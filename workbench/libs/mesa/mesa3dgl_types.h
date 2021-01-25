@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2015, The AROS Development Team. All rights reserved.
+    Copyright 2009-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,12 @@
 
 #include <GL/gla.h>
 #include "main/mtypes.h"
+#if defined(GL_PACK_REVERSE_ROW_ORDER_ANGLE)
+#include "frontend/api.h"
+#include "state_tracker/st_gl_api.h"
+#else
 #include "state_tracker/st_api.h"
+#endif
 
 struct mesa3dgl_framebuffer
 {

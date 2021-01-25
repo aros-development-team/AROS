@@ -24,6 +24,6 @@ USER_INCLUDES += \
             -iquote $(SRCDIR)/$(CURDIR)
 
 %build_module mmake=hidd-gallium modname=gallium modtype=hidd \
-   files="$(HIDD_GALLIUM_FILES)"
+   files="$(HIDD_GALLIUM_FILES)" objdir="$(OBJDIR)/$(MESAGLVERSION)"
 
 %common

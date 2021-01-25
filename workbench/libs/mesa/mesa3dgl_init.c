@@ -10,8 +10,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "state_tracker/st_gl_api.h"
-#include "state_tracker/st_api.h"
+#include "mesa3dgl_types.h"
 
 /* This is a global GL API object */
 /* TODO: Should be moved to LIBBASE */

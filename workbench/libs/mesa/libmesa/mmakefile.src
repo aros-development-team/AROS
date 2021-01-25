@@ -49,6 +49,18 @@ MESA_GENERATED_C_SOURCES := \
             program/program_parse.tab.c \
             program/lex.yy.c
 
+ifneq ($(MESAGLVERSION),20.0.2)
+MESA_GENERATED_C_SOURCES += \
+            main/marshal_generated0.c \
+            main/marshal_generated1.c \
+            main/marshal_generated2.c \
+            main/marshal_generated3.c \
+            main/marshal_generated4.c \
+            main/marshal_generated5.c \
+            main/marshal_generated6.c \
+            main/marshal_generated7.c
+endif
+
 MESA3D_SOURCES := $(filter-out $(MESA_GENERATED_C_SOURCES),$(PROGRAM_FILES) $(PROGRAM_NIR_FILES) $(MESA_GALLIUM_FILES))
 MESA3D_GALLIUM_CXX_SOURCES := $(filter %.cpp, $(MESA3D_SOURCES))
 MESA3D_GALLIUM_C_SOURCES := $(filter %.c, $(MESA3D_SOURCES))
@@ -106,12 +118,54 @@ $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: PRIVATE_XML := -f $(gla
 $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: $(dispatch_deps)
 	$(call es-gen)
 
+
 $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
 $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
 $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c: $(dispatch_deps)
 	$(call es-gen)
 
 $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c : $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h
+
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated0.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated0.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 0 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated0.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated1.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated1.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 1 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated1.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated2.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated2.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 2 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated2.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated3.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated3.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 3 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated3.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated4.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated4.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 4 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated4.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated5.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated5.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 5 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated5.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated6.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated6.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 6 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated6.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml -i 7 -n 8
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated7.c: $(dispatch_deps)
+	$(call es-gen)
 
 GET_HASH_GEN := $(top_srcdir)/$(CUR_MESADIR)/main/get_hash_generator.py
 $(top_builddir)/$(CUR_MESADIR)/main/get_hash.h: PRIVATE_SCRIPT :=  $(PYTHON) $(GET_HASH_GEN)

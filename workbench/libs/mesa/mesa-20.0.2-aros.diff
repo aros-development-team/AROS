@@ -45,6 +45,18 @@ diff -ruN mesa-20.0.2/include/c99_math.h mesa-20.0.2.aros/include/c99_math.h
  #else
  #error "Need to include or define an fpclassify function"
  #endif
+diff -ruN mesa-20.0.2/mesa3dgl.conf mesa-20.0.2.aros/mesa3dgl.conf
+--- mesa-20.0.2/mesa3dgl.conf	1970-01-01 00:00:00.000000000 +0000
++++ mesa-20.0.2.aros/mesa3dgl.conf	2021-01-24 00:17:05.170000000 +0000
+@@ -0,0 +1,8 @@
++##begin config
++basename Mesa3dgl
++version 21.02
++copyright Copyright (C) 1999-2020  Brian Paul, 2003-2020 The AROS Development Team
++rellib z1
++rellib posixc
++rellib stdc
++##end config
 diff -ruN mesa-20.0.2/src/egl/main/egldisplay.c mesa-20.0.2.aros/src/egl/main/egldisplay.c
 --- mesa-20.0.2/src/egl/main/egldisplay.c	2020-03-18 21:24:18.000000000 +0000
 +++ mesa-20.0.2.aros/src/egl/main/egldisplay.c	2020-03-19 14:49:53.700000000 +0000

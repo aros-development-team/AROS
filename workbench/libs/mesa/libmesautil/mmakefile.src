@@ -19,7 +19,8 @@ USER_INCLUDES += \
             -iquote $(top_srcdir)/src/mapi \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary \
-            -iquote $(top_srcdir)/$(CUR_MESADIR)/format
+            -iquote $(top_srcdir)/$(CUR_MESADIR)/format \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/format
 
 ifneq ($(mesa3dgl_ENTRYPOINTS),)
 MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
@@ -27,6 +28,11 @@ endif
 
 USER_CFLAGS += $(MESA_NOWARNFLAGS)
 USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
+
+$(top_builddir)/$(CUR_MESADIR)/format/u_format_pack.h: $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/format/u_format_table.py --header $(top_srcdir)/$(CUR_MESADIR)/format/u_format.csv > $@
 
 $(top_builddir)/$(CUR_MESADIR)/%.c: $(top_srcdir)/$(CUR_MESADIR)/%.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.csv
 	%mkdir_q dir="$(dir $@)"
@@ -37,7 +43,7 @@ MESA_UTIL_C_FILES := $(filter %.c, $(MESA_UTIL_FILES))
 MESA_UTIL_CXX_FILES := $(filter %.cpp, $(MESA_UTIL_FILES))
 
 MESA_UTIL_GENERATED_C_SOURCES := \
-            $(addprefix $(top_builddir)/$(CUR_MESADIR)/, $(MESA_UTIL_GENERATED_FILES))
+            $(addprefix $(top_builddir)/$(CUR_MESADIR)/, $(filter %.c, $(MESA_UTIL_GENERATED_FILES)))
 
 MESA3DGL_MESAUTIL_C_SOURCES := \
             $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA_UTIL_C_FILES))) \
@@ -49,8 +55,10 @@ MESA3DGL_MESAUTIL_SOURCES_C := $(MESA3DGL_MESAUTIL_C_SOURCES:.c=)
 
 MESA3DGL_MESAUTIL_SOURCES_CXX := $(MESA3DGL_MESAUTIL_CXX_SOURCES:.cpp=)
 
+MESA3DGL_MESAUTIL_GENERATED_HEADERS = $(addprefix $(top_builddir)/$(CUR_MESADIR)/, $(filter %.h, $(MESA_UTIL_GENERATED_FILES)))
+
 #MM
-mesa3d-linklib-mesautil-generated : $(MESA3DGL_MESAUTIL_GENERATED_C_SOURCES)
+mesa3d-linklib-mesautil-generated : $(MESA3DGL_MESAUTIL_GENERATED_C_SOURCES) $(MESA3DGL_MESAUTIL_GENERATED_HEADERS)
 
 #MM mesa3d-linklib-mesautil : mesa3d-linklib-mesautil-generated
 

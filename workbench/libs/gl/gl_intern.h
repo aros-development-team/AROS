@@ -28,6 +28,7 @@ struct LIBBASE
     struct Library              *glb_DOS;
     struct SignalSemaphore      glb_Sem;
     struct NotifyRequest        glb_Notify;
+    char                        *glb_GLDef;
     char                        *glb_GLImpl;
 };
 

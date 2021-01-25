@@ -38,7 +38,7 @@ USER_INCLUDES += \
             -iquote $(GALLIUM_PATH)/drivers \
             -iquote $(GALLIUM_PATH)/include \
             -iquote $(GALLIUM_PATH)/auxiliary \
-            -iquote $(GENDIR)/workbench/libs/mesa/src/mesa/main
+            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main
 
 USER_CPPFLAGS += \
                 -DPACKAGE_VERSION=\"$(MESAGLVERSION)\"
@@ -52,6 +52,6 @@ USER_LDFLAGS := \
 %build_module mmake=hidd-vmwaresvga \
   modname=vmwaresvga modtype=hidd \
   files=$(FILES) \
-  uselibs=""
+  uselibs="" objdir="$(OBJDIR)/$(MESAGLVERSION)"
 
 %common
