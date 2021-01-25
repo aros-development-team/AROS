@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,7 @@
 /* METHODS */
 OOP_Object *METHOD(HiddGallium, Root, New)
 {
-    D(bug("[Gallium] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Gallium] %s()\n", __func__));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 
@@ -40,7 +40,7 @@ VOID METHOD(HiddGallium, Root, Get)
 #endif
     ULONG idx;
 
-    D(bug("[Gallium] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Gallium] %s()\n", __func__));
 
     if (IS_GALLIUM_ATTR(msg->attrID, idx))
     {
@@ -58,14 +58,14 @@ VOID METHOD(HiddGallium, Root, Get)
 
 APTR METHOD(HiddGallium, Hidd_Gallium, CreatePipeScreen)
 {
-    D(bug("[Gallium] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Gallium] %s()\n", __func__));
 
     return NULL;
 }
 
 VOID METHOD(HiddGallium, Hidd_Gallium, DestroyPipeScreen)
 {
-    D(bug("[Gallium] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Gallium] %s()\n", __func__));
 }
 
 #if (0)
@@ -83,7 +83,7 @@ VOID METHOD(HiddGallium, Hidd_Gallium, DisplaySurface)
     height      : msg->height
     };
 
-    D(bug ("[Gallium] %s()\n", __PRETTY_FUNCTION__));
+    D(bug ("[Gallium] %s()\n", __func__));
 
     OOP_DoMethod(o, (OOP_Msg)&drmsg);
 }
@@ -91,6 +91,6 @@ VOID METHOD(HiddGallium, Hidd_Gallium, DisplaySurface)
 
 VOID METHOD(HiddGallium, Hidd_Gallium, DisplayResource)
 {
-    D(bug ("[Gallium] %s()\n", __PRETTY_FUNCTION__));
+    D(bug ("[Gallium] %s()\n", __func__));
 }
 

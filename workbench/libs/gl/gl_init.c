@@ -94,7 +94,7 @@ char *GetGLVarPath(struct Library *base)
     char pathBuff[BUFFER_SIZE];
     BPTR pathLock = BNULL;
 
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
     if ((pathLock = Lock("ENV:SYS", SHARED_LOCK)) != BNULL)
     {
@@ -102,23 +102,23 @@ char *GetGLVarPath(struct Library *base)
         {
             GLB(base)->glb_Notify.nr_Name = AllocVec(strlen(pathBuff) + 4, MEMF_PUBLIC);
             sprintf(GLB(base)->glb_Notify.nr_Name, "%s/GL", pathBuff);
-            D(bug("[GL] %s: using '%s'\n", __PRETTY_FUNCTION__, GLB(base)->glb_Notify.nr_Name));
+            D(bug("[GL] %s: using '%s'\n", __func__, GLB(base)->glb_Notify.nr_Name));
         }
         UnLock(pathLock);
     }
     return GLB(base)->glb_Notify.nr_Name;
 }
 
-void GetGLVar(struct Library *base)
+void GetGLVar(struct Library *base, const char *var, char **varstore)
 {
     LONG            Var_Length;
     char            Var_Value[BUFFER_SIZE];
 
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
-    FreeVec(GLB(base)->glb_GLImpl);
+    FreeVec(*varstore);
 
-    Var_Length = GetVar((STRPTR)"SYS/GL",
+    Var_Length = GetVar(var,
               &Var_Value[0],
               BUFFER_SIZE,
               GVF_GLOBAL_ONLY | LV_VAR
@@ -126,10 +126,10 @@ void GetGLVar(struct Library *base)
 
     if (Var_Length != -1)
     {
-        if ((GLB(base)->glb_GLImpl = AllocVec(strlen(Var_Value) + strlen(".library") + 1, MEMF_PUBLIC)) != NULL)
+        if ((*varstore = AllocVec(strlen(Var_Value) + strlen(".library") + 1, MEMF_PUBLIC)) != NULL)
         {
-            sprintf(GLB(base)->glb_GLImpl, "%s.library", Var_Value);
-            D(bug("[GL] %s: using '%s' for %s\n", __PRETTY_FUNCTION__, GLB(base)->glb_GLImpl, Var_Value));
+            sprintf(*varstore, "%s.library", Var_Value);
+            D(bug("[GL] %s: using '%s' for %s\n", __func__, *varstore, Var_Value));
         }
    }
 }
@@ -140,7 +140,7 @@ void gl_EnvNotifyProc(void)
     struct Library *base = ((struct Task *)pr)->tc_UserData;
     struct Message *msg;
 
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
     while (TRUE)
     {
@@ -148,13 +148,13 @@ void gl_EnvNotifyProc(void)
         while ((msg = GetMsg (&pr->pr_MsgPort)))
             ReplyMsg(msg);
 
-        GetGLVar(base);
+        GetGLVar(base, "SYS/GL", &GLB(base)->glb_GLImpl);
     }
 }
 
 void SetupGLVarNotification(struct Library *base)
 {
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
     if (!GLB(base)->glb_Notify.nr_Name)
         GetGLVarPath(base);
@@ -172,18 +172,18 @@ void SetupGLVarNotification(struct Library *base)
             struct Process *enProc;
             if ((enProc = CreateNewProc(enprocTags)) != NULL)
             {
-                D(bug("[GL] %s: FS Notification Proc @ 0x%p for '%s'\n", __PRETTY_FUNCTION__, enProc, GLB(base)->glb_Notify.nr_Name));
+                D(bug("[GL] %s: FS Notification Proc @ 0x%p for '%s'\n", __func__, enProc, GLB(base)->glb_Notify.nr_Name));
 
                 GLB(base)->glb_Notify.nr_stuff.nr_Msg.nr_Port	= &enProc->pr_MsgPort;
             }
-            D(bug("[GL] %s: MsgPort @ 0x%p\n", __PRETTY_FUNCTION__,GLB(base)->glb_Notify.nr_stuff.nr_Msg.nr_Port));
+            D(bug("[GL] %s: MsgPort @ 0x%p\n", __func__,GLB(base)->glb_Notify.nr_stuff.nr_Msg.nr_Port));
         }
 
         if (GLB(base)->glb_Notify.nr_stuff.nr_Msg.nr_Port && !GLB(base)->glb_Notify.nr_FullName)
         {
             GLB(base)->glb_Notify.nr_Flags = NRF_SEND_MESSAGE | NRF_NOTIFY_INITIAL;
             StartNotify(&GLB(base)->glb_Notify);
-            D(bug("[GL] %s: Started FS Notification for '%s'\n", __PRETTY_FUNCTION__, GLB(base)->glb_Notify.nr_FullName));
+            D(bug("[GL] %s: Started FS Notification for '%s'\n", __func__, GLB(base)->glb_Notify.nr_FullName));
         }
     }
 }
@@ -198,9 +198,9 @@ static AROS_UFH3(struct Library *, GM_UNIQUENAME(LibInit),
 
     SysBase = sysBase;
 
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
-    D(bug("[GL] %s: base @ 0x%p, SysBase @ 0x%p\n", __PRETTY_FUNCTION__, base, SysBase));
+    D(bug("[GL] %s: base @ 0x%p, SysBase @ 0x%p\n", __func__, base, SysBase));
 
     // setup the library structure.
     GLB(base)->glb_Lib.lib_Node.ln_Type = NT_LIBRARY;
@@ -213,13 +213,14 @@ static AROS_UFH3(struct Library *, GM_UNIQUENAME(LibInit),
 
     GLB(base)->glb_DOS = OpenLibrary("dos.library", 0);
 
-    D(bug("[GL] %s: DOSBase @ 0x%p\n", __PRETTY_FUNCTION__, DOSBase));
+    D(bug("[GL] %s: DOSBase @ 0x%p\n", __func__, DOSBase));
 
     memset(&GLB(base)->glb_Sem, 0,
         sizeof(struct SignalSemaphore) + sizeof(struct NotifyRequest));
     InitSemaphore(&GLB(base)->glb_Sem);
 
     SetupGLVarNotification(base);
+    GetGLVar(base, "SYS/GL.default", &GLB(base)->glb_GLDef);
 
     // return the library base as success
     return base;
@@ -237,7 +238,7 @@ static AROS_LH1(struct Library *, GM_UNIQUENAME(LibOpen),
     struct Library *res = NULL;
     char *glImplementation;
 
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
     // delete the late expunge flag
     GLB(base)->glb_Lib.lib_Flags &= ~LIBF_DELEXP;
@@ -245,9 +246,9 @@ static AROS_LH1(struct Library *, GM_UNIQUENAME(LibOpen),
     if (GLB(base)->glb_GLImpl)
         glImplementation = GLB(base)->glb_GLImpl;
     else
-        glImplementation = "mesa3dgl.library";
+        glImplementation = GLB(base)->glb_GLDef;
 
-    D(bug("[GL] %s: Attempting to use '%s' version %d\n", __PRETTY_FUNCTION__, glImplementation, version));
+    D(bug("[GL] %s: Attempting to use '%s' version %d\n", __func__, glImplementation, version));
 
     res = OpenLibrary(glImplementation, version);
 
@@ -266,7 +267,7 @@ static AROS_LH0(BPTR, GM_UNIQUENAME(LibClose),
 
     BPTR rc = 0;
 
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
     return rc;
 
@@ -282,7 +283,7 @@ static AROS_LH1(BPTR, GM_UNIQUENAME(LibExpunge),
 
     BPTR rc = 0;
 
-    D(bug("[GL] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[GL] %s()\n", __func__));
 
     return rc;
 

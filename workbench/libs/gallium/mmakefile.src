@@ -25,7 +25,7 @@ LIB_GALLIUM_SOURCES = \
 
 %build_module mmake=workbench-libs-gallium \
    modname=gallium modtype=library \
-   libdir=$(GENDIR)/lib/mesa linklibname=gallium \
+   libdir=$(top_libdir) linklibname=gallium \
    files="$(LIB_GALLIUM_SOURCES)" \
    uselibs="stdc"
 

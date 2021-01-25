@@ -25,6 +25,7 @@ USER_INCLUDES += \
             -iquote $(top_builddir)/$(CUR_MESADIR)/glsl \
             -iquote $(top_builddir)/$(CUR_MESADIR)/glsl/glcpp \
             -iquote $(top_builddir)/$(CUR_MESADIR)/nir \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/spirv \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary
 
@@ -165,11 +166,16 @@ $(top_builddir)/$(CUR_MESADIR)/glsl/ir_expression_operation_strings.h:  $(top_sr
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $< strings > $@
 
-$(top_builddir)/$(CUR_MESADIR)/glsl/float64_glsl.h: $(top_srcdir)/$(CUR_MESADIR)/glsl/xxd.py $(top_srcdir)/$(CUR_MESADIR)/glsl/float64.glsl
+ifeq ($(shell test -f $(top_srcdir)/src/util/xxd.py && echo -n yes),yes)
+FLOAT64DEP=$(top_srcdir)/src/util/xxd.py
+else
+FLOAT64DEP=$(top_srcdir)/$(CUR_MESADIR)/glsl/xxd.py
+endif
+
+$(top_builddir)/$(CUR_MESADIR)/glsl/float64_glsl.h: $(FLOAT64DEP) $(top_srcdir)/$(CUR_MESADIR)/glsl/float64.glsl
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $^ $@ -n float64_source || ($(RM) $@; false)
-
 
 $(top_builddir)/$(CUR_MESADIR)/spirv/spirv_info.c: $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv_info_c.py $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv.core.grammar.json
 	%mkdir_q dir="$(dir $@)"
@@ -180,6 +186,11 @@ $(top_builddir)/$(CUR_MESADIR)/spirv/vtn_gather_types.c: $(top_srcdir)/$(CUR_MES
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/spirv/vtn_gather_types_c.py $(top_srcdir)/$(CUR_MESADIR)/spirv/spirv.core.grammar.json $@ || ($(RM) $@; false)
+
+$(top_builddir)/$(CUR_MESADIR)/spirv/vtn_generator_ids.h:$(top_srcdir)/$(CUR_MESADIR)/spirv/vtn_generator_ids_h.py $(top_srcdir)/$(CUR_MESADIR)/spirv/spir-v.xml
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ $@ || ($(RM) $@; false)
 
 MESA3DGL_GLSL_GENERATED_FILES := $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(LIBGLSL_GENERATED_FILES))
 MESA3DGL_GLSL_GENERATED_HEADERS :=  $(filter %.h,$(MESA3DGL_GLSL_GENERATED_FILES))

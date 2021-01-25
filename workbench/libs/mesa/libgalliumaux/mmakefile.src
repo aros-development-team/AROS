@@ -65,7 +65,7 @@ $(top_builddir)/$(CUR_MESADIR)/indices/u_unfilled_gen.c: $(top_srcdir)/$(CUR_MES
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_unfilled_gen.py > $@
 
 #MM
-mesa3d-linklib-galliumauxiliary-generated : $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES))
+mesa3d-linklib-galliumauxiliary-generated : $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES) $(filter %.h, $(GENERATED_SOURCES)))
 
 # We want to build galliumaux using the source tree layout since there are files
 # with the same name...
