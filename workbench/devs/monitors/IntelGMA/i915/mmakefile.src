@@ -3,17 +3,16 @@
 include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
-GALLIUM_PATH = $(top_srcdir)/src/gallium
-
 CUR_MESADIR = src/gallium
 CUR_GALLIUMDIR = drivers/i915
+GALLIUM_PATH = $(top_srcdir)/$(CUR_MESADIR)
 
 include $(GALLIUM_PATH)/$(CUR_GALLIUMDIR)/Makefile.sources
 
 I915_C_SOURCES := $(filter %.c, $(C_SOURCES))
 
 I915_SOURCES := \
-             $(addprefix $(GALLIUM_PATH)/drivers/i915/,$(I915_C_SOURCES:.c=))
+             $(addprefix $(GALLIUM_PATH)/$(CUR_GALLIUMDIR)/,$(I915_C_SOURCES:.c=))
 
 USER_INCLUDES := \
             $(USER_INCLUDES) \
