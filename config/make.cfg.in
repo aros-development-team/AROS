@@ -141,7 +141,8 @@ AROS_ARCH_LIB                 = $(AROS_ARCH_SDK)/$(AROS_DIR_LIB)
 AROS_LIB                      := $(AROS_DEVELOPER)/$(AROS_DIR_LIB)
 #AROS_LIB                     := $(AROS_SDK)/$(AROS_DIR_LIB)
 
-DBGDIR                         := $(AROS_DEBUG)/dbg
+#DBGDIR                         := $(AROS_DEBUG)/dbg
+DBGDIR                         := $(AROSDIR)
 
 AROS_CONTRIB_DEVELOPER        := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)
 AROS_CONTRIB_SDK              := $(AROS_SDK)/$(AROS_DIR_CONTRIB)
