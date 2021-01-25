@@ -9,6 +9,6 @@ srcdir		= @srcdir@
 DRIVER		= sb128.audio
 MODEFILE	= SB128
 
-OBJECTS		= driver-init.o sb128.o accel.o misc.o interrupt.o pci_wrapper.o
+OBJECTS		= driver-init.o sb128hw.o accel.o misc.o interrupt.o pci_wrapper.o
 
 include ../Common/Makefile.common
