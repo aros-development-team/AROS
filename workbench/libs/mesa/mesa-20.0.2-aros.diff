@@ -245,7 +245,7 @@ diff -ruN mesa-20.0.2/src/mapi/glapi/gen/gl_XML.py mesa-20.0.2.aros/src/mapi/gla
  
 diff -ruN mesa-20.0.2/src/mapi/glapi/gen/gl_x86-64_asm.py mesa-20.0.2.aros/src/mapi/glapi/gen/gl_x86-64_asm.py
 --- mesa-20.0.2/src/mapi/glapi/gen/gl_x86-64_asm.py	2020-03-18 21:24:19.000000000 +0000
-+++ mesa-20.0.2.aros/src/mapi/glapi/gen/gl_x86-64_asm.py	2020-03-19 14:49:53.700000000 +0000
++++ mesa-20.0.2.aros/src/mapi/glapi/gen/gl_x86-64_asm.py	2021-01-26 01:08:21.200000000 +0000
 @@ -146,7 +146,7 @@
          print('\tret')
          print('\t.size\t_x86_64_get_dispatch, .-_x86_64_get_dispatch')
@@ -255,6 +255,30 @@ diff -ruN mesa-20.0.2/src/mapi/glapi/gen/gl_x86-64_asm.py mesa-20.0.2.aros/src/m
          print('')
          print('\t.extern\t_glapi_Dispatch')
          print('\t.extern\t_gl_DispatchTSD')
+@@ -226,7 +226,7 @@
+         print('\tcall\t_x86_64_get_dispatch@PLT')
+         print('\tmovq\t%u(%%rax), %%r11' % (f.offset * 8))
+         print('\tjmp\t*%r11')
+-        print('#elif defined(HAVE_PTHREAD)')
++        print('#elif defined(HAVE_PTHREAD) && !defined(__AROS__)')
+ 
+         save_all_regs(registers)
+         print('\tcall\t_x86_64_get_dispatch@PLT')
+@@ -240,12 +240,14 @@
+         print('\tjmp\t*%r11')
+ 
+         print('#else')
++        print('#if !defined(__AROS__)')
+         print('\tmovq\t_glapi_Dispatch(%rip), %rax')
+         print('\ttestq\t%rax, %rax')
+         print('\tje\t1f')
+         print('\tmovq\t%u(%%rax), %%r11' % (f.offset * 8))
+         print('\tjmp\t*%r11')
+         print('1:')
++        print('#endif')
+ 
+         save_all_regs(registers)
+         print('\tcall\t_glapi_get_dispatch')
 diff -ruN mesa-20.0.2/src/mapi/glapi/glapi.h mesa-20.0.2.aros/src/mapi/glapi/glapi.h
 --- mesa-20.0.2/src/mapi/glapi/glapi.h	2020-03-18 21:24:19.000000000 +0000
 +++ mesa-20.0.2.aros/src/mapi/glapi/glapi.h	2020-03-19 14:49:53.700000000 +0000
