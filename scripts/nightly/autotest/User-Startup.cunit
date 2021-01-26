@@ -23,6 +23,9 @@ If NOT WARN
     ; Perform basic "dos.library" unit tests...
     Execute S/Test cunit/dos/cunit-dos-fileseek
 
+    ; Perform basic "locale.library" unit tests...
+    Execute S/Test cunit/locale/cunit-locale-formatstring
+
     ; Perform basic "gfx.hidd" unit tests...
     Execute S/Test cunit/hidds/gfx/cunit-convertpixels
 
