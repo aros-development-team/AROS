@@ -49,12 +49,6 @@ endif
 %build_module mmake=hidd-softpipe modname=softpipe modtype=hidd \
     files="$(SOFTPIPE_HIDD_SOURCES)" alwayscxxlink=yes uselibs="" objdir="$(OBJDIR)/$(MESAGLVERSION)"
 
-ifeq ($(AROS_TARGET_CPU),x86_64)
-OPTIMIZATION_CFLAGS := -O3
-TARGET_ISA_CFLAGS += -msse2
-TARGET_ISA_CXXFLAGS += -msse2
-endif
-
 %build_linklib mmake=linklibs-gallium_softpipe libname=gallium_softpipe libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/$(CUR_GALLIUMDIR) files="$(SOFTPIPE_SOURCES)"
 
 %common
