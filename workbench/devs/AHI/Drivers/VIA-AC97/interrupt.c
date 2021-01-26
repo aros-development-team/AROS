@@ -1,6 +1,6 @@
 /*
+    Copyright © 2010-2021, The AROS Development Team. All rights reserved.
     Copyright © 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -164,7 +164,7 @@ void PlaybackInterrupt(struct CardData* card)
       --i;
     }
 
-    CacheClearE( card->current_buffer, (ULONG) dst - (ULONG) card->current_buffer, CACRF_ClearD );
+    CacheClearE( card->current_buffer, (IPTR) dst - (IPTR) card->current_buffer, CACRF_ClearD );
     CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
   }
 

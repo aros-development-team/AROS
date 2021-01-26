@@ -1,6 +1,6 @@
 /*
+    Copyright © 2010-2021, The AROS Development Team. All rights reserved.
     Copyright © 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -264,6 +264,7 @@ BOOL ac97_read_reg(struct CardData *card, unsigned char reg, unsigned short *dat
 
 static void set_table_ptr(struct CardData *card, BOOL Play)
 {
+    IPTR idx_table;
     ULONG phys_addr;
 #ifdef __amigaos4__
     APTR stack;
@@ -272,24 +273,32 @@ static void set_table_ptr(struct CardData *card, BOOL Play)
     codec_ready(card);
     if (Play)
     {
+        idx_table = (IPTR)card->play_idx_table;
 #ifdef __amigaos4__
         stack = IExec->SuperState();
-        phys_addr = IMMU->GetPhysicalAddress(card->play_idx_table);
+        phys_addr = IMMU->GetPhysicalAddress(idx_table);
         IExec->UserState(stack);
 #else
-        phys_addr = (ULONG)card->play_idx_table;
+#if defined(__AROS__) && (__WORDSIZE == 64)
+        idx_table &= 0xFFFFFFFF;
 #endif
-        
+        phys_addr = (ULONG)idx_table;
+#endif
+
         pci_outl(phys_addr, 4, card);
     }
     else
     {
+        idx_table = (IPTR)card->rec_idx_table;
 #ifdef __amigaos4__
         stack = IExec->SuperState();
-        phys_addr = IMMU->GetPhysicalAddress(card->rec_idx_table);
+        phys_addr = IMMU->GetPhysicalAddress(idx_table);
         IExec->UserState(stack);
 #else
-        phys_addr = (ULONG)card->rec_idx_table;
+#if defined(__AROS__) && (__WORDSIZE == 64)
+        idx_table &= 0xFFFFFFFF;
+#endif
+        phys_addr = (ULONG)idx_table;
 #endif
 
         pci_outl(phys_addr, 4 + RECORD, card);
@@ -313,35 +322,41 @@ static void set_table_ptr(struct CardData *card, BOOL Play)
 static int build_via_table(struct CardData *card, APTR sgbuf1, APTR sgbuf2, int OneBufferSize, struct snd_via_sg_table **idx, 
                            APTR *idx_nonaligned)
 {
+    IPTR _sgbuf1 = (IPTR)sgbuf1;
+    IPTR _sgbuf2 = (IPTR)sgbuf2;
     ULONG phys_addr;
+#if defined(__AROS__) && (__WORDSIZE == 64)
+    _sgbuf1 &= 0xFFFFFFFF;
+    _sgbuf2 &= 0xFFFFFFFF;
+#endif
 #ifdef __amigaos4__
     APTR stack;
 #endif
-    
+
     *idx = pci_alloc_consistent(sizeof(**idx) * 4, idx_nonaligned);
-    
+
 #ifdef __amigaos4__
     stack = IExec->SuperState();
-    phys_addr = IMMU->GetPhysicalAddress(sgbuf1);
+    phys_addr = IMMU->GetPhysicalAddress(_sgbuf1);
     IExec->UserState(stack);
 #else
-    phys_addr = (ULONG)sgbuf1;
+    phys_addr = (ULONG)_sgbuf1;
 #endif
-    
-    (*idx)[0].offset = (APTR) tolittle(phys_addr);
+
+    (*idx)[0].offset = (ULONG) tolittle(phys_addr);
     (*idx)[0].size = tolittle( (OneBufferSize) | VIA_TBL_BIT_FLAG);
-    
+
 #ifdef __amigaos4__
     stack = IExec->SuperState();
-    phys_addr = IMMU->GetPhysicalAddress(sgbuf2);
+    phys_addr = IMMU->GetPhysicalAddress(_sgbuf2);
     IExec->UserState(stack);
 #else
-    phys_addr = (ULONG)sgbuf2;
+    phys_addr = (ULONG)_sgbuf2;
 #endif
-    
-    (*idx)[1].offset = (APTR) tolittle(phys_addr);
+
+    (*idx)[1].offset = (ULONG) tolittle(phys_addr);
     (*idx)[1].size = tolittle( (OneBufferSize) | VIA_TBL_BIT_EOL );
-    
+
     CacheClearE(*idx, sizeof(**idx) * 4, CACRF_ClearD);
     //DebugPrintF("===> play_idx_table at %lx, %lx\n", *idx, *idx_nonaligned);
     

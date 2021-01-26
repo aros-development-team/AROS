@@ -1,6 +1,6 @@
 /*
+    Copyright © 2010-2021, The AROS Development Team. All rights reserved.
     Copyright © 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -762,8 +762,17 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress)
   else
 #endif
   {
-      address = AllocVec( size + CACHELINE_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-    
+    ULONG allocflags = MEMF_PUBLIC | MEMF_CLEAR;
+#if defined(__AROS__)
+    /*
+     * Ensure that allocations are addressable by the hardware..
+     * They are still stored in the driver base as APTR, for convenience
+     * but they will all be 32bit addressable.
+     */
+    allocflags |= MEMF_31BIT;
+#endif
+      address = AllocVec( size + CACHELINE_SIZE, allocflags);
+
       if( address != NULL )
       {
         a = (unsigned long) address;
@@ -771,7 +780,7 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress)
         address = (void *) a;
       }
   }
-  
+
   *NonAlignedAddress = address;
   
   return address;
