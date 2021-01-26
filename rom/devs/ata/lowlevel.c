@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -398,7 +398,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     )
     if (irq)
     {
-        bug("[ATA%02ld] %s: IRQ mode\n", unit->au_UnitNum, __func__);
+        DIRQ(bug("[ATA%02ld] %s: IRQ mode\n", unit->au_UnitNum, __func__);)
         /* Do not read ata_Status in irq mode. It can cause random lost interrupts. */
         if (bus->haveAltIO)
             status = PIO_InAlt(bus, ata_AltStatus);
@@ -412,7 +412,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
             fake_irq = TRUE;
             bug("[ATA%02ld] %s: %s occured, status = %02lx, ata error %lx\n",
                 unit->au_UnitNum, __func__, (status & (1 << 5)) ? "drive fault" : "error", status, PIO_In(bus, ata_Error));
-            bug("[ATA%02ld] %s: faking completion IRQ (real IRQ will not come)\n", unit->au_UnitNum, __func__);
+            DIRQ(bug("[ATA%02ld] %s: faking completion IRQ (real IRQ will not come)\n", unit->au_UnitNum, __func__);)
         }
         else
         {
