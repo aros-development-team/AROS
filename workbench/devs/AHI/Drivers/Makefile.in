@@ -41,9 +41,9 @@ ifneq ($(strip $(HAVE_ASMIO)),)
 SUBDIRS		+= ac97
 SUBDIRS		+= HDAudio
 SUBDIRS		+= SB128
-ifneq ($(host_cpu),x86_64)
 SUBDIRS		+= VIA-AC97
 SUBDIRS		+= CMI8738
+ifneq ($(host_cpu),x86_64)
 SUBDIRS		+= EMU10kx
 SUBDIRS		+= Envy24HT
 SUBDIRS		+= Envy24
