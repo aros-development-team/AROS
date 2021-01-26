@@ -50,15 +50,17 @@ CardInterrupt( struct CMI8738_DATA* card )
   ULONG intreq;
   LONG  handled = 0;
 
-    bug("[CMI8738]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card);
-    bug("[CMI8738] %s: AHIAudioCtrlDrv @ 0x%p\n", __PRETTY_FUNCTION__, AudioCtrl);
+    D(
+        bug("[CMI8738]: %s(card @ 0x%p)\n", __func__, card);
+        bug("[CMI8738] %s: AHIAudioCtrlDrv @ 0x%p\n", __func__, AudioCtrl);
+    )
 
     for (;;)
 //  while (((intreq = pci_inl(CMPCI_REG_INTR_STATUS, card)) & CMPCI_REG_ANY_INTR) != 0)
   {
     intreq = pci_inl(CMPCI_REG_INTR_STATUS, card);
 
-    bug("[CMI8738] %s: INTR_STATUS = %08x\n", __PRETTY_FUNCTION__, intreq);
+        D(bug("[CMI8738] %s: INTR_STATUS = %08x\n", __func__, intreq);)
 
       if (((intreq & CMPCI_REG_ANY_INTR) == 0) || (AudioCtrl == NULL))
 	  break;
@@ -66,7 +68,7 @@ CardInterrupt( struct CMI8738_DATA* card )
     //DebugPrintF("INT %lx\n", intreq);
     if( intreq & CMPCI_REG_CH0_INTR)
     {
-      unsigned long diff = pci_inl(CMPCI_REG_DMA0_BASE, card) - (unsigned long) card->playback_buffer_phys;
+      ULONG diff = (ULONG)((IPTR)pci_inl(CMPCI_REG_DMA0_BASE, card) - (IPTR) card->playback_buffer_phys);
       
       ClearMask(dev, card, CMPCI_REG_INTR_CTRL, CMPCI_REG_CH0_INTR_ENABLE);
 
@@ -162,7 +164,7 @@ PlaybackInterrupt( struct CMI8738_DATA* card )
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
   struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
   if( card->mix_buffer != NULL && card->current_buffer != NULL )
   {
@@ -214,7 +216,7 @@ PlaybackInterrupt( struct CMI8738_DATA* card )
       --i;
     }
 
-    CacheClearE( card->current_buffer, (ULONG) dst - (ULONG) card->current_buffer, CACRF_ClearD );
+    CacheClearE( card->current_buffer, (IPTR) dst - (IPTR) card->current_buffer, CACRF_ClearD );
 
     CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
   }
@@ -235,7 +237,7 @@ RecordInterrupt( struct CMI8738_DATA* card )
   struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
   struct PCIDevice *dev = (struct PCIDevice * ) card->pci_dev;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
   struct AHIRecordMessage rm =
   {

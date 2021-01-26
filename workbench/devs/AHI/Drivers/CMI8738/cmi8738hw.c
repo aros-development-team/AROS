@@ -118,7 +118,7 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
     ULONG ret;
     int   i;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     card_num = ( GetTagData( AHIDB_AudioID, 0, taglist) & 0x0000f000 ) >> 12;
 
@@ -181,7 +181,7 @@ _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
     struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
     struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     if( card != NULL )
     {
@@ -206,7 +206,7 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     // V6 drivers do not have to preserve all registers
 
@@ -222,7 +222,7 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     // V6 drivers do not have to preserve all registers
 
@@ -246,9 +246,10 @@ _AHIsub_Start( ULONG                   flags,
     struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
     struct PCIDevice *dev = card->pci_dev;
     ULONG dma_buffer_size = 0;
+	IPTR buffer_phys;
     int i, freqbit = 6;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     /* Stop playback/recording, free old buffers (if any) */
     //IAHIsub->AHIsub_Stop( flags, AudioCtrl );
@@ -332,12 +333,16 @@ _AHIsub_Start( ULONG                   flags,
 #endif
 	    card->playback_buffer_phys = card->playback_buffer;
 
-	bug("[CMI8738] %s: Playback buffer @ 0x%p\n", __PRETTY_FUNCTION__, card->playback_buffer);
-    
-	pci_outl((ULONG)card->playback_buffer_phys, CMPCI_REG_DMA0_BASE, card);
+	D(bug("[CMI8738] %s: Playback buffer @ 0x%p\n", __func__, card->playback_buffer);)
+
+	buffer_phys = (IPTR)card->playback_buffer_phys;
+#if defined(__AROS__) && (__WORDSIZE==64)
+	buffer_phys &= 0xFFFFFFFF;
+#endif
+	pci_outl((ULONG)buffer_phys, CMPCI_REG_DMA0_BASE, card);
 	pci_outw((dma_buffer_size / dma_sample_frame_size) * 2 - 1, CMPCI_REG_DMA0_LENGTH, card);
 	pci_outw((dma_buffer_size / dma_sample_frame_size) - 1, CMPCI_REG_DMA0_INTLEN, card);
-    
+
 	card->is_playing = TRUE;
     }
 
@@ -401,7 +406,11 @@ _AHIsub_Start( ULONG                   flags,
 #endif
         card->record_buffer_phys = card->record_buffer;
 
-	pci_outl((ULONG)card->record_buffer_phys, CMPCI_REG_DMA1_BASE, card);
+	buffer_phys = (IPTR)card->record_buffer_phys;
+#if defined(__AROS__) && (__WORDSIZE==64)
+	buffer_phys &= 0xFFFFFFFF;
+#endif
+	pci_outl((ULONG)buffer_phys, CMPCI_REG_DMA1_BASE, card);
 	udelay(1);
 	pci_outw((card->current_record_bytesize / 4) * 2 - 1, CMPCI_REG_DMA1_LENGTH, card);
 	udelay(1);
@@ -441,7 +450,7 @@ _AHIsub_Update( ULONG                   flags,
     struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
 #endif
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
 #if 0
     card->current_frames = AudioCtrl->ahiac_BuffSamples;
@@ -470,7 +479,7 @@ _AHIsub_Stop( ULONG                   flags,
     struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
     struct PCIDevice *dev = card->pci_dev;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     if( flags & AHISF_PLAY )
     {
@@ -543,7 +552,7 @@ _AHIsub_Stop( ULONG                   flags,
 ** AHIsub_GetAttr *************************************************************
 ******************************************************************************/
 
-LONG
+SIPTR
 _AHIsub_GetAttr( ULONG                   attribute,
 		 LONG                    argument,
 		 LONG                    def,
@@ -554,7 +563,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
     struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
     int i;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     struct CMI8738_DATA* card = (struct CMI8738_DATA*) AudioCtrl->ahiac_DriverData;
     if (card == NULL)
@@ -565,7 +574,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
 	      CMI8738Base->driverdatas[ card_num ] != NULL )
 	    card = CMI8738Base->driverdatas[ card_num ];
     }
-    bug("[CMI8738] %s: card data @ 0x%p\n", __PRETTY_FUNCTION__, card);
+    D(bug("[CMI8738] %s: card data @ 0x%p\n", __func__, card);)
 
     switch( attribute )
     {
@@ -612,16 +621,16 @@ _AHIsub_GetAttr( ULONG                   attribute,
 	return 0;  // Will not happen
 
     case AHIDB_Author:
-	return (LONG) "Davy Wentzler";
+	return (SIPTR) "Davy Wentzler";
 
     case AHIDB_Copyright:
-	return (LONG) "(C) 2011 The AROS Dev Team";
+	return (SIPTR) "(C) 2011 The AROS Dev Team";
 
     case AHIDB_Version:
-	return (LONG) LibIDString;
+	return (SIPTR) LibIDString;
 
     case AHIDB_Annotation:
-	return (LONG) "AROS CMI8738 Audio driver";
+	return (SIPTR) "AROS CMI8738 Audio driver";
 
     case AHIDB_Record:
 	return TRUE;
@@ -665,13 +674,13 @@ _AHIsub_GetAttr( ULONG                   attribute,
 	return INPUTS;
 
     case AHIDB_Input:
-	return (LONG) Inputs[ argument ];
+	return (SIPTR) Inputs[ argument ];
 
     case AHIDB_Outputs:
 	return OUTPUTS;
 
     case AHIDB_Output:
-	return (LONG) Outputs[ argument ];
+	return (SIPTR) Outputs[ argument ];
 
     default:
 	return def;
@@ -693,7 +702,7 @@ _AHIsub_HardwareControl( ULONG                   attribute,
     struct PCIDevice *dev = card->pci_dev;
     unsigned char byte;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     switch( attribute )
     {
