@@ -1310,6 +1310,14 @@ static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device
 {
     D(bug("[HDAudio] Found IDT codec\n"));
 
+    if (!(device == 0x7608
+        || device == 0x76a0
+        || device == 0x7680))
+    {
+        D(bug("[HDAudio] Unknown IDT codec.\n"));
+        return FALSE;
+    }
+
     if (device == 0x76a0)
     {
         D(bug("[HDAudio] STAC9205 detected.\n"));
@@ -1319,53 +1327,45 @@ static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device
 
         return FALSE;
     }
-
-    if (!(device == 0x7608))
+    else if (device == 0x7608)
     {
-        D(bug("[HDAudio] Unknown IDT codec.\n"));
-        return FALSE;
-    }
 
-    card->dac_nid = 0x10;
-    card->adc_nid = 0x12;
-    card->adc_mixer_nid = 0x1C;
-    card->dac_volume_nids[0] = 0x10;
-    card->dac_volume_count = 1;
+        card->dac_nid = 0x10;
+        card->adc_nid = 0x12;
+        card->adc_mixer_nid = 0x1C;
+        card->dac_volume_nids[0] = 0x10;
+        card->dac_volume_count = 1;
 
-    card->speaker_nid = 0x0D;
-    card->headphone_nid = 0x0A;
+        card->speaker_nid = 0x0D;
+        card->headphone_nid = 0x0A;
 
-    card->line_in_nid = 0x0B;
-    card->mic1_nid = 0x0B;
-    card->mic2_nid = 0x0C;
-    card->cd_nid = 0x0E; /* no cd but ...*/
+        card->line_in_nid = 0x0B;
+        card->mic1_nid = 0x0B;
+        card->mic2_nid = 0x0C;
+        card->cd_nid = 0x0E; /* no cd but ...*/
 
-    card->adc_mixer_is_mux = TRUE;
+        card->adc_mixer_is_mux = TRUE;
 
-    /* to not to enable headphone and the speaker at the same time */
-    card->speaker_active = TRUE;
+        /* to not to enable headphone and the speaker at the same time */
+        card->speaker_active = TRUE;
 
-    /* enable eapd. Specs says this is spdif out, but this is required */
-    send_command_12(card->codecnr, 0x1f, VERB_SET_EAPD, 0x2, card);
+        /* enable eapd. Specs says this is spdif out, but this is required */
+        send_command_12(card->codecnr, 0x1f, VERB_SET_EAPD, 0x2, card);
 
-    /* set connections */
-    send_command_12 (card->codecnr, 0x0f, VERB_SET_CONNECTION_SELECT, 0, card); /* 48QFN specific */
-    send_command_12 (card->codecnr, 0x0a, VERB_SET_CONNECTION_SELECT, 0, card); /* headset */
-    send_command_12 (card->codecnr, 0x0d, VERB_SET_CONNECTION_SELECT, 0, card); /* speaker */
+        /* set connections */
+        send_command_12 (card->codecnr, 0x0f, VERB_SET_CONNECTION_SELECT, 0, card); /* 48QFN specific */
+        send_command_12 (card->codecnr, 0x0a, VERB_SET_CONNECTION_SELECT, 0, card); /* headset */
+        send_command_12 (card->codecnr, 0x0d, VERB_SET_CONNECTION_SELECT, 0, card); /* speaker */
 
-    /* set output gains */
-    send_command_4 (card->codecnr, 0x0f, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
-    send_command_4 (card->codecnr, 0x0a, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
-    send_command_4 (card->codecnr, 0x0d, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+        /* set output gains */
+        send_command_4 (card->codecnr, 0x0f, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+        send_command_4 (card->codecnr, 0x0a, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+        send_command_4 (card->codecnr, 0x0d, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
 
-    /* enable outputs */
-    send_command_12(card->codecnr, 0x0f, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
-    send_command_12(card->codecnr, 0x0a, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
-    send_command_12(card->codecnr, 0x0d, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
-
-    if (device == 0x7608)
-    {
-        /* move 0x7608 specific stuff here */
+        /* enable outputs */
+        send_command_12(card->codecnr, 0x0f, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+        send_command_12(card->codecnr, 0x0a, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+        send_command_12(card->codecnr, 0x0d, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
 
         /* Not sure about indices */
         card->adc_mixer_indices[0] = 3;   // line in
@@ -1381,9 +1381,42 @@ static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device
         card->dac_min_gain = -95.25;
         card->dac_max_gain = 0.0;
         card->dac_step_gain = 0.75;
+
+        return TRUE;
+    }
+    else if (device == 0x7680)
+    {
+        D(bug("[HDAudio] STAC9221 A1 detected.\n"));
+
+        card->dac_nid = 0x03;
+        card->adc_nid = 0x06;
+        card->dac_volume_nids[0] = 0x03;
+        card->dac_volume_count = 1;
+
+        card->speaker_nid = 0x00;
+        card->headphone_nid = 0x02;
+
+        /* to not to enable headphone and the speaker at the same time */
+        card->speaker_active = TRUE;
+
+        /* set connections */
+        send_command_12 (card->codecnr, 0x0c, VERB_SET_CONNECTION_SELECT, 0, card); /* */
+        send_command_12 (card->codecnr, 0x0a, VERB_SET_CONNECTION_SELECT, 0, card); /* HP */
+
+        /* set output gains */
+        send_command_4 (card->codecnr, 0x03, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+
+        /* enable outputs */
+        send_command_12(card->codecnr, 0x0c, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+        send_command_12(card->codecnr, 0x0a, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+
+        card->dac_min_gain = -95.25;
+        card->dac_max_gain = 0.0;
+        card->dac_step_gain = 0.75;
+        return TRUE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 
