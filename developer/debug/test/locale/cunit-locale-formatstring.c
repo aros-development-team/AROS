@@ -77,7 +77,7 @@ void testFORMATSTRINGNOFORMAT(void)
      * value of FormatString() must point to the 1st argument so that the next
      * call of FormatString() can fetch that argument.
      */
-    CU_ASSERT(args.arg1 == retval);
+    CU_ASSERT(&args.arg1 == retval);
     CU_ASSERT(strcmp("Textformat", buffer) == 0);
 }
 
@@ -102,7 +102,7 @@ void testFORMATSTRINGFORMAT(void)
      * FormatString() must point to the 2nd argument so that the next call of
      * FormatString() can fetch that argument.
      */
-    CU_ASSERT(args.arg2 == retval);
+    CU_ASSERT(&args.arg2 == retval);
     CU_ASSERT(strcmp("Textformat ARG1", buffer) == 0);
 }
 
