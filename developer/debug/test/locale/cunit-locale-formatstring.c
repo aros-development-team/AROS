@@ -9,18 +9,24 @@
 #include <CUnit/Basic.h>
 #include <CUnit/Automated.h>
 
+#include <aros/debug.h>
+
 /* storage used during testing */
 static char buffer[100];
 
 #pragma pack(2)
 struct Args
 {
-    STRPTR arg1;
-    STRPTR arg2;
+    STRPTR  arg1;
+    STRPTR  arg2;
+    UWORD   arg3;
+    int     arg4;
+    void *  arg5; /* unused */
 };
 #pragma pack()
 
-static struct Args args = {"ARG1", "ARG2"};
+static struct Args args = {"ARG1", "ARG2", 'N', 50, NULL};
+static struct Hook hook;
 
 AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -46,6 +52,9 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
  */
 int init_suite(void)
 {
+    hook.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
+    hook.h_SubEntry = 0; //RAWFMTFUNC_STRING;
+    hook.h_Data = buffer;
     return 0;
 }
 
@@ -61,51 +70,48 @@ int clean_suite(void)
  */
 void testFORMATSTRINGNOFORMAT(void)
 {
-    struct Hook hook;
-    APTR retval;
-
-    hook.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
-    hook.h_SubEntry = 0; //RAWFMTFUNC_STRING;
-    hook.h_Data = buffer;
-
-    STRPTR textformat = "Textformat";
-
-    retval = FormatString(NULL, (STRPTR)textformat, (RAWARG)&args, &hook);
-
     /*
      * When the template string doesn't contain a format specifier the return
      * value of FormatString() must point to the 1st argument so that the next
      * call of FormatString() can fetch that argument.
      */
-    CU_ASSERT(&args.arg1 == retval);
-    CU_ASSERT(strcmp("Textformat", buffer) == 0);
+    CU_ASSERT(&args.arg1 == FormatString(NULL, (STRPTR)"Textformat", (RAWARG)&args, &hook));
+    CU_ASSERT(0 == strcmp("Textformat", buffer));
 }
 
-
-/* Test of FormatString() with format specifier.
+/* Test of FormatString() with a single str format specifier.
  */
-void testFORMATSTRINGFORMAT(void)
+void testFORMATSTRINGSINGLESTRFMTARG(void)
 {
-    struct Hook hook;
-    APTR retval;
-
-    hook.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
-    hook.h_SubEntry = 0; //RAWFMTFUNC_STRING;
     hook.h_Data = buffer;
-
-    STRPTR textformat = "Textformat %s"; /* one format specifier */
-
-    retval = FormatString(NULL, (STRPTR)textformat, (RAWARG)&args, &hook);
-
     /*
      * When the template string contains one format specifier the return value of
      * FormatString() must point to the 2nd argument so that the next call of
      * FormatString() can fetch that argument.
      */
-    CU_ASSERT(&args.arg2 == retval);
-    CU_ASSERT(strcmp("Textformat ARG1", buffer) == 0);
+    CU_ASSERT(&args.arg2 == FormatString(NULL, (STRPTR)"Textformat %s", (RAWARG)&args, &hook));
+    CU_ASSERT(0 == strcmp("Textformat ARG1", buffer));
 }
 
+/* Test of FormatString() with a single char format specifier.
+ */
+void testFORMATSTRINGSINGLECHRFMTARG(void)
+{
+    hook.h_Data = buffer;
+
+    CU_ASSERT(&args.arg4 == FormatString(NULL, (STRPTR)"Textformat %c", (RAWARG)&args.arg3, &hook));
+    CU_ASSERT(0 == strcmp("Textformat N", buffer));
+}
+
+/* Test of FormatString() with a format containing multiple specifiers.
+ */
+void testFORMATSTRINGFMTMULTIARG(void)
+{
+    hook.h_Data = buffer;
+
+    CU_ASSERT(&args.arg5 == FormatString(NULL, (STRPTR)"Textformat %s %s %c %u", (RAWARG)&args, &hook));
+    CU_ASSERT(0 == strcmp("Textformat ARG1 ARG2 N 50", buffer));
+}
 
 int main(void)
 {
@@ -124,8 +130,10 @@ int main(void)
     }
 
     /* add the tests to the suite */
-    if ((NULL == CU_add_test(pSuite, "test of FormatString w/o format specifier", testFORMATSTRINGNOFORMAT)) ||
-        (NULL == CU_add_test(pSuite, "test of FormatString with format specifier", testFORMATSTRINGFORMAT)))
+    if ((NULL == CU_add_test(pSuite, "test with no format specifier", testFORMATSTRINGNOFORMAT)) ||
+        (NULL == CU_add_test(pSuite, "test with format containing a single string specifier", testFORMATSTRINGSINGLESTRFMTARG)) ||
+        (NULL == CU_add_test(pSuite, "test with format containing a single char specifier",testFORMATSTRINGSINGLECHRFMTARG)) ||
+        (NULL == CU_add_test(pSuite, "test with format containing multiple specifiers",testFORMATSTRINGFMTMULTIARG)))
     {
         CU_cleanup_registry();
         return CU_get_error();
