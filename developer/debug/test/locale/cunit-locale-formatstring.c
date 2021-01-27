@@ -124,7 +124,7 @@ int main(void)
     }
 
     /* add the tests to the suite */
-    if ((NULL == CU_add_test(pSuite, "test of FormatString w/o format specifiern", testFORMATSTRINGNOFORMAT)) ||
+    if ((NULL == CU_add_test(pSuite, "test of FormatString w/o format specifier", testFORMATSTRINGNOFORMAT)) ||
         (NULL == CU_add_test(pSuite, "test of FormatString with format specifier", testFORMATSTRINGFORMAT)))
     {
         CU_cleanup_registry();
