@@ -629,7 +629,12 @@ APTR InternalFormatString(const struct Locale * locale,
                                 dataStream, indices, putCharFunc);
 
     CloseLocale(def_locale);
-
+    // TODO: Fix InternalFormatString so the following isnt needed...
+    if ((indexSize == 0) && (retval != dataStream))
+    {
+        bug("[locale] %s: fixup retval for fmt with 0 args (0x%p -> 0x%p)\n", __func__, retval, dataStream);
+        bug("[locale] %s: InternalFormatString returned wrong value - DEBUG!\n", __func__);
+    }
     return retval;
 
     AROS_LIBFUNC_EXIT
