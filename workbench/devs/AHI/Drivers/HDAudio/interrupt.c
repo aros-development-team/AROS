@@ -58,7 +58,7 @@ CardInterrupt( struct HDAudioChip* card )
     intreq = pci_inl(HD_INTSTS, card);
 
     if (intreq & HD_INTCTL_GLOBAL)
-    {       
+    {
         if (intreq & 0x3fffffff) // stream interrupt
         {
 //            ULONG position;
@@ -301,7 +301,7 @@ RecordInterrupt( struct HDAudioChip* card )
      while( i < frames )
      {
        *dst = ( ( *src & 0x00FF ) << 8 ) | ( ( *src & 0xFF00 ) >> 8 );
-   
+
        ++i;
        ++src;
        ++dst;
@@ -310,7 +310,7 @@ RecordInterrupt( struct HDAudioChip* card )
      /*while( i < frames )
      {
        *dst = (*src);
-   
+
        ++i;
        ++src;
        ++dst;
