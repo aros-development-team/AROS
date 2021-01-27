@@ -1542,7 +1542,7 @@ static void unmute_widget(UBYTE nid, struct HDAudioChip *card)
 
 static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
 {
-    int dac, adc, front, steps = 0, offset0dB = 0;
+    int adc, front, steps = 0, offset0dB = 0;
     double step_size = 0.25;
     ULONG parm, widget_caps, nid;
     UWORD connections, i;
@@ -1562,7 +1562,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
     if (card->dac_nid == 0)
     {
         // find out the first PCM DAC
-        dac = find_widget(card, 0, 0);
+        int dac = find_widget(card, 0, 0);
 
         if (dac == 0)
         {
@@ -1574,7 +1574,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
     }
     D(bug("[HDAudio] DAC NID = %xh\n", card->dac_nid));
 
-    check_widget_volume(dac, card);
+    check_widget_volume(card->dac_nid, card);
 
     // find FRONT pin
     front = find_widget(card, 4, 0);
@@ -1656,8 +1656,8 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
     if (nid != 0)
         before_front = (UBYTE)send_command_12(card->codecnr, nid,
             VERB_GET_CONNECTION_LIST_ENTRY, 0, card);
-	
-  if (before_front != dac)
+
+  if (before_front != card->dac_nid)
 	 {
 	    D(bug("[HDAudio] The widget before front/speaker/HP (%xh) is not equal to DAC!\n", before_front));
 
