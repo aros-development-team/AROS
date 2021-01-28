@@ -113,6 +113,16 @@ void testFORMATSTRINGFMTMULTIARG(void)
     CU_ASSERT(0 == strcmp("Textformat ARG1 ARG2 N 50", buffer));
 }
 
+/* Test of FormatString() with a format containing explicit argument no. specifiers.
+ */
+void testFORMATSTRINGFMTEXPLICITARG(void)
+{
+    hook.h_Data = buffer;
+
+    CU_ASSERT(&args.arg5 == FormatString(NULL, (STRPTR)"Textformat %2 %4", (RAWARG)&args, &hook));
+    CU_ASSERT(0 == strcmp("Textformat ARG2 50", buffer));
+}
+
 int main(void)
 {
     CU_pSuite pSuite = NULL;
@@ -133,7 +143,8 @@ int main(void)
     if ((NULL == CU_add_test(pSuite, "test with no format specifier", testFORMATSTRINGNOFORMAT)) ||
         (NULL == CU_add_test(pSuite, "test with format containing a single string specifier", testFORMATSTRINGSINGLESTRFMTARG)) ||
         (NULL == CU_add_test(pSuite, "test with format containing a single char specifier",testFORMATSTRINGSINGLECHRFMTARG)) ||
-        (NULL == CU_add_test(pSuite, "test with format containing multiple specifiers",testFORMATSTRINGFMTMULTIARG)))
+        (NULL == CU_add_test(pSuite, "test with format containing multiple specifiers",testFORMATSTRINGFMTMULTIARG))
+        (NULL == CU_add_test(pSuite, "test with format containing explicit arg specifiers",testFORMATSTRINGFMTEXPLICITARG)))
     {
         CU_cleanup_registry();
         return CU_get_error();
