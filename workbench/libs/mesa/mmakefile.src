@@ -86,7 +86,10 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) \
   files="$(MESAGL_LIBRARY_SOURCES_C)" \
   alwayscxxlink=yes uselibs="glapi mesa compiler galliumauxiliary gallium mesautil"
 
-$(AROS_ENVARC)/SYS/GL.default:
+$(AROS_ENVARC)/SYS:
+	%mkdir_q dir=$@
+
+$(AROS_ENVARC)/SYS/GL.default: | $(AROS_ENVARC)/SYS
 	@$(ECHO) "mesa3dgl$(MESAGLBUILD)" > $(AROS_ENVARC)/SYS/GL.default
 
 #MM
