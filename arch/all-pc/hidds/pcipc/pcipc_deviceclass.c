@@ -1,11 +1,12 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386/x86_64 native PCI device support routines.
     Lang: English
 */
 
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/kernel.h>
@@ -36,7 +37,7 @@
 /* Find the most-significant bit thats set */
 static inline ULONG fls_long(ULONG x)
 {
-    return ((sizeof(x) * 8) - __builtin_clzl(x));
+    return ((sizeof(x) * 8) - __builtin_clz(x));
 }
 
 /* Integer base 2 logarithm of x */
@@ -48,13 +49,7 @@ static inline ULONG ilog2(ULONG x)
 /* Round up, to nearest power of two */
 static inline ULONG roundup_pow_of_two(ULONG x)
 {
-    return (1UL << fls_long(x - 1));
-}
-
-/* Round down, to nearest power of two */
-static inline ULONG rounddown_pow_of_two(ULONG x)
-{
-    return (1UL << ilog2(x));
+    return x == 1 ? 1 : (1 << fls_long(x - 1));
 }
 #endif
 
@@ -220,36 +215,22 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, st
         msiflags = (UWORD)OOP_DoMethod(o, &cmeth.mID);
         if (msiflags & PCIMSIF_ENABLE)
         {
-            DMSI(bug("[PCIPC:Device] %s: MSI Queue size = %u\n", __func__, (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)));)
+            DMSI(bug("[PCIPC:Device] %s: #%u MSI message vectors\n", __func__, (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)));)
             /* MSI is enabled .. but is the requested vector valid? */
-            if (msg->vectorno < data->msicnt)
+            if (msg->vectorno < (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)))
             {
                 struct TagItem *tag, *tags;
-                UWORD msimdr;
-
-                if (!(msiflags & PCIMSIF_64BIT))
-                {
-                    cmeth.reg = capmsi + PCIMSI_DATA32;
-                    msimdr = (UWORD)OOP_DoMethod(o, &cmeth.mID);
-                }
-                else
-                {
-                    cmeth.reg = capmsi + PCIMSI_DATA64;
-                    msimdr = (UWORD)OOP_DoMethod(o, &cmeth.mID);
-                }
-                DMSI(bug("[PCIPC:Device] %s: msimdr = %04x\n", __func__, msimdr);)
-
-                tags=(struct TagItem *)msg->attribs;
+                  tags=(struct TagItem *)msg->attribs;
                 while((tag = NextTagItem(&tags)))
                 {
                     switch (tag->ti_Tag)
                     {
                         case tHidd_PCIVector_Int:
-                            tag->ti_Data = ((msimdr & 0xFF) + msg->vectorno) - HW_IRQ_BASE;
+                            tag->ti_Data = ((data->msimsg & 0xFF) + msg->vectorno) - HW_IRQ_BASE;
                             break;
 
                         case tHidd_PCIVector_Native:
-                            tag->ti_Data = ((msimdr & 0xFF) + msg->vectorno);
+                            tag->ti_Data = ((data->msimsg & 0xFF) + msg->vectorno);
                             break;
                     }
                 }
@@ -303,6 +284,8 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
         msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
 
         DMSI(bug("[PCIPC:Device] %s: Initial MSI Flags = %04x\n", __func__, msiflags);)
+        if (msiflags & PCIMSIF_ENABLE)
+            return FALSE;
 
         vecthw = (1 << ((msiflags & PCIMSIF_MMC_MASK) >> 1));
         DMSI(bug("[PCIPC:Device] %s: Max Device MSI vectors = %u\n", __func__, vecthw);)
@@ -319,22 +302,13 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
         {
             if ((apicIRQBase = KrnAllocIRQ(IRQTYPE_APIC, vectcnt)) != (ULONG)-1)
             {
-                DMSI(bug("[PCIPC:Device] %s: Allocated %u IRQs starting at #%u\n", __func__, vectcnt, apicIRQBase);)
+                DMSI(bug("[PCIPC:Device] %s: Allocated %u vectors (start = IRQ #%u)\n", __func__, vectcnt, apicIRQBase);)
                 break;
             }
         }
         if ((apicIRQBase) && (apicIRQBase != -1))
         {
             DMSI(bug("[PCIPC:Device] %s: Configuring Device with %u MSI vectors...\n", __func__, vectcnt);)
-
-            data->msicnt = vectcnt;
-
-            msiflags &= ~PCIMSIF_ENABLE;
-            cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
-            cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
-            cmeth.wcw.val = msiflags;
-            OOP_DoMethod(o, &cmeth.wcw.mID); 
-
             msiflags |= (ilog2(roundup_pow_of_two(vectcnt)) << 4);
             DMSI(bug("[PCIPC:Device] %s: flags = %04x\n", __func__, msiflags);)
 
@@ -343,6 +317,7 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
             cmeth.wcl.val = (0xFEE << 20) | (0 << 12);
             OOP_DoMethod(o, &cmeth.wcl.mID);
 
+            data->msimsg = (UWORD)apicIRQBase + HW_IRQ_BASE;
             if (msiflags & PCIMSIF_64BIT)
             {
                 DMSI(bug("[PCIPC:Device] %s: #64bit device!\n", __func__);)
@@ -353,14 +328,14 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
                 
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA64;
-                cmeth.wcw.val = HW_IRQ_BASE + apicIRQBase;
+                cmeth.wcw.val = data->msimsg;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
             else
             {
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA32;
-                cmeth.wcw.val = HW_IRQ_BASE + apicIRQBase;
+                cmeth.wcw.val = data->msimsg;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
 

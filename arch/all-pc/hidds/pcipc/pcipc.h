@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -92,7 +92,7 @@ struct PCIPCBusData
 struct PCIPCDeviceData
 {
     APTR                        mmconfig;
-    UBYTE                       msicnt;
+    UWORD                       msimsg;
 };
 
 /* PCI configuration mechanism 1 registers */
