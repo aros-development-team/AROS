@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/alib.h>
@@ -41,7 +41,12 @@ static STRPTR oldname;
 static TEXT str_line[256];
 static BPTR oldlock = (BPTR)-1;
 static STRPTR illegal_chars = "/:";
+static BOOL isInfoFile = FALSE;
 
+static BOOL checkIfInfoFile(CONST_STRPTR path) 
+{
+    return (strncmp(path + strlen(path) - 5, ".info", 5) == 0);
+}
 
 int main(int argc, char **argv)
 {
@@ -62,6 +67,14 @@ int main(int argc, char **argv)
 
     parentlock = startup->sm_ArgList[1].wa_Lock;
     oldname    = startup->sm_ArgList[1].wa_Name;
+
+    if (checkIfInfoFile(oldname)) 
+    {
+        isInfoFile = TRUE;
+        WORD len = strlen(oldname);
+        oldname[len - 5] = '\0';
+    }
+
     if ((parentlock == BNULL) || (oldname == NULL))
        Cleanup(_(MSG_INVALID_LOCK));
 
@@ -198,11 +211,23 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
         goto end;
     }
 
-    if ((test = Lock(newname, ACCESS_READ)))
+    if (!isInfoFile)
     {
-        UnLock(test);
-        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newname);
-        goto end;
+        if ((test = Lock(newname, ACCESS_READ)))
+        {
+            UnLock(test);
+            MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newname);
+            goto end;
+        }
+    }
+    else
+    {
+        if ((test = Lock(newinfoname, ACCESS_READ)))
+        {
+            UnLock(test);
+            MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newname);
+            goto end;
+        }
     }
 
     if ((test = Lock(oldinfoname, ACCESS_READ)))
@@ -218,10 +243,13 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
         }
     }
 
-    if (Rename(oldname, newname) == DOSFALSE)
+    if (!isInfoFile)
     {
-        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldname, GetDosErrorString(IoErr()));
-        goto end;
+        if (Rename(oldname, newname) == DOSFALSE)
+        {
+            MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldname, GetDosErrorString(IoErr()));
+            goto end;
+        }
     }
 
     if (infoexists)
