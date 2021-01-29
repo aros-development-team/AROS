@@ -368,7 +368,7 @@ $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
 %(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
-%(mmake)_LD_OPTS >= $(KERNEL_ISA_LDFLAGS)
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
