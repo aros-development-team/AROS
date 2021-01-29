@@ -1,5 +1,5 @@
 /*
-    Copyright @ 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -60,6 +60,7 @@
 #include "Classes/icon_attributes.h"
 #include "locale.h"
 #include "appobjects.h"
+#include "filesystems_utilities.h"
 
 #include "version.h"
 
@@ -284,10 +285,24 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         UBYTE action = ACTION_COPY;
         currententry = ((struct IconList_Drop_SourceEntry *) copyFunc_DropEvent->drop_SourceList.lh_Head);
 
-        if (copyFunc_DropEvent->drop_Mode == DROP_MODE_MOVE) {
-            action = (IsOnSameDevice(currententry->dropse_Node.ln_Name, copyFunc_DropEvent->drop_TargetPath) == TRUE 
+        if (copyFunc_DropEvent->drop_Mode == DROP_MODE_MOVE) 
+        {
+            STRPTR filename = currententry->dropse_Node.ln_Name;
+            BOOL exist = FileExists(filename);
+            if (!exist) 
+            {
+                // If dropped file does not exist, check if it is an info file that were dropped   
+                filename = ConstructInfofileName(filename);
+            }
+           
+            action = (IsOnSameDevice(filename, copyFunc_DropEvent->drop_TargetPath) == TRUE 
                 ? ACTION_MOVE
                 : ACTION_COPY);
+            
+            if (!exist) 
+            {
+                FreeVec(filename);
+            }                
         }
 
         if (!IsDirectory(copyFunc_DropEvent->drop_TargetPath))
@@ -1807,21 +1822,32 @@ void wanderer_menufunc_icon_rename(void)
         if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
             if (entry->type == ILE_TYPE_APPICON)
-                continue; /* TODO: Implement */
-
             {
-                BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
+                continue; /* TODO: Implement */
+            }
+            else
+            {
+                BOOL isInfoFile = FALSE;
+                STRPTR filename = entry->ile_IconEntry->ie_IconNode.ln_Name; 
+
+                if (!FileExists(filename)) {
+                    // Check if the file selected is an info file
+                    filename = ConstructInfofileName(filename);                    
+                    isInfoFile = TRUE;
+                }
+
+                BPTR lock   = Lock(filename, ACCESS_READ);
                 BPTR parent = ParentDir(lock);
+                
                 UnLock(lock);
 
-                D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__,
-                        entry->ile_IconEntry->ie_IconNode.ln_Name));
+                D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__, filename));
 
                 OpenWorkbenchObject
                 (
                     "WANDERER:Tools/WBRename",
                     WBOPENA_ArgLock, (IPTR) parent,
-                    WBOPENA_ArgName, (IPTR) FilePart(entry->ile_IconEntry->ie_IconNode.ln_Name),
+                    WBOPENA_ArgName, (IPTR) FilePart(filename),
                     TAG_DONE
                 );
 
@@ -1829,6 +1855,10 @@ void wanderer_menufunc_icon_rename(void)
                         entry->ile_IconEntry->ie_IconNode.ln_Name));
 
                 UnLock(parent);
+
+                if (isInfoFile) {
+                    FreeVec(filename);
+                }
             }
         }
         else
