@@ -44,4 +44,6 @@ void setForceSpeaker(int speaker_nid);
 BOOL is_jack_connected(struct HDAudioChip *card, UBYTE NID);
 void detect_headphone_change(struct HDAudioChip *card);
 
+UWORD get_hda_format(struct HDAudioChip *card);
+
 #endif /* AHI_Drivers_misc_h */

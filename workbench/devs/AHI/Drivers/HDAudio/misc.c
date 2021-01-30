@@ -43,6 +43,7 @@ static BOOL allocate_pos_buffer(struct HDAudioChip *card);
 static BOOL alloc_streams(struct HDAudioChip *card);
 static BOOL perform_codec_specific_settings(struct HDAudioChip *card);
 static void determine_frequencies(struct HDAudioChip *card);
+static void determine_bitsizes(struct HDAudioChip *card);
 static void set_frequency_info(struct Freq *freq, UWORD bitnr);
 static BOOL reset_chip(struct HDAudioChip *card);
 static void codec_discovery(struct HDAudioChip *card);
@@ -1064,6 +1065,7 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
     }
 
     determine_frequencies(card);
+    determine_bitsizes(card);
     return TRUE;
 }
 
@@ -1853,19 +1855,69 @@ static UBYTE find_widget(struct HDAudioChip *card, UBYTE type, UBYTE pin_type)
     return 0;
 }
 
+static void determine_bitsizes(struct HDAudioChip *card)
+{
+    ULONG verb = get_parameter(card->dac_nid, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+    UWORD bitsize_flags = (verb & PCM_SIZE_RATE_BITSIZE_MASK) >> 16;
+    int i;
+    ULONG bitsizes = 0;
+
+    if (bitsize_flags == 0)
+    {
+        verb = get_parameter(0x1, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+        bitsize_flags = (verb & PCM_SIZE_RATE_BITSIZE_MASK) >> 16;
+        D(bug("[HDAudio] dac_nid didn't have a list of sample rates, trying AFG node\n"));
+    }
+
+    // count number of bitsizes
+    for (i = 0; i < 5; i++)
+    {
+        if (bitsize_flags & (1 << i))
+        {
+            bitsizes++;
+        }
+    }
+
+    D(bug("[HDAudio] Bitsizes found = %lu\n", bitsizes));
+    card->bitsizes = (ULONG *) AllocVec(sizeof(ULONG) * bitsizes, MEMF_PUBLIC | MEMF_CLEAR);
+    card->nr_of_bitsizes = bitsizes;
+
+    i = 0;
+    if (bitsize_flags & 0x0001)
+        card->bitsizes[i++] = 8;
+    if (bitsize_flags & 0x0002)
+    {
+        /* First, select 16 bit */
+        card->selected_bitsize_index = i;
+        card->bitsizes[i++] = 16;
+    }
+    if (bitsize_flags & 0x0004)
+        card->bitsizes[i++] = 20;
+    if (bitsize_flags & 0x0008)
+    {
+        /* Use 24 bit where present */
+        card->selected_bitsize_index = i;
+        card->bitsizes[i++] = 24;
+    }
+    if (bitsize_flags & 0x0010)
+        card->bitsizes[i++] = 32;
+
+    D(bug("[HDAudio] Selected bitsize = %lu\n", card->bitsizes[card->selected_bitsize_index]));
+}
+
 
 static void determine_frequencies(struct HDAudioChip *card)
 {
-    ULONG verb = get_parameter(card->dac_nid, 0xA, card);
-    UWORD samplerate_flags = verb & 0x0FFF;
+    ULONG verb = get_parameter(card->dac_nid, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+    UWORD samplerate_flags = verb & PCM_SIZE_RATE_RATE_MASK;
     int i;
     ULONG freqs = 0;
     BOOL default_freq_found = FALSE;
 
     if (samplerate_flags == 0)
     {
-        verb = get_parameter(0x1, 0xA, card);
-        samplerate_flags = verb & 0x0FFF;
+        verb = get_parameter(0x1, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+        samplerate_flags = verb & PCM_SIZE_RATE_RATE_MASK;
         D(bug("[HDAudio] dac_nid didn't have a list of sample rates, trying AFG node\n"));
     }
 
@@ -2161,3 +2213,14 @@ void detect_headphone_change(struct HDAudioChip *card)
     }
 }
 
+UWORD get_hda_format(struct HDAudioChip *card)
+{
+    BYTE bitsize = FORMAT_16BITS;
+    if (card->bitsizes[card->selected_bitsize_index] == 24)
+        bitsize = FORMAT_24BITS;
+
+    return ((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
+            (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
+            (card->frequencies[card->selected_freq_index].div << 8) | // divisor
+            bitsize | FORMAT_STEREO;
+}

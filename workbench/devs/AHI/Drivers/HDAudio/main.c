@@ -275,23 +275,9 @@ ULONG _AHIsub_Start(ULONG flags,
         pci_outl(dma_buffer_size * 2, output_stream->sd_reg_offset + HD_SD_OFFSET_CYCLIC_BUFFER_LEN, card);
         pci_outw(1, output_stream->sd_reg_offset + HD_SD_OFFSET_LAST_VALID_INDEX, card); // 2 buffers, last valid index = 1
 
-        // set sample rate and format
-        pci_outw(((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
-            (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
-            (card->frequencies[card->selected_freq_index].div << 8) | // divisor
-            FORMAT_24BITS | // set to 24-bit for now
-            FORMAT_STEREO,
-            output_stream->sd_reg_offset + HD_SD_OFFSET_FORMAT, card);
+        pci_outw(get_hda_format(card), output_stream->sd_reg_offset + HD_SD_OFFSET_FORMAT, card);
 
-        send_command_4(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_FORMAT,
-            ((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
-            (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
-            (card->frequencies[card->selected_freq_index].div << 8) | // divisor
-            FORMAT_24BITS | // set to 24-bit for now
-            FORMAT_STEREO , card); // stereo
-
-        send_command_4(card->codecnr, card->dac_nid, 0xA, 0, card);
-
+        send_command_4(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_FORMAT, get_hda_format(card), card);
 
         // set BDL for scatter/gather
 #if defined(__AROS__) && (__WORDSIZE==64)

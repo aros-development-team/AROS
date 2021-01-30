@@ -72,6 +72,8 @@
     #define AUDIO_WIDGET_CAPS(x) ((x >> 20) & 0xF)
     #define AUDIO_WIDGET_POWER_CONTROL(x) ((x >> 10) & 0x1)
   #define VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE 0xA
+    #define PCM_SIZE_RATE_BITSIZE_MASK 0x001F0000
+    #define PCM_SIZE_RATE_RATE_MASK 0x0FFF
   #define VERB_GET_PARMS_PIN_CAPS 0xC
     #define PIN_CAPS_EAPD_CAPABLE (1 << 16)
     #define PIN_CAPS_INPUT_CAPABLE (1 << 5)

@@ -137,7 +137,12 @@ struct HDAudioChip
     struct Freq *frequencies;
     ULONG nr_of_frequencies;
     ULONG selected_freq_index;
-    
+
+    // sample bitsize
+    ULONG *bitsizes;
+    ULONG nr_of_bitsizes;
+    ULONG selected_bitsize_index;
+
     UBYTE eapd_gpio_mask;
 
     /*** PCI/Card initialization progress *********************************/
