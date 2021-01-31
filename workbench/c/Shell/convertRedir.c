@@ -1,11 +1,10 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
 
 #include <proto/dos.h>
 
-#include "buffer.h"
 #include "Shell.h"
 
 LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
@@ -40,7 +39,7 @@ LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
 
     in->cur = s - in->buf;
 
-    switch (bufferReadItem(file, FILE_MAX, in, DOSBase))
+    switch (bufferReadItem(file, FILE_MAX, in, ss))
     {
     case ITEM_QUOTED:
     case ITEM_UNQUOTED:

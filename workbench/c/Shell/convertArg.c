@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
 
 #include <string.h>
+
 #include "Shell.h"
 
 /* subsitute one script argument and leaves the input after .ket */
@@ -19,7 +20,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
     {
         TEXT buf[16];
         LONG len = l2a(ss->cliNumber, buf);
-        bufferAppend(buf, len, out, SysBase);
+        bufferAppend(buf, len, out, ss);
         in->cur += 4;
         return 0;
     }
@@ -37,7 +38,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
                 if (*p == '<') /* input redirection */
                     return convertRedir(ss, in, out);
 
-                bufferAppend(s, q - s, out, SysBase);
+                bufferAppend(s, q - s, out, ss);
                 return 0;
             }
     }
@@ -74,10 +75,10 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
                 for (j = 0; (arg = m[j]); ++j)
                 {
                     if (j > 0)
-                        bufferAppend(" ", 1, out, SysBase);
+                        bufferAppend(" ", 1, out, ss);
 
                     len = cliLen(arg);
-                    bufferAppend(arg, len, out, SysBase);
+                    bufferAppend(arg, len, out, ss);
                 }
             }
             else
@@ -98,7 +99,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
         }
 
         if (arg)
-            bufferAppend(arg, len, out, SysBase);
+            bufferAppend(arg, len, out, ss);
         break;
     }
 
@@ -108,7 +109,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
         in->cur = q - in->buf;
     }
     else
-        bufferCopy(in, out, 1, SysBase);
+        bufferCopy(in, out, 1, ss);
 
     return 0;
 }
