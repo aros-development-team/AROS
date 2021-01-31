@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -29,6 +29,7 @@ static void Processor_QueryTask(struct ExecBase *SysBase)
     struct ProcessorBase *ProcessorBase;
     struct PQData *pqData;
     struct Task *thisTask;
+    struct MemList *ml;
 
     D(
         bug("[processor.x86] %s()\n", __func__);
@@ -36,7 +37,10 @@ static void Processor_QueryTask(struct ExecBase *SysBase)
     )
 
     thisTask = FindTask(NULL);
-    pqData = thisTask->tc_UserData;
+    ml = (struct MemList *)thisTask->tc_UserData;
+    AddTail(&thisTask->tc_MemEntry, &ml->ml_Node);
+
+    pqData = (struct PQData *)ml->ml_ME[1].me_Addr;
     ProcessorBase = pqData->ProcessorBase;
 
     D(
@@ -125,12 +129,11 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
                                                 TASKTAG_PRI        , 100,
                                                 TASKTAG_PC         , Processor_QueryTask,
                                                 TASKTAG_ARG1       , SysBase,
-                                                TASKTAG_USERDATA, pqData,
+                                                TASKTAG_USERDATA, ml,
                                                 TAG_DONE);
 
                         if (processorQueryTask)
                         {
-                            //AddTail(&processorQueryTask->tc_MemEntry, &ml->ml_Node);
                             continue;
                         }
                         FreeEntry(ml);
