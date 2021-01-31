@@ -20,7 +20,7 @@ struct Args
     STRPTR  arg1;
     STRPTR  arg2;
     UWORD   arg3;
-    int     arg4;
+    UWORD   arg4;
     void *  arg5; /* unused */
 };
 #pragma pack()
@@ -119,7 +119,7 @@ void testFORMATSTRINGFMTEXPLICITARG(void)
 {
     hook.h_Data = buffer;
 
-    CU_ASSERT(&args.arg5 == FormatString(NULL, (STRPTR)"Textformat %2 %4", (RAWARG)&args, &hook));
+    CU_ASSERT(&args.arg5 == FormatString(NULL, (STRPTR)"Textformat %2$s %4$u", (RAWARG)&args, &hook));
     CU_ASSERT(0 == strcmp("Textformat ARG2 50", buffer));
 }
 
