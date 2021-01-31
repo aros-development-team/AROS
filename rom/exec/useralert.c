@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert in user mode.
@@ -14,6 +14,8 @@
 #include <proto/intuition.h>
 
 #include "etask.h"
+#define DEBUG_NOPRIVATEINLINE
+#include "debug_intern.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
@@ -107,11 +109,16 @@ LONG Alert_AskSuspend(struct Task *task, ULONG alertNum, char * buffer, struct E
 
 static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
 {
-    char * buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+    int allocsize = ALERT_BUFFER_SIZE;
+    char *buffer;
+    LONG choice;
 
-    LONG choice = Alert_AskSuspend(task, alertNum, buffer, SysBase);
+    if ((PrivExecBase(SysBase)->DebugBase) && (((struct DebugBase *)(PrivExecBase(SysBase)->DebugBase))->db_Flags & DBFF_DISASSEMBLE))
+        allocsize <<= 1;
 
-    FreeMem(buffer, ALERT_BUFFER_SIZE);
+    buffer = AllocMem(allocsize, MEMF_ANY);
+    choice = Alert_AskSuspend(task, alertNum, buffer, SysBase);
+    FreeMem(buffer, allocsize);
 
     return choice;
 }

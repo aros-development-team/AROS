@@ -76,7 +76,7 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
 			char *symname = NULL;
 			ULONG x,inslen;
 
-			if (DebugBase && DecodeLocation((APTR)ctx->PC,
+			if (DecodeLocation((APTR)ctx->PC,
 							DL_SymbolName, &symname,
 							DL_SymbolStart, &symaddr,
 							DL_SymbolEnd, &symend,
@@ -125,6 +125,7 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
 													 instrTags[2].ti_Data) - 1;
 					}
 				}
+				FreeDisassembleCtx(dissCtx);
 			}
 		}
 		else
