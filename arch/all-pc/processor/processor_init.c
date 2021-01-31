@@ -104,7 +104,7 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 #endif
             cpuNameArg[0] = (IPTR)cpuNo + 1;
 
-            if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+            if ((ml = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
             {
                 ml->ml_NumEntries      = 2;
 
@@ -142,13 +142,13 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
                     {
                         bug("[processor.x86] FATAL : Failed to allocate memory for ProcQuery Task name");
                         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
-                        FreeMem(ml, sizeof(struct MemList));
+                        FreeMem(ml, sizeof(struct MemList) + sizeof(struct MemEntry));
                     }
                 }
                 else
                 {
                     bug("[processor.x86] FATAL : Failed to allocate memory for ProcQuery Task params");
-                    FreeMem(ml, sizeof(struct MemList));
+                    FreeMem(ml, sizeof(struct MemList) + sizeof(struct MemEntry));
                 }
             }
             else
