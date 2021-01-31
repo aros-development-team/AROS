@@ -1,0 +1,18 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/debug
+
+include $(SRCDIR)/$(CURDIR)/make.opts
+
+FUNCS := debug_platform disassemble 
+
+%build_archspecific \
+  mainmmake=kernel-debug maindir=rom/debug \
+  arch=pc modname=debug \
+  files=" $(FUNCS)"
+
+#MM kernel-debug-pc : linklibs-udis86
+
+%common
