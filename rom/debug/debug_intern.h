@@ -57,10 +57,16 @@ struct DebugBase
     struct MinList          db_Modules;
     struct SignalSemaphore  db_ModSem;
     APTR                    db_KernelBase;
+    IPTR                    db_Flags;
 };
 
+#if !defined(DEBUG_NOPRIVATEINLINE)
 #define DBGBASE(x) ((struct DebugBase *)x)
 #define KernelBase  DBGBASE(DebugBase)->db_KernelBase
+#endif
+
+#define DBFB_DISASSEMBLE        1
+#define DBFF_DISASSEMBLE        (1 << DBFB_DISASSEMBLE)
 
 void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
         struct Library *DebugBase);
