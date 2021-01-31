@@ -108,7 +108,9 @@ struct IntExecBase
 #else
 #define __kernelBase              PrivExecBase(SysBase)->KernelBase
 #endif
+#if !defined(DEBUG_NOPRIVATEINLINE)
 #define DebugBase               PrivExecBase(SysBase)->DebugBase
+#endif
 
 /* IntFlags */
 #define EXECF_MungWall          0x0001                          /* This flag can't be changed at runtime                        */
