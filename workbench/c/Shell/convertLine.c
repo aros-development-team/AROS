@@ -1,7 +1,9 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
+
+#include <aros/debug.h>
 
 #include <exec/lists.h>
 #include <proto/alib.h>
@@ -11,8 +13,6 @@
 #include <string.h>
 
 #include "Shell.h"
-
-#include <aros/debug.h>
 
 static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BOOL *),
                         LONG a, ShellState *ss, Buffer *in, Buffer *out)
@@ -29,12 +29,12 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BO
         if (p == '*')
         {
             c = 0;
-            bufferCopy(in, out, 1, SysBase);
+            bufferCopy(in, out, 1, ss);
         }
         else if (c == '"')
         {
             quoted = !quoted;
-            bufferCopy(in, out, 1, SysBase);
+            bufferCopy(in, out, 1, ss);
         }
         else if (c == a)
         {
@@ -47,7 +47,7 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BO
              break;
         }
         else
-            bufferCopy(in, out, 1, SysBase);
+            bufferCopy(in, out, 1, ss);
     }
 
     in->cur = n;
@@ -69,15 +69,15 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
         if (p == '*')
         {
             c = 0;
-            bufferCopy(in, out, 1, SysBase);
+            bufferCopy(in, out, 1, ss);
         }
         else if (c == '"')
         {
             quoted = !quoted;
-            bufferCopy(in, out, 1, SysBase);
+            bufferCopy(in, out, 1, ss);
         }
         else if (quoted)
-            bufferCopy(in, out, 1, SysBase);
+            bufferCopy(in, out, 1, ss);
         else if (c == '<' || c == '>')
         {
             if ((error = convertRedir(ss, in, out)))
@@ -87,7 +87,7 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
             }
         }
         else
-            bufferCopy(in, out, 1, SysBase);
+            bufferCopy(in, out, 1, ss);
     }
 
     in->cur = n;
@@ -101,7 +101,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
     TEXT buf[FILE_MAX];
     LONG i;
 
-    i = bufferReadItem(command, FILE_MAX, in, DOSBase);
+    i = bufferReadItem(command, FILE_MAX, in, ss);
     D(bug("[readCommandR] Got item %d: %s\n", i, command));
 
     switch (i)
@@ -109,7 +109,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
     case ITEM_QUOTED: /* no alias expansion */
         if (in->cur < in->len)
             ++in->cur; /* skip separator */
-        return bufferCopy(in, out, in->len - in->cur, SysBase);
+        return bufferCopy(in, out, in->len - in->cur, ss);
     case ITEM_UNQUOTED:
         break;
     case ITEM_NOTHING:
@@ -128,7 +128,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
         LONG error;
 
         D(bug("Handling alias '%s'\n", command));
-        switch (bufferReadItem(cmd, FILE_MAX, &a, DOSBase))
+        switch (bufferReadItem(cmd, FILE_MAX, &a, ss))
         {
         case ITEM_QUOTED:
         case ITEM_UNQUOTED:
@@ -158,7 +158,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
                 break;
 
         bufferReset(&a);
-        bufferCopy(&b, &a, i, SysBase);
+        bufferCopy(&b, &a, i, ss);
 
         if ((TEXT *)strrchr(buf, ' ') != buf + strlen(buf) - 1
             && in->len > in->cur && i == b.len)
@@ -166,31 +166,31 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
              * We need a separator here, between the command
              * and its first argument
              */
-            bufferAppend(" ", 1, &a, SysBase);
+            bufferAppend(" ", 1, &a, ss);
 
         if (in->cur < in->len)
-            bufferCopy(in, &a, in->len - in->cur - 1, SysBase);
+            bufferCopy(in, &a, in->len - in->cur - 1, ss);
 
         if (i < b.len)
         {
             b.cur += 2; /* skip [] */
-            bufferCopy(&b, &a, b.len - b.cur, SysBase);
+            bufferCopy(&b, &a, b.len - b.cur, ss);
         }
 
-        bufferAppend("\n", 1, &a, SysBase);
+        bufferAppend("\n", 1, &a, ss);
 
         error = readCommandR(ss, &a, out, aliased);
 
 endReadAlias:
-        bufferFree(&a, SysBase);
-        bufferFree(&b, SysBase);
+        bufferFree(&a, ss);
+        bufferFree(&b, ss);
         return error;
     }
 
     D(bug("[readCommandR] Copying buffer '%s', len %d, pos %d\n",
         in->buf, in->len, in->cur));
 
-    return bufferCopy(in, out, in->len - in->cur, SysBase);
+    return bufferCopy(in, out, in->len - in->cur, ss);
 }
 
 static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out)
@@ -291,7 +291,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
          * ReadArgs() will halt, waiting for it.
          */
         D(bug("[convertLine] Appending a newline\n"));
-        error = bufferAppend("\n", 1, out, SysBase);
+        error = bufferAppend("\n", 1, out, ss);
     }
 
     D(bug("[convertLine] Result: cur %d len %d (%s)\n", out->cur, out->len, out->buf));

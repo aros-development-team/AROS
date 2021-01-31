@@ -1,15 +1,15 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
+
+#include <aros/debug.h>
 
 #include <proto/dos.h>
 
 #include <ctype.h>
 
 #include "Shell.h"
-
-#include <aros/debug.h>
 
 /* environment variables handling (locals and globals) */
 LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
@@ -67,12 +67,12 @@ LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
     if ((bra != 1) && (i > 0) && ((len = GetVar(varName, varValue, 256, LV_VAR)) != -1))
     {
 	D(bug("[Shell] found var: %s = %s\n", varName, varValue));
-	bufferAppend(varValue, len, out, SysBase);
+	bufferAppend(varValue, len, out, ss);
     }
     else
     {
 	D(bug("[Shell] var not found: %s\n", varName));
-	bufferAppend(p, ++i + bra, out, SysBase);
+	bufferAppend(p, ++i + bra, out, ss);
     }
 
     /* Restore original pr_WindowPtr */

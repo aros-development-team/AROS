@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -10,11 +10,11 @@
 
 #include <string.h>
 
-#include "buffer.h"
+#include "Shell.h"
 
 #define BUF_SIZE 512
 
-static BOOL bufferExpand(Buffer *out, LONG size, APTR SysBase)
+static BOOL bufferExpand(Buffer *out, LONG size, ShellState *ss)
 {
     ULONG newLength = out->len + size;
 
@@ -41,10 +41,10 @@ static BOOL bufferExpand(Buffer *out, LONG size, APTR SysBase)
     return TRUE;
 }
 
-LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, APTR SysBase)
+LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, ShellState *ss)
 {
     ULONG newLength;
-    if (!bufferExpand(out, size, SysBase))
+    if (!bufferExpand(out, size, ss))
         return ERROR_NO_FREE_STORE;
 
     memmove(out->buf + size, out->buf, out->len);
@@ -56,10 +56,10 @@ LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, APTR SysBase)
     return 0;
 }
 
-LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, APTR SysBase)
+LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, ShellState *ss)
 {
     ULONG newLength;
-    if (!bufferExpand(out, size, SysBase))
+    if (!bufferExpand(out, size, ss))
         return ERROR_NO_FREE_STORE;
 
     CopyMem(str, out->buf + out->len, size);
@@ -70,15 +70,15 @@ LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, APTR SysBase)
     return 0;
 }
 
-LONG bufferCopy(Buffer *in, Buffer *out, ULONG size, APTR SysBase)
+LONG bufferCopy(Buffer *in, Buffer *out, ULONG size, ShellState *ss)
 {
     STRPTR s = in->buf + in->cur;
-    LONG ret = bufferAppend(s, size, out, SysBase);
+    LONG ret = bufferAppend(s, size, out, ss);
     in->cur += size;
     return ret;
 }
 
-void bufferFree(Buffer *b, APTR SysBase)
+void bufferFree(Buffer *b, ShellState *ss)
 {
     if (b->mem <= 0)
 	return;
@@ -91,7 +91,7 @@ void bufferFree(Buffer *b, APTR SysBase)
     b->mem = 0;
 }
 
-LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, APTR DOSBase)
+LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, ShellState *ss)
 {
     struct CSource tin = { in->buf, in->len, in->cur };
     LONG ret = ReadItem(buf, size, &tin);

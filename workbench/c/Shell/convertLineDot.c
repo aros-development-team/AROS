@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -45,7 +45,7 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
     in->cur += len;
     i = in->cur;
 
-    if ((result = bufferReadItem(buf, sizeof(buf), in, DOSBase)) == ITEM_UNQUOTED)
+    if ((result = bufferReadItem(buf, sizeof(buf), in, ss)) == ITEM_UNQUOTED)
     {
 	len = in->cur - i;
 
@@ -56,7 +56,7 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 	a = ss->args + i;
 	i = ++in->cur;
 
-	switch (bufferReadItem(buf, sizeof(buf), in, DOSBase))
+	switch (bufferReadItem(buf, sizeof(buf), in, ss))
 	{
 	case ITEM_QUOTED:
 	case ITEM_UNQUOTED:

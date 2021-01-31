@@ -1,16 +1,15 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
+
+#include <aros/debug.h>
 
 #include <proto/dos.h>
 
 #include <stdio.h>
 
-#include "buffer.h"
 #include "Shell.h"
-
-#include <aros/debug.h>
 
 // TODO:  remove these comments when fixed and validated
 // TODO:  C++ style comments should be avoided
@@ -39,17 +38,17 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 	if (p == '*')
 	{
 	    c = 0;
-	    bufferCopy(in, &embedIn, 1, SysBase);
+	    bufferCopy(in, &embedIn, 1, ss);
 	}
 	else if (c == '`')
 	    break;
 	else
-	    bufferCopy(in, &embedIn, 1, SysBase);
+	    bufferCopy(in, &embedIn, 1, ss);
     }
 
     if (c != '`')
     {
-	bufferCopy(&embedIn, out, embedIn.len, SysBase);
+	bufferCopy(&embedIn, out, embedIn.len, ss);
 	goto freebufs;
     }
 
@@ -103,7 +102,7 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 		if (size <= 0 && buf[i] == '\n')
 		    --len;
 
-		bufferAppend(buf, len, out, SysBase);
+		bufferAppend(buf, len, out, ss);
 	    }
 	}
 
@@ -115,8 +114,8 @@ cleanup:
     Redirection_release(&ess);
     /* TODO: delete generated file */
 freebufs:
-    bufferFree(&embedIn, SysBase);
-    bufferFree(&embedOut, SysBase);
+    bufferFree(&embedIn, ss);
+    bufferFree(&embedOut, ss);
 
     D(bug("[Shell] embedded command done, error = %d\n", error));
     return error;

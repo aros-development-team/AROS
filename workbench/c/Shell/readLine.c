@@ -1,17 +1,18 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
+
+#include <aros/debug.h>
 
 #include <dos/stdio.h>
 
 #include <proto/dos.h>
-
-#include "Shell.h"
-
-#include <aros/debug.h>
+#include <proto/arossupport.h>
 
 #include <string.h>
+
+#include "Shell.h"
 
 #define PIPE_NAME "PIPE "
 
@@ -98,19 +99,21 @@ LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WOR
     }
 
     if (i >= LINE_MAX) {
-        D(bug("[Shell] ERROR_LINE_TOO_LONG\n"));
+        D(bug("[Shell] %s: ERROR_LINE_TOO_LONG\n", __func__);)
         return ERROR_LINE_TOO_LONG;
     }
 
     buf[j] = '\0';
-    bufferAppend(buf, j, out, SysBase);
+    bufferAppend(buf, j, out, ss);
 
     if (checkPipe(pchar, mchar, buf, j))
-        bufferInsert(PIPE_NAME, strlen(PIPE_NAME), out, SysBase);
+        bufferInsert(PIPE_NAME, strlen(PIPE_NAME), out, ss);
 
     *moreLeft = (c != ENDSTREAMCH);
 
-    D(bug("[Shell] readLine %d%s: %s", j, *moreLeft ?  "" : "'", buf));
+    D(
+        bug("[Shell] readLine %d%s: %s", j, *moreLeft ?  "" : "'", buf);
+    )
     return 0;
 }
 

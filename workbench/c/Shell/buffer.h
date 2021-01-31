@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -10,6 +10,8 @@
 #include <exec/types.h>
 #endif
 
+#include "state.h"
+
 typedef struct {
     STRPTR buf;
     ULONG  len; /* write position */
@@ -17,15 +19,15 @@ typedef struct {
     ULONG  mem; /* allocated memory */
 } Buffer;
 
-LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, APTR SysBase);
-LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, APTR SysBase);
+LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, ShellState *ss);
+LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, ShellState *ss);
 
 /* read 'size' chars from 'in' and append them to 'out' */
-LONG bufferCopy(Buffer *in, Buffer *out, ULONG size, APTR SysBase);
+LONG bufferCopy(Buffer *in, Buffer *out, ULONG size, ShellState *ss);
 
-void bufferFree(Buffer *b, APTR SysBase);
+void bufferFree(Buffer *b, ShellState *ss);
 
-LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, APTR DOSBase);
+LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, ShellState *ss);
 
 void bufferReset(Buffer *b);
 
