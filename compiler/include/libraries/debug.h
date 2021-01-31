@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Structures and TagItem for debug.library
@@ -14,17 +14,23 @@
 #include <dos/elf.h>
 
 /* Tags for DecodeLocation() */
-#define DL_Dummy		(TAG_USER + 0x03e00000)
-#define DL_ModuleName		(DL_Dummy + 1)
-#define DL_SegmentName		(DL_Dummy + 2)
-#define DL_SegmentPointer	(DL_Dummy + 3)
-#define DL_SegmentNumber	(DL_Dummy + 4)
-#define DL_SegmentStart		(DL_Dummy + 5)
-#define DL_SegmentEnd		(DL_Dummy + 6)
-#define DL_SymbolName		(DL_Dummy + 7)
-#define DL_SymbolStart		(DL_Dummy + 8)
-#define DL_SymbolEnd		(DL_Dummy + 9)
-#define DL_FirstSegment		(DL_Dummy + 10)
+#define DL_Dummy		            (TAG_USER + 0x03e00000)
+#define DL_ModuleName		        (DL_Dummy + 1)
+#define DL_SegmentName		        (DL_Dummy + 2)
+#define DL_SegmentPointer	        (DL_Dummy + 3)
+#define DL_SegmentNumber	        (DL_Dummy + 4)
+#define DL_SegmentStart		        (DL_Dummy + 5)
+#define DL_SegmentEnd		        (DL_Dummy + 6)
+#define DL_SymbolName		        (DL_Dummy + 7)
+#define DL_SymbolStart		        (DL_Dummy + 8)
+#define DL_SymbolEnd		        (DL_Dummy + 9)
+#define DL_FirstSegment		        (DL_Dummy + 10)
+
+/* Tags for GetCtxInstruction() */
+#define DCIT_Dummy					(DL_Dummy + 0x1000)
+#define DCIT_Instruction_Offset		(DCIT_Dummy + 1)
+#define DCIT_Instruction_HexStr		(DCIT_Dummy + 2)
+#define DCIT_Instruction_Asm		(DCIT_Dummy + 3)
 
 /* Known debug information types */
 #define DEBUG_NONE              0
