@@ -109,3 +109,14 @@ AROS_LH2(IPTR, GetCtxInstructionA,
 
     AROS_LIBFUNC_EXIT
 }
+
+AROS_LH1(void, FreeDisassembleCtx,
+        AROS_LHA(APTR, ctx, A0),
+        struct Library *, DebugBase, 12, Debug)
+{
+    AROS_LIBFUNC_INIT
+
+    FreeVec(ctx);
+
+    AROS_LIBFUNC_EXIT
+}

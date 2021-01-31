@@ -140,3 +140,45 @@
 
     AROS_LIBFUNC_EXIT
 }
+
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/debug.h>
+
+        AROS_LH1(void, FreeDisassembleCtx,
+
+/*  SYNOPSIS */
+        AROS_LHA(APTR, ctx, A0),
+
+/*  LOCATION */
+        struct Library *, DebugBase, 12, Debug)
+
+/*  FUNCTION
+        Free the disassemble context
+
+    INPUTS
+        ctx		- Disassembly context handle.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+	return;
+
+    AROS_LIBFUNC_EXIT
+}
+
