@@ -1,0 +1,30 @@
+#   $Id$
+#
+#   Generate liblibinit.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM linklibs-udis86 : includes udis86-includes-pc
+
+USER_CPPFLAGS := -DHAVE_STRING_H -D__UD_STANDALONE__
+
+UDIS86_SOURCES := \
+    libudis86/itab \
+    libudis86/decode \
+    libudis86/syn \
+    libudis86/syn-intel \
+    libudis86/syn-att \
+    libudis86/udis86
+
+%build_linklib mmake=linklibs-udis86 \
+    libname=udis86 files="$(UDIS86_SOURCES)"
+
+#INCLUDE_FILES := $(call WILDCARD, *.h)
+INCLUDE_FILES := udis86.h
+%copy_includes mmake=udis86-includes-pc
+
+INCLUDE_FILES := types.h extern.h itab.h
+%copy_includes mmake=udis86-includes-pc path=libudis86 dir=libudis86
+
+%common
