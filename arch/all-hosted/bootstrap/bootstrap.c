@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,9 +59,9 @@ extern void *HostIFace;
 
 /* 
  * External libgcc routine which eventually clears instruction cache. 
- * It is equivalent to gcc's __builtin___clear_cache(char *, char*)
+ * It is equivalent to gcc's __builtin___clear_cache(void *, void*)
  */
-extern void __clear_cache(char *begin, char *end);
+extern void __clear_cache(void *begin, void *end);
 
 char bootstrapdir[PATH_MAX];
 char *KernelArgs = NULL;
