@@ -40,6 +40,7 @@
 #include "nvme_queue.h"
 #include "nvme_queue_admin.h"
 
+//#define USE_MSI
 #define DIRQ(x)
 
 /*
@@ -226,12 +227,14 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     if (buffer)
     {
         IPTR PCIIntLine = 0, AdminIntLine;
+#if defined(USE_MSI)
         struct TagItem vectreqs[] = 
         {
             { tHidd_PCIVector_Min,      1                       },
             { tHidd_PCIVector_Max,      KrnGetCPUCount()        },
             { TAG_DONE,                 0                       } 
         };
+#endif
         int depth, hwqcnt = 1;
 
         ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
@@ -248,10 +251,15 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         memset(&c, 0, sizeof(c));
         c.features.op.opcode = nvme_admin_set_features;
         c.features.fid = AROS_LONG2LE(NVME_FEAT_NUM_QUEUES);
+#if defined(USE_MSI)
         c.features.dword11 = AROS_LONG2LE(vectreqs[1].ti_Data | (vectreqs[1].ti_Data << 16));
-        D(bug ("[NVME:Bus] NVMEBus_Start: sending nvme_admin_set_features(NVME_FEAT_NUM_QUEUES, %u)\n", vectreqs[1].ti_Data);)
+#else
+        c.features.dword11 = AROS_LONG2LE(1 | (1 << 16));
+#endif
+        D(bug ("[NVME:Bus] NVMEBus_Start: sending nvme_admin_set_features(NVME_FEAT_NUM_QUEUES, %u)\n", c.features.dword11 & 0xFF);)
         nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
         Wait(busehandle.ceh_SigSet);
+#if defined(USE_MSI)
         if (!busehandle.ceh_Status)
         {
             int featqueues = MIN((busehandle.ceh_Result & 0xffff), (busehandle.ceh_Result >> 16)) + 1;
@@ -286,6 +294,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         AddIntServer(INTB_KERNEL + AdminIntLine,
             &data->ab_Dev->dev_Queues[0]->q_IntHandler);
         Enable();
+#endif
 
         DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Ending Admin IRQ = %u\n", AdminIntLine);)
 
@@ -299,19 +308,27 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             D(bug ("[NVME:Bus] NVMEBus_Start:  # IO queue @ 0x%p (depth = %u)\n", data->ab_Dev->dev_Queues[nn + 1], depth);)
             if (data->ab_Dev->dev_Queues[nn + 1])
             {
+#if defined(USE_MSI)
                 struct TagItem vecAttribs[] =
                 {
                     {   tHidd_PCIVector_Int,    (IPTR)-1        },
                     {   tHidd_PCIVector_Native, (IPTR)-1        },
                     {   TAG_DONE,               0               }
                 };
+				
                 int flags;
 
                 HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);                
 
                 if ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1))
                 {
-                    D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u\n", vecAttribs[0].ti_Data);)
+					UBYTE qIRQ = (UBYTE)vecAttribs[0].ti_Data, qVect = (UBYTE)vecAttribs[1].ti_Data;
+                    D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", vecAttribs[0].ti_Data, vecAttribs[1].ti_Data);)
+#else
+                int flags;
+				{
+					UBYTE qIRQ = (UBYTE)AdminIntLine, qVect = (UBYTE)AdminIntLine;
+#endif
 
                     data->ab_Dev->dev_Queues[nn + 1]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
                     data->ab_Dev->dev_Queues[nn + 1]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
@@ -327,7 +344,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     c.create_cq.cqid = AROS_WORD2LE(nn + 1);
                     c.create_cq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->q_depth - 1);
                     c.create_cq.cq_flags = AROS_WORD2LE(flags);
-                    c.create_cq.irq_vector = AROS_WORD2LE(vecAttribs[1].ti_Data);
+                    c.create_cq.irq_vector = AROS_WORD2LE(nn);
 
                     nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
                     Wait(busehandle.ceh_SigSet);
@@ -351,7 +368,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Node.ln_Pri = 0;
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Code = (VOID_FUNC) NVME_IOIntCode;
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Data = data->ab_Dev->dev_Queues[nn + 1];
-                            AddIntServer(INTB_KERNEL + vecAttribs[0].ti_Data,
+                            AddIntServer(INTB_KERNEL + qIRQ,
                                 &data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler);
                             data->ab_Dev->queuecnt++;
                         }
@@ -365,10 +382,12 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to register IO completion queue (status=%u)\n", busehandle.ceh_Status);
                     }
                 }
+#if defined(USE_MSI)
                 else
                 {
                     bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to obtain necessary vector attribs\n");
                 }
+#endif
             }
             else
             {
