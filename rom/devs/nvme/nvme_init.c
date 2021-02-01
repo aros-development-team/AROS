@@ -271,7 +271,7 @@ AROS_UFH3(void, nvme_PCIEnumerator_h,
     owner = HIDD_PCIDevice_Obtain(Device, NVMEBase->nvme_Device.dd_Library.lib_Node.ln_Name);
     if (owner)
     {
-        D(bug("[NVME:PCI] Device is already in use by %s\n", __func__, owner));
+        D(bug("[NVME:PCI] %s: Device is already in use by %s\n", __func__, owner));
         FreePooled(NVMEBase->nvme_MemPool, dev, sizeof(*dev));
         return;
     }        
