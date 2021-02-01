@@ -76,6 +76,11 @@ CONST_STRPTR nvmeControllerName = "Non-Volatile Memory Express Controller";
 static int NVME_Init(struct NVMEBase *NVMEBase)
 {
     struct BootLoaderBase	*BootLoaderBase;
+#if (1)
+    BOOL enabled = FALSE;
+#else
+    BOOL enabled = TRUE;
+#endif
 
     D(bug("[NVME--] %s: %s Initialization\n", __func__, nvmeDeviceName);)
 
@@ -113,50 +118,65 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
                     if (strstr(CmdLine, "disable"))
                     {
                         D(bug("[NVME--] %s: Disabling NVME support\n", __func__));
-                        return FALSE;
+                        enabled = FALSE;
                     }
+#if (1)
+                    if (strstr(CmdLine, "enable"))
+                    {
+                        D(bug("[NVME--] %s: Enabling NVME support\n", __func__));
+                        enabled = TRUE;
+                    }
+#endif
                 }
             }
         }
     }
 
-    /*
-     * Alloc everything needed from a pool, so that we avoid memory fragmentation.
-     */
-    NVMEBase->nvme_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
-    if (NVMEBase->nvme_MemPool == NULL)
-        return FALSE;
-
-    D(bug("[NVME--] %s: MemPool @ %p\n", __func__, NVMEBase->nvme_MemPool);)
-
-#if defined(__OOP_NOATTRBASES__)
-    /* Get some useful bases */
-    if (OOP_ObtainAttrBasesArray(&NVMEBase->nvme_HWAttrBase, attrBaseIDs))
-        return FALSE;
-#endif
-#if defined(__OOP_NOMETHODBASES__)
-    if (OOP_ObtainMethodBasesArray(&NVMEBase->nvme_HiddPCIDeviceMethodBase, methBaseIDs))
+    if (enabled)
     {
-#if defined(__OOP_NOATTRBASES__)
-        OOP_ReleaseAttrBasesArray(&NVMEBase->nvme_HWAttrBase, attrBaseIDs);
-#endif
-        return FALSE;
+        /*
+         * Alloc everything needed from a pool, so that we avoid memory fragmentation.
+         */
+        NVMEBase->nvme_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+        if (NVMEBase->nvme_MemPool == NULL)
+            return FALSE;
+
+        D(bug("[NVME--] %s: MemPool @ %p\n", __func__, NVMEBase->nvme_MemPool);)
+
+    #if defined(__OOP_NOATTRBASES__)
+        /* Get some useful bases */
+        if (OOP_ObtainAttrBasesArray(&NVMEBase->nvme_HWAttrBase, attrBaseIDs))
+        {
+            DeletePool(NVMEBase->nvme_MemPool);
+            NVMEBase->nvme_MemPool = NULL;
+            return FALSE;
+        }
+    #endif
+    #if defined(__OOP_NOMETHODBASES__)
+        if (OOP_ObtainMethodBasesArray(&NVMEBase->nvme_HiddPCIDeviceMethodBase, methBaseIDs))
+        {
+    #if defined(__OOP_NOATTRBASES__)
+            OOP_ReleaseAttrBasesArray(&NVMEBase->nvme_HWAttrBase, attrBaseIDs);
+    #endif
+            DeletePool(NVMEBase->nvme_MemPool);
+            NVMEBase->nvme_MemPool = NULL;
+            return FALSE;
+        }
+    #endif
+
+        D(bug("[NVME--] %s: Base NVME Hidd Class @ %p\n", __func__, NVMEBase->nvmeClass);)
+        D(bug("[NVME--] %s: NVME PCI Bus Class @ %p\n", __func__, NVMEBase->busClass);)
+
+        NVMEBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+        if (!NVMEBase->storageRoot)
+            NVMEBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+        if (!NVMEBase->storageRoot)
+        {
+            return FALSE;
+        }
+        D(bug("[NVME--] %s: storage root @ %p\n", __func__, NVMEBase->storageRoot);)
     }
-#endif
-
-    D(bug("[NVME--] %s: Base NVME Hidd Class @ %p\n", __func__, NVMEBase->nvmeClass);)
-    D(bug("[NVME--] %s: NVME PCI Bus Class @ %p\n", __func__, NVMEBase->busClass);)
-
-    NVMEBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-    if (!NVMEBase->storageRoot)
-        NVMEBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-    if (!NVMEBase->storageRoot)
-    {
-        return FALSE;
-    }
-    D(bug("[NVME--] %s: storage root @ %p\n", __func__, NVMEBase->storageRoot);)
-
-    return TRUE;
+    return enabled;
 }
 
 static int NVME_Open
