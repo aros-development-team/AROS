@@ -22,6 +22,7 @@ If NOT WARN
 
     ; Perform basic "dos.library" unit tests...
     Execute S/Test cunit/dos/cunit-dos-fileseek
+    Execute S/Test cunit/dos/cunit-dos-readargs
 
     ; Perform basic "locale.library" unit tests...
     Execute S/Test cunit/locale/cunit-locale-formatstring

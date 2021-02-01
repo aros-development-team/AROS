@@ -57,7 +57,8 @@ PURE_FILES := \
     isfilesystem
 
 CUNITSTDCTESTFILES := \
-    cunit-dos-fileseek
+    cunit-dos-fileseek \
+    cunit-dos-readargs
 
 #MM- test : test-dos
 #MM- test-quick : test-dos-quick
