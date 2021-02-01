@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware detection routine
@@ -183,7 +183,9 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     D(bug("[ATA:PCI] ata_PCIEnumerator_h: Found IDE device %04x:%04x\n", ata_tags[ATA_TAG_VEND].ti_Data, ata_tags[ATA_TAG_PROD].ti_Data));
 
     /* First check subclass */
-    if ((SubClass == PCI_SUBCLASS_SCSI) || (SubClass == PCI_SUBCLASS_SAS))
+    if ((SubClass == PCI_SUBCLASS_SCSI) ||
+         (SubClass == PCI_SUBCLASS_NVM) ||
+        (SubClass == PCI_SUBCLASS_SAS))
     {
         D(bug("[ATA:PCI] Unsupported subclass %d\n", SubClass));
         return;
@@ -222,7 +224,8 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 
         if (!hwhba)
         {
-            DSATA(bug("[ATA:PCI] Mapping failed, device will be ignored\n"));
+            DSATA(bug("[ATA:PCI] Mapping failed, device will be ignored\n");)
+            HIDD_PCIDevice_Release(Device);
             return;
         }
 
@@ -244,6 +247,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             DSATA(bug("[ATA:PCI] Legacy mode is not supported, device will be ignored\n"));
 
             HIDD_PCIDriver_UnmapPCI(Driver, hba_phys, hba_size);
+            HIDD_PCIDevice_Release(Device);
             return;
         }
 
@@ -288,6 +292,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                         DSATA(bug("[ATA:PCI] Failed to open timer, can't perform handoff. Device will be ignored\n"));
 
                         HIDD_PCIDriver_UnmapPCI(Driver, hba_phys, hba_size);
+                        HIDD_PCIDevice_Release(Device);
                         return;
                    }
 
@@ -418,6 +423,11 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 }
             }
         }
+    }
+    else
+    {
+        D(bug("[ATA:PCI] Releasing ownership\n"));
+        HIDD_PCIDevice_Release(Device);
     }
     AROS_USERFUNC_EXIT
 }
