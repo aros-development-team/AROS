@@ -98,10 +98,19 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle);
     Wait(ioehandle.ceh_SigSet);
     CachePostDMA(data, &len, is_write ? DMAFLAGS_POSTWRITE : DMAFLAGS_POSTREAD);
-    if (!ioehandle.ceh_Status)
-        done = TRUE;
 
     DIO(bug("[NVME%02ld(%02u)] %s: NVME IO Status %08x\n", unit->au_UnitNum, queueno, __func__, ioehandle.ceh_Status);)
+    if (!ioehandle.ceh_Status)
+    {
+        done = TRUE;
+    }
+    else
+    {
+        UBYTE sct = (ioehandle.ceh_Status >> 4) & 0x7, sc = (ioehandle.ceh_Status >> 7) & 0xFF;
+        io->io_Error = TDERR_NotSpecified;
+        DIO(bug("[NVME%02ld(%02u)] %s: NVME IO Error %u-%u\n", unit->au_UnitNum, queueno, __func__, sct, sc);)
+    }
+
 
     return done;
 }
