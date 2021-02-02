@@ -1,5 +1,5 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved
+    Copyright © 2020-2021, The AROS Development Team. All rights reserved
     $Id$
  */
 
@@ -76,11 +76,7 @@ CONST_STRPTR nvmeControllerName = "Non-Volatile Memory Express Controller";
 static int NVME_Init(struct NVMEBase *NVMEBase)
 {
     struct BootLoaderBase	*BootLoaderBase;
-#if (1)
-    BOOL enabled = FALSE;
-#else
     BOOL enabled = TRUE;
-#endif
 
     D(bug("[NVME--] %s: %s Initialization\n", __func__, nvmeDeviceName);)
 
@@ -120,13 +116,6 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
                         D(bug("[NVME--] %s: Disabling NVME support\n", __func__));
                         enabled = FALSE;
                     }
-#if (1)
-                    if (strstr(CmdLine, "enable"))
-                    {
-                        D(bug("[NVME--] %s: Enabling NVME support\n", __func__));
-                        enabled = TRUE;
-                    }
-#endif
                 }
             }
         }

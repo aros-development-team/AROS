@@ -1,5 +1,5 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,6 +23,7 @@
 #include <dos/bptr.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
+#include <exec/errors.h>
 
 #include <oop/oop.h>
 
@@ -43,7 +44,7 @@
 
 //#define USE_MSI
 #define DIRQ(x)
-#define DIO(x) x
+#define DIO(x)
 
 /*
     NVME_IOIntCode:
@@ -85,20 +86,42 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
                 struct IOExtTD *iotd = (struct IOExtTD *)nvmeq->cehandlers[i]->ceh_Msg;
                 nvmeq->cehandlers[i]->ceh_Reply = FALSE;
                 nvmeq->cehandlers[i]->ceh_Msg = NULL;
-                iolen = iotd->iotd_Req.io_Length;
+                iolen = (LONG)iotd->iotd_Req.io_Length;
 
-                DIO(bug ("[NVME:Bus] %s:completing command #%u\n", __func__, nvmeq->cqba[i].command_id);)
-                if ((iotd->iotd_Req.io_Command == CMD_WRITE) || (iotd->iotd_Req.io_Command == TD_WRITE64) || (iotd->iotd_Req.io_Command == NSCMD_TD_WRITE64))
+                DIO(bug ("[NVME:Bus] %s:completing queue entry #%u\n", __func__, i);)
+                if ((iotd->iotd_Req.io_Command == CMD_WRITE) ||
+                    (iotd->iotd_Req.io_Command == TD_WRITE64) ||
+                    (iotd->iotd_Req.io_Command == NSCMD_TD_WRITE64) ||
+                    (iotd->iotd_Req.io_Command == TD_FORMAT))
                     CachePostDMA(iotd->iotd_Req.io_Data, &iolen, DMAFLAGS_POSTWRITE);
                 else
+                {
+                    UBYTE *tmpdata = iotd->iotd_Req.io_Data;
+                    ULONG x;
                     CachePostDMA(iotd->iotd_Req.io_Data, &iolen, DMAFLAGS_POSTREAD);
-
+                    bug("Read Data-:\n");
+                    for (x = 0; x < iotd->iotd_Req.io_Length; x++)
+                    {
+                        if ((x % 10) == 0)
+                        {
+                            bug("\n");
+                        }
+                        bug("%02x ", (UBYTE)tmpdata[x]);
+                    }
+                    bug("\n");
+                }
                 if (nvmeq->cehandlers[i]->ceh_Status)
                 {
                     UBYTE sct = (nvmeq->cehandlers[i]->ceh_Status >> 4) & 0x7, sc = (nvmeq->cehandlers[i]->ceh_Status >> 7) & 0xFF;
-                    iotd->iotd_Req.io_Error = TDERR_NotSpecified;
+                    iotd->iotd_Req.io_Error = IOERR_ABORTED;
                     DIO(bug("[NVME:Bus] %s: NVME IO Error %u-%u\n", __func__, sct, sc);)
                 }
+                else
+                {
+                    iotd->iotd_Req.io_Error = 0;
+                    iotd->iotd_Req.io_Actual = iotd->iotd_Req.io_Length;
+                }
+
                 nvmeq->cehandlers[i] = NULL;
                 ReplyMsg((struct Message *)iotd);
             }
@@ -545,36 +568,30 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                             data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
 
-                            ULONG div = 1;
-                            /*
-                             * TODO: this shouldn't be casted down here.
-                             */
-                            ULONG sec = unit->au_SecCnt;
-
-                            if (sec < unit->au_SecCnt)
-                                sec = ~((ULONG)0);
-
-                            sec /= 63;
+                            unit->nu_Heads = 1;
+                            unit->nu_Cyl = unit->au_SecCnt;
+                            if (unit->nu_Cyl < unit->au_SecCnt)
+                                unit->nu_Cyl = ~((ULONG)0);
+                            unit->nu_Cyl /= 63;
                             /* divide by 2 */
                             do
                             {
-                                if (((sec >> 1) << 1) != sec)
+                                if (((unit->nu_Cyl >> 1) << 1) != unit->nu_Cyl)
                                     break;
-                                if ((div << 1) > 255)
+                                if ((unit->nu_Heads << 1) > 255)
                                     break;
-                                div <<= 1;
-                                sec >>= 1;
+                                unit->nu_Heads <<= 1;
+                                unit->nu_Cyl >>= 1;
                             } while (1);
-
                             /* divide by 3 */
                             do
                             {
-                                if (((sec / 3) * 3) != sec)
+                                if (((unit->nu_Cyl / 3) * 3) != unit->nu_Cyl)
                                     break;
-                                if ((div * 3) > 255)
+                                if ((unit->nu_Heads * 3) > 255)
                                     break;
-                                div *= 3;
-                                sec /= 3;
+                                unit->nu_Heads *= 3;
+                                unit->nu_Cyl /= 3;
                             } while (1);
                             
                             pp[0] 		    = (IPTR)data->ab_IDNode->ln_Name;
@@ -582,15 +599,15 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             pp[2]		    = unit->au_UnitNum;
                             pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
                             pp[DE_SIZEBLOCK    + 4] = 1 << unit->au_SecShift;
-                            pp[DE_NUMHEADS     + 4] = div;
+                            pp[DE_NUMHEADS     + 4] = unit->nu_Heads;
                             pp[DE_SECSPERBLOCK + 4] = 1;
                             pp[DE_BLKSPERTRACK + 4] = 63;
                             pp[DE_RESERVEDBLKS + 4] = 2;
                             pp[DE_LOWCYL       + 4] = (ULONG)unit->au_Low;
-                            pp[DE_HIGHCYL      + 4] = sec;
+                            pp[DE_HIGHCYL      + 4] = unit->nu_Cyl;
                             pp[DE_NUMBUFFERS   + 4] = 10;
                             pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
-                            pp[DE_MAXTRANSFER  + 4] = 0x00200000;
+                            pp[DE_MAXTRANSFER  + 4] = (1 << data->ab_Dev->dev_mdts) * (1 << unit->au_SecShift);
                             pp[DE_MASK         + 4] = 0x7FFFFFFE;
                             pp[DE_BOOTPRI      + 4] = 0;
                             pp[DE_DOSTYPE      + 4] = IdDOS;

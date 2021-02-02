@@ -1,5 +1,5 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved
+    Copyright © 2020-2021, The AROS Development Team. All rights reserved
     $Id$
 */
  
@@ -41,7 +41,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DIO(x) x
+#define DIO(x)
 
 static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 {
@@ -84,7 +84,6 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     ObtainSemaphore(&unit->au_Lock);
     Remove(&io->io_Message.mn_Node);
     ReleaseSemaphore(&unit->au_Lock);
-
     
     memset(&cmdio, 0, sizeof(cmdio));
     if (is_write) {
@@ -249,15 +248,15 @@ AROS_LH1(void, BeginIO,
         geom = data;
         SetMem(geom, 0, len);
 
-        geom->dg_Heads        = 1;
+        geom->dg_Heads        = unit->nu_Heads;
         geom->dg_SectorSize   = 1 << unit->au_SecShift;
         if (unit->au_SecCnt >> 32 != 0)
-            geom->dg_TotalSectors = 0xffffffff;
+            geom->dg_TotalSectors = 0xFFFFFFFF;
         else
             geom->dg_TotalSectors = unit->au_SecCnt;
-        geom->dg_Cylinders    = 1;
-        geom->dg_CylSectors   = 1;
-        geom->dg_TrackSectors = geom->dg_TotalSectors;
+        geom->dg_Cylinders    = unit->nu_Cyl;
+        geom->dg_CylSectors   = 63 * unit->nu_Heads;
+        geom->dg_TrackSectors = 63;
         geom->dg_BufMemType   = MEMF_PUBLIC;
         geom->dg_DeviceType   = DG_DIRECT_ACCESS;
         geom->dg_Flags        = 0;
