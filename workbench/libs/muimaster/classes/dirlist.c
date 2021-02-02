@@ -134,6 +134,9 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg);
 
 IPTR Dirlist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
+    /* TODO: The format may specify different coluimn count or order
+     * so it needs to be parses, and only set the requested columns in the
+    * constructor/display hooks */
     STRPTR format =
         (STRPTR) GetTagData(MUIA_List_Format, 0, msg->ops_AttrList);
 
