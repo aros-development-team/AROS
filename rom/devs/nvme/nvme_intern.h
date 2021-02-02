@@ -137,14 +137,18 @@ typedef struct {
 struct completionevent_handler
 {
     struct Task *ceh_Task;
-    ULONG ceh_SigSet;
-    ULONG ceh_Result;
-    UWORD ceh_Status;
+    APTR        ceh_Msg;
+    ULONG       ceh_SigSet;
+    ULONG       ceh_Result;
+    UWORD       ceh_Status;
+    UWORD       ceh_Reply;
 };
 
 typedef void (*_NVMEQUEUE_CE_HOOK)(struct nvme_queue *, struct nvme_completion *);
 struct nvme_queue {
     device_t dev;
+    struct Task *q_IOTask;
+    
 #if defined(__AROSEXEC_SMP__)
     spinlock_t q_lock;
 #endif
@@ -178,7 +182,6 @@ struct nvme_Unit;
 struct nvme_Bus
 {
     struct NVMEBase     *ab_Base;   /* device self */
-
     device_t            ab_Dev;
 
     UWORD               ab_UnitCnt;

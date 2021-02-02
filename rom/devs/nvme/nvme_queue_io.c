@@ -30,6 +30,7 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
     if (nvmeq->cehandlers[cqe->command_id])
     {
         D(bug ("[NVME:IOQ] %s: Signaling 0x%p (%08x)\n", __func__, nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);)
+        nvmeq->cehandlers[cqe->command_id]->ceh_Reply = TRUE;
         nvmeq->cehandlers[cqe->command_id]->ceh_Result = AROS_LE2LONG(cqe->result);
         nvmeq->cehandlers[cqe->command_id]->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
         Signal(nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);
@@ -42,15 +43,10 @@ int nvme_submit_iocmd(struct nvme_queue *nvmeq, struct nvme_command *cmd, struct
 
     D(bug ("[NVME:IOQ] %s(0x%p, 0x%p)\n", __func__, cmd);)
 
+    handler->ceh_Reply = FALSE;
     cmd->common.op.command_id = nvme_alloc_cmdid(nvmeq);
     nvmeq->cehooks[cmd->common.op.command_id] = nvme_complete_ioevent;
     nvmeq->cehandlers[cmd->common.op.command_id] = handler;
-
-    if (handler)
-    {
-        /* clear the signal first */
-        SetSignal(0, handler->ceh_SigSet);
-    }
     retval = nvme_submit_cmd(nvmeq, cmd);
 
     return retval;

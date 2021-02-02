@@ -71,7 +71,6 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         if ((data->ac_dev = dev) != NULL)
         {
             dev->dev_Controller = nvmeController;
-
             OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Base0, (IPTR *)&dev->dev_nvmeregbase);
 
             D(bug ("[NVME:Controller] Root__New:     NVME RegBase @ 0x%p\n", dev->dev_nvmeregbase);)
@@ -94,7 +93,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 UQUAD cap;
                 ULONG aqa;
 
-                dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
+                dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 64, MEMF_CLEAR);
                 if (!dev->dev_Queues[0]->cehooks)
                 {
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
@@ -102,10 +101,10 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     // TODO: dispose the controller object
                     return NULL;
                 }
-                dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
+                dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 64, MEMF_CLEAR);
                 if (!dev->dev_Queues[0]->cehandlers)
                 {
-                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
+                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 64);
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
@@ -202,7 +201,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 else
                 {
                     D(bug ("[NVME:Controller] Root__New: ERROR - failed to create DMA buffer!\n");)
-                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
+                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 64);
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
