@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2020-2021, The AROS Development Team.  All rights reserved.
  */
 
 #ifndef NVME_INTERN_H
@@ -125,6 +125,8 @@ typedef struct {
     OOP_Object        	*dev_PCIDriverObject;
     ULONG              	dev_HostID;
 
+    UBYTE               dev_mdts;
+    
     int                 db_stride;
     struct nvme_registers volatile *dev_nvmeregbase;
     ULONG volatile      *dbs;
@@ -206,9 +208,13 @@ struct nvme_Unit
 
     ULONG               au_SecShift;
     UQUAD               au_SecCnt;
+
     UQUAD               au_Low;
     UQUAD               au_High;
 
+    ULONG               nu_Heads;
+    ULONG               nu_Cyl;
+    
     UBYTE               au_Model[41];
     UBYTE               au_FirmwareRev[9];
     UBYTE               au_SerialNumber[21];

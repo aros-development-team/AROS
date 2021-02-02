@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -172,6 +172,9 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         D(bug ("[NVME:Controller] Root__New:     Serial '%s'\n", ctrl->sn);)
                         D(bug ("[NVME:Controller] Root__New:     F/W '%s'\n", ctrl->fr);)
                         D(bug ("[NVME:Controller] Root__New:        %u namespace(s)\n", ctrl->nn);)
+
+                        D(bug ("[NVME:Controller] Root__New: mdts = %u\n", ctrl->mdts);)
+                        dev->dev_mdts = ctrl->mdts;
 
                         struct TagItem attrs[] =
                         {
