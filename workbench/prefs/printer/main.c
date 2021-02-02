@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,7 +23,7 @@
 
 #include <aros/debug.h>
 
-#define VERSION "$VER: Printer 0.1 (31.1.2011) AROS Dev Team"
+#define VERSION "$VER: Printer 0.2 (02.02.2021) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
             application = (Object *)ApplicationObject,
                 MUIA_Application_Author, (IPTR)"Jason McMullan <jason.mcmullan@gmail.com>",
-                MUIA_Application_Copyright, (IPTR)"2012, AROS Team",
+                MUIA_Application_Copyright, (IPTR)"2012-2021, AROS Team",
                 MUIA_Application_Title, __(MSG_WINTITLE),
                 MUIA_Application_Version, (IPTR) VERSION,
                 MUIA_Application_Description, __(MSG_WINTITLE),

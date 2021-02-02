@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -272,7 +272,6 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR) HCenter((ListviewObject,
                             MUIA_Listview_List, (IPTR) (data->pt_DriverList = DirlistObject,                                
                                 InputListFrame,
-                                MUIA_List_Format, (IPTR) "COL=0",
                                 MUIA_List_AdjustWidth, TRUE,
                                 MUIA_Dirlist_Directory, (IPTR)"DEVS:Printers",
 								MUIA_Dirlist_RejectPattern, (IPTR)reject_pattern,
