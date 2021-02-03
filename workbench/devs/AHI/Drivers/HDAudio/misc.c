@@ -6,14 +6,18 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2010-2021 The AROS Dev Team
 (C) Copyright 2009-2010 Stephen Jones.
-(C) Copyright 2010-2019 The AROS Dev Team.
+(C) Copyright xxxx-2009 Davy Wentzler.
 
 The Initial Developer of the Original Code is Davy Wentzler.
 
 All Rights Reserved.
 */
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
 
 #include <config.h>
 
@@ -21,9 +25,7 @@ All Rights Reserved.
 #include <proto/expansion.h>
 
 #include <proto/dos.h>
-#ifdef __AROS__
-#include <aros/debug.h>
-#endif
+
 #include <math.h>
 
 #include "library.h"
@@ -125,6 +127,8 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
     UWORD command_word;
     BOOL success = TRUE;
 
+    D(bug("[HDAudio] %s()\n", __func__));
+
     card = (struct HDAudioChip *) AllocVec(sizeof(struct HDAudioChip), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (card == NULL)
@@ -179,24 +183,30 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
 
     perform_controller_specific_settings(card);
 
-    ahi_pci_add_intserver(&card->interrupt, dev);
-
     /* Initialize chip */
-    if (card_init(card) < 0)
+    success = ahi_pci_add_intserver(&card->interrupt, dev);
+    if (success)
     {
-        D(bug("[HDAudio] Unable to initialize Card subsystem.\n"));
+        if (card_init(card) < 0)
+        {
+            D(bug("[HDAudio] Unable to initialize Card subsystem.\n"));
 
-        success = FALSE;
+            success = FALSE;
+        }
+
+        card->interrupt_added = TRUE;
+
+        card->card_initialized = TRUE;
+        card->input          = 0;
+        card->output         = 0;
+        card->monitor_volume = (Fixed) (0x10000 * pow (10.0, -6.0 / 20.0)); // -6 dB
+        card->input_gain     = 0x10000; // 0dB
+        card->output_volume  = 0x10000; // 0dB
     }
-
-    card->interrupt_added = TRUE;
-
-    card->card_initialized = TRUE;
-    card->input          = 0;
-    card->output         = 0;
-    card->monitor_volume = (unsigned long) (0x10000 * pow (10.0, -6.0 / 20.0)); // -6 dB
-    card->input_gain     = 0x10000; // 0dB
-    card->output_volume  = 0x10000; // 0dB
+    else
+    {
+        D(bug("[HDAudio] Failed to register interrupt handler.\n"));
+    }
 
     if (success)
     {
@@ -364,6 +374,8 @@ int card_init(struct HDAudioChip *card)
         return -1;
     }
 
+    D(bug("[HDAudio] codecs %08x\n", card->codecbits));
+
     if (alloc_streams(card) == FALSE)
     {
         D(bug("[HDAudio] Allocating streams failed!\n"));
@@ -387,10 +399,20 @@ int card_init(struct HDAudioChip *card)
         D(bug("[HDAudio] Allocating position buffer failed!\n"));
         return -1;
     }
+    
+    D(bug("[HDAudio] Clearing wake enable bits for codecs ..\n"));
+    pci_outw(0, HD_WAKEEN, card);
+
+    D(bug("[HDAudio] Clearing pending interrupts ..\n"));
+    pci_outb(0xFF, HD_INTSTS, card);
+
+    D(bug("[HDAudio] Enabling interrupts ..\n"));
 
     // enable interrupts
-    pci_outl(HD_INTCTL_CIE | HD_INTCTL_GLOBAL, HD_INTCTL, card);
+    pci_outl(HD_INTCTL_CIE | HD_INTCTL_GIE, HD_INTCTL, card);
     udelay(200);
+
+    D(bug("[HDAudio] Finding codec ..\n"));
 
     /* Find the first codec with an audio function group */
     for (i = 0; i < 16; i++)

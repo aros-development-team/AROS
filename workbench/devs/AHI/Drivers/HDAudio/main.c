@@ -6,7 +6,7 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright 2010-2020 The AROS Developer Team
+(C) Copyright 2010-2021 The AROS Dev Team
 (C) Copyright 2009-2010 Stephen Jones.
 (C) Copyright xxxx-2009 Davy Wentzler.
 
@@ -14,6 +14,10 @@ The Initial Developer of the Original Code is Davy Wentzler.
 
 All Rights Reserved.
 */
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
 
 #include <config.h>
 
@@ -26,9 +30,7 @@ All Rights Reserved.
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
-#ifdef __AROS__
-#include <aros/debug.h>
-#endif
+
 #include <string.h>
 
 #include "library.h"
