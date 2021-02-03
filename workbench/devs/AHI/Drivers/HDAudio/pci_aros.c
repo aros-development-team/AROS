@@ -6,13 +6,16 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2010-2021 The AROS Dev Team
 (C) Copyright 2009-2010 Stephen Jones.
+(C) Copyright xxxx-2009 Davy Wentzler.
 
 The Initial Developer of the Original Code is Davy Wentzler.
 
 All Rights Reserved.
 */
+
+#include <aros/debug.h>
 
 #define __OOP_NOATTRBASES__
 
@@ -30,7 +33,7 @@ All Rights Reserved.
 #include "DriverData.h"
 #include "pci_wrapper.h"
 
-#include <aros/debug.h>
+
 #define KPrintF kprintf
 
 struct Library *OOPBase;
@@ -151,38 +154,38 @@ APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev)
 
 ULONG pci_inl(ULONG addr, struct HDAudioChip *card)
 {
-    ULONG *real_addr = (ULONG *) (card->iobase + addr); // card->iobase should be virtual
+    ULONG *real_addr = (ULONG *) ((IPTR)card->iobase + addr); // card->iobase should be virtual
 
     return *(real_addr);
 }
 
 UWORD pci_inw(ULONG addr, struct HDAudioChip *card)
 {
-    UWORD *real_addr = (UWORD *) (card->iobase + addr);
+    UWORD *real_addr = (UWORD *) ((IPTR)card->iobase + addr);
 
     return *(real_addr);
 }
 
 UBYTE pci_inb(ULONG addr, struct HDAudioChip *card)
 {
-    UBYTE *real_addr = (UBYTE *) (card->iobase + addr);
+    UBYTE *real_addr = (UBYTE *) ((IPTR)card->iobase + addr);
 
     return *(real_addr);
 }
 
 void pci_outl(ULONG value, ULONG addr, struct HDAudioChip *card)
 {
-    *((ULONG *) (card->iobase + addr)) = value;  
+    *((ULONG *) ((IPTR)card->iobase + addr)) = value;  
 }
 
 void pci_outw(UWORD value, ULONG addr, struct HDAudioChip *card)
 {
-    *((UWORD *) (card->iobase + addr)) = value;
+    *((UWORD *) ((IPTR)card->iobase + addr)) = value;
 }
 
 void pci_outb(UBYTE value, ULONG addr, struct HDAudioChip *card)
 {
-    *((UBYTE *) (card->iobase + addr)) = value;
+    *((UBYTE *) ((IPTR)card->iobase + addr)) = value;
 }
 
 
@@ -314,31 +317,31 @@ ULONG ahi_pci_get_irq(APTR dev)
 
 BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
 {
-    IPTR val;
 
-    OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
-
-    AddIntServer(INTB_KERNEL + val, i);
-
-    inthandler_added = TRUE;
-
-    return TRUE;
+    D(bug("[HDAudio] %s(0x%p, 0x%p)\n", __func__, dev, i));
+    if (!inthandler_added)
+    {
+        OOP_Object *driver;
+        OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_Driver, (IPTR *) &driver);
+        inthandler_added = (BOOL)HIDD_PCIDriver_AddInterrupt(driver, dev, i);
+        return inthandler_added;
+    }
+    return FALSE;
 }
 
 void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
 {    
+    D(bug("[HDAudio] %s(0x%p, 0x%p)\n", __func__, dev, i));
+
     if (inthandler_added)
     {
-        IPTR val;
+        OOP_Object *driver;
 
-        OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
-        
-        RemIntServer(INTB_KERNEL + val, i);
-        	
+        OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_Driver, (IPTR *) &driver);
+        HIDD_PCIDriver_RemoveInterrupt(driver, dev, i);
+
         inthandler_added = FALSE;
     }   
-
-    D(bug("[HDAudio] ahi_pci_rem_intserver\n"));
 }
 
 

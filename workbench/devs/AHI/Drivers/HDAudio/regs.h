@@ -7,13 +7,15 @@
 #define HD_VMIN 0x2
 #define HD_VMAJ 0x3
 #define HD_GCTL 0x8
+#define HD_WAKEEN 0xC
 #define HD_STATESTS 0xE
 
 #define HD_INTCTL 0x20 // interrupt control
-  #define HD_INTCTL_GLOBAL 0x80000000
-  #define HD_INTCTL_CIE    0x40000000
+  #define HD_INTCTL_GIE 0x80000000
+  #define HD_INTCTL_CIE 0x40000000
 #define HD_INTSTS 0x24 // interrupt status
-
+  #define HD_INTSTS_GIS 0x80000000
+  #define HD_INTSTS_CIS 0x40000000
 
 // CORB
 #define HD_CORB_LOW 0x40
