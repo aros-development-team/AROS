@@ -18,6 +18,7 @@
 #include "debug_intern.h"
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "exec_locks.h"
 
 static LONG SafeEasyRequest(struct EasyStruct *es, BOOL full, struct IntuitionBase *IntuitionBase)
 {
@@ -60,8 +61,19 @@ static const char full_recoverable_buttons[] = "Log|Continue";
 LONG Alert_AskSuspend(struct Task *task, ULONG alertNum, char * buffer, struct ExecBase *SysBase)
 {
     LONG choice = -1;
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+    struct IntuitionBase *IntuitionBase;
 
+    /* Arbitrate for the library list */
+    EXEC_LOCK_LIST_READ_AND_FORBID(&SysBase->LibList);
+    
+    /* Look for the library in our list */
+    IntuitionBase = (struct IntuitionBase *) FindName (&SysBase->LibList, "intuition.library");
+
+    EXEC_UNLOCK_LIST(&SysBase->LibList);
+    if (!IntuitionBase)
+         return choice;
+
+    IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     if (IntuitionBase)
     {
         if (buffer)
