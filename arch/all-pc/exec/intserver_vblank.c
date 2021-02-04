@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,7 +59,7 @@ AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
             apicTLS = apicData->cores[0].cpu_TLS;
             if ((apicTLS) && ((apicScheduleData = apicTLS->ScheduleData) != NULL))
             {
-                if ((apicScheduleData->Elapsed) && (--apicScheduleData->Elapsed == 0))
+                if (!(apicScheduleData->Elapsed) || (--apicScheduleData->Elapsed == 0))
                 {
                     __AROS_ATOMIC_OR_L(apicScheduleData->ScheduleFlags, TLSSF_Quantum);
                     __AROS_ATOMIC_OR_L(apicScheduleData->ScheduleFlags, TLSSF_Switch);
