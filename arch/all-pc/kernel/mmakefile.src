@@ -60,8 +60,10 @@ MAINDIR	      := rom/kernel
 USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
-#MM- kernel-kernel-pc : kernel-pc-acpica-linklib  linklibs-bootconsole kernel-kernel-native
-#MM- kernel-kernel-pc-kobj : kernel-pc-acpica-linklib linklibs-bootconsole kernel-kernel-native
+#MM- kernel-kernel-pc-common : kernel-acpica-sharedlib-linklib linklibs-bootconsole \
+#MM  kernel-kernel-native kernel-acpica-sharedlib-includes
+#MM- kernel-kernel-pc : kernel-kernel-pc-common
+#MM- kernel-kernel-pc-kobj : kernel-kernel-pc-common
 #MM- kernel-kernel-pc-quick : kernel-kernel-native-quick
 
 %build_archspecific \
