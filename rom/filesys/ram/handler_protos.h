@@ -136,7 +136,7 @@ struct DosList *MyMakeDosEntry(struct Handler *handler, const TEXT *name, LONG t
 VOID MyFreeDosEntry(struct Handler *handler, struct DosList *entry);
 BOOL MyRenameDosEntry(struct Handler *handler, struct DosList *entry, const TEXT *name);
 
-
+LONG IsDirectory(struct Handler *handler, struct Lock *lock);
 #endif
 
 

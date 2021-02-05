@@ -1499,4 +1499,58 @@ static struct Block *GetLastBlock(struct Object *file)
 }
 
 
+/****i* ram.handler/IsDirectory ******************************************
+*
+*   NAME
+*	IsDirectory --
+*
+*   SYNOPSIS
+*	success = IsDirectory(handler, lock)
+*
+*	BOOL ExamineObject(struct Handler *, struct Lock *);
+*
+*   FUNCTION
+*   Check if the lock points to a directory
+*
+*   INPUTS
+*
+*   RESULT
+*   Returns TRUE if lock is a directory
+*
+*   EXAMPLE
+*
+*   NOTES
+*
+*   BUGS
+*
+*   SEE ALSO
+*
+****************************************************************************
+*
+*/
 
+LONG IsDirectory(struct Handler *handler, struct Lock *lock)
+{
+   LONG error = 0;
+   struct FileInfoBlock *info;
+   
+   lock = FIXLOCK(handler, lock);
+   
+   info = AllocDosObjectTagList(DOS_FIB, NULL);
+   if(info)
+   {
+      if(ExamineObject(handler, (APTR)((struct FileLock *)lock)->fl_Key, info))
+      {
+         if(info->fib_DirEntryType < 0)
+         {
+            error = ERROR_OBJECT_WRONG_TYPE;
+         }
+      }
+      FreeDosObject(DOS_FIB, info);
+   }
+   else
+   {
+      error = ERROR_NO_FREE_STORE;
+   }
+   return error;
+}

@@ -1372,6 +1372,11 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
    if(type > ED_COMMENT)
       error = ERROR_BAD_NUMBER;
 
+   /* ExAll must be called on directories */
+   /* todo: do we need special treatment for Links? */
+   if(error == 0)
+      error = IsDirectory(handler, lock);
+   
    /* Get starting point */
 
    examination = (APTR)control->eac_LastKey;
