@@ -49,7 +49,7 @@ MESA_GENERATED_C_SOURCES := \
             program/program_parse.tab.c \
             program/lex.yy.c
 
-ifneq ($(MESAGLVERSION),20.0.2)
+ifeq ($(MESAGLVERSION),20.3.2)
 MESA_GENERATED_C_SOURCES += \
             main/marshal_generated0.c \
             main/marshal_generated1.c \
