@@ -1,9 +1,7 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#define DEBUG 0
 
 #include <aros/config.h>
 
@@ -63,40 +61,14 @@ void cpu_PrepareExec(struct ExecBase *SysBase)
     PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;
 }
 
-struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
+static struct ExceptionContext *cpu_SMPInitCtx(cpuid_t cpuNo)
 {
-    struct ExceptionContext *bsctx;
-    struct MemList *ml;
-#define bstask          ((struct Task *)(ml->ml_ME[0].me_Addr))
-#define bstaskmlsize    (sizeof(struct MemList) + sizeof(struct MemEntry))
-    IPTR bstNameArg[1];
-
-    /* Build bootstraps memory list */
-    if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
-    {
-        bug("[Kernel:%03u] FATAL : Failed to allocate memory for bootstrap task\n", cpuNo);
-        return NULL;
-    }
-
-    D(bug("[Kernel:%03u] Allocated memory list for bootstrap task\n", cpuNo);)
-
-    ml->ml_ME[0].me_Length = sizeof(struct Task);
-    if ((ml->ml_ME[0].me_Addr = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
-    {
-        bug("[Kernel:%03u] FATAL : Failed to allocate task for bootstrap\n", cpuNo);
-        FreeMem(ml, bstaskmlsize);
-        return NULL;
-    }
-
-    D(bug("[Kernel:%03u] %s: Bootstrap task @ 0x%p\n", cpuNo, __func__, bstask));
-
-    NEWLIST(&bstask->tc_MemEntry);
-    AddHead(&bstask->tc_MemEntry, &ml->ml_Node);
-
     if (KernelBase->kb_ContextSize > AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 16) + sizeof(struct FPFXSContext))
     {
-        D(bug("[Kernel:%03u] %s: Enabling AVX ...\n", cpuNo, __func__));
-        D(bug("[Kernel:%03u] %s: Adjusting CR0 flags\n", cpuNo, __func__);)
+        D(
+            bug("[Kernel:%03u] %s: Enabling AVX ...\n", cpuNo, __func__);
+            bug("[Kernel:%03u] %s: Adjusting CR0 flags\n", cpuNo, __func__);
+        )
         /* Enable monitoring media instruction to generate #NM when CR0.TS is set.
          * Disable coprocessor emulation.
          */
@@ -113,25 +85,55 @@ struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
             "    xgetbv\n\t"                                                            /* Load XCR0 register                           */
             "    or         $0b111, %%eax\n\t"                                          /* Set FPU, XMM, YMM bits                       */
             "    xsetbv\n\t"                                                            /* Save back to XCR0                            */
-            : : : "%eax",  "%rcx"
+            : : : "%rax",  "%rcx",  "%rdx"
             );
         D(bug("[Kernel:%03u] %s: AVX Ready!\n", cpuNo, __func__);)
     }
-    D(bug("[Kernel:%03u] %s: Allocating CPU context...\n", cpuNo, __func__));
+    return KrnCreateContext();
+}
 
-    if ((bsctx = KrnCreateContext()) == NULL)
+struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
+{
+    struct ExceptionContext *bsctx;
+    struct MemList *ml;
+    struct Task *bstask;
+#define bstaskmlsize    (sizeof(struct MemList) + sizeof(struct MemEntry))
+    IPTR bstNameArg[1];
+
+    /* Build bootstraps memory list */
+    if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    {
+        bug("[Kernel:%03u] FATAL : Failed to allocate memory for bootstrap task\n", cpuNo);
+        return NULL;
+    }
+
+    D(bug("[Kernel:%03u] %s: Allocated memory list for bootstrap task\n", cpuNo, __func__);)
+
+    ml->ml_ME[0].me_Length = sizeof(struct Task);
+    if ((ml->ml_ME[0].me_Addr = AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    {
+        bug("[Kernel:%03u] FATAL : Failed to allocate task for bootstrap\n", cpuNo);
+        FreeMem(ml, bstaskmlsize);
+        return NULL;
+    }
+
+    bstask = (struct Task *)ml->ml_ME[0].me_Addr;
+    D(bug("[Kernel:%03u] %s: Bootstrap task @ 0x%p\n", cpuNo, __func__, bstask);)
+
+    NEWLIST(&bstask->tc_MemEntry);
+
+    D(bug("[Kernel:%03u] %s: Allocating CPU context...\n", cpuNo, __func__);)
+    if ((bsctx = cpu_SMPInitCtx(cpuNo)) == NULL)
     {
         bug("[Kernel:%03u] FATAL : Failed to create the bootstrap Task context\n", cpuNo);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
         return NULL;
     }
-
-    D(bug("[Kernel:%03u] %s: CPU Ctx @ 0x%p\n", cpuNo, __func__, bsctx));
-
+    D(bug("[Kernel:%03u] %s: CPU Ctx @ 0x%p\n", cpuNo, __func__, bsctx);)
 
     ml->ml_ME[1].me_Length = 20;
-    if ((ml->ml_ME[1].me_Addr = AllocMem(20, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    if ((ml->ml_ME[1].me_Addr = AllocMem(20, MEMF_PUBLIC)) == NULL)
     {
         bug("[Kernel:%03u] FATAL : Failed to allocate the bootstrap Task name\n", cpuNo);
         KrnDeleteContext(bsctx);
@@ -140,12 +142,14 @@ struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
         return NULL;
     }
 
-    ml->ml_NumEntries      = 2;
-    D(bug("[Kernel:%03u] %s: Task Memory Allocated\n", cpuNo, __func__);)
-
     bstask->tc_Node.ln_Name = ml->ml_ME[1].me_Addr;
     bstNameArg[0] = cpuNo;
     RawDoFmt("CPU #%03u Bootstrap", (RAWARG)bstNameArg, RAWFMTFUNC_STRING, bstask->tc_Node.ln_Name);
+
+    ml->ml_NumEntries      = 2;
+    AddTail(&bstask->tc_MemEntry, &ml->ml_Node);
+
+    D(bug("[Kernel:%03u] %s: Task Memory Allocated\n", cpuNo, __func__);)
 
     bstask->tc_Node.ln_Type = NT_TASK;
     bstask->tc_Node.ln_Pri  = 0;
@@ -185,7 +189,6 @@ struct Task *cpu_InitBootStrap(cpuid_t cpuNo)
     bsctx->Flags = 0;
 
     return bstask;
-#undef  bstask
 }
 
 void cpu_BootStrap(struct Task *bstask)

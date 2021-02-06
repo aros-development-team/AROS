@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -88,7 +88,7 @@ static int cpu_Init(struct KernelBase *KernelBase)
             "    or         $0b111, %%eax\n\t"                                          /* Set FPU, XMM, YMM bits                       */
             "    mov        %%eax, %0\n\t\n"
             "    xsetbv\n\t"                                                            /* Save back to XCR0                            */
-            : "=m"(featMask) : : "%eax",  "%rcx"
+            : "=m"(featMask) : : "%rax",  "%rcx",  "%rdx"
             );
 
         D(
