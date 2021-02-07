@@ -83,7 +83,7 @@ wget_ftp()
 
     for (( ; ; ))
     do
-        if !  eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c $wgetsrc -O $wgetoutput"; then
+        if !  eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c \"$wgetsrc\" -O $wgetoutput"; then
             if test "$ret" = false; then
                 break
             fi
@@ -130,7 +130,7 @@ wget_http()
 
     for (( ; ; ))
     do
-        if ! eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c $wgetsrc -O $wgetoutput"; then
+        if ! eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c \"$wgetsrc\" -O $wgetoutput"; then
             if test "$ret" = false; then
                 break
             fi
