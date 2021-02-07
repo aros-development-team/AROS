@@ -183,27 +183,6 @@ diff -ruN mesa-20.0.8/src/intel/genxml/gen_sort_tags.py mesa-20.0.8.aros/src/int
  
      genxml[:] = enums + list(sorted_structs.values()) + instructions + registers
  
-diff -ruN mesa-20.0.8/src/mapi/glapi/gen/glX_XML.py mesa-20.0.8.aros/src/mapi/glapi/gen/glX_XML.py
---- mesa-20.0.8/src/mapi/glapi/gen/glX_XML.py	2020-06-12 01:21:17.000000000 +0000
-+++ mesa-20.0.8.aros/src/mapi/glapi/gen/glX_XML.py	2021-02-04 23:47:55.340000000 +0000
-@@ -48,7 +48,7 @@
- 
-         self.functions = {}
- 
--        for child in element:
-+        for child in element.getchildren():
-             if child.tag == "size":
-                 n = child.get( "name" )
-                 c = child.get( "count" )
-@@ -130,7 +130,7 @@
-                     self.counter_list.append(param.counter)
- 
- 
--        for child in element:
-+        for child in element.getchildren():
-             if child.tag == "glx":
-                 rop = child.get( 'rop' )
-                 sop = child.get( 'sop' )
 diff -ruN mesa-20.0.8/src/mapi/glapi/gen/gl_x86-64_asm.py mesa-20.0.8.aros/src/mapi/glapi/gen/gl_x86-64_asm.py
 --- mesa-20.0.8/src/mapi/glapi/gen/gl_x86-64_asm.py	2020-06-12 01:21:17.000000000 +0000
 +++ mesa-20.0.8.aros/src/mapi/glapi/gen/gl_x86-64_asm.py	2021-02-04 23:48:00.860000000 +0000
