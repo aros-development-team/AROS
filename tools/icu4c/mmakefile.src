@@ -2,7 +2,9 @@ include $(SRCDIR)/config/aros.cfg
 
 LN ?= ln
 
-ICU_VERSION := 4.2.1
+ICU_MAJOR := 61
+ISU_MINOR := 1
+ICU_VERSION := $(ICU_MAJOR).$(ISU_MINOR)
 ICU_PKGNAME := icu4c
 ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
 
@@ -18,7 +20,7 @@ ICU_EXTRA_OPTS = \
         --disable-extras \
         --with-data-packaging=static
 
-ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
+ICU_REPOSITORY := https://github.com/unicode-org/icu/releases/download/release-$(ICU_MAJOR)-$(ISU_MINOR)
 
 icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
 
