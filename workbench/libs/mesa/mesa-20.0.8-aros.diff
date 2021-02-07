@@ -204,45 +204,6 @@ diff -ruN mesa-20.0.8/src/mapi/glapi/gen/glX_XML.py mesa-20.0.8.aros/src/mapi/gl
              if child.tag == "glx":
                  rop = child.get( 'rop' )
                  sop = child.get( 'sop' )
-diff -ruN mesa-20.0.8/src/mapi/glapi/gen/gl_XML.py mesa-20.0.8.aros/src/mapi/glapi/gen/gl_XML.py
---- mesa-20.0.8/src/mapi/glapi/gen/gl_XML.py	2020-06-12 01:21:17.000000000 +0000
-+++ mesa-20.0.8.aros/src/mapi/glapi/gen/gl_XML.py	2021-02-04 23:48:00.860000000 +0000
-@@ -713,7 +713,7 @@
- 
-         parameters = []
-         return_type = "void"
--        for child in element:
-+        for child in element.getchildren():
-             if child.tag == "return":
-                 return_type = child.get( "type", "void" )
-             elif child.tag == "param":
-@@ -743,7 +743,7 @@
-                 if param.is_image():
-                     self.images.append( param )
- 
--        if list(element):
-+        if element.getchildren():
-             self.initialized = 1
-             self.entry_point_parameters[name] = parameters
-         else:
-@@ -873,7 +873,7 @@
- 
- 
-     def process_OpenGLAPI(self, file_name, element):
--        for child in element:
-+        for child in element.getchildren():
-             if child.tag == "category":
-                 self.process_category( child )
-             elif child.tag == "OpenGLAPI":
-@@ -893,7 +893,7 @@
-         [cat_type, key] = classify_category(cat_name, cat_number)
-         self.categories[cat_type][key] = [cat_name, cat_number]
- 
--        for child in cat:
-+        for child in cat.getchildren():
-             if child.tag == "function":
-                 func_name = real_function_name( child )
- 
 diff -ruN mesa-20.0.8/src/mapi/glapi/gen/gl_x86-64_asm.py mesa-20.0.8.aros/src/mapi/glapi/gen/gl_x86-64_asm.py
 --- mesa-20.0.8/src/mapi/glapi/gen/gl_x86-64_asm.py	2020-06-12 01:21:17.000000000 +0000
 +++ mesa-20.0.8.aros/src/mapi/glapi/gen/gl_x86-64_asm.py	2021-02-04 23:48:00.860000000 +0000
