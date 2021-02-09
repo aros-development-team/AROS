@@ -2397,6 +2397,11 @@ else
 fi
 AC_MSG_RESULT($aros_target_guitheme)
 
+AC_MSG_CHECKING([which version of mesa to build ...])
+AC_ARG_WITH(mesagl,AC_HELP_STRING([--with-mesagl=family],[Which version of MesaGL to build (defaults to 20.0.8)]),aros_mesagl="$withval",aros_mesagl="20.0.8")
+AC_MSG_RESULT($aros_mesagl)
+aros_target_options+="$export_newline""# Enable MesaGL$export_newline""OPT_MESAGL               := $aros_mesagl$export_newline"
+
 # Find out if we are cross-compiling (i.e. if we can't use the host compiler
 # for target code)
 cross_compiling=no

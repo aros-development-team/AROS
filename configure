@@ -967,6 +967,7 @@ with_portssources
 with_bootloader
 with_iconset
 with_theme
+with_mesagl
 enable_includes
 with_resolution
 with_serial_debug
@@ -1731,6 +1732,8 @@ Optional Packages:
   --with-bootloader=NAME  Use a specific bootloader
   --with-iconset=NAME     Use a specific Icon-set (default=Gorilla).
   --with-theme=NAME       Use a specific GUI Theme
+  --with-mesagl=family    Which version of MesaGL to build (defaults to
+                          20.0.8)
   --with-resolution=XRESxYRESxDEPTH
                           Default resolution of the initial WorkbenchScreen
   --with-serial-debug     Enable serial debug output in native (default=no)
@@ -10359,6 +10362,20 @@ else
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_guitheme" >&5
 $as_echo "$aros_target_guitheme" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which version of mesa to build ..." >&5
+$as_echo_n "checking which version of mesa to build ...... " >&6; }
+
+# Check whether --with-mesagl was given.
+if test "${with_mesagl+set}" = set; then :
+  withval=$with_mesagl; aros_mesagl="$withval"
+else
+  aros_mesagl="20.0.8"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_mesagl" >&5
+$as_echo "$aros_mesagl" >&6; }
+aros_target_options+="$export_newline""# Enable MesaGL$export_newline""OPT_MESAGL               := $aros_mesagl$export_newline"
 
 # Find out if we are cross-compiling (i.e. if we can't use the host compiler
 # for target code)
