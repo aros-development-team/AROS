@@ -81,5 +81,5 @@ int main(int argc, char **argv)
     }
     cleanup(NULL);
 
-    return RETURN_OK; /* make compiler happy */
+    return RETURN_OK;
 }

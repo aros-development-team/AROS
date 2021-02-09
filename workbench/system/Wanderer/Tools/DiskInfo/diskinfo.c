@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -73,7 +73,6 @@ struct DiskInfo_DATA
     LONG                        dki_Aspect;
     struct MUI_InputHandlerNode dki_NotifyIHN;
     struct NotifyRequest        dki_FSNotifyRequest;
-    STRPTR                      dki_WindowTitle;
 };
 
 /*** Methods ****************************************************************/
@@ -170,6 +169,7 @@ Object *DiskInfo__OM_NEW
         SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
         return NULL;
     }
+
     int volname_len = strlen(volname);
     if ((volicon = AllocVec(volname_len + 5, MEMF_CLEAR)) == NULL)
     {
@@ -207,10 +207,10 @@ Object *DiskInfo__OM_NEW
             CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
         }
 
-        FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
-        percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
-        FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
-        sprintf(blocksize, "%d %s", (int)id.id_BytesPerBlock, _(MSG_BYTES));
+        FormatSize(size, sizeof size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
+        percent = FormatSize(used, sizeof used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+        FormatSize(free, sizeof free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+        snprintf(blocksize, sizeof blocksize, "%d %s", (int)id.id_BytesPerBlock, _(MSG_BYTES));
 
         switch (id.id_DiskState)
         {
@@ -272,12 +272,13 @@ Object *DiskInfo__OM_NEW
         CLASS, self, NULL,
 
         MUIA_Application_Title, __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.5 ("ADATE") \xA9 2006-2009 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.6 ("ADATE") \xA9 2006-2021 The AROS Dev Team",
         MUIA_Application_Copyright, __(MSG_COPYRIGHT),
         MUIA_Application_Author, __(MSG_AUTHOR),
         MUIA_Application_Description, __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "DISKINFO",
         SubWindow, (IPTR) (window = (Object *)WindowObject,
+            MUIA_Window_Title,       __(MSG_TITLE),
             MUIA_Window_Activate,    TRUE,
             MUIA_Window_NoMenus,     TRUE,
             MUIA_Window_CloseGadget, TRUE,
@@ -457,13 +458,6 @@ Object *DiskInfo__OM_NEW
     data->dki_FileSys = filesystem;
     data->dki_Aspect        = aspect;
 
-    /*
-        the window class doesn't copy the title so we must
-        create a copy by ourselves to avoid corrupt window title
-    */
-    data->dki_WindowTitle = StrDup(volname);
-    SET(data->dki_Window, MUIA_Window_Title, data->dki_WindowTitle);
-
     /* Setup notifications -------------------------------------------------*/
     DoMethod( window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
         (IPTR) self, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -513,7 +507,6 @@ IPTR DiskInfo__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
     FreeVec(data->dki_DOSDev);
     FreeVec(data->dki_DOSDevInfo);
     FreeVec(data->dki_FileSys);
-    FreeVec(data->dki_WindowTitle);
 
     return DoSuperMethodA(CLASS, self, message);
 }
@@ -566,8 +559,8 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
                         D(bug("[DiskInfo] %s: Updating Window from DOS Device '%s'\n", __PRETTY_FUNCTION__, (STRPTR)XGET(data->dki_VolumeName, MUIA_Text_Contents)));
 
                         //FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
-                        percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
-                        FormatSize(free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+                        percent = FormatSize(used, sizeof used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
+                        FormatSize(free, sizeof free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
                         //sprintf(blocksize, "%d %s", id.id_BytesPerBlock, _(MSG_BYTES));
 
                         //data->dki_VolumeName    = volnameobj;
