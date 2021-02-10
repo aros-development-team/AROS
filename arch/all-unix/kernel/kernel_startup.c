@@ -159,6 +159,22 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	return -1;
     }
 
+    if (cmdline && strstr(cmdline, "waitdebug"))
+    {
+        int (*getpid)(void);
+        unsigned (*sleep)(unsigned);
+
+        getpid = HostIFace->hostlib_GetPointer(hostlib, "getpid", &errstr);
+        sleep = HostIFace->hostlib_GetPointer(hostlib, "sleep", &errstr);
+
+        AROS_HOST_BARRIER
+    
+        nbug("[KRN] PID %u waiting %d seconds for connection\n", getpid(), 10);
+        sleep(10);
+
+        AROS_HOST_BARRIER
+    }
+    
     /* Now query memory page size. We need in order to get our memory manager functional. */
     mm_PageSize = krnGetPageSize(hostlib);
     D(nbug("[KRN] Memory page size is %u\n", mm_PageSize));
