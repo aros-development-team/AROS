@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,6 +14,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/utility.h>
+#include <proto/timer.h>
 #include <proto/muimaster.h>
 
 #include <proto/alib.h>
@@ -35,10 +37,12 @@ struct AppearanceEditor_DATA
     Object *ae_ThemePreview;
     Object *ae_ThemeEnable;
     Object *ae_ThemeChoice;
+    Object *ae_ThemePalette;
+    Object *ae_OptionPalette;
+    Object *ae_ThemeZune;
     Object *ae_OptionZune;
-#if (0)
+    Object *ae_ThemeWand;
     Object *ae_OptionWand;
-#endif
 
     Object *ae_CompEnable;
     Object *ae_CompBelow;
@@ -79,7 +83,7 @@ static IPTR AppearanceEditor__ListToArray(struct List *ThemeList)
     IPTR        *ThemeArray = NULL;
     struct Node *ThemeEntry, *TmpNode;
 
-    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[AppearanceEditor] %s()\n", __func__));
 
     ForeachNode(ThemeList, ThemeEntry)
     {
@@ -87,12 +91,12 @@ static IPTR AppearanceEditor__ListToArray(struct List *ThemeList)
     }
 
     ThemeArray = AllocVec(sizeof(IPTR) * (ThemeCount + 1), MEMF_CLEAR);
-    D(bug("[AppearanceEditor] %s: Array for %d Entries @ 0x%p\n", __PRETTY_FUNCTION__, ThemeCount, ThemeArray));
+    D(bug("[AppearanceEditor] %s: Array for %d Entries @ 0x%p\n", __func__, ThemeCount, ThemeArray));
 
     ForeachNodeSafe(ThemeList, ThemeEntry, TmpNode)
     {
         Remove(ThemeEntry);
-        D(bug("[AppearanceEditor] %s:   %02d: %s\n", __PRETTY_FUNCTION__, i, ThemeEntry->ln_Name));
+        D(bug("[AppearanceEditor] %s:   %02d: %s\n", __func__, i, ThemeEntry->ln_Name));
         ThemeArray[i++] = (IPTR)ThemeEntry->ln_Name;
         FreeVec(ThemeEntry);
     }
@@ -109,16 +113,47 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
 {
     AROS_USERFUNC_INIT
     struct AppearanceEditor_DATA *data = h->h_Data;
-    BOOL themeEnable, compEnable;
-    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
+    char themeFileTmp[256];
+    BOOL themeEnable, themeoptDisable, compEnable;
+    IPTR themeActive;
+    BPTR tmpLock;
+
+    D(bug("[AppearanceEditor] %s()\n", __func__));
 
     themeEnable = (BOOL)XGET(data->ae_ThemeEnable, MUIA_Selected);
     SET(data->ae_ThemeChoice, MUIA_Disabled, !(themeEnable));
-    SET(data->ae_OptionZune, MUIA_Disabled, !(themeEnable));
-#if (0)
-    SET(data->ae_OptionWand, MUIA_Disabled, !(themeEnable));
-#endif
 
+    themeActive = XGET(data->ae_ThemeChoice, MUIA_Cycle_Active);
+    if (data->ae_ThemeArray[themeActive])
+    {
+        themeoptDisable = !(themeEnable);
+        sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[themeActive]);
+        if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            themeoptDisable = TRUE;
+        else
+            UnLock(tmpLock);
+        SET(data->ae_ThemePalette, MUIA_Disabled, themeoptDisable);
+        themeoptDisable = !(themeEnable);
+        sprintf(themeFileTmp, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[themeActive]);
+        if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            themeoptDisable = TRUE;
+        else
+            UnLock(tmpLock);
+        SET(data->ae_ThemeZune, MUIA_Disabled, themeoptDisable);
+        themeoptDisable = !(themeEnable);
+        sprintf(themeFileTmp, "THEMES:%s/wanderer.prefs", (char *)data->ae_ThemeArray[themeActive]);
+        if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            themeoptDisable = TRUE;
+        else
+            UnLock(tmpLock);
+        SET(data->ae_ThemeWand, MUIA_Disabled, themeoptDisable);
+    }
+    else
+    {
+        SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemeZune, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemeWand, MUIA_Disabled, TRUE);
+    }
     compEnable = (BOOL)XGET(data->ae_CompEnable, MUIA_Selected);
     SET(data->ae_CompBelow, MUIA_Disabled, !(compEnable));
     SET(data->ae_CompLeft, MUIA_Disabled, !(compEnable));
@@ -155,10 +190,11 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
 #endif
     Object              *_ThemeEnable;
     Object              *_ThemeSelectionObj;
-#if (0)
-    Object              *_ThemeWandPrefsObj;
-#endif
-    Object              *_ThemeZunePrefsObj;
+
+    Object              *_ThemePalettePrefsGrp, *_ThemePalettePrefsObj,
+                        *_ThemeZunePrefsGrp, *_ThemeZunePrefsObj,
+                        *_ThemeWandPrefsGrp, *_ThemeWandPrefsObj;
+
     Object              *_CompEnable;
     Object              *_CompBelow;
     Object              *_CompLeft;
@@ -171,7 +207,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
 
     BPTR                _ThemeLock = BNULL;
 
-    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[AppearanceEditor] %s()\n", __func__));
 
     NewList(&_ThemesAvailable);
 
@@ -260,18 +296,21 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                             MUIA_Cycle_Entries, (IPTR)_ThemeArray,
                         End),
                     End,
-                    Child, (IPTR)HGroup,
+                    Child, (IPTR)(_ThemePalettePrefsGrp = HGroup,
+                        Child, (IPTR)(_ThemePalettePrefsObj = MakeCheckmark(TRUE)),
+                        Child, (IPTR)Label1(_(MSG_ENABLEPALETTEPREFS)),
+                        Child, (IPTR)HVSpace,
+                    End),
+                    Child, (IPTR)(_ThemeZunePrefsGrp = HGroup,
                         Child, (IPTR)(_ThemeZunePrefsObj = MakeCheckmark(TRUE)),
                         Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
                         Child, (IPTR)HVSpace,
-                    End,
-#if (0)
-                    Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
-                    Child, (IPTR)HGroup,
+                    End),
+                    Child, (IPTR)(_ThemeWandPrefsGrp = HGroup,
                         Child, (IPTR)(_ThemeWandPrefsObj = MakeCheckmark(TRUE)),
+                        Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
                         Child, (IPTR)HVSpace,
-                    End,
-#endif
+                    End),
                     Child, (IPTR)HVSpace,
                 End,
 
@@ -320,10 +359,12 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
 #endif
         data->ae_ThemeEnable = _ThemeEnable;
         data->ae_ThemeChoice = _ThemeSelectionObj;
+        data->ae_ThemePalette = _ThemePalettePrefsGrp;
+        data->ae_OptionPalette = _ThemePalettePrefsObj;
+        data->ae_ThemeZune = _ThemeZunePrefsGrp;
         data->ae_OptionZune = _ThemeZunePrefsObj;
-#if (0)
+        data->ae_ThemeWand = _ThemeWandPrefsGrp;
         data->ae_OptionWand = _ThemeWandPrefsObj;
-#endif
 
         data->ae_CompEnable = _CompEnable;
         data->ae_CompBelow = _CompBelow;
@@ -334,7 +375,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         data->ae_ThemeArray = (IPTR *)_ThemeArray;
 
         data->ae_PreviewHook.h_Entry = (HOOKFUNC)AppearanceEditor__PreviewHookFunc;
-	data->ae_PreviewHook.h_Data = data;
+        data->ae_PreviewHook.h_Data = data;
 
         DoMethod
         (
@@ -400,11 +441,11 @@ IPTR AppearanceEditor__OM_DISPOSE(Class *CLASS, Object *self, struct opSet *mess
     SETUP_INST_DATA;
     int index = 0;
 
-    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[AppearanceEditor] %s()\n", __func__));
 
     while (data->ae_ThemeArray[index] != (IPTR)NULL)
     {
-        D(bug("[AppearanceEditor] %s: Freeing %02d: %s\n", __PRETTY_FUNCTION__, index, data->ae_ThemeArray[index]));
+        D(bug("[AppearanceEditor] %s: Freeing %02d: %s\n", __func__, index, data->ae_ThemeArray[index]));
         FreeVec((APTR)data->ae_ThemeArray[index]);
         index++;
     }
@@ -426,16 +467,15 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Import
     BOOL success = TRUE;
     BPTR fh;
 
-    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[AppearanceEditor] %s()\n", __func__));
 
     if ((fh = Open(message->filename, MODE_OLDFILE)) != BNULL)
     {
         NNSET(data->ae_ThemeEnable, MUIA_Selected, TRUE);
         SET(data->ae_ThemeChoice, MUIA_Disabled, FALSE);
-        SET(data->ae_OptionZune, MUIA_Disabled, FALSE);
-#if (0)
-        SET(data->ae_OptionWand, MUIA_Disabled, FALSE);
-#endif
+        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
+        SET(data->ae_ThemeZune, MUIA_Disabled, FALSE);
+        SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
         success = DoMethod(self, MUIM_PrefsEditor_ImportFH, (IPTR) fh);
         Close(fh);
     }
@@ -443,10 +483,9 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Import
     {
         NNSET(data->ae_ThemeEnable, MUIA_Selected, FALSE);
         SET(data->ae_ThemeChoice, MUIA_Disabled, TRUE);
-        SET(data->ae_OptionZune, MUIA_Disabled, TRUE);
-#if (0)
-        SET(data->ae_OptionWand, MUIA_Disabled, TRUE);
-#endif
+        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
+        SET(data->ae_ThemeZune, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemeWand, MUIA_Disabled, TRUE);
         success = DoMethod(self, MUIM_PrefsEditor_ImportFH, NULL);
     }
 
@@ -463,7 +502,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
     TEXT importBuffer[1024];
     int index = 0;
 
-    D(bug("[AppearanceEditor] %s(FH@ 0x%p)\n", __PRETTY_FUNCTION__, message->fh));
+    D(bug("[AppearanceEditor] %s(FH@ 0x%p)\n", __func__, message->fh));
 
     if (message->fh)
     {
@@ -471,13 +510,54 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
         {
             char *tmpThemeFile = FilePart(importBuffer);
 
-            D(bug("[AppearanceEditor] %s: Prefs Theme = '%s'\n", __PRETTY_FUNCTION__, tmpThemeFile));
+            D(bug("[AppearanceEditor] %s: Prefs Theme = '%s'\n", __func__, tmpThemeFile));
 
             while (data->ae_ThemeArray[index] != (IPTR)NULL)
             {
                 if (strncmp((char *)data->ae_ThemeArray[index], tmpThemeFile, strlen((char *)data->ae_ThemeArray[index])) == 0)
                 {
+                    char themeFileTmp[256];
+                    BPTR tmpLock;
+
                     NNSET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
+                    sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[index]);
+                    if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+                    {
+                        NNSET(data->ae_OptionPalette, MUIA_Selected, FALSE);
+                        SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
+                    }
+                    else
+                    {
+                        UnLock(tmpLock);
+                        NNSET(data->ae_OptionPalette, MUIA_Selected, TRUE);
+                        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
+                    }
+
+                    sprintf(themeFileTmp, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[index]);
+                    if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+                    {
+                        NNSET(data->ae_OptionZune, MUIA_Selected, FALSE);
+                        SET(data->ae_ThemeZune, MUIA_Disabled, TRUE);
+                    }
+                    else
+                    {
+                        UnLock(tmpLock);
+                        NNSET(data->ae_OptionZune, MUIA_Selected, TRUE);
+                        SET(data->ae_ThemeZune, MUIA_Disabled, FALSE);
+                    }
+
+                    sprintf(themeFileTmp, "THEMES:%s/wanderer.prefs", (char *)data->ae_ThemeArray[index]);
+                    if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+                    {
+                        NNSET(data->ae_OptionWand, MUIA_Selected, FALSE);
+                        SET(data->ae_ThemeWand, MUIA_Disabled, TRUE);
+                    }
+                    else
+                    {
+                        UnLock(tmpLock);
+                        NNSET(data->ae_OptionWand, MUIA_Selected, TRUE);
+                        SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
+                    }
                     break;
                 }
                 index++;
@@ -528,7 +608,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Export
     SETUP_INST_DATA;
     BOOL success = TRUE;
 
-    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));    
+    D(bug("[AppearanceEditor] %s()\n", __func__));    
 
     if (XGET(data->ae_ThemeEnable, MUIA_Selected))
     {
@@ -542,6 +622,119 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Export
     return success;
 }
 
+static BOOL AppearanceEditor_TimeStamp(char *buffer)
+{
+    struct MsgPort *mp = CreateMsgPort();
+    if (mp)
+    {
+        struct IORequest *tr = CreateIORequest(mp, sizeof(struct IORequest));
+        if (tr)
+        {
+            if (!OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0))
+            {
+                struct Library *TimerBase = (struct Library *)tr->io_Device;
+                struct ClockData clockdata;
+                struct timeval tv;
+                char yearstr[5];
+
+                GetSysTime(&tv);
+                Amiga2Date(tv.tv_secs, &clockdata);
+                sprintf(yearstr, "%u", clockdata.year);
+                sprintf(buffer, "%02u%02u%s%02u%02u", clockdata.mday, clockdata.month, &yearstr[2], clockdata.hour, clockdata.min);
+
+                D(bug("[AppearanceEditor] %s: stamp - '%s'\n", __func__, buffer);)
+                
+                DeleteIORequest(tr);
+                DeleteMsgPort(mp);
+
+                return TRUE;
+            }
+            DeleteIORequest(tr);
+        }
+        DeleteMsgPort(mp);
+    }
+    return FALSE;
+}
+
+static void AppearanceEditor_ReplacePrefs(char *sourcepath, char *destpath)
+{
+    BPTR srcLock, tgtLock;
+    APTR copyBuff;
+
+    D(
+        bug("[AppearanceEditor] %s()\n", __func__);
+        bug("[AppearanceEditor] %s: source - '%s'\n", __func__, sourcepath);
+        bug("[AppearanceEditor] %s: target - '%s'\n", __func__, destpath);
+    )
+
+    /* If there is an existing file, back it up first.. */
+    if ((tgtLock = Lock(destpath, ACCESS_READ)) != BNULL)
+    {
+        char backuppath[1024];
+        char stamp[16];
+        char suffix[256] = { 0 };
+        char *tmpstr1, *tmpstr2 = NULL;
+
+        NameFromLock(tgtLock, backuppath, 1024);
+        UnLock(tgtLock);
+        tmpstr1 = &backuppath[-1];
+
+        D(bug("[AppearanceEditor] %s: finding suffix in 0x%p '%s'\n", __func__, &tmpstr1[1], &tmpstr1[1]);)
+        while((tmpstr1 = strstr(&tmpstr1[1], ".")) != NULL)
+        {
+            tmpstr2 = &tmpstr1[1];
+            D(bug("[AppearanceEditor] %s: -> 0x%p\n", __func__, tmpstr2);)
+        }
+
+        if (tmpstr2)
+        {
+            if ((tmpstr2 - backuppath) < strlen(backuppath))
+            {
+                sprintf(suffix, "%s", tmpstr2);
+            }
+            tmpstr1 = tmpstr2;
+            tmpstr2 = suffix;
+        }
+        else
+        {
+            tmpstr1 = backuppath + strlen(backuppath);
+            tmpstr2 = "";
+        }
+
+        if (AppearanceEditor_TimeStamp(stamp))
+        {
+            sprintf(tmpstr1, "%s.%s", stamp, tmpstr2);
+            D(
+                bug("[AppearanceEditor] %s: backing up existing file...\n", __func__);
+                bug("[AppearanceEditor] %s: > '%s'\n", __func__, backuppath);
+            )
+            Rename(destpath, backuppath);
+        }
+    }
+    if ((tgtLock = Open(destpath, MODE_NEWFILE)) != BNULL)
+    {
+        if ((srcLock = Open(sourcepath, MODE_OLDFILE)) != BNULL)
+        {
+            copyBuff = AllocMem(4096, MEMF_ANY);
+            if (copyBuff)
+            {
+                LONG readlen;
+
+                D(bug("[AppearanceEditor] %s: copying ...\n", __func__);)
+
+                while ((readlen = Read(srcLock, copyBuff, 4096)) > 0)
+                {
+                    Write(tgtLock, copyBuff, readlen);
+                }
+                
+                FreeMem(copyBuff, 4096);
+            }
+            Close(srcLock);
+        }
+        Close(tgtLock);
+    }
+}
+
 IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
 (
     Class *CLASS, Object *self,
@@ -553,7 +746,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
     char *exportBuffer;
     IPTR  active = 0;
 
-    D(bug("[AppearanceEditor] %s(FH@ 0x%p)\n", __PRETTY_FUNCTION__, message->fh));
+    D(bug("[AppearanceEditor] %s(FH@ 0x%p)\n", __func__, message->fh));
 
     if ((exportBuffer = AllocVec(1024, MEMF_CLEAR)) != NULL)
     {
@@ -564,7 +757,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
         if (message->fh)
         {
             GET(data->ae_ThemeChoice, MUIA_Cycle_Active, &active);
-            D(bug("[AppearanceEditor] %s: Selected Theme = [%02d] '%s'\n", __PRETTY_FUNCTION__, active, data->ae_ThemeArray[active]));
+            D(bug("[AppearanceEditor] %s: Selected Theme = [%02d] '%s'\n", __func__, active, data->ae_ThemeArray[active]));
 
             sprintf(exportBuffer, "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[active]);
 
@@ -573,16 +766,35 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
 
             if (!backup)
             {
-                if (XGET(data->ae_OptionZune, MUIA_Selected))
+                char *sourceBuffer = AllocVec(1024, MEMF_CLEAR);
+                if (sourceBuffer)
                 {
-                    sprintf(exportBuffer, "True");
-                    SetVar(THEMES_OPTZUNEPATH, exportBuffer, 4,
-                        GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
-                }
-                else
-                {
-                    DeleteVar(THEMES_OPTZUNEPATH,
-                        GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
+                    if (!(XGET(data->ae_ThemePalette, MUIA_Disabled)) && XGET(data->ae_OptionPalette, MUIA_Selected))
+                    {
+                        D(bug("[AppearanceEditor] %s: replacing Palette config with theme's version...\n", __func__);)
+
+                        sprintf(sourceBuffer, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[active]);
+                        NameFromFH(message->fh, exportBuffer, 1024);
+                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
+                        AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
+                    }
+                    if (!(XGET(data->ae_ThemeZune, MUIA_Disabled)) && XGET(data->ae_OptionZune, MUIA_Selected))
+                    {
+                        D(bug("[AppearanceEditor] %s: replacing Zune config with theme's version...\n", __func__);)
+
+                        sprintf(sourceBuffer, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[active]);
+                        NameFromFH(message->fh, exportBuffer, 1024);
+                        sprintf(strstr(exportBuffer, "SYS/theme.var"), "%s", "Zune/global.prefs");
+                        AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
+                    }
+                    if (!(XGET(data->ae_ThemeWand, MUIA_Disabled)) && XGET(data->ae_OptionWand, MUIA_Selected))
+                    {
+                        D(bug("[AppearanceEditor] %s: replacing Wanderer config with theme's version...\n", __func__);)
+                        sprintf(sourceBuffer, "THEMES:%s/wanderer.prefs", (char *)data->ae_ThemeArray[active]);
+                        NameFromFH(message->fh, exportBuffer, 1024);
+                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "Wanderer/global.prefs");
+                        AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
+                    }
                 }
             }
             // TODO: Signal Decoration to reload the theme
@@ -633,22 +845,61 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
     SETUP_INST_DATA;
     int index = 0;
 
-    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[AppearanceEditor] %s()\n", __func__));
 
     // Theme options
     while (data->ae_ThemeArray[index] != (IPTR)NULL)
     {
         if (!strcmp((char *)data->ae_ThemeArray[index], THEMES_DEFAULT))
         {
+            char themeFileTmp[256];
+            BPTR tmpLock;
+
             SET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
+
+            sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[index]);
+            if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            {
+                SET(data->ae_OptionPalette, MUIA_Selected, FALSE);
+                SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
+            }
+            else
+            {
+                UnLock(tmpLock);
+                SET(data->ae_OptionPalette, MUIA_Selected, TRUE);
+                SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
+            }
+
+            sprintf(themeFileTmp, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[index]);
+            if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            {
+                SET(data->ae_OptionZune, MUIA_Selected, FALSE);
+                SET(data->ae_ThemeZune, MUIA_Disabled, TRUE);
+            }
+            else
+            {
+                UnLock(tmpLock);
+                SET(data->ae_OptionZune, MUIA_Selected, TRUE);
+                SET(data->ae_ThemeZune, MUIA_Disabled, FALSE);
+            }
+
+            sprintf(themeFileTmp, "THEMES:%s/wanderer.prefs", (char *)data->ae_ThemeArray[index]);
+            if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            {
+                SET(data->ae_OptionWand, MUIA_Selected, FALSE);
+                SET(data->ae_ThemeWand, MUIA_Disabled, TRUE);
+            }
+            else
+            {
+                UnLock(tmpLock);
+                SET(data->ae_OptionWand, MUIA_Selected, TRUE);
+                SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
+            }
+            
             break;
         }
         index++;
     }
-    SET(data->ae_OptionZune, MUIA_Selected, TRUE);
-#if (0)
-    SET(data->ae_OptionWand, MUIA_Selected, TRUE);
-#endif
 
     // Compositor options
     SET(data->ae_CompEnable, MUIA_Selected, TRUE);
