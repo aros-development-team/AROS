@@ -34,6 +34,8 @@
 
 struct AppearanceEditor_DATA
 {
+    APTR *ae_readBuff;
+
     Object *ae_ThemePreview;
     Object *ae_ThemeEnable;
     Object *ae_ThemeChoice;
@@ -48,6 +50,10 @@ struct AppearanceEditor_DATA
     Object *ae_ThemeWand;
     Object *ae_OptionWand;
 
+    Object *ae_ThemeDescGrp;
+    Object *ae_ThemeDescA;
+    Object *ae_ThemeDescB;
+    
     Object *ae_CompEnable;
     Object *ae_CompBelow;
     Object *ae_CompLeft;
@@ -119,7 +125,7 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
     struct AppearanceEditor_DATA *data = h->h_Data;
     char themeFileTmp[256];
     BOOL themeEnable, themeoptDisable, compEnable;
-    IPTR themeActive;
+    IPTR themeActive, showDesc = FALSE;
     BPTR tmpLock;
 
     D(bug("[AppearanceEditor] %s()\n", __func__));
@@ -169,6 +175,25 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
         else
             UnLock(tmpLock);
         SET(data->ae_ThemePointer, MUIA_Disabled, themeoptDisable);
+        
+        sprintf(themeFileTmp, "THEMES:%s/Description", (char *)data->ae_ThemeArray[themeActive]);
+        if ((tmpLock = Open(themeFileTmp, MODE_OLDFILE)) != BNULL)
+        {
+            LONG readLen = Read(tmpLock, data->ae_readBuff, 1024);
+            Close(tmpLock);
+            if (readLen > 0)
+            {
+                char *line2 = strstr((const char *)data->ae_readBuff, "\n");
+                if (line2)
+                    line2[0] = '\0';
+                ((char *)data->ae_readBuff)[readLen] = '\0';
+
+                showDesc = TRUE;
+
+                SET(data->ae_ThemeDescA, MUIA_Text_Contents, data->ae_readBuff);
+                SET(data->ae_ThemeDescB, MUIA_Text_Contents, &line2[1]);
+            }
+        }
     }
     else
     {
@@ -179,6 +204,8 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
         SET(data->ae_ThemeFont, MUIA_Disabled, TRUE);
         SET(data->ae_ThemePointer, MUIA_Disabled, TRUE);
     }
+    SET(data->ae_ThemeDescGrp, MUIA_ShowMe, showDesc);
+
     compEnable = (BOOL)XGET(data->ae_CompEnable, MUIA_Selected);
     SET(data->ae_CompBelow, MUIA_Disabled, !(compEnable));
     SET(data->ae_CompLeft, MUIA_Disabled, !(compEnable));
@@ -220,7 +247,10 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                         *_ThemeZunePrefsGrp, *_ThemeZunePrefsObj,
                         *_ThemeWandPrefsGrp, *_ThemeWandPrefsObj,
                         *_ThemeFontPrefsGrp, *_ThemeFontPrefsObj,
-                        *_ThemePointerPrefsGrp, *_ThemePointerPrefsObj;
+                        *_ThemePointerPrefsGrp, *_ThemePointerPrefsObj,
+                        *_ThemeDescGrp,
+                        *_ThemeDescA,
+                        *_ThemeDescB;
 
     Object              *_CompEnable;
     Object              *_CompBelow;
@@ -323,6 +353,24 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                             MUIA_Cycle_Entries, (IPTR)_ThemeArray,
                         End),
                     End,
+
+                    Child, (IPTR)(_ThemeDescGrp = VGroup,
+                        MUIA_ShowMe, FALSE,
+                        TextFrame,
+                        Child, (IPTR)(_ThemeDescA = TextObject,
+                            NoFrame,
+                            MUIA_Text_Contents, (IPTR)"",
+                            MUIA_Text_PreParse, (IPTR)"\33c",
+                            MUIA_Text_SetMin, FALSE,
+                        End),
+                        Child, (IPTR)(_ThemeDescB = TextObject,
+                            NoFrame,
+                            MUIA_Text_Contents, (IPTR)"",
+                            MUIA_Text_PreParse, (IPTR)"\33c\33i",
+                            MUIA_Text_SetMin, FALSE,
+                        End),
+                    End),                    
+
                     Child, (IPTR)(_ThemeZunePrefsGrp = HGroup,
                         Child, (IPTR)(_ThemeZunePrefsObj = MakeCheckmark(TRUE)),
                         Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
@@ -409,6 +457,10 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         data->ae_ThemeWand = _ThemeWandPrefsGrp;
         data->ae_OptionWand = _ThemeWandPrefsObj;
 
+        data->ae_ThemeDescGrp = _ThemeDescGrp;
+        data->ae_ThemeDescA = _ThemeDescA;
+        data->ae_ThemeDescB = _ThemeDescB;
+        
         data->ae_CompEnable = _CompEnable;
         data->ae_CompBelow = _CompBelow;
         data->ae_CompLeft = _CompLeft;
@@ -416,6 +468,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         data->ae_CompAlpha = _CompAlpha;
 
         data->ae_ThemeArray = (IPTR *)_ThemeArray;
+
+        data->ae_readBuff = AllocMem(1024, MEMF_ANY);
 
         data->ae_PreviewHook.h_Entry = (HOOKFUNC)AppearanceEditor__PreviewHookFunc;
         data->ae_PreviewHook.h_Data = data;
@@ -486,6 +540,9 @@ IPTR AppearanceEditor__OM_DISPOSE(Class *CLASS, Object *self, struct opSet *mess
 
     D(bug("[AppearanceEditor] %s()\n", __func__));
 
+    if (data->ae_readBuff)
+        FreeMem(data->ae_readBuff, 1024);
+
     while (data->ae_ThemeArray[index] != (IPTR)NULL)
     {
         D(bug("[AppearanceEditor] %s: Freeing %02d: %s\n", __func__, index, data->ae_ThemeArray[index]));
@@ -548,6 +605,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
     BOOL success = TRUE, optzune = TRUE;
     TEXT importBuffer[1024];
     int index = 0;
+    BOOL showDesc = FALSE;
 
     D(bug("[AppearanceEditor] %s(FH@ 0x%p)\n", __func__, message->fh));
 
@@ -633,16 +691,31 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
                         SET(data->ae_ThemePointer, MUIA_Disabled, FALSE);
                     }
 
+                    sprintf(themeFileTmp, "THEMES:%s/Description", (char *)data->ae_ThemeArray[index]);
+                    if ((tmpLock = Open(themeFileTmp, MODE_OLDFILE)) != BNULL)
+                    {
+                        LONG readLen = Read(tmpLock, data->ae_readBuff, 1024);
+                        Close(tmpLock);
+                        if (readLen > 0)
+                        {
+                            char *line2 = strstr((const char *)data->ae_readBuff, "\n");
+                            if (line2)
+                                line2[0] = '\0';
+                            ((char *)data->ae_readBuff)[readLen] = '\0';
+
+                            showDesc = TRUE;
+
+                            SET(data->ae_ThemeDescA, MUIA_Text_Contents, data->ae_readBuff);
+                            SET(data->ae_ThemeDescB, MUIA_Text_Contents, &line2[1]);
+                        }
+                    }
                     break;
                 }
                 index++;
             }
         }
-        if (GetVar(THEMES_OPTZUNEPATH, importBuffer, 1, GVF_GLOBAL_ONLY) == -1)
-            optzune = FALSE;
-
-        NNSET(data->ae_OptionZune, MUIA_Selected, optzune);
     }
+    SET(data->ae_ThemeDescGrp, MUIA_ShowMe, showDesc);
 
     if (GetVar(COMPOSITE_ENVPATH, importBuffer, 1024, GVF_GLOBAL_ONLY) != -1)
     {
@@ -938,6 +1011,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
 {
     SETUP_INST_DATA;
     int index = 0;
+    BOOL showDesc = FALSE;
 
     D(bug("[AppearanceEditor] %s()\n", __func__));
 
@@ -1016,10 +1090,30 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
                 SET(data->ae_ThemePointer, MUIA_Disabled, FALSE);
             }
 
+            sprintf(themeFileTmp, "THEMES:%s/Description", (char *)data->ae_ThemeArray[index]);
+            if ((tmpLock = Open(themeFileTmp, MODE_OLDFILE)) != BNULL)
+            {
+                LONG readLen = Read(tmpLock, data->ae_readBuff, 1024);
+                Close(tmpLock);
+                if (readLen > 0)
+                {
+                    char *line2 = strstr((const char *)data->ae_readBuff, "\n");
+                    if (line2)
+                        line2[0] = '\0';
+                    ((char *)data->ae_readBuff)[readLen] = '\0';
+
+                    showDesc = TRUE;
+
+                    SET(data->ae_ThemeDescA, MUIA_Text_Contents, data->ae_readBuff);
+                    SET(data->ae_ThemeDescB, MUIA_Text_Contents, &line2[1]);
+                }
+            }
+
             break;
         }
         index++;
     }
+    SET(data->ae_ThemeDescGrp, MUIA_ShowMe, showDesc);
 
     // Compositor options
     SET(data->ae_CompEnable, MUIA_Selected, TRUE);

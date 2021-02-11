@@ -20,7 +20,7 @@
 #include "args.h"
 #include "locale.h"
 
-#define VERSION "$VER: Appearance 1.3 (11.02.2021) AROS Dev Team"
+#define VERSION "$VER: Appearance 1.4 (11.02.2021) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)
