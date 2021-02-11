@@ -39,6 +39,10 @@ struct AppearanceEditor_DATA
     Object *ae_ThemeChoice;
     Object *ae_ThemePalette;
     Object *ae_OptionPalette;
+    Object *ae_ThemeFont;
+    Object *ae_OptionFont;
+    Object *ae_ThemePointer;
+    Object *ae_OptionPointer;
     Object *ae_ThemeZune;
     Object *ae_OptionZune;
     Object *ae_ThemeWand;
@@ -127,19 +131,13 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
     if (data->ae_ThemeArray[themeActive])
     {
         themeoptDisable = !(themeEnable);
-        sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[themeActive]);
-        if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
-            themeoptDisable = TRUE;
-        else
-            UnLock(tmpLock);
-        SET(data->ae_ThemePalette, MUIA_Disabled, themeoptDisable);
-        themeoptDisable = !(themeEnable);
         sprintf(themeFileTmp, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[themeActive]);
         if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
             themeoptDisable = TRUE;
         else
             UnLock(tmpLock);
         SET(data->ae_ThemeZune, MUIA_Disabled, themeoptDisable);
+
         themeoptDisable = !(themeEnable);
         sprintf(themeFileTmp, "THEMES:%s/wanderer.prefs", (char *)data->ae_ThemeArray[themeActive]);
         if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
@@ -147,12 +145,39 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
         else
             UnLock(tmpLock);
         SET(data->ae_ThemeWand, MUIA_Disabled, themeoptDisable);
+        
+        themeoptDisable = !(themeEnable);
+        sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[themeActive]);
+        if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            themeoptDisable = TRUE;
+        else
+            UnLock(tmpLock);
+        SET(data->ae_ThemePalette, MUIA_Disabled, themeoptDisable);
+
+        themeoptDisable = !(themeEnable);
+        sprintf(themeFileTmp, "THEMES:%s/font.prefs", (char *)data->ae_ThemeArray[themeActive]);
+        if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            themeoptDisable = TRUE;
+        else
+            UnLock(tmpLock);
+        SET(data->ae_ThemeFont, MUIA_Disabled, themeoptDisable);
+
+        themeoptDisable = !(themeEnable);
+        sprintf(themeFileTmp, "THEMES:%s/pointer.prefs", (char *)data->ae_ThemeArray[themeActive]);
+        if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            themeoptDisable = TRUE;
+        else
+            UnLock(tmpLock);
+        SET(data->ae_ThemePointer, MUIA_Disabled, themeoptDisable);
     }
     else
     {
-        SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
         SET(data->ae_ThemeZune, MUIA_Disabled, TRUE);
         SET(data->ae_ThemeWand, MUIA_Disabled, TRUE);
+        
+        SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemeFont, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemePointer, MUIA_Disabled, TRUE);
     }
     compEnable = (BOOL)XGET(data->ae_CompEnable, MUIA_Selected);
     SET(data->ae_CompBelow, MUIA_Disabled, !(compEnable));
@@ -193,7 +218,9 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
 
     Object              *_ThemePalettePrefsGrp, *_ThemePalettePrefsObj,
                         *_ThemeZunePrefsGrp, *_ThemeZunePrefsObj,
-                        *_ThemeWandPrefsGrp, *_ThemeWandPrefsObj;
+                        *_ThemeWandPrefsGrp, *_ThemeWandPrefsObj,
+                        *_ThemeFontPrefsGrp, *_ThemeFontPrefsObj,
+                        *_ThemePointerPrefsGrp, *_ThemePointerPrefsObj;
 
     Object              *_CompEnable;
     Object              *_CompBelow;
@@ -296,11 +323,6 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                             MUIA_Cycle_Entries, (IPTR)_ThemeArray,
                         End),
                     End,
-                    Child, (IPTR)(_ThemePalettePrefsGrp = HGroup,
-                        Child, (IPTR)(_ThemePalettePrefsObj = MakeCheckmark(TRUE)),
-                        Child, (IPTR)Label1(_(MSG_ENABLEPALETTEPREFS)),
-                        Child, (IPTR)HVSpace,
-                    End),
                     Child, (IPTR)(_ThemeZunePrefsGrp = HGroup,
                         Child, (IPTR)(_ThemeZunePrefsObj = MakeCheckmark(TRUE)),
                         Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
@@ -309,6 +331,22 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                     Child, (IPTR)(_ThemeWandPrefsGrp = HGroup,
                         Child, (IPTR)(_ThemeWandPrefsObj = MakeCheckmark(TRUE)),
                         Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
+                        Child, (IPTR)HVSpace,
+                    End),
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)(_ThemePalettePrefsGrp = HGroup,
+                        Child, (IPTR)(_ThemePalettePrefsObj = MakeCheckmark(TRUE)),
+                        Child, (IPTR)Label1(_(MSG_ENABLEPALETTEPREFS)),
+                        Child, (IPTR)HVSpace,
+                    End),
+                    Child, (IPTR)(_ThemeFontPrefsGrp = HGroup,
+                        Child, (IPTR)(_ThemeFontPrefsObj = MakeCheckmark(TRUE)),
+                        Child, (IPTR)Label1(_(MSG_ENABLEFONTPREFS)),
+                        Child, (IPTR)HVSpace,
+                    End),
+                    Child, (IPTR)(_ThemePointerPrefsGrp = HGroup,
+                        Child, (IPTR)(_ThemePointerPrefsObj = MakeCheckmark(TRUE)),
+                        Child, (IPTR)Label1(_(MSG_ENABLEPOINTERPREFS)),
                         Child, (IPTR)HVSpace,
                     End),
                     Child, (IPTR)HVSpace,
@@ -342,6 +380,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                         Child, (IPTR)Label1(__(MSG_ENABLE_COMPOSITE_WITH_ALPHA)),
                         Child, (IPTR)HVSpace,
                     End,
+                    Child, (IPTR)HVSpace,
                 End,
 
             End,
@@ -361,6 +400,10 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         data->ae_ThemeChoice = _ThemeSelectionObj;
         data->ae_ThemePalette = _ThemePalettePrefsGrp;
         data->ae_OptionPalette = _ThemePalettePrefsObj;
+        data->ae_ThemeFont = _ThemeFontPrefsGrp;
+        data->ae_OptionFont = _ThemeFontPrefsObj;
+        data->ae_ThemePointer = _ThemePointerPrefsGrp;
+        data->ae_OptionPointer = _ThemePointerPrefsObj;
         data->ae_ThemeZune = _ThemeZunePrefsGrp;
         data->ae_OptionZune = _ThemeZunePrefsObj;
         data->ae_ThemeWand = _ThemeWandPrefsGrp;
@@ -473,9 +516,11 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Import
     {
         NNSET(data->ae_ThemeEnable, MUIA_Selected, TRUE);
         SET(data->ae_ThemeChoice, MUIA_Disabled, FALSE);
-        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
         SET(data->ae_ThemeZune, MUIA_Disabled, FALSE);
         SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
+        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
+        SET(data->ae_ThemeFont, MUIA_Disabled, FALSE);
+        SET(data->ae_ThemePointer, MUIA_Disabled, FALSE);
         success = DoMethod(self, MUIM_PrefsEditor_ImportFH, (IPTR) fh);
         Close(fh);
     }
@@ -483,9 +528,11 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Import
     {
         NNSET(data->ae_ThemeEnable, MUIA_Selected, FALSE);
         SET(data->ae_ThemeChoice, MUIA_Disabled, TRUE);
-        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
         SET(data->ae_ThemeZune, MUIA_Disabled, TRUE);
         SET(data->ae_ThemeWand, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemeFont, MUIA_Disabled, TRUE);
+        SET(data->ae_ThemePointer, MUIA_Disabled, TRUE);
         success = DoMethod(self, MUIM_PrefsEditor_ImportFH, NULL);
     }
 
@@ -520,18 +567,6 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
                     BPTR tmpLock;
 
                     NNSET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
-                    sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[index]);
-                    if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
-                    {
-                        NNSET(data->ae_OptionPalette, MUIA_Selected, FALSE);
-                        SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
-                    }
-                    else
-                    {
-                        UnLock(tmpLock);
-                        NNSET(data->ae_OptionPalette, MUIA_Selected, TRUE);
-                        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
-                    }
 
                     sprintf(themeFileTmp, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[index]);
                     if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
@@ -558,6 +593,46 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
                         NNSET(data->ae_OptionWand, MUIA_Selected, TRUE);
                         SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
                     }
+
+                    sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[index]);
+                    if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+                    {
+                        NNSET(data->ae_OptionPalette, MUIA_Selected, FALSE);
+                        SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
+                    }
+                    else
+                    {
+                        UnLock(tmpLock);
+                        NNSET(data->ae_OptionPalette, MUIA_Selected, TRUE);
+                        SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
+                    }
+
+                    sprintf(themeFileTmp, "THEMES:%s/font.prefs", (char *)data->ae_ThemeArray[index]);
+                    if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+                    {
+                        NNSET(data->ae_OptionFont, MUIA_Selected, FALSE);
+                        SET(data->ae_ThemeFont, MUIA_Disabled, TRUE);
+                    }
+                    else
+                    {
+                        UnLock(tmpLock);
+                        NNSET(data->ae_OptionFont, MUIA_Selected, TRUE);
+                        SET(data->ae_ThemeFont, MUIA_Disabled, FALSE);
+                    }
+
+                    sprintf(themeFileTmp, "THEMES:%s/pointer.prefs", (char *)data->ae_ThemeArray[index]);
+                    if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+                    {
+                        NNSET(data->ae_OptionPointer, MUIA_Selected, FALSE);
+                        SET(data->ae_ThemePointer, MUIA_Disabled, TRUE);
+                    }
+                    else
+                    {
+                        UnLock(tmpLock);
+                        NNSET(data->ae_OptionPointer, MUIA_Selected, TRUE);
+                        SET(data->ae_ThemePointer, MUIA_Disabled, FALSE);
+                    }
+
                     break;
                 }
                 index++;
@@ -769,15 +844,6 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
                 char *sourceBuffer = AllocVec(1024, MEMF_CLEAR);
                 if (sourceBuffer)
                 {
-                    if (!(XGET(data->ae_ThemePalette, MUIA_Disabled)) && XGET(data->ae_OptionPalette, MUIA_Selected))
-                    {
-                        D(bug("[AppearanceEditor] %s: replacing Palette config with theme's version...\n", __func__);)
-
-                        sprintf(sourceBuffer, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[active]);
-                        NameFromFH(message->fh, exportBuffer, 1024);
-                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
-                        AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
-                    }
                     if (!(XGET(data->ae_ThemeZune, MUIA_Disabled)) && XGET(data->ae_OptionZune, MUIA_Selected))
                     {
                         D(bug("[AppearanceEditor] %s: replacing Zune config with theme's version...\n", __func__);)
@@ -793,6 +859,34 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
                         sprintf(sourceBuffer, "THEMES:%s/wanderer.prefs", (char *)data->ae_ThemeArray[active]);
                         NameFromFH(message->fh, exportBuffer, 1024);
                         sprintf(strstr(exportBuffer, "theme.var"), "%s", "Wanderer/global.prefs");
+                        AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
+                    }
+
+                    if (!(XGET(data->ae_ThemePalette, MUIA_Disabled)) && XGET(data->ae_OptionPalette, MUIA_Selected))
+                    {
+                        D(bug("[AppearanceEditor] %s: replacing Palette config with theme's version...\n", __func__);)
+
+                        sprintf(sourceBuffer, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[active]);
+                        NameFromFH(message->fh, exportBuffer, 1024);
+                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
+                        AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
+                    }                    
+                    if (!(XGET(data->ae_ThemeFont, MUIA_Disabled)) && XGET(data->ae_OptionFont, MUIA_Selected))
+                    {
+                        D(bug("[AppearanceEditor] %s: replacing Font config with theme's version...\n", __func__);)
+
+                        sprintf(sourceBuffer, "THEMES:%s/font.prefs", (char *)data->ae_ThemeArray[active]);
+                        NameFromFH(message->fh, exportBuffer, 1024);
+                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
+                        AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
+                    }
+                    if (!(XGET(data->ae_ThemePointer, MUIA_Disabled)) && XGET(data->ae_OptionPointer, MUIA_Selected))
+                    {
+                        D(bug("[AppearanceEditor] %s: replacing Pointer config with theme's version...\n", __func__);)
+
+                        sprintf(sourceBuffer, "THEMES:%s/pointer.prefs", (char *)data->ae_ThemeArray[active]);
+                        NameFromFH(message->fh, exportBuffer, 1024);
+                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
                         AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
                     }
                 }
@@ -857,19 +951,6 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
 
             SET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
 
-            sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[index]);
-            if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
-            {
-                SET(data->ae_OptionPalette, MUIA_Selected, FALSE);
-                SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
-            }
-            else
-            {
-                UnLock(tmpLock);
-                SET(data->ae_OptionPalette, MUIA_Selected, TRUE);
-                SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
-            }
-
             sprintf(themeFileTmp, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[index]);
             if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
             {
@@ -895,7 +976,46 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
                 SET(data->ae_OptionWand, MUIA_Selected, TRUE);
                 SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
             }
-            
+
+            sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[index]);
+            if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            {
+                SET(data->ae_OptionPalette, MUIA_Selected, FALSE);
+                SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
+            }
+            else
+            {
+                UnLock(tmpLock);
+                SET(data->ae_OptionPalette, MUIA_Selected, TRUE);
+                SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
+            }
+
+            sprintf(themeFileTmp, "THEMES:%s/font.prefs", (char *)data->ae_ThemeArray[index]);
+            if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            {
+                SET(data->ae_OptionFont, MUIA_Selected, FALSE);
+                SET(data->ae_ThemeFont, MUIA_Disabled, TRUE);
+            }
+            else
+            {
+                UnLock(tmpLock);
+                SET(data->ae_OptionFont, MUIA_Selected, TRUE);
+                SET(data->ae_ThemeFont, MUIA_Disabled, FALSE);
+            }
+
+            sprintf(themeFileTmp, "THEMES:%s/pointer.prefs", (char *)data->ae_ThemeArray[index]);
+            if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
+            {
+                SET(data->ae_OptionPointer, MUIA_Selected, FALSE);
+                SET(data->ae_ThemePointer, MUIA_Disabled, TRUE);
+            }
+            else
+            {
+                UnLock(tmpLock);
+                SET(data->ae_OptionPointer, MUIA_Selected, TRUE);
+                SET(data->ae_ThemePointer, MUIA_Disabled, FALSE);
+            }
+
             break;
         }
         index++;
