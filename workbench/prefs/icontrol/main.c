@@ -1,11 +1,13 @@
 /*
-   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2021, The AROS Development Team. All rights reserved.
    $Id$
  */
 
 /*********************************************************************************************/
 
 #define MUIMASTER_YES_INLINE_STDARG
+
+#include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/intuition.h>
@@ -18,10 +20,7 @@
 #include "args.h"
 #include "prefs.h"
 
-/* #define DEBUG 1 */
-#include <aros/debug.h>
-
-#define VERSION "$VER: IControl 1.4 (7.1.2014) AROS Dev Team"
+#define VERSION "$VER: IControl 1.5 (11.02.2021) AROS Dev Team"
 
 /*********************************************************************************************/
 
