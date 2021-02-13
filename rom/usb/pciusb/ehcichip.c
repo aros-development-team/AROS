@@ -546,8 +546,8 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
             epcaps |= EQEF_HIGHSPEED;
         }
         WRITEMEM32_LE(&eqh->eqh_EPCaps, epcaps);
-        //eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
-        //eqh->eqh_AltNextTD = eqh->eqh_NextTD = setupetd->etd_Self;
+        eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
+        eqh->eqh_AltNextTD = eqh->eqh_NextTD = setupetd->etd_Self;
 
         //termetd->etd_QueueHead = setupetd->etd_QueueHead = eqh;
 
@@ -641,17 +641,20 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         termetd->etd_ExtBufferPtr[2] = 0; // clear for overlay bits
         termetd->etd_Succ = NULL;
 
-        // due to sillicon bugs, we fill in the first overlay ourselves.
-        eqh->eqh_CurrTD = setupetd->etd_Self;
-        eqh->eqh_NextTD = setupetd->etd_NextTD;
-        eqh->eqh_AltNextTD = setupetd->etd_AltNextTD;
-        eqh->eqh_CtrlStatus = setupetd->etd_CtrlStatus;
-        eqh->eqh_BufferPtr[0] = setupetd->etd_BufferPtr[0];
-        eqh->eqh_BufferPtr[1] = setupetd->etd_BufferPtr[1];
-        eqh->eqh_BufferPtr[2] = 0;
-        eqh->eqh_ExtBufferPtr[0] = setupetd->etd_ExtBufferPtr[0];
-        eqh->eqh_ExtBufferPtr[1] = setupetd->etd_ExtBufferPtr[1];
-        eqh->eqh_ExtBufferPtr[2] = 0;
+        if (hc->hc_Quirks & HCQ_EHCI_OVERLAY_CTRL_FILL)
+        {
+            // due to sillicon bugs, we fill in the first overlay ourselves.
+            eqh->eqh_CurrTD = setupetd->etd_Self;
+            eqh->eqh_NextTD = setupetd->etd_NextTD;
+            eqh->eqh_AltNextTD = setupetd->etd_AltNextTD;
+            eqh->eqh_CtrlStatus = setupetd->etd_CtrlStatus;
+            eqh->eqh_BufferPtr[0] = setupetd->etd_BufferPtr[0];
+            eqh->eqh_BufferPtr[1] = setupetd->etd_BufferPtr[1];
+            eqh->eqh_BufferPtr[2] = 0;
+            eqh->eqh_ExtBufferPtr[0] = setupetd->etd_ExtBufferPtr[0];
+            eqh->eqh_ExtBufferPtr[1] = setupetd->etd_ExtBufferPtr[1];
+            eqh->eqh_ExtBufferPtr[2] = 0;
+        }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -785,7 +788,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             }
         }
         WRITEMEM32_LE(&eqh->eqh_EPCaps, epcaps);
-        //eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
+        eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
         eqh->eqh_FirstTD = NULL; // clear for ehciFreeQHandTDs()
 
         ctrlstatus = (ioreq->iouh_Dir == UHDIR_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
@@ -811,7 +814,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
                 predetd->etd_AltNextTD = hc->hc_ShortPktEndTD->etd_Self;
             } else {
                 eqh->eqh_FirstTD = etd;
-                //eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
+                eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
             }
 
             len = ioreq->iouh_Length - eqh->eqh_Actual;
@@ -963,7 +966,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, splitctrl);
         }
         WRITEMEM32_LE(&eqh->eqh_EPCaps, epcaps);
-        //eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
+        eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
         eqh->eqh_FirstTD = NULL; // clear for ehciFreeQHandTDs()
 
         ctrlstatus = (ioreq->iouh_Dir == UHDIR_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
@@ -994,7 +997,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
                 predetd->etd_AltNextTD = hc->hc_ShortPktEndTD->etd_Self;
             } else {
                 eqh->eqh_FirstTD = etd;
-                //eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
+                eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
             }
 
             len = ioreq->iouh_Length - eqh->eqh_Actual;
