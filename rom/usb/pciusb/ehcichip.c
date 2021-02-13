@@ -1564,7 +1564,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         KPRINTF(10, ("HW Regs USBSTS=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS)));
         KPRINTF(10, ("HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT)));
 
-        KPRINTF(1000, ("ehciInit returns TRUE...\n"));
+        KPRINTF(10, ("ehciInit returns TRUE...\n"));
         return TRUE;
     }
 
