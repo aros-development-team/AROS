@@ -797,11 +797,14 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
                                     newval |= EHPF_PORTRESET;
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(50, unit);
+                                    uhwDelayMS(200, unit); /* Spec is 50ms, FreeBSD source suggests 200ms */
                                     newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
-                                    KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "GOOD" : "BAD!"));
-                                    newval &= ~EHPF_PORTRESET;
-                                    WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+                                    KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
+                                    if (newval & EHPF_PORTRESET)
+                                    {
+                                        newval &= ~EHPF_PORTRESET;
+                                        WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+                                    }
                                     uhwDelayMS(10, unit);
                                     newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
                                     KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
