@@ -183,7 +183,10 @@ struct PCIController
 #define HCF_ABORT	0x0010	/* Aborted requests available	 */
 
 /* hc_Quirks */
-#define HCQ_EHCI_OVERLAY_CTRL_FILL     (1 << 0)
+#define HCQ_EHCI_OVERLAY_CTRL_FILL      (1 << 0)
+#define HCQ_EHCI_OVERLAY_INT_FILL       (1 << 1)
+#define HCQ_EHCI_OVERLAY_BULK_FILL      (1 << 2)
+
 
 /* The device node - private
 */

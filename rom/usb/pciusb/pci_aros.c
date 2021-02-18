@@ -46,14 +46,14 @@ static void handleQuirks(struct PCIController *hc)
 
     hc->hc_Quirks = 0;
     if (hc->hc_HCIType == HCITYPE_EHCI)
-        hc->hc_Quirks |= HCQ_EHCI_OVERLAY_CTRL_FILL;
+        hc->hc_Quirks |= (HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
 
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_VendorID, &vendorid);
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_ProductID, &productid);
     if (vendorid == 0x8086 && productid == 0x265C)
     {
         /* This is needed for EHCI to work in VirtualBox */
-        hc->hc_Quirks &= ~(HCQ_EHCI_OVERLAY_CTRL_FILL);
+        hc->hc_Quirks &= ~(HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
     }
 }
 

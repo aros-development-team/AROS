@@ -857,22 +857,25 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
         CONSTWRITEMEM32_LE(&predetd->etd_AltNextTD, EHCI_TERMINATE);
         predetd->etd_Succ = NULL;
 
-        // due to sillicon bugs, we fill in the first overlay ourselves.
-        etd = eqh->eqh_FirstTD;
-        eqh->eqh_CurrTD = etd->etd_Self;
-        eqh->eqh_NextTD = etd->etd_NextTD;
-        eqh->eqh_AltNextTD = etd->etd_AltNextTD;
-        eqh->eqh_CtrlStatus = etd->etd_CtrlStatus;
-        eqh->eqh_BufferPtr[0] = etd->etd_BufferPtr[0];
-        eqh->eqh_BufferPtr[1] = etd->etd_BufferPtr[1];
-        eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
-        eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
-        eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
-        eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
-        eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
-        eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
-        eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
-        eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+        if (hc->hc_Quirks & HCQ_EHCI_OVERLAY_INT_FILL)
+        {
+            // due to sillicon bugs, we fill in the first overlay ourselves.
+            etd = eqh->eqh_FirstTD;
+            eqh->eqh_CurrTD = etd->etd_Self;
+            eqh->eqh_NextTD = etd->etd_NextTD;
+            eqh->eqh_AltNextTD = etd->etd_AltNextTD;
+            eqh->eqh_CtrlStatus = etd->etd_CtrlStatus;
+            eqh->eqh_BufferPtr[0] = etd->etd_BufferPtr[0];
+            eqh->eqh_BufferPtr[1] = etd->etd_BufferPtr[1];
+            eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
+            eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
+            eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
+            eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
+            eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
+            eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
+            eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
+            eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+        }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -1043,22 +1046,25 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
         CONSTWRITEMEM32_LE(&predetd->etd_NextTD, EHCI_TERMINATE);
         CONSTWRITEMEM32_LE(&predetd->etd_AltNextTD, EHCI_TERMINATE);
 
-        // due to sillicon bugs, we fill in the first overlay ourselves.
-        etd = eqh->eqh_FirstTD;
-        eqh->eqh_CurrTD = etd->etd_Self;
-        eqh->eqh_NextTD = etd->etd_NextTD;
-        eqh->eqh_AltNextTD = etd->etd_AltNextTD;
-        eqh->eqh_CtrlStatus = etd->etd_CtrlStatus;
-        eqh->eqh_BufferPtr[0] = etd->etd_BufferPtr[0];
-        eqh->eqh_BufferPtr[1] = etd->etd_BufferPtr[1];
-        eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
-        eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
-        eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
-        eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
-        eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
-        eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
-        eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
-        eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+        if (hc->hc_Quirks & HCQ_EHCI_OVERLAY_BULK_FILL)
+        {
+            // due to sillicon bugs, we fill in the first overlay ourselves.
+            etd = eqh->eqh_FirstTD;
+            eqh->eqh_CurrTD = etd->etd_Self;
+            eqh->eqh_NextTD = etd->etd_NextTD;
+            eqh->eqh_AltNextTD = etd->etd_AltNextTD;
+            eqh->eqh_CtrlStatus = etd->etd_CtrlStatus;
+            eqh->eqh_BufferPtr[0] = etd->etd_BufferPtr[0];
+            eqh->eqh_BufferPtr[1] = etd->etd_BufferPtr[1];
+            eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
+            eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
+            eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
+            eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
+            eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
+            eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
+            eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
+            eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+        }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
