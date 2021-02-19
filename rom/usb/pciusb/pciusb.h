@@ -139,6 +139,8 @@ struct PCIController
     volatile BOOL	  hc_AsyncAdvanced;
     struct EhciQH	 *hc_EhciAsyncFreeQH;
     struct EhciTD	 *hc_ShortPktEndTD;
+    UWORD		  hc_EhciTimeoutShift;
+
 
     struct OhciED	 *hc_OhciCtrlHeadED;
     struct OhciED	 *hc_OhciCtrlTailED;
@@ -186,6 +188,7 @@ struct PCIController
 #define HCQ_EHCI_OVERLAY_CTRL_FILL      (1 << 0)
 #define HCQ_EHCI_OVERLAY_INT_FILL       (1 << 1)
 #define HCQ_EHCI_OVERLAY_BULK_FILL      (1 << 2)
+#define HCQ_EHCI_VBOX_FRAMEROOLOVER     (1 << 3)
 
 
 /* The device node - private

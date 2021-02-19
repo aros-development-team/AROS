@@ -54,6 +54,9 @@ static void handleQuirks(struct PCIController *hc)
     {
         /* This is needed for EHCI to work in VirtualBox */
         hc->hc_Quirks &= ~(HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
+        /* VirtualBox reports frame list size of 1024, but still issues interrupts at
+           speed of around 4 per second instead of ever 1024 ms */
+        hc->hc_Quirks |= HCQ_EHCI_VBOX_FRAMEROOLOVER;
     }
 }
 
