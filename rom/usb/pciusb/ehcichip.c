@@ -1524,7 +1524,8 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     (hccparams & EHCF_64BITS) ? "Yes" : "No",
                     (hccparams & EHCF_PROGFRAMELIST) ? "Yes" : "No",
                     (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No"));
-                    hc->hc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
+
+        hc->hc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
 
         /* FIXME HERE: Process EHCF_64BITS flag and implement 64-bit addressing */
 
