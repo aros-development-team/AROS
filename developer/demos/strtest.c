@@ -32,7 +32,7 @@ UWORD strborderdata[] = { 0,0, STRGADWIDTH + 3,0, STRGADWIDTH + 3,STRGADHEIGHT +
 struct Border strborder = { -2, -2, 1, 0, JAM1, 5, strborderdata, };
 
 struct StringInfo strinfo = {strbuf, undobuf, 0, STRBUFSIZE, };
-struct Gadget strgad = {NULL, 20, 20, STRGADWIDTH, STRGADHEIGHT, 
+struct Gadget strgad = {NULL, 20, 50, STRGADWIDTH, STRGADHEIGHT, 
 	GFLG_GADGHCOMP, GACT_RELVERIFY|GACT_STRINGLEFT, GTYP_STRGADGET,
 	&strborder, NULL, NULL, 0, &strinfo, 0, NULL, };
 

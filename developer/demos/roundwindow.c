@@ -232,6 +232,7 @@ static void action(void)
 
 int main(void)
 {
+    printf("Press ESC to exit\n");
     openlibs();
     getvisual();
     makewin();
