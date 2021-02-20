@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Test program for RealTime.library
@@ -25,8 +25,8 @@
 
 AROS_UFP3(ULONG, myFunc,
 	  AROS_UFPA(struct Hook *  , hook   , A0),
-	  AROS_UFPA(struct pmTime *, message, A1),
-	  AROS_UFPA(struct Player *, player , A2));
+	  AROS_UFPA(struct Player *, player , A2),
+	  AROS_UFPA(struct pmTime *, message, A1));
 
 
 int main(int argc, char* argv[])
@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
 
 AROS_UFH3(ULONG, myFunc,
 	  AROS_UFHA(struct Hook *  , hook   , A0),
-	  AROS_UFHA(struct pmTime *, message, A1),
-	  AROS_UFHA(struct Player *, player , A2))
+	  AROS_UFHA(struct Player *, player , A2),
+	  AROS_UFHA(struct pmTime *, message, A1))
 {
     AROS_USERFUNC_INIT
 
