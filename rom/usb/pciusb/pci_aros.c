@@ -39,6 +39,27 @@ struct Library *ACPICABase = NULL;
 #define HiddAttrBase (hd->hd_HiddAB)
 #define HiddPCIDeviceBase (hd->hd_HiddPCIDeviceMB)
 
+static void handleQuirks(struct PCIController *hc)
+{
+    struct PCIDevice *hd = hc->hc_Device;
+    IPTR vendorid, productid;
+
+    hc->hc_Quirks = 0;
+    if (hc->hc_HCIType == HCITYPE_EHCI)
+        hc->hc_Quirks |= (HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
+
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_VendorID, &vendorid);
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_ProductID, &productid);
+    if (vendorid == 0x8086 && productid == 0x265C)
+    {
+        /* This is needed for EHCI to work in VirtualBox */
+        hc->hc_Quirks &= ~(HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
+        /* VirtualBox reports frame list size of 1024, but still issues interrupts at
+           speed of around 4 per second instead of ever 1024 ms */
+        hc->hc_Quirks |= HCQ_EHCI_VBOX_FRAMEROOLOVER;
+    }
+}
+
 AROS_UFH3(void, pciEnumerator,
           AROS_UFHA(struct Hook *, hook, A0),
           AROS_UFHA(OOP_Object *, pciDevice, A2),
@@ -101,6 +122,8 @@ AROS_UFH3(void, pciEnumerator,
                 NewList(&hc->hc_PeriodicTDQueue);
                 NewList(&hc->hc_OhciRetireQueue);
                 AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
+
+                handleQuirks(hc);
             }
             break;
 
