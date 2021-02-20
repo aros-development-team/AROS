@@ -528,8 +528,11 @@ void ReadAndDisplay(char *filename,struct IFFHandle *iff)
    }
 
       /*This more properly centers the screen, for some reason */
+#ifndef __AROS__
+      /*Disabled for AROS because it crashes in Compositor HIDD*/
    MoveScreen(screen,1,1);
    MoveScreen(screen,-1,-1);
+#endif
 
       /*Set the window dimensions from the screen dimensions*/
    newWindow.Screen=screen;
