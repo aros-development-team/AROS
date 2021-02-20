@@ -116,9 +116,13 @@ if (IntuitionBase)
 	    */
 #ifdef __AROS__
 	    if ((win = OpenWindowTags(NULL,
+                WA_Width,	200,
+                WA_Height,	100,
 				WA_PubScreen,	 (IPTR)screen,
 				WA_RMBTrap,	 TRUE,
-				WA_IDCMP,	 IDCMP_RAWKEY,
+				WA_IDCMP,	 IDCMP_CLOSEWINDOW,
+                WA_CloseGadget,	TRUE,
+                WA_Activate,	TRUE,
 				TAG_END)))
 #else
 	    if (win = OpenWindowTags(NULL,
@@ -137,7 +141,11 @@ if (IntuitionBase)
 		myIText.NextText    = NULL;
 
 		/* Draw the text string at 10,10 */
+#ifdef __AROS__
+		PrintIText(win->RPort,&myIText,20,40);
+#else
 		PrintIText(win->RPort,&myIText,10,10);
+#endif
 
 #ifdef __AROS__
 		/* Wait for keypress */
