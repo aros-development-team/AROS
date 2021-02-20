@@ -104,7 +104,9 @@ if (IntuitionBase != NULL)
 			WA_Width,	200,
 			WA_Height,	100,
 			WA_RMBTrap,	TRUE,
-			WA_IDCMP,	IDCMP_RAWKEY,
+			WA_IDCMP,	IDCMP_CLOSEWINDOW,
+			WA_CloseGadget,	TRUE,
+			WA_Activate,	TRUE,
 			TAG_END)))
 #else
     if (NULL != (win = OpenWindowTags(NULL,
@@ -131,7 +133,7 @@ if (IntuitionBase != NULL)
 	DrawImage(win->RPort,&myImage,100,50);
 
 #ifdef __AROS__
-	/* Wait for a keypress */
+	/* Wait for click on close gadget */
 	Wait (1L << win->UserPort->mp_SigBit);
 #else
 	/* Wait a bit, then quit.
