@@ -61,7 +61,7 @@ static void Cleanup(char *msg)
     {
     	InstallLayerInfoHook(&scr->LayerInfo,old_layerinfohook);
 
-	tempwin = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
+	tempwin = OpenWindowTags(0,WA_CustomScreen,(IPTR)scr,
     				   WA_Left,0,
 				   WA_Top,0,
 				   WA_Width,scr->Width,
@@ -81,7 +81,7 @@ static void Cleanup(char *msg)
     }
 
     if (dri) FreeScreenDrawInfo(scr,dri);
-    UnlockPubScreen(0,scr);
+    CloseScreen(scr);
 
     if (LayersBase) CloseLibrary(LayersBase);
     if (GfxBase) CloseLibrary((struct Library *)GfxBase);
@@ -175,9 +175,15 @@ static void InitBackfillHook(void)
 
 static void GetVisual(void)
 {
-    if (!(scr = LockPubScreen(0)))
+    scr = OpenScreenTags(NULL,
+	SA_Width, 800,
+	SA_Height, 800,
+	SA_Depth, 2,
+	SA_LikeWorkbench, TRUE
+    );
+    if (!scr)
     {
-	Cleanup("Can't lock pub screen!");
+	Cleanup("Can't create screen screen!");
     }
 
     if (!(dri = GetScreenDrawInfo(scr)))
@@ -229,7 +235,7 @@ static void StartBackfillHook(void)
        size of the screen and close it immediately. Layers library will then
        automatically backfill in DeleteLayer().*/
       
-    tempwin = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
+    tempwin = OpenWindowTags(0,WA_CustomScreen,(IPTR)scr,
     			       WA_Left,0,
 			       WA_Top,0,
 			       WA_Width,scr->Width,
@@ -245,11 +251,11 @@ static void StartBackfillHook(void)
 
 static void MakeWin(void)
 {	
-    if (!(win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
+    if (!(win = OpenWindowTags(0,WA_CustomScreen,(IPTR)scr,
 				 WA_Left,10,
 				 WA_Top,10,
 				 WA_Width,200,
-				 WA_Height,dri->dri_Font->tf_YSize + scr->WBorTop + 1,
+				 WA_Height,50,
 				 WA_AutoAdjust,TRUE,
 				 WA_Title,(IPTR)"Screen Backfill Test",
 				 WA_SimpleRefresh,TRUE,
