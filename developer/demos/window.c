@@ -47,12 +47,14 @@ int x, y;
 		    for( x=0 ; x<50 ; x++ )
 		    {
 			MoveWindow(w1,1,0);
+			Delay(4);
 //			RefreshWindowFrame(w1);
 		    }
 		    for( y=0 ; y<50 ; y++ )
 		    {
 			MoveWindow(w1,0,1);
 //			RefreshWindowFrame(w1);
+			Delay(4);
 		    }
 
 		    printf( "ChangeWindowBox()...\n" );
@@ -60,6 +62,7 @@ int x, y;
 		    {
 			ChangeWindowBox(w1,150-x,150-x,100+x,100+x);
 			RefreshWindowFrame(w1);
+			Delay(4);
 		    }
 
 		    printf( "SizeWindow()...\n" );
@@ -67,9 +70,10 @@ int x, y;
 		    {
 			SizeWindow(w1,-1,-1);
 			RefreshWindowFrame(w1);
+			Delay(4);
 		    }
 
-		    printf( "Done!\nPress a key or click closegadget to quit.\n" );
+		    printf( "Done!\nClick closegadget to quit.\n" );
 
 		    Wait(1L<<w1->UserPort->mp_SigBit);
 		    msg = (struct IntuiMessage *)GetMsg(w1->UserPort);
@@ -100,7 +104,7 @@ struct Window *openwindow(LONG x, LONG y, LONG w, LONG h)
   R.MaxY = 100;
   
   window = OpenWindowTags(NULL,
-			  WA_IDCMP, IDCMP_RAWKEY|IDCMP_CLOSEWINDOW,
+			  WA_IDCMP, IDCMP_CLOSEWINDOW,
 			  WA_Left,	x,
 			  WA_Top,	y,
                           WA_Height, 	w,
