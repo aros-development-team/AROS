@@ -10,6 +10,7 @@ FILES := \
     drawinfoattr \
     gamma \
     monitorclass \
+    movescreen \
     pubscreen \
     screenclass \
     screentest \
