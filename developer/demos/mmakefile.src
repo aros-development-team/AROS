@@ -37,7 +37,6 @@ FILES	:= \
     multiple_timers \
     mxgads \
     notify \
-    palettedemo \
     readicon \
     regiontest \
     register \
