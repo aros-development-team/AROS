@@ -24,7 +24,6 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <devices/inputevent.h>
-#include <gadgets/aroscycle.h>
 #include <proto/alib.h>
 
 #include <gadgets/tapedeck.h>
