@@ -9,10 +9,6 @@
     Lang: english
 */
 
-#if defined(RT_ENABLE) && RT_ENABLE
-#include <aros/rt.h>
-#endif
-
 #include <aros/asmcall.h>
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
@@ -52,10 +48,8 @@ void DeleteStdIO (struct IOStdReq * ioreq);
 struct Task * CreateTask (STRPTR name, LONG pri, APTR initpc, ULONG stacksize);
 void DeleteTask (struct Task * task);
 void NewList (struct List *);
-#if !defined(ENABLE_RT) || !ENABLE_RT
 struct MsgPort * CreatePort (STRPTR name, LONG pri);
 void DeletePort (struct MsgPort * mp);
-#endif
 
 /* Extra */
 extern ULONG RangeSeed;

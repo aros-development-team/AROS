@@ -44,7 +44,6 @@ FILES	:= \
     realtdemo \
     roundshape \
     roundwindow \
-    rtdemo \
     rtezrequest \
     rtfont \
     rtlong \

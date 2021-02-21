@@ -8,10 +8,6 @@
 
 #include <aros/config.h>
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#   define ENABLE_RT 1
-#endif
-
 #include <stdio.h>
 #include <proto/exec.h>
 #include <exec/libraries.h>
@@ -29,8 +25,6 @@
 #include <libraries/gadtools.h>
 
 #include <proto/alib.h>
-
-#include <aros/rt.h>
 
 #define SDEBUG 1
 #define DEBUG 1
@@ -530,8 +524,6 @@ int main()
     	idtask->tc_UserData = NULL;
 #endif    	
 
-    RT_Init();
-
     if (openlibs() != FALSE) {
 	struct Gadget *gad;
 
@@ -554,8 +546,6 @@ int main()
 
 D(bug("closing libs\n"));
     closelibs();
-
-    RT_Exit();
 
     return (error);
 }

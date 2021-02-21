@@ -68,7 +68,6 @@
 //#include <aros/ppc/cpucontext.h>
 //#include <aros/ppc/fenv.h>
 #include <aros/purify.h>
-#include <aros/rt.h>
 #include <aros/shcommands_embedded.h>
 #include <aros/shcommands_notembedded.h>
 #include <aros/shcommands.h>

@@ -33,10 +33,6 @@ FILES	:= \
     readstruct \
     readword \
     removeslist \
-    rt \
-    rt_dos \
-    rt_exec \
-    rt_intuition \
     writebyte \
     writedouble \
     writefloat \

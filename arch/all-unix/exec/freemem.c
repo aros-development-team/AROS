@@ -10,7 +10,6 @@
 #include <aros/libcall.h>
 #include <aros/config.h>
 #include <aros/macros.h>
-#include <aros/rt.h>
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
 #include <proto/exec.h>
@@ -51,10 +50,6 @@ AROS_LH2(void, FreeMem,
     /* If there is no memory free nothing */
     if(!byteSize || !memoryBlock)
 	ReturnVoid ("FreeMem");
-
-#if ENABLE_RT
-    RT_Free(RTT_MEMORY, memoryBlock, byteSize);
-#endif
 
     /* In early boot mode we can't free any memory */
     if (!PrivExecBase(SysBase)->defaultPool)

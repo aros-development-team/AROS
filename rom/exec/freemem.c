@@ -11,7 +11,6 @@
 #include <aros/libcall.h>
 #include <aros/config.h>
 #include <aros/macros.h>
-#include <aros/rt.h>
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
 #include <proto/exec.h>
@@ -67,8 +66,6 @@
     /* If there is nothing to free do nothing. */
     if(!byteSize || !memoryBlock)
         ReturnVoid ("FreeMem");
-
-    RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
     memoryBlock = MungWall_Check(memoryBlock, byteSize, &tp, SysBase);
 

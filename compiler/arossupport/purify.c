@@ -14,7 +14,6 @@
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 #include <aros/purify.h>
-#include <aros/rt.h>
 
 struct PNode
 {

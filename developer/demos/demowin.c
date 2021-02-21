@@ -5,7 +5,6 @@
     Desc: A short demo for the features of Intuition and Graphics
     Lang: english
 */
-#define ENABLE_RT	1
 #define ENABLE_PURIFY	1
 
 #include <exec/memory.h>
@@ -27,7 +26,6 @@
 #include <graphics/gfxmacros.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <aros/rt.h>
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
@@ -526,8 +524,6 @@ int main (int argc, char ** argv)
     int cont, draw;
     int prop;
 
-    RT_Init ();
-
     printf ("Welcome to the window demo of AROS\n");
 
     GfxBase=(struct GfxBase *)OpenLibrary(GRAPHICSNAME,39);
@@ -982,8 +978,6 @@ end:
 
     if (ConsoleDevice)
 	CloseDevice ((struct IORequest *)&cioreq);
-
-    RT_Exit ();
 
     return 0;
 }
