@@ -22,11 +22,11 @@ struct Library	     	*CyberGfxBase;
 static struct Window 	*win;
 static struct Screen 	*scr;
 static struct DrawInfo  *dri;
-static struct Gadget	*gad;
-static WORD 	    	winwidth, winheight;
+static struct Gadget	*gad[20];
 
 static void cleanup(char *msg)
 {
+    int i;
     if (msg) printf("coolbutton: %s\n", msg);
     
     if (win)
@@ -35,12 +35,18 @@ static void cleanup(char *msg)
 	   You *must* do this, if you want to kill (DisposeObject) a
 	   gadget, when the window is supposed to stay open, or when
 	   the window is killed after the gadget is killed. */
-	   
-    	if (gad) RemoveGadget(win, gad);
+	
+	for (i = 0; i < 20; i++)
+	{
+	    if (gad[i]) RemoveGadget(win, gad[i]);
+	}
 	CloseWindow(win);
     }
     
-    if (gad) DisposeObject((Object *)gad);
+    for (i = 0; i < 20; i++)
+    {
+	if (gad[i]) DisposeObject((Object *)gad[i]);
+    }
     
     CleanupCoolButtonClass();
     
@@ -82,25 +88,16 @@ static void getvisual(void)
     if (!dri) cleanup("Can't get screen drawinfo!");
 }
 
-static void makegadget(void)
+static void makegadget(int i, const struct CoolImage  *image, CONST_STRPTR buttontext)
 {
-    struct RastPort 	    temprp;
-    const struct CoolImage  *image = &cool_switchimage; 
-    char    	    	    *buttontext = "Hello world";
     WORD    	    	    x, y, w, h, ih;
     
     /* Calc. the size of the button. The coolbuttonclass for now always
        uses the screen font */
-       
-    InitRastPort(&temprp);
-    SetFont(&temprp, dri->dri_Font); /* dri_Font is screen font */
 
     /* gadget width */
     
-    w = TextLength(&temprp, buttontext, strlen(buttontext));
-    w += image->width;
-    /* add some extra width */
-    w += 20;
+    w = 110;
     
     /* gadget height */
     
@@ -118,16 +115,19 @@ static void makegadget(void)
     	/* Image is higher than font. Add some smaller extra height */
     	h = ih + 4; 
     }
-
-    /* Calc. inner window size */
-    
-    winwidth  = w + 8;
-    winheight = h + 8;
-    
+   
     /* Calc. gadget pos */
     
-    x = scr->WBorLeft + 4;
-    y = scr->WBorTop + scr->Font->ta_YSize + 1 + 4; /* scr->Font is the TextAttr of Screen font. I could also use dri->dri_Font->tf_YSize  */
+    if (i < 10)
+    {
+	x = 30;
+	y = 28 + (scr->Font->ta_YSize + 10) * i;
+    }
+    else
+    {
+	x = 50 + w;
+	y = 28 + (scr->Font->ta_YSize + 10) * (i - 10);
+    }
 
     /* Create gadget.
     
@@ -135,32 +135,27 @@ static void makegadget(void)
        GA_RelVerify -> want IDCMP_GADGETUP msgs
     */
        
-    gad = (struct Gadget *)NewObject(cool_buttonclass, NULL, GA_Left	     , x    	    	,
+    gad[i] = (struct Gadget *)NewObject(cool_buttonclass, NULL, GA_Left	     , x    	    	,
     	    	    	    	    	    	    	     GA_Top 	     , y    	    	,
 							     GA_Width	     , w    	    	,
 							     GA_Height	     , h    	    	,
-    	    	    	    	    	    	    	     GA_Text	     , (IPTR)buttontext ,
+							     GA_Text         , (IPTR)buttontext ,
 							     GA_Immediate    , TRUE 	    	,
 							     GA_RelVerify    , TRUE 	    	,
-    	    	    	    	    	    	    	     COOLBT_CoolImage, (IPTR)image  	,
+							     COOLBT_CoolImage, (IPTR)image      ,
 							     TAG_DONE);
 
-    if (!gad) cleanup("Can't create gadget!");
+    if (!gad[i]) cleanup("Can't create gadget!");
 }
 
 static void makewin(void)
 {
-    /* Make window. Gadget is directly specified with WA_Gadgets. If
-       we wanted to add the gadget after the window is created:
-       
-       AddGadget(win, gad, -1);
-       RefreshGList(gad, win, NULL, 1);
-    */
+    int i;
     
     win = OpenWindowTags(NULL, WA_PubScreen 	, (IPTR)scr 	    	,
-    	    	    	       WA_Title     	, (IPTR)"Cool Button"     	,
-			       WA_InnerWidth	, winwidth  	    	,
-			       WA_InnerHeight	, winheight 	    	,
+    	    	    	       WA_Title     	, (IPTR)"Cool Button"  	,
+			       WA_InnerWidth	, 300	  	    	,
+			       WA_InnerHeight	, 250 	    		,
 			       WA_CloseGadget	, TRUE	    	    	,
 			       WA_DragBar   	, TRUE	    	    	,
 			       WA_DepthGadget	, TRUE	    	    	,
@@ -168,10 +163,18 @@ static void makewin(void)
 			       WA_IDCMP     	, IDCMP_CLOSEWINDOW |
 			            	     	  IDCMP_GADGETUP    |
 					      	  IDCMP_GADGETDOWN	,
-			       WA_Gadgets   	, (IPTR)gad 	    	,
 			       TAG_DONE);
     
     if (!win) cleanup("Error creating window!");    
+    
+    for (i = 0; i < 20; i++)
+    {
+	if (gad[i])
+	{
+	    AddGadget(win, gad[i], -1);
+	    RefreshGList(gad[i], win, NULL, 1);
+	}
+    }
 }
 
 
@@ -219,7 +222,26 @@ int main(void)
 	cleanup("Can't init cool button class!");
     }
 
-    makegadget();
+    makegadget(0, &cool_saveimage, "saveimage");
+    makegadget(1, &cool_loadimage, "loadimage");
+    makegadget(2, &cool_useimage, "useimage");
+    makegadget(3, &cool_cancelimage, "cancelimage");
+    makegadget(4, &cool_dotimage, "dotimage");
+    makegadget(5, &cool_dotimage2, "dotimage2");
+    makegadget(6, &cool_warnimage, "warnimage");
+    makegadget(7, &cool_diskimage, "diskimage");
+    makegadget(8, &cool_switchimage, "switchimage");
+    makegadget(9, &cool_monitorimage, "monitorimage");
+    makegadget(10, &cool_mouseimage, "mouseimage");
+    makegadget(11, &cool_infoimage, "infoimage");
+    makegadget(12, &cool_askimage, "askimage");
+    makegadget(13, &cool_keyimage, "keyimage");
+    makegadget(14, &cool_clockimage, "clockimage");
+    makegadget(15, &cool_flagimage, "flagimage");
+    makegadget(16, &cool_headimage, "headimage");
+    makegadget(17, &cool_windowimage, "windowimage");
+    makegadget(18, &cool_kbdimage, "kbdimage");
+
     makewin();
     handleall();
     cleanup(NULL);
