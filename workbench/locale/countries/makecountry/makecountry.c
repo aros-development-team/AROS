@@ -81,8 +81,7 @@ extern struct IntCountryPrefs
     ukrainePrefs,
     united_kingdomPrefs,
     united_statesPrefs,
-    vatican_cityPrefs,
-    yugoslaviaPrefs;
+    vatican_cityPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1.
    Character set of this file is also Latin 1 */
@@ -148,7 +147,6 @@ struct CountryEntry CountryArray[] =
     { "united_kingdom"	, &united_kingdomPrefs	},
     { "united_states"	, &united_statesPrefs	},
     { "vatican_city"	, &vatican_cityPrefs	},
-    { "yugoslavia"	, &yugoslaviaPrefs	},
     { NULL		, NULL			}
 };
 
