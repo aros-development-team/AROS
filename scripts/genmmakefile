@@ -6,7 +6,7 @@
 import sys, glob, datetime
 
 if len(sys.argv) != 2:
-    print("Usage: genmfs <project name>")
+    print("Usage: genmmakefile <project name>")
     sys.exit(1)
 
 target = sys.argv[1]
