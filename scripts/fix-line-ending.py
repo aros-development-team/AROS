@@ -4,13 +4,13 @@
 # Script for fixing line ending from \r and \r\n to \n.
 # Script starts with the current directory.
 
-import re, os, sys
+import os, sys
 
 def examine(filename):
     infile = open(filename, "rb")
     content = infile.read()
     infile.close()
-    
+
     newcontent = content.replace(b"\r\n", b"\n") # Windows
     newcontent = newcontent.replace(b"\r", b"\n") # Mac
     if content != newcontent:
