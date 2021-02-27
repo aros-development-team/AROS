@@ -50,11 +50,13 @@ def copy_tree(src, dst, ignore):
         dstname = os.path.join(dst, name)
 
         if os.path.isdir(srcname):
-            if name not in ("CVS", ".svn"):
+            if name not in ("CVS", ".svn") and not name.startswith(".git"):
                 # print "Copying dir %s to %s" % (srcname, dstname)
                 copy_tree(srcname, dstname, ignore)
         else:
-            if (name not in (".cvsignore", "mmakefile.src", "mmakefile")) and not in_ignore_list(srcname, ignore):
+            if (name not in (".cvsignore", "mmakefile.src", "mmakefile")) \
+                    and not name.startswith(".git") \
+                    and not in_ignore_list(srcname, ignore):
                 if not os.path.exists(dstname) or (os.path.getctime(srcname) > os.path.getctime(dstname)):
                     # print "Copying file %s to %s" % (srcname, dstname)
                     shutil.copy(srcname, dstname)
