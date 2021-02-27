@@ -12,6 +12,7 @@ FILES := \
     monitorclass \
     movescreen \
     pubscreen \
+    smallscreen \
     screenclass \
     screentest \
     scrollerwin 
