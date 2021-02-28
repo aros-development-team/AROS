@@ -1413,7 +1413,7 @@ IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
    INSTDATA;
    struct DTSpecialInfo *si= CAST_GAD(obj)->SpecialInfo;
    ULONG lines = 0;
-   struct IBox *domain;
+   struct IBox *domain = NULL;
    struct List *list;
 
    ObtainSemaphore(&si->si_Lock);
@@ -1683,7 +1683,7 @@ SDISPATCHER(nodeclass_dispatcher)
    case GM_RENDER:
      {
        INSTDATA;
-       struct IBox *domain;
+       struct IBox *domain = NULL;
        if (   data->n_Flags.ClearArea
            && GetDTAttrs(obj,
                          DTA_Domain, (IPTR) &domain,

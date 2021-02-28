@@ -202,7 +202,7 @@ static Object *LoadDTPicture(CONST_STRPTR filename, struct Screen *scr, BOOL dtD
 
     if (o)
     {
-        struct BitMapHeader *bmhd;
+        struct BitMapHeader *bmhd = NULL;
         struct FrameInfo fri = { 0 };
 
         GetDTAttrs(o, PDTA_BitMapHeader, (IPTR) & bmhd, TAG_DONE);
@@ -773,7 +773,7 @@ struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
             {
                 if ((node->o = LoadDTPicture(filename, scr, TRUE, TRUE)))
                 {
-                    struct BitMapHeader *bmhd;
+                    struct BitMapHeader *bmhd = NULL;
                     GetDTAttrs(node->o, PDTA_BitMapHeader, (IPTR) & bmhd,
                         TAG_DONE);
                     D(bug("[Zune:DTC] %s: picture @ 0x%p\n", __func__, node->o));
@@ -1113,7 +1113,7 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp,
     int x1, int y1, int x2, int y2, int xoffset, int yoffset)
 {
     struct Screen *scr = node->scr;
-    struct BitMap *bitmap;
+    struct BitMap *bitmap = NULL;
     Object *o;
 
     o = node->o;
