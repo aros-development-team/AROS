@@ -36,8 +36,8 @@ USER_CPPFLAGS :=
 
 #MM {target} : includes linklibs
 
-%build_prog mmake={target}
-    progname=$(EXE) targetdir=$(EXEDIR)
+%build_prog mmake={target} \\
+    progname=$(EXE) targetdir=$(EXEDIR) \\
     files=$(FILES) uselibs=\"\"
 
 %common
