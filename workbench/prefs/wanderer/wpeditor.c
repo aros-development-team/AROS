@@ -1121,7 +1121,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                 End;
 
     _WP_Navigation_InnerHGrp1 = (Object *)HGroup,
-                    MUIA_Group_Columns, 3,
+                    MUIA_Group_Columns, 2,
                     MUIA_Group_SameSize, TRUE,
                     Child, (IPTR) Label1(_(MSG_METHOD)),
                 End;
@@ -1255,10 +1255,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 /*Add navigation Objects to Navigation page*/
 
     DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,_WP_Navigation_TypeObj);
-    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
     DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER, Label1(_(MSG_ICONDROPMODE)));
     DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,_WP_Navigation_IconDropModeObj);
-    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
 
 #if defined(DEBUG_NETWORKBROWSER)
     _WP_NetworkBrowser_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
