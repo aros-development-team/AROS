@@ -184,7 +184,7 @@ static void tap_send(struct tap_base *TAPBase, struct tap_unit *unit)
     struct tap_tracker *tracker, *tracker_next;
 
     if (!unit->write_queue->mp_MsgList.lh_Head->ln_Succ)
-	return;
+        return;
 
     /* grab the first pending request */
     req = (struct IOSana2Req *) unit->write_queue->mp_MsgList.lh_Head;
@@ -235,7 +235,7 @@ static void tap_send(struct tap_base *TAPBase, struct tap_unit *unit)
         D(bug("[tap] [io:%d] packet type: 0x%04x\n", unit->num, AROS_BE2WORD(eth->h_proto)));
 
         /* got a viable buffer, send it out */
-	nwritten = Hidd_UnixIO_WriteFile(TAPBase->unixio, unit->fd, buf, packet_length, &ioerr);
+        nwritten = Hidd_UnixIO_WriteFile(TAPBase->unixio, unit->fd, buf, packet_length, &ioerr);
         if (nwritten < 0) {
             D(bug("[tap] [io:%d] write failed (%d)\n", unit->num, ioerr));
             req->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -324,32 +324,32 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 
     while (1)
     {
-	int events;
+        int events;
 
-	do
-	{
-	    events = Hidd_UnixIO_Poll(TAPBase->unixio, unit->fd, vHidd_UnixIO_Read | write_flag, NULL);
+        do
+        {
+            events = Hidd_UnixIO_Poll(TAPBase->unixio, unit->fd, vHidd_UnixIO_Read | write_flag, NULL);
 
-	    if (events == -1)
-		continue;
+            if (events == -1)
+                continue;
 
-	    if (events & vHidd_UnixIO_Read)
-	    {
-		D(bug("[tap] [io:%d] ready for read\n", unit->num));
-		tap_receive(TAPBase, unit);
-	    }
-
-	    if (events & vHidd_UnixIO_Write)
-	    {
-        	D(bug("[tap] [io:%d] ready for write\n", unit->num));
-        	tap_send(TAPBase, unit);
-
-        	if (IsMsgPortEmpty(unit->write_queue)) {
-		    D(bug("[tap] [io:%d] all packets sent, will ignore future write events\n", unit->num));
-		    write_flag = 0;
-		}
+            if (events & vHidd_UnixIO_Read)
+            {
+                D(bug("[tap] [io:%d] ready for read\n", unit->num));
+                tap_receive(TAPBase, unit);
             }
-	} while (events);
+
+            if (events & vHidd_UnixIO_Write)
+            {
+                D(bug("[tap] [io:%d] ready for write\n", unit->num));
+                tap_send(TAPBase, unit);
+
+                if (IsMsgPortEmpty(unit->write_queue)) {
+                    D(bug("[tap] [io:%d] all packets sent, will ignore future write events\n", unit->num));
+                    write_flag = 0;
+                }
+            }
+        } while (events);
 
         D(bug("[tap] [io:%d] waiting for an event\n", unit->num));
 
@@ -357,8 +357,8 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 
         D(bug("[tap] [io:%d] iotask signaled\n", unit->num));
         if (signaled & write_signal_mask)
-	{
-	    D(bug("[tap] [io:%d] write requested, enabling\n", unit->num));
+        {
+            D(bug("[tap] [io:%d] write requested, enabling\n", unit->num));
             write_flag = vHidd_UnixIO_Write;
         }
 

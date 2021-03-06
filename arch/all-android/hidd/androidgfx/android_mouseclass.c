@@ -26,45 +26,45 @@ OOP_Object *AMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
      * will try to instantiate us.
      */
     if (XSD(cl)->mousehidd)
-    	return NULL;
+        return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
     D(bug("[AMouse] Object created by superclass: 0x%p\n", o));
 
     if (o)
     {
-	struct mouse_data *data = OOP_INST_DATA(cl, o);
-	struct TagItem *tstate = msg->attrList;
-	struct TagItem *tag;
+        struct mouse_data *data = OOP_INST_DATA(cl, o);
+        struct TagItem *tstate = msg->attrList;
+        struct TagItem *tag;
 
-	while ((tag = NextTagItem(&tstate)))
-	{
-	    ULONG idx;
+        while ((tag = NextTagItem(&tstate)))
+        {
+            ULONG idx;
 
-	    if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
-	    {
-		switch (idx)
-		{
-		case aoHidd_Mouse_IrqHandler:
-		    D(bug("[AMouse] Callback address 0x%p\n", tag->ti_Data));
-		    data->mouse_callback = (VOID (*)())tag->ti_Data;
-		    break;
+            if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
+            {
+                switch (idx)
+                {
+                case aoHidd_Mouse_IrqHandler:
+                    D(bug("[AMouse] Callback address 0x%p\n", tag->ti_Data));
+                    data->mouse_callback = (VOID (*)())tag->ti_Data;
+                    break;
 
-		case aoHidd_Mouse_IrqHandlerData:
-		    D(bug("[AMouse] Callback data 0x%p\n", tag->ti_Data));
-		    data->callbackdata = (APTR)tag->ti_Data;
-		    break;
-		}
-	    }
-	} /* while (tags to process) */
-	
-	/*
-	 * Install the mouse hidd.
-	 * Our class is final, it's not meant to be subclassed. Additionally, we
-	 * report mouse events from within an interrupt, and omitting oop.library calls
-	 * speeds things up.
-	 */
-	XSD(cl)->mousehidd = data;
+                case aoHidd_Mouse_IrqHandlerData:
+                    D(bug("[AMouse] Callback data 0x%p\n", tag->ti_Data));
+                    data->callbackdata = (APTR)tag->ti_Data;
+                    break;
+                }
+            }
+        } /* while (tags to process) */
+        
+        /*
+         * Install the mouse hidd.
+         * Our class is final, it's not meant to be subclassed. Additionally, we
+         * report mouse events from within an interrupt, and omitting oop.library calls
+         * speeds things up.
+         */
+        XSD(cl)->mousehidd = data;
     }
 
     return o;
@@ -88,27 +88,27 @@ VOID AMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
     {
-	switch (idx)
-	{
-	    case aoHidd_Mouse_IrqHandler:
-		*msg->storage = (IPTR)data->mouse_callback;
-		return;
+        switch (idx)
+        {
+            case aoHidd_Mouse_IrqHandler:
+                *msg->storage = (IPTR)data->mouse_callback;
+                return;
 
-	    case aoHidd_Mouse_IrqHandlerData:
-		*msg->storage = (IPTR)data->callbackdata;
-		return;
+            case aoHidd_Mouse_IrqHandlerData:
+                *msg->storage = (IPTR)data->callbackdata;
+                return;
 
-/*	    case aoHidd_Mouse_State:
+/*          case aoHidd_Mouse_State:
 
-		TODO: Implement this
+                TODO: Implement this
 
-		return;*/
+                return;*/
 
-	    /* We can report both absolute and relative coordinates */
-    	    case aoHidd_Mouse_Extended:
-	    	*msg->storage = TRUE;
-	    	return;
-	}
+            /* We can report both absolute and relative coordinates */
+            case aoHidd_Mouse_Extended:
+                *msg->storage = TRUE;
+                return;
+        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -125,27 +125,27 @@ void AMouse_ReportEvent(struct mouse_data *data, struct PointerEvent *pkt)
     switch (pkt->action)
     {
     case AMOTION_EVENT_ACTION_DOWN:
-    	e.button = vHidd_Mouse_Button1;
-    	e.type	 = vHidd_Mouse_Press;
-    	break;
-    	
+        e.button = vHidd_Mouse_Button1;
+        e.type   = vHidd_Mouse_Press;
+        break;
+        
     case AMOTION_EVENT_ACTION_UP:
-    	e.button = vHidd_Mouse_Button1;
-    	e.type	 = vHidd_Mouse_Release;
-    	break;
-    	
+        e.button = vHidd_Mouse_Button1;
+        e.type   = vHidd_Mouse_Release;
+        break;
+        
     case AMOTION_EVENT_ACTION_MOVE:
-    	e.button = vHidd_Mouse_NoButton;
-    	e.type	 = vHidd_Mouse_Motion;
-    	break;
+        e.button = vHidd_Mouse_NoButton;
+        e.type   = vHidd_Mouse_Motion;
+        break;
 
     default:
-    	/* Ignore something we don't know about */
-    	return;
+        /* Ignore something we don't know about */
+        return;
     }
 
-    e.x	    = pkt->x;
-    e.y	    = pkt->y;
+    e.x     = pkt->x;
+    e.y     = pkt->y;
     e.flags = vHidd_Mouse_Relative;
 
     data->mouse_callback(data->callbackdata, &e);
@@ -173,8 +173,8 @@ void AMouse_ReportTouch(struct mouse_data *data, struct PointerEvent *pkt)
 
     e.button = vHidd_Mouse_NoButton;
     e.type   = vHidd_Mouse_Motion;
-    e.x	     = pkt->x;
-    e.y	     = pkt->y;
+    e.x      = pkt->x;
+    e.y      = pkt->y;
     e.flags  = 0;
 
     data->mouse_callback(data->callbackdata, &e);
@@ -182,18 +182,18 @@ void AMouse_ReportTouch(struct mouse_data *data, struct PointerEvent *pkt)
     switch (pkt->action)
     {
     case AMOTION_EVENT_ACTION_DOWN:
-    	e.button = vHidd_Mouse_Button1;
-    	e.type	 = vHidd_Mouse_Press;
-    	break;
-    	
+        e.button = vHidd_Mouse_Button1;
+        e.type   = vHidd_Mouse_Press;
+        break;
+        
     case AMOTION_EVENT_ACTION_UP:
-    	e.button = vHidd_Mouse_Button1;
-    	e.type	 = vHidd_Mouse_Release;
-    	break;
+        e.button = vHidd_Mouse_Button1;
+        e.type   = vHidd_Mouse_Release;
+        break;
 
     default:
-    	/* Ignore something we don't know about */
-    	return;
+        /* Ignore something we don't know about */
+        return;
     }
 
     /* Report the second action */
@@ -208,7 +208,7 @@ void AMouse_ReportButton(struct mouse_data *data, UWORD button, UWORD action)
 
     e.button = button;
     e.type   = action;
-    e.x      = 0;	/* Relative motion of (0, 0) = no motion */
+    e.x      = 0;       /* Relative motion of (0, 0) = no motion */
     e.y      = 0;
     e.flags  = vHidd_Mouse_Relative;
 

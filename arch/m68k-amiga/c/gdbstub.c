@@ -9,22 +9,22 @@
  *  vvvvvvv The below are the original comments from m68k-gdbstub.c vvvvvvv
  */
 /****************************************************************************
- *  Header: remcom.c,v 1.34 91/03/09 12:29:49 glenne Exp $                   
+ *  Header: remcom.c,v 1.34 91/03/09 12:29:49 glenne Exp $
  *
- *  Module name: remcom.c $  
+ *  Module name: remcom.c $
  *  Revision: 1.34 $
  *  Date: 91/03/09 12:29:49 $
  *  Contributor:     Lake Stevens Instrument Division$
- *  
+ *
  *  Description:     low level support for gdb debugger. $
  *
  *  Considerations:  only works on target hardware $
  *
  *  Written by:      Glenn Engel $
- *  ModuleState:     Experimental $ 
+ *  ModuleState:     Experimental $
  *
  *  NOTES:           See Below $
- * 
+ *
  *  To enable debugger support, two things need to happen.  One, a
  *  call to set_debug_traps() is necessary in order to allow any breakpoints
  *  or error conditions to be properly intercepted and reported to gdb.
@@ -35,15 +35,15 @@
  *  there either should be a standard breakpoint instruction, or the protocol
  *  should be extended to provide some means to communicate which breakpoint
  *  instruction is in use (or have the stub insert the breakpoint).
- *  
+ *
  *  Some explanation is probably necessary to explain how exceptions are
  *  handled.  When an exception is encountered the 68000 pushes the current
  *  program counter and status register onto the supervisor stack and then
  *  transfers execution to a location specified in it's vector table.
  *  The handlers for the exception vectors are hardwired to jmp to an address
- *  given by the relation:  (exception - 256) * 6.  These are decending 
+ *  given by the relation:  (exception - 256) * 6.  These are decending
  *  addresses starting from -6, -12, -18, ...  By allowing 6 bytes for
- *  each entry, a jsr, jmp, bsr, ... can be used to enter the exception 
+ *  each entry, a jsr, jmp, bsr, ... can be used to enter the exception
  *  handler.  Using a jsr to handle an exception has an added benefit of
  *  allowing a single handler to service several exceptions and use the
  *  return address as the key differentiation.  The vector number can be
@@ -55,50 +55,50 @@
  *  For 68020 machines, the ability to have a return address around just
  *  so the vector can be determined is not necessary because the '020 pushes an
  *  extra word onto the stack containing the vector offset
- * 
+ *
  *  Because gdb will sometimes write to the stack area to execute function
  *  calls, this program cannot rely on using the supervisor stack so it
- *  uses it's own stack area reserved in the int array remcomStack.  
- * 
+ *  uses it's own stack area reserved in the int array remcomStack.
+ *
  *************
  *
  *    The following gdb commands are supported:
- * 
+ *
  * command          function                               Return value
- * 
+ *
  *    g             return the value of the CPU registers  hex data or ENN
  *    G             set the value of the CPU registers     OK or ENN
- * 
+ *
  *    mAA..AA,LLLL  Read LLLL bytes at address AA..AA      hex data or ENN
  *    MAA..AA,LLLL: Write LLLL bytes at address AA.AA      OK or ENN
- * 
+ *
  *    c             Resume at current address              SNN   ( signal NN)
  *    cAA..AA       Continue at address AA..AA             SNN
- * 
+ *
  *    s             Step one instruction                   SNN
  *    sAA..AA       Step one instruction from AA..AA       SNN
- * 
+ *
  *    k             kill
  *
  *    ?             What was the last sigval ?             SNN   (signal NN)
- * 
- * All commands and responses are sent with a packet which includes a 
- * checksum.  A packet consists of 
- * 
+ *
+ * All commands and responses are sent with a packet which includes a
+ * checksum.  A packet consists of
+ *
  * $<packet info>#<checksum>.
- * 
+ *
  * where
  * <packet info> :: <characters representing the command or response>
  * <checksum>    :: < two hex digits computed as modulo 256 sum of <packetinfo>>
- * 
+ *
  * When a packet is received, it is first acknowledged with either '+' or '-'.
  * '+' indicates a successful transfer.  '-' indicates a failed transfer.
- * 
+ *
  * Example:
- * 
+ *
  * Host:                  Reply:
  * $m0,10#2a               +$00010203040506070809101112131415#42
- * 
+ *
  ****************************************************************************/
 
 #include <stdio.h>
@@ -109,7 +109,7 @@
 
 /************************************************************************
  *
- * external low-level support routines 
+ * external low-level support routines
  */
 typedef void (*ExceptionHook)(int);   /* pointer to function with int parm */
 typedef void (*Function)();           /* pointer to a function */
@@ -131,15 +131,15 @@ void exceptionHandler(int n, ExceptionHook a);  /* assign an exception handler *
 static char initialized;  /* boolean flag. != 0 means we've been initialized */
 
 int     remote_debug;
-/*  debug >  0 prints ill-formed commands in valid packets & checksum errors */ 
+/*  debug >  0 prints ill-formed commands in valid packets & checksum errors */
 
 static const char hexchars[]="0123456789abcdef";
 
 /* there are 180 bytes of registers on a 68020 w/68881      */
 /* many of the fpa registers are 12 byte (96 bit) registers */
 #define NUMREGBYTES 180
-enum regnames {D0,D1,D2,D3,D4,D5,D6,D7, 
-               A0,A1,A2,A3,A4,A5,A6,A7, 
+enum regnames {D0,D1,D2,D3,D4,D5,D6,D7,
+               A0,A1,A2,A3,A4,A5,A6,A7,
                PS,PC,
                FP0,FP1,FP2,FP3,FP4,FP5,FP6,FP7,
                FPCONTROL,FPSTATUS,FPIADDR
@@ -170,7 +170,7 @@ const short exceptionSize[] = { 4,4,6,4,4,4,4,4,4,4,4,4,16,4,4,4 };
 jmp_buf remcomEnv;
 
 /***************************  ASSEMBLY CODE MACROS *************************/
-/* 									   */
+/*                                                                         */
 
 #define BREAKPOINT() asm("   trap #1");
 
@@ -196,7 +196,7 @@ char * buffer;
   
   do {
     /* wait around for the start character, ignore all other characters */
-    while ((ch = (DebugGetChar() & 0x7f)) != '$'); 
+    while ((ch = (DebugGetChar() & 0x7f)) != '$');
     checksum = 0;
     xmitcsum = -1;
     
@@ -218,28 +218,28 @@ char * buffer;
 #ifdef HAVE_STDIO
       if ((remote_debug ) && (checksum != xmitcsum)) {
         fprintf (stderr,"bad checksum.  My count = 0x%x, sent=0x%x. buf=%s\n",
-						     checksum,xmitcsum,buffer);
+                                                     checksum,xmitcsum,buffer);
       }
 #endif
       
-      if (checksum != xmitcsum) DebugPutChar('-');  /* failed checksum */ 
+      if (checksum != xmitcsum) DebugPutChar('-');  /* failed checksum */
       else {
-	 DebugPutChar('+');  /* successful transfer */
-	 /* if a sequence char is present, reply the sequence ID */
-	 if (buffer[2] == ':') {
-	    DebugPutChar( buffer[0] );
-	    DebugPutChar( buffer[1] );
-	    /* remove sequence chars from buffer */
-	    count = strlen(buffer);
-	    for (i=3; i <= count; i++) buffer[i-3] = buffer[i];
-	 } 
-      } 
-    } 
+         DebugPutChar('+');  /* successful transfer */
+         /* if a sequence char is present, reply the sequence ID */
+         if (buffer[2] == ':') {
+            DebugPutChar( buffer[0] );
+            DebugPutChar( buffer[1] );
+            /* remove sequence chars from buffer */
+            count = strlen(buffer);
+            for (i=3; i <= count; i++) buffer[i-3] = buffer[i];
+         }
+      }
+    }
   } while (checksum != xmitcsum);
   
 }
 
-/* send the packet in buffer.  The host get's one chance to read it.  
+/* send the packet in buffer.  The host get's one chance to read it.
    This routine does not wait for a positive acknowledge.  */
 
 
@@ -298,7 +298,7 @@ int   count;
           *buf++ = hexchars[ch >> 4];
           *buf++ = hexchars[ch % 16];
       }
-      *buf = 0; 
+      *buf = 0;
       return(buf);
 }
 
@@ -327,7 +327,7 @@ void handle_buserror()
   longjmp(remcomEnv,1);
 }
 
-/* this function takes the 68000 exception number and attempts to 
+/* this function takes the 68000 exception number and attempts to
    translate this number into a unix compatible signal value */
 int computeSignal( exceptionVector )
 int exceptionVector;
@@ -346,7 +346,7 @@ int exceptionVector;
     case 11: sigval = 4;  break; /* line 1111 emulator  */
 
       /* Coprocessor protocol violation.  Using a standard MMU or FPU
-	 this cannot be triggered by software.  Call it a SIGBUS.  */
+         this cannot be triggered by software.  Call it a SIGBUS.  */
     case 13: sigval = 10;  break;
 
     case 31: sigval = 2;  break; /* interrupt           */
@@ -360,7 +360,7 @@ int exceptionVector;
     case 52: sigval = 8;  break; /* operand error       */
     case 53: sigval = 8;  break; /* overflow            */
     case 54: sigval = 8;  break; /* NAN                 */
-    default: 
+    default:
       sigval = 7;         /* "software generated"*/
   }
   return (sigval);
@@ -408,10 +408,10 @@ void handle_exception(int exceptionVector)
       registers[ PC ] -= 2;
 
 #ifdef HAVE_STDIO
-  if (remote_debug) printf("vector=%d, sr=0x%x, pc=0x%x\n", 
-			    exceptionVector,
-			    registers[ PS ], 
-			    registers[ PC ]);
+  if (remote_debug) printf("vector=%d, sr=0x%x, pc=0x%x\n",
+                            exceptionVector,
+                            registers[ PS ],
+                            registers[ PC ]);
 #endif
   /* reply to host that an exception has occurred */
   sigval = computeSignal( exceptionVector );
@@ -420,9 +420,9 @@ void handle_exception(int exceptionVector)
   remcomOutBuffer[2] =  hexchars[sigval % 16];
   remcomOutBuffer[3] = 0;
 
-  putpacket(remcomOutBuffer); 
+  putpacket(remcomOutBuffer);
 
-  while (1==1) { 
+  while (1==1) {
     error = 0;
     remcomOutBuffer[0] = 0;
     getpacket(remcomInBuffer);
@@ -431,9 +431,9 @@ void handle_exception(int exceptionVector)
                    remcomOutBuffer[1] =  hexchars[sigval >> 4];
                    remcomOutBuffer[2] =  hexchars[sigval % 16];
                    remcomOutBuffer[3] = 0;
-                 break; 
+                 break;
       case 'd' : remote_debug = !(remote_debug);  /* toggle debug flag */
-                 break; 
+                 break;
       case 'g' : /* return the value of the CPU registers */
                 mem2hex((char*) registers, remcomOutBuffer, NUMREGBYTES);
                 break;
@@ -443,16 +443,16 @@ void handle_exception(int exceptionVector)
                 break;
       
       /* mAA..AA,LLLL  Read LLLL bytes at address AA..AA */
-      case 'm' : 
-	        if (setjmp(remcomEnv) == 0)
+      case 'm' :
+                if (setjmp(remcomEnv) == 0)
                 {
-                    exceptionHandler(2,handle_buserror); 
+                    exceptionHandler(2,handle_buserror);
 
-		    /* TRY TO READ %x,%x.  IF SUCCEED, SET PTR = 0 */
+                    /* TRY TO READ %x,%x.  IF SUCCEED, SET PTR = 0 */
                     ptr = &remcomInBuffer[1];
                     if (hexToInt(&ptr,&addr))
                         if (*(ptr++) == ',')
-                            if (hexToInt(&ptr,&length)) 
+                            if (hexToInt(&ptr,&length))
                             {
                                 ptr = 0;
                                 mem2hex((char*) addr, remcomOutBuffer, length);
@@ -460,26 +460,26 @@ void handle_exception(int exceptionVector)
 
                     if (ptr)
                     {
-		      strcpy(remcomOutBuffer,"E01");
-		      debug_error("malformed read memory command: %s",remcomInBuffer);
-                  }     
-                } 
-		else {
-		  exceptionHandler(2,handle_exception);   
-		  strcpy(remcomOutBuffer,"E03");
-		  debug_error("bus error");
-		  }     
+                      strcpy(remcomOutBuffer,"E01");
+                      debug_error("malformed read memory command: %s",remcomInBuffer);
+                  }
+                }
+                else {
+                  exceptionHandler(2,handle_exception);
+                  strcpy(remcomOutBuffer,"E03");
+                  debug_error("bus error");
+                  }
                 
-		/* restore handler for bus error */
-		exceptionHandler(2,handle_exception);   
-		break;
+                /* restore handler for bus error */
+                exceptionHandler(2,handle_exception);
+                break;
       
       /* MAA..AA,LLLL: Write LLLL bytes at address AA.AA return OK */
-      case 'M' : 
-	        if (setjmp(remcomEnv) == 0) {
-		    exceptionHandler(2,handle_buserror); 
+      case 'M' :
+                if (setjmp(remcomEnv) == 0) {
+                    exceptionHandler(2,handle_buserror);
                     
-		    /* TRY TO READ '%x,%x:'.  IF SUCCEED, SET PTR = 0 */
+                    /* TRY TO READ '%x,%x:'.  IF SUCCEED, SET PTR = 0 */
                     ptr = &remcomInBuffer[1];
                     if (hexToInt(&ptr,&addr))
                         if (*(ptr++) == ',')
@@ -492,24 +492,24 @@ void handle_exception(int exceptionVector)
                                 }
                     if (ptr)
                     {
-		      strcpy(remcomOutBuffer,"E02");
-		      debug_error("malformed write memory command: %s",remcomInBuffer);
-		      }     
-                } 
-		else {
-		  exceptionHandler(2,handle_exception);   
-		  strcpy(remcomOutBuffer,"E03");
-		  debug_error("bus error");
-		  }     
+                      strcpy(remcomOutBuffer,"E02");
+                      debug_error("malformed write memory command: %s",remcomInBuffer);
+                      }
+                }
+                else {
+                  exceptionHandler(2,handle_exception);
+                  strcpy(remcomOutBuffer,"E03");
+                  debug_error("bus error");
+                  }
 
                 /* restore handler for bus error */
-                exceptionHandler(2,handle_exception);   
+                exceptionHandler(2,handle_exception);
                 break;
 
      /* cAA..AA    Continue at address AA..AA(optional) */
      /* sAA..AA   Step one instruction from AA..AA(optional) */
-     case 'c' : 
-     case 's' : 
+     case 'c' :
+     case 's' :
           /* try to read optional parameter, pc unchanged if no parm */
          ptr = &remcomInBuffer[1];
          if (hexToInt(&ptr,&addr))
@@ -527,14 +527,14 @@ void handle_exception(int exceptionVector)
       /* kill the program */
       case 'k' :  /* do nothing */
                 break;
-      } /* switch */ 
+      } /* switch */
     
     /* reply to the request */
-    putpacket(remcomOutBuffer); 
+    putpacket(remcomOutBuffer);
     }
 }
 
-/* this function is used to set up exception handlers for tracing and 
+/* this function is used to set up exception handlers for tracing and
    breakpoints */
 void set_debug_traps()
 {
@@ -600,89 +600,89 @@ void exceptionHandler(int n, ExceptionHook a)
 
 union M68K_Exception_Frame {
     struct {
-	UWORD status;
-	ULONG access;
-	UWORD sr;
-	ULONG pc;
+        UWORD status;
+        ULONG access;
+        UWORD sr;
+        ULONG pc;
     } m68000_bus;
     struct {
-	UWORD sr;
-	ULONG pc;
+        UWORD sr;
+        ULONG pc;
     } m68000;
     struct {
-	UWORD sr;
-	ULONG pc;
-	UWORD vector;
-	UWORD data[0];
+        UWORD sr;
+        ULONG pc;
+        UWORD vector;
+        UWORD data[0];
     } m68010;
 };
 
 void trapHandler_(union M68K_Exception_Frame *frame, ULONG id)
 {
     if (SysBase->AttnFlags & AFF_68010) {
-    	/* M68010+, any trap */
-    	registers[PS] = frame->m68010.sr;
-    	registers[PC] = frame->m68010.pc;
+        /* M68010+, any trap */
+        registers[PS] = frame->m68010.sr;
+        registers[PC] = frame->m68010.pc;
     } else if (id == 2 || id == 3) {
-    	/* M68000 Bus/Address trap */
-    	registers[PS] = frame->m68000_bus.sr;
-    	registers[PC] = frame->m68000_bus.pc;
+        /* M68000 Bus/Address trap */
+        registers[PS] = frame->m68000_bus.sr;
+        registers[PC] = frame->m68000_bus.pc;
     } else {
-    	/* M68000 other traps */
-    	registers[PS] = frame->m68000.sr;
-    	registers[PC] = frame->m68000.pc;
+        /* M68000 other traps */
+        registers[PS] = frame->m68000.sr;
+        registers[PC] = frame->m68000.pc;
     }
 
     /* TODO: Save FPU state */
 
     if (id > 256 || exceptionTable[id] == NULL) {
-    	handle_exception(id);
+        handle_exception(id);
     } else {
-    	(exceptionTable[id])(id);
+        (exceptionTable[id])(id);
     }
 
     /* Restore registers */
     if (SysBase->AttnFlags & AFF_68010) {
-    	/* M68010+, any trap */
-    	frame->m68010.sr = registers[PS];
-    	frame->m68010.pc = registers[PC];
+        /* M68010+, any trap */
+        frame->m68010.sr = registers[PS];
+        frame->m68010.pc = registers[PC];
     } else if (id == 2 || id == 3) {
-    	/* M68000 Bus/Address trap */
-    	frame->m68000_bus.sr = registers[PS];
-    	frame->m68000_bus.pc = registers[PC];
+        /* M68000 Bus/Address trap */
+        frame->m68000_bus.sr = registers[PS];
+        frame->m68000_bus.pc = registers[PC];
     } else {
-    	/* M68000 other traps */
-    	frame->m68000.sr = registers[PS];
-    	frame->m68000.pc = registers[PC];
+        /* M68000 other traps */
+        frame->m68000.sr = registers[PS];
+        frame->m68000.pc = registers[PC];
     }
 }
 
 /* Wrapper for the trapHandler_ */
 extern void trapHandler(void);
 asm (
-	"	.text\n"
-	"	.global trapHandler\n"
-	"trapHandler:\n"
-	"	oriw    #0x0700,%sr\n"      /* Disable interrupts */
-	"	movem.l %d0-%d7/%a0-%a6,registers\n"
-	"	move.l  %usp,%a0\n"        /* registers[A7] = USP */
-	"	lea.l   registers,%a1\n"
-	"	move.l  %a0,%a1@(15*4)\n"
-	"	lea.l   %sp@(+4),%a0\n"    /* A0 = exception frame */
-	"	move.l  %a0,%sp@-\n"       /* Stack = Frame *, ID */
-	"	jsr     trapHandler_\n"    /* Call C routine */
-	"	addq    #8,%sp\n"          /* Pop off stack args */
-	"	lea.l   registers,%a1\n"
-	"	move.l  %a1@(15*4),%a0\n"
-	"	move.l  %a0,%usp\n"        /* Save new USP */
-	"	movem.l registers,%d0-%d7/%a0-%a6\n"	/* Restore regs */
-	"	rte\n"                     /* Done! */
+        "       .text\n"
+        "       .global trapHandler\n"
+        "trapHandler:\n"
+        "       oriw    #0x0700,%sr\n"      /* Disable interrupts */
+        "       movem.l %d0-%d7/%a0-%a6,registers\n"
+        "       move.l  %usp,%a0\n"        /* registers[A7] = USP */
+        "       lea.l   registers,%a1\n"
+        "       move.l  %a0,%a1@(15*4)\n"
+        "       lea.l   %sp@(+4),%a0\n"    /* A0 = exception frame */
+        "       move.l  %a0,%sp@-\n"       /* Stack = Frame *, ID */
+        "       jsr     trapHandler_\n"    /* Call C routine */
+        "       addq    #8,%sp\n"          /* Pop off stack args */
+        "       lea.l   registers,%a1\n"
+        "       move.l  %a1@(15*4),%a0\n"
+        "       move.l  %a0,%usp\n"        /* Save new USP */
+        "       movem.l registers,%d0-%d7/%a0-%a6\n"    /* Restore regs */
+        "       rte\n"                     /* Done! */
 );
 
 static APTR oldAlert;
 AROS_UFH2(void, myAlert,
-	AROS_UFHA(ULONG, alertNum, D7),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+        AROS_UFHA(ULONG, alertNum, D7),
+        AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -693,20 +693,20 @@ AROS_UFH2(void, myAlert,
 
 static APTR oldAddTask;
 AROS_UFH4(APTR, myAddTask,
-	AROS_UFHA(struct Task *,     task,      A1),
-	AROS_UFHA(APTR,              initialPC, A2),
-	AROS_UFHA(APTR,              finalPC,   A3),
-	AROS_UFHA(struct ExecBase *, SysBase,   A6))
+        AROS_UFHA(struct Task *,     task,      A1),
+        AROS_UFHA(APTR,              initialPC, A2),
+        AROS_UFHA(APTR,              finalPC,   A3),
+        AROS_UFHA(struct ExecBase *, SysBase,   A6))
 {
     AROS_USERFUNC_INIT
 
     APTR ret;
 
     ret = AROS_UFC4(APTR, oldAddTask,
-	AROS_UFCA(struct Task *,     task,      A1),
-	AROS_UFCA(APTR,              initialPC, A2),
-	AROS_UFCA(APTR,              finalPC,   A3),
-	AROS_UFCA(struct ExecBase *, SysBase,   A6));
+        AROS_UFCA(struct Task *,     task,      A1),
+        AROS_UFCA(APTR,              initialPC, A2),
+        AROS_UFCA(APTR,              finalPC,   A3),
+        AROS_UFCA(struct ExecBase *, SysBase,   A6));
 
     /* Set us up as the trap handler */
     task->tc_TrapCode = trapHandler;
@@ -732,12 +732,12 @@ static APTR UpdateTrapCode(APTR newHandler)
     /* And any other tasks in the system.
      */
     ForeachNode(&SysBase->TaskReady, task) {
-	if (task->tc_TrapCode == oldHandler)
-	    task->tc_TrapCode = newHandler;
+        if (task->tc_TrapCode == oldHandler)
+            task->tc_TrapCode = newHandler;
     }
     ForeachNode(&SysBase->TaskWait, task) {
-	if (task->tc_TrapCode == oldHandler)
-	    task->tc_TrapCode = newHandler;
+        if (task->tc_TrapCode == oldHandler)
+            task->tc_TrapCode = newHandler;
     }
 
     return oldHandler;
@@ -749,43 +749,43 @@ int main(int argc, char **argv)
     APTR oldTaskTrapCode;
 
     if ((DOSBase = OpenLibrary("dos.library",36))) {
-    	const char msg[] = "GDB trapping enabled on the serial port\n";
-    	/* We need to patch AddTask() to set
-    	 * us up as the default stub for tc_TrapCode.
-    	 *
-    	 * Although this is not needed (yet) on AROS,
-    	 * the Shell or Workbench may set tc_TrapCode
-    	 * before AddTask() on AOS.
-    	 *
-    	 * So instead of modifying SysBase->TrapCode,
-    	 * we have to inject this into the Exec Library.
-    	 */
-    	/* Set up new handler
-    	 */
-    	Disable();
-    	*(UWORD *)0 = 0x4e41;
-    	oldTaskTrapCode = UpdateTrapCode(trapHandler);
-    	oldAddTask  = SetFunction((struct Library *)SysBase, -LVOAddTask * LIB_VECTSIZE, myAddTask);
-    	/* Patch Alert() to generate a breakpoint */
-    	oldAlert = SetFunction((struct Library *)SysBase, -LVOAlert * LIB_VECTSIZE, myAlert);
-    	Enable();
+        const char msg[] = "GDB trapping enabled on the serial port\n";
+        /* We need to patch AddTask() to set
+         * us up as the default stub for tc_TrapCode.
+         *
+         * Although this is not needed (yet) on AROS,
+         * the Shell or Workbench may set tc_TrapCode
+         * before AddTask() on AOS.
+         *
+         * So instead of modifying SysBase->TrapCode,
+         * we have to inject this into the Exec Library.
+         */
+        /* Set up new handler
+         */
+        Disable();
+        *(UWORD *)0 = 0x4e41;
+        oldTaskTrapCode = UpdateTrapCode(trapHandler);
+        oldAddTask  = SetFunction((struct Library *)SysBase, -LVOAddTask * LIB_VECTSIZE, myAddTask);
+        /* Patch Alert() to generate a breakpoint */
+        oldAlert = SetFunction((struct Library *)SysBase, -LVOAlert * LIB_VECTSIZE, myAlert);
+        Enable();
 
-    	gdbstub();
-    	Write(Output(), msg, sizeof(msg)-1);
-    	Detach();
-    	Wait(SIGBREAKF_CTRL_C);
+        gdbstub();
+        Write(Output(), msg, sizeof(msg)-1);
+        Detach();
+        Wait(SIGBREAKF_CTRL_C);
 
-    	/* Restore traps. Not really safe, but better than nothing
-    	 */
-    	Disable();
-    	SetFunction((struct Library *)SysBase, -LVOAddTask * LIB_VECTSIZE, oldAddTask);
-    	SetFunction((struct Library *)SysBase, -LVOAlert * LIB_VECTSIZE, oldAlert);
-    	UpdateTrapCode(oldTaskTrapCode);
-    	Enable();
+        /* Restore traps. Not really safe, but better than nothing
+         */
+        Disable();
+        SetFunction((struct Library *)SysBase, -LVOAddTask * LIB_VECTSIZE, oldAddTask);
+        SetFunction((struct Library *)SysBase, -LVOAlert * LIB_VECTSIZE, oldAlert);
+        UpdateTrapCode(oldTaskTrapCode);
+        Enable();
 
-    	CloseLibrary(DOSBase);
+        CloseLibrary(DOSBase);
     } else {
-    	return RETURN_ERROR;
+        return RETURN_ERROR;
     }
     return RETURN_OK;
 }

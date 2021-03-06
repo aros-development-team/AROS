@@ -17,8 +17,8 @@ static inline UBYTE MakeBCDByte(UBYTE n)
 }
 
 AROS_LH1(void, WriteBattClock,
-	 AROS_LHA(ULONG, time, D0),
-	 struct BattClockBase *, BattClockBase, 3, Battclock)
+         AROS_LHA(ULONG, time, D0),
+         struct BattClockBase *, BattClockBase, 3, Battclock)
 {
     AROS_LIBFUNC_INIT
 

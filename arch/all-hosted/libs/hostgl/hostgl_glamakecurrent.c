@@ -52,7 +52,7 @@
             /* Attach */
             HostGL_SetCurrentContext(ctx);
             HostGL_UpdateGlobalGLXContext();
-        }            
+        }
     }
     else
     {

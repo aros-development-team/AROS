@@ -43,7 +43,7 @@ static struct
 };
 
 /*
- * The MMU pages and directories. They are stored at fixed location and may be either reused in the 
+ * The MMU pages and directories. They are stored at fixed location and may be either reused in the
  * 64-bit kernel, or replaced by it. Four PDE directories (PDE2M structures) are enough to map whole
  * 4GB address space.
  */
@@ -61,7 +61,7 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.
  *
  * To simplify things down we will use 2MB memory page size. In this mode the address is broken up into 4 fields:
  * - Bits 63–48 sign extension of bit 47 as required for canonical address forms.
- * - Bits 47–39 index into the 512-entry page-map level-4 table. 
+ * - Bits 47–39 index into the 512-entry page-map level-4 table.
  * - Bits 38–30 index into the 512-entry page-directory-pointer table.
  * - Bits 29–21 index into the 512-entry page-directory table.
  * - Bits 20–0  byte offset into the physical page.
@@ -78,27 +78,27 @@ void setup_mmu(void)
     D(kprintf("[BOOT] Setting up descriptor tables.\n");)
 
     /* Supervisor code segment */
-    GDT.super_cs.type	    = 0x1a;	/* code, non-conforming, readable	*/
-    GDT.super_cs.dpl	    = 0;	/* supervisor level (ring 0)		*/
-    GDT.super_cs.p	    = 1;	/* present				*/
-    GDT.super_cs.l	    = 1;	/* long mode enabled			*/
-    GDT.super_cs.d	    = 0;	/* must be zero for long mode		*/
-    GDT.super_cs.limit_low  = 0xffff;	/* Limit is actually 0xFFFFF000		*/
+    GDT.super_cs.type       = 0x1a;     /* code, non-conforming, readable       */
+    GDT.super_cs.dpl        = 0;        /* supervisor level (ring 0)            */
+    GDT.super_cs.p          = 1;        /* present                              */
+    GDT.super_cs.l          = 1;        /* long mode enabled                    */
+    GDT.super_cs.d          = 0;        /* must be zero for long mode           */
+    GDT.super_cs.limit_low  = 0xffff;   /* Limit is actually 0xFFFFF000         */
     GDT.super_cs.limit_high = 0xf;
-    GDT.super_cs.g	    = 1;	/* Limit is in 4K pages			*/
-    GDT.super_cs.base_low   = 0;	/* Segment starts at zero address	*/
+    GDT.super_cs.g          = 1;        /* Limit is in 4K pages                 */
+    GDT.super_cs.base_low   = 0;        /* Segment starts at zero address       */
     GDT.super_cs.base_mid   = 0;
     GDT.super_cs.base_high  = 0;
 
     /* Supervisor data segment. Actually ignored in long mode. */
-    GDT.super_ds.type	    = 0x12;	/* data, expand up, writable		*/
-    GDT.super_ds.dpl	    = 0;	/* supervisor level			*/
-    GDT.super_ds.p	    = 1;	/* present				*/
-    GDT.super_ds.limit_low  = 0xffff;	/* Limit = 0xFFFFF000			*/
+    GDT.super_ds.type       = 0x12;     /* data, expand up, writable            */
+    GDT.super_ds.dpl        = 0;        /* supervisor level                     */
+    GDT.super_ds.p          = 1;        /* present                              */
+    GDT.super_ds.limit_low  = 0xffff;   /* Limit = 0xFFFFF000                   */
     GDT.super_ds.limit_high = 0xf;
-    GDT.super_ds.g	    = 1;	/* 4K granularity			*/
-    GDT.super_ds.d	    = 1;	/* 32-bit operands			*/
-    GDT.super_ds.base_low   = 0;	/* Start at zero address		*/
+    GDT.super_ds.g          = 1;        /* 4K granularity                       */
+    GDT.super_ds.d          = 1;        /* 32-bit operands                      */
+    GDT.super_ds.base_low   = 0;        /* Start at zero address                */
     GDT.super_ds.base_mid   = 0;
     GDT.super_ds.base_high  = 0;
 
@@ -110,17 +110,17 @@ void setup_mmu(void)
      * Since we actually use only 32-bit addresses, we need only one entry
      * number zero (bits 47-39 of our address are zeroes).
      */
-    PML4[0].p	      = 1;			 /* present in physical RAM				*/
-    PML4[0].rw	      = 1;			 /* read/write access					*/
-    PML4[0].us	      = 1;			 /* accessible on user level				*/
-    PML4[0].pwt	      = 0;		         /* write-through cache mode				*/
-    PML4[0].pcd	      = 0;			 /* caching enabled					*/
-    PML4[0].a	      = 0;			 /* clear access bit (just in case)			*/
-    PML4[0].mbz	      = 0;			 /* reserved, must be zero				*/
-    PML4[0].avl	      = 0;			 /* user-defined flags, clear them			*/
-    PML4[0].base_low  = (unsigned int)PDP >> 12; /* Base address of directory pointer table to use	*/
-    PML4[0].nx	      = 0;			 /* code execution allowed				*/
-    PML4[0].avail     = 0;			 /* more user-defined flags				*/
+    PML4[0].p         = 1;                       /* present in physical RAM                             */
+    PML4[0].rw        = 1;                       /* read/write access                                   */
+    PML4[0].us        = 1;                       /* accessible on user level                            */
+    PML4[0].pwt       = 0;                       /* write-through cache mode                            */
+    PML4[0].pcd       = 0;                       /* caching enabled                                     */
+    PML4[0].a         = 0;                       /* clear access bit (just in case)                     */
+    PML4[0].mbz       = 0;                       /* reserved, must be zero                              */
+    PML4[0].avl       = 0;                       /* user-defined flags, clear them                      */
+    PML4[0].base_low  = (unsigned int)PDP >> 12; /* Base address of directory pointer table to use      */
+    PML4[0].nx        = 0;                       /* code execution allowed                              */
+    PML4[0].avail     = 0;                       /* more user-defined flags                             */
     PML4[0].base_high = 0;
 
     /*
@@ -131,22 +131,22 @@ void setup_mmu(void)
     {
         int j;
 
-	D(kprintf("[BOOT] PDE[%u] 0x%p\n", i, pdes[i]);)
+        D(kprintf("[BOOT] PDE[%u] 0x%p\n", i, pdes[i]);)
 
         /*
          * Set the PDP entry up and point to the PDE table.
          * Field meanings are analogous to PML4, just 'base' points to page directory tables
          */
-        PDP[i].p 	 = 1;
-        PDP[i].rw	 = 1;
-        PDP[i].us	 = 1;
-        PDP[i].pwt	 = 0;
-        PDP[i].pcd	 = 0;
-        PDP[i].a	 = 0;
-        PDP[i].mbz	 = 0;
+        PDP[i].p         = 1;
+        PDP[i].rw        = 1;
+        PDP[i].us        = 1;
+        PDP[i].pwt       = 0;
+        PDP[i].pcd       = 0;
+        PDP[i].a         = 0;
+        PDP[i].mbz       = 0;
         PDP[i].base_low  = (unsigned int)pdes[i] >> 12;
-        PDP[i].nx	 = 0;
-        PDP[i].avail	 = 0;
+        PDP[i].nx        = 0;
+        PDP[i].avail     = 0;
         PDP[i].base_high = 0;
 
         for (j=0; j < 512; j++)
@@ -154,19 +154,19 @@ void setup_mmu(void)
             /* Build a complete PDE set (512 entries) for every PDP entry */
             struct PDE2M *PDE = pdes[i];
 
-            PDE[j].p	     = 1;
-            PDE[j].rw	     = 1;
-            PDE[j].us	     = 1;
-            PDE[j].pwt	     = 0;
-            PDE[j].pcd	     = 0;
-            PDE[j].a	     = 0;
-            PDE[j].d	     = 0;	/* Clear write tracking bit							   */
-            PDE[j].g	     = 0;	/* Page is global								   */
-            PDE[j].pat	     = 0;	/* Most significant PAT bit							   */
-            PDE[j].ps	     = 1;	/* It's PDE (not PTE) and page size will be 2MB (after we enable PAE)		   */
-            PDE[j].base_low  = ((i << 30) + (j << 21)) >> 13;	/* Base address of the physical page. This is 1:1 mapping. */
+            PDE[j].p         = 1;
+            PDE[j].rw        = 1;
+            PDE[j].us        = 1;
+            PDE[j].pwt       = 0;
+            PDE[j].pcd       = 0;
+            PDE[j].a         = 0;
+            PDE[j].d         = 0;       /* Clear write tracking bit                                                        */
+            PDE[j].g         = 0;       /* Page is global                                                                  */
+            PDE[j].pat       = 0;       /* Most significant PAT bit                                                        */
+            PDE[j].ps        = 1;       /* It's PDE (not PTE) and page size will be 2MB (after we enable PAE)              */
+            PDE[j].base_low  = ((i << 30) + (j << 21)) >> 13;   /* Base address of the physical page. This is 1:1 mapping. */
             PDE[j].avail     = 0;
-            PDE[j].nx	     = 0;
+            PDE[j].nx        = 0;
             PDE[j].base_high = 0;
         }
     }
@@ -181,9 +181,9 @@ void setup_mmu(void)
 }
 
 /*
- * This tiny procedure sets the complete 64-bit environment up - it loads the descriptors, 
+ * This tiny procedure sets the complete 64-bit environment up - it loads the descriptors,
  * enables 64-bit mode, loads MMU tables and through paging it activates the 64-bit long mode.
- * 
+ *
  * After that it is perfectly safe to jump into the pure 64-bit kernel.
  */
 void kick(void *kick_base, struct TagItem64 *km)
@@ -192,16 +192,16 @@ void kick(void *kick_base, struct TagItem64 *km)
 
     cpuid(0x80000000, v1, v2, v3, v4);
     if (v1 > 0x80000000)
-    { 
+    {
         cpuid(0x80000001, v1, v2, v3, v4);
         if (v4 & (1 << 29))
         {
             D(kprintf("[BOOT] x86-64 CPU ok\n");)
 
-	    KernelTarget.off = kick_base;
+            KernelTarget.off = kick_base;
 
-	    asm volatile ("lgdt %0"::"m"(GDT_sel));
-	    D(kprintf("[BOOT] GDTR loaded\n");)
+            asm volatile ("lgdt %0"::"m"(GDT_sel));
+            D(kprintf("[BOOT] GDTR loaded\n");)
 
             /* Enable PAE */
             wrcr(cr4, _CR4_PAE | _CR4_PGE);
@@ -220,8 +220,8 @@ void kick(void *kick_base, struct TagItem64 *km)
             /* enable paging and activate long mode */
             wrcr(cr0, _CR0_PG | _CR0_PE);
 
-	    D(kprintf("[BOOT] Leaving 32-bit environment. LJMP $%x,$%p\n\n", SEG_SUPER_CS, KernelTarget.off);)
-	    asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(km),"S"(AROS_BOOT_MAGIC));
+            D(kprintf("[BOOT] Leaving 32-bit environment. LJMP $%x,$%p\n\n", SEG_SUPER_CS, KernelTarget.off);)
+            asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(km),"S"(AROS_BOOT_MAGIC));
         }
     }
 

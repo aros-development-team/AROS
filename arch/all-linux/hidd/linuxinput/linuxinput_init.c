@@ -27,7 +27,7 @@
 
 #define O_RDONLY    0
 
-/* 
+/*
  * Some attrbases needed as global vars.
  * These are write-once read-many.
  */

@@ -75,10 +75,10 @@ VOID HostGL_UpdateGlobalGLXContext()
 #endif
 #if defined(RENDERER_PBUFFER_WPA)
             GLXCALL(glXMakeContextCurrent, dsp, cur_ctx->glXPbuffer, cur_ctx->glXPbuffer, cur_ctx->glXctx);
-#endif  
+#endif
 #if defined(RENDERER_PIXMAP_BLIT)
             GLXCALL(glXMakeContextCurrent, dsp, cur_ctx->glXPixmap, cur_ctx->glXPixmap, cur_ctx->glXctx);
-#endif  
+#endif
         }
     }
     else

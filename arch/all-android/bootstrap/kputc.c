@@ -23,7 +23,7 @@ static void flushLog(void)
     buf[p] = 0;
     __android_log_write(ANDROID_LOG_DEBUG, "AROS", buf);
     p = 0;
-}    
+}
  
 int KPutC(int chr)
 {
@@ -40,8 +40,8 @@ int KPutC(int chr)
     {
         buf[p++] = chr;
 
-    	if (p == BUFFER_SIZE - 1)
-    	    flushLog();
+        if (p == BUFFER_SIZE - 1)
+            flushLog();
     }
 
     return ret;

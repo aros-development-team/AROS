@@ -90,7 +90,7 @@ ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub
 ULONG PCIEfika__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
-	ULONG val = ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
+        ULONG val = ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
     return val;
 }
 
@@ -100,7 +100,7 @@ UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub
 
     temp.ul = ReadConfigLong(psd, bus, dev, sub, reg);
 
-	return temp.uw[1 - ((reg&2)>>1)];
+        return temp.uw[1 - ((reg&2)>>1)];
 }
 
 
@@ -116,7 +116,7 @@ UBYTE PCIEfika__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
     pcicfg temp;
 
     temp.ul = ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
-	return temp.ub[3 - (msg->reg & 3)];
+        return temp.ub[3 - (msg->reg & 3)];
 }
 
 void WriteConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
@@ -159,20 +159,20 @@ void PCIEfika__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
 void *PCIEfika__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_MapPCI *msg)
 {
-	void *KernelBase = OpenResource("kernel.resource");
-	KrnMapGlobal(msg->PCIAddress, msg->PCIAddress, msg->Length, MAP_CacheInhibit | MAP_Guarded | MAP_Readable | MAP_Writable);
-	return msg->PCIAddress;
+        void *KernelBase = OpenResource("kernel.resource");
+        KrnMapGlobal(msg->PCIAddress, msg->PCIAddress, msg->Length, MAP_CacheInhibit | MAP_Guarded | MAP_Readable | MAP_Writable);
+        return msg->PCIAddress;
 }
 
 void *PCIEfika__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_AllocPCIMem *msg)
 {
-	void *KernelBase = OpenResource("kernel.resource");
+        void *KernelBase = OpenResource("kernel.resource");
     void *memory = OOP_DoSuperMethod(cl, o, msg);
 
     if (memory)
     {
-    	KrnSetProtection(memory, msg->Size, MAP_CacheInhibit | MAP_Readable | MAP_Writable);
+        KrnSetProtection(memory, msg->Size, MAP_CacheInhibit | MAP_Readable | MAP_Writable);
     }
 
     return memory;
@@ -185,8 +185,8 @@ void *PCIEfika__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
 VOID PCIEfika__Hidd_PCIDriver__FreePCIMem(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_FreePCIMem *msg)
 {
-	void *KernelBase = OpenResource("kernel.resource");
-	KrnSetProtection(msg->Address, 4096, MAP_Readable | MAP_Writable);
+        void *KernelBase = OpenResource("kernel.resource");
+        KrnSetProtection(msg->Address, 4096, MAP_Readable | MAP_Writable);
     OOP_DoSuperMethod(cl, o, msg);
 }
 
@@ -208,55 +208,55 @@ static int PCIEfika_InitClass(LIBBASETYPEPTR LIBBASE)
     D(bug("[PCI_Efika] OpenFirmwareBase = %08x\n", OpenFirmwareBase));
 
     void *key = OF_OpenKey("/builtin");
-	if (key)
-	{
-		void *prop = OF_FindProperty(key, "reg");
-		if (prop)
-		{
-			intptr_t *mbar = OF_GetPropValue(prop);
-			LIBBASE->psd.mbar = (void *)(*mbar);
+        if (key)
+        {
+                void *prop = OF_FindProperty(key, "reg");
+                if (prop)
+                {
+                        intptr_t *mbar = OF_GetPropValue(prop);
+                        LIBBASE->psd.mbar = (void *)(*mbar);
 
-			D(bug("[PCI_Efika] MBAR located at %08x\n", LIBBASE->psd.mbar));
-		}
-	}
+                        D(bug("[PCI_Efika] MBAR located at %08x\n", LIBBASE->psd.mbar));
+                }
+        }
 
-	D(bug("[PCI_Efika] PCITBATR0 = %08x\n", inl(LIBBASE->psd.mbar + 0x0d64)));
-	D(bug("[PCI_Efika] PCITBATR1 = %08x\n", inl(LIBBASE->psd.mbar + 0x0d68)));
+        D(bug("[PCI_Efika] PCITBATR0 = %08x\n", inl(LIBBASE->psd.mbar + 0x0d64)));
+        D(bug("[PCI_Efika] PCITBATR1 = %08x\n", inl(LIBBASE->psd.mbar + 0x0d68)));
 
-	D(bug("[PCI_Efika] PCIIW0BTAR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d70)));
-	D(bug("[PCI_Efika] PCIIW1BTAR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d74)));
-	D(bug("[PCI_Efika] PCIIW2BTAR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d78)));
+        D(bug("[PCI_Efika] PCIIW0BTAR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d70)));
+        D(bug("[PCI_Efika] PCIIW1BTAR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d74)));
+        D(bug("[PCI_Efika] PCIIW2BTAR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d78)));
 
-	D(bug("[PCI_Efika] PCIIWCR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d80)));
-	D(bug("[PCI_Efika] PCIICR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d84)));
+        D(bug("[PCI_Efika] PCIIWCR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d80)));
+        D(bug("[PCI_Efika] PCIICR = %08x\n", inl(LIBBASE->psd.mbar + 0x0d84)));
 
-	for (i=0; i < 3; i++)
-	{
-		uint8_t attr = inl(LIBBASE->psd.mbar + 0xd80) >> (24 - i*8);
+        for (i=0; i < 3; i++)
+        {
+                uint8_t attr = inl(LIBBASE->psd.mbar + 0xd80) >> (24 - i*8);
 
-		/* If bit 0 of attribute is cleared, then the window is not used */
-		if ((attr & 1) == 0)
-			continue;
+                /* If bit 0 of attribute is cleared, then the window is not used */
+                if ((attr & 1) == 0)
+                        continue;
 
-		temp = inl(LIBBASE->psd.mbar + 0xd70 + i*4);
-		uint32_t size = 0x1000000 + ((temp << 8) & 0xff000000);
-		uint32_t base = temp & 0xff000000;
+                temp = inl(LIBBASE->psd.mbar + 0xd70 + i*4);
+                uint32_t size = 0x1000000 + ((temp << 8) & 0xff000000);
+                uint32_t base = temp & 0xff000000;
 
-		D(bug("[PCI_Efika] PCI %s: %08x - %08x\n", attr & 8 ? "IO" : "MEM", base, base + size - 1));
-		if (attr & 8)
-		{
-			LIBBASE->psd.pciio = (uint8_t *)base;
-			LIBBASE->psd.pciio_size = size;
-		}
-		else
-		{
-			LIBBASE->psd.pcimem = (uint8_t *)base;
-			LIBBASE->psd.pcimem_size = size;
-		}
-	}
+                D(bug("[PCI_Efika] PCI %s: %08x - %08x\n", attr & 8 ? "IO" : "MEM", base, base + size - 1));
+                if (attr & 8)
+                {
+                        LIBBASE->psd.pciio = (uint8_t *)base;
+                        LIBBASE->psd.pciio_size = size;
+                }
+                else
+                {
+                        LIBBASE->psd.pcimem = (uint8_t *)base;
+                        LIBBASE->psd.pcimem_size = size;
+                }
+        }
 
-	/* Map first 64K of PCI IO space. More than that is not used anyway :) */
-	KrnMapGlobal(LIBBASE->psd.pciio, LIBBASE->psd.pciio, 0x10000, MAP_CacheInhibit | MAP_Guarded | MAP_Readable | MAP_Writable);
+        /* Map first 64K of PCI IO space. More than that is not used anyway :) */
+        KrnMapGlobal(LIBBASE->psd.pciio, LIBBASE->psd.pciio, 0x10000, MAP_CacheInhibit | MAP_Guarded | MAP_Readable | MAP_Writable);
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
 

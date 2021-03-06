@@ -76,7 +76,7 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     /*
      * Allocate cpu count + 1 slots
      * and embed UtilityBase in the last.
-    */ 
+    */
     sysprocs = AllocVec((ProcessorBase->cpucount + 1) * sizeof(APTR), MEMF_ANY | MEMF_CLEAR);
     if (sysprocs == NULL)
         return FALSE;
@@ -94,8 +94,8 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 
     for (cpuNo = 0; cpuNo < ProcessorBase->cpucount; cpuNo++)
     {
-    	sysprocs[cpuNo] = AllocMem(sizeof(struct X86ProcessorInformation), MEMF_CLEAR);
-    	if (sysprocs[cpuNo])
+        sysprocs[cpuNo] = AllocMem(sizeof(struct X86ProcessorInformation), MEMF_CLEAR);
+        if (sysprocs[cpuNo])
         {
 #if !defined(__AROSEXEC_SMP__)
             if (cpuNo > 0)

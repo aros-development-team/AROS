@@ -39,7 +39,7 @@ OOP_Object *PPC4xxSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, stru
 
 #if (AROS_SERIAL_DEBUG > 0)
     if (msg->unitnum == (AROS_SERIAL_DEBUG-1))
-	ReturnPtr("HIDDSerial::NewSerial", Object *, su);
+        ReturnPtr("HIDDSerial::NewSerial", Object *, su);
 #endif
 
   switch (msg->unitnum)
@@ -50,7 +50,7 @@ OOP_Object *PPC4xxSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, stru
     case 3:
       unitnum = msg->unitnum;
       if (0 != (data->sd_UsedMask & (1 << unitnum)))
-        unitnum = -1; 
+        unitnum = -1;
     break;
     
     case -1: /* search for the next available unit */
@@ -75,7 +75,7 @@ OOP_Object *PPC4xxSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, stru
 #define csd CSD(cl->UserData)
         {aHidd_SerialUnit_Unit, unitnum},
 #undef csd
-	{TAG_DONE		       }
+        {TAG_DONE                      }
     };
 
     su = OOP_NewObject(NULL, CLID_Hidd_SerialUnit, tags);
@@ -83,7 +83,7 @@ OOP_Object *PPC4xxSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, stru
     /*
     ** Mark it as used
     */
-    data->sd_UsedMask |= (1 << unitnum); 
+    data->sd_UsedMask |= (1 << unitnum);
   }
 
   ReturnPtr("HIDDSerial::NewSerial", Object *, su);
@@ -139,7 +139,7 @@ static int PPC4xxSer_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
     EnterFunc(bug("PPC4xxSer_ExpungeAttrs\n"));
 
     OOP_ReleaseAttrBase(IID_Hidd_SerialUnit);
-	
+        
     ReturnInt("PPC4xxSer_ExpungeAttrs", int, TRUE);
 }
 

@@ -35,11 +35,11 @@ int krnPutC(int c, struct KernelBase *KernelBase)
     if ((c == 0x03) && (scr_Type == SCR_GFX) && debug_framebuffer)
     {
         /* Reinitialize boot console with decreased height */
-    	scr_FrameBuffer = debug_framebuffer;
-    	fb_Resize(debug_y_resolution);
+        scr_FrameBuffer = debug_framebuffer;
+        fb_Resize(debug_y_resolution);
     }
     else
-	con_Putc(c);
+        con_Putc(c);
 
     /*
      * Interrupt flag is stored in flags - if it was enabled before,
@@ -54,17 +54,17 @@ void vesahack_Init(char *cmdline, struct vbe_mode *vmode)
 {
     if (cmdline && vmode && vmode->phys_base && strstr(cmdline, "vesahack"))
     {
-	bug("[Kernel] VESA debugging hack activated\n");
+        bug("[Kernel] VESA debugging hack activated\n");
 
-	/*
-	 * VESA hack.
-	 * It divides screen height by 2 and increments framebuffer pointer.
-	 * This allows VESA driver to use only upper half of the screen, while
-	 * lower half will still be used for debug output.
-	 */
-	vmode->y_resolution >>= 1;
+        /*
+         * VESA hack.
+         * It divides screen height by 2 and increments framebuffer pointer.
+         * This allows VESA driver to use only upper half of the screen, while
+         * lower half will still be used for debug output.
+         */
+        vmode->y_resolution >>= 1;
 
-	debug_y_resolution = vmode->y_resolution;
-	debug_framebuffer  = (void *)(unsigned long)vmode->phys_base + vmode->y_resolution * vmode->bytes_per_scanline;
+        debug_y_resolution = vmode->y_resolution;
+        debug_framebuffer  = (void *)(unsigned long)vmode->phys_base + vmode->y_resolution * vmode->bytes_per_scanline;
     }
 }

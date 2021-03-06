@@ -23,29 +23,29 @@
 /*
  * Detect memory in step sizes of 1kb. Keep it that way...
  */
-#define STEPSIZE 1024 
+#define STEPSIZE 1024
 
-UBYTE * check_memory(UBYTE * address) 
+UBYTE * check_memory(UBYTE * address)
 {
-	int found = FALSE;
-	*(ULONG *)ADDRESS_ERROR_MARKER_ADDRESS = 0;
-	while (1) {
-		*(UBYTE *)address = 0xcc;
-		if (0xcc != *(UBYTE *)address) {
-			break;
-		}
-		if (0 == *(ULONG *)ADDRESS_ERROR_MARKER_ADDRESS) {
-			found = TRUE;
-		} else {
-			break;
-		}
-		address += STEPSIZE;
-	}
-	address -= STEPSIZE;
-	
-	if (FALSE == found)
-		return NULL;
-	return address;
+        int found = FALSE;
+        *(ULONG *)ADDRESS_ERROR_MARKER_ADDRESS = 0;
+        while (1) {
+                *(UBYTE *)address = 0xcc;
+                if (0xcc != *(UBYTE *)address) {
+                        break;
+                }
+                if (0 == *(ULONG *)ADDRESS_ERROR_MARKER_ADDRESS) {
+                        found = TRUE;
+                } else {
+                        break;
+                }
+                address += STEPSIZE;
+        }
+        address -= STEPSIZE;
+        
+        if (FALSE == found)
+                return NULL;
+        return address;
 }
 
 /*
@@ -55,51 +55,51 @@ UBYTE * check_memory(UBYTE * address)
  */
 struct MemHeader * detect_memory(void)
 {
-	struct MemHeader * mh;
-	/*
-	 * There is no SysBase available here!!
-	 * It has not been initialized, yet.
-	 */
+        struct MemHeader * mh;
+        /*
+         * There is no SysBase available here!!
+         * It has not been initialized, yet.
+         */
 
-	/*
-	 * Must initialize the BusError handler
-	 */
-	UBYTE * address = (UBYTE *)1024;
+        /*
+         * Must initialize the BusError handler
+         */
+        UBYTE * address = (UBYTE *)1024;
 
-	*(ULONG *)(2*4) = (ULONG)dm_bus_error_handler;
-	*(ULONG *)(3*4) = (ULONG)dm_addr_error_handler;
+        *(ULONG *)(2*4) = (ULONG)dm_bus_error_handler;
+        *(ULONG *)(3*4) = (ULONG)dm_addr_error_handler;
 
-	address = check_memory(address);
+        address = check_memory(address);
 
-	mh=(struct MemHeader*)MEM_START;
-	mh->mh_Node.ln_Succ    = NULL;
-	mh->mh_Node.ln_Pred    = NULL;
-	mh->mh_Node.ln_Type    = NT_MEMORY;
-	mh->mh_Node.ln_Name    = "chip memory";
-	mh->mh_Node.ln_Pri     = -5;
-	mh->mh_Attributes      = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA |
-	                         MEMF_KICK;
-	mh->mh_First           = (struct MemChunk *)((UBYTE*)mh+MEMHEADER_TOTAL);
-	mh->mh_First->mc_Next  = NULL;
-	mh->mh_First->mc_Bytes = ((ULONG)address - MEM_START) - MEMHEADER_TOTAL;
+        mh=(struct MemHeader*)MEM_START;
+        mh->mh_Node.ln_Succ    = NULL;
+        mh->mh_Node.ln_Pred    = NULL;
+        mh->mh_Node.ln_Type    = NT_MEMORY;
+        mh->mh_Node.ln_Name    = "chip memory";
+        mh->mh_Node.ln_Pri     = -5;
+        mh->mh_Attributes      = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA |
+                                 MEMF_KICK;
+        mh->mh_First           = (struct MemChunk *)((UBYTE*)mh+MEMHEADER_TOTAL);
+        mh->mh_First->mc_Next  = NULL;
+        mh->mh_First->mc_Bytes = ((ULONG)address - MEM_START) - MEMHEADER_TOTAL;
 
-	mh->mh_Lower           = mh->mh_First;
-	mh->mh_Upper           = (APTR)(address);
-	mh->mh_Free            = mh->mh_First->mc_Bytes;
+        mh->mh_Lower           = mh->mh_First;
+        mh->mh_Upper           = (APTR)(address);
+        mh->mh_Free            = mh->mh_First->mc_Bytes;
 
-	return mh;
+        return mh;
 }
 
 /*
- * The locations where memory can be. 
+ * The locations where memory can be.
  * Beware: Whatever is at 0x0 is also at 0x10000000 for 1MB.
  *         So I am trying to avoid detecting this part again
  *         and start later in memory.
  */
-struct memories 
+struct memories
 {
-	UBYTE * start;
-	UBYTE   pri;
+        UBYTE * start;
+        UBYTE   pri;
 };
 
 static struct memories memory[] = {{(UBYTE *)0x10100000,-10},
@@ -111,23 +111,23 @@ static struct memories memory[] = {{(UBYTE *)0x10100000,-10},
  */
 void detect_memory_rest(struct ExecBase * SysBase)
 {
-	int c = 0;
-	*(ULONG *)(2*4) = (ULONG)dm_bus_error_handler;
-	*(ULONG *)(3*4) = (ULONG)dm_addr_error_handler;
+        int c = 0;
+        *(ULONG *)(2*4) = (ULONG)dm_bus_error_handler;
+        *(ULONG *)(3*4) = (ULONG)dm_addr_error_handler;
 
-	while (0 != memory[c].start) {
-		UBYTE * end;
-		/*
-		 * Now try to detect sram size
-		 */
-		end = check_memory(memory[c].start);
-		if (end != memory->start[c] && NULL != end) {
-			AddMemList((ULONG)end-(ULONG)memory[c].start,
-			           MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK,
-			           memory[c].pri,
-			           memory[c].start,
-			           "fast memory");
-		}
-		c++;
-	}
+        while (0 != memory[c].start) {
+                UBYTE * end;
+                /*
+                 * Now try to detect sram size
+                 */
+                end = check_memory(memory[c].start);
+                if (end != memory->start[c] && NULL != end) {
+                        AddMemList((ULONG)end-(ULONG)memory[c].start,
+                                   MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK,
+                                   memory[c].pri,
+                                   memory[c].start,
+                                   "fast memory");
+                }
+                c++;
+        }
 }

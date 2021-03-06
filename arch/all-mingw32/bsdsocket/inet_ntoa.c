@@ -48,18 +48,18 @@
     D(bug("[bsdsocket] Inet_NToA(0x%08lX)\n", in));
     a.s_addr = in;
 
-    Forbid();    
+    Forbid();
 
     res = WSinet_ntoa(a);
     if (res)
-	res = CopyString(res, taskBase->pool);
+        res = CopyString(res, taskBase->pool);
 
     Permit();
 
     if (res)
     {
     FreeVecPooled(taskBase->inaddr, taskBase->pool);
-	taskBase->inaddr = res;
+        taskBase->inaddr = res;
     }
 
     Permit();

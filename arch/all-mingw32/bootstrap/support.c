@@ -30,10 +30,10 @@ char *getosversion(const char *bsver)
 char *namepart(char *name)
 {
     while (*name)
-	name++;
+        name++;
 
     while((name[-1] != ':') && (name[-1] != '\\') && (name[-1] != '/'))
-	name--;
+        name--;
 
     return name;
 }

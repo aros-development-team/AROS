@@ -76,7 +76,7 @@ static struct ExceptionContext *cpu_SMPInitCtx(cpuid_t cpuNo)
         D(bug("[Kernel:%03u] %s: Enable #XF & XGETVB\n", cpuNo, __func__);)
         /* Enable #XF instead of #UD when a SIMD exception occurs
          * Enable xgetvb/xsetvb
-         */ 
+         */
         wrcr(cr4, rdcr(cr4) | _CR4_OSXMMEXCPT | _CR4_OSXSBV);
         D(bug("[Kernel:%03u] %s: Enable Saving AVX context\n", cpuNo, __func__);)
         asm volatile (

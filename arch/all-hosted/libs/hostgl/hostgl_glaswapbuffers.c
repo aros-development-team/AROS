@@ -46,7 +46,7 @@ static struct SignalSemaphore * GetX11SemaphoreFromBitmap(struct BitMap * bm);
 
     D(bug("[HostGL] TASK: 0x%x, SWAP 0x%x\n", FindTask(NULL), _ctx->glXctx));
 
-    if (_ctx) 
+    if (_ctx)
     {
 #if defined(RENDERER_SEPARATE_X_WINDOW)
         Display * dsp = NULL;
@@ -80,7 +80,7 @@ static struct SignalSemaphore * GetX11SemaphoreFromBitmap(struct BitMap * bm);
             CopyMem(_ctx->swapbufferline, end, width * SWAPBUFFER_BPP);
         }
 
-        WritePixelArray(_ctx->swapbuffer, 0, 0, width * SWAPBUFFER_BPP, _ctx->visible_rp, _ctx->left, _ctx->top, 
+        WritePixelArray(_ctx->swapbuffer, 0, 0, width * SWAPBUFFER_BPP, _ctx->visible_rp, _ctx->left, _ctx->top,
             width, height, RECTFMT_BGRA32);
 #endif
 #if defined(RENDERER_PIXMAP_BLIT)
@@ -112,17 +112,17 @@ struct bitmap_data
 {
     union
     {
-        Window 	xwindow;
+        Window  xwindow;
         Pixmap  pixmap;
     }               drawable;
-    Window          masterxwindow;    
+    Window          masterxwindow;
     Cursor          cursor;
     unsigned long   sysplanemask;
     Colormap        colmap;
     GC              gc; /* !!! This is an X11 GC, NOT a HIDD gc */
     Display         *display;
     int             screen;
-    int             flags;    
+    int             flags;
 };
 
 struct fakefb_data
@@ -135,8 +135,8 @@ struct x11_staticdata
 {
     /* These two members MUST be in the beginning of this structure
        because they are exposed to disk-based part (see x11_class.h) */
-    UBYTE	   	     keycode2rawkey[256];
-    BOOL	   	     havetable;
+    UBYTE                    keycode2rawkey[256];
+    BOOL                     havetable;
 
     struct SignalSemaphore   sema; /* Protecting this whole struct */
     struct SignalSemaphore   x11sema;
@@ -149,7 +149,7 @@ struct x11clbase
     struct x11_staticdata xsd;
 };
 
-#define XSD(cl)     	(&((struct x11clbase *)cl->UserData)->xsd)
+#define XSD(cl)         (&((struct x11clbase *)cl->UserData)->xsd)
 
 static struct SignalSemaphore * GetX11SemaphoreFromBitmap(struct BitMap * bm)
 {

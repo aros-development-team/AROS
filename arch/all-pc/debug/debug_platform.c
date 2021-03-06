@@ -11,8 +11,8 @@
 
 static int Debugx86_Init(struct DebugBase *DebugBase)
 {
-		DebugBase->db_Flags |= DBFF_DISASSEMBLE;
-	    return 1;
+                DebugBase->db_Flags |= DBFF_DISASSEMBLE;
+            return 1;
 }
 
 ADD2INITLIB(Debugx86_Init, 10)

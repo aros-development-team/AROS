@@ -57,14 +57,14 @@ static ULONG AddDisplays(ULONG num)
     /* Add displays if needed */
     for (i = old; i < num; i++)
     {
-	ULONG err = AddDisplayDriverA(gfxclass, NULL, NULL);
+        ULONG err = AddDisplayDriverA(gfxclass, NULL, NULL);
 
-	if (err)
-	{
-	    /* Abort if driver setup failed */
-	    D(bug("[GDI] Failed to add display object, error %u\n", err));
-	    break;
-	}
+        if (err)
+        {
+            /* Abort if driver setup failed */
+            D(bug("[GDI] Failed to add display object, error %u\n", err));
+            break;
+        }
     }
 
     return i;
@@ -81,16 +81,16 @@ int main(void)
 
     if (WBenchMsg) {
         olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
-	myname = WBenchMsg->sm_ArgList[0].wa_Name;
+        myname = WBenchMsg->sm_ArgList[0].wa_Name;
     } else {
-	struct Process *me = (struct Process *)FindTask(NULL);
+        struct Process *me = (struct Process *)FindTask(NULL);
     
-	if (me->pr_CLI) {
+        if (me->pr_CLI) {
             struct CommandLineInterface *cli = BADDR(me->pr_CLI);
-	
-	    myname = cli->cli_CommandName;
-	} else
-	    myname = me->pr_Task.tc_Node.ln_Name;
+        
+            myname = cli->cli_CommandName;
+        } else
+            myname = me->pr_Task.tc_Node.ln_Name;
     }
     D(bug("[GDI] Command name: %s\n", myname));
 
@@ -100,12 +100,12 @@ int main(void)
     if (icon) {
         STRPTR str = FindToolType(icon->do_ToolTypes, "DISPLAYS");
         
-	displays = atoi(str);
+        displays = atoi(str);
     }
 
     if (!WBenchMsg) {
         rdargs = ReadArgs("DISPLAYS/N/A", &displays, NULL);
-	D(bug("[GDI] RDArgs 0x%p\n", rdargs));
+        D(bug("[GDI] RDArgs 0x%p\n", rdargs));
     }
  
     AddDisplays(displays);

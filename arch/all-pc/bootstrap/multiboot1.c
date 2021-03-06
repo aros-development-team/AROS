@@ -14,7 +14,7 @@
 #include "bootstrap.h"
 #include "support.h"
 
-#if defined(DEBUG) && (DEBUG) 
+#if defined(DEBUG) && (DEBUG)
 #define str_BSMultiboot "bootstrap:multiboot"
 #endif
 
@@ -142,31 +142,31 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
              */
             if (mb->framebuffer_type == MB_FRAMEBUFFER_RGB)
             {
-				VBEModeInfo.mode_attributes             = VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
-				VBEModeInfo.bytes_per_scanline          = mb->framebuffer_pitch;
-				VBEModeInfo.x_resolution                = mb->framebuffer_width;
-				VBEModeInfo.y_resolution                = mb->framebuffer_height;
-				VBEModeInfo.bits_per_pixel              = mb->framebuffer_bpp;
-				VBEModeInfo.memory_model                = VMEM_RGB;
-				VBEModeInfo.red_mask_size               = mb->framebuffer_red_mask_size;
-				VBEModeInfo.red_field_position          = mb->framebuffer_red_field_position;
-				VBEModeInfo.green_mask_size             = mb->framebuffer_green_mask_size;
-				VBEModeInfo.green_field_position        = mb->framebuffer_green_field_position;
-				VBEModeInfo.blue_mask_size              = mb->framebuffer_blue_mask_size;
-				VBEModeInfo.blue_field_position         = mb->framebuffer_blue_field_position;
-				VBEModeInfo.phys_base                   = mb->framebuffer_addr;
-				VBEModeInfo.linear_bytes_per_scanline   = mb->framebuffer_pitch;
-				VBEModeInfo.linear_red_mask_size        = mb->framebuffer_red_mask_size;
-				VBEModeInfo.linear_red_field_position   = mb->framebuffer_red_field_position;
-				VBEModeInfo.linear_green_mask_size      = mb->framebuffer_green_mask_size;
-				VBEModeInfo.linear_green_field_position = mb->framebuffer_green_field_position;
-				VBEModeInfo.linear_blue_mask_size       = mb->framebuffer_blue_mask_size;
-				VBEModeInfo.linear_blue_field_position  = mb->framebuffer_blue_field_position;
-			
-				tag->ti_Tag = KRN_VBEModeInfo;
-				tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
-				tag++;
-			}
+                                VBEModeInfo.mode_attributes             = VM_SUPPORTED|VM_COLOR|VM_GRAPHICS|VM_NO_VGA_HW|VM_NO_VGA_MEM|VM_LINEAR_FB;
+                                VBEModeInfo.bytes_per_scanline          = mb->framebuffer_pitch;
+                                VBEModeInfo.x_resolution                = mb->framebuffer_width;
+                                VBEModeInfo.y_resolution                = mb->framebuffer_height;
+                                VBEModeInfo.bits_per_pixel              = mb->framebuffer_bpp;
+                                VBEModeInfo.memory_model                = VMEM_RGB;
+                                VBEModeInfo.red_mask_size               = mb->framebuffer_red_mask_size;
+                                VBEModeInfo.red_field_position          = mb->framebuffer_red_field_position;
+                                VBEModeInfo.green_mask_size             = mb->framebuffer_green_mask_size;
+                                VBEModeInfo.green_field_position        = mb->framebuffer_green_field_position;
+                                VBEModeInfo.blue_mask_size              = mb->framebuffer_blue_mask_size;
+                                VBEModeInfo.blue_field_position         = mb->framebuffer_blue_field_position;
+                                VBEModeInfo.phys_base                   = mb->framebuffer_addr;
+                                VBEModeInfo.linear_bytes_per_scanline   = mb->framebuffer_pitch;
+                                VBEModeInfo.linear_red_mask_size        = mb->framebuffer_red_mask_size;
+                                VBEModeInfo.linear_red_field_position   = mb->framebuffer_red_field_position;
+                                VBEModeInfo.linear_green_mask_size      = mb->framebuffer_green_mask_size;
+                                VBEModeInfo.linear_green_field_position = mb->framebuffer_green_field_position;
+                                VBEModeInfo.linear_blue_mask_size       = mb->framebuffer_blue_mask_size;
+                                VBEModeInfo.linear_blue_field_position  = mb->framebuffer_blue_field_position;
+                        
+                                tag->ti_Tag = KRN_VBEModeInfo;
+                                tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
+                                tag++;
+                        }
         }
     }
 

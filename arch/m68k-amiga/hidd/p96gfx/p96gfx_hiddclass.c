@@ -212,24 +212,24 @@ struct RTGFormat
 
 static const struct RTGFormat formats[] =
 {
-    { RGBFB_CLUT,	    vHidd_StdPixFmt_LUT8,       0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
+    { RGBFB_CLUT,           vHidd_StdPixFmt_LUT8,       0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_B8G8R8A8,	vHidd_StdPixFmt_BGRA32,     0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24, FALSE },
-    { RGBFB_R8G8B8A8,	vHidd_StdPixFmt_RGBA32,     0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24, FALSE },
-    { RGBFB_A8B8G8R8,	vHidd_StdPixFmt_ABGR32,     0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0, FALSE },
-    { RGBFB_A8R8G8B8,	vHidd_StdPixFmt_ARGB32,     0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0, FALSE },
+    { RGBFB_B8G8R8A8,   vHidd_StdPixFmt_BGRA32,     0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24, FALSE },
+    { RGBFB_R8G8B8A8,   vHidd_StdPixFmt_RGBA32,     0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24, FALSE },
+    { RGBFB_A8B8G8R8,   vHidd_StdPixFmt_ABGR32,     0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0, FALSE },
+    { RGBFB_A8R8G8B8,   vHidd_StdPixFmt_ARGB32,     0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_B8G8R8,	    vHidd_StdPixFmt_BGR24,      0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0, FALSE },
-    { RGBFB_R8G8B8,	    vHidd_StdPixFmt_RGB24,      0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
+    { RGBFB_B8G8R8,         vHidd_StdPixFmt_BGR24,      0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0, FALSE },
+    { RGBFB_R8G8B8,         vHidd_StdPixFmt_RGB24,      0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_R5G5B5,	    vHidd_StdPixFmt_RGB15,      0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
-    { RGBFB_R5G6B5,	    vHidd_StdPixFmt_RGB16,      0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
+    { RGBFB_R5G5B5,         vHidd_StdPixFmt_RGB15,      0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
+    { RGBFB_R5G6B5,         vHidd_StdPixFmt_RGB16,      0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
 
-    { RGBFB_R5G5B5PC,	vHidd_StdPixFmt_RGB15_LE,   0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
-    { RGBFB_R5G6B5PC,	vHidd_StdPixFmt_RGB16_LE,   0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
+    { RGBFB_R5G5B5PC,   vHidd_StdPixFmt_RGB15_LE,   0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
+    { RGBFB_R5G6B5PC,   vHidd_StdPixFmt_RGB16_LE,   0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
 
-    { RGBFB_B5G5R5PC,	vHidd_StdPixFmt_BGR15_LE,   0x0000003e, 0x000007c0, 0x0000f800, 0x00000000, 26, 21, 16,  0, TRUE },
-    { RGBFB_B5G6R5PC,	vHidd_StdPixFmt_BGR16_LE,   0x0000001f, 0x000007e0, 0x0000f800, 0x00000000, 27, 21, 16,  0, TRUE },
+    { RGBFB_B5G5R5PC,   vHidd_StdPixFmt_BGR15_LE,   0x0000003e, 0x000007c0, 0x0000f800, 0x00000000, 26, 21, 16,  0, TRUE },
+    { RGBFB_B5G6R5PC,   vHidd_StdPixFmt_BGR16_LE,   0x0000001f, 0x000007e0, 0x0000f800, 0x00000000, 27, 21, 16,  0, TRUE },
 
     { 0 }
 };
@@ -290,7 +290,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct LibResolution *r;
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct TagItem mytags[] = {
-        { aHidd_Gfx_ModeTags,	        0                   },
+        { aHidd_Gfx_ModeTags,           0                   },
         { aHidd_Name,                   (IPTR)"p96gfx.hidd" },
         { aHidd_HardwareName,           0                   },
         { aHidd_ProducerName,           (IPTR)"P96"         },
@@ -495,7 +495,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
     EnterFunc(bug("[P96Gfx] %s: tags @ %x\n", __func__, mytags);)
 
-    mymsg.mID	= msg->mID;
+    mymsg.mID   = msg->mID;
     mymsg.attrList = mytags;
     msg = &mymsg;
 
@@ -592,7 +592,7 @@ OOP_Object *P96GFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struc
     if (msg->cl == CSD(cl)->basebm)
     {
         struct p96gfx_staticdata        *csd = CSD(cl);
-        HIDDT_ModeID		        modeid;
+        HIDDT_ModeID                    modeid;
         struct pHidd_Gfx_CreateObject   p;
         struct TagItem tags[] =
         {
@@ -652,7 +652,7 @@ VOID P96GFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         case aoHidd_P96Gfx_CardData:
             *msg->storage = (IPTR)data->cardData;
-            return;  
+            return;
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -1124,7 +1124,7 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
         if (!pb)
         {
             Permit();
-            UNLOCK_HW            
+            UNLOCK_HW
             return FALSE;
         }
         pb += 2 * hiressprite;
@@ -1594,16 +1594,16 @@ BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
     __IHidd             = OOP_ObtainAttrBase(IID_Hidd);
     __IHidd_BitMap      = OOP_ObtainAttrBase(IID_Hidd_BitMap);
     __IHidd_BitMap_P96  = OOP_ObtainAttrBase(IID_Hidd_BitMap_P96);
-    __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
-    __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
-    __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
+    __IHidd_GC          = OOP_ObtainAttrBase(IID_Hidd_GC);
+    __IHidd_Sync        = OOP_ObtainAttrBase(IID_Hidd_Sync);
+    __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
     __IHidd_P96Gfx      = OOP_ObtainAttrBase(IID_Hidd_P96Gfx);
-    __IHidd_PixFmt	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
-    __IHidd_ColorMap 	= OOP_ObtainAttrBase(IID_Hidd_ColorMap);
+    __IHidd_PixFmt      = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
+    __IHidd_ColorMap    = OOP_ObtainAttrBase(IID_Hidd_ColorMap);
 
-    HiddBitMapBase	= OOP_GetMethodID(IID_Hidd_BitMap, 0);
-    HiddColorMapBase	= OOP_GetMethodID(IID_Hidd_ColorMap, 0);
-    HiddGfxBase		= OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    HiddBitMapBase      = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    HiddColorMapBase    = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
+    HiddGfxBase         = OOP_GetMethodID(IID_Hidd_Gfx, 0);
     HiddP96GfxBase      = OOP_GetMethodID(IID_Hidd_P96Gfx, 0);
     
     if (!__IHidd || !__IHidd_BitMap || !__IHidd_BitMap_P96 || !__IHidd_GC ||
@@ -1673,7 +1673,7 @@ AROS_INTH1(rtg_vblank, APTR, boardinfo)
 {
     AROS_INTFUNC_INIT
 
-    return 0;	
+    return 0;
 
     AROS_INTFUNC_EXIT
 }

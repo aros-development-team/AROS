@@ -21,9 +21,9 @@
 #define REVISION 1
 
 static AROS_UFP3 (APTR, Init,
-		  AROS_UFPA(struct Library *, lh, D0),
-		  AROS_UFPA(BPTR, segList, A0),
-		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+                  AROS_UFPA(struct Library *, lh, D0),
+                  AROS_UFPA(BPTR, segList, A0),
+                  AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 static const TEXT name_string[] = NAME;
 static const TEXT version_string[] =
@@ -48,37 +48,37 @@ const struct Resident rb_tag =
 // ROMTAG INIT time
 static void romtaginit(struct ExpansionBase *ExpansionBase)
 {
-	struct Node *node;
-	// look for possible romtags in expansion ROM image and InitResident() them if found
-	D(bug("romtaginit\n"));
-	ObtainConfigBinding();
-	ForeachNode(&ExpansionBase->BoardList, node) {
-		struct ConfigDev *configDev = (struct ConfigDev*)node;
-		if ((configDev->cd_Flags & CDF_CONFIGME) && (configDev->cd_Rom.er_Type & ERTF_DIAGVALID) &&
-		    configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME) {
-			struct Resident *res;
-			UWORD *romptr = (UWORD*)configDev->cd_Rom.er_DiagArea;
-			UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size - 26); // 26 = real sizeof(struct Resident)!
-			struct CurrentBinding cb = {
-			    .cb_ConfigDev = configDev
-			};
-			SetCurrentBinding(&cb, sizeof(cb));
-			while (romptr <= romend) {
-				res = (struct Resident*)romptr;
-				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res) {
-					D(bug("Diag board %p InitResident %p (V=%d P=%d F=%02x '%s' '%s')\n",
-						configDev->cd_BoardAddr, res, res->rt_Version, res->rt_Pri, res->rt_Flags,
-						res->rt_Name != NULL ? (char*)res->rt_Name : "<null>",
-						res->rt_IdString != NULL ? (char*)res->rt_IdString : "<null>"));
-					InitResident(res, BNULL);
-					break; /* must not keep looking */
-				}
-				romptr++;
-			}
-		}
-	}
-	ReleaseConfigBinding();
-	D(bug("romtaginit done\n"));
+        struct Node *node;
+        // look for possible romtags in expansion ROM image and InitResident() them if found
+        D(bug("romtaginit\n"));
+        ObtainConfigBinding();
+        ForeachNode(&ExpansionBase->BoardList, node) {
+                struct ConfigDev *configDev = (struct ConfigDev*)node;
+                if ((configDev->cd_Flags & CDF_CONFIGME) && (configDev->cd_Rom.er_Type & ERTF_DIAGVALID) &&
+                    configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME) {
+                        struct Resident *res;
+                        UWORD *romptr = (UWORD*)configDev->cd_Rom.er_DiagArea;
+                        UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size - 26); // 26 = real sizeof(struct Resident)!
+                        struct CurrentBinding cb = {
+                            .cb_ConfigDev = configDev
+                        };
+                        SetCurrentBinding(&cb, sizeof(cb));
+                        while (romptr <= romend) {
+                                res = (struct Resident*)romptr;
+                                if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res) {
+                                        D(bug("Diag board %p InitResident %p (V=%d P=%d F=%02x '%s' '%s')\n",
+                                                configDev->cd_BoardAddr, res, res->rt_Version, res->rt_Pri, res->rt_Flags,
+                                                res->rt_Name != NULL ? (char*)res->rt_Name : "<null>",
+                                                res->rt_IdString != NULL ? (char*)res->rt_IdString : "<null>"));
+                                        InitResident(res, BNULL);
+                                        break; /* must not keep looking */
+                                }
+                                romptr++;
+                        }
+                }
+        }
+        ReleaseConfigBinding();
+        D(bug("romtaginit done\n"));
 }
 
 /* Stupid hack.
@@ -91,26 +91,26 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 static void uaegfxhack(APTR uaeres, UBYTE *name)
 {
     asm volatile (
-	"move.l %0,%%a6\n"
-	"move.l %1,%%a0\n"
-	"jsr -6(%%a6)\n"
-	"tst.l %%d0\n"
-	"beq.s 0f\n"
-	"move.l %%d0,%%a0\n"
-	/* 35 = return if RTG enabled, safe function to call */
-	"moveq #35,%%d0\n"
-	"move.l %%d0,-(%%sp)\n"
-	"jsr (%%a0)\n"
-	"addq.l #4,%%sp\n"
-	"0:\n"
-	: : "m" (uaeres), "m" (name) : "d0", "d1", "a0", "a1", "a6"
+        "move.l %0,%%a6\n"
+        "move.l %1,%%a0\n"
+        "jsr -6(%%a6)\n"
+        "tst.l %%d0\n"
+        "beq.s 0f\n"
+        "move.l %%d0,%%a0\n"
+        /* 35 = return if RTG enabled, safe function to call */
+        "moveq #35,%%d0\n"
+        "move.l %%d0,-(%%sp)\n"
+        "jsr (%%a0)\n"
+        "addq.l #4,%%sp\n"
+        "0:\n"
+        : : "m" (uaeres), "m" (name) : "d0", "d1", "a0", "a1", "a6"
    );
 }
 
 static AROS_UFH3 (APTR, Init,
-		  AROS_UFHA(struct Library *, lh, D0),
-		  AROS_UFHA(BPTR, segList, A0),
-		  AROS_UFHA(struct ExecBase *, SysBase, A6)
+                  AROS_UFHA(struct Library *, lh, D0),
+                  AROS_UFHA(BPTR, segList, A0),
+                  AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
    AROS_USERFUNC_INIT
@@ -120,7 +120,7 @@ static AROS_UFH3 (APTR, Init,
 
    res = OpenResource("uae.resource");
    if (res)
-	uaegfxhack(res, "uaelib_demux");
+        uaegfxhack(res, "uaelib_demux");
 
    romtaginit(eb);
 

@@ -35,10 +35,10 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
     ret = hdskBase->iface->ioctl(file, HDIO_GETGEO, &geo);
 
     if (ret != -1)
-	ret = hdskBase->iface->ioctl(file, BLKSSZGET, &blksize);
+        ret = hdskBase->iface->ioctl(file, BLKSSZGET, &blksize);
 
     if (ret != -1)
-	ret = hdskBase->iface->ioctl(file, BLKGETSIZE, &devsize);
+        ret = hdskBase->iface->ioctl(file, BLKGETSIZE, &devsize);
 
     err = *hdskBase->errnoPtr;
 
@@ -46,9 +46,9 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
 
     if (ret == -1)
     {
-    	D(bug("hostdisk: Error %d\n", err));
+        D(bug("hostdisk: Error %d\n", err));
 
-    	return err;
+        return err;
     }
 
     D(bug("hostdisk: Block size: %lu\n", blksize));
@@ -61,18 +61,18 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
 
     if (dg->dg_TotalSectors % dg->dg_CylSectors)
     {
-	dg->dg_CylSectors = 1;
-	dg->dg_Cylinders  = dg->dg_TotalSectors;
+        dg->dg_CylSectors = 1;
+        dg->dg_Cylinders  = dg->dg_TotalSectors;
 
-	D(bug("hostdisk: Geometry does not fit, use LBA\n"));
+        D(bug("hostdisk: Geometry does not fit, use LBA\n"));
     }
     else
     {
-    	dg->dg_Heads        = geo.heads;
-    	dg->dg_TrackSectors = geo.sectors;
-    	dg->dg_Cylinders    = dg->dg_TotalSectors / dg->dg_CylSectors;
+        dg->dg_Heads        = geo.heads;
+        dg->dg_TrackSectors = geo.sectors;
+        dg->dg_Cylinders    = dg->dg_TotalSectors / dg->dg_CylSectors;
 
-	D(bug("hostdisk: Device size: %u cylinders\n", dg->dg_Cylinders));
+        D(bug("hostdisk: Device size: %u cylinders\n", dg->dg_Cylinders));
     }
 
     return 0;
@@ -94,7 +94,7 @@ static int deviceProbe(struct HostDiskBase *hdskBase)
 
     D(bug("hostdisk: /dev/hda check result: %d\n", res));
     if (res == -1)
-	hdskBase->DiskDevice = "/dev/sd%lc";
+        hdskBase->DiskDevice = "/dev/sd%lc";
 
     return TRUE;
 }

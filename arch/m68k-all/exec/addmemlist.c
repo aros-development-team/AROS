@@ -15,12 +15,12 @@
 #include "memory.h"
 
 AROS_LH5(void, AddMemList,
-	AROS_LHA(IPTR,   size,       D0),
-	AROS_LHA(ULONG,  attributes, D1),
-	AROS_LHA(LONG,   pri,        D2),
-	AROS_LHA(APTR,   base,       A0),
-	AROS_LHA(STRPTR, name,       A1),
-	struct ExecBase *, SysBase, 103, Exec)
+        AROS_LHA(IPTR,   size,       D0),
+        AROS_LHA(ULONG,  attributes, D1),
+        AROS_LHA(LONG,   pri,        D2),
+        AROS_LHA(APTR,   base,       A0),
+        AROS_LHA(STRPTR, name,       A1),
+        struct ExecBase *, SysBase, 103, Exec)
 {
     AROS_LIBFUNC_INIT
 

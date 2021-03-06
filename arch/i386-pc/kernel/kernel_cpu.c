@@ -27,7 +27,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     struct Task *task;
     struct ExceptionContext *ctx;
 
-    /* 
+    /*
      * Is the list of ready tasks empty? Well, increment the idle switch count and halt CPU.
      * It should be extended by some plugin mechanism which would put CPU and whole machine
      * into some more sophisticated sleep states (ACPI?)
@@ -55,7 +55,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     if (ctx->Flags & ECF_FPFXS)
     {
         /*
-         * We have SSE state, restore it. 
+         * We have SSE state, restore it.
          * SSE context includes 8087, so we don't have to care about
          * it separately after this.
          */
@@ -78,7 +78,7 @@ void cpu_Switch(struct ExceptionContext *regs)
 
     D(bug("[Kernel] cpu_Switch(), task %s\n", task->tc_Node.ln_Name));
 
-    /* 
+    /*
      * Copy the fpu, mmx, xmm state.
      * Do this before CopyMemQuick(), because this function
      * can use SSE itself.

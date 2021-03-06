@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 AROS_LH0(int, KrnObtainInput,
-	  struct KernelBase *, KernelBase, 33, Kernel)
+          struct KernelBase *, KernelBase, 33, Kernel)
 {
     AROS_LIBFUNC_INIT
 

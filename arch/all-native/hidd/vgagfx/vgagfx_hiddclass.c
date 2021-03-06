@@ -38,7 +38,7 @@ static AROS_INTH1(ResetHandler, struct VGAGfx_staticdata *, xsd)
 
 /* On my machine this fills the screen with colorful vertical stripes
    instead of blanking. So for now we use software method.
-	Pavel Fedin.
+        Pavel Fedin.
     vgaBlankScreen(0); */
 
     if (xsd->visible)
@@ -46,9 +46,9 @@ static AROS_INTH1(ResetHandler, struct VGAGfx_staticdata *, xsd)
 
     if (data)
     {
-    	struct Box box = {0, 0, data->width - 1, data->height - 1};
-	
-	vgaEraseArea(data, &box);
+        struct Box box = {0, 0, data->width - 1, data->height - 1};
+        
+        vgaEraseArea(data, &box);
     }
 
     return 0;
@@ -60,48 +60,48 @@ static AROS_INTH1(ResetHandler, struct VGAGfx_staticdata *, xsd)
 
 struct vgaModeDesc
     vgaDefMode[NUM_MODES]={
-		{"640x480x4 @ 60Hz",	// h: 31.5 kHz v: 60Hz
-		640,480,4,0,
-		0,
-		640,664,760,800,0,
-		480,491,493,525}
-#ifndef ONLY640 
-	       ,{"768x576x4 @ 54Hz",	// h: 32.5 kHz v: 54Hz
-		768,576,4,1,
-		0,
-		768,795,805,872,0,
-		576,577,579,600},
-		{"800x600x4 @ 52Hz",	// h: 31.5 kHz v: 52Hz
-		800,600,4,1,
-		0,
-		800,826,838,900,0,	// 900
-		600,601,603,617}	// 617
+                {"640x480x4 @ 60Hz",    // h: 31.5 kHz v: 60Hz
+                640,480,4,0,
+                0,
+                640,664,760,800,0,
+                480,491,493,525}
+#ifndef ONLY640
+               ,{"768x576x4 @ 54Hz",    // h: 32.5 kHz v: 54Hz
+                768,576,4,1,
+                0,
+                768,795,805,872,0,
+                576,577,579,600},
+                {"800x600x4 @ 52Hz",    // h: 31.5 kHz v: 52Hz
+                800,600,4,1,
+                0,
+                800,826,838,900,0,      // 900
+                600,601,603,617}        // 617
 #endif
-		};
+                };
 
 /*********************
 **  GfxHidd::New()  **
 *********************/
 
 #define NUM_SYNC_TAGS 11
-#define SET_SYNC_TAG(taglist, idx, tag, val) 	\
-    taglist[idx].ti_Tag  = aHidd_Sync_ ## tag;	\
+#define SET_SYNC_TAG(taglist, idx, tag, val)    \
+    taglist[idx].ti_Tag  = aHidd_Sync_ ## tag;  \
     taglist[idx].ti_Data = val
 
 VOID synctags_init(OOP_Class *cl, struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
 {
     ULONG clock = (md->clock == 1) ? 28322000 : 25175000;
 
-    SET_SYNC_TAG(tags, 0, PixelClock, 	clock	);
-    SET_SYNC_TAG(tags, 1, HDisp, 	md->HDisplay	);
-    SET_SYNC_TAG(tags, 2, VDisp, 	md->VDisplay	);
-    SET_SYNC_TAG(tags, 3, HSyncStart, 	md->HSyncStart	);
-    SET_SYNC_TAG(tags, 4, HSyncEnd, 	md->HSyncEnd	);
-    SET_SYNC_TAG(tags, 5, HTotal, 	md->HTotal	);
-    SET_SYNC_TAG(tags, 6, VSyncStart,	md->VSyncStart	);
-    SET_SYNC_TAG(tags, 7, VSyncEnd, 	md->VSyncEnd	);
-    SET_SYNC_TAG(tags, 8, VTotal, 	md->VTotal	);
-    SET_SYNC_TAG(tags, 9, Description,  (IPTR)name  	);
+    SET_SYNC_TAG(tags, 0, PixelClock,   clock   );
+    SET_SYNC_TAG(tags, 1, HDisp,        md->HDisplay    );
+    SET_SYNC_TAG(tags, 2, VDisp,        md->VDisplay    );
+    SET_SYNC_TAG(tags, 3, HSyncStart,   md->HSyncStart  );
+    SET_SYNC_TAG(tags, 4, HSyncEnd,     md->HSyncEnd    );
+    SET_SYNC_TAG(tags, 5, HTotal,       md->HTotal      );
+    SET_SYNC_TAG(tags, 6, VSyncStart,   md->VSyncStart  );
+    SET_SYNC_TAG(tags, 7, VSyncEnd,     md->VSyncEnd    );
+    SET_SYNC_TAG(tags, 8, VTotal,       md->VTotal      );
+    SET_SYNC_TAG(tags, 9, Description,  (IPTR)name      );
     tags[10].ti_Tag = TAG_DONE;
 }
 
@@ -110,55 +110,55 @@ VOID synctags_init(OOP_Class *cl, struct TagItem *tags, struct vgaModeDesc *md, 
 OOP_Object *VGAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] = {
-    	{ aHidd_PixFmt_RedShift     , 0			      }, /* 0 */
-	{ aHidd_PixFmt_GreenShift   , 0			      }, /* 1 */
-	{ aHidd_PixFmt_BlueShift    , 0			      }, /* 2 */
-	{ aHidd_PixFmt_AlphaShift   , 0			      }, /* 3 */
-	{ aHidd_PixFmt_RedMask      , 0x000000FC	      }, /* 4 */
-	{ aHidd_PixFmt_GreenMask    , 0x0000FC00	      }, /* 5 */
-	{ aHidd_PixFmt_BlueMask     , 0x00FC0000	      }, /* 6 */
-	{ aHidd_PixFmt_AlphaMask    , 0x00000000	      }, /* 7 */
-	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette}, /* 8 */
-	{ aHidd_PixFmt_Depth	    , 4			      }, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel, 1			      }, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel , 4			      }, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_LUT8    }, /* 12 */
-	{ aHidd_PixFmt_CLUTShift    , 0			      }, /* 13 */
-	{ aHidd_PixFmt_CLUTMask	    , 0x0f		      }, /* 14 */
-	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky }, /* 15 */
-	{ TAG_DONE		    , 0UL		      }
+        { aHidd_PixFmt_RedShift     , 0                       }, /* 0 */
+        { aHidd_PixFmt_GreenShift   , 0                       }, /* 1 */
+        { aHidd_PixFmt_BlueShift    , 0                       }, /* 2 */
+        { aHidd_PixFmt_AlphaShift   , 0                       }, /* 3 */
+        { aHidd_PixFmt_RedMask      , 0x000000FC              }, /* 4 */
+        { aHidd_PixFmt_GreenMask    , 0x0000FC00              }, /* 5 */
+        { aHidd_PixFmt_BlueMask     , 0x00FC0000              }, /* 6 */
+        { aHidd_PixFmt_AlphaMask    , 0x00000000              }, /* 7 */
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette}, /* 8 */
+        { aHidd_PixFmt_Depth        , 4                       }, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel, 1                       }, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel , 4                       }, /* 11 */
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_LUT8    }, /* 12 */
+        { aHidd_PixFmt_CLUTShift    , 0                       }, /* 13 */
+        { aHidd_PixFmt_CLUTMask     , 0x0f                    }, /* 14 */
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky }, /* 15 */
+        { TAG_DONE                  , 0UL                     }
     };
 
     struct TagItem sync_640_480[NUM_SYNC_TAGS];
-#ifndef ONLY640 
+#ifndef ONLY640
     struct TagItem sync_758_576[NUM_SYNC_TAGS];
     struct TagItem sync_800_600[NUM_SYNC_TAGS];
 #endif
 
     struct TagItem modetags[] = {
-	{ aHidd_Sync_HMax     , 16384			},
-	{ aHidd_Sync_VMax     , 16384			},
-	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags		},
-	{ aHidd_Gfx_SyncTags  ,	(IPTR)sync_640_480	},
+        { aHidd_Sync_HMax     , 16384                   },
+        { aHidd_Sync_VMax     , 16384                   },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags            },
+        { aHidd_Gfx_SyncTags  , (IPTR)sync_640_480      },
 #ifndef ONLY640
-	{ aHidd_Gfx_SyncTags  ,	(IPTR)sync_758_576	},
-	{ aHidd_Gfx_SyncTags  ,	(IPTR)sync_800_600	},
+        { aHidd_Gfx_SyncTags  , (IPTR)sync_758_576      },
+        { aHidd_Gfx_SyncTags  , (IPTR)sync_800_600      },
 #endif
-	{ TAG_DONE, 0UL }
+        { TAG_DONE, 0UL }
     };
     
     struct TagItem mytags[] = {
-	{ aHidd_Gfx_ModeTags,	(IPTR)modetags	},
+        { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
         { aHidd_Name            , (IPTR)"vgagfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"VGA Compatible Controller"   },
         { aHidd_ProducerName    , (IPTR)"IBM"  },
-	{ TAG_MORE, (IPTR)msg->attrList }
+        { TAG_MORE, (IPTR)msg->attrList }
     };
     struct pRoot_New mymsg;
 
     /* Do not allow to create more than one object */
     if (XSD(cl)->vgahidd)
-	return NULL;
+        return NULL;
 
     /* First init the sync tags */
     init_sync_tags(sync_640_480, &vgaDefMode[0], "VGA:640x480");
@@ -174,8 +174,8 @@ OOP_Object *VGAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
        for several calls, but that will break if some method changes the
        msg struct contents)
     */
-    mymsg.mID	= msg->mID;	/* We got New() method and we are sending 
-				   the same method to the superclass	*/
+    mymsg.mID   = msg->mID;     /* We got New() method and we are sending
+                                   the same method to the superclass    */
     mymsg.attrList = mytags;
     msg = &mymsg;
 
@@ -186,10 +186,10 @@ OOP_Object *VGAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     if (o) {
         struct VGAGfxDriverData *data = OOP_INST_DATA(cl, o);
 
-	data->ResetInterrupt.is_Node.ln_Name = cl->ClassNode.ln_Name;
-	data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
-	data->ResetInterrupt.is_Data = XSD(cl);
-	AddResetCallback(&data->ResetInterrupt);
+        data->ResetInterrupt.is_Node.ln_Name = cl->ClassNode.ln_Name;
+        data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
+        data->ResetInterrupt.is_Data = XSD(cl);
+        AddResetCallback(&data->ResetInterrupt);
     }
     ReturnPtr("VGAGfx::New", OOP_Object *, o);
 }
@@ -208,18 +208,18 @@ VOID VGAGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     ULONG idx;
     BOOL found = FALSE;
     if (IS_GFX_ATTR(msg->attrID, idx)) {
-    	switch (idx) {
-	     case aoHidd_Gfx_SupportsHWCursor:
-	     case aoHidd_Gfx_NoFrameBuffer:
-	     	*msg->storage = (IPTR)TRUE;
-		found = TRUE;
-		break;
-	}
+        switch (idx) {
+             case aoHidd_Gfx_SupportsHWCursor:
+             case aoHidd_Gfx_NoFrameBuffer:
+                *msg->storage = (IPTR)TRUE;
+                found = TRUE;
+                break;
+        }
     }
     
     if (!found)
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        
     return;
 }
 
@@ -244,13 +244,13 @@ OOP_Object *VGAGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct 
         modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         if (vHidd_ModeID_Invalid != modeid) {
             /* User supplied a valid modeid. We can use our class */
-            mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-            mytags[0].ti_Data	= (IPTR)XSD(cl)->bmclass;
+            mytags[0].ti_Tag    = aHidd_BitMap_ClassPtr;
+            mytags[0].ti_Data   = (IPTR)XSD(cl)->bmclass;
         }
         /* Like in Gfx::New() we init a new message struct */
-        mymsg.mID	= msg->mID;
-        mymsg.cl	= msg->cl;
-        mymsg.attrList	= mytags;
+        mymsg.mID       = msg->mID;
+        mymsg.cl        = msg->cl;
+        mymsg.attrList  = mytags;
 
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     }
@@ -276,39 +276,39 @@ OOP_Object *VGAGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
     /* Remove old bitmap from the screen */
     if (data->visible) {
-	IPTR tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
+        IPTR tags[] = {aHidd_BitMap_Visible, FALSE, TAG_DONE};
 
-	D(bug("[VGAGfx] Old displayed bitmap: 0x%p\n", data->visible));
-	OOP_SetAttrs(data->visible, (struct TagItem *)tags);
+        D(bug("[VGAGfx] Old displayed bitmap: 0x%p\n", data->visible));
+        OOP_SetAttrs(data->visible, (struct TagItem *)tags);
     }
 
     if (msg->bitMap) {
-	/* If we have a bitmap to show, set it as visible */
-	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
-	OOP_Object *pixfmt;
-	IPTR depth;
+        /* If we have a bitmap to show, set it as visible */
+        IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+        OOP_Object *pixfmt;
+        IPTR depth;
 
-	OOP_GetAttr(msg->bitMap, aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
-	OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
-	/* TODO: this should be brought in from SpriteBase of the colormap */
-	data->mouseBase = (depth > 4) ? 16 : (1 << depth) - 8;
+        OOP_GetAttr(msg->bitMap, aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
+        OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+        /* TODO: this should be brought in from SpriteBase of the colormap */
+        data->mouseBase = (depth > 4) ? 16 : (1 << depth) - 8;
 
-	OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
-	data->visible = msg->bitMap;
+        OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
+        data->visible = msg->bitMap;
     } else {
-	/* Otherwise simply clear the framebuffer */
-	box.x1 = 0;
-	box.y1 = 0;
-	box.x2 = 639;
-	box.y2 = 479;
-	ObtainSemaphore(&data->HW_acc);
-	/* We use old visible bitmap pointer here since this bitmap
-	   contains data about the current video mode */
+        /* Otherwise simply clear the framebuffer */
+        box.x1 = 0;
+        box.y1 = 0;
+        box.x2 = 639;
+        box.y2 = 479;
+        ObtainSemaphore(&data->HW_acc);
+        /* We use old visible bitmap pointer here since this bitmap
+           contains data about the current video mode */
         vgaEraseArea(OOP_INST_DATA(data->bmclass, data->visible), &box);
-	draw_mouse(data);
-	ReleaseSemaphore(&data->HW_acc);
+        draw_mouse(data);
+        ReleaseSemaphore(&data->HW_acc);
 
-	data->visible = NULL;
+        data->visible = NULL;
     }
     D(bug("[VGAGfx] New displayed bitmap: 0x%p\n", data->visible));
     D(bug("[VGAGfx] Mouse pointer base color: %u\n", data->mouseBase));
@@ -327,32 +327,32 @@ VOID VGAGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
     mode = GC_DRMD(msg->gc);
 
     EnterFunc(bug("VGAGfx.BitMap::CopyBox (%d,%d) to (%d,%d) of dim %d,%d\n",
-    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+        msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
     D(bug("[VGAGfx] Src: 0x%p, dest: 0x%p\n", msg->src, msg->dest));
     OOP_GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
 
     if (!dest || !src ||
-    	((mode != vHidd_GC_DrawMode_Copy) &&
-	 (mode != vHidd_GC_DrawMode_And) &&
-	 (mode != vHidd_GC_DrawMode_Xor) &&
-	 (mode != vHidd_GC_DrawMode_Clear) &&
-	 (mode != vHidd_GC_DrawMode_Invert)))
+        ((mode != vHidd_GC_DrawMode_Copy) &&
+         (mode != vHidd_GC_DrawMode_And) &&
+         (mode != vHidd_GC_DrawMode_Xor) &&
+         (mode != vHidd_GC_DrawMode_Clear) &&
+         (mode != vHidd_GC_DrawMode_Invert)))
     {
-	/* The source and/or destination object is no VGA bitmap, onscreen nor offscreen.
-	   Or drawmode is not one of those we accelerate. Let the superclass do the
-	   copying in a more general way
-	*/
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	return;
-	
+        /* The source and/or destination object is no VGA bitmap, onscreen nor offscreen.
+           Or drawmode is not one of those we accelerate. Let the superclass do the
+           copying in a more general way
+        */
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+        
     }
 
     {
-    	struct VGAGfxBitMapData *data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+        struct VGAGfxBitMapData *data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         struct VGAGfxBitMapData *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
         int i, width, phase, j;
-	BOOL descending;
+        BOOL descending;
 
         // start of Source data
         unsigned char *s_start = data->VideoData +
@@ -365,257 +365,257 @@ VOID VGAGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
                                  msg->destX + (msg->destY * ddata->bpr);
         ULONG d_add = ddata->bpr - msg->width;
 
-	width = msg->width;
+        width = msg->width;
 
-    	if ((msg->srcY > msg->destY) || ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)))
-	{
-	    if ((phase = ((IPTR)s_start & 3L)))
-	    {
-		phase = 4 - phase;
-		if (phase > width) phase = width;
-		width -= phase;
-	    }
-	    descending = FALSE;
-	}
-	else
-	{
-	    s_start += (cnt - 1) * data->bpr + width;
-	    d_start += (cnt - 1) * ddata->bpr + width;
+        if ((msg->srcY > msg->destY) || ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)))
+        {
+            if ((phase = ((IPTR)s_start & 3L)))
+            {
+                phase = 4 - phase;
+                if (phase > width) phase = width;
+                width -= phase;
+            }
+            descending = FALSE;
+        }
+        else
+        {
+            s_start += (cnt - 1) * data->bpr + width;
+            d_start += (cnt - 1) * ddata->bpr + width;
 
-	    phase = ((IPTR)s_start & 3L);
-	    if (phase > width) phase = width;
-	    width -= phase;
-	    
-	    descending = TRUE;
-	}
+            phase = ((IPTR)s_start & 3L);
+            if (phase > width) phase = width;
+            width -= phase;
+            
+            descending = TRUE;
+        }
 
         switch(mode)
-	{
-	    case vHidd_GC_DrawMode_Copy:
-	    	HIDD_BM_CopyMemBox8(msg->dest,
-		    	    	    data->VideoData,
-				    msg->srcX,
-				    msg->srcY,
-				    ddata->VideoData,
-				    msg->destX,
-				    msg->destY,
-				    msg->width,
-				    msg->height,
-				    data->bpr,
-				    ddata->bpr);
-		break;
-		
-	    case vHidd_GC_DrawMode_And:
-	    	if (!descending)
-		{
+        {
+            case vHidd_GC_DrawMode_Copy:
+                HIDD_BM_CopyMemBox8(msg->dest,
+                                    data->VideoData,
+                                    msg->srcX,
+                                    msg->srcY,
+                                    ddata->VideoData,
+                                    msg->destX,
+                                    msg->destY,
+                                    msg->width,
+                                    msg->height,
+                                    data->bpr,
+                                    ddata->bpr);
+                break;
+                
+            case vHidd_GC_DrawMode_And:
+                if (!descending)
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *d_start++ &= *s_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((ULONG*)d_start) &= *((ULONG*)s_start);
-		            d_start += 4;
-		            s_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                        }
+                        while (i >= 4)
+                        {
+                            *((ULONG*)d_start) &= *((ULONG*)s_start);
+                            d_start += 4;
+                            s_start += 4;
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *d_start++ &= *s_start++;
-                	}
-                	d_start += d_add;
-                	s_start += s_add;
+                        }
+                        d_start += d_add;
+                        s_start += s_add;
                     }
-		}
-		else
-		{
+                }
+                else
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *--d_start &= *--s_start;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            s_start -= 4;
-		            *((ULONG*)d_start) &= *((ULONG*)s_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                        }
+                        while (i >= 4)
+                        {
+                            d_start -= 4;
+                            s_start -= 4;
+                            *((ULONG*)d_start) &= *((ULONG*)s_start);
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *--d_start &= *--s_start;
-                	}
-                	d_start -= d_add;
-                	s_start -= s_add;
+                        }
+                        d_start -= d_add;
+                        s_start -= s_add;
                     }
-		}
-		
-		break;
+                }
+                
+                break;
 
-	    case vHidd_GC_DrawMode_Xor:
-	    	if (!descending)
-		{
+            case vHidd_GC_DrawMode_Xor:
+                if (!descending)
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *d_start++ ^= *s_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((ULONG*)d_start) ^= *((ULONG*)s_start);
-		            d_start += 4;
-		            s_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                        }
+                        while (i >= 4)
+                        {
+                            *((ULONG*)d_start) ^= *((ULONG*)s_start);
+                            d_start += 4;
+                            s_start += 4;
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *d_start++ ^= *s_start++;
-                	}
-                	d_start += d_add;
-                	s_start += s_add;
+                        }
+                        d_start += d_add;
+                        s_start += s_add;
                     }
-		}
-		else
-		{
+                }
+                else
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *--d_start ^= *--s_start;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            s_start -= 4;
-		            *((ULONG*)d_start) ^= *((ULONG*)s_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                        }
+                        while (i >= 4)
+                        {
+                            d_start -= 4;
+                            s_start -= 4;
+                            *((ULONG*)d_start) ^= *((ULONG*)s_start);
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *--d_start ^= *--s_start;
-                	}
-                	d_start -= d_add;
-                	s_start -= s_add;
+                        }
+                        d_start -= d_add;
+                        s_start -= s_add;
                     }
-		}
-		break;
-	    	
-	    case vHidd_GC_DrawMode_Clear:
-	    	if (!descending)
-		{		
+                }
+                break;
+                
+            case vHidd_GC_DrawMode_Clear:
+                if (!descending)
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *d_start++ = 0;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((ULONG*)d_start) = 0;
-		            d_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                        }
+                        while (i >= 4)
+                        {
+                            *((ULONG*)d_start) = 0;
+                            d_start += 4;
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *d_start++ = 0;
-                	}
-                	d_start += d_add;
+                        }
+                        d_start += d_add;
                     }
-		}
-		else
-		{
+                }
+                else
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *--d_start = 0;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            *((ULONG*)d_start) = 0;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                        }
+                        while (i >= 4)
+                        {
+                            d_start -= 4;
+                            *((ULONG*)d_start) = 0;
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *--d_start = 0;
-                	}
-                	d_start -= d_add;
+                        }
+                        d_start -= d_add;
                     }
-		}
-    	    	break;
-			    	
-	    case vHidd_GC_DrawMode_Invert:
-	    	if (!descending)
-		{
+                }
+                break;
+                                
+            case vHidd_GC_DrawMode_Invert:
+                if (!descending)
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *d_start = ~*d_start;
-			    d_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((ULONG*)d_start) = ~*((ULONG*)d_start);
-		            d_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                            d_start++;
+                        }
+                        while (i >= 4)
+                        {
+                            *((ULONG*)d_start) = ~*((ULONG*)d_start);
+                            d_start += 4;
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *d_start = ~*d_start;
-			    d_start++;
-                	}
-                	d_start += d_add;
+                            d_start++;
+                        }
+                        d_start += d_add;
                     }
-		}
-		else
-		{
+                }
+                else
+                {
                     while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
+                    {
+                        i = width;
+                        j = phase;
+                        while (j--)
+                        {
                             *d_start = ~*d_start;
-			    d_start--;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            *((ULONG*)d_start) = ~*((ULONG*)d_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
+                            d_start--;
+                        }
+                        while (i >= 4)
+                        {
+                            d_start -= 4;
+                            *((ULONG*)d_start) = ~*((ULONG*)d_start);
+                            i -= 4;
+                        }
+                        while (i--)
+                        {
                             *d_start = ~*d_start;
-			    d_start--;
-                	}
-                	d_start -= d_add;
+                            d_start--;
+                        }
+                        d_start -= d_add;
                     }
-		    break;
-		}
-		break;
-		
-	} /* switch(mode) */
+                    break;
+                }
+                break;
+                
+        } /* switch(mode) */
     }
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
@@ -633,14 +633,14 @@ BOOL VGAGfx__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     new_curs_pixels = AllocMem(curs_width * curs_height, MEMF_ANY);
     if (!new_curs_pixels)
-	return FALSE;
+        return FALSE;
 
     HIDD_BM_GetImage(msg->shape, new_curs_pixels, curs_width, 0, 0, curs_width, curs_height, vHidd_StdPixFmt_LUT8);
 
     ObtainSemaphore(&data->HW_acc);
     erase_mouse(data);
     if (data->mouseShape)
-	FreeMem(data->mouseShape, data->mouseW * data->mouseH);
+        FreeMem(data->mouseShape, data->mouseW * data->mouseH);
 
     data->mouseW = curs_width;
     data->mouseH = curs_height;
@@ -668,10 +668,10 @@ BOOL VGAGfx__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_G
             OOP_INST_DATA(XSD(cl)->bmclass, XSD(cl)->visible);
 
         if (XSD(cl)->mouseX < 0) XSD(cl)->mouseX = 0;
-	if (XSD(cl)->mouseY < 0) XSD(cl)->mouseY = 0;
-	if (XSD(cl)->mouseX >= bm_data->width) XSD(cl)->mouseX =
+        if (XSD(cl)->mouseY < 0) XSD(cl)->mouseY = 0;
+        if (XSD(cl)->mouseX >= bm_data->width) XSD(cl)->mouseX =
             bm_data->width - 1;
-	if (XSD(cl)->mouseY >= bm_data->height) XSD(cl)->mouseY =
+        if (XSD(cl)->mouseY >= bm_data->height) XSD(cl)->mouseY =
             bm_data->height - 1;
     }
     
@@ -696,7 +696,7 @@ VOID VGAGfx__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHi
 
 /* end of stuff added by stegerg */
 /*******************************************************************/
-	       
+               
 void draw_mouse(struct VGAGfx_staticdata *xsd)
 {
     int pix;
@@ -704,50 +704,50 @@ void draw_mouse(struct VGAGfx_staticdata *xsd)
     int x, y, width, fg, x_i, y_i;
 
     if (!xsd->mouseShape)
-	return;
+        return;
 
     if (xsd->mouseVisible)
     {
         if (xsd->visible)
-	{
+        {
             struct VGAGfxBitMapData *bm_data =
                 OOP_INST_DATA(xsd->bmclass, xsd->visible);
 
-	    /* Get display width */
-	    width = bm_data->disp_width;
+            /* Get display width */
+            width = bm_data->disp_width;
 
-    	    /* And pointer data */
-    	    data = xsd->mouseShape;
+            /* And pointer data */
+            data = xsd->mouseShape;
     
-    	    ObtainSemaphore(&xsd->HW_acc);
+            ObtainSemaphore(&xsd->HW_acc);
 
-    	    outw(0x3c4,0x0f02);
-	    outw(0x3ce,0x0005);
-	    outw(0x3ce,0x0003);
-	    outw(0x3ce,0x0f01);
+            outw(0x3c4,0x0f02);
+            outw(0x3ce,0x0005);
+            outw(0x3ce,0x0003);
+            outw(0x3ce,0x0f01);
 
-	    for (y_i = 0, y = xsd->mouseY ; y_i < xsd->mouseH; y_i++, y++)
-    	    {
-    		for (x_i = 0, x = xsd->mouseX; x_i < xsd->mouseW; x_i++, x++)
-		{
-		    ptr = (char *)(IPTR)(0xa0000 + (x + (y * width)) / 8);
-		    pix = 0x8000 >> (x % 8);
+            for (y_i = 0, y = xsd->mouseY ; y_i < xsd->mouseH; y_i++, y++)
+            {
+                for (x_i = 0, x = xsd->mouseX; x_i < xsd->mouseW; x_i++, x++)
+                {
+                    ptr = (char *)(IPTR)(0xa0000 + (x + (y * width)) / 8);
+                    pix = 0x8000 >> (x % 8);
     
-		    fg = (char)*data++;
+                    fg = (char)*data++;
 
-		    if (fg && (x < width))
-		    {
-			fg += xsd->mouseBase;
-			outw(0x3ce,pix | 8);
-			outw(0x3ce,(fg << 8));
+                    if (fg && (x < width))
+                    {
+                        fg += xsd->mouseBase;
+                        outw(0x3ce,pix | 8);
+                        outw(0x3ce,(fg << 8));
 
-			*ptr |= 1;		// This or'ed value isn't important
-		    }
-		}
-	    }
-	    
-	    ReleaseSemaphore(&xsd->HW_acc);
-	}
+                        *ptr |= 1;              // This or'ed value isn't important
+                    }
+                }
+            }
+            
+            ReleaseSemaphore(&xsd->HW_acc);
+        }
     }
 }
 
@@ -756,11 +756,11 @@ void erase_mouse(struct VGAGfx_staticdata *data)
     if (data->visible) {
         struct Box box = {0, 0, 0, 0};
 
-	box.x1 = data->mouseX;
+        box.x1 = data->mouseX;
         box.y1 = data->mouseY;
         box.x2 = box.x1 + data->mouseW;
         box.y2 = box.y1 + data->mouseH;
 
-	vgaRefreshArea(OOP_INST_DATA(data->bmclass, data->visible), &box);
+        vgaRefreshArea(OOP_INST_DATA(data->bmclass, data->visible), &box);
     }
 }

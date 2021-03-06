@@ -39,24 +39,24 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
     BOOL res = FALSE;
     int i;
 
-    struct OOP_ABDescr abd[] = 
+    struct OOP_ABDescr abd[] =
     {
         { IID_Hidd              , &HiddAttrBase         },
-        { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
-        { IID_Hidd_ChunkyBM,	&HiddChunkyBMAttrBase },
-        { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
-        { IID_Hidd_Gfx,		&HiddGfxAttrBase },
-        { IID_Hidd_Sync,		&HiddSyncAttrBase },
+        { IID_Hidd_BitMap,              &HiddBitMapAttrBase },
+        { IID_Hidd_ChunkyBM,    &HiddChunkyBMAttrBase },
+        { IID_Hidd_PixFmt,              &HiddPixFmtAttrBase },
+        { IID_Hidd_Gfx,         &HiddGfxAttrBase },
+        { IID_Hidd_Sync,                &HiddSyncAttrBase },
         /* Private bases */
-        { IID_Hidd_BitMap_VGA,	&HiddVGABitMapAB },
+        { IID_Hidd_BitMap_VGA,  &HiddVGABitMapAB },
         { NULL, NULL }
     };
 
     /* We are not compatible with VESA driver */
     if (OOP_FindClass("hidd.gfx.vesa"))
     {
-	D(bug("[VGAGfx] VESA driver found, not initializing VGA\n"));
-	return FALSE;
+        D(bug("[VGAGfx] VESA driver found, not initializing VGA\n"));
+        return FALSE;
     }
 
     if ((ACPICABase = OpenLibrary("acpica.library", 0)))
@@ -80,19 +80,19 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
     NEWLIST(&csd->modelist);
 
     if (!OOP_ObtainAttrBases(abd))
-	return FALSE;
+        return FALSE;
     
     /* Insert default videomodes */
-	
+        
     for (i=0; i < NUM_MODES; i++)
     {
-	entry = AllocMem(sizeof(struct vgaModeEntry),MEMF_CLEAR|MEMF_PUBLIC);
-	if (entry)
-	{
-	    entry->Desc=&(vgaDefMode[i]);
-	    ADDHEAD(&csd->modelist,entry);
-	    D(bug("Added default mode: %s\n", entry->Desc->name));
-	}
+        entry = AllocMem(sizeof(struct vgaModeEntry),MEMF_CLEAR|MEMF_PUBLIC);
+        if (entry)
+        {
+            entry->Desc=&(vgaDefMode[i]);
+            ADDHEAD(&csd->modelist,entry);
+            D(bug("Added default mode: %s\n", entry->Desc->name));
+        }
     }
 
     D(bug("[VGAGfx] Init: Everything OK, installing driver\n"));
@@ -105,14 +105,14 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
     if (!GfxBase)
     {
-	D(bug("[VGAGfx] Failed to open graphics.library!\n"));
+        D(bug("[VGAGfx] Failed to open graphics.library!\n"));
 
-	return FALSE;
+        return FALSE;
     }
 
     csd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
-    /* 
+    /*
      * It is unknown (and no way to know) what hardware part this driver uses.
      * In order to avoid conflicts with disk-based native-mode hardware
      * drivers it needs to be removed from the system when some other driver
@@ -124,9 +124,9 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[VGAGfx] AddDisplayDriver() result: %u\n", i));
     if (!i)
     {
-	/* We use ourselves, and no one else does */
-    	LIBBASE->library.lib_OpenCnt = 1;
-    	res = TRUE;
+        /* We use ourselves, and no one else does */
+        LIBBASE->library.lib_OpenCnt = 1;
+        res = TRUE;
     }
 
     CloseLibrary(&GfxBase->LibNode);

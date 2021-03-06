@@ -10,7 +10,7 @@
  * image cannot be loaded by this application.
  *
  * As you can probably guess, you will need at least 1MB of
- * extra free RAM to get this to work. 
+ * extra free RAM to get this to work.
  *
  * Also - no AROS specific code can go in here! We have to run
  * on AOS 1.3 and up.
@@ -33,7 +33,7 @@
 #define KERNELTAGS_TOTAL 16
 #define CMDLINE_SIZE 512
 
-#define SS_STACK_SIZE	0x2000
+#define SS_STACK_SIZE   0x2000
 #define MAGIC_FAST_SIZE 65536
 
 /* This structure must match with start.c! */
@@ -109,7 +109,7 @@ static inline void bug(const char *fmt, ...)
 }
 #define D(x) x
 #else
-#define D(x) 
+#define D(x)
 #endif
 
 #include <loadseg.h>
@@ -369,7 +369,7 @@ static void remMemList(UBYTE *mem)
             return;
         }
    }
-   D(DWriteF("MemList slot not found!\n"));   
+   D(DWriteF("MemList slot not found!\n"));
 }
 
 static struct Resident *scanResidents(UBYTE *mem, ULONG size, BOOL loadseg)
@@ -425,7 +425,7 @@ static void scanMemLists(void)
     while (bmc->ml.ml_Node.ln_Succ) {
         struct MemList *ml = &bmc->ml;
         if (ml->ml_Node.ln_Type == NT_KICKMEM) {
-        	ml->ml_Node.ln_Type = NT_MEMORY;
+                ml->ml_Node.ln_Type = NT_MEMORY;
             for (i = 0; i < ml->ml_NumEntries; i++) {
                 if (scanResidents(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, FALSE)) {
                     // Can be MMU write protected
@@ -527,7 +527,7 @@ off_t lseek(int fd, off_t offset, int whence)
     if (err < 0)
         return -1;
 
-    return Seek((BPTR)fd, 0, OFFSET_CURRENT);       
+    return Seek((BPTR)fd, 0, OFFSET_CURRENT);
 }
 
 static AROS_UFH4(LONG, aosRead,
@@ -818,7 +818,7 @@ static void RTGPatch(struct Resident *r, BPTR seg)
             LONG len = ptr[-1] - sizeof(BPTR);
             UBYTE *p = (UBYTE*)(ptr + 1);
             while (len > 0) {
-               	if (len > 16 && !strnicmp(p, "libs:picasso96/", 15)) {
+                if (len > 16 && !strnicmp(p, "libs:picasso96/", 15)) {
                     memmove(p, p + 15, strlen(p + 15) + 1);
                     patched = TRUE;
                 } else if (len > 10 && !strnicmp(p, "picasso96/", 10)) {
@@ -884,113 +884,113 @@ static void LoadResidents(BPTR *namearray)
 
 #if DEBUG
 
-#define SERDATR			0x18
-#define SERDAT			0x30
-#define INTREQ			0x9c
-#define INTENA			0x9a
-#define SERDATR_TBE		(1 << 13)	/* Tx Buffer Empty */
-#define SERDAT_STP8		(1 << 8)
-#define SERDAT_DB8(x)		((x) & 0xff)
-#define SERPER_BASE_PAL		3546895
-#define SERPER			0x32
-#define SERPER_BAUD(base, x)	((((base + (x)/2))/(x)-1) & 0x7fff)	/* Baud rate */
-#define INTF_TBE		0x0001
+#define SERDATR                 0x18
+#define SERDAT                  0x30
+#define INTREQ                  0x9c
+#define INTENA                  0x9a
+#define SERDATR_TBE             (1 << 13)       /* Tx Buffer Empty */
+#define SERDAT_STP8             (1 << 8)
+#define SERDAT_DB8(x)           ((x) & 0xff)
+#define SERPER_BASE_PAL         3546895
+#define SERPER                  0x32
+#define SERPER_BAUD(base, x)    ((((base + (x)/2))/(x)-1) & 0x7fff)     /* Baud rate */
+#define INTF_TBE                0x0001
 
 static inline void reg_w(ULONG reg, UWORD val)
 {
-	volatile UWORD *r = (void *)(0xdff000 + reg);
+        volatile UWORD *r = (void *)(0xdff000 + reg);
 
-	*r = val;
+        *r = val;
 }
 static inline UWORD reg_r(ULONG reg)
 {
-	volatile UWORD *r = (void *)(0xdff000 + reg);
+        volatile UWORD *r = (void *)(0xdff000 + reg);
 
-	return *r;
+        return *r;
 }
 static void DebugInit(void)
 {
-	/* Set DTR, RTS, etc */
-	volatile UBYTE *ciab_pra = (APTR)0xBFD000;
-	volatile UBYTE *ciab_ddra = (APTR)0xBFD200;
-	if (!debug_enabled)
-		return;
-	*ciab_ddra = 0xc0;  /* Only DTR and RTS are driven as outputs */
-	*ciab_pra = 0;      /* Turn on DTR and RTS */
+        /* Set DTR, RTS, etc */
+        volatile UBYTE *ciab_pra = (APTR)0xBFD000;
+        volatile UBYTE *ciab_ddra = (APTR)0xBFD200;
+        if (!debug_enabled)
+                return;
+        *ciab_ddra = 0xc0;  /* Only DTR and RTS are driven as outputs */
+        *ciab_pra = 0;      /* Turn on DTR and RTS */
 
-	/* Set the debug UART to 115200 */
-	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
-	/* Disable serial transmit interrupt */
-	reg_w(INTENA, INTF_TBE);
+        /* Set the debug UART to 115200 */
+        reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
+        /* Disable serial transmit interrupt */
+        reg_w(INTENA, INTF_TBE);
 }
 static void DebugPutChar(register int chr)
 {
-	if (!debug_enabled)
-		return;
-	if (chr == '\n')
-		DebugPutChar('\r');
-	while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
-	reg_w(INTREQ, INTF_TBE);
-	/* Output a char to the debug UART */
-	reg_w(SERDAT, SERDAT_STP8 | SERDAT_DB8(chr));
+        if (!debug_enabled)
+                return;
+        if (chr == '\n')
+                DebugPutChar('\r');
+        while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
+        reg_w(INTREQ, INTF_TBE);
+        /* Output a char to the debug UART */
+        reg_w(SERDAT, SERDAT_STP8 | SERDAT_DB8(chr));
 }
 static void DebugPutStr(register const char *buff)
 {
-	if (!debug_enabled)
-		return;
-	for (; *buff != 0; buff++)
-		DebugPutChar(*buff);
+        if (!debug_enabled)
+                return;
+        for (; *buff != 0; buff++)
+                DebugPutChar(*buff);
 }
 #if 0
 static void DebugPutDec(const char *what, ULONG val)
 {
-	int i, num;
-	if (!debug_enabled)
-		return;
-	DebugPutStr(what);
-	DebugPutStr(": ");
-	if (val == 0) {
-	    DebugPutChar('0');
-	    DebugPutChar('\n');
-	    return;
-	}
+        int i, num;
+        if (!debug_enabled)
+                return;
+        DebugPutStr(what);
+        DebugPutStr(": ");
+        if (val == 0) {
+            DebugPutChar('0');
+            DebugPutChar('\n');
+            return;
+        }
 
-	for (i = 1000000000; i > 0; i /= 10) {
-	    if (val == 0) {
-	    	DebugPutChar('0');
-	    	continue;
-	    }
+        for (i = 1000000000; i > 0; i /= 10) {
+            if (val == 0) {
+                DebugPutChar('0');
+                continue;
+            }
 
-	    num = val / i;
-	    if (num == 0)
-	    	continue;
+            num = val / i;
+            if (num == 0)
+                continue;
 
-	    DebugPutChar("0123456789"[num]);
-	    val -= num * i;
-	}
-	DebugPutChar('\n');
+            DebugPutChar("0123456789"[num]);
+            val -= num * i;
+        }
+        DebugPutChar('\n');
 }
 static void DebugPutHexVal(ULONG val)
 {
-	int i;
-	if (!debug_enabled)
-		return;
-	for (i = 0; i < 8; i ++) {
-		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
-	}
-	DebugPutChar(' ');
+        int i;
+        if (!debug_enabled)
+                return;
+        for (i = 0; i < 8; i ++) {
+                DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
+        }
+        DebugPutChar(' ');
 }
 static void DebugPutHex(const char *what, ULONG val)
 {
-	int i;
-	if (!debug_enabled)
-		return;
-	DebugPutStr(what);
-	DebugPutStr(": ");
-	for (i = 0; i < 8; i ++) {
-		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
-	}
-	DebugPutChar('\n');
+        int i;
+        if (!debug_enabled)
+                return;
+        DebugPutStr(what);
+        DebugPutStr(": ");
+        for (i = 0; i < 8; i ++) {
+                DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
+        }
+        DebugPutChar('\n');
 }
 #endif
 #endif
@@ -1031,37 +1031,37 @@ static UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
 static void setcpu(void)
 {
     asm(
-	".chip 68040\n"
-	"move.l	4,%a0\n"
-	"move.w	296(%a0),%d1\n"
-	"moveq	#0,%d0\n"
-	"btst	#0,%d1\n"
-	"beq.s	cpudone\n"
-	/* clear VBR */
-	"movec	%d0,%vbr\n"
-	"btst	#1,%d1\n"
-	"beq.s	cpudone\n"
-	/* disable caches */
-	"movec	%d0,%cacr\n"
-	"btst	#3,%d1\n"
-	"beq.s	not040\n"
-	/* 68040/060 MMU */
-	"movec	%d0,%tc\n"
-	"movec	%d0,%dtt0\n"
-	"movec	%d0,%dtt1\n"
-	"movec	%d0,%itt0\n"
-	"movec	%d0,%itt1\n"
-	"cpusha	%bc\n"
-	"bra.s	cpudone\n"
-"not040: btst	#2,%d1\n"
-	"beq.s	cpudone\n"
-	/* 68030 MMU */
-	"lea	zero(%pc),%a0\n"
-	".long	0xf0104000\n"
-	".long	0xf0100c00\n"
-	".long	0xf0100800\n"
-	"bra.s cpudone\n"
-"zero:	.long	0,0\n"
+        ".chip 68040\n"
+        "move.l 4,%a0\n"
+        "move.w 296(%a0),%d1\n"
+        "moveq  #0,%d0\n"
+        "btst   #0,%d1\n"
+        "beq.s  cpudone\n"
+        /* clear VBR */
+        "movec  %d0,%vbr\n"
+        "btst   #1,%d1\n"
+        "beq.s  cpudone\n"
+        /* disable caches */
+        "movec  %d0,%cacr\n"
+        "btst   #3,%d1\n"
+        "beq.s  not040\n"
+        /* 68040/060 MMU */
+        "movec  %d0,%tc\n"
+        "movec  %d0,%dtt0\n"
+        "movec  %d0,%dtt1\n"
+        "movec  %d0,%itt0\n"
+        "movec  %d0,%itt1\n"
+        "cpusha %bc\n"
+        "bra.s  cpudone\n"
+"not040: btst   #2,%d1\n"
+        "beq.s  cpudone\n"
+        /* 68030 MMU */
+        "lea    zero(%pc),%a0\n"
+        ".long  0xf0104000\n"
+        ".long  0xf0100c00\n"
+        ".long  0xf0100800\n"
+        "bra.s cpudone\n"
+"zero:  .long   0,0\n"
 "cpudone:\n.chip 68k\n"
     );
 }
@@ -1074,112 +1074,112 @@ void coldcapturecode(void)
 {
     asm(
     ".chip 68010\n"
-	".long end - start\n"
-	"start:\n"
-	"bra.s 0f\n"
-	"nop\n"               /* Align to start + 4 */
-	".long 0x46414b45\n"  /* AROS_MAKE_ID('F','A','K','E') */
-	".long 0\n" //  0 BootStruct
-	".long 0\n" //  4 FakeBase
-	".long 0\n" //  8 Stored NMI
-	".long 0\n" // 12 ROM EntryPoint
-	"0:\n"
-	"move.w	#0x440,0xdff180\n"
-	"lea	vbrexp(%pc),%a0\n"
-	"move.l	%a0,0x10.w\n" // illegal opcode exception
-	"move.l	#0x400,%sp\n"
-	"moveq	#0,%d0\n"
-	"movec	%d0,%vbr\n"	// reset VBR
-	"vbrexp:\n" // we get here if 68000 (no VBR)
-	"lea	start+8(%pc),%a4\n"
-	"move.l	4.w,%d0\n"
-	"clr.l	4.w\n"
-	"btst	#0,%d0\n"
-	"bne.s	basenok\n"
-	"move.l	%d0,%a0\n"
-	// We need to check if autoconfig has already been done by
-	// AOS expansion.library. It happens if SysBase is in autoconfig RAM
-	// We need to get back to non-autoconfig state.
-	"tst.l 	10(%a0)\n" // ln_Name == NULL?
-	"bne.s	baseok\n"
-	// It was AOS temp SysBase. Switch back to FakeBase.
-	// Interestingly ChkBase contains original SysBase pointer in this situation!
-	"move.l (%a4),%a1\n"
-	"move.l 38(%a0),8(%a1)\n" // Original SysBase -> BootStruct->RealBase2
-	"basenok:\n"
-	"bsr.s fixbase\n"
-	// and reset and try again.
-	"lea 0x01000000,%a0\n"
-	"sub.l %a0@(-0x14),%a0\n"
-	"move.l %a0@(4),%a0\n"
-	"subq.l #2,%a0\n"
-	/* Force ULONG alignment of 'reset' */
-	"bra 0f\n"
-	".balign 4,0xff\n"
-	"0:\n"
-	"reset\n"
-	"jmp (%a0)\n"
+        ".long end - start\n"
+        "start:\n"
+        "bra.s 0f\n"
+        "nop\n"               /* Align to start + 4 */
+        ".long 0x46414b45\n"  /* AROS_MAKE_ID('F','A','K','E') */
+        ".long 0\n" //  0 BootStruct
+        ".long 0\n" //  4 FakeBase
+        ".long 0\n" //  8 Stored NMI
+        ".long 0\n" // 12 ROM EntryPoint
+        "0:\n"
+        "move.w #0x440,0xdff180\n"
+        "lea    vbrexp(%pc),%a0\n"
+        "move.l %a0,0x10.w\n" // illegal opcode exception
+        "move.l #0x400,%sp\n"
+        "moveq  #0,%d0\n"
+        "movec  %d0,%vbr\n"     // reset VBR
+        "vbrexp:\n" // we get here if 68000 (no VBR)
+        "lea    start+8(%pc),%a4\n"
+        "move.l 4.w,%d0\n"
+        "clr.l  4.w\n"
+        "btst   #0,%d0\n"
+        "bne.s  basenok\n"
+        "move.l %d0,%a0\n"
+        // We need to check if autoconfig has already been done by
+        // AOS expansion.library. It happens if SysBase is in autoconfig RAM
+        // We need to get back to non-autoconfig state.
+        "tst.l  10(%a0)\n" // ln_Name == NULL?
+        "bne.s  baseok\n"
+        // It was AOS temp SysBase. Switch back to FakeBase.
+        // Interestingly ChkBase contains original SysBase pointer in this situation!
+        "move.l (%a4),%a1\n"
+        "move.l 38(%a0),8(%a1)\n" // Original SysBase -> BootStruct->RealBase2
+        "basenok:\n"
+        "bsr.s fixbase\n"
+        // and reset and try again.
+        "lea 0x01000000,%a0\n"
+        "sub.l %a0@(-0x14),%a0\n"
+        "move.l %a0@(4),%a0\n"
+        "subq.l #2,%a0\n"
+        /* Force ULONG alignment of 'reset' */
+        "bra 0f\n"
+        ".balign 4,0xff\n"
+        "0:\n"
+        "reset\n"
+        "jmp (%a0)\n"
 
-	"baseok:\n"
-	"not.l	%d0\n"
-	"cmp.l	38(%a0),%d0\n" // ChkBase
-	"bne.s	basenok\n"
+        "baseok:\n"
+        "not.l  %d0\n"
+        "cmp.l  38(%a0),%d0\n" // ChkBase
+        "bne.s  basenok\n"
 
-	"move.l	(%a4),%a1\n"
-	"move.l	%a0,4(%a1)\n" // Original SysBase -> BootStruct->RealBase
+        "move.l (%a4),%a1\n"
+        "move.l %a0,4(%a1)\n" // Original SysBase -> BootStruct->RealBase
 
-	// set early exceptions
-	"move.w	#8,%a1\n"
-	"lea	exception(%pc),%a0\n"
-	"moveq	#64-2-1,%d0\n"
-	"1:\n"
-	"move.l	%a0,(%a1)+\n"
-	"dbf	%d0,1b\n"
+        // set early exceptions
+        "move.w #8,%a1\n"
+        "lea    exception(%pc),%a0\n"
+        "moveq  #64-2-1,%d0\n"
+        "1:\n"
+        "move.l %a0,(%a1)+\n"
+        "dbf    %d0,1b\n"
 
-	"bsr.s	fixbase\n"
+        "bsr.s  fixbase\n"
 
-	"move.l	12(%a4),%a0\n" // Entrypoint
-	"addq.l	#2,%a0\n"
-	"moveq	#2,%d0\n"
-	"cmp.w	#0x4ef9,(%a0)\n"
-	"beq.s	.skip\n"
-	// skip elf loader injected header
-	"moveq	#4,%d0\n"
-	"move.l	(%a0),%a0\n"
-	".skip:\n"
-	"move.l	0(%a0,%d0.w),%a0\n"
-	"jmp	4(%a0)\n"
+        "move.l 12(%a4),%a0\n" // Entrypoint
+        "addq.l #2,%a0\n"
+        "moveq  #2,%d0\n"
+        "cmp.w  #0x4ef9,(%a0)\n"
+        "beq.s  .skip\n"
+        // skip elf loader injected header
+        "moveq  #4,%d0\n"
+        "move.l (%a0),%a0\n"
+        ".skip:\n"
+        "move.l 0(%a0,%d0.w),%a0\n"
+        "jmp    4(%a0)\n"
 
-	// Setup our temporary fake SysBase
-	"fixbase:\n"
-	"move.l	8(%a4),0x7c.w\n" // restore NMI
-	"move.l	4(%a4),%a0\n" // FakeBase
-	"move.l %a0,4.w\n"
-	"move.w #50,34(%a0)\n"	// SoftVer
-	"lea start(%pc),%a1\n"
-	"move.l	%a1,42(%a0)\n"  // ColdCapture
-	"move.l	%a0,%d0\n"
-	"not.l	%d0\n"
-	"move.l	%d0,38(%a0)\n" // ChkBase
-	"moveq	#0,%d1\n"
-	"lea	34(%a0),%a0\n"
-	"moveq	#24-1,%d0\n"
-	"chk1:	add.w (%a0)+,%d1\n"
-	"dbf	%d0,chk1\n"
-	"not.w	%d1\n"
-	"move.w	%d1,(%a0)\n" // ChkSum
-	"rts\n"
+        // Setup our temporary fake SysBase
+        "fixbase:\n"
+        "move.l 8(%a4),0x7c.w\n" // restore NMI
+        "move.l 4(%a4),%a0\n" // FakeBase
+        "move.l %a0,4.w\n"
+        "move.w #50,34(%a0)\n"  // SoftVer
+        "lea start(%pc),%a1\n"
+        "move.l %a1,42(%a0)\n"  // ColdCapture
+        "move.l %a0,%d0\n"
+        "not.l  %d0\n"
+        "move.l %d0,38(%a0)\n" // ChkBase
+        "moveq  #0,%d1\n"
+        "lea    34(%a0),%a0\n"
+        "moveq  #24-1,%d0\n"
+        "chk1:  add.w (%a0)+,%d1\n"
+        "dbf    %d0,chk1\n"
+        "not.w  %d1\n"
+        "move.w %d1,(%a0)\n" // ChkSum
+        "rts\n"
 
-	"exception:\n"
-	"move.w #0xff0,0xdff180\n"
-	"move.w #0x000,0xdff180\n"
-	"bra.s exception\n"
-	"end:\n"
-	".chip 68k\n"
+        "exception:\n"
+        "move.w #0xff0,0xdff180\n"
+        "move.w #0x000,0xdff180\n"
+        "bra.s exception\n"
+        "end:\n"
+        ".chip 68k\n"
     );
 }
 
-/* Official reboot code from HRM 
+/* Official reboot code from HRM
  * All CPUs have at least 1 word prefetch,
  * jmp (a0) has been prefetched even if
  * reset disables all memory
@@ -1187,16 +1187,16 @@ void coldcapturecode(void)
 static void doreboot(void)
 {
     asm volatile (
-	"lea 0x01000000,%a0\n"
-	"sub.l %a0@(-0x14),%a0\n"
-	"move.l %a0@(4),%a0\n"
-	"subq.l #2,%a0\n"
-	/* Force ULONG alignment of 'reset' */
-	"bra 0f\n"
-	".balign 4,0xff\n"
-	"0:\n"
-	"reset\n"
-	"jmp (%a0)\n"
+        "lea 0x01000000,%a0\n"
+        "sub.l %a0@(-0x14),%a0\n"
+        "move.l %a0@(4),%a0\n"
+        "subq.l #2,%a0\n"
+        /* Force ULONG alignment of 'reset' */
+        "bra 0f\n"
+        ".balign 4,0xff\n"
+        "0:\n"
+        "reset\n"
+        "jmp (%a0)\n"
     );
 }
 
@@ -1208,7 +1208,7 @@ struct BootStruct *bs;
  * where the CPU may be configured .. so we always call it if
  * the OS version provides it.
  */
-void ils_ClearCache(APTR address, IPTR length, ULONG caches) 
+void ils_ClearCache(APTR address, IPTR length, ULONG caches)
 {
     if (SysBase->LibNode.lib_Version >= 37)
     {

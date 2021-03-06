@@ -17,7 +17,7 @@ const struct CardMemoryMap cmm =
 };
 
 AROS_LH0(struct CardMemoryMap*, GetCardMap,
-	struct CardResource*, CardResource, 3, Card)
+        struct CardResource*, CardResource, 3, Card)
 {
     AROS_LIBFUNC_INIT
 

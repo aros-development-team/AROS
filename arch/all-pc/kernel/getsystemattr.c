@@ -20,24 +20,24 @@
         AROS_LH1(intptr_t, KrnGetSystemAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(uint32_t, id, D0),
+        AROS_LHA(uint32_t, id, D0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 29, Kernel)
+        struct KernelBase *, KernelBase, 29, Kernel)
 
 /*  FUNCTION
-	Get value of internal system attributes.
-	Currently defined attributes are:
+        Get value of internal system attributes.
+        Currently defined attributes are:
 
-	  KATTR_Architecture [.G] (char *)        - Name of architecture the kernel built for.
+          KATTR_Architecture [.G] (char *)        - Name of architecture the kernel built for.
 
-	  KATTR_PeripheralBase [.G] IPTR   - IO Base address for ARM peripherals
+          KATTR_PeripheralBase [.G] IPTR   - IO Base address for ARM peripherals
 
     INPUTS
-	id - ID of the attribute to get
+        id - ID of the attribute to get
 
     RESULT
-	Value of the attribute
+        Value of the attribute
 
     NOTES
 

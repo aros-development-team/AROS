@@ -61,8 +61,8 @@ OOP_Object *PCIPC__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct pRoot_New ncMsg;
     struct TagItem ncTags[] =
     {
-        { aHidd_Name,           (IPTR)"pcipc.hidd"			        },
-        { TAG_DONE,             0 					        }
+        { aHidd_Name,           (IPTR)"pcipc.hidd"                              },
+        { TAG_DONE,             0                                               }
     };
     IPTR mmbase = 0;
     OOP_Object *controllerObj;
@@ -121,7 +121,7 @@ void PCIPC__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                     *msg->storage = (IPTR)pcipcHWPCIE;
                 break;
         }
-    }        
+    }
     else if (IS_PCIDRV_ATTR(msg->attrID, idx))
     {
         switch (idx)
@@ -146,7 +146,7 @@ void PCIPC__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 }
 
-ULONG PCIPC__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+ULONG PCIPC__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     struct PCIPCBusData *data = OOP_INST_DATA(cl, o);
@@ -171,18 +171,18 @@ ULONG PCIPC__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     }
 }
 
-UWORD PCIPC__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
+UWORD PCIPC__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_ReadConfigWord *msg)
 {
     return ReadConfigWord(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
 }
 
-UBYTE PCIPC__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
+UBYTE PCIPC__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_ReadConfigByte *msg)
 {
     pcicfg temp;
 
-    temp.ul = PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, (msg->reg & ~3)); 
+    temp.ul = PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, (msg->reg & ~3));
     return temp.ub[msg->reg & 3];
 }
 
@@ -547,8 +547,8 @@ static int PCIPC_InitClass(LIBBASETYPEPTR LIBBASE)
             struct TagItem ptags[] =
             {
                 { aHidd_PCIDriver_IRQRoutingTable,      0 },
-                { TAG_DONE,                             0 }  
-            };            
+                { TAG_DONE,                             0 }
+            };
             msg.instanceTags = ptags;
             ForeachNodeSafe(&acpiHBridges, hbNode, tmpNode)
             {

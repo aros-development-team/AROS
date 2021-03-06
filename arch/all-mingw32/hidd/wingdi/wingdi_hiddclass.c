@@ -36,18 +36,18 @@
 
 #ifdef DEBUG_POINTER
 
-#define PRINT_POINTER(image, xsize, xmax, ymax)		\
-bug("[GDIGfx] Pointer data:\n");			\
-{							\
-    ULONG *pix = (ULONG *)image;			\
-    ULONG x, y;						\
-							\
-    for (y = 0; y < ymax; y++) {			\
-        for (x = 0; x < xmax; x++)			\
-	    bug("0x%08X ", pix[x]);			\
-	bug("\n");					\
-	pix += xsize;					\
-    }							\
+#define PRINT_POINTER(image, xsize, xmax, ymax)         \
+bug("[GDIGfx] Pointer data:\n");                        \
+{                                                       \
+    ULONG *pix = (ULONG *)image;                        \
+    ULONG x, y;                                         \
+                                                        \
+    for (y = 0; y < ymax; y++) {                        \
+        for (x = 0; x < xmax; x++)                      \
+            bug("0x%08X ", pix[x]);                     \
+        bug("\n");                                      \
+        pix += xsize;                                   \
+    }                                                   \
 }
 
 #else
@@ -59,7 +59,7 @@ bug("[GDIGfx] Pointer data:\n");			\
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static OOP_AttrBase HiddBitMapAttrBase;  
+static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddGDIBitMapAB;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
@@ -68,13 +68,13 @@ OOP_AttrBase HiddAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
-    { IID_Hidd_BitMap_WinGDI, &HiddGDIBitMapAB	},
-    { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
-    { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
-    { IID_Hidd_Gfx  	, &HiddGfxAttrBase	},
-    { IID_Hidd		, &HiddAttrBase		},
-    { NULL  	    	, NULL      	    	}
+    { IID_Hidd_BitMap   , &HiddBitMapAttrBase   },
+    { IID_Hidd_BitMap_WinGDI, &HiddGDIBitMapAB  },
+    { IID_Hidd_Sync     , &HiddSyncAttrBase     },
+    { IID_Hidd_PixFmt   , &HiddPixFmtAttrBase   },
+    { IID_Hidd_Gfx      , &HiddGfxAttrBase      },
+    { IID_Hidd          , &HiddAttrBase         },
+    { NULL              , NULL                  }
 };
 
 static void GfxIntHandler(struct gdi_staticdata *xsd, void *unused)
@@ -84,19 +84,19 @@ static void GfxIntHandler(struct gdi_staticdata *xsd, void *unused)
     /* Process ShowDone IRQ */
     if (xsd->ctl->ShowDone)
     {
-	xsd->ctl->ShowDone = FALSE;
-	if (xsd->showtask)
-	    Signal(xsd->showtask, SIGF_BLIT);
+        xsd->ctl->ShowDone = FALSE;
+        if (xsd->showtask)
+            Signal(xsd->showtask, SIGF_BLIT);
     }
 
     /* Process display window activation */
     active = xsd->ctl->Active;
     if (active)
     {
-	xsd->ctl->Active = NULL;
-	D(bug("Activated display data 0x%p\n", active));
-	if (active->cb)
-	    active->cb(active->cbdata, NULL);
+        xsd->ctl->Active = NULL;
+        D(bug("Activated display data 0x%p\n", active));
+        if (active->cb)
+            active->cb(active->cbdata, NULL);
     }
 }
 
@@ -109,156 +109,156 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         /* Shifts are non-obviously calculated from the MSB, not from the LSB.
            I. e. color value is placed in the most significant byte of the ULONG
            before shifting (cc000000, not 000000cc) */
-    	{ aHidd_PixFmt_RedShift     , 24			   },
-	{ aHidd_PixFmt_GreenShift   , 16			   },
-	{ aHidd_PixFmt_BlueShift    , 8				   },
-	{ aHidd_PixFmt_AlphaShift   , 0				   },
-	{ aHidd_PixFmt_RedMask	    , 0x000000FF		   },
-	{ aHidd_PixFmt_GreenMask    , 0x0000FF00		   },
-	{ aHidd_PixFmt_BlueMask     , 0x00FF0000		   },
-	{ aHidd_PixFmt_AlphaMask    , 0x00000000		   },
-	/* Windows effectively hides from us all details of
-	   color management and everything looks like if the
-	   display mode is always truecolor */
-	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   },
-	{ aHidd_PixFmt_Depth	    , 24			   },
-	{ aHidd_PixFmt_BytesPerPixel, 4				   },
-	{ aHidd_PixFmt_BitsPerPixel , 24			   },
-	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native	   },
-	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky      },
-	{ TAG_DONE  	    	    , 0UL			   } 
+        { aHidd_PixFmt_RedShift     , 24                           },
+        { aHidd_PixFmt_GreenShift   , 16                           },
+        { aHidd_PixFmt_BlueShift    , 8                            },
+        { aHidd_PixFmt_AlphaShift   , 0                            },
+        { aHidd_PixFmt_RedMask      , 0x000000FF                   },
+        { aHidd_PixFmt_GreenMask    , 0x0000FF00                   },
+        { aHidd_PixFmt_BlueMask     , 0x00FF0000                   },
+        { aHidd_PixFmt_AlphaMask    , 0x00000000                   },
+        /* Windows effectively hides from us all details of
+           color management and everything looks like if the
+           display mode is always truecolor */
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   },
+        { aHidd_PixFmt_Depth        , 24                           },
+        { aHidd_PixFmt_BytesPerPixel, 4                            },
+        { aHidd_PixFmt_BitsPerPixel , 24                           },
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native       },
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky      },
+        { TAG_DONE                  , 0UL                          }
     };
     
     struct TagItem tags_160_160[] =
     {
-    	{ aHidd_Sync_HDisp  	, 160 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 160 	    	    	 },
-	{ TAG_DONE  	    	, 0UL 	    	    	 }
+        { aHidd_Sync_HDisp      , 160                    },
+        { aHidd_Sync_VDisp      , 160                    },
+        { TAG_DONE              , 0UL                    }
     };
     
     struct TagItem tags_240_320[] =
     {
-    	{ aHidd_Sync_HDisp  	, 240 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 320 	    	    	 },
-	{ TAG_DONE  	    	, 0UL 	    	    	 } 
+        { aHidd_Sync_HDisp      , 240                    },
+        { aHidd_Sync_VDisp      , 320                    },
+        { TAG_DONE              , 0UL                    }
     };
 
-    struct TagItem tags_320_240[] = 
+    struct TagItem tags_320_240[] =
     {
-    	{ aHidd_Sync_HDisp  	, 320 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 240 	    	    	 },
-	{ TAG_DONE  	    	, 0UL 	    	    	 }
+        { aHidd_Sync_HDisp      , 320                    },
+        { aHidd_Sync_VDisp      , 240                    },
+        { TAG_DONE              , 0UL                    }
     };
 
-    struct TagItem tags_512_384[] = 
+    struct TagItem tags_512_384[] =
     {
-    	{ aHidd_Sync_HDisp  	, 512 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 384 	    	    	 },
-	{ TAG_DONE  	    	, 0UL 	    	    	 }
+        { aHidd_Sync_HDisp      , 512                    },
+        { aHidd_Sync_VDisp      , 384                    },
+        { TAG_DONE              , 0UL                    }
     };
 
-    struct TagItem tags_640_480[] = 
+    struct TagItem tags_640_480[] =
     {
-    	{ aHidd_Sync_HDisp  	, 640 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 480 	    	    	 },
-	{ TAG_DONE  	    	, 0UL 	    	    	 }
+        { aHidd_Sync_HDisp      , 640                    },
+        { aHidd_Sync_VDisp      , 480                    },
+        { TAG_DONE              , 0UL                    }
     };
 
-    struct TagItem tags_800_600[] = 
+    struct TagItem tags_800_600[] =
     {
-    	{ aHidd_Sync_HDisp  	, 800 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 600 	    	    	 },
-	{ TAG_DONE  	    	, 0UL 	    	    	 }
+        { aHidd_Sync_HDisp      , 800                    },
+        { aHidd_Sync_VDisp      , 600                    },
+        { TAG_DONE              , 0UL                    }
     };
 
-    struct TagItem tags_1024_768[] = 
+    struct TagItem tags_1024_768[] =
     {
-    	{ aHidd_Sync_HDisp  	, 1024      	    	  },
-	{ aHidd_Sync_VDisp  	, 768       	    	  },
-	{ TAG_DONE  	    	, 0UL       	    	  }
+        { aHidd_Sync_HDisp      , 1024                    },
+        { aHidd_Sync_VDisp      , 768                     },
+        { TAG_DONE              , 0UL                     }
     };
     
-    struct TagItem tags_1152_864[] = 
+    struct TagItem tags_1152_864[] =
     {
-    	{ aHidd_Sync_HDisp  	, 1152      	    	  },
-	{ aHidd_Sync_VDisp  	, 864       	    	  },
-	{ TAG_DONE  	    	, 0UL       	    	  }
+        { aHidd_Sync_HDisp      , 1152                    },
+        { aHidd_Sync_VDisp      , 864                     },
+        { TAG_DONE              , 0UL                     }
     };
 
-    struct TagItem tags_1280_800[] = 
+    struct TagItem tags_1280_800[] =
     {
-    	{ aHidd_Sync_HDisp  	, 1280      	    	  },
-	{ aHidd_Sync_VDisp  	, 800       	    	  },
-	{ TAG_DONE  	    	, 0UL       	    	  }
+        { aHidd_Sync_HDisp      , 1280                    },
+        { aHidd_Sync_VDisp      , 800                     },
+        { TAG_DONE              , 0UL                     }
     };
 
-    struct TagItem tags_1280_960[] = 
+    struct TagItem tags_1280_960[] =
     {
-    	{ aHidd_Sync_HDisp  	, 1280      	    	  },
-	{ aHidd_Sync_VDisp  	, 960       	    	  },
-	{ TAG_DONE  	    	, 0UL       	    	  }
+        { aHidd_Sync_HDisp      , 1280                    },
+        { aHidd_Sync_VDisp      , 960                     },
+        { TAG_DONE              , 0UL                     }
     };
     
     struct TagItem tags_1280_1024[] =
     {
-    	{ aHidd_Sync_HDisp  	, 1280      	    	   },
-	{ aHidd_Sync_VDisp  	, 1024      	    	   },
-	{ TAG_DONE  	    	, 0UL       	    	   }
+        { aHidd_Sync_HDisp      , 1280                     },
+        { aHidd_Sync_VDisp      , 1024                     },
+        { TAG_DONE              , 0UL                      }
     };
     
-    struct TagItem tags_1600_1200[] = 
+    struct TagItem tags_1600_1200[] =
     {
-    	{ aHidd_Sync_HDisp  	, 1600      	    	   },
-	{ aHidd_Sync_VDisp  	, 1200      	    	   },
-	{ TAG_DONE  	    	, 0UL       	    	   }
+        { aHidd_Sync_HDisp      , 1600                     },
+        { aHidd_Sync_VDisp      , 1200                     },
+        { TAG_DONE              , 0UL                      }
     };
     
     struct TagItem mode_tags[] =
     {
-	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
+        { aHidd_Gfx_PixFmtTags  , (IPTR)pftags          },
 
-	/* Default values for the sync attributes */
-	{ aHidd_Sync_PixelClock , 0			},
-	{ aHidd_Sync_HTotal	, 0			},
-	{ aHidd_Sync_VTotal	, 0			},
-	{ aHidd_Sync_HMin	, 112			}, /* In fact these can be even smaller, and */
-	{ aHidd_Sync_VMin	, 112			}, /* maximum can be even bigger...	     */
-	{ aHidd_Sync_HMax	, 16384			},
-	{ aHidd_Sync_VMax	, 16384			},
-	/* Formatting stands for:
-	   %b - board number
-	   %h - HDisp
-	   %v - VDisp */
-	{ aHidd_Sync_Description, (IPTR)"Windows %b: %hx%v"},
-	{ aHidd_Sync_BoardNumber, XSD(cl)->displaynum	},
+        /* Default values for the sync attributes */
+        { aHidd_Sync_PixelClock , 0                     },
+        { aHidd_Sync_HTotal     , 0                     },
+        { aHidd_Sync_VTotal     , 0                     },
+        { aHidd_Sync_HMin       , 112                   }, /* In fact these can be even smaller, and */
+        { aHidd_Sync_VMin       , 112                   }, /* maximum can be even bigger...          */
+        { aHidd_Sync_HMax       , 16384                 },
+        { aHidd_Sync_VMax       , 16384                 },
+        /* Formatting stands for:
+           %b - board number
+           %h - HDisp
+           %v - VDisp */
+        { aHidd_Sync_Description, (IPTR)"Windows %b: %hx%v"},
+        { aHidd_Sync_BoardNumber, XSD(cl)->displaynum   },
 
-	/* The different syncmodes. The default attribute values above 
-	    will be applied to each of these. Note that
-	    you can alter the defaults between the tags below 
-	*/
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_160_160	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_240_320	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_320_240	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_512_384	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_640_480	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_800_600	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1024_768	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1152_864	},
-        { aHidd_Gfx_SyncTags	, (IPTR)tags_1280_800	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_960	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_1024	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1600_1200	},
-	{ TAG_DONE  	    	, 0UL 	    	    	}
+        /* The different syncmodes. The default attribute values above
+            will be applied to each of these. Note that
+            you can alter the defaults between the tags below
+        */
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_160_160    },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_240_320    },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_320_240    },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_512_384    },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_640_480    },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_800_600    },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_1024_768   },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_1152_864   },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_800   },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_960   },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_1024  },
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_1600_1200  },
+        { TAG_DONE              , 0UL                   }
     };
 
     STRPTR name[32];
     struct TagItem mytags[] =
     {
-	{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	},
-	{ aHidd_Name		, (IPTR)name		},
-	{ aHidd_HardwareName	, (IPTR)"Windows GDI Gfx Host"	},
-	{ aHidd_ProducerName	, (IPTR)"Microsoft corporation"},
-	{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
+        { aHidd_Gfx_ModeTags    , (IPTR)mode_tags       },
+        { aHidd_Name            , (IPTR)name            },
+        { aHidd_HardwareName    , (IPTR)"Windows GDI Gfx Host"  },
+        { aHidd_ProducerName    , (IPTR)"Microsoft corporation"},
+        { TAG_MORE              , (IPTR)msg->attrList   }
     };
     struct pRoot_New mymsg = { msg->mID, mytags };
     APTR display;
@@ -274,7 +274,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     display = GDICALL(CreateDC, "DISPLAY", NULL, NULL, NULL);
     if (!display) {
         Permit();
-	ReturnPtr("GDIGfx::New()", OOP_Object *, NULL);
+        ReturnPtr("GDIGfx::New()", OOP_Object *, NULL);
     }
     
     /* Fill in sync data */
@@ -299,12 +299,12 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o)
     {
-	struct gfx_data *data = OOP_INST_DATA(cl, o);
+        struct gfx_data *data = OOP_INST_DATA(cl, o);
 
-	D(bug("GDIGfx::New(): Got object from super\n"));
-	data->display = display;
-	NewList((struct List *)&data->bitmaps);
-	XSD(cl)->displaynum++;
+        D(bug("GDIGfx::New(): Got object from super\n"));
+        data->display = display;
+        NewList((struct List *)&data->bitmaps);
+        XSD(cl)->displaynum++;
     }
     ReturnPtr("GDIGfx::New", OOP_Object *, o);
 }
@@ -326,7 +326,7 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     GDICALL(DeleteDC, data->display);
 
-    D(bug("GDIGfx::Dispose: calling super\n"));    
+    D(bug("GDIGfx::Dispose: calling super\n"));
     OOP_DoSuperMethod(cl, o, msg);
     
     ReturnVoid("GDIGfx::Dispose");
@@ -335,22 +335,22 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /****************************************************************************************/
 
 OOP_Object *GDICl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
-{  
+{
     OOP_Object      *object = NULL;
 
     if (msg->cl == XSD(cl)->basebm)
     {
-        HIDDT_ModeID		 modeid;
+        HIDDT_ModeID             modeid;
         struct pHidd_Gfx_CreateObject   p;
-        HIDDT_StdPixFmt		 stdpf;
+        HIDDT_StdPixFmt          stdpf;
 
-        struct gfx_data 	    	*data;
-        struct TagItem  	    	 tags[] =
+        struct gfx_data                 *data;
+        struct TagItem                   tags[] =
         {
             { aHidd_GDIBitMap_SysDisplay, 0UL }, /* 0 */
-            { TAG_IGNORE	    	    , 0UL }, /* 1 */
-            { TAG_IGNORE		    , 32  }, /* 2 */
-            { TAG_MORE  	    	    , 0UL }  /* 3 */
+            { TAG_IGNORE                    , 0UL }, /* 1 */
+            { TAG_IGNORE                    , 32  }, /* 2 */
+            { TAG_MORE                      , 0UL }  /* 3 */
         };
 
         EnterFunc(bug("GDIGfx::CreateObject()\n"));
@@ -398,26 +398,26 @@ OOP_Object *GDICl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct p
 
 VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    ULONG   	     idx;
+    ULONG            idx;
     
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
-    	switch (idx)
-	{
-	    case aoHidd_Gfx_IsWindowed:
-	    case aoHidd_Gfx_SupportsHWCursor:
-	    case aoHidd_Gfx_NoFrameBuffer:
-	    	*msg->storage = TRUE;
-		return;
+        switch (idx)
+        {
+            case aoHidd_Gfx_IsWindowed:
+            case aoHidd_Gfx_SupportsHWCursor:
+            case aoHidd_Gfx_NoFrameBuffer:
+                *msg->storage = TRUE;
+                return;
 
-	    case aoHidd_Gfx_HWSpriteTypes:
-		*msg->storage = vHidd_SpriteType_DirectColor;
-		return;
+            case aoHidd_Gfx_HWSpriteTypes:
+                *msg->storage = vHidd_SpriteType_DirectColor;
+                return;
 
-	    case aoHidd_Gfx_DriverName:
-		*msg->storage = (IPTR)"GDI";
-		return;
-	}
+            case aoHidd_Gfx_DriverName:
+                *msg->storage = (IPTR)"GDI";
+                return;
+        }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -428,23 +428,23 @@ VOID GDICl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
         if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
-	    switch(idx)
-	    {
-	    case aoHidd_Gfx_ActiveCallBack:
-	        data->cb = (void *)tag->ti_Data;
-		break;
+            switch(idx)
+            {
+            case aoHidd_Gfx_ActiveCallBack:
+                data->cb = (void *)tag->ti_Data;
+                break;
 
-	    case aoHidd_Gfx_ActiveCallBackData:
-	        data->cbdata = (APTR)tag->ti_Data;
-		break;
-	    }
-	}
+            case aoHidd_Gfx_ActiveCallBackData:
+                data->cbdata = (APTR)tag->ti_Data;
+                break;
+            }
+        }
     }
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
@@ -458,8 +458,8 @@ static void AddToList(struct MinList *list, OOP_Object *bitmap)
 
     D(bug("[GDI] Will display bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
     if (bmdata->node.mln_Pred) {
-	D(bug("[GDI] This bitmap is already on display\n"));
-	Remove((struct Node *)bmdata);
+        D(bug("[GDI] This bitmap is already on display\n"));
+        Remove((struct Node *)bmdata);
     }
     AddTail((struct List *)list, (struct Node *)bmdata);
 }
@@ -470,14 +470,14 @@ static void ShowList(struct gdi_staticdata *xsd, struct gfx_data *data, struct M
 
     /* If something left in displayed bitmaps list, close it */
     for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
-	bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
-	D(bug("[GDI] Hiding bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
-	if (bmdata->window) {
-	    NATIVECALL(GDI_PutMsg, bmdata->window, WM_CLOSE, 0, 0);
-	    bmdata->window = NULL;
-	}
-	/* This indicates that the bitmap is not in the list any more */
-	bmdata->node.mln_Pred = NULL;
+        bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
+        D(bug("[GDI] Hiding bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
+        if (bmdata->window) {
+            NATIVECALL(GDI_PutMsg, bmdata->window, WM_CLOSE, 0, 0);
+            bmdata->window = NULL;
+        }
+        /* This indicates that the bitmap is not in the list any more */
+        bmdata->node.mln_Pred = NULL;
     }
 
     /* Transfer the contents of our temporary list into display list */
@@ -512,7 +512,7 @@ ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
     /* Traverse through bitmaps chain and move them from old displayed list to the new temporary one */
     for (vpdata = msg->Data; vpdata; vpdata = vpdata->Next)
-	AddToList(&new_bitmaps, vpdata->Bitmap);
+        AddToList(&new_bitmaps, vpdata->Bitmap);
     ShowList(XSD(cl), data, &new_bitmaps);
 
     Permit();
@@ -537,7 +537,7 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     NewList((struct List *)&new_bitmaps);
 
     if (msg->bitMap)
-	AddToList(&new_bitmaps, msg->bitMap);
+        AddToList(&new_bitmaps, msg->bitMap);
     ShowList(XSD(cl), data, &new_bitmaps);
 
     Permit();
@@ -556,22 +556,22 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     IPTR xoffset, yoffset;
     
     EnterFunc(bug("[GDI] hidd.gfx.wingdi::CopyBox(0x%p(%lu, %lu, %lu, %lu) -> 0x%p(%lu, %lu)\n", msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
-    		  msg->dest, msg->destX, msg->destY));
+                  msg->dest, msg->destX, msg->destY));
     
     OOP_GetAttr(msg->src,  aHidd_GDIBitMap_DeviceContext, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_DeviceContext, (IPTR *)&dest);
     OOP_GetAttr(msg->dest, aHidd_BitMap_LeftEdge, &xoffset);
     OOP_GetAttr(msg->dest, aHidd_BitMap_TopEdge, &yoffset);
-	
+        
     if (NULL == dest || NULL == src)
     {
         D(bug("[GDI] Process by superclass\n"));
-	/* The destination object is not a GDI bitmap.
-	    Let the superclass do the copying in a more general way
-	*/
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	
-	return;
+        /* The destination object is not a GDI bitmap.
+            Let the superclass do the copying in a more general way
+        */
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        
+        return;
     }
 
     drmd = GC_DRMD(msg->gc);
@@ -605,53 +605,53 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
     buf = AllocMem(bufsize, MEMF_ANY);
     if (buf) {
         mask = AllocMem(bufsize, MEMF_ANY);
-	if (mask) {
-	    BITMAP bm;
-	    ULONG i;
+        if (mask) {
+            BITMAP bm;
+            ULONG i;
 
-	    HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_ARGB32_Native);
-	    PRINT_POINTER(buf, width, 8, 8);
-	    /* Construct the mask from alpha channel data. The mask will be used on pre-XP systems or
-	       on LUT screens. Of course there'll be no alpha blending there. */
-	    for (i = 0; i < width * height; i++)
-	        mask[i] = (buf[i] & 0xFF000000) ? 0 : 0xFFFFFFFF;
+            HIDD_BM_GetImage(msg->shape, (UBYTE *)buf, width * 4, 0, 0, width, height, vHidd_StdPixFmt_ARGB32_Native);
+            PRINT_POINTER(buf, width, 8, 8);
+            /* Construct the mask from alpha channel data. The mask will be used on pre-XP systems or
+               on LUT screens. Of course there'll be no alpha blending there. */
+            for (i = 0; i < width * height; i++)
+                mask[i] = (buf[i] & 0xFF000000) ? 0 : 0xFFFFFFFF;
 
-	    bm.bmType = 0;
-	    bm.bmWidth = width;
-	    bm.bmHeight = height;
-	    bm.bmWidthBytes = width * 4;
+            bm.bmType = 0;
+            bm.bmWidth = width;
+            bm.bmHeight = height;
+            bm.bmWidthBytes = width * 4;
             bm.bmPlanes = 1;
-	    bm.bmBitsPixel = 32;
-	    bm.bmBits = buf;
-	    Forbid();
-	    buf_bm = GDICALL(CreateBitmapIndirect, &bm);
-	    if (buf_bm) {
-	        bm.bmBits = mask;
-	        mask_bm = GDICALL(CreateBitmapIndirect, &bm);
-		if (mask_bm) {
-		    ICONINFO curs = {
-		        FALSE,
-			-msg->xoffset, -msg->yoffset,
-			mask_bm, buf_bm
-		    };
-		    cursor = USERCALL(CreateIconIndirect, &curs);
-		    if (cursor) {
-		        APTR old_cursor = data->cursor;
-			
-			D(bug("[GDI] Created cursor 0x%p, old cursor 0x%p\n", cursor, old_cursor));
-			data->cursor = cursor;
-			USERCALL(SetCursor, cursor);
-		        if (old_cursor)
-			    USERCALL(DestroyIcon, old_cursor);
-		    }
-		    GDICALL(DeleteObject, mask_bm);
-		}
-		GDICALL(DeleteObject, buf_bm);
-	    }
-	    Permit();
-	    FreeMem(mask, bufsize);
-	}
-	FreeMem(buf, bufsize);
+            bm.bmBitsPixel = 32;
+            bm.bmBits = buf;
+            Forbid();
+            buf_bm = GDICALL(CreateBitmapIndirect, &bm);
+            if (buf_bm) {
+                bm.bmBits = mask;
+                mask_bm = GDICALL(CreateBitmapIndirect, &bm);
+                if (mask_bm) {
+                    ICONINFO curs = {
+                        FALSE,
+                        -msg->xoffset, -msg->yoffset,
+                        mask_bm, buf_bm
+                    };
+                    cursor = USERCALL(CreateIconIndirect, &curs);
+                    if (cursor) {
+                        APTR old_cursor = data->cursor;
+                        
+                        D(bug("[GDI] Created cursor 0x%p, old cursor 0x%p\n", cursor, old_cursor));
+                        data->cursor = cursor;
+                        USERCALL(SetCursor, cursor);
+                        if (old_cursor)
+                            USERCALL(DestroyIcon, old_cursor);
+                    }
+                    GDICALL(DeleteObject, mask_bm);
+                }
+                GDICALL(DeleteObject, buf_bm);
+            }
+            Permit();
+            FreeMem(mask, bufsize);
+        }
+        FreeMem(buf, bufsize);
     }
     return cursor ? TRUE : FALSE;
 }
@@ -678,7 +678,7 @@ ULONG GDICl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 /****************************************************************************************/
 
-static int gdigfx_init(LIBBASETYPEPTR LIBBASE) 
+static int gdigfx_init(LIBBASETYPEPTR LIBBASE)
 {
     InitSemaphore(&LIBBASE->xsd.sema);
     LIBBASE->xsd.displaynum = 1;
@@ -686,15 +686,15 @@ static int gdigfx_init(LIBBASETYPEPTR LIBBASE)
     if (OOP_ObtainAttrBases(attrbases)) {
         D(bug("[GDI] Starting up GDI controller\n"));
 
-	Forbid();
+        Forbid();
         LIBBASE->xsd.ctl = NATIVECALL(GDI_Init);
-	Permit();
-	
-	if (LIBBASE->xsd.ctl) {
-	    LIBBASE->xsd.gfx_int = KrnAddIRQHandler(LIBBASE->xsd.ctl->GfxIrq, GfxIntHandler, &LIBBASE->xsd, NULL);
-	    if (LIBBASE->xsd.gfx_int)
-		return TRUE;
-	}
+        Permit();
+        
+        if (LIBBASE->xsd.ctl) {
+            LIBBASE->xsd.gfx_int = KrnAddIRQHandler(LIBBASE->xsd.ctl->GfxIrq, GfxIntHandler, &LIBBASE->xsd, NULL);
+            if (LIBBASE->xsd.gfx_int)
+                return TRUE;
+        }
     }
     return FALSE;
 }
@@ -704,12 +704,12 @@ static int gdigfx_init(LIBBASETYPEPTR LIBBASE)
 static int gdigfx_expunge(LIBBASETYPEPTR LIBBASE)
 {
     if (LIBBASE->xsd.gfx_int)
-	KrnRemIRQHandler(LIBBASE->xsd.gfx_int);
+        KrnRemIRQHandler(LIBBASE->xsd.gfx_int);
 
     if (LIBBASE->xsd.ctl) {
         Forbid();
-	NATIVECALL(GDI_Shutdown, LIBBASE->xsd.ctl);
-	Permit();
+        NATIVECALL(GDI_Shutdown, LIBBASE->xsd.ctl);
+        Permit();
     }
     OOP_ReleaseAttrBases(attrbases);
 

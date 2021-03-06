@@ -12,21 +12,21 @@
     NAME */
 #include <proto/hostlib.h>
 
-	AROS_LH0(void, HostLib_Unlock,
+        AROS_LH0(void, HostLib_Unlock,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct HostLibBase *, HostLibBase, 8, HostLib)
+        struct HostLibBase *, HostLibBase, 8, HostLib)
 
 /*  FUNCTION
-	Release global host OS call semaphore.
+        Release global host OS call semaphore.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -35,12 +35,12 @@
     BUGS
 
     SEE ALSO
-	HostLib_Lock()
+        HostLib_Lock()
 
     INTERNALS
-	The actual implementation of this function depends on
-	the host OS. Do not assume anything particular about it.
-	For example under Windows it's Permit(), not a semaphore.
+        The actual implementation of this function depends on
+        the host OS. Do not assume anything particular about it.
+        For example under Windows it's Permit(), not a semaphore.
 
 *****************************************************************************/
 {

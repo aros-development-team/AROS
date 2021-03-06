@@ -22,14 +22,14 @@ D(
 )
 
 /*
- * AROS expects memory map in original format. However, we won't bother 
- * adding more and more new kernel tags. We convert the memory map instead. 
- * The conversion happens in place. We use the fact that the layout of 
- * mb2_mmap is the same as mb_mmap except for the missing 'size' field. An 
- * mb_mmap can therefore be created by subtracting four bytes from the base 
- * address and filling in the 'size' field (mb2_mmap's 'pad' field, or the 
- * end of the tag structure) with the provided entry size. This will still 
- * work if mb2_mmap is extended in future, but we assume the old mb_mmap 
+ * AROS expects memory map in original format. However, we won't bother
+ * adding more and more new kernel tags. We convert the memory map instead.
+ * The conversion happens in place. We use the fact that the layout of
+ * mb2_mmap is the same as mb_mmap except for the missing 'size' field. An
+ * mb_mmap can therefore be created by subtracting four bytes from the base
+ * address and filling in the 'size' field (mb2_mmap's 'pad' field, or the
+ * end of the tag structure) with the provided entry size. This will still
+ * work if mb2_mmap is extended in future, but we assume the old mb_mmap
  * will not be extended.
  */
 static struct mb_mmap *mmap_convert(struct mb2_tag_mmap *tag, unsigned long *mmap_len)

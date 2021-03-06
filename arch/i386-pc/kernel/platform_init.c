@@ -29,7 +29,7 @@ int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *Kernel
 static int PlatformInit(struct KernelBase *KernelBase)
 {
     struct PlatformData *data;
-    struct tss	    *tss = __KernBootPrivate->TSS;
+    struct tss      *tss = __KernBootPrivate->TSS;
     apicidt_t *idt = __KernBootPrivate->BOOTIDT;
     struct segment_desc *GDT = __KernBootPrivate->BOOTGDT;
     int i;
@@ -46,8 +46,8 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!data)
-	return FALSE;
-	
+        return FALSE;
+        
     D(bug("[Kernel:i386] %s: Allocated platform data at 0x%p\n", __func__, data));
     KernelBase->kb_PlatformData = data;
 
@@ -58,7 +58,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
     SysBase->SysStkLower = AllocMem(0x10000, MEMF_PUBLIC);  /* 64KB of system stack */
 
     if (!SysBase->SysStkLower)
-	return FALSE;
+        return FALSE;
 
     tss->ssp_seg = KERNEL_DS; /* SSP segment descriptor */
     tss->cs      = USER_CS;
@@ -97,8 +97,8 @@ static int PlatformInit(struct KernelBase *KernelBase)
      */
     asm
     (
-	"ltr %%ax\n\t"
-	::"ax"(TSS_SELECTOR)
+        "ltr %%ax\n\t"
+        ::"ax"(TSS_SELECTOR)
     );
 
     D(bug("[Kernel:i386] %s: System restored\n", __func__));

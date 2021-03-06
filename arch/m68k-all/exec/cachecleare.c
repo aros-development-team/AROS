@@ -29,7 +29,7 @@ AROS_LH3(void, CacheClearE,
     void (*func)();
 
     if (SysBase->LibNode.lib_OpenCnt == 0)
-    	return;
+        return;
 
     Disable();
     if (SysBase->AttnFlags & AFF_68060) {
@@ -46,9 +46,9 @@ AROS_LH3(void, CacheClearE,
         func = AROS_SLIB_ENTRY(CacheClearE_00, Exec, LVOCacheClearE);
     }
     AROS_UFC3NR(void, func,
-	AROS_UFCA(APTR, address, A0),
-	AROS_UFCA(ULONG, length, D0),
-	AROS_UFCA(ULONG, caches, D1));
+        AROS_UFCA(APTR, address, A0),
+        AROS_UFCA(ULONG, length, D0),
+        AROS_UFCA(ULONG, caches, D1));
     SetFunction((struct Library *)SysBase, -LVOCacheClearE * LIB_VECTSIZE, func);
     Enable();
 

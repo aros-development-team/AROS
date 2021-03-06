@@ -19,7 +19,7 @@
 #include <hardware/videocore.h>
 
 APTR            MBoxBase;
-IPTR		__arm_periiobase __attribute__((used)) = 0 ;
+IPTR            __arm_periiobase __attribute__((used)) = 0 ;
 
 static int FNAME_BCMSDC(BCM2708Init)(struct SDCardBase *SDCardBase)
 {

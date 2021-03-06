@@ -203,17 +203,17 @@ VOID SDLBitMap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct bmdata *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate))) {
         idx = SDLBM_ATTR(tag->ti_Tag);
         if (idx < num_Hidd_SDLBitMap_Attrs) {
-	    switch(idx) {
-	    case aoHidd_SDLBitMap_Surface:
-	        data->surface = (SDL_Surface *)tag->ti_Data;
-		break;
-	    }
+            switch(idx) {
+            case aoHidd_SDLBitMap_Surface:
+                data->surface = (SDL_Surface *)tag->ti_Data;
+                break;
+            }
         }
     }
 
@@ -397,12 +397,12 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
             OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   &red_mask);
             OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, &green_mask);
             OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  &blue_mask);
-	    /* Alpha blitting is done using PutAlphaImage(). This method
-	       should ignore alpha channel data. Otherwise data without
-	       alpha channel (with alpha == 0) is assumed to contain valid
-	       alpha values and we see nothing as a result.
-	       This is known to affect TrueType fonts. */
-	    alpha_mask = 0;
+            /* Alpha blitting is done using PutAlphaImage(). This method
+               should ignore alpha channel data. Otherwise data without
+               alpha channel (with alpha == 0) is assumed to contain valid
+               alpha values and we see nothing as a result.
+               This is known to affect TrueType fonts. */
+            alpha_mask = 0;
 
             break;
     }

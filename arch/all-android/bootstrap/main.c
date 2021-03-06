@@ -56,13 +56,13 @@ int Java_org_aros_bootstrap_AROSBootstrap_Load(JNIEnv* env, jobject this, jstrin
 
     if (res)
     {
-	DisplayError("Failed to locate AROS root directory (%s): %s", arospath, strerror(errno));
-	(*env)->ReleaseStringUTFChars(env, basedir, arospath);
+        DisplayError("Failed to locate AROS root directory (%s): %s", arospath, strerror(errno));
+        (*env)->ReleaseStringUTFChars(env, basedir, arospath);
     }
     else
     {
-	(*env)->ReleaseStringUTFChars(env, basedir, arospath);
-	res = bootstrap(0, NULL); /* We can't pass any arguments (yet) */
+        (*env)->ReleaseStringUTFChars(env, basedir, arospath);
+        res = bootstrap(0, NULL); /* We can't pass any arguments (yet) */
     }
 
     return res;
@@ -103,7 +103,7 @@ jbyteArray Java_org_aros_bootstrap_AROSBootstrap_GetString(JNIEnv* env, jobject 
  * FIXME: See above why srcAddr is jint.
  */
 jint Java_org_aros_bootstrap_AROSBootstrap_GetBitmap(JNIEnv* env, jobject this, jobject bitmap, jint srcAddr,
-						     jint x, jint y, jint width, jint height, jint bytesPerLine)
+                                                     jint x, jint y, jint width, jint height, jint bytesPerLine)
 {
     void *src = (void *)srcAddr;
     void *dest;
@@ -114,15 +114,15 @@ jint Java_org_aros_bootstrap_AROSBootstrap_GetBitmap(JNIEnv* env, jobject this, 
     rc = bm_GetInfo(env, bitmap, &bmdata);
     if (rc < 0)
     {
-    	D(kprintf("[Bootstrap] Failed to obtain information about bitmap %p\n", bitmap));
-    	return rc;
+        D(kprintf("[Bootstrap] Failed to obtain information about bitmap %p\n", bitmap));
+        return rc;
     }
 
     rc = bm_Lock(env, bitmap, &dest);
     if (rc < 0)
     {
-    	D(kprintf("[Bootstrap] Failed to lock bitmap %p\n", bitmap));
-    	return rc;
+        D(kprintf("[Bootstrap] Failed to lock bitmap %p\n", bitmap));
+        return rc;
     }
 
     /* This is ARGB bitmap, 4 bytes per pixel */
@@ -132,9 +132,9 @@ jint Java_org_aros_bootstrap_AROSBootstrap_GetBitmap(JNIEnv* env, jobject this, 
 
     for (yc = 0; yc < height; yc++)
     {
-    	memcpy(dest, src, width);
-    	src  += bytesPerLine;
-    	dest += bmdata.stride;
+        memcpy(dest, src, width);
+        src  += bytesPerLine;
+        dest += bmdata.stride;
     }
 
     return bm_Unlock(env, bitmap);
@@ -147,9 +147,9 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved)
 
     if (libjnigraphics)
     {
-    	bm_GetInfo = dlsym(libjnigraphics, "AndroidBitmap_getInfo");
-    	bm_Lock    = dlsym(libjnigraphics, "AndroidBitmap_lockPixels");
-    	bm_Unlock  = dlsym(libjnigraphics, "AndroidBitmap_unlockPixels");
+        bm_GetInfo = dlsym(libjnigraphics, "AndroidBitmap_getInfo");
+        bm_Lock    = dlsym(libjnigraphics, "AndroidBitmap_lockPixels");
+        bm_Unlock  = dlsym(libjnigraphics, "AndroidBitmap_unlockPixels");
     }
 
     /* Dalvik wants a minimum of 1.4. Returning 1.1 causes exception. */

@@ -31,18 +31,18 @@ void stopclock(struct BattClockBase *Battclock)
 {
     volatile UBYTE *p = Battclock->clockptr;
     if (Battclock->clocktype == MSM6242B) {
-   	putreg(p, 0xf, 4 + 2);
+        putreg(p, 0xf, 4 + 2);
     } else if (Battclock->clocktype == RF5C01A) {
-    	putreg(p, 0xd, 0);
+        putreg(p, 0xd, 0);
     }
 }
 void startclock(struct BattClockBase *Battclock)
 {
     volatile UBYTE *p = Battclock->clockptr;
     if (Battclock->clocktype == MSM6242B) {
-   	putreg(p, 0xf, 4);
+        putreg(p, 0xf, 4);
     } else if (Battclock->clocktype == RF5C01A) {
-    	putreg(p, 0xd, 8);
+        putreg(p, 0xd, 8);
     }
 }
 
@@ -52,27 +52,27 @@ void resetbattclock(struct BattClockBase *Battclock)
     UBYTE i, j;
 
     if (!p)
-    	return;
+        return;
 
     if (Battclock->clocktype == MSM6242B) {
-    	putreg(p, 0xd, 0);
-    	putreg(p, 0xe, 0);
-    	putreg(p, 0xf, 2);
-	for (i = 0; i < 12; i++)
-	    putreg(p, i, 0);
-	putreg(p, 0xf, 7); // reset
-    	putreg(p, 0xf, 4); // leave 24h on
+        putreg(p, 0xd, 0);
+        putreg(p, 0xe, 0);
+        putreg(p, 0xf, 2);
+        for (i = 0; i < 12; i++)
+            putreg(p, i, 0);
+        putreg(p, 0xf, 7); // reset
+        putreg(p, 0xf, 4); // leave 24h on
     } else if (Battclock->clocktype == RF5C01A) {
-    	putreg(p, 0xd, 0); // stop
-    	putreg(p, 0xe, 0);
-    	for (j = 0; j < 4; j++) {
-    	    putreg(p, 0xd, j);
-    	    for (i = 0; i < 12; i++)
-    	    	putreg(p, i, 0);
-    	}
-    	putreg(p, 0xd, 0);
-    	putreg(p, 0xf, 3); // reset
-    	putreg(p, 0xf, 0); // reset off
-    	putreg(p, 0xd, 8); // timer en
+        putreg(p, 0xd, 0); // stop
+        putreg(p, 0xe, 0);
+        for (j = 0; j < 4; j++) {
+            putreg(p, 0xd, j);
+            for (i = 0; i < 12; i++)
+                putreg(p, i, 0);
+        }
+        putreg(p, 0xd, 0);
+        putreg(p, 0xf, 3); // reset
+        putreg(p, 0xf, 0); // reset off
+        putreg(p, 0xd, 8); // timer en
     }
 }

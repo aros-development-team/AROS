@@ -19,34 +19,34 @@ static int amiga_checksum(uint8_t *mem, int size, uint32_t chkoff, int update)
     int i;
 
     for (i = 0; i < size; i+=4) {
-	uint32_t val = (mem[i+0] << 24) + 
-		       (mem[i+1] << 16) +
-		       (mem[i+2] <<  8) +
-		       (mem[i+3] <<  0);
+        uint32_t val = (mem[i+0] << 24) +
+                       (mem[i+1] << 16) +
+                       (mem[i+2] <<  8) +
+                       (mem[i+3] <<  0);
 
-    	/* Clear existing checksum */
-	if (update && i == chkoff) {
-		oldcksum = val;
-		val = 0;
-	}
+        /* Clear existing checksum */
+        if (update && i == chkoff) {
+                oldcksum = val;
+                val = 0;
+        }
 
-	cksum += val;
-	if (cksum < prevck)
-	    cksum++;
-	prevck = cksum;
+        cksum += val;
+        if (cksum < prevck)
+            cksum++;
+        prevck = cksum;
     }
 
     cksum = ~cksum;
 
     if (update && cksum != oldcksum) {
-    	printf("Updating checksum from 0x%08x to 0x%08x\n", oldcksum, cksum);
-	
-	mem[chkoff + 0] = (cksum >> 24) & 0xff;
-	mem[chkoff + 1] = (cksum >> 16) & 0xff;
-	mem[chkoff + 2] = (cksum >>  8) & 0xff;
-	mem[chkoff + 3] = (cksum >>  0) & 0xff;
+        printf("Updating checksum from 0x%08x to 0x%08x\n", oldcksum, cksum);
+        
+        mem[chkoff + 0] = (cksum >> 24) & 0xff;
+        mem[chkoff + 1] = (cksum >> 16) & 0xff;
+        mem[chkoff + 2] = (cksum >>  8) & 0xff;
+        mem[chkoff + 3] = (cksum >>  0) & 0xff;
 
-	return 1;
+        return 1;
    }
 
    return 0;
@@ -54,24 +54,24 @@ static int amiga_checksum(uint8_t *mem, int size, uint32_t chkoff, int update)
 
 int main(int argc, char **argv)
 {
-	int err, fd, i, retval = EXIT_FAILURE;
-	void *rom;
-	uint8_t *p;
-	uint32_t size = 0;
-	off_t origlen, len;
+        int err, fd, i, retval = EXIT_FAILURE;
+        void *rom;
+        uint8_t *p;
+        uint32_t size = 0;
+        off_t origlen, len;
 
-	fd = open(argv[1], O_RDWR | O_CREAT, 0666);
-	if (fd < 0) {
+        fd = open(argv[1], O_RDWR | O_CREAT, 0666);
+        if (fd < 0) {
             perror(argv[1]);
             return retval;
-	}
+        }
 
         origlen = lseek(fd, 0, SEEK_END);
 
         /* Make sure we have a valid ROM ID */
         rom = mmap(NULL, origlen, PROT_READ | PROT_WRITE,
                 MAP_SHARED, fd, 0);
-	if (rom == MAP_FAILED)
+        if (rom == MAP_FAILED)
         {
             perror(argv[1]);
             close(fd);
@@ -113,9 +113,9 @@ int main(int argc, char **argv)
             return retval;
         }
 
-	/* Pad with 0xff */
-	for (; len < size; len++) {
-	    unsigned char padb;
+        /* Pad with 0xff */
+        for (; len < size; len++) {
+            unsigned char padb;
 
 #if (0)
             /* Earlier kickstarts used 0x00 as the pad byte.. */
@@ -123,13 +123,13 @@ int main(int argc, char **argv)
 #else
             padb = 0xff;
 #endif
-	    write(fd, &padb, 1);
-	}
+            write(fd, &padb, 1);
+        }
 
-	rom = mmap(NULL, len, PROT_READ | PROT_WRITE,
-			MAP_SHARED, fd, 0);
+        rom = mmap(NULL, len, PROT_READ | PROT_WRITE,
+                        MAP_SHARED, fd, 0);
 
-	if (rom != MAP_FAILED)
+        if (rom != MAP_FAILED)
         {
             p = (uint8_t*)rom + len - 20;
             if ((origlen <= (size - 24)) ||
@@ -167,9 +167,9 @@ int main(int argc, char **argv)
         else
             perror(argv[1]);
 
-	close(fd);
+        close(fd);
 
-	return retval;
+        return retval;
 }
 
 

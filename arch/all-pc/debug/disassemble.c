@@ -14,24 +14,24 @@ static const char *resolve(struct ud *u, uint64_t addr, int64_t *offset)
 {
     struct Library *DebugBase = (struct Library *)ud_get_user_opaque_data(u);
     const char *retval = "target", *symname;
-	void *symaddr;
+        void *symaddr;
 
     D(bug("[debug] %s(%p)\n", __func__, (APTR)addr);)
 
-	if (DebugBase && DecodeLocation((APTR)*offset,
-					DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
-					TAG_DONE))
-	{
+        if (DebugBase && DecodeLocation((APTR)*offset,
+                                        DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
+                                        TAG_DONE))
+        {
         if (symname)
             retval = symname;
         *offset = addr - (int64_t)symaddr;
-	}
+        }
     else
     {
         *offset = addr - (__WORDSIZE/2);
     }
 
-	return retval;
+        return retval;
 }
 
 AROS_LH3(APTR, InitDisassembleCtx,
@@ -58,7 +58,7 @@ AROS_LH3(APTR, InitDisassembleCtx,
         ud_set_sym_resolver(ud_obj, &resolve);
         ud_set_user_opaque_data(ud_obj, DebugBase);
     }
-	return ud_obj;
+        return ud_obj;
 
     AROS_LIBFUNC_EXIT
 }
@@ -69,7 +69,7 @@ AROS_LH1(IPTR, DisassembleCtx,
 {
     AROS_LIBFUNC_INIT
 
-	return ud_disassemble(ctx);
+        return ud_disassemble(ctx);
 
     AROS_LIBFUNC_EXIT
 }
@@ -104,7 +104,7 @@ AROS_LH2(IPTR, GetCtxInstructionA,
             break;
         }
     }
-	return retval;
+        return retval;
 
     AROS_LIBFUNC_EXIT
 }

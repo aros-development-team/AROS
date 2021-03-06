@@ -28,7 +28,7 @@
 
 #include LC_LIBDEFS_FILE
 
-static int X11_Startup(LIBBASETYPEPTR LIBBASE) 
+static int X11_Startup(LIBBASETYPEPTR LIBBASE)
 {
     struct TagItem kbd_tags[] =
     {
@@ -70,7 +70,7 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
     {
         CloseLibrary(&GfxBase->LibNode);
         return FALSE;
-    }	
+    }
 
     kbdriver = HW_AddDriver(kbd, LIBBASE->xsd.kbdclass, kbd_tags);
     if (kbdriver)

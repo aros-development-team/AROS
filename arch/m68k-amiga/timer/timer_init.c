@@ -125,32 +125,32 @@ static void TimerHook(struct Resource *cia, struct TimerBase *tb, WORD iCRBit)
 /*
  * Create a register preserving call stub
  */
-#define _AS_STRING(x)	#x
-#define AS_STRING(x)	_AS_STRING(x)
+#define _AS_STRING(x)   #x
+#define AS_STRING(x)    _AS_STRING(x)
 
 #define PRESERVE_A0(lib, libname, funcname, funcid) \
-	do { \
-		void libname##_##funcname##_Wrapper(void) \
-	        { asm volatile ( \
-	        	"move.l %a0,%sp@-\n" \
-	        	"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
-	        	"move.l %sp@+,%a0\n" \
-	        	"rts\n" ); } \
-		/* Insert into the library's jumptable */ \
-		__AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
-	} while (0)
+        do { \
+                void libname##_##funcname##_Wrapper(void) \
+                { asm volatile ( \
+                        "move.l %a0,%sp@-\n" \
+                        "jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
+                        "move.l %sp@+,%a0\n" \
+                        "rts\n" ); } \
+                /* Insert into the library's jumptable */ \
+                __AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
+        } while (0)
 
 #define PRESERVE_A0A1(lib, libname, funcname, funcid) \
-	do { \
-		void libname##_##funcname##_Wrapper(void) \
-	        { asm volatile ( \
-	        	"movem.l %a0-%a1,%sp@-\n" \
-	        	"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
-	        	"movem.l %sp@+,%a0-%a1\n" \
-	        	"rts\n" ); } \
-		/* Insert into the library's jumptable */ \
-		__AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
-	} while (0)
+        do { \
+                void libname##_##funcname##_Wrapper(void) \
+                { asm volatile ( \
+                        "movem.l %a0-%a1,%sp@-\n" \
+                        "jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
+                        "movem.l %sp@+,%a0-%a1\n" \
+                        "rts\n" ); } \
+                /* Insert into the library's jumptable */ \
+                __AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
+        } while (0)
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {

@@ -233,7 +233,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (cpuNo = 1; cpuNo < apicData->apic_count; cpuNo++)
     {
-        struct APICCPUWake_Data apicWake = 
+        struct APICCPUWake_Data apicWake =
         {
             bs,
             apicData->lapicBase,
@@ -310,7 +310,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
                 DWAKE(bug("[Kernel:SMP] %s: CPU #%u started up\n", __func__, cpuNo + 1));
             }
         }
-        D(if (wakeresult) { bug("[Kernel:SMP] %s: core_APIC_Wake() failed, status 0x%p\n", __func__, wakeresult); } ) 
+        D(if (wakeresult) { bug("[Kernel:SMP] %s: core_APIC_Wake() failed, status 0x%p\n", __func__, wakeresult); } )
     }
 
     D(bug("[Kernel:SMP] %s: Done\n", __func__));
@@ -363,7 +363,7 @@ int smp_Initialize(void)
         {
             D(bug("[Kernel:SMP] Failed to prepare the environment!\n"));
 
-            pdata->kb_APIC->apic_count = 1;	/* We have only one working CPU */
+            pdata->kb_APIC->apic_count = 1;     /* We have only one working CPU */
             return 0;
         }
 

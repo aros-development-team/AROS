@@ -19,15 +19,15 @@ AROS_LH3(void, CacheClearE,
     struct ExecBase *, SysBase, 107, Exec)
 /*
     INTERNALS
-        Although this function is not needed for BM-DMA on x86 due to 
-        strong cache coherency (the CPU snoops the address lines and 
-        invalidates all out-of-date cache), it is needed for some other 
-        operations. For example, when updating graphics memory address 
-        translation tables, changes may be invisible to the graphics 
+        Although this function is not needed for BM-DMA on x86 due to
+        strong cache coherency (the CPU snoops the address lines and
+        invalidates all out-of-date cache), it is needed for some other
+        operations. For example, when updating graphics memory address
+        translation tables, changes may be invisible to the graphics
         card/chip if not explicitly written back from the cache.
 
-        Drivers performing DMA operations should use 
-        CachePreDMA()/CachePostDMA() instead, which maximise performance 
+        Drivers performing DMA operations should use
+        CachePreDMA()/CachePostDMA() instead, which maximise performance
         on x86 by doing nothing!
 */
 {

@@ -247,9 +247,9 @@ struct syscallx86_Handler ACPI_SCChangePMStateHandler =
  * Process the FADT Table
  */
 AROS_UFH3(static IPTR, ACPI_hook_Table_PM_Probe,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_TABLE_FADT *, fadt, A2),
-	  AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_TABLE_FADT *, fadt, A2),
+          AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
 {
     AROS_USERFUNC_INIT
 

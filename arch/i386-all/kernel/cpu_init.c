@@ -30,35 +30,35 @@ static int cpu_Init(struct KernelBase *KernelBase)
 
     if (v4 & (1 << 24))
     {
-	switch ((v4 >> 25) & 3)
-	{
+        switch ((v4 >> 25) & 3)
+        {
         case 3:
         case 2:
         case 1:
-	    /* FPU + SSE */
+            /* FPU + SSE */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
-	    /* tell the CPU that we will support SSE */
-	    wrcr(cr4, rdcr(cr4) | (3 << 9));
-	    /* Clear the EM and MP flags of CR0 */
-	    wrcr(cr0, rdcr(cr0) & ~6);
+            /* tell the CPU that we will support SSE */
+            wrcr(cr4, rdcr(cr4) | (3 << 9));
+            /* Clear the EM and MP flags of CR0 */
+            wrcr(cr0, rdcr(cr0) & ~6);
 #endif
 
 #ifdef USE_LEGACY_8087
-	    KernelBase->kb_ContextFlags = ECF_FPU|ECF_FPFXS;
-	    KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;		  /* Legacy 8087 frame with private portion */
+            KernelBase->kb_ContextFlags = ECF_FPU|ECF_FPFXS;
+            KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;              /* Legacy 8087 frame with private portion */
 #else
-	    KernelBase->kb_ContextFlags = ECF_FPFXS;
+            KernelBase->kb_ContextFlags = ECF_FPFXS;
 #endif
-	    KernelBase->kb_ContextSize += sizeof(struct FPXContext) + 15; /* Add 15 bytes for alignment */
-	    break;
-	}
+            KernelBase->kb_ContextSize += sizeof(struct FPXContext) + 15; /* Add 15 bytes for alignment */
+            break;
+        }
     }
     else
     {
         /* FPU only */
-	KernelBase->kb_ContextFlags = ECF_FPU;
-	KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;
+        KernelBase->kb_ContextFlags = ECF_FPU;
+        KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;
     }
 
     D(bug("[Kernel] CPU context flags: 0x%08X\n", KernelBase->kb_ContextFlags));

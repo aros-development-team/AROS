@@ -76,7 +76,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
         asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 4" : [scp_reg] "=r" (scp_reg) );
 
         DPROBE(bug("[processor.ARM] %s:  - %02d:%02d\n", __PRETTY_FUNCTION__, (scp_reg >> 4) & 0xF, scp_reg & 0xF));
-    } 
+    }
     else
         info->Family = CPUFAMILY_UNKNOWN;
 
@@ -146,7 +146,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     asm volatile("mrc p15, 0, %[cache_reg], c0, c0, 1" : [cache_reg] "=r" (cache_reg) );
 
     if (scp_reg & (1 << 2))
-    {    
+    {
         switch((cache_reg >> 18) & 0xF) {
             case 3:
                 info->L1DataCacheSize = 4;
@@ -181,7 +181,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
         }
     }
     if (scp_reg & (1 << 12))
-    {    
+    {
         switch((cache_reg >> 6) & 0xF) {
             case 3:
                 info->L1InstructionCacheSize = 4;

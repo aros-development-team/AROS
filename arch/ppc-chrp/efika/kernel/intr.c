@@ -159,7 +159,7 @@ AROS_LH1(void, KrnRemIRQHandler,
         REMOVE(h);
         if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
         {
-        	ictl_disable_irq(irq);
+                ictl_disable_irq(irq);
         }
         Enable();
 
@@ -211,25 +211,25 @@ extern uint32_t __vector_dmissw;
 
 void intr_init()
 {
-	D(bug("[KRN] Initializing exception handlers\n"));
+        D(bug("[KRN] Initializing exception handlers\n"));
 
-	init_interrupt( 1, generic_handler);	/* RESET */
-	init_interrupt( 2, generic_handler);	/* Machine check */
-	init_interrupt( 3, mmu_handler);		/* DSI */
-	init_interrupt( 4, mmu_handler);		/* ISI */
-	init_interrupt( 5, ictl_handler);		/* External Intr */
-	init_interrupt( 6, generic_handler);	/* Alignment */
-	init_interrupt( 7, program_handler);	/* Program */
-	init_interrupt( 8, generic_handler);	/* Floating point unavailable */
-	init_interrupt( 9, decrementer_handler);/* Decrementer */
-	init_interrupt(10, generic_handler);	/* critical exception */
-	init_interrupt(12, syscall_handler);	/* Syscall */
-	init_interrupt(13, generic_handler);	/* Trace */
-	init_interrupt(16, generic_handler);	/* Instruction translation miss */
-	init_interrupt(17, generic_handler);	/* Data load translation miss */
-	init_interrupt(18, generic_handler);	/* Data store translation miss */
-	init_interrupt(19, generic_handler);	/* Instruction address breakpoint */
-	init_interrupt(20, ictl_handler);		/* SMI */
+        init_interrupt( 1, generic_handler);    /* RESET */
+        init_interrupt( 2, generic_handler);    /* Machine check */
+        init_interrupt( 3, mmu_handler);                /* DSI */
+        init_interrupt( 4, mmu_handler);                /* ISI */
+        init_interrupt( 5, ictl_handler);               /* External Intr */
+        init_interrupt( 6, generic_handler);    /* Alignment */
+        init_interrupt( 7, program_handler);    /* Program */
+        init_interrupt( 8, generic_handler);    /* Floating point unavailable */
+        init_interrupt( 9, decrementer_handler);/* Decrementer */
+        init_interrupt(10, generic_handler);    /* critical exception */
+        init_interrupt(12, syscall_handler);    /* Syscall */
+        init_interrupt(13, generic_handler);    /* Trace */
+        init_interrupt(16, generic_handler);    /* Instruction translation miss */
+        init_interrupt(17, generic_handler);    /* Data load translation miss */
+        init_interrupt(18, generic_handler);    /* Data store translation miss */
+        init_interrupt(19, generic_handler);    /* Instruction address breakpoint */
+        init_interrupt(20, ictl_handler);               /* SMI */
 }
 
 /*
@@ -244,43 +244,43 @@ void intr_init()
  */
 static void init_interrupt(uint8_t num, void *handler)
 {
-	if (num > 0 && num < 0x2f)
-	{
-		intptr_t target = num << 8;
+        if (num > 0 && num < 0x2f)
+        {
+                intptr_t target = num << 8;
 
-		if (num == 16)
-			memcpy((void*)target, &__vector_imiss, 256);
-		else if (num == 17)
-			memcpy((void*)target, &__vector_dmiss, 256);
-		else if (num == 18)
-			memcpy((void*)target, &__vector_dmissw, 256);
-		else
-		{
-			memcpy((void*)target, __tmpl_start, __tmpl_length);
+                if (num == 16)
+                        memcpy((void*)target, &__vector_imiss, 256);
+                else if (num == 17)
+                        memcpy((void*)target, &__vector_dmiss, 256);
+                else if (num == 18)
+                        memcpy((void*)target, &__vector_dmissw, 256);
+                else
+                {
+                        memcpy((void*)target, __tmpl_start, __tmpl_length);
 
-			/* Fix the exception  number */
-			*(uint16_t *)(target + __tmpl_irq_num) = num;
+                        /* Fix the exception  number */
+                        *(uint16_t *)(target + __tmpl_irq_num) = num;
 
-			/* Fix the handler address */
-			*(uint16_t *)(target + __tmpl_addr_lo) = (intptr_t)handler & 0x0000ffff;
-			*(uint16_t *)(target + __tmpl_addr_hi) = (intptr_t)handler >> 16;
+                        /* Fix the handler address */
+                        *(uint16_t *)(target + __tmpl_addr_lo) = (intptr_t)handler & 0x0000ffff;
+                        *(uint16_t *)(target + __tmpl_addr_hi) = (intptr_t)handler >> 16;
 
-			/*
-			 * Adjustment of the lower halfword of address is done through "la"
-			 * instruction, which happens to be the same as addi:
-			 *
-			 * "la %reg1, offset(%reg2) <=> addi %reg1, %reg1, offset"
-			 *
-			 * If the offset is bigger then 32KB (thus seen by addi as a negative
-			 * number), increase the upper halfword by one.
-			 */
-			if ((intptr_t)handler & 0x00008000)
-				(*(uint16_t *)(target + __tmpl_addr_hi))++;
-		}
+                        /*
+                         * Adjustment of the lower halfword of address is done through "la"
+                         * instruction, which happens to be the same as addi:
+                         *
+                         * "la %reg1, offset(%reg2) <=> addi %reg1, %reg1, offset"
+                         *
+                         * If the offset is bigger then 32KB (thus seen by addi as a negative
+                         * number), increase the upper halfword by one.
+                         */
+                        if ((intptr_t)handler & 0x00008000)
+                                (*(uint16_t *)(target + __tmpl_addr_hi))++;
+                }
 
-		/* Flush the cache */
-		flush_cache((char*)target, (char*)target + 0xff);
-	}
+                /* Flush the cache */
+                flush_cache((char*)target, (char*)target + 0xff);
+        }
 }
 
 /* Tiny routine to flush caches for a region of memory */
@@ -311,19 +311,19 @@ void __attribute__((noreturn)) fpu_handler(context_t *ctx, uint8_t exception, vo
 
     if (KernelBase)
     {
-    	if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
-    	{
-			struct ExceptNode *in, *intemp;
+        if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+        {
+                        struct ExceptNode *in, *intemp;
 
-			ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
-			{
-				/*
-				 * call every handler tied to this exception.
-				 */
-				if (in->in_Handler)
-					in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
-			}
-    	}
+                        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
+                        {
+                                /*
+                                 * call every handler tied to this exception.
+                                 */
+                                if (in->in_Handler)
+                                        in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
+                        }
+        }
     }
 
     core_LeaveInterrupt(ctx);
@@ -347,53 +347,53 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
 
     if (KernelBase)
     {
-    	if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
-    	{
-			struct ExceptNode *in, *intemp;
+        if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+        {
+                        struct ExceptNode *in, *intemp;
 
-			ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
-			{
-				/*
-				 * call every handler tied to this exception.
-				 */
-				if (in->in_Handler)
-					in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
-			}
-    	}
+                        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
+                        {
+                                /*
+                                 * call every handler tied to this exception.
+                                 */
+                                if (in->in_Handler)
+                                        in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
+                        }
+        }
     }
 
     if (SysBase && SysBase->Elapsed)
     {
         if (--SysBase->Elapsed == 0)
         {
-        	SysBase->SysFlags |= 0x2000;
-        	SysBase->AttnResched |= 0x80;
+                SysBase->SysFlags |= 0x2000;
+                SysBase->AttnResched |= 0x80;
         }
     }
 
     /* CPU usage meter. it should not be here, actually */
     uint64_t current = mftbu();
-	if (current - last_calc > 33000000)
-	{
-		uint32_t total_time = current - last_calc;
+        if (current - last_calc > 33000000)
+        {
+                uint32_t total_time = current - last_calc;
 
-		if (SysBase->ThisTask == idle_task)
-		{
-			tbu2 = mftbu();
-			idle_time += tbu2 - tbu1;
-			tbu1 = tbu2;
-		}
+                if (SysBase->ThisTask == idle_task)
+                {
+                        tbu2 = mftbu();
+                        idle_time += tbu2 - tbu1;
+                        tbu1 = tbu2;
+                }
 
-		if (total_time < idle_time)
-			total_time=idle_time;
+                if (total_time < idle_time)
+                        total_time=idle_time;
 
-		cpu_usage = 1000 - ((uint32_t)(idle_time))/(total_time /1000);
+                cpu_usage = 1000 - ((uint32_t)(idle_time))/(total_time /1000);
 
-		D(bug("[KRN] CPU usage: %3d.%d\n", cpu_usage / 10, cpu_usage % 10));
+                D(bug("[KRN] CPU usage: %3d.%d\n", cpu_usage / 10, cpu_usage % 10));
 
-		last_calc = current;
-		idle_time = 0;
-	}
+                last_calc = current;
+                idle_time = 0;
+        }
 
     core_ExitInterrupt(ctx);
 }
@@ -409,21 +409,21 @@ void __attribute__((noreturn)) program_handler(regs_t *ctx, uint8_t exception, v
 
     if ((insn & 0xfc1fffff) == 0x7c1442a6) /* mfspr sprg4 */
     {
-    	ctx->gpr[(insn >> 21) & 0x1f] = getKernelBase();
-    	ctx->srr0 += 4;
-    	core_LeaveInterrupt(ctx);
+        ctx->gpr[(insn >> 21) & 0x1f] = getKernelBase();
+        ctx->srr0 += 4;
+        core_LeaveInterrupt(ctx);
     }
     else if ((insn & 0xfc1fffff) == 0x7c1542a6) /* mfspr sprg5 */
     {
-    	ctx->gpr[(insn >> 21) & 0x1f] = getSysBase();
-    	ctx->srr0 += 4;
-    	core_LeaveInterrupt(ctx);
+        ctx->gpr[(insn >> 21) & 0x1f] = getSysBase();
+        ctx->srr0 += 4;
+        core_LeaveInterrupt(ctx);
     }
     else if (insn == 0x7fe00008)
     {
-    	D(bug("[KRN] trap @ %08x (r3=%08x)\n", ctx->srr0, ctx->gpr[3]));
+        D(bug("[KRN] trap @ %08x (r3=%08x)\n", ctx->srr0, ctx->gpr[3]));
 
-    	if (SysBase)
+        if (SysBase)
         {
             struct Task *t = FindTask(NULL);
             D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
@@ -433,10 +433,10 @@ void __attribute__((noreturn)) program_handler(regs_t *ctx, uint8_t exception, v
         D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
 
         D(bug("[KRN] HASH1=%08x HASH2=%08x IMISS=%08x DMISS=%08x ICMP=%08x DCMP=%08x\n",
-            		rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
+                        rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
 
         D(bug("[KRN] SPRG0=%08x SPRG1=%08x SPRG2=%08x SPRG3=%08x SPRG4=%08x SPRG5=%08x\n",
-        		rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
+                        rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
 
         D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
                  ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
@@ -456,11 +456,11 @@ void __attribute__((noreturn)) program_handler(regs_t *ctx, uint8_t exception, v
         D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
                  ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
 
-    	ctx->srr0 += 4;
-    	core_LeaveInterrupt(ctx);
+        ctx->srr0 += 4;
+        core_LeaveInterrupt(ctx);
     }
     else
-    	generic_handler(ctx, exception, self);
+        generic_handler(ctx, exception, self);
 }
 
 
@@ -474,23 +474,23 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
 
     if (KernelBase)
     {
-    	if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
-    	{
-			struct ExceptNode *in, *intemp;
+        if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+        {
+                        struct ExceptNode *in, *intemp;
 
-			ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
-			{
-				/*
-				 * call every handler tied to this exception. If any of them
-				 * returns a non-zero value, the exception is considered handled.
-				 *
-				 * If no handler will return zero, or there are no handlers at all,
-				 * this generic handler will stop cpu.
-				 */
-				if (in->in_Handler)
-					handled |= in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
-			}
-    	}
+                        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
+                        {
+                                /*
+                                 * call every handler tied to this exception. If any of them
+                                 * returns a non-zero value, the exception is considered handled.
+                                 *
+                                 * If no handler will return zero, or there are no handlers at all,
+                                 * this generic handler will stop cpu.
+                                 */
+                                if (in->in_Handler)
+                                        handled |= in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
+                        }
+        }
     }
 
     D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
@@ -504,10 +504,10 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
 
     D(bug("[KRN] HASH1=%08x HASH2=%08x IMISS=%08x DMISS=%08x ICMP=%08x DCMP=%08x\n",
-        		rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
+                        rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
 
     D(bug("[KRN] SPRG0=%08x SPRG1=%08x SPRG2=%08x SPRG3=%08x SPRG4=%08x SPRG5=%08x\n",
-    		rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
+                rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
 
     D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
              ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
@@ -537,11 +537,11 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
 
     if (!handled)
     {
-		D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
+                D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
 
-		while(1) {
-			wrmsr(rdmsr() | MSR_POW);
-		}
+                while(1) {
+                        wrmsr(rdmsr() | MSR_POW);
+                }
     }
     core_LeaveInterrupt(ctx);
 }
@@ -552,15 +552,15 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
  */
 static void __attribute__((used)) __exception_template()
 {
-	asm volatile(".globl __tmpl_start; .type __tmpl_start,@function\n"
-"__tmpl_start:					\n"
-"		mtsprg1 %%r3          	\n"   /* save %r3 */
+        asm volatile(".globl __tmpl_start; .type __tmpl_start,@function\n"
+"__tmpl_start:                                  \n"
+"               mtsprg1 %%r3            \n"   /* save %r3 */
 "       mfcr %%r3               \n"   /* copy CR to %r3 */
 "       mtsprg3 %%r3            \n"   /* save %r3 */
 
 "       mfmsr %%r3              \n"
-"		ori %%r3,%%r3,%2        \n"	  /* Enable address translation for data */
-"		mtmsr %%r3				\n"
+"               ori %%r3,%%r3,%2        \n"       /* Enable address translation for data */
+"               mtmsr %%r3                              \n"
 "       sync; isync             \n"
 
 "       mfsrr1 %%r3             \n"   /* srr1 (previous MSR) reg into %r3 */
@@ -576,28 +576,28 @@ static void __attribute__((used)) __exception_template()
 ::"i"(MSR_PR),"i"(-sizeof(context_t)),"i"(MSR_DS));
 
     asm volatile(
-"		stw %%r0, %[gpr0](%%r3) \n"   /* Store bunch of registers already. I could */
-"		stw %%r1, %[gpr1](%%r3) \n"   /* do it in common trampoline code, but it */
-"		stw %%r2, %[gpr2](%%r3) \n"   /* is much more sexy to do it here - this code */
-"		mfsprg1 %%r0            \n"   /* occupies in theory ZERO bytes in memory */
-"		stw %%r4, %[gpr4](%%r3) \n"   /* because the exception vector is 256 bytes long */
-"		stw %%r0, %[gpr3](%%r3) \n"   /* and shouldn't be used to anything else than */
-"		stw %%r5, %[gpr5](%%r3) \n"   /* exception handler anyway ;) */
-"		mfsprg3 %%r2            \n"
-"		mfsrr0 %%r0             \n"
-"		mfsrr1 %%r1             \n"
-"__addr_hi:	lis %%r5, 0xdeadbeef@ha\n"		/* Load the address of an generic handler */
-"__addr_lo:	la %%r5, 0xdeadbeef@l(%%r5)\n"	/* yes, load immediate sucks. Think about 64-bit PPC ;) */
-"__irq_num:	li %%r4, 0x5a5a     \n"	  /* Load the exception number */
-"		stw %%r2,%[ccr](%%r3)   \n"
-"		stw %%r0,%[srr0](%%r3)  \n"
-"		stw %%r1,%[srr1](%%r3)  \n"
-"		mfctr %%r0              \n"
-"		mflr %%r1               \n"
-"		mfxer %%r2              \n"
-"		stw %%r0,%[ctr](%%r3)   \n"
-"		stw %%r1,%[lr](%%r3)    \n"
-"		stw %%r2,%[xer](%%r3)   \n"
+"               stw %%r0, %[gpr0](%%r3) \n"   /* Store bunch of registers already. I could */
+"               stw %%r1, %[gpr1](%%r3) \n"   /* do it in common trampoline code, but it */
+"               stw %%r2, %[gpr2](%%r3) \n"   /* is much more sexy to do it here - this code */
+"               mfsprg1 %%r0            \n"   /* occupies in theory ZERO bytes in memory */
+"               stw %%r4, %[gpr4](%%r3) \n"   /* because the exception vector is 256 bytes long */
+"               stw %%r0, %[gpr3](%%r3) \n"   /* and shouldn't be used to anything else than */
+"               stw %%r5, %[gpr5](%%r3) \n"   /* exception handler anyway ;) */
+"               mfsprg3 %%r2            \n"
+"               mfsrr0 %%r0             \n"
+"               mfsrr1 %%r1             \n"
+"__addr_hi:     lis %%r5, 0xdeadbeef@ha\n"              /* Load the address of an generic handler */
+"__addr_lo:     la %%r5, 0xdeadbeef@l(%%r5)\n"  /* yes, load immediate sucks. Think about 64-bit PPC ;) */
+"__irq_num:     li %%r4, 0x5a5a     \n"   /* Load the exception number */
+"               stw %%r2,%[ccr](%%r3)   \n"
+"               stw %%r0,%[srr0](%%r3)  \n"
+"               stw %%r1,%[srr1](%%r3)  \n"
+"               mfctr %%r0              \n"
+"               mflr %%r1               \n"
+"               mfxer %%r2              \n"
+"               stw %%r0,%[ctr](%%r3)   \n"
+"               stw %%r1,%[lr](%%r3)    \n"
+"               stw %%r2,%[xer](%%r3)   \n"
 
 
 ::[gpr0]"i"(offsetof(regs_t, gpr[0])),
@@ -627,7 +627,7 @@ static void __attribute__((used)) __exception_template()
      * already, we would have to make region 0x00000000-0x00003000 *EXECUTABLE* :))
      */
     asm volatile( "lis %r2,(__EXCEPTION_Trampoline - " STR(KERNEL_VIRT_BASE) " + " STR(KERNEL_PHYS_BASE) ")@ha;"
-				  "la %r2,(__EXCEPTION_Trampoline - " STR(KERNEL_VIRT_BASE) " + " STR(KERNEL_PHYS_BASE) ")@l(%r2); mtctr %r2;");
+                                  "la %r2,(__EXCEPTION_Trampoline - " STR(KERNEL_VIRT_BASE) " + " STR(KERNEL_PHYS_BASE) ")@l(%r2); mtctr %r2;");
 
     /* Jump to the trampoline code */
     asm volatile("bctr;");
@@ -709,92 +709,92 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
                  [gpr31]"i"(offsetof(regs_t, gpr[31]))
     );
     asm volatile(
-				"mfmsr %%r0						\n\t"
-				"ori %%r0,%%r0, %[msrval]@l \n\t"
-				"mtmsr %%r0; isync				\n\t"
-				"stfd %%f0,%[fr0](%%r3)		\n\t"
-				"mffs %%f0						\n\t"
-				"stfd %%f0,%[fpscr](%%r3)		\n\t"
-				"stfd %%f1,%[fr1](%%r3)		\n\t"
-				"stfd %%f2,%[fr2](%%r3)		\n\t"
-				"stfd %%f3,%[fr3](%%r3)		\n\t"
-				"stfd %%f4,%[fr4](%%r3)		\n\t"
-				"stfd %%f5,%[fr5](%%r3)		\n\t"
-				"stfd %%f6,%[fr6](%%r3)		\n\t"
-				"stfd %%f7,%[fr7](%%r3)		\n\t"
-				"stfd %%f8,%[fr8](%%r3)		\n\t"
-				"stfd %%f9,%[fr9](%%r3)		\n\t"
-				"stfd %%f10,%[fr10](%%r3)		\n\t"
-				"stfd %%f11,%[fr11](%%r3)		\n\t"
-				"stfd %%f12,%[fr12](%%r3)		\n\t"
-				"stfd %%f13,%[fr13](%%r3)		\n\t"
-				"stfd %%f14,%[fr14](%%r3)		\n\t"
-				"stfd %%f15,%[fr15](%%r3)		\n\t"
-				::
-				[fpscr]"i"(offsetof(context_t, fpu.fpscr)),
-				[fr0]"i"(offsetof(context_t, fpu.fpr[0])),
-				[fr1]"i"(offsetof(context_t, fpu.fpr[1])),
-				[fr2]"i"(offsetof(context_t, fpu.fpr[2])),
-				[fr3]"i"(offsetof(context_t, fpu.fpr[3])),
-				[fr4]"i"(offsetof(context_t, fpu.fpr[4])),
-				[fr5]"i"(offsetof(context_t, fpu.fpr[5])),
-				[fr6]"i"(offsetof(context_t, fpu.fpr[6])),
-				[fr7]"i"(offsetof(context_t, fpu.fpr[7])),
-				[fr8]"i"(offsetof(context_t, fpu.fpr[8])),
-				[fr9]"i"(offsetof(context_t, fpu.fpr[9])),
-				[fr10]"i"(offsetof(context_t, fpu.fpr[10])),
-				[fr11]"i"(offsetof(context_t, fpu.fpr[11])),
-				[fr12]"i"(offsetof(context_t, fpu.fpr[12])),
-				[fr13]"i"(offsetof(context_t, fpu.fpr[13])),
-				[fr14]"i"(offsetof(context_t, fpu.fpr[14])),
-				[fr15]"i"(offsetof(context_t, fpu.fpr[15])),
-				[msrval]"i"(MSR_FP)
+                                "mfmsr %%r0                                             \n\t"
+                                "ori %%r0,%%r0, %[msrval]@l \n\t"
+                                "mtmsr %%r0; isync                              \n\t"
+                                "stfd %%f0,%[fr0](%%r3)         \n\t"
+                                "mffs %%f0                                              \n\t"
+                                "stfd %%f0,%[fpscr](%%r3)               \n\t"
+                                "stfd %%f1,%[fr1](%%r3)         \n\t"
+                                "stfd %%f2,%[fr2](%%r3)         \n\t"
+                                "stfd %%f3,%[fr3](%%r3)         \n\t"
+                                "stfd %%f4,%[fr4](%%r3)         \n\t"
+                                "stfd %%f5,%[fr5](%%r3)         \n\t"
+                                "stfd %%f6,%[fr6](%%r3)         \n\t"
+                                "stfd %%f7,%[fr7](%%r3)         \n\t"
+                                "stfd %%f8,%[fr8](%%r3)         \n\t"
+                                "stfd %%f9,%[fr9](%%r3)         \n\t"
+                                "stfd %%f10,%[fr10](%%r3)               \n\t"
+                                "stfd %%f11,%[fr11](%%r3)               \n\t"
+                                "stfd %%f12,%[fr12](%%r3)               \n\t"
+                                "stfd %%f13,%[fr13](%%r3)               \n\t"
+                                "stfd %%f14,%[fr14](%%r3)               \n\t"
+                                "stfd %%f15,%[fr15](%%r3)               \n\t"
+                                ::
+                                [fpscr]"i"(offsetof(context_t, fpu.fpscr)),
+                                [fr0]"i"(offsetof(context_t, fpu.fpr[0])),
+                                [fr1]"i"(offsetof(context_t, fpu.fpr[1])),
+                                [fr2]"i"(offsetof(context_t, fpu.fpr[2])),
+                                [fr3]"i"(offsetof(context_t, fpu.fpr[3])),
+                                [fr4]"i"(offsetof(context_t, fpu.fpr[4])),
+                                [fr5]"i"(offsetof(context_t, fpu.fpr[5])),
+                                [fr6]"i"(offsetof(context_t, fpu.fpr[6])),
+                                [fr7]"i"(offsetof(context_t, fpu.fpr[7])),
+                                [fr8]"i"(offsetof(context_t, fpu.fpr[8])),
+                                [fr9]"i"(offsetof(context_t, fpu.fpr[9])),
+                                [fr10]"i"(offsetof(context_t, fpu.fpr[10])),
+                                [fr11]"i"(offsetof(context_t, fpu.fpr[11])),
+                                [fr12]"i"(offsetof(context_t, fpu.fpr[12])),
+                                [fr13]"i"(offsetof(context_t, fpu.fpr[13])),
+                                [fr14]"i"(offsetof(context_t, fpu.fpr[14])),
+                                [fr15]"i"(offsetof(context_t, fpu.fpr[15])),
+                                [msrval]"i"(MSR_FP)
     );
-	asm volatile(
-			"stfd %%f16,%[fr16](%%r3)		\n\t"
-			"stfd %%f17,%[fr17](%%r3)		\n\t"
-			"stfd %%f18,%[fr18](%%r3)		\n\t"
-			"stfd %%f19,%[fr19](%%r3)		\n\t"
-			"stfd %%f20,%[fr20](%%r3)		\n\t"
-			"stfd %%f21,%[fr21](%%r3)		\n\t"
-			"stfd %%f22,%[fr22](%%r3)		\n\t"
-			"stfd %%f23,%[fr23](%%r3)		\n\t"
-			"stfd %%f24,%[fr24](%%r3)		\n\t"
-			"stfd %%f25,%[fr25](%%r3)		\n\t"
-			"stfd %%f26,%[fr26](%%r3)		\n\t"
-			"stfd %%f27,%[fr27](%%r3)		\n\t"
-			"stfd %%f28,%[fr28](%%r3)		\n\t"
-			"stfd %%f29,%[fr29](%%r3)		\n\t"
-			"stfd %%f30,%[fr30](%%r3)		\n\t"
-			"stfd %%f31,%[fr31](%%r3)		\n\t"
-				"mr %%r28,%%r3            \n\t"
-				"mr %%r29,%%r4            \n\t"
-				"mr %%r30,%%r5            \n\t"
-				"mtsrr0 %%r5           \n\t"
-				"lis %%r9, %[msrval]@ha  \n\t"
-				"ori %%r9,%%r9, %[msrval]@l \n\t"
-				"mtsrr1 %%r9              \n\t"
-				"sync; isync; rfi"
-				::
-				[fr16]"i"(offsetof(context_t, fpu.fpr[16])),
-				[fr17]"i"(offsetof(context_t, fpu.fpr[17])),
-				[fr18]"i"(offsetof(context_t, fpu.fpr[18])),
-				[fr19]"i"(offsetof(context_t, fpu.fpr[19])),
-				[fr20]"i"(offsetof(context_t, fpu.fpr[20])),
-				[fr21]"i"(offsetof(context_t, fpu.fpr[21])),
-				[fr22]"i"(offsetof(context_t, fpu.fpr[22])),
-				[fr23]"i"(offsetof(context_t, fpu.fpr[23])),
-				[fr24]"i"(offsetof(context_t, fpu.fpr[24])),
-				[fr25]"i"(offsetof(context_t, fpu.fpr[25])),
-				[fr26]"i"(offsetof(context_t, fpu.fpr[26])),
-				[fr27]"i"(offsetof(context_t, fpu.fpr[27])),
-				[fr28]"i"(offsetof(context_t, fpu.fpr[28])),
-				[fr29]"i"(offsetof(context_t, fpu.fpr[29])),
-				[fr30]"i"(offsetof(context_t, fpu.fpr[30])),
-				[fr31]"i"(offsetof(context_t, fpu.fpr[31])),
+        asm volatile(
+                        "stfd %%f16,%[fr16](%%r3)               \n\t"
+                        "stfd %%f17,%[fr17](%%r3)               \n\t"
+                        "stfd %%f18,%[fr18](%%r3)               \n\t"
+                        "stfd %%f19,%[fr19](%%r3)               \n\t"
+                        "stfd %%f20,%[fr20](%%r3)               \n\t"
+                        "stfd %%f21,%[fr21](%%r3)               \n\t"
+                        "stfd %%f22,%[fr22](%%r3)               \n\t"
+                        "stfd %%f23,%[fr23](%%r3)               \n\t"
+                        "stfd %%f24,%[fr24](%%r3)               \n\t"
+                        "stfd %%f25,%[fr25](%%r3)               \n\t"
+                        "stfd %%f26,%[fr26](%%r3)               \n\t"
+                        "stfd %%f27,%[fr27](%%r3)               \n\t"
+                        "stfd %%f28,%[fr28](%%r3)               \n\t"
+                        "stfd %%f29,%[fr29](%%r3)               \n\t"
+                        "stfd %%f30,%[fr30](%%r3)               \n\t"
+                        "stfd %%f31,%[fr31](%%r3)               \n\t"
+                                "mr %%r28,%%r3            \n\t"
+                                "mr %%r29,%%r4            \n\t"
+                                "mr %%r30,%%r5            \n\t"
+                                "mtsrr0 %%r5           \n\t"
+                                "lis %%r9, %[msrval]@ha  \n\t"
+                                "ori %%r9,%%r9, %[msrval]@l \n\t"
+                                "mtsrr1 %%r9              \n\t"
+                                "sync; isync; rfi"
+                                ::
+                                [fr16]"i"(offsetof(context_t, fpu.fpr[16])),
+                                [fr17]"i"(offsetof(context_t, fpu.fpr[17])),
+                                [fr18]"i"(offsetof(context_t, fpu.fpr[18])),
+                                [fr19]"i"(offsetof(context_t, fpu.fpr[19])),
+                                [fr20]"i"(offsetof(context_t, fpu.fpr[20])),
+                                [fr21]"i"(offsetof(context_t, fpu.fpr[21])),
+                                [fr22]"i"(offsetof(context_t, fpu.fpr[22])),
+                                [fr23]"i"(offsetof(context_t, fpu.fpr[23])),
+                                [fr24]"i"(offsetof(context_t, fpu.fpr[24])),
+                                [fr25]"i"(offsetof(context_t, fpu.fpr[25])),
+                                [fr26]"i"(offsetof(context_t, fpu.fpr[26])),
+                                [fr27]"i"(offsetof(context_t, fpu.fpr[27])),
+                                [fr28]"i"(offsetof(context_t, fpu.fpr[28])),
+                                [fr29]"i"(offsetof(context_t, fpu.fpr[29])),
+                                [fr30]"i"(offsetof(context_t, fpu.fpr[30])),
+                                [fr31]"i"(offsetof(context_t, fpu.fpr[31])),
                 [msrval]"i"(MSR_ME|MSR_FP|MSR_IS|MSR_DS)
 
-	);
+        );
 }
 
 /*
@@ -849,78 +849,78 @@ static void __attribute__((used)) __core_LeaveInterrupt()
         );
 
     asm volatile(
-				"lfd  %%f0,%[fpscr](%%r3)		\n\t"
-				"mtfsf 255,%%f0						\n\t"
-				"lfd %%f0,%[fr0](%%r3)		\n\t"
-				"lfd %%f1,%[fr1](%%r3)		\n\t"
-				"lfd %%f2,%[fr2](%%r3)		\n\t"
-				"lfd %%f3,%[fr3](%%r3)		\n\t"
-				"lfd %%f4,%[fr4](%%r3)		\n\t"
-				"lfd %%f5,%[fr5](%%r3)		\n\t"
-				"lfd %%f6,%[fr6](%%r3)		\n\t"
-				"lfd %%f7,%[fr7](%%r3)		\n\t"
-				"lfd %%f8,%[fr8](%%r3)		\n\t"
-				"lfd %%f9,%[fr9](%%r3)		\n\t"
-				"lfd %%f10,%[fr10](%%r3)		\n\t"
-				"lfd %%f11,%[fr11](%%r3)		\n\t"
-				"lfd %%f12,%[fr12](%%r3)		\n\t"
-				"lfd %%f13,%[fr13](%%r3)		\n\t"
-				"lfd %%f14,%[fr14](%%r3)		\n\t"
-				"lfd %%f15,%[fr15](%%r3)		\n\t"
-				::
-				[fpscr]"i"(offsetof(context_t, fpu.fpscr)),
-				[fr0]"i"(offsetof(context_t, fpu.fpr[0])),
-				[fr1]"i"(offsetof(context_t, fpu.fpr[1])),
-				[fr2]"i"(offsetof(context_t, fpu.fpr[2])),
-				[fr3]"i"(offsetof(context_t, fpu.fpr[3])),
-				[fr4]"i"(offsetof(context_t, fpu.fpr[4])),
-				[fr5]"i"(offsetof(context_t, fpu.fpr[5])),
-				[fr6]"i"(offsetof(context_t, fpu.fpr[6])),
-				[fr7]"i"(offsetof(context_t, fpu.fpr[7])),
-				[fr8]"i"(offsetof(context_t, fpu.fpr[8])),
-				[fr9]"i"(offsetof(context_t, fpu.fpr[9])),
-				[fr10]"i"(offsetof(context_t, fpu.fpr[10])),
-				[fr11]"i"(offsetof(context_t, fpu.fpr[11])),
-				[fr12]"i"(offsetof(context_t, fpu.fpr[12])),
-				[fr13]"i"(offsetof(context_t, fpu.fpr[13])),
-				[fr14]"i"(offsetof(context_t, fpu.fpr[14])),
-				[fr15]"i"(offsetof(context_t, fpu.fpr[15]))
+                                "lfd  %%f0,%[fpscr](%%r3)               \n\t"
+                                "mtfsf 255,%%f0                                         \n\t"
+                                "lfd %%f0,%[fr0](%%r3)          \n\t"
+                                "lfd %%f1,%[fr1](%%r3)          \n\t"
+                                "lfd %%f2,%[fr2](%%r3)          \n\t"
+                                "lfd %%f3,%[fr3](%%r3)          \n\t"
+                                "lfd %%f4,%[fr4](%%r3)          \n\t"
+                                "lfd %%f5,%[fr5](%%r3)          \n\t"
+                                "lfd %%f6,%[fr6](%%r3)          \n\t"
+                                "lfd %%f7,%[fr7](%%r3)          \n\t"
+                                "lfd %%f8,%[fr8](%%r3)          \n\t"
+                                "lfd %%f9,%[fr9](%%r3)          \n\t"
+                                "lfd %%f10,%[fr10](%%r3)                \n\t"
+                                "lfd %%f11,%[fr11](%%r3)                \n\t"
+                                "lfd %%f12,%[fr12](%%r3)                \n\t"
+                                "lfd %%f13,%[fr13](%%r3)                \n\t"
+                                "lfd %%f14,%[fr14](%%r3)                \n\t"
+                                "lfd %%f15,%[fr15](%%r3)                \n\t"
+                                ::
+                                [fpscr]"i"(offsetof(context_t, fpu.fpscr)),
+                                [fr0]"i"(offsetof(context_t, fpu.fpr[0])),
+                                [fr1]"i"(offsetof(context_t, fpu.fpr[1])),
+                                [fr2]"i"(offsetof(context_t, fpu.fpr[2])),
+                                [fr3]"i"(offsetof(context_t, fpu.fpr[3])),
+                                [fr4]"i"(offsetof(context_t, fpu.fpr[4])),
+                                [fr5]"i"(offsetof(context_t, fpu.fpr[5])),
+                                [fr6]"i"(offsetof(context_t, fpu.fpr[6])),
+                                [fr7]"i"(offsetof(context_t, fpu.fpr[7])),
+                                [fr8]"i"(offsetof(context_t, fpu.fpr[8])),
+                                [fr9]"i"(offsetof(context_t, fpu.fpr[9])),
+                                [fr10]"i"(offsetof(context_t, fpu.fpr[10])),
+                                [fr11]"i"(offsetof(context_t, fpu.fpr[11])),
+                                [fr12]"i"(offsetof(context_t, fpu.fpr[12])),
+                                [fr13]"i"(offsetof(context_t, fpu.fpr[13])),
+                                [fr14]"i"(offsetof(context_t, fpu.fpr[14])),
+                                [fr15]"i"(offsetof(context_t, fpu.fpr[15]))
     );
-	asm volatile(
-			"lfd %%f16,%[fr16](%%r3)		\n\t"
-			"lfd %%f17,%[fr17](%%r3)		\n\t"
-			"lfd %%f18,%[fr18](%%r3)		\n\t"
-			"lfd %%f19,%[fr19](%%r3)		\n\t"
-			"lfd %%f20,%[fr20](%%r3)		\n\t"
-			"lfd %%f21,%[fr21](%%r3)		\n\t"
-			"lfd %%f22,%[fr22](%%r3)		\n\t"
-			"lfd %%f23,%[fr23](%%r3)		\n\t"
-			"lfd %%f24,%[fr24](%%r3)		\n\t"
-			"lfd %%f25,%[fr25](%%r3)		\n\t"
-			"lfd %%f26,%[fr26](%%r3)		\n\t"
-			"lfd %%f27,%[fr27](%%r3)		\n\t"
-			"lfd %%f28,%[fr28](%%r3)		\n\t"
-			"lfd %%f29,%[fr29](%%r3)		\n\t"
-			"lfd %%f30,%[fr30](%%r3)		\n\t"
-			"lfd %%f31,%[fr31](%%r3)		\n\t"
-				::
-				[fr16]"i"(offsetof(context_t, fpu.fpr[16])),
-				[fr17]"i"(offsetof(context_t, fpu.fpr[17])),
-				[fr18]"i"(offsetof(context_t, fpu.fpr[18])),
-				[fr19]"i"(offsetof(context_t, fpu.fpr[19])),
-				[fr20]"i"(offsetof(context_t, fpu.fpr[20])),
-				[fr21]"i"(offsetof(context_t, fpu.fpr[21])),
-				[fr22]"i"(offsetof(context_t, fpu.fpr[22])),
-				[fr23]"i"(offsetof(context_t, fpu.fpr[23])),
-				[fr24]"i"(offsetof(context_t, fpu.fpr[24])),
-				[fr25]"i"(offsetof(context_t, fpu.fpr[25])),
-				[fr26]"i"(offsetof(context_t, fpu.fpr[26])),
-				[fr27]"i"(offsetof(context_t, fpu.fpr[27])),
-				[fr28]"i"(offsetof(context_t, fpu.fpr[28])),
-				[fr29]"i"(offsetof(context_t, fpu.fpr[29])),
-				[fr30]"i"(offsetof(context_t, fpu.fpr[30])),
-				[fr31]"i"(offsetof(context_t, fpu.fpr[31]))
-	);
+        asm volatile(
+                        "lfd %%f16,%[fr16](%%r3)                \n\t"
+                        "lfd %%f17,%[fr17](%%r3)                \n\t"
+                        "lfd %%f18,%[fr18](%%r3)                \n\t"
+                        "lfd %%f19,%[fr19](%%r3)                \n\t"
+                        "lfd %%f20,%[fr20](%%r3)                \n\t"
+                        "lfd %%f21,%[fr21](%%r3)                \n\t"
+                        "lfd %%f22,%[fr22](%%r3)                \n\t"
+                        "lfd %%f23,%[fr23](%%r3)                \n\t"
+                        "lfd %%f24,%[fr24](%%r3)                \n\t"
+                        "lfd %%f25,%[fr25](%%r3)                \n\t"
+                        "lfd %%f26,%[fr26](%%r3)                \n\t"
+                        "lfd %%f27,%[fr27](%%r3)                \n\t"
+                        "lfd %%f28,%[fr28](%%r3)                \n\t"
+                        "lfd %%f29,%[fr29](%%r3)                \n\t"
+                        "lfd %%f30,%[fr30](%%r3)                \n\t"
+                        "lfd %%f31,%[fr31](%%r3)                \n\t"
+                                ::
+                                [fr16]"i"(offsetof(context_t, fpu.fpr[16])),
+                                [fr17]"i"(offsetof(context_t, fpu.fpr[17])),
+                                [fr18]"i"(offsetof(context_t, fpu.fpr[18])),
+                                [fr19]"i"(offsetof(context_t, fpu.fpr[19])),
+                                [fr20]"i"(offsetof(context_t, fpu.fpr[20])),
+                                [fr21]"i"(offsetof(context_t, fpu.fpr[21])),
+                                [fr22]"i"(offsetof(context_t, fpu.fpr[22])),
+                                [fr23]"i"(offsetof(context_t, fpu.fpr[23])),
+                                [fr24]"i"(offsetof(context_t, fpu.fpr[24])),
+                                [fr25]"i"(offsetof(context_t, fpu.fpr[25])),
+                                [fr26]"i"(offsetof(context_t, fpu.fpr[26])),
+                                [fr27]"i"(offsetof(context_t, fpu.fpr[27])),
+                                [fr28]"i"(offsetof(context_t, fpu.fpr[28])),
+                                [fr29]"i"(offsetof(context_t, fpu.fpr[29])),
+                                [fr30]"i"(offsetof(context_t, fpu.fpr[30])),
+                                [fr31]"i"(offsetof(context_t, fpu.fpr[31]))
+        );
 
 
     asm volatile(

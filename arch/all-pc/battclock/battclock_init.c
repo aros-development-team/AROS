@@ -19,7 +19,7 @@ struct Library *ACPICABase = NULL;
 static int BattClock_Init(struct BattClockBase *BattClockBase)
 {
     InitSemaphore(&BattClockBase->sem);
-    BattClockBase->century = CENTURY;	/* Default offset */
+    BattClockBase->century = CENTURY;   /* Default offset */
 
     if ((ACPICABase = OpenLibrary("acpica.library",0)))
     {

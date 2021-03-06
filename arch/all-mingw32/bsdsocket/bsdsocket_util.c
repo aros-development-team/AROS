@@ -13,24 +13,24 @@ void SetError(int error, struct TaskBase *libPtr)
     switch (libPtr->errnoSize)
     {
     case 8:
-	*(UQUAD *)libPtr->errnoPtr = (UQUAD)error;
-	break;
+        *(UQUAD *)libPtr->errnoPtr = (UQUAD)error;
+        break;
 
     case 4:
-	*(ULONG *)libPtr->errnoPtr = (ULONG)error;
-	break;
+        *(ULONG *)libPtr->errnoPtr = (ULONG)error;
+        break;
 
     case 2:
-	*(UWORD *)libPtr->errnoPtr = (UWORD)error;
-	break;
+        *(UWORD *)libPtr->errnoPtr = (UWORD)error;
+        break;
 
     case 1:
-	*(UBYTE *)libPtr->errnoPtr = (UBYTE)error;
-	break;
+        *(UBYTE *)libPtr->errnoPtr = (UBYTE)error;
+        break;
 
     default:
-	D(bug("[SetErrno] Bogus errno size %u for TaskBase 0x%p\n", libPtr->errnoSize, libPtr));
-	break;
+        D(bug("[SetErrno] Bogus errno size %u for TaskBase 0x%p\n", libPtr->errnoSize, libPtr));
+        break;
     }
 }
 
@@ -44,23 +44,23 @@ ULONG SetDTableSize(ULONG size, struct TaskBase *taskBase)
 
     /* FIXME: just a temporary measure */
     if (size < taskBase->dTableSize)
-	return EMFILE;
+        return EMFILE;
 
     table = AllocPooled(taskBase->pool, newsize);
     
     if (!table)
-	return ENOMEM;
+        return ENOMEM;
 
     memset(table, 0, newsize);
 
     if (old)
-	CopyMem(old, table, oldsize);
+        CopyMem(old, table, oldsize);
 
     taskBase->dTable = table;
     taskBase->dTableSize = size;
 
     if (old)
-	FreePooled(taskBase->pool, old, oldsize);
+        FreePooled(taskBase->pool, old, oldsize);
 
     return 0;
 }
@@ -71,8 +71,8 @@ int GetFreeFD(struct TaskBase *taskBase)
     
     for (i = 0; i < taskBase->dTableSize; i++)
     {
-	if (!taskBase->dTable[i])
-	    return i;
+        if (!taskBase->dTable[i])
+            return i;
     }
 
     SetError(EMFILE, taskBase);
@@ -85,13 +85,13 @@ struct Socket *GetSocket(int s, struct TaskBase *taskBase)
 
     if (s >= taskBase->dTableSize)
     {
-	SetError(ENOTSOCK, taskBase);
-	return NULL;
+        SetError(ENOTSOCK, taskBase);
+        return NULL;
     }
 
     sd = taskBase->dTable[s];
     if (!sd)
-	SetError(ENOTSOCK, taskBase);
+        SetError(ENOTSOCK, taskBase);
 
     return sd;
 }
@@ -102,11 +102,11 @@ struct WSsockaddr *MakeSockAddr(const struct sockaddr *src, int len, struct Task
 
     if (sa)
     {
-	CopyMem(src, sa, len);
-	sa->sa_family = src->sa_family;
+        CopyMem(src, sa, len);
+        sa->sa_family = src->sa_family;
     }
     else
-	SetError(ENOMEM, taskBase);
+        SetError(ENOMEM, taskBase);
 
     return sa;
 }

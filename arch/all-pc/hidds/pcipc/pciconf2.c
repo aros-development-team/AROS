@@ -22,30 +22,30 @@ static ULONG ReadConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 
     if (dev < 16)
     {
-	Disable();
+        Disable();
 
-	outb(0xf0|(sub<<1),PCI_AddressPort);
-	outb(bus,PCI_ForwardPort);
-	temp=inl(CFG2ADD(dev, reg));
-	outb(0,PCI_AddressPort);
+        outb(0xf0|(sub<<1),PCI_AddressPort);
+        outb(bus,PCI_ForwardPort);
+        temp=inl(CFG2ADD(dev, reg));
+        outb(0,PCI_AddressPort);
 
-	Enable();
-	return temp;
+        Enable();
+        return temp;
     }
     else
-	return 0xffffffff;
+        return 0xffffffff;
 }
 
 static void WriteConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val)
 {
     if (dev < 16)
     {
-	Disable();
-	outb(0xf0|(sub<<1),PCI_CSEPort);
-	outb(bus,PCI_ForwardPort);
-	outl(val,CFG2ADD(dev, reg));
-	outb(0,PCI_AddressPort);
-	Enable();
+        Disable();
+        outb(0xf0|(sub<<1),PCI_CSEPort);
+        outb(bus,PCI_ForwardPort);
+        outl(val,CFG2ADD(dev, reg));
+        outb(0,PCI_AddressPort);
+        Enable();
     }
 }
 
@@ -56,7 +56,7 @@ static inline BOOL SanityCheck(struct pcipc_staticdata *psd)
     /* Check if the bus 0 is not empty */
     temp = ReadConfigWord(psd, 0, 0, 0, PCICS_PRODUCT);
     if ((temp != 0x0000) && (temp != 0xFFFF))
-	return TRUE;
+        return TRUE;
 
     D(bug("[PCI.PC] Sanity check failed\n"));
     return FALSE;
@@ -73,7 +73,7 @@ static BOOL PCIPC_ProbeMech1Conf(struct pcipc_staticdata *psd)
 
     if (val == 0x80000000)
     {
-	D(bug("[PCI.PC] Configuration mechanism 1 detected\n"));
+        D(bug("[PCI.PC] Configuration mechanism 1 detected\n"));
 
         if (SanityCheck(psd))
         {
@@ -94,7 +94,7 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
      * Writing 0x01 to it makes the machine's cold reboot mechanism stop working.
      */
     if (PCIPC_ProbeMech1Conf(psd))
-    	return;
+        return;
 
     /*
      * There's no Mechanism 1.
@@ -102,7 +102,7 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
      */
     outb(0x01, PCI_MechSelect);
     if (PCIPC_ProbeMech1Conf(psd))
-    	return;
+        return;
 
     /* Completely no support. Try mechanism 2. */
     outb(0x00, PCI_MechSelect);
@@ -111,16 +111,16 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
 
     if ((inb(PCI_CSEPort) == 0x00) && (inb(PCI_ForwardPort) == 0x00))
     {
-	D(bug("[PCI.PC] configuration mechanism 2 detected\n"));
+        D(bug("[PCI.PC] configuration mechanism 2 detected\n"));
 
-    	psd->ReadConfigLong  = ReadConfig2Long;
-    	psd->WriteConfigLong = WriteConfig2Long;
+        psd->ReadConfigLong  = ReadConfig2Long;
+        psd->WriteConfigLong = WriteConfig2Long;
 
-	if (SanityCheck(psd))
-	{
-	    /* Confirmed */
-	    return;
-	}
+        if (SanityCheck(psd))
+        {
+            /* Confirmed */
+            return;
+        }
     }
 
     /*

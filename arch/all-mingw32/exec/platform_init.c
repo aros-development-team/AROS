@@ -26,25 +26,25 @@ BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct TagItem *msg)
 
     tag = LibFindTagItem(KRN_HostInterface, msg);
     if (!tag)
-    	return FALSE;
+        return FALSE;
 
     HostIFace = (struct HostInterface *)tag->ti_Data;
 
     KernelLib = HostIFace->hostlib_Open("kernel32.dll", NULL);
     if (!KernelLib)
-	return FALSE;
+        return FALSE;
 
     pd->ExitProcess = HostIFace->hostlib_GetPointer(KernelLib, "ExitProcess", NULL);
     if (!pd->ExitProcess)
-	return FALSE;
+        return FALSE;
 
     pd->FlushInstructionCache = HostIFace->hostlib_GetPointer(KernelLib, "FlushInstructionCache", NULL);
     if (!pd->FlushInstructionCache)
-	return FALSE;
+        return FALSE;
 
     GetCurrentProcess = HostIFace->hostlib_GetPointer(KernelLib, "GetCurrentProcess", NULL);
     if (!GetCurrentProcess)
-	return FALSE;
+        return FALSE;
 
     pd->Reboot = HostIFace->Reboot;
     pd->MyProcess = GetCurrentProcess();

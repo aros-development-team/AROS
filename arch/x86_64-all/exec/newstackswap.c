@@ -12,10 +12,10 @@
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
 AROS_LH3(IPTR, NewStackSwap,
-	AROS_LHA(struct StackSwapStruct *,  sss, A0),
-	AROS_LHA(LONG_FUNC, entry, A1),
-	AROS_LHA(struct StackSwapArgs *, args, A2),
-	struct ExecBase *, SysBase, 134, Exec)
+        AROS_LHA(struct StackSwapStruct *,  sss, A0),
+        AROS_LHA(LONG_FUNC, entry, A1),
+        AROS_LHA(struct StackSwapArgs *, args, A2),
+        struct ExecBase *, SysBase, 134, Exec)
 {
     AROS_LIBFUNC_INIT
 
@@ -40,10 +40,10 @@ AROS_LH3(IPTR, NewStackSwap,
 
     if (t->tc_Flags & TF_STACKCHK)
     {
-    	UBYTE* startfill = sss->stk_Lower;
+        UBYTE* startfill = sss->stk_Lower;
 
-    	while (startfill < (UBYTE *)sp)
-	    *startfill++ = 0xE1;
+        while (startfill < (UBYTE *)sp)
+            *startfill++ = 0xE1;
     }
 
     /*

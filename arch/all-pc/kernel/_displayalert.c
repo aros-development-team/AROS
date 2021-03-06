@@ -40,7 +40,7 @@ static const char *PrintCentered(const char *str, struct KernelBase *KernelBase)
     ULONG s;
 
     if (len > (scr_Width - 2))
-    	    len = (scr_Width - 2);
+            len = (scr_Width - 2);
 
     s = scr_Width - 2 - len;
 
@@ -83,8 +83,8 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
 #endif
     if (scr_Type == SCR_UNKNOWN)
     {
-       	/* Default alert width (for possible serial output). */
-    	scr_Width = 80;
+        /* Default alert width (for possible serial output). */
+        scr_Width = 80;
     }
 
     /* Make sure that the output starts from a new line */
@@ -95,10 +95,10 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
     /* Print first three lines (title, task and error) centered */
     for (i = 0; i < 3; i++)
     {
-    	text = PrintCentered(text, KernelBase);
-    	if (*text == 0)	/* Handle early NULL terminator */
-    	    break;
-    	text++;	/* Skip a newline */
+        text = PrintCentered(text, KernelBase);
+        if (*text == 0) /* Handle early NULL terminator */
+            break;
+        text++; /* Skip a newline */
     }
 
     PrintFrame(0xDC, KernelBase);
@@ -106,12 +106,12 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
     /* Print the rest of alert text (if any) */
     if (*text)
     {
-    	PrintString(text, KernelBase);
+        PrintString(text, KernelBase);
 
-	/* Print a line in the bottom */
-	krnPutC('\n', KernelBase);
-	PrintChars(0xDC, scr_Width, KernelBase);
-	krnPutC('\n', KernelBase);
+        /* Print a line in the bottom */
+        krnPutC('\n', KernelBase);
+        PrintChars(0xDC, scr_Width, KernelBase);
+        krnPutC('\n', KernelBase);
     }
 #if defined(__AROSEXEC_SMP__)
     if (safedebug & 1)

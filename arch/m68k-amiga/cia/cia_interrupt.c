@@ -10,7 +10,7 @@
 #include "cia_intern.h"
 
 AROS_INTH1(Cia_Handler, struct CIABase *, CiaBase)
-{ 
+{
     AROS_INTFUNC_INIT
 
     UBYTE mask;

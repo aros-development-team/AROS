@@ -17,16 +17,16 @@ AROS_LH3(void, WriteExpansionByte,
 {
     AROS_LIBFUNC_INIT
 
-	UWORD loffset;
-	volatile UBYTE *p = (UBYTE*)board;
+        UWORD loffset;
+        volatile UBYTE *p = (UBYTE*)board;
 
-	offset *= 4;
-	if (((ULONG)board) & 0xff000000)
-		loffset = 0x100;
-	else
-		loffset = 0x002;
-	p[offset + loffset] = byte << 4;
-	p[offset] = byte;
+        offset *= 4;
+        if (((ULONG)board) & 0xff000000)
+                loffset = 0x100;
+        else
+                loffset = 0x002;
+        p[offset + loffset] = byte << 4;
+        p[offset] = byte;
 
     AROS_LIBFUNC_EXIT
 } /* WriteExpansionByte */

@@ -11,7 +11,7 @@ void *krnAllocMemAligned(unsigned long size, unsigned long align)
     align--;
     mem = AllocMem(size + align, MEMF_PUBLIC|MEMF_CLEAR);
     if (!mem)
-	return NULL;
+        return NULL;
 
     return (void *)(((IPTR)mem + align) & (~align));
 }

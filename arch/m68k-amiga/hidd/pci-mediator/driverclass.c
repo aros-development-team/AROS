@@ -333,7 +333,7 @@ void PCIMediator__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     BASE(cl)->cfg_writel(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
 }
 
-ULONG PCIMediator__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+ULONG PCIMediator__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     return BASE(cl)->cfg_readl(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg);

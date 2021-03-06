@@ -42,7 +42,7 @@
 #include <aros/debug.h>
 
 /* The speed of the crystal */
-#define CRYSTAL_SPEED   1843200 
+#define CRYSTAL_SPEED   1843200
 
 
 static void serialunit_receive_data();
@@ -54,15 +54,15 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
 static void adapt_data(struct HIDDSerialUnitData * data,
                        struct Preferences * prefs);
 
-static inline void serial_out(struct HIDDSerialUnitData * data, 
-                              int offset, 
+static inline void serial_out(struct HIDDSerialUnitData * data,
+                              int offset,
                               int value)
 {
   outb(value, data->baseaddr+offset);
 }
 
-static inline void serial_outp(struct HIDDSerialUnitData * data, 
-                               int offset, 
+static inline void serial_outp(struct HIDDSerialUnitData * data,
+                               int offset,
                                int value)
 {
   outb_p(value, data->baseaddr+offset);
@@ -301,7 +301,7 @@ BOOL PPC4xxSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o,
             3 == tags[i].ti_Data)
           data->stopbits = tags[i].ti_Data;
         else
-          valid = FALSE;            
+          valid = FALSE;
       break;
 
       case TAG_PARITY:
@@ -353,7 +353,7 @@ VOID PPC4xxSerUnit__Hidd_SerialUnit__Start(OOP_Class *cl, OOP_Object *o, struct 
         struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
         
         /*
-         * Allow or start feeding the UART with data. Get the data 
+         * Allow or start feeding the UART with data. Get the data
          * from upper layer.
          */
         if (TRUE == data->stopped) {
@@ -364,7 +364,7 @@ VOID PPC4xxSerUnit__Hidd_SerialUnit__Start(OOP_Class *cl, OOP_Object *o, struct 
                  */
                 data->stopped = FALSE;
         }
-}  
+}
 
 /******* SerialUnit::Stop() **********************************/
 VOID PPC4xxSerUnit__Hidd_SerialUnit__Stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop *msg)
@@ -414,7 +414,7 @@ UWORD PPC4xxSerUnit__Hidd_SerialUnit__GetStatus(OOP_Class * cl, OOP_Object *o, s
         UBYTE msr = serial_inp(data, UART_MSR);
         UBYTE mcr = serial_inp(data, UART_MCR);
 
-        if (msr & UART_MSR_DCD) 
+        if (msr & UART_MSR_DCD)
                 status |= (1<<5);
         if (msr & UART_MSR_DSR)
                 status |= (1<<3);
@@ -454,7 +454,7 @@ static AROS_UFH3(void, serialunit_receive_data,
   while (serial_inp(data, UART_LSR) & UART_LSR_DR);
   
   /*
-  ** ... and deliver them to whoever is interested. 
+  ** ... and deliver them to whoever is interested.
   */
 
   if (NULL != data->DataReceivedCallBack)
@@ -568,7 +568,7 @@ unsigned char get_fcr(ULONG baudrate)
   unsigned char fcr;
   fcr = (1 << 0);
   
-  /* 
+  /*
     Depending on the baudrate set the fifo interrupt threshold to a
     different value.
   */
@@ -633,11 +633,11 @@ void serial_int(void *data, void *data2);
             break;
 
             case UART_IIR_THRI:
-                    if (unit) 
+                    if (unit)
                             if (0 == serialunit_write_more_data(unit, NULL, SysBase))
                                     (void)serial_inp(unit, UART_IIR);
             break;
-    }       
+    }
 }
 
 static void adapt_data(struct HIDDSerialUnitData * data,
@@ -673,7 +673,7 @@ static void adapt_data(struct HIDDSerialUnitData * data,
         }
         
         /*
-         * Bit per character 
+         * Bit per character
          */
         switch ((prefs->SerRWBits & 0x0f)) {
                 default: /* 8 bit */

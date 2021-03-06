@@ -216,7 +216,7 @@ void PCIPrometheus__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o
     pcicfg_writel(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
 }
 
-ULONG PCIPrometheus__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+ULONG PCIPrometheus__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     return pcicfg_readl(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg);

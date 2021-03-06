@@ -20,26 +20,26 @@ AROS_LH1(void, RawPutChar,
     AROS_LHA(UBYTE, chr, D0),
     struct ExecBase *, SysBase, 86, Exec)
 {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 #if 0
 #ifdef DO_SERIAL_DEBUG
-	/*
-	 * This does not work with xcopilot...
-	 */
-	if (chr) {
-		/*
-		 * Wait until FIFO is half empty
-		 */
-		while (0 == (RREG_W(UTX1) & FIFO_HALF_F)) {
-		}
-		WREG_W(UTX1) = (UWORD)chr;
-	}
+        /*
+         * This does not work with xcopilot...
+         */
+        if (chr) {
+                /*
+                 * Wait until FIFO is half empty
+                 */
+                while (0 == (RREG_W(UTX1) & FIFO_HALF_F)) {
+                }
+                WREG_W(UTX1) = (UWORD)chr;
+        }
 #endif
 #endif
-	/* Don't write 0 bytes */
-	if (chr) {
-		vputc(chr);
-	}
+        /* Don't write 0 bytes */
+        if (chr) {
+                vputc(chr);
+        }
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 } /* RawPutChar */

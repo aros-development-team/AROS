@@ -41,7 +41,7 @@
 #include <aros/debug.h>
 
 /* The speed of the crystal */
-#define CRYSTAL_SPEED 	1843200 
+#define CRYSTAL_SPEED   1843200
 
 
 void serialunit_receive_data();
@@ -53,15 +53,15 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
 static void adapt_data(struct HIDDSerialUnitData * data,
                        struct Preferences * prefs);
 
-static inline void serial_out(struct HIDDSerialUnitData * data, 
-                              int offset, 
+static inline void serial_out(struct HIDDSerialUnitData * data,
+                              int offset,
                               int value)
 {
   outb(value, data->baseaddr+offset);
 }
 
-static inline void serial_outp(struct HIDDSerialUnitData * data, 
-                               int offset, 
+static inline void serial_outp(struct HIDDSerialUnitData * data,
+                               int offset,
                                int value)
 {
   outb_p(value, data->baseaddr+offset);
@@ -104,12 +104,12 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
       if (IS_HIDDSERIALUNIT_ATTR(tag->ti_Tag, idx))
 #undef csd
       {
-	  switch (idx)
-	  {
-	      case aoHidd_SerialUnit_Unit:
-		  unitnum = (ULONG)tag->ti_Data;
-		  break;
-	  }
+          switch (idx)
+          {
+              case aoHidd_SerialUnit_Unit:
+                  unitnum = (ULONG)tag->ti_Data;
+                  break;
+          }
       }
 
   } /* while (tags to process) */
@@ -300,7 +300,7 @@ BOOL PCSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, str
             3 == tags[i].ti_Data)
           data->stopbits = tags[i].ti_Data;
         else
-          valid = FALSE;            
+          valid = FALSE;
       break;
 
       case TAG_PARITY:
@@ -321,7 +321,7 @@ BOOL PCSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, str
       break;
 
       case TAG_SET_MCR:
-	serial_outp(data, UART_MCR, (tags[i].ti_Data & 0x0f) | 0x08);
+        serial_outp(data, UART_MCR, (tags[i].ti_Data & 0x0f) | 0x08);
       break;
       
       case TAG_SKIP:
@@ -349,21 +349,21 @@ BYTE PCSerUnit__Hidd_SerialUnit__SendBreak(OOP_Class *cl, OOP_Object *o, struct 
 /******* SerialUnit::Start() **********************************/
 VOID PCSerUnit__Hidd_SerialUnit__Start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Start *msg)
 {
-	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
-	
-	/*
-	 * Allow or start feeding the UART with data. Get the data 
-	 * from upper layer.
-	 */
-	if (TRUE == data->stopped) {
-		if (NULL != data->DataWriteCallBack)
-			data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
-		/*
-		 * Also mark the stopped flag as FALSE.
-		 */
-		data->stopped = FALSE;
-	}
-}  
+        struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+        
+        /*
+         * Allow or start feeding the UART with data. Get the data
+         * from upper layer.
+         */
+        if (TRUE == data->stopped) {
+                if (NULL != data->DataWriteCallBack)
+                        data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+                /*
+                 * Also mark the stopped flag as FALSE.
+                 */
+                data->stopped = FALSE;
+        }
+}
 
 /******* SerialUnit::Stop() **********************************/
 VOID PCSerUnit__Hidd_SerialUnit__Stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop *msg)
@@ -408,23 +408,23 @@ VOID PCSerUnit__Hidd_SerialUnit__GetCapabilities(OOP_Class * cl, OOP_Object *o, 
 /****** SerialUnit::GetStatus ********************************/
 UWORD PCSerUnit__Hidd_SerialUnit__GetStatus(OOP_Class * cl, OOP_Object *o, struct pHidd_SerialUnit_GetStatus *msg)
 {
-	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
-	UWORD status = 0;
-	UBYTE msr = serial_inp(data, UART_MSR);
-	UBYTE mcr = serial_inp(data, UART_MCR);
+        struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+        UWORD status = 0;
+        UBYTE msr = serial_inp(data, UART_MSR);
+        UBYTE mcr = serial_inp(data, UART_MCR);
 
-	if (msr & UART_MSR_DCD) 
-		status |= (1<<5);
-	if (msr & UART_MSR_DSR)
-		status |= (1<<3);
-	if (msr & UART_MSR_CTS)
-		status |= (1<<4);
+        if (msr & UART_MSR_DCD)
+                status |= (1<<5);
+        if (msr & UART_MSR_DSR)
+                status |= (1<<3);
+        if (msr & UART_MSR_CTS)
+                status |= (1<<4);
 
-	if (mcr & UART_MCR_DTR)
-		status |= (1<<7);
-	if (mcr & UART_MCR_RTS)
-		status |= (1<<6);  /* old RKMs say 'ready to send' */
-	return status;
+        if (mcr & UART_MCR_DTR)
+                status |= (1<<7);
+        if (mcr & UART_MCR_RTS)
+                status |= (1<<6);  /* old RKMs say 'ready to send' */
+        return status;
 }
 
 /************* The software interrupt handler that gets data from UART *****/
@@ -453,7 +453,7 @@ AROS_UFH3(void, serialunit_receive_data,
   while (serial_inp(data, UART_LSR) & UART_LSR_DR);
   
   /*
-  ** ... and deliver them to whoever is interested. 
+  ** ... and deliver them to whoever is interested.
   */
 
   if (NULL != data->DataReceivedCallBack)
@@ -567,7 +567,7 @@ unsigned char get_fcr(ULONG baudrate)
   unsigned char fcr;
   fcr = (1 << 0);
   
-  /* 
+  /*
     Depending on the baudrate set the fifo interrupt threshold to a
     different value.
   */
@@ -608,126 +608,126 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 static void common_serial_int_handler(struct class_static_data *csd,
                                       ULONG unitnum)
 {
-	UBYTE code = UART_IIR_NO_INT;
+        UBYTE code = UART_IIR_NO_INT;
 
-	if (csd->units[unitnum])
-		code = serial_inp(csd->units[unitnum], UART_IIR) & 0x07;
+        if (csd->units[unitnum])
+                code = serial_inp(csd->units[unitnum], UART_IIR) & 0x07;
 
-	switch (code)
-	{
-		case UART_IIR_RLSI:
-			(void)serial_inp(csd->units[unitnum], UART_LSR);
-		break;
+        switch (code)
+        {
+                case UART_IIR_RLSI:
+                        (void)serial_inp(csd->units[unitnum], UART_LSR);
+                break;
 
-		case UART_IIR_RDI:
-			if (csd->units[unitnum]) {
-				AROS_UFC3(void, serialunit_receive_data,
-				  AROS_UFCA(APTR               , csd->units[unitnum], A1),
-				  AROS_UFCA(APTR               , NULL   , A5),
-				  AROS_UFCA(struct ExecBase *  , SysBase, A6));
-			}
-		break;
+                case UART_IIR_RDI:
+                        if (csd->units[unitnum]) {
+                                AROS_UFC3(void, serialunit_receive_data,
+                                  AROS_UFCA(APTR               , csd->units[unitnum], A1),
+                                  AROS_UFCA(APTR               , NULL   , A5),
+                                  AROS_UFCA(struct ExecBase *  , SysBase, A6));
+                        }
+                break;
 
-		case UART_IIR_MSI:
-			(void)serial_inp(csd->units[unitnum], UART_MSR);
-		break;
+                case UART_IIR_MSI:
+                        (void)serial_inp(csd->units[unitnum], UART_MSR);
+                break;
 
-		case UART_IIR_THRI:
-			if (csd->units[unitnum]) 
-				if (0 == serialunit_write_more_data(csd->units[unitnum], NULL, SysBase))
-					(void)serial_inp(csd->units[unitnum], UART_IIR);
-		break;
-	}	
+                case UART_IIR_THRI:
+                        if (csd->units[unitnum])
+                                if (0 == serialunit_write_more_data(csd->units[unitnum], NULL, SysBase))
+                                        (void)serial_inp(csd->units[unitnum], UART_IIR);
+                break;
+        }
 }
 
 AROS_INTH1(serial_int_13, void *, data)
 {
     AROS_INTFUNC_INIT
 
-	common_serial_int_handler(data, 0);
-	common_serial_int_handler(data, 2);
+        common_serial_int_handler(data, 0);
+        common_serial_int_handler(data, 2);
 
     return FALSE;
 
-	AROS_INTFUNC_EXIT
+        AROS_INTFUNC_EXIT
 }
 
 AROS_INTH1(serial_int_24, void *, data)
 {
     AROS_INTFUNC_INIT
 
-	common_serial_int_handler(data, 1);
-	common_serial_int_handler(data, 3);
+        common_serial_int_handler(data, 1);
+        common_serial_int_handler(data, 3);
 
     return FALSE;
 
-	AROS_INTFUNC_EXIT
+        AROS_INTFUNC_EXIT
 }
 
 static void adapt_data(struct HIDDSerialUnitData * data,
                        struct Preferences * prefs)
 {
-	/*
-	 * Parity.
-	 */
-	data->parity = TRUE;
+        /*
+         * Parity.
+         */
+        data->parity = TRUE;
 
-	switch ((prefs->SerParShk >> 4) & 0x0f) {
+        switch ((prefs->SerParShk >> 4) & 0x0f) {
 
-		case SPARITY_NONE:
-		default:             /* DEFAULT !! */
-			data->parity = FALSE;
-		break;
-		
-		case SPARITY_EVEN:
-			data->paritytype = PARITY_EVEN;
-		break;
-		
-		case SPARITY_ODD:
-			data->paritytype = PARITY_ODD;
-		break;
+                case SPARITY_NONE:
+                default:             /* DEFAULT !! */
+                        data->parity = FALSE;
+                break;
+                
+                case SPARITY_EVEN:
+                        data->paritytype = PARITY_EVEN;
+                break;
+                
+                case SPARITY_ODD:
+                        data->paritytype = PARITY_ODD;
+                break;
 
-		case SPARITY_MARK:
-			data->paritytype = PARITY_1;
-		break;
-		case SPARITY_SPACE:
-			data->paritytype = PARITY_0;
-		break;
+                case SPARITY_MARK:
+                        data->paritytype = PARITY_1;
+                break;
+                case SPARITY_SPACE:
+                        data->paritytype = PARITY_0;
+                break;
 
-	}
-	
-	/*
-	 * Bit per character 
-	 */
-	switch ((prefs->SerRWBits & 0x0f)) {
-		default: /* 8 bit */
-		case 0:
-			data->datalength = 8;
-		break;
-		
-		case 1: /* 7 bit */
-			data->datalength = 7;
-		break;
-		
-		case 2: /* 6 bit */
-			data->datalength = 6;
-		break;
-		
-		case 3: /* 5 bit */
-			data->datalength = 5;
-		break;
-	}
+        }
+        
+        /*
+         * Bit per character
+         */
+        switch ((prefs->SerRWBits & 0x0f)) {
+                default: /* 8 bit */
+                case 0:
+                        data->datalength = 8;
+                break;
+                
+                case 1: /* 7 bit */
+                        data->datalength = 7;
+                break;
+                
+                case 2: /* 6 bit */
+                        data->datalength = 6;
+                break;
+                
+                case 3: /* 5 bit */
+                        data->datalength = 5;
+                break;
+        }
 
-	/*
-	 * 2 stop bits ? default is '1'.
-	 */
-	if (1 == (prefs->SerStopBuf >> 4))
-		data->stopbits = 2;
-	else
-		data->stopbits = 1;
-	
-	/*
-	 * Handshake to be used.
-	 */
-	// MISSING!
+        /*
+         * 2 stop bits ? default is '1'.
+         */
+        if (1 == (prefs->SerStopBuf >> 4))
+                data->stopbits = 2;
+        else
+                data->stopbits = 1;
+        
+        /*
+         * Handshake to be used.
+         */
+        // MISSING!
 }

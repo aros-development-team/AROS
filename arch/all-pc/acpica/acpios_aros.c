@@ -49,11 +49,11 @@ ACPI_STATUS AcpiOsInitialize (void)
         if ((ACPICABase->ab_TimeRequest = CreateIORequest(ACPICABase->ab_TimeMsgPort, sizeof(*ACPICABase->ab_TimeRequest)))) {
             D(bug("[ACPI] %s: TimeRequest @ %p\n", __func__, ACPICABase->ab_TimeRequest));
 
-			if (ACPICABase->ab_Flags & ACPICAF_TIMER)
-				if (0 == OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)ACPICABase->ab_TimeRequest, 0))	
-				{
-					ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
-				}
+                        if (ACPICABase->ab_Flags & ACPICAF_TIMER)
+                                if (0 == OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)ACPICABase->ab_TimeRequest, 0))
+                                {
+                                        ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
+                                }
 
             return AE_OK;
         }
@@ -71,11 +71,11 @@ ACPI_STATUS AcpiOsTerminate (void)
 
     D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
-	if (ACPICABase->ab_TimeRequest->tr_node.io_Device)
-	{
-		ACPICABase->ab_TimerBase = NULL;
-		CloseDevice((struct IORequest *)ACPICABase->ab_TimeRequest);
-	}
+        if (ACPICABase->ab_TimeRequest->tr_node.io_Device)
+        {
+                ACPICABase->ab_TimerBase = NULL;
+                CloseDevice((struct IORequest *)ACPICABase->ab_TimeRequest);
+        }
 
     DeleteIORequest(ACPICABase->ab_TimeRequest);
     DeleteMsgPort(ACPICABase->ab_TimeMsgPort);
@@ -418,10 +418,10 @@ ACPI_STATUS AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber, ACPI_OSD_HANDLE
 ACPI_STATUS AcpiOsReadMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 *Value, UINT32 Width)
 {
     switch (Width) {
-    case  8: *Value = *(UINT8 *)Address; break; 
-    case 16: *Value = *(UINT16 *)Address; break; 
-    case 32: *Value = *(UINT32 *)Address; break; 
-    case 64: *Value = *(UINT64 *)Address; break; 
+    case  8: *Value = *(UINT8 *)Address; break;
+    case 16: *Value = *(UINT16 *)Address; break;
+    case 32: *Value = *(UINT32 *)Address; break;
+    case 64: *Value = *(UINT64 *)Address; break;
     default: *Value = ~0; break;
     }
 
@@ -431,10 +431,10 @@ ACPI_STATUS AcpiOsReadMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 *Value, UINT3
 ACPI_STATUS AcpiOsWriteMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 Value, UINT32 Width)
 {
     switch (Width) {
-    case  8: *(UINT8 *)Address = (UINT8)Value; break; 
-    case 16: *(UINT16 *)Address = (UINT16)Value; break; 
-    case 32: *(UINT32 *)Address = (UINT32)Value; break; 
-    case 64: *(UINT64 *)Address = (UINT64)Value; break; 
+    case  8: *(UINT8 *)Address = (UINT8)Value; break;
+    case 16: *(UINT16 *)Address = (UINT16)Value; break;
+    case 32: *(UINT32 *)Address = (UINT32)Value; break;
+    case 64: *(UINT64 *)Address = (UINT64)Value; break;
     default: break;
     }
 
@@ -794,9 +794,9 @@ ADD2EXPUNGELIB(ACPICA_expunge, 0)
 extern void acpicapost_end(void);
 
 static AROS_UFP3 (APTR, ACPICAPost,
-		  AROS_UFPA(struct Library *, lh, D0),
-		  AROS_UFPA(BPTR, segList, A0),
-		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+                  AROS_UFPA(struct Library *, lh, D0),
+                  AROS_UFPA(BPTR, segList, A0),
+                  AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 static const TEXT acpicapost_namestring[] = "acpica.post";
 static const TEXT acpicapost_versionstring[] = "acpica.post 1.0\n";
@@ -819,9 +819,9 @@ extern struct syscallx86_Handler x86_SCRebootHandler;
 extern struct syscallx86_Handler x86_SCChangePMStateHandler;
 
 static AROS_UFH3 (APTR, ACPICAPost,
-		  AROS_UFHA(struct Library *, lh, D0),
-		  AROS_UFHA(BPTR, segList, A0),
-		  AROS_UFHA(struct ExecBase *, SysBase, A6)
+                  AROS_UFHA(struct Library *, lh, D0),
+                  AROS_UFHA(BPTR, segList, A0),
+                  AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
@@ -857,9 +857,9 @@ void acpicapost_end(void) { };
 extern void acpicatimer_end(void);
 
 static AROS_UFP3 (APTR, ACPICATimerSetup,
-		  AROS_UFPA(struct Library *, lh, D0),
-		  AROS_UFPA(BPTR, segList, A0),
-		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+                  AROS_UFPA(struct Library *, lh, D0),
+                  AROS_UFPA(BPTR, segList, A0),
+                  AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 static const TEXT acpicatimer_namestring[] = "acpica.timer";
 static const TEXT acpicatimer_versionstring[] = "acpica.timer 1.0\n";
@@ -882,9 +882,9 @@ extern struct syscallx86_Handler x86_SCRebootHandler;
 extern struct syscallx86_Handler x86_SCChangePMStateHandler;
 
 static AROS_UFH3 (APTR, ACPICATimerSetup,
-		  AROS_UFHA(struct Library *, lh, D0),
-		  AROS_UFHA(BPTR, segList, A0),
-		  AROS_UFHA(struct ExecBase *, SysBase, A6)
+                  AROS_UFHA(struct Library *, lh, D0),
+                  AROS_UFHA(BPTR, segList, A0),
+                  AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
@@ -900,11 +900,11 @@ static AROS_UFH3 (APTR, ACPICATimerSetup,
         return NULL;
     }
 
-	if (0 == OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)ACPICABase->ab_TimeRequest, 0))	
-	{
-		ACPICABase->ab_Flags |= ACPICAF_TIMER;
-		ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
-	}
+        if (0 == OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)ACPICABase->ab_TimeRequest, 0))
+        {
+                ACPICABase->ab_Flags |= ACPICAF_TIMER;
+                ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
+        }
     D(bug("[ACPI] %s: Finished\n", __func__));
 
     AROS_USERFUNC_EXIT

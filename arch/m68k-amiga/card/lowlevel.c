@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <exec/types.h>
@@ -16,7 +16,7 @@
 /* Card Change Detect interrupt */
 
 AROS_INTH1(card_level6, struct CardResource *, CardResource)
-{ 
+{
     AROS_INTFUNC_INIT
 
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
@@ -24,14 +24,14 @@ AROS_INTH1(card_level6, struct CardResource *, CardResource)
 
     intreq = gio->intreq;
     if (!(intreq & GAYLE_IRQ_CCDET) )
-	return 0; /* not ours */
+        return 0; /* not ours */
     intena = gio->intena;
     gio->intreq = ~GAYLE_IRQ_CCDET;
     if (!(intena & GAYLE_IRQ_CCDET))
-    	return 0; /* not ours either */
+        return 0; /* not ours either */
     if (CardResource->disabled) {
-    	pcmcia_reset(CardResource);
-    	return 0; /* huh? shouldn't happen */
+        pcmcia_reset(CardResource);
+        return 0; /* huh? shouldn't happen */
     }
 
     CardResource->disabled = TRUE;
@@ -52,7 +52,7 @@ AROS_INTH1(card_level6, struct CardResource *, CardResource)
 #define NOINTMASK (GAYLE_IRQ_IDE | GAYLE_IRQ_CCDET)
 
 AROS_INTH1(card_level2, struct CardResource *, CardResource)
-{ 
+{
     AROS_INTFUNC_INIT
 
     struct CardHandle *cah = CardResource->ownedcard;
@@ -62,43 +62,43 @@ AROS_INTH1(card_level2, struct CardResource *, CardResource)
 
     intreq = gio->intreq & INTMASK;
     if (!intreq)
-    	return 0; /* not ours */
+        return 0; /* not ours */
     status = ((intreq ^ INTMASK) & INTMASK) | NOINTMASK | CardResource->resetberr;
     intena = gio->intena;
 
     INTDEBUG(bug("%02x %02x\n", intena, intreq));
 
     if (!(intena & intreq)) {
-    	gio->intreq = status;
-    	return 0; /* not ours either */
+        gio->intreq = status;
+        return 0; /* not ours either */
     }
 
     if (CardResource->disabled) {
-    	gio->intreq = status;
-    	pcmcia_reset(CardResource);
-    	return 0; /* huh? shouldn't happen */
+        gio->intreq = status;
+        pcmcia_reset(CardResource);
+        return 0; /* huh? shouldn't happen */
     }
     intreq &= intena;
 
     status = intreq;
     if (cah && !CardResource->removed && cah->cah_CardStatus) {
-    	if (cah->cah_CardFlags & CARDF_POSTSTATUS)
-    	    poststatus = TRUE;
-	INTDEBUG(bug("cah_CardStatus(%d,%x,%x)\n",
-	   intreq,
-	   cah->cah_CardStatus->is_Data,
-	   cah->cah_CardStatus->is_Code));
-	status = AROS_CARDC(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data, status);
-	INTDEBUG(bug("returned=%d\n", status));
+        if (cah->cah_CardFlags & CARDF_POSTSTATUS)
+            poststatus = TRUE;
+        INTDEBUG(bug("cah_CardStatus(%d,%x,%x)\n",
+           intreq,
+           cah->cah_CardStatus->is_Data,
+           cah->cah_CardStatus->is_Code));
+        status = AROS_CARDC(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data, status);
+        INTDEBUG(bug("returned=%d\n", status));
     }
     if (status) {
-	status = (status ^ INTMASK) & INTMASK;
-	gio->intreq = status | NOINTMASK | CardResource->resetberr;
+        status = (status ^ INTMASK) & INTMASK;
+        gio->intreq = status | NOINTMASK | CardResource->resetberr;
     }
     if (poststatus) {
-    	INTDEBUG(bug("poststatus\n"));
-	AROS_CARDC(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data, 0);
-	INTDEBUG(bug("returned\n"));
+        INTDEBUG(bug("poststatus\n"));
+        AROS_CARDC(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data, 0);
+        INTDEBUG(bug("returned\n"));
     }
 
     INTDEBUG(bug("exit\n"));

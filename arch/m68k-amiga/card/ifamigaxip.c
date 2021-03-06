@@ -7,8 +7,8 @@
 #include "card_intern.h"
 
 AROS_LH1(struct Resident*, IfAmigaXIP,
-	AROS_LHA(struct CardHandle*, handle, A2),
-	struct CardResource*, CardResource, 14, Card)
+        AROS_LHA(struct CardHandle*, handle, A2),
+        struct CardResource*, CardResource, 14, Card)
 {
     AROS_LIBFUNC_INIT
 
@@ -16,13 +16,13 @@ AROS_LH1(struct Resident*, IfAmigaXIP,
     ULONG addr;
 
     if (!ISMINE)
-    	return NULL;
-    	
+        return NULL;
+        
     if (!CopyTuple(handle, (UBYTE*)&xip, CISTPL_AMIGAXIP, sizeof(xip) - 2))
-    	return FALSE;
+        return FALSE;
     if (xip.TPL_LINK <= 6)
-    	return FALSE;
-    addr = (xip.TP_XIPLOC[3] << 24) | (xip.TP_XIPLOC[2] << 16) | (xip.TP_XIPLOC[1] << 8) | (xip.TP_XIPLOC[0] << 0); 
+        return FALSE;
+    addr = (xip.TP_XIPLOC[3] << 24) | (xip.TP_XIPLOC[2] << 16) | (xip.TP_XIPLOC[1] << 8) | (xip.TP_XIPLOC[0] << 0);
 
     CARDDEBUG(bug("TP_AmigaXIP found, addr %p\n", addr));
 

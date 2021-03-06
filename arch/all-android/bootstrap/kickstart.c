@@ -58,23 +58,23 @@ static void childHandler(int sig)
 
     if (WIFEXITED(i))
     {
-    	int code = WEXITSTATUS(i);
+        int code = WEXITSTATUS(i);
 
-    	D(kprintf("[Bootstrap] AROS process exited with code 0x%08X\n", code));
+        D(kprintf("[Bootstrap] AROS process exited with code 0x%08X\n", code));
 
-	/*
-	 * If the requested action is not a warm reboot, free all the RAM.
-	 * On cold reboot we will reload the kickstart from scratch.
-	 */
-	if (code != STATUS_WARM_REBOOT)
-	    Host_FreeMem();
+        /*
+         * If the requested action is not a warm reboot, free all the RAM.
+         * On cold reboot we will reload the kickstart from scratch.
+         */
+        if (code != STATUS_WARM_REBOOT)
+            Host_FreeMem();
 
-	/* Let the Java part to do the work */
-	(*Java_Env)->CallVoidMethod(Java_Env, Java_Object, HandleExit_mid, WEXITSTATUS(i));
+        /* Let the Java part to do the work */
+        (*Java_Env)->CallVoidMethod(Java_Env, Java_Object, HandleExit_mid, WEXITSTATUS(i));
     }
     else
     {
-    	DisplayError("AROS process terminated, status 0x%08X\n", i);
+        DisplayError("AROS process terminated, status 0x%08X\n", i);
     }
 }
 
@@ -94,7 +94,7 @@ int kick(int (*addr)(), struct TagItem *msg)
     return 0;
 }
 
-/* 
+/*
  * The actual kicker.
  * Similar to generic UNIX one, but uses SIGCHILD handler instead of waitpid()
  * in order to detect when AROS exits.
@@ -116,8 +116,8 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
 
     if (!field_fd)
     {
-    	DisplayError("Failed to set up pipe descriptor objects");
-    	return -1;
+        DisplayError("Failed to set up pipe descriptor objects");
+        return -1;
     }
 
     sigemptyset(&sa.sa_mask);
@@ -129,17 +129,17 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
 
     if (pipe(displaypipe))
     {
-    	DisplayError("Failed to create display pipe: %s", strerror(errno));
-    	return -1;
+        DisplayError("Failed to create display pipe: %s", strerror(errno));
+        return -1;
     }
     
     if (pipe(inputpipe))
     {
-    	close(displaypipe[0]);
-    	close(displaypipe[1]);
+        close(displaypipe[0]);
+        close(displaypipe[1]);
 
-    	DisplayError("Failed to create input pipe: %s", strerror(errno));
-    	return -1;
+        DisplayError("Failed to create input pipe: %s", strerror(errno));
+        return -1;
     }
 
     D(kprintf("[Bootstrap] Launching kickstart...\n"));
@@ -148,20 +148,20 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kick(JNIEnv* env, jobject this, jobjec
     switch (AROS_pid)
     {
     case -1:
-    	close(displaypipe[0]);
-    	close(displaypipe[1]);
-    	close(inputpipe[0]);
-    	close(inputpipe[1]);
+        close(displaypipe[0]);
+        close(displaypipe[1]);
+        close(inputpipe[0]);
+        close(inputpipe[1]);
 
-    	DisplayError("Failed to run kickstart!");
-    	return -1;
+        DisplayError("Failed to run kickstart!");
+        return -1;
 
     case 0:
-    	/* Set up client side of pipes */
-	DisplayPipe = displaypipe[1];
-	InputPipe   = inputpipe[0];
-    	close(displaypipe[0]);
-    	close(inputpipe[1]);
+        /* Set up client side of pipes */
+        DisplayPipe = displaypipe[1];
+        InputPipe   = inputpipe[0];
+        close(displaypipe[0]);
+        close(inputpipe[1]);
 
         D(kprintf("[Bootstrap] entering kernel at %p...\n", EntryPoint));
         i = EntryPoint(BootMsg, AROS_BOOT_MAGIC);
@@ -185,6 +185,6 @@ int Java_org_aros_bootstrap_AROSBootstrap_Kill(JNIEnv* env, jobject this, jint s
 {
     int res = kill(AROS_pid, signal);
 
-    D(kprintf("[Bootstrap] kill(%d, %d) returned %d, errno %d\n", AROS_pid, signal, res, errno));    
+    D(kprintf("[Bootstrap] kill(%d, %d) returned %d, errno %d\n", AROS_pid, signal, res, errno));
     return res;
 }

@@ -50,12 +50,12 @@ static ULONG prot_a2w(ULONG protect)
   
   /* The following flags are low-active! */
   if ((protect & (FIBF_WRITE|FIBF_DELETE)) == (FIBF_WRITE|FIBF_DELETE))
-	uprot = FILE_ATTRIBUTE_READONLY;
+        uprot = FILE_ATTRIBUTE_READONLY;
   /* The following flags are high-active again. */
   if (protect & FIBF_ARCHIVE)
-      	uprot |= FILE_ATTRIBUTE_ARCHIVE;
+        uprot |= FILE_ATTRIBUTE_ARCHIVE;
   if (protect & FIBF_SCRIPT)
-	uprot |= FILE_ATTRIBUTE_SYSTEM;
+        uprot |= FILE_ATTRIBUTE_SYSTEM;
 
   /* TODO: 1) Support more NT-specific attributes ('Executable')
            2) Write complete AROS protection bits support using NTFS streams */
@@ -123,20 +123,20 @@ static UQUAD DateStamp2FileTime(struct DateStamp *ds)
 /* Make an AROS error-code (<dos/dos.h>) out of a Windows error-code. */
 static ULONG u2a[][2]=
 {
-  { ERROR_PATH_NOT_FOUND	, ERROR_OBJECT_NOT_FOUND	},
-  { ERROR_NO_MORE_FILES		, ERROR_NO_MORE_ENTRIES		},
-  { ERROR_NOT_ENOUGH_MEMORY	, ERROR_NO_FREE_STORE		},
-  { ERROR_FILE_NOT_FOUND	, ERROR_OBJECT_NOT_FOUND	},
-  { ERROR_FILE_EXISTS		, ERROR_OBJECT_EXISTS		},
-  { ERROR_WRITE_PROTECT		, ERROR_WRITE_PROTECTED		},
-  { WIN32_ERROR_DISK_FULL	, ERROR_DISK_FULL		},
-  { ERROR_DIR_NOT_EMPTY		, ERROR_DIRECTORY_NOT_EMPTY	},
-  { ERROR_SHARING_VIOLATION	, ERROR_OBJECT_IN_USE		},
-  { ERROR_LOCK_VIOLATION	, ERROR_OBJECT_IN_USE		},
-  { WIN32_ERROR_BUFFER_OVERFLOW	, ERROR_OBJECT_TOO_LARGE	},
-  { ERROR_INVALID_NAME		, ERROR_OBJECT_NOT_FOUND	},
-  { ERROR_HANDLE_EOF		, 0				},
-  { 0				, 0				}
+  { ERROR_PATH_NOT_FOUND        , ERROR_OBJECT_NOT_FOUND        },
+  { ERROR_NO_MORE_FILES         , ERROR_NO_MORE_ENTRIES         },
+  { ERROR_NOT_ENOUGH_MEMORY     , ERROR_NO_FREE_STORE           },
+  { ERROR_FILE_NOT_FOUND        , ERROR_OBJECT_NOT_FOUND        },
+  { ERROR_FILE_EXISTS           , ERROR_OBJECT_EXISTS           },
+  { ERROR_WRITE_PROTECT         , ERROR_WRITE_PROTECTED         },
+  { WIN32_ERROR_DISK_FULL       , ERROR_DISK_FULL               },
+  { ERROR_DIR_NOT_EMPTY         , ERROR_DIRECTORY_NOT_EMPTY     },
+  { ERROR_SHARING_VIOLATION     , ERROR_OBJECT_IN_USE           },
+  { ERROR_LOCK_VIOLATION        , ERROR_OBJECT_IN_USE           },
+  { WIN32_ERROR_BUFFER_OVERFLOW , ERROR_OBJECT_TOO_LARGE        },
+  { ERROR_INVALID_NAME          , ERROR_OBJECT_NOT_FOUND        },
+  { ERROR_HANDLE_EOF            , 0                             },
+  { 0                           , 0                             }
 };
 
 static ULONG Errno_w2a(ULONG e, LONG mode)
@@ -149,24 +149,24 @@ static ULONG Errno_w2a(ULONG e, LONG mode)
        on the context */
     if (e == ERROR_ACCESS_DENIED)
     {
-	if (mode == MODE_OLDFILE)
-	    return ERROR_READ_PROTECTED;
-	
-	if (mode == MODE_READWRITE || mode == MODE_NEWFILE)
-	    return ERROR_WRITE_PROTECTED;
+        if (mode == MODE_OLDFILE)
+            return ERROR_READ_PROTECTED;
+        
+        if (mode == MODE_READWRITE || mode == MODE_NEWFILE)
+            return ERROR_WRITE_PROTECTED;
 
-	if (mode == 0)
-	    return ERROR_DELETE_PROTECTED;
+        if (mode == 0)
+            return ERROR_DELETE_PROTECTED;
 
-	return ERROR_READ_PROTECTED;
+        return ERROR_READ_PROTECTED;
     }
 
     for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
     {
-	if(u2a[i][0]==e) {
-	    DERROR(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
-	    return u2a[i][1];
-	}
+        if(u2a[i][0]==e) {
+            DERROR(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
+            return u2a[i][1];
+        }
     }
 
     DERROR(printf("[EmulHandler] Unknown error code\n"));
@@ -182,29 +182,29 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     switch(current->type)
     {
     case FHD_FILE:
-	/* Nothing will happen if type has FHD_STDIO set, this is intentional */
-	DLOCK(bug("[emul] CloseHandle(), fd = 0x%08lX\n", current->fd));
+        /* Nothing will happen if type has FHD_STDIO set, this is intentional */
+        DLOCK(bug("[emul] CloseHandle(), fd = 0x%08lX\n", current->fd));
 
-	Forbid();
-	emulbase->pdata.KernelIFace->CloseHandle(current->fd);
-	Permit();
-	break;
+        Forbid();
+        emulbase->pdata.KernelIFace->CloseHandle(current->fd);
+        Permit();
+        break;
 
     case FHD_DIRECTORY:
-	if (current->fd != INVALID_HANDLE_VALUE)
-	{
-	    DLOCK(bug("[emul] Closing directory search handle\n"));
-	    Forbid();
-	    emulbase->pdata.KernelIFace->FindClose(current->fd);
-	    Permit();
-	}
-	
-	if (current->ph.pathname)
-	{
-	    DLOCK(bug("[emul] Freeing directory search path\n"));
-	    FreeVecPooled(emulbase->mempool, current->ph.pathname);
-	}
-	break;
+        if (current->fd != INVALID_HANDLE_VALUE)
+        {
+            DLOCK(bug("[emul] Closing directory search handle\n"));
+            Forbid();
+            emulbase->pdata.KernelIFace->FindClose(current->fd);
+            Permit();
+        }
+        
+        if (current->ph.pathname)
+        {
+            DLOCK(bug("[emul] Freeing directory search path\n"));
+            FreeVecPooled(emulbase->mempool, current->ph.pathname);
+        }
+        break;
     }
 
     DLOCK(bug("[emul] Done\n"));
@@ -227,97 +227,97 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG 
 
     /* Non-existing objects can be files opened for writing */
     if (kind == INVALID_FILE_ATTRIBUTES)
-	kind = 0;
+        kind = 0;
 
     if (kind & FILE_ATTRIBUTE_DIRECTORY)
     {
-    	/* file is a directory */
-	if (!AllowDir)
-	    return ERROR_OBJECT_WRONG_TYPE;
+        /* file is a directory */
+        if (!AllowDir)
+            return ERROR_OBJECT_WRONG_TYPE;
 
-	fh->type   = FHD_DIRECTORY;
-	fh->fd     = INVALID_HANDLE_VALUE;
-	fh->ph.dirpos = 0;
+        fh->type   = FHD_DIRECTORY;
+        fh->fd     = INVALID_HANDLE_VALUE;
+        fh->ph.dirpos = 0;
     }
     else
     {
-	ULONG flags = GENERIC_READ | GENERIC_WRITE;
-	/*
-	 * FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
+        ULONG flags = GENERIC_READ | GENERIC_WRITE;
+        /*
+         * FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
          * is already open with MODE_OLDFILE, even just for reading with Read()
-	 */
-	ULONG lock  = FILE_SHARE_READ | FILE_SHARE_WRITE;
-	ULONG create, err;
+         */
+        ULONG lock  = FILE_SHARE_READ | FILE_SHARE_WRITE;
+        ULONG create, err;
 
-	DOPEN2(bug("[emul] Open file \"%s\", mode 0x%08lX\n", fh->hostname, mode));
+        DOPEN2(bug("[emul] Open file \"%s\", mode 0x%08lX\n", fh->hostname, mode));
 
-	switch (mode)
-	{
-	case MODE_NEWFILE:
-	    flags  = GENERIC_WRITE;	/* Only for writing		  */
-	    lock   = 0;			/* This will be an exclusive lock */
-	    create = CREATE_ALWAYS;
-	    break;
+        switch (mode)
+        {
+        case MODE_NEWFILE:
+            flags  = GENERIC_WRITE;     /* Only for writing               */
+            lock   = 0;                 /* This will be an exclusive lock */
+            create = CREATE_ALWAYS;
+            break;
 
-	case MODE_READWRITE:
-	    create = OPEN_ALWAYS;
-	    break;
+        case MODE_READWRITE:
+            create = OPEN_ALWAYS;
+            break;
 
-	default: /* MODE_OLDFILE */
-	    create = OPEN_EXISTING;
-	    break;
-	}
-
-	/*
-	 * On post-XP systems files with 'system' attribute may be opened for writing
-         * only if we specify FILE_ATTRIBUTE_SYSTEM in CreateFile() call. So we keep
-         * if from kind value retrieved earlier by GetFileAttributes().
-	 */
-	protect = prot_a2w(protect) | (kind & FILE_ATTRIBUTE_SYSTEM);
-
-	DOPEN2(bug("[emul] CreateFile: flags 0x%08lX, lock 0x%08lX, create %lu\n", flags, lock, create));
-	Forbid();
-
-	fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, flags, lock, NULL, create, protect, NULL);
-
-	if ((mode == MODE_OLDFILE) && (fh->fd == INVALID_HANDLE_VALUE))
-	{
-            /*
-	     * Hack against two problems: 
-	     *
-	     * Problem 1: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
-             * Windows while AROS is running. However we may still read them. MODE_OLDFILE
-	     * also requests write access with shared lock, this is why it fails on these files.
-	     *
-	     * Problem 2: MODE_OLDFILE requests write access, which fails on files with read-only attribute.
-	     *
-             * Here we try to work around these problems by attempting to open the file in read-only mode
-             * when we discover one of them.
-	     *
-             * I hope this will not affect files really open in AROS because exclusive lock
-             * disallows read access too.
-	     */
-	    err = emulbase->pdata.KernelIFace->GetLastError();
-
-	    DOPEN2(bug("[emul] Windows error: %u\n", err));
-	    switch (err)
-	    {
-	    case ERROR_SHARING_VIOLATION:
-	    case ERROR_ACCESS_DENIED:
-		fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, GENERIC_READ, lock, NULL, OPEN_EXISTING, protect, NULL);
-	    }
+        default: /* MODE_OLDFILE */
+            create = OPEN_EXISTING;
+            break;
         }
 
-	err = emulbase->pdata.KernelIFace->GetLastError();
+        /*
+         * On post-XP systems files with 'system' attribute may be opened for writing
+         * only if we specify FILE_ATTRIBUTE_SYSTEM in CreateFile() call. So we keep
+         * if from kind value retrieved earlier by GetFileAttributes().
+         */
+        protect = prot_a2w(protect) | (kind & FILE_ATTRIBUTE_SYSTEM);
+
+        DOPEN2(bug("[emul] CreateFile: flags 0x%08lX, lock 0x%08lX, create %lu\n", flags, lock, create));
+        Forbid();
+
+        fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, flags, lock, NULL, create, protect, NULL);
+
+        if ((mode == MODE_OLDFILE) && (fh->fd == INVALID_HANDLE_VALUE))
+        {
+            /*
+             * Hack against two problems:
+             *
+             * Problem 1: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
+             * Windows while AROS is running. However we may still read them. MODE_OLDFILE
+             * also requests write access with shared lock, this is why it fails on these files.
+             *
+             * Problem 2: MODE_OLDFILE requests write access, which fails on files with read-only attribute.
+             *
+             * Here we try to work around these problems by attempting to open the file in read-only mode
+             * when we discover one of them.
+             *
+             * I hope this will not affect files really open in AROS because exclusive lock
+             * disallows read access too.
+             */
+            err = emulbase->pdata.KernelIFace->GetLastError();
+
+            DOPEN2(bug("[emul] Windows error: %u\n", err));
+            switch (err)
+            {
+            case ERROR_SHARING_VIOLATION:
+            case ERROR_ACCESS_DENIED:
+                fh->fd = emulbase->pdata.KernelIFace->CreateFile(fh->hostname, GENERIC_READ, lock, NULL, OPEN_EXISTING, protect, NULL);
+            }
+        }
+
+        err = emulbase->pdata.KernelIFace->GetLastError();
 
         Permit();
 
         DOPEN2(bug("[emul] FileHandle = 0x%08lX\n", fh->fd));
 
-	if (fh->fd == INVALID_HANDLE_VALUE)
-	    return Errno_w2a(err, mode);
-	    
-	fh->type = FHD_FILE;
+        if (fh->fd == INVALID_HANDLE_VALUE)
+            return Errno_w2a(err, mode);
+            
+        fh->type = FHD_FILE;
     }
 
     return 0;
@@ -335,63 +335,63 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
         /* FIXME: This is not thread-safe. */
         struct AsyncReaderControl *reader = emulbase->pdata.ConsoleReader;
 
-	DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", len));
-	reader->fh   = fh->fd;
-	reader->addr = buff;
-	reader->len  = len;
-	reader->sig  = SIGF_DOS;
-	reader->task = FindTask(NULL);
-	reader->cmd  = ASYNC_CMD_READ;
-	SetSignal(0, reader->sig);
+        DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", len));
+        reader->fh   = fh->fd;
+        reader->addr = buff;
+        reader->len  = len;
+        reader->sig  = SIGF_DOS;
+        reader->task = FindTask(NULL);
+        reader->cmd  = ASYNC_CMD_READ;
+        SetSignal(0, reader->sig);
 
-	Forbid();
-	res = emulbase->pdata.KernelIFace->SetEvent(reader->CmdEvent);
-	werr = emulbase->pdata.KernelIFace->GetLastError();
-	Permit();
+        Forbid();
+        res = emulbase->pdata.KernelIFace->SetEvent(reader->CmdEvent);
+        werr = emulbase->pdata.KernelIFace->GetLastError();
+        Permit();
 
-	if (res)
-	{
-	    Wait(reader->sig);
+        if (res)
+        {
+            Wait(reader->sig);
 
-	    DASYNC(bug("[emul] Read %ld bytes, error %lu\n", reader->.actual, reader->error));
-	    len = reader->actual;
-	    werr = reader->error;
+            DASYNC(bug("[emul] Read %ld bytes, error %lu\n", reader->.actual, reader->error));
+            len = reader->actual;
+            werr = reader->error;
 
-	    if (werr)
-		res = FALSE;
-	    else
-	    {
-	        char *c, *d;
+            if (werr)
+                res = FALSE;
+            else
+            {
+                char *c, *d;
 
-	        c = buff;
-	        d = c;
-	        while (*c) {
-	            if ((c[0] == '\r') && (c[1] == '\n')) {
-	                c++;
-	                len--;
-	            }
-	            *d++ = *c++;
-	        }
-	    }
-	}
+                c = buff;
+                d = c;
+                while (*c) {
+                    if ((c[0] == '\r') && (c[1] == '\n')) {
+                        c++;
+                        len--;
+                    }
+                    *d++ = *c++;
+                }
+            }
+        }
     }
     else
     {
-	Forbid();
-	res  = emulbase->pdata.KernelIFace->ReadFile(fh->fd, buff, len, &len, NULL);
-	werr = emulbase->pdata.KernelIFace->GetLastError();
-	Permit();
+        Forbid();
+        res  = emulbase->pdata.KernelIFace->ReadFile(fh->fd, buff, len, &len, NULL);
+        werr = emulbase->pdata.KernelIFace->GetLastError();
+        Permit();
     }
 
     if (res)
     {
-	*err = 0;
-	return len;
+        *err = 0;
+        return len;
     }
     else
     {
         *err = Errno_w2a(werr, MODE_OLDFILE);
-	return -1;
+        return -1;
     }
 }
 
@@ -408,14 +408,14 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
     
     if (success)
     {
-	*err = 0;
-	return len;
+        *err = 0;
+        return len;
     }
     else
     {
-	*err = Errno_w2a(werr, MODE_NEWFILE);
+        *err = Errno_w2a(werr, MODE_NEWFILE);
 
-	return -1;
+        return -1;
     }
 }
 
@@ -441,15 +441,15 @@ static LONG seek_file(struct emulbase *emulbase, void *fd, SIPTR *pOffset, ULONG
     switch(mode)
     {
     case OFFSET_BEGINNING:
-	mode = FILE_BEGIN;
-	break;
+        mode = FILE_BEGIN;
+        break;
 
     case OFFSET_CURRENT:
-	mode = FILE_CURRENT;
-	break;
+        mode = FILE_CURRENT;
+        break;
 
     default:
-	mode = FILE_END;
+        mode = FILE_END;
     }
 
     pos_high = offset >> 32;
@@ -460,17 +460,17 @@ static LONG seek_file(struct emulbase *emulbase, void *fd, SIPTR *pOffset, ULONG
     Permit();
 
     if (error == (ULONG)-1)
-	error = Errno_w2a(werror, MODE_OLDFILE);
+        error = Errno_w2a(werror, MODE_OLDFILE);
     else
     {
-	if (newpos)
-	{
-	    *newpos = error;
-	    *newpos |= (UQUAD)pos_high << 32;
-	}
-	error = 0;
-	
-	offset = oldpos;
+        if (newpos)
+        {
+            *newpos = error;
+            *newpos |= (UQUAD)pos_high << 32;
+        }
+        error = 0;
+        
+        offset = oldpos;
     }
 
     *pOffset = offset;
@@ -503,15 +503,15 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
 
     if (ret)
     {
-    	fh->type = FHD_DIRECTORY;
-	fh->fd   = INVALID_HANDLE_VALUE;
-	fh->ph.dirpos = 0;
+        fh->type = FHD_DIRECTORY;
+        fh->fd   = INVALID_HANDLE_VALUE;
+        fh->ph.dirpos = 0;
 
-	Forbid();
-	emulbase->pdata.KernelIFace->SetFileAttributes(fh->hostname, prot_a2w(protect));
-	Permit();
+        Forbid();
+        emulbase->pdata.KernelIFace->SetFileAttributes(fh->hostname, prot_a2w(protect));
+        Permit();
 
-	return 0;
+        return 0;
     }
     return Errno_w2a(werror, MODE_NEWFILE);
 }
@@ -527,13 +527,13 @@ LONG DoDelete(struct emulbase *emulbase, char *file)
     ret = emulbase->pdata.KernelIFace->GetFileAttributes(file);
     if (ret != INVALID_FILE_ATTRIBUTES)
     {
-	if (ret & FILE_ATTRIBUTE_DIRECTORY)
+        if (ret & FILE_ATTRIBUTE_DIRECTORY)
             ret = emulbase->pdata.KernelIFace->RemoveDirectory(file);
         else
             ret = emulbase->pdata.KernelIFace->_DeleteFile(file);
     }
     else
-	ret = 0;
+        ret = 0;
 
     err = emulbase->pdata.KernelIFace->GetLastError();
 
@@ -567,7 +567,7 @@ ULONG examine_start(struct emulbase *emulbase, struct filehandle *fh)
     ULONG len;
 
     if (fh->type != FHD_DIRECTORY)
-	return ERROR_OBJECT_WRONG_TYPE;
+        return ERROR_OBJECT_WRONG_TYPE;
 
     if (!fh->ph.pathname)
     {
@@ -577,7 +577,7 @@ ULONG examine_start(struct emulbase *emulbase, struct filehandle *fh)
         if (!fh->ph.pathname)
             return ERROR_NO_FREE_STORE;
 
-	    CopyMem(fh->hostname, fh->ph.pathname, len);
+            CopyMem(fh->hostname, fh->ph.pathname, len);
         c = fh->ph.pathname + len;
         strcpy(c, "\\*");
     }
@@ -596,13 +596,13 @@ LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
     {
         Forbid();
         r = emulbase->pdata.KernelIFace->FindClose(fh->fd);
-	err = emulbase->pdata.KernelIFace->GetLastError();
+        err = emulbase->pdata.KernelIFace->GetLastError();
         Permit();
 
         if (!r)
             return Errno_w2a(err, MODE_OLDFILE);
 
-	fh->fd = INVALID_HANDLE_VALUE;
+        fh->fd = INVALID_HANDLE_VALUE;
     }
 
     fh->ph.dirpos = 0;
@@ -624,8 +624,8 @@ static ULONG ReadDir(struct emulbase *emulbase, struct filehandle *fh, LPWIN32_F
      * following:
      * 1. Before starting we explicitly set current position (dirpos) to 0. Examine() will place
      *    it into our fib_DiskKey; in case of ExAll() this is eac_LastKey. We also maintain second
-     *	directory position counter - in our directory handle. It reflects the real position of
-     *	our file search handle.
+     *  directory position counter - in our directory handle. It reflects the real position of
+     *  our file search handle.
      * 2. Here we compare position in dirpos with position in the handle. If dirpos is smaller than
      *    filehandle's counter, we have to rewind the directory. This is done by closing the search
      *    handle in order to be able to restart from the beginning and setting handle's counter to 0.
@@ -633,50 +633,50 @@ static ULONG ReadDir(struct emulbase *emulbase, struct filehandle *fh, LPWIN32_F
     DEXAM(bug("[emul] Current dirpos %lu, requested %lu\n", fh->ph.dirpos, *dirpos));
     if (fh->ph.dirpos > *dirpos)
     {
-	DEXAM(bug("[emul] Resetting search handle\n"));
-	DoRewindDir(emulbase, fh);
+        DEXAM(bug("[emul] Resetting search handle\n"));
+        DoRewindDir(emulbase, fh);
     }
 
     do
     {
-		/* 
-		 * 3. Now we will scan the next directory entry until its index is greater than original index
-		 *    in dirpos. This means that we've repositioned and scanned the next entry. After this we
-		 *	update dirpos.
-		 */
-		do
-		{
-			ULONG err;
+                /*
+                 * 3. Now we will scan the next directory entry until its index is greater than original index
+                 *    in dirpos. This means that we've repositioned and scanned the next entry. After this we
+                 *      update dirpos.
+                 */
+                do
+                {
+                        ULONG err;
 
-			if (fh->fd == INVALID_HANDLE_VALUE)
-			{
-				DEXAM(bug("[emul] Finding first file\n"));
-				Forbid();
-				fh->fd = emulbase->pdata.KernelIFace->FindFirstFile(fh->ph.pathname, FindData);
-				err = emulbase->pdata.KernelIFace->GetLastError();
-				Permit();
-				res = (fh->fd != INVALID_HANDLE_VALUE);
-			}
-			else
-			{
-				Forbid();
-				res = emulbase->pdata.KernelIFace->FindNextFile(fh->fd, FindData);
-				err = emulbase->pdata.KernelIFace->GetLastError();
-				Permit();
-			}
+                        if (fh->fd == INVALID_HANDLE_VALUE)
+                        {
+                                DEXAM(bug("[emul] Finding first file\n"));
+                                Forbid();
+                                fh->fd = emulbase->pdata.KernelIFace->FindFirstFile(fh->ph.pathname, FindData);
+                                err = emulbase->pdata.KernelIFace->GetLastError();
+                                Permit();
+                                res = (fh->fd != INVALID_HANDLE_VALUE);
+                        }
+                        else
+                        {
+                                Forbid();
+                                res = emulbase->pdata.KernelIFace->FindNextFile(fh->fd, FindData);
+                                err = emulbase->pdata.KernelIFace->GetLastError();
+                                Permit();
+                        }
 
-			if (!res)
-				return Errno_w2a(err, MODE_OLDFILE);
+                        if (!res)
+                                return Errno_w2a(err, MODE_OLDFILE);
 
-			fh->ph.dirpos++;
-			DEXAM(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->ph.dirpos));
-		} while (fh->ph.dirpos <= *dirpos);
-		(*dirpos)++;
-		DEXAM(bug("[emul] New dirpos: %lu\n", *dirpos));
-		/*
-		 * We also skip "." and ".." entries (however we count their indexes - just in case), because
-		 * AmigaOS donesn't have them.
-		 */
+                        fh->ph.dirpos++;
+                        DEXAM(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->ph.dirpos));
+                } while (fh->ph.dirpos <= *dirpos);
+                (*dirpos)++;
+                DEXAM(bug("[emul] New dirpos: %lu\n", *dirpos));
+                /*
+                 * We also skip "." and ".." entries (however we count their indexes - just in case), because
+                 * AmigaOS donesn't have them.
+                 */
     } while (is_special_dir(FindData->cFileName));
 
     return 0;
@@ -694,20 +694,20 @@ static ULONG DoExamineEntry_sub(struct emulbase *emulbase, struct filehandle *fh
     DEXAM(bug("[emul] DoExamineEntry_sub(): filehandle's path: %s\n", fh->hostname));
     if (FoundName)
     {
-	DEXAM(bug("[emul] ...containing object: %s\n", FoundName));
-	plen = strlen(fh->hostname);
-	flen = strlen(FoundName);
-	name = AllocVecPooled(emulbase->mempool, plen + flen + 2);
-	if (!name)
-	    return ERROR_NO_FREE_STORE;
+        DEXAM(bug("[emul] ...containing object: %s\n", FoundName));
+        plen = strlen(fh->hostname);
+        flen = strlen(FoundName);
+        name = AllocVecPooled(emulbase->mempool, plen + flen + 2);
+        if (!name)
+            return ERROR_NO_FREE_STORE;
 
         strcpy(name, fh->hostname);
-	filename = name + plen;
-	*filename++ = '\\';
-	strcpy(filename, FoundName);
+        filename = name + plen;
+        *filename++ = '\\';
+        strcpy(filename, FoundName);
     }
     else
-	name = fh->hostname;
+        name = fh->hostname;
 
     DEXAM(bug("[emul] Full name: %s\n", name));
     Forbid();
@@ -717,17 +717,17 @@ static ULONG DoExamineEntry_sub(struct emulbase *emulbase, struct filehandle *fh
 
     if (FoundName)
     {
-	DEXAM(bug("[emul] Freeing full name\n"));
-	FreeVecPooled(emulbase->mempool, name);
+        DEXAM(bug("[emul] Freeing full name\n"));
+        FreeVecPooled(emulbase->mempool, name);
     }
 
     return error ? 0 : Errno_w2a(werr, MODE_OLDFILE);
-}	
+}
 
 /*********************************************************************************************/
 
 LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *FoundName,
-		    struct ExAllData *ead, ULONG size, ULONG type)
+                    struct ExAllData *ead, ULONG size, ULONG type)
 {
     STRPTR next, last, end, name;
     WIN32_FILE_ATTRIBUTE_DATA FIB;
@@ -745,56 +745,56 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Foun
 
     error = DoExamineEntry_sub(emulbase, fh, FoundName, &FIB);
     if (error)
-	return error;
+        return error;
 
     DEXAM(bug("[emul] Filling in object information\n"));
     switch(type)
     {
     default:
     case ED_OWNER:
-	ead->ed_OwnerUID = 0;
-	ead->ed_OwnerGID = 0;
+        ead->ed_OwnerUID = 0;
+        ead->ed_OwnerGID = 0;
     case ED_COMMENT:
-	ead->ed_Comment = NULL;
-	/* TODO: Write Windows shell-compatible comments support using NTFS streams */
+        ead->ed_Comment = NULL;
+        /* TODO: Write Windows shell-compatible comments support using NTFS streams */
     case ED_DATE:
-	FileTime2DateStamp((struct DateStamp *)&ead->ed_Days, FIB.ftLastWriteTime);
+        FileTime2DateStamp((struct DateStamp *)&ead->ed_Days, FIB.ftLastWriteTime);
     case ED_PROTECTION:
-	ead->ed_Prot 	= prot_w2a(FIB.dwFileAttributes);
+        ead->ed_Prot    = prot_w2a(FIB.dwFileAttributes);
     case ED_SIZE:
-	ead->ed_Size	= FIB.nFileSizeLow;
+        ead->ed_Size    = FIB.nFileSizeLow;
     case ED_TYPE:
-	if (FIB.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-	{
-	    if (FoundName || fh->name[0])
-	        ead->ed_Type = ST_USERDIR;
-	    else
-		ead->ed_Type = ST_ROOT;
-	}
-	else
-	    ead->ed_Type = ST_FILE;
+        if (FIB.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            if (FoundName || fh->name[0])
+                ead->ed_Type = ST_USERDIR;
+            else
+                ead->ed_Type = ST_ROOT;
+        }
+        else
+            ead->ed_Type = ST_FILE;
     case ED_NAME:
-	if (FoundName)
-	    last = FoundName;
-	else if (*fh->name) {
-	    name = fh->name;
-	    last = name;
-	    while(*name)
-		if(*name++=='\\')
-		    last = name;
-	} else
-	    last = fh->volumename;
-	ead->ed_Name=next;
-	for(;;)
-	{
-	    if (next>=end)
-		return ERROR_BUFFER_OVERFLOW;
-	    if (!(*next++=*last++))
-		break;
-	}
+        if (FoundName)
+            last = FoundName;
+        else if (*fh->name) {
+            name = fh->name;
+            last = name;
+            while(*name)
+                if(*name++=='\\')
+                    last = name;
+        } else
+            last = fh->volumename;
+        ead->ed_Name=next;
+        for(;;)
+        {
+            if (next>=end)
+                return ERROR_BUFFER_OVERFLOW;
+            if (!(*next++=*last++))
+                break;
+        }
     case 0:
-	ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
-	return 0;
+        ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
+        return 0;
     }
 }
 
@@ -809,35 +809,35 @@ LONG DoExamineNext(struct emulbase *emulbase,  struct filehandle *fh, struct Fil
 
     res = examine_start(emulbase, fh);
     if (res)
-	return res;
+        return res;
 
     res = ReadDir(emulbase, fh, &FindData, &FIB->fib_DiskKey);
     if (!res)
-	res = DoExamineEntry_sub(emulbase, fh, FindData.cFileName, &AttrData);
+        res = DoExamineEntry_sub(emulbase, fh, FindData.cFileName, &AttrData);
     if (res)
     {
-	DoRewindDir(emulbase, fh);
-	return res;
+        DoRewindDir(emulbase, fh);
+        return res;
     }
 
-    FIB->fib_OwnerUID	  = 0;
-    FIB->fib_OwnerGID	  = 0;
-    FIB->fib_Comment[0]	  = '\0'; /* TODO: no comments available yet! */
-    FIB->fib_Protection	  = prot_w2a(AttrData.dwFileAttributes);
+    FIB->fib_OwnerUID     = 0;
+    FIB->fib_OwnerGID     = 0;
+    FIB->fib_Comment[0]   = '\0'; /* TODO: no comments available yet! */
+    FIB->fib_Protection   = prot_w2a(AttrData.dwFileAttributes);
     FIB->fib_Size           = AttrData.nFileSizeLow;
 
     FileTime2DateStamp(&FIB->fib_Date, AttrData.ftLastWriteTime);
     if (AttrData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-	FIB->fib_DirEntryType = ST_USERDIR;
+        FIB->fib_DirEntryType = ST_USERDIR;
     else
-	FIB->fib_DirEntryType = ST_FILE;
+        FIB->fib_DirEntryType = ST_FILE;
 
     src  = FindData.cFileName;
     dest = &FIB->fib_FileName[1];
     for (res = 0; res<MAXFILENAMELENGTH-1; res++)
     {
-	if (!(*dest++=*src++))
-	    break;
+        if (!(*dest++=*src++))
+            break;
     }
     FIB->fib_FileName[0] = res;
     return 0;
@@ -858,44 +858,44 @@ LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAll
     eac->eac_Entries = 0;
     error = examine_start(emulbase, fh);
     if (error)
-	return error;
+        return error;
 
     for(;;)
     {
-	error = ReadDir(emulbase, fh, &FindData, &eac->eac_LastKey);
-	if (error) {
+        error = ReadDir(emulbase, fh, &FindData, &eac->eac_LastKey);
+        if (error) {
             DEXAM(bug("[emul] ReadDir() returned %lu\n", error));
             break;
         }
 
-	/* Try to match the filename, if required.  */
-	DEXAM(bug("[emul] Checking against MatchString\n"));
-	if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, FindData.cFileName))
-	    continue;
+        /* Try to match the filename, if required.  */
+        DEXAM(bug("[emul] Checking against MatchString\n"));
+        if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, FindData.cFileName))
+            continue;
 
-	DEXAM(bug("[emul] Examining object\n"));
+        DEXAM(bug("[emul] Examining object\n"));
         error = DoExamineEntry(emulbase, fh, FindData.cFileName, ead, end-(STRPTR)ead, type);
         if(error)
-	    break;
-	/* Do some more matching... */
-	if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
-	    continue;
-	eac->eac_Entries++;
-	last = ead;
-	ead = ead->ed_Next;
+            break;
+        /* Do some more matching... */
+        if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
+            continue;
+        eac->eac_Entries++;
+        last = ead;
+        ead = ead->ed_Next;
     }
 
     if (last!=NULL)
-	last->ed_Next=NULL;
+        last->ed_Next=NULL;
 
     if ((error==ERROR_BUFFER_OVERFLOW) && last)
     {
-	/*
-	 * ERROR_BUFFER_OVERFLOW happened while examining the last entry.
-	 * We need to step back to it in order to re-examine it next time.
-	 */
-	eac->eac_LastKey--;
-	return 0;
+        /*
+         * ERROR_BUFFER_OVERFLOW happened while examining the last entry.
+         * We need to step back to it in order to re-examine it next time.
+         */
+        eac->eac_LastKey--;
+        return 0;
     }
 
     return error;
@@ -908,7 +908,7 @@ LONG DoHardLink(struct emulbase *emulbase, char *name, char *oldfile)
     ULONG error, werr;
 
     if (!emulbase->pdata.KernelIFace->CreateHardLink)
-	return ERROR_ACTION_NOT_KNOWN;
+        return ERROR_ACTION_NOT_KNOWN;
 
     DLINK(bug("[emul] Creating hardlink %s to file %s\n", name, oldfile));
     Forbid();
@@ -932,7 +932,7 @@ LONG DoSymLink(struct emulbase *emulbase, char *dest, char *src)
       and this requires additional thinking and coding. Since reading symbolic links
       is not implemented yet, i disabled creation too - Pavel Fedin <pavel_fedin@mail.ru>
     if (!emulbase->pdata.KernelIFace->CreateSymbolicLink) */
-	return ERROR_ACTION_NOT_KNOWN;
+        return ERROR_ACTION_NOT_KNOWN;
 
     Forbid();
     error = emulbase->pdata.KernelIFace->CreateSymbolicLink(dest, src, 0);
@@ -980,17 +980,17 @@ LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date
 
     Forbid();
     handle = emulbase->pdata.KernelIFace->CreateFile(fullname, FILE_WRITE_ATTRIBUTES,
-						     FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-						     NULL, OPEN_EXISTING, 0, NULL);
+                                                     FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+                                                     NULL, OPEN_EXISTING, 0, NULL);
     if (handle == INVALID_HANDLE_VALUE)
         ret = 0;
     else
-	ret = emulbase->pdata.KernelIFace->SetFileTime(handle, &ft, NULL, &ft);
+        ret = emulbase->pdata.KernelIFace->SetFileTime(handle, &ft, NULL, &ft);
 
     werr = emulbase->pdata.KernelIFace->GetLastError();
 
     if (handle != INVALID_HANDLE_VALUE)
-	emulbase->pdata.KernelIFace->CloseHandle(handle);
+        emulbase->pdata.KernelIFace->CloseHandle(handle);
 
     Permit();
 
@@ -1012,22 +1012,22 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
         /* Set EOF to NEW position */
         Forbid();
         error = emulbase->pdata.KernelIFace->SetEndOfFile(fh->fd);
-	werr = emulbase->pdata.KernelIFace->GetLastError();
+        werr = emulbase->pdata.KernelIFace->GetLastError();
         Permit();
 
-	error = error ? 0 : Errno_w2a(werr, MODE_READWRITE);
+        error = error ? 0 : Errno_w2a(werr, MODE_READWRITE);
 
-	/*
-	 * If our OLD position was less than new file size, we seek back to it. 'offset' will again contain
+        /*
+         * If our OLD position was less than new file size, we seek back to it. 'offset' will again contain
          * position before this seek - i. e. our NEW file size.
-	 */
+         */
         if (offset < newpos)
-	{
-	    LONG error2;
+        {
+            LONG error2;
 
             error2 = seek_file(emulbase, fh->fd, &offset, OFFSET_BEGINNING, NULL);
             if (!error)
-        	error = error2;
+                error = error2;
         } else
             offset = newpos;
     }
@@ -1050,22 +1050,22 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
     c = path;
     if ((c[0] == '\\') && (c[1] == '\\'))
     {
-	/* If the path starts with "\\", it's a UNC path. Its root is "\\Server\Share\", so we skip "\\Server\" part */
-	c += 2;
-	while (*c != '\\') {
+        /* If the path starts with "\\", it's a UNC path. Its root is "\\Server\Share\", so we skip "\\Server\" part */
+        c += 2;
+        while (*c != '\\') {
             if (*c == 0)
-		return ERROR_OBJECT_NOT_FOUND;
+                return ERROR_OBJECT_NOT_FOUND;
             c++;
-	}
-	c++;
+        }
+        c++;
     }
 
     /* Skip everything up to the first '\'. */
     while (*c != '\\')
     {
-	if (*c == 0)
-	    return ERROR_OBJECT_NOT_FOUND;
-	c++;
+        if (*c == 0)
+            return ERROR_OBJECT_NOT_FOUND;
+        c++;
     }
 
     Forbid();
@@ -1083,13 +1083,13 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
 
     if (res)
     {
-	id->id_NumSoftErrors = 0;
-	id->id_UnitNumber = 0;
-	id->id_DiskState = ID_VALIDATED;
-	id->id_NumBlocksUsed = id->id_NumBlocks - FreeBlocks;
-	id->id_BytesPerBlock = SectorsPerCluster*BytesPerSector;
+        id->id_NumSoftErrors = 0;
+        id->id_UnitNumber = 0;
+        id->id_DiskState = ID_VALIDATED;
+        id->id_NumBlocksUsed = id->id_NumBlocks - FreeBlocks;
+        id->id_BytesPerBlock = SectorsPerCluster*BytesPerSector;
 
-	return 0;
+        return 0;
     }
 
     return Errno_w2a(err, MODE_OLDFILE);
@@ -1104,7 +1104,7 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
     char tmp;
     ULONG err;
 
-    /* "~<name>" means home of user <name> */		
+    /* "~<name>" means home of user <name> */
     for(sp_end = sp; sp_end[0] != '\0' && sp_end[0] != '\\'; sp_end++);
 
     cmplen = sp_end - sp - 1;
@@ -1120,20 +1120,20 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
 
     if (!err)
     {
-    	int hlen = strlen(home);
-	int splen = strlen(sp_end);
+        int hlen = strlen(home);
+        int splen = strlen(sp_end);
 
-	newunixpath = AllocVec(hlen + splen + 1, MEMF_PUBLIC);
-	if (newunixpath)
-	{
-	    char *s = newunixpath;
+        newunixpath = AllocVec(hlen + splen + 1, MEMF_PUBLIC);
+        if (newunixpath)
+        {
+            char *s = newunixpath;
 
-	    CopyMem(home, s, hlen);
-	    s += hlen;
-	    CopyMem(sp_end, s, splen);
-	    s += splen;
-	    *s = 0;
-	}
+            CopyMem(home, s, hlen);
+            s += hlen;
+            CopyMem(sp_end, s, splen);
+            s += splen;
+            *s = 0;
+        }
     }
 
     return newunixpath;
@@ -1159,7 +1159,7 @@ BOOL CheckDir(struct emulbase *emulbase, char *path)
     Permit();
 
     if (attrs == INVALID_FILE_ATTRIBUTES)
-	return TRUE;
+        return TRUE;
 
     return (attrs & FILE_ATTRIBUTE_DIRECTORY) ? FALSE : TRUE;
 }

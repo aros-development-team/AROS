@@ -55,8 +55,8 @@ BOOL i8259a_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     if (intNum == 2)
     {
-    	/* IRQ2 must never be disabled. Doing so breaks communication between two 8259s */
-    	return FALSE;
+        /* IRQ2 must never be disabled. Doing so breaks communication between two 8259s */
+        return FALSE;
     }
     xtPic->irq_mask |= 1 << intNum;
 
@@ -79,11 +79,11 @@ BOOL i8259a_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint1
 
     if (intNum == 2)
     {
-        /* IRQ2 is always enabled anyway, and it's not a "real" IRQ, so it's probably 
+        /* IRQ2 is always enabled anyway, and it's not a "real" IRQ, so it's probably
          * appropriate to report failure */
-    	return FALSE;
+        return FALSE;
     }
-    xtPic->irq_mask &= ~(1 << intNum);    
+    xtPic->irq_mask &= ~(1 << intNum);
 
     if (intNum >= 8)
         outb((xtPic->irq_mask >> 8) & 0xff, SLAVE8259_MASKREG);
@@ -248,7 +248,7 @@ BOOL i8259a_Probe()
     D(bug("[Kernel:i8259a] %s()\n", __func__));
 
     /* mask all of the interrupts except the cascade pin */
-    outb(0xff, SLAVE8259_MASKREG);      
+    outb(0xff, SLAVE8259_MASKREG);
     outb(~(1 << 2), MASTER8259_MASKREG);
     maskres = inb(MASTER8259_MASKREG);
     if (maskres == ~(1 << 2))

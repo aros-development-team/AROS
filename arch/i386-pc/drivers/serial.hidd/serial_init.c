@@ -37,7 +37,7 @@ static int PCSer_Init(LIBBASETYPEPTR LIBBASE)
     irq = &csd->intHandler[0];
     irq->is_Node.ln_Name = "COM1/COM3";
     irq->is_Node.ln_Type = NT_INTERRUPT;
-    irq->is_Node.ln_Pri=127;		/* Set the highest pri */
+    irq->is_Node.ln_Pri=127;            /* Set the highest pri */
     irq->is_Code = (VOID_FUNC)serial_int_13;
     irq->is_Data = (APTR)csd;
     AddIntServer(INTB_KERNEL + 4, irq);
@@ -46,7 +46,7 @@ static int PCSer_Init(LIBBASETYPEPTR LIBBASE)
     irq = &csd->intHandler[1];
     irq->is_Node.ln_Name = "COM2/COM4";
     irq->is_Node.ln_Type = NT_INTERRUPT;
-    irq->is_Node.ln_Pri=127;		/* Set the highest pri */
+    irq->is_Node.ln_Pri=127;            /* Set the highest pri */
     irq->is_Code = (VOID_FUNC)serial_int_24;
     irq->is_Data = (APTR)csd;
     AddIntServer(INTB_KERNEL + 3, irq);

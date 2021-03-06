@@ -30,7 +30,7 @@
 
 #include "classbase.h"
 
-static int uikit_Startup(struct UIKitBase *LIBBASE) 
+static int uikit_Startup(struct UIKitBase *LIBBASE)
 {
     struct GfxBase *GfxBase;
     OOP_Object *kbd, *ms;
@@ -51,21 +51,21 @@ static int uikit_Startup(struct UIKitBase *LIBBASE)
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     if (kbd) {
         ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
-	if (ms) {
+        if (ms) {
             kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->xsd.kbdclass, NULL);
-	    if (kbdriver) {
-		msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, NULL);
-		if (!msdriver)
-		    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
-	    }
-	    OOP_DisposeObject(ms);
-	}    
-	OOP_DisposeObject(kbd);
+            if (kbdriver) {
+                msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, NULL);
+                if (!msdriver)
+                    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+            }
+            OOP_DisposeObject(ms);
+        }
+        OOP_DisposeObject(kbd);
     }
 
     /* If we got no input, we can't work, fail */
     if (!msdriver) {
-	CloseLibrary(&GfxBase->LibNode);
+        CloseLibrary(&GfxBase->LibNode);
         return FALSE;
     }
 #endif

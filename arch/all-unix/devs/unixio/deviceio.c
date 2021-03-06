@@ -19,9 +19,9 @@ static void Flush(struct IoStdReq *req)
         next = (struct IoStdReq *)req->io_Message.mn_Node.ln_Succ
 
         ireq->io_Error = IOERR_ABORTED;
-        ReplyMsg(&req->io_Message);    
+        ReplyMsg(&req->io_Message);
     }
-}   
+}
 
 static BOOL is_eof(char c, struct UnitData *unit)
 {
@@ -192,7 +192,7 @@ AROS_LH1(void, beginio,
     switch (ioreq->io_Command)
     {
     case CMD_READ:
-        D(bug("Queuing the read request.\n"));        
+        D(bug("Queuing the read request.\n"));
         ioreq->io_Flags &= ~IOF_QUICK;
 
         Disable();
@@ -247,7 +247,7 @@ AROS_LH1(void, beginio,
         break;
 
     case CMD_FLUSH:
-        /* 
+        /*
          * Clear all queued IO request for the given unit except for the active ones.
          * Techniques are the same as in CMD_RESET, just don't touch writeLength.
          */

@@ -28,12 +28,12 @@ AROS_LH0(void, Enable,
 
         AROS_LIBFUNC_INIT
 
-	if( --SysBase->IDNestCnt < 0) {
-		/*
-		 * Enable interrupt by allowing all of them.
-		 */
-		SetSR(0,0x700);
-	}
+        if( --SysBase->IDNestCnt < 0) {
+                /*
+                 * Enable interrupt by allowing all of them.
+                 */
+                SetSR(0,0x700);
+        }
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 } /* Enable() */

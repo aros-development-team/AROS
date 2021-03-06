@@ -44,37 +44,37 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* Fail if we are ocassionally started from within AROS command line */
     if (magic != AROS_BOOT_MAGIC)
-    	return -1;
+        return -1;
 
     while ((tag = LibNextTagItem(&tstate)))
     {
-	switch (tag->ti_Tag)
-	{
-	case KRN_KernelLowest:
-	    ranges[0] = (UWORD *)tag->ti_Data;
-	    break;
+        switch (tag->ti_Tag)
+        {
+        case KRN_KernelLowest:
+            ranges[0] = (UWORD *)tag->ti_Data;
+            break;
 
-	case KRN_KernelHighest:
-	    ranges[1] = (UWORD *)tag->ti_Data;
-	    break;
+        case KRN_KernelHighest:
+            ranges[1] = (UWORD *)tag->ti_Data;
+            break;
 
-	case KRN_MMAPAddress:
-	    mmap = (struct mb_mmap *)tag->ti_Data;
-	    break;
+        case KRN_MMAPAddress:
+            mmap = (struct mb_mmap *)tag->ti_Data;
+            break;
 
-	case KRN_KernelBss:
-	    __clear_bss((struct KernelBSS *)tag->ti_Data);
-	    break;
+        case KRN_KernelBss:
+            __clear_bss((struct KernelBSS *)tag->ti_Data);
+            break;
 
-	case KRN_HostInterface:
-	    hif = (struct HostInterface *)tag->ti_Data;
-	    break;
-	}
+        case KRN_HostInterface:
+            hif = (struct HostInterface *)tag->ti_Data;
+            break;
+        }
     }
 
     /* If there's no HostIFace, we can't even say anything */
     if (!hif)
-	return -1;
+        return -1;
 
     /* Set globals only AFTER __clear_bss() */
     BootMsg = msg;
@@ -82,42 +82,42 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* Validate our HostInterface version */
     if (strcmp(HostIFace->System, "Windows"))
-	return -1;
+        return -1;
     if (HostIFace->Version != HOSTINTERFACE_VERSION)
-	return -1;
+        return -1;
 
     /* Now we have debug output, we can bug() */
     hostlib = HostIFace->hostlib_Open("Libs\\Host\\kernel.dll", &errstr);
     if (!hostlib)
     {
-	bug("[Kernel] Failed to load host-side module: %s\n", errstr);
-	HostIFace->hostlib_FreeErrorStr(errstr);
-	return -1;
+        bug("[Kernel] Failed to load host-side module: %s\n", errstr);
+        HostIFace->hostlib_FreeErrorStr(errstr);
+        return -1;
     }
 
     for (i = 0; kernel_functions[i]; i++)
     {
-	void *func = HostIFace->hostlib_GetPointer(hostlib, kernel_functions[i], &errstr);
+        void *func = HostIFace->hostlib_GetPointer(hostlib, kernel_functions[i], &errstr);
 
         if (!func)
-	{
-	    bug("[Kernel] Failed to find symbol %s in host-side module: %s\n", kernel_functions[i], errstr);
-	    HostIFace->hostlib_FreeErrorStr(errstr);
-	    HostIFace->hostlib_Close(hostlib, NULL);
+        {
+            bug("[Kernel] Failed to find symbol %s in host-side module: %s\n", kernel_functions[i], errstr);
+            HostIFace->hostlib_FreeErrorStr(errstr);
+            HostIFace->hostlib_Close(hostlib, NULL);
 
-	    return -1;
-	}
-	((void **)&KernelIFace)[i] = func;
+            return -1;
+        }
+        ((void **)&KernelIFace)[i] = func;
     }
 
     /* Now we have core_alert(), krnDisplayAlert() works */
     if ((!ranges[0]) || (!ranges[1]) || (!mmap))
     {
-	krnPanic(KernelBase, "Not enough information from the bootstrap\n"
-		 "Kickstart start 0x%p, end 0x%p\n"
-		 "Memory map address: 0x%p",
-		 ranges[0], ranges[1], mmap);
-	return -1;
+        krnPanic(KernelBase, "Not enough information from the bootstrap\n"
+                 "Kickstart start 0x%p, end 0x%p\n"
+                 "Memory map address: 0x%p",
+                 ranges[0], ranges[1], mmap);
+        return -1;
     }
 
 #if __WORDSIZE > 32
@@ -146,7 +146,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = 0x%p, msg = 0x%p\n", mh->mh_First, msg));
     if (!krnPrepareExecBase(ranges, mh, msg))
-	return -1;
+        return -1;
 
     D(bug("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
@@ -200,10 +200,10 @@ static int Platform_Init(struct KernelBase *KernelBase)
     args = (char *)LibGetTagData(KRN_CmdLine, 0, BootMsg);
     if (args)
     {
-	char *s = strstr(args, "vblank=");
+        char *s = strstr(args, "vblank=");
 
-	if (s)
-	    SysBase->VBlankFrequency = atoi(&s[7]);
+        if (s)
+            SysBase->VBlankFrequency = atoi(&s[7]);
     }
 
     D(bug("[Kernel] initializing host-side kernel module, timer frequency is %u\n", SysBase->VBlankFrequency));

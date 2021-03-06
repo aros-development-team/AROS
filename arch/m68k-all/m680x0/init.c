@@ -15,7 +15,7 @@ extern void sp060_init(void);
 static AROS_UFH2(struct Library*, OpenLib,
     AROS_UFHA(ULONG, version, D0),
     AROS_UFHA(struct Library*, base, A6))
-{ 
+{
     AROS_USERFUNC_INIT
     
     base->lib_OpenCnt++;
@@ -26,7 +26,7 @@ static AROS_UFH2(struct Library*, OpenLib,
     
 static AROS_UFH1(void, CloseLib,
     AROS_UFHA(struct Library*, base, A6))
-{ 
+{
     AROS_USERFUNC_INIT
     
     base->lib_OpenCnt--;
@@ -36,7 +36,7 @@ static AROS_UFH1(void, CloseLib,
 
 static AROS_UFH1(ULONG, DummyLib,
     AROS_UFHA(struct Library*, base, A6))
-{ 
+{
     AROS_USERFUNC_INIT
     
     return 0;
@@ -68,20 +68,20 @@ UNUSED(Unused15);
 UNUSED(Unused16);
 
 static const APTR funcLib[] = {
-	OpenLib, CloseLib, DummyLib, DummyLib,
-	Unused5,
-	Unused6,
-	Unused7,
-	Unused8,
-	Unused9,
-	Unused10,
-	Unused11,
-	Unused12,
-	Unused13,
-	Unused14,
-	Unused15,
-	Unused16,
-	(void*)-1 };
+        OpenLib, CloseLib, DummyLib, DummyLib,
+        Unused5,
+        Unused6,
+        Unused7,
+        Unused8,
+        Unused9,
+        Unused10,
+        Unused11,
+        Unused12,
+        Unused13,
+        Unused14,
+        Unused15,
+        Unused16,
+        (void*)-1 };
 
 static const UBYTE lib68040[] = "68040.library";
 static const UBYTE lib68060[] = "68060.library";
@@ -121,14 +121,14 @@ static int M680x0Init(struct M680x0Base *M680x0Base)
     struct Library *lib;
 
     if (!(SysBase->AttnFlags & (AFF_68040 | AFF_68060)))
-    	return FALSE; /* 68040/060 only need emulation */
+        return FALSE; /* 68040/060 only need emulation */
     if (SysBase->AttnFlags & AFF_68882)
-    	return FALSE; /* we already have full support? */
+        return FALSE; /* we already have full support? */
     if (!(SysBase->AttnFlags & AFF_FPU40))
-    	return FALSE; /* no FPU, don't bother with missing instruction emulation */
+        return FALSE; /* no FPU, don't bother with missing instruction emulation */
 
-    /* 
-        initialize emulation here, unless 68080 core is detected. In that case 
+    /*
+        initialize emulation here, unless 68080 core is detected. In that case
         no emulation is necessary, only the fake library is required.
     */
     if (!(SysBase->AttnFlags & AFF_68080))

@@ -9,7 +9,7 @@
  * $ bin/linux-x86_64/tools/m68k-amiga-aros-gcc  -Os -I /path/to/src/AROS \
  *      SetPatchAROS.c -o SetPatchAROS.elf
  * $ bin/linux-x86_64/tools/elf2hunk SetPatchAROS.elf SetPatchAROS
- * 
+ *
  * Copy SetPatchAROS to your AOS installation, and add the following
  * to your startup script:
  *
@@ -18,7 +18,7 @@
  * Send a ^C to the SetPatchAROS to unload it.
  */
 
-#define MINSTACK	8192
+#define MINSTACK        8192
 
 #include <aros/asmcall.h>
 #include <dos/stdio.h>
@@ -38,11 +38,11 @@
 
 static APTR oldRawDoFmt;
 static AROS_UFH5(APTR, myRawDoFmt,
-	AROS_UFHA(CONST_STRPTR, fmt, A0),
-	AROS_UFHA(APTR,        args, A1),
-	AROS_UFHA(VOID_FUNC,  putch, A2),
-	AROS_UFHA(APTR,      putptr, A3),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+        AROS_UFHA(CONST_STRPTR, fmt, A0),
+        AROS_UFHA(APTR,        args, A1),
+        AROS_UFHA(VOID_FUNC,  putch, A2),
+        AROS_UFHA(APTR,      putptr, A3),
+        AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -60,24 +60,24 @@ static AROS_UFH5(APTR, myRawDoFmt,
 
     switch ((IPTR)putch) {
     case (IPTR)RAWFMTFUNC_STRING:
-    	putch = (VOID_FUNC)&m68k_string;
-    	break;
+        putch = (VOID_FUNC)&m68k_string;
+        break;
     case (IPTR)RAWFMTFUNC_COUNT:
-    	putch = (VOID_FUNC)&m68k_count;
-    	break;
+        putch = (VOID_FUNC)&m68k_count;
+        break;
     case (IPTR)RAWFMTFUNC_SERIAL:
-    	putch = (VOID_FUNC)&m68k_serial;
-    	break;
+        putch = (VOID_FUNC)&m68k_serial;
+        break;
     default:
-    	break;
+        break;
     }
 
     return AROS_UFC5(APTR, oldRawDoFmt,
-	AROS_UFCA(CONST_STRPTR, fmt, A0),
-	AROS_UFCA(APTR,        args, A1),
-	AROS_UFCA(VOID_FUNC,  putch, A2),
-	AROS_UFCA(APTR,      putptr, A3),
-	AROS_UFCA(struct ExecBase *, SysBase, A6));
+        AROS_UFCA(CONST_STRPTR, fmt, A0),
+        AROS_UFCA(APTR,        args, A1),
+        AROS_UFCA(VOID_FUNC,  putch, A2),
+        AROS_UFCA(APTR,      putptr, A3),
+        AROS_UFCA(struct ExecBase *, SysBase, A6));
 
     AROS_USERFUNC_EXIT
 }
@@ -105,10 +105,10 @@ int main(int argc, char **argv)
    if (DOSBase != NULL) {
        struct Library *sbl = (APTR)SysBase;
        if (sbl->lib_Version > 40) {
-       	   FPrintf(Output(), "SetPatchAROS: Unsupported exec.library %ld.%ld\n",
-       	   	   sbl->lib_Version, sbl->lib_Revision);
-       	   CloseLibrary((APTR)DOSBase);
-       	   return RETURN_ERROR;
+           FPrintf(Output(), "SetPatchAROS: Unsupported exec.library %ld.%ld\n",
+                   sbl->lib_Version, sbl->lib_Revision);
+           CloseLibrary((APTR)DOSBase);
+           return RETURN_ERROR;
        }
 
        Disable();

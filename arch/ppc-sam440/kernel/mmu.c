@@ -285,8 +285,8 @@ void mmu_init(struct TagItem *tags)
      *   which appear to assume Write-Through caching.
      */
 
-    /* 
-     * The very first entry has to cover the executable part of kernel, 
+    /*
+     * The very first entry has to cover the executable part of kernel,
      * where exception handlers are located
      */
     map_region(&info, 0x0, krn_base, 0xff000000 + krn_base, krn_highest - krn_base, TLB_SR | TLB_SX | TLB_SW | TLB_UR | TLB_UX | TLB_W);

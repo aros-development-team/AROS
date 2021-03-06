@@ -29,11 +29,11 @@ AROS_LH2(void, KrnGetIRQA,
         struct TagItem *irqTag;
 
         if (intrMap && (irqTag = LibFindTagItem(KERNELTAG_IRQ_POLARITY, attribs)))
-        {    
+        {
             irqTag->ti_Data = intrMap->im_Polarity;
         }
         if (intrMap && (irqTag = LibFindTagItem(KERNELTAG_IRQ_TRIGGERLEVEL, attribs)))
-        {    
+        {
             irqTag->ti_Data = intrMap->im_Trig;
         }
     }

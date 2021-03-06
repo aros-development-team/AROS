@@ -44,8 +44,8 @@
 #define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
 
 struct bitmapinfo_mono
-{ 
-    BITMAPINFOHEADER bmiHeader; 
+{
+    BITMAPINFOHEADER bmiHeader;
     UWORD            bmiColors[2];
 };
 
@@ -54,7 +54,7 @@ static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGDIBitMapAB;
 
-static struct OOP_ABDescr attrbases[] = 
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap   , &HiddBitMapAttrBase   },
     { IID_Hidd_Sync     , &HiddSyncAttrBase     },
@@ -214,7 +214,7 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG col, mode;
 
-    DB2(bug("[WinGDI:BitMap] hidd.bitmap.gdibitmap::DrawPixel(0x%p): (%lu, %lu)\n", o, msg->x, msg->y));    
+    DB2(bug("[WinGDI:BitMap] hidd.bitmap.gdibitmap::DrawPixel(0x%p): (%lu, %lu)\n", o, msg->x, msg->y));
     col = GC_FG(msg->gc);
     mode = R2_DrawModeTable[GC_DRMD(msg->gc)];
     
@@ -223,7 +223,7 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     GDICALL(SetPixel, data->dc, msg->x, msg->y, col);
     Permit();
     CHECK_STACK
-    return 0;    
+    return 0;
 }
 
 /****************************************************************************************/
@@ -486,7 +486,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     DECLARE_ATTRCHECK(bitmap);
 
-    EnterFunc(bug("GDIBM::New()\n"));    
+    EnterFunc(bug("GDIBM::New()\n"));
     /* Parse the attributes */
     if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Hidd_BitMap_Attrs,
                             &ATTRCHECK(bitmap), HiddBitMapAttrBase))
@@ -498,7 +498,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     if (GOT_BM_ATTR(Friend))
         friend = (OOP_Object *)attrs[AO(Friend)];
-    else 
+    else
         friend = NULL;
         
     width  = attrs[AO(Width)];
@@ -570,7 +570,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         CHECK_STACK
         ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
-dispose_bitmap:    
+dispose_bitmap:
     Forbid();
     if (orig_bitmap)
         GDICALL(SelectObject, my_dc, orig_bitmap);
@@ -606,7 +606,7 @@ VOID GDIBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     OOP_DoSuperMethod(cl, o, msg);
 
-    CHECK_STACK    
+    CHECK_STACK
     ReturnVoid("GDIGfx.BitMap::Dispose");
 }
 

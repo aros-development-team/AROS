@@ -28,20 +28,20 @@ struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *d
 
     do
     {
-	dir = emulbase->pdata.SysIFace->readdir(fh->fd);
-	AROS_HOST_BARRIER
+        dir = emulbase->pdata.SysIFace->readdir(fh->fd);
+        AROS_HOST_BARRIER
 
-	if (NULL == dir)
-	    break;
+        if (NULL == dir)
+            break;
 
     } while (is_special_dir(dir->d_name));
 
 #if DEBUG
     bug("[ReadDir] Filehandle %s, ", fh->hostname);
     if (dir)
-    	bug("returning entry: %s\n", dir->d_name);
+        bug("returning entry: %s\n", dir->d_name);
     else
-    	bug("end of search\n");
+        bug("end of search\n");
 #endif
 
     *dirpos = emulbase->pdata.SysIFace->telldir(fh->fd);

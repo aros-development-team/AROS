@@ -144,23 +144,23 @@ static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct she
 
     if (KernelBase)
     {
-	char buffer[512];
+        char buffer[512];
 
-	if (NameFromFH(file, buffer, sizeof(buffer))) {
-	    char *nameptr = buffer;
-//	    struct ELF_DebugInfo dbg = {eh, sh};
+        if (NameFromFH(file, buffer, sizeof(buffer))) {
+            char *nameptr = buffer;
+//          struct ELF_DebugInfo dbg = {eh, sh};
 
 /* gdb support needs full paths */
 #if !AROS_MODULES_DEBUG
-	    /* First, go through the name, till end of the string */
-	    while(*nameptr++);
-	    /* Now, go back until either ":" or "/" is found */
-	    while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
-    		nameptr--;
+            /* First, go through the name, till end of the string */
+            while(*nameptr++);
+            /* Now, go back until either ":" or "/" is found */
+            while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
+                nameptr--;
 #endif
-    	   KrnRegisterModule(nameptr, sh, &eh);
-    	   //KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
-	}
+           KrnRegisterModule(nameptr, sh, &eh);
+           //KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
+        }
     }
 #endif
 }
@@ -172,7 +172,7 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
 
     if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
         eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
-	D(bug("[ELF Loader] Not an ELF object\n"));
+        D(bug("[ELF Loader] Not an ELF object\n"));
         SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
@@ -232,17 +232,17 @@ static int load_hunk
     if (hunk)
     {
         hunk->next = 0;
-	hunk->size = hunk_size;
+        hunk->size = hunk_size;
 
         /* In case we are required to honour alignment, and If this section contains
-	   executable code, create a trampoline to its beginning, so that even if the
-	   alignment requirements make the actual code go much after the end of the
-	   hunk structure, the code can still be reached in the usual way.  */
+           executable code, create a trampoline to its beginning, so that even if the
+           alignment requirements make the actual code go much after the end of the
+           hunk structure, the code can still be reached in the usual way.  */
         if (do_align)
         {
-	    if (sh->flags & SHF_EXECINSTR)
+            if (sh->flags & SHF_EXECINSTR)
             {
-	        sh->addr = (char *)AROS_ROUNDUP2
+                sh->addr = (char *)AROS_ROUNDUP2
                 (
                     (IPTR)hunk->data + sizeof(struct FullJumpVec), sh->addralign
                 );
@@ -250,9 +250,9 @@ static int load_hunk
             }
             else
                 sh->addr = (char *)AROS_ROUNDUP2((IPTR)hunk->data, sh->addralign);
-	}
-	else
-	    sh->addr = hunk->data;
+        }
+        else
+            sh->addr = hunk->data;
 
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
@@ -295,7 +295,7 @@ static int relocate
      * eg. with a .debug PROGBITS and a .rel.debug section
      */
     if (!(toreloc->flags & SHF_ALLOC))
-    	return 1;
+        return 1;
 
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
@@ -306,21 +306,21 @@ static int relocate
     {
         struct symbol *sym;
         ULONG *p;
-	IPTR s;
+        IPTR s;
         ULONG shindex;
 
 #ifdef __arm__
-	/*
-	 * R_ARM_V4BX are actually special marks for the linker.
-	 * They even never have a target (shindex == SHN_UNDEF),
-	 * so we simply ignore them before doing any checks.
-	 */
-	if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
-	    continue;
+        /*
+         * R_ARM_V4BX are actually special marks for the linker.
+         * They even never have a target (shindex == SHN_UNDEF),
+         * so we simply ignore them before doing any checks.
+         */
+        if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
+            continue;
 #endif
 
-	sym = &symtab[ELF_R_SYM(rel->info)];
-	p = toreloc->addr + rel->offset;
+        sym = &symtab[ELF_R_SYM(rel->info)];
+        p = toreloc->addr + rel->offset;
 
         if (sym->shindex != SHN_XINDEX)
             shindex = sym->shindex;
@@ -334,47 +334,47 @@ static int relocate
             shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
         }
 
-	DB2(bug("[ELF Loader] Processing symbol %s\n", sh[shsymtab->link].addr + sym->name));
+        DB2(bug("[ELF Loader] Processing symbol %s\n", sh[shsymtab->link].addr + sym->name));
 
         switch (shindex)
         {
 
             case SHN_UNDEF:
                 D(bug("[ELF Loader] Undefined symbol '%s'\n",
-		      (STRPTR)sh[shsymtab->link].addr + sym->name));
+                      (STRPTR)sh[shsymtab->link].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
                 return 0;
 
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",
-		      (STRPTR)sh[shsymtab->link].addr + sym->name));
+                      (STRPTR)sh[shsymtab->link].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
-		      
+                      
                 return 0;
 
             case SHN_ABS:
-	        if (SysBase_sym == NULL)
-		{
-		    if (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
-		    {
-		        SysBase_sym = sym;
-			goto SysBase_yes;
-	            }
-		    else
-		        goto SysBase_no;
-	        }
-		else
-		if (SysBase_sym == sym)
-		{
-		    SysBase_yes: s = (IPTR)&SysBase;
-		}
-		else
-		    SysBase_no:  s = sym->value;
+                if (SysBase_sym == NULL)
+                {
+                    if (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
+                    {
+                        SysBase_sym = sym;
+                        goto SysBase_yes;
+                    }
+                    else
+                        goto SysBase_no;
+                }
+                else
+                if (SysBase_sym == sym)
+                {
+                    SysBase_yes: s = (IPTR)&SysBase;
+                }
+                else
+                    SysBase_no:  s = sym->value;
                 break;
 
-  	    default:
-		s = (IPTR)sh[shindex].addr + sym->value;
- 	}
+            default:
+                s = (IPTR)sh[shindex].addr + sym->value;
+        }
 
         switch (ELF_R_TYPE(rel->info))
         {
@@ -410,7 +410,7 @@ static int relocate
 
             case R_X86_64_NONE: /* No reloc */
                 break;
-		
+                
             #elif defined(__mc68000__)
 
             case R_68K_32:
@@ -429,57 +429,57 @@ static int relocate
             case R_PPC_ADDR32:
                 *p = s + rel->addend;
                 break;
-	
-	    case R_PPC_ADDR16_LO:
-		{
-		    unsigned short *c = (unsigned short *) p;
-		    *c = (s + rel->addend) & 0xffff;
-		}
-		break;
-	    
-	    case R_PPC_ADDR16_HA:
-		{
-		    unsigned short *c = (unsigned short *) p;
-		    ULONG temp = s + rel->addend;
-		    *c = temp >> 16;
-		    if ((temp & 0x8000) != 0)
-			(*c)++;
-		}
-		break;
-	    
+        
+            case R_PPC_ADDR16_LO:
+                {
+                    unsigned short *c = (unsigned short *) p;
+                    *c = (s + rel->addend) & 0xffff;
+                }
+                break;
+            
+            case R_PPC_ADDR16_HA:
+                {
+                    unsigned short *c = (unsigned short *) p;
+                    ULONG temp = s + rel->addend;
+                    *c = temp >> 16;
+                    if ((temp & 0x8000) != 0)
+                        (*c)++;
+                }
+                break;
+            
             case R_PPC_REL16_LO:
-		{
-		    unsigned short *c = (unsigned short *) p;
-		    *c = (s + rel->addend - (ULONG) p) & 0xffff;
-		}
-		break;
+                {
+                    unsigned short *c = (unsigned short *) p;
+                    *c = (s + rel->addend - (ULONG) p) & 0xffff;
+                }
+                break;
 
             case R_PPC_REL16_HA:
-		{
-		    unsigned short *c = (unsigned short *) p;
-		    ULONG temp = s + rel->addend - (ULONG) p;
-		    *c = temp >> 16;
-		    if ((temp & 0x8000) != 0)
-			(*c)++;
-		}
-		break;
+                {
+                    unsigned short *c = (unsigned short *) p;
+                    ULONG temp = s + rel->addend - (ULONG) p;
+                    *c = temp >> 16;
+                    if ((temp & 0x8000) != 0)
+                        (*c)++;
+                }
+                break;
 
             case R_PPC_REL24:
-		*p &= ~0x3fffffc;
+                *p &= ~0x3fffffc;
                 *p |= (s + rel->addend - (ULONG) p) & 0x3fffffc;
                 break;
 
-	    case R_PPC_REL32:
-		*p = s + rel->addend - (ULONG) p;
-		break;
-	    
+            case R_PPC_REL32:
+                *p = s + rel->addend - (ULONG) p;
+                break;
+            
             case R_PPC_NONE:
                 break;
             
             #elif defined(__arm__)
             case R_ARM_CALL:
-	    case R_ARM_JUMP24:
-    	    case R_ARM_PC24:
+            case R_ARM_JUMP24:
+            case R_ARM_PC24:
             {
                 /* On ARM the 24 bit offset is shifted by 2 to the right */
                 signed long offset = (*p & 0x00ffffff) << 2;
@@ -495,8 +495,8 @@ static int relocate
             }
             break;
 
-    	    case R_ARM_MOVW_ABS_NC:
-    	    case R_ARM_MOVT_ABS:
+            case R_ARM_MOVW_ABS_NC:
+            case R_ARM_MOVT_ABS:
             {
                 signed long offset = *p;
                 offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
@@ -512,12 +512,12 @@ static int relocate
             }
             break;
 
-    	    case R_ARM_ABS32:
-        	*p += s;
-        	break;
+            case R_ARM_ABS32:
+                *p += s;
+                break;
 
-    	    case R_ARM_NONE:
-        	break;
+            case R_ARM_NONE:
+                break;
 
             #else
             #    error Your architecture is not supported
@@ -526,7 +526,7 @@ static int relocate
             default:
                 D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info)));
                 SetIoErr(ERROR_BAD_HUNK);
-		return 0;
+                return 0;
         }
     }
 
@@ -590,19 +590,19 @@ BPTR InternalLoadSeg_ELF
         /* Load the section in memory if needed, and make an hunk out of it */
         if (sh[i].flags & SHF_ALLOC)
         {
-	    if (sh[i].size)
-	    {
-	        /* Only allow alignment if this is an executable hunk
-		   or if an executable hunk has been loaded already,
-		   so to avoid the situation in which a data hunk has its
-		   content displaced from the hunk's header in case it's the
-		   first hunk (this happens with Keymaps, for instance).  */
-	        if (sh[i].flags & SHF_EXECINSTR)
-		    exec_hunk_seen = TRUE;
+            if (sh[i].size)
+            {
+                /* Only allow alignment if this is an executable hunk
+                   or if an executable hunk has been loaded already,
+                   so to avoid the situation in which a data hunk has its
+                   content displaced from the hunk's header in case it's the
+                   first hunk (this happens with Keymaps, for instance).  */
+                if (sh[i].flags & SHF_EXECINSTR)
+                    exec_hunk_seen = TRUE;
 
                 if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, exec_hunk_seen, DOSBase))
                     goto error;
-	    }
+            }
         }
 
     }
@@ -613,7 +613,7 @@ BPTR InternalLoadSeg_ELF
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
         if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
         {
-	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
+            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
                 goto error;
 
@@ -642,7 +642,7 @@ end:
         {
              struct hunk *hunk = BPTR2HUNK(BADDR(curr));
              
-	     CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+             CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
              
              curr = hunk->next;
         }

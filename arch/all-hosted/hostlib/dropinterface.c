@@ -9,36 +9,36 @@
     NAME */
 #include <proto/hostlib.h>
 
-	AROS_LH1I(void, HostLib_DropInterface,
+        AROS_LH1I(void, HostLib_DropInterface,
 
 /*  SYNOPSIS */
-   	AROS_LHA(APTR *, interface, A0),
+        AROS_LHA(APTR *, interface, A0),
 
 /*  LOCATION */
-   	APTR , HostLibBase, 6, HostLib)
+        APTR , HostLibBase, 6, HostLib)
 
 /*  FUNCTION
-	Free an array of symbol values obtained by HostLib_GetInterface()
+        Free an array of symbol values obtained by HostLib_GetInterface()
 
     INPUTS
-	interface - A pointer to values array
+        interface - A pointer to values array
 
     RESULT
-	None
+        None
 
     NOTES
-	This function appeared in v2 of hostlib.resource.
+        This function appeared in v2 of hostlib.resource.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	HostLib_GetInterface()
+        HostLib_GetInterface()
 
     INTERNALS
 
-*****************************************************************************/	 
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

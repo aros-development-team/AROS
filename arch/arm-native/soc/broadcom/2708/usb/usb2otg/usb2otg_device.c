@@ -22,7 +22,7 @@ const char devname[]    = MOD_NAME_STRING;
 AROS_INTP(FNAME_DEV(PendingInt));
 AROS_INTP(FNAME_DEV(NakTimeoutInt));
 
-IPTR	__arm_periiobase __attribute__((used)) = 0 ;
+IPTR    __arm_periiobase __attribute__((used)) = 0 ;
 
 /*
  *===========================================================
@@ -466,7 +466,7 @@ ADD2EXPUNGELIB(FNAME_DEV(Expunge), 0)
  */
 AROS_LH1(void, FNAME_DEV(BeginIO),
          AROS_LHA(struct IOUsbHWReq *, ioreq, A1),
-	     LIBBASETYPEPTR, USB2OTGBase, 5, usb2otg)
+             LIBBASETYPEPTR, USB2OTGBase, 5, usb2otg)
 {
     AROS_LIBFUNC_INIT
 
@@ -572,7 +572,7 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
  */
 AROS_LH1(LONG, FNAME_DEV(AbortIO),
          AROS_LHA(struct IOUsbHWReq *, ioreq, A1),
-	     LIBBASETYPEPTR, USB2OTGBase, 6, usb2otg)
+             LIBBASETYPEPTR, USB2OTGBase, 6, usb2otg)
 {
     AROS_LIBFUNC_INIT
 

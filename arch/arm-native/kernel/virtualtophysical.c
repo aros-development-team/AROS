@@ -14,8 +14,8 @@
 extern struct TagItem *BootMsg;
 
 AROS_LH1I(void *, KrnVirtualToPhysical,
-	AROS_LHA(void *, virtual, A0),
-	struct KernelBase *, KernelBase, 20, Kernel)
+        AROS_LHA(void *, virtual, A0),
+        struct KernelBase *, KernelBase, 20, Kernel)
 {
     AROS_LIBFUNC_INIT
 

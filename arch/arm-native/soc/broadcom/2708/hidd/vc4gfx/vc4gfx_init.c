@@ -36,7 +36,7 @@
 
 #define MBoxBase      xsd->vcsd_MBoxBase
 
-IPTR    	__arm_periiobase __attribute__((used)) = 0 ;
+IPTR            __arm_periiobase __attribute__((used)) = 0 ;
 APTR KernelBase __attribute__((used)) = NULL;
 
 static void FNAME_SUPPORT(FreeAttrBases)(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
@@ -45,9 +45,9 @@ static void FNAME_SUPPORT(FreeAttrBases)(const STRPTR *iftable, OOP_AttrBase *ba
 
     for (i = 0; i < num; i++)
     {
-	if (bases[i])
+        if (bases[i])
         {
-	        OOP_ReleaseAttrBase(iftable[i]);
+                OOP_ReleaseAttrBase(iftable[i]);
             bases[i] = (OOP_AttrBase)0;
         }
     }
@@ -59,12 +59,12 @@ static BOOL FNAME_SUPPORT(GetAttrBases)(const STRPTR *iftable, OOP_AttrBase *bas
 
     for (i = 0; i < num; i++)
     {
-	bases[i] = OOP_ObtainAttrBase(iftable[i]);
-	if (!bases[i])
-	{
-	    FNAME_SUPPORT(FreeAttrBases)(iftable, bases, i);
-	    return FALSE;
-	}
+        bases[i] = OOP_ObtainAttrBase(iftable[i]);
+        if (!bases[i])
+        {
+            FNAME_SUPPORT(FreeAttrBases)(iftable, bases, i);
+            return FALSE;
+        }
     }
 
     return TRUE;

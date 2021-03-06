@@ -33,35 +33,35 @@ volatile ata_5k2_t *ata_5k2;
 
 static void ata_out(UBYTE val, UWORD offset, IPTR port, APTR data)
 {
-	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
+        while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
-	if (port +offset * 4 == 0x3a7c)
-	{
-		ULONG val = inl(&mbar[port + offset * 4]);
-		outb(0, &mbar[port + 1 + offset * 4]);
-	}
+        if (port +offset * 4 == 0x3a7c)
+        {
+                ULONG val = inl(&mbar[port + offset * 4]);
+                outb(0, &mbar[port + 1 + offset * 4]);
+        }
 
-	outl((ULONG)val << 24, &mbar[port + offset * 4]);
+        outl((ULONG)val << 24, &mbar[port + offset * 4]);
 }
 
 static UBYTE ata_in(UWORD offset, IPTR port, APTR data)
 {
-	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
+        while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
-	if (port +offset * 4 == 0x3a7c)
-	{
-		ULONG val = inl(&mbar[port + offset * 4]);
-		outb(0, &mbar[port + 1 + offset * 4]);
-	}
+        if (port +offset * 4 == 0x3a7c)
+        {
+                ULONG val = inl(&mbar[port + offset * 4]);
+                outb(0, &mbar[port + 1 + offset * 4]);
+        }
 
-	return inl(&mbar[port + offset * 4]) >> 24;
+        return inl(&mbar[port + offset * 4]) >> 24;
 }
 
 static void ata_outl(ULONG val, UWORD offset, IPTR port, APTR data)
 {
-	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
+        while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
-	outl_le(val, &mbar[port + offset * 4]);
+        outl_le(val, &mbar[port + offset * 4]);
 }
 
 static VOID ata_insw(APTR address, UWORD port, ULONG count, APTR data)
@@ -73,16 +73,16 @@ static VOID ata_insw(APTR address, UWORD port, ULONG count, APTR data)
 
     count &= ~1;
 
-	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
+        while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
-	asm volatile("sync");
-	while(count)
+        asm volatile("sync");
+        while(count)
     {
-//    	*addr++ = inw(p);
-		*addr++ = *p;
+//      *addr++ = inw(p);
+                *addr++ = *p;
         count -= 2;
     }
-	asm volatile("sync");
+        asm volatile("sync");
 }
 
 static VOID ata_outsw(APTR address, UWORD port, ULONG count, APTR data)
@@ -94,27 +94,27 @@ static VOID ata_outsw(APTR address, UWORD port, ULONG count, APTR data)
 
     count &= ~1;
 
-	while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
+        while(inl(&ata_5k2->ata_status) & 0x80000000) asm volatile("nop");
 
-	asm volatile("sync");
-	while(count)
+        asm volatile("sync");
+        while(count)
     {
-//    	outw(*addr++, p);
-		*p = *addr++;
+//      outw(*addr++, p);
+                *p = *addr++;
         count -= 2;
     }
-	asm volatile("sync");
+        asm volatile("sync");
 }
 
 static void ata_400ns()
 {
-	register ULONG tick_old, tick;
+        register ULONG tick_old, tick;
 
-	asm volatile("mftbl %0":"=r"(tick_old));
+        asm volatile("mftbl %0":"=r"(tick_old));
 
-	do {
-		asm volatile("mftbl %0":"=r"(tick));
-	} while(tick < (tick_old + 15));
+        do {
+                asm volatile("mftbl %0":"=r"(tick));
+        } while(tick < (tick_old + 15));
 }
 
 static AROS_INTH1(ata_Interrupt, void *, data)
@@ -150,14 +150,14 @@ static BOOL CreateInterrupt(struct ata_Bus *bus)
     return TRUE;
 }
 
-static const struct ata_BusDriver mpc_driver = 
+static const struct ata_BusDriver mpc_driver =
 {
     ata_out,
     ata_in,
     ata_outl,
     ata_insw,
     ata_outsw,
-    ata_insw,	/* These are intentionally the same as 16-bit routines */
+    ata_insw,   /* These are intentionally the same as 16-bit routines */
     ata_outsw,
     CreateInterrupt
 };
@@ -177,69 +177,69 @@ static int ata_mpc_init(struct ataBase *LIBBASE)
     void *key = OF_OpenKey("/builtin");
     if (key)
     {
-    	void *prop = OF_FindProperty(key, "reg");
-    	if (prop)
-    	{
-    		intptr_t *m_ = OF_GetPropValue(prop);
-			mbar = (UBYTE *)*m_;
-			ata_5k2 = (ata_5k2_t *)(*m_ + 0x3a00);
+        void *prop = OF_FindProperty(key, "reg");
+        if (prop)
+        {
+                intptr_t *m_ = OF_GetPropValue(prop);
+                        mbar = (UBYTE *)*m_;
+                        ata_5k2 = (ata_5k2_t *)(*m_ + 0x3a00);
 
-    		D(bug("[ATA] MBAR located at %08x\n", mbar));
-    	}
+                D(bug("[ATA] MBAR located at %08x\n", mbar));
+        }
 
-    	/* Get the bus frequency for Efika */
-    	prop = OF_FindProperty(key, "bus-frequency");
-    	if (prop)
-    	{
-    		bus_frequency = *(uint32_t *)OF_GetPropValue(prop);
-    		D(bug("[ATA] bus frequency: %d\n", bus_frequency));
-    	}
+        /* Get the bus frequency for Efika */
+        prop = OF_FindProperty(key, "bus-frequency");
+        if (prop)
+        {
+                bus_frequency = *(uint32_t *)OF_GetPropValue(prop);
+                D(bug("[ATA] bus frequency: %d\n", bus_frequency));
+        }
     }
 
     key = OF_OpenKey("/builtin/ata");
     if (key)
     {
-    	void *prop = OF_FindProperty(key, "reg");
-		if (prop)
-		{
-			ata_5k2 = *(ata_5k2_t **)OF_GetPropValue(prop);
+        void *prop = OF_FindProperty(key, "reg");
+                if (prop)
+                {
+                        ata_5k2 = *(ata_5k2_t **)OF_GetPropValue(prop);
 
-			D(bug("[ATA] ATA registers at %08x\n", ata_5k2));
-		}
+                        D(bug("[ATA] ATA registers at %08x\n", ata_5k2));
+                }
     }
 
     key = OF_OpenKey("/builtin/ata/bestcomm-task");
     if (key)
     {
-    	void *prop = OF_FindProperty(key, "taskid");
-		if (prop)
-		{
-			bestcomm_taskid = *(uint32_t *)OF_GetPropValue(prop);
+        void *prop = OF_FindProperty(key, "taskid");
+                if (prop)
+                {
+                        bestcomm_taskid = *(uint32_t *)OF_GetPropValue(prop);
 
-			D(bug("[ATA] ATA uses bestcomm task %d\n", bestcomm_taskid));
-		}
+                        D(bug("[ATA] ATA uses bestcomm task %d\n", bestcomm_taskid));
+                }
     }
 
     key = OF_OpenKey("/builtin/sram");
     if (key)
     {
-    	void *prop = OF_FindProperty(key, "reg");
-    	if (prop)
-    	{
-    		sram = *(void **)OF_GetPropValue(prop);
-    	}
-    	D(bug("[ATA] SRAM at %08x\n", sram));
+        void *prop = OF_FindProperty(key, "reg");
+        if (prop)
+        {
+                sram = *(void **)OF_GetPropValue(prop);
+        }
+        D(bug("[ATA] SRAM at %08x\n", sram));
     }
 
     key = OF_OpenKey("/builtin/bestcomm");
     if (key)
     {
-    	void *prop = OF_FindProperty(key, "reg");
-    	if (prop)
-    	{
-    		bestcomm = *(void **)OF_GetPropValue(prop);
-    	}
-    	D(bug("[ATA] bestcomm at %08x\n", bestcomm));
+        void *prop = OF_FindProperty(key, "reg");
+        if (prop)
+        {
+                bestcomm = *(void **)OF_GetPropValue(prop);
+        }
+        D(bug("[ATA] bestcomm at %08x\n", bestcomm));
     }
 
     D(bug("[ATA] ata_config=%08x\n", inl(&ata_5k2->ata_config)));
@@ -255,9 +255,9 @@ static int ata_mpc_init(struct ataBase *LIBBASE)
     outl(0xc3000000, &ata_5k2->ata_config);
 
     for (i=0; i < 100 / 4; i++)
-    	ata_400ns();
+        ata_400ns();
 
-	/* Hacky timing pokes */
+        /* Hacky timing pokes */
     outl(0x03000000, &ata_5k2->ata_config);
     outl(132 << 16, &ata_5k2->ata_invalid);
 

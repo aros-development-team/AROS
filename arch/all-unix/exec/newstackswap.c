@@ -27,7 +27,7 @@
  * the define here
  */
 #ifndef SS_ONSTACK
-#define SS_ONSTACK	0x0001
+#define SS_ONSTACK      0x0001
 #endif
 
 static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
@@ -42,21 +42,21 @@ static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
     bug("[NewStackSwap] SP at 0x%p\n", AROS_GET_SP);
     bug("[NewStackSwap] Function address: 0x%p\n", func);
     for (i = 0; i < 8; i++)
-    	bug("[NewStackSwap] args[%u] = 0x%p\n", i, (void *)args[i]);
+        bug("[NewStackSwap] args[%u] = 0x%p\n", i, (void *)args[i]);
 #endif
 
     *ret = func(args[0], args[1], args[2], args[3],
-		args[4], args[5], args[6], args[7]);
+                args[4], args[5], args[6], args[7]);
 
-    /* this was called from NewStackSwap() which will enable again */        
+    /* this was called from NewStackSwap() which will enable again */
     Disable();
 }
 
 AROS_LH3(IPTR, NewStackSwap,
-	 AROS_LHA(struct StackSwapStruct *,  sss, A0),
-	 AROS_LHA(LONG_FUNC, entry, A1),
-	 AROS_LHA(struct StackSwapArgs *, args, A2),
-	 struct ExecBase *, SysBase, 134, Exec)
+         AROS_LHA(struct StackSwapStruct *,  sss, A0),
+         AROS_LHA(LONG_FUNC, entry, A1),
+         AROS_LHA(struct StackSwapArgs *, args, A2),
+         struct ExecBase *, SysBase, 134, Exec)
 {
     AROS_LIBFUNC_INIT
 
@@ -82,7 +82,7 @@ AROS_LH3(IPTR, NewStackSwap,
     ucx.uc_link           = &ucx_return;
 
     if (me->tc_Flags & TF_STACKCHK)
-    	memset(ucx.uc_stack.ss_sp, 0xE1, ucx.uc_stack.ss_size);
+        memset(ucx.uc_stack.ss_sp, 0xE1, ucx.uc_stack.ss_size);
 
     D(bug("[NewStackSwap] Prepared stack: 0x%p - 0x%p (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
 

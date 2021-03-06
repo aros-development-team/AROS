@@ -7,7 +7,7 @@
 #include "kernel_base.h"
 
 AROS_LH0(int, KrnMayGetChar,
-	 struct KernelBase *, KernelBase, 26, Kernel)
+         struct KernelBase *, KernelBase, 26, Kernel)
 {
     AROS_LIBFUNC_INIT
 

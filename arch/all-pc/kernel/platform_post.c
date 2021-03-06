@@ -28,7 +28,7 @@
 
 #define D(x)
 
-/* 
+/*
  * This file contains code that is run once Exec has been brought up - and is launched
  * via the RomTag/Autoinit routines in Exec.
  *
@@ -95,9 +95,9 @@ APTR PlatformAllocIDT(struct KernelBase *LIBBASE, apicid_t _APICID)
 extern void kernelpost_end(void);
 
 static AROS_UFP3 (APTR, KernelPost,
-		  AROS_UFPA(struct Library *, lh, D0),
-		  AROS_UFPA(BPTR, segList, A0),
-		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+                  AROS_UFPA(struct Library *, lh, D0),
+                  AROS_UFPA(BPTR, segList, A0),
+                  AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 static const TEXT kernelpost_namestring[] = "kernel.post";
 static const TEXT kernelpost_versionstring[] = "kernel.post 1.1\n";
@@ -138,9 +138,9 @@ AROS_UFH3(void, test_ipi_hook,
 #endif
 
 static AROS_UFH3 (APTR, KernelPost,
-		  AROS_UFHA(struct Library *, lh, D0),
-		  AROS_UFHA(BPTR, segList, A0),
-		  AROS_UFHA(struct ExecBase *, SysBase, A6)
+                  AROS_UFHA(struct Library *, lh, D0),
+                  AROS_UFHA(BPTR, segList, A0),
+                  AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT

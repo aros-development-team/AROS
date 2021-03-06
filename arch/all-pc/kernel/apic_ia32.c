@@ -37,10 +37,10 @@
 #include "apic_ia32.h"
 
 #define D(x)
-#define DINT(x) 
+#define DINT(x)
 #define DWAKE(x)         /* Badly interferes with AP startup */
 #define DID(x)           /* Badly interferes with everything */
-#define DPIT(x) 
+#define DPIT(x)
 /* #define DEBUG_WAIT */
 
 /*
@@ -489,7 +489,7 @@ static BOOL APIC_isMSHyperV(void)
                 "cpuid"
                     : "=a"(res[0]), "=b"(res[1]), "=c"(res[2]), "=d"(res[3])
                     : "a"(arg)
-                    : 
+                    :
             );
             /*
              * res[0]           contains the number of CPUID functions
@@ -503,7 +503,7 @@ static BOOL APIC_isMSHyperV(void)
                     return TRUE;
             }
         }
-	return FALSE;
+        return FALSE;
 }
 
 
@@ -521,7 +521,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 #ifdef CONFIG_LEGACY
     /* 82489DX doesn't report no. of LVT entries. */
     if (!APIC_INTEGRATED(apic_ver))
-    	maxlvt = 2;
+        maxlvt = 2;
 #endif
 
     D(
@@ -642,7 +642,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         /* Set the timer to one-shot mode, no interrupt, 1:1 divisor */
         APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
         APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
-        APIC_REG(__APICBase, APIC_TIMER_ICR) = 0x80000000;	/* Just some very large value */
+        APIC_REG(__APICBase, APIC_TIMER_ICR) = 0x80000000;      /* Just some very large value */
 
         D(bug("[Kernel:APIC-IA32.%03u] %s: Calibrating timers ...\n", cpuNum, __func__));
 
@@ -771,24 +771,24 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
      */
     if (!APIC_INTEGRATED(apic_ver))
     {
-    	/*
-    	 * BIOS warm reset magic, part one.
-    	 * Write real-mode bootstrap routine address to 40:67 (real-mode address) location.
-    	 * This is standard feature of IBM PC AT BIOS. If a warm reset condition is detected,
-    	 * the BIOS jumps to the given address.
-     	 */
-	DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: Setting BIOS vector for trampoline @ %p ..\n", cpuNo, __func__, wake_apicstartrip));
-	*((volatile unsigned short *)0x469) = (IPTR)wake_apicstartrip >> 4;
-	*((volatile unsigned short *)0x467) = 0; /* Actually wake_apicstartrip & 0x0F, it's page-aligned. */
+        /*
+         * BIOS warm reset magic, part one.
+         * Write real-mode bootstrap routine address to 40:67 (real-mode address) location.
+         * This is standard feature of IBM PC AT BIOS. If a warm reset condition is detected,
+         * the BIOS jumps to the given address.
+         */
+        DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: Setting BIOS vector for trampoline @ %p ..\n", cpuNo, __func__, wake_apicstartrip));
+        *((volatile unsigned short *)0x469) = (IPTR)wake_apicstartrip >> 4;
+        *((volatile unsigned short *)0x467) = 0; /* Actually wake_apicstartrip & 0x0F, it's page-aligned. */
 
-	/*
-	 * BIOS warm reset magic, part two.
-	 * This writes 0x0A into CMOS RAM, location 0x0F. This signals a warm reset condition to BIOS,
-	 * making part one work.
-	 */
-	DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: Setting warm reset code ..\n", cpuNo, __func__));
-	outb(0xf, 0x70);
-	outb(0xa, 0x71);
+        /*
+         * BIOS warm reset magic, part two.
+         * This writes 0x0A into CMOS RAM, location 0x0F. This signals a warm reset condition to BIOS,
+         * making part one work.
+         */
+        DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: Setting warm reset code ..\n", cpuNo, __func__));
+        outb(0xf, 0x70);
+        outb(0xa, 0x71);
     }
 #endif
 
@@ -796,11 +796,11 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     wrcr(cr3, rdcr(cr3));
 
     /* First we send the INIT command (reset the core). Vector must be zero for this. */
-    status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_INT_ASSERT | ICR_DM_INIT);    
+    status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_INT_ASSERT | ICR_DM_INIT);
     if (status_ipisend)
     {
-    	bug("[Kernel:APIC-IA32.%03u] %s: Error asserting INIT\n", cpuNo, __func__);
-    	return status_ipisend;
+        bug("[Kernel:APIC-IA32.%03u] %s: Error asserting INIT\n", cpuNo, __func__);
+        return status_ipisend;
     }
 
     /* Deassert INIT after a small delay */
@@ -810,8 +810,8 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, (2 << 18) | ICR_INT_LEVELTRIG | ICR_DM_INIT);
     if (status_ipisend)
     {
-    	bug("[Kernel:APIC-IA32.%03u] %s: Error deasserting INIT\n", cpuNo, __func__);
-    	return status_ipisend;
+        bug("[Kernel:APIC-IA32.%03u] %s: Error deasserting INIT\n", cpuNo, __func__);
+        return status_ipisend;
     }
 
     /* memory barrier */
@@ -821,8 +821,8 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     /* If it's 82489DX, we are done. */
     if (!APIC_INTEGRATED(apic_ver))
     {
-	DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: 82489DX detected, wakeup done\n", cpuNo, __func__));
-    	return 0;
+        DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: 82489DX detected, wakeup done\n", cpuNo, __func__));
+        return 0;
     }
 #endif
 
@@ -835,7 +835,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     {
         DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: Attempting STARTUP .. %u\n", cpuNo, __func__, start_count));
 
-	/* Clear any pending error condition */
+        /* Clear any pending error condition */
         APIC_REG(__APICBase, APIC_ESR) = 0;
 
         /*
@@ -848,34 +848,34 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
         krnClockSourceUdelay(200);
 
 #ifdef CONFIG_LEGACY
-	/* Pentium erratum 3AP quirk */
+        /* Pentium erratum 3AP quirk */
         if (APIC_LVT(apic_ver) > 3)
             APIC_REG(__APICBase, APIC_ESR) = 0;
 #endif
 
         status_ipirecv = APIC_REG(__APICBase, APIC_ESR) & 0xEF;
 
-	/*
-	 * EXPERIMENTAL:
-	 * On my machine (macmini 3,1, as OS X system profiler says), the core starts up from first
-	 * attempt. The second attempt ends up in error (according to the documentation, the STARTUP
-	 * can be accepted only once, while the core in RESET or INIT state, and first STARTUP, if
-	 * successful, brings the core out of this state).
-	 * Here we try to detect this condition. If the core accepted STARTUP, we suggest that it has
-	 * started up, and break the loop.
-	 * A topic at osdev.org forum (http://forum.osdev.org/viewtopic.php?f=1&t=23018)
-	 * also tells about some problems with double STARTUP. According to it, the second STARTUP can
-	 * manage to re-run the core from the given address, leaving it in 64-bit mode, causing it to crash.
-	 *
-	 * If startup problems pops up (the core doesn't respond and AROS halts at "Launching APIC no X" stage),
-	 * the following two variations of this algorithm can be tried:
-	 * a) Always send STARTUP twice, but signal error condition only if both attempts failed.
-	 * b) Send first STARTUP, abort on error. Allow second attempt to fail and ignore its result.
-	 *
-	 *								Sonic <pavel_fedin@mail.ru>
-	 */
-	if (!status_ipisend && !status_ipirecv)
-	    break;
+        /*
+         * EXPERIMENTAL:
+         * On my machine (macmini 3,1, as OS X system profiler says), the core starts up from first
+         * attempt. The second attempt ends up in error (according to the documentation, the STARTUP
+         * can be accepted only once, while the core in RESET or INIT state, and first STARTUP, if
+         * successful, brings the core out of this state).
+         * Here we try to detect this condition. If the core accepted STARTUP, we suggest that it has
+         * started up, and break the loop.
+         * A topic at osdev.org forum (http://forum.osdev.org/viewtopic.php?f=1&t=23018)
+         * also tells about some problems with double STARTUP. According to it, the second STARTUP can
+         * manage to re-run the core from the given address, leaving it in 64-bit mode, causing it to crash.
+         *
+         * If startup problems pops up (the core doesn't respond and AROS halts at "Launching APIC no X" stage),
+         * the following two variations of this algorithm can be tried:
+         * a) Always send STARTUP twice, but signal error condition only if both attempts failed.
+         * b) Send first STARTUP, abort on error. Allow second attempt to fail and ignore its result.
+         *
+         *                                                              Sonic <pavel_fedin@mail.ru>
+         */
+        if (!status_ipisend && !status_ipirecv)
+            break;
     }
 
     DWAKE(bug("[Kernel:APIC-IA32.%03u] %s: STARTUP run status 0x%08X, error 0x%08X\n", cpuNo, __func__, status_ipisend, status_ipirecv));

@@ -39,11 +39,11 @@
 #define DSC(x)
 
 #ifdef SIGCORE_NEED_SA_SIGINFO
-#define SETHANDLER(sa, h) 			\
-    sa.sa_sigaction = h ## _gate;	\
+#define SETHANDLER(sa, h)                       \
+    sa.sa_sigaction = h ## _gate;       \
     sa.sa_flags |= SA_SIGINFO
 #else
-#define SETHANDLER(sa, h) 			\
+#define SETHANDLER(sa, h)                       \
     sa.sa_handler = h ## _gate;
 #endif
 
@@ -65,8 +65,8 @@ static void core_TrapHandler(int sig, regs_t *regs)
     /* Translate UNIX trap number to CPU and exec trap numbers */
     for (s = sigs; s->sig != -1; s++)
     {
-	if (sig == s->sig)
-	    break;
+        if (sig == s->sig)
+            break;
     }
 
     /*
@@ -82,9 +82,9 @@ static void core_TrapHandler(int sig, regs_t *regs)
     amigaTrap = s->AmigaTrap;
     if (s->CPUTrap != -1)
     {
-	if (krnRunExceptionHandlers(KernelBase, s->CPUTrap, &ctx))
-	    /* Do not call exec trap handler */
-	    amigaTrap = -1;
+        if (krnRunExceptionHandlers(KernelBase, s->CPUTrap, &ctx))
+            /* Do not call exec trap handler */
+            amigaTrap = -1;
     }
 
     /*
@@ -93,7 +93,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
      * fixed the problem somehow and we may safely continue.
      */
     if (amigaTrap != -1)
-    	core_Trap(amigaTrap, &ctx);
+        core_Trap(amigaTrap, &ctx);
 
     /* Trap handler(s) have possibly modified the context, so
        we convert it back before returning */
@@ -110,10 +110,10 @@ static void core_IRQ(int sig, regs_t *sc)
 
     /* Just additional protection - what if there's more than 32 signals? */
     if (sig < IRQ_COUNT)
-	krnRunIRQHandlers(KernelBase, sig);
+        krnRunIRQHandlers(KernelBase, sig);
 
     if (UKB(KernelBase)->SupervisorCount == 1)
-	core_ExitInterrupt(sc);
+        core_ExitInterrupt(sc);
 
     SUPERVISOR_LEAVE;
 }
@@ -178,21 +178,21 @@ int core_Start(void *libc)
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
     {
-    	krnPanic(KernelBase, "Failed to open hostlib.resource");
-    	return FALSE;
+        krnPanic(KernelBase, "Failed to open hostlib.resource");
+        return FALSE;
     }
 
     pd->iface = (struct KernelInterface *)HostLib_GetInterface(libc, kernel_functions, &r);
     if (!pd->iface)
     {
-    	krnPanic(KernelBase, "Failed to allocate host-side libc interface");
-    	return FALSE;
+        krnPanic(KernelBase, "Failed to allocate host-side libc interface");
+        return FALSE;
     }
 
     if (r)
     {
-    	krnPanic(KernelBase, "Failed to resove %u functions from host libc", r);
-    	return FALSE;
+        krnPanic(KernelBase, "Failed to resove %u functions from host libc", r);
+        return FALSE;
     }
 
     /* Cache errno pointer, for context switching */
@@ -209,16 +209,16 @@ int core_Start(void *libc)
     SIGEMPTYSET(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
 
-    /* 
+    /*
      * These ones we consider as processor traps.
      * They are not be blocked by KrnCli()
      */
     SETHANDLER(sa, core_TrapHandler);
     for (s = sigs; s->sig != -1; s++)
     {
-	pd->iface->sigaction(s->sig, &sa, NULL);
-	AROS_HOST_BARRIER
-	SIGDELSET(&pd->sig_int_mask, s->sig);
+        pd->iface->sigaction(s->sig, &sa, NULL);
+        AROS_HOST_BARRIER
+        SIGDELSET(&pd->sig_int_mask, s->sig);
     }
 
     /* SIGUSRs are software interrupts, we also never block them */

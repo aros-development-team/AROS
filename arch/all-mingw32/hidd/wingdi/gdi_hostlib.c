@@ -114,7 +114,7 @@ static int gdi_hostlib_init(LIBBASETYPEPTR LIBBASE) {
         if (native_func)
             return TRUE;
         HostLib_DropInterface((APTR *)user_func);
-    	HostLib_Close(user_handle, NULL);
+        HostLib_Close(user_handle, NULL);
     }
     HostLib_DropInterface((APTR *)gdi_func);
     HostLib_Close(gdi_handle, NULL);

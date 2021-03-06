@@ -13,16 +13,16 @@
 #include "kbd.h"
 
 #undef XSD
-#define XSD(cl) 	ksd
+#define XSD(cl)         ksd
 
 static int AmigaKbd_Init(struct kbdbase *LIBBASE)
 {
     struct kbd_staticdata *ksd = &LIBBASE->ksd;
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd	, &HiddAttrBase   },
-        {IID_Hidd_Kbd	, &HiddKbdAB   },
-        {NULL	    	, NULL      	    }
+        {IID_Hidd       , &HiddAttrBase   },
+        {IID_Hidd_Kbd   , &HiddKbdAB   },
+        {NULL           , NULL              }
     };
     OOP_Object *kbd;
     OOP_Object *drv = NULL;
@@ -33,16 +33,16 @@ static int AmigaKbd_Init(struct kbdbase *LIBBASE)
 
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     if (kbd) {
-	if (OOP_ObtainAttrBases(attrbases))
-	{
-	    HiddKbdBase = OOP_GetMethodID(IID_Hidd_Kbd, 0);
-	    drv = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->ksd.kbdclass, NULL);
-	}
-	OOP_DisposeObject(kbd);
+        if (OOP_ObtainAttrBases(attrbases))
+        {
+            HiddKbdBase = OOP_GetMethodID(IID_Hidd_Kbd, 0);
+            drv = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->ksd.kbdclass, NULL);
+        }
+        OOP_DisposeObject(kbd);
     }
 
     if (!drv)
-	return FALSE;
+        return FALSE;
 
     LIBBASE->library.lib_OpenCnt = 1;
 
@@ -54,8 +54,8 @@ static int AmigaKbd_Expunge(struct kbdbase *LIBBASE)
     struct kbd_staticdata *ksd = &LIBBASE->ksd;
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
-        {NULL	    	, NULL      	    }
+        {IID_Hidd_Kbd   , &LIBBASE->ksd.hiddKbdAB   },
+        {NULL           , NULL              }
     };
     
     EnterFunc(bug("AmigaKbd_Expunge\n"));

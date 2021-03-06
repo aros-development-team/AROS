@@ -92,7 +92,7 @@ static int Timer_Init(struct TimerBase *TimerBase)
     /* Install timer IRQ handler */
     TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(IRQ_TIMER0 + TICK_TIMER, Timer1Tick, TimerBase, SysBase);
     if (!TimerBase->tb_TimerIRQHandle)
-    	return FALSE;
+        return FALSE;
 
     D(bug("[Timer] Timer_Init: TimerIRQHandle @ 0x%p\n", TimerBase->tb_TimerIRQHandle));
 
@@ -106,19 +106,19 @@ static int Timer_Init(struct TimerBase *TimerBase)
     BootLoaderBase = OpenResource("bootloader.resource");
     if (BootLoaderBase)
     {
-	struct List *args = GetBootInfo(BL_Args);
+        struct List *args = GetBootInfo(BL_Args);
 
-	if (args)
+        if (args)
         {
             struct Node *node;
 
             for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ)
             {
-		if (strncasecmp(node->ln_Name, "eclock=", 7) == 0)
-		{
-		    TimerBase->tb_eclock_rate = atoi(&node->ln_Name[7]);
-		    break;
-		}
+                if (strncasecmp(node->ln_Name, "eclock=", 7) == 0)
+                {
+                    TimerBase->tb_eclock_rate = atoi(&node->ln_Name[7]);
+                    break;
+                }
             }
         }
     }
@@ -150,7 +150,7 @@ static int Timer_Expunge(struct TimerBase *TimerBase)
     D(bug("[Timer] Timer_Expunge()\n"));
 
     if (TimerBase->tb_TimerIRQHandle)
-    	KrnRemIRQHandler(TimerBase->tb_TimerIRQHandle);
+        KrnRemIRQHandler(TimerBase->tb_TimerIRQHandle);
 
     return TRUE;
 }

@@ -45,22 +45,22 @@ void arm_dcache_invalidate(uint32_t addr, uint32_t length)
 
 void *malloc(size_t size)
 {
-	void *ret = NULL;
+        void *ret = NULL;
 
-	size = (size + 15) & ~15;
+        size = (size + 15) & ~15;
 
-	if (size <= free_memory)
-	{
-		ret = first_free;
+        if (size <= free_memory)
+        {
+                ret = first_free;
 
-		first_free += size;
-		free_memory -= size;
-	}
+                first_free += size;
+                free_memory -= size;
+        }
 
         if (!ret)
                 kprintf("[BOOT] malloc - OUT OF MEMORY\n");
 
-	return ret;
+        return ret;
 }
 
 void mem_init(void)
@@ -77,12 +77,12 @@ void explicit_mem_init(void *first, unsigned long free)
 
 size_t mem_avail()
 {
-	return free_memory;
+        return free_memory;
 }
 
 size_t mem_used()
 {
-	return BOOT_TMP_SIZE - free_memory;
+        return BOOT_TMP_SIZE - free_memory;
 }
 
 int32_t strlen(const char *c)

@@ -22,7 +22,7 @@ void sdcard_WaitNano(register ULONG ns, struct SDCardBase *SDCardBase)
 {
     while (ns > 0)
     {
-	asm volatile("mov r0, r0\n");
-	--ns;
+        asm volatile("mov r0, r0\n");
+        --ns;
     }
 }

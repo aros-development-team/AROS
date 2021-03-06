@@ -104,7 +104,7 @@ void core_InitMMU(struct CPUMMUConfig *MMU)
 
         for (j=0; j < 512; j++)
         {
-            /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */        
+            /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */
             unsigned long base = (i << 30) + (j << 21);
 
             pdes[j].p  = 1;
@@ -151,16 +151,16 @@ void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop)
 
     if (!MMU->mmu_PML4)
     {
-	/*
-	 * Allocate MMU pages and directories. Four PDE directories (PDE2M structures)
-	 * are enough to map whole 4GB address space.
-	 */
-    	MMU->mmu_PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
-    	MMU->mmu_PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
-    	MMU->mmu_PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * MMU->mmu_PDEPageCount, PAGE_SIZE);
-    	MMU->mmu_PTE  = krnAllocBootMemAligned(sizeof(struct PTE)   * 512 * 32, PAGE_SIZE);
+        /*
+         * Allocate MMU pages and directories. Four PDE directories (PDE2M structures)
+         * are enough to map whole 4GB address space.
+         */
+        MMU->mmu_PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
+        MMU->mmu_PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
+        MMU->mmu_PDE  = krnAllocBootMemAligned(sizeof(struct PDE2M) * MMU->mmu_PDEPageCount, PAGE_SIZE);
+        MMU->mmu_PTE  = krnAllocBootMemAligned(sizeof(struct PTE)   * 512 * 32, PAGE_SIZE);
 
-    	D(bug("[Kernel] Allocated PML4 0x%p, PDP 0x%p, PDE 0x%p PTE 0x%p\n", MMU->mmu_PML4, MMU->mmu_PDP, MMU->mmu_PDE, MMU->mmu_PTE));
+        D(bug("[Kernel] Allocated PML4 0x%p, PDP 0x%p, PDE 0x%p PTE 0x%p\n", MMU->mmu_PML4, MMU->mmu_PDP, MMU->mmu_PDE, MMU->mmu_PTE));
     }
 
     core_InitMMU(MMU);
@@ -195,7 +195,7 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
     if (pde[pde_off].ps)
     {
         /* work on local copy of the affected PDE */
-        struct PDE4K tmp_pde = pde[pde_off]; 
+        struct PDE4K tmp_pde = pde[pde_off];
         struct PDE2M *pde2 = (struct PDE2M *)pde;
         intptr_t base = ((IPTR)pde2[pde_off].base_low << 13) | ((IPTR)pde2[pde_off].base_high << 32);
         int i;
@@ -230,7 +230,7 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
     pte[pte_off].rw = rw ? 1:0;
     pte[pte_off].us = us ? 1:0;
     pte[pte_off].p = p ? 1:0;
-    asm volatile ("invlpg (%0)"::"r"(addr));   
+    asm volatile ("invlpg (%0)"::"r"(addr));
 }
 
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us)

@@ -34,27 +34,27 @@ static int bsdsocket_Init(struct bsdsocketBase *SocketBase)
     APTR HostLibBase = OpenResource("hostlib.resource");
 
     if (!HostLibBase)
-	return FALSE;
+        return FALSE;
     SocketBase->HostLibBase = HostLibBase;
 
     SocketBase->winsock = HostLib_Open("Ws2_32.dll", NULL);
     if (!SocketBase->winsock)
-	return FALSE;
+        return FALSE;
 
     SocketBase->resolver = HostLib_Open("Libs\\Host\\bsdsocket.dll", NULL);
     if (!SocketBase->resolver)
-	return FALSE;
+        return FALSE;
 
     SocketBase->WSIFace = (struct WinSockInterface *)HostLib_GetInterface(SocketBase->winsock, ws_functions, NULL);
     if (!SocketBase->WSIFace)
     {
-	D(bug("[socket] Failed to obtain winsock interface\n"));
-	return FALSE;
+        D(bug("[socket] Failed to obtain winsock interface\n"));
+        return FALSE;
     }
 
     SocketBase->ResIFace = (struct HostSocketInterface *)HostLib_GetInterface(SocketBase->resolver, res_functions, NULL);
     if (!SocketBase->ResIFace)
-	return FALSE;
+        return FALSE;
 
     NewList((struct List *)&SocketBase->socks);
 
@@ -63,7 +63,7 @@ static int bsdsocket_Init(struct bsdsocketBase *SocketBase)
     Permit();
 
     if (!SocketBase->ctl)
-	return FALSE;
+        return FALSE;
 
     return TRUE;
 }
@@ -74,28 +74,28 @@ static int bsdsocket_Cleanup(struct bsdsocketBase *SocketBase)
 
     D(bug("[socket] Cleanup, HostLibBase is 0x%p\n", HostLibBase));
     if (!HostLibBase)
-	return TRUE;
+        return TRUE;
 
     if (SocketBase->ResIFace)
     {
-	if (SocketBase->ctl)
-	{
-	    int res;
+        if (SocketBase->ctl)
+        {
+            int res;
 
-	    Forbid();
-	    res = SocketBase->ResIFace->sock_shutdown(SocketBase->ctl);
-	    Permit();
-	    
-	    if (res)
-		return FALSE;
-	}
+            Forbid();
+            res = SocketBase->ResIFace->sock_shutdown(SocketBase->ctl);
+            Permit();
+            
+            if (res)
+                return FALSE;
+        }
     }
-	
+        
     if (SocketBase->WSIFace)
-	HostLib_DropInterface((void **)SocketBase->WSIFace);
+        HostLib_DropInterface((void **)SocketBase->WSIFace);
 
     if (SocketBase->winsock)
-	HostLib_Close(SocketBase->winsock, NULL);
+        HostLib_Close(SocketBase->winsock, NULL);
 
     return TRUE;
 }

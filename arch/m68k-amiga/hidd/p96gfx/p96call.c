@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 
-#define GENCALL_MAX	(13 + 1)	/* Max number of arguments */
+#define GENCALL_MAX     (13 + 1)        /* Max number of arguments */
 
 static void asm_regs_init(int id, int has_bn, const char *jmp, const char *addr)
 {

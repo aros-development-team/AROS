@@ -26,11 +26,11 @@ AROS_LH0(void, CacheClearU,
     void (*func)(void);
 
     if (SysBase->LibNode.lib_OpenCnt == 0)
-    	/* We were called from PrepareExecBase. AttnFlags isn't set yet.
-    	 * Do nothing or we would always install 68000 routine.
-    	 * No harm done, caches are disabled at this point.
-    	 */
-    	 return;
+        /* We were called from PrepareExecBase. AttnFlags isn't set yet.
+         * Do nothing or we would always install 68000 routine.
+         * No harm done, caches are disabled at this point.
+         */
+         return;
 
     /* When called the first time, this patches up the
      * Exec syscall table to directly point to the right routine.

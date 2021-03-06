@@ -14,7 +14,7 @@
 static inline void GetErrorStr(char **error)
 {
     if (error)
-	*error = (char *)dlerror();
+        *error = (char *)dlerror();
 }
 
 void *Host_HostLib_Open(const char *filename, char **error)

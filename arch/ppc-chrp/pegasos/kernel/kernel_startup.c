@@ -27,7 +27,7 @@ int __startup kernel_entry(struct TagItem *bootMsg, ULONG magic)
 {
     if (magic == AROS_BOOT_MAGIC)
     {
-	core_kick(bootMsg, kernel_start);
+        core_kick(bootMsg, kernel_start);
     }
     return -1;
 }
@@ -38,7 +38,7 @@ void core_kick(struct TagItem *bootMsg, void *target)
 
     /* First clear .bss */
     if (bss)
-    	__clear_bss((const struct KernelBSS *)bss->ti_Data);
+        __clear_bss((const struct KernelBSS *)bss->ti_Data);
 
     asm volatile("mr %%r1, %1; bctr"::"c"(target),"r"(boot_stack + STACK_SIZE - SP_OFFSET));
 }
@@ -76,23 +76,23 @@ static struct OFWNode *krnCopyOFWTree(struct OFWNode *orig)
 
     ForeachNode(&orig->on_properties, prop)
     {
-	uint32_t prop_name_length = strlen(prop->op_name) + 1;
-	uint32_t prop_length = sizeof(struct OFWProperty) + prop_name_length + prop->op_length;
+        uint32_t prop_name_length = strlen(prop->op_name) + 1;
+        uint32_t prop_length = sizeof(struct OFWProperty) + prop_name_length + prop->op_length;
 
-	new_prop = krnAllocBootMem(prop_length);
+        new_prop = krnAllocBootMem(prop_length);
 
-	new_prop->op_name   = new_prop->op_storage;
-	new_prop->op_value  = &new_prop->op_storage[prop_name_length];
-	new_prop->op_length = prop->op_length;
+        new_prop->op_name   = new_prop->op_storage;
+        new_prop->op_value  = &new_prop->op_storage[prop_name_length];
+        new_prop->op_length = prop->op_length;
 
-	__boot_memcpy(new_prop->op_name, prop->op_name, strlen(prop->op_name)+1);
-	__boot_memcpy(new_prop->op_value, prop->op_value, prop->op_length);
+        __boot_memcpy(new_prop->op_name, prop->op_name, strlen(prop->op_name)+1);
+        __boot_memcpy(new_prop->op_value, prop->op_value, prop->op_length);
 
-	ADDTAIL(&new_node->on_properties, new_prop);
+        ADDTAIL(&new_node->on_properties, new_prop);
     }
 
     ForeachNode(&orig->on_children, child)
-	ADDTAIL(&new_node->on_children, krnCopyOFWTree(child));
+        ADDTAIL(&new_node->on_children, krnCopyOFWTree(child));
 
     return new_node;
 }
@@ -107,11 +107,11 @@ static void kernel_start(const struct TagItem *bootMsg)
 
     tag = LibFindTagItem(KRN_CmdLine, bootMsg);
     if (tag)
-    {    
-	char *opts = strcasestr((char *)tag->ti_Data, "debug=serial");
+    {
+        char *opts = strcasestr((char *)tag->ti_Data, "debug=serial");
 
-	if (opts)
-	    serial_options = opts + 12;
+        if (opts)
+            serial_options = opts + 12;
     }
 
     /*
@@ -130,17 +130,17 @@ static void kernel_start(const struct TagItem *bootMsg)
 
     if (!__BootData)
     {
-    	/*
-	 * This is our first start.
-	 * Set up BootData and relocate boot taglist to safe place.
-	 */
-	struct TagItem *dest;
-	unsigned long mlen;
+        /*
+         * This is our first start.
+         * Set up BootData and relocate boot taglist to safe place.
+         */
+        struct TagItem *dest;
+        unsigned long mlen;
         IPTR ptr;
         struct vbe_mode *vmode = NULL;
         char *cmdline = NULL;
 
-	tag = LibFindTagItem(KRN_KernelHighest, bootMsg);
+        tag = LibFindTagItem(KRN_KernelHighest, bootMsg);
         if (!tag)
         {
             D(bug("Incomplete information from the bootstrap\n"));
@@ -152,73 +152,73 @@ static void kernel_start(const struct TagItem *bootMsg)
         /* Align kickstart top address (we are going to place a structure after it) */
         ptr = AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
 
-	memset((void *)ptr, 0, sizeof(struct BootData));
+        memset((void *)ptr, 0, sizeof(struct BootData));
         __BootData = (struct BootData *)ptr;
 
-	D(bug("[Kernel] KRN_Highest 0x%p, BootData 0x%p\n", tag->ti_Data, ptr));
+        D(bug("[Kernel] KRN_Highest 0x%p, BootData 0x%p\n", tag->ti_Data, ptr));
 
-	/*
-	 * Our boot taglist is placed by the bootstrap just somewhere in memory.
-	 * The first thing is to move it into some safe place.
-	 */
+        /*
+         * Our boot taglist is placed by the bootstrap just somewhere in memory.
+         * The first thing is to move it into some safe place.
+         */
         ptr = AROS_ROUNDUP2(ptr + sizeof(struct BootData), sizeof(APTR));
         BootMsg = (struct TagItem *)ptr;
 
-	dest = BootMsg;
+        dest = BootMsg;
         while ((tag = LibNextTagItem(&bootMsg)))
-    	{
-    	    dest->ti_Tag  = tag->ti_Tag;
-    	    dest->ti_Data = tag->ti_Data;
-    	    dest++;
-    	}
-	dest->ti_Tag = TAG_DONE;
-	dest++;
+        {
+            dest->ti_Tag  = tag->ti_Tag;
+            dest->ti_Data = tag->ti_Data;
+            dest++;
+        }
+        dest->ti_Tag = TAG_DONE;
+        dest++;
 
-	__BootData->bd_BootMem = dest;
+        __BootData->bd_BootMem = dest;
 
-	/* Now relocate linked data */
-	mlen = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
-	bootMsg = BootMsg;
-	while ((tag = LibNextTagItem(&bootMsg)))
-    	{
-    	    unsigned long l;
-    	    struct KernelBSS *bss;
+        /* Now relocate linked data */
+        mlen = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
+        bootMsg = BootMsg;
+        while ((tag = LibNextTagItem(&bootMsg)))
+        {
+            unsigned long l;
+            struct KernelBSS *bss;
 
-    	    switch (tag->ti_Tag)
-    	    {
-    	    case KRN_KernelBss:
-    	    	l = sizeof(struct KernelBSS);
-    	    	for (bss = (struct KernelBSS *)tag->ti_Data; bss->addr; bss++)
-    	    	    l += sizeof(struct KernelBSS);
+            switch (tag->ti_Tag)
+            {
+            case KRN_KernelBss:
+                l = sizeof(struct KernelBSS);
+                for (bss = (struct KernelBSS *)tag->ti_Data; bss->addr; bss++)
+                    l += sizeof(struct KernelBSS);
 
-    	    	RelocateTagData(tag, l);
-    	    	break;
+                RelocateTagData(tag, l);
+                break;
 
-	    case KRN_OpenFirmwareTree:
-		tag->ti_Data = (IPTR)krnCopyOFWTree((struct OFWNode *)tag->ti_Data);
-		break;
+            case KRN_OpenFirmwareTree:
+                tag->ti_Data = (IPTR)krnCopyOFWTree((struct OFWNode *)tag->ti_Data);
+                break;
 
-    	    case KRN_VBEModeInfo:
-    	    	RelocateTagData(tag, sizeof(struct vbe_mode));
-    	    	vmode = (struct vbe_mode *)tag->ti_Data;
-    	    	break;
+            case KRN_VBEModeInfo:
+                RelocateTagData(tag, sizeof(struct vbe_mode));
+                vmode = (struct vbe_mode *)tag->ti_Data;
+                break;
 
-    	    case KRN_VBEControllerInfo:
-    	    	RelocateTagData(tag, sizeof(struct vbe_controller));
-    	    	break;
+            case KRN_VBEControllerInfo:
+                RelocateTagData(tag, sizeof(struct vbe_controller));
+                break;
 
-	    case KRN_CmdLine:
-	    	l = strlen((char *)tag->ti_Data) + 1;
-	    	RelocateTagData(tag, l);
-	    	cmdline = (char *)tag->ti_Data;
-	    	break;
+            case KRN_CmdLine:
+                l = strlen((char *)tag->ti_Data) + 1;
+                RelocateTagData(tag, l);
+                cmdline = (char *)tag->ti_Data;
+                break;
 
-	    case KRN_BootLoader:
-	    	l = strlen((char *)tag->ti_Data) + 1;
-	    	RelocateTagData(tag, l);
-	    	break;
-	    }
-	}
+            case KRN_BootLoader:
+                l = strlen((char *)tag->ti_Data) + 1;
+                RelocateTagData(tag, l);
+                break;
+            }
+        }
     }
 
     for (;;);

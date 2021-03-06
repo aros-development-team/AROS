@@ -27,7 +27,7 @@ AROS_LH1(ULONG, ReadEClock,
     Enable();
     dest->ev_lo += eclock;
     if (old > dest->ev_lo)
-    	dest->ev_hi++;
+        dest->ev_hi++;
 
     return TimerBase->tb_eclock_rate;
 

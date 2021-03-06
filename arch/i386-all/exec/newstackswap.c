@@ -12,10 +12,10 @@
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
 AROS_LH3(IPTR, NewStackSwap,
-	AROS_LHA(struct StackSwapStruct *,  sss, A0),
-	AROS_LHA(LONG_FUNC, entry, A1),
-	AROS_LHA(struct StackSwapArgs *, args, A2),
-	struct ExecBase *, SysBase, 134, Exec)
+        AROS_LHA(struct StackSwapStruct *,  sss, A0),
+        AROS_LHA(LONG_FUNC, entry, A1),
+        AROS_LHA(struct StackSwapArgs *, args, A2),
+        struct ExecBase *, SysBase, 134, Exec)
 {
     AROS_LIBFUNC_INIT
 
@@ -40,10 +40,10 @@ AROS_LH3(IPTR, NewStackSwap,
 
     if (t->tc_Flags & TF_STACKCHK)
     {
-    	volatile UBYTE* startfill = sss->stk_Lower;
+        volatile UBYTE* startfill = sss->stk_Lower;
 
-    	while (startfill < (UBYTE *)sp)
-	    *startfill++ = 0xE1;
+        while (startfill < (UBYTE *)sp)
+            *startfill++ = 0xE1;
     }
 
     /*
@@ -61,30 +61,30 @@ AROS_LH3(IPTR, NewStackSwap,
     asm volatile
     (
     /* Save original ESP by setting up a new stack frame */
-    "	push	%%ebp\n"
-    "	movl	%%esp, %%ebp\n"
+    "   push    %%ebp\n"
+    "   movl    %%esp, %%ebp\n"
     /* Actually change the stack */
-    "	movl	%2, %%esp\n\t"
+    "   movl    %2, %%esp\n\t"
 
     /* Enable(). Pass SysBase in %eax, We don't need %eax afterwards */
-    "	call	*-84(%0)\n"
+    "   call    *-84(%0)\n"
 
     /* Call our function */
-    "	call	*%1\n"
+    "   call    *%1\n"
 
     /*
      * Disable().
      * Remember %eax (e.g. %0) and put local SysBase of this function in it.
      * %3 was clobbered by the called function.
-     */ 
-    "	push	%0\n"
-    "	movl	SysBase, %0\n"
-    "	call	*-80(%0)\n"
-    "	pop	%0\n"
+     */
+    "   push    %0\n"
+    "   movl    SysBase, %0\n"
+    "   call    *-80(%0)\n"
+    "   pop     %0\n"
 
     /* Restore original ESP. Function's return value is in EAX. */
-    "	movl	%%ebp, %%esp\n"
-    "	pop	%%ebp\n"
+    "   movl    %%ebp, %%esp\n"
+    "   pop     %%ebp\n"
     : "=a"(ret)
     : "r"(entry), "r"(sp), "a"(SysBase)
     : "ecx", "edx", "cc");

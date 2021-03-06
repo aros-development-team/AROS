@@ -139,7 +139,7 @@ static void p5stuff(BOOL quiet)
     list = (struct List*)(mmuport + 0x26);
     ForeachNode(list, node) {
         ULONG addr = node->addr, end;
-        ULONG len = node->len; 
+        ULONG len = node->len;
         if (!quiet)
             Printf("- %p %08lx %08lx\n", addr, len, node->flags);
         end = addr + len;

@@ -2,13 +2,13 @@
     Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 */
 /*
- * This program generates the libcall.h macroset for gcc 
+ * This program generates the libcall.h macroset for gcc
  */
 
 #include <stdio.h>
 #include <string.h>
 
-#define GENCALL_MAX	(13 + 1)	/* Max number of arguments */
+#define GENCALL_MAX     (13 + 1)        /* Max number of arguments */
 
 void aros_lc(int id, const char *suffix)
 {
@@ -250,7 +250,7 @@ int main(int argc, char **argv)
     printf("\n");
 
     printf("#define __AROS_CPU_SPECIFIC_LH\n\n");
-	
+        
     for (i = 0; i < GENCALL_MAX; i++)
         aros_lh(i, 0);
 
@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 
     printf("\n");
     printf("#define __AROS_CPU_SPECIFIC_LC\n\n");
-	
+        
     for (i = 0; i < GENCALL_MAX; i++)
         aros_lc(i, "");
 
@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 
     printf("\n");
     printf("#define __AROS_CPU_SPECIFIC_LD\n\n");
-	
+        
     for (i = 0; i < GENCALL_MAX; i++)
         aros_ld(i, 0);
 

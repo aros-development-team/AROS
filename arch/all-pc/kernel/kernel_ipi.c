@@ -113,7 +113,7 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR
 
             If the FreeIPIHooks list is empty, just do busyloop wait - other cores shall free the hook sooner or later
         */
-        do 
+        do
         {
             Disable();
             KrnSpinLock(&pdata->kb_FreeIPIHooksLock, NULL, SPINLOCK_MODE_WRITE);
@@ -229,14 +229,14 @@ static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelB
             */
             if (ipi->ih_Async)
             {
-                D(bug("[Kernel:IPI.CPU.%03u] %s: Calling HOOK Entry %p with Data %p\n", cpunum, __func__, 
+                D(bug("[Kernel:IPI.CPU.%03u] %s: Calling HOOK Entry %p with Data %p\n", cpunum, __func__,
                     ipi->ih_Hook.h_Entry, &ipi->ih_Hook));
 
                 CALLHOOKPKT(&ipi->ih_Hook, NULL, 0);
             }
             else
             {
-                D(bug("[Kernel:IPI.CPU.%03u] %s: Calling HOOK Entry %p with Data %p\n", cpunum, __func__, 
+                D(bug("[Kernel:IPI.CPU.%03u] %s: Calling HOOK Entry %p with Data %p\n", cpunum, __func__,
                     ipi->ih_Hook.h_Entry, ipi->ih_Hook.h_Data));
 
                 CALLHOOKPKT(&ipi->ih_Hook, NULL, 0);

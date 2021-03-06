@@ -12,9 +12,9 @@
 #define D(x)
 
 AROS_LH2(ULONG, KrnAllocIRQ,
-	AROS_LHA(ULONG, irq_type, D0),
-	AROS_LHA(ULONG, count, D1),
-	struct KernelBase *, KernelBase, 38, Kernel)
+        AROS_LHA(ULONG, irq_type, D0),
+        AROS_LHA(ULONG, count, D1),
+        struct KernelBase *, KernelBase, 38, Kernel)
 {
     AROS_LIBFUNC_INIT
 

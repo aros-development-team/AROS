@@ -365,8 +365,8 @@ void exec_main(struct TagItem *msg, void *entry)
         {
             t->tc_UnionETask.tc_ETask = AllocVec
             (
-        	sizeof(struct IntETask), 
-        	MEMF_ANY|MEMF_CLEAR
+                sizeof(struct IntETask),
+                MEMF_ANY|MEMF_CLEAR
             );
 
             if (!t->tc_UnionETask.tc_ETask)

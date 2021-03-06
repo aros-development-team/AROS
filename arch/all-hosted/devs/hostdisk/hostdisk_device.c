@@ -108,7 +108,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
         iotd->iotd_Req.io_Error                   = 0;
         iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
-        DOPEN(bug("hostdisk: in libopen func. Yep. Unit is already open\n"));    
+        DOPEN(bug("hostdisk: in libopen func. Yep. Unit is already open\n"));
         return TRUE;
     }
 
@@ -235,15 +235,15 @@ static const UWORD NSDSupported[] = {
     0
 };
 
-AROS_LH1(void, beginio, 
- AROS_LHA(struct IOExtTD *, iotd, A1), 
+AROS_LH1(void, beginio,
+ AROS_LHA(struct IOExtTD *, iotd, A1),
            struct HostDiskBase *, hdskBase, 5, Hostdisk)
 {
     AROS_LIBFUNC_INIT
 
     struct NSDeviceQueryResult *nsdq;
  
-    DCMD(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command)); 
+    DCMD(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command));
     switch(iotd->iotd_Req.io_Command)
     {
         case CMD_UPDATE:
@@ -326,8 +326,8 @@ AROS_LH1(void, beginio,
 
 /****************************************************************************************/
 
-AROS_LH1(LONG, abortio, 
- AROS_LHA(struct IOExtTD *, iotd, A1), 
+AROS_LH1(LONG, abortio,
+ AROS_LHA(struct IOExtTD *, iotd, A1),
            struct HostDiskBase *, hdskBase, 6, Hostdisk)
 {
     AROS_LIBFUNC_INIT
@@ -352,7 +352,7 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
         subsize = Host_Read(unit, buf, size, &ioerr);
         if (!subsize)
         {
-             DREAD(bug("hostdisk.device/read: Host_Read() returned 0. Returning IOERR_BADLENGTH\n"));        
+             DREAD(bug("hostdisk.device/read: Host_Read() returned 0. Returning IOERR_BADLENGTH\n"));
              return IOERR_BADLENGTH;
         }
         if (subsize == -1)

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 
@@ -40,7 +40,7 @@ struct Library  *OOPBase;
 struct Library  *UnixIOBase;
 
 OOP_Object *unixio;
-int 	    midi_fd;
+int         midi_fd;
 
 int main(void)
 {
@@ -60,16 +60,16 @@ extern void kprintf(char *bla,...);
 BOOL ASM Init(REG(a6) APTR sysbase);
 void Expunge(void);
 SAVEDS ASM struct MidiPortData *OpenPort(
-					 REG(a3) struct MidiDeviceData *data,
-					 REG(d0) LONG portnum,
-					 REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
-					 REG(a1) void (* ASM receivefunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
-					 REG(a2) APTR userdata
-					 );
+                                         REG(a3) struct MidiDeviceData *data,
+                                         REG(d0) LONG portnum,
+                                         REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
+                                         REG(a1) void (* ASM receivefunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
+                                         REG(a2) APTR userdata
+                                         );
 ASM void ClosePort(
-		   REG(a3) struct MidiDeviceData *data,
-		   REG(d0) LONG portnum
-		   );
+                   REG(a3) struct MidiDeviceData *data,
+                   REG(d0) LONG portnum
+                   );
 
 /*   End prototypes  */
 
@@ -114,31 +114,31 @@ SAVEDS ASM BOOL Init(REG(a6) APTR sysbase)
     UnixIOBase = OpenLibrary("unixio.hidd", 0);
     if (!UnixIOBase)
     {
-    	CloseLibrary(OOPBase);
-    	return FALSE;
+        CloseLibrary(OOPBase);
+        return FALSE;
     }
 
     unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (!unixio)
     {
-    	CloseLibrary(UnixIOBase);
+        CloseLibrary(UnixIOBase);
         CloseLibrary(OOPBase);
         return FALSE;
     }
 
     midi_fd = Hidd_UnixIO_OpenFile(unixio, "/dev/midi",
-    	    	    	    	   02, /* O_RDWR */
-				   0, /* mode */
-				   NULL); 
+                                   02, /* O_RDWR */
+                                   0, /* mode */
+                                   NULL);
 
     if (!midi_fd)
     {
-    	OOP_DisposeObject(unixio);
-    	CloseLibrary(UnixIOBase);
+        OOP_DisposeObject(unixio);
+        CloseLibrary(UnixIOBase);
         CloseLibrary(OOPBase);
 
-	return FALSE;
-	
+        return FALSE;
+        
     }
     
     return TRUE;
@@ -176,15 +176,15 @@ SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum)
   
     for(;;)
     {
-    	int errno;
-	char buf[1];
-	
-    	data=(TransmitFunc)(userdata);
+        int errno;
+        char buf[1];
+        
+        data=(TransmitFunc)(userdata);
 
-    	if(data==0x100) return;    
+        if(data==0x100) return;
 
-    	buf[0] = data;
-	
+        buf[0] = data;
+        
         Hidd_UnixIO_WriteFile(unixio, midi_fd, buf, 1, &errno);
     }
 }
@@ -200,12 +200,12 @@ struct MidiPortData midiportdata=
    camd.library wants to use your services.
 ****************************************************************/
 SAVEDS ASM struct MidiPortData *OpenPort(
-					 REG(a3) struct MidiDeviceData *data,
-					 REG(d0) LONG portnum,
-					 REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
-					 REG(a1) void (* ASM receiverfunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
-					 REG(a2) APTR userdata
-					 )
+                                         REG(a3) struct MidiDeviceData *data,
+                                         REG(d0) LONG portnum,
+                                         REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
+                                         REG(a1) void (* ASM receiverfunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
+                                         REG(a2) APTR userdata
+                                         )
 {
     /* We haven't got any receiver function, so we don't bother about storing the receiverfunc variable. */
 
@@ -222,9 +222,9 @@ SAVEDS ASM struct MidiPortData *OpenPort(
    mark the port not to be in use anymore, delete a task, etc.
 *****************************************************************/
 ASM void ClosePort(
-		   REG(a3) struct MidiDeviceData *data,
-		   REG(d0) LONG portnum
-		   )
+                   REG(a3) struct MidiDeviceData *data,
+                   REG(d0) LONG portnum
+                   )
 {
     return;
 }

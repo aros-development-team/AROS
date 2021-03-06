@@ -22,24 +22,24 @@ void con_InitTagList(const struct TagItem *tags)
 
     while ((tag = LibNextTagItem((struct TagItem **)&tags)))
     {
-	switch (tag->ti_Tag)
-	{
-	case KRN_CmdLine:
-	    con_InitSerial((char *)tag->ti_Data);
-	    break;
+        switch (tag->ti_Tag)
+        {
+        case KRN_CmdLine:
+            con_InitSerial((char *)tag->ti_Data);
+            break;
 
-	case KRN_VBEModeInfo:
-	    vbemode = (struct vbe_mode *)tag->ti_Data;
-	    break;
+        case KRN_VBEModeInfo:
+            vbemode = (struct vbe_mode *)tag->ti_Data;
+            break;
 
-	case KRN_VBEControllerInfo:
-	    vbever = ((struct vbe_controller *)tag->ti_Data)->version;
-	    break;
-	}
+        case KRN_VBEControllerInfo:
+            vbever = ((struct vbe_controller *)tag->ti_Data)->version;
+            break;
+        }
     }
 
     if (vbemode)
-	con_InitVESA(vbever, vbemode);
+        con_InitVESA(vbever, vbemode);
     else
-    	con_InitVGA();
+        con_InitVGA();
 }

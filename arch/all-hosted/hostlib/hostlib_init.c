@@ -20,18 +20,18 @@ static int HostLib_Init(struct HostLibBase *HostLibBase)
     KernelBase = OpenResource("kernel.resource");
     D(bug("[hostlib] KernelBase = 0x%08lX\n", KernelBase));
     if (!KernelBase)
-	return FALSE;
+        return FALSE;
 
     tag = LibFindTagItem(KRN_HostInterface, KrnGetBootInfo());
     if (tag)
     {
-	HostLibBase->HostIFace = (struct HostInterface *)tag->ti_Data;
-    	D(bug("[hostlib] HostIFace = 0x%08lX\n", HostLibBase->HostIFace));
+        HostLibBase->HostIFace = (struct HostInterface *)tag->ti_Data;
+        D(bug("[hostlib] HostIFace = 0x%08lX\n", HostLibBase->HostIFace));
 
 #ifndef USE_FORBID_LOCK
-	InitSemaphore(&HostLibBase->HostSem);
+        InitSemaphore(&HostLibBase->HostSem);
 #endif
-	return TRUE;
+        return TRUE;
     }
 
     return FALSE;

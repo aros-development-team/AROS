@@ -43,7 +43,7 @@ int vcfb_init(void)
         vcmb_msg[4] = 0;
         vcmb_msg[5] = 0;
         vcmb_msg[6] = 0;
-        vcmb_msg[7] = 0;		        // terminate tag
+        vcmb_msg[7] = 0;                        // terminate tag
 
         vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
         vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
@@ -101,7 +101,7 @@ int vcfb_init(void)
         if (!vcmb_msg || (vcmb_msg[1] != AROS_LONG2LE(VCTAG_RESP)))
             return 0;
 
-        count = 2;	                        // locate the allocation request
+        count = 2;                              // locate the allocation request
         while((AROS_LE2LONG(vcmb_msg[count])))
         {
             if (vcmb_msg[count] == AROS_LONG2LE(VCTAG_FBALLOC))
@@ -143,7 +143,7 @@ int vcfb_init(void)
         vcmb_msg[3] = AROS_LONG2LE(4);
         vcmb_msg[4] = 0;
         vcmb_msg[5] = 0;
-        vcmb_msg[6] = 0;		        // terminate tag
+        vcmb_msg[6] = 0;                        // terminate tag
 
         vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vcmb_msg);
         vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);

@@ -92,12 +92,12 @@ static inline void outl(ULONG val, UWORD port)
     asm volatile ("outl %0,%w1"::"a"(val),"Nd"(port));
 }
 
-ULONG PCILx__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+ULONG PCILx__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     ULONG orig,temp;
 
-    Disable();    
+    Disable();
     orig=inl(PCI_AddressPort);
     outl(CFGADD(msg->bus, msg->dev, msg->sub, msg->reg),PCI_AddressPort);
     temp=inl(PCI_DataPort);

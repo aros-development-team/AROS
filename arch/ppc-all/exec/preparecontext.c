@@ -63,7 +63,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         if (tagList) tagList++;
     }
 
-    /* Next we set up return address */    
+    /* Next we set up return address */
     ctx->lr = (ULONG)fallBack;
 
     /* Then set up the frame to be used by Dispatch() */

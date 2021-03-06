@@ -23,68 +23,68 @@ static int BattClock_Init(struct BattClockBase *BattClockBase)
 
     Disable();
     for (;;) {
-    	UWORD adkcon = c->adkconr;
-	c->adkcon = 0x7fff;
-	if (c->adkconr == cm->adkconr) {
-	    c->adkcon = 0x8001;
-	    if (c->adkconr == cm->adkconr) {
-	        c->adkcon = 0x0001;
-	        if (c->adkconr == cm->adkconr)
-	       	    found = FALSE;
-	    }
-	}
-	c->adkcon = 0x7fff;
-	c->adkcon = 0x8000 | adkcon;
-	if (!found) {
-	    D(bug("custom chipset detected in clock space\n"));
-	    break;
-	}
-	// ok, not custom, check if we have a clock
-	found = FALSE;
-	// 10 minutes or hours bit 3 set = not a clock
-	if ((getreg(p, 0x01) & 0x8) || (getreg(p, 0x03) & 8))
-	    break;
-	// this is not easy, most UAE versions emulate clock
-	// registers very badly (read-only registers are read-write etc..)
-	// so this needs to be quite stupid.
-	while (rounds-- > 0) {
-	    if (getreg(p, 0x0d) == 0x8 && getreg(p, 0x0f) == 0x0) {
-	        // RF, maybe
- 	        BattClockBase->clocktype = RF5C01A;
-    		BattClockBase->clockptr = p;
-    		found = TRUE;
- 	        break;
-	    } else if (getreg(p, 0x0f) == 0x4) {
-	        // MSM
-	        BattClockBase->clocktype = MSM6242B;
-    		BattClockBase->clockptr = p;
-    		found = TRUE;
-	        break;
-	    } else {
-	        // reset clock
-	        putreg(p, 0xe, 0);
-	        putreg(p, 0xd, 0);
-	        putreg(p, 0xd, 4); // set irq flag
-	        if (getreg(p, 0xd) == 0) {
-		    // was MSM, irq can't be set
-	    	    putreg(p, 0xf, 7); // reset
-	    	    putreg(p, 0xf, 4); // leave 24h on
-	    	} else { // was alarm en
-	    	    // RF
-	    	    putreg(p, 0xf, 3); // reset
-	    	    putreg(p, 0xf, 0); // reset off
-	    	    putreg(p, 0xd, 8); // timer en
-	    	}
-	    	didreset = TRUE;
-	    }
-	    if (didreset)
-	    	resetbattclock(BattClockBase);
-	}
-	break;
+        UWORD adkcon = c->adkconr;
+        c->adkcon = 0x7fff;
+        if (c->adkconr == cm->adkconr) {
+            c->adkcon = 0x8001;
+            if (c->adkconr == cm->adkconr) {
+                c->adkcon = 0x0001;
+                if (c->adkconr == cm->adkconr)
+                    found = FALSE;
+            }
+        }
+        c->adkcon = 0x7fff;
+        c->adkcon = 0x8000 | adkcon;
+        if (!found) {
+            D(bug("custom chipset detected in clock space\n"));
+            break;
+        }
+        // ok, not custom, check if we have a clock
+        found = FALSE;
+        // 10 minutes or hours bit 3 set = not a clock
+        if ((getreg(p, 0x01) & 0x8) || (getreg(p, 0x03) & 8))
+            break;
+        // this is not easy, most UAE versions emulate clock
+        // registers very badly (read-only registers are read-write etc..)
+        // so this needs to be quite stupid.
+        while (rounds-- > 0) {
+            if (getreg(p, 0x0d) == 0x8 && getreg(p, 0x0f) == 0x0) {
+                // RF, maybe
+                BattClockBase->clocktype = RF5C01A;
+                BattClockBase->clockptr = p;
+                found = TRUE;
+                break;
+            } else if (getreg(p, 0x0f) == 0x4) {
+                // MSM
+                BattClockBase->clocktype = MSM6242B;
+                BattClockBase->clockptr = p;
+                found = TRUE;
+                break;
+            } else {
+                // reset clock
+                putreg(p, 0xe, 0);
+                putreg(p, 0xd, 0);
+                putreg(p, 0xd, 4); // set irq flag
+                if (getreg(p, 0xd) == 0) {
+                    // was MSM, irq can't be set
+                    putreg(p, 0xf, 7); // reset
+                    putreg(p, 0xf, 4); // leave 24h on
+                } else { // was alarm en
+                    // RF
+                    putreg(p, 0xf, 3); // reset
+                    putreg(p, 0xf, 0); // reset off
+                    putreg(p, 0xd, 8); // timer en
+                }
+                didreset = TRUE;
+            }
+            if (didreset)
+                resetbattclock(BattClockBase);
+        }
+        break;
     }
     Enable();
     if (found)
-    	BattClockBase->UtilityBase = (struct UtilityBase*)OpenLibrary("utility.library", 0);
+        BattClockBase->UtilityBase = (struct UtilityBase*)OpenLibrary("utility.library", 0);
     D(bug("BattClockBase init=%d clock=%d\n", found, BattClockBase->clocktype));
     return found;
 }

@@ -169,7 +169,7 @@ void PCIPCDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                     handled = TRUE;
                     *msg->storage = 1;
 
-                    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);                    
+                    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);
                     if (capmsi)
                     {
                         struct pHidd_PCIDevice_ReadConfigWord cmeth;

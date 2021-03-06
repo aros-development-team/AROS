@@ -41,59 +41,59 @@ static OOP_AttrBase HiddParallelUnitAB;
 static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
-    { NULL,	NULL }
+    { NULL,     NULL }
 };
 
 /******* ParallelUnit::New() ***********************************/
 OOP_Object *AmigaParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
-	struct TagItem *tag, *tstate;
-	ULONG unitnum = 0;
+        struct TagItem *tag, *tstate;
+        ULONG unitnum = 0;
 
-	EnterFunc(bug("ParallelUnit::New()\n"));
+        EnterFunc(bug("ParallelUnit::New()\n"));
 
-	tstate = msg->attrList;
-	while ((tag = NextTagItem(&tstate))) {
-		ULONG idx;
+        tstate = msg->attrList;
+        while ((tag = NextTagItem(&tstate))) {
+                ULONG idx;
 
-		if (IS_HIDDPARALLELUNIT_ATTR(tag->ti_Tag, idx)) {
-			switch (idx) {
-				case aoHidd_ParallelUnit_Unit:
-					unitnum = (ULONG)tag->ti_Data;
-				break;
-			}
-		}
+                if (IS_HIDDPARALLELUNIT_ATTR(tag->ti_Tag, idx)) {
+                        switch (idx) {
+                                case aoHidd_ParallelUnit_Unit:
+                                        unitnum = (ULONG)tag->ti_Data;
+                                break;
+                        }
+                }
 
-	} /* while (tags to process) */
+        } /* while (tags to process) */
 
-	if (unitnum != 0)
-	    ReturnPtr("ParallelUnit::New()", OOP_Object *, NULL);
+        if (unitnum != 0)
+            ReturnPtr("ParallelUnit::New()", OOP_Object *, NULL);
 
-	D(bug("!!!!Request for unit number %d\n",unitnum));
+        D(bug("!!!!Request for unit number %d\n",unitnum));
 
-	obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+        obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 
         if (!obj) {
             D(bug("%s - an error occurred!\n",__FUNCTION__));
         }
 
-	ReturnPtr("ParallelUnit::New()", OOP_Object *, obj);
+        ReturnPtr("ParallelUnit::New()", OOP_Object *, obj);
 }
 
 /******* ParallelUnit::Dispose() ***********************************/
 OOP_Object *AmigaParUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
-	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, obj);
+        struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, obj);
         struct Interrupt *irq = &data->parint;
 
-	EnterFunc(bug("ParallelUnit::Dispose()\n"));
+        EnterFunc(bug("ParallelUnit::Dispose()\n"));
 
-	/* stop all interrupts */
-	if (data->ciares)
+        /* stop all interrupts */
+        if (data->ciares)
             RemICRVector(data->ciares, 4, irq);
 
-	OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
-	ReturnPtr("ParallelUnit::Dispose()", OOP_Object *, obj);
+        OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+        ReturnPtr("ParallelUnit::Dispose()", OOP_Object *, obj);
 }
 
 static AROS_INTH1(parallel_interrupt, struct HIDDParallelUnitData *, data)
@@ -139,63 +139,63 @@ BOOL AmigaParUnit__Hidd_ParallelUnit__Init(OOP_Class *cl, OOP_Object *o, struct 
 /******* ParallelUnit::Write() **********************************/
 ULONG AmigaParUnit__Hidd_ParallelUnit__Write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Write *msg)
 {
-	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
-	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
-	ULONG len = msg->Length;
+        struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
+        volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
+        ULONG len = msg->Length;
 
-	EnterFunc(bug("ParallelUnit::Write()\n"));
-	/*
-	 * If the output is currently stopped just don't do anything here.
-	 */
-	if (TRUE == data->stopped || len < 1)
-		return 0;
+        EnterFunc(bug("ParallelUnit::Write()\n"));
+        /*
+         * If the output is currently stopped just don't do anything here.
+         */
+        if (TRUE == data->stopped || len < 1)
+                return 0;
 
-	ciaa->ciaprb = msg->Outbuffer[0];
+        ciaa->ciaprb = msg->Outbuffer[0];
 
-	ReturnInt("ParallelUnit::Write()",ULONG, 1);
+        ReturnInt("ParallelUnit::Write()",ULONG, 1);
 }
 
 /******* ParallelUnit::Start() **********************************/
 VOID AmigaParUnit__Hidd_ParallelUnit__Start(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Start *msg)
 {
-	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
-	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
+        struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
+        volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 
         /* Ensure that the parallel port is in output mode */
         ciaa->ciaddrb = 0xff;
 
-	/*
-	 * Allow or start feeding the CIA with data. Get the data
-	 * from upper layer.
-	 */
-	if (TRUE == data->stopped) {
-		if (NULL != data->DataWriteCallBack)
-			 data->DataWriteCallBack(0, data->DataWriteUserData);
-		/*
-		 * Also mark the stopped flag as FALSE.
-		 */
-		data->stopped = FALSE;
-	}
+        /*
+         * Allow or start feeding the CIA with data. Get the data
+         * from upper layer.
+         */
+        if (TRUE == data->stopped) {
+                if (NULL != data->DataWriteCallBack)
+                         data->DataWriteCallBack(0, data->DataWriteUserData);
+                /*
+                 * Also mark the stopped flag as FALSE.
+                 */
+                data->stopped = FALSE;
+        }
 }
 
 /******* ParallelUnit::Stop() **********************************/
 VOID AmigaParUnit__Hidd_ParallelUnit__Stop(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Stop *msg)
 {
-	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
+        struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 
-	/*
-	 * The next time the interrupt comes along and asks for
-	 * more data we just don't do anything...
-	 */
-	data->stopped = TRUE;
+        /*
+         * The next time the interrupt comes along and asks for
+         * more data we just don't do anything...
+         */
+        data->stopped = TRUE;
 }
 
 /****** ParallelUnit::GetStatus ********************************/
 UWORD AmigaParUnit__Hidd_ParallelUnit__GetStatus(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_GetStatus *msg)
 {
-	volatile struct CIA *ciab = (struct CIA*)0xbfd000;
+        volatile struct CIA *ciab = (struct CIA*)0xbfd000;
 
-	return ciab->ciapra & 7;
+        return ciab->ciapra & 7;
 }
 
 

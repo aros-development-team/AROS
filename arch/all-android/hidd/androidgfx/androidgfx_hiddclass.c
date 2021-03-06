@@ -37,62 +37,62 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem pftags[] =
     {
         /*
-	 * Shifts are non-obviously calculated from the MSB, not from the LSB.
+         * Shifts are non-obviously calculated from the MSB, not from the LSB.
          * I. e. color value is placed in the most significant byte of the ULONG
          * before shifting (cc000000, not 000000cc)
-	 */
-    	{ aHidd_PixFmt_RedShift     , 24			   },
-	{ aHidd_PixFmt_GreenShift   , 16			   },
-	{ aHidd_PixFmt_BlueShift    , 8				   },
-	{ aHidd_PixFmt_AlphaShift   , 0				   },
-	{ aHidd_PixFmt_RedMask	    , 0x000000FF		   },
-	{ aHidd_PixFmt_GreenMask    , 0x0000FF00		   },
-	{ aHidd_PixFmt_BlueMask     , 0x00FF0000		   },
-	{ aHidd_PixFmt_AlphaMask    , 0x00000000		   },
-	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   },
-	{ aHidd_PixFmt_Depth	    , 24			   },
-	{ aHidd_PixFmt_BytesPerPixel, 4				   },
-	{ aHidd_PixFmt_BitsPerPixel , 24			   },
-	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native	   },
-	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky      },
-	{ TAG_DONE  	    	    , 0				   }
+         */
+        { aHidd_PixFmt_RedShift     , 24                           },
+        { aHidd_PixFmt_GreenShift   , 16                           },
+        { aHidd_PixFmt_BlueShift    , 8                            },
+        { aHidd_PixFmt_AlphaShift   , 0                            },
+        { aHidd_PixFmt_RedMask      , 0x000000FF                   },
+        { aHidd_PixFmt_GreenMask    , 0x0000FF00                   },
+        { aHidd_PixFmt_BlueMask     , 0x00FF0000                   },
+        { aHidd_PixFmt_AlphaMask    , 0x00000000                   },
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   },
+        { aHidd_PixFmt_Depth        , 24                           },
+        { aHidd_PixFmt_BytesPerPixel, 4                            },
+        { aHidd_PixFmt_BitsPerPixel , 24                           },
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native       },
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky      },
+        { TAG_DONE                  , 0                            }
     };
 
     struct TagItem p_sync_tags[] =
     {
-    	{ aHidd_Sync_HDisp  	, 160 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 160 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Android: %hx%v Portrait"},
-	{ TAG_DONE  	    	, 0UL 	    	    	 }
+        { aHidd_Sync_HDisp      , 160                    },
+        { aHidd_Sync_VDisp      , 160                    },
+        { aHidd_Sync_Description, (IPTR)"Android: %hx%v Portrait"},
+        { TAG_DONE              , 0UL                    }
     };
 
     struct TagItem l_sync_tags[] =
     {
-    	{ aHidd_Sync_HDisp  	, 160 	    	    	 },
-	{ aHidd_Sync_VDisp  	, 160 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Android: %hx%v Landscape"},
-	{ TAG_DONE  	    	, 0UL 	    	    	 }
+        { aHidd_Sync_HDisp      , 160                    },
+        { aHidd_Sync_VDisp      , 160                    },
+        { aHidd_Sync_Description, (IPTR)"Android: %hx%v Landscape"},
+        { TAG_DONE              , 0UL                    }
     };
 
     struct TagItem mode_tags[] =
     {
-	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
+        { aHidd_Gfx_PixFmtTags  , (IPTR)pftags          },
 #ifdef ENABLE_SCROLL
-	{ aHidd_Sync_HMax	, 16384			},
-	{ aHidd_Sync_VMax	, 16384			},
+        { aHidd_Sync_HMax       , 16384                 },
+        { aHidd_Sync_VMax       , 16384                 },
 #endif
-	{ aHidd_Gfx_SyncTags	, (IPTR)p_sync_tags	},
-	{ aHidd_Gfx_SyncTags	, (IPTR)l_sync_tags	},
-	{ TAG_DONE  	    	, 0UL 	    	    	}
+        { aHidd_Gfx_SyncTags    , (IPTR)p_sync_tags     },
+        { aHidd_Gfx_SyncTags    , (IPTR)l_sync_tags     },
+        { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem mytags[] =
     {
-	{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	 },
-	{ aHidd_Name		, (IPTR)"androidgfx"},
-	{ aHidd_HardwareName	, (IPTR)"Android OS Gfx Host"	 },
-	{ aHidd_ProducerName	, (IPTR)"Google inc."	 },
-	{ TAG_MORE  	    	, (IPTR)msg->attrList 	 }
+        { aHidd_Gfx_ModeTags    , (IPTR)mode_tags        },
+        { aHidd_Name            , (IPTR)"androidgfx"},
+        { aHidd_HardwareName    , (IPTR)"Android OS Gfx Host"    },
+        { aHidd_ProducerName    , (IPTR)"Google inc."    },
+        { TAG_MORE              , (IPTR)msg->attrList    }
     };
     struct pRoot_New mymsg = { msg->mID, mytags };
 
@@ -106,37 +106,37 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     if (query.req.status != STATUS_ACK)
     {
-    	D(bug("[AGFX] Display server communication error\n"));
-    	return NULL;
+        D(bug("[AGFX] Display server communication error\n"));
+        return NULL;
     }
 
     D(bug("[AGFX] Display size: %ux%u, Titlebar size: %u, Orientation: %u\n", query.width, query.height, query.titlebar, query.orientation));
 
     if (query.orientation == ACONFIGURATION_ORIENTATION_PORT)
     {
-    	p_sync_tags[0].ti_Data = query.width;
-    	p_sync_tags[1].ti_Data = query.height - query.titlebar;
-    	l_sync_tags[0].ti_Data = query.height;
-    	l_sync_tags[1].ti_Data = query.width - query.titlebar;
+        p_sync_tags[0].ti_Data = query.width;
+        p_sync_tags[1].ti_Data = query.height - query.titlebar;
+        l_sync_tags[0].ti_Data = query.height;
+        l_sync_tags[1].ti_Data = query.width - query.titlebar;
     }
     else
     {
-    	l_sync_tags[0].ti_Data = query.width;
-    	l_sync_tags[1].ti_Data = query.height - query.titlebar;
-    	p_sync_tags[0].ti_Data = query.height;
-    	p_sync_tags[1].ti_Data = query.width - query.titlebar;
+        l_sync_tags[0].ti_Data = query.width;
+        l_sync_tags[1].ti_Data = query.height - query.titlebar;
+        p_sync_tags[0].ti_Data = query.height;
+        p_sync_tags[1].ti_Data = query.width - query.titlebar;
     }
 
     /* Register gfxmodes */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (o)
     {
-	struct gfx_data *data = OOP_INST_DATA(cl, o);
+        struct gfx_data *data = OOP_INST_DATA(cl, o);
 
-	D(bug("AGFX::New(): Got object from super\n"));
+        D(bug("AGFX::New(): Got object from super\n"));
 
-	data->width  = query.width;
-	data->height = query.height;
+        data->width  = query.width;
+        data->height = query.height;
     }
     ReturnPtr("AGFXGfx::New", OOP_Object *, o);
 }
@@ -153,7 +153,7 @@ OOP_Object *AGFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct 
         struct pHidd_Gfx_CreateObject p;
         struct TagItem tags[] =
         {
-            {TAG_IGNORE, 0			},
+            {TAG_IGNORE, 0                      },
             {TAG_MORE  , (IPTR)msg->attrList}
         };
 
@@ -200,17 +200,17 @@ VOID AGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
-    	switch (idx)
-	{
-	    case aoHidd_Gfx_IsWindowed:
-	    case aoHidd_Gfx_NoFrameBuffer:
-	    	*msg->storage = TRUE;
-		return;
+        switch (idx)
+        {
+            case aoHidd_Gfx_IsWindowed:
+            case aoHidd_Gfx_NoFrameBuffer:
+                *msg->storage = TRUE;
+                return;
 
-	    case aoHidd_Gfx_DriverName:
-		*msg->storage = (IPTR)"Android";
-		return;
-	}
+            case aoHidd_Gfx_DriverName:
+                *msg->storage = (IPTR)"Android";
+                return;
+        }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -224,22 +224,22 @@ OOP_Object *AGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     D(bug("[AGFX] Show(0x%p)\n", msg->bitMap));
 
     if (data->bitmap)
-    	OOP_SetAttrsTags(data->bitmap, aHidd_BitMap_Visible, FALSE, TAG_DONE);
+        OOP_SetAttrsTags(data->bitmap, aHidd_BitMap_Visible, FALSE, TAG_DONE);
 
     if (msg->bitMap)
-    	OOP_SetAttrsTags(msg->bitMap, aHidd_BitMap_Visible, TRUE, TAG_DONE);
+        OOP_SetAttrsTags(msg->bitMap, aHidd_BitMap_Visible, TRUE, TAG_DONE);
     else
     {
-    	/* addr == NULL will clear the screen. Offset and size are ignored. */
-	struct ShowRequest show;
+        /* addr == NULL will clear the screen. Offset and size are ignored. */
+        struct ShowRequest show;
 
-	show.req.cmd     = cmd_Show;
-	show.req.len     = 8;
-	show.displayid   = 0;
-	show.orientation = ACONFIGURATION_ORIENTATION_ANY;	/* Do not change the orientation */
-	show.addr        = 0;
+        show.req.cmd     = cmd_Show;
+        show.req.len     = 8;
+        show.displayid   = 0;
+        show.orientation = ACONFIGURATION_ORIENTATION_ANY;      /* Do not change the orientation */
+        show.addr        = 0;
 
-	DoRequest(&show.req, XSD(cl));
+        DoRequest(&show.req, XSD(cl));
     }
 
     data->bitmap = msg->bitMap;
@@ -255,8 +255,8 @@ static void FreeAttrBases(const STRPTR *iftable, OOP_AttrBase *bases)
     
     for (i = 0; iftable[i]; i++)
     {
-	if (bases[i])
-	    OOP_ReleaseAttrBase(iftable[i]);
+        if (bases[i])
+            OOP_ReleaseAttrBase(iftable[i]);
     }
 
     FreeVec(bases);
@@ -272,15 +272,15 @@ static OOP_AttrBase *AllocAttrBases(const STRPTR *iftable)
     ret = AllocVec(cnt * sizeof(OOP_AttrBase), MEMF_CLEAR);
     if (ret)
     {
-	for (i = 0; i < cnt; i++)
-	{
-	    ret[i] = OOP_ObtainAttrBase(iftable[i]);
-	    if (!ret[i])
-	    {
-		FreeAttrBases(iftable, ret);
-		return NULL;
-	    }
-	}
+        for (i = 0; i < cnt; i++)
+        {
+            ret[i] = OOP_ObtainAttrBase(iftable[i]);
+            if (!ret[i])
+            {
+                FreeAttrBases(iftable, ret);
+                return NULL;
+            }
+        }
     }
 
     return ret;
@@ -305,8 +305,8 @@ static int GetPipe(const char *name, APTR lib, APTR HostLibBase)
     
     if (!ptr)
     {
-    	D(bug("[AGFX] Failed to locate symbol %s\n", name));
-    	return -1;
+        D(bug("[AGFX] Failed to locate symbol %s\n", name));
+        return -1;
     }
     
     return *ptr;
@@ -324,11 +324,11 @@ static int agfx_init(struct AGFXBase *agfxBase)
 
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
-	return FALSE;
+        return FALSE;
 
     HostLibHandle = HostLib_Open("libAROSBootstrap.so", NULL);
     if (!HostLibHandle)
-	return FALSE;
+        return FALSE;
 
     agfxBase->xsd.DisplayPipe = GetPipe("DisplayPipe", HostLibHandle, HostLibBase);
     agfxBase->xsd.InputPipe   = GetPipe("InputPipe", HostLibHandle, HostLibBase);
@@ -338,32 +338,32 @@ static int agfx_init(struct AGFXBase *agfxBase)
     HostLib_Close(HostLibHandle, NULL);
 
     if ((agfxBase->xsd.DisplayPipe == -1) || (agfxBase->xsd.InputPipe == -1))
-    	return FALSE;
+        return FALSE;
 
     agfxBase->xsd.AttrBases = AllocAttrBases(interfaces);
     if (!agfxBase->xsd.AttrBases)
-	return FALSE;
+        return FALSE;
 
     agfxBase->xsd.unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (!agfxBase->xsd.unixio)
-    	return FALSE;
+        return FALSE;
 
     NEWLIST(&agfxBase->xsd.waitQueue);
 
     agfxBase->xsd.serverInt.fd          = agfxBase->xsd.InputPipe;
-    agfxBase->xsd.serverInt.mode	= vHidd_UnixIO_Read;
+    agfxBase->xsd.serverInt.mode        = vHidd_UnixIO_Read;
     agfxBase->xsd.serverInt.handler     = agfxInt;
     agfxBase->xsd.serverInt.handlerData = &agfxBase->xsd;
 
     res = Hidd_UnixIO_AddInterrupt(agfxBase->xsd.unixio, &agfxBase->xsd.serverInt);
     if (res)
     {
-	Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.DisplayPipe, NULL);
-    	Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.InputPipe, NULL);
+        Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.DisplayPipe, NULL);
+        Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.InputPipe, NULL);
 
-	/* We don't need to dispose a unixio v42 object, it's a singletone. */
-	agfxBase->xsd.unixio = NULL;
-    	return FALSE;
+        /* We don't need to dispose a unixio v42 object, it's a singletone. */
+        agfxBase->xsd.unixio = NULL;
+        return FALSE;
     }
 
     /* Say hello to our display server */
@@ -374,8 +374,8 @@ static int agfx_init(struct AGFXBase *agfxBase)
 
     if (hello.req.status != STATUS_ACK)
     {
-    	D(bug("[AGFX] Display server version mismatch\n"));
-    	return FALSE;
+        D(bug("[AGFX] Display server version mismatch\n"));
+        return FALSE;
     }
 
     D(bug("[AGFX] Init OK\n"));
@@ -391,17 +391,17 @@ static int agfx_expunge(struct AGFXBase *agfxBase)
 
     if (agfxBase->xsd.unixio)
     {
-	Hidd_UnixIO_RemInterrupt(agfxBase->xsd.unixio, &agfxBase->xsd.serverInt);
+        Hidd_UnixIO_RemInterrupt(agfxBase->xsd.unixio, &agfxBase->xsd.serverInt);
 
-    	if (agfxBase->xsd.DisplayPipe != -1)
-	    Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.DisplayPipe, NULL);
+        if (agfxBase->xsd.DisplayPipe != -1)
+            Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.DisplayPipe, NULL);
 
-	if (agfxBase->xsd.InputPipe != -1)
-    	    Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.InputPipe, NULL);
+        if (agfxBase->xsd.InputPipe != -1)
+            Hidd_UnixIO_CloseFile(agfxBase->xsd.unixio, agfxBase->xsd.InputPipe, NULL);
     }
 
     if (agfxBase->xsd.AttrBases)
-	FreeAttrBases(interfaces, agfxBase->xsd.AttrBases);
+        FreeAttrBases(interfaces, agfxBase->xsd.AttrBases);
 
     return TRUE;
 }

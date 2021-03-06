@@ -37,26 +37,26 @@ static int IEEEDPT_Init(struct MathIeeeDoubTransBase *lh)
 {
     MathIeeeDoubBasBase = OpenLibrary("mathieeedoubbas.library", 39);
     if (!MathIeeeDoubBasBase)
-	return FALSE;
+        return FALSE;
 
     if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40)) {
-	SetFunc(LVOIEEEDPAtan,          ATan_6888x);
-	SetFunc(LVOIEEEDPSin,           Sin_6888x);
-	SetFunc(LVOIEEEDPCos,           Cos_6888x);
-	SetFunc(LVOIEEEDPTan,           Tan_6888x);
-	SetFunc(LVOIEEEDPSincos,        Sincos_6888x);
-	SetFunc(LVOIEEEDPSinh,          Sinh_6888x);
-	SetFunc(LVOIEEEDPCosh,          Cosh_6888x);
-	SetFunc(LVOIEEEDPTanh,          Tanh_6888x);
-	SetFunc(LVOIEEEDPExp,           Exp_6888x);
-	SetFunc(LVOIEEEDPLog,           Log_6888x);
-	/* SetFunc(LVOIEEEDPPow,        Pow_6888x); */
-	SetFunc(LVOIEEEDPSqrt,          Sqrt_6888x);
-	SetFunc(LVOIEEEDPTieee,         Tieee_6888x);
-	SetFunc(LVOIEEEDPFieee,         Fieee_6888x);
-	SetFunc(LVOIEEEDPAsin,          Asin_6888x);
-	SetFunc(LVOIEEEDPAcos,          Acos_6888x);
-	SetFunc(LVOIEEEDPLog10,         Log10_6888x);
+        SetFunc(LVOIEEEDPAtan,          ATan_6888x);
+        SetFunc(LVOIEEEDPSin,           Sin_6888x);
+        SetFunc(LVOIEEEDPCos,           Cos_6888x);
+        SetFunc(LVOIEEEDPTan,           Tan_6888x);
+        SetFunc(LVOIEEEDPSincos,        Sincos_6888x);
+        SetFunc(LVOIEEEDPSinh,          Sinh_6888x);
+        SetFunc(LVOIEEEDPCosh,          Cosh_6888x);
+        SetFunc(LVOIEEEDPTanh,          Tanh_6888x);
+        SetFunc(LVOIEEEDPExp,           Exp_6888x);
+        SetFunc(LVOIEEEDPLog,           Log_6888x);
+        /* SetFunc(LVOIEEEDPPow,        Pow_6888x); */
+        SetFunc(LVOIEEEDPSqrt,          Sqrt_6888x);
+        SetFunc(LVOIEEEDPTieee,         Tieee_6888x);
+        SetFunc(LVOIEEEDPFieee,         Fieee_6888x);
+        SetFunc(LVOIEEEDPAsin,          Asin_6888x);
+        SetFunc(LVOIEEEDPAcos,          Acos_6888x);
+        SetFunc(LVOIEEEDPLog10,         Log10_6888x);
     }
     return TRUE;
 }
@@ -64,7 +64,7 @@ static int IEEEDPT_Init(struct MathIeeeDoubTransBase *lh)
 static int IEEEDPT_Expunge(struct Library *lh)
 {
     if (MathIeeeDoubBasBase)
-	CloseLibrary (MathIeeeDoubBasBase);
+        CloseLibrary (MathIeeeDoubBasBase);
     return TRUE;
 }
 

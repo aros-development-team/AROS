@@ -86,12 +86,12 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
       if (IS_HIDDSERIALUNIT_ATTR(tag->ti_Tag, idx))
 #undef csd
       {
-	  switch (idx)
-	  {
-	      case aoHidd_SerialUnit_Unit:
-		  unitnum = (ULONG)tag->ti_Data;
-		  break;
-	  }
+          switch (idx)
+          {
+              case aoHidd_SerialUnit_Unit:
+                  unitnum = (ULONG)tag->ti_Data;
+                  break;
+          }
       }
 
   } /* while (tags to process) */
@@ -135,11 +135,11 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
       ** Configure the tty driver
       */
       tcgetattr(data->filedescriptor, &data->orig_termios);
-      tcgetattr(data->filedescriptor, &_termios); 
+      tcgetattr(data->filedescriptor, &_termios);
       cfmakeraw(&_termios);
 #endif
 
-      /* 
+      /*
        * Get the preferences information from intuition library.
        * If intuition could not be opened (?) then I will just
        * use the default termios.
@@ -151,7 +151,7 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
         adapt_termios(&_termios, &prefs);
         CloseLibrary((struct Library *)IntuitionBase);
       } else {
-//          data->baudrate       = 
+//          data->baudrate       =
       }
       D(bug("Setting baudrate to %d.\n",data->baudrate));
 
@@ -221,7 +221,7 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
               OOP_DisposeObject(data->unixio_write);
           }
           
-          if (data->softint_read) 
+          if (data->softint_read)
             FreeMem(data->softint_read, sizeof(struct Interrupt));
           if (data->softint_write)
             FreeMem(data->softint_write, sizeof(struct Interrupt));
@@ -231,7 +231,7 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
           FreeMem(data->replyport_read , sizeof(struct MsgPort));
         if (data->replyport_write)
           FreeMem(data->replyport_write, sizeof(struct MsgPort));
-      } 
+      }
 #else
        goto exit;
 #endif
@@ -259,7 +259,7 @@ OOP_Object *UXSerUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg
   D(bug("Freeing filedescriptor (%d)!\n",data->filedescriptor));
 
   if (-1 != data->filedescriptor)
-  { 
+  {
 #if 0
     tcsetattr(data->filedescriptor, TCSANOW, &data->orig_termios);
     Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
@@ -395,7 +395,7 @@ ULONG UXSerUnit__Hidd_SerialUnit__SetBaudrate(OOP_Class *cl, OOP_Object *o, stru
       {
 #if 0
         struct termios _termios;
-        tcgetattr(data->filedescriptor, &_termios); 
+        tcgetattr(data->filedescriptor, &_termios);
         cfsetspeed(&_termios, msg->baudrate);
 
         if (tcsetattr(data->filedescriptor, TCSANOW, &_termios) <0)
@@ -471,21 +471,21 @@ ULONG UXSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, st
       case TAG_STOP_BITS:
           if (2 == tags[i].ti_Data) {
             data->stopbits = 2;
-          } else 
+          } else
             data->stopbits = 1;
       break;
       
       case TAG_PARITY:
-	  if ( /* PARITY_0    == tags[i].ti_Data ||
-	          PARITY_1    == tags[i].ti_Data || */
-	      PARITY_EVEN == tags[i].ti_Data ||
-              PARITY_ODD  == tags[i].ti_Data)  
+          if ( /* PARITY_0    == tags[i].ti_Data ||
+                  PARITY_1    == tags[i].ti_Data || */
+              PARITY_EVEN == tags[i].ti_Data ||
+              PARITY_ODD  == tags[i].ti_Data)
           {
-	     data->parity     = TRUE;
-	     data->paritytype = tags[i].ti_Data;
-	  }
-	  else
-	    valid = FALSE;
+             data->parity     = TRUE;
+             data->paritytype = tags[i].ti_Data;
+          }
+          else
+            valid = FALSE;
       break;
       
       case TAG_PARITY_OFF:
@@ -496,7 +496,7 @@ ULONG UXSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, st
       case TAG_IGNORE:
       break;
       
-      default: 
+      default:
         valid = FALSE;
     }
     i++;
@@ -510,7 +510,7 @@ ULONG UXSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, st
 /******* SerialUnit::SendBreak() **********************************/
 BYTE UXSerUnit__Hidd_SerialUnit__SendBreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
-#if 0 
+#if 0
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   if (0 == tcsendbreak(data->filedescriptor, msg->duration))
 #endif
@@ -522,21 +522,21 @@ BYTE UXSerUnit__Hidd_SerialUnit__SendBreak(OOP_Class *cl, OOP_Object *o, struct 
 /******* SerialUnit::Start() **********************************/
 VOID UXSerUnit__Hidd_SerialUnit__Start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Start *msg)
 {
-	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+        struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
-	/*
-	 * Allow or start feeding the UART with data. Get the data
-	 * from upper layer.
-	 */
-	if (TRUE == data->stopped) { 
-		if (NULL != data->DataWriteCallBack)
-			 data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
-		/*
-		 * Also mark the stopped flag as FALSE.
-		 */
-		data->stopped = FALSE;
-	}
-}  
+        /*
+         * Allow or start feeding the UART with data. Get the data
+         * from upper layer.
+         */
+        if (TRUE == data->stopped) {
+                if (NULL != data->DataWriteCallBack)
+                         data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+                /*
+                 * Also mark the stopped flag as FALSE.
+                 */
+                data->stopped = FALSE;
+        }
+}
   
 
 /******* SerialUnit::Stop() **********************************/
@@ -582,9 +582,9 @@ VOID UXSerUnit__Hidd_SerialUnit__GetCapabilities(OOP_Class * cl, OOP_Object *o, 
 /****** SerialUnit::GetStatus ********************************/
 UWORD UXSerUnit__Hidd_SerialUnit__GetStatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_GetStatus *msg)
 {
-//	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+//      struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
-	return 0;
+        return 0;
 }
 
 /************* The software interrupt handler that gets data from UART *****/
@@ -611,7 +611,7 @@ AROS_INTH1(serialunit_receive_data, struct HIDDSerialUnitData *, data)
   */
   len = Hidd_UnixIO_ReadFile(data->unixio, data->filedescriptor, buffer, READBUFFER_SIZE, NULL);
   /*
-  ** ... and deliver them to whoever is interested. 
+  ** ... and deliver them to whoever is interested.
   */
 
   if (NULL != data->DataReceivedCallBack)
@@ -705,7 +705,7 @@ static void settermios(struct HIDDSerialUnitData * data)
   }
 
   /*
-   * Stop Bits 
+   * Stop Bits
    */
   _termios.c_cflag &= ~CSTOPB;
   if (2 == data->stopbits)
@@ -731,80 +731,80 @@ static void adapt_termios(struct termios * termios,
                           struct Preferences * prefs)
 {
 #if 0
-	cfmakeraw(termios);
-	/*
-	 * Parity.
-	 */
-	termios->c_cflag &= ~(PARENB|PARODD);
-	switch ((prefs->SerParShk >> 4) & 0x0f) {
-		case SPARITY_NONE:
-			termios->c_cflag &= ~(PARENB|PARODD);
-		break;
-		
-		case SPARITY_EVEN:
-			termios->c_cflag |= PARENB;
-		break;
-		
-		case SPARITY_ODD:
-			termios->c_cflag |= (PARODD|PARENB);
-		break;
+        cfmakeraw(termios);
+        /*
+         * Parity.
+         */
+        termios->c_cflag &= ~(PARENB|PARODD);
+        switch ((prefs->SerParShk >> 4) & 0x0f) {
+                case SPARITY_NONE:
+                        termios->c_cflag &= ~(PARENB|PARODD);
+                break;
+                
+                case SPARITY_EVEN:
+                        termios->c_cflag |= PARENB;
+                break;
+                
+                case SPARITY_ODD:
+                        termios->c_cflag |= (PARODD|PARENB);
+                break;
 
-		case SPARITY_MARK:
-		case SPARITY_SPACE:
-		default:
-		break;
-	}
-	
-	/*
-	 * Bit per character 
-	 */
-	termios->c_cflag &= ~CSIZE;
-	switch ((prefs->SerRWBits & 0x0f)) {
-		default: /* 8 bit */
-		case 0:
-			termios->c_cflag |= CS8;
-		break;
-		
-		case 1: /* 7 bit */
-			termios->c_cflag |= CS7;
-		break;
-		
-		case 2: /* 6 bit */
-			termios->c_cflag |= CS6;
-		break;
-		
-		case 3: /* 5 bit */
-			termios->c_cflag |= CS5;
-		break;
-	}
+                case SPARITY_MARK:
+                case SPARITY_SPACE:
+                default:
+                break;
+        }
+        
+        /*
+         * Bit per character
+         */
+        termios->c_cflag &= ~CSIZE;
+        switch ((prefs->SerRWBits & 0x0f)) {
+                default: /* 8 bit */
+                case 0:
+                        termios->c_cflag |= CS8;
+                break;
+                
+                case 1: /* 7 bit */
+                        termios->c_cflag |= CS7;
+                break;
+                
+                case 2: /* 6 bit */
+                        termios->c_cflag |= CS6;
+                break;
+                
+                case 3: /* 5 bit */
+                        termios->c_cflag |= CS5;
+                break;
+        }
 
-	/*
-	 * 2 stop bits ? default is '1'.
-	 */
-	if (1 == (prefs->SerStopBuf >> 4))
-		termios->c_cflag |= CSTOPB;
-	else
-		termios->c_cflag &= ~CSTOPB;
-	
-	/*
-	 * Handshake to be used.
-	 */
-	termios->c_iflag &= ~(IXON|IXOFF);
-	termios->c_cflag &= ~CRTSCTS;
-	switch((prefs->SerParShk & 0x0f)) {
-		case SHSHAKE_XON:
-			termios->c_iflag |= (IXON|IXOFF);
-		break;
-		
-		case SHSHAKE_RTS:
-			termios->c_cflag |= CRTSCTS;
-		break;
-		
-		default:
-		break;
-	}
+        /*
+         * 2 stop bits ? default is '1'.
+         */
+        if (1 == (prefs->SerStopBuf >> 4))
+                termios->c_cflag |= CSTOPB;
+        else
+                termios->c_cflag &= ~CSTOPB;
+        
+        /*
+         * Handshake to be used.
+         */
+        termios->c_iflag &= ~(IXON|IXOFF);
+        termios->c_cflag &= ~CRTSCTS;
+        switch((prefs->SerParShk & 0x0f)) {
+                case SHSHAKE_XON:
+                        termios->c_iflag |= (IXON|IXOFF);
+                break;
+                
+                case SHSHAKE_RTS:
+                        termios->c_cflag |= CRTSCTS;
+                break;
+                
+                default:
+                break;
+        }
 
-	cfsetspeed(termios, prefs->BaudRate);
+        cfsetspeed(termios, prefs->BaudRate);
 #endif
-	
+        
 } /* adapt_termios */

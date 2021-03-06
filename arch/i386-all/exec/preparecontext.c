@@ -29,17 +29,17 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     struct ExceptionContext *ctx;
 
     if (!(task->tc_Flags & TF_ETASK) )
-	return FALSE;
+        return FALSE;
   
     ctx = KrnCreateContext();
     task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
     if (!ctx)
-	return FALSE;
+        return FALSE;
 
     while((t = LibNextTagItem((struct TagItem **)&tagList)))
     {
-    	switch(t->ti_Tag)
-	{
+        switch(t->ti_Tag)
+        {
 #if defined(__AROSEXEC_SMP__)
             case TASKTAG_AFFINITY:
                 IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
@@ -47,34 +47,34 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
 #endif
 
 #define HANDLEARG(x)                      \
-	case TASKTAG_ARG ## x:            \
-	    args[x - 1] = t->ti_Data;     \
-	    if (x > numargs) numargs = x; \
-	    break;
+        case TASKTAG_ARG ## x:            \
+            args[x - 1] = t->ti_Data;     \
+            if (x > numargs) numargs = x; \
+            break;
 
-	HANDLEARG(1)
-	HANDLEARG(2)
-	HANDLEARG(3)
-	HANDLEARG(4)
-	HANDLEARG(5)
-	HANDLEARG(6)
-	HANDLEARG(7)
-	HANDLEARG(8)
-	}
+        HANDLEARG(1)
+        HANDLEARG(2)
+        HANDLEARG(3)
+        HANDLEARG(4)
+        HANDLEARG(5)
+        HANDLEARG(6)
+        HANDLEARG(7)
+        HANDLEARG(8)
+        }
     }
 
     /*
-	There is not much to do here, or at least that is how it
-	appears. Most of the work is done in the kernel_cpu.h macros.
+        There is not much to do here, or at least that is how it
+        appears. Most of the work is done in the kernel_cpu.h macros.
     */
 
     if (numargs)
     {
-	/* On i386 C function gets all param on stack */
-	while(numargs--)
-	{
-	    _PUSH(sp, args[numargs]);
-	}
+        /* On i386 C function gets all param on stack */
+        while(numargs--)
+        {
+            _PUSH(sp, args[numargs]);
+        }
     }
 
     /* First we push the return address */

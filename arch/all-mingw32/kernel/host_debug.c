@@ -23,16 +23,16 @@ int __declspec(dllexport) __aros core_getc(void)
 
     do
     {
-	if (!PeekConsoleInput(conin, &input, 1, &cnt))
-	    return -1;
-	if (cnt < 1)
-	    return -1;
+        if (!PeekConsoleInput(conin, &input, 1, &cnt))
+            return -1;
+        if (cnt < 1)
+            return -1;
 
-	if (!ReadConsoleInput(conin, &input, 1, &cnt))
-	    return -1;
-	/* Control keys also generate events with zero character, so we ignore them */
+        if (!ReadConsoleInput(conin, &input, 1, &cnt))
+            return -1;
+        /* Control keys also generate events with zero character, so we ignore them */
     } while ((input.EventType != KEY_EVENT) || (!input.Event.KeyEvent.bKeyDown) ||
-	     (!input.Event.KeyEvent.uChar.AsciiChar));
+             (!input.Event.KeyEvent.uChar.AsciiChar));
 
     return input.Event.KeyEvent.uChar.AsciiChar;
 }

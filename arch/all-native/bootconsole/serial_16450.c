@@ -42,26 +42,26 @@ void serial_Init(char *opts)
 
     if (opts)
     {
-    	/* Command line option format: debug=serial[:N][@baud] */
-    	if (opts[0] == ':')
-    	{
+        /* Command line option format: debug=serial[:N][@baud] */
+        if (opts[0] == ':')
+        {
             unsigned short port = strtoul(++opts, &opts, 0);
 
-	    /* N can be either port number (0 - 4) or direct base address specification */
-    	    if (port < 4)
-	    	Serial_Base = standard_ports[port];
-	    else
-	    	Serial_Base = port;
-	}
+            /* N can be either port number (0 - 4) or direct base address specification */
+            if (port < 4)
+                Serial_Base = standard_ports[port];
+            else
+                Serial_Base = port;
+        }
 
-	/* Set baud rate */
-	if (opts[0] == '@')
-    	{
-    	    unsigned int baud = strtoul(++opts, NULL, 10);
+        /* Set baud rate */
+        if (opts[0] == '@')
+        {
+            unsigned int baud = strtoul(++opts, NULL, 10);
 
-	    if (baud <= SER_MAXBAUD)
-	    	baudRate = baud;
-	}
+            if (baud <= SER_MAXBAUD)
+                baudRate = baud;
+        }
     }
 
 #ifdef __ppc__
@@ -81,7 +81,7 @@ void serial_Init(char *opts)
     inb_p(base + UART_RX);
 }
 
-static void serial_RawPutc(char data) 
+static void serial_RawPutc(char data)
 {
     port_t base;
 
@@ -133,11 +133,11 @@ void serial_Putc(char chr)
     {
     /* Ignore null bytes, they are output by formatting routines as terminators */
     case 0:
-    	return;
+        return;
 
     /* Prepend CR to LF */
     case '\n':
-    	serial_RawPutc('\r');
+        serial_RawPutc('\r');
     }
 
     serial_RawPutc(chr);

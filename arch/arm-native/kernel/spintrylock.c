@@ -13,9 +13,9 @@
 #include <proto/kernel.h>
 
 AROS_LH2(spinlock_t *, KrnSpinTryLock,
-	AROS_LHA(spinlock_t *, lock, A0),
-	AROS_LHA(ULONG, mode, D0),
-	struct KernelBase *, KernelBase, 51, Kernel)
+        AROS_LHA(spinlock_t *, lock, A0),
+        AROS_LHA(ULONG, mode, D0),
+        struct KernelBase *, KernelBase, 51, Kernel)
 {
     AROS_LIBFUNC_INIT
 

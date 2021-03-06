@@ -59,7 +59,7 @@ asm (
     "           ldr     sp, stack_fiq_end    \n"
     "           cps     #0x13                \n" /* SVC (supervisor) mode */
     "           ldr     sp, stack_super_end  \n"
-    "           b       kernel_cstart	     \n"
+    "           b       kernel_cstart        \n"
 
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );

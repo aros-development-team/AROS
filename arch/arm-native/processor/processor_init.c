@@ -29,18 +29,18 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 
     for (i = 0; i < ProcessorBase->cpucount; i++)
     {
-    	sysprocs[i] = AllocMem(sizeof(struct ARMProcessorInformation), MEMF_CLEAR);
-    	if (!sysprocs[i])
-    	    return FALSE;
+        sysprocs[i] = AllocMem(sizeof(struct ARMProcessorInformation), MEMF_CLEAR);
+        if (!sysprocs[i])
+            return FALSE;
 #if defined(__AROSEXEC_SMP__)
-    	if (i > 0)
-	{
+        if (i > 0)
+        {
             NewCreateTask(TASKTAG_AFFINITY      , KrnGetCPUMask(i)              },
                           TASKTAG_PRI           , -127,
                           TASKTAG_PC            , ReadProcessorInformation,
                           TASKTAG_ARG1          , sysprocs[i],
                           TAG_DONE);
-	}
+        }
         else
 #else
         if (i == 0)
@@ -82,7 +82,7 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
             }
             else
             {
-                bug("[processor.ARM]   VFPv1 Co-Processor\n");            
+                bug("[processor.ARM]   VFPv1 Co-Processor\n");
             }
 
             if (sysprocs[i]->Features1 & FEATF_NEON)

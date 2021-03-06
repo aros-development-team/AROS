@@ -7,7 +7,7 @@
 #include "card_intern.h"
 
 AROS_LH0(ULONG, CardInterface,
-	struct CardResource*, CardResource, 17, Card)
+        struct CardResource*, CardResource, 17, Card)
 {
     AROS_LIBFUNC_INIT
 

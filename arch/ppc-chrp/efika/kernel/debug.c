@@ -16,12 +16,12 @@
 
 void __putc(uint8_t chr)
 {
-	if (chr == '\n')
-		__putc('\r');
+        if (chr == '\n')
+                __putc('\r');
 
-	while (!(inw(0xf0002004) & 0x400));
-	outb(chr, 0xf0002080);
-	while (!(inw(0xf0002004) & 0x400));
+        while (!(inw(0xf0002004) & 0x400));
+        outb(chr, 0xf0002080);
+        while (!(inw(0xf0002004) & 0x400));
 }
 
 
@@ -83,7 +83,7 @@ AROS_LH2(int, KrnBug,
 #define R_PPC_ADDR16_LO 4
 #define R_PPC_ADDR16_HA 6
 #define R_PPC_REL24     10
-#define R_PPC_REL32	26
+#define R_PPC_REL32     26
 #define R_PPC_REL16_LO  250
 #define R_PPC_REL16_HA  252
 
@@ -192,132 +192,132 @@ struct hunk
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
 AROS_LH3(void, KrnRegisterModule,
-		AROS_LHA(const char *, 		name, A0),
-		AROS_LHA(struct sheader *,	sections, A1),
-		AROS_LHA(struct elfheader *,eh, A2),
-		struct KernelBase *, KernelBase, 22, Kernel)
+                AROS_LHA(const char *,          name, A0),
+                AROS_LHA(struct sheader *,      sections, A1),
+                AROS_LHA(struct elfheader *,eh, A2),
+                struct KernelBase *, KernelBase, 22, Kernel)
 {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 
-	struct ExecBase *SysBase = getSysBase();
+        struct ExecBase *SysBase = getSysBase();
 
-	if (name && sections && eh)
-	{
-		module_t *mod = AllocVec(sizeof(module_t), MEMF_PUBLIC | MEMF_CLEAR);
+        if (name && sections && eh)
+        {
+                module_t *mod = AllocVec(sizeof(module_t), MEMF_PUBLIC | MEMF_CLEAR);
 
-		if (mod)
-		{
-			int i;
+                if (mod)
+                {
+                        int i;
 
-//			D(bug("[KRN] KrnRegisterModule('%s', %08x, %d)\n", name, sections, eh->int_shnum));
+//                      D(bug("[KRN] KrnRegisterModule('%s', %08x, %d)\n", name, sections, eh->int_shnum));
 
-			mod->m_name = AllocVec(strlen(name)+1, MEMF_PUBLIC | MEMF_CLEAR);
-			strcpy(mod->m_name, name);
+                        mod->m_name = AllocVec(strlen(name)+1, MEMF_PUBLIC | MEMF_CLEAR);
+                        strcpy(mod->m_name, name);
 
-			NEWLIST(&mod->m_symbols);
+                        NEWLIST(&mod->m_symbols);
 
-			mod->m_lowest = 0xffffffff;
-			mod->m_highest = 0;
+                        mod->m_lowest = 0xffffffff;
+                        mod->m_highest = 0;
 
-			for (i=0; i < eh->int_shnum; i++)
-			{
-				/* If we have string table, copy it */
-				if (sections[i].type == SHT_STRTAB && i != eh->int_shstrndx)
-				{
-//					D(bug("[KRN]  symbol table of length %d in section %d\n", sections[i].size, i));
+                        for (i=0; i < eh->int_shnum; i++)
+                        {
+                                /* If we have string table, copy it */
+                                if (sections[i].type == SHT_STRTAB && i != eh->int_shstrndx)
+                                {
+//                                      D(bug("[KRN]  symbol table of length %d in section %d\n", sections[i].size, i));
 
-					if (!mod->m_str)
-					{
-						mod->m_str = AllocVec(sections[i].size, MEMF_PUBLIC | MEMF_CLEAR);
-						CopyMem(sections[i].addr, mod->m_str, sections[i].size);
-					}
-				}
+                                        if (!mod->m_str)
+                                        {
+                                                mod->m_str = AllocVec(sections[i].size, MEMF_PUBLIC | MEMF_CLEAR);
+                                                CopyMem(sections[i].addr, mod->m_str, sections[i].size);
+                                        }
+                                }
 
-				if ((sections[i].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR))
-				{
-					if (sections[i].addr)
-					{
-						if (sections[i].addr < mod->m_lowest)
-							mod->m_lowest = sections[i].addr;
-						if (sections[i].addr + sections[i].size > mod->m_highest)
-							mod->m_highest = sections[i].addr + sections[i].size;
-					}
-				}
-			}
+                                if ((sections[i].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR))
+                                {
+                                        if (sections[i].addr)
+                                        {
+                                                if (sections[i].addr < mod->m_lowest)
+                                                        mod->m_lowest = sections[i].addr;
+                                                if (sections[i].addr + sections[i].size > mod->m_highest)
+                                                        mod->m_highest = sections[i].addr + sections[i].size;
+                                        }
+                                }
+                        }
 
-			for (i=0; i < eh->int_shnum; i++)
-			{
-				if (sections[i].addr && sections[i].type == SHT_SYMTAB)
-				{
-					int j;
-					struct symbol *st = (struct symbol *)sections[i].addr;
+                        for (i=0; i < eh->int_shnum; i++)
+                        {
+                                if (sections[i].addr && sections[i].type == SHT_SYMTAB)
+                                {
+                                        int j;
+                                        struct symbol *st = (struct symbol *)sections[i].addr;
 
-					for (j=0; j < (sections[i].size / sizeof(struct symbol)); j++)
-					{
-						if (st[j].shindex != SHN_XINDEX)
-						{
-							if (sections[st[j].shindex].addr && (sections[st[j].shindex].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR))
-							{
-								symbol_t *sym = AllocVec(sizeof(symbol_t), MEMF_PUBLIC | MEMF_CLEAR);
-								sym->s_name = &mod->m_str[st[j].name];
-								sym->s_lowest = sections[st[j].shindex].addr + st[j].value;
-								sym->s_highest = sym->s_lowest + st[j].size;
+                                        for (j=0; j < (sections[i].size / sizeof(struct symbol)); j++)
+                                        {
+                                                if (st[j].shindex != SHN_XINDEX)
+                                                {
+                                                        if (sections[st[j].shindex].addr && (sections[st[j].shindex].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR))
+                                                        {
+                                                                symbol_t *sym = AllocVec(sizeof(symbol_t), MEMF_PUBLIC | MEMF_CLEAR);
+                                                                sym->s_name = &mod->m_str[st[j].name];
+                                                                sym->s_lowest = sections[st[j].shindex].addr + st[j].value;
+                                                                sym->s_highest = sym->s_lowest + st[j].size;
 
-					//			D(bug("[KRN]  Adding symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest-1));
+                                        //                      D(bug("[KRN]  Adding symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest-1));
 
-								AddHead(&mod->m_symbols, sym);
-							}
-						}
-					}
+                                                                AddHead(&mod->m_symbols, sym);
+                                                        }
+                                                }
+                                        }
 
-					break;
-				}
-			}
+                                        break;
+                                }
+                        }
 
-//			D(bug("[KRN]  address range %08x - %08x\n", mod->m_lowest, mod->m_highest-1));
+//                      D(bug("[KRN]  address range %08x - %08x\n", mod->m_lowest, mod->m_highest-1));
 
 
 
-			AddHead(&KernelBase->kb_Modules, mod);
-		}
-	}
+                        AddHead(&KernelBase->kb_Modules, mod);
+                }
+        }
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 }
 
 AROS_LH1(void, KrnUnregisterModule,
-		AROS_LHA(void *,		address, A0),
-		struct KernelBase *, KernelBase, 23, Kernel)
+                AROS_LHA(void *,                address, A0),
+                struct KernelBase *, KernelBase, 23, Kernel)
 {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 
-	struct ExecBase *SysBase = getSysBase();
-	module_t *mod;
-	intptr_t addr = (intptr_t)address;
+        struct ExecBase *SysBase = getSysBase();
+        module_t *mod;
+        intptr_t addr = (intptr_t)address;
 
-	ForeachNode(&KernelBase->kb_Modules, mod)
-	{
-		if (mod->m_lowest <= addr && mod->m_highest > addr)
-		{
-			symbol_t *sym;
+        ForeachNode(&KernelBase->kb_Modules, mod)
+        {
+                if (mod->m_lowest <= addr && mod->m_highest > addr)
+                {
+                        symbol_t *sym;
 
-			Remove(mod);
+                        Remove(mod);
 
-			FreeVec(mod->m_str);
-			FreeVec(mod->m_name);
+                        FreeVec(mod->m_str);
+                        FreeVec(mod->m_name);
 
-			while(sym = RemHead(&mod->m_symbols))
-			{
-				FreeVec(sym);
-			}
+                        while(sym = RemHead(&mod->m_symbols))
+                        {
+                                FreeVec(sym);
+                        }
 
-			FreeVec(mod);
+                        FreeVec(mod);
 
-			break;
-		}
-	}
+                        break;
+                }
+        }
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 }
 
 extern module_t *modlist;
@@ -325,61 +325,61 @@ extern uint32_t modlength;
 
 uint32_t findNames(intptr_t addr, char **module, char **function)
 {
-	struct KernelBase *KernelBase = getKernelBase();
-	module_t *mod;
-	symbol_t *sym;
-	uint32_t offset = 0;
+        struct KernelBase *KernelBase = getKernelBase();
+        module_t *mod;
+        symbol_t *sym;
+        uint32_t offset = 0;
 
-	*module = NULL;
-	*function = NULL;
+        *module = NULL;
+        *function = NULL;
 
-	ForeachNode(&KernelBase->kb_Modules, mod)
-	{
-		/* if address suits the module bounds, you got it */
-		if (mod->m_lowest <= addr && mod->m_highest > addr)
-		{
-			*module = mod->m_name;
-			offset = addr - mod->m_lowest;
+        ForeachNode(&KernelBase->kb_Modules, mod)
+        {
+                /* if address suits the module bounds, you got it */
+                if (mod->m_lowest <= addr && mod->m_highest > addr)
+                {
+                        *module = mod->m_name;
+                        offset = addr - mod->m_lowest;
 
-			ForeachNode(&mod->m_symbols, sym)
-			{
-				if (sym->s_lowest <= addr && sym->s_highest > addr)
-				{
-					offset = addr - sym->s_lowest;
-					*function = sym->s_name;
-					break;
-				}
-			}
+                        ForeachNode(&mod->m_symbols, sym)
+                        {
+                                if (sym->s_lowest <= addr && sym->s_highest > addr)
+                                {
+                                        offset = addr - sym->s_lowest;
+                                        *function = sym->s_name;
+                                        break;
+                                }
+                        }
 
-			break;
-		}
-	}
+                        break;
+                }
+        }
 
-	/* module unset? then look through the kernel list */
-	if (*module == NULL)
-	{
-		int i;
-		for (i=0; i < modlength; i++)
-		{
-			if (modlist[i].m_lowest <= addr && modlist[i].m_highest > addr)
-			{
-				*module = modlist[i].m_name;
-				offset = addr - modlist[i].m_lowest;
+        /* module unset? then look through the kernel list */
+        if (*module == NULL)
+        {
+                int i;
+                for (i=0; i < modlength; i++)
+                {
+                        if (modlist[i].m_lowest <= addr && modlist[i].m_highest > addr)
+                        {
+                                *module = modlist[i].m_name;
+                                offset = addr - modlist[i].m_lowest;
 
-				ForeachNode(&modlist[i].m_symbols, sym)
-				{
-					if (sym->s_lowest <= addr && sym->s_highest > addr)
-					{
-						offset = addr - sym->s_lowest;
-						*function = sym->s_name;
-						break;
-					}
-				}
+                                ForeachNode(&modlist[i].m_symbols, sym)
+                                {
+                                        if (sym->s_lowest <= addr && sym->s_highest > addr)
+                                        {
+                                                offset = addr - sym->s_lowest;
+                                                *function = sym->s_name;
+                                                break;
+                                        }
+                                }
 
-				break;
-			}
-		}
-	}
+                                break;
+                        }
+                }
+        }
 
-	return offset;
+        return offset;
 }

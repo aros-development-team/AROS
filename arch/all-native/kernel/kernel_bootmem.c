@@ -31,9 +31,9 @@ void *krnAllocBootMemAligned(unsigned long size, unsigned int align)
     /* FIXME: Only x86-64 currently sets BootMemLimit */
     if (end > BootMemLimit)
     {
-	/* Our allocation must succeed. We can't continue without it. */
-    	krnPanic(NULL, "Not enough memory for boot information\n"
-    		       "Increase reserved space in bootstrap");
+        /* Our allocation must succeed. We can't continue without it. */
+        krnPanic(NULL, "Not enough memory for boot information\n"
+                       "Increase reserved space in bootstrap");
     }
 #endif
 

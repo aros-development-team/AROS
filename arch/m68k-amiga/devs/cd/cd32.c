@@ -215,7 +215,7 @@ static VOID CD32_UpdateTOC(struct CD32Unit *cu)
         cu->cu_CDInfo.Status |= CDSTSF_TOC;
         break;
     default:
-        if (((qc->Index & 0xf) <= 9) && ((qc->Index & 0xf0) <= 0x90) && 
+        if (((qc->Index & 0xf) <= 9) && ((qc->Index & 0xf0) <= 0x90) &&
             (qc->Index != 0)) {
             int track = bcd2dec(qc->Index);
             cu->cu_CDTOC[track].Entry.CtlAdr = qc->CtlAdr;
@@ -543,13 +543,13 @@ static VOID CD32_CopyREAD(APTR frame, APTR priv)
 
     D(bug("%s: Copy from 0x%08x to 0x%08x, %d\n", __func__, &mode1->cs_Data[cr->offset], cr->buffer, tocopy));
     CopyMem(&mode1->cs_Data[cr->offset], cr->buffer, tocopy);
-    if (0) { int i ; 
+    if (0) { int i ;
     for (i = 0; i < tocopy; i++) {
         int mod = i % 16;
         if (mod == 0) D(bug("%08x:", cr->buffer - (UBYTE *)cr->io->io_Data + i));
         D(bug("%c%02x", (mod==8) ? '-' : ' ', cr->buffer[i]));
         if (mod == 15) D(bug("\n"));
-    } 
+    }
     D(bug("\n"));
     }
 

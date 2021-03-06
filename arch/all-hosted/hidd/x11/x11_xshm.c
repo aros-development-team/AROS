@@ -106,74 +106,74 @@ void *init_shared_mem(Display *display)
     /* TODO: Also check if this is a local display */
     
     XShmSegmentInfo *shminfo;
-    int     	     xshm_major, xshm_minor;
-    Bool    	     xshm_pixmaps;
+    int              xshm_major, xshm_minor;
+    Bool             xshm_pixmaps;
     
     if (XEXTCALL(XShmQueryVersion, display, &xshm_major, &xshm_minor, &xshm_pixmaps))
     {
-	#if NO_MALLOC
-	shminfo = (XShmSegmentInfo *)AllocVec(sizeof(*shminfo), MEMF_PUBLIC);
-	#else
-	shminfo = (XShmSegmentInfo *)malloc(sizeof(*shminfo));
-	#endif
-	
-	if (NULL != shminfo)
-	{
-	    key_t key;
+        #if NO_MALLOC
+        shminfo = (XShmSegmentInfo *)AllocVec(sizeof(*shminfo), MEMF_PUBLIC);
+        #else
+        shminfo = (XShmSegmentInfo *)malloc(sizeof(*shminfo));
+        #endif
+        
+        if (NULL != shminfo)
+        {
+            key_t key;
 
-	    /*
-	     *	Try and get a key for us to use. The idea is to use a
-	     *	filename that isn't likely to change all that often. This
-	     *	is made somewhat easier since we must be run from the AROS
-	     *	root directory (atm). So, I shall choose the path "C",
-	     *	since the inode number isn't likely to change all that
-	     *	often.
-	     */
-    	#if 1
-	    key = IPC_PRIVATE;
-	#else
-	    key = CCALL(ftok, "./C", 'A');
-	    if(key == -1)
-	    {
-		kprintf("Hmm, path \"./C\" doesn't seem to exist?\n");
-		key = IPC_PRIVATE;
-	    }
-	    else
-	    {
-		kprintf("Using shared memory key %d\n", key);
-	    }
-    	#endif
-	    memset(shminfo, 0, sizeof (*shminfo));
-		
-	    /* Allocate shared memory */
-	    shminfo->shmid = CCALL(shmget, key, XSHM_MEMSIZE, IPC_CREAT|0777);
-			
-	    if (shminfo->shmid >= 0)
-	    {
-		/* Attach the mem to our process */
-		shminfo->shmaddr = CCALL(shmat, shminfo->shmid, NULL, 0);
-		if (NULL != shminfo->shmaddr)
-		{
-		    shminfo->readOnly = False;
-		    if (XEXTCALL(XShmAttach, display, shminfo))
-		    {
-		    	return shminfo;
-			
-		    }
-		    CCALL(shmdt, shminfo->shmaddr);
-		    
-		}
-		CCALL(shmctl, shminfo->shmid, IPC_RMID, NULL);
-	    }
-	#if NO_MALLOC
-	    FreeVec(shminfo);
-	#else	    
-	    free(shminfo);
-	#endif
-	    
-	}
+            /*
+             *  Try and get a key for us to use. The idea is to use a
+             *  filename that isn't likely to change all that often. This
+             *  is made somewhat easier since we must be run from the AROS
+             *  root directory (atm). So, I shall choose the path "C",
+             *  since the inode number isn't likely to change all that
+             *  often.
+             */
+        #if 1
+            key = IPC_PRIVATE;
+        #else
+            key = CCALL(ftok, "./C", 'A');
+            if(key == -1)
+            {
+                kprintf("Hmm, path \"./C\" doesn't seem to exist?\n");
+                key = IPC_PRIVATE;
+            }
+            else
+            {
+                kprintf("Using shared memory key %d\n", key);
+            }
+        #endif
+            memset(shminfo, 0, sizeof (*shminfo));
+                
+            /* Allocate shared memory */
+            shminfo->shmid = CCALL(shmget, key, XSHM_MEMSIZE, IPC_CREAT|0777);
+                        
+            if (shminfo->shmid >= 0)
+            {
+                /* Attach the mem to our process */
+                shminfo->shmaddr = CCALL(shmat, shminfo->shmid, NULL, 0);
+                if (NULL != shminfo->shmaddr)
+                {
+                    shminfo->readOnly = False;
+                    if (XEXTCALL(XShmAttach, display, shminfo))
+                    {
+                        return shminfo;
+                        
+                    }
+                    CCALL(shmdt, shminfo->shmaddr);
+                    
+                }
+                CCALL(shmctl, shminfo->shmid, IPC_RMID, NULL);
+            }
+        #if NO_MALLOC
+            FreeVec(shminfo);
+        #else
+            free(shminfo);
+        #endif
+            
+        }
     
-    }	/* If has XShm extension */
+    }   /* If has XShm extension */
     
     return NULL;
     
@@ -186,7 +186,7 @@ void cleanup_shared_mem(Display *display, void *meminfo)
     XShmSegmentInfo *shminfo = (XShmSegmentInfo *)meminfo;
     
     if (NULL == meminfo)
-    	return;
+        return;
     
     XEXTCALL(XShmDetach, display, shminfo);
     CCALL(shmdt, shminfo->shmaddr);
@@ -203,27 +203,27 @@ void cleanup_shared_mem(Display *display, void *meminfo)
 /****************************************************************************************/
 
 XImage *create_xshm_ximage(Display *display, Visual *visual, int depth, int format,
-    	    	    	   int width, int height, void *xshminfo)	
+                           int width, int height, void *xshminfo)
 {
     XShmSegmentInfo *shminfo;
-    XImage  	    *image;
+    XImage          *image;
     
     shminfo = (XShmSegmentInfo *)xshminfo;
     
     image = XEXTCALL(XShmCreateImage, display, visual, depth, format, shminfo->shmaddr,
-    	    	    	              shminfo, width, height);
+                                      shminfo, width, height);
     
     return image;
 }
-	
+        
 /****************************************************************************************/
 
 void put_xshm_ximage(Display *display, Drawable d, GC gc, XImage *image,
-    	    	     int xsrc,  int ysrc, int xdest, int ydest,
-		     int width, int height, Bool send_event)
+                     int xsrc,  int ysrc, int xdest, int ydest,
+                     int width, int height, Bool send_event)
 {
     XEXTCALL(XShmPutImage, display, d, gc, image, xsrc, ysrc, xdest, ydest,
-    	    	           width, height, send_event);
+                           width, height, send_event);
     XCALL(XSync, display, False);
 }
 

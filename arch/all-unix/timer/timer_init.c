@@ -72,10 +72,10 @@ static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     TimerBase->tb_Platform.tb_TimerCount++;
     if (TimerBase->tb_Platform.tb_TimerCount == TimerBase->tb_Platform.tb_VBlankTicks)
     {
-    	vblank_Cause(SysBase);
-    	handleVBlank(TimerBase, SysBase);
+        vblank_Cause(SysBase);
+        handleVBlank(TimerBase, SysBase);
 
-	TimerBase->tb_Platform.tb_TimerCount = 0;
+        TimerBase->tb_Platform.tb_TimerCount = 0;
     }
 }
 
@@ -89,20 +89,20 @@ static int Timer_Init(struct TimerBase *TimerBase)
 
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
-    	return FALSE;
+        return FALSE;
 
     TimerBase->tb_Platform.libcHandle = HostLib_Open(LIBC_NAME, NULL);
     if (!TimerBase->tb_Platform.libcHandle)
-    	return FALSE;
+        return FALSE;
 
     TimerBase->tb_Platform.setitimer = HostLib_GetPointer(TimerBase->tb_Platform.libcHandle, "setitimer", NULL);
     if (!TimerBase->tb_Platform.setitimer)
-    	return FALSE;
+        return FALSE;
 
     /* Install timer IRQ handler */
     TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(SIGALRM, TimerTick, TimerBase, SysBase);
     if (!TimerBase->tb_TimerIRQHandle)
-    	return FALSE;
+        return FALSE;
 
     /* Our defaults: 50 Hz VBlank and 4x timer rate. 1x gives very poor results. */
     SysBase->VBlankFrequency = 50;
@@ -115,18 +115,18 @@ static int Timer_Init(struct TimerBase *TimerBase)
     BootLoaderBase = OpenResource("bootloader.resource");
     if (BootLoaderBase)
     {
-	struct List *args = GetBootInfo(BL_Args);
+        struct List *args = GetBootInfo(BL_Args);
 
-	if (args)
+        if (args)
         {
             struct Node *node;
 
             for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ)
             {
                 if (strncasecmp(node->ln_Name, "vblank=", 7) == 0)
-		    SysBase->VBlankFrequency = atoi(&node->ln_Name[7]);
-		else if (strncasecmp(node->ln_Name, "tickrate=", 9) == 0)
-		    TimerBase->tb_Platform.tb_VBlankTicks = atoi(&node->ln_Name[9]);
+                    SysBase->VBlankFrequency = atoi(&node->ln_Name[7]);
+                else if (strncasecmp(node->ln_Name, "tickrate=", 9) == 0)
+                    TimerBase->tb_Platform.tb_VBlankTicks = atoi(&node->ln_Name[9]);
             }
         }
     }
@@ -158,13 +158,13 @@ static int Timer_Init(struct TimerBase *TimerBase)
 static int Timer_Expunge(struct TimerBase *TimerBase)
 {
     if (!HostLibBase)
-    	return TRUE;
+        return TRUE;
 
     if (TimerBase->tb_TimerIRQHandle)
-    	KrnRemIRQHandler(TimerBase->tb_TimerIRQHandle);
+        KrnRemIRQHandler(TimerBase->tb_TimerIRQHandle);
 
     if (TimerBase->tb_Platform.libcHandle)
-    	HostLib_Close(TimerBase->tb_Platform.libcHandle, NULL);
+        HostLib_Close(TimerBase->tb_Platform.libcHandle, NULL);
 
     return TRUE;
 }

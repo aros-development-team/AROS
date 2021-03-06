@@ -16,11 +16,11 @@ void DebugPutHexVal(ULONG val);
 
 struct busframe
 {
-	APTR mmuframe;
-	ULONG type;
-	ULONG *usp;
-	ULONG *vbr;
-	ULONG regs[16];
+        APTR mmuframe;
+        ULONG type;
+        ULONG *usp;
+        ULONG *vbr;
+        ULONG regs[16];
 };
 
 #if AROS_SERIAL_DEBUG
@@ -94,7 +94,7 @@ static void dumpbstr(UWORD mmutype, const UBYTE *label, const UBYTE *str)
             DebugPutStr(tmp);
         } else {
             DebugPutStr("<INVALID>");
-        }    
+        }
     } else {
         DebugPutStr("<BNULL>");
     }
@@ -143,107 +143,107 @@ static void dumpinfo(UWORD mmutype, struct ExecBase *SysBase, ULONG pc)
 void bushandler(struct busframe *bf)
 {
 #if AROS_SERIAL_DEBUG
-	struct ExecBase *SysBase = (struct ExecBase*)(bf->vbr[1]);
-	UBYTE *mf = bf->mmuframe;
-	ULONG fa = 0;
-	ULONG sw = 0;
-	ULONG data;
-	ULONG pc;
-	UWORD size = 0;
-	UWORD fc = 0;
-	UWORD sr;
-	BOOL write = FALSE;
-	BOOL inst = FALSE;
-	BOOL hasdata = FALSE;
-	UWORD mmutype = bf->type;
-	char buf[16];
-	BOOL addrerror = (bf->type & 0x10) != 0;
-	
-	DebugPutStr(addrerror ? "Address Error!\n" : "Bus Error!\n");
+        struct ExecBase *SysBase = (struct ExecBase*)(bf->vbr[1]);
+        UBYTE *mf = bf->mmuframe;
+        ULONG fa = 0;
+        ULONG sw = 0;
+        ULONG data;
+        ULONG pc;
+        UWORD size = 0;
+        UWORD fc = 0;
+        UWORD sr;
+        BOOL write = FALSE;
+        BOOL inst = FALSE;
+        BOOL hasdata = FALSE;
+        UWORD mmutype = bf->type;
+        char buf[16];
+        BOOL addrerror = (bf->type & 0x10) != 0;
+        
+        DebugPutStr(addrerror ? "Address Error!\n" : "Bus Error!\n");
 
-	if (mmutype == 0 || mmutype == 0x10) {
-		// 68030
-		fa = ((ULONG*)(mf + 16))[0];
-		sw = ((UWORD*)(mf + 10))[0];
-		size = (sw >> 4) & 3;
-		write = (sw & 0x40) == 0;
-		fc = sw & 7;
-		if (write) {
-			data = ((ULONG*)(mf + 24))[0];
-			hasdata = TRUE;
-		}
-	} else if (mmutype == 1) {
-		// 68040
-		fa = ((ULONG*)(mf + 20))[0];
-		sw = ((UWORD*)(mf + 12))[0];
-		size = (sw >> 5) & 3;
-		write = (sw & 0x100) == 0;
-		fc = sw & 7;
-		if (write && (mf[15] & 0x80)) {
-			data = ((ULONG*)(mf + 28))[0];
-			hasdata = TRUE;
-		}
-	} else if (mmutype == 2) {
-		// 68060
-		fa = ((ULONG*)(mf + 8))[0];
-		sw = ((ULONG*)(mf + 12))[0];
-		size = (sw >> 21) & 3;
-		write = (sw & 0x800000) != 0;
-		fc = (sw >> 16) & 7;
-	} else if (mmutype == 0x11 || mmutype == 0x12) {
-		// 68040
-		fa = ((ULONG*)(mf + 8))[0];
-		sw = 0;
-		size = 0;
-		fc = (((UWORD*)mf)[0] & 0x2000) ? 6 : 2;
-	}
-	pc = ((ULONG*)(mf + 2))[0];
-	inst = (fc & 3) == 2;
-	sr = ((UWORD*)mf)[0];
+        if (mmutype == 0 || mmutype == 0x10) {
+                // 68030
+                fa = ((ULONG*)(mf + 16))[0];
+                sw = ((UWORD*)(mf + 10))[0];
+                size = (sw >> 4) & 3;
+                write = (sw & 0x40) == 0;
+                fc = sw & 7;
+                if (write) {
+                        data = ((ULONG*)(mf + 24))[0];
+                        hasdata = TRUE;
+                }
+        } else if (mmutype == 1) {
+                // 68040
+                fa = ((ULONG*)(mf + 20))[0];
+                sw = ((UWORD*)(mf + 12))[0];
+                size = (sw >> 5) & 3;
+                write = (sw & 0x100) == 0;
+                fc = sw & 7;
+                if (write && (mf[15] & 0x80)) {
+                        data = ((ULONG*)(mf + 28))[0];
+                        hasdata = TRUE;
+                }
+        } else if (mmutype == 2) {
+                // 68060
+                fa = ((ULONG*)(mf + 8))[0];
+                sw = ((ULONG*)(mf + 12))[0];
+                size = (sw >> 21) & 3;
+                write = (sw & 0x800000) != 0;
+                fc = (sw >> 16) & 7;
+        } else if (mmutype == 0x11 || mmutype == 0x12) {
+                // 68040
+                fa = ((ULONG*)(mf + 8))[0];
+                sw = 0;
+                size = 0;
+                fc = (((UWORD*)mf)[0] & 0x2000) ? 6 : 2;
+        }
+        pc = ((ULONG*)(mf + 2))[0];
+        inst = (fc & 3) == 2;
+        sr = ((UWORD*)mf)[0];
 
-	if (!mmuisvalid(mmutype, SysBase) || !mmuisvalid(mmutype, SysBase + 1)) {
-		SysBase = NULL;
-		DebugPutStr("INVALID SYSBASE!\n");
+        if (!mmuisvalid(mmutype, SysBase) || !mmuisvalid(mmutype, SysBase + 1)) {
+                SysBase = NULL;
+                DebugPutStr("INVALID SYSBASE!\n");
         }
 
-	DebugPutStr(sizes[size]);
-	DebugPutStr("-");
-	DebugPutStr(write ? "WRITE to  " : "READ from ");
-	DebugPutHexVal(fa);
-	if (inst)
-		DebugPutStr("(INST)");
-	else
-		DebugPutStr("      ");
-	DebugPutStr("   data: ");
-	if (hasdata)
-		DebugPutHexVal(data);
-	else
-		DebugPutStr("-------- ");
-	DebugPutStr("   PC: ");
-	DebugPutHexVal(pc);
-	DebugPutStr("\n");
+        DebugPutStr(sizes[size]);
+        DebugPutStr("-");
+        DebugPutStr(write ? "WRITE to  " : "READ from ");
+        DebugPutHexVal(fa);
+        if (inst)
+                DebugPutStr("(INST)");
+        else
+                DebugPutStr("      ");
+        DebugPutStr("   data: ");
+        if (hasdata)
+                DebugPutHexVal(data);
+        else
+                DebugPutStr("-------- ");
+        DebugPutStr("   PC: ");
+        DebugPutHexVal(pc);
+        DebugPutStr("\n");
 
-	DebugPutStr("USP:  ");
-	DebugPutHexVal((ULONG)bf->usp);
-	DebugPutStr("SR: ");
-	DebugPutHexVal(sr);
-	DebugPutStr("     SW: ");
-	DebugPutHexVal(sw);
-	buf[0] = '(';
-	buf[1] = (sr & 0x2000) ? 'S' : 'U';
-	buf[2] = ((sr >> 8) & 7) + '0';
-	buf[3] = ')';
-	buf[4] = '(';
-	buf[5] = SysBase ? (SysBase->TDNestCnt >= 0 ? 'F' : '-') : '?';
-	buf[6] = ')';
-	buf[7] = '(';
-	buf[8] = SysBase ? (SysBase->IDNestCnt >= 0 ? 'D' : '-') : '?';
-	buf[9] = ')';
-	buf[10] = 0;
-	DebugPutStr(buf);
-	DebugPutStr("    TCB: ");
-	DebugPutHexVal(SysBase ? 0xffffffff : (ULONG)SysBase->ThisTask);
-	DebugPutStr("\n");
+        DebugPutStr("USP:  ");
+        DebugPutHexVal((ULONG)bf->usp);
+        DebugPutStr("SR: ");
+        DebugPutHexVal(sr);
+        DebugPutStr("     SW: ");
+        DebugPutHexVal(sw);
+        buf[0] = '(';
+        buf[1] = (sr & 0x2000) ? 'S' : 'U';
+        buf[2] = ((sr >> 8) & 7) + '0';
+        buf[3] = ')';
+        buf[4] = '(';
+        buf[5] = SysBase ? (SysBase->TDNestCnt >= 0 ? 'F' : '-') : '?';
+        buf[6] = ')';
+        buf[7] = '(';
+        buf[8] = SysBase ? (SysBase->IDNestCnt >= 0 ? 'D' : '-') : '?';
+        buf[9] = ')';
+        buf[10] = 0;
+        DebugPutStr(buf);
+        DebugPutStr("    TCB: ");
+        DebugPutHexVal(SysBase ? 0xffffffff : (ULONG)SysBase->ThisTask);
+        DebugPutStr("\n");
 
     dumpline(mmutype, "Data: ", &bf->regs[0]);
     dumpline(mmutype, "Addr: ", &bf->regs[8]);
@@ -254,8 +254,8 @@ void bushandler(struct busframe *bf)
     dumpline(mmutype, "PC-8: ", (ULONG*)(pc - 8 * 4));
     dumpline(mmutype, "PC *: ", (ULONG*)pc);
 
-	dumpinfo(mmutype, SysBase, pc);
+        dumpinfo(mmutype, SysBase, pc);
 
-	DebugPutStr("\n");
-#endif 
+        DebugPutStr("\n");
+#endif
 }

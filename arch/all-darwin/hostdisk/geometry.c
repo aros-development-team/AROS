@@ -23,7 +23,7 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
     ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKSIZE, &dg->dg_SectorSize);
 
     if (ret != -1)
-	ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKCOUNT, &dg->dg_TotalSectors);
+        ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKCOUNT, &dg->dg_TotalSectors);
 
     err = *hdskBase->errnoPtr;
 
@@ -31,9 +31,9 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
 
     if (ret == -1)
     {
-    	D(bug("hostdisk: Error %d\n", err));
+        D(bug("hostdisk: Error %d\n", err));
 
-    	return err;
+        return err;
     }
 
     D(bug("hostdisk: %u sectors per %u bytes\n", dg->dg_TotalSectors, dg->dg_SectorSize));

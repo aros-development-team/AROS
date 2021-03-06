@@ -35,13 +35,13 @@
 #define NO_CASE_SENSITIVITY
 
 #ifdef DEBUG_INTERFACE
-#define DUMP_INTERFACE					\
-{							\
-    int i;						\
-    APTR *iface = (APTR *)emulbase->pdata.SysIFace;	\
-							\
-    for (i = 0; libcSymbols[i]; i++)			\
-	bug("%s\t\t0x%p\n", libcSymbols[i], iface[i]);	\
+#define DUMP_INTERFACE                                  \
+{                                                       \
+    int i;                                              \
+    APTR *iface = (APTR *)emulbase->pdata.SysIFace;     \
+                                                        \
+    for (i = 0; libcSymbols[i]; i++)                    \
+        bug("%s\t\t0x%p\n", libcSymbols[i], iface[i]);  \
 }
 #else
 #define DUMP_INTERFACE
@@ -102,8 +102,8 @@ static inline struct filehandle *CreateStdHandle(int fd)
     fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
     if (fh)
     {
-	fh->type = FHD_FILE|FHD_STDIO;
-	fh->fd   = (void *)(IPTR)fd;
+        fh->type = FHD_FILE|FHD_STDIO;
+        fh->fd   = (void *)(IPTR)fd;
     }
 
     return fh;
@@ -115,35 +115,35 @@ static int host_startup(struct emulbase *emulbase)
 
     OOPBase = OpenLibrary("oop.library", 0);
     if (!OOPBase)
-    	return FALSE;
+        return FALSE;
 
     UtilityBase = OpenLibrary("utility.library", 0);
     D(bug("[EmulHandler] UtilityBase = %p\n", UtilityBase));
     if (!UtilityBase)
-	return FALSE;
+        return FALSE;
 
     emulbase->pdata.em_UnixIOBase = (struct UnixIOBase *)OpenLibrary("unixio.hidd", 43);
     if (!emulbase->pdata.em_UnixIOBase)
-    	return FALSE;
+        return FALSE;
 
     emulbase->pdata.unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (!emulbase->pdata.unixio)
-    	return FALSE;
+        return FALSE;
 
     emulbase->pdata.SysIFace = (struct LibCInterface *)HostLib_GetInterface(emulbase->pdata.em_UnixIOBase->uio_LibcHandle, libcSymbols, &r);
     if (!emulbase->pdata.SysIFace)
     {
         D(bug("[EmulHandler] Unable to get host-side library interface!\n"));
-    	CloseLibrary(UtilityBase);
-    	return FALSE;
+        CloseLibrary(UtilityBase);
+        return FALSE;
     }
 
     D(bug("[EmulHandler] %lu unresolved symbols\n", r));
     DUMP_INTERFACE
     if (r)
     {
-    	CloseLibrary(UtilityBase);
-    	return FALSE;
+        CloseLibrary(UtilityBase);
+        return FALSE;
     }
 
     /* Cache errno pointer for faster access */
@@ -164,7 +164,7 @@ static int host_cleanup(struct emulbase *emulbase)
     D(bug("[EmulHandler] Expunge\n"));
 
     if (emulbase->pdata.SysIFace)
-    	HostLib_DropInterface((APTR *)emulbase->pdata.SysIFace);
+        HostLib_DropInterface((APTR *)emulbase->pdata.SysIFace);
 
     /* UnixIO v42 object is a singletone, we don't need to dispose it */
 

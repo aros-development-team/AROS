@@ -12,8 +12,8 @@
 #include "ticks.h"
 
 AROS_LH1(void, BeginIO,
-	 AROS_LHA(struct timerequest *, timereq, A1),
-	 struct TimerBase *, TimerBase, 5, Timer)
+         AROS_LHA(struct timerequest *, timereq, A1),
+         struct TimerBase *, TimerBase, 5, Timer)
 {
     AROS_LIBFUNC_INIT
 
@@ -22,24 +22,24 @@ AROS_LH1(void, BeginIO,
 #if DEBUG
     if (timereq->tr_node.io_Command == TR_ADDREQUEST)
     {
-	bug("[Timereq 0x%p] Request time %d sec %d usec\n", timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro);
+        bug("[Timereq 0x%p] Request time %d sec %d usec\n", timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro);
     }
 #endif
 
     if (common_BeginIO(timereq, TimerBase))
     {
-	D(bug("[Timereq 0x%p] Updating hardware interrupt request\n", timereq));
+        D(bug("[Timereq 0x%p] Updating hardware interrupt request\n", timereq));
 
-	Disable();
-	Timer0Setup(TimerBase);
-	Enable();
+        Disable();
+        Timer0Setup(TimerBase);
+        Enable();
     }
 
 #if DEBUG
     if (timereq->tr_node.io_Command == TR_ADDREQUEST)
     {
-    	bug("[Timereq 0x%p] Request time %d sec %d usec\n", timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro);
-    	bug("[Timereq 0x%p] Elapsed time %d sec %d usec\n", timereq, TimerBase->tb_Elapsed.tv_secs, TimerBase->tb_Elapsed.tv_micro);
+        bug("[Timereq 0x%p] Request time %d sec %d usec\n", timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro);
+        bug("[Timereq 0x%p] Elapsed time %d sec %d usec\n", timereq, TimerBase->tb_Elapsed.tv_secs, TimerBase->tb_Elapsed.tv_micro);
     }
 #endif
 

@@ -15,15 +15,15 @@ AROS_LH1I(void *, KrnVirtualToPhysical,
     AROS_LHA(void *, virtual, A0),
     struct KernelBase *, KernelBase, 20, Kernel)
 {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 
-	uintptr_t virt = (uintptr_t)virtual;
-	uintptr_t phys = virt;
+        uintptr_t virt = (uintptr_t)virtual;
+        uintptr_t phys = virt;
 
-	if (virt >= 0xff000000)
-		phys = virt - 0xff000000;
+        if (virt >= 0xff000000)
+                phys = virt - 0xff000000;
 
-	return (void*)phys;
+        return (void*)phys;
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 }

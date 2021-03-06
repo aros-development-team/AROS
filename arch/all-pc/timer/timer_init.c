@@ -81,13 +81,13 @@ static int hw_Init(struct TimerBase *LIBBASE)
     /* We must have kernel.resource */
     D(bug("[Timer] KernelBase = 0x%p\n", KernelBase));
     if (!KernelBase)
-    	return FALSE;
+        return FALSE;
 
     /* Start up the interrupt server. We know that our HW timer is at IRQ 0 */
     LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0, TimerInt, LIBBASE, SysBase);
     D(bug("[Timer] IRQ handle = 0x%p\n", LIBBASE->tb_TimerIRQHandle));
     if (!LIBBASE->tb_TimerIRQHandle)
-    	return FALSE;
+        return FALSE;
 
     /* Install a reset handler */
     LIBBASE->tb_ResetHandler.is_Node.ln_Name =
@@ -102,7 +102,7 @@ static int hw_Init(struct TimerBase *LIBBASE)
     SysBase->VBlankFrequency    = 50;
     SysBase->ex_EClockFrequency = 1193180;
     LIBBASE->tb_eclock_rate     = 1193180;
-    LIBBASE->tb_prev_tick	= 0xFFFF;
+    LIBBASE->tb_prev_tick       = 0xFFFF;
 
     D(bug("[Timer] Initializing hardware...\n"));
 
@@ -144,7 +144,7 @@ static int hw_Init(struct TimerBase *LIBBASE)
 
     LIBBASE->tb_vblank_timerequest.tr_node.io_Command = TR_ADDREQUEST;
     LIBBASE->tb_vblank_timerequest.tr_node.io_Device = &LIBBASE->tb_Device;
-    LIBBASE->tb_vblank_timerequest.tr_node.io_Unit   = (struct Unit *)UNIT_MICROHZ;    
+    LIBBASE->tb_vblank_timerequest.tr_node.io_Unit   = (struct Unit *)UNIT_MICROHZ;
     LIBBASE->tb_vblank_timerequest.tr_time.tv_secs   = 0;
     LIBBASE->tb_vblank_timerequest.tr_time.tv_micro  = 1000000 / SysBase->VBlankFrequency;
 

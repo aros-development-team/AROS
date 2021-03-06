@@ -58,6 +58,6 @@ exit:
 
     if (NULL != out)
     fclose(out);
-*/    
+*/
     return ret;
 }

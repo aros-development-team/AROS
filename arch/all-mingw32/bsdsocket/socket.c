@@ -56,13 +56,13 @@
 
     s = GetFreeFD(taskBase);
     if (s == -1)
-	return -1;
+        return -1;
 
     sd = AllocPooled(taskBase->pool, sizeof(struct Socket));
     if (!sd)
     {
-	SetError(ENOMEM, taskBase);
-	return -1;
+        SetError(ENOMEM, taskBase);
+        return -1;
     }
 
     sd->flags = 0;
@@ -71,26 +71,26 @@
 
     sd->s = WSsocket(domain, type, protocol);
     if (sd->s == -1)
-	err = WSAGetLastError();
+        err = WSAGetLastError();
     else
     {
-	/* This implies setting the socket to non-blocking mode, so no ioctlsocket() is needed */
-	err = WSAEventSelect(sd->s, SocketBase->ctl->SocketEvent, WS_FD_READ|WS_FD_WRITE|WS_FD_OOB|WS_FD_ACCEPT|WS_FD_CONNECT|WS_FD_CLOSE);
-	if (err)
-	{
-	    err = WSAGetLastError();
+        /* This implies setting the socket to non-blocking mode, so no ioctlsocket() is needed */
+        err = WSAEventSelect(sd->s, SocketBase->ctl->SocketEvent, WS_FD_READ|WS_FD_WRITE|WS_FD_OOB|WS_FD_ACCEPT|WS_FD_CONNECT|WS_FD_CLOSE);
+        if (err)
+        {
+            err = WSAGetLastError();
 
-	    WSclosesocket(sd->s);
-	}
+            WSclosesocket(sd->s);
+        }
     }
 
     Permit();
 
     if (err)
     {
-	FreePooled(taskBase->pool, sd, sizeof(struct Socket));
-	SetError(err - WSABASEERR, taskBase);
-	return -1;
+        FreePooled(taskBase->pool, sd, sizeof(struct Socket));
+        SetError(err - WSABASEERR, taskBase);
+        return -1;
     }
 
     AddTail((struct List *)&SocketBase->socks, (struct Node *)sd);

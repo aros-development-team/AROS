@@ -36,7 +36,7 @@ struct ExecBase* SysBase = &_SysBase;
 /* Dummy KernelBase */
 struct PlatformData
 {
-    sigset_t	 sig_int_mask;
+    sigset_t     sig_int_mask;
 };
 
 struct PlatformData Kernel_PlatformData;
@@ -69,16 +69,16 @@ void Enqueue (struct List * list, struct Node * node)
 
     ForeachNode (list, next)
     {
-	/* Look for the first node with a lower priority */
-	if (node->ln_Pri > next->ln_Pri)
-	    break;
+        /* Look for the first node with a lower priority */
+        if (node->ln_Pri > next->ln_Pri)
+            break;
     }
 
     /* Insert "node" before "next" */
-    node->ln_Pred	   = next->ln_Pred;
+    node->ln_Pred          = next->ln_Pred;
     next->ln_Pred->ln_Succ = node;
-    next->ln_Pred	   = node;
-    node->ln_Succ	   = next;
+    next->ln_Pred          = node;
+    node->ln_Succ          = next;
 } /* Enqueue */
 
 #define STR(x)      (x && x->ln_Name ? (char *)x->ln_Name : "NULL")
@@ -90,16 +90,16 @@ void PrintList (struct List * list)
     int t = 0;
 
     printf ("list %p { head=%s, tail=%s } = ", list,
-	STR(list->lh_Head), STR(list->lh_TailPred));
+        STR(list->lh_Head), STR(list->lh_TailPred));
 
     for (node=GetHead(list); node; node=GetSucc(node))
     {
-	printf ("%s (%p { succ=%s pred=%s pri=%d}), ", node->ln_Name, node,
-	    STR(GetSucc(node)), STR(GetPred(node)),
-	    node->ln_Pri
-	);
-	if (++t > 10)
-	    break;
+        printf ("%s (%p { succ=%s pred=%s pri=%d}), ", node->ln_Name, node,
+            STR(GetSucc(node)), STR(GetPred(node)),
+            node->ln_Pri
+        );
+        if (++t > 10)
+            break;
     }
 
     printf ("\n");
@@ -108,38 +108,38 @@ void PrintList (struct List * list)
 #undef STR
 
 /* Macro to get a pointer to the current running task */
-#define THISTASK	(SysBase->ThisTask)
+#define THISTASK        (SysBase->ThisTask)
 
 /*
     Disable and enable signals. Don't use these in the signal handler
     because then some signal might break the signal handler and then
     stack will overflow.
 */
-#define DISABLE 	sigprocmask (SIG_BLOCK, &Kernel_PlatformData.sig_int_mask, NULL)
-#define ENABLE		sigprocmask (SIG_UNBLOCK, &Kernel_PlatformData.sig_int_mask, NULL)
+#define DISABLE         sigprocmask (SIG_BLOCK, &Kernel_PlatformData.sig_int_mask, NULL)
+#define ENABLE          sigprocmask (SIG_UNBLOCK, &Kernel_PlatformData.sig_int_mask, NULL)
 
 /* Enable/Disable interrupts */
 void Disable (void)
 {
     /*
-	Disable signals only if they are not already. The initial value of
-	IDNestCnt is -1.
+        Disable signals only if they are not already. The initial value of
+        IDNestCnt is -1.
     */
     if (SysBase->IDNestCnt++ < 0)
     {
-	DISABLE;
+        DISABLE;
     }
 } /* Disable */
 
 void Enable (void)
 {
     /*
-	Enable signals only if the number of calls of Enable() matches the
-	calls of Disable().
+        Enable signals only if the number of calls of Enable() matches the
+        calls of Disable().
     */
     if (--SysBase->IDNestCnt < 0)
     {
-	ENABLE;
+        ENABLE;
     }
 } /* Enable */
 
@@ -147,8 +147,8 @@ void Enable (void)
 void Forbid (void)
 {
     /*
-	Task switches are only allowed if TDNestCnt is < 0. The initial
-	value of TDNestCnt is -1.
+        Task switches are only allowed if TDNestCnt is < 0. The initial
+        value of TDNestCnt is -1.
     */
     ++ SysBase->TDNestCnt;
 } /* Forbid */
@@ -157,21 +157,21 @@ void Permit (void)
 {
     /* Count calls and check if interrupts are allowed. */
     if (--SysBase->TDNestCnt < 0
-	&& SysBase->IDNestCnt < 0
+        && SysBase->IDNestCnt < 0
     )
     {
-	/*
-	    Task switches are allowed again. If a switch is pending
-	    right now, do it.
-	*/
-	if (SysBase->SysFlags & SF_SAR)
-	{
-	    /* Clear flag */
-	    SysBase->SysFlags &= ~SF_SAR;
+        /*
+            Task switches are allowed again. If a switch is pending
+            right now, do it.
+        */
+        if (SysBase->SysFlags & SF_SAR)
+        {
+            /* Clear flag */
+            SysBase->SysFlags &= ~SF_SAR;
 
-	    /* Do task switch */
-	    Switch ();
-	}
+            /* Do task switch */
+            Switch ();
+        }
     }
 } /* Permit */
 
@@ -179,22 +179,22 @@ void Permit (void)
 void Reschedule (struct Task * task)
 {
     /*
-	The code in here defines how "good" the task switching is.
-	There are seveal things which should be taken into account:
+        The code in here defines how "good" the task switching is.
+        There are seveal things which should be taken into account:
 
-	1. No task should block the CPU forever even if it is an
-	    endless loop.
+        1. No task should block the CPU forever even if it is an
+            endless loop.
 
-	2. Tasks with a higher priority should get the CPU more often.
+        2. Tasks with a higher priority should get the CPU more often.
 
-	3. Tasks with a low priority should get the CPU every now and then.
+        3. Tasks with a low priority should get the CPU every now and then.
 
-	Enqueue() fulfills 2 but not 1 and 3. AddTail() fulfills 1 and 3.
+        Enqueue() fulfills 2 but not 1 and 3. AddTail() fulfills 1 and 3.
 
-	A better way would be to "deteriorate" a task, ie. decrease the
-	priority and use Enqueue() but at this time, I can't do this
-	because I have no good way to extend the task structure (I
-	need a variable to store the original prio).
+        A better way would be to "deteriorate" a task, ie. decrease the
+        priority and use Enqueue() but at this time, I can't do this
+        because I have no good way to extend the task structure (I
+        need a variable to store the original prio).
     */
     AddTail (&SysBase->TaskReady, (struct Node *)task);
 } /* Reschedule */
@@ -209,18 +209,18 @@ void Switch (void)
     /* Check that the task is not running and no exception is pending */
     if (task->tc_State != TS_RUN && !(task->tc_Flags & TF_EXCEPT) )
     {
-	/* Allow signals. */
-	ENABLE;
+        /* Allow signals. */
+        ENABLE;
 
-	/*
-	    Make sure there is a signal. This is somewhat tricky: The
-	    current task (which is excuting this funcion) will loose the
-	    CPU (ie. some code of another task will be executed). Then
-	    at some time in the future, the current task (ie. the one
-	    that has executed the kill()) will get the CPU back and
-	    continue with the code after the kill().
-	*/
-	kill (getpid(), SIGALRM);
+        /*
+            Make sure there is a signal. This is somewhat tricky: The
+            current task (which is excuting this funcion) will loose the
+            CPU (ie. some code of another task will be executed). Then
+            at some time in the future, the current task (ie. the one
+            that has executed the kill()) will get the CPU back and
+            continue with the code after the kill().
+        */
+        kill (getpid(), SIGALRM);
     }
 } /* Switch */
 
@@ -240,8 +240,8 @@ ULONG Wait (ULONG sigmask)
     struct Task * task = THISTASK;
 
     /*
-	Task is no longer running. If we didn't do this, Switch() would do
-	nothing.
+        Task is no longer running. If we didn't do this, Switch() would do
+        nothing.
     */
     task->tc_State = TS_READY;
 
@@ -260,9 +260,9 @@ void Main1 (void)
 
     while (1)
     {
-	printf ("Main1: %s\n", name);
+        printf ("Main1: %s\n", name);
 
-	Wait (1);
+        Wait (1);
     }
 }
 
@@ -282,22 +282,22 @@ void Main2 (void)
 
     while (1)
     {
-	printf ("Main2: %s\n", name);
+        printf ("Main2: %s\n", name);
 
-	/*
-	    Kids, don't do this at home. I'm a professional.
+        /*
+            Kids, don't do this at home. I'm a professional.
 
-	    This is to make sure even endless loops don't harm the
-	    system. Even if this task has a higher priority than any
-	    other task in the system, the other tasks will get the
-	    CPU every now and then.
-	*/
-	busy_wait();
+            This is to make sure even endless loops don't harm the
+            system. Even if this task has a higher priority than any
+            other task in the system, the other tasks will get the
+            CPU every now and then.
+        */
+        busy_wait();
     }
 }
 
-#define DEBUG_STACK	0
-#define STACKOFFSET	0
+#define DEBUG_STACK     0
+#define STACKOFFSET     0
 
 /*
     The signal handler. It will store the current tasks context and
@@ -313,34 +313,34 @@ static void sighandler (int sig, regs_t *sc)
         struct AROSCPUContext *ctx = THISTASK->tc_UnionETask.tc_ETask->et_RegFrame;
 
 #if DEBUG_STACK
-	PRINT_SC(sc);
+        PRINT_SC(sc);
 #endif
 
-	/* Save all registers and the stack pointer */
-	SAVEREGS(ctx, sc);
-	THISTASK->tc_SPReg = (APTR)SP(sc);
+        /* Save all registers and the stack pointer */
+        SAVEREGS(ctx, sc);
+        THISTASK->tc_SPReg = (APTR)SP(sc);
 
-	/* Find a new task to run */
-	Dispatch ();
-	/* Restore signal mask */
-	if (SysBase->IDNestCnt < 0)
-	    SC_ENABLE(sc);
-	else
-	    SC_DISABLE(sc);
+        /* Find a new task to run */
+        Dispatch ();
+        /* Restore signal mask */
+        if (SysBase->IDNestCnt < 0)
+            SC_ENABLE(sc);
+        else
+            SC_DISABLE(sc);
 
-	ctx = THISTASK->tc_UnionETask.tc_ETask->et_RegFrame;
-	RESTOREREGS(ctx, sc);
-	SP(sc) = (IPTR)THISTASK->tc_SPReg;
+        ctx = THISTASK->tc_UnionETask.tc_ETask->et_RegFrame;
+        RESTOREREGS(ctx, sc);
+        SP(sc) = (IPTR)THISTASK->tc_SPReg;
 
 #if DEBUG_STACK
-	PRINT_SC(sc);
+        PRINT_SC(sc);
 #endif
 
     }
     else
     {
-	/* Set flag: switch tasks as soon as switches are allowed again */
-	SysBase->SysFlags |= SF_SAR;
+        /* Set flag: switch tasks as soon as switches are allowed again */
+        SysBase->SysFlags |= SF_SAR;
     }
 } /* sighandler */
 
@@ -355,40 +355,40 @@ void Dispatch (void)
 
     /* Check the stack */
     if (this->tc_SPReg <= this->tc_SPLower
-	|| this->tc_SPReg >= this->tc_SPUpper
+        || this->tc_SPReg >= this->tc_SPUpper
     )
     {
-	printf ("illegal stack (SP %p, lower %p, upper %p)\n", this->tc_SPReg, this->tc_SPLower, this->tc_SPUpper);
+        printf ("illegal stack (SP %p, lower %p, upper %p)\n", this->tc_SPReg, this->tc_SPLower, this->tc_SPUpper);
     }
 
     /* Try to find a task which is ready to run */
     if ((task = (struct Task *)GetHead (&SysBase->TaskReady)))
     {
-	printf ("Dispatch: Old = %s (Stack = %lx), new = %s\n",
-	this->tc_Node.ln_Name,
-	(IPTR)this->tc_SPUpper - (IPTR)this->tc_SPReg,
-    	task->tc_Node.ln_Name);
+        printf ("Dispatch: Old = %s (Stack = %lx), new = %s\n",
+        this->tc_Node.ln_Name,
+        (IPTR)this->tc_SPUpper - (IPTR)this->tc_SPReg,
+        task->tc_Node.ln_Name);
 
-	/* Remove new task from the list */
-	Remove ((struct Node *)task);
+        /* Remove new task from the list */
+        Remove ((struct Node *)task);
 
-	/* Sort the old task into the list of tasks which want to run */
-	Reschedule (this);
+        /* Sort the old task into the list of tasks which want to run */
+        Reschedule (this);
 
-	/* Save disable counters */
-	this->tc_TDNestCnt = SysBase->TDNestCnt;
-	this->tc_IDNestCnt = SysBase->IDNestCnt;
+        /* Save disable counters */
+        this->tc_TDNestCnt = SysBase->TDNestCnt;
+        this->tc_IDNestCnt = SysBase->IDNestCnt;
 
-	/* Set new counters */
-	SysBase->TDNestCnt = task->tc_TDNestCnt;
-	SysBase->IDNestCnt = task->tc_IDNestCnt;
+        /* Set new counters */
+        SysBase->TDNestCnt = task->tc_TDNestCnt;
+        SysBase->IDNestCnt = task->tc_IDNestCnt;
 
-	/* Switch task */
-	THISTASK = task;
+        /* Switch task */
+        THISTASK = task;
 
-	/* Set new states of the tasks */
-	this->tc_State = TS_READY;
-	task->tc_State = TS_RUN;
+        /* Set new states of the tasks */
+        this->tc_State = TS_READY;
+        task->tc_State = TS_RUN;
     }
     printf("leaving dispatch!\n");
 } /* Dispatch */
@@ -443,17 +443,17 @@ void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
     sp = malloc (STACK_SIZE * sizeof(IPTR));
 
     /*
-	Copy bounds of stack in task structure. Note that the stack
-	grows to small addresses (ie. storing something on the stack
-	decreases the stack pointer).
+        Copy bounds of stack in task structure. Note that the stack
+        grows to small addresses (ie. storing something on the stack
+        decreases the stack pointer).
     */
     task->tc_SPLower = sp;
     sp += STACK_SIZE;
     task->tc_SPUpper = sp;
 
     /*
-	Let the sigcore do it's magic. Create a frame from which an
-	initial task context can be restored from.
+        Let the sigcore do it's magic. Create a frame from which an
+        initial task context can be restored from.
     */
  
     task->tc_UnionETask.tc_ETask = malloc(sizeof(struct IntETask));
@@ -494,13 +494,13 @@ int main (int argc, char ** argv)
     PrintList (&SysBase->TaskReady);
 
     /*
-	Add main task. Make sure the stack check is ok. This task is *not*
-	added to the list. It is stored in THISTASK and will be added to
-	the list at the next call to Dispatch().
+        Add main task. Make sure the stack check is ok. This task is *not*
+        added to the list. It is stored in THISTASK and will be added to
+        the list at the next call to Dispatch().
 
-	Also a trick with the stack: This is the stack of the Unix process.
-	We don't know where it lies in memory nor how big it is (it can
-	grow), so we set the maximum possible limits.
+        Also a trick with the stack: This is the stack of the Unix process.
+        We don't know where it lies in memory nor how big it is (it can
+        grow), so we set the maximum possible limits.
     */
     TaskMain.tc_Node.ln_Pri = 0;
     TaskMain.tc_Node.ln_Name = "Main";
@@ -523,10 +523,10 @@ int main (int argc, char ** argv)
     /* Wait for 10000 signals */
     while (cnt < 20)
     {
-	printf ("%6d\n", cnt);
+        printf ("%6d\n", cnt);
 
-	/* Wait for a "signal" from another task. */
-	Wait (1);
+        /* Wait for a "signal" from another task. */
+        Wait (1);
     }
 
     /* Make sure we don't get disturbed in the cleanup */

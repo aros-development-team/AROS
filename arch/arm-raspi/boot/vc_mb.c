@@ -30,12 +30,12 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
 
     if (chan <= VCMB_CHAN_MAX)
     {
-    	while(1)
+        while(1)
         {
             while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_READREADY) != 0)
             {
-            	/* Data synchronization barrier */
-            	asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+                /* Data synchronization barrier */
+                asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
 
                 if(try-- == 0)
                 {
@@ -65,8 +65,8 @@ void vcmb_write(uintptr_t mb, unsigned int chan, void *msg)
     {
         while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_WRITEREADY) != 0)
         {
-        	/* Data synchronization barrier */
-        	asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+                /* Data synchronization barrier */
+                asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
         }
 
         asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );

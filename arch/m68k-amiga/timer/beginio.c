@@ -20,7 +20,7 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, UWORD unit, struct 
 
 #define NEWSTYLE_DEVICE 1
 
-#define ioStd(x)  	((struct IOStdReq *)x)
+#define ioStd(x)        ((struct IOStdReq *)x)
 
 #if NEWSTYLE_DEVICE
 
@@ -37,8 +37,8 @@ static const UWORD SupportedCommands[] =
 
 
 AROS_LH1(void, BeginIO,
-	AROS_LHA(struct timerequest *, timereq, A1),
-	struct TimerBase *, TimerBase, 5, Timer)
+        AROS_LHA(struct timerequest *, timereq, A1),
+        struct TimerBase *, TimerBase, 5, Timer)
 
 {
     AROS_LIBFUNC_INIT
@@ -52,35 +52,35 @@ AROS_LH1(void, BeginIO,
     unitNum = (ULONG)timereq->tr_node.io_Unit;
     
     D(bug("timer: %d %d %x %d/%d task: '%s'\n", unitNum, timereq->tr_node.io_Command,
-    	timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro, FindTask(0)->tc_Node.ln_Name));
+        timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro, FindTask(0)->tc_Node.ln_Name));
     
     switch(timereq->tr_node.io_Command)
     {
 #if NEWSTYLE_DEVICE
         case NSCMD_DEVICEQUERY:
-	    if (timereq->tr_node.io_Message.mn_Length < sizeof(struct IOStdReq))
-	    {
-    		timereq->tr_node.io_Error = IOERR_BADLENGTH;
-	    }
-	    else if(ioStd(timereq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
-	    {
-    		timereq->tr_node.io_Error = IOERR_BADLENGTH;
-	    }
-	    else
-	    {
-	        struct NSDeviceQueryResult *d;
+            if (timereq->tr_node.io_Message.mn_Length < sizeof(struct IOStdReq))
+            {
+                timereq->tr_node.io_Error = IOERR_BADLENGTH;
+            }
+            else if(ioStd(timereq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+            {
+                timereq->tr_node.io_Error = IOERR_BADLENGTH;
+            }
+            else
+            {
+                struct NSDeviceQueryResult *d;
 
-    		d = (struct NSDeviceQueryResult *)ioStd(timereq)->io_Data;
-		
-    		d->DevQueryFormat 	 = 0;
-    		d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
-    		d->DeviceType 	 	 = NSDEVTYPE_TIMER;
-    		d->DeviceSubType 	 = 0;
-    		d->SupportedCommands 	 = (UWORD *)SupportedCommands;
+                d = (struct NSDeviceQueryResult *)ioStd(timereq)->io_Data;
+                
+                d->DevQueryFormat        = 0;
+                d->SizeAvailable         = sizeof(struct NSDeviceQueryResult);
+                d->DeviceType            = NSDEVTYPE_TIMER;
+                d->DeviceSubType         = 0;
+                d->SupportedCommands     = (UWORD *)SupportedCommands;
     
             ioStd(timereq)->io_Actual = sizeof(struct NSDeviceQueryResult);
-   	    }
-	    break;
+            }
+            break;
 #endif
 
         case TR_GETSYSTIME:
@@ -99,7 +99,7 @@ AROS_LH1(void, BeginIO,
             replyit = TRUE;
             break;
         
-        case TR_ADDREQUEST:             
+        case TR_ADDREQUEST:
             switch(unitNum)
             {
                 case UNIT_WAITUNTIL:
@@ -119,7 +119,7 @@ AROS_LH1(void, BeginIO,
                         timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     }
                     break;
-        	}
+                }
                 case UNIT_MICROHZ:
                     convertunits(TimerBase, &timereq->tr_time, UNIT_MICROHZ);
                     Disable();
@@ -132,22 +132,22 @@ AROS_LH1(void, BeginIO,
                 case UNIT_VBLANK:
                     convertunits(TimerBase, &timereq->tr_time, UNIT_VBLANK);
                     add64(&timereq->tr_time, &TimerBase->tb_vb_count);
-	            Disable();
+                    Disable();
                     timer_addToWaitList(TimerBase, UNIT_VBLANK, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     replyit = FALSE;
                     break;
                 case UNIT_ECLOCK:
-	            Disable();
+                    Disable();
                     addmicro(TimerBase, &timereq->tr_time);
                     timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     replyit = FALSE;
-		    break;
-               	case UNIT_WAITECLOCK:
-	            Disable();
+                    break;
+                case UNIT_WAITECLOCK:
+                    Disable();
                     timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
@@ -177,12 +177,12 @@ AROS_LH1(void, BeginIO,
 
     if(replyit)
     {
-    	timereq->tr_time.tv_secs = 0;
-    	timereq->tr_time.tv_micro = 0;
-    	if(!(timereq->tr_node.io_Flags & IOF_QUICK))
-    	{
-    	    ReplyMsg((struct Message *)timereq);
-    	}
+        timereq->tr_time.tv_secs = 0;
+        timereq->tr_time.tv_micro = 0;
+        if(!(timereq->tr_node.io_Flags & IOF_QUICK))
+        {
+            ReplyMsg((struct Message *)timereq);
+        }
     }
 
     AROS_LIBFUNC_EXIT
@@ -197,38 +197,38 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, UWORD unit, struct 
     struct MinList *list = &TimerBase->tb_Lists[unit];
 
     if (unit == UNIT_VBLANK) {
-	// always wait at least 1 full vblank
-	if (equ64(&iotr->tr_time, &TimerBase->tb_vb_count))
-	    inc64(&iotr->tr_time);
-	inc64(&iotr->tr_time);
+        // always wait at least 1 full vblank
+        if (equ64(&iotr->tr_time, &TimerBase->tb_vb_count))
+            inc64(&iotr->tr_time);
+        inc64(&iotr->tr_time);
     }
  
     ForeachNode(list, tr) {
-    	/* If the time in the new request is less than the next request */
-    	if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0) {
-    	    /* Add the node before the next request */
-    	    Insert((struct List *)list, (struct Node *)iotr, tr->tr_node.io_Message.mn_Node.ln_Pred);
-    	    added = TRUE;
-    	    break;
-    	}
-    	first = FALSE;
+        /* If the time in the new request is less than the next request */
+        if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0) {
+            /* Add the node before the next request */
+            Insert((struct List *)list, (struct Node *)iotr, tr->tr_node.io_Message.mn_Node.ln_Pred);
+            added = TRUE;
+            break;
+        }
+        first = FALSE;
     }
 
     /*
-	This will catch the case of either an empty list, or request is
-	for after all other requests
+        This will catch the case of either an empty list, or request is
+        for after all other requests
     */
 
     if(!added)
-    	AddTail((struct List *)list, (struct Node *)iotr);
+        AddTail((struct List *)list, (struct Node *)iotr);
 
     /* recalculate timers, list was empty or was added to head of list */
     if (!added || first)
-	CheckTimer(TimerBase, unit);   
+        CheckTimer(TimerBase, unit);
 
     D(bug("added %x: %d/%d->%d/%d\n", iotr,
-	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_secs : TimerBase->tb_micro_count.tv_secs),
-	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_usec : TimerBase->tb_micro_count.tv_usec),
-	iotr->tr_time.tv_secs, iotr->tr_time.tv_micro));
+        (unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_secs : TimerBase->tb_micro_count.tv_secs),
+        (unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_usec : TimerBase->tb_micro_count.tv_usec),
+        iotr->tr_time.tv_secs, iotr->tr_time.tv_micro));
 
 }

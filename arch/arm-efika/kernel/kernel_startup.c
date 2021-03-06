@@ -66,8 +66,8 @@ static uintptr_t    early_mmu __attribute__((used, section(".data"))) = 0;
  * boot message. prepared by the bootstrap.
  */
 static union {
-	uint32_t 		stack[128];
-	struct TagItem 	tags[64];
+        uint32_t                stack[128];
+        struct TagItem  tags[64];
 } temporary __attribute__((aligned(32),used,section(".data")));
 
 static uint8_t sys_stack[SYS_STACK_SIZE] __attribute__((used,aligned(16)));

@@ -52,7 +52,7 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
     struct TagItem hwTags[] =
     {
        { TAG_IGNORE,    0       },
-       { TAG_DONE,      0       } 
+       { TAG_DONE,      0       }
     };
     ULONG arg = 1;
     ULONG res;

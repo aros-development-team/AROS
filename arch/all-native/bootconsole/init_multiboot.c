@@ -14,28 +14,28 @@
 void con_InitMultiboot(struct multiboot *mb)
 {
     if (mb->flags & MB_FLAGS_CMDLINE)
-    	con_InitSerial((char *)(unsigned long)mb->cmdline);
+        con_InitSerial((char *)(unsigned long)mb->cmdline);
 
     if (mb->flags & MB_FLAGS_FB)
     {
-    	/* Framebuffer was given, use it */
-	scr_FrameBuffer = (void *)(unsigned long)mb->framebuffer_addr;
+        /* Framebuffer was given, use it */
+        scr_FrameBuffer = (void *)(unsigned long)mb->framebuffer_addr;
 
-    	switch (mb->framebuffer_type)
-    	{
-    	case MB_FRAMEBUFFER_TEXT:
-    	   /* Text framebuffer, size in characters */
-	   scr_Width  = mb->framebuffer_width;
-	   scr_Height = mb->framebuffer_height;
-	   scr_Type   = SCR_TEXT;
-	   txt_Clear();
-	   break;
+        switch (mb->framebuffer_type)
+        {
+        case MB_FRAMEBUFFER_TEXT:
+           /* Text framebuffer, size in characters */
+           scr_Width  = mb->framebuffer_width;
+           scr_Height = mb->framebuffer_height;
+           scr_Type   = SCR_TEXT;
+           txt_Clear();
+           break;
 
-	default:
-	   /* Graphical framebuffer, size in pixels */
-	   scr_Type = SCR_GFX;
-	   fb_Init(mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp, mb->framebuffer_pitch);
-	}
+        default:
+           /* Graphical framebuffer, size in pixels */
+           scr_Type = SCR_GFX;
+           fb_Init(mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp, mb->framebuffer_pitch);
+        }
     }
 /*
  * TODO: enable this only after testing text mode handling in initVESAScreen() below.
@@ -44,12 +44,12 @@ void con_InitMultiboot(struct multiboot *mb)
  *
     else if (mb->flags & MB_FLAGS_GFX)
     {
-    	struct vbe_control_info *vbc = (struct vbe_control_info *)mb->vbe_control_info;
-    	struct vbe_mode_info    *vbm = (struct vbe_mode_info *)mb->vbe_mode_info;
+        struct vbe_control_info *vbc = (struct vbe_control_info *)mb->vbe_control_info;
+        struct vbe_mode_info    *vbm = (struct vbe_mode_info *)mb->vbe_mode_info;
 
-    	con_InitVESA(vbc->version, vbm);
+        con_InitVESA(vbc->version, vbm);
     }*/
     else
         /* Fallback to default, VGA text mode */
-    	con_InitVGA();
+        con_InitVGA();
 }

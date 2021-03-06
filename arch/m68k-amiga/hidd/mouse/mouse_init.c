@@ -14,7 +14,7 @@
 #include "mouse.h"
 
 #undef MSD
-#define MSD(cl) 	msd
+#define MSD(cl)         msd
 
 static int AmigaMouse_Init(struct mousebase *LIBBASE)
 {
@@ -23,7 +23,7 @@ static int AmigaMouse_Init(struct mousebase *LIBBASE)
     {
         { IID_Hidd, &HiddAttrBase },
         { IID_Hidd_Mouse, &HiddMouseAB },
-        { NULL	    	, NULL      	    }
+        { NULL          , NULL              }
     };
     OOP_Object *ms;
     OOP_Object *drv = NULL;
@@ -57,7 +57,7 @@ static int AmigaMouse_Expunge(struct mousebase *LIBBASE)
     {
         { IID_Hidd, &HiddAttrBase },
         { IID_Hidd_Mouse, &HiddMouseAB },
-        { NULL	    	, NULL      	    }
+        { NULL          , NULL              }
     };
 
     EnterFunc(bug("AmigaMouse_Expunge\n"));

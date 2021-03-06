@@ -396,7 +396,7 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
     tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
     tmp |= USB2OTG_HOSTCHAR_ENABLE;
     if (tmp & 0x40000000)
-	bug("writing Disable bit!!!\n");
+        bug("writing Disable bit!!!\n");
     wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
 }
 

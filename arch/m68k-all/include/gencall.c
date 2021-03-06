@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define GENCALL_MAX	(13 + 1)	/* Max number of arguments */
+#define GENCALL_MAX     (13 + 1)        /* Max number of arguments */
 
 /* NOTE: For all 'call' macros, ie AROS_LC5(), the
  *       'bt' parameter is frequently garbled by
@@ -22,15 +22,15 @@
  * #define UtilityBase mydata->utilitybase
  *
  *       this makes a 'bt' parameter of 'struct UtilityBase *'
- *       turn into 'struct mydata->utilitybase *'. 
+ *       turn into 'struct mydata->utilitybase *'.
  *
  *       Unhappiness ensues. So, we must use 'void *'
  *       for all 'bt' arguments in the call macros.
  */
 
-#define FLAG_BN		(1 << 0)
-#define FLAG_DOUBLE	(1 << 1)
-#define FLAG_NR    	(1 << 2)
+#define FLAG_BN         (1 << 0)
+#define FLAG_DOUBLE     (1 << 1)
+#define FLAG_NR         (1 << 2)
 
 void aros_ufp(int id, int is_static)
 {
@@ -213,7 +213,7 @@ void aros_lp(int id, int is_ignored)
     printf("bt,bn,o,s) \\\n");
     printf("\tt n ( ");
     for (i = 0; i < id; i++)
-        printf("__AROS_LHA(a%d)%s", 
+        printf("__AROS_LHA(a%d)%s",
                i + 1,
                ((i + 1) == id) ? "" : ", \\\n\t"
         );
@@ -586,7 +586,7 @@ int main(int argc, char **argv)
         printf("\n");
 
         printf("#define __AROS_CPU_SPECIFIC_LP\n\n");
-	
+        
         for (i = 0; i < GENCALL_MAX; i++)
             aros_lp(i, 0);
 
@@ -595,7 +595,7 @@ int main(int argc, char **argv)
 
         printf("\n");
         printf("#define __AROS_CPU_SPECIFIC_LH\n\n");
-	
+        
         for (i = 0; i < GENCALL_MAX; i++)
             aros_lh(i, 0);
 
@@ -604,7 +604,7 @@ int main(int argc, char **argv)
 
         printf("\n");
         printf("#define __AROS_CPU_SPECIFIC_LC\n\n");
-	
+        
         for (i = 0; i < GENCALL_MAX; i++) {
             aros_lc(i, 0);
             aros_lc(i, FLAG_NR);
@@ -628,7 +628,7 @@ int main(int argc, char **argv)
 
         printf("\n");
         printf("#define __AROS_CPU_SPECIFIC_LD\n\n");
-	
+        
         for (i = 0; i < GENCALL_MAX; i++)
             aros_ld(i, 0);
 

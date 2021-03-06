@@ -24,7 +24,7 @@ AROS_LH0(void, Switch,
          && !(this->tc_Flags & TF_EXCEPT) )
     {
         /*      Its quite possible that they have interrupts Disabled(),
-            we should fix that here, otherwise we can't switch. 
+            we should fix that here, otherwise we can't switch.
 
             We can't call the dispatcher because we need a signal,
             lets just create one.

@@ -27,10 +27,10 @@ AROS_LH1(void, WriteBattClock,
     
     Amiga2Date(time, &date);
 
-    tm.wYear	  = date.year;
-    tm.wMonth	  = date.month;
-    tm.wDay	  = date.mday;
-    tm.wHour	  = date.hour;
+    tm.wYear      = date.year;
+    tm.wMonth     = date.month;
+    tm.wDay       = date.mday;
+    tm.wHour      = date.hour;
     tm.wMinute    = date.min;
     tm.wSecond    = date.sec;
     /* Day of week is just informative and can be ignored */

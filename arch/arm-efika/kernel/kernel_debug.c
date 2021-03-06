@@ -31,8 +31,8 @@ void (*_KrnPutC)(char) = NULL;
 
 void krnSerPutC(int chr)
 {
-	putByte(chr);
-	waitBusy();
+        putByte(chr);
+        waitBusy();
 }
 
 int krnPutC(int chr, struct KernelBase *KernelBase)

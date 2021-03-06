@@ -32,8 +32,8 @@ static int mbox_init(struct MBoxBase *MBoxBase)
 }
 
 AROS_LH1(unsigned int, MBoxStatus,
-		AROS_LHA(void *, mb, A0),
-		struct MBoxBase *, MBoxBase, 1, Mbox)
+                AROS_LHA(void *, mb, A0),
+                struct MBoxBase *, MBoxBase, 1, Mbox)
 {
     AROS_LIBFUNC_INIT
 
@@ -45,9 +45,9 @@ AROS_LH1(unsigned int, MBoxStatus,
 }
 
 AROS_LH2(volatile unsigned int *, MBoxRead,
-		AROS_LHA(void *, mb, A0),
-		AROS_LHA( unsigned int, chan, D0),
-		struct MBoxBase *, MBoxBase, 2, Mbox)
+                AROS_LHA(void *, mb, A0),
+                AROS_LHA( unsigned int, chan, D0),
+                struct MBoxBase *, MBoxBase, 2, Mbox)
 {
     AROS_LIBFUNC_INIT
 
@@ -97,10 +97,10 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
 }
 
 AROS_LH3(void, MBoxWrite,
-		AROS_LHA(void *, mb, A0),
-		AROS_LHA( unsigned int, chan, D0),
-		AROS_LHA(void *, msg, A1),
-		struct MBoxBase *, MBoxBase, 3, Mbox)
+                AROS_LHA(void *, mb, A0),
+                AROS_LHA( unsigned int, chan, D0),
+                AROS_LHA(void *, msg, A1),
+                struct MBoxBase *, MBoxBase, 3, Mbox)
 {
     AROS_LIBFUNC_INIT
 

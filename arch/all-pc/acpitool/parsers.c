@@ -33,8 +33,8 @@ static const char *decode_enum(ULONG val, const char **table)
 
     for (i = 0; table[i]; i++)
     {
-	if (val == i)
-	    return table[i];
+        if (val == i)
+            return table[i];
     }
     return NULL;
 }
@@ -44,9 +44,9 @@ static void parse_enum(const char *desc, ULONG val, const char **table, void (*c
     const char *valname = decode_enum(val, table);
 
     if (valname)
-	MakeString(cb, "%s: %s", desc, valname);
+        MakeString(cb, "%s: %s", desc, valname);
     else
-	MakeString(cb, "%s: %s (%u)", desc, _(MSG_UNKNOWN), val);
+        MakeString(cb, "%s: %s (%u)", desc, _(MSG_UNKNOWN), val);
 }
 
 #define FLAG_VAL(v) ((v) ? _(MSG_YES) : _(MSG_NO))
@@ -57,9 +57,9 @@ static void parse_flags(ULONG flags, const char **table, void (*cb)(const char *
 
     for (i = 0; table[i]; i++)
     {
-	MakeString(cb, "  %s: %s", table[i], FLAG_VAL(flags & (1 << i)));
+        MakeString(cb, "  %s: %s", table[i], FLAG_VAL(flags & (1 << i)));
     }
-}    
+}
 
 const char *spaces[] =
 {
@@ -90,7 +90,7 @@ static void parse_addr(const char *desc, const ACPI_GENERIC_ADDRESS *addr, void 
     const char *space;
     int n, i;
 
-    n = snprintf(p, len, "%s: ", desc);    
+    n = snprintf(p, len, "%s: ", desc);
     p += n;
     len -= n;
 
@@ -101,35 +101,35 @@ static void parse_addr(const char *desc, const ACPI_GENERIC_ADDRESS *addr, void 
         }
     }
     if (i == 4)
-    	n = snprintf(p, len, "%s (%u) %s ", _(MSG_UNKNOWN_SIZE), addr->BitWidth, _(MSG_AT));
+        n = snprintf(p, len, "%s (%u) %s ", _(MSG_UNKNOWN_SIZE), addr->BitWidth, _(MSG_AT));
 
     p += n;
     len -= n;
 
     if (addr->SpaceId == ACPI_ADR_SPACE_PCI_CONFIG)
-    	n = snprintf(p, len, "0:%u:%u:0x%04X", ACPI_PCI_DEV(addr->Address), ACPI_PCI_FUNC(addr->Address),
-    		     ACPI_PCI_OFFSET(addr->Address));
+        n = snprintf(p, len, "0:%u:%u:0x%04X", ACPI_PCI_DEV(addr->Address), ACPI_PCI_FUNC(addr->Address),
+                     ACPI_PCI_OFFSET(addr->Address));
     else
-    	n = snprintf(p, len, "0x%llX", (long long)addr->Address);
+        n = snprintf(p, len, "0x%llX", (long long)addr->Address);
 
     p += n;
     len -= n;
 
     if (addr->BitWidth)
     {
-    	n = snprintf(p, len, ", %s %u - %u", _(MSG_BITS), addr->BitOffset,
-    		     addr->BitOffset + addr->BitWidth - 1);
-    	p += n;
-    	len -= n;
+        n = snprintf(p, len, ", %s %u - %u", _(MSG_BITS), addr->BitOffset,
+                     addr->BitOffset + addr->BitWidth - 1);
+        p += n;
+        len -= n;
     }
 
     if (addr->SpaceId == ACPI_ADR_SPACE_FIXED_HARDWARE)
-	space = _(MSG_SPACE_FIXED);
+        space = _(MSG_SPACE_FIXED);
     else if (addr->SpaceId >= 0x80)
-	space = _(MSG_SPACE_OEM);
+        space = _(MSG_SPACE_OEM);
     else
     {
-	space = decode_enum(addr->SpaceId, spaces);
+        space = decode_enum(addr->SpaceId, spaces);
     }
 
     if (space)
@@ -143,15 +143,15 @@ static void parse_addr(const char *desc, const ACPI_GENERIC_ADDRESS *addr, void 
 static void header_parser(const ACPI_TABLE_HEADER *table, void (*cb)(const char *))
 {
     MakeString(cb, "%s: %.4s, %s %u, %s 0x%p",
-	       _(MSG_TABLE_SIGNATURE), table->Signature,
-	       _(MSG_REVISION), table->Revision, _(MSG_ADDRESS), table);
+               _(MSG_TABLE_SIGNATURE), table->Signature,
+               _(MSG_REVISION), table->Revision, _(MSG_ADDRESS), table);
     MakeString(cb, "%s: %.6s", _(MSG_OEM_ID), &table->OemId);
     MakeString(cb, "%s: %.8s %s 0x%08X",
-	       _(MSG_OEM_TABLE_ID), table->OemTableId,
-	       _(MSG_REVISION), table->OemRevision);
+               _(MSG_OEM_TABLE_ID), table->OemTableId,
+               _(MSG_REVISION), table->OemRevision);
     MakeString(cb, "%s: %.4s %s 0x%08X",
-	       _(MSG_CREATOR_ID), table->AslCompilerId,
-	       _(MSG_REVISION), table->AslCompilerRevision);
+               _(MSG_CREATOR_ID), table->AslCompilerId,
+               _(MSG_REVISION), table->AslCompilerRevision);
 }
 
 static void dumpData(const unsigned char *data, int length, void (*cb)(const char *))
@@ -162,8 +162,8 @@ static void dumpData(const unsigned char *data, int length, void (*cb)(const cha
 
     while (left > 0)
     {
-	char *p = buf;
-	int buflen = sizeof(buf);
+        char *p = buf;
+        int buflen = sizeof(buf);
 
         len = snprintf(p, buflen, "%p:", data);
         p += len;
@@ -180,9 +180,9 @@ static void dumpData(const unsigned char *data, int length, void (*cb)(const cha
         {
             for (; i < 16; i++)
             {
-            	*p++ = ' ';
-            	*p++ = ' ';
-            	*p++ = ' ';
+                *p++ = ' ';
+                *p++ = ' ';
+                *p++ = ' ';
             }
         }
 
@@ -281,16 +281,16 @@ static void fadt_parser(const ACPI_TABLE_HEADER *header, void (*cb)(const char *
     
     if (!(fadt->Flags & ACPI_FADT_WBINVD))
     {
-	MakeString(cb, "%s: %u", _(MSG_FLUSH_SIZE), fadt->FlushSize);
-	MakeString(cb, "%s: %u", _(MSG_FLUSH_STRIDE), fadt->FlushStride);
+        MakeString(cb, "%s: %u", _(MSG_FLUSH_SIZE), fadt->FlushSize);
+        MakeString(cb, "%s: %u", _(MSG_FLUSH_STRIDE), fadt->FlushStride);
     }
 
     if (fadt->DayAlarm)
-	MakeString(cb, "%s: 0x%02X", _(MSG_RTC_DAY_ALARM), fadt->DayAlarm);
+        MakeString(cb, "%s: 0x%02X", _(MSG_RTC_DAY_ALARM), fadt->DayAlarm);
     if (fadt->MonthAlarm)
-	MakeString(cb, "%s: 0x%02X", _(MSG_RTC_MON_ALARM), fadt->MonthAlarm);
+        MakeString(cb, "%s: 0x%02X", _(MSG_RTC_MON_ALARM), fadt->MonthAlarm);
     if (fadt->Century)
-	MakeString(cb, "%s: 0x%02X", _(MSG_RTC_CENTURY), fadt->Century);
+        MakeString(cb, "%s: 0x%02X", _(MSG_RTC_CENTURY), fadt->Century);
 
     MakeString(cb, "%s:", _(MSG_PC_FLAGS));
     parse_flags(fadt->BootFlags, pc_flags, cb);
@@ -300,7 +300,7 @@ static void fadt_parser(const ACPI_TABLE_HEADER *header, void (*cb)(const char *
 
     /* ACPIBase-> 1.0 FADT ends here */
     if (fadt->Header.Length < offsetof(ACPI_TABLE_FADT, ResetRegister))
-    	return;
+        return;
 
     parse_addr(_(MSG_RESET_REG), &fadt->ResetRegister, cb);
     MakeString(cb, "%s: 0x%02X", _(MSG_RESET_VAL), fadt->ResetValue);
@@ -346,9 +346,9 @@ static const char *int_types[] =
 };
 
 AROS_UFH3(static void, madt_entry_parser,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_SUBTABLE_HEADER *, entry, A2),
-	  AROS_UFHA(out_func, cb, A1))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_SUBTABLE_HEADER *, entry, A2),
+          AROS_UFHA(out_func, cb, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -363,121 +363,121 @@ AROS_UFH3(static void, madt_entry_parser,
     ACPI_MADT_LOCAL_X2APIC *x2apic;
     ACPI_MADT_LOCAL_X2APIC_NMI *x2nmi;
 
-    cb("");	/* Insert empty line */
+    cb("");     /* Insert empty line */
 
     switch (entry->Type)
     {
     case ACPI_MADT_TYPE_LOCAL_APIC:
-	lapic = (ACPI_MADT_LOCAL_APIC *)entry;
+        lapic = (ACPI_MADT_LOCAL_APIC *)entry;
 
-	MakeString(cb, "%s:", _(MSG_LOCAL_APIC));
-	MakeString(cb, "  %s: 0x%02X", _(MSG_CPU_ID), lapic->ProcessorId);
-	MakeString(cb, "  %s: 0x%02X", _(MSG_LAPIC_ID), lapic->Id);
-	MakeString(cb, "  %s: %s", _(MSG_ENABLED), FLAG_VAL(lapic->LapicFlags & ACPI_MADT_ENABLED));
-	break;
+        MakeString(cb, "%s:", _(MSG_LOCAL_APIC));
+        MakeString(cb, "  %s: 0x%02X", _(MSG_CPU_ID), lapic->ProcessorId);
+        MakeString(cb, "  %s: 0x%02X", _(MSG_LAPIC_ID), lapic->Id);
+        MakeString(cb, "  %s: %s", _(MSG_ENABLED), FLAG_VAL(lapic->LapicFlags & ACPI_MADT_ENABLED));
+        break;
 
     case ACPI_MADT_TYPE_IO_APIC:
-	ioapic = (ACPI_MADT_IO_APIC *)entry;
+        ioapic = (ACPI_MADT_IO_APIC *)entry;
 
-	MakeString(cb, "%s:", _(MSG_IOAPIC));
-	MakeString(cb, "  %s: 0x%02X", _(MSG_ID), ioapic->Id);
-	MakeString(cb, "  %s: 0x%04X", _(MSG_ADDRESS), ioapic->Address);
-	MakeString(cb, "  %s: %d", _(MSG_IRQ_BASE), ioapic->GlobalIrqBase);
-	break;
+        MakeString(cb, "%s:", _(MSG_IOAPIC));
+        MakeString(cb, "  %s: 0x%02X", _(MSG_ID), ioapic->Id);
+        MakeString(cb, "  %s: 0x%04X", _(MSG_ADDRESS), ioapic->Address);
+        MakeString(cb, "  %s: %d", _(MSG_IRQ_BASE), ioapic->GlobalIrqBase);
+        break;
 
     case ACPI_MADT_TYPE_INTERRUPT_OVERRIDE:
-	srcovr = (ACPI_MADT_INTERRUPT_OVERRIDE *)entry;
+        srcovr = (ACPI_MADT_INTERRUPT_OVERRIDE *)entry;
 
-	MakeString(cb, "%s:", _(MSG_INT_SRC_OVR));
-	parse_enum(_(MSG_BUS), srcovr->Bus, srcovr_buses, cb);
-	MakeString(cb, "  %s: %u", _(MSG_BUS_IRQ), srcovr->SourceIrq);
-	MakeString(cb, "  %s: %u", _(MSG_GLOBAL_IRQ), srcovr->GlobalIrq);
-	parse_int_flags(srcovr->IntiFlags, cb);
-	break;
+        MakeString(cb, "%s:", _(MSG_INT_SRC_OVR));
+        parse_enum(_(MSG_BUS), srcovr->Bus, srcovr_buses, cb);
+        MakeString(cb, "  %s: %u", _(MSG_BUS_IRQ), srcovr->SourceIrq);
+        MakeString(cb, "  %s: %u", _(MSG_GLOBAL_IRQ), srcovr->GlobalIrq);
+        parse_int_flags(srcovr->IntiFlags, cb);
+        break;
 
     case ACPI_MADT_TYPE_NMI_SOURCE:
-    	nmisrc = (ACPI_MADT_NMI_SOURCE *)entry;
+        nmisrc = (ACPI_MADT_NMI_SOURCE *)entry;
 
-	MakeString(cb, "%s:", _(MSG_NMI_SRC));
-	parse_int_flags(nmisrc->IntiFlags, cb);
-	MakeString(cb, "  %s: %u", _(MSG_GLOBAL_IRQ), nmisrc->GlobalIrq);
-	break;
+        MakeString(cb, "%s:", _(MSG_NMI_SRC));
+        parse_int_flags(nmisrc->IntiFlags, cb);
+        MakeString(cb, "  %s: %u", _(MSG_GLOBAL_IRQ), nmisrc->GlobalIrq);
+        break;
 
     case ACPI_MADT_TYPE_LOCAL_APIC_NMI:
-	nmi = (ACPI_MADT_LOCAL_APIC_NMI *)entry;
+        nmi = (ACPI_MADT_LOCAL_APIC_NMI *)entry;
 
-	MakeString(cb, "%s:", _(MSG_LAPIC_NMI));
-	if (nmi->ProcessorId == (UINT8)~0)
-	    MakeString(cb, "  %s: %s", _(MSG_CPU_ID), _(MSG_ALL));
-	else
-	    MakeString(cb, "  %s: 0x%02X", _(MSG_CPU_ID), nmi->ProcessorId);
-	parse_int_flags(nmi->IntiFlags, cb);
-	MakeString(cb, "  %s: %u", _(MSG_LINT), nmi->Lint);
-	break;
+        MakeString(cb, "%s:", _(MSG_LAPIC_NMI));
+        if (nmi->ProcessorId == (UINT8)~0)
+            MakeString(cb, "  %s: %s", _(MSG_CPU_ID), _(MSG_ALL));
+        else
+            MakeString(cb, "  %s: 0x%02X", _(MSG_CPU_ID), nmi->ProcessorId);
+        parse_int_flags(nmi->IntiFlags, cb);
+        MakeString(cb, "  %s: %u", _(MSG_LINT), nmi->Lint);
+        break;
 
     case ACPI_MADT_TYPE_LOCAL_APIC_OVERRIDE:
-	MakeString(cb, "%s: 0x%016llX", _(MSG_LAPIC_ADDR_OVR),
-		   ((ACPI_MADT_LOCAL_APIC_OVERRIDE *)entry)->Address);
-	break;
+        MakeString(cb, "%s: 0x%016llX", _(MSG_LAPIC_ADDR_OVR),
+                   ((ACPI_MADT_LOCAL_APIC_OVERRIDE *)entry)->Address);
+        break;
 
     case ACPI_MADT_TYPE_IO_SAPIC:
-	iosapic = (ACPI_MADT_IO_SAPIC *)entry;
+        iosapic = (ACPI_MADT_IO_SAPIC *)entry;
 
-	MakeString(cb, "%s:", _(MSG_IOSAPIC));
-	MakeString(cb, "  %s: 0x%02X", _(MSG_ID), iosapic->Id);
-	MakeString(cb, "  %s: %u", _(MSG_IRQ_BASE), iosapic->GlobalIrqBase);
-	MakeString(cb, "  %s: 0x%016llX", _(MSG_ADDRESS), iosapic->Address);
-	break;
+        MakeString(cb, "%s:", _(MSG_IOSAPIC));
+        MakeString(cb, "  %s: 0x%02X", _(MSG_ID), iosapic->Id);
+        MakeString(cb, "  %s: %u", _(MSG_IRQ_BASE), iosapic->GlobalIrqBase);
+        MakeString(cb, "  %s: 0x%016llX", _(MSG_ADDRESS), iosapic->Address);
+        break;
 
     case ACPI_MADT_TYPE_LOCAL_SAPIC:
-	lsapic = (ACPI_MADT_LOCAL_SAPIC *)entry;
+        lsapic = (ACPI_MADT_LOCAL_SAPIC *)entry;
 
-	MakeString(cb, "%s:", _(MSG_LSAPIC));
-	MakeString(cb, "  %s: 0x%02X", _(MSG_CPU_ID), lsapic->ProcessorId);
-	MakeString(cb, "  %s: 0x%02X", _(MSG_LSAPIC_ID), lsapic->Id);
-	MakeString(cb, "  %s: 0x%02X", _(MSG_LSAPIC_EID), lsapic->Eid);
-	MakeString(cb, "  %s: %s", _(MSG_ENABLED), FLAG_VAL(lsapic->LapicFlags & 1));
-	break;
+        MakeString(cb, "%s:", _(MSG_LSAPIC));
+        MakeString(cb, "  %s: 0x%02X", _(MSG_CPU_ID), lsapic->ProcessorId);
+        MakeString(cb, "  %s: 0x%02X", _(MSG_LSAPIC_ID), lsapic->Id);
+        MakeString(cb, "  %s: 0x%02X", _(MSG_LSAPIC_EID), lsapic->Eid);
+        MakeString(cb, "  %s: %s", _(MSG_ENABLED), FLAG_VAL(lsapic->LapicFlags & 1));
+        break;
 
     case ACPI_MADT_TYPE_INTERRUPT_SOURCE:
-	intsrc = (ACPI_MADT_INTERRUPT_SOURCE *)entry;
+        intsrc = (ACPI_MADT_INTERRUPT_SOURCE *)entry;
 
-	MakeString(cb, "%s:", _(MSG_PLAT_INT_SRC));
-	parse_int_flags(intsrc->IntiFlags, cb);
-	parse_enum(_(MSG_PLAT_INT_TYPE), intsrc->Type, int_types, cb);
-	MakeString(cb, "  %s: 0x%02X", _(MSG_DEST_LSAPIC_ID), intsrc->Id);
-	MakeString(cb, "  %s: 0x%02X", _(MSG_DEST_EID), intsrc->Eid);
-	MakeString(cb, "  %s: 0x%02X", _(MSG_IOSAPIC_VECTOR), intsrc->IoSapicVector);
-	MakeString(cb, "  %s: %u", _(MSG_GLOBAL_IRQ), intsrc->GlobalIrq);
-	MakeString(cb, "  %s: %s", _(MSG_CPEI_PROC_OVR),
-		   FLAG_VAL(intsrc->Flags & ACPI_MADT_CPEI_OVERRIDE));
-	break;
+        MakeString(cb, "%s:", _(MSG_PLAT_INT_SRC));
+        parse_int_flags(intsrc->IntiFlags, cb);
+        parse_enum(_(MSG_PLAT_INT_TYPE), intsrc->Type, int_types, cb);
+        MakeString(cb, "  %s: 0x%02X", _(MSG_DEST_LSAPIC_ID), intsrc->Id);
+        MakeString(cb, "  %s: 0x%02X", _(MSG_DEST_EID), intsrc->Eid);
+        MakeString(cb, "  %s: 0x%02X", _(MSG_IOSAPIC_VECTOR), intsrc->IoSapicVector);
+        MakeString(cb, "  %s: %u", _(MSG_GLOBAL_IRQ), intsrc->GlobalIrq);
+        MakeString(cb, "  %s: %s", _(MSG_CPEI_PROC_OVR),
+                   FLAG_VAL(intsrc->Flags & ACPI_MADT_CPEI_OVERRIDE));
+        break;
 
     case ACPI_MADT_TYPE_LOCAL_X2APIC:
-	x2apic = (ACPI_MADT_LOCAL_X2APIC *)entry;
+        x2apic = (ACPI_MADT_LOCAL_X2APIC *)entry;
 
-	MakeString(cb, "%s:", _(MSG_LOCAL_X2APIC));
-	MakeString(cb, "  %s: 0x%08X", _(MSG_X2APIC_ID), x2apic->LocalApicId);
-	MakeString(cb, "  %s: %s", _(MSG_ENABLED),
-		   FLAG_VAL(x2apic->LapicFlags & 1));
-	MakeString(cb, "  %s: 0x%08X", _(MSG_CPU_UID), x2apic->Uid);
-	break;
+        MakeString(cb, "%s:", _(MSG_LOCAL_X2APIC));
+        MakeString(cb, "  %s: 0x%08X", _(MSG_X2APIC_ID), x2apic->LocalApicId);
+        MakeString(cb, "  %s: %s", _(MSG_ENABLED),
+                   FLAG_VAL(x2apic->LapicFlags & 1));
+        MakeString(cb, "  %s: 0x%08X", _(MSG_CPU_UID), x2apic->Uid);
+        break;
 
     case ACPI_MADT_TYPE_LOCAL_X2APIC_NMI:
-	x2nmi = (ACPI_MADT_LOCAL_X2APIC_NMI *)entry;
+        x2nmi = (ACPI_MADT_LOCAL_X2APIC_NMI *)entry;
 
-	MakeString(cb, "%s:",_(MSG_X2APIC_NMI));
-	parse_int_flags(x2nmi->IntiFlags, cb);
-	if (x2nmi->Uid == (UINT32)~0)
-	    MakeString(cb, "  %s: %s", _(MSG_CPU_UID), _(MSG_ALL));
-	else
-	    MakeString(cb, "  %s: 0x%08X", _(MSG_CPU_UID), x2nmi->Uid);
-	MakeString(cb, "  %s: %u", _(MSG_LINT), x2nmi->Lint);
-	break;
+        MakeString(cb, "%s:",_(MSG_X2APIC_NMI));
+        parse_int_flags(x2nmi->IntiFlags, cb);
+        if (x2nmi->Uid == (UINT32)~0)
+            MakeString(cb, "  %s: %s", _(MSG_CPU_UID), _(MSG_ALL));
+        else
+            MakeString(cb, "  %s: 0x%08X", _(MSG_CPU_UID), x2nmi->Uid);
+        MakeString(cb, "  %s: %u", _(MSG_LINT), x2nmi->Lint);
+        break;
 
     default:
-	MakeString(cb, _(MSG_UNKNOWN_ENTRY), entry->Type, entry->Length);
-	break;
+        MakeString(cb, _(MSG_UNKNOWN_ENTRY), entry->Type, entry->Length);
+        break;
     }
 
     AROS_USERFUNC_EXIT
@@ -531,22 +531,22 @@ static const char *hpet_protect[] =
 };
 
 /* ID components */
-#define HPET_HW_REV_MASK		0x000000FF
-#define HPET_NUM_COMPARATORS_MASK	0x00001F00
-#define HPET_NUM_COMPARATORS_SHIFT	8
-#define HPET_COUNTER_SIZE		0x00002000
-#define HPET_LEGACY_REPLACEMENT		0x00008000
-#define HPET_PCI_VENDOR_MASK		0xFFFF0000
-#define HPET_PCI_VENDOR_SHIFT		16
+#define HPET_HW_REV_MASK                0x000000FF
+#define HPET_NUM_COMPARATORS_MASK       0x00001F00
+#define HPET_NUM_COMPARATORS_SHIFT      8
+#define HPET_COUNTER_SIZE               0x00002000
+#define HPET_LEGACY_REPLACEMENT         0x00008000
+#define HPET_PCI_VENDOR_MASK            0xFFFF0000
+#define HPET_PCI_VENDOR_SHIFT           16
 
 /* page_protect components */
-#define HPET_PAGE_PROTECT_MASK	0x0F
-#define HPET_OEM_ATTR_MASK	0xF0
-#define HPET_OEM_ATTR_SHIFT	4
+#define HPET_PAGE_PROTECT_MASK  0x0F
+#define HPET_OEM_ATTR_MASK      0xF0
+#define HPET_OEM_ATTR_SHIFT     4
 
-#define HPET_PAGE_NONE	0
-#define HPET_PAGE_4K	1
-#define HPET_PAGE_64K	2
+#define HPET_PAGE_NONE  0
+#define HPET_PAGE_4K    1
+#define HPET_PAGE_64K   2
 
 
 
@@ -558,16 +558,16 @@ static void hpet_parser(const ACPI_TABLE_HEADER *header, void (*cb)(const char *
 
     MakeString(cb, "%s: %u", _(MSG_HW_REVISION), hpet->Id & HPET_HW_REV_MASK);
     MakeString(cb, "%s: %u", _(MSG_NUM_COMPARATORS),
-	       (hpet->Id & HPET_NUM_COMPARATORS_MASK) >> HPET_NUM_COMPARATORS_SHIFT);
+               (hpet->Id & HPET_NUM_COMPARATORS_MASK) >> HPET_NUM_COMPARATORS_SHIFT);
     MakeString(cb, "%s: %s", _(MSG_64BIT_COUNTER), FLAG_VAL(hpet->Id & HPET_COUNTER_SIZE));
     MakeString(cb, "%s: %s", _(MSG_LEGACY_REPLACEMENT), FLAG_VAL(hpet->Id & HPET_LEGACY_REPLACEMENT));
     MakeString(cb, "%s: 0x%04X", _(MSG_PCI_VENDOR),
-	       (hpet->Id & HPET_PCI_VENDOR_MASK) >> HPET_PCI_VENDOR_SHIFT);
+               (hpet->Id & HPET_PCI_VENDOR_MASK) >> HPET_PCI_VENDOR_SHIFT);
     parse_addr(_(MSG_BASE_ADDRESS), &hpet->Address, cb);
     MakeString(cb, "%s: %u", _(MSG_NUMBER), hpet->Sequence);
     MakeString(cb, "%s: %u", _(MSG_MIN_TICK), hpet->MinimumTick);
     parse_enum(_(MSG_PAGE_PROTECT), hpet->Flags & HPET_PAGE_PROTECT_MASK,
-	       hpet_protect, cb);
+               hpet_protect, cb);
     MakeString(cb, "%s: 0x%02X", _(MSG_OEM_ATTRS), hpet->Flags >> HPET_OEM_ATTR_SHIFT);
 }
 
@@ -596,15 +596,15 @@ static void ecdt_parser(const ACPI_TABLE_HEADER *header, void (*cb)(const char *
 }
 
 AROS_UFH3(static void, mcfg_entry_parser,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MCFG_ALLOCATION *, entry, A2),
-	  AROS_UFHA(out_func, cb, A1))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_MCFG_ALLOCATION *, entry, A2),
+          AROS_UFHA(out_func, cb, A1))
 {
     AROS_USERFUNC_INIT
 
     cb("");
 
-	const ACPI_MCFG_ALLOCATION *mcfg_alloc = (ACPI_MCFG_ALLOCATION *)entry;
+        const ACPI_MCFG_ALLOCATION *mcfg_alloc = (ACPI_MCFG_ALLOCATION *)entry;
     MakeString(cb, "%s: 0x%08llX", _(MSG_MCFG_BASE_ADDRESS), mcfg_alloc->Address);
     MakeString(cb, "%s: 0x%04X", _(MSG_MCFG_SEGMENT), mcfg_alloc->PciSegment);
     MakeString(cb, "%s: 0x%02X", _(MSG_MCFG_START_BUS_NUMBER), mcfg_alloc->StartBusNumber);
@@ -667,8 +667,8 @@ const struct Parser *FindParser(const char *signature)
 
     for (t = ParserTable; t->name; t++)
     {
-	if (memcmp(signature,t->signature,4) == 0)
-	    return t;
+        if (memcmp(signature,t->signature,4) == 0)
+            return t;
     }
     return NULL;
 }

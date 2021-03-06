@@ -32,7 +32,7 @@ ULONG core_APIC_AllocMSI(ULONG count)
     )
 
     if (apicPrivate->msibase)
-    {        
+    {
         UBYTE first = apicPrivate->msilast;
         if (!first)
             first = apicPrivate->msibase;

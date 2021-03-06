@@ -23,12 +23,12 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
 {
     if (!displayAlert)
     {
-	/*
-	 * Early alert. call hook is not initialized yet.
-	 * Fail back to debug output.
-	 */
-    	bug(text);
-    	return;
+        /*
+         * Early alert. call hook is not initialized yet.
+         * Fail back to debug output.
+         */
+        bug(text);
+        return;
     }
 
     /* Display the alert via our UIKit helper */
@@ -48,13 +48,13 @@ static int Alert_Init(void *libc)
     libHandle = HostIFace->hostlib_Open("Libs/Host/uikit_hidd.dylib", &err);
     if (!libHandle)
     {
-    	bug("Failed to load uikit_hidd.dylib: %s\n", err);
-	return FALSE;
+        bug("Failed to load uikit_hidd.dylib: %s\n", err);
+        return FALSE;
     }
 
     displayAlert = HostIFace->hostlib_GetPointer(libHandle, "DisplayAlert", &err);
     if (displayAlert)
-	return TRUE;
+        return TRUE;
 
     HostIFace->hostlib_Close(libHandle, NULL);
 

@@ -53,23 +53,23 @@ void EventTask(struct UIKitBase *base)
 
     base->eventMask = 1 << signal;
     base->eventInt.is_Node.ln_Name = "Cocoa Touch events poll";
-    base->eventInt.is_Code	   = (VOID_FUNC)vblHandler;
-    base->eventInt.is_Data	   = base;
+    base->eventInt.is_Code         = (VOID_FUNC)vblHandler;
+    base->eventInt.is_Data         = base;
 
     AddIntServer(INTB_VERTB, &base->eventInt);
 
     do
     {
-    	sigset = Wait(base->eventMask | SIGBREAKF_CTRL_C);
+        sigset = Wait(base->eventMask | SIGBREAKF_CTRL_C);
 
-    	if (sigset & base->eventMask)
-    	{
-  	    HostLib_Lock();
+        if (sigset & base->eventMask)
+        {
+            HostLib_Lock();
 
-    	    PollEvents(base);
+            PollEvents(base);
 
-    	    HostLib_Unlock();
-    	}
+            HostLib_Unlock();
+        }
     } while (!(sigset & SIGBREAKF_CTRL_C));
 
     RemIntServer(INTB_VERTB, &base->eventInt);

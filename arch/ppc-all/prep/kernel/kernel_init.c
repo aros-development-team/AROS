@@ -59,18 +59,18 @@ AROS_UFH3(struct KernelBase *, Kernel_init,
     UWORD neg = AROS_ALIGN(LIB_VECTSIZE * VECTOR_COUNT);
 
     KernelBase = (struct KernelBase *)
-	((ULONG)AllocMem(neg + sizeof(struct KernelBase),
-	    MEMF_CLEAR | MEMF_PUBLIC) + neg);
+        ((ULONG)AllocMem(neg + sizeof(struct KernelBase),
+            MEMF_CLEAR | MEMF_PUBLIC) + neg);
 
     if (KernelBase)
     {
-	KernelBase->sysBase = SysBase;
-	KernelBase->node.ln_Pri = Kernel_Resident.rt_Pri;
-	KernelBase->node.ln_Name = Kernel_Resident.rt_Name;
-	KernelBase->node.ln_Type = NT_RESOURCE;
+        KernelBase->sysBase = SysBase;
+        KernelBase->node.ln_Pri = Kernel_Resident.rt_Pri;
+        KernelBase->node.ln_Name = Kernel_Resident.rt_Name;
+        KernelBase->node.ln_Type = NT_RESOURCE;
 
-	MakeFunctions(KernelBase, (APTR)LIBFUNCTABLE, NULL);
-	AddResource(KernelBase);
+        MakeFunctions(KernelBase, (APTR)LIBFUNCTABLE, NULL);
+        AddResource(KernelBase);
     }
 
     return(KernelBase);

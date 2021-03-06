@@ -86,7 +86,7 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
     /* Procedure for Pentium M (part of Pentium Pro) family */
     if ((info->Family == CPUFAMILY_INTEL_PENTIUM_PRO) &&
         (
-        (info->Model == 0x09) || /* Pentium M */ 
+        (info->Model == 0x09) || /* Pentium M */
         (info->Model == 0x0D)   /* Pentium M */
         )
         )
@@ -104,13 +104,13 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         mult = (eax >> 22) & 0x1F;
 
         info->MaxCPUFrequency = FSB_100 * mult;
-        info->MaxFSBFrequency = FSB_100 * 4;        
+        info->MaxFSBFrequency = FSB_100 * 4;
     }
     
     /* Procedure for Core (part of Pentium Pro) family (ATOM, Core, Core Duo) */
     if ((info->Family == CPUFAMILY_INTEL_PENTIUM_PRO) &&
         (
-        (info->Model == 0x0E) || /* Core Duo */ 
+        (info->Model == 0x0E) || /* Core Duo */
         (info->Model == 0x0F) || /* Core 2 Duo */
         (info->Model == 0x16) || /* Core Celeron */
         (info->Model == 0x17) || /* Core 2 Extreme */
@@ -153,7 +153,7 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
     /* Procedure for Nahalem (part of Pentium Pro) family (i7, i5, i3) */
     if ((info->Family == CPUFAMILY_INTEL_PENTIUM_PRO) &&
         (
-        (info->Model == 0x1A) || /* Core i7 */ 
+        (info->Model == 0x1A) || /* Core i7 */
         (info->Model == 0x1E) || /* ? */
         (info->Model == 0x1F) || /* ? */
         (info->Model == 0x2E)    /* ? */
@@ -267,7 +267,7 @@ static VOID ReadAMDMaxFrequencyInformation(struct X86ProcessorInformation * info
             info->MaxCPUFrequency = FSB_200 * (4 * 2 + cpufid) / 2;
 
             /* Note: FSB is not a valid concept with K8, K9 processors */
-            info->MaxFSBFrequency = 0;        
+            info->MaxFSBFrequency = 0;
         }
     }
 
@@ -287,7 +287,7 @@ VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info)
 
     switch(info->Vendor)
     {
-    case(VENDOR_INTEL): 
+    case(VENDOR_INTEL):
         ReadIntelMaxFrequencyInformation(info);
         break;
     case(VENDOR_AMD):

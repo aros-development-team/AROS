@@ -35,28 +35,28 @@ BOOL X11BM_InitPM(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
     friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, attrList);
     if (friend)
     {
-    	/* Get the X11 window from the friend bitmap */
-	OOP_GetAttr(friend, aHidd_BitMap_X11_Drawable, &friend_drawable);
+        /* Get the X11 window from the friend bitmap */
+        OOP_GetAttr(friend, aHidd_BitMap_X11_Drawable, &friend_drawable);
     }
     
     if (!friend_drawable)
     {
-	/* If no friend, or friend is not X11 bitmap, use default friend drawable */
-	friend_drawable = XSD(cl)->dummy_window_for_creating_pixmaps;
+        /* If no friend, or friend is not X11 bitmap, use default friend drawable */
+        friend_drawable = XSD(cl)->dummy_window_for_creating_pixmaps;
     }
 
-    /* 
+    /*
      * We must only create depths that are supported by the friend drawable
      * Currently we only support the default depth, and depth 1
      */
     if (depth != 1)
     {
-	depth = DefaultDepth(data->display, data->screen);
+        depth = DefaultDepth(data->display, data->screen);
     }
     else
     {
-    	/* Need this because of stipple bug in XFree86 :-( */
-	data->width += 32;
+        /* Need this because of stipple bug in XFree86 :-( */
+        data->width += 32;
     }
 
     D(bug("[X11OffBm] %s: Creating X Pixmap, 0x%p, %ld, %ld, %ld\n", __PRETTY_FUNCTION__, friend_drawable, data->width, data->height, depth));
@@ -79,12 +79,12 @@ VOID X11BM_DisposePM(struct bitmap_data *data)
 
     if (DRAWABLE(data))
     {
-    	HostLib_Lock();
+        HostLib_Lock();
 
-    	XCALL(XFreePixmap, GetSysDisplay(), DRAWABLE(data));
-	XCALL(XFlush, GetSysDisplay());
+        XCALL(XFreePixmap, GetSysDisplay(), DRAWABLE(data));
+        XCALL(XFlush, GetSysDisplay());
 
-    	HostLib_Unlock();
+        HostLib_Unlock();
     }
 }
 

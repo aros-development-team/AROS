@@ -54,20 +54,20 @@ static int Timer_Init(struct TimerBase *TimerBase)
 
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
-    	return FALSE;
+        return FALSE;
 
     TimerBase->tb_Platform.kernelHandle = HostLib_Open("Libs\\Host\\kernel.dll", NULL);
     if (!TimerBase->tb_Platform.kernelHandle)
-    	return FALSE;
+        return FALSE;
 
     TimerBase->tb_Platform.StartClock = HostLib_GetPointer(TimerBase->tb_Platform.kernelHandle, "StartClock", NULL);
     if (!TimerBase->tb_Platform.StartClock)
-    	return FALSE;
+        return FALSE;
 
     /* Install timer IRQ handler */
     TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(1, TimerTick, TimerBase, SysBase);
     if (!TimerBase->tb_TimerIRQHandle)
-    	return FALSE;
+        return FALSE;
 
     /* Set up VBlank handler */
     vblank_Init(TimerBase);
@@ -82,19 +82,19 @@ static int Timer_Init(struct TimerBase *TimerBase)
     BootLoaderBase = OpenResource("bootloader.resource");
     if (BootLoaderBase)
     {
-	struct List *args = GetBootInfo(BL_Args);
+        struct List *args = GetBootInfo(BL_Args);
 
-	if (args)
+        if (args)
         {
             struct Node *node;
 
             for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ)
             {
-		if (strncasecmp(node->ln_Name, "eclock=", 7) == 0)
-		{
-		    TimerBase->tb_eclock_rate = atoi(&node->ln_Name[7]);
-		    break;
-		}
+                if (strncasecmp(node->ln_Name, "eclock=", 7) == 0)
+                {
+                    TimerBase->tb_eclock_rate = atoi(&node->ln_Name[7]);
+                    break;
+                }
             }
         }
     }
@@ -119,13 +119,13 @@ static int Timer_Init(struct TimerBase *TimerBase)
 static int Timer_Expunge(struct TimerBase *TimerBase)
 {
     if (!HostLibBase)
-    	return TRUE;
+        return TRUE;
 
     if (TimerBase->tb_TimerIRQHandle)
-    	KrnRemIRQHandler(TimerBase->tb_TimerIRQHandle);
+        KrnRemIRQHandler(TimerBase->tb_TimerIRQHandle);
 
     if (TimerBase->tb_Platform.kernelHandle)
-    	HostLib_Close(TimerBase->tb_Platform.kernelHandle, NULL);
+        HostLib_Close(TimerBase->tb_Platform.kernelHandle, NULL);
 
     return TRUE;
 }

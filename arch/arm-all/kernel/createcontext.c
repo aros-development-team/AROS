@@ -13,7 +13,7 @@
 #include <kernel_objects.h>
 
 AROS_LH0(void *, KrnCreateContext,
-	 struct KernelBase *, KernelBase, 18, Kernel)
+         struct KernelBase *, KernelBase, 18, Kernel)
 
 {
     AROS_LIBFUNC_INIT
@@ -31,7 +31,7 @@ AROS_LH0(void *, KrnCreateContext,
     if (ctx)
     {
         ctx->FPUType    = KernelBase->kb_ContextFlags;
-        ctx->cpsr       = CPUMODE_USER;		/* Initial value for user mode */
+        ctx->cpsr       = CPUMODE_USER;         /* Initial value for user mode */
 #if AROS_BIG_ENDIAN
         ctx->cpsr      |= CPUMODE_BIGENDIAN;
 #endif

@@ -104,8 +104,8 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
 
     /* Push fallBack address */
     ctx->cpu.lr = (IPTR)fallBack;
-    /* 
-     * Task will be started upon interrupt resume. Push entrypoint into SRR0 
+    /*
+     * Task will be started upon interrupt resume. Push entrypoint into SRR0
      * and the MSR register into SRR1. Enable FPU at the beginning
      */
     ctx->cpu.srr0 = (IPTR)entryPoint;

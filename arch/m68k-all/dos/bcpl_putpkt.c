@@ -19,8 +19,8 @@
 
 AROS_UFH2(ULONG, Dos_BCPL_putpkt,
 /*  SYNOPSIS */
-	AROS_UFHA(BSTR, bdospacket, D1),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+        AROS_UFHA(BSTR, bdospacket, D1),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 
 /*  LOCATION
         BCPL Vector offset 0xa8
@@ -69,7 +69,7 @@ AROS_UFH2(ULONG, Dos_BCPL_putpkt,
     dp->dp_Link->mn_Length = sizeof(*dp->dp_Link);
 
     D(bug("BCPL putPkt: Send to port %p, reply on port %p, DosPacket %p\n",
-	dp->dp_Port, &me->pr_MsgPort, dp));
+        dp->dp_Port, &me->pr_MsgPort, dp));
 
     PutMsg(dp->dp_Port, dp->dp_Link);
     return DOSTRUE;

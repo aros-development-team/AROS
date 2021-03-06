@@ -20,8 +20,8 @@ VOID Hidd_Mouse_X11_HandleEvent(OOP_Object *o, XEvent *event)
     static OOP_MethodID mid;
     
     if (!mid)
-    	mid = OOP_GetMethodID(IID_Hidd_Mouse_X11, moHidd_Mouse_X11_HandleEvent);
-	
+        mid = OOP_GetMethodID(IID_Hidd_Mouse_X11, moHidd_Mouse_X11_HandleEvent);
+        
     msg.mID = mid;
     msg.event = event;
     
@@ -36,7 +36,7 @@ VOID Hidd_Kbd_X11_HandleEvent(OOP_Object *o, XEvent *event)
     static OOP_MethodID mid;
         
     if (!mid)
-    	mid = OOP_GetMethodID(IID_Hidd_Kbd_X11, moHidd_Kbd_X11_HandleEvent);
+        mid = OOP_GetMethodID(IID_Hidd_Kbd_X11, moHidd_Kbd_X11_HandleEvent);
 
     msg.mID = mid;
     msg.event = event;

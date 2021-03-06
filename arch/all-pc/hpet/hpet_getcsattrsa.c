@@ -12,19 +12,19 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(BOOL, GetCSAttrsA,
+        AROS_LH1(BOOL, GetCSAttrsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(const struct TagItem *, tags, A0),
+        AROS_LHA(const struct TagItem *, tags, A0),
 
 /*  LOCATION */
-	struct HPETBase *, base, 1, Hpet)
+        struct HPETBase *, base, 1, Hpet)
 
 /*  FUNCTION
-	Query attributes of HPET ClockSource resource.
+        Query attributes of HPET ClockSource resource.
 
     INPUTS
-	None
+        None
 
     RESULT
 
@@ -46,9 +46,9 @@
 
     while ((tag = LibNextTagItem(&tstate)))
     {
-    	switch (tag->ti_Tag)
-    	{
-	case CLOCKSOURCE_COUNT:
+        switch (tag->ti_Tag)
+        {
+        case CLOCKSOURCE_COUNT:
                     *(IPTR *)tag->ti_Data = base->unitCnt;
                     break;
         case CLOCKSOURCE_ID:
@@ -67,7 +67,7 @@
         case CLOCKSOURCE_ONESHOT:
                     *(IPTR *)tag->ti_Data = (IPTR)TRUE;
                     break;
-	}
+        }
     }
 
     return TRUE;

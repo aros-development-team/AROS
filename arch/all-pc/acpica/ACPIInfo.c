@@ -4,7 +4,7 @@
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
- * 
+ *
  * $Id$
  */
 
@@ -133,9 +133,9 @@ ACPI_STATUS OnDescend (
             Printf("\n");
         }
 
-	err = AcpiEvaluateObject (Object, METHOD_NAME__SUB,
+        err = AcpiEvaluateObject (Object, METHOD_NAME__SUB,
             NULL, &buffer);
-	if (ACPI_SUCCESS(err)) {
+        if (ACPI_SUCCESS(err)) {
             obj = buffer.Pointer;
 
             if (obj->Type == ACPI_TYPE_STRING)
@@ -143,7 +143,7 @@ ACPI_STATUS OnDescend (
                 Printf("%s: %s\n", METHOD_NAME__SUB, obj->String.Pointer);
             }
             FreeVec(buffer.Pointer);
-	}
+        }
 
  #if (0)
         buffer.Pointer = NULL;

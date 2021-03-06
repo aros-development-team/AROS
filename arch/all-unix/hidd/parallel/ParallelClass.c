@@ -35,14 +35,14 @@ static OOP_AttrBase HiddParallelUnitAB;
 static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
-    { NULL,	NULL }
+    { NULL,     NULL }
 };
 
 /*** HIDDParallel::NewUnit() *********************************************************/
 
 
 OOP_Object *UXPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
-					  struct pHidd_Parallel_NewUnit *msg)
+                                          struct pHidd_Parallel_NewUnit *msg)
 {
     OOP_Object *su = NULL;
     struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
@@ -57,47 +57,47 @@ OOP_Object *UXPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
     case 0:
     case 1:
     case 2:
-	unitnum = msg->unitnum;
+        unitnum = msg->unitnum;
 
-	if (0 != (data->usedunits & (1 << unitnum)))
-	{
-	    unitnum = -1;
-	}
-	
-	break;
-	
+        if (0 != (data->usedunits & (1 << unitnum)))
+        {
+            unitnum = -1;
+        }
+        
+        break;
+        
     case -1: /* search for the next available unit */
-	unitnum = 0;
+        unitnum = 0;
 
-	while (unitnum < PAR_MAX_UNITS)
-	{
-	    if (0 == (data->usedunits & (1 << unitnum)))
-	    {
-		break;
-	    }
-	    
-	    unitnum++;
-	}
-	break;
-	
-	
+        while (unitnum < PAR_MAX_UNITS)
+        {
+            if (0 == (data->usedunits & (1 << unitnum)))
+            {
+                break;
+            }
+            
+            unitnum++;
+        }
+        break;
+        
+        
     }
     
     if (unitnum >= 0 && unitnum < PAR_MAX_UNITS)
     {
-	struct TagItem tags[] =
-	{
-	    {aHidd_ParallelUnit_Unit, unitnum},
-	    {TAG_DONE		       }
-	};
+        struct TagItem tags[] =
+        {
+            {aHidd_ParallelUnit_Unit, unitnum},
+            {TAG_DONE                  }
+        };
 
-	su = OOP_NewObject(NULL, CLID_Hidd_ParallelUnit, tags);
-	data->ParallelUnits[unitnum] = su;
-	
-	/*
-	** Mark it as used
-	*/
-	data->usedunits |= (1 << unitnum); 
+        su = OOP_NewObject(NULL, CLID_Hidd_ParallelUnit, tags);
+        data->ParallelUnits[unitnum] = su;
+        
+        /*
+        ** Mark it as used
+        */
+        data->usedunits |= (1 << unitnum);
     }
     
     ReturnPtr("HIDDParallel::NewParallel", OOP_Object *, su);
@@ -107,7 +107,7 @@ OOP_Object *UXPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
 /*** HIDDParallel::DisposeUnit() ****************************************************/
 
 VOID UXPar__Hidd_Parallel__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
-				       struct pHidd_Parallel_DisposeUnit *msg)
+                                       struct pHidd_Parallel_DisposeUnit *msg)
 {
     OOP_Object * pu = msg->unit;
     struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
@@ -116,21 +116,21 @@ VOID UXPar__Hidd_Parallel__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
     
     if(pu)
     {
-	ULONG unitnum = 0;
+        ULONG unitnum = 0;
 
-	while (unitnum < PAR_MAX_UNITS)
-	{
-	    if (data->ParallelUnits[unitnum] == pu)
-	    {
-		D(bug("Disposing ParallelUnit!\n"));
-		OOP_DisposeObject(pu);
-		data->ParallelUnits[unitnum] = NULL;
-		data->usedunits &= ~(1 << unitnum);
-		break;
-	    }
+        while (unitnum < PAR_MAX_UNITS)
+        {
+            if (data->ParallelUnits[unitnum] == pu)
+            {
+                D(bug("Disposing ParallelUnit!\n"));
+                OOP_DisposeObject(pu);
+                data->ParallelUnits[unitnum] = NULL;
+                data->usedunits &= ~(1 << unitnum);
+                break;
+            }
 
-	    unitnum++;
-	}
+            unitnum++;
+        }
     }
 
     ReturnVoid("HIDDParallel::DisposeUnit");

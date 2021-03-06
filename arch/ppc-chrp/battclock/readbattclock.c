@@ -23,7 +23,7 @@ AROS_LH0(ULONG, ReadBattClock,
     ULONG secs;
     ULONG out[8];
 
-	RTASCall("get-time-of-day", 0, 8, out, NULL);
+        RTASCall("get-time-of-day", 0, 8, out, NULL);
 
     date.year  = out[0];
     date.month = out[1];

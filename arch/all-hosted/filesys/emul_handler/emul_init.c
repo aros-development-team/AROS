@@ -33,12 +33,12 @@ static LONG startup(struct emulbase *emulbase)
     HostLibBase = OpenResource("hostlib.resource");
     D(bug("[EmulHandler] got hostlib.resource %p\n", HostLibBase));
     if (!HostLibBase)
-	return FALSE;
+        return FALSE;
 
     KernelBase = OpenResource("kernel.resource");
     D(bug("[EmulHandler] KernelBase = %p\n", KernelBase));
     if (!KernelBase)
-	return FALSE;
+        return FALSE;
 
     emulbase->mempool = CreatePool(MEMF_ANY|MEMF_SEM_PROTECTED, 4096, 2000);
     if (!emulbase->mempool)
@@ -50,9 +50,9 @@ static LONG startup(struct emulbase *emulbase)
         struct DeviceNode *dn;
         IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
 
-        pp[0] 		      = (IPTR)"EMU";
-        pp[1]		      = 0;
-        pp[2]		      = 0;
+        pp[0]                 = (IPTR)"EMU";
+        pp[1]                 = 0;
+        pp[2]                 = 0;
         pp[DE_TABLESIZE  + 4] = DE_DOSTYPE;
         /* .... */
         pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
@@ -84,7 +84,7 @@ ADD2INITLIB(startup, -10)
 static LONG cleanup(struct emulbase *emulbase)
 {
     if (emulbase->mempool)
-    	DeletePool(emulbase->mempool);
+        DeletePool(emulbase->mempool);
 
     return TRUE;
 }

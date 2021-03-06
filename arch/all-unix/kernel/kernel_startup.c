@@ -76,7 +76,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* This bails out if the user started us from within AROS command line, as common executable */
     if (magic != AROS_BOOT_MAGIC)
-    	return -1;
+        return -1;
 
     while ((tag = LibNextTagItem(&tstate)))
     {
@@ -121,41 +121,41 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* If there's no proper HostIFace, we can't even say anything */
     if (!HostIFace)
-	return -1;
+        return -1;
 
     if (strcmp(HostIFace->System, AROS_ARCHITECTURE))
-	return -1;
+        return -1;
 
     if (HostIFace->Version < HOSTINTERFACE_VERSION)
-	return -1;
+        return -1;
 
     /* Host interface is okay. We have working krnPutC() and can talk now. */
     D(nbug("[Kernel] Starting up...\n"));
 
     if ((!ranges[0]) || (!ranges[1]) || (!mmap))
     {
-	krnPanic(NULL, "Not enough information from the bootstrap\n"
-		       "\n"
-		       "Kickstart start 0x%p, end 0x%p\n"
-		       "Memory map address: 0x%p",
-		       ranges[0], ranges[1], mmap);
-	return -1;
+        krnPanic(NULL, "Not enough information from the bootstrap\n"
+                       "\n"
+                       "Kickstart start 0x%p, end 0x%p\n"
+                       "Memory map address: 0x%p",
+                       ranges[0], ranges[1], mmap);
+        return -1;
     }
 
     hostlib = HostIFace->hostlib_Open(LIBC_NAME, &errstr);
     AROS_HOST_BARRIER
     if (!hostlib)
     {
-    	krnPanic(NULL, "Failed to load %s\n%s", LIBC_NAME, errstr);
-	return -1;
+        krnPanic(NULL, "Failed to load %s\n%s", LIBC_NAME, errstr);
+        return -1;
     }
 
     /* Here we can add some variant-specific things. Android and iOS ports use this. */
     if (!set_call_libfuncs(SETNAME(STARTUP), 1, 1, hostlib))
     {
-	HostIFace->hostlib_Close(hostlib, NULL);
-    	AROS_HOST_BARRIER
-	return -1;
+        HostIFace->hostlib_Close(hostlib, NULL);
+        AROS_HOST_BARRIER
+        return -1;
     }
 
     if (cmdline && strstr(cmdline, "waitdebug"))
@@ -186,14 +186,14 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     if (!mm_PageSize)
     {
-    	/* krnGetPageSize() panics itself */
-    	HostIFace->hostlib_Close(hostlib, NULL);
-    	AROS_HOST_BARRIER
-    	return -1;
+        /* krnGetPageSize() panics itself */
+        HostIFace->hostlib_Close(hostlib, NULL);
+        AROS_HOST_BARRIER
+        return -1;
     }
 
     /*
-     * The first memory map entry represents low 
+     * The first memory map entry represents low
      * (32bit) memory, so we allocate the "chip"
      * memory from it.
     */
@@ -252,16 +252,16 @@ int __startup startup(struct TagItem *msg, ULONG magic)
      * This makes sure that it points to a valid accessible memory region.
      */
     if (!sysb_safe)
-    	SysBase = NULL;
+        SysBase = NULL;
 
     /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
     D(nbug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
     if (!krnPrepareExecBase(ranges, bootmh, msg))
     {
-    	/* Hosted krnPanic() returns, allowing us to drop back into bootstrap */
-    	HostIFace->hostlib_Close(hostlib, NULL);
-    	AROS_HOST_BARRIER
-    	return -1;
+        /* Hosted krnPanic() returns, allowing us to drop back into bootstrap */
+        HostIFace->hostlib_Close(hostlib, NULL);
+        AROS_HOST_BARRIER
+        return -1;
     }
 
     D(nbug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
@@ -295,9 +295,9 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     }
 
     /* The following is a typical AROS bootup sequence */
-    InitCode(RTF_SINGLETASK, 0);	/* Initialize early modules. This includes hostlib.resource. */
-    core_Start(hostlib);		/* Got hostlib.resource. Initialize our interrupt mechanism. */
-    InitCode(RTF_COLDSTART, 0);		/* Boot!						     */
+    InitCode(RTF_SINGLETASK, 0);        /* Initialize early modules. This includes hostlib.resource. */
+    core_Start(hostlib);                /* Got hostlib.resource. Initialize our interrupt mechanism. */
+    InitCode(RTF_COLDSTART, 0);         /* Boot!                                                     */
 
     /* If we returned here, something went wrong, and dos.library failed to take over */
     krnPanic(getKernelBase(), "Failed to start up the system");

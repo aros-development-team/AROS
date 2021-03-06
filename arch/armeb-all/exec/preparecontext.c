@@ -27,49 +27,49 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     STACKULONG *sp = task->tc_SPReg;
 
     if (!(task->tc_Flags & TF_ETASK) )
-	return FALSE;
+        return FALSE;
 
     ctx = KrnCreateContext();
     task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
     if (!ctx)
-	return FALSE;
+        return FALSE;
 
     /* Set up function arguments */
     while((t = LibNextTagItem((struct TagItem **)&tagList)))
     {
-    	switch(t->ti_Tag)
-	{
+        switch(t->ti_Tag)
+        {
 #if defined(__AROSEXEC_SMP__)
             case TASKTAG_AFFINITY:
                 IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
                 break;
 #endif
-#define REGARG(x)			\
-	case TASKTAG_ARG ## x:		\
-	    ctx->r[x - 1] = t->ti_Data;	\
-	    break;
+#define REGARG(x)                       \
+        case TASKTAG_ARG ## x:          \
+            ctx->r[x - 1] = t->ti_Data; \
+            break;
 
-#define STACKARG(x)			\
-	case TASKTAG_ARG ## x:		\
-	    args[x - 5] = t->ti_Data;	\
-	    if (x - 4 > numargs)	\
-		numargs = x - 4;	\
-	    break;
+#define STACKARG(x)                     \
+        case TASKTAG_ARG ## x:          \
+            args[x - 5] = t->ti_Data;   \
+            if (x - 4 > numargs)        \
+                numargs = x - 4;        \
+            break;
 
-	REGARG(1)
-	REGARG(2)
-	REGARG(3)
-	REGARG(4)
-	STACKARG(5)
-	STACKARG(6)
-	STACKARG(7)
-	STACKARG(8)
-	}
+        REGARG(1)
+        REGARG(2)
+        REGARG(3)
+        REGARG(4)
+        STACKARG(5)
+        STACKARG(6)
+        STACKARG(7)
+        STACKARG(8)
+        }
     }
 
     /* Last four arguments are put on stack */
     while (numargs > 0)
-    	*--sp = args[--numargs];
+        *--sp = args[--numargs];
 
     task->tc_SPReg = sp;
 

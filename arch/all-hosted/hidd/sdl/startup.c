@@ -93,15 +93,15 @@ static int sdl_Startup(struct sdlhidd *xsd)
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     if (kbd) {
         ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
-	if (ms) {
+        if (ms) {
             kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, xsd->kbdclass, kbd_tags);
             D(bug("[SDL] Keyboard driver object 0x%p\n", kbdriver));
-	    if (kbdriver) {
-		msdriver = HIDD_Mouse_AddHardwareDriver(ms, xsd->mouseclass, mouse_tags);
-		D(bug("[SDL] Mouse driver object 0x%p\n", msdriver));
-	    }
-	    
-	}    
+            if (kbdriver) {
+                msdriver = HIDD_Mouse_AddHardwareDriver(ms, xsd->mouseclass, mouse_tags);
+                D(bug("[SDL] Mouse driver object 0x%p\n", msdriver));
+            }
+            
+        }
     }
 
     /* If we got no input, we can't work, fail */
@@ -152,36 +152,36 @@ int main(void)
        exits. Driver needs them. */
     OOPBase = OpenLibrary("oop.library", 42);
     if (!OOPBase)
-	return RETURN_FAIL;
+        return RETURN_FAIL;
 
     /* If SDLGfx class is already registered, the user attempts to run us twice.
        Just ignore this. */
     if (OOP_FindClass(CLID_Hidd_Gfx_SDL)) {
         D(bug("[SDL] Driver already registered\n"));
-	CloseLibrary(OOPBase);
+        CloseLibrary(OOPBase);
         return RETURN_OK;
     }
 
     UtilityBase = OpenLibrary("utility.library", 36);
     if (!UtilityBase) {
-	CloseLibrary(OOPBase);
-	return RETURN_FAIL;
+        CloseLibrary(OOPBase);
+        return RETURN_FAIL;
     }
 
     /* We don't open dos.library and icon.library manually because only startup code
        needs them and these libraries can be closed even upon successful exit */
     if (WBenchMsg) {
         olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
-	myname = WBenchMsg->sm_ArgList[0].wa_Name;
+        myname = WBenchMsg->sm_ArgList[0].wa_Name;
     } else {
-	struct Process *me = (struct Process *)FindTask(NULL);
+        struct Process *me = (struct Process *)FindTask(NULL);
     
-	if (me->pr_CLI) {
+        if (me->pr_CLI) {
             struct CommandLineInterface *cli = BADDR(me->pr_CLI);
-	
-	    myname = cli->cli_CommandName;
-	} else
-	    myname = me->pr_Task.tc_Node.ln_Name;
+        
+            myname = cli->cli_CommandName;
+        } else
+            myname = me->pr_Task.tc_Node.ln_Name;
     }
 
     icon = GetDiskObject(myname);
@@ -190,8 +190,8 @@ int main(void)
     if (icon) {
         STRPTR str;
 
-	str = FindToolType(icon->do_ToolTypes, "FULLSCREEN");
-	fullscreen = str ? TRUE : FALSE;
+        str = FindToolType(icon->do_ToolTypes, "FULLSCREEN");
+        fullscreen = str ? TRUE : FALSE;
     }
 
     if (!WBenchMsg)
@@ -207,93 +207,93 @@ int main(void)
 
     /* Obtain attribute bases first */
     if (OOP_ObtainAttrBases(attrbases)) {
-	/* Load host libraries */
-	if (sdl_hostlib_init(&xsd)) {
-	    /* Create classes */
-	    struct TagItem SDLGfx_tags[] = {
-		{aMeta_SuperID       , (IPTR)CLID_Hidd_Gfx   },
-		{aMeta_InterfaceDescr, (IPTR)SDLGfx_ifdescr  },
-		{aMeta_InstSize      , sizeof(struct gfxdata)},
-		{aMeta_ID            , (IPTR)CLID_Hidd_Gfx_SDL},
-		{TAG_DONE            , 0                     }
-	    };
+        /* Load host libraries */
+        if (sdl_hostlib_init(&xsd)) {
+            /* Create classes */
+            struct TagItem SDLGfx_tags[] = {
+                {aMeta_SuperID       , (IPTR)CLID_Hidd_Gfx   },
+                {aMeta_InterfaceDescr, (IPTR)SDLGfx_ifdescr  },
+                {aMeta_InstSize      , sizeof(struct gfxdata)},
+                {aMeta_ID            , (IPTR)CLID_Hidd_Gfx_SDL},
+                {TAG_DONE            , 0                     }
+            };
 
-	    xsd.gfxclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLGfx_tags);
-	    if (xsd.gfxclass) {
-		struct TagItem SDLBitMap_tags[] = {
-		    {aMeta_SuperID       , (IPTR)CLID_Hidd_BitMap },
-		    {aMeta_InterfaceDescr, (IPTR)SDLBitMap_ifdescr},
-		    {aMeta_InstSize      , sizeof(struct bmdata)  },
-		    {TAG_DONE            , 0                      }
-		};
+            xsd.gfxclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLGfx_tags);
+            if (xsd.gfxclass) {
+                struct TagItem SDLBitMap_tags[] = {
+                    {aMeta_SuperID       , (IPTR)CLID_Hidd_BitMap },
+                    {aMeta_InterfaceDescr, (IPTR)SDLBitMap_ifdescr},
+                    {aMeta_InstSize      , sizeof(struct bmdata)  },
+                    {TAG_DONE            , 0                      }
+                };
 
                 xsd.gfxclass->UserData = &xsd;
-		xsd.bmclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLBitMap_tags);
-	        if (xsd.bmclass) {
-		    struct TagItem SDLMouse_tags[] = {
-			{aMeta_SuperID       , (IPTR)CLID_Hidd         },
-			{aMeta_InterfaceDescr, (IPTR)SDLMouse_ifdescr  },
-			{aMeta_InstSize      , sizeof(struct mousedata)},
-			{TAG_DONE            , 0                       }
-		    };
+                xsd.bmclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLBitMap_tags);
+                if (xsd.bmclass) {
+                    struct TagItem SDLMouse_tags[] = {
+                        {aMeta_SuperID       , (IPTR)CLID_Hidd         },
+                        {aMeta_InterfaceDescr, (IPTR)SDLMouse_ifdescr  },
+                        {aMeta_InstSize      , sizeof(struct mousedata)},
+                        {TAG_DONE            , 0                       }
+                    };
 
                     xsd.bmclass->UserData = &xsd;
-		    xsd.mouseclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLMouse_tags);
-		    if (xsd.mouseclass) {
-			struct TagItem SDLKbd_tags[] = {
-			    {aMeta_SuperID       , (IPTR)CLID_Hidd       },
-			    {aMeta_InterfaceDescr, (IPTR)SDLKbd_ifdescr  },
-			    {aMeta_InstSize      , sizeof(struct kbddata)},
-			    {TAG_DONE            , 0                     }
-			};
+                    xsd.mouseclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLMouse_tags);
+                    if (xsd.mouseclass) {
+                        struct TagItem SDLKbd_tags[] = {
+                            {aMeta_SuperID       , (IPTR)CLID_Hidd       },
+                            {aMeta_InterfaceDescr, (IPTR)SDLKbd_ifdescr  },
+                            {aMeta_InstSize      , sizeof(struct kbddata)},
+                            {TAG_DONE            , 0                     }
+                        };
 
                         xsd.mouseclass->UserData = &xsd;
-			xsd.kbdclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLKbd_tags);
-			if (xsd.kbdclass) {
+                        xsd.kbdclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLKbd_tags);
+                        if (xsd.kbdclass) {
                             xsd.kbdclass->UserData = &xsd;
 
-			    /* Init internal stuff */
-			    sdl_keymap_init(&xsd);
-			    if (sdl_event_init(&xsd)) {
-			        if (sdl_hidd_init(&xsd)) {
-				    if (sdl_Startup(&xsd)) {
-					/* Register our gfx class as public, we use it as a
-					   protection against double start */
-				        OOP_AddClass(xsd.gfxclass);
-					/* Everything is okay, stay resident and exit */
-					struct Process *me = (struct Process *)FindTask(NULL);
+                            /* Init internal stuff */
+                            sdl_keymap_init(&xsd);
+                            if (sdl_event_init(&xsd)) {
+                                if (sdl_hidd_init(&xsd)) {
+                                    if (sdl_Startup(&xsd)) {
+                                        /* Register our gfx class as public, we use it as a
+                                           protection against double start */
+                                        OOP_AddClass(xsd.gfxclass);
+                                        /* Everything is okay, stay resident and exit */
+                                        struct Process *me = (struct Process *)FindTask(NULL);
 
-					D(bug("[SDL] Staying resident, process 0x%p\n", me));
-					if (me->pr_CLI) {
-					    struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+                                        D(bug("[SDL] Staying resident, process 0x%p\n", me));
+                                        if (me->pr_CLI) {
+                                            struct CommandLineInterface *cli = BADDR(me->pr_CLI);
 
-					    D(bug("[SDL] CLI 0x%p\n", cli));
-					    cli->cli_Module = NULL;
-					} else  
-					    me->pr_SegList = NULL;
-					    
-					/* Note also that we don't close needed libraries and
-					   don't free attribute bases */
-				        return RETURN_OK;
-				    }
-				    SV(SDL_Quit);
-				}
-			        sdl_event_expunge(&xsd);
-			    }
-			    OOP_DisposeObject((OOP_Object *)xsd.kbdclass);
-			}
-			OOP_DisposeObject((OOP_Object *)xsd.mouseclass);
-		    }
-		    OOP_DisposeObject((OOP_Object *)xsd.bmclass);
-		}
-	        OOP_DisposeObject((OOP_Object *)xsd.gfxclass);
-	    }
-	    sdl_hostlib_expunge(&xsd);
-	} else
-	    /* Perhaps some stupid user attempts to run this driver on
-	       native system. Well, let's forgive him :) */
-	    ret = RETURN_OK;
-	OOP_ReleaseAttrBases(attrbases);
+                                            D(bug("[SDL] CLI 0x%p\n", cli));
+                                            cli->cli_Module = NULL;
+                                        } else
+                                            me->pr_SegList = NULL;
+                                            
+                                        /* Note also that we don't close needed libraries and
+                                           don't free attribute bases */
+                                        return RETURN_OK;
+                                    }
+                                    SV(SDL_Quit);
+                                }
+                                sdl_event_expunge(&xsd);
+                            }
+                            OOP_DisposeObject((OOP_Object *)xsd.kbdclass);
+                        }
+                        OOP_DisposeObject((OOP_Object *)xsd.mouseclass);
+                    }
+                    OOP_DisposeObject((OOP_Object *)xsd.bmclass);
+                }
+                OOP_DisposeObject((OOP_Object *)xsd.gfxclass);
+            }
+            sdl_hostlib_expunge(&xsd);
+        } else
+            /* Perhaps some stupid user attempts to run this driver on
+               native system. Well, let's forgive him :) */
+            ret = RETURN_OK;
+        OOP_ReleaseAttrBases(attrbases);
     }
     
     CloseLibrary(UtilityBase);

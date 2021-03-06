@@ -16,11 +16,11 @@ char *remove_path(const char *in)
 
 int32_t strlen(const char *c)
 {
-	int32_t result = 0;
-	while (*c++)
-		result++;
+        int32_t result = 0;
+        while (*c++)
+                result++;
 
-	return result;
+        return result;
 }
 
 int isblank(char c)
@@ -92,161 +92,161 @@ void memcpy(void *dest, const void *src, int length)
 
 void __itoa(char *buf, intptr_t val, char code)
 {
-	static const char convtbl[] = "0123456789ABCDEF";
-	int i;
-	if (code == 'p')
-	{
-		for (i=0; i < 8; i++, val <<= 4)
-			*buf++ = convtbl[(val >> 28) & 0xf];
+        static const char convtbl[] = "0123456789ABCDEF";
+        int i;
+        if (code == 'p')
+        {
+                for (i=0; i < 8; i++, val <<= 4)
+                        *buf++ = convtbl[(val >> 28) & 0xf];
 
-		*buf = 0;
+                *buf = 0;
 
-		return;
-	}
-	else
-	{
-		uint32_t ud = val;
-		int divisor = 10;
-		char *p, *p1, *p2;
+                return;
+        }
+        else
+        {
+                uint32_t ud = val;
+                int divisor = 10;
+                char *p, *p1, *p2;
 
-		if (code == 'd' && val < 0)
-		{
-			val = -val;
-			*buf++ = '-';
-		}
-		if (code == 'x')
-			divisor = 16;
+                if (code == 'd' && val < 0)
+                {
+                        val = -val;
+                        *buf++ = '-';
+                }
+                if (code == 'x')
+                        divisor = 16;
 
-		p = buf;
+                p = buf;
 
-		do {
-			*p++ = convtbl[ud % divisor];
-		} while(ud /= divisor);
+                do {
+                        *p++ = convtbl[ud % divisor];
+                } while(ud /= divisor);
 
-		*p = 0;
+                *p = 0;
 
-		p1 = buf;
-		p2 = p - 1;
+                p1 = buf;
+                p2 = p - 1;
 
-		while(p1 < p2)
-		{
-			char temp = *p1;
-			*p1 = *p2;
-			*p2 = temp;
+                while(p1 < p2)
+                {
+                        char temp = *p1;
+                        *p1 = *p2;
+                        *p2 = temp;
 
-			p1++;
-			p2--;
-		}
-	}
+                        p1++;
+                        p2--;
+                }
+        }
 }
 
 void sprintf(char *dest, char *str, ...)
 {
-	va_list a;
-	char c;
-	char buf[20];
+        va_list a;
+        char c;
+        char buf[20];
 
-	va_start(a, str);
+        va_start(a, str);
 
-	while ((c = *str++) != 0)
-	{
-		if (c != '%')
-			*dest++ = c;
+        while ((c = *str++) != 0)
+        {
+                if (c != '%')
+                        *dest++ = c;
 
-		else
-		{
-			char *p, tmp;
+                else
+                {
+                        char *p, tmp;
 
-			c = *str++;
+                        c = *str++;
 
-			switch (c)
-			{
-			case 'c':
-				tmp = va_arg(a, int);
-				*dest++ = tmp;
-				break;
+                        switch (c)
+                        {
+                        case 'c':
+                                tmp = va_arg(a, int);
+                                *dest++ = tmp;
+                                break;
 
-			case 'p':
-			case 'x':
-			case 'd':
-			case 'u':
-				p = buf;
-				intptr_t val = va_arg(a, intptr_t);
-				__itoa(p, val, c);
-				goto string;
+                        case 'p':
+                        case 'x':
+                        case 'd':
+                        case 'u':
+                                p = buf;
+                                intptr_t val = va_arg(a, intptr_t);
+                                __itoa(p, val, c);
+                                goto string;
 
-			case 's':
-				p = va_arg(a, char *);
-				if (!p)
-					p = "(null)";
-			string:
-				while (*p)
-					*dest++ = *p++;
-				break;
+                        case 's':
+                                p = va_arg(a, char *);
+                                if (!p)
+                                        p = "(null)";
+                        string:
+                                while (*p)
+                                        *dest++ = *p++;
+                                break;
 
-			default:
-				*dest++ = c;
-				break;
-			}
-		}
-	}
+                        default:
+                                *dest++ = c;
+                                break;
+                        }
+                }
+        }
 
-	*dest = 0;
+        *dest = 0;
 
-	va_end(a);
+        va_end(a);
 }
 
 void printf(char *str, ...)
 {
-	va_list a;
-	char c;
-	char buf[20];
+        va_list a;
+        char c;
+        char buf[20];
 
-	va_start(a, str);
+        va_start(a, str);
 
-	while ((c = *str++) != 0)
-	{
-		if (c != '%')
-			ofw_write(stdout, &c, 1);
+        while ((c = *str++) != 0)
+        {
+                if (c != '%')
+                        ofw_write(stdout, &c, 1);
 
-		else
-		{
-			char *p, tmp;
+                else
+                {
+                        char *p, tmp;
 
-			c = *str++;
+                        c = *str++;
 
-			switch (c)
-			{
-			case 'c':
-				tmp = va_arg(a, int);
-				ofw_write(stdout, &tmp, 1);
-				break;
+                        switch (c)
+                        {
+                        case 'c':
+                                tmp = va_arg(a, int);
+                                ofw_write(stdout, &tmp, 1);
+                                break;
 
-			case 'p':
-			case 'x':
-			case 'd':
-			case 'u':
-				p = buf;
-				intptr_t val = va_arg(a, intptr_t);
-				__itoa(p, val, c);
-				goto string;
+                        case 'p':
+                        case 'x':
+                        case 'd':
+                        case 'u':
+                                p = buf;
+                                intptr_t val = va_arg(a, intptr_t);
+                                __itoa(p, val, c);
+                                goto string;
 
-			case 's':
-				p = va_arg(a, char *);
-				if (!p)
-					p = "(null)";
-			string:
-				ofw_write(stdout, p, strlen(p));
-				break;
+                        case 's':
+                                p = va_arg(a, char *);
+                                if (!p)
+                                        p = "(null)";
+                        string:
+                                ofw_write(stdout, p, strlen(p));
+                                break;
 
-			default:
-				ofw_write(stdout, &c, 1);
-				break;
-			}
-		}
-	}
+                        default:
+                                ofw_write(stdout, &c, 1);
+                                break;
+                        }
+                }
+        }
 
-	va_end(a);
+        va_end(a);
 }
 
 int atoi(const char *str)
@@ -255,19 +255,19 @@ int atoi(const char *str)
 
     if ((str[0] == '0') && (tolower(str[1]) == 'x'))
     {
-	str += 2;
+        str += 2;
 
-	while (*str && isxdigit(*str))
-	{
-	    char c = tolower(*str++);
+        while (*str && isxdigit(*str))
+        {
+            char c = tolower(*str++);
 
-	    val <<= 4;
-	    if (c > '9')
-		val += c - 'a' + 10;
-	    else
-		val += c - '0';
-	}
-    }    
+            val <<= 4;
+            if (c > '9')
+                val += c - 'a' + 10;
+            else
+                val += c - '0';
+        }
+    }
 
     while(*str && isdigit(*str))
     {

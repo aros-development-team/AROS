@@ -64,7 +64,7 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
     D(bug("[sdl] entering loop\n"));
 
     while (1) {
-	Uint8 active = 1;
+        Uint8 active = 1;
 
         Wait(SIGBREAKF_CTRL_D);
 
@@ -74,25 +74,25 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
 
             for (i = 0; i < nevents; i++) {
                 switch (e[i].type) {
-		    case SDL_ACTIVEEVENT:
-			if (e[i].active.state & SDL_APPINPUTFOCUS) {
-			    active = e[i].active.gain;
-			    D(bug("[sdl] Window active: %u\n", active));
-			    if (active && LIBBASE->cb)
-				LIBBASE->cb(LIBBASE->cbdata, NULL);
-			}
-			break;
+                    case SDL_ACTIVEEVENT:
+                        if (e[i].active.state & SDL_APPINPUTFOCUS) {
+                            active = e[i].active.gain;
+                            D(bug("[sdl] Window active: %u\n", active));
+                            if (active && LIBBASE->cb)
+                                LIBBASE->cb(LIBBASE->cbdata, NULL);
+                        }
+                        break;
                     case SDL_MOUSEMOTION:
                     case SDL_MOUSEBUTTONDOWN:
                     case SDL_MOUSEBUTTONUP:
-			/* We report mouse events only if our window is active.
-			   Some OSes (MS Windows) otherwise report mouse movements
-			   for inactive windows too, this can confuse Intuition */
-			if (active) {
+                        /* We report mouse events only if our window is active.
+                           Some OSes (MS Windows) otherwise report mouse movements
+                           for inactive windows too, this can confuse Intuition */
+                        if (active) {
                             D(bug("[sdl] got mouse event, sending to mouse hidd\n"));
 
                             if (LIBBASE->mousehidd)
-				Hidd_Mouse_SDL_HandleEvent(LIBBASE->mousehidd, &e[i]);
+                                Hidd_Mouse_SDL_HandleEvent(LIBBASE->mousehidd, &e[i]);
                         }
                         break;
 

@@ -12,9 +12,9 @@
 #define IRQMASK (GAYLE_INT_BVD1 | GAYLE_INT_BVD2 | GAYLE_INT_BSY)
 
 AROS_LH2(UBYTE, CardMiscControl,
-	AROS_LHA(struct CardHandle*, handle, A1),
-	AROS_LHA(UBYTE, control_bits, D1),
-	struct CardResource*, CardResource, 8, Card)
+        AROS_LHA(struct CardHandle*, handle, A1),
+        AROS_LHA(UBYTE, control_bits, D1),
+        struct CardResource*, CardResource, 8, Card)
 {
     AROS_LIBFUNC_INIT
 
@@ -24,7 +24,7 @@ AROS_LH2(UBYTE, CardMiscControl,
     CARDDEBUG(bug("CardMiscControl(%p,%02x)\n", handle, control_bits));
 
     if (!ISMINE)
-    	return 0;
+        return 0;
 
     val = control_bits & IRQMASK;
 
@@ -33,15 +33,15 @@ AROS_LH2(UBYTE, CardMiscControl,
     gio->status = control_bits & STATUSMASK;
 
     if (val) {
-	control = gio->intena;
-	if (control_bits & CARD_INTF_SETCLR)
-	    control |= val;
-	else
-	    control &= ~val;
-	gio->intena = control;
+        control = gio->intena;
+        if (control_bits & CARD_INTF_SETCLR)
+            control |= val;
+        else
+            control &= ~val;
+        gio->intena = control;
     }
 
-    Enable();    	
+    Enable();
 
     return control_bits & (STATUSMASK | IRQMASK | CARD_INTF_SETCLR);
 

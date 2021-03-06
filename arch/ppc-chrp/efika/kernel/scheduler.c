@@ -86,7 +86,7 @@ void core_Dispatch(regs_t *regs)
 
     if (SysBase)
     {
-    	wrmsr(rdmsr() & ~MSR_EE);
+        wrmsr(rdmsr() & ~MSR_EE);
 
         /*
          * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
@@ -141,7 +141,7 @@ void core_Dispatch(regs_t *regs)
         regs = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
         if (SysBase->IDNestCnt < 0)
-        	regs->srr1 |= MSR_EE;
+                regs->srr1 |= MSR_EE;
 
         /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
@@ -164,7 +164,7 @@ void core_Switch(regs_t *regs)
     if (SysBase)
     {
         /* Disable interrupts for a while */
-    	wrmsr(rdmsr() & ~MSR_EE);
+        wrmsr(rdmsr() & ~MSR_EE);
 
         task = SysBase->ThisTask;
 
@@ -185,12 +185,12 @@ void core_Switch(regs_t *regs)
         /* And enable interrupts */
         SysBase->IDNestCnt = -1;
 
-//        	if (task->tc_Node.ln_Pri < 127)
-//        		task->tc_Node.ln_Pri++;
+//              if (task->tc_Node.ln_Pri < 127)
+//                      task->tc_Node.ln_Pri++;
 //
 //        if (SysBase->Elapsed <= 1)
-//        	if (task->tc_Node.ln_Pri > -125)
-//        		task->tc_Node.ln_Pri--;
+//              if (task->tc_Node.ln_Pri > -125)
+//                      task->tc_Node.ln_Pri--;
 
 //        wrmsr(rdmsr() | MSR_EE);
 
@@ -252,17 +252,17 @@ void core_Schedule(regs_t *regs)
 #if 0
         if (task != idle_task)
         {
-        	/* almost no CPU time used? Good. Increase the pri */
-        	if (SysBase->Elapsed == SysBase->Quantum)
-        	{
-//        		if (task->tc_Node.ln_Pri < (GetIntETask(task)->iet_OrigPri) + 5)
-//        			task->tc_Node.ln_Pri++;
-        	}
-        	else
-        	{
-        		if (task->tc_Node.ln_Pri > (GetIntETask(task)->iet_OrigPri) - 5)
-        			task->tc_Node.ln_Pri--;
-        	}
+                /* almost no CPU time used? Good. Increase the pri */
+                if (SysBase->Elapsed == SysBase->Quantum)
+                {
+//                      if (task->tc_Node.ln_Pri < (GetIntETask(task)->iet_OrigPri) + 5)
+//                              task->tc_Node.ln_Pri++;
+                }
+                else
+                {
+                        if (task->tc_Node.ln_Pri > (GetIntETask(task)->iet_OrigPri) - 5)
+                                task->tc_Node.ln_Pri--;
+                }
         }
 #endif
 

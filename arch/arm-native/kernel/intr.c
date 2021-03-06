@@ -18,7 +18,7 @@
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
 
-#define BOOT_STACK_SIZE		(256 << 2)
+#define BOOT_STACK_SIZE         (256 << 2)
 #define BOOT_TAGS_SIZE          (128 << 3)
 
 #define DREGS(x)
@@ -55,7 +55,7 @@ asm (
 */
 
 asm (
-    ".set	MODE_SYSTEM, 0x1f              \n"
+    ".set       MODE_SYSTEM, 0x1f              \n"
 
     ".globl __vectorhand_undef                 \n"
     ".type __vectorhand_undef,%function        \n"
@@ -72,7 +72,7 @@ void handle_undef(regs_t *regs)
     bug("[Kernel]    at 0x%p\n", regs->pc);
 
     if (krnRunExceptionHandlers(KernelBase, 4, regs))
-	return;
+        return;
 
     D(bug("[Kernel] exception handler(s) returned\n"));
 
@@ -121,9 +121,9 @@ asm (
 */
 
 asm (
-    ".set	MODE_IRQ, 0x12                 \n"
-    ".set	MODE_SUPERVISOR, 0x13          \n"
-    ".set	MODE_SYSTEM, 0x1f              \n"
+    ".set       MODE_IRQ, 0x12                 \n"
+    ".set       MODE_SUPERVISOR, 0x13          \n"
+    ".set       MODE_SYSTEM, 0x1f              \n"
 
     ".globl __vectorhand_irq                   \n"
     ".type __vectorhand_irq,%function          \n"
@@ -182,7 +182,7 @@ __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 */
 
 asm (
-    ".set	MODE_SYSTEM, 0x1f              \n"
+    ".set       MODE_SYSTEM, 0x1f              \n"
 
     ".globl __vectorhand_dataabort             \n"
     ".type __vectorhand_dataabort,%function    \n"
@@ -207,7 +207,7 @@ void handle_dataabort(regs_t *regs)
     cpu_DumpRegs(regs);
 
     if (krnRunExceptionHandlers(KernelBase, 2, regs))
-	return;
+        return;
 
     D(bug("[Kernel] exception handler(s) returned\n"));
 
@@ -231,7 +231,7 @@ void handle_dataabort(regs_t *regs)
 */
 
 asm (
-    ".set	MODE_SYSTEM, 0x1f              \n"
+    ".set       MODE_SYSTEM, 0x1f              \n"
 
     ".globl __vectorhand_prefetchabort         \n"
     ".type __vectorhand_prefetchabort,%function \n"
@@ -253,7 +253,7 @@ void handle_prefetchabort(regs_t *regs)
     cpu_DumpRegs(regs);
 
     if (krnRunExceptionHandlers(KernelBase, 3, regs))
-	return;
+        return;
 
     D(bug("[Kernel] exception handler(s) returned\n"));
 

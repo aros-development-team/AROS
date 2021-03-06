@@ -12,23 +12,23 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH2(BOOL, GetCSUnitAttrsA,
+        AROS_LH2(BOOL, GetCSUnitAttrsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(IPTR, unit, D0),
-	AROS_LHA(const struct TagItem *, tags, A0),
+        AROS_LHA(IPTR, unit, D0),
+        AROS_LHA(const struct TagItem *, tags, A0),
 
 /*  LOCATION */
-	struct HPETBase *, base, 4, Hpet)
+        struct HPETBase *, base, 4, Hpet)
 
 /*  FUNCTION
-	Query attributes of HPET unit.
+        Query attributes of HPET unit.
 
     INPUTS
-	unit - a number of previously allocated HPET unit.
+        unit - a number of previously allocated HPET unit.
 
     RESULT
-    	TRUE in case of success or FALSE if the given unit number is out of range.
+        TRUE in case of success or FALSE if the given unit number is out of range.
 
     NOTES
 
@@ -49,24 +49,24 @@
     /* Owner is the only thing which can be modified, so we don't need a semaphore here */
 
     if (unit >= base->unitCnt)
-    	return FALSE;
+        return FALSE;
 
     while ((tag = LibNextTagItem(&tstate)))
     {
-    	switch (tag->ti_Tag)
-    	{
-    	case HPET_BASE_ADDR:
-    	    *(IPTR *)tag->ti_Data = base->units[unit].base;
-    	    break;
+        switch (tag->ti_Tag)
+        {
+        case HPET_BASE_ADDR:
+            *(IPTR *)tag->ti_Data = base->units[unit].base;
+            break;
 
-	case HPET_UNIT_ADDR:
-	    *(IPTR *)tag->ti_Data = base->units[unit].block;
-	    break;
+        case HPET_UNIT_ADDR:
+            *(IPTR *)tag->ti_Data = base->units[unit].block;
+            break;
 
-	case CLOCKSOURCE_UNIT_OWNER:
-	    *(const struct Node **)tag->ti_Data = base->units[unit].Owner;
-	    break;
-	}
+        case CLOCKSOURCE_UNIT_OWNER:
+            *(const struct Node **)tag->ti_Data = base->units[unit].Owner;
+            break;
+        }
     }
 
     return TRUE;

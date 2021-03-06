@@ -26,7 +26,7 @@
 /*** HIDDSerial::NewUnit() *********************************************************/
 
 OOP_Object *UXSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj,
-					struct pHidd_Serial_NewUnit *msg)
+                                        struct pHidd_Serial_NewUnit *msg)
 {
   OOP_Object *su = NULL;
   struct HIDDSerialData * data = OOP_INST_DATA(cl, obj);
@@ -44,7 +44,7 @@ OOP_Object *UXSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj,
     case 3:
       unitnum = msg->unitnum;
       if (0 != (data->usedunits & (1 << unitnum)))
-        unitnum = -1; 
+        unitnum = -1;
     break;
     
     case -1: /* search for the next available unit */
@@ -69,7 +69,7 @@ OOP_Object *UXSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj,
 #define csd CSD(cl)
         {aHidd_SerialUnit_Unit, unitnum},
 #undef csd
-	{TAG_DONE		       }
+        {TAG_DONE                      }
     };
     
     su = OOP_NewObject(NULL, CLID_Hidd_SerialUnit, tags);
@@ -77,7 +77,7 @@ OOP_Object *UXSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj,
     /*
     ** Mark it as used
     */
-    data->usedunits |= (1 << unitnum); 
+    data->usedunits |= (1 << unitnum);
   }
 
   ReturnPtr("HIDDSerial::NewSerial", OOP_Object *, su);
@@ -86,8 +86,8 @@ OOP_Object *UXSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj,
 
 /*** HIDDSerial::DisposeUnit() ****************************************************/
 
-VOID UXSer__Hidd_Serial__DisposeUnit(OOP_Class *cl, OOP_Object *obj, 
-				     struct pHidd_Serial_DisposeUnit *msg)
+VOID UXSer__Hidd_Serial__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
+                                     struct pHidd_Serial_DisposeUnit *msg)
 {
     OOP_Object * su = msg->unit;
     struct HIDDSerialData * data = OOP_INST_DATA(cl, obj);
@@ -96,22 +96,22 @@ VOID UXSer__Hidd_Serial__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
     
     if(su)
     {
-	ULONG unitnum = 0;
-	
-	while (unitnum < SER_MAX_UNITS)
-	{
-	    if (data->SerialUnits[unitnum] == su)
-	    {
-		D(bug("Disposing SerialUnit!\n"));
-		OOP_DisposeObject(su);
-		data->SerialUnits[unitnum] = NULL;
-		data->usedunits &= ~(1 << unitnum);
-		break;
-	    }
-	    
-	    unitnum++;
-	}
-	
+        ULONG unitnum = 0;
+        
+        while (unitnum < SER_MAX_UNITS)
+        {
+            if (data->SerialUnits[unitnum] == su)
+            {
+                D(bug("Disposing SerialUnit!\n"));
+                OOP_DisposeObject(su);
+                data->SerialUnits[unitnum] = NULL;
+                data->usedunits &= ~(1 << unitnum);
+                break;
+            }
+            
+            unitnum++;
+        }
+        
     }
     
     ReturnVoid("HIDDSerial::DisposeUnit");

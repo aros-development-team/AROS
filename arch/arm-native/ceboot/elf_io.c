@@ -17,7 +17,7 @@
 struct ExtELFNode
 {
     struct ELFNode node;
-    char FullName[1];		/* We need to store the full pathname */
+    char FullName[1];           /* We need to store the full pathname */
 };
 
 struct ELFNode *FirstELF = NULL;
@@ -58,8 +58,8 @@ void FreeKernelList(void)
     
     for (n = FirstELF; n; n = n2)
     {
-	n2 = n->Next;
-	free(n);
+        n2 = n->Next;
+        free(n);
     }
 }
 
@@ -87,11 +87,11 @@ int read_block(void *file, unsigned long offset, void *dest, unsigned long lengt
 
     err = fseek(file, offset, SEEK_SET);
     if (err)
-    	return GetLastError();
+        return GetLastError();
 
     err = fread(dest, length, 1, file);
     if (err == 0)
-    	return GetLastError();
+        return GetLastError();
 
     return 0;
 }
@@ -105,16 +105,16 @@ void *load_block(void *file, unsigned long offset, unsigned long length, unsigne
     
     if (dest)
     {
-	*err = read_block(file, offset, dest, length);
-	if (*err)
-	{
-	    free(dest);
-	    return NULL;
-	}
-	*err = 0;
+        *err = read_block(file, offset, dest, length);
+        if (*err)
+        {
+            free(dest);
+            return NULL;
+        }
+        *err = 0;
     }
     else
-    	*err = GetLastError();
+        *err = GetLastError();
 
     return dest;
 }

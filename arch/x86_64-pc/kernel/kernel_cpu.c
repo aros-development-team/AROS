@@ -55,7 +55,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         bug("[Kernel:%03u] cpu_Dispatch()\n", cpunum);
     )
     
-    /* 
+    /*
      * Is the list of ready tasks empty? Well, increment the idle switch count and halt CPU.
      */
     while (!(task = core_Dispatch()))
@@ -85,7 +85,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     )
     if (ctx)
     {
-        /* 
+        /*
          * Restore the x86 FPU / XMM / AVX512/ MXCSR state
          * NB: lazy saving of the x86 FPU states or FPU / XMM / AVX512 state, has
          * been reported to leak across process, aswell as VM boundaries, giving

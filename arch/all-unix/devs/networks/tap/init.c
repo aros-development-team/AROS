@@ -21,14 +21,14 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->UnixIOAttrBase = OOP_ObtainAttrBase(IID_Hidd_UnixIO);
     if (!LIBBASE->UnixIOAttrBase)
-	return FALSE;
+        return FALSE;
 
     D(bug("[tap] in init\n"));
 
     LIBBASE->unixio = OOP_NewObjectTags(NULL, CLID_Hidd_UnixIO,
-					aHidd_UnixIO_Opener, MOD_NAME_STRING,
-					aHidd_UnixIO_Architecture, AROS_ARCHITECTURE,
-					TAG_DONE);
+                                        aHidd_UnixIO_Opener, MOD_NAME_STRING,
+                                        aHidd_UnixIO_Architecture, AROS_ARCHITECTURE,
+                                        TAG_DONE);
     if (LIBBASE->unixio == NULL)
     {
         kprintf("[tap] couldn't create unixio object\n");
@@ -50,12 +50,12 @@ static int GM_UNIQUENAME(expunge)(LIBBASETYPEPTR LIBBASE)
     /* We don't need to dispose a unixio object, it's a singletone. */
 
     if (LIBBASE->UnixIOAttrBase)
-	OOP_ReleaseAttrBase(IID_Hidd_UnixIO);
+        OOP_ReleaseAttrBase(IID_Hidd_UnixIO);
 
     return TRUE;
 }
 
-static const ULONG rx_tags[] = { 
+static const ULONG rx_tags[] = {
     S2_CopyToBuff,
     S2_CopyToBuff16
 };
@@ -79,7 +79,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 
     D(bug("[tap] in open\n"));
 
-    D(bug("[tap] unit %ld, flags [0x%08x]%s%s\n", unitnum, flags, 
+    D(bug("[tap] unit %ld, flags [0x%08x]%s%s\n", unitnum, flags,
             flags & SANA2OPF_PROM ? " SANA2OPF_PROM" : "",
             flags & SANA2OPF_MINE ? " SANA2OPF_MINE" : ""));
     
@@ -147,7 +147,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             strncpy(ifr.ifr_name, unit->name, IFNAMSIZ - 1);
 
             if ((Hidd_UnixIO_IOControlFile(LIBBASE->unixio, fd, TUNSETIFF, &ifr, &ioerr)) < 0)
-	    {
+            {
                 kprintf("[tap] couldn't perform TUNSETIFF on TAP device (%d)\n", ioerr);
                 error = IOERR_OPENFAIL;
             }
@@ -161,14 +161,14 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 
         /* its good, time to create our unit */
         if (error == 0)
-	{
-	    char iotask_name[32];
+        {
+            char iotask_name[32];
 
             /* we're faking a 10Mbit ethernet card here */
             unit->info.SizeAvailable = unit->info.SizeSupplied = sizeof(struct Sana2DeviceQuery);
             unit->info.DevQueryFormat = 0;
             unit->info.DeviceLevel = 0;
-            unit->info.AddrFieldSize = 48;  
+            unit->info.AddrFieldSize = 48;
             unit->info.MTU = 1500;
             unit->info.BPS = 10000000;
             unit->info.HardwareType = S2WireType_Ethernet;
@@ -201,7 +201,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
                                          TASKTAG_NAME, iotask_name,
                                          TASKTAG_PRI , 50,
                                          TASKTAG_ARG1, LIBBASE,
-					 TASKTAG_ARG2, unit,
+                                         TASKTAG_ARG2, unit,
                                          TAG_DONE);
 
             /* wait until its ready to go */

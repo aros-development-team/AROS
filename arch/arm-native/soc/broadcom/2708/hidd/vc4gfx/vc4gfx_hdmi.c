@@ -32,7 +32,7 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
     xsd->vcsd_MBoxMessage[4] = 0;
     xsd->vcsd_MBoxMessage[5] = 0;
     xsd->vcsd_MBoxMessage[6] = 0;
-    xsd->vcsd_MBoxMessage[7] = 0;		        // terminate tag
+    xsd->vcsd_MBoxMessage[7] = 0;                       // terminate tag
 
     /* for now lets just get the mode the display is currently running.. */
     MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);

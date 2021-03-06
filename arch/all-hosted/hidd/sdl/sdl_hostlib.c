@@ -99,7 +99,7 @@ int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
     arch = (const char *)KrnGetSystemAttr(KATTR_Architecture);
     D(bug("[sdl] Host operating system: %s\n", arch));
 
-    if (!strcmp(arch, "mingw32-i386")) 
+    if (!strcmp(arch, "mingw32-i386"))
         LibraryFile = SDL_DLLFILE;
     else if (!strncmp(arch, "darwin", 6))
         LibraryFile = SDL_DYLIBFILE;

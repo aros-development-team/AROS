@@ -44,7 +44,7 @@
 #undef LSD
 #define LSD(cl) (&LIBBASE->lsd)
 
-static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE) 
+static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE)
 {
     int res = FALSE;
     struct GfxBase *GfxBase;

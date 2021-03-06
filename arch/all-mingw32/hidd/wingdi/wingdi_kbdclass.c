@@ -94,7 +94,7 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     }
 
     tstate = msg->attrList;
-    D(bug("attrList: 0x%p\n", tstate));     
+    D(bug("attrList: 0x%p\n", tstate));
     
     while ((tag = NextTagItem(&tstate)))
     {
@@ -163,7 +163,7 @@ VOID GDIKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static int kbd_init(LIBBASETYPEPTR LIBBASE) 
+static int kbd_init(LIBBASETYPEPTR LIBBASE)
 {
     return OOP_ObtainAttrBases(attrbases);
 }

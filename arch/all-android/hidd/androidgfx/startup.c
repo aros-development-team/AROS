@@ -29,7 +29,7 @@
 
 #include LC_LIBDEFS_FILE
 
-static int agfx_Startup(LIBBASETYPEPTR LIBBASE) 
+static int agfx_Startup(LIBBASETYPEPTR LIBBASE)
 {
     struct TagItem kbd_tags[] =
     {
@@ -64,24 +64,24 @@ static int agfx_Startup(LIBBASETYPEPTR LIBBASE)
     if (kbd)
     {
         ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
-	if (ms)
-	{
+        if (ms)
+        {
             kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->xsd.kbdclass, kbd_tags);
-	    if (kbdriver)
-	    {
-		msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, mouse_tags);
-		if (!msdriver)
-		    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
-	    }
-	    OOP_DisposeObject(ms);
-	}
-	OOP_DisposeObject(kbd);
+            if (kbdriver)
+            {
+                msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, mouse_tags);
+                if (!msdriver)
+                    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+            }
+            OOP_DisposeObject(ms);
+        }
+        OOP_DisposeObject(kbd);
     }
 
     /* If we got no input, we can't work, fail */
     if (!msdriver)
     {
-	CloseLibrary(&GfxBase->LibNode);
+        CloseLibrary(&GfxBase->LibNode);
         return FALSE;
     }
 

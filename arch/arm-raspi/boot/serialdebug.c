@@ -69,7 +69,7 @@ void serInit(void)
     uart_msg[4] = AROS_LONG2LE(4);
     uart_msg[5] = AROS_LONG2LE(0x000000002);                  // UART clock
     uart_msg[6] = 0;
-    uart_msg[7] = 0;		                // terminate tag
+    uart_msg[7] = 0;                            // terminate tag
 
     vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void*)uart_msg);
     uart_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);

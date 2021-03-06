@@ -355,7 +355,7 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
 #if defined(__AROSEXEC_SMP__)
     struct KernelBase *KernelBase = __kernelBase;
     int cpuNo = KrnGetCPUNumber();
-    IPTR idleNameArg[] = 
+    IPTR idleNameArg[] =
     {
         cpuNo
     };

@@ -24,12 +24,12 @@ int krnPutC(int chr, struct KernelBase *KernelBase)
      * but KernelBase is always NULL.
      */
     if (KernelBase)
-	Forbid();
+        Forbid();
 
     r = HostIFace->KPutC(chr);
 
     if (KernelBase)
-	Permit();
+        Permit();
 
     return r;
 }

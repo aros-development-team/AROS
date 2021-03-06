@@ -32,11 +32,11 @@ AROS_LH2(ULONG, KrnModifyIRQA,
     {
         struct TagItem *irqTag;
         if ((irqTag = LibFindTagItem(KERNELTAG_IRQ_POLARITY, attribs)))
-        {    
+        {
             irqPol = (UBYTE)irqTag->ti_Data;
         }
         if ((irqTag = LibFindTagItem(KERNELTAG_IRQ_TRIGGERLEVEL, attribs)))
-        {    
+        {
             irqTrig = (UBYTE)irqTag->ti_Data;
         }
     }

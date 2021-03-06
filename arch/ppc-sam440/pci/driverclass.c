@@ -96,7 +96,7 @@ static ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UB
     return temp;
 }
 
-ULONG PCI440__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+ULONG PCI440__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     return ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);

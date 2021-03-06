@@ -65,9 +65,9 @@ BOOL RADEONGetBIOSInfo(struct ati_staticdata *sd)
 
         if (key)
         {
-			void *rom_prop = OF_FindProperty(key, "rom");
-			if (rom_prop)
-				sd->Card.VBIOS = OF_GetPropValue(rom_prop);
+                        void *rom_prop = OF_FindProperty(key, "rom");
+                        if (rom_prop)
+                                sd->Card.VBIOS = OF_GetPropValue(rom_prop);
         }
         D(bug("[ATI] OF reported BIOS at %08x\n", sd->Card.VBIOS));
     }

@@ -274,9 +274,9 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     msgtags = TAGLIST(
         aHidd_Gfx_ModeTags, (IPTR)modetags,
-	aHidd_Name        , (IPTR)"SDL",
-	aHidd_HardwareName, (IPTR)"Simple DirectMedia Layer Gfx Host",
-	aHidd_ProducerName, (IPTR)"SDL development team (http://libsdl.org/credits.php)",
+        aHidd_Name        , (IPTR)"SDL",
+        aHidd_HardwareName, (IPTR)"Simple DirectMedia Layer Gfx Host",
+        aHidd_ProducerName, (IPTR)"SDL development team (http://libsdl.org/credits.php)",
         TAG_MORE          , (IPTR)msg->attrList
     );
 
@@ -315,20 +315,20 @@ VOID SDLGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
 
 VOID SDLGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    ULONG   	     idx;
+    ULONG            idx;
 
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
-    	switch (idx)
-	{
-	    case aoHidd_Gfx_IsWindowed:
-	    	*msg->storage = TRUE;
-		return;
+        switch (idx)
+        {
+            case aoHidd_Gfx_IsWindowed:
+                *msg->storage = TRUE;
+                return;
 
-	    case aoHidd_Gfx_DriverName:
-		*msg->storage = (IPTR)"SDL";
-		return;
-	}
+            case aoHidd_Gfx_DriverName:
+                *msg->storage = (IPTR)"SDL";
+                return;
+        }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -336,23 +336,23 @@ VOID SDLGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 VOID SDLGfx__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
         if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
-	    switch(idx)
-	    {
-	    case aoHidd_Gfx_ActiveCallBack:
-	        xsd.cb = (void *)tag->ti_Data;
-		break;
+            switch(idx)
+            {
+            case aoHidd_Gfx_ActiveCallBack:
+                xsd.cb = (void *)tag->ti_Data;
+                break;
 
-	    case aoHidd_Gfx_ActiveCallBackData:
-	        xsd.cbdata = (void *)tag->ti_Data;
-		break;
-	    }
-	}
+            case aoHidd_Gfx_ActiveCallBackData:
+                xsd.cbdata = (void *)tag->ti_Data;
+                break;
+            }
+        }
     }
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
@@ -439,24 +439,24 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     /* Resetting SDL onscreen surface will destroy its old contents.
        Copy back old bitmap data if there's one and if asked to do so */
     if (data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack)) {
-	OOP_Object *colmap;
-	IPTR numentries, i;
+        OOP_Object *colmap;
+        IPTR numentries, i;
 
         OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width, &width);
         OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &height);
-	
+        
         OOP_GetAttr(data->framebuffer, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
         OOP_GetAttr(colmap, aHidd_ColorMap_NumEntries, &numentries);
-	
-	/* We need also to copy colormap (palette) */
+        
+        /* We need also to copy colormap (palette) */
         for (i = 0; i < numentries; i ++) {
-    	    HIDDT_Color col;
+            HIDDT_Color col;
 
-	    HIDD_CM_GetColor(colmap, i, &col);
-	    HIDD_BM_SetColors(data->shownbm, &col, i, 1);
+            HIDD_CM_GetColor(colmap, i, &col);
+            HIDD_BM_SetColors(data->shownbm, &col, i, 1);
         }
 
-	/* Our CopyBox() happily ignores the GC, so set it to NULL and don't bother */
+        /* Our CopyBox() happily ignores the GC, so set it to NULL and don't bother */
         HIDD_Gfx_CopyBox(o, data->framebuffer, 0, 0, data->shownbm, 0, 0, width, height, NULL);
     }
 
@@ -464,41 +464,41 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
        This will change resolution */
     if (msg->bitMap) {
         HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
-	IPTR depth;
-	OOP_Object *sync, *pixfmt;
+        IPTR depth;
+        OOP_Object *sync, *pixfmt;
         SDL_Surface *s;
-	struct TagItem bmtags[] = {
-	    {aHidd_SDLBitMap_Surface, 0},
-	    {aHidd_BitMap_Width	    , 0},
-	    {aHidd_BitMap_Height    , 0},
-	    {aHidd_BitMap_PixFmt    , 0},
-	    {TAG_DONE               , 0}
-	};
+        struct TagItem bmtags[] = {
+            {aHidd_SDLBitMap_Surface, 0},
+            {aHidd_BitMap_Width     , 0},
+            {aHidd_BitMap_Height    , 0},
+            {aHidd_BitMap_PixFmt    , 0},
+            {TAG_DONE               , 0}
+        };
 
         /* Ask ModeID from our bitmap */
-	OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
-	if (modeid == vHidd_ModeID_Invalid)
-	    return NULL;
+        OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
+        if (modeid == vHidd_ModeID_Invalid)
+            return NULL;
 
-	HIDD_Gfx_GetMode(o, modeid, &sync, &pixfmt);
+        HIDD_Gfx_GetMode(o, modeid, &sync, &pixfmt);
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-	OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+        OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 
-	/* Set up new onscreen surface */
+        /* Set up new onscreen surface */
         s = SP(SDL_SetVideoMode, width, height, depth,
               (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
               (LIBBASE->use_fullscreen ? SDL_FULLSCREEN                : 0) |
               SDL_ANYFORMAT);
-	if (!s)
-	    return NULL;
+        if (!s)
+            return NULL;
 
-	/* Tell new parameters to the framebuffer object */
-	bmtags[0].ti_Data = (IPTR)s;
-	bmtags[1].ti_Data = width;
-	bmtags[2].ti_Data = height;
-	bmtags[3].ti_Data = (IPTR)pixfmt;
-	OOP_SetAttrs(data->framebuffer, bmtags);
+        /* Tell new parameters to the framebuffer object */
+        bmtags[0].ti_Data = (IPTR)s;
+        bmtags[1].ti_Data = width;
+        bmtags[2].ti_Data = height;
+        bmtags[3].ti_Data = (IPTR)pixfmt;
+        OOP_SetAttrs(data->framebuffer, bmtags);
     }
     
     data->shownbm = msg->bitMap;
@@ -512,7 +512,7 @@ static struct OOP_MethodDescr SDLGfx_Root_descr[] = {
     {(OOP_MethodFunc)SDLGfx__Root__Dispose, moRoot_Dispose},
     {(OOP_MethodFunc)SDLGfx__Root__Get    , moRoot_Get    },
     {(OOP_MethodFunc)SDLGfx__Root__Set    , moRoot_Set    },
-    {NULL				  , 0             }
+    {NULL                                 , 0             }
 };
 #define NUM_SDLGfx_Root_METHODS 4
 

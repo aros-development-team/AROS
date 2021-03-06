@@ -65,7 +65,7 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
                 {
-                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage =
                         (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
                     IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
                 }
@@ -77,7 +77,7 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
                 {
-                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage =
                         (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
                     IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
                 }
@@ -89,11 +89,11 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
                 {
-                    /* 
+                    /*
                         TaskRunning list is different than others. Here the iet_private2 field is not yet updated,
                         so we have to update the CPU time in this place.
                     */
-                    UQUAD time = IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 + 
+                    UQUAD time = IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 +
                                  now - IntETask(t->tc_UnionETask.tc_ETask)->iet_private1;
 
                     if (time < timeCur)
@@ -111,14 +111,14 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
             {
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
                 {
-                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage = 
+                    IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage =
                         (IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 << 32) / timeCur;
                     IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 = 0;
                 }
             }
             KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
 
-            apicData->cores[cpuNum].cpu_Load = 
+            apicData->cores[cpuNum].cpu_Load =
                 ((apicData->cores[cpuNum].cpu_TSCFreq - apicData->cores[cpuNum].cpu_SleepTime) << 32) / timeCur;
 
             D(bug("[Kernel:APIC.%03u] %s() cpu load %08x\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_Load));

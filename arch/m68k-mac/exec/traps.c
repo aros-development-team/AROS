@@ -15,25 +15,25 @@
 
 void do_TRAP(struct pt_regs regs)
 {
-	ULONG alert = 0;
+        ULONG alert = 0;
 #if 0
-	kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
-	        regs.eip, regs.eflags, regs.xds, &regs);
+        kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",
+                regs.eip, regs.eflags, regs.xds, &regs);
 
-	switch (regs.orig_eax) {
-		case 0:
-			alert = ACPU_DivZero;
-			break;
-		case 6:
-			alert = ACPU_InstErr;
-			break;
-		default:
-			alert = AT_DeadEnd | 0x100 | regs.orig_eax;
-	}
+        switch (regs.orig_eax) {
+                case 0:
+                        alert = ACPU_DivZero;
+                        break;
+                case 6:
+                        alert = ACPU_InstErr;
+                        break;
+                default:
+                        alert = AT_DeadEnd | 0x100 | regs.orig_eax;
+        }
 #endif
-	Alert(alert);
+        Alert(alert);
 }
 
 void Init_Traps(void) {
-	INSTALL_TRAP_HANDLER(TRAP_1, _sys_trap1_handler);
+        INSTALL_TRAP_HANDLER(TRAP_1, _sys_trap1_handler);
 }

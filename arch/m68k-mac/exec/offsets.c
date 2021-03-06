@@ -8,15 +8,15 @@
 
 ULONG get_offsetof_ThisTask(void)
 {
-	return (ULONG)&(((struct ExecBase *)0x0)->ThisTask);
+        return (ULONG)&(((struct ExecBase *)0x0)->ThisTask);
 }
 
 ULONG get_offsetof_tc_SPLower(void)
 {
-	return (ULONG)&(((struct Task *)0x0)->tc_SPLower);
+        return (ULONG)&(((struct Task *)0x0)->tc_SPLower);
 }
 
 ULONG get_offsetof_tc_TrapCode(void)
 {
-	return (ULONG)&(((struct Task *)0x0)->tc_TrapCode);
+        return (ULONG)&(((struct Task *)0x0)->tc_TrapCode);
 }

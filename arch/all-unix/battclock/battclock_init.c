@@ -45,18 +45,18 @@ static int BattClock_Init(struct BattClockBase *BattClockBase)
     {
         BattClockBase->Lib = HostLib_Open(LIBC_NAME, NULL);
         if (BattClockBase->Lib)
-	{
-    	    BattClockBase->SysIFace = (struct BattclockInterface *)HostLib_GetInterface(BattClockBase->Lib, Symbols, &r);
-    	    D(bug("[battclock] SysIFace = 0x%08lX, unresolved: %u\n", BattClockBase->SysIFace, r));
+        {
+            BattClockBase->SysIFace = (struct BattclockInterface *)HostLib_GetInterface(BattClockBase->Lib, Symbols, &r);
+            D(bug("[battclock] SysIFace = 0x%08lX, unresolved: %u\n", BattClockBase->SysIFace, r));
 
-    	    if (BattClockBase->SysIFace)
-	    {
-    	        if (!r)
-    	            return 1;
-    	        HostLib_DropInterface((APTR)BattClockBase->SysIFace);
-    	    }
-    	    HostLib_Close(BattClockBase->Lib, NULL);
-    	}
+            if (BattClockBase->SysIFace)
+            {
+                if (!r)
+                    return 1;
+                HostLib_DropInterface((APTR)BattClockBase->SysIFace);
+            }
+            HostLib_Close(BattClockBase->Lib, NULL);
+        }
     }
     return 0;
 }

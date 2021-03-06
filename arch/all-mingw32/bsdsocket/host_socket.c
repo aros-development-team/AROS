@@ -20,19 +20,19 @@ static DWORD WINAPI ResolverThread(struct SocketController *ctl)
 
     for (;;)
     {
-	WaitForSingleObject(ctl->ResolverEvent, INFINITE);
+        WaitForSingleObject(ctl->ResolverEvent, INFINITE);
     
-	switch(ctl->Command)
-	{
-	case SOCK_CMD_SHUTDOWN:
-	    D(printf("[Resolver] Shutdown requested\n"));
+        switch(ctl->Command)
+        {
+        case SOCK_CMD_SHUTDOWN:
+            D(printf("[Resolver] Shutdown requested\n"));
 
-	    CloseHandle(ctl->ResolverEvent);
-	    return 0;
+            CloseHandle(ctl->ResolverEvent);
+            return 0;
 
-	}
-	ctl->Command = 0;
-	KrnCauseSystemIRQ(ctl->ResolverIRQ);
+        }
+        ctl->Command = 0;
+        KrnCauseSystemIRQ(ctl->ResolverIRQ);
     }
 }
 
@@ -47,35 +47,35 @@ struct SocketController * __declspec(dllexport) __aros sock_init(void)
     D(printf("[sock_init] Using WinSock v%u.%u (%s)\n", wsdata.wVersion & 0x00FF, wsdata.wVersion >> 8, wsdata.szDescription));
     D(printf("[sock_init] Status: %s\n", wsdata.szSystemStatus));
     if (state)
-	return NULL;
+        return NULL;
 
     irq = KrnAllocSystemIRQ();
     if (irq != -1)
     {
-	ctl.SocketIRQ = irq;
+        ctl.SocketIRQ = irq;
 
-	irq = KrnAllocSystemIRQ();
-	if (irq != -1)
-	{
-	    ctl.ResolverIRQ = irq;
+        irq = KrnAllocSystemIRQ();
+        if (irq != -1)
+        {
+            ctl.ResolverIRQ = irq;
 
-	    ctl.ResolverEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-	    if (ctl.ResolverEvent)
-	    {
-		DWORD id;
+            ctl.ResolverEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+            if (ctl.ResolverEvent)
+            {
+                DWORD id;
 
-		thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ResolverThread, &ctl, 0, &id);
-		if (thread)
-		{
-		    CloseHandle(thread);
+                thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ResolverThread, &ctl, 0, &id);
+                if (thread)
+                {
+                    CloseHandle(thread);
 
-		    ctl.SocketEvent = KrnGetSystemIRQObject(ctl.SocketIRQ);
-		    return &ctl;
-		}
-		CloseHandle(ctl.ResolverEvent);
-	    }
-	}
-	KrnFreeSystemIRQ(ctl.SocketIRQ);
+                    ctl.SocketEvent = KrnGetSystemIRQObject(ctl.SocketIRQ);
+                    return &ctl;
+                }
+                CloseHandle(ctl.ResolverEvent);
+            }
+        }
+        KrnFreeSystemIRQ(ctl.SocketIRQ);
     }
 
     return NULL;
@@ -86,7 +86,7 @@ int __declspec(dllexport) __aros sock_shutdown(struct SocketController *ctl)
     int res = WSACleanup();
     
     if (res)
-	return res;
+        return res;
 
     ctl->Command = SOCK_CMD_SHUTDOWN;
     SetEvent(ctl->ResolverEvent);

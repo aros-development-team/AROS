@@ -215,14 +215,14 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             bug("[Kernel:IOAPIC] %s: Init IOAPIC #%u [ID=%03u] @ 0x%p\n", __func__, instance + 1, ioapicData->ioapic_ID, ioapicData->ioapic_Base);
         )
 
-	/*
+        /*
          * Skip controllers that report bogus version information
          */
         ioapicval = acpi_IOAPIC_ReadReg(
                         ioapicData->ioapic_Base,
                         IOAPICREG_VER);
-	if (ioapicval == 0xFFFFFFFF)
-		continue;
+        if (ioapicval == 0xFFFFFFFF)
+                continue;
 
         DINT(
             bug("[Kernel:IOAPIC] %s: IOAPIC Version appears to be valid...\n", __func__);
@@ -235,7 +235,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             )
         }
 
-	/*
+        /*
          * Make sure we are using the correct LocalID
          */
         ioapicval = acpi_IOAPIC_ReadReg(
@@ -600,8 +600,8 @@ static UBYTE ACPI_TrigFromInti(UWORD inti)
 
 /* Process the 'Interrupt Source' MADT Table */
 AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_INTERRUPT_SOURCE *, intsrc, A2))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_MADT_INTERRUPT_SOURCE *, intsrc, A2))
 {
     AROS_USERFUNC_INIT
 
@@ -657,8 +657,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
 
 /* Process the 'Interrupt Source Overide' MADT Table */
 AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_INTERRUPT_OVERRIDE *, intsrc, A2))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_MADT_INTERRUPT_OVERRIDE *, intsrc, A2))
 {
     AROS_USERFUNC_INIT
 
@@ -731,8 +731,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 
 /* Process the 'Non-Maskable Interrupt Source' MADT Table */
 AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_NMI_SOURCE *, nmi_src, A2))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_MADT_NMI_SOURCE *, nmi_src, A2))
 {
     AROS_USERFUNC_INIT
 
@@ -774,9 +774,9 @@ AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
 
 /* Process the 'IO-APIC' MADT Table */
 AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_IO_APIC *, ioapic, A2),
-	  AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_MADT_IO_APIC *, ioapic, A2),
+          AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -864,9 +864,9 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
  * This function counts the available IO-APICs.
  */
 AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(ACPI_MADT_IO_APIC *, ioapic, A2),
-	  AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(ACPI_MADT_IO_APIC *, ioapic, A2),
+          AROS_UFHA(struct ACPI_TABLESCAN_DATA *, tsdata, A1))
 {
     AROS_USERFUNC_INIT
 

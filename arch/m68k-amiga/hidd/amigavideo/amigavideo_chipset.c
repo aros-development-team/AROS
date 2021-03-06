@@ -129,8 +129,8 @@ VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
             if (bm->interlace) {
                 c2di->copper2_palette[i * 2 + off] = valhi;
                 c2di->copper2_palette_aga_lo[i * 2 + off] = vallo;
-            }	
-        }   
+            }
+        }
     } else if (bm->res == 2 && !csd->aga) {
         D(bug("[AmigaVideo] %s: ECS\n", __func__));
         /* ECS "scrambled" superhires */
@@ -800,7 +800,7 @@ UBYTE bltnode_wrapper(VOID)
 #define BQ_MISSED 8
 
 static AROS_INTH1(gfx_blit, struct GfxBase *, GfxBase)
-{ 
+{
     AROS_INTFUNC_INIT
 
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -895,7 +895,7 @@ static AROS_INTH1(gfx_blit, struct GfxBase *, GfxBase)
 }
 
 static AROS_INTH1(gfx_beamsync, struct amigavideo_staticdata*, csd)
-{ 
+{
     AROS_INTFUNC_INIT
 
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
@@ -1021,7 +1021,7 @@ static BOOL gfx_vblank_attachbm(struct amigavideo_staticdata *csd, struct amigab
     }
 
     D(
-        if (!bmpred)    
+        if (!bmpred)
             bug("[AmigaVideo] %s: * new topmost bitmap\n", __func__);
       )
 
@@ -1290,7 +1290,7 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
         }
         else if (bm == csd->updatescroll)
         {
-            UWORD toptmp; 
+            UWORD toptmp;
             retval = TRUE;
 
             if (bm->updtop < bm->topedge)
@@ -1378,7 +1378,7 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
                 else if ((!bm->interlace) && (bmtmp->interlace))
                     bmend >>= 1;
 
-                bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);                    
+                bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
             }
             else
                 bm->displayheight = limitheight(csd, (bm->height - bm->topedge), bm->interlace, FALSE);
@@ -1424,7 +1424,7 @@ static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
     return retval;
 }
 static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
-{ 
+{
     AROS_INTFUNC_INIT
 
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
@@ -1582,17 +1582,17 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     COPPEROUT(c, 0x0100, csd->bplcon0_null)
 
     COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 (ecs sprites)
-    COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)			// Pen = 0
-    COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 9) | (1 << 6))    // Push subsequent color palette bplcon3 
-    COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)			// Pen = 0
+    COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)                   // Pen = 0
+    COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 9) | (1 << 6))    // Push subsequent color palette bplcon3
+    COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)                   // Pen = 0
     COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 again
 
-    COPPEROUT(c, 0x01fc, 0)					// Push fmode
-    COPPEROUT(c, 0x008e, (1 << 8) | 0x81)			// Push (DIWSTRT) Display window start
-    COPPEROUT(c, 0x0090, (2 << 8) | 0x81)			// Push (DIWSTOP) Display window stop
-    COPPEROUT(c, 0x01e4, 0)					// Push (DIWHIGH) Display window
-    COPPEROUT(c, 0x0092, 0)					// Push (DDFSTRT) Display bitplane data fetch start
-    COPPEROUT(c, 0x0094, 0)					// Push (DDFSTOP) Display bitplane data fetch stop
+    COPPEROUT(c, 0x01fc, 0)                                     // Push fmode
+    COPPEROUT(c, 0x008e, (1 << 8) | 0x81)                       // Push (DIWSTRT) Display window start
+    COPPEROUT(c, 0x0090, (2 << 8) | 0x81)                       // Push (DIWSTOP) Display window stop
+    COPPEROUT(c, 0x01e4, 0)                                     // Push (DIWHIGH) Display window
+    COPPEROUT(c, 0x0092, 0)                                     // Push (DDFSTRT) Display bitplane data fetch start
+    COPPEROUT(c, 0x0094, 0)                                     // Push (DDFSTOP) Display bitplane data fetch stop
     COPPEROUT(c, 0x0104, csd->bplcon2)                          // Push the screens bplcon2
 
     /* initialize SPRxPOS */

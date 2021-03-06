@@ -48,15 +48,15 @@ static int PCILx_Init(LIBBASETYPEPTR LIBBASE)
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
-    	return FALSE;
+        return FALSE;
 
     /* Make sure we are running on Linux. Otherwise we will just
        crash at first syscall. */
     arch = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
     if (strncmp(arch, "linux", 5))
     {
-    	D(bug("LinuxPCI: Running on %s, not on Linux\n", arch));
-    	return FALSE;
+        D(bug("LinuxPCI: Running on %s, not on Linux\n", arch));
+        return FALSE;
     }
 
     ret = syscall1(__NR_iopl, 3);
@@ -66,7 +66,7 @@ static int PCILx_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("LinuxPCI: /dev/mem fd=%d\n", LIBBASE->psd.fd));
 
     if (ret==0)
-	return TRUE;
+        return TRUE;
 
     D(bug("LinuxPCI: has to be root in order to use this hidd\n"));
 
@@ -83,19 +83,19 @@ static int PCILx_Expunge(LIBBASETYPEPTR LIBBASE)
     OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     if (pci)
     {
-	/* If PCI successed to open, remove your driver from subsystem */
-	struct pHidd_PCI_RemHardwareDriver msg;
+        /* If PCI successed to open, remove your driver from subsystem */
+        struct pHidd_PCI_RemHardwareDriver msg;
 
-	msg.driverClass = LIBBASE->psd.driverClass;
-	msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_RemHardwareDriver);
+        msg.driverClass = LIBBASE->psd.driverClass;
+        msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_RemHardwareDriver);
 
-	D(bug("[PCILinux] Removing driver\n"));
-	if (OOP_DoMethod(pci, (OOP_Msg)&msg) == FALSE)
-	{
-	    ret = FALSE;
-	    D(bug("[PCILinux] PCI class refused to remove driver for some reason. Delaying expunge then\n"));
-	}
-	OOP_DisposeObject(pci);
+        D(bug("[PCILinux] Removing driver\n"));
+        if (OOP_DoMethod(pci, (OOP_Msg)&msg) == FALSE)
+        {
+            ret = FALSE;
+            D(bug("[PCILinux] PCI class refused to remove driver for some reason. Delaying expunge then\n"));
+        }
+        OOP_DisposeObject(pci);
     }
 
     return ret;

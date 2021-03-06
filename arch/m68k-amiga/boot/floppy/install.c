@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    err = read(fd, buff, sizeof(buff)); 
+    err = read(fd, buff, sizeof(buff));
     if (err < 0) {
         perror(image);
         close(fd);

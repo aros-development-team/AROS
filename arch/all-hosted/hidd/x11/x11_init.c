@@ -154,7 +154,7 @@ int X11_Init(struct x11_staticdata *xsd)
         BootLoaderBase = OpenResource("bootloader.resource");
 
         /*
-         *    Argument parsing from bootloader.resource 
+         *    Argument parsing from bootloader.resource
          */
 
         if (BootLoaderBase)

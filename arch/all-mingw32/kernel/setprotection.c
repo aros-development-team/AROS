@@ -19,24 +19,24 @@ static unsigned int access_map[] =
 };
 
 AROS_LH3(void, KrnSetProtection,
-	AROS_LHA(void *, address, A0),
-	AROS_LHA(uint32_t, length, D0),
+        AROS_LHA(void *, address, A0),
+        AROS_LHA(uint32_t, length, D0),
         AROS_LHA(KRN_MapAttr, flags, D1),
-	struct KernelBase *, KernelBase, 21, Kernel)
+        struct KernelBase *, KernelBase, 21, Kernel)
 {
     AROS_LIBFUNC_INIT
     
     unsigned int win_flags = access_map[(flags & 0x0300) >> 8];
 
     if (flags & MAP_Executable)
-	win_flags <<= 4;
+        win_flags <<= 4;
 
     if (flags & MAP_CacheInhibit)
-	win_flags = PAGE_NOCACHE;
-    if (flags & MAP_WriteThrough)	/* FIXME: is it correct mapping? */
-	win_flags |= PAGE_WRITECOMBINE;
+        win_flags = PAGE_NOCACHE;
+    if (flags & MAP_WriteThrough)       /* FIXME: is it correct mapping? */
+        win_flags |= PAGE_WRITECOMBINE;
     if (flags & MAP_Guarded)
-	win_flags |= PAGE_GUARD;
+        win_flags |= PAGE_GUARD;
 
     KernelIFace.core_protect(address, length, win_flags);
 

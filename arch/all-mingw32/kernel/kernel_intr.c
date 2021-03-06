@@ -58,18 +58,18 @@ void core_ExitInterrupt(CONTEXT *regs)
     D(bug("[Scheduler] TDNestCnt is %d\n", SysBase->TDNestCnt));
     if (SysBase->TDNestCnt < 0)
     {
-        /* 
-         * Do not disturb task if it's not necessary. 
+        /*
+         * Do not disturb task if it's not necessary.
          * Reschedule only if switch pending flag is set. Exit otherwise.
          */
         if (SysBase->AttnResched & ARF_AttnSwitch)
         {
             D(bug("[Scheduler] Rescheduling\n"));
             if (core_Schedule())
-	    {
-		cpu_Switch(regs);
-		cpu_Dispatch(regs);
-	    }
+            {
+                cpu_Switch(regs);
+                cpu_Dispatch(regs);
+            }
         }
     }
 }
@@ -82,7 +82,7 @@ int core_IRQHandler(unsigned char *irqs, CONTEXT *regs)
     /* Run handlers for all active IRQs */
     ForeachNodeSafe(KernelBase->kb_Interrupts, in, in2)
     {
-	irqhandler_t h = in->in_Handler;
+        irqhandler_t h = in->in_Handler;
 
         if (h && (irqs[in->in_nr]))
             h(in->in_HandlerData, in->in_HandlerData2);
@@ -90,7 +90,7 @@ int core_IRQHandler(unsigned char *irqs, CONTEXT *regs)
 
     /* IRQ 0 is exec VBlank timer */
     if (irqs[0])
-	core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
 
     /* Reschedule tasks and exit */
     core_ExitInterrupt(regs);
@@ -107,94 +107,94 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
     switch (num)
     {
     case AROS_EXCEPTION_SYSCALL:
-	/* It's a SysCall exception issued by core_raise() */
-	DSC(bug("[KRN] SysCall 0x%04X\n", args[0]));
-	switch(args[0])
-	{
-	case SC_SCHEDULE:
-	    if (!core_Schedule())
-		break;
+        /* It's a SysCall exception issued by core_raise() */
+        DSC(bug("[KRN] SysCall 0x%04X\n", args[0]));
+        switch(args[0])
+        {
+        case SC_SCHEDULE:
+            if (!core_Schedule())
+                break;
 
-	case SC_SWITCH:
-	    cpu_Switch(regs);
+        case SC_SWITCH:
+            cpu_Switch(regs);
 
-	case SC_DISPATCH:
-	    cpu_Dispatch(regs);
-	    break;
+        case SC_DISPATCH:
+            cpu_Dispatch(regs);
+            break;
 
-	case SC_CAUSE:
-	    core_ExitInterrupt(regs);
-	    break;
-	}
-	break;
+        case SC_CAUSE:
+            core_ExitInterrupt(regs);
+            break;
+        }
+        break;
 
     case AROS_EXCEPTION_RESUME:
         /* Restore saved context and continue */
-	ctx = (struct AROSCPUContext *)args[0];
-	RESTOREREGS(regs, ctx);
-	**KernelIFace.LastError = ctx->LastError;
-	break;
+        ctx = (struct AROSCPUContext *)args[0];
+        RESTOREREGS(regs, ctx);
+        **KernelIFace.LastError = ctx->LastError;
+        break;
 
     default:
-	/* It's something else, likely a CPU trap */
-	bug("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", num, SysBase, KernelBase);
+        /* It's something else, likely a CPU trap */
+        bug("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", num, SysBase, KernelBase);
 
-	/* Find out trap handler for caught task */
-	if (SysBase)
-	{
+        /* Find out trap handler for caught task */
+        if (SysBase)
+        {
             struct Task *t = SysBase->ThisTask;
 
             if (t)
-	    {
-		bug("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
-		trapHandler = t->tc_TrapCode;
-		D(bug("[KRN] Task trap handler 0x%p\n", trapHandler));
-	    }
-	    else
-		bug("[KRN] No task\n");
+            {
+                bug("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
+                trapHandler = t->tc_TrapCode;
+                D(bug("[KRN] Task trap handler 0x%p\n", trapHandler));
+            }
+            else
+                bug("[KRN] No task\n");
 
-	    DTRAP(bug("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
-	    if (!trapHandler)
-		trapHandler = SysBase->TaskTrapCode;
-	}
+            DTRAP(bug("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
+            if (!trapHandler)
+                trapHandler = SysBase->TaskTrapCode;
+        }
 
-    	PRINT_CPUCONTEXT(regs);
+        PRINT_CPUCONTEXT(regs);
 
-	/* Translate Windows exception code to CPU and exec trap numbers */
-	for (ex = Traps; ex->ExceptionCode; ex++)
-	{
-	    if (num == ex->ExceptionCode)
-		break;
-	}
-	DTRAP(bug("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
+        /* Translate Windows exception code to CPU and exec trap numbers */
+        for (ex = Traps; ex->ExceptionCode; ex++)
+        {
+            if (num == ex->ExceptionCode)
+                break;
+        }
+        DTRAP(bug("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
 
-	/* Convert CPU context to AROS structure */
-	struct ExceptionContext tmpContext;
-	TRAP_SAVEREGS(regs, tmpContext);
+        /* Convert CPU context to AROS structure */
+        struct ExceptionContext tmpContext;
+        TRAP_SAVEREGS(regs, tmpContext);
 
-	do
-	{
-	    if (ex->CPUTrap != -1)
-	    {
-		if (krnRunExceptionHandlers(KernelBase, ex->CPUTrap, &tmpContext))
-		    break;
-	    }
+        do
+        {
+            if (ex->CPUTrap != -1)
+            {
+                if (krnRunExceptionHandlers(KernelBase, ex->CPUTrap, &tmpContext))
+                    break;
+            }
 
-	    if (trapHandler && (ex->AmigaTrap != -1))
-	    {
-		/* Call our trap handler. Note that we may return, this means that the handler has
-		   fixed the problem somehow and we may safely continue */
-		DTRAP(bug("[KRN] Amiga trap %d\n", ex->AmigaTrap));
-		trapHandler(ex->AmigaTrap, &tmpContext);
+            if (trapHandler && (ex->AmigaTrap != -1))
+            {
+                /* Call our trap handler. Note that we may return, this means that the handler has
+                   fixed the problem somehow and we may safely continue */
+                DTRAP(bug("[KRN] Amiga trap %d\n", ex->AmigaTrap));
+                trapHandler(ex->AmigaTrap, &tmpContext);
 
-		break;
-	    }
+                break;
+            }
 
-	    /* If we reach here, the trap is unhandled and we request the virtual machine to stop */
-	    return INT_HALT;
-	} while(0);
+            /* If we reach here, the trap is unhandled and we request the virtual machine to stop */
+            return INT_HALT;
+        } while(0);
 
-	TRAP_RESTOREREGS(regs, tmpContext);
+        TRAP_RESTOREREGS(regs, tmpContext);
     }
 
     IRET;

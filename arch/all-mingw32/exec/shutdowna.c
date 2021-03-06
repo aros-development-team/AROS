@@ -9,8 +9,8 @@
 #include "exec_intern.h"
 
 AROS_LH1(ULONG, ShutdownA,
-	 AROS_LHA(ULONG, action, D0),
-	 struct ExecBase *, SysBase, 173, Exec)
+         AROS_LHA(ULONG, action, D0),
+         struct ExecBase *, SysBase, 173, Exec)
 {
     AROS_LIBFUNC_INIT
 
@@ -21,12 +21,12 @@ AROS_LH1(ULONG, ShutdownA,
     switch(action)
     {
     case SD_ACTION_POWEROFF:
-	PD(SysBase).ExitProcess(0);
-	break;
+        PD(SysBase).ExitProcess(0);
+        break;
 
     case SD_ACTION_COLDREBOOT:
-	PD(SysBase).Reboot(FALSE);
-	break;
+        PD(SysBase).Reboot(FALSE);
+        break;
     }
 
     Enable();

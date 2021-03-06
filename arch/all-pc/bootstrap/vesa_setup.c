@@ -32,21 +32,21 @@ void setupVESA(char *vesa)
 
     if (!tmp)
     {
-    	D(kprintf("[%s] Setup failed, not enough working memory\n", str_BSVESA);)
-    	return;
+        D(kprintf("[%s] Setup failed, not enough working memory\n", str_BSVESA);)
+        return;
     }
 
     x = strtoul(vesa, &vesa, 10);
     if (*vesa == 'x')
     {
-	vesa++;
-	y = strtoul(vesa, &vesa, 10);
+        vesa++;
+        y = strtoul(vesa, &vesa, 10);
 
-	if (*vesa == 'x')
-	{
-	    vesa++;
-	    d = strtoul(vesa, &vesa, 10);
-	}
+        if (*vesa == 'x')
+        {
+            vesa++;
+            d = strtoul(vesa, &vesa, 10);
+        }
         else
             d = 32;
     }
@@ -57,7 +57,7 @@ void setupVESA(char *vesa)
     if (*vesa == '@')
     {
         vesa++;
-	vfreq = strtoul(vesa, &vesa, 10);
+        vfreq = strtoul(vesa, &vesa, 10);
         set_refresh = TRUE;
     }
     else
@@ -95,7 +95,7 @@ void setupVESA(char *vesa)
     r = setVbeMode(mode, set_refresh);
     if (r == VBE_RC_SUPPORTED)
     {
-	/* Try to switch palette width to 8 bits if possible */
+        /* Try to switch palette width to 8 bits if possible */
         if (VBEControllerInfo.capabilities & VC_PALETTE_WIDTH)
             paletteWidth(0x0800, &palwidth);
     }
@@ -106,12 +106,12 @@ void setupVESA(char *vesa)
 
     if (r == VBE_RC_SUPPORTED)
     {
-    	/* Reinitialize our console */
-    	fb_Mirror = __bs_malloc(0);
-    	con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
-    	AllocFB();
+        /* Reinitialize our console */
+        fb_Mirror = __bs_malloc(0);
+        con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
+        AllocFB();
 
-	D(
+        D(
             kprintf("[%s] VBE version 0x%04X\n", str_BSVESA, VBEControllerInfo.version);
             kprintf("[%s]   Mode 0x%x\n", str_BSVESA, mode);
             kprintf("[%s]   Resolution %d x %d\n", str_BSVESA, VBEModeInfo.x_resolution, VBEModeInfo.y_resolution);

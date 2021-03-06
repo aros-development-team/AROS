@@ -28,7 +28,7 @@ AROS_LH3(void, KrnSetProtection,
     /* We need MAP_Supervisor and MAP_CacheInhibitSerialized */
     
     if ((ULONG)address < 0x00200000 && cm == CM_SERIALIZED)
-	cm = CM_NONCACHEABLE; /* Chip RAM does not need to be non-cacheable + serialized, only noncacheable */
+        cm = CM_NONCACHEABLE; /* Chip RAM does not need to be non-cacheable + serialized, only noncacheable */
     
     map_region(KernelBase, address, NULL, length, invalid, readonly, supervisor, cm);
 

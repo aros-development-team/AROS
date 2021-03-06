@@ -14,23 +14,23 @@
 
     NAME */
 
-	AROS_LH1(APTR, BusToPhys,
+        AROS_LH1(APTR, BusToPhys,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, busAddress, A0),
+        AROS_LHA(APTR, busAddress, A0),
 
 /*  LOCATION */
-	APTR, KernelBase, 1, Kernel)
+        APTR, KernelBase, 1, Kernel)
 
 /*  FUNCTION
-	This function translates Bus address (address that device sees) to
-	Physical address (address seen by CPU).
+        This function translates Bus address (address that device sees) to
+        Physical address (address seen by CPU).
 
     INPUTS
-	busAddress - Bus address as seen by device
+        busAddress - Bus address as seen by device
 
     RESULT
-	Physical address seen by CPU
+        Physical address seen by CPU
 
 *****************************************************************************/
 {
@@ -48,23 +48,23 @@
 
     NAME */
 
-	AROS_LH1(APTR, PhysToBus,
+        AROS_LH1(APTR, PhysToBus,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, physAddress, A0),
+        AROS_LHA(APTR, physAddress, A0),
 
 /*  LOCATION */
-	APTR, KernelBase, 2, Kernel)
+        APTR, KernelBase, 2, Kernel)
 
 /*  FUNCTION
-	This function translates Physical address address (address seen by CPU)
-	to Bus address (address seen by device).
+        This function translates Physical address address (address seen by CPU)
+        to Bus address (address seen by device).
 
     INPUTS
-	physAddress - Physical address as seen by CPU
+        physAddress - Physical address as seen by CPU
 
     RESULT
-	Bus address seen by device
+        Bus address seen by device
 
 *****************************************************************************/
 {
@@ -84,7 +84,7 @@
     address space. Please note that theirs implementation is platform specific.
 
     Also note, that allthough it might be possible to talk to hardware without
-    them, it doesn't have to be possible any time. It may happen, that 
+    them, it doesn't have to be possible any time. It may happen, that
     self-made IO access will end with program killed.
 
     There is no description available for this functions, but there is no need
@@ -100,10 +100,10 @@ AROS_LH2(void, OutB,
     AROS_LIBFUNC_INIT
 
     asm volatile (
-	"stbx %0,0,%1	\n\t"
-	"sync		\n\t"
-	:
-	: "r"(val), "r"(port + _IO_BASE));
+        "stbx %0,0,%1   \n\t"
+        "sync           \n\t"
+        :
+        : "r"(val), "r"(port + _IO_BASE));
 
     AROS_LIBFUNC_EXIT
 }
@@ -116,10 +116,10 @@ AROS_LH2(void, OutW,
     AROS_LIBFUNC_INIT
 
     asm volatile (
-	"sthbrx %0,0,%1	\n\t"
-	"sync		\n\t"
-	:
-	: "r"(val), "r"(port + _IO_BASE));
+        "sthbrx %0,0,%1 \n\t"
+        "sync           \n\t"
+        :
+        : "r"(val), "r"(port + _IO_BASE));
 
     AROS_LIBFUNC_EXIT
 }
@@ -132,10 +132,10 @@ AROS_LH2(void, OutL,
     AROS_LIBFUNC_INIT
 
     asm volatile (
-	"stwbrx %0,0,%1	\n\t"
-	"sync		\n\t"
-	:
-	: "r"(val), "r"(port + _IO_BASE));
+        "stwbrx %0,0,%1 \n\t"
+        "sync           \n\t"
+        :
+        : "r"(val), "r"(port + _IO_BASE));
 
     AROS_LIBFUNC_EXIT
 }
@@ -149,8 +149,8 @@ AROS_LH1(UBYTE, InB,
     UBYTE ret;
 
     asm volatile ("lbzx %0,0,%1\n\tisync\n\tnop"
-	:"=r"(ret)
-	:"r"(port + _IO_BASE));
+        :"=r"(ret)
+        :"r"(port + _IO_BASE));
 
     return(ret);
 
@@ -166,8 +166,8 @@ AROS_LH1(UWORD, InW,
     UWORD ret;
 
     asm volatile ("lhbrx %0,0,%1\n\tisync\n\tnop"
-	:"=r"(ret)
-	:"r"(port + _IO_BASE));
+        :"=r"(ret)
+        :"r"(port + _IO_BASE));
 
     return(ret);
 
@@ -183,8 +183,8 @@ AROS_LH1(ULONG, InL,
     ULONG ret;
 
     asm volatile ("lwbrx %0,0,%1\n\tisync\n\tnop"
-	:"=r"(ret)
-	:"r"(port + _IO_BASE));
+        :"=r"(ret)
+        :"r"(port + _IO_BASE));
 
     return(ret);
 

@@ -19,10 +19,10 @@ AROS_LH0(LONG, VBeamPos,
     UWORD v1, v2;
     
     for (;;) {
-	v1 = custom->vhposr >> 8;
-	v2 = custom->vposr;
-	if (v1 == (custom->vhposr >> 8))
-	    break;
+        v1 = custom->vhposr >> 8;
+        v2 = custom->vposr;
+        if (v1 == (custom->vhposr >> 8))
+            break;
     }
 
     return v1 | ((v2 & 7) << 8);

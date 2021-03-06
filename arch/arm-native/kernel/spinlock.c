@@ -14,10 +14,10 @@
 #include <proto/kernel.h>
 
 AROS_LH3(spinlock_t *, KrnSpinLock,
-	AROS_LHA(spinlock_t *, lock, A1),
-	AROS_LHA(struct Hook *, failhook, A0),
-	AROS_LHA(ULONG, mode, D0),
-	struct KernelBase *, KernelBase, 52, Kernel)
+        AROS_LHA(spinlock_t *, lock, A1),
+        AROS_LHA(struct Hook *, failhook, A0),
+        AROS_LHA(ULONG, mode, D0),
+        struct KernelBase *, KernelBase, 52, Kernel)
 {
     AROS_LIBFUNC_INIT
 

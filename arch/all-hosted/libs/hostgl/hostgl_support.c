@@ -79,7 +79,7 @@ BOOL HostGLStandardInit(struct hostgl_context * ctx, struct TagItem *tagList)
     LONG defaultleft = 0, defaulttop = 0;
     LONG defaultright = 0, defaultbottom = 0;
 
-    /* Set the defaults based on window information */    
+    /* Set the defaults based on window information */
     if (ctx->window)
     {
         if(!(ctx->window->Flags & WFLG_GIMMEZEROZERO))
@@ -98,7 +98,7 @@ BOOL HostGLStandardInit(struct hostgl_context * ctx, struct TagItem *tagList)
 
     D(bug("[HOSTGL] HostGLStandardInit: Cloned RastPort @ %x\n", ctx->visible_rp));
 
-    /* We assume left and top are given or if there is a window, set to border left/top 
+    /* We assume left and top are given or if there is a window, set to border left/top
        or if there is no window set to 0 */
     ctx->left = GetTagData(GLA_Left, defaultleft, tagList);
     ctx->top = GetTagData(GLA_Top, defaulttop, tagList);
@@ -109,10 +109,10 @@ BOOL HostGLStandardInit(struct hostgl_context * ctx, struct TagItem *tagList)
     requestedheight = GetTagData(GLA_Height, -1 , tagList);
 
     /* Calculate rastport dimensions */
-    ctx->visible_rp_width = 
+    ctx->visible_rp_width =
         ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
 
-    ctx->visible_rp_height = 
+    ctx->visible_rp_height =
         ctx->visible_rp->Layer->bounds.MaxY - ctx->visible_rp->Layer->bounds.MinY + 1;
     
     /* right will be either passed or calculated from width or 0 */
@@ -166,10 +166,10 @@ VOID HostGLRecalculateBufferWidthHeight(struct hostgl_context * ctx)
     D(bug("[HOSTGL] HostGLRecalculateBufferWidthHeight\n"));
     
     
-    ctx->visible_rp_width = 
+    ctx->visible_rp_width =
         ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
 
-    ctx->visible_rp_height = 
+    ctx->visible_rp_height =
         ctx->visible_rp->Layer->bounds.MaxY - ctx->visible_rp->Layer->bounds.MinY + 1;
 
 

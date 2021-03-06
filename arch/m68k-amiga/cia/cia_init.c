@@ -10,7 +10,7 @@
  * ciaa.resource and ciab.resource.
  * genmodule does not support such thing, so everything is written
  * by hands here.
- * 
+ *
  * Since we don't use genmodule, we have to use some other way for
  * generating include files. A standard SFD file is used to keep all
  * the definitions, it's processed using sfdc (note that it had to
@@ -19,7 +19,7 @@
  * Note that fd2inline (which also supports generating AROS macros) will
  * generate a BROKEN inline file for this resource. It handles missing
  * base specification incorrectly.
- * 
+ *
  * sonic <pavel_fedin@mail.ru>
  */
 
@@ -76,9 +76,9 @@ static const char resident_id[]   = "\0$VER:" RESIDENT_NAME " " STR(RESIDENT_VER
 AROS_INTP(Cia_Handler);
 
 static AROS_UFP3 (APTR, Cia_Init,
-		  AROS_UFPA(struct Library *, lh, D0),
-		  AROS_UFPA(BPTR, segList, A0),
-		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+                  AROS_UFPA(struct Library *, lh, D0),
+                  AROS_UFPA(BPTR, segList, A0),
+                  AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 extern void Cia_End(void);
 
@@ -112,22 +112,22 @@ static struct CIABase *InitResource(char *Name, struct ExecBase *SysBase)
     base = (struct CIABase *)MakeLibrary((APTR)Cia_FuncTable, NULL, NULL, sizeof(struct CIABase), 0);
 
     if (base) {
-	base->lib.lib_Node.ln_Type = NT_RESOURCE;
-	base->lib.lib_Node.ln_Name = Name;
-	base->lib.lib_Version      = RESIDENT_VERSION;
-	base->lib.lib_IdString     = (STRPTR)&resident_id[6];
-	base->lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
-	base->lib.lib_Revision     = RESIDENT_REVISION;
+        base->lib.lib_Node.ln_Type = NT_RESOURCE;
+        base->lib.lib_Node.ln_Name = Name;
+        base->lib.lib_Version      = RESIDENT_VERSION;
+        base->lib.lib_IdString     = (STRPTR)&resident_id[6];
+        base->lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+        base->lib.lib_Revision     = RESIDENT_REVISION;
 
-	AddResource(base);
+        AddResource(base);
     }
     return base;
 }
 
 static AROS_UFH3 (APTR, Cia_Init,
-		  AROS_UFHA(struct Library *, lh, D0),
-		  AROS_UFHA(BPTR, segList, A0),
-		  AROS_UFHA(struct ExecBase *, sysBase, A6)
+                  AROS_UFHA(struct Library *, lh, D0),
+                  AROS_UFHA(BPTR, segList, A0),
+                  AROS_UFHA(struct ExecBase *, sysBase, A6)
 )
 {
     AROS_USERFUNC_INIT

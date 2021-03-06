@@ -65,7 +65,7 @@ AROS_UFH5(BPTR, LoadSeg_Check,
     AROS_UFPA(BPTR, fh, D3),
     AROS_UFPA(APTR, LoadSeg_Original, A0),
     AROS_UFPA(struct DosLibrary *, DOSBase, A6))
-{ 
+{
     AROS_USERFUNC_INIT
 
     UBYTE *filename;
@@ -83,9 +83,9 @@ AROS_UFH5(BPTR, LoadSeg_Check,
     /* Do not allow Picasso96 to load, it is not
      * compatible with built-in AROS RTG system */
     if (stricmp(filename,"rtg.library") == 0)
-    	return BNULL;
+        return BNULL;
 
-    /* Call original LoadSeg function */  
+    /* Call original LoadSeg function */
     return AROS_UFC2(BPTR, LoadSeg_Original,
         AROS_UFCA(UBYTE*, name, D1),
         AROS_UFCA(struct DosLibrary *, DOSBase, A6));
@@ -131,20 +131,20 @@ static int PatchDOS(struct DosLibrary *dosbase)
 
     for (i = lowfunc; i <= highfunc; i++)
     {
-     	if (i == 24 || i == 25)
-    	    continue;
-    	func = (IPTR)__AROS_GETJUMPVEC(dosbase, i)->vec;
- 	__AROS_SETVECADDR(dosbase, i, asmcall);
- 	*asmcall++ = 0x2f0e; // MOVE.L A6,-(SP)
-	*asmcall++ = 0x4df9; // LEA dosbase,A6
-	*asmcall++ = (UWORD)((ULONG)dosbase >> 16);
-	*asmcall++ = (UWORD)((ULONG)dosbase >>  0);
-	*asmcall++ = 0x4eb9; // JSR func
-	*asmcall++ = (UWORD)(func >> 16);
-	*asmcall++ = (UWORD)(func >>  0);
-	*asmcall++ = 0x2C5F; // MOVE.L (SP)+,A6
-	*asmcall++ = 0x2200; // MOVE.L D0,D1
-	*asmcall++ = 0x4e75; // RTS
+        if (i == 24 || i == 25)
+            continue;
+        func = (IPTR)__AROS_GETJUMPVEC(dosbase, i)->vec;
+        __AROS_SETVECADDR(dosbase, i, asmcall);
+        *asmcall++ = 0x2f0e; // MOVE.L A6,-(SP)
+        *asmcall++ = 0x4df9; // LEA dosbase,A6
+        *asmcall++ = (UWORD)((ULONG)dosbase >> 16);
+        *asmcall++ = (UWORD)((ULONG)dosbase >>  0);
+        *asmcall++ = 0x4eb9; // JSR func
+        *asmcall++ = (UWORD)(func >> 16);
+        *asmcall++ = (UWORD)(func >>  0);
+        *asmcall++ = 0x2C5F; // MOVE.L (SP)+,A6
+        *asmcall++ = 0x2200; // MOVE.L D0,D1
+        *asmcall++ = 0x4e75; // RTS
     }
 
     /* NoReqLoadSeg() patch */

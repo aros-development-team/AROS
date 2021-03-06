@@ -55,18 +55,18 @@ short getModeInfo(long mode)
     long i;
     char *ptr = (char *)&modeinfo;
     for (i = 0; i < sizeof(modeinfo); i++)
-	*ptr++ = 0;
+        *ptr++ = 0;
     asm volatile("call go16 \n\t.code16 \n\t"
                 "movw $0x4f01, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
                 "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"c"(mode),"D"(&modeinfo):"eax","cc");
     if ((controllerinfo.version < 0x0102) && (mode > 0x0FF) && (mode < 0x108)) {
-	i = mode - 0x100;
-	modeinfo.x_resolution = vesa11Modes[i].x_resolution;
-	modeinfo.y_resolution = vesa11Modes[i].y_resolution;
-	modeinfo.bits_per_pixel = vesa11Modes[i].bits_per_pixel;
-	modeinfo.memory_model = vesa11Modes[i].memory_model;
+        i = mode - 0x100;
+        modeinfo.x_resolution = vesa11Modes[i].x_resolution;
+        modeinfo.y_resolution = vesa11Modes[i].y_resolution;
+        modeinfo.bits_per_pixel = vesa11Modes[i].bits_per_pixel;
+        modeinfo.memory_model = vesa11Modes[i].memory_model;
     }
     return retval;
 }
@@ -95,11 +95,11 @@ short paletteWidth(long req, unsigned char* width)
     unsigned char reswidth;
     
     asm volatile("call go16\n\t.code16\n\t"
-		"movw $0x4f08, %%ax\n\t"
-		"int $0x10\n\t"
-		"movb %%bh, %1\n\t"
-		"movw %%ax, %0\n\t"
-		"DATA32 call go32\n\t.code32\n\t":"=b"(retval),"=c"(reswidth):"0"(req):"eax","cc");
+                "movw $0x4f08, %%ax\n\t"
+                "int $0x10\n\t"
+                "movb %%bh, %1\n\t"
+                "movw %%ax, %0\n\t"
+                "DATA32 call go32\n\t.code32\n\t":"=b"(retval),"=c"(reswidth):"0"(req):"eax","cc");
     *width = reswidth;
     return retval;
 }
@@ -207,29 +207,29 @@ short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth)
 
         int i;
 
-	if (controllerinfo.version < 0x0200)
-	    mode_attrs = 0x11;
-	else
-	    mode_attrs = 0x91;
+        if (controllerinfo.version < 0x0200)
+            mode_attrs = 0x11;
+        else
+            mode_attrs = 0x91;
 
         for (i=0; modes[i] != 0xffff; ++i)
         {
-	    /* Check we can get info on the mode */
+            /* Check we can get info on the mode */
             if (getModeInfo(modes[i])!= 0x4f)
-		continue;
+                continue;
 
-	    /* Check for our manatory attributes */
+            /* Check for our manatory attributes */
             if ((modeinfo.mode_attributes & mode_attrs) != mode_attrs)
-		continue;
+                continue;
 
-	    /* We only support direct colour and paletted modes */
+            /* We only support direct colour and paletted modes */
             if ((modeinfo.memory_model != 6) && (modeinfo.memory_model != 4))
-		continue;
+                continue;
 
-	    /* Don't use a paletted mode that isn't VGA compatible: the VESA
-	     * driver uses VGA palette registers */
-	    if ((modeinfo.memory_model == 4) && (modeinfo.mode_attributes & 0x20))
-		continue;
+            /* Don't use a paletted mode that isn't VGA compatible: the VESA
+             * driver uses VGA palette registers */
+            if ((modeinfo.memory_model == 4) && (modeinfo.mode_attributes & 0x20))
+                continue;
 
             /* Return immediately if an exactly matching mode is found
              * (otherwise we could potentially return a mode with the right

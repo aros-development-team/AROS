@@ -27,27 +27,27 @@ struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *d
     D(bug("[emul] Current dirpos %lu, requested %lu\n", fh->ph.dirpos, *dirpos));
     if (fh->ph.dirpos > *dirpos)
     {
-	D(bug("[emul] Resetting search handle\n"));
+        D(bug("[emul] Resetting search handle\n"));
 
-	/* The same as DoRewindDir(), just do not torture a semaphore */
+        /* The same as DoRewindDir(), just do not torture a semaphore */
         emulbase->pdata.SysIFace->rewinddir(fh->fd);
-	fh->ph.dirpos = 0;
+        fh->ph.dirpos = 0;
     }
 
     do
     {
-	do
-	{
-	    dir = emulbase->pdata.SysIFace->readdir(fh->fd);
+        do
+        {
+            dir = emulbase->pdata.SysIFace->readdir(fh->fd);
             if (!dir)
-		return NULL;
+                return NULL;
 
-	    fh->ph.dirpos++;
-	    D(bug("[emul] Found %s, position %lu\n", dir->d_name, fh->ph.dirpos));
+            fh->ph.dirpos++;
+            D(bug("[emul] Found %s, position %lu\n", dir->d_name, fh->ph.dirpos));
         } while (fh->ph.dirpos <= *dirpos);
 
-	(*dirpos)++;
-	D(bug("[emul] New dirpos: %lu\n", *dirpos));
+        (*dirpos)++;
+        D(bug("[emul] New dirpos: %lu\n", *dirpos));
 
     } while (is_special_dir(dir->d_name));
 

@@ -105,18 +105,18 @@ void vgaLoadPalette(struct vgaHWRec *regs, unsigned char *pal)
     int i;
     
     if (!pal)
-	pal = (unsigned char *)&vgaANSIPalette;
+        pal = (unsigned char *)&vgaANSIPalette;
 
     for (i=0; i<768; i++)
     {
-	regs->DAC[i]=*(unsigned char*)pal++;
+        regs->DAC[i]=*(unsigned char*)pal++;
     }
 }
 
 /****************************************************************************************/
 
-#define SS_START	1
-#define SS_FINISH	0
+#define SS_START        1
+#define SS_FINISH       0
 
 /****************************************************************************************/
 
@@ -128,11 +128,11 @@ void vgaSaveScreen(int start)
 {
     if (start == SS_START)
     {
-	outw(0x3C4, 0x0100);        /* synchronous reset */
+        outw(0x3C4, 0x0100);        /* synchronous reset */
     }
     else
     {
-	outw(0x3C4, 0x0300);        /* end reset */
+        outw(0x3C4, 0x0300);        /* end reset */
     }
 }
 
@@ -150,11 +150,11 @@ int vgaBlankScreen(int on)
 
     if(on)
     {
-	scrn &= 0xDF;			/* enable screen */
+        scrn &= 0xDF;                   /* enable screen */
     }
     else
     {
-	scrn |= 0x20;			/* blank screen */
+        scrn |= 0x20;                   /* blank screen */
     }
 
     vgaSaveScreen(SS_START);
@@ -166,7 +166,7 @@ int vgaBlankScreen(int on)
 
 /****************************************************************************************/
 
-#define vgaIOBase	0x3d0
+#define vgaIOBase       0x3d0
 
 /****************************************************************************************/
 
@@ -182,10 +182,10 @@ void vgaDACLoad(struct vgaHWRec *restore, unsigned char start, int num)
     outb(0x3C8,start);
     for (i=0; i<num*3; i++)
     {
-	outb(0x3C9, restore->DAC[n++]);
-/*	DACDelay;
-	I beleive incrementing variables and checking cycle counter
-	provides enough delay. Uncomment this in case of problems */
+        outb(0x3C9, restore->DAC[n++]);
+/*      DACDelay;
+        I beleive incrementing variables and checking cycle counter
+        provides enough delay. Uncomment this in case of problems */
     }
 }
 
@@ -197,8 +197,8 @@ void vgaRestore(struct vgaHWRec *restore)
 {
     int i;
 
-    inb(vgaIOBase + 0x0A);		/* Reset flip-flop */
-    outb(0x3C0, 0x00);			/* Enables pallete access */
+    inb(vgaIOBase + 0x0A);              /* Reset flip-flop */
+    outb(0x3C0, 0x00);                  /* Enables pallete access */
 
     restore->MiscOutReg |= 0x01;
     outb(0x3C2, restore->MiscOutReg);
@@ -214,8 +214,8 @@ void vgaRestore(struct vgaHWRec *restore)
     for (i=0; i<9;  i++) outw(0x3CE, (restore->Graphics[i] << 8) | i);
 
     for (i=0; i<21; i++) {
-	inb(vgaIOBase + 0x0A);
-	outb(0x3C0,i); outb(0x3C0, restore->Attribute[i]);
+        inb(vgaIOBase + 0x0A);
+        outb(0x3C0,i); outb(0x3C0, restore->Attribute[i]);
     }
 
     outb(0x3C6,0xFF);
@@ -235,13 +235,13 @@ void vgaRestore(struct vgaHWRec *restore)
 int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 {
     unsigned int    i;
-    int     	    hblankstart;
-    int     	    hblankend;
-    int     	    vblankstart;
-    int     	    vblankend;
+    int             hblankstart;
+    int             hblankend;
+    int             vblankstart;
+    int             vblankend;
     
     /*
-	initialize default colormap for monochrome
+        initialize default colormap for monochrome
     */
     for (i = 0; i < 3;   i++) regs->DAC[i] = 0x00;
     for (i = 3; i < 768; i++) regs->DAC[i] = 0x3F;
@@ -252,56 +252,56 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     regs->NoClock = mode->clock;
 
     /*
-	compute correct Hsync & Vsync polarity 
+        compute correct Hsync & Vsync polarity
     */
     {
-    	int VDisplay = mode->Height;
-//	if (mode->Flags & V_DBLSCAN)
-//	  VDisplay *= 2;
-	if      (VDisplay < 400)
-		regs->MiscOutReg = 0xA3;	/* +hsync -vsync */
-	else if (VDisplay < 480)
-		regs->MiscOutReg = 0x63;	/* -hsync +vsync */
-	else if (VDisplay < 768)
-		regs->MiscOutReg = 0xE3;	/* -hsync -vsync  0xE3 */
-	else
-		regs->MiscOutReg = 0x23;	/* +hsync +vsync */
+        int VDisplay = mode->Height;
+//      if (mode->Flags & V_DBLSCAN)
+//        VDisplay *= 2;
+        if      (VDisplay < 400)
+                regs->MiscOutReg = 0xA3;        /* +hsync -vsync */
+        else if (VDisplay < 480)
+                regs->MiscOutReg = 0x63;        /* -hsync +vsync */
+        else if (VDisplay < 768)
+                regs->MiscOutReg = 0xE3;        /* -hsync -vsync  0xE3 */
+        else
+                regs->MiscOutReg = 0x23;        /* +hsync +vsync */
     }
 
     regs->MiscOutReg |= (regs->NoClock & 0x03) << 2;
     
     /*
-	Time Sequencer
+        Time Sequencer
     */
     regs->Sequencer[0] = 0x02;
-//    if (mode->Flags & V_CLKDIV2) 	/* TODO */
-//	regs->Sequencer[1] = 0x09;
+//    if (mode->Flags & V_CLKDIV2)      /* TODO */
+//      regs->Sequencer[1] = 0x09;
 //    else
-	regs->Sequencer[1] = 0x01;
+        regs->Sequencer[1] = 0x01;
     
     regs->Sequencer[2] = 0x0F;
     regs->Sequencer[3] = 0x00;                             /* Font select */
     regs->Sequencer[4] = 0x06;                             /* Misc */
 
     /*
-	CRTC Controller
+        CRTC Controller
     */
     
     hblankstart = min(mode->HSyncStart, mode->HDisplay);
     hblankend   = max(mode->HSyncEnd, mode->HTotal);
     if ((hblankend - hblankstart) >= 63 * 8)
     {
-    	hblankstart = hblankend - 63 * 8;
+        hblankstart = hblankend - 63 * 8;
     }
     
     vblankstart = min(mode->VSyncStart, mode->VDisplay);
     vblankend   = max(mode->VSyncEnd, mode->VTotal);
     if ((vblankend - vblankstart) >= 127)
     {
-    	vblankstart = vblankend - 127;
+        vblankstart = vblankend - 127;
     }
     
-    regs->CRTC[CRTC_H_TOTAL]  	    = (mode->HTotal / 8) - 5;
+    regs->CRTC[CRTC_H_TOTAL]        = (mode->HTotal / 8) - 5;
     regs->CRTC[CRTC_H_DISPLAY]      = (mode->HDisplay / 8) - 1;
     regs->CRTC[CRTC_H_BLANK_START]  = (hblankstart / 8) -1;
     regs->CRTC[CRTC_H_BLANK_END]    = (((hblankend / 8) - 1) & 0x1F) | 0x80;
@@ -309,72 +309,72 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     i = (((mode->HSkew << 2) + 0x10) & ~0x1F);
     if (i < 0x80)
     {
-	regs->CRTC[CRTC_H_BLANK_END] |= i;
+        regs->CRTC[CRTC_H_BLANK_END] |= i;
     }
     
     regs->CRTC[CRTC_H_SYNC_START]   = (mode->HSyncStart / 8);
     regs->CRTC[CRTC_H_SYNC_END]     = ((((hblankend / 8) - 1) & 0x20 ) << 2 ) |
-	    	    	    	      (((mode->HSyncEnd / 8)) & 0x1F);
-    regs->CRTC[CRTC_V_TOTAL]  	    = (mode->VTotal - 2) & 0xFF;
+                                      (((mode->HSyncEnd / 8)) & 0x1F);
+    regs->CRTC[CRTC_V_TOTAL]        = (mode->VTotal - 2) & 0xFF;
     regs->CRTC[CRTC_OVERFLOW]       = (((mode->VTotal -2) & 0x100) >> 8 )   |
-	    	    	    	      (((mode->VDisplay -1) & 0x100) >> 7 ) |
-            	    	    	      ((mode->VSyncStart & 0x100) >> 6 )    |
-	    	    	    	      (((vblankstart - 1) & 0x100) >> 5 )   |
-	      	    	    	      0x10  	    	    	    	    |
-		    	    	      (((mode->VTotal -2) & 0x200)   >> 4 ) |
-	            	    	      (((mode->VDisplay -1) & 0x200) >> 3 ) |
-		    	    	      ((mode->VSyncStart & 0x200) >> 2 );
+                                      (((mode->VDisplay -1) & 0x100) >> 7 ) |
+                                      ((mode->VSyncStart & 0x100) >> 6 )    |
+                                      (((vblankstart - 1) & 0x100) >> 5 )   |
+                                      0x10                                  |
+                                      (((mode->VTotal -2) & 0x200)   >> 4 ) |
+                                      (((mode->VDisplay -1) & 0x200) >> 3 ) |
+                                      ((mode->VSyncStart & 0x200) >> 2 );
     regs->CRTC[CRTC_PRESET_ROW]     = 0x00;
     regs->CRTC[CRTC_MAX_SCAN]       = (((vblankstart - 1) & 0x200) >>4) | 0x40;
 //    if (mode->Flags & V_DBLSCAN)
-//	new->CRTC[9] |= 0x80;
+//      new->CRTC[9] |= 0x80;
     regs->CRTC[CRTC_CURSOR_START]   = 0x00;
     regs->CRTC[CRTC_CURSOR_END]     = 0x00;
-    regs->CRTC[CRTC_START_HI] 	    = 0x00;
-    regs->CRTC[CRTC_START_LO] 	    = 0x00;
+    regs->CRTC[CRTC_START_HI]       = 0x00;
+    regs->CRTC[CRTC_START_LO]       = 0x00;
     regs->CRTC[CRTC_CURSOR_HI]      = 0x00;
     regs->CRTC[CRTC_CURSOR_LO]      = 0x00;
     regs->CRTC[CRTC_V_SYNC_START]   = mode->VSyncStart & 0xFF;
     regs->CRTC[CRTC_V_SYNC_END]     = (mode->VSyncEnd & 0x0F) | 0x20;
     regs->CRTC[CRTC_V_DISP_END]     = (mode->VDisplay -1) & 0xFF;
-    regs->CRTC[CRTC_OFFSET] 	    = mode->Width >> (8 - mode->Depth);  /* just a guess */
+    regs->CRTC[CRTC_OFFSET]         = mode->Width >> (8 - mode->Depth);  /* just a guess */
     regs->CRTC[CRTC_UNDERLINE]      = 0x00;
-    regs->CRTC[CRTC_V_BLANK_START]  = (vblankstart - 1) & 0xFF; 
+    regs->CRTC[CRTC_V_BLANK_START]  = (vblankstart - 1) & 0xFF;
     regs->CRTC[CRTC_V_BLANK_END]    = (vblankend - 1) & 0xFF;
-    regs->CRTC[CRTC_MODE]   	    = 0xE3;
+    regs->CRTC[CRTC_MODE]           = 0xE3;
     regs->CRTC[CRTC_LINE_COMPARE]   = 0xFF;
 
     if ((hblankend / 8) == (mode->HTotal / 8))
     {
-    	i = (regs->CRTC[CRTC_H_BLANK_END] & 0x1f) | ((regs->CRTC[CRTC_H_SYNC_END] & 0x80) >> 2);
-	if ((i-- > (regs->CRTC[CRTC_H_BLANK_START] & 0x3F)) && 
-	    (hblankend == mode->HTotal))
-	{
-	    i = 0;
-	}
-	
-	regs->CRTC[CRTC_H_BLANK_END] = (regs->CRTC[CRTC_H_BLANK_END] & ~0x1F) | (i & 0x1f);
-	regs->CRTC[CRTC_H_SYNC_END]  = (regs->CRTC[CRTC_H_SYNC_END] & ~0x80) | ((i << 2) & 0x80);
+        i = (regs->CRTC[CRTC_H_BLANK_END] & 0x1f) | ((regs->CRTC[CRTC_H_SYNC_END] & 0x80) >> 2);
+        if ((i-- > (regs->CRTC[CRTC_H_BLANK_START] & 0x3F)) &&
+            (hblankend == mode->HTotal))
+        {
+            i = 0;
+        }
+        
+        regs->CRTC[CRTC_H_BLANK_END] = (regs->CRTC[CRTC_H_BLANK_END] & ~0x1F) | (i & 0x1f);
+        regs->CRTC[CRTC_H_SYNC_END]  = (regs->CRTC[CRTC_H_SYNC_END] & ~0x80) | ((i << 2) & 0x80);
     }
     
     if (vblankend == mode->VTotal)
     {
-    	i = regs->CRTC[CRTC_V_BLANK_END];
-	if ((i > regs->CRTC[CRTC_V_BLANK_START]) &&
-	    ((i & 0x7F) > (regs->CRTC[CRTC_V_BLANK_START] & 0x7F)) &&
-	    !(regs->CRTC[CRTC_MAX_SCAN] & 0x9f))
-	{
-	    i = 0;
-	}
-	else
-	{
-	    i = (UBYTE)(i - 1);
-	}
-	regs->CRTC[CRTC_V_BLANK_END] = i;
+        i = regs->CRTC[CRTC_V_BLANK_END];
+        if ((i > regs->CRTC[CRTC_V_BLANK_START]) &&
+            ((i & 0x7F) > (regs->CRTC[CRTC_V_BLANK_START] & 0x7F)) &&
+            !(regs->CRTC[CRTC_MAX_SCAN] & 0x9f))
+        {
+            i = 0;
+        }
+        else
+        {
+            i = (UBYTE)(i - 1);
+        }
+        regs->CRTC[CRTC_V_BLANK_END] = i;
     }
     
     /*
-	Graphics Display Controller
+        Graphics Display Controller
     */
     regs->Graphics[0] = 0x00;
     regs->Graphics[1] = 0x00;
@@ -405,8 +405,8 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     regs->Attribute[16] = 0x81; /* wrong for the ET4000 */
     regs->Attribute[17] = 0x00; /* GJA -- overscan. */
     /*
-	Attribute[17] is the overscan, and is initialised above only at startup
-	time, and not when mode switching.
+        Attribute[17] is the overscan, and is initialised above only at startup
+        time, and not when mode switching.
     */
     regs->Attribute[18] = 0x0F;
     regs->Attribute[19] = 0x00;
@@ -437,33 +437,33 @@ void vgaRefreshPixel(struct VGAGfxBitMapData *data, unsigned int x, unsigned int
     outw(0x3ce,(fg << 8));
     outw(0x3ce,0x0f01);
 
-    *ptr2 |= 1;		// This or'ed value isn't important
+    *ptr2 |= 1;         // This or'ed value isn't important
 }
 
 /****************************************************************************************/
 
 void vgaRefreshArea(struct VGAGfxBitMapData *bmap, struct Box *pbox)
 {
-    int     	    	    width, height, FBPitch, left, right, i, j, SRCPitch, phase;
+    int                     width, height, FBPitch, left, right, i, j, SRCPitch, phase;
     register ULONG          m;
-    unsigned char   	    s1, s2, s3, s4;
-    ULONG              	    *src, *srcPtr;
-    unsigned char   	    *dst, *dstPtr;
-    unsigned int	    srcx, srcy;
+    unsigned char           s1, s2, s3, s4;
+    ULONG                   *src, *srcPtr;
+    unsigned char           *dst, *dstPtr;
+    unsigned int            srcx, srcy;
 
     /* In 640x480x16 mode VRAM data has planar layout. All 4 bitplanes share
        the same addresses, we use sequencer register in order to select
-       which plane to write to. 
+       which plane to write to.
        is very weird: we have LONGs in which first bytes contain bits 0 of
        eight pixels, second bytes contain bits 1, third - bits 2 and fourth
        - bits 3. Despite being planar, this is totally different to Amiga
-       native planar format.       
+       native planar format.
        Our pixelbuffer always has a simple chunky format, so we perform a
        4-step chunky to planar conversion. In order to select VRAM bitplanes
        we use a sequencer's plane select register */
 
     /* Start and end coordinates of our box have to be on byte border */
-    left   = pbox->x1 & ~7;	      /* Round down left (start) coordinate */
+    left   = pbox->x1 & ~7;           /* Round down left (start) coordinate */
     right  = (pbox->x2 & ~7) + 7;     /* Round up right (end) coordinate    */
 
     /* Check if refresh region is completely beyond physical display limits.
@@ -489,11 +489,11 @@ void vgaRefreshArea(struct VGAGfxBitMapData *bmap, struct Box *pbox)
     SRCPitch = bmap->bpr >> 2;        /* ULONGs per line for pixelbuffer */
 
     /* Disable data preprocessing in graphics controller */
-    outw(0x3ce, 0x0005);	/* MDR = 0 (direct write)	       */
-    outw(0x3ce, 0x0001);	/* Disable Set/Reset operation	       */
-    outw(0x3ce, 0x0000);	/* Set/Reset data = 0		       */
-    outw(0x3ce, 0x0003);	/* RFSR = 0 (no shift, no modify)      */
-    outw(0x3ce, 0xff08);	/* Bit mask = 0xFF (all bits from CPU) */
+    outw(0x3ce, 0x0005);        /* MDR = 0 (direct write)              */
+    outw(0x3ce, 0x0001);        /* Disable Set/Reset operation         */
+    outw(0x3ce, 0x0000);        /* Set/Reset data = 0                  */
+    outw(0x3ce, 0x0003);        /* RFSR = 0 (no shift, no modify)      */
+    outw(0x3ce, 0xff08);        /* Bit mask = 0xFF (all bits from CPU) */
 
     width  = (right - left + 1) >> 3; /* Width of destination box in UBYTEs */
     /* Calculate start addresses in the pixelbuffer and VRAM */
@@ -509,188 +509,188 @@ void vgaRefreshArea(struct VGAGfxBitMapData *bmap, struct Box *pbox)
        of these bytes */
     phase = (IPTR)dst & 3L;
     if (phase) {
-	    phase = 4 - phase;
-	    if(phase > width) phase = width;
-	    width    -= phase;
+            phase = 4 - phase;
+            if(phase > width) phase = width;
+            width    -= phase;
     }
 
     while(height--) /* For each line */
     {
         outw(0x3c4, 0x0102); /* Enable write to plane 0 */
-        dstPtr = dst;	 /* Take start pointers */
+        dstPtr = dst;    /* Take start pointers */
         srcPtr = src;
         i  = width;
         j  = phase;
-	    
+            
         while(j--)
         {
-		/* Take bits 0 of the 8 pixels and combine them
-		   (0B0B0B0B and 0A0A0A0A become BABABABA).
-		   We take 8 pixels from source buffer because in one VRAM
-		   plane one byte holds 8 bits for 8 different pixels.
-		   After this we will get the following:
-		   
-		   pixel    3   7    2   6    1   5    0   4
-		   m     76543210 76543210 76543210 76543210
-		   
-		   where bottom line is bitstring stored in m and top line
-		   contains numbers of pixels these bits came from. Other
-		   bits will be 0 (since we masked them out)
-		 */
-		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
-		/* And here we recombine the data into single byte and write
-		   them into VRAM. Result of these shift-or operations is:
-		   
-		   pixel 01234567
-		   value 76543210
-		   
-		   again, bottom line is bit number and top one is pixel number 
-		 */
- 		*dstPtr++ = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
-		srcPtr += 2;
+                /* Take bits 0 of the 8 pixels and combine them
+                   (0B0B0B0B and 0A0A0A0A become BABABABA).
+                   We take 8 pixels from source buffer because in one VRAM
+                   plane one byte holds 8 bits for 8 different pixels.
+                   After this we will get the following:
+                   
+                   pixel    3   7    2   6    1   5    0   4
+                   m     76543210 76543210 76543210 76543210
+                   
+                   where bottom line is bitstring stored in m and top line
+                   contains numbers of pixels these bits came from. Other
+                   bits will be 0 (since we masked them out)
+                 */
+                m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
+                /* And here we recombine the data into single byte and write
+                   them into VRAM. Result of these shift-or operations is:
+                   
+                   pixel 01234567
+                   value 76543210
+                   
+                   again, bottom line is bit number and top one is pixel number
+                 */
+                *dstPtr++ = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
+                srcPtr += 2;
         }
 
         while(i >= 4) {
-	        m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
- 		s1 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
-		m = (srcPtr[3] & 0x01010101) | ((srcPtr[2] & 0x01010101) << 4);
- 		s2 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
-		m = (srcPtr[5] & 0x01010101) | ((srcPtr[4] & 0x01010101) << 4);
- 		s3 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
-		m = (srcPtr[7] & 0x01010101) | ((srcPtr[6] & 0x01010101) << 4);
- 		s4 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
-		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
-		srcPtr += 8;
-		dstPtr += 4;
-		i -= 4;
-	}
-	    
-	while(i--) {
-		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
- 		*dstPtr++ = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
-		srcPtr += 2;
-	}
+                m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
+                s1 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
+                m = (srcPtr[3] & 0x01010101) | ((srcPtr[2] & 0x01010101) << 4);
+                s2 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
+                m = (srcPtr[5] & 0x01010101) | ((srcPtr[4] & 0x01010101) << 4);
+                s3 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
+                m = (srcPtr[7] & 0x01010101) | ((srcPtr[6] & 0x01010101) << 4);
+                s4 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
+                *((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+                srcPtr += 8;
+                dstPtr += 4;
+                i -= 4;
+        }
+            
+        while(i--) {
+                m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
+                *dstPtr++ = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
+                srcPtr += 2;
+        }
 
-	outw(0x3c4, 0x0202); /* Enable write to plane 1 */
-	dstPtr = dst;
-	srcPtr = src;
-	i = width;
-	j = phase;
-	    
-	while(j--) {
-		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
- 		*dstPtr++ = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
-		srcPtr += 2;
-	}
-	    
-	while(i >= 4) {
-		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
- 		s1 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
-		m = (srcPtr[3] & 0x02020202) | ((srcPtr[2] & 0x02020202) << 4);
- 		s2 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
-		m = (srcPtr[5] & 0x02020202) | ((srcPtr[4] & 0x02020202) << 4);
- 		s3 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
-		m = (srcPtr[7] & 0x02020202) | ((srcPtr[6] & 0x02020202) << 4);
- 		s4 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
-		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
-		srcPtr += 8;
-		dstPtr += 4;
-		i -= 4;
-	}
-	    
-	while(i--) {
-		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
- 		*dstPtr++ = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
-		srcPtr += 2;
-	}
+        outw(0x3c4, 0x0202); /* Enable write to plane 1 */
+        dstPtr = dst;
+        srcPtr = src;
+        i = width;
+        j = phase;
+            
+        while(j--) {
+                m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
+                *dstPtr++ = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
+                srcPtr += 2;
+        }
+            
+        while(i >= 4) {
+                m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
+                s1 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
+                m = (srcPtr[3] & 0x02020202) | ((srcPtr[2] & 0x02020202) << 4);
+                s2 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
+                m = (srcPtr[5] & 0x02020202) | ((srcPtr[4] & 0x02020202) << 4);
+                s3 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
+                m = (srcPtr[7] & 0x02020202) | ((srcPtr[6] & 0x02020202) << 4);
+                s4 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
+                *((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+                srcPtr += 8;
+                dstPtr += 4;
+                i -= 4;
+        }
+            
+        while(i--) {
+                m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
+                *dstPtr++ = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
+                srcPtr += 2;
+        }
 
-	outw(0x3c4, 0x0402); /* Enable write to plane 2 */
-	dstPtr = dst;
-	srcPtr = src;
-	i = width;
-	j = phase;
-	    
-	while(j--) {
-		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
- 		*dstPtr++ = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
-		srcPtr += 2;
-	}
-	    
-	while(i >= 4) {
-		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
- 		s1 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
-		m = (srcPtr[3] & 0x04040404) | ((srcPtr[2] & 0x04040404) << 4);
- 		s2 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
-		m = (srcPtr[5] & 0x04040404) | ((srcPtr[4] & 0x04040404) << 4);
- 		s3 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
-		m = (srcPtr[7] & 0x04040404) | ((srcPtr[6] & 0x04040404) << 4);
- 		s4 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
-		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
-		srcPtr += 8;
-		dstPtr += 4;
-		i -= 4;
-	}
-	    
-	while(i--) {
-		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
- 		*dstPtr++ = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
-		srcPtr += 2;
-	}
-	    
-	outw(0x3c4, 0x0802); /* Enable write to plane 3 */
-	dstPtr = dst;
-	srcPtr = src;
-	i = width;
-	j = phase;
-	    
-	while(j--) {
-		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
- 		*dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
-		srcPtr += 2;
-	}
-	    
-	while(i >= 4) {
-		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
- 		s1 = (m >> 27) | (m >> 18) | (m >> 9) | m;
-		m = (srcPtr[3] & 0x08080808) | ((srcPtr[2] & 0x08080808) << 4);
- 		s2 = (m >> 27) | (m >> 18) | (m >> 9) | m;
-		m = (srcPtr[5] & 0x08080808) | ((srcPtr[4] & 0x08080808) << 4);
- 		s3 = (m >> 27) | (m >> 18) | (m >> 9) | m;
-		m = (srcPtr[7] & 0x08080808) | ((srcPtr[6] & 0x08080808) << 4);
- 		s4 = (m >> 27) | (m >> 18) | (m >> 9) | m;
-		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
-		srcPtr += 8;
-		dstPtr += 4;
-		i -= 4;
-	}
-	    
-	while(i--) {
-		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
- 		*dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
-		srcPtr += 2;
-	}
+        outw(0x3c4, 0x0402); /* Enable write to plane 2 */
+        dstPtr = dst;
+        srcPtr = src;
+        i = width;
+        j = phase;
+            
+        while(j--) {
+                m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
+                *dstPtr++ = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
+                srcPtr += 2;
+        }
+            
+        while(i >= 4) {
+                m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
+                s1 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
+                m = (srcPtr[3] & 0x04040404) | ((srcPtr[2] & 0x04040404) << 4);
+                s2 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
+                m = (srcPtr[5] & 0x04040404) | ((srcPtr[4] & 0x04040404) << 4);
+                s3 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
+                m = (srcPtr[7] & 0x04040404) | ((srcPtr[6] & 0x04040404) << 4);
+                s4 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
+                *((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+                srcPtr += 8;
+                dstPtr += 4;
+                i -= 4;
+        }
+            
+        while(i--) {
+                m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
+                *dstPtr++ = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
+                srcPtr += 2;
+        }
+            
+        outw(0x3c4, 0x0802); /* Enable write to plane 3 */
+        dstPtr = dst;
+        srcPtr = src;
+        i = width;
+        j = phase;
+            
+        while(j--) {
+                m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
+                *dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
+                srcPtr += 2;
+        }
+            
+        while(i >= 4) {
+                m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
+                s1 = (m >> 27) | (m >> 18) | (m >> 9) | m;
+                m = (srcPtr[3] & 0x08080808) | ((srcPtr[2] & 0x08080808) << 4);
+                s2 = (m >> 27) | (m >> 18) | (m >> 9) | m;
+                m = (srcPtr[5] & 0x08080808) | ((srcPtr[4] & 0x08080808) << 4);
+                s3 = (m >> 27) | (m >> 18) | (m >> 9) | m;
+                m = (srcPtr[7] & 0x08080808) | ((srcPtr[6] & 0x08080808) << 4);
+                s4 = (m >> 27) | (m >> 18) | (m >> 9) | m;
+                *((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+                srcPtr += 8;
+                dstPtr += 4;
+                i -= 4;
+        }
+            
+        while(i--) {
+                m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
+                *dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
+                srcPtr += 2;
+        }
     
         dst += FBPitch;
         src += SRCPitch;
-	    
+            
     } /* while(height--) */
-} 
+}
 
 /****************************************************************************************/
 
 void vgaEraseArea(struct VGAGfxBitMapData *bmap, struct Box *pbox)
 {
-    int     	    	    width, height, FBPitch, left, right;
-    unsigned char   	    *dst;
+    int                     width, height, FBPitch, left, right;
+    unsigned char           *dst;
 
     FBPitch  = bmap->disp_width >> 3; /* UBYTEs per line for VRAM        */
 
     /* Disable data preprocessing in graphics controller */
-    outw(0x3ce, 0x0005);	/* MDR = 0 (direct write)	       */
-    outw(0x3ce, 0x0001);	/* Disable Set/Reset operation	       */
-    outw(0x3ce, 0x0000);	/* Set/Reset data = 0		       */
-    outw(0x3ce, 0x0003);	/* RFSR = 0 (no shift, no modify)      */
-    outw(0x3ce, 0xff08);	/* Bit mask = 0xFF (all bits from CPU) */
+    outw(0x3ce, 0x0005);        /* MDR = 0 (direct write)              */
+    outw(0x3ce, 0x0001);        /* Disable Set/Reset operation         */
+    outw(0x3ce, 0x0000);        /* Set/Reset data = 0                  */
+    outw(0x3ce, 0x0003);        /* RFSR = 0 (no shift, no modify)      */
+    outw(0x3ce, 0xff08);        /* Bit mask = 0xFF (all bits from CPU) */
 
     /* Start and end coordinates of our box have to be on a byte border,
        so get X dimensions in bytes */
@@ -705,9 +705,9 @@ void vgaEraseArea(struct VGAGfxBitMapData *bmap, struct Box *pbox)
 
     while(height--) /* For each line */
     {
-	memset(dst, 0, width);
+        memset(dst, 0, width);
         dst += FBPitch;
     } /* while(height--) */
-} 
+}
 
 /****************************************************************************************/

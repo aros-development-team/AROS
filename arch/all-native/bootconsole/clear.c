@@ -10,11 +10,11 @@ void con_Clear(void)
     switch (scr_Type)
     {
     case SCR_TEXT:
-    	txt_Clear();
-    	break;
+        txt_Clear();
+        break;
 
     case SCR_GFX:
-    	fb_Clear();
-    	break;
+        fb_Clear();
+        break;
     }
 }

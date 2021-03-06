@@ -59,7 +59,7 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     int intstate;
 
     /*
-     * We are already in interrupt and we must not be preempted by task switcher. 
+     * We are already in interrupt and we must not be preempted by task switcher.
      * Note that up to this point we still can be preempted by task switcher, in
      * fact it's not good, but this will happen only upon CPU exception. core_raise()
      * disables interrupts before raising an exception, so i really hope AROS will fail
@@ -122,7 +122,7 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
              */
             ContextRecord->ContextFlags |= CONTEXT_INTEGER;
         }
-    }    
+    }
 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -165,7 +165,7 @@ DWORD WINAPI TaskSwitcher()
         if ((Ints_Enabled && INT_SAFE(MainCtx)) || (obj == NonMaskableInt))
         {
             Supervisor = 1;
-            /* 
+            /*
              * We get and store the complete CPU context, but set only part of it
              * because changing some registers causes Windows to immediately shut down
              * our process. This can be a useful aid for future AROS debuggers.

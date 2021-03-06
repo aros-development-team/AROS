@@ -47,83 +47,83 @@ int main (int argc, char *argv[])
     channels = 2;
     rate = 44100;
     if (argc == 5) {
-	format = atoi(argv[2]);
-	channels = atoi(argv[3]);
-	rate = atoi(argv[4]);
+        format = atoi(argv[2]);
+        channels = atoi(argv[3]);
+        rate = atoi(argv[4]);
     } else if (argc != 2) {
-	printf ("Usage:\nplayoss <filename> [<format> <channels> <rate>]\n");
-	return -1;
+        printf ("Usage:\nplayoss <filename> [<format> <channels> <rate>]\n");
+        return -1;
     }
 
     buffer = malloc(BUFFERSIZE);
     if (!buffer) {
-	printf ("malloc error\n");
-	return -1;
+        printf ("malloc error\n");
+        return -1;
     }
 
     path = argv[1];
     infh = Open(path, MODE_OLDFILE);
     if (infh == 0) {
-	printf ("error %ld opening file %s\n", IoErr(), path);
-	cleanup(buffer, NULL, FALSE);
-	return -1;
+        printf ("error %ld opening file %s\n", IoErr(), path);
+        cleanup(buffer, NULL, FALSE);
+        return -1;
     }
 
     OSSBase = OpenLibrary("oss.library", 0);
     if (!OSSBase)
     {
-	printf("Could not open oss.library!\n");
-	cleanup(buffer, infh, FALSE);
-	return -1;
+        printf("Could not open oss.library!\n");
+        cleanup(buffer, infh, FALSE);
+        return -1;
     }
 
     ok = OSS_Open(DSP_DRIVER_NAME, FALSE, TRUE, TRUE);
     if (!ok) {
-	printf ("error opening DSP\n");
-	cleanup(buffer, infh, FALSE);
-	return -1;
+        printf ("error opening DSP\n");
+        cleanup(buffer, infh, FALSE);
+        return -1;
     }
 
     if( !OSS_SetFormat_S16LE() ) {
-	printf("error setting format\n");
-	cleanup(buffer, infh, TRUE);
-	return -1;
+        printf("error setting format\n");
+        cleanup(buffer, infh, TRUE);
+        return -1;
     }
 
     if( !OSS_SetNumChannels(channels) ) {
-	printf("error setting channels\n");
-	cleanup(buffer, infh, TRUE);
-	return -1;
+        printf("error setting channels\n");
+        cleanup(buffer, infh, TRUE);
+        return -1;
     }
 
     if( !OSS_SetWriteRate(rate, &rate) ) {
-	printf("error setting write rate\n");
-	cleanup(buffer, infh, TRUE);
-	return -1;
+        printf("error setting write rate\n");
+        cleanup(buffer, infh, TRUE);
+        return -1;
     }
     printf ("File:     %s\nFormat:   %d\nChannels: %d\nRate:     %d\n", path, format, channels, rate);
 
     while( (readlength = Read(infh, buffer, BUFFERSIZE)) > 0 ) {
-	// printf("read %d\n", readlength);
-	bufptr = buffer;
-	do {
-	    written = OSS_Write(bufptr, readlength);
-	    // printf("written %d\n", written);
-	    if( written < 0 ) {
-		printf ("error writing audio %d\n", written);
-		cleanup(buffer, infh, TRUE);
-		return -1;
-	    }
+        // printf("read %d\n", readlength);
+        bufptr = buffer;
+        do {
+            written = OSS_Write(bufptr, readlength);
+            // printf("written %d\n", written);
+            if( written < 0 ) {
+                printf ("error writing audio %d\n", written);
+                cleanup(buffer, infh, TRUE);
+                return -1;
+            }
 
-	    bufptr += written;
-	    readlength -= written;
-	} while( readlength > 0 );
+            bufptr += written;
+            readlength -= written;
+        } while( readlength > 0 );
     }
 
     if( readlength < 0 ) {
-	printf ("error %ld reading file\n", IoErr());
-	cleanup(buffer, infh, TRUE);
-	return -1;
+        printf ("error %ld reading file\n", IoErr());
+        cleanup(buffer, infh, TRUE);
+        return -1;
     }
 
     cleanup(buffer, infh, TRUE);

@@ -13,7 +13,7 @@
 #include "kernel_intern.h"
 
 AROS_LH0(void *, KrnAllocCPUMask,
-	struct KernelBase *, KernelBase, 42, Kernel)
+        struct KernelBase *, KernelBase, 42, Kernel)
 {
     AROS_LIBFUNC_INIT
 

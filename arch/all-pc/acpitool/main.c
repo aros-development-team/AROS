@@ -58,7 +58,7 @@ static void ShowError(Object *application, Object *window, CONST_STRPTR message,
             
     MUI_Request
     (
-        application, window, 0, _(MSG_TITLE), _(MSG_ERROR_OK), 
+        application, window, 0, _(MSG_TITLE), _(MSG_ERROR_OK),
         "%s:\n%s%s%s%s", _(MSG_ERROR_HEADER), message, newline, extra, period
     );
 }
@@ -69,8 +69,8 @@ void cleanup(CONST_STRPTR message)
 
     if (message != NULL)
     {
-	ShowError(NULL, NULL, message, TRUE);
-	exit(RETURN_FAIL);
+        ShowError(NULL, NULL, message, TRUE);
+        exit(RETURN_FAIL);
     }
 
     CloseLibrary(ACPICABase);
@@ -108,8 +108,8 @@ AROS_UFH3(static void, display_function,
 
     if (t)
     {
-	strings[0] = t->name;
-	return;
+        strings[0] = t->name;
+        return;
     }
 
     snprintf(buf, sizeof(buf), "%s (%4.4s)", _(MSG_UNKNOWN), table->Signature);
@@ -132,7 +132,7 @@ AROS_UFH3(static void, select_function,
 
     IPTR mode, active;
     const ACPI_TABLE_HEADER *table;
-    const struct Parser *t;    
+    const struct Parser *t;
 
     GetAttr(MUIA_Cycle_Active, ModeCycle, &mode);
 
@@ -142,18 +142,18 @@ AROS_UFH3(static void, select_function,
     GetAttr(MUIA_List_Active, object, &active);
     if (active != MUIV_List_Active_Off)
     {
-    	void (*parser)() = unknown_parser;
+        void (*parser)() = unknown_parser;
 
-	DoMethod(object, MUIM_List_GetEntry, active, &table);
+        DoMethod(object, MUIM_List_GetEntry, active, &table);
 
-	if (mode == 0)
-	{
-	    t = FindParser(table->Signature);
-	    if (t)
-	    	parser = t->parser;
-	}
+        if (mode == 0)
+        {
+            t = FindParser(table->Signature);
+            if (t)
+                parser = t->parser;
+        }
 
-	parser(table, display_callback);
+        parser(table, display_callback);
     }
 
     SetAttrs(InfoList, MUIA_List_Quiet, FALSE, TAG_DONE);
@@ -168,21 +168,21 @@ static BPTR RequestFile(void)
 
     req = MUI_AllocAslRequestTags(ASL_FileRequest, ASLFR_DoSaveMode, TRUE, TAG_DONE);
     if (!req)
-    	return BNULL;
+        return BNULL;
 
     if (MUI_AslRequest(req, NULL))
     {
-	ULONG len = strlen(req->fr_Drawer) + strlen(req->fr_File) + 2;
-	STRPTR pathname = AllocMem(len, MEMF_ANY);
+        ULONG len = strlen(req->fr_Drawer) + strlen(req->fr_File) + 2;
+        STRPTR pathname = AllocMem(len, MEMF_ANY);
 
-	if (pathname)
-	{
-	    strcpy(pathname, req->fr_Drawer);
-	    AddPart(pathname, req->fr_File, len);
+        if (pathname)
+        {
+            strcpy(pathname, req->fr_Drawer);
+            AddPart(pathname, req->fr_File, len);
 
-	    file = Open(pathname, MODE_NEWFILE);
-	    FreeMem(pathname, len);
-	}
+            file = Open(pathname, MODE_NEWFILE);
+            FreeMem(pathname, len);
+        }
     }
     MUI_FreeAslRequest(req);
 
@@ -200,24 +200,24 @@ AROS_UFH3(static void, save_function,
 
     if (file)
     {
-	IPTR i, n;
+        IPTR i, n;
 
-    	GetAttr(MUIA_List_Entries, object, &n);
+        GetAttr(MUIA_List_Entries, object, &n);
 
-	for (i = 0; i < n; i++)
-    	{
-    	    APTR text;
+        for (i = 0; i < n; i++)
+        {
+            APTR text;
 
-    	    DoMethod(object, MUIM_List_GetEntry, i, &text);
-    	    
-    	    FPuts(file, text);
-    	    FPutC(file, '\n');
-    	}
-    	Close(file);
+            DoMethod(object, MUIM_List_GetEntry, i, &text);
+            
+            FPuts(file, text);
+            FPutC(file, '\n');
+        }
+        Close(file);
     }
 
     AROS_USERFUNC_EXIT
-}    	
+}
 
 BPTR DumpFile;
 
@@ -228,9 +228,9 @@ static void dump_callback(const char *str)
 }
 
 AROS_UFH3(static IPTR, dumpFunc,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(const ACPI_TABLE_HEADER *, table, A2),
-	  AROS_UFHA(BOOL, parsed, A1))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(const ACPI_TABLE_HEADER *, table, A2),
+          AROS_UFHA(BOOL, parsed, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -238,10 +238,10 @@ AROS_UFH3(static IPTR, dumpFunc,
 
     if (parsed)
     {
-	const struct Parser *t = FindParser(table->Signature);
+        const struct Parser *t = FindParser(table->Signature);
 
-	if (t)
-	    parser = t->parser;
+        if (t)
+            parser = t->parser;
     }
 
     parser(table, dump_callback);
@@ -277,7 +277,7 @@ AROS_UFH3(static void, dump_function,
         for (i = 0; ParserTable[i].name; i++)
             AcpiScanTables(ParserTable[i].signature, &dumpHook, (APTR)(IPTR)parsed);
 
-	Close(DumpFile);
+        Close(DumpFile);
     }
 
     AROS_USERFUNC_EXIT
@@ -315,113 +315,113 @@ static BOOL GUIinit()
     BOOL retval = FALSE;
 
     app = ApplicationObject,
-	    MUIA_Application_Title,	    (IPTR)APPNAME,
-	    MUIA_Application_Version,	    (IPTR)VERSION,
-	    MUIA_Application_Copyright,	    (IPTR)"(C) 2004-2011, The AROS Development Team",
-	    MUIA_Application_Author,	    (IPTR)"Pavel Fedin",
-	    MUIA_Application_Base,	    (IPTR)APPNAME,
-	    MUIA_Application_Description,   __(MSG_DESCRIPTION),
+            MUIA_Application_Title,         (IPTR)APPNAME,
+            MUIA_Application_Version,       (IPTR)VERSION,
+            MUIA_Application_Copyright,     (IPTR)"(C) 2004-2011, The AROS Development Team",
+            MUIA_Application_Author,        (IPTR)"Pavel Fedin",
+            MUIA_Application_Base,          (IPTR)APPNAME,
+            MUIA_Application_Description,   __(MSG_DESCRIPTION),
 
             MUIA_Application_Menustrip, MenustripObject,
-            	MUIA_Family_Child, MenuObject,
+                MUIA_Family_Child, MenuObject,
                     MUIA_Menu_Title, __(MSG_MENU_PROJECT),
                     MUIA_Family_Child,
-                    	menu_quit = MenuitemObject, MUIA_Menuitem_Title, __(MSG_MENU_QUIT),
+                        menu_quit = MenuitemObject, MUIA_Menuitem_Title, __(MSG_MENU_QUIT),
                     End,
-            	End,
-            	MUIA_Family_Child, MenuObject,
+                End,
+                MUIA_Family_Child, MenuObject,
                     MUIA_Menu_Title, __(MSG_MENU_DUMP),
                     MUIA_Family_Child,
-                    	menu_dump_parsed = MenuitemObject,
-		    	MUIA_Menuitem_Title, __(MSG_MENU_DUMP_PARSED),
+                        menu_dump_parsed = MenuitemObject,
+                        MUIA_Menuitem_Title, __(MSG_MENU_DUMP_PARSED),
                     End,
                     MUIA_Family_Child,
-                    	menu_dump_raw = MenuitemObject,
-		    	MUIA_Menuitem_Title, __(MSG_MENU_DUMP_RAW),
+                        menu_dump_raw = MenuitemObject,
+                        MUIA_Menuitem_Title, __(MSG_MENU_DUMP_RAW),
                     End,
-            	End,
+                End,
             End,
 
-	    SubWindow, MainWindow = WindowObject,
-		MUIA_Window_Title,	__(MSG_WINTITLE),
+            SubWindow, MainWindow = WindowObject,
+                MUIA_Window_Title,      __(MSG_WINTITLE),
 
-		WindowContents, HGroup,
-		    MUIA_Group_SameWidth, FALSE,
+                WindowContents, HGroup,
+                    MUIA_Group_SameWidth, FALSE,
 
-		    Child, ListviewObject,
-			MUIA_Listview_List, TablesList = ListObject,
-			    InputListFrame,
-			    MUIA_List_AdjustWidth, TRUE,
-			    MUIA_List_DisplayHook, &display_hook,
-			End, // List
-			MUIA_CycleChain, TRUE,
-		    End, // ListView
+                    Child, ListviewObject,
+                        MUIA_Listview_List, TablesList = ListObject,
+                            InputListFrame,
+                            MUIA_List_AdjustWidth, TRUE,
+                            MUIA_List_DisplayHook, &display_hook,
+                        End, // List
+                        MUIA_CycleChain, TRUE,
+                    End, // ListView
 
-		    Child, VGroup,
-		    	Child, ListviewObject,
-			    MUIA_Listview_List, InfoList = ListObject,
-			    	ReadListFrame,
-				MUIA_Font, MUIV_Font_Fixed,
-			    	MUIA_List_AdjustWidth, TRUE,
-			    	MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
-			    	MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-			    End, // List
-			    MUIA_CycleChain, TRUE,
-		    	End, // ListView
-		    	Child, HGroup,
-		    	    Child, Label(__(MSG_SHOW_MODE)),
-		    	    Child, ModeCycle = CycleObject,
-		    	    	MUIA_Cycle_Entries, showModes,
-		    	    	MUIA_CycleChain, TRUE,
-		    	    End,
-		    	    Child, SaveButton = SimpleButton(__(MSG_SAVE_DATA)),
-		    	End,
-		    End,
-		End, // WindowContents
-	    End, // MainWindow
-	End; // ApplicationObject
+                    Child, VGroup,
+                        Child, ListviewObject,
+                            MUIA_Listview_List, InfoList = ListObject,
+                                ReadListFrame,
+                                MUIA_Font, MUIV_Font_Fixed,
+                                MUIA_List_AdjustWidth, TRUE,
+                                MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+                                MUIA_List_DestructHook, MUIV_List_DestructHook_String,
+                            End, // List
+                            MUIA_CycleChain, TRUE,
+                        End, // ListView
+                        Child, HGroup,
+                            Child, Label(__(MSG_SHOW_MODE)),
+                            Child, ModeCycle = CycleObject,
+                                MUIA_Cycle_Entries, showModes,
+                                MUIA_CycleChain, TRUE,
+                            End,
+                            Child, SaveButton = SimpleButton(__(MSG_SAVE_DATA)),
+                        End,
+                    End,
+                End, // WindowContents
+            End, // MainWindow
+        End; // ApplicationObject
 
     if (app)
     {
-	/* Quit application if the windowclosegadget or the esc key is pressed. */
-	DoMethod(MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-		 app, 2, 
-		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        /* Quit application if the windowclosegadget or the esc key is pressed. */
+        DoMethod(MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                 app, 2,
+                 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-	DoMethod(menu_quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-		 app, 2,
-		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        DoMethod(menu_quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                 app, 2,
+                 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-	DoMethod(TablesList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-		 TablesList, 2,
-		 MUIM_CallHook, &select_hook);
+        DoMethod(TablesList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+                 TablesList, 2,
+                 MUIM_CallHook, &select_hook);
 
-	DoMethod(ModeCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-		 TablesList, 2,
-		 MUIM_CallHook, &select_hook);
+        DoMethod(ModeCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+                 TablesList, 2,
+                 MUIM_CallHook, &select_hook);
 
-	DoMethod(SaveButton, MUIM_Notify, MUIA_Pressed, FALSE,
-		 InfoList, 2,
-		 MUIM_CallHook, &save_hook);
+        DoMethod(SaveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+                 InfoList, 2,
+                 MUIM_CallHook, &save_hook);
 
-	DoMethod(menu_dump_parsed, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-		 app, 3,
-		 MUIM_CallHook, &dump_hook, TRUE);
+        DoMethod(menu_dump_parsed, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                 app, 3,
+                 MUIM_CallHook, &dump_hook, TRUE);
 
-	DoMethod(menu_dump_raw, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-		 app, 3,
-		 MUIM_CallHook, &dump_hook, FALSE);
+        DoMethod(menu_dump_raw, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                 app, 3,
+                 MUIM_CallHook, &dump_hook, FALSE);
 
-	retval = TRUE;
+        retval = TRUE;
     }
 
     return retval;
 }
 
 AROS_UFH3(static IPTR, tableFunc,
-	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(const ACPI_TABLE_HEADER *, table, A2),
-	  AROS_UFHA(void *, unused, A1))
+          AROS_UFHA(struct Hook *, table_hook, A0),
+          AROS_UFHA(const ACPI_TABLE_HEADER *, table, A2),
+          AROS_UFHA(void *, unused, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -443,39 +443,39 @@ int main(void)
     int i;
 
     if (!Locale_Initialize())
-	cleanup(_(MSG_ERROR_LOCALE));
+        cleanup(_(MSG_ERROR_LOCALE));
 
     ACPICABase = OpenLibrary("acpica.library",0);
     if (!ACPICABase)
-	cleanup(_(MSG_ERROR_NO_ACPI));
+        cleanup(_(MSG_ERROR_NO_ACPI));
 
     if (GUIinit())
     {
-	/* Populate tables list */
-	for (i = 0; ParserTable[i].name; i++)
-	    AcpiScanTables(ParserTable[i].signature, &tableHook, NULL);
+        /* Populate tables list */
+        for (i = 0; ParserTable[i].name; i++)
+            AcpiScanTables(ParserTable[i].signature, &tableHook, NULL);
 
-	set(MainWindow, MUIA_Window_Open, TRUE);
+        set(MainWindow, MUIA_Window_Open, TRUE);
 
-	if (xget(MainWindow, MUIA_Window_Open))
-	{
-	    ULONG retval = 0;
-	    ULONG signals = 0;
+        if (xget(MainWindow, MUIA_Window_Open))
+        {
+            ULONG retval = 0;
+            ULONG signals = 0;
 
-	    while (retval != MUIV_Application_ReturnID_Quit)
-	    {
-		retval = DoMethod(app, MUIM_Application_NewInput, &signals);
+            while (retval != MUIV_Application_ReturnID_Quit)
+            {
+                retval = DoMethod(app, MUIM_Application_NewInput, &signals);
 
-		if (signals)
-		    signals = Wait(signals | SIGBREAKF_CTRL_C);
+                if (signals)
+                    signals = Wait(signals | SIGBREAKF_CTRL_C);
 
-		if (signals & SIGBREAKF_CTRL_C)
-		    retval = MUIV_Application_ReturnID_Quit;
-	    }
-	    set(MainWindow, MUIA_Window_Open, FALSE);
-	}
+                if (signals & SIGBREAKF_CTRL_C)
+                    retval = MUIV_Application_ReturnID_Quit;
+            }
+            set(MainWindow, MUIA_Window_Open, FALSE);
+        }
 
-	DisposeObject(app);
+        DisposeObject(app);
     }
 
     cleanup(NULL);

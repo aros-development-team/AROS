@@ -7,7 +7,7 @@
 #include "card_intern.h"
 
 AROS_LH0(UBYTE, ReadCardStatus,
-	 struct CardResource*, CardResource, 6, Card)
+         struct CardResource*, CardResource, 6, Card)
 {
     AROS_LIBFUNC_INIT
 

@@ -18,32 +18,32 @@
 struct Library *ACPICABase = NULL;
 
 AROS_UFH3(static BOOL, hpetEnumFunc,
-	  AROS_UFHA(struct Hook *, hook, A0),
-	  AROS_UFHA(ACPI_TABLE_HPET *, table, A2),
-	  AROS_UFHA(struct HPETBase *, base, A1))
+          AROS_UFHA(struct Hook *, hook, A0),
+          AROS_UFHA(ACPI_TABLE_HPET *, table, A2),
+          AROS_UFHA(struct HPETBase *, base, A1))
 {
     AROS_USERFUNC_INIT
 
     ULONG n;
 
     if (table->Address.SpaceId != ACPI_ADR_SPACE_SYSTEM_MEMORY)
-    	return FALSE;
+        return FALSE;
 
     n = (table->Id & HPET_NUM_COMPARATORS_MASK) >> HPET_NUM_COMPARATORS_SHIFT;
 
     if (base->units)
     {
-    	IPTR blk = table->Address.Address + 0x0100;
-    	ULONG i;
+        IPTR blk = table->Address.Address + 0x0100;
+        ULONG i;
 
-    	for (i = 0; i < n; i++)
-    	{
-    	    base->units[base->unitCnt + i].base  = table->Address.Address;
-    	    base->units[base->unitCnt + i].block = blk;
-    	    base->units[base->unitCnt + i].Owner = NULL;
+        for (i = 0; i < n; i++)
+        {
+            base->units[base->unitCnt + i].base  = table->Address.Address;
+            base->units[base->unitCnt + i].block = blk;
+            base->units[base->unitCnt + i].Owner = NULL;
 
-    	    blk += 0x0020;
-    	}
+            blk += 0x0020;
+        }
     }
 
     base->unitCnt += n;

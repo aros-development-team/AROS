@@ -68,7 +68,7 @@ static LONG u2a[][2]=
     { ETXTBSY     , ERROR_OBJECT_IN_USE      },
     { ENAMETOOLONG, ERROR_OBJECT_TOO_LARGE   },
     { EROFS       , ERROR_WRITE_PROTECTED    },
-    { 0           , 0            	     }
+    { 0           , 0                        }
 };
 
 static LONG errno_u2a(int err)
@@ -77,8 +77,8 @@ static LONG errno_u2a(int err)
 
     for (i = 0; i < sizeof(u2a)/sizeof(u2a[0]); i++)
     {
-	if (u2a[i][0] == err)
-	    return u2a[i][1];
+        if (u2a[i][0] == err)
+            return u2a[i][1];
     }
 
     return ERROR_UNKNOWN;
@@ -98,25 +98,25 @@ static mode_t prot_a2u(ULONG protect)
 
     /* The following three flags are low-active! */
     if (!(protect & FIBF_EXECUTE))
-	uprot |= S_IXUSR;
+        uprot |= S_IXUSR;
     if (!(protect & FIBF_WRITE))
-	uprot |= S_IWUSR;
+        uprot |= S_IWUSR;
     if (!(protect & FIBF_READ))
-	uprot |= S_IRUSR;
+        uprot |= S_IRUSR;
 
     if ((protect & FIBF_GRP_EXECUTE))
-	uprot |= S_IXGRP;
+        uprot |= S_IXGRP;
     if ((protect & FIBF_GRP_WRITE))
-	uprot |= S_IWGRP;
+        uprot |= S_IWGRP;
     if ((protect & FIBF_GRP_READ))
-	uprot |= S_IRGRP;
+        uprot |= S_IRGRP;
 
     if ((protect & FIBF_OTR_EXECUTE))
-	uprot |= S_IXOTH;
+        uprot |= S_IXOTH;
     if ((protect & FIBF_OTR_WRITE))
-	uprot |= S_IWOTH;
+        uprot |= S_IWOTH;
     if ((protect & FIBF_OTR_READ))
-	uprot |= S_IROTH;
+        uprot |= S_IROTH;
 
     if ((protect & FIBF_SCRIPT))
         uprot |= S_ISVTX;
@@ -133,26 +133,26 @@ static ULONG prot_u2a(mode_t protect)
 
     /* The following three (AROS) flags are low-active! */
     if (!(protect & S_IRUSR))
-	aprot |= FIBF_READ;
+        aprot |= FIBF_READ;
     if (!(protect & S_IWUSR))
-	aprot |= FIBF_WRITE;
+        aprot |= FIBF_WRITE;
     if (!(protect & S_IXUSR))
-	aprot |= FIBF_EXECUTE;
+        aprot |= FIBF_EXECUTE;
 
     /* The following flags are high-active again. */
     if ((protect & S_IRGRP))
-	aprot |= FIBF_GRP_READ;
+        aprot |= FIBF_GRP_READ;
     if ((protect & S_IWGRP))
-	aprot |= FIBF_GRP_WRITE;
+        aprot |= FIBF_GRP_WRITE;
     if ((protect & S_IXGRP))
-	aprot |= FIBF_GRP_EXECUTE;
+        aprot |= FIBF_GRP_EXECUTE;
 
     if ((protect & S_IROTH))
-	aprot |= FIBF_OTR_READ;
+        aprot |= FIBF_OTR_READ;
     if ((protect & S_IWOTH))
-	aprot |= FIBF_OTR_WRITE;
+        aprot |= FIBF_OTR_WRITE;
     if ((protect & S_IXOTH))
-	aprot |= FIBF_OTR_EXECUTE;
+        aprot |= FIBF_OTR_EXECUTE;
 
     if ((protect & S_ISVTX))
         aprot |= FIBF_SCRIPT;
@@ -194,7 +194,7 @@ static void timestamp2datestamp(struct emulbase *emulbase, time_t *timestamp, st
 
 static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *datestamp)
 {
-    ULONG secs = datestamp->ds_Days * (60 * 60 * 24) + 
+    ULONG secs = datestamp->ds_Days * (60 * 60 * 24) +
                  datestamp->ds_Minute * 60 +
                  datestamp->ds_Tick / TICKS_PER_SECOND;
     
@@ -224,12 +224,12 @@ static time_t datestamp2timestamp(struct emulbase *emulbase, struct DateStamp *d
 static void fixcase(struct emulbase *emulbase, char *pathname)
 {
     struct LibCInterface *iface = emulbase->pdata.SysIFace;
-    struct dirent 	*de;
-    struct stat	st;
-    DIR			*dir;
-    char		*pathstart, *pathend;
-    BOOL		dirfound;
-    int			res;
+    struct dirent       *de;
+    struct stat st;
+    DIR                 *dir;
+    char                *pathstart, *pathend;
+    BOOL                dirfound;
+    int                 res;
 
     pathstart = pathname;
 
@@ -238,53 +238,53 @@ static void fixcase(struct emulbase *emulbase, char *pathname)
 
     if (res == 0)
         /* Pathname exists, no need to fix anything */
-	return;
+        return;
 
     while((pathstart = strchr(pathstart, '/')))
     {
-	pathstart++;
-	    
-	pathend = strchr(pathstart, '/');
-	if (pathend) *pathend = '\0';
+        pathstart++;
+            
+        pathend = strchr(pathstart, '/');
+        if (pathend) *pathend = '\0';
 
-	dirfound = TRUE;
-	    
-	res = emulbase->pdata.SysIFace->lstat(pathname, &st);
-	AROS_HOST_BARRIER
-	if (res != 0)
-	{
-	    dirfound = FALSE;
+        dirfound = TRUE;
+            
+        res = emulbase->pdata.SysIFace->lstat(pathname, &st);
+        AROS_HOST_BARRIER
+        if (res != 0)
+        {
+            dirfound = FALSE;
 
             pathstart[-1] = '\0';
-	    dir = emulbase->pdata.SysIFace->opendir(pathname);
-	    AROS_HOST_BARRIER
-	    pathstart[-1] = '/';
+            dir = emulbase->pdata.SysIFace->opendir(pathname);
+            AROS_HOST_BARRIER
+            pathstart[-1] = '/';
 
-	    if (dir)
-	    {
-		while(1)
-		{
-		    de = emulbase->pdata.SysIFace->readdir(dir);
-		    AROS_HOST_BARRIER
-		    if (!de)
-		    	break;
-		    
-        	    if (Stricmp(de->d_name, pathstart) == 0)
-		    {
-			dirfound = TRUE;
-			strcpy(pathstart, de->d_name);
-			break;
-		    }
-		}	    
-		iface->closedir(dir);
-		AROS_HOST_BARRIER
+            if (dir)
+            {
+                while(1)
+                {
+                    de = emulbase->pdata.SysIFace->readdir(dir);
+                    AROS_HOST_BARRIER
+                    if (!de)
+                        break;
+                    
+                    if (Stricmp(de->d_name, pathstart) == 0)
+                    {
+                        dirfound = TRUE;
+                        strcpy(pathstart, de->d_name);
+                        break;
+                    }
+                }
+                iface->closedir(dir);
+                AROS_HOST_BARRIER
 
-	    }
-	} /* if (stat((const char *)pathname, &st) != 0) */
-	    
-	if (pathend) *pathend = '/';			    
+            }
+        } /* if (stat((const char *)pathname, &st) != 0) */
+            
+        if (pathend) *pathend = '/';
 
-	if (!dirfound) break;
+        if (!dirfound) break;
 
     } /* while((pathpos = strchr(pathpos, '/))) */
 }
@@ -365,7 +365,7 @@ static inline int nocase_link(struct emulbase *emulbase, char *oldpath, char *ne
 /*-------------------------------------------------------------------------------------------*/
 
 static inline int nocase_symlink(struct emulbase *emulbase, char *oldpath, char *newpath)
-{ 
+{
     fixcase(emulbase, oldpath);
     fixcase(emulbase, newpath);
 
@@ -386,7 +386,7 @@ static inline int nocase_rename(struct emulbase *emulbase, char *oldpath, char *
     ret = emulbase->pdata.SysIFace->lstat(newpath, &st);
     AROS_HOST_BARRIER
     if (ret == 0)
-    	return ERROR_OBJECT_EXISTS;
+        return ERROR_OBJECT_EXISTS;
 
     ret = emulbase->pdata.SysIFace->rename(oldpath, newpath);
     AROS_HOST_BARRIER
@@ -451,7 +451,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG 
     if (r == -1)
     {
         /* Non-existing objects can be files opened for writing */
-    	st.st_mode = S_IFREG;
+        st.st_mode = S_IFREG;
     }
 
     DOPEN(bug("[emul] lstat() returned %d, st_mode is 0x%08X\n", r, st.st_mode));
@@ -473,49 +473,49 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG 
             flags |= O_CREAT;
         }
 
-	r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
-	AROS_HOST_BARRIER
+        r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+        AROS_HOST_BARRIER
 
-	if (r < 0 && err_u2a(emulbase) == ERROR_WRITE_PROTECTED)
-	{
-	    /* Try again with read-only access. This is needed because AROS
-	     * FS handlers should only pay attention to R/W protection flags
-	     * when the corresponding operation is attempted on the file */
-	    r = emulbase->pdata.SysIFace->open(fh->hostname, O_RDONLY, 0770);
-	    AROS_HOST_BARRIER
-	}
-	if (r >= 0)
-	{
-	    fh->type = FHD_FILE;
-	    fh->fd   = (void *)(IPTR)r;
-	    ret = 0;
-	}
-	else
-	    ret = err_u2a(emulbase);
+        if (r < 0 && err_u2a(emulbase) == ERROR_WRITE_PROTECTED)
+        {
+            /* Try again with read-only access. This is needed because AROS
+             * FS handlers should only pay attention to R/W protection flags
+             * when the corresponding operation is attempted on the file */
+            r = emulbase->pdata.SysIFace->open(fh->hostname, O_RDONLY, 0770);
+            AROS_HOST_BARRIER
+        }
+        if (r >= 0)
+        {
+            fh->type = FHD_FILE;
+            fh->fd   = (void *)(IPTR)r;
+            ret = 0;
+        }
+        else
+            ret = err_u2a(emulbase);
     }
 
     if (AllowDir && S_ISDIR(st.st_mode))
     {
-	/* Object is a directory */
-	fh->fd = emulbase->pdata.SysIFace->opendir(fh->hostname);
+        /* Object is a directory */
+        fh->fd = emulbase->pdata.SysIFace->opendir(fh->hostname);
 #ifndef HOST_OS_android
         if (fh->fd != NULL)
             fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
 #endif
-	AROS_HOST_BARRIER
+        AROS_HOST_BARRIER
 
-	if (fh->fd)
-	{
-	    fh->type = FHD_DIRECTORY;
-	    ret = 0;
-	}
-	else
-	    ret = err_u2a(emulbase);
+        if (fh->fd)
+        {
+            fh->type = FHD_DIRECTORY;
+            ret = 0;
+        }
+        else
+            ret = err_u2a(emulbase);
     }
 
     if (S_ISLNK(st.st_mode))
-    	/* Object is a softlink */
-	ret = ERROR_IS_SOFT_LINK;
+        /* Object is a softlink */
+        ret = ERROR_IS_SOFT_LINK;
 
     HostLib_Unlock();
 
@@ -529,15 +529,15 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     switch(current->type)
     {
     case FHD_FILE:
-	/* Nothing will happen if type has FHD_STDIO set, this is intentional */
-	emulbase->pdata.SysIFace->close((IPTR)current->fd);
-	AROS_HOST_BARRIER
-	break;
+        /* Nothing will happen if type has FHD_STDIO set, this is intentional */
+        emulbase->pdata.SysIFace->close((IPTR)current->fd);
+        AROS_HOST_BARRIER
+        break;
 
     case FHD_DIRECTORY:
-    	emulbase->pdata.SysIFace->closedir(current->fd);
-    	AROS_HOST_BARRIER
-	break;
+        emulbase->pdata.SysIFace->closedir(current->fd);
+        AROS_HOST_BARRIER
+        break;
     }
 
     HostLib_Unlock();
@@ -554,8 +554,8 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
     error = Hidd_UnixIO_Wait(emulbase->pdata.unixio, (long)fh->fd, vHidd_UnixIO_Read);
     if (error)
     {
-    	*err = errno_u2a(error);
-    	return -1;
+        *err = errno_u2a(error);
+        return -1;
     }
 
     HostLib_Lock();
@@ -564,44 +564,44 @@ LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG l
 
     if (fh->type & FHD_STDIO)
     {
-	int res2;
-	struct pollfd pfd = {(long)fh->fd, POLLIN, 0};
+        int res2;
+        struct pollfd pfd = {(long)fh->fd, POLLIN, 0};
 
-	/*
-	 * When reading from stdin, we have to read character-by-character until
-	 * we read as many characters as we wanted, or there's nothing more to read.
-	 * Without this read() can return an error. For example this happens on Darwin
-	 * when the shell requests a single read of 208 bytes.
-	 */
-	res = 0;
-	do
-	{
-	    res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff++, 1);
-	    AROS_HOST_BARRIER
+        /*
+         * When reading from stdin, we have to read character-by-character until
+         * we read as many characters as we wanted, or there's nothing more to read.
+         * Without this read() can return an error. For example this happens on Darwin
+         * when the shell requests a single read of 208 bytes.
+         */
+        res = 0;
+        do
+        {
+            res2 = emulbase->pdata.SysIFace->read((long)fh->fd, buff++, 1);
+            AROS_HOST_BARRIER
 
-	    if (res2 == -1)
-	        break;
+            if (res2 == -1)
+                break;
 
-	    if (res++ == len)
-	        break;
+            if (res++ == len)
+                break;
 
-    	    res2 = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
-	    AROS_HOST_BARRIER
+            res2 = emulbase->pdata.SysIFace->poll(&pfd, 1, 0);
+            AROS_HOST_BARRIER
 
-	} while (res2 > 0);
+        } while (res2 > 0);
 
-	if (res2 == -1)
-	    res = -1;
+        if (res2 == -1)
+            res = -1;
     }
     else
     {
-	/* It's not stdin. Read as much as we need to. */
-	res = emulbase->pdata.SysIFace->read((long)fh->fd, buff, len);
-	AROS_HOST_BARRIER
+        /* It's not stdin. Read as much as we need to. */
+        res = emulbase->pdata.SysIFace->read((long)fh->fd, buff, len);
+        AROS_HOST_BARRIER
     }
 
     if (res == -1)
-	error = err_u2a(emulbase);
+        error = err_u2a(emulbase);
 
     HostLib_Unlock();
 
@@ -622,7 +622,7 @@ LONG DoWrite(struct emulbase *emulbase, struct filehandle *fh, CONST_APTR buff, 
     len = emulbase->pdata.SysIFace->write((IPTR)fh->fd, buff, len);
     AROS_HOST_BARRIER
     if (len == -1)
-	error = err_u2a(emulbase);
+        error = err_u2a(emulbase);
 
     HostLib_Unlock();
 
@@ -643,31 +643,31 @@ SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULO
     res = oldpos = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
     AROS_HOST_BARRIER
     if (res != -1)
-	res = emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st);
+        res = emulbase->pdata.SysIFace->fstat((int)(IPTR)fh->fd, &st);
     AROS_HOST_BARRIER
 
     DSEEK(bug("[emul] Original position: %lu\n", (unsigned long)oldpos));
 
     if (res != -1)
     {
-	switch (mode) {
-	case OFFSET_BEGINNING:
-	    newpos = offset;
-	    mode = SEEK_SET;
-	    break;
+        switch (mode) {
+        case OFFSET_BEGINNING:
+            newpos = offset;
+            mode = SEEK_SET;
+            break;
 
-	case OFFSET_CURRENT:
-	    newpos = offset + res;
-	    mode = SEEK_CUR;
-	    break;
+        case OFFSET_CURRENT:
+            newpos = offset + res;
+            mode = SEEK_CUR;
+            break;
 
-	default:
-	    newpos = offset + st.st_size;
-	    mode = SEEK_END;
-	}
+        default:
+            newpos = offset + st.st_size;
+            mode = SEEK_END;
+        }
 
-	if (newpos > st.st_size)
-	    res = -1;
+        if (newpos > st.st_size)
+            res = -1;
     }
 
     if (res != -1)
@@ -675,11 +675,11 @@ SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULO
         res = LSeek((IPTR)fh->fd, offset, mode);
         AROS_HOST_BARRIER
 
-	DSEEK(bug("[emul] New position: %lu\n", (unsigned long)res));
+        DSEEK(bug("[emul] New position: %lu\n", (unsigned long)res));
     }
 
     if (res == -1)
-    	oldpos = -1;
+        oldpos = -1;
 
     HostLib_Unlock();
 
@@ -698,13 +698,13 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
     ret = nocase_mkdir(emulbase, fh->hostname, protect);
     if (!ret)
     {
-	fh->type = FHD_DIRECTORY;
-	fh->fd   = emulbase->pdata.SysIFace->opendir(fh->hostname);
+        fh->type = FHD_DIRECTORY;
+        fh->fd   = emulbase->pdata.SysIFace->opendir(fh->hostname);
 #ifndef HOST_OS_android
         if (fh->fd != NULL)
             fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
 #endif
-	AROS_HOST_BARRIER
+        AROS_HOST_BARRIER
     }
 
     if ((ret == -1) || (fh->fd == NULL))
@@ -728,18 +728,18 @@ LONG DoDelete(struct emulbase *emulbase, char *name)
     {
         if (S_ISDIR(st.st_mode))
         {
-	    ret = emulbase->pdata.SysIFace->rmdir(name);
-	    AROS_HOST_BARRIER
-	}
-    	else
-    	{
-	    ret = emulbase->pdata.SysIFace->unlink(name);
-	    AROS_HOST_BARRIER
-	}
+            ret = emulbase->pdata.SysIFace->rmdir(name);
+            AROS_HOST_BARRIER
+        }
+        else
+        {
+            ret = emulbase->pdata.SysIFace->unlink(name);
+            AROS_HOST_BARRIER
+        }
     }
 
     if (ret)
-	ret = err_u2a(emulbase);
+        ret = err_u2a(emulbase);
 
     HostLib_Unlock();
 
@@ -817,7 +817,7 @@ LONG DoRename(struct emulbase *emulbase, char *filename, char *newfilename)
 
     error = nocase_rename(emulbase, filename, newfilename);
     if (error)
-	error = err_u2a(emulbase);
+        error = err_u2a(emulbase);
 
     HostLib_Unlock();
 
@@ -855,17 +855,17 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
         break;
 
     case OFFSET_CURRENT:
-       	absolute = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
-       	AROS_HOST_BARRIER
+        absolute = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
+        AROS_HOST_BARRIER
         break;
 
     case OFFSET_END:
-        absolute = LSeek((IPTR)fh->fd, 0, SEEK_END); 
+        absolute = LSeek((IPTR)fh->fd, 0, SEEK_END);
         AROS_HOST_BARRIER
         break;
 
     default:
-    	error = ERROR_UNKNOWN;
+        error = ERROR_UNKNOWN;
     }
 
     if (absolute == -1)
@@ -874,10 +874,10 @@ SIPTR DoSetSize(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, 
     if (!error)
     {
         absolute += offset;
-	error = FTruncate((IPTR)fh->fd, absolute);
-	AROS_HOST_BARRIER
-	if (error)
-	    error = err_u2a(emulbase);
+        error = FTruncate((IPTR)fh->fd, absolute);
+        AROS_HOST_BARRIER
+        if (error)
+            error = err_u2a(emulbase);
     }
 
     HostLib_Unlock();
@@ -899,17 +899,17 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
     err = emulbase->pdata.SysIFace->statfs(path, &buf);
     AROS_HOST_BARRIER
     if (err)
-    	err = err_u2a(emulbase);
+        err = err_u2a(emulbase);
 
     HostLib_Unlock();
 
     if (!err)
     {
-    	id->id_NumSoftErrors = 0;
-    	id->id_DiskState = ID_VALIDATED;
-    	id->id_NumBlocks = buf.f_blocks;
-    	id->id_NumBlocksUsed = buf.f_blocks - buf.f_bavail;
-    	id->id_BytesPerBlock = buf.f_bsize;
+        id->id_NumSoftErrors = 0;
+        id->id_DiskState = ID_VALIDATED;
+        id->id_NumBlocks = buf.f_blocks;
+        id->id_NumBlocksUsed = buf.f_blocks - buf.f_bavail;
+        id->id_BytesPerBlock = buf.f_bsize;
     }
 
     return err;
@@ -940,19 +940,19 @@ static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR 
     DEXAM(bug("[emul] stat_entry(): filehandle's path: %s\n", fh->hostname));
     if (FoundName)
     {
-	DEXAM(bug("[emul] ...containing object: %s\n", FoundName));
-	plen = strlen(fh->hostname);
-	flen = strlen(FoundName);
-	name = AllocVecPooled(emulbase->mempool, plen + flen + 2);
-	if (NULL == name)
-	    return ERROR_NO_FREE_STORE;
+        DEXAM(bug("[emul] ...containing object: %s\n", FoundName));
+        plen = strlen(fh->hostname);
+        flen = strlen(FoundName);
+        name = AllocVecPooled(emulbase->mempool, plen + flen + 2);
+        if (NULL == name)
+            return ERROR_NO_FREE_STORE;
 
-	strcpy(name, fh->hostname);
-	filename = name + plen;
-	*filename++ = '/';
-	strcpy(filename, FoundName);
+        strcpy(name, fh->hostname);
+        filename = name + plen;
+        *filename++ = '/';
+        strcpy(filename, FoundName);
     } else
-	name = fh->hostname;
+        name = fh->hostname;
   
     DEXAM(bug("[emul] Full name: %s\n", name));
 
@@ -961,20 +961,20 @@ static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR 
     err = emulbase->pdata.SysIFace->lstat(name, st);
     AROS_HOST_BARRIER
     if (err)
-	err = err_u2a(emulbase);
+        err = err_u2a(emulbase);
 
     HostLib_Unlock();
 
     if (FoundName)
     {
-	DEXAM(bug("[emul] Freeing full name\n"));
-	FreeVecPooled(emulbase->mempool, name);
+        DEXAM(bug("[emul] Freeing full name\n"));
+        FreeVecPooled(emulbase->mempool, name);
     }
     return err;
-}	
+}
 
 LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *EntryName,
-		   struct ExAllData *ead, ULONG size, ULONG type)
+                   struct ExAllData *ead, ULONG size, ULONG type)
 {
     STRPTR next, end, last, name;
     struct stat st;
@@ -984,7 +984,7 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Entr
 
     /* Return an error, if supplied type is not supported. */
     if(type>ED_OWNER)
-	return ERROR_BAD_NUMBER;
+        return ERROR_BAD_NUMBER;
 
     /* Check, if the supplied buffer is large enough. */
     next=(STRPTR)ead+sizes[type];
@@ -992,11 +992,11 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Entr
     DEXAM(bug("[emul] ead 0x%p, next 0x%p, end 0x%p\n", ead, next, end));
 
     if(next>end) /* > is correct. Not >= */
-	return ERROR_BUFFER_OVERFLOW;
+        return ERROR_BUFFER_OVERFLOW;
 
     err = stat_entry(emulbase, fh, EntryName, &st);
     if (err)
-    	return err;
+        return err;
 
     DEXAM(KrnPrintf("[emul] File mode %o, size %u\n", st.st_mode, st.st_size));
     DEXAM(KrnPrintf("[emul] Filling in information\n"));
@@ -1004,60 +1004,60 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Entr
 
     switch(type)
     {
-	default:
-	case ED_OWNER:
-	    ead->ed_OwnerUID	= st.st_uid;
-	    ead->ed_OwnerGID	= st.st_gid;
-	case ED_COMMENT:
-	    ead->ed_Comment=NULL;
-	case ED_DATE:
-	{
-	    struct DateStamp stamp;
+        default:
+        case ED_OWNER:
+            ead->ed_OwnerUID    = st.st_uid;
+            ead->ed_OwnerGID    = st.st_gid;
+        case ED_COMMENT:
+            ead->ed_Comment=NULL;
+        case ED_DATE:
+        {
+            struct DateStamp stamp;
 
-	    timestamp2datestamp(emulbase, &st.st_mtime, &stamp);
-	    ead->ed_Days	= stamp.ds_Days;
-	    ead->ed_Mins	= stamp.ds_Minute;
-	    ead->ed_Ticks	= stamp.ds_Tick;
-	}
-	case ED_PROTECTION:
-	    ead->ed_Prot 	= prot_u2a(st.st_mode);
-	case ED_SIZE:
-	    ead->ed_Size	= st.st_size;
-	case ED_TYPE:
+            timestamp2datestamp(emulbase, &st.st_mtime, &stamp);
+            ead->ed_Days        = stamp.ds_Days;
+            ead->ed_Mins        = stamp.ds_Minute;
+            ead->ed_Ticks       = stamp.ds_Tick;
+        }
+        case ED_PROTECTION:
+            ead->ed_Prot        = prot_u2a(st.st_mode);
+        case ED_SIZE:
+            ead->ed_Size        = st.st_size;
+        case ED_TYPE:
             if (S_ISDIR(st.st_mode)) {
-		if (EntryName || fh->name[0])
-		    ead->ed_Type = ST_USERDIR;
-		else
-		    ead->ed_Type = ST_ROOT;
-	    } else if (S_ISLNK(st.st_mode))
-		ead->ed_Type = ST_SOFTLINK;
-	    else
-	        ead->ed_Type = ST_FILE;
-	    
-	case ED_NAME:
-	    if (EntryName)
-		last = EntryName;
-	    else if (*fh->name) {
-	        name = fh->name;
-	        last = name;
-	        while(*name) {
-		    if(*name++ == '/')
-			last = name;
-		}
-	    } else
-	        last = fh->volumename;
+                if (EntryName || fh->name[0])
+                    ead->ed_Type = ST_USERDIR;
+                else
+                    ead->ed_Type = ST_ROOT;
+            } else if (S_ISLNK(st.st_mode))
+                ead->ed_Type = ST_SOFTLINK;
+            else
+                ead->ed_Type = ST_FILE;
+            
+        case ED_NAME:
+            if (EntryName)
+                last = EntryName;
+            else if (*fh->name) {
+                name = fh->name;
+                last = name;
+                while(*name) {
+                    if(*name++ == '/')
+                        last = name;
+                }
+            } else
+                last = fh->volumename;
 
-	    ead->ed_Name=next;
-	    for(;;)
-	    {
-		if(next>=end)
-		    return ERROR_BUFFER_OVERFLOW;
-		if(!(*next++=*last++))
-		    break;
-	    }
-	case 0:
-	    ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
-	    return 0;
+            ead->ed_Name=next;
+            for(;;)
+            {
+                if(next>=end)
+                    return ERROR_BUFFER_OVERFLOW;
+                if(!(*next++=*last++))
+                    break;
+            }
+        case 0:
+            ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
+            return 0;
     }
 }
 
@@ -1066,7 +1066,7 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Entr
 LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
                   struct FileInfoBlock *FIB)
 {
-    int	i;
+    int i;
     struct stat st;
     struct dirent *dir;
     char *src, *dest;
@@ -1074,7 +1074,7 @@ LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
 
     /* This operation does not make any sense on a file */
     if (fh->type != FHD_DIRECTORY)
-    	return ERROR_OBJECT_WRONG_TYPE;
+        return ERROR_OBJECT_WRONG_TYPE;
 
     HostLib_Lock();
 
@@ -1095,7 +1095,7 @@ LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
     HostLib_Unlock();
 
     if (!dir)
-    	return ERROR_NO_MORE_ENTRIES;
+        return ERROR_NO_MORE_ENTRIES;
 
     err = stat_entry(emulbase, fh, dir->d_name, &st);
     if (err)
@@ -1106,24 +1106,24 @@ LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
 
     DEXAM(KrnPrintf("[emul] File mode %o, size %u\n", st.st_mode, st.st_size));
 
-    FIB->fib_OwnerUID	= st.st_uid;
-    FIB->fib_OwnerGID	= st.st_gid;
-    FIB->fib_Comment[0]	= '\0'; /* no comments available yet! */
+    FIB->fib_OwnerUID   = st.st_uid;
+    FIB->fib_OwnerGID   = st.st_gid;
+    FIB->fib_Comment[0] = '\0'; /* no comments available yet! */
     timestamp2datestamp(emulbase, &st.st_mtime, &FIB->fib_Date);
-    FIB->fib_Protection	= prot_u2a(st.st_mode);
+    FIB->fib_Protection = prot_u2a(st.st_mode);
     FIB->fib_Size       = st.st_size;
 
     if (S_ISDIR(st.st_mode))
     {
-	FIB->fib_DirEntryType = ST_USERDIR; /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/
+        FIB->fib_DirEntryType = ST_USERDIR; /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/
     }
     else if(S_ISLNK(st.st_mode))
     {
-	FIB->fib_DirEntryType = ST_SOFTLINK;
+        FIB->fib_DirEntryType = ST_SOFTLINK;
     }
     else
     {
-	FIB->fib_DirEntryType = ST_FILE;
+        FIB->fib_DirEntryType = ST_FILE;
     }
 
     DEXAM(bug("[emul] DirentryType %d\n", FIB->fib_DirEntryType));
@@ -1134,10 +1134,10 @@ LONG DoExamineNext(struct emulbase *emulbase, struct filehandle *fh,
 
     for (i =0; i<MAXFILENAMELENGTH-1;i++)
     {
-	if(! (*dest++=*src++) )
-	{
-	    break;
-	}
+        if(! (*dest++=*src++) )
+        {
+            break;
+        }
     }
     FIB->fib_FileName[0] = i;
 
@@ -1159,7 +1159,7 @@ LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAll
 
     eac->eac_Entries = 0;
     if(fh->type!=FHD_DIRECTORY)
-	return ERROR_OBJECT_WRONG_TYPE;
+        return ERROR_OBJECT_WRONG_TYPE;
 
     DEXAM(bug("[emul] examine_all()\n"));
 
@@ -1183,65 +1183,65 @@ LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAll
 
     for(;;)
     {
-	HostLib_Lock();
+        HostLib_Lock();
 
 #ifndef HOST_OS_android
         oldpos = eac->eac_LastKey;
                 
-	//oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
-	//AROS_HOST_BARRIER
+        //oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
+        //AROS_HOST_BARRIER
 #endif
 
         *emulbase->pdata.errnoPtr = 0;
-	dir = ReadDir(emulbase, fh, &eac->eac_LastKey);
+        dir = ReadDir(emulbase, fh, &eac->eac_LastKey);
 
-	if (!dir)
-	    error = err_u2a(emulbase);
+        if (!dir)
+            error = err_u2a(emulbase);
 
-	HostLib_Unlock();
+        HostLib_Unlock();
 
-	if (!dir)
-	    break;
+        if (!dir)
+            break;
 
-	DEXAM(bug("[emul] Found entry %s\n", dir->d_name));
+        DEXAM(bug("[emul] Found entry %s\n", dir->d_name));
 
-	if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, dir->d_name)) {
-	    DEXAM(bug("[emul] Entry does not match, skipping\n"));
-	    continue;
-	}
+        if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, dir->d_name)) {
+            DEXAM(bug("[emul] Entry does not match, skipping\n"));
+            continue;
+        }
 
-	error = DoExamineEntry(emulbase, fh, dir->d_name, ead, end-(STRPTR)ead, type);
-	if(error)
-	    break;
+        error = DoExamineEntry(emulbase, fh, dir->d_name, ead, end-(STRPTR)ead, type);
+        if(error)
+            break;
 
-	if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
-	  continue;
+        if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
+          continue;
 
-	eac->eac_Entries++;
-	last=ead;
-	ead=ead->ed_Next;
+        eac->eac_Entries++;
+        last=ead;
+        ead=ead->ed_Next;
     }
     if (last!=NULL)
-	last->ed_Next=NULL;
+        last->ed_Next=NULL;
 
     if ((error==ERROR_BUFFER_OVERFLOW) && last)
     {
 #ifdef HOST_OS_android
-	eac->eac_LastKey--;
+        eac->eac_LastKey--;
 #else
         eac->eac_LastKey = oldpos;
 
-	//HostLib_Lock();
-	//emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
-	//AROS_HOST_BARRIER
-	//HostLib_Unlock();
+        //HostLib_Lock();
+        //emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
+        //AROS_HOST_BARRIER
+        //HostLib_Unlock();
 #endif
-	/* Examination will continue from the current position */
-	return 0;
+        /* Examination will continue from the current position */
+        return 0;
     }
 
     if(!error)
-	error = ERROR_NO_MORE_ENTRIES;
+        error = ERROR_NO_MORE_ENTRIES;
     /* Reading the whole directory has been completed, so reset position */
     DoRewindDir(emulbase, fh);
 
@@ -1262,63 +1262,63 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
     /* "~<name>" means home of user <name> */
     if ((sp[1] == '\0') || (sp[1] == '/'))
     {
-    	sp_end = sp + 1;
-	home = emulbase->pdata.SysIFace->getenv("HOME");
-	AROS_HOST_BARRIER
+        sp_end = sp + 1;
+        home = emulbase->pdata.SysIFace->getenv("HOME");
+        AROS_HOST_BARRIER
     }
 #ifndef HOST_OS_android
     else
     {
-    	struct passwd *pwd;
-	WORD  	       cmplen;
-		
-	for(sp_end = sp + 1; sp_end[0] != '\0' && sp_end[0] != '/'; sp_end++);
-	cmplen = sp_end - sp - 1;
+        struct passwd *pwd;
+        WORD           cmplen;
+                
+        for(sp_end = sp + 1; sp_end[0] != '\0' && sp_end[0] != '/'; sp_end++);
+        cmplen = sp_end - sp - 1;
 
-	while(1)
-	{
-	    pwd = emulbase->pdata.SysIFace->getpwent();
-	    AROS_HOST_BARRIER
+        while(1)
+        {
+            pwd = emulbase->pdata.SysIFace->getpwent();
+            AROS_HOST_BARRIER
 
-	    if (!pwd)
-	    	break;
+            if (!pwd)
+                break;
 
-	    if(memcmp(pwd->pw_name, sp + 1, cmplen) == 0)
-	    {
-	    	if (pwd->pw_name[cmplen] == '\0')
-		{
-	    	    home = pwd->pw_dir;
-		    break;
-		}
-	    }
-	}
-	do_endpwent = TRUE;
+            if(memcmp(pwd->pw_name, sp + 1, cmplen) == 0)
+            {
+                if (pwd->pw_name[cmplen] == '\0')
+                {
+                    home = pwd->pw_dir;
+                    break;
+                }
+            }
+        }
+        do_endpwent = TRUE;
     }
 #endif
 
     if (home)
     {
-	int hlen = strlen(home);
-	int splen = strlen(sp_end);
+        int hlen = strlen(home);
+        int splen = strlen(sp_end);
 
-	newunixpath = AllocVecPooled(emulbase->mempool, hlen + splen + 1);
-	if (newunixpath)
-	{
-	    char *s = newunixpath;
+        newunixpath = AllocVecPooled(emulbase->mempool, hlen + splen + 1);
+        if (newunixpath)
+        {
+            char *s = newunixpath;
 
-	    CopyMem(home, s, hlen);
-	    s += hlen;
-	    CopyMem(sp_end, s, splen);
-	    s += splen;
-	    *s = 0;
-	}
+            CopyMem(home, s, hlen);
+            s += hlen;
+            CopyMem(sp_end, s, splen);
+            s += splen;
+            *s = 0;
+        }
     }
 
 #ifndef HOST_OS_android
     if (do_endpwent)
     {
-	emulbase->pdata.SysIFace->endpwent();
-	AROS_HOST_BARRIER
+        emulbase->pdata.SysIFace->endpwent();
+        AROS_HOST_BARRIER
     }
 #endif
 
@@ -1331,7 +1331,7 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
 {
     char *res;
 
-    DMOUNT(bug("[emul] GetCurrentDir(0x%p, %u)\n", path, len)); 
+    DMOUNT(bug("[emul] GetCurrentDir(0x%p, %u)\n", path, len));
 
     HostLib_Lock();
 
@@ -1360,7 +1360,7 @@ BOOL CheckDir(struct emulbase *emulbase, char *path)
 
     DMOUNT(bug("[emul] Result: %d, mode: %o\n", res, st.st_mode));
     if ((!res) && S_ISDIR(st.st_mode))
-	return FALSE;
+        return FALSE;
 
     return TRUE;
 }

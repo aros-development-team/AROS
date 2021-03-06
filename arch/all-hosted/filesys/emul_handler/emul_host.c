@@ -112,7 +112,7 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
 }
 
 LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *name,
-		   struct ExAllData *ead, ULONG size, ULONG type)
+                   struct ExAllData *ead, ULONG size, ULONG type)
 {
     /* Examine named object */
     return ERROR_NOT_IMPLEMENTED;

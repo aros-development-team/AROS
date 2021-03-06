@@ -32,12 +32,12 @@
 
 /* defines for buttonstate */
 
-#define LEFT_BUTTON 	1
-#define RIGHT_BUTTON 	2
-#define MIDDLE_BUTTON	4
+#define LEFT_BUTTON     1
+#define RIGHT_BUTTON    2
+#define MIDDLE_BUTTON   4
 
 static AROS_INTH1(mouse_vblank, struct mouse_data *, mousedata)
-{ 
+{
     AROS_INTFUNC_INIT
 
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -61,7 +61,7 @@ static AROS_INTH1(mouse_vblank, struct mouse_data *, mousedata)
         e->button = vHidd_Mouse_NoButton;
         e->type = vHidd_Mouse_Motion;
         mousedata->mouse_callback(mousedata->callbackdata, e);
-    }	
+    }
 
     if ((cia->ciapra & (0x40 << mousedata->port)) == 0)
         buttons |= LEFT_BUTTON;
@@ -213,7 +213,7 @@ VOID AmigaMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID AmigaMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
-    ULONG   	       idx;
+    ULONG              idx;
 
     if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
     {

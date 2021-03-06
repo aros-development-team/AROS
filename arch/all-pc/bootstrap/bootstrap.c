@@ -34,7 +34,7 @@
 #endif
 
 /*
- * The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
+ * The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file,
  * therefore it will be packed into the .aros.startup section. I hope, that turning debug on
  * will not shift it into some distinct location.
  * We support both legacy Multiboot v1 specification (for backwards compatibility with GRUB1)
@@ -62,7 +62,7 @@ const struct multiboot_header __header __attribute__((used,section(".aros.startu
     0,
     0,
     0,
-    1,	/* We prefer text mode, but will accept also framebuffer */
+    1,  /* We prefer text mode, but will accept also framebuffer */
     640,
     200,
     32
@@ -70,18 +70,18 @@ const struct multiboot_header __header __attribute__((used,section(".aros.startu
 
 struct bootstrap_mb2_header
 {
-    struct mb2_header 			header;
-    struct mb2_header_tag_framebuffer	tag_fb __attribute__((aligned(8)));
-    struct mb2_header_tag		tag_end __attribute__((aligned(8)));
+    struct mb2_header                   header;
+    struct mb2_header_tag_framebuffer   tag_fb __attribute__((aligned(8)));
+    struct mb2_header_tag               tag_end __attribute__((aligned(8)));
 };
 
 const struct bootstrap_mb2_header __header_v2 __attribute__((used,section(".aros.startup"),aligned(8))) =
 {
     {
-    	MB2_MAGIC,
-    	MB2_ARCH_I386,
-    	sizeof(struct bootstrap_mb2_header),
-    	-(MB2_MAGIC + MB2_ARCH_I386 + sizeof(struct bootstrap_mb2_header))
+        MB2_MAGIC,
+        MB2_ARCH_I386,
+        sizeof(struct bootstrap_mb2_header),
+        -(MB2_MAGIC + MB2_ARCH_I386 + sizeof(struct bootstrap_mb2_header))
     },
     {
         MB2_HEADER_TAG_FRAMEBUFFER,
@@ -103,19 +103,19 @@ const struct bootstrap_mb2_header __header_v2 __attribute__((used,section(".aros
     up, disable interrupts and jump to the regular C code
 */
 static void __bootstrap(unsigned int, void *) __attribute__((used));
-asm("	.text\n\t"
-    "	.globl kernel_bootstrap\n\t"
-    "	.type  kernel_bootstrap,@function\n"
-    "kernel_bootstrap: movl $__stack + 65536, %esp\n\t"		/* Load stack pointer */
-    "	pushl %ebx\n\t"                                 /* store parameters passed by GRUB in registers */
-    "	pushl %eax\n\t"
-    "	pushl $0\n\t"
-    "	cld\n\t"
-    "	cli\n\t"                                        /* Lock interrupts (by flag)... */
-    "	movb $-1,%al\n\t"
-    "	outb %al, $0x21\n\t"                            /* And disable them physically */
-    "	outb %al, $0xa1\n\t"
-    "	jmp __bootstrap\n"
+asm("   .text\n\t"
+    "   .globl kernel_bootstrap\n\t"
+    "   .type  kernel_bootstrap,@function\n"
+    "kernel_bootstrap: movl $__stack + 65536, %esp\n\t"         /* Load stack pointer */
+    "   pushl %ebx\n\t"                                 /* store parameters passed by GRUB in registers */
+    "   pushl %eax\n\t"
+    "   pushl $0\n\t"
+    "   cld\n\t"
+    "   cli\n\t"                                        /* Lock interrupts (by flag)... */
+    "   movb $-1,%al\n\t"
+    "   outb %al, $0x21\n\t"                            /* And disable them physically */
+    "   outb %al, $0xa1\n\t"
+    "   jmp __bootstrap\n"
 );
 
 /*
@@ -155,17 +155,17 @@ static unsigned char __stack[65536] __attribute__((used));
 
 /*
  * External modules.
- * 
+ *
  * If GRUB has loaded any external modules, they will be loaded here. The modules to be loaded
  * are stored in a list. If a module with given name is loaded more than once, the last version
  * loaded by GRUB is used.
- * 
+ *
  * Once the list is ready, the modules will be loaded and linked with kernel one after another. Please
- * note that no information exchange between the modules is allowed. Each of them is absolutely 
+ * note that no information exchange between the modules is allowed. Each of them is absolutely
  * independent and has to care about itself (it has to clear its own .bss region itself). Kernel knows
  * about all modules only thanks to the list of resident modules, which is created during a memory scan
  * over the whole kernel.
- * 
+ *
  * Theoretically, such behaviour can guarantee us, that the GPL'ed modules do not conflict with kernel
  * and may be "part" of it, but since I am not a lawyer, I may be wrong.
  */
@@ -180,12 +180,12 @@ static struct ELFNode *module_prepare(const char *s)
 
     if (s)
     {
-    	/* Repeat for every module in the list */
-    	for (mo = firstMod; mo; mo = mo->Next)
-    	{
-	    /* Module exists? Break here to allow overriding it */
+        /* Repeat for every module in the list */
+        for (mo = firstMod; mo; mo = mo->Next)
+        {
+            /* Module exists? Break here to allow overriding it */
             if (strcmp(s, mo->Name) == 0)
-            	return mo;
+                return mo;
         }
     }
 
@@ -298,7 +298,7 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
 
     if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
     {
-        /* 
+        /*
          * The loaded file is an ELF object. It may be put directly into our list of modules.
          * Unfortunately GRUB doesn't give us names of loaded modules
          */
@@ -309,13 +309,13 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
 
         D(kprintf("[%s] * ELF module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
 
-	if (mod_end > end)
-	    end = mod_end;
+        if (mod_end > end)
+            end = mod_end;
     }
     else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x01)
     {
-        /* 
-         * The loaded file is an PKG\0 archive. Scan it to find all modules which are 
+        /*
+         * The loaded file is an PKG\0 archive. Scan it to find all modules which are
          * stored here.
          */
         void *file = p + 8;
@@ -339,8 +339,8 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
             file += len;
         }
 
-	if (mod_end > end)
-	    end = mod_end;
+        if (mod_end > end)
+            end = mod_end;
     }
     else if (memcmp(p,"!<arch>\n",8) == 0) {
         const struct ar_header *file;
@@ -373,12 +373,12 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
                 mo->Name = s;
                 mo->eh = (void *)data;
                 D(kprintf("[%s] *   ar module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
-            } 
+            }
             D(else  kprintf("[%s] *   Ignored @ %p (%s)\n", str_Bootstrap, file, s);)
         }
 
-	if (mod_end > end)
-	    end = mod_end;
+        if (mod_end > end)
+            end = mod_end;
 
     }
     D(else kprintf("[%s] Unknown module 0x%p\n", str_Bootstrap, p);)
@@ -391,9 +391,9 @@ void AllocFB(void)
 {
     if (scr_Type == SCR_GFX)
     {
-	D(kprintf("[%s] Allocating %u bytes for console mirror (%ux%u)\n", str_Bootstrap, scr_Width * scr_Height, scr_Width, scr_Height);)
+        D(kprintf("[%s] Allocating %u bytes for console mirror (%ux%u)\n", str_Bootstrap, scr_Width * scr_Height, scr_Width, scr_Height);)
 
-    	__bs_malloc(scr_Width * scr_Height);
+        __bs_malloc(scr_Width * scr_Height);
     }
 }
 
@@ -402,20 +402,20 @@ int ParseCmdLine(const char *cmdline)
     if (cmdline)
     {
         /*
-     	 * If vesa= option was given, set up the specified video mode explicitly.
-     	 * Otherwise specify to AROS what has been passed to us by the bootloader.
-     	 */
-    	char *vesa = strstr(cmdline, "vesa=");
+         * If vesa= option was given, set up the specified video mode explicitly.
+         * Otherwise specify to AROS what has been passed to us by the bootloader.
+         */
+        char *vesa = strstr(cmdline, "vesa=");
 
-	tag->ti_Tag  = KRN_CmdLine;
-    	tag->ti_Data = KERNEL_OFFSET | (unsigned long)cmdline;
-    	tag++;
+        tag->ti_Tag  = KRN_CmdLine;
+        tag->ti_Data = KERNEL_OFFSET | (unsigned long)cmdline;
+        tag++;
 
-    	if (vesa)
-    	{
-    	    setupVESA(&vesa[5]);
-    	    return 0;
-    	}
+        if (vesa)
+        {
+            setupVESA(&vesa[5]);
+            return 0;
+        }
     }
     return 1;
 }
@@ -441,7 +441,7 @@ struct mb_mmap *mmap_make(unsigned long *len, unsigned long mem_lower, unsigned 
 static void prepare_message(unsigned long kick_start, unsigned long kick_base, void *kick_end, void *DebugInfo_ptr)
 {
     D(kprintf("[%s] Kickstart 0x%p - 0x%p (base 0x%p), protection 0x%p - 0x%p\n", str_Bootstrap, kick_start, kick_end, kick_base,
-    	      &_prot_lo, &_prot_hi);)
+              &_prot_lo, &_prot_hi);)
 
     tag->ti_Tag  = KRN_KernelBase;
     tag->ti_Data = KERNEL_OFFSET | kick_base;
@@ -480,14 +480,14 @@ void panic(const char *str)
     kprintf("*** SYSTEM PANIC!!! ***\n");
 
     for(;;)
-    	HALT;
+        HALT;
 }
 
 /*
  * The entry point in C.
  *
- * The bootstrap routine has to load the kickstart at 0x01000000, with RO sections growing up the memory and 
- * RW sections stored beneath the 0x01000000 address. It is supposed to transfer the GRUB information further 
+ * The bootstrap routine has to load the kickstart at 0x01000000, with RO sections growing up the memory and
+ * RW sections stored beneath the 0x01000000 address. It is supposed to transfer the GRUB information further
  * into the 64-bit kickstart.
  *
  * The kickstart is assembled from modules which have been loaded by GRUB. The modules may be loaded separately,
@@ -521,27 +521,27 @@ static void __bootstrap(unsigned int magic, void *mb)
     /*
      * tell the CPU that we will support SSE. We do it here because x86-64 compiler
      * with -m32 switch will use SSE for operations on long longs.
-     */                                                                                    
-    wrcr(cr4, rdcr(cr4) | (3 << 9));                                                                                               
-    /* Clear the EM and MP flags of CR0 */                                                                                         
+     */
+    wrcr(cr4, rdcr(cr4) | (3 << 9));
+    /* Clear the EM and MP flags of CR0 */
     wrcr(cr0, rdcr(cr0) & ~6);
 #endif
 
     switch(magic)
     {
     case MB_STARTUP_MAGIC:
-	/* Parse multiboot v1 information */
-	mod_end = mb1_parse(mb, &mmap, &len);
-	break;
+        /* Parse multiboot v1 information */
+        mod_end = mb1_parse(mb, &mmap, &len);
+        break;
 
     case MB2_STARTUP_MAGIC:
-    	/* Parse multiboot v2 information */
-    	mod_end = mb2_parse(mb, &mmap, &len);
-	break;
+        /* Parse multiboot v2 information */
+        mod_end = mb2_parse(mb, &mmap, &len);
+        break;
 
     default:
-    	/* What to do here? We have no console... Die silently... */
-    	return;
+        /* What to do here? We have no console... Die silently... */
+        return;
     }
 
 #ifdef DEBUG_MEM
@@ -554,7 +554,7 @@ static void __bootstrap(unsigned int magic, void *mb)
 #ifdef DEBUG_MEM_TYPE
         if (mm2->type == DEBUG_MEM_TYPE)
 #endif
-	    kprintf("[%s] Type %lu addr %p len %p\n", str_Bootstrap, mm2->type, mm2->addr, mm2->len);
+            kprintf("[%s] Type %lu addr %p len %p\n", str_Bootstrap, mm2->type, mm2->addr, mm2->len);
 
         ksize -= mm2->size+4;
         mm2 = (struct mb_mmap *)(mm2->size + (unsigned long)mm2 + 4);
@@ -564,7 +564,7 @@ static void __bootstrap(unsigned int magic, void *mb)
     D(kprintf("[%s] Modules end at 0x%p\n", str_Bootstrap, mod_end);)
     if (!firstMod)
     {
-    	panic("No kickstart modules found, nothing to run");
+        panic("No kickstart modules found, nothing to run");
     }
 
     tag->ti_Tag = KRN_MMAPAddress;
@@ -581,7 +581,7 @@ static void __bootstrap(unsigned int magic, void *mb)
     /* Count kickstart size */
     if (!GetKernelSize(firstMod, &ro_size, &rw_size, NULL))
     {
-    	panic("Failed to determine kickstart size");
+        panic("Failed to determine kickstart size");
     }
 
     D(kprintf("[%s] Code %u, data %u\n", str_Bootstrap, ro_size, rw_size);)
@@ -605,40 +605,40 @@ static void __bootstrap(unsigned int magic, void *mb)
             unsigned long long start = mmap->addr;
             unsigned long long end = mmap->addr + mmap->len;
 
-	    /*
-	     * The region must be located in 32-bit memory and must not overlap
-	     * our modules.
-	     * Here we assume the following:
-	     * 1. Multiboot data from GRUB is placed in low memory.
-	     * 2. At least one module is placed in upper memory, above ourselves.
-	     * 3. There's no usable space below our modules.
-	     */
-	    if ((start <= 0x100000000ULL - ksize) && (end >= mod_end + ksize))
-	    {
-		unsigned long size;
+            /*
+             * The region must be located in 32-bit memory and must not overlap
+             * our modules.
+             * Here we assume the following:
+             * 1. Multiboot data from GRUB is placed in low memory.
+             * 2. At least one module is placed in upper memory, above ourselves.
+             * 3. There's no usable space below our modules.
+             */
+            if ((start <= 0x100000000ULL - ksize) && (end >= mod_end + ksize))
+            {
+                unsigned long size;
 
-	    	if (start < mod_end)
-	    	    start = mod_end;
+                if (start < mod_end)
+                    start = mod_end;
 
-	    	if (end > 0x100000000ULL)
-	    	    end = 0x100000000ULL;
+                if (end > 0x100000000ULL)
+                    end = 0x100000000ULL;
 
-		/* Remember the region if it fits in */
-		size = end - start;
-		if (size >= ksize)
-		{
-		    /*
-		     * We place .data section at the start of the region, followed by .code section
-		     * at page-aligned 'kbase' address.
-		     * There must be a space beyond kickstart's read-only section, because the kickstart
-		     * will extend it in order to store boot-time configuration and own private data.
-		     */
-		    kstart = start;
-		    kbase = start + rw_size;
-		    kbase = (kbase + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-	    	}
-	    }
-	}
+                /* Remember the region if it fits in */
+                size = end - start;
+                if (size >= ksize)
+                {
+                    /*
+                     * We place .data section at the start of the region, followed by .code section
+                     * at page-aligned 'kbase' address.
+                     * There must be a space beyond kickstart's read-only section, because the kickstart
+                     * will extend it in order to store boot-time configuration and own private data.
+                     */
+                    kstart = start;
+                    kbase = start + rw_size;
+                    kbase = (kbase + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+                }
+            }
+        }
 
         len -= mmap->size+4;
         mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
@@ -646,8 +646,8 @@ static void __bootstrap(unsigned int magic, void *mb)
 
     if (!kbase)
     {
-    	panic("Failed to find %u bytes for the kickstart.\n"
-    	      "Your system doesn't have enough memory.");
+        panic("Failed to find %u bytes for the kickstart.\n"
+              "Your system doesn't have enough memory.");
     }
 
     D(kprintf("[%s] Loading kickstart, data 0x%p, code 0x%p...\n", str_Bootstrap, kstart, kbase);)
@@ -663,7 +663,7 @@ static void __bootstrap(unsigned int magic, void *mb)
 #ifdef DEBUG_TAGLIST
     kprintf("[%s] Boot taglist:\n", str_Bootstrap);
     for (tag = km; tag->ti_Tag != TAG_DONE; tag++)
-    	kprintf("[%s] 0x%llp 0x%llp\n", str_Bootstrap, tag->ti_Tag, tag->ti_Data);
+        kprintf("[%s] 0x%llp 0x%llp\n", str_Bootstrap, tag->ti_Tag, tag->ti_Data);
 #endif
 
     /* Jump to the kickstart */

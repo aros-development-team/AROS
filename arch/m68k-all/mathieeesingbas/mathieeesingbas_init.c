@@ -27,25 +27,25 @@ extern void init_6888x_single(void);
 static int IEEESP_Open(struct Library *lh)
 {
     if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40))
-	init_6888x_single();
+        init_6888x_single();
     return TRUE;
 }
 
 static int IEEESP_Init(struct Library *lh)
 {
     if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40)) {
-	SetFunc(LVOIEEESPFix,           Fix_6888x);
-	SetFunc(LVOIEEESPFlt,           Flt_6888x);
-	//SetFunc(LVOIEEESPCmp,         Cmp_6888x); use software
-	//SetFunc(LVOIEEESPTst,         Tst_6888x); use software
-	SetFunc(LVOIEEESPAbs,           Abs_6888x);
-	SetFunc(LVOIEEESPNeg,           Neg_6888x);
-	SetFunc(LVOIEEESPAdd,           Add_6888x);
-	SetFunc(LVOIEEESPSub,           Sub_6888x);
-	SetFunc(LVOIEEESPMul,           Mul_6888x);
-	SetFunc(LVOIEEESPDiv,           Div_6888x);
-	//SetFunc(LVOIEEESPFloor,       Floor_6888x); use software
-	//SetFunc(LVOIEEESPCeil,        Ceil_6888x); use software
+        SetFunc(LVOIEEESPFix,           Fix_6888x);
+        SetFunc(LVOIEEESPFlt,           Flt_6888x);
+        //SetFunc(LVOIEEESPCmp,         Cmp_6888x); use software
+        //SetFunc(LVOIEEESPTst,         Tst_6888x); use software
+        SetFunc(LVOIEEESPAbs,           Abs_6888x);
+        SetFunc(LVOIEEESPNeg,           Neg_6888x);
+        SetFunc(LVOIEEESPAdd,           Add_6888x);
+        SetFunc(LVOIEEESPSub,           Sub_6888x);
+        SetFunc(LVOIEEESPMul,           Mul_6888x);
+        SetFunc(LVOIEEESPDiv,           Div_6888x);
+        //SetFunc(LVOIEEESPFloor,       Floor_6888x); use software
+        //SetFunc(LVOIEEESPCeil,        Ceil_6888x); use software
     }
     return TRUE;
 }

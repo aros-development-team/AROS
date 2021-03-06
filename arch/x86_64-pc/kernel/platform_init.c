@@ -22,7 +22,7 @@
 #define D(x)
 #define DAPIC(x)
 
-/* 
+/*
     This file contains code that is run once Exec has been brought up - and is launched
     via the RomTag/Autoinit routines in Exec.
     
@@ -46,7 +46,7 @@ void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, void *Ha
         D(bug("[Kernel] ** Code at 0x%p is trying to access the SysBase at 0x%p.\n", ip, ptr));
 
         if ((ip[0] & 0xfb) == 0x48 &&
-             ip[1]         == 0x8b && 
+             ip[1]         == 0x8b &&
             (ip[2] & 0xc7) == 0x04 &&
              ip[3]         == 0x25)
         {
@@ -109,7 +109,7 @@ void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, void *Ha
             core_LeaveInterrupt(regs);
         }
         else if ((ip[0] & 0xfb) == 0x48 &&
-                  ip[1]         == 0x8b && 
+                  ip[1]         == 0x8b &&
                  (ip[2] & 0xc7) == 0x05)
         {
             int reg = ((ip[2] >> 3) & 0x07) | ((ip[0] & 0x04) << 1);
@@ -223,7 +223,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
      */
     pdata = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
     if (!pdata)
-    	return FALSE;
+        return FALSE;
 
     D(bug("[Kernel:x86_64] %s: Platform Data allocated @ 0x%p\n", __func__, pdata));
 

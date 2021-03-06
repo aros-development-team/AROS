@@ -25,12 +25,12 @@ AROS_LH0(void, Disable,
 
         AROS_LIBFUNC_INIT
 
-	/*
-	 * Disable interrupts by masking all interrupts.
-	 */
-	SetSR(0x700,0x700);
+        /*
+         * Disable interrupts by masking all interrupts.
+         */
+        SetSR(0x700,0x700);
 
-	SysBase->IDNestCnt++;
+        SysBase->IDNestCnt++;
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 } /* Disable() */

@@ -83,7 +83,7 @@ static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, 
     pd->page_ptr += size;
     pd->page_free -= size;
     return dout;
-}	
+}
 
 BOOL init_mmu(struct KernelBase *kb)
 {
@@ -117,12 +117,12 @@ void *getphysaddr_mmu030(void *virt)
         ".chip 68030\n"
         "move.l %%a5,%%a4\n"
         "move.l 4.w,%%a6\n"
-        "lea	.gpasuper030(%%pc),%%a5\n"
-        "jsr	-0x1e(%%a6)\n"
-        "bra.s	0f\n"
+        "lea    .gpasuper030(%%pc),%%a5\n"
+        "jsr    -0x1e(%%a6)\n"
+        "bra.s  0f\n"
         ".gpasuper030:\n"
-        "ptestr	#2,%2@,#7,%0\n"
-        "pmove	%%psr,%1\n"
+        "ptestr #2,%2@,#7,%0\n"
+        "pmove  %%psr,%1\n"
         "rte\n"
         "0:\n"
         "move.l %%a4,%%a5\n"
@@ -147,40 +147,40 @@ static void enable_mmu030(ULONG *levela)
     asm volatile (
         ".chip 68030\n"
         "move.l %%a5,%%a4\n"
-        "move.l	%0,%%d0\n"
+        "move.l %0,%%d0\n"
         "move.l 4.w,%%a6\n"
-        "lea	.esuper030(%%pc),%%a5\n"
-        "jsr	-0x1e(%%a6)\n"
-        "bra.s	0f\n"
+        "lea    .esuper030(%%pc),%%a5\n"
+        "jsr    -0x1e(%%a6)\n"
+        "bra.s  0f\n"
         ".esuper030:\n"
         /* Do not interrupt us */
-        "or	#0x0700,%%sr\n"
-        "subq.l	#8,%%a7\n"
+        "or     #0x0700,%%sr\n"
+        "subq.l #8,%%a7\n"
         /* Disable MMU, setup root pointers,
          * uses 68040 MMU descriptor levels (7/7/6, 4K page size) */
-        "move.l	#0x00c07760,%%d1\n"
-        "move.l	%%d1,%%a7@\n"
-        "pmove	%%a7@,%%tc\n"
+        "move.l #0x00c07760,%%d1\n"
+        "move.l %%d1,%%a7@\n"
+        "pmove  %%a7@,%%tc\n"
         /* Set bus error exception vector */
-        "movec	%%vbr,%%a5\n"
-        "move.l	#addrerror030,%%a5@(12)\n"
-        "move.l	#buserror030,%%a5@(8)\n"
+        "movec  %%vbr,%%a5\n"
+        "move.l #addrerror030,%%a5@(12)\n"
+        "move.l #buserror030,%%a5@(8)\n"
         /* Configure CRP. Valid 4 byte descriptor, other features disabled. */
-        "move.l	#0x80000002,%%a7@\n"
+        "move.l #0x80000002,%%a7@\n"
         /* First level descriptor pointer */
-        "move.l	%%d0,%%a7@(4)\n"
+        "move.l %%d0,%%a7@(4)\n"
         /* Set CRP */
-        "pmove	%%a7@,%%crp\n"
+        "pmove  %%a7@,%%crp\n"
         /* Set MMU enabled bit */
-        "bset	#31,%%d1\n"
-        "move.l	%%d1,%%a7@\n"
+        "bset   #31,%%d1\n"
+        "move.l %%d1,%%a7@\n"
         /* MMU on! */
-        "pmove	%%a7@,%%tc\n"
+        "pmove  %%a7@,%%tc\n"
         /* Clear transparent translation */
-        "clr.l	%%a7@\n"
-        "pmove	%%a7@,%%tt0\n"
-        "pmove	%%a7@,%%tt1\n"
-        "addq.l	#8,%%a7\n"
+        "clr.l  %%a7@\n"
+        "pmove  %%a7@,%%tt0\n"
+        "pmove  %%a7@,%%tt1\n"
+        "addq.l #8,%%a7\n"
         "rte\n"
         "0:\n"
         "move.l %%a4,%%a5\n"
@@ -193,17 +193,17 @@ static void disable_mmu030(void)
         ".chip 68030\n"
         "move.l %%a5,%%a4\n"
         "move.l 4.w,%%a6\n"
-        "lea	.dsuper030(%%pc),%%a5\n"
-        "jsr	-0x1e(%%a6)\n"
-        "bra.s	0f\n"
+        "lea    .dsuper030(%%pc),%%a5\n"
+        "jsr    -0x1e(%%a6)\n"
+        "bra.s  0f\n"
         ".dsuper030:\n"
         /* Do not interrupt us */
-        "or	#0x0700,%%sr\n"
+        "or     #0x0700,%%sr\n"
         /* Disable MMU */
-        "subq.l	#4,%%a7\n"
-        "clr.l	%%a7@\n"
-        "pmove	%%a7@,%%tc\n"
-        "addq.l	#4,%%a7\n"
+        "subq.l #4,%%a7\n"
+        "clr.l  %%a7@\n"
+        "pmove  %%a7@,%%tc\n"
+        "addq.l #4,%%a7\n"
         "rte\n"
         "0:\n"
         "move.l %%a4,%%a5\n"
@@ -220,44 +220,44 @@ static void enable_mmu040(ULONG *levela, UBYTE cpu060, UBYTE *zeropagedescriptor
     asm volatile (
         ".chip 68060\n"
         "move.l %%a5,%%a4\n"
-        "move.l	%0,%%d0\n"
-        "move.b	%1,%%d1\n"
+        "move.l %0,%%d0\n"
+        "move.b %1,%%d1\n"
         "move.l %2,%%a1\n"
         "move.l 4.w,%%a6\n"
-        "lea	.esuper040(%%pc),%%a5\n"
-        "jsr	-0x1e(%%a6)\n"
-        "bra.s	0f\n"
+        "lea    .esuper040(%%pc),%%a5\n"
+        "jsr    -0x1e(%%a6)\n"
+        "bra.s  0f\n"
         ".esuper040:\n"
         /* Do not interrupt us */
-        "or	#0x0700,%%sr\n"
-        "movec	%%vbr,%%a5\n"
+        "or     #0x0700,%%sr\n"
+        "movec  %%vbr,%%a5\n"
         "move.l %%a1,253*4(%%a5)\n"
-        "lea	buserror040,%%a6\n"
-        "lea	addrerror040,%%a0\n"
-        "tst.b	%%d1\n"
-        "beq.s	.cpu040\n"
-        "lea	buserror060,%%a6\n"
-        "lea	addrerror060,%%a0\n"
+        "lea    buserror040,%%a6\n"
+        "lea    addrerror040,%%a0\n"
+        "tst.b  %%d1\n"
+        "beq.s  .cpu040\n"
+        "lea    buserror060,%%a6\n"
+        "lea    addrerror060,%%a0\n"
         ".cpu040:\n"
-        "move.l	%%a6,%%a5@(8)\n"
+        "move.l %%a6,%%a5@(8)\n"
         "move.l %%a0,%%a5@(12)\n"
-        "moveq	#0,%%d1\n"
+        "moveq  #0,%%d1\n"
         /* Disable MMU, setup root pointers */
-        "movec	%%d1,%%tc\n"
-        "movec	%%d0,%%urp\n"
-        "movec	%%d0,%%srp\n"
+        "movec  %%d1,%%tc\n"
+        "movec  %%d0,%%urp\n"
+        "movec  %%d0,%%srp\n"
         /* Flush data caches and ATC */
-        "cpusha	%%dc\n"
-        "cinva	%%dc\n"
+        "cpusha %%dc\n"
+        "cinva  %%dc\n"
         "pflusha\n"
         /* Enable MMU, 4K page size */
-        "move.l	#0x00008000,%%d0\n"
-        "movec	%%d0,%%tc\n"
+        "move.l #0x00008000,%%d0\n"
+        "movec  %%d0,%%tc\n"
         /* Disable transparent translation */
-        "movec	%%d1,%%itt0\n"
-        "movec	%%d1,%%itt1\n"
-        "movec	%%d1,%%dtt0\n"
-        "movec	%%d1,%%dtt1\n"
+        "movec  %%d1,%%itt0\n"
+        "movec  %%d1,%%itt1\n"
+        "movec  %%d1,%%dtt0\n"
+        "movec  %%d1,%%dtt1\n"
         "rte\n"
         "0:\n"
         "move.l %%a4,%%a5\n"
@@ -270,15 +270,15 @@ static void disable_mmu040(void)
         ".chip 68060\n"
         "move.l %%a5,%%a4\n"
         "move.l 4.w,%%a6\n"
-        "lea	.dsuper040(%%pc),%%a5\n"
-        "jsr	-0x1e(%%a6)\n"
-        "bra.s	0f\n"
+        "lea    .dsuper040(%%pc),%%a5\n"
+        "jsr    -0x1e(%%a6)\n"
+        "bra.s  0f\n"
         ".dsuper040:\n"
         /* Do not interrupt us */
-        "or	#0x0700,%%sr\n"
+        "or     #0x0700,%%sr\n"
         /* Disable MMU */
-        "moveq	#0,%%d0\n"
-        "movec	%%d0,%%tc\n"
+        "moveq  #0,%%d0\n"
+        "movec  %%d0,%%tc\n"
         "pflusha\n"
         "rte\n"
         "0:\n"
@@ -363,7 +363,7 @@ void debug_mmu(struct KernelBase *kb)
         }
         bug("MMU dump end\n");
 #endif
-}			
+}
 
 static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode)
 {

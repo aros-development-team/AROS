@@ -49,28 +49,28 @@ AROS_LH2(APTR, AllocMem,
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
-	return NULL;
+        return NULL;
 
     byteSize += sizeof(APTR);
 
     if (!pool)
     if (!PrivExecBase(SysBase)->defaultPool)
-    	/* If we don't have defaultPool, it's early boot mode */
-       	res = allocBootMem((struct MemHeader *)SysBase->MemList.lh_Head, byteSize);
+        /* If we don't have defaultPool, it's early boot mode */
+        res = allocBootMem((struct MemHeader *)SysBase->MemList.lh_Head, byteSize);
     else
     {
-	APTR pool;
+        APTR pool;
 
-	/* TODO: in future we will have separate pool for MEMF_EXECUTABLE memory */
-	pool = PrivExecBase(SysBase)->defaultPool;
+        /* TODO: in future we will have separate pool for MEMF_EXECUTABLE memory */
+        pool = PrivExecBase(SysBase)->defaultPool;
 
-    	res = AllocPooled(pool, byteSize);
+        res = AllocPooled(pool, byteSize);
     }
 
     if (res)
-    {    	
-    	if (requirements & MEMF_CLEAR)
-	    memset(res, 0, byteSize);
+    {
+        if (requirements & MEMF_CLEAR)
+            memset(res, 0, byteSize);
     }
     else
     {
@@ -83,9 +83,9 @@ AROS_LH2(APTR, AllocMem,
 
 #if DEBUG
     if (SysBase->DebugAROSBase)
-	bug("AllocMem result: 0x%p\n", res);
+        bug("AllocMem result: 0x%p\n", res);
 #endif
     return res;
 
-    AROS_LIBFUNC_EXIT    
+    AROS_LIBFUNC_EXIT
 } /* AllocMem */

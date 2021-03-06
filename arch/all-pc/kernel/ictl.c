@@ -93,8 +93,8 @@ void ictl_Initialize(struct KernelBase *KernelBase)
 #if (__WORDSIZE==64)
     if (!pdata->kb_APIC)
     {
-    	/* We are x86-64, so we should always have APIC. */
-    	krnPanic(KernelBase, "Failed to allocate APIC descriptor.");
+        /* We are x86-64, so we should always have APIC. */
+        krnPanic(KernelBase, "Failed to allocate APIC descriptor.");
     }
 #endif
 

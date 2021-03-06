@@ -47,7 +47,7 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     pcr = 0;
 
     if (SysBase->AttnFlags & (AFF_68060 | AFF_68080)) {
-	pcr = Supervisor(ReadPCR);
+        pcr = Supervisor(ReadPCR);
     }
 
     if ((SysBase->AttnFlags & AFF_68080) && ((pcr & 0xFFF00000) == 0x04400000))
@@ -171,7 +171,7 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
 
 LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 {
-    struct SystemProcessors * sysprocs = 
+    struct SystemProcessors * sysprocs =
         AllocVec(sizeof(struct SystemProcessors), MEMF_ANY | MEMF_CLEAR);
 
     if (sysprocs == NULL)

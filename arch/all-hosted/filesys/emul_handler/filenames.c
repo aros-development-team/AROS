@@ -21,33 +21,33 @@ BOOL shrink(char *filename)
     /* We skip the first slash because it separates volume root prefix and the actual pathname */
     s = filename;
     if (*s == '/')
-	s++;
+        s++;
 
     for(;;)
     {
-	/* leading slashes? --> return FALSE. */
-	if (*s == '/')
-	    return FALSE;
+        /* leading slashes? --> return FALSE. */
+        if (*s == '/')
+            return FALSE;
 
-	/* remove superflous paths (ie paths that are followed by '//') */
-	s1 = strstr(s, "//");
-	if (s1 == NULL)
-	    break;
-	s2 = s1;
-	while (s2 > filename)
-	{
-	    if (s2[-1] == '/')
-		break;
-	    s2--;
-	}
+        /* remove superflous paths (ie paths that are followed by '//') */
+        s1 = strstr(s, "//");
+        if (s1 == NULL)
+            break;
+        s2 = s1;
+        while (s2 > filename)
+        {
+            if (s2[-1] == '/')
+                break;
+            s2--;
+        }
 
-	memmove(s2, s1+2, strlen(s1+1));
+        memmove(s2, s1+2, strlen(s1+1));
     }
 
     /* strip trailing slash */
     len=strlen(filename);
     if (len && filename[len-1]=='/')
-	filename[len-1]=0;
+        filename[len-1]=0;
 
    return TRUE;
 }
@@ -59,20 +59,20 @@ ULONG validate(char *filename)
 
     while (*s)
     {
-	if (*s == '.') {
-	    do {
-		s++;
-	    } while (*s == '.');
-	    if ((*s == '/') || (!*s)) {
-	        D(bug("[emul] Bad file name, contains dots-only component\n"));
-		return ERROR_INVALID_COMPONENT_NAME;
-	    }
-	}
-	do {
-	    s++;
-	} while ((*s != '/') && *s);
-	while (*s == '/')
-	    s++;
+        if (*s == '.') {
+            do {
+                s++;
+            } while (*s == '.');
+            if ((*s == '/') || (!*s)) {
+                D(bug("[emul] Bad file name, contains dots-only component\n"));
+                return ERROR_INVALID_COMPONENT_NAME;
+            }
+        }
+        do {
+            s++;
+        } while ((*s != '/') && *s);
+        while (*s == '/')
+            s++;
     }
     
     return 0;
@@ -85,7 +85,7 @@ char *append(char *c, char *filename)
 
     *c++ = '/';
     for (s = filename; *s; s++)
-	*c++ = *s;
+        *c++ = *s;
     return c;
 }
 
@@ -94,7 +94,7 @@ long startpos(char *name, long i)
 {
     /* look for the first '/' in the filename starting at the end */
     while (i != 0 && name[i] != '/')
-	i--;
+        i--;
 
     return i;
 }

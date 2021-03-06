@@ -36,7 +36,7 @@ AROS_LH1(ULONG, SetChipRev,
         Enable();
         if (deniseid1 == deniseid2 && deniseid2 == deniseid3 && deniseid1 == 0xfc)
             chipflags |= GFXF_HR_DENISE;
-   	}
+        }
 
     if (ChipRev != SETCHIPREV_BEST) {
         if (ChipRev == SETCHIPREV_A && chipflags >= SETCHIPREV_A)

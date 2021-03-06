@@ -20,9 +20,9 @@ unsigned int krnGetPageSize(void *hostlib)
     
     if (!getpagesize)
     {
-    	krnPanic(NULL, "Failed to obtain memory page size\n"
-    		       "%s", errstr);
-    	return 0;
+        krnPanic(NULL, "Failed to obtain memory page size\n"
+                       "%s", errstr);
+        return 0;
     }
 
     ret = getpagesize();

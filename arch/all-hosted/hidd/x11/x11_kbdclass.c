@@ -25,7 +25,7 @@ static OOP_AttrBase HiddKbdAB;
 static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_Kbd  , &HiddKbdAB    },
-    { NULL  	    , NULL  	    }
+    { NULL          , NULL          }
 };
 
 /****************************************************************************************/
@@ -54,10 +54,10 @@ static struct OOP_ABDescr attrbases[] =
 
 OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    BOOL    	        has_kbd_hidd = FALSE;
+    BOOL                has_kbd_hidd = FALSE;
     struct TagItem      *tag, *tstate;
     KbdIrqCallBack_t    callback = NULL;
-    APTR    	        callbackdata = NULL;
+    APTR                callbackdata = NULL;
 
     D(bug("[X11:Kbd] %s()\n", __func__));
 
@@ -74,7 +74,7 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     }
 
     tstate = msg->attrList;
-    D(bug("[X11:Kbd] %s: tstate: %p, tag=%x\n", __func__, tstate, tstate->ti_Tag));	
+    D(bug("[X11:Kbd] %s: tstate: %p, tag=%x\n", __func__, tstate, tstate->ti_Tag));
     
     while ((tag = NextTagItem(&tstate)))
     {
@@ -146,9 +146,9 @@ VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_X11_HandleEvent *msg)
 {
-    struct x11kbd_data  *data;    
-    XKeyEvent 	    	*xk;
-    long   	    	 keycode;
+    struct x11kbd_data  *data;
+    XKeyEvent           *xk;
+    long                 keycode;
 
     D(bug("[X11:Kbd] %s()\n", __func__));
 
@@ -165,7 +165,7 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
 
     if (msg->event->type == KeyRelease)
     {
-        keycode |= IECODE_UP_PREFIX;    	
+        keycode |= IECODE_UP_PREFIX;
     }
 
     if (keycode != data->prev_keycode)
@@ -273,7 +273,7 @@ AROS_LH1(void , x11kdb_LoadkeyTable,
 
 /****************************************************************************************/
 
-static int kbd_init(LIBBASETYPEPTR LIBBASE) 
+static int kbd_init(LIBBASETYPEPTR LIBBASE)
 {
 
     return OOP_ObtainAttrBases(attrbases);

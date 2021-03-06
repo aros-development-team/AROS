@@ -9,22 +9,22 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(void, FreeCSUnit,
+        AROS_LH1(void, FreeCSUnit,
 
 /*  SYNOPSIS */
-	AROS_LHA(IPTR, unit, D0),
+        AROS_LHA(IPTR, unit, D0),
 
 /*  LOCATION */
-	struct HPETBase *, base, 3, Hpet)
+        struct HPETBase *, base, 3, Hpet)
 
 /*  FUNCTION
-	Free the specified HPET unit.
+        Free the specified HPET unit.
 
     INPUTS
-	unit - a number of previously allocated HPET unit.
+        unit - a number of previously allocated HPET unit.
 
     RESULT
-    	None.
+        None.
 
     NOTES
 

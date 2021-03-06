@@ -28,17 +28,17 @@ static OOP_AttrBase HiddParallelUnitAB;
 
 
 OOP_Object *AmigaPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
-					  struct pHidd_Parallel_NewUnit *msg)
+                                          struct pHidd_Parallel_NewUnit *msg)
 {
-	OOP_Object *su = NULL;
-	struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
-	ULONG unitnum = -1;
+        OOP_Object *su = NULL;
+        struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
+        ULONG unitnum = -1;
 
-	EnterFunc(bug("HIDDParallel::NewParallel()\n"));
+        EnterFunc(bug("HIDDParallel::NewParallel()\n"));
 
-	D(bug("Request for unit number %d\n",msg->unitnum));
+        D(bug("Request for unit number %d\n",msg->unitnum));
 
-	if (msg->unitnum >= 0 && msg->unitnum < PAR_MAX_UNITS) {
+        if (msg->unitnum >= 0 && msg->unitnum < PAR_MAX_UNITS) {
             unitnum = msg->unitnum;
 
             if (0 != (data->usedunits & (1 << unitnum))) {
@@ -46,7 +46,7 @@ OOP_Object *AmigaPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
             }
         } else if (msg->unitnum == -1) {
                 /* search for the next available unit */
-	        unitnum = 0;
+                unitnum = 0;
 
                 while (unitnum < PAR_MAX_UNITS) {
                         if (0 == (data->usedunits & (1 << unitnum))) {
@@ -55,53 +55,53 @@ OOP_Object *AmigaPar__Hidd_Parallel__NewUnit(OOP_Class *cl, OOP_Object *obj,
 
                         unitnum++;
                 }
-	}
+        }
 
-	if (unitnum >= 0 && unitnum < PAR_MAX_UNITS) {
-		struct TagItem tags[] =
-		{
-			{aHidd_ParallelUnit_Unit, unitnum},
-			{TAG_DONE		       }
-		};
+        if (unitnum >= 0 && unitnum < PAR_MAX_UNITS) {
+                struct TagItem tags[] =
+                {
+                        {aHidd_ParallelUnit_Unit, unitnum},
+                        {TAG_DONE                      }
+                };
 
-		su = OOP_NewObject(NULL, CLID_Hidd_ParallelUnit, tags);
-		data->ParallelUnits[unitnum] = su;
+                su = OOP_NewObject(NULL, CLID_Hidd_ParallelUnit, tags);
+                data->ParallelUnits[unitnum] = su;
 
-		/*
-		** Mark it as used
-		*/
-		data->usedunits |= (1 << unitnum); 
-	}
+                /*
+                ** Mark it as used
+                */
+                data->usedunits |= (1 << unitnum);
+        }
 
-	ReturnPtr("HIDDParallel::NewParallel", OOP_Object *, su);
+        ReturnPtr("HIDDParallel::NewParallel", OOP_Object *, su);
 }
 
 
 /*** HIDDParallel::DisposeUnit() ****************************************************/
 
 VOID AmigaPar__Hidd_Parallel__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
-				       struct pHidd_Parallel_DisposeUnit *msg)
+                                       struct pHidd_Parallel_DisposeUnit *msg)
 {
-	OOP_Object * pu = msg->unit;
-	struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
+        OOP_Object * pu = msg->unit;
+        struct HIDDParallelData * data = OOP_INST_DATA(cl, obj);
 
-	EnterFunc(bug("HIDDParallel::DisposeUnit()\n"));
+        EnterFunc(bug("HIDDParallel::DisposeUnit()\n"));
 
-	if(pu) {
-		ULONG unitnum = 0;
+        if(pu) {
+                ULONG unitnum = 0;
 
-		while (unitnum < PAR_MAX_UNITS) {
-			if (data->ParallelUnits[unitnum] == pu) {
-				D(bug("Disposing ParallelUnit!\n"));
-				OOP_DisposeObject(pu);
-				data->ParallelUnits[unitnum] = NULL;
-				data->usedunits &= ~(1 << unitnum);
-				break;
-			}
+                while (unitnum < PAR_MAX_UNITS) {
+                        if (data->ParallelUnits[unitnum] == pu) {
+                                D(bug("Disposing ParallelUnit!\n"));
+                                OOP_DisposeObject(pu);
+                                data->ParallelUnits[unitnum] = NULL;
+                                data->usedunits &= ~(1 << unitnum);
+                                break;
+                        }
 
-			unitnum++;
-		}
-	}
+                        unitnum++;
+                }
+        }
 
-	ReturnVoid("HIDDParallel::DisposeUnit");
+        ReturnVoid("HIDDParallel::DisposeUnit");
 }

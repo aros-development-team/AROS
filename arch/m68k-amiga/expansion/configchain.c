@@ -69,13 +69,13 @@ static BOOL romisinregion(APTR romstart, APTR romend, APTR regstart, APTR regend
 {
     if (rev)
     {
-        if (((romend < regstart) && (romend > regend)) && 
+        if (((romend < regstart) && (romend > regend)) &&
             ((romstart > regend ) && (romstart < regstart)))
             return TRUE;
     }
     else
     {
-        if (((romend > regstart) && (romend < regend)) && 
+        if (((romend > regstart) && (romend < regend)) &&
             ((romstart < regend ) && (romstart > regstart)))
             return TRUE;
     }
@@ -120,7 +120,7 @@ static LONG scanmbregion(struct ExpansionBase *ExpansionBase, struct MinList *mb
     D(
       bug("[expansion:am68k] %s(", __func__);
       if (step < 0)
-      {    
+      {
           bug("%08x:%08x)\n", *start - 1, *end);
       }
       else
@@ -222,7 +222,7 @@ static LONG scanmbregion(struct ExpansionBase *ExpansionBase, struct MinList *mb
       else
       {
           bug("%08x:%08x\n", *start, *end - 1);
-      }    
+      }
      )
 
     for (;;)
@@ -303,10 +303,10 @@ static LONG scanmbregion(struct ExpansionBase *ExpansionBase, struct MinList *mb
                 }
                 if (nxtChunk)
                 {
-                    memChunk->bmc_Node.mln_Pred	                = nxtChunk->bmc_Node.mln_Pred;
-                    memChunk->bmc_Node.mln_Succ	                = &nxtChunk->bmc_Node;
+                    memChunk->bmc_Node.mln_Pred                 = nxtChunk->bmc_Node.mln_Pred;
+                    memChunk->bmc_Node.mln_Succ                 = &nxtChunk->bmc_Node;
                     nxtChunk->bmc_Node.mln_Pred->mln_Succ       = &memChunk->bmc_Node;
-                    nxtChunk->bmc_Node.mln_Pred	                = &memChunk->bmc_Node;
+                    nxtChunk->bmc_Node.mln_Pred                 = &memChunk->bmc_Node;
                 }
                 else
                     AddTail(mbchunks, &memChunk->bmc_Node);

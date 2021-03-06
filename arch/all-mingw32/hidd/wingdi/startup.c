@@ -32,7 +32,7 @@
 
 #include "gdi.h"
 
-static int gdi_Startup(struct gdiclbase *LIBBASE) 
+static int gdi_Startup(struct gdiclbase *LIBBASE)
 {
     struct GfxBase *GfxBase;
     OOP_Object *kbd, *ms;
@@ -69,15 +69,15 @@ static int gdi_Startup(struct gdiclbase *LIBBASE)
     kbdriver = HW_AddDriver(kbd, LIBBASE->xsd.kbdclass, kbd_tags);
     if (kbdriver)
     {
-	msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, ms_tags);
-	if (!msdriver)
-	    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+        msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, ms_tags);
+        if (!msdriver)
+            HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
     }
 
     /* If we got no input, we can't work, fail */
     if (!msdriver)
     {
-	CloseLibrary(&GfxBase->LibNode);
+        CloseLibrary(&GfxBase->LibNode);
         return FALSE;
     }
 

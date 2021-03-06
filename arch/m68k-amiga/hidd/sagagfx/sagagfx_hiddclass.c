@@ -187,16 +187,16 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     struct TagItem pftags_32bpp[] = {
         { aHidd_PixFmt_RedShift,    8   }, /* 0 */
         { aHidd_PixFmt_GreenShift,  16  }, /* 1 */
-        { aHidd_PixFmt_BlueShift,  	24  }, /* 2 */
+        { aHidd_PixFmt_BlueShift,       24  }, /* 2 */
         { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
         { aHidd_PixFmt_RedMask,     0x00ff0000 }, /* 4 */
         { aHidd_PixFmt_GreenMask,   0x0000ff00 }, /* 5 */
         { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
         { aHidd_PixFmt_AlphaMask,   0xff000000 }, /* 7 */
         { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
-        { aHidd_PixFmt_Depth,       32	}, /* 9 */
-        { aHidd_PixFmt_BytesPerPixel,4	}, /* 10 */
-        { aHidd_PixFmt_BitsPerPixel,32	}, /* 11 */
+        { aHidd_PixFmt_Depth,       32  }, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,4  }, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,32  }, /* 11 */
         { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGRA32 }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
@@ -205,63 +205,63 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     struct TagItem pftags_24bpp[] = {
         { aHidd_PixFmt_RedShift,    8   }, /* 0 */
         { aHidd_PixFmt_GreenShift,  16  }, /* 1 */
-        { aHidd_PixFmt_BlueShift,  	24  }, /* 2 */
+        { aHidd_PixFmt_BlueShift,       24  }, /* 2 */
         { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
         { aHidd_PixFmt_RedMask,     0x00ff0000 }, /* 4 */
         { aHidd_PixFmt_GreenMask,   0x0000ff00 }, /* 5 */
         { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
         { aHidd_PixFmt_AlphaMask,   0x00000000 }, /* 7 */
         { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
-        { aHidd_PixFmt_Depth,       24	}, /* 9 */
-        { aHidd_PixFmt_BytesPerPixel,3	}, /* 10 */
-        { aHidd_PixFmt_BitsPerPixel,24	}, /* 11 */
+        { aHidd_PixFmt_Depth,       24  }, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,3  }, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,24  }, /* 11 */
         { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR24 }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
 
     struct TagItem pftags_16bpp[] = {
-        { aHidd_PixFmt_RedShift,	16	}, /* 0 */
-        { aHidd_PixFmt_GreenShift,	21	}, /* 1 */
-        { aHidd_PixFmt_BlueShift,  	27	}, /* 2 */
-        { aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
-        { aHidd_PixFmt_RedMask,		0x0000f800 }, /* 4 */
-        { aHidd_PixFmt_GreenMask,	0x000007e0 }, /* 5 */
-        { aHidd_PixFmt_BlueMask,	0x0000001f }, /* 6 */
-        { aHidd_PixFmt_AlphaMask,	0x00000000 }, /* 7 */
-        { aHidd_PixFmt_ColorModel,	vHidd_ColorModel_TrueColor }, /* 8 */
-        { aHidd_PixFmt_Depth,		16	}, /* 9 */
-        { aHidd_PixFmt_BytesPerPixel,	2	}, /* 10 */
-        { aHidd_PixFmt_BitsPerPixel,	16	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_RGB16 }, /* 12 */
-        { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
+        { aHidd_PixFmt_RedShift,        16      }, /* 0 */
+        { aHidd_PixFmt_GreenShift,      21      }, /* 1 */
+        { aHidd_PixFmt_BlueShift,       27      }, /* 2 */
+        { aHidd_PixFmt_AlphaShift,      0       }, /* 3 */
+        { aHidd_PixFmt_RedMask,         0x0000f800 }, /* 4 */
+        { aHidd_PixFmt_GreenMask,       0x000007e0 }, /* 5 */
+        { aHidd_PixFmt_BlueMask,        0x0000001f }, /* 6 */
+        { aHidd_PixFmt_AlphaMask,       0x00000000 }, /* 7 */
+        { aHidd_PixFmt_ColorModel,      vHidd_ColorModel_TrueColor }, /* 8 */
+        { aHidd_PixFmt_Depth,           16      }, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,   2       }, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,    16      }, /* 11 */
+        { aHidd_PixFmt_StdPixFmt,       vHidd_StdPixFmt_RGB16 }, /* 12 */
+        { aHidd_PixFmt_BitMapType,      vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
 
     struct TagItem pftags_8bpp[] = {
         { aHidd_PixFmt_RedShift,    8   }, /* 0 */
         { aHidd_PixFmt_GreenShift,  16  }, /* 1 */
-        { aHidd_PixFmt_BlueShift,  	24  }, /* 2 */
+        { aHidd_PixFmt_BlueShift,       24  }, /* 2 */
         { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
         { aHidd_PixFmt_RedMask,     0x00ff0000 }, /* 4 */
         { aHidd_PixFmt_GreenMask,   0x0000ff00 }, /* 5 */
         { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
-        { aHidd_PixFmt_AlphaMask,	0x00000000 }, /* 7 */
-        { aHidd_PixFmt_ColorModel,	vHidd_ColorModel_Palette }, /* 8 */
+        { aHidd_PixFmt_AlphaMask,       0x00000000 }, /* 7 */
+        { aHidd_PixFmt_ColorModel,      vHidd_ColorModel_Palette }, /* 8 */
         { aHidd_PixFmt_CLUTMask,    0x000000ff },
         { aHidd_PixFmt_CLUTShift,   0x00000000 },
-        { aHidd_PixFmt_Depth,		8	}, /* 9 */
-        { aHidd_PixFmt_BytesPerPixel,	1	}, /* 10 */
-        { aHidd_PixFmt_BitsPerPixel,	8	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_LUT8 }, /* 12 */
-        { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
+        { aHidd_PixFmt_Depth,           8       }, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,   1       }, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,    8       }, /* 11 */
+        { aHidd_PixFmt_StdPixFmt,       vHidd_StdPixFmt_LUT8 }, /* 12 */
+        { aHidd_PixFmt_BitMapType,      vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
 
     struct TagItem modetags[] = {
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_32bpp  },
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp  },
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_32bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_8bpp   },
         { TAG_MORE,             (IPTR)syncs },
         { TAG_DONE, 0UL }

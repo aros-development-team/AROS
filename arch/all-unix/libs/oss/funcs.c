@@ -35,15 +35,15 @@ BOOL OSS_Open(char *filename, BOOL read, BOOL write, BOOL blocking)
     
     if (write && read)
     {
-    	openflags = O_RDWR;
+        openflags = O_RDWR;
     }
     else if (write)
     {
-    	openflags = O_WRONLY;
+        openflags = O_WRONLY;
     }
     else
     {
-    	openflags = O_RDONLY;
+        openflags = O_RDONLY;
     }
     
     if (!blocking) openflags |= O_NONBLOCK;
@@ -59,8 +59,8 @@ void OSS_Close(void)
 {
     if (audio_fd >= 0)
     {
-    	Hidd_UnixIO_CloseFile(unixio, audio_fd, NULL);
-	audio_fd = -1;
+        Hidd_UnixIO_CloseFile(unixio, audio_fd, NULL);
+        audio_fd = -1;
     }
 }
 
@@ -70,9 +70,9 @@ void OSS_Reset(void)
 {
     if (audio_fd >= 0)
     {
-    	int value = 0;
-	
-    	Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_RESET, &value, NULL);
+        int value = 0;
+        
+        Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_RESET, &value, NULL);
     }
 }
 
@@ -82,42 +82,42 @@ BOOL OSS_SetFragmentSize(int num_fragments, int fragment_size)
 {
     if (audio_fd >= 0)
     {
-    	int value;
-	int retval;
-	
-	value = (num_fragments << 16) | fragment_size;
-	
-	retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SETFRAGMENT, &value, NULL);
-	return (retval < 0) ? FALSE : TRUE;
+        int value;
+        int retval;
+        
+        value = (num_fragments << 16) | fragment_size;
+        
+        retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SETFRAGMENT, &value, NULL);
+        return (retval < 0) ? FALSE : TRUE;
     }
     else
     {
-    	return FALSE;
+        return FALSE;
     }
 }
 
 /******************************************************************************/
 
 BOOL OSS_GetOutputInfo(int *num_fragments_available, int *num_fragments_allocated,
-    	    	       int *fragment_size, int *num_bytes_available)
+                       int *fragment_size, int *num_bytes_available)
 
 {
     if (audio_fd >= 0)
     {
-    	audio_buf_info info;
-	
-	Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_GETOSPACE, &info, NULL);
-	
-	if (num_fragments_available) *num_fragments_available = info.fragments;
-	if (num_fragments_allocated) *num_fragments_allocated = info.fragstotal;
-	if (fragment_size) *fragment_size = info.fragsize;
-	if (num_bytes_available) *num_bytes_available = info.bytes;
-	
-	return TRUE;
+        audio_buf_info info;
+        
+        Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_GETOSPACE, &info, NULL);
+        
+        if (num_fragments_available) *num_fragments_available = info.fragments;
+        if (num_fragments_allocated) *num_fragments_allocated = info.fragstotal;
+        if (fragment_size) *fragment_size = info.fragsize;
+        if (num_bytes_available) *num_bytes_available = info.bytes;
+        
+        return TRUE;
     }
     else
     {
-    	return FALSE;
+        return FALSE;
     }
 }
 
@@ -127,19 +127,19 @@ BOOL OSS_GetOutputPointer(int *processed_bytes, int *fragment_transitions, int *
 {
     if (audio_fd >= 0)
     {
-    	count_info info;
-	
-	Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_GETOPTR, &info, NULL);
-	
-	if (processed_bytes) *processed_bytes = info.bytes;
-	if (fragment_transitions) *fragment_transitions = info.blocks;
-	if (dmapointer) *dmapointer = info.ptr;
-	
-	return TRUE;
+        count_info info;
+        
+        Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_GETOPTR, &info, NULL);
+        
+        if (processed_bytes) *processed_bytes = info.bytes;
+        if (fragment_transitions) *fragment_transitions = info.blocks;
+        if (dmapointer) *dmapointer = info.ptr;
+        
+        return TRUE;
     }
     else
     {
-    	return FALSE;
+        return FALSE;
     }
     
 }
@@ -219,7 +219,7 @@ BOOL OSS_FormatSupported_U16BE(void)
 int audio_capabilities;
 
 static BOOL get_capabilities(void)
-{    
+{
     if (audio_capabilities) return TRUE;
     if (audio_fd < 0) return FALSE;
     
@@ -280,20 +280,20 @@ static BOOL set_format(int fmt)
 {
     if (audio_fd >= 0)
     {
-    	int val = fmt;	
-    	int retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SETFMT, &val, NULL);
+        int val = fmt;
+        int retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SETFMT, &val, NULL);
 
-	if ((val != fmt) || (retval < 0))
-	{
-	    return FALSE;
-	}
-	
-	return TRUE;
-    	
+        if ((val != fmt) || (retval < 0))
+        {
+            return FALSE;
+        }
+        
+        return TRUE;
+        
     }
     else
     {
-    	return FALSE;
+        return FALSE;
     }
 }
 
@@ -301,42 +301,42 @@ static BOOL set_format(int fmt)
 
 BOOL OSS_SetFormat_S8(void)
 {
-    return set_format(AFMT_S8); 
+    return set_format(AFMT_S8);
 }
 
 /******************************************************************************/
 
 BOOL OSS_SetFormat_U8(void)
 {
-    return set_format(AFMT_U8); 
+    return set_format(AFMT_U8);
 }
 
 /******************************************************************************/
 
 BOOL OSS_SetFormat_S16LE(void)
 {
-    return set_format(AFMT_S16_LE); 
+    return set_format(AFMT_S16_LE);
 }
 
 /******************************************************************************/
 
 BOOL OSS_SetFormat_S16BE(void)
 {
-    return set_format(AFMT_S16_BE); 
+    return set_format(AFMT_S16_BE);
 }
 
 /******************************************************************************/
 
 BOOL OSS_SetFormat_U16LE(void)
 {
-    return set_format(AFMT_S16_LE); 
+    return set_format(AFMT_S16_LE);
 }
 
 /******************************************************************************/
 
 BOOL OSS_SetFormat_U16BE(void)
 {
-    return set_format(AFMT_S16_BE); 
+    return set_format(AFMT_S16_BE);
 }
 
 /******************************************************************************/
@@ -380,13 +380,13 @@ BOOL OSS_SetNumChannels(int numchannels)
     
     if (audio_fd < 0) return FALSE;
     
-    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_CHANNELS, &val, NULL);   
+    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_CHANNELS, &val, NULL);
     if (retval < 0)
     {
-    	return (numchannels > 1) ? OSS_SetStereo() : OSS_SetMono();
+        return (numchannels > 1) ? OSS_SetStereo() : OSS_SetMono();
     }
     
-    return TRUE;  
+    return TRUE;
 }
 
 /******************************************************************************/
@@ -398,15 +398,15 @@ BOOL OSS_SetWriteRate(int rate, int *used_rate)
     
     if (audio_fd < 0) return FALSE;
     
-    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SPEED, &val, NULL);   
+    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SPEED, &val, NULL);
     if (retval < 0)
     {
-    	return FALSE;
+        return FALSE;
     }
     
     if (used_rate) *used_rate = val;
     
-    return TRUE;  
+    return TRUE;
 }
 
 /******************************************************************************/
@@ -417,7 +417,7 @@ BOOL OSS_MMap(APTR *mapped_address, int len, BOOL read, BOOL write)
 /* FIXME: Can't use mmap yet! */
     kprintf("\n=== Dont' call OSS_MMap! Not implemented yet! ===\n\n");
     return FALSE;
-#else      
+#else
     APTR buf;
     int protection;
     
@@ -425,21 +425,21 @@ BOOL OSS_MMap(APTR *mapped_address, int len, BOOL read, BOOL write)
     
     if (read && write)
     {
-    	protection = PROT_READ | PROT_WRITE;
+        protection = PROT_READ | PROT_WRITE;
     }
     else if (read)
     {
-    	protection = PROT_READ;
+        protection = PROT_READ;
     }
     else
     {
-    	protection = PROT_WRITE;
+        protection = PROT_WRITE;
     }
 
     buf = (APTR)mmap(NULL, len, protection, MAP_SHARED, audio_fd, 0);
     if (buf == MAP_FAILED)
     {
-    	return FALSE;
+        return FALSE;
     }
     
     *mapped_address = buf;
@@ -459,7 +459,7 @@ void OSS_MUnmap(APTR mapped_address, int len)
 #else
     if ((audio_fd >= 0) && (mapped_address != MAP_FAILED))
     {
-    	munmap(mapped_address, len);
+        munmap(mapped_address, len);
     }
 #endif
 }
@@ -476,7 +476,7 @@ BOOL OSS_SetTrigger(BOOL input, BOOL output)
     if (input) val |= PCM_ENABLE_INPUT;
     if (output) val |= PCM_ENABLE_OUTPUT;
 
-    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SETTRIGGER, &val, NULL);   
+    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SETTRIGGER, &val, NULL);
     
     return (retval < 0) ? FALSE : TRUE;
 }
@@ -490,29 +490,29 @@ int OSS_Write(APTR buf, int size)
     
     if (audio_fd < 0)
     {
-    	return -1;
+        return -1;
     }
     
     written = Hidd_UnixIO_WriteFile(unixio, audio_fd, buf, size, &Errno);
     if (written == -1)
     {
-    	switch(Errno)
-	{
-	    case EAGAIN:
-	    	written = -2; /* Retval -2. Caller should treat it like EAGAIN. */
-		break;
-		
-	    case EINTR:
-	    	written = -3; /* Retval -3. Caller should treat it like EINTR. */
-		break;
-		
-	    case 0:
-	    	written = -4; /* Retval -4. Caller should treat it like a 0-Errno.
-		                 (but since retval of write() was -1, like EAGAIN
-				 maybe?) */
-		break;
-	}
-		
+        switch(Errno)
+        {
+            case EAGAIN:
+                written = -2; /* Retval -2. Caller should treat it like EAGAIN. */
+                break;
+                
+            case EINTR:
+                written = -3; /* Retval -3. Caller should treat it like EINTR. */
+                break;
+                
+            case 0:
+                written = -4; /* Retval -4. Caller should treat it like a 0-Errno.
+                                 (but since retval of write() was -1, like EAGAIN
+                                 maybe?) */
+                break;
+        }
+                
     }
     
     return written;

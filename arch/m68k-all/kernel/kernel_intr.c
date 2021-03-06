@@ -28,7 +28,7 @@ BOOL core_ExitIntr(VOID)
     if (SysBase->TDNestCnt < 0)
     {
         /*
-         * Do not disturb task if it's not necessary. 
+         * Do not disturb task if it's not necessary.
          * Reschedule only if switch pending flag is set. Exit otherwise.
          */
         if (SysBase->AttnResched & ARF_AttnSwitch)

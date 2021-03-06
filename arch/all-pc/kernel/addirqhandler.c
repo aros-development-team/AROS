@@ -33,28 +33,28 @@
         struct KernelBase *, KernelBase, 7, Kernel)
 
 /*  FUNCTION
-	Add a raw hardware IRQ handler to the chain of handlers.
+        Add a raw hardware IRQ handler to the chain of handlers.
 
     INPUTS
-	num          - hardware-specific IRQ number
-	handler      - Pointer to a handler function
-	handlerData,
-	handlerData2 - User-defined data which is passed to the
-		       handler.
-	
-	  Handler function uses a C calling convention and must be
-	  declared as follows:
+        num          - hardware-specific IRQ number
+        handler      - Pointer to a handler function
+        handlerData,
+        handlerData2 - User-defined data which is passed to the
+                       handler.
+        
+          Handler function uses a C calling convention and must be
+          declared as follows:
 
-	  void IRQHandler(void *handlerData, void *handlerData2)
+          void IRQHandler(void *handlerData, void *handlerData2)
 
-	  handlerData and handlerData2 will be values passed to the
-	  KrnAddExceptionHandler() function.
+          handlerData and handlerData2 will be values passed to the
+          KrnAddExceptionHandler() function.
 
-	  There is no return code for the IRQ handler.
+          There is no return code for the IRQ handler.
 
     RESULT
-	An opaque handle that can be used for handler removal or NULL in case
-	of failure (like unsupported exception number).
+        An opaque handle that can be used for handler removal or NULL in case
+        of failure (like unsupported exception number).
 
     NOTES
 
@@ -63,7 +63,7 @@
     BUGS
 
     SEE ALSO
-	KrnRemIRQHandler()
+        KrnRemIRQHandler()
 
     INTERNALS
 
@@ -119,8 +119,8 @@ void krnRunIRQHandlers(struct KernelBase *KernelBase, uint8_t irq)
 
     ForeachNodeSafe(&KERNELIRQ_LIST(irq), in, in2)
     {
-	irqhandler_t h = in->in_Handler;
+        irqhandler_t h = in->in_Handler;
 
-	h(in->in_HandlerData, in->in_HandlerData2);
+        h(in->in_HandlerData, in->in_HandlerData2);
     }
 }

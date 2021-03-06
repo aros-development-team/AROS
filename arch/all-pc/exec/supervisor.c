@@ -10,8 +10,8 @@
 #include "kernel_syscall.h"
 
 AROS_LH1I(IPTR, Supervisor,
-	 AROS_LHA(void *, userFunction, A5),
-	 struct ExecBase *, SysBase, 5, Exec)
+         AROS_LHA(void *, userFunction, A5),
+         struct ExecBase *, SysBase, 5, Exec)
 {
     AROS_LIBFUNC_INIT
 

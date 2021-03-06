@@ -48,51 +48,51 @@ OOP_Object *VGAGfxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     D(bug("[VGAGfx:BitMap] Object created by superclass: 0x%p\n"));
     if (o)
     {
-    	struct VGAGfxBitMapData *data;
-	OOP_Object *gfxhidd, *sync, *pf;
-	IPTR modeid = vHidd_ModeID_Invalid;
+        struct VGAGfxBitMapData *data;
+        OOP_Object *gfxhidd, *sync, *pf;
+        IPTR modeid = vHidd_ModeID_Invalid;
         IPTR width, height, depth;
-	IPTR dwidth, dheight;
-	IPTR displayable = FALSE;
+        IPTR dwidth, dheight;
+        IPTR displayable = FALSE;
 
         data = OOP_INST_DATA(cl, o);
 
-	/* clear all data  */
+        /* clear all data  */
         memset(data, 0, sizeof(struct VGAGfxBitMapData));
-	
-	/* Get attr values */
-	OOP_GetAttr(o, aHidd_BitMap_ModeID     , &modeid     );
-	OOP_GetAttr(o, aHidd_BitMap_Width      , &width      );
-	OOP_GetAttr(o, aHidd_BitMap_Height     , &height     );
-	OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
-	OOP_GetAttr(o, aHidd_BitMap_PixFmt     , (IPTR *)&pf );
-	D(bug("[VGAGfx:BitMap] PixFmt object: 0x%p\n", pf));
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+        
+        /* Get attr values */
+        OOP_GetAttr(o, aHidd_BitMap_ModeID     , &modeid     );
+        OOP_GetAttr(o, aHidd_BitMap_Width      , &width      );
+        OOP_GetAttr(o, aHidd_BitMap_Height     , &height     );
+        OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
+        OOP_GetAttr(o, aHidd_BitMap_PixFmt     , (IPTR *)&pf );
+        D(bug("[VGAGfx:BitMap] PixFmt object: 0x%p\n", pf));
+        OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
-	D(bug("[VGAGfx:BitMap] Size: %lux%lu, depth: %lu\n", width, height, depth));
-	D(bug("[VGAGfx:BitMap] Displayable: %ld\n", displayable));
-	ASSERT (width != 0 && height != 0 && depth != 0);
+        D(bug("[VGAGfx:BitMap] Size: %lux%lu, depth: %lu\n", width, height, depth));
+        D(bug("[VGAGfx:BitMap] Displayable: %ld\n", displayable));
+        ASSERT (width != 0 && height != 0 && depth != 0);
 
-	data->width  = width;
-	data->height = height;
-	data->bpp    = depth;
-	
-	if (modeid != vHidd_ModeID_Invalid) {
-	    
-	    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-	    HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
-	    data->disp_width  = dwidth;
-	    data->disp_height = dheight;
-	    D(bug("[VGAGfx:BitMap] Display size: %dx%d\n", dwidth, dheight));
-	}
+        data->width  = width;
+        data->height = height;
+        data->bpp    = depth;
+        
+        if (modeid != vHidd_ModeID_Invalid) {
+            
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+            HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
+            data->disp_width  = dwidth;
+            data->disp_height = dheight;
+            D(bug("[VGAGfx:BitMap] Display size: %dx%d\n", dwidth, dheight));
+        }
 
-	width=(width+15) & ~15;
-	data->bpr = width;
-	data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
-	D(bug("[VGAGfx:BitMap] Allocated videodata at 0x%p\n", data->VideoData));
-	if (data->VideoData) {
+        width=(width+15) & ~15;
+        data->bpr = width;
+        data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
+        D(bug("[VGAGfx:BitMap] Allocated videodata at 0x%p\n", data->VideoData));
+        if (data->VideoData) {
             struct TagItem tags[2];
 
             tags[0].ti_Tag = aHidd_ChunkyBM_Buffer;
@@ -100,58 +100,58 @@ OOP_Object *VGAGfxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             tags[1].ti_Tag = TAG_END;
             OOP_SetAttrs(o, tags);
 
-	    /* If the bitmap is not displayable, we're done */
-	    if (!displayable)
-		ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
+            /* If the bitmap is not displayable, we're done */
+            if (!displayable)
+                ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
 
-	    data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
-	    D(bug("[VGAGfx:BitMap] Registers at 0x%p\n", data->Regs));
-	    /*
-	      Here there is brand new method of getting pixelclock data.
-	      It was introduced here to make the code more portable. Besides
-	      it may now be used as a base for creating other low level
-	      video drivers
-	    */
-	    if (data->Regs) {
-		struct vgaModeDesc mode;
-		IPTR pixelc;
-		
-		/* We should have got modeID from the bitmap */				
-		if (modeid != vHidd_ModeID_Invalid)
-		{
-		    mode.Width 	= dwidth;
-		    mode.Height = dheight;
-		    mode.Depth 	= depth;
-		    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixelc);
+            data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
+            D(bug("[VGAGfx:BitMap] Registers at 0x%p\n", data->Regs));
+            /*
+              Here there is brand new method of getting pixelclock data.
+              It was introduced here to make the code more portable. Besides
+              it may now be used as a base for creating other low level
+              video drivers
+            */
+            if (data->Regs) {
+                struct vgaModeDesc mode;
+                IPTR pixelc;
+                
+                /* We should have got modeID from the bitmap */
+                if (modeid != vHidd_ModeID_Invalid)
+                {
+                    mode.Width  = dwidth;
+                    mode.Height = dheight;
+                    mode.Depth  = depth;
+                    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixelc);
 
-		    mode.clock	= (pixelc > 26000000) ? 1 : 0;
-		    mode.Flags	= 0;
-		    mode.HSkew	= 0;
-		    OOP_GetAttr(sync, aHidd_Sync_HDisp, 	&mode.HDisplay);
-		    OOP_GetAttr(sync, aHidd_Sync_VDisp, 	&mode.VDisplay);
-		    OOP_GetAttr(sync, aHidd_Sync_HSyncStart, 	&mode.HSyncStart);
-		    OOP_GetAttr(sync, aHidd_Sync_VSyncStart, 	&mode.VSyncStart);
-		    OOP_GetAttr(sync, aHidd_Sync_HSyncEnd,	&mode.HSyncEnd);
-		    OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,	&mode.VSyncEnd);
-		    OOP_GetAttr(sync, aHidd_Sync_HTotal,	&mode.HTotal);
-		    OOP_GetAttr(sync, aHidd_Sync_VTotal,	&mode.VTotal);
+                    mode.clock  = (pixelc > 26000000) ? 1 : 0;
+                    mode.Flags  = 0;
+                    mode.HSkew  = 0;
+                    OOP_GetAttr(sync, aHidd_Sync_HDisp,         &mode.HDisplay);
+                    OOP_GetAttr(sync, aHidd_Sync_VDisp,         &mode.VDisplay);
+                    OOP_GetAttr(sync, aHidd_Sync_HSyncStart,    &mode.HSyncStart);
+                    OOP_GetAttr(sync, aHidd_Sync_VSyncStart,    &mode.VSyncStart);
+                    OOP_GetAttr(sync, aHidd_Sync_HSyncEnd,      &mode.HSyncEnd);
+                    OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,      &mode.VSyncEnd);
+                    OOP_GetAttr(sync, aHidd_Sync_HTotal,        &mode.HTotal);
+                    OOP_GetAttr(sync, aHidd_Sync_VTotal,        &mode.VTotal);
 
-		    vgaInitMode(&mode, data->Regs);
-		    vgaLoadPalette(data->Regs,(unsigned char *)NULL);
+                    vgaInitMode(&mode, data->Regs);
+                    vgaLoadPalette(data->Regs,(unsigned char *)NULL);
 
-		    D(bug("[VGAGfx:BitMap] Created displayable bitmap 0x%p, data 0x%p\n", o, data)); 
-		    return o;
-		}
-	    }
-	    FreeVec(data->VideoData);
-	}
+                    D(bug("[VGAGfx:BitMap] Created displayable bitmap 0x%p, data 0x%p\n", o, data));
+                    return o;
+                }
+            }
+            FreeVec(data->VideoData);
+        }
 
-	{
-	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
-	}
+        {
+            OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+        }
 
-	o = NULL;
+        o = NULL;
     } /* if created object */
 
     ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
@@ -183,49 +183,49 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
     
     ULONG xc_i, col_i;
     
-    HIDDT_Pixel	red, green, blue;
+    HIDDT_Pixel red, green, blue;
     
     pf = BM_PIXFMT(o);
 
     if (    vHidd_ColorModel_StaticPalette == HIDD_PF_COLMODEL(pf)
-    	 || vHidd_ColorModel_TrueColor	   == HIDD_PF_COLMODEL(pf) ) {
-	 
-	 /* Superclass takes care of this case */
-	 
-	 return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+         || vHidd_ColorModel_TrueColor     == HIDD_PF_COLMODEL(pf) ) {
+         
+         /* Superclass takes care of this case */
+         
+         return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 
-    /* We have a vHidd_GT_Palette bitmap */    
+    /* We have a vHidd_GT_Palette bitmap */
     
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) return FALSE;
     if (!data->Regs)
-	return TRUE;
+        return TRUE;
     
     if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
-	return FALSE;
+        return FALSE;
     
     
     for ( xc_i = msg->firstColor, col_i = 0;
-    		col_i < msg->numColors; 
-		xc_i ++, col_i ++ )
+                col_i < msg->numColors;
+                xc_i ++, col_i ++ )
     {
-	red   = msg->colors[col_i].red   >> 8;
-	green = msg->colors[col_i].green >> 8;
-	blue  = msg->colors[col_i].blue  >> 8;
+        red   = msg->colors[col_i].red   >> 8;
+        green = msg->colors[col_i].green >> 8;
+        blue  = msg->colors[col_i].blue  >> 8;
 
-	/* Update DAC registers */
-	data->Regs->DAC[xc_i*3] = red >> 2;
-	data->Regs->DAC[xc_i*3+1] = green >> 2;
-	data->Regs->DAC[xc_i*3+2] = blue >> 2;
-	
-	msg->colors[col_i].pixval = xc_i;
+        /* Update DAC registers */
+        data->Regs->DAC[xc_i*3] = red >> 2;
+        data->Regs->DAC[xc_i*3+1] = green >> 2;
+        data->Regs->DAC[xc_i*3+2] = blue >> 2;
+        
+        msg->colors[col_i].pixval = xc_i;
     }
 
     /* Restore palette if displayed */
     if (data->disp) {
-	ObtainSemaphore(&XSD(cl)->HW_acc);
-	vgaDACLoad(data->Regs, msg->firstColor, msg->numColors);
-	ReleaseSemaphore(&XSD(cl)->HW_acc);
+        ObtainSemaphore(&XSD(cl)->HW_acc);
+        vgaDACLoad(data->Regs, msg->firstColor, msg->numColors);
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
     }
 
     return TRUE;
@@ -246,7 +246,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct VGAGfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
     int limit;
     int xoffset = data->xoffset;
     int yoffset = data->yoffset;
@@ -259,67 +259,67 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             switch(idx)
             {
             case aoHidd_BitMap_Visible:
-		data->disp = tag->ti_Data;
-		D(bug("[VGAGfx:BitMap] Visible set to %d\n", data->disp));
-		if (data->disp) {
-		    struct Box box;
+                data->disp = tag->ti_Data;
+                D(bug("[VGAGfx:BitMap] Visible set to %d\n", data->disp));
+                if (data->disp) {
+                    struct Box box;
 
-		    /* Program video mode on the card */
-		    bug("\x03");
-		    vgaRestore(data->Regs);
-		    /* If our bitmap is smaller than display area,
-		       we need to clear two rectangles: to the right
-		       and to the bottom of the used framebuffer
-		       portion */
-		    if (data->disp_width > data->width) {
-			box.x1 = data->width;
-			box.y1 = 0;
-			box.x2 = data->disp_width - 1;
-			box.y2 = data->height - 1;
-			vgaEraseArea(data, &box);
-		    }
-		    if (data->disp_height > data->height) {
-			box.x1 = 0;
-			box.y1 = data->height;
-			box.x2 = data->width - 1;
-			box.y2 = data->disp_height - 1;
-			vgaEraseArea(data, &box);
-		    }
-		}
-		break;
-	    case aoHidd_BitMap_LeftEdge:
-	        xoffset = tag->ti_Data;
-    		limit = data->disp_width - data->width;
-    		if (xoffset > 0)
-		    xoffset = 0;
-		else if (xoffset < limit)
-		    xoffset = limit;
-		break;
-	    case aoHidd_BitMap_TopEdge:
-	        yoffset = tag->ti_Data;
-		limit = data->disp_height - data->height;
-		if (yoffset > 0)
-		    yoffset = 0;
-		else if (yoffset < limit)
-		    yoffset = limit;
-		break;
-	    }
-	}
+                    /* Program video mode on the card */
+                    bug("\x03");
+                    vgaRestore(data->Regs);
+                    /* If our bitmap is smaller than display area,
+                       we need to clear two rectangles: to the right
+                       and to the bottom of the used framebuffer
+                       portion */
+                    if (data->disp_width > data->width) {
+                        box.x1 = data->width;
+                        box.y1 = 0;
+                        box.x2 = data->disp_width - 1;
+                        box.y2 = data->height - 1;
+                        vgaEraseArea(data, &box);
+                    }
+                    if (data->disp_height > data->height) {
+                        box.x1 = 0;
+                        box.y1 = data->height;
+                        box.x2 = data->width - 1;
+                        box.y2 = data->disp_height - 1;
+                        vgaEraseArea(data, &box);
+                    }
+                }
+                break;
+            case aoHidd_BitMap_LeftEdge:
+                xoffset = tag->ti_Data;
+                limit = data->disp_width - data->width;
+                if (xoffset > 0)
+                    xoffset = 0;
+                else if (xoffset < limit)
+                    xoffset = limit;
+                break;
+            case aoHidd_BitMap_TopEdge:
+                yoffset = tag->ti_Data;
+                limit = data->disp_height - data->height;
+                if (yoffset > 0)
+                    yoffset = 0;
+                else if (yoffset < limit)
+                    yoffset = limit;
+                break;
+            }
+        }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     if ((xoffset != data->xoffset) || (yoffset != data->yoffset)) {
-	data->xoffset = xoffset;
-	data->yoffset = yoffset;
-	    
-	if (data->disp) {
-	    struct Box box = {0, 0, data->disp_width - 1, data->disp_height - 1};
+        data->xoffset = xoffset;
+        data->yoffset = yoffset;
+            
+        if (data->disp) {
+            struct Box box = {0, 0, data->disp_width - 1, data->disp_height - 1};
 
-    	    ObtainSemaphore(&XSD(cl)->HW_acc);
-	    vgaRefreshArea(data, &box);
+            ObtainSemaphore(&XSD(cl)->HW_acc);
+            vgaRefreshArea(data, &box);
             draw_mouse(XSD(cl));
-    	    ReleaseSemaphore(&XSD(cl)->HW_acc);
-	}
+            ReleaseSemaphore(&XSD(cl)->HW_acc);
+        }
     }
 }
 
@@ -329,22 +329,22 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     ULONG idx;
 
     if (IS_VGABM_ATTR(msg->attrID, idx)) {
-	switch (idx) {
-	case aoHidd_VGABitMap_Drawable:
-	    *msg->storage = (IPTR)data->VideoData;
-	    return;
-	}
+        switch (idx) {
+        case aoHidd_VGABitMap_Drawable:
+            *msg->storage = (IPTR)data->VideoData;
+            return;
+        }
     } else if (IS_BM_ATTR(msg->attrID, idx)) {
-	switch (idx) {
-	case aoHidd_BitMap_LeftEdge:
-	    *msg->storage = data->xoffset;
-	    return;
-	case aoHidd_BitMap_TopEdge:
-	    *msg->storage = data->yoffset;
-	    return;
-	case aoHidd_BitMap_Visible:
-	    *msg->storage = data->disp;
-	    return;
+        switch (idx) {
+        case aoHidd_BitMap_LeftEdge:
+            *msg->storage = data->xoffset;
+            return;
+        case aoHidd_BitMap_TopEdge:
+            *msg->storage = data->yoffset;
+            return;
+        case aoHidd_BitMap_Visible:
+            *msg->storage = data->disp;
+            return;
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -370,14 +370,14 @@ VOID VGAGfxBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHid
     if (data->disp)
     {
         ObtainSemaphore(&XSD(cl)->HW_acc);
-	
-	if ((msg->width == 1) && (msg->height == 1))
-	    vgaRefreshPixel(data, left, top);
-	else {
-	    struct Box box = {left, top, right, bottom};
+        
+        if ((msg->width == 1) && (msg->height == 1))
+            vgaRefreshPixel(data, left, top);
+        else {
+            struct Box box = {left, top, right, bottom};
 
             vgaRefreshArea(data, &box);
-	}
+        }
 
         if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW - 1 >= left) &&
                 (XSD(cl)->mouseX <= right) ) ||

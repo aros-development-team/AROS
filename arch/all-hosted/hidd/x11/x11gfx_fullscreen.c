@@ -21,7 +21,7 @@ typedef unsigned char UBYTE;
 #include "x11_hostlib.h"
 
 static XF86VidModeModeInfo **videomodes;
-static int  	    	     num_videomodes;
+static int                   num_videomodes;
 
 int x11_fullscreen_supported(Display *display)
 {
@@ -30,17 +30,17 @@ int x11_fullscreen_supported(Display *display)
 
     if (!XVMCALL(XF86VidModeQueryVersion, display, &majorversion, &minorversion))
     {
-	return 0;
-	
+        return 0;
+        
     }
     if (!XVMCALL(XF86VidModeQueryExtension, display, &eventbase, &errorbase))
     {
-	return 0;
+        return 0;
     }
     
     if (XVMCALL(XF86VidModeGetAllModeLines, display, DefaultScreen(display), &num_videomodes, &videomodes))
     {
-    	if (num_videomodes >= 2) return 1;
+        if (num_videomodes >= 2) return 1;
     }
     
     return 0;
@@ -51,17 +51,17 @@ void x11_fullscreen_switchmode(Display *display, int *w, int *h)
     int i, mode;
 
     if (videomodes == NULL)
-	return;
+        return;
 
     for(i = 1, mode = 0; i < num_videomodes; i++)
     {
-    	if ((videomodes[i]->hdisplay >= *w) &&
-	    (videomodes[i]->vdisplay >= *h) &&
-	    (videomodes[i]->hdisplay < videomodes[mode]->hdisplay) &&
-	    (videomodes[i]->vdisplay < videomodes[mode]->vdisplay))
-	{
-	    mode = i;
-	}
+        if ((videomodes[i]->hdisplay >= *w) &&
+            (videomodes[i]->vdisplay >= *h) &&
+            (videomodes[i]->hdisplay < videomodes[mode]->hdisplay) &&
+            (videomodes[i]->vdisplay < videomodes[mode]->vdisplay))
+        {
+            mode = i;
+        }
     }
     
     *w = videomodes[mode]->hdisplay;

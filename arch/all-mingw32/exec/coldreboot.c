@@ -9,7 +9,7 @@
 #include "exec_intern.h"
 
 AROS_LH0(void, ColdReboot,
-	 struct ExecBase *, SysBase, 121, Exec)
+         struct ExecBase *, SysBase, 121, Exec)
 {
     AROS_LIBFUNC_INIT
 

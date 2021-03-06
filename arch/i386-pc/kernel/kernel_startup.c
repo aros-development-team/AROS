@@ -50,7 +50,7 @@ static const struct MemRegion PC_Memory[] =
      * All MMIO sits beyond this border. AROS intentionally specifies a 4GB limit, in case some
      * devices expose even more RAM in this space. This allows all the RAM to be usable.
      */
-    {0x01000000, 0xFFFFFFFF, "High memory"   ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT	      },
+    {0x01000000, 0xFFFFFFFF, "High memory"   ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT              },
     {0         , 0         , NULL            ,  0, 0                                                                  }
 };
 
@@ -65,7 +65,7 @@ static const struct MemRegion PC_Memory[] =
 IPTR __startup kernel_entry(struct TagItem *bootMsg, ULONG magic)
 {
     if (magic == AROS_BOOT_MAGIC)
-	core_Kick(bootMsg, kernel_boot);
+        core_Kick(bootMsg, kernel_boot);
 
     return -1;
 }
@@ -103,7 +103,7 @@ void core_Kick(struct TagItem *msg, void *target)
 
     /* First clear .bss */
     if (bss)
-    	__clear_bss((const struct KernelBSS *)bss->ti_Data);
+        __clear_bss((const struct KernelBSS *)bss->ti_Data);
 
     /*
      * ... then switch to initial stack and jump to target address.
@@ -111,16 +111,16 @@ void core_Kick(struct TagItem *msg, void *target)
      * if the boot task crashes. Otherwise backtrace goes beyond this location
      * into memory areas with undefined contents.
      */
-    asm volatile("movl	%1, %%esp     \n\t"
-    		 "movl	$0, %%ebp     \n\t"
-		 "pushl %0            \n\t"
-		 "cld                 \n\t"      /* At the startup it's very important   */
-		 "cli                 \n\t"      /* to lock all interrupts. Both on the  */
-		 "movb	$-1,%%al      \n\t"      /* CPU side and hardware side. We don't  */
-		 "outb  %%al,$0x21    \n\t"      /* have proper structures in RAM yet.   */
-		 "outb  %%al,$0xa1    \n\t"
-    		 "call *%2\n"
-		 ::"r"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
+    asm volatile("movl  %1, %%esp     \n\t"
+                 "movl  $0, %%ebp     \n\t"
+                 "pushl %0            \n\t"
+                 "cld                 \n\t"      /* At the startup it's very important   */
+                 "cli                 \n\t"      /* to lock all interrupts. Both on the  */
+                 "movb  $-1,%%al      \n\t"      /* CPU side and hardware side. We don't  */
+                 "outb  %%al,$0x21    \n\t"      /* have proper structures in RAM yet.   */
+                 "outb  %%al,$0xa1    \n\t"
+                 "call *%2\n"
+                 ::"r"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
 }
 
 /*
@@ -138,7 +138,7 @@ __attribute__((section(".data"))) struct ExecBase *SysBase = NULL;
  * We only need to patch a TSS segment, after TSS has been allocated.
  */
 static const struct {UWORD l1, l2, l3, l4;}
-    GDT_Table[] = 
+    GDT_Table[] =
 {
         { 0x0000, 0x0000, 0x0000, 0x0000 },
         { 0xffff, 0x0000, 0x9a00, 0x00cf },
@@ -176,66 +176,66 @@ void kernel_cstart(const struct TagItem *msg)
     {
         struct vbe_mode *vmode = NULL;
 
-	tag = LibFindTagItem(KRN_KernelHighest, msg);
+        tag = LibFindTagItem(KRN_KernelHighest, msg);
         if (!tag)
-	    krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
-		     "Highest kickstart address is not supplied\n");
+            krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
+                     "Highest kickstart address is not supplied\n");
 
         /* Align kickstart top address (we are going to place a structure after it) */
         BootMemPtr = (void *)AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
 
-	/*
-	 * Our boot taglist is placed by the bootstrap just somewhere in memory.
-	 * The first thing is to move it into some safe place.
-	 * This function also sets global BootMsg pointer.
-	 */
-	RelocateBootMsg(msg);
+        /*
+         * Our boot taglist is placed by the bootstrap just somewhere in memory.
+         * The first thing is to move it into some safe place.
+         * This function also sets global BootMsg pointer.
+         */
+        RelocateBootMsg(msg);
 
-	/* Now relocate linked data */
-	mmap_len = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
-	msg = BootMsg;
-	while ((tag = LibNextTagItem((struct TagItem **)&msg)))
-    	{
-    	    switch (tag->ti_Tag)
-    	    {
-    	    case KRN_KernelBss:
-		RelocateBSSData(tag);
-    	    	break;
+        /* Now relocate linked data */
+        mmap_len = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
+        msg = BootMsg;
+        while ((tag = LibNextTagItem((struct TagItem **)&msg)))
+        {
+            switch (tag->ti_Tag)
+            {
+            case KRN_KernelBss:
+                RelocateBSSData(tag);
+                break;
 
-    	    case KRN_MMAPAddress:
-    	    	RelocateTagData(tag, mmap_len);
-    	    	break;
+            case KRN_MMAPAddress:
+                RelocateTagData(tag, mmap_len);
+                break;
 
-    	    case KRN_VBEModeInfo:
-    	    	RelocateTagData(tag, sizeof(struct vbe_mode));
-		vmode = (struct vbe_mode *)tag->ti_Data;
-    	    	break;
+            case KRN_VBEModeInfo:
+                RelocateTagData(tag, sizeof(struct vbe_mode));
+                vmode = (struct vbe_mode *)tag->ti_Data;
+                break;
 
-    	    case KRN_VBEControllerInfo:
-    	    	RelocateTagData(tag, sizeof(struct vbe_controller));
-    	    	break;
+            case KRN_VBEControllerInfo:
+                RelocateTagData(tag, sizeof(struct vbe_controller));
+                break;
 
-	    case KRN_CmdLine:
-	    	RelocateStringData(tag);
-		cmdline = (char *)tag->ti_Data;
-	    	break;
+            case KRN_CmdLine:
+                RelocateStringData(tag);
+                cmdline = (char *)tag->ti_Data;
+                break;
 
-	    case KRN_BootLoader:
-	    	RelocateStringData(tag);
-	    	break;
-	    }
-	}
+            case KRN_BootLoader:
+                RelocateStringData(tag);
+                break;
+            }
+        }
 
-	/* Now allocate KernBootPrivate */
-	__KernBootPrivate = krnAllocBootMem(sizeof(struct KernBootPrivate));
+        /* Now allocate KernBootPrivate */
+        __KernBootPrivate = krnAllocBootMem(sizeof(struct KernBootPrivate));
 
-	vesahack_Init(cmdline, vmode);
+        vesahack_Init(cmdline, vmode);
     }
 
     if (!__KernBootPrivate->BOOTGDT)
     {
         /* Allocate space for GDT */
-	__KernBootPrivate->BOOTGDT = krnAllocBootMemAligned(sizeof(GDT_Table), 128);
+        __KernBootPrivate->BOOTGDT = krnAllocBootMemAligned(sizeof(GDT_Table), 128);
     }
 
     /* Create global descriptor table */
@@ -252,12 +252,12 @@ void kernel_cstart(const struct TagItem *msg)
 
     if (!kick_end)
     {
-	/*
-	 * Set new kickstart end address.
-	 * Kickstart area now includes boot taglist with all its contents.
-	 */        
+        /*
+         * Set new kickstart end address.
+         * Kickstart area now includes boot taglist with all its contents.
+         */
         D(bug("[Kernel] Boot-time setup complete\n"));
-    	kick_end = AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
+        kick_end = AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
     }
 
     D(bug("[Kernel] End of kickstart area 0x%p\n", kick_end));
@@ -293,10 +293,10 @@ void kernel_cstart(const struct TagItem *msg)
     /* Sanity check */
     if ((!kick_start) || (!mmap) || (!mmap_len))
     {
-	krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
-		 "Kickstart address : 0x%P\n"
-		 "Memory map address: 0x%P, length %ld\n",
-		 kick_start, mmap, mmap_len);
+        krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
+                 "Kickstart address : 0x%P\n"
+                 "Memory map address: 0x%P, length %ld\n",
+                 kick_start, mmap, mmap_len);
     }
 
     if (cmdline && strstr(cmdline, "notlsf"))
@@ -311,15 +311,15 @@ void kernel_cstart(const struct TagItem *msg)
     gdtr.base = (unsigned long)__KernBootPrivate->BOOTGDT;
     asm
     (
-	"	lgdt	%0\n"
-	"	mov    	%1,%%ds\n"
-	"	mov    	%1,%%es\n"
-	"	mov    	%1,%%ss\n"
-	"	mov    	%2,%%fs\n"
-	"	mov    	%2,%%gs\n"
-	"	ljmp   	%3,$1f\n"
-	"1:\n"
-	::"m"(gdtr),"r"(KERNEL_DS),"r"(0),"i"(KERNEL_CS)
+        "       lgdt    %0\n"
+        "       mov     %1,%%ds\n"
+        "       mov     %1,%%es\n"
+        "       mov     %1,%%ss\n"
+        "       mov     %2,%%fs\n"
+        "       mov     %2,%%gs\n"
+        "       ljmp    %3,$1f\n"
+        "1:\n"
+        ::"m"(gdtr),"r"(KERNEL_DS),"r"(0),"i"(KERNEL_CS)
     );
 
     D(bug("[Kernel] GDT reloaded\n"));
@@ -342,25 +342,25 @@ void kernel_cstart(const struct TagItem *msg)
 
     if (SysBase)
     {
-	/*
-	 * Validate SysBase.
-	 * Criteria: The pointer should point to a valid memory region.
-	 * This is only address validation.
-	 * Checksum etc is processed in PrepareExecBase() in exec.library.
-	 */
-	BOOL sysbase_bad = TRUE;
+        /*
+         * Validate SysBase.
+         * Criteria: The pointer should point to a valid memory region.
+         * This is only address validation.
+         * Checksum etc is processed in PrepareExecBase() in exec.library.
+         */
+        BOOL sysbase_bad = TRUE;
 
-	region = mmap_FindRegion((unsigned long)SysBase, mmap, mmap_len);
-	if (region && region->type == MMAP_TYPE_RAM)
-	{
-	    IPTR end = region->addr + region->len;
+        region = mmap_FindRegion((unsigned long)SysBase, mmap, mmap_len);
+        if (region && region->type == MMAP_TYPE_RAM)
+        {
+            IPTR end = region->addr + region->len;
 
-	    if ((IPTR)SysBase + sizeof(struct ExecBase) < end)
-		sysbase_bad = FALSE;
-	}
+            if ((IPTR)SysBase + sizeof(struct ExecBase) < end)
+                sysbase_bad = FALSE;
+        }
 
-	if (sysbase_bad)
-	    SysBase = NULL;
+        if (sysbase_bad)
+            SysBase = NULL;
     }
 
     ranges[0] = (UWORD *)kick_start;
@@ -380,9 +380,9 @@ void kernel_cstart(const struct TagItem *msg)
      */
     if (scr_Type == SCR_GFX)
     {
-	char *mirror = AllocMem(scr_Width * scr_Height, MEMF_PUBLIC);
+        char *mirror = AllocMem(scr_Width * scr_Height, MEMF_PUBLIC);
 
-	fb_SetMirror(mirror);
+        fb_SetMirror(mirror);
     }
 
     D(bug("[Kernel] Created SysBase at 0x%p, MemHeader 0x%p\n", SysBase, mh));
@@ -393,8 +393,8 @@ void kernel_cstart(const struct TagItem *msg)
     {
         mh2 = (struct MemHeader *)mh->mh_Node.ln_Succ;
 
-	D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name));
-	Enqueue(&SysBase->MemList, &mh->mh_Node);
+        D(bug("[Kernel] * 0x%p - 0x%p (%s)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name));
+        Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
     
     /*
@@ -413,7 +413,7 @@ void kernel_cstart(const struct TagItem *msg)
     krnLeaveSupervisorRing(FLAGS_INTENABLED);
 
     InitCode(RTF_COLDSTART, 0);
-	
+        
     krnPanic(KernelBase, "Failed to start up the system");
 }
 

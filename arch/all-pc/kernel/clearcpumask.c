@@ -11,8 +11,8 @@
 #include "kernel_intern.h"
 
 AROS_LH1(void, KrnClearCPUMask,
-	AROS_LHA(void *, mask, A0),
-	struct KernelBase *, KernelBase, 44, Kernel)
+        AROS_LHA(void *, mask, A0),
+        struct KernelBase *, KernelBase, 44, Kernel)
 {
     AROS_LIBFUNC_INIT
 

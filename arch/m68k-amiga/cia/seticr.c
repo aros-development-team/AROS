@@ -14,8 +14,8 @@
 #include "cia_intern.h"
 
 AROS_LH1(WORD, SetICR,
-	 AROS_LHA(WORD, mask, D0),
-	 struct Library *, resource, 4, Cia)
+         AROS_LHA(WORD, mask, D0),
+         struct Library *, resource, 4, Cia)
 {
     AROS_LIBFUNC_INIT
 

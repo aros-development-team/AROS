@@ -14,8 +14,8 @@
 #define D(x)
 
 AROS_LH1(void, KrnSpinInit,
-	AROS_LHA(spinlock_t *, lock, A0),
-	struct KernelBase *, KernelBase, 49, Kernel)
+        AROS_LHA(spinlock_t *, lock, A0),
+        struct KernelBase *, KernelBase, 49, Kernel)
 {
     AROS_LIBFUNC_INIT
 

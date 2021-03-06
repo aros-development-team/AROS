@@ -68,18 +68,18 @@ static void SendEvent(struct emulbase *emulbase, LONG event)
         if ((InputRequest = (struct IOStdReq*)CreateIORequest(InputPort, sizeof(struct IOStdReq)))) {
           
           if (!OpenDevice("input.device", 0, (struct IORequest*)InputRequest, 0)) {
-        	
-        	if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC|MEMF_CLEAR))) {
-        	  ie->ie_Class = event;
-        	  InputRequest->io_Command = IND_WRITEEVENT;
-        	  InputRequest->io_Data = ie;
-        	  InputRequest->io_Length = sizeof(struct InputEvent);
-        	  
-        	  DoIO((struct IORequest*)InputRequest);
-        	  
-        	  FreeVec(ie);
-        	}
-        	CloseDevice((struct IORequest*)InputRequest);
+                
+                if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC|MEMF_CLEAR))) {
+                  ie->ie_Class = event;
+                  InputRequest->io_Command = IND_WRITEEVENT;
+                  InputRequest->io_Data = ie;
+                  InputRequest->io_Length = sizeof(struct InputEvent);
+                  
+                  DoIO((struct IORequest*)InputRequest);
+                  
+                  FreeVec(ie);
+                }
+                CloseDevice((struct IORequest*)InputRequest);
           }
           DeleteIORequest ((APTR)InputRequest);
         }
@@ -104,11 +104,11 @@ static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, st
      */
     c = strrchr(filename, ':');
     if (c)
-    	filename = c + 1;
+        filename = c + 1;
 
     ret = validate(filename);
     if (ret)
-    	return ret;
+        return ret;
   
     dirlen = strlen(fh->hostname);
     flen = strlen(filename);
@@ -210,8 +210,8 @@ static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct file
             ret = DoOpen(emulbase, fh, access, mode, protect, AllowDir);
             if (!ret)
             {
-            	*handle = fh;
-            	return 0;
+                *handle = fh;
+                return 0;
             }
 
             DOPEN(bug("[emul] Freeing pathname\n"));
@@ -229,7 +229,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct file
 /*********************************************************************************************/
 
 static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
-        	       const char *filename, ULONG protect)
+                       const char *filename, ULONG protect)
 {
   LONG ret = 0;
   struct filehandle *fh;
@@ -238,7 +238,7 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
   if (fh)
   {
         fh->volumename = (*handle)->volumename;
-        fh->dl	       = (*handle)->dl;
+        fh->dl         = (*handle)->dl;
         
         ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, filename);
         if (!ret)
@@ -279,7 +279,7 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh, cons
 /*********************************************************************************************/
 
 static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
-        		const char *file, ULONG aprot)
+                        const char *file, ULONG aprot)
 {
     LONG ret = 0;
     char *filename = NULL;
@@ -347,7 +347,7 @@ static SIPTR examine(struct emulbase *emulbase, struct filehandle *fh,
     fib->fib_OwnerUID = ead->ed_OwnerUID;
     fib->fib_OwnerGID = ead->ed_OwnerGID;
     
-    return 0; 
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -404,7 +404,7 @@ static LONG create_softlink(struct emulbase * emulbase,
 /*********************************************************************************************/
 
 static LONG rename_object(struct emulbase * emulbase, struct filehandle *fh,
-        		  const char *file, struct filehandle *fh2, const char *newname)
+                          const char *file, struct filehandle *fh2, const char *newname)
 {
   LONG ret = 0L;
   
@@ -507,7 +507,7 @@ static LONG read_softlink(struct emulbase *emulbase, struct filehandle *fh, CONS
 
 /*********************************************************************************************/
 
-static SIPTR parent_dir(struct emulbase *emulbase, 
+static SIPTR parent_dir(struct emulbase *emulbase,
                                 struct filehandle *fhv,
                                 struct filehandle **fhp)
 {
@@ -523,7 +523,7 @@ static SIPTR parent_dir(struct emulbase *emulbase,
 /*********************************************************************************************/
 
 static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
-        	     const char *FileName, struct DateStamp *date)
+                     const char *FileName, struct DateStamp *date)
 {
     char *fullname;
     LONG ret;
@@ -531,7 +531,7 @@ static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
     ret = makefilename(emulbase, &fullname, NULL, fh, FileName);
     if (!ret)
     {
-    	ret = DoSetDate(emulbase, fullname, date);
+        ret = DoSetDate(emulbase, fullname, date);
 
         FreeVecPooled(emulbase->mempool, fullname);
     }
@@ -548,7 +548,7 @@ static LONG disk_info(struct emulbase *emulbase, struct filehandle *fh, struct I
         id->id_UnitNumber = 0;
         id->id_DiskType   = ID_DOS_DISK; /* Well, not really true... */
         id->id_VolumeNode = MKBADDR(fh->dl);
-    	id->id_InUse      = TRUE; /* Perhaps we should count locks? */
+        id->id_InUse      = TRUE; /* Perhaps we should count locks? */
     }
 
     return Res2;
@@ -556,7 +556,7 @@ static LONG disk_info(struct emulbase *emulbase, struct filehandle *fh, struct I
 
 /*********************************************************************************************/
 
-#define VOLNAME	    "System"
+#define VOLNAME     "System"
 #define VOLNAME_LEN  6
 
 static struct filehandle *new_volume(struct emulbase *emulbase, const char *path, struct MsgPort *mp, struct DosLibrary *DOSBase)
@@ -576,19 +576,19 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
     {
         DMOUNT(bug("[emul] Mounting volume %s\n", path));
 
-	/*
-	 * Volume name and Unix path are encoded into DEVICE entry of
-	 * MountList like this: <volumename>:<unixpath>
-	 */
-	vol = path;
-	do
-	{
-	    if (*path == 0)
-		return NULL;
+        /*
+         * Volume name and Unix path are encoded into DEVICE entry of
+         * MountList like this: <volumename>:<unixpath>
+         */
+        vol = path;
+        do
+        {
+            if (*path == 0)
+                return NULL;
 
-	    vol_len++;
-	} while (*path++ != ':');
-	DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", path, vol_len));
+            vol_len++;
+        } while (*path++ != ':');
+        DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", path, vol_len));
 
         sp = strchr(path, '~');
         if (sp)
@@ -624,8 +624,8 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
         }
         D(bug("[emul] startup directory %s\n", unixpath));
 
-	vol = VOLNAME;
-	vol_len = VOLNAME_LEN + 1;
+        vol = VOLNAME;
+        vol_len = VOLNAME_LEN + 1;
     }
 
     DMOUNT(bug("[emul] Resolved host path: %s\n", unixpath));
@@ -678,16 +678,16 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
 }
 
 #define FH_FROM(x) ((struct filehandle *)(x))
-#define FH_FROM_LOCK(x)	\
-    	({ BPTR _x = (BPTR)x; \
-    	   APTR _fh; \
-    	   if (_x == BNULL) { \
-    	     _fh = fhv; \
-    	   } else { \
-    	     _fh = (APTR)(((struct FileLock *)BADDR(_x))->fl_Key); \
-    	   } \
-    	   (struct filehandle *)_fh;\
-    	 })
+#define FH_FROM_LOCK(x) \
+        ({ BPTR _x = (BPTR)x; \
+           APTR _fh; \
+           if (_x == BNULL) { \
+             _fh = fhv; \
+           } else { \
+             _fh = (APTR)(((struct FileLock *)BADDR(_x))->fl_Key); \
+           } \
+           (struct filehandle *)_fh;\
+         })
 
 static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, struct MsgPort *mp, struct DosPacket *dp, struct DosLibrary *DOSBase)
 {
@@ -705,8 +705,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     case ACTION_FINDINPUT:
     case ACTION_FINDOUTPUT:
     case ACTION_FINDUPDATE:
-    	f = BADDR(dp->dp_Arg1);
-    	fh2 = FH_FROM_LOCK(dp->dp_Arg2);
+        f = BADDR(dp->dp_Arg1);
+        fh2 = FH_FROM_LOCK(dp->dp_Arg2);
 
         DCMD(bug("[emul] %p ACTION_FIND%s: %p, %p, %b\n", fhv, (dp->dp_Type == ACTION_FINDINPUT) ? "INPUT" : ((dp->dp_Type == ACTION_FINDOUTPUT) ? "OUTPUT" : "UPDATE"), fh, fh2, dp->dp_Arg3));
         Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), ACCESS_WRITE, dp->dp_Type, 0, FALSE);
@@ -790,11 +790,11 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fh2 = FH_FROM_LOCK(dp->dp_Arg2);
 
         DCMD(bug("[emul] %p ACTION_SAME_LOCK: %p, %p\n", fhv, fh, fh2));
-	DSAME(bug("[emul] Paths: %s, %s\n", fh->hostname, fh2->hostname));
+        DSAME(bug("[emul] Paths: %s, %s\n", fh->hostname, fh2->hostname));
 
-	Res2 = 0;
-	/* DOSTRUE means 'Same', DOSFALSE means 'Different' */
-	Res1 = strcasecmp(fh->hostname, fh2->hostname) ? DOSFALSE : DOSTRUE;
+        Res2 = 0;
+        /* DOSTRUE means 'Same', DOSFALSE means 'Different' */
+        Res1 = strcasecmp(fh->hostname, fh2->hostname) ? DOSFALSE : DOSTRUE;
 
         DSAME(bug("[emul] Replying with 0x%p, %ld\n", Res1, Res2));
         break;
@@ -1101,8 +1101,8 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
   
     case ACTION_INFO:
         fh = FH_FROM_LOCK(dp->dp_Arg1);
-    	id = BADDR(dp->dp_Arg2);
-    	DCMD(bug("[emul] %p ACTION_INFO:\n", fhv));
+        id = BADDR(dp->dp_Arg2);
+        DCMD(bug("[emul] %p ACTION_INFO:\n", fhv));
   
         Res2 = disk_info(emulbase, fh, id);
         Res1 = Res2 ? DOSFALSE : DOSTRUE;
@@ -1192,7 +1192,7 @@ static void EmulHandler_work(struct ExecBase *SysBase)
 
     fssm = BADDR(dp->dp_Arg2);
     if (fssm)
-    	devpath = AROS_BSTR_ADDR(fssm->fssm_Device);
+        devpath = AROS_BSTR_ADDR(fssm->fssm_Device);
 
     fhv = new_volume(emulbase, devpath, mp, DOSBase);
     if (!fhv)

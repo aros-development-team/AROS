@@ -20,8 +20,8 @@ AROS_LH3(IPTR, NewStackSwap,
 {
     AROS_LIBFUNC_INIT
 
-    ULONG *	retptr;
-    ULONG	ret;
+    ULONG *     retptr;
+    ULONG       ret;
     register ULONG real_sp asm("r1");
     ULONG *sp;
     ULONG *src;
@@ -33,7 +33,7 @@ AROS_LH3(IPTR, NewStackSwap,
     /* Go one stack frame upper - now src points to the stackframe of caller */
     src = (ULONG*)*sp;
         
-    /* Go one more stack frame up. Now you may copy from src to dst (src - sp) IPTR's */ 
+    /* Go one more stack frame up. Now you may copy from src to dst (src - sp) IPTR's */
     src = (ULONG*)*src;
 
     dst = (ULONG*)((IPTR)sss->stk_Upper - SP_OFFSET);

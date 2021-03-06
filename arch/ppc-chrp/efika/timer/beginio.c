@@ -94,9 +94,9 @@ AROS_LH1(void, BeginIO,
 #endif
 
         case TR_GETSYSTIME:
-	    Disable();
+            Disable();
             EClockUpdate(TimerBase);
-	    Enable();
+            Enable();
             GetSysTime(&timereq->tr_time);
 
             if(!(timereq->tr_node.io_Flags & IOF_QUICK))

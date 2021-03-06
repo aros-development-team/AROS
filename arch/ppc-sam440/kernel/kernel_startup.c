@@ -31,20 +31,20 @@ extern void exec_main(struct TagItem *msg, void *entry);
 
 /* A very very very.....
  * ... very ugly code.
- * 
+ *
  * The AROS kernel gets executed at this place. The stack is unknown here, might be
  * set properly up, might be totally broken aswell and thus one cannot trust the contents
- * of %r1 register. Even worse, the kernel has been relocated most likely to some virtual 
+ * of %r1 register. Even worse, the kernel has been relocated most likely to some virtual
  * address and the MMU mapping might not be ready now.
- * 
- * The strategy is to create one MMU entry first, mapping first 16MB of ram into last 16MB 
+ *
+ * The strategy is to create one MMU entry first, mapping first 16MB of ram into last 16MB
  * of address space in one turn and then making proper MMU map once the bss sections are cleared
  * and the startup routine in C is executed. This "trick" assumes two evil things:
  * - the kernel will be loaded (and will fit completely) within first 16MB of RAM, and
  * - the kernel will be mapped into top (last 16MB) of memory.
- * 
- * Yes, I'm evil ;) 
- */ 
+ *
+ * Yes, I'm evil ;)
+ */
  
 asm(".section .aros.init,\"ax\"\n\t"
     ".globl start\n\t"
@@ -79,7 +79,7 @@ asm(".section .aros.init,\"ax\"\n\t"
     "\n\t.text\n\t"
 );
 
-static void __attribute__((used)) __clear_bss_tagged(struct TagItem *msg) 
+static void __attribute__((used)) __clear_bss_tagged(struct TagItem *msg)
 {
     struct KernelBSS *bss = (struct KernelBSS *) krnGetTagData(KRN_KernelBss, 0, msg);
 
@@ -97,7 +97,7 @@ static const void     *target_address          __attribute__((used, section(".te
 static char            CmdLine[200]            __attribute__((used));
 
 struct MinList *modlist;
-uintptr_t	memlo;
+uintptr_t       memlo;
 struct ExecBase *SysBase;
 
 static uint32_t exec_SelectMbs440(uint32_t bcr)
@@ -364,7 +364,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     bug("[KRN] Uhm? Nothing to do?\n[KRN] STOPPED\n");
 
-    /* 
+    /*
      * Do never ever try to return. This code would attempt to go back to the physical address
      * of asm trampoline, not the virtual one!
      */
@@ -641,7 +641,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
             (APTR) ((uintptr_t) 0xff000000 + krn_lowest - 1),
             (APTR) ((uintptr_t) 0xff000000 + krn_highest - 1));
     
-    /* 
+    /*
      * kernel.resource is ready to run, leave supervisor mode. External interrupts
      * will be enabled during late exec init.
      */

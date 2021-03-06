@@ -31,9 +31,9 @@ static const UBYTE version[];
 extern const char emul_End;
 
 AROS_UFP3S(APTR, EmulBoot,
-	   AROS_UFPA(ULONG, dummy, D0),
-	   AROS_UFPA(BPTR, segList, A0),
-	   AROS_UFPA(struct ExecBase *, SysBase, A6));
+           AROS_UFPA(ULONG, dummy, D0),
+           AROS_UFPA(BPTR, segList, A0),
+           AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 __section(".text.romtag") const struct Resident EmulBoot_resident =
 {
@@ -52,9 +52,9 @@ __section(".text.romtag") const struct Resident EmulBoot_resident =
 __section(".text.romtag") static const UBYTE version[] = "$VER: emul-handler emergency console v2.0";
 
 AROS_UFH3(APTR, EmulBoot,
-	   AROS_UFPA(ULONG, dummy, D0),
-	   AROS_UFPA(BPTR, segList, A0),
-	   AROS_UFPA(struct ExecBase *, SysBase, A6));
+           AROS_UFPA(ULONG, dummy, D0),
+           AROS_UFPA(BPTR, segList, A0),
+           AROS_UFPA(struct ExecBase *, SysBase, A6));
 {
     AROS_USERFUNC_INIT
 
@@ -116,14 +116,14 @@ AROS_UFH3(APTR, EmulBoot,
     {
         ULONG displayid = NextDisplayInfo(INVALID_ID);
 
-	CloseLibrary((APTR)GfxBase);
-	if (displayid != INVALID_ID)
-	{
+        CloseLibrary((APTR)GfxBase);
+        if (displayid != INVALID_ID)
+        {
             if (DOSBase)
                 CloseLibrary((APTR)DOSBase);
-	    /* Everything is ok, continue booting */
-	    return NULL;
-	}
+            /* Everything is ok, continue booting */
+            return NULL;
+        }
     }
 
     /*
@@ -132,37 +132,37 @@ AROS_UFH3(APTR, EmulBoot,
      * Without display drivers this will end up in AN_SysScrn alert.
      */
     if (!DOSBase)
-    	return NULL;
+        return NULL;
 
     EmulBase = OpenResource("emul-handler");
     if (!EmulBase)
-	return NULL;
+        return NULL;
 
     emulport = DeviceProc("EMU");
     if (!emulport)
-    	return NULL;
+        return NULL;
 
     fh_stdin = AllocDosObject(DOS_FILEHANDLE, NULL);
     if (!fh_stdin)
     {
-    	CloseLibrary(&DOSBase->dl_lib);
-    	return NULL;
+        CloseLibrary(&DOSBase->dl_lib);
+        return NULL;
     }
 
     fh_stdout = AllocDosObject(DOS_FILEHANDLE, NULL);
     if (!fh_stdout)
     {
-    	CloseLibrary(&DOSBase->dl_lib);
-    	return NULL;
+        CloseLibrary(&DOSBase->dl_lib);
+        return NULL;
     }
 
     /* A little bit of magic */
     fh_stdin->fh_Interactive  = DOSTRUE;
-    fh_stdin->fh_Type	      = emulport;
-    fh_stdin->fh_Arg1	      = (SIPTR)EmulBase->eb_stdin;
+    fh_stdin->fh_Type         = emulport;
+    fh_stdin->fh_Arg1         = (SIPTR)EmulBase->eb_stdin;
     fh_stdout->fh_Interactive = DOSTRUE;
-    fh_stdout->fh_Type	      = emulport;
-    fh_stdout->fh_Arg1	      = (SIPTR)EmulBase->eb_stdout;
+    fh_stdout->fh_Type        = emulport;
+    fh_stdout->fh_Arg1        = (SIPTR)EmulBase->eb_stdout;
 
     SetVBuf(MKBADDR(fh_stdin) , NULL, BUF_LINE, -1);
     SetVBuf(MKBADDR(fh_stdout), NULL, BUF_LINE, -1);
@@ -180,12 +180,12 @@ AROS_UFH3(APTR, EmulBoot,
     SetPrompt("%N> ");
 
     PutStr("Display driver(s) failed to initialize. Entering emergency shell.\n"
-    	   "EndCLI will quit AROS.\n");
+           "EndCLI will quit AROS.\n");
 
     rc = SystemTags("", SYS_Asynch, FALSE, SYS_Background, FALSE, TAG_DONE);
     if (rc == -1)
     {
-    	/* Everything is too bad */
+        /* Everything is too bad */
         PutStr("Cannot open boot console. System halted.\n");
         RemTask(NULL);
     }

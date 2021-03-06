@@ -11,10 +11,10 @@
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
 AROS_LH3(IPTR, NewStackSwap,
-	AROS_LHA(struct StackSwapStruct *,  sss, A0),
-	AROS_LHA(LONG_FUNC, entry, A1),
-	AROS_LHA(struct StackSwapArgs *, args, A2),
-	struct ExecBase *, SysBase, 134, Exec)
+        AROS_LHA(struct StackSwapStruct *,  sss, A0),
+        AROS_LHA(LONG_FUNC, entry, A1),
+        AROS_LHA(struct StackSwapArgs *, args, A2),
+        struct ExecBase *, SysBase, 134, Exec)
 {
     AROS_LIBFUNC_INIT
 
@@ -41,10 +41,10 @@ AROS_LH3(IPTR, NewStackSwap,
 
     if (t->tc_Flags & TF_STACKCHK)
     {
-    	UBYTE* startfill = sss->stk_Lower;
+        UBYTE* startfill = sss->stk_Lower;
 
-    	while (startfill < (UBYTE *)sp)
-	    *startfill++ = 0xE1;
+        while (startfill < (UBYTE *)sp)
+            *startfill++ = 0xE1;
     }
 
     /*
@@ -62,34 +62,34 @@ AROS_LH3(IPTR, NewStackSwap,
     asm volatile
     (
     /* Save original SP by adding one more stack frame */
-    "	push	{fp}\n"
-    "	add	fp, sp, #4\n"
+    "   push    {fp}\n"
+    "   add     fp, sp, #4\n"
     /* Actually change the stack */
-    "	mov 	sp, %2\n"
+    "   mov     sp, %2\n"
 
     /* Enable(). It preserves all registers by convention. */
-    "	mov	r0, %4\n"
-    "	ldr	r12, [r0, #-84]\n"
-    "	blx	r12\n"
+    "   mov     r0, %4\n"
+    "   ldr     r12, [r0, #-84]\n"
+    "   blx     r12\n"
 
     /* Call our function with its arguments */
-    "	ldr	r0, [%3, #0]\n"
-    "	ldr	r1, [%3, #4]\n"
-    "	ldr	r2, [%3, #8]\n"
-    "	ldr	r3, [%3, #12]\n"
-    "	blx	%1\n"
+    "   ldr     r0, [%3, #0]\n"
+    "   ldr     r1, [%3, #4]\n"
+    "   ldr     r2, [%3, #8]\n"
+    "   ldr     r3, [%3, #12]\n"
+    "   blx     %1\n"
 
     /* Disable(). r0 is first argument, so save it. */
-    "	push	{r0}\n"
-    "	ldr	r0, _sysbase\n"
-    "	ldr	r0, [r0]\n"
-    "	ldr	r12, [r0, #-80]\n"
-    "	blx	r12\n"
-    "	pop	{%0}\n"
+    "   push    {r0}\n"
+    "   ldr     r0, _sysbase\n"
+    "   ldr     r0, [r0]\n"
+    "   ldr     r12, [r0, #-80]\n"
+    "   blx     r12\n"
+    "   pop     {%0}\n"
 
     /* Restore original SP. Function's return value is in %0 now. */
-    "	sub	sp, fp, #4\n"
-    "	pop	{fp}\n"
+    "   sub     sp, fp, #4\n"
+    "   pop     {fp}\n"
     : "=r"(ret)
     : "r"(entry), "r"(sp), "r"(args), "r"(SysBase)
     : "r0", "r1", "r2", "r3", "r12", "lr", "cc");

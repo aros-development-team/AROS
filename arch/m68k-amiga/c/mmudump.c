@@ -61,64 +61,64 @@ struct DosLibrary *DOSBase;
 
 static ULONG getdesc(ULONG *root, ULONG addr)
 {
-	ULONG desc;
+        ULONG desc;
 
-	desc = LEVELA(root, addr);
-	if (ISINVALID(desc))
-		return desc;
-	desc = LEVELB(desc, addr);
-	if (ISINVALID(desc))
-		return desc;
-	desc = LEVELC(desc, addr);
-	return desc;
+        desc = LEVELA(root, addr);
+        if (ISINVALID(desc))
+                return desc;
+        desc = LEVELB(desc, addr);
+        if (ISINVALID(desc))
+                return desc;
+        desc = LEVELC(desc, addr);
+        return desc;
 }
 
 static void get68040(void)
 {
     asm volatile (
-    	".chip 68040\n"
-    	"lea m68040s,%%a0\n"
-    	"movec %%srp,%%a1\n"
-    	"move.l %%a1,(%%a0)+\n"
-    	"movec %%urp,%%a1\n"
-    	"move.l %%a1,(%%a0)+\n"
-    	"movec %%itt0,%%a1\n"
-    	"move.l %%a1,(%%a0)+\n"
-    	"movec %%itt1,%%a1\n"
-    	"move.l %%a1,(%%a0)+\n"
-    	"movec %%dtt0,%%a1\n"
-    	"move.l %%a1,(%%a0)+\n"
-    	"movec %%dtt1,%%a1\n"
-    	"move.l %%a1,(%%a0)+\n"
-    	"movec %%tc,%%a1\n"
-    	"move.l %%a1,(%%a0)+\n"
-  	"rte\n"
-    	: : : "a0", "a1");
+        ".chip 68040\n"
+        "lea m68040s,%%a0\n"
+        "movec %%srp,%%a1\n"
+        "move.l %%a1,(%%a0)+\n"
+        "movec %%urp,%%a1\n"
+        "move.l %%a1,(%%a0)+\n"
+        "movec %%itt0,%%a1\n"
+        "move.l %%a1,(%%a0)+\n"
+        "movec %%itt1,%%a1\n"
+        "move.l %%a1,(%%a0)+\n"
+        "movec %%dtt0,%%a1\n"
+        "move.l %%a1,(%%a0)+\n"
+        "movec %%dtt1,%%a1\n"
+        "move.l %%a1,(%%a0)+\n"
+        "movec %%tc,%%a1\n"
+        "move.l %%a1,(%%a0)+\n"
+        "rte\n"
+        : : : "a0", "a1");
 };
 
 static void get68060(void)
 {
     asm volatile (
-    	".chip 68060\n"
-    	"lea m68040s,%%a0\n"
-    	"movec %%pcr,%%a1\n"
-    	"move.l %%a1,7*4(%%a0)\n"
-    	"rte\n"
-    	: : : "a0", "a1");
+        ".chip 68060\n"
+        "lea m68040s,%%a0\n"
+        "movec %%pcr,%%a1\n"
+        "move.l %%a1,7*4(%%a0)\n"
+        "rte\n"
+        : : : "a0", "a1");
 };
 
 static void get68030(void)
 {
 #if 0
     asm volatile (
-    	".chip 68030\n"
-     	"move.l #m68030,%%a0\n"
-    	"pmove %%crp,(%%a0)\n"
-    	"pmove %%tt0,8(%%a0)\n"
-    	"pmove %%tt1,12(%%a0)\n"
-  	"pmove %%tc,16(%a0)\n"
-  	"rte\n"
-    	: : : "a0");
+        ".chip 68030\n"
+        "move.l #m68030,%%a0\n"
+        "pmove %%crp,(%%a0)\n"
+        "pmove %%tt0,8(%%a0)\n"
+        "pmove %%tt1,12(%%a0)\n"
+        "pmove %%tc,16(%a0)\n"
+        "rte\n"
+        : : : "a0");
 #endif
 };
 
@@ -129,13 +129,13 @@ static void dump_descriptor(ULONG desc)
     Printf ((desc & 0x080) ? "S" : "-");
     Printf ((desc & 0x004) ? "W " : "- ");
     if (cm == 0)
-	Printf("WT");
+        Printf("WT");
     else if (cm == 1)
-	Printf("CB");
+        Printf("CB");
     else if (cm == 2)
-	Printf("IP");
+        Printf("IP");
     else
-	Printf("II");
+        Printf("II");
 }
 
 // Ugnore M and U
@@ -143,45 +143,45 @@ static void dump_descriptor(ULONG desc)
 
 static void dump_mmu(ULONG *root)
 {
-	ULONG i;
-	ULONG startaddr;
-	ULONG odesc;
-	ULONG totalpages;
-	ULONG pagemask = (1 << PAGE_SIZE) - 1;
-	
-	totalpages = 1 << (32 - PAGE_SIZE);
-	startaddr = 0;
-	odesc = getdesc(root, startaddr);
-	for (i = 0; i <= totalpages; i++) {
-		ULONG addr = i << PAGE_SIZE;
-		ULONG desc = 0;
-		if (i < totalpages)
-			desc = getdesc(root, addr);
-		if ((desc & (pagemask & ~IGNOREMASK)) != (odesc & (pagemask & ~IGNOREMASK)) || i == totalpages) {
-			Printf("%08lx - %08lx: %08lx", startaddr, addr - 1, odesc);
-			if (!ISINVALID(odesc)) {
-			    if (mmutype >= MMU040) {
-			        if ((odesc & 3) == 2) {
-			            ULONG idesc = *((ULONG*)(odesc & ~3));
-			            Printf(" -> %08lx", idesc);
-			            dump_descriptor (idesc);
-			            Printf(" %08lx", idesc & ~pagemask);
-			        } else {
-			            dump_descriptor (odesc);
-			            Printf(" %08lx", odesc & ~pagemask);
-			        }
-			    } else {
-			        Printf(" %08lx", odesc & ~pagemask);
-			    }
-			} else {
-			    Printf(" INV");
-			}
-			Printf("\n");
-			startaddr = addr;
-			odesc = desc;
-		}
-	}
-}			
+        ULONG i;
+        ULONG startaddr;
+        ULONG odesc;
+        ULONG totalpages;
+        ULONG pagemask = (1 << PAGE_SIZE) - 1;
+        
+        totalpages = 1 << (32 - PAGE_SIZE);
+        startaddr = 0;
+        odesc = getdesc(root, startaddr);
+        for (i = 0; i <= totalpages; i++) {
+                ULONG addr = i << PAGE_SIZE;
+                ULONG desc = 0;
+                if (i < totalpages)
+                        desc = getdesc(root, addr);
+                if ((desc & (pagemask & ~IGNOREMASK)) != (odesc & (pagemask & ~IGNOREMASK)) || i == totalpages) {
+                        Printf("%08lx - %08lx: %08lx", startaddr, addr - 1, odesc);
+                        if (!ISINVALID(odesc)) {
+                            if (mmutype >= MMU040) {
+                                if ((odesc & 3) == 2) {
+                                    ULONG idesc = *((ULONG*)(odesc & ~3));
+                                    Printf(" -> %08lx", idesc);
+                                    dump_descriptor (idesc);
+                                    Printf(" %08lx", idesc & ~pagemask);
+                                } else {
+                                    dump_descriptor (odesc);
+                                    Printf(" %08lx", odesc & ~pagemask);
+                                }
+                            } else {
+                                Printf(" %08lx", odesc & ~pagemask);
+                            }
+                        } else {
+                            Printf(" INV");
+                        }
+                        Printf("\n");
+                        startaddr = addr;
+                        odesc = desc;
+                }
+        }
+}
 
 __startup static AROS_PROCH(startup, argstr, argsize, SysBase)
 {
@@ -207,7 +207,7 @@ __startup static AROS_PROCH(startup, argstr, argsize, SysBase)
         if (SysBase->AttnFlags & AFF_68060) {
             Supervisor((ULONG_FUNC)get68060);
             Printf("PCR : %08lx\n", m68040s.pcr);
-        }   
+        }
     
         if ((m68040s.tc & 0xc000) == 0x8000) {
             if (m68040s.srp != m68040s.urp)

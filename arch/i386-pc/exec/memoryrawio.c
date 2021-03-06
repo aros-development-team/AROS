@@ -45,31 +45,31 @@ static struct LogBlock *next_block = NULL;
 /*****i***********************************************************************
 
     NAME */
-	AROS_LH0(void, MemoryRawIOInit,
+        AROS_LH0(void, MemoryRawIOInit,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 84, Exec)
+        struct ExecBase *, SysBase, 84, Exec)
 
 /*  FUNCTION
-	This is a private function. It initializes raw IO. After you
-	have called this function, you can use (!RawMayGetChar()) and
-	RawPutChar().
+        This is a private function. It initializes raw IO. After you
+        have called this function, you can use (!RawMayGetChar()) and
+        RawPutChar().
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	None.
+        None.
 
     NOTES
-	This function is for very low level debugging only.
+        This function is for very low level debugging only.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	RawPutChar(), RawMayGetChar()
+        RawPutChar(), RawMayGetChar()
 
     INTERNALS
 
@@ -161,32 +161,32 @@ static struct LogBlock *next_block = NULL;
 /*****i***********************************************************************
 
     NAME */
-	AROS_LH1(void, MemoryRawPutChar,
+        AROS_LH1(void, MemoryRawPutChar,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE, chr, D0),
+        AROS_LHA(UBYTE, chr, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 86, Exec)
+        struct ExecBase *, SysBase, 86, Exec)
 
 /*  FUNCTION
-	Emits a single character.
+        Emits a single character.
 
     INPUTS
-	chr - The character to emit
+        chr - The character to emit
 
     RESULT
-	None.
+        None.
 
     NOTES
-	This function is for very low level debugging only.
+        This function is for very low level debugging only.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	RawIOInit(), RawPutChar(), RawMayGetChar()
+        RawIOInit(), RawPutChar(), RawMayGetChar()
 
     INTERNALS
 
@@ -238,9 +238,9 @@ static struct LogBlock *next_block = NULL;
     if (data->block_pos != data->block->length)
     {
         if (chr && (chr != '\03'))
-	{
+        {
             ((UBYTE *)data->block)[sizeof(struct LogBlock) + data->block_pos++] = chr;
-	}
+        }
     }
     else
         data_missed = TRUE;

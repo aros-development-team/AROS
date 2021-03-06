@@ -155,7 +155,7 @@ static void P96GFXBitmap__FreeBM(OOP_Class *cl, OOP_Object *o, struct P96GfxBitM
     }
     bm->VideoData = NULL;
     bm->invram = FALSE;
-}	
+}
 
 static BOOL P96GFXBitmap__ToFRAM(OOP_Class *cl, OOP_Object *o, struct P96GfxBitMapData *bm)
 {
@@ -286,7 +286,7 @@ static void P96GFXBitmap__HideScreen(OOP_Class *cl, OOP_Object *o, struct P96Gfx
 
 /****************************************************************************************/
 
-#define AO(x) 	    	  (aoHidd_BitMap_ ## x)
+#define AO(x)             (aoHidd_BitMap_ ## x)
 #define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
 
 /****************************************************************************************/
@@ -294,11 +294,11 @@ static void P96GFXBitmap__HideScreen(OOP_Class *cl, OOP_Object *o, struct P96Gfx
 OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
-    BOOL  ok = TRUE;      
+    BOOL  ok = TRUE;
     struct P96GfxBitMapData *data;
     struct p96gfx_carddata *cid;
-    IPTR 	    	     depth, width, height, multi;
-    IPTR		     displayable;
+    IPTR                     depth, width, height, multi;
+    IPTR                     displayable;
     struct TagItem tags[2];
     ULONG softsflags;
 
@@ -314,9 +314,9 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     memset(data, 0, sizeof  (*data));
     InitSemaphore(&data->bmLock);
 
-    OOP_GetAttr(o, aHidd_BitMap_Depth,	&depth);
-    OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
-    OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
+    OOP_GetAttr(o, aHidd_BitMap_Depth,  &depth);
+    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
     OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&data->pixfmtobj);
@@ -416,7 +416,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
     BOOL moved = FALSE;
 
     DB2(bug("[P96Gfx:Bitmap] %s: %p (%p:%d)\n", __func__, data, data->VideoData, data->memsize));
@@ -490,15 +490,15 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                                         if (bmnode != data) LOCK_BITMAP(bmnode)
                                     }
 
-                                    LOCK_HW                            
+                                    LOCK_HW
                                     WaitBlitter(cid); /* in case other bitmaps are swapped from VRAM to RAM */
-                                    P96GFXBitmap__ToVRAM(cl, o, data); /* shouldn't fail this time. If it does we are screwed ... */                          
+                                    P96GFXBitmap__ToVRAM(cl, o, data); /* shouldn't fail this time. If it does we are screwed ... */
                                     UNLOCK_HW
 
                                     ForeachNode(&cid->bitmaplist, bmnode)
                                     {
                                         if (bmnode != data) UNLOCK_BITMAP(bmnode)
-                                    }                            
+                                    }
 
                                     LOCK_HW
                                 }
@@ -725,9 +725,9 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
-    ULONG   	       offset;
+    ULONG              offset;
     HIDDT_Pixel       pixel = msg->pixel;
-    UBYTE   	      *mem;
+    UBYTE             *mem;
 
     LOCK_BITMAP(data)
 
@@ -772,9 +772,9 @@ ULONG P96GFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
-    HIDDT_Pixel     	 pixel = 0;
-    ULONG   	    	 offset;
-    UBYTE   	    	*mem;
+    HIDDT_Pixel          pixel = 0;
+    ULONG                offset;
+    UBYTE               *mem;
 
     LOCK_BITMAP(data)
 
@@ -961,7 +961,7 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
                                             msg->modulo);
                     break;
 
-                case 4:		    
+                case 4:
                     HIDD_BM_CopyMemBox32(o,
                                          data->VideoData,
                                          msg->x,
@@ -979,16 +979,16 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
 
         default:
             {
-                APTR 	    pixels = msg->pixels;
-                APTR 	    srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
+                APTR        pixels = msg->pixels;
+                APTR        srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
                 OOP_Object *dstpf;
 
                 dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
 
                 HIDD_BM_ConvertPixels(o, &srcPixels, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
                                       &pixels, (HIDDT_PixelFormat *)dstpf, msg->modulo,
-                                      msg->width, msg->height, NULL);    	    	
-            }		
+                                      msg->width, msg->height, NULL);
+            }
             break;
     } /* switch(msg->pixFmt) */
 
@@ -1141,7 +1141,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                                             data->bytesperline);
                     break;
 
-                case 4:		    
+                case 4:
                     HIDD_BM_CopyMemBox32(o,
                                          msg->pixels,
                                          0,
@@ -1159,20 +1159,20 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 
         default:
             {
-                APTR 	    pixels = msg->pixels;
-                APTR 	    dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
+                APTR        pixels = msg->pixels;
+                APTR        dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
                 OOP_Object *srcpf;
 
                 srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
 
                 HIDD_BM_ConvertPixels(o, &pixels, (HIDDT_PixelFormat *)srcpf, msg->modulo,
                                       &dstBuf, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
-                                      msg->width, msg->height, NULL);    	    	
+                                      msg->width, msg->height, NULL);
             }
             break;
-    } /* switch(msg->pixFmt) */	  
+    } /* switch(msg->pixFmt) */
 
-    UNLOCK_BITMAP(data)  
+    UNLOCK_BITMAP(data)
 }
 
 /****************************************************************************************/
@@ -1242,9 +1242,9 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
             break;
-    } /* switch(data->bytesperpix) */	 
+    } /* switch(data->bytesperpix) */
 
-    UNLOCK_BITMAP(data)   
+    UNLOCK_BITMAP(data)
 }
 
 /****************************************************************************************/
@@ -1283,7 +1283,7 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     LOCK_HW
     WaitBlitter(cid);
     UNLOCK_HW
-#if 0    
+#if 0
     maybeputinvram(cid, data);
 #endif
 
@@ -1383,7 +1383,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
-    HIDDT_Pixel	fg = GC_FG(msg->gc);
+    HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_Pixel bg = GC_BG(msg->gc);
     struct Pattern pat;
     UBYTE drawmode;
@@ -1436,7 +1436,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 
         if (pat.Size <= 8)
         {
-#if 0        
+#if 0
             maybeputinvram(cid, data);
 #endif
             if (data->invram)
@@ -1571,7 +1571,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
-    HIDDT_Pixel	fg = GC_FG(msg->gc);
+    HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_Pixel bg = GC_BG(msg->gc);
     BOOL v = FALSE;
 

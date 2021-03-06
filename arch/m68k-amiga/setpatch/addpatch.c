@@ -30,7 +30,7 @@
     RESULT
 
         TRUE  - Patch entry is added to the master patch list
-        FALSE - Patch with matching name already in the list 
+        FALSE - Patch with matching name already in the list
 
     NOTES
 

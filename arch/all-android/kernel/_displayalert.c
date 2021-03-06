@@ -36,9 +36,9 @@ int SendAlert(uint32_t code, const char *text)
     struct AlertRequest req;
     int res;
 
-    /* Prepare a message to server */    
-    req.cmd    = 0x00001000;	/* cmd_Alert				   */
-    req.params = 2;		/* Two parameters: code and string address */
+    /* Prepare a message to server */
+    req.cmd    = 0x00001000;    /* cmd_Alert                               */
+    req.params = 2;             /* Two parameters: code and string address */
     req.code   = code;
     req.text   = (IPTR)text;
 
@@ -66,7 +66,7 @@ static int Alert_Init(void *libc)
     if (!host_write)
     {
         krnPanic(NULL, "Failed to find \"write\" function\n%s", err);
-	return FALSE;
+        return FALSE;
     }
 
     /* Now pick up display pipe fd from our bootstrap */
@@ -74,8 +74,8 @@ static int Alert_Init(void *libc)
     D(bug("[Alert_Init] Bootstrap handle: 0x%p\n", libHandle));
     if (!libHandle)
     {
-    	krnPanic(NULL, "Failed to open libAROSBootstrap.so\n%s\n", err);
-	return FALSE;
+        krnPanic(NULL, "Failed to open libAROSBootstrap.so\n%s\n", err);
+        return FALSE;
     }
 
     ptr = HostIFace->hostlib_GetPointer(libHandle, "DisplayPipe", NULL);
@@ -87,8 +87,8 @@ static int Alert_Init(void *libc)
 
     if (alertPipe == -1)
     {
-    	bug("Failed to estabilish communication with display server!\n");
-    	return FALSE;
+        bug("Failed to estabilish communication with display server!\n");
+        return FALSE;
     }
 
     return TRUE;

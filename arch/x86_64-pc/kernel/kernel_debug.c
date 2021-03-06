@@ -35,11 +35,11 @@ int krnPutC(int c, struct KernelBase *KernelBase)
     if ((c == 0x03) && (scr_Type == SCR_GFX) && __KernBootPrivate->debug_framebuffer)
     {
         /* Reinitialize boot console with decreased height */
-    	scr_FrameBuffer = __KernBootPrivate->debug_framebuffer;
-    	fb_Resize(__KernBootPrivate->debug_y_resolution);
+        scr_FrameBuffer = __KernBootPrivate->debug_framebuffer;
+        fb_Resize(__KernBootPrivate->debug_y_resolution);
     }
     else
-    	con_Putc(c);
+        con_Putc(c);
 
     /*
      * Interrupt flag is stored in flags - if it was enabled before,

@@ -89,7 +89,7 @@ struct uioPacket {
                 UNIX errno variable) will be written
 
     RESULT
-        A number of the opened packet descriptor or -1 for an error. 
+        A number of the opened packet descriptor or -1 for an error.
 
     NOTES
 

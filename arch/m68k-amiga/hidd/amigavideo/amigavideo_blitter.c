@@ -76,12 +76,12 @@ static const UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 // C     = destination
 // D     = destination
 //  0: zero (->fillrect)
-//  1: src AND dst 		/AC + ABC
-//  2: src AND NOT dst 		/AC + AB/C
-//  3: src 			/AC + AB
-//  4: NOT src AND dst		/AC + A/B/C
+//  1: src AND dst              /AC + ABC
+//  2: src AND NOT dst          /AC + AB/C
+//  3: src                      /AC + AB
+//  4: NOT src AND dst          /AC + A/B/C
 //  5: dst (nop)
-//  6: src XOR dst		/AC + A
+//  6: src XOR dst              /AC + A
 //  7: copy source and blit thru mask
 //  8:
 //  9:
@@ -478,13 +478,13 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x
 struct pHidd_BitMap_PutTemplate
 {
     OOP_MethodID    mID;
-    OOP_Object	    *gc;
-    UBYTE 	    *Template;
-    ULONG	    modulo;
-    WORD    	    srcx;
-    WORD	    x, y;
-    WORD	    width, height;
-    BOOL    	    inverttemplate;
+    OOP_Object      *gc;
+    UBYTE           *Template;
+    ULONG           modulo;
+    WORD            srcx;
+    WORD            x, y;
+    WORD            width, height;
+    BOOL            inverttemplate;
 };
 #endif
 
@@ -498,7 +498,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     OOP_Object *gc = tmpl->gc;
-    HIDDT_Pixel	fgpen = GC_FG(tmpl->gc);
+    HIDDT_Pixel fgpen = GC_FG(tmpl->gc);
     HIDDT_Pixel bgpen = GC_BG(tmpl->gc);
 
     UBYTE type, i;

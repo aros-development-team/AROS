@@ -32,7 +32,7 @@ void cpu_Dispatch(context_t *regs)
     __asm__ __volatile__("wrteei 0;");
     idle = mftbu();
 
-    /* 
+    /*
      * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
      * It should be extended by some plugin mechanism which would put CPU and whole machine
      * into some more sophisticated sleep states (ACPI?)
@@ -69,7 +69,7 @@ void cpu_Dispatch(context_t *regs)
     if (task->tc_Flags & TF_LAUNCH)
     {
         AROS_UFC1(void, task->tc_Launch,
-                  AROS_UFCA(struct ExecBase *, SysBase, A6));       
+                  AROS_UFCA(struct ExecBase *, SysBase, A6));
     }
     
     /* Copy the fpu, mmx, xmm state */

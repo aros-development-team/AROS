@@ -19,7 +19,7 @@
 
 /* Externs */
 extern void BCPL_dummy(void);
-#define BCPL(id, name)	extern void BCPL_##name(void);
+#define BCPL(id, name)  extern void BCPL_##name(void);
 #include "bcpl.inc"
 #undef BCPL
 
@@ -27,7 +27,7 @@ extern void BCPL_dummy(void);
 
 /* Default Global Vector */
 #define BCPL(id, name) \
-	[(BCPL_GlobVec_NegSize + id)>>2] = (ULONG)BCPL_##name,
+        [(BCPL_GlobVec_NegSize + id)>>2] = (ULONG)BCPL_##name,
 
 const ULONG BCPL_GlobVec[(BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize) >> 2] = {
 #include "bcpl.inc"
@@ -44,36 +44,36 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
     ULONG *table;
 
     if (seg == BNULL) {
-    	D(bug("BCPL_InstallSeg: Empty segment\n"));
-    	return DOSTRUE;
+        D(bug("BCPL_InstallSeg: Empty segment\n"));
+        return DOSTRUE;
     }
 
     if (seg == (ULONG)-1) {
-    	ULONG slots = globvec[0];
-    	int i;
-    	if (slots > (BCPL_GlobVec_PosSize>>2))
-    	    slots = (BCPL_GlobVec_PosSize>>2);
-    	D(bug("BCPL_InstallSeg: Inserting %d Faux system entries.\n", slots));
+        ULONG slots = globvec[0];
+        int i;
+        if (slots > (BCPL_GlobVec_PosSize>>2))
+            slots = (BCPL_GlobVec_PosSize>>2);
+        D(bug("BCPL_InstallSeg: Inserting %d Faux system entries.\n", slots));
 
-	/* Copy over the negative entries from the default global vector */
-	CopyMem(&BCPL_GlobVec[0], &globvec[-(BCPL_GlobVec_NegSize>>2)], BCPL_GlobVec_NegSize);
+        /* Copy over the negative entries from the default global vector */
+        CopyMem(&BCPL_GlobVec[0], &globvec[-(BCPL_GlobVec_NegSize>>2)], BCPL_GlobVec_NegSize);
 
-    	for (i = 2; i < slots; i++) {
-    	    ULONG gv = BCPL_GlobVec[(BCPL_GlobVec_NegSize>>2) + i];
-    	    if (gv == 0)
-    	    	continue;
+        for (i = 2; i < slots; i++) {
+            ULONG gv = BCPL_GlobVec[(BCPL_GlobVec_NegSize>>2) + i];
+            if (gv == 0)
+                continue;
 
-    	    globvec[i] = gv;
-    	}
+            globvec[i] = gv;
+        }
 
-    	D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
-    	globvec[GV_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0); 
+        D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
+        globvec[GV_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0);
 
-    	return DOSTRUE;
+        return DOSTRUE;
     }
 
     if (seg == (ULONG)-2) {
-    	return DOSTRUE;
+        return DOSTRUE;
     }
 
     while (seg) {
@@ -146,14 +146,14 @@ void BCPL_Fixup(struct Process *me)
     if (segment[2] == (BPTR)0x0000abcd) {
         D(bug("[BCPL_Fixup] Fixing up overlay\n"));
 
-   	/* overlayed executable, fun..
-   	 * 2 = id
-   	 * 3 = filehandle (BPTR)
-   	 * 4 = overlay table (APTR)
-   	 * 5 = hunk table (BPTR)
-   	 * 6 = global vector (APTR)
-   	 */
-   	segment[6] = (ULONG)me->pr_GlobVec;
+        /* overlayed executable, fun..
+         * 2 = id
+         * 3 = filehandle (BPTR)
+         * 4 = overlay table (APTR)
+         * 5 = hunk table (BPTR)
+         * 6 = global vector (APTR)
+         */
+        segment[6] = (ULONG)me->pr_GlobVec;
     }
 }
 
@@ -205,7 +205,7 @@ ULONG BCPL_RunHandler(void)
     return ret;
 }
 
-/* Create the necessary process wrappings for a BCPL 
+/* Create the necessary process wrappings for a BCPL
  * segment. Only needed by Workbench's C:Run, C:NewCLI,
  * C:NewShell, and a few other applications.
  */

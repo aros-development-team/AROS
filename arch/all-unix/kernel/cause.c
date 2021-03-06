@@ -10,7 +10,7 @@
 #include <signal.h>
 
 AROS_LH0(void, KrnCause,
-	  struct KernelBase *, KernelBase, 3, Kernel)
+          struct KernelBase *, KernelBase, 3, Kernel)
 {
     AROS_LIBFUNC_INIT
 

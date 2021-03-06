@@ -32,7 +32,7 @@ AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
     D(bug("[Exec:X86] %s()\n", __func__));
 
     /*
-     * If the APIC's dont have their own heartbeat timer, 
+     * If the APIC's dont have their own heartbeat timer,
      * First decrease Elapsed time for current task
      */
     if ((!apicData) || (!(apicData->flags & APF_TIMER)))

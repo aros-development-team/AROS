@@ -63,7 +63,7 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         IPTR usecount = 0;
         ULONG bootdelay = 4;
 
-	D(bug("[USBROMStartup] Adding classes...\n"));
+        D(bug("[USBROMStartup] Adding classes...\n"));
 
         psdAddClass("hub.class", 0);
         if(!(psdAddClass("hid.class", 0)))
@@ -83,9 +83,9 @@ AROS_UFH3(static IPTR, usbromstartup_init,
             psdEnumerateHardware(phw);
         }
 
-	D(bug("[USBROMStartup] Scanning classes...\n"));
+        D(bug("[USBROMStartup] Scanning classes...\n"));
         psdClassScan();
-	D(bug("[USBROMStartup] classes enumerated\n"));
+        D(bug("[USBROMStartup] classes enumerated\n"));
 
         if(msdclass)
         {

@@ -2,7 +2,7 @@
     Copyright (C) 2019-2020, The AROS Development Team. All rights reserved.
 */
 
-/* 
+/*
     AmigaVideo Compositor class.
     Manages the copperlist to display amiga gfx screen(s).
 */
@@ -235,7 +235,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
                     bmdata->node.ln_Pred                = bmdatprev->node.ln_Pred;
                     bmdata->node.ln_Succ                = &bmdatprev->node;
                     bmdatprev->node.ln_Pred->ln_Succ    = &bmdata->node;
-                    bmdatprev->node.ln_Pred	        = &bmdata->node;
+                    bmdatprev->node.ln_Pred             = &bmdata->node;
                 }
                 else
                     AddTail(&compdata->visbmstack, &bmdata->node);
@@ -473,7 +473,7 @@ static void DisplayServiceTask(OOP_Object *displayCompositor)
 
     D(bug("[AmigaVideo:Compositor] %s(0x%p)\n", __func__, displayCompositor));
     D(bug("[AmigaVideo:Compositor] %s: starting up, ThisTask = 0x%p\n", __func__, thisTask));
-        if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
+        if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0)))
     {
         D(bug("[AmigaVideo:Compositor] %s: IntuitionBase = 0x%p\n", __func__, IntuitionBase));
         csd->svcTask = thisTask;

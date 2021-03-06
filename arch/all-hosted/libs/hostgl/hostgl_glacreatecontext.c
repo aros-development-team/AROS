@@ -21,7 +21,7 @@
 
       GLAContext glACreateContext(
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       struct TagItem *tagList)
 
 /*  FUNCTION
@@ -36,29 +36,29 @@
  
     TAGS
 
-        GLA_Left   - specifies the left rendering offset on the rastport. 
+        GLA_Left   - specifies the left rendering offset on the rastport.
                      Typically equals to window->BorderLeft.
 
-        GLA_Top    - specifies the top rendering offset on the rastport. 
+        GLA_Top    - specifies the top rendering offset on the rastport.
                      Typically equals to window->BorderTop.
 
-        GLA_Right  - specifies the right rendering offset on the rastport. 
+        GLA_Right  - specifies the right rendering offset on the rastport.
                      Typically equals to window->BorderRight.
 
-        GLA_Bottom - specifies the bottom rendering offset on the rastport. 
+        GLA_Bottom - specifies the bottom rendering offset on the rastport.
                      Typically equals to window->BorderBottom.
     
-        GLA_Width  - specifies the width of the rendering area. 
+        GLA_Width  - specifies the width of the rendering area.
                      GLA_Width + GLA_Left + GLA_Right should equal the width of
-                     the rastport. The GLA_Width is interchangable at cration 
-                     time with GLA_Right. Later durring window resizing, width 
+                     the rastport. The GLA_Width is interchangable at cration
+                     time with GLA_Right. Later durring window resizing, width
                      is calculated from scalled left, righ and window width.
 
-        GLA_Height - specifies the height of the rendering area. 
-                     GLA_Height + GLA_Top + GLA_Bottom should equal the height 
-                     of the rastport. The GLA_Height is interchangable at 
+        GLA_Height - specifies the height of the rendering area.
+                     GLA_Height + GLA_Top + GLA_Bottom should equal the height
+                     of the rastport. The GLA_Height is interchangable at
                      cration time with GLA_Bottom. Later durring window resizing
-                     , height is calculated from scalled top, bottom and window 
+                     , height is calculated from scalled top, bottom and window
                      height.
 
         GLA_Screen - pointer to Screen onto which scene is to be rendered. When
@@ -71,13 +71,13 @@
 
         GLA_DoubleBuf - ignored. All rendering is always double buffered.
 
-        GLA_RGBMode - ignored. All rendering is done in RGB. Indexed modes are 
+        GLA_RGBMode - ignored. All rendering is done in RGB. Indexed modes are
                       not supported.
 
         GLA_AlphaFlag - ignored. All rendering is done with alpha channel.
 
         GLA_NoDepth - disables the depth/Z buffer. Depth buffer is enabled by
-                      default and is 16 or 24 bit based on rendering 
+                      default and is 16 or 24 bit based on rendering
                       capabilities.
 
         GLA_NoStencil - disables the stencil buffer. Stencil buffer is enabled
@@ -200,7 +200,7 @@
     HostGL_AllocatePixmap(ctx);
 
     /* Create GL context */
-    ctx->glXctx = GLXCALL(glXCreateNewContext, dsp, ctx->framebuffer->fbconfigs[0], GLX_RGBA_TYPE, NULL, True);    
+    ctx->glXctx = GLXCALL(glXCreateNewContext, dsp, ctx->framebuffer->fbconfigs[0], GLX_RGBA_TYPE, NULL, True);
 #endif
 
     if (!ctx->glXctx)

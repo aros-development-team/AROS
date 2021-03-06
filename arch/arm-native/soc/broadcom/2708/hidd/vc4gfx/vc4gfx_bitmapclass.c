@@ -18,7 +18,7 @@
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     //struct BitmapData *data = OOP_INST_DATA(cl, o);
-    IPTR    	    	width, height;
+    IPTR                width, height;
 
     D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::Clear()\n"));
 
