@@ -14,22 +14,22 @@
     NAME */
 #include <stdio.h>
 
-	FILE *__posixc_freopen (
+        FILE *__posixc_freopen (
 
 /*  SYNOPSIS */
-	const char *path,
-	const char *mode,
-	FILE       *stream
-	)
+        const char *path,
+        const char *mode,
+        FILE       *stream
+        )
 
 /*  FUNCTION
-	Opens the  file whose name is the string pointed to by path  and
-	associates  the  stream  pointed to by stream with it.
+        Opens the  file whose name is the string pointed to by path  and
+        associates  the  stream  pointed to by stream with it.
 
     INPUTS
-	path   - the file to open
-	mode   - The mode of the stream  (same as with fopen()) must be com­patible
-	         with the mode of the file  descriptor.   The  file
+        path   - the file to open
+        mode   - The mode of the stream  (same as with fopen()) must be com­patible
+                 with the mode of the file  descriptor.   The  file
                  position  indicator  of  the  new  stream  is  set to that
                  belonging to fildes, and the error and end-of-file indicators
                  are cleared.  Modes "w" or "w+" do not cause truncation of the
@@ -39,7 +39,7 @@
         stream - the stream to which the file will be associated.
 
     RESULT
-	NULL on error or stream.
+        NULL on error or stream.
 
     NOTES
 
@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-	 open(), fclose(), fileno()
+         open(), fclose(), fileno()
 
     INTERNALS
 
@@ -59,7 +59,7 @@
     if (!(path && mode && stream))
     {
         errno = EFAULT;
-	return NULL;
+        return NULL;
     }
 
     oflags = __smode2oflags(mode);

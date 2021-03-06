@@ -18,30 +18,30 @@
     NAME */
 #include <stdio.h>
 
-	int fseek (
+        int fseek (
 
 /*  SYNOPSIS */
-	FILE * stream,
-	long   offset,
-	int    whence)
+        FILE * stream,
+        long   offset,
+        int    whence)
 
 /*  FUNCTION
-	Change the current position in a stream.
+        Change the current position in a stream.
 
     INPUTS
-	stream - Modify this stream
-	offset, whence - How to modify the current position. whence
-		can be SEEK_SET, then offset is the absolute position
-		in the file (0 is the first byte), SEEK_CUR then the
-		position will change by offset (ie. -5 means to move
-		5 bytes to the beginning of the file) or SEEK_END.
-		SEEK_END means that the offset is relative to the
-		end of the file (-1 is the last byte and 0 is
-		the EOF).
+        stream - Modify this stream
+        offset, whence - How to modify the current position. whence
+                can be SEEK_SET, then offset is the absolute position
+                in the file (0 is the first byte), SEEK_CUR then the
+                position will change by offset (ie. -5 means to move
+                5 bytes to the beginning of the file) or SEEK_END.
+                SEEK_END means that the offset is relative to the
+                end of the file (-1 is the last byte and 0 is
+                the EOF).
 
     RESULT
-	0 on success and -1 on error. If an error occurred, the global
-	variable errno is set.
+        0 on success and -1 on error. If an error occurred, the global
+        variable errno is set.
 
     NOTES
         The seek is handled by the files system so effects of what happens
@@ -54,7 +54,7 @@
         modes
 
     SEE ALSO
-	fopen(), fwrite()
+        fopen(), fwrite()
 
     INTERNALS
 

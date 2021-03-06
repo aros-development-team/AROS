@@ -15,26 +15,26 @@
     NAME */
 #include <unistd.h>
 
-	int execve(
+        int execve(
 
 /*  SYNOPSIS */
-	const char *filename,
-	char *const argv[],
-	char *const envp[])
+        const char *filename,
+        char *const argv[],
+        char *const envp[])
         
 /*  FUNCTION
-	Executes a file with given name.
+        Executes a file with given name.
 
     INPUTS
-	filename - Name of the file to execute.
-	argv - Array of arguments provided to main() function of the executed
-	file.
-	envp - Array of environment variables passed as environment to the
-	executed program.
+        filename - Name of the file to execute.
+        argv - Array of arguments provided to main() function of the executed
+        file.
+        envp - Array of environment variables passed as environment to the
+        executed program.
 
     RESULT
-	Returns -1 and sets errno appropriately in case of error, otherwise
-	doesn't return.
+        Returns -1 and sets errno appropriately in case of error, otherwise
+        doesn't return.
 
     NOTES
 
@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	
+        
     INTERNALS
 
 ******************************************************************************/

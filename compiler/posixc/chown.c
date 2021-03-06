@@ -18,12 +18,12 @@
     NAME */
 #include <unistd.h>
 
-	int chown(
+        int chown(
 
 /*  SYNOPSIS */
-	const char *path,
-	uid_t      owner,
-	gid_t      group)
+        const char *path,
+        uid_t      owner,
+        gid_t      group)
 
 /*  FUNCTION
         Change the user and group ownership of a file.

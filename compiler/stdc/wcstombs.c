@@ -9,12 +9,12 @@
     NAME
 #include <stdlib.h>
 
-	size_t wcstombs(
+        size_t wcstombs(
 
     SYNOPSIS
-	char * restrict s,
-	const wchar_t * restrict pwcs,
-	size_t n)
+        char * restrict s,
+        const wchar_t * restrict pwcs,
+        size_t n)
 
     FUNCTION
         C99 function wcstombs

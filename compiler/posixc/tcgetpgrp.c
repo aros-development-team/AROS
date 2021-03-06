@@ -17,13 +17,13 @@
     NAME */
 #include <unistd.h>
 
-	pid_t tcgetpgrp(
+        pid_t tcgetpgrp(
 
 /*  SYNOPSIS */
-	int fd)
+        int fd)
 
 /*  FUNCTION
-	Returns the process group ID for the specified file descriptor.
+        Returns the process group ID for the specified file descriptor.
 
     INPUTS
 

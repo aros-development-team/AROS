@@ -1,10 +1,10 @@
-/* 
+/*
     Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
 
     Desc: special main function for code which has to use special *nix features.
           This function gets called from a function with a similar name statically
-	  linked with the program. This is so to make the program not depend on a
-	  particular libc version.
+          linked with the program. This is so to make the program not depend on a
+          particular libc version.
 
 */
 
@@ -49,12 +49,12 @@ int __posixc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[]
        into a unix-style one.  */
     if (argv && argv[0])
     {
-	new_argv0 = strdup(__path_a2u(argv[0]));
-	if (new_argv0 == NULL)
-	    return RETURN_FAIL;
+        new_argv0 = strdup(__path_a2u(argv[0]));
+        if (new_argv0 == NULL)
+            return RETURN_FAIL;
 
         old_argv0 = argv[0];
-	argv[0] = new_argv0;
+        argv[0] = new_argv0;
     }
 
     /* Here we clone environment variables. We do this because
@@ -71,11 +71,11 @@ int __posixc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[]
     {
         D(bug("__posixc_nixmain: Cloning LocalVars"));
         if (!clone_vars(&old_vars))
-	{
+        {
             if (errorptr)
                 *errorptr = RETURN_FAIL;
-	    goto err_vars;
-	}
+            goto err_vars;
+        }
     }
 
     /* If the PATH variable is not defined, then define it to be what CLI's path list
@@ -108,7 +108,7 @@ err_vars:
     if (old_argv0 != NULL)
     {
         free(new_argv0);
-	argv[0] = (char *)old_argv0;
+        argv[0] = (char *)old_argv0;
     }
 
     D(bug("__posixc_nixmain: @end, Task=%x\n", FindTask(NULL)));
@@ -241,31 +241,31 @@ static void update_PATH(void)
     )
     {
         char *new_PATH;
-	const char *uname;
-	size_t uname_len;
+        const char *uname;
+        size_t uname_len;
 
         if (NameFromLock(cur->lock, aname, sizeof(aname)) == DOSFALSE)
-	    continue;
+            continue;
 
-	D(bug("aname = %s\n", aname));
+        D(bug("aname = %s\n", aname));
 
         uname = __path_a2u((const char *)aname);
-	if (!uname)
-	    continue;
-	uname_len = strlen(uname);
+        if (!uname)
+            continue;
+        uname_len = strlen(uname);
 
-	D(bug("uname = %s\n", uname));
+        D(bug("uname = %s\n", uname));
 
-	new_PATH = realloc(PATH, PATH_len + uname_len + 1);
-	if (!new_PATH)
-	    continue;
-	PATH = new_PATH;
+        new_PATH = realloc(PATH, PATH_len + uname_len + 1);
+        if (!new_PATH)
+            continue;
+        PATH = new_PATH;
 
-	memcpy(PATH + PATH_len, uname, uname_len);
-	PATH_len += uname_len;
-	PATH[PATH_len++] = ':';
+        memcpy(PATH + PATH_len, uname, uname_len);
+        PATH_len += uname_len;
+        PATH[PATH_len++] = ':';
 
-	D(bug("PATH_len = %d, PATH = %.*s\n", PATH_len, PATH_len, PATH));
+        D(bug("PATH_len = %d, PATH = %.*s\n", PATH_len, PATH_len, PATH));
     }
 
     if (PATH)

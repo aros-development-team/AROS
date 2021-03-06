@@ -92,9 +92,9 @@ int __getfirstfd(register int startfd)
 
     /* FIXME: Check if fd is in valid range... */
     for (
-	;
-	startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd];
-	startfd++
+        ;
+        startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd];
+        startfd++
     );
 
     return startfd;
@@ -143,12 +143,12 @@ LONG __oflags2amode(int flags)
     /* filter out invalid modes */
     switch (flags & (O_CREAT|O_TRUNC|O_EXCL))
     {
-    	case O_EXCL:
-    	case O_EXCL|O_TRUNC:
+        case O_EXCL:
+        case O_EXCL|O_TRUNC:
             return -1;
     }
 
-    /* Sorted in 'trumping' order. Ie if 
+    /* Sorted in 'trumping' order. Ie if
      * O_WRITE is on, that overrides O_READ.
      * Similarly, O_CREAT overrides O_WRITE.
      */
@@ -309,9 +309,9 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     if (!(fh = Open((char *)pathname, openmode)))
     {
-	ULONG ioerr = IoErr();
-	D(bug("__open: Open ioerr=%d\n", ioerr));
-	errno = __stdc_ioerr2errno(ioerr);
+        ULONG ioerr = IoErr();
+        D(bug("__open: Open ioerr=%d\n", ioerr));
+        errno = __stdc_ioerr2errno(ioerr);
         goto err;
     }
 
@@ -322,18 +322,18 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     /* Handle O_TRUNC */
     if ((flags & O_TRUNC) && (flags & (O_RDWR | O_WRONLY)))
     {
-	if(SetFileSize(fh, 0, OFFSET_BEGINNING) != 0)
-	{
-	    ULONG ioerr = IoErr();
-	    /* Ignore error if ACTION_SET_FILE_SIZE is not implemented */
-	    if(ioerr != ERROR_NOT_IMPLEMENTED &&
-	       ioerr != ERROR_ACTION_NOT_KNOWN)
-	    {
-		D(bug("__open: SetFileSize ioerr=%d\n", ioerr));
-	        errno = __stdc_ioerr2errno(ioerr);
+        if(SetFileSize(fh, 0, OFFSET_BEGINNING) != 0)
+        {
+            ULONG ioerr = IoErr();
+            /* Ignore error if ACTION_SET_FILE_SIZE is not implemented */
+            if(ioerr != ERROR_NOT_IMPLEMENTED &&
+               ioerr != ERROR_ACTION_NOT_KNOWN)
+            {
+                D(bug("__open: SetFileSize ioerr=%d\n", ioerr));
+                errno = __stdc_ioerr2errno(ioerr);
                 goto err;
-	    }
-	}
+            }
+        }
     }
 
     /* Handle O_APPEND */
@@ -420,12 +420,12 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
     if
     (
         res == -1                           ||
-	!(infcb  = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
-	!(indesc  = __alloc_fdesc()) ||
-	!(outfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
-	!(outdesc = __alloc_fdesc()) ||
-	!(errfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
-	!(errdesc = __alloc_fdesc())
+        !(infcb  = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
+        !(indesc  = __alloc_fdesc()) ||
+        !(outfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
+        !(outdesc = __alloc_fdesc()) ||
+        !(errfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
+        !(errdesc = __alloc_fdesc())
     )
     {
         FreeVec(infcb);
@@ -437,8 +437,8 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
         FreeVec(errfcb);
         if(errdesc)
             __free_fdesc(errdesc);
-    	SetIoErr(ERROR_NO_FREE_STORE);
-    	return 0;
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return 0;
     }
 
     me = (struct Process *)FindTask (NULL);
@@ -536,8 +536,8 @@ void __exit_fd(struct PosixCIntBase *PosixCBase)
     int i = PosixCBase->fd_slots;
     while (i)
     {
-	if (PosixCBase->fd_array[--i])
-	    close(i);
+        if (PosixCBase->fd_array[--i])
+            close(i);
     }
 }
 

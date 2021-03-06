@@ -10,20 +10,20 @@
     NAME */
 #include <stdio.h>
 
-	int feof (
+        int feof (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Test the EOF-Flag of a stream. This flag is set automatically by
-	any function which recognises EOF. To clear it, call clearerr().
+        Test the EOF-Flag of a stream. This flag is set automatically by
+        any function which recognises EOF. To clear it, call clearerr().
 
     INPUTS
-	stream - The stream to be tested.
+        stream - The stream to be tested.
 
     RESULT
-	!= 0, if the stream is at the end of the file, 0 otherwise.
+        != 0, if the stream is at the end of the file, 0 otherwise.
 
     NOTES
 
@@ -32,7 +32,7 @@
     BUGS
 
     SEE ALSO
-	ferror(), clearerr()
+        ferror(), clearerr()
 
     INTERNALS
 

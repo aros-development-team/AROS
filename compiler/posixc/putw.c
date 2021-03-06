@@ -10,11 +10,11 @@
 
 #include <stdio.h>
 
-	int putw(
+        int putw(
 
     SYNOPSIS
-	int word,
-	FILE *stream)
+        int word,
+        FILE *stream)
 
     FUNCTION
 

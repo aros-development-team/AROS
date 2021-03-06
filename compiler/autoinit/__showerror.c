@@ -38,15 +38,15 @@ void ___showerror(struct ExecBase *SysBase, const char *format, ...)
     (
         !__forceerrorrequester                                                 &&
         (DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0)) != NULL &&
-        Cli() != NULL && 
+        Cli() != NULL &&
         Output() != BNULL
     )
     {
         if (name)
-	{
+        {
             PutStr(name);
             PutStr(": ");
-	}
+        }
 
         VPrintf(format, AROS_SLOWSTACKFORMAT_ARG(format));
 
@@ -57,17 +57,17 @@ void ___showerror(struct ExecBase *SysBase, const char *format, ...)
     if ((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0)))
     {
         struct EasyStruct es =
-    	{
-	    sizeof(struct EasyStruct),
-	    0,
-	    name,
-	    format,
-	    "Exit"
-	};
+        {
+            sizeof(struct EasyStruct),
+            0,
+            name,
+            format,
+            "Exit"
+        };
 
-	EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(format));
+        EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(format));
 
-	CloseLibrary((struct Library *)IntuitionBase);
+        CloseLibrary((struct Library *)IntuitionBase);
     }
     else
     {

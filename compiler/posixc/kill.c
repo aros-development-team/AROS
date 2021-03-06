@@ -12,10 +12,10 @@
     NAME */
 #include <signal.h>
 
-	int kill (
+        int kill (
 
 /*  SYNOPSIS */
-	pid_t pid,
+        pid_t pid,
         int   sig)
 
 /*  FUNCTION
@@ -25,7 +25,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

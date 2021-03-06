@@ -17,7 +17,7 @@
         void)
 
 /*  FUNCTION
-	Returns the real user ID of the calling process.
+        Returns the real user ID of the calling process.
 
     INPUTS
 

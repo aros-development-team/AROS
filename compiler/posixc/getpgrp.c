@@ -12,10 +12,10 @@
 
 #include <unistd.h>
 
-	pid_t getpgrp(
+        pid_t getpgrp(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
 
@@ -24,7 +24,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

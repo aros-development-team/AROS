@@ -29,22 +29,22 @@ void Purify_Init (void)
 
     printf ("Purify active\n");
 
-    Purify_Filename	= "";
+    Purify_Filename     = "";
     Purify_Functionname = "_start";
-    Purify_Lineno	= 0;
+    Purify_Lineno       = 0;
 
     ptr = (&Purify_Beginrodata)+1;
     size = (long)(&Purify_Endrodata) - (long)(&Purify_Beginrodata) - 4;
 
     if (size > 0)
     {
-	node = Purify_AddMemory (ptr
-	    , size
-	    , PURIFY_MemFlag_Readable
-	    , PURIFY_MemType_Data
-	);
+        node = Purify_AddMemory (ptr
+            , size
+            , PURIFY_MemFlag_Readable
+            , PURIFY_MemType_Data
+        );
 
-	node->data = "rodata";
+        node->data = "rodata";
     }
 
     ptr = (&Purify_Beginbss)+1;
@@ -52,14 +52,14 @@ void Purify_Init (void)
 
     if (size > 0)
     {
-	node = Purify_AddMemory (ptr
-	    , size
-	    , PURIFY_MemFlag_Readable
-		| PURIFY_MemFlag_Writable
-	    , PURIFY_MemType_Data
-	);
+        node = Purify_AddMemory (ptr
+            , size
+            , PURIFY_MemFlag_Readable
+                | PURIFY_MemFlag_Writable
+            , PURIFY_MemType_Data
+        );
 
-	node->data = "bss";
+        node->data = "bss";
     }
 
     ptr = (&Purify_Begindata)+1;
@@ -67,90 +67,90 @@ void Purify_Init (void)
 
     if (size > 0)
     {
-	node = Purify_AddMemory (ptr
-	    , size
-	    , PURIFY_MemFlag_Readable
-		| PURIFY_MemFlag_Writable
-	    , PURIFY_MemType_Data
-	);
+        node = Purify_AddMemory (ptr
+            , size
+            , PURIFY_MemFlag_Readable
+                | PURIFY_MemFlag_Writable
+            , PURIFY_MemType_Data
+        );
 
-	node->data = "data";
+        node->data = "data";
     }
 
     size = (long)(Purify_Endstaticdata) - (long)(Purify_Beginstaticdata) - 4;
 
     if (size > 0)
     {
-	node = Purify_AddMemory (Purify_Beginstaticdata+1
-	    , size
-	    , PURIFY_MemFlag_Readable
-		| PURIFY_MemFlag_Writable
-	    , PURIFY_MemType_Data
-	);
+        node = Purify_AddMemory (Purify_Beginstaticdata+1
+            , size
+            , PURIFY_MemFlag_Readable
+                | PURIFY_MemFlag_Writable
+            , PURIFY_MemType_Data
+        );
 
-	node->data = "static data";
+        node->data = "static data";
     }
 
     size = (long)Purify_Endcode - (long)Purify_Begincode;
 
     if (size > 0)
     {
-	node = Purify_AddMemory (Purify_Begincode
-	    , size
-	    , PURIFY_MemFlag_Readable
-	    , PURIFY_MemType_Code
-	);
+        node = Purify_AddMemory (Purify_Begincode
+            , size
+            , PURIFY_MemFlag_Readable
+            , PURIFY_MemType_Code
+        );
 
-	node->data = "code";
+        node->data = "code";
     }
 
     node = Purify_AddMemory (__ctype_b
-	, sizeof(__ctype_b[0])*256
-	, PURIFY_MemFlag_Readable
-	, PURIFY_MemType_Data
+        , sizeof(__ctype_b[0])*256
+        , PURIFY_MemFlag_Readable
+        , PURIFY_MemType_Data
     );
 
     node->data = "ctype array";
 
     node = Purify_AddMemory (__ctype_tolower
-	, sizeof(__ctype_tolower[0])*256
-	, PURIFY_MemFlag_Readable
-	, PURIFY_MemType_Data
+        , sizeof(__ctype_tolower[0])*256
+        , PURIFY_MemFlag_Readable
+        , PURIFY_MemType_Data
     );
 
     node->data = "tolower array";
 
     node = Purify_AddMemory (__ctype_toupper
-	, sizeof(__ctype_toupper[0])*256
-	, PURIFY_MemFlag_Readable
-	, PURIFY_MemType_Data
+        , sizeof(__ctype_toupper[0])*256
+        , PURIFY_MemFlag_Readable
+        , PURIFY_MemType_Data
     );
 
     node->data = "toupper array";
 
 #define ADDGLOBAL(var,name) \
     node = Purify_AddMemory (&(var)                               \
-	, sizeof(var)                                             \
-	, PURIFY_MemFlag_Readable|PURIFY_MemFlag_Writable	  \
-	, PURIFY_MemType_Data					  \
-    );								  \
-								  \
+        , sizeof(var)                                             \
+        , PURIFY_MemFlag_Readable|PURIFY_MemFlag_Writable         \
+        , PURIFY_MemType_Data                                     \
+    );                                                            \
+                                                                  \
     node->data = name
 
     ADDGLOBAL(errno,"errno");
 
     node = Purify_AddMemory (stdin
-	, sizeof(stdin)
-	, PURIFY_MemFlag_Readable
-	, PURIFY_MemType_Data
+        , sizeof(stdin)
+        , PURIFY_MemFlag_Readable
+        , PURIFY_MemType_Data
     );
 
     node->data = "stdin";
 
     node = Purify_AddMemory (stdout
-	, sizeof(stdout)
-	, PURIFY_MemFlag_Readable
-	, PURIFY_MemType_Data
+        , sizeof(stdout)
+        , PURIFY_MemFlag_Readable
+        , PURIFY_MemType_Data
     );
 
     node->data = "stdout";

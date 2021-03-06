@@ -18,20 +18,20 @@
     NAME */
 #include <stdio.h>
 
-	long int ftell (
+        long int ftell (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Tell the current position in a stream.
+        Tell the current position in a stream.
 
     INPUTS
-	stream - Obtain position of this stream
+        stream - Obtain position of this stream
 
     RESULT
-	The position on success and -1 on error.
-	If an error occurred, the global variable errno is set.
+        The position on success and -1 on error.
+        If an error occurred, the global variable errno is set.
 
     NOTES
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	fopen(), fseek(), fwrite()
+        fopen(), fseek(), fwrite()
 
     INTERNALS
 

@@ -20,19 +20,19 @@
     NAME */
 #include <stdlib.h>
 
-	char *getenv (
+        char *getenv (
 
 /*  SYNOPSIS */
-	const char *name)
+        const char *name)
 
 /*  FUNCTION
-	Get an environment variable.
+        Get an environment variable.
 
     INPUTS
-	name - Name of the environment variable.
+        name - Name of the environment variable.
 
     RESULT
-	Pointer to the variable's value, or NULL on failure.
+        Pointer to the variable's value, or NULL on failure.
         When no memory is available errno will be set to ENOMEM.
 
     NOTES
@@ -47,7 +47,7 @@
     SEE ALSO
 
     INTERNALS
-    	Based on libnix getenv
+        Based on libnix getenv
 
 ******************************************************************************/
 {
@@ -61,7 +61,7 @@
     */
     if (!GetVar((char *)name, &c, 1, GVF_BINARY_VAR))
     {
-    	LONG len = IoErr();
+        LONG len = IoErr();
 
         D(bug("[%s] %s: Variable found of size %d\n", STDCNAME, __func__, len));
 
@@ -78,7 +78,7 @@
                 return NULL;
             }
             StdCIOBase->varsize = len + 1;
-	}
+        }
 
         /* This should not fail, unless someone stole our variable */
         /* FIXME: maybe this function should be atomic */

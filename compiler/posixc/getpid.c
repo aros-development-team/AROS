@@ -16,16 +16,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-	pid_t getpid (
+        pid_t getpid (
 
 /*  SYNOPSIS */
-	)
+        )
 
 /*  FUNCTION
-	Returns the process ID of the calling process
+        Returns the process ID of the calling process
 
     RESULT
-	The process ID of the calling process.
+        The process ID of the calling process.
 
     NOTES
 
@@ -45,11 +45,11 @@
 
     if(PosixCBase->flags & PRETEND_CHILD)
     {
-	struct vfork_data *udata = PosixCBase->vfork_data;
-	et = GetETask(udata->child);
+        struct vfork_data *udata = PosixCBase->vfork_data;
+        et = GetETask(udata->child);
     }
     else
-	et = GetETask(FindTask(NULL));
-    assert(et); 
+        et = GetETask(FindTask(NULL));
+    assert(et);
     return (pid_t) et->et_UniqueID;
 } /* getpid */

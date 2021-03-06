@@ -14,12 +14,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/dos.h>
 
-	BPTR NewLoadSegTags (
+        BPTR NewLoadSegTags (
 
 /*  SYNOPSIS */
-	STRPTR file,
-	Tag tag1,
-	...)
+        STRPTR file,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of dos.library/NewLoadSeg().

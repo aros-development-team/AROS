@@ -13,11 +13,11 @@
 
 #include <unistd.h>
 
-	int getgroups(
+        int getgroups(
 
 /*  SYNOPSIS */
-	int gidsetlen,
-	gid_t *gidset)
+        int gidsetlen,
+        gid_t *gidset)
 
 /*  FUNCTION
 
@@ -26,7 +26,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

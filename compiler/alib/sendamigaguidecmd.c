@@ -13,13 +13,13 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/amigaguide.h>
 
-	BOOL SendAmigaGuideCmd (
+        BOOL SendAmigaGuideCmd (
 
 /*  SYNOPSIS */
-	AMIGAGUIDECONTEXT handle,
-	STRPTR cmd,
-	Tag tag1,
-	...)
+        AMIGAGUIDECONTEXT handle,
+        STRPTR cmd,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of amigaguide.library/SendAmigaGuideCmdA().

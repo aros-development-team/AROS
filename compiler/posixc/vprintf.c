@@ -13,21 +13,21 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_vprintf (
+        int __posixc_vprintf (
 
 /*  SYNOPSIS */
-	const char * format,
-	va_list      args)
+        const char * format,
+        va_list      args)
 
 /*  FUNCTION
-	Format a list of arguments and print them on the standard output.
+        Format a list of arguments and print them on the standard output.
 
     INPUTS
-	format - A printf() format string.
-	args - A list of arguments for the format string.
+        format - A printf() format string.
+        args - A list of arguments for the format string.
 
     RESULT
-	The number of characters written.
+        The number of characters written.
 
     NOTES
 

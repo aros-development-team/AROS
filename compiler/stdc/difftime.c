@@ -10,39 +10,39 @@
 #ifndef AROS_NOFPU
 #include <time.h>
 
-	double difftime (
+        double difftime (
 
 /*  SYNOPSIS */
-	time_t time2,
-	time_t time1)
+        time_t time2,
+        time_t time1)
 
 /*  FUNCTION
        difftime() returns the number of seconds elapsed between
-       time time2 and time time1. 
+       time time2 and time time1.
 
     INPUTS
-	time2 - time value from which time1 is subtracted
-	time1 - time value that is subtracted from time2
+        time2 - time value from which time1 is subtracted
+        time1 - time value that is subtracted from time2
 
     RESULT
-	The number of seconds elapsed in double precision.
+        The number of seconds elapsed in double precision.
 
     NOTES
 
     EXAMPLE
-	time_t tt1, tt2;
-	double secs;
-	
-	time (&tt1);
+        time_t tt1, tt2;
+        double secs;
+        
+        time (&tt1);
         ...
-	time (&tt2);
-	
-	secs = difftime(tt2, tt1);
-	
+        time (&tt2);
+        
+        secs = difftime(tt2, tt1);
+        
     BUGS
 
     SEE ALSO
-	time(), ctime(), asctime(), localtime()
+        time(), ctime(), asctime(), localtime()
 
     INTERNALS
 
@@ -56,7 +56,7 @@
 
 void difftime(void)
 {
-	return;
+        return;
 }
 
 #endif /* AROS_NOFPU */

@@ -11,8 +11,8 @@
 
 struct phony_segment
 {
-    ULONG Size;	/* Length of segment in # of bytes */
-    BPTR  Next;	/* Next segment (always 0 for this) */
+    ULONG Size; /* Length of segment in # of bytes */
+    BPTR  Next; /* Next segment (always 0 for this) */
 } __attribute__((packed));
 
 /*****************************************************************************
@@ -53,7 +53,7 @@ struct phony_segment
 *****************************************************************************/
 {
     struct phony_segment *segtmp;
-    struct FullJumpVec *Code;	/* Code to jump to the offset */
+    struct FullJumpVec *Code;   /* Code to jump to the offset */
 
     segtmp = AllocMem(sizeof(*segtmp) + sizeof(*Code), MEMF_ANY);
     if (!segtmp)

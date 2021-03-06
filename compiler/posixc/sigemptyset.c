@@ -11,10 +11,10 @@
     NAME */
 #include <signal.h>
 
-	int sigemptyset (
+        int sigemptyset (
 
 /*  SYNOPSIS */
-	sigset_t *set)
+        sigset_t *set)
 
 /*  FUNCTION
 

@@ -16,23 +16,23 @@
     NAME */
 #include <proto/arossupport.h>
 
-	void debugmem (
+        void debugmem (
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	Print information about all memory lists.
+        Print information about all memory lists.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	None.
+        None.
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
+        This function is not part of a library and may thus be called
+        any time.
 
     EXAMPLE
 
@@ -52,23 +52,23 @@
 
     for
     (
-        mh = (struct MemHeader *) GetHead(&SysBase->MemList); 
-        mh != NULL; 
+        mh = (struct MemHeader *) GetHead(&SysBase->MemList);
+        mh != NULL;
         mh = (struct MemHeader *) GetSucc(mh)
     )
     {
-	bug("List %s: Attr=%08lX from 0x%p to 0x%p Free=%ld\n"
-	    , mh->mh_Node.ln_Name
-	    , mh->mh_Attributes
-	    , mh->mh_Lower
-	    , mh->mh_Upper
-	    , mh->mh_Free
-	);
+        bug("List %s: Attr=%08lX from 0x%p to 0x%p Free=%ld\n"
+            , mh->mh_Node.ln_Name
+            , mh->mh_Attributes
+            , mh->mh_Lower
+            , mh->mh_Upper
+            , mh->mh_Free
+        );
 
-	for (mc=mh->mh_First; mc; mc=mc->mc_Next)
-	{
-	    bug ("   Chunk %p Size %ld\n", mc, mc->mc_Bytes);
-	}
+        for (mc=mh->mh_First; mc; mc=mc->mc_Next)
+        {
+            bug ("   Chunk %p Size %ld\n", mc, mc->mc_Bytes);
+        }
     }
 
     Permit();

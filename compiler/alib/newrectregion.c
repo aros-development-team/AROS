@@ -12,36 +12,36 @@
     NAME */
 #include <proto/alib.h>
 
-	struct Region *NewRectRegion(
+        struct Region *NewRectRegion(
 
 /*  SYNOPSIS */
-    	WORD MinX,
-	WORD MinY,
-	WORD MaxX,
-	WORD MaxY)
+        WORD MinX,
+        WORD MinY,
+        WORD MaxX,
+        WORD MaxY)
 
 /*  FUNCTION
-    	Creates a new rectangular Region
-		
+        Creates a new rectangular Region
+                
     INPUTS
-    	MinX, MinY, MaxX, MaxY - The extent of the Rect
-		
+        MinX, MinY, MaxX, MaxY - The extent of the Rect
+                
     RESULT
-    	Pointer to the newly created Region. NULL on failure.
+        Pointer to the newly created Region. NULL on failure.
 
     NOTES
-	This function is a shorthand for:
+        This function is a shorthand for:
 
-	    struct Rectangle rect;
-	    struct Region *region;
+            struct Rectangle rect;
+            struct Region *region;
 
-	    rect.MinX = MinX;
-	    rect.MinY = MinY;
-	    rect.MaxX = MaxX;
-	    rect.MaxY = MaxY;
+            rect.MinX = MinX;
+            rect.MinY = MinY;
+            rect.MaxX = MaxX;
+            rect.MaxY = MaxY;
 
-	    region = NewRegion();
-	    OrRectRegion(region, &rect);
+            region = NewRegion();
+            OrRectRegion(region, &rect);
 
     EXAMPLE
 
@@ -59,13 +59,13 @@
     
     if (region)
     {
-    	struct Rectangle rect = {MinX, MinY, MaxX, MaxY};
-    	BOOL res = OrRectRegion(region, &rect);
+        struct Rectangle rect = {MinX, MinY, MaxX, MaxY};
+        BOOL res = OrRectRegion(region, &rect);
 
-	if (res)
-	    return region;
+        if (res)
+            return region;
 
-	DisposeRegion(region);
+        DisposeRegion(region);
     }
 
     return NULL;

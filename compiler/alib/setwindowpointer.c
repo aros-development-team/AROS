@@ -18,12 +18,12 @@ extern struct IntuitionBase * IntuitionBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/intuition.h>
 
-	void SetWindowPointer (
+        void SetWindowPointer (
 
 /*  SYNOPSIS */
         struct Window   * window,
-	ULONG		  tag1,
-	...		  )
+        ULONG             tag1,
+        ...               )
 
 /*  FUNCTION
         Varargs version of intuition.library/SetWindowPointerA().
@@ -39,7 +39,7 @@ extern struct IntuitionBase * IntuitionBase;
     BUGS
 
     SEE ALSO
-	intuition.library/SetWindowPointerA()
+        intuition.library/SetWindowPointerA()
 
     INTERNALS
 

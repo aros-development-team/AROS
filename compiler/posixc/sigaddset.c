@@ -11,11 +11,11 @@
     NAME */
 #include <signal.h>
 
-	int sigaddset (
+        int sigaddset (
 
 /*  SYNOPSIS */
-	sigset_t *set,
-	int signum)
+        sigset_t *set,
+        int signum)
 
 /*  FUNCTION
 
@@ -40,6 +40,6 @@
         set->__val[i] |= (1 << (signum & 0x1f));
         return 0;
     }
-	
+        
     return -1;
 } /* sigaddset */

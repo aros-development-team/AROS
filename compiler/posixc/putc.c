@@ -9,21 +9,21 @@
     NAME
 #include <stdio.h>
 
-	int putc (
+        int putc (
 
     SYNOPSIS
-	int    c,
-	FILE * stream)
+        int    c,
+        FILE * stream)
 
     FUNCTION
-	Write one character to the specified stream.
+        Write one character to the specified stream.
 
     INPUTS
-	c - The character to output
-	stream - The character is written to this stream
+        c - The character to output
+        stream - The character is written to this stream
 
     RESULT
-	The character written or EOF on error.
+        The character written or EOF on error.
 
     NOTES
 

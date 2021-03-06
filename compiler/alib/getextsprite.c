@@ -14,12 +14,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	LONG GetExtSprite (
+        LONG GetExtSprite (
 
 /*  SYNOPSIS */
-	struct ExtSprite * sprite,
-	Tag tag1,
-	...)
+        struct ExtSprite * sprite,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of graphics.library/GetExtSpriteA().

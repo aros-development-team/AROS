@@ -14,11 +14,11 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/dos.h>
 
-	struct Process * CreateNewProcTags (
+        struct Process * CreateNewProcTags (
 
 /*  SYNOPSIS */
-	Tag tag1,
-	...)
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of dos.library/CreateNewProc().

@@ -13,21 +13,21 @@
 #include <graphics/rastport.h>
 #include <proto/arossupport.h>
 
-	struct RastPort *CloneRastPort(
+        struct RastPort *CloneRastPort(
 
 /*  SYNOPSIS */
-	struct RastPort *rp)
+        struct RastPort *rp)
 
 /*  FUNCTION
-	This function creates a copy of a RastPort.
+        This function creates a copy of a RastPort.
 
     INPUTS
-	rp - The RastPort to clone.
+        rp - The RastPort to clone.
 
     RESULT
-	A pointer to a RastPort with the same attributes as the RastPort
-	which was specified or NULL if there was not enough memory to perform
-	the operation.
+        A pointer to a RastPort with the same attributes as the RastPort
+        which was specified or NULL if there was not enough memory to perform
+        the operation.
 
     NOTES
 
@@ -36,20 +36,20 @@
     BUGS
 
     SEE ALSO
-	CreateRastPort(), FreeRastPort()
+        CreateRastPort(), FreeRastPort()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
     struct RastPort *newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
 
     if (newRP)
-	CopyMem (rp, newRP, sizeof (struct RastPort));
+        CopyMem (rp, newRP, sizeof (struct RastPort));
 
     return newRP;
 

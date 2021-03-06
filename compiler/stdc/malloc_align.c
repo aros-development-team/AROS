@@ -17,7 +17,7 @@
     NAME */
 #include <stdlib.h>
 
-	void *malloc_align (
+        void *malloc_align (
 
 /*  SYNOPSIS */
         size_t size,
@@ -27,7 +27,7 @@
         Allocate aligned memory.
 
     INPUTS
-	size - How much memory to allocate.
+        size - How much memory to allocate.
         alignment - Alignment of allocated memory. The address of the
                     allocated memory will be a multiple of this value, which
                     must be a power of two and a multiple of sizeof(void *).
@@ -50,7 +50,7 @@
     BUGS
 
     SEE ALSO
-	calloc(), free(), malloc()
+        calloc(), free(), malloc()
 
     INTERNALS
 

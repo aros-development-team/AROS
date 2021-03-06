@@ -23,26 +23,26 @@
     NAME */
 #include <dirent.h>
 
-	struct dirent64 *readdir64(
+        struct dirent64 *readdir64(
 
 /*  SYNOPSIS */
-	DIR *dir)
+        DIR *dir)
 
 /*  FUNCTION
-	 Reads a directory
+         Reads a directory
 
     INPUTS
-	dir - the directory stream pointing to the directory being read
+        dir - the directory stream pointing to the directory being read
 
     RESULT
-	The  readdir()  function  returns  a  pointer  to a dirent
+        The  readdir()  function  returns  a  pointer  to a dirent
         structure, or NULL if an error occurs  or  end-of-file  is
         reached.
 
-	The data returned by readdir() is  overwritten  by subsequent
-	calls to readdir() for the same directory stream.
+        The data returned by readdir() is  overwritten  by subsequent
+        calls to readdir() for the same directory stream.
 
-	According  to POSIX, the dirent structure contains a field
+        According  to POSIX, the dirent structure contains a field
         char d_name[] of unspecified size, with at  most  NAME_MAX
         characters  preceding the terminating null character.  Use
         of other fields will harm the portability of your programs.
@@ -54,8 +54,8 @@
     BUGS
 
     SEE ALSO
- 	read(), opendir(), closedir(), rewinddir(), seekdir(),
-	telldir()
+        read(), opendir(), closedir(), rewinddir(), seekdir(),
+        telldir()
 
     INTERNALS
 
@@ -72,15 +72,15 @@
     {
         D(bug("null)=EFAULT\n"));
         errno = EFAULT;
-	return NULL;
+        return NULL;
     }
 
     desc = __getfdesc(dir->fd);
     if (!desc)
     {
         D(bug("fd=%d)=EBADF\n", (int)dir->fd));
-    	errno = EBADF;
-    	return NULL;
+        errno = EBADF;
+        return NULL;
     }
 
     if (PosixCBase->doupath && dir->pos == 0)
@@ -89,14 +89,14 @@
         dir->ent64.d_name[0]='.';
         dir->ent64.d_name[1]='\0';
         dir->ent64.d_reclen = 1;
-    } 
+    }
     else
     if (PosixCBase->doupath && dir->pos == 1)
     {
         dir->ent64.d_type = DT_DIR;
         dir->ent64.d_name[0]='.';
-    	dir->ent64.d_name[1]='.';
-    	dir->ent64.d_name[2]='\0';
+        dir->ent64.d_name[1]='.';
+        dir->ent64.d_name[2]='\0';
         dir->ent64.d_reclen = 2;
     }
     else
@@ -105,15 +105,15 @@
 
         if (!ExNext(desc->fcb->handle, fib))
         {
-	    dir->pos--;
-	    if (IoErr() != ERROR_NO_MORE_ENTRIES)
-	    {
+            dir->pos--;
+            if (IoErr() != ERROR_NO_MORE_ENTRIES)
+            {
                 errno = __stdc_ioerr2errno(IoErr());
-		D(bug(") errno=%d\n", (int)errno));
+                D(bug(") errno=%d\n", (int)errno));
             }
-	    D(else
-		bug("NO_MORE_ENTRIES)\n"));
-    	    return NULL;
+            D(else
+                bug("NO_MORE_ENTRIES)\n"));
+            return NULL;
         }
 
         CONST_STRPTR name = fib->fib_FileName;
@@ -121,9 +121,9 @@
         {
 
             if (PosixCBase->doupath && name[0] == '.')
-            { 
+            {
                 if (name[1] == '.')
-                {      
+                {
                     if (name[2] == '\0')
                         continue;
                 }
@@ -138,22 +138,22 @@
             switch (fib->fib_DirEntryType)
             {
             case ST_FILE:
-              dir->ent64.d_type = DT_REG; 
+              dir->ent64.d_type = DT_REG;
               break;
             case ST_ROOT:
             case ST_USERDIR:
-              dir->ent64.d_type = DT_DIR; 
+              dir->ent64.d_type = DT_DIR;
               break;
             case ST_SOFTLINK:
             case ST_LINKFILE:
             case ST_LINKDIR:
-              dir->ent64.d_type = DT_LNK; 
+              dir->ent64.d_type = DT_LNK;
               break;
             case ST_PIPEFILE:
-              dir->ent64.d_type = DT_FIFO; 
+              dir->ent64.d_type = DT_FIFO;
               break;
             default:
-              dir->ent64.d_type = DT_UNKNOWN; 
+              dir->ent64.d_type = DT_UNKNOWN;
               break;
             }
             

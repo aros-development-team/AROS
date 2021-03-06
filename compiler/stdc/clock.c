@@ -14,10 +14,10 @@
     NAME */
 #include <time.h>
 
-	clock_t clock (
+        clock_t clock (
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
        clock() returns an approximation of the time passed since
@@ -26,8 +26,8 @@
     INPUTS
 
     RESULT
-	The time passed in CLOCKS_PER_SEC units. To get the
-	number of seconds divide by CLOCKS_PER_SEC.
+        The time passed in CLOCKS_PER_SEC units. To get the
+        number of seconds divide by CLOCKS_PER_SEC.
 
     NOTES
         Reference point is set when stdc.library is opened.
@@ -39,15 +39,15 @@
     BUGS
 
     SEE ALSO
-	time()
+        time()
 
     INTERNALS
 
 ******************************************************************************/
 {
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
-    struct DateStamp 	t;
-    clock_t		retval;
+    struct DateStamp    t;
+    clock_t             retval;
 
     DateStamp(&t); /* Get timestamp */
 

@@ -17,10 +17,10 @@
     NAME */
 #include <unistd.h>
 
-	int pipe(
+        int pipe(
 
 /*  SYNOPSIS */
-	int *pipedes)
+        int *pipedes)
 
 /*  FUNCTION
 
@@ -49,26 +49,26 @@
 
     if (!pipedes)
     {
-	errno = EFAULT;
+        errno = EFAULT;
 
-	return -1;
+        return -1;
     }
 
     if (
-	(rfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) == NULL ||
-	(rdesc = __alloc_fdesc()) == NULL ||
-	(wfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) == NULL ||
-	(wdesc = __alloc_fdesc()) == NULL
+        (rfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) == NULL ||
+        (rdesc = __alloc_fdesc()) == NULL ||
+        (wfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) == NULL ||
+        (wdesc = __alloc_fdesc()) == NULL
     )
     {
     FreeVec(rfcb);
-	if(rdesc)
-	    __free_fdesc(rdesc);
+        if(rdesc)
+            __free_fdesc(rdesc);
     FreeVec(wfcb);
-	if(wdesc)
-	    __free_fdesc(wdesc);
-	errno = ENOMEM;
-	return -1;
+        if(wdesc)
+            __free_fdesc(wdesc);
+        errno = ENOMEM;
+        return -1;
     }
 
     /* Get the next pipe number */
@@ -83,13 +83,13 @@
     writer = Open(pipe_name, MODE_NEWFILE);
     if (writer)
     {
-    	reader = Open(pipe_name, MODE_OLDFILE);
-	if (!reader)
-	{
-    	    DeleteFile(pipe_name);
-    	    Close(writer);
-    	    writer = BNULL;
-	}
+        reader = Open(pipe_name, MODE_OLDFILE);
+        if (!reader)
+        {
+            DeleteFile(pipe_name);
+            Close(writer);
+            writer = BNULL;
+        }
     }
 
     if (!writer)

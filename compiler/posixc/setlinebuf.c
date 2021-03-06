@@ -10,10 +10,10 @@
     NAME */
 #include <stdio.h>
 
-	void setlinebuf (
+        void setlinebuf (
 
 /*  SYNOPSIS */
-	FILE *stream)
+        FILE *stream)
 
 /*  FUNCTION
 
@@ -22,8 +22,8 @@
     RESULT
 
     NOTES
-	This is a simpler alias for setvbuf() according to manpage.
-        This function is not part of POSIX and programmers are advised 
+        This is a simpler alias for setvbuf() according to manpage.
+        This function is not part of POSIX and programmers are advised
         to use setvbuf() function directly.
         Legacy functions may be removed in the future.
 

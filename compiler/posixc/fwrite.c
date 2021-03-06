@@ -21,13 +21,13 @@
     NAME */
 #include <unistd.h>
 
-	size_t __posixc_fwrite (
+        size_t __posixc_fwrite (
 
 /*  SYNOPSIS */
-	const void * restrict	buf,
-	size_t			size,
-	size_t			nblocks,
-	FILE * restrict		stream)
+        const void * restrict   buf,
+        size_t                  size,
+        size_t                  nblocks,
+        FILE * restrict         stream)
 
 /*  FUNCTION
         Write an amount of bytes to a stream.
@@ -63,9 +63,9 @@
     }
 
     if (nblocks > 0 && size > 0)
-	cnt = FWrite (fdesc->fcb->handle, (CONST APTR)buf, size, nblocks);
+        cnt = FWrite (fdesc->fcb->handle, (CONST APTR)buf, size, nblocks);
     else
-	cnt = 0;
+        cnt = 0;
 
     if (cnt == -1)
     {

@@ -9,20 +9,20 @@
     NAME */
 #include <string.h>
 
-	size_t strnlen (
+        size_t strnlen (
 
 /*  SYNOPSIS */
-	const char * ptr, size_t n)
+        const char * ptr, size_t n)
 
 /*  FUNCTION
-	Calculate the length of a string (without the terminating 0 byte).
+        Calculate the length of a string (without the terminating 0 byte).
 
     INPUTS
-	ptr - The string to get its length for
-	n - The max length
+        ptr - The string to get its length for
+        n - The max length
 
     RESULT
-	The length of the string.
+        The length of the string.
 
     NOTES
 

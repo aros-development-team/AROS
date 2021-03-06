@@ -40,7 +40,7 @@ static const struct lconv _lconv =
     NAME */
 #include <string.h>
 
-	struct lconv *localeconv (
+        struct lconv *localeconv (
 
 /*  SYNOPSIS */
         void)

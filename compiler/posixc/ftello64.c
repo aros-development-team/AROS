@@ -15,23 +15,23 @@
         FILE *stream)
 
 /*  FUNCTION
-	Returns the current position in a stream.
+        Returns the current position in a stream.
 
     INPUTS
-	stream - Query this stream
+        stream - Query this stream
 
     RESULT
 
     NOTES
-	Returns the position in files that may be larger than 2 GB, if the
-	underlying filesystem supports it.
+        Returns the position in files that may be larger than 2 GB, if the
+        underlying filesystem supports it.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	fopen64(), ftello64()
+        fopen64(), ftello64()
 
     INTERNALS
 

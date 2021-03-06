@@ -12,12 +12,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/dos.h>
 
-	APTR AllocDosObjectTags (
+        APTR AllocDosObjectTags (
 
 /*  SYNOPSIS */
-	ULONG type,
-	Tag tag1,
-	...)
+        ULONG type,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of dos.library/AllocDosObject().

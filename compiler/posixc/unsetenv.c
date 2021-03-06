@@ -11,16 +11,16 @@
     NAME */
 #include <stdlib.h>
 
-	int unsetenv (
+        int unsetenv (
 
 /*  SYNOPSIS */
-	const char *name)
+        const char *name)
 
 /*  FUNCTION
-	 deletes a variable from the environment.
+         deletes a variable from the environment.
 
     INPUTS
-	name  --  Name of the environment variable to delete.
+        name  --  Name of the environment variable to delete.
 
     RESULT
        Returns zero on success, or -1 if the variable was not found.

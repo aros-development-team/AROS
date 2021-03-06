@@ -12,23 +12,23 @@
     NAME */
 #include <wchar.h>
 
-	int wcscmp(
+        int wcscmp(
 
 /*  SYNOPSIS */
-	const wchar_t *wcstra,
+        const wchar_t *wcstra,
         const wchar_t *wcstrb)
 
 /*  FUNCTION
-	Lexicographically compares two null-terminated wide strings.
+        Lexicographically compares two null-terminated wide strings.
 
     INPUTS
-	wcstra - wide string to compare.
-	wcstrb - wide string to compare.
+        wcstra - wide string to compare.
+        wcstrb - wide string to compare.
 
     RESULT
-	If wcstra appears before wcstrb lexographically, then -1 is returned.
-	If wcstrb appears before wcstra lexographically, then 1 is returned.
-	If the strings are equal, 0 is returned.
+        If wcstra appears before wcstrb lexographically, then -1 is returned.
+        If wcstrb appears before wcstra lexographically, then 1 is returned.
+        If the strings are equal, 0 is returned.
 
     NOTES
 
@@ -46,8 +46,8 @@
                *wcstrb &&
                (*wcstra == *wcstrb))
     {
-	wcstra++;
-	wcstrb++;
+        wcstra++;
+        wcstrb++;
     }
 
     if (*wcstra < *wcstrb)

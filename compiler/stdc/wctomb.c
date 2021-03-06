@@ -9,11 +9,11 @@
     NAME
 #include <stdlib.h>
 
-	int wctomb(
+        int wctomb(
 
     SYNOPSIS
-	char *s,
-	wchar_t wchar)
+        char *s,
+        wchar_t wchar)
 
     FUNCTION
         Converts one wide char to a multi-byte char.
@@ -30,7 +30,7 @@
         string resp don't or do have state-dependent encodings.
 
     NOTES
-	stdc.library currently only implements "C" locale.
+        stdc.library currently only implements "C" locale.
         This means that 0 is returned when s is NULL and 0, 1 or -1 when s is
         not NULL.
 

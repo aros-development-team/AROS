@@ -13,11 +13,11 @@
 
 #include <dirent.h>
 
-	void seekdir(
+        void seekdir(
 
 /*  SYNOPSIS */
-	DIR *dir,
-	off_t offset)
+        DIR *dir,
+        off_t offset)
 
 /*  FUNCTION
 
@@ -46,12 +46,12 @@
         return;
 
     if (offset > 1)
-       	for
-	(
-	    pos = 2;
-	    (pos <= offset) && ExNext(desc->fcb->handle, dir->priv);
-	    pos++
-	);
+        for
+        (
+            pos = 2;
+            (pos <= offset) && ExNext(desc->fcb->handle, dir->priv);
+            pos++
+        );
     dir->pos = pos;
 }
 

@@ -29,18 +29,18 @@ static void __startup_fromwb(struct ExecBase *SysBase)
     /* Do we have a CLI structure? */
     if (!myproc->pr_CLI)
     {
-	/* Workbench startup. Get WBenchMsg and pass it to main() */
+        /* Workbench startup. Get WBenchMsg and pass it to main() */
 
-	WaitPort(&myproc->pr_MsgPort);
-	WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
-	__argv = (char **) WBenchMsg;
+        WaitPort(&myproc->pr_MsgPort);
+        WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
+        __argv = (char **) WBenchMsg;
         __argc = 0;
 
         /* WB started processes' pr_CurrentDir = BNULL */
         curdir = DupLock(WBenchMsg->sm_ArgList->wa_Lock);
         CurrentDir(curdir);
 
-	D(bug("[startup] Started from Workbench\n"));
+        D(bug("[startup] Started from Workbench\n"));
     }
 
     __startup_entries_next();

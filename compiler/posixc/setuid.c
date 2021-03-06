@@ -20,7 +20,7 @@
         uid_t uid)
 
 /*  FUNCTION
-	Sets the user ID, and effective user ID of the calling process.
+        Sets the user ID, and effective user ID of the calling process.
 
     INPUTS
 

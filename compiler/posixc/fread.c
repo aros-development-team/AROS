@@ -17,27 +17,27 @@
     NAME */
 #include <stdio.h>
 
-	size_t __posixc_fread (
+        size_t __posixc_fread (
 
 /*  SYNOPSIS */
-	void * buf,
-	size_t size,
-	size_t nblocks,
-	FILE * stream)
+        void * buf,
+        size_t size,
+        size_t nblocks,
+        FILE * stream)
 
 /*  FUNCTION
-	Read an amount of bytes from a stream.
+        Read an amount of bytes from a stream.
 
     INPUTS
-	buf - The buffer to read the bytes into
-	size - Size of one block to read
-	nblocks - The number of blocks to read
-	stream - Read from this stream
+        buf - The buffer to read the bytes into
+        size - Size of one block to read
+        nblocks - The number of blocks to read
+        stream - Read from this stream
 
     RESULT
-	The number of blocks read. This may range from 0 when the stream
-	contains no more blocks up to nblocks. In case of an error, 0 is
-	returned.
+        The number of blocks read. This may range from 0 when the stream
+        contains no more blocks up to nblocks. In case of an error, 0 is
+        returned.
 
     NOTES
 
@@ -46,7 +46,7 @@
     BUGS
 
     SEE ALSO
-	__posixc_fopen(), fwrite()
+        __posixc_fopen(), fwrite()
 
     INTERNALS
 
@@ -57,9 +57,9 @@
 
     if (!fdesc)
     {
-	stream->flags |= __POSIXC_STDIO_ERROR;
-	errno = EBADF;
-	return 0;
+        stream->flags |= __POSIXC_STDIO_ERROR;
+        errno = EBADF;
+        return 0;
     }
 
     FLUSHONREADCHECK
@@ -68,14 +68,14 @@
 
     if (cnt == -1)
     {
-	errno = __stdc_ioerr2errno (IoErr ());
-	stream->flags |= __POSIXC_STDIO_ERROR;
+        errno = __stdc_ioerr2errno (IoErr ());
+        stream->flags |= __POSIXC_STDIO_ERROR;
 
-	cnt = 0;
+        cnt = 0;
     }
     else if (cnt == 0 || cnt < nblocks)
     {
-	stream->flags |= __POSIXC_STDIO_EOF;
+        stream->flags |= __POSIXC_STDIO_EOF;
     }
 
     return cnt;

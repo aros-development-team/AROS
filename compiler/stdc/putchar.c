@@ -11,10 +11,10 @@
 
 #include <stdio.h>
 
-	int putchar(
+        int putchar(
 
 /*  SYNOPSIS */
-	int c)
+        int c)
 
 /*  FUNCTION
         Equivalent to fputc(stdout)

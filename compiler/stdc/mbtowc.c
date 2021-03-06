@@ -9,12 +9,12 @@
     NAME
 #include <stdlib.h>
 
-	int mbtowc(
+        int mbtowc(
 
     SYNOPSIS
-	wchar_t * restrict pwc,
-	const char * restrict s,
-	size_t n)
+        wchar_t * restrict pwc,
+        const char * restrict s,
+        size_t n)
 
     FUNCTION
         C99 mbtowc function; a function to convert one multi-byte character
@@ -35,7 +35,7 @@
         resp. don't or do have state-dependent encodings.
 
     NOTES
-	stdc.library currently only supports "C" locale
+        stdc.library currently only supports "C" locale
         This means that the function returns 0 when s is NULL and only 0, 1 or -1
         when s is not NULL.
 

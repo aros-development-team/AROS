@@ -21,20 +21,20 @@
     NAME */
 #include <stdio.h>
 
-/*	int fgetc (
+/*      int fgetc (
 
     SYNOPSIS
-	FILE * stream
+        FILE * stream
 
     FUNCTION
-	Read one character from the stream. If there is no character
-	available or an error occurred, the function returns EOF.
+        Read one character from the stream. If there is no character
+        available or an error occurred, the function returns EOF.
 
     INPUTS
-	stream - Read from this stream
+        stream - Read from this stream
 
     RESULT
-	The character read or EOF on end of file or error.
+        The character read or EOF on end of file or error.
 
     NOTES
 
@@ -43,12 +43,12 @@
     BUGS
 
     SEE ALSO
-	getc(), fputc(), putc()
+        getc(), fputc(), putc()
 
     INTERNALS
 
 ******************************************************************************/
-int  __posixc_fgetc (	FILE * stream)
+int  __posixc_fgetc (   FILE * stream)
 {
     int c;
     fdesc *fdesc = __getfdesc(stream->fd);
@@ -56,8 +56,8 @@ int  __posixc_fgetc (	FILE * stream)
     if (!fdesc)
     {
         errno = EBADF;
-	stream->flags |= __POSIXC_STDIO_ERROR;
-	return EOF;
+        stream->flags |= __POSIXC_STDIO_ERROR;
+        return EOF;
     }
 
     /* Note: changes here might require changes in vfscanf.c!! */
@@ -67,18 +67,18 @@ int  __posixc_fgetc (	FILE * stream)
     c = FGetC (fdesc->fcb->handle);
     if (c == EOF)
     {
-	c = IoErr ();
+        c = IoErr ();
 
-	if (c)
-	{
+        if (c)
+        {
             errno = __stdc_ioerr2errno (c);
 
-	    stream->flags |= __POSIXC_STDIO_ERROR;
-	}
-	else
-	    stream->flags |= __POSIXC_STDIO_EOF;
+            stream->flags |= __POSIXC_STDIO_ERROR;
+        }
+        else
+            stream->flags |= __POSIXC_STDIO_EOF;
 
-	c = EOF;
+        c = EOF;
     }
 
     return c;

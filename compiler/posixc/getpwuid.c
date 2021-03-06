@@ -19,15 +19,15 @@
         uid_t uid)
 
 /*  FUNCTION
-	Returns the database entry for the user with specified uid.
+        Returns the database entry for the user with specified uid.
 
     INPUTS
 
     RESULT
 
     NOTES
-	Function is not re-entrant. Results will be overwritten by
-	subsequent calls.
+        Function is not re-entrant. Results will be overwritten by
+        subsequent calls.
 
     EXAMPLE
 

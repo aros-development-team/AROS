@@ -10,20 +10,20 @@
 #include <exec/tasks.h>
 #include <proto/alib.h>
 
-	void DeleteTask (
+        void DeleteTask (
 
 /*  SYNOPSIS */
-	struct Task * task)
+        struct Task * task)
 
 /*  FUNCTION
-	Get rid of a task which was created by CreateTask().
+        Get rid of a task which was created by CreateTask().
 
     INPUTS
-	task - The task which was created by CreateTask(). Must be
-	    non-NULL.
+        task - The task which was created by CreateTask(). Must be
+            non-NULL.
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -32,7 +32,7 @@
     BUGS
 
     SEE ALSO
-	exec.library/RemTask()
+        exec.library/RemTask()
 
     INTERNALS
 

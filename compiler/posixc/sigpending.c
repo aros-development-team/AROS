@@ -13,10 +13,10 @@
 
 #include <signal.h>
 
-	int sigpending (
+        int sigpending (
 
 /*  SYNOPSIS */
-	sigset_t *set)
+        sigset_t *set)
 
 /*  FUNCTION
 

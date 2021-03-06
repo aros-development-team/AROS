@@ -53,11 +53,11 @@ static BPTR __lock(
         __posixc_stat(), __posixc_fstat()
 
     INTERNALS
-	Consult stat() documentation for details.
+        Consult stat() documentation for details.
 
 ******************************************************************************/
 {
-    struct PosixCIntBase *PosixCBase = 
+    struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int res = 0;
     BPTR lock;

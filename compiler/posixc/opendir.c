@@ -27,19 +27,19 @@
     NAME */
 #include <dirent.h>
 
-	DIR *opendir(
+        DIR *opendir(
 
 /*  SYNOPSIS */
-	const char *name)
+        const char *name)
 
 /*  FUNCTION
-	Opens a directory
+        Opens a directory
 
     INPUTS
-	pathname - Path and filename of the directory you want to open.
+        pathname - Path and filename of the directory you want to open.
 
     RESULT
-	NULL for error or a directory stream
+        NULL for error or a directory stream
 
     NOTES
 
@@ -48,8 +48,8 @@
     BUGS
 
     SEE ALSO
- 	open(), __posixc_readdir(), closedir(), rewinddir(), seekdir(),
-	telldir()
+        open(), __posixc_readdir(), closedir(), rewinddir(), seekdir(),
+        telldir()
 
     INTERNALS
 
@@ -67,22 +67,22 @@
 
     if (!name)
     {
-    	errno = EFAULT;
-	goto err1;
+        errno = EFAULT;
+        goto err1;
     }
 
     dir = malloc(sizeof(DIR));
     if (!dir)
     {
-	errno = ENOMEM;
-	goto err1;
+        errno = ENOMEM;
+        goto err1;
     }
 
     dir->priv = AllocDosObject(DOS_FIB, NULL);
     if (!dir->priv)
     {
-	errno = ENOMEM;
-	goto err2;
+        errno = ENOMEM;
+        goto err2;
     }
 
     /* Lock is used instead of open to allow opening "" */
@@ -90,8 +90,8 @@
     lock = Lock(aname, SHARED_LOCK);
     if (!lock)
     {
-	errno = __stdc_ioerr2errno(IoErr());
-	goto err3;
+        errno = __stdc_ioerr2errno(IoErr());
+        goto err3;
     }
 
 #ifndef ExNext_IS_WORKING_WITHOUT_ASSIGN
@@ -99,7 +99,7 @@
 
     if (!AssignLock(assign, DupLock(lock)))
     {
-	D(bug("!AssignLock err=%d\n", IoErr()));
+        D(bug("!AssignLock err=%d\n", IoErr()));
     }
 
     UnLock(lock);
@@ -110,14 +110,14 @@
 
     if (!Examine(lock, dir->priv))
     {
-	errno = __stdc_ioerr2errno(IoErr());
-	goto err4;
+        errno = __stdc_ioerr2errno(IoErr());
+        goto err4;
     }
 
     if (((struct FileInfoBlock *)dir->priv)->fib_DirEntryType<=0)
     {
-	errno = ENOTDIR;
-	goto err4;
+        errno = ENOTDIR;
+        goto err4;
     }
 
     cblock = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR);

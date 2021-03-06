@@ -21,20 +21,20 @@
     NAME */
 #include <stdio.h>
 
-	FILE *fdopen (
+        FILE *fdopen (
 
 /*  SYNOPSIS */
-	int         filedes,
-	const char *mode
-	)
+        int         filedes,
+        const char *mode
+        )
 
 /*  FUNCTION
-	function associates a stream with an existing file descriptor.
+        function associates a stream with an existing file descriptor.
 
     INPUTS
-	filedes - The descriptor the stream has to be associated with
-	mode    - The mode of the stream  (same as with fopen()) must be com­patible
-	          with the mode of the file  descriptor.   The  file
+        filedes - The descriptor the stream has to be associated with
+        mode    - The mode of the stream  (same as with fopen()) must be com­patible
+                  with the mode of the file  descriptor.   The  file
                   position  indicator  of  the  new  stream  is  set to that
                   belonging to filedes, and the error and end-of-file indicators
                   are cleared.  Modes "w" or "w+" do not cause truncation of the
@@ -43,10 +43,10 @@
                   closed.
 
     RESULT
-	NULL on error or the new stream associated with the descriptor.
+        NULL on error or the new stream associated with the descriptor.
 
-	The new descriptor returned by the call is the lowest numbered
-	descriptor currently not in use by the process.
+        The new descriptor returned by the call is the lowest numbered
+        descriptor currently not in use by the process.
 
     NOTES
 
@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-	 open(), fclose(), fileno()
+         open(), fclose(), fileno()
 
     INTERNALS
 
@@ -69,31 +69,31 @@
 
     if (!(fdesc = __getfdesc(filedes)))
     {
-	errno = EBADF;
-	return NULL;
+        errno = EBADF;
+        return NULL;
     }
 
     oflags = fdesc->fcb->flags;
 
     if (mode)
     {
-    	oflags          = __smode2oflags(mode);
-    	
+        oflags          = __smode2oflags(mode);
+        
         wanted_accmode  = oflags & O_ACCMODE;
         current_accmode = fdesc->fcb->flags & O_ACCMODE;
         
-        /* 
-           Check if the requested access mode flags are a valid subset of the 
+        /*
+           Check if the requested access mode flags are a valid subset of the
            flags the already open file has. Thus, if the file's access mode
-           is O_RDWR the requested mode can be anything (O_RDONLY, O_WRONLY or 
+           is O_RDWR the requested mode can be anything (O_RDONLY, O_WRONLY or
            O_RDWR), else they must match exactly.
         */
         
         if ((current_accmode != O_RDWR) && (wanted_accmode != current_accmode))
-    	{
+        {
             errno = EINVAL;
-	    return NULL;
-    	}
+            return NULL;
+        }
     }
 
     fn = AllocPooled(PosixCBase->internalpool, sizeof(FILENODE));

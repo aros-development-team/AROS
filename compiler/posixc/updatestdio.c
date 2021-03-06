@@ -9,10 +9,10 @@
 /*****************************************************************************
 
     NAME */
-	void updatestdio (
+        void updatestdio (
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
         Update stdin, stdout, stderr to reflect changes done by calling

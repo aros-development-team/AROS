@@ -9,36 +9,36 @@
     NAME */
 #include <string.h>
 
-	size_t strspn (
+        size_t strspn (
 
 /*  SYNOPSIS */
-	const char * str,
-	const char * accept)
+        const char * str,
+        const char * accept)
 
 /*  FUNCTION
-	Calculates the length of the initial segment of str which consists
-	entirely of characters in accept.
+        Calculates the length of the initial segment of str which consists
+        entirely of characters in accept.
 
     INPUTS
-	str - The string to check.
-	accept - Characters which have to be in str.
+        str - The string to check.
+        accept - Characters which have to be in str.
 
     RESULT
-	Length of the initial segment of str which contains only
-	characters from accept.
+        Length of the initial segment of str which contains only
+        characters from accept.
 
     NOTES
 
     EXAMPLE
-	char buffer[64];
+        char buffer[64];
 
-	strcpy (buffer, "Hello ");
+        strcpy (buffer, "Hello ");
 
-	// Returns 5
-	strspn (buffer, "Helo");
+        // Returns 5
+        strspn (buffer, "Helo");
 
-	// Returns 0
-	strspn (buffer, "xyz");
+        // Returns 0
+        strspn (buffer, "xyz");
 
     BUGS
 
@@ -52,8 +52,8 @@
 
     while (*str && strchr (accept, *str))
     {
-	str ++;
-	n ++;
+        str ++;
+        n ++;
     }
 
     return n;

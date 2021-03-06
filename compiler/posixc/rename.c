@@ -19,22 +19,22 @@
     NAME */
 #include <stdio.h>
 
-/*	int rename (
+/*      int rename (
 
     SYNOPSIS
-	const char * oldpath
-	const char * newpath
+        const char * oldpath
+        const char * newpath
 
     FUNCTION
-	Renames a file or directory.
+        Renames a file or directory.
 
     INPUTS
-	oldpath - Complete path to existing file or directory.
-	newpath - Complete path to the new file or directory.
+        oldpath - Complete path to existing file or directory.
+        newpath - Complete path to the new file or directory.
 
     RESULT
-	0 on success and -1 on error. In case of an error, errno is set.
-	
+        0 on success and -1 on error. In case of an error, errno is set.
+        
     NOTES
 
     EXAMPLE
@@ -56,12 +56,12 @@ int __posixc_rename (const char * oldpath, const char * newpath)
     /* __path_u2a has resolved paths like /toto/../a */
     if (anewpath[0] == '.')
     {
-	if (anewpath[1] == '\0' || (anewpath[1] == '.' && anewpath[2] == '\0'))
-	{
-	    errno = EEXIST;
-	    free(aoldpath);
-	    return -1;
-	}
+        if (anewpath[1] == '\0' || (anewpath[1] == '.' && anewpath[2] == '\0'))
+        {
+            errno = EEXIST;
+            free(aoldpath);
+            return -1;
+        }
     }
 
     ret = rename(aoldpath, anewpath);

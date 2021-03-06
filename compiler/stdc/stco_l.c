@@ -11,25 +11,25 @@
     NAME */
 #include <string.h>
 
-	int stco_l (
+        int stco_l (
 
 /*  SYNOPSIS */
-	const char 	* in,
-	long		* lvalue)
+        const char      * in,
+        long            * lvalue)
 
 /*  FUNCTION
-	Convert octal string to a long integer
+        Convert octal string to a long integer
 
     INPUTS
-	in     - The octal string to be converted
-	lvalue - Pointer to long where the result is saved 
+        in     - The octal string to be converted
+        lvalue - Pointer to long where the result is saved
 
     RESULT
-	1 means success. 0 means failure.
+        1 means success. 0 means failure.
 
     NOTES
-	SAS/C specific
-	
+        SAS/C specific
+        
     EXAMPLE
 
     BUGS

@@ -12,19 +12,19 @@
     NAME */
 #include <proto/alib.h>
 
-	struct Region *CopyRegion(
+        struct Region *CopyRegion(
 
 /*  SYNOPSIS */
-	struct Region *region)
+        struct Region *region)
 
 /*  FUNCTION
-    	Make a copy of the given Region.
+        Make a copy of the given Region.
 
     INPUTS
-	region - pointer to a Region structure
+        region - pointer to a Region structure
 
     RESULT
-	the copy of the Region, or NULL if not enough memory.
+        the copy of the Region, or NULL if not enough memory.
 
     NOTES
 
@@ -44,8 +44,8 @@
     
     if (nreg)
     {
-    	if (OrRegionRegion(region, nreg))
-    	    return nreg;
+        if (OrRegionRegion(region, nreg))
+            return nreg;
 
         DisposeRegion(nreg);
     }

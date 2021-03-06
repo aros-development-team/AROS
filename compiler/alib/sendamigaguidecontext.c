@@ -13,12 +13,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/amigaguide.h>
 
-	BOOL SendAmigaGuideContext (
+        BOOL SendAmigaGuideContext (
 
 /*  SYNOPSIS */
-	AMIGAGUIDECONTEXT handle,
-	Tag tag1,
-	...)
+        AMIGAGUIDECONTEXT handle,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of amigaguide.library/SendAmigaGuideContextA().

@@ -11,22 +11,22 @@
     NAME */
 #include <stdio.h>
 
-	char * gets (
+        char * gets (
 
 /*  SYNOPSIS */
-	char * buffer)
+        char * buffer)
 
 /*  FUNCTION
-	Read one line of characters from the standard input stream into
+        Read one line of characters from the standard input stream into
         the buffer. Reading will stop, when a newline ('\n') is encountered,
         EOF or when the buffer is full. If a newline is read, then it is
-	replaced by '\0'. The last character in the buffer is always '\0'.
+        replaced by '\0'. The last character in the buffer is always '\0'.
 
     INPUTS
-	buffer - Write characters into this buffer
+        buffer - Write characters into this buffer
 
     RESULT
-	buffer when successful. NULL in case of an error or when EOF without any
+        buffer when successful. NULL in case of an error or when EOF without any
         characters read. In the latter case buffer array is unchanged.
 
     NOTES
@@ -39,7 +39,7 @@
         if it has not encountered a newline or EOF yet. Use fgets() instead.
 
     SEE ALSO
-	fgets()
+        fgets()
 
     INTERNALS
 

@@ -12,10 +12,10 @@
 
     NAME */
 
-	mode_t umask(
+        mode_t umask(
 
 /*  SYNOPSIS */
-	mode_t numask)
+        mode_t numask)
 
 /*  FUNCTION
 

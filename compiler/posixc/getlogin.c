@@ -13,10 +13,10 @@
     NAME */
 #include <unistd.h>
 
-	char * getlogin(
+        char * getlogin(
 
 /*  SYNOPSIS */
-	)
+        )
         
 /*  FUNCTION
 
@@ -32,7 +32,7 @@
     BUGS
 
     SEE ALSO
-	
+        
     INTERNALS
 
 ******************************************************************************/

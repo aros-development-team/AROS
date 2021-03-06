@@ -23,48 +23,48 @@
     NAME */
 #include <stdio.h>
 
-	FILE * fopen (
+        FILE * fopen (
 
 /*  SYNOPSIS */
-	const char * restrict pathname,
-	const char * restrict mode)
+        const char * restrict pathname,
+        const char * restrict mode)
 
 /*  FUNCTION
-	Opens a file with the specified name in the specified mode.
+        Opens a file with the specified name in the specified mode.
 
     INPUTS
-	pathname - Path and filename of the file you want to open.
-	mode - How to open the file:
+        pathname - Path and filename of the file you want to open.
+        mode - How to open the file:
 
-		r: Open for reading. The stream is positioned at the
-			beginning of the file.
+                r: Open for reading. The stream is positioned at the
+                        beginning of the file.
 
-		r+: Open for reading and writing. The stream is positioned
-			at the beginning of the file.
+                r+: Open for reading and writing. The stream is positioned
+                        at the beginning of the file.
 
-		w: Open for writing. If the file doesn't exist, then
-			it is created. If it does already exist, then
-			it is truncated. The stream is positioned at the
-			beginning of the file.
+                w: Open for writing. If the file doesn't exist, then
+                        it is created. If it does already exist, then
+                        it is truncated. The stream is positioned at the
+                        beginning of the file.
 
-		w+: Open for reading and writing. If the file doesn't
-			exist, then it is created. If it does already
-			exist, then it is truncated. The stream is
-			positioned at the beginning of the file.
+                w+: Open for reading and writing. If the file doesn't
+                        exist, then it is created. If it does already
+                        exist, then it is truncated. The stream is
+                        positioned at the beginning of the file.
 
-		a: Open for writing. If the file doesn't exist, then
-			it is created. The stream is positioned at the
-			end of the file.
+                a: Open for writing. If the file doesn't exist, then
+                        it is created. The stream is positioned at the
+                        end of the file.
 
-		a+: Open for reading and writing. If the file doesn't
-			exist, then it is created. The stream is positioned
-			at the end of the file.
+                a+: Open for reading and writing. If the file doesn't
+                        exist, then it is created. The stream is positioned
+                        at the end of the file.
 
-		b: Open in binary more. This has no effect and is ignored.
+                b: Open in binary more. This has no effect and is ignored.
 
     RESULT
-	A pointer to a FILE handle or NULL in case of an error. When NULL
-	is returned, then errno is set to indicate the error.
+        A pointer to a FILE handle or NULL in case of an error. When NULL
+        is returned, then errno is set to indicate the error.
 
     NOTES
 
@@ -74,7 +74,7 @@
         Currently errno is not set on error.
 
     SEE ALSO
-	fclose(), fread(), fwrite(), fgets(), fgetc(), fputs(), fputc()
+        fclose(), fread(), fwrite(), fgets(), fgetc(), fputs(), fputc()
 
     INTERNALS
 

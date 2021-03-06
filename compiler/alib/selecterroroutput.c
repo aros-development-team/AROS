@@ -10,24 +10,24 @@
     NAME */
 #include <proto/dos.h>
 
-	BPTR SelectErrorOutput(
+        BPTR SelectErrorOutput(
 
 /*  SYNOPSIS */
-	BPTR fh)
+        BPTR fh)
 
 /*  FUNCTION
-	Sets the current error stream returned by ErrorOutput() to a new
-	value. Returns the old error stream.
+        Sets the current error stream returned by ErrorOutput() to a new
+        value. Returns the old error stream.
 
     INPUTS
-	fh - New error stream.
+        fh - New error stream.
 
     RESULT
-	Old error stream handle.
+        Old error stream handle.
 
     NOTES
-	This function is source-compatible with AmigaOS v4.
-	
+        This function is source-compatible with AmigaOS v4.
+        
     EXAMPLE
 
     BUGS

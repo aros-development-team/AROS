@@ -14,24 +14,24 @@
     NAME */
 #include <unistd.h>
 
-	int setegid(
+        int setegid(
 
 /*  SYNOPSIS */
-	gid_t gid)
+        gid_t gid)
 
 /*  FUNCTION
-	Set the effective group id of the calling process to gid.
+        Set the effective group id of the calling process to gid.
 
     INPUTS
-	
+        
     RESULT
-	
+        
     NOTES
 
     EXAMPLE
 
     BUGS
-    	
+        
     SEE ALSO
         
     INTERNALS

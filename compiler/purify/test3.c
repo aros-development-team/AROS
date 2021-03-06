@@ -11,8 +11,8 @@ int main (int argc, char ** argv)
 
     if (argc == 1)
     {
-	printf ("Too few arguments\n");
-	return 10;
+        printf ("Too few arguments\n");
+        return 10;
     }
 
     str = "Hello world.\n";
@@ -23,7 +23,7 @@ int main (int argc, char ** argv)
     printf ("argv=%p\n", argv);
 
     for (t=0; t<argc; t++)
-	printf ("Arg %d: %s\n", t, argv[t]);
+        printf ("Arg %d: %s\n", t, argv[t]);
 
     argc = 1;
     *argv = "test";

@@ -16,13 +16,13 @@
     NAME */
 #include <unistd.h>
 
-	pid_t setsid(
+        pid_t setsid(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	Returns the process group ID for the new session.
+        Returns the process group ID for the new session.
 
     INPUTS
 

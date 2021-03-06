@@ -15,22 +15,22 @@
     NAME */
 #include <stdio.h>
 
-	int rename (
+        int rename (
 
 /*  SYNOPSIS */
-	const char * oldpath,
-	const char * newpath)
+        const char * oldpath,
+        const char * newpath)
 
 /*  FUNCTION
-	Renames a file or directory.
+        Renames a file or directory.
 
     INPUTS
-	oldpath - Complete path to existing file or directory.
-	newpath - Complete path to the new file or directory.
+        oldpath - Complete path to existing file or directory.
+        newpath - Complete path to the new file or directory.
 
     RESULT
-	0 on success and -1 on error. In case of an error, errno is set.
-	
+        0 on success and -1 on error. In case of an error, errno is set.
+        
     NOTES
 
     EXAMPLE
@@ -51,34 +51,34 @@
     newlock = Lock(newpath, SHARED_LOCK);
     if (newlock)
     {
-	UnLock(newlock);
+        UnLock(newlock);
 
-	oldlock = Lock(oldpath, EXCLUSIVE_LOCK);
-	if (oldlock)
-	{
-	    UnLock(oldlock);
+        oldlock = Lock(oldpath, EXCLUSIVE_LOCK);
+        if (oldlock)
+        {
+            UnLock(oldlock);
 
-	    /* DeleteFile returns an error if directory is non-empty */
-	    if (!DeleteFile(newpath))
-	    {
+            /* DeleteFile returns an error if directory is non-empty */
+            if (!DeleteFile(newpath))
+            {
                 LONG ioerr = IoErr();
                 errno = __stdc_ioerr2errno(ioerr);
-		D(bug("[%s] %s: '%s' -> '%s', delete errno=%d, IoErr=%d\n", STDCNAME, __func__,
-			oldpath, newpath, errno, ioerr));
-		Permit();
-		return -1;
-	    }
-	}
+                D(bug("[%s] %s: '%s' -> '%s', delete errno=%d, IoErr=%d\n", STDCNAME, __func__,
+                        oldpath, newpath, errno, ioerr));
+                Permit();
+                return -1;
+            }
+        }
     }
 
     if (!Rename (oldpath, newpath))
     {
         LONG ioerr = IoErr();
         errno = __stdc_ioerr2errno(ioerr);
-	D(bug("[%s] %s: '%s' -> '%s' errno=%d, IoErr=%d\n", STDCNAME, __func__,
-		oldpath, newpath, errno, ioerr));
-	Permit();
-	return -1;
+        D(bug("[%s] %s: '%s' -> '%s' errno=%d, IoErr=%d\n", STDCNAME, __func__,
+                oldpath, newpath, errno, ioerr));
+        Permit();
+        return -1;
     }
 
     Permit();

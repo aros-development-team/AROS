@@ -9,11 +9,11 @@
     NAME */
 #include <stdio.h>
 
-	void __posixc_setbuf (
+        void __posixc_setbuf (
 
 /*  SYNOPSIS */
-	FILE *stream,
-	char *buf)
+        FILE *stream,
+        char *buf)
 
 /*  FUNCTION
 
@@ -22,7 +22,7 @@
     RESULT
 
     NOTES
-	This is a simpler alias for setvbuf() according to manpage.
+        This is a simpler alias for setvbuf() according to manpage.
 
     EXAMPLE
 

@@ -9,50 +9,50 @@
     NAME */
 #include <string.h>
 
-	char * strsep (
+        char * strsep (
 
 /*  SYNOPSIS */
-	char	   ** strptr,
-	const char * sep)
+        char       ** strptr,
+        const char * sep)
 
 /*  FUNCTION
-	Separates a string by the characters in sep.
+        Separates a string by the characters in sep.
 
     INPUTS
-	str - The string to check or NULL if the next word in
-		the last string is to be searched.
-	sep - Characters which separate "words" in str.
+        str - The string to check or NULL if the next word in
+                the last string is to be searched.
+        sep - Characters which separate "words" in str.
 
     RESULT
-	The first word in str or the next one if str is NULL.
+        The first word in str or the next one if str is NULL.
 
     NOTES
-	The function changes str !
+        The function changes str !
 
     EXAMPLE
-	char buffer[64];
+        char buffer[64];
         char **bufptr
 
-	strcpy (buffer, "Hello, this is a test.");
+        strcpy (buffer, "Hello, this is a test.");
         *bufptr = buffer
 
         // First word. Returns "Hello"
-	strtok (bufptr, " \t,.");
+        strtok (bufptr, " \t,.");
 
-	// Next word. Returns "this"
-	strtok (bufptr, " \t,.");
+        // Next word. Returns "this"
+        strtok (bufptr, " \t,.");
 
-	// Next word. Returns "is"
-	strtok (bufptr, " \t");
+        // Next word. Returns "is"
+        strtok (bufptr, " \t");
 
-	// Next word. Returns "a"
-	strtok (bufptr, " \t");
+        // Next word. Returns "a"
+        strtok (bufptr, " \t");
 
-	// Next word. Returns "test."
-	strtok (bufptr, " \t");
+        // Next word. Returns "test."
+        strtok (bufptr, " \t");
 
-	// Next word. Returns NULL.
-	strtok (bufptr, " \t");
+        // Next word. Returns NULL.
+        strtok (bufptr, " \t");
 
     BUGS
 
@@ -65,24 +65,24 @@
     char * retval;
     
     if (*strptr == NULL)
-	return NULL;
+        return NULL;
 
     *strptr += strspn (*strptr, sep);
 
     if (**strptr == '\0')
     {
-	*strptr = NULL;
-	return NULL;
+        *strptr = NULL;
+        return NULL;
     }
     else
-	retval = *strptr;
+        retval = *strptr;
     
     *strptr += strcspn (*strptr, sep);
 
     if (**strptr != '\0')
-	*(*strptr) ++ = '\0';
+        *(*strptr) ++ = '\0';
     else
-	*strptr = NULL;
+        *strptr = NULL;
 
     return retval;
 } /* strsep */

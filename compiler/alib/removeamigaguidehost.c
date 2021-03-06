@@ -13,12 +13,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/amigaguide.h>
 
-	LONG RemoveAmigaGuideHost (
+        LONG RemoveAmigaGuideHost (
 
 /*  SYNOPSIS */
-	AMIGAGUIDEHOST key,
-	Tag tag1,
-	...)
+        AMIGAGUIDEHOST key,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of amigaguide.library/RemoveAmigaGuideHostA().

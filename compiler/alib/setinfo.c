@@ -17,25 +17,25 @@ extern struct Library * BulletBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/bullet.h>
 
-	ULONG SetInfo (
+        ULONG SetInfo (
 
 /*  SYNOPSIS */
-	struct GlyphEngine *glyphEngine,
-	Tag                 tag1,
-	...)
+        struct GlyphEngine *glyphEngine,
+        Tag                 tag1,
+        ...)
 
 /*  FUNCTION
-	Changes attributes of an GlyphEngine.
+        Changes attributes of an GlyphEngine.
 
     INPUTS
-	object - Change the attributes of this GlyphEngine
-	tag1 - The first of a list of attribute/value-pairs. The last
-		attribute in this list must be TAG_END or TAG_DONE.
-		The value for this last attribute is not examined (ie.
-		you need not specify it).
+        object - Change the attributes of this GlyphEngine
+        tag1 - The first of a list of attribute/value-pairs. The last
+                attribute in this list must be TAG_END or TAG_DONE.
+                The value for this last attribute is not examined (ie.
+                you need not specify it).
 
     RESULT
-	Bullet Error Code
+        Bullet Error Code
 
     NOTES
 
@@ -44,7 +44,7 @@ extern struct Library * BulletBase;
     BUGS
 
     SEE ALSO
-    	bullet.library/SetInfoA()
+        bullet.library/SetInfoA()
 
     INTERNALS
 

@@ -14,14 +14,14 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	LONG ChangeExtSprite (
+        LONG ChangeExtSprite (
 
 /*  SYNOPSIS */
-	struct ViewPort * vp,
-	struct ExtSprite * oldsprite,
-	struct ExtSprite * newsprite,
-	Tag tag1,
-	...)
+        struct ViewPort * vp,
+        struct ExtSprite * oldsprite,
+        struct ExtSprite * newsprite,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of graphics.library/ChangeExtSpriteA().

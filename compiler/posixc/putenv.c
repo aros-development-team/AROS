@@ -17,26 +17,26 @@
     NAME */
 #include <stdlib.h>
 
-	int putenv (
+        int putenv (
 
 /*  SYNOPSIS */
-	const char *string)
+        const char *string)
 
 /*  FUNCTION
-	Change or add an environment variable.
+        Change or add an environment variable.
 
     INPUTS
-	string - Is of the form "name=value", where name is the variable's
-	         name and value is its value. In case the string is of the form
-		 "name" then the variable is removed from the environment.
+        string - Is of the form "name=value", where name is the variable's
+                 name and value is its value. In case the string is of the form
+                 "name" then the variable is removed from the environment.
     RESULT
-	The putenv() function returns zero on success, or -1 if an
-       	error occurs. In such a case the errno variable is set
-       	appropriately.
+        The putenv() function returns zero on success, or -1 if an
+        error occurs. In such a case the errno variable is set
+        appropriately.
 
     NOTES
         This function must not be used in a shared library.
-	Conforming to BSD4.4 in that it makes a copy of the argument string.
+        Conforming to BSD4.4 in that it makes a copy of the argument string.
 
     EXAMPLE
 
@@ -53,8 +53,8 @@
 
     if (!string)
     {
-    	errno = EFAULT;
-	goto err;
+        errno = EFAULT;
+        goto err;
     }
 
     name = strdup(string);
@@ -62,28 +62,28 @@
 
     for (ptr=name; *ptr!='\0' && *ptr!='='; ptr++)
     {
-	if (isspace(*ptr))
-	{
-	    errno = EINVAL;
-	    goto err;
-     	}
+        if (isspace(*ptr))
+        {
+            errno = EINVAL;
+            goto err;
+        }
     }
 
     /* No value means we have to delete the variable */
     if (*ptr == '\0')
-	res = 0, unsetenv(name);
+        res = 0, unsetenv(name);
 
     /* we might have a value to get */
     else
     {
-    	*ptr = '\0'; /* terminate the name string */
-	value = ++ptr;
-	res = setenv(name, value, 1);
+        *ptr = '\0'; /* terminate the name string */
+        value = ++ptr;
+        res = setenv(name, value, 1);
     }
 
 err:
     if (name)
-    	free(name);
+        free(name);
 
     return res;
 } /* putenv */

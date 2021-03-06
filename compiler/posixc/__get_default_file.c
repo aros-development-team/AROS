@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
-    Function to get a dos.library file handle associated with given file 
+    Function to get a dos.library file handle associated with given file
     descriptor.
 */
 
@@ -13,22 +13,22 @@
 
     NAME */
 
-	int __get_default_file (
+        int __get_default_file (
 
 /*  SYNOPSIS */
-	int file_descriptor,
-	long * file_handle)
+        int file_descriptor,
+        long * file_handle)
 
 /*  FUNCTION
-	Gets dos.library file handle associated with a given file descriptor.
+        Gets dos.library file handle associated with a given file descriptor.
 
     INPUTS
-	file_descriptor - the File Descriptor you wish to obtain the associated 
-		file handle for.
-	file_handle - Pointer to store the associated file handle.
+        file_descriptor - the File Descriptor you wish to obtain the associated
+                file handle for.
+        file_handle - Pointer to store the associated file handle.
 
     RESULT
-	!=0 on error, 0 on success.
+        !=0 on error, 0 on success.
 
     NOTES
         This function is not a part of the ISO C standard, it comes from clib2
@@ -48,7 +48,7 @@
     fdesc *fd;
 
     if(
-       file_descriptor < 0 || 
+       file_descriptor < 0 ||
        (fd = __getfdesc(file_descriptor)) == NULL
     )
         return -1;

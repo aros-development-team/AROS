@@ -11,25 +11,25 @@
     NAME */
 #include <string.h>
 
-	int stch_l (
+        int stch_l (
 
 /*  SYNOPSIS */
-	const char 	* in,
-	long		* lvalue)
+        const char      * in,
+        long            * lvalue)
 
 /*  FUNCTION
-	Convert hexadecimal string to a long integer
+        Convert hexadecimal string to a long integer
 
     INPUTS
-	in     - The hexadecimal string to be converted
-	lvalue - Pointer to long where the result is saved 
+        in     - The hexadecimal string to be converted
+        lvalue - Pointer to long where the result is saved
 
     RESULT
-	Number of characters converted
+        Number of characters converted
 
     NOTES
-	SAS/C specific
-	
+        SAS/C specific
+        
     EXAMPLE
 
     BUGS

@@ -19,12 +19,12 @@ extern struct Library * GadToolsBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/gadtools.h>
 
-	struct Menu * CreateMenus (
+        struct Menu * CreateMenus (
 
 /*  SYNOPSIS */
-	struct NewMenu * newmenu,
-	Tag		 tag1,
-	...		)
+        struct NewMenu * newmenu,
+        Tag              tag1,
+        ...             )
 
 /*  FUNCTION
         Varargs version of gadtools.library/CreateMenusA().
@@ -40,7 +40,7 @@ extern struct Library * GadToolsBase;
     BUGS
 
     SEE ALSO
-	gadtools.library/CreateMenusA()
+        gadtools.library/CreateMenusA()
 
     INTERNALS
 

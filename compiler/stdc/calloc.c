@@ -12,24 +12,24 @@
     NAME */
 #include <stdlib.h>
 
-	void * calloc (
+        void * calloc (
 
 /*  SYNOPSIS */
-	size_t count,
-	size_t size)
+        size_t count,
+        size_t size)
 
 /*  FUNCTION
-	Allocate size bytes of memory, clears the memory (sets all bytes to
-	0) and returns the address of the first byte.
+        Allocate size bytes of memory, clears the memory (sets all bytes to
+        0) and returns the address of the first byte.
 
     INPUTS
-	count - How many time size
-	size - How much memory to allocate.
+        count - How many time size
+        size - How much memory to allocate.
 
     RESULT
-	A pointer to the allocated memory or NULL. If you don't need the
-	memory anymore, you can pass this pointer to free(). If you don't,
-	the memory will be freed for you when the application exits.
+        A pointer to the allocated memory or NULL. If you don't need the
+        memory anymore, you can pass this pointer to free(). If you don't,
+        the memory will be freed for you when the application exits.
 
     NOTES
 
@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	free(), malloc()
+        free(), malloc()
 
     INTERNALS
 
@@ -52,7 +52,7 @@
     mem = malloc (size);
 
     if (mem)
-	memset (mem, 0, size);
+        memset (mem, 0, size);
 
     return mem;
 } /* calloc */

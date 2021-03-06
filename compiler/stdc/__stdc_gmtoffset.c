@@ -18,7 +18,7 @@
     NAME */
 #include <time.h>
 
-	int __stdc_gmtoffset (
+        int __stdc_gmtoffset (
 
 /*  SYNOPSIS */
         void)

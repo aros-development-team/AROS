@@ -24,12 +24,12 @@
 #endif
             char buffer1[2];                            /* Signs and that like */
             char buffer[REQUIREDBUFFER];                /* The body */
-            char *buffer2 = buffer;	                /* So we can set this to any other strings */
+            char *buffer2 = buffer;                     /* So we can set this to any other strings */
             size_t size1 = 0, size2 = 0;                /* How many chars in buffer? */
             const char *ptr = format + 1;               /* pointer to format string */
-            size_t i, pad;		                /* Some temporary variables */
+            size_t i, pad;                              /* Some temporary variables */
 #if defined(FULL_SPECIFIERS)
-            union {			                /* floating point arguments %[aAeEfFgG] */
+            union {                                     /* floating point arguments %[aAeEfFgG] */
                 double dbl;
                 long double ldbl;
             } fparg;
@@ -132,7 +132,7 @@
                                 if (llv2 < 0)
                                 {
                                     llv = - llv2;
-                                    v2 = -1;	        /* Assign a dummy value to v2 in order to process sign below */
+                                    v2 = -1;            /* Assign a dummy value to v2 in order to process sign below */
                                 }
                                 else
                                 {
@@ -163,7 +163,7 @@
                             v = v2;
                         }
                     }
-                    else 		                /* These are unsigned */
+                    else                                /* These are unsigned */
                     {
                         if (subtype=='l')
                         {
@@ -388,7 +388,7 @@
 
                     dreq = preci + 1;                   /* Calculate number of decimal places required */
                     if (type == 'f')
-                        dreq += ex1;	                /* even more before the decimal point */
+                        dreq += ex1;                    /* even more before the decimal point */
 
                     dnum = 0;
                     while (dnum < dreq && dnum < MINFLOATSIZE) /* Calculate all decimal places needed */

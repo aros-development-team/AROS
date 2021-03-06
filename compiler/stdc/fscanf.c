@@ -11,24 +11,24 @@
     NAME */
 #include <stdio.h>
 
-	int fscanf (
+        int fscanf (
 
 /*  SYNOPSIS */
-	FILE	   * restrict fh,
-	const char * restrict format,
-	...)
+        FILE       * restrict fh,
+        const char * restrict format,
+        ...)
 
 /*  FUNCTION
-	Scan a string with the specified arguments and write the results
-	in the specified parameters.
+        Scan a string with the specified arguments and write the results
+        in the specified parameters.
 
     INPUTS
-	fh - Read from this stream
-	format - How to convert the input into the arguments
-	... - Write the result in these arguments
+        fh - Read from this stream
+        format - How to convert the input into the arguments
+        ... - Write the result in these arguments
 
     RESULT
-	The number of converted arguments.
+        The number of converted arguments.
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	scanf()
+        scanf()
 
     INTERNALS
 

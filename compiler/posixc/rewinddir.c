@@ -8,10 +8,10 @@
 
 #include <dirent.h>
 
-	void rewinddir(
+        void rewinddir(
 
 /*  SYNOPSIS */
-	DIR *dir)
+        DIR *dir)
 
 /*  FUNCTION
 

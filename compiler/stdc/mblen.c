@@ -11,11 +11,11 @@
     NAME */
 #include <stdlib.h>
 
-	int mblen(
+        int mblen(
 
 /*  SYNOPSIS */
-	const char *s,
-	size_t n)
+        const char *s,
+        size_t n)
 
 /*  FUNCTION
         This function returns the number of bytes of the next multi-byte
@@ -33,7 +33,7 @@
         resp. don't or do have state-dependent encodings.
 
     NOTES
-	stdc.library currently only implements the "C" locale
+        stdc.library currently only implements the "C" locale
         This means that either 0 or 1 is returned when s is not NULL.
 
     EXAMPLE

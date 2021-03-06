@@ -14,24 +14,24 @@
     NAME */
 #include <stdio.h>
 
-	int vfscanf (
+        int vfscanf (
 
 /*  SYNOPSIS */
-	FILE	   * stream,
-	const char * format,
-	va_list      args)
+        FILE       * stream,
+        const char * format,
+        va_list      args)
 
 /*  FUNCTION
-	Read the scream, scan it as the format specified and write the
-	result of the conversion into the specified arguments.
+        Read the scream, scan it as the format specified and write the
+        result of the conversion into the specified arguments.
 
     INPUTS
-	stream - A stream to read from
-	format - A scanf() format string.
-	args - A list of arguments for the results.
+        stream - A stream to read from
+        format - A scanf() format string.
+        args - A list of arguments for the results.
 
     RESULT
-	The number of converted arguments.
+        The number of converted arguments.
 
     NOTES
 

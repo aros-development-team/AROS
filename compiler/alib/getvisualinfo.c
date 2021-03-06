@@ -19,12 +19,12 @@ extern struct Library * GadToolsBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/gadtools.h>
 
-	APTR GetVisualInfo (
+        APTR GetVisualInfo (
 
 /*  SYNOPSIS */
-	struct Screen * screen,
-	Tag		tag1,
-	...		)
+        struct Screen * screen,
+        Tag             tag1,
+        ...             )
 
 /*  FUNCTION
         Varargs version of gadtools.library/GetVisualInfoA().
@@ -40,7 +40,7 @@ extern struct Library * GadToolsBase;
     BUGS
 
     SEE ALSO
-	gadtools.library/GetVisualInfoA()
+        gadtools.library/GetVisualInfoA()
 
     INTERNALS
 

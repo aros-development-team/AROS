@@ -14,9 +14,9 @@
 struct ReadLevel
 {
     struct MinNode   node;
-    const IPTR	   * sd;
-    UBYTE	   * s;
-    int 	     pos;
+    const IPTR     * sd;
+    UBYTE          * s;
+    int              pos;
 };
 
 /******************************************************************************
@@ -26,42 +26,42 @@ struct ReadLevel
 #include <aros/bigendianio.h>
 #include <proto/alib.h>
 
-	BOOL ReadStruct (
+        BOOL ReadStruct (
 
 /*  SYNOPSIS */
-	struct Hook * hook,
-	APTR	    * dataptr,
-	void	    * stream,
-	const IPTR  * sd)
+        struct Hook * hook,
+        APTR        * dataptr,
+        void        * stream,
+        const IPTR  * sd)
 
 /*  FUNCTION
-	Reads one big endian structure from a streamhook.
+        Reads one big endian structure from a streamhook.
 
     INPUTS
-	hook - Streamhook
-	dataptr - Put the data here. If NULL, a new memory block is allocated
-	stream - Read from this stream
-	sd - Description of the structure to be read. The first element
-		is the size of the structure.
+        hook - Streamhook
+        dataptr - Put the data here. If NULL, a new memory block is allocated
+        stream - Read from this stream
+        sd - Description of the structure to be read. The first element
+                is the size of the structure.
 
     RESULT
-	The function returns TRUE on success. On success, the value
-	read is written into dataptr. On failure, FALSE is returned and the
-	contents of dataptr are not changed.
+        The function returns TRUE on success. On success, the value
+        read is written into dataptr. On failure, FALSE is returned and the
+        contents of dataptr are not changed.
 
     NOTES
-	This function reads big endian values from a streamhook even on
-	little endian machines.
+        This function reads big endian values from a streamhook even on
+        little endian machines.
 
     EXAMPLE
-	See below.
+        See below.
 
     BUGS
 
     SEE ALSO
-	ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
-	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
-	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
+        ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
+        ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
+        WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
     HISTORY
 
@@ -76,7 +76,7 @@ struct ReadLevel
     NEWLIST(list);
 
     if (!(curr = AllocMem (sizeof (struct ReadLevel), MEMF_ANY)) )
-	return FALSE;
+        return FALSE;
 
     AddTail (list, (struct Node *)curr);
 
@@ -89,270 +89,270 @@ struct ReadLevel
 
     for (;;)
     {
-	if (!curr->pos)
-	{
-	    IPTR size = IDESC;
-	    if (!curr->s && !(curr->s = AllocMem (size, MEMF_CLEAR)) )
-		goto error;
+        if (!curr->pos)
+        {
+            IPTR size = IDESC;
+            if (!curr->s && !(curr->s = AllocMem (size, MEMF_CLEAR)) )
+                goto error;
         }
 
-	if (DESC == SDT_END)
-	    break;
+        if (DESC == SDT_END)
+            break;
 
-	switch (IDESC)
-	{
-	case SDT_UBYTE:      /* Read one  8bit byte */
-	    if (!ReadByte (hook, (UBYTE *)(curr->s + IDESC), stream))
-		goto error;
+        switch (IDESC)
+        {
+        case SDT_UBYTE:      /* Read one  8bit byte */
+            if (!ReadByte (hook, (UBYTE *)(curr->s + IDESC), stream))
+                goto error;
 
-	    break;
+            break;
 
-	case SDT_UWORD:      /* Read one 16bit word */
-	    if (!ReadWord (hook, (UWORD *)(curr->s + IDESC), stream))
-		goto error;
+        case SDT_UWORD:      /* Read one 16bit word */
+            if (!ReadWord (hook, (UWORD *)(curr->s + IDESC), stream))
+                goto error;
 
-	    break;
+            break;
 
-	case SDT_ULONG:      /* Read one 32bit long */
-	    if (!ReadLong (hook, (ULONG *)(curr->s + IDESC), stream))
-		goto error;
+        case SDT_ULONG:      /* Read one 32bit long */
+            if (!ReadLong (hook, (ULONG *)(curr->s + IDESC), stream))
+                goto error;
 
-	    break;
+            break;
 
-	case SDT_FLOAT:      /* Read one 32bit IEEE */
-	    if (!ReadFloat (hook, (FLOAT *)(curr->s + IDESC), stream))
-		goto error;
+        case SDT_FLOAT:      /* Read one 32bit IEEE */
+            if (!ReadFloat (hook, (FLOAT *)(curr->s + IDESC), stream))
+                goto error;
 
-	    break;
+            break;
 
-	case SDT_DOUBLE:     /* Read one 64bit IEEE */
-	    if (!ReadDouble (hook, (DOUBLE *)(curr->s + IDESC), stream))
-		goto error;
+        case SDT_DOUBLE:     /* Read one 64bit IEEE */
+            if (!ReadDouble (hook, (DOUBLE *)(curr->s + IDESC), stream))
+                goto error;
 
-	    break;
+            break;
 
-	case SDT_COPY: {   /* Copy 'n' bytes */
-	    int    i, count, offset;
+        case SDT_COPY: {   /* Copy 'n' bytes */
+            int    i, count, offset;
 
             offset = IDESC;
             count = IDESC;
 
             for (i= 0; i < count; i++)
             {
-            	    if (!ReadByte (hook, (UBYTE *)(curr->s + offset + i), stream))
+                    if (!ReadByte (hook, (UBYTE *)(curr->s + offset + i), stream))
                         goto error;
             }
 
-	    break; }
+            break; }
 
-	case SDT_STRING: {   /* Read a string */
-	    UBYTE    valid_ptr;
-	    STRPTR * sptr;
+        case SDT_STRING: {   /* Read a string */
+            UBYTE    valid_ptr;
+            STRPTR * sptr;
 
-	    sptr = (STRPTR *)(curr->s + IDESC);
+            sptr = (STRPTR *)(curr->s + IDESC);
 
-	    if (!ReadByte (hook, &valid_ptr, stream))
-		goto error;
+            if (!ReadByte (hook, &valid_ptr, stream))
+                goto error;
 
-	    if (valid_ptr)
-	    {
-		if (!ReadString (hook, sptr, stream))
-		    goto error;
-	    }
-	    else
-	    {
-		*sptr = NULL;
-	    }
+            if (valid_ptr)
+            {
+                if (!ReadString (hook, sptr, stream))
+                    goto error;
+            }
+            else
+            {
+                *sptr = NULL;
+            }
 
-	    break; }
+            break; }
 
-	case SDT_STRUCT: {    /* Read a structure */
-	    struct ReadLevel * next;
-	    IPTR * desc;
-	    APTR   aptr;
+        case SDT_STRUCT: {    /* Read a structure */
+            struct ReadLevel * next;
+            IPTR * desc;
+            APTR   aptr;
 
-	    aptr = (APTR)(curr->s + IDESC);
-	    desc = (IPTR *)IDESC;
+            aptr = (APTR)(curr->s + IDESC);
+            desc = (IPTR *)IDESC;
 
-	    curr->pos -= 3; /* Go back to type */
+            curr->pos -= 3; /* Go back to type */
 
-	    if (!(next = AllocMem (sizeof (struct ReadLevel), MEMF_ANY)) )
-		goto error;
+            if (!(next = AllocMem (sizeof (struct ReadLevel), MEMF_ANY)) )
+                goto error;
 
-	    AddTail (list, (struct Node *)next);
-	    next->sd  = desc;
-	    next->pos = 1;
-	    next->s   = aptr;
+            AddTail (list, (struct Node *)next);
+            next->sd  = desc;
+            next->pos = 1;
+            next->s   = aptr;
 
-	    curr = next;
+            curr = next;
 
-	    break; }
+            break; }
 
-	case SDT_PTR: {    /* Follow a pointer */
-	    struct ReadLevel * next;
+        case SDT_PTR: {    /* Follow a pointer */
+            struct ReadLevel * next;
 
-	    UBYTE  valid_ptr;
-	    IPTR * desc;
-	    APTR * aptr;
+            UBYTE  valid_ptr;
+            IPTR * desc;
+            APTR * aptr;
 
-	    aptr = ((APTR *)(curr->s + IDESC));
-	    desc = (IPTR *)IDESC;
+            aptr = ((APTR *)(curr->s + IDESC));
+            desc = (IPTR *)IDESC;
 
-	    if (!ReadByte (hook, &valid_ptr, stream))
-		goto error;
+            if (!ReadByte (hook, &valid_ptr, stream))
+                goto error;
 
-	    if (valid_ptr)
-	    {
-		curr->pos -= 3;
+            if (valid_ptr)
+            {
+                curr->pos -= 3;
 
-		if (!(next = AllocMem (sizeof (struct ReadLevel), MEMF_ANY)) )
-		    goto error;
+                if (!(next = AllocMem (sizeof (struct ReadLevel), MEMF_ANY)) )
+                    goto error;
 
-		AddTail (list, (struct Node *)next);
-		next->sd  = desc;
-		next->pos = 0;
+                AddTail (list, (struct Node *)next);
+                next->sd  = desc;
+                next->pos = 0;
 
-		curr = next;
-	    }
-	    else
-	    {
-		*aptr = NULL;
-	    }
+                curr = next;
+            }
+            else
+            {
+                *aptr = NULL;
+            }
 
-	    break; }
+            break; }
 
-	case SDT_IGNORE: {   /* Ignore x bytes */
+        case SDT_IGNORE: {   /* Ignore x bytes */
         struct BEIOM_Ignore ig = {BEIO_IGNORE, IDESC};
-	    if (CallHookA (hook, stream, &ig) == EOF)
-		goto error;
+            if (CallHookA (hook, stream, &ig) == EOF)
+                goto error;
 
-	    break; }
+            break; }
 
-	case SDT_FILL_BYTE: { /* Fill x bytes */
-	    IPTR  offset;
-	    UBYTE value;
-	    IPTR  count;
+        case SDT_FILL_BYTE: { /* Fill x bytes */
+            IPTR  offset;
+            UBYTE value;
+            IPTR  count;
 
-	    offset = IDESC;
-	    value  = IDESC;
-	    count  = IDESC;
+            offset = IDESC;
+            value  = IDESC;
+            count  = IDESC;
 
-	    memset (curr->s + offset, value, count);
+            memset (curr->s + offset, value, count);
 
-	    break; }
+            break; }
 
-	case SDT_FILL_LONG: { /* Fill x longs */
-	    ULONG * ulptr;
-	    ULONG   value;
-	    IPTR    count;
+        case SDT_FILL_LONG: { /* Fill x longs */
+            ULONG * ulptr;
+            ULONG   value;
+            IPTR    count;
 
-	    ulptr = (ULONG *)(curr->s + IDESC);
-	    value = IDESC;
-	    count = IDESC;
+            ulptr = (ULONG *)(curr->s + IDESC);
+            value = IDESC;
+            count = IDESC;
 
-	    while (count --)
-		*ulptr ++ = value;
+            while (count --)
+                *ulptr ++ = value;
 
-	    break; }
+            break; }
 
-	case SDT_IFILL_BYTE: { /* Fill x bytes */
-	    IPTR  offset;
-	    UBYTE value;
-	    IPTR  count;
+        case SDT_IFILL_BYTE: { /* Fill x bytes */
+            IPTR  offset;
+            UBYTE value;
+            IPTR  count;
 
-	    offset = IDESC;
-	    value  = IDESC;
-	    count  = IDESC;
+            offset = IDESC;
+            value  = IDESC;
+            count  = IDESC;
 
         struct BEIOM_Ignore ig = {BEIO_IGNORE, count};
 
-	    if (CallHookA (hook, stream, &ig) == EOF)
-		goto error;
+            if (CallHookA (hook, stream, &ig) == EOF)
+                goto error;
 
-	    memset (curr->s + offset, value, count);
+            memset (curr->s + offset, value, count);
 
-	    break; }
+            break; }
 
-	case SDT_IFILL_LONG: { /* Fill x longs */
-	    ULONG * ulptr;
-	    ULONG   value;
-	    IPTR    count;
+        case SDT_IFILL_LONG: { /* Fill x longs */
+            ULONG * ulptr;
+            ULONG   value;
+            IPTR    count;
 
-	    ulptr = (ULONG *)(curr->s + IDESC);
-	    value = IDESC;
-	    count = IDESC;
+            ulptr = (ULONG *)(curr->s + IDESC);
+            value = IDESC;
+            count = IDESC;
 
         struct BEIOM_Ignore ig = {BEIO_IGNORE, count << 2};
 
-	    if (CallHookA (hook, stream, &ig) == EOF)
-		goto error;
+            if (CallHookA (hook, stream, &ig) == EOF)
+                goto error;
 
-	    while (count --)
-		*ulptr ++ = value;
+            while (count --)
+                *ulptr ++ = value;
 
-	    break; }
+            break; }
 
-	case SDT_SPECIAL: {   /* Call user hook */
-	    struct Hook * uhook;
-	    struct SDData data;
+        case SDT_SPECIAL: {   /* Call user hook */
+            struct Hook * uhook;
+            struct SDData data;
 
-	    data.sdd_Dest   = ((APTR)(curr->s + IDESC));
-	    data.sdd_Mode   = SDV_SPECIALMODE_READ;
-	    data.sdd_Stream = stream;
+            data.sdd_Dest   = ((APTR)(curr->s + IDESC));
+            data.sdd_Mode   = SDV_SPECIALMODE_READ;
+            data.sdd_Stream = stream;
 
-	    uhook = (struct Hook *)IDESC;
+            uhook = (struct Hook *)IDESC;
 
-	    if (!CallHookA (uhook, hook, &data))
-	    	goto error;
+            if (!CallHookA (uhook, hook, &data))
+                goto error;
 
-	    break; }
+            break; }
 
-	default:
-	    goto error;
+        default:
+            goto error;
 
-	} /* switch */
+        } /* switch */
 
-	/* End of the description list ? */
-	if (DESC == SDT_END)
-	{
-	    struct ReadLevel * last;
+        /* End of the description list ? */
+        if (DESC == SDT_END)
+        {
+            struct ReadLevel * last;
 
-	    /* Remove the current level */
-	    last = curr;
-	    Remove ((struct Node *)last);
+            /* Remove the current level */
+            last = curr;
+            Remove ((struct Node *)last);
 
-	    /* Get the last level */
-	    if ((curr = (struct ReadLevel *)GetTail (list)))
-	    {
-		switch (IDESC)
-		{
-		case SDT_STRUCT:
-		    curr->pos += 2; /* Skip 2 parameters */
-		    break;
+            /* Get the last level */
+            if ((curr = (struct ReadLevel *)GetTail (list)))
+            {
+                switch (IDESC)
+                {
+                case SDT_STRUCT:
+                    curr->pos += 2; /* Skip 2 parameters */
+                    break;
 
-		case SDT_PTR: {
-		    APTR * aptr;
+                case SDT_PTR: {
+                    APTR * aptr;
 
-		    aptr  = ((APTR *)(curr->s + IDESC));
-		    curr->pos ++; /* Skip description parameter */
+                    aptr  = ((APTR *)(curr->s + IDESC));
+                    curr->pos ++; /* Skip description parameter */
 
-		    /*
-			Now put the result of the current level in the
-			struct of the previous level.
-		    */
-		    *aptr = last->s;
+                    /*
+                        Now put the result of the current level in the
+                        struct of the previous level.
+                    */
+                    *aptr = last->s;
 
-		    break; }
+                    break; }
 
-		}
+                }
 
-		FreeMem (last, sizeof (struct ReadLevel));
-	    }
-	    else
-	    {
-		curr = last;
-	    }
-	}
+                FreeMem (last, sizeof (struct ReadLevel));
+            }
+            else
+            {
+                curr = last;
+            }
+        }
     } /* while */
 
     *dataptr = curr->s;
@@ -365,10 +365,10 @@ error:
     curr = (struct ReadLevel *)GetHead (list);
 
     if (curr && curr->s && !pre_alloc)
-	FreeStruct (curr->s, curr->sd);
+        FreeStruct (curr->s, curr->sd);
 
     while ((curr = (struct ReadLevel *)RemTail (list)))
-	FreeMem (curr, sizeof (struct ReadLevel));
+        FreeMem (curr, sizeof (struct ReadLevel));
 
     return FALSE;
 } /* ReadStruct */
@@ -464,18 +464,18 @@ LONG dosstreamhook (struct Hook * hook, BPTR fh, ULONG * msg)
     switch (*msg)
     {
     case BEIO_READ:
-	rc = FGetC (fh);
-	break;
+        rc = FGetC (fh);
+        break;
 
     case BEIO_WRITE:
-	rc = FPutC (fh, ((struct BEIOM_Write *)msg)->Data);
-	break;
+        rc = FPutC (fh, ((struct BEIOM_Write *)msg)->Data);
+        break;
 
     case BEIO_IGNORE:
-	Flush (fh);
+        Flush (fh);
 
-	rc = Seek (fh, ((struct BEIOM_Ignore *)msg)->Count, OFFSET_CURRENT);
-	break;
+        rc = Seek (fh, ((struct BEIOM_Ignore *)msg)->Count, OFFSET_CURRENT);
+        break;
 
     }
 
@@ -486,13 +486,13 @@ int main (int argc, char ** argv)
 {
     struct MainLevel demo =
     {
-	(BYTE)0x88,       0xFF,
-	(WORD)0x8844,     0xFF77,
-	(LONG)0x88442211, 0xFF773311,
-	1.5, 1.75,
-	"Hallo",
-	{ (BYTE)0x88, (LONG)0x88442211 },
-	/* ... */
+        (BYTE)0x88,       0xFF,
+        (WORD)0x8844,     0xFF77,
+        (LONG)0x88442211, 0xFF773311,
+        1.5, 1.75,
+        "Hallo",
+        { (BYTE)0x88, (LONG)0x88442211 },
+        /* ... */
     };
     BYTE b = (BYTE)0x88;
     WORD w = (WORD)0x8844;
@@ -502,7 +502,7 @@ int main (int argc, char ** argv)
     STRPTR s = "Hallo";
     struct Level1 l1 =
     {
-	(BYTE)0x88, (LONG)0x88442211
+        (BYTE)0x88, (LONG)0x88442211
     };
     BPTR fh;
     struct MainLevel * readback;
@@ -519,41 +519,41 @@ int main (int argc, char ** argv)
 
     if (!fh)
     {
-	PrintFault (IoErr(), "Can't open file\n");
-	return 10;
+        PrintFault (IoErr(), "Can't open file\n");
+        return 10;
     }
 
     /*
-	This writes the following data stream:
+        This writes the following data stream:
 
-	    0000 88			    ml_Byte
-	    0001 ff			    ml_Ubyte
-	    0002 88 44			    ml_Word
-	    0004 ff 77			    ml_UWord
-	    0006 88 44 22 11		    ml_Long
-	    000a ff 77 33 11		    ml_ULong
-	    000e 3f c0 00 00		    ml_Float
-	    0012 3f fc 00 00 00 00 00 00    ml_Double
-	    001a 01:48 61 6c 6c 6f 00	    ml_String
-	    0021 88			    ml_Level1.l1_Byte
-	    0022 88 44 22 11		    ml_Level1.l1_Long
-	    0026 01:88			    ml_BytePtr
-	    0028 01:88 44		    ml_WordPtr
-	    002b 01:88 44 22 11 	    ml_LongPtr
-	    0030 01:3f c0 00 00 	    ml_FloatPtr
-	    0035 01:3f fc 00 00 00 00 00 00 ml_DoublePtr
-	    003e 01:01:48 61 6c 6c 6f 00    ml_StringPtr - Note two 01 !
-	    0046 01:88 88 44 22 11	    ml_Level1Ptr
+            0000 88                         ml_Byte
+            0001 ff                         ml_Ubyte
+            0002 88 44                      ml_Word
+            0004 ff 77                      ml_UWord
+            0006 88 44 22 11                ml_Long
+            000a ff 77 33 11                ml_ULong
+            000e 3f c0 00 00                ml_Float
+            0012 3f fc 00 00 00 00 00 00    ml_Double
+            001a 01:48 61 6c 6c 6f 00       ml_String
+            0021 88                         ml_Level1.l1_Byte
+            0022 88 44 22 11                ml_Level1.l1_Long
+            0026 01:88                      ml_BytePtr
+            0028 01:88 44                   ml_WordPtr
+            002b 01:88 44 22 11             ml_LongPtr
+            0030 01:3f c0 00 00             ml_FloatPtr
+            0035 01:3f fc 00 00 00 00 00 00 ml_DoublePtr
+            003e 01:01:48 61 6c 6c 6f 00    ml_StringPtr - Note two 01 !
+            0046 01:88 88 44 22 11          ml_Level1Ptr
     */
 
     if (!WriteStruct (&dsh, &demo, fh, MainDesc))
     {
-	PrintFault (IoErr(), "Failed to write to file\n");
+        PrintFault (IoErr(), "Failed to write to file\n");
     }
 
     if (!Close (fh))
     {
-	PrintFault (IoErr(), "Failed to close file\n");
+        PrintFault (IoErr(), "Failed to close file\n");
     }
 
     /* Read the structure back */
@@ -561,76 +561,76 @@ int main (int argc, char ** argv)
 
     if (!fh)
     {
-	PrintFault (IoErr(), "Can't open file for reading\n");
-	return 10;
+        PrintFault (IoErr(), "Can't open file for reading\n");
+        return 10;
     }
 
     if (!ReadStruct (&dsh, (APTR *)&readback, fh, MainDesc))
     {
-	PrintFault (IoErr(), "Failed to read from file\n");
+        PrintFault (IoErr(), "Failed to read from file\n");
     }
     else
     {
-	UBYTE * ptr;
-	int t;
+        UBYTE * ptr;
+        int t;
 
-	ptr = (UBYTE *)readback;
-	t = 0;
+        ptr = (UBYTE *)readback;
+        t = 0;
 
-	kprintf ("readback = %p\n", readback);
+        kprintf ("readback = %p\n", readback);
 
-	kprintf ("%02X (88) %02X (FF)\n"
-	    , (UBYTE)readback->ml_Byte
-	    , readback->ml_UByte
-	);
-	kprintf ("%04X (8844) %04X (FF77)\n"
-	    , (UWORD)readback->ml_Word
-	    , readback->ml_UWord
-	);
-	kprintf ("%08lX (88442211) %08lX (FF773311)\n"
-	    , readback->ml_Long
-	    , readback->ml_ULong
-	);
-	kprintf ("%08lX (3FC00000) %08lX:%08lX (3FFC0000:00000000)\n"
-	    , *(ULONG *)&readback->ml_Float
-	    , ((ULONG *)&readback->ml_Double)[1]
-	    , ((ULONG *)&readback->ml_Double)[0]
-	);
-	kprintf ("%s (Hallo)\n"
-	    , readback->ml_String
-	);
-	kprintf ("{ %02X %08X } ({ 88 88442211 })\n"
-	    , (UBYTE)readback->ml_Level1.l1_Byte
-	    , readback->ml_Level1.l1_Long
-	);
-	kprintf ("%02X (88)\n"
-	    , (UBYTE)*readback->ml_BytePtr
-	);
-	kprintf ("%04X (8844)\n"
-	    , (UWORD)*readback->ml_WordPtr
-	);
-	kprintf ("%08lX (88442211)\n"
-	    , *readback->ml_LongPtr
-	);
-	kprintf ("%08lX (3FC00000) %08lX:%08lX (3FFC0000:00000000)\n"
-	    , *(ULONG *)readback->ml_FloatPtr
-	    , ((ULONG *)readback->ml_DoublePtr)[1]
-	    , ((ULONG *)readback->ml_DoublePtr)[0]
-	);
-	kprintf ("%s (Hallo)\n"
-	    , *readback->ml_StringPtr
-	);
-	kprintf ("{ %02X %08X } ({ 88 88442211 })\n"
-	    , (UBYTE)readback->ml_Level1Ptr->l1_Byte
-	    , readback->ml_Level1Ptr->l1_Long
-	);
+        kprintf ("%02X (88) %02X (FF)\n"
+            , (UBYTE)readback->ml_Byte
+            , readback->ml_UByte
+        );
+        kprintf ("%04X (8844) %04X (FF77)\n"
+            , (UWORD)readback->ml_Word
+            , readback->ml_UWord
+        );
+        kprintf ("%08lX (88442211) %08lX (FF773311)\n"
+            , readback->ml_Long
+            , readback->ml_ULong
+        );
+        kprintf ("%08lX (3FC00000) %08lX:%08lX (3FFC0000:00000000)\n"
+            , *(ULONG *)&readback->ml_Float
+            , ((ULONG *)&readback->ml_Double)[1]
+            , ((ULONG *)&readback->ml_Double)[0]
+        );
+        kprintf ("%s (Hallo)\n"
+            , readback->ml_String
+        );
+        kprintf ("{ %02X %08X } ({ 88 88442211 })\n"
+            , (UBYTE)readback->ml_Level1.l1_Byte
+            , readback->ml_Level1.l1_Long
+        );
+        kprintf ("%02X (88)\n"
+            , (UBYTE)*readback->ml_BytePtr
+        );
+        kprintf ("%04X (8844)\n"
+            , (UWORD)*readback->ml_WordPtr
+        );
+        kprintf ("%08lX (88442211)\n"
+            , *readback->ml_LongPtr
+        );
+        kprintf ("%08lX (3FC00000) %08lX:%08lX (3FFC0000:00000000)\n"
+            , *(ULONG *)readback->ml_FloatPtr
+            , ((ULONG *)readback->ml_DoublePtr)[1]
+            , ((ULONG *)readback->ml_DoublePtr)[0]
+        );
+        kprintf ("%s (Hallo)\n"
+            , *readback->ml_StringPtr
+        );
+        kprintf ("{ %02X %08X } ({ 88 88442211 })\n"
+            , (UBYTE)readback->ml_Level1Ptr->l1_Byte
+            , readback->ml_Level1Ptr->l1_Long
+        );
 
-	FreeStruct (readback, MainDesc);
+        FreeStruct (readback, MainDesc);
     }
 
     if (!Close (fh))
     {
-	PrintFault (IoErr(), "Failed to close file after reading\n");
+        PrintFault (IoErr(), "Failed to close file after reading\n");
     }
 
     return 0;

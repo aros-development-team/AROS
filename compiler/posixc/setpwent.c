@@ -11,10 +11,10 @@
 
 #include <pwd.h>
 
-	void setpwent(
+        void setpwent(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
 
@@ -23,7 +23,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

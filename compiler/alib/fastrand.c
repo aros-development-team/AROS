@@ -7,10 +7,10 @@
     NAME */
 #include <proto/alib.h>
 
-	ULONG FastRand (
+        ULONG FastRand (
 
 /*  SYNOPSIS */
-	ULONG seed)
+        ULONG seed)
 
 /*  FUNCTION
 
@@ -35,7 +35,7 @@
     ULONG a = seed << 1;
 
     if ((LONG)seed <= 0)
-	a ^= 0x1d872b41;
+        a ^= 0x1d872b41;
 
     return a;
 } /* FastRand */

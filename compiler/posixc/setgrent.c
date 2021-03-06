@@ -11,10 +11,10 @@
 
 #include <grp.h>
 
-	void setgrent(
+        void setgrent(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
 
@@ -23,7 +23,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

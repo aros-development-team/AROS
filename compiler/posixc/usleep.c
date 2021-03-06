@@ -14,10 +14,10 @@
     NAME */
 #include <unistd.h>
 
-	int usleep (
+        int usleep (
 
 /*  SYNOPSIS */
-	useconds_t usec) 
+        useconds_t usec)
         
 /*  FUNCTION
         Suspends program execution for a given number of microseconds.

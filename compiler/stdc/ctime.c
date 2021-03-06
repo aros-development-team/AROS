@@ -9,22 +9,22 @@
     NAME */
 #include <time.h>
 
-	char * ctime (
+        char * ctime (
 
 /*  SYNOPSIS */
-	const time_t * tt)
+        const time_t * tt)
 
 /*  FUNCTION
-	The ctime() function converts the broken-down time value tt
-	into a string.
+        The ctime() function converts the broken-down time value tt
+        into a string.
 
         See ctime_r() for details.
 
     INPUTS
-	tt - Convert this time.
+        tt - Convert this time.
 
     RESULT
-	A statically allocated buffer with the converted time. Note that
+        A statically allocated buffer with the converted time. Note that
         the contents of the buffer might get lost with the call of any of the
         date and time functions.
 
@@ -33,19 +33,19 @@
         in a threaded application. Use ctime_r() instead.
 
     EXAMPLE
-	time_t tt;
-	char * str;
+        time_t tt;
+        char * str;
 
-	// Get time
-	time (&tt);
+        // Get time
+        time (&tt);
 
-	// Convert to string
-	str = ctime (&tt);
+        // Convert to string
+        str = ctime (&tt);
 
     BUGS
 
     SEE ALSO
-	time(), asctime(), gmtime(), localtime()
+        time(), asctime(), gmtime(), localtime()
 
     INTERNALS
 

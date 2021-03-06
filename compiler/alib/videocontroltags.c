@@ -14,12 +14,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	ULONG VideoControlTags (
+        ULONG VideoControlTags (
 
 /*  SYNOPSIS */
-	struct ColorMap * cm,
-	Tag tag1,
-	...)
+        struct ColorMap * cm,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of graphics.library/VideoControl().

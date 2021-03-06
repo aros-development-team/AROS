@@ -13,10 +13,10 @@
 
 #include <signal.h>
 
-	int sigsuspend (
+        int sigsuspend (
 
 /*  SYNOPSIS */
-	const sigset_t *mask)
+        const sigset_t *mask)
 
 /*  FUNCTION
         replace the callers signal mask, and suspend it
@@ -28,10 +28,10 @@
 
         If the signal is caught, sigsuspend() returns following the
         signal handler, and the signal mask is restored to
-        the state prior to calling sigsuspend(). 
+        the state prior to calling sigsuspend().
 
         SIGKILL or SIGSTOP cannot be blocked; specifying
-        them in the mask has no effect on the process's signal mask. 
+        them in the mask has no effect on the process's signal mask.
 
     INPUTS
 
@@ -42,7 +42,7 @@
         Not implemented.
 
         Normally used in conjunction with sigprocmask(), to prevent
-        signal delivery during critical code sections. Callers must 
+        signal delivery during critical code sections. Callers must
         block the signals with sigprocmask(). On completion, the caller
         waits for signals by calling sigsuspend() with the return value
         of sigprocmask()

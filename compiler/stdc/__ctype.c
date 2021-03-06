@@ -372,33 +372,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isupper (
+        int isupper (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is uppercase. Works for all characters between
-	-128 and 255 inclusive both.
+        Test if a character is uppercase. Works for all characters between
+        -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is uppercase, 0 otherwise.
+        != 0 if the character is uppercase, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isupper ('A')    -> true
-	isupper ('a')    -> false
-	isupper ('0')    -> false
-	isupper ('.')    -> false
-	isupper ('\n')   -> false
-	isupper ('\001') -> false
-	isupper (EOF)    -> false
+        isupper ('A')    -> true
+        isupper ('a')    -> false
+        isupper ('0')    -> false
+        isupper ('.')    -> false
+        isupper ('\n')   -> false
+        isupper ('\001') -> false
+        isupper (EOF)    -> false
 
     BUGS
 
@@ -410,33 +410,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int islower (
+        int islower (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is lowercase. Works for all characters between
-	-128 and 255 inclusive both.
+        Test if a character is lowercase. Works for all characters between
+        -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is lowercase, 0 otherwise.
+        != 0 if the character is lowercase, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	islower ('A')    -> false
-	islower ('a')    -> true
-	islower ('0')    -> false
-	islower ('.')    -> false
-	islower ('\n')   -> false
-	islower ('\001') -> false
-	islower (EOF)    -> false
+        islower ('A')    -> false
+        islower ('a')    -> true
+        islower ('0')    -> false
+        islower ('.')    -> false
+        islower ('\n')   -> false
+        islower ('\001') -> false
+        islower (EOF)    -> false
 
     BUGS
 
@@ -448,33 +448,33 @@ ADD2INITLIB(__ctype_init, 20);
 /******************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isalpha (
+        int isalpha (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is an alphabetic character. Works for all
-	characters between -128 and 255 inclusive both.
+        Test if a character is an alphabetic character. Works for all
+        characters between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is an alphabetic character, 0 otherwise.
+        != 0 if the character is an alphabetic character, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isalpha ('A')    -> true
-	isalpha ('a')    -> true
-	isalpha ('0')    -> false
-	isalpha ('.')    -> false
-	isalpha ('\n')   -> false
-	isalpha ('\001') -> false
-	isalpha (EOF)    -> false
+        isalpha ('A')    -> true
+        isalpha ('a')    -> true
+        isalpha ('0')    -> false
+        isalpha ('.')    -> false
+        isalpha ('\n')   -> false
+        isalpha ('\001') -> false
+        isalpha (EOF)    -> false
 
     BUGS
 
@@ -486,33 +486,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isalnum (
+        int isalnum (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is an alphabetic character or a digit. Works
-	for all characters between -128 and 255 inclusive both.
+        Test if a character is an alphabetic character or a digit. Works
+        for all characters between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is alphabetic character or a digit, 0 otherwise.
+        != 0 if the character is alphabetic character or a digit, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isalnum ('A')    -> true
-	isalnum ('a')    -> true
-	isalnum ('0')    -> true
-	isalnum ('.')    -> false
-	isalnum ('\n')   -> false
-	isalnum ('\001') -> false
-	isalnum (EOF)    -> false
+        isalnum ('A')    -> true
+        isalnum ('a')    -> true
+        isalnum ('0')    -> true
+        isalnum ('.')    -> false
+        isalnum ('\n')   -> false
+        isalnum ('\001') -> false
+        isalnum (EOF)    -> false
 
     BUGS
 
@@ -524,33 +524,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isascii (
+        int isascii (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is an ascii character. Works for all characters
-	between -128 and 255 inclusive both.
+        Test if a character is an ascii character. Works for all characters
+        between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is an ascii character, 0 otherwise.
+        != 0 if the character is an ascii character, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isascii ('A')    -> true
-	isascii ('a')    -> true
-	isascii ('0')    -> true
-	isascii ('.')    -> true
-	isascii ('\n')   -> true
-	isascii ('\001') -> true
-	isascii (EOF)    -> false
+        isascii ('A')    -> true
+        isascii ('a')    -> true
+        isascii ('0')    -> true
+        isascii ('.')    -> true
+        isascii ('\n')   -> true
+        isascii ('\001') -> true
+        isascii (EOF)    -> false
 
     BUGS
 
@@ -562,34 +562,34 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isblank (
+        int isblank (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is a space or a tab. Works for all characters
-	between -128 and 255 inclusive both.
+        Test if a character is a space or a tab. Works for all characters
+        between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is a space or tab, 0 otherwise.
+        != 0 if the character is a space or tab, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isblank ('A')    -> false
-	isblank ('a')    -> false
-	isblank ('0')    -> false
-	isblank ('.')    -> false
-	isblank (' ')    -> true
-	isblank ('\n')   -> false
-	isblank ('\001') -> false
-	isblank (EOF)    -> false
+        isblank ('A')    -> false
+        isblank ('a')    -> false
+        isblank ('0')    -> false
+        isblank ('.')    -> false
+        isblank (' ')    -> true
+        isblank ('\n')   -> false
+        isblank ('\001') -> false
+        isblank (EOF)    -> false
 
     BUGS
 
@@ -601,33 +601,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int iscntrl (
+        int iscntrl (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is a control character. Works for all
-	characters between -128 and 255 inclusive both.
+        Test if a character is a control character. Works for all
+        characters between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is a control character, 0 otherwise.
+        != 0 if the character is a control character, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	iscntrl ('A')    -> false
-	iscntrl ('a')    -> false
-	iscntrl ('0')    -> false
-	iscntrl ('.')    -> false
-	iscntrl ('\n')   -> true
-	iscntrl ('\001') -> true
-	iscntrl (EOF)    -> false
+        iscntrl ('A')    -> false
+        iscntrl ('a')    -> false
+        iscntrl ('0')    -> false
+        iscntrl ('.')    -> false
+        iscntrl ('\n')   -> true
+        iscntrl ('\001') -> true
+        iscntrl (EOF)    -> false
 
     BUGS
 
@@ -639,33 +639,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isdigit (
+        int isdigit (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is a digit. Works for all characters between
-	-128 and 255 inclusive both.
+        Test if a character is a digit. Works for all characters between
+        -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is a digit, 0 otherwise.
+        != 0 if the character is a digit, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isdigit ('A')    -> false
-	isdigit ('a')    -> false
-	isdigit ('0')    -> true
-	isdigit ('.')    -> false
-	isdigit ('\n')   -> false
-	isdigit ('\001') -> false
-	isdigit (EOF)    -> false
+        isdigit ('A')    -> false
+        isdigit ('a')    -> false
+        isdigit ('0')    -> true
+        isdigit ('.')    -> false
+        isdigit ('\n')   -> false
+        isdigit ('\001') -> false
+        isdigit (EOF)    -> false
 
     BUGS
 
@@ -677,34 +677,34 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isgraph (
+        int isgraph (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is a printable character but no whitespace.
-	Works for all characters between -128 and 255 inclusive both.
+        Test if a character is a printable character but no whitespace.
+        Works for all characters between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is a printable character but no whitespace, 0
-	otherwise.
+        != 0 if the character is a printable character but no whitespace, 0
+        otherwise.
 
     NOTES
 
     EXAMPLE
-	isgraph ('A')    -> true
-	isgraph ('a')    -> true
-	isgraph ('0')    -> true
-	isgraph ('.')    -> true
-	isgraph ('\n')   -> false
-	isgraph ('\001') -> false
-	isgraph (EOF)    -> false
+        isgraph ('A')    -> true
+        isgraph ('a')    -> true
+        isgraph ('0')    -> true
+        isgraph ('.')    -> true
+        isgraph ('\n')   -> false
+        isgraph ('\001') -> false
+        isgraph (EOF)    -> false
 
     BUGS
 
@@ -716,33 +716,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isprint (
+        int isprint (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is a printable character. Works for all
-	characters between -128 and 255 inclusive both.
+        Test if a character is a printable character. Works for all
+        characters between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is a printable character, 0 otherwise.
+        != 0 if the character is a printable character, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isprint ('A')    -> true
-	isprint ('a')    -> true
-	isprint ('0')    -> true
-	isprint ('.')    -> true
-	isprint ('\n')   -> true
-	isprint ('\001') -> false
-	isprint (EOF)    -> false
+        isprint ('A')    -> true
+        isprint ('a')    -> true
+        isprint ('0')    -> true
+        isprint ('.')    -> true
+        isprint ('\n')   -> true
+        isprint ('\001') -> false
+        isprint (EOF)    -> false
 
     BUGS
 
@@ -754,33 +754,33 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isspace (
+        int isspace (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is whitespace. Works for all characters between
-	-128 and 255 inclusive both.
+        Test if a character is whitespace. Works for all characters between
+        -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is whitespace, 0 otherwise.
+        != 0 if the character is whitespace, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isspace ('A')    -> false
-	isspace ('a')    -> false
-	isspace ('0')    -> false
-	isspace ('.')    -> false
-	isspace ('\n')   -> true
-	isspace ('\001') -> false
-	isspace (EOF)    -> false
+        isspace ('A')    -> false
+        isspace ('a')    -> false
+        isspace ('0')    -> false
+        isspace ('.')    -> false
+        isspace ('\n')   -> true
+        isspace ('\001') -> false
+        isspace (EOF)    -> false
 
     BUGS
 
@@ -792,34 +792,34 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int ispunct (
+        int ispunct (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is printable but not alphanumeric. Works for
-	all characters between -128 and 255 inclusive both.
+        Test if a character is printable but not alphanumeric. Works for
+        all characters between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is printable but not alphanumeric, 0
-	otherwise.
+        != 0 if the character is printable but not alphanumeric, 0
+        otherwise.
 
     NOTES
 
     EXAMPLE
-	ispunct ('A')    -> false
-	ispunct ('a')    -> false
-	ispunct ('0')    -> false
-	ispunct ('.')    -> true
-	ispunct ('\n')   -> false
-	ispunct ('\001') -> false
-	ispunct (EOF)    -> false
+        ispunct ('A')    -> false
+        ispunct ('a')    -> false
+        ispunct ('0')    -> false
+        ispunct ('.')    -> true
+        ispunct ('\n')   -> false
+        ispunct ('\001') -> false
+        ispunct (EOF)    -> false
 
     BUGS
 
@@ -831,34 +831,34 @@ ADD2INITLIB(__ctype_init, 20);
 /*****************************************************************************
 
     NAME
-	#include <ctype.h>
+        #include <ctype.h>
 
-	int isxdigit (
+        int isxdigit (
 
     SYNOPSIS
-	int c)
+        int c)
 
     FUNCTION
-	Test if a character is a hexadecimal digit. Works for all
-	characters between -128 and 255 inclusive both.
+        Test if a character is a hexadecimal digit. Works for all
+        characters between -128 and 255 inclusive both.
 
     INPUTS
-	c - The character to test.
+        c - The character to test.
 
     RESULT
-	!= 0 if the character is a hexadecimal digit, 0 otherwise.
+        != 0 if the character is a hexadecimal digit, 0 otherwise.
 
     NOTES
 
     EXAMPLE
-	isxdigit ('A')    -> true
-	isxdigit ('a')    -> true
-	isxdigit ('x')    -> false
-	isxdigit ('0')    -> true
-	isxdigit ('.')    -> false
-	isxdigit ('\n')   -> false
-	isxdigit ('\001') -> false
-	isxdigit (EOF)    -> false
+        isxdigit ('A')    -> true
+        isxdigit ('a')    -> true
+        isxdigit ('x')    -> false
+        isxdigit ('0')    -> true
+        isxdigit ('.')    -> false
+        isxdigit ('\n')   -> false
+        isxdigit ('\001') -> false
+        isxdigit (EOF)    -> false
 
     BUGS
 

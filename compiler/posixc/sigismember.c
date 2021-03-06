@@ -11,11 +11,11 @@
     NAME */
 #include <signal.h>
 
-	int sigismember (
+        int sigismember (
 
 /*  SYNOPSIS */
-	const sigset_t *set,
-	int signum)
+        const sigset_t *set,
+        int signum)
 
 /*  FUNCTION
 

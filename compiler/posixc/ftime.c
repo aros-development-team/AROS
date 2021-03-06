@@ -11,10 +11,10 @@
     NAME */
 #include <sys/timeb.h>
 
-	int ftime(
+        int ftime(
 
 /*  SYNOPSIS */
-	struct timeb *tb)
+        struct timeb *tb)
 
 /*  FUNCTION
         Get info on current time and timezone.

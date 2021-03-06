@@ -7,7 +7,7 @@
 struct TagItem *LibNextTagItem(struct TagItem **tagListPtr)
 {
     if (!(*tagListPtr))
-	return NULL;
+        return NULL;
 
     while(1)
     {

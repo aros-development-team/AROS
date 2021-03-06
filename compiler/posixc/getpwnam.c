@@ -11,10 +11,10 @@
 
 #include <pwd.h>
 
-	struct passwd *getpwnam(
+        struct passwd *getpwnam(
 
 /*  SYNOPSIS */
-	const char *name)
+        const char *name)
 
 /*  FUNCTION
 
@@ -23,7 +23,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

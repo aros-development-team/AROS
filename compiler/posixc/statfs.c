@@ -43,7 +43,7 @@ short getnixfilesystemtype(LONG id_DiskType);
         f_mntfromname is set to an empty string
 
     SEE ALSO
-    	
+        
     INTERNALS
 
 ******************************************************************************/
@@ -55,52 +55,52 @@ short getnixfilesystemtype(LONG id_DiskType);
     
     if (path == NULL)
     {
-	errno = EINVAL;
+        errno = EINVAL;
         return -1;
     }
 
     apath = __path_u2a(path);
-    if (!apath) 
+    if (!apath)
     {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
     }
     
     /* Get filesystem data from lock */
     if(((lock = Lock(apath, SHARED_LOCK))))
     {
-	if(Info(lock, &data))
-	{
-	    /* Fill statfs structure */
-	    buf->f_type = getnixfilesystemtype(data.id_DiskType);
-	    buf->f_flags = 0;
-	    buf->f_fsize = data.id_BytesPerBlock;
-	    buf->f_bsize = data.id_BytesPerBlock;
-	    buf->f_blocks = data.id_NumBlocks;
-	    buf->f_bfree = data.id_NumBlocks - data.id_NumBlocksUsed;
-	    buf->f_bavail = data.id_NumBlocks - data.id_NumBlocksUsed;
-	    buf->f_files = 0;
-	    buf->f_ffree = 0;
-	    buf->f_fsid.val[0] = 0;
-	    buf->f_fsid.val[1] = 0;
+        if(Info(lock, &data))
+        {
+            /* Fill statfs structure */
+            buf->f_type = getnixfilesystemtype(data.id_DiskType);
+            buf->f_flags = 0;
+            buf->f_fsize = data.id_BytesPerBlock;
+            buf->f_bsize = data.id_BytesPerBlock;
+            buf->f_blocks = data.id_NumBlocks;
+            buf->f_bfree = data.id_NumBlocks - data.id_NumBlocksUsed;
+            buf->f_bavail = data.id_NumBlocks - data.id_NumBlocksUsed;
+            buf->f_files = 0;
+            buf->f_ffree = 0;
+            buf->f_fsid.val[0] = 0;
+            buf->f_fsid.val[1] = 0;
         CopyMem(__path_a2u(AROS_BSTR_ADDR(((struct DeviceList *)BADDR(data.id_VolumeNode))->dl_Name)), buf->f_mntonname, MNAMELEN);
         buf->f_mntonname[MNAMELEN -1] = '\0';
-	    buf->f_mntfromname[0] = '\0';
-	}
-	else
-	{
-	    ioerr = IoErr();
-	}
+            buf->f_mntfromname[0] = '\0';
+        }
+        else
+        {
+            ioerr = IoErr();
+        }
         UnLock(lock);
     }
     else
     {
-	ioerr = IoErr();
+        ioerr = IoErr();
     }
-	
+        
     if(ioerr != 0) {
-	errno = __stdc_ioerr2errno(ioerr);
-	return -1;
+        errno = __stdc_ioerr2errno(ioerr);
+        return -1;
     }
 
     return 0;

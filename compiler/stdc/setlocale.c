@@ -12,7 +12,7 @@
     NAME */
 #include <string.h>
 
-	char *setlocale(
+        char *setlocale(
 
 /*  SYNOPSIS */
         int category,

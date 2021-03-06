@@ -10,12 +10,12 @@
 
 #include <unistd.h>
 
-	int fchown(
+        int fchown(
 
 /*  SYNOPSIS */
-	int fd,
-	uid_t owner,
-	gid_t group)
+        int fd,
+        uid_t owner,
+        gid_t group)
 
 /*  FUNCTION
 
@@ -24,7 +24,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

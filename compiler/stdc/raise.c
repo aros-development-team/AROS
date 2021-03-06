@@ -9,10 +9,10 @@
     NAME */
 #include <signal.h>
 
-	int raise(
+        int raise(
 
 /*  SYNOPSIS */
-	int signum)
+        int signum)
 
 /*  FUNCTION
         Calls the handler of a signal

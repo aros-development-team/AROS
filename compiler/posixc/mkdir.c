@@ -15,21 +15,21 @@
     NAME */
 #include <sys/stat.h>
 
-	int mkdir (
+        int mkdir (
 
 /*  SYNOPSIS */
-	const char *path,
-	mode_t      mode)
+        const char *path,
+        mode_t      mode)
 
 /*  FUNCTION
-	 Make a directory file
+         Make a directory file
 
     INPUTS
-	path - the path of the directory being created
-	mode - the permission flags for the directory
+        path - the path of the directory being created
+        mode - the permission flags for the directory
 
     RESULT
-	0 on success or -1 on errorr.
+        0 on success or -1 on errorr.
 
     NOTES
 
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	chmod(),  __posixc_stat(),  umask()
+        chmod(),  __posixc_stat(),  umask()
 
     INTERNALS
 
@@ -51,8 +51,8 @@
 
     if (!path) /*safety check */
     {
-    	errno = EFAULT;
-	return -1;
+        errno = EFAULT;
+        return -1;
     }
 
     apath = (char*) __path_u2a(path);
@@ -69,7 +69,7 @@
 
     /* Remove possible trailing / to avoid problems in handlers */
     if(strlen(apath) > 0 && apath[strlen(apath)-1] == '/')
-	apath[strlen(apath)-1] = '\0';
+        apath[strlen(apath)-1] = '\0';
     
     lock = CreateDir((STRPTR) apath);
     free(apath);
@@ -77,7 +77,7 @@
     if (!lock)
     {
         errno = __stdc_ioerr2errno(IoErr());
-	return -1;
+        return -1;
     }
 
     UnLock(lock);

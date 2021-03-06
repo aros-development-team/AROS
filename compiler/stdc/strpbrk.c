@@ -9,40 +9,40 @@
     NAME */
 #include <string.h>
 
-	char * strpbrk (
+        char * strpbrk (
 
 /*  SYNOPSIS */
-	const char * str,
-	const char * accept)
+        const char * str,
+        const char * accept)
 
 /*  FUNCTION
-	Locate the first occurrence of any character in accept in str.
+        Locate the first occurrence of any character in accept in str.
 
     INPUTS
-	str - Search this string
-	accept - Look for these characters
+        str - Search this string
+        accept - Look for these characters
 
     RESULT
-	A pointer to the first occurrence of any character in accept in str
-	or NULL if no character of accept is not found in str.
+        A pointer to the first occurrence of any character in accept in str
+        or NULL if no character of accept is not found in str.
 
     NOTES
 
     EXAMPLE
-	char buffer[64];
+        char buffer[64];
 
-	strcpy (buffer, "Hello ");
+        strcpy (buffer, "Hello ");
 
-	// This returns a pointer to the first l in buffer.
-	strpbrk (buffer, "lo");
+        // This returns a pointer to the first l in buffer.
+        strpbrk (buffer, "lo");
 
-	// This returns NULL
-	strpbrk (buffer, "xyz");
+        // This returns NULL
+        strpbrk (buffer, "xyz");
 
     BUGS
 
     SEE ALSO
-	strchr(), strrchr()
+        strchr(), strrchr()
 
     INTERNALS
 
@@ -50,10 +50,10 @@
 {
     while (*str)
     {
-	if (strchr (accept, *str))
-	    return ((char *)str);
+        if (strchr (accept, *str))
+            return ((char *)str);
 
-	str ++;
+        str ++;
     }
 
     return(0);

@@ -13,8 +13,8 @@ int main (int argc, char ** argv)
 
     b = 0;
 
-    a = *x++;	/* ok */
-    a = *x++;	/* illegal: Uninitialized memory */
+    a = *x++;   /* ok */
+    a = *x++;   /* illegal: Uninitialized memory */
 
     x = (int *)&main;
 

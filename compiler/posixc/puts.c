@@ -11,36 +11,36 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_puts (
+        int __posixc_puts (
 
 /*  SYNOPSIS */
-	const char * str)
+        const char * str)
 
 /*  FUNCTION
-	Print a string to stdout. A newline ('\n') is emitted after the
-	string.
+        Print a string to stdout. A newline ('\n') is emitted after the
+        string.
 
     INPUTS
-	str - Print this string
+        str - Print this string
 
     RESULT
-	> 0 on success and EOF on error. On error, the reason is put in
-	errno.
+        > 0 on success and EOF on error. On error, the reason is put in
+        errno.
 
     NOTES
 
     EXAMPLE
-	#include <errno.h>
+        #include <errno.h>
 
-	if (puts ("Hello World.") != EOF)
-	    fprintf (stderr, "Success");
-	else
-	    fprintf (stderr, "Failure: errno=%d", errno);
+        if (puts ("Hello World.") != EOF)
+            fprintf (stderr, "Success");
+        else
+            fprintf (stderr, "Failure: errno=%d", errno);
 
     BUGS
 
     SEE ALSO
-	fputs(), printf(), fprintf(), putc(), fputc()
+        fputs(), printf(), fprintf(), putc(), fputc()
 
     INTERNALS
 
@@ -55,7 +55,7 @@
         fflush (PosixCBase->_stdout)      == EOF
     )
     {
-	return EOF;
+        return EOF;
     }
 
     return 1;

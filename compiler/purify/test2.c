@@ -16,7 +16,7 @@ int main (int argc, char ** argv)
     printf ("argv=%p\n", argv);
 
     for (t=0; t<argc; t++)
-	printf ("Arg %d: %s\n", t, argv[t]);
+        printf ("Arg %d: %s\n", t, argv[t]);
 
     return 0;
 }

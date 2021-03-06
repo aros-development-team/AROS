@@ -17,25 +17,25 @@ extern struct Library *IconBase;
        VOID              )
 
 /*  FUNCTION
-	Cleans up after a call to ArgArrayInit().  Make sure you don't need
-	the tooltype anymore array before calling this function. 
+        Cleans up after a call to ArgArrayInit().  Make sure you don't need
+        the tooltype anymore array before calling this function.
 
     INPUTS
 
     RESULT
-	Cleanup is made after an ArgArrayInit() call. This includes
-	deallocation of the tooltype array returned from that function.
+        Cleanup is made after an ArgArrayInit() call. This includes
+        deallocation of the tooltype array returned from that function.
 
     NOTES
-	The tooltype array got from ArgArrayInit() will no longer be valid
-	after a call to this function.
+        The tooltype array got from ArgArrayInit() will no longer be valid
+        after a call to this function.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	ArgArrayInit()
+        ArgArrayInit()
 
     INTERNALS
 
@@ -44,7 +44,7 @@ extern struct Library *IconBase;
 *****************************************************************************/
 {
     if(__alib_dObject != NULL)
-	FreeDiskObject(__alib_dObject);
+        FreeDiskObject(__alib_dObject);
 } /* ArgArrayDone */
 
 

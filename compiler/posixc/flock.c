@@ -32,59 +32,59 @@ void RemoveFromList(struct SignalSemaphore *sem);
     NAME */
 #include <sys/file.h>
 
-	int flock (
+        int flock (
 
 /*  SYNOPSIS */
-	int fd,
-	int operation)
+        int fd,
+        int operation)
 
 /*  FUNCTION
-	Apply or remove an advisory lock on open file descriptor fd. Operation
-	argument can be one of the following constants:
-	
-	LOCK_SH - Place a shared lock on the file specified by fd. More that
-	          one process can hold a shared lock on a given file at a
-	          time.
-	
-	LOCK_EX - Place an exclusive lock on the file specified by fd. Only
-	          one process can hold an exclusive lock on a given file at
-	          a time.
-	
-	LOCK_UN - Remove an existing lock from the file specified by fd.
+        Apply or remove an advisory lock on open file descriptor fd. Operation
+        argument can be one of the following constants:
+        
+        LOCK_SH - Place a shared lock on the file specified by fd. More that
+                  one process can hold a shared lock on a given file at a
+                  time.
+        
+        LOCK_EX - Place an exclusive lock on the file specified by fd. Only
+                  one process can hold an exclusive lock on a given file at
+                  a time.
+        
+        LOCK_UN - Remove an existing lock from the file specified by fd.
 
-	LOCK_EX operation blocks if there is a lock already placed on the
-	file. LOCK_SH blocks if there is an exclusive lock already placed
-	on the file. If you want to do a non-blocking request, OR the
-	operation specifier with LOCK_NB constant. In this case flock() will
-	return -1 instead of blocking and set errno to EWOULDBLOCK.
-	
-	Advisory locks created with flock() are shared among duplicated file
-	descriptors.
-	
+        LOCK_EX operation blocks if there is a lock already placed on the
+        file. LOCK_SH blocks if there is an exclusive lock already placed
+        on the file. If you want to do a non-blocking request, OR the
+        operation specifier with LOCK_NB constant. In this case flock() will
+        return -1 instead of blocking and set errno to EWOULDBLOCK.
+        
+        Advisory locks created with flock() are shared among duplicated file
+        descriptors.
+        
     INPUTS
-	fd - File descriptor of the file you want to place or remove lock from.
-	operation - Lock operation to be performed.
+        fd - File descriptor of the file you want to place or remove lock from.
+        operation - Lock operation to be performed.
 
     RESULT
-	0 on success, -1 on error. In case of error a global errno variable
-	is set.
+        0 on success, -1 on error. In case of error a global errno variable
+        is set.
 
     NOTES
-	Locks placed with flock() are only advisory, they place no
-	restrictions to any file or file descriptor operations.
+        Locks placed with flock() are only advisory, they place no
+        restrictions to any file or file descriptor operations.
 
     EXAMPLE
 
     BUGS
-	It's currently possible to remove lock placed by another process.
+        It's currently possible to remove lock placed by another process.
 
     SEE ALSO
 
     INTERNALS
-	Since advisory locks semantics is equal to exec.library semaphores
-	semantics, semaphores are used to implement locks. For a given file
-	a semaphore named FLOCK(path) is created where path is a full path to
-	the file. Locks held by a given process are stored in
+        Since advisory locks semantics is equal to exec.library semaphores
+        semantics, semaphores are used to implement locks. For a given file
+        a semaphore named FLOCK(path) is created where path is a full path to
+        the file. Locks held by a given process are stored in
         PosixCBase->file_locks and released during process exit.
 
 ******************************************************************************/
@@ -97,21 +97,21 @@ void RemoveFromList(struct SignalSemaphore *sem);
     D(bug("flock(%d, %d)\n", fd, operation));
     if (!fdesc)
     {
-	errno = EBADF;
-	return -1;
+        errno = EBADF;
+        return -1;
     }
 
     /* Sanity check */
     if(
-	(operation & ~LOCK_NB) != LOCK_SH &&
-	(operation & ~LOCK_NB) != LOCK_EX &&
-	(operation & ~LOCK_NB) != LOCK_UN
+        (operation & ~LOCK_NB) != LOCK_SH &&
+        (operation & ~LOCK_NB) != LOCK_EX &&
+        (operation & ~LOCK_NB) != LOCK_UN
     )
     {
-	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
     }
-	
+        
     /* Get the full path of the flocked filesystem object */
     do
     {
@@ -145,75 +145,75 @@ void RemoveFromList(struct SignalSemaphore *sem);
     sem = FindSemaphore((STRPTR) buffer);
     if(!sem)
     {
-	D(bug("[flock] Semaphore %s not found, creating a new one\n", buffer));
-	sem = (struct SignalSemaphore*) 
-	    AllocVec(sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
-	if(!sem)
-	{
-	    errno = ENOMEM;
-	    Permit();
-	    return -1;
-	}
-	sem->ss_Link.ln_Name = buffer;
-	AddSemaphore(sem);
+        D(bug("[flock] Semaphore %s not found, creating a new one\n", buffer));
+        sem = (struct SignalSemaphore*)
+            AllocVec(sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
+        if(!sem)
+        {
+            errno = ENOMEM;
+            Permit();
+            return -1;
+        }
+        sem->ss_Link.ln_Name = buffer;
+        AddSemaphore(sem);
     }
     else
     {
-	D(bug("[flock] Semaphore %s found, freeing buffer\n", buffer));
-	FreeVec(buffer);
+        D(bug("[flock] Semaphore %s found, freeing buffer\n", buffer));
+        FreeVec(buffer);
     }
     
     if(operation & LOCK_UN)
     {
-	D(bug("[flock] Releasing semaphore %s\n", sem->ss_Link.ln_Name));
-	ReleaseSemaphore(sem);
-	RemoveFromList(sem);
-	if(sem->ss_Owner == NULL && sem->ss_QueueCount == -1)
-	{
-	    D(bug("[flock] All locks unlocked, removing semaphore %s\n", sem->ss_Link.ln_Name));
-	    /* All locks for this file were unlocked, we don't need semaphore
-	     * anymore */
-	    RemSemaphore(sem);
-	    FreeVec(sem->ss_Link.ln_Name);
-	    FreeVec(sem);
-	    Permit();
-	    return 0;
-	}
+        D(bug("[flock] Releasing semaphore %s\n", sem->ss_Link.ln_Name));
+        ReleaseSemaphore(sem);
+        RemoveFromList(sem);
+        if(sem->ss_Owner == NULL && sem->ss_QueueCount == -1)
+        {
+            D(bug("[flock] All locks unlocked, removing semaphore %s\n", sem->ss_Link.ln_Name));
+            /* All locks for this file were unlocked, we don't need semaphore
+             * anymore */
+            RemSemaphore(sem);
+            FreeVec(sem->ss_Link.ln_Name);
+            FreeVec(sem);
+            Permit();
+            return 0;
+        }
     }
     Permit();
     
     switch(operation & ~LOCK_NB)
     {
-	case LOCK_SH:
-	    D(bug("[flock] Obtaining shared lock\n"));
-	    if(operation & LOCK_NB)
-	    {
-		if(!AttemptSemaphoreShared(sem))
-		{
-		    errno = EWOULDBLOCK;
-		    return -1;
-		}
-	    }
-	    else
-		ObtainSemaphoreShared(sem);
-	    D(bug("[flock] Shared lock obtained\n"));
-	    AddToList(sem);
-	    break;
-	case LOCK_EX:
-	    D(bug("[flock] Obtaining exclusive lock\n"));
-	    if(operation & LOCK_NB)
-	    {
-		if(!AttemptSemaphore(sem))
-		{
-		    errno = EWOULDBLOCK;
-		    return -1;
-		}
-	    }
-	    else
-		ObtainSemaphore(sem);
-	    D(bug("[flock] Exclusive lock obtained\n"));
-	    AddToList(sem);
-	    break;
+        case LOCK_SH:
+            D(bug("[flock] Obtaining shared lock\n"));
+            if(operation & LOCK_NB)
+            {
+                if(!AttemptSemaphoreShared(sem))
+                {
+                    errno = EWOULDBLOCK;
+                    return -1;
+                }
+            }
+            else
+                ObtainSemaphoreShared(sem);
+            D(bug("[flock] Shared lock obtained\n"));
+            AddToList(sem);
+            break;
+        case LOCK_EX:
+            D(bug("[flock] Obtaining exclusive lock\n"));
+            if(operation & LOCK_NB)
+            {
+                if(!AttemptSemaphore(sem))
+                {
+                    errno = EWOULDBLOCK;
+                    return -1;
+                }
+            }
+            else
+                ObtainSemaphore(sem);
+            D(bug("[flock] Exclusive lock obtained\n"));
+            AddToList(sem);
+            break;
     }
     return 0;
 }
@@ -225,7 +225,7 @@ LONG AddToList(struct SignalSemaphore *sem)
     struct FlockNode *node;
     node = AllocMem(sizeof(struct FlockNode), MEMF_ANY | MEMF_CLEAR);
     if(!node)
-	return -1;
+        return -1;
     node->sem = sem;
     AddHead((struct List *)PosixCBase->file_locks, (struct Node*) node);
     return 0;
@@ -240,12 +240,12 @@ void RemoveFromList(struct SignalSemaphore *sem)
     
     ForeachNodeSafe(PosixCBase->file_locks, varNode, tmpNode)
     {
-	if(varNode->sem == sem)
-	{
-	    Remove((struct Node*) varNode);
-	    FreeMem(varNode, sizeof(struct FlockNode));
-	    break;
-	}
+        if(varNode->sem == sem)
+        {
+            Remove((struct Node*) varNode);
+            FreeMem(varNode, sizeof(struct FlockNode));
+            break;
+        }
     }
 }
 

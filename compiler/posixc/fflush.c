@@ -20,22 +20,22 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_fflush (
+        int __posixc_fflush (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Flush a stream. If the stream is an input stream, then the stream
-	is synchronized for unbuffered I/O. If the stream is an output
-	stream, then any buffered data is written.
+        Flush a stream. If the stream is an input stream, then the stream
+        is synchronized for unbuffered I/O. If the stream is an output
+        stream, then any buffered data is written.
 
     INPUTS
-	stream - Flush this stream. May be NULL. In this case, all
-		output streams are flushed.
+        stream - Flush this stream. May be NULL. In this case, all
+                output streams are flushed.
 
     RESULT
-	0 on success or EOF on error.
+        0 on success or EOF on error.
 
     NOTES
 
@@ -55,40 +55,40 @@
     /* flush all streams opened for output */
     if (!stream)
     {
-	FILENODE *fn;
+        FILENODE *fn;
 
-	ForeachNode (&PosixCBase->stdio_files, fn)
-	{
-	    if (fn->File.flags & __POSIXC_STDIO_WRITE)
-	    {
-	    	fdesc *fdesc = __getfdesc(fn->File.fd);
+        ForeachNode (&PosixCBase->stdio_files, fn)
+        {
+            if (fn->File.flags & __POSIXC_STDIO_WRITE)
+            {
+                fdesc *fdesc = __getfdesc(fn->File.fd);
 
-		if (!fdesc)
-		{
-		    errno = EBADF;
-		    return EOF;
-      		}
+                if (!fdesc)
+                {
+                    errno = EBADF;
+                    return EOF;
+                }
 
-		if (!Flush(fdesc->fcb->handle))
-		{
-		    errno = __stdc_ioerr2errno(IoErr());
-		    return EOF;
-      		}
+                if (!Flush(fdesc->fcb->handle))
+                {
+                    errno = __stdc_ioerr2errno(IoErr());
+                    return EOF;
+                }
             }
         }
     }
     else
     {
-    	fdesc *fdesc = __getfdesc(stream->fd);
+        fdesc *fdesc = __getfdesc(stream->fd);
 
-	if (!fdesc || !(stream->flags & __POSIXC_STDIO_WRITE))
-	{
-	    errno = EBADF;
-	    return EOF;
-	}
+        if (!fdesc || !(stream->flags & __POSIXC_STDIO_WRITE))
+        {
+            errno = EBADF;
+            return EOF;
+        }
 
-	if (Flush(fdesc->fcb->handle))
-	    return 0;
+        if (Flush(fdesc->fcb->handle))
+            return 0;
     }
 
     errno = __stdc_ioerr2errno(IoErr());

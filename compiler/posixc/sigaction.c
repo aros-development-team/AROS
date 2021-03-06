@@ -12,12 +12,12 @@
     NAME */
 #include <signal.h>
 
-	int sigaction (
+        int sigaction (
 
 /*  SYNOPSIS */
-	int signum,
-	const  struct  sigaction  *act,
-	struct sigaction *oldact)
+        int signum,
+        const  struct  sigaction  *act,
+        struct sigaction *oldact)
 
 /*  FUNCTION
 

@@ -14,20 +14,20 @@
 #include <graphics/rastport.h>
 #include <proto/arossupport.h>
 
-	struct RastPort *CreateRastPort(
+        struct RastPort *CreateRastPort(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	This function creates a new RastPort.
+        This function creates a new RastPort.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	A pointer to a new RastPort or NULL if there was not enough memory
-	to perform the operation.
+        A pointer to a new RastPort or NULL if there was not enough memory
+        to perform the operation.
 
     NOTES
 
@@ -40,15 +40,15 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
     struct RastPort *newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
 
     if (newRP)
-	InitRastPort(newRP);
+        InitRastPort(newRP);
 
     return newRP;
 

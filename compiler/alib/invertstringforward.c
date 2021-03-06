@@ -81,7 +81,7 @@ extern struct Library *CxBase;
             first = ie;
         
         if(ieChain != NULL)
-            ieChain->ie_NextEvent = ie;            
+            ieChain->ie_NextEvent = ie;
         
         ieChain = ie;
         
@@ -130,7 +130,7 @@ extern struct Library *CxBase;
                 IX ix = {0};
                 LONG err;
                 
-                *str = '\0';            
+                *str = '\0';
                 err = ParseIX(start, &ix);
                 *str++ = '>';
                 

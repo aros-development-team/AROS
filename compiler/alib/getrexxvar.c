@@ -14,12 +14,12 @@
 /*****************************************************************************
 
     NAME */
-	LONG GetRexxVar(
+        LONG GetRexxVar(
 
 /*  SYNOPSIS */
-	struct RexxMsg *msg,
-	CONST_STRPTR varname,
-	char **value)
+        struct RexxMsg *msg,
+        CONST_STRPTR varname,
+        char **value)
 
 /*  FUNCTION
         Get a the value of the name REXX variable.
@@ -64,15 +64,15 @@
     
     if (!IsRexxMsg(msg))
     {
-	retval = ERR10_010;
-	goto cleanup;
+        retval = ERR10_010;
+        goto cleanup;
     }
     
     rexxport = FindPort("REXX");
     if (rexxport==NULL)
     {
-	retval = ERR10_013;
-	goto cleanup;
+        retval = ERR10_013;
+        goto cleanup;
     }
   
     port = CreateMsgPort();
@@ -89,23 +89,23 @@
     msg3 = NULL;
     while (msg3!=msg2)
     {
-	WaitPort(port);
-	msg3 = (struct RexxMsg *)GetMsg(port);
-	if (msg3!=msg2) ReplyMsg((struct Message *)msg3);
+        WaitPort(port);
+        msg3 = (struct RexxMsg *)GetMsg(port);
+        if (msg3!=msg2) ReplyMsg((struct Message *)msg3);
     }
     
     if (msg3->rm_Result1==RC_OK)
     {
-	*value = (char *)msg3->rm_Result2;
-	retval = RC_OK;
+        *value = (char *)msg3->rm_Result2;
+        retval = RC_OK;
     }
     else retval = (LONG)msg3->rm_Result2;
 
 cleanup:
     if (msg2!=NULL)
     {
-	if (msg2->rm_Args[0]!=0) DeleteArgstring((UBYTE *)msg2->rm_Args[0]);
-	DeleteRexxMsg(msg2);
+        if (msg2->rm_Args[0]!=0) DeleteArgstring((UBYTE *)msg2->rm_Args[0]);
+        DeleteRexxMsg(msg2);
     }
     if (port!=NULL) DeletePort(port);
     if (RexxSysBase!=NULL) CloseLibrary(RexxSysBase);

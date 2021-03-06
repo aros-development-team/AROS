@@ -12,37 +12,37 @@
     NAME */
 #include <stdlib.h>
 
-	void * realloc (
+        void * realloc (
 
 /*  SYNOPSIS */
-	void * oldmem,
-	size_t size)
+        void * oldmem,
+        size_t size)
 
 /*  FUNCTION
-	Change the size of an allocated part of memory. The memory must
-	have been allocated by malloc() or calloc(). If you reduce the
-	size, the old contents will be lost. If you enlarge the size,
-	the new contents will be undefined.
+        Change the size of an allocated part of memory. The memory must
+        have been allocated by malloc() or calloc(). If you reduce the
+        size, the old contents will be lost. If you enlarge the size,
+        the new contents will be undefined.
 
     INPUTS
-	oldmem - What you got from malloc() or calloc().
-	size - The new size.
+        oldmem - What you got from malloc() or calloc().
+        size - The new size.
 
     RESULT
-	A pointer to the allocated memory or NULL. If you don't need the
-	memory anymore, you can pass this pointer to free(). If you don't,
-	the memory will be freed for you when the application exits.
+        A pointer to the allocated memory or NULL. If you don't need the
+        memory anymore, you can pass this pointer to free(). If you don't,
+        the memory will be freed for you when the application exits.
 
     NOTES
-	If you get NULL, the memory at oldmem will not have been freed and
-	can still be used.
+        If you get NULL, the memory at oldmem will not have been freed and
+        can still be used.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	calloc(), free(), malloc()
+        calloc(), free(), malloc()
 
     INTERNALS
 
@@ -52,7 +52,7 @@
     size_t oldsize;
 
     if (!oldmem)
-	return malloc (size);
+        return malloc (size);
 
     mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(size_t));
     oldsize = *((size_t *)mem);
@@ -60,26 +60,26 @@
     /* Reduce or enlarge the memory ? */
     if (size < oldsize)
     {
-	/* Don't change anything for small changes */
-	if ((oldsize - size) < 4096)
-	    newmem = oldmem;
-	else
-	    goto copy;
+        /* Don't change anything for small changes */
+        if ((oldsize - size) < 4096)
+            newmem = oldmem;
+        else
+            goto copy;
     }
     else if (size == oldsize) /* Keep the size ? */
-	newmem = oldmem;
+        newmem = oldmem;
     else
     {
 copy:
-	newmem = malloc (size);
+        newmem = malloc (size);
 
-	if (newmem)
-	{
-	    if (size > oldsize)
-		size = oldsize;
-	    CopyMem (oldmem, newmem, size);
-	    free (oldmem);
-	}
+        if (newmem)
+        {
+            if (size > oldsize)
+                size = oldsize;
+            CopyMem (oldmem, newmem, size);
+            free (oldmem);
+        }
     }
 
     return newmem;

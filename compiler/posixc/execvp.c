@@ -19,24 +19,24 @@
     NAME */
 #include <unistd.h>
 
-	int execvp(
+        int execvp(
 
 /*  SYNOPSIS */
-	const char *file, 
-	char *const argv[])
+        const char *file,
+        char *const argv[])
         
 /*  FUNCTION
-	Executes a file with given name. The search paths for the executed
-	file are paths specified in the PATH environment variable.
+        Executes a file with given name. The search paths for the executed
+        file are paths specified in the PATH environment variable.
 
     INPUTS
-	file - Name of the file to execute.
-	argv - Array of arguments given to main() function of the executed
-	file.
+        file - Name of the file to execute.
+        argv - Array of arguments given to main() function of the executed
+        file.
 
     RESULT
-	Returns -1 and sets errno appropriately in case of error, otherwise
-	doesn't return.
+        Returns -1 and sets errno appropriately in case of error, otherwise
+        doesn't return.
 
     NOTES
 
@@ -45,8 +45,8 @@
     BUGS
 
     SEE ALSO
-	execve(), execl(), execlp(), execv()
-	
+        execve(), execl(), execlp(), execv()
+        
     INTERNALS
 
 ******************************************************************************/

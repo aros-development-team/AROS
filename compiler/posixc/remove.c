@@ -13,29 +13,29 @@
     NAME */
 #include <stdio.h>
 
-/*	int remove (
+/*      int remove (
 
     SYNOPSIS
-	const char * pathname)
+        const char * pathname)
 
     FUNCTION
-	Deletes a file or directory.
+        Deletes a file or directory.
 
     INPUTS
-	pathname - Complete path to the file or directory.
+        pathname - Complete path to the file or directory.
 
     RESULT
-	0 on success and -1 on error. In case of an error, errno is set.
-	
+        0 on success and -1 on error. In case of an error, errno is set.
+        
     NOTES
-    	Identical to unlink
+        Identical to unlink
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    	unlink()
+        unlink()
 
     INTERNALS
         Uses stdcio.library remove() function after path name conversion
@@ -52,26 +52,26 @@ int __posixc_remove(const char * pathname)
     NAME
 #include <unistd.h>
 
-	int unlink (
+        int unlink (
 
     SYNOPSIS
-	const char * pathname)
+        const char * pathname)
 
     FUNCTION
-	Delete a file from disk.
+        Delete a file from disk.
 
     INPUTS
-	pathname - Complete path to the file
+        pathname - Complete path to the file
 
     RESULT
-	0 on success and -1 on error. In case of an error, errno is set.
+        0 on success and -1 on error. In case of an error, errno is set.
 
     NOTES
-    	Identical to remove
+        Identical to remove
 
     EXAMPLE
-	// Delete the file xyz in the current directory
-	unlink ("xyz");
+        // Delete the file xyz in the current directory
+        unlink ("xyz");
 
     BUGS
 

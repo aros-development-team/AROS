@@ -16,7 +16,7 @@
 #include <intuition/classusr.h>
 #include <proto/alib.h>
 
-	IPTR DoSuperNewTagList
+        IPTR DoSuperNewTagList
         (
 /*  SYNOPSIS */
             Class             *CLASS,
@@ -38,8 +38,8 @@
     BUGS
 
     SEE ALSO
-	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
-	intuition.library/DisposeObject(), DoMethodA(),
+        intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
+        intuition.library/DisposeObject(), DoMethodA(),
         CoerceMethodA(), <intuition/classes.h>
 
 ******************************************************************************/

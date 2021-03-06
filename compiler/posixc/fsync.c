@@ -17,10 +17,10 @@
     NAME */
 #include <unistd.h>
 
-	int fsync(
+        int fsync(
 
 /*  SYNOPSIS */
-	int fd)
+        int fd)
 
 /*  FUNCTION
 

@@ -15,13 +15,13 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_setvbuf (
+        int __posixc_setvbuf (
 
 /*  SYNOPSIS */
-	FILE *stream,
-	char *buf,
-	int mode,
-	size_t size)
+        FILE *stream,
+        char *buf,
+        int mode,
+        size_t size)
 
 /*  FUNCTION
 
@@ -45,32 +45,32 @@
 
     if (!stream)
     {
-	errno = EFAULT;
-	return EOF;
+        errno = EFAULT;
+        return EOF;
     }
 
     /* Fail if provided buffer is smaller than minimum required by DOS */
     if (buf && size < 208)
     {
-	errno = EFAULT;
-	return EOF;
+        errno = EFAULT;
+        return EOF;
     }
 
     switch (mode)
     {
         case _IOFBF: mode = BUF_FULL; break;
-	case _IOLBF: mode = BUF_LINE; break;
-	case _IONBF: mode = BUF_NONE; break;
-	default:
+        case _IOLBF: mode = BUF_LINE; break;
+        case _IONBF: mode = BUF_NONE; break;
+        default:
             errno = EINVAL;
-	    return EOF;
+            return EOF;
     }
 
     desc = __getfdesc(stream->fd);
     if (!desc)
     {
-	errno = EBADF;
-	return EOF;
+        errno = EBADF;
+        return EOF;
     }
 
     return SetVBuf(desc->fcb->handle, buf, mode, size ? size : -1);

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$	$Log
+    $Id$        $Log
 
     Desc: AROS Graphics function DeinitRastPort()
 */
@@ -14,10 +14,10 @@
     NAME */
 #include <proto/arossupport.h>
 
-	void DeinitRastPort(
+        void DeinitRastPort(
 
 /*  SYNOPSIS */
-	struct RastPort *rp)
+        struct RastPort *rp)
 
 /*  FUNCTION
 
@@ -45,8 +45,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -54,8 +54,8 @@
 
     if (rp->RP_Extra)
     {
-    	FreeVec(rp->RP_Extra);
-    	rp->RP_Extra = NULL;
+        FreeVec(rp->RP_Extra);
+        rp->RP_Extra = NULL;
     }
 
 } /* DeinitRastPort */

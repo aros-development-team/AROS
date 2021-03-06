@@ -9,23 +9,23 @@
     NAME
 #include <assert.h>
 
-	void assert (
+        void assert (
 
     SYNOPSIS
-	expr)
+        expr)
 
     FUNCTION
-	Evaluates the expression expr and if it's FALSE or NULL, then
-	printf a message and aborts the program. The message will
-	contain the expression, the name of the file with the assert
-	in it and the line in the file.
+        Evaluates the expression expr and if it's FALSE or NULL, then
+        printf a message and aborts the program. The message will
+        contain the expression, the name of the file with the assert
+        in it and the line in the file.
 
     INPUTS
-	expr - The expression to evaluate. The type of the expression does
-		not matter, only if it's zero/NULL or not.
+        expr - The expression to evaluate. The type of the expression does
+                not matter, only if it's zero/NULL or not.
 
     RESULT
-	The function doesn't return.
+        The function doesn't return.
 
     NOTES
         Normally the output is sent to stderr and thus this code should
@@ -40,8 +40,8 @@
         the program.
 
     EXAMPLE
-	// Make sure that x equals 1
-	assert (x==1);
+        // Make sure that x equals 1
+        assert (x==1);
 
     BUGS
 
@@ -60,10 +60,10 @@
     NAME */
 #include <assert.h>
 
-	void __stdcio_assert (
+        void __stdcio_assert (
 
 /*  SYNOPSIS */
-	const char * expr,
+        const char * expr,
         const char * file,
         unsigned int line)
 
@@ -72,8 +72,8 @@
         function.
 
     INPUTS
-	expr - The expression to evaluate. The type of the expression does
-		not matter, only if its zero/NULL or not.
+        expr - The expression to evaluate. The type of the expression does
+                not matter, only if its zero/NULL or not.
         file - Name of the source file.
         line - Line number of assert() call.
 

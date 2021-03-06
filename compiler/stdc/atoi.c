@@ -9,33 +9,33 @@
     NAME */
 #include <stdlib.h>
 
-	int atoi (
+        int atoi (
 
 /*  SYNOPSIS */
-	const char * str)
+        const char * str)
 
 /*  FUNCTION
-	Convert a string of digits into an integer.
+        Convert a string of digits into an integer.
 
     INPUTS
-	str - The string which should be converted. Leading
-		whitespace are ignored. The number may be prefixed
-		by a '+' or '-'.
+        str - The string which should be converted. Leading
+                whitespace are ignored. The number may be prefixed
+                by a '+' or '-'.
 
     RESULT
-	The value of string str.
+        The value of string str.
 
     NOTES
 
     EXAMPLE
-	// returns 1
-	atoi ("  \t +1");
+        // returns 1
+        atoi ("  \t +1");
 
-	// returns 1
-	atoi ("1");
+        // returns 1
+        atoi ("1");
 
-	// returns -1
-	atoi ("  \n -1");
+        // returns -1
+        atoi ("  \n -1");
 
     BUGS
 

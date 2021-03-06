@@ -27,51 +27,51 @@ int __smode2oflags(const char *mode)
 
     switch (*mode++)
     {
-	case 'r':
-	    ret = O_RDONLY;
-	    break;
+        case 'r':
+            ret = O_RDONLY;
+            break;
 
-	case 'w':
-	    ret = O_WRONLY | O_CREAT | O_TRUNC;
-	    break;
+        case 'w':
+            ret = O_WRONLY | O_CREAT | O_TRUNC;
+            break;
 
-	case 'a':
-	    ret = O_WRONLY | O_CREAT | O_APPEND;
-	    break;
+        case 'a':
+            ret = O_WRONLY | O_CREAT | O_APPEND;
+            break;
 
-	default:
-	    errno = EINVAL;
-	    return -1;
+        default:
+            errno = EINVAL;
+            return -1;
     }
 
     if (*mode == 'b')
     {
-	theresb = 1;
-	mode++;
+        theresb = 1;
+        mode++;
     }
     else if (*mode == 't')
     {
-	// Silently ignore 't' (=text).
-	// It's deprecated, but it's still in some sources,
-	// and on other platforms they can compiled without problems. 
-	mode++;
+        // Silently ignore 't' (=text).
+        // It's deprecated, but it's still in some sources,
+        // and on other platforms they can compiled without problems.
+        mode++;
     }
 
     if (*mode == '+')
     {
-	ret = O_RDWR | (ret & ~O_ACCMODE);
-    	mode++;
+        ret = O_RDWR | (ret & ~O_ACCMODE);
+        mode++;
     }
 
     if (*mode == 'b' && !theresb)
     {
-	mode++;
+        mode++;
     }
 
     if (*mode != '\0')
     {
-    	errno = EINVAL;
-	return -1;
+        errno = EINVAL;
+        return -1;
     }
 
     return ret;
@@ -83,21 +83,21 @@ int __oflags2sflags(int omode)
 
     switch (omode & O_ACCMODE)
     {
-    	case O_RDONLY:
-	    ret = __POSIXC_STDIO_READ;
-    	    break;
+        case O_RDONLY:
+            ret = __POSIXC_STDIO_READ;
+            break;
 
-	case O_WRONLY:
-	    ret = __POSIXC_STDIO_WRITE;
-	    break;
+        case O_WRONLY:
+            ret = __POSIXC_STDIO_WRITE;
+            break;
 
-	case O_RDWR:
-	    ret = __POSIXC_STDIO_READ | __POSIXC_STDIO_WRITE;
-	    break;
+        case O_RDWR:
+            ret = __POSIXC_STDIO_READ | __POSIXC_STDIO_WRITE;
+            break;
 
         default:
-	    errno = EINVAL;
-	    return 0;
+            errno = EINVAL;
+            return 0;
     }
 
     if (omode & O_APPEND)
@@ -114,12 +114,12 @@ int __init_stdio(struct PosixCIntBase *PosixCIntBase)
     if
     (
         !(PosixCBase->_stdin  = fdopen(STDIN_FILENO, NULL))  ||
-    	!(PosixCBase->_stdout = fdopen(STDOUT_FILENO, NULL)) ||
-    	!(PosixCBase->_stderr = fdopen(STDERR_FILENO, NULL))
+        !(PosixCBase->_stdout = fdopen(STDOUT_FILENO, NULL)) ||
+        !(PosixCBase->_stderr = fdopen(STDERR_FILENO, NULL))
     )
     {
-    	SetIoErr(ERROR_NO_FREE_STORE);
-    	return 0;
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return 0;
     }
 
     return 1;

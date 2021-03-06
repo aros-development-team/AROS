@@ -13,10 +13,10 @@
 
 #include <sys/times.h>
 
-	clock_t times(
+        clock_t times(
 
 /*  SYNOPSIS */
-	struct tms *tms)
+        struct tms *tms)
 
 /*  FUNCTION
 

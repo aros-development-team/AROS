@@ -17,13 +17,13 @@
     NAME */
 #include <unistd.h>
 
-	pid_t getppid(
+        pid_t getppid(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	Returns the Parent process ID of the calling processes.
+        Returns the Parent process ID of the calling processes.
 
     INPUTS
 
@@ -59,7 +59,7 @@
   if(!ParentTask)
     return (pid_t) 1;
   et = GetETask(ParentTask);
-  assert(et); 
+  assert(et);
   return (pid_t) et->et_UniqueID;
 }
 

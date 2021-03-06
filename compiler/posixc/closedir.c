@@ -18,20 +18,20 @@
     NAME */
 #include <dirent.h>
 
-	int closedir(
+        int closedir(
 
 /*  SYNOPSIS */
-	DIR *dir)
+        DIR *dir)
 
 /*  FUNCTION
-	 Closes a directory
+         Closes a directory
 
     INPUTS
-	dir - the directory stream pointing to the directory being closed
+        dir - the directory stream pointing to the directory being closed
 
     RESULT
-	The  closedir()  function  returns  0  on success or -1 on
- 	failure.
+        The  closedir()  function  returns  0  on success or -1 on
+        failure.
 
     NOTES
 
@@ -40,8 +40,8 @@
     BUGS
 
     SEE ALSO
- 	close(), opendir(), __posixc_readdir(), rewinddir(), seekdir(),
-	telldir()
+        close(), opendir(), __posixc_readdir(), rewinddir(), seekdir(),
+        telldir()
 
     INTERNALS
 
@@ -51,15 +51,15 @@
 
     if (!dir)
     {
-	errno = EFAULT;
-	return -1;
+        errno = EFAULT;
+        return -1;
     }
 
     desc = __getfdesc(dir->fd);
     if (!desc)
     {
-	errno = EBADF;
-	return -1;
+        errno = EBADF;
+        return -1;
     }
 
     if (--desc->fcb->opencount == 0)

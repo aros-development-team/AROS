@@ -11,19 +11,19 @@
 #include <exec/ports.h>
 #include <proto/alib.h>
 
-	void BeginIO (
+        void BeginIO (
 
 /*  SYNOPSIS */
-	struct IORequest * ioReq)
+        struct IORequest * ioReq)
 
 /*  FUNCTION
-	Call the BeginIO() function of the given device.
+        Call the BeginIO() function of the given device.
 
     INPUTS
         ioReq - a filled out IORequest structure.
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -42,7 +42,7 @@
 {
     /* Call BeginIO() vector */
     AROS_LVO_CALL1NR(void,
-	AROS_LCA(struct IORequest *,ioReq,A1),
-	struct Device *,ioReq->io_Device,5,
+        AROS_LCA(struct IORequest *,ioReq,A1),
+        struct Device *,ioReq->io_Device,5,
     );
 } /* BeginIO */

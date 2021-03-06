@@ -13,7 +13,7 @@ int main (int argc, char ** argv)
 
     len = strlen (argv[0])-2;
     if (len < 0)
-	len = 1;
+        len = 1;
     str = malloc (len + 1); /* MLK */
 
     strncpy (str, argv[0], len);

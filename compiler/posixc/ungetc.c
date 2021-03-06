@@ -17,26 +17,26 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_ungetc (
+        int __posixc_ungetc (
 
 /*  SYNOPSIS */
-	int    c,
-	FILE * stream)
+        int    c,
+        FILE * stream)
 
 /*  FUNCTION
-	Push the character c character back into the stream.
+        Push the character c character back into the stream.
 
     INPUTS
-	c - Put this character back into the stream. The next read will
-		return this character. If you push back more than one
-		character, then they will be returned in reverse order.
-		The function guarantees that one character can be
-		pushed back but no more. It is possible to push the EOF
-		character back into the stream.
-	stream - Read from this stream
+        c - Put this character back into the stream. The next read will
+                return this character. If you push back more than one
+                character, then they will be returned in reverse order.
+                The function guarantees that one character can be
+                pushed back but no more. It is possible to push the EOF
+                character back into the stream.
+        stream - Read from this stream
 
     RESULT
-	c or EOF on error.
+        c or EOF on error.
 
     NOTES
 
@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	fgetc(), getc(), fputc(), putc()
+        fgetc(), getc(), fputc(), putc()
 
     INTERNALS
 
@@ -55,26 +55,26 @@
 
     if (!fdesc)
     {
-	stream->flags |= __POSIXC_STDIO_ERROR;
-	errno = EBADF;
-	return EOF;
+        stream->flags |= __POSIXC_STDIO_ERROR;
+        errno = EBADF;
+        return EOF;
     }
 
     /* Note: changes here might require changes in vfscanf.c!! */
 
     if (c < -1)
-	c = (unsigned int)c;
+        c = (unsigned int)c;
 
     if (!UnGetC (fdesc->fcb->handle, c))
     {
-	errno = __stdc_ioerr2errno (IoErr ());
+        errno = __stdc_ioerr2errno (IoErr ());
 
-	if (errno)
-	    stream->flags |= __POSIXC_STDIO_ERROR;
-	else
-	    stream->flags |= __POSIXC_STDIO_EOF;
+        if (errno)
+            stream->flags |= __POSIXC_STDIO_ERROR;
+        else
+            stream->flags |= __POSIXC_STDIO_EOF;
 
-	c = EOF;
+        c = EOF;
     }
 
     return c;

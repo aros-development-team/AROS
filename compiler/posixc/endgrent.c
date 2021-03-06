@@ -10,10 +10,10 @@
     NAME */
 #include <grp.h>
 
-	void endgrent(
+        void endgrent(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
 
@@ -22,7 +22,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

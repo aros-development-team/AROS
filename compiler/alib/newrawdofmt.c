@@ -12,13 +12,13 @@
 
     NAME */
 
-	STRPTR NewRawDoFmt(
+        STRPTR NewRawDoFmt(
 
 /*  SYNOPSIS */
-	CONST_STRPTR FormatString,
-	VOID_FUNC PutChProc,
-	APTR PutChData,
-	... )
+        CONST_STRPTR FormatString,
+        VOID_FUNC PutChProc,
+        APTR PutChData,
+        ... )
 
 /*  FUNCTION
         This is the varargs version of exec.library/VNewRawDoFmt().

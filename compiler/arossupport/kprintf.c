@@ -39,25 +39,25 @@ extern volatile ULONG   safedebug;
 /* ctype.h ... */
 static inline int isdigit(int c)
 {
-	return '0' <= c && c <= '9';
+        return '0' <= c && c <= '9';
 }
 
 static inline unsigned char tolower(unsigned char c)
 {
-	if ((int)c >= (int)'A')
-		c -= 'A'-'a';
-	return c;
+        if ((int)c >= (int)'A')
+                c -= 'A'-'a';
+        return c;
 }
 
 #define isprint(x)      (((x) >= ' ' && (x) <= 128) || (x) >= 160)
 
 /* math.h ... */
-#define isnan(x)		1
-#define isinf(x)		1
-#define log10(x)		1
-#define log10l(x)		1
-#define pow(x,y)      	1
-#define powl(x,y)		1
+#define isnan(x)                1
+#define isinf(x)                1
+#define log10(x)                1
+#define log10l(x)               1
+#define pow(x,y)        1
+#define powl(x,y)               1
 
 /* string.h ... */
 static inline int kprintf_strlen(const char *c)
@@ -68,14 +68,14 @@ static inline int kprintf_strlen(const char *c)
 }
 
 /* limits.h ... */
-#define ULONG_MAX   	4294967295UL
+#define ULONG_MAX       4294967295UL
 
 /* support macros for FMTPRINTF */
 #define FMTPRINTF_COUT(c)       RawPutChar(c)
 #define FMTPRINTF_STRLEN(str)   kprintf_strlen(str)
 
 #if defined(FULL_SPECIFIERS)
-#define FMTPRINTF_DECIMALPOINT	__arossupport_char_decimalpoint
+#define FMTPRINTF_DECIMALPOINT  __arossupport_char_decimalpoint
 #endif
 
 #include "fmtprintf_pre.c"
@@ -119,8 +119,8 @@ static inline int kprintf_strlen(const char *c)
 
 ******************************************************************************/
 {
-    va_list	 ap;
-    int		 result;
+    va_list      ap;
+    int          result;
 
     va_start (ap, fmt);
     result = vkprintf (fmt, ap);
@@ -133,7 +133,7 @@ static inline int kprintf_strlen(const char *c)
 int vkprintf (const char * format, va_list args)
 {
 #if defined(FULL_SPECIFIERS)
-	const unsigned char *const __arossupport_char_decimalpoint = ".";
+        const unsigned char *const __arossupport_char_decimalpoint = ".";
 #endif
 #if defined(__AROSEXEC_SMP__)
     if (safedebug & 1)

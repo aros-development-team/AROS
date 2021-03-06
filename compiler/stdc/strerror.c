@@ -23,19 +23,19 @@ static const char * _errstrings[];
     NAME
 #include <string.h>
 
-	char * strerror (
+        char * strerror (
 
     SYNOPSIS
-	int n)
+        int n)
 
     FUNCTION
-	Returns a readable string for an error number in errno.
+        Returns a readable string for an error number in errno.
 
     INPUTS
-	n - The contents of errno or a #define from errno.h
+        n - The contents of errno or a #define from errno.h
 
     RESULT
-	A string describing the error.
+        A string describing the error.
 
     NOTES
 
@@ -55,19 +55,19 @@ static const char * _errstrings[];
     NAME */
 #include <string.h>
 
-	char * __stdc_strerror (
+        char * __stdc_strerror (
 
 /*  SYNOPSIS */
-	int n)
+        int n)
 
 /*  FUNCTION
-	Returns a readable string for an error number in errno.
+        Returns a readable string for an error number in errno.
 
     INPUTS
-	n - The contents of errno or a #define from errno.h
+        n - The contents of errno or a #define from errno.h
 
     RESULT
-	A string describing the error.
+        A string describing the error.
 
     NOTES
         This functions only handles the error codes needed by C99 and the ones
@@ -100,9 +100,9 @@ static const char * _errstrings[];
             */
             StdCBase->fault_buf = malloc(100);
 
-	Fault(n - MAX_ERRNO, NULL, StdCBase->fault_buf, 100);
+        Fault(n - MAX_ERRNO, NULL, StdCBase->fault_buf, 100);
 #undef DOSBase
-	return StdCBase->fault_buf;
+        return StdCBase->fault_buf;
     }
     else
     {
@@ -120,93 +120,93 @@ static const char * _errstrings[];
 
 static const char * _errstrings[__STDC_ELAST+2] =
 {
-    /* 0	       */	"No error",
-    /* NA    	       */	NULL,
-    /* ENOENT	       */	"No such file or directory",
-    /* NA   	       */	NULL,
-    /* EINTR	       */	"Interrupted system call",
-    /* NA 	       */	NULL,
-    /* NA   	       */	NULL,
-    /* NA   	       */	NULL,
-    /* ENOEXEC	       */	"Exec format error",
-    /* NA   	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA     	       */	NULL,
-    /* ENOMEM	       */	"Out of memory",
-    /* EACCES	       */	"Permission denied",
-    /* NA 	       */	NULL,
-    /* NA	       */	NULL,
-    /* EBUSY	       */	"Device or resource busy",
-    /* EEXIST	       */	"File exists",
-    /* EXDEV	       */	"Cross-device link",
-    /* NA    	       */	NULL,
-    /* ENOTDIR	       */	"Not a directory",
-    /* NA    	       */	NULL,
-    /* EINVAL	       */	"Invalid argument",
-    /* NA    	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA     	       */	NULL,
-    /* NA   	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA   	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA   	       */	NULL,
-    /* EDOM	       */	"Numerical argument out of domain",
-    /* ERANGE	       */	"Math result not representable",
-    /* NA    	       */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* ENOBUFS	       */	"No buffer space available",
-    /* NA     	       */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA	       */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA   	       */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA              */	NULL,
-    /* NA	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA              */	NULL,
-    /* NA	       */	NULL,
-    /* NA	       */	NULL,
-    /* NA   	       */	NULL,
-    /* NA    	       */	NULL,
-    /* NA              */	NULL,
-    /* EILSEQ	       */	"Illegal byte sequence",
-    /* Too high        */	NULL,
+    /* 0               */       "No error",
+    /* NA              */       NULL,
+    /* ENOENT          */       "No such file or directory",
+    /* NA              */       NULL,
+    /* EINTR           */       "Interrupted system call",
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* ENOEXEC         */       "Exec format error",
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* ENOMEM          */       "Out of memory",
+    /* EACCES          */       "Permission denied",
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* EBUSY           */       "Device or resource busy",
+    /* EEXIST          */       "File exists",
+    /* EXDEV           */       "Cross-device link",
+    /* NA              */       NULL,
+    /* ENOTDIR         */       "Not a directory",
+    /* NA              */       NULL,
+    /* EINVAL          */       "Invalid argument",
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* EDOM            */       "Numerical argument out of domain",
+    /* ERANGE          */       "Math result not representable",
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* ENOBUFS         */       "No buffer space available",
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* NA              */       NULL,
+    /* EILSEQ          */       "Illegal byte sequence",
+    /* Too high        */       NULL,
 };
 
 static int __stdc_dosinit(struct StdCIntBase *StdCBase)

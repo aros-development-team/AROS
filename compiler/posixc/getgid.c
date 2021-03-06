@@ -11,26 +11,26 @@
     NAME */
 #include <unistd.h>
 
-	gid_t getgid(
+        gid_t getgid(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	Returns the real group ID of the calling process
+        Returns the real group ID of the calling process
 
     INPUTS
-	
+        
     RESULT
-	
+        
     NOTES
 
     EXAMPLE
 
     BUGS
-    	
+        
     SEE ALSO
-    	setgid()
+        setgid()
         
     INTERNALS
 

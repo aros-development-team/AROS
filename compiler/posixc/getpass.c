@@ -16,25 +16,25 @@
     NAME */
 #include <unistd.h>
 
-	char * getpass(
+        char * getpass(
 
 /*  SYNOPSIS */
-	const char *prompt)
+        const char *prompt)
 
 /*  FUNCTION
-	(obsolete) prompt for a password.
+        (obsolete) prompt for a password.
 
     INPUTS
 
     RESULT
 
     NOTES
-	This function returns a pointer to a static buffer
-	containing (the first PASS_MAX bytes of) the password without the
-	trailing newline, terminated by a null byte ('\0').
+        This function returns a pointer to a static buffer
+        containing (the first PASS_MAX bytes of) the password without the
+        trailing newline, terminated by a null byte ('\0').
 
-	Function is not re-entrant. Results will be overwritten by
-	subsequent calls.
+        Function is not re-entrant. Results will be overwritten by
+        subsequent calls.
 
     EXAMPLE
 
@@ -60,12 +60,12 @@
     s = fgets(PosixCIntBase->passbuffer, PASS_MAX, PosixCBase->_stdin);
     if (s)
     {
-	/* strip trailing \n */
-	size_t sl = strlen(s);
-	if ( (sl > 0) && (s[sl-1] == '\n') )
-	{
-	    s[sl-1] = '\0';
-	}
+        /* strip trailing \n */
+        size_t sl = strlen(s);
+        if ( (sl > 0) && (s[sl-1] == '\n') )
+        {
+            s[sl-1] = '\0';
+        }
     }
     return s;
 }

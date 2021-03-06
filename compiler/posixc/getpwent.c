@@ -11,10 +11,10 @@
 
 #include <pwd.h>
 
-	struct passwd *getpwent(
+        struct passwd *getpwent(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
 
@@ -23,7 +23,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

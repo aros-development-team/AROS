@@ -13,22 +13,22 @@
     NAME */
 #include <stdlib.h>
 
-	void _Exit (
+        void _Exit (
 
 /*  SYNOPSIS */
-	int code)
+        int code)
 
 /*  FUNCTION
-	Terminates the running program immediately. The code is returned to 
+        Terminates the running program immediately. The code is returned to
         the program which has called the running program. In contrast to
-        exit(), this function does not call user exit-handlers added with 
+        exit(), this function does not call user exit-handlers added with
         atexit() or on_exit(). It does, however, close open filehandles.
 
     INPUTS
-	code - Exit code. 0 for success, other values for failure.
+        code - Exit code. 0 for success, other values for failure.
 
     RESULT
-	None. This function does not return.
+        None. This function does not return.
 
     NOTES
         This function must not be used in a shared library or in a threaded
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	exit()
+        exit()
 
     INTERNALS
 

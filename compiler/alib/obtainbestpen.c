@@ -14,15 +14,15 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	LONG ObtainBestPen (
+        LONG ObtainBestPen (
 
 /*  SYNOPSIS */
-	struct ColorMap * cm,
-	ULONG R,
-	ULONG G,
-	ULONG B,
-	Tag tag1,
-	... ) __stackparm
+        struct ColorMap * cm,
+        ULONG R,
+        ULONG G,
+        ULONG B,
+        Tag tag1,
+        ... ) __stackparm
 
 /*  FUNCTION
         This is the varargs version of graphics.library/ObtainBestPenA().

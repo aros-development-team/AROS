@@ -51,7 +51,7 @@ static LONG v30_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
             msg.sv_VarLen = var->lv_Len;
             msg.sv_GDir = "";
             res = CallHookPkt(hook, userdata, &msg);
-            if(res != 0) 
+            if(res != 0)
                 break;
         }
     }
@@ -121,21 +121,21 @@ __env_item *__env_getvar(const char *name, int valuesize)
     {
         if (strlen((*curr)->value) < valuesize)
         {
-	    free((*curr)->value);
-	    (*curr)->value = malloc(valuesize);
+            free((*curr)->value);
+            (*curr)->value = malloc(valuesize);
 
-	    if (!(*curr)->value)
-	    {
-	        __env_item *tmp = (*curr)->next;
+            if (!(*curr)->value)
+            {
+                __env_item *tmp = (*curr)->next;
 
-	        free(*curr);
-	        *curr = tmp;
-   	    }
-	}
+                free(*curr);
+                *curr = tmp;
+            }
+        }
     }
-    else 
+    else
     {
-	*curr = __env_newvar(name, valuesize);
+        *curr = __env_newvar(name, valuesize);
     }
 
     return *curr;
@@ -149,13 +149,13 @@ void __env_delvar(const char *name)
 
     if (*curr)
     {
-	register __env_item *tmp = *curr;
+        register __env_item *tmp = *curr;
 
-	*curr = (*curr)->next;
+        *curr = (*curr)->next;
 
-	free(tmp->name);
-	free(tmp->value);
-	free(tmp);
+        free(tmp->name);
+        free(tmp->value);
+        free(tmp);
     }
 }
 
@@ -172,8 +172,8 @@ LONG get_var_len(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
 {
     struct EnvData *data = (struct EnvData *) userdata;
     data->envcount++;
-    data->varbufsize += 
-	(ptrdiff_t) strlen((char*)message->sv_Name) + 
+    data->varbufsize +=
+        (ptrdiff_t) strlen((char*)message->sv_Name) +
         message->sv_VarLen + 2;
     return 0;
 }
@@ -197,7 +197,7 @@ int __env_get_environ(char **environ, int size)
 {
     int i;
     struct Hook hook;
-    struct EnvData u; 
+    struct EnvData u;
     char *varbuf;
 
     u.envcount = 0;
@@ -208,16 +208,16 @@ int __env_get_environ(char **environ, int size)
     ScanVars(&hook, GVF_LOCAL_ONLY, &u);
 
     if(environ == NULL)
-	return sizeof(char*) * (u.envcount + 1) + u.varbufsize;
+        return sizeof(char*) * (u.envcount + 1) + u.varbufsize;
     else if(size < sizeof(char*) *(u.envcount + 1) + u.varbufsize)
-	return -1;
+        return -1;
 
     /* store name=value strings after table of pointers */
     varbuf = (char*) (environ + (u.envcount + 1));
-	    
+            
     /* time to fill in the buffers */
     u.varbufptr = varbuf;
-    u.varbufptr[0] = '\0';   
+    u.varbufptr[0] = '\0';
     hook.h_Entry = (HOOKFUNC) get_var;
     ScanVars(&hook, GVF_LOCAL_ONLY, &u);
 
@@ -228,5 +228,5 @@ int __env_get_environ(char **environ, int size)
     }
     environ[u.envcount] = NULL;
 
-    return 0;	    
+    return 0;
 }

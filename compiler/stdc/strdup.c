@@ -11,20 +11,20 @@
     NAME */
 #include <string.h>
 
-	char * strdup (
+        char * strdup (
 
 /*  SYNOPSIS */
-	const char * orig)
+        const char * orig)
 
 /*  FUNCTION
-	Create a copy of a string. The copy can be freed with free() or will
-	be freed when the program ends.
+        Create a copy of a string. The copy can be freed with free() or will
+        be freed when the program ends.
 
     INPUTS
-	str1 - Strings to duplicate
+        str1 - Strings to duplicate
 
     RESULT
-	A copy of the string which can be freed with free().
+        A copy of the string which can be freed with free().
 
     NOTES
 
@@ -43,9 +43,9 @@
 
     if ((copy = malloc (strlen (orig)+1)))
     {
-	ptr = copy;
+        ptr = copy;
 
-	while ((*ptr ++ = *orig ++));
+        while ((*ptr ++ = *orig ++));
     }
 
     return copy;

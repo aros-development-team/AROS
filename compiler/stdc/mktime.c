@@ -16,56 +16,56 @@ static char monthtable[] =
     NAME */
 #include <time.h>
 
-	time_t mktime (
+        time_t mktime (
 
 /*  SYNOPSIS */
-	struct tm * utim)
+        struct tm * utim)
 
 /*  FUNCTION
-	The mktime() function converts the broken-down time utim to
-	calendar time representation.
+        The mktime() function converts the broken-down time utim to
+        calendar time representation.
 
     INPUTS
-	utim - The broken-down time to convert
+        utim - The broken-down time to convert
 
     RESULT
-	The converted calendar time
+        The converted calendar time
 
     NOTES
 
     EXAMPLE
-	time_t	    tt;
-	struct tm * tm;
+        time_t      tt;
+        struct tm * tm;
 
         //Computation which results in a tm
         tm = ...
 
-	// and convert it
-	tt = mktime (tm);
+        // and convert it
+        tt = mktime (tm);
 
     BUGS
         At the moment sanity check is not performed nor a normalization on the
         structure is done
 
     SEE ALSO
-	time(), ctime(), asctime(), localtime(), gmtime()
+        time(), ctime(), asctime(), localtime(), gmtime()
 
     INTERNALS
-	Rules for leap-years:
+        Rules for leap-years:
 
-	1. every 4th year is a leap year
+        1. every 4th year is a leap year
 
-	2. every 100th year is none
+        2. every 100th year is none
 
-	3. every 400th is one
+        3. every 400th is one
 
-	4. 1900 was none, 2000 is one
+        4. 1900 was none, 2000 is one
 
 ******************************************************************************/
 {
     time_t           tt;
-    int 	     leapyear,
-		     days,
+    int              leapyear,
+                     days,
                      year,
                      i;
 

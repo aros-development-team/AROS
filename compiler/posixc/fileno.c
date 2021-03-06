@@ -12,19 +12,19 @@
     NAME */
 #include <stdio.h>
 
-	int fileno (
+        int fileno (
 
 /*  SYNOPSIS */
-	FILE *stream)
+        FILE *stream)
 
 /*  FUNCTION
-	Returns the descriptor associated with the stream
+        Returns the descriptor associated with the stream
 
     INPUTS
-	strem - the stream to get the descriptor from
+        strem - the stream to get the descriptor from
 
     RESULT
-	The integer descriptor
+        The integer descriptor
 
     NOTES
 
@@ -33,7 +33,7 @@
     BUGS
 
     SEE ALSO
-	open()
+        open()
 
     INTERNALS
 
@@ -41,8 +41,8 @@
 {
     if (!stream) /* safety check */
     {
-    	errno = EFAULT;
-	return -1;
+        errno = EFAULT;
+        return -1;
     }
     return stream->fd;
 }

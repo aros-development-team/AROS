@@ -12,24 +12,24 @@
     NAME */
 #include <stdio.h>
 
-	int sscanf (
+        int sscanf (
 
 /*  SYNOPSIS */
-	const char  *str,
-	const char  *format,
-	...)
+        const char  *str,
+        const char  *format,
+        ...)
 
 /*  FUNCTION
-	Scan the specified string and convert it into the arguments as
-	specified by format.
+        Scan the specified string and convert it into the arguments as
+        specified by format.
 
     INPUTS
-	str     - The routine examines this string.
-	format - Format string. See scanf() for a description
-	...    - Arguments for the result
+        str     - The routine examines this string.
+        format - Format string. See scanf() for a description
+        ...    - Arguments for the result
 
     RESULT
-	The number of converted parameters.
+        The number of converted parameters.
 
     NOTES
 
@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	fscanf(), vscanf(), vfscanf(), vsscanf()
+        fscanf(), vscanf(), vfscanf(), vsscanf()
 
     INTERNALS
 
@@ -52,4 +52,4 @@
     va_end(args);
     
     return retval;
-}  
+}

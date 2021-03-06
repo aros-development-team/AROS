@@ -18,34 +18,34 @@ static int _vsprintf_uc (int c, char ** str)
 #include <stdio.h>
 #include <stdarg.h>
 
-	int vsprintf (
+        int vsprintf (
 
 /*  SYNOPSIS */
-	char	   * str,
-	const char * format,
-	va_list      args)
+        char       * str,
+        const char * format,
+        va_list      args)
 
 /*  FUNCTION
-	Format a list of arguments and put them into the string str.
+        Format a list of arguments and put them into the string str.
 
     INPUTS
-	str - The formatted result is stored here
-	format - A printf() format string.
-	args - A list of arguments for the format string.
+        str - The formatted result is stored here
+        format - A printf() format string.
+        args - A list of arguments for the format string.
 
     RESULT
-	The number of characters written.
+        The number of characters written.
 
     NOTES
-	No check is made that str is large enough to contain the result.
+        No check is made that str is large enough to contain the result.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	printf(), sprintf(), fprintf(), vprintf(), vfprintf(), snprintf(),
-	vsnprintf()
+        printf(), sprintf(), fprintf(), vprintf(), vfprintf(), snprintf(),
+        vsnprintf()
 
     INTERNALS
 

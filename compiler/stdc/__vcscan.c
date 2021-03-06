@@ -41,7 +41,7 @@ struct vcs_ieeetype
 
 #ifdef FULL_SPECIFIERS
 const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
-{ 
+{
     { .uchar = { 0x7f,0xf0,0x00,0x00,0x00,0x00,0x00,0x00 }}, /* +inf */
     { .uchar = { 0xff,0xf0,0x00,0x00,0x00,0x00,0x00,0x00 }}, /* -inf */
     { .uchar = { 0x7f,0xf1,0x00,0x00,0x00,0x00,0x00,0x00 }}  /* NaN */
@@ -110,14 +110,14 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
             size_t i;
 
             if(isdigit(*ptr))
-            { 
+            {
                 width=0;
                 while(isdigit(*ptr))
-                    width=width*10+(*ptr++-'0'); 
+                    width=width*10+(*ptr++-'0');
             }
 
             while(*ptr=='h'||*ptr=='l'||*ptr=='L'||*ptr=='*')
-            { 
+            {
                 if(*ptr=='*')
                     ignore=1;
                 else
@@ -128,17 +128,17 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
             type=*ptr++;
 
             if(type&&type!='%'&&type!='c'&&type!='n'&&type!='[')
-            { 
+            {
                 do /* ignore leading whitespace characters */
                 NEXT(c);
                 while(isspace(c));
-                size=1; 
+                size=1;
             } /* The first non-whitespace character is already read */
 
             switch(type)
-            { 
+            {
             case 'c':
-            { 
+            {
                 unsigned char *bp;
 
                 if(width==ULONG_MAX) /* Default */
@@ -151,7 +151,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
 
                 NEXT(c); /* 'c' did not skip whitespace */
                 while(VAL(c!=EOF))
-                { 
+                {
                     if(!ignore)
                         *bp++=c;
                     NEXT(c);
@@ -163,28 +163,28 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 break;
             }
             case '[':
-            { 
+            {
                 unsigned char *bp;
                 unsigned char tab[32],a,b;
                 char circflag=0;
 
                 if(*ptr=='^')
-                { 
+                {
                     circflag=1;
-                    ptr++; 
+                    ptr++;
                 }
                 for(i=0;i<sizeof(tab);i++)
                     tab[i]=circflag?255:0;
 
                 for(;;)
-                { 
+                {
                     if(!*ptr)
                         break;
                     a=b=*ptr++;
                     if(*ptr=='-'&&ptr[1]&&ptr[1]!=']')
-                    { 
+                    {
                         ptr++;
-                        b=*ptr++; 
+                        b=*ptr++;
                     }
                     for(i=a;i<=b;i++)
                         if(circflag)
@@ -192,9 +192,9 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                         else
                             tab[i/8]|=1<<(i&7);
                     if(*ptr==']')
-                    { 
+                    {
                         ptr++;
-                        break; 
+                        break;
                     }
                 }
 
@@ -205,7 +205,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
 
                 NEXT(c);
                 while(VAL(c!=EOF&&tab[c/8]&(1<<(c&7))))
-                { 
+                {
                     if(!ignore)
                         *bp++=c;
                     NEXT(c);
@@ -213,14 +213,14 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 PREV(c);
 
                 if(!ignore&&size)
-                { 
+                {
                     *bp++='\0';
                     blocks++;
                 }
                 break;
             }
             case 's':
-            { 
+            {
                 unsigned char *bp;
 
                 if(!ignore)
@@ -229,7 +229,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                     bp=NULL; /* Just to get the compiler happy */
 
                 while(VAL(c!=EOF&&!isspace(c)))
-                { 
+                {
                     if(!ignore)
                         *bp++=c;
                     NEXT(c);
@@ -237,9 +237,9 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 PREV(c);
 
                 if(!ignore&&size)
-                { 
+                {
                     *bp++='\0';
-                    blocks++; 
+                    blocks++;
                 }
                 break;
             }
@@ -247,7 +247,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
             case 'e':
             case 'f':
             case 'g':
-            { 
+            {
                 double v;
                 int ex=0;
                 int min=0,mine=0; /* This is a workaround for gcc 2.3.3: should be char */
@@ -255,9 +255,9 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 do /* This is there just to be able to break out */
                 {
                     if(VAL(c=='-'||c=='+'))
-                    { 
+                    {
                         min=c;
-                        NEXT(c); 
+                        NEXT(c);
                     }
 
                     if(VAL(tolower(c)=='i')) /* +- inf */
@@ -265,30 +265,30 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                         int d;
                         NEXT(d);
                         if(VAL(tolower(d)=='n'))
-                        { 
+                        {
                             int e;
                             NEXT(e);
                             if(VAL(tolower(e)=='f'))
                             {
                                 v=*(double *)&undef[min=='-'];
-                                break; 
+                                break;
                             } /* break out */
                             PREV(e);
                         }
                         PREV(d);
                     }
                     else if(VAL(toupper(c)=='N')) /* NaN */
-                    { 
+                    {
                         int d;
                         NEXT(d);
                         if(VAL(tolower(d)=='a'))
-                        { 
+                        {
                             int e;
                             NEXT(e);
                             if(VAL(toupper(e)=='N'))
                             {
                                 v=*(double *)&undef[2];
-                                break; 
+                                break;
                             }
                             PREV(e);
                         }
@@ -303,24 +303,24 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                     }
 
                     if(VAL(c==__stdc_char_decimalpoint[0]))
-                    { 
+                    {
                         double dp=0.1;
                         NEXT(c);
                         while(VAL(isdigit(c)))
-                        { 
+                        {
                             v=v+dp*(c-'0');
                             dp=dp/10.0;
-                            NEXT(c); 
+                            NEXT(c);
                         }
                         if(size==2+(min!=0)) /* No number read till now -> malformatted */
-                        { 
+                        {
                             PREV(c);
-                            c=__stdc_char_decimalpoint[0]; 
+                            c=__stdc_char_decimalpoint[0];
                         }
                     }
 
                     if(min&&size==2) /* No number read till now -> malformatted */
-                    { 
+                    {
                         PREV(c);
                         c=min;
                     }
@@ -349,7 +349,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                             c=d;
                         }
                         else
-                        { 
+                        {
                             PREV(d);
                             if(mine)
                                 PREV(mine);
@@ -370,7 +370,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 if(!ignore&&size)
                 {
                     switch(subtype)
-                    { 
+                    {
                     case 'l':
                     case 'L':
                         *va_arg(args,double *)=v;
@@ -395,7 +395,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 size=1; /* fake a valid argument */
                 break;
             default:
-            { 
+            {
                 unsigned long v=0;
                 int base;
                 int min=0;
@@ -404,7 +404,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                     ptr--; /* unparse NUL character */
 
                 if(type=='p')
-                { 
+                {
                     subtype='l'; /* This is the same as %lx */
                     type='x';
                 }
@@ -416,13 +416,13 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 }
 
                 if(type=='i') /* which one to use ? */
-                { 
+                {
                     if(VAL(c=='0')) /* Could be octal or sedecimal */
-                    { 
+                    {
                         int d;
                         NEXT(d); /* Get a look at next character */
                         if(VAL(tolower(d)=='x'))
-                        { 
+                        {
                             int e;
                             NEXT(e); /* And the next */
                             if(VAL(isxdigit(c)))
@@ -447,13 +447,13 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                     int d;
                     NEXT(d);
                     if(VAL(tolower(d)=='x'))
-                    { 
+                    {
                         int e;
                         NEXT(e);
                         if(VAL(isxdigit(e)))
-                        { 
+                        {
                             c=e;
-                            break; 
+                            break;
                         } /* Used while just to do this ;-) */
                         PREV(e);
                     }
@@ -482,7 +482,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 if(type=='u')
                 {
                     switch(subtype)
-                    { 
+                    {
                         case 'l':
                         case 'L':
                             *va_arg(args,unsigned long *)=v;
@@ -496,7 +496,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                     }
                 }
                 else
-                { 
+                {
                     signed long v2;
                     if(min=='-')
                         v2=-v;
@@ -523,14 +523,14 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
             format=ptr;
         }
         else
-        { 
+        {
             if(isspace(*format))
-            { 
+            {
                 do
                 NEXT(c);
                 while(isspace(c));
                 PREV(c);
-                size=1; 
+                size=1;
             }
             else
             {

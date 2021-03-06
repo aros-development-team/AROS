@@ -12,53 +12,53 @@
     NAME */
 #include <fcntl.h>
 
-	int open (
+        int open (
 
 /*  SYNOPSIS */
-	const char * pathname,
-	int	         flags,
-	...)
+        const char * pathname,
+        int              flags,
+        ...)
 
 /*  FUNCTION
- 	Opens a file with the specified flags and name.
+        Opens a file with the specified flags and name.
 
     INPUTS
-	pathname - Path and filename of the file you want to open.
-	flags - Most be exactly one of: O_RDONLY, O_WRONLY or O_RDWR
-		to open a file for reading, writing or for reading and
-		writing.
+        pathname - Path and filename of the file you want to open.
+        flags - Most be exactly one of: O_RDONLY, O_WRONLY or O_RDWR
+                to open a file for reading, writing or for reading and
+                writing.
 
-		The mode can be modified by or'ing the following bits in:
+                The mode can be modified by or'ing the following bits in:
 
-		O_CREAT: Create the file if it doesn't exist (only for
-			O_WRONLY or O_RDWR). If this flag is set, then
-			open() will look for a third parameter mode. mode
-			must contain the access modes for the file
-			(mostly 0644).
-		O_EXCL: Only with O_CREAT. If the file does already exist,
-			then open() fails. See BUGS.
-		O_NOCTTY:
-		O_TRUNC: If the file exists, then it gets overwritten. This
-			is the default and the opposite to O_APPEND.
-		O_APPEND: If the file exists, then the starting position for
-			writes is the end of the file.
-		O_NONBLOCK or O_NDELAY: Opens the file in non-blocking mode.
-			If there is no data in the file, then read() on a
-			terminal will return immediately instead of waiting
-			until data arrives. Has no effect on write().
-		O_SYNC: The process will be stopped for each write() and the
-			data will be flushed before the write() returns.
-			This ensures that the data is physically written
-			when write() returns. If this flag is not specified,
-			the data is written into a buffer and flushed only
-			once in a while.
+                O_CREAT: Create the file if it doesn't exist (only for
+                        O_WRONLY or O_RDWR). If this flag is set, then
+                        open() will look for a third parameter mode. mode
+                        must contain the access modes for the file
+                        (mostly 0644).
+                O_EXCL: Only with O_CREAT. If the file does already exist,
+                        then open() fails. See BUGS.
+                O_NOCTTY:
+                O_TRUNC: If the file exists, then it gets overwritten. This
+                        is the default and the opposite to O_APPEND.
+                O_APPEND: If the file exists, then the starting position for
+                        writes is the end of the file.
+                O_NONBLOCK or O_NDELAY: Opens the file in non-blocking mode.
+                        If there is no data in the file, then read() on a
+                        terminal will return immediately instead of waiting
+                        until data arrives. Has no effect on write().
+                O_SYNC: The process will be stopped for each write() and the
+                        data will be flushed before the write() returns.
+                        This ensures that the data is physically written
+                        when write() returns. If this flag is not specified,
+                        the data is written into a buffer and flushed only
+                        once in a while.
 
     RESULT
-	-1 for error or a file descriptor for use with read(), write(), etc.
+        -1 for error or a file descriptor for use with read(), write(), etc.
 
     NOTES
-	If the filesystem doesn't allow to specify different access modes
-	for users, groups and others, then the user modes are used.
+        If the filesystem doesn't allow to specify different access modes
+        for users, groups and others, then the user modes are used.
 
         This function must not be used in a shared library or
         in a threaded application.
@@ -67,13 +67,13 @@
     EXAMPLE
 
     BUGS
-	The flag O_EXCL is not very reliable if the file resides on a NFS
-	filesystem.
+        The flag O_EXCL is not very reliable if the file resides on a NFS
+        filesystem.
 
-	Most flags are not supported right now.
+        Most flags are not supported right now.
 
     SEE ALSO
-	close(), read(), write(), __posixc_fopen()
+        close(), read(), write(), __posixc_fopen()
 
     INTERNALS
 

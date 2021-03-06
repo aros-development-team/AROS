@@ -14,7 +14,7 @@
 
 /*  SYNOPSIS */
 
-	struct InputEvent *ie)
+        struct InputEvent *ie)
 
 /*  FUNCTION
 
@@ -46,14 +46,14 @@
     
     for(next = ie; next != NULL; ie = next)
     {
-	next = ie->ie_NextEvent;
+        next = ie->ie_NextEvent;
 
-	if(ie->ie_Class == IECLASS_NEWPOINTERPOS &&
-	   (ie->ie_SubClass == IESUBCLASS_TABLET ||
-	    ie->ie_SubClass == IESUBCLASS_NEWTABLET ||
-	    ie->ie_SubClass == IESUBCLASS_PIXEL))
-	    FreeVec(ie->ie_EventAddress);
-	
-	FreeMem(ie, sizeof(struct InputEvent));
+        if(ie->ie_Class == IECLASS_NEWPOINTERPOS &&
+           (ie->ie_SubClass == IESUBCLASS_TABLET ||
+            ie->ie_SubClass == IESUBCLASS_NEWTABLET ||
+            ie->ie_SubClass == IESUBCLASS_PIXEL))
+            FreeVec(ie->ie_EventAddress);
+        
+        FreeMem(ie, sizeof(struct InputEvent));
     }
 } /* FreeIEvents */

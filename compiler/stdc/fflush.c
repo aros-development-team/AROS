@@ -15,22 +15,22 @@
     NAME */
 #include <stdio.h>
 
-	int fflush (
+        int fflush (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Flush a stream. If the stream is an input stream, then the stream
-	is synchronized for unbuffered I/O. If the stream is an output
-	stream, then any buffered data is written.
+        Flush a stream. If the stream is an input stream, then the stream
+        is synchronized for unbuffered I/O. If the stream is an output
+        stream, then any buffered data is written.
 
     INPUTS
-	stream - Flush this stream. May be NULL. In this case, all
-		output streams are flushed.
+        stream - Flush this stream. May be NULL. In this case, all
+                output streams are flushed.
 
     RESULT
-	0 on success or EOF on error.
+        0 on success or EOF on error.
 
     NOTES
 
@@ -49,17 +49,17 @@
         /* flush all streams opened for output */
         struct StdCIOIntBase *StdCIOBase =
             (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
-	FILE *f;
+        FILE *f;
 
-	ForeachNode (&StdCIOBase->files, f)
-	{
+        ForeachNode (&StdCIOBase->files, f)
+        {
             if (fflush(f) == EOF)
                 return EOF;
         }
     }
     else
     {
-	if (!Flush(stream->fh))
+        if (!Flush(stream->fh))
         {
             errno = __stdc_ioerr2errno(IoErr());
             return EOF;

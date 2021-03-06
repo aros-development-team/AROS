@@ -17,12 +17,12 @@ extern struct IntuitionBase * IntuitionBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/intuition.h>
 
-	struct Screen * OpenScreenTags (
+        struct Screen * OpenScreenTags (
 
 /*  SYNOPSIS */
-	struct NewScreen *  newScreen,
-	Tag                 tag1,
-	...)
+        struct NewScreen *  newScreen,
+        Tag                 tag1,
+        ...)
 
 /*  FUNCTION
 
@@ -37,7 +37,7 @@ extern struct IntuitionBase * IntuitionBase;
     BUGS
 
     SEE ALSO
-	intuition.library/OpenScreenTagList()
+        intuition.library/OpenScreenTagList()
 
     INTERNALS
 

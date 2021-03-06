@@ -11,33 +11,33 @@
     NAME */
 #include <stdlib.h>
 
-	long long atoll (
+        long long atoll (
 
 /*  SYNOPSIS */
-	const char * str)
+        const char * str)
 
 /*  FUNCTION
-	Convert a string of digits into an long long integer.
+        Convert a string of digits into an long long integer.
 
     INPUTS
-	str - The string which should be converted. Leading
-		whitespace are ignored. The number may be prefixed
-		by a '+' or '-'.
+        str - The string which should be converted. Leading
+                whitespace are ignored. The number may be prefixed
+                by a '+' or '-'.
 
     RESULT
-	The value of string str.
+        The value of string str.
 
     NOTES
 
     EXAMPLE
-	// returns 1
-	atoll ("  \t +1");
+        // returns 1
+        atoll ("  \t +1");
 
-	// returns 1
-	atoll ("1");
+        // returns 1
+        atoll ("1");
 
-	// returns -1
-	atoll ("  \n -1");
+        // returns -1
+        atoll ("  \n -1");
 
     BUGS
 

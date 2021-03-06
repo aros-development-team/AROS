@@ -18,21 +18,21 @@
     NAME */
 #include <sys/utsname.h>
 
-	int uname(
+        int uname(
 
 /*  SYNOPSIS */
     struct utsname *name)
         
 /*  FUNCTION
-	Store information about the operating system in the structure pointed 
-	to by name.
+        Store information about the operating system in the structure pointed
+        to by name.
 
     INPUTS
-	name - Pointer to utsname structure defined in <sys/utsname.h>.
+        name - Pointer to utsname structure defined in <sys/utsname.h>.
 
     RESULT
-	If the information was stored successfully, zero is returned. Otherwise
-	function returns -1 and sets errno appropriately.
+        If the information was stored successfully, zero is returned. Otherwise
+        function returns -1 and sets errno appropriately.
 
     NOTES
 
@@ -41,10 +41,10 @@
     BUGS
 
     SEE ALSO
-	
+        
     INTERNALS
-    	This function uses the ArosInquire() function to get information about
-    	the operating system.
+        This function uses the ArosInquire() function to get information about
+        the operating system.
 
 ******************************************************************************/
 {

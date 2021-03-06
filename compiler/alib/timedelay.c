@@ -14,39 +14,39 @@
 /*****************************************************************************
 
     NAME */
-	LONG TimeDelay(
+        LONG TimeDelay(
 
 /*  SYNOPSIS */
-	LONG Unit,
-	ULONG Seconds,
-	ULONG MicroSeconds)
+        LONG Unit,
+        ULONG Seconds,
+        ULONG MicroSeconds)
 
 /*  FUNCTION
-	TimeDelay() waits for the specified period of time before returning
-	to the caller.
+        TimeDelay() waits for the specified period of time before returning
+        to the caller.
 
     INPUTS
-	Unit         -  The timer.device unit to use for this command.
-	Seconds      -  The number of seconds to wait.
-	MicroSeconds -  The number of microseconds to wait.
+        Unit         -  The timer.device unit to use for this command.
+        Seconds      -  The number of seconds to wait.
+        MicroSeconds -  The number of microseconds to wait.
 
     RESULT
-	Zero if everything went OK, non-zero if there was a problem.
+        Zero if everything went OK, non-zero if there was a problem.
 
     NOTES
-	If this function fails, the most likely reasons are:
-	- invalid timer.device unit numbers
+        If this function fails, the most likely reasons are:
+        - invalid timer.device unit numbers
 
-	This function uses the SIGF_SINGLE signal, strange things can
-	happen if you are waiting on this signal when you call this
-	function. Basically: Don't use it and call this function.
+        This function uses the SIGF_SINGLE signal, strange things can
+        happen if you are waiting on this signal when you call this
+        function. Basically: Don't use it and call this function.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	timer.device/TR_ADDREQUEST
+        timer.device/TR_ADDREQUEST
 
     INTERNALS
 

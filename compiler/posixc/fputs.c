@@ -14,21 +14,21 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_fputs (
+        int __posixc_fputs (
 
 /*  SYNOPSIS */
-	const char * str,
-	FILE	   * stream)
+        const char * str,
+        FILE       * stream)
 
 /*  FUNCTION
-	Write a string to the specified stream.
+        Write a string to the specified stream.
 
     INPUTS
-	str - Output this string...
-	fh - ...to this stream
+        str - Output this string...
+        fh - ...to this stream
 
     RESULT
-	> 0 on success and EOF on error.
+        > 0 on success and EOF on error.
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	puts(), fputc(), putc()
+        puts(), fputc(), putc()
 
     INTERNALS
 
@@ -47,16 +47,16 @@
 
     if (!fdesc)
     {
-    	errno = EBADF;
-	return EOF;
+        errno = EBADF;
+        return EOF;
     }
 
     if (!str) str = "(null)";
 
     if (FPuts(fdesc->fcb->handle, str) == -1)
     {
-	errno = __stdc_ioerr2errno(IoErr());
-	return EOF;
+        errno = __stdc_ioerr2errno(IoErr());
+        return EOF;
     }
 
     return 0;

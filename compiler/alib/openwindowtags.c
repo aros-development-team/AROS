@@ -18,12 +18,12 @@ extern struct IntuitionBase * IntuitionBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/intuition.h>
 
-	struct Window * OpenWindowTags (
+        struct Window * OpenWindowTags (
 
 /*  SYNOPSIS */
-	struct NewWindow * newWindow,
-	Tag		   tag1,
-	...		   )
+        struct NewWindow * newWindow,
+        Tag                tag1,
+        ...                )
 
 /*  FUNCTION
 
@@ -38,7 +38,7 @@ extern struct IntuitionBase * IntuitionBase;
     BUGS
 
     SEE ALSO
-	intuition.library/OpenWindowTagList()
+        intuition.library/OpenWindowTagList()
 
     INTERNALS
 

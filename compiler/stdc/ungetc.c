@@ -16,26 +16,26 @@
     NAME */
 #include <stdio.h>
 
-	int ungetc (
+        int ungetc (
 
 /*  SYNOPSIS */
-	int    c,
-	FILE * stream)
+        int    c,
+        FILE * stream)
 
 /*  FUNCTION
-	Puch the character c character back into the stream.
+        Puch the character c character back into the stream.
 
     INPUTS
-	c - Put this character back into the stream. The next read will
-		return this character. If you push back more than one
-		character, then they will be returned in reverse order.
-		The function guarantees that one character can be
-		pushed back but no more. It is possible to push the EOF
-		character back into the stream.
-	stream - Read from this stream
+        c - Put this character back into the stream. The next read will
+                return this character. If you push back more than one
+                character, then they will be returned in reverse order.
+                The function guarantees that one character can be
+                pushed back but no more. It is possible to push the EOF
+                character back into the stream.
+        stream - Read from this stream
 
     RESULT
-	c or EOF on error.
+        c or EOF on error.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	fgetc(), getc(), fputc(), putc()
+        fgetc(), getc(), fputc(), putc()
 
     INTERNALS
 
@@ -53,21 +53,21 @@
     /* Note: changes here might require changes in vfscanf.c!! */
 
     if (c < -1)
-	c = (unsigned int)c;
+        c = (unsigned int)c;
 
     if (!UnGetC (stream->fh, c))
     {
         LONG ioerr = IoErr();
 
-	if (ioerr)
+        if (ioerr)
         {
             errno = __stdc_ioerr2errno(ioerr);
-	    stream->flags |= __STDCIO_STDIO_ERROR;
+            stream->flags |= __STDCIO_STDIO_ERROR;
         }
-	else
-	    stream->flags |= __STDCIO_STDIO_EOF;
+        else
+            stream->flags |= __STDCIO_STDIO_EOF;
 
-	c = EOF;
+        c = EOF;
     }
 
     return c;

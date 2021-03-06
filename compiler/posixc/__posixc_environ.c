@@ -20,16 +20,16 @@
     NAME */
 #include <stdlib.h>
 
-	int __posixc_set_environptr (
+        int __posixc_set_environptr (
 
 /*  SYNOPSIS */
-	char ***environptr)
+        char ***environptr)
 
 /*  FUNCTION
-	This function is called to enable environ emulation mode.
+        This function is called to enable environ emulation mode.
 
     INPUTS
-	environptr - ptr to the child environ variable (== &environ).
+        environptr - ptr to the child environ variable (== &environ).
 
     RESULT
         0 on fail, other value on success
@@ -75,19 +75,19 @@
     NAME */
 #include <stdlib.h>
 
-	char ***__posixc_get_environptr (
+        char ***__posixc_get_environptr (
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	This function the get pointer to the child environ global variable
+        This function the get pointer to the child environ global variable
         currently used by posixc.library.
 
     INPUTS
         -
 
-    RESULT 
+    RESULT
         environptr - ptr to the child environ variable (== &environ).
                      NULL is return if envirion emulation is disabled.
 

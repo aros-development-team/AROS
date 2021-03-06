@@ -11,23 +11,23 @@
     NAME */
 #include <time.h>
 
-	struct tm * gmtime (
+        struct tm * gmtime (
 
 /*  SYNOPSIS */
-	const time_t * tt)
+        const time_t * tt)
 
 /*  FUNCTION
-	The gmtime() function converts the calendar time tt to
-	broken-down time representation, expressed in Coordinated Universal
-	Time (UTC).
+        The gmtime() function converts the calendar time tt to
+        broken-down time representation, expressed in Coordinated Universal
+        Time (UTC).
 
         See gmtime_r() for details.
 
     INPUTS
-	tt - The time to convert
+        tt - The time to convert
 
     RESULT
-	A statically allocated buffer with the broken down time in Coordinated
+        A statically allocated buffer with the broken down time in Coordinated
         Universal Time (UTC). Note that the contents of the buffer might get
         lost with the call of any of the date and time functions.
 
@@ -36,19 +36,19 @@
         with localtime().
 
     EXAMPLE
-	time_t	    tt;
-	struct tm * tm;
+        time_t      tt;
+        struct tm * tm;
 
-	// Get the time
-	time (&tt);
+        // Get the time
+        time (&tt);
 
-	// and convert it
-	tm = gmtime (&tt);
+        // and convert it
+        tm = gmtime (&tt);
 
     BUGS
 
     SEE ALSO
-	time(), ctime(), asctime(), localtime()
+        time(), ctime(), asctime(), localtime()
 
     INTERNALS
 

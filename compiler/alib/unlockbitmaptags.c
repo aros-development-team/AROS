@@ -12,12 +12,12 @@ extern struct Library * CyberGfxBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/cybergraphics.h>
 
-	void UnLockBitMapTags (
+        void UnLockBitMapTags (
 
 /*  SYNOPSIS */
-	APTR handle,
-	Tag tag1,
-	...)
+        APTR handle,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
 
@@ -32,7 +32,7 @@ extern struct Library * CyberGfxBase;
     BUGS
 
     SEE ALSO
-	cgfx.library/UnLockBitMapTagList()
+        cgfx.library/UnLockBitMapTagList()
 
     INTERNALS
 

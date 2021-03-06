@@ -16,7 +16,7 @@ BSTR CreateBSTR(CONST_STRPTR src)
 
     dst = AllocVec(size, MEMF_ANY);
     if (!dst)
-	return BNULL;
+        return BNULL;
 
 #ifdef AROS_FAST_BSTR
     CopyMem(src, dst, size);

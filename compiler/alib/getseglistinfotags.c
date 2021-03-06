@@ -13,12 +13,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/dos.h>
 
-	LONG GetSegListInfoTags (
+        LONG GetSegListInfoTags (
 
 /*  SYNOPSIS */
-	BPTR seglist,
-	Tag tag1,
-	...)
+        BPTR seglist,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of dos.library/GetSegListInfo().

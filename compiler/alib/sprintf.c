@@ -18,15 +18,15 @@ const ULONG m68k_string_sprintf = 0x16c04e75;
        VOID  __sprintf(
 
 /*  SYNOPSIS */
-	     UBYTE *buffer, const UBYTE *format, ...)
+             UBYTE *buffer, const UBYTE *format, ...)
 
 /*  FUNCTION
-	Print a formatted string to a buffer.
+        Print a formatted string to a buffer.
 
     INPUTS
-	buffer   --  the buffer to fill
-	format   --  the format string, see the VNewRawDoFmt() documentation
-		     for information on which formatting commands there are
+        buffer   --  the buffer to fill
+        format   --  the format string, see the VNewRawDoFmt() documentation
+                     for information on which formatting commands there are
 
     RESULT
 
@@ -37,7 +37,7 @@ const ULONG m68k_string_sprintf = 0x16c04e75;
     BUGS
 
     SEE ALSO
-	exec.library/VNewRawDoFmt()
+        exec.library/VNewRawDoFmt()
 
     INTERNALS
 

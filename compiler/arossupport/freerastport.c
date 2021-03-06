@@ -13,20 +13,20 @@
 #include <graphics/rastport.h>
 #include <proto/arossupport.h>
 
-	void FreeRastPort(
+        void FreeRastPort(
 
 /*  SYNOPSIS */
-	struct RastPort *rp)
+        struct RastPort *rp)
 
 /*  FUNCTION
-	This frees a RastPort obtained with CloneRastPort() or
-	CreateRastPort().
+        This frees a RastPort obtained with CloneRastPort() or
+        CreateRastPort().
 
     INPUTS
-	rp - The result of CloneRastPort() or CreateRastPort().
+        rp - The result of CloneRastPort() or CreateRastPort().
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-	CloneRastPort(), CreateRastPort()
+        CloneRastPort(), CreateRastPort()
 
     INTERNALS
 

@@ -10,31 +10,31 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/arossupport.h>
+        #include <proto/arossupport.h>
 
-	APTR RemoveSList (
+        APTR RemoveSList (
 
 /*  SYNOPSIS */
-	APTR * list,
-	APTR   node)
+        APTR * list,
+        APTR   node)
 
 /*  FUNCTION
-	Remove the node from a single linked list.
+        Remove the node from a single linked list.
 
     INPUTS
-	list - Pointer to the pointer which contains the first element
-		of the single linked list.
-	node - The node which is to be removed.
+        list - Pointer to the pointer which contains the first element
+                of the single linked list.
+        node - The node which is to be removed.
 
     RESULT
-	Returns the node if it was in the list.
+        Returns the node if it was in the list.
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
+        This function is not part of a library and may thus be called
+        any time.
 
     EXAMPLE
-	@atend
+        @atend
 
     BUGS
 
@@ -43,19 +43,19 @@
     INTERNALS
 
     HISTORY
-	24-12-95    digulla created
+        24-12-95    digulla created
 
 ******************************************************************************/
 {
     while (*list && *list != node)
-	list = (APTR *)(*list);
+        list = (APTR *)(*list);
 
     if (*list)
     {
-	*list = *((APTR *)node);
-	*((APTR *)node) = NULL;
+        *list = *((APTR *)node);
+        *((APTR *)node) = NULL;
 
-	return node;
+        return node;
     }
 
     return NULL;
@@ -85,20 +85,20 @@ int main (int argc, char ** argv)
 
     ptr = RemoveSList ((APTR *)&List, &node2);
     if (ptr != &node2)
-	fprintf (stderr, "Error: Couldn't find node2\n");
+        fprintf (stderr, "Error: Couldn't find node2\n");
     else
-	printf ("node2 removed.\n");
+        printf ("node2 removed.\n");
 
     ptr = RemoveSList ((APTR *)&List, &node1);
     if (ptr != &node1)
-	fprintf (stderr, "Error: Couldn't find node1\n");
+        fprintf (stderr, "Error: Couldn't find node1\n");
     else
-	printf ("node1 removed.\n");
+        printf ("node1 removed.\n");
 
     if (List)
-	fprintf (stderr, "Error: List is not empty\n");
+        fprintf (stderr, "Error: List is not empty\n");
     else
-	printf ("List is now empty.\n");
+        printf ("List is now empty.\n");
 
     printf ("End.\n");
 }

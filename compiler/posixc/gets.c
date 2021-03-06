@@ -18,22 +18,22 @@
     NAME */
 #include <stdio.h>
 
-	char * __posixc_gets (
+        char * __posixc_gets (
 
 /*  SYNOPSIS */
-	char * buffer)
+        char * buffer)
 
 /*  FUNCTION
-	Read one line of characters from the standard input stream into
+        Read one line of characters from the standard input stream into
         the buffer. Reading will stop, when a newline ('\n') is encountered,
         EOF or when the buffer is full. If a newline is read, then it is
-	replaced by '\0'. The last character in the buffer is always '\0'.
+        replaced by '\0'. The last character in the buffer is always '\0'.
 
     INPUTS
-	buffer - Write characters into this buffer
+        buffer - Write characters into this buffer
 
     RESULT
-	buffer or NULL in case of an error or EOF.
+        buffer or NULL in case of an error or EOF.
 
     NOTES
 
@@ -45,7 +45,7 @@
         if it has not encountered a newline or EOF yet. Use fgets() instead.
 
     SEE ALSO
-	fgets()
+        fgets()
 
     INTERNALS
 
@@ -56,12 +56,12 @@
     char *s = fgets(buffer, BUFSIZ, PosixCBase->_stdin);
     if (s)
     {
-	/* strip trailing \n */
-	size_t sl = strlen(s);
-	if ( (sl > 0) && (s[sl-1] == '\n') )
-	{
-	    s[sl-1] = '\0';
-	}
+        /* strip trailing \n */
+        size_t sl = strlen(s);
+        if ( (sl > 0) && (s[sl-1] == '\n') )
+        {
+            s[sl-1] = '\0';
+        }
     }
     return s;
 } /* gets */

@@ -14,10 +14,10 @@
 
 #include <stdio.h>
 
-	int __posixc_putchar(
+        int __posixc_putchar(
 
 /*  SYNOPSIS */
-	int c)
+        int c)
 
 /*  FUNCTION
 

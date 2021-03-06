@@ -11,10 +11,10 @@
 
 #include <grp.h>
 
-	struct group *getgrgid(
+        struct group *getgrgid(
 
 /*  SYNOPSIS */
-	gid_t gid)
+        gid_t gid)
 
 /*  FUNCTION
 
@@ -23,7 +23,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

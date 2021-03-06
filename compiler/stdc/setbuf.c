@@ -9,11 +9,11 @@
     NAME */
 #include <stdio.h>
 
-	void setbuf (
+        void setbuf (
 
 /*  SYNOPSIS */
-	FILE * restrict stream,
-	char * restrict buf)
+        FILE * restrict stream,
+        char * restrict buf)
 
 /*  FUNCTION
         Sets a buffer associated with a stream.

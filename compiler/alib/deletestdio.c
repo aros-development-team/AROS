@@ -10,30 +10,30 @@
 #include <exec/io.h>
 #include <proto/alib.h>
 
-	void DeleteStdIO(
+        void DeleteStdIO(
 
 /*  SYNOPSIS */
-	struct IOStdReq * io)
+        struct IOStdReq * io)
 
 /*  FUNCTION
-	Delete a structure which was created by CreateStdIO().
+        Delete a structure which was created by CreateStdIO().
 
     INPUTS
-	io - The value returned by CreateStdIO(). May be NULL.
+        io - The value returned by CreateStdIO(). May be NULL.
 
     RESULT
-	None.
+        None.
 
     NOTES
-	Invalidates values of certain fields, to assure the developer
-	doesn't	depend on them remaining valid after the structure is freed.
+        Invalidates values of certain fields, to assure the developer
+        doesn't depend on them remaining valid after the structure is freed.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	CreateStdIO(), CreateExtIO(), DeleteExtIO()
+        CreateStdIO(), CreateExtIO(), DeleteExtIO()
 
     INTERNALS
 

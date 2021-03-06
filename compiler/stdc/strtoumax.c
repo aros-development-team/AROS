@@ -11,30 +11,30 @@
     NAME */
 #include <inttypes.h>
 
-	uintmax_t strtoumax (
+        uintmax_t strtoumax (
 
 /*  SYNOPSIS */
-	const char * nptr,
-	char      ** endptr,
-	int	     base)
+        const char * nptr,
+        char      ** endptr,
+        int          base)
 
 /*  FUNCTION
-	Convert a string of digits into an integer according to the
-	given base. This function is like strtoul() except the fact,
-	that it returns a value of type uintmax_t.
+        Convert a string of digits into an integer according to the
+        given base. This function is like strtoul() except the fact,
+        that it returns a value of type uintmax_t.
 
     INPUTS
-	str - The string which should be converted.
-	endptr - If this is non-NULL, then the address of the first
-		character after the number in the string is stored
-		here.
-	base - The base for the number.
+        str - The string which should be converted.
+        endptr - If this is non-NULL, then the address of the first
+                character after the number in the string is stored
+                here.
+        base - The base for the number.
 
     RESULT
-	The value of the string. The first character after the number
-	is returned in *endptr, if endptr is non-NULL. If no digits can
-	be converted, *endptr contains str (if non-NULL) and 0 is
-	returned.
+        The value of the string. The first character after the number
+        is returned in *endptr, if endptr is non-NULL. If no digits can
+        be converted, *endptr contains str (if non-NULL) and 0 is
+        returned.
 
     NOTES
 

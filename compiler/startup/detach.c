@@ -7,24 +7,24 @@
          detach.o as your program's start file, before any other usual start
          file.
 
-	 If you want the detached process to have a name different than the
-	 detacher's one, define the following variable in your program's
-	 source code:
-	 
+         If you want the detached process to have a name different than the
+         detacher's one, define the following variable in your program's
+         source code:
+         
              STRPTR __detached_name = "My Preferred Program Name";
-	     
-	You can also decide to control exactly when to detach your program
-	from the shell. To do so, simply use the function
-	
-	    Detach();
-	    
-	declared in
-	
-	    <aros/detach.h>
-	    
-	when you want to detach the program. Not using this function will
-	result in your program being detached from the shell before the main()
-	function is reached.
+             
+        You can also decide to control exactly when to detach your program
+        from the shell. To do so, simply use the function
+        
+            Detach();
+            
+        declared in
+        
+            <aros/detach.h>
+            
+        when you want to detach the program. Not using this function will
+        result in your program being detached from the shell before the main()
+        function is reached.
 */
 #define DEBUG 0
 
@@ -39,7 +39,7 @@
 #include <aros/startup.h>
 
 /*
- * the following symbols may be replaced by versions in 
+ * the following symbols may be replaced by versions in
  * external code, so need to be declared weak
  */
 STRPTR          __detached_name __attribute__((weak));
@@ -70,7 +70,7 @@ static void __startup_detach(struct ExecBase *SysBase)
     {
         D(bug("Wasn't started from cli.\n"));
         __startup_entries_next();
-    }  
+    }
     else
     {
         D(bug("Was started from cli.\n"));
@@ -163,7 +163,7 @@ AROS_PROCH(__detach_trampoline, argstr, argsize, SysBase)
 
     __startup_entries_next();
     
-    /* At this point the detacher process might still be around, 
+    /* At this point the detacher process might still be around,
       If the program forgot to detach, or if it couldn't, but in any
       case we need to tell the detacher to go away.  */
     __Detach(retval);

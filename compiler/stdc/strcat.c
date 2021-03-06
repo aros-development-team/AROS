@@ -9,33 +9,33 @@
     NAME */
 #include <string.h>
 
-	char * strcat (
+        char * strcat (
 
 /*  SYNOPSIS */
-	char	   * dest,
-	const char * src)
+        char       * dest,
+        const char * src)
 
 /*  FUNCTION
-	Concatenates two strings.
+        Concatenates two strings.
 
     INPUTS
-	dest - src is appended to this string. Make sure that there
-		is enough room for src.
-	src - This string is appended to dest
+        dest - src is appended to this string. Make sure that there
+                is enough room for src.
+        src - This string is appended to dest
 
     RESULT
-	dest.
+        dest.
 
     NOTES
-	The routine makes no checks if dest is large enough.
+        The routine makes no checks if dest is large enough.
 
     EXAMPLE
-	char buffer[64];
+        char buffer[64];
 
-	strcpy (buffer, "Hello ");
-	strcat (buffer, "World.");
+        strcpy (buffer, "Hello ");
+        strcat (buffer, "World.");
 
-	// Buffer now contains "Hello World."
+        // Buffer now contains "Hello World."
 
     BUGS
 
@@ -48,7 +48,7 @@
     char * d = dest;
 
     while (*dest)
-	dest ++;
+        dest ++;
 
     while ((*dest ++ = *src ++));
 

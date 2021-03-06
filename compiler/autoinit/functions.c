@@ -17,20 +17,20 @@ int _set_call_funcs(const void * const set[], int direction, int test_fail, stru
     
     ForeachElementInSet(set, direction, pos, func)
     {
-	D(bug("  %p[%d] %p()", set, pos, func));
+        D(bug("  %p[%d] %p()", set, pos, func));
 
         if (test_fail)
-	{
-	    int ret = (*func)(SysBase);
-	    D(bug(" => %d", ret));
-	    if (!ret)
-	        return 0;
-	}
-	else
-	{
-	    (void)(*func)(SysBase);
-	}
-	D(bug("\n"));
+        {
+            int ret = (*func)(SysBase);
+            D(bug(" => %d", ret));
+            if (!ret)
+                return 0;
+        }
+        else
+        {
+            (void)(*func)(SysBase);
+        }
+        D(bug("\n"));
     }
     
     return 1;

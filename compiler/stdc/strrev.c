@@ -9,30 +9,30 @@
     NAME */
 #include <string.h>
 
-	char * strrev (
+        char * strrev (
 
 /*  SYNOPSIS */
-	char	   * s)
+        char       * s)
 
 /*  FUNCTION
-	Reverse a string (rotate it about its midpoint)
+        Reverse a string (rotate it about its midpoint)
 
     INPUTS
-	s - The string to be reversed
+        s - The string to be reversed
 
     RESULT
-	The original string pointer
+        The original string pointer
 
     NOTES
-	SAS C specific
+        SAS C specific
 
     EXAMPLE
-	char buffer[64];
+        char buffer[64];
 
-	strcpy (buffer, "Hello);
+        strcpy (buffer, "Hello);
         strrev(buffer);
-	
-	// buffer now contains "olleH"
+        
+        // buffer now contains "olleH"
 
 
     BUGS
@@ -53,10 +53,10 @@
     while(end > start)
     {
         c1 = *start;
-	c2 = *end;
-	
-	*start++ = c2;
-	*end--   = c1;
+        c2 = *end;
+        
+        *start++ = c2;
+        *end--   = c1;
     }
 
     return s;

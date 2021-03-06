@@ -9,17 +9,17 @@
     NAME */
 #include <stdlib.h>
 
-	int atexit(
-	
+        int atexit(
+        
 /*  SYNOPSIS */
-	void (*func)(void))
+        void (*func)(void))
 
 /*  FUNCTION
-	Registers the given function to be called at normal
-	process termination.
-	
+        Registers the given function to be called at normal
+        process termination.
+        
     INPUTS
-	func - function to be called.
+        func - function to be called.
 
     RESULT
 
@@ -30,7 +30,7 @@
     BUGS
 
     SEE ALSO
-	exit()
+        exit()
 
     INTERNALS
 

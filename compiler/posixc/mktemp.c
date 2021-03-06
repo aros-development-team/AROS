@@ -18,27 +18,27 @@
     NAME */
 #include <stdlib.h>
 
-	char *mktemp (
+        char *mktemp (
 
 /*  SYNOPSIS */
-	char *template)
+        char *template)
 
 /*  FUNCTION
-	Make a unique temporary file name.
+        Make a unique temporary file name.
 
     INPUTS
-	template - template to change into unique filename
+        template - template to change into unique filename
 
     RESULT
-	Returns template.
+        Returns template.
 
     NOTES
-    	Template must end in "XXXXXX" (i.e at least 6 X's).
-    	
+        Template must end in "XXXXXX" (i.e at least 6 X's).
+        
         Prior to this paragraph being created, mktemp() sometimes produced filenames
         with '/' in them. AROS doesn't like that at all. Fortunately, the bug in this
         function which produced it has been fixed. -- blippy
-		
+                
         For clarity, define the HEAD of the template to be the part before the tail,
         and the TAIL to be the succession of X's. So in, T:temp.XXXXXX , the head is
         T:temp. and the tail is XXXXXX .
@@ -46,17 +46,17 @@
     EXAMPLE
 
     BUGS
-    	Cannot create more than 26 filenames for the same process id. This is because
-    	the "bumping" is only done to the first tail character - it should be
-    	generalized to bump more characters if necessary.
+        Cannot create more than 26 filenames for the same process id. This is because
+        the "bumping" is only done to the first tail character - it should be
+        generalized to bump more characters if necessary.
 
     SEE ALSO
 
     INTERNALS
-    	Based on libnix mktemp
+        Based on libnix mktemp
 
 ******************************************************************************/
-{ 
+{
     IPTR pid = (IPTR)FindTask(0L);
     char *c = template + strlen(template);
     BPTR  lock;
@@ -65,7 +65,7 @@
     while (*--c == 'X')
     {
         remainder = pid % 10;
-        assert(remainder>=0 && remainder<10); 
+        assert(remainder>=0 && remainder<10);
         *c = remainder + '0';
         pid /= 10L;
     }
@@ -93,5 +93,5 @@
     }
     
     D(bug("26 tries exhausted; Returning '%s'\n", template));
-    return template; 
+    return template;
 } /* mktemp */

@@ -22,7 +22,7 @@
 #include <resources/task.h>
 
 /*
- * the following symbols may be replaced by versions in 
+ * the following symbols may be replaced by versions in
  * external code, so need to be declared weak
  */
 extern const LONG __aros_libreq_DOSBase __attribute__((weak));

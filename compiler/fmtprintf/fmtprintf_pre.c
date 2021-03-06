@@ -57,7 +57,7 @@ static size_t format_long(char *buffer, char type, int base, unsigned long v)
             base = 8;
         break;
 
-    default:	/* 'd' and 'u' */
+    default:    /* 'd' and 'u' */
         /* Use slow divide operations for decimal numbers */
         do
         {

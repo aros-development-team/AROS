@@ -18,26 +18,26 @@
     NAME */
 #include <unistd.h>
 
-	ssize_t readlink(
+        ssize_t readlink(
 
 /*  SYNOPSIS */
         const char *path,
-	char       *buf,
-	size_t      bufsize)
+        char       *buf,
+        size_t      bufsize)
 
 /*  FUNCTION
         Places the contents of a symbolic link in a buffer of given size. No NUL
-	char is appended to the buffer.
+        char is appended to the buffer.
 
     INPUTS
-        path    - the path to the symbolic link  
-	buf     - pointer to the buffer where to store the symbolic link content
-	bufsize - the size of the buffer in bytes
+        path    - the path to the symbolic link
+        buf     - pointer to the buffer where to store the symbolic link content
+        bufsize - the size of the buffer in bytes
       
     RESULT
         The call returns the count of characters placed in the buffer if it
         succeeds, or a -1 if an error occurs, placing the error code in the
-	global variable errno.
+        global variable errno.
 */
 {
     struct PosixCIntBase *PosixCBase =

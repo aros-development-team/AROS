@@ -9,9 +9,9 @@
 #include <stdarg.h>
 #include <string.h>
 #ifndef AROS_NO_LIMITS_H
-#	include <limits.h>
+#       include <limits.h>
 #else
-#	define ULONG_MAX   4294967295UL
+#       define ULONG_MAX   4294967295UL
 #endif
 #include <math.h>
 #include <float.h>
@@ -27,13 +27,13 @@ const unsigned char *const __stdc_char_decimalpoint = ".";
 /* support macros for FMTPRINTF */
 #define FMTPRINTF_COUT(c)  do                           \
                 { if((*outc)((unsigned char)(c),data)==EOF)   \
-                    return outcount;	     \
-                  outcount++;		     \
+                    return outcount;         \
+                  outcount++;                \
                 }while(0)
 
 #define FMTPRINTF_STRLEN(str) strlen(str)
 
-#define FMTPRINTF_DECIMALPOINT	__stdc_char_decimalpoint
+#define FMTPRINTF_DECIMALPOINT  __stdc_char_decimalpoint
 
 #include "fmtprintf_pre.c"
 
@@ -44,8 +44,8 @@ const unsigned char *const __stdc_char_decimalpoint = ".";
         int __vcformat (
 
 /*  SYNOPSIS */
-        void	   * data,
-        int	  (* outc)(int, void *),
+        void       * data,
+        int       (* outc)(int, void *),
         const char * format,
         va_list      args)
 

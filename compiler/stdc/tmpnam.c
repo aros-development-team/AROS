@@ -18,10 +18,10 @@
     NAME */
 #include <stdio.h>
 
-	char *tmpnam(
+        char *tmpnam(
 
 /*  SYNOPSIS */
-	char *s)
+        char *s)
 
 /*  FUNCTION
         The tmpnam function generates a string that is a valid file name and

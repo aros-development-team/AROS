@@ -11,21 +11,21 @@
 
     NAME */
 
-	int setrlimit (
+        int setrlimit (
 
 /*  SYNOPSIS */
-	int resource,
-	const struct rlimit *rlp)
+        int resource,
+        const struct rlimit *rlp)
 
 /*  FUNCTION
-	Get the limits of certain system resources
+        Get the limits of certain system resources
 
     INPUTS
-	resource - the resource type to get
-	rlp      - resource information to update
+        resource - the resource type to get
+        rlp      - resource information to update
 
     RESULT
-	On success, returns 0. -1 and errno on error.
+        On success, returns 0. -1 and errno on error.
 
     NOTES
         Currently always returns -1 and errno is set to EINVAL
@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-	getrlimit()
+        getrlimit()
 
     INTERNALS
 

@@ -9,7 +9,7 @@
 static int _vsscanf_get (char ** str)
 {
     if (!**str)
-	return EOF;
+        return EOF;
 
     return *(*str)++;
 }
@@ -27,24 +27,24 @@ static int _vsscanf_unget (int c, char ** str)
 #include <stdio.h>
 #include <stdarg.h>
 
-	int vsscanf (
+        int vsscanf (
 
 /*  SYNOPSIS */
-	const char *str,
-	const char *format,
-	va_list     args)
+        const char *str,
+        const char *format,
+        va_list     args)
 
 /*  FUNCTION
-	Scan a string and convert it into the arguments as specified
-	by format.
+        Scan a string and convert it into the arguments as specified
+        by format.
 
     INPUTS
-	str - Scan this string
-	format - A scanf() format string.
-	args - A list of arguments for the results
+        str - Scan this string
+        format - A scanf() format string.
+        args - A list of arguments for the results
 
     RESULT
-	The number of arguments converted.
+        The number of arguments converted.
 
     NOTES
 
@@ -53,7 +53,7 @@ static int _vsscanf_unget (int c, char ** str)
     BUGS
 
     SEE ALSO
-	scanf(), sscanf(), fscanf(), vscanf(), vfscanf()
+        scanf(), sscanf(), fscanf(), vscanf(), vfscanf()
 
     INTERNALS
 
@@ -62,10 +62,10 @@ static int _vsscanf_unget (int c, char ** str)
     int rc;
 
     rc = __vcscan (&str,
-	    (void *)_vsscanf_get,
-	    (void *)_vsscanf_unget,
-	    format,
-	    args
+            (void *)_vsscanf_get,
+            (void *)_vsscanf_unget,
+            format,
+            args
     );
 
     return rc;

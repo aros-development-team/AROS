@@ -12,11 +12,11 @@
 
 #include <unistd.h>
 
-	int link(
+        int link(
 
 /*  SYNOPSIS */
-	const char *oldpath,
-	const char *newpath)
+        const char *oldpath,
+        const char *newpath)
 
 /*  FUNCTION
 

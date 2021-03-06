@@ -8,11 +8,11 @@
 
 #include <stdlib.h>
 
-	int getloadavg(
+        int getloadavg(
 
 /*  SYNOPSIS */
-	double loadavg[],
-	int n)
+        double loadavg[],
+        int n)
 
 /*  FUNCTION
 

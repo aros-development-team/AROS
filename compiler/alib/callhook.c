@@ -15,25 +15,25 @@
     NAME */
 #include <proto/alib.h>
 
-	IPTR CallHookA (
+        IPTR CallHookA (
 
 /*  SYNOPSIS */
-	struct Hook * hook,
-	APTR	      object,
-	APTR	      param)
+        struct Hook * hook,
+        APTR          object,
+        APTR          param)
 
 /*  FUNCTION
-	Calls a hook with the specified object and parameters.
+        Calls a hook with the specified object and parameters.
 
     INPUTS
-	hook - Call this hook.
-	object - This is the object which is passed to the hook. The valid
-	    values for this parameter depends on the definition of the called
-	    hook.
-	param - Pass these parameters to the specified object
+        hook - Call this hook.
+        object - This is the object which is passed to the hook. The valid
+            values for this parameter depends on the definition of the called
+            hook.
+        param - Pass these parameters to the specified object
 
     RESULT
-	The return value depends on the definition of the hook.
+        The return value depends on the definition of the hook.
 
     NOTES
 
@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	CallHook()
+        CallHook()
 
 ******************************************************************************/
 {
@@ -52,15 +52,15 @@
 /******************************************************************************
 
     NAME */
-	IPTR CallHook (
+        IPTR CallHook (
 
 /*  SYNOPSIS */
-	struct Hook * hook,
-	APTR object,
-	...)
+        struct Hook * hook,
+        APTR object,
+        ...)
 
 /*  FUNCTION
-	Variadic form of CallHookA().
+        Variadic form of CallHookA().
 
     INPUTS
 
@@ -73,7 +73,7 @@
     BUGS
 
     SEE ALSO
-	CallHookA()
+        CallHookA()
 
 ******************************************************************************/
 

@@ -9,11 +9,11 @@
 
     NAME */
 
-	int on_exit(
+        int on_exit(
 
 /*  SYNOPSIS */
-	void (*func)(int, void *),
-	void *arg)
+        void (*func)(int, void *),
+        void *arg)
 
 /*  FUNCTION
 

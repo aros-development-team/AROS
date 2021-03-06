@@ -21,30 +21,30 @@ static void _Purify_MakeRoom (void)
 {
     if (!Purify_CallStack)
     {
-	Purify_CallStack    = xmalloc (sizeof (CallStackNode));
-	Purify_CurrentFrame = &Purify_CallStack->entries[0];
+        Purify_CallStack    = xmalloc (sizeof (CallStackNode));
+        Purify_CurrentFrame = &Purify_CallStack->entries[0];
 
-	Purify_CallStack->next = NULL;
+        Purify_CallStack->next = NULL;
 
-	usedEntries = 1;
+        usedEntries = 1;
     }
     else
     {
-	if (usedEntries == PURIFY_CSNE)
-	{
-	    CallStackNode * node = xmalloc (sizeof (CallStackNode));
+        if (usedEntries == PURIFY_CSNE)
+        {
+            CallStackNode * node = xmalloc (sizeof (CallStackNode));
 
-	    node->next		= Purify_CallStack;
-	    Purify_CallStack	= node;
-	    Purify_CurrentFrame = &Purify_CallStack->entries[0];
+            node->next          = Purify_CallStack;
+            Purify_CallStack    = node;
+            Purify_CurrentFrame = &Purify_CallStack->entries[0];
 
-	    usedEntries = 1;
-	}
-	else
-	{
-	    usedEntries ++;
-	    Purify_CurrentFrame ++;
-	}
+            usedEntries = 1;
+        }
+        else
+        {
+            usedEntries ++;
+            Purify_CurrentFrame ++;
+        }
     }
 }
 
@@ -57,9 +57,9 @@ void Purify_EnterFunction (const char * filename, const char * functionname,
 
     SETPOS(&Purify_CurrentFrame->caller);
 
-    Purify_Filename	= filename;
+    Purify_Filename     = filename;
     Purify_Functionname = functionname;
-    Purify_Lineno	= lineno;
+    Purify_Lineno       = lineno;
 
     SETPOS(&Purify_CurrentFrame->called);
 
@@ -67,30 +67,30 @@ void Purify_EnterFunction (const char * filename, const char * functionname,
 
 #if 0
     printf ("EnterFunction() usedEntries=%d  Purify_CurrentFrame=%p\n",
-	usedEntries, Purify_CurrentFrame
+        usedEntries, Purify_CurrentFrame
     );
     printf ("at " POSINFO_FORMAT " fp=%p\n",
-	POSINFO_ARG(&Purify_CurrentFrame->called),
-	fp
+        POSINFO_ARG(&Purify_CurrentFrame->called),
+        fp
     );
     printf ("called from " POSINFO_FORMAT "\n",
-	POSINFO_ARG(&Purify_CurrentFrame->caller)
+        POSINFO_ARG(&Purify_CurrentFrame->caller)
     );
 #endif
 }
 
 void Purify_LeaveFunction (void)
 {
-    Purify_Filename	= Purify_CurrentFrame->caller.filename;
+    Purify_Filename     = Purify_CurrentFrame->caller.filename;
     Purify_Functionname = Purify_CurrentFrame->caller.functionname;
-    Purify_Lineno	= Purify_CurrentFrame->caller.lineno;
+    Purify_Lineno       = Purify_CurrentFrame->caller.lineno;
 
 #if 0
     printf ("LeaveFunction() usedEntries=%d  Purify_CurrentFrame=%p\n",
-	usedEntries, Purify_CurrentFrame
+        usedEntries, Purify_CurrentFrame
     );
     printf ("to " POSINFO_FORMAT "\n",
-	POSINFO_ARG(&Purify_CurrentFrame->caller)
+        POSINFO_ARG(&Purify_CurrentFrame->caller)
     );
 #endif
 
@@ -98,25 +98,25 @@ void Purify_LeaveFunction (void)
     callLevels --;
 
     if (usedEntries > 0)
-	Purify_CurrentFrame --;
+        Purify_CurrentFrame --;
     else if (callLevels)
     {
-	CallStackNode * node = Purify_CallStack;
+        CallStackNode * node = Purify_CallStack;
 
-	Purify_CallStack = node->next;
+        Purify_CallStack = node->next;
 
-	xfree (node);
+        xfree (node);
 
-	if (Purify_CallStack)
-	{
-	    usedEntries = PURIFY_CSNE;
-	    Purify_CurrentFrame = &Purify_CallStack->entries[PURIFY_CSNE-1];
-	}
-	else
-	{
-	    usedEntries = 0;
-	    Purify_CurrentFrame = NULL;
-	}
+        if (Purify_CallStack)
+        {
+            usedEntries = PURIFY_CSNE;
+            Purify_CurrentFrame = &Purify_CallStack->entries[PURIFY_CSNE-1];
+        }
+        else
+        {
+            usedEntries = 0;
+            Purify_CurrentFrame = NULL;
+        }
     }
 }
 
@@ -132,21 +132,21 @@ void Purify_RememberCallers (RememberData * rd)
 
     while (n < PURIFY_RememberDepth && n < callLevels)
     {
-	rd->stack[n] = cse->caller;
+        rd->stack[n] = cse->caller;
 
-	entry --;
-	n ++;
+        entry --;
+        n ++;
 
-	if (entry > 0)
-	    cse --;
-	else
-	{
-	    if (!Purify_CallStack->next)
-		break;
+        if (entry > 0)
+            cse --;
+        else
+        {
+            if (!Purify_CallStack->next)
+                break;
 
-	    entry = PURIFY_CSNE;
-	    cse = &Purify_CallStack->next->entries[PURIFY_CSNE-1];
-	}
+            entry = PURIFY_CSNE;
+            cse = &Purify_CallStack->next->entries[PURIFY_CSNE-1];
+        }
     }
 
     rd->nstack = n;
@@ -157,16 +157,16 @@ void Purify_PrintCallers (RememberData * rd)
     int t;
 
     if (rd->nstack == -1)
-	return;
+        return;
 
     fprintf (stderr, "at " POSINFO_FORMAT "\n",
-	POSINFO_ARG(&rd->current)
+        POSINFO_ARG(&rd->current)
     );
 
     for (t=0; t<rd->nstack; t++)
     {
-	fprintf (stderr, "called by " POSINFO_FORMAT "\n",
-	    POSINFO_ARG(&rd->stack[t])
-	);
+        fprintf (stderr, "called by " POSINFO_FORMAT "\n",
+            POSINFO_ARG(&rd->stack[t])
+        );
     }
 }

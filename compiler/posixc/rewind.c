@@ -9,16 +9,16 @@
     NAME */
 #include <stdio.h>
 
-	void __posixc_rewind (
+        void __posixc_rewind (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Change the current position in a stream to the beginning.
+        Change the current position in a stream to the beginning.
 
     INPUTS
-	stream - Modify this stream
+        stream - Modify this stream
 
     RESULT
 
@@ -29,7 +29,7 @@
     BUGS
 
     SEE ALSO
-	__posixc_fopen(), fwrite(), fseek()
+        __posixc_fopen(), fwrite(), fseek()
 
     INTERNALS
 

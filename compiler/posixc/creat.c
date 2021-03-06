@@ -9,27 +9,27 @@
     NAME */
 #include <fcntl.h>
 
-	int __posixc_creat (
+        int __posixc_creat (
 
 /*  SYNOPSIS */
-	const char * pathname,
-	int	     mode)
+        const char * pathname,
+        int          mode)
 
 /*  FUNCTION
-	Creates a file with the specified mode and name.
+        Creates a file with the specified mode and name.
 
     INPUTS
-	pathname - Path and filename of the file you want to open.
-	mode - The access flags.
+        pathname - Path and filename of the file you want to open.
+        mode - The access flags.
 
     RESULT
-	-1 for error or a file descriptor for use with write().
+        -1 for error or a file descriptor for use with write().
 
     NOTES
-	If the filesystem doesn't allow to specify different access modes
-	for users, groups and others, then the user modes are used.
+        If the filesystem doesn't allow to specify different access modes
+        for users, groups and others, then the user modes are used.
 
-	This is the same as open (pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
+        This is the same as open (pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
 
         This function must not be used in a shared library or
         in a threaded application.
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	open(), close(), write(), __posixc_fopen()
+        open(), close(), write(), __posixc_fopen()
 
     INTERNALS
 

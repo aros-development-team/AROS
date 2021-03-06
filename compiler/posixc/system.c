@@ -27,10 +27,10 @@ static int system_no_sh(const char *string);
     NAME */
 #include <stdlib.h>
 
-	int __posixc_system (
+        int __posixc_system (
 
 /*  SYNOPSIS */
-	const char *string)
+        const char *string)
 
 /*  FUNCTION
         Execute a command string. If string is NULL then 1 will be returned.
@@ -68,8 +68,8 @@ static int system_no_sh(const char *string);
     
     if (string == NULL || string[0] == '\0')
     {
-	D(bug("system(cmd=, args=)=1\n"));
-	return 1;
+        D(bug("system(cmd=, args=)=1\n"));
+        return 1;
     }
 
     me = (struct Process*) FindTask(NULL);
@@ -80,8 +80,8 @@ static int system_no_sh(const char *string);
     
     if (lock)
     {
-	UnLock(lock);
-	return system_sh(string);
+        UnLock(lock);
+        return system_sh(string);
     }
 
     return system_no_sh(string);
@@ -99,21 +99,21 @@ static int system_sh(const char *string)
     
     if(pid > 0)
     {
-	if(waitpid(pid, &status, 0) == -1)
-	    return -1;
-	return status;
+        if(waitpid(pid, &status, 0) == -1)
+            return -1;
+        return status;
     }
     else if(pid == 0)
     {
-	execl((PosixCBase->doupath ? "/bin/sh" : "bin:sh"), "sh", "-c", string, (char *) NULL);
-	_exit(127);
+        execl((PosixCBase->doupath ? "/bin/sh" : "bin:sh"), "sh", "-c", string, (char *) NULL);
+        _exit(127);
     }
     else
     {
         return -1;
     }
 }
-	
+        
 static int system_no_sh(const char *string)
 {
     const char *apath;

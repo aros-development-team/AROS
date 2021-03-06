@@ -18,29 +18,29 @@
     NAME */
 #include <unistd.h>
 
-	int access (
+        int access (
 
 /*  SYNOPSIS */
-	const char *path,
-	int         mode)
+        const char *path,
+        int         mode)
 
 /*  FUNCTION
-	Check access permissions of a file or pathname
+        Check access permissions of a file or pathname
 
     INPUTS
-	path - the path of the file being checked
-	mode - the bitwise inclusive OR of the access permissions
-	       to be checked:
+        path - the path of the file being checked
+        mode - the bitwise inclusive OR of the access permissions
+               to be checked:
 
-	       W_OK - for write permission
-	       R_OK - for read permissions
-	       X_OK - for execute permission
-	       F_OK - Just to see whether the file exists
+               W_OK - for write permission
+               R_OK - for read permissions
+               X_OK - for execute permission
+               F_OK - Just to see whether the file exists
 
     RESULT
-	If path cannot be found or if any of the desired access
-	modes would not be granted, then a -1 value is returned;
-	otherwise a 0 value is returned.
+        If path cannot be found or if any of the desired access
+        modes would not be granted, then a -1 value is returned;
+        otherwise a 0 value is returned.
 
     NOTES
 
@@ -49,7 +49,7 @@
     BUGS
 
     SEE ALSO
-	open(), ftruncate()
+        open(), ftruncate()
 
     INTERNALS
 
@@ -66,7 +66,7 @@
 
     if (!path) /* safety check */
     {
-    	errno = EFAULT;
+        errno = EFAULT;
         return -1;
     }
 
@@ -80,11 +80,11 @@
     /* POSIX root is (poorly) emulated, its contents is accessible */
     if (PosixCBase->doupath && (path[0] == '/') && (path[1] == '\0'))
     {
-	if (mode & (W_OK|R_OK)) {
-	    errno = EACCES;
-	    return -1;
-	} else
-	    return 0;
+        if (mode & (W_OK|R_OK)) {
+            errno = EACCES;
+            return -1;
+        } else
+            return 0;
     }
 
     apath = __path_u2a(path);
@@ -92,9 +92,9 @@
     /* Check if the volume exists. Calling Lock on non-existing volume will bring up System Requester */
     if (SplitName(apath, ':', vol, 0, sizeof(vol)-1) != -1)
     {
-	D(bug("[access] Volume name: %s\n", vol));
-	if(strcmp(vol, "PROGDIR") != 0)
-	{
+        D(bug("[access] Volume name: %s\n", vol));
+        if(strcmp(vol, "PROGDIR") != 0)
+        {
             dl = LockDosList(LDF_ALL | LDF_READ);
             dl = FindDosEntry(dl, vol, LDF_ALL);
             UnLockDosList(LDF_ALL | LDF_READ);
@@ -104,7 +104,7 @@
                 errno = ENOENT;
                 return -1;
             }
-	}
+        }
     }
 
     /* Create a lock and examine a lock */
@@ -146,42 +146,42 @@
     }
     else
     {
-	/* We get here if Examine() failed. However it can be a character device
-	   (NIL:, ZERO:, etc) which does not support EXAMINE action.
-	   Currently we consider them read-write. If really needded, the routine
-	   can be modified in order to try to open the device in different modes. */
-	BOOL ischar = FALSE;
-	BPTR fh = OpenFromLock(lock);
+        /* We get here if Examine() failed. However it can be a character device
+           (NIL:, ZERO:, etc) which does not support EXAMINE action.
+           Currently we consider them read-write. If really needded, the routine
+           can be modified in order to try to open the device in different modes. */
+        BOOL ischar = FALSE;
+        BPTR fh = OpenFromLock(lock);
 
-	if (fh)
-	{
-	    ischar = IsInteractive(fh);
+        if (fh)
+        {
+            ischar = IsInteractive(fh);
 
-	    Close(fh);
-	    lock = BNULL;
-	}
+            Close(fh);
+            lock = BNULL;
+        }
 
-	if (ischar)
-	{
-	    if (mode & X_OK)
-	    {
-		/* Character devices are not executable in any way */
-		errno = EACCES;
-		result = -1;
-	    }
-	    else
-		result = 0;
-	}
-	else
-	{
+        if (ischar)
+        {
+            if (mode & X_OK)
+            {
+                /* Character devices are not executable in any way */
+                errno = EACCES;
+                result = -1;
+            }
+            else
+                result = 0;
+        }
+        else
+        {
             errno = EBADF;
             result = -1;
-	}
+        }
     }
 
     FreeDosObject(DOS_FIB, fib);
     if (lock)
-	UnLock(lock);
+        UnLock(lock);
 
     return result;
 }

@@ -16,23 +16,23 @@
     NAME */
 #include <unistd.h>
 
-	ssize_t write (
+        ssize_t write (
 
 /*  SYNOPSIS */
-	int	     fd,
-	const void * buf,
-	size_t	     count)
+        int          fd,
+        const void * buf,
+        size_t       count)
 
 /*  FUNCTION
-	Write an amount of characters to the specified file descriptor.
+        Write an amount of characters to the specified file descriptor.
 
     INPUTS
-	fd - The file descriptor to write to
-	buf - Write these bytes into the file descriptor
-	count - Write that many bytes
+        fd - The file descriptor to write to
+        buf - Write these bytes into the file descriptor
+        count - Write that many bytes
 
     RESULT
-	The number of characters written or -1 on error.
+        The number of characters written or -1 on error.
 
     NOTES
 
@@ -51,14 +51,14 @@
     fdesc *fdesc = __getfdesc(fd);
     if (!fdesc)
     {
-	errno = EBADF;
-	return -1;
+        errno = EBADF;
+        return -1;
     }
 
     cnt = Write (fdesc->fcb->handle, (void *)buf, count);
 
     if (cnt == -1)
-	errno = __stdc_ioerr2errno (IoErr ());
+        errno = __stdc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* write */

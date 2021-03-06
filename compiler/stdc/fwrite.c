@@ -13,13 +13,13 @@
     NAME */
 #include <stdio.h>
 
-	size_t fwrite (
+        size_t fwrite (
 
 /*  SYNOPSIS */
-	const void * restrict	buf,
-	size_t			size,
-	size_t			nblocks,
-	FILE * restrict		stream)
+        const void * restrict   buf,
+        size_t                  size,
+        size_t                  nblocks,
+        FILE * restrict         stream)
 
 /*  FUNCTION
         Write an amount of bytes to a stream.

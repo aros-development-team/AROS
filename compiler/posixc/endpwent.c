@@ -9,10 +9,10 @@
     NAME */
 #include <pwd.h>
 
-	void endpwent(
+        void endpwent(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
 
@@ -21,7 +21,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

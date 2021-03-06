@@ -21,7 +21,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 #include "__upath.h"
 
 
-	const char *__path_u2a(
+        const char *__path_u2a(
 
 /*  SYNOPSIS */
         const char *upath)
@@ -36,9 +36,9 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         A pointer to a string containing the AmigaDOS-style path, or NULL in
         case of error.
 
-	The pointer is valid only until next call to this function, so if
-	you need to call this function recursively, you must save the string
-	pointed to by the pointer before calling this function again.
+        The pointer is valid only until next call to this function, so if
+        you need to call this function recursively, you must save the string
+        pointed to by the pointer before calling this function again.
 
     NOTES
         This function is for private usage by system code. Do not use it
@@ -77,8 +77,8 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     */
     if (!strncmp(upath, "/.attbin", 8))
     {
-	errno = ENOENT;
-	return NULL;
+        errno = ENOENT;
+        return NULL;
     }
 
     /*
@@ -91,16 +91,16 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         D(bug("__path_u2a: No /dev stuff, doing normal conversion\n"));
 
         /* Else, convert it normally */
-	newpath = realloc_nocopy(PosixCBase->upathbuf, strlen(upath) + 1);
+        newpath = realloc_nocopy(PosixCBase->upathbuf, strlen(upath) + 1);
 
-	if (newpath == NULL)
-	{
-	    errno = ENOMEM;
-	    return NULL;
-	}
+        if (newpath == NULL)
+        {
+            errno = ENOMEM;
+            return NULL;
+        }
 
         PosixCBase->upathbuf = (char *)newpath;
-	__path_normalstuff_u2a(upath, PosixCBase->upathbuf);
+        __path_normalstuff_u2a(upath, PosixCBase->upathbuf);
     }
 
     D(bug("__path_u2a: converted path \"%s\"\n", newpath));
@@ -114,7 +114,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 #include "__upath.h"
 
 
-	const char *__path_a2u(
+        const char *__path_a2u(
 
 /*  SYNOPSIS */
         const char *apath)
@@ -129,9 +129,9 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         A pointer to a string containing the unix-style path, or NULL in
         case of error.
 
-	The pointer is valid only until next call to this function, so if
-	you need to call this function recursively, you must save the string
-	pointed to by the pointer before calling this function again.
+        The pointer is valid only until next call to this function, so if
+        you need to call this function recursively, you must save the string
+        pointed to by the pointer before calling this function again.
 
     NOTES
         This function is for private usage by system code. Do not use it
@@ -152,7 +152,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     register enum
     {
         S_START0,
-	S_START1,
+        S_START1,
         S_START,
         S_VOLUME,
         S_PARENT,
@@ -168,13 +168,13 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 
     if (!PosixCBase->doupath)
         return apath;
-	
+        
     while ((ch = *apath++))
     {
          if (ch == '/')
-	     size += 3;
-	 else
-	     size += 1;
+             size += 3;
+         else
+             size += 1;
     }
 
     if (size == 0)
@@ -183,8 +183,8 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     old_upath = realloc_nocopy(PosixCBase->upathbuf, 1 + size + 1);
     if (old_upath == NULL)
     {
-	errno = ENOMEM;
-	return NULL;
+        errno = ENOMEM;
+        return NULL;
     }
 
     PosixCBase->upathbuf = old_upath;
@@ -198,67 +198,67 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         register char ch = apath[0];
 
         switch (state)
-	{
-	    case S_START0:
-	        if (ch == '/')
-		    state = S_PARENT;
-		else
-		{
-		    state = S_START1;
-		    continue;
-		}
+        {
+            case S_START0:
+                if (ch == '/')
+                    state = S_PARENT;
+                else
+                {
+                    state = S_START1;
+                    continue;
+                }
 
-		break;
+                break;
 
-	    case S_START1:
-		if (ch == ':')
-		    state = S_VOLUME;
-		else
-	    case S_START:
-	        if (ch == '/')
-		    state = S_SLASH;
-		else
-		if (ch == '\0')
-		    run = 0;
-		else
-		    upath++[0] = ch;
+            case S_START1:
+                if (ch == ':')
+                    state = S_VOLUME;
+                else
+            case S_START:
+                if (ch == '/')
+                    state = S_SLASH;
+                else
+                if (ch == '\0')
+                    run = 0;
+                else
+                    upath++[0] = ch;
 
-		break;
+                break;
 
-	    case S_VOLUME:
-	        (--old_upath)[0] = '/';
-		state = S_SLASH;
-		continue;
+            case S_VOLUME:
+                (--old_upath)[0] = '/';
+                state = S_SLASH;
+                continue;
 
-		break;
+                break;
 
-	    case S_SLASH:
-	        upath++[0] = '/';
+            case S_SLASH:
+                upath++[0] = '/';
 
-		if (ch == '/')
-		    state = S_PARENT;
-		else
-		{
-		    state = S_START;
-		    continue;
-		}
+                if (ch == '/')
+                    state = S_PARENT;
+                else
+                {
+                    state = S_START;
+                    continue;
+                }
 
-		break;
+                break;
 
-	    case S_PARENT:
-	        upath[0] = '.'; upath[1] = '.'; upath[2] = '/'; upath += 3;
+            case S_PARENT:
+                upath[0] = '.'; upath[1] = '.'; upath[2] = '/'; upath += 3;
 
-		if (ch != '/')
-		{
-		    state = S_START;
-		    continue;
-		}
+                if (ch != '/')
+                {
+                    state = S_START;
+                    continue;
+                }
 
-		break;
+                break;
         }
 
-	upath[0] = '\0';
-	apath++;
+        upath[0] = '\0';
+        apath++;
     }
 
     upath[0] = '\0';
@@ -297,7 +297,7 @@ static const char *__path_devstuff_u2a(const char *path)
             else
             if (path[5] == '\0')
                 return "DEV:";
-	}
+        }
         else
         if (path[4] == '\0')
             return "DEV:";
@@ -323,106 +323,106 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 
     while (path[0] == '/')
     {
-	path++;
-	makevol = 1;
+        path++;
+        makevol = 1;
     }
 
     while (run)
     {
         register char ch = path[0];
 
-	switch (state)
-	{
-	    case S_START0:
-	        if (ch == '.')
-		    state = S_DOT1;
-		else
-		{
-		    state = S_START;
-		    continue;
-		}
-		break;
-	    case S_START:
-	        if (ch == '/')
-		{
-		    dir_sep = '/';
-		    state = S_SLASH;
-		}
-		else
-	        if (ch == ':')
-		{
-		    dir_sep = ':';
-		    state = S_SLASH;
-		}
-		else
-		if (ch == '\0')
-		    run = 0;
-		else
-		    buf++[0] = ch;
+        switch (state)
+        {
+            case S_START0:
+                if (ch == '.')
+                    state = S_DOT1;
+                else
+                {
+                    state = S_START;
+                    continue;
+                }
+                break;
+            case S_START:
+                if (ch == '/')
+                {
+                    dir_sep = '/';
+                    state = S_SLASH;
+                }
+                else
+                if (ch == ':')
+                {
+                    dir_sep = ':';
+                    state = S_SLASH;
+                }
+                else
+                if (ch == '\0')
+                    run = 0;
+                else
+                    buf++[0] = ch;
 
-		break;
+                break;
 
-	    case S_DOT1:
-	        if (ch == '\0')
-		    run = 0;
-		else
-	        if (ch == '.')
-		    state = S_DOT2;
-		else
-		if (ch == '/')
-		{
-		    dir_sep = '\0';
-		    state = S_SLASH;
-		}
-		else
-		{
-		    buf[0] = '.';
-		    buf[1] = ch;
-		    buf += 2;
-		    state = S_START;
-		}
+            case S_DOT1:
+                if (ch == '\0')
+                    run = 0;
+                else
+                if (ch == '.')
+                    state = S_DOT2;
+                else
+                if (ch == '/')
+                {
+                    dir_sep = '\0';
+                    state = S_SLASH;
+                }
+                else
+                {
+                    buf[0] = '.';
+                    buf[1] = ch;
+                    buf += 2;
+                    state = S_START;
+                }
 
-		break;
+                break;
 
-	    case S_DOT2:
-	        if (ch == '/' || ch == '\0')
-		{
-		    dir_sep = '/';
-		    state = S_SLASH;
-		    continue;
-		}
-		else
-		{
-		    buf[0] = '.';
-		    buf[1] = '.';
-		    buf[2] = ch;
-		    buf += 3;
-		    state = S_START;
-		}
+            case S_DOT2:
+                if (ch == '/' || ch == '\0')
+                {
+                    dir_sep = '/';
+                    state = S_SLASH;
+                    continue;
+                }
+                else
+                {
+                    buf[0] = '.';
+                    buf[1] = '.';
+                    buf[2] = ch;
+                    buf += 3;
+                    state = S_START;
+                }
 
-		break;
+                break;
 
-	    case S_SLASH:
-	        if (ch != '/')
-		{
-		    if (makevol)
-		    {
-		        makevol = 0;
-		        dir_sep = ':';
-		    }
+            case S_SLASH:
+                if (ch != '/')
+                {
+                    if (makevol)
+                    {
+                        makevol = 0;
+                        dir_sep = ':';
+                    }
 
-		    if (dir_sep != '\0')
-		        buf++[0] = dir_sep;
+                    if (dir_sep != '\0')
+                        buf++[0] = dir_sep;
 
-  	            state = S_START0;
+                    state = S_START0;
 
-		    continue;
-		}
+                    continue;
+                }
 
-		break;
-	}
+                break;
+        }
 
-	path++;
+        path++;
     }
 
     if (makevol)

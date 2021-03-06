@@ -13,18 +13,18 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_scanf (
+        int __posixc_scanf (
 
 /*  SYNOPSIS */
-	const char * format,
-	...)
+        const char * format,
+        ...)
 
 /*  FUNCTION
 
     INPUTS
 
     RESULT
-	The number of converted parameters
+        The number of converted parameters
 
     NOTES
 
@@ -33,7 +33,7 @@
     BUGS
 
     SEE ALSO
-	fscanf(), vscanf(), vfscanf(), stdc.library/sscanf(),
+        fscanf(), vscanf(), vfscanf(), stdc.library/sscanf(),
         stdc.library/vsscanf()
 
     INTERNALS

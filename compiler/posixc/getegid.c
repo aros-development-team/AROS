@@ -11,16 +11,16 @@
     NAME */
 #include <unistd.h>
 
-	gid_t getegid(
+        gid_t getegid(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	Returns the effective group ID of the calling process
+        Returns the effective group ID of the calling process
 
     INPUTS
-	
+        
     RESULT
 
     NOTES
@@ -28,9 +28,9 @@
     EXAMPLE
 
     BUGS
-    	
+        
     SEE ALSO
-    	setgid()
+        setgid()
         
     INTERNALS
 

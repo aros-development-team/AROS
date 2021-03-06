@@ -11,24 +11,24 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_fprintf (
+        int __posixc_fprintf (
 
 /*  SYNOPSIS */
-	FILE	   * fh,
-	const char * format,
-	...)
+        FILE       * fh,
+        const char * format,
+        ...)
 
 /*  FUNCTION
-	Format a string with the specified arguments and write it to
-	the stream.
+        Format a string with the specified arguments and write it to
+        the stream.
 
     INPUTS
-	fh - Write to this stream
-	format - How to format the arguments
-	... - The additional arguments
+        fh - Write to this stream
+        format - How to format the arguments
+        ... - The additional arguments
 
     RESULT
-	The number of characters written to the stream or EOF on error.
+        The number of characters written to the stream or EOF on error.
 
     NOTES
 

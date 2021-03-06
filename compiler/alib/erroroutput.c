@@ -12,22 +12,22 @@
     NAME */
 #include <proto/alib.h>
 
-	BPTR ErrorOutput(
+        BPTR ErrorOutput(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
-	Returns the current error stream or 0 if there is no current
-	input stream.
+        Returns the current error stream or 0 if there is no current
+        input stream.
 
     INPUTS
 
     RESULT
-	Error stream handle.
+        Error stream handle.
 
     NOTES
-	This function is source-compatible with AmigaOS v4.
+        This function is source-compatible with AmigaOS v4.
 
     EXAMPLE
 

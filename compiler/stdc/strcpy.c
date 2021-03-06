@@ -9,32 +9,32 @@
     NAME */
 #include <string.h>
 
-	char * strcpy (
+        char * strcpy (
 
 /*  SYNOPSIS */
-	char	   * dest,
-	const char * src)
+        char       * dest,
+        const char * src)
 
 /*  FUNCTION
-	Copy a string. Works like an assignment "dest=src;".
+        Copy a string. Works like an assignment "dest=src;".
 
     INPUTS
-	dest - The string is copied into this variable. Make sure it is
-		large enough.
-	src - This is the new contents of dest.
+        dest - The string is copied into this variable. Make sure it is
+                large enough.
+        src - This is the new contents of dest.
 
     RESULT
-	dest.
+        dest.
 
     NOTES
-	No check is made that dest is large enough for src.
+        No check is made that dest is large enough for src.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	strncpy(), memcpy(), memmove()
+        strncpy(), memcpy(), memmove()
 
     INTERNALS
 
@@ -44,8 +44,8 @@
 
     while ((*ptr = *src))
     {
-	ptr ++;
-	src ++;
+        ptr ++;
+        src ++;
     }
 
     return dest;

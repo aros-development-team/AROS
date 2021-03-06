@@ -7,7 +7,7 @@
  * on cpu arch.
  * Add some stub function to make them available. In stdc.conf the
  * function name with _ prepended will be used.
- */ 
+ */
 
 #include "__stdc_intbase.h"
 #include <fenv.h>

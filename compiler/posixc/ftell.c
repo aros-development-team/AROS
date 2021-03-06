@@ -15,20 +15,20 @@
     NAME */
 #include <stdio.h>
 
-	long __posixc_ftell (
+        long __posixc_ftell (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Tell the current position in a stream.
+        Tell the current position in a stream.
 
     INPUTS
-	stream - Obtain position of this stream
+        stream - Obtain position of this stream
 
     RESULT
-	The position on success and -1 on error.
-	If an error occurred, the global variable errno is set.
+        The position on success and -1 on error.
+        If an error occurred, the global variable errno is set.
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	__posixc_fopen(), fseek(), fwrite()
+        __posixc_fopen(), fseek(), fwrite()
 
     INTERNALS
 
@@ -49,8 +49,8 @@
 
     if (!fdesc)
     {
-	errno = EBADF;
-	return 0;
+        errno = EBADF;
+        return 0;
     }
 
     fh = fdesc->fcb->handle;
@@ -59,7 +59,7 @@
     cnt = Seek (fh, 0, OFFSET_CURRENT);
 
     if (cnt == -1)
-	errno = __stdc_ioerr2errno (IoErr ());
+        errno = __stdc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* ftell */

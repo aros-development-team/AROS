@@ -21,10 +21,10 @@
     NAME */
 #include <assert.h>
 
-	void __stdc_assert (
+        void __stdc_assert (
 
 /*  SYNOPSIS */
-	const char * expr,
+        const char * expr,
         const char * file,
         unsigned int line)
 
@@ -33,8 +33,8 @@
         function.
 
     INPUTS
-	expr - The expression to evaluate. The type of the expression does
-		not matter, only if its zero/NULL or not.
+        expr - The expression to evaluate. The type of the expression does
+                not matter, only if its zero/NULL or not.
         file - Name of the source file.
         line - Line number of assert() call.
 

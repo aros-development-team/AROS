@@ -10,10 +10,10 @@
 
 #include <dirent.h>
 
-	long telldir(
+        long telldir(
 
 /*  SYNOPSIS */
-	DIR *dir)
+        DIR *dir)
 
 /*  FUNCTION
 

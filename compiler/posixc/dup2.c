@@ -48,7 +48,7 @@
             duplicated in
 
     RESULT
-	-1 for error or newfd on success
+        -1 for error or newfd on success
 
     NOTES
         This function must not be used in a shared library or

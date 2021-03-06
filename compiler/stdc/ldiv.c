@@ -9,14 +9,14 @@
     NAME */
 #include <stdlib.h>
 
-	ldiv_t ldiv (
+        ldiv_t ldiv (
 
 /*  SYNOPSIS */
-	long int numer,
-	long int denom)
+        long int numer,
+        long int denom)
 
 /*  FUNCTION
- 	Compute quotient en remainder of two long variables
+        Compute quotient en remainder of two long variables
 
     INPUTS
         numer = the numerator
@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	div()
+        div()
 
     INTERNALS
 
@@ -52,8 +52,8 @@
     /* See div() for why we do this */
     if (numer >= 0 && ret.rem < 0)
     {
-	ret.quot++;
-	ret.rem -= denom;
+        ret.quot++;
+        ret.rem -= denom;
     }
     return ret;
 }

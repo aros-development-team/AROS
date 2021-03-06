@@ -20,22 +20,22 @@
     NAME */
 #include <stdlib.h>
 
-	void *malloc (
+        void *malloc (
 
 /*  SYNOPSIS */
-	size_t size)
+        size_t size)
 
 /*  FUNCTION
-	Allocate size bytes of memory and return the address of the
-	first byte.
+        Allocate size bytes of memory and return the address of the
+        first byte.
 
     INPUTS
-	size - How much memory to allocate.
+        size - How much memory to allocate.
 
     RESULT
-	A pointer to the allocated memory or NULL. If you don't need the
-	memory anymore, you can pass this pointer to free(). If you don't,
-	the memory will be freed for you when the application exits.
+        A pointer to the allocated memory or NULL. If you don't need the
+        memory anymore, you can pass this pointer to free(). If you don't,
+        the memory will be freed for you when the application exits.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	free()
+        free()
 
     INTERNALS
 
@@ -57,8 +57,8 @@
     mem = AllocPooled (StdCBase->mempool, size + AROS_ALIGN(sizeof(size_t)));
     if (mem)
     {
-	*((size_t *)mem) = size;
-	mem += AROS_ALIGN(sizeof(size_t));
+        *((size_t *)mem) = size;
+        mem += AROS_ALIGN(sizeof(size_t));
     }
     else
         errno = ENOMEM;
@@ -80,7 +80,7 @@ int __init_memstuff(struct StdCIntBase *StdCBase)
 
     if (!StdCBase->mempool)
     {
-	return 0;
+        return 0;
     }
 
     return 1;
@@ -95,7 +95,7 @@ void __exit_memstuff(struct StdCIntBase *StdCBase)
 
     if (StdCBase->mempool)
     {
-	DeletePool(StdCBase->mempool);
+        DeletePool(StdCBase->mempool);
     }
 }
 

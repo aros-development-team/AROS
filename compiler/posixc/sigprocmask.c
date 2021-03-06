@@ -13,16 +13,16 @@
 
 #include <signal.h>
 
-	int sigprocmask (
+        int sigprocmask (
 
 /*  SYNOPSIS */
-	int  how,
-	const  sigset_t *set,
-	sigset_t *oldset)
+        int  how,
+        const  sigset_t *set,
+        sigset_t *oldset)
 
 /*  FUNCTION
-        Allow the caller to examine or change (or both) the 
-        signal mask of the calling thread. 
+        Allow the caller to examine or change (or both) the
+        signal mask of the calling thread.
 
     INPUTS
 

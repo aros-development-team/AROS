@@ -11,8 +11,8 @@ struct TagItem *LibFindTagItem(Tag tagValue, const struct TagItem *tagList)
 
     while ((tag = LibNextTagItem(&tstate)))
     {
-	if ((ULONG)tag->ti_Tag == (ULONG)tagValue)
-	    return tag;
+        if ((ULONG)tag->ti_Tag == (ULONG)tagValue)
+            return tag;
     }
 
     return NULL;

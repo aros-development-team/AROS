@@ -12,10 +12,10 @@
     NAME */
 #include <signal.h>
 
-	int sigfillset (
+        int sigfillset (
 
 /*  SYNOPSIS */
-	sigset_t *set)
+        sigset_t *set)
 
 /*  FUNCTION
         Initialise the signal set
@@ -35,7 +35,7 @@
     SEE ALSO
 
     INTERNALS
-        POSIX.1-2001. 
+        POSIX.1-2001.
 
 ******************************************************************************/
 {

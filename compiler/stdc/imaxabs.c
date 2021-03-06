@@ -9,18 +9,18 @@
     NAME */
 #include <inttypes.h>
 
-	intmax_t imaxabs (
+        intmax_t imaxabs (
 
 /*  SYNOPSIS */
-	intmax_t j)
+        intmax_t j)
 
 /*  FUNCTION
-	Compute the absolute value of an integer "j".
+        Compute the absolute value of an integer "j".
 
     INPUTS
 
     RESULT
-	Return the absolute value.
+        Return the absolute value.
 
     NOTES
 

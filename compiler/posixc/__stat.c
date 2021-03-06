@@ -26,8 +26,8 @@
 
 static mode_t __prot_a2u(ULONG protect);
 static uid_t  __id_a2u(UWORD id);
-static void hashlittle2(const void *key, size_t length, 
-		                   uint32_t *pc, uint32_t *pb);
+static void hashlittle2(const void *key, size_t length,
+                                   uint32_t *pc, uint32_t *pb);
 static void __fill_statbuffer(
     struct stat          *sb,
     char                 *buffer,
@@ -63,17 +63,17 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
              : Examine(lock, fib);
     if (!Examined)
     {
-	if(IoErr() == ERROR_NOT_IMPLEMENTED ||
-	   IoErr() == ERROR_ACTION_NOT_KNOWN)
-	{
-	    fallback_to_defaults = 1;
-	}
-	else
-	{
+        if(IoErr() == ERROR_NOT_IMPLEMENTED ||
+           IoErr() == ERROR_ACTION_NOT_KNOWN)
+        {
+            fallback_to_defaults = 1;
+        }
+        else
+        {
             errno = __stdc_ioerr2errno(IoErr());
             FreeDosObject(DOS_FIB, fib);
             return -1;
-	}
+        }
     }
 
     /* Get the full path of the stated filesystem object and use it to
@@ -158,17 +158,17 @@ int __stat64(BPTR lock, struct stat64 *sb, BOOL filehandle)
              : Examine(lock, fib);
     if (!Examined)
     {
-	if(IoErr() == ERROR_NOT_IMPLEMENTED ||
-	   IoErr() == ERROR_ACTION_NOT_KNOWN)
-	{
-	    fallback_to_defaults = 1;
-	}
-	else
-	{
+        if(IoErr() == ERROR_NOT_IMPLEMENTED ||
+           IoErr() == ERROR_ACTION_NOT_KNOWN)
+        {
+            fallback_to_defaults = 1;
+        }
+        else
+        {
             errno = __stdc_ioerr2errno(IoErr());
             FreeDosObject(DOS_FIB, fib);
             return -1;
-	}
+        }
     }
 
     /* Get the full path of the stated filesystem object and use it to
@@ -611,14 +611,14 @@ static uid_t __id_a2u(UWORD id)
  * length  : the length of the key, counting by bytes
  * pc      : IN: primary initval, OUT: primary hash
  * pb      : IN: secondary initval, OUT: secondary hash
- * 
+ *
  * Returns two 32-bit hash values.  This is good enough for hash table
  * lookup with 2^^64 buckets, or if you want a second hash if you're not
  * happy with the first, or if you want a probably-unique 64-bit ID for
  * the key.  *pc is better mixed than *pb, so use *pc first.  If you want
  * a 64-bit value do something like "*pc + (((uint64_t)*pb)<<32)".
  */
-static void hashlittle2( 
+static void hashlittle2(
   const void *key,       /* the key to hash */
   size_t      length,    /* length of the key */
   uint32_t   *pc,        /* IN: primary initval, OUT: primary hash */
@@ -650,7 +650,7 @@ static void hashlittle2(
     }
 
     /*----------------------------- handle the last (probably partial) block */
-    /* 
+    /*
      * "k[2]&0xffffff" actually reads beyond the end of the string, but
      * then masks off the part it's not allowed to read.  Because the
      * string is aligned, the masked-off tail is in the same word as the
@@ -809,17 +809,17 @@ static void __fill_statbuffer(
 
     if(fallback_to_defaults)
     {
-	/* Empty file, not protected, as old as it can be... */
-	fib->fib_Size = 0;
-	fib->fib_NumBlocks = 0;
-	fib->fib_Date.ds_Days = 0;
-	fib->fib_Date.ds_Minute = 0;
-	fib->fib_Date.ds_Tick = 0;
-	fib->fib_OwnerUID = 0;
-	fib->fib_OwnerGID = 0;
-	fib->fib_Protection = 0;
-	/* Most probable value */
-	fib->fib_DirEntryType = ST_PIPEFILE;
+        /* Empty file, not protected, as old as it can be... */
+        fib->fib_Size = 0;
+        fib->fib_NumBlocks = 0;
+        fib->fib_Date.ds_Days = 0;
+        fib->fib_Date.ds_Minute = 0;
+        fib->fib_Date.ds_Tick = 0;
+        fib->fib_OwnerUID = 0;
+        fib->fib_OwnerGID = 0;
+        fib->fib_Protection = 0;
+        /* Most probable value */
+        fib->fib_DirEntryType = ST_PIPEFILE;
     }
 
     sb->st_dev     = (dev_t) (lock ? ((struct FileLock *)BADDR(lock))->fl_Volume : BNULL);
@@ -831,7 +831,7 @@ static void __fill_statbuffer(
     sb->st_atime   =
     sb->st_ctime   =
     sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __stdc_gmtoffset()) * 60 +
-	              fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
+                      fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
     sb->st_uid     = __id_a2u(fib->fib_OwnerUID);
     sb->st_gid     = __id_a2u(fib->fib_OwnerGID);
     sb->st_mode    = __prot_a2u(fib->fib_Protection);
@@ -851,11 +851,11 @@ static void __fill_statbuffer(
         }
     }
     if(fib->fib_Size > 0 && sb->st_blksize > 0)
-	sb->st_blocks = 
-	    (1 + ((long) fib->fib_Size - 1) / sb->st_blksize) * 
-	    (sb->st_blksize / 512);
+        sb->st_blocks =
+            (1 + ((long) fib->fib_Size - 1) / sb->st_blksize) *
+            (sb->st_blksize / 512);
     else
-	sb->st_blocks  = 0;
+        sb->st_blocks  = 0;
 
     switch (fib->fib_DirEntryType)
     {
@@ -899,17 +899,17 @@ static void __fill_stat64buffer(
 
     if(fallback_to_defaults)
     {
-	/* Empty file, not protected, as old as it can be... */
-	fib->fib_Size = 0;
-	fib->fib_NumBlocks = 0;
-	fib->fib_Date.ds_Days = 0;
-	fib->fib_Date.ds_Minute = 0;
-	fib->fib_Date.ds_Tick = 0;
-	fib->fib_OwnerUID = 0;
-	fib->fib_OwnerGID = 0;
-	fib->fib_Protection = 0;
-	/* Most probable value */
-	fib->fib_DirEntryType = ST_PIPEFILE;
+        /* Empty file, not protected, as old as it can be... */
+        fib->fib_Size = 0;
+        fib->fib_NumBlocks = 0;
+        fib->fib_Date.ds_Days = 0;
+        fib->fib_Date.ds_Minute = 0;
+        fib->fib_Date.ds_Tick = 0;
+        fib->fib_OwnerUID = 0;
+        fib->fib_OwnerGID = 0;
+        fib->fib_Protection = 0;
+        /* Most probable value */
+        fib->fib_DirEntryType = ST_PIPEFILE;
     }
 
     sb->st_dev     = (dev_t) (lock ? ((struct FileLock *)BADDR(lock))->fl_Volume : BNULL);
@@ -921,7 +921,7 @@ static void __fill_stat64buffer(
     sb->st_atime   =
     sb->st_ctime   =
     sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __stdc_gmtoffset()) * 60 +
-	              fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
+                      fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
     sb->st_uid     = __id_a2u(fib->fib_OwnerUID);
     sb->st_gid     = __id_a2u(fib->fib_OwnerGID);
     sb->st_mode    = __prot_a2u(fib->fib_Protection);
@@ -941,11 +941,11 @@ static void __fill_stat64buffer(
         }
     }
     if(fib->fib_Size > 0 && sb->st_blksize > 0)
-	sb->st_blocks = 
-	    (1 + ((long) fib->fib_Size - 1) / sb->st_blksize) * 
-	    (sb->st_blksize / 512);
+        sb->st_blocks =
+            (1 + ((long) fib->fib_Size - 1) / sb->st_blksize) *
+            (sb->st_blksize / 512);
     else
-	sb->st_blocks  = 0;
+        sb->st_blocks  = 0;
 
     switch (fib->fib_DirEntryType)
     {

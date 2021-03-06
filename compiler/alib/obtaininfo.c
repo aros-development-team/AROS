@@ -17,25 +17,25 @@ extern struct Library * BulletBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/bullet.h>
 
-	ULONG ObtainInfo (
+        ULONG ObtainInfo (
 
 /*  SYNOPSIS */
-	struct GlyphEngine *glyphEngine,
-	Tag tag1,
-	...)
+        struct GlyphEngine *glyphEngine,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
-	Obtain information about an GlyphEngine.
+        Obtain information about an GlyphEngine.
 
     INPUTS
-	object - Obtain information about this GlyphEngine
-	tag1 - The first of a list of attribute/value-pairs. The last
-		attribute in this list must be TAG_END or TAG_DONE.
-		The value for this last attribute is not examined (ie.
-		you need not specify it).
+        object - Obtain information about this GlyphEngine
+        tag1 - The first of a list of attribute/value-pairs. The last
+                attribute in this list must be TAG_END or TAG_DONE.
+                The value for this last attribute is not examined (ie.
+                you need not specify it).
 
     RESULT
-	Bullet Error Code
+        Bullet Error Code
 
     NOTES
 
@@ -44,7 +44,7 @@ extern struct Library * BulletBase;
     BUGS
 
     SEE ALSO
-    	bullet.library/ObtainInfoA()
+        bullet.library/ObtainInfoA()
 
     INTERNALS
 

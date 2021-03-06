@@ -15,27 +15,27 @@
 #include <intuition/classusr.h>
 #include <proto/alib.h>
 
-	IPTR DoMethodA (
+        IPTR DoMethodA (
 
 /*  SYNOPSIS */
-	Object * obj,
-	Msg	 message)
+        Object * obj,
+        Msg      message)
 
 /*  FUNCTION
-	Invokes a method on a BOOPSI object. The dispatcher of the class the
-	object is inherited from is called. For more information about methods
-	a class supports, see the class documentation.
+        Invokes a method on a BOOPSI object. The dispatcher of the class the
+        object is inherited from is called. For more information about methods
+        a class supports, see the class documentation.
 
     INPUTS
-	obj - The object on which the method is to be performed.
-	message - The message. The first field is the same for all methods and
-		  specifies which method is to be invoked (see
-		  <intuition/classusr.h>).
+        obj - The object on which the method is to be performed.
+        message - The message. The first field is the same for all methods and
+                  specifies which method is to be invoked (see
+                  <intuition/classusr.h>).
 
     RESULT
-	Class and method dependent. See the class documentation. A value of 0
-	can be a valid return code but can also mean that a method is not
-	supported.
+        Class and method dependent. See the class documentation. A value of 0
+        can be a valid return code but can also mean that a method is not
+        supported.
 
     NOTES
 
@@ -44,8 +44,8 @@
     BUGS
 
     SEE ALSO
-	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
-	intuition.library/DisposeObject(), CoerceMethodA(),
+        intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
+        intuition.library/DisposeObject(), CoerceMethodA(),
         DoSuperMethodA(), <intuition/classusr.h>
 
 ******************************************************************************/
@@ -53,7 +53,7 @@
     ASSERT_VALID_PTR(obj);
 
     if (!obj)
-	return 0L;
+        return 0L;
 
     ASSERT_VALID_PTR(OCLASS(obj));
     ASSERT_VALID_PTR(message);
@@ -65,7 +65,7 @@ IPTR DoMethod (Object * obj, IPTR MethodID, ...)
 {
     ASSERT_VALID_PTR(obj);
     if (!obj)
-    	return 0L;
+        return 0L;
 
     ASSERT_VALID_PTR(OCLASS(obj));
 

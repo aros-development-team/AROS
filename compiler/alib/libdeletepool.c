@@ -12,10 +12,10 @@
     NAME */
 #include <proto/alib.h>
 
-	VOID LibDeletePool (
+        VOID LibDeletePool (
 
 /*  SYNOPSIS */
-	APTR pool)
+        APTR pool)
 
 /*  FUNCTION
 
@@ -39,25 +39,25 @@
 {
 #   define poolHeader ((POOL*)pool)
     if (SysBase->LibNode.lib_Version>=39)
-	DeletePool(poolHeader);
+        DeletePool(poolHeader);
     else
     {
-	if (poolHeader != NULL)
-	{
-	    ULONG * poolMem,
-		    size;
+        if (poolHeader != NULL)
+        {
+            ULONG * poolMem,
+                    size;
 
-	    while ((poolMem = (ULONG *)RemHead (
-		    (struct List *)&poolHeader->PuddleList)
-		)!=NULL
-	    )
-	    {
-		size = *--poolMem;
-		FreeMem (poolMem, size);
-	    }
+            while ((poolMem = (ULONG *)RemHead (
+                    (struct List *)&poolHeader->PuddleList)
+                )!=NULL
+            )
+            {
+                size = *--poolMem;
+                FreeMem (poolMem, size);
+            }
 
-	    FreeMem (poolHeader, sizeof (POOL));
-	}
+            FreeMem (poolHeader, sizeof (POOL));
+        }
     }
 } /* LibDeletePool */
 

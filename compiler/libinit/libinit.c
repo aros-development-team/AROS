@@ -32,19 +32,19 @@ int set_call_libfuncs
     int pos, (*func)(APTR);
 
     if (!set)
-    	    return TRUE;
+            return TRUE;
 
     ForeachElementInSet(set, order, pos, func)
     {
         if (test_fail)
-	{
-	    if (!(*func)(libbase))
-	        return FALSE;
-	}
-	else
-	{
-	    (void)(*func)(libbase);
-	}
+        {
+            if (!(*func)(libbase))
+                return FALSE;
+        }
+        else
+        {
+            (void)(*func)(libbase);
+        }
     }
 
     return TRUE;
@@ -64,41 +64,41 @@ int set_call_devfuncs
     int pos;
 
     if (!set)
-    	    return TRUE;
+            return TRUE;
 
     if (order>=0)
     {
-	int (*func)(APTR, APTR, IPTR, ULONG);
-	
-	ForeachElementInSet(set, order, pos, func)
-	{
-	    if (test_fail)
-	    {
-		if (!(*func)(libbase, ioreq, unitnum, flags))
-		    return FALSE;
-	    }
-	    else
-	    {
-		(void)(*func)(libbase, ioreq, unitnum, flags);
-	    }
-	}
+        int (*func)(APTR, APTR, IPTR, ULONG);
+        
+        ForeachElementInSet(set, order, pos, func)
+        {
+            if (test_fail)
+            {
+                if (!(*func)(libbase, ioreq, unitnum, flags))
+                    return FALSE;
+            }
+            else
+            {
+                (void)(*func)(libbase, ioreq, unitnum, flags);
+            }
+        }
     }
     else
     {
-	int (*func)(APTR, APTR);
-	
-	ForeachElementInSet(set, order, pos, func)
-	{
-	    if (test_fail)
-	    {
-		if (!(*func)(libbase, ioreq))
-		    return FALSE;
-	    }
-	    else
-	    {
-		(void)(*func)(libbase, ioreq);
-	    }
-	}
+        int (*func)(APTR, APTR);
+        
+        ForeachElementInSet(set, order, pos, func)
+        {
+            if (test_fail)
+            {
+                if (!(*func)(libbase, ioreq))
+                    return FALSE;
+            }
+            else
+            {
+                (void)(*func)(libbase, ioreq);
+            }
+        }
     }
 
     return TRUE;

@@ -19,23 +19,23 @@ static int __putc(int c, void *fh);
     NAME */
 #include <stdio.h>
 
-	int __posixc_vfprintf (
+        int __posixc_vfprintf (
 
 /*  SYNOPSIS */
-	FILE	   * stream,
-	const char * format,
-	va_list      args)
+        FILE       * stream,
+        const char * format,
+        va_list      args)
 
 /*  FUNCTION
-	Format a list of arguments and print them on the specified stream.
+        Format a list of arguments and print them on the specified stream.
 
     INPUTS
-	stream - A stream on which one can write
-	format - A printf() format string.
-	args - A list of arguments for the format string.
+        stream - A stream on which one can write
+        format - A printf() format string.
+        args - A list of arguments for the format string.
 
     RESULT
-	The number of characters written.
+        The number of characters written.
 
     NOTES
 
@@ -53,8 +53,8 @@ static int __putc(int c, void *fh);
 
     if (!fdesc)
     {
-	errno = EBADF;
-	return 0;
+        errno = EBADF;
+        return 0;
     }
 
     return __vcformat ((void *)BADDR(fdesc->fcb->handle), __putc, format, args);
@@ -66,8 +66,8 @@ static int __putc(int c, void *fhp)
     BPTR fh = MKBADDR(fhp);
     if (FPutC(fh, c) == EOF)
     {
-	errno = __stdc_ioerr2errno(IoErr());
-	return EOF;
+        errno = __stdc_ioerr2errno(IoErr());
+        return EOF;
     }
 
     return c;

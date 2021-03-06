@@ -15,14 +15,14 @@ extern struct Library *DataTypesBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/datatypes.h>
 
-	void RefreshDTObjects (
+        void RefreshDTObjects (
 
 /*  SYNOPSIS */
-	Object * o,
-	struct Window * win,
-	struct Requester *req,
-	Tag tag1,
-	...)
+        Object * o,
+        struct Window * win,
+        struct Requester *req,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of datatypes.library/RefreshDTObjectA().
@@ -39,7 +39,7 @@ extern struct Library *DataTypesBase;
     BUGS
 
     SEE ALSO
-	datatypes.library/RefreshDTObjectA()
+        datatypes.library/RefreshDTObjectA()
 
     INTERNALS
 

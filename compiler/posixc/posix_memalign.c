@@ -11,7 +11,7 @@
     NAME */
 #include <stdlib.h>
 
-	int posix_memalign (
+        int posix_memalign (
 
 /*  SYNOPSIS */
         void **memptr,
@@ -26,7 +26,7 @@
         alignment - Alignment of allocated memory. The address of the
                     allocated memory will be a multiple of this value, which
                     must be a power of two and a multiple of sizeof(void *).
-	size - How much memory to allocate.
+        size - How much memory to allocate.
 
     RESULT
         Returns zero on success.
@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	stdc.library/malloc_align(), stdc.library/calloc(),
+        stdc.library/malloc_align(), stdc.library/calloc(),
         stdc.library/free(), stdc.library/malloc()
 
     INTERNALS

@@ -13,13 +13,13 @@
     NAME */
 #include <stdio.h>
 
-	void funlockfile(
+        void funlockfile(
 
 /*  SYNOPSIS */
-	FILE *file)
+        FILE *file)
 
 /*  FUNCTION
-	Relinquish exclusive access to the file.
+        Relinquish exclusive access to the file.
 
     INPUTS
 

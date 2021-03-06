@@ -15,20 +15,20 @@
     NAME */
 #include <stdio.h>
 
-	int fgetc (
+        int fgetc (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Read one character from the stream. If there is no character
-	available or an error occurred, the function returns EOF.
+        Read one character from the stream. If there is no character
+        available or an error occurred, the function returns EOF.
 
     INPUTS
-	stream - Read from this stream
+        stream - Read from this stream
 
     RESULT
-	The character read or EOF on end of file or error.
+        The character read or EOF on end of file or error.
         If EOF is returned feof() and ferror() indicate if it was an
         end-of-file situation or an error.
 
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	getc(), feof(), ferror(), fputc(), putc()
+        getc(), feof(), ferror(), fputc(), putc()
 
     INTERNALS
 
@@ -64,15 +64,15 @@
     c = FGetC (stream->fh);
     if (c == EOF)
     {
-	ioerr = IoErr ();
+        ioerr = IoErr ();
 
-	if (ioerr)
-	{
-    	    errno = __stdc_ioerr2errno (ioerr);
-	    stream->flags |= __STDCIO_STDIO_ERROR;
-	}
-	else
-	    stream->flags |= __STDCIO_STDIO_EOF;
+        if (ioerr)
+        {
+            errno = __stdc_ioerr2errno (ioerr);
+            stream->flags |= __STDCIO_STDIO_ERROR;
+        }
+        else
+            stream->flags |= __STDCIO_STDIO_EOF;
     }
 
     return (int)c;

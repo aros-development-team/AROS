@@ -16,44 +16,44 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_fseeko (
+        int __posixc_fseeko (
 
 /*  SYNOPSIS */
-	FILE * stream,
-	off_t  offset,
-	int    whence)
+        FILE * stream,
+        off_t  offset,
+        int    whence)
 
 /*  FUNCTION
-	Change the current position in a stream.
+        Change the current position in a stream.
 
     INPUTS
-	stream - Modify this stream
-	offset, whence - How to modify the current position. whence
-		can be SEEK_SET, then offset is the absolute position
-		in the file (0 is the first byte), SEEK_CUR then the
-		position will change by offset (ie. -5 means to move
-		5 bytes to the beginning of the file) or SEEK_END.
-		SEEK_END means that the offset is relative to the
-		end of the file (-1 is the last byte and 0 is
-		the EOF).
+        stream - Modify this stream
+        offset, whence - How to modify the current position. whence
+                can be SEEK_SET, then offset is the absolute position
+                in the file (0 is the first byte), SEEK_CUR then the
+                position will change by offset (ie. -5 means to move
+                5 bytes to the beginning of the file) or SEEK_END.
+                SEEK_END means that the offset is relative to the
+                end of the file (-1 is the last byte and 0 is
+                the EOF).
 
     RESULT
-	0 on success and -1 on error. If an error occurred, the global
-	variable errno is set.
+        0 on success and -1 on error. If an error occurred, the global
+        variable errno is set.
 
     NOTES
-	on 32bit platforms, off_t is a 32bit value, and so the 64bit
+        on 32bit platforms, off_t is a 32bit value, and so the 64bit
         version (fseeko64) is needed to work with large files.
         off_t is 64bit natively on 64bit platforms.
 
     EXAMPLE
 
     BUGS
-	Not fully compatible with ISO fseeko, especially in 'ab' and 'a+b'
-	modes
+        Not fully compatible with ISO fseeko, especially in 'ab' and 'a+b'
+        modes
 
     SEE ALSO
-	fseek()
+        fseek()
 
     INTERNALS
 

@@ -15,10 +15,10 @@
     NAME */
 #include <stdio.h>
 
-	int pclose(
+        int pclose(
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
 
@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-	popen()
+        popen()
 
     INTERNALS
 

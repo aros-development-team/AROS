@@ -11,22 +11,22 @@
     NAME */
 #include <string.h>
 
-	char * strndup (
+        char * strndup (
 
 /*  SYNOPSIS */
-	const char *s, size_t n)
+        const char *s, size_t n)
 
 /*  FUNCTION
-	Create a copy of a string. The copy can be freed with free() or will
-	be freed when then program ends. The copy will be at most n character
-	long, excluding the trailing \000
+        Create a copy of a string. The copy can be freed with free() or will
+        be freed when then program ends. The copy will be at most n character
+        long, excluding the trailing \000
 
     INPUTS
-	s - String to duplicate
-	n - Maximum length
+        s - String to duplicate
+        n - Maximum length
 
     RESULT
-	A copy of the string which can be freed with free().
+        A copy of the string which can be freed with free().
 
     NOTES
 

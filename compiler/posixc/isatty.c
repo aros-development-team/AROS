@@ -12,11 +12,11 @@
 
 #include <unistd.h>
 
-	int isatty(
+        int isatty(
 
 /*  SYNOPSIS */
-	int fd)
-	
+        int fd)
+        
 /*  FUNCTION
 
     INPUTS

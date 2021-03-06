@@ -22,18 +22,18 @@ extern struct Library *IconBase;
             
 
 /*  FUNCTION
-	Returns the value associated with the string 'entry' found in the
-	tooltypes array 'tt'. If no match with entry was found,
-	'defaultval' is returned.
+        Returns the value associated with the string 'entry' found in the
+        tooltypes array 'tt'. If no match with entry was found,
+        'defaultval' is returned.
 
     INPUTS
-	tt          --  the tooltypes array ( returned by ArgArrayInit() )
-	entry       --  entry to look for (in tooltype "entry=value")
-	defaultval  --  value returned if 'entry' was not found
+        tt          --  the tooltypes array ( returned by ArgArrayInit() )
+        entry       --  entry to look for (in tooltype "entry=value")
+        defaultval  --  value returned if 'entry' was not found
 
     RESULT
-	(The tooltypes looks like "Entry=Value".) Returns Value if Entry
-	was found; otherwise returns 'defaultval'.
+        (The tooltypes looks like "Entry=Value".) Returns Value if Entry
+        was found; otherwise returns 'defaultval'.
 
     NOTES
 
@@ -42,11 +42,11 @@ extern struct Library *IconBase;
     BUGS
 
     SEE ALSO
-	ArgArrayInit()
+        ArgArrayInit()
 
     INTERNALS
-	The Amiga documentation says "requires that dos.library V36 or
-	higher is opened". I can't see why.
+        The Amiga documentation says "requires that dos.library V36 or
+        higher is opened". I can't see why.
 
 *****************************************************************************/
 {
@@ -54,7 +54,7 @@ extern struct Library *IconBase;
     LONG result = defaultval;
 
     if((match = FindToolType(tt, entry)) == NULL)
-	return defaultval;
+        return defaultval;
 
     StrToLong(match, &result);
     return result;

@@ -15,12 +15,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	struct ExtSprite * AllocSpriteData (
+        struct ExtSprite * AllocSpriteData (
 
 /*  SYNOPSIS */
-	struct BitMap * bitmap,
-	Tag tag1,
-	...)
+        struct BitMap * bitmap,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of graphics.library/AllocSpriteDataA().

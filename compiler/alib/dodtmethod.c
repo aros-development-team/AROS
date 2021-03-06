@@ -16,30 +16,30 @@ extern struct Library * DataTypesBase;
     NAME */
 #include <proto/datatypes.h>
 
-	IPTR DoDTMethod (
+        IPTR DoDTMethod (
 
 /*  SYNOPSIS */
-	Object	    	 * obj,
-	struct Window	 * win,
-	struct Requester * req,
-	ULONG		   methodId,
-	...)
+        Object           * obj,
+        struct Window    * win,
+        struct Requester * req,
+        ULONG              methodId,
+        ...)
 
 /*  FUNCTION
-	Invokes a BOOPSI method on a datatype object with a GadgetInfo derived from
-	the supplied window or requester parameter.
+        Invokes a BOOPSI method on a datatype object with a GadgetInfo derived from
+        the supplied window or requester parameter.
 
     INPUTS
-	gad - The datatype object to work on
-	win - The window which contains the gadget or the requester with
-		the gadgets.
-	req - If the gadget is in a requester, you must specify that one,
-		too.
-	methodId - The message to the gadget follows here.
+        gad - The datatype object to work on
+        win - The window which contains the gadget or the requester with
+                the gadgets.
+        req - If the gadget is in a requester, you must specify that one,
+                too.
+        methodId - The message to the gadget follows here.
 
     RESULT
-	The result depends on the contents of the message sent to the
-	gadget.
+        The result depends on the contents of the message sent to the
+        gadget.
 
     NOTES
 
@@ -57,9 +57,9 @@ extern struct Library * DataTypesBase;
 {
     AROS_SLOWSTACKMETHODS_PRE(methodId)
     retval = DoDTMethodA (obj
-	, win
-	, req
-	, AROS_SLOWSTACKMETHODS_ARG(methodId)
+        , win
+        , req
+        , AROS_SLOWSTACKMETHODS_ARG(methodId)
     );
     AROS_SLOWSTACKMETHODS_POST
 } /* DoDTMethod */

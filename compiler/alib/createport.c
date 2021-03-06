@@ -12,23 +12,23 @@
 #include <exec/ports.h>
 #include <proto/alib.h>
 
-	struct MsgPort * CreatePort (
+        struct MsgPort * CreatePort (
 
 /*  SYNOPSIS */
-	STRPTR name,
-	LONG   pri)
+        STRPTR name,
+        LONG   pri)
 
 /*  FUNCTION
-	Allocate and initialize a new Exec message port. You must
-	use DeletePort() to get rid of it.
+        Allocate and initialize a new Exec message port. You must
+        use DeletePort() to get rid of it.
 
     INPUTS
-	name - The name of the new port. The string is not copied
-	pri - The priority of the port.
+        name - The name of the new port. The string is not copied
+        pri - The priority of the port.
 
     RESULT
-	A pointer to the new message port or NULL if no memory or
-	no signal was available.
+        A pointer to the new message port or NULL if no memory or
+        no signal was available.
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	DeletePort(), exec.library/CreateMsgPort(), exec.library/DeleteMsgPort()
+        DeletePort(), exec.library/CreateMsgPort(), exec.library/DeleteMsgPort()
 
     INTERNALS
 
@@ -51,11 +51,11 @@
 
     if (mp)
     {
-	mp->mp_Node.ln_Name = name;
-	mp->mp_Node.ln_Pri  = pri;
+        mp->mp_Node.ln_Name = name;
+        mp->mp_Node.ln_Pri  = pri;
 
-	if (name)
-	    AddPort (mp);
+        if (name)
+            AddPort (mp);
     }
 
     return mp;

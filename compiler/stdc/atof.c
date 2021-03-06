@@ -11,21 +11,21 @@
     NAME */
 #include <stdlib.h>
 
-	double atof (
+        double atof (
 
 /*  SYNOPSIS */
-	const char * str)
+        const char * str)
 
 /*  FUNCTION
-	Convert a string of digits into a double.
+        Convert a string of digits into a double.
 
     INPUTS
-	str - The string which should be converted. Leading
-		whitespace are ignored. The number may be prefixed
-		by a '+' or '-'.
+        str - The string which should be converted. Leading
+                whitespace are ignored. The number may be prefixed
+                by a '+' or '-'.
 
     RESULT
-	The value of string str.
+        The value of string str.
 
     NOTES
 
@@ -47,7 +47,7 @@
 
 void atof(const char * str)
 {
-	return;
+        return;
 }
 
 #endif /* AROS_NOFPU */

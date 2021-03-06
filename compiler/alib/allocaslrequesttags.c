@@ -15,20 +15,20 @@
 extern struct Library *AslBase;
 #undef AllocAslRequestTags /* Get rid of the macro from inline/ */
 
-	APTR AllocAslRequestTags (
+        APTR AllocAslRequestTags (
 
 /*  SYNOPSIS */
-	ULONG   reqType,
-	Tag     tag1,
-	...)
+        ULONG   reqType,
+        Tag     tag1,
+        ...)
 
 /*  FUNCTION
-	This is the varargs version of the asl.library AllocAslRequest().
-	For information see asl.library/AllocAslRequest().
+        This is the varargs version of the asl.library AllocAslRequest().
+        For information see asl.library/AllocAslRequest().
 
     INPUTS
-	reqType     -   Type of requester to allocate.
-	tag1        -   TagList of extra arguments.
+        reqType     -   Type of requester to allocate.
+        tag1        -   TagList of extra arguments.
 
     NOTES
 
@@ -37,7 +37,7 @@ extern struct Library *AslBase;
     BUGS
 
     SEE ALSO
-	asl.library/AllocAslRequest()
+        asl.library/AllocAslRequest()
 
     INTERNALS
 

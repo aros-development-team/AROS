@@ -19,33 +19,33 @@
     NAME */
 #include <stdio.h>
 
-	FILE * popen (
+        FILE * popen (
 
 /*  SYNOPSIS */
-	const char * command,
-	const char * mode)
+        const char * command,
+        const char * mode)
 
 /*  FUNCTION
-	"opens" a process by creating a pipe, spawning a new process and invoking
-	the shell.
+        "opens" a process by creating a pipe, spawning a new process and invoking
+        the shell.
 
     INPUTS
-	command - Pointer to a null terminated string containing the command
-	          to be executed by the shell.
+        command - Pointer to a null terminated string containing the command
+                  to be executed by the shell.
 
-	mode - Since a pipe is unidirectional, mode can be only one of
+        mode - Since a pipe is unidirectional, mode can be only one of
 
-		r: Open for reading. After popen() returns, the stream can
-		   be used to read from it, as if it were a normal file stream,
-		   in order to get the command's output.
+                r: Open for reading. After popen() returns, the stream can
+                   be used to read from it, as if it were a normal file stream,
+                   in order to get the command's output.
 
-		w: Open for writing. After popen() returns, the stream can
-		   be used to write to it, as if it were a normal file stream,
-		   in order to provide the command with some input.
+                w: Open for writing. After popen() returns, the stream can
+                   be used to write to it, as if it were a normal file stream,
+                   in order to provide the command with some input.
 
     RESULT
-	A pointer to a FILE handle or NULL in case of an error. When NULL
-	is returned, then errno is set to indicate the error.
+        A pointer to a FILE handle or NULL in case of an error. When NULL
+        is returned, then errno is set to indicate the error.
 
     NOTES
         This function must not be used in a shared library or
@@ -56,7 +56,7 @@
     BUGS
 
     SEE ALSO
-	fclose(), fread(), fwrite(), pipe(), pclose()
+        fclose(), fread(), fwrite(), pipe(), pclose()
 
     INTERNALS
 
@@ -66,38 +66,38 @@
 
     if (!mode || (mode[0] != 'r' && mode[0] != 'w') || mode[1] != '\0')
     {
-	errno = !mode ? EFAULT : EINVAL;
-	return NULL;
+        errno = !mode ? EFAULT : EINVAL;
+        return NULL;
     }
 
     if (pipe(pipefds) == 0)
     {
- 	int fdtopass = (mode[0] == 'r');
+        int fdtopass = (mode[0] == 'r');
 
         struct TagItem tags[] =
         {
             { SYS_Input   , 0                                               },
-	    { SYS_Output  , 0                                               },
-	    { SYS_Error   , SYS_DupStream                                   },
+            { SYS_Output  , 0                                               },
+            { SYS_Error   , SYS_DupStream                                   },
             { SYS_Asynch  , TRUE                                            },
             { NP_StackSize, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT },
             { TAG_DONE    , 0                                               }
         };
 
-	tags[fdtopass].ti_Data     = (IPTR)__getfdesc(pipefds[fdtopass])->fcb->handle;
-	tags[1 - fdtopass].ti_Data = SYS_DupStream;
+        tags[fdtopass].ti_Data     = (IPTR)__getfdesc(pipefds[fdtopass])->fcb->handle;
+        tags[1 - fdtopass].ti_Data = SYS_DupStream;
 
-	if (SystemTagList(command, tags) != -1)
-	{
-	    /* Little trick to deallocate memory which otherwise wouldn't get deallocated */
+        if (SystemTagList(command, tags) != -1)
+        {
+            /* Little trick to deallocate memory which otherwise wouldn't get deallocated */
             __getfdesc(pipefds[fdtopass])->fcb->handle = BNULL;
-  	    close(pipefds[fdtopass]);
+            close(pipefds[fdtopass]);
 
             return fdopen(pipefds[1 - fdtopass], NULL);
-	}
+        }
 
-	close(pipefds[0]);
-	close(pipefds[1]);
+        close(pipefds[0]);
+        close(pipefds[1]);
     }
 
     return NULL;

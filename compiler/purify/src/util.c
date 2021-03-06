@@ -12,8 +12,8 @@ void * xmalloc (int size)
 
     if (!ptr)
     {
-	fprintf (stderr, "Out of memory\n");
-	exit (20);
+        fprintf (stderr, "Out of memory\n");
+        exit (20);
     }
 
     return ptr;
@@ -22,7 +22,7 @@ void * xmalloc (int size)
 void xfree (void * ptr)
 {
     if (ptr)
-	free (ptr);
+        free (ptr);
     else
-	fprintf (stderr, "Warning: free (NULL);\n");
+        fprintf (stderr, "Warning: free (NULL);\n");
 }

@@ -11,40 +11,40 @@
 /******************************************************************************
 
     NAME */
-	VOID GetDataStreamFromFormat (
+        VOID GetDataStreamFromFormat (
 
 /*  SYNOPSIS */
-	CONST_STRPTR format,
-	va_list args,
-	RAWARG dataStream, ULONG *dataSize,
-	ULONG *indexStream, ULONG *indexSize)
+        CONST_STRPTR format,
+        va_list args,
+        RAWARG dataStream, ULONG *dataSize,
+        ULONG *indexStream, ULONG *indexSize)
 
 /*  FUNCTION
-	Builds an array of parameters which are passed on the stack.
-	This function is used on machines which have compilers which
-	don't pass the arguments to a varargs function unlike the
-	Amiga ones.
+        Builds an array of parameters which are passed on the stack.
+        This function is used on machines which have compilers which
+        don't pass the arguments to a varargs function unlike the
+        Amiga ones.
 
     INPUTS
         format - Exec/RawDoFmt or Locale/FormatString format string
-	args   - This has to be initialized by va_start()
-	         (not used if dataStream is NULL)
-	dataStream - data buffer to write to
-	             (can be NULL for sizing)
-	dataSize  - size of the buffer
-	             (can be NULL, or pointer to 0 for sizing)
-	             updated to the actual size required at exit.
-	indexStream- array of offsets to the Nth element in the dataStream
-	             (can be NULL for sizing)
-	indexSize  - size of the index, in bytes
-	             (can be NULL, or pointer to 0 for sizing)
-	             updated to the actual size required at exit.
+        args   - This has to be initialized by va_start()
+                 (not used if dataStream is NULL)
+        dataStream - data buffer to write to
+                     (can be NULL for sizing)
+        dataSize  - size of the buffer
+                     (can be NULL, or pointer to 0 for sizing)
+                     updated to the actual size required at exit.
+        indexStream- array of offsets to the Nth element in the dataStream
+                     (can be NULL for sizing)
+        indexSize  - size of the index, in bytes
+                     (can be NULL, or pointer to 0 for sizing)
+                     updated to the actual size required at exit.
 
     RESULT
-	An array which can be passed to any function which expects the
-	structure or NULL if something failed. This call may fail for
-	different reasons on different systems. On some systems, NULL
-	indicates that there was not enough memory.
+        An array which can be passed to any function which expects the
+        structure or NULL if something failed. This call may fail for
+        different reasons on different systems. On some systems, NULL
+        indicates that there was not enough memory.
 
     NOTES
         This structure converts from format types to the following
@@ -72,7 +72,7 @@
     BUGS
 
     SEE ALSO
-	exec.library/RawDoFmt(), locale.library/FormatString()
+        exec.library/RawDoFmt(), locale.library/FormatString()
 
     INTERNALS
 

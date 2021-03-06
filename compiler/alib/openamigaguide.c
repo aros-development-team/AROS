@@ -13,12 +13,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/amigaguide.h>
 
-	AMIGAGUIDECONTEXT OpenAmigaGuide (
+        AMIGAGUIDECONTEXT OpenAmigaGuide (
 
 /*  SYNOPSIS */
-	struct NewAmigaGuide * nag,
-	Tag tag1,
-	...)
+        struct NewAmigaGuide * nag,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of amigaguide.library/OpenAmigaGuideA().

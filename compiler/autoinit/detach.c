@@ -1,10 +1,10 @@
 /*
     Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
     
-    Desc: support function for the detach.o startup file. 
+    Desc: support function for the detach.o startup file.
           Probably this is not the right place where to keep it,
-	  but it has to stay in a library, and making a library
-	  just for this file seemed overkill to me.
+          but it has to stay in a library, and making a library
+          just for this file seemed overkill to me.
 */
 
 #include <dos/dos.h>

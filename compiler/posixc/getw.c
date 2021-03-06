@@ -10,10 +10,10 @@
 
 #include <stdio.h>
 
-	int getw(
+        int getw(
 
     SYNOPSIS
-	FILE *stream)
+        FILE *stream)
 
     FUNCTION
 

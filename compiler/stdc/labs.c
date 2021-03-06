@@ -9,33 +9,33 @@
     NAME */
 #include <stdlib.h>
 
-	long labs (
+        long labs (
 
 /*  SYNOPSIS */
-	long j)
+        long j)
 
 /*  FUNCTION
-	Compute the absolute value of j.
+        Compute the absolute value of j.
 
     INPUTS
-	j - A signed long
+        j - A signed long
 
     RESULT
-	The absolute value of j.
+        The absolute value of j.
 
     NOTES
 
     EXAMPLE
-	// returns 1
-	labs (1L);
+        // returns 1
+        labs (1L);
 
-	// returns 1
-	labs (-1L);
+        // returns 1
+        labs (-1L);
 
     BUGS
 
     SEE ALSO
-	abs(), llabs()
+        abs(), llabs()
 
     INTERNALS
 

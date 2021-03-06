@@ -12,21 +12,21 @@
     NAME */
 #include <wchar.h>
 
-	wchar_t *wcscat(
+        wchar_t *wcscat(
 
 /*  SYNOPSIS */
-	wchar_t *wcdst,
+        wchar_t *wcdst,
         const wchar_t *wcsrc)
 
 /*  FUNCTION
-	Appends a wide string, onto another wide string.
+        Appends a wide string, onto another wide string.
 
     INPUTS
-	wcdst - the wide string that will have the text appended to it.
-	wcsrc - the wide string to append.
+        wcdst - the wide string that will have the text appended to it.
+        wcsrc - the wide string to append.
 
     RESULT
-	A pointer to the resulting wide string.
+        A pointer to the resulting wide string.
 
     NOTES
 

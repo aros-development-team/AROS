@@ -9,20 +9,20 @@
     NAME */
 #include <time.h>
 
-	char * asctime_r (
+        char * asctime_r (
 
 /*  SYNOPSIS */
-	const struct tm * tm,
+        const struct tm * tm,
         char * buf)
 
 /*  FUNCTION
-	The asctime_r() function converts the broken-down time value tm
-	into a string with this format:
+        The asctime_r() function converts the broken-down time value tm
+        into a string with this format:
 
-	    "Wed Jun 30 21:49:08 1993\n"
+            "Wed Jun 30 21:49:08 1993\n"
 
     INPUTS
-	tm - The broken down time
+        tm - The broken down time
         buf - Buffer of at least 26 characters to store the string in
 
     RESULT
@@ -32,23 +32,23 @@
     NOTES
 
     EXAMPLE
-	time_t	  tt;
-	struct tm tm;
-	char	  str[26];
+        time_t    tt;
+        struct tm tm;
+        char      str[26];
 
-	// Get time
-	time (&tt);
+        // Get time
+        time (&tt);
 
-	// Break time up
-	localtime (&tt, &tm);
+        // Break time up
+        localtime (&tt, &tm);
 
-	// Convert to string
-	asctime (&tm, str);
+        // Convert to string
+        asctime (&tm, str);
 
     BUGS
 
     SEE ALSO
-	time(), ctime_r(), gmtime_r(), localtime_r()
+        time(), ctime_r(), gmtime_r(), localtime_r()
 
     INTERNALS
 

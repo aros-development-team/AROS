@@ -13,13 +13,13 @@
     NAME */
 #include <stdio.h>
 
-	void flockfile(
+        void flockfile(
 
 /*  SYNOPSIS */
-	FILE *file)
+        FILE *file)
 
 /*  FUNCTION
-	Obtain exclusive access to the file.
+        Obtain exclusive access to the file.
 
     INPUTS
 

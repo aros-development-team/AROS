@@ -20,31 +20,31 @@ extern struct ExecBase * SysBase;
     NAME */
 #include <proto/arossupport.h>
 
-	void NastyFreeMem (
+        void NastyFreeMem (
 
 /*  SYNOPSIS */
-	APTR mem,
-	IPTR size)
+        APTR mem,
+        IPTR size)
 
 /*  FUNCTION
-	Overwrites the memory with 0xDEADBEEF before actually freeing it.
+        Overwrites the memory with 0xDEADBEEF before actually freeing it.
 
     INPUTS
-	mem - Pointer which was returned by AllocMem()
-	size - Size which was given to AllocMem()
+        mem - Pointer which was returned by AllocMem()
+        size - Size which was given to AllocMem()
 
     RESULT
-	The function may print some infos using kprintf().
+        The function may print some infos using kprintf().
 
     NOTES
-	This function depends on SysBase.
+        This function depends on SysBase.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	exec.library/FreeMem()
+        exec.library/FreeMem()
 
     INTERNALS
 

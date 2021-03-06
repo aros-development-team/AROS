@@ -11,10 +11,10 @@
 
 #include <grp.h>
 
-	struct group *getgrnam(
+        struct group *getgrnam(
 
 /*  SYNOPSIS */
-	const char *name)
+        const char *name)
 
 /*  FUNCTION
 
@@ -23,7 +23,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

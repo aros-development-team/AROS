@@ -49,10 +49,10 @@ static const UBYTE windowimage_pal[] =
 
 const struct CoolImage cool_windowimage =
 {
-	windowimage_data,
-	windowimage_pal,
-	WINDOWIMAGE_WIDTH,
-	WINDOWIMAGE_HEIGHT,
-	WINDOWIMAGE_COLORS
+        windowimage_data,
+        windowimage_pal,
+        WINDOWIMAGE_WIDTH,
+        WINDOWIMAGE_HEIGHT,
+        WINDOWIMAGE_COLORS
 };
 

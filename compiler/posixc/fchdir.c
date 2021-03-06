@@ -59,7 +59,7 @@
     if (!(fdc->fcb->privflags & _FCB_ISDIR))
     {
         errno = ENOTDIR;
-        goto error; 
+        goto error;
     }
 
     if ( __get_default_file(fd, (long*) &handle) != 0 )
@@ -85,7 +85,7 @@
     {
         PosixCBase->cd_changed = TRUE;
         PosixCBase->cd_lock    = oldlock;
-    }       
+    }
     return 0;
 
 error:

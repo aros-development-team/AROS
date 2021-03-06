@@ -29,22 +29,22 @@
 struct CoolImageData
 {
     struct CoolImage *image;
-    ULONG   	     *pal;
-    ULONG   	     bgcol;
+    ULONG            *pal;
+    ULONG            bgcol;
 };
 
 /****************************************************************************************/
 
 extern struct IntuitionBase *IntuitionBase;
-extern struct GfxBase 	    *GfxBase;
+extern struct GfxBase       *GfxBase;
 extern struct UtilityBase   *UtilityBase;
 
-struct IClass 	    	    *cool_imageclass;
+struct IClass               *cool_imageclass;
 
 /****************************************************************************************/
 
-#define CyberGfxBase	    cool_cybergfxbase
-#define IM(x)	    	    ((struct Image *)(x))
+#define CyberGfxBase        cool_cybergfxbase
+#define IM(x)               ((struct Image *)(x))
 
 /****************************************************************************************/
 
@@ -60,39 +60,39 @@ static IPTR coolimage_new(Class * cl, Object * o, struct opSet * msg)
 
     if (o)
     {
-    	data = INST_DATA(cl, o);
-	
-	data->image = (struct CoolImage *)GetTagData(COOLIM_CoolImage, 0, msg->ops_AttrList);
+        data = INST_DATA(cl, o);
+        
+        data->image = (struct CoolImage *)GetTagData(COOLIM_CoolImage, 0, msg->ops_AttrList);
 
-	if (!data->image)
-	{
-	    STACKULONG dispose_msg = OM_DISPOSE;
-	    CoerceMethodA(cl, o, &dispose_msg);
-	    o = NULL;
-	} else {
-	    data->bgcol = GetTagData(COOLIM_BgColor,
-	    	    	    	     (data->image->pal[0] << 16) | (data->image->pal[1] << 8) | data->image->pal[2],
-				     msg->ops_AttrList);
-	    if (CyberGfxBase)
-	    {
-	        if ((data->pal = AllocVec(data->image->numcolors * sizeof(ULONG), MEMF_PUBLIC)))
-		{
-		    ULONG *p = data->pal;
-		    WORD  i;
-		    
-		    for(i = 0; i < data->image->numcolors; i++)
-		    {
-		        *p++ = (data->image->pal[i * 3] << 16) |
-			       (data->image->pal[i * 3 + 1] << 8) |
-			       (data->image->pal[i * 3 + 2]);
-		    }
-		    
-		} else {
-		    data->image = NULL;
-		}
-	    }
-	}
-	
+        if (!data->image)
+        {
+            STACKULONG dispose_msg = OM_DISPOSE;
+            CoerceMethodA(cl, o, &dispose_msg);
+            o = NULL;
+        } else {
+            data->bgcol = GetTagData(COOLIM_BgColor,
+                                     (data->image->pal[0] << 16) | (data->image->pal[1] << 8) | data->image->pal[2],
+                                     msg->ops_AttrList);
+            if (CyberGfxBase)
+            {
+                if ((data->pal = AllocVec(data->image->numcolors * sizeof(ULONG), MEMF_PUBLIC)))
+                {
+                    ULONG *p = data->pal;
+                    WORD  i;
+                    
+                    for(i = 0; i < data->image->numcolors; i++)
+                    {
+                        *p++ = (data->image->pal[i * 3] << 16) |
+                               (data->image->pal[i * 3 + 1] << 8) |
+                               (data->image->pal[i * 3 + 2]);
+                    }
+                    
+                } else {
+                    data->image = NULL;
+                }
+            }
+        }
+        
     } /* if (o) */
     
     return (IPTR)o;
@@ -116,7 +116,7 @@ static IPTR coolimage_dispose(Class * cl, Object * o, Msg msg)
 static IPTR coolimage_draw(Class *cl, Object *o, struct impDraw *msg)
 {
     struct CoolImageData    *data;
-    WORD    	    	    x, y;
+    WORD                    x, y;
     
     data = INST_DATA(cl, o);
     
@@ -125,22 +125,22 @@ static IPTR coolimage_draw(Class *cl, Object *o, struct impDraw *msg)
     
     if (CyberGfxBase && (GetBitMapAttr(msg->imp_RPort->BitMap, BMA_DEPTH) >= 15))
     {
-	data->pal[0] = data->bgcol;
-	
-	WriteLUTPixelArray((APTR)data->image->data,
-			    0,
-			    0,
-			    data->image->width,
-			    msg->imp_RPort,
-			    data->pal,
-			    x,
-			    y,
-			    data->image->width,
-			    data->image->height,
-			    CTABFMT_XRGB8);
+        data->pal[0] = data->bgcol;
+        
+        WriteLUTPixelArray((APTR)data->image->data,
+                            0,
+                            0,
+                            data->image->width,
+                            msg->imp_RPort,
+                            data->pal,
+                            x,
+                            y,
+                            data->image->width,
+                            data->image->height,
+                            CTABFMT_XRGB8);
         
     }
-    	    
+            
     return 0;
 }
 
@@ -149,9 +149,9 @@ static IPTR coolimage_draw(Class *cl, Object *o, struct impDraw *msg)
 /****************************************************************************************/
 
 AROS_UFH3S(IPTR, cool_imageclass_dispatcher,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1))
+          AROS_UFHA(Class *, cl, A0),
+          AROS_UFHA(Object *, obj, A2),
+          AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -160,20 +160,20 @@ AROS_UFH3S(IPTR, cool_imageclass_dispatcher,
     switch (msg->MethodID)
     {
         case OM_NEW:
-	    retval = coolimage_new(cl, obj, (struct opSet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = coolimage_dispose(cl, obj, msg);
-	    break;
-	
-	case IM_DRAW:
-	    retval = coolimage_draw(cl, obj, (struct impDraw *)msg);
-	    break;
-	
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
+            retval = coolimage_new(cl, obj, (struct opSet *)msg);
+            break;
+            
+        case OM_DISPOSE:
+            retval = coolimage_dispose(cl, obj, msg);
+            break;
+        
+        case IM_DRAW:
+            retval = coolimage_draw(cl, obj, (struct impDraw *)msg);
+            break;
+        
+        default:
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
 
     } /* switch (msg->MethodID) */
     
@@ -196,16 +196,16 @@ BOOL InitCoolImageClass(struct Library *CyberGfxBase)
     
     if (IntuitionBase && GfxBase && UtilityBase) // && SysBase)
     {
-   	if (!cool_imageclass)
-	{
-	    cool_imageclass = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct CoolImageData), 0UL);
-	}
-	
-    	if (cool_imageclass)
-	{
-    	    cool_imageclass->cl_Dispatcher.h_Entry = (HOOKFUNC)cool_imageclass_dispatcher;
-	    retval = TRUE;
-	}
+        if (!cool_imageclass)
+        {
+            cool_imageclass = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct CoolImageData), 0UL);
+        }
+        
+        if (cool_imageclass)
+        {
+            cool_imageclass->cl_Dispatcher.h_Entry = (HOOKFUNC)cool_imageclass_dispatcher;
+            retval = TRUE;
+        }
     }
     
     return retval;
@@ -217,8 +217,8 @@ void CleanupCoolImageClass(void)
 {
     if (cool_imageclass)
     {
-    	FreeClass(cool_imageclass);
-	cool_imageclass = NULL;
+        FreeClass(cool_imageclass);
+        cool_imageclass = NULL;
     }
 }
 

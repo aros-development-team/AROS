@@ -11,20 +11,20 @@
     NAME */
 #include <stdio.h>
 
-	int __posixc_ferror (
+        int __posixc_ferror (
 
 /*  SYNOPSIS */
-	FILE * stream)
+        FILE * stream)
 
 /*  FUNCTION
-	Test the error flag of a stream. This flag is set automatically by
-	any function that detects an error. To clear it, call clearerr().
+        Test the error flag of a stream. This flag is set automatically by
+        any function that detects an error. To clear it, call clearerr().
 
     INPUTS
-	stream - The stream to be tested.
+        stream - The stream to be tested.
 
     RESULT
-	!= 0, if the stream had an error, 0 otherwise.
+        != 0, if the stream had an error, 0 otherwise.
 
     NOTES
 
@@ -33,7 +33,7 @@
     BUGS
 
     SEE ALSO
-	ferror(), clearerr()
+        ferror(), clearerr()
 
     INTERNALS
 

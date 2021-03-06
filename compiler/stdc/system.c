@@ -15,10 +15,10 @@
     NAME */
 #include <stdlib.h>
 
-	int system (
+        int system (
 
 /*  SYNOPSIS */
-	const char *string)
+        const char *string)
 
 /*  FUNCTION
         Execute a command string. If string is NULL then 1 will be returned.

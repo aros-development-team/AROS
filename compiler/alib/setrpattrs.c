@@ -13,12 +13,12 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/graphics.h>
 
-	void SetRPAttrs (
+        void SetRPAttrs (
 
 /*  SYNOPSIS */
-	struct RastPort * rp,
-	Tag tag1,
-	...)
+        struct RastPort * rp,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of graphics.library/SetRPAttrsA().

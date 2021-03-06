@@ -13,21 +13,21 @@
 #include <exec/io.h>
 #include <proto/alib.h>
 
-	struct IOStdReq * CreateStdIO(
+        struct IOStdReq * CreateStdIO(
 
 /*  SYNOPSIS */
-	struct MsgPort * port)
+        struct MsgPort * port)
 
 /*  FUNCTION
-	Create a standard IORequest structure. The structure must be freed
-	with DeleteStdIO().
+        Create a standard IORequest structure. The structure must be freed
+        with DeleteStdIO().
 
     INPUTS
-	port - The port to be signaled on events. May be NULL, in which case
-	    no IORequest is allocated.
+        port - The port to be signaled on events. May be NULL, in which case
+            no IORequest is allocated.
 
     RESULT
-	A pointer to the new IORequest structure, or NULL.
+        A pointer to the new IORequest structure, or NULL.
 
     NOTES
 
@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	CreateExtIO(), DeleteExtIO(), DeleteStdIO()
+        CreateExtIO(), DeleteExtIO(), DeleteStdIO()
 
     INTERNALS
 

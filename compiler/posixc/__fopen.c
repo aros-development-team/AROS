@@ -15,9 +15,9 @@
 #include "__fdesc.h"
 
 FILE * __fopen (
-	const char * pathname,
-	const char * mode,
-	int    large)
+        const char * pathname,
+        const char * mode,
+        int    large)
 {
     int fd;
     int openmode;
@@ -31,7 +31,7 @@ FILE * __fopen (
     if (pathname && (strlen(pathname) > 0) && openmode != -1)
     {
         FILE *ffile;
-	fdesc *fdesc;
+        fdesc *fdesc;
 
         D(bug("[posixc] %s: path '%s'\n", __func__, pathname));
 

@@ -15,29 +15,29 @@
 #include <stdlib.h>
 #include <math.h>
 
-	double strtod (
+        double strtod (
 
 /*  SYNOPSIS */
-	const char * str,
-	char      ** endptr)
+        const char * str,
+        char      ** endptr)
 
 /*  FUNCTION
-	Convert a string of digits into a double.
+        Convert a string of digits into a double.
 
     INPUTS
-	str - The string which should be converted. Leading
-		whitespace are ignored. The number may be prefixed
-		by a '+' or '-'. An 'e' or 'E' introduces the exponent.
-		Komma is only allowed before exponent.
-	endptr - If this is non-NULL, then the address of the first
-		character after the number in the string is stored
-		here.
+        str - The string which should be converted. Leading
+                whitespace are ignored. The number may be prefixed
+                by a '+' or '-'. An 'e' or 'E' introduces the exponent.
+                Komma is only allowed before exponent.
+        endptr - If this is non-NULL, then the address of the first
+                character after the number in the string is stored
+                here.
 
     RESULT
-	The value of the string. The first character after the number
-	is returned in *endptr, if endptr is non-NULL. If no digits can
-	be converted, *endptr contains str (if non-NULL) and 0 is
-	returned.
+        The value of the string. The first character after the number
+        is returned in *endptr, if endptr is non-NULL. If no digits can
+        be converted, *endptr contains str (if non-NULL) and 0 is
+        returned.
 
     NOTES
 
@@ -58,7 +58,7 @@
     double  val = 0, precision;
     int     exp = 0;
     char    c = 0, c2 = 0;
-    int     digits = 0;      
+    int     digits = 0;
 
     /* assign initial value in case nothing will be found */
     if (endptr)
@@ -83,7 +83,7 @@
             str ++;
         }
 
-        /* see if there is the dot and there were digits before it or there is 
+        /* see if there is the dot and there were digits before it or there is
             at least one digit after it */
         if ((*str == '.') && ((digits > 0) || (isdigit(*(str + 1)))))
         {
@@ -118,7 +118,7 @@
             if (c2 == '-')
                 exp = -exp;
             
-            if (edigits == 0) 
+            if (edigits == 0)
             {
                 /* there were no digits after 'e' - rollback pointer */
                 str--; if (c2 != 0) str--;

@@ -18,12 +18,12 @@ extern struct Library *DataTypesBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/datatypes.h>
 
-	Object * NewDTObject (
+        Object * NewDTObject (
 
 /*  SYNOPSIS */
-	APTR name,
-	Tag tag1,
-	...)
+        APTR name,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of datatypes.library/NewDTObjectA().
@@ -40,7 +40,7 @@ extern struct Library *DataTypesBase;
     BUGS
 
     SEE ALSO
-	datatypes.library/NewDTObjectA()
+        datatypes.library/NewDTObjectA()
 
     INTERNALS
 

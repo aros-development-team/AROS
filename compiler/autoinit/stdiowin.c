@@ -28,7 +28,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
     struct MsgPort *old;
 
     if (!fh)
-    	return BNULL;
+        return BNULL;
     old = SetConsoleTask(((struct FileHandle*)BADDR(fh))->fh_Type);
     nfh = Open("*", mode);
     SetConsoleTask(old);
@@ -52,22 +52,22 @@ static void __startup_stdiowin(struct ExecBase *SysBase)
     __iowinw = Open(__stdiowin, MODE_OLDFILE);
     __iowinr = DupFH(__iowinw, MODE_OLDFILE, DOSBase);
     if (__iowinr) {
-    	/* this is so ugly but ReadArgs() needs EOF or
-    	 * console window will always open and program
-    	 * pauses until RETURN is pressed.
-    	 */
-    	struct FileHandle *fh = BADDR(__iowinr);
-    	SetVBuf(__iowinr, NULL, BUF_LINE, 1);
-    	/* force EOF */
-    	fh->fh_Pos = fh->fh_End + 1;
+        /* this is so ugly but ReadArgs() needs EOF or
+         * console window will always open and program
+         * pauses until RETURN is pressed.
+         */
+        struct FileHandle *fh = BADDR(__iowinr);
+        SetVBuf(__iowinr, NULL, BUF_LINE, 1);
+        /* force EOF */
+        fh->fh_Pos = fh->fh_End + 1;
     }
     __iowine = DupFH(__iowinw, MODE_OLDFILE, DOSBase);
 
     if (!__iowinr || !__iowinw || !__iowine)
     {
-    	Close(__iowinr);
-    	Close(__iowine);
-    	Close(__iowinw);
+        Close(__iowinr);
+        Close(__iowine);
+        Close(__iowinw);
         D(bug("[__startup_stdiowin] Failed!\n"));
         return;
     }

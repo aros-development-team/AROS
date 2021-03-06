@@ -12,13 +12,13 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/amigaguide.h>
 
-	AMIGAGUIDEHOST AddAmigaGuideHost (
+        AMIGAGUIDEHOST AddAmigaGuideHost (
 
 /*  SYNOPSIS */
-	struct Hook * hook,
-	STRPTR name,
-	Tag tag1,
-	...)
+        struct Hook * hook,
+        STRPTR name,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
         This is the varargs version of amigaguide.library/AddAmigaGuideHostA().

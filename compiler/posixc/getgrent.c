@@ -11,10 +11,10 @@
 
 #include <grp.h>
 
-	struct group *getgrent(
+        struct group *getgrent(
 
 /*  SYNOPSIS */
-	void)
+        void)
 
 /*  FUNCTION
 
@@ -23,7 +23,7 @@
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 

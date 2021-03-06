@@ -13,10 +13,10 @@
     NAME */
 #include <unistd.h>
 
-	char * ttyname(
+        char * ttyname(
 
 /*  SYNOPSIS */
-	int fd)
+        int fd)
         
 /*  FUNCTION
 
@@ -32,7 +32,7 @@
     BUGS
 
     SEE ALSO
-	
+        
     INTERNALS
 
 ******************************************************************************/

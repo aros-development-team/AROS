@@ -4,7 +4,7 @@
     C99 floating-point environment
 */
 
-/* 
+/*
  * The implementation of these functions are architecture-specific, and so are
  * merely stubs here, provided to allow linking to happen correctly.
  */

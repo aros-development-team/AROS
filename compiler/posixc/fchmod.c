@@ -24,32 +24,32 @@ ULONG prot_u2a(mode_t protect);
 #include <sys/types.h>
 #include <sys/stat.h>
 
-	int fchmod (
+        int fchmod (
 
 /*  SYNOPSIS */
-	int filedes,
-	mode_t mode)
+        int filedes,
+        mode_t mode)
 
 /*  FUNCTION
-	Change permission bits of a file specified by an open file descriptor.
+        Change permission bits of a file specified by an open file descriptor.
 
     INPUTS
-	filedes - File descriptor of the file
-	mode - Permission bits to set
+        filedes - File descriptor of the file
+        mode - Permission bits to set
 
     RESULT
-	0 on success and -1 on error. If an error occurred, the global
-	variable errno is set.
+        0 on success and -1 on error. If an error occurred, the global
+        variable errno is set.
 
     NOTES
-	See chmod() documentation for more details about the mode parameter.
+        See chmod() documentation for more details about the mode parameter.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	chmod()
+        chmod()
 
     INTERNALS
 
@@ -61,8 +61,8 @@ ULONG prot_u2a(mode_t protect);
 
     if (!(fdesc = __getfdesc(filedes)))
     {
-	errno = EBADF;
-	return -1;
+        errno = EBADF;
+        return -1;
     }
     
     /* Get the full path of the stated filesystem object and use it to
@@ -90,9 +90,9 @@ ULONG prot_u2a(mode_t protect);
     
     if (!SetProtection(buffer, prot_u2a(mode)))
     {
-	FreeVec(buffer);
-	errno = __stdc_ioerr2errno(IoErr());
-	return -1;
+        FreeVec(buffer);
+        errno = __stdc_ioerr2errno(IoErr());
+        return -1;
     }
 
     FreeVec(buffer);
