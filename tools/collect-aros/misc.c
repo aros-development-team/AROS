@@ -21,11 +21,11 @@
 void copy_path(char *to, char *from)
 {
     do {
-	if (*from == '/')
-	    *to = '\\';
-	else
-	    *to = *from;
-	to++;
+        if (*from == '/')
+            *to = '\\';
+        else
+            *to = *from;
+        to++;
     } while (*from++);
 }
 #else
@@ -58,10 +58,10 @@ void set_compiler_path(void)
         char *path          = getenv("PATH");
 
         if (compiler_path && path)
-	{
+        {
             char *new_path;
-	    size_t compiler_path_len = strlen(compiler_path);
-	    size_t path_len          = strlen(path);
+            size_t compiler_path_len = strlen(compiler_path);
+            size_t path_len          = strlen(path);
 
             new_path = malloc(5 + compiler_path_len + 1 + path_len + 1);
             if (new_path)
@@ -71,10 +71,10 @@ void set_compiler_path(void)
                 new_path[5 + compiler_path_len] = PATH_SEPARATOR;
                 strcpy(new_path + 5 + compiler_path_len + 1, path);
 
-	        if (putenv(new_path) == 0)
-		    path_set = 1;
+                if (putenv(new_path) == 0)
+                    path_set = 1;
             }
-	}
+        }
     }
 }
 

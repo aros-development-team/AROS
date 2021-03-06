@@ -173,7 +173,7 @@ int HandleMask(struct DTDesc *TheDTDesc)
      if (DataPtr != NewDataPtr)
      {
       DataPtr = NewDataPtr;
-      TheDTDesc->Mask[TheDTDesc->DTH.dth_MaskLen++] = i;      
+      TheDTDesc->Mask[TheDTDesc->DTH.dth_MaskLen++] = i;
      }
      else
      {
@@ -626,7 +626,7 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
    free(DTCDdata);
    EndChunk(IH);
   }
- }     
+ }
  CloseIFF(IH);
 
  return(TRUE);

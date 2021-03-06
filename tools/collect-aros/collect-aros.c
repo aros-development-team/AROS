@@ -62,7 +62,7 @@ static int set_os_and_abi(const char *file)
 
     perror(file);
     if (f >= 0)
-    	    close(f);
+            close(f);
     return 0;
 }
 
@@ -86,57 +86,57 @@ int main(int argc, char *argv[])
     output = "a.out";
     for (cnt = 1; argv[cnt]; cnt++)
     {
-    	/* We've encountered an option */
-	if (argv[cnt][0]=='-')
-	{
+        /* We've encountered an option */
+        if (argv[cnt][0]=='-')
+        {
             /* Get the output file name */
-	    if (argv[cnt][1]=='o')
-     	        output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
+            if (argv[cnt][1]=='o')
+                output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
             else
-	    /* Incremental linking is requested */
+            /* Incremental linking is requested */
             if ((argv[cnt][1]=='r' || argv[cnt][1]=='i') && argv[cnt][2]=='\0')
-	        incremental  = 1;
-	    else
-	    /* Incremental, but produce the symbol sets */
-	    if (strncmp(&argv[cnt][1], "Ur", 3) == 0)
-	    {
+                incremental  = 1;
+            else
+            /* Incremental, but produce the symbol sets */
+            if (strncmp(&argv[cnt][1], "Ur", 3) == 0)
+            {
                 incremental  = 2;
                 
-		argv[cnt][1] = 'r';  /* Just some non-harming option... */
-		argv[cnt][2] = '\0';
-	    }
+                argv[cnt][1] = 'r';  /* Just some non-harming option... */
+                argv[cnt][2] = '\0';
+            }
             else
-	    /* Ignoring of missing symbols is requested */
-	    if (strncmp(&argv[cnt][1], "ius", 4) == 0)
-	    {
-	        ignore_undefined_symbols = 1;
-		argv[cnt][1] = 'r';  /* Just some non-harming option... */
-		argv[cnt][2] = '\0';
-	    }
-	    else
-	    /* Complete stripping is requested, but we do it our own way */
-	    if (argv[cnt][1]=='s' && argv[cnt][2]=='\0')
-	    {
+            /* Ignoring of missing symbols is requested */
+            if (strncmp(&argv[cnt][1], "ius", 4) == 0)
+            {
+                ignore_undefined_symbols = 1;
+                argv[cnt][1] = 'r';  /* Just some non-harming option... */
+                argv[cnt][2] = '\0';
+            }
+            else
+            /* Complete stripping is requested, but we do it our own way */
+            if (argv[cnt][1]=='s' && argv[cnt][2]=='\0')
+            {
                 strip_all = 1;
-		argv[cnt][1] = 'r'; /* Just some non-harming option... */
-	    }
-	    else
-	    /* The user just requested help info, don't do anything else */
-	    if (strncmp(&argv[cnt][1], "-help", 6) == 0)
-	    {
-	        /* I know, it's not incremental linking we're after, but the end result
-		   is the same */
-	        incremental = 1;
-	        break;
-	    }
-	    else
-	    /* verbose output */
-	    if (strncmp(&argv[cnt][1], "-verbose", 9) == 0)
-	    {
-	        do_verbose = argv[cnt];
-	        break;
-	    }
-	}
+                argv[cnt][1] = 'r'; /* Just some non-harming option... */
+            }
+            else
+            /* The user just requested help info, don't do anything else */
+            if (strncmp(&argv[cnt][1], "-help", 6) == 0)
+            {
+                /* I know, it's not incremental linking we're after, but the end result
+                   is the same */
+                incremental = 1;
+                break;
+            }
+            else
+            /* verbose output */
+            if (strncmp(&argv[cnt][1], "-verbose", 9) == 0)
+            {
+                do_verbose = argv[cnt];
+                break;
+            }
+        }
     }
 
     ldargs = xmalloc(sizeof(char *) * (argc + EXTRA_ARG_CNT
@@ -153,15 +153,15 @@ int main(int argc, char *argv[])
     if (incremental != 1)
     {
         atexit(exitfunc);
-	if
-	(
-	    !(tempoutput   = make_temp_file(NULL))     ||
-	    !(ldscriptname = make_temp_file(NULL))     ||
-	    !(ldscriptfile = fopen(ldscriptname, "w"))
-	)
-	{
-	    fatal(ldscriptname ? ldscriptname : "make_temp_file()", strerror(errno));
-	}
+        if
+        (
+            !(tempoutput   = make_temp_file(NULL))     ||
+            !(ldscriptname = make_temp_file(NULL))     ||
+            !(ldscriptfile = fopen(ldscriptname, "w"))
+        )
+        {
+            fatal(ldscriptname ? ldscriptname : "make_temp_file()", strerror(errno));
+        }
 
         ldargs[cnt++] = "-o";
         ldargs[cnt++] = tempoutput;
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
     fwrite(LDSCRIPT_PART2, sizeof(LDSCRIPT_PART2) - 1, 1, ldscriptfile);
     /* Append .eh_frame terminator only on final stage */
     if (incremental == 0)
-    	fputs("LONG(0)\n", ldscriptfile);
+        fputs("LONG(0)\n", ldscriptfile);
     fwrite(LDSCRIPT_PART3, sizeof(LDSCRIPT_PART3) - 1, 1, ldscriptfile);
     fwrite(LDSCRIPT_PART4, sizeof(LDSCRIPT_PART4) - 1, 1, ldscriptfile);
 
@@ -212,8 +212,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-	docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-r", "-o", output,
-	    tempoutput, "-T", ldscriptname, do_verbose, NULL);
+        docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-r", "-o", output,
+            tempoutput, "-T", ldscriptname, do_verbose, NULL);
     }
 #else
 #ifdef OBJECT_FORMAT_EXTRA_FINAL

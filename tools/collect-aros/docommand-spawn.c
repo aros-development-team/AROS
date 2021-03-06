@@ -15,7 +15,7 @@ static void _docommandv(const char *command, char *argv[], int do_path)
     int ret = (do_path ? spawnvp : spawnv)(P_WAIT, command, argv);
     if (ret == -1)
     {
-	fatal(command, strerror(errno));
+        fatal(command, strerror(errno));
     }
     if (ret > 0)
     {

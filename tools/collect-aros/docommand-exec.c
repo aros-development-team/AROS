@@ -25,7 +25,7 @@ static void _docommandv(const char *command, char *argv[], int do_path)
     {
         (do_path ? execvp : execv)(command, argv);
 
-	nonfatal(command, strerror(errno));
+        nonfatal(command, strerror(errno));
 
         _exit(EXIT_FAILURE);
     }

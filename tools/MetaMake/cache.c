@@ -55,10 +55,10 @@ Boston, MA 02111-1307, USA.  */
 #define debug(v)
 #endif
 
-#define MAJOR		0L
-#define MINOR		9L
-#define REVISION	0L
-#define ID		((MAJOR << 24) | (MINOR << 16) | REVISION)
+#define MAJOR           0L
+#define MINOR           9L
+#define REVISION        0L
+#define ID              ((MAJOR << 24) | (MINOR << 16) | REVISION)
 #define CHECK_ID(id)    (((id) & 0xFFFF0000) == ((ID) & 0xFFFF0000))
 
 struct Cache_priv
@@ -420,10 +420,10 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
                 }
                 else
                 {
-                    subdir->node.next	       = (struct Node *)&node->subdirs.last;
-                    subdir->node.prev	       = node->subdirs.prelast;
+                    subdir->node.next          = (struct Node *)&node->subdirs.last;
+                    subdir->node.prev          = node->subdirs.prelast;
                     node->subdirs.prelast->next = &subdir->node;
-                    node->subdirs.prelast	       = &subdir->node;
+                    node->subdirs.prelast              = &subdir->node;
                 }
             }
         }
@@ -575,7 +575,7 @@ regeneratemf (struct Cache_priv * cache, struct List * regeneratefiles)
     unlink (tmpname);
 }
 
-void 
+void
 buildtargetlist (struct Cache_priv * cache, struct DirNode * node)
 {
     struct Makefile * makefile;

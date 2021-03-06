@@ -64,9 +64,9 @@ void writeincinline(struct config *cfg)
                 "#    define __%s_LIBBASE %s\n"
                 "#endif\n"
                 "\n",
-                cfg->includenameupper, 
+                cfg->includenameupper,
                 cfg->includenameupper, cfg->libbase
-        );        
+        );
     freeBanner(banner);
 
     for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)

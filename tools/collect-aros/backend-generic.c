@@ -55,7 +55,7 @@ void collect_sets(const char *file, setnode **setlist_ptr)
     /* This fscanf() simply splits the whole stream into separate words */
     while (fscanf(pipe, " %200s ", secname) > 0)
     {
-	parse_format(secname);
+        parse_format(secname);
         parse_secname(secname, setlist_ptr);
     }
 
@@ -140,13 +140,13 @@ int check_and_print_undefined_symbols(const char *file)
 
     while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
     {
-	if (!there_are_undefined_syms)
-	{
-	    there_are_undefined_syms = 1;
-	    fprintf(stderr, "There are undefined symbols in '%s':\n", file);
+        if (!there_are_undefined_syms)
+        {
+            there_are_undefined_syms = 1;
+            fprintf(stderr, "There are undefined symbols in '%s':\n", file);
         }
 
-	fwrite(buf, cnt, 1, stderr);
+        fwrite(buf, cnt, 1, stderr);
     }
 
     pclose(pipe);

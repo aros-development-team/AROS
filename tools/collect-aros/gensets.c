@@ -28,7 +28,7 @@ static setnode *new_setnode(const char *name, setnode *next, int off, long pri){
        !(n->secname = strdup(name))
       )
    {
-	fatal("new_setnode()", strerror(errno));
+        fatal("new_setnode()", strerror(errno));
    }
 
    n->off_setname = off;
@@ -44,24 +44,24 @@ static setnode *get_setnode(setnode **list, const char *name, int off, long pri)
 
     while (*curr)
     {
-	if (strcmp((*curr)->secname, name) == 0)
-	{
-	    do
-	    {
- 	        if ((*curr)->pri == pri)
-	            return *curr;
+        if (strcmp((*curr)->secname, name) == 0)
+        {
+            do
+            {
+                if ((*curr)->pri == pri)
+                    return *curr;
 
-	        if ((*curr)->pri > pri)
-	            break;
+                if ((*curr)->pri > pri)
+                    break;
 
                 curr = &(*curr)->next;
 
             } while (*curr && strcmp((*curr)->secname, name) == 0);
 
-	    break;
-	}
+            break;
+        }
 
-	curr = &(*curr)->next;
+        curr = &(*curr)->next;
     }
 
     return (*curr = new_setnode(name, *curr, off, pri));
@@ -87,25 +87,25 @@ void emit_sets(setnode *setlist, FILE *out)
             out,
             "    __%s_LIST__ = .;\n"
             "    %s((__%s_END__ - __%s_LIST__) / %d - 2)\n",
-	    setname_big, pointer_size, setname_big, setname_big, pointer_bytes
-	);
+            setname_big, pointer_size, setname_big, setname_big, pointer_bytes
+        );
 
-	do
-	{
-	    fprintf
-	    (
-	        out,
-		"    KEEP(*(%s.%ld))\n",
-		setlist->secname, setlist->pri
-	    );
+        do
+        {
+            fprintf
+            (
+                out,
+                "    KEEP(*(%s.%ld))\n",
+                setlist->secname, setlist->pri
+            );
 
-	    setlist = setlist->next;
-	} while (setlist && (strcmp(oldnode->secname, setlist->secname) == 0));
+            setlist = setlist->next;
+        } while (setlist && (strcmp(oldnode->secname, setlist->secname) == 0));
 
 
-	fprintf
-	(
-	    out,
+        fprintf
+        (
+            out,
             "    KEEP(*(%s))\n"
             "    %s(0)\n"
             "    __%s_END__ = .;\n",
@@ -145,13 +145,13 @@ void parse_secname(const char *secname, setnode **setlist_ptr)
     if (strncmp(secname, ".fini_array", 11) == 0)
         off = 1;
     else
-	return;
+        return;
 
     idx = strchr(secname + off, '.');
     if (idx)
     {
         *idx = '\0';
-	pri  = strtol(&idx[1], NULL, 10);
+        pri  = strtol(&idx[1], NULL, 10);
     }
 
     get_setnode(setlist_ptr, secname, off, pri);
@@ -160,8 +160,8 @@ void parse_secname(const char *secname, setnode **setlist_ptr)
 void parse_format(const char *format)
 {
     if (strncmp(format, "elf64", 5) == 0) {
-	pointer_size = "QUAD";
-	pointer_bytes = 8;
+        pointer_size = "QUAD";
+        pointer_bytes = 8;
     }
 }
 

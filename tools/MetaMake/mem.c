@@ -44,8 +44,8 @@ _xstrdup (const char * str, const char * file, int line)
 
     if (!nstr)
     {
-	fprintf (stderr, "Out of memory in %s:%d", file, line);
-	exit (20);
+        fprintf (stderr, "Out of memory in %s:%d", file, line);
+        exit (20);
     }
 
     return nstr;
@@ -63,13 +63,13 @@ _xstrndup (const char * str, size_t len, const char * file, int line)
 #else
     nstr = malloc(strlen(str) >= len ? len : strlen(str) + 1);
     if (nstr)
-	strncpy (nstr, str, len);
+        strncpy (nstr, str, len);
 #endif
 
     if (!nstr)
     {
-	fprintf (stderr, "Out of memory in %s:%d", file, line);
-	exit (20);
+        fprintf (stderr, "Out of memory in %s:%d", file, line);
+        exit (20);
     }
 
     return nstr;
@@ -84,8 +84,8 @@ _xmalloc (size_t size, const char * file, int line)
 
     if (size && !ptr)
     {
-	fprintf (stderr, "Out of memory in %s:%d", file, line);
-	exit (20);
+        fprintf (stderr, "Out of memory in %s:%d", file, line);
+        exit (20);
     }
 
     return ptr;
@@ -95,8 +95,8 @@ void
 _xfree (void * ptr, const char * file, int line)
 {
     if (ptr)
-	free (ptr);
+        free (ptr);
     else
-	fprintf (stderr, "Illegal free(NULL) in %s:%d", file, line);
+        fprintf (stderr, "Illegal free(NULL) in %s:%d", file, line);
 }
 

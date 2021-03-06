@@ -68,13 +68,13 @@ typedef char *   STRPTR;
 #define HUNKF_MEMFLAGS     (HUNKF_CHIP | HUNKF_FAST)
 
 
-#define HUNK_CODE	1001
-#define HUNK_DATA	1002
-#define HUNK_BSS	1003
-#define HUNK_RELOC32	1004
-#define HUNK_SYMBOL	1008
-#define HUNK_END	1010
-#define HUNK_HEADER	1011
+#define HUNK_CODE       1001
+#define HUNK_DATA       1002
+#define HUNK_BSS        1003
+#define HUNK_RELOC32    1004
+#define HUNK_SYMBOL     1008
+#define HUNK_END        1010
+#define HUNK_HEADER     1011
 #define HUNK_RELRELOC32 1021
 
 #define SHT_PROGBITS    1
@@ -86,7 +86,7 @@ typedef char *   STRPTR;
 #define SHT_SYMTAB_SHNDX 18
 
 #define ET_REL          1
-#define ET_EXEC		2
+#define ET_EXEC         2
 
 #define EM_386          3
 #define EM_68K          4
@@ -115,27 +115,27 @@ typedef char *   STRPTR;
 #define R_PPC_ADDR16_LO 4
 #define R_PPC_ADDR16_HA 6
 #define R_PPC_REL24     10
-#define R_PPC_REL32	26
+#define R_PPC_REL32     26
 #define R_PPC_REL16_LO  250
 #define R_PPC_REL16_HA  252
 
 #define R_ARM_NONE        0
 #define R_ARM_PC24        1
 #define R_ARM_ABS32       2
-#define R_ARM_CALL	  28
-#define R_ARM_JUMP24	  29
-#define R_ARM_V4BX	  40
-#define R_ARM_PREL31	  42
+#define R_ARM_CALL        28
+#define R_ARM_JUMP24      29
+#define R_ARM_V4BX        40
+#define R_ARM_PREL31      42
 #define R_ARM_MOVW_ABS_NC 43
-#define R_ARM_MOVT_ABS	  44
+#define R_ARM_MOVT_ABS    44
 
-#define STT_NOTYPE	0
+#define STT_NOTYPE      0
 #define STT_OBJECT      1
 #define STT_FUNC        2
-#define STT_SECTION	3
-#define STT_FILE	4
-#define STT_LOPROC	13
-#define STT_HIPROC	15
+#define STT_SECTION     3
+#define STT_FILE        4
+#define STT_LOPROC      13
+#define STT_HIPROC      15
 
 #define SHN_UNDEF       0
 #define SHN_LORESERVE   0xff00
@@ -144,7 +144,7 @@ typedef char *   STRPTR;
 #define SHN_XINDEX      0xffff
 #define SHN_HIRESERVE   0xffff
 
-#define SHF_WRITE   	(1 << 0)
+#define SHF_WRITE       (1 << 0)
 #define SHF_ALLOC       (1 << 1)
 #define SHF_EXECINSTR   (1 << 2)
 
@@ -273,13 +273,13 @@ static void set_error(int err)
 }
 
 #if defined(DEBUG) && DEBUG
-#define D(x)	x
-#define DB2(x)	x
+#define D(x)    x
+#define DB2(x)  x
 #else
 #define D(x)
 #define DB2(x)
 #endif
-#define bug(fmt,args...)	fprintf(stderr, fmt ,##args )
+#define bug(fmt,args...)        fprintf(stderr, fmt ,##args )
 
 static int must_swap = -1;
 static int flags = 0;
@@ -288,48 +288,48 @@ static void eh_fixup(struct elfheader *eh)
 {
     /* Endian swaps */
     if (eh->type == 256) {
-    	must_swap = 1;
-    	eh->type = ntohs(eh->type);
-    	eh->machine = ntohs(eh->machine);
-    	eh->version = ntohl(eh->version);
-    	eh->entry = ntohl(eh->entry);
-    	eh->phoff = ntohl(eh->phoff);
-    	eh->shoff = ntohl(eh->shoff);
-    	eh->flags = ntohl(eh->flags);
-    	eh->ehsize = ntohs(eh->ehsize);
-    	eh->phentsize = ntohs(eh->phentsize);
-    	eh->phnum = ntohs(eh->phnum);
-    	eh->shentsize = ntohs(eh->shentsize);
-    	eh->shnum = ntohs(eh->shnum);
-    	eh->shstrndx = ntohs(eh->shstrndx);
+        must_swap = 1;
+        eh->type = ntohs(eh->type);
+        eh->machine = ntohs(eh->machine);
+        eh->version = ntohl(eh->version);
+        eh->entry = ntohl(eh->entry);
+        eh->phoff = ntohl(eh->phoff);
+        eh->shoff = ntohl(eh->shoff);
+        eh->flags = ntohl(eh->flags);
+        eh->ehsize = ntohs(eh->ehsize);
+        eh->phentsize = ntohs(eh->phentsize);
+        eh->phnum = ntohs(eh->phnum);
+        eh->shentsize = ntohs(eh->shentsize);
+        eh->shnum = ntohs(eh->shnum);
+        eh->shstrndx = ntohs(eh->shstrndx);
     } else {
-    	must_swap = 0;
+        must_swap = 0;
     }
 }
 
 static void sh_fixup(struct sheader *sh, int n)
 {
     if (must_swap == 0)
-    	return;
+        return;
 
     for (; n > 0; n--, sh++) {
-	sh->name = ntohl(sh->name);
-	sh->type = ntohl(sh->type);
-	sh->flags = ntohl(sh->flags);
-	sh->addr  = ntohl(sh->addr);
-	sh->offset = ntohl(sh->offset);
-	sh->size = ntohl(sh->size);
-	sh->link = ntohl(sh->link);
-	sh->info = ntohl(sh->info);
-	sh->addralign = ntohl(sh->addralign);
-	sh->entsize = ntohl(sh->entsize);
+        sh->name = ntohl(sh->name);
+        sh->type = ntohl(sh->type);
+        sh->flags = ntohl(sh->flags);
+        sh->addr  = ntohl(sh->addr);
+        sh->offset = ntohl(sh->offset);
+        sh->size = ntohl(sh->size);
+        sh->link = ntohl(sh->link);
+        sh->info = ntohl(sh->info);
+        sh->addralign = ntohl(sh->addralign);
+        sh->entsize = ntohl(sh->entsize);
     }
 }
 
 static void rel_fixup(struct relo *rel)
 {
     if (must_swap == 0)
-    	return;
+        return;
 
     rel->offset = ntohl(rel->offset);
     rel->info   = ntohl(rel->info);
@@ -339,7 +339,7 @@ static void rel_fixup(struct relo *rel)
 void sym_fixup(struct symbol *sym)
 {
     if (must_swap == 0)
-    	return;
+        return;
 
     sym->name = ntohl(sym->name);
     sym->value = ntohl(sym->value);
@@ -411,7 +411,7 @@ static int load_header(int file, struct elfheader *eh)
 {
     lseek(file, 0, SEEK_SET);
     if (read(file, eh, sizeof(struct elfheader)) != sizeof(struct elfheader)) {
-	D(bug("[ELF2HUNK] Can't read the %d byte ELF header\n", (int)sizeof(struct elfheader)));
+        D(bug("[ELF2HUNK] Can't read the %d byte ELF header\n", (int)sizeof(struct elfheader)));
         return 0;
     }
 
@@ -419,7 +419,7 @@ static int load_header(int file, struct elfheader *eh)
 
     if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
         eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
-	D(bug("[ELF2HUNK] Not an ELF object\n"));
+        D(bug("[ELF2HUNK] Not an ELF object\n"));
         return 0;
     }
     D(bug("[ELF2HUNK] ELF object\n"));
@@ -448,15 +448,15 @@ static int load_header(int file, struct elfheader *eh)
 struct hunkheader {
     ULONG type;
     ULONG memflags; /* Memory flags */
-    ULONG size;	/* Size in ULONGs */
+    ULONG size; /* Size in ULONGs */
     void *data;
     ULONG relocs;
     ULONG relrelocs;
-    int   hunk;	/* Allocatable hunk ID */
+    int   hunk; /* Allocatable hunk ID */
     struct hunkreloc {
-    	ULONG shid;	/* ELF hunk base to add to... */
-    	ULONG offset;	/* offset in this hunk. */
-    	const char *symbol;
+        ULONG shid;     /* ELF hunk base to add to... */
+        ULONG offset;   /* offset in this hunk. */
+        const char *symbol;
     } *reloc, *relreloc;
 };
 
@@ -483,7 +483,7 @@ static int relocate
      */
     D(bug("[ELF2HUNK] sh[%d].flags = 0x%x\n", (int)(shrel->info), (int)toreloc->flags));
     if (!(toreloc->flags & SHF_ALLOC))
-    	return 1;
+        return 1;
 
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
@@ -508,19 +508,19 @@ static int relocate
         rel_fixup(rel);
 
 #ifdef __arm__
-	/*
-	 * R_ARM_V4BX are actually special marks for the linker.
-	 * They even never have a target (shindex == SHN_UNDEF),
-	 * so we simply ignore them before doing any checks.
-	 */
-	if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
-	    continue;
+        /*
+         * R_ARM_V4BX are actually special marks for the linker.
+         * They even never have a target (shindex == SHN_UNDEF),
+         * so we simply ignore them before doing any checks.
+         */
+        if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
+            continue;
 #endif
 
-	sym = symtab[ELF_R_SYM(rel->info)];
-	sym_fixup(&sym);
-	offset = rel->offset;
-	symname = (const char *)(hh[shsymtab->link]->data + sym.name);
+        sym = symtab[ELF_R_SYM(rel->info)];
+        sym_fixup(&sym);
+        offset = rel->offset;
+        symname = (const char *)(hh[shsymtab->link]->data + sym.name);
 
         if (sym.shindex != SHN_XINDEX)
             shindex = sym.shindex;
@@ -534,7 +534,7 @@ static int relocate
             shindex = ntohl(((ULONG *)hh[symtab_shndx]->data)[ELF_R_SYM(rel->info)]);
         }
 
-	D(bug("[ELF2HUNK] Processing %d symbol %s\n", (int)shindex, symname));
+        D(bug("[ELF2HUNK] Processing %d symbol %s\n", (int)shindex, symname));
 
         switch (shindex)
         {
@@ -554,14 +554,14 @@ static int relocate
                 return 0;
 
             case SHN_ABS:
-		shid = ~0; value = sym.value;
+                shid = ~0; value = sym.value;
                 break;
 
-  	    default:
-		shid = shindex;
-		value = sym.value;
-		break;
- 	}
+            default:
+                shid = shindex;
+                value = sym.value;
+                break;
+        }
 
         switch (ELF_R_TYPE(rel->info))
         {
@@ -588,14 +588,14 @@ static int relocate
                 bug("[ELF2HUNK] Unrecognized relocation type %d %d,\n", (int)i, (int)ELF_R_TYPE(rel->info));
                 bug("[ELF2HUNK]    for symbol '%s'\n", symname);
                 set_error(EINVAL);
-		return 0;
+                return 0;
         }
 
-	D(bug("[ELF2HUNK]   shid %d, offset 0x%x: base 0x%x\n", (int)shid, (int)offset, (int)value));
+        D(bug("[ELF2HUNK]   shid %d, offset 0x%x: base 0x%x\n", (int)shid, (int)offset, (int)value));
         *(ULONG *)(h->data + offset) = htonl(value + ntohl(*(ULONG *)(h->data + offset)));
 
         if (shid == ~0) {
-    	    continue;
+            continue;
         }
 
         switch (ELF_R_TYPE(rel->info))
@@ -629,7 +629,7 @@ int reloc_cmp(const void *a, const void *b)
     const struct hunkreloc *ha = a, *hb = b;
 
     if (ha->shid != hb->shid)
-    	return hb->shid - ha->shid;
+        return hb->shid - ha->shid;
     return hb->offset - ha->offset;
 }
 
@@ -656,30 +656,30 @@ int write_hunksymbols(int hunk_fd, struct sheader *sh, struct hunkheader **hh, i
     syms = symtab->size / sizeof(struct symbol);
 
     if (syms == 0)
-    	return 1;
+        return 1;
 
     wlong(hunk_fd, HUNK_SYMBOL);
 
     /* Dump symbols for this hunk */
     for (i = 0; i < syms ; i++) {
-    	struct symbol s;
-    	const char *name;
-    	int lsize;
+        struct symbol s;
+        const char *name;
+        int lsize;
 
-    	s = sym[i];
-    	sym_fixup(&s);
+        s = sym[i];
+        sym_fixup(&s);
 
-    	if (s.shindex != shid)
-    	    continue;
+        if (s.shindex != shid)
+            continue;
 
-	name = (const char *)(hh[symtab->link]->data + s.name);
-    	D(bug("\t0x%08x: %s\n", (int)s.value, name));
-    	lsize = (strlen(name) + 4) / 4;
-    	wlong(hunk_fd, lsize);
-    	err = write(hunk_fd, name, lsize * 4);
-    	if (err < 0)
-    	    return 0;
-    	wlong(hunk_fd, s.value);
+        name = (const char *)(hh[symtab->link]->data + s.name);
+        D(bug("\t0x%08x: %s\n", (int)s.value, name));
+        lsize = (strlen(name) + 4) / 4;
+        wlong(hunk_fd, lsize);
+        err = write(hunk_fd, name, lsize * 4);
+        if (err < 0)
+            return 0;
+        wlong(hunk_fd, s.value);
     }
     wlong(hunk_fd, 0);
 
@@ -693,7 +693,7 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
     int i;
 
     if (hh[h]->relocs == 0)
-    	return relreloc_failed;
+        return relreloc_failed;
 
     /* Sort the relocations by reference hunk id */
     qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
@@ -703,20 +703,20 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
     D(bug("\tHUNK_RELOC32: %d relocations\n", (int)hh[h]->relocs));
 
     for (i = 0; i < hh[h]->relocs; ) {
-    	int count;
-    	int shid = hh[h]->reloc[i].shid;
-    	for (count = i; count < hh[h]->relocs; count++)
-    	    if (hh[h]->reloc[count].shid != shid)
-    	    	break;
-    	count -= i;
-    	wlong(hunk_fd, count);
-    	D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
-    	/* Convert from ELF hunk ID to AOS hunk ID */
-    	wlong(hunk_fd, hh[shid]->hunk);
-    	for (; count > 0; i++, count--) {
-    	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->reloc[i].offset, hh[h]->reloc[i].symbol));
-    	    wlong(hunk_fd, hh[h]->reloc[i].offset);
-    	}
+        int count;
+        int shid = hh[h]->reloc[i].shid;
+        for (count = i; count < hh[h]->relocs; count++)
+            if (hh[h]->reloc[count].shid != shid)
+                break;
+        count -= i;
+        wlong(hunk_fd, count);
+        D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
+        /* Convert from ELF hunk ID to AOS hunk ID */
+        wlong(hunk_fd, hh[shid]->hunk);
+        for (; count > 0; i++, count--) {
+            D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->reloc[i].offset, hh[h]->reloc[i].symbol));
+            wlong(hunk_fd, hh[h]->reloc[i].offset);
+        }
     }
     wlong(hunk_fd, 0);
 
@@ -724,26 +724,26 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
     D(bug("\tHUNK_RELRELOC32: %d relocations\n", (int)hh[h]->relrelocs));
 
     for (i = 0; i < hh[h]->relrelocs; ) {
-    	int count;
-    	int shid = hh[h]->relreloc[i].shid;
-    	for (count = i; count < hh[h]->relrelocs; count++)
-    	    if (hh[h]->relreloc[count].shid != shid)
-    	    	break;
-    	count -= i;
+        int count;
+        int shid = hh[h]->relreloc[i].shid;
+        for (count = i; count < hh[h]->relrelocs; count++)
+            if (hh[h]->relreloc[count].shid != shid)
+                break;
+        count -= i;
         if (h == shid) {
             D(bug("RELRELOC32 within one hunk. Discarding...\n"));
             i+=count;
             continue;
         }
-    	if (count > 65535)
-    	    bug("RELRELOC32 count exceeds 65535!\n");
-    	wshort(hunk_fd, count);
-    	D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
-    	/* Convert from ELF hunk ID to AOS hunk ID */
-    	wshort(hunk_fd, hh[shid]->hunk);
-    	for (; count > 0; i++, count--) {
-    	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
-    	    if (hh[h]->relreloc[i].offset > 65535)
+        if (count > 65535)
+            bug("RELRELOC32 count exceeds 65535!\n");
+        wshort(hunk_fd, count);
+        D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
+        /* Convert from ELF hunk ID to AOS hunk ID */
+        wshort(hunk_fd, hh[shid]->hunk);
+        for (; count > 0; i++, count--) {
+            D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
+            if (hh[h]->relreloc[i].offset > 65535)
             {
                 if (flags & F_VERBOSE)
                 {
@@ -755,9 +755,9 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
                 }
                 relreloc_failed++;
             }
-    	    wshort(hunk_fd, hh[h]->relreloc[i].offset);
+            wshort(hunk_fd, hh[h]->relreloc[i].offset);
             relreloc_needed++;
-    	}
+        }
     }
 
     /* If no relrelocs were required, rewind the counter back so that there is no HUNK_RELRELOC32 in the file */
@@ -865,7 +865,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
                    also states that this may change in future... we already handle it.
         */
         D(bug("sh[%d].type = 0x%08x, .offset = 0x%08x, .size = 0x%08x\n",
-        	    (int)i, (int)sh[i].type, (int)sh[i].offset, (int)sh[i].size));
+                    (int)i, (int)sh[i].type, (int)sh[i].offset, (int)sh[i].size));
         if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB || sh[i].type == SHT_SYMTAB_SHNDX)
         {
             hh[i] = calloc(sizeof(struct hunkheader), 1);
@@ -894,19 +894,19 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
             hh[i]->hunk = hunks++;
 
             if (sh[i].type == SHT_NOBITS) {
-            	/* BSS area */
-            	hh[i]->type = HUNK_BSS;
-            	hh[i]->memflags = 0;
-            	hh[i]->data = NULL;
+                /* BSS area */
+                hh[i]->type = HUNK_BSS;
+                hh[i]->memflags = 0;
+                hh[i]->data = NULL;
             } else {
-            	if (sh[i].flags & SHF_EXECINSTR) {
-            	    hh[i]->type = HUNK_CODE;
-            	    exec_hunk_seen = TRUE;
-            	} else {
-            	    hh[i]->type = HUNK_DATA;
-            	}
-            	hh[i]->data = load_block(file, sh[i].offset, sh[i].size);
-	    }
+                if (sh[i].flags & SHF_EXECINSTR) {
+                    hh[i]->type = HUNK_CODE;
+                    exec_hunk_seen = TRUE;
+                } else {
+                    hh[i]->type = HUNK_DATA;
+                }
+                hh[i]->data = load_block(file, sh[i].offset, sh[i].size);
+            }
 
             if (strtab) {
                 const char *nameext;
@@ -934,77 +934,77 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
     {
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
         if ((sh[i].type == AROS_ELF_REL)
-        	&& hh[sh[i].info]
-        	&& hh[sh[i].info]->data)
+                && hh[sh[i].info]
+                && hh[sh[i].info]->data)
         {
-	    void *reloc = load_block(file, sh[i].offset, sh[i].size);
+            void *reloc = load_block(file, sh[i].offset, sh[i].size);
 
-	    if (!relocate(&eh, sh, i, symtab_shndx, reloc, hh))
-	    	    return EXIT_FAILURE;
+            if (!relocate(&eh, sh, i, symtab_shndx, reloc, hh))
+                    return EXIT_FAILURE;
 
-	    free(reloc);
+            free(reloc);
         }
     }
 
     wlong(hunk_fd, HUNK_HEADER);
     if (libname == NULL) {
         D(bug("HUNK_HEADER: hunks=%d, first=%d, last=%d\n", hunks, 0, hunks-1));
-    	wlong(hunk_fd, 0);	/* No name */
+        wlong(hunk_fd, 0);      /* No name */
     } else {
         int lsize;
         D(bug("HUNK_HEADER: \"%s\", hunks=%d, first=%d, last=%d\n", libname, hunks, 0, hunks-1));
-    	lsize = (strlen(libname) + 4) / 4;
-    	wlong(hunk_fd, lsize);
-    	err = write(hunk_fd, libname, lsize * 4);
-    	if (err < 0)
-    	    return EXIT_FAILURE;
+        lsize = (strlen(libname) + 4) / 4;
+        wlong(hunk_fd, lsize);
+        err = write(hunk_fd, libname, lsize * 4);
+        if (err < 0)
+            return EXIT_FAILURE;
     }
     wlong(hunk_fd, hunks);
-    wlong(hunk_fd, 0);	/* First hunk is #0 */
+    wlong(hunk_fd, 0);  /* First hunk is #0 */
     wlong(hunk_fd, hunks - 1); /* Last hunk is hunks-1 */
 
     /* Write all allocatable hunk sizes */
     for (i = 0; i < int_shnum; i++) {
         ULONG count;
 
-    	if (hh[i]==NULL || hh[i]->hunk < 0)
-    	    continue;
+        if (hh[i]==NULL || hh[i]->hunk < 0)
+            continue;
 
-    	count = (hh[i]->size + 4) / 4;
-    	switch (hh[i]->memflags) {
-    	case MEMF_CHIP:
-    	    count |= HUNKF_CHIP;
-    	    break;
-    	case MEMF_FAST:
-    	    count |= HUNKF_FAST;
-    	    break;
-    	case 0:
-    	    break;
-    	default:
-    	    count |= HUNKF_MEMFLAGS;
-    	    break;
-    	}
+        count = (hh[i]->size + 4) / 4;
+        switch (hh[i]->memflags) {
+        case MEMF_CHIP:
+            count |= HUNKF_CHIP;
+            break;
+        case MEMF_FAST:
+            count |= HUNKF_FAST;
+            break;
+        case 0:
+            break;
+        default:
+            count |= HUNKF_MEMFLAGS;
+            break;
+        }
 
-    	D(bug("\tHunk #%d, %s, lsize=%d\n", hh[i]->hunk, names[hh[i]->type - HUNK_CODE], (int)(hh[i]->size+4)/4));
-    	wlong(hunk_fd, count);
+        D(bug("\tHunk #%d, %s, lsize=%d\n", hh[i]->hunk, names[hh[i]->type - HUNK_CODE], (int)(hh[i]->size+4)/4));
+        wlong(hunk_fd, count);
 
-    	if ((count & HUNKF_MEMFLAGS) == HUNKF_MEMFLAGS)
-    	    wlong(hunk_fd, hh[i]->memflags | MEMF_PUBLIC | MEMF_CLEAR);
+        if ((count & HUNKF_MEMFLAGS) == HUNKF_MEMFLAGS)
+            wlong(hunk_fd, hh[i]->memflags | MEMF_PUBLIC | MEMF_CLEAR);
     }
 
     /* Write all hunks */
     for (i = hunks = 0; i < int_shnum; i++) {
-    	D(int s;)
+        D(int s;)
 
-    	if (hh[i]==NULL || hh[i]->hunk < 0)
-    	    continue;
+        if (hh[i]==NULL || hh[i]->hunk < 0)
+            continue;
 
-    	wlong(hunk_fd, hh[i]->type);
-    	wlong(hunk_fd, (hh[i]->size + 4) / 4);
+        wlong(hunk_fd, hh[i]->type);
+        wlong(hunk_fd, (hh[i]->size + 4) / 4);
 
-    	switch (hh[i]->type) {
-    	case HUNK_BSS:
-    	    D(
+        switch (hh[i]->type) {
+        case HUNK_BSS:
+            D(
                 bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4));
                 for (s = 0; s < int_shnum; s++) {
                     if (hh[s] && hh[s]->type == HUNK_SYMBOL)
@@ -1012,11 +1012,11 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
                 }
             )
 
-    	    wlong(hunk_fd, HUNK_END);
-    	    hunks++;
-    	    break;
-    	case HUNK_CODE:
-    	case HUNK_DATA:
+            wlong(hunk_fd, HUNK_END);
+            hunks++;
+            break;
+        case HUNK_CODE:
+        case HUNK_DATA:
             {
                 int failcnt;
                 D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
@@ -1036,22 +1036,22 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
                 wlong(hunk_fd, HUNK_END);
                 D(bug("\tHUNK_END\n"));
             }
-    	    break;
-    	default:
-    	    D(bug("Unsupported allocatable hunk type %d\n", (int)hh[i]->type));
-    	    return EXIT_FAILURE;
-    	}
+            break;
+        default:
+            D(bug("Unsupported allocatable hunk type %d\n", (int)hh[i]->type));
+            return EXIT_FAILURE;
+        }
     }
 
     /* Free all blocks */
     for (i = 0; i < int_shnum; i++) {
-    	if (hh[i]) {
-    	    if (hh[i]->data)
-    	    	free(hh[i]->data);
-    	    if (hh[i]->reloc)
-    	    	free(hh[i]->reloc);
-    	    free(hh[i]);
-    	}
+        if (hh[i]) {
+            if (hh[i]->data)
+                free(hh[i]->data);
+            if (hh[i]->reloc)
+                free(hh[i]->reloc);
+            free(hh[i]);
+        }
     }
     free(hh);
     free(sh);
@@ -1150,8 +1150,8 @@ static int copy(const char *src, const char *dst, int flags)
 
     src_fd = open(src, O_RDONLY);
     if (src_fd < 0) {
-    	perror(src);
-    	return EXIT_FAILURE;
+        perror(src);
+        return EXIT_FAILURE;
     }
 
     if (strcmp(dst,"-") == 0)
@@ -1161,8 +1161,8 @@ static int copy(const char *src, const char *dst, int flags)
         hunk_fd = open(dst, O_RDWR | O_CREAT | O_TRUNC, mode);
     }
     if (hunk_fd < 0) {
-    	perror(dst);
-    	return EXIT_FAILURE;
+        perror(dst);
+        return EXIT_FAILURE;
     }
 
     ret = elf2hunk(src_fd, hunk_fd, NULL, flags, target);
@@ -1185,9 +1185,9 @@ int main(int argc, char **argv)
     }
 
     if (argc != 3) {
-    	fprintf(stderr, "Usage:\n%s file.elf file.hunk\n", argv[0]);
-    	fprintf(stderr, "%s src-dir dest-dir\n", argv[0]);
-    	return EXIT_FAILURE;
+        fprintf(stderr, "Usage:\n%s file.elf file.hunk\n", argv[0]);
+        fprintf(stderr, "%s src-dir dest-dir\n", argv[0]);
+        return EXIT_FAILURE;
     }
 
     return copy(argv[1], argv[2], flags);

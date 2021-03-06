@@ -2,7 +2,7 @@
     Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: Tool to convert IFF ILBM images into C source.
-	      
+              
     
 */
 
@@ -34,12 +34,12 @@
    have a bigger sizeof() than on Amiga */
 
 #ifndef __AROS__
-typedef unsigned long 	ULONG;
-typedef long	    	LONG;
+typedef unsigned long   ULONG;
+typedef long            LONG;
 typedef unsigned short  UWORD;
-typedef short 	    	WORD;
-typedef short	    	BOOL;
-typedef unsigned char 	UBYTE;
+typedef short           WORD;
+typedef short           BOOL;
+typedef unsigned char   UBYTE;
 #else
 #include <exec/types.h>
 #endif
@@ -65,20 +65,20 @@ struct BitMapHeader
 
 /****************************************************************************************/
 
-static char 	     	    *filename;
-static FILE 	     	    *file;
-static unsigned char 	    *filebuffer, *body, *planarbuffer, *chunkybuffer;
-static unsigned char	    *planarbuffer_packed, *chunkybuffer_packed;
-static LONG 	     	    filesize, bodysize, bodysize_packed;
-static long 	     	    filepos;
+static char                 *filename;
+static FILE                 *file;
+static unsigned char        *filebuffer, *body, *planarbuffer, *chunkybuffer;
+static unsigned char        *planarbuffer_packed, *chunkybuffer_packed;
+static LONG                 filesize, bodysize, bodysize_packed;
+static long                 filepos;
 static struct BitMapHeader  bmh;
-static LONG 	    	    cmapentries, totdepth, bpr;
-static BOOL 	    	    have_bmhd, have_cmap, have_body;
-static UBYTE	    	    red[256], green[256], blue[256];
-static char 	    	    imagename[1000];
-static char 	    	    bigimagename[1000];
-static BOOL		    brush2c;	// compatibility with brush2c from MUI SDK
-static BOOL		    brush2pix;	// compatibility with brush2pix from JabberWocky
+static LONG                 cmapentries, totdepth, bpr;
+static BOOL                 have_bmhd, have_cmap, have_body;
+static UBYTE                red[256], green[256], blue[256];
+static char                 imagename[1000];
+static char                 bigimagename[1000];
+static BOOL                 brush2c;    // compatibility with brush2c from MUI SDK
+static BOOL                 brush2pix;  // compatibility with brush2pix from JabberWocky
 
 /****************************************************************************************/
 
@@ -89,7 +89,7 @@ static void cleanup(char *msg, int rc)
     if (chunkybuffer_packed) free(chunkybuffer_packed);
     if (planarbuffer_packed) free(planarbuffer_packed);
     if (chunkybuffer) free(chunkybuffer);
-    if (planarbuffer) free(planarbuffer);    
+    if (planarbuffer) free(planarbuffer);
     if (filebuffer) free(filebuffer);
     
     if (file) fclose(file);
@@ -107,34 +107,34 @@ static void getarguments(int argc, char **argv)
     
     if (!strcasecmp(argv[1], "-b2c"))
     {
-	brush2c = 1;
-	narg++;
+        brush2c = 1;
+        narg++;
     }
     else if (!strcasecmp(argv[1], "-b2p"))
     {
-	brush2pix = 1;
-	narg++;
+        brush2pix = 1;
+        narg++;
     }
     
     if (argc > narg)
-	filename = argv[narg++];
+        filename = argv[narg++];
     else
         cleanup("Usage: ilbmtoc [-b2c|-b2p] filename [imagename]", 1);
     
     if (argc > narg)
-    	imagenamestart = argv[narg];
+        imagenamestart = argv[narg];
     else
     {
-    	imagenamestart = filename;
-    	for(;;)
-    	{
+        imagenamestart = filename;
+        for(;;)
+        {
             sp = strchr(imagenamestart + 1, '/');
-	    if (!sp) sp = strchr(imagenamestart + 1, '\\');
-	    if (!sp) sp = strchr(imagenamestart + 1, ':');
-	    if (!sp) break;
-	
-	    imagenamestart = sp + 1;
-	}
+            if (!sp) sp = strchr(imagenamestart + 1, '\\');
+            if (!sp) sp = strchr(imagenamestart + 1, ':');
+            if (!sp) break;
+        
+            imagenamestart = sp + 1;
+        }
     }
 
     if (strlen(imagename) >= sizeof(imagename)) cleanup("Image name too long!", 1);
@@ -245,10 +245,10 @@ static void scanfile(void)
     for(;;)
     {
         ULONG id;
-	ULONG size;
-	
-	id   = getlong();
-	size = getlong();
+        ULONG size;
+        
+        id   = getlong();
+        size = getlong();
 
         /* Cast the IFF identifier to 4 ASCII chars:
              (Use unsigned as i ANSI-C the cast to signed is implementation-dependent.) */
@@ -259,85 +259,85 @@ static void scanfile(void)
         , (unsigned char) (id)
         , size
         );
-		
-	switch(id)
-	{
-	    case ID_BMHD:
-	    	if (size != 20) cleanup("Bad BMHD chunk size!", 1);
-		
-	    	bmh.bmh_Width 	    = getword();
-		bmh.bmh_Height      = getword();
-		bmh.bmh_Left 	    = (WORD)getword();
-		bmh.bmh_Top 	    = (WORD)getword();
-		bmh.bmh_Depth 	    = getbyte();
-		bmh.bmh_Masking     = getbyte();
-		bmh.bmh_Compression = getbyte();
-		bmh.bmh_Pad 	    = getbyte();
-		bmh.bmh_Transparent = getword();
-		bmh.bmh_XAspect     = getbyte();
-		bmh.bmh_YAspect     = getbyte();
-		bmh.bmh_PageWidth   = (WORD)getword();
-		bmh.bmh_PageHeight  = (WORD)getword();
-		
-		if (bmh.bmh_Depth > 8) cleanup("ILBM file has too many colors!", 1);
-		if ((bmh.bmh_Compression != CMP_NONE) && (bmh.bmh_Compression != CMP_BYTERUN1)) cleanup("Compression method unsupported!", 1);
-		
-		have_bmhd = 1;
-		
-		totdepth = bmh.bmh_Depth + ((bmh.bmh_Masking == MSK_HASMASK) ? 1 : 0);
-		
-		bpr = ((bmh.bmh_Width + 15) & ~15) / 8;
-		
-		fprintf(stderr, "BMHD: %d x %d x %d (%ld)\n", bmh.bmh_Width,
-		    	    	    	    	    	      bmh.bmh_Height,
-							      bmh.bmh_Depth,
-							      totdepth);
-		break;
-	
-	    case ID_CMAP:   
-	    	if (!have_bmhd) cleanup("CMAP chunk before BMHD chunk (or no BMHD chunk at all!", 1);
-		
-		cmapentries = size / 3;
-		if (size & 1) size++;
-		
-		if ((cmapentries < 2) || (cmapentries > 256)) cleanup("CMAP chunk has bad number of entries!", 1);
-		
-		for(i = 0; i < cmapentries; i++)
-		{
-		    red[i]   = getbyte();
-		    green[i] = getbyte();
-		    blue[i]  = getbyte();
-		    size -= 3;
-		}
-	    	
-		skipbytes(size);
-		
-		have_cmap = 1;
-		
-		break;
-	
-	    case ID_BODY:
-	    	if (!have_bmhd) cleanup("BODY chunk before BMHD chunk (or no BMHD chunk at all!", 1);
-		body = &filebuffer[filepos];
-		bodysize = size;
-		
-		if (bmh.bmh_Compression == CMP_NONE)
-		{
-		    LONG shouldbesize = totdepth * bpr * bmh.bmh_Height;
-		    if (bodysize != shouldbesize) cleanup("BODY chunk size seems to be wrong!", 1);
-		}
-		
-		have_body = 1;
-		/* Fall through */
-		
-	    default:
-	    	if (size & 1) size++;
-	    	skipbytes(size);
-		break;
-	}
-	
-	if (filepos == filesize) break;
-	if (have_bmhd && have_body && have_cmap) break;
+                
+        switch(id)
+        {
+            case ID_BMHD:
+                if (size != 20) cleanup("Bad BMHD chunk size!", 1);
+                
+                bmh.bmh_Width       = getword();
+                bmh.bmh_Height      = getword();
+                bmh.bmh_Left        = (WORD)getword();
+                bmh.bmh_Top         = (WORD)getword();
+                bmh.bmh_Depth       = getbyte();
+                bmh.bmh_Masking     = getbyte();
+                bmh.bmh_Compression = getbyte();
+                bmh.bmh_Pad         = getbyte();
+                bmh.bmh_Transparent = getword();
+                bmh.bmh_XAspect     = getbyte();
+                bmh.bmh_YAspect     = getbyte();
+                bmh.bmh_PageWidth   = (WORD)getword();
+                bmh.bmh_PageHeight  = (WORD)getword();
+                
+                if (bmh.bmh_Depth > 8) cleanup("ILBM file has too many colors!", 1);
+                if ((bmh.bmh_Compression != CMP_NONE) && (bmh.bmh_Compression != CMP_BYTERUN1)) cleanup("Compression method unsupported!", 1);
+                
+                have_bmhd = 1;
+                
+                totdepth = bmh.bmh_Depth + ((bmh.bmh_Masking == MSK_HASMASK) ? 1 : 0);
+                
+                bpr = ((bmh.bmh_Width + 15) & ~15) / 8;
+                
+                fprintf(stderr, "BMHD: %d x %d x %d (%ld)\n", bmh.bmh_Width,
+                                                              bmh.bmh_Height,
+                                                              bmh.bmh_Depth,
+                                                              totdepth);
+                break;
+        
+            case ID_CMAP:
+                if (!have_bmhd) cleanup("CMAP chunk before BMHD chunk (or no BMHD chunk at all!", 1);
+                
+                cmapentries = size / 3;
+                if (size & 1) size++;
+                
+                if ((cmapentries < 2) || (cmapentries > 256)) cleanup("CMAP chunk has bad number of entries!", 1);
+                
+                for(i = 0; i < cmapentries; i++)
+                {
+                    red[i]   = getbyte();
+                    green[i] = getbyte();
+                    blue[i]  = getbyte();
+                    size -= 3;
+                }
+                
+                skipbytes(size);
+                
+                have_cmap = 1;
+                
+                break;
+        
+            case ID_BODY:
+                if (!have_bmhd) cleanup("BODY chunk before BMHD chunk (or no BMHD chunk at all!", 1);
+                body = &filebuffer[filepos];
+                bodysize = size;
+                
+                if (bmh.bmh_Compression == CMP_NONE)
+                {
+                    LONG shouldbesize = totdepth * bpr * bmh.bmh_Height;
+                    if (bodysize != shouldbesize) cleanup("BODY chunk size seems to be wrong!", 1);
+                }
+                
+                have_body = 1;
+                /* Fall through */
+                
+            default:
+                if (size & 1) size++;
+                skipbytes(size);
+                break;
+        }
+        
+        if (filepos == filesize) break;
+        if (have_bmhd && have_body && have_cmap) break;
     }
     
     if (!have_bmhd) cleanup("BMHD chunk missing!", 1);
@@ -353,26 +353,26 @@ static unsigned char *unpack_byterun1(unsigned char *source, unsigned char *dest
     
     for(;;)
     {
-	c = (signed char)(*source++);
-	if (c >= 0)
-	{
+        c = (signed char)(*source++);
+        if (c >= 0)
+        {
             while(c-- >= 0)
-	    {
-		*dest++ = *source++;
-		if (--unpackedsize <= 0) return source;
-	    }
-	}
-	else if (c != -128)
-	{
+            {
+                *dest++ = *source++;
+                if (--unpackedsize <= 0) return source;
+            }
+        }
+        else if (c != -128)
+        {
             c = -c;
-	    r = *source++;
+            r = *source++;
 
-	    while(c-- >= 0)
-	    {
-		*dest++ = r;
-		if (--unpackedsize <= 0) return source;
-	    }
-	}
+            while(c-- >= 0)
+            {
+                *dest++ = r;
+                if (--unpackedsize <= 0) return source;
+            }
+        }
     }
     
 }
@@ -380,32 +380,32 @@ static unsigned char *unpack_byterun1(unsigned char *source, unsigned char *dest
 /****************************************************************************************/
 
 static BOOL norm1(LONG count, unsigned char **source_backup,
-            	  unsigned char **dest, LONG *checksize)
+                  unsigned char **dest, LONG *checksize)
 {
     //if (count >= 0) fprintf(stderr, "XX: non packable %d\n",count);
     
     while(count >= 0)
     {
-	LONG step = count;
+        LONG step = count;
 
-	if (step > 127) step = 127;
+        if (step > 127) step = 127;
 
-	*checksize -= step;
-	*checksize -= 2;
+        *checksize -= step;
+        *checksize -= 2;
 
-	if (*checksize <= 0) return 0;
+        if (*checksize <= 0) return 0;
 
-   	count -= step;
+        count -= step;
 
-	*(*dest)++ = step;
+        *(*dest)++ = step;
 
 
-	while(step-- >= 0)
-	{
-	    *(*dest)++ = *(*source_backup)++;
-	}
-	
-	count--;
+        while(step-- >= 0)
+        {
+            *(*dest)++ = *(*source_backup)++;
+        }
+        
+        count--;
 
     }
     
@@ -419,23 +419,23 @@ static BOOL copy1(unsigned char r, LONG count, unsigned char **dest, LONG *check
     while(--count >= 0)
     {
         LONG step = count;
-	
-	if (step > 127) step = 127;
-	
-	count -= step;
-	step = -step;
-	*checksize -= 2;
-	if (*checksize <= 0) return 0;
-	
-	*(*dest)++ = (unsigned char)step;
-	*(*dest)++ = r;
+        
+        if (step > 127) step = 127;
+        
+        count -= step;
+        step = -step;
+        *checksize -= 2;
+        if (*checksize <= 0) return 0;
+        
+        *(*dest)++ = (unsigned char)step;
+        *(*dest)++ = r;
     }
     
     return 1;
 }
 
 static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
-            	      LONG size, LONG check_size, LONG *packsize)
+                      LONG size, LONG check_size, LONG *packsize)
 {
     unsigned char *source_backup, *dest_backup;
     LONG samebytes_counter, samebytes, count;
@@ -453,40 +453,40 @@ static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
     {
         //fprintf(stderr, "size = %d. checksize = %d\n", size, checksize);
         if (--size < 0) break;
-	actbyte = *source++;
-	if (actbyte == oldbyte)
-	{
-	    samebytes_counter++;
-	    continue;
-	}
-	
-	oldbyte = actbyte;
-	
-	samebytes = samebytes_counter;
-	samebytes_counter = 1;
-	
-	if (samebytes < 3) continue;
-	
-	count = (LONG)(source - source_backup - samebytes - 2);
-	if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
-	
-	if (!copy1(source[-2], samebytes, &dest, &checksize)) return 0;
+        actbyte = *source++;
+        if (actbyte == oldbyte)
+        {
+            samebytes_counter++;
+            continue;
+        }
+        
+        oldbyte = actbyte;
+        
+        samebytes = samebytes_counter;
+        samebytes_counter = 1;
+        
+        if (samebytes < 3) continue;
+        
+        count = (LONG)(source - source_backup - samebytes - 2);
+        if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
+        
+        if (!copy1(source[-2], samebytes, &dest, &checksize)) return 0;
 
         source_backup = source - 1;
     }
-    //fprintf(stderr, "done\n");    
+    //fprintf(stderr, "done\n");
     
     if (samebytes_counter >= 3)
     {
         samebytes = samebytes_counter;
-	count = (LONG)(source - source_backup - samebytes - 1);
-	if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
-	if (!copy1(source[-2], samebytes, &dest, &checksize)) return 0;	
+        count = (LONG)(source - source_backup - samebytes - 1);
+        if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
+        if (!copy1(source[-2], samebytes, &dest, &checksize)) return 0;
     }
     else
     {
         count = (LONG)(source - source_backup - 1);
-	if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
+        if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
     }
     //fprintf(stderr, "realdone\n");
     
@@ -498,7 +498,7 @@ static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
 /****************************************************************************************/
 
 static void p2c(unsigned char *source, unsigned char *dest, LONG width, LONG height,
-            	LONG totplanes, LONG wantplanes, LONG chunkybpr)
+                LONG totplanes, LONG wantplanes, LONG chunkybpr)
 {
     LONG alignedwidth, x, y, p, bpr, bpl;
     
@@ -509,20 +509,20 @@ static void p2c(unsigned char *source, unsigned char *dest, LONG width, LONG hei
     for(y = 0; y < height; y++)
     {
         for(x = 0; x < width; x++)
-	{
-	    LONG mask   = 1 << (7 - (x & 7));
-	    LONG offset = x / 8;
-	    unsigned char chunkypix = 0;
-	    
-	    for(p = 0; p < wantplanes; p++)
-	    {
-	    	if (source[p * bpr + offset] & mask) chunkypix |= (1 << p);
-	    }
-	    dest[x] = chunkypix;
-	}
-	
-	source += bpl;
-	dest += chunkybpr;
+        {
+            LONG mask   = 1 << (7 - (x & 7));
+            LONG offset = x / 8;
+            unsigned char chunkypix = 0;
+            
+            for(p = 0; p < wantplanes; p++)
+            {
+                if (source[p * bpr + offset] & mask) chunkypix |= (1 << p);
+            }
+            dest[x] = chunkypix;
+        }
+        
+        source += bpl;
+        dest += chunkybpr;
     }
     
     
@@ -551,11 +551,11 @@ static void convertbody(void)
     
     p2c(planarbuffer,
         chunkybuffer,
-	bmh.bmh_Width,
-	bmh.bmh_Height,
-	totdepth,
-	bmh.bmh_Depth,
-	bmh.bmh_Width);
+        bmh.bmh_Width,
+        bmh.bmh_Height,
+        totdepth,
+        bmh.bmh_Depth,
+        bmh.bmh_Width);
 }
 
 /****************************************************************************************/
@@ -569,16 +569,16 @@ static void packdata(void)
     
     if (!chunkybuffer_packed) cleanup("Memory allocation for packed chunky buffer failed!", 1);
 
-    fprintf(stderr, "Starting packing\n"); 
+    fprintf(stderr, "Starting packing\n");
        
     success = pack_byterun1(chunkybuffer, chunkybuffer_packed,
-            	    	    chunkysize, chunkysize, &bodysize_packed);
-			    
-    fprintf(stderr, "Done packing. Success = %d\n", success);    
+                            chunkysize, chunkysize, &bodysize_packed);
+                            
+    fprintf(stderr, "Done packing. Success = %d\n", success);
     if (!success)
     {
         free(chunkybuffer_packed); chunkybuffer_packed = 0;
-    }	  
+    }
 }
 
 /****************************************************************************************/
@@ -602,32 +602,32 @@ static void gensource(void)
     if (have_cmap)
     {
         printf("const ULONG %s_pal[%ld] =\n", imagename, cmapentries);
-	printf("{\n");
-	for(i = 0; i < cmapentries; i++)
-	{
-	    ULONG col = (((ULONG)red[i]) << 16) +
-	    	    	(((ULONG)green[i]) << 8) +
-			((ULONG)blue[i]);
-			
-	    printf("    0x%06lx", col);
-	    if (i == cmapentries - 1)
-	    	printf("\n");
-	    else
-	    	printf(",\n");
-	}
-	printf("};\n\n");
+        printf("{\n");
+        for(i = 0; i < cmapentries; i++)
+        {
+            ULONG col = (((ULONG)red[i]) << 16) +
+                        (((ULONG)green[i]) << 8) +
+                        ((ULONG)blue[i]);
+                        
+            printf("    0x%06lx", col);
+            if (i == cmapentries - 1)
+                printf("\n");
+            else
+                printf(",\n");
+        }
+        printf("};\n\n");
     }
     
     
     if (chunkybuffer_packed)
     {
         buffer = chunkybuffer_packed;
-	buffersize = bodysize_packed;
+        buffersize = bodysize_packed;
     }
     else
     {
         buffer = chunkybuffer;
-	buffersize = bodysize;
+        buffersize = bodysize;
     }
 
     printf("const UBYTE %s_data[%ld] =\n", imagename, buffersize);
@@ -637,9 +637,9 @@ static void gensource(void)
         
     for(x = 0; x < buffersize; x++)
     {
-	if ((i++ % 20) == 0) printf("\n    ");
-	printf("0x%02x", buffer[x]);
-	if (!(x == buffersize - 1)) printf(","); 
+        if ((i++ % 20) == 0) printf("\n    ");
+        printf("0x%02x", buffer[x]);
+        if (!(x == buffersize - 1)) printf(",");
     }
     
     printf("\n");
@@ -654,44 +654,44 @@ static void genbrush2csource(void)
 
     if (have_cmap)
     {
-	printf("#ifdef USE_%s_COLORS\n", bigimagename);
-	printf("const ULONG %s_colors[%ld] =\n{\n", imagename, cmapentries * 3);
-	for (i = 0; i < cmapentries; i++)
-	{
-	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
-		(long) ((ULONG)red[i] << 24 | (ULONG)red[i] << 16 | (ULONG)red[i] << 8 | (ULONG)red[i]),
-		(long) ((ULONG)green[i] << 24 | (ULONG)green[i] << 16 | (ULONG)green[i] << 8 | (ULONG)green[i]),
-		(long) ((ULONG)blue[i] << 24 | (ULONG)blue[i] << 16 | (ULONG)blue[i] << 8 | (ULONG)blue[i]));
-	}
-	printf("};\n");
-	printf("#endif\n\n");
+        printf("#ifdef USE_%s_COLORS\n", bigimagename);
+        printf("const ULONG %s_colors[%ld] =\n{\n", imagename, cmapentries * 3);
+        for (i = 0; i < cmapentries; i++)
+        {
+            printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
+                (long) ((ULONG)red[i] << 24 | (ULONG)red[i] << 16 | (ULONG)red[i] << 8 | (ULONG)red[i]),
+                (long) ((ULONG)green[i] << 24 | (ULONG)green[i] << 16 | (ULONG)green[i] << 8 | (ULONG)green[i]),
+                (long) ((ULONG)blue[i] << 24 | (ULONG)blue[i] << 16 | (ULONG)blue[i] << 8 | (ULONG)blue[i]));
+        }
+        printf("};\n");
+        printf("#endif\n\n");
     }
 
     if (have_body)
     {
-	printf("#define %s_WIDTH       %3d\n", bigimagename, bmh.bmh_Width);
-	printf("#define %s_HEIGHT      %3d\n", bigimagename, bmh.bmh_Height);
-	printf("#define %s_DEPTH       %3d\n", bigimagename, bmh.bmh_Depth);
-	printf("#define %s_COMPRESSION %3d\n", bigimagename, bmh.bmh_Compression);
-	printf("#define %s_MASKING     %3d\n", bigimagename, bmh.bmh_Masking);
-	printf("\n");
+        printf("#define %s_WIDTH       %3d\n", bigimagename, bmh.bmh_Width);
+        printf("#define %s_HEIGHT      %3d\n", bigimagename, bmh.bmh_Height);
+        printf("#define %s_DEPTH       %3d\n", bigimagename, bmh.bmh_Depth);
+        printf("#define %s_COMPRESSION %3d\n", bigimagename, bmh.bmh_Compression);
+        printf("#define %s_MASKING     %3d\n", bigimagename, bmh.bmh_Masking);
+        printf("\n");
 
-	printf("#ifdef USE_%s_HEADER\n", bigimagename);
-	printf("const struct BitMapHeader %s_header =\n{ %ld,%ld,%ld,%ld,%ld,%ld,%ld,0,%ld,%ld,%ld,%ld,%ld };\n",
-	    imagename, (long)bmh.bmh_Width, (long)bmh.bmh_Height, (long)bmh.bmh_Left, (long)bmh.bmh_Top,
-	    (long)bmh.bmh_Depth, (long)bmh.bmh_Masking, (long)bmh.bmh_Compression, (long)bmh.bmh_Transparent,
-	    (long)bmh.bmh_XAspect, (long)bmh.bmh_YAspect, (long)bmh.bmh_PageWidth, (long)bmh.bmh_PageHeight);
-	printf("#endif\n\n");
+        printf("#ifdef USE_%s_HEADER\n", bigimagename);
+        printf("const struct BitMapHeader %s_header =\n{ %ld,%ld,%ld,%ld,%ld,%ld,%ld,0,%ld,%ld,%ld,%ld,%ld };\n",
+            imagename, (long)bmh.bmh_Width, (long)bmh.bmh_Height, (long)bmh.bmh_Left, (long)bmh.bmh_Top,
+            (long)bmh.bmh_Depth, (long)bmh.bmh_Masking, (long)bmh.bmh_Compression, (long)bmh.bmh_Transparent,
+            (long)bmh.bmh_XAspect, (long)bmh.bmh_YAspect, (long)bmh.bmh_PageWidth, (long)bmh.bmh_PageHeight);
+        printf("#endif\n\n");
 
-	printf("#ifdef USE_%s_BODY\n", bigimagename);
-	printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
-	for (i = 0; i < bodysize; i++)
-	{
-	    printf("0x%02lx,", (long)(body[i]));
-	    if (!((i + 1) % 15)) printf("\n");
-	}
-	printf(" };\n");
-	printf("#endif\n");
+        printf("#ifdef USE_%s_BODY\n", bigimagename);
+        printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
+        for (i = 0; i < bodysize; i++)
+        {
+            printf("0x%02lx,", (long)(body[i]));
+            if (!((i + 1) % 15)) printf("\n");
+        }
+        printf(" };\n");
+        printf("#endif\n");
     }
 }
 
@@ -703,33 +703,33 @@ static void genbrush2pixsource(void)
 
     if (have_cmap)
     {
-	printf("const ULONG %s_colors[%ld] =\n{\n", imagename, cmapentries * 3);
-	for (i = 0; i < cmapentries; i++)
-	{
-	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
-		(long)((ULONG)red[i] << 24 | (ULONG)red[i] << 16 | (ULONG)red[i] << 8 | (ULONG)red[i]),
-		(long)((ULONG)green[i] << 24 | (ULONG)green[i] << 16 | (ULONG)green[i] << 8 | (ULONG)green[i]),
-		(long)((ULONG)blue[i] << 24 | (ULONG)blue[i] << 16 | (ULONG)blue[i] << 8 | (ULONG)blue[i]));
-	}
-	printf("};\n\n");
+        printf("const ULONG %s_colors[%ld] =\n{\n", imagename, cmapentries * 3);
+        for (i = 0; i < cmapentries; i++)
+        {
+            printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
+                (long)((ULONG)red[i] << 24 | (ULONG)red[i] << 16 | (ULONG)red[i] << 8 | (ULONG)red[i]),
+                (long)((ULONG)green[i] << 24 | (ULONG)green[i] << 16 | (ULONG)green[i] << 8 | (ULONG)green[i]),
+                (long)((ULONG)blue[i] << 24 | (ULONG)blue[i] << 16 | (ULONG)blue[i] << 8 | (ULONG)blue[i]));
+        }
+        printf("};\n\n");
     }
 
     if (have_body)
     {
-	printf("#define %s_WIDTH       %3d\n", bigimagename, bmh.bmh_Width);
-	printf("#define %s_HEIGHT      %3d\n", bigimagename, bmh.bmh_Height);
-	printf("#define %s_DEPTH       %3d\n", bigimagename, bmh.bmh_Depth);
-	printf("#define %s_COMPRESSION %3d\n", bigimagename, bmh.bmh_Compression);
-	printf("#define %s_MASKING     %3d\n", bigimagename, bmh.bmh_Masking);
-	printf("\n");
+        printf("#define %s_WIDTH       %3d\n", bigimagename, bmh.bmh_Width);
+        printf("#define %s_HEIGHT      %3d\n", bigimagename, bmh.bmh_Height);
+        printf("#define %s_DEPTH       %3d\n", bigimagename, bmh.bmh_Depth);
+        printf("#define %s_COMPRESSION %3d\n", bigimagename, bmh.bmh_Compression);
+        printf("#define %s_MASKING     %3d\n", bigimagename, bmh.bmh_Masking);
+        printf("\n");
 
-	printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
-	for (i = 0; i < bodysize; i++)
-	{
-	    printf("0x%02lx,", (long)(body[i]));
-	    if (!((i + 1) % 15)) printf("\n");
-	}
-	printf(" };\n");
+        printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
+        for (i = 0; i < bodysize; i++)
+        {
+            printf("0x%02lx,", (long)(body[i]));
+            if (!((i + 1) % 15)) printf("\n");
+        }
+        printf(" };\n");
     }
 
     if (have_cmap && have_body)
@@ -754,17 +754,17 @@ int main(int argc, char **argv)
 
     if (brush2c)
     {
-	genbrush2csource();
+        genbrush2csource();
     }
     else if (brush2pix)
     {
-	genbrush2pixsource();
+        genbrush2pixsource();
     }
     else
     {
-	convertbody();
-	packdata();
-	gensource();
+        convertbody();
+        packdata();
+        gensource();
     }
 
     cleanup(0, 0);

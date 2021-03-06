@@ -39,15 +39,15 @@ writestring (FILE * fh, const char * s)
     int32_t len;
 
     if (s != NULL)
-	len = strlen(s);
+        len = strlen(s);
     else
-	len = -1;
+        len = -1;
 
     out = htonl(len);
     fwrite(&out, sizeof(out), 1, fh);
 
     if (!ferror(fh) && len>0)
-	fwrite(s, len, 1, fh);
+        fwrite(s, len, 1, fh);
 
     return !ferror(fh);
 }
@@ -59,23 +59,23 @@ readstring (FILE * fh, char **strptr)
     int32_t len;
 
     if (fread(&in, sizeof(in), 1, fh) != 1)
-	return 0;
+        return 0;
 
     len = ntohl(in);
     if (len>0)
     {
-	*strptr = xmalloc (len+1);
-	if (fread (*strptr, len, 1, fh) != 1)
-	{
-	    xfree (*strptr);
-	    return 0;
-	}
-	(*strptr)[len] = 0;
+        *strptr = xmalloc (len+1);
+        if (fread (*strptr, len, 1, fh) != 1)
+        {
+            xfree (*strptr);
+            return 0;
+        }
+        (*strptr)[len] = 0;
     }
     else if (len == 0)
-	*strptr = xstrdup("");
+        *strptr = xstrdup("");
     else /* len < 0 */
-	*strptr = NULL;
+        *strptr = NULL;
 
     return 1;
 }

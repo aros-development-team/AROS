@@ -42,17 +42,17 @@ struct AmiKMap_KeyMapNode {
 } __packed;
 
 struct AmiKMap_Hunk {
-    ULONG			Hunk;
-    ULONG			Length;
+    ULONG                       Hunk;
+    ULONG                       Length;
     struct AmiKMap_KeyMapNode   kh_KeyMapNode;
-    UBYTE			kh_LoKeyMapTypes[0x40];
-    ULONG			kh_LoKeyMap[0x40];
-    UBYTE			kh_LoCapsable[0x08];
-    UBYTE			kh_LoRepeatable[0x08];
-    UBYTE			kh_HiKeyMapTypes[0x38];
-    ULONG			kh_HiKeyMap[0x38];
-    UBYTE			kh_HiCapsable[0x07];
-    UBYTE			kh_HiRepeatable[0x07];
+    UBYTE                       kh_LoKeyMapTypes[0x40];
+    ULONG                       kh_LoKeyMap[0x40];
+    UBYTE                       kh_LoCapsable[0x08];
+    UBYTE                       kh_LoRepeatable[0x08];
+    UBYTE                       kh_HiKeyMapTypes[0x38];
+    ULONG                       kh_HiKeyMap[0x38];
+    UBYTE                       kh_HiCapsable[0x07];
+    UBYTE                       kh_HiRepeatable[0x07];
 } __packed;
 
 BOOL writeKeyMap(struct config *cfg)

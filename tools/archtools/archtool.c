@@ -14,12 +14,12 @@
 /* Prototypes of reusable functions */
 
 /* Read in one line from file
-   - mallocs needed space					*/
+   - mallocs needed space                                       */
 char *get_line(FILE *file);
 
 /* Search for '#Keyword' in string
   - mallocs needed space
-  - returns 'Keyword'						*/
+  - returns 'Keyword'                                           */
 char *keyword(char *line);
 
 /* Searches line for whitespace separated words
@@ -27,28 +27,28 @@ char *keyword(char *line);
   - mallocs needed space
   - frees previously allocated space before !
   - for first use pass
-      char **words=NULL; get_words(line,&words)			*/
+      char **words=NULL; get_words(line,&words)                 */
 int get_words(char *line, char ***outarray);
 
-/* Converts string to lower case				*/
+/* Converts string to lower case                                */
 void strlower(char *string);
 
 /* Compares two files
    returns 0 for equal files,
    1 for different files,
    -1 if file1 is not present,
-   -2 if file2 is not present					*/
+   -2 if file2 is not present                                   */
 int filesdiffer( char *file1, char *file2 );
 
 /* Compares old and new file,
    if old file is not found or different from new
    new file will be renamed to name of old
-   old will be named old.bak					*/
+   old will be named old.bak                                    */
 void moveifchanged(char *old, char *new);
 
 /* Parses file or lib.conf if file==NULL
    puts values in struct libconf
-   returns 0 on success						*/
+   returns 0 on success                                         */
 struct libconf * parse_libconf(char *file);
 
 
@@ -236,14 +236,14 @@ char *bakname;
 
 enum libtype
 {
-  t_device	= 1,
-  t_library	= 2,
-  t_resource	= 3,
-  t_hidd	= 4,
-  t_gadget	= 5,
-  t_image	= 6,
-  t_class	= 7,
-  t_datatype	= 8,
+  t_device      = 1,
+  t_library     = 2,
+  t_resource    = 3,
+  t_hidd        = 4,
+  t_gadget      = 5,
+  t_image       = 6,
+  t_class       = 7,
+  t_datatype    = 8,
   t_usbclass    = 9
 };
 
@@ -454,57 +454,57 @@ struct libconf * lc;
 # Create libdefs.h from a file lib.conf. lib.conf may contain these options:
 #
 # name <string> - Init the various fields with reasonable defaults. If
-#		<string> is XXX, then this is the result:
+#               <string> is XXX, then this is the result:
 #
-#		    libname	    xxx
-#		    basename	    Xxx
-#		    libbase	    XxxBase
-#		    libbasetype     XxxBase
-#		    libbasetypeptr  XxxBase *
+#                   libname         xxx
+#                   basename        Xxx
+#                   libbase         XxxBase
+#                   libbasetype     XxxBase
+#                   libbasetypeptr  XxxBase *
 #
-#		Variables will only be changed if they have not yet been
-#		specified.
+#               Variables will only be changed if they have not yet been
+#               specified.
 #
 # libname <string> - Set libname to <string>. This is the name of the
-#		library (ie. you can open it with <string>.library).
-#		It will show up in the version string, too.
+#               library (ie. you can open it with <string>.library).
+#               It will show up in the version string, too.
 # basename <string> - Set basename to <string>. The basename is used in
-#		the AROS-LHx macros in the location part (last parameter)
-#		and to specify defaults for libbase and libbasetype
-#		in case they have no value yet. If <string> is xXx, then
-#		libbase will become xXxBase and libbasetype will become
-#		xXxBase.
+#               the AROS-LHx macros in the location part (last parameter)
+#               and to specify defaults for libbase and libbasetype
+#               in case they have no value yet. If <string> is xXx, then
+#               libbase will become xXxBase and libbasetype will become
+#               xXxBase.
 # libbase <string> - Defines the name of the library base (ie. SysBase,
-#		DOSBase, IconBase, etc). If libbasetype is not set, then
-#		it is set to <string>, too.
+#               DOSBase, IconBase, etc). If libbasetype is not set, then
+#               it is set to <string>, too.
 # libbasetype <string> - The type of libbase (with struct), ie.
-#		struct ExecBase, struct DosLibrary, struct IconBase, etc).
+#               struct ExecBase, struct DosLibrary, struct IconBase, etc).
 # libbasetypeptr <string> - Type of a pointer to the libbase. (eg.
-#		struct ExecBase *).
+#               struct ExecBase *).
 # version <version>.<revision> - Specifies the version and revision of the
-#		library. 41.0103 means version 41 and revision 103.
+#               library. 41.0103 means version 41 and revision 103.
 # copyright <string> - Copyright string.
 # define <string> - The define to use to protect the resulting file
-#		against double inclusion (ie. #ifndef <string>...)
-#		The default is _LIBDEFS_H.
+#               against double inclusion (ie. #ifndef <string>...)
+#               The default is _LIBDEFS_H.
 # type <string> - What kind of library is this ? Valid values
-#		for <string> are: device, library, resource and hidd.
+#               for <string> are: device, library, resource and hidd.
 # option <string>... - Specify an option. Valid values for <string> are:
 #
-#		    noexpunge - Once the lib/dev is loaded, it can't be
-#				removed from memory. Be careful with this
-#				option.
-#		    rom - For ROM based libraries. Implies noexpunge and
-#				unique.
-#		    unique - Generate unique names for all external
-#				symbols.
-#		    nolibheader - We don't want to use the LibHeader prefixed
-#				functions in the function table.
-#		    hasrt - This library has resource tracking.
+#                   noexpunge - Once the lib/dev is loaded, it can't be
+#                               removed from memory. Be careful with this
+#                               option.
+#                   rom - For ROM based libraries. Implies noexpunge and
+#                               unique.
+#                   unique - Generate unique names for all external
+#                               symbols.
+#                   nolibheader - We don't want to use the LibHeader prefixed
+#                               functions in the function table.
+#                   hasrt - This library has resource tracking.
 #
-#		You can specify more than one option in a config file and
-#		more than one option per option line. Separate options by
-#		space.
+#               You can specify more than one option in a config file and
+#               more than one option per option line. Separate options by
+#               space.
 #
 */
 int genlibdefs(int argc, char **argv)
@@ -821,351 +821,351 @@ return 0;
 
 
 const char * m68k_registers[] = {
-	"D0",
-	"D1",
-	"D2",
-	"D3",
-	"D4",
-	"D5",
-	"D6",
-	"D7",
-	"A0",
-	"A1",
-	"A2",
-	"A3",
-	"A4",
-	"A5",
-	"A6",
-	"A7",
+        "D0",
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "A0",
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
 };
 
-struct pragma_description 
+struct pragma_description
 {
-	struct pragma_description	*next;
-	char				basename[200];
-	char				funcname[200];
-	unsigned short			offset;
-	int				numargs;
-	int				args[16];
+        struct pragma_description       *next;
+        char                            basename[200];
+        char                            funcname[200];
+        unsigned short                  offset;
+        int                             numargs;
+        int                             args[16];
 };
 
 char * skipstr(char * line, char skipper,int direction)
 {
-	while (line[0] == skipper) {
-		line += direction;
-	}
-	return line;
+        while (line[0] == skipper) {
+                line += direction;
+        }
+        return line;
 }
 
 void free_pragma_description(struct pragma_description * pd)
 {
-	struct pragma_description * _pd;
-	while (pd != NULL) {
-		_pd = pd -> next;
-		free(pd);
-		pd = _pd;
-	}
-	
+        struct pragma_description * _pd;
+        while (pd != NULL) {
+                _pd = pd -> next;
+                free(pd);
+                pd = _pd;
+        }
+        
 }
 
 struct pragma_description * find_pragma_description(struct pragma_description * pd,
                                                    char * funcname)
 {
-	while (NULL != pd) {
-		if (0 == strcmp(pd->funcname,
-		                funcname))
-			return pd;
-		pd = pd->next;
-	}
-	return NULL;
+        while (NULL != pd) {
+                if (0 == strcmp(pd->funcname,
+                                funcname))
+                        return pd;
+                pd = pd->next;
+        }
+        return NULL;
 }
 
 struct pragma_description * parse_pragmas(char * filename)
 {
-	FILE *fdi =NULL;
-	char *line;
-	struct pragma_description * base_pd = NULL;
-	fdi = fopen(filename,"r");
-	
+        FILE *fdi =NULL;
+        char *line;
+        struct pragma_description * base_pd = NULL;
+        fdi = fopen(filename,"r");
+        
         if (!fdi){
-		fprintf(stderr, "Couldn't open file %s!\n",filename);
-		return NULL;
-	}
-	
-	while( (line = get_line(fdi))) {
-		char * substr;
-		//printf("%s\n",line);
-		/*
-		 * look for '#', then 'pragma'.
-		 */
-		substr = skipstr(line,' ',1);
-		
-		if (substr[0] == '#'){
-			substr++;
-			substr = skipstr(substr, ' ',1);
-			//printf("1. %s\n",substr);
-			if (0 == strncmp(substr, "pragma",6)) {
-				substr += 6;
-				substr = skipstr(substr,' ',1);
-				//printf("2. %s\n",substr);
-				if (!strncmp(substr, "amicall",7)) {
-					substr += 7;
-					substr = skipstr(substr,' ',1);
-					
-					if (substr[0] == '(') {
-						struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
-						substr += 1;
-						substr = skipstr(substr,' ',1);
-						if (NULL != pd) {
-							char * comma;
-							char * lastchar;
-							pd->next = base_pd;
-							base_pd = pd;
-							/*
-							 * Now read the name of the base
-							 * of the library!
-							 */
-							comma = strchr(substr, ',');
-							lastchar = skipstr(comma-1,' ',-1);
-							
-							strncpy(&pd->basename[0],
-							        substr,
-							        lastchar-substr+1);
-							//printf("basename: %s\n",pd->basename);
-							
-							/*
-							 * after the comma comes the offset in HEX!
-							 */
-							pd->offset = strtol(comma+1,&lastchar,16)/6;
-							//printf("Offset : %x\n",pd->offset);
-							
-							/*
-							 * Now for the next ','
-							 */
-							comma = strchr(lastchar, ',');
-							comma = skipstr(comma+1,' ',1);
-							//printf("%s\n",comma);
-							
-							if ( NULL == comma) {
-								fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
-								free_pragma_description(base_pd);
-								fclose(fdi);
-								exit(-1);
-							}
-							
-							/*
-							 * Now the name of the function
-							 */
-							lastchar = strchr(comma+1, '(');
-							if ( NULL == lastchar) {
-								fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
-								free_pragma_description(base_pd);
-								fclose(fdi);
-								exit(-1);
-							}
-							
-							
-							strncpy(&pd->funcname[0],
-							        comma,
-							        skipstr(lastchar,' ',-1)-comma);
-							//printf("funcname: %s\n",pd->funcname);
-							        
-							substr = lastchar + 1;
-							//printf("%s\n",substr);
-							lastchar = strchr(substr,')');
-							/*
-							 * Now read the CPU registers.
-							 */
-							
-							while (substr < lastchar) {
-								int r = 0;
-								substr = skipstr(substr, ' ',1);
-								
-								if (substr[0] == 'a' ||
-								    substr[0] == 'A') {
-									r = 8;
-								} else if (substr[0] == 'd' ||
-								           substr[0] == 'D') {
-									} else {
-										fprintf(stderr, "Wrong register (letter) in pragma file!\n");
-										free_pragma_description(base_pd);
-										fclose(fdi);
-										exit(-1);
-									}
-								
-								if (substr[1] >= '0' && substr[1] <= '8') {
-									r += substr[1] - '0';
-								} else {
-									fprintf(stderr, "Wrong register (number) in pragma file!\n");
-									free_pragma_description(base_pd);
-									fclose(fdi);
-									exit(-1);
-								}
+                fprintf(stderr, "Couldn't open file %s!\n",filename);
+                return NULL;
+        }
+        
+        while( (line = get_line(fdi))) {
+                char * substr;
+                //printf("%s\n",line);
+                /*
+                 * look for '#', then 'pragma'.
+                 */
+                substr = skipstr(line,' ',1);
+                
+                if (substr[0] == '#'){
+                        substr++;
+                        substr = skipstr(substr, ' ',1);
+                        //printf("1. %s\n",substr);
+                        if (0 == strncmp(substr, "pragma",6)) {
+                                substr += 6;
+                                substr = skipstr(substr,' ',1);
+                                //printf("2. %s\n",substr);
+                                if (!strncmp(substr, "amicall",7)) {
+                                        substr += 7;
+                                        substr = skipstr(substr,' ',1);
+                                        
+                                        if (substr[0] == '(') {
+                                                struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
+                                                substr += 1;
+                                                substr = skipstr(substr,' ',1);
+                                                if (NULL != pd) {
+                                                        char * comma;
+                                                        char * lastchar;
+                                                        pd->next = base_pd;
+                                                        base_pd = pd;
+                                                        /*
+                                                         * Now read the name of the base
+                                                         * of the library!
+                                                         */
+                                                        comma = strchr(substr, ',');
+                                                        lastchar = skipstr(comma-1,' ',-1);
+                                                        
+                                                        strncpy(&pd->basename[0],
+                                                                substr,
+                                                                lastchar-substr+1);
+                                                        //printf("basename: %s\n",pd->basename);
+                                                        
+                                                        /*
+                                                         * after the comma comes the offset in HEX!
+                                                         */
+                                                        pd->offset = strtol(comma+1,&lastchar,16)/6;
+                                                        //printf("Offset : %x\n",pd->offset);
+                                                        
+                                                        /*
+                                                         * Now for the next ','
+                                                         */
+                                                        comma = strchr(lastchar, ',');
+                                                        comma = skipstr(comma+1,' ',1);
+                                                        //printf("%s\n",comma);
+                                                        
+                                                        if ( NULL == comma) {
+                                                                fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
+                                                                free_pragma_description(base_pd);
+                                                                fclose(fdi);
+                                                                exit(-1);
+                                                        }
+                                                        
+                                                        /*
+                                                         * Now the name of the function
+                                                         */
+                                                        lastchar = strchr(comma+1, '(');
+                                                        if ( NULL == lastchar) {
+                                                                fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
+                                                                free_pragma_description(base_pd);
+                                                                fclose(fdi);
+                                                                exit(-1);
+                                                        }
+                                                        
+                                                        
+                                                        strncpy(&pd->funcname[0],
+                                                                comma,
+                                                                skipstr(lastchar,' ',-1)-comma);
+                                                        //printf("funcname: %s\n",pd->funcname);
+                                                                
+                                                        substr = lastchar + 1;
+                                                        //printf("%s\n",substr);
+                                                        lastchar = strchr(substr,')');
+                                                        /*
+                                                         * Now read the CPU registers.
+                                                         */
+                                                        
+                                                        while (substr < lastchar) {
+                                                                int r = 0;
+                                                                substr = skipstr(substr, ' ',1);
+                                                                
+                                                                if (substr[0] == 'a' ||
+                                                                    substr[0] == 'A') {
+                                                                        r = 8;
+                                                                } else if (substr[0] == 'd' ||
+                                                                           substr[0] == 'D') {
+                                                                        } else {
+                                                                                fprintf(stderr, "Wrong register (letter) in pragma file!\n");
+                                                                                free_pragma_description(base_pd);
+                                                                                fclose(fdi);
+                                                                                exit(-1);
+                                                                        }
+                                                                
+                                                                if (substr[1] >= '0' && substr[1] <= '8') {
+                                                                        r += substr[1] - '0';
+                                                                } else {
+                                                                        fprintf(stderr, "Wrong register (number) in pragma file!\n");
+                                                                        free_pragma_description(base_pd);
+                                                                        fclose(fdi);
+                                                                        exit(-1);
+                                                                }
 /*
-								printf("r:%d\n",r);
-								printf("parameter %d goes into %s\n",
-								        pd->numargs+1,
-								        m68k_registers[r]);
+                                                                printf("r:%d\n",r);
+                                                                printf("parameter %d goes into %s\n",
+                                                                        pd->numargs+1,
+                                                                        m68k_registers[r]);
 */
-								pd->args[pd->numargs] = r;
-								pd->numargs++;
-								
-								substr+=2;
-								skipstr(substr, ' ', 1);
-								substr+=1;
-								
-							}
-							
-						}
-					}
-				} else if (!strncmp(substr, "libcall",7)) {
-					struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
-					substr += 7;
-					//substr = skipstr(substr,' ',1);
-					if (NULL != pd) {
-						char offset_s[10];
-						char parameters_s[20];
-						char hex[3]={0,0,0};
-						int i,c;
-						/*
-						 * Read in the description of the
-						 * function
-						 */
-						sscanf(substr, "%s %s %s %s",
-						      &pd->basename[0],
-						      &pd->funcname[0],
-						      offset_s,
-						      parameters_s);
-						pd->offset = strtol(offset_s,NULL,16)/6;
+                                                                pd->args[pd->numargs] = r;
+                                                                pd->numargs++;
+                                                                
+                                                                substr+=2;
+                                                                skipstr(substr, ' ', 1);
+                                                                substr+=1;
+                                                                
+                                                        }
+                                                        
+                                                }
+                                        }
+                                } else if (!strncmp(substr, "libcall",7)) {
+                                        struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
+                                        substr += 7;
+                                        //substr = skipstr(substr,' ',1);
+                                        if (NULL != pd) {
+                                                char offset_s[10];
+                                                char parameters_s[20];
+                                                char hex[3]={0,0,0};
+                                                int i,c;
+                                                /*
+                                                 * Read in the description of the
+                                                 * function
+                                                 */
+                                                sscanf(substr, "%s %s %s %s",
+                                                      &pd->basename[0],
+                                                      &pd->funcname[0],
+                                                      offset_s,
+                                                      parameters_s);
+                                                pd->offset = strtol(offset_s,NULL,16)/6;
 #if 1
-						printf("|%s| |%s| %d %s[%zd]\t",
-						       pd->basename,
-						       pd->funcname,
-						       pd->offset,
-						       parameters_s,
-						       strlen(parameters_s));
-#endif	
-						/*
-						 * Process the parameters.
-						 */
-						i = strlen(parameters_s)-1;
-						hex[0] = parameters_s[i-1];
-						hex[1] = parameters_s[i];
-						i -= 2;
-						pd->numargs = strtol(hex,NULL,16);
-						c = 0;
-						hex[1] = 0;
-						while (i >= 0) {
-							hex[0] = parameters_s[i];
-							pd->args[c] = strtol(hex,NULL,16);
-							printf("%s ",m68k_registers[pd->args[c]]);
-							i--;
-							c++;
-						}
-						printf("\n");
+                                                printf("|%s| |%s| %d %s[%zd]\t",
+                                                       pd->basename,
+                                                       pd->funcname,
+                                                       pd->offset,
+                                                       parameters_s,
+                                                       strlen(parameters_s));
+#endif
+                                                /*
+                                                 * Process the parameters.
+                                                 */
+                                                i = strlen(parameters_s)-1;
+                                                hex[0] = parameters_s[i-1];
+                                                hex[1] = parameters_s[i];
+                                                i -= 2;
+                                                pd->numargs = strtol(hex,NULL,16);
+                                                c = 0;
+                                                hex[1] = 0;
+                                                while (i >= 0) {
+                                                        hex[0] = parameters_s[i];
+                                                        pd->args[c] = strtol(hex,NULL,16);
+                                                        printf("%s ",m68k_registers[pd->args[c]]);
+                                                        i--;
+                                                        c++;
+                                                }
+                                                printf("\n");
 
-						pd->next = base_pd;
-						base_pd = pd;
-					}
-				} else if(!strncmp(substr, "usrcall",7)) {
-					substr += 7;
-					substr = skipstr(substr,' ',1);
-					
-					if (substr[0] == '(') {
-						struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
-						substr += 1;
-						substr = skipstr(substr,' ',1);
-						if (NULL != pd) {
-							char * lastchar;
-							pd->offset = 0xffff; // sign for user function
-							pd->next = base_pd;
-							base_pd = pd;
-							/*
-							 * Now the name of the function
-							 */
+                                                pd->next = base_pd;
+                                                base_pd = pd;
+                                        }
+                                } else if(!strncmp(substr, "usrcall",7)) {
+                                        substr += 7;
+                                        substr = skipstr(substr,' ',1);
+                                        
+                                        if (substr[0] == '(') {
+                                                struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
+                                                substr += 1;
+                                                substr = skipstr(substr,' ',1);
+                                                if (NULL != pd) {
+                                                        char * lastchar;
+                                                        pd->offset = 0xffff; // sign for user function
+                                                        pd->next = base_pd;
+                                                        base_pd = pd;
+                                                        /*
+                                                         * Now the name of the function
+                                                         */
 printf("%s\n",substr);
-							lastchar = strchr(substr+1, '(');
-							if ( NULL == lastchar) {
-								fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
-								free_pragma_description(base_pd);
-								fclose(fdi);
-								exit(-1);
-							}
-							
-							
-							strncpy(&pd->funcname[0],
-							        substr,
-							        skipstr(lastchar,' ',-1)-substr);
-							//printf("funcname: %s\n",pd->funcname);
-							        
-							substr = lastchar + 1;
-							//printf("%s\n",substr);
-							lastchar = strchr(substr,')');
-							/*
-							 * Now read the CPU registers.
-							 */
-							
-							while (substr < lastchar) {
-								int r = 0;
-								substr = skipstr(substr, ' ',1);
-								
-								if (substr[0] == 'a' ||
-								    substr[0] == 'A') {
-									r = 8;
-								} else if (substr[0] == 'd' ||
-								           substr[0] == 'D') {
-									} else {
-										fprintf(stderr, "Wrong register (letter) in pragma file!\n");
-										free_pragma_description(base_pd);
-										fclose(fdi);
-										exit(-1);
-									}
-								
-								if (substr[1] >= '0' && substr[1] <= '8') {
-									r += substr[1] - '0';
-								} else {
-									fprintf(stderr, "Wrong register (number) in pragma file!\n");
-									free_pragma_description(base_pd);
-									fclose(fdi);
-									exit(-1);
-								}
+                                                        lastchar = strchr(substr+1, '(');
+                                                        if ( NULL == lastchar) {
+                                                                fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
+                                                                free_pragma_description(base_pd);
+                                                                fclose(fdi);
+                                                                exit(-1);
+                                                        }
+                                                        
+                                                        
+                                                        strncpy(&pd->funcname[0],
+                                                                substr,
+                                                                skipstr(lastchar,' ',-1)-substr);
+                                                        //printf("funcname: %s\n",pd->funcname);
+                                                                
+                                                        substr = lastchar + 1;
+                                                        //printf("%s\n",substr);
+                                                        lastchar = strchr(substr,')');
+                                                        /*
+                                                         * Now read the CPU registers.
+                                                         */
+                                                        
+                                                        while (substr < lastchar) {
+                                                                int r = 0;
+                                                                substr = skipstr(substr, ' ',1);
+                                                                
+                                                                if (substr[0] == 'a' ||
+                                                                    substr[0] == 'A') {
+                                                                        r = 8;
+                                                                } else if (substr[0] == 'd' ||
+                                                                           substr[0] == 'D') {
+                                                                        } else {
+                                                                                fprintf(stderr, "Wrong register (letter) in pragma file!\n");
+                                                                                free_pragma_description(base_pd);
+                                                                                fclose(fdi);
+                                                                                exit(-1);
+                                                                        }
+                                                                
+                                                                if (substr[1] >= '0' && substr[1] <= '8') {
+                                                                        r += substr[1] - '0';
+                                                                } else {
+                                                                        fprintf(stderr, "Wrong register (number) in pragma file!\n");
+                                                                        free_pragma_description(base_pd);
+                                                                        fclose(fdi);
+                                                                        exit(-1);
+                                                                }
 /*
-								printf("r:%d\n",r);
-								printf("parameter %d goes into %s\n",
-								        pd->numargs+1,
-								        m68k_registers[r]);
+                                                                printf("r:%d\n",r);
+                                                                printf("parameter %d goes into %s\n",
+                                                                        pd->numargs+1,
+                                                                        m68k_registers[r]);
 */
-								pd->args[pd->numargs] = r;
-								pd->numargs++;
-								
-								substr+=2;
-								skipstr(substr, ' ', 1);
-								substr+=1;
-								
-							}
-						}
-					}
-				}
-			}
-		}
-		free(line);
-	}
-	
+                                                                pd->args[pd->numargs] = r;
+                                                                pd->numargs++;
+                                                                
+                                                                substr+=2;
+                                                                skipstr(substr, ' ', 1);
+                                                                substr+=1;
+                                                                
+                                                        }
+                                                }
+                                        }
+                                }
+                        }
+                }
+                free(line);
+        }
+        
 
-	fclose(fdi);
-	return base_pd;
+        fclose(fdi);
+        return base_pd;
 }
 
 
 int countchars (char * s, char c)
 {
-	int ctr = 0;
-	while (s[0] != 0) {
-		if (s[0] == c)
-			ctr++;
-		s++;
-	}
-	return ctr;
+        int ctr = 0;
+        while (s[0] != 0) {
+                if (s[0] == c)
+                        ctr++;
+                s++;
+        }
+        return ctr;
 }
 
 /*
@@ -1179,83 +1179,83 @@ int countchars (char * s, char c)
  */
 char * addtocache(char * cache, char * newline, int len, FILE * fdo)
 {
-	int cachelen;
-	char * semic;
-	char * newcache = NULL;
-	char * endcomment;
+        int cachelen;
+        char * semic;
+        char * newcache = NULL;
+        char * endcomment;
 
-	if (NULL == newline) {
-		if (NULL != cache) {
-			fprintf(fdo, "%s\n", cache);
-			free(cache);
-		}
-		return NULL;
-	}
-	
-	
-	semic = strchr(newline, ';');
-	endcomment = strstr(newline, "*/");
-	
-	if (NULL != semic || NULL != endcomment) {
-		int newlinelen = strlen(newline);
-		int i = newlinelen -1;
-		char * tmp;
-		/*
-		 * write the cache and everything up to the
-		 * last ';' in the new line to the file.
-		 */
-		if (NULL != cache) {
-			fprintf(fdo,"%s\n",cache);
+        if (NULL == newline) {
+                if (NULL != cache) {
+                        fprintf(fdo, "%s\n", cache);
+                        free(cache);
+                }
+                return NULL;
+        }
+        
+        
+        semic = strchr(newline, ';');
+        endcomment = strstr(newline, "*/");
+        
+        if (NULL != semic || NULL != endcomment) {
+                int newlinelen = strlen(newline);
+                int i = newlinelen -1;
+                char * tmp;
+                /*
+                 * write the cache and everything up to the
+                 * last ';' in the new line to the file.
+                 */
+                if (NULL != cache) {
+                        fprintf(fdo,"%s\n",cache);
 //printf("1. Flush: |%s|\n",cache);
-		}
-		
-		if (NULL != endcomment) {
-			i = endcomment - newline + 1;
-		} else {
-			while (newline[i] != ';')
-				i--;
-		}
-		
-			
-		tmp = malloc(i+2);
-		memcpy(tmp,newline,i+1);
-		tmp[i+1] = 0;
-		fprintf(fdo, "%s",tmp);
+                }
+                
+                if (NULL != endcomment) {
+                        i = endcomment - newline + 1;
+                } else {
+                        while (newline[i] != ';')
+                                i--;
+                }
+                
+                        
+                tmp = malloc(i+2);
+                memcpy(tmp,newline,i+1);
+                tmp[i+1] = 0;
+                fprintf(fdo, "%s",tmp);
 //printf("2. Flush: |%s|\n",tmp);
-		free(tmp);
-		
-		if (i < newlinelen) {
-			newcache = malloc(newlinelen-i+1);
-			memcpy(newcache, &newline[i+1], newlinelen-i);
-			newcache[newlinelen-i] = 0;
-		}
-		free(cache);
-		
-	} else {
-		/*
-		 * ';' could not be found. Enhance the cache.
-		 */
-		cachelen = 0;
-		if (NULL != cache)
-			cachelen = strlen(cache);
-			
-		cachelen += strlen(newline)+1+1;
-		newcache = malloc(cachelen);
-		if (NULL != cache)
-			sprintf(newcache,"%s\n%s",cache,newline);
-		else
-			sprintf(newcache,"%s",newline);
+                free(tmp);
+                
+                if (i < newlinelen) {
+                        newcache = malloc(newlinelen-i+1);
+                        memcpy(newcache, &newline[i+1], newlinelen-i);
+                        newcache[newlinelen-i] = 0;
+                }
+                free(cache);
+                
+        } else {
+                /*
+                 * ';' could not be found. Enhance the cache.
+                 */
+                cachelen = 0;
+                if (NULL != cache)
+                        cachelen = strlen(cache);
+                        
+                cachelen += strlen(newline)+1+1;
+                newcache = malloc(cachelen);
+                if (NULL != cache)
+                        sprintf(newcache,"%s\n%s",cache,newline);
+                else
+                        sprintf(newcache,"%s",newline);
 //printf("cache: %s\tnewcache: %s\n",cache,newcache);
-		free (cache);
-	}
-	
-	return newcache;
+                free (cache);
+        }
+        
+        return newcache;
 }
 
 char * clear_cache(char * cache)
 {
-	free(cache);
-	return NULL;
+        free(cache);
+        return NULL;
 }
 
 /*
@@ -1264,469 +1264,469 @@ char * clear_cache(char * cache)
  */
 void strtrim(char ** s)
 {
-	int end = strlen(*s)-1;
-	int start = 0;
-	char * newstr;
-	int end_orig = end;
-	
-	while ((start < end) && (
-	       '\t' == (*s)[start]  ||
-	       '\n' == (*s)[start]  ||
-	       ' '  == (*s)[start])) {
-		start++;
-	}
+        int end = strlen(*s)-1;
+        int start = 0;
+        char * newstr;
+        int end_orig = end;
+        
+        while ((start < end) && (
+               '\t' == (*s)[start]  ||
+               '\n' == (*s)[start]  ||
+               ' '  == (*s)[start])) {
+                start++;
+        }
 
-	while (end > 0 && (
-	       '\t' == (*s)[end]  ||
-	       '\n' == (*s)[end]  ||
-	       ' '  == (*s)[end])) {
-		end--;
-	}
+        while (end > 0 && (
+               '\t' == (*s)[end]  ||
+               '\n' == (*s)[end]  ||
+               ' '  == (*s)[end])) {
+                end--;
+        }
 
-	if ((end > start) && ((start > 0) || (end_orig != end))) {
-		newstr = malloc(end-start+2);
-		strncpy(newstr, (*s)+start, end-start+1);
-		newstr[end-start+1] = 0;
-		free(*s);
-		*s = newstr;
-	}
+        if ((end > start) && ((start > 0) || (end_orig != end))) {
+                newstr = malloc(end-start+2);
+                strncpy(newstr, (*s)+start, end-start+1);
+                newstr[end-start+1] = 0;
+                free(*s);
+                *s = newstr;
+        }
 }
 
 char * getfuncname(char * s)
 {
-	int i = strlen(s)-1;
-	int c = 0;
-	char * name;
-	int last;
-	while (i > 0) {
-		if (')' == s[i])
-			c++;
-		else if ('(' == s[i]) {
-			c--;
-			if (0 == c) {
-				i--;
-				while (i >= 0 && ' ' == s[i])
-					i--;
+        int i = strlen(s)-1;
+        int c = 0;
+        char * name;
+        int last;
+        while (i > 0) {
+                if (')' == s[i])
+                        c++;
+                else if ('(' == s[i]) {
+                        c--;
+                        if (0 == c) {
+                                i--;
+                                while (i >= 0 && ' ' == s[i])
+                                        i--;
 
-				if (i == 0)
-					return NULL;
-					
-				last = i;
-				while (i > 0 && ' ' != s[i] && '\n' != s[i])
-					i--;
-				
-				if (last == i)
-					return NULL;
-				
-				if (s[i+1] == '*')
-					i++;
-				
-				name = malloc(last-i+2);
-				strncpy(name, &s[i+1], last-i);
-				name[last-i]=0;
-				strtrim(&name);
-				return name;
-			}
-				
-		}
-		i--;
-	}
-	return NULL;
+                                if (i == 0)
+                                        return NULL;
+                                        
+                                last = i;
+                                while (i > 0 && ' ' != s[i] && '\n' != s[i])
+                                        i--;
+                                
+                                if (last == i)
+                                        return NULL;
+                                
+                                if (s[i+1] == '*')
+                                        i++;
+                                
+                                name = malloc(last-i+2);
+                                strncpy(name, &s[i+1], last-i);
+                                name[last-i]=0;
+                                strtrim(&name);
+                                return name;
+                        }
+                                
+                }
+                i--;
+        }
+        return NULL;
 }
 
 char * get_returntype(char * pattern, char * funcname)
 {
-	size_t len;
-	int c = 0;
-	char * ret_type;
-	len = strstr(pattern, funcname) - pattern;
-	
-	ret_type = malloc(len-c+1);
-	strncpy(ret_type, pattern+c, len-c);
-	ret_type[len-c] = 0;
+        size_t len;
+        int c = 0;
+        char * ret_type;
+        len = strstr(pattern, funcname) - pattern;
+        
+        ret_type = malloc(len-c+1);
+        strncpy(ret_type, pattern+c, len-c);
+        ret_type[len-c] = 0;
 
-	strtrim(&ret_type);
-	
-	return ret_type; 
+        strtrim(&ret_type);
+        
+        return ret_type;
 }
 
 void get_argument(int num, int max, char * pattern, char ** type, char ** val)
 {
-	int i = 0;
-	int _num = num;
-	while (1) {
-		if ('(' == pattern[i++]) {
-			char * start;
-			int c;
-			int depth = 0;
-			int other = 0;
+        int i = 0;
+        int _num = num;
+        while (1) {
+                if ('(' == pattern[i++]) {
+                        char * start;
+                        int c;
+                        int depth = 0;
+                        int other = 0;
 
-			while (_num > 0) {
-				if (',' == pattern[i])
-					_num--;
-				i++;
-			}
-			
-			/* Start of nth argument. */ 
-			start = &pattern[i];
+                        while (_num > 0) {
+                                if (',' == pattern[i])
+                                        _num--;
+                                i++;
+                        }
+                        
+                        /* Start of nth argument. */
+                        start = &pattern[i];
 
 //printf("start: %s\n",start);
-			
-			i = 0;
-			while (1) {
-				if (',' == start[i])
-					break;
-				else if ('(' == start[i])
-					depth++;
-				else if (')' == start[i])
-					depth--;
+                        
+                        i = 0;
+                        while (1) {
+                                if (',' == start[i])
+                                        break;
+                                else if ('(' == start[i])
+                                        depth++;
+                                else if (')' == start[i])
+                                        depth--;
 
-				if (-1 == depth)
-					break;
+                                if (-1 == depth)
+                                        break;
 
-				i++;
-			}
-				
-			i--;
-//printf("end at %d\n",i);	
-			/*
-			 * Search for the parameter value backwards
-			 */
-			c = i;
-			while (1) {
-				if (1 == other && (' ' == start[c] || '\t' == start[c] || '\n' == start[c] || '*' == start[c]))
-					break;
-				
-				if (' ' != start[c])
-					other = 1;
-				c--;
-			}
-			//c++;
-//printf("variable at %d\n",c);			
-			*type = malloc(c+2);
-			strncpy(*type, start, c+1);
-			(*type)[c+1] = 0;
-			*val  = malloc(i-c+2);
-			strncpy(*val , start+c+1, i-c);
-			(*val)[i-c] = 0; 
+                                i++;
+                        }
+                                
+                        i--;
+//printf("end at %d\n",i);
+                        /*
+                         * Search for the parameter value backwards
+                         */
+                        c = i;
+                        while (1) {
+                                if (1 == other && (' ' == start[c] || '\t' == start[c] || '\n' == start[c] || '*' == start[c]))
+                                        break;
+                                
+                                if (' ' != start[c])
+                                        other = 1;
+                                c--;
+                        }
+                        //c++;
+//printf("variable at %d\n",c);
+                        *type = malloc(c+2);
+                        strncpy(*type, start, c+1);
+                        (*type)[c+1] = 0;
+                        *val  = malloc(i-c+2);
+                        strncpy(*val , start+c+1, i-c);
+                        (*val)[i-c] = 0;
 //printf("|%s| |%s|\n",*type,*val);
 
-			strtrim(type);
-			strtrim(val);
-			return;
-		}
-		
-	}
+                        strtrim(type);
+                        strtrim(val);
+                        return;
+                }
+                
+        }
 }
 
 /*
  * Rewrite a c function to AROS style c function
  */
-int rewrite_function(FILE * fdo, 
-                     char * pattern, 
-                     struct pragma_description * pd, 
+int rewrite_function(FILE * fdo,
+                     char * pattern,
+                     struct pragma_description * pd,
                      struct libconf * lc,
                      FILE * fdefines)
 {
-	char output[1024];
-	int i = 0;
-	char * ret_type;
-	char * argtype, * argval;
-	memset(&output[0],0,1024);
-	
-	printf("must pick ???? from info in: \n%s\n",pattern);
-	ret_type = get_returntype(pattern,pd->funcname);
+        char output[1024];
+        int i = 0;
+        char * ret_type;
+        char * argtype, * argval;
+        memset(&output[0],0,1024);
+        
+        printf("must pick ???? from info in: \n%s\n",pattern);
+        ret_type = get_returntype(pattern,pd->funcname);
 
 
-	if (0xffff != pd->offset) {
-		fprintf(fdo,
-		       "\nAROS_LH%d(%s, %s,\n",
-		       pd->numargs,
-		       ret_type,
-		       pd->funcname);
-	
-	       
-		while (i < pd->numargs) {
-			get_argument(i, pd->numargs,pattern, &argtype, &argval);
-			fprintf(fdo,
-			        "    AROS_LHA(%s, %s, %s),\n",
-			        argtype,
-			        argval,
-			        m68k_registers[pd->args[i]]);
+        if (0xffff != pd->offset) {
+                fprintf(fdo,
+                       "\nAROS_LH%d(%s, %s,\n",
+                       pd->numargs,
+                       ret_type,
+                       pd->funcname);
+        
+               
+                while (i < pd->numargs) {
+                        get_argument(i, pd->numargs,pattern, &argtype, &argval);
+                        fprintf(fdo,
+                                "    AROS_LHA(%s, %s, %s),\n",
+                                argtype,
+                                argval,
+                                m68k_registers[pd->args[i]]);
 
-			free(argtype);
-			free(argval);
-			i++;
-		}  
+                        free(argtype);
+                        free(argval);
+                        i++;
+                }
 
-		if (0 != pd->offset) {	
-			fprintf(fdo,
-			        "    %s, %s, %d, %s)\n{\n",
-			        lc->libbasetypeptr,
-			        lc->libbase,
-			        pd->offset,
-			        lc->basename);
-		} else {
-			fprintf(fdo,
-			        "    struct ExecBase *, SysBase, 0, %s)\n{\n",
-			        lc->basename);
-		}
+                if (0 != pd->offset) {
+                        fprintf(fdo,
+                                "    %s, %s, %d, %s)\n{\n",
+                                lc->libbasetypeptr,
+                                lc->libbase,
+                                pd->offset,
+                                lc->basename);
+                } else {
+                        fprintf(fdo,
+                                "    struct ExecBase *, SysBase, 0, %s)\n{\n",
+                                lc->basename);
+                }
 
-		/*
-		 * Make the entry in the defines file. Only write
-		 * those functions with offset > 4 (not init,open,close,
-		 * expunge, null)
-		 */
-		if (pd->offset > 4) {
-			fprintf(fdefines, "#ifndef %s\n#define %s(",
-			        pd->funcname,
-			        pd->funcname);
-			
-			i = 0;
-		
-			while (i < pd->numargs) {
-				get_argument(i, pd->numargs,pattern, &argtype, &argval);
-				fprintf(fdefines,
-				        "%s",
-				        argval);
-				if (i < pd->numargs-1) {
-					fprintf(fdefines,",");
-				}
-				free(argtype);
-				free(argval);
-		
-				i++;
-			}	
-	
-			fprintf(fdefines,") \\\n\tAROS_LC%d(%s,%s, \\\n",
-			        pd->numargs,
-			        ret_type,
-			        pd->funcname);
+                /*
+                 * Make the entry in the defines file. Only write
+                 * those functions with offset > 4 (not init,open,close,
+                 * expunge, null)
+                 */
+                if (pd->offset > 4) {
+                        fprintf(fdefines, "#ifndef %s\n#define %s(",
+                                pd->funcname,
+                                pd->funcname);
+                        
+                        i = 0;
+                
+                        while (i < pd->numargs) {
+                                get_argument(i, pd->numargs,pattern, &argtype, &argval);
+                                fprintf(fdefines,
+                                        "%s",
+                                        argval);
+                                if (i < pd->numargs-1) {
+                                        fprintf(fdefines,",");
+                                }
+                                free(argtype);
+                                free(argval);
+                
+                                i++;
+                        }
+        
+                        fprintf(fdefines,") \\\n\tAROS_LC%d(%s,%s, \\\n",
+                                pd->numargs,
+                                ret_type,
+                                pd->funcname);
 
-			i = 0;
-			while (i < pd->numargs) {
-				get_argument(i, pd->numargs,pattern, &argtype, &argval);
-				fprintf(fdefines,
-				        "\tAROS_LCA(%s,%s,%s),\\\n",
-				        argtype,
-				        argval,
-				        m68k_registers[pd->args[i]]);
-				free(argtype);
-				free(argval);
-		
-				i++;
-			}	
+                        i = 0;
+                        while (i < pd->numargs) {
+                                get_argument(i, pd->numargs,pattern, &argtype, &argval);
+                                fprintf(fdefines,
+                                        "\tAROS_LCA(%s,%s,%s),\\\n",
+                                        argtype,
+                                        argval,
+                                        m68k_registers[pd->args[i]]);
+                                free(argtype);
+                                free(argval);
+                
+                                i++;
+                        }
 
-			fprintf(fdefines,
-			        "\t%s, %s, %d, %s)\n#endif\n\n",
-			        lc->libbasetypeptr,
-			        lc->libbase,
-			        pd->offset,
-			        lc->basename);
+                        fprintf(fdefines,
+                                "\t%s, %s, %d, %s)\n#endif\n\n",
+                                lc->libbasetypeptr,
+                                lc->libbase,
+                                pd->offset,
+                                lc->basename);
 
-			free(ret_type);
-		}
-	} else {
-		fprintf(fdo,
-		       "\nAROS_UFH%d(%s, %s",
-		       pd->numargs,
-		       ret_type,
-		       pd->funcname);
-	
-	       
-		while (i < pd->numargs) {
-			get_argument(i, pd->numargs,pattern, &argtype, &argval);
-			strtrim(&argtype);
-			strtrim(&argval);
-			
-			fprintf(fdo,
-			        ",\n    AROS_UFHA(%s, %s, %s)",
-			        argtype,
-			        argval,
-			        m68k_registers[pd->args[i]]);
+                        free(ret_type);
+                }
+        } else {
+                fprintf(fdo,
+                       "\nAROS_UFH%d(%s, %s",
+                       pd->numargs,
+                       ret_type,
+                       pd->funcname);
+        
+               
+                while (i < pd->numargs) {
+                        get_argument(i, pd->numargs,pattern, &argtype, &argval);
+                        strtrim(&argtype);
+                        strtrim(&argval);
+                        
+                        fprintf(fdo,
+                                ",\n    AROS_UFHA(%s, %s, %s)",
+                                argtype,
+                                argval,
+                                m68k_registers[pd->args[i]]);
 
-			free(argtype);
-			free(argval);
-			i++;
-		}  
-		fprintf(fdo,")\n{\n");
-	}
-	return 0;
+                        free(argtype);
+                        free(argval);
+                        i++;
+                }
+                fprintf(fdo,")\n{\n");
+        }
+        return 0;
 }
 
 /*
  * Rewrite a whole c source code file according to the info provided
  * from a pragma file.
  */
-int rewritecfile(FILE * fdi, 
-                 FILE * fdo, 
-                 struct pragma_description * pd, 
+int rewritecfile(FILE * fdi,
+                 FILE * fdo,
+                 struct pragma_description * pd,
                  struct libconf * lc,
-                 FILE * fdefines) 
+                 FILE * fdefines)
 {
-	char * line;
-	int depth = 0; // counting '{' and '}'
-	char * cache = NULL;
-	
-	while (1) {
-		line = get_line(fdi);
-		if (NULL == line) {
-			cache = addtocache(cache, NULL, 0, fdo);
-			return 0;
-		}
-		
-		if (0 == depth) {
-			depth = countchars(line,'{');
-			if (0 != depth) {
-				char * funcname;
-				/*
-				 * A function begins in this line.
-				 */
-				
-				cache = addtocache(cache,line,-1,fdo);
-				
-				//printf("\ncache where to find function: %s\n",cache);
-				funcname = getfuncname(cache);
-				if (funcname != NULL) {
-					struct pragma_description * _pd;
-					printf("funcname: %s",funcname);
-					_pd = find_pragma_description(pd, funcname);
-					if (_pd) {
-						printf("-> Rewriting!\n");
-						rewrite_function(fdo,cache,_pd,lc,fdefines);
-						/*
-						 * Do not throw the cache into the
-						 * file but clear it
-						 */
-					 	cache = clear_cache(cache);
-					} else
-						printf("-> Not rewriting!\n");
-					free(funcname);
-				} else {
+        char * line;
+        int depth = 0; // counting '{' and '}'
+        char * cache = NULL;
+        
+        while (1) {
+                line = get_line(fdi);
+                if (NULL == line) {
+                        cache = addtocache(cache, NULL, 0, fdo);
+                        return 0;
+                }
+                
+                if (0 == depth) {
+                        depth = countchars(line,'{');
+                        if (0 != depth) {
+                                char * funcname;
+                                /*
+                                 * A function begins in this line.
+                                 */
+                                
+                                cache = addtocache(cache,line,-1,fdo);
+                                
+                                //printf("\ncache where to find function: %s\n",cache);
+                                funcname = getfuncname(cache);
+                                if (funcname != NULL) {
+                                        struct pragma_description * _pd;
+                                        printf("funcname: %s",funcname);
+                                        _pd = find_pragma_description(pd, funcname);
+                                        if (_pd) {
+                                                printf("-> Rewriting!\n");
+                                                rewrite_function(fdo,cache,_pd,lc,fdefines);
+                                                /*
+                                                 * Do not throw the cache into the
+                                                 * file but clear it
+                                                 */
+                                                cache = clear_cache(cache);
+                                        } else
+                                                printf("-> Not rewriting!\n");
+                                        free(funcname);
+                                } else {
 //printf("ADDING 1\n");
-//					cache = addtocache(cache,line,-1,fdo);
-				}
-				
+//                                      cache = addtocache(cache,line,-1,fdo);
+                                }
+                                
 //printf("ADDING 2\n");
-				cache = addtocache(cache,NULL,0,fdo);
-			} else {
-				char * substr;
-				/*
-				 * No function begins in this line.
-				 * So let's collect it unless it is
-				 * a comment ot starts with a '#'.
-				 */
-				substr = skipstr(line, ' ',1);
+                                cache = addtocache(cache,NULL,0,fdo);
+                        } else {
+                                char * substr;
+                                /*
+                                 * No function begins in this line.
+                                 * So let's collect it unless it is
+                                 * a comment ot starts with a '#'.
+                                 */
+                                substr = skipstr(line, ' ',1);
 
-				if ('#' == substr[0] ||
-				    NULL != strstr(line,"//") ) {
-				    	cache = addtocache(cache,line,-1,fdo);
-				    	cache = addtocache(cache,NULL,0,fdo);
-					//printf("cache: %p\n",cache);
-					//fprintf(fdo,"%s\n",line);
-				} else {
-					cache = addtocache(cache,line,-1,fdo);
-				}
-			}
-			depth -= countchars(line,'}');
-		} else {
-			depth += countchars(line,'{');
-			depth -= countchars(line,'}');
-			fprintf(fdo,"%s\n",line);
-		}
-		free(line);
-	}
+                                if ('#' == substr[0] ||
+                                    NULL != strstr(line,"//") ) {
+                                        cache = addtocache(cache,line,-1,fdo);
+                                        cache = addtocache(cache,NULL,0,fdo);
+                                        //printf("cache: %p\n",cache);
+                                        //fprintf(fdo,"%s\n",line);
+                                } else {
+                                        cache = addtocache(cache,line,-1,fdo);
+                                }
+                        }
+                        depth -= countchars(line,'}');
+                } else {
+                        depth += countchars(line,'{');
+                        depth -= countchars(line,'}');
+                        fprintf(fdo,"%s\n",line);
+                }
+                free(line);
+        }
 
-	return 0;
+        return 0;
 }
 
 FILE * create_definesfile(char * filename)
 {
-	FILE * fdo = fopen(filename, "r");
-	
-	/*
-	 * If file existed position at end.
-	 */
-	if (fdo) {
-		fclose(fdo);
-		fdo = fopen(filename, "a+");
-		return fdo;
-	}
-	
-	/*
-	 * File does not exist, so start it, if possible.
-	 */
-	fdo = fopen(filename, "w");
-	if (NULL != fdo) {
-		fprintf(fdo, "#include <aros/libcall.h>\n"
-		             "#include <exec/types.h>\n\n");
-		
-	}
-	
-	return fdo;
+        FILE * fdo = fopen(filename, "r");
+        
+        /*
+         * If file existed position at end.
+         */
+        if (fdo) {
+                fclose(fdo);
+                fdo = fopen(filename, "a+");
+                return fdo;
+        }
+        
+        /*
+         * File does not exist, so start it, if possible.
+         */
+        fdo = fopen(filename, "w");
+        if (NULL != fdo) {
+                fprintf(fdo, "#include <aros/libcall.h>\n"
+                             "#include <exec/types.h>\n\n");
+                
+        }
+        
+        return fdo;
 }
 
 /*
- * Generate AROS source code for a library from the description 
+ * Generate AROS source code for a library from the description
  * in a pragmas file.
  */
 int genarossource(int argc, char **argv)
 {
-	FILE *fdo =NULL;
-	FILE *fdi =NULL;
-	FILE *fdefines = NULL;
-	char * filename;
-	char * sourcefile, * destfile;
-	char * definesfile;
-	struct libconf *lc;
-	struct pragma_description * pd;
+        FILE *fdo =NULL;
+        FILE *fdi =NULL;
+        FILE *fdefines = NULL;
+        char * filename;
+        char * sourcefile, * destfile;
+        char * definesfile;
+        struct libconf *lc;
+        struct pragma_description * pd;
 
-	
-	if (argc !=5) {
-		fprintf(stderr,"Usage: %s <source pragma file> <source c file> <dest c file> <output defines file>\n", argv[0]);
-		exit(-1);
-	}
-	
-	if(!(lc = parse_libconf(NULL)) )
-	{
-	  return(-1);
-	}
-	filename = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
-	sprintf( filename, "%s", argv[1]);
+        
+        if (argc !=5) {
+                fprintf(stderr,"Usage: %s <source pragma file> <source c file> <dest c file> <output defines file>\n", argv[0]);
+                exit(-1);
+        }
+        
+        if(!(lc = parse_libconf(NULL)) )
+        {
+          return(-1);
+        }
+        filename = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+        sprintf( filename, "%s", argv[1]);
 
-	sourcefile = argv[2];
-	destfile   = argv[3];
-	definesfile = argv[4];
-	
-	pd = parse_pragmas(filename);
+        sourcefile = argv[2];
+        destfile   = argv[3];
+        definesfile = argv[4];
+        
+        pd = parse_pragmas(filename);
 
-	if (NULL == pd) {
-		fprintf(stderr, "Could not read in the pragmas!\n");
-		exit(-1);
-	}	
+        if (NULL == pd) {
+                fprintf(stderr, "Could not read in the pragmas!\n");
+                exit(-1);
+        }
 
-	/*
-	 * Now open and parse the C input file and generate an output.
-	 */
-	fdi = fopen(sourcefile, "r");
-	fdo = fopen(destfile, "w");
-	fdefines = create_definesfile(definesfile);
+        /*
+         * Now open and parse the C input file and generate an output.
+         */
+        fdi = fopen(sourcefile, "r");
+        fdo = fopen(destfile, "w");
+        fdefines = create_definesfile(definesfile);
 
-	if (NULL != fdi && NULL != fdo && NULL != fdefines)
-		rewritecfile(fdi,fdo,pd,lc,fdefines);
+        if (NULL != fdi && NULL != fdo && NULL != fdefines)
+                rewritecfile(fdi,fdo,pd,lc,fdefines);
 
-	if (NULL != fdi)
-		fclose(fdi);
-	if (NULL != fdo)
-		fclose(fdo);
-	if (NULL != fdefines)
-		fclose(fdefines);
+        if (NULL != fdi)
+                fclose(fdi);
+        if (NULL != fdo)
+                fclose(fdo);
+        if (NULL != fdefines)
+                fclose(fdefines);
 
-	free_pragma_description(pd);
-	
-	free(lc);        
-	free(filename);
-	return 0;
+        free_pragma_description(pd);
+        
+        free(lc);
+        free(filename);
+        return 0;
 }
 
 

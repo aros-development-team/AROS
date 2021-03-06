@@ -386,7 +386,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         fprintf(out,
                 "...) \\\n"
                 "({ \\\n"
-        );        
+        );
         for (arglistit = funclistit->arguments, count = 1;
              arglistit != NULL;
              arglistit = arglistit->next, count++

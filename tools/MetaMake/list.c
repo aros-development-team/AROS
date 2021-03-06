@@ -42,10 +42,10 @@ AssignList (struct List * dest, struct List * src)
 
     if (src->first->next != NULL)
     {
-	src->first->prev = (struct Node *)&dest->first;
-	dest->first = src->first;
-	src->prelast->next = (struct Node *)&dest->last;
-	dest->prelast = src->prelast;
+        src->first->prev = (struct Node *)&dest->first;
+        dest->first = src->first;
+        src->prelast->next = (struct Node *)&dest->last;
+        dest->prelast = src->prelast;
     }
 }
 
@@ -56,8 +56,8 @@ FindNode (const struct List * l, const char * name)
 
     ForeachNode (l, n)
     {
-	if (!strcmp (n->name, name))
-	    return n;
+        if (!strcmp (n->name, name))
+            return n;
     }
 
     return NULL;
@@ -70,7 +70,7 @@ printlist (struct List * l)
 
     ForeachNode (l,n)
     {
-	printf ("    \"%s\"\n", n->name);
+        printf ("    \"%s\"\n", n->name);
     }
 }
 
@@ -81,10 +81,10 @@ freelist (struct List * l)
 
     ForeachNodeSafe(l,node,next)
     {
-	Remove (node);
+        Remove (node);
 
-	cfree (node->name);
-	free (node);
+        cfree (node->name);
+        free (node);
     }
 }
 
@@ -126,8 +126,8 @@ addnodeonce (struct List * l, const char * name)
 
     if (!n)
     {
-	n = newnode (name);
-	AddTail(l,n);
+        n = newnode (name);
+        AddTail(l,n);
     }
 
     return n;
@@ -142,8 +142,8 @@ addnodeoncesize (struct List * l, const char * name, size_t size)
 
     if (!n)
     {
-	n = newnodesize (name, size);
-	AddTail(l,n);
+        n = newnodesize (name, size);
+        AddTail(l,n);
     }
 
     return n;

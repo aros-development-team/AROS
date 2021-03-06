@@ -43,12 +43,12 @@ getvar (struct List * varlist, const char * varname)
     struct Var * var = FindNode (varlist, varname);
 
     if (var)
-	return var->value;
+        return var->value;
 
     env_val = getenv(varname);
     if(env_val)
     {
-	return env_val;
+        return env_val;
     }
     if (verbose)
         printf("[MMAKE] Variable %s doesn't exist\n", varname);
@@ -72,27 +72,27 @@ substvars (struct List * varlist, const char * str)
 
     while (*src)
     {
-	if (*src == '$')
-	{
-	    src += 2;
-	    vptr = varname;
+        if (*src == '$')
+        {
+            src += 2;
+            vptr = varname;
 
-	    while (*src && *src != ')')
-	    {
-		*vptr ++ = *src ++;
-	    }
-	    if (*src)
-		src ++;
+            while (*src && *src != ')')
+            {
+                *vptr ++ = *src ++;
+            }
+            if (*src)
+                src ++;
 
-	    *vptr = 0;
+            *vptr = 0;
 
-	    strcpy (dest, getvar (varlist, varname));
-	    dest += strlen (dest);
-	}
-	else
-	    *dest ++ = *src ++;
+            strcpy (dest, getvar (varlist, varname));
+            dest += strlen (dest);
+        }
+        else
+            *dest ++ = *src ++;
 
-	assert (dest<buffer+sizeof(buffer));
+        assert (dest<buffer+sizeof(buffer));
     }
 
     *dest = 0;
@@ -127,7 +127,7 @@ printvarlist (struct List * l)
 
     ForeachNode (l,n)
     {
-	printf ("    %s=%s\n", n->node.name, n->value);
+        printf ("    %s=%s\n", n->node.name, n->value);
     }
 }
 
@@ -138,11 +138,11 @@ freevarlist (struct List * l)
 
     ForeachNodeSafe(l,node,next)
     {
-	Remove (node);
+        Remove (node);
 
-	xfree (node->node.name);
-	cfree (node->value);
-	xfree (node);
+        xfree (node->node.name);
+        cfree (node->value);
+        xfree (node);
     }
 }
 
@@ -158,12 +158,12 @@ getargs (const char * line, int * argc, struct List * vars)
     buffer = NULL;
 
     if (!line)
-	return NULL;
+        return NULL;
 
     if (vars)
-	buffer = xstrdup (substvars (vars, line));
+        buffer = xstrdup (substvars (vars, line));
     else
-	buffer = xstrdup (line);
+        buffer = xstrdup (line);
 
     assert (buffer);
 
@@ -172,34 +172,34 @@ getargs (const char * line, int * argc, struct List * vars)
 
     while (*src)
     {
-	while (isspace (*src))
-	    src ++;
+        while (isspace (*src))
+            src ++;
 
-	if (!*src)
-	    break;
+        if (!*src)
+            break;
 
-	assert (arg < 255);
-	argv[arg++] = src;
+        assert (arg < 255);
+        argv[arg++] = src;
 
-	if (*src == '"')
-	{
-	    while (*src && *src != '"')
-		src ++;
-	}
-	else
-	{
-	    while (*src && !isspace (*src))
-		src ++;
-	}
+        if (*src == '"')
+        {
+            while (*src && *src != '"')
+                src ++;
+        }
+        else
+        {
+            while (*src && !isspace (*src))
+                src ++;
+        }
 
-	if (*src)
-	    *src++ = 0;
+        if (*src)
+            *src++ = 0;
     }
 
     argv[arg] = NULL;
 
     if (argc)
-	*argc = arg;
+        *argc = arg;
 
     return argv;
 }

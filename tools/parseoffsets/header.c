@@ -34,44 +34,44 @@ hnode_t *headerSets = NULL;
 
 struct headerMatch knownStructs[] =
 {
-    { "ExecBase",			false,		"exec/execbase.h"						},
+    { "ExecBase",                       false,          "exec/execbase.h"                                               },
 
-    { "DateStamp",			false,		"dos/dos.h"							},
-    { "FileInfoBlock",			false,		"dos/dos.h"							},
-    { "InfoData",			false,		"dos/dos.h"							},
+    { "DateStamp",                      false,          "dos/dos.h"                                                     },
+    { "FileInfoBlock",                  false,          "dos/dos.h"                                                     },
+    { "InfoData",                       false,          "dos/dos.h"                                                     },
 
-    { "DosLibrary",			false,		"dos/dosextens.h"						},
-    { "RootNode",			false,		"dos/dosextens.h"						},
-    { "CLIInfo",			false,		"dos/dosextens.h"						},
-    { "DosInfo",			false,		"dos/dosextens.h"						},
-    { "Process",			false,		"dos/dosextens.h"						},
-    { "CommandLineInterface",		false,		"dos/dosextens.h"						},
-    { "DevProcs",			false,		"dos/dosextens.h"						},
-    { "FileHandle",			true,		"dos/dosextens.h"						},
-    { "FileLock",			false,		"dos/dosextens.h"						},
-    { "DosList",			false,		"dos/dosextens.h"						},
-    { "DeviceList",			false,		"dos/dosextens.h"						},
-    { "DevInfo",			false,		"dos/dosextens.h"						},
-    { "AssignList",			false,		"dos/dosextens.h"						},
-    { "DosPacket",			false,		"dos/dosextens.h"						},
-    { "StandardPacket",			false,		"dos/dosextens.h"						},
-    { "Segment",			false,		"dos/dosextens.h"						},
-    { "ErrorString",			false,		"dos/dosextens.h"						},
+    { "DosLibrary",                     false,          "dos/dosextens.h"                                               },
+    { "RootNode",                       false,          "dos/dosextens.h"                                               },
+    { "CLIInfo",                        false,          "dos/dosextens.h"                                               },
+    { "DosInfo",                        false,          "dos/dosextens.h"                                               },
+    { "Process",                        false,          "dos/dosextens.h"                                               },
+    { "CommandLineInterface",           false,          "dos/dosextens.h"                                               },
+    { "DevProcs",                       false,          "dos/dosextens.h"                                               },
+    { "FileHandle",                     true,           "dos/dosextens.h"                                               },
+    { "FileLock",                       false,          "dos/dosextens.h"                                               },
+    { "DosList",                        false,          "dos/dosextens.h"                                               },
+    { "DeviceList",                     false,          "dos/dosextens.h"                                               },
+    { "DevInfo",                        false,          "dos/dosextens.h"                                               },
+    { "AssignList",                     false,          "dos/dosextens.h"                                               },
+    { "DosPacket",                      false,          "dos/dosextens.h"                                               },
+    { "StandardPacket",                 false,          "dos/dosextens.h"                                               },
+    { "Segment",                        false,          "dos/dosextens.h"                                               },
+    { "ErrorString",                    false,          "dos/dosextens.h"                                               },
 
-    { "AChain",				false,		"dos/dosasl.h"							},
-    { "AnchorPath",			false,		"dos/dosasl.h"							},
+    { "AChain",                         false,          "dos/dosasl.h"                                                  },
+    { "AnchorPath",                     false,          "dos/dosasl.h"                                                  },
 
-    { "AmigaGuideHost",			false,		"libraries/amigaguide.h"					},
-    { "AmigaGuideMsg",			false,		"libraries/amigaguide.h"					},
-    { "NewAmigaGuide",			false,		"libraries/amigaguide.h"					},
-    { "XRef",				false,		"libraries/amigaguide.h"					},
-    { "opFindHost",			false,		"libraries/amigaguide.h"					},
-    { "opNodeIO",			false,		"libraries/amigaguide.h"					},
-    { "opExpungeNode",			false,		"libraries/amigaguide.h"					},
+    { "AmigaGuideHost",                 false,          "libraries/amigaguide.h"                                        },
+    { "AmigaGuideMsg",                  false,          "libraries/amigaguide.h"                                        },
+    { "NewAmigaGuide",                  false,          "libraries/amigaguide.h"                                        },
+    { "XRef",                           false,          "libraries/amigaguide.h"                                        },
+    { "opFindHost",                     false,          "libraries/amigaguide.h"                                        },
+    { "opNodeIO",                       false,          "libraries/amigaguide.h"                                        },
+    { "opExpungeNode",                  false,          "libraries/amigaguide.h"                                        },
 
-    { "DateTime",			false,		"dos/datetime.h"						},
+    { "DateTime",                       false,          "dos/datetime.h"                                                },
 
-    {NULL,				true,		NULL							        }
+    {NULL,                              true,           NULL                                                            }
 };
 
 void nodeaddtail(hnode_t *nodefirst, hnode_t *node)
@@ -243,7 +243,7 @@ void writeHeaderMakefile(char *gendir, char *bindir)
             }
 
             /* Pass 2: generate header-set targets & scripts */
-            header_node = (struct headerSet *)headerSets;		
+            header_node = (struct headerSet *)headerSets;
             while (header_node) {
                 if (header_node->headerStructs)
                 {
