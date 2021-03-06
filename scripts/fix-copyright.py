@@ -6,7 +6,7 @@
 # Copyright sign unified to (C)
 # Script starts with the current directory
 
-import re, os, sys
+import re, os
 
 re_src_header = re.compile(r"^(/\*.*?Copyright.*?\*/)(.*)$", re.DOTALL)
 re_src_id = re.compile(r"^ *?\$Id\$ *?\n", re.MULTILINE)
@@ -29,7 +29,7 @@ def examine_src(filename):
         if "AROS Development Team" in header:
             oldheader = header
             source = match_header.group(2)
-            
+
             # remove $Id$
             header = re_src_id.sub("", header)
             
