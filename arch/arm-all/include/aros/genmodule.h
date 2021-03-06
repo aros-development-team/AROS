@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: genmodule.h include file for arm-le systems
-    Lang: english
 */
 
 #ifndef AROS_ARM_GENMODULE_H

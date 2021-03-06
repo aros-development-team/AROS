@@ -1,9 +1,7 @@
 /*
-    Copyright © 2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2014, The AROS Development Team. All rights reserved.
 
     Desc: Special handling for NIL: locks and file handles
-    Lang: English
 */
 
 #include "dos_intern.h"

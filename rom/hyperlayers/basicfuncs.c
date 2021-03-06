@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: Basic support functions for layers.library.
-    Lang: English.
 */
 
 #include <aros/config.h>

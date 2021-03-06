@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
 
     Returns a pointer to the first char of the filename in the give file part.
 */

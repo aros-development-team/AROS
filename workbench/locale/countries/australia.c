@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Country data for Australia.
     Author: Iain Templeton <iain@ugh.net.au>

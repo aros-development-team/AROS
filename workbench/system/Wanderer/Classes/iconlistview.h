@@ -1,6 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2002-2003, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _MUI_CLASSES_ICONLISTVIEW_H

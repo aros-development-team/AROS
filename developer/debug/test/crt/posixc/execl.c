@@ -1,9 +1,7 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009, The AROS Development Team. All rights reserved.
 
     Desc: Test program for the libc's execl() function.
-    Lang: English
 */
 
 #include <stdio.h>

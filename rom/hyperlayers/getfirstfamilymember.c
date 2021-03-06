@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: english
 */
 #include <aros/libcall.h>
 #include <graphics/clip.h>

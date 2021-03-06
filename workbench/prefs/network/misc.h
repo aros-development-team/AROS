@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _MISC_H

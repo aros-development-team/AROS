@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: Add a segment to the resident list.
-    Lang: english
 */
 #include "dos_intern.h"
 #include <string.h>

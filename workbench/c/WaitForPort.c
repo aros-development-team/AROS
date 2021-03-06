@@ -1,9 +1,7 @@
 /*
     Copyright (C) 2004, The AROS Development Team. All rights reserved.
-    $Id$
     
     Desc: Waits up to 10 seconds for a user specified Port to become available
-    Lang: English
 */
 
 /******************************************************************************

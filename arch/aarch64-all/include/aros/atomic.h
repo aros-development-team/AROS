@@ -1,6 +1,5 @@
 /*
-    Copyright © 2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2016, The AROS Development Team. All rights reserved.
  */
 
 #ifndef AROS_AARCH64_ATOMIC_H

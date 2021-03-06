@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
 
     Desc: Code for CONU_CHARMAP console units.
-    Lang: english
 */
 
 #include <proto/exec.h>

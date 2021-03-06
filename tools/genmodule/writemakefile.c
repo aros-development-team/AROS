@@ -1,6 +1,5 @@
 /*
-    Copyright © 2005-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2005-2020, The AROS Development Team. All rights reserved.
 
     Code to write a Makefile with variables that provides the files
     and configuration for building the module

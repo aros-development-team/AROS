@@ -1,9 +1,7 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2020, The AROS Development Team. All rights reserved.
 
     Desc: m68k arch specific private data for lowlevel library
-    Lang: english
 */
 
 struct llCIATimer

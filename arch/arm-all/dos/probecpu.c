@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011, The AROS Development Team. All rights reserved.
 
     Desc: Obtain ARM CPU information for ELF loader
-    Lang: english
 */
 
 #define DEBUG 1

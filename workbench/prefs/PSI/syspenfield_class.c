@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2020, The AROS Development Team.
+    Copyright (C) 1995-1997 Stefan Stuntz.
+    Copyright (C) 2009-2020, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 
 #include <proto/muimaster.h>

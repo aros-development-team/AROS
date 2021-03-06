@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: Varargs version of workbench.library/AddAppWindowDropZoneA()
-    Lang: english
 */
 #define AROS_TAGRETURNTYPE struct AppWindowDropZone *
 #include <dos/bptr.h>

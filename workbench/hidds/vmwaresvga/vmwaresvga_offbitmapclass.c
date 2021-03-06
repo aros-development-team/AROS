@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: Offscreen bitmap class for VMWare hidd.
-    Lang: English.
 */
 
 #define __OOP_NOATTRBASES__

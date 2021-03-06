@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011, The AROS Development Team. All rights reserved.
 
     Desc: Internal data structures for card.resource
-    Lang: english
 */
 
 #ifndef CARD_INTERN_H

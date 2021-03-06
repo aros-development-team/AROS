@@ -3,7 +3,6 @@
     Copyright  1999, David Le Corfec.
     All rights reserved.
 
-    $Id$
 */
 
 /* This is the implementation of a MUI-like image engine

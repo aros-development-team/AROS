@@ -1,9 +1,7 @@
 /*
-    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2012, The AROS Development Team. All rights reserved.
 
     Desc: Array of Cities with their time difference to GMT
-    Lang: English
 */
 
 /*********************************************************************************************/

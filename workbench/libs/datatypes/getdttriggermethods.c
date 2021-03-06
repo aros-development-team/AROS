@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: English
 */
 #define USE_BOOPSI_STUBS
 #include <proto/intuition.h>

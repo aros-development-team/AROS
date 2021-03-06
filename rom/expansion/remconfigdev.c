@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Remove a ConfigDev structure from the system.
-    Lang: english
 */
 #include "expansion_intern.h"
 #include <proto/exec.h>

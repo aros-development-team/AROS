@@ -1,9 +1,7 @@
 /*
-    Copyright © 2016-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2016-2017, The AROS Development Team. All rights reserved.
 
     Desc: genmodule-thumb2.h include file for arm-le systems in thumb2 mode
-    Lang: english
 */
 
 #ifndef AROS_ARM_GENMODULE_H

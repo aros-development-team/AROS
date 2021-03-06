@@ -1,6 +1,5 @@
 /*
-    Copyright © 2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2021, The AROS Development Team. All rights reserved.
 
     Code to parse the command line options and the module config file for
     the genmodule program

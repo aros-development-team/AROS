@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013, The AROS Development Team. All rights reserved.
 
     This file is there to provide a background section in the Autodocs
     for the stdc.library

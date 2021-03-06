@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Android bitmap class.
-    Lang: English.
 */
 
 #define DEBUG 0

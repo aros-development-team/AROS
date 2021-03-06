@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 */
 
 #define NUM_E0KEYS 94

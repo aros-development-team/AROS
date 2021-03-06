@@ -1,6 +1,5 @@
 /*
-    Copyright © 2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2019, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _RESOURCES_LDDEMON_H

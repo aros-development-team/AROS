@@ -1,9 +1,7 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
 
     Desc: Gfx Hidd color conversion initialization code.
-    Lang: English.
 */
 #include <exec/types.h>
 #include <proto/exec.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-96, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-96, The AROS Development Team. All rights reserved.
 
     Desc: A short demo for the features of Intuition and Graphics
-    Lang: english
 */
 #define ENABLE_PURIFY	1
 

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2020-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2020-2021, The AROS Development Team. All rights reserved.
 
     Desc: i386/x86_64 native PCI device support routines.
-    Lang: English
 */
 
 #define DEBUG 1

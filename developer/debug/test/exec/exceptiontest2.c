@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team.
 
     Desc: Task exception test adapted from tasktest.
-    Lang: english
 */
 
 #include <proto/alib.h>

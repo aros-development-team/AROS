@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Loader for shared libraries and devices.
 */

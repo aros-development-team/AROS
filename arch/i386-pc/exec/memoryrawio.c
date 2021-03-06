@@ -1,9 +1,7 @@
 /*
-    Copyright © 2009-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2017, The AROS Development Team. All rights reserved.
 
     Desc: functions for memory-stored RawIOInit/RawPutChar
-    Lang: English
 */
 
 #include <proto/exec.h>

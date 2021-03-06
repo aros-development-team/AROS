@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
 __FBSDID("$FreeBSD: src/lib/msun/src/s_llrintl.c,v 1.1 2008/01/14 02:12:06 das Exp $");

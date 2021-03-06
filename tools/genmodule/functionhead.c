@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
     The code for storing information of functions present in the module
 */

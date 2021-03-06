@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 
     Desc: Add a DOS device to the system.
-    Lang: English
 */
 #include "expansion_intern.h"
 #include <exec/io.h>

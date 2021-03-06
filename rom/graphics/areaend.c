@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AreaEnd()
-    Lang: english
 */
 #include <exec/types.h>
 #include <graphics/rastport.h>

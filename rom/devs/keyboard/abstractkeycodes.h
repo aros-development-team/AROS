@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Definitions for AROS abstract keymap
-    Lang: English
 */
 
 #ifndef ABSTRACTKEYCODES_H

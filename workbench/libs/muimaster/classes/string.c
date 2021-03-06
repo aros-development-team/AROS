@@ -1,6 +1,5 @@
 /* 
-    Copyright © 2003-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003-2018, The AROS Development Team. All rights reserved.
 */
 
 /* This is based on muimaster/class/text.c (first string version)

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003-2006, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _SMEDITOR_H

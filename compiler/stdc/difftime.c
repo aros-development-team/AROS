@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
 
     Return the number of seconds elapsed between time2 and time1.
 */

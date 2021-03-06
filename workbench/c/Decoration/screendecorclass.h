@@ -1,6 +1,5 @@
 /*
     Copyright  2011-2012, The AROS Development Team.
-    $Id$
 */
 
 #ifndef SCREENDECORCLASS_H

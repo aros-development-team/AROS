@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: PrepareContext() - Prepare a task context for dispatch.
-    Lang: english
 */
 
 #include <exec/execbase.h>

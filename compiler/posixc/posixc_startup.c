@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
 
     Additional startup code for posixc.library that is executed during
     init of a program that uses the library.

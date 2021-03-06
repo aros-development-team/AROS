@@ -1,7 +1,6 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
     Original version from libnix
-    $Id$
 */
 
 #define AROS_LIBREQ(base,ver)   /* We test for versions manually */

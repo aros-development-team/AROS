@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
     Desc: The query function called by rexxmast to find the library functions
-    Lang: English
 */
 
 #include <rexx/rexxcall.h>

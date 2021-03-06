@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 
     Desc: Get a pointer to a method for an object
-    Lang: english
 */
 #include <exec/lists.h>
 #include <proto/exec.h>

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2016, The AROS Development Team. All rights reserved.
 
     Desc: autoinit library - handle init and exit symolsets
 */

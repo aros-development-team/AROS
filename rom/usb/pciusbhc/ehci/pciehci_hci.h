@@ -1,6 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved
-    $Id$
+    Copyright (C) 2011, The AROS Development Team. All rights reserved
 */
 
 #ifndef PCIEHCI_HC_H

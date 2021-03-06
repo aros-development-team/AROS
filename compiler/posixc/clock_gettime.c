@@ -1,6 +1,5 @@
 /*
-    Copyright © 2008-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2018, The AROS Development Team. All rights reserved.
     POSIX.1-2001 function clock_gettime().
 */
 

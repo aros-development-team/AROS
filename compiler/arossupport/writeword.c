@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Write a big endian word (16bit) from a streamhook
-    Lang: english
 */
 
 #include <proto/dos.h>

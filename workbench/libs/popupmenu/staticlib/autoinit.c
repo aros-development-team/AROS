@@ -1,8 +1,7 @@
 /*
-    Copyright © 2010, The AROS Development Team. 
+    Copyright (C) 2010, The AROS Development Team. 
     All rights reserved.
     
-    $Id$
 */
 
 #include <proto/popupmenu.h>

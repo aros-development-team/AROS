@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
 */
 
 #define CLIP(x) ((x)>0xff ? 0xff : ((x)<0x00 ? 0x00 : (x)))

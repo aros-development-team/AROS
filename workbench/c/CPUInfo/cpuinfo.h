@@ -1,9 +1,7 @@
 /*
-    Copyright © 2000, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2000, The AROS Development Team. All rights reserved.
 
     Desc: Probe installed CPUs and display relevant information
-    Lang: english
 */
 
 /****************************************************************************************************

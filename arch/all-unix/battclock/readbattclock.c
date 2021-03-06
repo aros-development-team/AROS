@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: ReadBattClock() function.
-    Lang: english
 */
 
 #include <proto/battclock.h>

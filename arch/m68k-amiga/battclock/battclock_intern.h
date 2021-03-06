@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: Internal data structures for battclock.resource
-    Lang: english
 */
 
 #ifndef BATTCLOCK_INTERN_H

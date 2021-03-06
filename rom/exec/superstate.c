@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: SuperState() - Switch the processor into a higher plane.
-    Lang: english
 */
 
 #include <aros/config.h>

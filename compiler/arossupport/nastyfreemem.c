@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: Erase contents of memory before freeing it.
-    Lang: english
 */
 
 #include <proto/exec.h>

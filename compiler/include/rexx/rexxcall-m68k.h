@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
     Desc: Macros to make calling ARexx library querying functions portable
-    Lang: English
 */
 
 #ifndef AROS_REXXCALL_M68K_H

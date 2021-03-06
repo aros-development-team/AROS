@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: FilterTagChanges() - filter unchanged tags from a list.
-    Lang: english
 */
 #include "intern.h"
 

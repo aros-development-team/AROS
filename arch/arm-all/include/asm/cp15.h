@@ -1,9 +1,7 @@
 /*
-    Copyright © 2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2014, The AROS Development Team. All rights reserved.
 
     Desc: The purpose of the system control coprocessor, CP15, is to control and provide status information for the functions implemented in the processor.
-    Lang: english
 */
 
 #ifndef ASM_ARM_CP15_H

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2001, The AROS Development Team. All rights reserved.
 
     Test program for ram.handler notification.
 */

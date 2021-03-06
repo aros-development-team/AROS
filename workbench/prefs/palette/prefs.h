@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: English
 */
 
 #ifndef _PREFS_H_

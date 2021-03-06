@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2004-2019, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #define __OOP_NOATTRBASES__

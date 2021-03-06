@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Query a filesystem for interactiveness.
-    Lang: English
 */
 #include <proto/exec.h>
 #include "dos_intern.h"

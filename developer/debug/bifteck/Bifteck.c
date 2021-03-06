@@ -1,6 +1,5 @@
 /*
-      Copyright © 2009-2018, The AROS Development Team. All rights reserved.
-      $Id$
+      Copyright (C) 2009-2018, The AROS Development Team. All rights reserved.
 
       Bifteck -- Retrieves memory-stored debug output.
 */

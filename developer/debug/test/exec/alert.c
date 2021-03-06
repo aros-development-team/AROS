@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
 /* The main purpose is to test alert address detection and stack trace */

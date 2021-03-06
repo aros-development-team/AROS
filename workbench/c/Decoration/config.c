@@ -1,6 +1,5 @@
 /*
     Copyright  2011-2012, The AROS Development Team.
-    $Id$
 */
 
 #include <proto/dos.h>

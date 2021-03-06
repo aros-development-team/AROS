@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Convert a human understandable date to a machine form.
-    Lang: english
 */
 #include "intern.h"
 

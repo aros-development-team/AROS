@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Bitmap class for p96 rtg card drivers.
-    Lang: English.
     
 */
 

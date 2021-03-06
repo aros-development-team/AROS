@@ -1,9 +1,7 @@
 /*
-    Copyright © 1998, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1998, The AROS Development Team. All rights reserved.
 
     Desc: Demo showing x11gfx.hidd
-    Lang: English.
 */
 
 #include <stdio.h>

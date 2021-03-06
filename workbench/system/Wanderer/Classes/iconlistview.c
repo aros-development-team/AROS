@@ -1,6 +1,5 @@
 /*
-Copyright © 2002-2011, The AROS Development Team. 
-$Id$
+Copyright (C) 2002-2011, The AROS Development Team. 
 */
 
 #define DEBUG 0

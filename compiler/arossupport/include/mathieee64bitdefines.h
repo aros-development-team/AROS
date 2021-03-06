@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Some shortcuts that provide the highest flexibility
     for 64bit and 32bit Systems.

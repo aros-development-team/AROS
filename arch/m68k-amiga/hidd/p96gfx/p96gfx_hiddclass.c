@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: P96 rtg card Gfx Hidd wrapper.
-    Lang: English.
 */
 
 #include <exec/libraries.h>

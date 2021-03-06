@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: stdio internals
-    Lang: English
 */
 
 #include "__posixc_intbase.h"

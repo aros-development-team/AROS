@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
 
     Desc: Internal data structures for expansion.library
-    Lang: english
 */
 
 #ifndef _SHELLCOMMANDS_INTERN_H

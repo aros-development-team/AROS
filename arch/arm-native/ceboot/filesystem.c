@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2011, The AROS Development Team. All rights reserved.
 
     Desc: Filesystem control routines
-    Lang: english
 */
 
 #include <dirent.h>

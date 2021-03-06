@@ -1,6 +1,5 @@
 /*
-    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2013, The AROS Development Team. All rights reserved.
 */
 
 #include "__posixc_intbase.h"

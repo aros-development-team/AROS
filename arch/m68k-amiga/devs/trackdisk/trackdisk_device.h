@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Internal defs for trackdisk
-    Lang: English
 */
 #ifndef TRACKDISK_DEVICE_H
 #define TRACKDISK_DEVICE_H

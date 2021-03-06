@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
     Desc: Delete a file
-    Lang: English
 */
 
 #include <proto/exec.h>

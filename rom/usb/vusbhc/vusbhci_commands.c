@@ -1,9 +1,7 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2015-2017, The AROS Development Team. All rights reserved.
 
     Desc: VUSBHCI USB host controller
-    Lang: English
 */
 
 #ifdef DEBUG

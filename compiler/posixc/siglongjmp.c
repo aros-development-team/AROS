@@ -1,9 +1,7 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2015, The AROS Development Team. All rights reserved.
 
     Desc: POSIX.1-2008 function siglongjmp()
-    Lang: english
 */
 
 /******************************************************************************

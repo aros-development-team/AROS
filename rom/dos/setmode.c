@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Set the current mode of a console device.
-    Lang: english
 */
 #include "dos_intern.h"
 

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
     Desc: CacheClearE() - Clear the caches with extended control.
-    Lang: english
 */
 
 #include <exec/types.h>

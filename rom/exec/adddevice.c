@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: Add a device to the public list of devices.
-    Lang: english
 */
 #include <aros/debug.h>
 #include <exec/execbase.h>

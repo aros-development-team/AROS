@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: FindNamedObject() - find a NamedObject in a given NameSpace.
-    Lang: english
 */
 #include <proto/exec.h>
 #include "intern.h"

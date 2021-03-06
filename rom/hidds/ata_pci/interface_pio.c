@@ -1,9 +1,7 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
 
     Desc: PCI IDE PIO interface functions
-    Lang: English
 */
 
 #include "interface_pio.h"

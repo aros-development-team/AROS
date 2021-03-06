@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: Forbid() - Prevent tasks switches from taking place.
-    Lang: english
 */
 
 #define DEBUG 0

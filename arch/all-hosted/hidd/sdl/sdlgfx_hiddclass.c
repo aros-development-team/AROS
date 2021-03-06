@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2010-2020 The AROS Development Team. All rights reserved.
- * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright (C) 2010-2020 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2007 Robert Norris. All rights reserved.
  *
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  *

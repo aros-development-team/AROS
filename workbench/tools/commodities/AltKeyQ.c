@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2011, The AROS Development Team. All rights reserved.
 
     AltKeyQ -- Enter characters by their ANSI number.
 */

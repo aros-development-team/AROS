@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
     Desc: Lock all semaphores in the list at once.
-    Lang: english
 */
 #include "exec_intern.h"
 #include "semaphores.h"

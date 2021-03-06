@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: AllocMiscResource() function.
-    Lang: English
 */
 #include "misc_intern.h"
 #include <proto/exec.h>

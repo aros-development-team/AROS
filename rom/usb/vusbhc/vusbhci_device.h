@@ -1,9 +1,7 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2015-2017, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: English
 */
 
 #ifndef VUSBHCI_DEVICE_H

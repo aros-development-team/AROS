@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2004 The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2004 The AROS Development Team. All rights reserved.
 
     Desc: Tool to test openlib closelib functions.
-    Lang: english
 */
 #define  DEBUG  1
 #include <aros/debug.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: Install an interrupt handler.
-    Lang: english
 */
 #include <exec/execbase.h>
 #include <exec/interrupts.h>

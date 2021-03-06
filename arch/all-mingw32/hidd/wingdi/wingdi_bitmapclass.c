@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for GDI hidd.
-    Lang: English.
     
     Note: this implementation ignores GC_COLMASK. Windows GDI has no way to support it,
           however color masks seem to be not used anywhere in AROS.

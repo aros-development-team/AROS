@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: The task Dispatcher for m68k; taken from i386-native version
-    Lang: english
 */
 
 #include <exec/execbase.h>

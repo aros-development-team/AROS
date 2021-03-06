@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: MakeDosNode() - Create a DOS DeviceNode structure.
-    Lang: English
 */
 
 #include "expansion_intern.h"

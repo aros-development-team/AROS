@@ -1,6 +1,5 @@
 /*
-    Copyright © 2005-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2005-2016, The AROS Development Team. All rights reserved.
 
     Desc: Support functions for oop.library classes. Part of genmodule.
 */

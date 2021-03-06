@@ -1,6 +1,5 @@
 /*
-    Copyright © 2011-2018, The AROS Development Team.
-    $Id$
+    Copyright (C) 2011-2018, The AROS Development Team.
 */
 
 #include <datatypes/pictureclass.h>

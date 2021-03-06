@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: Internal types and stuff for dos
-    Lang: English
 */
 #ifndef DOS_INTERN_H
 #define DOS_INTERN_H

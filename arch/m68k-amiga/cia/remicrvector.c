@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010, The AROS Development Team. All rights reserved.
 
     Desc: RemICRVector() function.
-    Lang: english
 */
 
 #include <exec/interrupts.h>

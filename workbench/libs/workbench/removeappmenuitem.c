@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Remove a menuitem from Workbench's list of AppMenuItems.
-    Lang: English
 */
 
 #include "workbench_intern.h"

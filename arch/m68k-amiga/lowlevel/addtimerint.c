@@ -1,6 +1,5 @@
 /*
-    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>

@@ -1,9 +1,7 @@
 /*
     Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
-    $Id$
     
     Desc: Miscellaneous support functions.
-    Lang: English
 */
 
 #include <bootconsole.h>

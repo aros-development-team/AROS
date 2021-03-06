@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Host-side part of GDI hidd. Handles windows and receives events.
-    Lang: English.
 */
 
 #include <windows.h>

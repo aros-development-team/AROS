@@ -1,6 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _MUIMASTER_SUPPORT_AMIGAOS_H_

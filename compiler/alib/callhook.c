@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: amiga.lib function CallHook() which doesn't use utility.library
-    Lang: english
 */
 
 #define ALIB_NO_INLINE_STDARG

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Start an IO request and wait until it completes.
-    Lang: english
 */
 #include <exec/execbase.h>
 #include <exec/io.h>

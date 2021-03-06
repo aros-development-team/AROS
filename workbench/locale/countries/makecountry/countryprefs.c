@@ -1,9 +1,7 @@
 /*
-    Copyright © 2008-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2019, The AROS Development Team. All rights reserved.
 
     Desc: makecountry code that needs access to AROS structures and types
-    Lang: english
 */
 
 #include <exec/types.h>

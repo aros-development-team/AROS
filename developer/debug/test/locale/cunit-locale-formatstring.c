@@ -1,6 +1,5 @@
 /*
-    Copyright © 2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2021, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/locale.h>

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2020, The AROS Development Team. All rights reserved.
 
     Export the module entry points e.g to use when linking with --gc-sections
 */

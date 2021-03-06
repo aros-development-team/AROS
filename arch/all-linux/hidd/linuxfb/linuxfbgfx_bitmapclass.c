@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: Onscreen bitmap class for Linux FB Gfx Hidd
-    Lang: English.
 */
 
 #define DEBUG 0

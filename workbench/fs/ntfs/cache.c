@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2021, The AROS Development Team. All rights reserved.
 
     Disk cache.
  */

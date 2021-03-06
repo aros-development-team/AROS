@@ -1,10 +1,8 @@
 /*
-    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2012, The AROS Development Team. All rights reserved.
 
     Desc: CPU context parsing routines. Dummy nonfunctional template.
           See code in arch/i386-all/exec/alert_cpu.c for working example.
-    Lang: english
 */
 
 #include <string.h>

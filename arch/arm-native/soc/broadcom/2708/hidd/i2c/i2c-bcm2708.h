@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2019, The AROS Development Team. All rights reserved.
 */
 
 #ifndef I2C_BCM2708_H

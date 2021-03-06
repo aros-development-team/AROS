@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
     Desc: Free the memory occupied by a BitMap.
-    Lang: english
 */
 
 #include <aros/debug.h>

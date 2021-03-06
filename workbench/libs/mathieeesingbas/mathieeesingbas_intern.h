@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: english
 */
 #ifndef __MATHIEEESP_INTERN_H__
 #define __MATHIEEESP_INTERN_H__

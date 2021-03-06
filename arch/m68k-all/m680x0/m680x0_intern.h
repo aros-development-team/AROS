@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
     $Id: m680x0_intern.h$
 
     Desc: 68040/060 missing instruction emulation support code
-    Lang: english
 */
 
 #ifndef EXEC_TYPES_H

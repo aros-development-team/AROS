@@ -1,7 +1,6 @@
 /*
-   Copyright © 2002-2009, Chris Hodges. All rights reserved.
-   Copyright © 2009-2012, The AROS Development Team. All rights reserved.
-   $Id$
+   Copyright (C) 2002-2009, Chris Hodges. All rights reserved.
+   Copyright (C) 2009-2012, The AROS Development Team. All rights reserved.
 */
 
 #ifndef CHIP_H

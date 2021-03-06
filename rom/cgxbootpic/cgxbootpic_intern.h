@@ -1,6 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2013, The AROS Development Team. All rights reserved.
 */
 #ifndef _CGXBOOTPIC_INTERN_H_
 #define _CGXBOOTPIC_INTERN_H_

@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
 /* A very hacky testcase which dumps lots of graphics subsystem internal things.

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003, The AROS Development Team. All rights reserved.
 
     Originally written by by Rune Elvemo.
     Improved and adapted to gcc by Fabio Alemagna.

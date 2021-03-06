@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
 /* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices.

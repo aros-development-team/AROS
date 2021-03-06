@@ -1,6 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2002-2003, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _MUIMASTER_SUPPORT_CLASSES_H

@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _ICONLIST_PRIVATE_H_

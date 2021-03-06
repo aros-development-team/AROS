@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2019, The AROS Development Team. All rights reserved.
 
     Desc: CPU context parsing routines.
-    Lang: english
 */
 
 #include <string.h>

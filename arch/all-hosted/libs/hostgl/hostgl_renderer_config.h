@@ -1,6 +1,5 @@
 /*
     Copyright 2011, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef HOSTGL_RENDERER_CONFIG_H

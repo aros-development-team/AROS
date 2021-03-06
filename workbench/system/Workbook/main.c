@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011, The AROS Development Team. All rights reserved.
 
     Desc: Workbook wrapper for CLI
-    Lang: english
 */
 
 #include <proto/exec.h>

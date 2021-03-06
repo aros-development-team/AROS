@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Return the memory occupied by a single bitplane to the system.
-    Lang: english
 */
 #include <exec/memory.h>
 #include <proto/exec.h>

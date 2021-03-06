@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2003-2009, The AROS Development Team.
-    $Id$
 */
 
 #ifndef SAVEINFO_H_

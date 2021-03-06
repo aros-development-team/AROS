@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: Allocate some memory.
-    Lang: english
 */
 #include "exec_intern.h"
 #include <aros/libcall.h>

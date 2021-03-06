@@ -1,6 +1,5 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #if !defined(NOVUEAU_PCIIDS_H)

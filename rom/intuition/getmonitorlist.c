@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
 
     Get a copy of monitors list
 */

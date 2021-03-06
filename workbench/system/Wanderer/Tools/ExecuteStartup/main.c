@@ -1,9 +1,7 @@
 /*
-    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2006-2007, The AROS Development Team. All rights reserved.
 
     Desc: Executes programs in sys:WBStartup
-    Lang: English
 */
 
 /*****************************************************************************

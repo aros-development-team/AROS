@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: FreeDeviceProc() - Clean up after calls to GetDeviceProc()
-    Lang: english
 */
 #include "dos_intern.h"
 #include <proto/exec.h>

@@ -1,12 +1,10 @@
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
           of exec.library/RawDoFmt function. IPrefs will install
           the patch.
 
-    Lang: english
 */
 
 #include <exec/rawfmt.h>

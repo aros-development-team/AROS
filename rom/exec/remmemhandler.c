@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Remove a memory handler.
-    Lang: english
 */
 #include <exec/execbase.h>
 #include <aros/libcall.h>

@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: ReadBattClock() function.
-    Lang: english
 */
 #define DEBUG 0
 

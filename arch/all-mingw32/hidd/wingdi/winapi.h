@@ -1,10 +1,8 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2011, The AROS Development Team. All rights reserved.
 
     Desc: WinAPI definitions to be used with AROS-side code.
           Taken from various Mingw32 headers..
-    Lang: English.
 */
 
 #ifdef __x86_64__

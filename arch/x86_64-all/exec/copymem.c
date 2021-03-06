@@ -1,9 +1,7 @@
 /*
-    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2012, The AROS Development Team. All rights reserved.
 
     Desc: Copy memory.
-    Lang: english
 */
 
 #define DEBUG 0

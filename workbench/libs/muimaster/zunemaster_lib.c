@@ -1,8 +1,7 @@
 /*
-    Copyright © 2002-2020, The AROS Development Team. 
+    Copyright (C) 2002-2020, The AROS Development Team. 
     All rights reserved.
     
-    $Id$
 
     Library code for AmigaOS, based on Dirk Stöckers Libary
     Example

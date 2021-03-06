@@ -1,9 +1,7 @@
 /*
-    Copyright © 2013-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2013-2019, The AROS Development Team. All rights reserved.
 
     Desc: boot.c
-    Lang: english
  */
 
 #include <exec/types.h>

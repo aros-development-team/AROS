@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Unsigned 64-bit product of two 32-bit numbers.
-    Lang: english
 */
 #include "intern.h"
 

@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Bitmap class for native Amiga chipset.
-    Lang: English.
     
 */
 

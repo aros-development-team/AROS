@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2012, The AROS Development Team. All rights reserved.
  
     Desc: Multiboot v2 information structures
-    Lang: english
 */
 
 #ifndef _AROS_MULTIBOOT2_H

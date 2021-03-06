@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Backwards compatibility display driver loader.
-    Lang: english
 */
 
 #include <aros/debug.h>

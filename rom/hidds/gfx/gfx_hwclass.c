@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2017, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #include "gfx_debug.h"

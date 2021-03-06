@@ -1,6 +1,5 @@
 /*
-    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2009, The AROS Development Team. All rights reserved.
 */
 #ifndef __EXEC_H
 #define __EXEC_H

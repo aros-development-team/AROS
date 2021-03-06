@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Code to dynamically load ELF executables
-    Lang: english
 
     1997/12/13: Changed filename to internalloadseg_elf.c
                 Original file was created by digulla.

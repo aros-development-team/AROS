@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
 
     Desc: i386-pc kernel startup code
-    Lang: english
 */
 
 #include <aros/multiboot.h>

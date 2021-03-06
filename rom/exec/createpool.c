@@ -1,9 +1,7 @@
 /*
     Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Create a memory pool.
-    Lang: english
 */
 
 #include <aros/kernel.h>

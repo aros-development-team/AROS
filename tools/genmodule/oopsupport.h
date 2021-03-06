@@ -1,6 +1,5 @@
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2005, The AROS Development Team. All rights reserved.
 
     Desc: Include file for genmodules support for oop.library classes
 */

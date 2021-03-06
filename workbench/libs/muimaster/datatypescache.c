@@ -1,7 +1,6 @@
 /*
-    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
 
-    $Id$
 */
 
 #include <ctype.h>

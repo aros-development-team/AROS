@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
     Desc: Country data for Deutschland (Germany)
     Author: Sebastian Rittau <srittau@jroger.in-berlin.de>

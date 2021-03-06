@@ -2,7 +2,6 @@
     Copyright  2002, The AROS Development Team. 
     All rights reserved.
     
-    $Id$
 */
 
 #ifndef _ZUNE_FRAMESP_H

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
 
     Desc: Support functions for the gradientslider class
-    Lang: English
 */
 
 #include <graphics/gfxmacros.h>

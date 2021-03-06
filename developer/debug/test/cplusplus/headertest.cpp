@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
 // purpose of this test is to find out if our headers are C++ compatible

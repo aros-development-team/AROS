@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2003-2015, The AROS Development Team.
-    $Id$
 */
 
 #include <proto/acpica.h>

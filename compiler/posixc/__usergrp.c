@@ -1,9 +1,7 @@
 /*
-    Copyright © 2016-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2016-2017, The AROS Development Team. All rights reserved.
 
     Desc: single user defintion for POSIX user/groups
-    Lang: English
 */
 
 #include "__posixc_intbase.h"

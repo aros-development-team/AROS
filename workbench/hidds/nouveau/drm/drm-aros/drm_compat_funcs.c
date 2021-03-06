@@ -1,6 +1,5 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #include "drm_compat_funcs.h"

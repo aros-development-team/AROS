@@ -1,6 +1,5 @@
 /*
     Copyright 2009-2015, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef AROSMESA_FUNCS_H

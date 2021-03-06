@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
     Desc: Convert BCPL address to C pointer
-    Lang: English
 */
 
 #include <proto/exec.h>

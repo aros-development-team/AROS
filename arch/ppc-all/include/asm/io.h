@@ -1,6 +1,5 @@
 /*
-    Copyright � 1995-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
 */
 
 #ifndef ASM_PPC_IO_H

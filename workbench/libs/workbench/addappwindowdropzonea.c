@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Add a dropzone to an AppWindow's list of AppWindowDropZones.
 */

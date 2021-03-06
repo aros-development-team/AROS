@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: dos.library function Fault()
-    Lang: english
 */
 #include <aros/system.h>
 #include "dos_intern.h"

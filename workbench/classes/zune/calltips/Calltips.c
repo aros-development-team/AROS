@@ -1,7 +1,6 @@
 /*
-    Copyright © 2014, Thore Böckelmann. All rights reserved.
-    Copyright © 2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2014, Thore Böckelmann. All rights reserved.
+    Copyright (C) 2014, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/alib.h>

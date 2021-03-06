@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
 
     Desc: Shortcut OpenLibrary call for system modules (private!)
-    Lang: english
 */
 
 #include <aros/libcall.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-97, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-97, The AROS Development Team. All rights reserved.
 
     Desc: Demo for the console.device
-    Lang: english
 */
 #include <proto/exec.h>
 #include <proto/intuition.h>

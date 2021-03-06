@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Disk-resident part of GDI display driver
-    Lang: english
 */
 
 #include <aros/debug.h>

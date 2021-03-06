@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
 */
 #ifndef _CMDLIST_H
 #define _CMDLIST_H

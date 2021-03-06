@@ -1,6 +1,5 @@
 /*
     Copyright 2011-2015, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #include "hostgl_ctx_manager.h"

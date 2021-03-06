@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
     $Id: bootwait.c 55802 2019-03-08 21:47:59Z wawa $
 */
 

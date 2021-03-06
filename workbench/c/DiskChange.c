@@ -1,9 +1,7 @@
 /*
-    Copyright © 2007-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2007-2014, The AROS Development Team. All rights reserved.
 
     Desc: DiskChange CLI command
-    Lang: English
 */
 /******************************************************************************
 

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2000-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2000-2010, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: English
 */
 
 #include "bsdsocket_intern.h"

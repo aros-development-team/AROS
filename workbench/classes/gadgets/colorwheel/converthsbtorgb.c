@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
     Desc: ColorWheel function ConvertHSBToRGB()
-    Lang: english
 */
 #include <gadgets/colorwheel.h>
 #include <math.h>

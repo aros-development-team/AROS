@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011, The AROS Development Team. All rights reserved.
 
     Desc: ARM floating-point environment for software floating point processing
-    Lang: english
 */
 
 #ifndef _FENV_SOFT_H_

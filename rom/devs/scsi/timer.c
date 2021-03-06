@@ -1,9 +1,8 @@
 /*
-    Copyright © 2009-2013, The AROS Development Team. All rights reserved
+    Copyright (C) 2009-2013, The AROS Development Team. All rights reserved
     $Id: timer.c 55802 2019-03-08 21:47:59Z wawa $
 
     Desc:
-    Lang: English
 */
 
 #include <aros/debug.h>

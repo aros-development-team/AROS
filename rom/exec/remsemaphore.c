@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Remove a semaphore from the list of public semaphores.
-    Lang: english
 */
 
 #include "exec_intern.h"

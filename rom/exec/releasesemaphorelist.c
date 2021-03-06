@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Release all semaphores in the list.
-    Lang: english
 */
 #include "exec_intern.h"
 #include "semaphores.h"

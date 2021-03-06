@@ -2,7 +2,6 @@
     Copyright (C) 2003, The AROS Development Team. 
     All rights reserved.
     
-    $Id$
     
     This file provides the library initialization for OS4
 */

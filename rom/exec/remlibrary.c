@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Remove a library from the list of public libraries.
-    Lang: english
 */
 #include <aros/config.h>
 #include <exec/execbase.h>

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2014, The AROS Development Team. All rights reserved.
 */
 
 #ifndef LOWLEVEL_H_

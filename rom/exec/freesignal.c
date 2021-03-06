@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2009, The AROS Development Team. All rights reserved.
 
     Desc: Free a signal.
-    Lang: english
 */
 #include <exec/execbase.h>
 #include <exec/tasks.h>

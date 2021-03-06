@@ -2,7 +2,6 @@
     Copyright  2003, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 
 #include <math.h>

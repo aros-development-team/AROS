@@ -1,9 +1,7 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2002-2011, The AROS Development Team. All rights reserved.
  
     Desc: VESA BIOS information structures
-    Lang: english
 */
 
 #ifndef HARDWARE_VBE_H

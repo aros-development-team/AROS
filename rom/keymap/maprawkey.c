@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: keymap.library function MapRawKey()
-    Lang: english
 */
 #include <proto/arossupport.h>
 #include <devices/inputevent.h>

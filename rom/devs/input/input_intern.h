@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 
     Desc: Internal definitions for the input.device
-    Lang: english
 */
 
 #ifndef INPUT_INTERN_H

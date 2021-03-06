@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Free memory allocated with AllocEntry().
-    Lang: english
 */
 #include <aros/libcall.h>
 #include <exec/memory.h>

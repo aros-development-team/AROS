@@ -1,6 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008, The AROS Development Team. All rights reserved.
 
     Test for OpenFromLock(), NameFromLock(), NameFromFH() and DupLockFromFH().
  */

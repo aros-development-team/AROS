@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Exec functions declared as extern
-    Lang: english
 */
 
 extern void AROS_SLIB_ENTRY(Supervisor,Exec,5)();

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2006-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2006-2008, The AROS Development Team. All rights reserved.
 */
 
 #ifndef MAIN_H

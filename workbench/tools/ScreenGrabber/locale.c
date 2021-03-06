@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2006 AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006 AROS Development Team. All rights reserved.
 */
 
 #include <aros/symbolsets.h>

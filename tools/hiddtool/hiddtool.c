@@ -1,5 +1,5 @@
 /* Hiddtool
-   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
 This file is part of Hiddtool
 

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010, The AROS Development Team. All rights reserved.
 
     Desc: Set display driver notification callback
-    Lang: english
 */
 
 #include <aros/debug.h>

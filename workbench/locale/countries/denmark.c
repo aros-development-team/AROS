@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: Country data for Danmark (Denmark)
           based on the Amiga Developer CD 2.1 file -: 

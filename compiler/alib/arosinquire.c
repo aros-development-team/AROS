@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Retrieve information about the OS
-    Lang: english
 */
 #define AROS_TAGRETURNTYPE  ULONG
 #include <aros/arosbase.h>

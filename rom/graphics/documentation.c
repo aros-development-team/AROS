@@ -1,9 +1,7 @@
 /*
-    Copyright © 2008-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2010, The AROS Development Team. All rights reserved.
 
     Desc: Autodocs for function macros
-    Lang: english
 */
 
 

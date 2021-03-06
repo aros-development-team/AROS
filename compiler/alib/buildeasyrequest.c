@@ -1,9 +1,7 @@
 /*
-    Copyright � 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
     Desc: Varargs version of BuildEasyRequestArgs() (intuition.library)
-    Lang: english
 */
 
 #include <stdarg.h>

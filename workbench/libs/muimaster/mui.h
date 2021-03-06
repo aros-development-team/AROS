@@ -1,6 +1,5 @@
 /*
     Copyright  2002-2018, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef LIBRARIES_MUI_H

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
 
     Desc: The functions to read lines from a file
 */

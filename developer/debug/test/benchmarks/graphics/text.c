@@ -1,10 +1,8 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011, The AROS Development Team. All rights reserved.
 
     Desc: Benchmark for: 
           graphics.library/Text
-    Lang: English
 */
 /*****************************************************************************
 

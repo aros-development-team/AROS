@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
 
     Desc: Private data belonging to exec.library
-    Lang:
 */
 #ifndef __EXEC_INTERN_H__
 #define __EXEC_INTERN_H__

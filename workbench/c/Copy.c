@@ -1,9 +1,7 @@
 /*
-    Copyright © 2001-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2001-2017, The AROS Development Team. All rights reserved.
 
     Desc: Copy CLI command
-    Lang: English
 */
 
 /*****************************************************************************

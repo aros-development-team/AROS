@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: ResetBattClock()
-    Lang: english
 */
 #include "battclock_intern.h"
 

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
     Desc: Support functions for the colorwheel class
-    Lang: English
 */
 
 #include <exec/memory.h>

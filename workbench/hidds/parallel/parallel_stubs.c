@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Stubs for Parallel and ParallelUnit class
-    Lang: english
 */
 
 #ifndef AROS_USE_OOP

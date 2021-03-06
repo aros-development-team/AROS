@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 */
 
 #define __CRT_INLINE __attribute__ ((__always_inline__))

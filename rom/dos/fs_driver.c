@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2014, The AROS Development Team. All rights reserved.
 
     Desc: Low-level filesystem access functions, packet version
-    Lang: English
 */
 
 #include <aros/debug.h>

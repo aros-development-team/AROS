@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: FPU-specific definitions for ARM processors
-    Lang: english
 */
 
 #ifndef	_FENV_H_

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2012, The AROS Development Team. All rights reserved.
 
     Desc: PowerPC CPU context parsing routines.
-    Lang: english
 */
 
 #define DEBUG 1

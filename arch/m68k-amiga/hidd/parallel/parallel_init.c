@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
     Desc: Parallel hidd initialization code.
-    Lang: English.
 */
 #include <stddef.h>
 #include <exec/types.h>

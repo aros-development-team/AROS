@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: exec.library's internal service task. Performs memory management according
           to task scheduler's requests.
-    Lang: english
 */
 
 #include <exec/execbase.h>

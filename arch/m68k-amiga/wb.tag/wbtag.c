@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
     $Id: wbtag.c
 
     Desc: WB1.x C:LoadWB ROM Workbench startup code
-    Lang: english
 */
 #include <aros/debug.h>
 #include <exec/types.h>

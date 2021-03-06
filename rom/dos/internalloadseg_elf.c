@@ -1,9 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Code to dynamically load ELF executables
-    Lang: english
 */
 
 #include <aros/debug.h>

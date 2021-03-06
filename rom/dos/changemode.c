@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
 
     Desc: Change the mode of a filehandle or lock.
-    Lang: English
 */
 #include <aros/debug.h>
 #include <proto/exec.h>

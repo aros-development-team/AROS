@@ -1,6 +1,5 @@
 /*
-    Copyright © 2012-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2012-2021, The AROS Development Team. All rights reserved.
 
     Internal initialisation code for posixc.library
 */

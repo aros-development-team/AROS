@@ -1,6 +1,5 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: Free memory allocated by AllocVec().
-    Lang: english
 */
 #include "exec_intern.h"
 #include <aros/libcall.h>

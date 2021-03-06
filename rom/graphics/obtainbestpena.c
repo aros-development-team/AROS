@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
 
     Desc: Obtain the best pen available for a given color
-    Lang: english
 */
 
 #include "graphics_intern.h"

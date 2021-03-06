@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: English
 */
 
 /* HISTORY:  28.01.2001  SDuvan  --  Implemented */

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: English
 */
 #include <devices/inputevent.h>
 #include <devices/keymap.h>

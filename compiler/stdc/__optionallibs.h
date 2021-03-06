@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2018, The AROS Development Team. All rights reserved.
 */
 
 /* Functions in this include should be used in rest of stdc.library to check

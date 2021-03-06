@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: m68k-amiga gdb stub
-    Lang: english
  */
 /* Adapted from public domain code from:
  * ftp://ftp.jyu.fi/pub/PalmOS/ryeham/ALPHA/m68k-gdbstub.c

@@ -1,6 +1,5 @@
 /*
     Copyright 2010-2019, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef _SYSMON_INTERN_H

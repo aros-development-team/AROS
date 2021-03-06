@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Internal data structures for battclock.resource, PC hardware version
-    Lang: english
 */
 
 #include <exec/libraries.h>

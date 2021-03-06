@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team.
-    $Id$
+    Copyright (C) 1995-2002, The AROS Development Team.
 */
 
 #include <proto/exec.h>

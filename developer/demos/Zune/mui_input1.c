@@ -1,9 +1,8 @@
 /* 
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2003, The AROS Development Team.
+    Copyright (C) 1999, David Le Corfec.
+    Copyright (C) 2002-2003, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 
 #define MUIMASTER_NO_INLINE_STDARG

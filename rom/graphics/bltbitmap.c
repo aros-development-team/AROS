@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Copy a rectangle in a bitmap to another place or another bitmap.
-    Lang: english
 */
 
 #include <aros/debug.h>

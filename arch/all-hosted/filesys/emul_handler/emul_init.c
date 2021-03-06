@@ -1,9 +1,7 @@
 /*
  Copyright  1995-2011, The AROS Development Team. All rights reserved.
- $Id$
  
  Desc: Filesystem that accesses an underlying host OS filesystem.
- Lang: english
  */
 
 /*********************************************************************************************/

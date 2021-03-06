@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Check if an I/O request is completed.
-    Lang: english
 */
 #include <exec/execbase.h>
 #include <exec/io.h>

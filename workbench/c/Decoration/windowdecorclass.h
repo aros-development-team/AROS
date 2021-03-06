@@ -1,6 +1,5 @@
 /*
     Copyright  2011, The AROS Development Team.
-    $Id$
 */
 
 #ifndef WINDOWDECORCLASS_H

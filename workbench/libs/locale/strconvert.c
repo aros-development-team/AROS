@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: StrConvert - Stub for the Locale StrConvert function.
-    Lang: english
 */
 #include <exec/types.h>
 #include <proto/exec.h>

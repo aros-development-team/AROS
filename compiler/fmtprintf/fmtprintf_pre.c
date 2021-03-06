@@ -1,6 +1,5 @@
 /*
-    Copyright © 2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2018, The AROS Development Team. All rights reserved.
 
     Prelude for common code block to format a string like printf().
 */

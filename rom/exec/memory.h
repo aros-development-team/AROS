@@ -1,9 +1,7 @@
 /*
-    Copyright � 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang:
 */
 #ifndef _MEMORY_H_
 #define _MEMORY_H_

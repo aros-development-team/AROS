@@ -1,6 +1,5 @@
 /*
-    Copyright © 2008-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2021, The AROS Development Team. All rights reserved.
 
     4.4BSD function flock().
 */

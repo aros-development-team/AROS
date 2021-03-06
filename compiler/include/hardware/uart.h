@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
  
     Desc: IBM PC-compatible UART (16x50) specific definitions
-    Lang: english
 */
 
 #ifndef HARDWARE_UART_H

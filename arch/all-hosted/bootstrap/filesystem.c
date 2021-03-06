@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2014, The AROS Development Team. All rights reserved.
  */
 
 #include <dirent.h>

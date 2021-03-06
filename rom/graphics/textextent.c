@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: Calculate the size a text needs in a specific rastport.
-    Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>

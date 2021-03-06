@@ -1,6 +1,5 @@
 /*
-    Copyright © 2005-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2005-2021, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>

@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 */
 
 /* Create a Library, add it to the system, and try to open it.

@@ -1,6 +1,5 @@
 /*
     Copyright 2010, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #include "arosdrm.h"

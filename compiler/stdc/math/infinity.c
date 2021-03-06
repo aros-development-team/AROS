@@ -1,6 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2002, The AROS Development Team. All rights reserved.
 
     Definition of infinity and NaN.
 */

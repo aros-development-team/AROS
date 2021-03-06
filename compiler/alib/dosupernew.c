@@ -1,6 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003-2011, The AROS Development Team. All rights reserved.
 */
 
 #define ALIB_NO_INLINE_STDARG

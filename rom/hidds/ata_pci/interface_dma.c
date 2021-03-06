@@ -1,9 +1,7 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved
-    $Id$
+    Copyright (C) 2004-2018, The AROS Development Team. All rights reserved
 
     Desc: Generic PCI-DMA ATA controller driver
-    Lang: English
 */
 
 #include <aros/debug.h>

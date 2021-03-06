@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: Host-side hepler code for Windows emul.handler
-    Lang: english
 */
 
 #define _WIN32_IE 0x0500

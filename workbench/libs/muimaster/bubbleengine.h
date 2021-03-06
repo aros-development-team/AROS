@@ -1,9 +1,8 @@
 /* 
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright (C) 1999, David Le Corfec.
+    Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 
 #ifndef _ZUNE_BUBBLEENGINE_H__

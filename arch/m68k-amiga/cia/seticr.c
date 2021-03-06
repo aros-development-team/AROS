@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010, The AROS Development Team. All rights reserved.
 
     Desc: SetICR() function.
-    Lang: english
 */
 
 #include <exec/libraries.h>

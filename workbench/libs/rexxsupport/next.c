@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
     Desc: Get the pointer value a pointer is pointing to, often used to get
           the next element of a list
-    Lang: English
 */
 
 #include <proto/exec.h>

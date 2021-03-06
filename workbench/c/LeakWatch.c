@@ -1,9 +1,7 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2002-2013, The AROS Development Team. All rights reserved.
 
     Desc: show deltas of resources usage
-    Lang: english
 */
 
 /******************************************************************************

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: IsXXXX() - Stub for Language isXXXXX() functions.
-    Lang: english
 */
 #include "locale_intern.h"
 #include <aros/asmcall.h>

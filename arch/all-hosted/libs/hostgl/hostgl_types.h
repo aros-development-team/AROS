@@ -1,6 +1,5 @@
 /*
     Copyright 2011-2015, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef HOSTGL_TYPES_H

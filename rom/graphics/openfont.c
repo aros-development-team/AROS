@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function OpenFont()
-    Lang: english
 */
 #include <aros/debug.h>
 #include "graphics_intern.h"

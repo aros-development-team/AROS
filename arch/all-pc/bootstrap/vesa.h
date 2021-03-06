@@ -1,9 +1,7 @@
 /*
-    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2007-2011, The AROS Development Team. All rights reserved.
 
     Desc: VBE-related definitions.
-    Lang: english
 */
 
 #ifndef VESA_H_

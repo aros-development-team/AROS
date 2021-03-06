@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: AllocConfigDev() - Create a new ConfigDev in a compatible way.
-    Lang: english
 */
 #include "expansion_intern.h"
 #include <exec/memory.h>

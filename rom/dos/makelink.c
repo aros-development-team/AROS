@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Create a hard or soft link.
-    Lang: English
 */
 #include <dos/dosextens.h>
 #include "dos_intern.h"

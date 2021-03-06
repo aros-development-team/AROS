@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2019, The AROS Development Team. All rights reserved.
 */
 
 #ifndef GALLIUM_GALLIUM_H

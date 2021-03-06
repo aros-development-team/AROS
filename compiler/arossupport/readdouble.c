@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Read a big endian double floating point (64bit) from a streamhook
-    Lang: english
 */
 
 #include <proto/dos.h>

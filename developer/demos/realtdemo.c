@@ -1,9 +1,7 @@
 /*
-    Copyright © 2001-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2001-2021, The AROS Development Team. All rights reserved.
 
     Desc: Test program for RealTime.library
-    Lang: English
 */
 
 

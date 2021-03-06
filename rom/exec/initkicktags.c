@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
     $Id: initkicktags.c
 
     Desc: Handle CoolCapture and KickTags (reset proof residents)
-    Lang: english
 */
 
 #if AROS_SERIAL_DEBUG

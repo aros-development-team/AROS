@@ -1,6 +1,5 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #if !defined(DRM_AROS_CONFIG_H)

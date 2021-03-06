@@ -1,9 +1,7 @@
 /*
-   Copyright © 1997-98, The AROS Development Team. All rights reserved.
-   $Id$
+   Copyright (C) 1997-98, The AROS Development Team. All rights reserved.
 
    Desc: Demo for gadtools.library
-   Lang: english
  */
 
 #include <aros/config.h>

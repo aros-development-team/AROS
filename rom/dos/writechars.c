@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
 
     Desc: Writes a buffer to the current output.
-    Lang: english
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>

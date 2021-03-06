@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2012, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG

@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: GDI gfx HIDD for AROS.
-    Lang: English.
 */
 
 #define __OOP_NOATTRBASES__

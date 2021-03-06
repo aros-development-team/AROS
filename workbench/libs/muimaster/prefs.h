@@ -3,7 +3,6 @@
     Copyright  2002, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 #ifndef __ZUNE_PREFS_H__
 #define __ZUNE_PREFS_H__

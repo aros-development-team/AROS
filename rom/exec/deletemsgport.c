@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Free a message port.
-    Lang: english
 */
 #include <exec/ports.h>
 #include <exec/execbase.h>

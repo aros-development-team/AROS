@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
  
     Desc: IBM PC-compatible PIT (8253) specific definitions
-    Lang: english
 */
 
 #ifndef HARDWARE_PIT_H

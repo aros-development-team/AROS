@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
 */
 
 #ifndef PROCESSOR_ARCH_INTERN_H

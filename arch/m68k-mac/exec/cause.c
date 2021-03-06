@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Plam Version of Cause(); taken from i386native version of Cause().
-    Lang: english
 */
 
 #include <exec/execbase.h>

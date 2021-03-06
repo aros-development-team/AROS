@@ -1,10 +1,8 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2017, The AROS Development Team. All rights reserved.
 
     Desc: Update specified region of the bitmap, taking software composition into account.
     	  Private function for cybergraphics.library support.
-    Lang: english
 */
 
 #include "graphics_intern.h"

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
     Desc: Internal information for aros.library.
-    Lang:
 */
 #ifndef _AROS_INTERN_H_
 #define _AROS_INTERN_H_

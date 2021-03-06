@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: Internal information for utility.library.
-    Lang:
 */
 #ifndef UTILITY_INTERN_H
 #define UTILITY_INTERN_H

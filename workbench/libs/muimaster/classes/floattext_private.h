@@ -1,6 +1,5 @@
 /*
-    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2002-2012, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _FLOATTEXT_PRIVATE_H_

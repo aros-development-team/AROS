@@ -1,10 +1,8 @@
 /*
-    Copyright © 2008-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008-2017, The AROS Development Team. All rights reserved.
 
     Desc: CPU-specific add-ons for Windows-hosted scheduler.
           Context save, restore, and task exception handling.
-    Lang: english
 */
 
 #include <exec/execbase.h>

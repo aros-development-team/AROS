@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Removes a resource from the list of public resources.
-    Lang: english
 */
 #include <exec/execbase.h>
 #include <aros/libcall.h>

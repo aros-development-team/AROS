@@ -1,9 +1,7 @@
 /*
-    Copyright © 2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2019, The AROS Development Team. All rights reserved.
 
     Desc: private inline stubs for calling DMA and PIO vectors
-    Lang: English
 */
 
 static inline VOID PIO_Out(struct scsi_Bus* bus, UBYTE val, UWORD offset)

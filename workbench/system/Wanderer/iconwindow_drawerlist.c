@@ -1,6 +1,5 @@
 /*
   Copyright  2004-2011, The AROS Development Team. All rights reserved.
-  $Id$
 */
 
 #define ZCC_QUIET

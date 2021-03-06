@@ -2,7 +2,6 @@
     Copyright  2003, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 
 #ifndef MUI_IMSPEC_INTERN_H

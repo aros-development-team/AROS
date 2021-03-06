@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetChipRev()
-    Lang: english
 */
 #include <aros/debug.h>
 #include "graphics_intern.h"

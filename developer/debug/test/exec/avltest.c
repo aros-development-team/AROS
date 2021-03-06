@@ -1,9 +1,7 @@
 /*
-    Copyright © 2008 The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2008 The AROS Development Team. All rights reserved.
 
     Desc: Test AVL balanced tree interface.
-    Lang: english
 */
 #define  DEBUG  1
 #include <aros/debug.h>

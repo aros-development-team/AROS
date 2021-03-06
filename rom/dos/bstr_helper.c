@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: BSTR helpers
-    Lang: English
 */
 
 #include <aros/debug.h>

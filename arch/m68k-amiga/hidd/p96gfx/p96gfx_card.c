@@ -1,6 +1,5 @@
 /*
-    Copyright © 2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2019, The AROS Development Team. All rights reserved.
     
     Desc: Stubs used to call into a p96 card driver.
 */

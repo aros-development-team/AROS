@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: Tool to convert IFF ILBM images into Amiga icon file.
 
-    Lang: English
 
 */
 

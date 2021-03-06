@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: Add a node to the head of a list
-    Lang: english
 */
 #include <aros/debug.h>
 #include <exec/lists.h>

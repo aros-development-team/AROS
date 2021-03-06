@@ -1,9 +1,7 @@
 /*
-    Copyright © 1999, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1999, The AROS Development Team. All rights reserved.
 
     Desc: Demo showing moving and sizing of windows
-    Lang: English.
 */
 
 #include <stdio.h>

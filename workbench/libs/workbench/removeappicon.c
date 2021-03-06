@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Remove an icon from Workbench's list of AppIcons.
-    Lang: English
 */
 
 #include "workbench_intern.h"

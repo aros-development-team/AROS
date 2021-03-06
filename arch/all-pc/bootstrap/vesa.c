@@ -1,9 +1,7 @@
 /*
-    Copyright © 2007-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2007-2018, The AROS Development Team. All rights reserved.
 
     Desc: Real-mode code to set VBE mode.
-    Lang: english
 */
 
 #define _IMPLEMENTATION_

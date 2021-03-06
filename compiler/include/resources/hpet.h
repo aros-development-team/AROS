@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
 
     Desc: AROS HPET ClockSource definitions.
-    Lang: english
 */
 
 #ifndef RESOURCES_HPET_H

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2019-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2019-2020, The AROS Development Team. All rights reserved.
 
     Desc: Hardware detection routine
-    Lang: English
 */
 
 #include <aros/debug.h>

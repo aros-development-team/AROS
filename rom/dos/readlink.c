@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: Read the soft-link information.
-    Lang: English
 */
 #include "dos_intern.h"
 #include <exec/lists.h>

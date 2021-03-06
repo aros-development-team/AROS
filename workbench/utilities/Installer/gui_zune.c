@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
 */
 
 /* gui_zune.c -- here are all functions for the ZUNE gui */

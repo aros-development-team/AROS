@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Document the CLI startup packet
-    Lang: English
 */
 
 #ifndef  DOS_CLIINIT_H

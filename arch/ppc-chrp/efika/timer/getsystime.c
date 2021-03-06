@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: GetSysTime() - Find out what time it is.
-    Lang: english
 */
 #include "lowlevel.h"
 #include <proto/exec.h>

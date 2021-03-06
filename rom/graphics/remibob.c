@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Remove a Bob from the gel list an the RastPort
-    Lang: english
 */
 #include "graphics_intern.h"
 #include "gels_internal.h"

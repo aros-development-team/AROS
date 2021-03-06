@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 
     Desc: Waits for a character to arrive at a filehandle.
-    Lang: English
 */
 #include <proto/exec.h>
 #include "dos_intern.h"

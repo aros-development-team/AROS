@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Scroll the contents of a drawer so an specific icon becomes visible.
-    Lang: english
 */
 
 #include <exec/types.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: Internal data structures for potgo.resource
-    Lang: english
 */
 
 #ifndef POTGO_INTERN_H

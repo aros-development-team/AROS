@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FreeSprite()
-    Lang: english
 */
 #include <graphics/gfxbase.h>
 #include <proto/exec.h>

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2019, The AROS Development Team. All rights reserved.
     $Id: emul_arosc.c 56280 2019-04-17 18:42:57Z NicJA $
 */
 

@@ -1,6 +1,5 @@
 /*
-    Copyright © 2003-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003-2021, The AROS Development Team. All rights reserved.
 */
 
 #include "common.c"

@@ -1,9 +1,7 @@
 /*
-   Copyright © 2001-2020, The AROS Development Team. All rights reserved.
-   $Id$
+   Copyright (C) 2001-2020, The AROS Development Team. All rights reserved.
 
    Desc: Partition initialization code
-   Lang: English
 */
 
 #include <aros/symbolsets.h>

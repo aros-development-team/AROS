@@ -1,8 +1,7 @@
 /*
-    Copyright © 2002-2019, The AROS Development Team.
+    Copyright (C) 2002-2019, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 
 #define INTUITION_NO_INLINE_STDARG

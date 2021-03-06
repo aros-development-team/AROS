@@ -1,9 +1,7 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2020, The AROS Development Team. All rights reserved.
 
     Desc: Support for ARM EABI unwinding
-    Lang: english
 */
 
 

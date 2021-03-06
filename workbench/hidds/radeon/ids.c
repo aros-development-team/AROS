@@ -1,9 +1,7 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2006, The AROS Development Team. All rights reserved.
 
     Desc: List of ATI cards supported by this driver
-    Lang: English
 */
 
 #include "ids.h"

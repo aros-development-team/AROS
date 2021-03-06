@@ -1,9 +1,7 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2020, The AROS Development Team. All rights reserved.
 
     Desc: Varargs version of dos.library/GetSegListInfoTags()
-    Lang: english
 */
 
 #define AROS_TAGRETURNTYPE LONG

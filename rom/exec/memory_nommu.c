@@ -1,10 +1,8 @@
 /*
-    Copyright � 1995-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
 
     Desc: System memory allocator for MMU-less systems.
           Used also as boot-time memory allocator on systems with MMU.
-    Lang: english
 */
 
 #include <aros/debug.h>

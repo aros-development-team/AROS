@@ -1,9 +1,7 @@
 /*
-    Copyright © 1997-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1997-2011, The AROS Development Team. All rights reserved.
 
     Desc: Convert Amiga font to C code.
-    Lang: english
 */
 
 #include <stdlib.h>

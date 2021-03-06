@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: ColdReboot() - Reboot the computer, Unix-hosted implementation.
-    Lang: english
 */
 
 #include <aros/debug.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-     $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: SAGA Gfx Hidd for V4 AROS
-    Lang: english
 */
 #define DEBUG 0
 #include <aros/debug.h>

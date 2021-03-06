@@ -1,9 +1,8 @@
 /*
-    Copyright © 2002-2020, The AROS Development Team.
-    Copyright © 1999, David Le Corfec.
+    Copyright (C) 2002-2020, The AROS Development Team.
+    Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
-    $Id$
 */
 #include <exec/types.h>
 #include <exec/memory.h>

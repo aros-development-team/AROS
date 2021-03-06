@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Structure definitions for SMP machines following the Intel Multiprocessing Specification 1.1 and 1.4.
-    Lang: english
 */
 
 #ifndef __AROS_CPU_MPSPEC_H__

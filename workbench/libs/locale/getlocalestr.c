@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: GetLocaleStr() - Get a built-in system string.
-    Lang: english
 */
 
 #include <exec/types.h>

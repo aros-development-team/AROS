@@ -1,6 +1,5 @@
 /*
     Copyright 2014-2015, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #include <GL/gla.h>

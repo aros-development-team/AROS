@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: AttemptRemNamedObject() - attempt to remove a NamedObject
-    Lang: english
 */
 #include "intern.h"
 

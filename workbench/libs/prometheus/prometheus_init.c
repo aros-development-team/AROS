@@ -1,9 +1,7 @@
 /*
-    Copyright © 2005-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2005-2013, The AROS Development Team. All rights reserved.
 
     Desc: Prometheus initialisation code.
-    Lang: English.
 */
 
 #include <exec/types.h>

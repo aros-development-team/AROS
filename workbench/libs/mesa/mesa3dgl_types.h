@@ -1,6 +1,5 @@
 /*
     Copyright 2009-2021, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef MESA3DGL_TYPES_H

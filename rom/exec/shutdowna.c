@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: ShutdownA() - Shut down the operating system.
-    Lang: english
 */
 
 #include <aros/debug.h>

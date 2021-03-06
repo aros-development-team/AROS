@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011, The AROS Development Team. All rights reserved.
 
     Desc: Amiga(tm) chipset control macros
-    Lang: english
 */
 
 #ifdef AROS_ARCH_amiga

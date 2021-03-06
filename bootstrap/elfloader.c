@@ -1,9 +1,7 @@
 /*
  Copyright (C) 2006-2020 The AROS Development Team. All rights reserved.
- $Id$
  
  Desc: ELF loader extracted from our internal_load_seg_elf in dos.library.
- Lang: English
  */
 
 #include <inttypes.h>

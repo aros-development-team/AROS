@@ -1,9 +1,7 @@
 /*
     Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Delete a memory pool including all its memory.
-    Lang: english
 */
 
 #include <aros/libcall.h>

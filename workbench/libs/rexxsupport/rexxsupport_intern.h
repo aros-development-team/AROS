@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 */
 
 #ifndef REXXSUPPORT_INTERN_H

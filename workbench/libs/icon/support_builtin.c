@@ -1,6 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003, The AROS Development Team. All rights reserved.
     
     Builtin icon images to fall back upon if on-disk icons cannot be opened.
     Icons contributed by Martin "Mason" Merz.

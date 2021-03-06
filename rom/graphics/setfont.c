@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
     $Id$	  $Log
 
     Desc: Graphics function SetFont()
-    Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>

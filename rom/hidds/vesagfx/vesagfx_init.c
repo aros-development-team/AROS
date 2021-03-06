@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: VESA Gfx Hidd for standalone i386 AROS
-    Lang: english
 */
 
 #define __OOP_NOATTRBASES__

@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Print the library magic and init code in the file modname_start.c.
     This code is partly based on code in CLib37x.lha from Andreas R. Kleinert

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-96, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-96, The AROS Development Team. All rights reserved.
 
     Desc: Defines and macros to create and fill an inittable
-    Lang: english
 */
 #ifndef _INITSTRUCT_H_
 #define _INITSTRUCT_H_

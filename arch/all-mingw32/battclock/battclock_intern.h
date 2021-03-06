@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Internal data structures for Windows-hosted battclock.resource
-    Lang: english
 */
 
 #ifndef BATTCLOCK_INTERN_H

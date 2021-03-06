@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2013, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function sysconf().
 */

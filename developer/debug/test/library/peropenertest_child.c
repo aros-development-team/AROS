@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2012, The AROS Development Team. All rights reserved.
 */
 #include <proto/dos.h>
 #include <proto/pertask.h>

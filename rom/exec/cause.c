@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
 
     Desc: Cause() - Cause a software interrupt.
-    Lang: english
 */
 
 #include <aros/asmcall.h>

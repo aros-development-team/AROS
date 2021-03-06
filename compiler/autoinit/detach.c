@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
     
     Desc: support function for the detach.o startup file. 
           Probably this is not the right place where to keep it,

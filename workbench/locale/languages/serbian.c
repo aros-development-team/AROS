@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
     Desc: serbian.language description file.
     Char: ISO 8859-5

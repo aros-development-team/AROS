@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: Common startup code
-    Lang: english
 
     Use: To make a program detach itself from the launching CLI, use
          detach.o as your program's start file, before any other usual start

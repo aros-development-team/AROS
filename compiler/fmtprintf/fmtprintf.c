@@ -1,5 +1,5 @@
 /*
-    Copyright © 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018, The AROS Development Team. All rights reserved.
     $Id:$
 
     Common code block to format a string like printf().

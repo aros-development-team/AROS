@@ -1,9 +1,7 @@
 /*
-    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: cpu.h
-    Lang: english
 */
 
 #ifndef ASM_ARM_CPU_H

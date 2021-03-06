@@ -1,6 +1,5 @@
 /*
-    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2002-2015, The AROS Development Team. All rights reserved.
 */
 
 #ifndef MUIMASTER_INTERN_H

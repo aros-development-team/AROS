@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2019, The AROS Development Team. All rights reserved.
 */
 
 #include <dos/rdargs.h>

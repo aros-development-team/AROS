@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
     This file is part of the LoadResource program, which is distributed under
     the terms of version 2 of the GNU General Public License.
 

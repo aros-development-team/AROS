@@ -1,9 +1,8 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2018, The AROS Development Team. All rights reserved.
     $Id: lowlevel.c 55802 2019-03-08 21:47:59Z wawa $
 
     Desc:
-    Lang: English
 */
 
 /*

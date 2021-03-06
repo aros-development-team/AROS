@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
     Desc: dos.library function ExamineFH().
-    Lang: English
 */
 
 #include <aros/debug.h>

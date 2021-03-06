@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: X11 bitmap class, internal definitions
-    Lang: english
 */
 
 #include "x11gfx_bitmapclass.h"

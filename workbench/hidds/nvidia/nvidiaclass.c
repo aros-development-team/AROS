@@ -1,9 +1,7 @@
 /*
-    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
 
     Desc: NVidia gfx class
-    Lang: English
 */
 
 #include <exec/types.h>

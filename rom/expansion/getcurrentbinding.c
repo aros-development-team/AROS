@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 
     Desc: Get the CurrentBinding structure.
-    Lang: english
 */
 #include "expansion_intern.h"
 #include <proto/exec.h>

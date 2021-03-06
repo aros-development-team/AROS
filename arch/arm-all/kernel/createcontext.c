@@ -1,9 +1,7 @@
 /*
-    Copyright � 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Create an empty usable CPU context, ARM version.
-    Lang: english
 */
 
 #include <aros/kernel.h>

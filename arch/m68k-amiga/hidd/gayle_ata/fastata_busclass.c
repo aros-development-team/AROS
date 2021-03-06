@@ -1,9 +1,7 @@
 /*
-    Copyright © 2017-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2017-2019, The AROS Development Team. All rights reserved.
 
     Desc: Elbox FastATA HIDD
-    Lang: English
 */
 
 #include <aros/debug.h>

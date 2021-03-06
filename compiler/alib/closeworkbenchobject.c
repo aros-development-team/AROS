@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Varargs version of workbench.library/CloseWorkbenchObjectA()
-    Lang: english
 */
 #define AROS_TAGRETURNTYPE BOOL
 #include <dos/bptr.h>

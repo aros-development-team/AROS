@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: English
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>

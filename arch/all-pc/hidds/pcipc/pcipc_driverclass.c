@@ -1,9 +1,7 @@
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
 
     Desc: PCI direct bus driver, for i386/x86_64 native.
-    Lang: English
 */
 
 #include <aros/debug.h>

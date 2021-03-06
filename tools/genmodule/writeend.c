@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: function to write modulename_end.c. Part of genmodule.
 */

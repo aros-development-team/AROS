@@ -1,9 +1,7 @@
 /*
-    Copyright © 1997-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1997-2010, The AROS Development Team. All rights reserved.
 
     Desc: Atomic access functions to be used by macros in atomic.h.
-    Lang: english
 */
 
 #include <proto/exec.h>

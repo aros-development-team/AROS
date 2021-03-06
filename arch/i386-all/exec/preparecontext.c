@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: PrepareContext() - Prepare a task context for dispatch, i386 version
-    Lang: english
 */
 
 #include <exec/types.h>

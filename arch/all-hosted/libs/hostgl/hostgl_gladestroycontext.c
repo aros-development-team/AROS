@@ -1,6 +1,5 @@
 /*
     Copyright 2011-2017, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #include <aros/debug.h>

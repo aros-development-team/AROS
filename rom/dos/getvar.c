@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: GetVar - Return the value of a local or global variable.
-    Lang: English
 */
 
 #include <aros/debug.h>

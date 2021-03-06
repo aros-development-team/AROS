@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: AROS Generic CPU Definitions.
-    Lang: english
 */
 #ifndef __AROS_CPU_H__
 #define __AROS_CPU_H__

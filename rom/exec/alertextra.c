@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2021, The AROS Development Team. All rights reserved.
 
     Desc: Alert context parsing routines
-    Lang: english
 */
 
 #include <exec/rawfmt.h>

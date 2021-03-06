@@ -1,6 +1,5 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2020, The AROS Development Team. All rights reserved.
 
     Code to parse the command line options for the mkkeymap program
 */

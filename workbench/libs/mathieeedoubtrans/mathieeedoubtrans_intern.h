@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 */
 #ifndef __MATHIEEEDOUBTRANS_INTERN_H__
 #define __MATHIEEEDOUBTRANS_INTERN_H__

@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2003-2013, The AROS Development Team.
-    $Id$
 */
 
 

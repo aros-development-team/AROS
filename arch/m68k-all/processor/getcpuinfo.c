@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2019, The AROS Development Team. All rights reserved.
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
-    Lang: english
 */
 
 #define DEBUG 0

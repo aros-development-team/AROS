@@ -1,6 +1,5 @@
 /*
     Copyright  1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef _AMIGABITMAP_H

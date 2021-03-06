@@ -1,9 +1,8 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2011, The AROS Development Team. All rights reserved.
     This file is part of the PrefsWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
-    $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG

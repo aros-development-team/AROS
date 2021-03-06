@@ -1,9 +1,7 @@
 /*
-    Copyright © 2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2021, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for Headless Gfx hidd.
-    Lang: English.
 */
 
 #define __OOP_NOATTRBASES__

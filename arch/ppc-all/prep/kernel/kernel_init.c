@@ -1,9 +1,7 @@
 /*
-    Copyright C 2003, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2003, The AROS Development Team. All rights reserved.
 
     Desc: kernel.resource startup file
-    Lang: English
 */
 
 #include <exec/types.h>

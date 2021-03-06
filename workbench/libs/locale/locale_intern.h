@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
 
     Desc: Internal definitions for the locale.library.
-    Lang: english
 */
 
 #ifndef LOCALE_INTERN_H

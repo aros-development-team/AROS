@@ -1,9 +1,7 @@
 /*
-    Copyright © 1998-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1998-2001, The AROS Development Team. All rights reserved.
 
     Desc: Test program for Commodities
-    Lang: English
 */
 
 #include <proto/exec.h>

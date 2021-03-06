@@ -1,6 +1,5 @@
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2007, The AROS Development Team. All rights reserved.
 
     DepthMenu commodity -- shows list of window/screens in popupmenu.
 */

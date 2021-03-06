@@ -1,10 +1,8 @@
 /*
- Copyright © 1995-2011, The AROS Development Team. All rights reserved.
- $Id$
+ Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
  
  Desc: Filesystem that accesses an underlying host OS filesystem.
        Low-level host-dependent subroutines for Windows.
- Lang: english
  */
 
 /*********************************************************************************************/

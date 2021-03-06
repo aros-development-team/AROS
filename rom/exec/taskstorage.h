@@ -1,6 +1,5 @@
 /*
-    Copyright © 2011-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2014, The AROS Development Team. All rights reserved.
 */
 #ifndef TASKSTORAGE_H
 #define TASKSTORAGE_H

@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
- * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright (c) 2007-2011 The AROS Development Team
+ * Copyright (C) 2007 Robert Norris. All rights reserved.
+ * Copyright (C) 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.

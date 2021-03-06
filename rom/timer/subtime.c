@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: SubTime - subtract two timevals from each other.
-    Lang: english
 */
 
 #include <devices/timer.h>

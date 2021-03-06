@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2010, The AROS Development Team. All rights reserved.
 
     Desc: Request string from user
 */

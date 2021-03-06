@@ -1,6 +1,5 @@
 /*
-    Copyright © 2005-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2005-2013, The AROS Development Team. All rights reserved.
 */
 
 #ifndef PROMETHEUS_INTERN_H

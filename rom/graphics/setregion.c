@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: (AROS only) Graphics function SetRegion()
-    Lang: english
 */
 
 #include "graphics_intern.h"

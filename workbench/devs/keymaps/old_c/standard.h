@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 */
 
 /* Strings for the F1 key. In a real AmigaOS keymap, these would have come after

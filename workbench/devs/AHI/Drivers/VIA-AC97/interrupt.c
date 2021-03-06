@@ -1,7 +1,6 @@
 /*
-    Copyright © 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2005-2013, Davy Wentzler. All rights reserved.
+    Copyright (C) 2010-2016, The AROS Development Team. All rights reserved.
 */
 
 #include <config.h>

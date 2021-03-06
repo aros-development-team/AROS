@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
     Command line options:
 
     1. PUBSCREEN <name>: the name of the public screen to open the window on

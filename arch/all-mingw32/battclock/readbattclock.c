@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: ReadBattClock() function.
-    Lang: english
 */
 
 #include "battclock_intern.h"

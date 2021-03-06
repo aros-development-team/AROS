@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
     
     Demo for oss.library to playback audio samples.
     It can play raw audio files containing 16 bit signed PCM data in little endian format.

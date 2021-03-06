@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Checks for signals in a mask.
-    Lang: english
 */
 #include <exec/tasks.h>
 #include <proto/exec.h>

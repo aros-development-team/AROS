@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: gadtools.library function CreateGadgetA()
-    Lang: english
 */
 #include <proto/exec.h>
 #include <exec/memory.h>

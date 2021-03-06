@@ -1,9 +1,7 @@
 /*
-    Copyright © 2000, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2000, The AROS Development Team. All rights reserved.
 
     Desc: Probe installed Rise Technology mP6 CPUs and display relevant information
-    Lang: english
 */
 
 /* BIG TO DO - SEPERATE THE INDIVIDUAL PROCESSOR FAMILY "PROBES" INTO RUNTIME SHARED LIBS OR SIMILAR */

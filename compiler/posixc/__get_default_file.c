@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Function to get a dos.library file handle associated with given file 
     descriptor.

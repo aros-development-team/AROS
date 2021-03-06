@@ -1,6 +1,5 @@
 /*
     Copyright 2015, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #ifndef GL_INTERN_H

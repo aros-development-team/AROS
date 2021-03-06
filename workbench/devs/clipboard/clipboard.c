@@ -1,6 +1,5 @@
 /*
-    Copyright © 1998-2009, The AROS Development Team. All rights reserved. 
-    $Id$
+    Copyright (C) 1998-2009, The AROS Development Team. All rights reserved. 
 
     Clipboard device.
 */

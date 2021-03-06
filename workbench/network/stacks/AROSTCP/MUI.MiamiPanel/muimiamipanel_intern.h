@@ -1,8 +1,7 @@
 /*
-    Copyright © 2002-2008, The AROS Development Team. 
+    Copyright (C) 2002-2008, The AROS Development Team. 
     All rights reserved.
     
-    $Id$
 */
 
 #ifndef _MIAMIPANEL_INTERN_H

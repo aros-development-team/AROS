@@ -1,9 +1,7 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2004-2006, The AROS Development Team. All rights reserved.
 
     Desc: PCI direct driver for i386 native.
-    Lang: English
 */
 
 #define __OOP_NOATTRBASES__

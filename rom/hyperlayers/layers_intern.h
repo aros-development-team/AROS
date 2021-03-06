@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Internal information for layers.library.
-    Lang:
 */
 #ifndef _LAYERS_INTERN_H_
 #define _LAYERS_INTERN_H_

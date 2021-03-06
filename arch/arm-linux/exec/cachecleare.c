@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
 
     Desc: CacheClearE() - Clear the caches with extended control, ARM Linux-hosted implementation
-    Lang: english
 */
 
 #include <exec/execbase.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2011, The AROS Development Team. All rights reserved.
 
     Desc: Hellenic (Greek) PC105 Keymap
-    Lang: Hellenic
 */
 
 #include "common.h"

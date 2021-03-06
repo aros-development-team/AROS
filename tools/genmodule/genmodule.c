@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Main for genmodule. A tool to generate files for building modules.
 */

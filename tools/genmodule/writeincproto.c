@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Desc: Function to write proto/modulename(_rel).h. Part of genmodule.
 */

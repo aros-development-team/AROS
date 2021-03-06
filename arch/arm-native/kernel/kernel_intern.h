@@ -1,6 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2013-2015, The AROS Development Team. All rights reserved.
 */
 
 #ifndef KERNEL_INTERN_H_

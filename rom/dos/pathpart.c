@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
 
     Desc: Return a pointer to after the directories in a path.
-    Lang: English
 */
 #ifndef TEST
 #    include "dos_intern.h"

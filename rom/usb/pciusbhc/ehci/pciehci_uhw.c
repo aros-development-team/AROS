@@ -1,6 +1,5 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2012, The AROS Development Team. All rights reserved.
 */
 
 #include LC_LIBDEFS_FILE

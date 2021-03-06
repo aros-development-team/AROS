@@ -1,6 +1,5 @@
 /*
-    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2015-2018, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/alerts.h>

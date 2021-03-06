@@ -1,9 +1,7 @@
 /*
-    Copyright © 2018-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2018-2019, The AROS Development Team. All rights reserved.
 
     Desc: Gamepad (XInput) USB class driver
-    Lang: English
 */
 
 

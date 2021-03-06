@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetRGB32CM()
-    Lang: english
 */
 #include <graphics/view.h>
 #include "graphics_intern.h"

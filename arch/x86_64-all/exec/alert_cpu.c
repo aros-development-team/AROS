@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2012, The AROS Development Team. All rights reserved.
 
     Desc: CPU context parsing routines, x86-64 version.
-    Lang: english
 */
 
 #include <exec/rawfmt.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
 
     Desc: Display an alert in supervisor mode.
-    Lang: english
 */
 
 #include <aros/debug.h>

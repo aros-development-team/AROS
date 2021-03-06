@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: private definitions for the security.library
-    Lang: english
 */
 #ifndef _SECURITY_INTERN_H
 #define _SECURITY_INTERN_H

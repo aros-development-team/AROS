@@ -1,9 +1,7 @@
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
 
     Desc: Base PCI driver class
-    Lang: English
 
     I am not sure, whether this piece of code is already aware of endianess.
     Has to be checked soon ;)

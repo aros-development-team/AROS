@@ -5,7 +5,7 @@
 #define __MMAKE_PROJECT_H
 
 /* MetaMake - A Make extension
-   Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 

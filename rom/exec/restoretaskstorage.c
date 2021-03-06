@@ -1,6 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2012, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/nodes.h>

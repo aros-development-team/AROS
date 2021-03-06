@@ -1,9 +1,7 @@
 /*
-    Copyright © 2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2014, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: english
 */
 #ifndef FELSUNXI_INTERN_H
 #define FELSUNXI_INTERN_H

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
     $Id: BMPclass.c 30902 2009-03-14 13:38:20Z mazze $ 2020-01-04 miker.
 */
 

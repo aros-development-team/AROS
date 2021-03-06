@@ -1,6 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved
-    $Id$
+    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved
 */
 
 #define DB_LEVEL 100

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2013, The AROS Development Team. All rights reserved.
 
     Desc: Cumulative graphics benchmarks
-    Lang: English
 */
 /*****************************************************************************
 

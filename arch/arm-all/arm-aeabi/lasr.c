@@ -1,6 +1,5 @@
 /*
     Copyright (C) 2009-2015, The AROS Development Team. All rights reserved.
-    $Id$
  */
 
 #include <inttypes.h>

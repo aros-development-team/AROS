@@ -1,9 +1,7 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2020, The AROS Development Team. All rights reserved.
 
     Desc: AROS generic ClockSource resource definitions.
-    Lang: english
 */
 
 #ifndef RESOURCES_CLOCKSOURCE_H

@@ -1,6 +1,5 @@
 /*
     Copyright 2017-2018, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 #define DEBUG 0

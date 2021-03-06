@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: OOP function OOP_GetAttrBase
-    Lang: english
 */
 
 #include "intern.h"

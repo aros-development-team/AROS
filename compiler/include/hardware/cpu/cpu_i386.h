@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: i386 compatable Processor information.
-    Lang: english
 */
 
 #ifndef __AROS_CPU_i386_H__

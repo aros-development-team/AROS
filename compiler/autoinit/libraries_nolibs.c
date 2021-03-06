@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
 
     Desc: autoinit library - automatic library opening/closing handling
           Dummy functions to be used in case no libraries have to be opened/closed
-    Lang: english
 */
 
 #include <aros/symbolsets.h>

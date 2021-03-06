@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: Gameport device
-    Lang: English
 */
 
 /* NOTE: Currently, only mice are supported */

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2014, The AROS Development Team. All rights reserved.
 
     Desc: dummy file
-    Lang: English
 */
 
 #include "card_intern.h"

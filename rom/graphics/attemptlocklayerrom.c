@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AttemptLockLayerRom()
-    Lang: english
 */
 #include <graphics/clip.h>
 #include <graphics/layers.h>

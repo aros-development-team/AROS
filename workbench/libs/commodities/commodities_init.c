@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
     Desc: Commodities initialization code.
-    Lang: English.
 */
 
 #define  USE_ZERO_OBJECT 0 /* stegerg: no idea why zero object is/was used at all */

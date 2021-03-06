@@ -1,6 +1,5 @@
 /*
-    Copyright © 2012-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2012-2013, The AROS Development Team. All rights reserved.
 
     Desc: Code enabling environ emulation mode for user programs.
           This code is part of the static link library of arosc.

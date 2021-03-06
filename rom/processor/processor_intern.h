@@ -1,9 +1,7 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
 
     Desc: Internal data structures for processor.resource
-    Lang: english
 */
 
 #ifndef PROCESSOR_INTERN_H

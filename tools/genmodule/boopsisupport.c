@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
     Support function for generating code for BOOPSI classes. Part of genmodule.
 */

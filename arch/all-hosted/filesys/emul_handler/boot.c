@@ -1,9 +1,7 @@
 /*
     Copyright  1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Emergency console launcher for hosted AROS
-    Lang: english
 */
 
 #define DEBUG 0

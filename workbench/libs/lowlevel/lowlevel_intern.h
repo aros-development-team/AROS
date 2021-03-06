@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: Internal header file for lowlevel library
-    Lang: english
 */
 #ifndef __LOWLEVEL_INTERN_H__
 #define __LOWLEVEL_INTERN_H__

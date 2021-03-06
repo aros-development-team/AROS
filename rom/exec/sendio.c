@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
     Desc: Start an asynchronous I/O request.
-    Lang: english
 */
 #include <exec/execbase.h>
 #include <exec/io.h>

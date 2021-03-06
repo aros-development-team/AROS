@@ -1,9 +1,7 @@
 /*
-    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
 
     Desc: i386 native CPU supplementals for task scheduler
-    Lang: english
 */
 
 #include <exec/lists.h>

@@ -1,9 +1,7 @@
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
 
     Desc: PCI configuration mechanism 2 access functions
-    Lang: English
 */
 
 #include <aros/debug.h>

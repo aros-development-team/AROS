@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Detect custom chipset revisions and PAL/NTSC state
-    Lang: english
 */
 
 #define DEBUG 0

@@ -1,6 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
     Desc: C99 header file stdint.h
           Standard fixed sized integral types.

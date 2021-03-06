@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc:
-    Lang: english
 */
 
 #ifndef AROS_ASMCALL_H

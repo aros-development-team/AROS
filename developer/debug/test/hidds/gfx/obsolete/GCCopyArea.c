@@ -1,9 +1,7 @@
 /*
-    Copyright © 1998, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1998, The AROS Development Team. All rights reserved.
 
     Desc: Test for graphics.hidd
-    Lang: english
 */
 
 /*****************************************************************************

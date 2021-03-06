@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Retrieve the full pathname from a filehandle.
-    Lang: english
 */
 #include <proto/exec.h>
 #include "dos_intern.h"

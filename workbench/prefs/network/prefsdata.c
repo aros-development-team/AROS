@@ -1,6 +1,5 @@
 /*
-    Copyright © 2009-2014, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 2009-2014, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/dos.h>

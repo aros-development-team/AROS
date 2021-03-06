@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
     Desc: Header file for intregions.c
-    Lang: english
 */
 #ifndef INTREGIONS_H
 #define INTREGIONS_H

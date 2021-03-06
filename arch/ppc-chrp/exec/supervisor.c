@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Supervisor() - Execute some code in a privileged environment.
-    Lang: english
 */
 
 #include <proto/exec.h>

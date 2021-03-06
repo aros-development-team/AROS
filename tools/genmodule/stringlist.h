@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
 
     Desc: Code for the handling of a list of strings
 */

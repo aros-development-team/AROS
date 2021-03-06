@@ -1,7 +1,7 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
- * Copyright © 2008-2015 The AROS Development Team
+ * Copyright (C) 2008-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.

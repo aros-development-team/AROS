@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: Linux fbdev Gfx Hidd for AROS.
-    Lang: English.
 */
 
 #define DEBUG 1

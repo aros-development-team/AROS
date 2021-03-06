@@ -1,9 +1,7 @@
 /*
     Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
-    $Id$
 
     Desc: Varargs version of EasyRequestArgs() (intuition.library)
-    Lang: english
 */
 
 #include <stdarg.h>

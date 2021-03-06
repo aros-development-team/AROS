@@ -1,8 +1,7 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team.
+    Copyright (C) 2003-2011, The AROS Development Team.
     All rights reserved.
 
-    $Id$
 */
 
 #ifndef _ZUNE_MUISUPPORT_H

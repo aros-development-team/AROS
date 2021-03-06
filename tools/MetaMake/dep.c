@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 

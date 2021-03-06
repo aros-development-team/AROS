@@ -1,6 +1,6 @@
 /* indent -blC -bli0 -npcs -ncs -i4 -bad -bap avl.c */
 /*
-    Copyright (c) 2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008, The AROS Development Team. All rights reserved.
 
 #Description: @AROS.Exec.AVL@
 
