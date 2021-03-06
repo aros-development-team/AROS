@@ -71,7 +71,7 @@ static char *check_header(struct elfheader *eh)
  * Get the memory for chunk and load it
  */
 static void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS_t **bss_tracker)
-{ 
+{
     uintptr_t align;
 
     /* empty chunk? Who cares :) */
