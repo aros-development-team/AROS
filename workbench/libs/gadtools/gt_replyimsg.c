@@ -16,10 +16,10 @@
         AROS_LH1(void, GT_ReplyIMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IntuiMessage *, imsg, A1),
+        AROS_LHA(struct IntuiMessage *, imsg, A1),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 13, GadTools)
+        struct Library *, GadToolsBase, 13, GadTools)
 
 /*  FUNCTION
         Replies a message gotten via GT_GetIMsg().
@@ -50,9 +50,9 @@
     
     if (imsg)
     {
-    	origmsg = GT_PostFilterIMsg(imsg);
-	if (origmsg)
-	    ReplyMsg(&origmsg->ExecMessage);
+        origmsg = GT_PostFilterIMsg(imsg);
+        if (origmsg)
+            ReplyMsg(&origmsg->ExecMessage);
     }
 
     AROS_LIBFUNC_EXIT

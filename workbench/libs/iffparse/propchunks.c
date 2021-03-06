@@ -11,29 +11,29 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH3(LONG, PropChunks,
+        AROS_LH3(LONG, PropChunks,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
-	AROS_LHA(const LONG       *, propArray, A1),
-	AROS_LHA(LONG              , numPairs, D0),
+        AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(const LONG       *, propArray, A1),
+        AROS_LHA(LONG              , numPairs, D0),
 
 /*  LOCATION */
     struct Library *, IFFParseBase, 20, IFFParse)
 
 /*  FUNCTION
-	Does multiple PropChunk() calls on the supplied list.
-	An easy way to install several prop chunk handlers
+        Does multiple PropChunk() calls on the supplied list.
+        An easy way to install several prop chunk handlers
 
 
     INPUTS
-	iff	  - pointer to an IFFHandle struct.
-	propArray  - pointer to an array of longword chunk types and identifiers.
-	numPairs  - number of type/id pairs in the propArray.
+        iff       - pointer to an IFFHandle struct.
+        propArray  - pointer to an array of longword chunk types and identifiers.
+        numPairs  - number of type/id pairs in the propArray.
 
 
     RESULT
-	error	   - 0 if successful, IFFERR_#? otherwise.
+        error      - 0 if successful, IFFERR_#? otherwise.
 
 
     NOTES
@@ -53,7 +53,7 @@
     LONG err;
 
     DEBUG_PROPCHUNKS(dprintf("PropChunks: iff 0x%lx array 0x%lx num %d\n",
-			    iff, propArray, numPairs));
+                            iff, propArray, numPairs));
 
 #if DEBUG
     {
@@ -61,11 +61,11 @@
     bug ("PropChunks (iff=%p, [\n", iff);
     for (count = 0; count < numPairs; count++)
     {
-	bug ("    {%c%c%c%c,%c%c%c%c}, ",
-	    dmkid(lptr[0]),
-	    dmkid(lptr[1])
-	);
-	lptr += 2;
+        bug ("    {%c%c%c%c,%c%c%c%c}, ",
+            dmkid(lptr[0]),
+            dmkid(lptr[1])
+        );
+        lptr += 2;
     }
     bug ("    ])\n");
     }
@@ -73,10 +73,10 @@
 
     for (count = 0; count < numPairs; count ++ )
     {
-	if ((err = PropChunk(iff, propArray[0], propArray[1])))
-	    ReturnInt("PropChunks",LONG,err);
+        if ((err = PropChunk(iff, propArray[0], propArray[1])))
+            ReturnInt("PropChunks",LONG,err);
 
-	propArray += 2;
+        propArray += 2;
     }
 
     ReturnInt("PropChunks",LONG,0L);

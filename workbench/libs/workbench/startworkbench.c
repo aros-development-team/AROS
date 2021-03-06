@@ -53,31 +53,31 @@
     D(bug("StartWorkbench: ptr = %p\n", ptr));
     Forbid();
     if (!WorkbenchBase->wb_WBStarted) {
-    	struct Segment *seg;
-    	BPTR wbseg = 0;
+        struct Segment *seg;
+        BPTR wbseg = 0;
 
-    	seg = FindSegment("Workbook", NULL, TRUE);
-    	if (seg != NULL)
-    	    wbseg = seg->seg_Seg;
-    	D(bug("StartWorkbench: DOSBase = %p, Segment = %p\n", DOSBase, BADDR(wbseg)));
-    	if (wbseg) {
-	    struct TagItem tags[] =
-	    {
-	    	/* FIXME: check tags */
-		{ NP_Entry, (IPTR)BADDR(wbseg) },
-		{ NP_WindowPtr, (IPTR)-1 },
-		{ NP_ConsoleTask, (IPTR)BNULL },
-		{ NP_CurrentDir, (IPTR)BNULL },
-		{ NP_Name, (IPTR)"Workbench" },
-		{ NP_Cli, TRUE },
-		{ NP_Priority, 1 },
-		{ TAG_END , 0 }
-	    };
-     	    if (CreateNewProc((struct TagItem *)tags)) {
-     	    	rc = TRUE;
-     	    	WorkbenchBase->wb_WBStarted = TRUE;
-     	    }
-    	}
+        seg = FindSegment("Workbook", NULL, TRUE);
+        if (seg != NULL)
+            wbseg = seg->seg_Seg;
+        D(bug("StartWorkbench: DOSBase = %p, Segment = %p\n", DOSBase, BADDR(wbseg)));
+        if (wbseg) {
+            struct TagItem tags[] =
+            {
+                /* FIXME: check tags */
+                { NP_Entry, (IPTR)BADDR(wbseg) },
+                { NP_WindowPtr, (IPTR)-1 },
+                { NP_ConsoleTask, (IPTR)BNULL },
+                { NP_CurrentDir, (IPTR)BNULL },
+                { NP_Name, (IPTR)"Workbench" },
+                { NP_Cli, TRUE },
+                { NP_Priority, 1 },
+                { TAG_END , 0 }
+            };
+            if (CreateNewProc((struct TagItem *)tags)) {
+                rc = TRUE;
+                WorkbenchBase->wb_WBStarted = TRUE;
+            }
+        }
     }
     Permit();
     return rc;

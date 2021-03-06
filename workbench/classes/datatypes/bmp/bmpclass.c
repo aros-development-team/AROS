@@ -62,11 +62,11 @@ typedef struct {
 
 typedef struct
 {
-    UBYTE rgbBlue; 
+    UBYTE rgbBlue;
     UBYTE rgbGreen;
     UBYTE rgbRed;
-    UBYTE rgbZero;    
-} __attribute__((packed)) RGBQUAD;    
+    UBYTE rgbZero;
+} __attribute__((packed)) RGBQUAD;
 
 typedef struct
 {
@@ -235,7 +235,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     ULONG                   alignwidth, alignbytes, alignedbytes, pixelfmt;
     long                    x, y;
     int                     cont, byte;
-    int 		    numcolors;
+    int                     numcolors;
     struct BitMapHeader     *bmhd;
     struct ColorRegister    *colormap;
     ULONG                   *colorregs;
@@ -332,7 +332,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 #endif
     
     /* check color mode */
-    numcolors = 0; 
+    numcolors = 0;
     pixelfmt = PBPAFMT_LUT8;
     switch (biBitCount)
     {
@@ -613,14 +613,14 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
         if
         (
             !DoSuperMethod(cl, o,
-                   PDTM_WRITEPIXELARRAY,	/* Method_ID */
-                   (IPTR)BMPhandle->linebuf,	/* PixelData */
-                   pixelfmt,			/* PixelFormat */
-                   (biBitCount <= 8) ? (biWidth << 3) : linebufwidth,		/* PixelArrayMod (number of bytes per row) */
-                   0,				/* Left edge */
-                   y,				/* Top edge */
-                   biWidth,			/* Width */
-                   1				/* Height (here: one line) */
+                   PDTM_WRITEPIXELARRAY,        /* Method_ID */
+                   (IPTR)BMPhandle->linebuf,    /* PixelData */
+                   pixelfmt,                    /* PixelFormat */
+                   (biBitCount <= 8) ? (biWidth << 3) : linebufwidth,           /* PixelArrayMod (number of bytes per row) */
+                   0,                           /* Left edge */
+                   y,                           /* Top edge */
+                   biWidth,                     /* Width */
+                   1                            /* Height (here: one line) */
             )
         )
         {
@@ -640,17 +640,17 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 
 static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
-    BPTR		        filehandle;
+    BPTR                        filehandle;
     unsigned int                width, height, depth, y, yoffset, imageIdx;
     int                         numcolors;
-    UBYTE		        *linebuf;
+    UBYTE                       *linebuf;
     UBYTE                       tempRGB;
     struct BitMapHeader         *bmhd;
     struct ColorRegister        *colormap;
     long                        *colorregs;
     ULONG                       alignwidth, alignbytes, pixelfmt;
-    ULONG 			ulbuff;
-    UWORD			uwbuff;
+    ULONG                       ulbuff;
+    UWORD                       uwbuff;
 
     D(bug("[bmp.datatype] %s()\n", __func__));
 
@@ -681,7 +681,7 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     D(bug("[bmp.datatype] %s: Picture size %d x %d (x %d bits)\n", __func__, width, height, depth));
     
     /* Check bit depth to add padding & to determine pixel format */
-    pixelfmt = PBPAFMT_LUT8; //Default bit depth is set to 8.	
+    pixelfmt = PBPAFMT_LUT8; //Default bit depth is set to 8.
     switch (depth)
     {
     case 1:
@@ -728,7 +728,7 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     D(bug("[bmp.datatype] %s: Picture size %d x %d (x %d bit)\n", __func__, width, height, depth));
 #endif
 
-    /* Test for Modulus & Set Padding Values. */	
+    /* Test for Modulus & Set Padding Values. */
     LONG pixelElements = (depth / 8);
     //Is it Modulus 4??
     if((width * pixelElements)%4 == 0)
@@ -743,7 +743,7 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     }
         
         
-    /* Set Values for FileHeader & Infoheader */    
+    /* Set Values for FileHeader & Infoheader */
     LONG bfOffBits = 14 + 40; //14+40=54
     LONG biSizeImage = alignwidth * height;
     if (depth == 8)
@@ -751,8 +751,8 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
         biSizeImage = (alignwidth * height) + 1024; //Include Palette Size
         bfOffBits = 14 + 40 + 1024; //14+40+1024=1078 //Palette Size
     }
-    LONG bfsize = bfOffBits + biSizeImage; 
-    WORD bfReserved = 0;    
+    LONG bfsize = bfOffBits + biSizeImage;
+    WORD bfReserved = 0;
     ULONG       biSize = 40;             //  0 Size of this header, 40 bytes
     LONG        biWidth = (LONG)width;            //  4 Image width in pixels
     LONG        biHeight = (LONG)height;           //  8 Image height in pixels
@@ -773,8 +773,8 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     /* Write file signature, fileheader & infoheader to file */
 
     /* Write fileheader data to file */
-    char *sig = "BM"; 
-    memcpy(&ulbuff, sig, 2);          
+    char *sig = "BM";
+    memcpy(&ulbuff, sig, 2);
     FWrite( filehandle, &ulbuff, 2, 1 );
 
     ulbuff = AROS_LONG2LE(bfsize);
@@ -784,7 +784,7 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     uwbuff = AROS_WORD2LE(bfReserved);
     FWrite( filehandle, &uwbuff, 2, 1 );
     ulbuff = AROS_LONG2LE(bfOffBits);
-    FWrite( filehandle, &ulbuff, 4, 1 );    
+    FWrite( filehandle, &ulbuff, 4, 1 );
             
     /* Write infoheader data to file */
     ulbuff = AROS_LONG2LE(biSize);
@@ -810,26 +810,26 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     ulbuff = AROS_LONG2LE(biClrUsed);
     FWrite( filehandle, &ulbuff, 4, 1 );
     ulbuff = AROS_LONG2LE(biClrImportant);
-    FWrite( filehandle, &ulbuff, 4, 1 );   
+    FWrite( filehandle, &ulbuff, 4, 1 );
     
     /* If biBitCount == 8 Convert ColorMap to RGBQuads & Write to file */
     if( depth == 8 )
-    {        	
+    {
         /* Write RGBQuads Color Data to file */
         numcolors = 256;
         WriteBMP_Colormap(filehandle, numcolors, colormap);
     }
 
-    /* Now read the picture data line by line and write it to a chunky buffer */        
-    if( !(linebuf = AllocVec(alignwidth, MEMF_ANY)) )	
+    /* Now read the picture data line by line and write it to a chunky buffer */
+    if( !(linebuf = AllocVec(alignwidth, MEMF_ANY)) )
     {
         SetIoErr(ERROR_NO_FREE_STORE);
         return FALSE;
     }
     D(bug("[bmp.datatype] %s: copying picture with READPIXELARRAY\n", __func__));
 
-    /* Read ScanLine Data from Bottom to Top for BMP */ 
-    yoffset = height - 1;    
+    /* Read ScanLine Data from Bottom to Top for BMP */
+    yoffset = height - 1;
     for (y=0; y<height; y++)
     {
         if(!DoSuperMethod(cl, o,
@@ -877,7 +877,7 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
             D(bug("[bmp.datatype] %s: writing picture data line %d failed !\n", __func__, y));
             FreeVec(linebuf);
             return FALSE;
-        }		
+        }
         yoffset--;
     }
 

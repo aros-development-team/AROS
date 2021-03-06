@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /******************************************************************************
@@ -66,14 +66,14 @@ AROS_SHA(LONG *, ,RC,/N,NULL))
 
         fh->fh_Pos = fh->fh_End + 1; /* Simulate an EOF */
 
-	if(SHArg(RC) != NULL)
-	    retval = (int)*SHArg(RC);
+        if(SHArg(RC) != NULL)
+            retval = (int)*SHArg(RC);
 
     }
     else
     {
-	PrintFault(ERROR_SCRIPT_ONLY, "Quit");
-	retval = RETURN_FAIL;
+        PrintFault(ERROR_SCRIPT_ONLY, "Quit");
+        retval = RETURN_FAIL;
     }
 
     return retval;

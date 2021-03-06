@@ -86,7 +86,7 @@ struct StringDef __dtStrings[]=
     CONST_STRPTR      str = NULL;
     struct StringDef *sd;
    
-    if((LocaleBase != NULL) && 
+    if((LocaleBase != NULL) &&
        (GPB(DataTypesBase)->dtb_LibsCatalog != NULL))
         str = GetCatalogStr(GPB(DataTypesBase)->dtb_LibsCatalog, id, NULL);
    

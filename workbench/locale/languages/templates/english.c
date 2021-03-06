@@ -7,39 +7,39 @@
     Language description file for english.language.
 
     So what is this thing?
-	Well basically it's a template for you to write
-	description files for your own language.
+        Well basically it's a template for you to write
+        description files for your own language.
 
     How is it done?
-	A language file is simply a shared library that
-	the locale.library loads into memory. The language
-	must define at least one function, which tells locale
-	which other functions it defines. This function has an
-	an LVO number of 5 (-30 on m68k/amiga). The function
-	has to return a mask which has a bit set for each
-	function that this library defines. Functions which
-	this library does not define are filled in by the
-	functions from the english.language definition
-	(which is essentially what this file defines).
+        A language file is simply a shared library that
+        the locale.library loads into memory. The language
+        must define at least one function, which tells locale
+        which other functions it defines. This function has an
+        an LVO number of 5 (-30 on m68k/amiga). The function
+        has to return a mask which has a bit set for each
+        function that this library defines. Functions which
+        this library does not define are filled in by the
+        functions from the english.language definition
+        (which is essentially what this file defines).
 
     What do I have to do?
-	You have to write functions for all the locale
-	functions which would be different for your
-	language. Typically this would be just function 3,
-	GetLangString(), which returns the string
-	returned by the locale.library function
-	GetLocaleStr().
+        You have to write functions for all the locale
+        functions which would be different for your
+        language. Typically this would be just function 3,
+        GetLangString(), which returns the string
+        returned by the locale.library function
+        GetLocaleStr().
 
-	There are some parts of this file which will also need to
-	be altered (language names and versions), but these will
-	be pointed out.
+        There are some parts of this file which will also need to
+        be altered (language names and versions), but these will
+        be pointed out.
 
-	NOTE: This file should ideally be self-contained,
-	not relying upon any third party shared libraries.
+        NOTE: This file should ideally be self-contained,
+        not relying upon any third party shared libraries.
 
-	In fact it is impossible to make library function
-	calls inside the locale support functions since you
-	will actually have no library base to work with.
+        In fact it is impossible to make library function
+        calls inside the locale support functions since you
+        will actually have no library base to work with.
 */
 
 #include <exec/types.h>
@@ -178,8 +178,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_USERFUNC_INIT
 
     /*
-	You could just as easily do this bit as the InitResident()
-	datatable, however this works just as well.
+        You could just as easily do this bit as the InitResident()
+        datatable, however this works just as well.
     */
     language->library.lib_Node.ln_Type = NT_LIBRARY;
     language->library.lib_Node.ln_Pri = -120;
@@ -193,8 +193,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     language->sysbase = _SysBase;
 
     /*
-	Although it is unlikely, you would return NULL if you for some
-	unknown reason couldn't open.
+        Although it is unlikely, you would return NULL if you for some
+        unknown reason couldn't open.
     */
 
     return language;
@@ -224,13 +224,13 @@ AROS_LH0(BPTR, close, struct Language *, language, 2, language)
     AROS_LIBFUNC_INIT
     if(! --language->library.lib_OpenCnt)
     {
-	/* Delayed expunge pending? */
-	if(language->library.lib_Flags & LIBF_DELEXP)
-	{
-	    /* Yes, expunge the library */
-	    return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
-	}
-	return NULL;
+        /* Delayed expunge pending? */
+        if(language->library.lib_Flags & LIBF_DELEXP)
+        {
+            /* Yes, expunge the library */
+            return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
+        }
+        return NULL;
     }
     AROS_LIBFUNC_EXIT
 }
@@ -244,16 +244,16 @@ AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
     BPTR ret;
     if(language->library.lib_OpenCnt)
     {
-	/* Can't expunge, we are still open */
-	language->library.lib_Flags |= LIBF_DELEXP;
-	return 0;
+        /* Can't expunge, we are still open */
+        language->library.lib_Flags |= LIBF_DELEXP;
+        return 0;
     }
 
     Remove(&language->library.lib_Node);
     ret = language->seglist;
 
     FreeMem((UBYTE *)language - language->library.lib_NegSize,
-	    language->library.lib_PosSize + language->library.lib_NegSize);
+            language->library.lib_PosSize + language->library.lib_NegSize);
 
     return ret;
 
@@ -285,20 +285,20 @@ AROS_LH0(ULONG, mask, struct Language *, language, 5, language)
     AROS_LIBFUNC_INIT
 
     /* CHANGES:
-	This is where you list which functions that this language
-	specifies. There are some bit masks which can be used for
-	simplicity.
+        This is where you list which functions that this language
+        specifies. There are some bit masks which can be used for
+        simplicity.
 
-	Most languages will probably only need to implement
-	LF_GetLangStr
+        Most languages will probably only need to implement
+        LF_GetLangStr
     */
     return (  LF_ConvToLower | LF_ConvToUpper
-	    | LF_GetLangStr
-	    | LF_IsAlNum | LF_IsAlpha | LF_IsCntrl | LF_IsDigit
-	    | LF_IsGraph | LF_IsLower | LF_IsPrint | LF_IsPunct
-	    | LF_IsSpace | LF_IsXDigit
-	    | LF_StringConv | LF_StringComp
-	   );
+            | LF_GetLangStr
+            | LF_IsAlNum | LF_IsAlpha | LF_IsCntrl | LF_IsDigit
+            | LF_IsGraph | LF_IsLower | LF_IsPrint | LF_IsPunct
+            | LF_IsSpace | LF_IsXDigit
+            | LF_StringConv | LF_StringComp
+           );
 
     AROS_LIBFUNC_EXIT
 }
@@ -344,9 +344,9 @@ AROS_LH1(STRPTR, getlangstring,
     AROS_LIBFUNC_INIT
 
     if(id < MAXSTRMSG)
-	return __eng_strings[id];
+        return __eng_strings[id];
     else
-	return NULL;
+        return NULL;
 
     AROS_LIBFUNC_EXIT
 }
@@ -505,34 +505,34 @@ AROS_LH4(ULONG, strconvert,
 
     if(type == SC_COLLATE2)
     {
-	STRPTR origS1;
+        STRPTR origS1;
 
-	while(--length && *string1)
-	{
-	    *string2++ = __eng_collate_tab[(UBYTE)*string1];
-	    count++;
-	}
-	while(--length && *origS1)
-	{
-	    *string2++ = *origS1++;
-	    count++;
-	}
-	*string2 = '\0';
+        while(--length && *string1)
+        {
+            *string2++ = __eng_collate_tab[(UBYTE)*string1];
+            count++;
+        }
+        while(--length && *origS1)
+        {
+            *string2++ = *origS1++;
+            count++;
+        }
+        *string2 = '\0';
     }
     else if((type == SC_COLLATE1) || (type == SC_ASCII))
     {
-	STRPTR collTab;
+        STRPTR collTab;
 
-	if(type == SC_ASCII)
-	    collTab = __eng_to_upper;
-	else
-	    collTab = __eng_collate_tab;
+        if(type == SC_ASCII)
+            collTab = __eng_to_upper;
+        else
+            collTab = __eng_collate_tab;
 
-	while(--length && *string1)
-	{
-	    *string2++ = collTab[ (UBYTE)*string1 ];
-	    count++;
-	}
+        while(--length && *string1)
+        {
+            *string2++ = collTab[ (UBYTE)*string1 ];
+            count++;
+        }
         *string2 = '\0';
     }
     return count;
@@ -557,45 +557,45 @@ AROS_LH4(LONG, strcompare,
 
     if(type == SC_COLLATE2)
     {
-	/* Collate 2, a bit more difficult */
-	STRPTR origS1, origS2;
+        /* Collate 2, a bit more difficult */
+        STRPTR origS1, origS2;
 
-	origS1 = string1;
-	origS2 = string2;
-	do
-	{
-	    a = colltab[(UBYTE)*string1++];
-	    b = colltab[(UBYTE)*string2++];
-	} while( (a == b) && --length);
+        origS1 = string1;
+        origS2 = string2;
+        do
+        {
+            a = colltab[(UBYTE)*string1++];
+            b = colltab[(UBYTE)*string2++];
+        } while( (a == b) && --length);
 
-	/* If we reached the end, and everything is the same */
-	if((a == 0) && (a == b))
-	{
-	    /* Compare again using strings as is... */
-	    do
-	    {
-		a = *origS1++;
-		b = *origS2++;
-	    } while( (a == b) && --length);
-	}
-	return a - b;
+        /* If we reached the end, and everything is the same */
+        if((a == 0) && (a == b))
+        {
+            /* Compare again using strings as is... */
+            do
+            {
+                a = *origS1++;
+                b = *origS2++;
+            } while( (a == b) && --length);
+        }
+        return a - b;
     }
     else if((type == SC_COLLATE1) || (SC_ASCII))
     {
-	ULONG *colltab;
+        ULONG *colltab;
 
-	/* Determine which collation table to use... */
-	if(type == SC_ASCII)
-	    colltab = __eng_to_upper;
-	else
-	    colltab = __eng_collate_tab;
+        /* Determine which collation table to use... */
+        if(type == SC_ASCII)
+            colltab = __eng_to_upper;
+        else
+            colltab = __eng_collate_tab;
 
-	do
-	{
-	    a = colltab[(UBYTE)*string1++];
-	    b = colltab[(UBYTE)*string2++];
-	} while( (a == b) && --length);
-	return a - b;
+        do
+        {
+            a = colltab[(UBYTE)*string1++];
+            b = colltab[(UBYTE)*string2++];
+        } while( (a == b) && --length);
+        return a - b;
     }
 
     /* Ha: Wrong arguments... */
@@ -618,16 +618,16 @@ void *const functable[] =
     &AROS_SLIB_ENTRY(mask,language,5),
 
     /*
-	CHANGES:
-	 This is where language specific functions must go.
-	 If this language doesn't require a specific function
-	 you must still define the entry. You should make this a
-	 function which just returns 0. For the moment, using
-	 &AROS_SLIB_ENTRY(null, language) will suffice, however
-	 watch out if that function is ever given a purpose.
+        CHANGES:
+         This is where language specific functions must go.
+         If this language doesn't require a specific function
+         you must still define the entry. You should make this a
+         function which just returns 0. For the moment, using
+         &AROS_SLIB_ENTRY(null, language) will suffice, however
+         watch out if that function is ever given a purpose.
 
-	 You need only include enough vectors to correspond to
-	 all of your entries.
+         You need only include enough vectors to correspond to
+         all of your entries.
     */
 
     /* 0 - 3 */
@@ -677,8 +677,8 @@ const STRPTR __eng_strings[] =
     "",
 
     /*  The days of the week. Starts with the first day of the week.
-	In English this would be Sunday, this depends upon the settings
-	of Locale->CalendarType.
+        In English this would be Sunday, this depends upon the settings
+        of Locale->CalendarType.
     */
     "Sunday",   "Monday",   "Tuesday",  "Wednesday",
     "Thursday", "Friday",   "Saturday",
@@ -721,528 +721,533 @@ const STRPTR __eng_strings[] =
 };
 
 /* Array for the IsXXXXX() functions*/
-const UWORD __eng_ctype_array[256] = 
+const UWORD __eng_ctype_array[256] =
 {
-	/*   0 */  iCntrl,
-	/*   1 */  iCntrl,
-	/*   2 */  iCntrl,
-	/*   3 */  iCntrl,
-	/*   4 */  iCntrl,
-	/*   5 */  iCntrl,
-	/*   6 */  iCntrl,
-	/*   7 */  iCntrl,
-	/*   8 */  iCntrl,
-	/*   9 */  iCntrl | iPrint | iSpace,
-	/*  10 */  iCntrl | iPrint | iSpace,
-	/*  11 */  iCntrl | iPrint | iSpace,
-	/*  12 */  iCntrl | iPrint | iSpace,
-	/*  13 */  iCntrl | iPrint | iSpace,
-	/*  14 */  iCntrl,
-	/*  15 */  iCntrl,
-	/*  16 */  iCntrl,
-	/*  17 */  iCntrl,
-	/*  18 */  iCntrl,
-	/*  19 */  iCntrl,
-	/*  20 */  iCntrl,
-	/*  21 */  iCntrl,
-	/*  22 */  iCntrl,
-	/*  23 */  iCntrl,
-	/*  24 */  iCntrl,
-	/*  25 */  iCntrl,
-	/*  26 */  iCntrl,
-	/*  27 */  iCntrl,
-	/*  28 */  iCntrl,
-	/*  29 */  iCntrl,
-	/*  30 */  iCntrl,
-	/*  31 */  iCntrl,
-	/*  32 */  iPrint | iSpace,
-	/* '!' */  iGraph | iPrint | iPunct,
-	/* '"' */  iGraph | iPrint | iPunct,
-	/* '#' */  iGraph | iPrint | iPunct,
-	/* '$' */  iGraph | iPrint | iPunct,
-	/* '%' */  iGraph | iPrint | iPunct,
-	/* '&' */  iGraph | iPrint | iPunct,
-	/* ''' */  iGraph | iPrint | iPunct,
-	/* '(' */  iGraph | iPrint | iPunct,
-	/* ')' */  iGraph | iPrint | iPunct,
-	/* '*' */  iGraph | iPrint | iPunct,
-	/* '+' */  iGraph | iPrint | iPunct,
-	/* ',' */  iGraph | iPrint | iPunct,
-	/* '-' */  iGraph | iPrint | iPunct,
-	/* '.' */  iGraph | iPrint | iPunct,
-	/* '/' */  iGraph | iPrint | iPunct,
-	/* '0' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '1' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '2' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '3' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '4' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '5' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '6' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '7' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '8' */  iDigit | iGraph | iPrint | iXDigit,
-	/* '9' */  iDigit | iGraph | iPrint | iXDigit,
-	/* ':' */  iGraph | iPrint | iPunct,
-	/* ';' */  iGraph | iPrint | iPunct,
-	/* '<' */  iGraph | iPrint | iPunct,
-	/* '=' */  iGraph | iPrint | iPunct,
-	/* '>' */  iGraph | iPrint | iPunct,
-	/* '?' */  iGraph | iPrint | iPunct,
-	/* '@' */  iGraph | iPrint | iPunct,
-	/* 'A' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
-	/* 'B' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
-	/* 'C' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
-	/* 'D' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
-	/* 'E' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
-	/* 'F' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
-	/* 'G' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'H' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'I' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'J' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'K' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'L' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'M' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'N' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'O' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'P' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'Q' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'R' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'S' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'T' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'U' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'V' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'W' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'X' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'Y' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'Z' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '[' */  iGraph | iPrint | iPunct,
-	/* '\' */  iGraph | iPrint | iPunct,
-	/* ']' */  iGraph | iPrint | iPunct,
-	/* '^' */  iGraph | iPrint | iPunct,
-	/* '_' */  iGraph | iPrint | iPunct,
-	/* '`' */  iGraph | iPrint | iPunct,
-	/* 'a' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
-	/* 'b' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
-	/* 'c' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
-	/* 'd' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
-	/* 'e' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
-	/* 'f' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
-	/* 'g' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'h' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'i' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'j' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'k' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'l' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'm' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'n' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'o' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'p' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'q' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'r' */  iAlpha | iGraph | iLower | iPrint,
-	/* 's' */  iAlpha | iGraph | iLower | iPrint,
-	/* 't' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'u' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'v' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'w' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'x' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'y' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'z' */  iAlpha | iGraph | iLower | iPrint,
-	/* '{' */  iGraph | iPrint | iPunct,
-	/* '|' */  iGraph | iPrint | iPunct,
-	/* '}' */  iGraph | iPrint | iPunct,
-	/* '~' */  iGraph | iPrint | iPunct,
-	/* 127 */  iCntrl,
-	/* 128 */  iCntrl,
-	/* 129 */  iCntrl,
-	/* 130 */  iCntrl,
-	/* 131 */  iCntrl,
-	/* 132 */  iCntrl,
-	/* 133 */  iCntrl,
-	/* 134 */  iCntrl,
-	/* 135 */  iCntrl,
-	/* 136 */  iCntrl,
-	/* 137 */  iCntrl,
-	/* 138 */  iCntrl,
-	/* 139 */  iCntrl,
-	/* 140 */  iCntrl,
-	/* 141 */  iCntrl,
-	/* 142 */  iCntrl,
-	/* 143 */  iCntrl,
-	/* 144 */  iCntrl,
-	/* 145 */  iCntrl,
-	/* 146 */  iCntrl,
-	/* 147 */  iCntrl,
-	/* 148 */  iCntrl,
-	/* 149 */  iCntrl,
-	/* 150 */  iCntrl,
-	/* 151 */  iCntrl,
-	/* 152 */  iCntrl,
-	/* 153 */  iCntrl,
-	/* 154 */  iCntrl,
-	/* 155 */  iCntrl,
-	/* 156 */  iCntrl,
-	/* 157 */  iCntrl,
-	/* 158 */  iCntrl,
-	/* 159 */  iCntrl,
-	/* 160 */  iPrint | iSpace,
-	/* '∞' */  iGraph | iPrint | iPunct,
-	/* '¢' */  iGraph | iPrint | iPunct,
-	/* '£' */  iGraph | iPrint | iPunct,
-	/* 'ß' */  iGraph | iPrint | iPunct,
-	/* 'Ä' */  iGraph | iPrint | iPunct,
-	/* '∂' */  iGraph | iPrint | iPunct,
-	/* 'ﬂ' */  iAlpha | iGraph | iPrint | iLower,
-	/* 'Æ' */  iGraph | iPrint | iPunct,
-	/* '©' */  iGraph | iPrint | iPunct,
-	/* 'Å' */  iGraph | iPrint | iPunct,
-	/* '¥' */  iGraph | iPrint | iPunct,
-	/* '®' */  iGraph | iPrint | iPunct,
-	/* 'Ç' */  iGraph | iPrint | iPunct,
-	/* '∆' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'ÿ' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'É' */  iGraph | iPrint | iPunct,
-	/* '±' */  iGraph | iPrint | iPunct,
-	/* 'æ' */  iDigit | iGraph | iPrint,
-	/* 'Ñ' */  iGraph | iPrint | iPunct,
-	/* '•' */  iGraph | iPrint | iPunct,
-	/* 'µ' */  iGraph | iPrint | iPunct,
-	/* 'è' */  iGraph | iPrint | iPunct,
-	/* 'Ö' */  iGraph | iPrint | iPunct,
-	/* 'Ω' */  iDigit | iGraph | iPrint,
-	/* 'º' */  iDigit | iGraph | iPrint,
-	/* 'Ü' */  iGraph | iPrint | iPunct,
-	/* '™' */  iGraph | iPrint | iPunct,
-	/* '∫' */  iGraph | iPrint | iPunct,
-	/* 'á' */  iGraph | iPrint | iPunct,
-	/* 'Ê' */  iAlpha | iGraph | iPrint | iLower,
-	/* '¯' */  iAlpha | iGraph | iPrint | iLower,
-	/* 'ø' */  iGraph | iPrint | iPunct,
-	/* '°' */  iGraph | iPrint | iPunct,
-	/* '¨' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'à' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'ü' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'â' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'ê' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '´' */  iGraph | iPrint | iPunct,
-	/* 'ª' */  iGraph | iPrint | iPunct,
-	/* 'ä' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '†' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '¿' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '√' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '’' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'ë' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '¶' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '≠' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'ã' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '≥' */  iDigit | iGraph | iPrint,
-	/* '≤' */  iDigit | iGraph | iPrint,
-	/* 'å' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'π' */  iDigit | iGraph | iPrint,
-	/* '˜' */  iPunct | iGraph | iPrint,
-	/* '◊' */  iPunct | iGraph | iPrint,
-	/* 'ˇ' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'ç' */  iAlpha | iGraph | iPrint | iUpper,
-	/* 'é' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '§' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '–' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '' */  iAlpha | iGraph | iPrint | iLower,
-	/* 'ﬁ' */  iAlpha | iGraph | iPrint | iUpper,
-	/* '˛' */  iAlpha | iGraph | iLower | iPrint,
-	/* '˝' */  iAlpha | iGraph | iLower | iPrint,
-	/* '∑' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'í' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ì' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'î' */  iAlpha | iGraph | iLower | iPrint,
-	/* '¬' */  iAlpha | iGraph | iLower | iPrint,
-	/* ' ' */  iAlpha | iGraph | iLower | iPrint,
-	/* '¡' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'À' */  iAlpha | iGraph | iLower | iPrint,
-	/* '»' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'Õ' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'Œ' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'œ' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'Ã' */  iAlpha | iGraph | iLower | iPrint,
-	/* '”' */  iAlpha | iGraph | iLower | iPrint,
-	/* '‘' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ï' */  iAlpha | iGraph | iLower | iPrint,
-	/* '“' */  iAlpha | iGraph | iLower | iPrint,
-	/* '⁄' */  iAlpha | iGraph | iLower | iPrint,
-	/* '€' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'Ÿ' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'û' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ñ' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ó' */  iGraph | iPrint | iPunct,
-	/* 'Ø' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ò' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ô' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ö' */  iAlpha | iGraph | iLower | iPrint,
-	/* '∏' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'õ' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ú' */  iAlpha | iGraph | iLower | iPrint,
-	/* 'ù' */  iAlpha | iGraph | iLower | iPrint
+        /*   0 */  iCntrl,
+        /*   1 */  iCntrl,
+        /*   2 */  iCntrl,
+        /*   3 */  iCntrl,
+        /*   4 */  iCntrl,
+        /*   5 */  iCntrl,
+        /*   6 */  iCntrl,
+        /*   7 */  iCntrl,
+        /*   8 */  iCntrl,
+        /*   9 */  iCntrl | iPrint | iSpace,
+        /*  10 */  iCntrl | iPrint | iSpace,
+        /*  11 */  iCntrl | iPrint | iSpace,
+        /*  12 */  iCntrl | iPrint | iSpace,
+        /*  13 */  iCntrl | iPrint | iSpace,
+        /*  14 */  iCntrl,
+        /*  15 */  iCntrl,
+        /*  16 */  iCntrl,
+        /*  17 */  iCntrl,
+        /*  18 */  iCntrl,
+        /*  19 */  iCntrl,
+        /*  20 */  iCntrl,
+        /*  21 */  iCntrl,
+        /*  22 */  iCntrl,
+        /*  23 */  iCntrl,
+        /*  24 */  iCntrl,
+        /*  25 */  iCntrl,
+        /*  26 */  iCntrl,
+        /*  27 */  iCntrl,
+        /*  28 */  iCntrl,
+        /*  29 */  iCntrl,
+        /*  30 */  iCntrl,
+        /*  31 */  iCntrl,
+        /*  32 */  iPrint | iSpace,
+        /* '!' */  iGraph | iPrint | iPunct,
+        /* '"' */  iGraph | iPrint | iPunct,
+        /* '#' */  iGraph | iPrint | iPunct,
+        /* '$' */  iGraph | iPrint | iPunct,
+        /* '%' */  iGraph | iPrint | iPunct,
+        /* '&' */  iGraph | iPrint | iPunct,
+        /* ''' */  iGraph | iPrint | iPunct,
+        /* '(' */  iGraph | iPrint | iPunct,
+        /* ')' */  iGraph | iPrint | iPunct,
+        /* '*' */  iGraph | iPrint | iPunct,
+        /* '+' */  iGraph | iPrint | iPunct,
+        /* ',' */  iGraph | iPrint | iPunct,
+        /* '-' */  iGraph | iPrint | iPunct,
+        /* '.' */  iGraph | iPrint | iPunct,
+        /* '/' */  iGraph | iPrint | iPunct,
+        /* '0' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '1' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '2' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '3' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '4' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '5' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '6' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '7' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '8' */  iDigit | iGraph | iPrint | iXDigit,
+        /* '9' */  iDigit | iGraph | iPrint | iXDigit,
+        /* ':' */  iGraph | iPrint | iPunct,
+        /* ';' */  iGraph | iPrint | iPunct,
+        /* '<' */  iGraph | iPrint | iPunct,
+        /* '=' */  iGraph | iPrint | iPunct,
+        /* '>' */  iGraph | iPrint | iPunct,
+        /* '?' */  iGraph | iPrint | iPunct,
+        /* '@' */  iGraph | iPrint | iPunct,
+        /* 'A' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
+        /* 'B' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
+        /* 'C' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
+        /* 'D' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
+        /* 'E' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
+        /* 'F' */  iAlpha | iGraph | iPrint | iUpper | iXDigit,
+        /* 'G' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'H' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'I' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'J' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'K' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'L' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'M' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'N' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'O' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'P' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'Q' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'R' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'S' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'T' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'U' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'V' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'W' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'X' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'Y' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'Z' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '[' */  iGraph | iPrint | iPunct,
+        /* '\' */  iGraph | iPrint | iPunct,
+        /* ']' */  iGraph | iPrint | iPunct,
+        /* '^' */  iGraph | iPrint | iPunct,
+        /* '_' */  iGraph | iPrint | iPunct,
+        /* '`' */  iGraph | iPrint | iPunct,
+        /* 'a' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
+        /* 'b' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
+        /* 'c' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
+        /* 'd' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
+        /* 'e' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
+        /* 'f' */  iAlpha | iGraph | iLower | iPrint | iXDigit,
+        /* 'g' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'h' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'i' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'j' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'k' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'l' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'm' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'n' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'o' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'p' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'q' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'r' */  iAlpha | iGraph | iLower | iPrint,
+        /* 's' */  iAlpha | iGraph | iLower | iPrint,
+        /* 't' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'u' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'v' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'w' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'x' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'y' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'z' */  iAlpha | iGraph | iLower | iPrint,
+        /* '{' */  iGraph | iPrint | iPunct,
+        /* '|' */  iGraph | iPrint | iPunct,
+        /* '}' */  iGraph | iPrint | iPunct,
+        /* '~' */  iGraph | iPrint | iPunct,
+        /* 127 */  iCntrl,
+        /* 128 */  iCntrl,
+        /* 129 */  iCntrl,
+        /* 130 */  iCntrl,
+        /* 131 */  iCntrl,
+        /* 132 */  iCntrl,
+        /* 133 */  iCntrl,
+        /* 134 */  iCntrl,
+        /* 135 */  iCntrl,
+        /* 136 */  iCntrl,
+        /* 137 */  iCntrl,
+        /* 138 */  iCntrl,
+        /* 139 */  iCntrl,
+        /* 140 */  iCntrl,
+        /* 141 */  iCntrl,
+        /* 142 */  iCntrl,
+        /* 143 */  iCntrl,
+        /* 144 */  iCntrl,
+        /* 145 */  iCntrl,
+        /* 146 */  iCntrl,
+        /* 147 */  iCntrl,
+        /* 148 */  iCntrl,
+        /* 149 */  iCntrl,
+        /* 150 */  iCntrl,
+        /* 151 */  iCntrl,
+        /* 152 */  iCntrl,
+        /* 153 */  iCntrl,
+        /* 154 */  iCntrl,
+        /* 155 */  iCntrl,
+        /* 156 */  iCntrl,
+        /* 157 */  iCntrl,
+        /* 158 */  iCntrl,
+        /* 159 */  iCntrl,
+        /* 160 */  iPrint | iSpace,
+        /* '∞' */  iGraph | iPrint | iPunct,
+        /* '¢' */  iGraph | iPrint | iPunct,
+        /* '£' */  iGraph | iPrint | iPunct,
+        /* 'ß' */  iGraph | iPrint | iPunct,
+        /* 'Ä' */  iGraph | iPrint | iPunct,
+        /* '∂' */  iGraph | iPrint | iPunct,
+        /* 'ﬂ' */  iAlpha | iGraph | iPrint | iLower,
+        /* 'Æ' */  iGraph | iPrint | iPunct,
+        /* '©' */  iGraph | iPrint | iPunct,
+        /* 'Å' */  iGraph | iPrint | iPunct,
+        /* '¥' */  iGraph | iPrint | iPunct,
+        /* '®' */  iGraph | iPrint | iPunct,
+        /* 'Ç' */  iGraph | iPrint | iPunct,
+        /* '∆' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'ÿ' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'É' */  iGraph | iPrint | iPunct,
+        /* '±' */  iGraph | iPrint | iPunct,
+        /* 'æ' */  iDigit | iGraph | iPrint,
+        /* 'Ñ' */  iGraph | iPrint | iPunct,
+        /* '•' */  iGraph | iPrint | iPunct,
+        /* 'µ' */  iGraph | iPrint | iPunct,
+        /* 'è' */  iGraph | iPrint | iPunct,
+        /* '
+' */  iGraph | iPrint | iPunct,
+        /* 'Ω' */  iDigit | iGraph | iPrint,
+        /* 'º' */  iDigit | iGraph | iPrint,
+        /* 'Ü' */  iGraph | iPrint | iPunct,
+        /* '™' */  iGraph | iPrint | iPunct,
+        /* '∫' */  iGraph | iPrint | iPunct,
+        /* 'á' */  iGraph | iPrint | iPunct,
+        /* 'Ê' */  iAlpha | iGraph | iPrint | iLower,
+        /* '¯' */  iAlpha | iGraph | iPrint | iLower,
+        /* 'ø' */  iGraph | iPrint | iPunct,
+        /* '°' */  iGraph | iPrint | iPunct,
+        /* '¨' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'à' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'ü' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'â' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'ê' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '´' */  iGraph | iPrint | iPunct,
+        /* 'ª' */  iGraph | iPrint | iPunct,
+        /* 'ä' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '†' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '¿' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '√' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '’' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'ë' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '¶' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '≠' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'ã' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '≥' */  iDigit | iGraph | iPrint,
+        /* '≤' */  iDigit | iGraph | iPrint,
+        /* 'å' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'π' */  iDigit | iGraph | iPrint,
+        /* '˜' */  iPunct | iGraph | iPrint,
+        /* '◊' */  iPunct | iGraph | iPrint,
+        /* 'ˇ' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'ç' */  iAlpha | iGraph | iPrint | iUpper,
+        /* 'é' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '§' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '–' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '' */  iAlpha | iGraph | iPrint | iLower,
+        /* 'ﬁ' */  iAlpha | iGraph | iPrint | iUpper,
+        /* '˛' */  iAlpha | iGraph | iLower | iPrint,
+        /* '˝' */  iAlpha | iGraph | iLower | iPrint,
+        /* '∑' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'í' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ì' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'î' */  iAlpha | iGraph | iLower | iPrint,
+        /* '¬' */  iAlpha | iGraph | iLower | iPrint,
+        /* ' ' */  iAlpha | iGraph | iLower | iPrint,
+        /* '¡' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'À' */  iAlpha | iGraph | iLower | iPrint,
+        /* '»' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'Õ' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'Œ' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'œ' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'Ã' */  iAlpha | iGraph | iLower | iPrint,
+        /* '”' */  iAlpha | iGraph | iLower | iPrint,
+        /* '‘' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ï' */  iAlpha | iGraph | iLower | iPrint,
+        /* '“' */  iAlpha | iGraph | iLower | iPrint,
+        /* '⁄' */  iAlpha | iGraph | iLower | iPrint,
+        /* '€' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'Ÿ' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'û' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ñ' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ó' */  iGraph | iPrint | iPunct,
+        /* 'Ø' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ò' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ô' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ö' */  iAlpha | iGraph | iLower | iPrint,
+        /* '∏' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'õ' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ú' */  iAlpha | iGraph | iLower | iPrint,
+        /* 'ù' */  iAlpha | iGraph | iLower | iPrint
 };
 
-const ULONG __eng_to_lower[256] = 
+const ULONG __eng_to_lower[256] =
 {
-	0  ,            /* 0   */        1  ,            /* 1   */
-	2  ,            /* 2   */        3  ,            /* 3   */
-	4  ,            /* 4   */        5  ,            /* 5   */
-	6  ,            /* 6   */        7  ,            /* 7   */
-	8  ,            /* 8   */        9  ,            /* 9   */
-	10 ,            /* 10  */        11 ,            /* 11  */
-	12 ,            /* 12  */        13 ,            /* 13  */
-	14 ,            /* 14  */        15 ,            /* 15  */
-	16 ,            /* 16  */        17 ,            /* 17  */
-	18 ,            /* 18  */        19 ,            /* 19  */
-	20 ,            /* 20  */        21 ,            /* 21  */
-	22 ,            /* 22  */        23 ,            /* 23  */
-	24 ,            /* 24  */        25 ,            /* 25  */
-	26 ,            /* 26  */        27 ,            /* 27  */
-	28 ,            /* 28  */        29 ,            /* 29  */
-	30 ,            /* 30  */        31 ,            /* 31  */
-	32 ,            /* 32  */        '!',            /* '!' */
-	'"',            /* '"' */        '#',            /* '#' */
-	'$',            /* '$' */        '%',            /* '%' */
-	'&',            /* '&' */        39 ,            /* ''' */
-	'(',            /* '(' */        ')',            /* ')' */
-	'*',            /* '*' */        '+',            /* '+' */
-	',',            /* ',' */        '-',            /* '-' */
-	'.',            /* '.' */        '/',            /* '/' */
-	'0',            /* '0' */        '1',            /* '1' */
-	'2',            /* '2' */        '3',            /* '3' */
-	'4',            /* '4' */        '5',            /* '5' */
-	'6',            /* '6' */        '7',            /* '7' */
-	'8',            /* '8' */        '9',            /* '9' */
-	':',            /* ':' */        ';',            /* ';' */
-	'<',            /* '<' */        '=',            /* '=' */
-	'>',            /* '>' */        '?',            /* '?' */
-	'@',            /* '@' */        'a',            /* 'A' */
-	'b',            /* 'B' */        'c',            /* 'C' */
-	'd',            /* 'D' */        'e',            /* 'E' */
-	'f',            /* 'F' */        'g',            /* 'G' */
-	'h',            /* 'H' */        'i',            /* 'I' */
-	'j',            /* 'J' */        'k',            /* 'K' */
-	'l',            /* 'L' */        'm',            /* 'M' */
-	'n',            /* 'N' */        'o',            /* 'O' */
-	'p',            /* 'P' */        'q',            /* 'Q' */
-	'r',            /* 'R' */        's',            /* 'S' */
-	't',            /* 'T' */        'u',            /* 'U' */
-	'v',            /* 'V' */        'w',            /* 'W' */
-	'x',            /* 'X' */        'y',            /* 'Y' */
-	'z',            /* 'Z' */        '[',            /* '[' */
-	92 ,            /* '\' */        ']',            /* ']' */
-	'^',            /* '^' */        '_',            /* '_' */
-	'`',            /* '`' */        'a',            /* 'a' */
-	'b',            /* 'b' */        'c',            /* 'c' */
-	'd',            /* 'd' */        'e',            /* 'e' */
-	'f',            /* 'f' */        'g',            /* 'g' */
-	'h',            /* 'h' */        'i',            /* 'i' */
-	'j',            /* 'j' */        'k',            /* 'k' */
-	'l',            /* 'l' */        'm',            /* 'm' */
-	'n',            /* 'n' */        'o',            /* 'o' */
-	'p',            /* 'p' */        'q',            /* 'q' */
-	'r',            /* 'r' */        's',            /* 's' */
-	't',            /* 't' */        'u',            /* 'u' */
-	'v',            /* 'v' */        'w',            /* 'w' */
-	'x',            /* 'x' */        'y',            /* 'y' */
-	'z',            /* 'z' */        '{',            /* '{' */
-	'|',            /* '|' */        '}',            /* '}' */
-	'~',            /* '~' */        127,            /* 127 */
-	128,            /* 128 */        129,            /* 129 */
-	130,            /* 130 */        131,            /* 131 */
-	132,            /* 132 */        133,            /* 133 */
-	134,            /* 134 */        135,            /* 135 */
-	136,            /* 136 */        137,            /* 137 */
-	138,            /* 138 */        139,            /* 139 */
-	140,            /* 140 */        141,            /* 141 */
-	142,            /* 142 */        143,            /* 143 */
-	144,            /* 144 */        145,            /* 145 */
-	146,            /* 146 */        147,            /* 147 */
-	148,            /* 148 */        149,            /* 149 */
-	150,            /* 150 */        151,            /* 151 */
-	152,            /* 152 */        153,            /* 153 */
-	154,            /* 154 */        155,            /* 155 */
-	156,            /* 156 */        157,            /* 157 */
-	158,            /* 158 */        159,            /* 159 */
-	160,            /* 160 */        '∞',            /* '∞' */
-	'¢',            /* '¢' */        '£',            /* '£' */
-	'ß',            /* 'ß' */        'Ä',            /* 'Ä' */
-	'∂',            /* '∂' */        'ﬂ',            /* 'ﬂ' */
-	'Æ',            /* 'Æ' */        '©',            /* '©' */
-	'Å',            /* 'Å' */        '¥',            /* '¥' */
-	'®',            /* '®' */        'Ç',            /* 'Ç' */
-	'∆',            /* '∆' */        'ÿ',            /* 'ÿ' */
-	'É',            /* 'É' */        '±',            /* '±' */
-	'æ',            /* 'æ' */        'Ñ',            /* 'Ñ' */
-	'•',            /* '•' */        'µ',            /* 'µ' */
-	'è',            /* 'è' */        'Ö',            /* 'Ö' */
-	'Ω',            /* 'Ω' */        'º',            /* 'º' */
-	'Ü',            /* 'Ü' */        '™',            /* '™' */
-	'∫',            /* '∫' */        'á',            /* 'á' */
-	'Ê',            /* 'Ê' */        '¯',            /* '¯' */
-	'˝',            /* 'ø' */        '∑',            /* '°' */
-	'í',            /* '¨' */        'ì',            /* 'à' */
-	'î',            /* 'ü' */        '¬',            /* 'â' */
-	' ',            /* 'ê' */        '¡',            /* '´' */
-	'À',            /* 'ª' */        '»',            /* 'ä' */
-	'Õ',            /* '†' */        'Œ',            /* '¿' */
-	'œ',            /* '√' */        'Ã',            /* '’' */
-	'”',            /* 'ë' */        '‘',            /* '¶' */
-	'ï',            /* '≠' */        '“',            /* 'ã' */
-	'⁄',            /* '≥' */        '€',            /* '≤' */
-	'Ÿ',            /* 'å' */        'û',            /* 'π' */
-	'ñ',            /* '˜' */        'ó',            /* '◊' */
-	'Ø',            /* 'ˇ' */        'ò',            /* 'ç' */
-	'ô',            /* 'é' */        'ö',            /* '§' */
-	'∏',            /* '–' */        'õ',            /* '' */
-	'ú',            /* 'ﬁ' */        '˛',            /* '˛' */
-	'˝',            /* '˝' */        '∑',            /* '∑' */
-	'í',            /* 'í' */        'ì',            /* 'ì' */
-	'î',            /* 'î' */        '¬',            /* '¬' */
-	' ',            /* ' ' */        '¡',            /* '¡' */
-	'À',            /* 'À' */        '»',            /* '»' */
-	'Õ',            /* 'Õ' */        'Œ',            /* 'Œ' */
-	'œ',            /* 'œ' */        'Ã',            /* 'Ã' */
-	'”',            /* '”' */        '‘',            /* '‘' */
-	'ï',            /* 'ï' */        '“',            /* '“' */
-	'⁄',            /* '⁄' */        '€',            /* '€' */
-	'Ÿ',            /* 'Ÿ' */        'û',            /* 'û' */
-	'ñ',            /* 'ñ' */        'ó',            /* 'ó' */
-	'Ø',            /* 'Ø' */        'ò',            /* 'ò' */
-	'ô',            /* 'ô' */        'ö',            /* 'ö' */
-	'∏',            /* '∏' */        'õ',            /* 'õ' */
-	'ú',            /* 'ú' */        'ù',            /* 'ù' */
+        0  ,            /* 0   */        1  ,            /* 1   */
+        2  ,            /* 2   */        3  ,            /* 3   */
+        4  ,            /* 4   */        5  ,            /* 5   */
+        6  ,            /* 6   */        7  ,            /* 7   */
+        8  ,            /* 8   */        9  ,            /* 9   */
+        10 ,            /* 10  */        11 ,            /* 11  */
+        12 ,            /* 12  */        13 ,            /* 13  */
+        14 ,            /* 14  */        15 ,            /* 15  */
+        16 ,            /* 16  */        17 ,            /* 17  */
+        18 ,            /* 18  */        19 ,            /* 19  */
+        20 ,            /* 20  */        21 ,            /* 21  */
+        22 ,            /* 22  */        23 ,            /* 23  */
+        24 ,            /* 24  */        25 ,            /* 25  */
+        26 ,            /* 26  */        27 ,            /* 27  */
+        28 ,            /* 28  */        29 ,            /* 29  */
+        30 ,            /* 30  */        31 ,            /* 31  */
+        32 ,            /* 32  */        '!',            /* '!' */
+        '"',            /* '"' */        '#',            /* '#' */
+        '$',            /* '$' */        '%',            /* '%' */
+        '&',            /* '&' */        39 ,            /* ''' */
+        '(',            /* '(' */        ')',            /* ')' */
+        '*',            /* '*' */        '+',            /* '+' */
+        ',',            /* ',' */        '-',            /* '-' */
+        '.',            /* '.' */        '/',            /* '/' */
+        '0',            /* '0' */        '1',            /* '1' */
+        '2',            /* '2' */        '3',            /* '3' */
+        '4',            /* '4' */        '5',            /* '5' */
+        '6',            /* '6' */        '7',            /* '7' */
+        '8',            /* '8' */        '9',            /* '9' */
+        ':',            /* ':' */        ';',            /* ';' */
+        '<',            /* '<' */        '=',            /* '=' */
+        '>',            /* '>' */        '?',            /* '?' */
+        '@',            /* '@' */        'a',            /* 'A' */
+        'b',            /* 'B' */        'c',            /* 'C' */
+        'd',            /* 'D' */        'e',            /* 'E' */
+        'f',            /* 'F' */        'g',            /* 'G' */
+        'h',            /* 'H' */        'i',            /* 'I' */
+        'j',            /* 'J' */        'k',            /* 'K' */
+        'l',            /* 'L' */        'm',            /* 'M' */
+        'n',            /* 'N' */        'o',            /* 'O' */
+        'p',            /* 'P' */        'q',            /* 'Q' */
+        'r',            /* 'R' */        's',            /* 'S' */
+        't',            /* 'T' */        'u',            /* 'U' */
+        'v',            /* 'V' */        'w',            /* 'W' */
+        'x',            /* 'X' */        'y',            /* 'Y' */
+        'z',            /* 'Z' */        '[',            /* '[' */
+        92 ,            /* '\' */        ']',            /* ']' */
+        '^',            /* '^' */        '_',            /* '_' */
+        '`',            /* '`' */        'a',            /* 'a' */
+        'b',            /* 'b' */        'c',            /* 'c' */
+        'd',            /* 'd' */        'e',            /* 'e' */
+        'f',            /* 'f' */        'g',            /* 'g' */
+        'h',            /* 'h' */        'i',            /* 'i' */
+        'j',            /* 'j' */        'k',            /* 'k' */
+        'l',            /* 'l' */        'm',            /* 'm' */
+        'n',            /* 'n' */        'o',            /* 'o' */
+        'p',            /* 'p' */        'q',            /* 'q' */
+        'r',            /* 'r' */        's',            /* 's' */
+        't',            /* 't' */        'u',            /* 'u' */
+        'v',            /* 'v' */        'w',            /* 'w' */
+        'x',            /* 'x' */        'y',            /* 'y' */
+        'z',            /* 'z' */        '{',            /* '{' */
+        '|',            /* '|' */        '}',            /* '}' */
+        '~',            /* '~' */        127,            /* 127 */
+        128,            /* 128 */        129,            /* 129 */
+        130,            /* 130 */        131,            /* 131 */
+        132,            /* 132 */        133,            /* 133 */
+        134,            /* 134 */        135,            /* 135 */
+        136,            /* 136 */        137,            /* 137 */
+        138,            /* 138 */        139,            /* 139 */
+        140,            /* 140 */        141,            /* 141 */
+        142,            /* 142 */        143,            /* 143 */
+        144,            /* 144 */        145,            /* 145 */
+        146,            /* 146 */        147,            /* 147 */
+        148,            /* 148 */        149,            /* 149 */
+        150,            /* 150 */        151,            /* 151 */
+        152,            /* 152 */        153,            /* 153 */
+        154,            /* 154 */        155,            /* 155 */
+        156,            /* 156 */        157,            /* 157 */
+        158,            /* 158 */        159,            /* 159 */
+        160,            /* 160 */        '∞',            /* '∞' */
+        '¢',            /* '¢' */        '£',            /* '£' */
+        'ß',            /* 'ß' */        'Ä',            /* 'Ä' */
+        '∂',            /* '∂' */        'ﬂ',            /* 'ﬂ' */
+        'Æ',            /* 'Æ' */        '©',            /* '©' */
+        'Å',            /* 'Å' */        '¥',            /* '¥' */
+        '®',            /* '®' */        'Ç',            /* 'Ç' */
+        '∆',            /* '∆' */        'ÿ',            /* 'ÿ' */
+        'É',            /* 'É' */        '±',            /* '±' */
+        'æ',            /* 'æ' */        'Ñ',            /* 'Ñ' */
+        '•',            /* '•' */        'µ',            /* 'µ' */
+        'è',            /* 'è' */        '
+',            /* '
+' */
+        'Ω',            /* 'Ω' */        'º',            /* 'º' */
+        'Ü',            /* 'Ü' */        '™',            /* '™' */
+        '∫',            /* '∫' */        'á',            /* 'á' */
+        'Ê',            /* 'Ê' */        '¯',            /* '¯' */
+        '˝',            /* 'ø' */        '∑',            /* '°' */
+        'í',            /* '¨' */        'ì',            /* 'à' */
+        'î',            /* 'ü' */        '¬',            /* 'â' */
+        ' ',            /* 'ê' */        '¡',            /* '´' */
+        'À',            /* 'ª' */        '»',            /* 'ä' */
+        'Õ',            /* '†' */        'Œ',            /* '¿' */
+        'œ',            /* '√' */        'Ã',            /* '’' */
+        '”',            /* 'ë' */        '‘',            /* '¶' */
+        'ï',            /* '≠' */        '“',            /* 'ã' */
+        '⁄',            /* '≥' */        '€',            /* '≤' */
+        'Ÿ',            /* 'å' */        'û',            /* 'π' */
+        'ñ',            /* '˜' */        'ó',            /* '◊' */
+        'Ø',            /* 'ˇ' */        'ò',            /* 'ç' */
+        'ô',            /* 'é' */        'ö',            /* '§' */
+        '∏',            /* '–' */        'õ',            /* '' */
+        'ú',            /* 'ﬁ' */        '˛',            /* '˛' */
+        '˝',            /* '˝' */        '∑',            /* '∑' */
+        'í',            /* 'í' */        'ì',            /* 'ì' */
+        'î',            /* 'î' */        '¬',            /* '¬' */
+        ' ',            /* ' ' */        '¡',            /* '¡' */
+        'À',            /* 'À' */        '»',            /* '»' */
+        'Õ',            /* 'Õ' */        'Œ',            /* 'Œ' */
+        'œ',            /* 'œ' */        'Ã',            /* 'Ã' */
+        '”',            /* '”' */        '‘',            /* '‘' */
+        'ï',            /* 'ï' */        '“',            /* '“' */
+        '⁄',            /* '⁄' */        '€',            /* '€' */
+        'Ÿ',            /* 'Ÿ' */        'û',            /* 'û' */
+        'ñ',            /* 'ñ' */        'ó',            /* 'ó' */
+        'Ø',            /* 'Ø' */        'ò',            /* 'ò' */
+        'ô',            /* 'ô' */        'ö',            /* 'ö' */
+        '∏',            /* '∏' */        'õ',            /* 'õ' */
+        'ú',            /* 'ú' */        'ù',            /* 'ù' */
 };
 
-const ULONG __eng_to_upper[256] = 
+const ULONG __eng_to_upper[256] =
 {
-	0  ,            /* 0   */        1  ,            /* 1   */
-	2  ,            /* 2   */        3  ,            /* 3   */
-	4  ,            /* 4   */        5  ,            /* 5   */
-	6  ,            /* 6   */        7  ,            /* 7   */
-	8  ,            /* 8   */        9  ,            /* 9   */
-	10 ,            /* 10  */        11 ,            /* 11  */
-	12 ,            /* 12  */        13 ,            /* 13  */
-	14 ,            /* 14  */        15 ,            /* 15  */
-	16 ,            /* 16  */        17 ,            /* 17  */
-	18 ,            /* 18  */        19 ,            /* 19  */
-	20 ,            /* 20  */        21 ,            /* 21  */
-	22 ,            /* 22  */        23 ,            /* 23  */
-	24 ,            /* 24  */        25 ,            /* 25  */
-	26 ,            /* 26  */        27 ,            /* 27  */
-	28 ,            /* 28  */        29 ,            /* 29  */
-	30 ,            /* 30  */        31 ,            /* 31  */
-	32 ,            /* 32  */        '!',            /* '!' */
-	'"',            /* '"' */        '#',            /* '#' */
-	'$',            /* '$' */        '%',            /* '%' */
-	'&',            /* '&' */        39 ,            /* ''' */
-	'(',            /* '(' */        ')',            /* ')' */
-	'*',            /* '*' */        '+',            /* '+' */
-	',',            /* ',' */        '-',            /* '-' */
-	'.',            /* '.' */        '/',            /* '/' */
-	'0',            /* '0' */        '1',            /* '1' */
-	'2',            /* '2' */        '3',            /* '3' */
-	'4',            /* '4' */        '5',            /* '5' */
-	'6',            /* '6' */        '7',            /* '7' */
-	'8',            /* '8' */        '9',            /* '9' */
-	':',            /* ':' */        ';',            /* ';' */
-	'<',            /* '<' */        '=',            /* '=' */
-	'>',            /* '>' */        '?',            /* '?' */
-	'@',            /* '@' */        'A',            /* 'A' */
-	'B',            /* 'B' */        'C',            /* 'C' */
-	'D',            /* 'D' */        'E',            /* 'E' */
-	'F',            /* 'F' */        'G',            /* 'G' */
-	'H',            /* 'H' */        'I',            /* 'I' */
-	'J',            /* 'J' */        'K',            /* 'K' */
-	'L',            /* 'L' */        'M',            /* 'M' */
-	'N',            /* 'N' */        'O',            /* 'O' */
-	'P',            /* 'P' */        'Q',            /* 'Q' */
-	'R',            /* 'R' */        'S',            /* 'S' */
-	'T',            /* 'T' */        'U',            /* 'U' */
-	'V',            /* 'V' */        'W',            /* 'W' */
-	'X',            /* 'X' */        'Y',            /* 'Y' */
-	'Z',            /* 'Z' */        '[',            /* '[' */
-	92 ,            /* '\' */        ']',            /* ']' */
-	'^',            /* '^' */        '_',            /* '_' */
-	'`',            /* '`' */        'A',            /* 'a' */
-	'B',            /* 'b' */        'C',            /* 'c' */
-	'D',            /* 'd' */        'E',            /* 'e' */
-	'F',            /* 'f' */        'G',            /* 'g' */
-	'H',            /* 'h' */        'I',            /* 'i' */
-	'J',            /* 'j' */        'K',            /* 'k' */
-	'L',            /* 'l' */        'M',            /* 'm' */
-	'N',            /* 'n' */        'O',            /* 'o' */
-	'P',            /* 'p' */        'Q',            /* 'q' */
-	'R',            /* 'r' */        'S',            /* 's' */
-	'T',            /* 't' */        'U',            /* 'u' */
-	'V',            /* 'v' */        'W',            /* 'w' */
-	'X',            /* 'x' */        'Y',            /* 'y' */
-	'Z',            /* 'z' */        '{',            /* '{' */
-	'|',            /* '|' */        '}',            /* '}' */
-	'~',            /* '~' */        127,            /* 127 */
-	128,            /* 128 */        129,            /* 129 */
-	130,            /* 130 */        131,            /* 131 */
-	132,            /* 132 */        133,            /* 133 */
-	134,            /* 134 */        135,            /* 135 */
-	136,            /* 136 */        137,            /* 137 */
-	138,            /* 138 */        139,            /* 139 */
-	140,            /* 140 */        141,            /* 141 */
-	142,            /* 142 */        143,            /* 143 */
-	144,            /* 144 */        145,            /* 145 */
-	146,            /* 146 */        147,            /* 147 */
-	148,            /* 148 */        149,            /* 149 */
-	150,            /* 150 */        151,            /* 151 */
-	152,            /* 152 */        153,            /* 153 */
-	154,            /* 154 */        155,            /* 155 */
-	156,            /* 156 */        157,            /* 157 */
-	158,            /* 158 */        159,            /* 159 */
-	160,            /* 160 */        '∞',            /* '∞' */
-	'¢',            /* '¢' */        '£',            /* '£' */
-	'ß',            /* 'ß' */        'Ä',            /* 'Ä' */
-	'∂',            /* '∂' */        'ﬂ',            /* 'ﬂ' */
-	'Æ',            /* 'Æ' */        '©',            /* '©' */
-	'Å',            /* 'Å' */        '¥',            /* '¥' */
-	'®',            /* '®' */        'Ç',            /* 'Ç' */
-	'∆',            /* '∆' */        'ÿ',            /* 'ÿ' */
-	'É',            /* 'É' */        '±',            /* '±' */
-	'æ',            /* 'æ' */        'Ñ',            /* 'Ñ' */
-	'•',            /* '•' */        'µ',            /* 'µ' */
-	'è',            /* 'è' */        'Ö',            /* 'Ö' */
-	'Ω',            /* 'Ω' */        'º',            /* 'º' */
-	'Ü',            /* 'Ü' */        '™',            /* '™' */
-	'∫',            /* '∫' */        'á',            /* 'á' */
-	'Ê',            /* 'Ê' */        '¯',            /* '¯' */
-	'ø',            /* 'ø' */        '°',            /* '°' */
-	'¨',            /* '¨' */        'à',            /* 'à' */
-	'ü',            /* 'ü' */        'â',            /* 'â' */
-	'ê',            /* 'ê' */        '´',            /* '´' */
-	'ª',            /* 'ª' */        'ä',            /* 'ä' */
-	'†',            /* '†' */        '¿',            /* '¿' */
-	'√',            /* '√' */        '’',            /* '’' */
-	'ë',            /* 'ë' */        '¶',            /* '¶' */
-	'≠',            /* '≠' */        'ã',            /* 'ã' */
-	'≥',            /* '≥' */        '≤',            /* '≤' */
-	'å',            /* 'å' */        'π',            /* 'π' */
-	'˜',            /* '˜' */        '◊',            /* '◊' */
-	'ˇ',            /* 'ˇ' */        'ç',            /* 'ç' */
-	'é',            /* 'é' */        '§',            /* '§' */
-	'–',            /* '–' */        '',            /* '' */
-	'ﬁ',            /* 'ﬁ' */        '˛',            /* '˛' */
-	'ø',            /* '˝' */        '°',            /* '∑' */
-	'¨',            /* 'í' */        'à',            /* 'ì' */
-	'ü',            /* 'î' */        'â',            /* '¬' */
-	'ê',            /* ' ' */        '´',            /* '¡' */
-	'ª',            /* 'À' */        'ä',            /* '»' */
-	'†',            /* 'Õ' */        '¿',            /* 'Œ' */
-	'√',            /* 'œ' */        '’',            /* 'Ã' */
-	'ë',            /* '”' */        '¶',            /* '‘' */
-	'≠',            /* 'ï' */        'ã',            /* '“' */
-	'≥',            /* '⁄' */        '≤',            /* '€' */
-	'å',            /* 'Ÿ' */        'π',            /* 'û' */
-	'˜',            /* 'ñ' */        '◊',            /* 'ó' */
-	'ˇ',            /* 'Ø' */        'ç',            /* 'ò' */
-	'é',            /* 'ô' */        '§',            /* 'ö' */
-	'–',            /* '∏' */        '',            /* 'õ' */
-	'ﬁ',            /* 'ú' */        'ù',            /* 'ù' */
+        0  ,            /* 0   */        1  ,            /* 1   */
+        2  ,            /* 2   */        3  ,            /* 3   */
+        4  ,            /* 4   */        5  ,            /* 5   */
+        6  ,            /* 6   */        7  ,            /* 7   */
+        8  ,            /* 8   */        9  ,            /* 9   */
+        10 ,            /* 10  */        11 ,            /* 11  */
+        12 ,            /* 12  */        13 ,            /* 13  */
+        14 ,            /* 14  */        15 ,            /* 15  */
+        16 ,            /* 16  */        17 ,            /* 17  */
+        18 ,            /* 18  */        19 ,            /* 19  */
+        20 ,            /* 20  */        21 ,            /* 21  */
+        22 ,            /* 22  */        23 ,            /* 23  */
+        24 ,            /* 24  */        25 ,            /* 25  */
+        26 ,            /* 26  */        27 ,            /* 27  */
+        28 ,            /* 28  */        29 ,            /* 29  */
+        30 ,            /* 30  */        31 ,            /* 31  */
+        32 ,            /* 32  */        '!',            /* '!' */
+        '"',            /* '"' */        '#',            /* '#' */
+        '$',            /* '$' */        '%',            /* '%' */
+        '&',            /* '&' */        39 ,            /* ''' */
+        '(',            /* '(' */        ')',            /* ')' */
+        '*',            /* '*' */        '+',            /* '+' */
+        ',',            /* ',' */        '-',            /* '-' */
+        '.',            /* '.' */        '/',            /* '/' */
+        '0',            /* '0' */        '1',            /* '1' */
+        '2',            /* '2' */        '3',            /* '3' */
+        '4',            /* '4' */        '5',            /* '5' */
+        '6',            /* '6' */        '7',            /* '7' */
+        '8',            /* '8' */        '9',            /* '9' */
+        ':',            /* ':' */        ';',            /* ';' */
+        '<',            /* '<' */        '=',            /* '=' */
+        '>',            /* '>' */        '?',            /* '?' */
+        '@',            /* '@' */        'A',            /* 'A' */
+        'B',            /* 'B' */        'C',            /* 'C' */
+        'D',            /* 'D' */        'E',            /* 'E' */
+        'F',            /* 'F' */        'G',            /* 'G' */
+        'H',            /* 'H' */        'I',            /* 'I' */
+        'J',            /* 'J' */        'K',            /* 'K' */
+        'L',            /* 'L' */        'M',            /* 'M' */
+        'N',            /* 'N' */        'O',            /* 'O' */
+        'P',            /* 'P' */        'Q',            /* 'Q' */
+        'R',            /* 'R' */        'S',            /* 'S' */
+        'T',            /* 'T' */        'U',            /* 'U' */
+        'V',            /* 'V' */        'W',            /* 'W' */
+        'X',            /* 'X' */        'Y',            /* 'Y' */
+        'Z',            /* 'Z' */        '[',            /* '[' */
+        92 ,            /* '\' */        ']',            /* ']' */
+        '^',            /* '^' */        '_',            /* '_' */
+        '`',            /* '`' */        'A',            /* 'a' */
+        'B',            /* 'b' */        'C',            /* 'c' */
+        'D',            /* 'd' */        'E',            /* 'e' */
+        'F',            /* 'f' */        'G',            /* 'g' */
+        'H',            /* 'h' */        'I',            /* 'i' */
+        'J',            /* 'j' */        'K',            /* 'k' */
+        'L',            /* 'l' */        'M',            /* 'm' */
+        'N',            /* 'n' */        'O',            /* 'o' */
+        'P',            /* 'p' */        'Q',            /* 'q' */
+        'R',            /* 'r' */        'S',            /* 's' */
+        'T',            /* 't' */        'U',            /* 'u' */
+        'V',            /* 'v' */        'W',            /* 'w' */
+        'X',            /* 'x' */        'Y',            /* 'y' */
+        'Z',            /* 'z' */        '{',            /* '{' */
+        '|',            /* '|' */        '}',            /* '}' */
+        '~',            /* '~' */        127,            /* 127 */
+        128,            /* 128 */        129,            /* 129 */
+        130,            /* 130 */        131,            /* 131 */
+        132,            /* 132 */        133,            /* 133 */
+        134,            /* 134 */        135,            /* 135 */
+        136,            /* 136 */        137,            /* 137 */
+        138,            /* 138 */        139,            /* 139 */
+        140,            /* 140 */        141,            /* 141 */
+        142,            /* 142 */        143,            /* 143 */
+        144,            /* 144 */        145,            /* 145 */
+        146,            /* 146 */        147,            /* 147 */
+        148,            /* 148 */        149,            /* 149 */
+        150,            /* 150 */        151,            /* 151 */
+        152,            /* 152 */        153,            /* 153 */
+        154,            /* 154 */        155,            /* 155 */
+        156,            /* 156 */        157,            /* 157 */
+        158,            /* 158 */        159,            /* 159 */
+        160,            /* 160 */        '∞',            /* '∞' */
+        '¢',            /* '¢' */        '£',            /* '£' */
+        'ß',            /* 'ß' */        'Ä',            /* 'Ä' */
+        '∂',            /* '∂' */        'ﬂ',            /* 'ﬂ' */
+        'Æ',            /* 'Æ' */        '©',            /* '©' */
+        'Å',            /* 'Å' */        '¥',            /* '¥' */
+        '®',            /* '®' */        'Ç',            /* 'Ç' */
+        '∆',            /* '∆' */        'ÿ',            /* 'ÿ' */
+        'É',            /* 'É' */        '±',            /* '±' */
+        'æ',            /* 'æ' */        'Ñ',            /* 'Ñ' */
+        '•',            /* '•' */        'µ',            /* 'µ' */
+        'è',            /* 'è' */        '
+',            /* '
+' */
+        'Ω',            /* 'Ω' */        'º',            /* 'º' */
+        'Ü',            /* 'Ü' */        '™',            /* '™' */
+        '∫',            /* '∫' */        'á',            /* 'á' */
+        'Ê',            /* 'Ê' */        '¯',            /* '¯' */
+        'ø',            /* 'ø' */        '°',            /* '°' */
+        '¨',            /* '¨' */        'à',            /* 'à' */
+        'ü',            /* 'ü' */        'â',            /* 'â' */
+        'ê',            /* 'ê' */        '´',            /* '´' */
+        'ª',            /* 'ª' */        'ä',            /* 'ä' */
+        '†',            /* '†' */        '¿',            /* '¿' */
+        '√',            /* '√' */        '’',            /* '’' */
+        'ë',            /* 'ë' */        '¶',            /* '¶' */
+        '≠',            /* '≠' */        'ã',            /* 'ã' */
+        '≥',            /* '≥' */        '≤',            /* '≤' */
+        'å',            /* 'å' */        'π',            /* 'π' */
+        '˜',            /* '˜' */        '◊',            /* '◊' */
+        'ˇ',            /* 'ˇ' */        'ç',            /* 'ç' */
+        'é',            /* 'é' */        '§',            /* '§' */
+        '–',            /* '–' */        '',            /* '' */
+        'ﬁ',            /* 'ﬁ' */        '˛',            /* '˛' */
+        'ø',            /* '˝' */        '°',            /* '∑' */
+        '¨',            /* 'í' */        'à',            /* 'ì' */
+        'ü',            /* 'î' */        'â',            /* '¬' */
+        'ê',            /* ' ' */        '´',            /* '¡' */
+        'ª',            /* 'À' */        'ä',            /* '»' */
+        '†',            /* 'Õ' */        '¿',            /* 'Œ' */
+        '√',            /* 'œ' */        '’',            /* 'Ã' */
+        'ë',            /* '”' */        '¶',            /* '‘' */
+        '≠',            /* 'ï' */        'ã',            /* '“' */
+        '≥',            /* '⁄' */        '≤',            /* '€' */
+        'å',            /* 'Ÿ' */        'π',            /* 'û' */
+        '˜',            /* 'ñ' */        '◊',            /* 'ó' */
+        'ˇ',            /* 'Ø' */        'ç',            /* 'ò' */
+        'é',            /* 'ô' */        '§',            /* 'ö' */
+        '–',            /* '∏' */        '',            /* 'õ' */
+        'ﬁ',            /* 'ú' */        'ù',            /* 'ù' */
 };
 
 /*
@@ -1255,134 +1260,135 @@ const ULONG __eng_to_upper[256] =
 */
 const ULONG __eng_collate_tab[256] =
 {
-	0  ,            /* 0   */        1  ,            /* 1   */
-	2  ,            /* 2   */        3  ,            /* 3   */
-	4  ,            /* 4   */        5  ,            /* 5   */
-	6  ,            /* 6   */        7  ,            /* 7   */
-	8  ,            /* 8   */        9  ,            /* 9   */
-	10 ,            /* 10  */        11 ,            /* 11  */
-	12 ,            /* 12  */        13 ,            /* 13  */
-	14 ,            /* 14  */        15 ,            /* 15  */
-	16 ,            /* 16  */        17 ,            /* 17  */
-	18 ,            /* 18  */        19 ,            /* 19  */
-	20 ,            /* 20  */        21 ,            /* 21  */
-	22 ,            /* 22  */        23 ,            /* 23  */
-	24 ,            /* 24  */        25 ,            /* 25  */
-	26 ,            /* 26  */        27 ,            /* 27  */
-	28 ,            /* 28  */        29 ,            /* 29  */
-	30 ,            /* 30  */        31 ,            /* 31  */
-	32 ,            /* 32  */        '!',            /* '!' */
-	'"',            /* '"' */        '#',            /* '#' */
-	'$',            /* '$' */        '%',            /* '%' */
-	'&',            /* '&' */        39 ,            /* ''' */
-	'(',            /* '(' */        ')',            /* ')' */
-	'*',            /* '*' */        '+',            /* '+' */
-	',',            /* ',' */        '-',            /* '-' */
-	'.',            /* '.' */        '/',            /* '/' */
-	'0',            /* '0' */        '1',            /* '1' */
-	'2',            /* '2' */        '3',            /* '3' */
-	'4',            /* '4' */        '5',            /* '5' */
-	'6',            /* '6' */        '7',            /* '7' */
-	'8',            /* '8' */        '9',            /* '9' */
-	':',            /* ':' */        ';',            /* ';' */
-	'<',            /* '<' */        '=',            /* '=' */
-	'>',            /* '>' */        '?',            /* '?' */
-	'@',            /* '@' */        'A',            /* 'A' */
-	'B',            /* 'B' */        'C',            /* 'C' */
-	'D',            /* 'D' */        'E',            /* 'E' */
-	'F',            /* 'F' */        'G',            /* 'G' */
-	'H',            /* 'H' */        'I',            /* 'I' */
-	'J',            /* 'J' */        'K',            /* 'K' */
-	'L',            /* 'L' */        'M',            /* 'M' */
-	'N',            /* 'N' */        'O',            /* 'O' */
-	'P',            /* 'P' */        'Q',            /* 'Q' */
-	'R',            /* 'R' */        'S',            /* 'S' */
-	'T',            /* 'T' */        'U',            /* 'U' */
-	'V',            /* 'V' */        'W',            /* 'W' */
-	'X',            /* 'X' */        'Y',            /* 'Y' */
-	'Z',            /* 'Z' */        '[',            /* '[' */
-	92 ,            /* '\' */        ']',            /* ']' */
-	'^',            /* '^' */        '_',            /* '_' */
-	'`',            /* '`' */        'A',            /* 'a' */
-	'B',            /* 'b' */        'C',            /* 'c' */
-	'D',            /* 'd' */        'E',            /* 'e' */
-	'F',            /* 'f' */        'G',            /* 'g' */
-	'H',            /* 'h' */        'I',            /* 'i' */
-	'J',            /* 'j' */        'K',            /* 'k' */
-	'L',            /* 'l' */        'M',            /* 'm' */
-	'N',            /* 'n' */        'O',            /* 'o' */
-	'P',            /* 'p' */        'Q',            /* 'q' */
-	'R',            /* 'r' */        'S',            /* 's' */
-	'T',            /* 't' */        'U',            /* 'u' */
-	'V',            /* 'v' */        'W',            /* 'w' */
-	'X',            /* 'x' */        'Y',            /* 'y' */
-	'Z',            /* 'z' */        '{',            /* '{' */
-	'|',            /* '|' */        '}',            /* '}' */
-	'~',            /* '~' */        127,            /* 127 */
-	128,            /* 128 */        129,            /* 129 */
-	130,            /* 130 */        131,            /* 131 */
-	132,            /* 132 */        133,            /* 133 */
-	134,            /* 134 */        135,            /* 135 */
-	136,            /* 136 */        137,            /* 137 */
-	138,            /* 138 */        139,            /* 139 */
-	140,            /* 140 */        141,            /* 141 */
-	142,            /* 142 */        143,            /* 143 */
-	144,            /* 144 */        145,            /* 145 */
-	146,            /* 146 */        147,            /* 147 */
-	148,            /* 148 */        149,            /* 149 */
-	150,            /* 150 */        151,            /* 151 */
-	152,            /* 152 */        153,            /* 153 */
-	154,            /* 154 */        155,            /* 155 */
-	156,            /* 156 */        157,            /* 157 */
-	158,            /* 158 */        159,            /* 159 */
-	20,             /* 160 */        '!',            /* '∞' */
-	'$',            /* '¢' */        '$',            /* '£' */
-	'g',            /* 'ß' */        'h',            /* 'Ä' */
-	'i',            /* '∂' */        'S',            /* 'ﬂ' */
-	'j',            /* 'Æ' */        'k',            /* '©' */
-	'l',            /* 'Å' */        '\"',           /* '¥' */
-	'm',            /* '®' */        'n',            /* 'Ç' */
-	'o',            /* '∆' */        'p',            /* 'ÿ' */
-	'q',            /* 'É' */        'r',            /* '±' */
-	's',            /* 'æ' */        't',            /* 'Ñ' */
-	'u',            /* '•' */        'v',            /* 'µ' */
-	'w',            /* 'è' */        'x',            /* 'Ö' */
-	'y',            /* 'Ω' */        'z',            /* 'º' */
-	'{',            /* 'Ü' */        '\"'            /* '™' */
-	'|',            /* '∫' */        '}',            /* 'á' */
-	'~',            /* 'Ê' */        '?',            /* '¯' */
-	'A',            /* 'ø' */        'A',            /* '°' */
-	'A',            /* '¨' */        'A',            /* 'à' */
-	'A',            /* 'ü' */        'A',            /* 'â' */
-	'A',            /* 'ê' */        'C',            /* '´' */
-	'E',            /* 'ª' */        'E',            /* 'ä' */
-	'E',            /* '†' */        'E',            /* '¿' */
-	'I',            /* '√' */        'I',            /* '’' */
-	'I',            /* 'ë' */        'I',            /* '¶' */
-	'D',            /* '≠' */        'N',            /* 'ã' */
-	'O',            /* '≥' */        'O',            /* '≤' */
-	'O',            /* 'å' */        'O',            /* 'π' */
-	'O',            /* '˜' */        '*',            /* '◊' */
-	'O',            /* 'ˇ' */        'U',            /* 'ç' */
-	'U',            /* 'é' */        'U',            /* '§' */
-	'U',            /* '–' */        'Y',            /* '' */
-	'P',            /* 'ﬁ' */        'Y',            /* '˛' */
-	'A',            /* '˝' */        'A',            /* '∑' */
-	'A',            /* 'í' */        'A',            /* 'ì' */
-	'A',            /* 'î' */        'A',            /* '¬' */
-	'A',            /* ' ' */        'C',            /* '¡' */
-	'E',            /* 'À' */        'E',            /* '»' */
-	'E',            /* 'Õ' */        'E',            /* 'Œ' */
-	'I',            /* 'œ' */        'I',            /* 'Ã' */
-	'I',            /* '”' */        'I',            /* '‘' */
-	'D',            /* 'ï' */        'N',            /* '“' */
-	'O',            /* '⁄' */        'O',            /* '€' */
-	'O',            /* 'Ÿ' */        'O',            /* 'û' */
-	'O',            /* 'ñ' */        '/',            /* 'ó' */
-	'O',            /* 'Ø' */        'U',            /* 'ò' */
-	'U',            /* 'ô' */        'U',            /* 'ö' */
-	'U',            /* '∏' */        'Y',            /* 'õ' */
-	'P',            /* 'ú' */        'Y',            /* 'ù' */
+        0  ,            /* 0   */        1  ,            /* 1   */
+        2  ,            /* 2   */        3  ,            /* 3   */
+        4  ,            /* 4   */        5  ,            /* 5   */
+        6  ,            /* 6   */        7  ,            /* 7   */
+        8  ,            /* 8   */        9  ,            /* 9   */
+        10 ,            /* 10  */        11 ,            /* 11  */
+        12 ,            /* 12  */        13 ,            /* 13  */
+        14 ,            /* 14  */        15 ,            /* 15  */
+        16 ,            /* 16  */        17 ,            /* 17  */
+        18 ,            /* 18  */        19 ,            /* 19  */
+        20 ,            /* 20  */        21 ,            /* 21  */
+        22 ,            /* 22  */        23 ,            /* 23  */
+        24 ,            /* 24  */        25 ,            /* 25  */
+        26 ,            /* 26  */        27 ,            /* 27  */
+        28 ,            /* 28  */        29 ,            /* 29  */
+        30 ,            /* 30  */        31 ,            /* 31  */
+        32 ,            /* 32  */        '!',            /* '!' */
+        '"',            /* '"' */        '#',            /* '#' */
+        '$',            /* '$' */        '%',            /* '%' */
+        '&',            /* '&' */        39 ,            /* ''' */
+        '(',            /* '(' */        ')',            /* ')' */
+        '*',            /* '*' */        '+',            /* '+' */
+        ',',            /* ',' */        '-',            /* '-' */
+        '.',            /* '.' */        '/',            /* '/' */
+        '0',            /* '0' */        '1',            /* '1' */
+        '2',            /* '2' */        '3',            /* '3' */
+        '4',            /* '4' */        '5',            /* '5' */
+        '6',            /* '6' */        '7',            /* '7' */
+        '8',            /* '8' */        '9',            /* '9' */
+        ':',            /* ':' */        ';',            /* ';' */
+        '<',            /* '<' */        '=',            /* '=' */
+        '>',            /* '>' */        '?',            /* '?' */
+        '@',            /* '@' */        'A',            /* 'A' */
+        'B',            /* 'B' */        'C',            /* 'C' */
+        'D',            /* 'D' */        'E',            /* 'E' */
+        'F',            /* 'F' */        'G',            /* 'G' */
+        'H',            /* 'H' */        'I',            /* 'I' */
+        'J',            /* 'J' */        'K',            /* 'K' */
+        'L',            /* 'L' */        'M',            /* 'M' */
+        'N',            /* 'N' */        'O',            /* 'O' */
+        'P',            /* 'P' */        'Q',            /* 'Q' */
+        'R',            /* 'R' */        'S',            /* 'S' */
+        'T',            /* 'T' */        'U',            /* 'U' */
+        'V',            /* 'V' */        'W',            /* 'W' */
+        'X',            /* 'X' */        'Y',            /* 'Y' */
+        'Z',            /* 'Z' */        '[',            /* '[' */
+        92 ,            /* '\' */        ']',            /* ']' */
+        '^',            /* '^' */        '_',            /* '_' */
+        '`',            /* '`' */        'A',            /* 'a' */
+        'B',            /* 'b' */        'C',            /* 'c' */
+        'D',            /* 'd' */        'E',            /* 'e' */
+        'F',            /* 'f' */        'G',            /* 'g' */
+        'H',            /* 'h' */        'I',            /* 'i' */
+        'J',            /* 'j' */        'K',            /* 'k' */
+        'L',            /* 'l' */        'M',            /* 'm' */
+        'N',            /* 'n' */        'O',            /* 'o' */
+        'P',            /* 'p' */        'Q',            /* 'q' */
+        'R',            /* 'r' */        'S',            /* 's' */
+        'T',            /* 't' */        'U',            /* 'u' */
+        'V',            /* 'v' */        'W',            /* 'w' */
+        'X',            /* 'x' */        'Y',            /* 'y' */
+        'Z',            /* 'z' */        '{',            /* '{' */
+        '|',            /* '|' */        '}',            /* '}' */
+        '~',            /* '~' */        127,            /* 127 */
+        128,            /* 128 */        129,            /* 129 */
+        130,            /* 130 */        131,            /* 131 */
+        132,            /* 132 */        133,            /* 133 */
+        134,            /* 134 */        135,            /* 135 */
+        136,            /* 136 */        137,            /* 137 */
+        138,            /* 138 */        139,            /* 139 */
+        140,            /* 140 */        141,            /* 141 */
+        142,            /* 142 */        143,            /* 143 */
+        144,            /* 144 */        145,            /* 145 */
+        146,            /* 146 */        147,            /* 147 */
+        148,            /* 148 */        149,            /* 149 */
+        150,            /* 150 */        151,            /* 151 */
+        152,            /* 152 */        153,            /* 153 */
+        154,            /* 154 */        155,            /* 155 */
+        156,            /* 156 */        157,            /* 157 */
+        158,            /* 158 */        159,            /* 159 */
+        20,             /* 160 */        '!',            /* '∞' */
+        '$',            /* '¢' */        '$',            /* '£' */
+        'g',            /* 'ß' */        'h',            /* 'Ä' */
+        'i',            /* '∂' */        'S',            /* 'ﬂ' */
+        'j',            /* 'Æ' */        'k',            /* '©' */
+        'l',            /* 'Å' */        '\"',           /* '¥' */
+        'm',            /* '®' */        'n',            /* 'Ç' */
+        'o',            /* '∆' */        'p',            /* 'ÿ' */
+        'q',            /* 'É' */        'r',            /* '±' */
+        's',            /* 'æ' */        't',            /* 'Ñ' */
+        'u',            /* '•' */        'v',            /* 'µ' */
+        'w',            /* 'è' */        'x',            /* '
+' */
+        'y',            /* 'Ω' */        'z',            /* 'º' */
+        '{',            /* 'Ü' */        '\"'            /* '™' */
+        '|',            /* '∫' */        '}',            /* 'á' */
+        '~',            /* 'Ê' */        '?',            /* '¯' */
+        'A',            /* 'ø' */        'A',            /* '°' */
+        'A',            /* '¨' */        'A',            /* 'à' */
+        'A',            /* 'ü' */        'A',            /* 'â' */
+        'A',            /* 'ê' */        'C',            /* '´' */
+        'E',            /* 'ª' */        'E',            /* 'ä' */
+        'E',            /* '†' */        'E',            /* '¿' */
+        'I',            /* '√' */        'I',            /* '’' */
+        'I',            /* 'ë' */        'I',            /* '¶' */
+        'D',            /* '≠' */        'N',            /* 'ã' */
+        'O',            /* '≥' */        'O',            /* '≤' */
+        'O',            /* 'å' */        'O',            /* 'π' */
+        'O',            /* '˜' */        '*',            /* '◊' */
+        'O',            /* 'ˇ' */        'U',            /* 'ç' */
+        'U',            /* 'é' */        'U',            /* '§' */
+        'U',            /* '–' */        'Y',            /* '' */
+        'P',            /* 'ﬁ' */        'Y',            /* '˛' */
+        'A',            /* '˝' */        'A',            /* '∑' */
+        'A',            /* 'í' */        'A',            /* 'ì' */
+        'A',            /* 'î' */        'A',            /* '¬' */
+        'A',            /* ' ' */        'C',            /* '¡' */
+        'E',            /* 'À' */        'E',            /* '»' */
+        'E',            /* 'Õ' */        'E',            /* 'Œ' */
+        'I',            /* 'œ' */        'I',            /* 'Ã' */
+        'I',            /* '”' */        'I',            /* '‘' */
+        'D',            /* 'ï' */        'N',            /* '“' */
+        'O',            /* '⁄' */        'O',            /* '€' */
+        'O',            /* 'Ÿ' */        'O',            /* 'û' */
+        'O',            /* 'ñ' */        '/',            /* 'ó' */
+        'O',            /* 'Ø' */        'U',            /* 'ò' */
+        'U',            /* 'ô' */        'U',            /* 'ö' */
+        'U',            /* '∏' */        'Y',            /* 'õ' */
+        'P',            /* 'ú' */        'Y',            /* 'ù' */
 };
 
 

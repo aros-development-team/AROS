@@ -24,7 +24,7 @@
     INPUTS
 
         DRIVE   --  The volume to rename
-	NAME    --  The new name
+        NAME    --  The new name
 
     RESULT
 
@@ -64,53 +64,53 @@ int main(void)
 
     if(rda != NULL)
     {
-	if(strchr((STRPTR)args[ARG_NAME], ':') == NULL)
-	{
-		ULONG len = strlen((STRPTR)args[ARG_DRIVE]);
-		UBYTE *tmp = AllocVec(len + 1, MEMF_ANY);
-		struct DosList *dl;
+        if(strchr((STRPTR)args[ARG_NAME], ':') == NULL)
+        {
+                ULONG len = strlen((STRPTR)args[ARG_DRIVE]);
+                UBYTE *tmp = AllocVec(len + 1, MEMF_ANY);
+                struct DosList *dl;
 
-		if (tmp == NULL || !len || ((STRPTR)args[ARG_DRIVE])[len - 1] != ':')
-			goto invalid;
+                if (tmp == NULL || !len || ((STRPTR)args[ARG_DRIVE])[len - 1] != ':')
+                        goto invalid;
 
-		len--;
-		memcpy(tmp, (STRPTR)args[ARG_DRIVE], len);
-		tmp[len] = '\0';
+                len--;
+                memcpy(tmp, (STRPTR)args[ARG_DRIVE], len);
+                tmp[len] = '\0';
 
-		dl = LockDosList(LDF_READ | LDF_DEVICES | LDF_VOLUMES);
-		dl = FindDosEntry(dl, tmp, LDF_DEVICES | LDF_VOLUMES);
-		UnLockDosList(LDF_READ | LDF_DEVICES | LDF_VOLUMES);
+                dl = LockDosList(LDF_READ | LDF_DEVICES | LDF_VOLUMES);
+                dl = FindDosEntry(dl, tmp, LDF_DEVICES | LDF_VOLUMES);
+                UnLockDosList(LDF_READ | LDF_DEVICES | LDF_VOLUMES);
 
-		if (dl)
-		{
-			if (Relabel((STRPTR)args[ARG_DRIVE], (STRPTR)args[ARG_NAME]))
-			{
-				retval = RETURN_OK;
-			}
-			else
-			{
-				PrintFault(IoErr(), NULL);
-			}
-		}
-		else
-		{
+                if (dl)
+                {
+                        if (Relabel((STRPTR)args[ARG_DRIVE], (STRPTR)args[ARG_NAME]))
+                        {
+                                retval = RETURN_OK;
+                        }
+                        else
+                        {
+                                PrintFault(IoErr(), NULL);
+                        }
+                }
+                else
+                {
 invalid:
-			PutStr("Invalid device or volume name\n");
-		}
+                        PutStr("Invalid device or volume name\n");
+                }
 
-		if (tmp != NULL)
-			FreeVec(tmp);
-	}
-	else
-	{
-	    PutStr("':' is not a valid character in a volume name.\n");
-	    retval = RETURN_FAIL;
-	}
+                if (tmp != NULL)
+                        FreeVec(tmp);
+        }
+        else
+        {
+            PutStr("':' is not a valid character in a volume name.\n");
+            retval = RETURN_FAIL;
+        }
     }
     else
     {
-	PrintFault(IoErr(), "Relabel");
-	retval = RETURN_FAIL;
+        PrintFault(IoErr(), "Relabel");
+        retval = RETURN_FAIL;
     }
     
     FreeArgs(rda);

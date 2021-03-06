@@ -9,7 +9,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
-#include "datatypes_intern.h"	/* Must be after <intuition/intuition.h> */
+#include "datatypes_intern.h"   /* Must be after <intuition/intuition.h> */
 
 #include <aros/debug.h>
 

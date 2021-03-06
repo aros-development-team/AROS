@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 2002-2020, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.

@@ -34,14 +34,14 @@ LONG rxsupp_reply(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **
         int code = strtoul(ARG1(msg), &end, 10);
         if ((*end != 0) || code<0)
         {
-	    *argstring = NULL;
-	    return ERR10_018;
-	}
+            *argstring = NULL;
+            return ERR10_018;
+        }
         else
         {
-	    msg2->rm_Result1 = code;
-	    msg2->rm_Result2 = (IPTR)NULL;
-	}
+            msg2->rm_Result1 = code;
+            msg2->rm_Result2 = (IPTR)NULL;
+        }
     }
 
     Remove((struct Node *)msg2);

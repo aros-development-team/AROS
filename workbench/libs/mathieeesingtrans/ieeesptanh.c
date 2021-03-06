@@ -42,7 +42,7 @@
     LONG tmp;
     
     if ( y2 >= 0x41100000 )
-    /* 
+    /*
         tanh( x > 9 ) =  1
         tanh( x <-9 ) = -1
     */
@@ -52,7 +52,7 @@
     Res = IEEESPExp(y2);
     tmp = IEEESPDiv(one, Res);
     Res = IEEESPDiv
-    ( 
+    (
         IEEESPAdd(Res, (tmp | IEEESPSign_Mask) ),
         IEEESPAdd(Res, tmp)
     );

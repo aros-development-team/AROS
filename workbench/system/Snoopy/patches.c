@@ -78,7 +78,7 @@ struct Patches
     struct Library *lib;
     LONG lvo;
     BOOL enabled;
-} patches[PATCH_last] = 
+} patches[PATCH_last] =
 {
     // must be in same order as in enum in patches.h
     {NULL, NULL, LIB_Dos,       0, LVO_CreateDir,      FALSE},

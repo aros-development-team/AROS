@@ -33,7 +33,7 @@
 
 /**********************************************************************************************/
 
-#define GadToolsBase 	((struct GadToolsBase_intern *)cl->cl_UserData)
+#define GadToolsBase    ((struct GadToolsBase_intern *)cl->cl_UserData)
 
 /**********************************************************************************************/
 
@@ -45,39 +45,39 @@ STATIC VOID mx_setnew(Class *cl, Object *o, struct opSet *msg)
 
     while ((tag = NextTagItem(&taglist)))
     {
-	switch (tag->ti_Tag)
-	{
-	    case GA_DrawInfo:
-		data->dri = (struct DrawInfo *) tag->ti_Data;
-		break;
-		
+        switch (tag->ti_Tag)
+        {
+            case GA_DrawInfo:
+                data->dri = (struct DrawInfo *) tag->ti_Data;
+                break;
+                
             case GA_TextAttr:
-        	data->tattr = (struct TextAttr *) tag->ti_Data;
-        	break;
-		
+                data->tattr = (struct TextAttr *) tag->ti_Data;
+                break;
+                
             case GA_LabelPlace:
-        	data->labelplace = (LONG) tag->ti_Data;
-        	break;
-		
-	    case GTMX_Active:
-		data->active = tag->ti_Data;
-		break;
-		
-	    case GTMX_Labels:
-		data->labels = (STRPTR *) tag->ti_Data;
-		data->numlabels = 0;
-		while (data->labels[data->numlabels])
-		    data->numlabels++;
-		break;
-		
-	    case GTMX_Spacing:
-		data->spacing = tag->ti_Data;
-		break;
-		
+                data->labelplace = (LONG) tag->ti_Data;
+                break;
+                
+            case GTMX_Active:
+                data->active = tag->ti_Data;
+                break;
+                
+            case GTMX_Labels:
+                data->labels = (STRPTR *) tag->ti_Data;
+                data->numlabels = 0;
+                while (data->labels[data->numlabels])
+                    data->numlabels++;
+                break;
+                
+            case GTMX_Spacing:
+                data->spacing = tag->ti_Data;
+                break;
+                
             case GTMX_TickLabelPlace:
-        	data->ticklabelplace = (LONG) tag->ti_Data;
-		break;
-	}
+                data->ticklabelplace = (LONG) tag->ti_Data;
+                break;
+        }
     }
 }
 
@@ -88,35 +88,35 @@ IPTR GTMX__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
     struct MXData   *data;
     struct TagItem  tags[] =
     {
-	{IA_Width   	, 0 	    	},
-	{IA_Height  	, 0 	    	},
-	{SYSIA_DrawInfo , (IPTR) NULL	},
-	{SYSIA_Which	, MXIMAGE   	},
-	{TAG_DONE   	, 0L	    	}
+        {IA_Width       , 0             },
+        {IA_Height      , 0             },
+        {SYSIA_DrawInfo , (IPTR) NULL   },
+        {SYSIA_Which    , MXIMAGE       },
+        {TAG_DONE       , 0L            }
     };
     struct Gadget    *g;
 
     g = (struct Gadget *) DoSuperMethodA(cl, objcl, (Msg)msg);
     if (!g)
-	return (IPTR)NULL;
+        return (IPTR)NULL;
 
     g->Activation = GACT_IMMEDIATE;
 
     data = INST_DATA(cl, g);
     
-    data->dri 	    	 = NULL;
-    data->tattr     	 = NULL;
-    data->active    	 = 0;
-    data->labels    	 = NULL;
-    data->spacing   	 = 1;
-    data->labelplace 	 = GV_LabelPlace_Above;
+    data->dri            = NULL;
+    data->tattr          = NULL;
+    data->active         = 0;
+    data->labels         = NULL;
+    data->spacing        = 1;
+    data->labelplace     = GV_LabelPlace_Above;
     data->ticklabelplace = GV_LabelPlace_Right;
     
     mx_setnew(cl, (Object *)g, msg);
 
     if (data->tattr)
-    	data->font = OpenFont(data->tattr);
-	
+        data->font = OpenFont(data->tattr);
+        
     /* Calculate fontheight */
     if (data->tattr)
         data->fontheight = data->tattr->ta_YSize;
@@ -128,7 +128,7 @@ IPTR GTMX__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
     /* Calculate gadget size */
     if (g->Width == 0)
         g->Width = MX_WIDTH;
-	
+        
     g->Height = (data->fontheight + data->spacing) *data->numlabels -
                 data->spacing;
 
@@ -139,8 +139,8 @@ IPTR GTMX__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
 
     if ((!data->dri) || (!data->labels) || (!data->mximage) || (!data->numlabels))
     {
-	CoerceMethod(cl, (Object *)g, OM_DISPOSE);
-	g = NULL;
+        CoerceMethod(cl, (Object *)g, OM_DISPOSE);
+        g = NULL;
     }
     
     return (IPTR)g;
@@ -151,7 +151,7 @@ IPTR GTMX__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
 IPTR GTMX__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct MXData   *data = INST_DATA(cl, o);
-    IPTR    	    retval;
+    IPTR            retval;
     
     if (data->font) CloseFont(data->font);
     if (data->mximage) DisposeObject(data->mximage);
@@ -168,44 +168,44 @@ IPTR GTMX__OM_SET(Class *cl, Object *o, struct opSet *msg)
     struct MXData   *data = INST_DATA(cl, o);
     struct TagItem  *tag;
     struct TagItem *taglist = msg->ops_AttrList;
-    IPTR    	    retval = FALSE;
+    IPTR            retval = FALSE;
 
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, o, (Msg)msg);
 
     while ((tag = NextTagItem(&taglist)))
     {
-	switch (tag->ti_Tag)
-	{
+        switch (tag->ti_Tag)
+        {
             case GA_Disabled:
-        	retval = TRUE;
-        	break;
-		
-	    case GTMX_Active:
-        	if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels))
-		{
+                retval = TRUE;
+                break;
+                
+            case GTMX_Active:
+                if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels))
+                {
                     data->active = tag->ti_Data;
                     retval = TRUE;
-        	}
-        	break;
-	}
+                }
+                break;
+        }
     }
 
     if ((retval) && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(o))))
     {
-	struct gpRender rmsg;
+        struct gpRender rmsg;
 
-	rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
-	if (rmsg.gpr_RPort)
-	{
-	    rmsg.MethodID = GM_RENDER;
-	    rmsg.gpr_GInfo = msg->ops_GInfo;
-	    rmsg.gpr_Redraw = GREDRAW_REDRAW;
+        rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
+        if (rmsg.gpr_RPort)
+        {
+            rmsg.MethodID = GM_RENDER;
+            rmsg.gpr_GInfo = msg->ops_GInfo;
+            rmsg.gpr_Redraw = GREDRAW_REDRAW;
 
-	    DoMethodA(o, &rmsg);
-	    ReleaseGIRPort(rmsg.gpr_RPort);
-	    retval = FALSE;
-	}
+            DoMethodA(o, &rmsg);
+            ReleaseGIRPort(rmsg.gpr_RPort);
+            retval = FALSE;
+        }
     }
 
     return retval;
@@ -216,26 +216,26 @@ IPTR GTMX__OM_SET(Class *cl, Object *o, struct opSet *msg)
 IPTR GTMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct MXData   *data;
-    IPTR    	    retval;
+    IPTR            retval;
     
     data = INST_DATA(cl, o);
     
     switch (msg->opg_AttrID)
     {
-	case GTA_GadgetKind:
-	case GTA_ChildGadgetKind:
-	    *(msg->opg_Storage) = MX_KIND;
-	    retval = 1UL;
-	    break;
+        case GTA_GadgetKind:
+        case GTA_ChildGadgetKind:
+            *(msg->opg_Storage) = MX_KIND;
+            retval = 1UL;
+            break;
 
-    	case GTMX_Active:
-	    *(msg->opg_Storage) = data->active;
-	    retval = 1UL;
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    break;
+        case GTMX_Active:
+            *(msg->opg_Storage) = data->active;
+            retval = 1UL;
+            break;
+            
+        default:
+            retval = DoSuperMethodA(cl, o, (Msg)msg);
+            break;
     }
     
     return retval;
@@ -246,9 +246,9 @@ IPTR GTMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
 IPTR GTMX__GM_RENDER(Class *cl, struct ExtGadget *g, struct gpRender *msg)
 {
     struct MXData   *data = INST_DATA(cl, g);
-    WORD    	    ypos = g->TopEdge;
-    UWORD   	    maxtextwidth;
-    int     	    y;
+    WORD            ypos = g->TopEdge;
+    UWORD           maxtextwidth;
+    int             y;
 
     if (msg->gpr_Redraw == GREDRAW_UPDATE)
     {
@@ -265,13 +265,13 @@ IPTR GTMX__GM_RENDER(Class *cl, struct ExtGadget *g, struct gpRender *msg)
     {
         /* Full redraw */
         STRPTR *labels;
-	WORD minx, miny, maxx, maxy;
-	
-	if (data->font)
-	    SetFont(msg->gpr_RPort, data->font);
-	else
-	    SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
-	
+        WORD minx, miny, maxx, maxy;
+        
+        if (data->font)
+            SetFont(msg->gpr_RPort, data->font);
+        else
+            SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
+        
         /* Draw ticks */
         for (y=0; y<data->numlabels; y++)
         {
@@ -295,104 +295,104 @@ IPTR GTMX__GM_RENDER(Class *cl, struct ExtGadget *g, struct gpRender *msg)
 
         ypos = g->TopEdge;
 
-	maxtextwidth = 0;
-	
-	minx = g->LeftEdge;
-	miny = g->TopEdge;
-	maxx = minx + g->Width - 1;
-	maxy = miny + g->Height - 1;
-	
+        maxtextwidth = 0;
+        
+        minx = g->LeftEdge;
+        miny = g->TopEdge;
+        maxx = minx + g->Width - 1;
+        maxy = miny + g->Height - 1;
+        
         for (labels = data->labels; *labels; labels++)
-	{
-	    struct TextExtent 	te;
-	    WORD    	    	x, y, width, height, len;
-	    
-	    x = g->LeftEdge;
-	    y = ypos;
+        {
+            struct TextExtent   te;
+            WORD                x, y, width, height, len;
+            
+            x = g->LeftEdge;
+            y = ypos;
 
             len = strlen(*labels);
             TextExtent(msg->gpr_RPort, *labels, len, &te);
             width  = te.te_Width;
             height = te.te_Height;
- 	    
-	    if (width > maxtextwidth) maxtextwidth = width;
-	    
-	    switch(data->ticklabelplace)
-	    {
-	        case GV_LabelPlace_Right:
-        	    x += data->mximage->Width + 5;
-        	    y += (data->mximage->Height - height) / 2 + 1;
-		    break;
-		
-		case GV_LabelPlace_Above:
-        	    x += (data->mximage->Width - width) / 2;
-        	    y -= (height + 2);
-		    break;
-		
-		case GV_LabelPlace_Below:
-        	    x += (data->mximage->Width - width) / 2;
-        	    y += (data->mximage->Height + 3);
-		    break;
-		
-		case GV_LabelPlace_In:
-        	    x += (data->mximage->Width - width) / 2;
-        	    y += (data->mximage->Height - height) / 2;
-		    break;
-		
-		default: /* GV_LabelPlace_Left: */
-        	    x -= (width + 4);
-        	    y += (data->mximage->Height - height) / 2 + 1;
-		    break;
+            
+            if (width > maxtextwidth) maxtextwidth = width;
+            
+            switch(data->ticklabelplace)
+            {
+                case GV_LabelPlace_Right:
+                    x += data->mximage->Width + 5;
+                    y += (data->mximage->Height - height) / 2 + 1;
+                    break;
+                
+                case GV_LabelPlace_Above:
+                    x += (data->mximage->Width - width) / 2;
+                    y -= (height + 2);
+                    break;
+                
+                case GV_LabelPlace_Below:
+                    x += (data->mximage->Width - width) / 2;
+                    y += (data->mximage->Height + 3);
+                    break;
+                
+                case GV_LabelPlace_In:
+                    x += (data->mximage->Width - width) / 2;
+                    y += (data->mximage->Height - height) / 2;
+                    break;
+                
+                default: /* GV_LabelPlace_Left: */
+                    x -= (width + 4);
+                    y += (data->mximage->Height - height) / 2 + 1;
+                    break;
             }
-	    
+            
             Move(msg->gpr_RPort, x, y + msg->gpr_RPort->Font->tf_Baseline);
             Text(msg->gpr_RPort, *labels, len);
-	    
-	    if (x < minx) minx = x;
-	    if (y < miny) miny = y;
-	    if (x + width - 1 > maxx) maxx = x + width - 1;
-	    if (y + height - 1 > maxy) maxy = y + height - 1;
-	    
+            
+            if (x < minx) minx = x;
+            if (y < miny) miny = y;
+            if (x + width - 1 > maxx) maxx = x + width - 1;
+            if (y + height - 1 > maxy) maxy = y + height - 1;
+            
             ypos += data->fontheight + data->spacing;
         }
 
-	g->BoundsLeftEdge = minx;
-	g->BoundsTopEdge  = miny;
-	g->BoundsWidth    = maxx - minx + 1;
-	g->BoundsHeight   = maxy - miny + 1;
-	g->MoreFlags |= GMORE_BOUNDS;
+        g->BoundsLeftEdge = minx;
+        g->BoundsTopEdge  = miny;
+        g->BoundsWidth    = maxx - minx + 1;
+        g->BoundsHeight   = maxy - miny + 1;
+        g->MoreFlags |= GMORE_BOUNDS;
 
-	data->maxtextwidth = maxtextwidth;
-	
+        data->maxtextwidth = maxtextwidth;
+        
         /* Draw main label */
 
         /* bug: this will not be rendered at the correct
-	        position if ticklabel place and labelplace
-		are the same. I don't think any app will
-		ever do this:
-		
-		   x Item 1
-		   x Item 2 Label
-		   x Item 3
-	
-	*/
-	
+                position if ticklabel place and labelplace
+                are the same. I don't think any app will
+                ever do this:
+                
+                   x Item 1
+                   x Item 2 Label
+                   x Item 3
+        
+        */
+        
         renderlabel(GadToolsBase,
                     (struct Gadget *)g,
-		    msg->gpr_RPort,
+                    msg->gpr_RPort,
                     data->labelplace);
 
     }
 
     /* Draw disabled pattern */
     if (g->Flags & GFLG_DISABLED)
-        DoDisabledPattern(msg->gpr_RPort,                            
+        DoDisabledPattern(msg->gpr_RPort,
                           g->LeftEdge,
-			  g->TopEdge,
+                          g->TopEdge,
                           g->LeftEdge + g->Width - 1,
-			  g->TopEdge + g->Height - 1,
-			  data->dri->dri_Pens[SHADOWPEN],
-			  GadToolsBase);
+                          g->TopEdge + g->Height - 1,
+                          data->dri->dri_Pens[SHADOWPEN],
+                          GadToolsBase);
 
     return TRUE;
 }
@@ -403,8 +403,8 @@ IPTR GTMX__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     struct MXData   *data = INST_DATA(cl, o);
     struct gpRender rmsg;
-    int     	    y, blobheight = data->spacing + data->fontheight;
-    IPTR    	    retval = GMR_NOREUSE;
+    int             y, blobheight = data->spacing + data->fontheight;
+    IPTR            retval = GMR_NOREUSE;
 
     D(bug("blobheight: %d\n", blobheight));
 

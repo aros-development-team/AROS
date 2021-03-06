@@ -23,7 +23,7 @@
 #include "mesa3dgl_support.h"
 #include "mesa3dgl_gallium.h"
 
-static BOOL MESA3DGLSelectColorFormat(enum pipe_format * colorFormat, 
+static BOOL MESA3DGLSelectColorFormat(enum pipe_format * colorFormat,
     struct pipe_screen * screen, GLint bpp)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
@@ -63,7 +63,7 @@ static BOOL MESA3DGLSelectColorFormat(enum pipe_format * colorFormat,
     return FALSE;
 }
 
-static BOOL MESA3DGLSelectDepthStencilFormat(enum pipe_format * depthStencilFormat, 
+static BOOL MESA3DGLSelectDepthStencilFormat(enum pipe_format * depthStencilFormat,
     struct pipe_screen * screen, BOOL noDepth, BOOL noStencil)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
@@ -147,7 +147,7 @@ BOOL MESA3DGLFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
     {
         D(bug("[MESA3DGL] %s: ERROR - No supported color format found\n", __func__));
         return FALSE;
-    } 
+    }
 
     /* Z-buffer / Stencil buffer */
     if (!MESA3DGLSelectDepthStencilFormat(&stvis->depth_stencil_format, screen, noDepth, noStencil))
@@ -250,7 +250,7 @@ static bool MESA3DGLFrameBufferValidate(struct st_context_iface *stctx,
     if (!out)
         return TRUE;
 
-    for (i = 0; i < count; i++) 
+    for (i = 0; i < count; i++)
     {
         out[i] = NULL;
         pipe_resource_reference(&out[i], amfb->textures[statts[i]]);
@@ -273,7 +273,7 @@ struct mesa3dgl_framebuffer * MESA3DGLNewFrameBuffer(struct mesa3dgl_context * c
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    struct mesa3dgl_framebuffer * framebuffer = 
+    struct mesa3dgl_framebuffer * framebuffer =
         AllocVec(sizeof(struct mesa3dgl_framebuffer), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (!framebuffer)
@@ -305,7 +305,7 @@ VOID MESA3DGLFreeFrameBuffer(struct mesa3dgl_framebuffer * framebuffer)
         pipe_resource_reference(&framebuffer->render_resource, NULL);
 
         for (i = 0; i < ST_ATTACHMENT_COUNT; i++)
-            pipe_resource_reference(&framebuffer->textures[i], NULL);        
+            pipe_resource_reference(&framebuffer->textures[i], NULL);
 
         FreeVec(framebuffer);
     }
@@ -334,7 +334,7 @@ struct st_manager * MESA3DGLNewStManager(struct pipe_screen * pscreen)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    struct st_manager * stmanager = 
+    struct st_manager * stmanager =
         (struct st_manager *)AllocVec(sizeof(struct st_manager), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (stmanager)

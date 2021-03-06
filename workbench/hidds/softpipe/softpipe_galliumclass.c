@@ -68,7 +68,7 @@ HiddSoftpipe_CreateDisplaytarget( struct sw_winsys *ws,
                             const void *front_private,
                             unsigned *stride )
 {
-    struct HiddSoftpipeDisplaytarget * spdt = 
+    struct HiddSoftpipeDisplaytarget * spdt =
         AllocVec(sizeof(struct HiddSoftpipeDisplaytarget), MEMF_PUBLIC | MEMF_CLEAR);
     
     *stride = align(util_format_get_stride(format, width), alignment);
@@ -203,15 +203,15 @@ VOID METHOD(HiddSoftpipe, Hidd_Gallium, DisplayResource)
         rp->BitMap = msg->bitmap;
 
         WritePixelArray(
-            data, 
+            data,
             msg->srcx,
             msg->srcy,
             spr->stride[0],
-            rp, 
-            msg->dstx, 
-            msg->dsty, 
-            msg->width, 
-            msg->height, 
+            rp,
+            msg->dstx,
+            msg->dsty,
+            msg->width,
+            msg->height,
             AROS_PIXFMT);
 
         FreeRastPort(rp);

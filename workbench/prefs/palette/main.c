@@ -89,7 +89,7 @@ int main(int argc, char **argv)
                     SA_SharePens, TRUE,
                     SA_Title, "",
                     TAG_END);
-            }                
+            }
 
             application = (Object *)ApplicationObject,
                 MUIA_Application_Title, __(MSG_WINTITLE),

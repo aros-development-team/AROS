@@ -40,8 +40,8 @@ static LONG WebP_Export (Class *cl, Object *o, struct dtWrite *msg)
     D(bug("[webp.datatype] %s()\n", __func__));
 
     GetDTAttrs(o,
-            PDTA_BitMapHeader,	&bmh,
-            TAG_END);	
+            PDTA_BitMapHeader,  &bmh,
+            TAG_END);
 
     if (bmh)
     {
@@ -109,11 +109,11 @@ static LONG WebP_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
                 bmh->bmh_Masking = mskHasAlpha;
 
                 SetDTAttrs(o, NULL, NULL,
-                DTA_NominalHoriz,	bmh->bmh_Width,
-                DTA_NominalVert,	bmh->bmh_Height,
-                PDTA_SourceMode,	PMODE_V43,
-                DTA_ErrorLevel,	&level,
-                DTA_ErrorNumber,	&error,
+                DTA_NominalHoriz,       bmh->bmh_Width,
+                DTA_NominalVert,        bmh->bmh_Height,
+                PDTA_SourceMode,        PMODE_V43,
+                DTA_ErrorLevel, &level,
+                DTA_ErrorNumber,        &error,
                 TAG_END);
 
                 DoSuperMethod(cl, o,
@@ -144,10 +144,10 @@ static LONG  WebP_Import (Class *cl, Object *o, struct TagItem *tags) {
     D(bug("[webp.datatype] %s()\n", __func__));
 
     GetDTAttrs(o,
-            PDTA_BitMapHeader,	&bmh,
+            PDTA_BitMapHeader,  &bmh,
             (filename) ? DTA_Handle : TAG_IGNORE,
                 &file,
-            DTA_SourceType,		&srctype,
+            DTA_SourceType,             &srctype,
             TAG_END);
 
     if (bmh && file && srctype == DTST_FILE) {

@@ -24,7 +24,7 @@ BOOL MakeDir( CONST_STRPTR path )
 
 BOOL MakeDirs( STRPTR path )
 {
-    STRPTR position; 
+    STRPTR position;
     BOOL   success = FALSE;
     BPTR   lock    = BNULL;
     

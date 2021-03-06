@@ -15,11 +15,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(CxObj *, co, A0),
+        AROS_LHA(CxObj *, co, A0),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 8, Commodities)
+        struct Library *, CxBase, 8, Commodities)
 
 /*  FUNCTION
 
@@ -46,7 +46,7 @@
 
     SEE ALSO
 
-    DeleteCxObjAll(), 
+    DeleteCxObjAll(),
 
     INTERNALS
 
@@ -59,7 +59,7 @@
 
     if (co == NULL)
     {
-	return;
+        return;
     }
 
     RemoveCxObj(co);

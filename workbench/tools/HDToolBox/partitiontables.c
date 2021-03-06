@@ -124,7 +124,7 @@ ULONG getOffset(struct PartitionHandle *ph)
     return offset;
 }
 
-/* 
+/*
  Output: 0 - no mount (no partition change)
          1 - mount that device
          2 - reboot not really neccessary
@@ -161,7 +161,7 @@ WORD checkMount(struct HDTBPartition *table, STRPTR name, struct DosEnvec *de)
                 retval = 3; /* better do a reboot */
             }
             else
-            {	
+            {
                 d_de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
                 i = getOffset(table->ph);
                 if (
@@ -266,7 +266,7 @@ void mount(struct HDTBPartition *table, struct PartitionHandle *ph, STRPTR name,
         kprintf("ignored %s: unknown FS (0x%lx)\n", name, de->de_DosType);
 }
 
-void mountPartitions(struct List *ptlist) 
+void mountPartitions(struct List *ptlist)
 {
     struct EasyStruct es =
     {

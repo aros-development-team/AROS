@@ -146,10 +146,10 @@ static boolean VMWareSVGA_WSScr_GetCap(struct svga_winsys_screen *sws,
 
 /******************************/
 
-static struct svga_winsys_buffer *VMWareSVGA_WSScr_BufferCreate( struct svga_winsys_screen *sws, 
-	             unsigned alignment, 
-	             unsigned usage,
-	             unsigned size )
+static struct svga_winsys_buffer *VMWareSVGA_WSScr_BufferCreate( struct svga_winsys_screen *sws,
+                     unsigned alignment,
+                     unsigned usage,
+                     unsigned size )
 {
     struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(sws);
     struct VMWareSVGAPBBuf *buf;
@@ -173,22 +173,22 @@ static struct svga_winsys_buffer *VMWareSVGA_WSScr_BufferCreate( struct svga_win
     return (struct svga_winsys_buffer *)buf;
 }
 
-static void *VMWareSVGA_WSScr_BufferMap( struct svga_winsys_screen *sws, 
-	          struct svga_winsys_buffer *buf,
-		  unsigned usage )
+static void *VMWareSVGA_WSScr_BufferMap( struct svga_winsys_screen *sws,
+                  struct svga_winsys_buffer *buf,
+                  unsigned usage )
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
     return ((struct VMWareSVGAPBBuf *)(buf))->map;
 }
    
-static void VMWareSVGA_WSScr_BufferUnMap( struct svga_winsys_screen *sws, 
+static void VMWareSVGA_WSScr_BufferUnMap( struct svga_winsys_screen *sws,
                     struct svga_winsys_buffer *buf )
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 }
 
 static void VMWareSVGA_WSScr_BufferDestroy( struct svga_winsys_screen *sws,
-	              struct svga_winsys_buffer *buf )
+                      struct svga_winsys_buffer *buf )
 {
     struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(sws);
     struct VMWareSVGAPBBuf *pbuf = (struct VMWareSVGAPBBuf *)buf;
@@ -357,8 +357,8 @@ static boolean VMWareSVGA_WSScr_SurfaceIsFlushed(struct svga_winsys_screen *sws,
 }
 
 static void VMWareSVGA_WSScr_SurfaceReference(struct svga_winsys_screen *sws,
-			struct svga_winsys_surface **pdst,
-			struct svga_winsys_surface *src)
+                        struct svga_winsys_surface **pdst,
+                        struct svga_winsys_surface *src)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 
@@ -377,14 +377,14 @@ static boolean VMWareSVGA_WSScr_SurfaceCanCreate(struct svga_winsys_screen *sws,
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 
-    buffer_size = svga3dsurface_get_serialized_size(format, size, 
-                                                   numMipLevels, 
+    buffer_size = svga3dsurface_get_serialized_size(format, size,
+                                                   numMipLevels,
                                                    numLayers);
     if (numSamples > 1)
       buffer_size *= numSamples;
 
     if (buffer_size > data->hwdata->txrmax) {
-	return FALSE;
+        return FALSE;
     }
 
     return TRUE;
@@ -438,9 +438,9 @@ static int VMWareSVGA_WSScr_FenceFinish( struct svga_winsys_screen *sws,
 }
 
 static struct svga_winsys_gb_shader *VMWareSVGA_WSScr_ShaderCreate(struct svga_winsys_screen *sws,
-		    SVGA3dShaderType shaderType,
-		    const uint32 *bytecode,
-		    uint32 bytecodeLen)
+                    SVGA3dShaderType shaderType,
+                    const uint32 *bytecode,
+                    uint32 bytecodeLen)
 {
     struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(sws);
     struct HIDDGalliumVMWareSVGAShader *shader = NULL;
@@ -454,8 +454,8 @@ static struct svga_winsys_gb_shader *VMWareSVGA_WSScr_ShaderCreate(struct svga_w
 
     pipe_reference_init(&shader->refcnt, 1);
     shader->shaderbuf = VMWareSVGA_WSScr_BufferCreate(sws, 64,
-					       SVGA_BUFFER_USAGE_SHADER,
-					       bytecodeLen);
+                                               SVGA_BUFFER_USAGE_SHADER,
+                                               bytecodeLen);
 
     code = VMWareSVGA_WSScr_BufferMap(sws, shader->shaderbuf, PIPE_TRANSFER_WRITE);
     memcpy(code, bytecode, bytecodeLen);
@@ -479,7 +479,7 @@ static struct svga_winsys_gb_shader *VMWareSVGA_WSScr_ShaderCreate(struct svga_w
 }
 
 static void VMWareSVGA_WSScr_ShaderDestroy(struct svga_winsys_screen *sws,
-		     struct svga_winsys_gb_shader *shader)
+                     struct svga_winsys_gb_shader *shader)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 }
@@ -494,7 +494,7 @@ static struct svga_winsys_gb_query *VMWareSVGA_WSScr_QueryCreate(struct svga_win
 }
 
 static void VMWareSVGA_WSScr_QueryDestroy(struct svga_winsys_screen *sws,
-		    struct svga_winsys_gb_query *query)
+                    struct svga_winsys_gb_query *query)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 }

@@ -7,18 +7,18 @@
 /*****************************************************************************
 
     NAME
-	Debug
+        Debug
 
     FORMAT
-	Debug
+        Debug
 
     SYNOPSIS
 
     LOCATION
-	C:
+        C:
 
     FUNCTION
-	Activates built-in AROS debugger (SAD)
+        Activates built-in AROS debugger (SAD)
 
     EXAMPLE
 

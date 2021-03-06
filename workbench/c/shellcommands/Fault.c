@@ -7,29 +7,29 @@
 /**************************************************************************
 
     NAME
-	Fault
+        Fault
 
     FORMAT
-	Fault <error number>
+        Fault <error number>
 
     SYNOPSIS
-	NUMBERS/N/M
+        NUMBERS/N/M
 
     LOCATION
-	C:
+        C:
 
     FUNCTION
-	Fault prints the message corresponding with the error number
-	supplied. Any number of error numbers can be given at once,
-	but they must be separated by spaces.
+        Fault prints the message corresponding with the error number
+        supplied. Any number of error numbers can be given at once,
+        but they must be separated by spaces.
 
     EXAMPLE
 
-	1.SYS:> Fault 205
-	Fault 205: object not found
+        1.SYS:> Fault 205
+        Fault 205: object not found
 
-	    This tells you that the error code 205 means that a disk
-	    object could not be found.
+            This tells you that the error code 205 means that a disk
+            object could not be found.
 
 **************************************************************************/
 
@@ -55,13 +55,13 @@ AROS_SHAH(LONG **, ,NUMBERS,/N/M, NULL, "The error numbers you wish to query"))
 
     if (theNum)
     {
-	while( *theNum != NULL )
-	{
-	    LONG num = **theNum;
-	    Printf("Fault %ld", num);
-	    PrintFault(num, "");
-	    theNum++;
-	}
+        while( *theNum != NULL )
+        {
+            LONG num = **theNum;
+            Printf("Fault %ld", num);
+            PrintFault(num, "");
+            theNum++;
+        }
     }
 
     SetIoErr(0);

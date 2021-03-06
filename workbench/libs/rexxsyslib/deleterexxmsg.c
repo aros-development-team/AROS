@@ -10,13 +10,13 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH1(VOID, DeleteRexxMsg,
+        AROS_LH1(VOID, DeleteRexxMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RexxMsg *, packet, A0),
+        AROS_LHA(struct RexxMsg *, packet, A0),
 
 /*  LOCATION */
-	struct RxsLib *, RexxSysBase, 25, RexxSys)
+        struct RxsLib *, RexxSysBase, 25, RexxSys)
 
 /*  FUNCTION
          Deletes a RexxMsg structure

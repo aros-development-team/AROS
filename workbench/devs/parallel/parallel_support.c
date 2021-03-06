@@ -13,7 +13,7 @@
 #include <aros/debug.h>
 
 
-struct ParallelUnit * findUnit(struct parallelbase * ParallelDevice, 
+struct ParallelUnit * findUnit(struct parallelbase * ParallelDevice,
                              ULONG unitnum)
 {
   struct ParallelUnit * pu;

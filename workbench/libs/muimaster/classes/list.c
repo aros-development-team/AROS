@@ -507,7 +507,7 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
     D(bug("List AllocListEntry %p, %ld bytes\n", le, size));
     if (le)
     {
-        /* possible, that we have an external pool, which does not have 
+        /* possible, that we have an external pool, which does not have
            MEMF_CLEAR set.. */
         memset(le, 0, size);
     }
@@ -645,7 +645,7 @@ static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
         return FALSE;
 
     if (!(data->strings_mem = AllocVec((new_columns + 1 + 10)
-        * sizeof(STRPTR), MEMF_CLEAR)))    
+        * sizeof(STRPTR), MEMF_CLEAR)))
                                   /* hold enough space also for the entry pos,
                                    * used by orginal MUI and also some
                                    * security space */
@@ -734,7 +734,7 @@ static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
         /* called from OM_NEW */
         data->columns_allocated = new_columns;
     }
-    else if (data->columns_allocated < new_columns) 
+    else if (data->columns_allocated < new_columns)
     {
         /* called by MUIA_List_Format */
         if (!IncreaseColumns(data, new_columns))
@@ -921,7 +921,7 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
  Space can only grow, not shrink.
  Return FALSE on error (no memory).
 **************************************************************************/
-static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns) 
+static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns)
 {
     int i = 0;
     IPTR newsize, oldsize;
@@ -3165,8 +3165,8 @@ IPTR List__MUIM_SelectChange(struct IClass *cl, Object *obj,
 *
 *   FUNCTION
 *       Creates an image to be inserted within list entries. An instance of
-*       any Area subclass is passed in and a blackbox value is returned that 
-*       can be displayed by embedding its hexadecimal representation within 
+*       any Area subclass is passed in and a blackbox value is returned that
+*       can be displayed by embedding its hexadecimal representation within
 *       any of the list's display strings (provided either statically or by
 *       the list's display hook. The format string to be used is
 *       "\330[%08lx]".
@@ -3176,7 +3176,7 @@ IPTR List__MUIM_SelectChange(struct IClass *cl, Object *obj,
 *       MUIM_Setup method, and MUIM_List_DeleteImage can be called in the
 *       list's MUIM_Cleanup method. However, this is not necessary as long as
 *       MUIM_List_CreateImage is called after the list has had its MUIM_Setup
-*       called, and MUIM_List_DeleteImage is called after the list has had its 
+*       called, and MUIM_List_DeleteImage is called after the list has had its
 *       MUIM_Cleanup method called.
 *
 *   INPUTS

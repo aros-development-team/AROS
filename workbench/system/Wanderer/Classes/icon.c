@@ -131,7 +131,7 @@ static void Icon_GetIconImageRectangle(Object *obj, struct Icon_DATA *data, stru
 D(bug("[Icon]: %s(icon @ %p)\n", __PRETTY_FUNCTION__, icon));
 #endif
 
-    /* Get basic width/height */    
+    /* Get basic width/height */
     GetIconRectangleA(NULL, data->IcD_DiskObj, NULL, rect, __iconList_DrawIconStateTags);
 #if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[Icon] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTION__, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
@@ -185,13 +185,13 @@ D(bug("[Icon]: %s()\n", __PRETTY_FUNCTION__));
         if (curlabel_TotalLines > XGET(_parent(obj), MUIA_Icon_LabelText_MultiLine))
             curlabel_TotalLines = XGET(_parent(obj), MUIA_Icon_LabelText_MultiLine);
         
-        rect->MaxY = (((data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalPadding) * 2) + 
+        rect->MaxY = (((data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalPadding) * 2) +
                      ((data->icld_IconLabelFont->tf_YSize + outline_offset) * curlabel_TotalLines)) - 1;
 
         /*  Date/size sorting has the date/size appended under the icon label
             only list regular files like this (drawers have no size/date output) */
         if(
-            icon->IcD_IconEntry.type != ST_USERDIR && 
+            icon->IcD_IconEntry.type != ST_USERDIR &&
             ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
         )
         {
@@ -362,8 +362,8 @@ D(bug("[Icon] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     DrawIconStateA
         (
             data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, message->icon->IcD_DiskObj, NULL,
-            iconX, 
-            iconY, 
+            iconX,
+            iconY,
             (message->icon->IcD_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
             __iconList_DrawIconStateTags
         );
@@ -382,7 +382,7 @@ void Icon__LabelFunc_SplitLabel(Object *obj, struct Icon_DATA *data, struct Icon
      int        labelSplit_CharsDone,   labelSplit_CharsSplit;
     ULONG         labelSplit_CurSplitWidth;
 
-    if ((data->icld__Option_TrimVolumeNames) && 
+    if ((data->icld__Option_TrimVolumeNames) &&
         ((icon->IcD_IconEntry.type == ST_ROOT) && (icon->IcD_Label_TXTBUFF[labelSplit_LabelLength - 1] == ':')))
         labelSplit_LabelLength--;
 
@@ -549,7 +549,7 @@ D(bug("[Icon]: %s: Attempting to split label ..\n", __PRETTY_FUNCTION__));
     }
     
     if (icon->IcD_DisplayedLabel_TXTBUFF == NULL)
-    { 
+    {
         ULONG IcD_LabelLength = strlen(icon->IcD_Label_TXTBUFF);
         icon->IcD_DisplayedLabel_SplitParts = 1;
 
@@ -557,7 +557,7 @@ D(bug("[Icon]: %s: Attempting to split label ..\n", __PRETTY_FUNCTION__));
 D(bug("[Icon]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTION__, IcD_LabelLength));
 #endif
 
-        if ((data->icld__Option_TrimVolumeNames) && 
+        if ((data->icld__Option_TrimVolumeNames) &&
             ((icon->IcD_IconEntry.type == ST_ROOT) && (icon->IcD_Label_TXTBUFF[IcD_LabelLength - 1] == ':')))
             IcD_LabelLength--;
 
@@ -571,7 +571,7 @@ D(bug("[Icon]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTION__,
             strncpy(icon->IcD_DisplayedLabel_TXTBUFF, icon->IcD_Label_TXTBUFF, XGET(_parent(obj), MUIA_Icon_LabelText_MaxLineLen) - 3);
             strcat(icon->IcD_DisplayedLabel_TXTBUFF , " ..");
         }
-        else 
+        else
         {
             if (!(icon->IcD_DisplayedLabel_TXTBUFF = AllocVecPooled(data->icld_Pool, IcD_LabelLength + 1)))
             {
@@ -779,12 +779,12 @@ D(bug("[Icon] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_I
             {
                 case ICON_TEXTMODE_DROPSHADOW:
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                    Move(data->icld_BufferRastPort, tx + 1, ty + 1); 
+                    Move(data->icld_BufferRastPort, tx + 1, ty + 1);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, IcD_LabelLength);
                     offset_y = 1;
                 case ICON_TEXTMODE_PLAIN:
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                    Move(data->icld_BufferRastPort, tx, ty); 
+                    Move(data->icld_BufferRastPort, tx, ty);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, IcD_LabelLength);
                     break;
                     
@@ -794,17 +794,17 @@ D(bug("[Icon] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_I
                     SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
 
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                    Move(data->icld_BufferRastPort, tx + 1, ty ); 
+                    Move(data->icld_BufferRastPort, tx + 1, ty );
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, IcD_LabelLength);
-                    Move(data->icld_BufferRastPort, tx - 1, ty ); 
+                    Move(data->icld_BufferRastPort, tx - 1, ty );
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, IcD_LabelLength);
-                    Move(data->icld_BufferRastPort, tx, ty + 1);  
+                    Move(data->icld_BufferRastPort, tx, ty + 1);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, IcD_LabelLength);
                     Move(data->icld_BufferRastPort, tx, ty - 1);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, IcD_LabelLength);
                     
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                    Move(data->icld_BufferRastPort, tx , ty ); 
+                    Move(data->icld_BufferRastPort, tx , ty );
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, IcD_LabelLength);
                     
                     SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
@@ -869,13 +869,13 @@ D(bug("[Icon] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_I
                         SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
                         SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
                         
-                        Move(data->icld_BufferRastPort, tx + 1, ty ); 
+                        Move(data->icld_BufferRastPort, tx + 1, ty );
                         Text(data->icld_BufferRastPort, buf, IcD_LabelLength);
-                        Move(data->icld_BufferRastPort, tx - 1, ty );  
+                        Move(data->icld_BufferRastPort, tx - 1, ty );
                         Text(data->icld_BufferRastPort, buf, IcD_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty - 1 );  
+                        Move(data->icld_BufferRastPort, tx, ty - 1 );
                         Text(data->icld_BufferRastPort, buf, IcD_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty + 1 );  
+                        Move(data->icld_BufferRastPort, tx, ty + 1 );
                         Text(data->icld_BufferRastPort, buf, IcD_LabelLength);
                         
                         SetAPen(data->icld_BufferRastPort, XGET(_parent(obj), MUIA_IconList_LabelInfoText_Pen));
@@ -926,7 +926,7 @@ D(bug("[Icon]: %s()\n", __PRETTY_FUNCTION__));
     {
         data->dob = GetIconTags
         (
-            message->filename, 
+            message->filename,
             ICONGETA_FailIfUnavailable,        FALSE,
             ICONGETA_GenerateImageMasks,       TRUE,
             ICONA_ErrorCode,                   &geticon_error,
@@ -1414,7 +1414,7 @@ D(bug("[Icon]: %s()\n", __PRETTY_FUNCTION__));
         case MUIA_Iconview_ScaledBackground:         STORE = (IPTR)data->icld__Option_IconScaledBackground; return 1;
     }
 
-    if (DoSuperMethodA(CLASS, obj, (Msg) message)) 
+    if (DoSuperMethodA(CLASS, obj, (Msg) message))
         return 1;
     return 0;
 #undef STORE
@@ -1577,7 +1577,7 @@ MUIM_Draw - draw the Icon
 **************************************************************************/
 IPTR DrawCount;
 IPTR Icon__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *message)
-{   
+{
     struct Icon_DATA    *data = INST_DATA(CLASS, obj);
     struct IconEntry       *icon = NULL;
 
@@ -1609,7 +1609,7 @@ D(bug("[Icon] %s: id %d\n", __PRETTY_FUNCTION__, draw_id));
     if ((data->update_oldwidth != data->icld_ViewWidth) || (data->update_oldheight != data->icld_ViewHeight))
     {
         if (data->icld_UpdateMode != UPDATE_SCROLL)
-        { 
+        {
             data->icld_UpdateMode = UPDATE_RESIZE;
             update_oldwidth = data->update_oldwidth;
             update_oldheight = data->update_oldheight;
@@ -1663,10 +1663,10 @@ D(bug("[Icon] %s#%d: UPDATE_SINGLEICON (icon @ 0x%p)\n", __PRETTY_FUNCTION__, dr
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[Icon] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
-            DoMethod(obj, MUIM_DrawBackground, 
+            DoMethod(obj, MUIM_DrawBackground,
                 rect.MinX, rect.MinY,
                 rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-                clear_xoffset, clear_yoffset, 
+                clear_xoffset, clear_yoffset,
                 0);
 
             /* We could have deleted also other icons so they must be redrawn */
@@ -1698,7 +1698,7 @@ D(bug("[Icon] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PR
                     }
 
                     if (RectAndRect(&rect, &rect2))
-                    {  
+                    {
                         // Update icon here
                         DoMethod(obj, MUIM_Icon_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
                         DoMethod(obj, MUIM_Icon_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
@@ -1715,7 +1715,7 @@ D(bug("[Icon] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PR
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[Icon] %s#%d: UPDATE_SINGLEICON Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           rect.MinX - _mleft(obj), rect.MinY - _mtop(obj),
                           data->icld_DisplayRastPort,
@@ -1736,7 +1736,7 @@ D(bug("[Icon] %s#%d: UPDATE_SINGLEICON Blitting to front rastport..\n", __PRETTY
 
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[Icon] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
 
             if (!data->icld__Option_IconFixedBackground)
             {
@@ -1749,7 +1749,7 @@ D(bug("[Icon] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[Icon] %s#%d: UPDATE_SCROLL: Moved outside current view\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
                 }
@@ -1871,7 +1871,7 @@ D(bug("[Icon] %s#%d: UPDATE_SCROLL: Causing Redraw..\n", __PRETTY_FUNCTION__, dr
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[Icon] %s#%d: UPDATE_SCROLL: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           0, 0,
                           data->icld_DisplayRastPort,
@@ -1891,7 +1891,7 @@ D(bug("[Icon] %s#%d: UPDATE_SCROLL: Blitting to front rastport..\n", __PRETTY_FU
 
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[Icon] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
 
             if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
             {
@@ -1946,7 +1946,7 @@ D(bug("[Icon] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 if ( data->icld_ViewWidth > update_oldwidth )
                     diffw = data->icld_ViewWidth - update_oldwidth;
                 if ( data->icld_ViewHeight > update_oldheight )
-                    diffh = data->icld_ViewHeight - update_oldheight;            
+                    diffh = data->icld_ViewHeight - update_oldheight;
 
                 if (diffw)
                 {
@@ -2047,7 +2047,7 @@ D(bug("[Icon] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __PRET
         {
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[Icon] %s#%d: MADF_DRAWOBJECT: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
       BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
             0, 0,
             data->icld_DisplayRastPort,
@@ -2156,10 +2156,10 @@ BOOPSI_DISPATCHER(IPTR,Icon_Dispatcher, CLASS, obj, message)
     return DoSuperMethodA(CLASS, obj, message);
 }
 BOOPSI_DISPATCHER_END
-const struct __MUIBuiltinClass _MUI_Icon_desc = { 
-    MUIC_Icon, 
-    MUIC_Area, 
-    sizeof(struct Icon_DATA), 
+const struct __MUIBuiltinClass _MUI_Icon_desc = {
+    MUIC_Icon,
+    MUIC_Area,
+    sizeof(struct Icon_DATA),
     (void*)Icon_Dispatcher
 };
 

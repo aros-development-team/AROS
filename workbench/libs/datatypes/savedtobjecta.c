@@ -75,9 +75,9 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
     ULONG            rc       = 0;
     struct Library  *IconBase = OpenLibrary("icon.library", 39L);
     struct TagItem   tags[2]  =
-    { 
+    {
         { DTA_DataType, (STACKIPTR)&dt  },
-        { TAG_DONE    , (STACKIPTR)NULL } 
+        { TAG_DONE    , (STACKIPTR)NULL }
     };
     
     if(o == NULL || file == NULL)
@@ -137,7 +137,7 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
             PutDiskObject(file, icon);
             FreeDiskObject(icon);
         }
-    }    
+    }
 
 cleanup:
     if (IconBase != NULL) CloseLibrary(IconBase);

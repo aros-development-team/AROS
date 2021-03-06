@@ -441,7 +441,7 @@ static void IconList_InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, 
     r.MaxY = maxy;
     
     if (AndRectRect(&r, clip, &clipped_r))
-    { 
+    {
         InvertPixelArray(rp, clipped_r.MinX, clipped_r.MinY,
                          clipped_r.MaxX - clipped_r.MinX + 1, clipped_r.MaxY - clipped_r.MinY + 1);
     }
@@ -481,7 +481,7 @@ static void IconList_InvertLassoOutlines(Object *obj, struct IconList_DATA *data
     /* vertical lasso lines */
     IconList_InvertPixelRect(_rp(obj), lasso.MinX, lasso.MinY, lasso.MinX + 1, lasso.MaxY - 1, &clip);
     IconList_InvertPixelRect(_rp(obj), lasso.MaxX, lasso.MinY, lasso.MaxX + 1, lasso.MaxY - 1, &clip);
-} 
+}
 ///
 
 ///IconList_GetIconImageRectangle()
@@ -492,7 +492,7 @@ static void IconList_GetIconImageRectangle(Object *obj, struct IconList_DATA *da
     D(bug("[IconList]: %s(entry @ %p)\n", __PRETTY_FUNCTION__, entry));
 #endif
 
-    /* Get basic width/height */    
+    /* Get basic width/height */
     GetIconRectangleA(NULL, entry->ie_DiskObj, NULL, rect, __iconList_DrawIconStateTags);
 #if defined(DEBUG_ILC_ICONPOSITIONING)
     D(bug("[IconList] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTION__, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
@@ -562,13 +562,13 @@ static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *da
         if (curlabel_TotalLines > data->icld__Option_LabelTextMultiLine)
             curlabel_TotalLines = data->icld__Option_LabelTextMultiLine;
         
-        rect->MaxY = (((data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalPadding) * 2) + 
+        rect->MaxY = (((data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalPadding) * 2) +
                      ((data->icld_IconLabelFont->tf_YSize + outline_offset) * curlabel_TotalLines)) - 1;
 
         /*  Date/size sorting has the date/size appended under the entry label
             only list regular files like this (drawers have no size/date output) */
         if(
-            entry->ie_IconListEntry.type != ST_USERDIR && 
+            entry->ie_IconListEntry.type != ST_USERDIR &&
             ((data->icld_SortFlags & MUIV_IconList_Sort_BySize) || (data->icld_SortFlags & MUIV_IconList_Sort_ByDate))
         )
         {
@@ -795,7 +795,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
 
         case INDEX_PROTECTION:
             text = entry->ie_TxtBuf_PROT;
-            break;                            
+            break;
     }
 
     if (!text) return;
@@ -1053,8 +1053,8 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
         DrawIconStateA
           (
             data->icld_BufferRastPort, message->entry->ie_DiskObj, NULL,
-            iconX, 
-            iconY, 
+            iconX,
+            iconY,
             (message->entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
             __iconList_DrawIconStateTags
           );
@@ -1077,7 +1077,7 @@ static void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *da
     int         labelSplit_CharsDone,   labelSplit_CharsSplit;
     ULONG       labelSplit_CurSplitWidth;
 
-    if ((data->icld__Option_TrimVolumeNames) && 
+    if ((data->icld__Option_TrimVolumeNames) &&
          ((entry->ie_IconListEntry.type == ST_ROOT) && (entry->ie_IconListEntry.label[labelSplit_LabelLength - 1] == ':')))
         labelSplit_LabelLength--;
 
@@ -1252,7 +1252,7 @@ static IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *d
     }
 
     if (entry->ie_TxtBuf_DisplayedLabel == NULL)
-    { 
+    {
         ULONG ie_LabelLength = strlen(entry->ie_IconListEntry.label);
         entry->ie_SplitParts = 1;
 
@@ -1260,7 +1260,7 @@ static IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *d
         D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTION__, ie_LabelLength));
 #endif
 
-        if ((data->icld__Option_TrimVolumeNames) && 
+        if ((data->icld__Option_TrimVolumeNames) &&
              ((entry->ie_IconListEntry.type == ST_ROOT) && (entry->ie_IconListEntry.label[ie_LabelLength - 1] == ':')))
             ie_LabelLength--;
 
@@ -1274,7 +1274,7 @@ static IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *d
             strncpy(entry->ie_TxtBuf_DisplayedLabel, entry->ie_IconListEntry.label, data->icld__Option_LabelTextMaxLen - 3);
             strcat(entry->ie_TxtBuf_DisplayedLabel , " ..");
         }
-        else 
+        else
         {
             if (!(entry->ie_TxtBuf_DisplayedLabel = AllocVecPooled(data->icld_Pool, ie_LabelLength + 1)))
             {
@@ -1564,12 +1564,12 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
             {
                 case ICON_TEXTMODE_DROPSHADOW:
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                    Move(data->icld_BufferRastPort, tx + 1, ty + 1); 
+                    Move(data->icld_BufferRastPort, tx + 1, ty + 1);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
                     offset_y = 1;
                 case ICON_TEXTMODE_PLAIN:
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                    Move(data->icld_BufferRastPort, tx, ty); 
+                    Move(data->icld_BufferRastPort, tx, ty);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
                     break;
 
@@ -1578,17 +1578,17 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
                     SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
 
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                    Move(data->icld_BufferRastPort, tx + 1, ty ); 
+                    Move(data->icld_BufferRastPort, tx + 1, ty );
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                    Move(data->icld_BufferRastPort, tx - 1, ty ); 
+                    Move(data->icld_BufferRastPort, tx - 1, ty );
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
-                    Move(data->icld_BufferRastPort, tx, ty + 1);  
+                    Move(data->icld_BufferRastPort, tx, ty + 1);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
                     Move(data->icld_BufferRastPort, tx, ty - 1);
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
 
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                    Move(data->icld_BufferRastPort, tx , ty ); 
+                    Move(data->icld_BufferRastPort, tx , ty );
                     Text(data->icld_BufferRastPort, curlabel_StrPtr, ie_LabelLength);
 
                     SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
@@ -1653,13 +1653,13 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
                         SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
                         SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
 
-                        Move(data->icld_BufferRastPort, tx + 1, ty ); 
+                        Move(data->icld_BufferRastPort, tx + 1, ty );
                         Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                        Move(data->icld_BufferRastPort, tx - 1, ty );  
+                        Move(data->icld_BufferRastPort, tx - 1, ty );
                         Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty - 1 );  
+                        Move(data->icld_BufferRastPort, tx, ty - 1 );
                         Text(data->icld_BufferRastPort, buf, ie_LabelLength);
-                        Move(data->icld_BufferRastPort, tx, ty + 1 );  
+                        Move(data->icld_BufferRastPort, tx, ty + 1 );
                         Text(data->icld_BufferRastPort, buf, ie_LabelLength);
 
                         SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
@@ -2156,7 +2156,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
     NewList((struct List*)&data->icld_IconList);
     NewList((struct List*)&data->icld_SelectionList);
 
-    data->icld_IconLabelFont = icl_WindowFont;  
+    data->icld_IconLabelFont = icl_WindowFont;
 
 /* Setup List View-Mode options */
     if ((data->icld_LVMAttribs = AllocMem(sizeof(struct ListViewModeAttribs), MEMF_CLEAR)) != NULL)
@@ -2250,14 +2250,14 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
     DoMethod
       (
         obj, MUIM_Notify, MUIA_IconList_LabelText_MaxLineLen, MUIV_EveryTime,
-        (IPTR)obj, 3, 
+        (IPTR)obj, 3,
         MUIM_CallHook, &__iconlist_UpdateLabels_hook, (IPTR)CLASS
       );
 
     DoMethod
       (
         obj, MUIM_Notify, MUIA_IconList_LabelText_MultiLine, MUIV_EveryTime,
-        (IPTR)obj, 3, 
+        (IPTR)obj, 3,
         MUIM_CallHook, &__iconlist_UpdateLabels_hook, (IPTR)CLASS
       );
 
@@ -2906,7 +2906,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             newtop = 0;
 
         if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
-        {    
+        {
             SetAttrs(obj, MUIA_Virtgroup_Left, newleft,
                 MUIA_Virtgroup_Top, newtop,
                 TAG_DONE);
@@ -3187,7 +3187,7 @@ static LONG NumVisibleLines(struct IconList_DATA *data)
                    
     visible /= data->icld_LVMAttribs->lmva_RowHeight;
     
-    return visible;                   
+    return visible;
 }
 
 static void RenderListViewModeHeaderField(Object *obj, struct IconList_DATA *data,
@@ -3369,7 +3369,7 @@ MUIM_Draw - draw the IconList
 **************************************************************************/
 IPTR DrawCount;
 IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *message)
-{   
+{
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
     struct IconEntry            *entry = NULL;
 
@@ -3404,7 +3404,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
     if ((data->update_oldwidth != data->icld_ViewWidth) || (data->update_oldheight != data->icld_ViewHeight))
     {
         if (data->icld_UpdateMode != UPDATE_SCROLL)
-        { 
+        {
             data->icld_UpdateMode = UPDATE_RESIZE;
             update_oldwidth = data->update_oldwidth;
             update_oldheight = data->update_oldheight;
@@ -3450,7 +3450,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                     field_rect.MaxX += HEADERLINE_SPACING_RIGHT;
 
                 if ((IPTR)data->update_entry != index)
-                {                
+                {
                     field_rect.MinX += data->icld_LVMAttribs->lmva_ColumnWidth[index];
                     if (index == firstvis)
                         field_rect.MinX += HEADERLINE_SPACING_LEFT;
@@ -3473,7 +3473,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
                 D(bug("[IconList] %s#%d: UPDATE_HEADERENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           field_rect.MinX - _mleft(obj), field_rect.MinY - _mtop(obj),
                           data->icld_DisplayRastPort,
@@ -3526,10 +3526,10 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
                     clip = MUI_AddClipping(muiRenderInfo(obj), rect.MinX, rect.MinY, rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1);
 
-                    DoMethod(obj, MUIM_DrawBackground, 
+                    DoMethod(obj, MUIM_DrawBackground,
                         rect.MinX, rect.MinY,
                         rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-                        clear_xoffset, clear_yoffset, 
+                        clear_xoffset, clear_yoffset,
                         0);
                     
                     entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
@@ -3576,10 +3576,10 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 #if defined(DEBUG_ILC_ICONRENDERING)
                 D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
-                DoMethod(obj, MUIM_DrawBackground, 
+                DoMethod(obj, MUIM_DrawBackground,
                     rect.MinX, rect.MinY,
                     rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-                    clear_xoffset, clear_yoffset, 
+                    clear_xoffset, clear_yoffset,
                     0);
 
                 /* We could have deleted also other icons so they must be redrawn */
@@ -3611,7 +3611,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                         }
 
                         if (RectAndRect(&rect, &rect2))
-                        {  
+                        {
                             // Update entry here
                             entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
                             DoMethod(obj, MUIM_IconList_DrawEntry, entry, ICONENTRY_DRAWMODE_PLAIN);
@@ -3634,7 +3634,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
                     D(bug("[IconList] %s#%d: UPDATE_SINGLEENTRY Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                     BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                               rect.MinX - _mleft(obj), rect.MinY - _mtop(obj),
                               data->icld_DisplayRastPort,
@@ -3655,7 +3655,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
 #if defined(DEBUG_ILC_ICONRENDERING)
             D(bug("[IconList] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
 
             if (!data->icld__Option_IconListFixedBackground)
             {
@@ -3668,7 +3668,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                 {
 #if defined(DEBUG_ILC_ICONRENDERING)
                     D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view -> Causing Redraw .. MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
                 }
@@ -3815,7 +3815,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
                 D(bug("[IconList] %s#%d: UPDATE_SCROLL: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           0, 0,
                           data->icld_DisplayRastPort,
@@ -3835,7 +3835,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
 #if defined(DEBUG_ILC_ICONRENDERING)
             D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
 
             if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
             {
@@ -3918,7 +3918,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                 if ( data->icld_ViewWidth > update_oldwidth )
                     diffw = data->icld_ViewWidth - update_oldwidth;
                 if ( data->icld_ViewHeight > update_oldheight )
-                    diffh = data->icld_ViewHeight - update_oldheight;            
+                    diffh = data->icld_ViewHeight - update_oldheight;
 
                 if (diffw)
                 {
@@ -3990,7 +3990,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             {
 #if defined(DEBUG_ILC_ICONRENDERING)
                 D(bug("[IconList] %s#%d: MADF_DRAWOBJECT Blitting Header to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
                 BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
                           0, 0,
                           data->icld_DisplayRastPort,
@@ -4083,7 +4083,7 @@ draw_done:;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList] %s: Draw finished for id %d\n", __PRETTY_FUNCTION__, draw_id));
-#endif 
+#endif
     return 0;
 }
 ///
@@ -4621,7 +4621,7 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
         #  vertical wheel is used but there's nothing to scroll
            (everything is visible already) ..
 
-        #  vertical wheel is used and one of the ALT keys is down.      */  
+        #  vertical wheel is used and one of the ALT keys is down.      */
 
     if ((wheely && !wheelx) &&
        ((data->icld_AreaHeight <= _mheight(obj)) || (qual & (IEQUALIFIER_LALT | IEQUALIFIER_RALT))))
@@ -6054,7 +6054,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
                             DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
                         }
-                    }     
+                    }
                 }
                 else
                 {
@@ -6145,7 +6145,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     LONG move_x = mx;
                     LONG move_y = my;
 
-                    if (data->icld_SelectionLastClicked && (data->icld_LassoActive == FALSE) && 
+                    if (data->icld_SelectionLastClicked && (data->icld_LassoActive == FALSE) &&
                         ((abs(move_x - data->click_x) >= 2) || (abs(move_y - data->click_y) >= 2)))
                     {
                         LONG touch_x, touch_y;
@@ -6173,10 +6173,10 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         struct Rectangle    iconrect;
 
                         struct IconEntry    *node = NULL;
-//                        struct IconEntry    *new_selected = NULL; 
+//                        struct IconEntry    *new_selected = NULL;
 
                         /* Remove previous Lasso frame */
-                        GetAbsoluteLassoRect(data, &old_lasso);                          
+                        GetAbsoluteLassoRect(data, &old_lasso);
                         IconList_InvertLassoOutlines(obj, data, &old_lasso);
 
                         /* if the mouse leaves our visible area scroll the view */
@@ -6200,7 +6200,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             {
                                 SetAttrs(obj, MUIA_Virtgroup_Left, newleft, MUIA_Virtgroup_Top, newtop, TAG_DONE);
                             }
-                        } 
+                        }
 
                         /* update Lasso coordinates */
                         data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
@@ -6312,7 +6312,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                             node->ie_Flags |= ICONENTRY_FLAG_LASSO;
                                             update_entry = (IPTR)node;
                                          }
-                                    } 
+                                    }
                                     else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
                                     {
                                         //Entry is no longer inside our lasso - revert its selected state
@@ -6338,8 +6338,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                 MUI_Redraw(obj, MADF_DRAWUPDATE);
                             }
                         }
-                        /* Draw Lasso frame */                         
-                        IconList_InvertLassoOutlines(obj, data, &new_lasso);                        
+                        /* Draw Lasso frame */
+                        IconList_InvertLassoOutlines(obj, data, &new_lasso);
                     }
 
                     return MUI_EventHandlerRC_Eat;
@@ -6837,14 +6837,14 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                 iconbox.MaxY = (node->ie_IconY + node->ie_AreaHeight)- data->icld_ViewY;
 
                 if ((node->ie_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                   (click_x >= iconbox.MinX) && 
+                   (click_x >= iconbox.MinX) &&
                    (click_x <  iconbox.MaxX) &&
-                   (click_y >= iconbox.MinY)  && 
+                   (click_y >= iconbox.MinY)  &&
                    (click_y <  iconbox.MaxY))
                 {
                     drop_target_node = node;
                     break;
-                } 
+                }
             }
         }
 
@@ -6852,7 +6852,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         if ((message->obj == obj) && (drop_target_node) && (drop_target_node->ie_Flags & ICONENTRY_FLAG_SELECTED))
             drop_target_node = NULL;
 
-        if ((drop_target_node != NULL) && 
+        if ((drop_target_node != NULL) &&
             ((drop_target_node->ie_IconListEntry.type == ST_SOFTLINK)   ||
              (drop_target_node->ie_IconListEntry.type == ST_ROOT)       ||
              (drop_target_node->ie_IconListEntry.type == ST_USERDIR)    ||
@@ -7622,7 +7622,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_DragQuery:                    return IconList__MUIM_DragQuery(CLASS, obj, (APTR)message);
         case MUIM_DragReport:                   return IconList__MUIM_DragReport(CLASS, obj, (APTR)message);
         case MUIM_DragDrop:                     return IconList__MUIM_DragDrop(CLASS, obj, (APTR)message);
-        case MUIM_UnknownDropDestination:       return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
+        case MUIM_UnknownDropDestination:       return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);
         case MUIM_IconList_Update:              return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
         case MUIM_IconList_Clear:               return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
         case MUIM_IconList_RethinkDimensions:   return IconList__MUIM_IconList_RethinkDimensions(CLASS, obj, (APTR)message);
@@ -7646,10 +7646,10 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 BOOPSI_DISPATCHER_END
 
 /* Class descriptor. */
-const struct __MUIBuiltinClass _MUI_IconList_desc = { 
-    MUIC_IconList, 
-    MUIC_Area, 
-    sizeof(struct IconList_DATA), 
+const struct __MUIBuiltinClass _MUI_IconList_desc = {
+    MUIC_IconList,
+    MUIC_Area,
+    sizeof(struct IconList_DATA),
     (void*)IconList_Dispatcher
 };
 #endif /* WANDERER_BUILTIN_ICONLIST */

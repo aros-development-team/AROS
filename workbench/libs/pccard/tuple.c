@@ -453,104 +453,104 @@ static ULONG StrLen(const TEXT *s);
 /****** pccard.library/PCCard_GetTupleInfo *********************************
 *
 *   NAME
-*	PCCard_GetTupleInfo -- Parse a CIS tuple.
+*       PCCard_GetTupleInfo -- Parse a CIS tuple.
 *
 *   SYNOPSIS
-*	tag_list = PCCard_GetTupleInfo(tuple)
-*	D0                             A0
+*       tag_list = PCCard_GetTupleInfo(tuple)
+*       D0                             A0
 *
-*	struct TagItem *PCCard_GetTupleInfo(UBYTE *);
+*       struct TagItem *PCCard_GetTupleInfo(UBYTE *);
 *
 *   FUNCTION
-*	Reads the information held within a CIS tuple and presents it in the
-*	form of a tag list. The returned tag list is read-only and must be
-*	relinquished via PCCard_FreeTupleInfo().
+*       Reads the information held within a CIS tuple and presents it in the
+*       form of a tag list. The returned tag list is read-only and must be
+*       relinquished via PCCard_FreeTupleInfo().
 *
-*	The tags available for each tuple type are described below.
+*       The tags available for each tuple type are described below.
 *
-*	PCCARD_TPL_DEVICE/PCCARD_TPL_DEVICEA:
-*	    PCCARD_RegionCount - The number of memory regions in either
-*	        common memory (PCCARD_TPL_DEVICE) or attribute memory
-*	        (PCCARD_TPL_DEVICEA).
-*	    PCCARD_RegionLists - An array of tag lists, one for each memory
-*	        region. Each sub-list may have the following tags:
-*	        PCCARD_Flags - Currently only PCCARD_REGIONF_WP (write
-*	            protection) is defined.
-*	        PCCARD_Type - Region's memory type.
-*	        PCCARD_Speed - Speed in nanoseconds.
-*	        PCCARD_Base - Offset of start of region.
-*	        PCCARD_Length - Length of region.
+*       PCCARD_TPL_DEVICE/PCCARD_TPL_DEVICEA:
+*           PCCARD_RegionCount - The number of memory regions in either
+*               common memory (PCCARD_TPL_DEVICE) or attribute memory
+*               (PCCARD_TPL_DEVICEA).
+*           PCCARD_RegionLists - An array of tag lists, one for each memory
+*               region. Each sub-list may have the following tags:
+*               PCCARD_Flags - Currently only PCCARD_REGIONF_WP (write
+*                   protection) is defined.
+*               PCCARD_Type - Region's memory type.
+*               PCCARD_Speed - Speed in nanoseconds.
+*               PCCARD_Base - Offset of start of region.
+*               PCCARD_Length - Length of region.
 *
-*	PCCARD_TPL_VERS1:
-*	    PCCARD_MajorVersion - ?
-*	    PCCARD_MinorVersion - ?
-*	    PCCARD_InfoStringCount - Number of strings available.
-*	    PCCARD_InfoStrings - An array of card information strings.
+*       PCCARD_TPL_VERS1:
+*           PCCARD_MajorVersion - ?
+*           PCCARD_MinorVersion - ?
+*           PCCARD_InfoStringCount - Number of strings available.
+*           PCCARD_InfoStrings - An array of card information strings.
 *
-*	PCCARD_TPL_CONFIG:
-*	    PCCARD_RegisterBase - Offset within attribute memory of
-*	        configuration registers.
-*	    PCCARD_ModeCount - Number of operating modes.
+*       PCCARD_TPL_CONFIG:
+*           PCCARD_RegisterBase - Offset within attribute memory of
+*               configuration registers.
+*           PCCARD_ModeCount - Number of operating modes.
 *
-*	PCCARD_TPL_CFTABLEENTRY:
-*	    PCCARD_ModeNo - Value to write to the COR to select this mode.
-*	    PCCARD_Flags - See pccard.h for details.
-*	    PCCARD_VCCPowerTags - Tag list for VCC power. The following tags
-*	        may be present (voltages in 10-uV units, currents in 100-nA
-*	        units):
-*	        PCCARD_NominalVoltage - Nominal supply voltage.
-*	        PCCARD_MinVoltage - Maximum supply voltage.
-*	        PCCARD_MaxVoltage - Minimum supply voltage.
-*	        PCCARD_StaticCurrent - Continuous supply current required.
-*	        PCCARD_AverageCurrent - Maximum current averaged over one
-*	            second.
-*	        PCCARD_PeakCurrent - Maximum current averaged over 10 ms.
-*	        PCCARD_DownCurrent - Current required in power-down mode.
-*	        PCCARD_Flags - See pccard.h for details.
-*	    PCCARD_VPP1PowerTags - Tag list for VPP1 power. Uses the same
-*	        tags as PCCARD_VCCPowerTags.
-*	    PCCARD_VPP2PowerTags - Tag list for VPP2 power. Uses the same
-*	        tags as PCCARD_VCCPowerTags.
-*	    PCCARD_WaitTimingTags - Tag list for wait timing. The following
-*	        tags may be present:
-*	        PCCARD_Value - Base value/mantissa (in nanoseconds).
-*	        PCCARD_Scale - Multiplier/exponent to be applied to
-*	            PCCARD_Value.
-*	    PCCARD_ReadyTimingTags - Tag list for ready timing. Uses the
-*	        same tags as PCCARD_WaitTimingTags.
-*	    PCCARD_ReservedTimingTags - Tag list for reserved timing. Uses
-*	        the same tags as PCCARD_WaitTimingTags.
-*	    PCCARD_IOFlags - See pccard.h for details.
-*	    PCCARD_IOLineCount - Number of IO lines decoded by the card.
-*	    PCCARD_IOWinCount - Number of IO windows.
-*	    PCCARD_IOWinBases - An array of ULONGs giving the window bases
-*	        as offsets into the card's IO space.
-*	    PCCARD_IOWinLengths - An array of ULONGs giving the lengths of
-*	        the IO windows.
-*	    PCCARD_IRQFlags - See pccard.h for details.
-*	    PCCARD_IRQMask - Interrupt numbers that may be used.
-*	    PCCARD_MemWinCount - Number of memory windows.
-*	    PCCARD_MemWinBases - An array of ULONGs giving the window bases
-*	        as offsets into the card's memory space.
-*	    PCCARD_MemWinHostBases - An array of ULONGs giving the window
-*	        bases as offsets into the host memory space.
-*	    PCCARD_MemWinLengths - An array of ULONGs giving the lengths of
-*	        the memory windows.
+*       PCCARD_TPL_CFTABLEENTRY:
+*           PCCARD_ModeNo - Value to write to the COR to select this mode.
+*           PCCARD_Flags - See pccard.h for details.
+*           PCCARD_VCCPowerTags - Tag list for VCC power. The following tags
+*               may be present (voltages in 10-uV units, currents in 100-nA
+*               units):
+*               PCCARD_NominalVoltage - Nominal supply voltage.
+*               PCCARD_MinVoltage - Maximum supply voltage.
+*               PCCARD_MaxVoltage - Minimum supply voltage.
+*               PCCARD_StaticCurrent - Continuous supply current required.
+*               PCCARD_AverageCurrent - Maximum current averaged over one
+*                   second.
+*               PCCARD_PeakCurrent - Maximum current averaged over 10 ms.
+*               PCCARD_DownCurrent - Current required in power-down mode.
+*               PCCARD_Flags - See pccard.h for details.
+*           PCCARD_VPP1PowerTags - Tag list for VPP1 power. Uses the same
+*               tags as PCCARD_VCCPowerTags.
+*           PCCARD_VPP2PowerTags - Tag list for VPP2 power. Uses the same
+*               tags as PCCARD_VCCPowerTags.
+*           PCCARD_WaitTimingTags - Tag list for wait timing. The following
+*               tags may be present:
+*               PCCARD_Value - Base value/mantissa (in nanoseconds).
+*               PCCARD_Scale - Multiplier/exponent to be applied to
+*                   PCCARD_Value.
+*           PCCARD_ReadyTimingTags - Tag list for ready timing. Uses the
+*               same tags as PCCARD_WaitTimingTags.
+*           PCCARD_ReservedTimingTags - Tag list for reserved timing. Uses
+*               the same tags as PCCARD_WaitTimingTags.
+*           PCCARD_IOFlags - See pccard.h for details.
+*           PCCARD_IOLineCount - Number of IO lines decoded by the card.
+*           PCCARD_IOWinCount - Number of IO windows.
+*           PCCARD_IOWinBases - An array of ULONGs giving the window bases
+*               as offsets into the card's IO space.
+*           PCCARD_IOWinLengths - An array of ULONGs giving the lengths of
+*               the IO windows.
+*           PCCARD_IRQFlags - See pccard.h for details.
+*           PCCARD_IRQMask - Interrupt numbers that may be used.
+*           PCCARD_MemWinCount - Number of memory windows.
+*           PCCARD_MemWinBases - An array of ULONGs giving the window bases
+*               as offsets into the card's memory space.
+*           PCCARD_MemWinHostBases - An array of ULONGs giving the window
+*               bases as offsets into the host memory space.
+*           PCCARD_MemWinLengths - An array of ULONGs giving the lengths of
+*               the memory windows.
 *
-*	PCCARD_TPL_MANFID:
-*	    PCCARD_Maker - The card's manufacturer ID.
-*	    PCCARD_Product - The card's product ID relative to its
-*	        manufacturer.
+*       PCCARD_TPL_MANFID:
+*           PCCARD_Maker - The card's manufacturer ID.
+*           PCCARD_Product - The card's product ID relative to its
+*               manufacturer.
 *
-*	PCCARD_TPL_FUNCID:
-*	    PCCARD_Type - The card's function, eg. network or memory.
-*	    PCCARD_Flags - Card initialisation flags.
+*       PCCARD_TPL_FUNCID:
+*           PCCARD_Type - The card's function, eg. network or memory.
+*           PCCARD_Flags - Card initialisation flags.
 *
 *   INPUTS
-*	tuple - Pointer to the tuple.
+*       tuple - Pointer to the tuple.
 *
 *   RESULT
-*	tag_list - A tag list containing the tuple's properties.
+*       tag_list - A tag list containing the tuple's properties.
 *
 *   EXAMPLE
 *
@@ -559,7 +559,7 @@ static ULONG StrLen(const TEXT *s);
 *   BUGS
 *
 *   SEE ALSO
-*	PCCard_FreeTupleInfo()
+*       PCCard_FreeTupleInfo()
 *
 ****************************************************************************
 *
@@ -1100,22 +1100,22 @@ static BOOL ParseFuncID(const UBYTE *tuple,struct TagItem *tag_list,
 /****** pccard.library/PCCard_FreeTupleInfo ********************************
 *
 *   NAME
-*	PCCard_FreeTupleInfo -- Relinquish a CIS tuple tag list.
+*       PCCard_FreeTupleInfo -- Relinquish a CIS tuple tag list.
 *
 *   SYNOPSIS
-*	PCCard_FreeTupleInfo(tag_list)
-*	                     A0
+*       PCCard_FreeTupleInfo(tag_list)
+*                            A0
 *
-*	VOID PCCard_FreeTupleInfo(struct TagItem *);
+*       VOID PCCard_FreeTupleInfo(struct TagItem *);
 *
 *   FUNCTION
-*	Frees a tag list obtained via PCCard_GetTupleInfo().
+*       Frees a tag list obtained via PCCard_GetTupleInfo().
 *
 *   INPUTS
-*	tag_list - Tuple tag list (may be NULL).
+*       tag_list - Tuple tag list (may be NULL).
 *
 *   RESULT
-*	None.
+*       None.
 *
 *   EXAMPLE
 *
@@ -1124,7 +1124,7 @@ static BOOL ParseFuncID(const UBYTE *tuple,struct TagItem *tag_list,
 *   BUGS
 *
 *   SEE ALSO
-*	PCCard_GetTupleInfo()
+*       PCCard_GetTupleInfo()
 *
 ****************************************************************************
 *

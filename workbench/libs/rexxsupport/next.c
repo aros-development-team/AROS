@@ -25,19 +25,19 @@ LONG rxsupp_next(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **a
 
     if ((msg->rm_Action & RXARGMASK) > 1)
     {
-	offset = strtol(ARG2(msg), &end, 10);
-	while (isspace(*end)) end++;
-	if (*end != 0)
-	{
-	    *argstring = NULL;
-	    return ERR10_018;
-	}
+        offset = strtol(ARG2(msg), &end, 10);
+        while (isspace(*end)) end++;
+        if (*end != 0)
+        {
+            *argstring = NULL;
+            return ERR10_018;
+        }
     }
     
     if (LengthArgstring(ARG1(msg)) != sizeof(void *))
     {
-	*argstring = NULL;
-	return ERR10_018;
+        *argstring = NULL;
+        return ERR10_018;
     }
     
     ptr = (char *)ARG1(msg) + offset;

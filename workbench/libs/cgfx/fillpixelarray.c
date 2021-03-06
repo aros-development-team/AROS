@@ -14,18 +14,18 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH6(ULONG, FillPixelArray,
+        AROS_LH6(ULONG, FillPixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp		, A1),
-	AROS_LHA(UWORD            , destx	, D0),
-	AROS_LHA(UWORD            , desty	, D1),
-	AROS_LHA(UWORD            , width	, D2),
-	AROS_LHA(UWORD            , height	, D3),
-	AROS_LHA(ULONG            , pixel	, D4),
+        AROS_LHA(struct RastPort *, rp          , A1),
+        AROS_LHA(UWORD            , destx       , D0),
+        AROS_LHA(UWORD            , desty       , D1),
+        AROS_LHA(UWORD            , width       , D2),
+        AROS_LHA(UWORD            , height      , D3),
+        AROS_LHA(ULONG            , pixel       , D4),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 25, Cybergraphics)
+        struct Library *, CyberGfxBase, 25, Cybergraphics)
 
 /*  FUNCTION
         Writes the same color value to all pixels in a rectangular region of
@@ -60,10 +60,10 @@
     HIDDT_Pixel pix;
 
     /* HIDDT_ColComp are 16 Bit */
-    col.alpha	= (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
-    col.red	= (HIDDT_ColComp)((pixel >> 8) & 0x0000FF00);
-    col.green	= (HIDDT_ColComp)(pixel & 0x0000FF00);
-    col.blue	= (HIDDT_ColComp)((pixel << 8) & 0x0000FF00);
+    col.alpha   = (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
+    col.red     = (HIDDT_ColComp)((pixel >> 8) & 0x0000FF00);
+    col.green   = (HIDDT_ColComp)(pixel & 0x0000FF00);
+    col.blue    = (HIDDT_ColComp)((pixel << 8) & 0x0000FF00);
 
     pix = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
 

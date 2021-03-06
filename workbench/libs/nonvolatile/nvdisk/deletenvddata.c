@@ -22,12 +22,12 @@ AROS_LH2(BOOL, DeleteNVDData,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName,  A0),
-	AROS_LHA(STRPTR, itemName, A1),
+        AROS_LHA(STRPTR, appName,  A0),
+        AROS_LHA(STRPTR, itemName, A1),
 
 /*  LOCATION */
 
-	struct Library *, nvdBase, 7, NVDisk)
+        struct Library *, nvdBase, 7, NVDisk)
 
 /*  FUNCTION
 
@@ -61,7 +61,7 @@ AROS_LH2(BOOL, DeleteNVDData,
 ******************************************************************************/
 
 {
-    AROS_LIBFUNC_INIT    
+    AROS_LIBFUNC_INIT
 
     BPTR oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
     BPTR lock = Lock(appName, SHARED_LOCK);
@@ -71,9 +71,9 @@ AROS_LH2(BOOL, DeleteNVDData,
 
     if(lock == BNULL)
     {
-	D(bug("Could not lock directory %s", appName));
-	CurrentDir(oldCDir);
-	return FALSE;
+        D(bug("Could not lock directory %s", appName));
+        CurrentDir(oldCDir);
+        return FALSE;
     }
 
     D(bug("Deleting file %s", itemName));

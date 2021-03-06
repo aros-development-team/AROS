@@ -474,7 +474,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     set(obj, MUIA_Pressed, TRUE);
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
-                else 
+                else
                 {
                     /* Clicked on background */
                     if (data->flags & SLIDER_HORIZ)

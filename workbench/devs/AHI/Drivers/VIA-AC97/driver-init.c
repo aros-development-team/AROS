@@ -55,7 +55,7 @@ DriverInit( struct DriverBase* ahisubbase )
     struct CardBase  *CardBase = (struct CardBase*) ahisubbase;
     struct PCIDevice    *dev;
     int                 card_no, i;
-    struct List		foundCards;
+    struct List         foundCards;
     struct Node         *devTmp;
 
     bug("[VIA-AC97]: %s()\n", __PRETTY_FUNCTION__);
@@ -96,7 +96,7 @@ DriverInit( struct DriverBase* ahisubbase )
     vendor_device_list[0].device = DEVICE_ID;
     vendor_device_list_size++;
 
-    bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    
+    bug("vendor_device_list_size = %ld\n", vendor_device_list_size);
 
     CardBase->cards_found = 0;
     dev = NULL;
@@ -178,7 +178,7 @@ DriverCleanup( struct DriverBase* AHIsubBase )
     FreeDriverData( CardBase->driverdatas[ i ], AHIsubBase );
   }
 
-  FreeVec( CardBase->driverdatas ); 
+  FreeVec( CardBase->driverdatas );
 
   ahi_pci_exit();
 

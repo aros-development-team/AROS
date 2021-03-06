@@ -27,11 +27,11 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName, A0),
+        AROS_LHA(STRPTR, appName, A0),
 
 /*  LOCATION */
 
-	struct Library *, nvdBase, 10, NVDisk)
+        struct Library *, nvdBase, 10, NVDisk)
 
 /*  FUNCTION
 
@@ -67,25 +67,25 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 #define  NV_NODESIZE  (sizeof(struct NVEntry) + 32)
 
 {
-    AROS_LIBFUNC_INIT    
+    AROS_LIBFUNC_INIT
 
     BPTR            lock;
     BPTR            oldCDir;
     struct MinList *minList = (struct MinList *)AllocVec(sizeof(struct MinList),
-							 MEMF_CLEAR);
+                                                         MEMF_CLEAR);
     ULONG                 length;
     struct FileInfoBlock *fib;
     char                 *entries;
 
     if(minList == NULL)
-	return NULL;
+        return NULL;
 
     fib = AllocDosObject(DOS_FIB, NULL);
 
     if(fib == NULL)
     {
-	FreeVec(minList);
-	return NULL;
+        FreeVec(minList);
+        return NULL;
     }
 
     oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
@@ -96,34 +96,34 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 
     if(lock != BNULL)
     {
-	if(Examine(lock, fib))
-	{
-	    while(ExNext(lock, fib))
-	    {
-	        // Data is stored as _files_
-		if(fib->fib_DirEntryType < 0)
-		{
-		    struct NVEntry *entry = AllocVec(NV_NODESIZE,
-						     MEMF_CLEAR);
-		    
-		    if(entry == NULL)
-		    {
-			FreeAll(minList, nvdBase);
-			minList = NULL;
-			break;
-		    }
+        if(Examine(lock, fib))
+        {
+            while(ExNext(lock, fib))
+            {
+                // Data is stored as _files_
+                if(fib->fib_DirEntryType < 0)
+                {
+                    struct NVEntry *entry = AllocVec(NV_NODESIZE,
+                                                     MEMF_CLEAR);
+                    
+                    if(entry == NULL)
+                    {
+                        FreeAll(minList, nvdBase);
+                        minList = NULL;
+                        break;
+                    }
 
-		    entry->nve_Name = (STRPTR)(((char *)entry) + sizeof(struct NVEntry));
-			CopyMem(fib->fib_FileName, entry->nve_Name, 32);
-			entry->nve_Name[31] = '0';
-		    entry->nve_Size = fib->fib_Size;
-		    entry->nve_Protection = fib->fib_Protection;
-		    AddTail((struct List *)minList, (struct Node *)entry);
-		}
-	    }
-	}
-	
-	UnLock(lock);
+                    entry->nve_Name = (STRPTR)(((char *)entry) + sizeof(struct NVEntry));
+                        CopyMem(fib->fib_FileName, entry->nve_Name, 32);
+                        entry->nve_Name[31] = '0';
+                    entry->nve_Size = fib->fib_Size;
+                    entry->nve_Protection = fib->fib_Protection;
+                    AddTail((struct List *)minList, (struct Node *)entry);
+                }
+            }
+        }
+        
+        UnLock(lock);
     }
     
     FreeDosObject(DOS_FIB, fib);
@@ -132,36 +132,36 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 
     ListLength(minList, length);
     entries = AllocVec(sizeof(struct MinList) + length*NV_NODESIZE,
-		       MEMF_ANY);
+                       MEMF_ANY);
 
 
     /* We store the whole list in one memory block to make it possible to
        free the memory by calling nonvolatile.library/FreeNVData() */
     if(entries != NULL)
     {
-	struct Node *node;	/* Temporary variable */
-	ULONG        offset = sizeof(struct MinList); /* Offset into the memory
-							 allocated */
-	NEWLIST((struct List *)entries);
+        struct Node *node;      /* Temporary variable */
+        ULONG        offset = sizeof(struct MinList); /* Offset into the memory
+                                                         allocated */
+        NEWLIST((struct List *)entries);
 
-	for(node = GetHead((struct List *)minList); node != NULL;
-	    node = GetSucc(node))
-	{
-	    /* 1. Copy the NVEntry plus string
-	       2. Add the memory as a node in the list
-	       3. Set the name to point to the copied memory */
+        for(node = GetHead((struct List *)minList); node != NULL;
+            node = GetSucc(node))
+        {
+            /* 1. Copy the NVEntry plus string
+               2. Add the memory as a node in the list
+               3. Set the name to point to the copied memory */
 
-	    CopyMem(node, entries + offset, NV_NODESIZE);
-	    AddTail((struct List *)entries, (struct Node *)(entries + offset));
-	    SetNodeName(entries + offset, entries + offset +
-			sizeof(struct NVEntry));
-	    offset += NV_NODESIZE;
-	}
+            CopyMem(node, entries + offset, NV_NODESIZE);
+            AddTail((struct List *)entries, (struct Node *)(entries + offset));
+            SetNodeName(entries + offset, entries + offset +
+                        sizeof(struct NVEntry));
+            offset += NV_NODESIZE;
+        }
     }
     else
     {
-	FreeAll(minList, nvdBase);
-	return NULL;
+        FreeAll(minList, nvdBase);
+        return NULL;
     }
 
     FreeAll(minList, nvdBase);
@@ -178,8 +178,8 @@ void FreeAll(struct MinList *ml, struct Library *nvdBase)
 
     while((node = GetHead((struct List *)ml)) != NULL)
     {
-	Remove(node);
-	FreeVec(node);
+        Remove(node);
+        FreeVec(node);
     }
 
     FreeVec(ml);

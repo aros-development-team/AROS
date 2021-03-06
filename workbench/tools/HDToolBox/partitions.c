@@ -59,7 +59,7 @@ struct HDTBPartition *newPartition(struct ListNode *parent, struct HDTBPartition
             {
                 pn->listnode.ln.ln_Type = LNT_Partition;
                 pn->root = partition;
-		D(bug("[HDToolBox] newPartition successful - new partition at %p\n", pn));
+                D(bug("[HDToolBox] newPartition successful - new partition at %p\n", pn));
                 return pn;
             }
             FreeVec(pn->listnode.ln.ln_Name);
@@ -70,7 +70,7 @@ struct HDTBPartition *newPartition(struct ListNode *parent, struct HDTBPartition
     return NULL;
 }
 
-void findPartitions(struct ListNode *parent, struct HDTBPartition *partition) 
+void findPartitions(struct ListNode *parent, struct HDTBPartition *partition)
 {
     struct PartitionHandle *ph;
     struct HDTBPartition *pn;
@@ -86,7 +86,7 @@ void findPartitions(struct ListNode *parent, struct HDTBPartition *partition)
         )
     {
         pn = newPartition(parent, partition);
-	D(bug("[HDToolBox] - found new partition at %p, created node at %p\n", ph, pn));
+        D(bug("[HDToolBox] - found new partition at %p, created node at %p\n", ph, pn));
         if (pn != NULL)
         {
             pn->ph = ph;
@@ -97,81 +97,81 @@ void findPartitions(struct ListNode *parent, struct HDTBPartition *partition)
                 PT_DOSENVEC, &pn->de,
                 TAG_DONE
             );
-	    
-	    /*
-	     * check if we can read partition type
-	     */
+            
+            /*
+             * check if we can read partition type
+             */
             if (getAttrInfo(pn->root->table->pattrlist, PTA_TYPE) & PLAM_READ)
-	    {
+            {
                 GetPartitionAttrsA(pn->ph, PT_TYPE, &pn->type, TAG_DONE);
-		D(bug("[HDToolBox] - ID valid (%ld)\n", pn->type));
-	    }
+                D(bug("[HDToolBox] - ID valid (%ld)\n", pn->type));
+            }
             else
             {
                 pn->type.id[0] = 0;
                 pn->type.id_len = 0;
-		D(bug("[HDToolBox] - ID invalid\n"));
+                D(bug("[HDToolBox] - ID invalid\n"));
             }
 
-	    /*
-	     * read partition location
-	     */
+            /*
+             * read partition location
+             */
             if (getAttrInfo(pn->root->table->pattrlist, PTA_POSITION) & PLAM_READ)
-	    {
+            {
                 GetPartitionAttrsA(pn->ph, PT_POSITION, &pn->pos, TAG_DONE);
-		D(bug("[HDToolBox] - Position valid (%ld)\n", pn->pos));
-	    }
+                D(bug("[HDToolBox] - Position valid (%ld)\n", pn->pos));
+            }
             else
-	    {
+            {
                 pn->pos = -1L;
-		D(bug("[HDToolBox] - Position invalid\n"));
-	    }
+                D(bug("[HDToolBox] - Position invalid\n"));
+            }
 
-	    /*
-	     * read partition name
-	     */
+            /*
+             * read partition name
+             */
             if (getAttrInfo(pn->root->table->pattrlist, PTA_NAME) & PLAM_READ)
-	    {
+            {
                 GetPartitionAttrsA(pn->ph, PT_NAME, pn->listnode.ln.ln_Name, TAG_DONE);
-		D(bug("[HDToolBox] - Name valid (%s)\n", pn->listnode.ln.ln_Name));
-	    }
+                D(bug("[HDToolBox] - Name valid (%s)\n", pn->listnode.ln.ln_Name));
+            }
             else
-	    {
+            {
                 setPartitionName(pn);
-		D(bug("[HDToolBox] - Name generated (%s)\n", pn->listnode.ln.ln_Name));
-	    }
+                D(bug("[HDToolBox] - Name generated (%s)\n", pn->listnode.ln.ln_Name));
+            }
 
-	    /*
-	     * check bootable flag
-	     */
+            /*
+             * check bootable flag
+             */
             if (getAttrInfo(pn->root->table->pattrlist, PTA_BOOTABLE) & PLAM_READ)
             {
                 GetPartitionAttrsA(pn->ph, PT_BOOTABLE, &flag, TAG_DONE);
                 if (flag)
                     pn->flags |= PNF_BOOTABLE;
-		D(bug("[HDToolBox] - Bootable flag %s\n", flag ? "enabled" : "disabled"));
+                D(bug("[HDToolBox] - Bootable flag %s\n", flag ? "enabled" : "disabled"));
             }
 
-	    /*
-	     * automount flag
-	     */
+            /*
+             * automount flag
+             */
             if (getAttrInfo(pn->root->table->pattrlist, PTA_AUTOMOUNT) & PLAM_READ)
             {
                 GetPartitionAttrsA(pn->ph, PT_AUTOMOUNT, &flag, TAG_DONE);
                 if (flag)
                     pn->flags |= PNF_AUTOMOUNT;
-		D(bug("[HDToolBox] - Automount flag %s\n", flag ? "enabled" : "disabled"));
+                D(bug("[HDToolBox] - Automount flag %s\n", flag ? "enabled" : "disabled"));
             }
 
-	    /*
-	     * check if partition is active (MBR-specific)
-	     */
+            /*
+             * check if partition is active (MBR-specific)
+             */
             if (getAttrInfo(pn->root->table->pattrlist, PTA_ACTIVE) & PLAM_READ)
             {
                 GetPartitionAttrsA(pn->ph, PT_ACTIVE, &flag, TAG_DONE);
                 if (flag)
                     pn->flags |= PNF_ACTIVE;
-		D(bug("[HDToolBox] - Active flag %s\n", flag ? "enabled" : "disabled"));
+                D(bug("[HDToolBox] - Active flag %s\n", flag ? "enabled" : "disabled"));
             }
 
             if (pn->root->table->max_partitions)
@@ -235,29 +235,29 @@ BOOL validValue(struct HDTBPartition *table, struct HDTBPartition *current, ULON
 
     if (value<table->table->reserved)
     {
-	D(bug("[HDToolBox] - value (%ld) < table->reserved (%ld) -> bad\n", value, table->table->reserved));
+        D(bug("[HDToolBox] - value (%ld) < table->reserved (%ld) -> bad\n", value, table->table->reserved));
         return FALSE;
     }
     spc = table->dg.dg_Heads*table->dg.dg_TrackSectors;
     if (value>=(table->dg.dg_Cylinders*spc))
     {
-	D(bug("[HDToolBox] - value (%ld) >= table->dg.dg_Cylinders*spc (%ld) -> bad\n", value, table->dg.dg_Cylinders*spc));
+        D(bug("[HDToolBox] - value (%ld) >= table->dg.dg_Cylinders*spc (%ld) -> bad\n", value, table->dg.dg_Cylinders*spc));
         return FALSE;
     }
 
     for (
         pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
-	pn->listnode.ln.ln_Succ;
+        pn->listnode.ln.ln_Succ;
         pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ)
     {
-	D(bug("[HDToolBox] - List %p / Partition %p / Next %p / Current %p\n", &table->listnode, pn, pn->listnode.ln.ln_Succ, current));
-	D(bug("[HDToolBox] - Partition Type: %lx\n", pn->type));
+        D(bug("[HDToolBox] - List %p / Partition %p / Next %p / Current %p\n", &table->listnode, pn, pn->listnode.ln.ln_Succ, current));
+        D(bug("[HDToolBox] - Partition Type: %lx\n", pn->type));
         
-	/* don't analyze PARENT, don't analyze ROOT */
-	if (pn->listnode.ln.ln_Type != LNT_Partition)
-	    continue;	
+        /* don't analyze PARENT, don't analyze ROOT */
+        if (pn->listnode.ln.ln_Type != LNT_Partition)
+            continue;
 
-	/* don't check currently processed partition */
+        /* don't check currently processed partition */
         if (current != pn)
         {
             spc = pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
@@ -265,10 +265,10 @@ BOOL validValue(struct HDTBPartition *table, struct HDTBPartition *current, ULON
                     (value >= (pn->de.de_LowCyl*spc)) &&
                     (value <  (((pn->de.de_HighCyl+1)*spc)-1))
                 )
-	    {
-		D(bug("[HDToolBox] - value (%ld) within bounds <%ld; %ld) -> bad\n", value, pn->de.de_LowCyl * spc, (pn->de.de_HighCyl+1)*spc-1));
+            {
+                D(bug("[HDToolBox] - value (%ld) within bounds <%ld; %ld) -> bad\n", value, pn->de.de_LowCyl * spc, (pn->de.de_HighCyl+1)*spc-1));
                 return FALSE;
-	    }
+            }
         }
     }
     
@@ -332,17 +332,17 @@ struct HDTBPartition *addPartition(struct HDTBPartition *table, struct DosEnvec 
 
         blocks_per_cyl = de->de_Surfaces * de->de_BlocksPerTrack;
         de->de_LowCyl += (leadin + blocks_per_cyl - 1) / blocks_per_cyl;
-	D(bug("[HDToolBox] addPartition() Prepared Envec:\n"));
-	D(bug("[HDToolBox] - LeadIn          : %ld\n", leadin));
-	D(bug("[HDToolBox] - SizeBlock       : %ld\n", de->de_SizeBlock));
-	D(bug("[HDToolBox] - SecOrg          : %ld\n", de->de_SecOrg));
-	D(bug("[HDToolBox] - Surfaces        : %ld\n", de->de_Surfaces));
-	D(bug("[HDToolBox] - SectorsPerBlock : %ld\n", de->de_SectorPerBlock));
-	D(bug("[HDToolBox] - Reserved        : %ld\n", de->de_Reserved));
-	D(bug("[HDToolBox] - LowCyl          : %ld\n", de->de_LowCyl));
-	D(bug("[HDToolBox] - HighCyl         : %ld\n", de->de_HighCyl));
-	D(bug("[HDToolBox] - BlocksPerTrack  : %ld\n", de->de_BlocksPerTrack));
-	D(bug("[HDToolBox] - BootBlocks      : %ld\n", de->de_BootBlocks));
+        D(bug("[HDToolBox] addPartition() Prepared Envec:\n"));
+        D(bug("[HDToolBox] - LeadIn          : %ld\n", leadin));
+        D(bug("[HDToolBox] - SizeBlock       : %ld\n", de->de_SizeBlock));
+        D(bug("[HDToolBox] - SecOrg          : %ld\n", de->de_SecOrg));
+        D(bug("[HDToolBox] - Surfaces        : %ld\n", de->de_Surfaces));
+        D(bug("[HDToolBox] - SectorsPerBlock : %ld\n", de->de_SectorPerBlock));
+        D(bug("[HDToolBox] - Reserved        : %ld\n", de->de_Reserved));
+        D(bug("[HDToolBox] - LowCyl          : %ld\n", de->de_LowCyl));
+        D(bug("[HDToolBox] - HighCyl         : %ld\n", de->de_HighCyl));
+        D(bug("[HDToolBox] - BlocksPerTrack  : %ld\n", de->de_BlocksPerTrack));
+        D(bug("[HDToolBox] - BootBlocks      : %ld\n", de->de_BootBlocks));
 
         partition->ph = AddPartitionTags(table->ph,
                                          PT_DOSENVEC, de,
@@ -353,26 +353,26 @@ struct HDTBPartition *addPartition(struct HDTBPartition *table, struct DosEnvec 
         if (partition->ph)
         {
             /* We did not set GEOMETRY so partitionlib did it. Update geometry and DOS type in local DOSEnvec */
-            GetPartitionAttrsTags(partition->ph, PT_GEOMETRY, &partition->dg, 
+            GetPartitionAttrsTags(partition->ph, PT_GEOMETRY, &partition->dg,
                                                  PT_DOSENVEC, &partition->de,
                                                  TAG_DONE);
 
-	    de = &partition->de;
-	    D(bug("[HDToolBox] addPartition() Real Envec:\n"));
-	    D(bug("[HDToolBox] - SizeBlock       : %ld\n", de->de_SizeBlock));
-	    D(bug("[HDToolBox] - SecOrg          : %ld\n", de->de_SecOrg));
-	    D(bug("[HDToolBox] - Surfaces        : %ld\n", de->de_Surfaces));
-	    D(bug("[HDToolBox] - SectorsPerBlock : %ld\n", de->de_SectorPerBlock));
-	    D(bug("[HDToolBox] - Reserved        : %ld\n", de->de_Reserved));
-	    D(bug("[HDToolBox] - LowCyl          : %ld\n", de->de_LowCyl));
-	    D(bug("[HDToolBox] - HighCyl         : %ld\n", de->de_HighCyl));
-	    D(bug("[HDToolBox] - BlocksPerTrack  : %ld\n", de->de_BlocksPerTrack));
-	    D(bug("[HDToolBox] - BootBlocks      : %ld\n", de->de_BootBlocks));
-	    D(bug("[HDToolBox] addPartition() successful\n"));
-	    return partition;
+            de = &partition->de;
+            D(bug("[HDToolBox] addPartition() Real Envec:\n"));
+            D(bug("[HDToolBox] - SizeBlock       : %ld\n", de->de_SizeBlock));
+            D(bug("[HDToolBox] - SecOrg          : %ld\n", de->de_SecOrg));
+            D(bug("[HDToolBox] - Surfaces        : %ld\n", de->de_Surfaces));
+            D(bug("[HDToolBox] - SectorsPerBlock : %ld\n", de->de_SectorPerBlock));
+            D(bug("[HDToolBox] - Reserved        : %ld\n", de->de_Reserved));
+            D(bug("[HDToolBox] - LowCyl          : %ld\n", de->de_LowCyl));
+            D(bug("[HDToolBox] - HighCyl         : %ld\n", de->de_HighCyl));
+            D(bug("[HDToolBox] - BlocksPerTrack  : %ld\n", de->de_BlocksPerTrack));
+            D(bug("[HDToolBox] - BootBlocks      : %ld\n", de->de_BootBlocks));
+            D(bug("[HDToolBox] addPartition() successful\n"));
+            return partition;
         }
 
-	D(bug("[HDToolBox] addPartition() failed to add partition\n"));
+        D(bug("[HDToolBox] addPartition() failed to add partition\n"));
         freePartitionNode(partition);
     }
     D(bug("[HDToolBox] addPartition() failed\n"));

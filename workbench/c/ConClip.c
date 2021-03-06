@@ -225,7 +225,7 @@ AROS_UFH3(ULONG, conclipeditfunc,
                             msg.msg.mn_Length           = sizeof(msg);
 
                             msg.code = ToUpper(sgw->Code);
-                            msg.sgw  = sgw;                         
+                            msg.sgw  = sgw;
 
                             if ((msg.code == CODE_COPY) || (sgw->NumChars < sgw->StringInfo->MaxChars - 1))
                             {
@@ -256,7 +256,7 @@ AROS_UFH3(ULONG, conclipeditfunc,
                 } /* switch(ToUpper(sgw->Code)) */
 
             } /* if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND) */
-            break;    
+            break;
 
     } /* switch (*command) */
 
@@ -275,7 +275,7 @@ static void installedithook(void)
     edithook.h_SubEntry = NULL;
     edithook.h_Data = NULL;
     
-    oldedithook = SetEditHook(&edithook);  
+    oldedithook = SetEditHook(&edithook);
 }
 
 /*****************************************************************************************/
@@ -407,7 +407,7 @@ static void handleall(void)
                         savetoclipboard(msg->sgw);
                         break;
                         
-                    case CODE_PASTE:    
+                    case CODE_PASTE:
                         D(bug("ConClip: Received CODE_PASTE message\n"));
                         readfromclipboard(msg->sgw);
                         break;

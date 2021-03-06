@@ -26,19 +26,19 @@ struct PNGStuff
     png_infop   png_end_info_ptr;
     png_uint_32 png_width;
     png_uint_32 png_height;
-    int 	png_bits;
-    int 	png_type;
-    int 	png_lace;
-    int 	png_num_lace_passes;
-    int 	png_depth;
-    int 	png_format;
+    int         png_bits;
+    int         png_type;
+    int         png_lace;
+    int         png_num_lace_passes;
+    int         png_depth;
+    int         png_format;
 };
 
 struct PNGHandle
 {
     struct PNGStuff stuff;
-    APTR    	    data;
-    APTR    	    pal;
+    APTR            data;
+    APTR            pal;
 };
 
 struct MyMemHandle
@@ -69,22 +69,22 @@ AROS_LH1(LONG, PNG_CheckSig,
     
     if ((fh = Open(name, MODE_OLDFILE)))
     {
-    	png_byte header[8];
-	
-	if (Read(fh, header, sizeof(header)) == sizeof(header))
-	{
-	    if (png_sig_cmp(header, 0, sizeof(header)) == 0)
-	    {
-	    	ret = 8;
-	    }
-	    else
-	    {
-	    	ret = 0;
-	    }
-    	}
-	
-	Close(fh);
-	
+        png_byte header[8];
+        
+        if (Read(fh, header, sizeof(header)) == sizeof(header))
+        {
+            if (png_sig_cmp(header, 0, sizeof(header)) == 0)
+            {
+                ret = 8;
+            }
+            else
+            {
+                ret = 0;
+            }
+        }
+        
+        Close(fh);
+        
     }
     
     return ret;
@@ -105,26 +105,26 @@ void my_readmem_fn(png_structp png_ptr, png_bytep data, png_size_t length)
     
     if (mh->pos + length > mh->size)
     {
-    	png_error(png_ptr, "Read mem error!");
+        png_error(png_ptr, "Read mem error!");
     }
     else
     {
-    	memcpy(data, mh->address + mh->pos, length);
-	mh->pos += length;
-    }  
+        memcpy(data, mh->address + mh->pos, length);
+        mh->pos += length;
+    }
 }
 
 /***************************************************************************************************/
 
 static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread, APTR *chunkstore,
-    	    	    	    	  BOOL makeARGB, LONG handletype)
+                                  BOOL makeARGB, LONG handletype)
 {
     struct PNGStuff   png;
     struct PNGHandle *pnghandle = NULL;
-    APTR    	      buffer = NULL;
-    UBYTE   	      header[8];
-    APTR    	      retval = NULL;
-    BOOL    	      ok = TRUE;
+    APTR              buffer = NULL;
+    UBYTE             header[8];
+    APTR              retval = NULL;
+    BOOL              ok = TRUE;
     
     if (!handle) return NULL;
     
@@ -132,331 +132,331 @@ static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread,
     
     if (handletype == HANDLETYPE_FILE)
     {
-    	if (Read(MKBADDR(handle), header, sizeof(header)) != sizeof(header)) ok = FALSE;
+        if (Read(MKBADDR(handle), header, sizeof(header)) != sizeof(header)) ok = FALSE;
     }
     else if (handletype == HANDLETYPE_MEM)
     {
-    	struct MyMemHandle *mh = (struct MyMemHandle *)handle;
-	
-	if (mh->size < 8)
-	{
-    	    D(bug("PNG_LoadImageInternal: Memory file too small: %d\n", mh->size));
-	    ok = FALSE;
-	}
-	else
-	{
-	    memcpy(header, mh->address, 8);
-	    mh->pos = 8;
-	}
+        struct MyMemHandle *mh = (struct MyMemHandle *)handle;
+        
+        if (mh->size < 8)
+        {
+            D(bug("PNG_LoadImageInternal: Memory file too small: %d\n", mh->size));
+            ok = FALSE;
+        }
+        else
+        {
+            memcpy(header, mh->address, 8);
+            mh->pos = 8;
+        }
     }
     else
     {
-    	ok = FALSE;
+        ok = FALSE;
     }
     
     D(bug("PNG_LoadImageInternal: Header %02x%02x%02x%02x%02x%02x%02x%02x\n",
-    	  header[0], header[1], header[2], header[3],
-	  header[4], header[5], header[6], header[7]));
-	  
+          header[0], header[1], header[2], header[3],
+          header[4], header[5], header[6], header[7]));
+          
     memset(&png, 0, sizeof(png));
     
     if (ok)
     {
-    	if (png_sig_cmp(header, 0, sizeof(header)) != 0) ok = FALSE;
+        if (png_sig_cmp(header, 0, sizeof(header)) != 0) ok = FALSE;
     }
     
     if (ok)
     {
-    	D(bug("PNG_LoadImageInternal: signature okay\n"));
-    	memset(&png, 0, sizeof(png));
-	    
-	png.png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING,
-    	    	    	    		       0, 	    	/* error ptr */
-					       my_error_fn,     /* error function */
-					       my_warning_fn,   /* warning function */
-					       0, 	    	/* mem ptr */
-					       my_malloc_fn,    /* malloc function */
-					       my_free_fn 	/* free function */
-					       );
-	    
-	if (!png.png_ptr) ok = FALSE;
+        D(bug("PNG_LoadImageInternal: signature okay\n"));
+        memset(&png, 0, sizeof(png));
+            
+        png.png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING,
+                                               0,               /* error ptr */
+                                               my_error_fn,     /* error function */
+                                               my_warning_fn,   /* warning function */
+                                               0,               /* mem ptr */
+                                               my_malloc_fn,    /* malloc function */
+                                               my_free_fn       /* free function */
+                                               );
+            
+        if (!png.png_ptr) ok = FALSE;
     }
     
     if (ok)
     {
-    	png.png_info_ptr = png_create_info_struct(png.png_ptr);
-	if (!png.png_info_ptr) ok = FALSE;
+        png.png_info_ptr = png_create_info_struct(png.png_ptr);
+        if (!png.png_info_ptr) ok = FALSE;
     }
     
     
     if (ok)
     {
-    	png.png_end_info_ptr = png_create_info_struct(png.png_ptr);
-    	if (!png.png_end_info_ptr) ok = FALSE;
-    }
-    
-    if (ok)
-    {   	
-    	png_set_read_fn(png.png_ptr,
-	    	    	handle,
-			(handletype == HANDLETYPE_FILE) ? my_read_fn : my_readmem_fn);
-			
-    	png_set_sig_bytes(png.png_ptr, sizeof(header));
-	
+        png.png_end_info_ptr = png_create_info_struct(png.png_ptr);
+        if (!png.png_end_info_ptr) ok = FALSE;
     }
     
     if (ok)
     {
-	if (setjmp(png_jmpbuf(png.png_ptr)))
-	{
-    	    /* Error */
-
-	    ok = FALSE;
-	}
+        png_set_read_fn(png.png_ptr,
+                        handle,
+                        (handletype == HANDLETYPE_FILE) ? my_read_fn : my_readmem_fn);
+                        
+        png_set_sig_bytes(png.png_ptr, sizeof(header));
+        
     }
     
     if (ok)
     {
-	if (chunkstoread)
-	{
-	    int i;
+        if (setjmp(png_jmpbuf(png.png_ptr)))
+        {
+            /* Error */
 
-    	    /* CHECKME:
-	    
-	       Do this first, because it doesn't work otherwise. Maybe
-	       a bug in libpng. The problem is that libpng/pngrutil.c
-	       in png_handle_unknown() checks PNG_FLAG_KEEP_UNKNOWN_CHUNKS
-	       flag. But this flag is set only when num_chunks param passed
-	       to png_set_keep_unknown_chunks() is 0.
-	       
-	    */
-	       
-	    png_set_keep_unknown_chunks(png.png_ptr, 3, 0, 0);
-	    
-	    for(i = 0; chunkstoread[i]; i++)
-	    {
-	    	png_set_keep_unknown_chunks(png.png_ptr, 3, chunkstoread[i], 1);	    	
-	    }
-	    	    	  				    
-	}
+            ok = FALSE;
+        }
+    }
+    
+    if (ok)
+    {
+        if (chunkstoread)
+        {
+            int i;
 
-	png_read_info(png.png_ptr, png.png_info_ptr);
+            /* CHECKME:
+            
+               Do this first, because it doesn't work otherwise. Maybe
+               a bug in libpng. The problem is that libpng/pngrutil.c
+               in png_handle_unknown() checks PNG_FLAG_KEEP_UNKNOWN_CHUNKS
+               flag. But this flag is set only when num_chunks param passed
+               to png_set_keep_unknown_chunks() is 0.
+               
+            */
+               
+            png_set_keep_unknown_chunks(png.png_ptr, 3, 0, 0);
+            
+            for(i = 0; chunkstoread[i]; i++)
+            {
+                png_set_keep_unknown_chunks(png.png_ptr, 3, chunkstoread[i], 1);
+            }
+                                                            
+        }
 
-	png_get_IHDR(png.png_ptr, png.png_info_ptr,
-    	    	     &png.png_width, &png.png_height, &png.png_bits,
-		     &png.png_type, &png.png_lace, NULL, NULL);
+        png_read_info(png.png_ptr, png.png_info_ptr);
+
+        png_get_IHDR(png.png_ptr, png.png_info_ptr,
+                     &png.png_width, &png.png_height, &png.png_bits,
+                     &png.png_type, &png.png_lace, NULL, NULL);
 
 
-	if (png.png_bits == 16)
-	{
-    	    png_set_strip_16(png.png_ptr);
-	    png.png_bits = 8;
-	}
-	else if (png.png_bits < 8)
-	{
-    	    png_set_packing(png.png_ptr);
-	    if (png.png_type == PNG_COLOR_TYPE_GRAY)
-	    {
-		png_set_expand_gray_1_2_4_to_8(png.png_ptr);
-	    }
-	    png.png_bits = 8;
-	}
+        if (png.png_bits == 16)
+        {
+            png_set_strip_16(png.png_ptr);
+            png.png_bits = 8;
+        }
+        else if (png.png_bits < 8)
+        {
+            png_set_packing(png.png_ptr);
+            if (png.png_type == PNG_COLOR_TYPE_GRAY)
+            {
+                png_set_expand_gray_1_2_4_to_8(png.png_ptr);
+            }
+            png.png_bits = 8;
+        }
 
-	if (png.png_type == PNG_COLOR_TYPE_GRAY_ALPHA)
-	{
-    	    png_set_strip_alpha(png.png_ptr);
-	    png.png_type = PNG_COLOR_TYPE_GRAY;
-	}
+        if (png.png_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+        {
+            png_set_strip_alpha(png.png_ptr);
+            png.png_type = PNG_COLOR_TYPE_GRAY;
+        }
 
-	if (makeARGB)
-	{
-    	    if (png.png_type == PNG_COLOR_TYPE_RGB)
-	    {
-		png_set_filler(png.png_ptr, 0xFF, PNG_FILLER_BEFORE);	    
-	    }
-	    else if (png.png_type == PNG_COLOR_TYPE_GRAY)
-	    {
-		png_set_gray_to_rgb(png.png_ptr);
-		png_set_filler(png.png_ptr, 0xFF, PNG_FILLER_BEFORE);
-	    }
-	    else if (png.png_type == PNG_COLOR_TYPE_PALETTE)
-	    {
-		png_set_palette_to_rgb(png.png_ptr);
-		if (png_get_valid(png.png_ptr, png.png_info_ptr, PNG_INFO_tRNS))
-		{
-	    	    png_set_tRNS_to_alpha(png.png_ptr);
-		}
-		else
-		{
-	    	    png_set_filler(png.png_ptr, 0xFF, PNG_FILLER_BEFORE);
-		}
-	    }
+        if (makeARGB)
+        {
+            if (png.png_type == PNG_COLOR_TYPE_RGB)
+            {
+                png_set_filler(png.png_ptr, 0xFF, PNG_FILLER_BEFORE);
+            }
+            else if (png.png_type == PNG_COLOR_TYPE_GRAY)
+            {
+                png_set_gray_to_rgb(png.png_ptr);
+                png_set_filler(png.png_ptr, 0xFF, PNG_FILLER_BEFORE);
+            }
+            else if (png.png_type == PNG_COLOR_TYPE_PALETTE)
+            {
+                png_set_palette_to_rgb(png.png_ptr);
+                if (png_get_valid(png.png_ptr, png.png_info_ptr, PNG_INFO_tRNS))
+                {
+                    png_set_tRNS_to_alpha(png.png_ptr);
+                }
+                else
+                {
+                    png_set_filler(png.png_ptr, 0xFF, PNG_FILLER_BEFORE);
+                }
+            }
 
-	    png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
-	}
+            png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
+        }
 
-	{
-    	    double png_file_gamma;
-	    double png_screen_gamma = 2.2;
+        {
+            double png_file_gamma;
+            double png_screen_gamma = 2.2;
 
-	    if (!(png_get_gAMA(png.png_ptr, png.png_info_ptr, &png_file_gamma)))
-	    {
-		png_file_gamma = 0.45455;
-	    }
+            if (!(png_get_gAMA(png.png_ptr, png.png_info_ptr, &png_file_gamma)))
+            {
+                png_file_gamma = 0.45455;
+            }
 
-	    png_set_gamma(png.png_ptr, png_file_gamma, png_screen_gamma);
-	}
+            png_set_gamma(png.png_ptr, png_file_gamma, png_screen_gamma);
+        }
 
-	png.png_num_lace_passes = png_set_interlace_handling(png.png_ptr);
+        png.png_num_lace_passes = png_set_interlace_handling(png.png_ptr);
 
-	switch(png.png_type)
-	{
-    	    case PNG_COLOR_TYPE_GRAY:
-	    case PNG_COLOR_TYPE_GRAY_ALPHA:
-		png.png_depth = 8;
-		png.png_format = PBPAFMT_GREY8;
-		break;
+        switch(png.png_type)
+        {
+            case PNG_COLOR_TYPE_GRAY:
+            case PNG_COLOR_TYPE_GRAY_ALPHA:
+                png.png_depth = 8;
+                png.png_format = PBPAFMT_GREY8;
+                break;
 
-	    case PNG_COLOR_TYPE_PALETTE:
-		png.png_depth = 8;
-		png.png_format = PBPAFMT_LUT8;
-		break;
+            case PNG_COLOR_TYPE_PALETTE:
+                png.png_depth = 8;
+                png.png_format = PBPAFMT_LUT8;
+                break;
 
-	    case PNG_COLOR_TYPE_RGB:
-		png.png_depth = 24;
-		png.png_format = PBPAFMT_RGB;
-		break;
+            case PNG_COLOR_TYPE_RGB:
+                png.png_depth = 24;
+                png.png_format = PBPAFMT_RGB;
+                break;
 
-	    case PNG_COLOR_TYPE_RGB_ALPHA:
-		png.png_depth = 32;
+            case PNG_COLOR_TYPE_RGB_ALPHA:
+                png.png_depth = 32;
 #if defined(PBPAFMT_RGBA)
-		png.png_format = PBPAFMT_RGBA;
+                png.png_format = PBPAFMT_RGBA;
 #else
-		png.png_format = PBPAFMT_ARGB;
-		png_set_swap_alpha(png.png_ptr);
+                png.png_format = PBPAFMT_ARGB;
+                png_set_swap_alpha(png.png_ptr);
 #endif
-		break;
+                break;
 
-	    default:
-		png_error(png.png_ptr, "Unknown PNG Color Type!");
-		break;
-	}
+            default:
+                png_error(png.png_ptr, "Unknown PNG Color Type!");
+                break;
+        }
 
-	png_read_update_info(png.png_ptr, png.png_info_ptr);
-	
-	{
-    	    ULONG buffersize, modulo, y, bpr, bpp;
-	    UBYTE *buf;
+        png_read_update_info(png.png_ptr, png.png_info_ptr);
+        
+        {
+            ULONG buffersize, modulo, y, bpr, bpp;
+            UBYTE *buf;
 
-	    buffersize = png_get_rowbytes(png.png_ptr, png.png_info_ptr);
-	    if (png.png_lace == PNG_INTERLACE_NONE)
-	    {
-    		modulo = 0;
-	    }
-	    else
-	    {
-    		modulo = buffersize; buffersize *= png.png_height;
-	    }
+            buffersize = png_get_rowbytes(png.png_ptr, png.png_info_ptr);
+            if (png.png_lace == PNG_INTERLACE_NONE)
+            {
+                modulo = 0;
+            }
+            else
+            {
+                modulo = buffersize; buffersize *= png.png_height;
+            }
 
-	    buffer = AllocVec(buffersize, MEMF_ANY);
-    	    if (!buffer) png_error(png.png_ptr, "Out of memory!");
+            buffer = AllocVec(buffersize, MEMF_ANY);
+            if (!buffer) png_error(png.png_ptr, "Out of memory!");
 
-    	    bpp = png.png_depth / 8;
-    	    bpr = bpp * png.png_width;
-	    buffersize = bpr * png.png_height;
-	    
-	    pnghandle = AllocVec(sizeof(*pnghandle) + buffersize, MEMF_ANY);
-	    if (!pnghandle) png_error(png.png_ptr, "Out of memory!");
-	    
-	    pnghandle->data = ((UBYTE *)pnghandle) + sizeof(*pnghandle);
-	    
-	    while(png.png_num_lace_passes--)
-	    {
-    		for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo)
-		{
-		    png_read_row(png.png_ptr, buf, NULL);
+            bpp = png.png_depth / 8;
+            bpr = bpp * png.png_width;
+            buffersize = bpr * png.png_height;
+            
+            pnghandle = AllocVec(sizeof(*pnghandle) + buffersize, MEMF_ANY);
+            if (!pnghandle) png_error(png.png_ptr, "Out of memory!");
+            
+            pnghandle->data = ((UBYTE *)pnghandle) + sizeof(*pnghandle);
+            
+            while(png.png_num_lace_passes--)
+            {
+                for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo)
+                {
+                    png_read_row(png.png_ptr, buf, NULL);
 
-		    if (png.png_num_lace_passes == 0)
-		    {
-		    	memcpy(pnghandle->data + y * bpr, buf, bpr);
-		    }
+                    if (png.png_num_lace_passes == 0)
+                    {
+                        memcpy(pnghandle->data + y * bpr, buf, bpr);
+                    }
 
-		} /* for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo) */
+                } /* for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo) */
 
-	    } /* while(png.png_num_lace_passes--) */
+            } /* while(png.png_num_lace_passes--) */
 
-    	    png_read_end(png.png_ptr, png.png_end_info_ptr);
+            png_read_end(png.png_ptr, png.png_end_info_ptr);
 
-    	    if (chunkstore && chunkstoread)
-	    {
-	    	png_unknown_chunkp entries;
-		png_infop info;
-		
-		int infoloop;
-		
-		info = png.png_info_ptr;
-		
-		for(infoloop = 0; infoloop < 2; infoloop++)
-		{
-		    int numchunks = png_get_unknown_chunks(png.png_ptr, info, &entries);
+            if (chunkstore && chunkstoread)
+            {
+                png_unknown_chunkp entries;
+                png_infop info;
+                
+                int infoloop;
+                
+                info = png.png_info_ptr;
+                
+                for(infoloop = 0; infoloop < 2; infoloop++)
+                {
+                    int numchunks = png_get_unknown_chunks(png.png_ptr, info, &entries);
 
-		    while(numchunks--)
-		    {
-		    	int i;
-			
-			for(i = 0; chunkstoread[i]; i++)
-			{
-			    if (chunkstore[i]) continue;
-			    
-		    	    if (memcmp(entries->name, chunkstoread[i], 4) == 0)
-			    {
-			    	png_unknown_chunkp p;
-				
-    	    	    	    	chunkstore[i] = AllocVec(sizeof(*p) + entries->size, MEMF_ANY);
-				if (!chunkstore[i]) png_error(png.png_ptr, "Out of memory!");
-				
-				p = (png_unknown_chunkp)chunkstore[i];
-				
-				*p = *entries;
-				p->data = (png_byte *)(p + 1);
-				memcpy(p->data, entries->data, entries->size);
-				break;
-			    }
+                    while(numchunks--)
+                    {
+                        int i;
+                        
+                        for(i = 0; chunkstoread[i]; i++)
+                        {
+                            if (chunkstore[i]) continue;
+                            
+                            if (memcmp(entries->name, chunkstoread[i], 4) == 0)
+                            {
+                                png_unknown_chunkp p;
+                                
+                                chunkstore[i] = AllocVec(sizeof(*p) + entries->size, MEMF_ANY);
+                                if (!chunkstore[i]) png_error(png.png_ptr, "Out of memory!");
+                                
+                                p = (png_unknown_chunkp)chunkstore[i];
+                                
+                                *p = *entries;
+                                p->data = (png_byte *)(p + 1);
+                                memcpy(p->data, entries->data, entries->size);
+                                break;
+                            }
 
-			} /* for(i = 0; chunkstoread[i]; i++) */
+                        } /* for(i = 0; chunkstoread[i]; i++) */
 
-			entries++;
-			
-		    } /* while(numchunks--) */
-		    
-		    info = png.png_end_info_ptr;
-		    
-		} /* for(infoloop = 0, infoloop < 2; infoloop++) */
-		
-	    } /* if (chunkstore && chunkstoread) */
+                        entries++;
+                        
+                    } /* while(numchunks--) */
+                    
+                    info = png.png_end_info_ptr;
+                    
+                } /* for(infoloop = 0, infoloop < 2; infoloop++) */
+                
+            } /* if (chunkstore && chunkstoread) */
 
-    	    pnghandle->pal = 0;
-	    pnghandle->stuff = png;
-	    	    
-	    /* We're done :-) */
-	    
-    	    retval = pnghandle;
-	    
-	} /**/
-	
+            pnghandle->pal = 0;
+            pnghandle->stuff = png;
+                    
+            /* We're done :-) */
+            
+            retval = pnghandle;
+            
+        } /**/
+        
     } /* if (ok) */
     
     if (png.png_ptr)
     {
-    	FreeVec(buffer);
-    	png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, &png.png_end_info_ptr);
+        FreeVec(buffer);
+        png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, &png.png_end_info_ptr);
     }
         
     if (!ok)
     {
-    	FreeVec(pnghandle);
+        FreeVec(pnghandle);
     }
-	    
+            
     return retval;
 
 }
@@ -493,8 +493,8 @@ AROS_LH4(APTR, PNG_LoadImage,
     
     if ((fh = Open(name, MODE_OLDFILE)))
     {
-    	retval = PNG_LoadImageInternal(BADDR(fh), chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
-	Close(fh);
+        retval = PNG_LoadImageInternal(BADDR(fh), chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
+        Close(fh);
     }
    
     return retval;
@@ -514,7 +514,7 @@ AROS_LH5(APTR, PNG_LoadImageMEM,
 {
     AROS_LIBFUNC_INIT
     
-    struct MyMemHandle mh;    
+    struct MyMemHandle mh;
     APTR retval = 0;
     
     mh.address = mem;

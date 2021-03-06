@@ -46,7 +46,7 @@ BOOL setInteractive(struct CommandLineInterface *cli, ShellState *ss)
     D(bug("Shell %ld: cli_StandardInput = %p\n", ss->cliNumber,
         cli->cli_StandardInput));
     if (!cli->cli_Background && IS_SCRIPT)
-    	cli->cli_Background = DOSTRUE;
+        cli->cli_Background = DOSTRUE;
 
     cli->cli_Interactive = (cli->cli_Background || IS_SCRIPT || IS_SYSTEM) ? DOSFALSE : DOSTRUE;
     D(bug("Shell %ld: cli_Interactive => %ld\n", ss->cliNumber,
@@ -69,89 +69,89 @@ LONG interact(ShellState *ss)
 
     /* pre-allocate input buffer */
     if ((error = bufferAppend("?", 1, &in, ss))) /* FIXME drop when readLine ok */
-	return error;
+        return error;
 
     do {
-	if ((error = Redirection_init(ss)) == 0)
-	{
-	    cliPrompt(ss);
+        if ((error = Redirection_init(ss)) == 0)
+        {
+            cliPrompt(ss);
 
-	    bufferReset(&in); /* reuse allocated buffers */
-	    bufferReset(&out);
+            bufferReset(&in); /* reuse allocated buffers */
+            bufferReset(&out);
 
-	    D(bug("Shell %ld: Reading in a line of input...\n",
+            D(bug("Shell %ld: Reading in a line of input...\n",
                 ss->cliNumber));
-	    error = readLine(ss, cli, &in, &moreLeft);
-	    D(bug("Shell %ld: moreLeft=%d, error=%ld, Line is: "
+            error = readLine(ss, cli, &in, &moreLeft);
+            D(bug("Shell %ld: moreLeft=%d, error=%ld, Line is: "
                 "%ld bytes (%s)\n",
                 ss->cliNumber, moreLeft, error, in.len, in.buf));
 
-	    if (error == 0 && in.len > 0)
-		error = checkLine(ss, &in, &out, TRUE);
+            if (error == 0 && in.len > 0)
+                error = checkLine(ss, &in, &out, TRUE);
 
             /* The command may have modified cli_Background.
              * C:Execute does that.
              */
-	    setInteractive(cli, ss);
+            setInteractive(cli, ss);
 
-	    /* As per AmigaMail Vol 2, "II-65: Writing a UserShell" */
-	    if (IS_SYSTEM && !IS_SCRIPT)
-	    	moreLeft = FALSE;
+            /* As per AmigaMail Vol 2, "II-65: Writing a UserShell" */
+            if (IS_SYSTEM && !IS_SCRIPT)
+                moreLeft = FALSE;
 
-	    if (!cli->cli_Interactive)
-	    {
-		if (cli->cli_ReturnCode >= cli->cli_FailLevel) {
-		    moreLeft = FALSE;
-		    D(bug("Shell: cli_ReturnCode (%ld) >= cli->cli_FailLevel (%ld)\n", cli->cli_ReturnCode, cli->cli_FailLevel));
-		}
+            if (!cli->cli_Interactive)
+            {
+                if (cli->cli_ReturnCode >= cli->cli_FailLevel) {
+                    moreLeft = FALSE;
+                    D(bug("Shell: cli_ReturnCode (%ld) >= cli->cli_FailLevel (%ld)\n", cli->cli_ReturnCode, cli->cli_FailLevel));
+                }
 
-		if (CheckSignal(SIGBREAKF_CTRL_D))
-		{
-		    PrintFault(ERROR_BREAK, "Shell");
-		    moreLeft = FALSE;
-		}
-	    }
+                if (CheckSignal(SIGBREAKF_CTRL_D))
+                {
+                    PrintFault(ERROR_BREAK, "Shell");
+                    moreLeft = FALSE;
+                }
+            }
 
-	    Redirection_release(ss);
-	}
+            Redirection_release(ss);
+        }
 
-	if (moreLeft)
-	    continue;
+        if (moreLeft)
+            continue;
 
-	popInterpreterState(ss);
+        popInterpreterState(ss);
 
-	if (cli->cli_Interactive)
-	{
-	    Printf("Process %ld ending\n", ss->cliNumber);
-	    Flush(Output());
-	    break;
-	}
+        if (cli->cli_Interactive)
+        {
+            Printf("Process %ld ending\n", ss->cliNumber);
+            Flush(Output());
+            break;
+        }
 
-	if (IS_SCRIPT) {
-	    D(bug("Shell %ld: Closing CLI input 0x%08lx\n", ss->cliNumber,
+        if (IS_SCRIPT) {
+            D(bug("Shell %ld: Closing CLI input 0x%08lx\n", ss->cliNumber,
                 cli->cli_CurrentInput));
-	    Close(cli->cli_CurrentInput);
+            Close(cli->cli_CurrentInput);
 
-	    /* Now that we've closed CurrentInput, we can delete
-	     * the CommandFile.
-	     */
-	    if (AROS_BSTR_strlen(cli->cli_CommandFile))
-	    {
-		DeleteFile(AROS_BSTR_ADDR(cli->cli_CommandFile));
-		AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
-	    }
+            /* Now that we've closed CurrentInput, we can delete
+             * the CommandFile.
+             */
+            if (AROS_BSTR_strlen(cli->cli_CommandFile))
+            {
+                DeleteFile(AROS_BSTR_ADDR(cli->cli_CommandFile));
+                AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
+            }
 
-	    cli->cli_CurrentInput = cli->cli_StandardInput;
-	    cli->cli_Background = IsInteractive(cli->cli_CurrentInput) ? DOSFALSE : DOSTRUE;
+            cli->cli_CurrentInput = cli->cli_StandardInput;
+            cli->cli_Background = IsInteractive(cli->cli_CurrentInput) ? DOSFALSE : DOSTRUE;
 
-	    setInteractive(cli, ss);
-	}
+            setInteractive(cli, ss);
+        }
 
 
-	/* As per AmigaMail Vol 2, "II-65: Writing a UserShell",
-	 * if we were running a SYSTEM command, we're done now.
-	 */
-	moreLeft = cli->cli_Interactive;
+        /* As per AmigaMail Vol 2, "II-65: Writing a UserShell",
+         * if we were running a SYSTEM command, we're done now.
+         */
+        moreLeft = cli->cli_Interactive;
 
         if (cli->cli_Interactive) {
             D(bug("Shell %ld: Flushing output 0x%lx, error 0x%lx\n",
@@ -181,15 +181,15 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
     {
         D(bug("convertLine: haveCommand = %d, out->buf=%s\n", haveCommand,
             out->buf));
-	/* Only a comment or dot command ? */
-	if (haveCommand == FALSE)
-	    goto exit;
+        /* Only a comment or dot command ? */
+        if (haveCommand == FALSE)
+            goto exit;
 
-	if (echo)
-	    cliEcho(ss, out->buf);
+        if (echo)
+            cliEcho(ss, out->buf);
 
-	/* OK, we've got a command. Let's execute it! */
-	result = executeLine(ss, out->buf);
+        /* OK, we've got a command. Let's execute it! */
+        result = executeLine(ss, out->buf);
     }
 
     /* If the command changed the cli's definition
@@ -206,7 +206,7 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
     {
         D(bug("convertLine: error = %ld faillevel=%ld\n", result,
             cli->cli_FailLevel));
-	cli->cli_Result2 = result;
+        cli->cli_Result2 = result;
     }
 
 exit:
@@ -217,8 +217,8 @@ exit:
 
     if (cli->cli_Interactive)
     {
-	Flush(ErrorOutput());
-	Flush(Output());
+        Flush(ErrorOutput());
+        Flush(Output());
     }
 
     return result;
@@ -228,39 +228,39 @@ exit:
  *
  * Action:   Free the resources held by a (loaded) command.
  *
- * Input:    ShellState	   *ss              --  this state
- *           BPTR	    commandSeg      --  segment of the program to unload
- *           BOOL	    homeDirChanged  --  home changed flag
+ * Input:    ShellState    *ss              --  this state
+ *           BPTR           commandSeg      --  segment of the program to unload
+ *           BOOL           homeDirChanged  --  home changed flag
  *
  * Output:   --
  */
 static void unloadCommand(ShellState *ss, BPTR commandSeg,
-			  BOOL homeDirChanged, BOOL residentCommand)
+                          BOOL homeDirChanged, BOOL residentCommand)
 {
     struct CommandLineInterface *cli = Cli();
 
     if (homeDirChanged)
-	UnLock(SetProgramDir(ss->oldHomeDir));
+        UnLock(SetProgramDir(ss->oldHomeDir));
 
     SetProgramName("");
 
     if (!cli->cli_Module)
-	return;
+        return;
 
     if (residentCommand)
     {
-	struct Segment *residentSeg = (struct Segment *)BADDR(commandSeg);
+        struct Segment *residentSeg = (struct Segment *)BADDR(commandSeg);
 
-	Forbid();
+        Forbid();
 
-	/* Decrease usecount */
-	if (residentSeg->seg_UC > 0)
-	    residentSeg->seg_UC--;
+        /* Decrease usecount */
+        if (residentSeg->seg_UC > 0)
+            residentSeg->seg_UC--;
 
-	Permit();
+        Permit();
     }
     else
-	UnLoadSeg(commandSeg);
+        UnLoadSeg(commandSeg);
 
     cli->cli_Module = BNULL;
 }
@@ -270,15 +270,15 @@ static void unloadCommand(ShellState *ss, BPTR commandSeg,
  * Action:   Load a command, searching the resident lists, paths and C:
  *
  * Input:    ShellState    *ss              --  this state
- *           STRPTR	    commandName     --  the command to load
- *           BOOL	   *homeDirChanged  --  home changed result
- *           BPTR	   *scriptLock	    --	lock of script if one
+ *           STRPTR         commandName     --  the command to load
+ *           BOOL          *homeDirChanged  --  home changed result
+ *           BPTR          *scriptLock      --  lock of script if one
  *
  * Output:   BPTR  --  segment of the loaded command or NULL if there was an
  *                     error
  */
 static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
-			BOOL *homeDirChanged, BOOL *residentCommand)
+                        BOOL *homeDirChanged, BOOL *residentCommand)
 {
     struct CommandLineInterface *cli = Cli();
     BPTR oldCurDir;
@@ -292,32 +292,32 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
     /* We check the resident lists only if we do not have an absolute path */
     if (!absolutePath)
     {
-	Forbid();
+        Forbid();
 
-	/* Check regular list first... */
-	residentSeg = FindSegment(commandName, NULL, FALSE);
+        /* Check regular list first... */
+        residentSeg = FindSegment(commandName, NULL, FALSE);
 
-	if (residentSeg == NULL)
-	{
-	    /* ... then the system list */
-	    residentSeg = FindSegment(commandName, NULL, TRUE);
-	}
+        if (residentSeg == NULL)
+        {
+            /* ... then the system list */
+            residentSeg = FindSegment(commandName, NULL, TRUE);
+        }
 
-	if (residentSeg != NULL)
-	{
-	    /* Can we use this command? */
-	    if (residentSeg->seg_UC == CMD_INTERNAL || residentSeg->seg_UC >= 0)
-	    {
-		if (residentSeg->seg_UC >= 0)
-		    residentSeg->seg_UC++;
+        if (residentSeg != NULL)
+        {
+            /* Can we use this command? */
+            if (residentSeg->seg_UC == CMD_INTERNAL || residentSeg->seg_UC >= 0)
+            {
+                if (residentSeg->seg_UC >= 0)
+                    residentSeg->seg_UC++;
 
-		Permit();
-		*residentCommand = TRUE;
-		return MKBADDR(residentSeg);
-	    }
-	}
+                Permit();
+                *residentCommand = TRUE;
+                return MKBADDR(residentSeg);
+            }
+        }
 
-	Permit();
+        Permit();
     }
 
     oldCurDir = CurrentDir(BNULL);
@@ -328,72 +328,72 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
 
     if (!file)
     {
-	if
-	(
-	    absolutePath ||                 /* If this was an absolute path, we don't check the paths set by
-					       'path' or the C: multiassign */
-	    err == ERROR_OBJECT_IN_USE  /* The object might be exclusively locked */
-	)
-	    return BNULL;
+        if
+        (
+            absolutePath ||                 /* If this was an absolute path, we don't check the paths set by
+                                               'path' or the C: multiassign */
+            err == ERROR_OBJECT_IN_USE  /* The object might be exclusively locked */
+        )
+            return BNULL;
 
-	/* Search the command in the path */
-	for
-	(
-	    paths = (BPTR *)BADDR(cli->cli_CommandDir);
-	    file == BNULL && paths != NULL;
-	    paths = (BPTR *)BADDR(paths[0])    /* Go on with the next path */
-	)
-	{
-	    CurrentDir(paths[1]);
-	    file = Open(commandName, MODE_OLDFILE);
-	}
+        /* Search the command in the path */
+        for
+        (
+            paths = (BPTR *)BADDR(cli->cli_CommandDir);
+            file == BNULL && paths != NULL;
+            paths = (BPTR *)BADDR(paths[0])    /* Go on with the next path */
+        )
+        {
+            CurrentDir(paths[1]);
+            file = Open(commandName, MODE_OLDFILE);
+        }
 
-	/* The last resort -- the C: multiassign */
-	if (!file)
-	{
-	    commandName -= 2;
-	    file = Open(commandName, MODE_OLDFILE);
-	}
+        /* The last resort -- the C: multiassign */
+        if (!file)
+        {
+            commandName -= 2;
+            file = Open(commandName, MODE_OLDFILE);
+        }
     }
 
     if (file)
     {
-	commandSeg = LoadSeg(commandName);
-	err = IoErr();
+        commandSeg = LoadSeg(commandName);
+        err = IoErr();
 
-	if (commandSeg)
-	{
-	    BPTR lock = ParentOfFH(file);
+        if (commandSeg)
+        {
+            BPTR lock = ParentOfFH(file);
 
-	    if (lock)
-	    {
-		ss->oldHomeDir = SetProgramDir(lock);
-		*homeDirChanged = TRUE; /* TODO merge */
-	    }
-	}
-	/* Do not attempt to execute corrupted executables (BAD_HUNK)
-	 * Do not swallow original error code */
-	if (!commandSeg && err == ERROR_NOT_EXECUTABLE) {
-	    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-	    if (fib && ExamineFH(file, fib) && (fib->fib_Protection & FIBF_SCRIPT))
-	    {
-		commandSeg = LoadSeg("C:Execute");
-		if (commandSeg) {
-		    *scriptLock = Lock(commandName, SHARED_LOCK);
-		    if (*scriptLock == BNULL) {
-		    	UnLoadSeg(commandSeg);
-		    	commandSeg = BNULL;
-		    }
-		}
-	    }
-	    else
-		err = ERROR_FILE_NOT_OBJECT;
-	    FreeDosObject(DOS_FIB, fib);
-	}
+            if (lock)
+            {
+                ss->oldHomeDir = SetProgramDir(lock);
+                *homeDirChanged = TRUE; /* TODO merge */
+            }
+        }
+        /* Do not attempt to execute corrupted executables (BAD_HUNK)
+         * Do not swallow original error code */
+        if (!commandSeg && err == ERROR_NOT_EXECUTABLE) {
+            struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+            if (fib && ExamineFH(file, fib) && (fib->fib_Protection & FIBF_SCRIPT))
+            {
+                commandSeg = LoadSeg("C:Execute");
+                if (commandSeg) {
+                    *scriptLock = Lock(commandName, SHARED_LOCK);
+                    if (*scriptLock == BNULL) {
+                        UnLoadSeg(commandSeg);
+                        commandSeg = BNULL;
+                    }
+                }
+            }
+            else
+                err = ERROR_FILE_NOT_OBJECT;
+            FreeDosObject(DOS_FIB, fib);
+        }
 
-	Close(file);
+        Close(file);
     } else
-    	err = IoErr();
+        err = IoErr();
 
     CurrentDir(oldCurDir);
     SetIoErr(err);
@@ -428,7 +428,7 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs)
     }
 
     module = loadCommand(ss, command, &scriptLock,
-			 &homeDirChanged, &residentCommand);
+                         &homeDirChanged, &residentCommand);
 
     /* Set command name even if we couldn't load the command to be able to
        report errors correctly */
@@ -436,90 +436,90 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs)
 
     if (module)
     {
-	struct Process *pr = (struct Process *) FindTask(NULL);
-	ULONG defaultStack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
-	STRPTR oldtaskname = pr->pr_Task.tc_Node.ln_Name;
-	ULONG mem_before = 0;
-	ULONG sig_before = pr->pr_Task.tc_SigAlloc;
-	ULONG sig_after;
-	ULONG sigmask;
-	BYTE sigbit;
+        struct Process *pr = (struct Process *) FindTask(NULL);
+        ULONG defaultStack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+        STRPTR oldtaskname = pr->pr_Task.tc_Node.ln_Name;
+        ULONG mem_before = 0;
+        ULONG sig_before = pr->pr_Task.tc_SigAlloc;
+        ULONG sig_after;
+        ULONG sigmask;
+        BYTE sigbit;
 
-	BPTR seglist = residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg : module;
+        BPTR seglist = residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg : module;
 
-	STRPTR dst = cmd, src;
-	LONG len = 0;
+        STRPTR dst = cmd, src;
+        LONG len = 0;
 
-	if (scriptLock)
-	{
-	    *dst++ = '"';
-	    if (NameFromLock(scriptLock, dst, FILE_MAX) == 0) {
-	    	error = IoErr(); /* bad FS handler ? */
-	    	goto errexit;
-	    }
-	    while (*++dst != '\0');
+        if (scriptLock)
+        {
+            *dst++ = '"';
+            if (NameFromLock(scriptLock, dst, FILE_MAX) == 0) {
+                error = IoErr(); /* bad FS handler ? */
+                goto errexit;
+            }
+            while (*++dst != '\0');
 
-	    *dst++ = '"';
-	    *dst++ = ' ';
-	    UnLock(scriptLock);
-	    len = dst - cmd;
-	}
+            *dst++ = '"';
+            *dst++ = ' ';
+            UnLock(scriptLock);
+            len = dst - cmd;
+        }
 
-	src = commandArgs;
-	for (; src && *src != '\0'; ++dst, ++src, ++len)
-	    *dst = *src;
-	*dst = '\0';
+        src = commandArgs;
+        for (; src && *src != '\0'; ++dst, ++src, ++len)
+            *dst = *src;
+        *dst = '\0';
 
-	D(bug("[Shell] command loaded: len=%ld, args=%s\n", len, cmd));
-	SetIoErr(0); /* Clear error before we execute this command */
-	SetSignal(0, SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+        D(bug("[Shell] command loaded: len=%ld, args=%s\n", len, cmd));
+        SetIoErr(0); /* Clear error before we execute this command */
+        SetSignal(0, SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
 
-	cli->cli_Module = seglist;
-	pr->pr_Task.tc_Node.ln_Name = command;
+        cli->cli_Module = seglist;
+        pr->pr_Task.tc_Node.ln_Name = command;
 
-	mem_before = FindVar("__debug_mem", LV_VAR) ? AvailMem(MEMF_ANY) : 0;
-	cli->cli_ReturnCode = RunCommand(seglist, defaultStack, cmd, len);
-	error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
+        mem_before = FindVar("__debug_mem", LV_VAR) ? AvailMem(MEMF_ANY) : 0;
+        cli->cli_ReturnCode = RunCommand(seglist, defaultStack, cmd, len);
+        error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
 
-	/* Update the state of the cli_Interactive field */
-	setInteractive(cli, ss);
+        /* Update the state of the cli_Interactive field */
+        setInteractive(cli, ss);
 
-	/*
-	    Check if running the command has changed signal bits of the Shell
-	    process. If there is a difference the signals will be set or freed
-	    to avoid that the Shell runs out of free signals.
-	 */
-	sig_after = pr->pr_Task.tc_SigAlloc;
-	if (sig_before != sig_after)
-	{
-	    for (sigbit = 0; sigbit < 32; sigbit++)
-	    {
-		sigmask = 1L << sigbit;
-		if ((sig_before & sigmask) && !(sig_after & sigmask))
-		{
-		    /* Command has deleted signal => set it */
-		    Printf("*** '%s' returned with freed signal 0x%lx\n", command, sigmask);
-		    AllocSignal(sigbit);
-		}
-		else if (!(sig_before & sigmask) && (sig_after & sigmask))
-		{
-		    /* Command has set signal => free it */
-		    Printf("*** '%s' returned with unfreed signal 0x%lx\n", command, sigmask);
-		    FreeSignal(sigbit);
-		}
-	    }
-	}
+        /*
+            Check if running the command has changed signal bits of the Shell
+            process. If there is a difference the signals will be set or freed
+            to avoid that the Shell runs out of free signals.
+         */
+        sig_after = pr->pr_Task.tc_SigAlloc;
+        if (sig_before != sig_after)
+        {
+            for (sigbit = 0; sigbit < 32; sigbit++)
+            {
+                sigmask = 1L << sigbit;
+                if ((sig_before & sigmask) && !(sig_after & sigmask))
+                {
+                    /* Command has deleted signal => set it */
+                    Printf("*** '%s' returned with freed signal 0x%lx\n", command, sigmask);
+                    AllocSignal(sigbit);
+                }
+                else if (!(sig_before & sigmask) && (sig_after & sigmask))
+                {
+                    /* Command has set signal => free it */
+                    Printf("*** '%s' returned with unfreed signal 0x%lx\n", command, sigmask);
+                    FreeSignal(sigbit);
+                }
+            }
+        }
 
-	if (mem_before)
-	{
-	    ULONG mem_after = AvailMem(MEMF_ANY);
-	    Printf("Memory leak of %lu bytes\n", mem_before - mem_after);
-	}
+        if (mem_before)
+        {
+            ULONG mem_after = AvailMem(MEMF_ANY);
+            Printf("Memory leak of %lu bytes\n", mem_before - mem_after);
+        }
 
-	D(bug("[Shell] returned %ld (%ld): %s\n", cli->cli_ReturnCode,
-	    error, command));
-	pr->pr_Task.tc_Node.ln_Name = oldtaskname;
-	unloadCommand(ss, module, homeDirChanged, residentCommand);
+        D(bug("[Shell] returned %ld (%ld): %s\n", cli->cli_ReturnCode,
+            error, command));
+        pr->pr_Task.tc_Node.ln_Name = oldtaskname;
+        unloadCommand(ss, module, homeDirChanged, residentCommand);
 
         /* If command couldn't be started, explain why */
         if (cli->cli_ReturnCode == -1)
@@ -527,41 +527,41 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs)
     }
     else
     {
-	/* SFS returns ERROR_INVALID_COMPONENT_NAME if you try to open "" */
-	error = IoErr();
+        /* SFS returns ERROR_INVALID_COMPONENT_NAME if you try to open "" */
+        error = IoErr();
 
-	if (error == ERROR_OBJECT_WRONG_TYPE ||
-	    error == ERROR_OBJECT_NOT_FOUND ||
-	    error == ERROR_INVALID_COMPONENT_NAME)
-	{
-	    BPTR lock = Lock(command, SHARED_LOCK);
+        if (error == ERROR_OBJECT_WRONG_TYPE ||
+            error == ERROR_OBJECT_NOT_FOUND ||
+            error == ERROR_INVALID_COMPONENT_NAME)
+        {
+            BPTR lock = Lock(command, SHARED_LOCK);
 
-	    if (lock)
-	    {
-		struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+            if (lock)
+            {
+                struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
-		if (fib)
-		{
-		    if (Examine(lock, fib))
-		    {
-			if (fib->fib_DirEntryType > 0)
-			{
-			    setPath(ss, lock);
-			    lock = CurrentDir(lock);
-			}
-			else
-			    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-		    }
+                if (fib)
+                {
+                    if (Examine(lock, fib))
+                    {
+                        if (fib->fib_DirEntryType > 0)
+                        {
+                            setPath(ss, lock);
+                            lock = CurrentDir(lock);
+                        }
+                        else
+                            SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+                    }
 
-		    FreeDosObject(DOS_FIB, fib);
-		}
+                    FreeDosObject(DOS_FIB, fib);
+                }
 
-		error = IoErr();
+                error = IoErr();
 
-		/* UnLock the old currentdir */
-		UnLock(lock);
-	    }
-	}
+                /* UnLock the old currentdir */
+                UnLock(lock);
+            }
+        }
         PrintFault(error, command);
     }
 errexit:
@@ -576,30 +576,30 @@ void setPath(ShellState *ss, BPTR lock)
     ULONG i = 0;
 
     if (lock)
-	dir = lock;
+        dir = lock;
     else
-	dir = CurrentDir(BNULL);
+        dir = CurrentDir(BNULL);
 
     do
     {
         i += 256;
-	buf = AllocVec(i, MEMF_ANY);
+        buf = AllocVec(i, MEMF_ANY);
 
-	if (buf == NULL)
-	    break;
+        if (buf == NULL)
+            break;
 
-	if (NameFromLock(dir, buf, i))
-	{
-	    SetCurrentDirName(buf);
-	    FreeVec(buf);
-	    break;
-	}
+        if (NameFromLock(dir, buf, i))
+        {
+            SetCurrentDirName(buf);
+            FreeVec(buf);
+            break;
+        }
 
-	FreeVec(buf);
+        FreeVec(buf);
     }  while (IoErr() == ERROR_LINE_TOO_LONG);
 
     if (lock == BNULL)
-	CurrentDir(dir);
+        CurrentDir(dir);
 }
 
 #undef SysBase
@@ -621,9 +621,9 @@ __startup AROS_CLI(ShellStart)
     D(bug("[Shell] executing\n"));
     ss = AllocMem(sizeof(ShellState), MEMF_CLEAR);
     if (!ss) {
-    	SetIoErr(ERROR_NO_FREE_STORE);
-    	CloseLibrary(DOSBase);
-    	return RETURN_FAIL;
+        SetIoErr(ERROR_NO_FREE_STORE);
+        CloseLibrary(DOSBase);
+        return RETURN_FAIL;
     }
 
     ss->ss_DOSBase = DOSBase;

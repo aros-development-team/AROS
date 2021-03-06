@@ -23,8 +23,8 @@ AROS_SH0H(LoadWB, 42.2, "Load the default Workbench")
 
     struct Library *WorkbenchBase = OpenLibrary("workbench.library", 0);
     if (WorkbenchBase) {
-    	StartWorkbench(0, NULL);
-    	CloseLibrary(WorkbenchBase);
+        StartWorkbench(0, NULL);
+        CloseLibrary(WorkbenchBase);
     }
     return 0;
 

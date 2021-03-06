@@ -80,7 +80,7 @@ void AsyncLayouter(void)
    
     ReleaseSemaphore(&dtsi->si_Lock);
    
-    DoGad_OM_NOTIFY(object, lm->lm_window, NULL, 0, 
+    DoGad_OM_NOTIFY(object, lm->lm_window, NULL, 0,
                     GA_ID, (ULONG)((struct Gadget *)object)->GadgetID,
                     DTA_Data,         object,
                     DTA_TopVert,      dtsi->si_TopVert,

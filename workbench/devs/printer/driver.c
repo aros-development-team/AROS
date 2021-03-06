@@ -53,9 +53,9 @@ const struct EasyStruct driverMisuse = { \
 /* Internal, private message
  */
 struct PrinterMessage {
-	struct Message mm_Message;
-	ULONG   mm_Magic;
-	ULONG   mm_Version;
+        struct Message mm_Message;
+        ULONG   mm_Magic;
+        ULONG   mm_Version;
 };
 
 #define TASK_PRINTERDATA(pd)   \
@@ -175,7 +175,7 @@ STATIC AROS_LH1(void, BeginIO,
 {
     AROS_LIBFUNC_INIT
 
-    struct IOStdReq *io = &pio->ios; 
+    struct IOStdReq *io = &pio->ios;
     struct PrinterData *pd = &pu->pu_PrinterData;
 
     D(bug("BeginIO: io_Command = %d, Unit Port %p\n", io->io_Command, &pd->pd_Unit));
@@ -189,7 +189,7 @@ STATIC AROS_LH1(void, BeginIO,
 }
 
 STATIC AROS_LH1(LONG, AbortIO,
- AROS_LHA(struct IORequest *, pio, A1), 
+ AROS_LHA(struct IORequest *, pio, A1),
           struct PrinterUnit *, pd, 6, PrinterUnit)
 {
     AROS_LIBFUNC_INIT
@@ -197,7 +197,7 @@ STATIC AROS_LH1(LONG, AbortIO,
     AROS_LIBFUNC_EXIT
 }
 
-/* These wrappers make sure that we don't 
+/* These wrappers make sure that we don't
  * make WaitIO() hang or corrupt memory
  * if called on an already completed IO
  */
@@ -535,7 +535,7 @@ static LONG pd_DriverTask(VOID)
     LONG ret;
 
     /* Wait for startup message -
-     * we use the DOS port because the 
+     * we use the DOS port because the
      * pd_Unit has not been created yet
      */
     D(bug("%s: Waiting for startup. pd=%p\n", __func__, pd));

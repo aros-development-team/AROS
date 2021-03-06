@@ -20,20 +20,20 @@ extern void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG 
 /*****************************************************************************
 
     NAME */
-	AROS_LH8(LONG, MiamiPanelInit,
+        AROS_LH8(LONG, MiamiPanelInit,
 
 /*  SYNOPSIS */
-	AROS_LHA(IPTR, synccb, A0),
-	AROS_LHA(IPTR, asynccb, A1),
-	AROS_LHA(LONG, flags, D0),
-	AROS_LHA(STRPTR, font, A2),
-	AROS_LHA(STRPTR, screen, A3),
-	AROS_LHA(LONG, xo, D1),
-	AROS_LHA(LONG, yo, D2),
-	AROS_LHA(IPTR, sigbit, A4),
+        AROS_LHA(IPTR, synccb, A0),
+        AROS_LHA(IPTR, asynccb, A1),
+        AROS_LHA(LONG, flags, D0),
+        AROS_LHA(STRPTR, font, A2),
+        AROS_LHA(STRPTR, screen, A3),
+        AROS_LHA(LONG, xo, D1),
+        AROS_LHA(LONG, yo, D2),
+        AROS_LHA(IPTR, sigbit, A4),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 5, MiamiPanel)
+        struct Library *, MiamiPanelBase, 5, MiamiPanel)
 
 /*  FUNCTION
 
@@ -57,18 +57,18 @@ extern void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG 
     struct MiamiPanelBase_intern *MiamiPanelBaseIntern = MiamiPanelBase;
 
 D(bug("[MiamiPanel] MiamiPanelInit()\n"));
-	
+        
     struct MsgPort    reply;
     struct Process    *proc = NULL;
     long                    res;
     int                       sig;
-	
+        
     struct TagItem tags[] = {NP_Entry,        0,
 #ifdef __MORPHOS__
                              NP_CodeType,     CODETYPE_PPC,
                              NP_PPCStackSize, 32000,
 #endif
-							 NP_UserData,     MiamiPanelBaseIntern,
+                                                         NP_UserData,     MiamiPanelBaseIntern,
                              NP_StackSize,    16000,
                              NP_Name,          (ULONG)DEF_Base,
                              NP_CopyVars,     FALSE,
@@ -128,7 +128,7 @@ D(bug("[MiamiPanel] MiamiPanelInit()\n"));
     ReleaseSemaphore(&MiamiPanelBaseIntern->mpb_libSem);
 
     return res;
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelInit */
@@ -137,12 +137,12 @@ D(bug("[MiamiPanel] MiamiPanelInit()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(void, MiamiPanelCleanup,
+        AROS_LH0(void, MiamiPanelCleanup,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 6, MiamiPanel)
+        struct Library *, MiamiPanelBase, 6, MiamiPanel)
 
 /*  FUNCTION
 
@@ -171,7 +171,7 @@ D(bug("[MiamiPanel] MiamiPanelCleanup()\n"));
 
     ObtainSemaphore(&MiamiPanelBaseIntern->mpb_procSem);
     ReleaseSemaphore(&MiamiPanelBaseIntern->mpb_procSem);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelCleanup */
@@ -179,17 +179,17 @@ D(bug("[MiamiPanel] MiamiPanelCleanup()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH5(void, MiamiPanelAddInterface,
+        AROS_LH5(void, MiamiPanelAddInterface,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, unit, D0),
-	AROS_LHA(STRPTR, name, A0),
-	AROS_LHA(LONG, state, D1),
-	AROS_LHA(LONG, ontime, D2),
-	AROS_LHA(STRPTR, speed, A1),
-	
+        AROS_LHA(LONG, unit, D0),
+        AROS_LHA(STRPTR, name, A0),
+        AROS_LHA(LONG, state, D1),
+        AROS_LHA(LONG, ontime, D2),
+        AROS_LHA(STRPTR, speed, A1),
+        
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 7, MiamiPanel)
+        struct Library *, MiamiPanelBase, 7, MiamiPanel)
 
 /*  FUNCTION
 
@@ -213,9 +213,9 @@ D(bug("[MiamiPanel] MiamiPanelCleanup()\n"));
     struct MiamiPanelBase_intern *MiamiPanelBaseIntern = MiamiPanelBase;
 
 D(bug("[MiamiPanel] MiamiPanelAddInterface()\n"));
-	
+        
     DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_AddInterface,unit,name,state,ontime,speed);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelAddInterface */
@@ -223,13 +223,13 @@ D(bug("[MiamiPanel] MiamiPanelAddInterface()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(void, MiamiPanelDelInterface,
+        AROS_LH1(void, MiamiPanelDelInterface,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, unit, D0),
+        AROS_LHA(LONG, unit, D0),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 8, MiamiPanel)
+        struct Library *, MiamiPanelBase, 8, MiamiPanel)
 
 /*  FUNCTION
 
@@ -255,7 +255,7 @@ D(bug("[MiamiPanel] MiamiPanelAddInterface()\n"));
 D(bug("[MiamiPanel] MiamiPanelDelInterface()\n"));
 
     DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_DelInterface,unit);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelDelInterface */
@@ -263,15 +263,15 @@ D(bug("[MiamiPanel] MiamiPanelDelInterface()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH3(void, MiamiPanelSetInterfaceState,
+        AROS_LH3(void, MiamiPanelSetInterfaceState,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, unit, D0),
-	AROS_LHA(LONG, state, D1),
-	AROS_LHA(LONG, ontime, D2),
+        AROS_LHA(LONG, unit, D0),
+        AROS_LHA(LONG, state, D1),
+        AROS_LHA(LONG, ontime, D2),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 9, MiamiPanel)
+        struct Library *, MiamiPanelBase, 9, MiamiPanel)
 
 /*  FUNCTION
 
@@ -297,7 +297,7 @@ D(bug("[MiamiPanel] MiamiPanelDelInterface()\n"));
 D(bug("[MiamiPanel] MiamiPanelSetInterfaceState()\n"));
 
     DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_SetInterfaceState,unit,state,ontime);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelSetInterfaceState */
@@ -305,14 +305,14 @@ D(bug("[MiamiPanel] MiamiPanelSetInterfaceState()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(void, MiamiPanelSetInterfaceSpeed,
+        AROS_LH2(void, MiamiPanelSetInterfaceSpeed,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, unit, D0),
-	AROS_LHA(UBYTE *, speed, A0),
+        AROS_LHA(LONG, unit, D0),
+        AROS_LHA(UBYTE *, speed, A0),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 10, MiamiPanel)
+        struct Library *, MiamiPanelBase, 10, MiamiPanel)
 
 /*  FUNCTION
 
@@ -338,7 +338,7 @@ D(bug("[MiamiPanel] MiamiPanelSetInterfaceState()\n"));
 D(bug("[MiamiPanel] MiamiPanelSetInterfaceSpeed()\n"));
 
     DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_SetInterfaceSpeed,unit,speed);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelSetInterfaceSpeed */
@@ -346,17 +346,17 @@ D(bug("[MiamiPanel] MiamiPanelSetInterfaceSpeed()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH5(void, MiamiPanelInterfaceReport,
+        AROS_LH5(void, MiamiPanelInterfaceReport,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, unit, D0),
-	AROS_LHA(LONG, rate, D1),
-	AROS_LHA(LONG, now, D2),
-	AROS_LHA(LONG, totalhi, D3),
-	AROS_LHA(ULONG, totallo, D4),
-		
+        AROS_LHA(LONG, unit, D0),
+        AROS_LHA(LONG, rate, D1),
+        AROS_LHA(LONG, now, D2),
+        AROS_LHA(LONG, totalhi, D3),
+        AROS_LHA(ULONG, totallo, D4),
+                
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 11, MiamiPanel)
+        struct Library *, MiamiPanelBase, 11, MiamiPanel)
 
 /*  FUNCTION
 
@@ -383,7 +383,7 @@ D(bug("[MiamiPanel] MiamiPanelInterfaceReport()\n"));
 
     if (unit>=0)
         DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_InterfaceReport,unit,rate,now,totalhi,totallo);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelInterfaceReport */
@@ -391,12 +391,12 @@ D(bug("[MiamiPanel] MiamiPanelInterfaceReport()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(void, MiamiPanelToFront,
+        AROS_LH0(void, MiamiPanelToFront,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 12, MiamiPanel)
+        struct Library *, MiamiPanelBase, 12, MiamiPanel)
 
 /*  FUNCTION
 
@@ -422,7 +422,7 @@ D(bug("[MiamiPanel] MiamiPanelInterfaceReport()\n"));
 D(bug("[MiamiPanel] MiamiPanelToFront()\n"));
 
     DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_ToFront);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelToFront */
@@ -430,13 +430,13 @@ D(bug("[MiamiPanel] MiamiPanelToFront()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(void, MiamiPanelInhibitRefresh,
+        AROS_LH1(void, MiamiPanelInhibitRefresh,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, val, D0),
+        AROS_LHA(LONG, val, D0),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 13, MiamiPanel)
+        struct Library *, MiamiPanelBase, 13, MiamiPanel)
 
 /*  FUNCTION
 
@@ -462,7 +462,7 @@ D(bug("[MiamiPanel] MiamiPanelToFront()\n"));
 D(bug("[MiamiPanel] MiamiPanelInhibitRefresh()\n"));
 
     DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_InhibitRefresh,val);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelInhibitRefresh */
@@ -470,14 +470,14 @@ D(bug("[MiamiPanel] MiamiPanelInhibitRefresh()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(void, MiamiPanelGetCoord,
+        AROS_LH2(void, MiamiPanelGetCoord,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG *, xp, A0),
-	AROS_LHA(LONG *, yp, A1),
+        AROS_LHA(LONG *, xp, A0),
+        AROS_LHA(LONG *, yp, A1),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 14, MiamiPanel)
+        struct Library *, MiamiPanelBase, 14, MiamiPanel)
 
 /*  FUNCTION
 
@@ -503,7 +503,7 @@ D(bug("[MiamiPanel] MiamiPanelInhibitRefresh()\n"));
 D(bug("[MiamiPanel] MiamiPanelGetCoord()\n"));
 
     *xp = *yp = 0;
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelGetCoord */
@@ -511,13 +511,13 @@ D(bug("[MiamiPanel] MiamiPanelGetCoord()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(void, MiamiPanelEvent,
+        AROS_LH1(void, MiamiPanelEvent,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, sigs, D0),
+        AROS_LHA(ULONG, sigs, D0),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 15, MiamiPanel)
+        struct Library *, MiamiPanelBase, 15, MiamiPanel)
 
 /*  FUNCTION
 
@@ -541,7 +541,7 @@ D(bug("[MiamiPanel] MiamiPanelGetCoord()\n"));
     struct MiamiPanelBase_intern *MiamiPanelBaseIntern = MiamiPanelBase;
 
 D(bug("[MiamiPanel] MiamiPanelEvent()\n"));
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelEvent */
@@ -549,14 +549,14 @@ D(bug("[MiamiPanel] MiamiPanelEvent()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(void, MiamiPanelRefreshName,
+        AROS_LH2(void, MiamiPanelRefreshName,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, unit, D0),
-	AROS_LHA(UBYTE *, name, A0),
+        AROS_LHA(LONG, unit, D0),
+        AROS_LHA(UBYTE *, name, A0),
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 16, MiamiPanel)
+        struct Library *, MiamiPanelBase, 16, MiamiPanel)
 
 /*  FUNCTION
 
@@ -582,7 +582,7 @@ D(bug("[MiamiPanel] MiamiPanelEvent()\n"));
 D(bug("[MiamiPanel] MiamiPanelRefreshName()\n"));
 
     DoCommand(MiamiPanelBaseIntern, MPV_Msg_Type_RefreshName,unit,name);
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelRefreshName */
@@ -590,12 +590,12 @@ D(bug("[MiamiPanel] MiamiPanelRefreshName()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(LONG, MiamiPanelGetVersion,
+        AROS_LH0(LONG, MiamiPanelGetVersion,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 17, MiamiPanel)
+        struct Library *, MiamiPanelBase, 17, MiamiPanel)
 
 /*  FUNCTION
 
@@ -619,9 +619,9 @@ D(bug("[MiamiPanel] MiamiPanelRefreshName()\n"));
     struct MiamiPanelBase_intern *MiamiPanelBaseIntern = MiamiPanelBase;
 
 D(bug("[MiamiPanel] MiamiPanelGetVersion()\n"));
-	
-	return 1;
-	
+        
+        return 1;
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelGetVersion */
@@ -629,12 +629,12 @@ D(bug("[MiamiPanel] MiamiPanelGetVersion()\n"));
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(ULONG, MiamiPanelKill,
+        AROS_LH0(ULONG, MiamiPanelKill,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct Library *, MiamiPanelBase, 26, MiamiPanel)
+        struct Library *, MiamiPanelBase, 26, MiamiPanel)
 
 /*  FUNCTION
 
@@ -691,7 +691,7 @@ D(bug("[MiamiPanel] MiamiPanelKill()\n"));
     ReleaseSemaphore(&MiamiPanelBaseIntern->mpb_libSem);
 
     return TRUE;
-	
+        
     AROS_LIBFUNC_EXIT
 
 } /* MiamiPanelKill */

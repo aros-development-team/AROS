@@ -18,7 +18,7 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Compares two IEEE double precision numbers.
+        Compares two IEEE double precision numbers.
 
     INPUTS
         y - IEEE double precision floating point number.
@@ -30,10 +30,10 @@
              0: y = z
             -1: y < z
 
-	Flags:
-	  zero	   : y = z
-	  negative : y < z
-	  overflow : 0
+        Flags:
+          zero     : y = z
+          negative : y < z
+          overflow : 0
 
     NOTES
 

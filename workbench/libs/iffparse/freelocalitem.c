@@ -9,20 +9,20 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH1(void, FreeLocalItem,
+        AROS_LH1(void, FreeLocalItem,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct LocalContextItem *, localItem, A0),
+        AROS_LHA(struct LocalContextItem *, localItem, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 34, IFFParse)
+        struct Library *, IFFParseBase, 34, IFFParse)
 
 /*  FUNCTION
-	Frees a local context item previously allocated by AllocLocalItem.
-	This functioned should always be calles by custom LCI purge hooks.
+        Frees a local context item previously allocated by AllocLocalItem.
+        This functioned should always be calles by custom LCI purge hooks.
 
     INPUTS
-	localItem    -	pointer to LocalContextItem struct.
+        localItem    -  pointer to LocalContextItem struct.
 
     RESULT
 
@@ -33,7 +33,7 @@
     BUGS
 
     SEE ALSO
-	AllocLocalItem()
+        AllocLocalItem()
 
     INTERNALS
 
@@ -43,19 +43,19 @@
 
     if (localItem != NULL)
     {
-	/* If the LCI has supplied userdata, then free it */
-	if ( GetIntLCI(localItem)->lci_UserData )
-	{
-	    FreeMem
-	    (
-		GetIntLCI(localItem)->lci_UserData,
-		GetIntLCI(localItem)->lci_UserDataSize
-	    );
-	}
+        /* If the LCI has supplied userdata, then free it */
+        if ( GetIntLCI(localItem)->lci_UserData )
+        {
+            FreeMem
+            (
+                GetIntLCI(localItem)->lci_UserData,
+                GetIntLCI(localItem)->lci_UserDataSize
+            );
+        }
 
 
-	/* Free the LCI itself */
-	FreeMem(localItem, sizeof (struct IntLocalContextItem));
+        /* Free the LCI itself */
+        FreeMem(localItem, sizeof (struct IntLocalContextItem));
     }
     
     AROS_LIBFUNC_EXIT

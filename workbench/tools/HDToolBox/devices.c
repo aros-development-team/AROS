@@ -30,9 +30,9 @@ struct HDTBDevice *addDevice(struct ListNode *parent, STRPTR name)
     seppoint = strstr(name, ":");
 
     if (seppoint != NULL)
-	devnamelen = (int)(seppoint - name);
+        devnamelen = (int)(seppoint - name);
     else
-	devnamelen = strlen(name);
+        devnamelen = strlen(name);
     
     ln = AllocMem(sizeof(struct HDTBDevice), MEMF_PUBLIC | MEMF_CLEAR);
     if (ln)
@@ -44,25 +44,25 @@ struct HDTBDevice *addDevice(struct ListNode *parent, STRPTR name)
             {
                 ln->listnode.ln.ln_Type = LNT_Device;
                 CopyMem(name, ln->listnode.ln.ln_Name, devnamelen);
-		D(bug("[HDToolBox] addDevice: device '%s'\n", ln->listnode.ln.ln_Name));
+                D(bug("[HDToolBox] addDevice: device '%s'\n", ln->listnode.ln.ln_Name));
 
-		if (seppoint != NULL)
-		{
-		    ln->maxunits = atoi(name + devnamelen + 1);
-		    D(bug("[HDToolBox] addDevice: maxunits %d\n", ln->maxunits));
-		}
+                if (seppoint != NULL)
+                {
+                    ln->maxunits = atoi(name + devnamelen + 1);
+                    D(bug("[HDToolBox] addDevice: maxunits %d\n", ln->maxunits));
+                }
 
                 findHDs(ln);
 
-		/*
-		 * check if device carries at least one element (empty partition?)
-		 */
+                /*
+                 * check if device carries at least one element (empty partition?)
+                 */
                 if (ln->listnode.list.lh_Head->ln_Succ->ln_Succ)
                     ln->listnode.flags |= LNF_Listable;
 
-		/*
-		 * add device to the list
-		 */
+                /*
+                 * add device to the list
+                 */
                 InsertList(gadgets.leftlv, &ln->listnode);
                 AddTail(&parent->list, &ln->listnode.ln);
                 return ln;
@@ -74,7 +74,7 @@ struct HDTBDevice *addDevice(struct ListNode *parent, STRPTR name)
     return NULL;
 }
 
-struct HDTBDevice *addDeviceName(STRPTR name) 
+struct HDTBDevice *addDeviceName(STRPTR name)
 {
     D(bug("[HDToolBox] addDeviceName('%s')\n", name));
 

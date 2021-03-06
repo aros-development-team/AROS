@@ -41,7 +41,7 @@ static void wbOpenDrawer(Class *cl, Object *obj, CONST_STRPTR path)
     struct wbApp *my = INST_DATA(cl, obj);
     Object *win;
 
-    win = NewObject(WBWindow, NULL, 
+    win = NewObject(WBWindow, NULL,
                         WBWA_UserPort, my->WinPort,
                         WBWA_Path, path,
                         TAG_END);
@@ -51,7 +51,7 @@ static void wbOpenDrawer(Class *cl, Object *obj, CONST_STRPTR path)
         struct opMember opmmsg;
         opmmsg.MethodID = OM_ADDMEMBER;
         opmmsg.opam_Object = win;
-    	DoMethodA(obj, &opmmsg);
+        DoMethodA(obj, &opmmsg);
     }
 }
 
@@ -64,7 +64,7 @@ static IPTR WBAppNew(Class *cl, Object *obj, struct opSet *ops)
 
     rc = DoSuperMethodA(cl, obj, (Msg)ops);
     if (rc == 0)
-    	return 0;
+        return 0;
 
     my = INST_DATA(cl, rc);
 
@@ -74,17 +74,17 @@ static IPTR WBAppNew(Class *cl, Object *obj, struct opSet *ops)
     my->AppPort = CreatePort(NULL, 0);
 
     if (my->AppPort == NULL) {
-    	DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
-    	return 0;
+        DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
+        return 0;
     }
 
     /* Create our Window message port */
     my->WinPort = CreatePort(NULL, 0);
 
     if (my->WinPort == NULL) {
-    	DeleteMsgPort(my->AppPort);
-    	DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
-    	return 0;
+        DeleteMsgPort(my->AppPort);
+        DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
+        return 0;
     }
 
     my->AppMask |= (1UL << my->AppPort->mp_SigBit);
@@ -97,10 +97,10 @@ static IPTR WBAppNew(Class *cl, Object *obj, struct opSet *ops)
                          TAG_END);
 
     if (my->Root == NULL) {
-    	DeleteMsgPort(my->WinPort);
-    	DeleteMsgPort(my->AppPort);
-    	DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
-    	return 0;
+        DeleteMsgPort(my->WinPort);
+        DeleteMsgPort(my->AppPort);
+        DoSuperMethod(cl, (Object *)rc, OM_DISPOSE);
+        return 0;
     }
 
     return rc;
@@ -118,8 +118,8 @@ static IPTR WBAppDispose(Class *cl, Object *obj, Msg msg)
     while ((tmp = NextObject(&tstate))) {
         STACKED ULONG omrmethodID;
         omrmethodID = OM_REMOVE;
-    	DoMethodA(tmp, &omrmethodID);
-    	DisposeObject(obj);
+        DoMethodA(tmp, &omrmethodID);
+        DisposeObject(obj);
     }
 
     /* Get rid of the main window */
@@ -163,13 +163,13 @@ static Object *wbLookupWindow(Class *cl, Object *obj, struct Window *win)
     /* Is it the root window? */
     GetAttr(WBWA_Window, my->Root, (IPTR *)&match);
     if (match == win)
-    	return my->Root;
+        return my->Root;
 
     while ((owin = NextObject(&ostate))) {
-    	match = NULL;
-    	GetAttr(WBWA_Window, owin, (IPTR *)&match);
-    	if (match == win)
-    	    return owin;
+        match = NULL;
+        GetAttr(WBWA_Window, owin, (IPTR *)&match);
+        if (match == win)
+            return owin;
     }
 
     return NULL;
@@ -182,7 +182,7 @@ static void wbRefreshWindow(Class *cl, Object *obj, struct Window *win)
     if ((owin = wbLookupWindow(cl, obj, win))) {
         STACKED ULONG wbrefmethodID;
         wbrefmethodID = WBWM_REFRESH;
-    	DoMethodA(owin, &wbrefmethodID);
+        DoMethodA(owin, &wbrefmethodID);
     }
 }
 
@@ -193,7 +193,7 @@ static void wbNewSizeWindow(Class *cl, Object *obj, struct Window *win)
     if ((owin = wbLookupWindow(cl, obj, win))) {
         STACKED ULONG wbnewsmethodID;
         wbnewsmethodID = WBWM_NEWSIZE;
-    	DoMethodA(owin, &wbnewsmethodID);
+        DoMethodA(owin, &wbnewsmethodID);
     }
 }
 
@@ -206,8 +206,8 @@ static void wbCloseWindow(Class *cl, Object *obj, struct Window *win)
         struct opMember opmmsg;
         opmmsg.MethodID = OM_REMMEMBER;
         opmmsg.opam_Object = owin;
-    	DoMethodA(obj, &opmmsg);
-    	DisposeObject(owin);
+        DoMethodA(obj, &opmmsg);
+        DisposeObject(owin);
     }
 }
 
@@ -222,35 +222,35 @@ static BOOL wbMenuPick(Class *cl, Object *obj, struct Window *win, UWORD menuNum
 
     D(bug("Menu: %x\n", menuNumber));
     while (menuNumber != MENUNULL) {
-    	BOOL handled = FALSE;
+        BOOL handled = FALSE;
 
-    	item = ItemAddress(win->MenuStrip, menuNumber);
+        item = ItemAddress(win->MenuStrip, menuNumber);
 
-    	/* Let the window have first opportunity */
-    	if (owin)
+        /* Let the window have first opportunity */
+        if (owin)
         {
             struct wbwm_MenuPick wbmpmsg;
             wbmpmsg.MethodID = WBWM_MENUPICK;
             wbmpmsg.wbwmp_MenuItem = item;
             wbmpmsg.wbwmp_MenuNumber = menuNumber;
-    	    handled = DoMethodA(owin, &wbmpmsg);
+            handled = DoMethodA(owin, &wbmpmsg);
         }
 
-    	if (!handled) {
-    	    switch (WBMENU_ITEM_ID(item)) {
-    	    case WBMENU_ID(WBMENU_WB_QUIT):
-    	    	quit = TRUE;
-    	    	break;
-    	    case WBMENU_ID(WBMENU_WB_SHUTDOWN):
-    	    	/* TODO: Ask if the user wants a shutdown or reboot */
-    	    	ShutdownA(SD_ACTION_POWEROFF);
-    	    	/* Can't power off. Try to reboot. */
-    	    	ShutdownA(SD_ACTION_COLDREBOOT);
-    	    	break;
-    	    }
-    	}
+        if (!handled) {
+            switch (WBMENU_ITEM_ID(item)) {
+            case WBMENU_ID(WBMENU_WB_QUIT):
+                quit = TRUE;
+                break;
+            case WBMENU_ID(WBMENU_WB_SHUTDOWN):
+                /* TODO: Ask if the user wants a shutdown or reboot */
+                ShutdownA(SD_ACTION_POWEROFF);
+                /* Can't power off. Try to reboot. */
+                ShutdownA(SD_ACTION_COLDREBOOT);
+                break;
+            }
+        }
 
-    	menuNumber = item->NextSelect;
+        menuNumber = item->NextSelect;
     }
 
     return quit;
@@ -263,7 +263,7 @@ static void wbIntuiTick(Class *cl, Object *obj, struct Window *win)
     if ((owin = wbLookupWindow(cl, obj, win))) {
         STACKED ULONG wbintuitmethodID;
         wbintuitmethodID = WBWM_INTUITICK;
-    	DoMethodA(owin, &wbintuitmethodID);
+        DoMethodA(owin, &wbintuitmethodID);
     }
 }
 
@@ -277,7 +277,7 @@ static void wbHideAllWindows(Class *cl, Object *obj)
     while ((owin = NextObject(&ostate))) {
         STACKED ULONG wbhidemethodid;
         wbhidemethodid = WBWM_HIDE;
-    	DoMethodA(owin, &wbhidemethodid);
+        DoMethodA(owin, &wbhidemethodid);
     }
 }
 
@@ -291,7 +291,7 @@ static void wbShowAllWindows(Class *cl, Object *obj)
     while ((owin = NextObject(&ostate))) {
         STACKED ULONG wbshowmethodid;
         wbshowmethodid = WBWM_SHOW;
-    	DoMethodA(owin, &wbshowmethodid);
+        DoMethodA(owin, &wbshowmethodid);
     }
 }
 
@@ -306,8 +306,8 @@ static void wbCloseAllWindows(Class *cl, Object *obj)
         struct opMember opmmsg;
         opmmsg.MethodID = OM_REMMEMBER;
         opmmsg.opam_Object = owin;
-    	DoMethodA(obj, &opmmsg);
-    	DisposeObject(owin);
+        DoMethodA(obj, &opmmsg);
+        DisposeObject(owin);
     }
 }
 
@@ -321,69 +321,69 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     CurrentDir(BNULL);
 
     if (RegisterWorkbench(my->AppPort)) {
-    	while (!done) {
-    	    ULONG mask;
+        while (!done) {
+            ULONG mask;
 
-    	    mask = Wait(my->AppMask | my->WinMask);
+            mask = Wait(my->AppMask | my->WinMask);
 
-    	    if (mask & my->AppMask) {
-    	    	struct WBHandlerMessage *wbhm;
-    	    	wbhm = (APTR)GetMsg(my->AppPort);
+            if (mask & my->AppMask) {
+                struct WBHandlerMessage *wbhm;
+                wbhm = (APTR)GetMsg(my->AppPort);
 
-    	    	switch (wbhm->wbhm_Type) {
-    	    	case WBHM_TYPE_SHOW:
-    	    	    /* Show all windows */
-    	    	    wbShowAllWindows(cl, obj);
-    	    	    break;
-    	    	case WBHM_TYPE_HIDE:
-    	    	    /* Hide all windows */
-    	    	    wbHideAllWindows(cl, obj);
-    	    	    break;
-    	    	case WBHM_TYPE_OPEN:
-    	    	    /* Open a drawer */
-    	    	    wbOpenDrawer(cl, obj, wbhm->wbhm_Data.Open.Name);
-    	    	    break;
-    	    	case WBHM_TYPE_UPDATE:
-    	    	    /* Refresh an open window/object */
-    	    	    break;
-    	    	}
-    	    	ReplyMsg((APTR)wbhm);
-    	    }
+                switch (wbhm->wbhm_Type) {
+                case WBHM_TYPE_SHOW:
+                    /* Show all windows */
+                    wbShowAllWindows(cl, obj);
+                    break;
+                case WBHM_TYPE_HIDE:
+                    /* Hide all windows */
+                    wbHideAllWindows(cl, obj);
+                    break;
+                case WBHM_TYPE_OPEN:
+                    /* Open a drawer */
+                    wbOpenDrawer(cl, obj, wbhm->wbhm_Data.Open.Name);
+                    break;
+                case WBHM_TYPE_UPDATE:
+                    /* Refresh an open window/object */
+                    break;
+                }
+                ReplyMsg((APTR)wbhm);
+            }
 
-    	    if (mask & my->WinMask) {
-    	    	struct IntuiMessage *im;
+            if (mask & my->WinMask) {
+                struct IntuiMessage *im;
 
-    	    	im = GT_GetIMsg(my->WinPort);
+                im = GT_GetIMsg(my->WinPort);
 
-    	    	D(bug("im=%p, Class=%d, Code=%d\n", im, im->Class, im->Code));
-    	    	switch (im->Class) {
-    	    	case IDCMP_CLOSEWINDOW:
-    	    	    /* Dispose the window */
-    	    	    wbCloseWindow(cl, obj, im->IDCMPWindow);
-    	    	    break;
-    	    	case IDCMP_REFRESHWINDOW:
-    	    	    /* call WBWM_REFRESH on the window */
-    	    	    wbRefreshWindow(cl, obj, im->IDCMPWindow);
-    	    	    break;
-    	    	case IDCMP_NEWSIZE:
-    	    	    /* call WBWM_NEWSIZE on the window */
-    	    	    wbNewSizeWindow(cl, obj, im->IDCMPWindow);
-    	    	    break;
-    	    	case IDCMP_MENUPICK:
-    	    	    done = wbMenuPick(cl, obj, im->IDCMPWindow, im->Code);
-    	    	    break;
-    	    	case IDCMP_INTUITICKS:
-    	    	    wbIntuiTick(cl, obj, im->IDCMPWindow);
-    	    	    break;
-    	    	}
+                D(bug("im=%p, Class=%d, Code=%d\n", im, im->Class, im->Code));
+                switch (im->Class) {
+                case IDCMP_CLOSEWINDOW:
+                    /* Dispose the window */
+                    wbCloseWindow(cl, obj, im->IDCMPWindow);
+                    break;
+                case IDCMP_REFRESHWINDOW:
+                    /* call WBWM_REFRESH on the window */
+                    wbRefreshWindow(cl, obj, im->IDCMPWindow);
+                    break;
+                case IDCMP_NEWSIZE:
+                    /* call WBWM_NEWSIZE on the window */
+                    wbNewSizeWindow(cl, obj, im->IDCMPWindow);
+                    break;
+                case IDCMP_MENUPICK:
+                    done = wbMenuPick(cl, obj, im->IDCMPWindow, im->Code);
+                    break;
+                case IDCMP_INTUITICKS:
+                    wbIntuiTick(cl, obj, im->IDCMPWindow);
+                    break;
+                }
 
-    	    	GT_ReplyIMsg(im);
-    	    }
-    	}
+                GT_ReplyIMsg(im);
+            }
+        }
 
-    	wbCloseAllWindows(cl, obj);
+        wbCloseAllWindows(cl, obj);
 
-    	UnregisterWorkbench(my->AppPort);
+        UnregisterWorkbench(my->AppPort);
     }
 
     return FALSE;
@@ -413,10 +413,10 @@ Class *WBApp_MakeClass(struct WorkbookBase *wb)
                     sizeof(struct wbApp),
                     0);
     if (cl != NULL) {
-    	cl->cl_Dispatcher.h_Entry = HookEntry;
-    	cl->cl_Dispatcher.h_SubEntry = dispatcher;
-    	cl->cl_Dispatcher.h_Data = NULL;
-    	cl->cl_UserData = (IPTR)wb;
+        cl->cl_Dispatcher.h_Entry = HookEntry;
+        cl->cl_Dispatcher.h_SubEntry = dispatcher;
+        cl->cl_Dispatcher.h_Data = NULL;
+        cl->cl_UserData = (IPTR)wb;
     }
 
     return cl;

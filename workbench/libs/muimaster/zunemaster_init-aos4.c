@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003, The AROS Development Team. 
+    Copyright (C) 2003, The AROS Development Team.
     All rights reserved.
     
     
@@ -60,18 +60,18 @@ LONG _start(void)
 *************************************************************************/
 struct Library *OpenLibraryInterface(STRPTR name, int version, void *interface_ptr)
 {
-	struct Library *lib = IExec->OpenLibrary(name,version);
-	struct Interface *iface;
-	if (!lib) return NULL;
+        struct Library *lib = IExec->OpenLibrary(name,version);
+        struct Interface *iface;
+        if (!lib) return NULL;
 
-	iface = IExec->GetInterface(lib,"main",1,NULL);
-	if (!iface)
-	{
-		IExec->CloseLibrary(lib);
-		return NULL;
-	}
-	*((struct Interface**)interface_ptr) = iface;
-	return lib;
+        iface = IExec->GetInterface(lib,"main",1,NULL);
+        if (!iface)
+        {
+                IExec->CloseLibrary(lib);
+                return NULL;
+        }
+        *((struct Interface**)interface_ptr) = iface;
+        return lib;
 }
 
 /*************************************************************************
@@ -79,8 +79,8 @@ struct Library *OpenLibraryInterface(STRPTR name, int version, void *interface_p
 *************************************************************************/
 void CloseLibraryInterface(struct Library *lib, void *interface)
 {
-	IExec->DropInterface(interface);
-	IExec->CloseLibrary(lib);
+        IExec->DropInterface(interface);
+        IExec->CloseLibrary(lib);
 }
 
 
@@ -111,31 +111,31 @@ static int InitCustomLibraryBase(struct MUIMasterBase_intern *libBase)
 {
     MUIMB(libBase)->sysbase = (struct ExecBase*)SysBase;
     if (!(MUIMB(libBase)->utilitybase = (void*)OpenLibraryInterface("utility.library",50,&IUtility)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->dosbase = (void*)OpenLibraryInterface("dos.library",50,&IDOS)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->gfxbase = (void*)OpenLibraryInterface("graphics.library",50,&IGraphics)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->aslbase = OpenLibraryInterface("asl.library",50,&IAsl)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->layersbase = OpenLibraryInterface("layers.library",50,&ILayers)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->intuibase = (void*)OpenLibraryInterface("intuition.library",50,&IIntuition)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->cxbase = OpenLibraryInterface("commodities.library",50,&ICommodities)))
- 	goto out;
+        goto out;
     if (!(MUIMB(libBase)->gadtoolsbase = OpenLibraryInterface("gadtools.library",37,&IGadTools)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->keymapbase = OpenLibraryInterface("keymap.library",37,&IKeymap)))
-	goto out;
+        goto out;
     if (!(DataTypesBase = OpenLibraryInterface("datatypes.library",39,&IDataTypes)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->iffparsebase = OpenLibraryInterface("iffparse.library",39,&IIFFParse)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->diskfontbase = OpenLibraryInterface("diskfont.library",39,&IDiskfont)))
-	goto out;
+        goto out;
     if (!(MUIMB(libBase)->iconbase = OpenLibraryInterface("icon.library",39,&IIcon)))
-	goto out;
+        goto out;
 
     /* continue even if cybergraphics.library is not available */
     MUIMB(libBase)->cybergfxbase = OpenLibraryInterface("cybergraphics.library",39,&ICyberGfx);
@@ -165,11 +165,11 @@ struct Library *libOpen(struct LibraryManagerInterface *Self, ULONG version)
     IExec->ObtainSemaphore(&OpenSemaphore);
 
     if (libBase->lib_OpenCnt == 0)
-	IZuneMaster = (struct ZuneMasterIFace*)IExec->GetInterface(libBase,"main",1,NULL);
+        IZuneMaster = (struct ZuneMasterIFace*)IExec->GetInterface(libBase,"main",1,NULL);
 
     /* Add up the open count */
     if (IZuneMaster)
-	libBase->lib_OpenCnt++;
+        libBase->lib_OpenCnt++;
     else libBase = NULL;
 
     IExec->ReleaseSemaphore(&OpenSemaphore);
@@ -187,8 +187,8 @@ APTR libClose(struct LibraryManagerInterface *Self)
     libBase->lib_OpenCnt--;
     if (libBase->lib_OpenCnt == 0)
     {
-    	IExec->DropInterface((struct Interface*)IZuneMaster);
-    	IZuneMaster = NULL;
+        IExec->DropInterface((struct Interface*)IZuneMaster);
+        IZuneMaster = NULL;
     }
     IExec->ReleaseSemaphore(&OpenSemaphore);
     return 0;
@@ -204,9 +204,9 @@ APTR libExpunge(struct LibraryManagerInterface *Self)
 
     if (libBase->lib_OpenCnt == 0)
     {
-    	result = (APTR)MUIMB(libBase)->seglist;
+        result = (APTR)MUIMB(libBase)->seglist;
 
-	DeinitCustomLibraryBase(MUIMB(libBase));
+        DeinitCustomLibraryBase(MUIMB(libBase));
 
         IExec->Remove((struct Node *)libBase);
         IExec->DeleteLibrary(libBase);
@@ -226,7 +226,7 @@ struct Library *libInit(struct Library *libBase, APTR seglist, struct Interface 
     SysBase = exec->Data.LibBase;
 
     if ((SysBase->lib_Version < 51) || (SysBase->lib_Version == 51 && SysBase->lib_Revision < 19))
-	return NULL;
+        return NULL;
 
     libBase->lib_Node.ln_Type = NT_LIBRARY;
     libBase->lib_Node.ln_Pri  = 0;
@@ -242,7 +242,7 @@ struct Library *libInit(struct Library *libBase, APTR seglist, struct Interface 
     IExec->InitSemaphore(&OpenSemaphore);
 
     if (!InitCustomLibraryBase(MUIMB(libBase)))
-    	goto out;
+        goto out;
 
     /* Store the libraries base */
     MUIMasterBase = libBase;

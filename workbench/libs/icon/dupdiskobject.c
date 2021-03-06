@@ -39,63 +39,63 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
     if (!src) return NULL;
 
     if (dupImageData)
-    	dupImage = TRUE;
+        dupImage = TRUE;
 
     if (!dupImage)
-    	return src;
+        return src;
 
     dest = (struct Image*)AllocMemIcon(dobj, sizeof(struct Image),
         MEMF_PUBLIC, IconBase);
     if (dest)
     {
-	int data_size = 0;
-	int plane_size;
-	int i;
-	int plane_pick = src->PlanePick;
+        int data_size = 0;
+        int plane_size;
+        int i;
+        int plane_pick = src->PlanePick;
 
-	*dest = *src;
-	dest->NextImage = NULL;
+        *dest = *src;
+        dest->NextImage = NULL;
 
-	/* Calc the size all used planes */
-	plane_size = RASSIZE(src->Width,src->Height);
+        /* Calc the size all used planes */
+        plane_size = RASSIZE(src->Width,src->Height);
     #if 0
-	for (i=0;i<8;i++)
-	{
-	    if (plane_pick & 1) data_size += plane_size;
-	    plane_pick >>= 1;
-	}
+        for (i=0;i<8;i++)
+        {
+            if (plane_pick & 1) data_size += plane_size;
+            plane_pick >>= 1;
+        }
     #else
-    	/* It seems planepick must be ignored. See drawer icon in MCC_TheBar-26.7.lha
-	   which seems to contain a SelectRender image with planepick == 0, but the image
-	   data is still there. */
-	   
-    	(void)plane_pick;
-	(void)i;
-	
-    	data_size = plane_size * src->Depth;
+        /* It seems planepick must be ignored. See drawer icon in MCC_TheBar-26.7.lha
+           which seems to contain a SelectRender image with planepick == 0, but the image
+           data is still there. */
+           
+        (void)plane_pick;
+        (void)i;
+        
+        data_size = plane_size * src->Depth;
     #endif
 
-	if (!dupImageData)
-	    return dest;
-	
-	if ((dest->ImageData = AllocMemIcon(dobj, data_size,
+        if (!dupImageData)
+            return dest;
+        
+        if ((dest->ImageData = AllocMemIcon(dobj, data_size,
             MEMF_PUBLIC | MEMF_CHIP, IconBase)))
-	{
-	    memcpy(dest->ImageData,src->ImageData,data_size);
+        {
+            memcpy(dest->ImageData,src->ImageData,data_size);
 #ifdef OUTPUT_DATA
-	    kprintf("plane_pick = %ld\n",src->PlanePick);
-	    kprintf("width = %ld\n",src->Width);
-	    kprintf("height = %ld\n",src->Height);
+            kprintf("plane_pick = %ld\n",src->PlanePick);
+            kprintf("width = %ld\n",src->Width);
+            kprintf("height = %ld\n",src->Height);
 
-	    for (i=0;i<data_size;i++)
-	    {
-		kprintf("0x%02lx,",((unsigned char*)src->ImageData)[i]);
-		if (i%16 == 15) kprintf("\n");
-	    }
-	     kprintf("\n");
+            for (i=0;i<data_size;i++)
+            {
+                kprintf("0x%02lx,",((unsigned char*)src->ImageData)[i]);
+                if (i%16 == 15) kprintf("\n");
+            }
+             kprintf("\n");
 #endif
-	    return dest;
-	}
+            return dest;
+        }
     }
     return NULL;
 }
@@ -105,14 +105,14 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
     NAME */
 #include <clib/icon_protos.h>
 
-	AROS_LH2(struct DiskObject *, DupDiskObjectA,
+        AROS_LH2(struct DiskObject *, DupDiskObjectA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DiskObject *, icon, A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+        AROS_LHA(struct DiskObject *, icon, A0),
+        AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 25, Icon)
+        struct IconBase *, IconBase, 25, Icon)
 
 /*  FUNCTION
 
@@ -155,8 +155,8 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
 
     if (srcnativeicon && GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags) == TRUE)
     {
-    	int i;
-	
+        int i;
+        
         mem->ni_IsDefault = srcnativeicon->ni_IsDefault;
         mem->ni_Frameless = srcnativeicon->ni_Frameless;
         mem->ni_ScaleBox  = srcnativeicon->ni_ScaleBox;
@@ -219,81 +219,81 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
     if (GetTagData(ICONDUPA_DuplicateDefaultTool, TRUE, tags) &&
         dobj->do_DefaultTool)
     {
-    	dobj->do_DefaultTool = StrDupIcon(dobj,icon->do_DefaultTool,IconBase);
-	if (!dobj->do_DefaultTool) goto fail;
+        dobj->do_DefaultTool = StrDupIcon(dobj,icon->do_DefaultTool,IconBase);
+        if (!dobj->do_DefaultTool) goto fail;
     }
     
     if (GetTagData(ICONDUPA_DuplicateToolWindow, TRUE, tags) &&
         dobj->do_ToolWindow)
     {
-    	dobj->do_ToolWindow = StrDupIcon(dobj,icon->do_ToolWindow,IconBase);
-    	if (!dobj->do_ToolWindow) goto fail;
+        dobj->do_ToolWindow = StrDupIcon(dobj,icon->do_ToolWindow,IconBase);
+        if (!dobj->do_ToolWindow) goto fail;
     }
    
     if (GetTagData(ICONDUPA_DuplicateDrawerData, TRUE, tags) &&
         icon->do_DrawerData)
     {
-    	LONG size;
-	
-	dobj->do_DrawerData = AllocMemIcon(dobj, sizeof(struct DrawerData),
+        LONG size;
+        
+        dobj->do_DrawerData = AllocMemIcon(dobj, sizeof(struct DrawerData),
             MEMF_PUBLIC, IconBase);
-    	if (!dobj->do_DrawerData) goto fail;
-	
- 	if (((SIPTR)icon->do_Gadget.UserData > 0) &&
-	    ((SIPTR)icon->do_Gadget.UserData <= WB_DISKREVISION))
-	{
-	    size = sizeof(struct DrawerData);
-	}
-	else
-	{
-	    size = sizeof(struct OldDrawerData);
-	}
+        if (!dobj->do_DrawerData) goto fail;
+        
+        if (((SIPTR)icon->do_Gadget.UserData > 0) &&
+            ((SIPTR)icon->do_Gadget.UserData <= WB_DISKREVISION))
+        {
+            size = sizeof(struct DrawerData);
+        }
+        else
+        {
+            size = sizeof(struct OldDrawerData);
+        }
 
-	memset(dobj->do_DrawerData, 0, sizeof(struct DrawerData));
-	memcpy(dobj->do_DrawerData, icon->do_DrawerData, size);
+        memset(dobj->do_DrawerData, 0, sizeof(struct DrawerData));
+        memcpy(dobj->do_DrawerData, icon->do_DrawerData, size);
     }
 
     /* Duplicate the image data */
     
     if (icon->do_Gadget.GadgetRender)
     {
-    	dobj->do_Gadget.GadgetRender = ImageDupIcon(dobj, (struct Image*)icon->do_Gadget.GadgetRender,
-    		GetTagData(ICONDUPA_DuplicateImages, TRUE, tags),
-    		GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags),IconBase);
-	if (!dobj->do_Gadget.GadgetRender) goto fail;
+        dobj->do_Gadget.GadgetRender = ImageDupIcon(dobj, (struct Image*)icon->do_Gadget.GadgetRender,
+                GetTagData(ICONDUPA_DuplicateImages, TRUE, tags),
+                GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags),IconBase);
+        if (!dobj->do_Gadget.GadgetRender) goto fail;
     }
     
     if (icon->do_Gadget.SelectRender)
-    {	    
-    	dobj->do_Gadget.SelectRender = ImageDupIcon(dobj, (struct Image*)icon->do_Gadget.SelectRender,
-    		GetTagData(ICONDUPA_DuplicateImages, TRUE, tags),
-    		GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags),IconBase);
-	if (!dobj->do_Gadget.SelectRender) goto fail;
+    {
+        dobj->do_Gadget.SelectRender = ImageDupIcon(dobj, (struct Image*)icon->do_Gadget.SelectRender,
+                GetTagData(ICONDUPA_DuplicateImages, TRUE, tags),
+                GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags),IconBase);
+        if (!dobj->do_Gadget.SelectRender) goto fail;
     }
 
     /* Duplicate the tool types */
     if (GetTagData(ICONDUPA_DuplicateToolTypes, TRUE, tags) &&
         icon->do_ToolTypes)
     {
-	int num_tts;
-	/* Get number of tool types */
-	for (num_tts = 0;icon->do_ToolTypes[num_tts];num_tts++);
+        int num_tts;
+        /* Get number of tool types */
+        for (num_tts = 0;icon->do_ToolTypes[num_tts];num_tts++);
 
-	if ((dobj->do_ToolTypes = (STRPTR *)AllocMemIcon(dobj,
+        if ((dobj->do_ToolTypes = (STRPTR *)AllocMemIcon(dobj,
             sizeof(char*) * (num_tts + 1), MEMF_PUBLIC, IconBase)))
-	{
-	    int i;
-	    for (i=0;i<num_tts;i++)
-	    {
-		dobj->do_ToolTypes[i] = StrDupIcon(dobj,icon->do_ToolTypes[i],IconBase);
-		if (!dobj->do_ToolTypes[i]) goto fail;
-	    }
-	    dobj->do_ToolTypes[i] = NULL;
-	}
-	else
-	{
-	    goto fail;
-	}
+        {
+            int i;
+            for (i=0;i<num_tts;i++)
+            {
+                dobj->do_ToolTypes[i] = StrDupIcon(dobj,icon->do_ToolTypes[i],IconBase);
+                if (!dobj->do_ToolTypes[i]) goto fail;
+            }
+            dobj->do_ToolTypes[i] = NULL;
+        }
+        else
+        {
+            goto fail;
+        }
     }
 
     if (GetTagData(ICONDUPA_ActivateImageData, FALSE, tags))

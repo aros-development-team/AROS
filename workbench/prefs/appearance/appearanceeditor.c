@@ -116,9 +116,9 @@ static IPTR AppearanceEditor__ListToArray(struct List *ThemeList)
 /* N.B. This hook doesn't currently produce any preview of the selected theme.
  * It just updates gadgets to match other gadgets and marks prefs as changed */
 AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
-	  AROS_UFHA(struct Hook *, h, A0),
-	  AROS_UFHA(Object *, self, A2),
-	  AROS_UFHA(APTR, msg, A1))
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(Object *, self, A2),
+          AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
     struct AppearanceEditor_DATA *data = h->h_Data;
@@ -223,7 +223,7 @@ static Object *MakeCheckmark(BOOL selected)
     if (obj)
     {
         SET(obj, MUIA_CycleChain, 1);
-	SET(obj, MUIA_Selected, selected);
+        SET(obj, MUIA_Selected, selected);
     }
     return obj;
 }
@@ -368,7 +368,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                             MUIA_Text_PreParse, (IPTR)"\33c\33i",
                             MUIA_Text_SetMin, FALSE,
                         End),
-                    End),                    
+                    End),
 
                     Child, (IPTR)(_ThemeZunePrefsGrp = HGroup,
                         Child, (IPTR)(_ThemeZunePrefsObj = MakeCheckmark(TRUE)),
@@ -755,7 +755,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Export
     SETUP_INST_DATA;
     BOOL success = TRUE;
 
-    D(bug("[AppearanceEditor] %s()\n", __func__));    
+    D(bug("[AppearanceEditor] %s()\n", __func__));
 
     if (XGET(data->ae_ThemeEnable, MUIA_Selected))
     {
@@ -942,7 +942,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
                         NameFromFH(message->fh, exportBuffer, 1024);
                         sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
                         AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
-                    }                    
+                    }
                     if (!(XGET(data->ae_ThemeFont, MUIA_Disabled)) && XGET(data->ae_OptionFont, MUIA_Selected))
                     {
                         D(bug("[AppearanceEditor] %s: replacing Font config with theme's version...\n", __func__);)

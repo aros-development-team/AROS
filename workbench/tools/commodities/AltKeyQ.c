@@ -77,8 +77,8 @@ static struct NewBroker nb =
     NBU_NOTIFY | NBU_UNIQUE,
     0,
     0,
-    NULL,                             
-    0 
+    NULL,
+    0
 };
 
 struct AKQState
@@ -126,8 +126,8 @@ static CONST_STRPTR _(ULONG id)
     if (LocaleBase != NULL && catalog != NULL)
     {
         return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+    }
+    else
     {
         return CatCompArray[id].cca_Str;
     }
@@ -162,11 +162,11 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
-    easyStruct.es_StructSize	= sizeof(easyStruct);
-    easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= _(MSG_ALTKEYQ_CXNAME);
-    easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+    easyStruct.es_StructSize    = sizeof(easyStruct);
+    easyStruct.es_Flags         = 0;
+    easyStruct.es_Title         = _(MSG_ALTKEYQ_CXNAME);
+    easyStruct.es_TextFormat    = msgString;
+    easyStruct.es_GadgetFormat  = _(MSG_OK);
 
     if (IntuitionBase != NULL && !Cli() )
     {
@@ -394,7 +394,7 @@ static void handleCx(struct AKQState *as)
                 ReplyMsg((struct Message *)msg);
 
             } /* while((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
-        }	    
+        }
 
         if (signals & SIGBREAKF_CTRL_C)
         {

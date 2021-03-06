@@ -25,13 +25,13 @@
         struct IconBase *, IconBase, 26, Icon)
 
 /*  FUNCTION
-	Set and get icon and icon.library options.
-	
+        Set and get icon and icon.library options.
+        
     INPUTS
-	icon - icon to be queried
+        icon - icon to be queried
 
     RESULT
-	Number of processed tags.
+        Number of processed tags.
 
     NOTES
 
@@ -53,16 +53,16 @@
 
     SIPTR                *errorCode    = NULL;
     struct TagItem      **errorTagItem = NULL;
-    struct NativeIcon 	 *nativeicon = NULL;
+    struct NativeIcon    *nativeicon = NULL;
     struct NativeIconImage *image1 = NULL, *image2 = NULL;
     
     if (icon)
     {
-    	nativeicon = GetNativeIcon(icon, LB(IconBase));
-    	if (nativeicon) {
-    	    image1 = &nativeicon->ni_Image[0];
-    	    image2 = &nativeicon->ni_Image[1];
-    	}
+        nativeicon = GetNativeIcon(icon, LB(IconBase));
+        if (nativeicon) {
+            image1 = &nativeicon->ni_Image[0];
+            image2 = &nativeicon->ni_Image[1];
+        }
     }
     
 #   define STORE(pointer, value)   (pointer != NULL ? *pointer = (value) : (value))
@@ -118,13 +118,13 @@
                 
             case ICONCTRLA_SetGlobalEmbossRect:
                 CopyMem((struct Rectangle *)tag->ti_Data, &LB(IconBase)->ib_EmbossRectangle, sizeof(struct Rectangle));
-		processed++;
+                processed++;
                 SET_ERRORCODE(0);
                 break;
                 
             case ICONCTRLA_GetGlobalEmbossRect:
                 CopyMem(&LB(IconBase)->ib_EmbossRectangle, (struct Rectangle *)tag->ti_Data, sizeof(struct Rectangle));
-		processed++;
+                processed++;
                 break;
                 
             case ICONCTRLA_SetGlobalFrameless:
@@ -195,21 +195,21 @@
             
             /* Local tags --------------------------------------------------*/
             case ICONCTRLA_GetImageMask1:
-	    	if (image1)
-		{
-		    FetchIconImage(icon, 0);
-		    STORE((PLANEPTR *)tag->ti_Data, image1->BitMask);
-		    processed++;
-		}
+                if (image1)
+                {
+                    FetchIconImage(icon, 0);
+                    STORE((PLANEPTR *)tag->ti_Data, image1->BitMask);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_GetImageMask2:
-	    	if (image2)
-		{
-		    FetchIconImage(icon, 1);
-		    STORE((PLANEPTR *)tag->ti_Data, image2->BitMask);
-		    processed++;
-		}
+                if (image2)
+                {
+                    FetchIconImage(icon, 1);
+                    STORE((PLANEPTR *)tag->ti_Data, image2->BitMask);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_SetTransparentColor1:
@@ -224,16 +224,16 @@
                 break;
                 
             case ICONCTRLA_GetTransparentColor1:
-	    	if (image1)
-		{
-		    FetchIconImage(icon, 0);
-		    STORE((LONG *)tag->ti_Data, image1->TransparentColor);
-		}
-		else
-		{
-		    STORE((LONG *)tag->ti_Data, -1);
-		}
-		processed++;
+                if (image1)
+                {
+                    FetchIconImage(icon, 0);
+                    STORE((LONG *)tag->ti_Data, image1->TransparentColor);
+                }
+                else
+                {
+                    STORE((LONG *)tag->ti_Data, -1);
+                }
+                processed++;
                 break;
                 
             case ICONCTRLA_SetTransparentColor2:
@@ -248,16 +248,16 @@
                 break;
                 
             case ICONCTRLA_GetTransparentColor2:
-	    	if (image2)
-		{
-		    FetchIconImage(icon, 1);
-		    STORE((LONG *)tag->ti_Data, image2->TransparentColor);
-		}
-		else
-		{
-		    STORE((LONG *)tag->ti_Data, -1);
-		}
-		processed++;
+                if (image2)
+                {
+                    FetchIconImage(icon, 1);
+                    STORE((LONG *)tag->ti_Data, image2->TransparentColor);
+                }
+                else
+                {
+                    STORE((LONG *)tag->ti_Data, -1);
+                }
+                processed++;
                 break;
                 
             case ICONCTRLA_SetPalette1:
@@ -272,12 +272,12 @@
                 break;
                 
             case ICONCTRLA_GetPalette1:
-	    	if (image1)
-		{
-		    FetchIconImage(icon, 0);
-		    STORE((CONST struct ColorRegister **)tag->ti_Data, image1->Palette);
-		    processed++;
-		}
+                if (image1)
+                {
+                    FetchIconImage(icon, 0);
+                    STORE((CONST struct ColorRegister **)tag->ti_Data, image1->Palette);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_SetPalette2:
@@ -292,12 +292,12 @@
                 break;
                 
             case ICONCTRLA_GetPalette2:
-	    	if (image2)
-		{
-		    FetchIconImage(icon, 1);
-		    STORE((CONST struct ColorRegister **)tag->ti_Data, image2->Palette);
-		    processed++;
-		}
+                if (image2)
+                {
+                    FetchIconImage(icon, 1);
+                    STORE((CONST struct ColorRegister **)tag->ti_Data, image2->Palette);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_SetPaletteSize1:
@@ -317,16 +317,16 @@
                 break;
                 
             case ICONCTRLA_GetPaletteSize1:
-	    	if (image1)
-		{
-		    FetchIconImage(icon, 0);
-		    STORE((ULONG *)tag->ti_Data, image1->Pens);
-		}
-		else
-		{
-		    STORE((ULONG *)tag->ti_Data, 0);
-		}
-		processed++;
+                if (image1)
+                {
+                    FetchIconImage(icon, 0);
+                    STORE((ULONG *)tag->ti_Data, image1->Pens);
+                }
+                else
+                {
+                    STORE((ULONG *)tag->ti_Data, 0);
+                }
+                processed++;
                 break;
                 
             case ICONCTRLA_SetPaletteSize2:
@@ -346,16 +346,16 @@
                 break;
                 
             case ICONCTRLA_GetPaletteSize2:
-	    	if (image2)
-		{
-		    FetchIconImage(icon, 1);
-		    STORE((ULONG *)tag->ti_Data, image2->Pens);
-		}
-		else
-		{
-		    STORE((ULONG *)tag->ti_Data, 0);
-		}
-		processed++;
+                if (image2)
+                {
+                    FetchIconImage(icon, 1);
+                    STORE((ULONG *)tag->ti_Data, image2->Pens);
+                }
+                else
+                {
+                    STORE((ULONG *)tag->ti_Data, 0);
+                }
+                processed++;
                 break;
                 
             case ICONCTRLA_SetImageData1:
@@ -369,12 +369,12 @@
                 break;
                 
             case ICONCTRLA_GetImageData1:
-	    	if (image1)
-		{
-		    FetchIconImage(icon, 0);
-		    STORE((CONST UBYTE **)tag->ti_Data, image1->ImageData);
-		    processed++;
-		}
+                if (image1)
+                {
+                    FetchIconImage(icon, 0);
+                    STORE((CONST UBYTE **)tag->ti_Data, image1->ImageData);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_SetImageData2:
@@ -388,12 +388,12 @@
                 break;
                 
             case ICONCTRLA_GetImageData2:
-	    	if (image2)
-		{
-		    FetchIconImage(icon, 1);
-		    STORE((CONST UBYTE **)tag->ti_Data, image2->ImageData);
-		    processed++;
-		}
+                if (image2)
+                {
+                    FetchIconImage(icon, 1);
+                    STORE((CONST UBYTE **)tag->ti_Data, image2->ImageData);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_SetFrameless:
@@ -455,11 +455,11 @@
                 break;
                 
             case ICONCTRLA_GetWidth:
-	    	if (nativeicon && nativeicon->ni_Face.Width > 0)
-		{
-		    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Face.Width);
-		    processed++;
-		}
+                if (nativeicon && nativeicon->ni_Face.Width > 0)
+                {
+                    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Face.Width);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_SetHeight:
@@ -477,40 +477,40 @@
                 break;
                 
             case ICONCTRLA_GetHeight:
-	    	if (nativeicon)
-		{
-		    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Face.Height);
-		    processed++;
-		}
+                if (nativeicon)
+                {
+                    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Face.Height);
+                    processed++;
+                }
                 break;
                 
             case ICONCTRLA_IsPaletteMapped:
-	    	if (nativeicon && nativeicon->ni_Image[0].ImageData)
-		{
-		    STORE((LONG *)tag->ti_Data, 1);
-		}
-		else
-		{
-		    STORE((LONG *)tag->ti_Data, 0);
-		}
-		processed++;
+                if (nativeicon && nativeicon->ni_Image[0].ImageData)
+                {
+                    STORE((LONG *)tag->ti_Data, 1);
+                }
+                else
+                {
+                    STORE((LONG *)tag->ti_Data, 0);
+                }
+                processed++;
                 break;
                 
             case ICONCTRLA_IsNewIcon:
                 /* NewIcons are not supported */
-		STORE((LONG *)tag->ti_Data, 0);
+                STORE((LONG *)tag->ti_Data, 0);
                 break;
                 
             case ICONCTRLA_IsNativeIcon:
-	    	if (nativeicon)
-		{
-		    STORE((LONG *)tag->ti_Data, 1);
-		}
-		else
-		{
-		    STORE((LONG *)tag->ti_Data, 0);
-		}
-		processed++;
+                if (nativeicon)
+                {
+                    STORE((LONG *)tag->ti_Data, 1);
+                }
+                else
+                {
+                    STORE((LONG *)tag->ti_Data, 0);
+                }
+                processed++;
                 break;
                 
             case ICONGETA_IsDefaultIcon:
@@ -539,22 +539,22 @@
                     STORE((LONG *)tag->ti_Data, FALSE);
                 }
                 break;
-		
-	    case ICONCTRLA_GetARGBImageData1:
-	    	if (image1)
-		{
-		    FetchIconARGB(icon, 0);
-		    STORE((CONST ULONG **)tag->ti_Data, image1->ARGB);
-		}
-		else
-		{
-		    STORE((CONST ULONG **)tag->ti_Data, NULL);
-		}
-		processed++;
-	    	break;
+                
+            case ICONCTRLA_GetARGBImageData1:
+                if (image1)
+                {
+                    FetchIconARGB(icon, 0);
+                    STORE((CONST ULONG **)tag->ti_Data, image1->ARGB);
+                }
+                else
+                {
+                    STORE((CONST ULONG **)tag->ti_Data, NULL);
+                }
+                processed++;
+                break;
 
-	    case ICONCTRLA_SetARGBImageData1:
-	        if (image1)
+            case ICONCTRLA_SetARGBImageData1:
+                if (image1)
                 {
                     image1->ARGB = (APTR)tag->ti_Data;
                     /* Disable the from-disk PNG based ARGB imagery */
@@ -567,21 +567,21 @@
                 break;
 
 
-	    case ICONCTRLA_GetARGBImageData2:
-	    	if (image2)
-		{
-		    FetchIconARGB(icon, 1);
-		    STORE((CONST ULONG **)tag->ti_Data, image2->ARGB);
-		}
-		else
-		{
-		    STORE((CONST ULONG **)tag->ti_Data, NULL);
-		}
-		processed++;
-	    	break;
-		
-       	    case ICONCTRLA_SetARGBImageData2:
-	        if (image2)
+            case ICONCTRLA_GetARGBImageData2:
+                if (image2)
+                {
+                    FetchIconARGB(icon, 1);
+                    STORE((CONST ULONG **)tag->ti_Data, image2->ARGB);
+                }
+                else
+                {
+                    STORE((CONST ULONG **)tag->ti_Data, NULL);
+                }
+                processed++;
+                break;
+                
+            case ICONCTRLA_SetARGBImageData2:
+                if (image2)
                 {
                     image2->ARGB = (APTR)tag->ti_Data;
                     /* Disable the from-disk PNG based ARGB imagery */

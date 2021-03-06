@@ -19,7 +19,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 {
     MathBase = OpenLibrary ("mathffp.library", 0);
     if (!MathBase)
-	return FALSE;
+        return FALSE;
 
     return TRUE;
 }
@@ -27,7 +27,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
     if (MathBase)
-	CloseLibrary ((struct Library *)MathBase);
+        CloseLibrary ((struct Library *)MathBase);
 
     return TRUE;
 }

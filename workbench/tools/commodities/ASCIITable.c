@@ -278,7 +278,7 @@ IPTR ASCIITable__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     (
         CLASS, self, NULL,
         Child, key_group,
-        Child, (IPTR) (RectangleObject, 
+        Child, (IPTR) (RectangleObject,
             MUIA_Rectangle_HBar, TRUE,
             MUIA_FixHeight,      2,
         End),
@@ -402,8 +402,8 @@ static CONST_STRPTR _(ULONG id)
     if (LocaleBase != NULL && catalog != NULL)
     {
         return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+    }
+    else
     {
         return CatCompArray[id].cca_Str;
     }
@@ -417,8 +417,8 @@ static int Locale_Initialize(VOID)
     if (LocaleBase != NULL)
     {
         catalog = OpenCatalog
-            ( 
-             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+            (
+             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
             );
     }
     else
@@ -488,7 +488,7 @@ static struct NewMenu nm[] =
     {NM_TITLE, (STRPTR)MSG_MEN_PROJECT         },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_HIDE    },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_ICONIFY },
-     {NM_ITEM, NM_BARLABEL    	               },
+     {NM_ITEM, NM_BARLABEL                     },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_QUIT    },
     {NM_END                                    }
 };
@@ -524,11 +524,11 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
-    easyStruct.es_StructSize	= sizeof(easyStruct);
-    easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= _(MSG_ASCIITABLE_CXNAME);
-    easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+    easyStruct.es_StructSize    = sizeof(easyStruct);
+    easyStruct.es_Flags         = 0;
+    easyStruct.es_Title         = _(MSG_ASCIITABLE_CXNAME);
+    easyStruct.es_TextFormat    = msgString;
+    easyStruct.es_GadgetFormat  = _(MSG_OK);
 
     if (IntuitionBase != NULL && !Cli() )
     {
@@ -699,7 +699,7 @@ int main(int argc, char **argv)
 {
     D(bug("ASCIITable started\n"));
     GetArguments(argc, argv);
-    InitMenus();    
+    InitMenus();
     MakeGUI();
     HandleAll();
     Cleanup(NULL);

@@ -81,7 +81,7 @@ AROS_UFH3(static VOID, EnumHook, AROS_UFHA(struct Hook *, hook, A0),
     * An alternative would be to map regions on first access, but
     * this could be a significant resource hog (like the same region being
     * mapped several times by several different APIs).
-    */   
+    */
    OOP_GetAttr(aros_board, aHidd_PCIDevice_Driver, (IPTR *)&driver);
    OOP_GetAttr(driver, aHidd_PCIDriver_DirectBus, &direct);
    if (!direct)

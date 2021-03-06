@@ -75,12 +75,12 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
 
     Var_Length = GetVar(SHArg(NAME), &Var_Value[0], BUFFER_SIZE,
-			GVF_LOCAL_ONLY);
+                        GVF_LOCAL_ONLY);
 
     if (Var_Length != -1)
     {
         Printf("%s\n", Var_Value);
-	
+        
         return RETURN_OK;
     }
 

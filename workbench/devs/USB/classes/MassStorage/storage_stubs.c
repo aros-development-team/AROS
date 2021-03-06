@@ -29,132 +29,132 @@
 
 BOOL HIDD_USBStorage_Reset(OOP_Object *o)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_Reset p;
+        STATIC_MID;
+        struct pHidd_USBStorage_Reset p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Reset);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Reset);
 
-	p.mID = static_mid;
+        p.mID = static_mid;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 uint8_t HIDD_USBStorage_GetMaxLUN(OOP_Object *o)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_GetMaxLUN p;
+        STATIC_MID;
+        struct pHidd_USBStorage_GetMaxLUN p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_GetMaxLUN);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_GetMaxLUN);
 
-	p.mID = static_mid;
+        p.mID = static_mid;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 BOOL HIDD_USBStorage_TestUnitReady(OOP_Object *o, uint8_t lun)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_TestUnitReady p;
+        STATIC_MID;
+        struct pHidd_USBStorage_TestUnitReady p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_TestUnitReady);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_TestUnitReady);
 
-	p.mID = static_mid;
-	p.lun = lun;
+        p.mID = static_mid;
+        p.lun = lun;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 uint32_t HIDD_USBStorage_DirectSCSI(OOP_Object *o, uint8_t lun, uint8_t *cmd, uint8_t cmdLen, void *data, uint32_t dataLen, uint8_t read)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_DirectSCSI p;
+        STATIC_MID;
+        struct pHidd_USBStorage_DirectSCSI p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_DirectSCSI);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_DirectSCSI);
 
-	p.mID = static_mid;
-	p.lun = lun;
-	p.cmd = cmd;
-	p.cmdLen = cmdLen;
-	p.data = data;
-	p.dataLen = dataLen;
-	p.read = read;
+        p.mID = static_mid;
+        p.lun = lun;
+        p.cmd = cmd;
+        p.cmdLen = cmdLen;
+        p.data = data;
+        p.dataLen = dataLen;
+        p.read = read;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 BOOL HIDD_USBStorage_ReadCapacity(OOP_Object *o, uint8_t lun, uint32_t *blockTotal, uint32_t *blockSize)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_ReadCapacity p;
+        STATIC_MID;
+        struct pHidd_USBStorage_ReadCapacity p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_ReadCapacity);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_ReadCapacity);
 
-	p.mID = static_mid;
-	p.lun = lun;
-	p.blockTotal = blockTotal;
-	p.blockSize = blockSize;
+        p.mID = static_mid;
+        p.lun = lun;
+        p.blockTotal = blockTotal;
+        p.blockSize = blockSize;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 BOOL HIDD_USBStorage_RequestSense(OOP_Object *o, uint8_t lun, void *buffer, uint32_t bufferLength)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_RequestSense p;
+        STATIC_MID;
+        struct pHidd_USBStorage_RequestSense p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_RequestSense);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_RequestSense);
 
-	p.mID = static_mid;
-	p.lun = lun;
-	p.buffer = buffer;
-	p.bufferLength = bufferLength;
+        p.mID = static_mid;
+        p.lun = lun;
+        p.buffer = buffer;
+        p.bufferLength = bufferLength;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 BOOL HIDD_USBStorage_Inquiry(OOP_Object *o, uint8_t lun, void *buffer, uint32_t bufferLength)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_Inquiry p;
+        STATIC_MID;
+        struct pHidd_USBStorage_Inquiry p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Inquiry);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Inquiry);
 
-	p.mID = static_mid;
-	p.lun = lun;
-	p.buffer = buffer;
-	p.bufferLength = bufferLength;
+        p.mID = static_mid;
+        p.lun = lun;
+        p.buffer = buffer;
+        p.bufferLength = bufferLength;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 BOOL HIDD_USBStorage_Read(OOP_Object *o, uint8_t lun, void *buffer, uint32_t lba, uint16_t count)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_Read p;
+        STATIC_MID;
+        struct pHidd_USBStorage_Read p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Read);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Read);
 
-	p.mID = static_mid;
-	p.lun = lun;
-	p.buffer = buffer;
-	p.block= lba;
-	p.count = count;
+        p.mID = static_mid;
+        p.lun = lun;
+        p.buffer = buffer;
+        p.block= lba;
+        p.count = count;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }
 
 BOOL HIDD_USBStorage_Write(OOP_Object *o, uint8_t lun, void *buffer, uint32_t lba, uint16_t count)
 {
-	STATIC_MID;
-	struct pHidd_USBStorage_Write p;
+        STATIC_MID;
+        struct pHidd_USBStorage_Write p;
 
-	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Write);
+        if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Write);
 
-	p.mID = static_mid;
-	p.lun = lun;
-	p.buffer = buffer;
-	p.block= lba;
-	p.count = count;
+        p.mID = static_mid;
+        p.lun = lun;
+        p.buffer = buffer;
+        p.block= lba;
+        p.count = count;
 
-	return OOP_DoMethod(o, &p.mID);
+        return OOP_DoMethod(o, &p.mID);
 }

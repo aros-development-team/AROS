@@ -42,7 +42,7 @@
     QUAD z,Res, ysquared, yabs, Qtmp;
     AND64C
     (
-        yabs, y, 
+        yabs, y,
         (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
         (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo)
     );
@@ -79,7 +79,7 @@
           IEEEDPAdd(cosf4,
           IEEEDPMul(ysquared,
           IEEEDPAdd(cosf5,
-          IEEEDPMul(ysquared, 
+          IEEEDPMul(ysquared,
           IEEEDPAdd(cosf6,
           IEEEDPMul(ysquared,
           IEEEDPAdd(cosf7,

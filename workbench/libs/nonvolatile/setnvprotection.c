@@ -21,14 +21,14 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName,        A0),
+        AROS_LHA(STRPTR, appName,        A0),
         AROS_LHA(STRPTR, itemName,       A1),
-	AROS_LHA(LONG,   mask,           D2),
-	AROS_LHA(BOOL,   killRequesters, D1),
+        AROS_LHA(LONG,   mask,           D2),
+        AROS_LHA(BOOL,   killRequesters, D1),
 
 /*  LOCATION */
 
-	struct Library *, nvBase, 11, Nonvolatile)
+        struct Library *, nvBase, 11, Nonvolatile)
 
 /*  FUNCTION
 
@@ -72,19 +72,19 @@
     BOOL result;
 
     if(appName == NULL || itemName == NULL)
-	return FALSE;
+        return FALSE;
 
     if(strpbrk(appName, ":/") != NULL ||
        strpbrk(itemName, ":/") != NULL)
-	return FALSE;
+        return FALSE;
 
     if(killRequesters)
-	me->pr_WindowPtr = (APTR)-1;
+        me->pr_WindowPtr = (APTR)-1;
 
     result = SetNVDProtection(appName, itemName, mask);
 
     if(killRequesters)
-	me->pr_WindowPtr = oldReq;
+        me->pr_WindowPtr = oldReq;
 
     return result;
 

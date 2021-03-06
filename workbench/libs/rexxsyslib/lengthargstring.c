@@ -10,13 +10,13 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH1(ULONG, LengthArgstring,
+        AROS_LH1(ULONG, LengthArgstring,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, argstring, A0),
+        AROS_LHA(UBYTE *, argstring, A0),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 23, RexxSys)
+        struct Library *, RexxSysBase, 23, RexxSys)
 
 /*  FUNCTION
         This will return the length of a string created with CreateArgstring

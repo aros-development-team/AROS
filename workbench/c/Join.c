@@ -22,7 +22,7 @@
     FUNCTION
 
     Join makes one big file of all listed files by putting them together
-    in the order given. The destination file may not have the same name 
+    in the order given. The destination file may not have the same name
     as any of input files. You must supply a destination file name. The
     original files remain unchanged. Any number of files can be Join:ed in
     one operation.
@@ -38,9 +38,9 @@
 
     EXAMPLE
 
-    Join Text1.doc Text2.doc AS Text.doc    
+    Join Text1.doc Text2.doc AS Text.doc
     (This will merge the two text files into one.)
-	
+        
     BUGS
 
     SEE ALSO
@@ -102,38 +102,38 @@ int main( void )
 
     if( (rda = ReadArgs( ARG_TEMPLATE , args , NULL )) )
     {
-	if( args[ARG_FILE] && args[ARG_AS] )
-	{
-	    destination = (STRPTR)args[ARG_AS];
-	    files = (STRPTR *)args[ARG_FILE];
-	    
-	    if( (destfile = Open( destination , MODE_NEWFILE )) )
-	    {
-		rc = doJoin(files, destfile);
-		Close(destfile);
-		if (rc != RETURN_OK)
-		{
-		    Printf(", %s.\n", getstring(STR_REMOVINGDEST));
-		    DeleteFile(destination);
-		}
-	    }
-	    else
-	    {
-		PrintFault(IoErr() , ERROR_HEADER);
-		rc = RETURN_FAIL;
-	    }
-	}
-	else
-	{
-	    rc = RETURN_FAIL;
-	}
+        if( args[ARG_FILE] && args[ARG_AS] )
+        {
+            destination = (STRPTR)args[ARG_AS];
+            files = (STRPTR *)args[ARG_FILE];
+            
+            if( (destfile = Open( destination , MODE_NEWFILE )) )
+            {
+                rc = doJoin(files, destfile);
+                Close(destfile);
+                if (rc != RETURN_OK)
+                {
+                    Printf(", %s.\n", getstring(STR_REMOVINGDEST));
+                    DeleteFile(destination);
+                }
+            }
+            else
+            {
+                PrintFault(IoErr() , ERROR_HEADER);
+                rc = RETURN_FAIL;
+            }
+        }
+        else
+        {
+            rc = RETURN_FAIL;
+        }
 
-	FreeArgs(rda);
+        FreeArgs(rda);
     }
     else
     {
-	PrintFault(IoErr(), ERROR_HEADER);
-	rc = RETURN_FAIL;
+        PrintFault(IoErr(), ERROR_HEADER);
+        rc = RETURN_FAIL;
     }
 
     return rc;
@@ -147,18 +147,18 @@ int doJoin(STRPTR *files, BPTR destfile)
 {
     struct AnchorPath *ap;
 
-    LONG  i;			/* Loop variable over patterns */
-    LONG  match;		/* Loop variable over files */
+    LONG  i;                    /* Loop variable over patterns */
+    LONG  match;                /* Loop variable over files */
     LONG  rc = RETURN_OK;
     ULONG numfiles;
     
     ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) +
-				       MAX_PATH_LEN, MEMF_CLEAR);
+                                       MAX_PATH_LEN, MEMF_CLEAR);
 
     if (ap == NULL)
     {
-	SetIoErr(ERROR_NO_FREE_STORE);
-	return RETURN_FAIL;
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return RETURN_FAIL;
     }
 
     ap->ap_Strlen = MAX_PATH_LEN;
@@ -168,31 +168,31 @@ int doJoin(STRPTR *files, BPTR destfile)
     {
         ap->ap_BreakBits  = SIGBREAKF_CTRL_C;
         ap->ap_FoundBreak = 0;
-	numfiles = 0;
-	for (match = MatchFirst(files[i], ap); match == 0;
-	     match = MatchNext(ap))
-	{	
-	    if(append(destfile, ap->ap_Buf) != RETURN_OK )
-	    {
-		Printf("%s: %s", ERROR_HEADER, getstring(STR_ABORTED));
-		rc = RETURN_FAIL;
-		break;
-	    }
-	    numfiles++;
-	}
-	
-	MatchEnd(ap);
+        numfiles = 0;
+        for (match = MatchFirst(files[i], ap); match == 0;
+             match = MatchNext(ap))
+        {
+            if(append(destfile, ap->ap_Buf) != RETURN_OK )
+            {
+                Printf("%s: %s", ERROR_HEADER, getstring(STR_ABORTED));
+                rc = RETURN_FAIL;
+                break;
+            }
+            numfiles++;
+        }
+        
+        MatchEnd(ap);
         if (ap->ap_FoundBreak & SIGBREAKF_CTRL_C)
         {
             SetIoErr(ERROR_BREAK);
             numfiles = 0;
         }
-	if (!numfiles)
-	{
-	    PrintFault(IoErr(), NULL);
-	    rc = RETURN_FAIL;
-	    break;
-	}
+        if (!numfiles)
+        {
+            PrintFault(IoErr(), NULL);
+            rc = RETURN_FAIL;
+            break;
+        }
     }
 
     FreeVec(ap);
@@ -211,24 +211,24 @@ LONG append(BPTR destfile, STRPTR srcfilename)
     
     if ( (buffer = AllocMem( BUFFERSIZE , MEMF_ANY )) )
     {
-	if ( (srcfile = Open( srcfilename , MODE_OLDFILE )) )
-	{
-	    ULONG brk;
-	    while(!(brk = SetSignal(0,0) & SIGBREAKF_CTRL_C) && (actualLength = Read(srcfile, buffer, BUFFERSIZE)) != -1 )
-	    {
-		if (Write(destfile, buffer, actualLength) != actualLength )
-		{
-		    Printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_WRITING));
-		    rc = RETURN_FAIL;
-		    
-		    break;
-		}
-		
-		if (actualLength < BUFFERSIZE)
-		{
-		    break;
-		}
-	    }
+        if ( (srcfile = Open( srcfilename , MODE_OLDFILE )) )
+        {
+            ULONG brk;
+            while(!(brk = SetSignal(0,0) & SIGBREAKF_CTRL_C) && (actualLength = Read(srcfile, buffer, BUFFERSIZE)) != -1 )
+            {
+                if (Write(destfile, buffer, actualLength) != actualLength )
+                {
+                    Printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_WRITING));
+                    rc = RETURN_FAIL;
+                    
+                    break;
+                }
+                
+                if (actualLength < BUFFERSIZE)
+                {
+                    break;
+                }
+            }
             if (actualLength == -1)
             {
                 PrintFault(IoErr(), NULL);
@@ -243,26 +243,26 @@ LONG append(BPTR destfile, STRPTR srcfilename)
                 SetIoErr(ERROR_BREAK);
                 rc = RETURN_FAIL;
             }
-	    
-	    Close(srcfile);
-	}
-	else
-	{
+            
+            Close(srcfile);
+        }
+        else
+        {
             PrintFault(IoErr(), NULL);
-	    Printf("%s: %s: '%s'\n",
-		ERROR_HEADER,
-		getstring(STR_ERR_OPENREAD),
-		srcfilename);
-	    
-	    rc = RETURN_FAIL;
-	}
-	
-	FreeMem(buffer, BUFFERSIZE);
+            Printf("%s: %s: '%s'\n",
+                ERROR_HEADER,
+                getstring(STR_ERR_OPENREAD),
+                srcfilename);
+            
+            rc = RETURN_FAIL;
+        }
+        
+        FreeMem(buffer, BUFFERSIZE);
     }
     else
     {
-	Printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_NOMEM));
-	rc = RETURN_FAIL;
+        Printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_NOMEM));
+        rc = RETURN_FAIL;
     }
     
     return rc;
@@ -274,19 +274,19 @@ STRPTR getstring(LONG stringid)
     switch(stringid)
     {
     case STR_ABORTED:
-	return "Aborted";
+        return "Aborted";
 
     case STR_REMOVINGDEST:
-	return "removed incomplete destination-file";
-	    
+        return "removed incomplete destination-file";
+            
     case STR_ERR_OPENREAD:
-	return "Could not open file for reading";
+        return "Could not open file for reading";
 
     case STR_ERR_NOMEM:
-	return "Could not allocate memory";
+        return "Could not allocate memory";
 
     case STR_ERR_WRITING:
-	return "Error while writing";
+        return "Error while writing";
 
     case STR_ERR_OPENWRITE:
         return "Could not open file for writing";
@@ -295,6 +295,6 @@ STRPTR getstring(LONG stringid)
         return "Error while writing";
 
     default:
-	return "[Error: Unknown StringID]";
+        return "[Error: Unknown StringID]";
     }
 }

@@ -52,22 +52,22 @@ static BOOL init(void)
     rexxport = FindPort("REXX");
     if (rexxport == NULL)
     {
-	FPuts(out, "Could not start RexxMast; no Rexx interpreter seems to be installed\n");
-	return FALSE;
+        FPuts(out, "Could not start RexxMast; no Rexx interpreter seems to be installed\n");
+        return FALSE;
     }
     
     replyport = CreatePort(NULL, 0);
     if (replyport == NULL)
     {
-	FPuts(out, "Could not create a port\n");
-	return FALSE;
+        FPuts(out, "Could not create a port\n");
+        return FALSE;
     }
     
     msg = CreateRexxMsg(replyport, NULL, NULL);
     if (msg == NULL)
     {
-	FPuts(out, "Could not create RexxMsg\n");
-	return FALSE;
+        FPuts(out, "Could not create RexxMsg\n");
+        return FALSE;
     }
     msg->rm_Action = RXCOMM | RXFF_RESULT;
     msg->rm_Stdin = Input();
@@ -82,11 +82,11 @@ void cleanup(void)
     if (closestdout)
         Close(msg->rm_Stdout);
     if (msg)
-	DeleteRexxMsg(msg);
+        DeleteRexxMsg(msg);
     if (replyport)
-	DeletePort(replyport);
+        DeletePort(replyport);
     if (olddir != (BPTR)-1)
-	CurrentDir(olddir);
+        CurrentDir(olddir);
 }
 
 int main(int argc, char **argv)
@@ -96,21 +96,21 @@ int main(int argc, char **argv)
     
     if (!init())
     {
-	cleanup();
-	return RC_ERROR;
+        cleanup();
+        return RC_ERROR;
     }
     
     if (argc == 1)
     {
-	FPuts(out, "Usage: RX <filename> [arguments]\n"
-	           "       RX \"commands\"\n");
-	cleanup();
-	return RC_ERROR;
+        FPuts(out, "Usage: RX <filename> [arguments]\n"
+                   "       RX \"commands\"\n");
+        cleanup();
+        return RC_ERROR;
     }
 
     if (argc == 0)
     {
-	struct WBStartup *startup = (struct WBStartup *) argv;
+        struct WBStartup *startup = (struct WBStartup *) argv;
         char *s = startup->sm_ArgList[1].wa_Name;
         
         if (startup->sm_NumArgs < 2)
@@ -119,8 +119,8 @@ int main(int argc, char **argv)
             return RC_ERROR;
         }
 
-	olddir = CurrentDir(startup->sm_ArgList[1].wa_Lock);
-	out = msg->rm_Stdout = Open("CON:////RX Output/CLOSE/WAIT/AUTO", MODE_READWRITE);
+        olddir = CurrentDir(startup->sm_ArgList[1].wa_Lock);
+        out = msg->rm_Stdout = Open("CON:////RX Output/CLOSE/WAIT/AUTO", MODE_READWRITE);
         closestdout = TRUE;
         
         msg->rm_Args[0] = (IPTR)CreateArgstring(s, strlen(s));
@@ -128,58 +128,58 @@ int main(int argc, char **argv)
     }
     else
     {
-	UBYTE *s;
-	struct Process *me = (struct Process *)FindTask(NULL);
-	ULONG length = 0;
-	
-	s = me->pr_Arguments;
-	while(isspace(*s)) s++;
-	
-	if (*s == '"')
-	{
-	    s++;
-	    while((s[length] != '"') && (s[length] != '\0')) length++;
-	    if (length == 0)
-	    {
-		FPuts(out, "Empty command\n");
-		cleanup();
-		return RC_ERROR;
-	    }
-	    /* Lazy string termination like ARexx */
+        UBYTE *s;
+        struct Process *me = (struct Process *)FindTask(NULL);
+        ULONG length = 0;
+        
+        s = me->pr_Arguments;
+        while(isspace(*s)) s++;
+        
+        if (*s == '"')
+        {
+            s++;
+            while((s[length] != '"') && (s[length] != '\0')) length++;
+            if (length == 0)
+            {
+                FPuts(out, "Empty command\n");
+                cleanup();
+                return RC_ERROR;
+            }
+            /* Lazy string termination like ARexx */
 #if 0
-	    if (s[length] == '\0')
-	    {
-		FPuts(out, "Unterminated string\n");
-		cleanup();
-		return RC_ERROR;
-	    }
+            if (s[length] == '\0')
+            {
+                FPuts(out, "Unterminated string\n");
+                cleanup();
+                return RC_ERROR;
+            }
 #endif
-	    
-	    msg->rm_Args[0] = (IPTR)CreateArgstring(s, length);
-	    /* It is a literal command with 1 argument */
-	    msg->rm_Action |= (RXFF_STRING | 1);
-	}
-	else if (*s == '\'')
-	{
-	    s++;
-	    while((s[length] != '\'')
+            
+            msg->rm_Args[0] = (IPTR)CreateArgstring(s, length);
+            /* It is a literal command with 1 argument */
+            msg->rm_Action |= (RXFF_STRING | 1);
+        }
+        else if (*s == '\'')
+        {
+            s++;
+            while((s[length] != '\'')
                   && (s[length] != '\0')
                   && (s[length] != '\n')
             )
                 length++;
-	    
-	    msg->rm_Args[0] = (IPTR)CreateArgstring(s, length);
-	    /* It is a literal command with 1 argument */
-	    msg->rm_Action |= (RXFF_STRING | 1);
-	}
-	else
-	{
+            
+            msg->rm_Args[0] = (IPTR)CreateArgstring(s, length);
+            /* It is a literal command with 1 argument */
+            msg->rm_Action |= (RXFF_STRING | 1);
+        }
+        else
+        {
             if (s[strlen(s)-1] == '\n')
                 s[strlen(s)-1] = '\0';
             
             msg->rm_Args[0] = (IPTR)CreateArgstring(s, strlen(s));
-	    msg->rm_Action |= 1;
-	}
+            msg->rm_Action |= 1;
+        }
     }
 
 
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 
     ret = msg->rm_Result1;
     if (msg->rm_Result1 == RC_OK)
-	/* Less verbosity like ARexx, use "get Result2" */
+        /* Less verbosity like ARexx, use "get Result2" */
 #if 0
         FPrintf(out, "Script executed and returned: %ld\n", msg->rm_Result2);
 #else

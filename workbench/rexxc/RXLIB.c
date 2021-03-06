@@ -22,29 +22,29 @@ static BOOL init(void)
 {
 #ifdef __AROS__
     out = ErrorOutput();
-#else 
+#else
     out = Output();
 #endif
     
     rexxport = FindPort("REXX");
     if (rexxport == NULL)
     {
-	FPuts(out, "Could not start RexxMast\n");
-	return FALSE;
+        FPuts(out, "Could not start RexxMast\n");
+        return FALSE;
     }
     
     replyport = CreatePort(NULL, 0);
     if (replyport == NULL)
     {
-	FPuts(out, "Could not create a port\n");
-	return FALSE;
+        FPuts(out, "Could not create a port\n");
+        return FALSE;
     }
     
     msg = CreateRexxMsg(replyport, NULL, NULL);
     if (msg == NULL)
     {
-	FPuts(out, "Could not create RexxMsg\n");
-	return FALSE;
+        FPuts(out, "Could not create RexxMsg\n");
+        return FALSE;
     }
     
     return TRUE;
@@ -55,9 +55,9 @@ void cleanup(void)
     if (closeout)
         Close(out);
     if (msg)
-	DeleteRexxMsg(msg);
+        DeleteRexxMsg(msg);
     if (replyport)
-	DeletePort(replyport);
+        DeletePort(replyport);
 }
 
 int main(int argc, char **argv)

@@ -13,15 +13,15 @@
 #include <prefs/prefhdr.h>
 #include <prefs/serial.h>
 
-static const ULONG buffersizes[] = 
+static const ULONG buffersizes[] =
 {
-	512,
-	1024,
-	2048,
-	4096,
-	8000,
-	16000,
-	-1
+        512,
+        1024,
+        2048,
+        4096,
+        8000,
+        16000,
+        -1
 };
 
 static LONG stopchunks[] =
@@ -33,7 +33,7 @@ static LONG stopchunks[] =
 
 void SerialPrefs_Handler(STRPTR filename)
 {
-    struct IFFHandle *iff;	
+    struct IFFHandle *iff;
     struct SerialPrefs *serialprefs;
 
     D(bug("In IPrefs:SerialPrefs_Handler\n"));
@@ -44,37 +44,37 @@ void SerialPrefs_Handler(STRPTR filename)
     if (iff) {
         while(ParseIFF(iff, IFFPARSE_SCAN) == 0) {
             serialprefs = LoadChunk(iff, sizeof(struct SerialPrefs), MEMF_ANY);
-	    if (serialprefs) {
-	        struct Preferences prefs;
-	        ULONG index = 0;
-		
-	        GetPrefs(&prefs, sizeof(prefs));
+            if (serialprefs) {
+                struct Preferences prefs;
+                ULONG index = 0;
+                
+                GetPrefs(&prefs, sizeof(prefs));
 
-	        while (-1 != buffersizes[index]) {
-		    if (buffersizes[index] == serialprefs->sp_InputBuffer)
-		        break;
-		    index++;
-	        }
+                while (-1 != buffersizes[index]) {
+                    if (buffersizes[index] == serialprefs->sp_InputBuffer)
+                        break;
+                    index++;
+                }
 
-	        if (-1 == buffersizes[index])
-		    index = 0;
+                if (-1 == buffersizes[index])
+                    index = 0;
 
-	        D(bug("Setting new serial prefs.\n"));
-	        D(bug("Setting baudrate to %d\n", GET_LONG(serialprefs->sp_BaudRate)));
-	        D(bug("Setting receive buffer size to %d\n",buffersizes[index]));
-	        D(bug("Setting read bit len to %d\n",8-serialprefs->sp_BitsPerChar));
-	        D(bug("Setting write bit len to %d\n",8-serialprefs->sp_BitsPerChar));
-	        D(bug("Setting stop bits to %d\n",1+serialprefs->sp_StopBits));
+                D(bug("Setting new serial prefs.\n"));
+                D(bug("Setting baudrate to %d\n", GET_LONG(serialprefs->sp_BaudRate)));
+                D(bug("Setting receive buffer size to %d\n",buffersizes[index]));
+                D(bug("Setting read bit len to %d\n",8-serialprefs->sp_BitsPerChar));
+                D(bug("Setting write bit len to %d\n",8-serialprefs->sp_BitsPerChar));
+                D(bug("Setting stop bits to %d\n",1+serialprefs->sp_StopBits));
 
-	        prefs.BaudRate   =  GET_LONG(serialprefs->sp_BaudRate);
-	        prefs.SerRWBits  = (serialprefs->sp_BitsPerChar << 4) | serialprefs->sp_BitsPerChar;
-	        prefs.SerStopBuf = (serialprefs->sp_StopBits    << 4) | index;
-	        prefs.SerParShk  = (serialprefs->sp_Parity      << 4) | serialprefs->sp_InputHandshake;
+                prefs.BaudRate   =  GET_LONG(serialprefs->sp_BaudRate);
+                prefs.SerRWBits  = (serialprefs->sp_BitsPerChar << 4) | serialprefs->sp_BitsPerChar;
+                prefs.SerStopBuf = (serialprefs->sp_StopBits    << 4) | index;
+                prefs.SerParShk  = (serialprefs->sp_Parity      << 4) | serialprefs->sp_InputHandshake;
 
-	        SetPrefs(&prefs, sizeof(prefs), TRUE);
-	        FreeVec(serialprefs);
-	    }
-	}
-	KillIFF(iff);
+                SetPrefs(&prefs, sizeof(prefs), TRUE);
+                FreeVec(serialprefs);
+            }
+        }
+        KillIFF(iff);
     }
 }

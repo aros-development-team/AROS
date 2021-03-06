@@ -12,18 +12,18 @@ LONG l2a(LONG x, STRPTR buf) /* long to ascii */
     TEXT tmp[32];
 
     do {
-	tmp[i] = '0' + (a % 10);
-	++len;
+        tmp[i] = '0' + (a % 10);
+        ++len;
     } while (i-- && (a /= 10));
 
     if (x < 0)
     {
-	tmp[i--] = '-';
-	++len;
+        tmp[i--] = '-';
+        ++len;
     }
 
     for (j = 0; j < len; ++j)
-	buf[j] = tmp[++i];
+        buf[j] = tmp[++i];
 
     buf[j] = '\0';
     return len;

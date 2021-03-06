@@ -14,21 +14,21 @@ extern const IPTR IconDesc[];
     NAME */
 #include <clib/icon_protos.h>
 
-	AROS_LH1(void, FreeDiskObject,
+        AROS_LH1(void, FreeDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DiskObject *, diskobj, A0),
+        AROS_LHA(struct DiskObject *, diskobj, A0),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 15, Icon)
+        struct IconBase *, IconBase, 15, Icon)
 
 /*  FUNCTION
-	Frees all memory for a DiskObject structure.
-	
+        Frees all memory for a DiskObject structure.
+        
     INPUTS
-	diskobj --  a pointer to a DiskObject structure. A NULL pointer will be
-		    ignored.
-	
+        diskobj --  a pointer to a DiskObject structure. A NULL pointer will be
+                    ignored.
+        
     RESULT
 
     NOTES
@@ -38,13 +38,13 @@ extern const IPTR IconDesc[];
     BUGS
 
     SEE ALSO
-	GetDiskObject()
-	
+        GetDiskObject()
+        
     INTERNALS
 
     HISTORY
-	2006-04-09 Test for NULL pointer added
-	
+        2006-04-09 Test for NULL pointer added
+        
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -9,39 +9,39 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH2(STRPTR, IDtoStr,
+        AROS_LH2(STRPTR, IDtoStr,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG  , id, D0),
-	AROS_LHA(STRPTR, buf, A0),
+        AROS_LHA(LONG  , id, D0),
+        AROS_LHA(STRPTR, buf, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 45, IFFParse)
+        struct Library *, IFFParseBase, 45, IFFParse)
 
 /*  FUNCTION
 
     INPUTS
-	id  - pointer to an IFF chunk identfication code.
-	buf  -	buffer into which the id will be stored. Should at least be 5 bytes.
+        id  - pointer to an IFF chunk identfication code.
+        buf  -  buffer into which the id will be stored. Should at least be 5 bytes.
 
     RESULT
-	buf  -	pointer to the supplied buffer.
+        buf  -  pointer to the supplied buffer.
 
     NOTES
-	Assumes that the supplied ID is stored in local byte order.
+        Assumes that the supplied ID is stored in local byte order.
 
     EXAMPLE
-	// Print the ID of the current contextnode
+        // Print the ID of the current contextnode
 
-	UBYTE buf[5];
-	struct ContextNode *cn;
+        UBYTE buf[5];
+        struct ContextNode *cn;
 
-	if (cn = CurrentChunk(iff)
-	    printf
-	    (
-		"ID of current chunk: %s\n",
-		IDtoStr(cn->cn_ID)
-	    );
+        if (cn = CurrentChunk(iff)
+            printf
+            (
+                "ID of current chunk: %s\n",
+                IDtoStr(cn->cn_ID)
+            );
 
 
     BUGS

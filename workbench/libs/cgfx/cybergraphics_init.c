@@ -32,34 +32,34 @@ static int cgfx_init(struct IntCGFXBase *CyberGfxBase)
 
     /* Init the needed attrbases */
 
-    __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
-    __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
-    __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
-    __IHidd_PixFmt  	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
-    __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
+    __IHidd_BitMap      = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    __IHidd_GC          = OOP_ObtainAttrBase(IID_Hidd_GC);
+    __IHidd_Sync        = OOP_ObtainAttrBase(IID_Hidd_Sync);
+    __IHidd_PixFmt      = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
+    __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
     
     CyberGfxBase->basegc = OOP_FindClass(CLID_Hidd_GC);
     CyberGfxBase->basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
     if (__IHidd_BitMap   &&
         __IHidd_GC       &&
-	__IHidd_Sync     &&
-	__IHidd_PixFmt   &&
-	__IHidd_Gfx)
+        __IHidd_Sync     &&
+        __IHidd_PixFmt   &&
+        __IHidd_Gfx)
     {
-	CyberGfxBase->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
-	if (CyberGfxBase->pixel_buf)
-	{
-	    WORD i;
+        CyberGfxBase->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
+        if (CyberGfxBase->pixel_buf)
+        {
+            WORD i;
 
-	    for (i = 0; i < 256; i++)
-	    {
-	    	CyberGfxBase->greytab[i] = i * 0x010101;
-	    }
+            for (i = 0; i < 256; i++)
+            {
+                CyberGfxBase->greytab[i] = i * 0x010101;
+            }
 
-	    ReturnInt("[CGX] cgfx_init", int, TRUE);
-	}
-	
+            ReturnInt("[CGX] cgfx_init", int, TRUE);
+        }
+        
     }
 
     ReleaseAttrBases(CyberGfxBase);

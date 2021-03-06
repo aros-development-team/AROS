@@ -79,7 +79,7 @@
     {
         Set_Value64C
         (
-            Res, 
+            Res,
             (IEEEDPSign_Mask_Hi + IEEEDPExponent_Mask_Hi),
             (IEEEDPSign_Mask_Lo + IEEEDPExponent_Mask_Lo)
         );
@@ -87,7 +87,7 @@
     }
     /* check for argument == 0 or argument == +infinity */
     if
-    ( 
+    (
            is_eqC(y, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo)
         || is_eqC(y, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo)
     )
@@ -106,7 +106,7 @@
     (
         (struct MathIeeeDoubTransBase *) MathIeeeDoubTransBase, tmp
     );
-    /*               
+    /*
                       ld M + E
         log(fnum1) =  --------
                         ld 10

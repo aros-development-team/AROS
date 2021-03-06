@@ -44,7 +44,7 @@
 
     RESULT
 
-    The return value of GM_DOMAIN or 0 if an error occurred. The 'domain' 
+    The return value of GM_DOMAIN or 0 if an error occurred. The 'domain'
     IBox will be filled with the requested values as a side effect.
 
     NOTES

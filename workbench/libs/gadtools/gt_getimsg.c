@@ -16,10 +16,10 @@
         AROS_LH1(struct IntuiMessage *, GT_GetIMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, intuiport, A0),
+        AROS_LHA(struct MsgPort *, intuiport, A0),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 12, GadTools)
+        struct Library *, GadToolsBase, 12, GadTools)
 
 /*  FUNCTION
         You must use this function instead of exec.library/GetMsg() to get
@@ -54,17 +54,17 @@
 
     while ((imsg = (struct IntuiMessage *)GetMsg(intuiport)))
     {
-    	if ((gtmsg = GT_FilterIMsg(imsg)))
-	{
-	    /* msg is for app */
-	    imsg = gtmsg;
-	    break;
-	}
-	else
-	{
-	    /* msg was for gadtools only */
-	    ReplyMsg(&imsg->ExecMessage);
-	}
+        if ((gtmsg = GT_FilterIMsg(imsg)))
+        {
+            /* msg is for app */
+            imsg = gtmsg;
+            break;
+        }
+        else
+        {
+            /* msg was for gadtools only */
+            ReplyMsg(&imsg->ExecMessage);
+        }
     }
     
     return imsg;

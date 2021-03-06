@@ -44,39 +44,39 @@ static void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 
     while ((tag = NextTagItem(&taglist)))
     {
-	switch (tag->ti_Tag)
-	{
-	    case GA_DrawInfo:
-		data->dri = (struct DrawInfo *) tag->ti_Data;
-		break;
-		
+        switch (tag->ti_Tag)
+        {
+            case GA_DrawInfo:
+                data->dri = (struct DrawInfo *) tag->ti_Data;
+                break;
+                
             case GA_TextAttr:
-        	data->tattr = (struct TextAttr *) tag->ti_Data;
-        	break;
-		
+                data->tattr = (struct TextAttr *) tag->ti_Data;
+                break;
+                
             case GA_LabelPlace:
-        	data->labelplace = (LONG) tag->ti_Data;
-        	break;
-		
-	    case AROSMX_Active:
-		data->active = tag->ti_Data;
-		break;
-		
-	    case AROSMX_Labels:
-		data->labels = (STRPTR *) tag->ti_Data;
-		data->numlabels = 0;
-		while (data->labels[data->numlabels])
-		    data->numlabels++;
-		break;
-		
-	    case AROSMX_Spacing:
-		data->spacing = tag->ti_Data;
-		break;
-		
+                data->labelplace = (LONG) tag->ti_Data;
+                break;
+                
+            case AROSMX_Active:
+                data->active = tag->ti_Data;
+                break;
+                
+            case AROSMX_Labels:
+                data->labels = (STRPTR *) tag->ti_Data;
+                data->numlabels = 0;
+                while (data->labels[data->numlabels])
+                    data->numlabels++;
+                break;
+                
+            case AROSMX_Spacing:
+                data->spacing = tag->ti_Data;
+                break;
+                
             case AROSMX_TickLabelPlace:
-        	data->ticklabelplace = (LONG) tag->ti_Data;
-		break;
-	}
+                data->ticklabelplace = (LONG) tag->ti_Data;
+                break;
+        }
     }
 }
 
@@ -87,17 +87,17 @@ Object *AROSMX__OM_NEW(Class * cl, Class * rootcl, struct opSet *msg)
     struct MXData   *data;
     struct TagItem  tags[] =
     {
-	{IA_Width, 0},
-	{IA_Height, 0},
-	{SYSIA_DrawInfo, (IPTR) NULL},
-	{SYSIA_Which, MXIMAGE},
-	{TAG_DONE, 0L}
+        {IA_Width, 0},
+        {IA_Height, 0},
+        {SYSIA_DrawInfo, (IPTR) NULL},
+        {SYSIA_Which, MXIMAGE},
+        {TAG_DONE, 0L}
     };
-    Object  	    *obj;
+    Object          *obj;
 
     obj = (Object *) DoSuperMethodA(cl, (Object *) rootcl, (Msg)msg);
     if (!obj)
-	return NULL;
+        return NULL;
 
     G(obj)->Activation = GACT_IMMEDIATE;
 
@@ -112,8 +112,8 @@ Object *AROSMX__OM_NEW(Class * cl, Class * rootcl, struct opSet *msg)
     mx_setnew(cl, obj, msg);
 
     if (data->tattr)
-    	data->font = OpenFont(data->tattr);
-	
+        data->font = OpenFont(data->tattr);
+        
     /* Calculate fontheight */
     if (data->tattr)
         data->fontheight = data->tattr->ta_YSize;
@@ -134,8 +134,8 @@ Object *AROSMX__OM_NEW(Class * cl, Class * rootcl, struct opSet *msg)
     data->mximage = (struct Image *) NewObjectA(NULL, SYSICLASS, tags);
 
     if ((!data->dri) || (!data->labels) || (!data->mximage) || (!data->numlabels)) {
-	CoerceMethod(cl, obj, OM_DISPOSE);
-	return NULL;
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        return NULL;
     }
     return obj;
 }
@@ -146,40 +146,40 @@ IPTR AROSMX__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct MXData   *data = INST_DATA(cl, obj);
     struct TagItem  *tag, *taglist = msg->ops_AttrList;
-    IPTR    	     retval = FALSE;
+    IPTR             retval = FALSE;
 
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
     while ((tag = NextTagItem(&taglist)))
     {
-	switch (tag->ti_Tag)
-	{
+        switch (tag->ti_Tag)
+        {
             case GA_Disabled:
-        	retval = TRUE;
-        	break;
-		
-	    case AROSMX_Active:
-        	if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels))
-		{
+                retval = TRUE;
+                break;
+                
+            case AROSMX_Active:
+                if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels))
+                {
                     data->active = tag->ti_Data;
                     retval = TRUE;
-        	}
-        	break;
-	}
+                }
+                break;
+        }
     }
 
     if ((retval) && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(obj))))
     {
         struct RastPort *rport;
 
-	rport = ObtainGIRPort(msg->ops_GInfo);
-	if (rport)
-	{
-	    DoMethod(obj, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rport, GREDRAW_REDRAW);
-	    ReleaseGIRPort(rport);
-	    retval = FALSE;
-	}
+        rport = ObtainGIRPort(msg->ops_GInfo);
+        if (rport)
+        {
+            DoMethod(obj, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rport, GREDRAW_REDRAW);
+            ReleaseGIRPort(rport);
+            retval = FALSE;
+        }
     }
 
     return retval;
@@ -190,9 +190,9 @@ IPTR AROSMX__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 IPTR AROSMX__GM_RENDER(Class * cl, Object * obj, struct gpRender * msg)
 {
     struct MXData   *data = INST_DATA(cl, obj);
-    WORD    	    ypos = G(obj)->TopEdge;
-    UWORD   	    maxtextwidth;
-    int     	    y;
+    WORD            ypos = G(obj)->TopEdge;
+    UWORD           maxtextwidth;
+    int             y;
 
     if (msg->gpr_Redraw == GREDRAW_UPDATE)
     {
@@ -209,13 +209,13 @@ IPTR AROSMX__GM_RENDER(Class * cl, Object * obj, struct gpRender * msg)
     {
         /* Full redraw */
         STRPTR *labels;
-	WORD minx, miny, maxx, maxy;
-	
-	if (data->font)
-	    SetFont(msg->gpr_RPort, data->font);
-	else
-	    SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
-	
+        WORD minx, miny, maxx, maxy;
+        
+        if (data->font)
+            SetFont(msg->gpr_RPort, data->font);
+        else
+            SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
+        
         /* Draw ticks */
         for (y=0; y<data->numlabels; y++)
         {
@@ -239,88 +239,88 @@ IPTR AROSMX__GM_RENDER(Class * cl, Object * obj, struct gpRender * msg)
 
         ypos = G(obj)->TopEdge;
 
-	maxtextwidth = 0;
-	
-	minx = G(obj)->LeftEdge;
-	miny = G(obj)->TopEdge;
-	maxx = minx + G(obj)->Width - 1;
-	maxy = miny + G(obj)->Height - 1;
-	
+        maxtextwidth = 0;
+        
+        minx = G(obj)->LeftEdge;
+        miny = G(obj)->TopEdge;
+        maxx = minx + G(obj)->Width - 1;
+        maxy = miny + G(obj)->Height - 1;
+        
         for (labels=data->labels; *labels; labels++)
-	{
-	    struct TextExtent 	te;
-	    WORD    	    	x, y, width, height, len;
-	    
-	    x = G(obj)->LeftEdge;
-	    y = ypos;
+        {
+            struct TextExtent   te;
+            WORD                x, y, width, height, len;
+            
+            x = G(obj)->LeftEdge;
+            y = ypos;
 
             len = strlen(*labels);
             TextExtent(msg->gpr_RPort, *labels, len, &te);
             width  = te.te_Width;
             height = te.te_Height;
- 	    
-	    if (width > maxtextwidth) maxtextwidth = width;
-	    
-	    switch(data->ticklabelplace)
-	    {
-	        case GV_LabelPlace_Right:
-        	    x += data->mximage->Width + 5;
-        	    y += (data->mximage->Height - height) / 2 + 1;
-		    break;
-		
-		case GV_LabelPlace_Above:
-        	    x += (data->mximage->Width - width) / 2;
-        	    y -= (height + 2);
-		    break;
-		
-		case GV_LabelPlace_Below:
-        	    x += (data->mximage->Width - width) / 2;
-        	    y += (data->mximage->Height + 3);
-		    break;
-		
-		case GV_LabelPlace_In:
-        	    x += (data->mximage->Width - width) / 2;
-        	    y += (data->mximage->Height - height) / 2;
-		    break;
-		
-		default: /* GV_LabelPlace_Left: */
-        	    x -= (width + 4);
-        	    y += (data->mximage->Height - height) / 2 + 1;
-		    break;
+            
+            if (width > maxtextwidth) maxtextwidth = width;
+            
+            switch(data->ticklabelplace)
+            {
+                case GV_LabelPlace_Right:
+                    x += data->mximage->Width + 5;
+                    y += (data->mximage->Height - height) / 2 + 1;
+                    break;
+                
+                case GV_LabelPlace_Above:
+                    x += (data->mximage->Width - width) / 2;
+                    y -= (height + 2);
+                    break;
+                
+                case GV_LabelPlace_Below:
+                    x += (data->mximage->Width - width) / 2;
+                    y += (data->mximage->Height + 3);
+                    break;
+                
+                case GV_LabelPlace_In:
+                    x += (data->mximage->Width - width) / 2;
+                    y += (data->mximage->Height - height) / 2;
+                    break;
+                
+                default: /* GV_LabelPlace_Left: */
+                    x -= (width + 4);
+                    y += (data->mximage->Height - height) / 2 + 1;
+                    break;
             }
 
-	    
+            
             Move(msg->gpr_RPort, x, y + msg->gpr_RPort->Font->tf_Baseline);
             Text(msg->gpr_RPort, *labels, len);
-	    
-	    if (x < minx) minx = x;
-	    if (y < miny) miny = y;
-	    if (x + width - 1 > maxx) maxx = x + width - 1;
-	    if (y + height - 1 > maxy) maxy = y + height - 1;
-	    
+            
+            if (x < minx) minx = x;
+            if (y < miny) miny = y;
+            if (x + width - 1 > maxx) maxx = x + width - 1;
+            if (y + height - 1 > maxy) maxy = y + height - 1;
+            
             ypos += data->fontheight + data->spacing;
         }
 
         data->bbox.MinX = minx;
-	data->bbox.MinY = miny;
-	data->bbox.MaxX = maxx;
-	data->bbox.MaxY = maxy;
-	
-	data->maxtextwidth = maxtextwidth;
-	
+        data->bbox.MinY = miny;
+        data->bbox.MaxX = maxx;
+        data->bbox.MaxY = maxy;
+        
+        data->maxtextwidth = maxtextwidth;
+        
         /* Draw main label */
 
         /* bug: this will not be rendered at the correct
-	        position if ticklabel place and labelplace
-		are the same. I don't think any app will
-		ever do this:
-		
-		   x Item 1
-		   x Item 2 Label
-		   x Item 3
-	
-	*/
-	
+                position if ticklabel place and labelplace
+                are the same. I don't think any app will
+                ever do this:
+                
+                   x Item 1
+                   x Item 2 Label
+                   x Item 3
+        
+        */
+        
         renderlabel(G(obj), msg->gpr_RPort, data);
 
     }
@@ -340,8 +340,8 @@ IPTR AROSMX__GM_RENDER(Class * cl, Object * obj, struct gpRender * msg)
 IPTR AROSMX__GM_GOACTIVE(Class * cl, Object * obj, struct gpInput * msg)
 {
     struct MXData   *data = INST_DATA(cl, obj);
-    int     	    y, blobheight = data->spacing + data->fontheight;
-    IPTR    	    retval = GMR_NOREUSE;
+    int             y, blobheight = data->spacing + data->fontheight;
+    IPTR            retval = GMR_NOREUSE;
 
     D(bug("blobheight: %d\n", blobheight));
 
@@ -387,11 +387,11 @@ IPTR AROSMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
     struct MXData *data = INST_DATA(cl, o);
     if (msg->opg_AttrID == GTMX_Active)
     {
-	*(msg->opg_Storage) = (IPTR)data->active;
-	return 1;
+        *(msg->opg_Storage) = (IPTR)data->active;
+        return 1;
     }
     else
-	return DoSuperMethodA(cl, o, msg);
+        return DoSuperMethodA(cl, o, msg);
 }
 
 /***********************************************************************************/

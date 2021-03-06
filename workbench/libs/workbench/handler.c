@@ -227,7 +227,7 @@ static BOOL __Initialize_WB
                        
         /* We're now ready to accept messages ------------------------------*/
         WorkbenchBase->wb_HandlerPort.mp_SigTask = FindTask(NULL);
-        WorkbenchBase->wb_HandlerPort.mp_Flags   = PA_SIGNAL;  
+        WorkbenchBase->wb_HandlerPort.mp_Flags   = PA_SIGNAL;
         
         /* Make sure to process messages that arrived before we were ready -*/
         Signal(FindTask(NULL), SIGBREAKF_CTRL_F);
@@ -239,7 +239,7 @@ static BOOL __Initialize_WB
     }
     else
     {
-        Deinitialize(); 
+        Deinitialize();
         
         return FALSE;
     }
@@ -266,7 +266,7 @@ static VOID __Deinitialize_WB
 
 static VOID __HandleLaunch_WB
 (
-    struct WBCommandMessage *message, 
+    struct WBCommandMessage *message,
     struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
 )
 {
@@ -339,7 +339,7 @@ static VOID __HandleLaunch_WB
         startup->sm_Process              = &process->pr_MsgPort;
         startup->sm_Message.mn_ReplyPort = hc->hc_StartupReplyPort;
         
-        /* Send startup message to program */ 
+        /* Send startup message to program */
         PutMsg(startup->sm_Process, (struct Message *) startup);
     }
     
@@ -395,30 +395,30 @@ static void __HandleIntuition_WB
     if (message->Class == IDCMP_WBENCHMESSAGE)
     {
         switch (message->Code)
-	{
-	    case WBENCHOPEN:
+        {
+            case WBENCHOPEN:
 D(bug("[WBLIB] __HandleIntuition_WB: WBENCHOPEN\n"));
-	        iwbhm = CreateIWBHM(WBHM_TYPE_SHOW, hc->hc_RelayReplyPort);
-		break;
-	    case WBENCHCLOSE:
+                iwbhm = CreateIWBHM(WBHM_TYPE_SHOW, hc->hc_RelayReplyPort);
+                break;
+            case WBENCHCLOSE:
 D(bug("[WBLIB] __HandleIntuition_WB: WBENCHCLOSE\n"));
-	        iwbhm = CreateIWBHM(WBHM_TYPE_HIDE, hc->hc_RelayReplyPort);
-		iwbhm->iwbhm_Data.Hide.imsg = message;
-		break;
+                iwbhm = CreateIWBHM(WBHM_TYPE_HIDE, hc->hc_RelayReplyPort);
+                iwbhm->iwbhm_Data.Hide.imsg = message;
+                break;
             default:
-	        iwbhm = NULL;
-		break;
-	}
+                iwbhm = NULL;
+                break;
+        }
         
         if ((iwbhm != NULL) && (WorkbenchBase->wb_WorkbenchPort != NULL))
         {
 D(bug("[WBLIB] __HandleIntuition_WB: Forwarding message to Workbench port @ %p\n", WorkbenchBase->wb_WorkbenchPort));
             PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *)iwbhm);
-	
-	    /* Don't reply immediately if we're asked to close the WB,
-	       we'll do it when handling replied message, so that the WB
-	       will have a chance to close its windows.  */ 
-	    if (message->Code == WBENCHCLOSE)
+        
+            /* Don't reply immediately if we're asked to close the WB,
+               we'll do it when handling replied message, so that the WB
+               will have a chance to close its windows.  */
+            if (message->Code == WBENCHCLOSE)
                 return;
         }
     }

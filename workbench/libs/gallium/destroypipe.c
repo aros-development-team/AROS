@@ -23,7 +23,7 @@
 
       AROS_LH1(void, DestroyPipe,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(PipeHandle_t, pipe, A0),
 
 /*  LOCATION */

@@ -292,7 +292,7 @@ void setTypeString(struct PartitionType *type, Object *strgad)
     set(strgad,  MUIA_String_Contents, str);
 }
 
-LONG askSave(STRPTR name) 
+LONG askSave(STRPTR name)
 {
     struct EasyStruct es =
     {
@@ -459,7 +459,7 @@ AROS_UFH3(void, buttons_function,
                     {
                         table->listnode.flags |= LNF_Listable;
                         table->listnode.flags |= LNF_ToSave;
-                        setChanged(partitiontabletypegadgets.iln); 
+                        setChanged(partitiontabletypegadgets.iln);
                     }
                     else
                         set(gadgets.text, MUIA_Text_Contents, MSG(MSG_CreateTableError));
@@ -508,7 +508,7 @@ AROS_UFH3(void, buttons_function,
             struct DosEnvec *de = NULL;
             char str[32];
 
-	    D(bug("[HDToolBox] buttons_function() - Resize/Move Partition Display:\n"));
+            D(bug("[HDToolBox] buttons_function() - Resize/Move Partition Display:\n"));
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_EMPTY_AREA)
             {
@@ -530,14 +530,14 @@ AROS_UFH3(void, buttons_function,
             nnset(resizemovegadgets.totalcyl, MUIA_String_Integer, de->de_HighCyl-de->de_LowCyl+1);
             getSizeStr(str, (((de->de_HighCyl - de->de_LowCyl + 1) * de->de_Surfaces * de->de_BlocksPerTrack)-1)/2);
             nnset(resizemovegadgets.size, MUIA_String_Contents, str);
-	    D(bug("[HDToolBox] buttons_function() - Resize/Move Partition Display successful\n"));
+            D(bug("[HDToolBox] buttons_function() - Resize/Move Partition Display successful\n"));
         }
         else if (object == resizemovegadgets.lowcyl)
         {
             LONG type = 0;
             ULONG value = 0;
 
-	    D(bug("[HDToolBox] buttons_function() - Resize/Move Lowcyl:\n"));
+            D(bug("[HDToolBox] buttons_function() - Resize/Move Lowcyl:\n"));
             get(object, MUIA_String_Integer, &value);
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
@@ -548,11 +548,11 @@ AROS_UFH3(void, buttons_function,
 
                 get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
-		D(bug("[HDToolBox] - Type             : Partition\n"));
-		D(bug("[HDToolBox] - Old value        : %ld\n", partition->de.de_LowCyl));
-		D(bug("[HDToolBox] - New value        : %ld\n", value));
-		D(bug("[HDToolBox] - Partition table  : %p\n", table));
-		D(bug("[HDToolBox] - Active partition : %p\n", partition));
+                D(bug("[HDToolBox] - Type             : Partition\n"));
+                D(bug("[HDToolBox] - Old value        : %ld\n", partition->de.de_LowCyl));
+                D(bug("[HDToolBox] - New value        : %ld\n", value));
+                D(bug("[HDToolBox] - Partition table  : %p\n", table));
+                D(bug("[HDToolBox] - Active partition : %p\n", partition));
                 if (value != partition->de.de_LowCyl)
                 {
                     block =
@@ -596,7 +596,7 @@ AROS_UFH3(void, buttons_function,
             LONG type = 0;
             ULONG value = 0;
 
-	    D(bug("[HDToolBox] buttons_function() - Resize/Move Highcyl:\n"));
+            D(bug("[HDToolBox] buttons_function() - Resize/Move Highcyl:\n"));
             get(object, MUIA_String_Integer, &value);
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
@@ -607,11 +607,11 @@ AROS_UFH3(void, buttons_function,
 
                 get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
-		D(bug("[HDToolBox] - Type             : Partition\n"));
-		D(bug("[HDToolBox] - Old value        : %ld\n", partition->de.de_HighCyl));
-		D(bug("[HDToolBox] - New value        : %ld\n", value));
-		D(bug("[HDToolBox] - Partition table  : %p\n", table));
-		D(bug("[HDToolBox] - Active partition : %p\n", partition));
+                D(bug("[HDToolBox] - Type             : Partition\n"));
+                D(bug("[HDToolBox] - Old value        : %ld\n", partition->de.de_HighCyl));
+                D(bug("[HDToolBox] - New value        : %ld\n", value));
+                D(bug("[HDToolBox] - Partition table  : %p\n", table));
+                D(bug("[HDToolBox] - Active partition : %p\n", partition));
                 if (value != partition->de.de_HighCyl)
                 {
                     block =
@@ -646,7 +646,7 @@ AROS_UFH3(void, buttons_function,
             {
                 struct DosEnvec *de = NULL;
 
-		D(bug("[HDToolBox] - Type             : Empty Area\n"));
+                D(bug("[HDToolBox] - Type             : Empty Area\n"));
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &de);
                 if (value != de->de_HighCyl)
                     set(object, MUIA_String_Integer, de->de_HighCyl);
@@ -790,7 +790,7 @@ AROS_UFH3(void, buttons_function,
             }
             get(dosenvecgadgets.custboot, MUIA_Selected, &check);
             if (check)
-            { 
+            {
                 if (partition->de.de_TableSize<(DE_BOOTBLOCKS+1))
                 {
                     partition->de.de_TableSize = DE_BOOTBLOCKS+1;
@@ -991,7 +991,7 @@ AROS_UFH3(void, buttons_function,
                         ) ||
                         (table->table->max_partitions == 0)
                     )
-                {	
+                {
                     DoMethod
                     (
                         addpartitiongadgets.win,
@@ -1212,16 +1212,16 @@ static ULONG GetStartCyl(struct HDTBPartition *part)
 
     while (part->listnode.parent)
     {
-    	part = (struct HDTBPartition *)part->listnode.parent;
+        part = (struct HDTBPartition *)part->listnode.parent;
 
-	if (part->listnode.ln.ln_Type != LNT_Partition)
-	    break;
+        if (part->listnode.ln.ln_Type != LNT_Partition)
+            break;
 
-	/*
-	 * Calculate start offset in blocks. This can be done because theoretically
-	 * partitions can have different virtual geometries.
-	 */
-	ret += part->de.de_LowCyl * part->de.de_Surfaces * part->de.de_BlocksPerTrack;
+        /*
+         * Calculate start offset in blocks. This can be done because theoretically
+         * partitions can have different virtual geometries.
+         */
+        ret += part->de.de_LowCyl * part->de.de_Surfaces * part->de.de_BlocksPerTrack;
     }
 
     /*
@@ -1240,12 +1240,12 @@ static struct FileSysEntry *FindFileSysEntry(ULONG dostype)
     struct FileSysResource *fsr = OpenResource("FileSystem.resource");
     
     if (!fsr)
-    	return NULL;
+        return NULL;
 
     ForeachNode(&fsr->fsr_FileSysEntries, fse)
     {
-    	if (fse->fse_DosType == dostype)
-	    return fse;
+        if (fse->fse_DosType == dostype)
+            return fse;
     }
     
     return NULL;
@@ -1264,125 +1264,125 @@ AROS_UFH3(void, createml_function,
     get(gadgets.leftlv, MUIA_List_Active, &active);
     if (active != MUIV_List_Active_Off)
     {
-	struct FileRequester *req;
-	struct TagItem asltags[] =
-	{
-	    {ASLFR_InitialDrawer, (IPTR)"SYS:Storage/DOSDrivers"},
-	    {ASLFR_InitialFile  , 0},
-	    {ASLFR_DoSaveMode   , TRUE},
-	    {TAG_DONE           , 0}
-	};
-	
+        struct FileRequester *req;
+        struct TagItem asltags[] =
+        {
+            {ASLFR_InitialDrawer, (IPTR)"SYS:Storage/DOSDrivers"},
+            {ASLFR_InitialFile  , 0},
+            {ASLFR_DoSaveMode   , TRUE},
+            {TAG_DONE           , 0}
+        };
+        
         DoMethod(gadgets.leftlv, MUIM_List_GetEntry, active, &partition);
-	asltags[1].ti_Data = (IPTR)partition->listnode.ln.ln_Name;
+        asltags[1].ti_Data = (IPTR)partition->listnode.ln.ln_Name;
 
-	req = MUI_AllocAslRequest(ASL_FileRequest, asltags);
+        req = MUI_AllocAslRequest(ASL_FileRequest, asltags);
 
-	if (!req)
-	    return;
-	
-	if (MUI_AslRequest(req, NULL))
-	{
-	    ULONG len = strlen(req->fr_Drawer) + strlen(req->fr_File) + 2;
-	    STRPTR pathname = AllocMem(len, MEMF_ANY);
+        if (!req)
+            return;
+        
+        if (MUI_AslRequest(req, NULL))
+        {
+            ULONG len = strlen(req->fr_Drawer) + strlen(req->fr_File) + 2;
+            STRPTR pathname = AllocMem(len, MEMF_ANY);
 
-	    if (pathname)
-	    {
-		BPTR file;
+            if (pathname)
+            {
+                BPTR file;
 
-		strcpy(pathname, req->fr_Drawer);
-		AddPart(pathname, req->fr_File, len);
+                strcpy(pathname, req->fr_Drawer);
+                AddPart(pathname, req->fr_File, len);
 
-		file = Open(pathname, MODE_NEWFILE);
-		FreeMem(pathname, len);
+                file = Open(pathname, MODE_NEWFILE);
+                FreeMem(pathname, len);
 
-		if (file)
-		{
-		    struct DiskObject *icon;
-		    CONST_STRPTR args[2];
-		    ULONG argu[18];
-		    struct FileSysEntry *fse;
-    		    ULONG startcyl = GetStartCyl(partition);
+                if (file)
+                {
+                    struct DiskObject *icon;
+                    CONST_STRPTR args[2];
+                    ULONG argu[18];
+                    struct FileSysEntry *fse;
+                    ULONG startcyl = GetStartCyl(partition);
 
-		    args[ 0] = "";
-		    args[ 1] = partition->ph->bd->ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name;
+                    args[ 0] = "";
+                    args[ 1] = partition->ph->bd->ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name;
 
-		    argu[ 0] = ((struct HDNode *)partition->root)->unit;
-		    argu[ 1] = partition->de.de_SizeBlock * 4;  /* block size in longs */
-		    argu[ 2] = partition->de.de_Surfaces;
-		    argu[ 3] = partition->de.de_SectorPerBlock;
-		    argu[ 4] = partition->de.de_BlocksPerTrack;
-		    argu[ 5] = partition->de.de_Reserved;
-		    argu[ 6] = partition->de.de_PreAlloc;
-		    argu[ 7] = partition->de.de_Interleave;
-		    argu[ 8] = partition->de.de_MaxTransfer;
-		    argu[ 9] = partition->de.de_Mask;
-		    argu[10] = partition->de.de_LowCyl  + startcyl;
-		    argu[11] = partition->de.de_HighCyl + startcyl;
-		    argu[12] = partition->de.de_NumBuffers;
-		    argu[13] = partition->de.de_BufMemType;
-		    argu[14] = 16384;
-		    argu[15] = 0;
-		    argu[16] = -1;
-		    argu[17] = partition->de.de_DosType;
+                    argu[ 0] = ((struct HDNode *)partition->root)->unit;
+                    argu[ 1] = partition->de.de_SizeBlock * 4;  /* block size in longs */
+                    argu[ 2] = partition->de.de_Surfaces;
+                    argu[ 3] = partition->de.de_SectorPerBlock;
+                    argu[ 4] = partition->de.de_BlocksPerTrack;
+                    argu[ 5] = partition->de.de_Reserved;
+                    argu[ 6] = partition->de.de_PreAlloc;
+                    argu[ 7] = partition->de.de_Interleave;
+                    argu[ 8] = partition->de.de_MaxTransfer;
+                    argu[ 9] = partition->de.de_Mask;
+                    argu[10] = partition->de.de_LowCyl  + startcyl;
+                    argu[11] = partition->de.de_HighCyl + startcyl;
+                    argu[12] = partition->de.de_NumBuffers;
+                    argu[13] = partition->de.de_BufMemType;
+                    argu[14] = 16384;
+                    argu[15] = 0;
+                    argu[16] = -1;
+                    argu[17] = partition->de.de_DosType;
 
-		    /*
-		     * Some things can be fetched only from FileSystem.resource.
-		     * Let's try to do it.
-		     */
-		    fse = FindFileSysEntry(partition->de.de_DosType);
-		    if (fse)
-		    {
-		    	if (fse->fse_PatchFlags & FSEF_HANDLER)
-		    	    args[0] = AROS_BSTR_ADDR(fse->fse_Handler);
+                    /*
+                     * Some things can be fetched only from FileSystem.resource.
+                     * Let's try to do it.
+                     */
+                    fse = FindFileSysEntry(partition->de.de_DosType);
+                    if (fse)
+                    {
+                        if (fse->fse_PatchFlags & FSEF_HANDLER)
+                            args[0] = AROS_BSTR_ADDR(fse->fse_Handler);
 
-		    	if (fse->fse_PatchFlags & FSEF_STACKSIZE)
-		    	    argu[14] = fse->fse_StackSize;
+                        if (fse->fse_PatchFlags & FSEF_STACKSIZE)
+                            argu[14] = fse->fse_StackSize;
 
-		    	if (fse->fse_PatchFlags & FSEF_PRIORITY)
-		    	    argu[15] = fse->fse_Priority;
+                        if (fse->fse_PatchFlags & FSEF_PRIORITY)
+                            argu[15] = fse->fse_Priority;
 
-		    	if (fse->fse_PatchFlags & FSEF_GLOBALVEC)
-		    	    argu[16] = (ULONG)(IPTR)fse->fse_GlobalVec;
-		    }
+                        if (fse->fse_PatchFlags & FSEF_GLOBALVEC)
+                            argu[16] = (ULONG)(IPTR)fse->fse_GlobalVec;
+                    }
 
-		    VFPrintf(file, "FileSystem       = %s\n"
-				  "Device           = %s\n",
-				  (RAWARG)args);
-		    VFPrintf(file,"Unit             = %ld\n"
-				  "BlockSize        = %ld\n"
-				  "Surfaces         = %ld\n"
-				  "SectorsPerBlock  = %ld\n"
-				  "BlocksPerTrack   = %ld\n"
-				  "Reserved         = %ld\n"
-				  "PreAlloc         = %ld\n"
-				  "Interleave       = %ld\n"
-				  "MaxTransfer      = 0x%08lx\n"
-				  "Mask             = 0x%08lx\n"
-				  "LowCyl           = %ld\n"
-				  "HighCyl          = %ld\n"
-				  "Buffers          = %ld\n"
-				  "BufMemType       = %ld\n"
-				  "StackSize        = %ld\n"
-				  "Priority         = %ld\n"
-				  "GlobVec          = %ld\n"
-				  "DosType          = 0x%08lx\n"
-				  "Activate         = 1\n",
-			     (RAWARG)argu);
+                    VFPrintf(file, "FileSystem       = %s\n"
+                                  "Device           = %s\n",
+                                  (RAWARG)args);
+                    VFPrintf(file,"Unit             = %ld\n"
+                                  "BlockSize        = %ld\n"
+                                  "Surfaces         = %ld\n"
+                                  "SectorsPerBlock  = %ld\n"
+                                  "BlocksPerTrack   = %ld\n"
+                                  "Reserved         = %ld\n"
+                                  "PreAlloc         = %ld\n"
+                                  "Interleave       = %ld\n"
+                                  "MaxTransfer      = 0x%08lx\n"
+                                  "Mask             = 0x%08lx\n"
+                                  "LowCyl           = %ld\n"
+                                  "HighCyl          = %ld\n"
+                                  "Buffers          = %ld\n"
+                                  "BufMemType       = %ld\n"
+                                  "StackSize        = %ld\n"
+                                  "Priority         = %ld\n"
+                                  "GlobVec          = %ld\n"
+                                  "DosType          = 0x%08lx\n"
+                                  "Activate         = 1\n",
+                             (RAWARG)argu);
 
-		    Close(file);
-		    
-		    icon = GetDiskObject("ENVARC:Sys/def_Mountlist");
-		    if (icon)
-		    {
-			PutDiskObject(pathname, icon);
-			FreeDiskObject(icon);
-		    }
-		}
-	    }
-	}
+                    Close(file);
+                    
+                    icon = GetDiskObject("ENVARC:Sys/def_Mountlist");
+                    if (icon)
+                    {
+                        PutDiskObject(pathname, icon);
+                        FreeDiskObject(icon);
+                    }
+                }
+            }
+        }
 
-	MUI_FreeAslRequest(req);
+        MUI_FreeAslRequest(req);
     }
     
     AROS_USERFUNC_EXIT
@@ -1763,7 +1763,7 @@ AROS_UFH3(void, lv_click,
                     enableObject(gadgets.buttons[GB_RENAME]);
                     enableObject(gadgets.buttons[GB_DOSENVEC]);
                     enableObject(gadgets.buttons[GB_SWITCHES]);
-		    SetAttrs(part_item, MUIA_Menu_Enabled, !partition->table, TAG_DONE);
+                    SetAttrs(part_item, MUIA_Menu_Enabled, !partition->table, TAG_DONE);
                 }
                 else if (iln->ln.ln_Type == LNT_Harddisk)
                 {
@@ -1784,7 +1784,7 @@ AROS_UFH3(void, lv_click,
             disableObject(gadgets.buttons[GB_CREATE_TABLE]);
             disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
             disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
-	    SetAttrs(part_item, MUIA_Menu_Enabled, FALSE, TAG_DONE);
+            SetAttrs(part_item, MUIA_Menu_Enabled, FALSE, TAG_DONE);
             break;
         }
     }
@@ -1794,7 +1794,7 @@ AROS_UFH3(void, lv_click,
 
 /**************************************** Main ******************************/
 
-LONG initGUI(void) 
+LONG initGUI(void)
 {
     struct MUI_CustomClass *listcc;
     int i;
@@ -1839,12 +1839,12 @@ LONG initGUI(void)
                 End,
             End,
             MUIA_Family_Child,
-		part_item = MenuObject,
+                part_item = MenuObject,
                 MUIA_Menu_Title, MSG(WORD_MENU_Partition),
-		MUIA_Menu_Enabled, FALSE,
+                MUIA_Menu_Enabled, FALSE,
                 MUIA_Family_Child,
                     createml_item = MenuitemObject,
-		    MUIA_Menuitem_Title, MSG(WORD_MENU_CreateMountlist),
+                    MUIA_Menuitem_Title, MSG(WORD_MENU_CreateMountlist),
                 End,
             End,
         End,
@@ -2285,8 +2285,8 @@ LONG initGUI(void)
         MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
     );
     DoMethod(createml_item,
-	     MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2,
-	     MUIM_CallHook, &hook_createml);
+             MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2,
+             MUIM_CallHook, &hook_createml);
     /* add device window */
     DoMethod
     (
@@ -2580,11 +2580,11 @@ void deinitGUI()
 
 BOOL QuitGUI(ULONG *sigs)
 {
-    // moved debug from this place because it produces too much garbage 
+    // moved debug from this place because it produces too much garbage
 
     if ((IPTR)DoMethod(app, MUIM_Application_NewInput, (IPTR)sigs) == MUIV_Application_ReturnID_Quit)
     {
-	D(bug("[HDToolBox] QuitGUI()\n"));
+        D(bug("[HDToolBox] QuitGUI()\n"));
         return TRUE;
     }
     return FALSE;

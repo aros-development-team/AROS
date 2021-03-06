@@ -16,11 +16,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(APTR, lockHandle, A0),
+        AROS_LHA(APTR, lockHandle, A0),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 6, RealTime)
+        struct Library *, RealTimeBase, 6, RealTime)
 
 /*  FUNCTION
 
@@ -55,7 +55,7 @@
 
     if (lockHandle == NULL)
     {
-	return;
+        return;
     }
 
     ReleaseSemaphore((struct SignalSemaphore *)lockHandle);

@@ -16,15 +16,15 @@
     LOCATION
 
         C:
-	   
+           
     FUNCTION
 
-	Without argument it shows the name of the current directory.
-	With argument it changes the current directory.
-	
+        Without argument it shows the name of the current directory.
+        With argument it changes the current directory.
+        
     INPUTS
 
-	DIR -- path to change to current directory
+        DIR -- path to change to current directory
 
     RESULT
 
@@ -63,47 +63,47 @@ AROS_SH1(CD, 41.2,
 
     if (SHArg(DIR))
     {
-	dir = Lock(SHArg(DIR), SHARED_LOCK);
+        dir = Lock(SHArg(DIR), SHARED_LOCK);
 
-	if (dir)
+        if (dir)
         {
-	    fib = AllocDosObject(DOS_FIB, NULL);
+            fib = AllocDosObject(DOS_FIB, NULL);
 
-	    if (fib != NULL)
-	    {
-		if (Examine(dir, fib))
-		{
-		    if (fib->fib_DirEntryType > 0)
-		    {
-			newdir = dir;
-			dir = CurrentDir(newdir);
+            if (fib != NULL)
+            {
+                if (Examine(dir, fib))
+                {
+                    if (fib->fib_DirEntryType > 0)
+                    {
+                        newdir = dir;
+                        dir = CurrentDir(newdir);
 
-			buf = GetLockName(newdir, SysBase, DOSBase);
-		        if (buf != NULL)
-		        {
-			    SetCurrentDirName(buf);
-			    FreeVec(buf);
-		        }
-		    }
-		    else
-			error = ERROR_OBJECT_WRONG_TYPE;
-		}
-		else
-		    error = IoErr();
+                        buf = GetLockName(newdir, SysBase, DOSBase);
+                        if (buf != NULL)
+                        {
+                            SetCurrentDirName(buf);
+                            FreeVec(buf);
+                        }
+                    }
+                    else
+                        error = ERROR_OBJECT_WRONG_TYPE;
+                }
+                else
+                    error = IoErr();
 
-		FreeDosObject(DOS_FIB, fib);
-	    }
-	    else
-		error = IoErr();
+                FreeDosObject(DOS_FIB, fib);
+            }
+            else
+                error = IoErr();
 
-	    UnLock(dir);
-	}
-	else
-	    error = IoErr();
+            UnLock(dir);
+        }
+        else
+            error = IoErr();
     }
     else
     {
-	dir = CurrentDir(BNULL);
+        dir = CurrentDir(BNULL);
 
         buf = GetLockName(dir, SysBase, DOSBase);
         if (buf != NULL)
@@ -113,8 +113,8 @@ AROS_SH1(CD, 41.2,
         }
         else
             error = IoErr();
-	FreeVec(buf);
-	CurrentDir(dir);
+        FreeVec(buf);
+        CurrentDir(dir);
     }
 
     if (error != 0)

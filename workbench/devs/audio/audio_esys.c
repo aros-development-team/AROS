@@ -101,11 +101,11 @@ WORD GetMultiple(WORD d0, WORD d1)
 
 /*
  *
- *	InitESYS
+ *      InitESYS
  * ------------
  *
- *	Initialize some needed things for the system.
- *	0 success, 1 fail.
+ *      Initialize some needed things for the system.
+ *      0 success, 1 fail.
  */
 
 BOOL InitESYS( VOID)

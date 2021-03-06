@@ -20,13 +20,13 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct Player *, player, A0),
-	AROS_LHA(ULONG          , state , D0),
-	AROS_LHA(LONG           , time  , D1),
+        AROS_LHA(struct Player *, player, A0),
+        AROS_LHA(ULONG          , state , D0),
+        AROS_LHA(LONG           , time  , D1),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 10, RealTime)
+        struct Library *, RealTimeBase, 10, RealTime)
 
 /*  FUNCTION
 
@@ -87,7 +87,7 @@
 
     if (conductor == NULL)
     {
-	return RTE_NOCONDUCTOR;
+        return RTE_NOCONDUCTOR;
     }
 
     stateMsg.pms_OldState = conductor->cdt_State;
@@ -95,137 +95,137 @@
     /* Don't report phony states */
     if (state >= 0)
     {
-	ForeachNode(&conductor->cdt_Players, pl)
-	{
-	    /* Filter out QUIET players? */
-	    if (pl->pl_Hook != NULL)
-	    {
-		CallHookA(pl->pl_Hook, player, &stateMsg);
-	    }
-	}
+        ForeachNode(&conductor->cdt_Players, pl)
+        {
+            /* Filter out QUIET players? */
+            if (pl->pl_Hook != NULL)
+            {
+                CallHookA(pl->pl_Hook, player, &stateMsg);
+            }
+        }
     }
 
     switch (state)
     {
     case CONDSTATE_PAUSED:
-	
-	/* Pause the clock */
-	conductor->cdt_State = CONDSTATE_PAUSED;
-	conductor->cdt_Flags &= ~CONDUCTF_GOTTICK;
+        
+        /* Pause the clock */
+        conductor->cdt_State = CONDSTATE_PAUSED;
+        conductor->cdt_Flags &= ~CONDUCTF_GOTTICK;
 
-	break;
+        break;
 
     case CONDSTATE_STOPPED:
 
-	/* Stop the clock */
-	conductor->cdt_State = CONDSTATE_STOPPED;
-	conductor->cdt_Flags &= ~CONDUCTF_GOTTICK;
+        /* Stop the clock */
+        conductor->cdt_State = CONDSTATE_STOPPED;
+        conductor->cdt_Flags &= ~CONDUCTF_GOTTICK;
 
-	break;
+        break;
 
     case CONDSTATE_LOCATE:
-	{
-	    ULONG oldSignals;
+        {
+            ULONG oldSignals;
 
-	    conductor->cdt_State = CONDSTATE_LOCATE;
+            conductor->cdt_State = CONDSTATE_LOCATE;
 
-	    ObtainSemaphore(&conductor->cdt_Lock);
-	    oldSignals = SetSignal(0, SIGF_SINGLE);
-	    conductor->cdt_Barrier = FindTask(NULL);
-	    ReleaseSemaphore(&conductor->cdt_Lock);
+            ObtainSemaphore(&conductor->cdt_Lock);
+            oldSignals = SetSignal(0, SIGF_SINGLE);
+            conductor->cdt_Barrier = FindTask(NULL);
+            ReleaseSemaphore(&conductor->cdt_Lock);
 
-	    ForeachNode(&conductor->cdt_Players, pl)
-	    {
-		BOOL isReady = FALSE;
+            ForeachNode(&conductor->cdt_Players, pl)
+            {
+                BOOL isReady = FALSE;
 
-		/* Barrier synchronization */
-		while (!isReady)
-		{
-		    struct TagItem tags[] = { { PLAYER_Ready, (IPTR)&isReady },
-					      { TAG_DONE    , (IPTR)NULL   } };
+                /* Barrier synchronization */
+                while (!isReady)
+                {
+                    struct TagItem tags[] = { { PLAYER_Ready, (IPTR)&isReady },
+                                              { TAG_DONE    , (IPTR)NULL   } };
 
-		    GetPlayerAttrsA(pl, tags);
+                    GetPlayerAttrsA(pl, tags);
 
-		    if (!isReady)
-		    {
-			/* We are signalled by SetPlayerAttrs() if the tags
-			   contain PLAYER_Ready '=' TRUE) */
-			Wait(SIGF_SINGLE);
-		    }
-		}
-	    }
+                    if (!isReady)
+                    {
+                        /* We are signalled by SetPlayerAttrs() if the tags
+                           contain PLAYER_Ready '=' TRUE) */
+                        Wait(SIGF_SINGLE);
+                    }
+                }
+            }
 
-	    ObtainSemaphore(&conductor->cdt_Lock);
-	    conductor->cdt_Barrier = NULL;
-	    SetSignal(oldSignals, SIGF_SINGLE);
-	    ReleaseSemaphore(&conductor->cdt_Lock);
-	}
+            ObtainSemaphore(&conductor->cdt_Lock);
+            conductor->cdt_Barrier = NULL;
+            SetSignal(oldSignals, SIGF_SINGLE);
+            ReleaseSemaphore(&conductor->cdt_Lock);
+        }
 
-	/* Send PM_STATE message with CONDSTATE_LOCATE_SET here? */
+        /* Send PM_STATE message with CONDSTATE_LOCATE_SET here? */
 
-	/* Fall through */
-	
+        /* Fall through */
+        
     case CONDSTATE_RUNNING:
-	/* Start clock */
-	conductor->cdt_ClockTime = time;
-	conductor->cdt_State = CONDSTATE_RUNNING;
+        /* Start clock */
+        conductor->cdt_ClockTime = time;
+        conductor->cdt_State = CONDSTATE_RUNNING;
 
-	break;
+        break;
 
     case CONDSTATE_METRIC:
-	{
-	    /* Get the highest priority musically aware player and let him
-	       take care of the time location process. He will later call
-	       SetConductorState() with state CONDSTATE_LOCATE to set the
-	       time in realtime units calculated from his internal awareness
-	       of time. */
-	    struct Player *maestro = NULL;
+        {
+            /* Get the highest priority musically aware player and let him
+               take care of the time location process. He will later call
+               SetConductorState() with state CONDSTATE_LOCATE to set the
+               time in realtime units calculated from his internal awareness
+               of time. */
+            struct Player *maestro = NULL;
 
-	    ForeachNode(&conductor->cdt_Players,pl)
-	    {
-		if (pl->pl_Flags & PLAYERF_CONDUCTED)
-		{
-		    maestro = pl;
-		    break;
-		}
-	    }
+            ForeachNode(&conductor->cdt_Players,pl)
+            {
+                if (pl->pl_Flags & PLAYERF_CONDUCTED)
+                {
+                    maestro = pl;
+                    break;
+                }
+            }
 
-	    if (maestro == NULL)
-	    {
-		/* There is no defined error to return in this situation */
-	    }
-	    else
-	    {
-		timeMsg.pmt_Method = PM_POSITION;
-		CallHookA(maestro->pl_Hook, player, &timeMsg);
-	    }
-	    
-	    break;
-	}
+            if (maestro == NULL)
+            {
+                /* There is no defined error to return in this situation */
+            }
+            else
+            {
+                timeMsg.pmt_Method = PM_POSITION;
+                CallHookA(maestro->pl_Hook, player, &timeMsg);
+            }
+            
+            break;
+        }
 
     case CONDSTATE_SHUTTLE:
-	/* Shuttling not allowed when playing */
-	if (conductor->cdt_State == CONDSTATE_RUNNING)
-	{
-	    return RTE_PLAYING;
-	}
+        /* Shuttling not allowed when playing */
+        if (conductor->cdt_State == CONDSTATE_RUNNING)
+        {
+            return RTE_PLAYING;
+        }
 
-	conductor->cdt_StartTime = time;
+        conductor->cdt_StartTime = time;
 
-	timeMsg.pmt_Method = PM_SHUTTLE;
-	
-	ForeachNode(&conductor->cdt_Players, pl)
-	{
-	    if (pl->pl_Hook != NULL)
-	    {
-		CallHookA(pl->pl_Hook, player, &timeMsg);
-	    }
-	}
-	
-	break;
+        timeMsg.pmt_Method = PM_SHUTTLE;
+        
+        ForeachNode(&conductor->cdt_Players, pl)
+        {
+            if (pl->pl_Hook != NULL)
+            {
+                CallHookA(pl->pl_Hook, player, &timeMsg);
+            }
+        }
+        
+        break;
     }
 
-    return 0;			/* Success */
+    return 0;                   /* Success */
 
     AROS_LIBFUNC_EXIT
 } /* SetConductorState */

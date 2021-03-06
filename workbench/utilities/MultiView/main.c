@@ -81,7 +81,7 @@ static UBYTE            fontname[256];
 static WORD             winwidth, winheight;
 static WORD             sizeimagewidth, sizeimageheight;
 static BOOL             model_has_members;
-static jmp_buf 		exit_buf;
+static jmp_buf          exit_buf;
 
 /*********************************************************************************************/
 
@@ -116,7 +116,7 @@ void OutputMessage(CONST_STRPTR msg)
             es.es_TextFormat   = msg;
             es.es_GadgetFormat = MSG(MSG_OK);
            
-            EasyRequestArgs(win, &es, NULL, NULL);  
+            EasyRequestArgs(win, &es, NULL, NULL);
         }
         else
         {
@@ -213,7 +213,7 @@ static void OpenLibs(void)
         {
             __sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
             Cleanup(s);
-        }       
+        }
     }
        
 }
@@ -322,28 +322,28 @@ static struct DiskObject *LoadProgIcon(struct WBStartup *startup, BPTR *icondir,
 
     if (startup)
     {
-    	BPTR olddir;
-	
-	*icondir = startup->sm_ArgList[0].wa_Lock;
-	
-	olddir = CurrentDir(*icondir);	
-    	progicon = GetDiskObject(startup->sm_ArgList[0].wa_Name);		
-	CurrentDir(olddir);
+        BPTR olddir;
+        
+        *icondir = startup->sm_ArgList[0].wa_Lock;
+        
+        olddir = CurrentDir(*icondir);
+        progicon = GetDiskObject(startup->sm_ArgList[0].wa_Name);
+        CurrentDir(olddir);
 
-	strncpy(iconname, startup->sm_ArgList[0].wa_Name, 255);
+        strncpy(iconname, startup->sm_ArgList[0].wa_Name, 255);
     }
     else
-    {	
-	if (GetProgramName(iconname, 255))
-	{
-    	    BPTR olddir;
-	    
-	    *icondir = GetProgramDir();
-	    
-	    olddir = CurrentDir(*icondir);
-    	    progicon = GetDiskObject(iconname);	    
-	    CurrentDir(olddir);
-	}	    
+    {
+        if (GetProgramName(iconname, 255))
+        {
+            BPTR olddir;
+            
+            *icondir = GetProgramDir();
+            
+            olddir = CurrentDir(*icondir);
+            progicon = GetDiskObject(iconname);
+            CurrentDir(olddir);
+        }
     }
     
     return progicon;
@@ -427,7 +427,7 @@ static void MakeICObjects(void)
         !dto_to_vert_ic_obj     ||
         !dto_to_horiz_ic_obj    ||
         !vert_to_dto_ic_obj     ||
-        !horiz_to_dto_ic_obj 
+        !horiz_to_dto_ic_obj
     #if BACK_CONNECTION
         || !model_to_dto_ic_obj
     #endif
@@ -976,7 +976,7 @@ static void MakeWindow(void)
                                                   IDCMP_GADGETUP    |
                                                   IDCMP_GADGETDOWN  |
                                                   IDCMP_MOUSEMOVE   |
-                                                  IDCMP_VANILLAKEY  |                                             
+                                                  IDCMP_VANILLAKEY  |
                                                   IDCMP_RAWKEY      |
                                                   IDCMP_IDCMPUPDATE |
                                                   IDCMP_MENUPICK    |
@@ -984,7 +984,7 @@ static void MakeWindow(void)
                                                   IDCMP_INTUITICKS      ,
                             TAG_DONE);
 
-    if (!win) Cleanup(MSG(MSG_CANT_CREATE_WIN));                            
+    if (!win) Cleanup(MSG(MSG_CANT_CREATE_WIN));
 
     AddDTOToWin();
         
@@ -1090,7 +1090,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
 
     D(bug("[MultiView] %s()\n", __func__));
 
-#ifdef __AROS__    
+#ifdef __AROS__
     switch(dir)
     {
         case RAWKEY_NM_WHEEL_UP:
@@ -1422,7 +1422,7 @@ static void HandleAll(void)
                     break;
                         
                 case IDCMP_MENUPICK:
-                    men = msg->Code;            
+                    men = msg->Code;
 //                  D(bug(" * MV: men %08lx\n", (long)men));
                     while(men != MENUNULL)
                     {

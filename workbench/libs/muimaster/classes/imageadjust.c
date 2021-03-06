@@ -1105,7 +1105,7 @@ BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
         return Imageadjust__MUIM_Imageadjust_ReadExternal(cl, obj,
             (APTR) msg);
 
-    //case MUIM_Imageadjust_ExternalSelected: 
+    //case MUIM_Imageadjust_ExternalSelected:
     //    return Imageadjust__MUIM_Imageadjust_ExternalSelected(cl, obj,
     //        (APTR)msg);
 

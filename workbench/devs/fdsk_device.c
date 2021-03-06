@@ -216,7 +216,7 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
-AROS_LH1(void, beginio, 
+AROS_LH1(void, beginio,
  AROS_LHA(struct IOExtTD *, iotd, A1),
           struct fdskbase *, fdskbase, 5, Fdsk)
 {
@@ -305,8 +305,8 @@ AROS_LH1(void, beginio,
 
 /****************************************************************************************/
 
-AROS_LH1(LONG, abortio, 
- AROS_LHA(struct IOExtTD *, iotd, A1), 
+AROS_LH1(LONG, abortio,
+ AROS_LHA(struct IOExtTD *, iotd, A1),
           struct fdskbase *, fdskbase, 6, Fdsk)
 {
     AROS_LIBFUNC_INIT
@@ -343,8 +343,8 @@ static LONG error(LONG error)
 
 static LONG read(struct unit *unit, struct IOExtTD *iotd)
 {
-    STRPTR 	buf;
-    LONG 	size, subsize;
+    STRPTR      buf;
+    LONG        size, subsize;
 
     D(bug("[FDSK%02ld] read32: offset = %08x  size = %08x\n", unit->unitnum, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
@@ -501,8 +501,8 @@ void eject(struct unit *unit, BOOL eject) {
 
 /**************************************************************************/
 
-AROS_UFH2(void, putchr, 
-    AROS_UFHA(UBYTE, chr, D0), 
+AROS_UFH2(void, putchr,
+    AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(STRPTR *, p, A3)
 )
 {

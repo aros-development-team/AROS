@@ -539,7 +539,7 @@ static void DrawMapTileToRP(struct NewImage *src, struct RastPort *rp, UWORD _sx
 
             if (src->mask)
             {
-                BltMaskBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, 0xe0, (PLANEPTR) src->mask);  
+                BltMaskBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, 0xe0, (PLANEPTR) src->mask);
             }
             else BltBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, 0xc0);
 
@@ -666,7 +666,7 @@ void  SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb)
     }
 }
 
-/* 
+/*
  * offx - offset between start of ni and place where image should be sample from
  * offy - offset between start of ni and place where image should be sample from
  * x, y, w, h - coords in rastport rp
@@ -877,10 +877,10 @@ void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG x
         xw = width;
         yw = -height;
     }
-		
+                
     if (angle > 90 && angle <= 270)
     {
-	/* for these angle we have y1 = height - y1. Instead of
+        /* for these angle we have y1 = height - y1. Instead of
          *
          *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
          *
@@ -911,7 +911,7 @@ void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG x
 
     /* The formular as shown above is
      *
-     * 	 y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
+     *   y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
      *
      * We see that only yw*(vy*x-vx*y) changes during the loop.
      *
@@ -943,7 +943,7 @@ void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG x
              * and making it incremental)...update: it's now incremental and no FFP is used
              * but it probably can be optimized more by removing some more of the divisions and
              * further specialize the stuff here (use of three accus). */
-            /*	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
+            /*      y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
             y1 = y1_mul_t_accu / t;
 
             red = startRGB.red + (int)(diffR*y1/height);

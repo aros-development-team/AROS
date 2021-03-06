@@ -49,7 +49,7 @@ VOID METHOD(g33BridgeDevice, Hidd_AGPBridgeDevice, BindMemory)
 BOOL METHOD(g33BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 {
     /* TODO: Implement */
-    /* Note: specific detection, but initialization code identical as i915 */   
+    /* Note: specific detection, but initialization code identical as i915 */
     
     /* THIS CLASS IS NOT FULLY IMPLEMENT AND NOT TESTED AT ALL */
     return FALSE;

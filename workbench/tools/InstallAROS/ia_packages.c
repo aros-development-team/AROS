@@ -17,7 +17,7 @@ void PACKAGES_InitSupport(struct List *PACKAGELIST)
     D(bug("[InstallAROS] %s()\n", __func__));
 
     NEWLIST(PACKAGELIST);
-    // TODO: enumerate available packages .. 
+    // TODO: enumerate available packages ..
 }
 
 void PACKAGES_AddCoreSkipPaths(struct List *SkipList)
@@ -32,7 +32,7 @@ void PACKAGES_AddCoreSkipPaths(struct List *SkipList)
     AddPart(skipPath, "Prefs/Env-Archive/SYS/Packages/Developer", skipPathLen);
     AddSkipListEntry(SkipList, skipPath);
 #endif
-    // TODO: remove core package dirs .. 
+    // TODO: remove core package dirs ..
 }
 
 void PACKAGES_DoInstall(Class * CLASS, Object * self)

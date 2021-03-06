@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 #include "lowlevel_intern.h"
 
@@ -15,7 +15,7 @@
 
       AROS_LH1(VOID, RemTimerInt,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(APTR, intHandle, A1),
 
 /*  LOCATION */

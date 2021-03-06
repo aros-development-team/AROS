@@ -18,20 +18,20 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH8(VOID, ProcessPixelArray,
+        AROS_LH8(VOID, ProcessPixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(ULONG, destX, D0),
-	AROS_LHA(ULONG, destY, D1),
-	AROS_LHA(ULONG, sizeX, D2),
-	AROS_LHA(ULONG, sizeY, D3),
-	AROS_LHA(ULONG, operation, D4),
-	AROS_LHA(LONG, value, D5),
-	AROS_LHA(struct TagItem *, taglist, A2),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(ULONG, destX, D0),
+        AROS_LHA(ULONG, destY, D1),
+        AROS_LHA(ULONG, sizeX, D2),
+        AROS_LHA(ULONG, sizeY, D3),
+        AROS_LHA(ULONG, operation, D4),
+        AROS_LHA(LONG, value, D5),
+        AROS_LHA(struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 38, Cybergraphics)
+        struct Library *, CyberGfxBase, 38, Cybergraphics)
 
 /*  FUNCTION
         Applies one of a variety of transformations to a rectangular portion
@@ -147,7 +147,7 @@
                 default:
                     D(bug("[Cgfx] %s: Unknown POP_GRADIENT TAG 0x%08x\n", __PRETTY_FUNCTION__, tag->ti_Tag));
                     break;
-            } 	
+            }
         }
         ProcessPixelArrayGradientFunc(rp, &opRect, gradHoriz, gradOffset, gradCol1, gradCol2, gradFull, CyberGfxBase);
         break;

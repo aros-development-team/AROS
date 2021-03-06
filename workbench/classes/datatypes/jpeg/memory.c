@@ -18,7 +18,7 @@ void free(void *mem)
 }
 
 char *getenv (const char *name)
-{ 
+{
     /* This function is not thread-safe */
     static TEXT buff[128] = {};
     

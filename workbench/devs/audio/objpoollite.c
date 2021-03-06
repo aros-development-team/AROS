@@ -11,17 +11,17 @@
  * $Id$
  */
 
-#include	"audio_intern.h"
+#include        "audio_intern.h"
 
 /*
  *
- *	enode_AllocNode
+ *      enode_AllocNode
  * -----------------
  *
- *	Allocs an ENODE node. The node returned has size equal to sizeof(ENODE). Is possible also to alloc more bytes after the struct
- *	enode equal to the nodesize for personal uses. If it has to be simply as the ENODE you can ask as nodesize ENODE_NOBODY. Is also
- *	possible to name this node at making using the field name. The name can be changed after or can be ENODE_NONAME.
- *	Returns the node or NULL if there is not memory. If you ask as size for example 10 bytes the whole struct size is sizeof(ENODE) + 10.
+ *      Allocs an ENODE node. The node returned has size equal to sizeof(ENODE). Is possible also to alloc more bytes after the struct
+ *      enode equal to the nodesize for personal uses. If it has to be simply as the ENODE you can ask as nodesize ENODE_NOBODY. Is also
+ *      possible to name this node at making using the field name. The name can be changed after or can be ENODE_NONAME.
+ *      Returns the node or NULL if there is not memory. If you ask as size for example 10 bytes the whole struct size is sizeof(ENODE) + 10.
  *
  */
 
@@ -45,15 +45,15 @@ ENODE *enode_AllocNode(unsigned long int nodesize, unsigned long int name)
 
 /*
  *
- *	enode_FreeNode
+ *      enode_FreeNode
  * ----------------
  *
- *	Frees an enode allocated by enode_AllocNode(). Pay attention because the node is not removed from the list it may still be.
- *	So before free a simple enode remove it from the list, or better allocs all the nodes you want but always asking for
- *	ELIST_FREE elist types which free all the nodes they have in their list automatically. The best would be to ask for that type
- *	of list (ELIST_FREE) adding a new node each time to an existing list or making more than one list; one could manage a stack of
- *	available nodes and another one when needs of a node could pick the one from the stack and after having used it could send
- *	it back to the stack list.
+ *      Frees an enode allocated by enode_AllocNode(). Pay attention because the node is not removed from the list it may still be.
+ *      So before free a simple enode remove it from the list, or better allocs all the nodes you want but always asking for
+ *      ELIST_FREE elist types which free all the nodes they have in their list automatically. The best would be to ask for that type
+ *      of list (ELIST_FREE) adding a new node each time to an existing list or making more than one list; one could manage a stack of
+ *      available nodes and another one when needs of a node could pick the one from the stack and after having used it could send
+ *      it back to the stack list.
  *
  */
 
@@ -64,10 +64,10 @@ void enode_FreeNode(ENODE *thenode)
 }
 
 /*
- *	enode_InitList
+ *      enode_InitList
  * ----------------
  *
- *	Inits a just allocated list.
+ *      Inits a just allocated list.
  *
  */
 
@@ -84,26 +84,26 @@ VOID enode_InitList(ELIST *thelist)
 
 /*
  *
- *	enode_AllocList
+ *      enode_AllocList
  * -----------------
  *
- *	Allocs the functional body of an enode list of nodes. Return a ready ELIST or NULL if there is not memory.
- *	You can ask a particular quitting mode when this list is freed by enode_FreeList(). By ELIST_FREE when the
- *	enode_FreeList() is called the function frees by enode_FreeNode() all the nodes into the elist. By ELIST_SIMPLE
- *	the function does nothing and you have to free manually all the enodes. The function saves the type into the name of the
- *	head node (elist->firstnode->name).
- *	The input value 'toalloc' is usefull to ask enode_AllocList() to allocate by enode_AllocNode() a certain number of pre
- *	allocated nodes own by this list as default. If you want an empty list please ask for a ELIST_EMPTY otherwise for the
- *	number of enodes. The enodes allocated here are with noname and has the minimal size possible equal to sizeof(ENODE).
- *	Remember to free manually all the enodes here allocated (using enode_FreeNode()) if you don't ask the ELIST_FREE mode
- *	here. If there isn't enought mem to alloc all the requested enodes the function frees all the resources and returns NULL.
+ *      Allocs the functional body of an enode list of nodes. Return a ready ELIST or NULL if there is not memory.
+ *      You can ask a particular quitting mode when this list is freed by enode_FreeList(). By ELIST_FREE when the
+ *      enode_FreeList() is called the function frees by enode_FreeNode() all the nodes into the elist. By ELIST_SIMPLE
+ *      the function does nothing and you have to free manually all the enodes. The function saves the type into the name of the
+ *      head node (elist->firstnode->name).
+ *      The input value 'toalloc' is usefull to ask enode_AllocList() to allocate by enode_AllocNode() a certain number of pre
+ *      allocated nodes own by this list as default. If you want an empty list please ask for a ELIST_EMPTY otherwise for the
+ *      number of enodes. The enodes allocated here are with noname and has the minimal size possible equal to sizeof(ENODE).
+ *      Remember to free manually all the enodes here allocated (using enode_FreeNode()) if you don't ask the ELIST_FREE mode
+ *      here. If there isn't enought mem to alloc all the requested enodes the function frees all the resources and returns NULL.
  *
- *	>Syn
- *	*list	=	enode_AllocList(nodes,exit_mode)
+ *      >Syn
+ *      *list   =       enode_AllocList(nodes,exit_mode)
  *
- *	>Inputs
- *	nodes			=	Number of nodes to alloc at startup, if none use ELIST_EMPTY.
- *	exit_mode	=	If ELIST_SIMPLE no action is taken at freeing otherwise by ELIST_FREE each node in the list is freed.
+ *      >Inputs
+ *      nodes                   =       Number of nodes to alloc at startup, if none use ELIST_EMPTY.
+ *      exit_mode       =       If ELIST_SIMPLE no action is taken at freeing otherwise by ELIST_FREE each node in the list is freed.
  *
  */
 
@@ -141,12 +141,12 @@ ELIST *enode_AllocList(unsigned long int toalloc, unsigned long int exitmode)
 
 /*
  *
- *	enode_FreeList
+ *      enode_FreeList
  * ----------------
  *
- *	Frees the head body ELIST of a list of enodes. It considers the initial exitmode asked in enode_AllocList(). The value is
- *	saved under the elist->firstnode->name field. If it is ELIST_FREE before to free the entire body list frees by
- *	enode_FreeNode() all the nodes in the list. By ELIST_SIMPLE it does nothing more than to free the list's body ELIST.
+ *      Frees the head body ELIST of a list of enodes. It considers the initial exitmode asked in enode_AllocList(). The value is
+ *      saved under the elist->firstnode->name field. If it is ELIST_FREE before to free the entire body list frees by
+ *      enode_FreeNode() all the nodes in the list. By ELIST_SIMPLE it does nothing more than to free the list's body ELIST.
  *
  */
 
@@ -167,34 +167,34 @@ void enode_FreeList(ELIST *thelist)
 
 /*
  *
- *	enode_PrintList
+ *      enode_PrintList
  * -----------------
  *
- *	Prints an elist info.
+ *      Prints an elist info.
  *
  */
 
 void enode_PrintList(ELIST *thelist)
 {
     /*
-     ENODE	*actnode;
+     ENODE      *actnode;
 
      actnode = thelist->firstnode;
      do
      {
-     if(actnode == thelist->firstnode)		printf("List is: [F](%d)",thelist);
-     else	if(actnode == thelist->lastnode)	printf("-[L](%d)\n",thelist->lastnode);
-     else												printf("-[%d](%d){%d}",actnode->name,actnode,actnode->pri);
+     if(actnode == thelist->firstnode)          printf("List is: [F](%d)",thelist);
+     else       if(actnode == thelist->lastnode)        printf("-[L](%d)\n",thelist->lastnode);
+     else                                                                                               printf("-[%d](%d){%d}",actnode->name,actnode,actnode->pri);
      }while(actnode = actnode->next);
      */
 }
 
 /*
  *
- *	enode_AddHead
+ *      enode_AddHead
  * ---------------
  *
- *	Add an enode to the head of an elist.
+ *      Add an enode to the head of an elist.
  *
  *
  */
@@ -209,10 +209,10 @@ void enode_AddHead(ELIST *thelist, ENODE *thenode)
 
 /*
  *
- *	enode_RemHead
+ *      enode_RemHead
  * ---------------
  *
- *	Removes the head enode from an elist. Returns the pointer to the enode or NULL if the list is empty.
+ *      Removes the head enode from an elist. Returns the pointer to the enode or NULL if the list is empty.
  *
  *
  */
@@ -232,10 +232,10 @@ ENODE *enode_RemHead(ELIST *thelist)
 
 /*
  *
- *	enode_AddTail
+ *      enode_AddTail
  * ---------------
  *
- *	Add an enode to the tail of an elist.
+ *      Add an enode to the tail of an elist.
  *
  *
  */
@@ -250,10 +250,10 @@ void enode_AddTail(ELIST *thelist, ENODE *thenode)
 
 /*
  *
- *	enode_RemTail
+ *      enode_RemTail
  * ---------------
  *
- *	Removes the tail enode from an elist. Returns the pointer to the enode or NULL if the list is empty.
+ *      Removes the tail enode from an elist. Returns the pointer to the enode or NULL if the list is empty.
  *
  *
  */
@@ -273,10 +273,10 @@ ENODE *enode_RemTail(ELIST *thelist)
 
 /*
  *
- *	enode_Remove
+ *      enode_Remove
  * --------------
  *
- *	Removes an enode from the elist where it is.
+ *      Removes an enode from the elist where it is.
  *
  */
 
@@ -288,11 +288,11 @@ void enode_Remove(ENODE *thenode)
 
 /*
  *
- *	enode_FindNode
+ *      enode_FindNode
  * ----------------
  *
- *	Finds in an elist the first enode from the bottom (head) of the list which has the field enode->name equal
- *	to the requested name. If doesn't find any return NULL. The name is a 32 bit integer value.
+ *      Finds in an elist the first enode from the bottom (head) of the list which has the field enode->name equal
+ *      to the requested name. If doesn't find any return NULL. The name is a 32 bit integer value.
  *
  */
 
@@ -311,11 +311,11 @@ ENODE *enode_FindNode(ELIST *thelist, unsigned long int name)
 
 /*
  *
- *	enode_Insert
+ *      enode_Insert
  * --------------
  *
- *	Puts the enode 'insert' in the same list 'thelist' of enode 'before' after the 'before' enode. If 'before' is NULL
- *	the enode 'insert' is added at the head of the elist 'thelist'. In that case is the same as calling enode_AddHead(thelist,insert).
+ *      Puts the enode 'insert' in the same list 'thelist' of enode 'before' after the 'before' enode. If 'before' is NULL
+ *      the enode 'insert' is added at the head of the elist 'thelist'. In that case is the same as calling enode_AddHead(thelist,insert).
  *
  */
 
@@ -334,10 +334,10 @@ void enode_Insert(ELIST *thelist, ENODE *insert, ENODE *before)
 
 /*
  *
- *	enode_SwapNodes
+ *      enode_SwapNodes
  * -----------------
  *
- *	Swaps two nodes.
+ *      Swaps two nodes.
  *
  */
 
@@ -390,10 +390,10 @@ VOID enode_SwapNodes(ENODE *node_a, ENODE *node_b)
 
 /*
  *
- *	enode_FindListNode
+ *      enode_FindListNode
  * --------------------
  *
- *	Given an enode finds the elist which contains that enode. Could be a bit expansive in time.
+ *      Given an enode finds the elist which contains that enode. Could be a bit expansive in time.
  *
  *
  */
@@ -407,15 +407,15 @@ ELIST *enode_FindListNode(ENODE *thenode)
 
 /*
  *
- *	enode_Enqueue
+ *      enode_Enqueue
  * ---------------
  *
- *	Appends an enode into an elist considering the node pri. You are allowed to modify the enode->pri field before using this
- *	function. The pri is a signed char so can have a range from -127 to +127. More high it is more pri the node has when added
- *	into the list. The highest pri is +127 the lowest is -127. The order is..
- *	list_head->127->126->125->....->list_tail
- *	If a new node has the same pri of an existing one the last is inserted with a FIFO (first in, first out) order so is placed
- *	in the last position before the next node with lower pri and after all the other with same pri.
+ *      Appends an enode into an elist considering the node pri. You are allowed to modify the enode->pri field before using this
+ *      function. The pri is a signed char so can have a range from -127 to +127. More high it is more pri the node has when added
+ *      into the list. The highest pri is +127 the lowest is -127. The order is..
+ *      list_head->127->126->125->....->list_tail
+ *      If a new node has the same pri of an existing one the last is inserted with a FIFO (first in, first out) order so is placed
+ *      in the last position before the next node with lower pri and after all the other with same pri.
  *
  */
 
@@ -436,10 +436,10 @@ void enode_Enqueue(ELIST *thelist, ENODE *thenode)
 }
 
 /*
- *	enode_GetHeadNode
+ *      enode_GetHeadNode
  *  -------------------
  *
- *	Returns the pointer to the head enode of the elist without removing it. If the elist is empty returns NULL.
+ *      Returns the pointer to the head enode of the elist without removing it. If the elist is empty returns NULL.
  *
  */
 
@@ -452,10 +452,10 @@ ENODE *enode_GetHeadNode(ELIST *thelist)
 }
 
 /*
- *	enode_GetTailNode
+ *      enode_GetTailNode
  *  -------------------
  *
- *	Returns the pointer to the tail enode of the elist without removing it. If the elist is empty returns NULL.
+ *      Returns the pointer to the tail enode of the elist without removing it. If the elist is empty returns NULL.
  *
  */
 
@@ -469,10 +469,10 @@ ENODE *enode_GetTailNode(ELIST *thelist)
 
 /*
  *
- *	enode_GetNextNode
+ *      enode_GetNextNode
  *  -------------------
  *
- *	Returns,without removing, the next node after the given 'thenode' or NULL if 'thenode' is the last one of the list.
+ *      Returns,without removing, the next node after the given 'thenode' or NULL if 'thenode' is the last one of the list.
  *
  */
 
@@ -487,10 +487,10 @@ ENODE *enode_GetNextNode(ELIST *thelist, ENODE *thenode)
 
 /*
  *
- *	enode_GetPrecNode
+ *      enode_GetPrecNode
  *  -------------------
  *
- *	Returns, without removing, the previous enode after the given 'thenode' or NULL if 'thenode' is the first one of the list.
+ *      Returns, without removing, the previous enode after the given 'thenode' or NULL if 'thenode' is the first one of the list.
  *
  */
 
@@ -505,10 +505,10 @@ ENODE *enode_GetPrecNode(ELIST *thelist, ENODE *thenode)
 
 /*
  *
- *	enode_GetNodeName
+ *      enode_GetNodeName
  *  -------------------
  *
- *	Returns the name of an enode.
+ *      Returns the name of an enode.
  *
  */
 
@@ -519,10 +519,10 @@ unsigned long int enode_GetNodeName(ENODE *thenode)
 
 /*
  *
- *	enode_SetNodeName
+ *      enode_SetNodeName
  *  -------------------
  *
- *	Changes te node's own name.
+ *      Changes te node's own name.
  *
  */
 
@@ -533,10 +533,10 @@ VOID enode_SetNodeName(ENODE *thenode, unsigned long int name)
 
 /*
  *
- *	enode_CountNodes
+ *      enode_CountNodes
  * ------------------
  *
- *	Returns the number (unsigned long int) of nodes present into an ELIST.
+ *      Returns the number (unsigned long int) of nodes present into an ELIST.
  *
  *
  */
@@ -556,15 +556,15 @@ unsigned long int enode_CountNodes(ELIST *thelist)
 
 /*
  *
- *	enode_GetNNode
+ *      enode_GetNNode
  * ----------------
  *
- *	Returns the node in n position from the bottom. If the pos value exits from the list returns NULL. The same if the list
- *	is empty. The first node has position 0.
+ *      Returns the node in n position from the bottom. If the pos value exits from the list returns NULL. The same if the list
+ *      is empty. The first node has position 0.
  *
  *
- *	>Syn
- *	*nnode	=	enode_GetNNode(*list,pos)
+ *      >Syn
+ *      *nnode  =       enode_GetNNode(*list,pos)
  *
  */
 

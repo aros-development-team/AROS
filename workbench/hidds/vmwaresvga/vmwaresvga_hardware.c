@@ -163,10 +163,10 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
 
     data->mmiosize = vmwareReadReg(data, SVGA_REG_MEM_SIZE);
 
-    vmwareWriteReg(data, SVGA_REG_CONFIG_DONE, 0);		//Stop vmware from reading the fifo
+    vmwareWriteReg(data, SVGA_REG_CONFIG_DONE, 0);              //Stop vmware from reading the fifo
 
     fifo[SVGA_FIFO_MIN] = (data->fifomin << VMWFIFO_CMD_SIZESHIFT);
-    fifo[SVGA_FIFO_MAX] = data->mmiosize; 
+    fifo[SVGA_FIFO_MAX] = data->mmiosize;
     fifo[SVGA_FIFO_NEXT_CMD] = fifo[SVGA_FIFO_MIN];
     fifo[SVGA_FIFO_STOP] = fifo[SVGA_FIFO_MIN];
 
@@ -352,7 +352,7 @@ APTR reserveVMWareSVGAFIFO(struct HWData *data, ULONG size)
             ReleaseSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
             return data->fifocmdbuf.buffer;
         }
-    } /* while (1) */    
+    } /* while (1) */
 }
 
 VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
@@ -925,9 +925,9 @@ VOID VMWareSVGA_RenderTask(struct HWData *hwdata)
     timer_request = AllocMem(request_size, MEMF_CLEAR | MEMF_PUBLIC);
     timer_request_as_io_request = (void *)timer_request;
 
-    timer_request_as_io_request->io_Message.mn_Node.ln_Type 	= NT_MESSAGE;
-    timer_request_as_io_request->io_Message.mn_ReplyPort	  	= &render_thread_message_port;
-    timer_request_as_io_request->io_Message.mn_Length	  		= request_size;
+    timer_request_as_io_request->io_Message.mn_Node.ln_Type     = NT_MESSAGE;
+    timer_request_as_io_request->io_Message.mn_ReplyPort                = &render_thread_message_port;
+    timer_request_as_io_request->io_Message.mn_Length                   = request_size;
 
     OpenDevice("timer.device", UNIT_MICROHZ, timer_request_as_io_request, 0);
 
@@ -974,9 +974,9 @@ VOID VMWareSVGA_RestartRenderTask(struct HWData *hwdata)
 #if !defined(VMWAREGFX_IMMEDIATEDRAW)
     hwdata->render_task = NewCreateTask(TASKTAG_PC,
                                         VMWareSVGA_RenderTask,
-                                        TASKTAG_NAME,	"VMWare Render Task",
-                                        TASKTAG_PRI,	1,
-                                        TASKTAG_ARG1,	hwdata,
+                                        TASKTAG_NAME,   "VMWare Render Task",
+                                        TASKTAG_PRI,    1,
+                                        TASKTAG_ARG1,   hwdata,
                                         TAG_DONE);
 #endif
 }

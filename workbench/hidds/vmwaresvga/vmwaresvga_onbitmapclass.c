@@ -30,7 +30,7 @@ static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddVMWareSVGAAttrBase;
 static OOP_AttrBase HiddVMWareSVGABitMapAttrBase;
 
-static struct OOP_ABDescr attrbases[] = 
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap,              &HiddBitMapAttrBase             },
     { IID_Hidd_PixFmt,              &HiddPixFmtAttrBase             },
@@ -84,7 +84,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
         ASSERT (width != 0 && height != 0 && depth != 0);
 
-        /* 
+        /*
             We must only create depths that are supported by the friend drawable
             Currently we only support the default depth
         */

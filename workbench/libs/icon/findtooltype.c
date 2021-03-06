@@ -10,26 +10,26 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH2(UBYTE *, FindToolType,
+        AROS_LH2(UBYTE *, FindToolType,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST STRPTR *, toolTypeArray, A0),
-	AROS_LHA(CONST STRPTR,   typeName,      A1),
+        AROS_LHA(CONST STRPTR *, toolTypeArray, A0),
+        AROS_LHA(CONST STRPTR,   typeName,      A1),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 16, Icon)
+        struct IconBase *, IconBase, 16, Icon)
 
 /*  FUNCTION
-	Finds the supplied typeName inside the given toolTypeArray.
-	Search is case-insensitive.
+        Finds the supplied typeName inside the given toolTypeArray.
+        Search is case-insensitive.
 
     INPUTS
-	toolTypeArray  -  pointer to an array of tooltype strings.
-	typeName      -  name of a specific tool-type.
+        toolTypeArray  -  pointer to an array of tooltype strings.
+        typeName      -  name of a specific tool-type.
 
     RESULT
-	NULL if the tooltype wasn't found and a pointer to the value
-	of the tooltype otherwise.
+        NULL if the tooltype wasn't found and a pointer to the value
+        of the tooltype otherwise.
 
     NOTES
 
@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	MatchToolValue()
+        MatchToolValue()
 
     INTERNALS
 
@@ -57,14 +57,14 @@
 
     while (*toolTypeArray)
     {
-	/* case insensitive compare */
-	if (!Strnicmp (*toolTypeArray, typeName, typenamelen) )
-	{
-	    if ( (*toolTypeArray)[typenamelen] == '=') typenamelen++;
+        /* case insensitive compare */
+        if (!Strnicmp (*toolTypeArray, typeName, typenamelen) )
+        {
+            if ( (*toolTypeArray)[typenamelen] == '=') typenamelen++;
             return (*toolTypeArray + typenamelen);
-	}
+        }
 
-	toolTypeArray ++;
+        toolTypeArray ++;
     }
 
     return NULL;

@@ -24,8 +24,8 @@
 
 #include "parse.h"
 
-#define DEBUG_PARSEIX(x)	;
-#define DEBUG_PMATCH(x)		;
+#define DEBUG_PARSEIX(x)        ;
+#define DEBUG_PMATCH(x)         ;
 
 BOOL pMatch(pix_S[], CONST_STRPTR, LONG *, BOOL *, struct Library *CxBase);
 VOID GetNext(CONST_STRPTR *);
@@ -39,12 +39,12 @@ BOOL IsSeparator(char);
 
 /*  SYNOPSIS */
 
-	AROS_LHA(CONST_STRPTR, desc, A0),
-	AROS_LHA(IX *  , ix  , A1),
+        AROS_LHA(CONST_STRPTR, desc, A0),
+        AROS_LHA(IX *  , ix  , A1),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 22, Commodities)
+        struct Library *, CxBase, 22, Commodities)
 
 /*  FUNCTION
 
@@ -111,152 +111,152 @@ BOOL IsSeparator(char);
     
     if (desc == NULL)
     {
-	ix->ix_Code = 0xFFFF;
+        ix->ix_Code = 0xFFFF;
 
-	return -2;
+        return -2;
     }
 
     DEBUG_PARSEIX(dprintf("ParseIX: ix = 0x%lx, desc = \"%s\"\n", ix, desc));
     
     while (IsSeparator(*desc))
     {
-	desc++;
+        desc++;
     }
     
     dash = FALSE;
     
     if (pMatch(pix_Class, desc, &val, &dash, CxBase))
     {
-	ix->ix_Class = val;
-	GetNext(&desc);
+        ix->ix_Class = val;
+        GetNext(&desc);
     }
     
     while (TRUE)
     {
-	dash = TRUE;
-	
-	if (pMatch(pix_IEvent, desc, &val, &dash, CxBase))
-	{
-	    if (dash)
-	    {
-		ix->ix_QualMask &= ~val;
-	    }
-	    else
-	    {
-		ix->ix_Qualifier |= val;
-	    }
-	    
-	    GetNext(&desc);
-	}
-	else
-	{
-	    dash = TRUE;
-	    
-	    if (pMatch(pix_Synonyms, desc, &val, &dash, CxBase))
-	    {
-	        ix->ix_QualSame |= val;
-		
-		if (dash)
-		{
-		    switch (val)
-		    {
-		    case IXSYM_SHIFT:
-			ix->ix_QualMask &= ~IXSYM_SHIFTMASK;
-			break;
-			
-		    case IXSYM_ALT:
-			ix->ix_QualMask &= ~IXSYM_ALTMASK;
-			break;
-			
-		    case IXSYM_CAPS:
-			ix->ix_QualMask &= ~IXSYM_CAPSMASK;
-			break;
-		    }
-		}
-		else
-		{
-		    switch (val)
-		    {
-		    case IXSYM_SHIFT:
-			ix->ix_Qualifier |= IXSYM_SHIFTMASK;
-			break;
-			
-		    case IXSYM_ALT:
-			ix->ix_Qualifier |= IXSYM_ALTMASK;
-			break;
-			
-		    case IXSYM_CAPS:
-			ix->ix_Qualifier |= IXSYM_CAPSMASK;
-			break;
-		    }
-		}
-		
-		GetNext(&desc);
-	    }
-	    else
-	    {
-		break;
-	    }
-	}
+        dash = TRUE;
+        
+        if (pMatch(pix_IEvent, desc, &val, &dash, CxBase))
+        {
+            if (dash)
+            {
+                ix->ix_QualMask &= ~val;
+            }
+            else
+            {
+                ix->ix_Qualifier |= val;
+            }
+            
+            GetNext(&desc);
+        }
+        else
+        {
+            dash = TRUE;
+            
+            if (pMatch(pix_Synonyms, desc, &val, &dash, CxBase))
+            {
+                ix->ix_QualSame |= val;
+                
+                if (dash)
+                {
+                    switch (val)
+                    {
+                    case IXSYM_SHIFT:
+                        ix->ix_QualMask &= ~IXSYM_SHIFTMASK;
+                        break;
+                        
+                    case IXSYM_ALT:
+                        ix->ix_QualMask &= ~IXSYM_ALTMASK;
+                        break;
+                        
+                    case IXSYM_CAPS:
+                        ix->ix_QualMask &= ~IXSYM_CAPSMASK;
+                        break;
+                    }
+                }
+                else
+                {
+                    switch (val)
+                    {
+                    case IXSYM_SHIFT:
+                        ix->ix_Qualifier |= IXSYM_SHIFTMASK;
+                        break;
+                        
+                    case IXSYM_ALT:
+                        ix->ix_Qualifier |= IXSYM_ALTMASK;
+                        break;
+                        
+                    case IXSYM_CAPS:
+                        ix->ix_Qualifier |= IXSYM_CAPSMASK;
+                        break;
+                    }
+                }
+                
+                GetNext(&desc);
+            }
+            else
+            {
+                break;
+            }
+        }
     }
     
     if (pMatch(pix_Upstroke, desc, &val, &upstrdash, CxBase))
     {
-	upstroke = TRUE;
-	GetNext(&desc);
+        upstroke = TRUE;
+        GetNext(&desc);
     }
     
     dash = FALSE;
     
     if (pMatch(pix_Highmap, desc, &val, &dash, CxBase))
     {
-	ix->ix_Code = val;
+        ix->ix_Code = val;
     }
     else
     {
-	if (*desc != '\0')
-	{
-	    if (InvertKeyMap(*desc, &event, NULL))
-	    {
-		ix->ix_Code = event.ie_Code;
-	    }
-	}
+        if (*desc != '\0')
+        {
+            if (InvertKeyMap(*desc, &event, NULL))
+            {
+                ix->ix_Code = event.ie_Code;
+            }
+        }
     }
     
     if (upstroke)
     {
-	if (upstrdash)
-	{
-	    ix->ix_CodeMask &= ~IECODE_UP_PREFIX;
-	}
-	else
-	{
-	    ix->ix_Code |= IECODE_UP_PREFIX;
-	}
+        if (upstrdash)
+        {
+            ix->ix_CodeMask &= ~IECODE_UP_PREFIX;
+        }
+        else
+        {
+            ix->ix_Code |= IECODE_UP_PREFIX;
+        }
     }
     
     while (!(IsSeparator(*desc)))
     {
-	desc++;
+        desc++;
     }
 
     DEBUG_PARSEIX(dprintf("ParseIX: Class 0x%lx Code 0x%lx CodeMask 0x%lx\n"
-			  "ParseIX: Qualifier 0x%lx QualMask 0x%lx QualSame 0x%lx\n",
-			  ix->ix_Class,
-			  ix->ix_Code,
-			  ix->ix_CodeMask,
-			  ix->ix_Qualifier,
-			  ix->ix_QualMask,
-			  ix->ix_QualSame));
+                          "ParseIX: Qualifier 0x%lx QualMask 0x%lx QualSame 0x%lx\n",
+                          ix->ix_Class,
+                          ix->ix_Code,
+                          ix->ix_CodeMask,
+                          ix->ix_Qualifier,
+                          ix->ix_QualMask,
+                          ix->ix_QualSame));
     
     if (*desc == '\0')
     {
-	return 0;
+        return 0;
     }
     else
     {
-	DEBUG_PARSEIX(dprintf("ParseIX: fail, desc 0x%lx *desc 0x%lx\n", desc, *desc));
-	return -1;
+        DEBUG_PARSEIX(dprintf("ParseIX: fail, desc 0x%lx *desc 0x%lx\n", desc, *desc));
+        return -1;
     }
     
     AROS_LIBFUNC_EXIT
@@ -264,35 +264,35 @@ BOOL IsSeparator(char);
 
 
 BOOL pMatch(pix_S words[], CONST_STRPTR string, LONG *v, BOOL *dash,
-	    struct Library *CxBase)
+            struct Library *CxBase)
 {
     CONST_STRPTR nstr = string;
     int    i;
 
     DEBUG_PMATCH(dprintf("pMatch: words[0] = \"%s\" string \"%s\" dash %d\n",
-			 words[0].name, string, *dash));
+                         words[0].name, string, *dash));
     
     if (*dash)
     {
-	if (*nstr == '-')
-	{
-	    nstr++;
-	    *dash = TRUE;
-	}
-	else
-	{
-	    *dash = FALSE;
-	}
+        if (*nstr == '-')
+        {
+            nstr++;
+            *dash = TRUE;
+        }
+        else
+        {
+            *dash = FALSE;
+        }
     }
     
     for (i = 0; words[i].name != NULL; i++)
     {
-	if (Strnicmp(nstr, words[i].name, strlen(words[i].name)) == 0)
-	{
-	    *v = words[i].value;
-	    DEBUG_PMATCH(dprintf("pMatch: value 0x%lx\n", *v));
-	    return TRUE;
-	}
+        if (Strnicmp(nstr, words[i].name, strlen(words[i].name)) == 0)
+        {
+            *v = words[i].value;
+            DEBUG_PMATCH(dprintf("pMatch: value 0x%lx\n", *v));
+            return TRUE;
+        }
     }
 
     DEBUG_PMATCH(dprintf("pMatch: not found\n"));
@@ -304,12 +304,12 @@ VOID GetNext(CONST_STRPTR *str)
 {
     while (!(IsSeparator(**str)))
     {
-	(*str)++;
+        (*str)++;
     }
     
     while (IsSeparator(**str) && !(**str=='\0'))
     {
-	(*str)++;
+        (*str)++;
     }
 }
 
@@ -318,10 +318,10 @@ BOOL IsSeparator(char a)
 {
     if (a == ' ' || a == '\n' || a == '\t' || a == ',' || a == '\0')
     {
-	return TRUE;
+        return TRUE;
     }
     else
     {
-	return FALSE;
+        return FALSE;
     }
 }

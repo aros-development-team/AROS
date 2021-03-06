@@ -75,7 +75,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
             D(bug("NV location = %s\n", temp));
 
             FreeVec(temp);
-        }    
+        }
         Close(locFile);
     } else {
         /* Volatile mode, if we have no nv_location file */

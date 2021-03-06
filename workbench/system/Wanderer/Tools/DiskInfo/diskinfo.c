@@ -42,7 +42,7 @@
 #define ID_NTFS_DISK       (0x4E544653L)
 #endif
 
-static LONG dt[] = 
+static LONG dt[] =
 {
     ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
     ID_DOS_DISK, ID_FFS_DISK, ID_INTER_DOS_DISK, ID_INTER_FFS_DISK,
@@ -77,7 +77,7 @@ struct DiskInfo_DATA
 /*** Methods ****************************************************************/
 Object *DiskInfo__OM_NEW
 (
-    Class *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message
 )
 {
     struct DosList             *dl;
@@ -107,8 +107,8 @@ Object *DiskInfo__OM_NEW
 
     static struct InfoData id;
 
-    static STRPTR disktypelist[] = 
-    { 
+    static STRPTR disktypelist[] =
+    {
     "No Disk",
     "Unreadable",
     "OFS",
@@ -259,7 +259,7 @@ Object *DiskInfo__OM_NEW
             }
         }
     }
-    else        
+    else
     {
         filesystem = AllocVec(strlen(_(MSG_UNKNOWN)) + 1, MEMF_ANY);
         CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
@@ -300,32 +300,32 @@ Object *DiskInfo__OM_NEW
                             Child, (IPTR) HVSpace,
                                 Child, (IPTR) ColGroup(2),
                                     /* TODO: Build this list only when data is realy available, and localise */
-                                    (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject, 
+                                    (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
                                         MUIA_Text_Contents, __(MSG_DOSDEVICE),
                                     End,
-                                    (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject, 
+                                    (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject,
                                         MUIA_Text_PreParse, (IPTR) "\33l",
                                         MUIA_Text_Contents, (IPTR) dosdevname,
                                     End,
-                                    (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject, 
+                                    (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject,
                                         MUIA_Text_PreParse, (IPTR) "\33r",
                                         MUIA_Text_Contents, __(MSG_DEVICEINFO),
                                     End,
-                                    (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject, 
+                                    (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject,
                                         MUIA_Text_PreParse, (IPTR) "\33l",
                                         MUIA_Text_Contents, (IPTR) deviceinfo,
                                     End,
-                            Child, (IPTR) TextObject, 
+                            Child, (IPTR) TextObject,
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, __(MSG_FILESYSTEM),
                             End,
-                            Child, (IPTR) TextObject, 
+                            Child, (IPTR) TextObject,
                                 MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33l",
                                 MUIA_Text_Contents, (IPTR) filesystem,
                             End,
                             Child, (IPTR) HVSpace,
-                            Child, (IPTR) TextObject, 
+                            Child, (IPTR) TextObject,
                                 MUIA_Text_PreParse, (IPTR) "\33l",
                                 MUIA_Text_Contents, (IPTR) handlertype,
                             End,
@@ -340,7 +340,7 @@ Object *DiskInfo__OM_NEW
                         GroupFrame,
                         Child, (IPTR) HVSpace,
                         Child, (IPTR) ColGroup(2),
-                            Child, (IPTR) TextObject, 
+                            Child, (IPTR) TextObject,
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, __(MSG_NAME),
                             End,
@@ -666,7 +666,7 @@ BOOL DiskInfo_Initialize()
     D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
 
     DiskInfo_CLASS = MUI_CreateCustomClass(
-        NULL, MUIC_Application, NULL, 
+        NULL, MUIC_Application, NULL,
         sizeof(struct DiskInfo_DATA), DiskInfo_Dispatcher);
 
     return DiskInfo_CLASS ? TRUE : FALSE;

@@ -82,7 +82,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     {
         Printf("%s\n", Var_Value);
 
-	return RETURN_OK;
+        return RETURN_OK;
     }
 
     SetIoErr(ERROR_OBJECT_NOT_FOUND);

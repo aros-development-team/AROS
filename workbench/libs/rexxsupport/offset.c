@@ -27,11 +27,11 @@ LONG rxsupp_offset(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE *
     offset = strtol(ARG2(msg), &end, 10);
     while (isspace(*end)) end++;
     if (*end != 0)
-	return ERR10_018;
+        return ERR10_018;
 
     
     if (LengthArgstring(ARG1(msg)) != sizeof(void *))
-	return ERR10_018;
+        return ERR10_018;
 
     ptr = *(char **)ARG1(msg) + offset;
     

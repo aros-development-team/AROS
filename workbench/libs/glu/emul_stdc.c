@@ -13,7 +13,7 @@
 
 #define IMPLEMENT()  bug("------IMPLEMENT(%s)\n", __func__)
  
-/* 
+/*
     The purpose of this file is to provide implementation for C functions part
     of arosnixc.library in code where one does not want to use this library.
 */
@@ -64,8 +64,8 @@ int usleep (useconds_t usec)
    
     Under AROS, when a .library file is used by an application, library code AND
     library data is shared. This means, an atexit call inside .library which was
-    initially coded under Linux cannot be executed when process is finishing 
-    (for example at CloseLibrary) because such call will most likely free shared 
+    initially coded under Linux cannot be executed when process is finishing
+    (for example at CloseLibrary) because such call will most likely free shared
     data which will make other processes crash. The best approximation of atexit
     in case of .library is to call the atexit functions at library expunge/exit.
 

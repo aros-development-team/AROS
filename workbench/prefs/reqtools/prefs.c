@@ -65,15 +65,15 @@ BOOL Prefs_ImportFH(BPTR fh)
     {
 #if (!(AROS_BIG_ENDIAN))
         reqtoolsprefs.Flags = AROS_BE2LONG(loadprefs.Flags);
-	for(i = 0;i < RTPREF_NR_OF_REQ; i++)
-	{
-	    reqtoolsprefs.ReqDefaults[i].Size = AROS_BE2LONG(loadprefs.ReqDefaults[i].Size);
-	    reqtoolsprefs.ReqDefaults[i].ReqPos = AROS_BE2LONG(loadprefs.ReqDefaults[i].ReqPos);
-	    reqtoolsprefs.ReqDefaults[i].LeftOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].LeftOffset);
-	    reqtoolsprefs.ReqDefaults[i].TopOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].TopOffset);
-	    reqtoolsprefs.ReqDefaults[i].MinEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MinEntries);
-	    reqtoolsprefs.ReqDefaults[i].MaxEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MaxEntries);	    
-	}
+        for(i = 0;i < RTPREF_NR_OF_REQ; i++)
+        {
+            reqtoolsprefs.ReqDefaults[i].Size = AROS_BE2LONG(loadprefs.ReqDefaults[i].Size);
+            reqtoolsprefs.ReqDefaults[i].ReqPos = AROS_BE2LONG(loadprefs.ReqDefaults[i].ReqPos);
+            reqtoolsprefs.ReqDefaults[i].LeftOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].LeftOffset);
+            reqtoolsprefs.ReqDefaults[i].TopOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].TopOffset);
+            reqtoolsprefs.ReqDefaults[i].MinEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MinEntries);
+            reqtoolsprefs.ReqDefaults[i].MaxEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MaxEntries);
+        }
 #endif
         retval = TRUE;
     }
@@ -104,7 +104,7 @@ BOOL Prefs_ExportFH(BPTR fh)
         saveprefs.ReqDefaults[i].LeftOffset = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].LeftOffset);
         saveprefs.ReqDefaults[i].TopOffset = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].TopOffset);
         saveprefs.ReqDefaults[i].MinEntries = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].MinEntries);
-        saveprefs.ReqDefaults[i].MaxEntries = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].MaxEntries);	    
+        saveprefs.ReqDefaults[i].MaxEntries = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].MaxEntries);
     }
 #endif
     if (Write(fh, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))

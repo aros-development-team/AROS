@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
-    Desc: Close a named named drawer displayed by Workbench. 
+    Desc: Close a named named drawer displayed by Workbench.
 */
 
 #include <exec/types.h>

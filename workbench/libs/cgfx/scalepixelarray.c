@@ -48,22 +48,22 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH10(LONG, ScalePixelArray,
+        AROS_LH10(LONG, ScalePixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR             , srcRect, A0),
-	AROS_LHA(UWORD            , SrcW, D0),
-	AROS_LHA(UWORD            , SrcH, D1),
-	AROS_LHA(UWORD            , SrcMod, D2),
-	AROS_LHA(struct RastPort *, RastPort, A1),
-	AROS_LHA(UWORD            , DestX, D3),
-	AROS_LHA(UWORD            , DestY, D4),
-	AROS_LHA(UWORD            , DestW, D5),
-	AROS_LHA(UWORD            , DestH, D6),
-	AROS_LHA(UBYTE            , SrcFormat, D7),
+        AROS_LHA(APTR             , srcRect, A0),
+        AROS_LHA(UWORD            , SrcW, D0),
+        AROS_LHA(UWORD            , SrcH, D1),
+        AROS_LHA(UWORD            , SrcMod, D2),
+        AROS_LHA(struct RastPort *, RastPort, A1),
+        AROS_LHA(UWORD            , DestX, D3),
+        AROS_LHA(UWORD            , DestY, D4),
+        AROS_LHA(UWORD            , DestW, D5),
+        AROS_LHA(UWORD            , DestH, D6),
+        AROS_LHA(UBYTE            , SrcFormat, D7),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 15, Cybergraphics)
+        struct Library *, CyberGfxBase, 15, Cybergraphics)
 
 /*  FUNCTION
         Fills all or part of a RastPort with a rectangular block of raw pixel
@@ -141,14 +141,14 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
         dest_bounds->w, dest_bounds->h, SrcFormat));
 
     if (SrcW == 0 || SrcH == 0 || dest_bounds->w == 0 || dest_bounds->h == 0)
-    	return 0;
+        return 0;
 
     /* This is AROS Cybergraphx - We only work wih Gfx Hidd bitmaps */
 
     if (!IS_HIDD_BM(RastPort->BitMap))
     {
-    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in ScalePixelArray() !!!\n"));
-    	return 0;
+        D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in ScalePixelArray() !!!\n"));
+        return 0;
     }
 
     /* Query the bitmaps Gfx Hidd, and create a suitable GC Object (graphics context) */

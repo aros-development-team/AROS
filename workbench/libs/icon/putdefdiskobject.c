@@ -9,23 +9,23 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH1(BOOL, PutDefDiskObject,
+        AROS_LH1(BOOL, PutDefDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DiskObject *, icon, A0),
+        AROS_LHA(struct DiskObject *, icon, A0),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 21, Icon)
+        struct IconBase *, IconBase, 21, Icon)
 
 /*  FUNCTION
-	Puts a new default icon for a certain type.
+        Puts a new default icon for a certain type.
 
     INPUTS
-	diskObject  - diskObject struct describing icon to put as new
-		      default icon.
+        diskObject  - diskObject struct describing icon to put as new
+                      default icon.
 
     RESULT
-	TRUE if success, else FALSE. Error may be obtained via IoErr().
+        TRUE if success, else FALSE. Error may be obtained via IoErr().
 
     NOTES
 
@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-	GetDefDiskObject(), PutDiskObject()
+        GetDefDiskObject(), PutDiskObject()
 
     INTERNALS
 

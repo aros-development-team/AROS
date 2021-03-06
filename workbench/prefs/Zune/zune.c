@@ -350,7 +350,7 @@ void deinit_gui(void)
                    
                 CloseLibrary(main_page_entries[i].mcp_library);
                 main_page_entries[i].mcp_library = NULL;
-            }       
+            }
         }
         
         main_page_entries[i].group = NULL;
@@ -536,10 +536,10 @@ int init_gui(void)
                  (IPTR)&main_cancel_pressed_hook);
         DoMethod(open_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
                  MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook,
-                 (IPTR)&main_open_menu_hook);   
+                 (IPTR)&main_open_menu_hook);
         DoMethod(saveas_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
                  MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook,
-                 (IPTR)&main_saveas_menu_hook); 
+                 (IPTR)&main_saveas_menu_hook);
         DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
                  MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_AboutMUI,
                  (IPTR)main_wnd);
@@ -645,7 +645,7 @@ void main_open_menu(void)
             //LastSavedConfigdata = configdata;
             DoMethod(configdata, MUIM_Configdata_Load,filename);
 
-            /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */           
+            /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
             for (i=0;main_page_entries[i].name;i++)
             {
                 struct page_entry *p = &main_page_entries[i];
@@ -657,9 +657,9 @@ void main_open_menu(void)
             test_prefs();
 
             /*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
-        }                     
+        }
                           
-    } 
+    }
 }
 
 /****************************************************************
@@ -712,7 +712,7 @@ void main_saveas_menu(void)
     static char dirpart[500]="ENVARC:Zune",filepart[500],filename[1000];
 
     if (aslfilerequest("Save a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename, prefstags))
-    {   
+    {
         Object *configdata;
 
         configdata = MUI_NewObject(MUIC_Configdata,
@@ -728,7 +728,7 @@ void main_saveas_menu(void)
 
             /*      D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
 
-            /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */    
+            /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */
             for (i=0;main_page_entries[i].name;i++)
             {
                 struct page_entry *p = &main_page_entries[i];
@@ -740,9 +740,9 @@ void main_saveas_menu(void)
 
             MUI_DisposeObject(configdata);
             /*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
-        }                     
+        }
 
-    } 
+    }
 
 }
 

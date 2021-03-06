@@ -22,15 +22,15 @@ static LONG PixelHook(struct render_data *data, OOP_Object *bm, OOP_Object *gc,
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH3(ULONG, ReadRGBPixel,
+        AROS_LH3(ULONG, ReadRGBPixel,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp	, A1),
-	AROS_LHA(UWORD            , x	, D0),
-	AROS_LHA(UWORD            , y	, D1),
+        AROS_LHA(struct RastPort *, rp  , A1),
+        AROS_LHA(UWORD            , x   , D0),
+        AROS_LHA(UWORD            , y   , D1),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 18, Cybergraphics)
+        struct Library *, CyberGfxBase, 18, Cybergraphics)
 
 /*  FUNCTION
         Reads a particular pixel's color value from a RastPort.
@@ -65,16 +65,16 @@ static LONG PixelHook(struct render_data *data, OOP_Object *bm, OOP_Object *gc,
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap))
     {
-    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+        D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
             "in ReadRGBPixel()!!!\n"));
-    	return (ULONG)-1;
+        return (ULONG)-1;
     }
 
     /* Get the HIDD pixel val */
     ret = DoPixelFunc(rp, x, y, PixelHook, &data, FALSE);
 
     if (-1 == ret)
-    	return (ULONG)-1;
+        return (ULONG)-1;
 
     HIDD_BM_UnmapPixel(HIDD_BM_OBJ(rp->BitMap), data.pixel, &col);
 
@@ -92,7 +92,7 @@ static LONG PixelHook(struct render_data *data, OOP_Object *bm, OOP_Object *gc,
 
 static LONG PixelHook(struct render_data *data, OOP_Object *bm, OOP_Object *gc,
     LONG x, LONG y, struct GfxBase *GfxBase)
-{   
+{
     data->pixel = HIDD_BM_GetPixel(bm, x, y);
     return 0;
 }

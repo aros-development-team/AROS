@@ -277,10 +277,10 @@ AROS_LH1(BOOL, SkipClass,
 /** Library Initialization **/
 
 void *SysexpLibrary_funcTable[] = {
-  AROS_SLIB_ENTRY(Null, LIB, 0),	     /* Open() */
+  AROS_SLIB_ENTRY(Null, LIB, 0),             /* Open() */
   AROS_SLIB_ENTRY(Null, LIB, 0),
-  AROS_SLIB_ENTRY(Null, LIB, 0),	     /* Expunge() */
-  AROS_SLIB_ENTRY(Null, LIB, 0),	     /* Reserved() */
+  AROS_SLIB_ENTRY(Null, LIB, 0),             /* Expunge() */
+  AROS_SLIB_ENTRY(Null, LIB, 0),             /* Reserved() */
   AROS_SLIB_ENTRY(RegisterModule, Sysexp, 5),
   AROS_SLIB_ENTRY(RegisterBase, Sysexp, 6),
   AROS_SLIB_ENTRY(GetBase, Sysexp, 7),
@@ -302,10 +302,10 @@ void sysexp_initlib(struct SysexpBase **SysexpBasePtr)
 
     D(bug("[SysExplorer] %s()\n", __func__));
     SysexpBase = (struct SysexpBase *)MakeLibrary(SysexpLibrary_funcTable,
-				NULL,
-				 NULL,
-				 sizeof(struct SysexpBase),
-				 BNULL);
+                                NULL,
+                                 NULL,
+                                 sizeof(struct SysexpBase),
+                                 BNULL);
 
     D(bug("[SysExplorer] %s: SysexpBase @ %p\n", __func__, SysexpBase));
 

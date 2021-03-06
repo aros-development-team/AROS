@@ -19,7 +19,7 @@
     FUNCTION
 
         Display information about the processes that are executing
-	within Shells/CLIs.
+        within Shells/CLIs.
 
     INPUTS
 
@@ -28,12 +28,12 @@
         FULL         --  Display all information about the processes.
 
         TCB          --  As for Full, except that this option omits the
-	                 process name.
+                         process name.
 
         CLI=ALL      --  Default. Displays all processes.
 
         COM=COMMAND  --  Show the process id of the command given. Specify
-	                 the command name.
+                         the command name.
 
     RESULT
 
@@ -87,7 +87,7 @@
 #include <aros/shcommands.h>
 
 static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, BOOL all,
-			 struct Process *process);
+                         struct Process *process);
 
 AROS_SH5(Status,41.1,
 AROS_SHA(LONG *, ,PROCESS,/N,NULL),
@@ -114,78 +114,78 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
     if (!full && !tcb && processNum == 0 && command == NULL)
     {
-	all = TRUE;
+        all = TRUE;
     }
 
     if (command != NULL)
     {
- 	struct List     *cliList;
-	struct CLIInfo  *ci;
+        struct List     *cliList;
+        struct CLIInfo  *ci;
 
-	D(bug("command != NULL in Status\n"));
+        D(bug("command != NULL in Status\n"));
 
-	/* Get access to the rootnode */
-	ObtainSemaphore(&root->rn_RootLock);
+        /* Get access to the rootnode */
+        ObtainSemaphore(&root->rn_RootLock);
 
-	D(bug("Got RootLock\n"));
+        D(bug("Got RootLock\n"));
 
-	cliList = (struct List *)&root->rn_CliList;
-	ci = (struct CLIInfo *)FindName(cliList, command);
+        cliList = (struct List *)&root->rn_CliList;
+        ci = (struct CLIInfo *)FindName(cliList, command);
 
-	if (ci != NULL)
-	{
-	    if (ci->ci_Process->pr_TaskNum != 0)
-	    {
-		Printf(" %ld\n", ci->ci_Process->pr_TaskNum);
-	    }
-	}
-	else
-	{
-	    retval = RETURN_WARN;
-	}
+        if (ci != NULL)
+        {
+            if (ci->ci_Process->pr_TaskNum != 0)
+            {
+                Printf(" %ld\n", ci->ci_Process->pr_TaskNum);
+            }
+        }
+        else
+        {
+            retval = RETURN_WARN;
+        }
 
-	ReleaseSemaphore(&root->rn_RootLock);
+        ReleaseSemaphore(&root->rn_RootLock);
     }
     else if (processNum != 0)
     {
-	struct Process *process;
+        struct Process *process;
 
-	ObtainSemaphore(&root->rn_RootLock);
+        ObtainSemaphore(&root->rn_RootLock);
 
-	/* This is a temporary construction until I've fixed the
-	   implementation of FindCliProc() */
-	Forbid();
-	process = FindCliProc(processNum);
-	Permit();
+        /* This is a temporary construction until I've fixed the
+           implementation of FindCliProc() */
+        Forbid();
+        process = FindCliProc(processNum);
+        Permit();
 
-	ReleaseSemaphore(&root->rn_RootLock);
+        ReleaseSemaphore(&root->rn_RootLock);
 
-	if (process != NULL)
-	{
-	    printProcess(DOSBase, full, tcb, all, process);
-	}
-	else
-	{
-	    Printf("Process %ld does not exist\n", processNum);
-	}
+        if (process != NULL)
+        {
+            printProcess(DOSBase, full, tcb, all, process);
+        }
+        else
+        {
+            Printf("Process %ld does not exist\n", processNum);
+        }
     }
     else
     {
-	struct List     *cliList;
-	struct CLIInfo  *ci;
+        struct List     *cliList;
+        struct CLIInfo  *ci;
 
-	ObtainSemaphore(&root->rn_RootLock);
+        ObtainSemaphore(&root->rn_RootLock);
 
-	D(bug("Got RootLock\n"));
+        D(bug("Got RootLock\n"));
 
-	cliList = (struct List *)&root->rn_CliList;
+        cliList = (struct List *)&root->rn_CliList;
 
-	ForeachNode(cliList, ci)
-	{
-	    printProcess(DOSBase, full, tcb, all, ci->ci_Process);
-	}
+        ForeachNode(cliList, ci)
+        {
+            printProcess(DOSBase, full, tcb, all, ci->ci_Process);
+        }
 
-	ReleaseSemaphore(&root->rn_RootLock);
+        ReleaseSemaphore(&root->rn_RootLock);
     }
 
     return retval;
@@ -196,28 +196,28 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 /* Print the information for a certain cli process */
 static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, BOOL all,
-			 struct Process *process)
+                         struct Process *process)
 {
     struct CommandLineInterface *cli = BADDR(process->pr_CLI);
 
     /* This should never happen, I guess */
     if (cli == NULL)
     {
-	return;
+        return;
     }
 
     Printf("Process %ld ", process->pr_TaskNum);
 
     if (tcb || full)
     {
-	Printf("stk %lu, pri %ld ",
-	       (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
-	       (LONG)process->pr_Task.tc_Node.ln_Pri);
+        Printf("stk %lu, pri %ld ",
+               (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
+               (LONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
     if (!tcb || full)
     {
-	Printf("Loaded as command: %b", cli->cli_CommandName);
+        Printf("Loaded as command: %b", cli->cli_CommandName);
     }
 
     Printf("\n");

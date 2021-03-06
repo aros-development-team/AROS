@@ -11,22 +11,22 @@
     NAME */
 #include <clib/cgxvideo_protos.h>
 
-	AROS_LH1(void, DeleteVLayerHandle,
+        AROS_LH1(void, DeleteVLayerHandle,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
+        AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
 
 /*  LOCATION */
-	struct Library *, CGXVideoBase, 6, Cgxvideo)
+        struct Library *, CGXVideoBase, 6, Cgxvideo)
 
 /*  FUNCTION
-	Deletes a created video layer handle
+        Deletes a created video layer handle
 
     INPUTS
-	VLayerHandle - pointer to a previously created videolayer handle
+        VLayerHandle - pointer to a previously created videolayer handle
 
     RESULT
-	none
+        none
 
     NOTES
 

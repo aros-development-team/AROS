@@ -27,22 +27,22 @@
 
 #define G(a) ((struct Gadget *)a)
 
-#define DPTYPE_EMPTY 	      0
+#define DPTYPE_EMPTY          0
 #define DPTYPE_EMPTY_SELECTED 1
-#define DPTYPE_USED 	      2
+#define DPTYPE_USED           2
 #define DPTYPE_USED_SELECTED  3
 
 #define PARTITIONBLOCK_FRAMEWIDTH 2
 
 #define END_FIX 1
 
-#define EMPTY1_RED  	    0x99999999
-#define EMPTY1_GREEN	    0x99999999
-#define EMPTY1_BLUE 	    0x99999999
+#define EMPTY1_RED          0x99999999
+#define EMPTY1_GREEN        0x99999999
+#define EMPTY1_BLUE         0x99999999
 
-#define EMPTY2_RED  	    0x65656565
-#define EMPTY2_GREEN	    0x65656565
-#define EMPTY2_BLUE 	    0x65656565
+#define EMPTY2_RED          0x65656565
+#define EMPTY2_GREEN        0x65656565
+#define EMPTY2_BLUE         0x65656565
 
 #define EMPTY1_DARK_RED     0x66666666
 #define EMPTY1_DARK_GREEN   0x66666666
@@ -52,43 +52,43 @@
 #define EMPTY2_DARK_GREEN   0x42424242
 #define EMPTY2_DARK_BLUE    0x42424242
 
-#define EMPTY1_SEL_RED	    0x40404040
+#define EMPTY1_SEL_RED      0x40404040
 #define EMPTY1_SEL_GREEN    0x85858585
 #define EMPTY1_SEL_BLUE     0x99999999
 
-#define EMPTY2_SEL_RED	    0x29292929
+#define EMPTY2_SEL_RED      0x29292929
 #define EMPTY2_SEL_GREEN    0x56565656
 #define EMPTY2_SEL_BLUE     0x63636363
 
-#define USED_RED    	    0x02020202
-#define USED_GREEN  	    0x75757575
-#define USED_BLUE   	    0x02020202
+#define USED_RED            0x02020202
+#define USED_GREEN          0x75757575
+#define USED_BLUE           0x02020202
 
-#define USED_SEL_RED	    0x66666666
-#define USED_SEL_GREEN	    0xc9c9c9c9
-#define USED_SEL_BLUE	    0x66666666
+#define USED_SEL_RED        0x66666666
+#define USED_SEL_GREEN      0xc9c9c9c9
+#define USED_SEL_BLUE       0x66666666
 
-#define PEN_EMPTY1  	0
-#define PEN_EMPTY2  	1
+#define PEN_EMPTY1      0
+#define PEN_EMPTY2      1
 #define PEN_EMPTY1_SEL  2
 #define PEN_EMPTY2_SEL  3
 #define PEN_EMPTY1_DARK 4
 #define PEN_EMPTY2_DARK 5
-#define PEN_USED    	6
-#define PEN_USED_SEL   	7
+#define PEN_USED        6
+#define PEN_USED_SEL    7
     
-#define NUM_PENS    	8
+#define NUM_PENS        8
 
 STATIC CONST ULONG rgbtable[] =
 {
-    EMPTY1_RED	    , EMPTY1_GREEN  	, EMPTY1_BLUE	    ,
-    EMPTY2_RED	    , EMPTY2_GREEN  	, EMPTY2_BLUE	    ,
-    EMPTY1_SEL_RED  , EMPTY1_SEL_GREEN	, EMPTY1_SEL_BLUE   ,
-    EMPTY2_SEL_RED  , EMPTY2_SEL_GREEN	, EMPTY2_SEL_BLUE   ,
+    EMPTY1_RED      , EMPTY1_GREEN      , EMPTY1_BLUE       ,
+    EMPTY2_RED      , EMPTY2_GREEN      , EMPTY2_BLUE       ,
+    EMPTY1_SEL_RED  , EMPTY1_SEL_GREEN  , EMPTY1_SEL_BLUE   ,
+    EMPTY2_SEL_RED  , EMPTY2_SEL_GREEN  , EMPTY2_SEL_BLUE   ,
     EMPTY1_DARK_RED , EMPTY1_DARK_GREEN , EMPTY1_DARK_BLUE  ,
     EMPTY2_DARK_RED , EMPTY2_DARK_GREEN , EMPTY2_DARK_BLUE  ,
-    USED_RED	    , USED_GREEN    	, USED_BLUE 	    ,
-    USED_SEL_RED    , USED_SEL_GREEN	, USED_SEL_BLUE
+    USED_RED        , USED_GREEN        , USED_BLUE         ,
+    USED_SEL_RED    , USED_SEL_GREEN    , USED_SEL_BLUE
 };
 
 struct PTableData {
@@ -131,7 +131,7 @@ STATIC CONST UWORD pattern2[] =
         0x00FF,
         0x00FF,
         0x00FF,
-        0x00FF		
+        0x00FF
 };
 
 #define SetPattern(r,p,s) {r->AreaPtrn = (UWORD *)p; r->AreaPtSz = s;}
@@ -194,7 +194,7 @@ static void PrepareRP(struct RastPort *rp, struct PTableData *data, WORD dptype)
     } /* if (data->multicolor) */
 }
 
-STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg) 
+STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg)
 {
     struct PTableData *data;
     struct DrawInfo *dri;
@@ -252,7 +252,7 @@ STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-STATIC IPTR pt_set(Class *cl, Object *obj, struct opSet *msg) 
+STATIC IPTR pt_set(Class *cl, Object *obj, struct opSet *msg)
 {
     struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = 0UL;
@@ -399,7 +399,7 @@ struct DosEnvec *findSpace(struct HDTBPartition *table, struct DosEnvec *de, ULO
  * Find the partition containing the currently selected block, or the DE
  * describing the empty space.
  */
-struct HDTBPartition *getActive(struct PTableData *data) 
+struct HDTBPartition *getActive(struct PTableData *data)
 {
     struct HDTBPartition *pn;
 
@@ -533,7 +533,7 @@ ULONG getBlock(UWORD mousex, UWORD width, struct HDTBPartition *table)
     return block;
 }
 
-STATIC VOID notify_all(Class *cl, Object *obj, struct GadgetInfo *gi, BOOL interim, BOOL userinput) 
+STATIC VOID notify_all(Class *cl, Object *obj, struct GadgetInfo *gi, BOOL interim, BOOL userinput)
 {
     struct PTableData *data = INST_DATA(cl, obj);
     struct opUpdate opu;
@@ -566,7 +566,7 @@ STATIC IPTR pt_goactive(Class *cl, Object *obj, struct gpInput *msg)
     IPTR retval = GMR_MEACTIVE;
     struct DosEnvec *de;
     struct RastPort *rport;
-    WORD	    	 drawtype;
+    WORD                 drawtype;
 
     D(bug("[HDToolBox] pt_goactive()\n"));
 
@@ -626,7 +626,7 @@ STATIC IPTR pt_goinactive(Class *cl, Object *obj, struct gpInput *msg)
 
     if (data->active)
     {
-//		data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH, data->table);
+//              data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH, data->table);
         if (getActive(data) == data->active)
         {
             if ((rport = ObtainGIRPort(msg->gpi_GInfo)))
@@ -662,7 +662,7 @@ ULONG overflow_add(ULONG a, LONG b)
     return result;
 }
 
-ULONG underflow_add(ULONG a, LONG b) 
+ULONG underflow_add(ULONG a, LONG b)
 {
     ULONG result;
 
@@ -674,7 +674,7 @@ ULONG underflow_add(ULONG a, LONG b)
     return result;
 }
 
-BOOL overlap(ULONG a, ULONG b, ULONG c, ULONG d) 
+BOOL overlap(ULONG a, ULONG b, ULONG c, ULONG d)
 {
     if (a>b)
     {
@@ -734,12 +734,12 @@ LONG getBetterDiff(struct HDTBPartition *table, struct HDTBPartition *current, L
     }
 
     for (pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
-	 pn->listnode.ln.ln_Succ;
-	 pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ)
+         pn->listnode.ln.ln_Succ;
+         pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ)
     {
-	/* do NOT include anything that is NOT a partition */
-	if (pn->listnode.ln.ln_Type != LNT_Partition)
-	    continue;
+        /* do NOT include anything that is NOT a partition */
+        if (pn->listnode.ln.ln_Type != LNT_Partition)
+            continue;
         /* don't check currently processed partition */
         if (current != pn)
         {
@@ -763,7 +763,7 @@ LONG getBetterDiff(struct HDTBPartition *table, struct HDTBPartition *current, L
     return diff;
 }
 
-STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg) 
+STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
 {
     struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = GMR_MEACTIVE;
@@ -774,7 +774,7 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
     ie = msg->gpi_IEvent;
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-	D(bug("[HDToolBox] pt_handleinput(): %x / %x / %x\n", IECODE_NOBUTTON, IECODE_LBUTTON | IECODE_UP_PREFIX, ie->ie_Code));
+        D(bug("[HDToolBox] pt_handleinput(): %x / %x / %x\n", IECODE_NOBUTTON, IECODE_LBUTTON | IECODE_UP_PREFIX, ie->ie_Code));
         switch (ie->ie_Code)
         {
         case IECODE_NOBUTTON:
@@ -790,24 +790,24 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
                 ULONG spc;
                 ULONG tocheck;
 
-		D(bug("[HDToolBox] - attempting to obtain block\n", diff));
+                D(bug("[HDToolBox] - attempting to obtain block\n", diff));
                 block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH, data->table);
-		D(bug("[HDToolBox] - block location: %ld\n", diff));
+                D(bug("[HDToolBox] - block location: %ld\n", diff));
                 diff = block-data->block;
                 if (diff)
                 {
-		    D(bug("[HDToolBox] - odiff: %ld\n", diff));
+                    D(bug("[HDToolBox] - odiff: %ld\n", diff));
                     diff = getBetterDiff(data->table, data->active, diff);
-		    D(bug("[HDToolBox] - diff : %ld\n", diff));
+                    D(bug("[HDToolBox] - diff : %ld\n", diff));
                     if (diff)
                     {
                         spc=data->active->de.de_Surfaces*data->active->de.de_BlocksPerTrack;
-			D(bug("[HDToolBox] - spc  : %ld\n", spc));
+                        D(bug("[HDToolBox] - spc  : %ld\n", spc));
                         start = data->active->de.de_LowCyl*spc;
-			D(bug("[HDToolBox] - start: %ld\n", start));
+                        D(bug("[HDToolBox] - start: %ld\n", start));
                         start += diff;
                         end = ((data->active->de.de_HighCyl+1)*spc)-1;
-			D(bug("[HDToolBox] - end  : %ld\n", end));
+                        D(bug("[HDToolBox] - end  : %ld\n", end));
                         end += diff;
                         tocheck = (diff>0) ? end : start;
                         if (validValue(data->table, data->active, tocheck))
@@ -850,7 +850,7 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
                     }
                 }
             }
-	    break;
+            break;
         case (IECODE_LBUTTON | IECODE_UP_PREFIX):
             data->move = FALSE;
             notify_all(cl, obj, msg->gpi_GInfo, FALSE, TRUE);
@@ -861,13 +861,13 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
     }
     else
     {
-	D(bug("[HDToolBox] pt_handleinput(): Other class: %x\n", ie->ie_Class));
+        D(bug("[HDToolBox] pt_handleinput(): Other class: %x\n", ie->ie_Class));
     }
     D(bug("[HDToolBox] pt_handleinput(): successful\n", ie->ie_Class));
     return retval;
 }
 
-void DrawLegend(struct RastPort *rport, struct DrawInfo *dri, LONG sx, LONG sy, LONG ex, LONG ey, char *text) 
+void DrawLegend(struct RastPort *rport, struct DrawInfo *dri, LONG sx, LONG sy, LONG ex, LONG ey, char *text)
 {
     D(bug("[HDToolBox] DrawLegend()\n"));
 
@@ -881,7 +881,7 @@ void DrawLegend(struct RastPort *rport, struct DrawInfo *dri, LONG sx, LONG sy, 
     Text(rport, text, strlen(text));
 }
 
-STATIC IPTR pt_render(Class *cl, Object *obj, struct gpRender *msg) 
+STATIC IPTR pt_render(Class *cl, Object *obj, struct gpRender *msg)
 {
     struct PTableData *data = INST_DATA(cl, obj);
     struct HDTBPartition *pn;
@@ -896,8 +896,8 @@ STATIC IPTR pt_render(Class *cl, Object *obj, struct gpRender *msg)
         struct TagItem obp_tags[] =
         {
             {OBP_Precision, PRECISION_EXACT },
-            {OBP_FailIfBad, TRUE	    	},
-            {TAG_DONE   	    	    	}
+            {OBP_FailIfBad, TRUE                },
+            {TAG_DONE                           }
         };
 
         WORD i;
@@ -1048,7 +1048,7 @@ STATIC IPTR pt_render(Class *cl, Object *obj, struct gpRender *msg)
     return retval;
 }
 
-STATIC IPTR pt_dispose(Class *cl, Object *obj, Msg msg) 
+STATIC IPTR pt_dispose(Class *cl, Object *obj, Msg msg)
 {
     struct PTableData *data = INST_DATA(cl, obj);
 
@@ -1067,7 +1067,7 @@ STATIC IPTR pt_dispose(Class *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-STATIC IPTR pt_hittest(Class *cl, Object *obj, struct gpHitTest *msg) 
+STATIC IPTR pt_hittest(Class *cl, Object *obj, struct gpHitTest *msg)
 {
     D(bug("[HDToolBox] pt_hittest()\n"));
 

@@ -39,7 +39,7 @@ UWORD readconfigword(OOP_Object * pciDevice, UBYTE where)
     reg: where,
     }, *msg = &rcwmsg;
     
-    return (UWORD)OOP_DoMethod(pciDevice, (OOP_Msg)msg);    
+    return (UWORD)OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 ULONG readconfiglong(OOP_Object * pciDevice, UBYTE where)
@@ -60,7 +60,7 @@ VOID writeconfiglong(OOP_Object * pciDevice, UBYTE where, ULONG val)
     val: val,
     }, *msg = &wclmsg;
     
-    OOP_DoMethod(pciDevice, (OOP_Msg)msg); 
+    OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 VOID writeconfigbyte(OOP_Object * pciDevice, UBYTE where, UBYTE val)
@@ -71,7 +71,7 @@ VOID writeconfigbyte(OOP_Object * pciDevice, UBYTE where, UBYTE val)
     val: val,
     }, *msg = &wcbmsg;
     
-    OOP_DoMethod(pciDevice, (OOP_Msg)msg); 
+    OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 VOID writeconfigword(OOP_Object * pciDevice, UBYTE where, UWORD val)
@@ -82,7 +82,7 @@ VOID writeconfigword(OOP_Object * pciDevice, UBYTE where, UWORD val)
     val: val,
     }, *msg = &wcwmsg;
     
-    OOP_DoMethod(pciDevice, (OOP_Msg)msg); 
+    OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 AROS_UFH3(void, HiddAgpPciDevicesEnumerator,
@@ -93,7 +93,7 @@ AROS_UFH3(void, HiddAgpPciDevicesEnumerator,
     AROS_USERFUNC_INIT
 
     IPTR class, agpcapptr;
-    struct HiddAgpPciDevicesEnumeratorData * hdata = 
+    struct HiddAgpPciDevicesEnumeratorData * hdata =
                         (struct HiddAgpPciDevicesEnumeratorData *)hook->h_Data;
 
 #undef HiddPCIDeviceAttrBase
@@ -112,7 +112,7 @@ AROS_UFH3(void, HiddAgpPciDevicesEnumerator,
         if ((class != 0x06) && ((intline == 0) || (intline >= 255)))
             return;
 
-        struct PciAgpDevice * pciagpdev = 
+        struct PciAgpDevice * pciagpdev =
             (struct PciAgpDevice *)AllocVec(sizeof(struct PciAgpDevice), MEMF_ANY | MEMF_CLEAR);
         IPTR temp;
         pciagpdev->PciDevice = pciDevice;
@@ -189,7 +189,7 @@ static ULONG HiddAgpGenericAgp2CalibrateModes(ULONG requestedmode, ULONG bridgem
     requestedmode &= ~0x07; /* Clear any speed */
     if (temp & AGP_STATUS_REG_AGP2_X4)
         requestedmode |= AGP_STATUS_REG_AGP2_X4;
-    else 
+    else
     {
         if (temp & AGP_STATUS_REG_AGP2_X2)
             requestedmode |= AGP_STATUS_REG_AGP2_X2;
@@ -228,7 +228,7 @@ static ULONG HiddAgpGenericAgp2CalibrateModes(ULONG requestedmode, ULONG bridgem
 static ULONG HiddAgpGenericSelectBestMode(struct HIDDGenericBridgeDeviceData * gbddata, ULONG requestedmode, ULONG bridgemode)
 {
     OOP_Object * videodev = gbddata->videocard->PciDevice;
-    UBYTE videoagpcap = gbddata->videocard->AgpCapability;    
+    UBYTE videoagpcap = gbddata->videocard->AgpCapability;
     ULONG vgamode = 0;
 
     /* Get VGA card capability */
@@ -277,8 +277,8 @@ static VOID HiddAgpGenericSendCommand(struct HIDDGenericBridgeDeviceData * gbdda
             if (status & AGP_STATUS_REG_AGP_3_0)
                 mode *= 4;
             
-            D(bug("[AGP] Set AGP%d device 0x%x/0x%x to speed %dx\n", 
-                (status & AGP_STATUS_REG_AGP_3_0) ? 3 : 2, 
+            D(bug("[AGP] Set AGP%d device 0x%x/0x%x to speed %dx\n",
+                (status & AGP_STATUS_REG_AGP_3_0) ? 3 : 2,
                 pciagpdev->VendorID, pciagpdev->ProductID, mode));
             
             writeconfiglong(pciagpdev->PciDevice, pciagpdev->AgpCapability + AGP_COMMAND_REG, status);
@@ -326,7 +326,7 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, ScanAndDetectDevices)
     ForeachNode(&gbddata->devices, pciagpdev)
     {
         /* Select bridge */
-        if ((!gbddata->bridge) && (pciagpdev->Class == 0x06) && 
+        if ((!gbddata->bridge) && (pciagpdev->Class == 0x06) &&
             (pciagpdev->AgpCapability))
         {
             gbddata->bridge = pciagpdev;
@@ -363,13 +363,13 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, CreateGattTable)
     gbddata->gatttablebuffer = AllocVec(tablesize + 4096, MEMF_PUBLIC | MEMF_CLEAR);
     gbddata->gatttable = (ULONG *)(ALIGN((IPTR)gbddata->gatttablebuffer, 4096));
     
-    D(bug("[AGP] Created GATT table size %d at 0x%x\n", tablesize, 
+    D(bug("[AGP] Created GATT table size %d at 0x%x\n", tablesize,
         (ULONG)gbddata->gatttable));
     
     for (i = 0; i < entries; i++)
     {
         writel((ULONG)(IPTR)gbddata->scratchmem, gbddata->gatttable + i);
-        readl(gbddata->gatttable + i);	/* PCI Posting. */
+        readl(gbddata->gatttable + i);  /* PCI Posting. */
     }
     
     flushcpucache();
@@ -505,7 +505,7 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, Enable)
             bridgemode &= ~(7 << 10);
             temp = readconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG);
             temp |= (1 << 9);
-            writeconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG, temp);           
+            writeconfiglong(bridgedev, bridgeagpcap + AGP_CTRL_REG, temp);
         }
     }
 
@@ -543,7 +543,7 @@ VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, BindMemory)
     for(i = 0; i < msg->size / 4096; i++)
     {
         /* Write masked memory address into GATT */
-        writel((msg->address + (4096 * i)) | gbddata->memmask, 
+        writel((msg->address + (4096 * i)) | gbddata->memmask,
             gbddata->gatttable + msg->offset + i);
     }
     

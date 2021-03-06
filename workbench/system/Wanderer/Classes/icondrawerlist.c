@@ -127,7 +127,7 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
                             {
                                 /* We have a real file so skip it for now and let it be found seperately */
                                 D(bug("[IconDrawerList] %s: File found .. skipping\n", __PRETTY_FUNCTION__));
-                                UnLock(tmplock); 
+                                UnLock(tmplock);
                                 continue;
                             }
                         }
@@ -148,8 +148,8 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
                         if ((tmplock = Lock(namebuffer, SHARED_LOCK)))
                         {
                             D(bug("[IconDrawerList] %s: File has a .info file .. updating info\n", __PRETTY_FUNCTION__));
-                            UnLock(tmplock); 
-                            if (!(this_Icon->ie_Flags & ICONENTRY_FLAG_HASICON)) 
+                            UnLock(tmplock);
+                            if (!(this_Icon->ie_Flags & ICONENTRY_FLAG_HASICON))
                                 this_Icon->ie_Flags |= ICONENTRY_FLAG_HASICON;
                         }
 
@@ -352,10 +352,10 @@ BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, CLASS, obj, message)
 BOOPSI_DISPATCHER_END
 
 /* Class descriptor. */
-const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = { 
-    MUIC_IconDrawerList, 
-    MUIC_IconList, 
-    sizeof(struct IconDrawerList_DATA), 
-    (void*)IconDrawerList_Dispatcher 
+const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = {
+    MUIC_IconDrawerList,
+    MUIC_IconList,
+    sizeof(struct IconDrawerList_DATA),
+    (void*)IconDrawerList_Dispatcher
 };
 #endif

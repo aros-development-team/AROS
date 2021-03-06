@@ -13,7 +13,7 @@
 LONG StopFunc
 (
     struct Hook *hook,
-     APTR         obj, 
+     APTR         obj,
      APTR         p
 )
 {

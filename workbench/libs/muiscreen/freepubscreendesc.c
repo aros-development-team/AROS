@@ -15,10 +15,10 @@
         AROS_LH1(BOOL, MUIS_FreePubScreenDesc,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_PubScreenDesc *, psd,  A0),
+        AROS_LHA(struct MUI_PubScreenDesc *, psd,  A0),
 
 /*  LOCATION */
-	struct Library *, MUIScreenBase, 6, MUIScreen)
+        struct Library *, MUIScreenBase, 6, MUIScreen)
 
 /*  FUNCTION
 

@@ -16,10 +16,10 @@
         AROS_LH1(void, MUIS_ClosePubFile,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, pf,  A0),
+        AROS_LHA(APTR, pf,  A0),
 
 /*  LOCATION */
-	struct Library *, MUIScreenBase, 10, MUIScreen)
+        struct Library *, MUIScreenBase, 10, MUIScreen)
 
 /*  FUNCTION
 
@@ -48,12 +48,12 @@
 
     if (iff)
     {
-	if(iff->iff_Flags & IFFF_WRITE)
-	    PopChunk(iff);
+        if(iff->iff_Flags & IFFF_WRITE)
+            PopChunk(iff);
 
-	CloseIFF(iff);
+        CloseIFF(iff);
         Close((BPTR) iff->iff_Stream);
-	FreeIFF(iff);
+        FreeIFF(iff);
     }
 
     AROS_LIBFUNC_EXIT

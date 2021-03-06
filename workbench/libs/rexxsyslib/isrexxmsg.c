@@ -10,13 +10,13 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH1(BOOL, IsRexxMsg,
+        AROS_LH1(BOOL, IsRexxMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RexxMsg *, msgptr, A0),
+        AROS_LHA(struct RexxMsg *, msgptr, A0),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 28, RexxSys)
+        struct Library *, RexxSysBase, 28, RexxSys)
 
 /*  FUNCTION
         Test to see if given Message is a RexxMsg

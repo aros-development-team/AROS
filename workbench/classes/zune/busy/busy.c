@@ -28,13 +28,13 @@ IPTR Busy__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Busy_DATA *data;
     
-    obj = (Object *) DoSuperMethodA(cl, obj, (Msg)msg);	
+    obj = (Object *) DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return 0;
     
     data = INST_DATA(cl, obj);
     if (GetTagData(MUIA_Busy_ShowHideIH, FALSE, msg->ops_AttrList))
     {
-    	data->flags |= FLG_SHOWHIDEIH;
+        data->flags |= FLG_SHOWHIDEIH;
     }
     data->speed = 50;
     
@@ -49,48 +49,48 @@ IPTR Busy__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 IPTR Busy__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Busy_DATA *data = INST_DATA(cl, obj);
-    struct TagItem   	 *tags  = msg->ops_AttrList;
-    struct TagItem   	 *tag;
-    BOOL    	      	  redraw = FALSE;
+    struct TagItem       *tags  = msg->ops_AttrList;
+    struct TagItem       *tag;
+    BOOL                  redraw = FALSE;
         
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-    	switch(tag->ti_Tag)
-	{
-    	    case MUIA_Busy_Speed:
-		if ((LONG)tag->ti_Data == MUIV_Busy_Speed_User)
-		{
-		    data->speed = 50;
-		}
-		else
-		{
-		    data->speed = tag->ti_Data;
-		}
+        switch(tag->ti_Tag)
+        {
+            case MUIA_Busy_Speed:
+                if ((LONG)tag->ti_Data == MUIV_Busy_Speed_User)
+                {
+                    data->speed = 50;
+                }
+                else
+                {
+                    data->speed = tag->ti_Data;
+                }
 
-	    	if ((data->flags & FLG_SHOWN) ||
-		    ((data->flags & FLG_SETUP) && !(data->flags & FLG_SHOWHIDEIH)))
-		{
-		    if (data->ihn.ihn_Millis)
-		    {
-    	    	    	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
-		    }
-		    
-		    data->ihn.ihn_Millis = data->speed;
-		    
-		    if (data->ihn.ihn_Millis)
-		    {
-    	    	        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
-		    }		    		    
-		}
-		break;
-		
-	} /* switch(tag->ti_Tag) */
-	
+                if ((data->flags & FLG_SHOWN) ||
+                    ((data->flags & FLG_SETUP) && !(data->flags & FLG_SHOWHIDEIH)))
+                {
+                    if (data->ihn.ihn_Millis)
+                    {
+                        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+                    }
+                    
+                    data->ihn.ihn_Millis = data->speed;
+                    
+                    if (data->ihn.ihn_Millis)
+                    {
+                        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
+                    }
+                }
+                break;
+                
+        } /* switch(tag->ti_Tag) */
+        
     } /* while ((tag = NextTagItem(&tags)) != NULL) */
     
     if (redraw)
     {
-    	 MUI_Redraw(obj, MADF_DRAWUPDATE);
+         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -100,17 +100,17 @@ IPTR Busy__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 IPTR Busy__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Busy_DATA *data = INST_DATA(cl, obj);
-    IPTR    	      retval = TRUE;
+    IPTR              retval = TRUE;
     
     switch(msg->opg_AttrID)
     {
-    	case MUIA_Busy_Speed:
-	    *msg->opg_Storage = data->speed;
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-	    break;
+        case MUIA_Busy_Speed:
+            *msg->opg_Storage = data->speed;
+            break;
+            
+        default:
+            retval = DoSuperMethodA(cl, obj, (Msg)msg);
+            break;
     }
     
     return retval;
@@ -125,7 +125,7 @@ IPTR Busy__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 
     if (data->speed && !(data->flags & FLG_SHOWHIDEIH))
     {
-    	data->ihn.ihn_Millis = data->speed;
+        data->ihn.ihn_Millis = data->speed;
         DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
     }
     
@@ -141,8 +141,8 @@ IPTR Busy__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
  
     if (data->ihn.ihn_Millis && !(data->flags & FLG_SHOWHIDEIH))
     {
-   	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
-	data->ihn.ihn_Millis = 0;
+        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+        data->ihn.ihn_Millis = 0;
     }
     
     data->flags &= ~FLG_SETUP;
@@ -153,13 +153,13 @@ IPTR Busy__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 IPTR Busy__MUIM_Show(Class *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct Busy_DATA *data = INST_DATA(cl, obj);
-    IPTR    	      retval;
+    IPTR              retval;
     
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (data->speed && (data->flags & FLG_SHOWHIDEIH))
     {
-    	data->ihn.ihn_Millis = data->speed;
+        data->ihn.ihn_Millis = data->speed;
         DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
     }
     
@@ -175,8 +175,8 @@ IPTR Busy__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Hide *msg)
  
     if (data->ihn.ihn_Millis && (data->flags & FLG_SHOWHIDEIH))
     {
-    	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
-	data->ihn.ihn_Millis = 0;
+        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+        data->ihn.ihn_Millis = 0;
     }
     
     data->flags &= ~FLG_SHOWN;
@@ -202,8 +202,8 @@ IPTR Busy__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 IPTR Busy__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Busy_DATA *data = INST_DATA(cl, obj);
-    WORD    	      x;
-    IPTR    	      retval;
+    WORD              x;
+    IPTR              retval;
     
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
     
@@ -211,11 +211,11 @@ IPTR Busy__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         
     for(x = 0; x < _mwidth(obj); x++)
     {
-    	WORD col;
-	
-    	col = ((x + data->pos) / 8) % 2;
-	SetAPen(_rp(obj), _pens(obj)[col ? MPEN_SHADOW : MPEN_SHINE]);
-	RectFill(_rp(obj), _mleft(obj) + x, _mtop(obj), _mleft(obj) + x, _mbottom(obj));
+        WORD col;
+        
+        col = ((x + data->pos) / 8) % 2;
+        SetAPen(_rp(obj), _pens(obj)[col ? MPEN_SHADOW : MPEN_SHINE]);
+        RectFill(_rp(obj), _mleft(obj) + x, _mtop(obj), _mleft(obj) + x, _mbottom(obj));
     }
     
     return retval;

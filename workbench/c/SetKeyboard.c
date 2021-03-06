@@ -31,13 +31,13 @@
     NOTES
 
         To make a certain keymap be the default for all shells, use the
-	preferences input program so specify your default choice.
+        preferences input program so specify your default choice.
 
     EXAMPLE
 
         SetKeyboard s
 
-	Makes the current shell use the Swedish keymap.
+        Makes the current shell use the Swedish keymap.
 
     BUGS
 
@@ -84,46 +84,46 @@ __startup AROS_PROCH(Start, argstr, argsize, SysBase)
 
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
     if (!DOSBase)
-    	return RETURN_FAIL;
+        return RETURN_FAIL;
 
     KeymapBase = OpenLibrary("keymap.library", 0);
     if (KeymapBase)
     {
-    	KMSBase = (struct KMSLibrary *)OpenLibrary("kms.library", 0);
-	if (KMSBase)
-	{
-	    IPTR args[NOOFARGS];
-	    struct RDArgs *myargs = ReadArgs(ARG_TEMPLATE, args, 0);
+        KMSBase = (struct KMSLibrary *)OpenLibrary("kms.library", 0);
+        if (KMSBase)
+        {
+            IPTR args[NOOFARGS];
+            struct RDArgs *myargs = ReadArgs(ARG_TEMPLATE, args, 0);
 
-	    if (myargs)
-	    {
-	        struct KeyMapNode *kmn = OpenKeymap((STRPTR)args[ARG_NAME]);
+            if (myargs)
+            {
+                struct KeyMapNode *kmn = OpenKeymap((STRPTR)args[ARG_NAME]);
 
-    		if (kmn)
-    		{
-		    SetKeyMapDefault(&kmn->kn_KeyMap);
-		    rc = RETURN_OK;
-		}
-	    }
-	    
-	    if (rc != RETURN_OK)
-	    	PrintFault(IoErr(), "SetKeyboard");
+                if (kmn)
+                {
+                    SetKeyMapDefault(&kmn->kn_KeyMap);
+                    rc = RETURN_OK;
+                }
+            }
+            
+            if (rc != RETURN_OK)
+                PrintFault(IoErr(), "SetKeyboard");
 
-	    if (myargs)
-	    	FreeArgs(myargs);
+            if (myargs)
+                FreeArgs(myargs);
 
-	    CloseLibrary(&KMSBase->kms_Lib);
-	}
-	else
-	    err = "Can't opem kms.library!";
+            CloseLibrary(&KMSBase->kms_Lib);
+        }
+        else
+            err = "Can't opem kms.library!";
 
-    	CloseLibrary(KeymapBase);
+        CloseLibrary(KeymapBase);
     }
     else
-    	err = "Can't open keymap.library!";
+        err = "Can't open keymap.library!";
 
     if (err)
-    	Printf("SetKeyboard: %s\n", err);
+        Printf("SetKeyboard: %s\n", err);
 
     CloseLibrary(&DOSBase->dl_lib);
 

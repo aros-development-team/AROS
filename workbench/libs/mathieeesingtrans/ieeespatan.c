@@ -79,7 +79,7 @@
                 (
                     IEEESPAdd
                     (
-                        IEEESPMul(three, ysquared) | IEEESPSign_Mask, one 
+                        IEEESPMul(three, ysquared) | IEEESPSign_Mask, one
                     ),
                     IEEESPMul(three, ycubed)
                 )
@@ -94,7 +94,7 @@
                 (
                     IEEESPAdd
                     (
-                        IEEESPMul(three, ysquared) | IEEESPSign_Mask, one 
+                        IEEESPMul(three, ysquared) | IEEESPSign_Mask, one
                     ),
                     IEEESPMul(three, ycubed)
                 )

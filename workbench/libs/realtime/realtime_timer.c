@@ -35,25 +35,25 @@ static AROS_INTH1(rtVBlank, struct internal_RealTimeBase *, RealTimeBase)
 
 BOOL AllocTimer(struct internal_RealTimeBase *RealTimeBase)
 {
-    RealTimeBase->rtb_TickErr = 0;	/* How may such a thing be measured?            */
+    RealTimeBase->rtb_TickErr = 0;      /* How may such a thing be measured?            */
     RealTimeBase->rtb_Reserved1 = 60;   /* NB: rtb_Reserved1 contains the TICK_FREQ,
                                          * which in our case is vblank (60)             */
 
     /* I use a process here just to be able to use CreateNewProc() so
        I don't have to fiddle with stack order and such... */
     {
-	struct TagItem tags[] = { { NP_Entry   , (IPTR)Pulse            },
-	                          { NP_Name    , (IPTR)"RealTime Pulse" },
-				  { NP_Priority, (IPTR)127              },
-			          { NP_UserData, (IPTR)RealTimeBase     },
-			          { TAG_DONE   , (IPTR)NULL             } };
-	
-	RealTimeBase->rtb_PulseTask = (struct Task *)CreateNewProc(tags);
+        struct TagItem tags[] = { { NP_Entry   , (IPTR)Pulse            },
+                                  { NP_Name    , (IPTR)"RealTime Pulse" },
+                                  { NP_Priority, (IPTR)127              },
+                                  { NP_UserData, (IPTR)RealTimeBase     },
+                                  { TAG_DONE   , (IPTR)NULL             } };
+        
+        RealTimeBase->rtb_PulseTask = (struct Task *)CreateNewProc(tags);
     }
     
     if (RealTimeBase->rtb_PulseTask == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
 
     D(bug("[realtime.library] pulse task created @ 0x%p\n", GPB(RealTimeBase)->rtb_PulseTask));

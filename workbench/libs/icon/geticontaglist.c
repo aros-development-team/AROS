@@ -15,38 +15,38 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH2(struct DiskObject *, GetIconTagList,
+        AROS_LH2(struct DiskObject *, GetIconTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, A0),
-	AROS_LHA(const struct TagItem *, tags, A1),
+        AROS_LHA(CONST_STRPTR, name, A0),
+        AROS_LHA(const struct TagItem *, tags, A1),
 /*  LOCATION */
-	struct IconBase *, IconBase, 30, Icon)
+        struct IconBase *, IconBase, 30, Icon)
 
 /*  FUNCTION
-	Opens an icon from disk.
+        Opens an icon from disk.
 
     INPUTS
-	name - object path (without .info extension). May be NULL when
-	    retrieving a default icon.
-	tags - tag list containing tags described below.
+        name - object path (without .info extension). May be NULL when
+            retrieving a default icon.
+        tags - tag list containing tags described below.
 
     TAGS
-	ICONA_ErrorCode (LONG *)
-	ICONGETA_GetDefaultType (LONG) - Default icon type to get. This
-		overrides the "name" parameter.
-	ICONGETA_GetDefaultName (STRPTR) - Name of default icon to get. This
-		overrides the "name" parameter.
-	ICONGETA_FailIfUnavailable (BOOL) - Find a default icon if there is no
-		specific icon.
-	ICONGETA_GetPaletteMappedIcon (BOOL)
-	ICONGETA_IsDefaultIcon (LONG *) - Upon completion of this function, the
-	    referenced LONG will be set to a boolean value indicating whether
-	    the returned icon is a default icon.
-	ICONGETA_RemapIcon (BOOL)
-	ICONGETA_GenerateImageMasks (BOOL)
-	ICONGETA_Label (STRPTR)
-	ICONGETA_Screen (struct Screen *)
+        ICONA_ErrorCode (LONG *)
+        ICONGETA_GetDefaultType (LONG) - Default icon type to get. This
+                overrides the "name" parameter.
+        ICONGETA_GetDefaultName (STRPTR) - Name of default icon to get. This
+                overrides the "name" parameter.
+        ICONGETA_FailIfUnavailable (BOOL) - Find a default icon if there is no
+                specific icon.
+        ICONGETA_GetPaletteMappedIcon (BOOL)
+        ICONGETA_IsDefaultIcon (LONG *) - Upon completion of this function, the
+            referenced LONG will be set to a boolean value indicating whether
+            the returned icon is a default icon.
+        ICONGETA_RemapIcon (BOOL)
+        ICONGETA_GenerateImageMasks (BOOL)
+        ICONGETA_Label (STRPTR)
+        ICONGETA_Screen (struct Screen *)
 
     RESULT
 
@@ -91,12 +91,12 @@
         {
             case ICONGETA_GetDefaultType:
                 if (defaultType == -1)
-                    defaultType = tag->ti_Data; 
+                    defaultType = tag->ti_Data;
                 break;
                 
             case ICONGETA_GetDefaultName:
                 if (defaultName == NULL)
-                    defaultName = (CONST_STRPTR) tag->ti_Data; 
+                    defaultName = (CONST_STRPTR) tag->ti_Data;
                 break;
                 
             case ICONGETA_FailIfUnavailable:
@@ -137,21 +137,21 @@
     if (defaultType != -1 || defaultName != NULL)
     {
         if (defaultName != NULL)
-	{
+        {
             BPTR file = OpenDefaultIcon(defaultName, MODE_OLDFILE);
             
             D(bug("[%s] Find default icon '%s'\n", __func__, defaultName));
             if (file != BNULL)
-	    {
-	        D(bug("[%s] Found default icon '%s'\n", __func__, defaultName));
-	    	icon = ReadIcon(file);
-		CloseDefaultIcon(file);
-		SET_ISDEFAULTICON(TRUE);
-	    }
-	}
+            {
+                D(bug("[%s] Found default icon '%s'\n", __func__, defaultName));
+                icon = ReadIcon(file);
+                CloseDefaultIcon(file);
+                SET_ISDEFAULTICON(TRUE);
+            }
+        }
 
-	if (icon == NULL && defaultType != -1 && defaultName == NULL)
-	{
+        if (icon == NULL && defaultType != -1 && defaultName == NULL)
+        {
             CONST_STRPTR defaultIconName = GetDefaultIconName(defaultType);
             
             D(bug("[%s] Find default icon type %d\n", __func__, defaultType));
@@ -206,9 +206,9 @@
                 icon->do_Type = WBPROJECT;
         }
     } else {
-    	/* NULL name = return empty DiskObject */
-    	D(bug("[%s] Get an empty DiskObject\n", __func__));
-    	icon = NewDiskObject(0);
+        /* NULL name = return empty DiskObject */
+        D(bug("[%s] Get an empty DiskObject\n", __func__));
+        icon = NewDiskObject(0);
     }
 
     /* Try to identify it by name or type */
@@ -247,7 +247,7 @@
                         if (icon != NULL)
                         {
                             /*
-                                Sanity check since we don't trust the 
+                                Sanity check since we don't trust the
                                 user-provided hook too much. ;-)
                             */
                             

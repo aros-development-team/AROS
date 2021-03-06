@@ -45,16 +45,16 @@ ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 /**************************************************************************************************/
 
-#define QUALITY 90	/* compress quality for saving */
+#define QUALITY 90      /* compress quality for saving */
 
-typedef	struct {
-    struct IFFHandle	*filehandle;
-    UBYTE		*linebuf;
+typedef struct {
+    struct IFFHandle    *filehandle;
+    UBYTE               *linebuf;
 } JpegHandleType;
 
 struct my_error_mgr {
-  struct jpeg_error_mgr pub;	/* "public" fields */
-  jmp_buf setjmp_buffer;	/* for return to caller */
+  struct jpeg_error_mgr pub;    /* "public" fields */
+  jmp_buf setjmp_buffer;        /* for return to caller */
 };
 
 typedef struct my_error_mgr * my_error_ptr;
@@ -89,16 +89,16 @@ my_output_message (j_common_ptr cinfo)
 }
 
 typedef struct {
-  struct jpeg_source_mgr pub;	/* public fields */
+  struct jpeg_source_mgr pub;   /* public fields */
 
-  FILE * infile;		/* source stream */
-  JOCTET * buffer;		/* start of buffer */
-  boolean start_of_file;	/* have we gotten any data yet? */
+  FILE * infile;                /* source stream */
+  JOCTET * buffer;              /* start of buffer */
+  boolean start_of_file;        /* have we gotten any data yet? */
 } my_source_mgr;
 
 typedef my_source_mgr * my_src_ptr;
 
-#define INPUT_BUF_SIZE  4096	/* choose an efficiently fread'able size */
+#define INPUT_BUF_SIZE  4096    /* choose an efficiently fread'able size */
 
 METHODDEF(boolean)
 my_fill_input_buffer (j_decompress_ptr cinfo)
@@ -110,7 +110,7 @@ my_fill_input_buffer (j_decompress_ptr cinfo)
   nbytes = Read(MKBADDR(src->infile), src->buffer, INPUT_BUF_SIZE);
 
   if (nbytes <= 0) {
-    if (src->start_of_file)	/* Treat empty input file as fatal error */
+    if (src->start_of_file)     /* Treat empty input file as fatal error */
       ERREXIT(cinfo, JERR_INPUT_EMPTY);
     WARNMS(cinfo, JWRN_JPEG_EOF);
     /* Insert a fake EOI marker */
@@ -159,7 +159,7 @@ static void JPEG_Exit(JpegHandleType *jpeghandle, LONG errorcode)
 {
     D(if (errorcode) bug("jpeg.datatype/JPEG_Exit(): IoErr %ld\n", errorcode));
     if( jpeghandle->linebuf )
-	FreeVec( jpeghandle->linebuf );
+        FreeVec( jpeghandle->linebuf );
     FreeMem(jpeghandle, sizeof(JpegHandleType));
     SetIoErr(errorcode);
 }
@@ -170,48 +170,48 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
 {
     JpegHandleType          *jpeghandle;
     union {
-    	struct IFFHandle   *iff;
-    	BPTR                bptr;
+        struct IFFHandle   *iff;
+        BPTR                bptr;
     } filehandle;
-    long		    width, height;
+    long                    width, height;
     IPTR                    sourcetype;
     struct BitMapHeader     *bmhd;
     STRPTR                  name;
 
     struct jpeg_decompress_struct cinfo;
     struct my_error_mgr jerr;
-    JSAMPARRAY buffer;		/* Output row buffer */
-    int row_stride;		/* physical row width in output buffer */
+    JSAMPARRAY buffer;          /* Output row buffer */
+    int row_stride;             /* physical row width in output buffer */
     my_src_ptr src;
 
     D(bug("jpeg.datatype/LoadJPEG()\n"));
 
     if( !(jpeghandle = AllocMem(sizeof(JpegHandleType), MEMF_ANY)) )
     {
-	SetIoErr(ERROR_NO_FREE_STORE);
-	return FALSE;
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return FALSE;
     }
     jpeghandle->linebuf = NULL;
     if( GetDTAttrs(o,   DTA_SourceType    , (IPTR)&sourcetype ,
-			DTA_Handle        , (IPTR)&filehandle,
-			PDTA_BitMapHeader , (IPTR)&bmhd,
-			TAG_DONE) != 3 )
+                        DTA_Handle        , (IPTR)&filehandle,
+                        PDTA_BitMapHeader , (IPTR)&bmhd,
+                        TAG_DONE) != 3 )
     {
-	JPEG_Exit(jpeghandle, ERROR_OBJECT_NOT_FOUND);
-	return FALSE;
+        JPEG_Exit(jpeghandle, ERROR_OBJECT_NOT_FOUND);
+        return FALSE;
     }
     
     if ( sourcetype == DTST_RAM && filehandle.iff == NULL && bmhd )
     {
-	D(bug("jpeg.datatype/LoadJPEG(): Creating an empty object\n"));
-	JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
-	return TRUE;
+        D(bug("jpeg.datatype/LoadJPEG(): Creating an empty object\n"));
+        JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
+        return TRUE;
     }
     if ( sourcetype != DTST_FILE || !filehandle.bptr || !bmhd )
     {
-	D(bug("jpeg.datatype/LoadJPEG(): unsupported mode\n"));
-	JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
-	return FALSE;
+        D(bug("jpeg.datatype/LoadJPEG(): unsupported mode\n"));
+        JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
+        return FALSE;
     }
 
     D(bug("jpeg.datatype/LoadJPEG(): Setting error handler\n"));
@@ -219,12 +219,12 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
     jerr.pub.error_exit = my_error_exit;
     jerr.pub.output_message = my_output_message;
     if (setjmp(jerr.setjmp_buffer)) {
-	/* If we get here, the JPEG code has signaled an error.
-	 * We need to clean up the JPEG object, close the input file, and return.
-	 */
-	jpeg_destroy_decompress(&cinfo);
-	JPEG_Exit(jpeghandle, 1);
-	return FALSE;
+        /* If we get here, the JPEG code has signaled an error.
+         * We need to clean up the JPEG object, close the input file, and return.
+         */
+        jpeg_destroy_decompress(&cinfo);
+        JPEG_Exit(jpeghandle, 1);
+        return FALSE;
     }
 
     D(bug("jpeg.datatype/LoadJPEG(): Create decompressor\n"));
@@ -245,41 +245,41 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
     D(bug("jpeg.datatype/LoadJPEG(): Size %ld x %ld x %d bit\n", width, height, (int)(cinfo.output_components*8)));
     if (cinfo.output_components != 3)
     {
-	D(bug("jpeg.datatype/LoadJPEG(): unsupported colormode\n"));
-	JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
-	return FALSE;
+        D(bug("jpeg.datatype/LoadJPEG(): unsupported colormode\n"));
+        JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
+        return FALSE;
     }
 
     /* Make a one-row-high sample array that will go away when done with image */
     row_stride = width * 3;
     buffer = (*cinfo.mem->alloc_sarray)
-		((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+                ((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
     
     /* Here we use the library's state variable cinfo.output_scanline as the
     * loop counter, so that we don't have to keep track ourselves.
     */
     while (cinfo.output_scanline < height)
     {
-	/* jpeg_read_scanlines expects an array of pointers to scanlines.
-	 * Here the array is only one element long, but you could ask for
-	 * more than one scanline at a time if that's more convenient.
-	 */
-	(void) jpeg_read_scanlines(&cinfo, buffer, 1);
-	// D(bug("jpeg.datatype/LoadJPEG(): Copy line %ld\n", (long)cinfo.output_scanline));
-	if(!DoSuperMethod(cl, o,
-			PDTM_WRITEPIXELARRAY,		/* Method_ID */
-			(IPTR) buffer[0],		/* PixelData */
-			PBPAFMT_RGB,			/* PixelFormat */
-			row_stride,			/* PixelArrayMod (number of bytes per row) */
-			0,				/* Left edge */
-			cinfo.output_scanline-1,	/* Top edge */
-			width,				/* Width */
-			1))				/* Height (here: one line) */
-	{
-	    D(bug("jpeg.datatype/LoadJPEG(): WRITEPIXELARRAY failed\n"));
-	    JPEG_Exit(jpeghandle, ERROR_OBJECT_NOT_FOUND);
-	    return FALSE;
-	} 
+        /* jpeg_read_scanlines expects an array of pointers to scanlines.
+         * Here the array is only one element long, but you could ask for
+         * more than one scanline at a time if that's more convenient.
+         */
+        (void) jpeg_read_scanlines(&cinfo, buffer, 1);
+        // D(bug("jpeg.datatype/LoadJPEG(): Copy line %ld\n", (long)cinfo.output_scanline));
+        if(!DoSuperMethod(cl, o,
+                        PDTM_WRITEPIXELARRAY,           /* Method_ID */
+                        (IPTR) buffer[0],               /* PixelData */
+                        PBPAFMT_RGB,                    /* PixelFormat */
+                        row_stride,                     /* PixelArrayMod (number of bytes per row) */
+                        0,                              /* Left edge */
+                        cinfo.output_scanline-1,        /* Top edge */
+                        width,                          /* Width */
+                        1))                             /* Height (here: one line) */
+        {
+            D(bug("jpeg.datatype/LoadJPEG(): WRITEPIXELARRAY failed\n"));
+            JPEG_Exit(jpeghandle, ERROR_OBJECT_NOT_FOUND);
+            return FALSE;
+        }
     }
     D(bug("jpeg.datatype/LoadJPEG(): WRITEPIXELARRAY of whole picture done\n"));
     
@@ -290,9 +290,9 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
     /* Pass picture size to picture.datatype */
     GetDTAttrs( o, DTA_Name, (IPTR)&name, TAG_DONE );
     SetDTAttrs(o, NULL, NULL, DTA_NominalHoriz, width,
-			      DTA_NominalVert , height,
-			      DTA_ObjName     , (IPTR)name,
-			      TAG_DONE);
+                              DTA_NominalVert , height,
+                              DTA_ObjName     , (IPTR)name,
+                              TAG_DONE);
 
     D(bug("jpeg.datatype/LoadJPEG(): Normal Exit\n"));
     JPEG_Exit(jpeghandle, 0);
@@ -304,13 +304,13 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
 typedef struct {
   struct jpeg_destination_mgr pub; /* public fields */
 
-  FILE * outfile;		/* target stream */
-  JOCTET * buffer;		/* start of buffer */
+  FILE * outfile;               /* target stream */
+  JOCTET * buffer;              /* start of buffer */
 } my_destination_mgr;
 
 typedef my_destination_mgr * my_dest_ptr;
 
-#define OUTPUT_BUF_SIZE  4096	/* choose an efficiently fwrite'able size */
+#define OUTPUT_BUF_SIZE  4096   /* choose an efficiently fwrite'able size */
 
 METHODDEF(boolean)
 my_empty_output_buffer (j_compress_ptr cinfo)
@@ -346,15 +346,15 @@ my_term_destination (j_compress_ptr cinfo)
 static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
     JpegHandleType          *jpeghandle;
-    BPTR		    filehandle;
+    BPTR                    filehandle;
     unsigned int            width, height, numplanes;
-    UBYTE		    *linebuf;
+    UBYTE                   *linebuf;
     struct BitMapHeader     *bmhd;
     long                    *colorregs;
 
     struct jpeg_compress_struct cinfo;
     struct my_error_mgr jerr;
-    JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
+    JSAMPROW row_pointer[1];    /* pointer to JSAMPLE row[s] */
     my_dest_ptr dest;
 
     D(bug("jpeg.datatype/SaveJPEG()\n"));
@@ -362,20 +362,20 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     /* A NULL file handle is a NOP */
     if( !dtw->dtw_FileHandle )
     {
-	D(bug("jpeg.datatype/SaveJPEG(): empty Filehandle - just testing\n"));
-	return TRUE;
+        D(bug("jpeg.datatype/SaveJPEG(): empty Filehandle - just testing\n"));
+        return TRUE;
     }
     filehandle = dtw->dtw_FileHandle;
 
     /* Get BitMapHeader and color palette */
     if( GetDTAttrs( o,  PDTA_BitMapHeader, (IPTR) &bmhd,
-			PDTA_CRegs,        (IPTR) &colorregs,
-			TAG_DONE ) != 2UL ||
-	!bmhd || !colorregs )
+                        PDTA_CRegs,        (IPTR) &colorregs,
+                        TAG_DONE ) != 2UL ||
+        !bmhd || !colorregs )
     {
-	D(bug("jpeg.datatype/SaveJPEG(): missing attributes\n"));
-	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	return FALSE;
+        D(bug("jpeg.datatype/SaveJPEG(): missing attributes\n"));
+        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+        return FALSE;
     }
 
     width = bmhd->bmh_Width;
@@ -383,16 +383,16 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     numplanes = bmhd->bmh_Depth;
     if( numplanes != 24 )
     {
-	D(bug("jpeg.datatype/SaveJPEG(): color depth %d, can save only depths of 24\n", numplanes));
-	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	return FALSE;
+        D(bug("jpeg.datatype/SaveJPEG(): color depth %d, can save only depths of 24\n", numplanes));
+        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+        return FALSE;
     }
     D(bug("jpeg.datatype/SaveJPEG(): Picture size %d x %d (x %d bit)\n", width, height, numplanes));
 
     if( !(jpeghandle = AllocMem(sizeof(JpegHandleType), MEMF_ANY)) )
     {
-	SetIoErr(ERROR_NO_FREE_STORE);
-	return FALSE;
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return FALSE;
     }
     jpeghandle->linebuf = NULL;
 
@@ -401,12 +401,12 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     jerr.pub.error_exit = my_error_exit;
     jerr.pub.output_message = my_output_message;
     if (setjmp(jerr.setjmp_buffer)) {
-	/* If we get here, the JPEG code has signaled an error.
-	 * We need to clean up the JPEG object, close the input file, and return.
-	 */
-	jpeg_destroy_compress(&cinfo);
-	JPEG_Exit(jpeghandle, 1);
-	return FALSE;
+        /* If we get here, the JPEG code has signaled an error.
+         * We need to clean up the JPEG object, close the input file, and return.
+         */
+        jpeg_destroy_compress(&cinfo);
+        JPEG_Exit(jpeghandle, 1);
+        return FALSE;
     }
 
     D(bug("jpeg.datatype/SaveJPEG(): Create compressor\n"));
@@ -416,10 +416,10 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     dest->pub.empty_output_buffer = my_empty_output_buffer;
     dest->pub.term_destination = my_term_destination;
 
-    cinfo.image_width = width;	 	/* image width and height, in pixels */
+    cinfo.image_width = width;          /* image width and height, in pixels */
     cinfo.image_height = height;
-    cinfo.input_components = 3;		/* # of color components per pixel */
-    cinfo.in_color_space = JCS_RGB; 	/* colorspace of input image */
+    cinfo.input_components = 3;         /* # of color components per pixel */
+    cinfo.in_color_space = JCS_RGB;     /* colorspace of input image */
     jpeg_set_defaults(&cinfo);
     jpeg_set_quality(&cinfo, QUALITY, TRUE /* limit to baseline-JPEG values */);
     D(bug("jpeg.datatype/SaveJPEG(): Starting compression\n"));
@@ -428,30 +428,30 @@ static BOOL SaveJPEG(struct IClass *cl, Object *o, struct dtWrite *dtw )
     /* Now read the picture data line by line and write it to a chunky buffer */
     if( !(linebuf = AllocVec(width*3, MEMF_ANY)) )
     {
-	JPEG_Exit(jpeghandle, ERROR_NO_FREE_STORE);
-	return FALSE;
+        JPEG_Exit(jpeghandle, ERROR_NO_FREE_STORE);
+        return FALSE;
     }
     jpeghandle->linebuf = linebuf;
 
     row_pointer[0] = linebuf;
     while (cinfo.next_scanline < cinfo.image_height)
     {
-	// D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY line %ld\n", (long)cinfo.next_scanline));
-	if(!DoSuperMethod(cl, o,
-			PDTM_READPIXELARRAY,	/* Method_ID */
-			(IPTR)linebuf,		/* PixelData */
-			PBPAFMT_RGB,		/* PixelFormat */
-			width,			/* PixelArrayMod (number of bytes per row) */
-			0,			/* Left edge */
-			cinfo.next_scanline,	/* Top edge */
-			width,			/* Width */
-			1))			/* Height */
-	{
-	    D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY failed!\n"));
-	    JPEG_Exit(jpeghandle, ERROR_OBJECT_WRONG_TYPE);
-	    return FALSE;
-	}
-	(void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+        // D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY line %ld\n", (long)cinfo.next_scanline));
+        if(!DoSuperMethod(cl, o,
+                        PDTM_READPIXELARRAY,    /* Method_ID */
+                        (IPTR)linebuf,          /* PixelData */
+                        PBPAFMT_RGB,            /* PixelFormat */
+                        width,                  /* PixelArrayMod (number of bytes per row) */
+                        0,                      /* Left edge */
+                        cinfo.next_scanline,    /* Top edge */
+                        width,                  /* Width */
+                        1))                     /* Height */
+        {
+            D(bug("jpeg.datatype/SaveJPEG(): READPIXELARRAY failed!\n"));
+            JPEG_Exit(jpeghandle, ERROR_OBJECT_WRONG_TYPE);
+            return FALSE;
+        }
+        (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
     }
 
     jpeg_finish_compress(&cinfo);
@@ -471,11 +471,11 @@ IPTR JPEG__OM_NEW(Class *cl, Object *o, Msg msg)
     newobj = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (newobj)
     {
-	if (!LoadJPEG(cl, newobj))
-	{
-	    CoerceMethod(cl, newobj, OM_DISPOSE);
-	    newobj = NULL;
-	}
+        if (!LoadJPEG(cl, newobj))
+        {
+            CoerceMethod(cl, newobj, OM_DISPOSE);
+            newobj = NULL;
+        }
     }
     
     return (IPTR)newobj;
@@ -488,13 +488,13 @@ IPTR JPEG__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
     D(bug("jpeg.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
     if( (dtw -> dtw_Mode) == DTWM_RAW )
     {
-	/* Local data format requested */
-	return SaveJPEG(cl, o, dtw );
+        /* Local data format requested */
+        return SaveJPEG(cl, o, dtw );
     }
     else
     {
-	/* Pass msg to superclass (which writes an IFF ILBM picture)... */
-	return DoSuperMethodA( cl, o, (Msg)dtw );
+        /* Pass msg to superclass (which writes an IFF ILBM picture)... */
+        return DoSuperMethodA( cl, o, (Msg)dtw );
     }
 }
 

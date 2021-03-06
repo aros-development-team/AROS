@@ -60,7 +60,7 @@ static CONST_STRPTR PED_Commands[] = {
     "\377",                             /* 18 aSHORP3 (no condensed) */
     "\377",                             /* 19 aSHORP6 (enlarge) */
     "\377",                             /* 20 aSHORT5 (no enlarge) */
-    "\377",                             /* 21 aDEN6   (shadow) */ 
+    "\377",                             /* 21 aDEN6   (shadow) */
     "\377",                             /* 22 aDEN5   (no shadow) */
     "\377",                             /* 23 aDEN4   (double strike) */
     "\377",                             /* 24 aDEN3   (no double strike) */
@@ -201,100 +201,100 @@ static CONST_STRPTR cmdTable[] = {
 static CONST_STRPTR PED_8BitChars[] = {
 
           " ", /* SPC (160) */
-          "?", /* ! */ 
-          "?", /* c */ 
+          "?", /* ! */
+          "?", /* c */
           "?", /* £ */
           "?", /* o */
           "?", /* Y */
-          "|", 
+          "|",
           "?", /* S */
-          "?", 
-          "?", /* Copyright */ 
+          "?",
+          "?", /* Copyright */
           "?", /* a */
-          "?", /* < */ 
+          "?", /* < */
           "?", /* - */
           "?", /* SHY */
-          "?", /* R */ 
+          "?", /* R */
           "?", /* - */
           "?", /* o (176) */
-          "?", /* +- */ 
+          "?", /* +- */
           "?", /* 2 */
           "?", /* 3 */
-          "?", 
-          "?", /* u */ 
-          "?", /* P */ 
+          "?",
+          "?", /* u */
+          "?", /* P */
           "?", /* . */
-          "?", /* , */ 
+          "?", /* , */
           "?", /* 1 */
           "?", /* o */
           "?", /* > */
           "?", /* 1/4 */
           "?", /* 1/2 */
-          "?", /* 3/4 */ 
+          "?", /* 3/4 */
           "?", /* ? */
           "?", /* A' (192) */
-          "?", /* A' */ 
-          "?", /* A^ */ 
-          "?", /* A~ */ 
-          "?", /* A: */ 
-          "?", /* Ao */ 
-          "?", /* AE */ 
+          "?", /* A' */
+          "?", /* A^ */
+          "?", /* A~ */
+          "?", /* A: */
+          "?", /* Ao */
+          "?", /* AE */
           "?", /* C */
-          "?", /* E' */ 
-          "?", /* E' */ 
-          "?", /* E^ */ 
-          "?", /* E: */ 
-          "?", /* I' */ 
-          "?", /* I' */ 
-          "?", /* I^ */ 
+          "?", /* E' */
+          "?", /* E' */
+          "?", /* E^ */
+          "?", /* E: */
+          "?", /* I' */
+          "?", /* I' */
+          "?", /* I^ */
           "?", /* I: */
-          "?", /* D- (208) */ 
-          "?", /* N~ */ 
-          "?", /* O' */ 
-          "?", /* O' */ 
-          "?", /* O^ */ 
-          "?", /* O~ */ 
-          "?", /* O: */ 
+          "?", /* D- (208) */
+          "?", /* N~ */
+          "?", /* O' */
+          "?", /* O' */
+          "?", /* O^ */
+          "?", /* O~ */
+          "?", /* O: */
           "?", /* x  */
-          "?", /* 0  */ 
+          "?", /* 0  */
           "?", /* U' */
           "?", /* U' */
-          "?", /* U^ */ 
-          "?", /* U: */ 
-          "?", /* Y' */ 
-          "?", /* p  */ 
+          "?", /* U^ */
+          "?", /* U: */
+          "?", /* Y' */
+          "?", /* p  */
           "?", /* B  */
           "?", /* a' (224) */
-          "?", /* a' */ 
-          "?", /* a^ */ 
-          "?", /* a~ */ 
-          "?", /* a: */ 
-          "?", /* ao */ 
-          "?", /* ae */ 
+          "?", /* a' */
+          "?", /* a^ */
+          "?", /* a~ */
+          "?", /* a: */
+          "?", /* ao */
+          "?", /* ae */
           "?", /* c */
-          "?", /* e' */ 
-          "?", /* e' */ 
-          "?", /* e^ */ 
-          "?", /* e: */ 
-          "?", /* i' */ 
-          "?", /* i' */ 
-          "?", /* i^ */ 
+          "?", /* e' */
+          "?", /* e' */
+          "?", /* e^ */
+          "?", /* e: */
+          "?", /* i' */
+          "?", /* i' */
+          "?", /* i^ */
           "?", /* i: */
-          "?", /* o (240) */ 
-          "?", /* n~ */ 
-          "?", /* o' */ 
-          "?", /* o' */ 
-          "?", /* o^ */ 
-          "?", /* o~ */ 
-          "?", /* o: */ 
+          "?", /* o (240) */
+          "?", /* n~ */
+          "?", /* o' */
+          "?", /* o' */
+          "?", /* o^ */
+          "?", /* o~ */
+          "?", /* o: */
           "?", /* /  */
-          "?", /* 0  */ 
+          "?", /* 0  */
           "?", /* u' */
           "?", /* u' */
-          "?", /* u^ */ 
-          "?", /* u: */ 
-          "?", /* y' */ 
-          "?", /* p  */ 
+          "?", /* u^ */
+          "?", /* u: */
+          "?", /* y' */
+          "?", /* p  */
           "?", /* y: */
 };
 
@@ -420,7 +420,7 @@ static VOID sk_Close(union printerIO *ior)
 static LONG sk_RenderInit(struct IODRPReq *io, LONG width, LONG height)
 {
     D(bug("sk_RenderInit: Dump raster %ldx%ld pixels, io_RastPort=%p\n", width, height, io->io_RastPort));
-    D(bug("\t@%ldx%ld (%ldx%ld) => @%ldx%ld\n", 
+    D(bug("\t@%ldx%ld (%ldx%ld) => @%ldx%ld\n",
            io->io_SrcX, io->io_SrcY, io->io_SrcWidth,
            io->io_SrcHeight, io->io_DestCols, io->io_DestRows));
     LONG alignOffsetX = 0;
@@ -702,7 +702,7 @@ static LONG sk_ConvFunc(UBYTE *buf, UBYTE c, LONG crlf_flag)
 {
     D(bug("sk_ConvFunc: %p '%c' %d\n", buf, c, crlf_flag));
 
-    /* NOTE: For compatability with AOS 3.x, do 
+    /* NOTE: For compatability with AOS 3.x, do
      *       not attempt to convert ESC or \377
      *       characters if you want DoSpecial() to work.
      */

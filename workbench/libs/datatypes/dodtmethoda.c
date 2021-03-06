@@ -35,7 +35,7 @@
     o    --  pointer to data type object
     win  --  window the object is attached to
     req  --  requester the object is attached to
-    msg  --  the message to send to the object    
+    msg  --  the message to send to the object
 
     RESULT
 

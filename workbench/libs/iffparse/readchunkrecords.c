@@ -9,30 +9,30 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH4(LONG, ReadChunkRecords,
+        AROS_LH4(LONG, ReadChunkRecords,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
-	AROS_LHA(APTR              , buf, A1),
-	AROS_LHA(LONG              , bytesPerRecord, D0),
-	AROS_LHA(LONG              , numRecords, D1),
+        AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(APTR              , buf, A1),
+        AROS_LHA(LONG              , bytesPerRecord, D0),
+        AROS_LHA(LONG              , numRecords, D1),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 12, IFFParse)
+        struct Library *, IFFParseBase, 12, IFFParse)
 
 /*  FUNCTION
-	Read a number of records with the given size from the current chunk
-	into a buffer. Attempts to read past the end of the chunk will be truncated.
+        Read a number of records with the given size from the current chunk
+        into a buffer. Attempts to read past the end of the chunk will be truncated.
 
     INPUTS
-	 iff		  - pointer to IFFHandle struct.
-	buf		 -  pointer to a buffer into which the data will be placed.
-	bytesPerRecord	- number of bytes per record.
-	numRecords	-  number of records to read.
+         iff              - pointer to IFFHandle struct.
+        buf              -  pointer to a buffer into which the data will be placed.
+        bytesPerRecord  - number of bytes per record.
+        numRecords      -  number of records to read.
 
     RESULT
-	actual -   (positive) the actual number of whole records read.
-		  (negative) IFFERR_#? error code if not successful.
+        actual -   (positive) the actual number of whole records read.
+                  (negative) IFFERR_#? error code if not successful.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	ReadChunkBytes(), ParseIFF(), WriteChunkRecords()
+        ReadChunkBytes(), ParseIFF(), WriteChunkRecords()
 
     INTERNALS
 
@@ -52,8 +52,8 @@
     struct ContextNode *cn;
 
     LONG   bytestoread,
-	  lefttoread,
-	  bytesread;
+          lefttoread,
+          bytesread;
 
     DEBUG_READCHUNKRECORDS(dprintf("ReadChunkRecords: iff %p buf %p bytesPerRecord %ld numRecords %ld\n",
                                    iff, buf, bytesPerRecord, numRecords));
@@ -68,35 +68,35 @@
     /* If bytestoread > lefttoread then we must truncate the readoperation */
     if (bytestoread > lefttoread)
     {
-	bytestoread = lefttoread;
+        bytestoread = lefttoread;
 
 
-	/* See to it that we only read whole records */
-	bytestoread -= (lefttoread % bytesPerRecord);
+        /* See to it that we only read whole records */
+        bytestoread -= (lefttoread % bytesPerRecord);
     }
 
     /* Beware: bytestoread is 0 now if bytesPerRecord > lefttoread */
 
     bytesread = ReadStream
     (
-	iff,
-	buf,
-	bytestoread,
-	IPB(IFFParseBase)
+        iff,
+        buf,
+        bytestoread,
+        IPB(IFFParseBase)
     );
 
 
     /* Return number of records  actually read (if no error occured)  */
     if (bytesread < 0)
-	/* IFFERR_#? in bytesread */
-	numRecords = bytesread;
+        /* IFFERR_#? in bytesread */
+        numRecords = bytesread;
     else
     {
-	/* calculate the actual number of records written */
-	numRecords = bytesread / bytesPerRecord;
+        /* calculate the actual number of records written */
+        numRecords = bytesread / bytesPerRecord;
 
-	/* Update number of bytes read */
-	cn->cn_Scan += bytesread;
+        /* Update number of bytes read */
+        cn->cn_Scan += bytesread;
     }
 
     DEBUG_READCHUNKRECORDS(dprintf("ReadChunkRecords: return %ld\n", numRecords));

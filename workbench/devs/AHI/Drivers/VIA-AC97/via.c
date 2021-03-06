@@ -169,12 +169,12 @@ unsigned short codec_read(struct CardData *card, unsigned char reg) {
 
 // IO base 0 registers
 static const unsigned char VIA_AC97_RX = 0x80; // ac97 register
-// static const unsigned long		VIA_AC97_RX_PRIMARY_ID		= 0x00;
+// static const unsigned long           VIA_AC97_RX_PRIMARY_ID          = 0x00;
 // //primamry codec ID (RW) static const unsigned long
-// VIA_AC97_RX_SECODARY_ID		= 0x40000000;	//secondary codec ID
+// VIA_AC97_RX_SECODARY_ID              = 0x40000000;   //secondary codec ID
 // (RW)
-// static const unsigned long		VIA_AC97_RX_SECODARY_VALID	=
-// 0x08000000;	//secondary valid data/status/index (RWC)
+// static const unsigned long           VIA_AC97_RX_SECODARY_VALID      =
+// 0x08000000;  //secondary valid data/status/index (RWC)
 static const unsigned long VIA_AC97_RX_PRIMARY_VALID =
     0x02000000; // primary valid data etc. (RWC)
 static const unsigned long VIA_AC97_RX_BUSY = 0x01000000; // controller busy (R)

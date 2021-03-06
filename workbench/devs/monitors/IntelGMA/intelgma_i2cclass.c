@@ -18,56 +18,56 @@
 
 void METHOD(INTELI2C, Hidd_I2C, PutBits)
 {
-	struct g45staticdata *sd = SD(cl);
-	uint32_t val = 0;
+        struct g45staticdata *sd = SD(cl);
+        uint32_t val = 0;
 
 #if 0
-	/* SCL as output */
-	val = G45_GPIO_CLOCK_DIR_MASK | G45_GPIO_CLOCK_DIR_VAL;
-	/* update SCL value */
-	val |= G45_GPIO_CLOCK_DATA_MASK;
-	/* SDA as output */
-	val |= G45_GPIO_DATA_DIR_MASK | G45_GPIO_DATA_DIR_VAL;
-	/* update SDA value */
-	val |= G45_GPIO_DATA_MASK;
+        /* SCL as output */
+        val = G45_GPIO_CLOCK_DIR_MASK | G45_GPIO_CLOCK_DIR_VAL;
+        /* update SCL value */
+        val |= G45_GPIO_CLOCK_DATA_MASK;
+        /* SDA as output */
+        val |= G45_GPIO_DATA_DIR_MASK | G45_GPIO_DATA_DIR_VAL;
+        /* update SDA value */
+        val |= G45_GPIO_DATA_MASK;
 
-	/* set SCL */
-	if (msg->scl)
-		val |= G45_GPIO_CLOCK_DATA_VAL;
-	if (msg->sda)
-		val |= G45_GPIO_DATA_VAL;
+        /* set SCL */
+        if (msg->scl)
+                val |= G45_GPIO_CLOCK_DATA_VAL;
+        if (msg->sda)
+                val |= G45_GPIO_DATA_VAL;
 #endif
 
-	if (msg->scl)
-		val |= G45_GPIO_CLOCK_DIR_MASK;
-	else
-		val |= G45_GPIO_CLOCK_DIR_MASK | G45_GPIO_CLOCK_DIR_VAL | G45_GPIO_CLOCK_DATA_MASK;
+        if (msg->scl)
+                val |= G45_GPIO_CLOCK_DIR_MASK;
+        else
+                val |= G45_GPIO_CLOCK_DIR_MASK | G45_GPIO_CLOCK_DIR_VAL | G45_GPIO_CLOCK_DATA_MASK;
 
-	if (msg->sda)
-		val |= G45_GPIO_DATA_DIR_MASK;
-	else
-		val |= G45_GPIO_DATA_DIR_MASK | G45_GPIO_DATA_DIR_VAL | G45_GPIO_DATA_MASK;
+        if (msg->sda)
+                val |= G45_GPIO_DATA_DIR_MASK;
+        else
+                val |= G45_GPIO_DATA_DIR_MASK | G45_GPIO_DATA_DIR_VAL | G45_GPIO_DATA_MASK;
 
-	//D(bug("[GMA_I2C] Put: %08x -> %08x\n", val, sd->Card.MMIO + G45_GPIOA));
+        //D(bug("[GMA_I2C] Put: %08x -> %08x\n", val, sd->Card.MMIO + G45_GPIOA));
 
-	writel(val, sd->Card.MMIO + sd->DDCPort);
-	val = readl(sd->Card.MMIO + sd->DDCPort);
+        writel(val, sd->Card.MMIO + sd->DDCPort);
+        val = readl(sd->Card.MMIO + sd->DDCPort);
 }
 
 void METHOD(INTELI2C, Hidd_I2C, GetBits)
 {
-	struct g45staticdata *sd = SD(cl);
-	uint32_t val;
+        struct g45staticdata *sd = SD(cl);
+        uint32_t val;
 
-	/* release SCL and SDA lines */
-//	writel(/*G45_GPIO_CLOCK_DIR_MASK |*/ G45_GPIO_DATA_DIR_MASK, sd->Card.MMIO + G45_GPIOA);
-//	writel(0, sd->Card.MMIO + G45_GPIOA);
+        /* release SCL and SDA lines */
+//      writel(/*G45_GPIO_CLOCK_DIR_MASK |*/ G45_GPIO_DATA_DIR_MASK, sd->Card.MMIO + G45_GPIOA);
+//      writel(0, sd->Card.MMIO + G45_GPIOA);
 
-	val = readl(sd->Card.MMIO + sd->DDCPort);
+        val = readl(sd->Card.MMIO + sd->DDCPort);
 
-	//D(bug("[GMA_I2C] Get: %08x <- %08x\n", val, sd->Card.MMIO + G45_GPIOA));
-	*msg->scl = (val & G45_GPIO_CLOCK_DATA_IN) != 0;
-	*msg->sda = (val & G45_GPIO_DATA_IN) != 0;
+        //D(bug("[GMA_I2C] Get: %08x <- %08x\n", val, sd->Card.MMIO + G45_GPIOA));
+        *msg->scl = (val & G45_GPIO_CLOCK_DATA_IN) != 0;
+        *msg->sda = (val & G45_GPIO_DATA_IN) != 0;
 }
 
 

@@ -119,7 +119,7 @@
         r = SPDiv(q,p);
         p = SPAdd(SPAdd(c,c),SPMul(SPAdd(s,s),r));
         q = SPSub(SPAdd(w,w) ,pio4);
-        t = SPSub(SPSub(q,p) ,pio4);   
+        t = SPSub(SPSub(q,p) ,pio4);
     }
     
     return (t | (fnum1 & FFPSign_Mask )) ;

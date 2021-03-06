@@ -22,7 +22,7 @@
 #include <proto/layers.h>
 #include <proto/cybergraphics.h>
 
-//#define MYDEBUG 1 
+//#define MYDEBUG 1
 #include "debug.h"
 #include "support.h"
 #include "muimaster_intern.h"
@@ -319,7 +319,7 @@ void GetIntegers(char *v, int *v1, int *v2)
     *                          width and height ofthe wished Image
  * Output:     NewImage:
     *                          Pointer to the Created image or NULL
-    * Bugs:	   Not known yet
+    * Bugs:        Not known yet
     * NOTES:      Function will only return non-NULL if all allocations could be done
     *             so you have not to check something inside the NewImage structure
 */
@@ -346,7 +346,7 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
 /* Function:   Remove all Memory used by an Image
  * Input:      NewImage ni:
     *                          Pointer to an Image to be deallocated
-    * Bugs:	   Not known
+    * Bugs:        Not known
 */
 void DisposeImageContainer(struct NewImage *ni)
 {
@@ -368,7 +368,7 @@ void DisposeImageContainer(struct NewImage *ni)
     *                          Filename of the Image to load
  * Output:     NewImage:
     *                          Pointer to the Created image or NULL
-    * Bugs:	   Not known yet
+    * Bugs:        Not known yet
     * NOTES:      Function will only return non-NULL if all allocations could be done
     *             so you have not to check something inside the NewImage struct.
     *             This function uses DataTypes for loading images, so be sure to have

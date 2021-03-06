@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 #include <aros/debug.h>
 /******************************************************************************
@@ -22,27 +22,27 @@
     FUNCTION
 
         Carry out all the commands in a block if a given conditional is true.
-	(A block is a run of command lines ended with an Else or EndIf
-	command.) For every If command there must be a corresponding EndIf.
-	If the condition is false, command execution will skip to the
-	corresponding Else of EndIf command.
+        (A block is a run of command lines ended with an Else or EndIf
+        command.) For every If command there must be a corresponding EndIf.
+        If the condition is false, command execution will skip to the
+        corresponding Else of EndIf command.
 
     INPUTS
 
         NOT               --  Negates the value of the condition
 
-	WARN              --  True if the previous return code was greater
-	                      than or equal to 5.
-	ERROR             --  True if the previous return code was greater
-	                      than or equal to 10.
+        WARN              --  True if the previous return code was greater
+                              than or equal to 5.
+        ERROR             --  True if the previous return code was greater
+                              than or equal to 10.
         FAIL              --  True if the previous return code was greater
-	                      than or equal to 20.
+                              than or equal to 20.
 
-	EQ, GE, GT        --  True if the first value is equal, greater than
-	                      or equal respectively greater than the second.
+        EQ, GE, GT        --  True if the first value is equal, greater than
+                              or equal respectively greater than the second.
 
         VAL               --  Indicate that the comparison should treat the
-	                      strings as numerical values.
+                              strings as numerical values.
 
         EXISTS  <string>  --  True if the file or directory <string> exists.
 
@@ -52,19 +52,19 @@
     NOTES
 
         ERROR and FAIL will only be appropriate if the fail level of the
-	script is set via FailAt (the standard fail level is 10 and if any
-	return code exceeds or equals this value, the script will be aborted).
+        script is set via FailAt (the standard fail level is 10 and if any
+        return code exceeds or equals this value, the script will be aborted).
 
     EXAMPLE
 
         If 500 GT 200 VAL
-	    echo "500 is greater than 200"
-	Else
-	    If EXISTS S:User-Startup
-	        echo "User-Startup script found in S:"
-		Execute S:User-Startup
-	    EndIf
-	EndIf
+            echo "500 is greater than 200"
+        Else
+            If EXISTS S:User-Startup
+                echo "User-Startup script found in S:"
+                Execute S:User-Startup
+            EndIf
+        EndIf
 
     BUGS
 
@@ -124,115 +124,115 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 
     if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
-	D(bug("Current input = %p, Standard input = %p\n",
-	      cli->cli_CurrentInput, cli->cli_StandardInput));
+        D(bug("Current input = %p, Standard input = %p\n",
+              cli->cli_CurrentInput, cli->cli_StandardInput));
 
-	if(SHArg(WARN))
-	{
-	    if(cli->cli_ReturnCode >= RETURN_WARN)
-		result = TRUE;
-	}
-	else if(SHArg(ERROR))
-	{
-	    if(cli->cli_ReturnCode >= RETURN_ERROR)
-		result = TRUE;
-	}
-	else if(SHArg(FAIL))
-	{
-	    if(cli->cli_ReturnCode >= RETURN_FAIL)
-		result = TRUE;
-	}    
-	else if(SHArg(EQ))
-	{
-	    result = doeval(SHArg( ), SHArg(EQ), 0, SHArg(VAL), DOSBase, UtilityBase);
-	}
-	else if (SHArg(GT))
-	{
-	    result = doeval(SHArg( ), SHArg(GT), 1, SHArg(VAL), DOSBase, UtilityBase);
-	}
-	else if (SHArg(GE))
-	{
-	    result = doeval(SHArg( ), SHArg(GE), 2, SHArg(VAL), DOSBase, UtilityBase);
-	}
-	else if(SHArg(EXISTS))
-	{
-	    BPTR lock = Lock(SHArg(EXISTS), SHARED_LOCK);
+        if(SHArg(WARN))
+        {
+            if(cli->cli_ReturnCode >= RETURN_WARN)
+                result = TRUE;
+        }
+        else if(SHArg(ERROR))
+        {
+            if(cli->cli_ReturnCode >= RETURN_ERROR)
+                result = TRUE;
+        }
+        else if(SHArg(FAIL))
+        {
+            if(cli->cli_ReturnCode >= RETURN_FAIL)
+                result = TRUE;
+        }
+        else if(SHArg(EQ))
+        {
+            result = doeval(SHArg( ), SHArg(EQ), 0, SHArg(VAL), DOSBase, UtilityBase);
+        }
+        else if (SHArg(GT))
+        {
+            result = doeval(SHArg( ), SHArg(GT), 1, SHArg(VAL), DOSBase, UtilityBase);
+        }
+        else if (SHArg(GE))
+        {
+            result = doeval(SHArg( ), SHArg(GE), 2, SHArg(VAL), DOSBase, UtilityBase);
+        }
+        else if(SHArg(EXISTS))
+        {
+            BPTR lock = Lock(SHArg(EXISTS), SHARED_LOCK);
 
-	    if((lock != BNULL) || (IoErr() == ERROR_OBJECT_IN_USE))
-		result = TRUE;
+            if((lock != BNULL) || (IoErr() == ERROR_OBJECT_IN_USE))
+                result = TRUE;
 
-	    UnLock(lock);
-	}
+            UnLock(lock);
+        }
 
-	if(SHArg(NOT))		       /* NOT */
-	    result = !result;
+        if(SHArg(NOT))                 /* NOT */
+            result = !result;
 
 
-	/* We have determined the result -- now we've got to act on it. */
+        /* We have determined the result -- now we've got to act on it. */
 
-	if(!result)
-	{
-	    int  a = 0;
-	    char buffer[256];
-	    int  level = 1;	    /* If block level */
-	    BOOL found = FALSE; /* Have we found a matching Else or
-				   EndIF? */
+        if(!result)
+        {
+            int  a = 0;
+            char buffer[256];
+            int  level = 1;         /* If block level */
+            BOOL found = FALSE; /* Have we found a matching Else or
+                                   EndIF? */
 
-	    SelectInput(cli->cli_CurrentInput);
+            SelectInput(cli->cli_CurrentInput);
 
-	    while(!found)
-	    {
-		LONG status;
+            while(!found)
+            {
+                LONG status;
 
-		status = ReadItem(buffer, sizeof(buffer), NULL);
+                status = ReadItem(buffer, sizeof(buffer), NULL);
 
-		if(status == ITEM_ERROR)
-		    break;
+                if(status == ITEM_ERROR)
+                    break;
 
-		if(status == ITEM_NOTHING)
-		{
-		    if (a == ENDSTREAMCH)
-			break;
-		    else
-		        goto next;
-		}
+                if(status == ITEM_NOTHING)
+                {
+                    if (a == ENDSTREAMCH)
+                        break;
+                    else
+                        goto next;
+                }
 
-		switch(FindArg("IF,ELSE,ENDIF", buffer))
-		{
-		case 0:
-		    level++;
-		    //			printf("Found If\n");
-		    break;
+                switch(FindArg("IF,ELSE,ENDIF", buffer))
+                {
+                case 0:
+                    level++;
+                    //                  printf("Found If\n");
+                    break;
 
-		case 1:
-		    if(level == 1)
-			found = TRUE;
-		    break;
+                case 1:
+                    if(level == 1)
+                        found = TRUE;
+                    break;
 
-		case 2:
-		    level--;
+                case 2:
+                    level--;
 
-		    if(level == 0)
-			found = TRUE;
-		    break;
-		}
+                    if(level == 0)
+                        found = TRUE;
+                    break;
+                }
 
 next:
-		/* Take care of long and empty lines */
-		do
-		{
-		    a = FGetC(Input());
-		} while (a != '\n' && a != ENDSTREAMCH);
-	    }
+                /* Take care of long and empty lines */
+                do
+                {
+                    a = FGetC(Input());
+                } while (a != '\n' && a != ENDSTREAMCH);
+            }
 
-	    if(!found)
-		PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "If");
-	}
+            if(!found)
+                PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "If");
+        }
     }
     else
     {
-	Flush(Output());
-	PrintFault(ERROR_SCRIPT_ONLY, "If");
+        Flush(Output());
+        PrintFault(ERROR_SCRIPT_ONLY, "If");
     }
 
     CloseLibrary((struct Library *)UtilityBase);
@@ -250,54 +250,54 @@ static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric, APTR DOSBase
 
     if (s1 && s2)
     {
-    	if (numeric)
-	{
-	    LONG val1, val2;
-	    
-	    StrToLong(s1, &val1);
-	    StrToLong(s2, &val2);
-	    
-	    switch(op)
-	    {
-	    	case 0:
-		    result = (val1 == val2);
-		    break;
-		    
-		case 1:
-		    result = (val1 > val2);
-		    break;
-		    
-		case 2:
-		    result = (val1 >= val2);
-		    break;		    
-	    }
-	    
-	} /* if (numeric) */
-	else
-	{
-	    LONG match;
-	    
-	    match = Stricmp(s1, s2);
-	    
-	    switch(op)
-	    {
-	    	case 0:
-		    result = (match == 0);
-		    break;
-		    
-		case 1:
-		    result = (match > 0);
-		    break;
-		    
-		case 2:
-		    result = (match >= 0);
-		    break;
-	    }
-	    
-	}
-	
+        if (numeric)
+        {
+            LONG val1, val2;
+            
+            StrToLong(s1, &val1);
+            StrToLong(s2, &val2);
+            
+            switch(op)
+            {
+                case 0:
+                    result = (val1 == val2);
+                    break;
+                    
+                case 1:
+                    result = (val1 > val2);
+                    break;
+                    
+                case 2:
+                    result = (val1 >= val2);
+                    break;
+            }
+            
+        } /* if (numeric) */
+        else
+        {
+            LONG match;
+            
+            match = Stricmp(s1, s2);
+            
+            switch(op)
+            {
+                case 0:
+                    result = (match == 0);
+                    break;
+                    
+                case 1:
+                    result = (match > 0);
+                    break;
+                    
+                case 2:
+                    result = (match >= 0);
+                    break;
+            }
+            
+        }
+        
     } /* if (s1 && s2) */
     
-    return result;    
+    return result;
 }
 

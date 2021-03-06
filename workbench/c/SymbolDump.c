@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2013-2014, The AROS Development Team. All rights reserved.
  
-    Desc: 
+    Desc:
  */
 
 /******************************************************************************

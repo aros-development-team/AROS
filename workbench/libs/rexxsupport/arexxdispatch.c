@@ -57,7 +57,7 @@ int comparefunc(const void *name, const void *func)
 }
 
 AROS_AREXXLIBQUERYFUNC(ArexxDispatch, msg,
-		       struct Library *, RexxSupportBase, 5, RexxSupport)
+                       struct Library *, RexxSupportBase, 5, RexxSupport)
 {
     struct arexxfunc *func;
     UBYTE *argstring = NULL;
@@ -73,7 +73,7 @@ AROS_AREXXLIBQUERYFUNC(ArexxDispatch, msg,
     {
         ReturnRexxQuery(ERR10_018, NULL);
     }
-    else 
+    else
     {
         rc = func->f(RexxSupportBase, msg, &argstring);
         ReturnRexxQuery(rc, argstring);

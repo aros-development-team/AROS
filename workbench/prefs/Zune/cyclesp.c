@@ -129,8 +129,8 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     Child, (IPTR) (d.recessed_entries_checkmark = MakeCheck(NULL)),
                 End, /* HGroup recessed CM */
             End, /* Popup Menu Design */
-        End, /* HGroup Popup Menu */			       
-    	
+        End, /* HGroup Popup Menu */
+        
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
 
@@ -148,43 +148,43 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
  * MUIM_Settingsgroup_ConfigToGadgets
  */
 static IPTR CyclesP_ConfigToGadgets(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+                                    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_CyclesPData *data = INST_DATA(cl, obj);
     STRPTR spec;
 
 /* Frame */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Frame_PopUp);
+                            MUICFG_Frame_PopUp);
     set(data->menu_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
 
 /* Images */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_PopUp);
+                            MUICFG_Background_PopUp);
     set(data->background_menu_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Image_Cycle);
+                            MUICFG_Image_Cycle);
     set(data->cycle_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
 
 /* Sliders */
     setslider(data->menu_level_slider,
-	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		       MUICFG_Cycle_MenuCtrl_Level));
+              DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                       MUICFG_Cycle_MenuCtrl_Level));
     setslider(data->menu_speed_slider,
-	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		       MUICFG_Cycle_MenuCtrl_Speed));
+              DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                       MUICFG_Cycle_MenuCtrl_Speed));
 /* Checkmark */
     setcheckmark(data->recessed_entries_checkmark,
-		 DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-			  MUICFG_Cycle_Menu_Recessed));
+                 DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                          MUICFG_Cycle_Menu_Recessed));
 
 /* Cycles */
     setcycle(data->menu_position_cycle,
-	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		      MUICFG_Cycle_MenuCtrl_Position));
+             DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                      MUICFG_Cycle_MenuCtrl_Position));
 
-    return 1;    
+    return 1;
 }
 
 
@@ -192,7 +192,7 @@ static IPTR CyclesP_ConfigToGadgets(struct IClass *cl, Object *obj,
  * MUIM_Settingsgroup_ConfigToGadgets
  */
 static IPTR CyclesP_GadgetsToConfig(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+                                    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_CyclesPData *data = INST_DATA(cl, obj);
     STRPTR str;
@@ -200,25 +200,25 @@ static IPTR CyclesP_GadgetsToConfig(struct IClass *cl, Object *obj,
 /* Frame */
     str = (STRPTR)XGET(data->menu_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_PopUp,
-	     (IPTR)str);
+             (IPTR)str);
 /* Images */
     str = (STRPTR)XGET(data->background_menu_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_PopUp,
-	     (IPTR)str);
+             (IPTR)str);
     str = (STRPTR)XGET(data->cycle_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_Cycle,
-	     (IPTR)str);
+             (IPTR)str);
 /* Sliders */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_MenuCtrl_Level,
-	     XGET(data->menu_level_slider, MUIA_Numeric_Value));
+             XGET(data->menu_level_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_MenuCtrl_Speed,
-	     XGET(data->menu_speed_slider, MUIA_Numeric_Value));
+             XGET(data->menu_speed_slider, MUIA_Numeric_Value));
 /* Checkmark */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_Menu_Recessed,
-	     XGET(data->recessed_entries_checkmark, MUIA_Selected));
+             XGET(data->recessed_entries_checkmark, MUIA_Selected));
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_MenuCtrl_Position,
-	     XGET(data->menu_position_cycle, MUIA_Cycle_Active));
+             XGET(data->menu_position_cycle, MUIA_Cycle_Active));
 
     return TRUE;
 }
@@ -228,9 +228,9 @@ BOOPSI_DISPATCHER(IPTR, CyclesP_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return CyclesP_New(cl, obj, (struct opSet *)msg);
-	case MUIM_Settingsgroup_ConfigToGadgets: return CyclesP_ConfigToGadgets(cl,obj,(APTR)msg);break;
-	case MUIM_Settingsgroup_GadgetsToConfig: return CyclesP_GadgetsToConfig(cl,obj,(APTR)msg);break;
+        case OM_NEW: return CyclesP_New(cl, obj, (struct opSet *)msg);
+        case MUIM_Settingsgroup_ConfigToGadgets: return CyclesP_ConfigToGadgets(cl,obj,(APTR)msg);break;
+        case MUIM_Settingsgroup_GadgetsToConfig: return CyclesP_GadgetsToConfig(cl,obj,(APTR)msg);break;
     }
     
     return DoSuperMethodA(cl, obj, msg);
@@ -240,11 +240,11 @@ BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUIP_Cycles_desc = { 
+const struct __MUIBuiltinClass _MUIP_Cycles_desc = {
     "Cycles",
     MUIC_Group,
     sizeof(struct MUI_CyclesPData),
-    (void*)CyclesP_Dispatcher 
+    (void*)CyclesP_Dispatcher
 };
 
 
@@ -255,17 +255,17 @@ static unsigned char default_icon[] =
     'B', 'Z', '2', '\0',
     0x00, 0x00, 0x00, 0x79,  // number of bytes
 
-    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0x3c, 0xe9, 
-    0xa9, 0x76, 0x00, 0x03, 0x24, 0x51, 0x12, 0xa2, 0x22, 0x00, 0x02, 0x20, 
-    0x00, 0x00, 0x01, 0x42, 0x40, 0x00, 0x00, 0xb0, 0x00, 0xb8, 0x08, 0x06, 
-    0x9a, 0x68, 0x20, 0x1a, 0x69, 0xa0, 0x42, 0x54, 0xd2, 0x0c, 0xf0, 0x12, 
-    0x90, 0x6e, 0x4e, 0xb9, 0x3c, 0xb9, 0xce, 0x47, 0x72, 0x3c, 0x83, 0xe0, 
-    0x20, 0x10, 0x81, 0xf4, 0x10, 0x3f, 0xa2, 0xa8, 0x78, 0x8a, 0xa1, 0xd0, 
-    0xa8, 0x27, 0x9d, 0x8d, 0x29, 0x49, 0x49, 0x50, 0xd1, 0xdc, 0x32, 0xed, 
-    0x9a, 0x35, 0x34, 0x05, 0x36, 0x17, 0x48, 0xb8, 0x87, 0x59, 0x95, 0x1a, 
-    0x50, 0xa9, 0x21, 0xd3, 0xa7, 0x42, 0x9a, 0xaa, 0x54, 0x02, 0xe8, 0x40, 
-    0xe9, 0x03, 0xd1, 0x77, 0x24, 0x53, 0x85, 0x09, 0x03, 0xce, 0x9a, 0x97, 
-    0x60, 
+    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0x3c, 0xe9,
+    0xa9, 0x76, 0x00, 0x03, 0x24, 0x51, 0x12, 0xa2, 0x22, 0x00, 0x02, 0x20,
+    0x00, 0x00, 0x01, 0x42, 0x40, 0x00, 0x00, 0xb0, 0x00, 0xb8, 0x08, 0x06,
+    0x9a, 0x68, 0x20, 0x1a, 0x69, 0xa0, 0x42, 0x54, 0xd2, 0x0c, 0xf0, 0x12,
+    0x90, 0x6e, 0x4e, 0xb9, 0x3c, 0xb9, 0xce, 0x47, 0x72, 0x3c, 0x83, 0xe0,
+    0x20, 0x10, 0x81, 0xf4, 0x10, 0x3f, 0xa2, 0xa8, 0x78, 0x8a, 0xa1, 0xd0,
+    0xa8, 0x27, 0x9d, 0x8d, 0x29, 0x49, 0x49, 0x50, 0xd1, 0xdc, 0x32, 0xed,
+    0x9a, 0x35, 0x34, 0x05, 0x36, 0x17, 0x48, 0xb8, 0x87, 0x59, 0x95, 0x1a,
+    0x50, 0xa9, 0x21, 0xd3, 0xa7, 0x42, 0x9a, 0xaa, 0x54, 0x02, 0xe8, 0x40,
+    0xe9, 0x03, 0xd1, 0x77, 0x24, 0x53, 0x85, 0x09, 0x03, 0xce, 0x9a, 0x97,
+    0x60,
 };
 
 

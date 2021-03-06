@@ -56,7 +56,7 @@
 
         Now calculate the square root of the mantisse.
         The following algorithm calculates the square of a number + delta
-        and compares it to the mantisse. If the square of that	number +
+        and compares it to the mantisse. If the square of that  number +
         delta is less than the mantisse then keep that number + delta.
         Otherwise calculate a lower offset and try again.
         Start out with number = 0;</p>
@@ -119,7 +119,7 @@
     Set_Value64C(ResSquared, 0x0, 0x0);
     z = 0;
     
-    /* 
+    /*
         this calculates the sqrt of the mantisse. It`s short, isn`t it?
         Delta starts out with 0.5, then 0.25, 0.125 etc.
     */

@@ -5,7 +5,7 @@
 */
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
-#include "datatypes_intern.h"	/* Must be after <intuition/intuition.h> */
+#include "datatypes_intern.h"   /* Must be after <intuition/intuition.h> */
 
 /*****************************************************************************
 

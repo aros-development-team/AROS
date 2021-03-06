@@ -43,8 +43,8 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
     if (catalog != NULL)
     {
         return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+    }
+    else
     {
         return CatCompArray[id].cca_Str;
     }
@@ -56,7 +56,7 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 /*** Utility functions ******************************************************/
 Object *MakeMenuitem(CONST_STRPTR text)
 {
-    CONST_STRPTR title    = NULL, 
+    CONST_STRPTR title    = NULL,
                  shortcut = NULL;
     
     if (text != NM_BARLABEL && text[1] == '\0')
@@ -94,11 +94,11 @@ AROS_UFH3(static void, IMsgHook,
 /*** Methods ****************************************************************/
 Object *SystemPrefsWindow__OM_NEW
 (
-    Class *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message
 )
 {
-    struct SystemPrefsWindow_DATA *data = NULL; 
-    struct TagItem *tag        = NULL;    
+    struct SystemPrefsWindow_DATA *data = NULL;
+    struct TagItem *tag        = NULL;
     struct Catalog *catalog    = NULL;
     Object         *editor     = NULL;
     Object         *importMI, *exportMI, *exportIconMI, *defaultsMI,
@@ -139,7 +139,7 @@ Object *SystemPrefsWindow__OM_NEW
                 Child, (IPTR)(useMI    = MakeMenuitem(_(MSG_MENU_PREFS_USE))),
                 Child, (IPTR)(cancelMI = MakeMenuitem(_(MSG_MENU_PREFS_CANCEL))),
             End,
-        End, 
+        End,
         
         TAG_MORE, (IPTR) message->ops_AttrList
     );
@@ -240,7 +240,7 @@ Object *SystemPrefsWindow__OM_NEW
 
 IPTR SystemPrefsWindow__OM_DISPOSE
 (
-    Class *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message
 )
 {
     SETUP_INST_DATA;
@@ -427,7 +427,7 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
         );
         if (reqOK)
         {
-            LONG buflen = strlen(data->spwd_FileRequester->rf_Dir) + 
+            LONG buflen = strlen(data->spwd_FileRequester->rf_Dir) +
                 strlen(data->spwd_FileRequester->rf_File) + 5;
             STRPTR prefname = AllocVec(buflen, MEMF_ANY);
             if (prefname)

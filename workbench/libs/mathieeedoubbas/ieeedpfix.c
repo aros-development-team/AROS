@@ -17,7 +17,7 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Converts an IEEE double precision floating point number to an integer.
+        Converts an IEEE double precision floating point number to an integer.
 
     INPUTS
         y - IEEE double precision floating point number.
@@ -25,10 +25,10 @@
     RESULT
         x - the closest signed 32-bit integer to y.
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : ieeedp out of integer-range
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : ieeedp out of integer-range
 
     NOTES
 

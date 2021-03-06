@@ -38,7 +38,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    /* 
+    /*
         a ^ b  = e^(b * ln a)
         y ^ x  = e^(x * ln y)
     */
@@ -59,7 +59,7 @@
     Set_Value64(tmp, y);
     AND64QC
     (
-        tmp, 
+        tmp,
         (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
         (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo)
     );
@@ -68,13 +68,13 @@
     Res = IEEEDPMul(Res, x);
     Res = IEEEDPExp(Res);
     
-    /* 
+    /*
         if y < 0 and x was and even integer, the result is positive, otherwise
         it is negative.
     */
     if
     (
-           is_lessSC(y, 0x0, 0x0) 
+           is_lessSC(y, 0x0, 0x0)
         && TRUE == intern_IEEEDPisodd(x)
     )
     {
@@ -98,7 +98,7 @@
     Set_Value64(tmp, Res);
     AND64QC
     (
-        tmp, 
+        tmp,
         (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
         (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo)
     );

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /******************************************************************************
@@ -166,24 +166,24 @@ int main(void)
 #else
         FPuts(Output(),"   Address  Version  Rev  OpenCnt  Flags  Name\n");
 #endif
-	    for(devs2=buffer;devs2<devs;devs2++)
-	    {
+            for(devs2=buffer;devs2<devs;devs2++)
+            {
 #if (__WORDSIZE == 64)
-		Printf("0x%012.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
+                Printf("0x%012.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
 #else
-		Printf("0x%08.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
+                Printf("0x%08.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
 #endif
-		        devs2->address, devs2->version,
-		        devs2->revision, devs2->opencnt,
-		        devs2->flags, devs2->name);
+                        devs2->address, devs2->version,
+                        devs2->revision, devs2->opencnt,
+                        devs2->flags, devs2->name);
                 if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
                         error = RETURN_FAIL;
                         SetIoErr(ERROR_BREAK);
                         break;
                 }
-	    }
-	    FreeVec(buffer);
+            }
+            FreeVec(buffer);
             break;
         }
         FreeVec(buffer);

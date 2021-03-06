@@ -29,24 +29,24 @@
 
 /***************************************************************************************************/
 
-#define MATRIX_HALFTONE		0
-#define MATRIX_BAYER4 		1
-#define MATRIX_BAYER16		0
-#define MATRIX_RECTANGULAR	0
+#define MATRIX_HALFTONE         0
+#define MATRIX_BAYER4           1
+#define MATRIX_BAYER16          0
+#define MATRIX_RECTANGULAR      0
 
 
-#define MATRIX 	      		Bayer4
-#define MATRIX_WIDTH  		Bayer4_Width
-#define MATRIX_HEIGHT 		Bayer4_Height
-#define MATRIX_MAXVAL 		Bayer4_MaxVal
+#define MATRIX                  Bayer4
+#define MATRIX_WIDTH            Bayer4_Width
+#define MATRIX_HEIGHT           Bayer4_Height
+#define MATRIX_MAXVAL           Bayer4_MaxVal
 
 /***************************************************************************************************/
 
 #if MATRIX_HALFTONE
 
-#define Halftone_Width 		6
-#define Halftone_Height 	6
-#define Halftone_MaxVal 	36
+#define Halftone_Width          6
+#define Halftone_Height         6
+#define Halftone_MaxVal         36
 
 const UBYTE Halftone[6][6] =
 {
@@ -64,16 +64,16 @@ const UBYTE Halftone[6][6] =
 
 #if MATRIX_BAYER4
 
-#define Bayer4_Width 		4
-#define Bayer4_Height 		4
-#define Bayer4_MaxVal 		16
+#define Bayer4_Width            4
+#define Bayer4_Height           4
+#define Bayer4_MaxVal           16
 
 const UBYTE Bayer4[4][4] =
 {
     { 1, 9, 3,11},
     {13, 5,15, 7},
     { 4,12, 2,10},
-    {16, 8,14, 6}	
+    {16, 8,14, 6}
 };
 
 #endif
@@ -82,9 +82,9 @@ const UBYTE Bayer4[4][4] =
 
 #if MATRIX_BAYER16
 
-#define Bayer16_Width 		16
-#define Bayer16_Height 		16
-#define Bayer16_MaxVal 		254
+#define Bayer16_Width           16
+#define Bayer16_Height          16
+#define Bayer16_MaxVal          254
 
 const UBYTE Bayer16[16][16] =
 {
@@ -103,7 +103,7 @@ const UBYTE Bayer16[16][16] =
     { 11,227, 51,211,  7,237, 61,221,  8,224, 48,208,  4,238, 62,222},
     {139, 75,179,115,135, 71,189,125,136, 72,176,112,132, 68,190,126},
     { 43,203, 27,243, 39,199, 23,253, 40,200, 24,240, 36,196, 20,254},
-    {171,107,155, 91,167,103,151, 87,168,104,152, 88,164,100,148, 84} 
+    {171,107,155, 91,167,103,151, 87,168,104,152, 88,164,100,148, 84}
 };
 
 #endif
@@ -112,15 +112,15 @@ const UBYTE Bayer16[16][16] =
 
 #if MATRIX_RECTANGULAR
 
-#define Rectangular_Width  	3
-#define Rectangular_Height 	3
-#define Rectangular_MaxVal 	4
+#define Rectangular_Width       3
+#define Rectangular_Height      3
+#define Rectangular_MaxVal      4
 
 const UBYTE Rectangular[3][3] =
 {
     {2, 3, 2},
     {4, 1, 4},
-    {2, 3, 2} 
+    {2, 3, 2}
 };
 
 #endif
@@ -128,7 +128,7 @@ const UBYTE Rectangular[3][3] =
 /***************************************************************************************************/
 
 STATIC VOID DitherV(struct RastPort *rp,
-		    WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2
+                    WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2
 )
 {
     LONG width = x2 - x1 + 1;
@@ -138,43 +138,43 @@ STATIC VOID DitherV(struct RastPort *rp,
 
     if (height <= 2)
     {
-    	SetAPen(rp, pen1);
-    	RectFill(rp, x1, y1, x2, y1);
+        SetAPen(rp, pen1);
+        RectFill(rp, x1, y1, x2, y1);
     }
     
     if (height == 2)
     {
-    	SetAPen(rp, pen2);
-    	RectFill(rp, x1, y1 + 1, x2, y2);
+        SetAPen(rp, pen2);
+        RectFill(rp, x1, y1 + 1, x2, y2);
     }
     
     if (height <= 2) return;
     
-    for(y = 0 ; y < height ; y++) 
+    for(y = 0 ; y < height ; y++)
     {
         /* v = brightness. Make it go from 0 at y = 0 to MATRIX_MAXVAL at y = height - 1 */
-	
+        
         v = (y * MATRIX_MAXVAL + (height - 1) / 2)  / (height - 1);
 
         for(x = 0 ; x < width ; x++)
-        {   
-	    /* t = threshold */
-	         	   
+        {
+            /* t = threshold */
+                           
             t = MATRIX[y % MATRIX_HEIGHT][x % MATRIX_WIDTH];
 
-	    /* if brightness is smaller than threshold use pen1, otherwise pen2 */
+            /* if brightness is smaller than threshold use pen1, otherwise pen2 */
 
             if(v < t)
                 pixel = pen1;
             else
                 pixel = pen2;
 
-	    if (pixel != lastpixel)
-	    {
-	        SetAPen(rp, pixel);
-		lastpixel = pixel;
-	    }
-	    
+            if (pixel != lastpixel)
+            {
+                SetAPen(rp, pixel);
+                lastpixel = pixel;
+            }
+            
             WritePixel(rp, x1 + x, y1 + y);
         }
     }
@@ -183,7 +183,7 @@ STATIC VOID DitherV(struct RastPort *rp,
 /***************************************************************************************************/
 
 STATIC VOID DitherH(struct RastPort *rp,
-		    WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2
+                    WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2
 )
 {
     LONG width = x2 - x1 + 1;
@@ -193,43 +193,43 @@ STATIC VOID DitherH(struct RastPort *rp,
 
     if (width <= 2)
     {
-    	SetAPen(rp, pen1);
-    	RectFill(rp, x1, y1, x1, y2);
+        SetAPen(rp, pen1);
+        RectFill(rp, x1, y1, x1, y2);
     }
     
     if (width == 2)
     {
-    	SetAPen(rp, pen2);
-    	RectFill(rp, x1 + 1, y1, x2, y2);
+        SetAPen(rp, pen2);
+        RectFill(rp, x1 + 1, y1, x2, y2);
     }
     
     if (width <= 2) return;
     
-    for(x = 0 ; x < width ; x++) 
+    for(x = 0 ; x < width ; x++)
     {
         /* v = brightness. Make it go from 0 at x = 0 to MATRIX_MAXVAL at x = width - 1 */
-	
+        
         v = (x * MATRIX_MAXVAL + (width - 1) / 2)  / (width - 1);
 
         for(y = 0 ; y < height ; y++)
-        {   
-	    /* t = threshold */
-	         	   
+        {
+            /* t = threshold */
+                           
             t = MATRIX[y % MATRIX_HEIGHT][x % MATRIX_WIDTH];
 
-	    /* if brightness is smaller than threshold use pen1, otherwise pen2 */
+            /* if brightness is smaller than threshold use pen1, otherwise pen2 */
 
             if(v < t)
                 pixel = pen1;
             else
                 pixel = pen2;
 
-	    if (pixel != lastpixel)
-	    {
+            if (pixel != lastpixel)
+            {
                 SetAPen(rp, pixel);
-		lastpixel = pixel;
-	    }
-	    
+                lastpixel = pixel;
+            }
+            
             WritePixel(rp, x1 + x, y1 + y);
         }
     }
@@ -237,8 +237,8 @@ STATIC VOID DitherH(struct RastPort *rp,
 
 /***************************************************************************************************/
 
-STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, ULONG *pen1_rgb, ULONG *pen2_rgb, 
-		    LONG *delta_r, LONG *delta_g, LONG *delta_b
+STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, ULONG *pen1_rgb, ULONG *pen2_rgb,
+                    LONG *delta_r, LONG *delta_g, LONG *delta_b
 )
 {
     GetRGB32(cm, pen1, 1, (ULONG *)pen1_rgb);
@@ -260,8 +260,8 @@ STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, ULONG *pen1_rgb, 
 /***************************************************************************************************/
 
 STATIC VOID TrueDitherV(struct RastPort *rp,
-			WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
-		        struct ColorMap *cm
+                        WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
+                        struct ColorMap *cm
 )
 {
     LONG width = x2 - x1 + 1;
@@ -272,14 +272,14 @@ STATIC VOID TrueDitherV(struct RastPort *rp,
 
     if (height <= 2)
     {
-    	SetAPen(rp, pen1);
-    	RectFill(rp, x1, y1, x2, y1);
+        SetAPen(rp, pen1);
+        RectFill(rp, x1, y1, x2, y1);
     }
     
     if (height == 2)
     {
-    	SetAPen(rp, pen2);
-    	RectFill(rp, x1, y1 + 1, x2, y2);
+        SetAPen(rp, pen2);
+        RectFill(rp, x1, y1 + 1, x2, y2);
     }
     
     if (height <= 2) return;
@@ -289,9 +289,9 @@ STATIC VOID TrueDitherV(struct RastPort *rp,
     for(y = 0; y < height; y++)
     {
         LONG red   = pen1_rgb[0] + (delta_r * y + (height - 1) / 2) / (height - 1);
-	LONG green = pen1_rgb[1] + (delta_g * y + (height - 1) / 2) / (height - 1);
-	LONG blue  = pen1_rgb[2] + (delta_b * y + (height - 1) / 2) / (height - 1);
-	
+        LONG green = pen1_rgb[1] + (delta_g * y + (height - 1) / 2) / (height - 1);
+        LONG blue  = pen1_rgb[2] + (delta_b * y + (height - 1) / 2) / (height - 1);
+        
         FillPixelArray(rp, x1, y1 + y, width, 1, (red << 16) + (green << 8) + blue);
     }
 }
@@ -299,8 +299,8 @@ STATIC VOID TrueDitherV(struct RastPort *rp,
 /***************************************************************************************************/
 
 STATIC VOID TrueDitherH(struct RastPort *rp,
-			WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
-		        struct ColorMap *cm
+                        WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
+                        struct ColorMap *cm
 )
 {
     LONG width = x2 - x1 + 1;
@@ -311,14 +311,14 @@ STATIC VOID TrueDitherH(struct RastPort *rp,
 
     if (width <= 2)
     {
-    	SetAPen(rp, pen1);
-    	RectFill(rp, x1, y1, x1, y2);
+        SetAPen(rp, pen1);
+        RectFill(rp, x1, y1, x1, y2);
     }
     
     if (width == 2)
     {
-    	SetAPen(rp, pen2);
-    	RectFill(rp, x1 + 1, y1, x2, y2);
+        SetAPen(rp, pen2);
+        RectFill(rp, x1 + 1, y1, x2, y2);
     }
     
     if (width <= 2) return;
@@ -328,17 +328,17 @@ STATIC VOID TrueDitherH(struct RastPort *rp,
     for(x = 0; x < width; x++)
     {
         LONG red   = pen1_rgb[0] + (delta_r * x + (width - 1) / 2) / (width - 1);
-	LONG green = pen1_rgb[1] + (delta_g * x + (width - 1) / 2) / (width - 1);
-	LONG blue  = pen1_rgb[2] + (delta_b * x + (width - 1) / 2) / (width - 1);
-	
+        LONG green = pen1_rgb[1] + (delta_g * x + (width - 1) / 2) / (width - 1);
+        LONG blue  = pen1_rgb[2] + (delta_b * x + (width - 1) / 2) / (width - 1);
+        
         FillPixelArray(rp, x1 + x, y1, 1, height, (red << 16) + (green << 8) + blue);
-    }    
+    }
 }
 
 /***************************************************************************************************/
 
 VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD *penarray,
-		  WORD numpens, WORD orientation, struct ColorMap *cm
+                  WORD numpens, WORD orientation, struct ColorMap *cm
 )
 {
     UWORD *pen = penarray;
@@ -356,53 +356,53 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
     switch(orientation)
     {
         case LORIENT_VERT:
-	    height = y2 - y1 + 1;
-	    step = height * 65536 / (numpens - 1);
-	    oldy = y1;
-	    for(i = 0; i < numpens - 1; i++)
-	    {
-		pen2 = *pen++;
-		pos += step;
-		y = y1 + (pos / 65536);
-		endy = y; if (endy != y2) endy--;
-		if (endy >= oldy)
-		{
-		    if (truecolor)
-		    {
-		        TrueDitherV(rp, x1, oldy, x2, endy, pen1, pen2, cm);		        
-		    } else {
-		        DitherV(rp, x1, oldy, x2, endy, pen1, pen2);
-		    }
-		    pen1 = pen2;
-		    oldy = y;
-	        }
-	    }
-	    break;
+            height = y2 - y1 + 1;
+            step = height * 65536 / (numpens - 1);
+            oldy = y1;
+            for(i = 0; i < numpens - 1; i++)
+            {
+                pen2 = *pen++;
+                pos += step;
+                y = y1 + (pos / 65536);
+                endy = y; if (endy != y2) endy--;
+                if (endy >= oldy)
+                {
+                    if (truecolor)
+                    {
+                        TrueDitherV(rp, x1, oldy, x2, endy, pen1, pen2, cm);
+                    } else {
+                        DitherV(rp, x1, oldy, x2, endy, pen1, pen2);
+                    }
+                    pen1 = pen2;
+                    oldy = y;
+                }
+            }
+            break;
 
         case LORIENT_HORIZ:
-	    width = x2 - x1 + 1;
-	    step = width * 65536 / (numpens - 1);
-	    oldx = x1;
-	    for(i = 0; i < numpens - 1;i++)
-	    {
-		pen2 = *pen++;
-		pos += step;
-		x = x1 + (pos / 65536);
-		endx = x; if (endx != x2) endx--;
-		if (endx >= oldx)
-		{
-		    if (truecolor)
-		    {
-		        TrueDitherH(rp, oldx, y1, endx, y2, pen1, pen2, cm);
-		    } else {
-		        DitherH(rp, oldx, y1, endx, y2, pen1, pen2);
-		    }
-		    pen1 = pen2;
-		    oldx = x;
-	        }
-	    }
-	    break;
-	    
+            width = x2 - x1 + 1;
+            step = width * 65536 / (numpens - 1);
+            oldx = x1;
+            for(i = 0; i < numpens - 1;i++)
+            {
+                pen2 = *pen++;
+                pos += step;
+                x = x1 + (pos / 65536);
+                endx = x; if (endx != x2) endx--;
+                if (endx >= oldx)
+                {
+                    if (truecolor)
+                    {
+                        TrueDitherH(rp, oldx, y1, endx, y2, pen1, pen2, cm);
+                    } else {
+                        DitherH(rp, oldx, y1, endx, y2, pen1, pen2);
+                    }
+                    pen1 = pen2;
+                    oldx = x;
+                }
+            }
+            break;
+            
     } /* switch(orientation) */
     
 }
@@ -411,24 +411,24 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
 
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
 {
-    ibox->Left	 = EG(o)->LeftEdge;
-    ibox->Top	 = EG(o)->TopEdge;
+    ibox->Left   = EG(o)->LeftEdge;
+    ibox->Top    = EG(o)->TopEdge;
     ibox->Width  = EG(o)->Width;
     ibox->Height = EG(o)->Height;
 
     if (gi)
     {
-	if (EG(o)->Flags & GFLG_RELRIGHT)
-	    ibox->Left	 += gi->gi_Domain.Width - 1;
+        if (EG(o)->Flags & GFLG_RELRIGHT)
+            ibox->Left   += gi->gi_Domain.Width - 1;
 
-	if (EG(o)->Flags & GFLG_RELBOTTOM)
-	    ibox->Top	 += gi->gi_Domain.Height - 1;
+        if (EG(o)->Flags & GFLG_RELBOTTOM)
+            ibox->Top    += gi->gi_Domain.Height - 1;
 
-	if (EG(o)->Flags & GFLG_RELWIDTH)
-	    ibox->Width  += gi->gi_Domain.Width;
+        if (EG(o)->Flags & GFLG_RELWIDTH)
+            ibox->Width  += gi->gi_Domain.Width;
 
-	if (EG(o)->Flags & GFLG_RELHEIGHT)
-	    ibox->Height += gi->gi_Domain.Height;
+        if (EG(o)->Flags & GFLG_RELHEIGHT)
+            ibox->Height += gi->gi_Domain.Height;
     }
 }
 
@@ -440,7 +440,7 @@ VOID GetSliderBox(struct IBox *gadgetbox, struct IBox *sliderbox)
     sliderbox->Left   = gadgetbox->Left   + FRAMESLIDERSPACINGX;
     sliderbox->Top    = gadgetbox->Top    + FRAMESLIDERSPACINGY;
     sliderbox->Width  = gadgetbox->Width  - FRAMESLIDERSPACINGX * 2;
-    sliderbox->Height = gadgetbox->Height - FRAMESLIDERSPACINGY * 2;    
+    sliderbox->Height = gadgetbox->Height - FRAMESLIDERSPACINGY * 2;
 }
 
 /***************************************************************************************************/
@@ -451,52 +451,52 @@ VOID GetKnobBox(struct GradientSliderData *data, struct IBox *sliderbox, struct 
     {
         knobbox->Left   = sliderbox->Left + (sliderbox->Width - data->knobpixels) * data->curval / data->maxval;
         knobbox->Top    = sliderbox->Top;
-	knobbox->Width  = data->knobpixels;
-	knobbox->Height = sliderbox->Height;
+        knobbox->Width  = data->knobpixels;
+        knobbox->Height = sliderbox->Height;
     } else {
         knobbox->Left   = sliderbox->Left;
-	knobbox->Top    = sliderbox->Top + (sliderbox->Height - data->knobpixels) * data->curval / data->maxval;
-	knobbox->Width  = sliderbox->Width;
-	knobbox->Height = data->knobpixels;
+        knobbox->Top    = sliderbox->Top + (sliderbox->Height - data->knobpixels) * data->curval / data->maxval;
+        knobbox->Width  = sliderbox->Width;
+        knobbox->Height = data->knobpixels;
     }
 }
 
 /***************************************************************************************************/
 
-VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawInfo *dri, 
-	      struct IBox *box, WORD state
+VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawInfo *dri,
+              struct IBox *box, WORD state
 )
 {
     if ((box->Width > 2) && (box->Height > 2))
     {
-	
-	/* black frame around box */
+        
+        /* black frame around box */
 #if 1
-	SetDrMd(rp, JAM1);
-    	SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-		
-	RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top);
-	RectFill(rp, box->Left + box->Width - 1, box->Top + 1, box->Left + box->Width - 1, box->Top + box->Height - 1);
-	RectFill(rp, box->Left, box->Top + box->Height - 1, box->Left + box->Width - 2, box->Top + box->Height - 1);
-	RectFill(rp, box->Left, box->Top + 1, box->Left, box->Top + box->Height - 2);
-	
-	/* white box inside */
-	
-	SetAPen(rp, dri->dri_Pens[SHINEPEN]);
-	
-	RectFill(rp, box->Left + 1, box->Top + 1, box->Left + box->Width - 2, box->Top + box->Height - 2);
+        SetDrMd(rp, JAM1);
+        SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+                
+        RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top);
+        RectFill(rp, box->Left + box->Width - 1, box->Top + 1, box->Left + box->Width - 1, box->Top + box->Height - 1);
+        RectFill(rp, box->Left, box->Top + box->Height - 1, box->Left + box->Width - 2, box->Top + box->Height - 1);
+        RectFill(rp, box->Left, box->Top + 1, box->Left, box->Top + box->Height - 2);
+        
+        /* white box inside */
+        
+        SetAPen(rp, dri->dri_Pens[SHINEPEN]);
+        
+        RectFill(rp, box->Left + 1, box->Top + 1, box->Left + box->Width - 2, box->Top + box->Height - 2);
 #else
-	struct TagItem tags[] =
-	{
-	    {RPTAG_APen		, dri->dri_Pens[SHINEPEN]	},
-	    {RPTAG_OutlinePen	, dri->dri_Pens[SHADOWPEN]	},
-	    {RPTAG_DrMd		, JAM1				},
-	    {TAG_DONE 						}
-	};	
+        struct TagItem tags[] =
+        {
+            {RPTAG_APen         , dri->dri_Pens[SHINEPEN]       },
+            {RPTAG_OutlinePen   , dri->dri_Pens[SHADOWPEN]      },
+            {RPTAG_DrMd         , JAM1                          },
+            {TAG_DONE                                           }
+        };
 
-	SetRPAttrsA(rp, tags);
-	RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top + box->Height - 1);
-	rp->Flags &= ~AREAOUTLINE;
+        SetRPAttrsA(rp, tags);
+        RectFill(rp, box->Left, box->Top, box->Left + box->Width - 1, box->Top + box->Height - 1);
+        rp->Flags &= ~AREAOUTLINE;
 #endif
     }
 }
@@ -508,7 +508,7 @@ VOID DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen)
     UWORD pattern[] = { 0x8888, 0x2222 };
 
     EnterFunc(bug("DrawDisabledPattern(rp=%p, gadbox=%p, pen=%d)\n",
-    		rport, gadbox, pen));
+                rport, gadbox, pen));
 
     SetDrMd( rport, JAM1 );
     SetAPen( rport, pen );
@@ -516,10 +516,10 @@ VOID DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen)
 
     /* render disable pattern */
     RectFill( rport, gadbox->Left,
-    		     gadbox->Top,
-		     gadbox->Left + gadbox->Width - 1,
-		     gadbox->Top + gadbox->Height -1 );
-		         
+                     gadbox->Top,
+                     gadbox->Left + gadbox->Width - 1,
+                     gadbox->Top + gadbox->Height -1 );
+                         
     SetAfPt ( rport, NULL, 0);
 
     ReturnVoid("DrawDisabledPattern");

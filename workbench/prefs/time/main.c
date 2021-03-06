@@ -20,30 +20,30 @@
 #define ARG_TEMPLATE    "FROM,EDIT/S,USE/S,SAVE/S,PUBSCREEN/K"
 
 #define ARG_FROM        0
-#define ARG_EDIT    	1
-#define ARG_USE     	2
-#define ARG_SAVE      	3
+#define ARG_EDIT        1
+#define ARG_USE         2
+#define ARG_SAVE        3
 #define ARG_PUBSCREEN   4
 
 #define NUM_ARGS        5
 
 #define DO_SPECIAL_BUTTON_LAYOUT 1 /* all button get same width, but as small as possible,
-    	    	    	    	      and spread along whole parent group */
+                                      and spread along whole parent group */
 
 #define SPACING_BUTTONGROUP 4
 
-#define RETURNID_USE 	1
-#define RETURNID_SAVE 	2
+#define RETURNID_USE    1
+#define RETURNID_SAVE   2
 
 /*********************************************************************************************/
 
-static struct Hook  	    	yearhook, clockhook, activehook, restorehook;
+static struct Hook              yearhook, clockhook, activehook, restorehook;
 #if DO_SPECIAL_BUTTON_LAYOUT
-static struct Hook  	    	buttonlayouthook;	    	
+static struct Hook              buttonlayouthook;
 #endif
-static struct RDArgs        	*myargs;
-static Object	    	    	*activetimestrobj = NULL;
-static IPTR                 	args[NUM_ARGS];
+static struct RDArgs            *myargs;
+static Object                   *activetimestrobj = NULL;
+static IPTR                     args[NUM_ARGS];
 
 static CONST_STRPTR monthlabels[] =
 {
@@ -80,7 +80,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
     es.es_TextFormat   = text;
     es.es_GadgetFormat = gadtext;
    
-    return EasyRequestArgs(NULL, &es, NULL, NULL);  
+    return EasyRequestArgs(NULL, &es, NULL, NULL);
 }
 
 /*********************************************************************************************/
@@ -91,7 +91,7 @@ void Cleanup(STRPTR msg)
     {
         if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
         {
-            ShowMessage((STRPTR)"Time", msg, MSG(MSG_OK));     
+            ShowMessage((STRPTR)"Time", msg, MSG(MSG_OK));
         }
         else
         {
@@ -113,7 +113,7 @@ static void OpenTimerDev(void)
 {
     if ((TimerMP = CreateMsgPort()))
     {
-    	if ((TimerIO = (struct timerequest *)CreateIORequest(TimerMP, sizeof(struct timerequest))))
+        if ((TimerIO = (struct timerequest *)CreateIORequest(TimerMP, sizeof(struct timerequest))))
         {
             if (!OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)TimerIO, 0))
             {
@@ -135,13 +135,13 @@ static void CloseTimerDev(void)
 {
     if (TimerIO)
     {
-    	CloseDevice((struct IORequest *)TimerIO);
+        CloseDevice((struct IORequest *)TimerIO);
         DeleteIORequest((struct IORequest *)TimerIO);
     }
     
     if (TimerMP)
     {
-    	DeleteMsgPort(TimerMP);
+        DeleteMsgPort(TimerMP);
     }
 }
 
@@ -194,11 +194,11 @@ static ULONG ButtonLayoutFunc(struct Hook *hook, Object *obj, struct MUI_LayoutM
     
     switch(msg->lm_Type)
     {
-    	case MUILM_MINMAX:
-	    {
-	    	Object *cstate = (Object *)msg->lm_Children->mlh_Head;
+        case MUILM_MINMAX:
+            {
+                Object *cstate = (Object *)msg->lm_Children->mlh_Head;
             Object *child;
-		
+                
             WORD maxminwidth = 0;
             WORD maxminheight = 0;
             WORD numchilds = 0;
@@ -210,20 +210,20 @@ static ULONG ButtonLayoutFunc(struct Hook *hook, Object *obj, struct MUI_LayoutM
                 numchilds++;
             }
             
-            msg->lm_MinMax.MinWidth = 
+            msg->lm_MinMax.MinWidth =
             msg->lm_MinMax.DefWidth = numchilds * maxminwidth + SPACING_BUTTONGROUP * (numchilds - 1);
             msg->lm_MinMax.MaxWidth = MUI_MAXMAX;
             
             msg->lm_MinMax.MinHeight =
             msg->lm_MinMax.DefHeight =
             msg->lm_MinMax.MaxHeight = maxminheight;
-	    }
-	    retval = 0;
-	    break;
-	    
-	case MUILM_LAYOUT:
-	    {
-	    	Object *cstate = (Object *)msg->lm_Children->mlh_Head;
+            }
+            retval = 0;
+            break;
+            
+        case MUILM_LAYOUT:
+            {
+                Object *cstate = (Object *)msg->lm_Children->mlh_Head;
             Object *child;
             
             WORD maxminwidth = 0;
@@ -253,11 +253,11 @@ static ULONG ButtonLayoutFunc(struct Hook *hook, Object *obj, struct MUI_LayoutM
                 MUI_Layout(child, x, 0, maxminwidth, maxminheight, 0);
 
                 i++;
-            }	
-	    }
-	    retval = TRUE;
-	    break;
-	    
+            }
+            }
+            retval = TRUE;
+            break;
+            
     } /* switch(msg->lm_Type) */
     
     return retval;
@@ -277,26 +277,26 @@ static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
     
     if ((LONG)*param == -1)
     {
-    	year--;
+        year--;
     }
     else if ((LONG)*param == 1)
     {
-    	year++;
+        year++;
     }
     
     if (year < 1978)
     {
-    	year = 1978;
+        year = 1978;
         nnset(obj, MUIA_String_Integer, year);
     }
     else if (year > 2099)
     {
-    	year = 2099;
+        year = 2099;
         nnset(obj, MUIA_String_Integer, year);
     }
     else if (*param)
     {
-    	nnset(obj, MUIA_String_Integer, year);
+        nnset(obj, MUIA_String_Integer, year);
     }
     
     nnset(calobj, MUIA_Calendar_Year, year);
@@ -314,7 +314,7 @@ static void ActiveFunc(struct Hook *hook, Object *obj, IPTR *param)
  
     if (active == hourobj)
     {
-    	hand = MUIV_Clock_EditHand_Hour;
+        hand = MUIV_Clock_EditHand_Hour;
     }
     else if (active == minobj)
     {
@@ -327,7 +327,7 @@ static void ActiveFunc(struct Hook *hook, Object *obj, IPTR *param)
     
     if (hand != -1)
     {
-    	activetimestrobj = active;
+        activetimestrobj = active;
         set(clockobj, MUIA_Clock_EditHand, hand);
     }
 }
@@ -343,8 +343,8 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
     
     if (*param == 0)
     {
-    	if (activetimestrobj == NULL)
-    	{
+        if (activetimestrobj == NULL)
+        {
             my_sprintf(s,(UBYTE *)"%02d",cd->hour);
             nnset(hourobj, MUIA_String_Contents, s);
             
@@ -357,13 +357,13 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
     }
     else
     {
-    	struct ClockData  cd2;	
-    	LONG 	    	  diff = (LONG)*param;
-        LONG 	    	  max = 0;
-        UWORD 	    	 *cd2_member = NULL;
+        struct ClockData  cd2;
+        LONG              diff = (LONG)*param;
+        LONG              max = 0;
+        UWORD            *cd2_member = NULL;
 
-    	if (diff == 100) diff = 0; /* 100 means string gadget acknowledge */
-	
+        if (diff == 100) diff = 0; /* 100 means string gadget acknowledge */
+        
         if (activetimestrobj == hourobj)
         {
             max = 23;
@@ -379,7 +379,7 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
         {
             max = 59;
             cd2_member = &cd2.sec;
-        }    
+        }
         
         if (max)
         {
@@ -423,7 +423,7 @@ static void RestoreFunc(struct Hook *hook, Object *obj, APTR msg)
     set(calobj, MUIA_Calendar_Date, (IPTR)&clockdata);
     set(monthobj, MUIA_Cycle_Active, clockdata.month - 1);
     set(yearobj, MUIA_String_Integer, clockdata.year);
-    set(clockobj, MUIA_Clock_Frozen, FALSE);   
+    set(clockobj, MUIA_Clock_Frozen, FALSE);
 }
 
 /*********************************************************************************************/
@@ -455,8 +455,8 @@ static struct Screen *MakeGUI(void)
     
     if (LocaleBase)
     {
-    	struct Locale *locale = OpenLocale(NULL);
-	
+        struct Locale *locale = OpenLocale(NULL);
+        
         if (locale)
         {
             WORD i;
@@ -468,11 +468,11 @@ static struct Screen *MakeGUI(void)
             
             CloseLocale(locale);
         }
-	
+        
     }
     
     menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
-        	
+                
     if (args[ARG_PUBSCREEN])
         pScreen = LockPubScreen((CONST_STRPTR)args[ARG_PUBSCREEN]);
 
@@ -560,7 +560,7 @@ static struct Screen *MakeGUI(void)
                                     MUIA_InputMode, MUIV_InputMode_RelVerify,
                                     MUIA_Text_Contents, "\033c+",
                                     MUIA_FixWidthTxt, (IPTR)"-",
-                                End,			    
+                                End,
                             End,
                         End,
                         
@@ -577,7 +577,7 @@ static struct Screen *MakeGUI(void)
                             MUIA_String_Accept, (IPTR)"0123456789",
                             MUIA_FixWidthTxt, (IPTR)"555",
                         End,
-                        Child, CLabel2(":"),		    
+                        Child, CLabel2(":"),
                         Child, secobj = StringObject, /* sec gadget */
                             StringFrame,
                             MUIA_CycleChain, TRUE,
@@ -623,9 +623,9 @@ static struct Screen *MakeGUI(void)
                     Child, cancelobj = ImageButton(MSG(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Cancel"),
                 End,
             End,
-	    End,
-	End;
-	
+            End,
+        End;
+        
     if (!app) Cleanup(MSG(MSG_CANT_CREATE_APP));
 
     DoMethod(cancelobj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -677,7 +677,7 @@ static void HandleAll(struct Screen *pScreen)
 
     for(;;)
     {
-    	returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs);
+        returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs);
 
         if ((returnid == MUIV_Application_ReturnID_Quit) ||
             (returnid == RETURNID_SAVE) || (returnid == RETURNID_USE)) break;
@@ -692,14 +692,14 @@ static void HandleAll(struct Screen *pScreen)
     switch(returnid)
     {
         case RETURNID_SAVE:
-    	case RETURNID_USE:
-	    {
-	    	struct ClockData cal_date, clock_time, *dateptr=NULL;
+        case RETURNID_USE:
+            {
+                struct ClockData cal_date, clock_time, *dateptr=NULL;
             IPTR frozen = 0;
-		
-	    	get(calobj, MUIA_Calendar_Date, &dateptr);
+                
+                get(calobj, MUIA_Calendar_Date, &dateptr);
             cal_date = *dateptr;
-		
+                
             get(clockobj, MUIA_Clock_Frozen, &frozen);
             if (frozen)
             {
@@ -730,9 +730,9 @@ static void HandleAll(struct Screen *pScreen)
             {
                 UsePrefs();
             }
-	    }
-	    break;
-	    
+            }
+            break;
+            
     }
 }
 

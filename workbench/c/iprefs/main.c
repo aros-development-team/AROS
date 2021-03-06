@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
-	
+        
     Desc: Iprefs
 */
 /******************************************************************************
@@ -29,19 +29,19 @@
     NOTES
     This is a command executed on startup by the s:startup-sequence script file.
     So no actual need of the command afterwards.
-	
+        
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	
+        
     Decoration
-	
+        
     INTERNALS
 
     HISTORY
-	
+        
 ******************************************************************************/
 
 #include "global.h"
@@ -63,53 +63,53 @@ static struct libinfo
     APTR        var;
     STRPTR      name;
     WORD        version;
-    BOOL    	nocloseafterpatch;
+    BOOL        nocloseafterpatch;
 }
 libtable[] =
 {
     {&IntuitionBase     , "intuition.library"           , 39, FALSE },
     {&GfxBase           , "graphics.library"            , 39, FALSE },
     {&UtilityBase       , "utility.library"             , 39, TRUE  },
-    {&IFFParseBase  	, "iffparse.library"	    	, 39, FALSE },
-    {&LocaleBase    	, "locale.library"  	    	, 39, TRUE  },
+    {&IFFParseBase      , "iffparse.library"            , 39, FALSE },
+    {&LocaleBase        , "locale.library"              , 39, TRUE  },
     {&KeymapBase        , "keymap.library"              , 39, FALSE },
-    {&KMSBase		, "kms.library"			, 3,  FALSE },
+    {&KMSBase           , "kms.library"                 , 3,  FALSE },
     {&LayersBase        , "layers.library"              , 39, FALSE },
     {&DataTypesBase     , "datatypes.library"           , 39, FALSE },
     {&DiskfontBase      , "diskfont.library"            , 39, FALSE },
-    {NULL   	    	    	    	    	    	    	    }
+    {NULL                                                           }
 };
 
 /*********************************************************************************************/
 
 static struct prefinfo
 {
-    STRPTR  	    	    filename;
-    STRPTR  	    	    filenamebuffer;
-    void    	    	    (*func)(STRPTR);
+    STRPTR                  filename;
+    STRPTR                  filenamebuffer;
+    void                    (*func)(STRPTR);
     struct NotifyRequest    nr;
-    BOOL    	    	    notifystarted;
+    BOOL                    notifystarted;
 }
 preftable[] =
 {
-    {"input"	    , inputprefsname     , InputPrefs_Handler      },
-    {"locale"	    , localeprefsname	 , LocalePrefs_Handler     }, /* Keep before font */
-    {"font" 	    , fontprefsname      , FontPrefs_Handler       },
-    {"palette"	    , paletteprefsname   , PalettePrefs_Handler    },
+    {"input"        , inputprefsname     , InputPrefs_Handler      },
+    {"locale"       , localeprefsname    , LocalePrefs_Handler     }, /* Keep before font */
+    {"font"         , fontprefsname      , FontPrefs_Handler       },
+    {"palette"      , paletteprefsname   , PalettePrefs_Handler    },
     {"wbpattern"    , patternprefsname   , WBPatternPrefs_Handler  },
     {"icontrol"     , icontrolprefsname  , IControlPrefs_Handler   },
     {"screenmode"   , screenmodeprefsname, ScreenModePrefs_Handler },
-    {"serial"	    , serialprefsname	 , SerialPrefs_Handler     },
-    {"printer"	    , printerprefsname	 , PrinterPrefs_Handler    },
-    {"pointer"	    , pointerprefsname   , PointerPrefs_Handler    },
+    {"serial"       , serialprefsname    , SerialPrefs_Handler     },
+    {"printer"      , printerprefsname   , PrinterPrefs_Handler    },
+    {"pointer"      , pointerprefsname   , PointerPrefs_Handler    },
     {"overscan"     , overscanprefsname  , NULL                    },
-    {NULL   	    	    	    	      	    	    	   }
+    {NULL                                                          }
 
 };
 
 /*********************************************************************************************/
 
-static ULONG 	    notifysig;
+static ULONG        notifysig;
 
 /*********************************************************************************************/
 
@@ -136,10 +136,10 @@ void Cleanup(STRPTR msg)
 {
     if (msg)
     {
-	if (IntuitionBase /* && !((struct Process *)FindTask(NULL))->pr_CLI */)
-	{
-	    ShowMessage("IPrefs", msg, "Ok");
-	}
+        if (IntuitionBase /* && !((struct Process *)FindTask(NULL))->pr_CLI */)
+        {
+            ShowMessage("IPrefs", msg, "Ok");
+        }
     }
 
 
@@ -160,12 +160,12 @@ static void OpenLibs(void)
 
     for (li = libtable; li->var; li++)
     {
-	if (!((*(struct Library **)li->var) = OpenLibrary(li->name,
-							  li->version)))
-	{
-	    sprintf(s, "Can't open %s V%d!", li->name, li->version);
-	    Cleanup(s);
-	}
+        if (!((*(struct Library **)li->var) = OpenLibrary(li->name,
+                                                          li->version)))
+        {
+            sprintf(s, "Can't open %s V%d!", li->name, li->version);
+            Cleanup(s);
+        }
     }
 }
 
@@ -177,10 +177,10 @@ static void CloseLibs(void)
 
     for(li = libtable; li->var; li++)
     {
-    	if (!patches_installed || !li->nocloseafterpatch)
-	{
-	    if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
-	}
+        if (!patches_installed || !li->nocloseafterpatch)
+        {
+            if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
+        }
     }
 }
 
@@ -194,8 +194,8 @@ static void GetENVName(void)
     lock = Lock("ENV:", SHARED_LOCK);
     if (lock)
     {
-    	if (NameFromLock(lock, envname, 256)) ok = TRUE;
-    	UnLock(lock);
+        if (NameFromLock(lock, envname, 256)) ok = TRUE;
+        UnLock(lock);
     }
     
     if (!ok) Cleanup("Error expanding \"ENV:\" to full name!");
@@ -214,34 +214,34 @@ static void StartNotifications(void)
     
     for(i = 0; preftable[i].filename; i++)
     {
-    	strncpy(preftable[i].filenamebuffer, envname, 256);
-	AddPart(preftable[i].filenamebuffer, "Sys", 256);
-	AddPart(preftable[i].filenamebuffer, preftable[i].filename, 256);
-	if (strlen(preftable[i].filenamebuffer) < 250)
-	    strcat(preftable[i].filenamebuffer, ".prefs");
-	else
-	{
-	    D(bug("Filename too long for %s prefs\n", preftable[i].filename));
-	    Cleanup("Prefs filename too long!\n");
-	}
+        strncpy(preftable[i].filenamebuffer, envname, 256);
+        AddPart(preftable[i].filenamebuffer, "Sys", 256);
+        AddPart(preftable[i].filenamebuffer, preftable[i].filename, 256);
+        if (strlen(preftable[i].filenamebuffer) < 250)
+            strcat(preftable[i].filenamebuffer, ".prefs");
+        else
+        {
+            D(bug("Filename too long for %s prefs\n", preftable[i].filename));
+            Cleanup("Prefs filename too long!\n");
+        }
 
-	preftable[i].nr.nr_Name     	    	= preftable[i].filenamebuffer;
-	preftable[i].nr.nr_UserData 	    	= i;
-	preftable[i].nr.nr_Flags    	    	= NRF_SEND_MESSAGE | NRF_NOTIFY_INITIAL;
-	preftable[i].nr.nr_stuff.nr_Msg.nr_Port = notifyport;
-	
-	D(bug("\nTrying to start notification for file \"%s\".\n", preftable[i].filenamebuffer));
-	
-	if (StartNotify(&preftable[i].nr))
-	{
-	    D(bug("Notification successfully started.\n"));
-	    
-	    preftable[i].notifystarted = TRUE;
-	}
-	else
-	{
-	    D(bug("Notification start failed!! Continuing anyway!\n"));
-	}
+        preftable[i].nr.nr_Name                 = preftable[i].filenamebuffer;
+        preftable[i].nr.nr_UserData             = i;
+        preftable[i].nr.nr_Flags                = NRF_SEND_MESSAGE | NRF_NOTIFY_INITIAL;
+        preftable[i].nr.nr_stuff.nr_Msg.nr_Port = notifyport;
+        
+        D(bug("\nTrying to start notification for file \"%s\".\n", preftable[i].filenamebuffer));
+        
+        if (StartNotify(&preftable[i].nr))
+        {
+            D(bug("Notification successfully started.\n"));
+            
+            preftable[i].notifystarted = TRUE;
+        }
+        else
+        {
+            D(bug("Notification start failed!! Continuing anyway!\n"));
+        }
 
     } /* for(i = 0; preftable[i].filename; i++) */
 }
@@ -254,18 +254,18 @@ static void KillNotifications(void)
     
     for(i = 0; preftable[i].filename; i++)
     {
-    	if (preftable[i].notifystarted)
-	{
-	    EndNotify(&preftable[i].nr);
-	    preftable[i].notifystarted = FALSE;
-	}
+        if (preftable[i].notifystarted)
+        {
+            EndNotify(&preftable[i].nr);
+            preftable[i].notifystarted = FALSE;
+        }
     }
     
     if (notifyport)
     {
-    	DeleteMsgPort(notifyport);
-	    notifyport = NULL;
-	    notifysig  = 0;
+        DeleteMsgPort(notifyport);
+            notifyport = NULL;
+            notifysig  = 0;
     }
 }
 
@@ -273,8 +273,8 @@ static void KillNotifications(void)
 
 static void PreparePatches(void)
 {
-    struct IPrefsSem 	   *sem;
-    BOOL    	    	   created_sem = FALSE;
+    struct IPrefsSem       *sem;
+    BOOL                   created_sem = FALSE;
 
     sem = AllocVec(sizeof(struct IPrefsSem), MEMF_PUBLIC | MEMF_CLEAR);
     if (!sem) Cleanup("Out of memory!");
@@ -286,20 +286,20 @@ static void PreparePatches(void)
     Forbid();
     if(!(iprefssem = (struct IPrefsSem *)FindSemaphore(IPREFS_SEM_NAME)))
     {
-    	iprefssem = sem;
-	AddSemaphore(&iprefssem->sem);
-	
-	created_sem = TRUE;
+        iprefssem = sem;
+        AddSemaphore(&iprefssem->sem);
+        
+        created_sem = TRUE;
     }
     Permit();
     
     if (created_sem)
     {
-    	InstallPatches();
+        InstallPatches();
     }
     else
     {
-     	FreeVec(sem);
+        FreeVec(sem);
     }
         
 }
@@ -312,18 +312,18 @@ static void HandleNotify(void)
 
     while((msg = (struct NotifyMessage *)GetMsg(notifyport)))
     {
-	WORD id = msg->nm_NReq->nr_UserData;
+        WORD id = msg->nm_NReq->nr_UserData;
 
-	D(bug("Received notify message. UserData = %d --> File = \"%s\"\n", id,
-		    	    	    	    	    	    	    	    preftable[id].filenamebuffer));
+        D(bug("Received notify message. UserData = %d --> File = \"%s\"\n", id,
+                                                                            preftable[id].filenamebuffer));
 
-	if (preftable[id].func)
-	{
-	    preftable[id].func(preftable[id].filenamebuffer);
-	}
+        if (preftable[id].func)
+        {
+            preftable[id].func(preftable[id].filenamebuffer);
+        }
 
-	ReplyMsg(&msg->nm_ExecMessage);
-	
+        ReplyMsg(&msg->nm_ExecMessage);
+        
     } /* while((msg = (struct NotifyMessage *)GetMsg(notifyport))) */
 }
 
@@ -335,11 +335,11 @@ static void HandleAll(void)
 
     for(;;)
     {
-	sigs = Wait(notifysig | SIGBREAKF_CTRL_C);
+        sigs = Wait(notifysig | SIGBREAKF_CTRL_C);
 
-	if (sigs & SIGBREAKF_CTRL_C) break;
+        if (sigs & SIGBREAKF_CTRL_C) break;
 
-	if (sigs & notifysig) HandleNotify();
+        if (sigs & notifysig) HandleNotify();
 
     } /* for(;;) */
 }

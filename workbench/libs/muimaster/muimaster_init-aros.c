@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2015, The AROS Development Team. 
+    Copyright (C) 2002-2015, The AROS Development Team.
     All rights reserved.
     
 */
@@ -22,7 +22,7 @@ static struct TextAttr topaz8Attr =
 
 
 static int MUIMasterInit(LIBBASETYPEPTR lh)
-{   
+{
     MUIMasterBase = (struct Library *)lh;
     
     InitSemaphore(&MUIMB(lh)->ZuneSemaphore);

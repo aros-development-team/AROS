@@ -35,13 +35,13 @@
 #undef GadToolsBase
 
 STATIC VOID notifylevel(Class *cl, Object *o, WORD level, struct GadgetInfo *ginfo,
-			struct GadToolsBase_intern *GadToolsBase)
-{			
+                        struct GadToolsBase_intern *GadToolsBase)
+{
 
     struct TagItem ntags[] =
     {
-    	{GTSL_Level	, (IPTR)NULL	},
-    	{TAG_DONE			}
+        {GTSL_Level     , (IPTR)NULL    },
+        {TAG_DONE                       }
     };
 
     ntags[0].ti_Data = (IPTR)level;
@@ -56,15 +56,15 @@ STATIC VOID notifylevel(Class *cl, Object *o, WORD level, struct GadgetInfo *gin
 
 IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
-    struct TagItem 	*tag, *tstate, *dosuper_tags, tags[] =
+    struct TagItem      *tag, *tstate, *dosuper_tags, tags[] =
     {
-    	{PGA_Total	, 0	},
-    	{PGA_Top	, 0	},
-   	{TAG_MORE	, 0	}
+        {PGA_Total      , 0     },
+        {PGA_Top        , 0     },
+        {TAG_MORE       , 0     }
     };
-    struct SliderData	*data = INST_DATA(cl, o);
+    struct SliderData   *data = INST_DATA(cl, o);
     
-    BOOL 		val_set = FALSE;
+    BOOL                val_set = FALSE;
 
     EnterFunc(bug("Slider::Set(attrlist=%p)\n", msg->ops_AttrList));
     dosuper_tags = msg->ops_AttrList;
@@ -72,47 +72,47 @@ IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
     tstate = msg->ops_AttrList;
     while ((tag = NextTagItem(&tstate)))
     {
-    	WORD tidata = tag->ti_Data;
-    	
-    	switch (tag->ti_Tag)
-    	{
-    	    case GTSL_Min:
-    	    	data->min = tidata;
-		val_set = TRUE;
-		break;
-		
-    	    case GTSL_Max:
-    	    	data->max = tidata;
-    	    	val_set = TRUE;
-    	    	break;
-    	    	
-    	    case GTSL_Level:	/* [ISN] */
-	        /* Ensure that the value is within limits */
-	        if (tidata < data->min)
-		    tidata = data->min;
-		if (tidata > data->max)
-		    tidata = data->max;
+        WORD tidata = tag->ti_Data;
+        
+        switch (tag->ti_Tag)
+        {
+            case GTSL_Min:
+                data->min = tidata;
+                val_set = TRUE;
+                break;
+                
+            case GTSL_Max:
+                data->max = tidata;
+                val_set = TRUE;
+                break;
+                
+            case GTSL_Level:    /* [ISN] */
+                /* Ensure that the value is within limits */
+                if (tidata < data->min)
+                    tidata = data->min;
+                if (tidata > data->max)
+                    tidata = data->max;
 
-    	    	if (tidata != data->level)
-    	    	{
-    	    	    data->level = data->freedom == FREEHORIZ ? tidata : data->max - tidata + data->min;
-    	    	    notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
-		    val_set = TRUE;
-		    
-    	    	}
-    	    	break;
-    	    	
-    	} /* switch () */
-    	
+                if (tidata != data->level)
+                {
+                    data->level = data->freedom == FREEHORIZ ? tidata : data->max - tidata + data->min;
+                    notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
+                    val_set = TRUE;
+                    
+                }
+                break;
+                
+        } /* switch () */
+        
     } /* while (iterate taglist) */
     
     if (val_set)
     {
-    	tags[0].ti_Data = data->max - data->min + 1;
-    	tags[1].ti_Data = data->level - data->min;
-    	tags[2].ti_Data = (IPTR)msg->ops_AttrList;
+        tags[0].ti_Data = data->max - data->min + 1;
+        tags[1].ti_Data = data->level - data->min;
+        tags[2].ti_Data = (IPTR)msg->ops_AttrList;
    
-   	dosuper_tags = tags;
+        dosuper_tags = tags;
     }
         
     ReturnInt ("Slider::Set", IPTR, DoSuperMethod(cl, o, OM_SET, (IPTR) dosuper_tags, (IPTR) msg->ops_GInfo));
@@ -122,16 +122,16 @@ IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
 
 IPTR GTSlider__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
-    struct DrawInfo	*dri;
+    struct DrawInfo     *dri;
     
-    struct TagItem 	fitags[] =
+    struct TagItem      fitags[] =
     {
-	{IA_Width	, 0UL		},
-	{IA_Height	, 0UL		},
-	{IA_Resolution	, 0UL		},
-	{IA_FrameType	, FRAME_BUTTON	},
-	{IA_EdgesOnly	, TRUE		},
-	{TAG_DONE			}
+        {IA_Width       , 0UL           },
+        {IA_Height      , 0UL           },
+        {IA_Resolution  , 0UL           },
+        {IA_FrameType   , FRAME_BUTTON  },
+        {IA_EdgesOnly   , TRUE          },
+        {TAG_DONE                       }
     };
     
     EnterFunc(bug("Slider::New()\n"));
@@ -139,31 +139,31 @@ IPTR GTSlider__OM_NEW(Class * cl, Object * o, struct opSet *msg)
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-    	struct SliderData *data = INST_DATA(cl, o);
+        struct SliderData *data = INST_DATA(cl, o);
   
-	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
-	
-	fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
-	fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;
-	fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
+        dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
+        
+        fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
+        fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;
+        fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
 
-	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
-	if (data->frame)
-	{
-	    data->freedom=GetTagData(PGA_Freedom,FREEHORIZ,msg->ops_AttrList);
+        data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+        if (data->frame)
+        {
+            data->freedom=GetTagData(PGA_Freedom,FREEHORIZ,msg->ops_AttrList);
 
-	    data->min   = 0;
-	    data->max   = 15;
-	    data->level = data->freedom==FREEHORIZ?data->min:data->max;
-	    notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
+            data->min   = 0;
+            data->max   = 15;
+            data->level = data->freedom==FREEHORIZ?data->min:data->max;
+            notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
 
-	    GTSlider__OM_SET(cl, o, msg);
-	    
-	    data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
-	} else {
-	    CoerceMethod(cl, o, OM_DISPOSE);
-	    o = NULL;
-	}
+            GTSlider__OM_SET(cl, o, msg);
+            
+            data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
+        } else {
+            CoerceMethod(cl, o, OM_DISPOSE);
+            o = NULL;
+        }
     }
     ReturnPtr("Slider::New", IPTR, (IPTR)o);
     
@@ -173,16 +173,16 @@ IPTR GTSlider__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 
 IPTR GTSlider__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
-    IPTR 		retval;
-    struct SliderData 	*data = INST_DATA(cl, o);
+    IPTR                retval;
+    struct SliderData   *data = INST_DATA(cl, o);
 
     EnterFunc(bug("Slider::GoActive()\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     
     if (retval != GMR_MEACTIVE)
     {
-    	data->level = data->min + (WORD)*(msg->gpi_Termination);
-	notifylevel(cl, o, data->level, msg->gpi_GInfo, GadToolsBase);    	
+        data->level = data->min + (WORD)*(msg->gpi_Termination);
+        notifylevel(cl, o, data->level, msg->gpi_GInfo, GadToolsBase);
     }
     ReturnInt("Slider::Goactive", IPTR, retval);
 }
@@ -191,31 +191,31 @@ IPTR GTSlider__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 
 IPTR GTSlider__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
-    struct SliderData 	*data = INST_DATA(cl, o);
-    IPTR 		retval = 1UL;
+    struct SliderData   *data = INST_DATA(cl, o);
+    IPTR                retval = 1UL;
     
     switch (msg->opg_AttrID)
     {
-	case GTA_GadgetKind:
-	case GTA_ChildGadgetKind:
-	    *msg->opg_Storage = SLIDER_KIND;
-	    break;
-	
-	case GTSL_Level:
-	  *msg->opg_Storage = data->freedom==FREEHORIZ?data->level:data->max-data->level+data->min;
-	  break;
-	
-	case GTSL_Max:
-	    *msg->opg_Storage = data->max;
-	    break;
-	
-	case GTSL_Min:
-	    *msg->opg_Storage = data->min;
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    break;
+        case GTA_GadgetKind:
+        case GTA_ChildGadgetKind:
+            *msg->opg_Storage = SLIDER_KIND;
+            break;
+        
+        case GTSL_Level:
+          *msg->opg_Storage = data->freedom==FREEHORIZ?data->level:data->max-data->level+data->min;
+          break;
+        
+        case GTSL_Max:
+            *msg->opg_Storage = data->max;
+            break;
+        
+        case GTSL_Min:
+            *msg->opg_Storage = data->min;
+            break;
+            
+        default:
+            retval = DoSuperMethodA(cl, o, (Msg)msg);
+            break;
     }
     
     return retval;
@@ -225,35 +225,35 @@ IPTR GTSlider__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 IPTR GTSlider__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
-    struct InputEvent 	*ie = msg->gpi_IEvent;
-    IPTR 		retval;
-    struct SliderData 	*data = INST_DATA(cl ,o);
+    struct InputEvent   *ie = msg->gpi_IEvent;
+    IPTR                retval;
+    struct SliderData   *data = INST_DATA(cl ,o);
 
     EnterFunc(bug("Slider::HandleInput()\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     /* Mousemove ? */
     if ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == IECODE_NOBUTTON))
     {
-    	LONG top;
-    	
-    	/* Get the PGA_Top attribute */
-    	DoSuperMethod(cl, o, OM_GET, PGA_Top, (IPTR) &top);
-    	
-    	/* Level changed ? */
-    	if (data->level - data->min != top)
-    	{
-    	    data->level = data->min + top;
-	    notifylevel(cl, o, data->level, msg->gpi_GInfo, GadToolsBase);    	
-    	}
+        LONG top;
+        
+        /* Get the PGA_Top attribute */
+        DoSuperMethod(cl, o, OM_GET, PGA_Top, (IPTR) &top);
+        
+        /* Level changed ? */
+        if (data->level - data->min != top)
+        {
+            data->level = data->min + top;
+            notifylevel(cl, o, data->level, msg->gpi_GInfo, GadToolsBase);
+        }
     }
     else
     {
-    	if (retval != GMR_MEACTIVE)
-    	{
-    	
-    	    data->level = data->min + (WORD)*(msg->gpi_Termination);
-	    notifylevel(cl, o, data->level, msg->gpi_GInfo, GadToolsBase);
-    	}
+        if (retval != GMR_MEACTIVE)
+        {
+        
+            data->level = data->min + (WORD)*(msg->gpi_Termination);
+            notifylevel(cl, o, data->level, msg->gpi_GInfo, GadToolsBase);
+        }
     }
     
     ReturnInt("Slider::HandleInput", IPTR, retval);
@@ -263,17 +263,17 @@ IPTR GTSlider__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 
 IPTR GTSlider__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
-    struct SliderData 	*data = INST_DATA(cl, g);
-    IPTR 		retval;
+    struct SliderData   *data = INST_DATA(cl, g);
+    IPTR                retval;
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
-	DrawImageState(msg->gpr_RPort,
-		(struct Image *)data->frame,
-		g->LeftEdge - BORDERPROPSPACINGX,
-		g->TopEdge  - BORDERPROPSPACINGY,
-		IDS_NORMAL,
-		msg->gpr_GInfo->gi_DrInfo);
+        DrawImageState(msg->gpr_RPort,
+                (struct Image *)data->frame,
+                g->LeftEdge - BORDERPROPSPACINGX,
+                g->TopEdge  - BORDERPROPSPACINGY,
+                IDS_NORMAL,
+                msg->gpr_GInfo->gi_DrInfo);
    
     }
     

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include "lowlevel_intern.h"
@@ -16,7 +16,7 @@
 
       AROS_LH2(APTR, AddTimerInt,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(APTR, intRoutine, A0),
       AROS_LHA(APTR, intData, A1),
 

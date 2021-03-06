@@ -15,13 +15,13 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(CxMsg *, cxm      , A0),
-	AROS_LHA(CxObj *, headObj  , A1),
-	AROS_LHA(CxObj *, returnObj, A2),
+        AROS_LHA(CxMsg *, cxm      , A0),
+        AROS_LHA(CxObj *, headObj  , A1),
+        AROS_LHA(CxObj *, returnObj, A2),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 26, Commodities)
+        struct Library *, CxBase, 26, Commodities)
 
 /*  FUNCTION
 
@@ -62,12 +62,12 @@
 
 {
     AROS_LIBFUNC_INIT
-	
+        
     ROUTECxMsg(cxm, (CxObj *)GetHead(&headObj->co_ObjList));
     
     if (cxm->cxm_Level >= cxm_MaxLevel)
     {
-	return;
+        return;
     }
     
     cxm->cxm_retObj[cxm->cxm_Level] = returnObj;

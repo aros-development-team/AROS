@@ -60,7 +60,7 @@ IPTR       WaitForPort_Arguments[2];
 struct RDArgs *WFP_rda = NULL;
 
 struct Device              *TimerBase = NULL;
-static struct MsgPort      *timerport = NULL;	      /* Timer message reply port */
+static struct MsgPort      *timerport = NULL;         /* Timer message reply port */
 static struct timerequest  *timerIORequest = NULL;    /* template IORequest */
 ULONG wait_time;
 ULONG wait_limit;
@@ -87,22 +87,22 @@ D(bug("[WaitForPort] Waiting for '%s' port\n",WaitForPort_Arguments[0]));
 
          if (timerIORequest != NULL)
          {
-            if (!(OpenDevice(TIMERNAME, UNIT_VBLANK, 
-			                      (struct IORequest *)timerIORequest, 0)))
+            if (!(OpenDevice(TIMERNAME, UNIT_VBLANK,
+                                              (struct IORequest *)timerIORequest, 0)))
             {
-            	/* Make sure that we got at least V36 timer, since we use some
-            	 * functions defined only in V36 and later. */
+                /* Make sure that we got at least V36 timer, since we use some
+                 * functions defined only in V36 and later. */
 
-            	if ((timerIORequest->tr_node.io_Device)->dd_Library.lib_Version >= 36)
-            	{
-            	   /* initialize TimerBase from timerIORequest */
+                if ((timerIORequest->tr_node.io_Device)->dd_Library.lib_Version >= 36)
+                {
+                   /* initialize TimerBase from timerIORequest */
                   TimerBase = timerIORequest->tr_node.io_Device;
 
-            	   /* Initialize some fields of the IO request to common values */
-            	   timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
+                   /* Initialize some fields of the IO request to common values */
+                   timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
 
-            	   /* NT_UNKNOWN means unused, too (see note on exec/nodes.h) */
-            	   timerIORequest->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+                   /* NT_UNKNOWN means unused, too (see note on exec/nodes.h) */
+                   timerIORequest->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
 
                   timerIORequest->tr_time.tv_micro = 1000000;
                   wait_limit = timerIORequest->tr_time.tv_micro * 10; /* Default to a 10 second wait */
@@ -114,9 +114,9 @@ D(bug("[WaitForPort] Waiting for '%s' port\n",WaitForPort_Arguments[0]));
                   {
 D(bug("[WaitForPort] In Wait Loop ..\n"));
                      ULONG mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | (1 << timerport->mp_SigBit);
-      					mask = Wait(mask);
+                                        mask = Wait(mask);
                      if (mask & SIGBREAKF_CTRL_C) break;
-			         	if (mask & SIGBREAKF_CTRL_D) break;
+                                        if (mask & SIGBREAKF_CTRL_D) break;
                      if (mask & (1 << timerport->mp_SigBit))
                      {
 D(bug("[WaitForPort] Received timer signal?...\n"));
@@ -139,7 +139,7 @@ D(bug("[WaitForPort] Port not found .. secs=%d\n",wait_time/1000000));
 D(bug("[WaitForPort] Port found ... escaping from wait loop\n"));
                               break;
                            }
-                     	   timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
+                           timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
                            timerIORequest->tr_time.tv_micro = 1000000;
                            BeginIO((struct IORequest *)timerIORequest);
                         }

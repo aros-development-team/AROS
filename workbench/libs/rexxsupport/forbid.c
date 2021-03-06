@@ -36,34 +36,34 @@ LONG rxsupp_forbid(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE *
     
     if (!inforbid)
     {
-	char *s;
-	int permit_nest;
-	
-	if (GetRexxVar(msg, NEST_VAR, &s) == RC_OK)
-	    permit_nest = *(int *)s;
-	else
-	    permit_nest = -1;
+        char *s;
+        int permit_nest;
+        
+        if (GetRexxVar(msg, NEST_VAR, &s) == RC_OK)
+            permit_nest = *(int *)s;
+        else
+            permit_nest = -1;
     
-	permit_nest++;
-	sprintf(val, "%d", permit_nest);
+        permit_nest++;
+        sprintf(val, "%d", permit_nest);
 
-	if (permit_nest == 0)
-	{
-	    Forbid();
-	    inforbid = TRUE;
-	    forbid_nest = 0;
-	}
-	else
-	    if (SetRexxVar(msg, NEST_VAR, (char *)&permit_nest, sizeof(int)) != RC_OK)
-	    {
-		*argstring = NULL;
-		return ERR10_012;
-	    }
+        if (permit_nest == 0)
+        {
+            Forbid();
+            inforbid = TRUE;
+            forbid_nest = 0;
+        }
+        else
+            if (SetRexxVar(msg, NEST_VAR, (char *)&permit_nest, sizeof(int)) != RC_OK)
+            {
+                *argstring = NULL;
+                return ERR10_012;
+            }
     }
     else /* inforbid == TRUE */
     {
-	forbid_nest++;
-	sprintf(val, "%d", forbid_nest);
+        forbid_nest++;
+        sprintf(val, "%d", forbid_nest);
     }
 
     *argstring = CreateArgstring(val, strlen(val));
@@ -76,33 +76,33 @@ LONG rxsupp_permit(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE *
 
     if (!inforbid)
     {
-	char *s;
-	int permit_nest;
-	
-	if (GetRexxVar(msg, NEST_VAR, &s) == RC_OK)
-	    permit_nest = *(int *)s;
-	else
-	    permit_nest = -1;
+        char *s;
+        int permit_nest;
+        
+        if (GetRexxVar(msg, NEST_VAR, &s) == RC_OK)
+            permit_nest = *(int *)s;
+        else
+            permit_nest = -1;
     
-	permit_nest--;
-	sprintf(val, "%d", permit_nest);
+        permit_nest--;
+        sprintf(val, "%d", permit_nest);
 
-	if (SetRexxVar(msg, NEST_VAR, (char *)&permit_nest, sizeof(int)) != RC_OK)
-	{
-	    *argstring = NULL;
-	    return ERR10_012;
-	}
+        if (SetRexxVar(msg, NEST_VAR, (char *)&permit_nest, sizeof(int)) != RC_OK)
+        {
+            *argstring = NULL;
+            return ERR10_012;
+        }
     }
     else /* inforbid == TRUE */
     {
-	forbid_nest--;
-	sprintf(val, "%d", forbid_nest);
-	
-	if (forbid_nest < 0)
-	{
-	    Permit();
-	    inforbid = FALSE;
-	}
+        forbid_nest--;
+        sprintf(val, "%d", forbid_nest);
+        
+        if (forbid_nest < 0)
+        {
+            Permit();
+            inforbid = FALSE;
+        }
     }
     
     *argstring = CreateArgstring(val, strlen(val));

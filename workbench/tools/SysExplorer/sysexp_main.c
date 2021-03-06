@@ -43,7 +43,7 @@
 
 #define APPNAME "SysExplorer"
 #define VERSION "SysExplorer " MOD_VERS_STRING
-#define SysexpModuleDir	"PROGDIR:SysExpModules"
+#define SysexpModuleDir "PROGDIR:SysExpModules"
 
 int __nocommandline = 1;
 
@@ -292,7 +292,7 @@ AROS_UFH3S(void, propertyFunc,
             {
                 DoMethod(rootGrp, MUIM_Group_ExitChange);
             }
-            DoMethod(data->win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+            DoMethod(data->win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
                      data->win, 3,
                      MUIM_CallHook, &close_hook, data);
             SET(data->win, MUIA_Window_Open, TRUE);
@@ -339,7 +339,7 @@ static BOOL GUIinit(struct SysexpBase *SysexpBase)
         End),
 
         SubWindow, (IPTR)(main_window = WindowObject,
-            MUIA_Window_Title,	__(MSG_WINTITLE),
+            MUIA_Window_Title,  __(MSG_WINTITLE),
             MUIA_Window_ID, MAKE_ID('S', 'Y', 'E', 'X'),
             WindowContents, (IPTR)(HGroup,
                 Child, (IPTR)(NListviewObject,
@@ -360,8 +360,8 @@ static BOOL GUIinit(struct SysexpBase *SysexpBase)
     if (app)
     {
         /* Quit application if the main window's closegadget or the esc key is pressed. */
-        DoMethod(main_window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-                 app, 2, 
+        DoMethod(main_window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                 app, 2,
                  MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
         DoMethod(property_menu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,

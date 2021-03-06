@@ -14,13 +14,13 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH1(void, UnLockBitMap,
+        AROS_LH1(void, UnLockBitMap,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, Handle, A0),
+        AROS_LHA(APTR, Handle, A0),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 29, Cybergraphics)
+        struct Library *, CyberGfxBase, 29, Cybergraphics)
 
 /*  FUNCTION
         Releases exclusive access to a bitmap.

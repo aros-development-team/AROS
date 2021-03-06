@@ -15,19 +15,19 @@
         AROS_LH1(struct IntuiMessage *, GT_PostFilterIMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IntuiMessage *, modimsg, A1),
+        AROS_LHA(struct IntuiMessage *, modimsg, A1),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 18, GadTools)
+        struct Library *, GadToolsBase, 18, GadTools)
 
 /*  FUNCTION
-	Restores an intuition message formerly changed with GT_FilterIMsg().
+        Restores an intuition message formerly changed with GT_FilterIMsg().
 
     INPUTS
-	modimsg - The message returned from GT_FilterIMsg(). May be NULL.
+        modimsg - The message returned from GT_FilterIMsg(). May be NULL.
 
     RESULT
-	The original intuition message or NULL, if NULL was passed in.
+        The original intuition message or NULL, if NULL was passed in.
 
     NOTES
 
@@ -46,29 +46,29 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct GT_IntuiMessage 	*gtmsg;
-    struct IntuiMessage		*rc;
+    struct GT_IntuiMessage      *gtmsg;
+    struct IntuiMessage         *rc;
     
     gtmsg = (struct GT_IntuiMessage *)modimsg;
     if (gtmsg)
     {
-    	/* GT_FilterIMsg (which is called by GT_GetImsg)
-	   always returns an extended GadTools intuimsg */
+        /* GT_FilterIMsg (which is called by GT_GetImsg)
+           always returns an extended GadTools intuimsg */
 
-    	rc = gtmsg->origmsg;
-	
-	if (rc) if (rc->Class == IDCMP_MENUVERIFY)
-	{
-	    /* IDCMP_MENUVERIFY: app can put MENUCANCEL into msg->Code to
-	       indicate to Intuition that it shall prevent opening of menus */
-	       
-	    rc->Code = gtmsg->imsg.eim_IntuiMessage.Code;
-	}
-	
-	if (gtmsg->wasalloced)
-	{
-	    FreeMem(gtmsg, sizeof(struct GT_IntuiMessage));
-	}
+        rc = gtmsg->origmsg;
+        
+        if (rc) if (rc->Class == IDCMP_MENUVERIFY)
+        {
+            /* IDCMP_MENUVERIFY: app can put MENUCANCEL into msg->Code to
+               indicate to Intuition that it shall prevent opening of menus */
+               
+            rc->Code = gtmsg->imsg.eim_IntuiMessage.Code;
+        }
+        
+        if (gtmsg->wasalloced)
+        {
+            FreeMem(gtmsg, sizeof(struct GT_IntuiMessage));
+        }
         else /* if (gtmsg == &gtmsg->contextgad->gtmsg) */
         {
             gtmsg->contextgad->gtmsg_used = FALSE;
@@ -84,7 +84,7 @@
     }
     else
     {
-    	rc = NULL;
+        rc = NULL;
     }
     
     return rc;

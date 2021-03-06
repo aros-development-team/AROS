@@ -163,6 +163,6 @@ int main(void)
     if (rc)
         return rc;
 
-    Cleanup(0);    
+    Cleanup(0);
     return 0;
 }

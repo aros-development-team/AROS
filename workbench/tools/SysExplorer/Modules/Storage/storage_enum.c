@@ -355,7 +355,7 @@ AROS_LH5(BOOL, RegisterStorageClassHandler,
         newClass->ch_Node.ln_Name = (char *)classid;
         newClass->ch_Node.ln_Pri = pri;
         newClass->muiClass = customwinclass;
-	newClass->enumFunc = enumfunc;
+        newClass->enumFunc = enumfunc;
         newClass->validFunc = validfunc;
 
         if (add)
@@ -385,9 +385,9 @@ AROS_LH5(BOOL, RegisterStorageControllerHandler,
     CLASS_ENUMFUNC enumFunc;
 
     if (enumfunc)
-	enumFunc = enumfunc;
+        enumFunc = enumfunc;
     else
-	enumFunc = storageControllerEnum;
+        enumFunc = storageControllerEnum;
 
     return RegisterStorageClassHandler(classid, pri, customwinclass, enumFunc, validfunc);
 
@@ -407,9 +407,9 @@ AROS_LH5(BOOL, RegisterStorageBusHandler,
      CLASS_ENUMFUNC enumFunc;
 
     if (enumfunc)
-	enumFunc = enumfunc;
+        enumFunc = enumfunc;
     else
-	enumFunc = storageBusEnum;
+        enumFunc = storageBusEnum;
 
     return RegisterStorageClassHandler(classid, pri, customwinclass, enumFunc, validfunc);
 

@@ -66,18 +66,18 @@ void Cleanup(CONST_STRPTR message)
 {
     if(message != NULL)
     {
-	if
-        ( 
-               IntuitionBase != NULL 
+        if
+        (
+               IntuitionBase != NULL
             && ((struct Process *) FindTask(NULL))->pr_CLI == BNULL
         )
-	{
-	    ShowMessage("Clock", message, MSG(MSG_OK));     
-	}
-	else
-	{
-	    Printf("Clock: %s\n", message);
-	}
+        {
+            ShowMessage("Clock", message, MSG(MSG_OK));
+        }
+        else
+        {
+            Printf("Clock: %s\n", message);
+        }
     }
     
     FreeVec(optionPubscr);
@@ -93,40 +93,40 @@ static void GetArguments(int argc, char **argv)
 {
     if (argc == 0) /* started from WB */
     {
-	UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
-	optionLeft = ArgInt(array, "LEFT", optionLeft);
-	optionTop  = ArgInt(array, "TOP", optionTop);
-	optionWidth = ArgInt(array, "WIDTH", optionWidth);
-	optionHeight = ArgInt(array, "HEIGHT", optionHeight);
-	optionPubscr = StrDup(ArgString(array, "PUBSCREEN", optionPubscr));
-	ArgArrayDone();
+        UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
+        optionLeft = ArgInt(array, "LEFT", optionLeft);
+        optionTop  = ArgInt(array, "TOP", optionTop);
+        optionWidth = ArgInt(array, "WIDTH", optionWidth);
+        optionHeight = ArgInt(array, "HEIGHT", optionHeight);
+        optionPubscr = StrDup(ArgString(array, "PUBSCREEN", optionPubscr));
+        ArgArrayDone();
     }
     else
     {
 #       define TMPSIZE 256
-	TEXT           tmp[TMPSIZE];
-	struct RDArgs *rdargs = NULL;
-	IPTR           args[NUM_ARGS];
+        TEXT           tmp[TMPSIZE];
+        struct RDArgs *rdargs = NULL;
+        IPTR           args[NUM_ARGS];
 
-	memset(args, 0, sizeof(args));
-	rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
-	if (rdargs == NULL)
-	{
-	    Fault(IoErr(), 0, tmp, TMPSIZE);
-	    Cleanup(tmp);
-	}
+        memset(args, 0, sizeof(args));
+        rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
+        if (rdargs == NULL)
+        {
+            Fault(IoErr(), 0, tmp, TMPSIZE);
+            Cleanup(tmp);
+        }
 
-	if (args[ARG_LEFT])   optionLeft   = *(LONG*)args[ARG_LEFT];
-	if (args[ARG_TOP])    optionTop    = *(LONG*)args[ARG_TOP];
-	if (args[ARG_WIDTH])  optionWidth  = *(LONG*)args[ARG_WIDTH];
-	if (args[ARG_HEIGHT]) optionHeight = *(LONG*)args[ARG_HEIGHT];
-	if (args[ARG_PUBSCREEN]) optionPubscr = StrDup((STRPTR)args[ARG_PUBSCREEN]);
+        if (args[ARG_LEFT])   optionLeft   = *(LONG*)args[ARG_LEFT];
+        if (args[ARG_TOP])    optionTop    = *(LONG*)args[ARG_TOP];
+        if (args[ARG_WIDTH])  optionWidth  = *(LONG*)args[ARG_WIDTH];
+        if (args[ARG_HEIGHT]) optionHeight = *(LONG*)args[ARG_HEIGHT];
+        if (args[ARG_PUBSCREEN]) optionPubscr = StrDup((STRPTR)args[ARG_PUBSCREEN]);
 
-	FreeArgs(rdargs);
+        FreeArgs(rdargs);
 #       undef TMPSIZE
     }
     D(bug("Clock left %d top %d width %d height %d pubscr %s\n",
-		optionLeft, optionTop, optionWidth, optionHeight, optionPubscr));
+                optionLeft, optionTop, optionWidth, optionHeight, optionPubscr));
 }
 
 int main(int argc, char **argv)
@@ -158,15 +158,15 @@ int main(int argc, char **argv)
     if (application)
     {
         DoMethod
-        ( 
-            window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-            (IPTR) application, 2, 
+        (
+            window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+            (IPTR) application, 2,
             MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
         );
         
         SetAttrs(window, MUIA_Window_Open, TRUE, TAG_DONE);
         
-	DoMethod(application, MUIM_Application_Execute);
+        DoMethod(application, MUIM_Application_Execute);
         
         SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
         MUI_DisposeObject(application);

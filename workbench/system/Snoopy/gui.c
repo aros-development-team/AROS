@@ -268,7 +268,7 @@ void gui_init(void)
                         End),
                     End),
                 End),
-                Child, (IPTR) (RectangleObject, 
+                Child, (IPTR) (RectangleObject,
                     MUIA_Rectangle_HBar, TRUE,
                     MUIA_FixHeight,      2,
                 End),

@@ -97,7 +97,7 @@
 #define FIBF_HOLD (1<<FIBB_HOLD)
 #endif
 
-enum 
+enum
 {
     ARG_FILE = 0,
     ARG_FLAGS,
@@ -121,9 +121,9 @@ const TEXT version[] = "$VER: Protect 41.1 (2.12.2000)\n";
 int Do_Protect(struct AnchorPath *, STRPTR, STRPTR, BOOL, BOOL, BOOL, BOOL);
 
 int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
-	      BOOL add, BOOL sub, BOOL all, BOOL quiet);
-BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet, 
-		  BOOL add, BOOL sub);
+              BOOL add, BOOL sub, BOOL all, BOOL quiet);
+BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
+                  BOOL add, BOOL sub);
 
 int __nocommandline;
 
@@ -133,11 +133,11 @@ int main(void)
     struct AnchorPath *apath;
 
     IPTR args[NOOFARGS] = { 0,
-			    0,
-			    (IPTR)FALSE,
-			    (IPTR)FALSE,
-			    (IPTR)FALSE,
-			    (IPTR)FALSE };
+                            0,
+                            (IPTR)FALSE,
+                            (IPTR)FALSE,
+                            (IPTR)FALSE,
+                            (IPTR)FALSE };
 
     int retval = RETURN_OK;
 
@@ -151,21 +151,21 @@ int main(void)
 
         rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
-	if (rda != NULL)
-	{
- 	    STRPTR  file = (STRPTR)args[ARG_FILE];
-	    STRPTR  flags = (STRPTR)args[ARG_FLAGS];
-	    BOOL    add = (BOOL)args[ARG_ADD];
-	    BOOL    sub = (BOOL)args[ARG_SUB];
-	    BOOL    all = (BOOL)args[ARG_ALL];
-	    BOOL    quiet = (BOOL)args[ARG_QUIET];
+        if (rda != NULL)
+        {
+            STRPTR  file = (STRPTR)args[ARG_FILE];
+            STRPTR  flags = (STRPTR)args[ARG_FLAGS];
+            BOOL    add = (BOOL)args[ARG_ADD];
+            BOOL    sub = (BOOL)args[ARG_SUB];
+            BOOL    all = (BOOL)args[ARG_ALL];
+            BOOL    quiet = (BOOL)args[ARG_QUIET];
 
-	    LONG    flagValues = FIBF_READ | FIBF_WRITE | FIBF_DELETE |
-	                         FIBF_EXECUTE;
+            LONG    flagValues = FIBF_READ | FIBF_WRITE | FIBF_DELETE |
+                                 FIBF_EXECUTE;
 
-	    if (flags != NULL)
-	    {
-		D(Printf("Flags: %s\n", flags));
+            if (flags != NULL)
+            {
+                D(Printf("Flags: %s\n", flags));
 
                 if (*flags == '+')
                 {
@@ -178,55 +178,55 @@ int main(void)
                         flags++;
                 }
 
-	        while (*flags != 0 && retval == RETURN_OK)
-		{
-		    char f = ToUpper(*flags);
+                while (*flags != 0 && retval == RETURN_OK)
+                {
+                    char f = ToUpper(*flags);
 
-		    D(Printf("Checking flag: %lc\n", f));
-		    switch (f)
-		    {
- 		        /* Active low */
-			case 'R':
-			    flagValues &= ~FIBF_READ;
-			    break;
+                    D(Printf("Checking flag: %lc\n", f));
+                    switch (f)
+                    {
+                        /* Active low */
+                        case 'R':
+                            flagValues &= ~FIBF_READ;
+                            break;
 
-			case 'W':
-			    flagValues &= ~FIBF_WRITE;
-			    break;
+                        case 'W':
+                            flagValues &= ~FIBF_WRITE;
+                            break;
 
-			case 'D':
-			    flagValues &= ~FIBF_DELETE;
-			    break;
+                        case 'D':
+                            flagValues &= ~FIBF_DELETE;
+                            break;
 
-			case 'E':
-			    flagValues &= ~FIBF_EXECUTE;
-			    break;
+                        case 'E':
+                            flagValues &= ~FIBF_EXECUTE;
+                            break;
 
-			    /* Active high */
-			case 'A':
-			    flagValues |= FIBF_ARCHIVE;
-			    break;
+                            /* Active high */
+                        case 'A':
+                            flagValues |= FIBF_ARCHIVE;
+                            break;
 
-			case 'S':
-			    flagValues |= FIBF_SCRIPT;
-			    break;
+                        case 'S':
+                            flagValues |= FIBF_SCRIPT;
+                            break;
 
-			case 'P':
-			    flagValues |= FIBF_PURE;
-			    break;
+                        case 'P':
+                            flagValues |= FIBF_PURE;
+                            break;
 
-    	    	    	case 'H':
-			    flagValues |= FIBF_HOLD;
-			    break;
-			    
-			default:
-			    Printf("Invalid flags - must be one of HSPARWED\n");
-			    retval = RETURN_FAIL;
-		    }
+                        case 'H':
+                            flagValues |= FIBF_HOLD;
+                            break;
+                            
+                        default:
+                            Printf("Invalid flags - must be one of HSPARWED\n");
+                            retval = RETURN_FAIL;
+                    }
 
-		    flags++;
-		} /* while (*flags != 0) */
-	    }
+                    flags++;
+                } /* while (*flags != 0) */
+            }
 
             if (add && sub)
             {
@@ -234,26 +234,26 @@ int main(void)
                 retval = RETURN_FAIL;
             }
 
-	    if (retval == RETURN_OK)
-	    {
-		if (!all && IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES))
-		{
-		    Printf("Can't set protection for %s - ", file);
-		    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-		    PrintFault(IoErr(), NULL);
+            if (retval == RETURN_OK)
+            {
+                if (!all && IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES))
+                {
+                    Printf("Can't set protection for %s - ", file);
+                    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+                    PrintFault(IoErr(), NULL);
 
-		    retval = RETURN_FAIL;
-		}
-		else
-		{
-		    retval = doProtect(apath, file, flagValues,
-			  	       flags != NULL, add, sub, all,
-		                       quiet);
-		}
-	    }
+                    retval = RETURN_FAIL;
+                }
+                else
+                {
+                    retval = doProtect(apath, file, flagValues,
+                                       flags != NULL, add, sub, all,
+                                       quiet);
+                }
+            }
 
-	    FreeArgs(rda);
-	}
+            FreeArgs(rda);
+        }
         else
         {
             PrintFault(IoErr(), "Protect");
@@ -273,39 +273,39 @@ int main(void)
 #define  isDir(fib) ((fib)->fib_DirEntryType >= 0)
 
 int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
-	      BOOL add, BOOL sub, BOOL all, BOOL quiet)
+              BOOL add, BOOL sub, BOOL all, BOOL quiet)
 {
     LONG  match;
     int   retval = RETURN_OK;
     LONG  indent = 0;
-    int   i;			/* Loop variable */
+    int   i;                    /* Loop variable */
     BOOL  success;
     ULONG match_count = 0;
 
     for (match = MatchFirst(file, ap);
-    	 match == 0 && retval == RETURN_OK && !CTRL_C;
-	 match = MatchNext(ap))
+         match == 0 && retval == RETURN_OK && !CTRL_C;
+         match = MatchNext(ap))
     {
         match_count++;
-	if (isDir(&ap->ap_Info))
-	{
-	    if (ap->ap_Flags & APF_DIDDIR)
-	    {
-		indent--;
-		ap->ap_Flags &= ~APF_DIDDIR; /* Should not be necessary */
-		continue;
-	    }
-	    else if (all)
-	    {
-		ap->ap_Flags |= APF_DODIR;
-		indent++;
-	    }
+        if (isDir(&ap->ap_Info))
+        {
+            if (ap->ap_Flags & APF_DIDDIR)
+            {
+                indent--;
+                ap->ap_Flags &= ~APF_DIDDIR; /* Should not be necessary */
+                continue;
+            }
+            else if (all)
+            {
+                ap->ap_Flags |= APF_DODIR;
+                indent++;
+            }
 
 
-	}
+        }
 
-	success = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flags,
-			      flagsSet, add, sub);
+        success = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flags,
+                              flagsSet, add, sub);
 
         if (!quiet)
         {
@@ -354,52 +354,52 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 
 #define  ALL_OFF  (FIBF_READ | FIBF_WRITE | FIBF_DELETE | FIBF_EXECUTE)
 #define addFlags(new, old)  ((~(~old | ~new) & ALL_OFF) | \
-			      ((old | new) & ~ALL_OFF))
+                              ((old | new) & ~ALL_OFF))
      
 #define  subFlags(new, old)  (((old | ~new) & ALL_OFF) | \
-			      ((old & ~new) & ~ALL_OFF))
+                              ((old & ~new) & ~ALL_OFF))
      
-BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet, 
-		   BOOL add, BOOL sub)
+BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
+                   BOOL add, BOOL sub)
 {
     LONG  newFlags;
     
     if (flags != ALL_OFF)
     {
-	if (add)
-	{
-	    /* Enable permission */
-	    newFlags = addFlags(flags, oldFlags);
-	}
-	else if (sub)
-	{
-	    /* Disable permissions */
-	    newFlags = subFlags(flags, oldFlags);
-	}
-	else
-	{
-	    /* Clear all permissions then set the ones given. */
-	    newFlags = flags;
-	}
+        if (add)
+        {
+            /* Enable permission */
+            newFlags = addFlags(flags, oldFlags);
+        }
+        else if (sub)
+        {
+            /* Disable permissions */
+            newFlags = subFlags(flags, oldFlags);
+        }
+        else
+        {
+            /* Clear all permissions then set the ones given. */
+            newFlags = flags;
+        }
     }
     else
     {
-	/* No flags were given */
-	if (!add && !sub)
-	{
-	    /* Disable all permissions */
-	    newFlags = ALL_OFF;
-	}
-	else
-	{
-	    /* Do nothing */
-	    return FALSE;
-	}
-    }    
+        /* No flags were given */
+        if (!add && !sub)
+        {
+            /* Disable all permissions */
+            newFlags = ALL_OFF;
+        }
+        else
+        {
+            /* Do nothing */
+            return FALSE;
+        }
+    }
 
     if (!SetProtection(file, newFlags))
     {
-	return FALSE;
+        return FALSE;
     }
     
     return TRUE;

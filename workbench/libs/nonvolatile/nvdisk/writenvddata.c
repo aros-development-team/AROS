@@ -18,14 +18,14 @@ AROS_LH4(LONG, WriteNVDData,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName,  A0),
-	AROS_LHA(STRPTR, itemName, A1),
-	AROS_LHA(APTR,   data,     A2),
-	AROS_LHA(LONG,   length,   A3),
+        AROS_LHA(STRPTR, appName,  A0),
+        AROS_LHA(STRPTR, itemName, A1),
+        AROS_LHA(APTR,   data,     A2),
+        AROS_LHA(LONG,   length,   A3),
 
 /*  LOCATION */
 
-	struct Library *, nvdBase, 6, NVDisk)
+        struct Library *, nvdBase, 6, NVDisk)
 
 /*  FUNCTION
 
@@ -59,7 +59,7 @@ AROS_LH4(LONG, WriteNVDData,
 ******************************************************************************/
 
 {
-    AROS_LIBFUNC_INIT    
+    AROS_LIBFUNC_INIT
 
     LONG retval  = 0;
     BPTR oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
@@ -68,17 +68,17 @@ AROS_LH4(LONG, WriteNVDData,
 
     if(lock == BNULL)
     {
-	lock = CreateDir(appName);
+        lock = CreateDir(appName);
 
-	if(lock == BNULL)
-	{
-	    LONG err = IoErr();
-	    if(err == ERROR_WRITE_PROTECTED ||
-	       err == ERROR_DISK_WRITE_PROTECTED)
-		return NVERR_WRITEPROT;
-	    else
-		return NVERR_FAIL;
-	}
+        if(lock == BNULL)
+        {
+            LONG err = IoErr();
+            if(err == ERROR_WRITE_PROTECTED ||
+               err == ERROR_DISK_WRITE_PROTECTED)
+                return NVERR_WRITEPROT;
+            else
+                return NVERR_FAIL;
+        }
     }
 
     /* 'lock' is now containing a valid lock on the 'appName' directory. */
@@ -89,14 +89,14 @@ AROS_LH4(LONG, WriteNVDData,
 
     if(file == BNULL)
     {
-	UnLock(lock);
-	CurrentDir(oldCDir);
-	return NVERR_FAIL;
+        UnLock(lock);
+        CurrentDir(oldCDir);
+        return NVERR_FAIL;
     }
 
     if(Write(file, data, length) == -1)
     {
-	retval = NVERR_FATAL;
+        retval = NVERR_FATAL;
     }
 
     Close(file);

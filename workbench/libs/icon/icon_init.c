@@ -34,7 +34,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
     InitSemaphore(&LB(lh)->iconlistlock);
     for(i = 0; i < ICONLIST_HASHSIZE; i++)
     {
-    	NewList((struct List *)&LB(lh)->iconlists[i]);
+        NewList((struct List *)&LB(lh)->iconlists[i]);
     }
     
     /* Setup default global settings ---------------------------------------*/
@@ -43,7 +43,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
     LB(lh)->ib_EmbossRectangle.MinX = -4;
     LB(lh)->ib_EmbossRectangle.MaxX = 4;
     LB(lh)->ib_EmbossRectangle.MinY = -4;
-    LB(lh)->ib_EmbossRectangle.MaxY = 4; 
+    LB(lh)->ib_EmbossRectangle.MaxY = 4;
     LB(lh)->ib_Frameless            = FALSE;
     LB(lh)->ib_IdentifyHook         = NULL;
     LB(lh)->ib_MaxNameLength        = 25;
@@ -54,21 +54,21 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
     
     UtilityBase = OpenLibrary("utility.library", 0);
     if (UtilityBase != NULL) {
-    	DOSBase = OpenLibrary("dos.library", 0);
-    	if (DOSBase != NULL) {
-    	    GfxBase = OpenLibrary("graphics.library", GfxBase_version);
-    	    if (GfxBase != NULL) {
-    	    	IntuitionBase = OpenLibrary("intuition.library", 0);
-    	    	if (IntuitionBase != NULL) {
+        DOSBase = OpenLibrary("dos.library", 0);
+        if (DOSBase != NULL) {
+            GfxBase = OpenLibrary("graphics.library", GfxBase_version);
+            if (GfxBase != NULL) {
+                IntuitionBase = OpenLibrary("intuition.library", 0);
+                if (IntuitionBase != NULL) {
                     /* Optional libraries are loaded dynamically if needed */
                     return TRUE;
-    	    	}
-    	    	CloseLibrary(GfxBase);
-    	    }
-    	    CloseLibrary(DOSBase);
-    	}
+                }
+                CloseLibrary(GfxBase);
+            }
+            CloseLibrary(DOSBase);
+        }
         CloseLibrary(UtilityBase);
-    } 
+    }
 
     return FALSE;
 }

@@ -34,16 +34,16 @@ void PalettePrefs_Handler(STRPTR filename)
     
     if ((iff = CreateIFF(filename, stopchunks, 2)))
     {
-	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
-	{
-	    struct ContextNode *cn;
+        while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
+        {
+            struct ContextNode *cn;
 
-	    D(bug("[IPrefs:Palette] %s: ParseIFF okay\n", __func__));
-	    cn = CurrentChunk(iff);
+            D(bug("[IPrefs:Palette] %s: ParseIFF okay\n", __func__));
+            cn = CurrentChunk(iff);
 
-	    switch (cn->cn_ID)
-	    {
-	    case ID_PALT:
+            switch (cn->cn_ID)
+            {
+            case ID_PALT:
                 {
                     struct PalettePrefs loadprefs;
                     int i;
@@ -87,11 +87,11 @@ void PalettePrefs_Handler(STRPTR filename)
                         D(bug("[IPrefs:Palette]  %s:  ID_PALT chunk parsed.\n", __func__));
                     }
                 }
-		break;
-	    }
-	}
+                break;
+            }
+        }
 
-   	KillIFF(iff);
+        KillIFF(iff);
 
     }
 

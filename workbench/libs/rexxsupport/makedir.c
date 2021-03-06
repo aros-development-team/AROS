@@ -24,11 +24,11 @@ LONG rxsupp_makedir(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE 
 
     lock = CreateDir(ARG1(msg));
     if (lock == (BPTR)NULL)
-	*argstring = CreateArgstring("0", 1);
+        *argstring = CreateArgstring("0", 1);
     else
     {
-	UnLock(lock);
-	*argstring = CreateArgstring("1", 1);
+        UnLock(lock);
+        *argstring = CreateArgstring("1", 1);
     }
     
     return RC_OK;

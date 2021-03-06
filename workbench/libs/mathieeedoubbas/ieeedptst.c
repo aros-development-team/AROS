@@ -28,10 +28,10 @@
              0: y = 0.0
             -1: y < 0.0
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : 0
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
 
     NOTES
 
@@ -44,9 +44,9 @@
 
     INTERNALS
         Algorithm:
-	Sign is negative: return -1
-	y == 0		: return 0
-	Otherwise	: return 1
+        Sign is negative: return -1
+        y == 0          : return 0
+        Otherwise       : return 1
 
 *****************************************************************************/
 {

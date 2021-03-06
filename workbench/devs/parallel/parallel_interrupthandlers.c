@@ -79,7 +79,7 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
             */
             ioreq = (struct IOStdReq *)GetMsg(&PU->pu_QReadCommandPort);
             PU->pu_ActiveRead = (struct Message *)ioreq;
-            break;    
+            break;
           }
         }
         
@@ -93,7 +93,7 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
         PU->pu_Status &= ~STATUS_READS_PENDING;
       
     }
-  } /* if (NULL != pu) */   
+  } /* if (NULL != pu) */
  
   /*
   ** Simply dropping the incoming data
@@ -108,71 +108,71 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
  */
 ULONG WBE_InterruptHandler( ULONG unitnum, APTR userdata)
 {
-	ULONG total = 0;
-	struct ParallelUnit * PU;
+        ULONG total = 0;
+        struct ParallelUnit * PU;
 
-	PU = findUnit(pubParallelBase, unitnum);
+        PU = findUnit(pubParallelBase, unitnum);
 
-	if (NULL != PU) {
-		/*
-		 * First get any active write 
-		 */
-		struct IOExtPar * ioparreq = (struct IOExtPar *)PU->pu_ActiveWrite;
-		
-		while (1) {
-			/*
-			 * Try to transmit the active write request
-			 */
-			if (NULL != ioparreq) {
-				ULONG writtenbytes;
-				writtenbytes = HIDD_ParallelUnit_Write(PU->pu_Unit,
-				                                      &((char *)ioparreq->IOPar.io_Data)[PU->pu_NextToWrite],
-				                                      PU->pu_WriteLength);
-				/*
-				 * Check whether this was written completely.
-				 */
-				total += writtenbytes;
-				if (writtenbytes >= PU->pu_WriteLength) {
-					/* This one is done */
-					ReplyMsg(&ioparreq->IOPar.io_Message);
-				} else {
-					/*
-					 * Not completed, yet.
-					 */
-					PU->pu_WriteLength -= writtenbytes;
-					PU->pu_NextToWrite += writtenbytes;
-					/*
-					 * Get out of the loop
-					 */
-					break;
-				}
-			}
-			/* 
-			 * Get the next request from the queue.
-			 */
-			ioparreq = (struct IOExtPar *)GetMsg(&PU->pu_QWriteCommandPort);
-			PU->pu_ActiveWrite = (struct Message *)ioparreq;
-			if (NULL == ioparreq) {
-				/*
-				 * No more request left. Done.
-				 */
-				PU->pu_Status &= ~STATUS_WRITES_PENDING;
-				break;
-			}
-			
-			/*
-			 * There is a new request.
-			 */
-			PU->pu_NextToWrite = 0;
-			if (-1 == ioparreq->IOPar.io_Length) {
-				PU->pu_WriteLength = strlen(ioparreq->IOPar.io_Data);
-			} else {
-				PU->pu_WriteLength = ioparreq->IOPar.io_Length;
-			}
-			/*
-			 * And repeat the loop with this request
-			 */
-		}
-	}
-	return total;
+        if (NULL != PU) {
+                /*
+                 * First get any active write
+                 */
+                struct IOExtPar * ioparreq = (struct IOExtPar *)PU->pu_ActiveWrite;
+                
+                while (1) {
+                        /*
+                         * Try to transmit the active write request
+                         */
+                        if (NULL != ioparreq) {
+                                ULONG writtenbytes;
+                                writtenbytes = HIDD_ParallelUnit_Write(PU->pu_Unit,
+                                                                      &((char *)ioparreq->IOPar.io_Data)[PU->pu_NextToWrite],
+                                                                      PU->pu_WriteLength);
+                                /*
+                                 * Check whether this was written completely.
+                                 */
+                                total += writtenbytes;
+                                if (writtenbytes >= PU->pu_WriteLength) {
+                                        /* This one is done */
+                                        ReplyMsg(&ioparreq->IOPar.io_Message);
+                                } else {
+                                        /*
+                                         * Not completed, yet.
+                                         */
+                                        PU->pu_WriteLength -= writtenbytes;
+                                        PU->pu_NextToWrite += writtenbytes;
+                                        /*
+                                         * Get out of the loop
+                                         */
+                                        break;
+                                }
+                        }
+                        /*
+                         * Get the next request from the queue.
+                         */
+                        ioparreq = (struct IOExtPar *)GetMsg(&PU->pu_QWriteCommandPort);
+                        PU->pu_ActiveWrite = (struct Message *)ioparreq;
+                        if (NULL == ioparreq) {
+                                /*
+                                 * No more request left. Done.
+                                 */
+                                PU->pu_Status &= ~STATUS_WRITES_PENDING;
+                                break;
+                        }
+                        
+                        /*
+                         * There is a new request.
+                         */
+                        PU->pu_NextToWrite = 0;
+                        if (-1 == ioparreq->IOPar.io_Length) {
+                                PU->pu_WriteLength = strlen(ioparreq->IOPar.io_Data);
+                        } else {
+                                PU->pu_WriteLength = ioparreq->IOPar.io_Length;
+                        }
+                        /*
+                         * And repeat the loop with this request
+                         */
+                }
+        }
+        return total;
 }

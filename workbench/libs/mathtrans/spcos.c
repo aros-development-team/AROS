@@ -68,10 +68,10 @@
     tmp |= FFPSign_Mask; /* tmp = -tmp; */
     yabs = SPAdd(yabs, tmp);
     
-    if 
-    ( 
-            (char)yabs > (char)pio2  
-        &&  (yabs & FFPMantisse_Mask) > (pio2 & FFPMantisse_Mask) 
+    if
+    (
+            (char)yabs > (char)pio2
+        &&  (yabs & FFPMantisse_Mask) > (pio2 & FFPMantisse_Mask)
     )
     {
         yabs |= FFPSign_Mask;

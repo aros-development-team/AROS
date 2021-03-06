@@ -17,7 +17,7 @@
 #include "x86.h"
 
 /********************************************
-		    Cyrix CPU Features
+                    Cyrix CPU Features
  ********************************************/
 
 char *Cyrix_standard_feature_flags_5[] = {
@@ -190,27 +190,27 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
                 switch ( model )
                 {
                 case 9:
-	                Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "5x86");
-	                break;
+                        Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "5x86");
+                        break;
                 }
             break;
             case 5:
                 switch ( model )
                 {
                 case 2:
-	                Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "6x86");
-	                break;
+                        Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "6x86");
+                        break;
                 case 4:
-	                Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "GX, GXm");
-	                break;
+                        Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "GX, GXm");
+                        break;
                 }
             break;
             case 6:
                 switch ( model )
                 {
                 case 0:
-	                Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "6x86MX");
-	                break;
+                        Cyrix_CPU_IDENTITY_cnt = AddBufferLine(Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_IDENTITY, "6x86MX");
+                        break;
                 }
             break;
             }
@@ -222,11 +222,11 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
 
                 for ( i=0 ; i<32 ; i++ )
                 {
-	                if ( edx & (1<<i) )
+                        if ( edx & (1<<i) )
                     {
                         sprintf( BUFF_STR,"        %s\n",Cyrix_standard_feature_flags_5[i]);
                         Cyrix_CPU_FEATURES_cnt = AddBufferLine(Cyrix_CPU_FEATURES_cnt, Cyrix_CPU_FEATURES, BUFF_STR);
-	                }
+                        }
                 }
             }
             else
@@ -235,11 +235,11 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
 
                 for ( i=0 ; i<32 ; i++ )
                 {
-	                if ( edx & (1<<i) )
+                        if ( edx & (1<<i) )
                     {
                         sprintf( BUFF_STR,"        %s\n",Cyrix_standard_feature_flags_not5[i]);
                         Cyrix_CPU_FEATURES_cnt = AddBufferLine(Cyrix_CPU_FEATURES_cnt, Cyrix_CPU_FEATURES, BUFF_STR);
-	                }
+                        }
                 }
             }
         }
@@ -264,10 +264,10 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
 
                 if (( edx & 0x80000000 ) == 0 )
                 {
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx, BUFF_STR ));
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx >> 8, BUFF_STR ));
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx >> 16, BUFF_STR ));
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx >> 24, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx >> 8, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx >> 16, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode( edx >> 24, BUFF_STR ));
                 }
             }
         }
@@ -353,10 +353,10 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
 
                 if (( ecx & 0x80000000 ) == 0 )
                 {
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx, BUFF_STR ));
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx >> 8, BUFF_STR ));
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx >> 16, BUFF_STR ));
-	                Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx >> 24, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx >> 8, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx >> 16, BUFF_STR ));
+                        Cyrix_CPU_CACHE_cnt = AddBufferLine(Cyrix_CPU_CACHE_cnt, Cyrix_CPU_CACHE, i386_cyrix_TLB_decode(  ecx >> 24, BUFF_STR ));
                 }
             }
         }

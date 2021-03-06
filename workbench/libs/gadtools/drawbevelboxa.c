@@ -18,36 +18,36 @@
 #include <graphics/rastport.h>
 #include <utility/tagitem.h>
 
-	AROS_LH6(void, DrawBevelBoxA,
+        AROS_LH6(void, DrawBevelBoxA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rport, A0),
-	AROS_LHA(WORD, left, D0),
-	AROS_LHA(WORD, top, D1),
-	AROS_LHA(WORD, width, D2),
-	AROS_LHA(WORD, height, D3),
-	AROS_LHA(struct TagItem *, taglist, A1),
+        AROS_LHA(struct RastPort *, rport, A0),
+        AROS_LHA(WORD, left, D0),
+        AROS_LHA(WORD, top, D1),
+        AROS_LHA(WORD, width, D2),
+        AROS_LHA(WORD, height, D3),
+        AROS_LHA(struct TagItem *, taglist, A1),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 20, GadTools)
+        struct Library *, GadToolsBase, 20, GadTools)
 
 /*  FUNCTION
-	DrawBevelBoxA() does just that. It draws a bevelled box.
+        DrawBevelBoxA() does just that. It draws a bevelled box.
 
     INPUTS
-	rport   - rastport, in which the box should be drawn
-	left    - left edge of the box
-	top     - top edge of the box
-	width   - width of the box
-	height  - height og the box
-	taglist - additional tags
+        rport   - rastport, in which the box should be drawn
+        left    - left edge of the box
+        top     - top edge of the box
+        width   - width of the box
+        height  - height og the box
+        taglist - additional tags
 
     RESULT
 
     NOTES
-	Boxes drawn with DrawBevelBox() aren't refreshed automatically.
-	You have to refresh them yourself.
-	DrawBevelBoxA() might modify the rastport to guarantee fast drawing.
+        Boxes drawn with DrawBevelBox() aren't refreshed automatically.
+        You have to refresh them yourself.
+        DrawBevelBoxA() might modify the rastport to guarantee fast drawing.
 
     EXAMPLE
 
@@ -63,12 +63,12 @@
 {
     AROS_LIBFUNC_INIT
     
-    struct VisualInfo 	*vi;
-    struct TagItem 	tags[5];
+    struct VisualInfo   *vi;
+    struct TagItem      tags[5];
 
     vi = (struct VisualInfo *) GetTagData(GT_VisualInfo, (IPTR) NULL, taglist);
     if (vi == NULL)
-	return;
+        return;
 
     tags[0].ti_Tag = IA_Width;
     tags[0].ti_Data = width;

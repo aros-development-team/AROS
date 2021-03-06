@@ -276,13 +276,13 @@ static const ULONG dayspermonth[13] =
                         days++;
                 }
 
-                /* 
+                /*
                  ** If January 1st is a Monday then the first week
                  ** will start with a Sunday January 7th if Sunday is the first day of the week
                  ** but if Monday is the first day of the week then Jan 1st will also be the
                  ** first day of the first week.
                  */
-                /* 
+                /*
                  ** Go to Saturday = last day of week if Sunday is first day of week
                  ** Go to Sunday   = last day of week if Monday is first day of week
                  */

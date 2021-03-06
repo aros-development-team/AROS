@@ -10,14 +10,14 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH2(VOID, ClearRexxMsg,
+        AROS_LH2(VOID, ClearRexxMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RexxMsg *, msgptr, A0),
-	AROS_LHA(ULONG           , count , D0),
+        AROS_LHA(struct RexxMsg *, msgptr, A0),
+        AROS_LHA(ULONG           , count , D0),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 26, RexxSys)
+        struct Library *, RexxSysBase, 26, RexxSys)
 
 /*  FUNCTION
         This function will clear a specified number of arguments by calling
@@ -50,11 +50,11 @@
     
     for (i = 0; i < count; i++)
     {
-	if (msgptr->rm_Args[i] != 0)
-	{
-	    DeleteArgstring(RXARG(msgptr,i));
-	    msgptr->rm_Args[i] = 0;
-	}
+        if (msgptr->rm_Args[i] != 0)
+        {
+            DeleteArgstring(RXARG(msgptr,i));
+            msgptr->rm_Args[i] = 0;
+        }
     }
     
     ReturnVoid("ClearRexxMsg");

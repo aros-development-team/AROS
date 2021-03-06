@@ -77,7 +77,7 @@ BOOL METHOD(VIABridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     bridgedev = gbddata->bridge->PciDevice;
     bridgeagpcap = gbddata->bridge->AgpCapability;
 
-    /* Getting version info */ 
+    /* Getting version info */
     major = (readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) >> 4) & 0xf;
     D(minor = readconfigbyte(bridgedev, bridgeagpcap + AGP_VERSION_REG) & 0xf);
     
@@ -145,9 +145,9 @@ BOOL METHOD(VIABridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     writeconfiglong(bridgedev, AGP_VIA_GART_CTRL, 0x0000000f);
         
     /* Set GATT pointer */
-    writeconfiglong(bridgedev, AGP_VIA_GATT_BASE, 
+    writeconfiglong(bridgedev, AGP_VIA_GATT_BASE,
         (((ULONG)(IPTR)gbddata->gatttable) & 0xfffff000) | 3);
-    D(bug("[AGP] [VIA] Set GATT pointer to 0x%x\n", 
+    D(bug("[AGP] [VIA] Set GATT pointer to 0x%x\n",
         (((ULONG)(IPTR)gbddata->gatttable) & 0xfffff000) | 3));
 
     gbddata->state = STATE_INITIALIZED;

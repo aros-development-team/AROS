@@ -9,7 +9,7 @@ LONG cliLen(CONST_STRPTR s)
     LONG i;
 
     for (i = 0; *s != '\0'; ++i)
-	++s;
+        ++s;
 
     return i;
 }

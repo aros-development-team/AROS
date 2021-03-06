@@ -16,13 +16,13 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct Player *, player , A0),
-	AROS_LHA(LONG           , minTime, D0),
-	AROS_LHA(LONG           , maxTime, D1),
+        AROS_LHA(struct Player *, player , A0),
+        AROS_LHA(LONG           , minTime, D0),
+        AROS_LHA(LONG           , maxTime, D1),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 11, RealTime)
+        struct Library *, RealTimeBase, 11, RealTime)
 
 /*  FUNCTION
 
@@ -62,9 +62,9 @@
     AROS_LIBFUNC_INIT
 
     if ((player == NULL) || (player->pl_Source == NULL) ||
-	!(player->pl_Flags & PLAYERF_EXTSYNC))
+        !(player->pl_Flags & PLAYERF_EXTSYNC))
     {
-	return FALSE;
+        return FALSE;
     }
 
     player->pl_Source->cdt_ExternalTime    = minTime;

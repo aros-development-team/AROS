@@ -21,7 +21,7 @@
     FUNCTION
 
         Shows popup menu with list of screens and windows after user clicks on
-	depth gadget of screen or window.
+        depth gadget of screen or window.
 
     INPUTS
 
@@ -103,8 +103,8 @@ static struct NewBroker nb =
     NBU_NOTIFY | NBU_UNIQUE,
     0,
     0,
-    NULL,                             
-    0 
+    NULL,
+    0
 };
 
 
@@ -159,11 +159,11 @@ static CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    }
+    else
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
@@ -173,14 +173,14 @@ static BOOL Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
-	catalog = OpenCatalog
-	    ( 
-	     NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
-	    );
+        catalog = OpenCatalog
+            (
+             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
+            );
     }
     else
     {
-	catalog = NULL;
+        catalog = NULL;
     }
 
     return TRUE;
@@ -199,19 +199,19 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
-    easyStruct.es_StructSize	= sizeof(easyStruct);
-    easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= _(MSG_DEPTHMENU_CXNAME);
-    easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+    easyStruct.es_StructSize    = sizeof(easyStruct);
+    easyStruct.es_Flags         = 0;
+    easyStruct.es_Title         = _(MSG_DEPTHMENU_CXNAME);
+    easyStruct.es_TextFormat    = msgString;
+    easyStruct.es_GadgetFormat  = _(MSG_OK);
 
     if (IntuitionBase != NULL && !Cli() )
     {
-	EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
+        EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
     }
     else
     {
-	PutStr(msgString);
+        PutStr(msgString);
     }
 }
 
@@ -225,24 +225,24 @@ static BOOL initiate(int argc, char **argv, DMState *cs)
 
     if (Cli() != NULL)
     {
-	struct RDArgs *rda;
-	IPTR           args[] = { (IPTR) NULL, (IPTR) NULL, FALSE };
+        struct RDArgs *rda;
+        IPTR           args[] = { (IPTR) NULL, (IPTR) NULL, FALSE };
 
-	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-	if (rda != NULL)
-	{
-	    if (args[ARG_PRI] != (IPTR) NULL)
-	    {
-		nb.nb_Pri = *(LONG *)args[ARG_PRI];
-	    }
-	}
-	FreeArgs(rda);
+        rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+        if (rda != NULL)
+        {
+            if (args[ARG_PRI] != (IPTR) NULL)
+            {
+                nb.nb_Pri = *(LONG *)args[ARG_PRI];
+            }
+        }
+        FreeArgs(rda);
     }
     else
     {
-	UBYTE  **array = ArgArrayInit(argc, (UBYTE **)argv);
-	nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
-	ArgArrayDone();
+        UBYTE  **array = ArgArrayInit(argc, (UBYTE **)argv);
+        nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+        ArgArrayDone();
     }
 
     nb.nb_Name = _(MSG_DEPTHMENU_CXNAME);
@@ -252,40 +252,40 @@ static BOOL initiate(int argc, char **argv, DMState *cs)
     cs->cs_msgPort = CreateMsgPort();
     if (cs->cs_msgPort == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
-	return FALSE;
+        showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
+        return FALSE;
     }
 
     nb.nb_Port = cs->cs_msgPort;
     cs->cs_broker = CxBroker(&nb, 0);
     if (cs->cs_broker == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
 
     customObj = CxCustom(depthMenu, 0);
     if (customObj == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
-	return FALSE;
+        showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
+        return FALSE;
     }
 
     AttachCxObj(cs->cs_broker, customObj);
     ActivateCxObj(cs->cs_broker, TRUE);
 
     inputIO = (struct IOStdReq *)CreateIORequest(cs->cs_msgPort,
-	    sizeof(struct IOStdReq));
+            sizeof(struct IOStdReq));
 
     if (inputIO == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_ALLOCATE_MEM));
-	return FALSE;
+        showSimpleMessage(_(MSG_CANT_ALLOCATE_MEM));
+        return FALSE;
     }
 
     if ((OpenDevice("input.device", 0, (struct IORequest *)inputIO, 0)) != 0)
     {
-	showSimpleMessage(_(MSG_CANT_OPEN_INPUTDEVICE));
-	return FALSE;
+        showSimpleMessage(_(MSG_CANT_OPEN_INPUTDEVICE));
+        return FALSE;
     }
 
     InputBase = (struct Device *)inputIO->io_Device;
@@ -301,22 +301,22 @@ static void freeResources(DMState *cs)
 
     if (cs->cs_broker != NULL)
     {
-	DeleteCxObjAll(cs->cs_broker);
+        DeleteCxObjAll(cs->cs_broker);
     }
 
     if (cs->cs_msgPort != NULL)
     {
-	while ((cxm = GetMsg(cs->cs_msgPort)))
-	{
-	    ReplyMsg(cxm);
-	}
-	DeleteMsgPort(cs->cs_msgPort);
+        while ((cxm = GetMsg(cs->cs_msgPort)))
+        {
+            ReplyMsg(cxm);
+        }
+        DeleteMsgPort(cs->cs_msgPort);
     }
 
     if (inputIO != NULL)
     {
-	CloseDevice((struct IORequest *)inputIO);
-	DeleteIORequest((struct IORequest *)inputIO);
+        CloseDevice((struct IORequest *)inputIO);
+        DeleteIORequest((struct IORequest *)inputIO);
     }
 }
 
@@ -327,18 +327,18 @@ static void depthMenu(CxMsg *cxm, CxObj *co)
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(cxm);
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-	switch (ie->ie_Code)
-	{
-	    case MENUDOWN:
-		handleMenuDown(cxm);
-		break;
-	    case MENUUP:
-		handleMenuUp(cxm);
-		break;
-	    case IECODE_NOBUTTON:
-		handleMouseMove(cxm);
-		break;
-	}
+        switch (ie->ie_Code)
+        {
+            case MENUDOWN:
+                handleMenuDown(cxm);
+                break;
+            case MENUUP:
+                handleMenuUp(cxm);
+                break;
+            case IECODE_NOBUTTON:
+                handleMouseMove(cxm);
+                break;
+        }
     }
 }
 
@@ -359,34 +359,34 @@ static void handleMenuDown(CxMsg *cxm)
 
     if (layer)
     {
-	if (layer == screen->BarLayer) // Title bar of screen
-	{
-	    D(bug("DepthMenu: BarLayer\n"));
-	    if (
-		    screen->Title
-		    && (screen->MouseX > screen->Width - 25) // FIXME real width/pos. of depth gadget
-		    && (screen->MouseX < screen->Width)
-		    && (screen->MouseY > 0)
-		    && (screen->MouseY < screen->BarHeight)
-	       )
-	    {
-		showPopup(DM_SCREEN, screen, screen->MouseX, screen->MouseY);
-		DisposeCxMsg(cxm);
-	    }
-	}
-	else
-	{
-	    D(bug("DepthMenu: other Layer\n"));
-	    window = layer->Window;
-	    if (
-		    window
-		    && depthGadHit(window, screen->MouseX, screen->MouseY)
-	       )
-	    {
-		showPopup(DM_WINDOW, screen, screen->MouseX, screen->MouseY);
-		DisposeCxMsg(cxm);
-	    }
-	}
+        if (layer == screen->BarLayer) // Title bar of screen
+        {
+            D(bug("DepthMenu: BarLayer\n"));
+            if (
+                    screen->Title
+                    && (screen->MouseX > screen->Width - 25) // FIXME real width/pos. of depth gadget
+                    && (screen->MouseX < screen->Width)
+                    && (screen->MouseY > 0)
+                    && (screen->MouseY < screen->BarHeight)
+               )
+            {
+                showPopup(DM_SCREEN, screen, screen->MouseX, screen->MouseY);
+                DisposeCxMsg(cxm);
+            }
+        }
+        else
+        {
+            D(bug("DepthMenu: other Layer\n"));
+            window = layer->Window;
+            if (
+                    window
+                    && depthGadHit(window, screen->MouseX, screen->MouseY)
+               )
+            {
+                showPopup(DM_WINDOW, screen, screen->MouseX, screen->MouseY);
+                DisposeCxMsg(cxm);
+            }
+        }
     }
     unlockIBaseSave();
 }
@@ -397,62 +397,62 @@ static void handleMenuUp(CxMsg *cxm)
 {
     if (dmdata.popupwindow)
     {
-	struct Screen *screen = dmdata.popupwindow->WScreen;
-	{
-	    LONG entry = dmdata.selected;
+        struct Screen *screen = dmdata.popupwindow->WScreen;
+        {
+            LONG entry = dmdata.selected;
 
-	    FreeScreenDrawInfo(screen, dmdata.drawinfo);
-	    dmdata.drawinfo = NULL;
+            FreeScreenDrawInfo(screen, dmdata.drawinfo);
+            dmdata.drawinfo = NULL;
 
-	    CloseWindow(dmdata.popupwindow);
-	    dmdata.popupwindow = NULL;
+            CloseWindow(dmdata.popupwindow);
+            dmdata.popupwindow = NULL;
 
-	    D(bug("DepthMenu: selected entry %d\n", entry));
-	    if (entry != -1)
-	    {
-		if (dmdata.mode == DM_WINDOW)
-		{
-		    // does selected window still exist?
-		    lockIBaseSave();
-		    struct Window *checkwin = screen->FirstWindow;
-		    while (checkwin)
-		    {
-			if (checkwin == dmdata.address[entry])
-			{
-			    unlockIBaseSave();
-			    WindowToFront(dmdata.address[entry]);
-			    ActivateWindow(dmdata.address[entry]);
-			    break;
-			}
-			checkwin = checkwin->NextWindow;
-		    }
-		}
-		else
-		{
-		    // does selected screen still exist?
-		    lockIBaseSave();
-		    struct Screen *checkscreen = IntuitionBase->FirstScreen;
-		    while (checkscreen)
-		    {
-			if (checkscreen == dmdata.address[entry])
-			{
-			    unlockIBaseSave();
-			    ScreenToFront(dmdata.address[entry]);
-			    break;
-			}
-			checkscreen = checkscreen->NextScreen;
-		    }
-		}
-	    }	    
-	}
-	// when we release mouse outside window it's still open
-	if (dmdata.popupwindow)
-	{
-	    FreeScreenDrawInfo(screen, dmdata.drawinfo);
-	    dmdata.drawinfo = NULL;
-	    CloseWindow(dmdata.popupwindow);
-	    dmdata.popupwindow = NULL;
-	}
+            D(bug("DepthMenu: selected entry %d\n", entry));
+            if (entry != -1)
+            {
+                if (dmdata.mode == DM_WINDOW)
+                {
+                    // does selected window still exist?
+                    lockIBaseSave();
+                    struct Window *checkwin = screen->FirstWindow;
+                    while (checkwin)
+                    {
+                        if (checkwin == dmdata.address[entry])
+                        {
+                            unlockIBaseSave();
+                            WindowToFront(dmdata.address[entry]);
+                            ActivateWindow(dmdata.address[entry]);
+                            break;
+                        }
+                        checkwin = checkwin->NextWindow;
+                    }
+                }
+                else
+                {
+                    // does selected screen still exist?
+                    lockIBaseSave();
+                    struct Screen *checkscreen = IntuitionBase->FirstScreen;
+                    while (checkscreen)
+                    {
+                        if (checkscreen == dmdata.address[entry])
+                        {
+                            unlockIBaseSave();
+                            ScreenToFront(dmdata.address[entry]);
+                            break;
+                        }
+                        checkscreen = checkscreen->NextScreen;
+                    }
+                }
+            }
+        }
+        // when we release mouse outside window it's still open
+        if (dmdata.popupwindow)
+        {
+            FreeScreenDrawInfo(screen, dmdata.drawinfo);
+            dmdata.drawinfo = NULL;
+            CloseWindow(dmdata.popupwindow);
+            dmdata.popupwindow = NULL;
+        }
     }
     unlockIBaseSave();
 }
@@ -468,30 +468,30 @@ static void handleMouseMove(CxMsg *cxm)
 
     // are we within popupwindow?
     if (
-	    (screen->MouseX > dmdata.popupwindow->LeftEdge)
-	    && (screen->MouseX < dmdata.popupwindow->LeftEdge + dmdata.popupwindow->Width)
-	    && (screen->MouseY > dmdata.popupwindow->TopEdge)
-	    && (screen->MouseY < dmdata.popupwindow->TopEdge + dmdata.popupwindow->Height)
+            (screen->MouseX > dmdata.popupwindow->LeftEdge)
+            && (screen->MouseX < dmdata.popupwindow->LeftEdge + dmdata.popupwindow->Width)
+            && (screen->MouseY > dmdata.popupwindow->TopEdge)
+            && (screen->MouseY < dmdata.popupwindow->TopEdge + dmdata.popupwindow->Height)
        )
     {
-	entry = (screen->MouseY - dmdata.popupwindow->TopEdge - DM_BORDERWIDTH)
-	    / dmdata.popupwindow->RPort->TxHeight;
-	if ((entry < 0) || (entry >= dmdata.entries)) entry = -1;
+        entry = (screen->MouseY - dmdata.popupwindow->TopEdge - DM_BORDERWIDTH)
+            / dmdata.popupwindow->RPort->TxHeight;
+        if ((entry < 0) || (entry >= dmdata.entries)) entry = -1;
     }
     if (entry != dmdata.selected)
     {
-	// undraw old entry
-	if (dmdata.selected != -1)
-	{
-	    drawEntry(dmdata.selected, FALSE);
-	}
+        // undraw old entry
+        if (dmdata.selected != -1)
+        {
+            drawEntry(dmdata.selected, FALSE);
+        }
 
-	// draw selected
-	if (entry != -1)
-	{
-	    drawEntry(entry, TRUE);
-	}
-	dmdata.selected = entry;
+        // draw selected
+        if (entry != -1)
+        {
+            drawEntry(entry, TRUE);
+        }
+        dmdata.selected = entry;
     }
 }
 
@@ -505,133 +505,133 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
     struct Screen *popupscreen = screen;
     if ((popupscreen->Flags & (PUBLICSCREEN | WBENCHSCREEN)) == 0)
     {
-	bug("DepthMenu: Frontmost screen isn't a public screen\n");
-	return;
+        bug("DepthMenu: Frontmost screen isn't a public screen\n");
+        return;
     }
 
     if ( ! popupscreen->RastPort.Font)
     {
-	bug("DepthMenu: Frontmost screen doesn't have Font\n");
-	return;
+        bug("DepthMenu: Frontmost screen doesn't have Font\n");
+        return;
     }
 
     if (mode == DM_WINDOW)
     {
-	D(bug("DepthMenu: window\n"));
-	struct Window *window = screen->FirstWindow;
-	dmdata.entries = 0;
-	while (window && (dmdata.entries < DM_MAXENTRY))
-	{
-	    if (window->Title && (window->WScreen == screen))
-	    {
-		dmdata.mode = DM_WINDOW;
-		dmdata.address[dmdata.entries] = window;
-		strncpy(dmdata.title[dmdata.entries], window->Title, DM_MAXSTRLEN);
-		dmdata.title[dmdata.entries][DM_MAXSTRLEN - 1] = 0;
-		dmdata.entries++;
-	    }
-	    window = window->NextWindow;
-	}
+        D(bug("DepthMenu: window\n"));
+        struct Window *window = screen->FirstWindow;
+        dmdata.entries = 0;
+        while (window && (dmdata.entries < DM_MAXENTRY))
+        {
+            if (window->Title && (window->WScreen == screen))
+            {
+                dmdata.mode = DM_WINDOW;
+                dmdata.address[dmdata.entries] = window;
+                strncpy(dmdata.title[dmdata.entries], window->Title, DM_MAXSTRLEN);
+                dmdata.title[dmdata.entries][DM_MAXSTRLEN - 1] = 0;
+                dmdata.entries++;
+            }
+            window = window->NextWindow;
+        }
     }
     else
     {
-	D(bug("DepthMenu: Screen\n"));
-	dmdata.entries = 0;
-	screen = screen->NextScreen; // Don't add frontmost screen, start with second screen
-	while (screen && (dmdata.entries < DM_MAXENTRY))
-	{
-	    if (screen->Title)
-	    {
-		dmdata.mode = DM_SCREEN;
-		dmdata.address[dmdata.entries] = screen;
-		strncpy(dmdata.title[dmdata.entries], screen->Title, DM_MAXSTRLEN);
-		dmdata.title[dmdata.entries][DM_MAXSTRLEN - 1] = 0;
-		dmdata.entries++;
-	    }
-	    screen = screen->NextScreen;
-	}
+        D(bug("DepthMenu: Screen\n"));
+        dmdata.entries = 0;
+        screen = screen->NextScreen; // Don't add frontmost screen, start with second screen
+        while (screen && (dmdata.entries < DM_MAXENTRY))
+        {
+            if (screen->Title)
+            {
+                dmdata.mode = DM_SCREEN;
+                dmdata.address[dmdata.entries] = screen;
+                strncpy(dmdata.title[dmdata.entries], screen->Title, DM_MAXSTRLEN);
+                dmdata.title[dmdata.entries][DM_MAXSTRLEN - 1] = 0;
+                dmdata.entries++;
+            }
+            screen = screen->NextScreen;
+        }
     }
 
     if (dmdata.entries > 0)
     {
-	// calculate max. text length
-	LONG maxtextwidth = 0;
-	LONG textwidth;
-	int i;
-	for (i=0 ; i < dmdata.entries ; i++)
-	{
-	    textwidth = TextLength(&popupscreen->RastPort, dmdata.title[i], strlen(dmdata.title[i]));
-	    if (textwidth > maxtextwidth) maxtextwidth = textwidth;
-	}
+        // calculate max. text length
+        LONG maxtextwidth = 0;
+        LONG textwidth;
+        int i;
+        for (i=0 ; i < dmdata.entries ; i++)
+        {
+            textwidth = TextLength(&popupscreen->RastPort, dmdata.title[i], strlen(dmdata.title[i]));
+            if (textwidth > maxtextwidth) maxtextwidth = textwidth;
+        }
 
-	LONG width = maxtextwidth + 2 * DM_BORDERWIDTH;
-	LONG height = dmdata.entries * popupscreen->RastPort.TxHeight + 2 * DM_BORDERWIDTH;
-	LONG left = xpos - width / 2;
-	LONG top = ypos - height / 2;
-	if (left < 0) left = 0;
-	if (left + width > popupscreen->Width) left = popupscreen->Width - width;
-	if (top < 0) top = 0;
-	if (top + height > popupscreen->Height) top = popupscreen->Height - height;
+        LONG width = maxtextwidth + 2 * DM_BORDERWIDTH;
+        LONG height = dmdata.entries * popupscreen->RastPort.TxHeight + 2 * DM_BORDERWIDTH;
+        LONG left = xpos - width / 2;
+        LONG top = ypos - height / 2;
+        if (left < 0) left = 0;
+        if (left + width > popupscreen->Width) left = popupscreen->Width - width;
+        if (top < 0) top = 0;
+        if (top + height > popupscreen->Height) top = popupscreen->Height - height;
 
-	unlockIBaseSave();
+        unlockIBaseSave();
 
-	dmdata.popupwindow = OpenWindowTags
-	    (
-	     NULL,
-	     WA_Left,         left,
-	     WA_Top,          top,
-	     WA_InnerWidth,   width,
-	     WA_InnerHeight,  height,
-	     WA_Borderless,   TRUE,
-	     WA_Activate,     TRUE,
-	     WA_SmartRefresh, TRUE,
-	     WA_PubScreen,    popupscreen,
-	     TAG_DONE
-	    );
-	if (dmdata.popupwindow)
-	{
-	    struct RastPort *rp = dmdata.popupwindow->RPort;
-	    SetFont(rp, popupscreen->RastPort.Font);	// use the screen's font for the menu
-	    // so we can calculate the window size with the screen font
-	    SetDrMd(rp, JAM1); // for text rendering
+        dmdata.popupwindow = OpenWindowTags
+            (
+             NULL,
+             WA_Left,         left,
+             WA_Top,          top,
+             WA_InnerWidth,   width,
+             WA_InnerHeight,  height,
+             WA_Borderless,   TRUE,
+             WA_Activate,     TRUE,
+             WA_SmartRefresh, TRUE,
+             WA_PubScreen,    popupscreen,
+             TAG_DONE
+            );
+        if (dmdata.popupwindow)
+        {
+            struct RastPort *rp = dmdata.popupwindow->RPort;
+            SetFont(rp, popupscreen->RastPort.Font);    // use the screen's font for the menu
+            // so we can calculate the window size with the screen font
+            SetDrMd(rp, JAM1); // for text rendering
 
-	    dmdata.drawinfo = GetScreenDrawInfo(popupscreen);
-	    if (dmdata.drawinfo)
-	    {
-		dmdata.bgpen = dmdata.drawinfo->dri_Pens[BACKGROUNDPEN];
-		dmdata.txtpen = dmdata.drawinfo->dri_Pens[TEXTPEN];
-		dmdata.highpen = dmdata.drawinfo->dri_Pens[FILLPEN];
-		dmdata.shinepen =dmdata.drawinfo->dri_Pens[SHINEPEN];
-		dmdata.shadowpen = dmdata.drawinfo->dri_Pens[SHADOWPEN];
-	    }
-	    else
-	    {
-		bug("DepthMenu: GetScreenDrawInfo failed\n");
-		dmdata.bgpen = 0;
-		dmdata.txtpen = 1;
-		dmdata.highpen = 3;
-		dmdata.shinepen = 1;
-		dmdata.shadowpen = 1;
-	    }
+            dmdata.drawinfo = GetScreenDrawInfo(popupscreen);
+            if (dmdata.drawinfo)
+            {
+                dmdata.bgpen = dmdata.drawinfo->dri_Pens[BACKGROUNDPEN];
+                dmdata.txtpen = dmdata.drawinfo->dri_Pens[TEXTPEN];
+                dmdata.highpen = dmdata.drawinfo->dri_Pens[FILLPEN];
+                dmdata.shinepen =dmdata.drawinfo->dri_Pens[SHINEPEN];
+                dmdata.shadowpen = dmdata.drawinfo->dri_Pens[SHADOWPEN];
+            }
+            else
+            {
+                bug("DepthMenu: GetScreenDrawInfo failed\n");
+                dmdata.bgpen = 0;
+                dmdata.txtpen = 1;
+                dmdata.highpen = 3;
+                dmdata.shinepen = 1;
+                dmdata.shadowpen = 1;
+            }
 
-	    SetAPen(rp, dmdata.shinepen);
-	    Move(rp, width-1, 0);
-	    Draw(rp, 0, 0);
-	    Draw(rp, 0, height-1);
-	    SetAPen(rp, dmdata.shadowpen);
-	    Draw(rp, width-1, height-1);
-	    Draw(rp, width-1, 0);
+            SetAPen(rp, dmdata.shinepen);
+            Move(rp, width-1, 0);
+            Draw(rp, 0, 0);
+            Draw(rp, 0, height-1);
+            SetAPen(rp, dmdata.shadowpen);
+            Draw(rp, width-1, height-1);
+            Draw(rp, width-1, 0);
 
-	    int i;
-	    for(i=0; i<dmdata.entries; i++)
-	    {
-		drawEntry(i, FALSE);
-	    }
-	}
-	else
-	{
-	    bug("DepthMenu: Can't open popup window\n");
-	}
+            int i;
+            for(i=0; i<dmdata.entries; i++)
+            {
+                drawEntry(i, FALSE);
+            }
+        }
+        else
+        {
+            bug("DepthMenu: Can't open popup window\n");
+        }
     }
 }
 
@@ -643,14 +643,14 @@ static void drawEntry(LONG entry, BOOL selstate)
 
     if (selstate)
     {
-	SetAPen(rp, dmdata.highpen);
+        SetAPen(rp, dmdata.highpen);
     }
     else
     {
-	SetAPen(rp, dmdata.bgpen);
+        SetAPen(rp, dmdata.bgpen);
     }
     RectFill(rp, DM_BORDERWIDTH, entry * rp->TxHeight + DM_BORDERWIDTH,
-	    dmdata.popupwindow->Width - DM_BORDERWIDTH , (entry+1) * rp->TxHeight + DM_BORDERWIDTH);
+            dmdata.popupwindow->Width - DM_BORDERWIDTH , (entry+1) * rp->TxHeight + DM_BORDERWIDTH);
 
     SetAPen(rp, dmdata.txtpen);
     Move(rp, DM_BORDERWIDTH, entry * rp->TxHeight + rp->TxBaseline + DM_BORDERWIDTH);
@@ -665,32 +665,32 @@ static BOOL depthGadHit(struct Window *window, WORD mousex, WORD mousey)
 
     for(gad = window->FirstGadget; gad; gad = gad->NextGadget)
     {
-	if ( ! (gad->Flags & GFLG_DISABLED))
-	{
-	    WORD x = window->LeftEdge + gad->LeftEdge;
-	    WORD y = window->TopEdge + gad->TopEdge;
-	    WORD w = gad->Width;
-	    WORD h = gad->Height;
+        if ( ! (gad->Flags & GFLG_DISABLED))
+        {
+            WORD x = window->LeftEdge + gad->LeftEdge;
+            WORD y = window->TopEdge + gad->TopEdge;
+            WORD w = gad->Width;
+            WORD h = gad->Height;
 
-	    if (gad->Flags & GFLG_RELRIGHT)  x += window->Width  - 1;
-	    if (gad->Flags & GFLG_RELBOTTOM) y += window->Height - 1;
-	    if (gad->Flags & GFLG_RELWIDTH)  w += window->Width;
-	    if (gad->Flags & GFLG_RELHEIGHT) h += window->Height;
+            if (gad->Flags & GFLG_RELRIGHT)  x += window->Width  - 1;
+            if (gad->Flags & GFLG_RELBOTTOM) y += window->Height - 1;
+            if (gad->Flags & GFLG_RELWIDTH)  w += window->Width;
+            if (gad->Flags & GFLG_RELHEIGHT) h += window->Height;
 
-	    if (
-		    (mousex >= x) &&
-		    (mousey >= y) &&
-		    (mousex < x + w) &&
-		    (mousey < y + h)
-	       )
-	    {
-		if (SYSGADTYPE(gad) == GTYP_WDEPTH)
-		{
-		    /* found depth */
-		    return TRUE;
-		}
-	    }
-	}
+            if (
+                    (mousex >= x) &&
+                    (mousey >= y) &&
+                    (mousex < x + w) &&
+                    (mousey < y + h)
+               )
+            {
+                if (SYSGADTYPE(gad) == GTYP_WDEPTH)
+                {
+                    /* found depth */
+                    return TRUE;
+                }
+            }
+        }
     }
     return FALSE;
 }
@@ -701,8 +701,8 @@ static void lockIBaseSave(void)
 {
     if ( ! dmdata.locked)
     {
-	dmdata.ibaselock = LockIBase(0);
-	dmdata.locked = TRUE;
+        dmdata.ibaselock = LockIBase(0);
+        dmdata.locked = TRUE;
     }
 }
 
@@ -712,8 +712,8 @@ static void unlockIBaseSave(void)
 {
     if (dmdata.locked)
     {
-	UnlockIBase(dmdata.ibaselock);
-	dmdata.locked = FALSE;
+        UnlockIBase(dmdata.ibaselock);
+        dmdata.locked = FALSE;
     }
 }
 
@@ -727,47 +727,47 @@ static void handleCx(DMState *cs)
 
     while (!quit)
     {
-	signals = Wait((1 << nb.nb_Port->mp_SigBit)  | SIGBREAKF_CTRL_C);
+        signals = Wait((1 << nb.nb_Port->mp_SigBit)  | SIGBREAKF_CTRL_C);
 
-	if (signals & (1 << nb.nb_Port->mp_SigBit))
-	{
-	    while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort)))
-	    {
-		switch (CxMsgType(msg))
-		{
-		    case CXM_COMMAND:
-			switch (CxMsgID(msg))
-			{
-			    case CXCMD_DISABLE:
-				ActivateCxObj(cs->cs_broker, FALSE);
-				break;
+        if (signals & (1 << nb.nb_Port->mp_SigBit))
+        {
+            while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort)))
+            {
+                switch (CxMsgType(msg))
+                {
+                    case CXM_COMMAND:
+                        switch (CxMsgID(msg))
+                        {
+                            case CXCMD_DISABLE:
+                                ActivateCxObj(cs->cs_broker, FALSE);
+                                break;
 
-			    case CXCMD_ENABLE:
-				ActivateCxObj(cs->cs_broker, TRUE);
-				break;
+                            case CXCMD_ENABLE:
+                                ActivateCxObj(cs->cs_broker, TRUE);
+                                break;
 
-			    case CXCMD_UNIQUE:
-				/* Running the program twice is the same as shutting
-				   down the existing program... */
-				/* Fall through */
+                            case CXCMD_UNIQUE:
+                                /* Running the program twice is the same as shutting
+                                   down the existing program... */
+                                /* Fall through */
 
-			    case CXCMD_KILL:
-				quit = TRUE;
-				break;
+                            case CXCMD_KILL:
+                                quit = TRUE;
+                                break;
 
-			} /* switch (CxMsgID(msg)) */
-			break;
-		} /* switch (CxMsgType(msg))*/
+                        } /* switch (CxMsgID(msg)) */
+                        break;
+                } /* switch (CxMsgType(msg))*/
 
-		ReplyMsg((struct Message *)msg);
+                ReplyMsg((struct Message *)msg);
 
-	    } /* while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
-	}	    
+            } /* while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
+        }
 
-	if (signals & SIGBREAKF_CTRL_C)
-	{
-	    quit = TRUE;
-	}
+        if (signals & SIGBREAKF_CTRL_C)
+        {
+            quit = TRUE;
+        }
 
     } /* while(!quit) */
 }
@@ -781,11 +781,11 @@ int main(int argc, char **argv)
 
     if (initiate(argc, argv, &cState))
     {
-	handleCx(&cState);
+        handleCx(&cState);
     }
     else
     {
-	error = RETURN_FAIL;
+        error = RETURN_FAIL;
     }
 
     freeResources(&cState);

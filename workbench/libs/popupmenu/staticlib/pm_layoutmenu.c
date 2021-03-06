@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. 
+    Copyright (C) 2010, The AROS Development Team.
     All rights reserved.
     
 */
@@ -14,13 +14,13 @@
 #include <proto/popupmenu.h>
 extern struct PopupMenuBase * PopupMenuBase;
 
-	LONG PM_LayoutMenu(
+        LONG PM_LayoutMenu(
 
 /*  SYNOPSIS */
-	struct Window *window,
-	struct PopupMenu *pm,
-	Tag tag1, 
-	...)
+        struct Window *window,
+        struct PopupMenu *pm,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
 

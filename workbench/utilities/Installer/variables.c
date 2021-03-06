@@ -256,7 +256,7 @@ int i;
  */
 void free_varlist()
 {
-int i; 
+int i;
 
     for ( i = 0 ; i < numvariables ; i++ )
     {

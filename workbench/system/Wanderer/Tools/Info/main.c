@@ -49,7 +49,7 @@
 #define RETURNID_QUERYVERSION    12
 #define RETURNID_PROTECT    13
 #define RETURNID_SCANSIZE   14
-#define RETURNID_OPENPATH	15
+#define RETURNID_OPENPATH       15
 
 #define  MAX_PATH_LEN  1024
 #define  MAX_TOOLTYPE_LINE 256
@@ -232,9 +232,9 @@ D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
                 directorySize += calculateDirectorySize(scan, (base + directorySize), subdirectory, lastrefreshsize);
             }
             ead = ead->ed_Next;
-        } while((ead != NULL) && (scan->scanState == SCANRUN)); 
+        } while((ead != NULL) && (scan->scanState == SCANRUN));
     }
-    } while((loop) && (scan->scanState == SCANRUN)); 
+    } while((loop) && (scan->scanState == SCANRUN));
 
     FreeDosObject(DOS_EXALLCONTROL, eac);
     UnLock(directoryLock);
@@ -319,7 +319,7 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
     }
     dst_ttypes[lines] = 0;
      
-    return dst_ttypes;   
+    return dst_ttypes;
 #else
     APTR     pool = CreatePool(MEMF_CLEAR, 200, 200);
     Object  *listobj = list;
@@ -364,7 +364,7 @@ D(bug("[WBInfo] tooltype #%ld %s\n", num_ttypes + 1, text));
     }
     dst_ttypes[0] = (APTR)pool;
     return dst_ttypes + 1;
-#endif    
+#endif
 }
 
 void FreeToolTypes(UBYTE **ttypes)
@@ -503,16 +503,16 @@ void DelKey(void)
     STRPTR  text = NULL;
     DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&text);
 
-    if (text) 
+    if (text)
     {
         DoMethod(list, MUIM_List_Remove, MUIV_List_Remove_Active);
         DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&text);
-        if (!text) 
+        if (!text)
         {
             nnset(liststr, MUIA_String_Contents, (IPTR) "");
             nnset(liststr, MUIA_Disabled, TRUE);
             ListToString();
-        } else { 
+        } else {
             ListToString();
         }
     }
@@ -739,7 +739,7 @@ int main(int argc, char **argv)
         _(MSG_APPICON)  /* 8 */
     };
 
-	char pathname[1024];
+        char pathname[1024];
 
     int retval = RETURN_OK;
     
@@ -919,24 +919,24 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         End;
     }
 
-	if (icon->do_Type!=WBDRAWER)
-		{
-		sprintf(pathname, "%s",lname);
-		} else {
-		int path_x;
-		int path_y = 58;
-		char *ch;
-		
-		sprintf(pathname, "%s",lname);
-		ch = strrchr (pathname, path_y);
-		path_x = strlen (ch);
+        if (icon->do_Type!=WBDRAWER)
+                {
+                sprintf(pathname, "%s",lname);
+                } else {
+                int path_x;
+                int path_y = 58;
+                char *ch;
+                
+                sprintf(pathname, "%s",lname);
+                ch = strrchr (pathname, path_y);
+                path_x = strlen (ch);
 
-		if (path_x > 1)
-			sprintf(pathname, "%s/%s", lname, name);
-		else
-			sprintf(pathname, "%s%s", lname, name);
+                if (path_x > 1)
+                        sprintf(pathname, "%s/%s", lname, name);
+                else
+                        sprintf(pathname, "%s%s", lname, name);
 
-		}
+                }
  
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
@@ -1009,20 +1009,20 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                     Child, (IPTR) (sizegrp = (Object *)HGroup,
                     Child, (IPTR) sizespace,
                     End),
-									Child, (IPTR) Label2(__(MSG_PATH)),
-									Child, (IPTR) HGroup,
-									Child, (IPTR) (pathspace = (Object *)StringObject,
-       									StringFrame,
-       									MUIA_String_Contents, (IPTR)pathname,
-										MUIA_Weight, 150,
-        								End),
-									Child, (IPTR) (btnopenpath = SimpleButton(__(MSG_BTNPATH))),
-                                	End,
+                                                                        Child, (IPTR) Label2(__(MSG_PATH)),
+                                                                        Child, (IPTR) HGroup,
+                                                                        Child, (IPTR) (pathspace = (Object *)StringObject,
+                                                                        StringFrame,
+                                                                        MUIA_String_Contents, (IPTR)pathname,
+                                                                                MUIA_Weight, 150,
+                                                                        End),
+                                                                        Child, (IPTR) (btnopenpath = SimpleButton(__(MSG_BTNPATH))),
+                                        End,
 
                                  End,
                             End,
 
-								
+                                                                
                             Child, (IPTR) HVSpace,
                             Child, (IPTR) (grouptool = (Object *)HGroup,
                             End),
@@ -1104,9 +1104,9 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                 End),
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameSize, TRUE,
-                    Child, (IPTR) (savebutton = 
+                    Child, (IPTR) (savebutton =
                      ImageButton(_(MSG_SAVE),"THEME:Images/Gadgets/OK")),
-                    Child, (IPTR) (cancelbutton = 
+                    Child, (IPTR) (cancelbutton =
                      ImageButton(_(MSG_CANCEL),"THEME:Images/Gadgets/Cancel")),
                 End,
             End,
@@ -1279,7 +1279,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         SetAttrs(window, MUIA_Window_Open, TRUE, TAG_DONE);
 
         while (returnid != MUIV_Application_ReturnID_Quit)
-        { 
+        {
 #ifdef DEBUG
             if (returnid)
             {
@@ -1308,7 +1308,7 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         break;
                     case RETURNID_LVACK:
                         ListToString();
-                        break;  
+                        break;
                     case RETURNID_STRINGACK:
                         StringToKey();
                         icon_altered = TRUE;
@@ -1344,8 +1344,8 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         file_altered = TRUE;
                         break;
                     case RETURNID_OPENPATH:
-						OpenWorkbenchObject(pathname, TAG_DONE);
-             		break;
+                                                OpenWorkbenchObject(pathname, TAG_DONE);
+                        break;
                     case RETURNID_QUERYVERSION:
             {
                 Object * oldversionspace = versionspace;

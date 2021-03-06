@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <proto/utility.h>
@@ -40,7 +40,7 @@ static struct
 
       AROS_LH0(ULONG, GetLanguageSelection,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
 
 /*  LOCATION */
       struct LowLevelBase *, LowLevelBase, 6, LowLevel)

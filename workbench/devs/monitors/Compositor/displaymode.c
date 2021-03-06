@@ -86,7 +86,7 @@ static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositorData *compdata, ULONG 
         D(bug("\n"));
     }
 
-    /* Store mode information */ 
+    /* Store mode information */
     compdata->displayrect.MinX = 0;
     compdata->displayrect.MinY = 0;
     compdata->displayrect.MaxX = found_width  - 1;
@@ -244,11 +244,11 @@ void UpdateDisplayMode(struct HIDDCompositorData *compdata)
         /* The mode is different. Need to prepare information needed for compositing */
         struct TagItem gctags[] =
         {
-            { aHidd_GC_Foreground, 0x99999999 }, 
+            { aHidd_GC_Foreground, 0x99999999 },
             { TAG_DONE           , 0          }
         };
 
-        /* Signal mode change */ 
+        /* Signal mode change */
         compdata->displaymode = modeid;
         compdata->displaydepth = wanteddepth;
         compdata->modeschanged = TRUE;

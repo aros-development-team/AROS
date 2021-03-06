@@ -106,7 +106,7 @@
     
     ld_M = intern_IEEESPLd((y & IEEESPMantisse_Mask) | 0x3f000000);
     
-    /*               
+    /*
                       ld M + E
         log(fnum1) =  --------
                        ld 10

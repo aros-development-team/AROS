@@ -24,16 +24,16 @@
 static int openall(LIBBASETYPEPTR LIBBASE)
 {
     if ((UtilityBase = OpenLibrary("utility.library", 0)) != NULL) {
-    	if ((GfxBase = OpenLibrary("graphics.library", 0)) != NULL) {
-    	    if ((LayersBase = OpenLibrary("layers.library", 0)) != NULL) {
-    	    	if ((IntuitionBase = OpenLibrary("intuition.library", 0)) != NULL) {
-    	    	    return TRUE;
-    	    	}
-    	    	CloseLibrary(LayersBase);
-    	    }
-    	    CloseLibrary(GfxBase);
-    	}
-    	CloseLibrary(UtilityBase);
+        if ((GfxBase = OpenLibrary("graphics.library", 0)) != NULL) {
+            if ((LayersBase = OpenLibrary("layers.library", 0)) != NULL) {
+                if ((IntuitionBase = OpenLibrary("intuition.library", 0)) != NULL) {
+                    return TRUE;
+                }
+                CloseLibrary(LayersBase);
+            }
+            CloseLibrary(GfxBase);
+        }
+        CloseLibrary(UtilityBase);
     }
     return FALSE;
 }
@@ -85,15 +85,15 @@ Object *makebevelobj(struct GadToolsBase_intern *GadToolsBase)
 static int Open(LIBBASETYPEPTR LIBBASE)
 {
     /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
+        This function is single-threaded by exec by calling Forbid.
+        If you break the Forbid() another task may enter this function
+        at the same time. Take care.
     */
 
     if (!LIBBASE->bevel)
-	LIBBASE->bevel = (struct Image *)makebevelobj(GadToolsBase);
+        LIBBASE->bevel = (struct Image *)makebevelobj(GadToolsBase);
     if (!LIBBASE->bevel)
-	return FALSE;
+        return FALSE;
 
     return TRUE;
 }
@@ -103,13 +103,13 @@ static int Open(LIBBASETYPEPTR LIBBASE)
 static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
     /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
+        This function is single-threaded by exec by calling Forbid.
+        If you break the Forbid() another task may enter this function
+        at the same time. Take care.
     */
 
     if (LIBBASE->bevel)
-	DisposeObject(LIBBASE->bevel);
+        DisposeObject(LIBBASE->bevel);
     LIBBASE->bevel = NULL;
    
     closeall(LIBBASE);

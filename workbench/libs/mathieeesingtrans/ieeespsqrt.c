@@ -109,14 +109,14 @@
     ResSquared = 0;
     z = 0;
     
-    /* 
+    /*
         this calculates the sqrt of the mantisse. It`s short, isn`t it?
         Delta starts out with 0.5, then 0.25, 0.125 etc.
     */
     while (ResSquared != TargetMantisse && z < 25)
     {
         Delta = (0x80000000 >> z);
-        /* 
+        /*
             X = (Res+Delta)^2 = Res^2 + 2*Res*Delta + Delta^2
         */
         X = ResSquared + (Res >> z)  + (Delta >> (z+1));

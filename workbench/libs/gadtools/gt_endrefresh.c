@@ -14,11 +14,11 @@
         AROS_LH2(void, GT_EndRefresh,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window *, win, A0),
+        AROS_LHA(struct Window *, win, A0),
         AROS_LHA(BOOL, complete, D0),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 16, GadTools)
+        struct Library *, GadToolsBase, 16, GadTools)
 
 /*  FUNCTION
         GT_EndRefresh() must be called, when a refresh initiated with

@@ -35,7 +35,7 @@ const struct OOP_ABDescr pci_abd[] =
     {NULL            ,  NULL          }
 };
 
-static int pcienum_init(struct SysexpPCIBase *PciBase) 
+static int pcienum_init(struct SysexpPCIBase *PciBase)
 {
     D(bug("[pci.sysexp] %s()\n", __func__));
 

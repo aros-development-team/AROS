@@ -10,24 +10,24 @@
     NAME */
 #include <clib/cgxvideo_protos.h>
 
-	AROS_LH1(ULONG, LockVLayer,
+        AROS_LH1(ULONG, LockVLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
+        AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
 
 /*  LOCATION */
-	struct Library *, CGXVideoBase, 10, Cgxvideo)
+        struct Library *, CGXVideoBase, 10, Cgxvideo)
 
 /*  FUNCTION
-	Locks the specified video layer to allow access to source data. Make
-	sure that you don't keep that lock for too long. It is only allowed
-	to keep it for a short time.
+        Locks the specified video layer to allow access to source data. Make
+        sure that you don't keep that lock for too long. It is only allowed
+        to keep it for a short time.
 
     INPUTS
-	VLayerHandle - pointer to a previously created videolayer handle
+        VLayerHandle - pointer to a previously created videolayer handle
 
     RESULT
-	result - TRUE if video layer could be locked, FALSE otherwise
+        result - TRUE if video layer could be locked, FALSE otherwise
 
     NOTES
 
@@ -37,7 +37,7 @@
         This function is unimplemented.
 
     SEE ALSO
-	UnlockVLayer()
+        UnlockVLayer()
 
     INTERNALS
 

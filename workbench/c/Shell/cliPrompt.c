@@ -17,34 +17,34 @@ void cliPrompt(ShellState *ss)
     ULONG i;
 
     if (cli->cli_Background)
-	return;
+        return;
 
     for (i = 0; i < length; i++)
     {
-	if (AROS_BSTR_getchar(prompt, i) == '%')
-	{
-	    if (++i == length)
-		break;
+        if (AROS_BSTR_getchar(prompt, i) == '%')
+        {
+            if (++i == length)
+                break;
 
-	    switch (AROS_BSTR_getchar(prompt, i))
-	    {
-	    case 'N': case 'n':
-		Printf("%ld", ss->cliNumber);
-		break;
-	    case 'R': case 'r':
-		Printf("%ld", cli->cli_ReturnCode);
-		break;
-	    case 'S': case 's':
-		FPuts(output, AROS_BSTR_ADDR(cli->cli_SetName));
-		break;
-	    default:
-		FPutC(output, '%');
-		FPutC(output, AROS_BSTR_getchar(prompt, i));
-		break;
-	    }
-	}
-	else
-	    FPutC(output, AROS_BSTR_getchar(prompt, i));
+            switch (AROS_BSTR_getchar(prompt, i))
+            {
+            case 'N': case 'n':
+                Printf("%ld", ss->cliNumber);
+                break;
+            case 'R': case 'r':
+                Printf("%ld", cli->cli_ReturnCode);
+                break;
+            case 'S': case 's':
+                FPuts(output, AROS_BSTR_ADDR(cli->cli_SetName));
+                break;
+            default:
+                FPutC(output, '%');
+                FPutC(output, AROS_BSTR_getchar(prompt, i));
+                break;
+            }
+        }
+        else
+            FPutC(output, AROS_BSTR_getchar(prompt, i));
     }
 
     Flush(output);

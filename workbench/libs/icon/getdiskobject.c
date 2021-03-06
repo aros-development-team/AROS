@@ -10,22 +10,22 @@
 #include <clib/icon_protos.h>
 #include <exec/types.h>
 
-	AROS_LH1(struct DiskObject *, GetDiskObject,
+        AROS_LH1(struct DiskObject *, GetDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, A0),
+        AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 13, Icon)
+        struct IconBase *, IconBase, 13, Icon)
 
 /*  FUNCTION
-	Opens an icon from disk.
-	
+        Opens an icon from disk.
+        
     INPUTS
-	name - filename without ".info" or NULL for an empty diskobject.
+        name - filename without ".info" or NULL for an empty diskobject.
 
     RESULT
-	Pointer to diskobject.
+        Pointer to diskobject.
 
     NOTES
 

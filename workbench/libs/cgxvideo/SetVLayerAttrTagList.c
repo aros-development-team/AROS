@@ -11,40 +11,40 @@
     NAME */
 #include <clib/cgxvideo_protos.h>
 
-	AROS_LH2(void, SetVLayerAttrTagList,
+        AROS_LH2(void, SetVLayerAttrTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
-	AROS_LHA(struct TagItem  *, TagItems, A1),
+        AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
+        AROS_LHA(struct TagItem  *, TagItems, A1),
 
 /*  LOCATION */
-	struct Library *, CGXVideoBase, 12, Cgxvideo)
+        struct Library *, CGXVideoBase, 12, Cgxvideo)
 
 /*  FUNCTION
-	Sets certain attributes for a given video layer
+        Sets certain attributes for a given video layer
 
     INPUTS
-	VLayerHandle - pointer to a previously created videolayer handle
+        VLayerHandle - pointer to a previously created videolayer handle
 
-	TagItems - pointer to a tag list which contains attributes to be
-		modified
+        TagItems - pointer to a tag list which contains attributes to be
+                modified
 
     RESULT
-	none
+        none
 
     NOTES
-	Tags available are:
+        Tags available are:
 
-		VOA_LeftIndent (ULONG) - additional offset from the left window
-						border
+                VOA_LeftIndent (ULONG) - additional offset from the left window
+                                                border
 
-		VOA_RightIndent (ULONG) - additional offset from the right window
-						border
+                VOA_RightIndent (ULONG) - additional offset from the right window
+                                                border
 
-		VOA_TopIndent (ULONG) - additional offset from the top window border
+                VOA_TopIndent (ULONG) - additional offset from the top window border
 
-		VOA_BottomIndent (ULONG) - additional offset from the bottom window
-						border
+                VOA_BottomIndent (ULONG) - additional offset from the bottom window
+                                                border
 
     EXAMPLE
 
@@ -52,7 +52,7 @@
         This function is unimplemented.
 
     SEE ALSO
-	GetVLayerAttr()
+        GetVLayerAttr()
 
     INTERNALS
 

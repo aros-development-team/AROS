@@ -869,7 +869,7 @@ void printverstring(void)
     {
         if (parsedver.pv_flags & PVF_MD5SUM)
         {
-            /* Endianess safe version */   
+            /* Endianess safe version */
             Printf("%02lX%02lX%02lX%02lX"
                    "%02lX%02lX%02lX%02lX"
                    "%02lX%02lX%02lX%02lX"
@@ -975,7 +975,7 @@ void printverstring(void)
 
                 default:
                     arch = "Unknown";
-                    break;    
+                    break;
                 }
 
                 if (arch)
@@ -1369,7 +1369,7 @@ int makeexeclistver(struct List *list, CONST_STRPTR name)
     struct Library *MyLibrary;
     int error = -1;
 #if defined(__AROSPLATFORM_SMP__)
-	void *ExecLockBase = OpenResource("execlock.resource");
+        void *ExecLockBase = OpenResource("execlock.resource");
 
     if (ExecLockBase)
         ObtainSystemLock(list, SPINLOCK_MODE_READ, LOCKF_FORBID);
@@ -1823,8 +1823,8 @@ int makefilever(CONST_STRPTR name)
                         struct elfheader *eh = (struct elfheader *)buffer;
 
                         parsedver.pv_arch = elf_read_word(eh->machine, eh);
-                    	if (parsedver.pv_arch == EM_ARM)
-                    	    arm_read_cpudata(file, eh);
+                        if (parsedver.pv_arch == EM_ARM)
+                            arm_read_cpudata(file, eh);
                     }
                 }
                 else if (len >= 4)

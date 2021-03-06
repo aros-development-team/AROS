@@ -9,26 +9,26 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH3(void, StoreItemInContext,
+        AROS_LH3(void, StoreItemInContext,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle        *, iff, A0),
-	AROS_LHA(struct LocalContextItem *, localItem, A1),
-	AROS_LHA(struct ContextNode      *, contextNode, A2),
+        AROS_LHA(struct IFFHandle        *, iff, A0),
+        AROS_LHA(struct LocalContextItem *, localItem, A1),
+        AROS_LHA(struct ContextNode      *, contextNode, A2),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 37, IFFParse)
+        struct Library *, IFFParseBase, 37, IFFParse)
 
 /*  FUNCTION
-	Stores the given local context item into the given context node.
-	If a LCI with the some id, type and class identifier allready exists
-	in the context node, the old one will be purged, and the new one
-	inserted.
+        Stores the given local context item into the given context node.
+        If a LCI with the some id, type and class identifier allready exists
+        in the context node, the old one will be purged, and the new one
+        inserted.
 
     INPUTS
-	iff	    - pointer to IFFHandle struct.
-	localItem    -	pointer to LCI to install.
-	contextNode  -	pointer to the context node in which the LCI will be stored.
+        iff         - pointer to IFFHandle struct.
+        localItem    -  pointer to LCI to install.
+        contextNode  -  pointer to the context node in which the LCI will be stored.
 
     RESULT
 
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	StoreLocalItem()
+        StoreLocalItem()
 
     INTERNALS
 
@@ -48,14 +48,14 @@
     AROS_LIBFUNC_INIT
 
     struct LocalContextItem *node,
-			    *nextnode;
+                            *nextnode;
 
     struct MinList *lcilist;
 
     (void) iff;
 
     DEBUG_STOREITEMINCONTEXT(dprintf("StoreItemInContext: iff 0x%lx item 0x%lx context 0x%lx\n",
-			    iff, localItem, contextNode));
+                            iff, localItem, contextNode));
 
     lcilist = &( GetIntCN(contextNode)->cn_LCIList );
 
@@ -64,25 +64,25 @@
 
     while ((nextnode = (struct LocalContextItem*)node->lci_Node.mln_Succ))
     {
-	if
-	(
-	    ( node->lci_ID     == localItem->lci_ID    )
-	&&
-	    ( node->lci_Type   == localItem->lci_Type  )
-	&&
-	    ( node->lci_Ident  == localItem->lci_Ident  )
-	)
-	    PurgeLCI(node, IPB(IFFParseBase));
+        if
+        (
+            ( node->lci_ID     == localItem->lci_ID    )
+        &&
+            ( node->lci_Type   == localItem->lci_Type  )
+        &&
+            ( node->lci_Ident  == localItem->lci_Ident  )
+        )
+            PurgeLCI(node, IPB(IFFParseBase));
 
-	node = nextnode;
+        node = nextnode;
 
     }
 
     /* Insert the LCI */
     AddHead
     (
-	(struct List*)lcilist,
-	(struct Node*)localItem
+        (struct List*)lcilist,
+        (struct Node*)localItem
     );
 
     return;

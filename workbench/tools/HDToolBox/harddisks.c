@@ -83,9 +83,9 @@ void findHDs(struct HDTBDevice *parent)
         ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq));
         if (ioreq)
         {
-	    int maxunits = 8;
-	    if (parent->maxunits > maxunits)
-		maxunits = parent->maxunits;
+            int maxunits = 8;
+            if (parent->maxunits > maxunits)
+                maxunits = parent->maxunits;
 
             for (i=0;i<maxunits;i++)
             {
@@ -108,19 +108,19 @@ void findHDs(struct HDTBDevice *parent)
                                 node->root_partition.ph = OpenRootPartition(parent->listnode.ln.ln_Name, node->unit);
                                 if (node->root_partition.ph)
                                 {
-				    D(bug("[HDToolBox] - appending ROOT partition %p to list %p\n", &node->root_partition.listnode.ln, &parent->listnode.list));
-				    D(bug("[HDToolBox] - first entry at %p\n", node->root_partition.listnode.list.lh_Head));
+                                    D(bug("[HDToolBox] - appending ROOT partition %p to list %p\n", &node->root_partition.listnode.ln, &parent->listnode.list));
+                                    D(bug("[HDToolBox] - first entry at %p\n", node->root_partition.listnode.list.lh_Head));
                                     AddTail(&parent->listnode.list, &node->root_partition.listnode.ln);
                                     if (findPartitionTable(&node->root_partition))
                                     {
-					D(bug("[HDToolBox] - partition table found. searching for partitions\n"));
+                                        D(bug("[HDToolBox] - partition table found. searching for partitions\n"));
                                         findPartitions(&node->root_partition.listnode, &node->root_partition);
                                         node->root_partition.listnode.flags |= LNF_Listable;
                                     }
-				    else
-				    {
-					D(bug("[HDToolBox] - partition table not found.\n"));
-				    }
+                                    else
+                                    {
+                                        D(bug("[HDToolBox] - partition table not found.\n"));
+                                    }
                                     GetPartitionAttrsA
                                     (
                                         node->root_partition.ph,

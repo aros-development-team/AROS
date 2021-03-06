@@ -20,14 +20,14 @@
                               with the highest priority is started first.
                               
                 WAIT=n        Wait n seconds after execution.
-                              n can be between 0 and 60.  
+                              n can be between 0 and 60.
                 
-                DONOTWAIT     don't wait till the program is finished.    
+                DONOTWAIT     don't wait till the program is finished.
 
     EXAMPLE
     
     BUGS
-        All programs are treated like DONOTWAIT is set. 
+        All programs are treated like DONOTWAIT is set.
     
     SEE ALSO
 
@@ -73,7 +73,7 @@ main(void)
     executeWBStartup();
 
     return RETURN_OK;
-}                                       
+}
 
 static BOOL
 checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait)
@@ -202,7 +202,7 @@ executePrograms(struct List *infolist)
         struct EasyStruct es = {sizeof(struct EasyStruct), 0,
         "Warning", "ExecuteStartup\nOpenWorkbenchObject failed for:\n%s", "OK"};
         EasyRequest(0, &es, 0, infonode->node.ln_Name);
-    }        
+    }
     }
 }
 
@@ -240,7 +240,7 @@ executeWBStartup(void)
         {
        D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
        break;
-        }        
+        }
 
         if ( ! Examine(startupdir, fib))
         {
@@ -259,7 +259,7 @@ executeWBStartup(void)
            executePrograms(&infoList);
            retvalue = TRUE;
        }
-        }        
+        }
         else
         {
        D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));

@@ -15,11 +15,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct Conductor *, previousConductor, A0),
+        AROS_LHA(struct Conductor *, previousConductor, A0),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 12, RealTime)
+        struct Library *, RealTimeBase, 12, RealTime)
 
 /*  FUNCTION
 
@@ -65,7 +65,7 @@
 
     if (previousConductor == NULL)
     {
-	return (struct Conductor *)GetHead((struct List *)&GPB(RealTimeBase)->rtb_ConductorList);
+        return (struct Conductor *)GetHead((struct List *)&GPB(RealTimeBase)->rtb_ConductorList);
     }
 
     return (struct Conductor *)GetSucc((struct Node *)previousConductor);

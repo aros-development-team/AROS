@@ -51,7 +51,7 @@
             D(bug("[MESA3DGL] %s: calling glstapi @ 0x%p -> make_current @ 0x%p\n", __func__, glstapi, glstapi->make_current));
             D(bug("[MESA3DGL] %s: _ctx->framebuffer @ 0x%p base @ 0x%p\n", __func__, _ctx->framebuffer, &_ctx->framebuffer->base));
             /* Attach */
-            glstapi->make_current(glstapi, _ctx->st, 
+            glstapi->make_current(glstapi, _ctx->st,
                 &_ctx->framebuffer->base, &_ctx->framebuffer->base);
         }
     }

@@ -19,17 +19,17 @@
     FUNCTION
 
         Allows user definable skins for the intuition windows, menus and gadgets.
-    	
+        
     NOTES
 
         Must be launched before Wanderer - usually in the S:startup-sequence
-	
+        
     BUGS
 
     SEE ALSO
 
-	IPREFS
-	
+        IPREFS
+        
     INTERNALS
 
 ******************************************************************************/
@@ -55,8 +55,8 @@ const TEXT version_string[] = "$VER: Decoration 1.9 (11.01.2017)";
 
 STRPTR __detached_name = "Decorator";
 
-#define MAGIC_PRIVATE_SKIN		0x0001
-#define MAGIC_PRIVATE_TITLECHILD 	0x0F0F
+#define MAGIC_PRIVATE_SKIN              0x0001
+#define MAGIC_PRIVATE_TITLECHILD        0x0F0F
 
 struct DecorationDecorator
 {
@@ -116,7 +116,7 @@ struct DecorationDecorator *LoadDecoration(STRPTR path)
         }
 
         dnd->base.nd_ScreenTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
-        dnd->base.nd_MenuTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);       
+        dnd->base.nd_MenuTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
         dnd->base.nd_WindowTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
 
         if (basedecor)

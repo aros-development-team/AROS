@@ -35,9 +35,9 @@
 
 extern struct Library *MUIMasterBase;
 
-#define FLAG_FIXED_PEN 	    1
+#define FLAG_FIXED_PEN      1
 #define FLAG_PEN_ALLOCATED  2
-#define FLAG_NO_PEN 	    4
+#define FLAG_NO_PEN         4
 
 #define ColorWheelBase data->colorwheelbase
 #define IColorWheel data->icolorwheel

@@ -84,11 +84,11 @@ BOOL HIDD_ParallelUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataRec
     
     if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Init);
         
-    p.mID      		   = static_mid;
-    p.DataReceived 	   = DataReceived;
+    p.mID                  = static_mid;
+    p.DataReceived         = DataReceived;
     p.DataReceivedUserData = DataReceivedUserData;
-    p.WriteData    	   = WriteData;
-    p.WriteDataUserData	   = WriteDataUserData;
+    p.WriteData            = WriteData;
+    p.WriteDataUserData    = WriteDataUserData;
 
     return((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
@@ -101,9 +101,9 @@ ULONG HIDD_ParallelUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
     
     if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Write);
         
-    p.mID	= static_mid;
-    p.Length	= length;
-    p.Outbuffer	= data; 
+    p.mID       = static_mid;
+    p.Length    = length;
+    p.Outbuffer = data;
 
     return ((ULONG) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
@@ -117,7 +117,7 @@ VOID HIDD_ParallelUnit_Start (OOP_Object *obj)
     
     if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Start);
         
-    p.mID	= static_mid;
+    p.mID       = static_mid;
 
     ((VOID)OOP_DoMethod(obj, (OOP_Msg) msg));
 }
@@ -131,7 +131,7 @@ VOID HIDD_ParallelUnit_Stop (OOP_Object *obj)
     
     if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Stop);
         
-    p.mID	= static_mid;
+    p.mID       = static_mid;
 
     ((VOID) OOP_DoMethod(obj, (OOP_Msg) msg));
 }

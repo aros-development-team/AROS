@@ -236,9 +236,9 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
     temp.do_DefaultTool          = (type == WBDISK) ? "SYS:System/DiskCopy" : "";
    
     dobj = DupDiskObject(&temp,
-    	    ICONDUPA_DuplicateImages, TRUE,
-    	    ICONDUPA_DuplicateImageData, TRUE,
-    	    TAG_END);
+            ICONDUPA_DuplicateImages, TRUE,
+            ICONDUPA_DuplicateImageData, TRUE,
+            TAG_END);
 
     return dobj;
 }

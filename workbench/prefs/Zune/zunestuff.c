@@ -42,7 +42,7 @@ long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struc
         { ASLFR_InitialFile,        (IPTR)filepart},
         { TAG_MORE,                 (IPTR)tags }
         
-        }; 
+        };
   
     
         if ( (fr = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, frtags) ) )
@@ -57,12 +57,12 @@ long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struc
                 CloseLibrary(AslBase);
         
                 return 1;
-            } 
+            }
 
             if (AslBase) CloseLibrary(AslBase);
 
             return 0;
-        } 
+        }
     
 
     }
@@ -80,8 +80,8 @@ Object *MakeButton(CONST_STRPTR str)
     if (obj)
     {
         SetAttrs(obj,
-	     MUIA_CycleChain, 1,
-	     TAG_DONE);
+             MUIA_CycleChain, 1,
+             TAG_DONE);
     }
     return obj;
 }
@@ -90,7 +90,7 @@ Object *MakeSpacingSlider (void)
 {
     Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 0, 9);
     if (obj)
-	set(obj, MUIA_CycleChain, 1);
+        set(obj, MUIA_CycleChain, 1);
     return obj;
 }
 
@@ -98,7 +98,7 @@ Object *MakeCycle (CONST_STRPTR label, CONST_STRPTR entries[])
 {
     Object *obj = MUI_MakeObject(MUIO_Cycle, (IPTR)label, (IPTR)entries);
     if (obj)
-	set(obj, MUIA_CycleChain, 1);
+        set(obj, MUIA_CycleChain, 1);
     return obj;
 }
 
@@ -106,40 +106,40 @@ Object *MakeCheck (CONST_STRPTR label)
 {
     Object *obj = MUI_MakeObject(MUIO_Checkmark, (IPTR)label);
     if (obj)
-	set(obj, MUIA_CycleChain, 1);
+        set(obj, MUIA_CycleChain, 1);
     return obj;
 }
 
 Object *MakeBackgroundPopimage(void)
 {
     return MUI_NewObject(MUIC_Popimage,
-		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
-		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_BACKGROUND),
-		     TAG_DONE);
+                     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
+                     MUIA_CycleChain, 1,
+                     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_BACKGROUND),
+                     TAG_DONE);
 }
 
 Object *MakePopframe(void)
 {
     return MUI_NewObject(MUIC_Popframe,
-		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_FRAME),
-		     TAG_DONE);
+                     MUIA_CycleChain, 1,
+                     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_FRAME),
+                     TAG_DONE);
 }
 
 Object *MakePoppen(void)
 {
     return MUI_NewObject(MUIC_Poppen,
-		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_PEN),
-		     TAG_DONE);
+                     MUIA_CycleChain, 1,
+                     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_PEN),
+                     TAG_DONE);
 }
 
 Object *MakeString(void)
 {
     return StringObject,
-	StringFrame,
-	MUIA_CycleChain, 1,
+        StringFrame,
+        MUIA_CycleChain, 1,
         End;
 }
 
@@ -169,13 +169,13 @@ Object *MakePopfile(BOOL fixed, CONST_STRPTR pattern)
 void SliderToConfig (Object *slider, Object *configdata, ULONG cfg)
 {
     DoMethod(configdata, MUIM_Configdata_SetULong, cfg,
-	     XGET(slider, MUIA_Numeric_Value));
+             XGET(slider, MUIA_Numeric_Value));
 }
 
 void CheckmarkToConfig (Object *checkmark, Object *configdata, ULONG cfg)
 {
     DoMethod(configdata, MUIM_Configdata_SetULong, cfg,
-	     XGET(checkmark, MUIA_Selected));
+             XGET(checkmark, MUIA_Selected));
 }
 
 void FrameToConfig (Object *popframe, Object *configdata, ULONG cfg)
@@ -205,7 +205,7 @@ void StringToConfig (Object *string, Object *configdata, ULONG cfg)
 void CycleToConfig (Object *cycle, Object *configdata, ULONG cfg)
 {
     DoMethod(configdata, MUIM_Configdata_SetULong, cfg,
-	     XGET(cycle, MUIA_Cycle_Active));
+             XGET(cycle, MUIA_Cycle_Active));
 }
 
 void ConfigToSlider (Object *configdata, ULONG cfg, Object *slider)

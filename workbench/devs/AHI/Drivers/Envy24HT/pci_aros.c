@@ -29,7 +29,7 @@ static OOP_Object *pciobj;
 static OOP_MethodID mid_RB;
 static OOP_MethodID mid_RW;
 static OOP_MethodID mid_RL;
-	
+        
 static OOP_MethodID mid_WB;
 static OOP_MethodID mid_WW;
 static OOP_MethodID mid_WL;
@@ -61,7 +61,7 @@ BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
         }
     }
     
-    return FALSE; 
+    return FALSE;
 }
 
 void ahi_pci_exit(void)
@@ -81,9 +81,9 @@ struct enum_data
 };
 
 static AROS_UFH3(void, Enumerator,
-		 AROS_UFHA(struct Hook *,    hook,   A0),
-		 AROS_UFHA(OOP_Object *,     device, A2),
-		 AROS_UFHA(APTR,             msg,    A1))
+                 AROS_UFHA(struct Hook *,    hook,   A0),
+                 AROS_UFHA(OOP_Object *,     device, A2),
+                 AROS_UFHA(APTR,             msg,    A1))
 {
     AROS_USERFUNC_INIT
 
@@ -99,31 +99,31 @@ static AROS_UFH3(void, Enumerator,
 
 
 APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev)
-{ 
+{
     struct enum_data ed;
 
     struct Hook FindHook =
     {
       h_Entry:    (HOOKFUNC)Enumerator,
-      h_Data:	    &ed,
+      h_Data:       &ed,
     };
 
     struct TagItem Reqs[] =
     {
 #if 0
-      { tHidd_PCI_Class   	, 0x04 	    }, /* Multimedia */
-      { tHidd_PCI_SubClass	, 0x01 	    }, /* Audio */
+      { tHidd_PCI_Class         , 0x04      }, /* Multimedia */
+      { tHidd_PCI_SubClass      , 0x01      }, /* Audio */
 #endif
-      { tHidd_PCI_VendorID	, vendorid  },
-      { tHidd_PCI_ProductID	, deviceid  },
-      { TAG_DONE  	    	, 0   	    },
+      { tHidd_PCI_VendorID      , vendorid  },
+      { tHidd_PCI_ProductID     , deviceid  },
+      { TAG_DONE                , 0         },
     };
 
     struct pHidd_PCI_EnumDevices enummsg =
     {
-      mID:		OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
-      callback:	&FindHook,
-      requirements:	(struct TagItem *)&Reqs,
+      mID:              OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
+      callback: &FindHook,
+      requirements:     (struct TagItem *)&Reqs,
     }, *msg = &enummsg;
 
     ed.prev_dev = (OOP_Object *)dev;
@@ -306,7 +306,7 @@ BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
 }
 
 void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
-{    
+{
     if (inthandler_added)
     {
         IPTR val;
@@ -314,9 +314,9 @@ void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
         OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
 
         RemIntServer(INTB_KERNEL + val, i);
-        	
+                
         inthandler_added = FALSE;
-    }   
+    }
 
     KPrintF("ahi_pci_rem_intserver\n");
 }
@@ -419,27 +419,27 @@ ULONG ahi_pci_get_type(WORD which, APTR dev)
     case 0:
       attr = aHidd_PCIDevice_Type0;
       break;
-	    
+            
     case 1:
       attr = aHidd_PCIDevice_Type1;
       break;
-	    
+            
     case 2:
       attr = aHidd_PCIDevice_Type2;
       break;
-	    
+            
     case 3:
       attr = aHidd_PCIDevice_Type3;
       break;
-	    
+            
     case 4:
       attr = aHidd_PCIDevice_Type4;
       break;
-	    
+            
     case 5:
       attr = aHidd_PCIDevice_Type5;
       break;
-	    
+            
     default:
       return 0;
   }

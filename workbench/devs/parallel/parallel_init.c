@@ -76,26 +76,26 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ParallelDevice)
     D(bug("parallel.hidd base: 0x%x\n",ParallelDevice->ParallelHidd));
 
     if (NULL == ParallelDevice->ParallelHidd)
-    	return FALSE;
+        return FALSE;
 
     if (NULL == ParallelDevice->oopBase)
-      ParallelDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);    
+      ParallelDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);
     if (NULL == ParallelDevice->oopBase)
     {
-    	CloseLibrary(ParallelDevice->ParallelHidd);
-	ParallelDevice->ParallelHidd = NULL;
-    	return FALSE;
+        CloseLibrary(ParallelDevice->ParallelHidd);
+        ParallelDevice->ParallelHidd = NULL;
+        return FALSE;
     }
 
     ParallelDevice->ParallelObject = OOP_NewObject(NULL, CLID_Hidd_Parallel, NULL);
 
     if (NULL == ParallelDevice->ParallelObject)
     {
-    	CloseLibrary(ParallelDevice->oopBase);
-	ParallelDevice->oopBase = NULL;
-	CloseLibrary(ParallelDevice->ParallelHidd);
-	ParallelDevice->ParallelHidd = NULL;
-      	return FALSE;
+        CloseLibrary(ParallelDevice->oopBase);
+        ParallelDevice->oopBase = NULL;
+        CloseLibrary(ParallelDevice->ParallelHidd);
+        ParallelDevice->ParallelHidd = NULL;
+        return FALSE;
     }
   }
 
@@ -128,7 +128,7 @@ static int GM_UNIQUENAME(Open)
 
   ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
-  /* In the list of available units look for the one with the same 
+  /* In the list of available units look for the one with the same
      UnitNumber as the given one  */
   if (0 == ioreq->io_Error)
   {
@@ -141,9 +141,9 @@ static int GM_UNIQUENAME(Open)
       PU = AllocMem(sizeof(struct ParallelUnit), MEMF_CLEAR|MEMF_PUBLIC);
       if (NULL != PU)
       {
-        PU->pu_OpenerCount	= 1;
-        PU->pu_UnitNum		= unitnum;
-        PU->pu_Flags		= iopar->io_ParFlags;
+        PU->pu_OpenerCount      = 1;
+        PU->pu_UnitNum          = unitnum;
+        PU->pu_Flags            = iopar->io_ParFlags;
 
         /*
         ** Initialize the message ports
@@ -187,8 +187,8 @@ static int GM_UNIQUENAME(Open)
     else
     {
       /* the unit does already exist. */
-      /* 
-      ** Check whether one more opener to this unit is tolerated 
+      /*
+      ** Check whether one more opener to this unit is tolerated
       */
       if (0 != (PU->pu_Flags & PARF_SHARED))
       {
@@ -287,7 +287,7 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 #define ioStd(x)  ((struct IOStdReq *)x)
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOExtPar *, ioreq, A1),
-	   struct parallelbase *, ParallelDevice, 5, Parallel)
+           struct parallelbase *, ParallelDevice, 5, Parallel)
 {
   AROS_LIBFUNC_INIT
   
@@ -298,10 +298,10 @@ AROS_LH1(void, beginio,
   /* WaitIO will look into this */
   ioreq->IOPar.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 
-  /* 
+  /*
   ** As a lot of "public" data can be modified in the following lines
-  ** I protect it from other tasks by this semaphore 
-  */  
+  ** I protect it from other tasks by this semaphore
+  */
   ObtainSemaphore(&PU->pu_Lock);
 
   switch (ioreq->IOPar.io_Command)
@@ -318,11 +318,11 @@ AROS_LH1(void, beginio,
 
       d = (struct NSDeviceQueryResult *)ioreq->IOPar.io_Data;
 
-      d->DevQueryFormat 	= 0;
-      d->SizeAvailable 	 	= sizeof(struct NSDeviceQueryResult);
-      d->DeviceType 	 	= NSDEVTYPE_PARALLEL;
-      d->DeviceSubType 	 	= 0;
-      d->SupportedCommands 	= (UWORD *)SupportedCommands;
+      d->DevQueryFormat         = 0;
+      d->SizeAvailable          = sizeof(struct NSDeviceQueryResult);
+      d->DeviceType             = NSDEVTYPE_PARALLEL;
+      d->DeviceSubType          = 0;
+      d->SupportedCommands      = (UWORD *)SupportedCommands;
 
       ioreq->IOPar.io_Actual = sizeof(struct NSDeviceQueryResult);
       ioreq->IOPar.io_Error  = 0;
@@ -362,7 +362,7 @@ AROS_LH1(void, beginio,
       Enable();
       /*
       ** As I am returning immediately I will tell that this
-      ** could not be done QUICK   
+      ** could not be done QUICK
       */
       ioreq->IOPar.io_Flags &= ~IOF_QUICK;
     break;
@@ -380,39 +380,39 @@ AROS_LH1(void, beginio,
       {
         ULONG writtenbytes;
         BOOL complete = FALSE;
-        /* 
+        /*
            Writing the first few bytes to the UART has to have the
            effect that whenever the UART can receive new data
            a HW interrupt must happen. So this writing to the
            UART should get the sequence of HW-interrupts going
-           until there is no more data to write 
-	*/
-	if (-1 == ioreq->IOPar.io_Length)
-	{
-	  int stringlen = strlen(ioreq->IOPar.io_Data);
-	  D(bug("Transmitting NULL termninated string.\n"));
-	  /*
-	  ** Supposed to write the buffer to the port until a '\0'
-	  ** is encountered.
-	  */
-	  
-	  writtenbytes = HIDD_ParallelUnit_Write(PU->pu_Unit,
-	                                         ioreq->IOPar.io_Data,
-	                                         stringlen);
-	  if (writtenbytes == stringlen)
-	    complete = TRUE;
-	  else
-	    PU->pu_WriteLength = stringlen-writtenbytes;
-	}
-	else
-	{
+           until there is no more data to write
+        */
+        if (-1 == ioreq->IOPar.io_Length)
+        {
+          int stringlen = strlen(ioreq->IOPar.io_Data);
+          D(bug("Transmitting NULL termninated string.\n"));
+          /*
+          ** Supposed to write the buffer to the port until a '\0'
+          ** is encountered.
+          */
+          
+          writtenbytes = HIDD_ParallelUnit_Write(PU->pu_Unit,
+                                                 ioreq->IOPar.io_Data,
+                                                 stringlen);
+          if (writtenbytes == stringlen)
+            complete = TRUE;
+          else
+            PU->pu_WriteLength = stringlen-writtenbytes;
+        }
+        else
+        {
           writtenbytes = HIDD_ParallelUnit_Write(PU->pu_Unit,
                                                  ioreq->IOPar.io_Data,
                                                  ioreq->IOPar.io_Length);
           if (writtenbytes == ioreq->IOPar.io_Length)
             complete = TRUE;
           else
-	    PU->pu_WriteLength = ioreq->IOPar.io_Length-writtenbytes;
+            PU->pu_WriteLength = ioreq->IOPar.io_Length-writtenbytes;
         }
         /*
         ** A consistency check between the STATUS_WRITES_PENDING flag
@@ -443,12 +443,12 @@ AROS_LH1(void, beginio,
           ioreq->IOPar.io_Flags &= ~IOF_QUICK;
           PU->pu_ActiveWrite = (struct Message *)ioreq;
           PU->pu_Status |= STATUS_WRITES_PENDING;
-	  PU->pu_NextToWrite = writtenbytes;
+          PU->pu_NextToWrite = writtenbytes;
         }
       }
       else
-      {    
-        /* 
+      {
+        /*
            I could not write the data immediately as another request
            is already there. So I will make this
            the responsibility of the interrupt handler to use this
@@ -456,10 +456,10 @@ AROS_LH1(void, beginio,
         */
         PutMsg(&PU->pu_QWriteCommandPort,
                (struct Message *)ioreq);
-	PU->pu_Status |= STATUS_WRITES_PENDING;
-        /* 
+        PU->pu_Status |= STATUS_WRITES_PENDING;
+        /*
         ** As I am returning immediately I will tell that this
-        ** could not be done QUICK   
+        ** could not be done QUICK
         */
         ioreq->IOPar.io_Flags &= ~IOF_QUICK;
       }
@@ -469,7 +469,7 @@ AROS_LH1(void, beginio,
 
     case CMD_CLEAR:
       /* Simply reset the input buffer pointer no matter what */
-      ioreq->IOPar.io_Error = 0;    
+      ioreq->IOPar.io_Error = 0;
       /*
       ** The request could be completed immediately.
       ** Check if I have to reply the message
@@ -503,7 +503,7 @@ AROS_LH1(void, beginio,
     /*******************************************************************/
 
     case CMD_FLUSH:
-      /* 
+      /*
       ** Clear all queued IO request for the given parallel unit except
       ** for the active ones.
        */
@@ -511,22 +511,22 @@ AROS_LH1(void, beginio,
       
       while (TRUE)
       {
-        struct IOStdReq * iopreq = 
+        struct IOStdReq * iopreq =
                   (struct IOStdReq *)GetMsg(&PU->pu_QReadCommandPort);
         if (NULL == iopreq)
           break;
         iopreq->io_Error = IOERR_ABORTED;
-        ReplyMsg((struct Message *)iopreq);        
+        ReplyMsg((struct Message *)iopreq);
       }
 
       while (TRUE)
       {
-        struct IOStdReq * iopreq = 
+        struct IOStdReq * iopreq =
                   (struct IOStdReq *)GetMsg(&PU->pu_QWriteCommandPort);
         if (NULL == iopreq)
           break;
         iopreq->io_Error = IOERR_ABORTED;
-        ReplyMsg((struct Message *)iopreq);        
+        ReplyMsg((struct Message *)iopreq);
       }
       ioreq->IOPar.io_Error = 0;
 
@@ -617,7 +617,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *, ioreq, A1),
-	   struct parallelbase *, ParallelDevice, 6, Parallel)
+           struct parallelbase *, ParallelDevice, 6, Parallel)
 {
   AROS_LIBFUNC_INIT
 

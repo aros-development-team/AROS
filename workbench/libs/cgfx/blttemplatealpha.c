@@ -26,20 +26,20 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH8(void, BltTemplateAlpha,
+        AROS_LH8(void, BltTemplateAlpha,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR             , src		, A0),
-	AROS_LHA(LONG             , srcx	, D0),
-	AROS_LHA(LONG             , srcmod	, D1),
-	AROS_LHA(struct RastPort *, rp		, A1),
-	AROS_LHA(LONG             , destx	, D2),
-	AROS_LHA(LONG             , desty	, D3),
-	AROS_LHA(LONG	          , width	, D4),
-	AROS_LHA(LONG             , height	, D5),
+        AROS_LHA(APTR             , src         , A0),
+        AROS_LHA(LONG             , srcx        , D0),
+        AROS_LHA(LONG             , srcmod      , D1),
+        AROS_LHA(struct RastPort *, rp          , A1),
+        AROS_LHA(LONG             , destx       , D2),
+        AROS_LHA(LONG             , desty       , D3),
+        AROS_LHA(LONG             , width       , D4),
+        AROS_LHA(LONG             , height      , D5),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 37, Cybergraphics)
+        struct Library *, CyberGfxBase, 37, Cybergraphics)
 
 /*  FUNCTION
         Alpha blends the current foreground colour into a rectangular portion
@@ -83,9 +83,9 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+        D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
             "in BltTemplateAlpha() !!!\n"));
-    	return;
+        return;
     }
 
     /* Compute the start of the array */

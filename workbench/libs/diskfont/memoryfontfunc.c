@@ -38,11 +38,11 @@ APTR MF_IteratorInit(struct DiskfontBase *DiskfontBase)
 
     mfdata = AllocVec(sizeof(struct MFData), MEMF_ANY|MEMF_CLEAR);
     if (mfdata == NULL)
-	return NULL;
+        return NULL;
     
     /* To prevent race conditions */
     Forbid();
-					
+                                        
     /* Get the first font */
     mfdata->CurrentFont = (struct TextFont*)GetHead(&GfxBase->TextFonts);
 
@@ -63,7 +63,7 @@ struct TTextAttr *MF_IteratorGetNext(APTR iterator, struct DiskfontBase *Diskfon
     struct TextFont *currfont;
     
     if (mfdata==NULL || mfdata->CurrentFont==NULL)
-	return NULL;
+        return NULL;
     
     currfont = mfdata->CurrentFont;
     
@@ -75,8 +75,8 @@ struct TTextAttr *MF_IteratorGetNext(APTR iterator, struct DiskfontBase *Diskfon
     
     if (ExtendFont(currfont, 0L))
     {
-	mfdata->currattr.tta_Tags = TFE(currfont->tf_Extension)->tfe_Tags;
-	if (mfdata->currattr.tta_Tags) mfdata->currattr.tta_Style |= FSF_TAGGED;
+        mfdata->currattr.tta_Tags = TFE(currfont->tf_Extension)->tfe_Tags;
+        if (mfdata->currattr.tta_Tags) mfdata->currattr.tta_Style |= FSF_TAGGED;
     }
 
     /* Go to next font */

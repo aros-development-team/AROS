@@ -9,30 +9,30 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH4(LONG, WriteChunkRecords,
+        AROS_LH4(LONG, WriteChunkRecords,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
-	AROS_LHA(APTR              , buf, A1),
-	AROS_LHA(LONG              , bytesPerRecord, D0),
-	AROS_LHA(LONG              , numRecords, D1),
+        AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(APTR              , buf, A1),
+        AROS_LHA(LONG              , bytesPerRecord, D0),
+        AROS_LHA(LONG              , numRecords, D1),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 13, IFFParse)
+        struct Library *, IFFParseBase, 13, IFFParse)
 
 /*  FUNCTION
-	Write numRecods records of bytesPerRecord bytes to the current chunk.
-	Attempts to write past the end of the chunk will be truncated.
+        Write numRecods records of bytesPerRecord bytes to the current chunk.
+        Attempts to write past the end of the chunk will be truncated.
 
     INPUTS
-	 iff		  - pointer to IFFHandle struct.
-	buf		 -  pointer to a buffer containig the data to be written.
-	bytesPerRecord	- number of bytes per record.
-	numRecords	-  number of records to write.
+         iff              - pointer to IFFHandle struct.
+        buf              -  pointer to a buffer containig the data to be written.
+        bytesPerRecord  - number of bytes per record.
+        numRecords      -  number of records to write.
 
     RESULT
-	actual -   (positive) the actual number of whole records written.
-		  (negative) IFFERR_#? error code if not successful.
+        actual -   (positive) the actual number of whole records written.
+                  (negative) IFFERR_#? error code if not successful.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	WriteChunkBytes()
+        WriteChunkBytes()
 
     INTERNALS
 
@@ -70,15 +70,15 @@
     /* Is the numBytes known for this chunk ? */
     if (cn->cn_Size != IFFSIZE_UNKNOWN)
     {
-	/* We must truncate attempts to write larger than the chunksize */
-	lefttowrite = cn->cn_Size - cn->cn_Scan;
-	if  (bytestowrite > lefttowrite)
-	{
-	    bytestowrite = lefttowrite;
+        /* We must truncate attempts to write larger than the chunksize */
+        lefttowrite = cn->cn_Size - cn->cn_Scan;
+        if  (bytestowrite > lefttowrite)
+        {
+            bytestowrite = lefttowrite;
 
-	    /* See to it that we only write whole records */
-	    bytestowrite -= (lefttowrite % bytesPerRecord);
-	}
+            /* See to it that we only write whole records */
+            bytestowrite -= (lefttowrite % bytesPerRecord);
+        }
     }
 
 
@@ -86,14 +86,14 @@
     byteswritten = WriteStream(iff, buf, bytestowrite, IPB(IFFParseBase));
 
     if (byteswritten < 0)
-	/* IFFERR_#? returned by WriteStream() */
-	numRecords = byteswritten;
+        /* IFFERR_#? returned by WriteStream() */
+        numRecords = byteswritten;
     else
     {
-	/* No error */
-	cn->cn_Scan += byteswritten;
+        /* No error */
+        cn->cn_Scan += byteswritten;
 
-	numRecords = (byteswritten / bytesPerRecord);
+        numRecords = (byteswritten / bytesPerRecord);
     }
 
     DEBUG_WRITECHUNKRECORDS(dprintf("WriteChunkRecords: return %ld\n", numRecords));

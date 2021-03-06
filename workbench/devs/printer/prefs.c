@@ -163,7 +163,7 @@ BOOL Printer_LoadPrefs(struct PrinterBase *PrinterBase, LONG unitnum, struct Pri
     if (chunk_map & (1 << 0)) {
         D(bug("LoadPrefs: PTXT\n"));
 
-        IMPORT_WORD(txt.pt_PaperType); 
+        IMPORT_WORD(txt.pt_PaperType);
         IMPORT_WORD(txt.pt_PaperSize);
         IMPORT_WORD(txt.pt_PaperLength);
         IMPORT_WORD(txt.pt_Pitch);

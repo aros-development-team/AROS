@@ -45,33 +45,33 @@ static BOOL wbRedimension(Class *cl, Object *obj, WORD vwidth, WORD vheight)
     BOOL rc = FALSE;
 
     if ((my->Virt.Width != vwidth) ||
-    	(my->Virt.Height != vheight))
-    	rc = TRUE;
+        (my->Virt.Height != vheight))
+        rc = TRUE;
 
     my->Virt.Width = vwidth;
     my->Virt.Height = vheight;
 
     if (my->Virt.Left > (my->Virt.Width - gadget->Width)) {
-    	my->Virt.Left = max(0, my->Virt.Width - gadget->Width);
-    	rc = TRUE;
+        my->Virt.Left = max(0, my->Virt.Width - gadget->Width);
+        rc = TRUE;
     }
 
     if (my->Virt.Top > (my->Virt.Height - gadget->Height)) {
-    	my->Virt.Top  = max(0, my->Virt.Height - gadget->Height);
-    	rc = TRUE;
+        my->Virt.Top  = max(0, my->Virt.Height - gadget->Height);
+        rc = TRUE;
     }
 
     D(bug("WBVirtual: wbRedimension(%d,%d) = (%d,%d) %dx%d\n",
-    		vwidth,vheight,my->Virt.Left,my->Virt.Top,
-    		my->Virt.Width, my->Virt.Height));
+                vwidth,vheight,my->Virt.Left,my->Virt.Top,
+                my->Virt.Width, my->Virt.Height));
     D(bug("WBVirtual: Frame at: (%d,%d) %dx%d\n",
-    		gadget->TopEdge, gadget->LeftEdge,
-    		gadget->Width, gadget->Height));
+                gadget->TopEdge, gadget->LeftEdge,
+                gadget->Width, gadget->Height));
 
     if (my->Gadget) {
-    	SetAttrs(my->Gadget, GA_Top,   gadget->TopEdge - my->Virt.Top,
-    			     GA_Left,  gadget->LeftEdge - my->Virt.Left,
-    			     TAG_END);
+        SetAttrs(my->Gadget, GA_Top,   gadget->TopEdge - my->Virt.Top,
+                             GA_Left,  gadget->LeftEdge - my->Virt.Left,
+                             TAG_END);
     }
 
     return rc;
@@ -89,31 +89,31 @@ static BOOL wbMoveTo(Class *cl, Object *obj, WORD left, WORD top)
     D(bug("  wbMoveTo(%d,%d) =", left,top));
 
     if (left > (my->Virt.Width - gadget->Width))
-    	left = max(0, my->Virt.Width - gadget->Width);
+        left = max(0, my->Virt.Width - gadget->Width);
     if (top > (my->Virt.Height - gadget->Height))
-    	top = max(0, my->Virt.Height - gadget->Height);
+        top = max(0, my->Virt.Height - gadget->Height);
 
     dLeft = left - my->Virt.Left;
     dTop  = top  - my->Virt.Top;
 
     D(bug(" (%d,%d) %dx%d\n",
-    		left, top,
-    		my->Virt.Width, my->Virt.Height));
+                left, top,
+                my->Virt.Width, my->Virt.Height));
 
     if (dLeft == 0 && dTop == 0)
-    	return FALSE;
+        return FALSE;
 
     my->Virt.Left = left;
     my->Virt.Top  = top;
 
     D(bug("Frame at: (%d,%d) %dx%d\n",
-    		gadget->TopEdge, gadget->LeftEdge,
-    		gadget->Width, gadget->Height));
+                gadget->TopEdge, gadget->LeftEdge,
+                gadget->Width, gadget->Height));
 
     /* Set the position of the child */
     if (my->Gadget) {
-    	SetAttrs(my->Gadget, GA_Top, gadget->TopEdge - my->Virt.Top,
-    			     GA_Left, gadget->LeftEdge - my->Virt.Left);
+        SetAttrs(my->Gadget, GA_Top, gadget->TopEdge - my->Virt.Top,
+                             GA_Left, gadget->LeftEdge - my->Virt.Left);
     }
 
     return TRUE;
@@ -126,7 +126,7 @@ static IPTR WBVirtualNew(Class *cl, Object *obj, struct opSet *ops)
 
     rc = DoSuperMethodA(cl, obj, (Msg)ops);
     if (rc == 0)
-    	return rc;
+        return rc;
 
     struct opSet smsg;
     obj = (Object *)rc;
@@ -147,23 +147,23 @@ static IPTR WBVirtualGet(Class *cl, Object *obj, struct opGet *opg)
 
     switch (opg->opg_AttrID) {
     case WBVA_Gadget:
-    	*(opg->opg_Storage) = (IPTR)(my->Gadget);
-    	break;
+        *(opg->opg_Storage) = (IPTR)(my->Gadget);
+        break;
     case WBVA_VirtLeft:
-    	*(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Left);
-    	break;
+        *(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Left);
+        break;
     case WBVA_VirtTop:
-    	*(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Top);
-    	break;
+        *(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Top);
+        break;
     case WBVA_VirtWidth:
-    	*(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Width);
-    	break;
+        *(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Width);
+        break;
     case WBVA_VirtHeight:
-    	*(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Height);
-    	break;
+        *(opg->opg_Storage) = (IPTR)(SIPTR)(my->Virt.Height);
+        break;
     default:
-    	rc = DoSuperMethodA(cl, obj, (Msg)opg);
-    	break;
+        rc = DoSuperMethodA(cl, obj, (Msg)opg);
+        break;
     }
 
     return rc;
@@ -182,41 +182,41 @@ static IPTR WBVirtualSetUpdate(Class *cl, Object *obj, struct opUpdate *opu)
     rc = DoSuperMethodA(cl, obj, (Msg)opu);
 
     if ((opu->MethodID == OM_UPDATE) && (opu->opu_Flags & OPUF_INTERIM))
-    	return rc;
+        return rc;
 
     tstate = opu->opu_AttrList;
     while ((tag = NextTagItem(&tstate))) {
-    	val = (WORD)tag->ti_Data;
+        val = (WORD)tag->ti_Data;
 D(bug("%s: Tag=0x%x, val=%d\n", __func__, tag->ti_Tag, val));
-    	switch (tag->ti_Tag) {
-    	case WBVA_Gadget:
-    	    if (my->Gadget != (Object *)tag->ti_Data) {
-    	    	my->Gadget = (Object *)tag->ti_Data;
-    	    	IPTR vwidth = 0, vheight = 0;
-    	    	GetAttr(GA_Width, my->Gadget, &vwidth);
-    	    	GetAttr(GA_Height, my->Gadget, &vheight);
-    	    	rc |= wbRedimension(cl, obj, vwidth, vheight);
-    	    }
-    	    break;
-    	case WBVA_VirtTop:
-    	    rc |= wbMoveTo(cl, obj, my->Virt.Left, val);
-    	    break;
-    	case WBVA_VirtLeft:
-    	    rc |= wbMoveTo(cl, obj, val, my->Virt.Top);
-    	    break;
-    	case WBVA_VirtHeight:
-    	    rc |= wbRedimension(cl, obj, my->Virt.Width, val);
-    	    break;
-    	case WBVA_VirtWidth:
-    	    rc |= wbRedimension(cl, obj, val, my->Virt.Height);
-    	    break;
-    	case GA_Width:
-    	case GA_Height:
-    	    rc |= wbRedimension(cl, obj, my->Virt.Width, my->Virt.Height);
-    	    break;
-    	default:
-    	    break;
-    	}
+        switch (tag->ti_Tag) {
+        case WBVA_Gadget:
+            if (my->Gadget != (Object *)tag->ti_Data) {
+                my->Gadget = (Object *)tag->ti_Data;
+                IPTR vwidth = 0, vheight = 0;
+                GetAttr(GA_Width, my->Gadget, &vwidth);
+                GetAttr(GA_Height, my->Gadget, &vheight);
+                rc |= wbRedimension(cl, obj, vwidth, vheight);
+            }
+            break;
+        case WBVA_VirtTop:
+            rc |= wbMoveTo(cl, obj, my->Virt.Left, val);
+            break;
+        case WBVA_VirtLeft:
+            rc |= wbMoveTo(cl, obj, val, my->Virt.Top);
+            break;
+        case WBVA_VirtHeight:
+            rc |= wbRedimension(cl, obj, my->Virt.Width, val);
+            break;
+        case WBVA_VirtWidth:
+            rc |= wbRedimension(cl, obj, val, my->Virt.Height);
+            break;
+        case GA_Width:
+        case GA_Height:
+            rc |= wbRedimension(cl, obj, my->Virt.Width, my->Virt.Height);
+            break;
+        default:
+            break;
+        }
     }
 
     return rc;
@@ -229,7 +229,7 @@ static IPTR WBVirtualHitTest(Class *cl, Object *obj, struct gpHitTest *gph)
     struct gpHitTest subtest = *gph;
 
     if (!my->Gadget)
-    	return 0;
+        return 0;
 
     /* Forward to our client */
     subtest.gpht_Mouse.X += my->Virt.Left;
@@ -247,27 +247,27 @@ static IPTR WBVirtualRender(Class *cl, Object *obj, struct gpRender *gpr)
     struct GadgetInfo *ginfo = gpr->gpr_GInfo;
    
     if (my->Gadget == NULL)
-    	return FALSE;
+        return FALSE;
 
     if (ginfo == NULL)
-    	return FALSE;
+        return FALSE;
 
     /* Redraw the child */
     struct Region *region, *old;
     if ((region = NewRegion())) {
-    	struct Rectangle rect = {
-    	    .MinX = gadget->LeftEdge,
-    	    .MinY = gadget->TopEdge,
-    	    .MaxX = gadget->LeftEdge + gadget->Width - 1,
-    	    .MaxY = gadget->TopEdge  + gadget->Height - 1,
-    	};
-    	OrRectRegion(region, &rect);
-    	old = InstallClipRegion(ginfo->gi_Layer, region);
-    	AddGadget(ginfo->gi_Window, (struct Gadget *)my->Gadget, 0);
-    	RefreshGList((struct Gadget *)my->Gadget, ginfo->gi_Window, ginfo->gi_Requester, 1);
-    	RemoveGadget(ginfo->gi_Window, (struct Gadget *)my->Gadget);
-    	InstallClipRegion(ginfo->gi_Layer, old);
-    	DisposeRegion(region);
+        struct Rectangle rect = {
+            .MinX = gadget->LeftEdge,
+            .MinY = gadget->TopEdge,
+            .MaxX = gadget->LeftEdge + gadget->Width - 1,
+            .MaxY = gadget->TopEdge  + gadget->Height - 1,
+        };
+        OrRectRegion(region, &rect);
+        old = InstallClipRegion(ginfo->gi_Layer, region);
+        AddGadget(ginfo->gi_Window, (struct Gadget *)my->Gadget, 0);
+        RefreshGList((struct Gadget *)my->Gadget, ginfo->gi_Window, ginfo->gi_Requester, 1);
+        RemoveGadget(ginfo->gi_Window, (struct Gadget *)my->Gadget);
+        InstallClipRegion(ginfo->gi_Layer, old);
+        DisposeRegion(region);
     }
 
     return TRUE;
@@ -335,10 +335,10 @@ Class *WBVirtual_MakeClass(struct WorkbookBase *wb)
                     sizeof(struct wbVirtual),
                     0);
     if (cl != NULL) {
-    	cl->cl_Dispatcher.h_Entry = HookEntry;
-    	cl->cl_Dispatcher.h_SubEntry = dispatcher;
-    	cl->cl_Dispatcher.h_Data = NULL;
-    	cl->cl_UserData = (IPTR)wb;
+        cl->cl_Dispatcher.h_Entry = HookEntry;
+        cl->cl_Dispatcher.h_SubEntry = dispatcher;
+        cl->cl_Dispatcher.h_Data = NULL;
+        cl->cl_UserData = (IPTR)wb;
     }
 
     return cl;

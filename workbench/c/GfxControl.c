@@ -12,8 +12,8 @@
     SYNOPSIS
 
         PREVENT_DIRECT_BITMAP_ACCESS=PDBA/S,
-	ALLOW_DIRECT_BITMAP_ACCESS=ADBA/S,
-	DUMP/S
+        ALLOW_DIRECT_BITMAP_ACCESS=ADBA/S,
+        DUMP/S
 
     LOCATION
 
@@ -26,20 +26,20 @@
     INPUTS
 
         PREVENT_DIRECT_BITMAP_ACCESS   --  Causes LockBitMapTagList() calls to
-	                                   always fail
+                                           always fail
 
         ALLOW_DIRECT_BITMAP_ACCESS     --  Allow LocKBitMapTagList() to go to
-	                                   gfx driver which may or may not
-					   support it. (default)
+                                           gfx driver which may or may not
+                                           support it. (default)
 
-    	DUMP	    	    	       --  Show current settings
-	
+        DUMP                           --  Show current settings
+        
     RESULT
 
         Standard DOS return codes.
 
     NOTES
-    	By default 
+        By default
     BUGS
 
     INTERNALS
@@ -55,18 +55,18 @@
 
 #define PORT_NAME "GfxControl"
 
-#define ARG_TEMPLATE 	    "PREVENT_DIRECT_BITMAP_ACCESS=PDBA/S,ALLOW_DIRECT_BITMAP_ACCESS=ADBA/S,DUMP/S"
-#define ARG_PDBA   	    0
-#define ARG_ADBA   	    1
+#define ARG_TEMPLATE        "PREVENT_DIRECT_BITMAP_ACCESS=PDBA/S,ALLOW_DIRECT_BITMAP_ACCESS=ADBA/S,DUMP/S"
+#define ARG_PDBA            0
+#define ARG_ADBA            1
 #define ARG_DUMP            2
-#define NUM_ARGS    	    3
+#define NUM_ARGS            3
 
 /****************************************************************************************/
 
 AROS_UFH3(APTR, MyLockBitMapTagList,
-	  AROS_UFHA(struct BitMap *, bitmap, A0),
-	  AROS_UFHA(struct TagItem *, tags, A1),
-	  AROS_UFHA(struct Library *, CyberGfxBase, A6))
+          AROS_UFHA(struct BitMap *, bitmap, A0),
+          AROS_UFHA(struct TagItem *, tags, A1),
+          AROS_UFHA(struct Library *, CyberGfxBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -95,12 +95,12 @@ AROS_PROCH(PatchTask, argstr, argsize, SysBase)
         port->mp_Node.ln_Name = PORT_NAME;
         AddPort(port);
         orig_func = SetFunction(CyberGfxBase, -28 * (WORD)LIB_VECTSIZE, MyLockBitMapTagList);
-	
-	/* Just wait for a signal from the port. There's no need to look at message contents */
-	WaitPort(port);
-	SetFunction(CyberGfxBase, -28 * (WORD)LIB_VECTSIZE, orig_func);
-	RemPort(port);
-	DeleteMsgPort(port);
+        
+        /* Just wait for a signal from the port. There's no need to look at message contents */
+        WaitPort(port);
+        SetFunction(CyberGfxBase, -28 * (WORD)LIB_VECTSIZE, orig_func);
+        RemPort(port);
+        DeleteMsgPort(port);
     }
 
     CloseLibrary(CyberGfxBase);
@@ -117,7 +117,7 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
 
     struct RDArgs *myargs;
     IPTR args[NUM_ARGS] = {0};
-    int	rc = RETURN_OK;
+    int rc = RETURN_OK;
     struct MsgPort *port;
     struct CommandLineInterface *cli;
     struct DosLibrary *DOSBase;
@@ -132,46 +132,46 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
        if we were started via "Run command..."? */
     if (!cli) {
         PutStr("This program must be run from CLI\n");
-	CloseLibrary((struct Library *)DOSBase);
-	return RETURN_FAIL;
+        CloseLibrary((struct Library *)DOSBase);
+        return RETURN_FAIL;
     }
 
     myargs = ReadArgs(ARG_TEMPLATE, args, 0);
     if (myargs) {
-	port = FindPort(PORT_NAME);
+        port = FindPort(PORT_NAME);
 
-	if (args[ARG_PDBA]) {
-	    if (port)
-	        PutStr("Direct bitmap access already disabled\n");
-	    else {
-		if (CreateNewProcTags(NP_Seglist, cli->cli_Module, NP_Entry, PatchTask, NP_Name, "GfxControl patch", TAG_DONE))
-		    cli->cli_Module = BNULL;
-		else {
-		    PrintFault(IoErr(), "GfxControl");
-		    rc = RETURN_FAIL;
-		}
-	    }
-	}
+        if (args[ARG_PDBA]) {
+            if (port)
+                PutStr("Direct bitmap access already disabled\n");
+            else {
+                if (CreateNewProcTags(NP_Seglist, cli->cli_Module, NP_Entry, PatchTask, NP_Name, "GfxControl patch", TAG_DONE))
+                    cli->cli_Module = BNULL;
+                else {
+                    PrintFault(IoErr(), "GfxControl");
+                    rc = RETURN_FAIL;
+                }
+            }
+        }
 
-	if (args[ARG_ADBA]) {
-	    if (port) {
-		/* We do a very basic thing: just send a message. The message has no additional data
-		   and therefore does not need to be freed. We even don't look at its contents in the
-		   patch process */
-	        struct Message msg;
+        if (args[ARG_ADBA]) {
+            if (port) {
+                /* We do a very basic thing: just send a message. The message has no additional data
+                   and therefore does not need to be freed. We even don't look at its contents in the
+                   patch process */
+                struct Message msg;
 
-		PutMsg(port, &msg);
-	    } else
-	        PutStr("Direct bitmap access already enabled\n");
-	}
+                PutMsg(port, &msg);
+            } else
+                PutStr("Direct bitmap access already enabled\n");
+        }
 
-	if (args[ARG_DUMP])
-	    Printf("Prevent Direct BitMap Access: %s\n", port ? "YES" : "NO");
+        if (args[ARG_DUMP])
+            Printf("Prevent Direct BitMap Access: %s\n", port ? "YES" : "NO");
 
         FreeArgs(myargs);
     } else {
-    	PrintFault(IoErr(), "GfxControl");
-	rc = RETURN_FAIL;
+        PrintFault(IoErr(), "GfxControl");
+        rc = RETURN_FAIL;
     }
 
     CloseLibrary((struct Library *)DOSBase);

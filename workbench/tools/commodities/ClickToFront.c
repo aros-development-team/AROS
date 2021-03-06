@@ -101,8 +101,8 @@ static struct NewBroker nb =
     NBU_NOTIFY | NBU_UNIQUE,
     0,
     0,
-    NULL,                             
-    0 
+    NULL,
+    0
 };
 
 
@@ -126,7 +126,7 @@ typedef struct CF
 } CF;
 
 
-static CF cfInfo = 
+static CF cfInfo =
 {
     NULL,
     NULL,
@@ -156,8 +156,8 @@ static CONST_STRPTR _(ULONG id)
     if (LocaleBase != NULL && catalog != NULL)
     {
         return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+    }
+    else
     {
         return CatCompArray[id].cca_Str;
     }
@@ -169,7 +169,7 @@ static BOOL Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
-    	catalog = OpenCatalog(NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, 
+        catalog = OpenCatalog(NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION,
                     TAG_DONE);
     }
     else
@@ -193,11 +193,11 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
-    easyStruct.es_StructSize	= sizeof(easyStruct);
-    easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= _(MSG_CLICK2FNT_CXNAME);
-    easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+    easyStruct.es_StructSize    = sizeof(easyStruct);
+    easyStruct.es_Flags         = 0;
+    easyStruct.es_Title         = _(MSG_CLICK2FNT_CXNAME);
+    easyStruct.es_TextFormat    = msgString;
+    easyStruct.es_GadgetFormat  = _(MSG_OK);
 
     if (IntuitionBase != NULL && !Cli() )
     {
@@ -228,7 +228,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
         {
             if (args[ARG_PRI] != (IPTR) NULL)
             {
-	            nb.nb_Pri = *(LONG *)args[ARG_PRI];
+                    nb.nb_Pri = *(LONG *)args[ARG_PRI];
             }
 
             getQualifier((STRPTR)args[ARG_QUALIFIER]);
@@ -260,7 +260,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
     if (cfInfo.ci_clicksToDo == 0)
         cfInfo.ci_clicksToDo = 2; /* Default value is 2 */
 
-   	D(bug("CLICKS to do = %i\n",cfInfo.ci_clicksToDo));
+        D(bug("CLICKS to do = %i\n",cfInfo.ci_clicksToDo));
     nb.nb_Name = _(MSG_CLICK2FNT_CXNAME);
     nb.nb_Title = _(MSG_CLICK2FNT_CXTITLE);
     nb.nb_Descr = _(MSG_CLICK2FNT_CXDESCR);
@@ -297,7 +297,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 
     cfInfo.ci_thisWindow = IntuitionBase->ActiveWindow;
 
-    inputIO = (struct IOStdReq *)CreateIORequest(cs->cs_msgPort, 
+    inputIO = (struct IOStdReq *)CreateIORequest(cs->cs_msgPort,
                                     sizeof(struct IOStdReq));
 
     if (inputIO == NULL)
@@ -361,7 +361,7 @@ static void freeResources(CFState *cs)
     {
         while ((cxm = GetMsg(cs->cs_msgPort)))
         {
-    	    ReplyMsg(cxm);
+            ReplyMsg(cxm);
         }
 
         DeleteMsgPort(cs->cs_msgPort);
@@ -392,9 +392,9 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
             /* Mask relevant qualifiers (key qualifiers) */
             if ((PeekQualifier() & 0xff) != cfInfo.ci_qualifiers)
             {
-		        D(bug("Qualifiers: %i, Wanted qualifiers: %i\n",
-			            (int)PeekQualifier(),
-			            (int)cfInfo.ci_qualifiers | IEQUALIFIER_LEFTBUTTON));
+                        D(bug("Qualifiers: %i, Wanted qualifiers: %i\n",
+                                    (int)PeekQualifier(),
+                                    (int)cfInfo.ci_qualifiers | IEQUALIFIER_LEFTBUTTON));
 
                 return;
             }
@@ -412,7 +412,7 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
 
             LockLayerInfo(&screen->LayerInfo);
             layer = WhichLayer(&screen->LayerInfo,
-	                               screen->MouseX,
+                                       screen->MouseX,
                                    screen->MouseY);
             UnlockLayerInfo(&screen->LayerInfo);
 
@@ -422,48 +422,48 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
             }
 
             cfInfo.ci_thisWindow = (layer != NULL) ?
-	        (struct Window *)layer->Window : NULL;
+                (struct Window *)layer->Window : NULL;
 
-            /* 
+            /*
                Error: IB->ActiveWindow is non-NULL even if there is no
                active window!
             */
             if (layer->front != NULL)
             {
-                /* 
+                /*
                    Counting clicks is only meaningful if cfInfo.ci_clicksToDo
                    is no less than 2
                 */
                 if (cfInfo.ci_clicksToDo > 1)
-		        {
+                        {
                     cfInfo.ci_clicksDone++;
                     
                     D(bug("clicksDone = %i\n",cfInfo.ci_clicksDone));
                     
-                    /* 
-                       Return if the delay between two clicks is longer than 
+                    /*
+                       Return if the delay between two clicks is longer than
                        Input-Preferences-set double-click delay
                     */
                     if (!DoubleClick(cfInfo.ci_lcSeconds,
                                       cfInfo.ci_lcMicros,
                                 ie->ie_TimeStamp.tv_secs,
                                ie->ie_TimeStamp.tv_micro))
-		            {
+                            {
                         cfInfo.ci_lcSeconds = ie->ie_TimeStamp.tv_secs;
                         cfInfo.ci_lcMicros  = ie->ie_TimeStamp.tv_micro;
                         cfInfo.ci_clicksDone = 1L;
                         D(bug("DoubleClick is FALSE\nclicksDone = %i\n",
                                                   cfInfo.ci_clicksDone));
                         return;
-		            }
+                            }
                     
                     D(bug("DoubleClick is TRUE\n"));
                     
-		            D(bug("Time %i %i, last time %i %i\n",
-				        ie->ie_TimeStamp.tv_secs,
-				        ie->ie_TimeStamp.tv_micro,
-				        cfInfo.ci_lcSeconds,
-				        cfInfo.ci_lcMicros));
+                            D(bug("Time %i %i, last time %i %i\n",
+                                        ie->ie_TimeStamp.tv_secs,
+                                        ie->ie_TimeStamp.tv_micro,
+                                        cfInfo.ci_lcSeconds,
+                                        cfInfo.ci_lcMicros));
                     
                     cfInfo.ci_lcSeconds = ie->ie_TimeStamp.tv_secs;
                     cfInfo.ci_lcMicros  = ie->ie_TimeStamp.tv_micro;
@@ -474,19 +474,19 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
                         return;
                     }
                     
-		            /* Return if the clicks weren't made in the same window */
-		            if (cfInfo.ci_lastWindow != cfInfo.ci_thisWindow)
-		            {
+                            /* Return if the clicks weren't made in the same window */
+                            if (cfInfo.ci_lastWindow != cfInfo.ci_thisWindow)
+                            {
                         cfInfo.ci_clicksDone = 1L;
                         D(bug("Window changed. clicksDone = %i\n",
                                             cfInfo.ci_clicksDone));
                         return;
-		            }
+                            }
                     
-                    /* 
+                    /*
                        If we didn't return yet, that means that all conditions
                        are good to bring the window to front, and it will be
-                       done now. We just reset cfInfo.ci_clicksDone to 0 in 
+                       done now. We just reset cfInfo.ci_clicksDone to 0 in
                        order to be ready for another bring-to-front loop...
                     */
                     cfInfo.ci_clicksDone = 0L;
@@ -500,12 +500,12 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
                     ActivateWindow(cfInfo.ci_thisWindow);
                 }
 
-		        D(bug("Window %s was put to front.\n",
-			             cfInfo.ci_thisWindow->Title));
+                        D(bug("Window %s was put to front.\n",
+                                     cfInfo.ci_thisWindow->Title));
             }
             else
             {
-		        D(bug("New: %p Old: %p\n", cfInfo.ci_thisWindow,
+                        D(bug("New: %p Old: %p\n", cfInfo.ci_thisWindow,
                                    IntuitionBase->ActiveWindow));
             }
         } /* if (ie->ie_Code == SELECTDOWN) */
@@ -522,47 +522,47 @@ static void handleCx(CFState *cs)
 
     while (!quit)
     {
-	signals = Wait((1 << nb.nb_Port->mp_SigBit)  | SIGBREAKF_CTRL_C);
+        signals = Wait((1 << nb.nb_Port->mp_SigBit)  | SIGBREAKF_CTRL_C);
 
-	if (signals & (1 << nb.nb_Port->mp_SigBit))
-	{
-	    while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort)))
-	    {
-		switch (CxMsgType(msg))
-		{
-		    case CXM_COMMAND:
-			switch (CxMsgID(msg))
-			{
-			    case CXCMD_DISABLE:
-				ActivateCxObj(cs->cs_broker, FALSE);
-				break;
+        if (signals & (1 << nb.nb_Port->mp_SigBit))
+        {
+            while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort)))
+            {
+                switch (CxMsgType(msg))
+                {
+                    case CXM_COMMAND:
+                        switch (CxMsgID(msg))
+                        {
+                            case CXCMD_DISABLE:
+                                ActivateCxObj(cs->cs_broker, FALSE);
+                                break;
 
-			    case CXCMD_ENABLE:
-				ActivateCxObj(cs->cs_broker, TRUE);
-				break;
+                            case CXCMD_ENABLE:
+                                ActivateCxObj(cs->cs_broker, TRUE);
+                                break;
 
-			    case CXCMD_UNIQUE:
-				/* Running the program twice is the same as shutting
-				   down the existing program... */
-				/* Fall through */
+                            case CXCMD_UNIQUE:
+                                /* Running the program twice is the same as shutting
+                                   down the existing program... */
+                                /* Fall through */
 
-			    case CXCMD_KILL:
-				quit = TRUE;
-				break;
+                            case CXCMD_KILL:
+                                quit = TRUE;
+                                break;
 
-			} /* switch (CxMsgID(msg)) */
-			break;
-		} /* switch (CxMsgType(msg))*/
+                        } /* switch (CxMsgID(msg)) */
+                        break;
+                } /* switch (CxMsgType(msg))*/
 
-		ReplyMsg((struct Message *)msg);
+                ReplyMsg((struct Message *)msg);
 
-	    } /* while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
-	}	    
+            } /* while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
+        }
 
-	if (signals & SIGBREAKF_CTRL_C)
-	{
-	    quit = TRUE;
-	}
+        if (signals & SIGBREAKF_CTRL_C)
+        {
+            quit = TRUE;
+        }
 
     } /* while(!quit) */
 }

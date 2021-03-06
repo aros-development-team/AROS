@@ -69,8 +69,8 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         {aHidd_Sync_VDisp,      0},
         {aHidd_Sync_HTotal,     0},
         {aHidd_Sync_VTotal,     0},
-        {aHidd_Sync_HMax,	16384},
-        {aHidd_Sync_VMax,	16384},
+        {aHidd_Sync_HMax,       16384},
+        {aHidd_Sync_VMax,       16384},
         {aHidd_Sync_Description, (IPTR)"SM502:%hx%v"},
         {TAG_DONE, 0UL}
     };
@@ -212,7 +212,7 @@ OOP_Object *SM502Gfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_
     struct SM502Gfx_staticdata *data = XSD(cl);
     struct TagItem tags[] = {
         {aHidd_BitMap_Visible, FALSE},
-        {TAG_DONE	     , 0    }
+        {TAG_DONE            , 0    }
     };
 
     D(bug("[SM502Gfx] Show(0x%p), old visible 0x%p\n", msg->bitMap, data->visible));

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /******************************************************************************
@@ -158,46 +158,46 @@ int main(void)
         if(buffer==NULL)
         {
             FPuts(Output(),"Not Enough memory for library buffer\n");
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	    error = RETURN_FAIL;
+            SetIoErr(ERROR_NO_FREE_STORE);
+            error = RETURN_FAIL;
             break;
         }
         libs=buffer;
         if(fillbuffer(&libs,size))
         {
 #if (__WORDSIZE == 64)
-	    FPuts(Output(),"       Address  Version  Rev  OpenCnt  Flags  Name\n");
+            FPuts(Output(),"       Address  Version  Rev  OpenCnt  Flags  Name\n");
 #else
-	    FPuts(Output(),"   Address  Version  Rev  OpenCnt  Flags  Name\n");
+            FPuts(Output(),"   Address  Version  Rev  OpenCnt  Flags  Name\n");
 #endif
-	    for(libs2=buffer;libs2<libs;libs2++)
-	    {
+            for(libs2=buffer;libs2<libs;libs2++)
+            {
 #if (__WORDSIZE == 64)
         Printf("0x%012.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
 #else
         Printf("0x%08.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
 #endif
-		        libs2->address, (ULONG)libs2->version,
-		        (ULONG)libs2->revision,
-		        (ULONG)libs2->opencnt,
-		        (ULONG)libs2->flags,
-		        libs2->name);
+                        libs2->address, (ULONG)libs2->version,
+                        (ULONG)libs2->revision,
+                        (ULONG)libs2->opencnt,
+                        (ULONG)libs2->flags,
+                        libs2->name);
                 if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
                     error = RETURN_FAIL;
                     SetIoErr(ERROR_BREAK);
                     break;
                 }
-	    }
-	    FreeVec(buffer);
-            break; 
+            }
+            FreeVec(buffer);
+            break;
         }
         FreeVec(buffer);
     }
 
     if (error != RETURN_OK)
     {
-	PrintFault(IoErr(), NULL);
+        PrintFault(IoErr(), NULL);
     }
     
     return error;

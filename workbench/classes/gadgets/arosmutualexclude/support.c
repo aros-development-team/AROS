@@ -24,7 +24,7 @@ UWORD disabledpattern[2] = {0x4444, 0x1111};
 
 /* draws a disabled pattern */
 void drawdisabledpattern(struct RastPort *rport, UWORD pen,
-			 WORD left, WORD top, UWORD width, UWORD height
+                         WORD left, WORD top, UWORD width, UWORD height
 )
 {
     SetABPenDrMd(rport, pen, 0, JAM1);
@@ -36,25 +36,25 @@ void drawdisabledpattern(struct RastPort *rport, UWORD pen,
 /***********************************************************************************/
 
 struct TextFont *preparefont(struct RastPort *rport, struct IntuiText *itext,
-			     struct TextFont **oldfont
+                             struct TextFont **oldfont
 )
 {
     struct TextFont *font;
 
     if (itext->ITextFont)
     {
-	*oldfont = rport->Font;
-	font = OpenFont(itext->ITextFont);
-	if (font)
-	{
-	    SetFont(rport, font);
-	    SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
-	} else
-	    font = rport->Font;
+        *oldfont = rport->Font;
+        font = OpenFont(itext->ITextFont);
+        if (font)
+        {
+            SetFont(rport, font);
+            SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
+        } else
+            font = rport->Font;
     } else
     {
-	*oldfont = NULL;
-	font = rport->Font;
+        *oldfont = NULL;
+        font = rport->Font;
     }
     SetABPenDrMd(rport, itext->FrontPen, itext->BackPen, itext->DrawMode);
 
@@ -64,13 +64,13 @@ struct TextFont *preparefont(struct RastPort *rport, struct IntuiText *itext,
 /***********************************************************************************/
 
 void closefont(struct RastPort *rport,
-	       struct TextFont *font, struct TextFont *oldfont
+               struct TextFont *font, struct TextFont *oldfont
 )
 {
     if (oldfont)
     {
-	SetFont(rport, oldfont);
-	CloseFont(font);
+        SetFont(rport, oldfont);
+        CloseFont(font);
     }
 }
 
@@ -118,15 +118,15 @@ BOOL renderlabel(struct Gadget *gad, struct RastPort *rport, struct MXData *data
             y = (data->bbox.MinY + data->bbox.MaxY - height) / 2;
         } else if (data->labelplace == GV_LabelPlace_Above)
         {
-	    x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
+            x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
             y = data->bbox.MinY - height - 2;
         } else if (data->labelplace == GV_LabelPlace_Below)
         {
-	    x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
+            x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
             y = gad->TopEdge + gad->Height + 3;
         } else if (data->labelplace == GV_LabelPlace_In)
         {
-	    x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
+            x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
             y = (data->bbox.MinY + data->bbox.MaxY - height) / 2;
         } else /* GV_LabelPlace_Left */
         {

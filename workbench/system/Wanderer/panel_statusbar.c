@@ -382,7 +382,7 @@ static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *mess
             TAG_DONE),
         TAG_DONE);
 
-        /* Got a StatusBarPanel? setup notifies and other values are 
+        /* Got a StatusBarPanel? setup notifies and other values are
          copied to the data of the object */
         if ( panel_StatusBar != NULL )
         {
@@ -407,8 +407,8 @@ static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *mess
             {
                 panelStatusBarPrivate->iwp_StatusBar_updateHook.h_Entry = ( HOOKFUNC )panelStatusBar__HookFunc_UpdateStatusFunc;
 
-                DoMethod ( 
-                    data->iwd_IconListObj, MUIM_Notify, MUIA_IconList_Changed, MUIV_EveryTime, 
+                DoMethod (
+                    data->iwd_IconListObj, MUIM_Notify, MUIA_IconList_Changed, MUIV_EveryTime,
                     (IPTR)self, 3, MUIM_CallHook, &panelStatusBarPrivate->iwp_StatusBar_updateHook, (IPTR)CLASS
                   );
 
@@ -417,7 +417,7 @@ static IPTR panelStatusBar__Setup(Class *CLASS, Object *self, struct opSet *mess
 
                 DoMethod
                   (
-                    panelStatusBar__PrefsNotificationObject, MUIM_Notify, MUIA_ShowMe, MUIV_EveryTime, 
+                    panelStatusBar__PrefsNotificationObject, MUIM_Notify, MUIA_ShowMe, MUIV_EveryTime,
                     (IPTR)data->iwd_BottomPanel.iwp_PanelContainerObj, 3, MUIM_Set, MUIA_ShowMe, MUIV_TriggerValue
                   );
 
@@ -461,7 +461,7 @@ static IPTR panelStatusBar__Cleanup(Class *CLASS, Object *self, Msg msg)
         {
             DoMethod
               (
-                panelStatusBar__PrefsNotificationObject, MUIM_KillNotifyObj, MUIA_ShowMe, 
+                panelStatusBar__PrefsNotificationObject, MUIM_KillNotifyObj, MUIA_ShowMe,
                 (IPTR)data->iwd_BottomPanel.iwp_PanelContainerObj
               );
         }
@@ -516,7 +516,7 @@ static IPTR panelStatusBar__OM_SET(Class *CLASS, Object *self, struct opSet *mes
         {
             switch (tag->ti_Tag)
             {
-            /*case MUIA_IconWindowExt_ToolBar_Enabled:   
+            /*case MUIA_IconWindowExt_ToolBar_Enabled:
                 if ((!(data->iwd_Flags & IWDFLAG_ISROOT)) && (data->iwd_BottomPanel.iwp_PanelContainerObj))
                 {
                     // remove statusbar

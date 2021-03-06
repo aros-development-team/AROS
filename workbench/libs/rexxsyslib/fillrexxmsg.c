@@ -12,15 +12,15 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH3(BOOL, FillRexxMsg,
+        AROS_LH3(BOOL, FillRexxMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RexxMsg *, msgptr, A0),
-	AROS_LHA(ULONG           , count , D0),
-	AROS_LHA(ULONG           , mask  , D1),
+        AROS_LHA(struct RexxMsg *, msgptr, A0),
+        AROS_LHA(ULONG           , count , D0),
+        AROS_LHA(ULONG           , mask  , D1),
 
 /*  LOCATION */
-	struct RxsLib *, RexxSysBase, 27, RexxSys)
+        struct RxsLib *, RexxSysBase, 27, RexxSys)
 
 /*  FUNCTION
         This function will convert the value(s) provided in rm_Args of the
@@ -71,38 +71,38 @@
     
     for (i = 0; i < count; i++)
     {
-	/* Is argument i an integer ? */
-	if (mask & (1<<i))
-	{
-	    /* Convert int to string */
-	    sprintf(number, "%ld", (long)msgptr->rm_Args[i]);
-	    args[i] = (STRPTR)CreateArgstring(number, strlen(number));
-	    
-	    /* Clean up if error in CreateArgstring */
-	    if (args[i] == NULL)
-	    {
-	        for (j = 0; j < i; j++)
-		    if (args[j] != NULL) DeleteArgstring((UBYTE *)args[j]);
-		ReturnBool("FillRexxMsg", FALSE);
-	    }
-	}
-	else
-	{
-	    /* CreateArgstring with null terminated string if pointer is not null */
-	    if (msgptr->rm_Args[i] == 0) args[i] = NULL;
-	    else
-	    {
-		args[i] = (STRPTR)CreateArgstring(RXARG(msgptr,i), strlen(RXARG(msgptr,i)));
-	    
-		/* Clean up if error in CreateArgstring */
-		if (args[i] == NULL)
-		{
-		    for (j = 0; j < i; j++)
-		        if (args[j] != NULL) DeleteArgstring((UBYTE *)args[j]);
-		    ReturnBool("FillRexxMsg", FALSE);
-		}
-	    }
-	}
+        /* Is argument i an integer ? */
+        if (mask & (1<<i))
+        {
+            /* Convert int to string */
+            sprintf(number, "%ld", (long)msgptr->rm_Args[i]);
+            args[i] = (STRPTR)CreateArgstring(number, strlen(number));
+            
+            /* Clean up if error in CreateArgstring */
+            if (args[i] == NULL)
+            {
+                for (j = 0; j < i; j++)
+                    if (args[j] != NULL) DeleteArgstring((UBYTE *)args[j]);
+                ReturnBool("FillRexxMsg", FALSE);
+            }
+        }
+        else
+        {
+            /* CreateArgstring with null terminated string if pointer is not null */
+            if (msgptr->rm_Args[i] == 0) args[i] = NULL;
+            else
+            {
+                args[i] = (STRPTR)CreateArgstring(RXARG(msgptr,i), strlen(RXARG(msgptr,i)));
+            
+                /* Clean up if error in CreateArgstring */
+                if (args[i] == NULL)
+                {
+                    for (j = 0; j < i; j++)
+                        if (args[j] != NULL) DeleteArgstring((UBYTE *)args[j]);
+                    ReturnBool("FillRexxMsg", FALSE);
+                }
+            }
+        }
     }
     
     CopyMem(args, msgptr->rm_Args, count * sizeof(STRPTR));

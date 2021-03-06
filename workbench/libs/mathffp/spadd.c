@@ -164,7 +164,7 @@
         {
             Mant1 += Mant1;  /* one bit to the left. */
             Exponent--;
-        }    
+        }
     } /* else */
     
     if ((char) Exponent < 0)

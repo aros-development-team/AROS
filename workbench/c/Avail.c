@@ -13,7 +13,7 @@
 
     SYNOPSIS
 
-        CHIP/S, FAST/S, TOTAL/S, FLUSH/S, H=HUMAN/S        
+        CHIP/S, FAST/S, TOTAL/S, FLUSH/S, H=HUMAN/S
 
     LOCATION
 
@@ -22,25 +22,25 @@
     FUNCTION
 
         Give a summary of the memory usage and availability in the system.
-	To free up unused memory that still may be allocated (libraries,
-	devices, fonts and such present in memory but whcih are currently
-	not in use), use the FLUSH option.
+        To free up unused memory that still may be allocated (libraries,
+        devices, fonts and such present in memory but whcih are currently
+        not in use), use the FLUSH option.
 
     INPUTS
 
         CHIP   --  show only "chip" memory
-	FAST   --  show only "fast" memory
-	TOTAL  --  show information on memory regardless of type
-	FLUSH  --  remove unnecessary things residing in memory
-	HUMAN  --  display more human-readable values (gigabytes as "G",
-		   megabytes as "M", kilobytes as "K")
+        FAST   --  show only "fast" memory
+        TOTAL  --  show information on memory regardless of type
+        FLUSH  --  remove unnecessary things residing in memory
+        HUMAN  --  display more human-readable values (gigabytes as "G",
+                   megabytes as "M", kilobytes as "K")
 
     RESULT
 
     NOTES
 
         "Chip" and "fast" memory are associated with the Amiga computer
-	and may not be applicable on your hardware platform.
+        and may not be applicable on your hardware platform.
 
     EXAMPLE
 
@@ -108,10 +108,10 @@ static void FlushMem(struct ExecBase *SysBase)
 int main(void)
 {
     IPTR           args[NOOFARGS] = { (IPTR)FALSE,
-				      (IPTR)FALSE,
-				      (IPTR)FALSE, 
-				      (IPTR)FALSE,
-				      (IPTR)FALSE };
+                                      (IPTR)FALSE,
+                                      (IPTR)FALSE,
+                                      (IPTR)FALSE,
+                                      (IPTR)FALSE };
     struct RDArgs *rda;
     LONG           error = 0;
     BOOL bPrintErr = TRUE;
@@ -120,11 +120,11 @@ int main(void)
     if (rda != NULL)
     {
         UWORD typeCount = 0;
-	BOOL  aChip  = (BOOL)args[ARG_CHIP];
-	BOOL  aFast  = (BOOL)args[ARG_FAST];
-	BOOL  aTotal = (BOOL)args[ARG_TOTAL];
-	BOOL  aFlush = (BOOL)args[ARG_FLUSH];
-	aHuman = (BOOL)args[ARG_HUMAN];
+        BOOL  aChip  = (BOOL)args[ARG_CHIP];
+        BOOL  aFast  = (BOOL)args[ARG_FAST];
+        BOOL  aTotal = (BOOL)args[ARG_TOTAL];
+        BOOL  aFlush = (BOOL)args[ARG_FLUSH];
+        aHuman = (BOOL)args[ARG_HUMAN];
 
         if (aChip)
         {
@@ -139,94 +139,94 @@ int main(void)
             typeCount++;
         }
 
-	IPTR chip[4], fast[4], total[4];
+        IPTR chip[4], fast[4], total[4];
 
-	if (typeCount > 1)
-	{
-	    FPuts(Output(), "Only one of CHIP, FAST or TOTAL allowed\n");
-	    bPrintErr = FALSE;
+        if (typeCount > 1)
+        {
+            FPuts(Output(), "Only one of CHIP, FAST or TOTAL allowed\n");
+            bPrintErr = FALSE;
             FreeArgs(rda);
 
-	    return RETURN_FAIL;
-	}
-	else
-	{
-	    if (aFlush)
-	    {
-	        FlushMem(SysBase);
-	    }
-	    
-	    if(aChip)
-	    {
-		
-		chip[0] = AvailMem(MEMF_CHIP);
-		
-		if (printm(NULL, chip, 1) < 0)
-		{
-		    error = RETURN_ERROR;
-		}
-	    }
-	    else if(aFast)
-	    {
-		fast[0] = AvailMem(MEMF_FAST);
+            return RETURN_FAIL;
+        }
+        else
+        {
+            if (aFlush)
+            {
+                FlushMem(SysBase);
+            }
+            
+            if(aChip)
+            {
+                
+                chip[0] = AvailMem(MEMF_CHIP);
+                
+                if (printm(NULL, chip, 1) < 0)
+                {
+                    error = RETURN_ERROR;
+                }
+            }
+            else if(aFast)
+            {
+                fast[0] = AvailMem(MEMF_FAST);
 
-		if (printm(NULL, fast, 1) < 0)
-		{
-		    error = RETURN_ERROR;
-		}
-	    }
-	    else if (aTotal)
-	    {
-		total[0] = AvailMem(MEMF_ANY);
+                if (printm(NULL, fast, 1) < 0)
+                {
+                    error = RETURN_ERROR;
+                }
+            }
+            else if (aTotal)
+            {
+                total[0] = AvailMem(MEMF_ANY);
 
-		if (printm(NULL, total, 1) < 0)
-		{
-		    error = RETURN_ERROR;
-		}
-	    }
-	    else
-	    {
-		Forbid();
+                if (printm(NULL, total, 1) < 0)
+                {
+                    error = RETURN_ERROR;
+                }
+            }
+            else
+            {
+                Forbid();
 
-		chip[0] = AvailMem(MEMF_CHIP);
-		chip[2] = AvailMem(MEMF_CHIP | MEMF_TOTAL);
-		chip[3] = AvailMem(MEMF_CHIP | MEMF_LARGEST);
-		chip[1] = chip[2] - chip[0];
-		fast[0] = AvailMem(MEMF_FAST);
-		fast[2] = AvailMem(MEMF_FAST | MEMF_TOTAL);
-		fast[3] = AvailMem(MEMF_FAST | MEMF_LARGEST);
-		fast[1] = fast[2] - fast[0];
-		total[0] = AvailMem(MEMF_ANY);
-		total[2] = AvailMem(MEMF_ANY | MEMF_TOTAL);
-		total[3] = AvailMem(MEMF_ANY | MEMF_LARGEST);
-		total[1] = total[2] - total[0];
+                chip[0] = AvailMem(MEMF_CHIP);
+                chip[2] = AvailMem(MEMF_CHIP | MEMF_TOTAL);
+                chip[3] = AvailMem(MEMF_CHIP | MEMF_LARGEST);
+                chip[1] = chip[2] - chip[0];
+                fast[0] = AvailMem(MEMF_FAST);
+                fast[2] = AvailMem(MEMF_FAST | MEMF_TOTAL);
+                fast[3] = AvailMem(MEMF_FAST | MEMF_LARGEST);
+                fast[1] = fast[2] - fast[0];
+                total[0] = AvailMem(MEMF_ANY);
+                total[2] = AvailMem(MEMF_ANY | MEMF_TOTAL);
+                total[3] = AvailMem(MEMF_ANY | MEMF_LARGEST);
+                total[1] = total[2] - total[0];
 
-		Permit();
+                Permit();
 
 #if (__WORDSIZE == 64)
-		if (PutStr("Type     Available        In-Use       Maximum       Largest\n") < 0 ||
+                if (PutStr("Type     Available        In-Use       Maximum       Largest\n") < 0 ||
 #else
-		if (PutStr("Type    Available    In-Use   Maximum   Largest\n") < 0 ||
+                if (PutStr("Type    Available    In-Use   Maximum   Largest\n") < 0 ||
 #endif
-		    printm("chip", chip, 4) < 0 ||
-		    printm("fast", fast, 4) < 0 ||
-		    printm("total", total, 4) < 0)
-		{
-		    error = RETURN_ERROR;
-		}
-	    }
-	}
-	
-	FreeArgs(rda);
+                    printm("chip", chip, 4) < 0 ||
+                    printm("fast", fast, 4) < 0 ||
+                    printm("total", total, 4) < 0)
+                {
+                    error = RETURN_ERROR;
+                }
+            }
+        }
+        
+        FreeArgs(rda);
     }
     else
     {
-	error = RETURN_FAIL;
+        error = RETURN_FAIL;
     }
     
     if(error != RETURN_OK && bPrintErr)
     {
-	PrintFault(IoErr(), "Avail");
+        PrintFault(IoErr(), "Avail");
     }
 
     return error;

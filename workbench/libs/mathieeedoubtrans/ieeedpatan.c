@@ -38,8 +38,8 @@
     
     AND64C
     (
-        yabs, y, 
-        (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi), 
+        yabs, y,
+        (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
         (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo)
     );
     
@@ -69,7 +69,7 @@
         Set_Value64C(tmp1, pio2_hi_Hi, pio2_hi_Lo);
         Set_Value64C(onethird, onethird_Hi, onethird_Lo);
         
-        tmp1 = IEEEDPAdd(tmp1,IEEEDPDiv(IEEEDPSub(onethird, ysquared),ycubed)); 
+        tmp1 = IEEEDPAdd(tmp1,IEEEDPDiv(IEEEDPSub(onethird, ysquared),ycubed));
         
         if (is_eq(yabs,y)) /* arg has positive sign */
         {
@@ -84,8 +84,8 @@
         }
     }
     
-    /* 
-          atan(x >= 128) = pi/2 - 1/x + 1/(3*x^3) -1/(5*x^5) 
+    /*
+          atan(x >= 128) = pi/2 - 1/x + 1/(3*x^3) -1/(5*x^5)
         = pi/2 + (1/3*x^2 - x^4 - 1/5) / x^5
     */
     if (Get_High32of64(yabs) >= 0x40600000)
@@ -98,8 +98,8 @@
         
         tmp1 = IEEEDPAdd
         (
-            tmp1, 
-            IEEEDPDiv( 
+            tmp1,
+            IEEEDPDiv(
             IEEEDPSub(
             IEEEDPSub(
             IEEEDPMul(onethird,ysquared),
@@ -109,7 +109,7 @@
         if (is_eq(yabs,y)) /* arg has positive sign */
         {
             SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
-            return tmp1;     
+            return tmp1;
         }
         else
         {

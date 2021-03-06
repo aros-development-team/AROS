@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002, The AROS Development Team. 
+    Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
     
 */
@@ -15,12 +15,12 @@
 #include <proto/muimaster.h>
 extern struct Library * MUIMasterBase;
 
-	Object * MUI_NewObject (
+        Object * MUI_NewObject (
 
 /*  SYNOPSIS */
-	const char * classname,
-	Tag tag1, 
-	...)
+        const char * classname,
+        Tag tag1,
+        ...)
 
 /*  FUNCTION
 

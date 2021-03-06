@@ -15,27 +15,27 @@
 #include <intuition/screens.h>
 #include <utility/tagitem.h>
 
-	AROS_LH2(APTR, GetVisualInfoA,
+        AROS_LH2(APTR, GetVisualInfoA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Screen *, screen, A0),
-	AROS_LHA(struct TagItem *, tagList, A1),
+        AROS_LHA(struct Screen *, screen, A0),
+        AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 21, GadTools)
+        struct Library *, GadToolsBase, 21, GadTools)
 
 /*  FUNCTION
-	GetVisualInfoA() creates a visual info structure, which is needed
-	by several gadtools functions. When you're done using it, you have
-	to call FreeVisualInfo().
+        GetVisualInfoA() creates a visual info structure, which is needed
+        by several gadtools functions. When you're done using it, you have
+        to call FreeVisualInfo().
 
     INPUTS
-	screen -  pointer to the screen to create a visual info structure for
-	          (may be NULL)
-	taglist - additional tags (none defined, yet)
+        screen -  pointer to the screen to create a visual info structure for
+                  (may be NULL)
+        taglist - additional tags (none defined, yet)
 
     RESULT
-	A (private) visual info structure. NULL indicates an error.
+        A (private) visual info structure. NULL indicates an error.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	FreeVisualInfo()
+        FreeVisualInfo()
 
     INTERNALS
 
@@ -57,7 +57,7 @@
     struct VisualInfo *vi;
 
     if (screen == NULL)
-	return NULL;
+        return NULL;
 
     vi = AllocVec(sizeof(struct VisualInfo), MEMF_ANY);
     if (!vi)

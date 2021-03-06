@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. 
+    Copyright (C) 2002-2020, The AROS Development Team.
     All rights reserved.
     
 */
@@ -97,9 +97,9 @@ __saveds void objects_function(void)
     Object *new_obj = MUI_MakeObject(MUIO_Button,"Button");
     if (new_obj)
     {
-    	DoMethod(group, MUIM_Group_InitChange);
-    	DoMethod(group, OM_ADDMEMBER, new_obj);
-    	DoMethod(group, MUIM_Group_ExitChange);
+        DoMethod(group, MUIM_Group_InitChange);
+        DoMethod(group, OM_ADDMEMBER, new_obj);
+        DoMethod(group, MUIM_Group_ExitChange);
     }
 }
 
@@ -110,9 +110,9 @@ void about_function(void)
     static Object *about_wnd;
     if (!about_wnd)
     {
-	about_wnd = AboutmuiObject,
-		MUIA_Aboutmui_Application, app,
-		End;
+        about_wnd = AboutmuiObject,
+                MUIA_Aboutmui_Application, app,
+                End;
     }
 
     if (about_wnd) set(about_wnd,MUIA_Window_Open,TRUE);
@@ -123,7 +123,7 @@ __saveds __asm void display_function(register __a0 struct Hook *h, register __a2
     static char buf[100];
     if (entry)
     {
-    	sprintf(buf,"%ld",*(strings-1));
+        sprintf(buf,"%ld",*(strings-1));
         strings[0] = buf;
         strings[1] = entry->column1;
         strings[2] = entry->column2;
@@ -140,7 +140,7 @@ __saveds __asm void display2_function(register __a0 struct Hook *h, register __a
     static char buf[100];
     if (entry)
     {
-    	sprintf(buf,"line num: %ld  id: %ld",*(strings-1),entry);
+        sprintf(buf,"line num: %ld  id: %ld",*(strings-1),entry);
         strings[0] = buf;
     } else
     {
@@ -158,8 +158,8 @@ void save_function(void)
 
     if ((fh = Open(filename,MODE_NEWFILE)))
     {
-    	Write(fh,text,strlen(text));
-	Close(fh);
+        Write(fh,text,strlen(text));
+        Close(fh);
     }
 }
 
@@ -222,22 +222,22 @@ struct Library *KeymapBase;
 __saveds __asm IPTR dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 AROS_UFH3S(IPTR, dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
+        AROS_UFHA(Class  *, cl,  A0),
+        AROS_UFHA(Object *, obj, A2),
+        AROS_UFHA(Msg     , msg, A1))
 #endif
 {
     switch (msg->MethodID)
     {
-    	case MUIM_DragQuery: return MUIV_DragQuery_Accept;
-    	case MUIM_DragDrop:
-    	{
-	    struct DropText_Data *data = (struct DropText_Data*)INST_DATA(cl,obj);
-	    char buf[100];
-	    data->times++;
-	    sprintf(buf,"%ld times",data->times); /* no MUIM_SetAsString yet */
-	    set(obj,MUIA_Text_Contents,buf);
-    	}
+        case MUIM_DragQuery: return MUIV_DragQuery_Accept;
+        case MUIM_DragDrop:
+        {
+            struct DropText_Data *data = (struct DropText_Data*)INST_DATA(cl,obj);
+            char buf[100];
+            data->times++;
+            sprintf(buf,"%ld times",data->times); /* no MUIM_SetAsString yet */
+            set(obj,MUIA_Text_Contents,buf);
+        }
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -256,11 +256,11 @@ static struct Hook hook_standard;
 
 __saveds static __asm void hook_func_standard(register __a0 struct Hook *h, register __a1 ULONG * funcptr)
 {
-	void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
-//	putreg(REG_A4,(long)h->h_Data);
+        void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+//      putreg(REG_A4,(long)h->h_Data);
 
-	if (func)
-		func(funcptr + 1);
+        if (func)
+                func(funcptr + 1);
 }
 void main(void)
 {
@@ -288,7 +288,7 @@ void main(void)
     static struct list_entry entry6 = {"Entry6","Col2: Entry6"};
 
     static struct list_entry *entries[] =
-    	{&entry1,&entry2,&entry3,&entry4,&entry5,&entry6,NULL};
+        {&entry1,&entry2,&entry3,&entry4,&entry5,&entry6,NULL};
 
     struct Hook hook;
     struct Hook hook_wheel;
@@ -316,7 +316,7 @@ void main(void)
     MUIMasterBase_instance.iffparsebase = OpenLibrary("iffparse.library",37);
     MUIMasterBase_instance.diskfontbase = OpenLibrary("diskfont.library",37);
     MUIMasterBase_instance.iconbase = OpenLibrary("icon.library",44);
-		MUIMasterBase_instance.cybergfxbase = OpenLibrary("cybergraphics.library", 0);
+                MUIMasterBase_instance.cybergfxbase = OpenLibrary("cybergraphics.library", 0);
     InitSemaphore(&MUIMasterBase_instance.ZuneSemaphore);
 
 #ifdef __MAXON__
@@ -334,343 +334,343 @@ void main(void)
     hook_display2.h_Entry = (HOOKFUNC)display2_function;
 
     context_menu = MenustripObject,
-	    MUIA_Family_Child, MenuObject,
-		MUIA_Menu_Title, "Menutest",
-		MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "First Test Entry", End,
-		MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Second Test Entry", End,
-		End,
-	    End;
+            MUIA_Family_Child, MenuObject,
+                MUIA_Menu_Title, "Menutest",
+                MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "First Test Entry", End,
+                MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Second Test Entry", End,
+                End,
+            End;
 
     /* should check the result in a real program! */
     CL_DropText = MUI_CreateCustomClass(NULL,MUIC_Text,NULL,sizeof(struct DropText_Data), dispatcher);
     ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget",0);
 
     app = ApplicationObject,
-	MUIA_Application_Menustrip, MenustripObject,
-	    MUIA_Family_Child, MenuObject,
-	    	MUIA_Menu_Title, "Project",
-	    	MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "About...", MUIA_Menuitem_Shortcut, "?", End,
-	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
-	    	MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
-	    	End,
-	    End,
-    	SubWindow, wnd = WindowObject,
-    	    MUIA_Window_Title, "test",
-	    MUIA_Window_Activate, TRUE,
+        MUIA_Application_Menustrip, MenustripObject,
+            MUIA_Family_Child, MenuObject,
+                MUIA_Menu_Title, "Project",
+                MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "About...", MUIA_Menuitem_Shortcut, "?", End,
+                MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
+                MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
+                End,
+            End,
+        SubWindow, wnd = WindowObject,
+            MUIA_Window_Title, "test",
+            MUIA_Window_Activate, TRUE,
 
-	    MUIA_Window_UseRightBorderScroller, TRUE,
+            MUIA_Window_UseRightBorderScroller, TRUE,
 
-    	    WindowContents, VGroup,
-    	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
-    	    	Child, popobject = PopobjectObject,
-    	    	    MUIA_Popstring_String, MUI_MakeObject(MUIO_String, NULL, 200),
-    	    	    MUIA_Popstring_Button, PopButton(MUII_PopUp),
-    	    	    MUIA_Popobject_Object, VGroup,
-    	    	    	Child, TextObject,MUIA_Text_Contents,"test",End,
-    	    	    	Child, listview = ListviewObject,
-			    MUIA_Listview_List, ListObject,
-			        InputListFrame,
-			        MUIA_List_DisplayHook, &hook_display,
-    	    	    	        MUIA_List_Format, ",,",
-    	    	    	        MUIA_List_SourceArray, entries,
-    	    	    	        MUIA_List_Title, TRUE,
-    	    	    	        End,
-    	    	    	    End,
-			End,
-    	    	    End,
-    	    	Child, RegisterObject,
-								MUIA_Register_Titles, pages,
-								MUIA_Register_Columns, 3,
-								
-//		    MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
-		    Child, HGroup,
-		        GroupFrameT("A horizontal group"),
-		        Child, ColGroup(2),
-			    GroupFrameT("A column group"),
-			    Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Repeat", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drag Me", MUIA_Draggable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, MUIA_ContextMenu, context_menu, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Press Right", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, objects_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Add Objects", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, MUIA_Disabled, 1, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, MUI_MakeObject(MUIO_Label,"_Checkmark",0),
-			    Child, MUI_MakeObject(MUIO_Checkmark,"_Checkmark"),
-			    End,
-		        Child, group = VGroup,
-			    GroupFrameT("A vertical group"),
-			    Child, DropTextObject, MUIA_Dropable, TRUE, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, TextFrame, MUIA_Background, MUII_MARKHALFSHINE, MUIA_CycleChain, 1, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Pattern", End,
-			   End,
-			Child, MUI_NewObject(MUIC_Popimage, TAG_DONE),
-		       End,
+            WindowContents, VGroup,
+                Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
+                Child, popobject = PopobjectObject,
+                    MUIA_Popstring_String, MUI_MakeObject(MUIO_String, NULL, 200),
+                    MUIA_Popstring_Button, PopButton(MUII_PopUp),
+                    MUIA_Popobject_Object, VGroup,
+                        Child, TextObject,MUIA_Text_Contents,"test",End,
+                        Child, listview = ListviewObject,
+                            MUIA_Listview_List, ListObject,
+                                InputListFrame,
+                                MUIA_List_DisplayHook, &hook_display,
+                                MUIA_List_Format, ",,",
+                                MUIA_List_SourceArray, entries,
+                                MUIA_List_Title, TRUE,
+                                End,
+                            End,
+                        End,
+                    End,
+                Child, RegisterObject,
+                                                                MUIA_Register_Titles, pages,
+                                                                MUIA_Register_Columns, 3,
+                                                                
+//                  MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
+                    Child, HGroup,
+                        GroupFrameT("A horizontal group"),
+                        Child, ColGroup(2),
+                            GroupFrameT("A column group"),
+                            Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Repeat", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+                            Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drag Me", MUIA_Draggable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+                            Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+                            Child, TextObject, MUIA_ContextMenu, context_menu, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Press Right", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+                            Child, objects_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Add Objects", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+                            Child, TextObject, MUIA_Disabled, 1, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+                            Child, MUI_MakeObject(MUIO_Label,"_Checkmark",0),
+                            Child, MUI_MakeObject(MUIO_Checkmark,"_Checkmark"),
+                            End,
+                        Child, group = VGroup,
+                            GroupFrameT("A vertical group"),
+                            Child, DropTextObject, MUIA_Dropable, TRUE, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+                            Child, TextObject, TextFrame, MUIA_Background, MUII_MARKHALFSHINE, MUIA_CycleChain, 1, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Pattern", End,
+                           End,
+                        Child, MUI_NewObject(MUIC_Popimage, TAG_DONE),
+                       End,
 
-		    Child, VGroup,
-		        Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
-		            GroupFrame,
-		            MUIA_Boopsi_ClassID  , "colorwheel.gadget",
-		            MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
-		            MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
-		            MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
-		            MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
-		            MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
-		            WHEEL_Screen         , NULL,         /* the screen pointer  */
-		            GA_Left     , 0,
-		            GA_Top      , 0, /* MUI will automatically     */
-		            GA_Width    , 0, /* fill in the correct values */
-		            GA_Height   , 0,
-		            ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
-		            WHEEL_Saturation, 0, /* start in the center */
-		            MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
-					        for boopsi gadgets but the colorwheel
-					        doesnt bother about redrawing its backgorund */
-		            End,
+                    Child, VGroup,
+                        Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
+                            GroupFrame,
+                            MUIA_Boopsi_ClassID  , "colorwheel.gadget",
+                            MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
+                            MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
+                            MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
+                            MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
+                            MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
+                            WHEEL_Screen         , NULL,         /* the screen pointer  */
+                            GA_Left     , 0,
+                            GA_Top      , 0, /* MUI will automatically     */
+                            GA_Width    , 0, /* fill in the correct values */
+                            GA_Height   , 0,
+                            ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
+                            WHEEL_Saturation, 0, /* start in the center */
+                            MUIA_FillArea, TRUE, /* use this because it defaults to FALSE
+                                                for boopsi gadgets but the colorwheel
+                                                doesnt bother about redrawing its backgorund */
+                            End,
 
-		        Child, r_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
-		        Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
-		        Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+                        Child, r_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+                        Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+                        Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 
-			Child, hue_gauge = GaugeObject, MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Max, 255, MUIA_Gauge_Divide, 1<<24, MUIA_Gauge_InfoText, "Hue: %ld",End,
-		        End,
+                        Child, hue_gauge = GaugeObject, MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Max, 255, MUIA_Gauge_Divide, 1<<24, MUIA_Gauge_InfoText, "Hue: %ld",End,
+                        End,
 
 #if 0
-Child, ScrollgroupObject,   
-    MUIA_Scrollgroup_Contents, HGroupV,   
-Child, VGroup,   
-    Child, TextObject,   
-TextFrame,   
-MUIA_Text_Contents,   
-"Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",   
-End,   
-    Child, HGroup,   
-Child, MUI_MakeObject(MUIO_Button,"Button9"),   
-Child, MUI_MakeObject(MUIO_Button,"Button10"),   
-Child, MUI_MakeObject(MUIO_Button,"Button11"),   
-Child, MUI_MakeObject(MUIO_Button,"Button12"),   
-Child, MUI_MakeObject(MUIO_Button,"Button13"),   
-End,   
-    End,   
-Child, VGroup,   
-    Child, SimpleButton("blabla"),   
-    Child, SimpleButton("blabla"),   
-    Child, SimpleButton("blabla"),   
-    Child, SimpleButton("blabla"),   
-    Child, SimpleButton("blabla"),   
-    Child, SimpleButton("blabla"),   
-    End,   
+Child, ScrollgroupObject,
+    MUIA_Scrollgroup_Contents, HGroupV,
+Child, VGroup,
+    Child, TextObject,
+TextFrame,
+MUIA_Text_Contents,
+"Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",
+End,
+    Child, HGroup,
+Child, MUI_MakeObject(MUIO_Button,"Button9"),
+Child, MUI_MakeObject(MUIO_Button,"Button10"),
+Child, MUI_MakeObject(MUIO_Button,"Button11"),
+Child, MUI_MakeObject(MUIO_Button,"Button12"),
+Child, MUI_MakeObject(MUIO_Button,"Button13"),
+End,
+    End,
+Child, VGroup,
+    Child, SimpleButton("blabla"),
+    Child, SimpleButton("blabla"),
+    Child, SimpleButton("blabla"),
+    Child, SimpleButton("blabla"),
+    Child, SimpleButton("blabla"),
+    Child, SimpleButton("blabla"),
+    End,
 
-Child, ScrollgroupObject, MUIA_Scrollgroup_Contents, VGroupV,   
-    GroupFrameT("virtvir"),   
-    Child, SimpleButton("eins"),   
-    Child, SimpleButton("zwei"),   
-    Child, SimpleButton("drei"),   
-    Child, SimpleButton("vier"),   
-    Child, SimpleButton("eins"),   
-    Child, SimpleButton("zwei"),   
-    Child, SimpleButton("drei"),   
-    Child, SimpleButton("vier"),   
-    Child, SimpleButton("eins"),   
-    Child, SimpleButton("zwei"),   
-    Child, SimpleButton("drei"),   
-    Child, SimpleButton("vier"),   
-    Child, SimpleButton("eins"),   
-    Child, SimpleButton("zwei"),   
-    Child, SimpleButton("drei"),   
-    Child, SimpleButton("vier"),   
-    End,   
+Child, ScrollgroupObject, MUIA_Scrollgroup_Contents, VGroupV,
+    GroupFrameT("virtvir"),
+    Child, SimpleButton("eins"),
+    Child, SimpleButton("zwei"),
+    Child, SimpleButton("drei"),
+    Child, SimpleButton("vier"),
+    Child, SimpleButton("eins"),
+    Child, SimpleButton("zwei"),
+    Child, SimpleButton("drei"),
+    Child, SimpleButton("vier"),
+    Child, SimpleButton("eins"),
+    Child, SimpleButton("zwei"),
+    Child, SimpleButton("drei"),
+    Child, SimpleButton("vier"),
+    Child, SimpleButton("eins"),
+    Child, SimpleButton("zwei"),
+    Child, SimpleButton("drei"),
+    Child, SimpleButton("vier"),
+    End,
     End,
-End,   
-    End,   
+End,
+    End,
 #else
 
-		    Child, ScrollgroupObject,
-			MUIA_Scrollgroup_Contents, HGroupV,
-			    VirtualFrame,
-			    Child, TextObject,
-				TextFrame,
-				MUIA_Text_Contents, "Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",
-				End,
-			    Child, HGroup,
-				Child, MUI_MakeObject(MUIO_Button,"Button9"),
-				Child, MUI_MakeObject(MUIO_Button,"Button10"),
-				End,
-			    Child, HGroup,
-				Child, MUI_MakeObject(MUIO_Button,"Button9"),
-				Child, MUI_MakeObject(MUIO_Button,"Button10"),
-				End,
-			    Child, HGroup,
-				Child, MUI_MakeObject(MUIO_Button,"Button9"),
-				Child, MUI_MakeObject(MUIO_Button,"Button10"),
-				End,
-			    End,
-		    	End,
-		    Child, VGroup,
-			Child, editor_text = TextObject,
-			    StringFrame,
+                    Child, ScrollgroupObject,
+                        MUIA_Scrollgroup_Contents, HGroupV,
+                            VirtualFrame,
+                            Child, TextObject,
+                                TextFrame,
+                                MUIA_Text_Contents, "Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",
+                                End,
+                            Child, HGroup,
+                                Child, MUI_MakeObject(MUIO_Button,"Button9"),
+                                Child, MUI_MakeObject(MUIO_Button,"Button10"),
+                                End,
+                            Child, HGroup,
+                                Child, MUI_MakeObject(MUIO_Button,"Button9"),
+                                Child, MUI_MakeObject(MUIO_Button,"Button10"),
+                                End,
+                            Child, HGroup,
+                                Child, MUI_MakeObject(MUIO_Button,"Button9"),
+                                Child, MUI_MakeObject(MUIO_Button,"Button10"),
+                                End,
+                            End,
+                        End,
+                    Child, VGroup,
+                        Child, editor_text = TextObject,
+                            StringFrame,
 #ifndef COMPILE_WITH_MUI
 #if 0
-			    MUIA_Text_Editable, TRUE,
-			    MUIA_Text_Multiline, TRUE,
+                            MUIA_Text_Editable, TRUE,
+                            MUIA_Text_Multiline, TRUE,
 #endif
 #endif
-			    End,
-		    	Child, PopaslObject,
-		    	    ASLFR_DoSaveMode, TRUE,
-    		    	    MUIA_Popstring_String, filename_string = MUI_MakeObject(MUIO_String, NULL, 200),
-    	    		    MUIA_Popstring_Button, PopButton(MUII_PopFile),
-			    End,
-			Child, save_button = MUI_MakeObject(MUIO_Button, "Save"),
-			End,
-		    Child, VGroup,
-		    	Child, ListviewObject,
-			    MUIA_Listview_List, list2 = ListObject,
-				InputListFrame,
-			        MUIA_List_DisplayHook, &hook_display2,
-			    	End,
-			    End,
-			Child, HGroup,
-			    Child, list_add_button = MUI_MakeObject(MUIO_Button,"_Add"),
-			    Child, list_add_child_button = MUI_MakeObject(MUIO_Button,"_Add Child"),
-			    Child, list_remove_button = MUI_MakeObject(MUIO_Button,"_Remove"),
-			    Child, list_clear_button = MUI_MakeObject(MUIO_Button,"_Clear"),
-			    End,
-			End,
+                            End,
+                        Child, PopaslObject,
+                            ASLFR_DoSaveMode, TRUE,
+                            MUIA_Popstring_String, filename_string = MUI_MakeObject(MUIO_String, NULL, 200),
+                            MUIA_Popstring_Button, PopButton(MUII_PopFile),
+                            End,
+                        Child, save_button = MUI_MakeObject(MUIO_Button, "Save"),
+                        End,
+                    Child, VGroup,
+                        Child, ListviewObject,
+                            MUIA_Listview_List, list2 = ListObject,
+                                InputListFrame,
+                                MUIA_List_DisplayHook, &hook_display2,
+                                End,
+                            End,
+                        Child, HGroup,
+                            Child, list_add_button = MUI_MakeObject(MUIO_Button,"_Add"),
+                            Child, list_add_child_button = MUI_MakeObject(MUIO_Button,"_Add Child"),
+                            Child, list_remove_button = MUI_MakeObject(MUIO_Button,"_Remove"),
+                            Child, list_clear_button = MUI_MakeObject(MUIO_Button,"_Clear"),
+                            End,
+                        End,
 
 /* gauges */
-	            Child, HGroup,
-		        Child, VGroup,
-	                    Child, VGroup, GroupFrame,
-		                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 25, End,
-		                Child, ScaleObject, End,
-	                        End,
-	                    Child, VGroup, GroupFrame,
-   		                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 50, End,
-		                Child, ScaleObject, End,
-	                        End,
-	                    Child, VGroup, GroupFrame,
-		                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 75, End,
-		                Child, ScaleObject, End,
-	                        End,
-	                    End,
-	                Child, HGroup,
-			    Child, HVSpace,
-		            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 25, End,
-		            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 50, End,
-		            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 75, End,
-			    Child, HVSpace,
-	                    End,
-		        End,
+                    Child, HGroup,
+                        Child, VGroup,
+                            Child, VGroup, GroupFrame,
+                                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 25, End,
+                                Child, ScaleObject, End,
+                                End,
+                            Child, VGroup, GroupFrame,
+                                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 50, End,
+                                Child, ScaleObject, End,
+                                End,
+                            Child, VGroup, GroupFrame,
+                                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 75, End,
+                                Child, ScaleObject, End,
+                                End,
+                            End,
+                        Child, HGroup,
+                            Child, HVSpace,
+                            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 25, End,
+                            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 50, End,
+                            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 75, End,
+                            Child, HVSpace,
+                            End,
+                        End,
 /* radios */
-	            Child, HGroup,
-	                Child, VGroup, 
-		            Child, RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries1, End,
-	                    Child, country_radio[0] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
-	                    End,
-	                Child, HGroup,
-		            Child, RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries1, End,
-	                    Child, country_radio[1] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
-	                    End,
-	                End,
+                    Child, HGroup,
+                        Child, VGroup,
+                            Child, RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries1, End,
+                            Child, country_radio[0] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
+                            End,
+                        Child, HGroup,
+                            Child, RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries1, End,
+                            Child, country_radio[1] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
+                            End,
+                        End,
 
 /* iconlist */
 #ifndef COMPILE_WITH_MUI
 
-	            Child, HGroup,
-	            	Child, volume_iconlist = MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
-	            	Child, drawer_iconlist = MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
-	            	End,
+                    Child, HGroup,
+                        Child, volume_iconlist = MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
+                        Child, drawer_iconlist = MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
+                        End,
 #else
-		    Child, HGroup,
-			TAG_IGNORE,volume_iconlist = drawer_iconlist = NULL,
-			Child, HVSpace,
-			End,
+                    Child, HGroup,
+                        TAG_IGNORE,volume_iconlist = drawer_iconlist = NULL,
+                        Child, HVSpace,
+                        End,
 #endif
 
-	            End,
-	         
+                    End,
+                 
 #endif
-		Child, RectangleObject,
-		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
-		    MUIA_Rectangle_HBar, TRUE,
-		    MUIA_Rectangle_BarTitle,"Enter an integer",
-		    End,
+                Child, RectangleObject,
+                    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
+                    MUIA_Rectangle_HBar, TRUE,
+                    MUIA_Rectangle_BarTitle,"Enter an integer",
+                    End,
 
-		Child, CycleObject,
-				ButtonFrame,
-		    MUIA_Cycle_Entries, pages,
-		    End,
+                Child, CycleObject,
+                                ButtonFrame,
+                    MUIA_Cycle_Entries, pages,
+                    End,
 
-		Child, StringObject,
-		    StringFrame,
-		    MUIA_CycleChain,1,
-		    MUIA_String_AdvanceOnCR, TRUE,
-		    MUIA_String_Accept, "0123456789",
-		    End,
+                Child, StringObject,
+                    StringFrame,
+                    MUIA_CycleChain,1,
+                    MUIA_String_AdvanceOnCR, TRUE,
+                    MUIA_String_Accept, "0123456789",
+                    End,
 
-		Child, prop = ScrollbarObject,
-		    MUIA_Group_Horiz, TRUE,
-		    MUIA_Prop_Visible, 100,
-		    MUIA_Prop_Entries, 300,
-		    MUIA_Prop_First, 50,
-		    MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
-		    End,
+                Child, prop = ScrollbarObject,
+                    MUIA_Group_Horiz, TRUE,
+                    MUIA_Prop_Visible, 100,
+                    MUIA_Prop_Entries, 300,
+                    MUIA_Prop_First, 50,
+                    MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
+                    End,
 
-    	    	Child, HGroup,
-    	    	    Child, quit_button = TextObject,
-			ButtonFrame,
-			MUIA_InputMode, MUIV_InputMode_RelVerify,
-			MUIA_CycleChain, 1,
-			MUIA_Background, MUII_ButtonBack,
-			MUIA_ControlChar, 'q',
-			MUIA_Text_HiChar, 'q',
-			MUIA_Text_PreParse, "\33c",
-			MUIA_Text_Contents, "Quit",
-			End,
-    	    	    End,
-    	        End,
-    	    End,
-    	SubWindow, second_wnd = WindowObject,
-    	    MUIA_Window_Title, "Second window",
+                Child, HGroup,
+                    Child, quit_button = TextObject,
+                        ButtonFrame,
+                        MUIA_InputMode, MUIV_InputMode_RelVerify,
+                        MUIA_CycleChain, 1,
+                        MUIA_Background, MUII_ButtonBack,
+                        MUIA_ControlChar, 'q',
+                        MUIA_Text_HiChar, 'q',
+                        MUIA_Text_PreParse, "\33c",
+                        MUIA_Text_Contents, "Quit",
+                        End,
+                    End,
+                End,
+            End,
+        SubWindow, second_wnd = WindowObject,
+            MUIA_Window_Title, "Second window",
 
-    	    WindowContents, VGroup,
-		Child, DropTextObject, MUIA_Text_Contents, "Drop here", MUIA_Dropable, TRUE, End,
-		End,
-    	    End,
-    	End;
+            WindowContents, VGroup,
+                Child, DropTextObject, MUIA_Text_Contents, "Drop here", MUIA_Dropable, TRUE, End,
+                End,
+            End,
+        End;
 
     if (app)
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 
-	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	DoMethod(second_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-	DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd, 3,  MUIM_Set, MUIA_Window_Open, TRUE);
-	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	DoMethod(objects_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_CallHook, &hook_objects);
-	DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
-	DoMethod(prop, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
+        DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        DoMethod(second_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+        DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd, 3,  MUIM_Set, MUIA_Window_Open, TRUE);
+        DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        DoMethod(objects_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_CallHook, &hook_objects);
+        DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
+        DoMethod(prop, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
 
-	DoMethod(wheel, MUIM_Notify,WHEEL_Hue       , MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
-	DoMethod(wheel, MUIM_Notify,WHEEL_Saturation, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
-	DoMethod(r_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
-	DoMethod(g_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
-	DoMethod(b_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
+        DoMethod(wheel, MUIM_Notify,WHEEL_Hue       , MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
+        DoMethod(wheel, MUIM_Notify,WHEEL_Saturation, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
+        DoMethod(r_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
+        DoMethod(g_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
+        DoMethod(b_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
 
-	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, save_function);
+        DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, save_function);
 
-	DoMethod(quit_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	DoMethod(about_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, about_function);
+        DoMethod(quit_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        DoMethod(about_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, about_function);
 
-	DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, popobject, 2, MUIM_Popstring_Close, TRUE);
+        DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, popobject, 2, MUIM_Popstring_Close, TRUE);
 
         /* The callbacks of the buttons within the list page */
-	DoMethod(list_add_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_function);
-	DoMethod(list_add_child_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_child_function);
+        DoMethod(list_add_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_function);
+        DoMethod(list_add_child_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_child_function);
         DoMethod(list_remove_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 2, MUIM_List_Remove, MUIV_List_Remove_Active);
-	DoMethod(list_clear_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 1, MUIM_List_Clear);
+        DoMethod(list_clear_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 1, MUIM_List_Clear);
 
-	/* radio */
-	DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
-	DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
+        /* radio */
+        DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
+        DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 
         /* iconlist */
 #ifndef COMPILE_WITH_MUI
@@ -678,19 +678,19 @@ End,
         DoMethod(drawer_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, drawer_iconlist, 3, MUIM_CallHook, &hook_standard, drawer_doubleclicked);
 #endif
 
-	set(wnd,MUIA_Window_Open,TRUE);
+        set(wnd,MUIA_Window_Open,TRUE);
 
-	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-		if (sigs & SIGBREAKF_CTRL_C) break;
-		if (sigs & SIGBREAKF_CTRL_D) break;
-	    }
-	}
+        while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+                if (sigs & SIGBREAKF_CTRL_D) break;
+            }
+        }
 
-	MUI_DisposeObject(app);
+        MUI_DisposeObject(app);
     }
     if (context_menu) MUI_DisposeObject(context_menu);
     CloseLibrary(ColorWheelBase);
@@ -724,20 +724,20 @@ void main(void)
 
     if (notify)
     {
-	LONG ud;
-	printf("Notification Object created at 0x%p. Now setting MUIA_UserData to 10\n",notify);
-	set(notify, MUIA_UserData, 10);
-	get(notify, MUIA_UserData, &ud);
-	printf("UserData is now %ld\n",ud);
+        LONG ud;
+        printf("Notification Object created at 0x%p. Now setting MUIA_UserData to 10\n",notify);
+        set(notify, MUIA_UserData, 10);
+        get(notify, MUIA_UserData, &ud);
+        printf("UserData is now %ld\n",ud);
 
-	printf("Create a notify for the MUIA_UserData tag\n");
-	hook.h_Entry = (HOOKFUNC)hook_function;
-	DoMethod(notify, MUIM_Notify, MUIA_UserData, MUIV_EveryTime, notify, 3, MUIM_CallHook, &hook, MUIV_TriggerValue);
-	printf("Setting User Data to 20\n");
-	set(notify, MUIA_UserData, 20);
-	printf("Done. Now disposing object\n");
+        printf("Create a notify for the MUIA_UserData tag\n");
+        hook.h_Entry = (HOOKFUNC)hook_function;
+        DoMethod(notify, MUIM_Notify, MUIA_UserData, MUIV_EveryTime, notify, 3, MUIM_CallHook, &hook, MUIV_TriggerValue);
+        printf("Setting User Data to 20\n");
+        set(notify, MUIA_UserData, 20);
+        printf("Done. Now disposing object\n");
 
-	MUI_DisposeObject(notify);
+        MUI_DisposeObject(notify);
     }
 }
 

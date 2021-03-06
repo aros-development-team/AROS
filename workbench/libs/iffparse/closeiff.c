@@ -35,7 +35,7 @@
     EXAMPLE
 
     BUGS
-    Errors during writing of any of the remaining chunks are just 
+    Errors during writing of any of the remaining chunks are just
     ignored and both the faulty and all following chunks are not written.
 
     SEE ALSO

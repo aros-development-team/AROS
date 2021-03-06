@@ -57,7 +57,7 @@ AROS_UFH3(IPTR, GraphReadProcessorValueFunc,
 {
     AROS_USERFUNC_INIT
 
-    struct TagItem tags [] = 
+    struct TagItem tags [] =
     {
         { GCIT_SelectedProcessor, cpuNo },
         { GCIT_ProcessorLoad, (IPTR)storage },
@@ -144,7 +144,7 @@ Object *ProcessorGraph__OM_NEW(Class *CLASS, Object *self, struct opSet *message
                 MUIA_Group_Columns, cpupr,
             TAG_MORE, (IPTR) message->ops_AttrList
         );
-    }        
+    }
     
     if (self != NULL)
     {
@@ -276,7 +276,7 @@ IPTR ProcessorGraph__MUIM_ProcessorGrp_Update(Class *CLASS, Object *self, Msg me
     for (i = 0; i < data->pg_CPUCount; i++)
     {
         ULONG usage = 0;
-        struct TagItem tags [] = 
+        struct TagItem tags [] =
         {
             { GCIT_SelectedProcessor, (IPTR)i },
             { GCIT_ProcessorLoad, (IPTR)&usage },

@@ -22,10 +22,10 @@
         AROS_LH1(BOOL, MUIS_ClosePubScreen,
 
 /*  SYNOPSIS */
-	AROS_LHA(char *, name,  A0),
+        AROS_LHA(char *, name,  A0),
 
 /*  LOCATION */
-	struct MUIScreenBase_intern *, MUIScreenBase, 8, MUIScreen)
+        struct MUIScreenBase_intern *, MUIScreenBase, 8, MUIScreen)
 
 /*  FUNCTION
 
@@ -58,27 +58,27 @@
     pubscrlist = LockPubScreenList();
     ForeachNode(pubscrlist, pubscrnode)
     {
-	if(strcmp(pubscrnode->psn_Node.ln_Name, name) == 0)
-	{
-	    found = TRUE;
-	    break;
-	}
+        if(strcmp(pubscrnode->psn_Node.ln_Name, name) == 0)
+        {
+            found = TRUE;
+            break;
+        }
     }
     UnlockPubScreenList();
     
     if(found)
     {
-	PubScreenStatus(pubscrnode->psn_Screen, PSNF_PRIVATE);
-	CloseScreen(pubscrnode->psn_Screen);
+        PubScreenStatus(pubscrnode->psn_Screen, PSNF_PRIVATE);
+        CloseScreen(pubscrnode->psn_Screen);
 
-	struct Node *node;
-	ForeachNode(&MUIScreenBase->clients, node)
-	{
-	    struct MUIS_InfoClient *client = (struct MUIS_InfoClient*) node;
-	    Signal(client->task, client->sigbit);
-	}
+        struct Node *node;
+        ForeachNode(&MUIScreenBase->clients, node)
+        {
+            struct MUIS_InfoClient *client = (struct MUIS_InfoClient*) node;
+            Signal(client->task, client->sigbit);
+        }
 
-	retval = TRUE;
+        retval = TRUE;
     }
 
     return retval;

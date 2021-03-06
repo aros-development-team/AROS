@@ -76,10 +76,10 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
         /* Delete the local Var from the list.
          */
 
-	 if (!DeleteVar(SHArg(NAME), GVF_LOCAL_ONLY))
-	 {
+         if (!DeleteVar(SHArg(NAME), GVF_LOCAL_ONLY))
+         {
              return RETURN_FAIL;
-	 }
+         }
 
     }
     else

@@ -50,9 +50,9 @@ static void SetIControlPrefs(struct FileIControlPrefs *prefs)
     #define GETBYTE(x) i.ic_ ## x = prefs->ic_ ## x
     #define GETWORD(x) i.ic_ ## x = ((prefs->ic_ ## x[0] << 8) + prefs->ic_ ## x[1])
     #define GETLONG(x) i.ic_ ## x = ((prefs->ic_ ## x[0] << 24) + \
-    	    	    	    	     (prefs->ic_ ## x[1] << 16) + \
-				     (prefs->ic_ ## x[2] << 8) + \
-				      prefs->ic_ ## x[3])
+                                     (prefs->ic_ ## x[1] << 16) + \
+                                     (prefs->ic_ ## x[2] << 8) + \
+                                      prefs->ic_ ## x[3])
     
     GETWORD(TimeOut);
     GETWORD(MetaDrag);
@@ -76,21 +76,21 @@ void IControlPrefs_Handler(STRPTR filename)
     
     if ((iff = CreateIFF(filename, stopchunks, 1)))
     {
-	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
-	{
-	    struct FileIControlPrefs *icontrolprefs;
+        while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
+        {
+            struct FileIControlPrefs *icontrolprefs;
 
-	    icontrolprefs = LoadChunk(iff, 0, MEMF_ANY);
-	    if (icontrolprefs) {
-    	    	D(bug("IControlPrefs_Handler: ID_ICTL chunk successfully loaded.\n"));
-    	    	SetIControlPrefs(icontrolprefs);
-		FreeVec(icontrolprefs);		
-	    }
+            icontrolprefs = LoadChunk(iff, 0, MEMF_ANY);
+            if (icontrolprefs) {
+                D(bug("IControlPrefs_Handler: ID_ICTL chunk successfully loaded.\n"));
+                SetIControlPrefs(icontrolprefs);
+                FreeVec(icontrolprefs);
+            }
 
-	} /* while(ParseIFF(iff, IFFPARSE_SCAN) == 0) */
-	    
-   	KillIFF(iff);
-	
+        } /* while(ParseIFF(iff, IFFPARSE_SCAN) == 0) */
+            
+        KillIFF(iff);
+        
     } /* if ((iff = CreateIFF(filename))) */
     
     

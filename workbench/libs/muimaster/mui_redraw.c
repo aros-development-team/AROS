@@ -132,7 +132,7 @@
         }
     }
     
-    _flags(obj) = (_flags(obj) & ~MADF_DRAWFLAGS) | (flags & MADF_DRAWFLAGS);    
+    _flags(obj) = (_flags(obj) & ~MADF_DRAWFLAGS) | (flags & MADF_DRAWFLAGS);
 
     DoMethod(obj, MUIM_Draw, 0);
 
@@ -162,7 +162,7 @@
               This aproach might be faster *provided* that the buffer is
               allocated and filled *once* at startup of muimaster.library.
                 
-              In reality, the WritePixelArray() call has quite a big 
+              In reality, the WritePixelArray() call has quite a big
               overhead, so you should only use this buffer if the gadget
               completely fits inside, and fall back to allocating a new
               buffer if the gadget is too big.
@@ -183,14 +183,14 @@
                     WritePixelArrayAlpha
                     (
                         buffer, 0, 0, width * sizeof(LONG),
-                        _rp(obj), _left(obj) + x, _top(obj) + y, 
+                        _rp(obj), _left(obj) + x, _top(obj) + y,
                         x + width  > _width(obj)  ? _width(obj)  - x : width,
                         y + height > _height(obj) ? _height(obj) - y : height,
                         0xffffffff
                     );
                 }
             }
-#else            
+#else
             LONG  width  = _width(obj);
             LONG  height = _height(obj);
             LONG *buffer = NULL;
@@ -206,7 +206,7 @@
 
                 WritePixelArrayAlpha
                 (
-                    buffer, 0, 0, 0, 
+                    buffer, 0, 0, 0,
                     _rp(obj), _left(obj), _top(obj), width, height,
                     0xffffffff
                 );

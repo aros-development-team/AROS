@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /******************************************************************************
@@ -20,13 +20,13 @@
 
     FUNCTION
 
-        Jump to a new position in a script. If a label is specified, control 
-        goes to the first Lab command found that has the same label. If no 
+        Jump to a new position in a script. If a label is specified, control
+        goes to the first Lab command found that has the same label. If no
         label is specified, control goes to the first EndSkip command found.
 
-        If the BACK switch is given, the search for a matching Lab or 
-        EndSkip command starts at the beginning of the script; otherwise the 
-        search starts at the Skip command. If a matching Lab/EndSkip is not 
+        If the BACK switch is given, the search for a matching Lab or
+        EndSkip command starts at the beginning of the script; otherwise the
+        search starts at the Skip command. If a matching Lab/EndSkip is not
         found, an error is returned.
 
     INPUTS

@@ -47,7 +47,7 @@
     Set_Value64(y2, y);
     AND64QC
     (
-        y2, 
+        y2,
         (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
         (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo)
     );

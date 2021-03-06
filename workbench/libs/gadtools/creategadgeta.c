@@ -22,13 +22,13 @@
         AROS_LH4(struct Gadget *, CreateGadgetA,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, kind, D0),
-	AROS_LHA(struct Gadget *, previous, A0),
-	AROS_LHA(struct NewGadget *, ng, A1),
-	AROS_LHA(struct TagItem *, taglist, A2),
+        AROS_LHA(ULONG, kind, D0),
+        AROS_LHA(struct Gadget *, previous, A0),
+        AROS_LHA(struct NewGadget *, ng, A1),
+        AROS_LHA(struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 5, GadTools)
+        struct Library *, GadToolsBase, 5, GadTools)
 
 /*  FUNCTION
         Creates a gadtools gadget.
@@ -37,9 +37,9 @@
 
         kind -     Kind of gadget. See <libraries/gadtools.h> for a list of
                    all possible kinds.
-	previous - Pointer to the previous gadget in gadget-list. Create the
-	           first "gadget" with CreateContext(). This may be NULL, in
-		   which case CreateGadgetA() fails.
+        previous - Pointer to the previous gadget in gadget-list. Create the
+                   first "gadget" with CreateContext(). This may be NULL, in
+                   which case CreateGadgetA() fails.
         ng -       Pointer to struct NewGadget. See <libraries/gadtools.h>.
         taglist -  Additional tags. See <libraries/gadtools.h>.
 
@@ -63,27 +63,27 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Gadget 	*gad = NULL;
-    struct TagItem 	stdgadtags[] =
+    struct Gadget       *gad = NULL;
+    struct TagItem      stdgadtags[] =
     {
-        {GA_Left	, 0L			},
-	{GA_Top		, 0L			},
-	{GA_Width	, 0L			},
-	{GA_Height	, 0L			},
-	{GA_IntuiText	, (IPTR)NULL		},
-        {GA_LabelPlace	, (IPTR)GV_LabelPlace_In},
-	{GA_Previous	, (IPTR)NULL		},
-	{GA_ID		, 0L			},
-	{GA_DrawInfo	, (IPTR)NULL		},
-	{GA_UserData	, (IPTR)NULL		},
-	{TAG_DONE				}
+        {GA_Left        , 0L                    },
+        {GA_Top         , 0L                    },
+        {GA_Width       , 0L                    },
+        {GA_Height      , 0L                    },
+        {GA_IntuiText   , (IPTR)NULL            },
+        {GA_LabelPlace  , (IPTR)GV_LabelPlace_In},
+        {GA_Previous    , (IPTR)NULL            },
+        {GA_ID          , 0L                    },
+        {GA_DrawInfo    , (IPTR)NULL            },
+        {GA_UserData    , (IPTR)NULL            },
+        {TAG_DONE                               }
     };
 
     DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: Kind %d Prev 0x%lx NewGadget 0x%lx TagList 0x%lx\n",
-			    kind, previous, ng, taglist));
+                            kind, previous, ng, taglist));
 
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
-	return (NULL);
+        return (NULL);
 
     DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: previous->NextGadget 0x%lx\n",
                             previous->NextGadget));
@@ -97,14 +97,14 @@
                             ng->ng_Flags, ng->ng_VisualInfo, ng->ng_UserData));
 
     DEBUG_CREATEGADGETA(if (taglist)
-	    {
-		struct TagItem *tag;
-		APTR state = taglist;
-		while (tag = NextTagItem(&state))
-		{
-		    dprintf("\t%08lx %08lx\n", tag->ti_Tag,tag->ti_Data);
-		}
-	    });
+            {
+                struct TagItem *tag;
+                APTR state = taglist;
+                while (tag = NextTagItem(&state))
+                {
+                    dprintf("\t%08lx %08lx\n", tag->ti_Tag,tag->ti_Data);
+                }
+            });
 
     /* Emm: The makeXXX() functions expect this, and with 'normal' object creation,
      * this is always true. However, with Triton previous->NextGadget is trashed
@@ -117,9 +117,9 @@
     /* Set the default label place according to the gadget type. */
 
     if (kind == LISTVIEW_KIND)
-	stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Above;
+        stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Above;
     else if (kind != BUTTON_KIND)
-	stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Left;
+        stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Left;
     
     stdgadtags[TAG_Left].ti_Data = ng->ng_LeftEdge;
     stdgadtags[TAG_Top].ti_Data = ng->ng_TopEdge;
@@ -129,18 +129,18 @@
     if (ng->ng_GadgetText)
     {
         ULONG old_ng_flags = ng->ng_Flags;
-	
-	if (kind == BUTTON_KIND) ng->ng_Flags &= ~NG_HIGHLABEL;	
-    	stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng, taglist);
-	if (kind == BUTTON_KIND) ng->ng_Flags = old_ng_flags;
-	
-    	if (!stdgadtags[TAG_IText].ti_Data)
-	{
-	    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: can't make label\n"));
+        
+        if (kind == BUTTON_KIND) ng->ng_Flags &= ~NG_HIGHLABEL;
+        stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng, taglist);
+        if (kind == BUTTON_KIND) ng->ng_Flags = old_ng_flags;
+        
+        if (!stdgadtags[TAG_IText].ti_Data)
+        {
+            DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: can't make label\n"));
             return (NULL);
-	}
+        }
     } else {
-    	stdgadtags[TAG_IText].ti_Tag = TAG_IGNORE;
+        stdgadtags[TAG_IText].ti_Tag = TAG_IGNORE;
     }
 
     stdgadtags[TAG_Previous].ti_Data = (IPTR)previous;
@@ -160,52 +160,52 @@
 
     switch(kind)
     {
-	case BUTTON_KIND:
-            gad = makebutton(GTB(GadToolsBase), 
+        case BUTTON_KIND:
+            gad = makebutton(GTB(GadToolsBase),
                              stdgadtags,
                              VI(ng->ng_VisualInfo),
                              taglist);
             break;
 
-	case CHECKBOX_KIND:
+        case CHECKBOX_KIND:
             gad = makecheckbox(GTB(GadToolsBase),
                                stdgadtags,
                                VI(ng->ng_VisualInfo),
                                taglist);
             break;
 
-	case CYCLE_KIND:
+        case CYCLE_KIND:
             gad = makecycle(GTB(GadToolsBase),
                             stdgadtags,
                             VI(ng->ng_VisualInfo),
-			    ng->ng_TextAttr,
+                            ng->ng_TextAttr,
                             taglist);
             break;
 
-	case MX_KIND:
+        case MX_KIND:
             gad = makemx(GTB(GadToolsBase),
-                	 stdgadtags,
-                	 VI(ng->ng_VisualInfo),
-			 ng->ng_TextAttr,
-                	 taglist);
+                         stdgadtags,
+                         VI(ng->ng_VisualInfo),
+                         ng->ng_TextAttr,
+                         taglist);
             break;
 
-	case PALETTE_KIND:
+        case PALETTE_KIND:
             gad = makepalette(GTB(GadToolsBase),
                               stdgadtags,
                               VI(ng->ng_VisualInfo),
                               taglist);
             break;
 
-	case TEXT_KIND:
+        case TEXT_KIND:
             gad = maketext(GTB(GadToolsBase),
-                	   stdgadtags,
-                	   VI(ng->ng_VisualInfo),
-                	   ng->ng_TextAttr,
-                	   taglist);
+                           stdgadtags,
+                           VI(ng->ng_VisualInfo),
+                           ng->ng_TextAttr,
+                           taglist);
             break;
 
-	case NUMBER_KIND:
+        case NUMBER_KIND:
             gad = makenumber(GTB(GadToolsBase),
                              stdgadtags,
                              VI(ng->ng_VisualInfo),
@@ -213,7 +213,7 @@
                              taglist);
             break;
 
-	case SLIDER_KIND:
+        case SLIDER_KIND:
             gad = makeslider(GTB(GadToolsBase),
                              stdgadtags,
                              VI(ng->ng_VisualInfo),
@@ -222,73 +222,73 @@
 
             break;
 
-	case SCROLLER_KIND:
+        case SCROLLER_KIND:
             gad = makescroller(GTB(GadToolsBase),
                                stdgadtags,
                                VI(ng->ng_VisualInfo),
                                taglist);
-	    break;
+            break;
 
-	case STRING_KIND:
+        case STRING_KIND:
             gad = makestring(GTB(GadToolsBase),
                              stdgadtags,
                              VI(ng->ng_VisualInfo),
                              ng->ng_TextAttr,
                              taglist);
-	    break;
+            break;
 
-	case INTEGER_KIND:
+        case INTEGER_KIND:
             gad = makeinteger(GTB(GadToolsBase),
                               stdgadtags,
                               VI(ng->ng_VisualInfo),
                               ng->ng_TextAttr,
                               taglist);
-	    break;
+            break;
 
-	case LISTVIEW_KIND:
+        case LISTVIEW_KIND:
             gad = makelistview(GTB(GadToolsBase),
                                stdgadtags,
                                VI(ng->ng_VisualInfo),
                                ng->ng_TextAttr,
                                taglist);
-	    break;
-	
-	case GENERIC_KIND:
-	    gad = makegeneric(GTB(GadToolsBase),
-	    		      stdgadtags,
-			      VI(ng->ng_VisualInfo),
-			      ng->ng_TextAttr,
-			      taglist);
-	    break;
-	    
+            break;
+        
+        case GENERIC_KIND:
+            gad = makegeneric(GTB(GadToolsBase),
+                              stdgadtags,
+                              VI(ng->ng_VisualInfo),
+                              ng->ng_TextAttr,
+                              taglist);
+            break;
+            
     } /* switch(kind) */
 
     if (gad)
     {
 #if 0
         struct Gadget *gad2 = gad;
-	while (gad2)
-	{
-	    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: created gadget 0x%lx\n", gad2));
-	    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: mark GTYPE_GADTOOLS, GadgetID %ld UserData 0x%lx\n",gad->GadgetID,gad->UserData));
-	    gad2->GadgetType |= GTYP_GADTOOLS;
-	    gad2 = gad2->NextGadget;
-	}
+        while (gad2)
+        {
+            DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: created gadget 0x%lx\n", gad2));
+            DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: mark GTYPE_GADTOOLS, GadgetID %ld UserData 0x%lx\n",gad->GadgetID,gad->UserData));
+            gad2->GadgetType |= GTYP_GADTOOLS;
+            gad2 = gad2->NextGadget;
+        }
 #endif
 
-	/*
-	 * Scan through all childgadgets and the return the last one, so we return
-	 * a ptr with no NextGadget which would collide with our triton fix above
-	 */
-	while (gad->NextGadget)
-	{
-	    gad = gad->NextGadget;
-	}
-	DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: return gadget 0x%lx\n", gad));
+        /*
+         * Scan through all childgadgets and the return the last one, so we return
+         * a ptr with no NextGadget which would collide with our triton fix above
+         */
+        while (gad->NextGadget)
+        {
+            gad = gad->NextGadget;
+        }
+        DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: return gadget 0x%lx\n", gad));
     }
     else
     {
-    	previous->NextGadget = NULL;
+        previous->NextGadget = NULL;
         FreeVec((APTR)stdgadtags[TAG_IText].ti_Data);
     }
 

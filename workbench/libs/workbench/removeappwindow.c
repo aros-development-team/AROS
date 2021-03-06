@@ -61,15 +61,15 @@
 
     if (appWindow == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
     
     LockWorkbench();
 
     while (!IsListEmpty(&appWindow->aw_DropZones))
     {
-	RemoveAppWindowDropZone(appWindow, 
-	      (struct AppWindowDropZone *)GetHead(&appWindow->aw_DropZones));
+        RemoveAppWindowDropZone(appWindow,
+              (struct AppWindowDropZone *)GetHead(&appWindow->aw_DropZones));
     }
 
     Remove((struct Node *)appWindow);

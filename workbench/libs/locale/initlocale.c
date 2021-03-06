@@ -19,10 +19,10 @@
 #include <aros/debug.h>
 
 #include <string.h>
-#include <stdio.h>	/* For snprintf */
-#include <limits.h>	/* For PATH_MAX */
+#include <stdio.h>      /* For snprintf */
+#include <limits.h>     /* For PATH_MAX */
 
-#define	DEBUG_INITLOCALE(x)	;
+#define DEBUG_INITLOCALE(x)     ;
 
 AROS_LD4(ULONG, strcompare,
     AROS_UFPA(STRPTR, string1, A1),
@@ -195,7 +195,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     /*
        Ok so we now should have a language, or nothing. Either way
        we now fill in the locale functions in the structure.
-       I remember there was a VERY big bug in here once, which I 
+       I remember there was a VERY big bug in here once, which I
        finally managed to fix, only to blow away the only copy
        of the file (and the rest of the locale.library) from all
        existance. Sigh.

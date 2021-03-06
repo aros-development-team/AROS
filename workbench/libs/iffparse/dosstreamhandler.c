@@ -16,8 +16,8 @@
 
 ULONG DOSStreamHandler
 (
-    struct Hook 	* hook,
-    struct IFFHandle	* iff,
+    struct Hook         * hook,
+    struct IFFHandle    * iff,
     struct IFFStreamCmd * cmd
 )
 {
@@ -28,54 +28,54 @@ ULONG DOSStreamHandler
     switch (cmd->sc_Command)
     {
     case IFFCMD_READ:
-	DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_READ...\n"));
-	D(bug("   Reading %ld bytes\n", cmd->sc_NBytes));
+        DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_READ...\n"));
+        D(bug("   Reading %ld bytes\n", cmd->sc_NBytes));
 
-	error = Read(
-		(BPTR)iff->iff_Stream,
-		cmd->sc_Buf,
-		cmd->sc_NBytes) != cmd->sc_NBytes;
+        error = Read(
+                (BPTR)iff->iff_Stream,
+                cmd->sc_Buf,
+                cmd->sc_NBytes) != cmd->sc_NBytes;
 
-	break;
+        break;
 
     case IFFCMD_WRITE:
-	DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_WRITE...\n"));
-	D(bug("   Writing %ld bytes\n", cmd->sc_NBytes));
+        DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_WRITE...\n"));
+        D(bug("   Writing %ld bytes\n", cmd->sc_NBytes));
 
-	error = Write(
-		(BPTR)iff->iff_Stream,
-		cmd->sc_Buf,
-		cmd->sc_NBytes) != cmd->sc_NBytes;
+        error = Write(
+                (BPTR)iff->iff_Stream,
+                cmd->sc_Buf,
+                cmd->sc_NBytes) != cmd->sc_NBytes;
 
-	break;
+        break;
 
     case IFFCMD_SEEK:
-	DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_SEEK...\n"));
-	D(bug("   Seeking %ld bytes\n", cmd->sc_NBytes));
+        DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_SEEK...\n"));
+        D(bug("   Seeking %ld bytes\n", cmd->sc_NBytes));
 
-	error = Seek((BPTR)iff->iff_Stream, cmd->sc_NBytes, OFFSET_CURRENT) == -1;
+        error = Seek((BPTR)iff->iff_Stream, cmd->sc_NBytes, OFFSET_CURRENT) == -1;
 
-	break;
+        break;
 
     case IFFCMD_INIT:
 
-	DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_INIT...\n"));
+        DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_INIT...\n"));
 
-	/* Don't need these for dos streams
-	*/
-	error = 0;
-	break;
+        /* Don't need these for dos streams
+        */
+        error = 0;
+        break;
 
     case IFFCMD_CLEANUP:
 
-	DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_CLEANUP...\n"));
+        DEBUG_BUFSTREAMHANDLER(dprintf("DOSStreamHandler: IFFCMD_CLEANUP...\n"));
 
-	/* Force stream to beginning, some applications assume stream is at
-	   beginning after failed OpenIFF()'s IFFCMD_CLEANUP. This fixed pbs
-	   with multiview and certain jpeg files, for example. - Piru
-	*/
-	error = Seek((BPTR)iff->iff_Stream, 0, OFFSET_BEGINNING) == -1;
-	break;
+        /* Force stream to beginning, some applications assume stream is at
+           beginning after failed OpenIFF()'s IFFCMD_CLEANUP. This fixed pbs
+           with multiview and certain jpeg files, for example. - Piru
+        */
+        error = Seek((BPTR)iff->iff_Stream, 0, OFFSET_BEGINNING) == -1;
+        break;
     }
 
     DEBUG_DOSSTREAMHANDLER(dprintf("DOSStreamHandler: return %ld\n", error));

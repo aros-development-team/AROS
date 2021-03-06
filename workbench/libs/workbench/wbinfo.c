@@ -53,7 +53,7 @@
     D(bug("WBInfo('%s', 0x%08lX)\n", name, lock));
     return OpenWorkbenchObject
     (
-	name[0] ? "WANDERER:Tools/Info" : "WANDERER:Tools/DiskInfo",
+        name[0] ? "WANDERER:Tools/Info" : "WANDERER:Tools/DiskInfo",
         WBOPENA_ArgLock, (IPTR) lock,
         WBOPENA_ArgName, (IPTR) name,
         TAG_DONE

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include "lowlevel_intern.h"
@@ -36,7 +36,7 @@ AROS_UFH1(void, KBEventWrapper,
 
       AROS_LH2(APTR, AddKBInt,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(APTR, intRoutine, A0),
       AROS_LHA(APTR, intData, A1),
 
@@ -48,12 +48,12 @@ AROS_UFH1(void, KBEventWrapper,
            input event occurs.
 
     INPUTS
- 	intRoutine - the routine to invoke every vblank. This routine should
-		     be as short as possible to minimize its effect on overall
-		     system performance.
-	intData - data passed to the routine in register A1. If more than one
-		  long word of data is required this should be a pointer to
-		  a structure that contains the required data.
+        intRoutine - the routine to invoke every vblank. This routine should
+                     be as short as possible to minimize its effect on overall
+                     system performance.
+        intData - data passed to the routine in register A1. If more than one
+                  long word of data is required this should be a pointer to
+                  a structure that contains the required data.
 
     RESULT
  

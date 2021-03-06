@@ -28,14 +28,14 @@ struct RectList
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH2(void, UnLockBitMapTagList,
+        AROS_LH2(void, UnLockBitMapTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR            , Handle, A0),
-	AROS_LHA(struct TagItem *, Tags, A1),
+        AROS_LHA(APTR            , Handle, A0),
+        AROS_LHA(struct TagItem *, Tags, A1),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 30, Cybergraphics)
+        struct Library *, CyberGfxBase, 30, Cybergraphics)
 
 /*  FUNCTION
         Releases exclusive access to a bitmap. Options for the unlocking

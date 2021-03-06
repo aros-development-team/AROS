@@ -11,7 +11,7 @@
 #endif
 
 #include <utility/utility.h>
-#include "cxintern.h"	/* Must be included after utility.h */ 
+#include "cxintern.h"   /* Must be included after utility.h */
 
 #include <aros/debug.h>
 
@@ -46,28 +46,28 @@ static int Init(struct CommoditiesBase *CxBase)
     CxBase->cx_TimerMP.mp_Node.ln_Type = NT_MSGPORT;
     CxBase->cx_TimerMP.mp_Flags = PA_IGNORE;
     NEWLIST(&CxBase->cx_TimerMP.mp_MsgList);
-	
+        
     CxBase->cx_TimerIO.tr_node.io_Message.mn_ReplyPort = &CxBase->cx_TimerMP;
     CxBase->cx_TimerIO.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
-	
+        
     if (OpenDevice(TIMERNAME, UNIT_VBLANK,
-		   (struct IORequest *)&CxBase->cx_TimerIO, 0) == 0)
+                   (struct IORequest *)&CxBase->cx_TimerIO, 0) == 0)
     {
-	CxBase->cx_TimerBase = 
-	    (struct Library *)(CxBase->cx_TimerIO.tr_node.io_Device);
+        CxBase->cx_TimerBase =
+            (struct Library *)(CxBase->cx_TimerIO.tr_node.io_Device);
     }
     if (CxBase->cx_TimerBase == NULL)
-	return FALSE;
+        return FALSE;
 
     D(bug("commodities_open: Setting up Zero object.\n"));
-	
+        
     ok = InitCx((struct CommoditiesBase *)CxBase);
     
     if (!ok)
     {
         D(bug("Error: Failed to initialize commodities.library.\n"));
 
-	return FALSE;
+        return FALSE;
     }
     
     D(bug("commodities_open: Library correctly opened.\n"));
@@ -96,7 +96,7 @@ BOOL InitCx(struct CommoditiesBase *CxBase)
     
     if (zero == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
 
     /* Make sure this object goes LAST in the list */
@@ -118,21 +118,21 @@ BOOL ShutDownCx(struct CommoditiesBase *CxBase)
     /* Free messages */
     while ((msg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
     {
-	FreeCxStructure(msg, CX_MESSAGE, (struct Library *)CxBase);
+        FreeCxStructure(msg, CX_MESSAGE, (struct Library *)CxBase);
     }
     
     /* Free input events */
     while (CxBase->cx_IEvents != NULL)
     {
-	temp = CxBase->cx_IEvents->ie_NextEvent;
-	FreeCxStructure(CxBase->cx_IEvents, CX_INPUTEVENT,
-			(struct Library *)CxBase);
-	CxBase->cx_IEvents = temp;
+        temp = CxBase->cx_IEvents->ie_NextEvent;
+        FreeCxStructure(CxBase->cx_IEvents, CX_INPUTEVENT,
+                        (struct Library *)CxBase);
+        CxBase->cx_IEvents = temp;
     }
 
     CxBase->cx_IEvents = NULL;
     
-#if USE_ZERO_OBJECT    
+#if USE_ZERO_OBJECT
     /* Remove the ZERO object, in case it exists. */
     DeleteCxObj((CxObj *)RemHead(&CxBase->cx_BrokerList));
 #endif

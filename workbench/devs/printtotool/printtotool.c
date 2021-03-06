@@ -49,7 +49,7 @@ static BPTR OpenTool(struct PrintToToolBase *PrintToToolBase, CONST_STRPTR tool)
     return BNULL;
 }
 
-BOOL pu_OpenFile(struct PrintToToolBase *PrintToToolBase, 
+BOOL pu_OpenFile(struct PrintToToolBase *PrintToToolBase,
                  struct PrintToToolUnit *pu)
 {
     struct FileRequester *fr;
@@ -156,7 +156,7 @@ end:
 }
 
 AROS_LH1(LONG, AbortIO,
- AROS_LHA(struct IORequest *, io, A1), 
+ AROS_LHA(struct IORequest *, io, A1),
           struct PrintToToolBase *, PrintToToolBase, 6, PrintToTool)
 {
     AROS_LIBFUNC_INIT

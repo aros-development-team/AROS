@@ -96,7 +96,7 @@ static struct NewBroker nb =
     NBU_NOTIFY | NBU_UNIQUE,
     0,
     0,
-    NULL,                             
+    NULL,
     0
 };
 
@@ -119,7 +119,7 @@ typedef struct AP
     BOOL           ai_midMousePreventsActivation;
 } AP;
 
-static AP apInfo = 
+static AP apInfo =
 {
     NULL,
     NULL,
@@ -150,11 +150,11 @@ static CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    }
+    else
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
@@ -164,14 +164,14 @@ static BOOL Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
-	catalog = OpenCatalog
-	    ( 
-	     NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
-	    );
+        catalog = OpenCatalog
+            (
+             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
+            );
     }
     else
     {
-	catalog = NULL;
+        catalog = NULL;
     }
 
     return TRUE;
@@ -190,19 +190,19 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
-    easyStruct.es_StructSize	= sizeof(easyStruct);
-    easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= _(MSG_AUTOPOINT_CXNAME);
-    easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+    easyStruct.es_StructSize    = sizeof(easyStruct);
+    easyStruct.es_Flags         = 0;
+    easyStruct.es_Title         = _(MSG_AUTOPOINT_CXNAME);
+    easyStruct.es_TextFormat    = msgString;
+    easyStruct.es_GadgetFormat  = _(MSG_OK);
 
     if (IntuitionBase != NULL && !Cli() )
     {
-	EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
+        EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
     }
     else
     {
-	PutStr(msgString);
+        PutStr(msgString);
     }
 }
 
@@ -219,48 +219,48 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (Cli() != NULL)
     {
-	struct RDArgs *rda;
-	IPTR          *args[] = {
+        struct RDArgs *rda;
+        IPTR          *args[] = {
             NULL,
             (IPTR *)((IPTR)FALSE),
             (IPTR *)((IPTR)FALSE)
         };
 
-	rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
+        rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
 
-	if (rda != NULL)
-	{
-	    if (args[ARG_PRI] != NULL)
-	    {
-		nb.nb_Pri = *args[ARG_PRI];
-	    }
-	    if (args[ARG_LAG])
-	    {
-		activateFunc = autoActivateLag;
-	    }
-	    if (args[ARG_MMPA])
-	    {
-		apInfo.ai_midMousePreventsActivation = TRUE;
-	    }
-	}
-	FreeArgs(rda);
+        if (rda != NULL)
+        {
+            if (args[ARG_PRI] != NULL)
+            {
+                nb.nb_Pri = *args[ARG_PRI];
+            }
+            if (args[ARG_LAG])
+            {
+                activateFunc = autoActivateLag;
+            }
+            if (args[ARG_MMPA])
+            {
+                apInfo.ai_midMousePreventsActivation = TRUE;
+            }
+        }
+        FreeArgs(rda);
     }
     else
     {
-	UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
+        UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
 
-	nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+        nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
 
-	if (ArgString(array, "LAG", 0))
-	{
-	    activateFunc = autoActivateLag;
-	}
-	if (ArgString(array, "MIDMOUSEPREVENTSACTIVATION", 0))
-	{
-	    apInfo.ai_midMousePreventsActivation = TRUE;
-	}
+        if (ArgString(array, "LAG", 0))
+        {
+            activateFunc = autoActivateLag;
+        }
+        if (ArgString(array, "MIDMOUSEPREVENTSACTIVATION", 0))
+        {
+            apInfo.ai_midMousePreventsActivation = TRUE;
+        }
 
-	ArgArrayDone();
+        ArgArrayDone();
     }
 
     nb.nb_Name = _(MSG_AUTOPOINT_CXNAME);
@@ -271,9 +271,9 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (as->as_msgPort == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
+        showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
 
-	return FALSE;
+        return FALSE;
     }
 
     nb.nb_Port = as->as_msgPort;
@@ -282,16 +282,16 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (as->as_broker == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
 
     customObj = CxCustom(activateFunc, 0);
 
     if (customObj == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_CREATE_CUSTOM));
+        showSimpleMessage(_(MSG_CANT_CREATE_CUSTOM));
 
-	return FALSE;
+        return FALSE;
     }
 
     AttachCxObj(as->as_broker, customObj);
@@ -310,20 +310,20 @@ static void freeResources(APState *as)
 
     if (CxBase != NULL)
     {
-	if (as->as_broker != NULL)
-	{
-	    DeleteCxObjAll(as->as_broker);
-	}
+        if (as->as_broker != NULL)
+        {
+            DeleteCxObjAll(as->as_broker);
+        }
     }
 
     if (as->as_msgPort != NULL)
     {
-	while ((cxm = GetMsg(as->as_msgPort)))
-	{
-	    ReplyMsg(cxm);
-	}
+        while ((cxm = GetMsg(as->as_msgPort)))
+        {
+            ReplyMsg(cxm);
+        }
 
-	DeleteMsgPort(as->as_msgPort);
+        DeleteMsgPort(as->as_msgPort);
     }
 }
 
@@ -337,66 +337,66 @@ static void autoActivateLag(CxMsg *msg, CxObj *co)
 
     if (ie->ie_Class == IECLASS_TIMER)
     {
-	struct Screen *screen;
-	struct Layer  *layer;
+        struct Screen *screen;
+        struct Layer  *layer;
 
         if (apInfo.ai_leftButtonDown  ||
             apInfo.ai_rightButtonDown ||
             apInfo.ai_middleButtonDown  )
             return;
 
-	if (IntuitionBase->ActiveWindow != NULL)
-	{
-	    screen = IntuitionBase->ActiveWindow->WScreen;
-	}
-	else
-	{
-	    screen = IntuitionBase->ActiveScreen;
-	}
+        if (IntuitionBase->ActiveWindow != NULL)
+        {
+            screen = IntuitionBase->ActiveWindow->WScreen;
+        }
+        else
+        {
+            screen = IntuitionBase->ActiveScreen;
+        }
 
-	if (!screen)
-	    layer = NULL;
-	else
-	{
-	    LockLayerInfo(&screen->LayerInfo);
-	    layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
-	    UnlockLayerInfo(&screen->LayerInfo);
-	}
+        if (!screen)
+            layer = NULL;
+        else
+        {
+            LockLayerInfo(&screen->LayerInfo);
+            layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
+            UnlockLayerInfo(&screen->LayerInfo);
+        }
 
-	apInfo.ai_thisWindow = (layer != NULL) ?
-	    (struct Window *)layer->Window : NULL;
+        apInfo.ai_thisWindow = (layer != NULL) ?
+            (struct Window *)layer->Window : NULL;
 
-	if (apInfo.ai_mouseHasMoved ||
-		(IntuitionBase->ActiveWindow == apInfo.ai_thisWindow) ||
-		(apInfo.ai_lastActivatedWindow == apInfo.ai_thisWindow))
-	{
-	    apInfo.ai_mouseHasMoved = FALSE;
-	    return;
-	}
+        if (apInfo.ai_mouseHasMoved ||
+                (IntuitionBase->ActiveWindow == apInfo.ai_thisWindow) ||
+                (apInfo.ai_lastActivatedWindow == apInfo.ai_thisWindow))
+        {
+            apInfo.ai_mouseHasMoved = FALSE;
+            return;
+        }
 
-	/* Two timer events and mouse hasn't moved in between. */
+        /* Two timer events and mouse hasn't moved in between. */
 
-	apInfo.ai_mouseHasMoved = FALSE;
+        apInfo.ai_mouseHasMoved = FALSE;
 
-	/* Should be possible to use ActivateWindow(NULL)? Else, we must
-	   hack... */
-	if (apInfo.ai_thisWindow != NULL)
-	{
-	    apInfo.ai_lastActivatedWindow = apInfo.ai_thisWindow;
-	    ActivateWindow(apInfo.ai_thisWindow);
-	}
+        /* Should be possible to use ActivateWindow(NULL)? Else, we must
+           hack... */
+        if (apInfo.ai_thisWindow != NULL)
+        {
+            apInfo.ai_lastActivatedWindow = apInfo.ai_thisWindow;
+            ActivateWindow(apInfo.ai_thisWindow);
+        }
 
-	if (apInfo.ai_thisWindow != NULL)
-	{
-	    D(bug("Activated window %s\n", apInfo.ai_thisWindow->Title));
-	}
-	else
-	{
-	    D(bug("No window active. %s\n",
-			IntuitionBase->ActiveWindow->Title));
-	}
+        if (apInfo.ai_thisWindow != NULL)
+        {
+            D(bug("Activated window %s\n", apInfo.ai_thisWindow->Title));
+        }
+        else
+        {
+            D(bug("No window active. %s\n",
+                        IntuitionBase->ActiveWindow->Title));
+        }
 
-	return;
+        return;
     }
 
     if (ie->ie_Class == IECLASS_RAWMOUSE)
@@ -438,11 +438,11 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-	struct Screen *screen;
-	struct Layer  *layer;
+        struct Screen *screen;
+        struct Layer  *layer;
 
-	if (ie->ie_Code != IECODE_NOBUTTON)
-	{
+        if (ie->ie_Code != IECODE_NOBUTTON)
+        {
             switch (ie->ie_Code)
             {
                 case MIDDLEDOWN:
@@ -465,43 +465,43 @@ static void autoActivate(CxMsg *msg, CxObj *co)
                     apInfo.ai_rightButtonDown = FALSE;
                     break;
             }
-	    return;
-	}
+            return;
+        }
 
         if (apInfo.ai_leftButtonDown  ||
             apInfo.ai_rightButtonDown ||
             apInfo.ai_middleButtonDown  )
             return;
 
-	if (IntuitionBase->ActiveWindow != NULL)
-	{
-	    screen = IntuitionBase->ActiveWindow->WScreen;
-	}
-	else
-	{
-	    screen = IntuitionBase->ActiveScreen;
-	}
+        if (IntuitionBase->ActiveWindow != NULL)
+        {
+            screen = IntuitionBase->ActiveWindow->WScreen;
+        }
+        else
+        {
+            screen = IntuitionBase->ActiveScreen;
+        }
 
-	if (!screen)
-	    layer = NULL;
-	else
-	{
-	    LockLayerInfo(&screen->LayerInfo);
-	    layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
-	    UnlockLayerInfo(&screen->LayerInfo);
-	}
+        if (!screen)
+            layer = NULL;
+        else
+        {
+            LockLayerInfo(&screen->LayerInfo);
+            layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
+            UnlockLayerInfo(&screen->LayerInfo);
+        }
 
-	apInfo.ai_thisWindow = (layer != NULL) ?
-	    (struct Window *)layer->Window : NULL;
+        apInfo.ai_thisWindow = (layer != NULL) ?
+            (struct Window *)layer->Window : NULL;
 
-	if (apInfo.ai_thisWindow != NULL &&
-		apInfo.ai_thisWindow != IntuitionBase->ActiveWindow)
-	{
-	    ActivateWindow(apInfo.ai_thisWindow);
-	    D(bug("Activated window %s\n", apInfo.ai_thisWindow->Title));
-	}
+        if (apInfo.ai_thisWindow != NULL &&
+                apInfo.ai_thisWindow != IntuitionBase->ActiveWindow)
+        {
+            ActivateWindow(apInfo.ai_thisWindow);
+            D(bug("Activated window %s\n", apInfo.ai_thisWindow->Title));
+        }
 
-	return;
+        return;
     }
 }
 
@@ -516,47 +516,47 @@ static void handleCx(APState *as)
 
     while (!quit)
     {
-	signals = Wait((1 << nb.nb_Port->mp_SigBit) | SIGBREAKF_CTRL_C);
+        signals = Wait((1 << nb.nb_Port->mp_SigBit) | SIGBREAKF_CTRL_C);
 
-	if (signals & (1 << nb.nb_Port->mp_SigBit))
-	{
-	    while ((msg = (CxMsg *)GetMsg(as->as_msgPort)))
-	    {
-		switch (CxMsgType(msg))
-		{
-		    case CXM_COMMAND:
-			switch (CxMsgID(msg))
-			{
-			    case CXCMD_DISABLE:
-				ActivateCxObj(as->as_broker, FALSE);
-				break;
+        if (signals & (1 << nb.nb_Port->mp_SigBit))
+        {
+            while ((msg = (CxMsg *)GetMsg(as->as_msgPort)))
+            {
+                switch (CxMsgType(msg))
+                {
+                    case CXM_COMMAND:
+                        switch (CxMsgID(msg))
+                        {
+                            case CXCMD_DISABLE:
+                                ActivateCxObj(as->as_broker, FALSE);
+                                break;
 
-			    case CXCMD_ENABLE:
-				ActivateCxObj(as->as_broker, TRUE);
-				break;
+                            case CXCMD_ENABLE:
+                                ActivateCxObj(as->as_broker, TRUE);
+                                break;
 
-			    case CXCMD_UNIQUE:
-				/* Running the program twice <=> quit */
-				/* Fall through */
+                            case CXCMD_UNIQUE:
+                                /* Running the program twice <=> quit */
+                                /* Fall through */
 
-			    case CXCMD_KILL:
-				quit = TRUE;
-				break;
+                            case CXCMD_KILL:
+                                quit = TRUE;
+                                break;
 
-			} /* switch(CxMsgID(msg)) */
+                        } /* switch(CxMsgID(msg)) */
 
-			break;
-		} /* switch (CxMsgType(msg))*/
+                        break;
+                } /* switch (CxMsgType(msg))*/
 
-		ReplyMsg((struct Message *)msg);
+                ReplyMsg((struct Message *)msg);
 
-	    } /* while((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
-	}	    
+            } /* while((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
+        }
 
-	if (signals & SIGBREAKF_CTRL_C)
-	{
-	    quit = TRUE;
-	}
+        if (signals & SIGBREAKF_CTRL_C)
+        {
+            quit = TRUE;
+        }
 
     } /* while (!quit) */
 }
@@ -570,11 +570,11 @@ int main(int argc, char **argv)
 
     if (initiate(argc, argv, &aState))
     {
-	handleCx(&aState);
+        handleCx(&aState);
     }
     else
     {
-	error = RETURN_FAIL;
+        error = RETURN_FAIL;
     }
 
     freeResources(&aState);

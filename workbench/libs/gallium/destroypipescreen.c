@@ -10,7 +10,7 @@
 
       AROS_LH2(void, DestroyPipeScreen,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(PipeHandle_t, pipe, A0),
       AROS_LHA(struct pipe_screen *, pscreen, A1),
 

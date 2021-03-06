@@ -10,29 +10,29 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH3(BOOL, AddFreeList,
+        AROS_LH3(BOOL, AddFreeList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct FreeList *, freelist, A0),
-	AROS_LHA(APTR             , mem, A1),
-	AROS_LHA(unsigned long    , size, A2),
+        AROS_LHA(struct FreeList *, freelist, A0),
+        AROS_LHA(APTR             , mem, A1),
+        AROS_LHA(unsigned long    , size, A2),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 12, Icon)
+        struct IconBase *, IconBase, 12, Icon)
 
 /*  FUNCTION
-	Adds supplied memory chunk to the supplied freelist. The memory chunk
-	must have been allocated by AllocMem(). All memory added into the
-	freelist can later be deallocated through a single FreeFreeList() call.
+        Adds supplied memory chunk to the supplied freelist. The memory chunk
+        must have been allocated by AllocMem(). All memory added into the
+        freelist can later be deallocated through a single FreeFreeList() call.
 
     INPUTS
-	freelist - pointer to freelist struct previously allocated by
-	    the programmer.
-	mem - memory to add to the freelist.
-	size - size of memory chunk to add to the freelist.
+        freelist - pointer to freelist struct previously allocated by
+            the programmer.
+        mem - memory to add to the freelist.
+        size - size of memory chunk to add to the freelist.
 
     RESULT
-	FALSE on failure, else TRUE.
+        FALSE on failure, else TRUE.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	FreeFreeList()
+        FreeFreeList()
 
     INTERNALS
 
@@ -59,16 +59,16 @@
     /* Is this memlist full? */
     if (freelist->fl_NumFree == 0)
     {
-	/* No more room, we must allocate a new entry */
-	if (!(memlist = AllocMem (sizeof(struct IconInternalMemList),
-		    MEMF_CLEAR)
-	) )
-	    return FALSE;
+        /* No more room, we must allocate a new entry */
+        if (!(memlist = AllocMem (sizeof(struct IconInternalMemList),
+                    MEMF_CLEAR)
+        ) )
+            return FALSE;
 
-	freelist->fl_NumFree = FREELIST_MEMLISTENTRIES;
-	memlist->ml_NumEntries = FREELIST_MEMLISTENTRIES;
+        freelist->fl_NumFree = FREELIST_MEMLISTENTRIES;
+        memlist->ml_NumEntries = FREELIST_MEMLISTENTRIES;
 
-	AddTail ((struct List*)&freelist->fl_MemList, (struct Node*)memlist);
+        AddTail ((struct List*)&freelist->fl_MemList, (struct Node*)memlist);
     }
 
     /* Insert the supplied parameters */

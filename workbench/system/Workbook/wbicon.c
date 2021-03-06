@@ -72,11 +72,11 @@ void wbIcon_Update(Class *cl, Object *obj)
 
     D(bug("%s: %dx%d @%d,%d (%s)\n", my->File, (int)w, (int)h, (WORD)my->Icon->do_CurrentX, (WORD)my->Icon->do_CurrentY, my->Label));
     SetAttrs(obj,
-    	GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX,
-    	GA_Top, (my->Icon->do_CurrentY == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentY,
-    	GA_Width, w,
-    	GA_Height, h,
-    	TAG_END);
+        GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX,
+        GA_Top, (my->Icon->do_CurrentY == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentY,
+        GA_Width, w,
+        GA_Height, h,
+        TAG_END);
 }
 
 // OM_NEW
@@ -88,7 +88,7 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)ops);
     if (obj == NULL)
-    	return 0;
+        return 0;
 
     my = INST_DATA(cl, obj);
 
@@ -96,34 +96,34 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
     my->Icon = (struct DiskObject *)GetTagData(WBIA_Icon, (IPTR)NULL, ops->ops_AttrList);
     my->Screen = (struct Screen *)GetTagData(WBIA_Screen, (IPTR)NULL, ops->ops_AttrList);
     if (my->Icon != NULL) {
-    	if (my->Icon->do_Gadget.GadgetText != NULL &&
-    	    my->Icon->do_Gadget.GadgetText->IText != NULL)
-    	    label = my->Icon->do_Gadget.GadgetText->IText;
+        if (my->Icon->do_Gadget.GadgetText != NULL &&
+            my->Icon->do_Gadget.GadgetText->IText != NULL)
+            label = my->Icon->do_Gadget.GadgetText->IText;
     } else {
-	file = (CONST_STRPTR)GetTagData(WBIA_File, (IPTR)NULL, ops->ops_AttrList);
-	if (file == NULL)
-	    goto error;
+        file = (CONST_STRPTR)GetTagData(WBIA_File, (IPTR)NULL, ops->ops_AttrList);
+        if (file == NULL)
+            goto error;
 
-	my->File = StrDup(file);
-	if (my->File == NULL)
-	    goto error;
+        my->File = StrDup(file);
+        if (my->File == NULL)
+            goto error;
 
-	strcpy(my->File, file);
+        strcpy(my->File, file);
 
-	label = FilePart(my->File);
+        label = FilePart(my->File);
 
-	my->Icon = GetIconTags(my->File,
-	                       ICONGETA_Screen, my->Screen,
-	                       ICONGETA_FailIfUnavailable, FALSE,
-	                       TAG_END);
-	if (my->Icon == NULL)
-	    goto error;
+        my->Icon = GetIconTags(my->File,
+                               ICONGETA_Screen, my->Screen,
+                               ICONGETA_FailIfUnavailable, FALSE,
+                               TAG_END);
+        if (my->Icon == NULL)
+            goto error;
 
     }
 
     my->Label = StrDup((CONST_STRPTR)GetTagData(WBIA_Label, (IPTR)label, ops->ops_AttrList));
     if (my->Label == NULL)
-    	goto error;
+        goto error;
 
     wbIcon_Update(cl, obj);
 
@@ -131,7 +131,7 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 
 error:
     if (my->File)
-    	FreeVec(my->File);
+        FreeVec(my->File);
     DoSuperMethod(cl, obj, OM_DISPOSE);
     return 0;
 }
@@ -143,8 +143,8 @@ static IPTR wbIconDispose(Class *cl, Object *obj, Msg msg)
     struct wbIcon *my = INST_DATA(cl, obj);
 #if 0
     struct TagItem tags[] = {
-	{ ICONPUTA_OnlyUpdatePosition, TRUE },
-	{ TAG_END } };
+        { ICONPUTA_OnlyUpdatePosition, TRUE },
+        { TAG_END } };
 
     /* If need be, update the on-disk Icon's position information */
     PutIconTagList(my->File, my->Icon, tags);
@@ -155,13 +155,13 @@ static IPTR wbIconDispose(Class *cl, Object *obj, Msg msg)
      * via WBIA_Icon, and its the caller's responsibility.
      */
     if (my->File) {
-    	FreeVec(my->File);
-	if (my->Icon)
-	    FreeDiskObject(my->Icon);
+        FreeVec(my->File);
+        if (my->Icon)
+            FreeDiskObject(my->Icon);
     }
 
     if (my->Label)
-    	FreeVec(my->Label);
+        FreeVec(my->Label);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -174,14 +174,14 @@ static IPTR wbIconGet(Class *cl, Object *obj, struct opGet *opg)
 
     switch (opg->opg_AttrID) {
     case WBIA_File:
-    	*(opg->opg_Storage) = (IPTR)my->File;
-    	break;
+        *(opg->opg_Storage) = (IPTR)my->File;
+        break;
     case WBIA_Label:
-    	*(opg->opg_Storage) = (IPTR)my->Label;
-    	break;
+        *(opg->opg_Storage) = (IPTR)my->Label;
+        break;
     default:
-    	rc = DoSuperMethodA(cl, obj, (Msg)opg);
-    	break;
+        rc = DoSuperMethodA(cl, obj, (Msg)opg);
+        break;
     }
 
     return rc;
@@ -195,7 +195,7 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
     struct RastPort *rp = gpr->gpr_RPort;
     struct Window *win = gpr->gpr_GInfo->gi_Window;
     struct Region *clip;
-    struct Gadget *gadget = (struct Gadget *)obj;	/* Legal for 'gadgetclass' */
+    struct Gadget *gadget = (struct Gadget *)obj;       /* Legal for 'gadgetclass' */
     WORD x,y;
 
     x = gadget->LeftEdge;
@@ -204,7 +204,7 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
     /* Clip to the window for drawing */
     clip = wbClipWindow(wb, win);
     DrawIconStateA(rp, my->Icon, (STRPTR)my->Label, x, y,
-    	(gadget->Flags & GFLG_SELECTED) ? TRUE : FALSE, (struct TagItem *)wbIcon_DrawTags);
+        (gadget->Flags & GFLG_SELECTED) ? TRUE : FALSE, (struct TagItem *)wbIcon_DrawTags);
     wbUnclipWindow(wb, win, clip);
 
     return 0;
@@ -239,9 +239,9 @@ static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
      * do the action.
      */
     dclicked = DoubleClick(my->LastActive.tv_secs,
-    		           my->LastActive.tv_micro,
-    		           gpi->gpi_IEvent->ie_TimeStamp.tv_secs,
-    		           gpi->gpi_IEvent->ie_TimeStamp.tv_micro);
+                           my->LastActive.tv_micro,
+                           gpi->gpi_IEvent->ie_TimeStamp.tv_secs,
+                           gpi->gpi_IEvent->ie_TimeStamp.tv_micro);
 
     my->LastActive = gpi->gpi_IEvent->ie_TimeStamp;
 
@@ -249,7 +249,7 @@ static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
     {
         STACKED ULONG openmethodID;
         openmethodID = WBIM_Open;
-    	DoMethodA(obj, (Msg)&openmethodID);
+        DoMethodA(obj, (Msg)&openmethodID);
     }
 
     return GMR_MEACTIVE;
@@ -280,10 +280,10 @@ static IPTR wbIconOpen(Class *cl, Object *obj, Msg msg)
     struct wbIcon *my = INST_DATA(cl, obj);
 
     struct TagItem tags[] = {
-	{ NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
-	{ NP_Arguments,   (IPTR)my->File },
-	{ NP_FreeSeglist, FALSE },
-	{ TAG_END, 0 },
+        { NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
+        { NP_Arguments,   (IPTR)my->File },
+        { NP_FreeSeglist, FALSE },
+        { TAG_END, 0 },
     };
     CreateNewProc(tags);
 
@@ -390,10 +390,10 @@ Class *WBIcon_MakeClass(struct WorkbookBase *wb)
                     sizeof(struct wbIcon),
                     0);
     if (cl != NULL) {
-    	cl->cl_Dispatcher.h_Entry = HookEntry;
-    	cl->cl_Dispatcher.h_SubEntry = dispatcher;
-    	cl->cl_Dispatcher.h_Data = NULL;
-    	cl->cl_UserData = (IPTR)wb;
+        cl->cl_Dispatcher.h_Entry = HookEntry;
+        cl->cl_Dispatcher.h_SubEntry = dispatcher;
+        cl->cl_Dispatcher.h_Data = NULL;
+        cl->cl_UserData = (IPTR)wb;
     }
 
     return cl;

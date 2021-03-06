@@ -30,9 +30,9 @@
 
 extern struct Library *MUIMasterBase;
 
-#define FLAG_FIXED_PEN 	    1
+#define FLAG_FIXED_PEN      1
 #define FLAG_PEN_ALLOCATED  2
-#define FLAG_NO_PEN 	    4
+#define FLAG_NO_PEN         4
 
 
 /****** Colorfield.mui/MUIA_Colorfield_Pen ***********************************
@@ -319,7 +319,7 @@ void Colorfield_SetupPen(Object *obj, struct Colorfield_DATA *data)
         {
             data->pen = (UBYTE) pen;
             data->flags |= FLAG_PEN_ALLOCATED;
-        }    
+        }
     }
 }
 

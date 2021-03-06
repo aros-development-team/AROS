@@ -84,7 +84,7 @@ static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *
     D(bug("[WBLIB] OpenWorkbenchObjectA: name = %s\n", name));
     D(bug("[WBLIB] OpenWorkbenchObjectA: isDefaultIcon = %ld\n", isDefaultIcon));
 
-    if( j_uae_running() && is_68k(name, WorkbenchBase) ) 
+    if( j_uae_running() && is_68k(name, WorkbenchBase) )
     {
 
         D(bug("[WBLIB] OpenWorkbenchObjectA: forward %s to uae\n", name));
@@ -92,7 +92,7 @@ static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *
         forward_to_uae(tags, name, WorkbenchBase);
         success = TRUE;
     }
-    else 
+    else
     {
         if (icon != NULL)
         {
@@ -714,7 +714,7 @@ static BOOL HandleProject
         if (lock != BNULL)
             parent = ParentDir(lock);
         else
-        /* 
+        /*
          *  A project icon (without a project file) is actually enough for
          *  original Workbench (i.e. to launch the supplied tool)
          */

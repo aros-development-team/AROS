@@ -115,7 +115,7 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             GroupFrameT(_(MSG_DESIGN)),
             MUIA_Group_VertSpacing, 2,
             Child, (IPTR) FreeLabel(_(MSG_INPUT_LISTS)),
-            Child, (IPTR) (d.input_popframe = MakePopframe()),                  
+            Child, (IPTR) (d.input_popframe = MakePopframe()),
             Child, (IPTR) (d.input_popimage = MakeBackgroundPopimage()),
             Child, (IPTR) FreeLabel(_(MSG_READONLY_LISTS)),
             Child, (IPTR) (d.readonly_popframe = MakePopframe()),
@@ -161,39 +161,39 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 
 static IPTR ListviewsP_ConfigToGadgets(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+                                    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_ListviewsPData *data = INST_DATA(cl, obj);
     STRPTR spec;
 
 /* Backgrounds */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_List);
+                            MUICFG_Background_List);
     set(data->input_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
 
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_ReadList);
+                            MUICFG_Background_ReadList);
     set(data->readonly_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
 
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_ListCursor);
+                            MUICFG_Background_ListCursor);
     set(data->active_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
 
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_ListSelect);
+                            MUICFG_Background_ListSelect);
     set(data->selected_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
 
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_ListSelCur);
+                            MUICFG_Background_ListSelCur);
     set(data->activeselected_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
 
 /* Frames */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Frame_InputList);
+                            MUICFG_Frame_InputList);
     set(data->input_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Frame_ReadList);
+                            MUICFG_Frame_ReadList);
     set(data->readonly_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
 /* Font */
@@ -202,31 +202,31 @@ static IPTR ListviewsP_ConfigToGadgets(struct IClass *cl, Object *obj,
 
 /* Sliders */
     setslider(data->smooth_slider,
-	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		       MUICFG_Listview_SmoothVal));
+              DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                       MUICFG_Listview_SmoothVal));
     setslider(data->fonts_leading_slider,
-	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		       MUICFG_Listview_Font_Leading));
+              DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                       MUICFG_Listview_Font_Leading));
 
 /* Checkmarks */
     setcheckmark(data->smooth_checkmark,
-		 DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-			  MUICFG_Listview_Smoothed));
+                 DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                          MUICFG_Listview_Smoothed));
 /* Cycles */
     setcycle(data->multi_cycle,
-	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		      MUICFG_Listview_Multi));
+             DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                      MUICFG_Listview_Multi));
 
     setcycle(data->refresh_cycle,
-	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		      MUICFG_Listview_Refresh));
+             DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+                      MUICFG_Listview_Refresh));
 
-    return 1;    
+    return 1;
 }
 
 
 static IPTR ListviewsP_GadgetsToConfig(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+                                    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_ListviewsPData *data = INST_DATA(cl, obj);
     STRPTR str;
@@ -241,50 +241,50 @@ static IPTR ListviewsP_GadgetsToConfig(struct IClass *cl, Object *obj,
 /* Frames */
     str = (STRPTR)XGET(data->input_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_InputList,
-	     (IPTR)str);
+             (IPTR)str);
 
     str = (STRPTR)XGET(data->readonly_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_ReadList,
-	     (IPTR)str);
+             (IPTR)str);
 
 /* Backgrounds */
     str = (STRPTR)XGET(data->input_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_List,
-	     (IPTR)str);
+             (IPTR)str);
 
     str = (STRPTR)XGET(data->readonly_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ReadList,
-	     (IPTR)str);
+             (IPTR)str);
 
     str = (STRPTR)XGET(data->active_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ListCursor,
-	     (IPTR)str);
+             (IPTR)str);
 
     str = (STRPTR)XGET(data->selected_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ListSelect,
-	     (IPTR)str);
+             (IPTR)str);
 
     str = (STRPTR)XGET(data->activeselected_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ListSelCur,
-	     (IPTR)str);
+             (IPTR)str);
 
 /* Sliders */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_SmoothVal,
-	     XGET(data->smooth_slider, MUIA_Numeric_Value));
+             XGET(data->smooth_slider, MUIA_Numeric_Value));
 
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Font_Leading,
-	     XGET(data->fonts_leading_slider, MUIA_Numeric_Value));
+             XGET(data->fonts_leading_slider, MUIA_Numeric_Value));
 
 /* Checkmarks */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Smoothed,
-	     XGET(data->smooth_checkmark, MUIA_Selected));
+             XGET(data->smooth_checkmark, MUIA_Selected));
 
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Multi,
-	     XGET(data->multi_cycle, MUIA_Cycle_Active));
+             XGET(data->multi_cycle, MUIA_Cycle_Active));
 
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Refresh,
-	     XGET(data->refresh_cycle, MUIA_Cycle_Active));
+             XGET(data->refresh_cycle, MUIA_Cycle_Active));
 
     return TRUE;
 }
@@ -294,9 +294,9 @@ BOOPSI_DISPATCHER(IPTR, ListviewsP_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return ListviewsP_New(cl, obj, (struct opSet *)msg);
-	case MUIM_Settingsgroup_ConfigToGadgets: return ListviewsP_ConfigToGadgets(cl,obj,(APTR)msg);break;
-	case MUIM_Settingsgroup_GadgetsToConfig: return ListviewsP_GadgetsToConfig(cl,obj,(APTR)msg);break;
+        case OM_NEW: return ListviewsP_New(cl, obj, (struct opSet *)msg);
+        case MUIM_Settingsgroup_ConfigToGadgets: return ListviewsP_ConfigToGadgets(cl,obj,(APTR)msg);break;
+        case MUIM_Settingsgroup_GadgetsToConfig: return ListviewsP_GadgetsToConfig(cl,obj,(APTR)msg);break;
     }
     
     return DoSuperMethodA(cl, obj, msg);
@@ -306,11 +306,11 @@ BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUIP_Listviews_desc = { 
+const struct __MUIBuiltinClass _MUIP_Listviews_desc = {
     "Listviews",
     MUIC_Group,
     sizeof(struct MUI_ListviewsPData),
-    (void*)ListviewsP_Dispatcher 
+    (void*)ListviewsP_Dispatcher
 };
 
 
@@ -321,14 +321,14 @@ static const UBYTE icon32[] =
     'B', 'Z', '2', '\0',
     0x00, 0x00, 0x00, 0x5c,  // number of bytes
 
-    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0x80, 0xa2, 
-    0xd8, 0x11, 0x00, 0x01, 0xb6, 0xd5, 0x02, 0xa2, 0x00, 0x20, 0x20, 0x02, 
-    0x00, 0x00, 0x04, 0x42, 0x40, 0x00, 0x00, 0xa0, 0x00, 0x70, 0x40, 0x0c, 
-    0x02, 0x92, 0x94, 0xd1, 0x89, 0xe9, 0x1a, 0x68, 0xb6, 0x95, 0xd6, 0xe6, 
-    0x9a, 0x61, 0xf9, 0x09, 0xe1, 0x51, 0xe9, 0x51, 0xe7, 0x55, 0x4e, 0xf9, 
-    0x39, 0xb9, 0xb1, 0xb3, 0x89, 0x18, 0xf3, 0xbf, 0x95, 0x4e, 0xc8, 0x7b, 
-    0x20, 0xe0, 0x8e, 0x4e, 0x6d, 0x36, 0xd3, 0x6d, 0x57, 0xf1, 0x77, 0x24, 
-    0x53, 0x85, 0x09, 0x08, 0x0a, 0x2d, 0x81, 0x10, 
+    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0x80, 0xa2,
+    0xd8, 0x11, 0x00, 0x01, 0xb6, 0xd5, 0x02, 0xa2, 0x00, 0x20, 0x20, 0x02,
+    0x00, 0x00, 0x04, 0x42, 0x40, 0x00, 0x00, 0xa0, 0x00, 0x70, 0x40, 0x0c,
+    0x02, 0x92, 0x94, 0xd1, 0x89, 0xe9, 0x1a, 0x68, 0xb6, 0x95, 0xd6, 0xe6,
+    0x9a, 0x61, 0xf9, 0x09, 0xe1, 0x51, 0xe9, 0x51, 0xe7, 0x55, 0x4e, 0xf9,
+    0x39, 0xb9, 0xb1, 0xb3, 0x89, 0x18, 0xf3, 0xbf, 0x95, 0x4e, 0xc8, 0x7b,
+    0x20, 0xe0, 0x8e, 0x4e, 0x6d, 0x36, 0xd3, 0x6d, 0x57, 0xf1, 0x77, 0x24,
+    0x53, 0x85, 0x09, 0x08, 0x0a, 0x2d, 0x81, 0x10,
 };
 
 

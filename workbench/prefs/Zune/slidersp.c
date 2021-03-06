@@ -55,23 +55,23 @@ static Object *MakeBigHorizSlider(void)
 static Object *MakeSmallVertSlider(void)
 {
     return SliderObject,
-	MUIA_Slider_Horiz, FALSE,
-	MUIA_CycleChain, 1,
-	MUIA_Numeric_Min, 0,
-	MUIA_Numeric_Max, 9,
-	MUIA_Numeric_Value, 5,
-	End;
+        MUIA_Slider_Horiz, FALSE,
+        MUIA_CycleChain, 1,
+        MUIA_Numeric_Min, 0,
+        MUIA_Numeric_Max, 9,
+        MUIA_Numeric_Value, 5,
+        End;
 }
 
 static Object *MakeBigVertSlider(void)
 {
     return SliderObject,
-	MUIA_Slider_Horiz, FALSE,
-	MUIA_CycleChain, 1,
-	MUIA_Numeric_Min, 0,
-	MUIA_Numeric_Max, 99,
-	MUIA_Numeric_Value, 42,
-	End;
+        MUIA_Slider_Horiz, FALSE,
+        MUIA_CycleChain, 1,
+        MUIA_Numeric_Min, 0,
+        MUIA_Numeric_Max, 99,
+        MUIA_Numeric_Value, 42,
+        End;
 }
 
 static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -155,26 +155,26 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
  * MUIM_Settingsgroup_ConfigToGadgets
  */
 static IPTR SlidersP_ConfigToGadgets(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+                                    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_SlidersPData *data = INST_DATA(cl, obj);
     STRPTR spec;
 
 /* Frame */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Frame_Slider);
+                            MUICFG_Frame_Slider);
     set(data->container_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Frame_Knob);
+                            MUICFG_Frame_Knob);
     set(data->knob_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
 /* Images */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_Slider);
+                            MUICFG_Background_Slider);
     set(data->container_background_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
-			    MUICFG_Background_SliderKnob);
+                            MUICFG_Background_SliderKnob);
     set(data->knob_background_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
 
 /* Fonts */
@@ -188,7 +188,7 @@ static IPTR SlidersP_ConfigToGadgets(struct IClass *cl, Object *obj,
  * MUIM_Settingsgroup_ConfigToGadgets
  */
 static IPTR SlidersP_GadgetsToConfig(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+                                    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_SlidersPData *data = INST_DATA(cl, obj);
     STRPTR str;
@@ -200,19 +200,19 @@ static IPTR SlidersP_GadgetsToConfig(struct IClass *cl, Object *obj,
 /* Backgrounds */
     str = (STRPTR)XGET(data->container_background_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Slider,
-	     (IPTR)str);
+             (IPTR)str);
 
     str = (STRPTR)XGET(data->knob_background_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_SliderKnob,
-	     (IPTR)str);
+             (IPTR)str);
 
 /* Frame */
     str = (STRPTR)XGET(data->container_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Slider,
-	     (IPTR)str);
+             (IPTR)str);
     str = (STRPTR)XGET(data->knob_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Knob,
-	     (IPTR)str);
+             (IPTR)str);
     return TRUE;
 }
 
@@ -221,9 +221,9 @@ BOOPSI_DISPATCHER(IPTR, SlidersP_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return SlidersP_New(cl, obj, (struct opSet *)msg);
-	case MUIM_Settingsgroup_ConfigToGadgets: return SlidersP_ConfigToGadgets(cl,obj,(APTR)msg);break;
-	case MUIM_Settingsgroup_GadgetsToConfig: return SlidersP_GadgetsToConfig(cl,obj,(APTR)msg);break;
+        case OM_NEW: return SlidersP_New(cl, obj, (struct opSet *)msg);
+        case MUIM_Settingsgroup_ConfigToGadgets: return SlidersP_ConfigToGadgets(cl,obj,(APTR)msg);break;
+        case MUIM_Settingsgroup_GadgetsToConfig: return SlidersP_GadgetsToConfig(cl,obj,(APTR)msg);break;
     }
     
     return DoSuperMethodA(cl, obj, msg);
@@ -233,11 +233,11 @@ BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUIP_Sliders_desc = { 
+const struct __MUIBuiltinClass _MUIP_Sliders_desc = {
     "Sliders",
     MUIC_Group,
     sizeof(struct MUI_SlidersPData),
-    (void*)SlidersP_Dispatcher 
+    (void*)SlidersP_Dispatcher
 };
 
 
@@ -248,16 +248,16 @@ static const UBYTE icon32[] =
     'B', 'Z', '2', '\0',
     0x00, 0x00, 0x00, 0x73,  // number of bytes
 
-    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0x78, 0x5d, 
-    0x6a, 0xd9, 0x00, 0x03, 0x1e, 0x61, 0x12, 0xa0, 0x00, 0x02, 0x00, 0x00, 
-    0x04, 0x00, 0x01, 0x42, 0x40, 0x00, 0x00, 0xb0, 0x00, 0xb9, 0x21, 0x09, 
-    0x53, 0x20, 0x43, 0x02, 0x02, 0x92, 0x8a, 0x1e, 0xa7, 0x82, 0xe1, 0xcd, 
-    0xb3, 0x96, 0xd4, 0xba, 0x28, 0xd3, 0xba, 0x9b, 0x28, 0xf8, 0x15, 0xf8, 
-    0x21, 0xe0, 0x87, 0x4a, 0x87, 0x67, 0xd5, 0x5b, 0x4d, 0xe5, 0x64, 0x92, 
-    0x81, 0x80, 0x30, 0x94, 0x35, 0x65, 0x12, 0x25, 0xc4, 0xad, 0x6d, 0x65, 
-    0xc4, 0x86, 0x9a, 0x1c, 0x4b, 0xac, 0x49, 0x4a, 0x11, 0x28, 0x9a, 0x1d, 
-    0x22, 0x66, 0xdb, 0x55, 0x37, 0x45, 0x9d, 0x4f, 0xe2, 0xee, 0x48, 0xa7, 
-    0x0a, 0x12, 0x0f, 0x0b, 0xad, 0x5b, 0x20, 
+    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0x78, 0x5d,
+    0x6a, 0xd9, 0x00, 0x03, 0x1e, 0x61, 0x12, 0xa0, 0x00, 0x02, 0x00, 0x00,
+    0x04, 0x00, 0x01, 0x42, 0x40, 0x00, 0x00, 0xb0, 0x00, 0xb9, 0x21, 0x09,
+    0x53, 0x20, 0x43, 0x02, 0x02, 0x92, 0x8a, 0x1e, 0xa7, 0x82, 0xe1, 0xcd,
+    0xb3, 0x96, 0xd4, 0xba, 0x28, 0xd3, 0xba, 0x9b, 0x28, 0xf8, 0x15, 0xf8,
+    0x21, 0xe0, 0x87, 0x4a, 0x87, 0x67, 0xd5, 0x5b, 0x4d, 0xe5, 0x64, 0x92,
+    0x81, 0x80, 0x30, 0x94, 0x35, 0x65, 0x12, 0x25, 0xc4, 0xad, 0x6d, 0x65,
+    0xc4, 0x86, 0x9a, 0x1c, 0x4b, 0xac, 0x49, 0x4a, 0x11, 0x28, 0x9a, 0x1d,
+    0x22, 0x66, 0xdb, 0x55, 0x37, 0x45, 0x9d, 0x4f, 0xe2, 0xee, 0x48, 0xa7,
+    0x0a, 0x12, 0x0f, 0x0b, 0xad, 0x5b, 0x20,
 };
 
 

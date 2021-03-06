@@ -123,7 +123,7 @@ void DisposeLUT8ImageContainer(struct NewLUT8Image *ni)
 
 struct NewLUT8Image *NewLUT8ImageContainer(UWORD w, UWORD h)
 {
-    struct	NewLUT8Image *ni;
+    struct      NewLUT8Image *ni;
 
     ni = AllocVec(sizeof(struct NewLUT8Image), MEMF_ANY | MEMF_CLEAR);
     if (ni)
@@ -142,7 +142,7 @@ struct NewLUT8Image *NewLUT8ImageContainer(UWORD w, UWORD h)
 
 struct NewImage *NewImageContainer(UWORD w, UWORD h)
 {
-    struct	NewImage *ni;
+    struct      NewImage *ni;
 
     ni = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR);
     if (ni)
@@ -352,7 +352,7 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
             if (out->o)
             {
                 GetDTAttrs(out->o, PDTA_DestBitMap, (IPTR)&out->bitmap, TAG_DONE);
-                if (out->bitmap == NULL) 
+                if (out->bitmap == NULL)
                     GetDTAttrs(out->o, PDTA_BitMap, (IPTR)&out->bitmap, TAG_DONE);
 
                 if (out->bitmap != NULL)

@@ -12,19 +12,19 @@
 /* CollectionLCI Purge func  */
 /****************************/
 
-#define IFFParseBase	IPB(hook->h_Data)
+#define IFFParseBase    IPB(hook->h_Data)
 
 ULONG CollectionPurgeFunc
 (
-    struct Hook 	    * hook,
+    struct Hook             * hook,
     struct LocalContextItem * lci,
-    ULONG		      p
+    ULONG                     p
 )
 {
-    struct CIPtr	   *ciptr;
+    struct CIPtr           *ciptr;
 
     struct CollectionItem  *node,
-			  *nextnode;
+                          *nextnode;
 
     /* Read the LCI's userdata
     */
@@ -35,12 +35,12 @@ ULONG CollectionPurgeFunc
 
     while (node)
     {
-	nextnode = node->ci_Next;
-	if (node->ci_Data) FreeMem(node->ci_Data, node->ci_Size);
+        nextnode = node->ci_Next;
+        if (node->ci_Data) FreeMem(node->ci_Data, node->ci_Size);
 
-	FreeMem(node,sizeof (struct CollectionItem));
+        FreeMem(node,sizeof (struct CollectionItem));
 
-	node = nextnode;
+        node = nextnode;
     }
 
     /* Free the local item itself */
@@ -58,16 +58,16 @@ ULONG CollectionPurgeFunc
 struct CF_ResourceInfo
 {
     struct LocalContextItem *LCI;
-    APTR		    Buffer;
-    LONG		    BufferSize;
-    BOOL		    LCIStored;
+    APTR                    Buffer;
+    LONG                    BufferSize;
+    BOOL                    LCIStored;
     struct CollectionItem    *CollItem;
 };
 
 #undef IFFParseBase
 
 VOID CF_FreeResources (struct CF_ResourceInfo * ri,
-	struct IFFParseBase_intern * IFFParseBase)
+        struct IFFParseBase_intern * IFFParseBase)
 {
     if (ri->LCIStored)  Remove((struct Node*)ri->LCI);
     if (ri->LCI)        FreeLocalItem(ri->LCI);
@@ -77,19 +77,19 @@ VOID CF_FreeResources (struct CF_ResourceInfo * ri,
     return;
 }
 
-#define IFFParseBase	IPB(hook->h_Data)
+#define IFFParseBase    IPB(hook->h_Data)
 
 LONG CollectionFunc
 (
-    struct Hook 	* hook,
-    struct IFFHandle	* iff,
-    APTR		  p
+    struct Hook         * hook,
+    struct IFFHandle    * iff,
+    APTR                  p
 )
 {
     struct LocalContextItem *lci;
 
-    struct ContextNode	    *cn;
-    struct CIPtr	    *ciptr;
+    struct ContextNode      *cn;
+    struct CIPtr            *ciptr;
     struct CollectionItem    *collitem;
 
     struct CF_ResourceInfo resinfo = {0}; /* = {0} is important */
@@ -97,11 +97,11 @@ LONG CollectionFunc
 
 
     LONG   type,
-	  id,
-	  size;
+          id,
+          size;
 
     LONG  bytesread,
-	  err;
+          err;
 
     APTR buf;
 
@@ -109,47 +109,47 @@ LONG CollectionFunc
     cn = TopChunk(iff);
 
     type   = cn->cn_Type;
-    id	  = cn->cn_ID;
+    id    = cn->cn_ID;
 
     /* IMPORTANT !! For collectionchunks we MUST check if a collection is allready present,
     if so there is no clever to add a new one */
 
     lci = FindLocalItem
     (
-	iff,
-	type,
-	id,
-	IFFLCI_COLLECTION
+        iff,
+        type,
+        id,
+        IFFLCI_COLLECTION
     );
 
     if (!lci)
     {
 
-	/* Allocate new LCI for containing the property */
+        /* Allocate new LCI for containing the property */
 
-	lci = AllocLocalItem
-	(
-	    type,
-	    id,
-	    IFFLCI_COLLECTION,
-	    sizeof (struct CIPtr)
-	);
-	if (!lci) return (IFFERR_NOMEM);
+        lci = AllocLocalItem
+        (
+            type,
+            id,
+            IFFLCI_COLLECTION,
+            sizeof (struct CIPtr)
+        );
+        if (!lci) return (IFFERR_NOMEM);
 
-	resinfo.LCI = lci;
+        resinfo.LCI = lci;
 
-	/* Store the new LCI into top of stack */
+        /* Store the new LCI into top of stack */
 
-	err = StoreLocalItem(iff,lci,IFFSLI_PROP);
+        err = StoreLocalItem(iff,lci,IFFSLI_PROP);
 
-	if (err)
-	{
-	    CF_FreeResources(&resinfo, IFFParseBase);
-	    return (err);
-	}
-	resinfo.LCIStored = TRUE;
+        if (err)
+        {
+            CF_FreeResources(&resinfo, IFFParseBase);
+            return (err);
+        }
+        resinfo.LCIStored = TRUE;
 
-	SetLocalItemPurge(lci,&IFFParseBase->collectionpurgehook);
+        SetLocalItemPurge(lci,&IFFParseBase->collectionpurgehook);
 
     }
 
@@ -157,14 +157,14 @@ LONG CollectionFunc
 
     collitem = (struct CollectionItem*)AllocMem
     (
-	sizeof (struct CollectionItem),
-	MEMF_ANY|MEMF_CLEAR
+        sizeof (struct CollectionItem),
+        MEMF_ANY|MEMF_CLEAR
     );
 
     if (!collitem)
     {
-	CF_FreeResources(&resinfo, IFFParseBase);
-	return (IFFERR_NOMEM);
+        CF_FreeResources(&resinfo, IFFParseBase);
+        return (IFFERR_NOMEM);
     }
 
     resinfo.CollItem = collitem;
@@ -174,17 +174,17 @@ LONG CollectionFunc
     /* Allocate buffer to read chunk into */
     if ((size = cn->cn_Size))
     {
-	buf = AllocMem
-	(
-	    size,
-	    MEMF_ANY
-	);
+        buf = AllocMem
+        (
+            size,
+            MEMF_ANY
+        );
     
-	if (!buf)
-	{
-	    CF_FreeResources(&resinfo, IFFParseBase);
-	    return (IFFERR_NOMEM);
-	}
+        if (!buf)
+        {
+            CF_FreeResources(&resinfo, IFFParseBase);
+            return (IFFERR_NOMEM);
+        }
     }
     else buf = NULL;
 
@@ -193,25 +193,25 @@ LONG CollectionFunc
 
     if (buf)
     {
-	/* Read chunk into the buffer */
+        /* Read chunk into the buffer */
 
-	bytesread = ReadChunkBytes
-	(
-	    iff,
-	    buf,
-	    size
-	);
+        bytesread = ReadChunkBytes
+        (
+            iff,
+            buf,
+            size
+        );
 
-	/* Sucess ? */
-	if (bytesread != size)
-	{
-	    CF_FreeResources(&resinfo, IFFParseBase);
+        /* Sucess ? */
+        if (bytesread != size)
+        {
+            CF_FreeResources(&resinfo, IFFParseBase);
 
-	    /* IFFERR_.. ? */
-	    if (bytesread >= 0)
-		err = IFFERR_MANGLED;
-	}
-	
+            /* IFFERR_.. ? */
+            if (bytesread >= 0)
+                err = IFFERR_MANGLED;
+        }
+        
     }
 
     /* Get pointer to first ContextItem from LCIs userdata */

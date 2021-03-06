@@ -101,7 +101,7 @@ char *GetAROSRegionAttribs(struct AnchorPath *ap, char **regionNamePtr)
                     {
                         if ((error = ParseIFF(iff, parse_mode)) == 0)
                         {
-                            parse_mode = IFFPARSE_STEP; 
+                            parse_mode = IFFPARSE_STEP;
 
                             cn = CurrentChunk(iff);
                             D(bug("[LocalePrefs] GetAROSRegionAttribs: Chunk ID %08x. %d bytes\n", cn->cn_ID, cn->cn_Size));
@@ -345,7 +345,7 @@ BOOL Prefs_LoadRegion(STRPTR name, struct CountryPrefs *region)
                     {
                         if ((error = ParseIFF(iff, parse_mode)) == 0)
                         {
-                            parse_mode = IFFPARSE_STEP; 
+                            parse_mode = IFFPARSE_STEP;
                             
                             D(bug("[LocalePrefs] LoadRegion: ParseIFF okay.\n"));
 

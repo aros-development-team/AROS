@@ -16,18 +16,18 @@
 
 enum
 {
-	ARG_COPY,
-	ARG_TTFFONT,
-	ARG_CODEPAGE,
-	ARG_TO,
-	ARG_FONTDIR,
-	ARG_OUTFONT,
-	ARG_COUNT
+        ARG_COPY,
+        ARG_TTFFONT,
+        ARG_CODEPAGE,
+        ARG_TO,
+        ARG_FONTDIR,
+        ARG_OUTFONT,
+        ARG_COUNT
 };
 
 ULONG fiWriteFiles_real(FontInfoData *dat, STRPTR base, ULONG size);
 
-static void usage(void) 
+static void usage(void)
 {
     BPTR out = ErrorOutput();
     char myname[256];
@@ -176,7 +176,7 @@ int ftmanager_cli(void)
         return RETURN_ERROR;
     }
 
-    if(args[ARG_CODEPAGE] != 0) 
+    if(args[ARG_CODEPAGE] != 0)
     {
         printf("WARNING: Option Codepage ignored (not implemented)\n");
     }
@@ -201,7 +201,7 @@ int ftmanager_cli(void)
     }
 
     dat=(struct FontInfoData *) AllocVec(sizeof(struct FontInfoData), MEMF_CLEAR);
-    if(dat == NULL) 
+    if(dat == NULL)
     {
         printf("ERROR: Out of memory\n");
         return RETURN_ERROR;
@@ -228,7 +228,7 @@ int ftmanager_cli(void)
         D(bug("copy %s to %s\n", (STRPTR) args[ARG_TTFFONT], ttf_source));
         AddPart(ttf_source, FilePart((STRPTR) args[ARG_TTFFONT]), 255);
 
-        if(copy_file((STRPTR) args[ARG_TTFFONT], ttf_source)) 
+        if(copy_file((STRPTR) args[ARG_TTFFONT], ttf_source))
         {
             dat->Filename=ttf_source;
         }
@@ -249,7 +249,7 @@ int ftmanager_cli(void)
     get_basename(basename, (STRPTR) args[ARG_OUTFONT], dat->Filename);
 
 
-    if(error=FT_New_Face(ftlibrary, dat->Filename, 0, &dat->Face)) 
+    if(error=FT_New_Face(ftlibrary, dat->Filename, 0, &dat->Face))
     {
       printf("ERROR: opening \"%s\" failed (error code: %d)\n", dat->Filename, error);
       FT_Done_FreeType(ftlibrary);

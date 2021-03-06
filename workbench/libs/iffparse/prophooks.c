@@ -16,9 +16,9 @@
 
 IPTR PropPurgeFunc
 (
-    struct Hook 	    * hook,
+    struct Hook             * hook,
     struct LocalContextItem * lci,
-    ULONG		      p
+    ULONG                     p
 )
 {
     struct StoredProperty *sp;
@@ -46,8 +46,8 @@ IPTR PropPurgeFunc
 struct PF_ResourceInfo
 {
     struct LocalContextItem *LCI;
-    APTR		    Buffer;
-    LONG		    BufferSize;
+    APTR                    Buffer;
+    LONG                    BufferSize;
 };
 
 #undef IFFParseBase
@@ -66,26 +66,26 @@ VOID PF_FreeResources(struct PF_ResourceInfo *ri,
 
 LONG PropFunc
 (
-    struct Hook 	* hook,
-    struct IFFHandle	* iff,
-    APTR		  p
+    struct Hook         * hook,
+    struct IFFHandle    * iff,
+    APTR                  p
 )
 {
     struct LocalContextItem *lci;
 
 
     struct StoredProperty    *sp;
-    struct ContextNode	    *cn;
+    struct ContextNode      *cn;
 
     struct PF_ResourceInfo resinfo = {0}; /* = {0} is important */
 
 
     LONG   type,
-	  id,
-	  size;
+          id,
+          size;
 
     LONG  bytesread,
-	  err;
+          err;
 
     APTR  buf;
 
@@ -95,22 +95,22 @@ LONG PropFunc
     cn = TopChunk(iff);
 
     type   = cn->cn_Type;
-    id	  = cn->cn_ID;
+    id    = cn->cn_ID;
 
     /* Allocate new LCI for containig the property */
 
     lci = AllocLocalItem
     (
-	type,
-	id,
-	IFFLCI_PROP,
-	sizeof (struct StoredProperty)
+        type,
+        id,
+        IFFLCI_PROP,
+        sizeof (struct StoredProperty)
     );
     if (!lci)
     {
-	DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #1\n"));
+        DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #1\n"));
 
-	return IFFERR_NOMEM;
+        return IFFERR_NOMEM;
     }
 
     resinfo.LCI = lci;
@@ -123,15 +123,15 @@ LONG PropFunc
     /* Allocate buffer to read chunk into */
     if ((size = cn->cn_Size))
     {
-	buf = AllocMem(size, MEMF_ANY);
-	if (!buf)
-	{
-	    DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #2\n"));
+        buf = AllocMem(size, MEMF_ANY);
+        if (!buf)
+        {
+            DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #2\n"));
 
-	    PF_FreeResources(&resinfo, IFFParseBase);
+            PF_FreeResources(&resinfo, IFFParseBase);
 
-	    return (IFFERR_NOMEM);
-	}
+            return (IFFERR_NOMEM);
+        }
     } else buf = NULL;
 
     resinfo.Buffer = buf;
@@ -144,25 +144,25 @@ LONG PropFunc
 
     if (buf)
     {
-    	/* Read chunk into the buffer */
-	bytesread = ReadChunkBytes(iff, buf, size);
+        /* Read chunk into the buffer */
+        bytesread = ReadChunkBytes(iff, buf, size);
 
-	DEBUG_PROPHOOKS(dprintf("PropFunc: ReadChunkBytes returned %lu\n", bytesread));
+        DEBUG_PROPHOOKS(dprintf("PropFunc: ReadChunkBytes returned %lu\n", bytesread));
 
-	/* Success ? */
-	if (bytesread != size)
-	{
-	    DEBUG_PROPHOOKS(dprintf("PropFunc: incomplete read! (%ld != %ld)\n", bytesread, size));
-	    PF_FreeResources(&resinfo, IFFParseBase);
+        /* Success ? */
+        if (bytesread != size)
+        {
+            DEBUG_PROPHOOKS(dprintf("PropFunc: incomplete read! (%ld != %ld)\n", bytesread, size));
+            PF_FreeResources(&resinfo, IFFParseBase);
 
-	    /* IFFERR_.. ? */
-	    if (bytesread >= 0)
-	    {
-		DEBUG_PROPHOOKS(dprintf("PropFunc: err = IFFERR_MANGLED\n"));
-		err = IFFERR_MANGLED;
-    		/* FIXME: should return err here? */
-	    }
-	}
+            /* IFFERR_.. ? */
+            if (bytesread >= 0)
+            {
+                DEBUG_PROPHOOKS(dprintf("PropFunc: err = IFFERR_MANGLED\n"));
+                err = IFFERR_MANGLED;
+                /* FIXME: should return err here? */
+            }
+        }
     }
 
 
@@ -171,11 +171,11 @@ LONG PropFunc
 
     if (err)
     {
-	DEBUG_PROPHOOKS(dprintf("PropFunc: return %ld\n", err));
+        DEBUG_PROPHOOKS(dprintf("PropFunc: return %ld\n", err));
 
-	PF_FreeResources(&resinfo, IFFParseBase);
+        PF_FreeResources(&resinfo, IFFParseBase);
 
-	return err;
+        return err;
     }
 
 

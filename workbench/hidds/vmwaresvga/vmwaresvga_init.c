@@ -26,7 +26,7 @@
 
 #include LC_LIBDEFS_FILE
 
-static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+static OOP_AttrBase HiddPixFmtAttrBase; // = 0;
 static OOP_AttrBase HiddPCIDeviceAttrBase;
 
 static struct OOP_ABDescr abd[] =
@@ -88,7 +88,7 @@ STATIC BOOL findCard(struct VMWareSVGA_staticdata *xsd)
         h_Data:         xsd,
     };
 
-    struct TagItem Requirements[] = 
+    struct TagItem Requirements[] =
         {
             {tHidd_PCI_VendorID,    VENDOR_VMWARE   },
             {tHidd_PCI_Class,       3               }, /* Display */

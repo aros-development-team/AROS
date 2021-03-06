@@ -65,7 +65,7 @@ BOOL __CloseIcon_WB(BPTR file, struct IconBase *IconBase)
 BPTR __OpenDefaultIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 {
     static const char * const  readPaths[]  = { "ENV:SYS", "ENVARC:SYS", NULL };
-    static const char * const  writePaths[] = { "ENV:SYS", NULL }; 
+    static const char * const  writePaths[] = { "ENV:SYS", NULL };
     const char * const        *paths        = NULL;
     CONST_STRPTR               path         = NULL;
     BPTR                       file         = BNULL;
@@ -102,7 +102,7 @@ BOOL __CloseDefaultIcon_WB(BPTR file, struct IconBase *IconBase)
     return Close(file);
 }
 
-static const struct ColorRegister ehb_palette[] = 
+static const struct ColorRegister ehb_palette[] =
 {
     { 0x00, 0x00, 0x00 },
     { 0x00, 0x00, 0x7f },
@@ -393,15 +393,15 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         }
     }
 
-    if (is_png(ni)) 
+    if (is_png(ni))
     {
-    	D(bug("[%s] Write as PNG\n", __func__));
-    	success = WriteIconPNG(file, itmp, IconBase);
+        D(bug("[%s] Write as PNG\n", __func__));
+        success = WriteIconPNG(file, itmp, IconBase);
     }
     else
     {
-    	D(bug("[%s] Write as AOS 3.5\n", __func__));
-    	success = WriteStruct(&(LB(IconBase)->dsh), (APTR) itmp, (APTR) file, IconDesc);
+        D(bug("[%s] Write as AOS 3.5\n", __func__));
+        success = WriteStruct(&(LB(IconBase)->dsh), (APTR) itmp, (APTR) file, IconDesc);
     }
     if (!success)
         error = IoErr();
@@ -449,7 +449,7 @@ CONST_STRPTR GetDefaultIconName(LONG type)
 {
     static const char * const defaultNames[] =
     {
-        "Disk",         /* WBDISK    (1) */ 
+        "Disk",         /* WBDISK    (1) */
         "Drawer",       /* WBDRAWER  (2) */
         "Tool",         /* WBTOOL    (3) */
         "Project",      /* WBPROJECT (4) */
@@ -482,11 +482,11 @@ LONG CalcIconHash(struct DiskObject *dobj)
 
     hash = FNV1_32_Offset;
     for (i = 0; i < AROS_SIZEOFPTR; i++) {
-    	    hash *= FNV1_32_Prime;
-    	    hash ^= data & 0xff;
-    	    data >>= 8;
+            hash *= FNV1_32_Prime;
+            hash ^= data & 0xff;
+            data >>= 8;
     }
-    	
+        
     return hash & (ICONLIST_HASHSIZE-1);
 }
 
@@ -525,13 +525,13 @@ VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase)
 {
     ObtainSemaphore(&IconBase->iconlistlock);
     Remove((struct Node *)&icon->ni_Node);
-    ReleaseSemaphore(&IconBase->iconlistlock);   
+    ReleaseSemaphore(&IconBase->iconlistlock);
 }
 
 struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconBase)
 {
     struct NativeIcon *icon, *reticon = NULL;
-    LONG    	       hash;
+    LONG               hash;
     LONG i = 0;
     
     hash = CalcIconHash(dobj);
@@ -540,13 +540,13 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
     ForeachNode(&IconBase->iconlists[hash], icon)
     {
         i++;
-    	if (dobj == &icon->ni_DiskObject)
-	{
-	    reticon = icon;
-	    break;
-	}
+        if (dobj == &icon->ni_DiskObject)
+        {
+            reticon = icon;
+            break;
+        }
     }
-    ReleaseSemaphore(&IconBase->iconlistlock);   
+    ReleaseSemaphore(&IconBase->iconlistlock);
     
     return reticon;
 }

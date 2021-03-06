@@ -103,7 +103,7 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
         if (SHArg(NAME) != NULL && SHArg(STRING) == NULL)
         {
             Success = GetVar(SHArg(NAME), &Buffer[0],
-		             BUFFER_SIZE, GVF_LOCAL_ONLY | LV_ALIAS);
+                             BUFFER_SIZE, GVF_LOCAL_ONLY | LV_ALIAS);
 
             if (Success == FALSE)
             {
@@ -133,27 +133,27 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
         /* Display a list of aliases. */
         AliasProc = (struct Process *)FindTask(NULL);
 
-	ForeachNode(&(AliasProc->pr_LocalVars), AliasNode)
+        ForeachNode(&(AliasProc->pr_LocalVars), AliasNode)
         {
-	    if (AliasNode->lv_Node.ln_Type == LV_ALIAS)
-	    {
-		/* Get a clean variable with no excess
-		 * characters.
-		 */
-		VarLength = GetVar(AliasNode->lv_Node.ln_Name,
-		 	            &Buffer1[0],
-				    BUFFER_SIZE,
-				    GVF_LOCAL_ONLY | LV_ALIAS);
-		if (VarLength != -1)
-		{
-		     GetNewString(&Buffer1[0], &Buffer2[0], VarLength);
+            if (AliasNode->lv_Node.ln_Type == LV_ALIAS)
+            {
+                /* Get a clean variable with no excess
+                 * characters.
+                 */
+                VarLength = GetVar(AliasNode->lv_Node.ln_Name,
+                                    &Buffer1[0],
+                                    BUFFER_SIZE,
+                                    GVF_LOCAL_ONLY | LV_ALIAS);
+                if (VarLength != -1)
+                {
+                     GetNewString(&Buffer1[0], &Buffer2[0], VarLength);
 
-		     Buffer2[VarLength] = 0;
+                     Buffer2[VarLength] = 0;
 
-		     Printf("%-20s\t%-20s\n", AliasNode->lv_Node.ln_Name, Buffer2);
-		}
-	    }
-	}
+                     Printf("%-20s\t%-20s\n", AliasNode->lv_Node.ln_Name, Buffer2);
+                }
+            }
+        }
     }
 
     return Return_Value;

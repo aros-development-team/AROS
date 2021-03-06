@@ -19,7 +19,7 @@
 
 /*  FUNCTION
         Calculate the cosine and the sine of the given IEEE single
-        precision number where y represents an angle in radians. The 
+        precision number where y represents an angle in radians. The
         function returns the sine of that number as a result and puts
         the cosine of that number into *z which must represent
         a valid pointer to a IEEE single precision number.

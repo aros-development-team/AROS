@@ -417,9 +417,9 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         if (data->pprv_set_hspot)
         {
             D(bug("[PointerPrefs:Preview] %s: Draw hotspot at %d %d\n", __func__, drawoffsetx + data->pprv_hspot_x, drawoffsety + data->pprv_hspot_y));
-	    /* I experimented with inversion, it looks better IMHO - sonic
+            /* I experimented with inversion, it looks better IMHO - sonic
             SetAPen(_rp(obj), 1); */
-	    SetDrMd(_rp(obj), COMPLEMENT);
+            SetDrMd(_rp(obj), COMPLEMENT);
             if (data->pprv_hspot_x < drawwidth)
             {
                 Move(_rp(obj), drawoffsetx + data->pprv_hspot_x, drawoffsety);
@@ -430,8 +430,8 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                 Move(_rp(obj), drawoffsetx, drawoffsety + data->pprv_hspot_y);
                 Draw(_rp(obj), drawoffsetx + drawwidth, drawoffsety + data->pprv_hspot_y);
             }
-	    /* Reset drawmode back to JAM2, otherwise shit happens */
-	    SetDrMd(_rp(obj), JAM2);
+            /* Reset drawmode back to JAM2, otherwise shit happens */
+            SetDrMd(_rp(obj), JAM2);
         }
     }
 
@@ -502,19 +502,19 @@ IPTR PPreview__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
     data->fill1 = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-    	    	    	    	  0x9C9C9C9C,
-				  0xBDBDBDBD,
-				  0xE4E4E4E4,
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  0x9C9C9C9C,
+                                  0xBDBDBDBD,
+                                  0xE4E4E4E4,
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
     data->fill2 = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-    	    	    	    	  0xD3D3D3D3,
-				  0xD7D7D7D7,
-				  0xE4E4E4E4,
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  0xD3D3D3D3,
+                                  0xD7D7D7D7,
+                                  0xE4E4E4E4,
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
     return TRUE;
 }
 
@@ -524,13 +524,13 @@ IPTR PPreview__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
  
     if (data->fill1 != -1)
     {
-    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->fill1);
-    	data->fill1 = -1;
+        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->fill1);
+        data->fill1 = -1;
     }
     if (data->fill2 != -1)
     {
-    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->fill2);
-    	data->fill2 = -1;
+        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->fill2);
+        data->fill2 = -1;
     }
     
     return DoSuperMethodA(cl, obj, (Msg)msg);

@@ -15,7 +15,7 @@ BOOL InstallClass(struct Library *DataTypesBase)
 {
     BOOL Success = FALSE;
 
-    if((GPB(DataTypesBase)->dtb_DataTypesClass = MakeClass(DATATYPESCLASS, 
+    if((GPB(DataTypesBase)->dtb_DataTypesClass = MakeClass(DATATYPESCLASS,
                                                     GADGETCLASS, NULL,
                                                     sizeof(struct DTObject),
                                                     0)))

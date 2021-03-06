@@ -29,18 +29,18 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 {
     /* This function is single-threaded by exec by calling Forbid. */
 
-    WORD   i;			/* Loop variable */
+    WORD   i;                   /* Loop variable */
 
     for(i = 0; i < RT_MAXLOCK; i++)
     {
-	InitSemaphore(&RealTimeBase->rtb_Locks[i]);
+        InitSemaphore(&RealTimeBase->rtb_Locks[i]);
     }
 
     NEWLIST(&RealTimeBase->rtb_ConductorList);
 
     if (!AllocTimer((struct internal_RealTimeBase *)RealTimeBase))
     {
-	return FALSE;
+        return FALSE;
     }
 
     D(bug("[realtime.library] initialized\n");)
@@ -52,8 +52,8 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
     /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
+        This function is single-threaded by exec by calling Forbid.
+        Never break the Forbid() or strange things might happen.
     */
 
     FreeTimer(RealTimeBase);

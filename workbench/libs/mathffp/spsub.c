@@ -24,7 +24,7 @@
     INPUTS
 
     RESULT
-	FFP number
+        FFP number
 
         Flags:
           zero     : result is zero
@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-	SPAdd()
+        SPAdd()
 
     INTERNALS
         ALGORITHM:

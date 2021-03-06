@@ -9,29 +9,29 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH3(struct StoredProperty *, FindProp,
+        AROS_LH3(struct StoredProperty *, FindProp,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
-	AROS_LHA(LONG              , type, D0),
-	AROS_LHA(LONG              , id, D1),
+        AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(LONG              , type, D0),
+        AROS_LHA(LONG              , id, D1),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 26, IFFParse)
+        struct Library *, IFFParseBase, 26, IFFParse)
 
 /*  FUNCTION
-	Searches for a StoredProperty that is valid in the given context.
-	Property chunks are automatically stored by ParseIFF() when pre-declared
-	by PropChunk() or PropChunks(). The returned storedproperty contains
-	a pointer to the data in the chunk.
+        Searches for a StoredProperty that is valid in the given context.
+        Property chunks are automatically stored by ParseIFF() when pre-declared
+        by PropChunk() or PropChunks(). The returned storedproperty contains
+        a pointer to the data in the chunk.
 
     INPUTS
-	iff    - a pointer to a an IFFHandle struct.
-	type  - type code of property to search for.
-	id    -  id code of property to search for.
+        iff    - a pointer to a an IFFHandle struct.
+        type  - type code of property to search for.
+        id    -  id code of property to search for.
 
     RESULT
-	sp    - pointer to a storedproperty if found, NULL if none are found.
+        sp    - pointer to a storedproperty if found, NULL if none are found.
 
     NOTES
 
@@ -41,7 +41,7 @@
 
 
     SEE ALSO
-	PropChunk(), PropChunks()
+        PropChunk(), PropChunks()
 
     INTERNALS
 
@@ -52,16 +52,16 @@
     struct LocalContextItem *lci;
 
     DEBUG_FINDPROP(dprintf("FindProp: iff 0x%lx type 0x%08lx (%c%c%c%c) id 0x%08lx (%c%c%c%c)\n",
-			    iff, type, dmkid(type), id, dmkid(id)));
+                            iff, type, dmkid(type), id, dmkid(id)));
 
     if (!(lci = FindLocalItem(
-		iff,
-		type,
-		id,
-		IFFLCI_PROP)))
+                iff,
+                type,
+                id,
+                IFFLCI_PROP)))
     {
-	DEBUG_FINDPROP(dprintf("FindProp: reuturn NULL\n"));
-	return NULL;
+        DEBUG_FINDPROP(dprintf("FindProp: reuturn NULL\n"));
+        return NULL;
     }
 
     /* The userdata of the found LCI is the StoredProperty */

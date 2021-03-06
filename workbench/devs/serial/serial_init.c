@@ -56,7 +56,7 @@ static const UWORD SupportedCommands[] =
     CMD_FLUSH,
     SDCMD_QUERY,
     SDCMD_SETPARAMS,
-    SDCMD_BREAK,    
+    SDCMD_BREAK,
     NSCMD_DEVICEQUERY,
     0
 };
@@ -77,26 +77,26 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR SerialDevice)
     SerialDevice->SerialHidd = OpenLibrary("DRIVERS:serial.hidd",0);
     D(bug("serial.hidd base: 0x%x\n",SerialDevice->SerialHidd));
     if (NULL == SerialDevice->SerialHidd)
-	return FALSE;
+        return FALSE;
     
     if (NULL == SerialDevice->oopBase)
       SerialDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);
     if (NULL == SerialDevice->oopBase)
     {
-	CloseLibrary(SerialDevice->SerialHidd);
-	SerialDevice->SerialHidd = FALSE;
-	return FALSE;
+        CloseLibrary(SerialDevice->SerialHidd);
+        SerialDevice->SerialHidd = FALSE;
+        return FALSE;
     }
 
     SerialDevice->SerialObject = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
     D(bug("serialHidd Object: 0x%x\n",SerialDevice->SerialObject));
     if (NULL == SerialDevice->SerialObject)
     {
-	CloseLibrary(SerialDevice->oopBase);
-	SerialDevice->oopBase = NULL;
-	CloseLibrary(SerialDevice->SerialHidd);
-	SerialDevice->SerialHidd = NULL;
-	return FALSE;
+        CloseLibrary(SerialDevice->oopBase);
+        SerialDevice->oopBase = NULL;
+        CloseLibrary(SerialDevice->SerialHidd);
+        SerialDevice->SerialHidd = NULL;
+        return FALSE;
     }
   }
     
@@ -130,7 +130,7 @@ static int GM_UNIQUENAME(Open)
 
   /* I have one more opener. */
 
-  /* In the list of available units look for the one with the same 
+  /* In the list of available units look for the one with the same
      UnitNumber as the given one  */
   if (0 == ioreq->io_Error)
   {
@@ -143,10 +143,10 @@ static int GM_UNIQUENAME(Open)
       SU = AllocMem(sizeof(struct SerialUnit), MEMF_CLEAR|MEMF_PUBLIC);
       if (NULL != SU)
       {
-        SU->su_OpenerCount	= 1;
-        SU->su_UnitNum		= unitnum;
-        SU->su_SerFlags		= ((struct IOExtSer *)ioreq)->io_SerFlags;
-        SU->su_InputBuffer	= AllocMem(MINBUFSIZE, MEMF_PUBLIC);
+        SU->su_OpenerCount      = 1;
+        SU->su_UnitNum          = unitnum;
+        SU->su_SerFlags         = ((struct IOExtSer *)ioreq)->io_SerFlags;
+        SU->su_InputBuffer      = AllocMem(MINBUFSIZE, MEMF_PUBLIC);
         
         if (NULL != SU->su_InputBuffer)
         {
@@ -170,10 +170,10 @@ static int GM_UNIQUENAME(Open)
           SU->su_Unit  = HIDD_Serial_NewUnit(SerialDevice->SerialObject, unitnum);
           if (NULL != SU->su_Unit)
           {
-            HIDD_SerialUnit_Init(SU->su_Unit, RBF_InterruptHandler, NULL, 
+            HIDD_SerialUnit_Init(SU->su_Unit, RBF_InterruptHandler, NULL,
                                               WBE_InterruptHandler, NULL);
             ioreq->io_Device = (struct Device *)SerialDevice;
-            ioreq->io_Unit   = (struct Unit *)SU;  
+            ioreq->io_Unit   = (struct Unit *)SU;
 
             /*
             ** put it in the list of open units
@@ -198,8 +198,8 @@ static int GM_UNIQUENAME(Open)
     else
     {
       /* the unit does already exist. */
-      /* 
-      ** Check whether one more opener to this unit is tolerated 
+      /*
+      ** Check whether one more opener to this unit is tolerated
       */
       if (0 != (SU->su_SerFlags & SERF_SHARED))
       {
@@ -255,7 +255,7 @@ static int GM_UNIQUENAME(Close)
   
     if (NULL != SU->su_InputBuffer && 0 != SU->su_InBufLength)
     {
-      FreeMem(SU->su_InputBuffer, 
+      FreeMem(SU->su_InputBuffer,
               SU->su_InBufLength);
     }
   
@@ -306,7 +306,7 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 #define ioStd(x)  ((struct IOStdReq *)x)
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOExtSer *, ioreq, A1),
-	   struct serialbase *, SerialDevice, 5, Serial)
+           struct serialbase *, SerialDevice, 5, Serial)
 {
   AROS_LIBFUNC_INIT
   
@@ -318,10 +318,10 @@ AROS_LH1(void, beginio,
   /* WaitIO will look into this */
   ioreq->IOSer.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 
-  /* 
+  /*
   ** As a lot of "public" data can be modified in the following lines
-  ** I protect it from other tasks by this semaphore 
-  */  
+  ** I protect it from other tasks by this semaphore
+  */
   ObtainSemaphore(&SU->su_Lock);
 
   switch (ioreq->IOSer.io_Command)
@@ -338,11 +338,11 @@ AROS_LH1(void, beginio,
 
       d = (struct NSDeviceQueryResult *)ioreq->IOSer.io_Data;
 
-      d->DevQueryFormat 	= 0;
-      d->SizeAvailable 	 	= sizeof(struct NSDeviceQueryResult);
-      d->DeviceType 	 	= NSDEVTYPE_SERIAL;
-      d->DeviceSubType 	 	= 0;
-      d->SupportedCommands 	= (UWORD *)SupportedCommands;
+      d->DevQueryFormat         = 0;
+      d->SizeAvailable          = sizeof(struct NSDeviceQueryResult);
+      d->DeviceType             = NSDEVTYPE_SERIAL;
+      d->DeviceSubType          = 0;
+      d->SupportedCommands      = (UWORD *)SupportedCommands;
 
       ioreq->IOSer.io_Actual = sizeof(struct NSDeviceQueryResult);
       ioreq->IOSer.io_Error  = 0;
@@ -363,7 +363,7 @@ AROS_LH1(void, beginio,
       **  Let me see whether I can copy any data at all and
       **  whether nobody else is using this device now
        */
-      ioreq->IOSer.io_Actual = 0;      
+      ioreq->IOSer.io_Actual = 0;
 
       Disable();
 
@@ -371,7 +371,7 @@ AROS_LH1(void, beginio,
           0 == (SU->su_Status & STATUS_READS_PENDING)    )
       {
         D(bug("There are data in the receive buffer!\n"));
-        /* 
+        /*
            No matter how many bytes are in the input buffer,
            I will copy them into the IORequest buffer immediately.
            This way I can satisfy requests that are larger than
@@ -380,10 +380,10 @@ AROS_LH1(void, beginio,
            request from now on.
          */
         if (-1 == ioreq->IOSer.io_Length)
-	{
+        {
           if (TRUE == copyInDataUntilZero(SU, (struct IOStdReq *)ioreq))
-	  {
-            /* 
+          {
+            /*
             ** it could be completed immediately.
             ** Check if I have to reply the message.
             */
@@ -392,14 +392,14 @@ AROS_LH1(void, beginio,
 
             Enable();
             break;
-	  }
+          }
         }
         else
-	{
+        {
           D(bug("Calling copyInData!\n"));
           if (TRUE == copyInData(SU, (struct IOStdReq *)ioreq))
-	  {
-            /* 
+          {
+            /*
             ** it could be completed immediately.
             ** Check if I have to reply the message.
             */
@@ -408,8 +408,8 @@ AROS_LH1(void, beginio,
 
             Enable();
             break;
-	  } 
-	}
+          }
+        }
 
         if (NULL != SU->su_ActiveRead)
         {
@@ -439,7 +439,7 @@ AROS_LH1(void, beginio,
      
       /*
       ** As I am returning immediately I will tell that this
-      ** could not be done QUICK   
+      ** could not be done QUICK
       */
       ioreq->IOSer.io_Flags &= ~IOF_QUICK;
     break;
@@ -457,39 +457,39 @@ AROS_LH1(void, beginio,
       {
         ULONG writtenbytes;
         BOOL complete = FALSE;
-        /* 
+        /*
            Writing the first few bytes to the UART has to have the
            effect that whenever the UART can receive new data
            a HW interrupt must happen. So this writing to the
            UART should get the sequence of HW-interrupts going
-           until there is no more data to write 
-	*/
-	if (-1 == ioreq->IOSer.io_Length)
-	{
-	  int stringlen = strlen(ioreq->IOSer.io_Data);
-	  D(bug("Transmitting NULL termninated string.\n"));
-	  /*
-	  ** Supposed to write the buffer to the port until a '\0'
-	  ** is encountered.
-	  */
-	  
-	  writtenbytes = HIDD_SerialUnit_Write(SU->su_Unit,
-	                                       ioreq->IOSer.io_Data,
-	                                       stringlen);
-	  if (writtenbytes == stringlen)
-	    complete = TRUE;
-	  else
-	    SU->su_WriteLength = stringlen-writtenbytes;
-	}
-	else
-	{
+           until there is no more data to write
+        */
+        if (-1 == ioreq->IOSer.io_Length)
+        {
+          int stringlen = strlen(ioreq->IOSer.io_Data);
+          D(bug("Transmitting NULL termninated string.\n"));
+          /*
+          ** Supposed to write the buffer to the port until a '\0'
+          ** is encountered.
+          */
+          
+          writtenbytes = HIDD_SerialUnit_Write(SU->su_Unit,
+                                               ioreq->IOSer.io_Data,
+                                               stringlen);
+          if (writtenbytes == stringlen)
+            complete = TRUE;
+          else
+            SU->su_WriteLength = stringlen-writtenbytes;
+        }
+        else
+        {
           writtenbytes = HIDD_SerialUnit_Write(SU->su_Unit,
                                                ioreq->IOSer.io_Data,
                                                ioreq->IOSer.io_Length);
           if (writtenbytes == ioreq->IOSer.io_Length)
             complete = TRUE;
-	  else
-	    SU->su_WriteLength = ioreq->IOSer.io_Length-writtenbytes;
+          else
+            SU->su_WriteLength = ioreq->IOSer.io_Length-writtenbytes;
         }
         /*
         ** A consistency check between the STATUS_WRITES_PENDING flag
@@ -519,13 +519,13 @@ AROS_LH1(void, beginio,
           */
           ioreq->IOSer.io_Flags &= ~IOF_QUICK;
           SU->su_ActiveWrite = (struct Message *)ioreq;
-          SU->su_Status |= STATUS_WRITES_PENDING; 
+          SU->su_Status |= STATUS_WRITES_PENDING;
           SU->su_NextToWrite = writtenbytes;
         }
       }
       else
-      {    
-        /* 
+      {
+        /*
            I could not write the data immediately as another request
            is already there. So I will make this
            the responsibility of the interrupt handler to use this
@@ -534,9 +534,9 @@ AROS_LH1(void, beginio,
         PutMsg(&SU->su_QWriteCommandPort,
                (struct Message *)ioreq);
         SU->su_Status |= STATUS_WRITES_PENDING;
-        /* 
+        /*
         ** As I am returning immediately I will tell that this
-        ** could not be done QUICK   
+        ** could not be done QUICK
         */
         ioreq->IOSer.io_Flags &= ~IOF_QUICK;
       }
@@ -551,7 +551,7 @@ AROS_LH1(void, beginio,
       SU->su_InputNextPos = 0;
       SU->su_InputFirst = 0;
       SU->su_Status &= ~STATUS_BUFFEROVERFLOW;
-      ioreq->IOSer.io_Error = 0;    
+      ioreq->IOSer.io_Error = 0;
       Enable();
       /*
       ** The request could be completed immediately.
@@ -591,16 +591,16 @@ AROS_LH1(void, beginio,
         BYTE * oldBuffer = SU->su_InputBuffer;
         BYTE * newBuffer = (BYTE *)AllocMem(MINBUFSIZE ,MEMF_PUBLIC);
         if (NULL != newBuffer)
-	{
+        {
           SU->su_InputBuffer = newBuffer;
           FreeMem(oldBuffer, SU->su_InBufLength);
           /* write new buffersize */
           SU->su_InBufLength = MINBUFSIZE;
         }
         else
-	{
+        {
           /* Buffer could not be allocated */
-	}
+        }
       }
       Enable();
       /* now fall through to CMD_FLUSH */
@@ -609,7 +609,7 @@ AROS_LH1(void, beginio,
     /*******************************************************************/
 
     case CMD_FLUSH:
-      /* 
+      /*
       ** Clear all queued IO request for the given serial unit except
       ** for the active ones.
        */
@@ -617,22 +617,22 @@ AROS_LH1(void, beginio,
 
       while (TRUE)
       {
-        struct IOStdReq * iosreq = 
+        struct IOStdReq * iosreq =
                   (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
         if (NULL == iosreq)
           break;
         iosreq->io_Error = IOERR_ABORTED;
-        ReplyMsg((struct Message *)iosreq);        
+        ReplyMsg((struct Message *)iosreq);
       }
 
       while (TRUE)
       {
-        struct IOStdReq * iosreq = 
+        struct IOStdReq * iosreq =
                   (struct IOStdReq *)GetMsg(&SU->su_QWriteCommandPort);
         if (NULL == iosreq)
           break;
         iosreq->io_Error = IOERR_ABORTED;
-        ReplyMsg((struct Message *)iosreq);        
+        ReplyMsg((struct Message *)iosreq);
       }
       ioreq->IOSer.io_Error = 0;
 
@@ -696,7 +696,7 @@ AROS_LH1(void, beginio,
           ioreq->IOSer.io_Actual = unread;
       }
 
-      ioreq->IOSer.io_Error = 0; 
+      ioreq->IOSer.io_Error = 0;
       Enable();
       /*
       ** The request could be completed immediately.
@@ -717,13 +717,13 @@ AROS_LH1(void, beginio,
       if (ioreq->io_RBufLen >= MINBUFSIZE &&
           ioreq->io_RBufLen != SU->su_InBufLength)
       {
-        /* 
+        /*
         ** The other ones I will only do if I am not busy with
-        ** reading or writing data right now 
+        ** reading or writing data right now
         */
         if (0 == (SU->su_Status & (STATUS_READS_PENDING |
                                    STATUS_WRITES_PENDING) ))
-	{
+        {
           /* the user requests a different inputbuffer size.
              he shall have it. */
           int OldInBufLength = SU->su_InBufLength;
@@ -744,8 +744,8 @@ AROS_LH1(void, beginio,
             SU->su_InBufLength  = ioreq->io_RBufLen;
             SU->su_Status      &= ~STATUS_CHANGING_IN_BUFFER;
            
-            /* free the old buffer */ 
-            FreeMem(OldInBuf, OldInBufLength); 
+            /* free the old buffer */
+            FreeMem(OldInBuf, OldInBufLength);
           }
           else
           {
@@ -756,7 +756,7 @@ AROS_LH1(void, beginio,
         }
       }
         
-      /* Changing the break time */        
+      /* Changing the break time */
       if (ioreq->io_BrkTime != 0)
         SU->su_BrkTime = ioreq->io_BrkTime;
         
@@ -768,7 +768,7 @@ AROS_LH1(void, beginio,
       {
         /* Change the Baudrate */
         D(bug("Setting baudrate on SerialUnit!\n"));
-        success = HIDD_SerialUnit_SetBaudrate(SU->su_Unit, 
+        success = HIDD_SerialUnit_SetBaudrate(SU->su_Unit,
                                               ioreq->io_Baud);
 
         if (FALSE == success)
@@ -776,7 +776,7 @@ AROS_LH1(void, beginio,
           D(bug("Setting baudrate didn't work!\n"));
           /* this Baudrate is not supported */
           ioreq->IOSer.io_Error = SerErr_BaudMismatch;
-          return; 
+          return;
         }
         SU->su_Baud = ioreq->io_Baud;
       } /* Baudrate changing */
@@ -789,7 +789,7 @@ AROS_LH1(void, beginio,
           SU->su_WriteLen != ioreq->io_WriteLen ||
           SU->su_StopBits != ioreq->io_StopBits)
       {
-        struct TagItem tags[] = 
+        struct TagItem tags[] =
           {{TAG_DATALENGTH, ioreq->io_ReadLen},
            {TAG_STOP_BITS , ioreq->io_StopBits},
            {TAG_SKIP      , 0},  // !!! PARITY!!!
@@ -800,7 +800,7 @@ AROS_LH1(void, beginio,
           ioreq->IOSer.io_Error = SerErr_InvParam;
           bug("HIDD_SerialUnit_SetParameters() failed.\n");
           return;
-	}
+        }
         SU->su_ReadLen  = ioreq->io_ReadLen;
         SU->su_WriteLen = ioreq->io_WriteLen;
         SU->su_StopBits = ioreq->io_StopBits;
@@ -834,7 +834,7 @@ AROS_LH1(void, beginio,
         }
       }
       /* Immediately execute this command */
-      ioreq->IOSer.io_Error = HIDD_SerialUnit_SendBreak(SU->su_Unit, 
+      ioreq->IOSer.io_Error = HIDD_SerialUnit_SendBreak(SU->su_Unit,
                                                         SU->su_BrkTime);
       Enable();
 
@@ -859,7 +859,7 @@ AROS_LH1(void, beginio,
     
   } /* switch () */
 
-  ReleaseSemaphore(&SU->su_Lock);  
+  ReleaseSemaphore(&SU->su_Lock);
   
   D(bug("id: Return from BeginIO()\n"));
 
@@ -870,7 +870,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *, ioreq, A1),
-	   struct serialbase *, SerialDevice, 6, Serial)
+           struct serialbase *, SerialDevice, 6, Serial)
 {
   AROS_LIBFUNC_INIT
 

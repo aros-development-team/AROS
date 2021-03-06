@@ -26,10 +26,10 @@
     RESULT
         x - IEEE double precision floating point number.
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : 0
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
 
     NOTES
 
@@ -55,7 +55,7 @@
     
     if (0 == y)
     {
-        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);  
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
         return *DRes; /* return 0 */
     }
     

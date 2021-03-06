@@ -257,11 +257,11 @@ const IPTR NewWindowDesc[] =
     SDM_ULONG(O(IDCMPFlags)),
     SDM_ULONG(O(Flags)),
     SDM_IGNORE(4+4+4+4+4), /* FirstGadget
-	    +CheckMark
-	    +Title
-	    +Screen
-	    +BitMap
-	    */
+            +CheckMark
+            +Title
+            +Screen
+            +BitMap
+            */
     SDM_WORD(O(MinWidth)),
     SDM_WORD(O(MinHeight)),
     SDM_UWORD(O(MaxWidth)),
@@ -303,24 +303,24 @@ AROS_UFH3(LONG, dosstreamhook,
     switch (*msg)
     {
     case BEIO_READ:
-	rc = FGetC (fh);
+        rc = FGetC (fh);
 #if 0
 kprintf ("dsh: Read: %02X\n", rc);
 #endif
-	break;
+        break;
 
     case BEIO_WRITE:
-	rc = FPutC (fh, ((struct BEIOM_Write *)msg)->Data);
-	break;
+        rc = FPutC (fh, ((struct BEIOM_Write *)msg)->Data);
+        break;
 
     case BEIO_IGNORE:
-	Flush (fh);
+        Flush (fh);
 
-	rc = Seek (fh, ((struct BEIOM_Ignore *)msg)->Count, OFFSET_CURRENT);
+        rc = Seek (fh, ((struct BEIOM_Ignore *)msg)->Count, OFFSET_CURRENT);
 #if 0
 kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
 #endif
-	break;
+        break;
 
     }
 
@@ -347,10 +347,10 @@ AROS_UFH3S(ULONG, ProcessCheckFileType,
     
     if (data->sdd_Mode == SDV_SPECIALMODE_READ)
     {
-    	if ((icon->do_Magic != WB_DISKMAGIC))
-	{
-	    return FALSE;
-	}
+        if ((icon->do_Magic != WB_DISKMAGIC))
+        {
+            return FALSE;
+        }
     }
     
     return TRUE;
@@ -384,35 +384,35 @@ kprintf ("ProcessOldDrawerData\n");
 
     if (icon->do_DrawerData)
     {
-	switch (data->sdd_Mode)
-	{
-	case SDV_SPECIALMODE_READ:
-	    ptr = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC,
+        switch (data->sdd_Mode)
+        {
+        case SDV_SPECIALMODE_READ:
+            ptr = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC,
                 IconBase);
-	    if (ptr == NULL)
-	        return FALSE;
+            if (ptr == NULL)
+                return FALSE;
 
-	    if (ReadStruct (streamhook
-		, (APTR *)&ptr
-		, data->sdd_Stream
-		, OldDrawerDataDesc
-	    	))
-	    {
-	        icon->do_DrawerData = ptr;
-    	    	NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_OLDDRAWERDATA_READ;	    	
-    	    	return TRUE;
-	    }
-	    return FALSE;
+            if (ReadStruct (streamhook
+                , (APTR *)&ptr
+                , data->sdd_Stream
+                , OldDrawerDataDesc
+                ))
+            {
+                icon->do_DrawerData = ptr;
+                NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_OLDDRAWERDATA_READ;
+                return TRUE;
+            }
+            return FALSE;
 
-	case SDV_SPECIALMODE_WRITE:
-	    return WriteStruct (streamhook
-		, icon->do_DrawerData
-		, data->sdd_Stream
-		, OldDrawerDataDesc
-	    );
+        case SDV_SPECIALMODE_WRITE:
+            return WriteStruct (streamhook
+                , icon->do_DrawerData
+                , data->sdd_Stream
+                , OldDrawerDataDesc
+            );
         case SDV_SPECIALMODE_FREE:
-	    return TRUE;
-	}
+            return TRUE;
+        }
     }
 
     return TRUE;
@@ -425,8 +425,8 @@ kprintf ("ProcessOldDrawerData\n");
 static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamhook, BPTR file)
 {
     struct Image * image;
-    ULONG	   size;
-    ULONG	   t;
+    ULONG          size;
+    ULONG          t;
     struct IconBase *IconBase = streamhook->h_Data;
 
     image = AllocMemIcon(icon, sizeof(struct Image),
@@ -441,34 +441,34 @@ static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamho
     size = ((image->Width + 15) >> 4) * image->Height * image->Depth * 2;
 
     D(bug("%s: %dx%dx%d (%d bytes)\n", __func__
-	    , image->Width
-	    , image->Height
-	    , image->Depth
-	    , size));
+            , image->Width
+            , image->Height
+            , image->Depth
+            , size));
 
     if (size)
     {
-	if (!(image->ImageData = AllocMemIcon(icon, size,
+        if (!(image->ImageData = AllocMemIcon(icon, size,
             MEMF_PUBLIC | MEMF_CHIP, IconBase)))
-	    return NULL;
+            return NULL;
 
-	size >>= 1;
+        size >>= 1;
 
-	for (t=0; t<size; t++)
-	{
-	    UWORD data;
+        for (t=0; t<size; t++)
+        {
+            UWORD data;
 
-	    if (!ReadWord (streamhook, &data, (APTR)file))
-		break;
+            if (!ReadWord (streamhook, &data, (APTR)file))
+                break;
 
-	    image->ImageData[t] = AROS_WORD2BE(data);
-    	}
+            image->ImageData[t] = AROS_WORD2BE(data);
+        }
 
-	if (t != size)
-	{
-	    D(bug("[%s] Strange. Short read at %d, expected %d\n", t, size));
-	    return NULL;
-	}
+        if (t != size)
+        {
+            D(bug("[%s] Strange. Short read at %d, expected %d\n", t, size));
+            return NULL;
+        }
     }
 
     return image;
@@ -477,13 +477,13 @@ static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamho
 /****************************************************************************************/
 
 static int WriteImage (struct Hook * streamhook, BPTR file,
-	struct Image * image)
+        struct Image * image)
 {
     ULONG size;
     ULONG t;
 
     if (!WriteStruct (streamhook, image, (APTR)file, ImageDesc) )
-	return FALSE;
+        return FALSE;
 
     /* Get size in words */
     size = ((image->Width + 15) >> 4) * image->Height * image->Depth;
@@ -499,10 +499,10 @@ kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
 
     for (t=0; t<size; t++)
     {
-    	UWORD data = image->ImageData[t];
+        UWORD data = image->ImageData[t];
 
-	if (!WriteWord (streamhook, AROS_WORD2BE(data), (APTR)file))
-	    break;
+        if (!WriteWord (streamhook, AROS_WORD2BE(data), (APTR)file))
+            break;
     }
 
     return (t == size);
@@ -577,26 +577,26 @@ kprintf ("ProcessSelectRender\n");
     
     if (icon->do_Gadget.SelectRender || (icon->do_Gadget.Flags & GFLG_GADGHIMAGE))
     {
-	switch (data->sdd_Mode)
-	{
-	case SDV_SPECIALMODE_READ:
-	    image = ReadImage (icon, streamhook, (BPTR)data->sdd_Stream);
+        switch (data->sdd_Mode)
+        {
+        case SDV_SPECIALMODE_READ:
+            image = ReadImage (icon, streamhook, (BPTR)data->sdd_Stream);
 
-	    if (!image)
-		return FALSE;
+            if (!image)
+                return FALSE;
 
-	    icon->do_Gadget.SelectRender = image;
-    	    NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_SELECTIMAGE_READ;
-	    break;
+            icon->do_Gadget.SelectRender = image;
+            NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_SELECTIMAGE_READ;
+            break;
 
-	case SDV_SPECIALMODE_WRITE:
-	    image = icon->do_Gadget.SelectRender;
+        case SDV_SPECIALMODE_WRITE:
+            image = icon->do_Gadget.SelectRender;
 
-	    return WriteImage (streamhook, (BPTR)data->sdd_Stream, image);
+            return WriteImage (streamhook, (BPTR)data->sdd_Stream, image);
 
-	case SDV_SPECIALMODE_FREE:
-	    break;
-	}
+        case SDV_SPECIALMODE_FREE:
+            break;
+        }
     }
 
     return TRUE;
@@ -620,31 +620,31 @@ AROS_UFH3S(ULONG, ProcessFlagPtr,
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
-	if (FRead ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
-	    return FALSE;
+        if (FRead ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
+            return FALSE;
 
 #if 0
 kprintf ("ProcessFlagPtr: %08lx %ld\n", ptr);
 #endif
 
-	*((IPTR *)data->sdd_Dest) = (IPTR)(ptr != 0L);
+        *((IPTR *)data->sdd_Dest) = (IPTR)(ptr != 0L);
 
-	break;
+        break;
 
     case SDV_SPECIALMODE_WRITE:
-    	IconBase = streamhook->h_Data;
-	if (*((APTR *)data->sdd_Dest))
-	    ptr = 0xABADCAFEL;
-	else
-	    ptr = 0L;
+        IconBase = streamhook->h_Data;
+        if (*((APTR *)data->sdd_Dest))
+            ptr = 0xABADCAFEL;
+        else
+            ptr = 0L;
 
-	if (FWrite ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
-	    return FALSE;
+        if (FWrite ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
+            return FALSE;
 
-	break;
+        break;
 
     case SDV_SPECIALMODE_FREE:
-	break;
+        break;
     }
 
 
@@ -663,16 +663,16 @@ static STRPTR ReadIconString (struct DiskObject *icon, struct Hook * streamhook,
     struct IconBase *IconBase = streamhook->h_Data;
 
     if (!ReadLong (streamhook, &len, (APTR)file))
-	return NULL;
+        return NULL;
 
     str = AllocMemIcon(icon, len, MEMF_PUBLIC, IconBase);
 
     if (!str)
-	return NULL;
+        return NULL;
 
     if (FRead ((BPTR)file, str, len, 1) == EOF)
     {
-	return NULL;
+        return NULL;
     }
 
 #if 0
@@ -693,7 +693,7 @@ static int WriteIconString (struct Hook * streamhook, BPTR file, STRPTR str)
     len = strlen (str) + 1;
 
     if (!WriteLong (streamhook, len, (APTR)file))
-	return FALSE;
+        return FALSE;
 
     return FWrite (file, str, len, 1) != EOF;
 } /* WriteIconString */
@@ -717,28 +717,28 @@ kprintf ("ProcessDefaultTool\n");
 
     if (icon->do_DefaultTool)
     {
-	switch (data->sdd_Mode)
-	{
-	case SDV_SPECIALMODE_READ:
-	    str = ReadIconString (icon, streamhook, (BPTR) data->sdd_Stream);
+        switch (data->sdd_Mode)
+        {
+        case SDV_SPECIALMODE_READ:
+            str = ReadIconString (icon, streamhook, (BPTR) data->sdd_Stream);
 
-	    if (!str)
-		return FALSE;
+            if (!str)
+                return FALSE;
 
-	    icon->do_DefaultTool = str;
-    	    NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_DEFAULTTOOL_READ;
-	    break;
+            icon->do_DefaultTool = str;
+            NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_DEFAULTTOOL_READ;
+            break;
 
-	case SDV_SPECIALMODE_WRITE: {
-	    str = icon->do_DefaultTool;
+        case SDV_SPECIALMODE_WRITE: {
+            str = icon->do_DefaultTool;
 
-	    WriteIconString (streamhook, (BPTR) data->sdd_Stream, str);
+            WriteIconString (streamhook, (BPTR) data->sdd_Stream, str);
 
-	    break; }
+            break; }
 
-	case SDV_SPECIALMODE_FREE:
-	    break;
-	}
+        case SDV_SPECIALMODE_FREE:
+            break;
+        }
     }
 
     return TRUE;
@@ -765,28 +765,28 @@ kprintf ("ProcessToolWindow\n");
 
     if (icon->do_ToolWindow)
     {
-	switch (data->sdd_Mode)
-	{
-	case SDV_SPECIALMODE_READ:
-	    str = ReadIconString (icon, streamhook, (BPTR)data->sdd_Stream);
+        switch (data->sdd_Mode)
+        {
+        case SDV_SPECIALMODE_READ:
+            str = ReadIconString (icon, streamhook, (BPTR)data->sdd_Stream);
 
-	    if (!str)
-		return FALSE;
+            if (!str)
+                return FALSE;
 
-	    icon->do_ToolWindow = str;
-    	    NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_TOOLWINDOW_READ;
-	    break;
+            icon->do_ToolWindow = str;
+            NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_TOOLWINDOW_READ;
+            break;
 
-	case SDV_SPECIALMODE_WRITE: {
-	    str = icon->do_ToolWindow;
+        case SDV_SPECIALMODE_WRITE: {
+            str = icon->do_ToolWindow;
 
-	    WriteIconString (streamhook, (BPTR)data->sdd_Stream, str);
+            WriteIconString (streamhook, (BPTR)data->sdd_Stream, str);
 
-	    break; }
+            break; }
 
-	case SDV_SPECIALMODE_FREE:
-	    break;
-	}
+        case SDV_SPECIALMODE_FREE:
+            break;
+        }
     }
 
     return TRUE;
@@ -813,85 +813,85 @@ kprintf ("ProcessToolTypes\n");
 
     if (icon->do_ToolTypes)
     {
-	ULONG	 t;
-	ULONG	 count;
-	STRPTR * ttarray;
+        ULONG    t;
+        ULONG    count;
+        STRPTR * ttarray;
 
-	switch (data->sdd_Mode)
-	{
-	case SDV_SPECIALMODE_READ:
-	    /* Read size of ToolTypes array (each entry is 4 bytes and the
-	       last is 0L */
-	    if (!ReadLong (streamhook, &count, data->sdd_Stream))
-		return FALSE;
+        switch (data->sdd_Mode)
+        {
+        case SDV_SPECIALMODE_READ:
+            /* Read size of ToolTypes array (each entry is 4 bytes and the
+               last is 0L */
+            if (!ReadLong (streamhook, &count, data->sdd_Stream))
+                return FALSE;
 
-	    count = (count >> 2) - 1; /* How many entries */
+            count = (count >> 2) - 1; /* How many entries */
 
-    	    if ((LONG)count < 0)
-	    {
-	    	icon->do_ToolTypes = NULL;
-	    	return TRUE;
-	    }
+            if ((LONG)count < 0)
+            {
+                icon->do_ToolTypes = NULL;
+                return TRUE;
+            }
 
-	    ttarray = AllocMemIcon(icon, (count+1)*sizeof(STRPTR),
+            ttarray = AllocMemIcon(icon, (count+1)*sizeof(STRPTR),
                 MEMF_PUBLIC, IconBase);
-	    if (!ttarray) return FALSE;
+            if (!ttarray) return FALSE;
 
 #if 0
 kprintf ("Read %d tooltypes (tt=%p)\n", count, ttarray);
 #endif
 
-	    for (t=0; t<count; t++)
-	    {
-		ttarray[t] = ReadIconString (icon, streamhook, (BPTR)data->sdd_Stream);
+            for (t=0; t<count; t++)
+            {
+                ttarray[t] = ReadIconString (icon, streamhook, (BPTR)data->sdd_Stream);
 #if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
 
-		if (!ttarray[t])
-		    return FALSE;
-	    }
+                if (!ttarray[t])
+                    return FALSE;
+            }
 
-	    ttarray[t] = NULL;
+            ttarray[t] = NULL;
 
-	    icon->do_ToolTypes = (STRPTR *)ttarray;
-    	    NATIVEICON(icon)->ni_ReadStruct_State |= RSS_TOOLTYPES_READ;
-	    break;
+            icon->do_ToolTypes = (STRPTR *)ttarray;
+            NATIVEICON(icon)->ni_ReadStruct_State |= RSS_TOOLTYPES_READ;
+            break;
 
-	case SDV_SPECIALMODE_WRITE: {
-	    ULONG size;
+        case SDV_SPECIALMODE_WRITE: {
+            ULONG size;
 
-	    ttarray = (STRPTR *)icon->do_ToolTypes;
+            ttarray = (STRPTR *)icon->do_ToolTypes;
 
-	    for (count=0; ttarray[count]; count++);
+            for (count=0; ttarray[count]; count++);
 
 #if 0
 kprintf ("Write %d tooltypes (%p)\n", count, ttarray);
 #endif
 
-	    size = (count+1)*4;
+            size = (count+1)*4;
 
-	    if (!WriteLong (streamhook, size, data->sdd_Stream))
-		return FALSE;
+            if (!WriteLong (streamhook, size, data->sdd_Stream))
+                return FALSE;
 
-	    for (t=0; t<count; t++)
-	    {
+            for (t=0; t<count; t++)
+            {
 #if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
-		if (!WriteIconString (streamhook, (BPTR)data->sdd_Stream, ttarray[t]))
-		    return FALSE;
-	    }
+                if (!WriteIconString (streamhook, (BPTR)data->sdd_Stream, ttarray[t]))
+                    return FALSE;
+            }
 
-	    break; }
+            break; }
 
-	case SDV_SPECIALMODE_FREE:
-	    break;
-	}
+        case SDV_SPECIALMODE_FREE:
+            break;
+        }
     }
 #if 0
     else
-	kprintf ("No tool types\n");
+        kprintf ("No tool types\n");
 #endif
 
     return TRUE;
@@ -917,25 +917,25 @@ kprintf ("ProcessNewDrawerData\n");
 
     if (icon->do_DrawerData && (rev > 0) && (rev <= WB_DISKREVISION))
     {
-	switch (data->sdd_Mode)
-	{
-	case SDV_SPECIALMODE_READ:
-	    if (!ReadLong(streamhook, &icon->do_DrawerData->dd_Flags, data->sdd_Stream))
-		return FALSE;
+        switch (data->sdd_Mode)
+        {
+        case SDV_SPECIALMODE_READ:
+            if (!ReadLong(streamhook, &icon->do_DrawerData->dd_Flags, data->sdd_Stream))
+                return FALSE;
 
-    	    if (!ReadWord(streamhook, &icon->do_DrawerData->dd_ViewModes, data->sdd_Stream))
-	    	return FALSE;
-		
-	    break;
+            if (!ReadWord(streamhook, &icon->do_DrawerData->dd_ViewModes, data->sdd_Stream))
+                return FALSE;
+                
+            break;
 
-	case SDV_SPECIALMODE_WRITE: 
-	    if (!WriteLong(streamhook, icon->do_DrawerData->dd_Flags, data->sdd_Stream))
-		return FALSE;
+        case SDV_SPECIALMODE_WRITE:
+            if (!WriteLong(streamhook, icon->do_DrawerData->dd_Flags, data->sdd_Stream))
+                return FALSE;
 
-    	    if (!WriteWord(streamhook, icon->do_DrawerData->dd_ViewModes, data->sdd_Stream))
-	    	return FALSE;
-	    break;
-	}
+            if (!WriteWord(streamhook, icon->do_DrawerData->dd_ViewModes, data->sdd_Stream))
+                return FALSE;
+            break;
+        }
     }
 
     return TRUE;
@@ -965,17 +965,17 @@ kprintf ("ProcessIcon35\n");
     
     switch (data->sdd_Mode)
     {
-    	case SDV_SPECIALMODE_READ:
-	    ReadIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
-    	    break;	    
+        case SDV_SPECIALMODE_READ:
+            ReadIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+            break;
 
-    	case SDV_SPECIALMODE_FREE:
-	    FreeIcon35(NATIVEICON(DO(data->sdd_Dest)), IconBase);
-	    break;
+        case SDV_SPECIALMODE_FREE:
+            FreeIcon35(NATIVEICON(DO(data->sdd_Dest)), IconBase);
+            break;
 
-    	case SDV_SPECIALMODE_WRITE:
-	    retval = WriteIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
-    	    break;	    
+        case SDV_SPECIALMODE_WRITE:
+            retval = WriteIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+            break;
 
     }
     
@@ -1002,17 +1002,17 @@ kprintf ("ProcessIconNI\n");
     
     switch (data->sdd_Mode)
     {
-    	case SDV_SPECIALMODE_READ:
-	    ReadIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
-    	    break;	    
+        case SDV_SPECIALMODE_READ:
+            ReadIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+            break;
 
-    	case SDV_SPECIALMODE_FREE:
-	    FreeIconNI(NATIVEICON(DO(data->sdd_Dest)), IconBase);
-	    break;
+        case SDV_SPECIALMODE_FREE:
+            FreeIconNI(NATIVEICON(DO(data->sdd_Dest)), IconBase);
+            break;
 
-    	case SDV_SPECIALMODE_WRITE:
-	    retval = WriteIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
-    	    break;	    
+        case SDV_SPECIALMODE_WRITE:
+            retval = WriteIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+            break;
 
     }
     

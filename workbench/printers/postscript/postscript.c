@@ -67,7 +67,7 @@ static CONST_STRPTR PED_Commands[] = {
     ") aSHOW aSHORP3 (",                /* 18 aSHORP3 (no condensed) */
     ") aSHOW aSHORP6 (",                /* 19 aSHORP6 (enlarge) */
     ") aSHOW aSHORP5 (",                /* 20 aSHORT5 (no enlarge) */
-    ") aSHOW aDEN6 (",                  /* 21 aDEN6   (shadow) */ 
+    ") aSHOW aDEN6 (",                  /* 21 aDEN6   (shadow) */
     ") aSHOW aDEN5 (",                  /* 22 aDEN5   (no shadow) */
     ") aSHOW aDEN4 (",                  /* 23 aDEN4   (double strike) */
     ") aSHOW aDEN3 (",                  /* 24 aDEN3   (no double strike) */
@@ -128,100 +128,100 @@ static CONST_STRPTR PED_Commands[] = {
 static CONST_STRPTR PED_8BitChars[] = {
 
           " ", /* SPC (160) */
-          "?", /* ! */ 
-          "?", /* c */ 
+          "?", /* ! */
+          "?", /* c */
           "?", /* £ */
           "?", /* o */
           "?", /* Y */
-          "|", 
+          "|",
           "?", /* S */
-          "?", 
-          "?", /* Copyright */ 
+          "?",
+          "?", /* Copyright */
           "?", /* a */
-          "?", /* < */ 
+          "?", /* < */
           "?", /* - */
           "?", /* SHY */
-          "?", /* R */ 
+          "?", /* R */
           "?", /* - */
           "?", /* o (176) */
-          "?", /* +- */ 
+          "?", /* +- */
           "?", /* 2 */
           "?", /* 3 */
-          "?", 
-          "?", /* u */ 
-          "?", /* P */ 
+          "?",
+          "?", /* u */
+          "?", /* P */
           "?", /* . */
-          "?", /* , */ 
+          "?", /* , */
           "?", /* 1 */
           "?", /* o */
           "?", /* > */
           "?", /* 1/4 */
           "?", /* 1/2 */
-          "?", /* 3/4 */ 
+          "?", /* 3/4 */
           "?", /* ? */
           "?", /* A' (192) */
-          "?", /* A' */ 
-          "?", /* A^ */ 
-          "?", /* A~ */ 
-          "?", /* A: */ 
-          "?", /* Ao */ 
-          "?", /* AE */ 
+          "?", /* A' */
+          "?", /* A^ */
+          "?", /* A~ */
+          "?", /* A: */
+          "?", /* Ao */
+          "?", /* AE */
           "?", /* C */
-          "?", /* E' */ 
-          "?", /* E' */ 
-          "?", /* E^ */ 
-          "?", /* E: */ 
-          "?", /* I' */ 
-          "?", /* I' */ 
-          "?", /* I^ */ 
+          "?", /* E' */
+          "?", /* E' */
+          "?", /* E^ */
+          "?", /* E: */
+          "?", /* I' */
+          "?", /* I' */
+          "?", /* I^ */
           "?", /* I: */
-          "?", /* D- (208) */ 
-          "?", /* N~ */ 
-          "?", /* O' */ 
-          "?", /* O' */ 
-          "?", /* O^ */ 
-          "?", /* O~ */ 
-          "?", /* O: */ 
+          "?", /* D- (208) */
+          "?", /* N~ */
+          "?", /* O' */
+          "?", /* O' */
+          "?", /* O^ */
+          "?", /* O~ */
+          "?", /* O: */
           "?", /* x  */
-          "?", /* 0  */ 
+          "?", /* 0  */
           "?", /* U' */
           "?", /* U' */
-          "?", /* U^ */ 
-          "?", /* U: */ 
-          "?", /* Y' */ 
-          "?", /* p  */ 
+          "?", /* U^ */
+          "?", /* U: */
+          "?", /* Y' */
+          "?", /* p  */
           "?", /* B  */
           "?", /* a' (224) */
-          "?", /* a' */ 
-          "?", /* a^ */ 
-          "?", /* a~ */ 
-          "?", /* a: */ 
-          "?", /* ao */ 
-          "?", /* ae */ 
+          "?", /* a' */
+          "?", /* a^ */
+          "?", /* a~ */
+          "?", /* a: */
+          "?", /* ao */
+          "?", /* ae */
           "?", /* c */
-          "?", /* e' */ 
-          "?", /* e' */ 
-          "?", /* e^ */ 
-          "?", /* e: */ 
-          "?", /* i' */ 
-          "?", /* i' */ 
-          "?", /* i^ */ 
+          "?", /* e' */
+          "?", /* e' */
+          "?", /* e^ */
+          "?", /* e: */
+          "?", /* i' */
+          "?", /* i' */
+          "?", /* i^ */
           "?", /* i: */
-          "?", /* o (240) */ 
-          "?", /* n~ */ 
-          "?", /* o' */ 
-          "?", /* o' */ 
-          "?", /* o^ */ 
-          "?", /* o~ */ 
-          "?", /* o: */ 
+          "?", /* o (240) */
+          "?", /* n~ */
+          "?", /* o' */
+          "?", /* o' */
+          "?", /* o^ */
+          "?", /* o~ */
+          "?", /* o: */
           "?", /* /  */
-          "?", /* 0  */ 
+          "?", /* 0  */
           "?", /* u' */
           "?", /* u' */
-          "?", /* u^ */ 
-          "?", /* u: */ 
-          "?", /* y' */ 
-          "?", /* p  */ 
+          "?", /* u^ */
+          "?", /* u: */
+          "?", /* y' */
+          "?", /* p  */
           "?", /* y: */
 };
 
@@ -394,7 +394,7 @@ static void ps_SendPage(BOOL formfeed)
 
 static void ps_SendHeader(void)
 {
-    const TEXT header[] = 
+    const TEXT header[] =
         "%%!PS-Adobe-2.0\n"
         "%%%%Creator: AROS PostScript %ld.%ld (printer.device)\n"
         "%%%%BoundingBox: %ld %ld %ld %ld\n"
@@ -602,7 +602,7 @@ VOID color_get(struct ColorMap *cm,
 static LONG ps_RenderInit(struct IODRPReq *io, LONG width, LONG height)
 {
     D(bug("ps_RenderInit: Dump raster %ldx%ld pixels, io_RastPort=%p\n", width, height, io->io_RastPort));
-    D(bug("\t@%ldx%ld (%ldx%ld) => @%ldx%ld\n", 
+    D(bug("\t@%ldx%ld (%ldx%ld) => @%ldx%ld\n",
            io->io_SrcX, io->io_SrcY, io->io_SrcWidth,
            io->io_SrcHeight, io->io_DestCols, io->io_DestRows));
     LONG alignOffsetX;

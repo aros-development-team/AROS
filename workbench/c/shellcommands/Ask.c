@@ -67,7 +67,7 @@ AROS_SHA(STRPTR, ,PROMPT,/A,NULL))
     int error = RETURN_OK;
 
     struct UtilityBase *UtilityBase =
-	(struct UtilityBase *)OpenLibrary("utility.library", 37);
+        (struct UtilityBase *)OpenLibrary("utility.library", 37);
 
 
     if (!UtilityBase)
@@ -77,11 +77,11 @@ AROS_SHA(STRPTR, ,PROMPT,/A,NULL))
 
     while (ready == 0)
     {
-	Printf("%s ", SHArg(PROMPT));
-	Flush(Output());
-	
+        Printf("%s ", SHArg(PROMPT));
+        Flush(Output());
+        
         if (FGets(Input(), buffer, 100) == (STRPTR)buffer)
-	{
+        {
             char *tmpbuf;
             int   tmplen;
 
@@ -89,41 +89,41 @@ AROS_SHA(STRPTR, ,PROMPT,/A,NULL))
             tmplen = stripwhites(tmpbuf);
 
             if (tmplen == 0)
-	    {
+            {
                 ready = 1;
-	    }
+            }
             else if (tmplen == 1)
-	    {
+            {
                 if (Strnicmp(tmpbuf, "y", 1) == 0)
-		{
-                    error = RETURN_WARN;
-                    ready = 1;
-		}
-		else if (Strnicmp(tmpbuf, "n", 1) == 0)
-		{
-  		    ready = 1;
-		}
- 	    }
-	    else if (tmplen == 2)
-	    {
-                if (Strnicmp(tmpbuf, "no", 2) == 0)
-		{
-                    ready = 1;
-		}
-     	    }
-	    else if (tmplen == 3)
-	    {
-                if (Strnicmp(tmpbuf, "yes", 3) == 0)
-		{
+                {
                     error = RETURN_WARN;
                     ready = 1;
                 }
-	    }
-	}
-	else
-	{
-	    ready = 1;
-	}
+                else if (Strnicmp(tmpbuf, "n", 1) == 0)
+                {
+                    ready = 1;
+                }
+            }
+            else if (tmplen == 2)
+            {
+                if (Strnicmp(tmpbuf, "no", 2) == 0)
+                {
+                    ready = 1;
+                }
+            }
+            else if (tmplen == 3)
+            {
+                if (Strnicmp(tmpbuf, "yes", 3) == 0)
+                {
+                    error = RETURN_WARN;
+                    ready = 1;
+                }
+            }
+        }
+        else
+        {
+            ready = 1;
+        }
     }
 
     CloseLibrary((struct Library *)UtilityBase);

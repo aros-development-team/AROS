@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /******************************************************************************
@@ -94,7 +94,7 @@ static int addres(struct Node *r, struct res **l, STRPTR *e)
 static int fillbuffer(struct res **buffer, IPTR size)
 {
 #if defined(__AROSPLATFORM_SMP__)
-	void *ExecLockBase = OpenResource("execlock.resource");
+        void *ExecLockBase = OpenResource("execlock.resource");
 #endif
     STRPTR end=(STRPTR)*buffer+size;
     struct Node *r;
@@ -152,21 +152,21 @@ int main(void)
         if(fillbuffer(&ress,size))
         {
 #if (__WORDSIZE == 64)
-	    FPuts(Output(),"       Address  Name\n");
+            FPuts(Output(),"       Address  Name\n");
 #else
-	    FPuts(Output(),"   Address  Name\n");
+            FPuts(Output(),"   Address  Name\n");
 #endif
-	    for(ress2=buffer;ress2<ress;ress2++)
-	    {
+            for(ress2=buffer;ress2<ress;ress2++)
+            {
 #if (__WORDSIZE == 64)
                 Printf("0x%012.ix  %s\n",
 #else
                 Printf("0x%08.ix  %s\n",
 #endif
                     ress2->address, ress2->name);
-	    }
-	    FreeVec(buffer);
-            return 0; 
+            }
+            FreeVec(buffer);
+            return 0;
         }
         FreeVec(buffer);
     }

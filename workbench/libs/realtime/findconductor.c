@@ -15,11 +15,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, name, A0),
+        AROS_LHA(STRPTR, name, A0),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 13, RealTime)
+        struct Library *, RealTimeBase, 13, RealTime)
 
 /*  FUNCTION
 
@@ -59,16 +59,16 @@
     AROS_LIBFUNC_INIT
 
     struct Conductor *conductor = (struct Conductor *)
-	FindName((struct List *)&GPB(RealTimeBase)->rtb_ConductorList, name);
+        FindName((struct List *)&GPB(RealTimeBase)->rtb_ConductorList, name);
 
     if (conductor == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     if (conductor->cdt_Flags & CONDUCTF_PRIVATE)
     {
-	return NULL;
+        return NULL;
     }
 
     return conductor;

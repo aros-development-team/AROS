@@ -49,17 +49,17 @@
     
     if ( tmp >= 3  &&  (fnum1 & FFPMantisse_Mask) >= 0x90000000 )
     {
-        /* 
+        /*
             tanh( x > 9 ) =  1
             tanh( x <-9 ) = -1
-        */    
+        */
         return (one | ( fnum1 & FFPSign_Mask ));
     }
     
     /* tanh(-x) = -tanh(x) */
     Res = SPExp(fnum1 & (FFPMantisse_Mask + FFPExponent_Mask ));
     Res = SPDiv
-    ( 
+    (
         SPAdd(Res, SPDiv(Res, one)),
         SPAdd(Res, (ULONG)SPDiv(Res, one) | FFPSign_Mask )
     );

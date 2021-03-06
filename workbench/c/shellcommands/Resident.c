@@ -96,173 +96,173 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 
     if (SHArg(FILE) || SHArg(NAME))
     {
-	STRPTR name, file;
-	BPTR seglist;
-	struct FileInfoBlock *fib;
+        STRPTR name, file;
+        BPTR seglist;
+        struct FileInfoBlock *fib;
 
-	if (SHArg(FILE))
-	{
-	    name = SHArg(NAME);
-	    file = SHArg(FILE);
+        if (SHArg(FILE))
+        {
+            name = SHArg(NAME);
+            file = SHArg(FILE);
         }
-	else
-	{
-	    name = FilePart(SHArg(NAME));
-	    file = SHArg(NAME);
+        else
+        {
+            name = FilePart(SHArg(NAME));
+            file = SHArg(NAME);
         }
 
-	SetIoErr(0);
-	if (SHArg(REMOVE))
-	{
-	    struct Segment *found;
+        SetIoErr(0);
+        if (SHArg(REMOVE))
+        {
+            struct Segment *found;
 
-	    Forbid();
-	    found = FindSegment(name, NULL, FALSE);
-	    if (!found)
-	        found = FindSegment(name, NULL, TRUE);
-	    if (!found)
-	    {
-	        Permit();
-		SetIoErr(ERROR_OBJECT_NOT_FOUND);
-	    }
-	    else
-	    if (!RemSegment(found))
-	    {
-	        if (found->seg_UC == CMD_INTERNAL)
-	            found->seg_UC = CMD_DISABLED;
-		else
-		    SetIoErr(ERROR_OBJECT_IN_USE);
+            Forbid();
+            found = FindSegment(name, NULL, FALSE);
+            if (!found)
+                found = FindSegment(name, NULL, TRUE);
+            if (!found)
+            {
+                Permit();
+                SetIoErr(ERROR_OBJECT_NOT_FOUND);
+            }
+            else
+            if (!RemSegment(found))
+            {
+                if (found->seg_UC == CMD_INTERNAL)
+                    found->seg_UC = CMD_DISABLED;
+                else
+                    SetIoErr(ERROR_OBJECT_IN_USE);
             }
 
-	    if (IoErr())
-	    {
-	        PrintFault(IoErr(), SHArg(NAME));
-		return RETURN_WARN;
-	    }
+            if (IoErr())
+            {
+                PrintFault(IoErr(), SHArg(NAME));
+                return RETURN_WARN;
+            }
 
-	    return RETURN_OK;
-	}
-
-	if (SHArg(REPLACE))
-	{
-	    struct Segment *found;
-
-	    Forbid();
-	    found = FindSegment(name, NULL, TRUE);
-	    if (found && found->seg_UC == CMD_DISABLED)
-	    {
-		found->seg_UC = CMD_INTERNAL;
-		Permit();
-		return RETURN_OK;
-	    }
-	    Permit();
-	}
-
-	if (!SHArg(ADD)) SHArg(REPLACE) = TRUE;
-
-	if (!SHArg(FORCE) && (fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
-	{
-	    BPTR lock;
-
-	    if ((lock = Lock(file, SHARED_LOCK)))
-	    {
-	        if (Examine(lock, fib))
-		{
-		    if ((fib->fib_Protection & FIBF_PURE) == 0)
-		        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-		}
-
-		UnLock(lock);
-	    }
-
-	    FreeDosObject(DOS_FIB, fib);
-	}
-
-	if (IoErr() || !(seglist = LoadSeg(file)))
-	{
-	    PrintFault(IoErr(), file);
-	    return RETURN_FAIL;
+            return RETURN_OK;
         }
 
-	if (SHArg(REPLACE))
-	{
-	    struct Segment *found;
+        if (SHArg(REPLACE))
+        {
+            struct Segment *found;
 
-	    Forbid();
-	    found = FindSegment(name, NULL, FALSE);
+            Forbid();
+            found = FindSegment(name, NULL, TRUE);
+            if (found && found->seg_UC == CMD_DISABLED)
+            {
+                found->seg_UC = CMD_INTERNAL;
+                Permit();
+                return RETURN_OK;
+            }
+            Permit();
+        }
 
-	    if (found)
-	    {
-		if (found->seg_UC != 0)
-		{
-		     Permit();
-		     PrintFault(ERROR_OBJECT_IN_USE, file);
-		     UnLoadSeg(seglist);
-		     return RETURN_FAIL;
-		}
+        if (!SHArg(ADD)) SHArg(REPLACE) = TRUE;
 
-  		UnLoadSeg(found->seg_Seg);
-		found->seg_Seg = seglist;
-		Permit();
+        if (!SHArg(FORCE) && (fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
+        {
+            BPTR lock;
 
-		return RETURN_OK;
-	    }
-	/* Fall through */
-	}
+            if ((lock = Lock(file, SHARED_LOCK)))
+            {
+                if (Examine(lock, fib))
+                {
+                    if ((fib->fib_Protection & FIBF_PURE) == 0)
+                        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+                }
 
-	/* WB1.x backwards compatibility hack, do not allow
-	 * override of built-in resident or to add l:shell-seg (CLI) */
-	if (!stricmp(name, "resident") || !stricmp(name, "cli")) {
-	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	    UnLoadSeg(seglist);
-	    return 1; /* yes, return code = 1 in this special case */
-	}
+                UnLock(lock);
+            }
 
-	if (!AddSegment(name, seglist, SHArg(SYSTEM)?CMD_SYSTEM:0))
-	{
-	    UnLoadSeg(seglist);
-	    PrintFault(IoErr(), "Resident");
-	    return RETURN_FAIL;
-	}
+            FreeDosObject(DOS_FIB, fib);
+        }
+
+        if (IoErr() || !(seglist = LoadSeg(file)))
+        {
+            PrintFault(IoErr(), file);
+            return RETURN_FAIL;
+        }
+
+        if (SHArg(REPLACE))
+        {
+            struct Segment *found;
+
+            Forbid();
+            found = FindSegment(name, NULL, FALSE);
+
+            if (found)
+            {
+                if (found->seg_UC != 0)
+                {
+                     Permit();
+                     PrintFault(ERROR_OBJECT_IN_USE, file);
+                     UnLoadSeg(seglist);
+                     return RETURN_FAIL;
+                }
+
+                UnLoadSeg(found->seg_Seg);
+                found->seg_Seg = seglist;
+                Permit();
+
+                return RETURN_OK;
+            }
+        /* Fall through */
+        }
+
+        /* WB1.x backwards compatibility hack, do not allow
+         * override of built-in resident or to add l:shell-seg (CLI) */
+        if (!stricmp(name, "resident") || !stricmp(name, "cli")) {
+            SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+            UnLoadSeg(seglist);
+            return 1; /* yes, return code = 1 in this special case */
+        }
+
+        if (!AddSegment(name, seglist, SHArg(SYSTEM)?CMD_SYSTEM:0))
+        {
+            UnLoadSeg(seglist);
+            PrintFault(IoErr(), "Resident");
+            return RETURN_FAIL;
+        }
     }
     else
     {
 
-	struct MinList l;
-	struct Segment *curr;
-	struct SegNode *n;
-	struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
-	BOOL isbreak = FALSE;
+        struct MinList l;
+        struct Segment *curr;
+        struct SegNode *n;
+        struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
+        BOOL isbreak = FALSE;
 
-	NEWLIST((struct List *)&l);
+        NEWLIST((struct List *)&l);
 
-	SetIoErr(0);
-	Forbid();
-	curr = (struct Segment *)BADDR(dinf->di_ResList);
-	while (curr)
-	{
- 	    n = NewSegNode(SysBase, AROS_BSTR_ADDR(MKBADDR(&curr->seg_Name[0])), curr->seg_UC);
+        SetIoErr(0);
+        Forbid();
+        curr = (struct Segment *)BADDR(dinf->di_ResList);
+        while (curr)
+        {
+            n = NewSegNode(SysBase, AROS_BSTR_ADDR(MKBADDR(&curr->seg_Name[0])), curr->seg_UC);
 
-	    if (!n)
-	    {
-	        SetIoErr(ERROR_NO_FREE_STORE);
-		break;
-	    }
+            if (!n)
+            {
+                SetIoErr(ERROR_NO_FREE_STORE);
+                break;
+            }
 
-	    AddTail((struct List *)&l, (struct Node *)n);
-	    curr = (struct Segment *)BADDR(curr->seg_Next);
-	}
-	Permit();
+            AddTail((struct List *)&l, (struct Node *)n);
+            curr = (struct Segment *)BADDR(curr->seg_Next);
+        }
+        Permit();
 
-	if (IoErr())
-	{
-	    PrintFault(IoErr(), "Resident");
-	    return RETURN_FAIL;
+        if (IoErr())
+        {
+            PrintFault(IoErr(), "Resident");
+            return RETURN_FAIL;
         }
 
-	PutStr("NAME                           USECOUNT\n\n");
-	while ((n = (struct SegNode *)RemHead((struct List *)&l)))
-	{
+        PutStr("NAME                           USECOUNT\n\n");
+        while ((n = (struct SegNode *)RemHead((struct List *)&l)))
+        {
             if (SetSignal(0L, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 isbreak = TRUE;
             if (!isbreak) {
@@ -307,20 +307,20 @@ static STRPTR myStrDup(struct ExecBase *SysBase, STRPTR str)
 
 
 static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name,
-				  LONG uc)
+                                  LONG uc)
 {
     struct SegNode *sn = AllocVec(sizeof (struct SegNode), MEMF_ANY);
 
     if (sn)
     {
         sn->data[0] = (IPTR) myStrDup(SysBase, name);
-	if (sn->data[0])
-	{
- 	    sn->data[1] = uc;
-	    return sn;
-     	}
+        if (sn->data[0])
+        {
+            sn->data[1] = uc;
+            return sn;
+        }
 
-	FreeVec(sn);
+        FreeVec(sn);
     }
 
     return NULL;

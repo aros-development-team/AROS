@@ -55,22 +55,22 @@ IPTR Ascii__OM_NEW(Class * cl, Object *o, struct opSet *msg)
     
     if ((retval = DoSuperMethodA (cl, o, (Msg)msg)))
     {
-         struct AsciiData 	*data;
-         IPTR 			len, estlines, poolsize;
-         BOOL 			success = FALSE;
-         STRPTR 		buffer;
+         struct AsciiData       *data;
+         IPTR                   len, estlines, poolsize;
+         BOOL                   success = FALSE;
+         STRPTR                 buffer;
 
          /* Get a pointer to the object data */
          data = INST_DATA (cl, (Object *) retval);
 
          /* Get the attributes that we need to determine
-	  * memory pool size */
+          * memory pool size */
          GetDTAttrs ((Object *) retval,
-                     TDTA_Buffer	, (IPTR)&buffer,
-                     TDTA_BufferLen	, (IPTR)&len,
+                     TDTA_Buffer        , (IPTR)&buffer,
+                     TDTA_BufferLen     , (IPTR)&len,
                      TAG_DONE);
 
-	D(bug("AsciiDataType_new: buffer = %x  bufferlen = %d\n", buffer, len));
+        D(bug("AsciiDataType_new: buffer = %x  bufferlen = %d\n", buffer, len));
 
          /* Make sure we have a text buffer */
          if (buffer && len)
@@ -83,13 +83,13 @@ IPTR Ascii__OM_NEW(Class * cl, Object *o, struct opSet *msg)
              /* Create a memory pool for the line list */
              if ((data->Pool = CreatePool (MEMF_CLEAR | MEMF_PUBLIC, poolsize, poolsize)))
                  success = TRUE;
-	     else
-		 SetIoErr (ERROR_NO_FREE_STORE);
+             else
+                 SetIoErr (ERROR_NO_FREE_STORE);
          }
          else
          {
-	     /* Indicate that something was missing that we
-	      * needed */
+             /* Indicate that something was missing that we
+              * needed */
              SetIoErr (ERROR_REQUIRED_ARG_MISSING);
          }
 
@@ -100,16 +100,16 @@ IPTR Ascii__OM_NEW(Class * cl, Object *o, struct opSet *msg)
          }
      }
      
-     return retval;     
+     return retval;
 }
 
 /**************************************************************************************************/
 
 IPTR Ascii__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
-    struct AsciiData 	*data;
-    struct List 	*linelist = 0;
-    IPTR		retval;
+    struct AsciiData    *data;
+    struct List         *linelist = 0;
+    IPTR                retval;
     
     /* Get a pointer to our object data */
     data = INST_DATA (cl, o);
@@ -157,7 +157,7 @@ IPTR Ascii__OM_SET(Class *cl, Object *o, struct opSet *msg)
         retval = 0;
     }
  
-    return retval;  
+    return retval;
 }
 
 /**************************************************************************************************/
@@ -168,8 +168,8 @@ IPTR Ascii__GM_LAYOUT(Class *cl, Object *o, struct gpLayout *msg)
     
     /* Tell everyone that we are busy doing things */
     NotifyAttrChanges (o, msg->gpl_GInfo, 0,
-                       GA_ID	, G(o)->GadgetID,
-                       DTA_Busy	, TRUE		,
+                       GA_ID    , G(o)->GadgetID,
+                       DTA_Busy , TRUE          ,
                        TAG_DONE);
 
     /* Let the super-class partake */
@@ -189,8 +189,8 @@ IPTR Ascii__DTM_PROCLAYOUT(Class *cl, Object *o, struct gpLayout *msg)
     
     /* Tell everyone that we are busy doing things */
     NotifyAttrChanges (o, ((struct gpLayout *) msg)->gpl_GInfo, 0,
-                       GA_ID	, G(o)->GadgetID,
-                       DTA_Busy	, TRUE		,
+                       GA_ID    , G(o)->GadgetID,
+                       DTA_Busy , TRUE          ,
                        TAG_DONE);
 
     /* Let the super-class partake and then fall through to our layout method */
@@ -207,8 +207,8 @@ IPTR Ascii__DTM_PRINT(Class *cl, Object *o, struct dtPrint *dtp)
     STRPTR buffer;
     IPTR   bufferlen;
 
-    if (GetDTAttrs (o, TDTA_Buffer	, (IPTR) &buffer	,
-                       TDTA_BufferLen	, (IPTR) &bufferlen	,
+    if (GetDTAttrs (o, TDTA_Buffer      , (IPTR) &buffer        ,
+                       TDTA_BufferLen   , (IPTR) &bufferlen     ,
                        TAG_DONE) == 2) {
         pio->ios.io_Command = CMD_WRITE;
         pio->ios.io_Data = buffer;
@@ -218,59 +218,59 @@ IPTR Ascii__DTM_PRINT(Class *cl, Object *o, struct dtPrint *dtp)
 
     return PDERR_CANCEL;
 }
-	
+        
 /**************************************************************************************************/
 
 IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 {
-    struct DTSpecialInfo 	*si = (struct DTSpecialInfo *) G (o)->SpecialInfo;
-    struct AsciiData 		*data = INST_DATA (cl, o);
-    ULONG 			visible = 0, total = 0;
-    struct RastPort 		trp;
-    ULONG 			hunit = 1;
-    ULONG 			bsig = 0;
+    struct DTSpecialInfo        *si = (struct DTSpecialInfo *) G (o)->SpecialInfo;
+    struct AsciiData            *data = INST_DATA (cl, o);
+    ULONG                       visible = 0, total = 0;
+    struct RastPort             trp;
+    ULONG                       hunit = 1;
+    ULONG                       bsig = 0;
 
     /* Switches */
-    BOOL 			linefeed = FALSE;
-    BOOL 			newseg = FALSE;
-    BOOL 			abort = FALSE;
+    BOOL                        linefeed = FALSE;
+    BOOL                        newseg = FALSE;
+    BOOL                        abort = FALSE;
 
     /* Attributes obtained from super-class */
-    struct TextAttr 		*tattr;
-    struct TextFont 		*font;
-    struct List 		*linelist;
-    struct IBox 		*domain;
-    IPTR 			wrap = FALSE;
-    IPTR 			bufferlen;
-    STRPTR 			buffer;
-    STRPTR 			title;
+    struct TextAttr             *tattr;
+    struct TextFont             *font;
+    struct List                 *linelist;
+    struct IBox                 *domain;
+    IPTR                        wrap = FALSE;
+    IPTR                        bufferlen;
+    STRPTR                      buffer;
+    STRPTR                      title;
 
     /* Line information */
-    ULONG 			num, offset, swidth;
-    ULONG 			anchor = 0, newanchor = 0;
-    ULONG 			style = FS_NORMAL;
-    struct Line 		*line;
-    ULONG 			yoffset = 0;
-    ULONG			linelength, max_linelength = 0;
-    UBYTE 			fgpen = 1;
-    UBYTE 			bgpen = 0;
-    ULONG 			tabspace;
-    ULONG 			numtabs;
-    ULONG 			i;
+    ULONG                       num, offset, swidth;
+    ULONG                       anchor = 0, newanchor = 0;
+    ULONG                       style = FS_NORMAL;
+    struct Line                 *line;
+    ULONG                       yoffset = 0;
+    ULONG                       linelength, max_linelength = 0;
+    UBYTE                       fgpen = 1;
+    UBYTE                       bgpen = 0;
+    ULONG                       tabspace;
+    ULONG                       numtabs;
+    ULONG                       i;
 
-    ULONG 			nomwidth = 0, nomheight = 0;
+    ULONG                       nomwidth = 0, nomheight = 0;
 
     D(bug("AsciiDataType_AsyncLayout\n"));
     
     /* Get all the attributes that we are going to need for a successful layout */
-    if (GetDTAttrs (o, DTA_TextAttr	, (IPTR) &tattr		,
-                       DTA_TextFont	, (IPTR) &font		,
-                       DTA_Domain	, (IPTR) &domain	,
-                       DTA_ObjName	, (IPTR) &title		,
-                       TDTA_Buffer	, (IPTR) &buffer	,
-                       TDTA_BufferLen	, (IPTR) &bufferlen	,
-                       TDTA_LineList	, (IPTR) &linelist	,
-                       TDTA_WordWrap	, (IPTR) &wrap		,
+    if (GetDTAttrs (o, DTA_TextAttr     , (IPTR) &tattr         ,
+                       DTA_TextFont     , (IPTR) &font          ,
+                       DTA_Domain       , (IPTR) &domain        ,
+                       DTA_ObjName      , (IPTR) &title         ,
+                       TDTA_Buffer      , (IPTR) &buffer        ,
+                       TDTA_BufferLen   , (IPTR) &bufferlen     ,
+                       TDTA_LineList    , (IPTR) &linelist      ,
+                       TDTA_WordWrap    , (IPTR) &wrap          ,
                        TAG_DONE) == 8)
     {
         D(bug("AsciiDataType_AsyncLayout: Got all attrs\n"));
@@ -281,35 +281,35 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
         /* Make sure we have a buffer */
         if (buffer)
         {
-	    D(bug("AsciiDataType_AsyncLayout: Got buffer\n"));
-	    
+            D(bug("AsciiDataType_AsyncLayout: Got buffer\n"));
+            
             /* Initialize the temporary RastPort */
             InitRastPort (&trp);
             SetFont (&trp, font);
 
-    	    D(bug("AsciiDataType_AsyncLayout: Temp RastPort initialized\n"));
+            D(bug("AsciiDataType_AsyncLayout: Temp RastPort initialized\n"));
 
             /* Calculate the nominal size */
             nomheight = (ULONG) (24 * font->tf_YSize);
             nomwidth  = (ULONG) (80 * font->tf_XSize);
 
-	    /* Calculate the tab space */
-	    tabspace = font->tf_XSize * 8;
+            /* Calculate the tab space */
+            tabspace = font->tf_XSize * 8;
 
             /* We only need to perform layout if we are doing word wrap, or this
              * is the initial layout call */
 
-    	    D(bug("AsciiDataType_AsyncLayout: Checking if layout is needed\n"));
-	    
+            D(bug("AsciiDataType_AsyncLayout: Checking if layout is needed\n"));
+            
             if (wrap || gpl->gpl_Initial)
             {
-		D(bug("AsciiDataType_AsyncLayout: Layout IS needed. Freeing old LineList\n"));
-		
+                D(bug("AsciiDataType_AsyncLayout: Layout IS needed. Freeing old LineList\n"));
+                
                 /* Delete the old line list */
                 while ((line = (struct Line *) RemHead (linelist)))
                     FreePooled (data->Pool, line, sizeof (struct Line));
 
-    		D(bug("AsciiDataType_AsyncLayout. Old LineList freed\n"));
+                D(bug("AsciiDataType_AsyncLayout. Old LineList freed\n"));
 
                 /* Step through the text buffer */
                 for (i = offset = num = numtabs = 0;
@@ -325,166 +325,166 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
                             buffer[i] = '\n';
                     }
 
-		    /* Check for end of line */
-		    if (buffer[i] == '\n')
-		    {
-			newseg = linefeed = TRUE;
-			newanchor = i + 1;
-		    }
-		    /* Check for end of page */
-		    else if (buffer[i] == 12)
-		    {
-			newseg = linefeed = TRUE;
-			newanchor = i + 1;
-		    }
-		    /* Check for tab */
-		    else if (buffer[i] == '\t')
-		    {
-			/* See if we need to terminate a line segment */
-			if ((numtabs == 0) && num)
-			{
-			    newseg = TRUE;
-			}
-			numtabs++;
-		    }
-		    else
-		    {
-			/* See if we have any TABs that we need to finish out */
-			if (numtabs)
-			{
-			    offset += (((offset / tabspace) + 1) * tabspace) - offset;
-			    num = numtabs = 0;
-			    anchor = i;
-			}
+                    /* Check for end of line */
+                    if (buffer[i] == '\n')
+                    {
+                        newseg = linefeed = TRUE;
+                        newanchor = i + 1;
+                    }
+                    /* Check for end of page */
+                    else if (buffer[i] == 12)
+                    {
+                        newseg = linefeed = TRUE;
+                        newanchor = i + 1;
+                    }
+                    /* Check for tab */
+                    else if (buffer[i] == '\t')
+                    {
+                        /* See if we need to terminate a line segment */
+                        if ((numtabs == 0) && num)
+                        {
+                            newseg = TRUE;
+                        }
+                        numtabs++;
+                    }
+                    else
+                    {
+                        /* See if we have any TABs that we need to finish out */
+                        if (numtabs)
+                        {
+                            offset += (((offset / tabspace) + 1) * tabspace) - offset;
+                            num = numtabs = 0;
+                            anchor = i;
+                        }
 
-			/* Compute the width of the line. */
-			swidth = TextLength(&trp, &buffer[anchor], num + 1);
-			num++;
-		    }
+                        /* Compute the width of the line. */
+                        swidth = TextLength(&trp, &buffer[anchor], num + 1);
+                        num++;
+                    }
 
-    	    	    if (i == bufferlen - 1) newseg = TRUE;
-		    
-		    /* Time for a new text segment yet? */
-		    if (newseg)
-		    {
-			/* Allocate a new line segment from our memory pool */
-			if ((line = AllocPooled(data->Pool, sizeof(struct Line))))
-			{
-			    swidth = TextLength(&trp, &buffer[anchor], num);
-			    line->ln_Text = &buffer[anchor];
-			    line->ln_TextLen = num;
-			    line->ln_XOffset = offset;
-			    line->ln_YOffset = yoffset + font->tf_Baseline;
-			    line->ln_Width = swidth;
-			    line->ln_Height = font->tf_YSize;
-			    line->ln_Flags = (linefeed) ? LNF_LF : 0;
-			    line->ln_FgPen = fgpen;
-			    line->ln_BgPen = bgpen;
-			    line->ln_Style = style;
-			    line->ln_Data = NULL;
+                    if (i == bufferlen - 1) newseg = TRUE;
+                    
+                    /* Time for a new text segment yet? */
+                    if (newseg)
+                    {
+                        /* Allocate a new line segment from our memory pool */
+                        if ((line = AllocPooled(data->Pool, sizeof(struct Line))))
+                        {
+                            swidth = TextLength(&trp, &buffer[anchor], num);
+                            line->ln_Text = &buffer[anchor];
+                            line->ln_TextLen = num;
+                            line->ln_XOffset = offset;
+                            line->ln_YOffset = yoffset + font->tf_Baseline;
+                            line->ln_Width = swidth;
+                            line->ln_Height = font->tf_YSize;
+                            line->ln_Flags = (linefeed) ? LNF_LF : 0;
+                            line->ln_FgPen = fgpen;
+                            line->ln_BgPen = bgpen;
+                            line->ln_Style = style;
+                            line->ln_Data = NULL;
 
-			    linelength = line->ln_Width + line->ln_XOffset;
-			    if (linelength > max_linelength)
-			    {
-			    	max_linelength = linelength;
-			    }
-			    			    
-			    /* Add the line to the list */
-			    AddTail(linelist, (struct Node *) line);
+                            linelength = line->ln_Width + line->ln_XOffset;
+                            if (linelength > max_linelength)
+                            {
+                                max_linelength = linelength;
+                            }
+                                                    
+                            /* Add the line to the list */
+                            AddTail(linelist, (struct Node *) line);
 
-			    /* Increment the line count */
-			    if (linefeed)
-			    {
-				yoffset += font->tf_YSize;
-				offset = 0;
-				total++;
-			    }
-			    else
-			    {
-				/* Increment the offset */
-				offset += swidth;
-			    }
-			}
-			else
-			{
-			    abort = TRUE;
-			}
+                            /* Increment the line count */
+                            if (linefeed)
+                            {
+                                yoffset += font->tf_YSize;
+                                offset = 0;
+                                total++;
+                            }
+                            else
+                            {
+                                /* Increment the offset */
+                                offset += swidth;
+                            }
+                        }
+                        else
+                        {
+                            abort = TRUE;
+                        }
 
-			/* Clear the variables */
-			newseg = linefeed = FALSE;
-			anchor = newanchor;
-			num = 0;
+                        /* Clear the variables */
+                        newseg = linefeed = FALSE;
+                        anchor = newanchor;
+                        num = 0;
 
                         /* Check to see if layout has been aborted */
                         bsig = CheckSignal (SIGBREAKF_CTRL_C);
-			
+                        
                     } /* if (newseg) */
-		    
+                    
                 }
 
-		/*
-		 * check for last line
-		 */
+                /*
+                 * check for last line
+                 */
 
-		D(bug("AsciiDataType_AsyncLayout: end textloop, anchor %ld\n",anchor));
+                D(bug("AsciiDataType_AsyncLayout: end textloop, anchor %ld\n",anchor));
 
 #if 0
-		if (buffer[anchor])
-		{
-			linefeed=TRUE;
-			D(bug("AsciiDataType_AsyncLayout: add last line <%s>\n",
-				&buffer[anchor]));
-			/* Allocate a new line segment from our memory pool */
-			if ((line = AllocPooled(data->Pool, sizeof(struct Line))))
-			{
-			    swidth = TextLength(&trp, &buffer[anchor], num);
-			    line->ln_Text = &buffer[anchor];
-			    line->ln_TextLen = num;
-			    line->ln_XOffset = offset;
-			    line->ln_YOffset = yoffset + font->tf_Baseline;
-			    line->ln_Width = swidth;
-			    line->ln_Height = font->tf_YSize;
-			    line->ln_Flags = (linefeed) ? LNF_LF : 0;
-			    line->ln_FgPen = fgpen;
-			    line->ln_BgPen = bgpen;
-			    line->ln_Style = style;
-			    line->ln_Data = NULL;
+                if (buffer[anchor])
+                {
+                        linefeed=TRUE;
+                        D(bug("AsciiDataType_AsyncLayout: add last line <%s>\n",
+                                &buffer[anchor]));
+                        /* Allocate a new line segment from our memory pool */
+                        if ((line = AllocPooled(data->Pool, sizeof(struct Line))))
+                        {
+                            swidth = TextLength(&trp, &buffer[anchor], num);
+                            line->ln_Text = &buffer[anchor];
+                            line->ln_TextLen = num;
+                            line->ln_XOffset = offset;
+                            line->ln_YOffset = yoffset + font->tf_Baseline;
+                            line->ln_Width = swidth;
+                            line->ln_Height = font->tf_YSize;
+                            line->ln_Flags = (linefeed) ? LNF_LF : 0;
+                            line->ln_FgPen = fgpen;
+                            line->ln_BgPen = bgpen;
+                            line->ln_Style = style;
+                            line->ln_Data = NULL;
 
-			    linelength = line->ln_Width + line->ln_XOffset;
-			    if (linelength > max_linelength)
-			    {
-				max_linelength = linelength;
-			    }
-			    			    
-			    /* Add the line to the list */
-			    AddTail(linelist, (struct Node *) line);
+                            linelength = line->ln_Width + line->ln_XOffset;
+                            if (linelength > max_linelength)
+                            {
+                                max_linelength = linelength;
+                            }
+                                                    
+                            /* Add the line to the list */
+                            AddTail(linelist, (struct Node *) line);
 
-			    /* Increment the line count */
-			    if (linefeed)
-			    {
-				yoffset += font->tf_YSize;
-				offset = 0;
-				total++;
-			    }
-			    else
-			    {
-				/* Increment the offset */
-				offset += swidth;
-			    }
-			}
-			else
-			{
-			    abort = TRUE;
-			}
-		}
+                            /* Increment the line count */
+                            if (linefeed)
+                            {
+                                yoffset += font->tf_YSize;
+                                offset = 0;
+                                total++;
+                            }
+                            else
+                            {
+                                /* Increment the offset */
+                                offset += swidth;
+                            }
+                        }
+                        else
+                        {
+                            abort = TRUE;
+                        }
+                }
 #endif
-		
+                
             } /* if (wrap || gpl->gpl_Initial) */
             else
             {
                 /* No layout to perform */
                 total  = si->si_TotVert;
-		max_linelength = si->si_TotHoriz * si->si_HorizUnit;
+                max_linelength = si->si_TotHoriz * si->si_HorizUnit;
             }
         } /* if (buffer) */
 
@@ -496,11 +496,11 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 /*        si->si_HorizUnit = hunit = 1;
         si->si_VisHoriz  = (LONG) domain->Width / hunit;
         si->si_TotHoriz  = domain->Width;*/
-	
-	si->si_HorizUnit = hunit = font->tf_XSize;
-	si->si_VisHoriz  = domain->Width / hunit;
-	si->si_TotHoriz  = max_linelength / hunit;
-								   
+        
+        si->si_HorizUnit = hunit = font->tf_XSize;
+        si->si_VisHoriz  = domain->Width / hunit;
+        si->si_TotHoriz  = max_linelength / hunit;
+                                                                   
         /* Release the global data lock */
         ReleaseSemaphore (&si->si_Lock);
 
@@ -509,26 +509,26 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
         {
             /* Not aborted, so tell the world of our newest attributes */
             NotifyAttrChanges (o, gpl->gpl_GInfo, 0,
-                               GA_ID		, G(o)->GadgetID,
+                               GA_ID            , G(o)->GadgetID,
 
-                               DTA_VisibleVert	, visible				,
-                               DTA_TotalVert	, total					,
-                               DTA_NominalVert	, nomheight				,
-                               DTA_VertUnit	, font->tf_YSize			,
-                            /* DTA_TopVert   	, si->si_TopVert                        , */
+                               DTA_VisibleVert  , visible                               ,
+                               DTA_TotalVert    , total                                 ,
+                               DTA_NominalVert  , nomheight                             ,
+                               DTA_VertUnit     , font->tf_YSize                        ,
+                            /* DTA_TopVert      , si->si_TopVert                        , */
 
-                               DTA_VisibleHoriz	, (domain->Width / hunit)		,
-                               DTA_TotalHoriz	, max_linelength / hunit		,
-                               DTA_NominalHoriz	, nomwidth				,
-                               DTA_HorizUnit	, hunit					,
-    	    	    	       DTA_TopHoriz 	, si->si_TopHoriz   	    	    	,
-			       
-                               DTA_Title	, (IPTR)title				,
-                               DTA_Busy		, FALSE					,
-                               DTA_Sync		, TRUE					,
+                               DTA_VisibleHoriz , (domain->Width / hunit)               ,
+                               DTA_TotalHoriz   , max_linelength / hunit                ,
+                               DTA_NominalHoriz , nomwidth                              ,
+                               DTA_HorizUnit    , hunit                                 ,
+                               DTA_TopHoriz     , si->si_TopHoriz                       ,
+                               
+                               DTA_Title        , (IPTR)title                           ,
+                               DTA_Busy         , FALSE                                 ,
+                               DTA_Sync         , TRUE                                  ,
                                TAG_DONE);
         } /* if (bsig == 0) */
-		
+                
     } /* if GetDTAttrs(... */
 
     D(bug("AsciiDataType_AsyncLayout: Done. Returning %d\n", total));

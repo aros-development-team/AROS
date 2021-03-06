@@ -155,7 +155,7 @@ static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case SDA_TitleChild: 
+            case SDA_TitleChild:
                 if (tag->ti_Data)
                 {
                     if (!(data->FirstChild))
@@ -214,7 +214,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     struct DrawInfo        *dri = msg->sdp_Dri;
     UWORD                  *pens = dri->dri_Pens;
     LONG                    left, right = 0, len, filllen;
-    BOOL		    beeping = scr->Flags & BEEPING;
+    BOOL                    beeping = scr->Flags & BEEPING;
 
     if ((data->dc->SBarChildPre_s > 0) && (data->dc->SBarChildPre_s < sd->img_stitlebar->w))
         filllen = data->dc->SBarChildPre_o;
@@ -259,7 +259,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
         if ((data->FirstChild) && (((struct Gadget *)(data->FirstChild))->Width > 2)) {
             D(bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width));
-            right = right - (((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarChildPre_s + data->dc->SBarChildPost_s); 
+            right = right - (((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarChildPre_s + data->dc->SBarChildPost_s);
         }
 
         if (sd->img_stitlebar->ok)
@@ -272,8 +272,8 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
     if (sd->img_sbarlogo->ok)
     {
-        WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
-            sd->img_sbarlogo->w, data->dc->SLogoOffset, 
+        WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0,
+            sd->img_sbarlogo->w, data->dc->SLogoOffset,
             (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2, sd->img_sbarlogo->w);
     }
 

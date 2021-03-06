@@ -117,15 +117,15 @@ int main(void)
     rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
     if (rda)
     {
-	Return_Value = Do_RequestChoice((STRPTR)args[ARG_TITLE],
+        Return_Value = Do_RequestChoice((STRPTR)args[ARG_TITLE],
                                         (STRPTR)args[ARG_BODY],
                                         (STRPTR *)args[ARG_GADGETS],
                                         (STRPTR)args[ARG_PUBSCREEN]);
-	FreeArgs(rda);
+        FreeArgs(rda);
     }
     else
     {
-	PrintFault(IoErr(), ERROR_HEADER);
+        PrintFault(IoErr(), ERROR_HEADER);
         Return_Value = RETURN_FAIL;
     }
 

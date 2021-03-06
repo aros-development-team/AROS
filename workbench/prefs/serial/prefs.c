@@ -117,16 +117,16 @@ BOOL Prefs_ImportFH(BPTR fh)
                         {
                             D(bug("LoadPrefs: Reading chunk successful.\n"));
 
-			    CopyMem(loadprefs.sp_Reserved, serialprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
-			    serialprefs.sp_Unit0Map        = GET_LONG(loadprefs.sp_Unit0Map);
-			    serialprefs.sp_BaudRate        = GET_LONG(loadprefs.sp_BaudRate);	
-			    serialprefs.sp_InputBuffer     = GET_LONG(loadprefs.sp_InputBuffer);
-			    serialprefs.sp_OutputBuffer    = GET_LONG(loadprefs.sp_OutputBuffer);
-			    serialprefs.sp_InputHandshake  = loadprefs.sp_InputHandshake;
-			    serialprefs.sp_OutputHandshake = loadprefs.sp_OutputHandshake;
-			    serialprefs.sp_Parity	   = loadprefs.sp_Parity;
-			    serialprefs.sp_BitsPerChar	   = loadprefs.sp_BitsPerChar;
-			    serialprefs.sp_StopBits	   = loadprefs.sp_StopBits;
+                            CopyMem(loadprefs.sp_Reserved, serialprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
+                            serialprefs.sp_Unit0Map        = GET_LONG(loadprefs.sp_Unit0Map);
+                            serialprefs.sp_BaudRate        = GET_LONG(loadprefs.sp_BaudRate);
+                            serialprefs.sp_InputBuffer     = GET_LONG(loadprefs.sp_InputBuffer);
+                            serialprefs.sp_OutputBuffer    = GET_LONG(loadprefs.sp_OutputBuffer);
+                            serialprefs.sp_InputHandshake  = loadprefs.sp_InputHandshake;
+                            serialprefs.sp_OutputHandshake = loadprefs.sp_OutputHandshake;
+                            serialprefs.sp_Parity          = loadprefs.sp_Parity;
+                            serialprefs.sp_BitsPerChar     = loadprefs.sp_BitsPerChar;
+                            serialprefs.sp_StopBits        = loadprefs.sp_StopBits;
 
                             D(bug("LoadPrefs: Everything okay :-)\n"));
 
@@ -154,15 +154,15 @@ BOOL Prefs_ExportFH(BPTR fh)
 #endif
 
     CopyMem(serialprefs.sp_Reserved, saveprefs.sp_Reserved, sizeof(serialprefs.sp_Reserved));
-    saveprefs.sp_Unit0Map	 = GET_LONG(serialprefs.sp_Unit0Map);
+    saveprefs.sp_Unit0Map        = GET_LONG(serialprefs.sp_Unit0Map);
     saveprefs.sp_BaudRate        = GET_LONG(serialprefs.sp_BaudRate);
     saveprefs.sp_InputBuffer     = GET_LONG(serialprefs.sp_InputBuffer);
     saveprefs.sp_OutputBuffer    = GET_LONG(serialprefs.sp_OutputBuffer);
     saveprefs.sp_InputHandshake  = serialprefs.sp_InputHandshake;
     saveprefs.sp_OutputHandshake = serialprefs.sp_OutputHandshake;
-    saveprefs.sp_Parity		 = serialprefs.sp_Parity;
-    saveprefs.sp_BitsPerChar	 = serialprefs.sp_BitsPerChar;
-    saveprefs.sp_StopBits	 = serialprefs.sp_StopBits;
+    saveprefs.sp_Parity          = serialprefs.sp_Parity;
+    saveprefs.sp_BitsPerChar     = serialprefs.sp_BitsPerChar;
+    saveprefs.sp_StopBits        = serialprefs.sp_StopBits;
 
     D(bug("SavePrefsFH: fh: %lx\n", fh));
 

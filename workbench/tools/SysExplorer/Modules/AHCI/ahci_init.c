@@ -30,7 +30,7 @@ const struct OOP_ABDescr ahci_abd[] =
     {NULL            ,  NULL          }
 };
 
-static int ahcienum_init(struct SysexpAHCIBase *AhciBase) 
+static int ahcienum_init(struct SysexpAHCIBase *AhciBase)
 {
     D(bug("[ahci.sysexp] %s()\n", __func__));
 

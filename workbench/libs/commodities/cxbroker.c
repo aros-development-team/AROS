@@ -35,18 +35,18 @@ extern struct InputEvent *cxIHandler();
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct NewBroker *, nb   , A0),
-	AROS_LHA(LONG *            , error, D0),
+        AROS_LHA(struct NewBroker *, nb   , A0),
+        AROS_LHA(LONG *            , error, D0),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 6, Commodities)
+        struct Library *, CxBase, 6, Commodities)
 
 /*  FUNCTION
 
     Create a commodity broker from the specifications found in the structure
     pointed to by 'nb'. The NewBroker structure is described in <Libraries/
-    Commodities.h>, see this file for more info. After the call, the 
+    Commodities.h>, see this file for more info. After the call, the
     NewBroker structure isn't needed anymore and may be discarded.
 
     INPUTS
@@ -66,7 +66,7 @@ extern struct InputEvent *cxIHandler();
 
     CBERR_DUP      --  another broker with the same name already exists
                        (and your nb_Unique indicates that only one is
-		       allowed)
+                       allowed)
 
     CBERR_VERSION  --  the version found in nb_Version is unknown to the
                        library
@@ -101,17 +101,17 @@ extern struct InputEvent *cxIHandler();
     /* No duplicates allowed? */
     if (nb->nb_Unique & NBU_UNIQUE)
     {
-	temp = (CxObj *)FindName(&GPB(CxBase)->cx_BrokerList, nb->nb_Name);
-	
-	if (temp != NULL)
-	{
-	    if(nb->nb_Unique & NBU_NOTIFY)
-	    {
-		CheckStatus(temp, CXCMD_UNIQUE, CxBase);
-	    }
-	    
-	    myerr = CBERR_DUP;
-	}
+        temp = (CxObj *)FindName(&GPB(CxBase)->cx_BrokerList, nb->nb_Name);
+        
+        if (temp != NULL)
+        {
+            if(nb->nb_Unique & NBU_NOTIFY)
+            {
+                CheckStatus(temp, CXCMD_UNIQUE, CxBase);
+            }
+            
+            myerr = CBERR_DUP;
+        }
     }
     
     if (myerr == CBERR_OK)
@@ -137,18 +137,18 @@ extern struct InputEvent *cxIHandler();
           Enqueue(&GPB(CxBase)->cx_BrokerList, (struct Node *)co);
           co->co_Flags |= COF_VALID;
         }
-	else
-	{
-	sysErr:
-	    myerr = CBERR_SYSERR;
-	}
+        else
+        {
+        sysErr:
+            myerr = CBERR_SYSERR;
+        }
     }
     
     ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
     if (error != NULL)
     {
-	*error = myerr;
+        *error = myerr;
     }
 
     D(bug("CxBroker: returning co=%p\n", co));
@@ -173,10 +173,10 @@ BOOL SetupIHandler(struct CommoditiesBase *CxBase)
     CxBase->cx_IORequest.io_Message.mn_ReplyPort = &CxBase->cx_InputMP;
     
     if (OpenDevice("input.device", 0,
-		   (struct IORequest *)&CxBase->cx_IORequest, 0) != 0)
+                   (struct IORequest *)&CxBase->cx_IORequest, 0) != 0)
     {
-	// kprintf("Input.device didn't open\n");
-	return FALSE;
+        // kprintf("Input.device didn't open\n");
+        return FALSE;
     }
     
     //  kprintf("CxBroker: Opened input.device.\n");

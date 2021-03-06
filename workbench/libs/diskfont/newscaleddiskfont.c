@@ -10,14 +10,14 @@
     NAME */
 #include <clib/diskfont_protos.h>
 
-	AROS_LH2(struct DiskFont *, NewScaledDiskFont,
+        AROS_LH2(struct DiskFont *, NewScaledDiskFont,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TextFont *, sourceFont, A0),
-	AROS_LHA(struct TextAttr *, destTextAttr, A1),
+        AROS_LHA(struct TextFont *, sourceFont, A0),
+        AROS_LHA(struct TextAttr *, destTextAttr, A1),
 
 /*  LOCATION */
-	struct Library *, DiskfontBase, 9, Diskfont)
+        struct Library *, DiskfontBase, 9, Diskfont)
 
 /*  FUNCTION
 
@@ -36,8 +36,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    diskfont_lib.fd and clib/diskfont_protos.h
+        27-11-96    digulla automatically created from
+                            diskfont_lib.fd and clib/diskfont_protos.h
 
 *****************************************************************************/
 {

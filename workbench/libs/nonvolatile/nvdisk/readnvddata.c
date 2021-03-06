@@ -20,12 +20,12 @@ AROS_LH2(APTR, ReadNVDData,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName,  A0),
-	AROS_LHA(STRPTR, itemName, A1),
+        AROS_LHA(STRPTR, appName,  A0),
+        AROS_LHA(STRPTR, itemName, A1),
 
 /*  LOCATION */
 
-	struct Library *, nvdBase, 5, NVDisk)
+        struct Library *, nvdBase, 5, NVDisk)
 
 /*  FUNCTION
 
@@ -57,7 +57,7 @@ AROS_LH2(APTR, ReadNVDData,
 ******************************************************************************/
 
 {
-    AROS_LIBFUNC_INIT    
+    AROS_LIBFUNC_INIT
 
     APTR  mem = NULL;
     BPTR  lock, lock2;
@@ -69,44 +69,44 @@ AROS_LH2(APTR, ReadNVDData,
 
     if(fib != NULL)
     {
-	oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
-	lock = Lock(appName, SHARED_LOCK);
+        oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
+        lock = Lock(appName, SHARED_LOCK);
 
-	if(lock)
-	{
-	    CurrentDir(lock);
+        if(lock)
+        {
+            CurrentDir(lock);
 
-	    lock2 = Lock(itemName, SHARED_LOCK);
+            lock2 = Lock(itemName, SHARED_LOCK);
 
-	    if(lock2 != BNULL)
-	    {
-		// We have now found the file -- check how big it is
-		Examine(lock2, fib);
+            if(lock2 != BNULL)
+            {
+                // We have now found the file -- check how big it is
+                Examine(lock2, fib);
 
-		mem = AllocVec(fib->fib_Size, MEMF_ANY);
+                mem = AllocVec(fib->fib_Size, MEMF_ANY);
 
-		if(mem != NULL)
-		{
-		    if(Read(lock2, mem, fib->fib_Size) != fib->fib_Size)
-		    {
-		        FreeVec(mem);
-			mem = NULL;
-		    }
-		    
-		} /* if(mem) */
-		
-		UnLock(lock2);
-		
-	    } /* if(lock2) */
-	    
-	    CurrentDir(oldCDir);
-	    UnLock(lock);
-	    
-	} /* if(lock) */
-	
-	CurrentDir(oldCDir);
-	FreeDosObject(DOS_FIB, fib);
-	
+                if(mem != NULL)
+                {
+                    if(Read(lock2, mem, fib->fib_Size) != fib->fib_Size)
+                    {
+                        FreeVec(mem);
+                        mem = NULL;
+                    }
+                    
+                } /* if(mem) */
+                
+                UnLock(lock2);
+                
+            } /* if(lock2) */
+            
+            CurrentDir(oldCDir);
+            UnLock(lock);
+            
+        } /* if(lock) */
+        
+        CurrentDir(oldCDir);
+        FreeDosObject(DOS_FIB, fib);
+        
     } /* if(fib) */
     
     return mem;

@@ -44,7 +44,7 @@ BOOL initSM502GfxHW(struct SM502_HWData *hw)
     }
 
     hw->disp_width = (smread(hw, SM502_PFBO) >> 16) & 0x3fff;
-    hw->disp_height = (smread(hw, SM502_PFBH) >> 16) & 0x0fff; 
+    hw->disp_height = (smread(hw, SM502_PFBH) >> 16) & 0x0fff;
     hw->xoffset = smread(hw, SM502_PFBW) & 0xfff;
     hw->yoffset = smread(hw, SM502_PFBH) & 0xfff;
     hw->bytesperline = smread(hw, SM502_PFBO) & 0x3fff;

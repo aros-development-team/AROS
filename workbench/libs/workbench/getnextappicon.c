@@ -34,19 +34,19 @@
 
 /*  FUNCTION
 
-    Accesses AppIcon information from workbench.library. This function 
-    is meant for iterations through wblibs´ AppIcon storage as needed 
-    to display those. 
+    Accesses AppIcon information from workbench.library. This function
+    is meant for iterations through wblibs´ AppIcon storage as needed
+    to display those.
         Initialised with a NULL as the first argument, it iterates
     through all AppIcons stored in workbench.library by returning the
     pointer to the next AppIcon´s DiskObject structure and copies the
     name of the given AppIcon to the given array. The function returns
-    a NULL if the end of AppIcon list was reached or if no AppIcons 
+    a NULL if the end of AppIcon list was reached or if no AppIcons
     were stored.
 
     INPUTS
 
-    lastdiskobj  --  NULL (initial value) or pointer to a DiskObject 
+    lastdiskobj  --  NULL (initial value) or pointer to a DiskObject
                      structure stored in workbench.library
     text         --  char array pointer to store AppIcon´s name in
 

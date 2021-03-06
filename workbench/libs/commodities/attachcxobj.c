@@ -17,12 +17,12 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(CxObj *, headObj, A0),
-	AROS_LHA(CxObj *, co,      A1),
+        AROS_LHA(CxObj *, headObj, A0),
+        AROS_LHA(CxObj *, co,      A1),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 14, Commodities)
+        struct Library *, CxBase, 14, Commodities)
 
 /*  FUNCTION
 
@@ -62,16 +62,16 @@
 
     if (headObj == NULL)
     {
-	DeleteCxObjAll(co);
+        DeleteCxObjAll(co);
 
-	return;
+        return;
     }
     
     if (co == NULL)
     {
-	headObj->co_Error |= COERR_NULLATTACH;
+        headObj->co_Error |= COERR_NULLATTACH;
 
-	return;
+        return;
     }
     
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);

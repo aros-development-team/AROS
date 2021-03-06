@@ -43,11 +43,11 @@ struct __ROP ROP_table[] = {
 
 #define sd ((struct g45staticdata*)SD(cl))
 
-#define POINT_OUTSIDE_CLIP(gc, x, y)	\
-	(  (x) < GC_CLIPX1(gc)		\
-	|| (x) > GC_CLIPX2(gc)		\
-	|| (y) < GC_CLIPY1(gc)		\
-	|| (y) > GC_CLIPY2(gc) )
+#define POINT_OUTSIDE_CLIP(gc, x, y)    \
+        (  (x) < GC_CLIPX1(gc)          \
+        || (x) > GC_CLIPX2(gc)          \
+        || (y) < GC_CLIPY1(gc)          \
+        || (y) > GC_CLIPY2(gc) )
 
 static BOOL CanAccelerateBlits(UWORD product_id)
 {
@@ -57,7 +57,7 @@ static BOOL CanAccelerateBlits(UWORD product_id)
 
 OOP_Object *METHOD(GMABM, Root, New)
 {
-	EnterFunc(bug("[GMABitMap] Bitmap::New()\n"));
+        EnterFunc(bug("[GMABitMap] Bitmap::New()\n"));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
@@ -90,7 +90,7 @@ OOP_Object *METHOD(GMABM, Root, New)
         }
 
         if (depth == 24)
-        	depth = 32;
+                depth = 32;
 
         if (depth <= 8)
             bytesPerPixel = 1;
@@ -113,15 +113,15 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->yoffset = 0;
         bm->fbid = 0; /* Default value */
 
-		if (displayable) bm->displayable = TRUE; else bm->displayable = FALSE;
-		//bm->compositor = sd->compositor;
+                if (displayable) bm->displayable = TRUE; else bm->displayable = FALSE;
+                //bm->compositor = sd->compositor;
         bm->compositor = (OOP_Object *)
             GetTagData(aHidd_BitMap_IntelG45_CompositorHidd, 0, msg->attrList);
         /* FIXME: check if compositor hidd was passed */
 
         if (displayable)
         {
-			if ((bm->framebuffer != -1))
+                        if ((bm->framebuffer != -1))
             {
                 HIDDT_ModeID modeid;
                 OOP_Object *sync;
@@ -157,7 +157,7 @@ OOP_Object *METHOD(GMABM, Root, New)
                     OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,      &vend);
                     OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
                     OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);
-                    OOP_GetAttr(sync, aHidd_Sync_Flags,			&flags);
+                    OOP_GetAttr(sync, aHidd_Sync_Flags,                 &flags);
 
                     bm->state = (GMAState_t *)AllocVecPooled(sd->MemPool,
                             sizeof(GMAState_t));
@@ -177,14 +177,14 @@ OOP_Object *METHOD(GMABM, Root, New)
                     }
                 }
             }
-			else
-			{
-				bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
-						MEMF_PUBLIC | MEMF_CLEAR);
-				bm->fbgfx = FALSE;
+                        else
+                        {
+                                bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
+                                                MEMF_PUBLIC | MEMF_CLEAR);
+                                bm->fbgfx = FALSE;
 
-				return o;
-			}
+                                return o;
+                        }
         }
         else
         {
@@ -197,7 +197,7 @@ OOP_Object *METHOD(GMABM, Root, New)
 
             if (bm->framebuffer != 0)
             {
-				D(bug("[GMA] not displayable Bitmap::new = %p\n", o));
+                                D(bug("[GMA] not displayable Bitmap::new = %p\n", o));
                 return o;
             }
         }
@@ -219,13 +219,13 @@ VOID METHOD(GMABM, Root, Dispose)
 
     if (bm->fbgfx)
     {
-    	DO_FLUSH();
+        DO_FLUSH();
 
         FreeBitmapArea(sd, bm->framebuffer, bm->width, bm->height, bm->bpp);
 
         if (sd->VisibleBitmap == bm)
         {
-        	sd->VisibleBitmap = NULL;
+                sd->VisibleBitmap = NULL;
         }
 
         bm->framebuffer = -1;
@@ -257,8 +257,8 @@ VOID METHOD(GMABM, Root, Get)
 {
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     ULONG idx;
-	
-	if (IS_GMABM_ATTR(msg->attrID, idx))
+        
+        if (IS_GMABM_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {
@@ -272,28 +272,28 @@ VOID METHOD(GMABM, Root, Get)
                 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     }
-	else
-	{
-		if (IS_BM_ATTR(msg->attrID, idx))
-		{
-			switch (idx)
-			{
-				case aoHidd_BitMap_LeftEdge:
-					*msg->storage = bm->xoffset;
-				return;
-				case aoHidd_BitMap_TopEdge:
-					*msg->storage = bm->yoffset;
-				return;
-			}
-		}
-		
+        else
+        {
+                if (IS_BM_ATTR(msg->attrID, idx))
+                {
+                        switch (idx)
+                        {
+                                case aoHidd_BitMap_LeftEdge:
+                                        *msg->storage = bm->xoffset;
+                                return;
+                                case aoHidd_BitMap_TopEdge:
+                                        *msg->storage = bm->yoffset;
+                                return;
+                        }
+                }
+                
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 }
 
 VOID METHOD(GMABM, Root, Set)
 {
-	struct TagItem  *tag, *tstate;
+        struct TagItem  *tag, *tstate;
     GMABitMap_t * bmdata = OOP_INST_DATA(cl, o);
     ULONG idx;
     LONG newxoffset = bmdata->xoffset;
@@ -348,86 +348,86 @@ VOID METHOD(GMABM, Root, Set)
 /* not used?
 static inline void setup_engine(OOP_Class *cl, OOP_Object *o, GMABitMap_t *bm)
 {
-	if (sd->Engine2DOwner != bm && bm->fbgfx)
-	{
-		LOCK_HW
+        if (sd->Engine2DOwner != bm && bm->fbgfx)
+        {
+                LOCK_HW
 
-		START_RING(8);
+                START_RING(8);
 
-		OUT_RING((2 << 29) | (0x11 << 22) | (7));	 // BR00
-		if (bm->bpp == 1)
-			OUT_RING(0xff << 16 | bm->pitch/4);
-		else if (bm->bpp == 2)
-			OUT_RING(0xff << 16 | (bm->pitch / 4) | (1 << 24));
-		else
-			OUT_RING(0xff << 16 | (bm->pitch / 4) | (3 << 24));
-		OUT_RING(0);
-		OUT_RING(0);
-		OUT_RING(bm->framebuffer);
-		OUT_RING(0);
+                OUT_RING((2 << 29) | (0x11 << 22) | (7));        // BR00
+                if (bm->bpp == 1)
+                        OUT_RING(0xff << 16 | bm->pitch/4);
+                else if (bm->bpp == 2)
+                        OUT_RING(0xff << 16 | (bm->pitch / 4) | (1 << 24));
+                else
+                        OUT_RING(0xff << 16 | (bm->pitch / 4) | (3 << 24));
+                OUT_RING(0);
+                OUT_RING(0);
+                OUT_RING(bm->framebuffer);
+                OUT_RING(0);
 
-		ADVANCE_RING();
+                ADVANCE_RING();
 
-		sd->Engine2DOwner = bm;
+                sd->Engine2DOwner = bm;
 
-		UNLOCK_HW
-	}
+                UNLOCK_HW
+        }
 }
 */
 
 VOID METHOD(GMABM, Hidd_BitMap, PutPixel)
 {
-	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-	void *ptr;
+        GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+        void *ptr;
 
-//	if (msg->x >= 0 && msg->x < bm->width && msg->y >= 0 && msg->y < bm->height)
-	{
-		LOCK_BITMAP
+//      if (msg->x >= 0 && msg->x < bm->width && msg->y >= 0 && msg->y < bm->height)
+        {
+                LOCK_BITMAP
 
-		if (bm->fbgfx)
-		{
-			LOCK_HW
-			DO_FLUSH();
-			UNLOCK_HW
-		}
+                if (bm->fbgfx)
+                {
+                        LOCK_HW
+                        DO_FLUSH();
+                        UNLOCK_HW
+                }
 
-		if (bm->fbgfx)
-			ptr = (void *)(bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch);
-		else
-			ptr = (void *)(bm->framebuffer + msg->y * bm->pitch);
+                if (bm->fbgfx)
+                        ptr = (void *)(bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch);
+                else
+                        ptr = (void *)(bm->framebuffer + msg->y * bm->pitch);
 
 
-		switch (bm->bpp)
-		{
-		case 1:
-			((UBYTE *)ptr)[msg->x] = msg->pixel;
-			break;
-		case 2:
-			((UWORD *)ptr)[msg->x] = msg->pixel;
-			break;
-		case 4:
-			((ULONG *)ptr)[msg->x] = msg->pixel;
-			break;
-		}
+                switch (bm->bpp)
+                {
+                case 1:
+                        ((UBYTE *)ptr)[msg->x] = msg->pixel;
+                        break;
+                case 2:
+                        ((UWORD *)ptr)[msg->x] = msg->pixel;
+                        break;
+                case 4:
+                        ((ULONG *)ptr)[msg->x] = msg->pixel;
+                        break;
+                }
 
-		UNLOCK_BITMAP
-	}
+                UNLOCK_BITMAP
+        }
 }
 
 HIDDT_Pixel METHOD(GMABM, Hidd_BitMap, GetPixel)
 {
-	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-	void *ptr;
-	HIDDT_Pixel pixel = 0;
+        GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+        void *ptr;
+        HIDDT_Pixel pixel = 0;
 
-	LOCK_BITMAP
+        LOCK_BITMAP
 
-	if (bm->fbgfx)
-	{
-		LOCK_HW
-		DO_FLUSH();
-		UNLOCK_HW
-	}
+        if (bm->fbgfx)
+        {
+                LOCK_HW
+                DO_FLUSH();
+                UNLOCK_HW
+        }
 
     if (bm->fbgfx)
         ptr = sd->Card.Framebuffer;
@@ -435,33 +435,33 @@ HIDDT_Pixel METHOD(GMABM, Hidd_BitMap, GetPixel)
         ptr = NULL;
     ptr += bm->framebuffer + msg->y * bm->pitch;
 
-	switch (bm->bpp)
-	{
-	case 1:
-		pixel = ((UBYTE *)ptr)[msg->x];
-		break;
-	case 2:
-		pixel = ((UWORD *)ptr)[msg->x];
-		break;
-	case 4:
-		pixel = ((ULONG *)ptr)[msg->x];
-		break;
-	}
+        switch (bm->bpp)
+        {
+        case 1:
+                pixel = ((UBYTE *)ptr)[msg->x];
+                break;
+        case 2:
+                pixel = ((UWORD *)ptr)[msg->x];
+                break;
+        case 4:
+                pixel = ((ULONG *)ptr)[msg->x];
+                break;
+        }
 
-	UNLOCK_BITMAP
+        UNLOCK_BITMAP
 
-	return pixel;
+        return pixel;
 }
 
 VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
 {
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     void *ptr;
-	OOP_Object *gc = msg->gc;
+        OOP_Object *gc = msg->gc;
 
-    HIDDT_Pixel     	    	    src, dest = 0, val;
-    HIDDT_DrawMode  	    	    mode;
-    HIDDT_Pixel     	    	    writeMask;
+    HIDDT_Pixel                     src, dest = 0, val;
+    HIDDT_DrawMode                  mode;
+    HIDDT_Pixel                     writeMask;
 
     if (bm->fbgfx)
         ptr = sd->Card.Framebuffer;
@@ -474,52 +474,52 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
 
     LOCK_BITMAP
 
-	if (bm->fbgfx)
-	{
-		LOCK_HW
-		DO_FLUSH();
-		UNLOCK_HW
-	}
+        if (bm->fbgfx)
+        {
+                LOCK_HW
+                DO_FLUSH();
+                UNLOCK_HW
+        }
 
     if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0)
-	{
-		val = src;
-	}
-	else
-	{
-		switch (bm->bpp)
-	    {
-	        case 1:
-	            dest = ((UBYTE *)ptr)[msg->x];
-	            break;
-	        case 2:
-	            dest = ((UWORD *)ptr)[msg->x];
-	            break;
-	        case 4:
-	            dest = ((ULONG *)ptr)[msg->x];
-	            break;
-	    }
+        {
+                val = src;
+        }
+        else
+        {
+                switch (bm->bpp)
+            {
+                case 1:
+                    dest = ((UBYTE *)ptr)[msg->x];
+                    break;
+                case 2:
+                    dest = ((UWORD *)ptr)[msg->x];
+                    break;
+                case 4:
+                    dest = ((ULONG *)ptr)[msg->x];
+                    break;
+            }
 
-		writeMask = ~GC_COLMASK(gc) & dest;
+                writeMask = ~GC_COLMASK(gc) & dest;
 
-		val = 0;
+                val = 0;
 
-		if(mode & 1) val = ( src &  dest);
-		if(mode & 2) val = ( src & ~dest) | val;
-		if(mode & 4) val = (~src &  dest) | val;
-		if(mode & 8) val = (~src & ~dest) | val;
+                if(mode & 1) val = ( src &  dest);
+                if(mode & 2) val = ( src & ~dest) | val;
+                if(mode & 4) val = (~src &  dest) | val;
+                if(mode & 8) val = (~src & ~dest) | val;
 
-		val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
-	}
+                val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
+        }
 
-	if (bm->fbgfx)
-	{
-		LOCK_HW
-		DO_FLUSH();
-		UNLOCK_HW
-	}
+        if (bm->fbgfx)
+        {
+                LOCK_HW
+                DO_FLUSH();
+                UNLOCK_HW
+        }
 
-	switch (bm->bpp)
+        switch (bm->bpp)
     {
         case 1:
             ((UBYTE *)ptr)[msg->x] = val;
@@ -543,145 +543,145 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
 
 VOID METHOD(GMABM, Hidd_BitMap, DrawEllipse)
 {
-	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-	OOP_Object *gc = msg->gc;
-	WORD    	x = msg->rx, y = 0;     /* ellipse points */
-	HIDDT_Pixel     	    	    src;
-	HIDDT_DrawMode  	    	    mode;
+        GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+        OOP_Object *gc = msg->gc;
+        WORD            x = msg->rx, y = 0;     /* ellipse points */
+        HIDDT_Pixel                         src;
+        HIDDT_DrawMode                      mode;
 
-	/* intermediate terms to speed up loop */
-	LONG    	t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
-	LONG    	t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
-	LONG    	t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
-	LONG    	d1 = t2 - t7 + (t4 >> 1);    /* error terms */
-	LONG    	d2 = (t1 >> 1) - t8 + t5;
+        /* intermediate terms to speed up loop */
+        LONG            t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+        LONG            t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+        LONG            t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+        LONG            d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+        LONG            d2 = (t1 >> 1) - t8 + t5;
 
-	APTR    	doclip = GC_DOCLIP(gc);
+        APTR            doclip = GC_DOCLIP(gc);
 
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
 
 
-	LOCK_BITMAP
+        LOCK_BITMAP
 
     if (bm->fbgfx)
     {
 
-    	LOCK_HW
+        LOCK_HW
 
-    	uint32_t br00, br01, br24, br25, br09, br05, br06, br07;
+        uint32_t br00, br01, br24, br25, br09, br05, br06, br07;
 
-    	br00 = (2 << 29) | (0x1 << 22) | 6;
+        br00 = (2 << 29) | (0x1 << 22) | 6;
 
-    	if (bm->bpp == 4)
-    		br00 |= (3 << 20);
+        if (bm->bpp == 4)
+                br00 |= (3 << 20);
 
-    	br01 = ROP_table[mode].pattern | (bm->pitch);
-    	if (bm->bpp == 4)
-    		br01 |= 3 << 24;
-    	else if (bm->bpp == 2)
-    		br01 |= 1 << 24;
+        br01 = ROP_table[mode].pattern | (bm->pitch);
+        if (bm->bpp == 4)
+                br01 |= 3 << 24;
+        else if (bm->bpp == 2)
+                br01 |= 1 << 24;
 
-    	if (doclip)
-    		br01 |= (1 << 30);
+        if (doclip)
+                br01 |= (1 << 30);
 
-    	br24 = GC_CLIPX1(gc) | (GC_CLIPY1(gc) << 16);
-    	br25 = (GC_CLIPX2(gc)+1) | ((GC_CLIPY2(gc)+1) << 16);
-    	br09 = bm->framebuffer;
-    	br05 = src;
-    	br06 = 0;
-    	br07 = 0;
+        br24 = GC_CLIPX1(gc) | (GC_CLIPY1(gc) << 16);
+        br25 = (GC_CLIPX2(gc)+1) | ((GC_CLIPY2(gc)+1) << 16);
+        br09 = bm->framebuffer;
+        br05 = src;
+        br06 = 0;
+        br07 = 0;
 
-    	START_RING(8);
+        START_RING(8);
 
-    	OUT_RING(br00);
-    	OUT_RING(br01);
-    	OUT_RING(br24);
-    	OUT_RING(br25);
-    	OUT_RING(br09);
-    	OUT_RING(br05);
-    	OUT_RING(br06);
-    	OUT_RING(br07);
+        OUT_RING(br00);
+        OUT_RING(br01);
+        OUT_RING(br24);
+        OUT_RING(br25);
+        OUT_RING(br09);
+        OUT_RING(br05);
+        OUT_RING(br06);
+        OUT_RING(br07);
 
-    	while (d2 < 0)                  /* til slope = -1 */
-    	{
-    		/* draw 4 points using symmetry */
+        while (d2 < 0)                  /* til slope = -1 */
+        {
+                /* draw 4 points using symmetry */
 
-    		{
-    			START_RING(2*4);
+                {
+                        START_RING(2*4);
 
-    			_drawpixel(msg->x + x, msg->y + y);
-    			_drawpixel(msg->x + x, msg->y - y);
-    			_drawpixel(msg->x - x, msg->y + y);
-    			_drawpixel(msg->x - x, msg->y - y);
+                        _drawpixel(msg->x + x, msg->y + y);
+                        _drawpixel(msg->x + x, msg->y - y);
+                        _drawpixel(msg->x - x, msg->y + y);
+                        _drawpixel(msg->x - x, msg->y - y);
 
-    			ADVANCE_RING();
-    		}
+                        ADVANCE_RING();
+                }
 
-    		y++;            /* always move up here */
-    		t9 = t9 + t3;
-    		if (d1 < 0)     /* move straight up */
-    		{
-    			d1 = d1 + t9 + t2;
-    			d2 = d2 + t9;
-    		}
-    		else            /* move up and left */
-    		{
-    			x--;
-    			t8 = t8 - t6;
-    			d1 = d1 + t9 + t2 - t8;
-    			d2 = d2 + t9 + t5 - t8;
-    		}
-    	}
+                y++;            /* always move up here */
+                t9 = t9 + t3;
+                if (d1 < 0)     /* move straight up */
+                {
+                        d1 = d1 + t9 + t2;
+                        d2 = d2 + t9;
+                }
+                else            /* move up and left */
+                {
+                        x--;
+                        t8 = t8 - t6;
+                        d1 = d1 + t9 + t2 - t8;
+                        d2 = d2 + t9 + t5 - t8;
+                }
+        }
 
-    	do                              /* rest of top right quadrant */
-    	{
-    		/* draw 4 points using symmetry */
-    		{
-    			START_RING(2*4);
+        do                              /* rest of top right quadrant */
+        {
+                /* draw 4 points using symmetry */
+                {
+                        START_RING(2*4);
 
-    			_drawpixel(msg->x + x, msg->y + y);
-    			_drawpixel(msg->x + x, msg->y - y);
-    			_drawpixel(msg->x - x, msg->y + y);
-    			_drawpixel(msg->x - x, msg->y - y);
+                        _drawpixel(msg->x + x, msg->y + y);
+                        _drawpixel(msg->x + x, msg->y - y);
+                        _drawpixel(msg->x - x, msg->y + y);
+                        _drawpixel(msg->x - x, msg->y - y);
 
-    			ADVANCE_RING();
-    		}
+                        ADVANCE_RING();
+                }
 
-    		x--;            /* always move left here */
-    		t8 = t8 - t6;
-    		if (d2 < 0)     /* move up and left */
-    		{
-    			y++;
-    			t9 = t9 + t3;
-    			d2 = d2 + t9 + t5 - t8;
-    		}
-    		else            /* move straight left */
-    		{
-    			d2 = d2 + t5 - t8;
-    		}
+                x--;            /* always move left here */
+                t8 = t8 - t6;
+                if (d2 < 0)     /* move up and left */
+                {
+                        y++;
+                        t9 = t9 + t3;
+                        d2 = d2 + t9 + t5 - t8;
+                }
+                else            /* move straight left */
+                {
+                        d2 = d2 + t5 - t8;
+                }
 
-    	} while (x >= 0);
+        } while (x >= 0);
 
-    	UNLOCK_HW
+        UNLOCK_HW
     }
     else
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     UNLOCK_BITMAP
 }
 
 VOID METHOD(GMABM, Hidd_BitMap, DrawLine)
 {
-	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
-	OOP_Object *gc = msg->gc;
-	HIDDT_Pixel     	    	    src;
-	HIDDT_DrawMode  	    	    mode;
+        GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+        OOP_Object *gc = msg->gc;
+        HIDDT_Pixel                         src;
+        HIDDT_DrawMode                      mode;
 
-	WORD        dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
-	LONG        x1, y1, x2, y2;
+        WORD        dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
+        LONG        x1, y1, x2, y2;
 
-	APTR    	doclip = GC_DOCLIP(gc);
+        APTR            doclip = GC_DOCLIP(gc);
 
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
@@ -725,216 +725,216 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawLine)
     x2 = msg->x2;
     y2 = msg->y2;
 
-	LOCK_BITMAP
+        LOCK_BITMAP
 
-	if ((GC_LINEPAT(gc) != (UWORD)~0) || !bm->fbgfx)
-	{
-		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	}
-	else
-	{
-		LOCK_HW
+        if ((GC_LINEPAT(gc) != (UWORD)~0) || !bm->fbgfx)
+        {
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+        else
+        {
+                LOCK_HW
 
-		uint32_t br00, br01, br24, br25, br09, br05, br06, br07;
-		uint32_t ring_space;
+                uint32_t br00, br01, br24, br25, br09, br05, br06, br07;
+                uint32_t ring_space;
 
-		br00 = (2 << 29) | (0x1 << 22) | 6;
+                br00 = (2 << 29) | (0x1 << 22) | 6;
 
-		if (bm->bpp == 4)
-			br00 |= (3 << 20);
+                if (bm->bpp == 4)
+                        br00 |= (3 << 20);
 
-		br01 = ROP_table[mode].pattern | (bm->pitch);
-		if (bm->bpp == 4)
-			br01 |= 3 << 24;
-		else if (bm->bpp == 2)
-			br01 |= 1 << 24;
+                br01 = ROP_table[mode].pattern | (bm->pitch);
+                if (bm->bpp == 4)
+                        br01 |= 3 << 24;
+                else if (bm->bpp == 2)
+                        br01 |= 1 << 24;
 
-		if (doclip)
-			br01 |= (1 << 30);
+                if (doclip)
+                        br01 |= (1 << 30);
 
-		br24 = GC_CLIPX1(gc) | (GC_CLIPY1(gc) << 16);
-		br25 = (GC_CLIPX2(gc)+1) | ((GC_CLIPY2(gc)+1) << 16);
-		br09 = bm->framebuffer;
-		br05 = src;
-		br06 = 0;
-		br07 = 0;
+                br24 = GC_CLIPX1(gc) | (GC_CLIPY1(gc) << 16);
+                br25 = (GC_CLIPX2(gc)+1) | ((GC_CLIPY2(gc)+1) << 16);
+                br09 = bm->framebuffer;
+                br05 = src;
+                br06 = 0;
+                br07 = 0;
 
-		START_RING(8);
+                START_RING(8);
 
-		OUT_RING(br00);
-		OUT_RING(br01);
-		OUT_RING(br24);
-		OUT_RING(br25);
-		OUT_RING(br09);
-		OUT_RING(br05);
-		OUT_RING(br06);
-		OUT_RING(br07);
+                OUT_RING(br00);
+                OUT_RING(br01);
+                OUT_RING(br24);
+                OUT_RING(br25);
+                OUT_RING(br09);
+                OUT_RING(br05);
+                OUT_RING(br06);
+                OUT_RING(br07);
 
-		if (y1 == y2)
-		{
-			/*
-	            Horizontal line drawing code.
-			 */
-			y = y1;
+                if (y1 == y2)
+                {
+                        /*
+                    Horizontal line drawing code.
+                         */
+                        y = y1;
 
-			/* Don't swap coordinates if x2 < x1! Because of linepattern! */
+                        /* Don't swap coordinates if x2 < x1! Because of linepattern! */
 
-			if (x1 < x2)
-			{
-				x2++;
-				dx = 1;
-			}
-			else
-			{
-				x2--;
-				dx = -1;
-			}
+                        if (x1 < x2)
+                        {
+                                x2++;
+                                dx = 1;
+                        }
+                        else
+                        {
+                                x2--;
+                                dx = -1;
+                        }
 
-			ring_space = x2-x1+1;
-			if (ring_space > 500)
-				ring_space = 500;
+                        ring_space = x2-x1+1;
+                        if (ring_space > 500)
+                                ring_space = 500;
 
-			START_RING(ring_space);
+                        START_RING(ring_space);
 
-			for(i = x1; i != x2; i += dx)
-			{
-				_drawpixel(i, y);
+                        for(i = x1; i != x2; i += dx)
+                        {
+                                _drawpixel(i, y);
 
-				ring_space-=2;
-				if (!ring_space)
-				{
-					ADVANCE_RING();
-					ring_space = x2-i+1;
-					if (ring_space > 500)
-						ring_space=500;
-					START_RING(ring_space);
-				}
-			}
-		}
-	    else if (x1 == x2)
-	    {
-	        /*
-	            Vertical line drawing code.
-	        */
-	        x = x1;
+                                ring_space-=2;
+                                if (!ring_space)
+                                {
+                                        ADVANCE_RING();
+                                        ring_space = x2-i+1;
+                                        if (ring_space > 500)
+                                                ring_space=500;
+                                        START_RING(ring_space);
+                                }
+                        }
+                }
+            else if (x1 == x2)
+            {
+                /*
+                    Vertical line drawing code.
+                */
+                x = x1;
 
-	        /* Don't swap coordinates if y2 < y1! Because of linepattern! */
+                /* Don't swap coordinates if y2 < y1! Because of linepattern! */
 
-	        if (y1 < y2)
-	        {
-	            y2++;
-	            dy = 1;
-	        }
-	        else
-	        {
-	            y2--;
-	            dy = -1;
-	        }
+                if (y1 < y2)
+                {
+                    y2++;
+                    dy = 1;
+                }
+                else
+                {
+                    y2--;
+                    dy = -1;
+                }
 
-			ring_space = y2-y1+1;
-			if (ring_space > 500)
-				ring_space = 500;
+                        ring_space = y2-y1+1;
+                        if (ring_space > 500)
+                                ring_space = 500;
 
-			START_RING(ring_space);
+                        START_RING(ring_space);
 
-	        for(i = y1; i != y2; i += dy)
-	        {
-	        	_drawpixel(x, i);
+                for(i = y1; i != y2; i += dy)
+                {
+                        _drawpixel(x, i);
 
-				ring_space-=2;
-				if (!ring_space)
-				{
-					ADVANCE_RING();
-					ring_space = y2-i+1;
-					if (ring_space > 500)
-						ring_space=500;
-					START_RING(ring_space);
-				}
-	        }
-	    }
-	    else
-	    {
-	        /*
-	            Generic line drawing code.
-	        */
-	        /* Calculate slope */
-	        dx = abs(x2 - x1);
-	        dy = abs(y2 - y1);
+                                ring_space-=2;
+                                if (!ring_space)
+                                {
+                                        ADVANCE_RING();
+                                        ring_space = y2-i+1;
+                                        if (ring_space > 500)
+                                                ring_space=500;
+                                        START_RING(ring_space);
+                                }
+                }
+            }
+            else
+            {
+                /*
+                    Generic line drawing code.
+                */
+                /* Calculate slope */
+                dx = abs(x2 - x1);
+                dy = abs(y2 - y1);
 
-	        /* which direction? */
-	        if((x2 - x1) > 0) s1 = 1; else s1 = - 1;
-	        if((y2 - y1) > 0) s2 = 1; else s2 = - 1;
+                /* which direction? */
+                if((x2 - x1) > 0) s1 = 1; else s1 = - 1;
+                if((y2 - y1) > 0) s2 = 1; else s2 = - 1;
 
-	        /* change axes if dx < dy */
-	        if(dx < dy)
-	        {
-	            d = dx;
-	            dx = dy;
-	            dy = d;
-	            t = 0;
-	        }
-	        else
-	        {
-	           t = 1;
-	        }
+                /* change axes if dx < dy */
+                if(dx < dy)
+                {
+                    d = dx;
+                    dx = dy;
+                    dy = d;
+                    t = 0;
+                }
+                else
+                {
+                   t = 1;
+                }
 
-	        d  = 2 * dy - dx;        /* initial value of d */
+                d  = 2 * dy - dx;        /* initial value of d */
 
-	        incrE  = 2 * dy;         /* Increment use for move to E  */
-	        incrNE = 2 * (dy - dx);  /* Increment use for move to NE */
+                incrE  = 2 * dy;         /* Increment use for move to E  */
+                incrNE = 2 * (dy - dx);  /* Increment use for move to NE */
 
-	        x = x1; y = y1;
+                x = x1; y = y1;
 
-			ring_space = dx+1;
-			if (ring_space > 500)
-				ring_space = 500;
+                        ring_space = dx+1;
+                        if (ring_space > 500)
+                                ring_space = 500;
 
-			START_RING(ring_space);
+                        START_RING(ring_space);
 
-	        for(i = 0; i <= dx; i++)
-	        {
-	            /* Pixel inside ? */
-	        	_drawpixel(x, y);
+                for(i = 0; i <= dx; i++)
+                {
+                    /* Pixel inside ? */
+                        _drawpixel(x, y);
 
-				ring_space-=2;
-				if (!ring_space)
-				{
-					ADVANCE_RING();
-					ring_space = dx-i+1;
-					if (ring_space > 500)
-						ring_space=500;
-					START_RING(ring_space);
-				}
+                                ring_space-=2;
+                                if (!ring_space)
+                                {
+                                        ADVANCE_RING();
+                                        ring_space = dx-i+1;
+                                        if (ring_space > 500)
+                                                ring_space=500;
+                                        START_RING(ring_space);
+                                }
 
-	             if(d <= 0)
-	             {
-	                 if(t == 1)
-	                 {
-	                     x = x + s1;
-	                 }
-	                 else
-	                 {
-	                     y = y + s2;
-	                 }
+                     if(d <= 0)
+                     {
+                         if(t == 1)
+                         {
+                             x = x + s1;
+                         }
+                         else
+                         {
+                             y = y + s2;
+                         }
 
-	                 d = d + incrE;
-	             }
-	             else
-	             {
-	                 x = x + s1;
-	                 y = y + s2;
-	                 d = d + incrNE;
-	             }
-	         }
-	     }
+                         d = d + incrE;
+                     }
+                     else
+                     {
+                         x = x + s1;
+                         y = y + s2;
+                         d = d + incrNE;
+                     }
+                 }
+             }
 
-		ADVANCE_RING();
+                ADVANCE_RING();
 
-		DO_FLUSH();
-		UNLOCK_HW
-	}
+                DO_FLUSH();
+                UNLOCK_HW
+        }
 
-	UNLOCK_BITMAP
+        UNLOCK_BITMAP
 }
 
 ULONG METHOD(GMABM, Hidd_BitMap, BytesPerLine)
@@ -952,9 +952,9 @@ BOOL METHOD(GMABM, Hidd_BitMap, ObtainDirectAccess)
     if (bm->fbgfx)
     {
         VideoData += (IPTR)sd->Card.Framebuffer;
-		LOCK_HW
-		DO_FLUSH();
-		UNLOCK_HW
+                LOCK_HW
+                DO_FLUSH();
+                UNLOCK_HW
     }
     *msg->addressReturn = (UBYTE*)VideoData;
     *msg->widthReturn = bm->pitch / bm->bpp;
@@ -969,7 +969,7 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     UNLOCK_BITMAP
 
-	if (bm->displayable)
+        if (bm->displayable)
     {
         struct pHidd_Compositor_BitMapRectChanged brcmsg =
         {
@@ -980,7 +980,7 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
             .width = bm->width,
             .height = bm->height
         };
-        OOP_DoMethod(bm->compositor, (OOP_Msg)&brcmsg);    
+        OOP_DoMethod(bm->compositor, (OOP_Msg)&brcmsg);
     }
 
 }
@@ -989,63 +989,63 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
 
 VOID METHOD(GMABM, Hidd_BitMap, FillRect)
 {
-	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+        GMABitMap_t *bm = OOP_INST_DATA(cl, o);
 
-	LOCK_BITMAP
+        LOCK_BITMAP
 
-	if (bm->fbgfx)
-	{
-		LOCK_HW
+        if (bm->fbgfx)
+        {
+                LOCK_HW
 
-		uint32_t br00,br13,br14,br09,br16;
+                uint32_t br00,br13,br14,br09,br16;
 
-		br00 = (2 << 29) | (0x40 << 22) | 3;
+                br00 = (2 << 29) | (0x40 << 22) | 3;
 
-		if (bm->bpp == 4)
-			br00 |= 3 << 20;
+                if (bm->bpp == 4)
+                        br00 |= 3 << 20;
 
-		br13 = (ROP_table[GC_DRMD(msg->gc)].pattern) | (bm->pitch);
-		switch (bm->bpp)
-		{
-		case 4:
-			br13 |= (3 << 24);
-			break;
-		case 2:
-			br13 |= 1 << 24;
-			break;
-		default:
-			break;
-		}
+                br13 = (ROP_table[GC_DRMD(msg->gc)].pattern) | (bm->pitch);
+                switch (bm->bpp)
+                {
+                case 4:
+                        br13 |= (3 << 24);
+                        break;
+                case 2:
+                        br13 |= 1 << 24;
+                        break;
+                default:
+                        break;
+                }
 
-		br14 = ((msg->maxY - msg->minY+1) << 16) | ((msg->maxX - msg->minX+1) * bm->bpp);
+                br14 = ((msg->maxY - msg->minY+1) << 16) | ((msg->maxX - msg->minX+1) * bm->bpp);
 
-		br09 = bm->framebuffer + msg->minX * bm->bpp + msg->minY * bm->pitch;
-		br16 = GC_FG(msg->gc);
+                br09 = bm->framebuffer + msg->minX * bm->bpp + msg->minY * bm->pitch;
+                br16 = GC_FG(msg->gc);
 
-		START_RING(6);
-		OUT_RING(br00);
-		OUT_RING(br13);
-		OUT_RING(br14);
-		OUT_RING(br09);
-		OUT_RING(br16);
-		OUT_RING(0);
-		ADVANCE_RING();
+                START_RING(6);
+                OUT_RING(br00);
+                OUT_RING(br13);
+                OUT_RING(br14);
+                OUT_RING(br09);
+                OUT_RING(br16);
+                OUT_RING(0);
+                ADVANCE_RING();
 
-		DO_FLUSH();
-		UNLOCK_HW
-	}
-	else
-		OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+                DO_FLUSH();
+                UNLOCK_HW
+        }
+        else
+                OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 
-	UNLOCK_BITMAP
+        UNLOCK_BITMAP
 }
 
 /* Unaccelerated functions */
 
 static inline int do_alpha(int a, int v)
 {
-	int tmp = a*v;
-	return ((tmp << 8) + tmp + 32768) >> 16;
+        int tmp = a*v;
+        return ((tmp << 8) + tmp + 32768) >> 16;
 }
 
 /*
@@ -1067,8 +1067,8 @@ VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
         ULONG srcpix, x, y = msg->y;
         LONG src_red, src_green, src_blue, src_alpha;
         LONG dst_red, dst_green, dst_blue;
-    	UWORD height = msg->height;
-    	UWORD bw = msg->width;
+        UWORD height = msg->height;
+        UWORD bw = msg->width;
 
         /* Since we wont use the BLT engine now, flush the chip */
         LOCK_HW
@@ -1207,7 +1207,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
         }
     }
     else
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     UNLOCK_BITMAP
 }
@@ -1234,342 +1234,342 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
         || msg->pixFmt == vHidd_StdPixFmt_BGRA32
         || msg->pixFmt == vHidd_StdPixFmt_BGR032))
     {
-    	UBYTE *src = msg->pixels;
-    	ULONG x_add = msg->modulo;
-    	UWORD height = msg->height;
+        UBYTE *src = msg->pixels;
+        ULONG x_add = msg->modulo;
+        UWORD height = msg->height;
 
-    	if (x_add == 0)
-    		x_add = bm->pitch;
+        if (x_add == 0)
+                x_add = bm->pitch;
 
-    	LOCK_HW
+        LOCK_HW
 
-    	intptr_t length = x_add * height;
-    	intptr_t phys = ((intptr_t)src) & 0xfffff000;
-    	length += (intptr_t)src - phys;
+        intptr_t length = x_add * height;
+        intptr_t phys = ((intptr_t)src) & 0xfffff000;
+        length += (intptr_t)src - phys;
 
-    	length = (length + 4095) & ~4095;
+        length = (length + 4095) & ~4095;
 
-    	if (length <= 16*1024*1024)
-    	{
-    		intptr_t virt = sd->ScratchArea + ((intptr_t)src - phys);
-    		done = TRUE;
+        if (length <= 16*1024*1024)
+        {
+                intptr_t virt = sd->ScratchArea + ((intptr_t)src - phys);
+                done = TRUE;
 
-    	    //D(bug("[GMA] PutImage(%d, %d, fmt=%d) with buffer at %p\n", msg->width, msg->height, msg->pixFmt,phys));
+            //D(bug("[GMA] PutImage(%d, %d, fmt=%d) with buffer at %p\n", msg->width, msg->height, msg->pixFmt,phys));
 
-    		if (sd->AttachedMemory != phys || sd->AttachedSize != length)
-    		{
-    			G45_AttachCacheableMemory(sd, phys, sd->ScratchArea, length);
-    			sd->AttachedMemory = phys;
-    			sd->AttachedSize = length;
-    		}
+                if (sd->AttachedMemory != phys || sd->AttachedSize != length)
+                {
+                        G45_AttachCacheableMemory(sd, phys, sd->ScratchArea, length);
+                        sd->AttachedMemory = phys;
+                        sd->AttachedSize = length;
+                }
 
-    		writel(0, &sd->HardwareStatusPage[16]);
+                writel(0, &sd->HardwareStatusPage[16]);
 
-    		uint32_t br00, br13, br14, br09, br11, br12;
+                uint32_t br00, br13, br14, br09, br11, br12;
 
-    		br00 = (2 << 29) | (0x43 << 22) | (4);
-  			br00 |= 3 << 20;
+                br00 = (2 << 29) | (0x43 << 22) | (4);
+                        br00 |= 3 << 20;
 
-    		br13 = bm->pitch | ROP3_S;
-   			br13 |= 3 << 24;
+                br13 = bm->pitch | ROP3_S;
+                        br13 |= 3 << 24;
 
-    		br14 = (msg->width * bm->bpp) | (msg->height) << 16;
-    		br09 = bm->framebuffer + bm->pitch * msg->y + bm->bpp * msg->x;
-    		br11 = x_add;
-    		br12 = virt;
+                br14 = (msg->width * bm->bpp) | (msg->height) << 16;
+                br09 = bm->framebuffer + bm->pitch * msg->y + bm->bpp * msg->x;
+                br11 = x_add;
+                br12 = virt;
 
-    		START_RING(12);
+                START_RING(12);
 
-    		OUT_RING(br00);
-    		OUT_RING(br13);
-    		OUT_RING(br14);
-    		OUT_RING(br09);
-    		OUT_RING(br11);
-    		OUT_RING(br12);
+                OUT_RING(br00);
+                OUT_RING(br13);
+                OUT_RING(br14);
+                OUT_RING(br09);
+                OUT_RING(br11);
+                OUT_RING(br12);
 
-    		OUT_RING((4 << 23));
-    		OUT_RING(0);
+                OUT_RING((4 << 23));
+                OUT_RING(0);
 
-    		OUT_RING((0x21 << 23) | 1);
-    		OUT_RING(16 << 2);
-    		OUT_RING(1);
-    		OUT_RING(0);
+                OUT_RING((0x21 << 23) | 1);
+                OUT_RING(16 << 2);
+                OUT_RING(1);
+                OUT_RING(0);
 
-    		ADVANCE_RING();
-    	}
-    	UNLOCK_HW
+                ADVANCE_RING();
+        }
+        UNLOCK_HW
 
-    	/* Wait until HW is ready with blit and flush */
-		while(readl(&sd->HardwareStatusPage[16]) == 0);
+        /* Wait until HW is ready with blit and flush */
+                while(readl(&sd->HardwareStatusPage[16]) == 0);
     }
 
     if (!done)
     {
-    	D(bug("[GMA] PutImage on unknown pixfmt %d\n",msg->pixFmt));
+        D(bug("[GMA] PutImage on unknown pixfmt %d\n",msg->pixFmt));
 
-    	if (bm->fbgfx)
+        if (bm->fbgfx)
         {
-			VideoData += (IPTR)sd->Card.Framebuffer;
+                        VideoData += (IPTR)sd->Card.Framebuffer;
 
-			LOCK_HW
-			DO_FLUSH();
-			UNLOCK_HW
+                        LOCK_HW
+                        DO_FLUSH();
+                        UNLOCK_HW
         }
 
-    	switch(msg->pixFmt)
-		{
-			case vHidd_StdPixFmt_Native:
-				switch(bm->bpp)
-				{
-					case 1:
-					{
-						struct pHidd_BitMap_CopyMemBox8 __m = {
-								sd->mid_CopyMemBox8,
-								msg->pixels,
-								0,
-								0,
-								(APTR)VideoData,
-								msg->x,
-								msg->y,
-								msg->width,
-								msg->height,
-								msg->modulo,
-								bm->pitch
-						}, *m = &__m;
+        switch(msg->pixFmt)
+                {
+                        case vHidd_StdPixFmt_Native:
+                                switch(bm->bpp)
+                                {
+                                        case 1:
+                                        {
+                                                struct pHidd_BitMap_CopyMemBox8 __m = {
+                                                                sd->mid_CopyMemBox8,
+                                                                msg->pixels,
+                                                                0,
+                                                                0,
+                                                                (APTR)VideoData,
+                                                                msg->x,
+                                                                msg->y,
+                                                                msg->width,
+                                                                msg->height,
+                                                                msg->modulo,
+                                                                bm->pitch
+                                                }, *m = &__m;
 
-						OOP_DoMethod(o, (OOP_Msg)m);
-					}
-					break;
+                                                OOP_DoMethod(o, (OOP_Msg)m);
+                                        }
+                                        break;
 
-				case 2:
-					{
-						struct pHidd_BitMap_CopyMemBox16 __m = {
-								sd->mid_CopyMemBox16,
-								msg->pixels,
-								0,
-								0,
-								(APTR)VideoData,
-								msg->x,
-								msg->y,
-								msg->width,
-								msg->height,
-								msg->modulo,
-								bm->pitch
-						}, *m = &__m;
+                                case 2:
+                                        {
+                                                struct pHidd_BitMap_CopyMemBox16 __m = {
+                                                                sd->mid_CopyMemBox16,
+                                                                msg->pixels,
+                                                                0,
+                                                                0,
+                                                                (APTR)VideoData,
+                                                                msg->x,
+                                                                msg->y,
+                                                                msg->width,
+                                                                msg->height,
+                                                                msg->modulo,
+                                                                bm->pitch
+                                                }, *m = &__m;
 
-						OOP_DoMethod(o, (OOP_Msg)m);
-					}
-					break;
+                                                OOP_DoMethod(o, (OOP_Msg)m);
+                                        }
+                                        break;
 
-				case 4:
-					{
-						struct pHidd_BitMap_CopyMemBox32 __m = {
-								sd->mid_CopyMemBox32,
-								msg->pixels,
-								0,
-								0,
-								(APTR)VideoData,
-								msg->x,
-								msg->y,
-								msg->width,
-								msg->height,
-								msg->modulo,
-								bm->pitch
-						}, *m = &__m;
+                                case 4:
+                                        {
+                                                struct pHidd_BitMap_CopyMemBox32 __m = {
+                                                                sd->mid_CopyMemBox32,
+                                                                msg->pixels,
+                                                                0,
+                                                                0,
+                                                                (APTR)VideoData,
+                                                                msg->x,
+                                                                msg->y,
+                                                                msg->width,
+                                                                msg->height,
+                                                                msg->modulo,
+                                                                bm->pitch
+                                                }, *m = &__m;
 
-						OOP_DoMethod(o, (OOP_Msg)m);
-					}
-					break;
+                                                OOP_DoMethod(o, (OOP_Msg)m);
+                                        }
+                                        break;
 
-					} /* switch(data->bytesperpix) */
-				break;
+                                        } /* switch(data->bytesperpix) */
+                                break;
 
-			case vHidd_StdPixFmt_Native32:
-				switch(bm->bpp)
-				{
-					case 1:
-					{
-					struct pHidd_BitMap_PutMem32Image8 __m = {
-								sd->mid_PutMem32Image8,
-								msg->pixels,
-								(APTR)VideoData,
-								msg->x,
-								msg->y,
-								msg->width,
-								msg->height,
-								msg->modulo,
-								bm->pitch
-						}, *m = &__m;
-					OOP_DoMethod(o, (OOP_Msg)m);
-					}
-					break;
+                        case vHidd_StdPixFmt_Native32:
+                                switch(bm->bpp)
+                                {
+                                        case 1:
+                                        {
+                                        struct pHidd_BitMap_PutMem32Image8 __m = {
+                                                                sd->mid_PutMem32Image8,
+                                                                msg->pixels,
+                                                                (APTR)VideoData,
+                                                                msg->x,
+                                                                msg->y,
+                                                                msg->width,
+                                                                msg->height,
+                                                                msg->modulo,
+                                                                bm->pitch
+                                                }, *m = &__m;
+                                        OOP_DoMethod(o, (OOP_Msg)m);
+                                        }
+                                        break;
 
-				case 2:
-					{
-					struct pHidd_BitMap_PutMem32Image16 __m = {
-								sd->mid_PutMem32Image16,
-								msg->pixels,
-								(APTR)VideoData,
-								msg->x,
-								msg->y,
-								msg->width,
-								msg->height,
-								msg->modulo,
-								bm->pitch
-						}, *m = &__m;
-					OOP_DoMethod(o, (OOP_Msg)m);
-					}
-					break;
+                                case 2:
+                                        {
+                                        struct pHidd_BitMap_PutMem32Image16 __m = {
+                                                                sd->mid_PutMem32Image16,
+                                                                msg->pixels,
+                                                                (APTR)VideoData,
+                                                                msg->x,
+                                                                msg->y,
+                                                                msg->width,
+                                                                msg->height,
+                                                                msg->modulo,
+                                                                bm->pitch
+                                                }, *m = &__m;
+                                        OOP_DoMethod(o, (OOP_Msg)m);
+                                        }
+                                        break;
 
-				case 4:
-					{
-					struct pHidd_BitMap_CopyMemBox32 __m = {
-							sd->mid_CopyMemBox32,
-							msg->pixels,
-							0,
-							0,
-							(APTR)VideoData,
-							msg->x,
-							msg->y,
-							msg->width,
-							msg->height,
-							msg->modulo,
-							bm->pitch
-					}, *m = &__m;
+                                case 4:
+                                        {
+                                        struct pHidd_BitMap_CopyMemBox32 __m = {
+                                                        sd->mid_CopyMemBox32,
+                                                        msg->pixels,
+                                                        0,
+                                                        0,
+                                                        (APTR)VideoData,
+                                                        msg->x,
+                                                        msg->y,
+                                                        msg->width,
+                                                        msg->height,
+                                                        msg->modulo,
+                                                        bm->pitch
+                                        }, *m = &__m;
 
-					OOP_DoMethod(o, (OOP_Msg)m);
-					}
-					break;
+                                        OOP_DoMethod(o, (OOP_Msg)m);
+                                        }
+                                        break;
 
-				} /* switch(data->bytesperpix) */
-				break;
+                                } /* switch(data->bytesperpix) */
+                                break;
 
-			default:
-				if (CanAccelerateBlits(sd->ProductID) && bm->bpp == 4)
-				{
-			    	/* Get image width aligned to 4K page boundary */
-			    	uint32_t line_width = (msg->width * bm->bpp + 4095) & ~4095;
-			    	void *pages = AllocVecPooled(sd->MemPool, line_width * 5);
+                        default:
+                                if (CanAccelerateBlits(sd->ProductID) && bm->bpp == 4)
+                                {
+                                /* Get image width aligned to 4K page boundary */
+                                uint32_t line_width = (msg->width * bm->bpp + 4095) & ~4095;
+                                void *pages = AllocVecPooled(sd->MemPool, line_width * 5);
 
-			    	if (pages)
-			    	{
-			    		LOCK_HW
+                                if (pages)
+                                {
+                                        LOCK_HW
 
-		    			/* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
-		    			uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
-		    			uint32_t *buffer_2 = &buffer_1[line_width / 4];
-		    			uint32_t *buffer_3 = &buffer_2[line_width / 4];
-		    			uint32_t *buffer_4 = &buffer_3[line_width / 4];
+                                        /* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
+                                        uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
+                                        uint32_t *buffer_2 = &buffer_1[line_width / 4];
+                                        uint32_t *buffer_3 = &buffer_2[line_width / 4];
+                                        uint32_t *buffer_4 = &buffer_3[line_width / 4];
 
-		    			uint32_t y;
-		    			const uint32_t height = msg->height;
-		    			uint8_t *src = msg->pixels;
-		    			uint32_t x_add = msg->modulo;
+                                        uint32_t y;
+                                        const uint32_t height = msg->height;
+                                        uint8_t *src = msg->pixels;
+                                        uint32_t x_add = msg->modulo;
 
-		        	    D(bug("[GMA] Unknown PutImage(%d, %d) with buffers at %p\n", msg->width, msg->height, buffer_1));
+                                    D(bug("[GMA] Unknown PutImage(%d, %d) with buffers at %p\n", msg->width, msg->height, buffer_1));
 
-		    			uint32_t *buffer[4] = { buffer_1, buffer_2, buffer_3, buffer_4 };
-		    			intptr_t virt[4] = { sd->ScratchArea, sd->ScratchArea + line_width,
-											 sd->ScratchArea + 2*line_width, sd->ScratchArea + 3*line_width  };
+                                        uint32_t *buffer[4] = { buffer_1, buffer_2, buffer_3, buffer_4 };
+                                        intptr_t virt[4] = { sd->ScratchArea, sd->ScratchArea + line_width,
+                                                                                         sd->ScratchArea + 2*line_width, sd->ScratchArea + 3*line_width  };
 
-		    			HIDDT_PixelFormat *srcpf, *dstpf;
+                                        HIDDT_PixelFormat *srcpf, *dstpf;
 
-		    			srcpf = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(
+                                        srcpf = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(
                             sd->GMAObject, msg->pixFmt);
-		    			OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
+                                        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
 
-		    			/* Attach memory, if necessary */
-		        		if (sd->AttachedMemory != (intptr_t)buffer_1 || sd->AttachedSize != 4 * line_width)
-		        		{
-		        			G45_AttachCacheableMemory(sd, (intptr_t)buffer_1, sd->ScratchArea, 4 * line_width);
-		        			sd->AttachedMemory = (intptr_t)buffer_1;
-		        			sd->AttachedSize = 4 * line_width;
-		        		}
+                                        /* Attach memory, if necessary */
+                                        if (sd->AttachedMemory != (intptr_t)buffer_1 || sd->AttachedSize != 4 * line_width)
+                                        {
+                                                G45_AttachCacheableMemory(sd, (intptr_t)buffer_1, sd->ScratchArea, 4 * line_width);
+                                                sd->AttachedMemory = (intptr_t)buffer_1;
+                                                sd->AttachedSize = 4 * line_width;
+                                        }
 
-		        		/* Both buffers are not busy */
-		        		writel(1, &sd->HardwareStatusPage[17]);
-		        		writel(1, &sd->HardwareStatusPage[18]);
-		        		writel(1, &sd->HardwareStatusPage[19]);
-		        		writel(1, &sd->HardwareStatusPage[20]);
+                                        /* Both buffers are not busy */
+                                        writel(1, &sd->HardwareStatusPage[17]);
+                                        writel(1, &sd->HardwareStatusPage[18]);
+                                        writel(1, &sd->HardwareStatusPage[19]);
+                                        writel(1, &sd->HardwareStatusPage[20]);
 
-		        		for (y=0; y < height; y++)
-		        		{
-		        			const uint8_t current = y & 3;
-							uint32_t *dst = buffer[current];
-							APTR _src = src;
+                                        for (y=0; y < height; y++)
+                                        {
+                                                const uint8_t current = y & 3;
+                                                        uint32_t *dst = buffer[current];
+                                                        APTR _src = src;
 
-							/* Wait until dst buffer is ready */
-							while(readl(&sd->HardwareStatusPage[17 + current]) == 0);
+                                                        /* Wait until dst buffer is ready */
+                                                        while(readl(&sd->HardwareStatusPage[17 + current]) == 0);
 
-							/* Convert! */
-							HIDD_BM_ConvertPixels(o, &_src, srcpf,
+                                                        /* Convert! */
+                                                        HIDD_BM_ConvertPixels(o, &_src, srcpf,
                                 msg->modulo, (APTR *)&dst, dstpf,
                                 msg->modulo, msg->width, 1, NULL);
 
-							/* Mark buffer as busy */
-							writel(0, &sd->HardwareStatusPage[17 + current]);
+                                                        /* Mark buffer as busy */
+                                                        writel(0, &sd->HardwareStatusPage[17 + current]);
 
-							/* Prepare the Blit command */
-							uint32_t br00, br13, br14, br09, br11, br12;
+                                                        /* Prepare the Blit command */
+                                                        uint32_t br00, br13, br14, br09, br11, br12;
 
-							br00 = (2 << 29) | (0x43 << 22) | (4);
-							br00 |= 3 << 20;
+                                                        br00 = (2 << 29) | (0x43 << 22) | (4);
+                                                        br00 |= 3 << 20;
 
-							br13 = bm->pitch | ROP3_S;
-							br13 |= 3 << 24;
+                                                        br13 = bm->pitch | ROP3_S;
+                                                        br13 |= 3 << 24;
 
-							br14 = (msg->width * bm->bpp) | (1) << 16;
-							br09 = bm->framebuffer + bm->pitch * (msg->y + y) + bm->bpp * msg->x;
-							br11 = msg->width * bm->bpp;
-							br12 = virt[current];
+                                                        br14 = (msg->width * bm->bpp) | (1) << 16;
+                                                        br09 = bm->framebuffer + bm->pitch * (msg->y + y) + bm->bpp * msg->x;
+                                                        br11 = msg->width * bm->bpp;
+                                                        br12 = virt[current];
 
-							START_RING(12);
+                                                        START_RING(12);
 
-							OUT_RING(br00);
-							OUT_RING(br13);
-							OUT_RING(br14);
-							OUT_RING(br09);
-							OUT_RING(br11);
-							OUT_RING(br12);
+                                                        OUT_RING(br00);
+                                                        OUT_RING(br13);
+                                                        OUT_RING(br14);
+                                                        OUT_RING(br09);
+                                                        OUT_RING(br11);
+                                                        OUT_RING(br12);
 
-							OUT_RING((4 << 23));
-							OUT_RING(0);
+                                                        OUT_RING((4 << 23));
+                                                        OUT_RING(0);
 
-							OUT_RING((0x21 << 23) | 1);
-							OUT_RING((17 + current) << 2);
-							OUT_RING(1);
-							OUT_RING(0);
+                                                        OUT_RING((0x21 << 23) | 1);
+                                                        OUT_RING((17 + current) << 2);
+                                                        OUT_RING(1);
+                                                        OUT_RING(0);
 
-							ADVANCE_RING();
+                                                        ADVANCE_RING();
 
-							/*
-							 * Right now the buffer is busy. The commands will flush buffer and set the proper flag (17+current) back to 1.
-							 * During that time it is fully safe to advance the loop and work on another buffer with CPU.
-							 */
-							src += x_add;
-		        		}
+                                                        /*
+                                                         * Right now the buffer is busy. The commands will flush buffer and set the proper flag (17+current) back to 1.
+                                                         * During that time it is fully safe to advance the loop and work on another buffer with CPU.
+                                                         */
+                                                        src += x_add;
+                                        }
 
-						/* Wait until both buffer are ready */
-						while(readl(&sd->HardwareStatusPage[17]) == 0)
+                                                /* Wait until both buffer are ready */
+                                                while(readl(&sd->HardwareStatusPage[17]) == 0)
                                                         ;
-						while(readl(&sd->HardwareStatusPage[18]) == 0)
+                                                while(readl(&sd->HardwareStatusPage[18]) == 0)
                                                         ;
-						while(readl(&sd->HardwareStatusPage[19]) == 0)
+                                                while(readl(&sd->HardwareStatusPage[19]) == 0)
                                                         ;
-						while(readl(&sd->HardwareStatusPage[20]) == 0)
+                                                while(readl(&sd->HardwareStatusPage[20]) == 0)
                                                         ;
 
-			    		UNLOCK_HW
+                                        UNLOCK_HW
 
-			    		FreeVecPooled(sd->MemPool, pages);
-			    	}
-			    	else
-			        	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-				}
-				else
-					OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-				break;
-		} /* switch(msg->pixFmt) */
+                                        FreeVecPooled(sd->MemPool, pages);
+                                }
+                                else
+                                        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                                }
+                                else
+                                        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                                break;
+                } /* switch(msg->pixFmt) */
     }
 
     UNLOCK_BITMAP
@@ -1583,122 +1583,122 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImageLUT)
 
     if (bm->fbgfx)
     {
-    	/* Get image width aligned to 4K page boundary */
-    	uint32_t line_width = (msg->width * bm->bpp + 4095) & ~4095;
-    	void *pages = AllocVecPooled(sd->MemPool, line_width * 3);
-    	HIDDT_Pixel *colmap = msg->pixlut->pixels;
+        /* Get image width aligned to 4K page boundary */
+        uint32_t line_width = (msg->width * bm->bpp + 4095) & ~4095;
+        void *pages = AllocVecPooled(sd->MemPool, line_width * 3);
+        HIDDT_Pixel *colmap = msg->pixlut->pixels;
 
-    	if (pages)
-    	{
-    		LOCK_HW
+        if (pages)
+        {
+                LOCK_HW
 
             if (bm->bpp == 4 && CanAccelerateBlits(sd->ProductID))
-    		{
-    			/* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
-    			uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
-    			uint32_t *buffer_2 = &buffer_1[line_width / 4];
-    			uint32_t y;
-    			const uint32_t height = msg->height;
-    			uint8_t *src = msg->pixels;
-    			uint32_t x_add = msg->modulo;
+                {
+                        /* Get two buffers in different GTT regions and _surely_ in different CPU cache lines */
+                        uint32_t *buffer_1 = (uint32_t *)(((intptr_t)pages + 4095) & ~4095);
+                        uint32_t *buffer_2 = &buffer_1[line_width / 4];
+                        uint32_t y;
+                        const uint32_t height = msg->height;
+                        uint8_t *src = msg->pixels;
+                        uint32_t x_add = msg->modulo;
 
-        	    D(bug("[GMA] PutImageLUT(%d, %d) with buffers at %p\n", msg->width, msg->height, buffer_1));
+                    D(bug("[GMA] PutImageLUT(%d, %d) with buffers at %p\n", msg->width, msg->height, buffer_1));
 
-    			uint32_t *buffer[2] = { buffer_1, buffer_2};
-    			intptr_t virt[2] = { sd->ScratchArea, sd->ScratchArea + line_width };
+                        uint32_t *buffer[2] = { buffer_1, buffer_2};
+                        intptr_t virt[2] = { sd->ScratchArea, sd->ScratchArea + line_width };
 
-    			/* Attach memory, if necessary */
-        		if (sd->AttachedMemory != (intptr_t)buffer_1 || sd->AttachedSize != 2 * line_width)
-        		{
-        			G45_AttachCacheableMemory(sd, (intptr_t)buffer_1, sd->ScratchArea, 2 * line_width);
-        			sd->AttachedMemory = (intptr_t)buffer_1;
-        			sd->AttachedSize = 2 * line_width;
-        		}
+                        /* Attach memory, if necessary */
+                        if (sd->AttachedMemory != (intptr_t)buffer_1 || sd->AttachedSize != 2 * line_width)
+                        {
+                                G45_AttachCacheableMemory(sd, (intptr_t)buffer_1, sd->ScratchArea, 2 * line_width);
+                                sd->AttachedMemory = (intptr_t)buffer_1;
+                                sd->AttachedSize = 2 * line_width;
+                        }
 
-        		/* Both buffers are not busy */
-        		writel(1, &sd->HardwareStatusPage[17]);
-        		writel(1, &sd->HardwareStatusPage[18]);
+                        /* Both buffers are not busy */
+                        writel(1, &sd->HardwareStatusPage[17]);
+                        writel(1, &sd->HardwareStatusPage[18]);
 
-        		for (y=0; y < height; y++)
-        		{
-        			const uint8_t current = y & 1;
-					uint32_t *dst = buffer[current];
-					uint32_t x;
-					uint8_t *line = (uint8_t *)src;
-					const uint32_t width = msg->width;
+                        for (y=0; y < height; y++)
+                        {
+                                const uint8_t current = y & 1;
+                                        uint32_t *dst = buffer[current];
+                                        uint32_t x;
+                                        uint8_t *line = (uint8_t *)src;
+                                        const uint32_t width = msg->width;
 
-					/* Wait until dst buffer is ready */
-					while(readl(&sd->HardwareStatusPage[17 + current]) == 0);
+                                        /* Wait until dst buffer is ready */
+                                        while(readl(&sd->HardwareStatusPage[17 + current]) == 0);
 
-					/* Do LUT lookup */
-					for (x=0; x < width; x++)
-						dst[x] = colmap[*line++];
+                                        /* Do LUT lookup */
+                                        for (x=0; x < width; x++)
+                                                dst[x] = colmap[*line++];
 
-					/* Mark buffer as busy */
-					writel(0, &sd->HardwareStatusPage[17 + current]);
+                                        /* Mark buffer as busy */
+                                        writel(0, &sd->HardwareStatusPage[17 + current]);
 
-					/* Prepare the Blit command */
-					uint32_t br00, br13, br14, br09, br11, br12;
+                                        /* Prepare the Blit command */
+                                        uint32_t br00, br13, br14, br09, br11, br12;
 
-					br00 = (2 << 29) | (0x43 << 22) | (4);
-					if (bm->bpp == 4)
-						br00 |= 3 << 20;
+                                        br00 = (2 << 29) | (0x43 << 22) | (4);
+                                        if (bm->bpp == 4)
+                                                br00 |= 3 << 20;
 
-					br13 = bm->pitch | ROP3_S;
-					if (bm->bpp == 4)
-						br13 |= 3 << 24;
-					else if (bm->bpp == 2)
-						br13 |= 1 << 24;
+                                        br13 = bm->pitch | ROP3_S;
+                                        if (bm->bpp == 4)
+                                                br13 |= 3 << 24;
+                                        else if (bm->bpp == 2)
+                                                br13 |= 1 << 24;
 
-					br14 = (msg->width * bm->bpp) | (1) << 16;
-					br09 = bm->framebuffer + bm->pitch * (msg->y + y) + bm->bpp * msg->x;
-					br11 = msg->width * bm->bpp;
-					br12 = virt[current];
+                                        br14 = (msg->width * bm->bpp) | (1) << 16;
+                                        br09 = bm->framebuffer + bm->pitch * (msg->y + y) + bm->bpp * msg->x;
+                                        br11 = msg->width * bm->bpp;
+                                        br12 = virt[current];
 
-					START_RING(12);
+                                        START_RING(12);
 
-					OUT_RING(br00);
-					OUT_RING(br13);
-					OUT_RING(br14);
-					OUT_RING(br09);
-					OUT_RING(br11);
-					OUT_RING(br12);
+                                        OUT_RING(br00);
+                                        OUT_RING(br13);
+                                        OUT_RING(br14);
+                                        OUT_RING(br09);
+                                        OUT_RING(br11);
+                                        OUT_RING(br12);
 
-					OUT_RING((4 << 23));
-					OUT_RING(0);
+                                        OUT_RING((4 << 23));
+                                        OUT_RING(0);
 
-					OUT_RING((0x21 << 23) | 1);
-					OUT_RING((17 + current) << 2);
-					OUT_RING(1);
-					OUT_RING(0);
+                                        OUT_RING((0x21 << 23) | 1);
+                                        OUT_RING((17 + current) << 2);
+                                        OUT_RING(1);
+                                        OUT_RING(0);
 
-					ADVANCE_RING();
+                                        ADVANCE_RING();
 
-					/*
-					 * Right now the buffer is busy. The commands will flush buffer and set the proper flag (17+current) back to 1.
-					 * During that time it is fully safe to advance the loop and work on another buffer with CPU.
-					 */
-					src += x_add;
-        		}
+                                        /*
+                                         * Right now the buffer is busy. The commands will flush buffer and set the proper flag (17+current) back to 1.
+                                         * During that time it is fully safe to advance the loop and work on another buffer with CPU.
+                                         */
+                                        src += x_add;
+                        }
 
-				/* Wait until both buffer are ready */
-				while(readl(&sd->HardwareStatusPage[17]) == 0);
-				while(readl(&sd->HardwareStatusPage[18]) == 0);
-    		}
-        	else
-            	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                                /* Wait until both buffer are ready */
+                                while(readl(&sd->HardwareStatusPage[17]) == 0);
+                                while(readl(&sd->HardwareStatusPage[18]) == 0);
+                }
+                else
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    		UNLOCK_HW
+                UNLOCK_HW
 
-    		FreeVecPooled(sd->MemPool, pages);
-    	}
-    	else
-        	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                FreeVecPooled(sd->MemPool, pages);
+        }
+        else
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     else
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-	UNLOCK_BITMAP
+        UNLOCK_BITMAP
 }
 
 VOID METHOD(GMABM, Hidd_BitMap, GetImage)
@@ -1714,232 +1714,232 @@ VOID METHOD(GMABM, Hidd_BitMap, GetImage)
 
     if (bm->fbgfx)
     {
-			LOCK_HW
-			DO_FLUSH();
-			UNLOCK_HW
+                        LOCK_HW
+                        DO_FLUSH();
+                        UNLOCK_HW
 
         if (bm->bpp == 4 && CanAccelerateBlits(sd->ProductID)
             && (msg->pixFmt == vHidd_StdPixFmt_Native
             || msg->pixFmt == vHidd_StdPixFmt_Native32))
-		{
-	    	UBYTE *dst = msg->pixels;
-	    	ULONG x_add = msg->modulo;
-	    	UWORD height = msg->height;
+                {
+                UBYTE *dst = msg->pixels;
+                ULONG x_add = msg->modulo;
+                UWORD height = msg->height;
 
-	    	if (x_add == 0)
-	    		x_add = bm->bpp * msg->width;
+                if (x_add == 0)
+                        x_add = bm->bpp * msg->width;
 
-	    	LOCK_HW
+                LOCK_HW
 
-	    	intptr_t length = x_add * height;
-	    	intptr_t phys = ((intptr_t)dst) & 0xfffff000;
-	    	length += (intptr_t)dst - phys;
+                intptr_t length = x_add * height;
+                intptr_t phys = ((intptr_t)dst) & 0xfffff000;
+                length += (intptr_t)dst - phys;
 
-	    	length = (length + 4095) & ~4095;
+                length = (length + 4095) & ~4095;
 
-	    	if (length <= 16*1024*1024)
-	    	{
-	    		intptr_t virt = sd->ScratchArea + ((intptr_t)dst - phys);
-	    		done = 1;
+                if (length <= 16*1024*1024)
+                {
+                        intptr_t virt = sd->ScratchArea + ((intptr_t)dst - phys);
+                        done = 1;
 
-	    	    D(bug("[GMA] GetImage(%d, %d) with buffer at %p\n", msg->width, msg->height, phys));
+                    D(bug("[GMA] GetImage(%d, %d) with buffer at %p\n", msg->width, msg->height, phys));
 
-	    		if (sd->AttachedMemory != phys || sd->AttachedSize != length)
-	    		{
-	    			G45_AttachCacheableMemory(sd, phys, sd->ScratchArea, length);
-	    			sd->AttachedMemory = phys;
-	    			sd->AttachedSize = length;
-	    		}
+                        if (sd->AttachedMemory != phys || sd->AttachedSize != length)
+                        {
+                                G45_AttachCacheableMemory(sd, phys, sd->ScratchArea, length);
+                                sd->AttachedMemory = phys;
+                                sd->AttachedSize = length;
+                        }
 
-	    		writel(0, &sd->HardwareStatusPage[16]);
+                        writel(0, &sd->HardwareStatusPage[16]);
 
-	    		uint32_t br00, br13, br14, br09, br11, br12;
+                        uint32_t br00, br13, br14, br09, br11, br12;
 
-	    		br00 = (2 << 29) | (0x43 << 22) | (4);
-	    		if (bm->bpp == 4)
-	    			br00 |= 3 << 20;
+                        br00 = (2 << 29) | (0x43 << 22) | (4);
+                        if (bm->bpp == 4)
+                                br00 |= 3 << 20;
 
-	    		br13 = x_add | ROP3_S;
-	    		if (bm->bpp == 4)
-	    			br13 |= 3 << 24;
-	    		else if (bm->bpp == 2)
-	    			br13 |= 1 << 24;
+                        br13 = x_add | ROP3_S;
+                        if (bm->bpp == 4)
+                                br13 |= 3 << 24;
+                        else if (bm->bpp == 2)
+                                br13 |= 1 << 24;
 
-	    		br14 = (x_add) | (msg->height << 16);
-	    		br09 = virt;
-	    		br11 = bm->pitch;
-	    		br12 = bm->framebuffer + bm->pitch * msg->y + bm->bpp * msg->x;
+                        br14 = (x_add) | (msg->height << 16);
+                        br09 = virt;
+                        br11 = bm->pitch;
+                        br12 = bm->framebuffer + bm->pitch * msg->y + bm->bpp * msg->x;
 
-	    		D(bug("[GMA] %08x %08x %08x %08x %08x %08x\n", br00, br13, br14, br09, br11, br12));
+                        D(bug("[GMA] %08x %08x %08x %08x %08x %08x\n", br00, br13, br14, br09, br11, br12));
 
-	    		START_RING(12);
+                        START_RING(12);
 
-	    		OUT_RING(br00);
-	    		OUT_RING(br13);
-	    		OUT_RING(br14);
-	    		OUT_RING(br09);
-	    		OUT_RING(br11);
-	    		OUT_RING(br12);
+                        OUT_RING(br00);
+                        OUT_RING(br13);
+                        OUT_RING(br14);
+                        OUT_RING(br09);
+                        OUT_RING(br11);
+                        OUT_RING(br12);
 
-	    		OUT_RING((4 << 23));
-	    		OUT_RING(0);
+                        OUT_RING((4 << 23));
+                        OUT_RING(0);
 
-	    		OUT_RING((0x21 << 23) | 1);
-	    		OUT_RING(16 << 2);
-	    		OUT_RING(1);
-	    		OUT_RING(0);
+                        OUT_RING((0x21 << 23) | 1);
+                        OUT_RING(16 << 2);
+                        OUT_RING(1);
+                        OUT_RING(0);
 
-	    		ADVANCE_RING();
+                        ADVANCE_RING();
 
-	    	}
-	    	UNLOCK_HW
+                }
+                UNLOCK_HW
 
-	    	/* Wait until HW is ready with blit and flush */
-			while(readl(&sd->HardwareStatusPage[16]) == 0);
+                /* Wait until HW is ready with blit and flush */
+                        while(readl(&sd->HardwareStatusPage[16]) == 0);
 
-		}
-		else
-	        VideoData += (IPTR)sd->Card.Framebuffer;
+                }
+                else
+                VideoData += (IPTR)sd->Card.Framebuffer;
     }
 
     if (!done)
     {
-    	switch(msg->pixFmt)
-    	{
-    	case vHidd_StdPixFmt_Native:
-    		switch(bm->bpp)
-    		{
-    		case 1:
-    		{
-    			struct pHidd_BitMap_CopyMemBox8 __m = {
-    					sd->mid_CopyMemBox8,
-    					(APTR)VideoData,
-    					msg->x,
-    					msg->y,
-    					msg->pixels,
-    					0,
-    					0,
-    					msg->width,
-    					msg->height,
-    					bm->pitch,
-    					msg->modulo
-    			}, *m = &__m;
+        switch(msg->pixFmt)
+        {
+        case vHidd_StdPixFmt_Native:
+                switch(bm->bpp)
+                {
+                case 1:
+                {
+                        struct pHidd_BitMap_CopyMemBox8 __m = {
+                                        sd->mid_CopyMemBox8,
+                                        (APTR)VideoData,
+                                        msg->x,
+                                        msg->y,
+                                        msg->pixels,
+                                        0,
+                                        0,
+                                        msg->width,
+                                        msg->height,
+                                        bm->pitch,
+                                        msg->modulo
+                        }, *m = &__m;
 
-    			OOP_DoMethod(o, (OOP_Msg)m);
-    		}
-    		break;
+                        OOP_DoMethod(o, (OOP_Msg)m);
+                }
+                break;
 
-    		case 2:
-    		{
-    			struct pHidd_BitMap_CopyMemBox16 __m = {
-    					sd->mid_CopyMemBox16,
-    					(APTR)VideoData,
-    					msg->x,
-    					msg->y,
-    					msg->pixels,
-    					0,
-    					0,
-    					msg->width,
-    					msg->height,
-    					bm->pitch,
-    					msg->modulo
-    			}, *m = &__m;
+                case 2:
+                {
+                        struct pHidd_BitMap_CopyMemBox16 __m = {
+                                        sd->mid_CopyMemBox16,
+                                        (APTR)VideoData,
+                                        msg->x,
+                                        msg->y,
+                                        msg->pixels,
+                                        0,
+                                        0,
+                                        msg->width,
+                                        msg->height,
+                                        bm->pitch,
+                                        msg->modulo
+                        }, *m = &__m;
 
-    			OOP_DoMethod(o, (OOP_Msg)m);
-    		}
-    		break;
+                        OOP_DoMethod(o, (OOP_Msg)m);
+                }
+                break;
 
-    		case 4:
-    			//            	D(bug("[GMA]  Native GetImage(%d, %d)\n", msg->width, msg->height));
-    			{
-    				struct pHidd_BitMap_CopyMemBox32 __m = {
-    						sd->mid_CopyMemBox32,
-    						(APTR)VideoData,
-    						msg->x,
-    						msg->y,
-    						msg->pixels,
-    						0,
-    						0,
-    						msg->width,
-    						msg->height,
-    						bm->pitch,
-    						msg->modulo
-    				}, *m = &__m;
+                case 4:
+                        //              D(bug("[GMA]  Native GetImage(%d, %d)\n", msg->width, msg->height));
+                        {
+                                struct pHidd_BitMap_CopyMemBox32 __m = {
+                                                sd->mid_CopyMemBox32,
+                                                (APTR)VideoData,
+                                                msg->x,
+                                                msg->y,
+                                                msg->pixels,
+                                                0,
+                                                0,
+                                                msg->width,
+                                                msg->height,
+                                                bm->pitch,
+                                                msg->modulo
+                                }, *m = &__m;
 
-    				OOP_DoMethod(o, (OOP_Msg)m);
-    			}
-    			break;
+                                OOP_DoMethod(o, (OOP_Msg)m);
+                        }
+                        break;
 
-    		} /* switch(data->bytesperpix) */
-    		break;
+                } /* switch(data->bytesperpix) */
+                break;
 
-    		case vHidd_StdPixFmt_Native32:
-    			switch(bm->bpp)
-    			{
-    			case 1:
-    			{
-    				struct pHidd_BitMap_GetMem32Image8 __m = {
-    						sd->mid_GetMem32Image8,
-    						(APTR)VideoData,
-    						msg->x,
-    						msg->y,
-    						msg->pixels,
-    						msg->width,
-    						msg->height,
-    						bm->pitch,
-    						msg->modulo
-    				}, *m = &__m;
+                case vHidd_StdPixFmt_Native32:
+                        switch(bm->bpp)
+                        {
+                        case 1:
+                        {
+                                struct pHidd_BitMap_GetMem32Image8 __m = {
+                                                sd->mid_GetMem32Image8,
+                                                (APTR)VideoData,
+                                                msg->x,
+                                                msg->y,
+                                                msg->pixels,
+                                                msg->width,
+                                                msg->height,
+                                                bm->pitch,
+                                                msg->modulo
+                                }, *m = &__m;
 
-    				OOP_DoMethod(o, (OOP_Msg)m);
-    			}
-    			break;
+                                OOP_DoMethod(o, (OOP_Msg)m);
+                        }
+                        break;
 
-    			case 2:
-    			{
-    				struct pHidd_BitMap_GetMem32Image16 __m = {
-    						sd->mid_GetMem32Image16,
-    						(APTR)VideoData,
-    						msg->x,
-    						msg->y,
-    						msg->pixels,
-    						msg->width,
-    						msg->height,
-    						bm->pitch,
-    						msg->modulo
-    				}, *m = &__m;
+                        case 2:
+                        {
+                                struct pHidd_BitMap_GetMem32Image16 __m = {
+                                                sd->mid_GetMem32Image16,
+                                                (APTR)VideoData,
+                                                msg->x,
+                                                msg->y,
+                                                msg->pixels,
+                                                msg->width,
+                                                msg->height,
+                                                bm->pitch,
+                                                msg->modulo
+                                }, *m = &__m;
 
-    				OOP_DoMethod(o, (OOP_Msg)m);
-    			}
-    			break;
+                                OOP_DoMethod(o, (OOP_Msg)m);
+                        }
+                        break;
 
-    			case 4:
-    			{
-    				struct pHidd_BitMap_CopyMemBox32 __m = {
-    						sd->mid_CopyMemBox32,
-    						(APTR)VideoData,
-    						msg->x,
-    						msg->y,
-    						msg->pixels,
-    						0,
-    						0,
-    						msg->width,
-    						msg->height,
-    						bm->pitch,
-    						msg->modulo
-    				}, *m = &__m;
+                        case 4:
+                        {
+                                struct pHidd_BitMap_CopyMemBox32 __m = {
+                                                sd->mid_CopyMemBox32,
+                                                (APTR)VideoData,
+                                                msg->x,
+                                                msg->y,
+                                                msg->pixels,
+                                                0,
+                                                0,
+                                                msg->width,
+                                                msg->height,
+                                                bm->pitch,
+                                                msg->modulo
+                                }, *m = &__m;
 
-    				OOP_DoMethod(o, (OOP_Msg)m);
-    			}
-    			break;
+                                OOP_DoMethod(o, (OOP_Msg)m);
+                        }
+                        break;
 
-    			} /* switch(data->bytesperpix) */
-    			break;
+                        } /* switch(data->bytesperpix) */
+                        break;
 
-    			default:
-    				OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    				break;
+                        default:
+                                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                                break;
 
-    	} /* switch(msg->pixFmt) */
+        } /* switch(msg->pixFmt) */
 
     }
 
@@ -1961,9 +1961,9 @@ VOID METHOD(GMABM, Hidd_BitMap, PutTemplate)
     if (bm->fbgfx)
     {
         VideoData += (IPTR)sd->Card.Framebuffer;
-			LOCK_HW
-			DO_FLUSH();
-			UNLOCK_HW
+                        LOCK_HW
+                        DO_FLUSH();
+                        UNLOCK_HW
 
 //        if (sd->Card.Busy)
 //        {
@@ -2058,9 +2058,9 @@ VOID METHOD(GMABM, Hidd_BitMap, PutPattern)
     if (bm->fbgfx)
     {
         VideoData += (IPTR)sd->Card.Framebuffer;
-			LOCK_HW
-			DO_FLUSH();
-			UNLOCK_HW
+                        LOCK_HW
+                        DO_FLUSH();
+                        UNLOCK_HW
 
 //        if (sd->Card.Busy)
 //        {
@@ -2068,7 +2068,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutPattern)
 //#warning TODO: NVSync(sd)
 //            RADEONWaitForIdleMMIO(sd);
             //DO_FLUSH();
-//			UNLOCK_HW
+//                      UNLOCK_HW
 //        }
     }
 
@@ -2175,40 +2175,40 @@ VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
             .width = msg->width,
             .height = msg->height
         };
-        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&brcmsg);    
+        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&brcmsg);
     }
 }
 
 
 static const struct OOP_MethodDescr GMABM_Root_descr[] =
 {
-    {(OOP_MethodFunc)GMABM__Root__New	 , moRoot_New	 },
+    {(OOP_MethodFunc)GMABM__Root__New    , moRoot_New    },
     {(OOP_MethodFunc)GMABM__Root__Dispose, moRoot_Dispose},
-    {(OOP_MethodFunc)GMABM__Root__Get	 , moRoot_Get	 },
-    {(OOP_MethodFunc)GMABM__Root__Set	 , moRoot_Set	 },
-    {NULL				 , 0		 }
+    {(OOP_MethodFunc)GMABM__Root__Get    , moRoot_Get    },
+    {(OOP_MethodFunc)GMABM__Root__Set    , moRoot_Set    },
+    {NULL                                , 0             }
 };
 #define NUM_GMABM_Root_METHODS 4
 
 static const struct OOP_MethodDescr GMABM_Hidd_BitMap_descr[] =
 {
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutPixel	    , moHidd_BitMap_PutPixel	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__GetPixel	    , moHidd_BitMap_GetPixel	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawPixel	    , moHidd_BitMap_DrawPixel	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawLine	    , moHidd_BitMap_DrawLine	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawEllipse	    , moHidd_BitMap_DrawEllipse	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__FillRect	    , moHidd_BitMap_FillRect	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__BytesPerLine	    , moHidd_BitMap_BytesPerLine       },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutPixel           , moHidd_BitMap_PutPixel           },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__GetPixel           , moHidd_BitMap_GetPixel           },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawPixel          , moHidd_BitMap_DrawPixel          },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawLine           , moHidd_BitMap_DrawLine           },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__DrawEllipse        , moHidd_BitMap_DrawEllipse        },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__FillRect           , moHidd_BitMap_FillRect           },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__BytesPerLine       , moHidd_BitMap_BytesPerLine       },
     {(OOP_MethodFunc)GMABM__Hidd_BitMap__ObtainDirectAccess , moHidd_BitMap_ObtainDirectAccess },
     {(OOP_MethodFunc)GMABM__Hidd_BitMap__ReleaseDirectAccess, moHidd_BitMap_ReleaseDirectAccess},
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutImage           , moHidd_BitMap_PutImage	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutImageLUT	    , moHidd_BitMap_PutImageLUT	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutAlphaImage	    , moHidd_BitMap_PutAlphaImage      },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__GetImage	    , moHidd_BitMap_GetImage	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutTemplate	    , moHidd_BitMap_PutTemplate	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutPattern	    , moHidd_BitMap_PutPattern	       },
-    {(OOP_MethodFunc)GMABM__Hidd_BitMap__UpdateRect	    , moHidd_BitMap_UpdateRect	       },
-    {NULL					   	    , 0				       }
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutImage           , moHidd_BitMap_PutImage           },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutImageLUT        , moHidd_BitMap_PutImageLUT        },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutAlphaImage      , moHidd_BitMap_PutAlphaImage      },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__GetImage           , moHidd_BitMap_GetImage           },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutTemplate        , moHidd_BitMap_PutTemplate        },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__PutPattern         , moHidd_BitMap_PutPattern         },
+    {(OOP_MethodFunc)GMABM__Hidd_BitMap__UpdateRect         , moHidd_BitMap_UpdateRect         },
+    {NULL                                                   , 0                                }
 };
 #define NUM_GMABM_Hidd_BitMap_METHODS 16
 
@@ -2216,5 +2216,5 @@ const struct OOP_InterfaceDescr GMABM_ifdescr[] =
 {
     {GMABM_Root_descr       , IID_Root       , NUM_GMABM_Root_METHODS       },
     {GMABM_Hidd_BitMap_descr, IID_Hidd_BitMap, NUM_GMABM_Hidd_BitMap_METHODS},
-    {NULL		    , NULL	     , 0			    }
+    {NULL                   , NULL           , 0                            }
 };

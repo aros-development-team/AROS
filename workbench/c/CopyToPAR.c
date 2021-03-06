@@ -72,7 +72,7 @@ STRPTR           devicename = "parallel.device";
 
 static void cleanup(char *msg)
 {
-    if (msg && !args[ARG_QUIET]) 
+    if (msg && !args[ARG_QUIET])
     {
         Printf("CopyToPAR: %s\n", msg);
     }
@@ -205,6 +205,6 @@ int main(void)
     if (rc)
         return rc;
 
-    cleanup(NULL);    
+    cleanup(NULL);
     return 0;
 }

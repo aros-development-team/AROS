@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /******************************************************************************
@@ -56,13 +56,13 @@ AROS_SH0(EndSkip,41.1)
 
     if ((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
-	return RETURN_OK;	/* Normal operation: do nothing! */
+        return RETURN_OK;       /* Normal operation: do nothing! */
     }
     else
     {
-	PrintFault(ERROR_SCRIPT_ONLY, "EndSkip");
+        PrintFault(ERROR_SCRIPT_ONLY, "EndSkip");
 
-	return RETURN_ERROR;
+        return RETURN_ERROR;
     }
 
     AROS_SHCOMMAND_EXIT

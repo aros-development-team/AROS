@@ -45,21 +45,21 @@
         if(fnum < 0) /* don`t hurt the SR! */
         {
             SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-            return 0x80000000;    
+            return 0x80000000;
         }
         else
         {
             SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-            return 0x7fffffff;    
+            return 0x7fffffff;
         }
     }
     
     
     Shift = (fnum & FFPExponent_Mask) - 0x40;
     if (Shift > 0) /* > 32 bit LONG shift = undefined */
-	Res = ((ULONG)(fnum & FFPMantisse_Mask)) >> (32 - Shift);
+        Res = ((ULONG)(fnum & FFPMantisse_Mask)) >> (32 - Shift);
     else
-    	Res = 0;
+        Res = 0;
     
     if (0 == Res)
     {

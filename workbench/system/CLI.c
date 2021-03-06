@@ -34,13 +34,13 @@
         WINDOW  --  Specification of the shell window. It must be in the form
                     con:[X]/[Y]/[WIDTH]/[HEIGHT]...
 
-                    X         --  number of pixels from the left edge of 
+                    X         --  number of pixels from the left edge of
                                   the screen
-                    Y         --  number of pixels from the top edge of 
+                    Y         --  number of pixels from the top edge of
                                   the screen
                     WIDTH     --  width of the shell window in pixels
                     HEIGHT    --  height of the shell window in pixels
-                    TITLE     --  text to appear in the shell window's 
+                    TITLE     --  text to appear in the shell window's
                                   title bar
                     AUTO      --  the window automatically appears when the
                                   program needs input or output

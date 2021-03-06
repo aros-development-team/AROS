@@ -100,8 +100,8 @@
             res = SPAdd
             (
                 pio2, SPDiv
-                ( 
-                    SPMul(three, fnumcubed), 
+                (
+                    SPMul(three, fnumcubed),
                     SPAdd( res | FFPSign_Mask, one )
                 )
             );

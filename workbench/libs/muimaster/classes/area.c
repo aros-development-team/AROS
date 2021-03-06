@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 2002-2020, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
@@ -85,7 +85,7 @@ Area.mui/MUIA_WindowObject          done
 
 Area.mui/MUIM_AskMinMax             done
 Area.mui/MUIM_Cleanup               done
-Area.mui/MUIM_ContextMenuBuild	    done
+Area.mui/MUIM_ContextMenuBuild      done
 Area.mui/MUIM_ContextMenuChoice     done
 Area.mui/MUIM_CreateBubble          done
 Area.mui/MUIM_CreateShortHelp       done
@@ -703,9 +703,9 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_Selected:
-            /*  D(bug(" Area_Set(%p) : 
+            /*  D(bug(" Area_Set(%p) :
                MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data,
-                   !!(data->mad_Flags & MADF_SHOWSELSTATE))); 
+                   !!(data->mad_Flags & MADF_SHOWSELSTATE)));
              */
             if (tag->ti_Data && !(data->mad_Flags & MADF_SELECTED))
             {
@@ -930,9 +930,9 @@ static IPTR Area__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 
 /*   D(bug("Area_AskMinMax 0x%p (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n",
          obj, data->mad_FrameTitle, */
-/*  	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
-/*  	  msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
-/*  	  msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight)); */
+/*        msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
+/*        msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
+/*        msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight)); */
 
     return TRUE;
 }
@@ -1221,7 +1221,7 @@ static void Area_Draw_handle_frame(Object *obj, struct MUI_AreaData *data,
     if (region && textdrawclip != (APTR) - 1)
     {
         MUI_RemoveClipRegion(muiRenderInfo(obj), textdrawclip);
-        /*		DisposeRegion(region);*/ /* sba: DisposeRegion happens in MUI_RemoveClipRegion, this seems wrong to me */
+        /*              DisposeRegion(region);*/ /* sba: DisposeRegion happens in MUI_RemoveClipRegion, this seems wrong to me */
     }
 
     /* Title text drawing */
@@ -1389,13 +1389,13 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj,
     if ((msg->flags & MADF_SELECTED) && (msg->flags & MADF_SHOWSELSTATE)
         && data->mad_SelBack)
     {
-/*  	D(bug("Area_DrawBackground(%p): selected bg\n", obj)); */
+/*      D(bug("Area_DrawBackground(%p): selected bg\n", obj)); */
         bg = data->mad_SelBack;
         state = IDS_SELECTED;
     }
     else
     {
-/*  	D(bug("Area_DrawBackground(%p): normal bg\n", obj)); */
+/*      D(bug("Area_DrawBackground(%p): normal bg\n", obj)); */
         bg = data->mad_Background;
         state = IDS_NORMAL;
     }
@@ -1873,12 +1873,12 @@ static void handle_press(struct IClass *cl, Object *obj)
             get(obj, MUIA_Selected, &selected);
             if (selected)
             {
-/*  		D(bug("handle_press(%p) : nnset MUIA_Selected FALSE\n", obj)); */
+/*              D(bug("handle_press(%p) : nnset MUIA_Selected FALSE\n", obj)); */
                 nnset(obj, MUIA_Selected, FALSE);
             }
-/*  	    D(bug("handle_press(%p) : set MUIA_Selected TRUE\n", obj)); */
+/*          D(bug("handle_press(%p) : set MUIA_Selected TRUE\n", obj)); */
             set(obj, MUIA_Selected, TRUE);
-/*  	    D(bug("handle_press(%p) : done\n", obj)); */
+/*          D(bug("handle_press(%p) : done\n", obj)); */
             break;
         }
     case MUIV_InputMode_Toggle:
@@ -2423,7 +2423,7 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 
 /*      if (XGET(obj, MUIA_UserData) == 42) */
 /*      { */
-/*  	D(bug("area_update_msizes(%p) : ileft=%ld itop=%ld\n", obj, */
+/*      D(bug("area_update_msizes(%p) : ileft=%ld itop=%ld\n", obj, */
 /*        zframe->ileft, zframe->itop)); */
 /*      } */
 
@@ -2463,7 +2463,7 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 
 /*  D(bug("area_update_msizes(%x,%d) => addleft/top=%d/%d, " */
 /*      "subwidth/height=%d/%d\n", */
-/*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, */
+/*        obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, */
 /*      data->mad_subwidth, data->mad_subheight)); */
 }
 

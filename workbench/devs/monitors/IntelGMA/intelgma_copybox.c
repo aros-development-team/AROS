@@ -90,7 +90,7 @@ BOOL copybox3d_supported()
     if( IS_GEN3( sd->ProductID ) )
     {
         return TRUE;
-    } 
+    }
     return FALSE;
 }
 
@@ -101,7 +101,7 @@ BOOL copybox3d( GMABitMap_t *bm_dst, GMABitMap_t *bm_src,
     uint32_t dst_format;
     uint32_t src_format;
 
-    if( !copybox3d_supported() ) 
+    if( !copybox3d_supported() )
     {
         return FALSE;
     }
@@ -247,7 +247,7 @@ BOOL copybox3d( GMABitMap_t *bm_dst, GMABitMap_t *bm_src,
     OUT_RING( _3DSTATE_DRAW_RECT_CMD );
 
     OUT_RING( 0x00000000 );
-    OUT_RING( 0x00000000 );    // ymin, xmin 
+    OUT_RING( 0x00000000 );    // ymin, xmin
     OUT_RING( DRAW_YMAX(dst_y + dst_height - 1) |
               DRAW_XMAX(dst_x + dst_width - 1) );
 
@@ -289,7 +289,7 @@ BOOL copybox3d( GMABitMap_t *bm_dst, GMABitMap_t *bm_src,
         (REG_NR(FS_T0) << T1_ADDRESS_REG_NR_SHIFT) );
     OUT_RING( 0 );
     
-    // rectangle 
+    // rectangle
     // 3--x
     // |  |
     // 2--1

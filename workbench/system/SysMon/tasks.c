@@ -128,7 +128,7 @@ int Tasklist__Refresh(struct Tasklist_DATA *data, struct TaskInfo *ti, int col)
     /* Cache values we need incase something happens to the task .. */
     ti->ti_TimeLast.tv_secs = ti->ti_TimeCurrent.tv_secs;
     QueryTaskTags[0].ti_Data = (IPTR)&ti->ti_TimeCurrent;
-    QueryTaskTags[1].ti_Data = (IPTR)&cpuusage;    
+    QueryTaskTags[1].ti_Data = (IPTR)&cpuusage;
 #if defined(__AROSPLATFORM_SMP__)
     QueryTaskTags[2].ti_Data = (IPTR)&cpuNum;
 #endif

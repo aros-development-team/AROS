@@ -355,7 +355,7 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
 
         if ((depth >= 15) && (data->bmhd->bmh_Masking == mskHasAlpha))
         {
-            /* Transparency on high color rast port with alpha channel in 
+            /* Transparency on high color rast port with alpha channel in
              * picture */
             ULONG *img =
                 AllocVec(_mwidth(obj) * _mheight(obj) * 4, MEMF_ANY);

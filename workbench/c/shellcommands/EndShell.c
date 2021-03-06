@@ -58,7 +58,7 @@ AROS_SH0(EndShell, 41.3)
         struct FileHandle *fhin = BADDR(cli->cli_CurrentInput);
         struct FileHandle *fhout = BADDR(cli->cli_StandardOutput);
 
-	cli->cli_Background = TRUE;
+        cli->cli_Background = TRUE;
 
         fhin->fh_Pos  = fhin->fh_End + 1; /* Simulate an EOF */
         fhout->fh_Pos = 0; /* don't flush cli's standard output on close*/

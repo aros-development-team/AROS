@@ -53,7 +53,7 @@ Object *ProcessorGauge__OM_NEW(Class *CLASS, Object *self, struct opSet *message
             data->pg_Gauges[i] = GaugeObject,
                             GaugeFrame,
                             MUIA_Gauge_InfoText, (IPTR) CPU_DEFSTR,
-                            MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0, 
+                            MUIA_Gauge_Horiz, FALSE, MUIA_Gauge_Current, 0,
                             MUIA_Gauge_Max, 1000,
                             MUIA_UserData, i,
                         End;
@@ -132,14 +132,14 @@ IPTR ProcessorGauge__MUIM_ProcessorGrp_Update(Class *CLASS, Object *self, Msg me
         DateStamp(&ds);
         usage = (ds.ds_Tick * (i + 1)) % 100;
 #else
-        struct TagItem tags [] = 
+        struct TagItem tags [] =
         {
             { GCIT_SelectedProcessor, (IPTR)i },
             { GCIT_ProcessorLoad, (IPTR)&usage },
             { TAG_DONE, TAG_DONE }
         };
 
-        usage = 0;        
+        usage = 0;
         GetCPUInfo(tags);
         usage = ((usage >> 16) * 1000) >> 16;
 #endif

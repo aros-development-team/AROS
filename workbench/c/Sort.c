@@ -16,18 +16,18 @@
     LOCATION
 
         C:
-	   
+           
     FUNCTION
 
-	Sorts the contents of a text file
-	
+        Sorts the contents of a text file
+        
     INPUTS
 
-	FROM      -- file to read from
-	TO        -- file to output to
-	COLSTART  -- column at which the comparison begins
-	CASE      -- sort is case sensitive. Uppercase items are output first
-	NUMERIC   -- lines are interpreted as numbers
+        FROM      -- file to read from
+        TO        -- file to output to
+        COLSTART  -- column at which the comparison begins
+        CASE      -- sort is case sensitive. Uppercase items are output first
+        NUMERIC   -- lines are interpreted as numbers
 
     RESULT
 
@@ -60,13 +60,13 @@
 
 #define TEMPLATE "FROM/A,TO/A,COLSTART/K,CASE/S,NUMERIC/S"
 
-#define ARG_FROM	0
-#define ARG_TO		1
-#define ARG_COLSTART	2
-#define ARG_CASE	3
-#define ARG_NUMERIC	4
+#define ARG_FROM        0
+#define ARG_TO          1
+#define ARG_COLSTART    2
+#define ARG_CASE        3
+#define ARG_NUMERIC     4
 
-#define ARG_NUM		5
+#define ARG_NUM         5
 
 const TEXT version[] = "$VER: Sort 41.2 (3.4.2014)";
 
@@ -79,9 +79,9 @@ struct sorted_data
 
 struct Locale * locale;
 
-int compare(struct sorted_data * sd1, 
-            struct sorted_data * sd2, 
-            ULONG col, 
+int compare(struct sorted_data * sd1,
+            struct sorted_data * sd2,
+            ULONG col,
             BOOL case_on)
 {
   ULONG len = MIN(sd1->len, sd2->len);
@@ -125,7 +125,7 @@ int compare(struct sorted_data * sd1,
                    sd1->data+col,
                    sd2->data+col,
                    len,
-                   SC_COLLATE2);  
+                   SC_COLLATE2);
 
     if (0 == retval)
     {
@@ -138,7 +138,7 @@ int compare(struct sorted_data * sd1,
   
   return retval;
 
-#else  
+#else
   int i = col;
   char * str1 = sd1->data;
   char * str2 = sd2->data;
@@ -153,7 +153,7 @@ int compare(struct sorted_data * sd1,
   
   return (int)sd1->len - (int)sd2->len;
 #endif
-} 
+}
 
 
 struct sorted_data * sort(UBYTE * data,
@@ -200,7 +200,7 @@ struct sorted_data * sort(UBYTE * data,
       if (len > col)
       {
         /*
-        ** Insert it into the list of sorted lines 
+        ** Insert it into the list of sorted lines
         */
         if (NULL != first)
         {
@@ -349,8 +349,8 @@ int main (void)
                 if (-1 != read)
                 {
                   struct sorted_data * sd;
-                  sd = sort(data, 
-                            fib->fib_Size, 
+                  sd = sort(data,
+                            fib->fib_Size,
                             (STRPTR)args[ARG_COLSTART],
                             (BOOL)args[ARG_CASE],
                             (BOOL)args[ARG_NUMERIC]);
@@ -365,7 +365,7 @@ int main (void)
           else
             error = IoErr();
 
-          Close(file_out);  
+          Close(file_out);
        }
        FreeDosObject(DOS_FIB, fib);
        if (lock_in)

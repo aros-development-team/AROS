@@ -108,11 +108,11 @@ VMWareSVGA_WSCtx_RegionReloc(struct svga_winsys_context *swc,
 
 static void
 VMWareSVGA_WSCtx_MObReloc(struct svga_winsys_context *swc,
-		       SVGAMobId *id,
-		       uint32 *offset_into_mob,
-		       struct svga_winsys_buffer *buffer,
-		       uint32 offset,
-		       unsigned flags)
+                       SVGAMobId *id,
+                       uint32 *offset_into_mob,
+                       struct svga_winsys_buffer *buffer,
+                       uint32 offset,
+                       unsigned flags)
 {
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
@@ -137,17 +137,17 @@ VMWareSVGA_WSCtx_QueryReloc(struct svga_winsys_context *swc,
 
 static void
 VMWareSVGA_WSCtx_ContextReloc(struct svga_winsys_context *swc,
-			   uint32 *cid)
+                           uint32 *cid)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
 }
 
 static void
 VMWareSVGA_WSCtx_ShaderReloc(struct svga_winsys_context *swc,
-			  uint32 *shid,
-			  uint32 *mobid,
-			  uint32 *offset,
-			  struct svga_winsys_gb_shader *shader,
+                          uint32 *shid,
+                          uint32 *mobid,
+                          uint32 *offset,
+                          struct svga_winsys_gb_shader *shader,
                           unsigned flags)
 {
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);

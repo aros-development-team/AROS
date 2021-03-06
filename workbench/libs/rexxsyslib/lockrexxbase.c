@@ -10,13 +10,13 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH1(VOID, LockRexxBase,
+        AROS_LH1(VOID, LockRexxBase,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, resource, D0),
+        AROS_LHA(ULONG, resource, D0),
 
 /*  LOCATION */
-	struct RxsLib *, RexxSysBase, 75, RexxSys)
+        struct RxsLib *, RexxSysBase, 75, RexxSys)
 
 /*  FUNCTION
 

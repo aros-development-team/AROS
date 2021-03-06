@@ -77,34 +77,34 @@ struct GadToolsBase_intern
 {
     struct Library                lib;
 
-    Class 			* buttonclass;
-    Class 			* textclass;
-    Class 			* sliderclass;
-    Class 			* scrollerclass;
-    Class 			* arrowclass;
-    Class 			* stringclass;
-    Class 			* listviewclass;
-    Class 			* checkboxclass;
-    Class 			* cycleclass;
-    Class 			* mxclass;
-    Class 			* paletteclass;
+    Class                       * buttonclass;
+    Class                       * textclass;
+    Class                       * sliderclass;
+    Class                       * scrollerclass;
+    Class                       * arrowclass;
+    Class                       * stringclass;
+    Class                       * listviewclass;
+    Class                       * checkboxclass;
+    Class                       * cycleclass;
+    Class                       * mxclass;
+    Class                       * paletteclass;
     
     /* Semaphore to protect the bevel object. */
-    struct SignalSemaphore   	bevelsema;
+    struct SignalSemaphore      bevelsema;
     /* Actually an Object *. The image used for bevel boxes. */
-    struct Image           	* bevel;
+    struct Image                * bevel;
     
     /* RenderHook for GTListView class */
     struct Hook                 lv_RenderHook;
 
     /* Seglist pointer */
-    BPTR			gt_SegList;
+    BPTR                        gt_SegList;
 
     /* Required libraies */
-    APTR			gt_IntuitionBase;
-    APTR			gt_UtilityBase;
-    APTR			gt_GfxBase;
-    APTR			gt_LayersBase;
+    APTR                        gt_IntuitionBase;
+    APTR                        gt_UtilityBase;
+    APTR                        gt_GfxBase;
+    APTR                        gt_LayersBase;
 };
 
 
@@ -158,15 +158,15 @@ static UBYTE _strbuf[MAX_STR];
 static struct ModifiedResource _mrbuf[MAX_MR];
 
 static int next_orn = 0;
-static int next_tr = 0; 
-static int next_rd = 0; 
-static int next_str = 0; 
-static int next_mr = 0; 
+static int next_tr = 0;
+static int next_rd = 0;
+static int next_str = 0;
+static int next_mr = 0;
 
 static struct OpenedResourceNode *get_orn()
 {
     if (next_orn == MAX_ORN)
-	return NULL;
+        return NULL;
     return &_ornbuf[next_orn++];
 }
 
@@ -177,7 +177,7 @@ static void release_orn (struct OpenedResourceNode *orn)
 static struct TrackedResources *get_tr()
 {
     if (next_tr == MAX_TR)
-	return NULL;
+        return NULL;
     return &_trbuf[next_tr++];
 }
 
@@ -188,7 +188,7 @@ static void release_tr (struct TrackedResources *tr)
 static struct ResourceDiff *get_rd()
 {
     if (next_rd == MAX_RD)
-	return NULL;
+        return NULL;
     return &_rdbuf[next_rd++];
 }
 
@@ -199,7 +199,7 @@ static void release_rd (struct ResourceDiff *rd)
 static struct ModifiedResource *get_mr()
 {
     if (next_mr == MAX_MR)
-	return NULL;
+        return NULL;
     return &_mrbuf[next_mr++];
 }
 
@@ -208,20 +208,20 @@ static void release_mr (struct ModifiedResource *mr)
 }
 
 CONST_STRPTR StaticStrDup (CONST_STRPTR str)
-{   
+{
     UBYTE *start = &_strbuf[next_str];
     UBYTE *t = start;
     int len;
 
     if (NULL == str)
-	str = "<unnamed>";
+        str = "<unnamed>";
 
     len = strlen(str);
     if (len + next_str + 1 > MAX_STR)
-	return NULL;
+        return NULL;
 
     while ((*t++ = *str++))
-	;
+        ;
     next_str += t - start;
     return (CONST_STRPTR)start;
 }
@@ -235,7 +235,7 @@ void StrFree (CONST_STRPTR str)
 static struct TrackedResources *NewResourcesState(void);
 static void DeleteResourcesState(struct TrackedResources *rs);
 static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
-					  const struct TrackedResources *new);
+                                          const struct TrackedResources *new);
 static void DisplayStateDiff(const struct ResourceDiff *rd, int pagelines);
 static void DeleteStateDiff(struct ResourceDiff *rd);
 static struct TrackedResources * CopyResourcesState(const struct TrackedResources *src);
@@ -249,17 +249,17 @@ static BOOL AddLibs(struct List *opened)
         lib->lib_Node.ln_Succ!=NULL;
         lib=(struct Library *)lib->lib_Node.ln_Succ)
     {
-	struct OpenedResourceNode *orn = get_orn();
-	if (!orn)
-	{
-	    Permit();
-	    return FALSE;
-	}
-	orn->type = "Library";
-	orn->name = StaticStrDup(lib->lib_Node.ln_Name);
-	orn->addr = lib;
-	orn->count = lib->lib_OpenCnt;
-	Enqueue(opened, (struct Node *)orn);
+        struct OpenedResourceNode *orn = get_orn();
+        if (!orn)
+        {
+            Permit();
+            return FALSE;
+        }
+        orn->type = "Library";
+        orn->name = StaticStrDup(lib->lib_Node.ln_Name);
+        orn->addr = lib;
+        orn->count = lib->lib_OpenCnt;
+        Enqueue(opened, (struct Node *)orn);
     }
     Permit();
     return TRUE;
@@ -274,17 +274,17 @@ static BOOL AddDevs(struct List *opened)
         dev->dd_Library.lib_Node.ln_Succ!=NULL;
         dev=(struct Device *)dev->dd_Library.lib_Node.ln_Succ)
     {
-	struct OpenedResourceNode *orn = get_orn();
-	if (!orn)
-	{
-	    Permit();
-	    return FALSE;
-	}
-	orn->type = "Device";
-	orn->name = StaticStrDup(dev->dd_Library.lib_Node.ln_Name);
-	orn->addr = dev;
-	orn->count = dev->dd_Library.lib_OpenCnt;
-	Enqueue(opened, (struct Node *)orn);
+        struct OpenedResourceNode *orn = get_orn();
+        if (!orn)
+        {
+            Permit();
+            return FALSE;
+        }
+        orn->type = "Device";
+        orn->name = StaticStrDup(dev->dd_Library.lib_Node.ln_Name);
+        orn->addr = dev;
+        orn->count = dev->dd_Library.lib_OpenCnt;
+        Enqueue(opened, (struct Node *)orn);
     }
     Permit();
     return TRUE;
@@ -299,17 +299,17 @@ static BOOL AddFonts(struct List *opened)
         tf->tf_Message.mn_Node.ln_Succ!=NULL;
         tf=(struct TextFont *)tf->tf_Message.mn_Node.ln_Succ)
     {
-	struct OpenedResourceNode *orn = get_orn();
-	if (!orn)
-	{
-	    Permit();
-	    return FALSE;
-	}
-	orn->type = "Font";
-	orn->name = StaticStrDup(tf->tf_Message.mn_Node.ln_Name);
-	orn->addr = tf;
-	orn->count = tf->tf_Accessors;
-	Enqueue(opened, (struct Node *)orn);
+        struct OpenedResourceNode *orn = get_orn();
+        if (!orn)
+        {
+            Permit();
+            return FALSE;
+        }
+        orn->type = "Font";
+        orn->name = StaticStrDup(tf->tf_Message.mn_Node.ln_Name);
+        orn->addr = tf;
+        orn->count = tf->tf_Accessors;
+        Enqueue(opened, (struct Node *)orn);
     }
     Permit();
     return TRUE;
@@ -324,31 +324,31 @@ static BOOL AddNodeNames(struct List *opened, struct List *list, CONST_STRPTR ty
         lib->ln_Succ!=NULL;
         lib=(struct Node *)lib->ln_Succ)
     {
-	struct OpenedResourceNode *orn = get_orn();
-	if (!orn)
-	{
-	    Permit();
-	    return FALSE;
-	}
-	orn->type = type;
-	orn->name = StaticStrDup(lib->ln_Name);
-	orn->addr = lib;
-	orn->count = 0;
-	Enqueue(opened, (struct Node *)orn);
+        struct OpenedResourceNode *orn = get_orn();
+        if (!orn)
+        {
+            Permit();
+            return FALSE;
+        }
+        orn->type = type;
+        orn->name = StaticStrDup(lib->ln_Name);
+        orn->addr = lib;
+        orn->count = 0;
+        Enqueue(opened, (struct Node *)orn);
     }
     Permit();
     return TRUE;
 }
 
 static BOOL AddASemaphore(struct List *opened,
-			  struct SignalSemaphore *ss,
-			  CONST_STRPTR name)
+                          struct SignalSemaphore *ss,
+                          CONST_STRPTR name)
 {
     struct OpenedResourceNode *orn = get_orn();
 
     if (!orn)
     {
-	return FALSE;
+        return FALSE;
     }
 
     Forbid();
@@ -364,23 +364,23 @@ static BOOL AddASemaphore(struct List *opened,
 
 
 static BOOL AddAClass(struct List *opened,
-		      Class *cl, CONST_STRPTR name)
+                      Class *cl, CONST_STRPTR name)
 {
     struct OpenedResourceNode *orn;
 
     if (NULL == cl)
-	return TRUE;
+        return TRUE;
 
     orn = get_orn();
     if (!orn)
     {
-	return FALSE;
+        return FALSE;
     }
 
     Forbid();
     orn->type = "Class";
     if (NULL == name)
-	name = cl->cl_ID;
+        name = cl->cl_ID;
     orn->name = StaticStrDup(name);
     orn->addr = cl;
     orn->count = cl->cl_ObjectCount;
@@ -397,43 +397,43 @@ static BOOL AddOpenedResources(struct List *opened)
     struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
 
     if (!AddLibs(opened))
-	return FALSE;
+        return FALSE;
     if (!AddDevs(opened))
-	return FALSE;
+        return FALSE;
     if (!AddFonts(opened))
-	return FALSE;
+        return FALSE;
     if (!AddNodeNames(opened, &SysBase->ResourceList, "Resource"))
-	return FALSE;
+        return FALSE;
     if (!AddNodeNames(opened, &SysBase->IntrList, "Interrupt"))
-	return FALSE;
+        return FALSE;
     if (!AddNodeNames(opened, &SysBase->PortList, "Port"))
-	return FALSE;
+        return FALSE;
     if (!AddNodeNames(opened, &SysBase->SemaphoreList, "Semaphore"))
-	return FALSE;
+        return FALSE;
     if (!AddASemaphore(opened, &di->di_DevLock, "di_DevLock"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->buttonclass, "button"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->textclass, "text"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->sliderclass, "slider"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->scrollerclass, "scroller"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->arrowclass, "arrow"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->stringclass, "string"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->listviewclass, "listview"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->checkboxclass, "checkbox"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->cycleclass, "cycle"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->mxclass, "mx"))
-	return FALSE;
+        return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->paletteclass, "palette"))
-	return FALSE;
+        return FALSE;
     return TRUE;
 }
 
@@ -444,7 +444,7 @@ static struct TrackedResources *NewResourcesState(void)
 
     tr = get_tr();
     if (!tr)
-	return NULL;
+        return NULL;
 
     /* flush */
     FreeVec(AllocVec((ULONG)(~0ul/2), MEMF_ANY));
@@ -452,7 +452,7 @@ static struct TrackedResources *NewResourcesState(void)
     /* opencount-based stuff */
     NEWLIST(&tr->opened);
     if (!AddOpenedResources(&tr->opened))
-	return NULL;
+        return NULL;
 
     /* memory */
     tr->freeMem = AvailMem(MEMF_ANY);
@@ -463,7 +463,7 @@ static struct TrackedResources *NewResourcesState(void)
 static void DeleteResourceNode(struct OpenedResourceNode *orn)
 {
     if (!orn)
-	return;
+        return;
     StrFree((APTR)orn->name);
     orn->name = NULL;
     release_orn(orn);
@@ -476,15 +476,15 @@ static void DeleteResourcesState(struct TrackedResources *rs)
     struct OpenedResourceNode *tmp;
 
     if (!rs)
-	return;
+        return;
 
     for(orn=(struct OpenedResourceNode *)rs->opened.lh_Head;
         orn->node.ln_Succ!=NULL;
         orn=tmp)
     {
-	tmp = (struct OpenedResourceNode *)orn->node.ln_Succ;
-	Remove((struct Node *)orn);
-	DeleteResourceNode(orn);
+        tmp = (struct OpenedResourceNode *)orn->node.ln_Succ;
+        Remove((struct Node *)orn);
+        DeleteResourceNode(orn);
     }
     release_tr(rs);
 }
@@ -495,7 +495,7 @@ void DisplayResourcesState(const struct TrackedResources *rs, int pagelines)
     int currentlines;
 
     if (!rs)
-	return;
+        return;
 
     FPuts(Output(), "LeakWatch snapshot:\n");
 
@@ -507,18 +507,18 @@ void DisplayResourcesState(const struct TrackedResources *rs, int pagelines)
         orn->node.ln_Succ!=NULL;
         orn=(struct OpenedResourceNode *)orn->node.ln_Succ)
     {
-	if (currentlines >= (pagelines - 2))
-	{
-	    ULONG buf;
-	    currentlines = 0;
-	    FPuts(Output(), "--- Press a key to continue ---\n");
-	    Flush(Input());
-	    Read(Input(), &buf, 1);
-	    Flush(Input());
-	}
-	FPrintf(Output(), " %s: %s (0x%ix) : %lu\n",
-	        orn->type, orn->name, orn->addr, orn->count);
-	currentlines++;
+        if (currentlines >= (pagelines - 2))
+        {
+            ULONG buf;
+            currentlines = 0;
+            FPuts(Output(), "--- Press a key to continue ---\n");
+            Flush(Input());
+            Read(Input(), &buf, 1);
+            Flush(Input());
+        }
+        FPrintf(Output(), " %s: %s (0x%ix) : %lu\n",
+                orn->type, orn->name, orn->addr, orn->count);
+        currentlines++;
     }
     FPuts(Output(), "-- end of state\n");
 }
@@ -528,7 +528,7 @@ void DisplayResourcesState(const struct TrackedResources *rs, int pagelines)
  * them before being done with rd in the processing loop
  */
 static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
-					  const struct TrackedResources *nu)
+                                          const struct TrackedResources *nu)
 {
     /* FIXME */
     struct OpenedResourceNode *orn;
@@ -536,7 +536,7 @@ static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
 
     rd = get_rd();
     if (!rd)
-	return NULL;
+        return NULL;
 
     NEWLIST(&rd->modifiedOpened);
 
@@ -544,47 +544,47 @@ static struct ResourceDiff *NewStateDiff(const struct TrackedResources *old,
         orn->node.ln_Succ!=NULL;
         orn=(struct OpenedResourceNode *)orn->node.ln_Succ)
     {
-	struct OpenedResourceNode *other;
-	BOOL seen = FALSE;
+        struct OpenedResourceNode *other;
+        BOOL seen = FALSE;
 
-	for(other=(struct OpenedResourceNode *)old->opened.lh_Head;
-	    other->node.ln_Succ!=NULL;
-	    other=(struct OpenedResourceNode *)other->node.ln_Succ)
-	{
-	    if (orn->addr == other->addr)
-	    {
-		if (!strcmp(orn->name, other->name))
-		{
-		    seen = TRUE;
-		    if (orn->count != other->count)
-		    {
-			struct ModifiedResource *mr = get_mr();
-			if (!mr)
-			    return NULL;
-			mr->type = other->type;
-			mr->name = other->name;
-			mr->addr = other->addr;
-			mr->before_count = other->count;
-			mr->after_count = orn->count;
-			Enqueue(&rd->modifiedOpened, (struct Node *)mr);
-		    }
-		}
-	    }
-	}
-	if (!seen)
-	{
-	    struct ModifiedResource *mr = get_mr();
-	    if (!mr)
-		return NULL;
-	    
-	    mr->type = orn->type;
-	    mr->name = orn->name;
-	    mr->addr = orn->addr;
-	    mr->before_count = 0;
-	    mr->after_count = orn->count;
+        for(other=(struct OpenedResourceNode *)old->opened.lh_Head;
+            other->node.ln_Succ!=NULL;
+            other=(struct OpenedResourceNode *)other->node.ln_Succ)
+        {
+            if (orn->addr == other->addr)
+            {
+                if (!strcmp(orn->name, other->name))
+                {
+                    seen = TRUE;
+                    if (orn->count != other->count)
+                    {
+                        struct ModifiedResource *mr = get_mr();
+                        if (!mr)
+                            return NULL;
+                        mr->type = other->type;
+                        mr->name = other->name;
+                        mr->addr = other->addr;
+                        mr->before_count = other->count;
+                        mr->after_count = orn->count;
+                        Enqueue(&rd->modifiedOpened, (struct Node *)mr);
+                    }
+                }
+            }
+        }
+        if (!seen)
+        {
+            struct ModifiedResource *mr = get_mr();
+            if (!mr)
+                return NULL;
+            
+            mr->type = orn->type;
+            mr->name = orn->name;
+            mr->addr = orn->addr;
+            mr->before_count = 0;
+            mr->after_count = orn->count;
 
-	    Enqueue(&rd->modifiedOpened, (struct Node *)mr);
-	}
+            Enqueue(&rd->modifiedOpened, (struct Node *)mr);
+        }
     }
 
 
@@ -604,22 +604,22 @@ static void DisplayStateDiff(const struct ResourceDiff *rd, int pagelines)
     FPuts(Output(), " Open count:\n");
     currentlines = 3;
     for(mr=(struct ModifiedResource *)rd->modifiedOpened.lh_Head;
-	mr->node.ln_Succ!=NULL;
-	mr=(struct ModifiedResource *)mr->node.ln_Succ)
+        mr->node.ln_Succ!=NULL;
+        mr=(struct ModifiedResource *)mr->node.ln_Succ)
     {
-	if (currentlines >= (pagelines - 2))
-	{
-	    ULONG buf;
-	    currentlines = 0;
-	    FPuts(Output(), "--- Press a key to continue ---\n");
-	    Flush(Input());
-	    Read(Input(), &buf, 1);
-	    Flush(Input());
-	}
-	FPrintf(Output(), " %s: %s (0x%ix) : %lu -> %lu\n",
-	        mr->type, mr->name, mr->addr, mr->before_count,
-	        mr->after_count);
-	currentlines++;
+        if (currentlines >= (pagelines - 2))
+        {
+            ULONG buf;
+            currentlines = 0;
+            FPuts(Output(), "--- Press a key to continue ---\n");
+            Flush(Input());
+            Read(Input(), &buf, 1);
+            Flush(Input());
+        }
+        FPrintf(Output(), " %s: %s (0x%ix) : %lu -> %lu\n",
+                mr->type, mr->name, mr->addr, mr->before_count,
+                mr->after_count);
+        currentlines++;
     }
 
     FPuts(Output(), "-- end of diff\n");
@@ -633,16 +633,16 @@ static void DeleteStateDiff(struct ResourceDiff *rd)
     struct ModifiedResource *tmpmr;
 
     if (!rd)
-	return;
+        return;
 
     for(mr=(struct ModifiedResource *)rd->modifiedOpened.lh_Head;
         mr->node.ln_Succ!=NULL;
         mr=tmpmr)
     {
-	tmpmr = (struct ModifiedResource *)mr->node.ln_Succ;
-	Remove((struct Node *)mr);
-	
-	release_mr(mr);
+        tmpmr = (struct ModifiedResource *)mr->node.ln_Succ;
+        Remove((struct Node *)mr);
+        
+        release_mr(mr);
     }
 
     release_rd(rd);
@@ -652,7 +652,7 @@ static struct OpenedResourceNode * CopyResourcesNode(const struct OpenedResource
 {
     struct OpenedResourceNode *orn = get_orn();
     if (!orn)
-	return NULL;
+        return NULL;
     orn->name = StaticStrDup(src->name);
     orn->addr = src->addr;
     orn->count = src->count;
@@ -666,7 +666,7 @@ static struct TrackedResources * CopyResourcesState(const struct TrackedResource
 
     tr = get_tr();
     if (!tr)
-	return NULL;
+        return NULL;
 
     /* opencount-based stuff */
     NEWLIST(&tr->opened);
@@ -675,10 +675,10 @@ static struct TrackedResources * CopyResourcesState(const struct TrackedResource
         orn->node.ln_Succ!=NULL;
         orn=(struct OpenedResourceNode *)orn->node.ln_Succ)
     {
-	struct OpenedResourceNode *nc;
+        struct OpenedResourceNode *nc;
 
-	nc = CopyResourcesNode(orn);
-	Enqueue(&tr->opened, (struct Node *)nc);
+        nc = CopyResourcesNode(orn);
+        Enqueue(&tr->opened, (struct Node *)nc);
     }
 
     /* memory */
@@ -710,7 +710,7 @@ int main(void)
 
     port = CreateMsgPort();
     if (!port)
-	return 2;
+        return 2;
     port->mp_Node.ln_Name = "LeakWatch";
     port->mp_Node.ln_Pri  = 0;
     AddPort(port);
@@ -723,77 +723,77 @@ int main(void)
 
     crs = NewResourcesState();
     if (NULL == crs)
-	quitme = TRUE;
+        quitme = TRUE;
     else
-	start_rs = CopyResourcesState(crs);
+        start_rs = CopyResourcesState(crs);
 
     while(!quitme)
     {
-	ULONG signals;
+        ULONG signals;
 
-	signals = Wait(portsig | SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_C);
+        signals = Wait(portsig | SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_C);
 
-	if (signals & SIGBREAKF_CTRL_D)
-	{
-	    struct TrackedResources *tr;
+        if (signals & SIGBREAKF_CTRL_D)
+        {
+            struct TrackedResources *tr;
 
-	    tr = NewResourcesState();
-	    if (NULL == tr)
-	    {
-		quitme = TRUE;
-		break;
-	    }
-	    DisplayResourcesState(tr, numlines);
-	    DeleteResourcesState(tr);
-	}
-	if (signals & SIGBREAKF_CTRL_E)
-	{
-	    struct ResourceDiff *rd = NULL;
+            tr = NewResourcesState();
+            if (NULL == tr)
+            {
+                quitme = TRUE;
+                break;
+            }
+            DisplayResourcesState(tr, numlines);
+            DeleteResourcesState(tr);
+        }
+        if (signals & SIGBREAKF_CTRL_E)
+        {
+            struct ResourceDiff *rd = NULL;
 
-	    DeleteResourcesState(crs);
-	    crs = NewResourcesState();
-	    if (NULL == crs)
-	    {
-		quitme = TRUE;
-		break;
-	    }
-	    /*  DisplayResourcesState(crs); */ /* only for debug */
-	    rd = NewStateDiff(start_rs, crs);
-	    DisplayStateDiff(rd, numlines);
-	    DeleteStateDiff(rd);
-	}
-	if (signals & SIGBREAKF_CTRL_F)
-	{
-	    struct TrackedResources *ors = crs;
-	    struct ResourceDiff *rd = NULL;
+            DeleteResourcesState(crs);
+            crs = NewResourcesState();
+            if (NULL == crs)
+            {
+                quitme = TRUE;
+                break;
+            }
+            /*  DisplayResourcesState(crs); */ /* only for debug */
+            rd = NewStateDiff(start_rs, crs);
+            DisplayStateDiff(rd, numlines);
+            DeleteStateDiff(rd);
+        }
+        if (signals & SIGBREAKF_CTRL_F)
+        {
+            struct TrackedResources *ors = crs;
+            struct ResourceDiff *rd = NULL;
 
-	    crs = NewResourcesState();
-	    if (NULL == crs)
-	    {
-		quitme = TRUE;
-		break;
-	    }
-	    rd = NewStateDiff(ors, crs);
-	    DisplayStateDiff(rd, numlines);
-	    DeleteStateDiff(rd);
-	    DeleteResourcesState(ors);
-	}
-	if (signals & SIGBREAKF_CTRL_C)
-	{
-	    quitme = TRUE;
-	}
-	if (signals & portsig)
-	{
-	    struct Message *msg;
+            crs = NewResourcesState();
+            if (NULL == crs)
+            {
+                quitme = TRUE;
+                break;
+            }
+            rd = NewStateDiff(ors, crs);
+            DisplayStateDiff(rd, numlines);
+            DeleteStateDiff(rd);
+            DeleteResourcesState(ors);
+        }
+        if (signals & SIGBREAKF_CTRL_C)
+        {
+            quitme = TRUE;
+        }
+        if (signals & portsig)
+        {
+            struct Message *msg;
 
-	    while((msg = (struct Message *)GetMsg(port)))
-	    {
-		D(bug("Received watch message.\n"));
+            while((msg = (struct Message *)GetMsg(port)))
+            {
+                D(bug("Received watch message.\n"));
 
-		ReplyMsg(msg);
-	    }
+                ReplyMsg(msg);
+            }
 
-	}
+        }
     } /* while(!quitme) */
 
     DeleteResourcesState(crs);
@@ -803,8 +803,8 @@ int main(void)
 
     if (port)
     {
-	RemPort(port);
-    	DeleteMsgPort(port);
+        RemPort(port);
+        DeleteMsgPort(port);
     }
     return 0;
 }

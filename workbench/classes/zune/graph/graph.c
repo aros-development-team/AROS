@@ -54,7 +54,7 @@ IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
             if (count > data->graph_SourceCount)
             {
                 D(bug("[Graph] %s: initializing new source\n", __func__);)
-                memset(&newSourceArray[count - 1], 0, sizeof(struct Graph_SourceDATA)); 
+                memset(&newSourceArray[count - 1], 0, sizeof(struct Graph_SourceDATA));
                 newSourceArray[count - 1].gs_PlotPen = -1;
                 newSourceArray[count - 1].gs_PlotFillPen = -1;
                 if (data->graph_EntryCount > 0)
@@ -173,11 +173,11 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         cl, obj, NULL,
     
         MUIA_InnerLeft,   4,
-	MUIA_InnerTop,    4,
-	MUIA_InnerRight,  4,
-	MUIA_InnerBottom, 4,
-	
-        TAG_MORE, (IPTR) msg->ops_AttrList	
+        MUIA_InnerTop,    4,
+        MUIA_InnerRight,  4,
+        MUIA_InnerBottom, 4,
+        
+        TAG_MORE, (IPTR) msg->ops_AttrList
     );
 
     if (obj)
@@ -243,8 +243,8 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
     struct TagItem *tags  = msg->ops_AttrList;
-    struct TagItem   	 *tag;
-    BOOL    	      	  redraw = FALSE;
+    struct TagItem       *tag;
+    BOOL                  redraw = FALSE;
 
     D(bug("[Graph] %s()\n", __func__);)
 
@@ -324,7 +324,7 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                     data->graph_Flags &= ~GRAPHF_FIXEDLEN;
                 }
                 break;
-	}
+        }
     }
 
     if (redraw)
@@ -337,7 +337,7 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
-    IPTR    	      retval = TRUE;
+    IPTR              retval = TRUE;
 
     D(bug("[Graph] %s()\n", __func__);)
 
@@ -355,9 +355,9 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
             *(msg->opg_Storage) = data->ihn.ihn_Millis;
             break;
 
-    	default:
-	    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-	    break;
+        default:
+            retval = DoSuperMethodA(cl, obj, (Msg)msg);
+            break;
     }
     
     return retval;
@@ -393,28 +393,28 @@ IPTR Graph__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
     data->graph_BackPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-				  0xF2F2F2F2,
-				  0xF8F8F8F8,
-				  0xFAFAFAFA,
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  0xF2F2F2F2,
+                                  0xF8F8F8F8,
+                                  0xFAFAFAFA,
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
 
     data->graph_AxisPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-    	    	    	    	  0x7A7A7A7A,
-				  0xC5C5C5C5,
-				  0xDEDEDEDE,
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  0x7A7A7A7A,
+                                  0xC5C5C5C5,
+                                  0xDEDEDEDE,
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
 
     data->graph_SegmentPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-    	    	    	    	  0x85858585,
-				  0xD3D3D3D3,
-				  0xEDEDEDED,
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  0x85858585,
+                                  0xD3D3D3D3,
+                                  0xEDEDEDED,
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
 
     for (i = 0; i < data->graph_SourceCount; i ++)
     {
@@ -422,21 +422,21 @@ IPTR Graph__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
         if (((penSrc = (ULONG *)data->graph_Sources[i].gs_PlotFillPenSrc) != NULL) &&
             (data->graph_Sources[i].gs_PlotFillPenSrc != data->graph_Sources[i].gs_PlotPenSrc))
             data->graph_Sources[i].gs_PlotFillPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-    	    	    	    	  penSrc[0],
-				  penSrc[1],
-				  penSrc[2],
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  penSrc[0],
+                                  penSrc[1],
+                                  penSrc[2],
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
 
         if ((penSrc = (ULONG *)data->graph_Sources[i].gs_PlotPenSrc) != NULL)
             data->graph_Sources[i].gs_PlotPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-    	    	    	    	  penSrc[0],
-				  penSrc[1],
-				  penSrc[2],
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  penSrc[0],
+                                  penSrc[1],
+                                  penSrc[2],
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
     }
 
     return TRUE;
@@ -451,20 +451,20 @@ IPTR Graph__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 
     if (data->graph_SegmentPen != -1)
     {
-    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_SegmentPen);
-    	data->graph_SegmentPen = -1;
+        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_SegmentPen);
+        data->graph_SegmentPen = -1;
     }
 
     if (data->graph_AxisPen != -1)
     {
-    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_AxisPen);
-    	data->graph_AxisPen = -1;
+        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_AxisPen);
+        data->graph_AxisPen = -1;
     }
 
     if (data->graph_BackPen != -1)
     {
-    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_BackPen);
-    	data->graph_BackPen = -1;
+        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_BackPen);
+        data->graph_BackPen = -1;
     }
 
     for (i = 0; i < data->graph_SourceCount; i ++)
@@ -519,11 +519,11 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Graph_DATA           *data = INST_DATA(cl, obj);
     struct Graph_SourceDATA     *sourceData;
-    struct Region   	        *region;
+    struct Region               *region;
     struct Node                 *infoLine;
     struct RastPort             *renderPort;
-    struct Rectangle	        rect;
-    APTR    	    	        clip = NULL;
+    struct Rectangle            rect;
+    APTR                        clip = NULL;
     UWORD                       pos, span = 1, offset = 0, src, objHeight, objWidth;
 
     D(bug("[Graph] %s()\n", __func__);)
@@ -536,9 +536,9 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     region = NewRegion();
     if (region)
     {
-	OrRectRegion(region, &rect);
+        OrRectRegion(region, &rect);
 
-	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+        clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
     }
     
     DoSuperMethodA(cl, obj, (Msg)msg);
@@ -609,7 +609,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         }
 
         // Plot the entries..
-        if (data->graph_Sources) 
+        if (data->graph_Sources)
         {
             for (src = 0; src < data->graph_SourceCount; src ++)
             {
@@ -684,7 +684,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     }
     if (region)
     {
-    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+        MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
 
     D(bug("[Graph] %s: done\n", __func__);)
@@ -765,7 +765,7 @@ IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
         {
             BOOL updateEntries = FALSE, updated = FALSE, move = FALSE;
 
-            if (data->graph_Flags & GRAPHF_FIXEDLEN) 
+            if (data->graph_Flags & GRAPHF_FIXEDLEN)
             {
                 if (data->graph_EntryPtr >= data->graph_EntryCount)
                 {
@@ -807,7 +807,7 @@ IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
             data->graph_EntryPtr++;
         }
 
-	SET(obj, MUIA_Graph_PeriodicTick, TRUE);
+        SET(obj, MUIA_Graph_PeriodicTick, TRUE);
     }
     
     return 0;

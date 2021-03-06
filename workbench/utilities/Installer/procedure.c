@@ -118,7 +118,7 @@ return incarnation;
  */
 void free_proclist()
 {
-int i; 
+int i;
 
     for ( i = 0 ; i < numusrprocs ; i++)
     {

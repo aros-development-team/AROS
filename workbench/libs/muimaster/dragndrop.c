@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2011, The AROS Development Team. 
+    Copyright (C) 2002-2011, The AROS Development Team.
     All rights reserved.
     
 */
@@ -1009,7 +1009,7 @@ struct DragNDrop *CreateDragNDropA(struct TagItem *tlist)
             struct RastPort *rp = &dnd->dnd_RastPort;
             InitRastPort(rp);
 
-            rp->BitMap = 
+            rp->BitMap =
 
             if(dnd->dnd_Layer = CreateBehindLayer(dnd->dnd_LayerInfo,
 

@@ -176,7 +176,7 @@ static VOID IntelGMA_StatusFree(ULONG i)
     D(bug("[IntelGMA:Gallium] %s(%d)\n", i));
 
     hw_status[i].reserved = FALSE;
-    hw_status[i].flush_num = 0; 
+    hw_status[i].flush_num = 0;
 }
 
 static VOID IntelGMA_GfxMemFree(APTR ptr, ULONG size)
@@ -381,10 +381,10 @@ static void IntelGMA_WS_BatchbufferFlush(struct i915_winsys_batchbuffer *batch,
 
                 D(bug("[IntelGMA:Gallium] %s: reloc %p\n", __func__, rl->buf));
                 
-                if( i >= MAX_RELOCS || 
-                    rl->buf->map == 0 || 
+                if( i >= MAX_RELOCS ||
+                    rl->buf->map == 0 ||
                     rl->buf->magic != MAGIC ||
-                    *(uint32_t *)(rl->ptr) != RELOC_MAGIC 
+                    *(uint32_t *)(rl->ptr) != RELOC_MAGIC
                   )
                 {
                     IntelGMA_BatchBufferReset( gmabatch );
@@ -402,7 +402,7 @@ static void IntelGMA_WS_BatchbufferFlush(struct i915_winsys_batchbuffer *batch,
                 }
 
                 rl->buf->flush_num = flush_num;
-                rl->buf->status_index = index;           
+                rl->buf->status_index = index;
                 
                 *(uint32_t *)(rl->ptr) = BASEADDRESS( rl->buf->map ) + rl->offset;
             }
@@ -439,9 +439,9 @@ static void IntelGMA_WS_BatchbufferFlush(struct i915_winsys_batchbuffer *batch,
                 OUT_RING( index << 2 );
                 OUT_RING(0);
                 OUT_RING(0);
-            }  
+            }
             ADVANCE_RING();
-        }    
+        }
         UNLOCK_HW
 
         IntelGMA_BatchBufferReset( gmabatch );

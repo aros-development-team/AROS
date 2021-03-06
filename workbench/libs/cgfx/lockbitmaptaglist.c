@@ -18,14 +18,14 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH2(APTR, LockBitMapTagList,
+        AROS_LH2(APTR, LockBitMapTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR            , bitmap, A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+        AROS_LHA(APTR            , bitmap, A0),
+        AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 28, Cybergraphics)
+        struct Library *, CyberGfxBase, 28, Cybergraphics)
 
 /*  FUNCTION
         Obtains exclusive access to a bitmap in preparation for direct access
@@ -48,7 +48,7 @@
         constants:
                 PIXFMT_RGB24 - 3 bytes per pixel: 1 byte per component, in
                     the order red, green, blue.
-                PIXFMT_RGBA32 - 4 bytes per pixel: 1 byte per component, in  
+                PIXFMT_RGBA32 - 4 bytes per pixel: 1 byte per component, in
                     the order red, green, blue, alpha.
                 PIXFMT_ARGB32 - 4 bytes per pixel: 1 byte per component, in
                     the order alpha, red, green, blue.
@@ -70,10 +70,10 @@
                     for green, then 5 bits for red.
                 PIXFMT_RGB16PC - 2 bytes per pixel, accessed as a little
                     endian value: 5 bits for red, then 6 bits for green, then
-                    5 bits for blue. 
+                    5 bits for blue.
                 PIXFMT_BGR16PC - 2 bytes per pixel, accessed as a little
                     endian value: 5 bits for blue, then 6 bits for green, then
-                    5 bits for red.  
+                    5 bits for red.
                 PIXFMT_BGR24 - 3 bytes per pixel: 1 byte per component, in
                     the order blue, green, red.
                 PIXFMT_BGRA32 - 4 bytes per pixel: 1 byte per component, in
@@ -112,7 +112,7 @@
     BUGS
 
     SEE ALSO
-        UnLockBitMap(), UnLockBitMapTagList() 
+        UnLockBitMap(), UnLockBitMapTagList()
 
     INTERNALS
 
@@ -129,16 +129,16 @@
     
     if (!IS_HIDD_BM(bm))
     {
-    	D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-HIDD BM !!!\n"));
-	return NULL;
+        D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-HIDD BM !!!\n"));
+        return NULL;
     }
 
     OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     OOP_GetAttr(pf, aHidd_PixFmt_CgxPixFmt, &cpf);
     if (-1 == cpf)
     {
-    	D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-CYBER PIXFMT BITMAP !!!\n"));
-	return NULL;
+        D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-CYBER PIXFMT BITMAP !!!\n"));
+        return NULL;
     }
     
     /* Get some info from the bitmap object */
@@ -149,40 +149,40 @@
     
     while ((tag = NextTagItem(&tags)))
     {
-    	switch (tag->ti_Tag)
-	{
-	    case LBMI_BASEADDRESS:
-	    	*((IPTR **)tag->ti_Data) = (IPTR *)baseaddress;
-	    	break;
+        switch (tag->ti_Tag)
+        {
+            case LBMI_BASEADDRESS:
+                *((IPTR **)tag->ti_Data) = (IPTR *)baseaddress;
+                break;
 
-	    case LBMI_BYTESPERROW:
+            case LBMI_BYTESPERROW:
         OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_BytesPerRow, (IPTR *)tag->ti_Data);
-		break;
+                break;
 
-	    case LBMI_BYTESPERPIX:
-	    	OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, (IPTR *)tag->ti_Data);
-	    	break;
-	    
-	    case LBMI_PIXFMT: 
-		*((IPTR *)tag->ti_Data) = (IPTR)cpf;
-	    	break;
-		
-	    case LBMI_DEPTH:
-	    	OOP_GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)tag->ti_Data);
-		break;
-	    
-	    case LBMI_WIDTH:
-	    	OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Width, (IPTR *)tag->ti_Data);
-	    	break;
-	    
-	    case LBMI_HEIGHT:
-	    	OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Height, (IPTR *)tag->ti_Data);
-	    	break;
-		
-	    default:
-	    	D(bug("!!! UNKNOWN TAG PASSED TO LockBitMapTagList() !!!\n"));
-		break;
-	}
+            case LBMI_BYTESPERPIX:
+                OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, (IPTR *)tag->ti_Data);
+                break;
+            
+            case LBMI_PIXFMT:
+                *((IPTR *)tag->ti_Data) = (IPTR)cpf;
+                break;
+                
+            case LBMI_DEPTH:
+                OOP_GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)tag->ti_Data);
+                break;
+            
+            case LBMI_WIDTH:
+                OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Width, (IPTR *)tag->ti_Data);
+                break;
+            
+            case LBMI_HEIGHT:
+                OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Height, (IPTR *)tag->ti_Data);
+                break;
+                
+            default:
+                D(bug("!!! UNKNOWN TAG PASSED TO LockBitMapTagList() !!!\n"));
+                break;
+        }
     }
     
     return bm;

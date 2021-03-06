@@ -30,7 +30,7 @@ static OOP_AttrBase HiddGfxAttrBase;
 static OOP_AttrBase HiddVMWareSVGAAttrBase;
 static OOP_AttrBase HiddVMWareSVGABitMapAttrBase;
 
-static struct OOP_ABDescr attrbases[] = 
+static struct OOP_ABDescr attrbases[] =
 {
     {IID_Hidd_BitMap,           &HiddBitMapAttrBase             },
     {IID_Hidd_PixFmt,           &HiddPixFmtAttrBase             },
@@ -76,13 +76,13 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         memset(data, 0, sizeof(struct BitmapData));
 
         /* Get attr values */
-        OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
-        OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
-        OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
-        OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
+        OOP_GetAttr(o, aHidd_BitMap_Width,              &width);
+        OOP_GetAttr(o, aHidd_BitMap_Height,     &height);
+        OOP_GetAttr(o,  aHidd_BitMap_PixFmt,    (IPTR *)&pf);
+        OOP_GetAttr(pf, aHidd_PixFmt_Depth,             &depth);
 
         /* Get the friend bitmap. This should be a displayable bitmap */
-        OOP_GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&bmfriend);
+        OOP_GetAttr(o, aHidd_BitMap_Friend,     (IPTR *)&bmfriend);
 
         /* If you got a friend bitmap, copy its colormap */
         if (bmfriend)

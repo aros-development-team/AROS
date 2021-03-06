@@ -9,13 +9,13 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH0(struct IFFHandle *, AllocIFF,
+        AROS_LH0(struct IFFHandle *, AllocIFF,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 5, IFFParse)
+        struct Library *, IFFParseBase, 5, IFFParse)
 
 /*  FUNCTION
       Allocates an IFFHandle struct.
@@ -24,22 +24,22 @@
 
 
     RESULT
-	An unitialized IFFHandle structure.
+        An unitialized IFFHandle structure.
 
     NOTES
-	The default context-node is created in AllocIFF() and persists until
-	FreeIFF().
+        The default context-node is created in AllocIFF() and persists until
+        FreeIFF().
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	FreeIFF()
+        FreeIFF()
 
     INTERNALS
-	Since the default contextnode persistes from AllocIFF until FreeIFF, it
-	is built-in into the internal IFFHandle structure
+        Since the default contextnode persistes from AllocIFF until FreeIFF, it
+        is built-in into the internal IFFHandle structure
 
 *****************************************************************************/
 {
@@ -50,32 +50,32 @@
     DEBUG_ALLOCIFF(dprintf("AllocIff: entry\n"));
 
     if ( (intiff=(struct IntIFFHandle*)AllocMem (sizeof(struct IntIFFHandle),
-	    MEMF_ANY|MEMF_CLEAR)
+            MEMF_ANY|MEMF_CLEAR)
     ) )
     {
 
-	GetIH(intiff)->iff_Flags = (0L|IFFF_READ);
+        GetIH(intiff)->iff_Flags = (0L|IFFF_READ);
 
 
-	/* No need for buffering yet */
-	intiff->iff_BufferStartDepth = 0;
+        /* No need for buffering yet */
+        intiff->iff_BufferStartDepth = 0;
 
-	/* Initialize the context-stack list */
-	NewList ((struct List*)&(intiff->iff_CNStack));
+        /* Initialize the context-stack list */
+        NewList ((struct List*)&(intiff->iff_CNStack));
 
 
-	/* Initialize the default context node */
-	NewList ((struct List*)&(intiff->iff_DefaultCN.cn_LCIList));
+        /* Initialize the default context node */
+        NewList ((struct List*)&(intiff->iff_DefaultCN.cn_LCIList));
 
-	/* And add it to the stack */
-	AddHead
-	(
-	    (struct List*)&(intiff->iff_CNStack),
-	    (struct Node*)&(intiff->iff_DefaultCN)
-	);
+        /* And add it to the stack */
+        AddHead
+        (
+            (struct List*)&(intiff->iff_CNStack),
+            (struct Node*)&(intiff->iff_DefaultCN)
+        );
 
-	/* Depth is 0 even if we have a default contextnode */
-	GetIH(intiff)->iff_Depth = 0;
+        /* Depth is 0 even if we have a default contextnode */
+        GetIH(intiff)->iff_Depth = 0;
 
     }
 

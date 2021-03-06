@@ -36,10 +36,10 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-        OOP_MethodID	   disp_mid;
+        OOP_MethodID       disp_mid;
         struct SM502GfxBitmapData *data;
-        HIDDT_ModeID 	   modeid;
-        OOP_Object	  *sync, *pf;
+        HIDDT_ModeID       modeid;
+        OOP_Object        *sync, *pf;
 
         data = OOP_INST_DATA(cl, o);
 
@@ -99,7 +99,7 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct SM502GfxBitmapData *data = OOP_INST_DATA(cl, o);
-    ULONG   	       idx;
+    ULONG              idx;
 
     if (IS_BM_ATTR(msg->attrID, idx))
     {
@@ -127,7 +127,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct SM502GfxBitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
     LONG xoffset = data->xoffset;
     LONG yoffset = data->yoffset;
     LONG limit;
@@ -211,7 +211,7 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 
     if (data->DAC) {
         for ( xc_i = msg->firstColor, col_i = 0;
-              col_i < msg->numColors; 
+              col_i < msg->numColors;
               xc_i ++, col_i ++) {
             red   = msg->colors[col_i].red   >> 8;
             green = msg->colors[col_i].green >> 8;

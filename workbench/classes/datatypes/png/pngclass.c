@@ -55,12 +55,12 @@ struct PNGStuff
     png_infop   png_end_info_ptr;
     png_uint_32 png_width;
     png_uint_32 png_height;
-    int 	png_bits;
-    int 	png_type;
-    int 	png_lace;
-    int 	png_num_lace_passes;
-    int 	png_depth;
-    int 	dtbuffer_format;
+    int         png_bits;
+    int         png_type;
+    int         png_lace;
+    int         png_num_lace_passes;
+    int         png_depth;
+    int         dtbuffer_format;
 };
 
 /**************************************************************************************************/
@@ -72,7 +72,7 @@ png_voidp my_malloc_fn(png_structp png_ptr, png_size_t size)
     ret = (png_voidp)AllocVec(size, 0);
     if (ret == NULL)
     {
-    	if (png_ptr) png_error(png_ptr, "PNG: Out of memory!");
+        if (png_ptr) png_error(png_ptr, "PNG: Out of memory!");
     }
 
     return ret;
@@ -105,35 +105,35 @@ void my_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 
 void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-    BPTR    	file = MKBADDR(png_get_io_ptr(png_ptr));
+    BPTR        file = MKBADDR(png_get_io_ptr(png_ptr));
     png_uint_32 count;
 
     count = Read(file, data, length);
     if (count != length)
     {
-    	png_error(png_ptr, "Read error!");
+        png_error(png_ptr, "Read error!");
     }
 }
 
 void my_write_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-    BPTR	file = MKBADDR(png_get_io_ptr(png_ptr));
+    BPTR        file = MKBADDR(png_get_io_ptr(png_ptr));
     png_uint_32 count;
 
     count = Write(file, data, length);
     if (count != length)
     {
-    	png_error(png_ptr, "Write error!");
+        png_error(png_ptr, "Write error!");
     }
 }
 
 void my_flush_fn(png_structp png_ptr)
 {
-    BPTR	file = MKBADDR(png_get_io_ptr(png_ptr));
+    BPTR        file = MKBADDR(png_get_io_ptr(png_ptr));
 
     if (Flush(file))
     {
-    	png_error(png_ptr, "Flush error!");
+        png_error(png_ptr, "Flush error!");
     }
 }
 
@@ -149,88 +149,88 @@ static void PNG_Exit(struct PNGStuff *png, LONG errorcode)
 
 static BOOL LoadPNG(struct IClass *cl, Object *o)
 {
-    struct PNGStuff 	    png;
+    struct PNGStuff         png;
     union {
-    	struct IFFHandle    *iff;
-    	BPTR                 bptr;
+        struct IFFHandle    *iff;
+        BPTR                 bptr;
     } filehandle;
     struct BitMapHeader     *bmhd;
-    UBYTE   	    	    *buffer = NULL;
+    UBYTE                   *buffer = NULL;
     IPTR                    sourcetype;
     STRPTR                  name;
-    UBYTE   	    	    fileheader[HEADER_CHECK_SIZE];
+    UBYTE                   fileheader[HEADER_CHECK_SIZE];
 
     D(bug("png.datatype/LoadPNG()\n"));
 
     if( GetDTAttrs(o,   DTA_SourceType    , (IPTR)&sourcetype ,
-			DTA_Handle        , (IPTR)&filehandle,
-			PDTA_BitMapHeader , (IPTR)&bmhd,
-			TAG_DONE) != 3 )
+                        DTA_Handle        , (IPTR)&filehandle,
+                        PDTA_BitMapHeader , (IPTR)&bmhd,
+                        TAG_DONE) != 3 )
     {
-	PNG_Exit(&png, ERROR_OBJECT_NOT_FOUND);
-	return FALSE;
+        PNG_Exit(&png, ERROR_OBJECT_NOT_FOUND);
+        return FALSE;
     }
 
     if ( sourcetype == DTST_RAM && filehandle.iff == NULL && bmhd )
     {
-	D(bug("png.datatype/LoadPNG(): Creating an empty object\n"));
-	PNG_Exit(&png, 0);
-	return TRUE;
+        D(bug("png.datatype/LoadPNG(): Creating an empty object\n"));
+        PNG_Exit(&png, 0);
+        return TRUE;
     }
 
     if ( sourcetype != DTST_FILE || !filehandle.bptr || !bmhd )
     {
-	D(bug("png.datatype/LoadPNG(): unsupported mode\n"));
-	PNG_Exit(&png, ERROR_NOT_IMPLEMENTED);
-	return FALSE;
+        D(bug("png.datatype/LoadPNG(): unsupported mode\n"));
+        PNG_Exit(&png, ERROR_NOT_IMPLEMENTED);
+        return FALSE;
     }
 
     if (Read(filehandle.bptr, fileheader, sizeof(fileheader)) != sizeof(fileheader))
     {
-    	return FALSE;
+        return FALSE;
     }
 
     if (png_sig_cmp(fileheader, 0, sizeof(fileheader)) != 0)
     {
-    	PNG_Exit(&png, ERROR_OBJECT_WRONG_TYPE);
-	return FALSE;
+        PNG_Exit(&png, ERROR_OBJECT_WRONG_TYPE);
+        return FALSE;
     }
 
     memset(&png, 0, sizeof(png));
 
     png.png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING,
-    	    	    	    		   0, 	    	    /* error ptr */
-					   my_error_fn,     /* error function */
-					   my_warning_fn,   /* warning function */
-					   0, 	    	    /* mem ptr */
-					   my_malloc_fn,    /* malloc function */
-					   my_free_fn 	    /* free function */
-					   );
+                                           0,               /* error ptr */
+                                           my_error_fn,     /* error function */
+                                           my_warning_fn,   /* warning function */
+                                           0,               /* mem ptr */
+                                           my_malloc_fn,    /* malloc function */
+                                           my_free_fn       /* free function */
+                                           );
 
     if (!png.png_ptr)
     {
-    	D(bug("png.datatype/LoadPNG(): Can't create png read struct!"));
-	PNG_Exit(&png, ERROR_NO_FREE_STORE);
-	return FALSE;
+        D(bug("png.datatype/LoadPNG(): Can't create png read struct!"));
+        PNG_Exit(&png, ERROR_NO_FREE_STORE);
+        return FALSE;
     }
 
     png.png_info_ptr = png_create_info_struct(png.png_ptr);
     if (!png.png_info_ptr)
     {
-    	D(bug("png.datatype/LoadPNG():Can't create png info struct!\n"));
-    	png_destroy_read_struct(&png.png_ptr, NULL, NULL);
-	PNG_Exit(&png, ERROR_NO_FREE_STORE);
-	return FALSE;
+        D(bug("png.datatype/LoadPNG():Can't create png info struct!\n"));
+        png_destroy_read_struct(&png.png_ptr, NULL, NULL);
+        PNG_Exit(&png, ERROR_NO_FREE_STORE);
+        return FALSE;
 
     }
 
     png.png_end_info_ptr = png_create_info_struct(png.png_ptr);
     if (!png.png_end_info_ptr)
     {
-    	D(bug("png.datatype/LoadPNG():Can't create png end info struct!\n"));
-    	png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, NULL);
-	PNG_Exit(&png, ERROR_NO_FREE_STORE);
-	return FALSE;
+        D(bug("png.datatype/LoadPNG():Can't create png end info struct!\n"));
+        png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, NULL);
+        PNG_Exit(&png, ERROR_NO_FREE_STORE);
+        return FALSE;
     }
 
     png_set_read_fn(png.png_ptr, BADDR(filehandle.bptr), my_read_fn);
@@ -239,32 +239,32 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
     if (setjmp(png_jmpbuf(png.png_ptr)))
     {
-    	D(bug("png.datatype/LoadPNG(): Error!\n"));
-    	png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, &png.png_end_info_ptr);
-	FreeVec(buffer);
-	PNG_Exit(&png, ERROR_UNKNOWN);
-	return FALSE;
+        D(bug("png.datatype/LoadPNG(): Error!\n"));
+        png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, &png.png_end_info_ptr);
+        FreeVec(buffer);
+        PNG_Exit(&png, ERROR_UNKNOWN);
+        return FALSE;
     }
 
     png_read_info(png.png_ptr, png.png_info_ptr);
     png_get_IHDR(png.png_ptr, png.png_info_ptr,
-    	    	 &png.png_width, &png.png_height, &png.png_bits,
-		 &png.png_type, &png.png_lace, NULL, NULL);
+                 &png.png_width, &png.png_height, &png.png_bits,
+                 &png.png_type, &png.png_lace, NULL, NULL);
 
     D(
         bug("[png.datatype] %s: PNG IHDR: %ldx%ldx  (type:%d, lace:%d)\n", __func__,
-    	   png.png_width,
-	   png.png_height,
-	   png.png_type,
-	   png.png_lace);
+           png.png_width,
+           png.png_height,
+           png.png_type,
+           png.png_lace);
         bug("[png.datatype] %s: PNG IHDR: %d bits per channel\n", __func__,
-	   png.png_bits);
+           png.png_bits);
     )
 
     if (png.png_bits == 16)
     {
         D(bug("[png.datatype] %s: set_strip_16\n", __func__);)
-    	png_set_strip_16(png.png_ptr);
+        png_set_strip_16(png.png_ptr);
     }
 
 #if defined(PNGDATATYPE_ALWAYS_ARGB)
@@ -278,11 +278,11 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
     if (png.png_bits < 8)
     {
-	if (png.png_type == PNG_COLOR_TYPE_GRAY)
-	{
+        if (png.png_type == PNG_COLOR_TYPE_GRAY)
+        {
             D(bug("[png.datatype] %s: set_expand_gray_1_2_4_to_8\n", __func__);)
-	    png_set_expand_gray_1_2_4_to_8(png.png_ptr);
-	}
+            png_set_expand_gray_1_2_4_to_8(png.png_ptr);
+        }
         else
         {
             D(bug("[png.datatype] %s: set_packing\n", __func__);)
@@ -292,10 +292,10 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
     if (png.png_type == PNG_COLOR_TYPE_PALETTE)
     {
-    	png_bytep trans;
-	int 	  num_trans;
-    	if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
-	{
+        png_bytep trans;
+        int       num_trans;
+        if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
+        {
             if (num_trans > 1)
             {
                 D(bug("[png.datatype] %s: converting palette with mixed-alpha to truecolor\n", __func__);)
@@ -338,59 +338,59 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
       )
     {
         D(bug("[png.datatype] %s: set_gray_to_rgb\n", __func__);)
-    	png_set_gray_to_rgb(png.png_ptr);
+        png_set_gray_to_rgb(png.png_ptr);
     }
 
     {
-    	double png_file_gamma;
-	double png_screen_gamma = 2.2;
+        double png_file_gamma;
+        double png_screen_gamma = 2.2;
 
-	if (!(png_get_gAMA(png.png_ptr, png.png_info_ptr, &png_file_gamma)))
-	{
-	    png_file_gamma = 0.45455;
-	}
+        if (!(png_get_gAMA(png.png_ptr, png.png_info_ptr, &png_file_gamma)))
+        {
+            png_file_gamma = 0.45455;
+        }
         D(bug("[png.datatype] %s: set_gamma\n", __func__);)
-	png_set_gamma(png.png_ptr, png_file_gamma, png_screen_gamma);
+        png_set_gamma(png.png_ptr, png_file_gamma, png_screen_gamma);
     }
 
     png.png_num_lace_passes = png_set_interlace_handling(png.png_ptr);
 
     switch(png.png_type)
     {
-    	case PNG_COLOR_TYPE_GRAY:
+        case PNG_COLOR_TYPE_GRAY:
 #if !defined(PNGDATATYPE_ALWAYS_ARGB)
-	    png.png_depth = 8;
-	    png.dtbuffer_format = PBPAFMT_GREY8;
-	    break;
+            png.png_depth = 8;
+            png.dtbuffer_format = PBPAFMT_GREY8;
+            break;
 #endif
-	case PNG_COLOR_TYPE_PALETTE:
+        case PNG_COLOR_TYPE_PALETTE:
 #if !defined(PNGDATATYPE_ALWAYS_ARGB)
-	    png.png_depth = 8;
-	    png.dtbuffer_format = PBPAFMT_LUT8;
-	    break;
+            png.png_depth = 8;
+            png.dtbuffer_format = PBPAFMT_LUT8;
+            break;
 #endif
-	case PNG_COLOR_TYPE_RGB:
+        case PNG_COLOR_TYPE_RGB:
 #if !defined(PNGDATATYPE_ALWAYS_ARGB)
-	    png.png_depth = 24;
-	    png.dtbuffer_format = PBPAFMT_RGB;
-	    break;
+            png.png_depth = 24;
+            png.dtbuffer_format = PBPAFMT_RGB;
+            break;
 #endif
-	case PNG_COLOR_TYPE_GRAY_ALPHA:
-	case PNG_COLOR_TYPE_RGB_ALPHA:
-	    png.png_depth = 32;
+        case PNG_COLOR_TYPE_GRAY_ALPHA:
+        case PNG_COLOR_TYPE_RGB_ALPHA:
+            png.png_depth = 32;
 #if defined(PBPAFMT_RGBA)
-	    png.dtbuffer_format = PBPAFMT_RGBA;
+            png.dtbuffer_format = PBPAFMT_RGBA;
 #else
-	    png.dtbuffer_format = PBPAFMT_ARGB;
-	    png_set_swap_alpha(png.png_ptr);
+            png.dtbuffer_format = PBPAFMT_ARGB;
+            png_set_swap_alpha(png.png_ptr);
 #endif
 
-	    bmhd->bmh_Masking = mskHasAlpha;
-	    break;
+            bmhd->bmh_Masking = mskHasAlpha;
+            break;
 
-	default:
-	    png_error(png.png_ptr, "Unknown PNG Color Type!");
-	    break;
+        default:
+            png_error(png.png_ptr, "Unknown PNG Color Type!");
+            break;
     }
 
     png_read_update_info(png.png_ptr, png.png_info_ptr);
@@ -407,21 +407,21 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     /* Mask? */
     if (png.png_type == PNG_COLOR_TYPE_PALETTE)
     {
-    	png_bytep trans;
-	int 	  num_trans;
+        png_bytep trans;
+        int       num_trans;
 
         D(bug("[png.datatype] %s: handling mask\n", __func__);)
 
-    	if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
-	{
-	    png_byte best_trans = 255;
-	    int      i, best_index = 0;
+        if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
+        {
+            png_byte best_trans = 255;
+            int      i, best_index = 0;
 
             D(bug("[png.datatype] %s: %d trans @ 0x%p\n", __func__, num_trans, trans);)
             if (num_trans == 1)
             {
-	    	bmhd->bmh_Masking = mskHasTransparentColor;
-		bmhd->bmh_Transparent = *trans;
+                bmhd->bmh_Masking = mskHasTransparentColor;
+                bmhd->bmh_Transparent = *trans;
             }
             else
             {
@@ -448,114 +448,114 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
                 }
 #endif
             }
-	}
+        }
     }
 
     /* Palette? */
     if ((png.png_type == PNG_COLOR_TYPE_PALETTE) ||
-    	(png.png_type == PNG_COLOR_TYPE_GRAY))
+        (png.png_type == PNG_COLOR_TYPE_GRAY))
     {
-    	struct ColorRegister    *colorregs = 0;
-	ULONG	    	    	*cregs = 0;
-    	png_colorp  	    	col = 0;
-    	int 	    	    	numcolors = 1L << png.png_depth;
+        struct ColorRegister    *colorregs = 0;
+        ULONG                   *cregs = 0;
+        png_colorp              col = 0;
+        int                     numcolors = 1L << png.png_depth;
 
         D(bug("[png.datatype] %s: reading palette\n", __func__);)
 
-	if (png.png_type == PNG_COLOR_TYPE_PALETTE)
-	{
-   	    if (!png_get_PLTE(png.png_ptr, png.png_info_ptr, &col, &numcolors))
-	    {
-	    	png_error(png.png_ptr, "PLTE chunk missing!");
-	    }
-	}
+        if (png.png_type == PNG_COLOR_TYPE_PALETTE)
+        {
+            if (!png_get_PLTE(png.png_ptr, png.png_info_ptr, &col, &numcolors))
+            {
+                png_error(png.png_ptr, "PLTE chunk missing!");
+            }
+        }
 
-	SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
+        SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
 
-    	/* Gray images should in theory not require the following code,
-	   as picture.datatype should handle it automatically when
-	   we use PBPAFMT_GREY8. But just to be sure ... */
+        /* Gray images should in theory not require the following code,
+           as picture.datatype should handle it automatically when
+           we use PBPAFMT_GREY8. But just to be sure ... */
 
-	if (GetDTAttrs(o, PDTA_ColorRegisters, (IPTR) &colorregs,
-	    	    	  PDTA_CRegs	     , (IPTR) &cregs	 ,
-			  TAG_DONE                                ) == 2)
-	{
-	    int i;
+        if (GetDTAttrs(o, PDTA_ColorRegisters, (IPTR) &colorregs,
+                          PDTA_CRegs         , (IPTR) &cregs     ,
+                          TAG_DONE                                ) == 2)
+        {
+            int i;
 
-	    for(i = 0; i < numcolors; i++)
-	    {
-	    	if (png.png_type == PNG_COLOR_TYPE_PALETTE)
-		{
-		    colorregs->red   = col->red;
-		    colorregs->green = col->green;
-		    colorregs->blue  = col->blue;
+            for(i = 0; i < numcolors; i++)
+            {
+                if (png.png_type == PNG_COLOR_TYPE_PALETTE)
+                {
+                    colorregs->red   = col->red;
+                    colorregs->green = col->green;
+                    colorregs->blue  = col->blue;
 
-		    col++;
-		}
-		else
-		{
-		    colorregs->red =
-		    colorregs->green =
-		    colorregs->blue = i;
-		}
+                    col++;
+                }
+                else
+                {
+                    colorregs->red =
+                    colorregs->green =
+                    colorregs->blue = i;
+                }
 
-		*cregs++ = ((ULONG)colorregs->red)   * 0x01010101;
-		*cregs++ = ((ULONG)colorregs->green) * 0x01010101;
-		*cregs++ = ((ULONG)colorregs->blue)  * 0x01010101;
+                *cregs++ = ((ULONG)colorregs->red)   * 0x01010101;
+                *cregs++ = ((ULONG)colorregs->green) * 0x01010101;
+                *cregs++ = ((ULONG)colorregs->blue)  * 0x01010101;
 
-		colorregs++;
+                colorregs++;
 
-	    } /* for(i = 0; i < numcolors; i++) */
+            } /* for(i = 0; i < numcolors; i++) */
 
-	} /* if (GetDTAttrs(o, ... */
+        } /* if (GetDTAttrs(o, ... */
 
     } /* if image needs palette */
 
     {
-    	ULONG buffersize, modulo, y;
-	UBYTE *buf;
+        ULONG buffersize, modulo, y;
+        UBYTE *buf;
 
-	buffersize = png_get_rowbytes(png.png_ptr, png.png_info_ptr);
-	if (png.png_lace == PNG_INTERLACE_NONE)
-	{
-    	    modulo = 0;
-	}
-	else
-	{
-    	    modulo = buffersize; buffersize *= png.png_height;
-	}
+        buffersize = png_get_rowbytes(png.png_ptr, png.png_info_ptr);
+        if (png.png_lace == PNG_INTERLACE_NONE)
+        {
+            modulo = 0;
+        }
+        else
+        {
+            modulo = buffersize; buffersize *= png.png_height;
+        }
 
-	buffer = AllocVec(buffersize, 0);
-    	if (!buffer) png_error(png.png_ptr, "Out of memory!");
+        buffer = AllocVec(buffersize, 0);
+        if (!buffer) png_error(png.png_ptr, "Out of memory!");
 
-	while(png.png_num_lace_passes--)
-	{
-    	    for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo)
-	    {
-		png_read_row(png.png_ptr, buf, NULL);
+        while(png.png_num_lace_passes--)
+        {
+            for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo)
+            {
+                png_read_row(png.png_ptr, buf, NULL);
 
-		if (png.png_num_lace_passes == 0)
-		{
-		    if(!DoSuperMethod(cl, o,
-				      PDTM_WRITEPIXELARRAY, /* Method_ID */
-				      (IPTR) buf,	    /* PixelData */
-				      png.dtbuffer_format,	    /* PixelFormat */
-				      0,		    /* PixelArrayMod (number of bytes per row) */
-				      0,		    /* Left edge */
-				      y,	    	    /* Top edge */
-				      png.png_width,	    /* Width */
-				      1))		    /* Height (here: one line) */
-		    {
-		    	png_error(png.png_ptr, "Out of memory!");
-		    }
+                if (png.png_num_lace_passes == 0)
+                {
+                    if(!DoSuperMethod(cl, o,
+                                      PDTM_WRITEPIXELARRAY, /* Method_ID */
+                                      (IPTR) buf,           /* PixelData */
+                                      png.dtbuffer_format,          /* PixelFormat */
+                                      0,                    /* PixelArrayMod (number of bytes per row) */
+                                      0,                    /* Left edge */
+                                      y,                    /* Top edge */
+                                      png.png_width,        /* Width */
+                                      1))                   /* Height (here: one line) */
+                    {
+                        png_error(png.png_ptr, "Out of memory!");
+                    }
 
-		}
+                }
 
-	    } /* for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo) */
+            } /* for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo) */
 
-	} /* while(png.png_num_lace_passes--) */
+        } /* while(png.png_num_lace_passes--) */
 
-	FreeVec(buffer); buffer = NULL;
+        FreeVec(buffer); buffer = NULL;
 
     } /**/
 
@@ -565,9 +565,9 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     /* Pass picture size to picture.datatype */
     GetDTAttrs( o, DTA_Name, (IPTR) &name, TAG_DONE );
     SetDTAttrs(o, NULL, NULL, DTA_NominalHoriz,        png.png_width,
-			      DTA_NominalVert ,        png.png_height,
-			      DTA_ObjName     , (IPTR) name,
-			      TAG_DONE);
+                              DTA_NominalVert ,        png.png_height,
+                              DTA_ObjName     , (IPTR) name,
+                              TAG_DONE);
 
     D(bug("png.datatype/LoadPNG(): Normal Exit\n"));
     PNG_Exit(&png, 0);
@@ -590,8 +590,8 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
     /* No filehandle is not an error, just NOP */
     if (!dtw->dtw_FileHandle)
     {
-	D(bug("png.datatype/SavePNG(): empty filehandle\n"));
-	PNG_Exit(&png, 0);
+        D(bug("png.datatype/SavePNG(): empty filehandle\n"));
+        PNG_Exit(&png, 0);
         return TRUE;
     }
     filehandle = dtw->dtw_FileHandle;
@@ -730,7 +730,7 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
             PNG_Exit(&png, ERROR_UNKNOWN);
             return FALSE;
         }
-	
+        
         /* png_write_line */
         png_write_row(png.png_ptr, linebuf);
     }
@@ -755,11 +755,11 @@ IPTR PNG__OM_NEW(struct IClass *cl, Object *o, Msg msg)
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval != (IPTR)0)
     {
-	if (!LoadPNG(cl, (Object *)retval))
-	{
-	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-	    return (IPTR)0;
-	}
+        if (!LoadPNG(cl, (Object *)retval))
+        {
+            CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
+            return (IPTR)0;
+        }
     }
     return retval;
 }

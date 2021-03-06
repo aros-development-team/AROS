@@ -11,54 +11,54 @@
 LONG PushContextNode
 (
     struct IFFHandle   *iff,
-    LONG	       type,
-    LONG	       id,
-    LONG	       size,
-    LONG	       scan,
+    LONG               type,
+    LONG               id,
+    LONG               size,
+    LONG               scan,
     struct IFFParseBase_intern *IFFParseBase
 )
 {
     /* Allocates and puts a new context-node into the top of the context-stack
      Also does GoodType and GoodID checking  */
-    struct ContextNode	 *cn;
+    struct ContextNode   *cn;
     BOOL composite;
 
     D(bug("PushContextNode(iff=%p, type=%c%c%c%c, id=%c%c%c%c, size=%d, scan=%d)\n",
-	iff,
-	dmkid(type),
-	dmkid(id),
-	size,
-	scan
+        iff,
+        dmkid(type),
+        dmkid(id),
+        size,
+        scan
     ));
 
     /* Set the composite flag if we have a composite contextnnode */
     if (id == ID_FORM || id == ID_LIST || id == ID_CAT || id == ID_PROP)
     {
-	composite = TRUE;
-	/* We have a new type, check it */
+        composite = TRUE;
+        /* We have a new type, check it */
     }
     else
     {
-	composite = FALSE;
-	/* No composite type found.  Get old type from top contextnode */
-	cn = TopChunk(iff);
-	type = cn->cn_Type;
+        composite = FALSE;
+        /* No composite type found.  Get old type from top contextnode */
+        cn = TopChunk(iff);
+        type = cn->cn_Type;
     }
 
       /* Check if type and ids are valid */
     if (!(GoodType(type) && GoodID(id)) )
-	ReturnInt ("PushContextNode",LONG,IFFERR_MANGLED);
+        ReturnInt ("PushContextNode",LONG,IFFERR_MANGLED);
 
     /* Allocate a new context node */
     if ( !(cn = AllocMem ( sizeof (struct IntContextNode), MEMF_ANY ) ) )
-	ReturnInt ("PushContextNode",LONG,IFFERR_NOMEM);
+        ReturnInt ("PushContextNode",LONG,IFFERR_NOMEM);
 
     /* Put the context node at top of the stack */
     AddHead ( (struct List*)&( GetIntIH(iff)->iff_CNStack ), (struct Node*)cn );
 
     /* Set the contextnode attrs */
     cn->cn_Type  =  type;
-    cn->cn_ID	= id;
+    cn->cn_ID   = id;
     cn->cn_Size  = size;
     cn->cn_Scan  =  scan;
 
@@ -76,7 +76,7 @@ VOID PopContextNode(struct IFFHandle* iff,
     struct IFFParseBase_intern *IFFParseBase)
 {
     struct LocalContextItem *node,
-			    *nextnode;
+                            *nextnode;
 
     struct IntContextNode *cn;
 
@@ -86,14 +86,14 @@ VOID PopContextNode(struct IFFHandle* iff,
 
     if (cn)
     {
-	D(bug("(%c%c%c%c, %c%c%c%c)\n",
-	    dmkid(cn->CN.cn_Type),
-	    dmkid(cn->CN.cn_ID)
-	));
+        D(bug("(%c%c%c%c, %c%c%c%c)\n",
+            dmkid(cn->CN.cn_Type),
+            dmkid(cn->CN.cn_ID)
+        ));
     }
     else
     {
-	D(bug("\n"));
+        D(bug("\n"));
     }
 
     /* Free all localcontextitems */
@@ -101,9 +101,9 @@ VOID PopContextNode(struct IFFHandle* iff,
 
     while ((nextnode = (struct LocalContextItem*)node->lci_Node.mln_Succ))
     {
-	PurgeLCI((struct LocalContextItem*)node, IFFParseBase);
+        PurgeLCI((struct LocalContextItem*)node, IFFParseBase);
 
-	node = nextnode;
+        node = nextnode;
     }
 
     /* Free the contextnode itself */
@@ -132,9 +132,9 @@ LONG ReadStreamLong (struct IFFHandle *iff,
     D(bug("ReadStreamLong: val %ld\n", val));
 
     if (val < 0)
-	return val;
+        return val;
     else if (val != sizeof(LONG))
-	return IFFERR_EOF;
+        return IFFERR_EOF;
 
 #if !AROS_BIG_ENDIAN
     *(LONG *)valptr = bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
@@ -170,9 +170,9 @@ LONG WriteStreamLong (struct IFFHandle *iff,
     D(bug("WriteStreamLong: val %ld\n", val));
 
     if (val < 0)
-	return val;
+        return val;
     else if (val != sizeof(LONG))
-	return IFFERR_EOF;
+        return IFFERR_EOF;
 
     return sizeof(LONG);
 } /* WriteStreamLong */
@@ -185,8 +185,8 @@ LONG GetChunkHeader(struct IFFHandle *iff,
     struct IFFParseBase_intern *IFFParseBase)
 {
     LONG type,
-	 id,
-	 size;
+         id,
+         size;
     LONG scan = 0;
     LONG bytesread;
 
@@ -199,54 +199,54 @@ LONG GetChunkHeader(struct IFFHandle *iff,
 
     /* We may have an IFF Error */
     if (bytesread < 0)
-	ReturnInt ("GetChunkHeader",LONG,bytesread);
+        ReturnInt ("GetChunkHeader",LONG,bytesread);
 
     /* Read chunk size */
     bytesread = ReadStreamLong ( iff, &size, IFFParseBase );
 
     if (bytesread < 0)
-	ReturnInt ("GetChunkHeader",LONG,bytesread);
+        ReturnInt ("GetChunkHeader",LONG,bytesread);
 
     /* We must see if we have a IFF header ("FORM", "CAT" or "LIST" */
     if ( id == ID_FORM || id == ID_CAT || id == ID_LIST || id == ID_PROP )
     {
-	/* Read chunk size */
-	bytesread = ReadStreamLong ( iff, &type, IFFParseBase );
+        /* Read chunk size */
+        bytesread = ReadStreamLong ( iff, &type, IFFParseBase );
 
-	if (bytesread < 0)
-	    ReturnInt ("GetChunkHeader",LONG,bytesread);
+        if (bytesread < 0)
+            ReturnInt ("GetChunkHeader",LONG,bytesread);
 
-	DB2(bug("  Found Chunk %c%c%c%c size=%d type %c%c%c%c\n",
-	    dmkid(id),
-	    size,
-	    dmkid(type)
-	));
+        DB2(bug("  Found Chunk %c%c%c%c size=%d type %c%c%c%c\n",
+            dmkid(id),
+            size,
+            dmkid(type)
+        ));
 
-	/* Type is inside chunk so we had to add its size to the scancount. */
-	scan = sizeof (LONG);
+        /* Type is inside chunk so we had to add its size to the scancount. */
+        scan = sizeof (LONG);
     }
     else
     {
-	type = 0L;
-	DB2(bug("  Found Chunk %c%c%c%c size=%d\n",
-	    dmkid(id),
-	    size
-	));
+        type = 0L;
+        DB2(bug("  Found Chunk %c%c%c%c size=%d\n",
+            dmkid(id),
+            size
+        ));
     }
 
     ReturnInt
     (
-	"GetChunkHeader",
-	LONG,
-	PushContextNode
-	(
-	    iff,
-	    type,
-	    id,
-	    size,
-	    scan,
-	    IFFParseBase
-	)
+        "GetChunkHeader",
+        LONG,
+        PushContextNode
+        (
+            iff,
+            type,
+            id,
+            size,
+            scan,
+            IFFParseBase
+        )
     );
 }
 
@@ -257,8 +257,8 @@ LONG GetChunkHeader(struct IFFHandle *iff,
 LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
     struct IFFParseBase_intern *IFFParseBase)
 {
-    struct ContextNode	     *cn;
-    struct HandlerInfo	    *hi;
+    struct ContextNode       *cn;
+    struct HandlerInfo      *hi;
     struct LocalContextItem *lci;
 
     LONG err;
@@ -267,17 +267,17 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
     IPTR param;
 
     D(bug("InvokeHandlers (Iff=%p, mode=%d, ident=0x%08lx\n",
-	iff, mode, ident
+        iff, mode, ident
     ));
 
     if (ident == IFFLCI_ENTRYHANDLER)
-	stepping_retval = IFF_RETURN2CLIENT;
+        stepping_retval = IFF_RETURN2CLIENT;
     else
-	stepping_retval = IFFERR_EOC;
+        stepping_retval = IFFERR_EOC;
 
     /* Check for IFFPARSE_RAWSTEP *before* calling evt entryhandlers */
     if (mode == IFFPARSE_RAWSTEP)
-	ReturnInt ("InvokeHandlers(1)",LONG,stepping_retval);
+        ReturnInt ("InvokeHandlers(1)",LONG,stepping_retval);
 
     /* Get top of contextstack */
     cn = TopChunk(iff);
@@ -287,36 +287,36 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
 
     if (lci)
     {
-	/* Get the HandlerInfo userdata */
-	hi = LocalItemData(lci);
+        /* Get the HandlerInfo userdata */
+        hi = LocalItemData(lci);
 
 
-	/* First check if a hook really is present */
-	if (! hi->hi_Hook)
-	    ReturnInt ("InvokeHandlers",LONG,IFFERR_NOHOOK);
+        /* First check if a hook really is present */
+        if (! hi->hi_Hook)
+            ReturnInt ("InvokeHandlers",LONG,IFFERR_NOHOOK);
 
-	/* What kind off command shall the hook receive */
+        /* What kind off command shall the hook receive */
 
-	if (ident == IFFLCI_ENTRYHANDLER)
-	    param = IFFCMD_ENTRY;
-	else
-	    param = IFFCMD_EXIT;
+        if (ident == IFFLCI_ENTRYHANDLER)
+            param = IFFCMD_ENTRY;
+        else
+            param = IFFCMD_EXIT;
 
 
-	/* Call the handler */
-	if ( (err = CallHookPkt (  hi->hi_Hook, hi->hi_Object, (APTR)param)) )
-	    ReturnInt ("InvokeHandlers(2)",LONG,err);
+        /* Call the handler */
+        if ( (err = CallHookPkt (  hi->hi_Hook, hi->hi_Object, (APTR)param)) )
+            ReturnInt ("InvokeHandlers(2)",LONG,err);
     }
 
     /* Check for IFFPARSE_STEP. (stepping through file WITH handlers enabled */
     if (mode == IFFPARSE_STEP)
-	ReturnInt ("InvokeHandlers(3)",LONG,stepping_retval);
+        ReturnInt ("InvokeHandlers(3)",LONG,stepping_retval);
 
     ReturnInt ("InvokeHandlers",LONG,0L);
 }
 
 /******************/
-/* PurgeLCI	   */
+/* PurgeLCI        */
 /******************/
 
 VOID PurgeLCI(struct LocalContextItem *lci,
@@ -330,21 +330,21 @@ VOID PurgeLCI(struct LocalContextItem *lci,
     /* Has the user specified a Purge hook ? */
 
     if ( GetIntLCI(lci)->lci_PurgeHook)
-	CallHookPkt
-	(
-	    GetIntLCI(lci)->lci_PurgeHook,
-	    lci,
-	    (APTR)IFFCMD_PURGELCI
-	);
+        CallHookPkt
+        (
+            GetIntLCI(lci)->lci_PurgeHook,
+            lci,
+            (APTR)IFFCMD_PURGELCI
+        );
 
     else
-	FreeLocalItem(lci);
+        FreeLocalItem(lci);
 }
 
 
 
 /******************/
-/* Readstream	   */
+/* Readstream      */
 /******************/
 
 /* Reads from the current StreamHandler */
@@ -354,7 +354,7 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
     struct IFFParseBase_intern *IFFParseBase)
 {
     LONG   retval,
-	  err;
+          err;
 
     /* For use with custom streams */
     struct IFFStreamCmd cmd;
@@ -371,13 +371,13 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
 
         err = CallHookPkt
         (
-	    GetIntIH(iff)->iff_StreamHandler,
-	    iff,
-	    &cmd
+            GetIntIH(iff)->iff_StreamHandler,
+            iff,
+            &cmd
         );
 
         if (err)
-	    retval = IFFERR_READ;
+            retval = IFFERR_READ;
     }
 
     D(bug("ReadStream: return %d\n", retval));
@@ -386,14 +386,14 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
 
 
 /****************/
-/* WriteStream	*/
+/* WriteStream  */
 /****************/
 
 LONG WriteStream(struct IFFHandle *iff, APTR buf, LONG bytestowrite,
     struct IFFParseBase_intern *IFFParseBase)
 {
     LONG   retval,
-	  err;
+          err;
 
     struct IFFStreamCmd cmd;
 
@@ -405,19 +405,19 @@ LONG WriteStream(struct IFFHandle *iff, APTR buf, LONG bytestowrite,
 
     if (bytestowrite)
     {
-	cmd.sc_Command   = IFFCMD_WRITE;
-	cmd.sc_Buf	 = buf;
-	cmd.sc_NBytes    = bytestowrite;
+        cmd.sc_Command   = IFFCMD_WRITE;
+        cmd.sc_Buf       = buf;
+        cmd.sc_NBytes    = bytestowrite;
 
         err = CallHookPkt
         (
-	    GetIntIH(iff)->iff_StreamHandler,
-	    iff,
-	    &cmd
+            GetIntIH(iff)->iff_StreamHandler,
+            iff,
+            &cmd
         );
 
         if (err)
-	    retval = IFFERR_WRITE;
+            retval = IFFERR_WRITE;
     }
 
     D(bug("WriteStream: return %d\n", retval));
@@ -433,13 +433,13 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
 
     /* Some different problem - situations:
 
-	1. Backwards seek in non back seekable stream. In this case the stream is buffered,
-	  and we may seek in the buffer. This is done automagically, since PushChunk
-	  then has inserted a Buffering streamhandle.
+        1. Backwards seek in non back seekable stream. In this case the stream is buffered,
+          and we may seek in the buffer. This is done automagically, since PushChunk
+          then has inserted a Buffering streamhandle.
 
 
-	2. Forwards seek in a non - seekable stream. Simulate the seek with a bunch
-	  of ReadStream's
+        2. Forwards seek in a non - seekable stream. Simulate the seek with a bunch
+          of ReadStream's
 
     */
 
@@ -457,65 +457,65 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
     /* Problem 2. */
     if
     (
-	(offset > 0)
+        (offset > 0)
     &&
-	(
-	    !(
-		(flags & IFFF_RSEEK)
-	    ||
-		(flags & IFFF_FSEEK)
-	    )
-	)
+        (
+            !(
+                (flags & IFFF_RSEEK)
+            ||
+                (flags & IFFF_FSEEK)
+            )
+        )
     )
     {
-	/* We should use consecutive ReadStream()s to simulate a Seek */
+        /* We should use consecutive ReadStream()s to simulate a Seek */
 
-	/* Allocate a buffer to use with the read */
-	seekbuf = AllocMem(SEEKBUFSIZE, MEMF_ANY);
+        /* Allocate a buffer to use with the read */
+        seekbuf = AllocMem(SEEKBUFSIZE, MEMF_ANY);
 
-	if (!seekbuf)
-	    retval = IFFERR_NOMEM;
-	else
-	{
+        if (!seekbuf)
+            retval = IFFERR_NOMEM;
+        else
+        {
 
-	    for (; offset > SEEKBUFSIZE; offset -= SEEKBUFSIZE)
-	    {
-		retval = ReadStream(iff, seekbuf, SEEKBUFSIZE, IFFParseBase);
+            for (; offset > SEEKBUFSIZE; offset -= SEEKBUFSIZE)
+            {
+                retval = ReadStream(iff, seekbuf, SEEKBUFSIZE, IFFParseBase);
 
-		if (retval != SEEKBUFSIZE)
-		    retval = IFFERR_SEEK;
-	    }
+                if (retval != SEEKBUFSIZE)
+                    retval = IFFERR_SEEK;
+            }
 
-	    /* Seek what is left of offset  */
-	    retval = ReadStream(iff, seekbuf, SEEKBUFSIZE, IFFParseBase);
-	    if ( retval != SEEKBUFSIZE)
-		retval = IFFERR_SEEK;
+            /* Seek what is left of offset  */
+            retval = ReadStream(iff, seekbuf, SEEKBUFSIZE, IFFParseBase);
+            if ( retval != SEEKBUFSIZE)
+                retval = IFFERR_SEEK;
 
-	    FreeMem(seekbuf, SEEKBUFSIZE);
-	}
+            FreeMem(seekbuf, SEEKBUFSIZE);
+        }
 
     }
     else if (offset == 0)
     {
-	; /* Do nothing */
+        ; /* Do nothing */
     }
     else
     {
 
-	/* Everything is just fine... Seek in a normal manner */
+        /* Everything is just fine... Seek in a normal manner */
 
-	cmd.sc_Command = IFFCMD_SEEK;
-	cmd.sc_NBytes	   = offset;
+        cmd.sc_Command = IFFCMD_SEEK;
+        cmd.sc_NBytes      = offset;
 
-	err = CallHookPkt
-	(
-	    GetIntIH(iff)->iff_StreamHandler,
-	    iff,
-	    &cmd
-	);
+        err = CallHookPkt
+        (
+            GetIntIH(iff)->iff_StreamHandler,
+            iff,
+            &cmd
+        );
 
-	if (err)
-	      retval = IFFERR_SEEK;
+        if (err)
+              retval = IFFERR_SEEK;
     }
 
     D(bug("SeekStream: return %d\n", retval));

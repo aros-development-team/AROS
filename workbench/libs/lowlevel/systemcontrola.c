@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #define DEBUG 0
@@ -22,7 +22,7 @@
 
       AROS_LH1(ULONG, SystemControlA,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */

@@ -11,12 +11,12 @@
 
     NAME */
 
-	AROS_LH0(struct GlyphEngine *, OpenEngine,
+        AROS_LH0(struct GlyphEngine *, OpenEngine,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct Library *, BulletBase, 5, Bullet)
+        struct Library *, BulletBase, 5, Bullet)
 
 /*  FUNCTION
 
@@ -34,7 +34,7 @@
 
     INTERNALS
 
-    This interface is implemented in freetype2.library. 
+    This interface is implemented in freetype2.library.
     See /workbench/libs/freetype/src/aros.
 
     HISTORY

@@ -332,7 +332,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    // load only global prefs if no local app pref is found  
+    // load only global prefs if no local app pref is found
     if (!res)
     {
         if (!DoMethod(obj, MUIM_Configdata_Load,
@@ -729,7 +729,7 @@ static IPTR Configdata_SetWindowPos(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetString *msg)
 {
     struct MUI_ConfigdataData *data;
-    //kprintf ("setwindowpos\n");   
+    //kprintf ("setwindowpos\n");
     data = INST_DATA(cl, obj);
     IPTR addr = 0;
     LONG size = 0;

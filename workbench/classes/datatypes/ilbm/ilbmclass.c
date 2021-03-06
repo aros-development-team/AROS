@@ -99,7 +99,7 @@ static UBYTE *UnpackByteRun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
                 if (--unpackedsize <= 0) return source;
             }
         }
-    }   
+    }
 }
 
 /**************************************************************************************************/
@@ -108,8 +108,8 @@ static BOOL ReadBitMapPic(Class *cl, Object *o, struct IFFHandle *handle, struct
                        struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn)
 {
     struct BitMap *bm;
-    UBYTE   	  *src, *body, *uncompress_buf;
-    LONG    	   y, p, w16, bm_bpr, body_bpr, copy_bpr, totdepth;
+    UBYTE         *src, *body, *uncompress_buf;
+    LONG           y, p, w16, bm_bpr, body_bpr, copy_bpr, totdepth;
     
     totdepth = bmhd->bmh_Depth;
     if (file_bmhd->bmh_Masking == mskHasMask) totdepth++;
@@ -208,12 +208,12 @@ const UBYTE bitmask[] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01, 0 };
 static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
                        struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn, UBYTE *coltab)
 {
-    UBYTE   	*src, *srcline, *srclinestart, *chunkystart, *chunky, *body, *compressed=0, *uncompressed=0, *maskptr;
-    int		width, height, numplanes, mask, hamrot1, hamrot2;
-    LONG    	x, y, p, w16, body_bpr, bodysize;
-    ULONG	rgb;
-    UBYTE	r, g, b, hmask, mmask;
-    BOOL	compress;
+    UBYTE       *src, *srcline, *srclinestart, *chunkystart, *chunky, *body, *compressed=0, *uncompressed=0, *maskptr;
+    int         width, height, numplanes, mask, hamrot1, hamrot2;
+    LONG        x, y, p, w16, body_bpr, bodysize;
+    ULONG       rgb;
+    UBYTE       r, g, b, hmask, mmask;
+    BOOL        compress;
     
     width  = bmhd->bmh_Width;
     height = bmhd->bmh_Height;
@@ -328,13 +328,13 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
                 
                 if( !DoSuperMethod(cl, o,
                             PDTM_WRITEPIXELARRAY,   /* Method_ID */
-                            (IPTR) chunkystart,	    /* PixelData */
-                            PBPAFMT_RGB,	    /* PixelFormat */
-                            width*3,		    /* PixelArrayMod (number of bytes per row) */
-                            0,			    /* Left edge */
-                            y,			    /* Top edge */
-                            width,		    /* Width */
-                            1))			    /* Height (here: one line) */
+                            (IPTR) chunkystart,     /* PixelData */
+                            PBPAFMT_RGB,            /* PixelFormat */
+                            width*3,                /* PixelArrayMod (number of bytes per row) */
+                            0,                      /* Left edge */
+                            y,                      /* Top edge */
+                            width,                  /* Width */
+                            1))                     /* Height (here: one line) */
                 {
                     D(bug("ilbm.datatype/ReadRGB: WRITEPIXELARRAY failed\n"));
                     FreeVec(body);
@@ -383,20 +383,20 @@ static void FixColRegs(ULONG numcolors, UBYTE *srcstart)
 static void CopyColRegs(Object *o, ULONG numcolors, UBYTE *srcstart, BOOL ehb)
 {
     struct ColorRegister    *colorregs;
-    ULONG    	    	    *cregs;
+    ULONG                   *cregs;
 
     SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
     
     if (GetDTAttrs(o, PDTA_ColorRegisters   , (IPTR)&colorregs,
-                      PDTA_CRegs    	    , (IPTR)&cregs	,
-                      TAG_DONE	    	    	    	    	 ) == 2)
+                      PDTA_CRegs            , (IPTR)&cregs      ,
+                      TAG_DONE                                   ) == 2)
     {
         if (colorregs && cregs)
         {
-            LONG	i, j;
-            int		cnt = 0;
-            int		r, g, b;
-            UBYTE	*src;
+            LONG        i, j;
+            int         cnt = 0;
+            int         r, g, b;
+            UBYTE       *src;
             
             if( ehb )
             {
@@ -439,19 +439,19 @@ static BOOL ReadILBM(Class *cl, Object *o)
 {
     struct FileBitMapHeader *file_bmhd;
     struct BitMapHeader     *bmhd;
-    struct IFFHandle	    *handle;
+    struct IFFHandle        *handle;
     struct StoredProperty   *bmhd_prop, *cmap_prop, *camg_prop;
-    struct ContextNode	    *cn;
-    ULONG   	    	    numcolors;
-    IPTR    	    	    sourcetype;
-    LONG    	    	    error;
+    struct ContextNode      *cn;
+    ULONG                   numcolors;
+    IPTR                    sourcetype;
+    LONG                    error;
  
     D(bug("ilbm.datatype/ReadILBM()\n"));
        
-    if (GetDTAttrs(o, DTA_SourceType	, (IPTR)&sourcetype ,
-                      DTA_Handle    	, (IPTR)&handle     , 
-                      PDTA_BitMapHeader , (IPTR)&bmhd	    ,
-                      TAG_DONE	    	    	    	     ) != 3)
+    if (GetDTAttrs(o, DTA_SourceType    , (IPTR)&sourcetype ,
+                      DTA_Handle        , (IPTR)&handle     ,
+                      PDTA_BitMapHeader , (IPTR)&bmhd       ,
+                      TAG_DONE                               ) != 3)
     {
         SetIoErr(ERROR_OBJECT_NOT_FOUND);
         return FALSE;
@@ -506,10 +506,10 @@ static BOOL ReadILBM(Class *cl, Object *o)
     }
 
     file_bmhd = (struct FileBitMapHeader *)bmhd_prop->sp_Data;
-    bmhd->bmh_Width  	  = bmhd->bmh_PageWidth  = (file_bmhd->bmh_Width [0] << 8) + file_bmhd->bmh_Width [1];
-    bmhd->bmh_Height 	  = bmhd->bmh_PageHeight = (file_bmhd->bmh_Height[0] << 8) + file_bmhd->bmh_Height[1];
-    bmhd->bmh_Depth  	  = file_bmhd->bmh_Depth;
-    bmhd->bmh_Masking 	  = file_bmhd->bmh_Masking;
+    bmhd->bmh_Width       = bmhd->bmh_PageWidth  = (file_bmhd->bmh_Width [0] << 8) + file_bmhd->bmh_Width [1];
+    bmhd->bmh_Height      = bmhd->bmh_PageHeight = (file_bmhd->bmh_Height[0] << 8) + file_bmhd->bmh_Height[1];
+    bmhd->bmh_Depth       = file_bmhd->bmh_Depth;
+    bmhd->bmh_Masking     = file_bmhd->bmh_Masking;
     bmhd->bmh_Transparent = (file_bmhd->bmh_Transparent[0] << 8) + file_bmhd->bmh_Transparent[1];
     
     {
@@ -597,7 +597,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
 /**************************************************************************************************/
 
 LONG WriteBytes(BPTR file, APTR data, LONG offset, LONG length)
-{    
+{
     LONG count = 0;
     Seek(file,offset,OFFSET_BEGINNING);
     
@@ -615,13 +615,13 @@ LONG WriteBytes(BPTR file, APTR data, LONG offset, LONG length)
 /**************************************************************************************************/
 
 static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
-{    
-    BPTR                        fileHandle;    
+{
+    BPTR                        fileHandle;
     int                         i, numcolors;
     struct BitMapHeader         *bmhd;
     struct BitMap               *bm;
     struct ColorRegister        *colormap;
-    LONG                        *colorregs;    
+    LONG                        *colorregs;
     ULONG                       FileOutL;
     UWORD                       BMHD[10];
 
@@ -661,11 +661,11 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     ULONG fileSize = (ULONG)(((bm->BytesPerRow * bmhd->bmh_Depth) * bmhd->bmh_Height) + (numcolors * 3) + 48);
 
     offset += 4;
-    length = 4;    
+    length = 4;
     FileOutL = AROS_LONG2BE(fileSize);
     WriteBytes(fileHandle, &FileOutL, offset, length);
 
-    //Write File Format Type 'ILBM'.    
+    //Write File Format Type 'ILBM'.
     offset += 4;
     length = 4;
     FileOutL = AROS_LONG2BE(AROS_MAKE_ID('I','L','B','M'));
@@ -675,9 +675,9 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     offset += 4;
     length = 4;
     FileOutL = AROS_LONG2BE(AROS_MAKE_ID('B','M','H','D'));
-    WriteBytes(fileHandle, &FileOutL, offset, length);    
+    WriteBytes(fileHandle, &FileOutL, offset, length);
 
-    //Write BMHD ChunkSize.    
+    //Write BMHD ChunkSize.
     offset += 4;
     length = 4;
     FileOutL = AROS_LONG2BE(20);
@@ -712,7 +712,7 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
         FileOutL = AROS_LONG2BE(AROS_MAKE_ID('C','M','A','P'));
         WriteBytes(fileHandle, &FileOutL, offset, length);
 
-        //Write chunkSize to File.        
+        //Write chunkSize to File.
         offset += 4;
         FileOutL = AROS_LONG2BE(numcolors * 3);
         WriteBytes(fileHandle, &FileOutL, offset, length);
@@ -727,9 +727,9 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
             Cmap[(i*3)+2] = colormap[i].blue;
         }
 
-        /* Write ColorMap and CAMG information. */               
+        /* Write ColorMap and CAMG information. */
         offset += 4;
-        count = WriteBytes(fileHandle, Cmap, offset, numcolors*3);        
+        count = WriteBytes(fileHandle, Cmap, offset, numcolors*3);
         FreeVec(Cmap);
     }
 
@@ -753,17 +753,17 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
 
     /* Write chunkSize to File. */
     //Does NOT include Padding Byte!
-    //Calculate BODY size without Padding Byte if Odd. 
+    //Calculate BODY size without Padding Byte if Odd.
     offset += 4;
     FileOutL = AROS_LONG2BE((bytesPerRow * numplanes) * imageHeight);
     WriteBytes(fileHandle, &FileOutL, offset, length);
 
     /* For images with <= 8 bitplanes. */
-    //Copy planar data from the bitplanes of the bitmap to the BODY buffer 
-    //one scanline at a time. Compress as needed. 
+    //Copy planar data from the bitplanes of the bitmap to the BODY buffer
+    //one scanline at a time. Compress as needed.
    
-    //Set the offset to write the planar data to file.    
-    offset += 4;    
+    //Set the offset to write the planar data to file.
+    offset += 4;
     
     //Copy planar data from the bitplanes of the bitmap.
     for(y = 0; y < imageHeight; y++)
@@ -776,11 +776,11 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
             WriteBytes(fileHandle, src, offset, bytesPerRow);
             offset += bytesPerRow;
         }
-    }            
+    }
     //Add padding byte if needed.
 
     if (fileHandle)
-        Close(fileHandle); 
+        Close(fileHandle);
     
     return TRUE;
 }
@@ -802,19 +802,19 @@ static BOOL SaveILBM(struct IClass *cl, Object *DTImage, struct dtWrite *dtw )
         }
 
         //If bmhd->depth <= 8,24,32 then save ILBM with correct no. bitplanes
-        //else Process fails. Incorrect number of bitplanes.        
+        //else Process fails. Incorrect number of bitplanes.
 
-        if (bmhd->bmh_Depth <= 8) 
-        {            
+        if (bmhd->bmh_Depth <= 8)
+        {
             Save_BitMapPic(cl, DTImage, dtw);
         }
         else if ((bmhd->bmh_Depth == 24) || (bmhd->bmh_Depth == 32))
-        {            
-            //Save_RGBPic(cl, DTImage, dtw);            
+        {
+            //Save_RGBPic(cl, DTImage, dtw);
         }
         else
         {
-            //Process fails. Incorrect number of bitplanes.            
+            //Process fails. Incorrect number of bitplanes.
             D(bug("ilbm.datatype/SaveILBM --- incorrect bitplanes\n"))
             return FALSE;
         }

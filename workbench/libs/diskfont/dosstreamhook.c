@@ -14,7 +14,7 @@
 #undef DOSBase
 
 /****************************************************************************************/
-	
+        
 AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(BPTR,          fh,   A2),
@@ -30,25 +30,25 @@ AROS_UFH3(LONG, dosstreamhook,
     switch (*msg)
     {
     case BEIO_READ:
-	rc = FGetC (fh);
+        rc = FGetC (fh);
 #if 0
 kprintf ("dsh: Read: %02X\n", rc);
 #endif
 
-	break;
+        break;
 
     case BEIO_WRITE:
-	rc = FPutC (fh, ((struct BEIOM_Write *)msg)->Data);
-	break;
+        rc = FPutC (fh, ((struct BEIOM_Write *)msg)->Data);
+        break;
 
     case BEIO_IGNORE:
-	Flush (fh);
+        Flush (fh);
 
-	rc = Seek (fh, ((struct BEIOM_Ignore *)msg)->Count, OFFSET_CURRENT);
+        rc = Seek (fh, ((struct BEIOM_Ignore *)msg)->Count, OFFSET_CURRENT);
 #if 0
 kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
 #endif
-	break;
+        break;
 
     }
 

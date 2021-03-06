@@ -15,11 +15,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(APTR, data, A0),
+        AROS_LHA(APTR, data, A0),
 
 /*  LOCATION */
 
-	struct Library *, nvBase, 6, Nonvolatile)
+        struct Library *, nvBase, 6, Nonvolatile)
 
 /*  FUNCTION
 

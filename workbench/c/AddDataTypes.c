@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 
@@ -22,7 +22,7 @@
     FUNCTION
 
         AddDataTypes allows you to activate a set of specific DataTypes.
-        This might be necessary if new DataTypes were installed on your 
+        This might be necessary if new DataTypes were installed on your
         system or were not activated on startup.
 
     INPUTS
@@ -91,18 +91,18 @@
 /* same as datatypes/datatypes.h/struct DataTypeHeader, but always big endian
 and 32 bit pointers (which in the file are actually offsets) */
 
-struct FileDataTypeHeader	    
+struct FileDataTypeHeader
 {
-    ULONG	 fdth_NameOffset;     /* Name of the data type */
-    ULONG	 fdth_BaseNameOffset; /* Base name of the data type */
-    ULONG	 fdth_PatternOffset;  /* File name match pattern */
-    ULONG	 fdth_MaskOffset;     /* Comparision mask (binary) */
-    ULONG	 fdth_GroupID;        /* DataType Group */
-    ULONG	 fdth_ID;             /* DataType ID (same as IFF FORM type) */
-    WORD	 fdth_MaskLen;        /* Length of the comparision mask */
-    WORD	 fdth_Pad;            /* Unused at present (must be 0) */
-    UWORD	 fdth_Flags;          /* Flags -- see below */
-    UWORD	 fdth_Priority;
+    ULONG        fdth_NameOffset;     /* Name of the data type */
+    ULONG        fdth_BaseNameOffset; /* Base name of the data type */
+    ULONG        fdth_PatternOffset;  /* File name match pattern */
+    ULONG        fdth_MaskOffset;     /* Comparision mask (binary) */
+    ULONG        fdth_GroupID;        /* DataType Group */
+    ULONG        fdth_ID;             /* DataType ID (same as IFF FORM type) */
+    WORD         fdth_MaskLen;        /* Length of the comparision mask */
+    WORD         fdth_Pad;            /* Unused at present (must be 0) */
+    UWORD        fdth_Flags;          /* Flags -- see below */
+    UWORD        fdth_Priority;
 };
 
 #define O(x)        offsetof(struct FileDataTypeHeader,x)
@@ -125,7 +125,7 @@ static const IPTR FileDataTypeHeaderDesc[] =
 
 /******************************** PROTOTYPES *********************************/
 
-struct StackVars;		/* forward declaration */
+struct StackVars;               /* forward declaration */
 
 BOOL DateScan(struct StackVars *sv);
 void ScanDirectory(struct StackVars *sv, STRPTR pattern);
@@ -137,28 +137,28 @@ struct CompoundDataType *CreateBasicType(struct StackVars *sv,
 void LoadDataType(struct StackVars *sv, STRPTR name);
 struct CompoundDataType *CreateDataType(struct StackVars *sv,
                                         struct IFFHandle *iff, STRPTR name);
-struct CompoundDataType *AddDataType(struct StackVars *sv, 
+struct CompoundDataType *AddDataType(struct StackVars *sv,
                                      struct CompoundDataType *cdt);
 void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt);
 void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node);
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
                               STRPTR name);
 
-AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0), 
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
         AROS_UFPA(BPTR   , fh        , D1),
         AROS_UFPA(void * , buf       , D2),
         AROS_UFPA(LONG   , size      , D3),
         AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0), 
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0),
         AROS_UFPA(BPTR   , fh        , D1),
         AROS_UFPA(LONG   , pos       , D2),
         AROS_UFPA(LONG   , mode      , D3),
         AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0), 
+AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0),
         AROS_UFPA(ULONG, size, D0),
         AROS_UFPA(ULONG, req,  D1),
         AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0), 
+AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
         AROS_UFPA(APTR , memory, A1),
         AROS_UFPA(ULONG, size  , D0),
         AROS_UFPA(struct DosLibrary *, DOSBase, A6));
@@ -200,7 +200,7 @@ const LONG CollArray[2*NUM_COLL]=
 
 
 const LONG_FUNC FunctionArray[]=
-{				/* Note! */
+{                               /* Note! */
     (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
     (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0),
     (LONG_FUNC)AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
@@ -469,7 +469,7 @@ void ScanDirectory(struct StackVars *sv, STRPTR pattern)
             }
             else
             {
-                if(!MatchPatternNoCase(ExclPat, 
+                if(!MatchPatternNoCase(ExclPat,
                                        AnchorPath->ap_Info.fib_FileName))
                 {
                     OldDir = CurrentDir(AnchorPath->ap_Current->an_Lock);
@@ -608,8 +608,8 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 *
 */
 
-struct CompoundDataType *CreateBasicType(struct StackVars *sv, 
-                                         struct List *list, 
+struct CompoundDataType *CreateBasicType(struct StackVars *sv,
+                                         struct List *list,
                                          struct List *globallist, STRPTR name,
                                          UWORD Flags, ULONG ID, ULONG GroupID)
 {
@@ -688,7 +688,7 @@ void LoadDataType(struct StackVars *sv, STRPTR name)
                         {
                             LONG error;
                             
-                            while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC) 
+                            while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC)
                             {
                                 CreateDataType(sv, iff, name);
                                 /* FIXME: The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix */
@@ -789,7 +789,7 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
     if((prop = FindProp(iff, ID_DTYP, ID_DTHD)))
     {
         D(bug("[AddDataTypes] sp_Size = %d", prop->sp_Size));
-        AllocLen = sizeof(struct CompoundDataType) - 
+        AllocLen = sizeof(struct CompoundDataType) -
                   32 + /* was sizeof(struct DataTypeHeader), but we must use struct size as it would be on Amiga */
                   prop->sp_Size;
 
@@ -837,17 +837,17 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
                                                      cdt->DTH.dth_ID >> 16,
                                                      cdt->DTH.dth_ID >> 8,
                                                      cdt->DTH.dth_ID);
-                    bug("[AddDataTypes] flags    = %x\n",	 cdt->DTH.dth_Flags);
-                    bug("[AddDataTypes] pri      = %d\n",	 cdt->DTH.dth_Priority);
-                    bug("[AddDataTypes] name     = %s\n",	 cdt->DTH.dth_Name);
-                    bug("[AddDataTypes] basename = %s\n",	 cdt->DTH.dth_BaseName);
-                    bug("[AddDataTypes] pattern  = %s\n",	 cdt->DTH.dth_Pattern);
-                    bug("[AddDataTypes] masklen  = %d\n",	 cdt->DTH.dth_MaskLen);
+                    bug("[AddDataTypes] flags    = %x\n",        cdt->DTH.dth_Flags);
+                    bug("[AddDataTypes] pri      = %d\n",        cdt->DTH.dth_Priority);
+                    bug("[AddDataTypes] name     = %s\n",        cdt->DTH.dth_Name);
+                    bug("[AddDataTypes] basename = %s\n",        cdt->DTH.dth_BaseName);
+                    bug("[AddDataTypes] pattern  = %s\n",        cdt->DTH.dth_Pattern);
+                    bug("[AddDataTypes] masklen  = %d\n",        cdt->DTH.dth_MaskLen);
                 )
                 for(i = 0; i < cdt->DTH.dth_MaskLen; i++)
                 {
                     cdt->DTH.dth_Mask[i] = AROS_BE2WORD(cdt->DTH.dth_Mask[i]);
-                    D(bug("[AddDataTypes] mask[%d] = %04x (%c %c)\n", i, 
+                    D(bug("[AddDataTypes] mask[%d] = %04x (%c %c)\n", i,
                             cdt->DTH.dth_Mask[i],
                             cdt->DTH.dth_Mask[i] & 255,
                             (cdt->DTH.dth_Mask[i] >> 8) & 255);)
@@ -976,7 +976,7 @@ struct CompoundDataType *AddDataType(struct StackVars *sv,
         
         Success = TRUE;
         
-        if((!Stricmp(cdt->DTH.dth_Pattern, "#?")) || 
+        if((!Stricmp(cdt->DTH.dth_Pattern, "#?")) ||
            (!strlen(cdt->DTH.dth_Pattern)) )
         {
             cdt->FlagLong |= CFLGF_PATTERN_UNUSED;
@@ -1200,7 +1200,7 @@ void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt)
 /****** AddDataTypes/AlphaInsert **********************************************
 *
 *   NAME
-*        AlphaInsert - enqueue a node alphabetically into a list 
+*        AlphaInsert - enqueue a node alphabetically into a list
 *
 *   SYNOPSIS
 *

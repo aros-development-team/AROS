@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /******************************************************************************
@@ -19,7 +19,7 @@
     FUNCTION
 
         Declares a label in a script file. This label may be referred to in a
-	Skip command.
+        Skip command.
 
     INPUTS
 
@@ -70,13 +70,13 @@ AROS_SH0(Lab,41.1)
 
     if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
-	return RETURN_OK;	/* Normal operation: do nothing! */
+        return RETURN_OK;       /* Normal operation: do nothing! */
     }
     else
     {
-	PrintFault(ERROR_SCRIPT_ONLY, "Lab");
+        PrintFault(ERROR_SCRIPT_ONLY, "Lab");
 
-	return RETURN_ERROR;
+        return RETURN_ERROR;
     }
 
     AROS_SHCOMMAND_EXIT

@@ -322,9 +322,9 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt,
      * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line
      * starting at (x,y) (every pixel inside the rectangle) and angle angle
      * with direction vector (vx,vy).
-     * 
+     *
      * Having the intersection point we then know the color of the pixel.
-     * 
+     *
      * TODO: Turn the algorithm into a incremental one
      *       Remove the use of floating point variables
      */
@@ -394,15 +394,15 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt,
     if (angle > 90 && angle <= 270)
     {
         /* for these angle we have y1 = height - y1. Instead of
-         * 
+         *
          *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
-         * 
+         *
          * we can write
-         * 
+         *
          *  y1 =          (-vy*(yw*(-xs)-xw*(-ys+height)) + yw*(vy*(-x)-vx*(-y+height)))/(-yw*vx + xw*vy);
-         * 
+         *
          * so height - y1 can be expressed with the normal formular adapting some parameters.
-         * 
+         *
          * Note that if one would exchanging startRGB/endRGB the values would only work
          * for linear color gradients
          */
@@ -424,18 +424,18 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt,
     t = -yw * vx + xw * vy;
 
     /* The formular as shown above is
-     * 
+     *
      *   y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
-     * 
+     *
      * We see that only yw*(vy*x-vx*y) changes during the loop.
-     * 
+     *
      * We write
-     *   
+     *
      *   Current Pixel: y1(x,y) = (r + yw*(vy*x-vx*y))/t = r/t + yw*(vy*x-vx*y)/t
-     *   Next Pixel:    y1(x+xadd,y) = (r + vw*(vy*(x+xadd)-vx*y))/t 
+     *   Next Pixel:    y1(x+xadd,y) = (r + vw*(vy*(x+xadd)-vx*y))/t
      *
      *   t*(y1(x+xadd,y) - y1(x,y)) = yw*(vy*(x+xadd)-vx*y) - yw*(vy*x-vx*y) = yw*vy*xadd;
-     * 
+     *
      */
 
     incr_y1 = yw * vy * xadd;
@@ -459,7 +459,7 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt,
              * and making it incremental)...update: it's now incremental and no FFP is used
              * but it probably can be optimized more by removing some more of the divisions and
              * further specialize the stuff here (use of three accus). */
-/*	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
+/*          y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
             y1 = y1_mul_t_accu / t;
 
             red = startRGB.red + (int)(diffR * y1 / height);

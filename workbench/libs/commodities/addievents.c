@@ -14,7 +14,7 @@
 #include <exec/memory.h>
 #include "cxintern.h"
 
-#define DEBUG_COPYIEVENT(x)	x;
+#define DEBUG_COPYIEVENT(x)     x;
 
 BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to, struct CommoditiesBase *CxBase);
 
@@ -22,11 +22,11 @@ BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to, struct Commo
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct InputEvent *, events, A0),
+        AROS_LHA(struct InputEvent *, events, A0),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 30, Commodities)
+        struct Library *, CxBase, 30, Commodities)
 
 /*  FUNCTION
 
@@ -60,29 +60,29 @@ BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to, struct Commo
 
     if (events == NULL)
     {
-	return;
+        return;
     }
     
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
     do
     {
-	msg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE, CxBase);
-	
-	if (msg == NULL)
-	{
-	    break;
-	}
-	
-	if (!CopyInputEvent(events, msg->cxm_Data, GPB(CxBase)))
-	{
-	    DEBUG_COPYIEVENT(dprintf("AddIEvents: CopyInputEvent() failed!\n"));
-	}
-	
-	ROUTECxMsg(msg, (CxObj *) GPB(CxBase)->cx_BrokerList.lh_Head);
-	AddTail(&GPB(CxBase)->cx_MessageList, (struct Node *)msg);
-	
-	events = events->ie_NextEvent;
+        msg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_DOUBLE, CxBase);
+        
+        if (msg == NULL)
+        {
+            break;
+        }
+        
+        if (!CopyInputEvent(events, msg->cxm_Data, GPB(CxBase)))
+        {
+            DEBUG_COPYIEVENT(dprintf("AddIEvents: CopyInputEvent() failed!\n"));
+        }
+        
+        ROUTECxMsg(msg, (CxObj *) GPB(CxBase)->cx_BrokerList.lh_Head);
+        AddTail(&GPB(CxBase)->cx_MessageList, (struct Node *)msg);
+        
+        events = events->ie_NextEvent;
     } while(events != NULL);
     
     ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);

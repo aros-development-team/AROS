@@ -21,10 +21,10 @@
         AROS_LH1(char *, MUIS_OpenPubScreen,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_PubScreenDesc *, desc,  A0),
+        AROS_LHA(struct MUI_PubScreenDesc *, desc,  A0),
 
 /*  LOCATION */
-	struct MUIScreenBase_intern *, MUIScreenBase, 7, MUIScreen)
+        struct MUIScreenBase_intern *, MUIScreenBase, 7, MUIScreen)
 
 /*  FUNCTION
 
@@ -60,40 +60,40 @@
     // TODO desc->Palette
     
     struct Screen *screen = OpenScreenTags(NULL,
-	    SA_Type, (IPTR) PUBLICSCREEN,
-	    SA_PubName, desc->Name,
-	    SA_Title, desc->Title,
-	    SA_Font, font,
-	    (backfillHook ? SA_BackFill : TAG_IGNORE), backfillHook,
-	    SA_DisplayID, (IPTR) desc->DisplayID,
-	    SA_Width, (IPTR) desc->DisplayWidth,
-	    SA_Height, (IPTR) desc->DisplayHeight,
-	    SA_Depth, (IPTR) desc->DisplayDepth,
-	    SA_Overscan, (IPTR) desc->OverscanType,
-	    SA_AutoScroll, (IPTR) desc->AutoScroll,
-	    SA_Draggable, (IPTR) !desc->NoDrag,
-	    SA_Exclusive, (IPTR) desc->Exclusive,
-	    SA_Interleaved, (IPTR) desc->Interleaved,
-	    SA_Behind, (IPTR) desc->Behind,
+            SA_Type, (IPTR) PUBLICSCREEN,
+            SA_PubName, desc->Name,
+            SA_Title, desc->Title,
+            SA_Font, font,
+            (backfillHook ? SA_BackFill : TAG_IGNORE), backfillHook,
+            SA_DisplayID, (IPTR) desc->DisplayID,
+            SA_Width, (IPTR) desc->DisplayWidth,
+            SA_Height, (IPTR) desc->DisplayHeight,
+            SA_Depth, (IPTR) desc->DisplayDepth,
+            SA_Overscan, (IPTR) desc->OverscanType,
+            SA_AutoScroll, (IPTR) desc->AutoScroll,
+            SA_Draggable, (IPTR) !desc->NoDrag,
+            SA_Exclusive, (IPTR) desc->Exclusive,
+            SA_Interleaved, (IPTR) desc->Interleaved,
+            SA_Behind, (IPTR) desc->Behind,
             TAG_DONE);
     
     if(screen)
     {
-	if ((PubScreenStatus(screen, 0) & 1) == 0)
-	{
-	    D(bug("Can't make screen public\n"));
-	    CloseScreen(screen);
-	}
-	else
-	{
-	    ret = desc->Name;
-	    struct Node *node;
-	    ForeachNode(&MUIScreenBase->clients, node)
-	    {
-		struct MUIS_InfoClient *client = (struct MUIS_InfoClient*) node;
-		Signal(client->task, client->sigbit);
-	    }
-	}
+        if ((PubScreenStatus(screen, 0) & 1) == 0)
+        {
+            D(bug("Can't make screen public\n"));
+            CloseScreen(screen);
+        }
+        else
+        {
+            ret = desc->Name;
+            struct Node *node;
+            ForeachNode(&MUIScreenBase->clients, node)
+            {
+                struct MUIS_InfoClient *client = (struct MUIS_InfoClient*) node;
+                Signal(client->task, client->sigbit);
+            }
+        }
     }
     
     return ret;

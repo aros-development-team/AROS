@@ -12,20 +12,20 @@
     NAME */
 #include <proto/gadtools.h>
 
-	AROS_LH1(void, FreeVisualInfo,
+        AROS_LH1(void, FreeVisualInfo,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, vi, A0),
+        AROS_LHA(APTR, vi, A0),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 22, GadTools)
+        struct Library *, GadToolsBase, 22, GadTools)
 
 /*  FUNCTION
-	FreeVisualInfo() frees a visual info structure created with
-	GetVisualInfo().
+        FreeVisualInfo() frees a visual info structure created with
+        GetVisualInfo().
 
     INPUTS
-	vi - the visual info structure to free, may be NULL.
+        vi - the visual info structure to free, may be NULL.
 
     RESULT
 
@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	GetVisualInfoA()
+        GetVisualInfoA()
 
     INTERNALS
 
@@ -48,8 +48,8 @@
 
     if (vi)
     {
-	FreeScreenDrawInfo(((struct VisualInfo *)vi)->vi_screen, ((struct VisualInfo *)vi)->vi_dri);
-	FreeVec(vi);
+        FreeScreenDrawInfo(((struct VisualInfo *)vi)->vi_screen, ((struct VisualInfo *)vi)->vi_dri);
+        FreeVec(vi);
     }
     
     AROS_LIBFUNC_EXIT

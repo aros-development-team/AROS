@@ -101,7 +101,7 @@ static int SM502Gfx_Init(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->vsd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
-    /* 
+    /*
      * It is unknown (and no way to know) what hardware part this driver uses.
      * In order to avoid conflicts with disk-based native-mode hardware
      * drivers it needs to be removed from the system when some other driver

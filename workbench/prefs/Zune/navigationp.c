@@ -54,21 +54,21 @@ static Object *MakeScrollgroup (struct MUI_NavigationPData *data)
 
     for (i = 0; i < NSHORTCUTS; i++)
     {
-	tags[2 * i].ti_Tag = Child;
-	tags[2 * i].ti_Data = (IPTR) Label(keyboard_label[i]);
-	tags[2 * i + 1].ti_Tag = Child;
-	tags[2 * i + 1].ti_Data = (IPTR) (data->keyboard_string[i] = MakeString());
+        tags[2 * i].ti_Tag = Child;
+        tags[2 * i].ti_Data = (IPTR) Label(keyboard_label[i]);
+        tags[2 * i + 1].ti_Tag = Child;
+        tags[2 * i + 1].ti_Data = (IPTR) (data->keyboard_string[i] = MakeString());
     }
     tags[NSHORTCUTS * 2].ti_Tag = TAG_DONE;
     tags[NSHORTCUTS * 2].ti_Data = 0;
 
     return ScrollgroupObject,
-	MUIA_Scrollgroup_FreeHoriz, FALSE,
-	MUIA_Scrollgroup_Contents, (IPTR) ColGroupV(2),
-	InputListFrame,
-	TAG_MORE, (IPTR) tags,
-	End,
-	End;
+        MUIA_Scrollgroup_FreeHoriz, FALSE,
+        MUIA_Scrollgroup_Contents, (IPTR) ColGroupV(2),
+        InputListFrame,
+        TAG_MORE, (IPTR) tags,
+        End,
+        End;
 }
 
 
@@ -110,83 +110,83 @@ static IPTR NavigationP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
-	MUIA_Group_Horiz, TRUE,
-	Child, (IPTR) VGroup,
-	Child, (IPTR) VGroup,
-	GroupFrameT(_(MSG_DRAG_DROP)),
-	Child, (IPTR) ColGroup(3),
-	Child, (IPTR) Label(_(MSG_LEFT_BUTTON)),
-	Child, (IPTR) (d.drag_leftbutton_checkmark = MakeCheck(NULL)),
-	Child, (IPTR) (d.drag_leftbutton_string = MakeString()),
+        MUIA_Group_Horiz, TRUE,
+        Child, (IPTR) VGroup,
+        Child, (IPTR) VGroup,
+        GroupFrameT(_(MSG_DRAG_DROP)),
+        Child, (IPTR) ColGroup(3),
+        Child, (IPTR) Label(_(MSG_LEFT_BUTTON)),
+        Child, (IPTR) (d.drag_leftbutton_checkmark = MakeCheck(NULL)),
+        Child, (IPTR) (d.drag_leftbutton_string = MakeString()),
 
-	Child, (IPTR) Label(_(MSG_MIDDLE_BUTTON)),
-	Child, (IPTR) (d.drag_middlebutton_checkmark = MakeCheck(NULL)),
-	Child, (IPTR) (d.drag_middlebutton_string = MakeString()),
+        Child, (IPTR) Label(_(MSG_MIDDLE_BUTTON)),
+        Child, (IPTR) (d.drag_middlebutton_checkmark = MakeCheck(NULL)),
+        Child, (IPTR) (d.drag_middlebutton_string = MakeString()),
 
-	Child, (IPTR) Label(_(MSG_AUTOSTART)),
-	Child, (IPTR) (d.drag_autostart_checkmark = MakeCheck(NULL)),
-	Child, (IPTR) (d.drag_autostart_slider = SliderObject,
-		       MUIA_CycleChain, 1,
-		       MUIA_Numeric_Format, (IPTR) _(MSG_PIXEL),
-		       MUIA_Numeric_Min, 1,
-		       MUIA_Numeric_Max, 20,
-	End), // Slider
-	End, // ColGroup(3)
-	Child, ColGroup(2),
-	Child, (IPTR) FreeLabel(_(MSG_FRAME_COLON)),
-	Child, (IPTR) (d.dnd_popframe = MakePopframe()),
-	Child, (IPTR) Label(_(MSG_LOOK_COLON)),
-	Child, (IPTR) (d.drag_look_cycle = MakeCycle(NULL, dnd_labels)),
-	End, // ColGroup(2),
-	End, // Drag & Drop
-	Child, VGroup,
-	GroupFrameT(_(MSG_BALANCING_GROUPS)),
-	Child, (IPTR) HVSpace,
-	Child, (IPTR) ColGroup(2),
-	Child, (IPTR) Label(_(MSG_LOOK_COLON)),
-	Child, (IPTR) (d.balance_look_cycle = MakeCycle(NULL, balancing_labels)),
-	Child, (IPTR) Label(_(MSG_EXAMPLE)),
-	Child, (IPTR) HGroup,
-	Child, (IPTR) TextObject,
-	TextFrame,
-	MUIA_Text_SetMin, FALSE,
-	MUIA_Text_PreParse, "\33c",
-	MUIA_Text_Contents, _(MSG_TRY_WITH),
-	End,
-	Child, (IPTR) BalanceObject, End,
-	Child, (IPTR) TextObject,
-	TextFrame,
-	MUIA_Text_SetMin, FALSE,
-	MUIA_Text_PreParse, "\33c",
-	MUIA_Text_Contents, _(MSG_SHIFT),
-	End,
-	Child, (IPTR) BalanceObject, End,
-	Child, (IPTR) TextObject,
-	TextFrame,
-	MUIA_Text_SetMin, FALSE,
-	MUIA_Text_PreParse, "\33c",
-	MUIA_Text_Contents, _(MSG_TOO),
-	End,	
-	End, // HGroup
-	End, // ColGroup
-	Child, (IPTR) HVSpace,
-	End, // Balancing Groups
-	End, // VGroup Left
-	Child, (IPTR) VGroup,
-	GroupFrameT(_(MSG_KEYBOARD_CONTROL)),
-	Child, (IPTR) HGroup,
-	Child, (IPTR) VGroup,
-	MUIA_Group_VertSpacing, 0,
-	Child, (IPTR) VSpace(3),
-	Child, (IPTR) Label(_(MSG_COLOR_ACTIVE_OBJ)),
-	Child, (IPTR) VSpace(3),
-	End, // VGroup label
-	Child, (IPTR) (d.active_poppen = MakePoppen()),
-	End, // HGroup
-	Child, (IPTR) MakeScrollgroup(&d),
-	End, // VGroup KB Ctrl
-    	TAG_MORE, (IPTR) msg->ops_AttrList);
-	
+        Child, (IPTR) Label(_(MSG_AUTOSTART)),
+        Child, (IPTR) (d.drag_autostart_checkmark = MakeCheck(NULL)),
+        Child, (IPTR) (d.drag_autostart_slider = SliderObject,
+                       MUIA_CycleChain, 1,
+                       MUIA_Numeric_Format, (IPTR) _(MSG_PIXEL),
+                       MUIA_Numeric_Min, 1,
+                       MUIA_Numeric_Max, 20,
+        End), // Slider
+        End, // ColGroup(3)
+        Child, ColGroup(2),
+        Child, (IPTR) FreeLabel(_(MSG_FRAME_COLON)),
+        Child, (IPTR) (d.dnd_popframe = MakePopframe()),
+        Child, (IPTR) Label(_(MSG_LOOK_COLON)),
+        Child, (IPTR) (d.drag_look_cycle = MakeCycle(NULL, dnd_labels)),
+        End, // ColGroup(2),
+        End, // Drag & Drop
+        Child, VGroup,
+        GroupFrameT(_(MSG_BALANCING_GROUPS)),
+        Child, (IPTR) HVSpace,
+        Child, (IPTR) ColGroup(2),
+        Child, (IPTR) Label(_(MSG_LOOK_COLON)),
+        Child, (IPTR) (d.balance_look_cycle = MakeCycle(NULL, balancing_labels)),
+        Child, (IPTR) Label(_(MSG_EXAMPLE)),
+        Child, (IPTR) HGroup,
+        Child, (IPTR) TextObject,
+        TextFrame,
+        MUIA_Text_SetMin, FALSE,
+        MUIA_Text_PreParse, "\33c",
+        MUIA_Text_Contents, _(MSG_TRY_WITH),
+        End,
+        Child, (IPTR) BalanceObject, End,
+        Child, (IPTR) TextObject,
+        TextFrame,
+        MUIA_Text_SetMin, FALSE,
+        MUIA_Text_PreParse, "\33c",
+        MUIA_Text_Contents, _(MSG_SHIFT),
+        End,
+        Child, (IPTR) BalanceObject, End,
+        Child, (IPTR) TextObject,
+        TextFrame,
+        MUIA_Text_SetMin, FALSE,
+        MUIA_Text_PreParse, "\33c",
+        MUIA_Text_Contents, _(MSG_TOO),
+        End,
+        End, // HGroup
+        End, // ColGroup
+        Child, (IPTR) HVSpace,
+        End, // Balancing Groups
+        End, // VGroup Left
+        Child, (IPTR) VGroup,
+        GroupFrameT(_(MSG_KEYBOARD_CONTROL)),
+        Child, (IPTR) HGroup,
+        Child, (IPTR) VGroup,
+        MUIA_Group_VertSpacing, 0,
+        Child, (IPTR) VSpace(3),
+        Child, (IPTR) Label(_(MSG_COLOR_ACTIVE_OBJ)),
+        Child, (IPTR) VSpace(3),
+        End, // VGroup label
+        Child, (IPTR) (d.active_poppen = MakePoppen()),
+        End, // HGroup
+        Child, (IPTR) MakeScrollgroup(&d),
+        End, // VGroup KB Ctrl
+        TAG_MORE, (IPTR) msg->ops_AttrList);
+        
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
@@ -224,7 +224,7 @@ static IPTR NavigationP_New(struct IClass *cl, Object *obj, struct opSet *msg)
  * MUIM_Settingsgroup_ConfigToGadgets
  */
 static IPTR NavigationP_ConfigToGadgets(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+                                    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_NavigationPData *data = INST_DATA(cl, obj);
     int i;
@@ -246,9 +246,9 @@ static IPTR NavigationP_ConfigToGadgets(struct IClass *cl, Object *obj,
     ConfigToPen(msg->configdata, MUICFG_ActiveObject_Color, data->active_poppen);
 
     for (i = 0; i < NSHORTCUTS; i++)
-	ConfigToString(msg->configdata, MUICFG_Keyboard_Press + i, data->keyboard_string[i]);
+        ConfigToString(msg->configdata, MUICFG_Keyboard_Press + i, data->keyboard_string[i]);
 
-    return TRUE;    
+    return TRUE;
 }
 
 
@@ -256,7 +256,7 @@ static IPTR NavigationP_ConfigToGadgets(struct IClass *cl, Object *obj,
  * MUIM_Settingsgroup_ConfigToGadgets
  */
 static IPTR NavigationP_GadgetsToConfig(struct IClass *cl, Object *obj,
-				    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+                                    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_NavigationPData *data = INST_DATA(cl, obj);
     int i;
@@ -278,7 +278,7 @@ static IPTR NavigationP_GadgetsToConfig(struct IClass *cl, Object *obj,
     PenToConfig(data->active_poppen, msg->configdata, MUICFG_ActiveObject_Color);
 
     for (i = 0; i < NSHORTCUTS; i++)
-	StringToConfig(data->keyboard_string[i], msg->configdata, MUICFG_Keyboard_Press + i);
+        StringToConfig(data->keyboard_string[i], msg->configdata, MUICFG_Keyboard_Press + i);
 
     return TRUE;
 }
@@ -288,9 +288,9 @@ BOOPSI_DISPATCHER(IPTR, NavigationP_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return NavigationP_New(cl, obj, (struct opSet *)msg);
-	case MUIM_Settingsgroup_ConfigToGadgets: return NavigationP_ConfigToGadgets(cl,obj,(APTR)msg);break;
-	case MUIM_Settingsgroup_GadgetsToConfig: return NavigationP_GadgetsToConfig(cl,obj,(APTR)msg);break;
+        case OM_NEW: return NavigationP_New(cl, obj, (struct opSet *)msg);
+        case MUIM_Settingsgroup_ConfigToGadgets: return NavigationP_ConfigToGadgets(cl,obj,(APTR)msg);break;
+        case MUIM_Settingsgroup_GadgetsToConfig: return NavigationP_GadgetsToConfig(cl,obj,(APTR)msg);break;
     }
     
     return DoSuperMethodA(cl, obj, msg);
@@ -300,11 +300,11 @@ BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUIP_Navigation_desc = { 
+const struct __MUIBuiltinClass _MUIP_Navigation_desc = {
     "Navigation",
     MUIC_Group,
     sizeof(struct MUI_NavigationPData),
-    (void*)NavigationP_Dispatcher 
+    (void*)NavigationP_Dispatcher
 };
 
 
@@ -315,17 +315,17 @@ static const UBYTE icon32[] =
     'B', 'Z', '2', '\0',
     0x00, 0x00, 0x00, 0x84,  // number of bytes
 
-    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0xb5, 0x28, 
-    0xdf, 0x3c, 0x00, 0x02, 0xde, 0x62, 0x42, 0xa2, 0x02, 0x00, 0x20, 0x40, 
-    0x00, 0x00, 0x0c, 0x42, 0x40, 0x00, 0x00, 0xb0, 0x00, 0xc0, 0x08, 0x4a, 
-    0x44, 0x32, 0x10, 0x0d, 0x34, 0xd0, 0x40, 0x34, 0xd3, 0x47, 0xa8, 0x25, 
-    0x09, 0x30, 0x24, 0x9b, 0x63, 0x9d, 0x82, 0x8f, 0xd1, 0x45, 0x3a, 0xe5, 
-    0x1d, 0x5d, 0xcf, 0x1b, 0x7c, 0x3a, 0xe8, 0x05, 0xb6, 0xa2, 0x90, 0xf0, 
-    0x15, 0x1f, 0x41, 0x51, 0xca, 0x2a, 0xfb, 0xe2, 0x1e, 0xc0, 0x6c, 0x26, 
-    0xa9, 0x62, 0x22, 0x03, 0x40, 0x44, 0x94, 0x85, 0x2d, 0x68, 0xcd, 0x28, 
-    0x66, 0x12, 0x89, 0x82, 0x48, 0x1d, 0x01, 0x89, 0xa6, 0x92, 0x28, 0xc6, 
-    0x0a, 0x45, 0x69, 0xa2, 0x80, 0x42, 0xe0, 0xab, 0x71, 0x82, 0x29, 0xa2, 
-    0x17, 0xf8, 0xbb, 0x92, 0x29, 0xc2, 0x84, 0x85, 0xa9, 0x46, 0xf9, 0xe0, 
+    0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0xb5, 0x28,
+    0xdf, 0x3c, 0x00, 0x02, 0xde, 0x62, 0x42, 0xa2, 0x02, 0x00, 0x20, 0x40,
+    0x00, 0x00, 0x0c, 0x42, 0x40, 0x00, 0x00, 0xb0, 0x00, 0xc0, 0x08, 0x4a,
+    0x44, 0x32, 0x10, 0x0d, 0x34, 0xd0, 0x40, 0x34, 0xd3, 0x47, 0xa8, 0x25,
+    0x09, 0x30, 0x24, 0x9b, 0x63, 0x9d, 0x82, 0x8f, 0xd1, 0x45, 0x3a, 0xe5,
+    0x1d, 0x5d, 0xcf, 0x1b, 0x7c, 0x3a, 0xe8, 0x05, 0xb6, 0xa2, 0x90, 0xf0,
+    0x15, 0x1f, 0x41, 0x51, 0xca, 0x2a, 0xfb, 0xe2, 0x1e, 0xc0, 0x6c, 0x26,
+    0xa9, 0x62, 0x22, 0x03, 0x40, 0x44, 0x94, 0x85, 0x2d, 0x68, 0xcd, 0x28,
+    0x66, 0x12, 0x89, 0x82, 0x48, 0x1d, 0x01, 0x89, 0xa6, 0x92, 0x28, 0xc6,
+    0x0a, 0x45, 0x69, 0xa2, 0x80, 0x42, 0xe0, 0xab, 0x71, 0x82, 0x29, 0xa2,
+    0x17, 0xf8, 0xbb, 0x92, 0x29, 0xc2, 0x84, 0x85, 0xa9, 0x46, 0xf9, 0xe0,
 };
 
 

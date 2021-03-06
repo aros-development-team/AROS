@@ -25,10 +25,10 @@
 
     FUNCTION
 
-        Lists detailed information about the files and directories in the 
+        Lists detailed information about the files and directories in the
         current directory or in the directory specified by DIR.
 
-        The information for each file or directory is presented on a separate 
+        The information for each file or directory is presented on a separate
         line, containing the following information:
 
         name
@@ -112,7 +112,7 @@
         [     Insta] -- >26  <
         [      List] -- >40  <
         [     Which] -- >16  <
-        1> 
+        1>
 
     BUGS
 
@@ -371,7 +371,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
                 /* File size */
             case 'L':
-                /* File size in blocks of BLOCKSIZE bytes */               
+                /* File size in blocks of BLOCKSIZE bytes */
             case 'B':
 
                 if (lf->isdir)
@@ -604,7 +604,7 @@ int printFileData(struct AnchorPath *ap,
     }
     
     /* Does a substring of the filename match a certain pattern? (ARG_SUB) */
-    if (subpatternStr != NULL && 
+    if (subpatternStr != NULL &&
         !MatchPatternNoCase(subpatternStr, FilePart(filename)))
     {
         return 0;
@@ -788,7 +788,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
     NewList(&DirList);
     NewList(&FreeDirNodeList);
      
-    do 
+    do
     {
         ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
 
@@ -817,7 +817,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
                         error = MatchNext(ap);
                     }
                 }
-            }    
+            }
         }
 
         if (0 == error)
@@ -988,7 +988,7 @@ int main(void)
                FALSE    // ARG_ALL
     };
     static CONST_STRPTR default_directories[] = {(CONST_STRPTR)"", 0};
-    struct RDArgs *rda;       
+    struct RDArgs *rda;
 
     LONG     result = RETURN_OK;
     LONG     error = 0;
@@ -1022,7 +1022,7 @@ int main(void)
         struct DateTime  sinceDatetime;
         struct DateTime  uptoDatetime;
 
-        ULONG   i;              /* Loop variable */    
+        ULONG   i;              /* Loop variable */
 
         if (since != NULL)
         {
@@ -1081,7 +1081,7 @@ int main(void)
 
             subpatternStr = AllocVec(length, MEMF_ANY);
 
-            if (subpatternStr == NULL || 
+            if (subpatternStr == NULL ||
                 ParsePatternNoCase(subStrWithPat, subpatternStr, length) == -1)
             {
                 error = IoErr();
@@ -1172,10 +1172,10 @@ int main(void)
             }
 
 //          Printf("\n");
-        } 
+        }
         
         FreeArgs(rda);
-    } 
+    }
     else
     {
         error = IoErr();

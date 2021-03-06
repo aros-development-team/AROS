@@ -25,7 +25,7 @@
 
     INPUTS
 
-        QUIET    --  avoids printing of the background CLI's number 
+        QUIET    --  avoids printing of the background CLI's number
 
         COMMAND  --  the program to run together with its arguments
 
@@ -144,25 +144,25 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
     {
         struct TagItem tags[] =
         {
-	    { SYS_ScriptInput, (IPTR)cis     },
-	    { SYS_Input,       (IPTR)cis     },
-	    { SYS_Output,      (IPTR)cos     },
-	    { SYS_Error,       (IPTR)ces     },
-	    { SYS_CliType,     (IPTR)CLI_RUN },
-	    { TAG_DONE,        0             }
+            { SYS_ScriptInput, (IPTR)cis     },
+            { SYS_Input,       (IPTR)cis     },
+            { SYS_Output,      (IPTR)cos     },
+            { SYS_Error,       (IPTR)ces     },
+            { SYS_CliType,     (IPTR)CLI_RUN },
+            { TAG_DONE,        0             }
         };
 
         if ( SystemTagList((CONST_STRPTR)command,
                            tags                                ) == -1 )
         {
-	    PrintFault(IoErr(), "Run");
-	    Close(cis);
-	    Close(cos);
-	    Close(ces);
-	    if (cmdsize > 0)
-	        FreeMem(command, cmdsize);
+            PrintFault(IoErr(), "Run");
+            Close(cis);
+            Close(cos);
+            Close(ces);
+            if (cmdsize > 0)
+                FreeMem(command, cmdsize);
 
-	    return RETURN_FAIL;
+            return RETURN_FAIL;
         }
     }
 

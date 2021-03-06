@@ -20,15 +20,15 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName,        A0),
+        AROS_LHA(STRPTR, appName,        A0),
         AROS_LHA(STRPTR, itemName,       A1),
-	AROS_LHA(APTR,   data,           A2),
-	AROS_LHA(ULONG,  length,         D0),
-	AROS_LHA(BOOL,   killRequesters, D1),
+        AROS_LHA(APTR,   data,           A2),
+        AROS_LHA(ULONG,  length,         D0),
+        AROS_LHA(BOOL,   killRequesters, D1),
 
 /*  LOCATION */
 
-	struct Library *, nvBase, 7, Nonvolatile)
+        struct Library *, nvBase, 7, Nonvolatile)
 
 /*  FUNCTION
 
@@ -50,13 +50,13 @@
     Indication of the success of the operation
     
         0                --  no error
-	NVERR_BADNAME    --  'appName' or 'itemName' were not correctly
-	                     specified names
-	NVERR_WRITEPROT  --  the nonvolatile storage is read only
-	NVERR_FAIL       --  failure in data saving (storage is full or write
-	                     protected)
-	NVERR_FATAL      --  fatal error (possible loss of previously saved
-	                     data)
+        NVERR_BADNAME    --  'appName' or 'itemName' were not correctly
+                             specified names
+        NVERR_WRITEPROT  --  the nonvolatile storage is read only
+        NVERR_FAIL       --  failure in data saving (storage is full or write
+                             protected)
+        NVERR_FATAL      --  fatal error (possible loss of previously saved
+                             data)
     
     NOTES
 
@@ -85,25 +85,25 @@
     LONG            retval;
 
     if(data == NULL)
-	return NVERR_FAIL;	/* There is no good (defined) error to
-				   report... */
+        return NVERR_FAIL;      /* There is no good (defined) error to
+                                   report... */
 
     if(appName == NULL || itemName == NULL)
-	return NVERR_BADNAME;
+        return NVERR_BADNAME;
 
     if(strpbrk(appName, ":/") != NULL ||
        strpbrk(itemName, ":/") != NULL)
-	return NVERR_BADNAME;
+        return NVERR_BADNAME;
 
     if(killRequesters)
-	me->pr_WindowPtr = (APTR)-1;
+        me->pr_WindowPtr = (APTR)-1;
 
     //    kprintf("Calling writedata");
     
     retval = WriteNVDData(appName, itemName, data, length*10);
 
     if(killRequesters)
-	me->pr_WindowPtr = oldReq;
+        me->pr_WindowPtr = oldReq;
 
     return retval;
 

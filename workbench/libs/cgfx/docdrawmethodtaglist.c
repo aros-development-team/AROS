@@ -34,15 +34,15 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH3(void, DoCDrawMethodTagList,
+        AROS_LH3(void, DoCDrawMethodTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Hook     *, hook, A0),
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(struct TagItem  *, tags, A2),
+        AROS_LHA(struct Hook     *, hook, A0),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(struct TagItem  *, tags, A2),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 26, Cybergraphics)
+        struct Library *, CyberGfxBase, 26, Cybergraphics)
 
 /*  FUNCTION
         Calls a callback hook that directly accesses a RastPort's bitmap.

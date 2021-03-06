@@ -34,7 +34,7 @@
 
         Both  CHAR  (character)  and WORD arguments allow to define a begin and an end
         position  in the original string. Words are strings separated by a SEPARATOR (a
-        space character (" ") is the default), which can also be a string. 
+        space character (" ") is the default), which can also be a string.
 
         Positions  range  is specified using numbers with the form "P1-P2", where "P1"
         is  the position of the first character (resp. word) to extract in the original
@@ -42,7 +42,7 @@
         character (resp. word) to extract.
 
         If  only  one  position  is  supplied, then only one character (resp. word) is
-        extracted,  unless  the  hyphen-minus  character is supplied too: P- extracts a 
+        extracted,  unless  the  hyphen-minus  character is supplied too: P- extracts a
         string  begining  at  the  character (resp. word) at position P in the original
         string until the end, and -P extracts a string starting at the beginning of the
         original  string,  and  ending with the character (resp. word) at position P in
@@ -183,7 +183,7 @@ AROS_SHAH(STRPTR,S=,SEPARATOR,/K," " ,"Specify a string of any length to be used
 
     if (rc == RETURN_OK)
         FPutC(Output(), '\n');
-    else 
+    else
     {
         ioerr = IoErr();
         PrintFault(ioerr, (CONST_STRPTR)"Cut");

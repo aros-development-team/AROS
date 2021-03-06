@@ -9,23 +9,23 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH1(void, InitIFFasClip,
+        AROS_LH1(void, InitIFFasClip,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(struct IFFHandle *, iff, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 40, IFFParse)
+        struct Library *, IFFParseBase, 40, IFFParse)
 
 /*  FUNCTION
-	Initializes the given IFFHandle to be a clipboard stream. It installs a
-	"custom" stream handler (via InitIFF) to handle clipboard streams.
-	The iff_Stream field of the iffhandle will still need
-	to be initializes with a ClipboardHandle struct returned from
-	OpenClipboard().
+        Initializes the given IFFHandle to be a clipboard stream. It installs a
+        "custom" stream handler (via InitIFF) to handle clipboard streams.
+        The iff_Stream field of the iffhandle will still need
+        to be initializes with a ClipboardHandle struct returned from
+        OpenClipboard().
 
     INPUTS
-	iff  - pointer to an IFFHandle struct.
+        iff  - pointer to an IFFHandle struct.
 
     RESULT
 
@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	OpenClipboard()
+        OpenClipboard()
 
     INTERNALS
 

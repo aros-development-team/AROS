@@ -84,7 +84,7 @@
     where the 'hookFunc' is prototyped as:
 
          LONG hookFunc(struct Hook *hook, APTR reserved,
-	               struct AppWindowDropZoneMsg *adzm);
+                       struct AppWindowDropZoneMsg *adzm);
 
     Your hook function should always return 0. You must limit the rendering
     done in the 'hookFunc' to simple graphics.library operations as otherwise
@@ -140,67 +140,67 @@
     while ((tag = NextTagItem(&tagState)))
     {
         switch (tag->ti_Tag)
-	{
-	case WBDZA_Left:
-	    dropZone->awdz_leftSpecifier = AWDZFlag_fix;
-	    dropZone->awdz_Box.Left = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_RelRight:
-	    dropZone->awdz_leftSpecifier = AWDZFlag_relRight;
-	    dropZone->awdz_Box.Left = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_Top:
-	    dropZone->awdz_topSpecifier = AWDZFlag_fix;
-	    dropZone->awdz_Box.Top = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_RelBottom:
-	    dropZone->awdz_topSpecifier = AWDZFlag_relBottom;
-	    dropZone->awdz_Box.Top = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_Width:
-	    dropZone->awdz_widthSpecifier = AWDZFlag_fix;
-	    dropZone->awdz_Box.Width = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_RelWidth:
-	    dropZone->awdz_widthSpecifier = AWDZFlag_relWidth;
-	    dropZone->awdz_Box.Width = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_Height:
-	    dropZone->awdz_heightSpecifier = AWDZFlag_fix;
-	    dropZone->awdz_Box.Height = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_RelHeight:
-	    dropZone->awdz_heightSpecifier = AWDZFlag_relHeight;
-	    dropZone->awdz_Box.Height = (WORD)tag->ti_Data;
-	    break;
-	    
-	case WBDZA_Box:
-	    dropZone->awdz_leftSpecifier = AWDZFlag_fix;
-	    dropZone->awdz_topSpecifier = AWDZFlag_fix;
-	    dropZone->awdz_widthSpecifier = AWDZFlag_fix;
-	    dropZone->awdz_heightSpecifier = AWDZFlag_fix;
+        {
+        case WBDZA_Left:
+            dropZone->awdz_leftSpecifier = AWDZFlag_fix;
+            dropZone->awdz_Box.Left = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_RelRight:
+            dropZone->awdz_leftSpecifier = AWDZFlag_relRight;
+            dropZone->awdz_Box.Left = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_Top:
+            dropZone->awdz_topSpecifier = AWDZFlag_fix;
+            dropZone->awdz_Box.Top = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_RelBottom:
+            dropZone->awdz_topSpecifier = AWDZFlag_relBottom;
+            dropZone->awdz_Box.Top = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_Width:
+            dropZone->awdz_widthSpecifier = AWDZFlag_fix;
+            dropZone->awdz_Box.Width = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_RelWidth:
+            dropZone->awdz_widthSpecifier = AWDZFlag_relWidth;
+            dropZone->awdz_Box.Width = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_Height:
+            dropZone->awdz_heightSpecifier = AWDZFlag_fix;
+            dropZone->awdz_Box.Height = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_RelHeight:
+            dropZone->awdz_heightSpecifier = AWDZFlag_relHeight;
+            dropZone->awdz_Box.Height = (WORD)tag->ti_Data;
+            break;
+            
+        case WBDZA_Box:
+            dropZone->awdz_leftSpecifier = AWDZFlag_fix;
+            dropZone->awdz_topSpecifier = AWDZFlag_fix;
+            dropZone->awdz_widthSpecifier = AWDZFlag_fix;
+            dropZone->awdz_heightSpecifier = AWDZFlag_fix;
 
-	    if (tag->ti_Data != (IPTR)NULL)
-	    {
-		dropZone->awdz_Box = *(struct IBox *)tag->ti_Data;
-	    }
+            if (tag->ti_Data != (IPTR)NULL)
+            {
+                dropZone->awdz_Box = *(struct IBox *)tag->ti_Data;
+            }
 
-	    break;
-	    
-	case WBDZA_Hook:
-	    if (tag->ti_Data != (IPTR)NULL)
-	    {
-		dropZone->awdz_Hook = (struct Hook *)tag->ti_Data;
-	    }
+            break;
+            
+        case WBDZA_Hook:
+            if (tag->ti_Data != (IPTR)NULL)
+            {
+                dropZone->awdz_Hook = (struct Hook *)tag->ti_Data;
+            }
 
-	    break;
+            break;
         }
     }
 

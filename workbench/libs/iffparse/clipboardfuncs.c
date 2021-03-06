@@ -10,7 +10,7 @@
 
 #include <string.h>
 
-#define DEBUG_STREAM(x)		;
+#define DEBUG_STREAM(x)         ;
 
 /***********************/
 /* Port initialization */
@@ -21,7 +21,7 @@
 /* Look at page 501-502 in RKM Libraries     */
 
 BOOL InitPort (struct MsgPort *mp, struct Task *t,
-	struct IFFParseBase_intern * IFFParseBase)
+        struct IFFParseBase_intern * IFFParseBase)
 {
     LONG sigbit;
 
@@ -29,9 +29,9 @@ BOOL InitPort (struct MsgPort *mp, struct Task *t,
 
     memset( mp, 0, sizeof( *mp ) );
     mp->mp_Node.ln_Type = NT_MSGPORT;
-    mp->mp_Flags	=  PA_SIGNAL;
-    mp->mp_SigBit	 =  sigbit;
-    mp->mp_SigTask	=  t;
+    mp->mp_Flags        =  PA_SIGNAL;
+    mp->mp_SigBit        =  sigbit;
+    mp->mp_SigTask      =  t;
 
     NewList(&(mp->mp_MsgList));
 
@@ -41,7 +41,7 @@ BOOL InitPort (struct MsgPort *mp, struct Task *t,
 VOID ClosePort (struct MsgPort *mp,
     struct IFFParseBase_intern * IFFParseBase)
 {
-    mp->mp_SigTask	    =  (struct Task*)-1;
+    mp->mp_SigTask          =  (struct Task*)-1;
     mp->mp_MsgList.lh_Head  = (struct Node*)-1;
 
     FreeSignal( mp->mp_SigBit );
@@ -58,8 +58,8 @@ VOID ClosePort (struct MsgPort *mp,
 
 ULONG ClipStreamHandler
 (
-    struct Hook 	* hook,
-    struct IFFHandle	* iff,
+    struct Hook         * hook,
+    struct IFFHandle    * iff,
     struct IFFStreamCmd * cmd
 )
 {
@@ -67,87 +67,87 @@ ULONG ClipStreamHandler
     ULONG error = 0;
 
     /* Buffer neede for reading rest of clip in IFFCMD_CLEANUP. Eats some stack */
-//	UBYTE  buf[CLIPSCANBUFSIZE];
+//      UBYTE  buf[CLIPSCANBUFSIZE];
 
     struct IOClipReq *req;
 
     req = &( ((struct ClipboardHandle*)iff->iff_Stream)->cbh_Req);
 
     DEBUG_STREAM(bug("ClipStream: iff %p cmd %d buf %p bytes %d\n",
-			 iff, cmd->sc_Command, cmd->sc_Buf, cmd->sc_NBytes));
+                         iff, cmd->sc_Command, cmd->sc_Buf, cmd->sc_NBytes));
 
     switch (cmd->sc_Command)
     {
-	case IFFCMD_READ:
+        case IFFCMD_READ:
 
-	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_READ...\n"));
+            DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_READ...\n"));
 
-	    req->io_Command = CMD_READ;
-	    req->io_Data    = cmd->sc_Buf;
-	    req->io_Length  =  cmd->sc_NBytes;
+            req->io_Command = CMD_READ;
+            req->io_Data    = cmd->sc_Buf;
+            req->io_Length  =  cmd->sc_NBytes;
 
-	    error = (DoIO((struct IORequest*)req));
+            error = (DoIO((struct IORequest*)req));
 
-	    break;
+            break;
 
-	case IFFCMD_WRITE:
+        case IFFCMD_WRITE:
 
-	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_WRITE...\n"));
+            DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_WRITE...\n"));
 
-	    req->io_Command = CMD_WRITE;
-	    req->io_Data    = cmd->sc_Buf;
-	    req->io_Length  =  cmd->sc_NBytes;
+            req->io_Command = CMD_WRITE;
+            req->io_Data    = cmd->sc_Buf;
+            req->io_Length  =  cmd->sc_NBytes;
 
-	    error = (DoIO((struct IORequest*)req));
+            error = (DoIO((struct IORequest*)req));
 
-	    break;
+            break;
 
-	case IFFCMD_SEEK:
+        case IFFCMD_SEEK:
 
-	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_SEEK...\n"));
+            DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_SEEK...\n"));
 
-	    req->io_Offset += cmd->sc_NBytes;
+            req->io_Offset += cmd->sc_NBytes;
 
-	    if (req->io_Offset < 0)
-		error = TRUE;
+            if (req->io_Offset < 0)
+                error = TRUE;
 
-	    break;
+            break;
 
-	case IFFCMD_INIT:
+        case IFFCMD_INIT:
 
-	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_INIT...\n"));
+            DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_INIT...\n"));
 
-	    /* Start reading and writing at offset 0 */
-	    req->io_ClipID = 0;
-	    req->io_Offset = 0;
-	    break;
+            /* Start reading and writing at offset 0 */
+            req->io_ClipID = 0;
+            req->io_Offset = 0;
+            break;
 
-	case IFFCMD_CLEANUP:
+        case IFFCMD_CLEANUP:
 
-	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_CLEANUP...\n"));
+            DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_CLEANUP...\n"));
 
-	    if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_READ)
-	    {
-		/* Read past end of clip if we are in read mode */
-		req->io_Command = CMD_READ;
-		req->io_Data    = NULL;
-		req->io_Length  = CLIPSCANBUFSIZE;
+            if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_READ)
+            {
+                /* Read past end of clip if we are in read mode */
+                req->io_Command = CMD_READ;
+                req->io_Data    = NULL;
+                req->io_Length  = CLIPSCANBUFSIZE;
 
-		/* Read until there is not more left */
-		do
+                /* Read until there is not more left */
+                do
                 {
                     DoIO((struct IORequest*)req);
-		}
-		while (req->io_Actual != 0);
+                }
+                while (req->io_Actual != 0);
 
-	    }
+            }
 
-	    if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_WRITE)
-	    {
-	        req->io_Command = CMD_UPDATE;
-		DoIO((struct IORequest*)req);
-	    }
-	    break;
+            if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_WRITE)
+            {
+                req->io_Command = CMD_UPDATE;
+                DoIO((struct IORequest*)req);
+            }
+            break;
 
     }
 

@@ -4,7 +4,7 @@
     Desc: piglatin.language description file.
 */
 
-/* 
+/*
     This is a rather silly language, but it is more of an example than
     then english language file, as this one actually does something...
 
@@ -41,7 +41,7 @@ void *const functable[] =
     /* 0 - 3 */
     &AROS_SLIB_ENTRY(null, language, 0),
     &AROS_SLIB_ENTRY(null, language, 0),
-    &AROS_SLIB_ENTRY(null, language, 0),    
+    &AROS_SLIB_ENTRY(null, language, 0),
     &AROS_SLIB_ENTRY(getlangstring, language, 9),
     (void *)-1
 };
@@ -58,8 +58,8 @@ const STRPTR ___strings[] =
     "",
 
     /*  The days of the week. Starts with the first day of the week.
-	In English this would be Sunday, this depends upon the settings
-	of Locale->CalendarType.
+        In English this would be Sunday, this depends upon the settings
+        of Locale->CalendarType.
     */
     "Undaysay",   "Ondaymay",   "Uesdaytay",  "Ednesdayway",
     "Hursdaytay", "Ridayfay",   "Aturdaysay",

@@ -12,15 +12,15 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH3(struct RexxMsg *, CreateRexxMsg,
+        AROS_LH3(struct RexxMsg *, CreateRexxMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, port     , A0),
-	AROS_LHA(UBYTE          *, extension, A1),
-	AROS_LHA(UBYTE          *, host     , D0),
+        AROS_LHA(struct MsgPort *, port     , A0),
+        AROS_LHA(UBYTE          *, extension, A1),
+        AROS_LHA(UBYTE          *, host     , D0),
 
 /*  LOCATION */
-	struct RxsLib *, RexxSysBase, 24, RexxSys)
+        struct RxsLib *, RexxSysBase, 24, RexxSys)
 
 /*  FUNCTION
         Creation and initialization of a RexxMsg structure

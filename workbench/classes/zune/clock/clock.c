@@ -32,20 +32,20 @@
 IPTR Clock__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data;
-    struct TagItem  	*ti;
+    struct TagItem      *ti;
     
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
     
         MUIA_InnerLeft,   4,
-	MUIA_InnerTop,    4,
-	MUIA_InnerRight,  4,
-	MUIA_InnerBottom, 4,
-	
-        TAG_MORE, (IPTR) msg->ops_AttrList	
+        MUIA_InnerTop,    4,
+        MUIA_InnerRight,  4,
+        MUIA_InnerBottom, 4,
+        
+        TAG_MORE, (IPTR) msg->ops_AttrList
     );
-	
+        
     if (!obj) return 0;
     
     data = INST_DATA(cl, obj);
@@ -55,16 +55,16 @@ IPTR Clock__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     
     if ((ti = FindTagItem(MUIA_Clock_Time, msg->ops_AttrList)))
     {
-    	struct ClockData *cd = (struct ClockData *)ti->ti_Data;
-	
-	data->clockdata = *cd;
+        struct ClockData *cd = (struct ClockData *)ti->ti_Data;
+        
+        data->clockdata = *cd;
     }
     else
     {
-    	struct timeval tv;
-	
-    	GetSysTime(&tv);
-	Amiga2Date(tv.tv_secs, &data->clockdata);
+        struct timeval tv;
+        
+        GetSysTime(&tv);
+        Amiga2Date(tv.tv_secs, &data->clockdata);
     }
     
     data->ihn.ihn_Flags  = MUIIHNF_TIMER;
@@ -86,49 +86,49 @@ IPTR Clock__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
     struct TagItem       *tags  = msg->ops_AttrList;
-    struct TagItem   	 *tag;
-    BOOL    	      	  redraw = FALSE;
+    struct TagItem       *tag;
+    BOOL                  redraw = FALSE;
     
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-    	switch(tag->ti_Tag)
-	{
-    	    case MUIA_Clock_Time:
-		data->clockdata = *(struct ClockData *)tag->ti_Data;
-		redraw = TRUE;
-		break;
+        switch(tag->ti_Tag)
+        {
+            case MUIA_Clock_Time:
+                data->clockdata = *(struct ClockData *)tag->ti_Data;
+                redraw = TRUE;
+                break;
 
-	    case MUIA_Clock_Hour:
-		data->clockdata.hour = tag->ti_Data;
-		redraw = TRUE;
-		break;
+            case MUIA_Clock_Hour:
+                data->clockdata.hour = tag->ti_Data;
+                redraw = TRUE;
+                break;
 
-	    case MUIA_Clock_Min:
-		data->clockdata.min = tag->ti_Data;
-		redraw = TRUE;
-		break;
+            case MUIA_Clock_Min:
+                data->clockdata.min = tag->ti_Data;
+                redraw = TRUE;
+                break;
 
-	    case MUIA_Clock_Sec:
-		data->clockdata.sec = tag->ti_Data;
-		redraw = TRUE;
-		break;
+            case MUIA_Clock_Sec:
+                data->clockdata.sec = tag->ti_Data;
+                redraw = TRUE;
+                break;
 
-    	    case MUIA_Clock_Frozen:
-	    	data->frozen = tag->ti_Data ? TRUE : FALSE;
-		break;
-		
-	    case MUIA_Clock_EditHand:
-	    	data->edithand = tag->ti_Data;
-		redraw = TRUE;
-		break;
-		
-	} /* switch(tag->ti_Tag) */
-	
+            case MUIA_Clock_Frozen:
+                data->frozen = tag->ti_Data ? TRUE : FALSE;
+                break;
+                
+            case MUIA_Clock_EditHand:
+                data->edithand = tag->ti_Data;
+                redraw = TRUE;
+                break;
+                
+        } /* switch(tag->ti_Tag) */
+        
     } /* while ((tag = NextTagItem(&tags)) != NULL) */
     
     if (redraw)
     {
-    	 MUI_Redraw(obj, MADF_DRAWUPDATE);
+         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -138,37 +138,37 @@ IPTR Clock__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 IPTR Clock__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
-    IPTR    	      retval = TRUE;
+    IPTR              retval = TRUE;
     
     switch(msg->opg_AttrID)
     {
-    	case MUIA_Clock_Time:
-	    *(struct ClockData **)msg->opg_Storage = &data->clockdata;
-	    break;
+        case MUIA_Clock_Time:
+            *(struct ClockData **)msg->opg_Storage = &data->clockdata;
+            break;
 
-	case MUIA_Clock_Hour:
-	    *msg->opg_Storage = data->clockdata.hour;
-	    break;
+        case MUIA_Clock_Hour:
+            *msg->opg_Storage = data->clockdata.hour;
+            break;
 
-	case MUIA_Clock_Min:
-	    *msg->opg_Storage = data->clockdata.min;
-	    break;
-	    
-	case MUIA_Clock_Sec:
-	    *msg->opg_Storage = data->clockdata.sec;
-	    break;
+        case MUIA_Clock_Min:
+            *msg->opg_Storage = data->clockdata.min;
+            break;
+            
+        case MUIA_Clock_Sec:
+            *msg->opg_Storage = data->clockdata.sec;
+            break;
 
-    	case MUIA_Clock_Frozen:
-	    *msg->opg_Storage = data->frozen;
-	    break;
-	    
-	case MUIA_Clock_EditHand:
-	    *msg->opg_Storage = data->edithand;
-	    break;
-	    
-    	default:
-	    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-	    break;
+        case MUIA_Clock_Frozen:
+            *msg->opg_Storage = data->frozen;
+            break;
+            
+        case MUIA_Clock_EditHand:
+            *msg->opg_Storage = data->edithand;
+            break;
+            
+        default:
+            retval = DoSuperMethodA(cl, obj, (Msg)msg);
+            break;
     }
     
     return retval;
@@ -193,12 +193,12 @@ IPTR Clock__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
     data->editpen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-    	    	    	    	  0xFFFFFFFF,
-				  0xD8D8D8D8,
-				  0x00000000,
-				  OBP_Precision, PRECISION_GUI,
-				  OBP_FailIfBad, FALSE,
-				  TAG_DONE);
+                                  0xFFFFFFFF,
+                                  0xD8D8D8D8,
+                                  0x00000000,
+                                  OBP_Precision, PRECISION_GUI,
+                                  OBP_FailIfBad, FALSE,
+                                  TAG_DONE);
     return TRUE;
 }
 
@@ -208,8 +208,8 @@ IPTR Clock__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
  
     if (data->editpen != -1)
     {
-    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->editpen);
-    	data->editpen = -1;
+        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->editpen);
+        data->editpen = -1;
     }
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -222,10 +222,10 @@ IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
  
     if (data->clockbm)
     {
-    	FreeBitMap(data->clockbm);
-	FreeRaster(data->clockraster, data->clockbmw, data->clockbmh);
-	data->clockbm = NULL;
-	data->clockraster = NULL;
+        FreeBitMap(data->clockbm);
+        FreeRaster(data->clockraster, data->clockbmw, data->clockbmh);
+        data->clockbm = NULL;
+        data->clockraster = NULL;
     }
     DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
     
@@ -302,14 +302,14 @@ static void DrawThinHand(struct RastPort *rp, WORD cx, WORD cy, DOUBLE angle, WO
 IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
-    struct RastPort 	 *obj_rp;
-    struct Region   	 *region;
-    struct Rectangle	 rect;
-    APTR    	    	 clip = NULL;
-    WORD    	    	 r, x, y, x2, y2, i, cx, cy, c;
-    WORD    	    	 new_clockbmw, new_clockbmh;
-    WORD    	    	 clock_posx, clock_posy;
-    DOUBLE  	    	 angle;
+    struct RastPort      *obj_rp;
+    struct Region        *region;
+    struct Rectangle     rect;
+    APTR                 clip = NULL;
+    WORD                 r, x, y, x2, y2, i, cx, cy, c;
+    WORD                 new_clockbmw, new_clockbmh;
+    WORD                 clock_posx, clock_posy;
+    DOUBLE               angle;
 
     r = (_mwidth(obj) - SHADOW_OFFX) / 2;
     y = (_mheight(obj) - SHADOW_OFFY) / 2;
@@ -325,70 +325,70 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     region = NewRegion();
     if (region)
     {
-    	rect.MinX = _left(obj);
-	rect.MinY = _top(obj);
-	rect.MaxX = _right(obj);
-	rect.MaxY = _bottom(obj);
-	
-	OrRectRegion(region, &rect);
-	
-	rect.MinX = clock_posx;
-	rect.MinY = clock_posy;
-	rect.MaxX = clock_posx + new_clockbmw - 1;
-	rect.MaxY = clock_posy + new_clockbmh - 1;
-	
-	ClearRectRegion(region, &rect);
-	
-	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+        rect.MinX = _left(obj);
+        rect.MinY = _top(obj);
+        rect.MaxX = _right(obj);
+        rect.MaxY = _bottom(obj);
+        
+        OrRectRegion(region, &rect);
+        
+        rect.MinX = clock_posx;
+        rect.MinY = clock_posy;
+        rect.MaxX = clock_posx + new_clockbmw - 1;
+        rect.MaxY = clock_posy + new_clockbmh - 1;
+        
+        ClearRectRegion(region, &rect);
+        
+        clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
     }
     
     DoSuperMethodA(cl, obj, (Msg)msg);
   
     if (region)
     {
-    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+        MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
     
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
         
     if (!data->clockbm || (data->clockbmr != r))
     {
-    	if (data->clockbm)
-	{
-	    FreeBitMap(data->clockbm);
-	    FreeRaster(data->clockraster, data->clockbmw, data->clockbmh);
-	    data->clockraster = NULL;
-	}
+        if (data->clockbm)
+        {
+            FreeBitMap(data->clockbm);
+            FreeRaster(data->clockraster, data->clockbmw, data->clockbmh);
+            data->clockraster = NULL;
+        }
 
-	data->clockbmw = new_clockbmw;
-	data->clockbmh = new_clockbmh;
-    	
-    	data->clockbm = AllocBitMap(data->clockbmw,
-	    	    	    	    data->clockbmh,
-				    GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH),
-				    BMF_MINPLANES,
-				    _rp(obj)->BitMap);
+        data->clockbmw = new_clockbmw;
+        data->clockbmh = new_clockbmh;
+        
+        data->clockbm = AllocBitMap(data->clockbmw,
+                                    data->clockbmh,
+                                    GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH),
+                                    BMF_MINPLANES,
+                                    _rp(obj)->BitMap);
 
-    	if (!data->clockbm) return 0;
-	
-	data->clockraster = AllocRaster(data->clockbmw, data->clockbmh);
-	if (!data->clockraster)
-	{
-	    FreeBitMap(data->clockbm);
-	    data->clockbm = 0;
-	    return 0;
-	}
-	
-	InitRastPort(&data->clockrp);
-	data->clockrp.BitMap = data->clockbm;
-	
-	InitArea(&data->clockai, data->areabuf, sizeof(data->areabuf) / 5);
-	data->clockrp.AreaInfo = &data->clockai;
-	
-	InitTmpRas(&data->clocktr, data->clockraster, RASSIZE(data->clockbmw, data->clockbmh));
-	data->clockrp.TmpRas = &data->clocktr;
-	
-	data->clockbmr = r;  
+        if (!data->clockbm) return 0;
+        
+        data->clockraster = AllocRaster(data->clockbmw, data->clockbmh);
+        if (!data->clockraster)
+        {
+            FreeBitMap(data->clockbm);
+            data->clockbm = 0;
+            return 0;
+        }
+        
+        InitRastPort(&data->clockrp);
+        data->clockrp.BitMap = data->clockbm;
+        
+        InitArea(&data->clockai, data->areabuf, sizeof(data->areabuf) / 5);
+        data->clockrp.AreaInfo = &data->clockai;
+        
+        InitTmpRas(&data->clocktr, data->clockraster, RASSIZE(data->clockbmw, data->clockbmh));
+        data->clockrp.TmpRas = &data->clocktr;
+        
+        data->clockbmr = r;
     }
     
     obj_rp = _rp(obj);
@@ -404,26 +404,26 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
     for(c = 0; c < 2; c++)
     {
-	for(angle = 0.0, i = 0; angle < 2.0 * MY_PI; angle += 2 * MY_PI / 60.0, i++)
-	{
-    	    x = cx + (WORD)(cos(angle) * r);
-	    y = cy - (WORD)(sin(angle) * r);
+        for(angle = 0.0, i = 0; angle < 2.0 * MY_PI; angle += 2 * MY_PI / 60.0, i++)
+        {
+            x = cx + (WORD)(cos(angle) * r);
+            y = cy - (WORD)(sin(angle) * r);
 
-	    if ((i % 5) == 0)
-	    {
-		x2 = cx + (WORD)(cos(angle) * (r * 90 / 100));
-		y2 = cy - (WORD)(sin(angle) * (r * 90 / 100));
-		Move(_rp(obj), x, y); Draw(_rp(obj), x2, y2);
-	    }
-	    else
-	    {
-		WritePixel(_rp(obj), x, y);
-	    }
-	}
-	
-	cx -= SHADOW_OFFX;
-	cy -= SHADOW_OFFY;
-	SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
+            if ((i % 5) == 0)
+            {
+                x2 = cx + (WORD)(cos(angle) * (r * 90 / 100));
+                y2 = cy - (WORD)(sin(angle) * (r * 90 / 100));
+                Move(_rp(obj), x, y); Draw(_rp(obj), x2, y2);
+            }
+            else
+            {
+                WritePixel(_rp(obj), x, y);
+            }
+        }
+        
+        cx -= SHADOW_OFFX;
+        cy -= SHADOW_OFFY;
+        SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
     }
     
     cx += SHADOW_OFFX * 2;
@@ -433,84 +433,84 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     
     for(c = 0; c < 2; c++)
     {
-    	DOUBLE angle, h;
-	
-    	h = data->clockdata.hour + (data->clockdata.min / 60.0);
-	if (h > 12.0) h -= 12.0;
-	
-	angle = MY_PI / 2.0 + MY_PI * 2.0 * (12.0 - h) / 12.0;
-	
-	if (c == 1)
-	{
-	    if ((data->edithand == MUIV_Clock_EditHand_Hour) && data->frozen)
-	    {
-	    	SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
-	    }
-	    else
-	    {
-	    	SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
-	    }
-	}
-	    
-	DrawHand(_rp(obj),
-	    	 cx,
-		 cy,
-		 angle,
-		 r * 6 / 100,
-		 r * 60 / 100);
+        DOUBLE angle, h;
+        
+        h = data->clockdata.hour + (data->clockdata.min / 60.0);
+        if (h > 12.0) h -= 12.0;
+        
+        angle = MY_PI / 2.0 + MY_PI * 2.0 * (12.0 - h) / 12.0;
+        
+        if (c == 1)
+        {
+            if ((data->edithand == MUIV_Clock_EditHand_Hour) && data->frozen)
+            {
+                SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
+            }
+            else
+            {
+                SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
+            }
+        }
+            
+        DrawHand(_rp(obj),
+                 cx,
+                 cy,
+                 angle,
+                 r * 6 / 100,
+                 r * 60 / 100);
 
-    	angle = MY_PI / 2.0 + MY_PI * 2.0 * ((double)60 - data->clockdata.min) / 60.0;
+        angle = MY_PI / 2.0 + MY_PI * 2.0 * ((double)60 - data->clockdata.min) / 60.0;
 
-	if (c == 1)
-	{
-	    if ((data->edithand == MUIV_Clock_EditHand_Minute) && data->frozen)
-	    {
-	    	SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
-	    }
-	    else
-	    {
-	    	SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
-	    }
-	}
+        if (c == 1)
+        {
+            if ((data->edithand == MUIV_Clock_EditHand_Minute) && data->frozen)
+            {
+                SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
+            }
+            else
+            {
+                SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
+            }
+        }
 
-	DrawHand(_rp(obj),
-	    	 cx,
-		 cy,
-		 angle,
-		 r * 4 / 100,
-		 r * 85 / 100);
-		 
-    	angle = MY_PI / 2.0 + MY_PI * 2.0 * ((double)60 - data->clockdata.sec) / 60.0;
+        DrawHand(_rp(obj),
+                 cx,
+                 cy,
+                 angle,
+                 r * 4 / 100,
+                 r * 85 / 100);
+                 
+        angle = MY_PI / 2.0 + MY_PI * 2.0 * ((double)60 - data->clockdata.sec) / 60.0;
 
-	if (c == 1)
-	{
-	    if ((data->edithand == MUIV_Clock_EditHand_Second) && data->frozen)
-	    {
-	    	SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
-	    }
-	    else
-	    {
-	    	SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
-	    }
-	}
+        if (c == 1)
+        {
+            if ((data->edithand == MUIV_Clock_EditHand_Second) && data->frozen)
+            {
+                SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
+            }
+            else
+            {
+                SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
+            }
+        }
 
-	DrawThinHand(_rp(obj), cx, cy, angle, r * 85 / 100);
+        DrawThinHand(_rp(obj), cx, cy, angle, r * 85 / 100);
 
-    	cx -= SHADOW_OFFX;
-	cy -= SHADOW_OFFY;	
-	
+        cx -= SHADOW_OFFX;
+        cy -= SHADOW_OFFY;
+        
     }
     
     _rp(obj) = obj_rp;
 
     BltBitMapRastPort(data->clockbm,
-    	    	      0,
-		      0,
-    	    	      _rp(obj),
-		      clock_posx,
-		      clock_posy,
-		      data->clockbmw,
-		      data->clockbmh, 192);
+                      0,
+                      0,
+                      _rp(obj),
+                      clock_posx,
+                      clock_posy,
+                      data->clockbmw,
+                      data->clockbmh, 192);
     
     return 0;
 }
@@ -519,18 +519,18 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 IPTR Clock__MUIM_Clock_Timer(Class *cl, Object *obj, Msg msg)
 {
     struct Clock_DATA *data;
-    struct ClockData 	  cd;
-    struct timeval  	  tv;
+    struct ClockData      cd;
+    struct timeval        tv;
     
     data = INST_DATA(cl, obj);
     
     if (!data->frozen)
     {
-	GetSysTime(&tv);
-	Amiga2Date(tv.tv_secs, &cd);
+        GetSysTime(&tv);
+        Amiga2Date(tv.tv_secs, &cd);
 
-	set(obj, MUIA_Clock_Time, &cd);
-	set(obj, MUIA_Clock_Ticked, TRUE);
+        set(obj, MUIA_Clock_Time, &cd);
+        set(obj, MUIA_Clock_Ticked, TRUE);
     }
     
     return 0;

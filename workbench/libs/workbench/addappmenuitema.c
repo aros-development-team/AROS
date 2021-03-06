@@ -43,7 +43,7 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
     userdata  --  user specific data (ignored by workbench.library)
     text      --  menu item text; any text consisting merely of '-','_' and
                   '~' characters corresponds to a separator bar instead of
-		  a textual item
+                  a textual item
     msgport   --  port to which notification messages regarding the menu
                   item will be sent
     taglist   --  tags (see below)
@@ -101,22 +101,22 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
     while ((tag = NextTagItem(&tagState)))
     {
         switch (tag->ti_Tag)
-	{
-	case WBAPPMENUA_CommandKeyString:
-	    {
-		STRPTR key = (STRPTR)tag->ti_Data;
+        {
+        case WBAPPMENUA_CommandKeyString:
+            {
+                STRPTR key = (STRPTR)tag->ti_Data;
 
-		if (keyUsed(key, WorkbenchBase))
-		{
-		    appMenuItem->ami_CommandKey = "";
-		}
-		else
-		{
-		    appMenuItem->ami_CommandKey = key;
-		}
+                if (keyUsed(key, WorkbenchBase))
+                {
+                    appMenuItem->ami_CommandKey = "";
+                }
+                else
+                {
+                    appMenuItem->ami_CommandKey = key;
+                }
 
-		break;
-	    }
+                break;
+            }
         }
     }
 
@@ -140,19 +140,19 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase)
 
     if (strlen(key) == 0)
     {
-	return FALSE;
+        return FALSE;
     }
 
     LockWorkbench();
 
     ForeachNode(&WorkbenchBase->wb_AppMenuItems, ami)
     {
-	if (strlen(ami->ami_CommandKey) != 0 &&
-	    ami->ami_CommandKey[0] == key[0])
-	{
-	    found = TRUE;
-	    break;
-	}
+        if (strlen(ami->ami_CommandKey) != 0 &&
+            ami->ami_CommandKey[0] == key[0])
+        {
+            found = TRUE;
+            break;
+        }
     }
 
     UnlockWorkbench();

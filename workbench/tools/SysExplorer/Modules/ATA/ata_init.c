@@ -32,7 +32,7 @@ const struct OOP_ABDescr ata_abd[] =
     {NULL            ,  NULL          }
 };
 
-static int ataenum_init(struct SysexpATABase *AtaBase) 
+static int ataenum_init(struct SysexpATABase *AtaBase)
 {
     D(bug("[ata.sysexp] %s()\n", __func__));
 

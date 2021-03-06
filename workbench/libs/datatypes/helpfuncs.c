@@ -66,10 +66,10 @@ struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase)
     {
         struct TagItem tags[] =
         {
-            {ANO_NameSpace  , TRUE  	    	    	    },
+            {ANO_NameSpace  , TRUE                          },
             {ANO_UserSpace  , sizeof(struct DataTypesList)  },
-            {ANO_Flags	    , NSF_NODUPS | NSF_CASE 	    },
-            {TAG_DONE	    	    	    	    	    }
+            {ANO_Flags      , NSF_NODUPS | NSF_CASE         },
+            {TAG_DONE                                       }
         };
         
         if((no = AllocNamedObjectA(DATATYPESLIST, tags)))
@@ -143,7 +143,7 @@ BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 #if 0
         if(XpkBase)
         {
-            if(xpkfib = AllocVec(sizeof(struct XpkFib), 
+            if(xpkfib = AllocVec(sizeof(struct XpkFib),
                                   MEMF_PUBLIC|MEMF_CLEAR))
             {
                 if(!xpkexaminetags(DataTypesBase, xpkfib, XPK_InFH, dosfile,
@@ -209,7 +209,7 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struc
         if (fib->fib_DirEntryType > 0)
         {
             D(bug("datatypes.library/ExamineLock: is a directory\n"));
-            cdt = (struct CompoundDataType *)FindNameNoCase(DataTypesBase, 
+            cdt = (struct CompoundDataType *)FindNameNoCase(DataTypesBase,
                                                             &getDTLIST->dtl_MiscList,
                                                             "directory");
         }
@@ -240,7 +240,7 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struc
                         {
                             D(bug("datatypes.library/ExamineLock: Allocated CheckArray\n"));
                             
-                            if((CheckSize = Read(file, CheckArray, 
+                            if((CheckSize = Read(file, CheckArray,
                                                  (ULONG)CheckSize)) > 0)
                             {
                                 struct DTHookContext dthc;
@@ -329,7 +329,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
     {
         struct CompoundDataType *cur;
 
-        for(cur = (struct CompoundDataType *)list->lh_Head; 
+        for(cur = (struct CompoundDataType *)list->lh_Head;
                 cur->DT.dtn_Node1.ln_Succ;
                 cur = (struct CompoundDataType *)cur->DT.dtn_Node1.ln_Succ)
         {
@@ -382,7 +382,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                         {
                             if(cur->ParsePatMem)
                             {
-                                if(!MatchPatternNoCase(cur->ParsePatMem, 
+                                if(!MatchPatternNoCase(cur->ParsePatMem,
                                             Filename))
                                 {
                                     found = FALSE;
@@ -413,7 +413,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                             }
                             else
                             {
-                                Seek(dthc->dthc_FileHandle, 0, 
+                                Seek(dthc->dthc_FileHandle, 0,
                                         OFFSET_BEGINNING);
                             }
                         }

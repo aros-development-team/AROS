@@ -121,11 +121,11 @@ struct Popobject_DATA
 *       MUIA_Popobject_Volatile -- (V7) [ISG], BOOL
 *
 *   FUNCTION
-*       Specifies whether the pop-up window should be hidden when the portion 
+*       Specifies whether the pop-up window should be hidden when the portion
 *       of the Popobject residing in the parent window is hidden. This would
-*       normally be desirable if the Popobject is in a page group for 
-*       example. If the pop-up window is on display when the Popobject is 
-*       hidden, it will reappear as soon as the Popobject is reshown. 
+*       normally be desirable if the Popobject is in a page group for
+*       example. If the pop-up window is on display when the Popobject is
+*       hidden, it will reappear as soon as the Popobject is reshown.
 *       Defaults to TRUE.
 *
 ******************************************************************************

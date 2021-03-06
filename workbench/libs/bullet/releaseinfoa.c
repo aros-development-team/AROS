@@ -11,14 +11,14 @@
 
     NAME */
 
-	AROS_LH2(ULONG, ReleaseInfoA,
+        AROS_LH2(ULONG, ReleaseInfoA,
 
 /*  SYNOPSIS */
-    	AROS_LHA(struct GlyphEngine *, glyphEngine, A0),
-	AROS_LHA(struct TagItem *, tagList, A1),
-	
+        AROS_LHA(struct GlyphEngine *, glyphEngine, A0),
+        AROS_LHA(struct TagItem *, tagList, A1),
+        
 /*  LOCATION */
-	struct Library *, BulletBase, 9, Bullet)
+        struct Library *, BulletBase, 9, Bullet)
 
 /*  FUNCTION
 
@@ -36,7 +36,7 @@
 
     INTERNALS
 
-    This interface is implemented in freetype2.library. 
+    This interface is implemented in freetype2.library.
     See /workbench/libs/freetype/src/aros.
 
     HISTORY

@@ -80,17 +80,17 @@ BOOL Prefs_ImportFH(BPTR fh)
                 }
                 else
                 {
-		    CopyMem(loadprefs.smp_Reserved, screenmodeprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
-		    screenmodeprefs.smp_DisplayID =
-			AROS_BE2LONG(loadprefs.smp_DisplayID);
-		    screenmodeprefs.smp_Width =
-			AROS_BE2WORD(loadprefs.smp_Width);
-		    screenmodeprefs.smp_Height =
-			AROS_BE2WORD(loadprefs.smp_Height);
-		    screenmodeprefs.smp_Depth =
-			AROS_BE2WORD(loadprefs.smp_Depth);
-		    screenmodeprefs.smp_Control =
-			AROS_BE2WORD(loadprefs.smp_Control);
+                    CopyMem(loadprefs.smp_Reserved, screenmodeprefs.smp_Reserved, sizeof(screenmodeprefs.smp_Reserved));
+                    screenmodeprefs.smp_DisplayID =
+                        AROS_BE2LONG(loadprefs.smp_DisplayID);
+                    screenmodeprefs.smp_Width =
+                        AROS_BE2WORD(loadprefs.smp_Width);
+                    screenmodeprefs.smp_Height =
+                        AROS_BE2WORD(loadprefs.smp_Height);
+                    screenmodeprefs.smp_Depth =
+                        AROS_BE2WORD(loadprefs.smp_Depth);
+                    screenmodeprefs.smp_Control =
+                        AROS_BE2WORD(loadprefs.smp_Control);
                 }
             }
             else
@@ -146,36 +146,36 @@ BOOL Prefs_ExportFH(BPTR fh)
             
             if (!error)
             {
-            	header.ph_Version = PHV_CURRENT;
-            	header.ph_Type    = 0;
+                header.ph_Version = PHV_CURRENT;
+                header.ph_Type    = 0;
 
-            	error = PushChunk(handle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+                error = PushChunk(handle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
 
-		if (!error)
-		{
-            	    WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
-            	    PopChunk(handle);
-            	}
+                if (!error)
+                {
+                    WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
+                    PopChunk(handle);
+                }
 
-		if (!error)
-		{
-            	    error = PushChunk(handle, ID_PREF, ID_SCRM, sizeof(struct ScreenModePrefs));
-            	    if (!error)
-            	    {
-            		WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
-		        PopChunk(handle);
-		    }
-		}
+                if (!error)
+                {
+                    error = PushChunk(handle, ID_PREF, ID_SCRM, sizeof(struct ScreenModePrefs));
+                    if (!error)
+                    {
+                        WriteChunkBytes(handle, &saveprefs, sizeof(struct ScreenModePrefs));
+                        PopChunk(handle);
+                    }
+                }
 
-            	// Terminate the FORM
-            	PopChunk(handle);
+                // Terminate the FORM
+                PopChunk(handle);
             }
 
             if (error != 0) // TODO: We need some error checking here!
             {
-            	char buf[256];
+                char buf[256];
 
-		NameFromFH(fh, buf, sizeof(buf));
+                NameFromFH(fh, buf, sizeof(buf));
                 printf("Error saving prefs file %s!\n", buf);
             }
         }

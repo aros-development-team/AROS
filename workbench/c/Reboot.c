@@ -25,18 +25,18 @@
     INPUTS
 
         COLD --  tells to perform cold (complete) reboot of the machine.
-        	 Otherwise only AROS is restarted.
+                 Otherwise only AROS is restarted.
 
     NOTES
 
         Any programs and data in memory will be lost and all disk
-        activity will cease. Make sure no disk access is being 
+        activity will cease. Make sure no disk access is being
         carried out by your computer.
 
 
     SEE ALSO
 
-	Shutdown
+        Shutdown
 
 ******************************************************************************/
 
@@ -57,7 +57,7 @@ int main()
 
     if (rda == NULL)
     {
-	PrintFault(IoErr(),"Reboot");
+        PrintFault(IoErr(),"Reboot");
         return RETURN_FAIL;
     }
     FreeArgs(rda);
@@ -65,7 +65,7 @@ int main()
     if (cold)
         ShutdownA(SD_ACTION_COLDREBOOT);
     else
-	ColdReboot();
+        ColdReboot();
 
     /* If we are here, shutdown did not work for some reason */
     Delay(25);

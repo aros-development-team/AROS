@@ -19,11 +19,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct Player *, player, A0),
+        AROS_LHA(struct Player *, player, A0),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 8, RealTime)
+        struct Library *, RealTimeBase, 8, RealTime)
 
 /*  FUNCTION
 
@@ -62,27 +62,27 @@
 
     if (player == NULL)
     {
-	return;
+        return;
     }
 
     conductor = player->pl_Source;
 
     if (conductor != NULL)
     {
-	APTR lock;
+        APTR lock;
 
-	lock = LockRealTime(RT_CONDUCTORS);
-	Remove((struct Node *)player);
+        lock = LockRealTime(RT_CONDUCTORS);
+        Remove((struct Node *)player);
 
-	/* If this was the last player of this conductor, we delete the
-	   conductor, too. */
-	if (IsListEmpty(&conductor->cdt_Players))
-	{
-	    Remove((struct Node *)conductor);
-	    FreeMem(conductor, sizeof(struct Conductor));
-	}
+        /* If this was the last player of this conductor, we delete the
+           conductor, too. */
+        if (IsListEmpty(&conductor->cdt_Players))
+        {
+            Remove((struct Node *)conductor);
+            FreeMem(conductor, sizeof(struct Conductor));
+        }
 
-	UnlockRealTime(lock);
+        UnlockRealTime(lock);
     }
 
     FreeMem(player, sizeof(struct Player));

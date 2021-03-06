@@ -53,7 +53,7 @@ enum
     BTYPE_SUB,
     BTYPE_ADD,
     BTYPE_SIGN,
-    BTYPE_EQU    
+    BTYPE_EQU
 };
 
 #define NUM_BUTTONS 20
@@ -502,7 +502,7 @@ IPTR mAddCalcKey(struct IClass *cl, Object *obj, struct MUIMP_CalcKey *msg)
              (data->state == STATE_LEFTVAL || data->state == STATE_RIGHTVAL))
     {
         clear_edit_buffer(data);
-        display_state(data);      
+        display_state(data);
 
     }
     else if (msg->btype == BTYPE_SIGN && data->state != STATE_OP)
@@ -567,13 +567,13 @@ static void dos_error(void)
 
 static char retrieve_decimal_point(void)
 {
-    struct Locale *loc;    
+    struct Locale *loc;
     char result = '.';
 
     if ((loc = OpenLocale(0)))
     {
-    	  result = loc->loc_DecimalPoint[0];
-    	  CloseLocale(loc);
+          result = loc->loc_DecimalPoint[0];
+          CloseLocale(loc);
     }
     return result;
 }

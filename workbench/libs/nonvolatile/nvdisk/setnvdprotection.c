@@ -18,13 +18,13 @@ AROS_LH3(BOOL, SetNVDProtection,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName,  A0),
-	AROS_LHA(STRPTR, itemName, A1),
-	AROS_LHA(LONG,   mask,     D0),
+        AROS_LHA(STRPTR, appName,  A0),
+        AROS_LHA(STRPTR, itemName, A1),
+        AROS_LHA(LONG,   mask,     D0),
 
 /*  LOCATION */
 
-	struct Library *, nvdBase, 9, NVDisk)
+        struct Library *, nvdBase, 9, NVDisk)
 
 /*  FUNCTION
 
@@ -57,7 +57,7 @@ AROS_LH3(BOOL, SetNVDProtection,
 ******************************************************************************/
 
 {
-    AROS_LIBFUNC_INIT    
+    AROS_LIBFUNC_INIT
 
     BPTR lock;
     BOOL result = FALSE;
@@ -65,9 +65,9 @@ AROS_LH3(BOOL, SetNVDProtection,
 
     if((lock = Lock(appName, SHARED_LOCK)) != BNULL)
     {
-	result = SetProtection(itemName, mask) == DOSTRUE ? TRUE : FALSE;
+        result = SetProtection(itemName, mask) == DOSTRUE ? TRUE : FALSE;
 
-	UnLock(lock);
+        UnLock(lock);
     }
 
     CurrentDir(oldCDir);

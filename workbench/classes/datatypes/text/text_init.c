@@ -36,7 +36,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#undef	register
+#undef  register
 #define register
 
 #undef __a6

@@ -23,18 +23,18 @@
 
 #include <png.h>
 
-#define ATTR_ICONX   	    0x80001001
-#define ATTR_ICONY   	    0x80001002
-#define ATTR_DRAWERX 	    0x80001003
-#define ATTR_DRAWERY 	    0x80001004
+#define ATTR_ICONX          0x80001001
+#define ATTR_ICONY          0x80001002
+#define ATTR_DRAWERX        0x80001003
+#define ATTR_DRAWERY        0x80001004
 #define ATTR_DRAWERWIDTH    0x80001005
 #define ATTR_DRAWERHEIGHT   0x80001006
 #define ATTR_DRAWERFLAGS    0x80001007
 #define ATTR_TOOLWINDOW     0x80001008  //OS4: STRPTR, tool window string, length including the tag
                                         //must be a multiple of 8
-#define ATTR_STACKSIZE	    0x80001009
+#define ATTR_STACKSIZE      0x80001009
 #define ATTR_DEFAULTTOOL    0x8000100a
-#define ATTR_TOOLTYPE	    0x8000100b
+#define ATTR_TOOLTYPE       0x8000100b
 #define ATTR_VIEWMODES      0x8000100c  //OS4 PNG use that
 #define ATTR_DD_CURRENTX    0x8000100d  //OS4 ULONG, drawer view X offset
 #define ATTR_DD_CURRENTY    0x8000100e  //OS4 ULONG, drawer view Y offset
@@ -67,14 +67,14 @@ static ULONG flags_to_ddflags(ULONG flags)
     
     if (flags & 1)
     {
-    	ret = DDFLAGS_SHOWALL;
+        ret = DDFLAGS_SHOWALL;
     }
     else
     {
-    	ret = DDFLAGS_SHOWICONS;
+        ret = DDFLAGS_SHOWICONS;
     }
 
-    return ret;    
+    return ret;
 }
 
 static ULONG flags_to_ddviewmodes(ULONG flags)
@@ -83,14 +83,14 @@ static ULONG flags_to_ddviewmodes(ULONG flags)
     
     if (flags & 2)
     {
-    	ret = DDVM_BYICON;
+        ret = DDVM_BYICON;
     }
     else
     {
-    	ret = (flags >> 2) + DDVM_BYNAME;
+        ret = (flags >> 2) + DDVM_BYNAME;
     }
     
-    return ret;    
+    return ret;
 }
 
 static ULONG dd_to_flags(struct DiskObject *dobj)
@@ -99,18 +99,18 @@ static ULONG dd_to_flags(struct DiskObject *dobj)
     
     if (dobj->do_DrawerData->dd_Flags & DDFLAGS_SHOWALL)
     {
-	drawerflags |= 1;
+        drawerflags |= 1;
     }
 
     if (dobj->do_DrawerData->dd_ViewModes == DDVM_BYICON)
     {
-	drawerflags |= 2;
+        drawerflags |= 2;
     }
     else
     {
-	drawerflags |= ((dobj->do_DrawerData->dd_ViewModes - 2) << 2);
+        drawerflags |= ((dobj->do_DrawerData->dd_ViewModes - 2) << 2);
     }
-	
+        
     return drawerflags;
 }
 
@@ -317,18 +317,18 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 {
     static CONST_STRPTR const chunknames[] =
     {
-    	"icOn",
-	NULL
+        "icOn",
+        NULL
     };
     APTR chunkpointer[] =
     {
-    	NULL,
-	NULL
+        NULL,
+        NULL
     };
     
     struct NativeIcon  *icon;
-    ULONG   	    	filesize;
-    APTR    	    	data;
+    ULONG               filesize;
+    APTR                data;
 
     icon = NATIVEICON(dobj);
 
@@ -361,345 +361,345 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
     icon->ni_Extra.PNG[0].Offset = 0;
     icon->ni_Extra.PNG[0].Size = filesize;
     {
-    	ULONG width = ~0, height = ~0;
-	
-	icon->ni_Image[0].ARGB = ReadMemPNG(&icon->ni_DiskObject, icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset, &width, &height, chunknames, chunkpointer, IconBase);
-	if (icon->ni_Image[0].ARGB == NULL) {
-	    D(bug("[%s] Can't parse PNG image at 0\n", __func__));
-	    return FALSE;
+        ULONG width = ~0, height = ~0;
+        
+        icon->ni_Image[0].ARGB = ReadMemPNG(&icon->ni_DiskObject, icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset, &width, &height, chunknames, chunkpointer, IconBase);
+        if (icon->ni_Image[0].ARGB == NULL) {
+            D(bug("[%s] Can't parse PNG image at 0\n", __func__));
+            return FALSE;
         }
 
-	icon->ni_Face.Width  = width;
-	icon->ni_Face.Height = height;
-	icon->ni_Face.Aspect = ICON_ASPECT_RATIO_UNKNOWN;
-	
-	#define DO(x) (&x->ni_DiskObject)
-	
-	DO(icon)->do_Magic    	    = WB_DISKMAGIC;
-	DO(icon)->do_Version  	    = (WB_DISKVERSION << 8) | WB_DISKREVISION;
-	DO(icon)->do_Type     	    = 0;  /* Invalid */
-	DO(icon)->do_CurrentX 	    = NO_ICON_POSITION;
-	DO(icon)->do_CurrentY 	    = NO_ICON_POSITION;
-	DO(icon)->do_Gadget.Width   = width;
-	DO(icon)->do_Gadget.Height  = height;
-	DO(icon)->do_StackSize      = AROS_STACKSIZE;
+        icon->ni_Face.Width  = width;
+        icon->ni_Face.Height = height;
+        icon->ni_Face.Aspect = ICON_ASPECT_RATIO_UNKNOWN;
+        
+        #define DO(x) (&x->ni_DiskObject)
+        
+        DO(icon)->do_Magic          = WB_DISKMAGIC;
+        DO(icon)->do_Version        = (WB_DISKVERSION << 8) | WB_DISKREVISION;
+        DO(icon)->do_Type           = 0;  /* Invalid */
+        DO(icon)->do_CurrentX       = NO_ICON_POSITION;
+        DO(icon)->do_CurrentY       = NO_ICON_POSITION;
+        DO(icon)->do_Gadget.Width   = width;
+        DO(icon)->do_Gadget.Height  = height;
+        DO(icon)->do_StackSize      = AROS_STACKSIZE;
 
-	if (chunkpointer[0])
-	{
-	    UBYTE *chunkdata;
-	    ULONG  chunksize;
-	    ULONG  ttnum = 0;
-	    ULONG  ttarraysize = 0;
-	    BOOL   ok = TRUE;
-	    
-	    GetChunkInfo(chunkpointer[0], (APTR *)&chunkdata, &chunksize);
-	    
-	    while(chunksize >= 4)
-	    {
-	    	ULONG attr;
-		IPTR  val = 0;
-		BOOL  need_drawerdata = FALSE;
+        if (chunkpointer[0])
+        {
+            UBYTE *chunkdata;
+            ULONG  chunksize;
+            ULONG  ttnum = 0;
+            ULONG  ttarraysize = 0;
+            BOOL   ok = TRUE;
+            
+            GetChunkInfo(chunkpointer[0], (APTR *)&chunkdata, &chunksize);
+            
+            while(chunksize >= 4)
+            {
+                ULONG attr;
+                IPTR  val = 0;
+                BOOL  need_drawerdata = FALSE;
 
-		attr = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
-		chunksize -=4;
-		chunkdata += 4;
-		
-		switch(attr)
-		{
-		    case ATTR_DRAWERX:
-		    case ATTR_DRAWERY:
-		    case ATTR_DRAWERWIDTH:
-		    case ATTR_DRAWERHEIGHT:
-		    case ATTR_DRAWERFLAGS:
-		    case ATTR_DRAWERFLAGS2:
-		    case ATTR_DRAWERFLAGS3:
-		    case ATTR_VIEWMODES:
-		    case ATTR_VIEWMODES2:
-		    case ATTR_DD_CURRENTX:
-		    case ATTR_DD_CURRENTY:
-		    	need_drawerdata = TRUE;
-			/* Fall through */
-			
-		    case ATTR_ICONX:
-		    case ATTR_ICONY:
-		    case ATTR_STACKSIZE:
-		    case ATTR_TYPE:
-		    case ATTR_FRAMELESS:
-		    	if (chunksize >= 4)
-			{
-			    val = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
-			    chunksize -=4;
-			    chunkdata += 4;			    
-			}
-			else
-			{
-			    ok = FALSE;
-			}
-			break;
-			
-		    /* case ATTR_UNKNOWN: */
-		    case ATTR_DEFAULTTOOL:
-		    case ATTR_TOOLTYPE:
-		    	val = (IPTR)chunkdata;
-			chunksize -= strlen((char *)val) + 1;
-			chunkdata += strlen((char *)val) + 1;
-			
-			if (chunksize < 0)
-			{
-			    ok = FALSE;
-			}
-			break;
-			
-		    default:
-		    	/* Unknown attribute/tag. Impossible to handle correctly
-			   if we don't know if it's a string attribute or not. */
-		    	ok = FALSE;
-			break;
-					    
-		} /* switch(attr) */
-		
-		if (!ok) break;
-		
-		if (need_drawerdata && !(DO(icon)->do_DrawerData))
-		{
-		    DO(icon)->do_DrawerData =
+                attr = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
+                chunksize -=4;
+                chunkdata += 4;
+                
+                switch(attr)
+                {
+                    case ATTR_DRAWERX:
+                    case ATTR_DRAWERY:
+                    case ATTR_DRAWERWIDTH:
+                    case ATTR_DRAWERHEIGHT:
+                    case ATTR_DRAWERFLAGS:
+                    case ATTR_DRAWERFLAGS2:
+                    case ATTR_DRAWERFLAGS3:
+                    case ATTR_VIEWMODES:
+                    case ATTR_VIEWMODES2:
+                    case ATTR_DD_CURRENTX:
+                    case ATTR_DD_CURRENTY:
+                        need_drawerdata = TRUE;
+                        /* Fall through */
+                        
+                    case ATTR_ICONX:
+                    case ATTR_ICONY:
+                    case ATTR_STACKSIZE:
+                    case ATTR_TYPE:
+                    case ATTR_FRAMELESS:
+                        if (chunksize >= 4)
+                        {
+                            val = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
+                            chunksize -=4;
+                            chunkdata += 4;
+                        }
+                        else
+                        {
+                            ok = FALSE;
+                        }
+                        break;
+                        
+                    /* case ATTR_UNKNOWN: */
+                    case ATTR_DEFAULTTOOL:
+                    case ATTR_TOOLTYPE:
+                        val = (IPTR)chunkdata;
+                        chunksize -= strlen((char *)val) + 1;
+                        chunkdata += strlen((char *)val) + 1;
+                        
+                        if (chunksize < 0)
+                        {
+                            ok = FALSE;
+                        }
+                        break;
+                        
+                    default:
+                        /* Unknown attribute/tag. Impossible to handle correctly
+                           if we don't know if it's a string attribute or not. */
+                        ok = FALSE;
+                        break;
+                                            
+                } /* switch(attr) */
+                
+                if (!ok) break;
+                
+                if (need_drawerdata && !(DO(icon)->do_DrawerData))
+                {
+                    DO(icon)->do_DrawerData =
                         AllocMemIcon(DO(icon), sizeof(struct DrawerData),
                             MEMF_PUBLIC | MEMF_CLEAR, IconBase);
-		    if (!(DO(icon)->do_DrawerData))
-		    {
-		    	ok = FALSE;
-			break;
-		    }
-		    
-		    DO(icon)->do_DrawerData->dd_NewWindow.LeftEdge = 20;
-		    DO(icon)->do_DrawerData->dd_NewWindow.TopEdge  = 20;
-		    DO(icon)->do_DrawerData->dd_NewWindow.Width    = 300;
-		    DO(icon)->do_DrawerData->dd_NewWindow.Height   = 200;		    
+                    if (!(DO(icon)->do_DrawerData))
+                    {
+                        ok = FALSE;
+                        break;
+                    }
+                    
+                    DO(icon)->do_DrawerData->dd_NewWindow.LeftEdge = 20;
+                    DO(icon)->do_DrawerData->dd_NewWindow.TopEdge  = 20;
+                    DO(icon)->do_DrawerData->dd_NewWindow.Width    = 300;
+                    DO(icon)->do_DrawerData->dd_NewWindow.Height   = 200;
             DO(icon)->do_Gadget.UserData = (APTR)1; /* See DupDiskObject logic */
-		}
-		
-		switch(attr)
-		{
-		    case ATTR_ICONX:
-		    	DO(icon)->do_CurrentX = val;
-			break;
-			
-		    case ATTR_ICONY:
-		    	DO(icon)->do_CurrentY = val;
-			break;
-			
-		    case ATTR_STACKSIZE:
-		    	DO(icon)->do_StackSize = val;
-			break;
-			
-		    case ATTR_DRAWERX:
-		    	DO(icon)->do_DrawerData->dd_NewWindow.LeftEdge = (WORD)val;
-			break;
+                }
+                
+                switch(attr)
+                {
+                    case ATTR_ICONX:
+                        DO(icon)->do_CurrentX = val;
+                        break;
+                        
+                    case ATTR_ICONY:
+                        DO(icon)->do_CurrentY = val;
+                        break;
+                        
+                    case ATTR_STACKSIZE:
+                        DO(icon)->do_StackSize = val;
+                        break;
+                        
+                    case ATTR_DRAWERX:
+                        DO(icon)->do_DrawerData->dd_NewWindow.LeftEdge = (WORD)val;
+                        break;
 
-		    case ATTR_DRAWERY:
-		    	DO(icon)->do_DrawerData->dd_NewWindow.TopEdge = (WORD)val;
-			break;
+                    case ATTR_DRAWERY:
+                        DO(icon)->do_DrawerData->dd_NewWindow.TopEdge = (WORD)val;
+                        break;
 
-		    case ATTR_DRAWERWIDTH:
-		    	DO(icon)->do_DrawerData->dd_NewWindow.Width = (WORD)val;
-			break;
+                    case ATTR_DRAWERWIDTH:
+                        DO(icon)->do_DrawerData->dd_NewWindow.Width = (WORD)val;
+                        break;
 
-		    case ATTR_DRAWERHEIGHT:
-		    	DO(icon)->do_DrawerData->dd_NewWindow.Height = (WORD)val;
-			break;
-			
-		    case ATTR_DRAWERFLAGS:
-		    	DO(icon)->do_DrawerData->dd_Flags     = flags_to_ddflags(val);
-			DO(icon)->do_DrawerData->dd_ViewModes = flags_to_ddviewmodes(val);
-			break;
+                    case ATTR_DRAWERHEIGHT:
+                        DO(icon)->do_DrawerData->dd_NewWindow.Height = (WORD)val;
+                        break;
+                        
+                    case ATTR_DRAWERFLAGS:
+                        DO(icon)->do_DrawerData->dd_Flags     = flags_to_ddflags(val);
+                        DO(icon)->do_DrawerData->dd_ViewModes = flags_to_ddviewmodes(val);
+                        break;
 
-    	    	    case ATTR_DEFAULTTOOL:
-		    	DO(icon)->do_DefaultTool =
+                    case ATTR_DEFAULTTOOL:
+                        DO(icon)->do_DefaultTool =
                             AllocMemIcon(DO(icon), strlen((char *)val) + 1,
                                 MEMF_PUBLIC | MEMF_CLEAR, IconBase);
-			if (DO(icon)->do_DefaultTool)
-			{
-			    strcpy(DO(icon)->do_DefaultTool, (char *)val);
-			}
-			else
-			{
-			    ok = FALSE;
-			}
-			break;
-		    case ATTR_FRAMELESS:
-		        NATIVEICON(icon)->ni_Frameless = val ? TRUE : FALSE;
-		        break;
+                        if (DO(icon)->do_DefaultTool)
+                        {
+                            strcpy(DO(icon)->do_DefaultTool, (char *)val);
+                        }
+                        else
+                        {
+                            ok = FALSE;
+                        }
+                        break;
+                    case ATTR_FRAMELESS:
+                        NATIVEICON(icon)->ni_Frameless = val ? TRUE : FALSE;
+                        break;
 
-		    case ATTR_TOOLTYPE:
-		    	ttnum++;
+                    case ATTR_TOOLTYPE:
+                        ttnum++;
 
-			D(bug("[Icon.PNG] Got tooltype number %u : %s\n", ttnum - 1, val));
+                        D(bug("[Icon.PNG] Got tooltype number %u : %s\n", ttnum - 1, val));
 
-			if (ttarraysize < ttnum + 1)
-			{
-			    STRPTR *old_tooltypes = DO(icon)->do_ToolTypes;
+                        if (ttarraysize < ttnum + 1)
+                        {
+                            STRPTR *old_tooltypes = DO(icon)->do_ToolTypes;
 
-			    ttarraysize += 10;
+                            ttarraysize += 10;
 
-			    DO(icon)->do_ToolTypes =
+                            DO(icon)->do_ToolTypes =
                                 AllocMemIcon(DO(icon),
                                     ttarraysize * sizeof(APTR),
                                     MEMF_PUBLIC | MEMF_CLEAR, IconBase);
-			    if (DO(icon)->do_ToolTypes)
-			    {
-			    	D(bug("[Icon.PNG] Allocated array of %u entries @ 0x%p (old 0x%p)\n", ttarraysize, DO(icon)->do_ToolTypes, old_tooltypes));
-			    	if (old_tooltypes)
-				{
-				    CopyMemQuick(old_tooltypes, DO(icon)->do_ToolTypes, (ttnum - 1) * sizeof(APTR));
+                            if (DO(icon)->do_ToolTypes)
+                            {
+                                D(bug("[Icon.PNG] Allocated array of %u entries @ 0x%p (old 0x%p)\n", ttarraysize, DO(icon)->do_ToolTypes, old_tooltypes));
+                                if (old_tooltypes)
+                                {
+                                    CopyMemQuick(old_tooltypes, DO(icon)->do_ToolTypes, (ttnum - 1) * sizeof(APTR));
 
-				    /* TODO: Free old array */
-				}
-			    }
-			    else
-			    {
-			    	ok = FALSE;
-			    }
-			}
+                                    /* TODO: Free old array */
+                                }
+                            }
+                            else
+                            {
+                                ok = FALSE;
+                            }
+                        }
 
-			if (!ok) break;
-			
-			DO(icon)->do_ToolTypes[ttnum - 1] =
+                        if (!ok) break;
+                        
+                        DO(icon)->do_ToolTypes[ttnum - 1] =
                             AllocMemIcon(DO(icon), strlen((char *)val) + 1,
                             MEMF_PUBLIC | MEMF_CLEAR, IconBase);
-			if (DO(icon)->do_ToolTypes[ttnum - 1])
-			{
-			    strcpy(DO(icon)->do_ToolTypes[ttnum - 1], (char *)val);
-			}
-			else
-			{
-			    ok = FALSE;
-			}
-			break;
-			
-		} /* switch(attr) */
-				
-		if (!ok) break;
-		
-	    } /* while(chunksize >= 4) */
-	    
-	    if (!ok)
-	    {
-    	    	D(bug("=== Failure during icOn chunk parsing ===\n"));
-    	    	FreeIconPNG(&icon->ni_DiskObject, IconBase);
-	    	return FALSE;
-	    }
-	    
-	    
-	} /* if (chunkpointer[0]) */
+                        if (DO(icon)->do_ToolTypes[ttnum - 1])
+                        {
+                            strcpy(DO(icon)->do_ToolTypes[ttnum - 1], (char *)val);
+                        }
+                        else
+                        {
+                            ok = FALSE;
+                        }
+                        break;
+                        
+                } /* switch(attr) */
+                                
+                if (!ok) break;
+                
+            } /* while(chunksize >= 4) */
+            
+            if (!ok)
+            {
+                D(bug("=== Failure during icOn chunk parsing ===\n"));
+                FreeIconPNG(&icon->ni_DiskObject, IconBase);
+                return FALSE;
+            }
+            
+            
+        } /* if (chunkpointer[0]) */
 
-	#undef DO
+        #undef DO
 
-	/*
-	 * FIXME: Someone killed PNG Icon do_Type detection here which causes
-	 *        following lines to always free DrawerData even when it
-	 *        shouldn't be freed (only possible to know if do_Type is
-	 *        known). So for now following lines disabled and DrawerData
-	 *        is always kept (even when it shouldn't).
-	 */
+        /*
+         * FIXME: Someone killed PNG Icon do_Type detection here which causes
+         *        following lines to always free DrawerData even when it
+         *        shouldn't be freed (only possible to know if do_Type is
+         *        known). So for now following lines disabled and DrawerData
+         *        is always kept (even when it shouldn't).
+         */
 
-#if 0	
-	if (icon->ni_DiskObject.do_DrawerData &&
-	    (icon->ni_DiskObject.do_Type != WBDISK) &&
-	    (icon->ni_DiskObject.do_Type != WBDRAWER) &&
-	    (icon->ni_DiskObject.do_Type != WBGARBAGE))
-	{
-	    FreePooled(pool, icon->ni_DiskObject.do_DrawerData, sizeof(struct DrawerData));
-	    icon->ni_DiskObject.do_DrawerData = NULL;
-	}
+#if 0
+        if (icon->ni_DiskObject.do_DrawerData &&
+            (icon->ni_DiskObject.do_Type != WBDISK) &&
+            (icon->ni_DiskObject.do_Type != WBDRAWER) &&
+            (icon->ni_DiskObject.do_Type != WBGARBAGE))
+        {
+            FreePooled(pool, icon->ni_DiskObject.do_DrawerData, sizeof(struct DrawerData));
+            icon->ni_DiskObject.do_DrawerData = NULL;
+        }
 #endif
-	
+        
     } /**/
     
     /* Look for a possible 2nd PNG image attached onto the first one */
     {
-    	UBYTE *filepos = icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset + 8;
-    	BOOL done = FALSE;
-	
-	while(!done && filepos < ((UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size))
-	{
-    	    ULONG chunksize = (filepos[0] << 24) | (filepos[1] << 16) |
-	    	    	      (filepos[2] << 8) | filepos[3];
-    	    ULONG chunktype = (filepos[4] << 24) | (filepos[5] << 16) |
-	    	    	      (filepos[6] << 8) | filepos[7];
+        UBYTE *filepos = icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset + 8;
+        BOOL done = FALSE;
+        
+        while(!done && filepos < ((UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size))
+        {
+            ULONG chunksize = (filepos[0] << 24) | (filepos[1] << 16) |
+                              (filepos[2] << 8) | filepos[3];
+            ULONG chunktype = (filepos[4] << 24) | (filepos[5] << 16) |
+                              (filepos[6] << 8) | filepos[7];
 
-	    chunksize += 12;
+            chunksize += 12;
 
-	    if (chunktype == MAKE_ID('I', 'E', 'N', 'D'))
-	    {
-		done = TRUE;
-	    }
+            if (chunktype == MAKE_ID('I', 'E', 'N', 'D'))
+            {
+                done = TRUE;
+            }
 
-	    filepos += chunksize;
-	}
-	
-	if (filepos + 8 < (UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size)
-	{
-	    ULONG offset = filepos - (UBYTE *)icon->ni_Extra.Data;
-	    
-	    icon->ni_Extra.PNG[0].Size = offset;
-	    icon->ni_Extra.PNG[1].Offset = offset;
-	    icon->ni_Extra.PNG[1].Size = (filesize - icon->ni_Extra.PNG[0].Size);
-	    icon->ni_Image[1].ARGB = ReadMemPNG(&icon->ni_DiskObject, filepos, &icon->ni_Face.Width, &icon->ni_Face.Height, NULL, NULL, IconBase);
-	}
-    	
+            filepos += chunksize;
+        }
+        
+        if (filepos + 8 < (UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size)
+        {
+            ULONG offset = filepos - (UBYTE *)icon->ni_Extra.Data;
+            
+            icon->ni_Extra.PNG[0].Size = offset;
+            icon->ni_Extra.PNG[1].Offset = offset;
+            icon->ni_Extra.PNG[1].Size = (filesize - icon->ni_Extra.PNG[0].Size);
+            icon->ni_Image[1].ARGB = ReadMemPNG(&icon->ni_DiskObject, filepos, &icon->ni_Face.Width, &icon->ni_Face.Height, NULL, NULL, IconBase);
+        }
+        
     } /**/
 
     /* If there's no image for selected-state, generate one */
     if (!icon->ni_Image[1].ARGB)
     {
-    	ULONG size = icon->ni_Face.Width * icon->ni_Face.Height;
-	
-    	if ((icon->ni_Image[1].ARGB =
+        ULONG size = icon->ni_Face.Width * icon->ni_Face.Height;
+        
+        if ((icon->ni_Image[1].ARGB =
             AllocMemIcon(&icon->ni_DiskObject, size * sizeof(ULONG),
                 MEMF_PUBLIC, IconBase)))
-	{
-	    ULONG *src = (ULONG *)icon->ni_Image[0].ARGB;
-	    ULONG *dst = (ULONG *)icon->ni_Image[1].ARGB;
-	    
-	    while(size--)
-	    {
-	    	ULONG pixel = *src++;
-		
-		/* Effects like in changetoselectediconcolor.c */
-		
-	#if EFFECT == EFFECT_LIGHTEN
-	    #if AROS_BIG_ENDIAN
-	    	pixel = (pixel & 0xFF000000) +
-		      	((pixel >> 1) & 0x007F7F7F) +
-		      	0x00808080;
-	    #else
-	    	pixel = (pixel & 0x000000FF) +
-		      	((pixel >> 1) & 0x7F7F7F00) +
-		      	0x80808000;	    	
-	    #endif
-	#elif EFFECT == EFFECT_TINT_BLUE
-	    #if AROS_BIG_ENDIAN
-	    	pixel = (pixel & 0xFF000000) +
-		      	((pixel >> 1) & 0x007F7F7F) +
-		      	0x00000080;
-	    #else
-	    	pixel = (pixel & 0x000000FF) +
-		      	((pixel >> 1) & 0x7F7F7F00) +
-		      	0x80000000;	    	
-	    #endif
-	    
-	#elif EFFECT == EFFECT_XOR
-	    #if AROS_BIG_ENDIAN
-	    	pixel = (pixel & 0xFF000000) +
-		      	((pixel & 0x00FFFFFF) ^ 0x00FFFFFF);
-	    #else
-	    	pixel = (pixel & 0x000000FF) +
-		      	((pixel & 0xFFFFFF00) ^ 0xFFFFFF00);	    	
-	    #endif	    
-	#endif
-		*dst++ = pixel;
-	    }
-	}
+        {
+            ULONG *src = (ULONG *)icon->ni_Image[0].ARGB;
+            ULONG *dst = (ULONG *)icon->ni_Image[1].ARGB;
+            
+            while(size--)
+            {
+                ULONG pixel = *src++;
+                
+                /* Effects like in changetoselectediconcolor.c */
+                
+        #if EFFECT == EFFECT_LIGHTEN
+            #if AROS_BIG_ENDIAN
+                pixel = (pixel & 0xFF000000) +
+                        ((pixel >> 1) & 0x007F7F7F) +
+                        0x00808080;
+            #else
+                pixel = (pixel & 0x000000FF) +
+                        ((pixel >> 1) & 0x7F7F7F00) +
+                        0x80808000;
+            #endif
+        #elif EFFECT == EFFECT_TINT_BLUE
+            #if AROS_BIG_ENDIAN
+                pixel = (pixel & 0xFF000000) +
+                        ((pixel >> 1) & 0x007F7F7F) +
+                        0x00000080;
+            #else
+                pixel = (pixel & 0x000000FF) +
+                        ((pixel >> 1) & 0x7F7F7F00) +
+                        0x80000000;
+            #endif
+            
+        #elif EFFECT == EFFECT_XOR
+            #if AROS_BIG_ENDIAN
+                pixel = (pixel & 0xFF000000) +
+                        ((pixel & 0x00FFFFFF) ^ 0x00FFFFFF);
+            #else
+                pixel = (pixel & 0x000000FF) +
+                        ((pixel & 0xFFFFFF00) ^ 0xFFFFFF00);
+            #endif
+        #endif
+                *dst++ = pixel;
+            }
+        }
     }
 
     /*
@@ -727,18 +727,18 @@ STATIC VOID MakeCRCTable(struct IconBase *IconBase)
 
     IconBase->ib_CRCTable = AllocMem(256 * sizeof(ULONG), MEMF_ANY);
     if (!IconBase->ib_CRCTable)
-    	return;
+        return;
     for (n = 0; n < 256; n++)
     {
-	c = (unsigned long) n;
-	for (k = 0; k < 8; k++)
-	{
-	    if (c & 1)
-        	c = 0xedb88320L ^ (c >> 1);
-	    else
-        	c = c >> 1;
-	}
-	IconBase->ib_CRCTable[n] = c;
+        c = (unsigned long) n;
+        for (k = 0; k < 8; k++)
+        {
+            if (c & 1)
+                c = 0xedb88320L ^ (c >> 1);
+            else
+                c = c >> 1;
+        }
+        IconBase->ib_CRCTable[n] = c;
     }
 }
 
@@ -751,7 +751,7 @@ STATIC ULONG UpdateCRC(ULONG crc, UBYTE *buf, ULONG len, struct IconBase *IconBa
 
     for (n = 0; n < len; n++)
     {
-	c = IconBase->ib_CRCTable[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+        c = IconBase->ib_CRCTable[(c ^ buf[n]) & 0xff] ^ (c >> 8);
     }
 
     return c;
@@ -761,7 +761,7 @@ STATIC ULONG UpdateCRC(ULONG crc, UBYTE *buf, ULONG len, struct IconBase *IconBa
 /****************************************************************************************/
 
 STATIC BOOL WriteIconAttr(BPTR file, ULONG id, ULONG val, ULONG *chunksize,
-    	    	    	  ULONG *crc, struct IconBase *IconBase)
+                          ULONG *crc, struct IconBase *IconBase)
 {
     UBYTE buf[8];
     
@@ -777,14 +777,14 @@ STATIC BOOL WriteIconAttr(BPTR file, ULONG id, ULONG val, ULONG *chunksize,
     if (Write(file, buf, 8) != 8) return FALSE;
 
     *chunksize += 8;
-    *crc = UpdateCRC(*crc, buf, 8, IconBase);    
+    *crc = UpdateCRC(*crc, buf, 8, IconBase);
     return TRUE;
 }
 
 /****************************************************************************************/
 
 STATIC BOOL WriteIconStrAttr(BPTR file, ULONG id, char *val, ULONG *chunksize,
-    	    	    	     ULONG *crc, struct IconBase *IconBase)
+                             ULONG *crc, struct IconBase *IconBase)
 {
     UBYTE buf[4];
     ULONG len = strlen(val) + 1;
@@ -804,7 +804,7 @@ STATIC BOOL WriteIconStrAttr(BPTR file, ULONG id, char *val, ULONG *chunksize,
     
     return TRUE;
 }
- 			  
+                          
 /****************************************************************************************/
 
 STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
@@ -816,7 +816,7 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
     
     if (sizeseek < 0) return FALSE;
 
-    /* Write Chunk size + chunk type */    
+    /* Write Chunk size + chunk type */
     if (Write(file, buf, 8) != 8) return FALSE;
     
     crc = UpdateCRC(crc, buf + 4, 4, IconBase); /* chunksize is excluded from CRC */
@@ -824,92 +824,92 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
     /* Write Frameless */
     if (!WriteIconAttr(file, ATTR_FRAMELESS, NATIVEICON(dobj)->ni_Frameless, &chunksize, &crc, IconBase))
     {
-	return FALSE;
+        return FALSE;
     }
 
     /* Write Stack Size */
 
     if (!WriteIconAttr(file, ATTR_STACKSIZE, dobj->do_StackSize, &chunksize, &crc, IconBase))
     {
-	return FALSE;
+        return FALSE;
     }
     
     /* Write Icon X Position */
     if (dobj->do_CurrentX != NO_ICON_POSITION)
     {
-    	if (!WriteIconAttr(file, ATTR_ICONX, dobj->do_CurrentX, &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
+        if (!WriteIconAttr(file, ATTR_ICONX, dobj->do_CurrentX, &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
     }
 
     /* Write Icon Y Position */
     if (dobj->do_CurrentY != NO_ICON_POSITION)
     {
-    	if (!WriteIconAttr(file, ATTR_ICONY, dobj->do_CurrentY, &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
+        if (!WriteIconAttr(file, ATTR_ICONY, dobj->do_CurrentY, &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
     }
             
     if (dobj->do_DrawerData)
     {
-    	if (!WriteIconAttr(file, ATTR_DRAWERX, dobj->do_DrawerData->dd_NewWindow.LeftEdge,
-	    &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
-	
-    	if (!WriteIconAttr(file, ATTR_DRAWERY, dobj->do_DrawerData->dd_NewWindow.TopEdge,
-	    &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
+        if (!WriteIconAttr(file, ATTR_DRAWERX, dobj->do_DrawerData->dd_NewWindow.LeftEdge,
+            &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
+        
+        if (!WriteIconAttr(file, ATTR_DRAWERY, dobj->do_DrawerData->dd_NewWindow.TopEdge,
+            &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
 
-    	if (!WriteIconAttr(file, ATTR_DRAWERWIDTH, dobj->do_DrawerData->dd_NewWindow.Width,
-	    &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
+        if (!WriteIconAttr(file, ATTR_DRAWERWIDTH, dobj->do_DrawerData->dd_NewWindow.Width,
+            &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
 
-    	if (!WriteIconAttr(file, ATTR_DRAWERHEIGHT, dobj->do_DrawerData->dd_NewWindow.Height,
-	    &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
-	
-    	if (!WriteIconAttr(file, ATTR_DRAWERFLAGS, dd_to_flags(dobj),
-	    &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
-	
+        if (!WriteIconAttr(file, ATTR_DRAWERHEIGHT, dobj->do_DrawerData->dd_NewWindow.Height,
+            &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
+        
+        if (!WriteIconAttr(file, ATTR_DRAWERFLAGS, dd_to_flags(dobj),
+            &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
+        
     } /* if (dobj->do_DrawerData) */
-    	    
+            
     if (dobj->do_DefaultTool)
     {
-    	if (!WriteIconStrAttr(file, ATTR_DEFAULTTOOL, dobj->do_DefaultTool,
-	    &chunksize, &crc, IconBase))
-	{
-	    return FALSE;
-	}
-    	
+        if (!WriteIconStrAttr(file, ATTR_DEFAULTTOOL, dobj->do_DefaultTool,
+            &chunksize, &crc, IconBase))
+        {
+            return FALSE;
+        }
+        
     }
 
     if (dobj->do_ToolTypes)
     {
-    	STRPTR *tt = (STRPTR *)dobj->do_ToolTypes;
-	
-	for(tt = (STRPTR *)dobj->do_ToolTypes; *tt; tt++)
-	{
-	    if (!WriteIconStrAttr(file, ATTR_TOOLTYPE, *tt, &chunksize,
-	    	    	    	  &crc, IconBase))
-	    {
-	    	return FALSE;
-	    }
-	}
+        STRPTR *tt = (STRPTR *)dobj->do_ToolTypes;
+        
+        for(tt = (STRPTR *)dobj->do_ToolTypes; *tt; tt++)
+        {
+            if (!WriteIconStrAttr(file, ATTR_TOOLTYPE, *tt, &chunksize,
+                                  &crc, IconBase))
+            {
+                return FALSE;
+            }
+        }
     }
-        	    
+                    
     /* Write CRC */
         
     crc ^= 0xFFFFFFFF;
@@ -940,20 +940,20 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
 
 BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 {
-    struct NativeIcon 	*nativeicon = NATIVEICON(dobj);
-    UBYTE   	    	*mempos = nativeicon->ni_Extra.Data + nativeicon->ni_Extra.PNG[0].Offset;
-    BOOL    	    	 done = FALSE;
+    struct NativeIcon   *nativeicon = NATIVEICON(dobj);
+    UBYTE               *mempos = nativeicon->ni_Extra.Data + nativeicon->ni_Extra.PNG[0].Offset;
+    BOOL                 done = FALSE;
 
     D(bug("%s: ni=%p, ni->ni_Extra.Data = %p\n", __func__, nativeicon, nativeicon->ni_Extra.Data));
     if (nativeicon->ni_Extra.Data == NULL)
-    	return FALSE;
+        return FALSE;
 
-    ObtainSemaphore(&IconBase->iconlistlock);   
+    ObtainSemaphore(&IconBase->iconlistlock);
     if (!IconBase->ib_CRCTable)
-	MakeCRCTable(IconBase);
+        MakeCRCTable(IconBase);
     ReleaseSemaphore(&IconBase->iconlistlock);
     if (!IconBase->ib_CRCTable)
-    	return FALSE;
+        return FALSE;
 
     /* Write PNG header */
     if (Write(file, mempos, 8) != 8) return FALSE;
@@ -962,38 +962,38 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
     
     while(!done)
     {
-    	ULONG chunksize = (mempos[0] << 24) | (mempos[1] << 16) |
-	    	    	  (mempos[2] << 8) | mempos[3];
-    	ULONG chunktype = (mempos[4] << 24) | (mempos[5] << 16) |
-	    	    	  (mempos[6] << 8) | mempos[7];
-    	
-	chunksize += 12;
-	
-	if (chunktype == MAKE_ID('I', 'E', 'N', 'D'))
-	{
-	    if (!WriteIconChunk(file, dobj, IconBase)) return FALSE;
-	    done = TRUE;
-	}
-	
-	if (chunktype != MAKE_ID('i', 'c', 'O', 'n'))
-	{
-	    if (Write(file, mempos, chunksize) != chunksize)
-	    {
-	    	return FALSE;
-	    }
-	}
-	
-	mempos += chunksize;
-	
+        ULONG chunksize = (mempos[0] << 24) | (mempos[1] << 16) |
+                          (mempos[2] << 8) | mempos[3];
+        ULONG chunktype = (mempos[4] << 24) | (mempos[5] << 16) |
+                          (mempos[6] << 8) | mempos[7];
+        
+        chunksize += 12;
+        
+        if (chunktype == MAKE_ID('I', 'E', 'N', 'D'))
+        {
+            if (!WriteIconChunk(file, dobj, IconBase)) return FALSE;
+            done = TRUE;
+        }
+        
+        if (chunktype != MAKE_ID('i', 'c', 'O', 'n'))
+        {
+            if (Write(file, mempos, chunksize) != chunksize)
+            {
+                return FALSE;
+            }
+        }
+        
+        mempos += chunksize;
+        
     }
 
     if (nativeicon->ni_Extra.PNG[1].Offset > 0)
     {
-    	ULONG size = nativeicon->ni_Extra.PNG[1].Size;
+        ULONG size = nativeicon->ni_Extra.PNG[1].Size;
 
-    	/* 2nd PNG Image attached */
+        /* 2nd PNG Image attached */
 
-	if (Write(file, nativeicon->ni_Extra.Data + nativeicon->ni_Extra.PNG[1].Offset, size) != size) return FALSE;
+        if (Write(file, nativeicon->ni_Extra.Data + nativeicon->ni_Extra.PNG[1].Offset, size) != size) return FALSE;
     }
         
     return TRUE;

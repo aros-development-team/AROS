@@ -269,7 +269,7 @@ VOID initPenMap(ULONG *penmap, ULONG size)
         else if (i == 1 || i == 7)
             penmap[i] = 0;
         else if (i == 3 || i == 8 || i == 10 || i == 12)
-            penmap[i] = 2;            
+            penmap[i] = 2;
         else
             penmap[i] = 1;
     }

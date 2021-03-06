@@ -19,7 +19,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 {
     MathIeeeSingBasBase = OpenLibrary ("mathieeesingbas.library", 39);
     if (!MathIeeeSingBasBase)
-	return FALSE;
+        return FALSE;
 
     return TRUE;
 }
@@ -28,7 +28,7 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
     if (MathIeeeSingBasBase)
-	CloseLibrary ((struct Library *)MathIeeeSingBasBase);
+        CloseLibrary ((struct Library *)MathIeeeSingBasBase);
     
     return TRUE;
 }

@@ -12,19 +12,19 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH1(BOOL, DeleteDiskObject,
+        AROS_LH1(BOOL, DeleteDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, name, A0),
+        AROS_LHA(UBYTE *, name, A0),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 23, Icon)
+        struct IconBase *, IconBase, 23, Icon)
 
 /*  FUNCTION
-	Deletes an icon description file.
+        Deletes an icon description file.
 
     INPUTS
-	name  -  name of the icon file without the ".info".
+        name  -  name of the icon file without the ".info".
 
     RESULT
 

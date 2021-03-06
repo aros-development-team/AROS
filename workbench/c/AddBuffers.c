@@ -22,18 +22,18 @@
     FUNCTION
 
         Add buffers to the list of available buffers for a specific
-	drive. Adding buffers speeds disk access but has the drawback
-	of using up system memory (typically 512 bytes per buffer).
-	Specifying a negative number subtracts buffers from the drive.
-	    If only the DRIVE argument is specified, the number of 
-	buffers for that drive are displayed without changing the buffer
-	allocation.
+        drive. Adding buffers speeds disk access but has the drawback
+        of using up system memory (typically 512 bytes per buffer).
+        Specifying a negative number subtracts buffers from the drive.
+            If only the DRIVE argument is specified, the number of
+        buffers for that drive are displayed without changing the buffer
+        allocation.
 
     INPUTS
 
         DRIVE    --  the drive to alter the buffer allocation of
-	BUFFERS  --  the number of buffers to add (or subtract in case of
-	             a negative number) to a drive.
+        BUFFERS  --  the number of buffers to add (or subtract in case of
+                     a negative number) to a drive.
 
     RESULT
 
@@ -82,33 +82,33 @@ int main(void)
 
     if (rda != NULL)
     {
-	STRPTR  drive = (STRPTR)args[ARG_DRIVE];
-	ULONG  *bufsptr = (ULONG *)args[ARG_BUFFERS];
+        STRPTR  drive = (STRPTR)args[ARG_DRIVE];
+        ULONG  *bufsptr = (ULONG *)args[ARG_BUFFERS];
 
-	if (bufsptr != NULL)
-	{
-	    buffers = *bufsptr;
-	}
+        if (bufsptr != NULL)
+        {
+            buffers = *bufsptr;
+        }
 
-	if(AddBuffers(drive, buffers))
-	{
-	    Printf("%s has %ld buffers\n", drive, IoErr());
-	}
-	else
-	{
-	    error = IoErr();
-	    return_code = RETURN_FAIL;
-	}
-	
-	FreeArgs(rda);
+        if(AddBuffers(drive, buffers))
+        {
+            Printf("%s has %ld buffers\n", drive, IoErr());
+        }
+        else
+        {
+            error = IoErr();
+            return_code = RETURN_FAIL;
+        }
+        
+        FreeArgs(rda);
     }
     else
     {
-	error = IoErr();
-	return_code = RETURN_FAIL;
+        error = IoErr();
+        return_code = RETURN_FAIL;
     }
     
     if (error != 0)
-	PrintFault(IoErr(), "AddBuffers");
+        PrintFault(IoErr(), "AddBuffers");
     return return_code;
 }

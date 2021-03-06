@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 #include "lowlevel_intern.h"
 
@@ -16,7 +16,7 @@
 
       AROS_LH1(VOID, RemVBlankInt,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(APTR, intHandle, A1),
 
 /*  LOCATION */
@@ -48,9 +48,9 @@
 
     /* Protection against erroneous programs */
     if (intHandle != NULL ||
-	((struct Interrupt *)intHandle) != &LowLevelBase->ll_VBlank)
+        ((struct Interrupt *)intHandle) != &LowLevelBase->ll_VBlank)
     {
-	return;
+        return;
     }
     
     ObtainSemaphore(&LowLevelBase->ll_Lock);

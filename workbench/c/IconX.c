@@ -121,7 +121,7 @@ STRPTR AllocateNameFromLock(BPTR lock)
                 else
                 {
                     break;
-                }                
+                }
             }
         }
         else

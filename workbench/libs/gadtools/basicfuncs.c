@@ -34,7 +34,7 @@ struct GTIText
     struct IntuiText it2;
     struct TextAttr  ta;
     struct TextAttr  ta2;
-    UBYTE	     text[0];
+    UBYTE            text[0];
 };
 
 /**********************************************************************************************/
@@ -49,48 +49,48 @@ void freeitext(struct GadToolsBase_intern *GadToolsBase,
 
 /* Create a struct IntuiText accordings to a struct NewGadget */
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
-			    struct NewGadget *ng,
-			    struct TagItem *taglist)
+                            struct NewGadget *ng,
+                            struct TagItem *taglist)
 {
-    struct GTIText 	*gtit;
-    struct DrawInfo 	*dri = ((struct VisualInfo *)ng->ng_VisualInfo)->vi_dri;
-    struct TextFont	*font = NULL;
-    struct RastPort	temprp;
-    STRPTR		underscorepos;
-    STRPTR		fontname;
-    UWORD		fontysize;
-    UBYTE		fontstyle;
-    UBYTE		fontflags;
-    WORD		gadgettextlen;
-    WORD		fontnamelen;
-    WORD		underscorelen;
-    WORD		alloclen;
-    BOOL		fontopened = FALSE;
-    UBYTE		underscore = 1; /* default for GT_Underscore = a char which hopefully a normal
-    				           string never contains */
+    struct GTIText      *gtit;
+    struct DrawInfo     *dri = ((struct VisualInfo *)ng->ng_VisualInfo)->vi_dri;
+    struct TextFont     *font = NULL;
+    struct RastPort     temprp;
+    STRPTR              underscorepos;
+    STRPTR              fontname;
+    UWORD               fontysize;
+    UBYTE               fontstyle;
+    UBYTE               fontflags;
+    WORD                gadgettextlen;
+    WORD                fontnamelen;
+    WORD                underscorelen;
+    WORD                alloclen;
+    BOOL                fontopened = FALSE;
+    UBYTE               underscore = 1; /* default for GT_Underscore = a char which hopefully a normal
+                                           string never contains */
 
-    underscore = (UBYTE)GetTagData(GT_Underscore, underscore, taglist);    
+    underscore = (UBYTE)GetTagData(GT_Underscore, underscore, taglist);
     underscorepos = strchr(ng->ng_GadgetText, underscore);
     gadgettextlen = strlen(ng->ng_GadgetText);
     
     if (ng->ng_TextAttr)
     {
         font = OpenFont(ng->ng_TextAttr);
-	if (!font) return NULL;
-	
-	fontopened = TRUE;
-	
+        if (!font) return NULL;
+        
+        fontopened = TRUE;
+        
         fontname  = ng->ng_TextAttr->ta_Name;
-	fontysize = ng->ng_TextAttr->ta_YSize;
-	fontstyle = ng->ng_TextAttr->ta_Style;
-	fontflags = ng->ng_TextAttr->ta_Flags;
+        fontysize = ng->ng_TextAttr->ta_YSize;
+        fontstyle = ng->ng_TextAttr->ta_Style;
+        fontflags = ng->ng_TextAttr->ta_Flags;
     } else {
         font = dri->dri_Font;
-	
+        
         fontname  = dri->dri_Font->tf_Message.mn_Node.ln_Name;
-	fontysize = dri->dri_Font->tf_YSize;
-	fontstyle = dri->dri_Font->tf_Style;
-	fontflags = dri->dri_Font->tf_Flags;
+        fontysize = dri->dri_Font->tf_YSize;
+        fontstyle = dri->dri_Font->tf_Style;
+        fontflags = dri->dri_Font->tf_Flags;
     }
     
     if (!fontname) return NULL;
@@ -98,12 +98,12 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
     fontnamelen = strlen(fontname);
     
     alloclen = sizeof(struct GTIText) + fontnamelen + 1 + gadgettextlen + 1 + 2; /* 2 for safety */
-    		   
+                   
     gtit = (struct GTIText *)AllocVec(alloclen, MEMF_PUBLIC | MEMF_CLEAR);
     if (!gtit)
     {
         if (fontopened) CloseFont(font);
-	return NULL;
+        return NULL;
     }
 
     CopyMem(fontname, gtit->text, fontnamelen);
@@ -122,55 +122,55 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
     
     if (!underscorepos)
     {
-        gtit->it.IText = gtit->text + fontnamelen + 1;	
+        gtit->it.IText = gtit->text + fontnamelen + 1;
         gtit->it.NextText = NULL;
-	
-	if (gadgettextlen) CopyMem(ng->ng_GadgetText, gtit->it.IText, gadgettextlen);
+        
+        if (gadgettextlen) CopyMem(ng->ng_GadgetText, gtit->it.IText, gadgettextlen);
     }
     else
-    {	
+    {
         gadgettextlen--;
-	underscorelen = underscorepos - ng->ng_GadgetText;
-	
-	gtit->it.IText = gtit->text + fontnamelen + 1;	
-	if (underscorelen)
-	{
-	    CopyMem(ng->ng_GadgetText, gtit->it.IText, underscorelen);
-	}
-	if (gadgettextlen - underscorelen)
-	{
-	    CopyMem(underscorepos + 1, gtit->it.IText + underscorelen, gadgettextlen - underscorelen);
-	}
-		
-	gtit->it.NextText = &gtit->it2;
-	
-    	gtit->it2 = gtit->it;
-	gtit->it2.ITextFont = &gtit->ta2;
-	gtit->it2.IText = gtit->it.IText + gadgettextlen + 1;
-	gtit->it2.NextText = NULL;
+        underscorelen = underscorepos - ng->ng_GadgetText;
+        
+        gtit->it.IText = gtit->text + fontnamelen + 1;
+        if (underscorelen)
+        {
+            CopyMem(ng->ng_GadgetText, gtit->it.IText, underscorelen);
+        }
+        if (gadgettextlen - underscorelen)
+        {
+            CopyMem(underscorepos + 1, gtit->it.IText + underscorelen, gadgettextlen - underscorelen);
+        }
+                
+        gtit->it.NextText = &gtit->it2;
+        
+        gtit->it2 = gtit->it;
+        gtit->it2.ITextFont = &gtit->ta2;
+        gtit->it2.IText = gtit->it.IText + gadgettextlen + 1;
+        gtit->it2.NextText = NULL;
 
-	gtit->ta2 = gtit->ta;
+        gtit->ta2 = gtit->ta;
 
 #if HIGH_COLOR
-	gtit->it2.FrontPen = dri->dri_Pens[(ng->ng_Flags & NG_HIGHLABEL) ? TEXTPEN : HIGHLIGHTTEXTPEN];
+        gtit->it2.FrontPen = dri->dri_Pens[(ng->ng_Flags & NG_HIGHLABEL) ? TEXTPEN : HIGHLIGHTTEXTPEN];
 #else
-	gtit->ta2.ta_Style |= FSF_UNDERLINED;
+        gtit->ta2.ta_Style |= FSF_UNDERLINED;
 #endif
-	
+        
 
-	if (!underscorelen)
-	{
-	    gtit->it2.LeftEdge = 0;
-	}
-	else
-	{
-	    InitRastPort(&temprp);
-	    SetFont(&temprp, font);
-	
-	    gtit->it2.LeftEdge = TextLength(&temprp, ng->ng_GadgetText, underscorelen);
-	}
-	
-	gtit->it2.IText[0] = underscorepos[1];	
+        if (!underscorelen)
+        {
+            gtit->it2.LeftEdge = 0;
+        }
+        else
+        {
+            InitRastPort(&temprp);
+            SetFont(&temprp, font);
+        
+            gtit->it2.LeftEdge = TextLength(&temprp, ng->ng_GadgetText, underscorelen);
+        }
+        
+        gtit->it2.IText[0] = underscorepos[1];
     }
     
     if (fontopened) CloseFont(font);
@@ -181,25 +181,25 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 /**********************************************************************************************/
 
 struct TextFont *preparefont(struct GadToolsBase_intern *GadToolsBase,
-			     struct RastPort *rport, struct IntuiText *itext,
-			     struct TextFont **oldfont)
+                             struct RastPort *rport, struct IntuiText *itext,
+                             struct TextFont **oldfont)
 {
     struct TextFont *font;
 
     if (itext->ITextFont)
     {
-	*oldfont = rport->Font;
-	font = OpenFont(itext->ITextFont);
-	if (font)
-	{
-	    SetFont(rport, font);
-	    SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
-	} else
-	    font = rport->Font;
+        *oldfont = rport->Font;
+        font = OpenFont(itext->ITextFont);
+        if (font)
+        {
+            SetFont(rport, font);
+            SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff);
+        } else
+            font = rport->Font;
     } else
     {
-	*oldfont = NULL;
-	font = rport->Font;
+        *oldfont = NULL;
+        font = rport->Font;
     }
     SetABPenDrMd(rport, itext->FrontPen, itext->BackPen, itext->DrawMode);
 
@@ -209,39 +209,39 @@ struct TextFont *preparefont(struct GadToolsBase_intern *GadToolsBase,
 /**********************************************************************************************/
 
 void closefont(struct GadToolsBase_intern *GadToolsBase,
-	       struct RastPort *rport,
-	       struct TextFont *font, struct TextFont *oldfont)
+               struct RastPort *rport,
+               struct TextFont *font, struct TextFont *oldfont)
 {
     if (oldfont)
     {
-	SetFont(rport, oldfont);
-	CloseFont(font);
+        SetFont(rport, oldfont);
+        CloseFont(font);
     }
 }
 
 /**********************************************************************************************/
 
 BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
-		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
+                 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
 {
-    struct TextFont 	*font = NULL, *oldfont;
-    struct TextExtent 	te;
-    STRPTR 		text;
-    int 		len = 0, x, y;
-    UWORD 		width, height;
-    WORD 		gadleft, gadtop, gadwidth, gadheight;
+    struct TextFont     *font = NULL, *oldfont;
+    struct TextExtent   te;
+    STRPTR              text;
+    int                 len = 0, x, y;
+    UWORD               width, height;
+    WORD                gadleft, gadtop, gadwidth, gadheight;
     
     if (EG(gad)->MoreFlags & GMORE_BOUNDS)
     {
-    	gadleft   = EG(gad)->BoundsLeftEdge;
-	gadtop    = EG(gad)->BoundsTopEdge;
-	gadwidth  = EG(gad)->BoundsWidth;
-	gadheight = EG(gad)->BoundsHeight;
+        gadleft   = EG(gad)->BoundsLeftEdge;
+        gadtop    = EG(gad)->BoundsTopEdge;
+        gadwidth  = EG(gad)->BoundsWidth;
+        gadheight = EG(gad)->BoundsHeight;
     } else {
-    	gadleft   = gad->LeftEdge;
-	gadtop    = gad->TopEdge;
-	gadwidth  = gad->Width;
-	gadheight = gad->Height;
+        gadleft   = gad->LeftEdge;
+        gadtop    = gad->TopEdge;
+        gadwidth  = gad->Width;
+        gadheight = gad->Height;
     }
     
     if (gad->GadgetText)
@@ -303,7 +303,7 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
         } else if (gad->Flags & GFLG_LABELIMAGE)
             DrawImage(rport, (struct Image *)gad->GadgetText, x, y);
         else
-        { 
+        {
             PrintIText(rport, gad->GadgetText, x, y);
             closefont(GadToolsBase, rport, font, oldfont);
         }
@@ -314,7 +314,7 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
 /**********************************************************************************************/
 
 void DoDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
-		       WORD pen, struct GadToolsBase_intern *GadToolsBase)
+                       WORD pen, struct GadToolsBase_intern *GadToolsBase)
 {
     UWORD pattern[] = { 0x8888, 0x2222 };
 

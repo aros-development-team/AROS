@@ -74,7 +74,7 @@ struct panel_ToolBar_DATA
 
 ///ExpandEnvName()
 /* Expand a passed in env: string to its full location */
-/* Wanderer doesnt free this mem at the moment but should 
+/* Wanderer doesnt free this mem at the moment but should
    incase it is every closed */
 STRPTR ExpandEnvName(CONST_STRPTR env_path)
 {
@@ -97,7 +97,7 @@ STRPTR ExpandEnvName(CONST_STRPTR env_path)
             strcpy(fullpath, tmp_envbuff);
             AddPart(fullpath, env_path + 4, 1019);
             return fullpath;
-        }     
+        }
     }
 
     // We couldn't expand it so just use as is, but the
@@ -334,7 +334,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
             TAG_DONE),
         TAG_DONE);
 
-        /* Got a toolbarpanel? setup notifies and other values are 
+        /* Got a toolbarpanel? setup notifies and other values are
          copied to the data of the object */
         if ( panel_ToolBar != NULL )
         {
@@ -364,8 +364,8 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
 
             if (panelToolBarPrivate->iwp_ToolBar_ToolBarObj)
             {
-                DoMethod( 
-                    panelToolBar_ButtonDirUp, MUIM_Notify, MUIA_Pressed, FALSE, 
+                DoMethod(
+                    panelToolBar_ButtonDirUp, MUIM_Notify, MUIA_Pressed, FALSE,
                     (IPTR)self, 1, MUIM_IconWindow_DirectoryUp
                   );
 
@@ -373,13 +373,13 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                 panelToolBarPrivate->iwp_ToolBar_LocationStrHook.h_Entry = ( HOOKFUNC )panelToolBar__HookFunc_LocationStringFunc;
 
                 NNSET(
-                    panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIA_String_Contents, 
+                    panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIA_String_Contents,
                     XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
                   );
 
                 /* Make changes to string contents change dir on enter */
-                DoMethod ( 
-                    panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
+                DoMethod (
+                    panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
                     (IPTR)self, 3, MUIM_CallHook, &panelToolBarPrivate->iwp_ToolBar_LocationStrHook, (IPTR)CLASS
                   );
 
@@ -388,7 +388,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
 
                 DoMethod
                 (
-                    panelToolBar__PrefsNotificationObject, MUIM_Notify, MUIA_ShowMe, MUIV_EveryTime, 
+                    panelToolBar__PrefsNotificationObject, MUIM_Notify, MUIA_ShowMe, MUIV_EveryTime,
                     (IPTR)data->iwd_TopPanel.iwp_PanelContainerObj, 3, MUIM_Set, MUIA_ShowMe, MUIV_TriggerValue
                   );
 
@@ -432,7 +432,7 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, Msg msg)
         {
             DoMethod
               (
-                panelToolBar__PrefsNotificationObject, MUIM_KillNotifyObj, MUIA_ShowMe, 
+                panelToolBar__PrefsNotificationObject, MUIM_KillNotifyObj, MUIA_ShowMe,
                 (IPTR)data->iwd_TopPanel.iwp_PanelContainerObj
               );
         }
@@ -440,7 +440,7 @@ IPTR panelToolBar__Cleanup(Class *CLASS, Object *self, Msg msg)
         {
             DoMethod
               (
-                panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIM_KillNotifyObj, MUIA_String_Acknowledge, 
+                panelToolBarPrivate->iwp_ToolBar_LocationStringObj, MUIM_KillNotifyObj, MUIA_String_Acknowledge,
                 (IPTR)self
               );
         }

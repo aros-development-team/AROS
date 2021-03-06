@@ -85,7 +85,7 @@
 struct KeyInfo
 {
     struct InputEvent *translist;
-    CxObj             *filter, *trans, *custom;    
+    CxObj             *filter, *trans, *custom;
     WORD               action;
     char               descr[80];
     char               param[MAXPARAMLEN + 1];
@@ -194,7 +194,7 @@ static WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadt
     es.es_TextFormat   = text;
     es.es_GadgetFormat = gadtext;
 
-    return EasyRequestArgs(NULL, &es, NULL, NULL);  
+    return EasyRequestArgs(NULL, &es, NULL, NULL);
 }
 
 /*********************************************************************************************/
@@ -205,7 +205,7 @@ static void Cleanup(CONST_STRPTR msg)
     {
         if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
         {
-            ShowMessage("Fkey", msg, MSG(MSG_OK));     
+            ShowMessage("Fkey", msg, MSG(MSG_OK));
         }
         else
         {
@@ -264,7 +264,7 @@ static CONST_STRPTR MSG(ULONG id)
     {
         return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     }
-    else 
+    else
     {
         return CatCompArray[id].cca_Str;
     }
@@ -560,13 +560,13 @@ AROS_UFH3S(
     if (XGET(obj, MUIA_Pressed))
     {
         set(liststr, MUIA_Disabled, FALSE);
-        set(_win(obj), MUIA_Window_ActiveObject, liststr); 
+        set(_win(obj), MUIA_Window_ActiveObject, liststr);
     }
     else
     {
         StringToKey();
         set(liststr, MUIA_Disabled, TRUE);
-        set(_win(obj), MUIA_Window_ActiveObject, list); 
+        set(_win(obj), MUIA_Window_ActiveObject, list);
     }
 
     AROS_USERFUNC_EXIT
@@ -964,7 +964,7 @@ static void StringToKey(void)
     DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&ki);
     if (!ki) return;
 
-    get(liststr, MUIA_String_Contents, &text);    
+    get(liststr, MUIA_String_Contents, &text);
     strncpy(ki->descr, text, sizeof(ki->descr) - 1);
 
     DoMethod(list, MUIM_List_Redraw, MUIV_List_Redraw_Active);
@@ -1045,22 +1045,22 @@ static void ExecuteArexx(struct KeyInfo  *ki)
     rexxport = FindPort("REXX");
     if (rexxport == NULL)
     {
-	FPuts(out, "Could not start RexxMast; no Rexx interpreter seems to be installed\n");
-	goto cleanup;
+        FPuts(out, "Could not start RexxMast; no Rexx interpreter seems to be installed\n");
+        goto cleanup;
     }
     
     replyport = CreatePort(NULL, 0);
     if (replyport == NULL)
     {
-	FPuts(out, "Could not create a port\n");
-	goto cleanup;
+        FPuts(out, "Could not create a port\n");
+        goto cleanup;
     }
     
     msg = CreateRexxMsg(replyport, NULL, NULL);
     if (msg == NULL)
     {
-	FPuts(out, "Could not create RexxMsg\n");
-	goto cleanup;
+        FPuts(out, "Could not create RexxMsg\n");
+        goto cleanup;
     }
     msg->rm_Action = RXCOMM | RXFF_RESULT;
     msg->rm_Stdin = Input();
@@ -1090,9 +1090,9 @@ cleanup:
     if (closestdout)
         Close(msg->rm_Stdout);
     if (msg)
-	DeleteRexxMsg(msg);
+        DeleteRexxMsg(msg);
     if (replyport)
-	DeletePort(replyport);
+        DeletePort(replyport);
 }
 
 /*********************************************************************************************/
@@ -1221,7 +1221,7 @@ static void HandleAction(void)
                     {
                         {SYS_Asynch , TRUE      },
                         {SYS_Input  , (IPTR)infh},
-                        {SYS_Output , 0	        },
+                        {SYS_Output , 0         },
                         {TAG_DONE               }
                     };
 
@@ -1421,7 +1421,7 @@ static struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname)
         
         *icondir = wbstartup->sm_ArgList[0].wa_Lock;
         
-        olddir = CurrentDir(*icondir);	
+        olddir = CurrentDir(*icondir);
         progicon = GetDiskObject(wbstartup->sm_ArgList[0].wa_Name);
         CurrentDir(olddir);
 
@@ -1436,7 +1436,7 @@ static struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname)
             *icondir = GetProgramDir();
             
             olddir = CurrentDir(*icondir);
-            progicon = GetDiskObject(iconname);	    
+            progicon = GetDiskObject(iconname);
             CurrentDir(olddir);
         }
     }
@@ -1632,7 +1632,7 @@ int main(int argc, char **argv)
     InitMenus();
     MakeGUI();
     LoadSettings();
-    HandleAll();       
+    HandleAll();
     Cleanup(NULL);
 
     return 0;

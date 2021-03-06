@@ -17,15 +17,15 @@ struct Region *wbClipWindow(struct WorkbookBase *wb, struct Window *win)
     /* Install new clip region */
     if ((clip = NewRegion())) {
         struct Rectangle rect = {
-        	.MinX = win->BorderLeft,
-        	.MinY = win->BorderTop,
-        	.MaxX = win->Width - win->BorderRight - 1,
-        	.MaxY = win->Height - win->BorderBottom - 1,
-	};
+                .MinX = win->BorderLeft,
+                .MinY = win->BorderTop,
+                .MaxX = win->Width - win->BorderRight - 1,
+                .MaxY = win->Height - win->BorderBottom - 1,
+        };
         if (!OrRectRegion(clip, &rect)) {
-        	DisposeRegion(clip);
-        	clip = NULL;
-	}
+                DisposeRegion(clip);
+                clip = NULL;
+        }
     }
 
     /* Install new clip region */
@@ -36,5 +36,5 @@ void wbUnclipWindow(struct WorkbookBase *wb, struct Window *win, struct Region *
 {
     clip = InstallClipRegion(win->WLayer, clip);
     if (clip)
-    	    DisposeRegion(clip);
+            DisposeRegion(clip);
 }

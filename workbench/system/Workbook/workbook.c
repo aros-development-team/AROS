@@ -23,44 +23,44 @@ static int WB_Main(struct WorkbookBase *wb)
 
     wb->wb_WBApp = WBApp_MakeClass(wb);
     if (!wb->wb_WBApp)
-    	goto exit;
+        goto exit;
 
     wb->wb_WBWindow = WBWindow_MakeClass(wb);
     if (!wb->wb_WBWindow)
-    	goto exit;
+        goto exit;
 
     wb->wb_WBVirtual = WBVirtual_MakeClass(wb);
     if (!wb->wb_WBVirtual)
-    	goto exit;
+        goto exit;
 
     wb->wb_WBSet    = WBSet_MakeClass(wb);
     if (!wb->wb_WBSet)
-    	goto exit;
+        goto exit;
 
     wb->wb_WBIcon   = WBIcon_MakeClass(wb);
     if (!wb->wb_WBIcon)
-    	goto exit;
+        goto exit;
 
     wb->wb_App = NewObject(WBApp, NULL, TAG_END);
     if (wb->wb_App) {
         STACKED ULONG wbmethodID;
         wbmethodID = WBAM_WORKBENCH;
-    	DoMethodA(wb->wb_App, &wbmethodID);
-    	DisposeObject(wb->wb_App);
-    	rc = 0;
+        DoMethodA(wb->wb_App, &wbmethodID);
+        DisposeObject(wb->wb_App);
+        rc = 0;
     }
 
 exit:
     if (wb->wb_WBIcon)
-    	FreeClass(wb->wb_WBIcon);
+        FreeClass(wb->wb_WBIcon);
     if (wb->wb_WBSet)
-    	FreeClass(wb->wb_WBSet);
+        FreeClass(wb->wb_WBSet);
     if (wb->wb_WBVirtual)
-    	FreeClass(wb->wb_WBVirtual);
+        FreeClass(wb->wb_WBVirtual);
     if (wb->wb_WBWindow)
-    	FreeClass(wb->wb_WBWindow);
+        FreeClass(wb->wb_WBWindow);
     if (wb->wb_WBApp)
-    	FreeClass(wb->wb_WBApp);
+        FreeClass(wb->wb_WBApp);
 
     return rc;
 }
@@ -68,7 +68,7 @@ exit:
 #undef WorkbenchBase
 #undef DOSBase
 
-/* This wrapper is needed, so that we can start 
+/* This wrapper is needed, so that we can start
  * workbench items from an Input handler
  */
 AROS_PROCH(wbOpener, argstr, argsize, SysBase)
@@ -102,17 +102,17 @@ ULONG WorkbookMain(void)
 
     wb = AllocVec(sizeof(*wb), MEMF_ANY | MEMF_CLEAR);
     if (!wb)
-    	goto error;
+        goto error;
 
     wb->wb_DOSBase = OpenLibrary("dos.library", 0);
     if (wb->wb_DOSBase == NULL)
-    	goto error;
+        goto error;
 
     DOSBase = wb->wb_DOSBase;
 
     wb->wb_IntuitionBase = OpenLibrary("intuition.library",0);
     if (wb->wb_IntuitionBase == NULL)
-    	goto error;
+        goto error;
 
     wb->wb_UtilityBase = OpenLibrary("utility.library",0);
     if (wb->wb_UtilityBase == NULL)
@@ -138,11 +138,11 @@ ULONG WorkbookMain(void)
 
     wb->wb_LayersBase = OpenLibrary("layers.library", 0);
     if (wb->wb_LayersBase == NULL)
-    	goto error;
+        goto error;
 
     wb->wb_OpenerSegList = CreateSegList(wbOpener);
     if (wb->wb_OpenerSegList == BNULL)
-    	goto error;
+        goto error;
 
     SetConsoleTask(NULL);
     rc = WB_Main(wb);

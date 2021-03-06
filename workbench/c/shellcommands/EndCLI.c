@@ -62,7 +62,7 @@ AROS_SH0(EndCLI, 41.3)
             cli->cli_CurrentInput = cli->cli_StandardInput;
         }
 
-	cli->cli_Background = DOSTRUE;
+        cli->cli_Background = DOSTRUE;
 
         fhin->fh_End = 0; /* Simulate an EOF */
 

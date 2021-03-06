@@ -92,7 +92,7 @@ AROS_INTH1(CardInterrupt, struct CardData *, card)
                card->recflip = 0;
                card->current_record_buffer = (APTR) ((unsigned long) card->record_buffer + card->current_record_bytesize_target);
                card->current_record_buffer_32bit = (APTR) ((unsigned long) card->record_buffer_32bit + card->current_record_bytesize_32bit);
-            }   
+            }
             card->record_interrupt_enabled = FALSE;
             Cause( &card->record_interrupt );
          }
@@ -101,7 +101,7 @@ AROS_INTH1(CardInterrupt, struct CardData *, card)
     }
     else
     {
-       DebugPrintF("Oh dear, it's not CCS_INTR_PLAYREC!\n");   
+       DebugPrintF("Oh dear, it's not CCS_INTR_PLAYREC!\n");
     }
 
     handled = 1;
@@ -134,7 +134,7 @@ AROS_INTH1(PlaybackInterrupt, struct CardData *, card)
     LONG *srclong, *dstlong, left, right;
     int frames = card->current_frames;
     
-    skip_mix = CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );  
+    skip_mix = CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );
     CallHookPkt( AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL );
 
     //DebugPrintF("skip_mix = %d\n", skip_mix);

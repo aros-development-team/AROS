@@ -41,7 +41,7 @@
     AROS_LIBFUNC_INIT
     
     const LONG ExpTable[] =
-    { 
+    {
         0x6da12cc2,  /* e^64  */
         0x568fa1fe,  /* e^32  */
         0x4b07975e,  /* e^16  */
@@ -75,7 +75,7 @@
     };
     ULONG Res, i;
     LONG Mantisse;
-    char Exponent;   
+    char Exponent;
     
     Exponent = ((y & IEEESPExponent_Mask) >> 23) -0x7f;
     

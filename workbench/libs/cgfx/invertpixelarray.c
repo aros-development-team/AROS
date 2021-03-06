@@ -14,17 +14,17 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH5(ULONG, InvertPixelArray,
+        AROS_LH5(ULONG, InvertPixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp		, A1),
-	AROS_LHA(UWORD            , destx	, D0),
-	AROS_LHA(UWORD            , desty	, D1),
-	AROS_LHA(UWORD            , width	, D2),
-	AROS_LHA(UWORD            , height	, D3),
+        AROS_LHA(struct RastPort *, rp          , A1),
+        AROS_LHA(UWORD            , destx       , D0),
+        AROS_LHA(UWORD            , desty       , D1),
+        AROS_LHA(UWORD            , width       , D2),
+        AROS_LHA(UWORD            , height      , D3),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 24, Cybergraphics)
+        struct Library *, CyberGfxBase, 24, Cybergraphics)
 
 /*  FUNCTION
         Inverts each pixel in rectangular portion of a RastPort, i.e. applies
@@ -55,9 +55,9 @@
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap))
     {
-    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+        D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
             "in InvertPixelArray() !!!\n"));
-    	return 0;
+        return 0;
     }
 
     return (LONG)FillRectPenDrMd(rp, destx, desty, destx + width  - 1,

@@ -113,8 +113,8 @@ struct Timezone_DATA
     Object          *me;
     Object          *zone_name;
     Object          *city_name;
-    Object	    *gmt_switch;
-    Object	    *gmt_label;
+    Object          *gmt_switch;
+    Object          *gmt_label;
     Object          *prefs;
     struct Hook      h;
     struct Hook      Timezone_list_hook;
@@ -320,7 +320,7 @@ static void UpdateZoneName(Object *zone_name, char *newname, BOOL noNotify)
 
     if(old && strcmp(old, newname))
     {
-    	SetAttrs(zone_name, MUIA_Text_Contents, newname, MUIA_NoNotify, noNotify, TAG_DONE);
+        SetAttrs(zone_name, MUIA_Text_Contents, newname, MUIA_NoNotify, noNotify, TAG_DONE);
     }
 }
 
@@ -603,10 +603,10 @@ static Object *handle_New_error(Object *obj, struct IClass *cl, char *error)
     data = INST_DATA(cl, obj);
 
     if (data->gmt_label)
-    	DisposeObject(data->gmt_label);
+        DisposeObject(data->gmt_label);
 
     if (data->gmt_switch)
-    	DisposeObject(data->gmt_switch);
+        DisposeObject(data->gmt_switch);
 
     if(data->zone_name)
     {
@@ -722,11 +722,11 @@ Object *Timezone__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->gmt_switch = MUI_MakeObject(MUIO_Checkmark, NULL);
     if (!data->gmt_switch)
-    	return handle_New_error(obj, cl, "ERROR: unable to create checkmark bject!\n");
+        return handle_New_error(obj, cl, "ERROR: unable to create checkmark bject!\n");
 
     data->gmt_label = Label1(_(MSG_GMT_CLOCK));
     if (!data->gmt_label)
-    	return handle_New_error(obj, cl, "ERROR: unable to create label object!\n");
+        return handle_New_error(obj, cl, "ERROR: unable to create label object!\n");
 
     DoMethod(obj, OM_ADDMEMBER, data->zone_name);
     DoMethod(obj, OM_ADDMEMBER, data->city_name);
@@ -859,9 +859,9 @@ static IPTR Timezone__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             D(bug("[timezone class] Timezone_Get: MA_TimeOffset: %d\n",rc));
             break;
 
-	case MUIA_Timezone_GMTClock:
-	    GetAttr(MUIA_Selected, data->gmt_switch, &rc);
-	    break;
+        case MUIA_Timezone_GMTClock:
+            GetAttr(MUIA_Selected, data->gmt_switch, &rc);
+            break;
 
         default:
             return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -921,8 +921,8 @@ static IPTR Timezone__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 break;
         
             case MUIA_Timezone_GMTClock:
-            	SetAttrs(data->gmt_switch, MUIA_Selected, tag->ti_Data, MUIA_NoNotify, TRUE, TAG_DONE);
-            	break;
+                SetAttrs(data->gmt_switch, MUIA_Selected, tag->ti_Data, MUIA_NoNotify, TRUE, TAG_DONE);
+                break;
 
             default:
                 return DoSuperMethodA(cl, obj, (Msg)msg);

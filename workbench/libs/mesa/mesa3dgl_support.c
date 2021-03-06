@@ -81,7 +81,7 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList
 
     D(bug("[MESA3DGL] %s(ctx @ 0x%p, taglist @ 0x%p)\n", __func__, ctx, tagList));
 
-    /* Set the defaults based on window information */    
+    /* Set the defaults based on window information */
     if (ctx->window)
     {
         if(!(ctx->window->Flags & WFLG_GIMMEZEROZERO))
@@ -99,7 +99,7 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList
 
     D(bug("[MESA3DGL] %s: Cloned RastPort @ 0x%p\n", __func__, ctx->visible_rp));
 
-    /* We assume left and top are given or if there is a window, set to border left/top 
+    /* We assume left and top are given or if there is a window, set to border left/top
        or if there is no window set to 0 */
     ctx->left = GetTagData(GLA_Left, defaultleft, tagList);
     ctx->top = GetTagData(GLA_Top, defaulttop, tagList);
@@ -110,10 +110,10 @@ BOOL MESA3DGLStandardInit(struct mesa3dgl_context * ctx, struct TagItem *tagList
     requestedheight = GetTagData(GLA_Height, -1 , tagList);
 
     /* Calculate rastport dimensions */
-    ctx->visible_rp_width = 
+    ctx->visible_rp_width =
         ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
 
-    ctx->visible_rp_height = 
+    ctx->visible_rp_height =
         ctx->visible_rp->Layer->bounds.MaxY - ctx->visible_rp->Layer->bounds.MinY + 1;
 
     /* right will be either passed or calculated from width or 0 */
@@ -166,10 +166,10 @@ VOID MESA3DGLRecalculateBufferWidthHeight(struct mesa3dgl_context * ctx)
     
     D(bug("[MESA3DGL] %s(0x%p)\n", __func__, ctx));
     
-    ctx->visible_rp_width = 
+    ctx->visible_rp_width =
         ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
 
-    ctx->visible_rp_height = 
+    ctx->visible_rp_height =
         ctx->visible_rp->Layer->bounds.MaxY - ctx->visible_rp->Layer->bounds.MinY + 1;
 
 

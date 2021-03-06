@@ -161,41 +161,41 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     char buf[64];
 
-	ui_Pages[0] = (STRPTR)__(MSG_PRINTER_DRIVER);
-	ui_Pages[1] = (STRPTR)__(MSG_PRINTER_SETTINGS);
+        ui_Pages[0] = (STRPTR)__(MSG_PRINTER_DRIVER);
+        ui_Pages[1] = (STRPTR)__(MSG_PRINTER_SETTINGS);
 
-	ui_Port[0] = (STRPTR)__(MSG_PRINTER_PARALLEL);
-	ui_Port[1] = (STRPTR)__(MSG_PRINTER_SERIAL);
-	ui_Port[2] = (STRPTR)__(MSG_PRINTER_TO_FILE);
-	ui_Port[3] = (STRPTR)__(MSG_PRINTER_USB);
-	
-	ui_PaperTypes[0] = (STRPTR)__(MSG_TISK_FANFOLD);
-	ui_PaperTypes[1] = (STRPTR)__(MSG_TISK_SINGLE);
-	
-	ui_Quality[0] = (STRPTR)__(MSG_TISK_DRAFT);
-	ui_Quality[1] = (STRPTR)__(MSG_TISK_LETTER);
+        ui_Port[0] = (STRPTR)__(MSG_PRINTER_PARALLEL);
+        ui_Port[1] = (STRPTR)__(MSG_PRINTER_SERIAL);
+        ui_Port[2] = (STRPTR)__(MSG_PRINTER_TO_FILE);
+        ui_Port[3] = (STRPTR)__(MSG_PRINTER_USB);
+        
+        ui_PaperTypes[0] = (STRPTR)__(MSG_TISK_FANFOLD);
+        ui_PaperTypes[1] = (STRPTR)__(MSG_TISK_SINGLE);
+        
+        ui_Quality[0] = (STRPTR)__(MSG_TISK_DRAFT);
+        ui_Quality[1] = (STRPTR)__(MSG_TISK_LETTER);
 
-	ui_Aspect[0] = (STRPTR)__(MSG_TISK_PORTRAIT);
-	ui_Aspect[1] = (STRPTR)__(MSG_TISK_LANDSCAPE);
+        ui_Aspect[0] = (STRPTR)__(MSG_TISK_PORTRAIT);
+        ui_Aspect[1] = (STRPTR)__(MSG_TISK_LANDSCAPE);
 
-	ui_Shade[0] = (STRPTR)__(MSG_TISK_BW);
-	ui_Shade[1] = (STRPTR)__(MSG_TISK_GRAY);
-	ui_Shade[2] = (STRPTR)__(MSG_TISK_COLOR);
-	ui_Shade[3] = (STRPTR)__(MSG_TISK_GRAY2);
-	
-	ui_Image[0] = (STRPTR)__(MSG_TISK_POSITIVE);
-	ui_Image[1] = (STRPTR)__(MSG_TISK_NEGATIVE);
-	
-	ui_Dimensions[0] = (STRPTR)__(MSG_TISK_IGNORE);
-	ui_Dimensions[1] = (STRPTR)__(MSG_TISK_BOUNDED);
-	ui_Dimensions[2] = (STRPTR)__(MSG_TISK_ABSOLUTE);
-	ui_Dimensions[3] = (STRPTR)__(MSG_TISK_PIXEL);
-	ui_Dimensions[4] = (STRPTR)__(MSG_TISK_MULTIPLY);
-	
-	ui_Dithering[0] = (STRPTR)__(MSG_TISK_ORDERED);
-	ui_Dithering[1] = (STRPTR)__(MSG_TISK_HALFTONE);
-	ui_Dithering[2] = (STRPTR)__(MSG_TISK_FLOYDSTEINBERG);
-	
+        ui_Shade[0] = (STRPTR)__(MSG_TISK_BW);
+        ui_Shade[1] = (STRPTR)__(MSG_TISK_GRAY);
+        ui_Shade[2] = (STRPTR)__(MSG_TISK_COLOR);
+        ui_Shade[3] = (STRPTR)__(MSG_TISK_GRAY2);
+        
+        ui_Image[0] = (STRPTR)__(MSG_TISK_POSITIVE);
+        ui_Image[1] = (STRPTR)__(MSG_TISK_NEGATIVE);
+        
+        ui_Dimensions[0] = (STRPTR)__(MSG_TISK_IGNORE);
+        ui_Dimensions[1] = (STRPTR)__(MSG_TISK_BOUNDED);
+        ui_Dimensions[2] = (STRPTR)__(MSG_TISK_ABSOLUTE);
+        ui_Dimensions[3] = (STRPTR)__(MSG_TISK_PIXEL);
+        ui_Dimensions[4] = (STRPTR)__(MSG_TISK_MULTIPLY);
+        
+        ui_Dithering[0] = (STRPTR)__(MSG_TISK_ORDERED);
+        ui_Dithering[1] = (STRPTR)__(MSG_TISK_HALFTONE);
+        ui_Dithering[2] = (STRPTR)__(MSG_TISK_FLOYDSTEINBERG);
+        
     int i;
 #if SHOWICON
     Object *icon;
@@ -233,7 +233,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         if (!icon) icon = HVSpace;
     #endif
 
-        /* 
+        /*
             Prepare the pattern for MUIA_DirList_RejectPattern
             If ParsePatternNoCase() fails we keep the value NULL which
             means nothing to reject
@@ -253,27 +253,27 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, icon,
 #endif
                 Child, (IPTR) LLabel1(__(MSG_PRINTER_UNIT)),
-                Child, (IPTR) (data->pd_UnitNum = CycleObject, 
+                Child, (IPTR) (data->pd_UnitNum = CycleObject,
                     MUIA_Cycle_Entries, (IPTR)data->UnitLabels,
                 End),
                 Child, (IPTR) LLabel1(__(MSG_PRINTER_NAME)),
-                Child, (IPTR) (data->pd_UnitName = StringObject, 
+                Child, (IPTR) (data->pd_UnitName = StringObject,
                     StringFrame,
                     MUIA_String_MaxLen, UNITNAMESIZE,
                 End),
-            End, 
+            End,
             /* Pages */
             Child, (IPTR) RegisterGroup(ui_Pages),
                 /* Driver and Device page */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) VGroup,
-						Child, (IPTR) CLabel(__(MSG_PRINTER_SELECT_DRIVER)),
+                                                Child, (IPTR) CLabel(__(MSG_PRINTER_SELECT_DRIVER)),
                         Child, (IPTR) HCenter((ListviewObject,
-                            MUIA_Listview_List, (IPTR) (data->pt_DriverList = DirlistObject,                                
+                            MUIA_Listview_List, (IPTR) (data->pt_DriverList = DirlistObject,
                                 InputListFrame,
                                 MUIA_List_AdjustWidth, TRUE,
                                 MUIA_Dirlist_Directory, (IPTR)"DEVS:Printers",
-								MUIA_Dirlist_RejectPattern, (IPTR)reject_pattern,
+                                                                MUIA_Dirlist_RejectPattern, (IPTR)reject_pattern,
                                 MUIA_Dirlist_FilesOnly, TRUE,
                                 MUIA_Dirlist_RejectIcons, TRUE,
                             End),

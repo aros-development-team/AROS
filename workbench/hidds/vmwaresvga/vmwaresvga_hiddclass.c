@@ -42,8 +42,8 @@
 #define DINFO(x)
 #endif
 
-static OOP_AttrBase             HiddAttrBase; 
-static OOP_AttrBase             HiddBitMapAttrBase;  
+static OOP_AttrBase             HiddAttrBase;
+static OOP_AttrBase             HiddBitMapAttrBase;
 static OOP_AttrBase             HiddPixFmtAttrBase;
 static OOP_AttrBase             HiddGfxAttrBase;
 static OOP_AttrBase             HiddSyncAttrBase;
@@ -129,7 +129,7 @@ static ULONG VMWareSVGA__GetDefSyncSizes(ULONG syncno, ULONG *syncwid, ULONG *sy
         default:
             *syncwid = 640;
             *synchi  = 480;
-            break;            
+            break;
     }
     return (syncno % VMWARESVGA_DEFSYNCMAX);
 }
@@ -744,7 +744,7 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
                         xcnt = msg->width;
 
                         // NOTE: this is only valid if the two bitmaps share the same bytes per pixel.
-                        //		 we may want to pre-process it (see below in the mouse definition code)
+                        //               we may want to pre-process it (see below in the mouse definition code)
                         CopyMem(sbuffer, dbuffer, xcnt * dstbd->bytesperpix);
 
                         sbuffer += xcnt * dstbd->bytesperpix;

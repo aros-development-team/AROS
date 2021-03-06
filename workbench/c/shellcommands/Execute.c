@@ -237,7 +237,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
         len = strlen(arguments);
 
-        /* Inject the command args into cli->cli_StandardInput 
+        /* Inject the command args into cli->cli_StandardInput
          *
          * It would be nice to have a standard DOS LVO that
          * could do this for us.

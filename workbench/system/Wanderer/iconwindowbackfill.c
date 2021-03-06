@@ -149,7 +149,7 @@ static void ImageBackFill_CopyScaledBitMap
 D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyScaledBitMap()\n"));
 
   Scale_Args.bsa_SrcX = SrcOffsetX;
-  Scale_Args.bsa_SrcY = SrcOffsetY;   
+  Scale_Args.bsa_SrcY = SrcOffsetY;
   Scale_Args.bsa_SrcWidth = SrcSizeX;
   Scale_Args.bsa_SrcHeight = SrcSizeY;
   Scale_Args.bsa_XSrcFactor = SrcSizeX;
@@ -190,7 +190,7 @@ static void ImageBackFill_CopyTiledBitMap
   WORD SrcX, SrcY;        // used as bitmap size in the "exponential" blit
 
   struct BitMap *Src = SrcRast->BitMap;
-  struct BitMap *Dst = DstRast->BitMap; 
+  struct BitMap *Dst = DstRast->BitMap;
 
   #if defined(DEBUG)
   int xcount;
@@ -227,12 +227,12 @@ D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", bli
   if (blit_MODE == blit_MODE_Blit)  // blit the first piece of the tile
   {
     D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 1st Tile Part @ %d,%d [%d x %d]\n", DstFillBounds->MinX, DstFillBounds->MinY, FirstSizeX, FirstSizeY));
-    BltBitMap(Src, 
+    BltBitMap(Src,
         SrcOffsetX, SrcOffsetY,
         Dst,
         DstFillBounds->MinX, DstFillBounds->MinY,
         FirstSizeX, FirstSizeY,
-        0xC0, -1, NULL); 
+        0xC0, -1, NULL);
 
 
     if (SecondSizeX > 0) // if SrcOffset was 0 or the dest rect was too narrow, we won't need a second column
@@ -456,13 +456,13 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
     D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Creating NEW ImageSource Record\n"));
     if (!(this_BFI->bfi_Source = AllocMem(sizeof(struct BackFillSourceImageRecord), MEMF_CLEAR|MEMF_PUBLIC)))
     {
-      D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source record!\n"));      
+      D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source record!\n"));
       return FALSE;
     }
 
     if (!(this_BFI->bfi_Source->bfsir_SourceImage = AllocVec(strlen(this_ImageName) +1, MEMF_CLEAR|MEMF_PUBLIC)))
     {
-      D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source image name store\n"));     
+      D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source image name store\n"));
       FreeMem(this_BFI->bfi_Source, sizeof(struct BackFillSourceImageRecord));
       return FALSE;
     }
@@ -635,7 +635,7 @@ check_imagebuffer:
 
             
             ImageBackFill_CopyScaledBitMap(this_BFI->bfi_Source->bfsir_DTRastPort,
-                    0, 0, 
+                    0, 0,
                     this_BFI->bfi_Source->bfsir_DTBitMapHeader->bmh_Width,
                     this_BFI->bfi_Source->bfsir_DTBitMapHeader->bmh_Height,
                     this_Buffer->bfsib_BitMapRastPort,
@@ -742,7 +742,7 @@ check_imagebuffer:
           CopyBounds.MaxY = this_BFI->bfi_CopyHeight - 1;
 
           ImageBackFill_CopyTiledBitMap(this_BFI->bfi_Source->bfsir_DTRastPort,
-                  0, 0, 
+                  0, 0,
                   this_BFI->bfi_Source->bfsir_DTBitMapHeader->bmh_Width,
                   this_BFI->bfi_Source->bfsir_DTBitMapHeader->bmh_Height,
                   this_BFI->bfi_Buffer->bfsib_BitMapRastPort,
@@ -765,7 +765,7 @@ check_imagebuffer:
     }
   }
 
-  D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create image datatype object\n"));  
+  D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create image datatype object\n"));
   return FALSE;
   
 pb_cleanup_buffer:
@@ -776,7 +776,7 @@ pb_cleanup_buffer:
   }
 
   if (this_BFI->bfi_Source)
-  { 
+  {
     ImageBackFill_CloseSourceRecord(this_BFI->bfi_Source);
     this_BFI->bfi_Source = NULL;
   }

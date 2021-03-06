@@ -147,7 +147,7 @@ AROS_UFH3
             SET(d->fileObject, MUIA_Text_Contents, d->Buffer);
             SetAttrs(d->gauge, MUIA_Gauge_Current, d->numObjects, MUIA_Gauge_InfoText, d->NumberBuffer, TAG_DONE);
         }
-        else 
+        else
         {
             SET(d->gauge, MUIA_Gauge_Current, 0);
             SetAttrs(d->numFilesGauge, MUIA_Gauge_Current, d->numObjects, MUIA_Gauge_InfoText, d->NumberBuffer, TAG_DONE);
@@ -200,38 +200,38 @@ AROS_UFH3
     UWORD    ret = 0;
     char     *string = NULL;
 
-    if (obj->file) 
+    if (obj->file)
     {
 
-        if (obj->type == 0) 
+        if (obj->type == 0)
         {
-            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s", 
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s",
                 _(MSG_REQU_DELETE_FILE_S), obj->file, _(MSG_REQU_DELETE_FILE_M), obj->spath, _(MSG_REQU_DELETE_FILE_E) );
         }
-        else if (obj->type == 1) 
+        else if (obj->type == 1)
         {
-            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s", 
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s",
                 _(MSG_REQU_FILEUNPROTECT_S), obj->file, _(MSG_REQU_FILEUNPROTECT_M), obj->spath, _(MSG_REQU_FILEUNPROTECT_E) );
         }
-        else if (obj->type == 2) 
+        else if (obj->type == 2)
         {
-            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s", 
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s",
                 _(MSG_REQU_OVERWRITE_S), obj->file, _(MSG_REQU_OVERWRITE_M), obj->spath, _(MSG_REQU_OVERWRITE_E) );
         }
-        else 
+        else
         {
-            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n%s", 
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n%s",
                 _(MSG_NOFILEACCESS_S), obj->file, _(MSG_NOFILEACCESS_M), obj->spath, _(MSG_NOFILEACCESS_E) );
         }
-    } 
-    else 
+    }
+    else
     {
         if (obj->type == 0) string = CombineString("%s \033b%s\033n %s", _(MSG_REQU_DELETE_DRAWER_S), obj->spath, _(MSG_REQU_DELETE_DRAWER_E) );
         else if (obj->type == 1) string = CombineString("%s\n\033b%s\033n %s", _(MSG_REQU_PROTECTION_UNPROTECTDRAWER_S), obj->spath, _(MSG_REQU_PROTECTION_UNPROTECTDRAWER_E) );
         else if (obj->type == 3) string = CombineString("%s\n\033b%s %s", _(MSG_NODRAWERACCESS_S), obj->spath, _(MSG_NODRAWERACCESS_E) );
     }
 
-    if (string) 
+    if (string)
     {
         if (obj->type == 0) ret = AskChoice( _(MSG_REQU_DELETE), string, _(MSG_REQU_DELETE_YESNO), 0, TRUE);
         else if (obj->type == 1) ret = AskChoice( _(MSG_REQU_PROTECTION), string, _(MSG_REQU_PROTECTION_UNPROTECT), 0, TRUE);
@@ -284,38 +284,38 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         UBYTE action = ACTION_COPY;
         currententry = ((struct IconList_Drop_SourceEntry *) copyFunc_DropEvent->drop_SourceList.lh_Head);
 
-        if (copyFunc_DropEvent->drop_Mode == DROP_MODE_MOVE) 
+        if (copyFunc_DropEvent->drop_Mode == DROP_MODE_MOVE)
         {
             STRPTR filename = currententry->dropse_Node.ln_Name;
             BOOL exist = FileExists(filename);
-            if (!exist) 
+            if (!exist)
             {
-                // If dropped file does not exist, check if it is an info file that were dropped   
+                // If dropped file does not exist, check if it is an info file that were dropped
                 filename = ConstructInfofileName(filename);
             }
            
-            action = (IsOnSameDevice(filename, copyFunc_DropEvent->drop_TargetPath) == TRUE 
+            action = (IsOnSameDevice(filename, copyFunc_DropEvent->drop_TargetPath) == TRUE
                 ? ACTION_MOVE
                 : ACTION_COPY);
             
-            if (!exist) 
+            if (!exist)
             {
                 FreeVec(filename);
-            }                
+            }
         }
 
         if (!IsDirectory(copyFunc_DropEvent->drop_TargetPath))
         {
             targetDir = GetPathPart(copyFunc_DropEvent->drop_TargetPath);
-        } 
-        else 
+        }
+        else
         {
             targetDir = copyFunc_DropEvent->drop_TargetPath;
         }
 
         // Count number of dropped elements
         WORD numberOfObjects = 0;
-        struct Node *current = &currententry->dropse_Node;       
+        struct Node *current = &currententry->dropse_Node;
         do
         {
             numberOfObjects++;
@@ -331,13 +331,13 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
             BOOL result = FALSE;
             while ((currententry = (struct IconList_Drop_SourceEntry *)RemTail(&copyFunc_DropEvent->drop_SourceList)) != NULL && !result)
             {
-                if (action & ACTION_COPY) 
+                if (action & ACTION_COPY)
                 {
                     dobjects.currentObject = (CONST_STRPTR) currententry->dropse_Node.ln_Name;
                     dobjects.numObjects++;
                     result = CopyContent(currententry->dropse_Node.ln_Name, targetDir, &displayCopyHook, &displayAskHook, &opModes, (APTR) &dobjects, TRUE);
-                } 
-                else 
+                }
+                else
                 {
                     MoveContent(currententry->dropse_Node.ln_Name, targetDir);
                 }
@@ -346,11 +346,11 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
                 FreeVec(currententry->dropse_Node.ln_Name);
                 FreeMem(currententry, sizeof(struct IconList_Drop_SourceEntry));
-            } 
+            }
 
             // delete copy window
-            if (action == ACTION_COPY) 
-            {    
+            if (action == ACTION_COPY)
+            {
                 DisposeCopyDisplay(&dobjects);
             }
             
@@ -398,7 +398,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
-        static UBYTE windowTitleBuffer[1024]; 
+        static UBYTE windowTitleBuffer[1024];
         STRPTR windowTitle;
         D(IPTR                  offset);
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
@@ -461,7 +461,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                             return;
                         }
                     }
-                } 
+                }
 
                 DoMethod(_app(obj), MUIM_Wanderer_CreateDrawerWindow, (IPTR) windowTitle);
                 // FIXME: error handling
@@ -472,7 +472,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 /* Open drawer in same window */
                 SET(obj, MUIA_IconWindow_Location, (IPTR) windowTitleBuffer);
             }
-        } 
+        }
         else if ((ent->type == ST_FILE) || (ent->type == ST_LINKFILE))
         {
             BPTR newwd, oldwd;
@@ -588,9 +588,9 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
         {
             SendAppIconMessage((struct AppIcon *)ent->ile_IconEntry->ie_User1, 0, NULL);
         }
-    } 
+    }
     else  if (msg->type == ICONWINDOW_ACTION_DIRUP)
-    {     
+    {
         STRPTR actual_drawer = (STRPTR)XGET(obj, MUIA_IconWindow_Location);
         STRPTR parent_drawer = strrchr(actual_drawer,'/');
         STRPTR root_drawer = strrchr(actual_drawer,':');
@@ -609,10 +609,10 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
             {
                 (*parent_drawer) = 0;
                 SET(obj, MUIA_IconWindow_Location, actual_drawer);
-            } 
+            }
             
         }
-    } 
+    }
     else if (msg->type == ICONWINDOW_ACTION_CLICK)
     {
         if (!msg->click->shift)
@@ -628,7 +628,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 }
             }
         }
-    } 
+    }
     else if (msg->type == ICONWINDOW_ACTION_ICONDROP)
     {
         Object *prefs = NULL;
@@ -678,7 +678,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
 
                 ent = (void*)MUIV_IconList_NextIcon_Start;
                 /* process all selected entries */
-                do 
+                do
                 {
                     DoMethod(msg->iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &ent);
                     /*  if not end of selection, process */
@@ -704,10 +704,10 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                                 FreeVec(a);
                                 fail = TRUE;
                             }
-                        } 
+                        }
                         else fail = TRUE;
                     }
-                } 
+                }
                 while (((IPTR)ent != MUIV_IconList_NextIcon_End) && !fail);
 
                 if (!fail && (files > 0))
@@ -749,7 +749,7 @@ D(bug("[Wanderer] %s: win:<%s> first file:<%s> mx=%d my=%d\n", __PRETTY_FUNCTION
                     }
                 }
             }
-        }       
+        }
     }
 
     AROS_USERFUNC_EXIT
@@ -947,7 +947,7 @@ STRPTR GetUserScreenTitle(Object *self)
     char *screentitlestr = NULL;
     int screentitleleng;
 
-    GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);   
+    GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
 
     if (screentitlestr == NULL)
         screentitlestr = "";
@@ -955,9 +955,9 @@ STRPTR GetUserScreenTitle(Object *self)
     screentitleleng = strlen(screentitlestr);
 
     if (screentitleleng<1)
-    { 
+    {
         return GetScreenTitle();
-    } 
+    }
     return screentitlestr;
 
 }
@@ -1200,17 +1200,17 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     last_letter = &thispath[strlen(thispath)-1];
 
-    if (*last_letter==0x3a) 
+    if (*last_letter==0x3a)
        path_len = (IPTR)(thispath-(IPTR)(dr));
-    else 
+    else
        path_len = (IPTR)((thispath-(IPTR)(dr))-1);
 
-    buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);  
+    buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);
     if (buf == NULL)
         return;
     CopyMem(dr, buf, path_len);
 
-    // Make sure we have a correct path   
+    // Make sure we have a correct path
     foundSlash = FALSE, foundColon = FALSE;
     i = 0; for ( ; i < path_len; i++ )
     {
@@ -1233,7 +1233,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     while ((child = NextObject(&cstate)))
     {
         if (XGET(child, MUIA_UserData))
-        {      
+        {
             STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
             if (child_drawer && !Stricmp(buf,child_drawer))
             {
@@ -1246,7 +1246,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
                     SET(child, MUIA_Window_Activate, TRUE);
                 }
                 FreeVec(buf);
-                return; 
+                return;
             }
         }
     }
@@ -1347,7 +1347,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         {
             DoMethod(iconList, MUIM_IconList_Sort);
         }
-    } 
+    }
 }
 ///
 
@@ -1827,11 +1827,11 @@ void wanderer_menufunc_icon_rename(void)
             else
             {
                 BOOL isInfoFile = FALSE;
-                STRPTR filename = entry->ile_IconEntry->ie_IconNode.ln_Name; 
+                STRPTR filename = entry->ile_IconEntry->ie_IconNode.ln_Name;
 
                 if (!FileExists(filename)) {
                     // Check if the file selected is an info file
-                    filename = ConstructInfofileName(filename);                    
+                    filename = ConstructInfofileName(filename);
                     isInfoFile = TRUE;
                 }
 
@@ -1871,7 +1871,7 @@ void wanderer_menufunc_icon_rename(void)
 ///wanderer_menufunc_icon_information()
 void wanderer_menufunc_icon_information()
 {
-    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
 
@@ -1952,12 +1952,12 @@ attemptlock:
 ///wanderer_menufunc_icon_snapshot()
 void wanderer_menufunc_icon_snapshot(IPTR *flags)
 {
-    Object                      *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                      *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                      *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry       *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
     struct IconEntry            *node = NULL;
     BOOL                        snapshot  = *flags;
-    struct TagItem              icontags[] = 
+    struct TagItem              icontags[] =
     {
         { ICONPUTA_OnlyUpdatePosition, TRUE },
         { TAG_DONE, 0                       }
@@ -2048,7 +2048,7 @@ struct DesktopLinkIcon_Entry
 ///wanderer_menufunc_icon_leaveout()
 void wanderer_menufunc_icon_leaveout(void)
 {
-    Object                                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     Object                                *rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     Object                                *rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
@@ -2226,7 +2226,7 @@ struct PutAwayIcon_Volume
 ///wanderer_menufunc_icon_putaway()
 void wanderer_menufunc_icon_putaway(void)
 {
-    Object                        *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                        *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                        *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     Object                        *rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     Object                        *rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
@@ -2433,9 +2433,9 @@ void wanderer_menufunc_icon_putaway(void)
 
 ///DisposeCopyDisplay()
 /* dispose the file copy display */
-void DisposeCopyDisplay(struct MUIDisplayObjects *d) 
+void DisposeCopyDisplay(struct MUIDisplayObjects *d)
 {
-    if (d->copyApp) 
+    if (d->copyApp)
     {
         //SET(d->win,MUIA_Window_Open,FALSE);
        MUI_DisposeObject(d->copyApp);
@@ -2445,13 +2445,13 @@ void DisposeCopyDisplay(struct MUIDisplayObjects *d)
 
 ///CreateCopyDisplay()
 /* create the file copy window */
-BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d) 
+BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
 {
     BOOL    back = FALSE;
 
     Object  *group, *gaugeGroup, *numGaugeGroup;
 
-    d->stopflag = 0; // will be set to 1 if the stop button is clicked 
+    d->stopflag = 0; // will be set to 1 if the stop button is clicked
     d->numObjects = 0;
     d->action = flags;
     d->copyApp = MUI_NewObject(MUIC_Application,
@@ -2511,9 +2511,9 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
         TAG_DONE)),
     TAG_DONE);
 
-    if (d->copyApp) 
+    if (d->copyApp)
     {
-        if ((flags & ACTION_DELETE) == ACTION_DELETE) 
+        if ((flags & ACTION_DELETE) == ACTION_DELETE)
         {
             DoMethod(group, MUIM_Group_InitChange);
             DoMethod(group, OM_REMMEMBER, numGaugeGroup);
@@ -2571,10 +2571,10 @@ void wanderer_menufunc_icon_delete(void)
     if (CreateCopyDisplay(ACTION_DELETE, &dobjects))
     {
         do
-        {   
+        {
             if ((IPTR)entry != MUIV_IconList_NextIcon_End)
             {
-                dobjects.currentObject = (CONST_STRPTR) entry->ile_IconEntry->ie_IconNode.ln_Name; 
+                dobjects.currentObject = (CONST_STRPTR) entry->ile_IconEntry->ie_IconNode.ln_Name;
                 dobjects.numObjects++;
                 if (entry->type != ILE_TYPE_APPICON)
                 {
@@ -2589,7 +2589,7 @@ void wanderer_menufunc_icon_delete(void)
             }
             D(bug("[Wanderer] Delete Looking for next icon...\n"));
             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
-        } 
+        }
         while ((IPTR)entry != MUIV_IconList_NextIcon_End );
         D(bug("[Wanderer] Delete Disponsing copy display...\n"));
         DisposeCopyDisplay(&dobjects);
@@ -2616,7 +2616,7 @@ void wanderer_menufunc_icon_format(void)
 
     /* Process only first selected entry */
     if ((IPTR)entry != MUIV_IconList_NextIcon_End)
-    {  
+    {
         if (entry->type != ILE_TYPE_APPICON) /* TODO: Implement */
         {
             BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
@@ -2704,11 +2704,11 @@ void wanderer_menufunc_wanderer_about(Object **pwand)
                         End,
                     Child, (IPTR)VGroup,
                         Child, (IPTR)TextObject,
-                            MUIA_Text_PreParse, (IPTR)"\33c\33b", 
+                            MUIA_Text_PreParse, (IPTR)"\33c\33b",
                             MUIA_Text_Contents, (IPTR)wand_titlestr,
                         End,
                         Child, (IPTR)TextObject,
-                            MUIA_Text_PreParse, (IPTR)"\33c", 
+                            MUIA_Text_PreParse, (IPTR)"\33c",
                             MUIA_Text_Contents, (IPTR)wand_copyrightstr,
                         End,
                     End,
@@ -2717,7 +2717,7 @@ void wanderer_menufunc_wanderer_about(Object **pwand)
                 Child, (IPTR)VGroup,
                     MUIA_Frame, MUIV_Frame_Group,
                     Child, (IPTR)TextObject,
-                        MUIA_Text_PreParse, (IPTR)"\33b", 
+                        MUIA_Text_PreParse, (IPTR)"\33b",
                         MUIA_Text_Contents, (IPTR)"Internal Classes:",
                     End,
                     Child, (IPTR)HVSpace,
@@ -2743,7 +2743,7 @@ void wanderer_menufunc_wanderer_about(Object **pwand)
                     End,
                     Child, (IPTR)HVSpace,
                     Child, (IPTR)TextObject,
-                        MUIA_Text_PreParse, (IPTR)"\33b", 
+                        MUIA_Text_PreParse, (IPTR)"\33b",
                         MUIA_Text_Contents, (IPTR)"External Classes:",
                     End,
                     Child, (IPTR)HVSpace,
@@ -2782,7 +2782,7 @@ void wanderer_menufunc_wanderer_about(Object **pwand)
 
         DoMethod
         (
-            data->wd_AboutWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+            data->wd_AboutWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             (IPTR)data->wd_AboutWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
     }
@@ -2867,7 +2867,7 @@ VOID DoMenuNotify(Object* strip, int id, IPTR trigattrib, void *function, void *
     {
         DoMethod
           (
-            entry, MUIM_Notify, trigattrib, MUIV_EveryTime, 
+            entry, MUIM_Notify, trigattrib, MUIV_EveryTime,
             (IPTR) entry, 4, MUIM_CallHook, (IPTR) &_WandererIntern_hook_standard,
             (IPTR) function, (IPTR) arg
           );
@@ -2927,7 +2927,7 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
 
     
     DoMenuNotify(strip, MEN_WINDOW_SORT_NOW, MUIA_Menuitem_Trigger,
-                                wanderer_menufunc_window_cleanup, NULL); 
+                                wanderer_menufunc_window_cleanup, NULL);
     DoMenuNotify(strip, MEN_WINDOW_SORT_ENABLE, MUIA_Menuitem_Trigger,
                                 wanderer_menufunc_window_sort_enable, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME, MUIA_Menuitem_Trigger,
@@ -2971,13 +2971,13 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
     {
         DoMethod
         (
-            item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, 
-            (IPTR) _WandererIntern_AppObj, 7, MUIM_Application_PushMethod, 
-            (IPTR) _WandererIntern_AppObj, 4, MUIM_CallHook, (IPTR) &_WandererIntern_hook_standard, 
+            item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) _WandererIntern_AppObj, 7, MUIM_Application_PushMethod,
+            (IPTR) _WandererIntern_AppObj, 4, MUIM_CallHook, (IPTR) &_WandererIntern_hook_standard,
             (IPTR) wanderer_menufunc_wanderer_backdrop, (IPTR) strip
         );
     }
-}    
+}
 ///
 
 #define MENF_ICON_OPEN          (1 << 0)
@@ -3269,7 +3269,7 @@ D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererInte
 
         RegisterWorkbench(data->wd_CommandPort);
 
-        /* Setup command port handler --------------------------------------*/ 
+        /* Setup command port handler --------------------------------------*/
         data->wd_CommandIHN.ihn_Signals = 1UL << data->wd_CommandPort->mp_SigBit;
         data->wd_CommandIHN.ihn_Object  = self;
         data->wd_CommandIHN.ihn_Method  = MUIM_Wanderer_HandleCommand;
@@ -3446,13 +3446,13 @@ IPTR Wanderer__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 ///Wanderer__MUIM_Application_Execute()
 /* Main entry point for Wanderer Application Object */
 /*
-    When the executable creates our object it calls zune 
-    to handle basic "control" ... which results in Zune 
+    When the executable creates our object it calls zune
+    to handle basic "control" ... which results in Zune
     calling this method ..
 */
 IPTR Wanderer__MUIM_Application_Execute
 (
-    Class *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message
 )
 {
     SETUP_WANDERER_INST_DATA;
@@ -3505,10 +3505,10 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
 //        D(bug("[Wanderer] Current title %s\n", current_title));
 
         if ((current_title == NULL) || (strcmp(current_title, scr_title) != 0))
-	{
-	    /* Limit the menu bar flickering */
+        {
+            /* Limit the menu bar flickering */
             SET(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
-	}
+        }
 
         /* Request rate-limited, conditional refresh */
         DoMethod(child, MUIM_IconWindow_RateLimitRefresh);
@@ -3607,7 +3607,7 @@ D(bug("[Wanderer] %s: name = %s, length = %ld\n", __PRETTY_FUNCTION__, name, len
 
                                 if
                                 (
-                                    child_drawer != NULL 
+                                    child_drawer != NULL
                                     && strncmp(name, child_drawer, length) == 0
                                     && strlen(child_drawer) == length
                                 )
@@ -3666,7 +3666,7 @@ D(bug("[Wanderer] %s: WBHM_TYPE_OPEN\n", __PRETTY_FUNCTION__));
                                     DoMethod(child, MUIM_Window_ToFront);
                                     SET(child, MUIA_Window_Activate, TRUE);
                                 }
-                                return 0; 
+                                return 0;
                             }
                         }
                     }
@@ -3871,7 +3871,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
 ///Wanderer__MUIM_Wanderer_CreateDrawerWindow()
 Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
 (
-    Class *CLASS, Object *self, 
+    Class *CLASS, Object *self,
     struct MUIP_Wanderer_CreateDrawerWindow *message
 )
 {
@@ -3941,7 +3941,7 @@ D(bug("[Wanderer] %s: window != NULL\n", __PRETTY_FUNCTION__));
 D(bug("[Wanderer] %s: call AllocVec()\n", __PRETTY_FUNCTION__));
             drw = AllocVec ( 5, MEMF_CLEAR );
             sprintf ( drw, "RAM:" );
-            freeDrwStr = TRUE;    
+            freeDrwStr = TRUE;
         }
 
         if (isWorkbenchWindow)
@@ -3949,7 +3949,7 @@ D(bug("[Wanderer] %s: call AllocVec()\n", __PRETTY_FUNCTION__));
 D(bug("[Wanderer] %s: isWorkbenchWindow\n", __PRETTY_FUNCTION__));
             DoMethod
             (
-                window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+                window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
                 (IPTR)self, 3, MUIM_CallHook, (IPTR)&_WandererIntern_hook_standard, (IPTR)wanderer_menufunc_wanderer_quit
             );
         }
@@ -3977,7 +3977,7 @@ D(bug("[Wanderer] %s: IconWindows IconList @ %p\n", __PRETTY_FUNCTION__, window_
                 DoMethod
                   (
                     window_IconList, MUIM_Notify, MUIA_IconList_SelectionChanged, MUIV_EveryTime,
-                    (IPTR) self, 3, 
+                    (IPTR) self, 3,
                     MUIM_CallHook, _wand_UpdateMenuStates_hook, (IPTR)window
                   );
             }
@@ -4005,7 +4005,7 @@ D(bug("[Wanderer] %s: setup notifications\n", __PRETTY_FUNCTION__));
 #endif
 D(bug("[Wanderer] %s: execute all notifies\n", __PRETTY_FUNCTION__));
         /* If "Execute Command" entry is clicked open the execute window */
-        SetMenuDefaultNotifies(self, _NewWandDrawerMenu__menustrip, drw);        
+        SetMenuDefaultNotifies(self, _NewWandDrawerMenu__menustrip, drw);
 
 D(bug("[Wanderer] %s: add window to app\n", __PRETTY_FUNCTION__));
         /* Add the window to the application */

@@ -22,11 +22,11 @@ CONST_STRPTR _(ULONG id, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
     if (LocaleBase != NULL && MiamiPanelBaseIntern->mpb_cat != NULL)
     {
-	return GetCatalogStr(MiamiPanelBaseIntern->mpb_cat, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+        return GetCatalogStr(MiamiPanelBaseIntern->mpb_cat, id, CatCompArray[id].cca_Str);
+    }
+    else
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
@@ -83,8 +83,8 @@ VOID Locale_Initialize(struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
     if (LocaleBase != NULL)
     {
         MiamiPanelBaseIntern->mpb_cat = OpenCatalog
-        ( 
-            NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+        (
+            NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
         );
     }
     else
@@ -96,9 +96,9 @@ VOID Locale_Initialize(struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 VOID Locale_Deinitialize(struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
     if(LocaleBase != NULL && MiamiPanelBaseIntern->mpb_cat != NULL)
-	{
-		CloseCatalog(MiamiPanelBaseIntern->mpb_cat);
-		MiamiPanelBaseIntern->mpb_cat = NULL;
-	}
+        {
+                CloseCatalog(MiamiPanelBaseIntern->mpb_cat);
+                MiamiPanelBaseIntern->mpb_cat = NULL;
+        }
 }
 

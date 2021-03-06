@@ -17,7 +17,7 @@
 #include "../x86.h"
 
 /********************************************
-		 IDT Specific information..
+                 IDT Specific information..
  ********************************************/
 
 void    parse_i386_IDT( int maxi, struct i386_compat_intern * CPUi386 )

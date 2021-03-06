@@ -11,14 +11,14 @@
     NAME */
 #include <clib/rexxsyslib_protos.h>
 
-	AROS_LH2(UBYTE *, CreateArgstring,
+        AROS_LH2(UBYTE *, CreateArgstring,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST UBYTE *, string, A0),
-	AROS_LHA(ULONG  , length, D0),
+        AROS_LHA(CONST UBYTE *, string, A0),
+        AROS_LHA(ULONG  , length, D0),
 
 /*  LOCATION */
-	struct RxsLib *, RexxSysBase, 21, RexxSys)
+        struct RxsLib *, RexxSysBase, 21, RexxSys)
 
 /*  FUNCTION
         This function will create a RexxArg structure and copy the supplied
@@ -63,7 +63,7 @@
     /* Initialize the deprecated fields to a sane value for compatibility under AmigaOS */
     ra->ra_Deprecated1 = 1<<1 | 1<<2 | 1<<6; /* Was ra_Flags = NSF_ALPHA | NSF_EXT */
     for (i=0; i<length; i++)
-	hash += string[i];
+        hash += string[i];
     ra->ra_Deprecated2 = (UBYTE)(hash & 255); /* Was ra_Hash */
     CopyMem(string, ra->ra_Buff, length);
     *(ra->ra_Buff + length) = '\0';

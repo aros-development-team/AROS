@@ -43,7 +43,7 @@ LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase);
 #define GetDefaultIconFromType(type, tags) (__GetDefaultIconFromType_WB((type), (tags), IconBase))
 #define FindDiskType(volname, lock) (__FindDiskType_WB((volname),(lock),IconBase))
 /*** Functions **************************************************************/
-LONG __FindType_WB(BPTR lock, struct IconBase *IconBase) 
+LONG __FindType_WB(BPTR lock, struct IconBase *IconBase)
 {
     LONG                  type = -1;
     struct FileInfoBlock *fib  = AllocDosObject(DOS_FIB, TAG_DONE);
@@ -138,7 +138,7 @@ struct DiskObject *__FindDefaultIcon_WB
         (
             FindDeviceName
             (
-                device, MAXFILENAMELENGTH, 
+                device, MAXFILENAMELENGTH,
                 iim->iim_FileLock
             )
         )
@@ -159,14 +159,14 @@ struct DiskObject *__FindDefaultIcon_WB
                 else if (strncasecmp(device, "DF", 2) == 0)
                 {
                     icon = GetDefaultIconFromName("Floppy", iim->iim_Tags);
-                } 
+                }
                 else if (strncasecmp(device, "CD", 2) == 0)
                 {
                     icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
                 }
                 else if
                 (
-                       strncasecmp(device, "DH",  2) == 0 
+                       strncasecmp(device, "DH",  2) == 0
                     || strncasecmp(device, "HD",  2) == 0
                     || strncasecmp(device, "EMU", 3) == 0
                 )
@@ -250,7 +250,7 @@ struct DiskObject *__FindDefaultIcon_WB
 
                 UBYTE buffer[MAXFILENAMELENGTH], buffer1[MAXFILENAMELENGTH];
 
-                /* SFS .recycled Trashcan */ 
+                /* SFS .recycled Trashcan */
                 BPTR lock = Lock(".recycled", ACCESS_READ);
                 NameFromLock(iim->iim_FileLock, buffer, MAXFILENAMELENGTH);
 
@@ -300,7 +300,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 
                 if
                 (
-                       dth->dth_GroupID == GID_SYSTEM 
+                       dth->dth_GroupID == GID_SYSTEM
                     && dth->dth_ID      == ID_EXECUTABLE
                 )
                 {

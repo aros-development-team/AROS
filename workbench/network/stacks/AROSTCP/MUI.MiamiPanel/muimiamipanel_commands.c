@@ -92,11 +92,11 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
     #if defined(__MORPHOS__) || defined(__AROS__)
     va_list        va;
     #else
-	#if defined(__AROS__)
-	
-	#else
+        #if defined(__AROS__)
+        
+        #else
     ULONG          *va;
-	#endif
+        #endif
     #endif
     struct MsgPort reply;
     struct MPS_Msg *msg;
@@ -125,9 +125,9 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
     {
         // We break the rules here: Cleanup must be got
         if (id==MPV_Msg_Type_Cleanup)
-            DoMethod(MiamiPanelBaseIntern->mpb_app, MUIM_Application_PushMethod, 
-								(ULONG)MiamiPanelBaseIntern->mpb_app,
-								2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+            DoMethod(MiamiPanelBaseIntern->mpb_app, MUIM_Application_PushMethod,
+                                                                (ULONG)MiamiPanelBaseIntern->mpb_app,
+                                                                2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
         ReleaseSemaphore(&MiamiPanelBaseIntern->mpb_libSem);
         return;

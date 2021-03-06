@@ -9,24 +9,24 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH1(struct DiskObject *, GetDefDiskObject,
+        AROS_LH1(struct DiskObject *, GetDefDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, type, D0),
+        AROS_LHA(LONG, type, D0),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 20, Icon)
+        struct IconBase *, IconBase, 20, Icon)
 
 /*  FUNCTION
-	Gets the default icon for the supplied type of icon.
+        Gets the default icon for the supplied type of icon.
 
     INPUTS
-	type  -  type of icon to get default diskobject for.
+        type  -  type of icon to get default diskobject for.
 
 
     RESULT
-	DiskObject structure or NULL if an error occured. The error may
-	be obtained by IoErr().
+        DiskObject structure or NULL if an error occured. The error may
+        be obtained by IoErr().
 
     NOTES
 
@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-	PutDefDiskObject(), GetDiskObjectNew()
+        PutDefDiskObject(), GetDiskObjectNew()
 
     INTERNALS
 

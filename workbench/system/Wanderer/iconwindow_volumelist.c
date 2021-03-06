@@ -333,7 +333,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 
                             bdrp_currfile_dob = GetIconTags
                               (
-                                bdrp_fullfile, 
+                                bdrp_fullfile,
                                 ICONGETA_Screen, _screen(self),
                                 ICONGETA_FailIfUnavailable, FALSE,
                                 ICONGETA_Label,             bdrp_namepart,
@@ -532,7 +532,7 @@ IPTR IconWindowVolumeList__MUIM_Setup
         DoMethod
           (
             prefs, MUIM_Notify, MUIA_IconWindowExt_NetworkBrowser_Show, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &((struct IconWindowVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook, (IPTR)CLASS
           );
     }
@@ -618,14 +618,14 @@ IPTR IconWindowVolumeList__MUIM_HandleEvent
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
-    if(imsg->Class == IDCMP_DISKINSERTED) 
+    if(imsg->Class == IDCMP_DISKINSERTED)
     {
         D(bug("[Wanderer:VolumeList] %s: IDCMP_DISKINSERTED\n", __PRETTY_FUNCTION__));
         DoMethod(self, MUIM_IconList_Update);
         DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
     }
-    else if (imsg->Class == IDCMP_DISKREMOVED) 
+    else if (imsg->Class == IDCMP_DISKREMOVED)
     {
         D(bug("[Wanderer:VolumeList] %s: IDCMP_DISKREMOVED\n", __PRETTY_FUNCTION__));
         DoMethod(self, MUIM_IconList_Update);
@@ -897,7 +897,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                     struct DiskObject    *_nb_dob = NULL;
                     _nb_dob = GetIconTags
                       (
-                        "ENV:SYS/def_NetworkHost", 
+                        "ENV:SYS/def_NetworkHost",
                         ICONGETA_FailIfUnavailable, FALSE,
                         ICONGETA_Label,             (IPTR)"Network Access..",
                         TAG_DONE
@@ -950,7 +950,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
                             _nb_dob = GetIconTags
                               (
-                                "ENV:SYS/def_UserHome", 
+                                "ENV:SYS/def_UserHome",
                                 ICONGETA_FailIfUnavailable, FALSE,
                                 ICONGETA_Label,             (IPTR)"User Files..",
                                 TAG_DONE

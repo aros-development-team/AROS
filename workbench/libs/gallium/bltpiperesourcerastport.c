@@ -18,7 +18,7 @@
 
       AROS_LH9(void, BltPipeResourceRastPort,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(PipeHandle_t, pipe, A0),
       AROS_LHA(struct pipe_resource *, srcPipeResource, A1),
       AROS_LHA(LONG                  , xSrc, D0),
@@ -37,11 +37,11 @@
         rastport.
  
     INPUTS
-	srcPipeResource - Copy from this pipe resource.
-	xSrc, ySrc - This is the upper left corner of the area to copy.
-	destRP - Destination RastPort.
-	xDest, yDest - Upper left corner where to place the copy
-	xSize, ySize - The size of the area to copy
+        srcPipeResource - Copy from this pipe resource.
+        xSrc, ySrc - This is the upper left corner of the area to copy.
+        destRP - Destination RastPort.
+        xDest, yDest - Upper left corner where to place the copy
+        xSize, ySize - The size of the area to copy
  
     RESULT
  
@@ -88,7 +88,7 @@
     if (renderableLayerRect.MaxY > L->bounds.MaxY)
         renderableLayerRect.MaxY = L->bounds.MaxY;
 
-    /*  Do not clip renderableLayerRect to screen rast port. CRs are already clipped and unclipped 
+    /*  Do not clip renderableLayerRect to screen rast port. CRs are already clipped and unclipped
         layer coords are needed. */
 
     CR = L->ClipRect;
@@ -134,7 +134,7 @@
         OOP_DoMethod(bm, (OOP_Msg)&urmsg);
     }
 
-    UnlockLayerRom(L);    
+    UnlockLayerRom(L);
 
     AROS_LIBFUNC_EXIT
 }

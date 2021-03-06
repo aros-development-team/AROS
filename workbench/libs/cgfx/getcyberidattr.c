@@ -18,14 +18,14 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH2(ULONG, GetCyberIDAttr,
+        AROS_LH2(ULONG, GetCyberIDAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, attribute, 	D0),
-	AROS_LHA(ULONG, DisplayModeID, 	D1),
+        AROS_LHA(ULONG, attribute,      D0),
+        AROS_LHA(ULONG, DisplayModeID,  D1),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 17, Cybergraphics)
+        struct Library *, CyberGfxBase, 17, Cybergraphics)
 
 /*  FUNCTION
         Provides information about a specific RTG screenmode.
@@ -64,36 +64,36 @@
     struct DimensionInfo info;
 
     if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, DisplayModeID) == sizeof(info)) {
-    	OOP_Object *pf = (OOP_Object *)info.reserved[1];
+        OOP_Object *pf = (OOP_Object *)info.reserved[1];
 
-	switch (attribute)
+        switch (attribute)
         {
-	case CYBRIDATTR_PIXFMT:
-	    OOP_GetAttr(pf, aHidd_PixFmt_CgxPixFmt, &retval);
-	    D(if (-1 == retval) bug("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n");)
-	    break;
+        case CYBRIDATTR_PIXFMT:
+            OOP_GetAttr(pf, aHidd_PixFmt_CgxPixFmt, &retval);
+            D(if (-1 == retval) bug("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n");)
+            break;
 
-	case CYBRIDATTR_DEPTH:
-	    retval = info.MaxDepth;
-	    break;
+        case CYBRIDATTR_DEPTH:
+            retval = info.MaxDepth;
+            break;
 
-	case CYBRIDATTR_WIDTH:
-	    retval = info.Nominal.MaxX - info.Nominal.MinX + 1;
-	    break;
+        case CYBRIDATTR_WIDTH:
+            retval = info.Nominal.MaxX - info.Nominal.MinX + 1;
+            break;
 
-	case CYBRIDATTR_HEIGHT:
-	    retval = info.Nominal.MaxY - info.Nominal.MinY + 1;
-	    break;
+        case CYBRIDATTR_HEIGHT:
+            retval = info.Nominal.MaxY - info.Nominal.MinY + 1;
+            break;
 
-	case CYBRIDATTR_BPPIX:
-	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
-	    break;
+        case CYBRIDATTR_BPPIX:
+            OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+            break;
 
-	default:
-	    D(bug("!!! UNKNOWN ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n",
+        default:
+            D(bug("!!! UNKNOWN ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n",
                 attribute));
-	    break;
-	}
+            break;
+        }
     }
     return (ULONG)retval;
 

@@ -440,7 +440,7 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     rp = CreateRastPort();
     if (rp)
     {
-        /* Reuse the bitmap if there was no size change (ie. only change of state) */        
+        /* Reuse the bitmap if there was no size change (ie. only change of state) */
         if (changetype == CHANGE_NO_SIZE_CHANGE)
             rp->BitMap = cachedtitlebarbitmap;
         else
@@ -643,7 +643,7 @@ static VOID DisposeWindowSkinning(struct windecor_data *data)
 
 }
 
-static BOOL InitWindowSkinning(struct windecor_data *data, struct DecorImages * di, struct DecorConfig * dc) 
+static BOOL InitWindowSkinning(struct windecor_data *data, struct DecorImages * di, struct DecorConfig * dc)
 {
     if ((!di) || (!dc))
         return FALSE;
@@ -667,7 +667,7 @@ static BOOL InitWindowSkinning(struct windecor_data *data, struct DecorImages * 
     data->img_iconify   = di->img_iconify;
     data->img_lock      = di->img_lock;
 
-    if (data->img_close && data->img_depth && data->img_zoom && data->img_up && 
+    if (data->img_close && data->img_depth && data->img_zoom && data->img_up &&
         data->img_down && data->img_left && data->img_right)
         return TRUE;
 
@@ -751,9 +751,9 @@ static IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImag
             {
                 ni = wd->img_size;
                 isset = TRUE;
-                if (data->dc->GadgetsThreeState) 
-                    addx = (data->dc->RightBorderGadgets - (wd->img_size->w / 3)) /2; 
-                else 
+                if (data->dc->GadgetsThreeState)
+                    addx = (data->dc->RightBorderGadgets - (wd->img_size->w / 3)) /2;
+                else
                     addx = (data->dc->RightBorderGadgets - (wd->img_size->w >> 2)) /2;
                 addy = (data->dc->BottomBorderGadgets - wd->img_size->h) / 2;
             }
@@ -956,17 +956,17 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
             buf = AllocVec(1 * window->Height * 3, MEMF_ANY | MEMF_CLEAR);
             
             /* Fill the buffer with gradient */
-            FillMemoryBufferRGBGradient(buf, pen, 0, 0, window->Width - 1, window->Height - 1, 0, 0, 
+            FillMemoryBufferRGBGradient(buf, pen, 0, 0, window->Width - 1, window->Height - 1, 0, 0,
                 1, window->Height , s_col, e_col, arc);
         }
     
         if (data->dc->UseGradients)
         {
             /* Reuse the buffer for blitting frames */
-            if (window->BorderLeft > overlap) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
-                                            0, window->BorderTop, 
+            if (window->BorderLeft > overlap) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp,
+                                            0, window->BorderTop,
                                             window->BorderLeft, window->Height - window->BorderTop);
-            if (window->BorderRight > overlap) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
+            if (window->BorderRight > overlap) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp,
                                             window->Width - window->BorderRight, window->BorderTop,
                                             window->BorderRight, window->Height - window->BorderTop);
             if (window->BorderBottom > overlap) HorizRepeatBuffer(buf, window->Height - window->BorderBottom, pen, wd->truecolor, rp,
@@ -975,14 +975,14 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         }
         else
         {
-            if (window->BorderLeft > overlap) HorizVertRepeatNewImage(ni, color, 0, window->BorderTop, rp,  
-                                            0, window->BorderTop, 
+            if (window->BorderLeft > overlap) HorizVertRepeatNewImage(ni, color, 0, window->BorderTop, rp,
+                                            0, window->BorderTop,
                                             window->BorderLeft - 1, window->Height - window->BorderTop);
-            if (window->BorderRight > overlap) HorizVertRepeatNewImage(ni, color, window->Width - window->BorderRight , window->BorderTop, rp,  
-                                            window->Width - window->BorderRight , window->BorderTop, 
+            if (window->BorderRight > overlap) HorizVertRepeatNewImage(ni, color, window->Width - window->BorderRight , window->BorderTop, rp,
+                                            window->Width - window->BorderRight , window->BorderTop,
                                             window->BorderRight, window->Height - window->BorderTop);
-            if (window->BorderBottom > overlap) HorizVertRepeatNewImage(ni, color, 0, window->Height - window->BorderBottom, rp,  
-                                            0, window->Height - window->BorderBottom, 
+            if (window->BorderBottom > overlap) HorizVertRepeatNewImage(ni, color, 0, window->Height - window->BorderBottom, rp,
+                                            0, window->Height - window->BorderBottom,
                                             window->Width, window->BorderBottom);
         }
 
@@ -1010,7 +1010,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
             if (br > 3) {
                 if (bb > 1) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
             }
-        }        
+        }
         FreeVec(buf);
     }
     return TRUE;
@@ -1532,9 +1532,9 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     if (changetype == CHANGE_NO_CHANGE)
     {
         /* Final blitting of gadget bitmap to window rast port */
-        BltBitMapRastPort(cachedgadgetbitmap, 0, 0, winrp, msg->wdp_PropRect->MinX, 
-            msg->wdp_PropRect->MinY, 
-            msg->wdp_PropRect->MaxX - msg->wdp_PropRect->MinX + 1, 
+        BltBitMapRastPort(cachedgadgetbitmap, 0, 0, winrp, msg->wdp_PropRect->MinX,
+            msg->wdp_PropRect->MinY,
+            msg->wdp_PropRect->MaxX - msg->wdp_PropRect->MinX + 1,
             msg->wdp_PropRect->MaxY - msg->wdp_PropRect->MinY + 1, 0xc0);
         return TRUE;
     }
@@ -1550,7 +1550,7 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     rp = CreateRastPort();
     if (rp)
     {
-        /* Reuse the bitmap if there was no size change (ie. only move of knob) */        
+        /* Reuse the bitmap if there was no size change (ie. only move of knob) */
         if (changetype == CHANGE_NO_SIZE_CHANGE)
             rp->BitMap = cachedgadgetbitmap;
         else
@@ -1694,9 +1694,9 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     }
 
     /* Final blitting of gadget bitmap to window rast port */
-    BltBitMapRastPort(rp->BitMap, 0, 0, winrp, msg->wdp_PropRect->MinX, 
-        msg->wdp_PropRect->MinY, 
-        msg->wdp_PropRect->MaxX - msg->wdp_PropRect->MinX + 1, 
+    BltBitMapRastPort(rp->BitMap, 0, 0, winrp, msg->wdp_PropRect->MinX,
+        msg->wdp_PropRect->MinY,
+        msg->wdp_PropRect->MaxX - msg->wdp_PropRect->MinX + 1,
         msg->wdp_PropRect->MaxY - msg->wdp_PropRect->MinY + 1, 0xc0);
 
     /* Cache the actual bitmap */

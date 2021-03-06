@@ -122,7 +122,7 @@ static SIPTR decodeArgs(struct portBase *pb, struct portArgs *pa, BSTR args)
                 pa->pa_Printer.pr_Type = PRT_RAW;
             } else if (slen == 11 && Strnicmp(cp, "TRANSPARENT", 11) == 0) {
                 pa->pa_Printer.pr_Type = PRT_TRANSPARENT;
-            } 
+            }
         } else if (pb->pb_Mode == PORT_SERIAL) {
             int i;
             ULONG baud = 0;

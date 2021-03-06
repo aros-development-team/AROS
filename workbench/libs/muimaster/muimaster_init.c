@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002, The AROS Development Team. 
+    Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
     
 */
@@ -21,7 +21,7 @@
 /* Global libbase vars */
 #undef IntuitionBase
 
-/* Undef the following bases because the casts struct Libaray * -> struct <Lib>Base * casts 
+/* Undef the following bases because the casts struct Libaray * -> struct <Lib>Base * casts
  * would use them */
 #undef UtilityBase
 #undef DOSBase
@@ -29,7 +29,7 @@
 
 struct Library       *MUIMasterBase;
 struct IntuitionBase *IntuitionBase;
-struct Library	     *DataTypesBase;
+struct Library       *DataTypesBase;
 
 struct Library  **MUIMasterBasePtr = &MUIMasterBase;
 
@@ -43,36 +43,36 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 
     if (!MUIMB(MUIMasterBase)->dosbase)
     {
-	if (!(MUIMB(MUIMasterBase)->dosbase = (struct DosLibrary*)OpenLibrary("dos.library", 37)))
-	    return FALSE;
+        if (!(MUIMB(MUIMasterBase)->dosbase = (struct DosLibrary*)OpenLibrary("dos.library", 37)))
+            return FALSE;
     }
 
     if (!MUIMB(MUIMasterBase)->utilitybase)
     {
         if (!(MUIMB(MUIMasterBase)->utilitybase = (struct UtilityBase*)OpenLibrary("utility.library", 37)))
-	    return FALSE;
+            return FALSE;
     }
 
     if (!MUIMB(MUIMasterBase)->gfxbase)
     {
         if (!(MUIMB(MUIMasterBase)->gfxbase = (struct GfxBase*)OpenLibrary("graphics.library", 39)))
-	    return FALSE;
+            return FALSE;
     }
 
     if (!AslBase)
-    	AslBase = OpenLibrary("asl.library", 37);
+        AslBase = OpenLibrary("asl.library", 37);
     if (!AslBase)
-    	return FALSE;
+        return FALSE;
 
     if (!LayersBase)
-    	LayersBase = OpenLibrary("layers.library", 37);
+        LayersBase = OpenLibrary("layers.library", 37);
     if (!LayersBase)
-    	return FALSE;
+        return FALSE;
 
     if (!IntuitionBase)
-    	IntuitionBase = (struct IntuitionBase*)OpenLibrary("intuition.library", 39);
+        IntuitionBase = (struct IntuitionBase*)OpenLibrary("intuition.library", 39);
     if (!IntuitionBase)
-    	return FALSE;
+        return FALSE;
 
     if (!CxBase)
         CxBase = OpenLibrary("commodities.library", 37);
@@ -85,37 +85,37 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
         return FALSE;
 
     if (!GadToolsBase)
-    	GadToolsBase = OpenLibrary("gadtools.library", 37);
+        GadToolsBase = OpenLibrary("gadtools.library", 37);
     if (!GadToolsBase)
-    	return FALSE;
+        return FALSE;
 
     if (!KeymapBase)
-    	KeymapBase = OpenLibrary("keymap.library", 37);
+        KeymapBase = OpenLibrary("keymap.library", 37);
     if (!KeymapBase)
-    	return FALSE;
+        return FALSE;
 
     if (!DataTypesBase)
-    	DataTypesBase = OpenLibrary("datatypes.library", 37);
+        DataTypesBase = OpenLibrary("datatypes.library", 37);
     if (!DataTypesBase)
-    	return FALSE;
+        return FALSE;
 
     if (!IFFParseBase)
-    	IFFParseBase = OpenLibrary("iffparse.library", 37);
+        IFFParseBase = OpenLibrary("iffparse.library", 37);
     if (!IFFParseBase)
-    	return FALSE;
+        return FALSE;
 
     if (!DiskfontBase)
-    	DiskfontBase = OpenLibrary("diskfont.library", 37);
+        DiskfontBase = OpenLibrary("diskfont.library", 37);
     if (!DiskfontBase)
-    	return FALSE;
+        return FALSE;
 
     if (!IconBase)
-    	IconBase = OpenLibrary("icon.library", 37); /* V44 really */
+        IconBase = OpenLibrary("icon.library", 37); /* V44 really */
     if (!IconBase)
-    	return FALSE;
+        return FALSE;
 
     if (!CyberGfxBase)
-    	CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+        CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
     /* continue even if cybergraphics.library is not available */
 
     if (!WorkbenchBase)
@@ -125,7 +125,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 
 #ifdef HAVE_COOLIMAGES
     if (!CoolImagesBase)
-    	CoolImagesBase = OpenLibrary("coolimages.library", 0);
+        CoolImagesBase = OpenLibrary("coolimages.library", 0);
 #endif
     
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;

@@ -33,19 +33,19 @@ static int UUID_Init(LIBBASETYPEPTR LIBBASE)
     
     /* get the system time and convert it to UUID time */
     GetSysTime(&tv);
-    time_now = LIBBASE->uuid_NextUpdate = LIBBASE->uuid_LastTime = 
+    time_now = LIBBASE->uuid_NextUpdate = LIBBASE->uuid_LastTime =
         ((uint64_t)tv.tv_secs + 2922) * 10000000 +
         ((uint64_t)tv.tv_micro) * 10 +
         ((uint64_t)0x01B21DD213814000LL);
     
-    D(bug("[UUID] UUID time: 0x%08lx%08lx\n", 
+    D(bug("[UUID] UUID time: 0x%08lx%08lx\n",
           (uint32_t)((LIBBASE->uuid_LastTime >> 32) & 0xffffffff),
           (uint32_t)((LIBBASE->uuid_LastTime & 0xffffffff))
           ));
     
     /* Seed the random generator */
     time_now /= UUIDS_PER_TICK;
-    UUIDBase->uuid_RandomSeed = (time_now >> 32) ^ time_now; 
+    UUIDBase->uuid_RandomSeed = (time_now >> 32) ^ time_now;
     UUIDBase->uuid_UUIDs_ThisTick = 0;
     
     /* Try to open dos.library for GetVar/SetVar */

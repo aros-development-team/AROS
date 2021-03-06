@@ -480,7 +480,7 @@ int main(int argc, char *argv[])
                 Child, (IPTR) VGroup,
                     Child, (IPTR) HGroup,
                         Child, (IPTR) VGroup,
-                            MUIA_Background, MUII_SHADOW,    
+                            MUIA_Background, MUII_SHADOW,
 
                             Child, (IPTR) ImageObject,
                                 MUIA_Frame,             MUIV_Frame_None,

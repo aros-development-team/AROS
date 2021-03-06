@@ -77,7 +77,7 @@
             case WBCTRLA_GetDefaultStackSize:
                 STORE
                 (
-                    (ULONG *) tag->ti_Data, 
+                    (ULONG *) tag->ti_Data,
                     WorkbenchBase->wb_DefaultStackSize
                 );
                 break;

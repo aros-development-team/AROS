@@ -23,7 +23,7 @@ OOP_Object * gfxhidd;
 /* Videofunctions */
 static BOOL InitVideo(struct SysMonData *smdata)
 {
-    struct OOP_ABDescr attrbases[] = 
+    struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Gfx,         &HiddGfxAttrBase        },
         { IID_Hidd_BitMap,      &HiddBitMapAttrBase     },

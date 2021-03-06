@@ -129,7 +129,7 @@ struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
     struct TagItem *ti;
     struct Picture_Data *pd;
 
-#if 0	/* DTA_SourceType is handled by subclasses */
+#if 0   /* DTA_SourceType is handled by subclasses */
     IPTR sourcetype;
     IPTR handle;
 
@@ -169,7 +169,7 @@ struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 #if (0)
     pd->DestMode = FALSE;
 #else
-    pd->DestMode = TRUE;	/* needs to be changed to FALSE after Multiview adaptation */
+    pd->DestMode = TRUE;        /* needs to be changed to FALSE after Multiview adaptation */
 #endif
 
     /* Prefs overrides default, but application overrides Prefs */
@@ -334,10 +334,10 @@ IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
                 DGS(bug("picture.datatype/OM_SET: Tag PDTA_ScaleQuality: %ld\n", (long)pd->ScaleQuality));
                 break;
 
-            case PDTA_Remap:                
+            case PDTA_Remap:
                 pd->Remap = (BOOL) ti->ti_Data;
                 DGS(bug("picture.datatype/OM_SET: Tag ID PDTA_Remap: %ld\n", (long)pd->Remap));
-                break;    
+                break;
                 
 #ifdef __AROS__
             case PDTA_DelayedRead:
@@ -576,7 +576,7 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
     return TRUE;
 }
 /**************************************************************************************************/
-static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG SrcX, LONG SrcY, struct RastPort * destRP, 
+static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG SrcX, LONG SrcY, struct RastPort * destRP,
     LONG DestX, LONG DestY, LONG SizeX, LONG SizeY)
 {
     struct BitMapHeader * bmhd = NULL;
@@ -602,7 +602,7 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
         }
     }
     else
-    {   
+    {
         if (bmhd && ((bmhd->bmh_Masking == mskHasMask) || (bmhd->bmh_Masking == mskHasTransparentColor)))
         {
             /* Transparency with mask */
@@ -610,8 +610,8 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
 
             GetDTAttrs((Object *) g, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
 
-            if (mask) 
-                BltMaskBitMapRastPort(pd->DestBM, 
+            if (mask)
+                BltMaskBitMapRastPort(pd->DestBM,
                                     SrcX,
                                     SrcY,
                                     destRP,
@@ -707,7 +707,7 @@ IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
     struct Picture_Data  *pd = INST_DATA(cl, g);
-    IPTR    	    	  retval = GMR_NOREUSE;
+    IPTR                  retval = GMR_NOREUSE;
     
     if (!AttemptSemaphore(&dtsi->si_Lock))
     {
@@ -743,7 +743,7 @@ IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *m
 {
     struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
     struct Picture_Data  *pd = INST_DATA(cl, g);
-    IPTR    	    	  retval = GMR_MEACTIVE;
+    IPTR                  retval = GMR_MEACTIVE;
     
     if (!AttemptSemaphore(&dtsi->si_Lock))
     {
@@ -1077,7 +1077,7 @@ IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixe
 
     /* Do some checks first */
     pixelformat = (long)msg->pbpa_PixelFormat;
-    if ( pixelformat != pd->SrcPixelFormat )	/* This also checks for pd->SrcBuffer */
+    if ( pixelformat != pd->SrcPixelFormat )    /* This also checks for pd->SrcBuffer */
     {
         if( !pd->SrcBuffer )
         {
@@ -1116,7 +1116,7 @@ IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixe
                     InitRGBColTable( pd );
                     pixelbytes = 4;
                     pd->TrueColorSrc = TRUE;
-                    break;    
+                    break;
                 default:
                     D(bug("picture.datatype/DTM_WRITEPIXELARRAY: Unknown PixelFormat mode %d !\n", pixelformat));
                     return FALSE;
@@ -1182,7 +1182,7 @@ IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixe
         }
     }
 
-    pd->Layouted = FALSE;	/* re-layout required */
+    pd->Layouted = FALSE;       /* re-layout required */
     return TRUE;
 }
 
@@ -1291,7 +1291,7 @@ IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixel
                     case PBPAFMT_RGBA:
                         r = *srcptr++;
                         g = *srcptr++;
-                        b = *srcptr++;   
+                        b = *srcptr++;
                         a = *srcptr++;
                         break;
                 }
@@ -1326,15 +1326,15 @@ IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
     pd = (struct Picture_Data *) INST_DATA(cl, g);
     si = (struct DTSpecialInfo *) g->SpecialInfo;
 
-    ObtainSemaphore( &(si->si_Lock) );	/* lock object data */
+    ObtainSemaphore( &(si->si_Lock) );  /* lock object data */
     D(bug("picture.datatype/PDTM_SCALE: newwidth %ld newheight %ld flags %08lx\n", msg->ps_NewWidth, msg->ps_NewHeight, msg->ps_Flags));
 
     pd->DestWidth = msg->ps_NewWidth;
     pd->DestHeight = msg->ps_NewHeight;
     
     /* FIXME: PDT_Scale() set bmh_Width/bmh_Height to new size yes or no? */
-    pd->bmhd.bmh_Width = msg->ps_NewWidth;   
-    pd->bmhd.bmh_Height = msg->ps_NewHeight;   
+    pd->bmhd.bmh_Width = msg->ps_NewWidth;
+    pd->bmhd.bmh_Height = msg->ps_NewHeight;
 
     if( pd->SrcWidth == pd->DestWidth && pd->SrcHeight == pd->DestHeight )
         pd->Scale = FALSE;
@@ -1359,7 +1359,7 @@ IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
                         DTA_NominalHoriz, pd->DestWidth,
                         DTA_NominalVert , pd->DestHeight,
                         TAG_DONE);
-    pd->Layouted = FALSE;	/* re-layout required */
+    pd->Layouted = FALSE;       /* re-layout required */
 
     ReleaseSemaphore( &si->si_Lock );   /* unlock object data */
     return TRUE;
@@ -1388,8 +1388,8 @@ IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
     /* FIXME: DT_FrameBox implementation may need to be checked */
 
     /* It is not really clear/documented what's the correct thing to do
-       here. And what effect FRAMEF_SPECIFY has *here*. The demo sources on 
-       the Amiga Dev CD 2.1 are conflicting. 
+       here. And what effect FRAMEF_SPECIFY has *here*. The demo sources on
+       the Amiga Dev CD 2.1 are conflicting.
        
        ClipView source on Amiga Dev CD 2.1 uses ContentsInfo and FRAMEF_SPECIFY
        and (!) uninitialized FrameInfo. So accessing FrameInfo here would crash.

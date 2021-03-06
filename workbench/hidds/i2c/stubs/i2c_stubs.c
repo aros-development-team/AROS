@@ -23,7 +23,7 @@
 #include <proto/oop.h>
 
 #undef OOPBase
-#define OOPBase	(OOP_OOPBASE(obj))
+#define OOPBase (OOP_OOPBASE(obj))
 
 /***************************************************************************/
 

@@ -20,8 +20,8 @@
 
     FUNCTION
 
-        Generates one or more universally unique identifiers. They may be either 
-        time-based or random. Please note that the quality of random generated 
+        Generates one or more universally unique identifiers. They may be either
+        time-based or random. Please note that the quality of random generated
         uuid's may be poor, due to the lack of high-quality noise generators on AROS.
 
     INPUTS

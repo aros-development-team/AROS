@@ -9,25 +9,25 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH3(void, InitIFF,
+        AROS_LH3(void, InitIFF,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
-	AROS_LHA(LONG              , flags, D0),
-	AROS_LHA(struct Hook      *, streamHook, A1),
+        AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(LONG              , flags, D0),
+        AROS_LHA(struct Hook      *, streamHook, A1),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 38, IFFParse)
+        struct Library *, IFFParseBase, 38, IFFParse)
 
 /*  FUNCTION
-	Initializes an IFFHandle with a custom stream handler and
-	flags describing seekability of the stream.
+        Initializes an IFFHandle with a custom stream handler and
+        flags describing seekability of the stream.
 
     INPUTS
-	iff	    - pointer to IFFHandle struct.
-	flags	     -	stream I/O flags for the IFFHandle.
-	streamHook  - pointer to a Hook structure initialized with the streamhandler
-		      to be called.
+        iff         - pointer to IFFHandle struct.
+        flags        -  stream I/O flags for the IFFHandle.
+        streamHook  - pointer to a Hook structure initialized with the streamhandler
+                      to be called.
 
     RESULT
 
@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	utility/hooks.h
+        utility/hooks.h
 
     INTERNALS
 

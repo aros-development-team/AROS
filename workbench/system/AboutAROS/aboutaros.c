@@ -116,11 +116,11 @@ BOOL NamesToList
                 
                 if (sectionName != NULL)
                 {
-                    sectionFirst 
+                    sectionFirst
                         ? sectionFirst = FALSE
                         : DoMethod
                           (
-                              list, MUIM_List_InsertSingle, (IPTR) "", 
+                              list, MUIM_List_InsertSingle, (IPTR) "",
                               MUIV_List_Insert_Bottom
                           );
 

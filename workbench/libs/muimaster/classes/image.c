@@ -61,7 +61,7 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageData   *data;
     struct TagItem    *tags;
-    struct TagItem  	    *tag;
+    struct TagItem          *tag;
     Object *prop;
 
 /*      D(bug("Image_New starts\n")); */
@@ -139,13 +139,13 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 /*      if (!data->spec && !data->old_image) */
 /*      { */
-/*  	data->spec = StrDup("0:128"); */
+/*      data->spec = StrDup("0:128"); */
 /*      } */
 
 /*      if (!data->spec && !data->old_image) */
 /*      { */
-/*  	CoerceMethod(cl,obj,OM_DISPOSE); */
-/*      	return NULL; */
+/*      CoerceMethod(cl,obj,OM_DISPOSE); */
+/*              return NULL; */
 /*      } */
     
 /*      D(bug("Image_New(0x%p) spec=0x%p\n", obj, data->img)); */
@@ -171,7 +171,7 @@ IPTR Image__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Image__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
-    struct TagItem  	    *tag, *tags;
+    struct TagItem          *tag, *tags;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -415,14 +415,14 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
     }
     else /* no imagespec specified */
     {
-/*  	D(bug("*** Image_AskMinMax : no img, no old_img\n")); */
-/*  	msg->MinMaxInfo->MinWidth += 8; */
-/*  	msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth; */
-/*  	msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth; */
+/*      D(bug("*** Image_AskMinMax : no img, no old_img\n")); */
+/*      msg->MinMaxInfo->MinWidth += 8; */
+/*      msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth; */
+/*      msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth; */
 
-/*  	msg->MinMaxInfo->MinHeight += 8; */
-/*  	msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight; */
-/*  	msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;	 */
+/*      msg->MinMaxInfo->MinHeight += 8; */
+/*      msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight; */
+/*      msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;         */
     }
     return 1;
 }
@@ -465,12 +465,12 @@ void DrawAlphaStateImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG sta
     *                          Image to draw
  *             UWORD xp, yp:
     *                          location where to draw the Image
-    * Bugs:	   Not known, throught the lack of AlphaHandling in cgfx/p96 there
+    * Bugs:        Not known, throught the lack of AlphaHandling in cgfx/p96 there
     *             must all be done by hand so it's recommended to use this for small Images.
     * NOTES:      a temporary Buffer must be allocated to store the Background
 */
 
-    UWORD 	ix, iy;
+    UWORD       ix, iy;
     UBYTE   *d;
     ULONG   depth;
 
@@ -502,7 +502,7 @@ void DrawAlphaStateImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG sta
         {
             if (ni->mask)
             {
-                BltMaskBitMapRastPort(ni->bitmap, 0, 0, rp, xp, yp, ix >> 2, iy, 0xe0, (PLANEPTR) ni->mask);  
+                BltMaskBitMapRastPort(ni->bitmap, 0, 0, rp, xp, yp, ix >> 2, iy, 0xe0, (PLANEPTR) ni->mask);
             }
             else BltBitMapRastPort(ni->bitmap, 0, 0, rp, xp, yp, ix >> 2, iy, 0xc0);
         }
@@ -518,7 +518,7 @@ IPTR Image__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
                 obj, ((struct MUIP_Draw *)msg)->flags, data->state,
                 !!(_flags(obj) & MADF_SHOWSELSTATE)));
 
-    if (data->propimage == NULL) 
+    if (data->propimage == NULL)
     {
         DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -531,7 +531,7 @@ IPTR Image__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
         //Object *p = NULL;
         //get(obj, MUIA_Parent, &p);
         //if (p) DoMethod(p, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
-        //else 
+        //else
         DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
 
         DrawAlphaStateImageToRP(_rp(obj), data->propimage, data->state, _left(obj), _top(obj));
@@ -573,10 +573,10 @@ BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUI_Image_desc = { 
-    MUIC_Image, 
-    MUIC_Area, 
-    sizeof(struct MUI_ImageData), 
-    (void*)Image_Dispatcher 
+const struct __MUIBuiltinClass _MUI_Image_desc = {
+    MUIC_Image,
+    MUIC_Area,
+    sizeof(struct MUI_ImageData),
+    (void*)Image_Dispatcher
 };
 

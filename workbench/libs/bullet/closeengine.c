@@ -11,13 +11,13 @@
 
     NAME */
 
-	AROS_LH1(void, CloseEngine,
+        AROS_LH1(void, CloseEngine,
 
 /*  SYNOPSIS */
-    	AROS_LHA(struct GlyphEngine *, glyphEngine, A0),
-	
+        AROS_LHA(struct GlyphEngine *, glyphEngine, A0),
+        
 /*  LOCATION */
-	struct Library *, BulletBase, 6, Bullet)
+        struct Library *, BulletBase, 6, Bullet)
 
 /*  FUNCTION
 
@@ -35,7 +35,7 @@
 
     INTERNALS
 
-    This interface is implemented in freetype2.library. 
+    This interface is implemented in freetype2.library.
     See /workbench/libs/freetype/src/aros.
 
     HISTORY

@@ -84,7 +84,7 @@ VOID FreeArguments(VOID)
 IPTR GetArgument(enum Argument id)
 {
     if ((id >= 0) && (id < COUNT))
-	return args[id];
+        return args[id];
 
     return 0;
 }

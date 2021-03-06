@@ -21,8 +21,8 @@
 #include "rxfunctions.h"
 
 AROS_UFH2(void, __putChr,
-	  AROS_UFHA(UBYTE, chr, D0),
-	  AROS_UFHA(STRPTR *, p, A3))
+          AROS_UFHA(UBYTE, chr, D0),
+          AROS_UFHA(STRPTR *, p, A3))
 {
     AROS_USERFUNC_INIT;
     
@@ -46,35 +46,35 @@ LONG rxsupp_statef(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE *
     lock = Lock(RXARG(msg,1), ACCESS_READ);
     if (lock == BNULL)
     {
-	*argstring = CreateArgstring("", 0);
-	return RC_OK;
+        *argstring = CreateArgstring("", 0);
+        return RC_OK;
     }
     else
     {
-	struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-	if (fib == NULL)
-	{
-	    *argstring = NULL;
-	    return ERR10_003;
-	}
-	Examine(lock, fib);
-	string = AllocMem(1024, MEMF_ANY);
-	my_sprintf(RexxSupportBase, string, "%s %ld %ld %s%s%s%s%s%s%s%s %ld %ld %ld",
-		  fib->fib_DirEntryType<0 ? "FILE" : "DIR",
-		  fib->fib_Size,
-		  fib->fib_NumBlocks,
-		  fib->fib_Protection & 1<<8         ? "H" : "-",
-		  fib->fib_Protection & FIBF_SCRIPT  ? "S" : "-",
-		  fib->fib_Protection & FIBF_PURE    ? "P" : "-",
-		  fib->fib_Protection & FIBF_ARCHIVE ? "A" : "-",
-		  fib->fib_Protection & FIBF_READ    ? "-" : "R",
-		  fib->fib_Protection & FIBF_WRITE   ? "-" : "W",
-		  fib->fib_Protection & FIBF_EXECUTE ? "-" : "E",
-		  fib->fib_Protection & FIBF_DELETE  ? "-" : "D",
-		  fib->fib_Date.ds_Days,
-		  fib->fib_Date.ds_Minute,
-		  fib->fib_Date.ds_Tick);
-	FreeDosObject(DOS_FIB, fib);
+        struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+        if (fib == NULL)
+        {
+            *argstring = NULL;
+            return ERR10_003;
+        }
+        Examine(lock, fib);
+        string = AllocMem(1024, MEMF_ANY);
+        my_sprintf(RexxSupportBase, string, "%s %ld %ld %s%s%s%s%s%s%s%s %ld %ld %ld",
+                  fib->fib_DirEntryType<0 ? "FILE" : "DIR",
+                  fib->fib_Size,
+                  fib->fib_NumBlocks,
+                  fib->fib_Protection & 1<<8         ? "H" : "-",
+                  fib->fib_Protection & FIBF_SCRIPT  ? "S" : "-",
+                  fib->fib_Protection & FIBF_PURE    ? "P" : "-",
+                  fib->fib_Protection & FIBF_ARCHIVE ? "A" : "-",
+                  fib->fib_Protection & FIBF_READ    ? "-" : "R",
+                  fib->fib_Protection & FIBF_WRITE   ? "-" : "W",
+                  fib->fib_Protection & FIBF_EXECUTE ? "-" : "E",
+                  fib->fib_Protection & FIBF_DELETE  ? "-" : "D",
+                  fib->fib_Date.ds_Days,
+                  fib->fib_Date.ds_Minute,
+                  fib->fib_Date.ds_Tick);
+        FreeDosObject(DOS_FIB, fib);
     }
     
     *argstring = CreateArgstring(string, strlen(string));

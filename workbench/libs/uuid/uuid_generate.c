@@ -28,7 +28,7 @@ static void uuid_generate_time(uuid_t *uuid, struct uuid_base *UUIDBase);
     NAME */
         AROS_LH2(void, UUID_Generate,
 
-/*  SYNOPSIS */                
+/*  SYNOPSIS */
         AROS_LHA(uuid_type_t, type, D0),
         AROS_LHA(uuid_t *, uuid, A0),
         
@@ -88,7 +88,7 @@ static void uuid_generate_time(uuid_t *uuid, struct uuid_base *UUIDBase);
 
 static uint32_t uuid_rand(struct uuid_base *UUIDBase)
 {
-    return (UUIDBase->uuid_RandomSeed = 
+    return (UUIDBase->uuid_RandomSeed =
         UUIDBase->uuid_RandomSeed * 1103515245 + 12345) % 0x7fffffff;
 }
 
@@ -153,7 +153,7 @@ static void uuid_get_node(uuid_node_t *node, struct uuid_base *UUIDBase)
             UUIDBase->uuid_State.cs = uuid_rand(UUIDBase);
             for (i=0; i < 6; i++)
             {
-                UUIDBase->uuid_State.node.nodeID[i] = uuid_rand(UUIDBase);                
+                UUIDBase->uuid_State.node.nodeID[i] = uuid_rand(UUIDBase);
             }
             UUIDBase->uuid_State.node.nodeID[0] |= 0x01;
         }
@@ -181,7 +181,7 @@ static void uuid_get_state(uint16_t *cs, uuid_time_t *timestamp, uuid_node_t *no
             UUIDBase->uuid_State.cs = uuid_rand(UUIDBase);
             for (i=0; i < 6; i++)
             {
-                UUIDBase->uuid_State.node.nodeID[i] = uuid_rand(UUIDBase);                
+                UUIDBase->uuid_State.node.nodeID[i] = uuid_rand(UUIDBase);
             }
             UUIDBase->uuid_State.node.nodeID[0] |= 0x01;
         }
@@ -216,7 +216,7 @@ static void uuid_set_state(uint16_t cs, uuid_time_t timestamp, uuid_node_t node,
                               GVF_GLOBAL_ONLY | GVF_SAVE_VAR | LV_VAR);
         
         LIBBASE->uuid_NextUpdate = timestamp + (10 * 10 * 1000000);
-    }    
+    }
 }
 
 static void uuid_generate_time(uuid_t *uuid, struct uuid_base *UUIDBase)
@@ -240,8 +240,8 @@ static void uuid_generate_time(uuid_t *uuid, struct uuid_base *UUIDBase)
     
     uuid->time_low = (uint32_t)(time & 0xFFFFFFFF);
     uuid->time_mid = (uint16_t)((time >> 32) & 0xFFFF);
-    uuid->time_hi_and_version = (uint16_t)((time >> 48) & 0x0FFF); 
-    uuid->time_hi_and_version |= (1 << 12); 
+    uuid->time_hi_and_version = (uint16_t)((time >> 48) & 0x0FFF);
+    uuid->time_hi_and_version |= (1 << 12);
     uuid->clock_seq_low = clockseq & 0xFF;
     uuid->clock_seq_hi_and_reserved = (clockseq & 0x3F00) >> 8;
     uuid->clock_seq_hi_and_reserved |= 0x80;

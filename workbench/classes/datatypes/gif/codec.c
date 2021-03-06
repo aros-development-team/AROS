@@ -73,32 +73,32 @@ static short read_code(GifHandleType *gifhandle, struct codecvars *d)
     byte = 0;
     while (temp_bits < d->code_size)
     {
-	if (d->bytes_unread == 0)
-	{
-	    /* Get the length of the next record. A zero-length record
-	     * denotes "end of data".
-	     */
-	    if ( !(gifhandle->filebufbytes--) && !LoadGIF_FillBuf(gifhandle, 1) )
-	    {
-		D(bug("gif.datatype/read_code() --- buffer underrun 1\n"));
-		return -2;
-	    }
-	    d->bytes_unread = *(gifhandle->filebufpos)++;
+        if (d->bytes_unread == 0)
+        {
+            /* Get the length of the next record. A zero-length record
+             * denotes "end of data".
+             */
+            if ( !(gifhandle->filebufbytes--) && !LoadGIF_FillBuf(gifhandle, 1) )
+            {
+                D(bug("gif.datatype/read_code() --- buffer underrun 1\n"));
+                return -2;
+            }
+            d->bytes_unread = *(gifhandle->filebufpos)++;
 //          D(bug("gif --- end of record, new len %ld, bytes %ld\n", (long)(d->bytes_unread), (long)(gifhandle->filebufbytes)));
-	    if (d->bytes_unread == 0)   /* end of data */
-		return -1;
-	}
-	if ( !(gifhandle->filebufbytes--) && !LoadGIF_FillBuf(gifhandle, 1) )
-	{
-	    D(bug("gif.datatype/read_code() --- buffer underrun 2\n"));
-	    return -3;
-	}
-	byte = *(gifhandle->filebufpos)++;
-	d->bytes_unread--;
-	bytes++;
+            if (d->bytes_unread == 0)   /* end of data */
+                return -1;
+        }
+        if ( !(gifhandle->filebufbytes--) && !LoadGIF_FillBuf(gifhandle, 1) )
+        {
+            D(bug("gif.datatype/read_code() --- buffer underrun 2\n"));
+            return -3;
+        }
+        byte = *(gifhandle->filebufpos)++;
+        d->bytes_unread--;
+        bytes++;
 
-	temp |= byte << temp_bits;
-	temp_bits += 8;
+        temp |= byte << temp_bits;
+        temp_bits += 8;
     }
 
     ret = temp & mask[d->code_size - 1];
@@ -122,13 +122,13 @@ short DecodeInit(GifHandleType *gifhandle)
     /* Get the minimum code size (2 to 8) */
     if ( !(gifhandle->filebufbytes--) && !LoadGIF_FillBuf(gifhandle, 1) )
     {
-	D(bug("gif.datatype/DecodeInit() --- buffer underrun\n"));
-	return -4;
+        D(bug("gif.datatype/DecodeInit() --- buffer underrun\n"));
+        return -4;
     }
     d->min_code_size = *(gifhandle->filebufpos)++;
 
     if (d->min_code_size < 2 || d->min_code_size > 8)
-	return -3;
+        return -3;
 
     init_table(d);
     d->old_temp = 0;
@@ -146,17 +146,17 @@ short DecodeLines(GifHandleType *gifhandle)
     
     while ((code = read_code(gifhandle, d)) != d->eof_code)
     {
-	if (code < 0) return code;
-	if (code != d->clear_code)
-	{
-	    if ( !(gifhandle->linebufbytes--) )
-	    {
-		D(bug("gif.datatype/DecodeLines() --- line buffer full\n"));
-		return -5;
-	    }
-	    *(gifhandle->linebufpos)++ = (UBYTE)(code);
+        if (code < 0) return code;
+        if (code != d->clear_code)
+        {
+            if ( !(gifhandle->linebufbytes--) )
+            {
+                D(bug("gif.datatype/DecodeLines() --- line buffer full\n"));
+                return -5;
+            }
+            *(gifhandle->linebufpos)++ = (UBYTE)(code);
 //          D(bug("gif -- pixel x%lx\n", (long)(code)));
-	}
+        }
     }
     return TRUE;
 }
@@ -184,21 +184,21 @@ static short write_code(GifHandleType *gifhandle, struct codecvars *d, short cod
     byte = 0;
     while (temp_bits >= 8)
     {
-	if ( !d->bytes_unread-- )
-	{
+        if ( !d->bytes_unread-- )
+        {
 //          D(bug("gif --- end of record, bytes %ld, %ld\n", (long)(gifhandle->filebufsize-gifhandle->filebufbytes), (long)(gifhandle->filebufpos-gifhandle->filebuf)));
-	    if ( (gifhandle->filebufbytes -= (BLOCKLEN+1)) < 0 && !SaveGIF_EmptyBuf(gifhandle, (BLOCKLEN+1)) )
-	    {
-		return -2;
-	    }
-	    d->block_start = gifhandle->filebufpos;
-	    *(gifhandle->filebufpos)++ = BLOCKLEN;
-	    d->bytes_unread = BLOCKLEN - 1;
-	}
-	*(gifhandle->filebufpos)++ = temp & 0xff;
-	temp = temp >> 8;
-	temp_bits -= 8;
-	bytes++;
+            if ( (gifhandle->filebufbytes -= (BLOCKLEN+1)) < 0 && !SaveGIF_EmptyBuf(gifhandle, (BLOCKLEN+1)) )
+            {
+                return -2;
+            }
+            d->block_start = gifhandle->filebufpos;
+            *(gifhandle->filebufpos)++ = BLOCKLEN;
+            d->bytes_unread = BLOCKLEN - 1;
+        }
+        *(gifhandle->filebufpos)++ = temp & 0xff;
+        temp = temp >> 8;
+        temp_bits -= 8;
+        bytes++;
     }
     
 //  D(bug("gif --- bytes %d, byte x%x, bits %d->%d, csiz %d, temp x%lx->x%lx, ret x%x\n", bytes, byte, d->old_bits, temp_bits, d->code_size, d->old_temp, temp, ret));
@@ -220,11 +220,11 @@ short EncodeInit(GifHandleType *gifhandle, short numplanes)
     /* Write the minimum code size (2 to 8) */
     d->min_code_size = numplanes;
     if ( numplanes == 1 )
-	d->min_code_size = 2;
+        d->min_code_size = 2;
     if ( !(gifhandle->filebufbytes--) && !SaveGIF_EmptyBuf(gifhandle, 1) )
     {
-	D(bug("gif.datatype/DecompressInit() --- buffer overrun\n"));
-	return -4;
+        D(bug("gif.datatype/DecompressInit() --- buffer overrun\n"));
+        return -4;
     }
     *(gifhandle->filebufpos)++ = d->min_code_size;
 
@@ -245,12 +245,12 @@ short EncodeLines(GifHandleType *gifhandle)
     clear_count = 0;
     while (gifhandle->linebufbytes--)
     {
-	if ( !clear_count-- )
-	{
-	    clear_count = d->max_clear_count;
-	    write_code (gifhandle, d, d->clear_code);
-	}
-	write_code (gifhandle, d, *(gifhandle->linebufpos)++);
+        if ( !clear_count-- )
+        {
+            clear_count = d->max_clear_count;
+            write_code (gifhandle, d, d->clear_code);
+        }
+        write_code (gifhandle, d, *(gifhandle->linebufpos)++);
     }
     return TRUE;
 }
@@ -263,15 +263,15 @@ short EncodeEnd(GifHandleType *gifhandle)
     write_code (gifhandle, d, d->eof_code);
     if ( d->old_bits )
     {
-	d->code_size = 8 - d->old_bits;
-	write_code (gifhandle, d, 0);   /* flush remaining bits */
+        d->code_size = 8 - d->old_bits;
+        write_code (gifhandle, d, 0);   /* flush remaining bits */
     }
     *(d->block_start) = BLOCKLEN - d->bytes_unread; /* correct last block length... */
     gifhandle->filebufbytes += d->bytes_unread; /* and number of bytes to write */
     D(bug("gif --- end, bytes %ld, %ld, ubytes %ld\n", (long)(gifhandle->filebufsize-gifhandle->filebufbytes), (long)(gifhandle->filebufpos-gifhandle->filebuf), (long)(BLOCKLEN - d->bytes_unread)));
     if ( !gifhandle->filebufbytes-- && !SaveGIF_EmptyBuf(gifhandle, 1) )
     {
-	return FALSE;
+        return FALSE;
     }
     *(gifhandle->filebufpos)++ = 0; /* zero block length as termination */
     return TRUE;

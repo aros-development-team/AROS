@@ -77,9 +77,9 @@
                         "NEGATIVE/K,ACCEPTPATTERN/K,REJECTPATTERN/K," \
                         "SAVEMODE/S,MULTISELECT/S,DRAWERSONLY/S," \
                         "NOICONS/S,PUBSCREEN/K,INITIALVOLUMES/S"
-			
+                        
 #define MAX_PATH_LEN    512
-			
+                        
 
 enum { ARG_DRAWER = 0, ARG_FILE, ARG_PATTERN, ARG_TITLE, ARG_POSITIVE,
        ARG_NEGATIVE, ARG_ACCEPTPAT, ARG_REJECTPAT, ARG_SAVEMODE,
@@ -119,9 +119,9 @@ int main(void)
     struct FileRequester *FileReq;
     struct WBArg         *WBFiles;
     IPTR                 *args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL,
-					       NULL, NULL, NULL, NULL,
-					       NULL, NULL, NULL, NULL,
-					       NULL, NULL };
+                                               NULL, NULL, NULL, NULL,
+                                               NULL, NULL, NULL, NULL,
+                                               NULL, NULL };
     int                   Return_Value = RETURN_OK;
     char                 *Buffer;
     BOOL                  Success;
@@ -147,23 +147,23 @@ int main(void)
             FileTags[ARG_NOICONS].ti_Data       = (IPTR)args[ARG_NOICONS];
             FileTags[ARG_PUBSCREEN].ti_Data     = (IPTR)args[ARG_PUBSCREEN];
             FileTags[ARG_PUBSCREEN + 1].ti_Data = args[ARG_PATTERN] != NULL;
-	    if (!args[ARG_INITIALVOLUMES])
-	    {
-		FileTags[ARG_INITIALVOLUMES + 1].ti_Tag = TAG_IGNORE;
-	    }
+            if (!args[ARG_INITIALVOLUMES])
+            {
+                FileTags[ARG_INITIALVOLUMES + 1].ti_Tag = TAG_IGNORE;
+            }
 
             FileReq = (struct FileRequester *)AllocAslRequest(ASL_FileRequest,
                 FileTags);
             if(FileReq != NULL)
             {
-                Success = AslRequest(FileReq, NULL); 
+                Success = AslRequest(FileReq, NULL);
 
                 if(Success != FALSE)
                 {
                     if(!(IPTR)args[ARG_MULTISELECT])
                     {
-			strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
-			
+                        strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
+                        
                         /* FileReq->fr_File is NULL when using DRAWERSONLY */
                         Success = AddPart(Buffer,
                                           FileReq->fr_File ? FileReq->fr_File : (STRPTR)"",
@@ -177,10 +177,10 @@ int main(void)
                     else
                     {
                         WBFiles = FileReq->fr_ArgList;
-			
-                	for (i = 0; i != FileReq->fr_NumArgs; i++)
-                	{
-			    strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
+                        
+                        for (i = 0; i != FileReq->fr_NumArgs; i++)
+                        {
+                            strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
 
                             Success = AddPart(Buffer,
                                               WBFiles[i].wa_Name,
@@ -190,8 +190,8 @@ int main(void)
                             {
                                 Printf("\"%s\" ", Buffer);
                             }
-                        }    
-			
+                        }
+                        
                         PutStr("\n");
                     }
                 }
@@ -202,40 +202,40 @@ int main(void)
                         /* We cancelled it!!
                          */
                         Return_Value = RETURN_WARN;
-			
+                        
                         SetIoErr(ERROR_BREAK);
                     }
                     else
                     {
-			PrintFault(IoErr(), NULL);
+                        PrintFault(IoErr(), NULL);
                         Return_Value = RETURN_FAIL;
                     }
                 }
-		
+                
                 FreeAslRequest((struct FileRequester *)FileReq);
             }
             else
             {
                 PrintFault(IoErr(), "RequestFile");
-		Return_Value = RETURN_ERROR;
+                Return_Value = RETURN_ERROR;
             }
-	    
+            
             FreeArgs(rda);
         }
         else
         {
             PrintFault(IoErr(), "RequestFile");
-	    Return_Value = RETURN_ERROR;
+            Return_Value = RETURN_ERROR;
         }
-	
+        
         FreeVec((APTR)FileTags[ARG_ACCEPTPAT].ti_Data);
         FreeVec((APTR)FileTags[ARG_REJECTPAT].ti_Data);
         FreeVec(Buffer);
     }
     else
     {
-	PrintFault(IoErr(), NULL);
-	Return_Value = RETURN_FAIL;
+        PrintFault(IoErr(), NULL);
+        Return_Value = RETURN_FAIL;
     }
     
     return Return_Value;

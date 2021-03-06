@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. 
+    Copyright (C) 2002-2020, The AROS Development Team.
     All rights reserved.
     
 
@@ -26,8 +26,8 @@ LONG ReturnError2(void)
 
 #define VERSION   1
 #define REVISION  0
-#define DATETXT	  "27.06.2003"
-#define VERSTXT	  "1.0"
+#define DATETXT   "27.06.2003"
+#define VERSTXT   "1.0"
 
 #define LIBNAME  "zunemaster.library"
 #define IDSTRING "zunemaster.library " VERSTXT " (" DATETXT ")\r\n"
@@ -53,22 +53,22 @@ LONG ReturnError(void)
 
 __asm void MUI_Priv1(register __a6 struct Library *MUIMasterBase)
 {
-	D(bug("MUI_Priv1() called"));
+        D(bug("MUI_Priv1() called"));
 }
 
 __asm void MUI_Priv2(register __a6 struct Library *MUIMasterBase)
 {
-	D(bug("MUI_Priv2() called"));
+        D(bug("MUI_Priv2() called"));
 }
 
 __asm void MUI_Priv3(register __a6 struct Library *MUIMasterBase)
 {
-	D(bug("MUI_Priv3() called"));
+        D(bug("MUI_Priv3() called"));
 }
 
 __asm void MUI_Priv4(register __a6 struct Library *MUIMasterBase)
 {
-	D(bug("MUI_Priv4() called"));
+        D(bug("MUI_Priv4() called"));
 }
 
 /************************************************************************/
@@ -83,9 +83,9 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
 /************************************************************************/
 
 struct LibInitData {
- UBYTE i_Type;     UBYTE o_Type;     UBYTE  d_Type;	UBYTE p_Type;
+ UBYTE i_Type;     UBYTE o_Type;     UBYTE  d_Type;     UBYTE p_Type;
  UBYTE i_Name;     UBYTE o_Name;     STRPTR d_Name;
- UBYTE i_Flags;    UBYTE o_Flags;    UBYTE  d_Flags;	UBYTE p_Flags;
+ UBYTE i_Flags;    UBYTE o_Flags;    UBYTE  d_Flags;    UBYTE p_Flags;
  UBYTE i_Version;  UBYTE o_Version;  UWORD  d_Version;
  UBYTE i_Revision; UBYTE o_Revision; UWORD  d_Revision;
  UBYTE i_IdString; UBYTE o_IdString; STRPTR d_IdString;
@@ -194,7 +194,7 @@ ASM struct Library *LibInit(REG(a0, SEGLISTPTR seglist), REG(d0, struct MUIMaste
   /* Fill some globals */
 //  MUIMasterBase = (struct Library *)mb;
   mb->sysbase = sysbase;
-	SysBase = sysbase;
+        SysBase = sysbase;
 
   D(bug("Librarybase at 0x%p\n",mb));
 
@@ -259,7 +259,7 @@ static const struct LibInitData LibInitData = {
  0x90, 22, REVISION,
  0x80, 24, IDSTRING,
 #else
- 0xA0, (UBYTE) OFFSET(Node,    ln_Type),      NT_LIBRARY,		 0,
+ 0xA0, (UBYTE) OFFSET(Node,    ln_Type),      NT_LIBRARY,                0,
  0x80, (UBYTE) OFFSET(Node,    ln_Name),      LIBNAME,
  0xA0, (UBYTE) OFFSET(Library, lib_Flags),    LIBF_SUMUSED|LIBF_CHANGED, 0,
  0x90, (UBYTE) OFFSET(Library, lib_Version),  VERSION,

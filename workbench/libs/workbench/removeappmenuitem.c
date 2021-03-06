@@ -55,7 +55,7 @@
 
     if (appMenuItem == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
 
     LockWorkbench();

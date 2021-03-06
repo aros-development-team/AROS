@@ -176,7 +176,7 @@ static int DevClose(struct IOAudio *MyIORequest, LIBBASETYPEPTR MyDevBase)
 
     //WaitPort(MyIOreuest->ioa_Request.io_Message->mn_ReplyPort);
 
-    //MyIORequest->ioa_Request.io_Flags   = 0;								// I try the waiting method.
+    //MyIORequest->ioa_Request.io_Flags   = 0;                                                          // I try the waiting method.
     //DoIO(&MyIORequest->ioa_Request);
     //BeginIO(&MyIORequest->ioa_Request);
     //WaitIO(&MyIORequest->ioa_Request);
@@ -242,7 +242,7 @@ static int GM_UNIQUENAME( Open)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // 24.9	This a well know piece of code still valid.
+    // 24.9     This a well know piece of code still valid.
     //
     audioio->ioa_Request.io_Device = (struct Device*) AudioDevice;
 
@@ -256,13 +256,13 @@ static int GM_UNIQUENAME( Open)
             oldcmd = audioio->ioa_Request.io_Command;
             audioio->ioa_Request.io_Command = ADCMD_ALLOCATE;
             audioio->ioa_Request.io_Flags = (IOF_QUICK | ADIOF_NOWAIT);
-            //MyIORequest->ioa_Request.io_Flags   = 0;							// add.
+            //MyIORequest->ioa_Request.io_Flags   = 0;                                                  // add.
             BeginIO(&audioio->ioa_Request); // add
             WaitIO(&audioio->ioa_Request); // add
 
             D(bug("NEWD: ADCMD_ALLOCATE after the well know situation\n"));
 
-            //DoIO(&MyIORequest->ioa_Request);											// prev
+            //DoIO(&MyIORequest->ioa_Request);                                                                                  // prev
             audioio->ioa_Request.io_Flags = tflags;
             audioio->ioa_Request.io_Command = oldcmd;
         }

@@ -35,18 +35,18 @@
 
 #ifdef DEBUG_POINTER
 
-#define PRINT_POINTER(image, xsize, xmax, ymax)		\
-bug("[GMA] Pointer data:\n");				\
-{							\
-    ULONG *pix = (ULONG *)image;			\
-    ULONG x, y;						\
-							\
-    for (y = 0; y < ymax; y++) {			\
-        for (x = 0; x < xmax; x++)			\
-	    bug("0x%08X ", pix[x]);			\
-	bug("\n");					\
-	pix += xsize;					\
-    }							\
+#define PRINT_POINTER(image, xsize, xmax, ymax)         \
+bug("[GMA] Pointer data:\n");                           \
+{                                                       \
+    ULONG *pix = (ULONG *)image;                        \
+    ULONG x, y;                                         \
+                                                        \
+    for (y = 0; y < ymax; y++) {                        \
+        for (x = 0; x < xmax; x++)                      \
+            bug("0x%08X ", pix[x]);                     \
+        bug("\n");                                      \
+        pix += xsize;                                   \
+    }                                                   \
 }
 
 #else
@@ -66,17 +66,17 @@ bug("[GMA] Pointer data:\n");				\
 #define CLOCK_STEP 250000 /* Hz */
 
 typedef struct {
-	uint16_t width;
-	uint16_t height;
+        uint16_t width;
+        uint16_t height;
 
-	uint16_t hstart;
-	uint16_t hend;
-	uint16_t htotal;
-	uint16_t vstart;
-	uint16_t vend;
-	uint16_t vtotal;
+        uint16_t hstart;
+        uint16_t hend;
+        uint16_t htotal;
+        uint16_t vstart;
+        uint16_t vend;
+        uint16_t vtotal;
 
-	uint32_t pixel;
+        uint32_t pixel;
 } sync_t;
 
 /* Partial implementation of CVT formula */
@@ -154,7 +154,7 @@ void calcTimings(int x, int y, int vfreq, sync_t *sync)
     sync->pixel = pixel_freq;
 }
 
-#define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
+#define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)   \
     struct TagItem sync_ ## name[]={ \
         { aHidd_Sync_PixelClock,  clock*1000 }, \
         { aHidd_Sync_HDisp,       hdisp }, \
@@ -172,219 +172,219 @@ void calcTimings(int x, int y, int vfreq, sync_t *sync)
 
 void createSync(OOP_Class *cl, int x, int y, int refresh, struct TagItem **tagsptr, struct TagItem **poolptr)
 {
-	sync_t sync;
-	char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
-	snprintf(description, MAX_MODE_NAME_LEN, "GMA: %dx%d@%d", x, y, refresh);
-	calcTimings(x, y, refresh, &sync);
+        sync_t sync;
+        char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
+        snprintf(description, MAX_MODE_NAME_LEN, "GMA: %dx%d@%d", x, y, refresh);
+        calcTimings(x, y, refresh, &sync);
 
-	D(bug("[GMA]  %s %d  %d %d %d %d  %d %d %d %d  -HSync +VSync\n", description+5,
-			sync.pixel / 1000, sync.width, sync.hstart, sync.hend, sync.htotal,
-			sync.height, sync.vstart, sync.vend, sync.vtotal));
+        D(bug("[GMA]  %s %d  %d %d %d %d  %d %d %d %d  -HSync +VSync\n", description+5,
+                        sync.pixel / 1000, sync.width, sync.hstart, sync.hend, sync.htotal,
+                        sync.height, sync.vstart, sync.vend, sync.vtotal));
 
-	PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, *poolptr);
+        PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, *poolptr);
 
-	PUSH_TAG(poolptr, aHidd_Sync_Description, description);
-	PUSH_TAG(poolptr, aHidd_Sync_PixelClock, sync.pixel);
+        PUSH_TAG(poolptr, aHidd_Sync_Description, description);
+        PUSH_TAG(poolptr, aHidd_Sync_PixelClock, sync.pixel);
 
-	PUSH_TAG(poolptr, aHidd_Sync_HDisp, sync.width);
-	PUSH_TAG(poolptr, aHidd_Sync_HSyncStart, sync.hstart);
-	PUSH_TAG(poolptr, aHidd_Sync_HSyncEnd, sync.hend);
-	PUSH_TAG(poolptr, aHidd_Sync_HTotal, sync.htotal);
+        PUSH_TAG(poolptr, aHidd_Sync_HDisp, sync.width);
+        PUSH_TAG(poolptr, aHidd_Sync_HSyncStart, sync.hstart);
+        PUSH_TAG(poolptr, aHidd_Sync_HSyncEnd, sync.hend);
+        PUSH_TAG(poolptr, aHidd_Sync_HTotal, sync.htotal);
 
-	PUSH_TAG(poolptr, aHidd_Sync_VDisp, sync.height);
-	PUSH_TAG(poolptr, aHidd_Sync_VSyncStart, sync.vstart);
-	PUSH_TAG(poolptr, aHidd_Sync_VSyncEnd, sync.vend);
-	PUSH_TAG(poolptr, aHidd_Sync_VTotal, sync.vtotal);
+        PUSH_TAG(poolptr, aHidd_Sync_VDisp, sync.height);
+        PUSH_TAG(poolptr, aHidd_Sync_VSyncStart, sync.vstart);
+        PUSH_TAG(poolptr, aHidd_Sync_VSyncEnd, sync.vend);
+        PUSH_TAG(poolptr, aHidd_Sync_VTotal, sync.vtotal);
 
-	PUSH_TAG(poolptr, aHidd_Sync_VMin, sync.height);
-	PUSH_TAG(poolptr, aHidd_Sync_VMax, 4096);
-	PUSH_TAG(poolptr, aHidd_Sync_HMin, sync.width);
-	PUSH_TAG(poolptr, aHidd_Sync_HMax,  4096);
-		
-	PUSH_TAG(poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
-	PUSH_TAG(poolptr, TAG_DONE, 0);
+        PUSH_TAG(poolptr, aHidd_Sync_VMin, sync.height);
+        PUSH_TAG(poolptr, aHidd_Sync_VMax, 4096);
+        PUSH_TAG(poolptr, aHidd_Sync_HMin, sync.width);
+        PUSH_TAG(poolptr, aHidd_Sync_HMax,  4096);
+                
+        PUSH_TAG(poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
+        PUSH_TAG(poolptr, TAG_DONE, 0);
 }
 
 static VOID G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr,
     struct TagItem *poolptr, OOP_Object *obj)
 {
-	struct pHidd_I2CDevice_WriteRead msg;
-	uint8_t edid[128];
-	char wb[2] = {0, 0};
-	int i;
-	uint8_t chksum = 0;
-	char *description;
+        struct pHidd_I2CDevice_WriteRead msg;
+        uint8_t edid[128];
+        char wb[2] = {0, 0};
+        int i;
+        uint8_t chksum = 0;
+        char *description;
 
-	D(bug("[GMA] Trying to parse the DDC data\n"));
+        D(bug("[GMA] Trying to parse the DDC data\n"));
 
-	msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_WriteRead);
-	msg.readBuffer = &edid[0];
-	msg.readLength = 128;
-	msg.writeBuffer = &wb[0];
-	msg.writeLength = 1;
+        msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_WriteRead);
+        msg.readBuffer = &edid[0];
+        msg.readLength = 128;
+        msg.writeBuffer = &wb[0];
+        msg.writeLength = 1;
 
-	OOP_DoMethod(obj, &msg.mID);
+        OOP_DoMethod(obj, &msg.mID);
 
-	for (i=0; i < 128; i++)
-		chksum += edid[i];
+        for (i=0; i < 128; i++)
+                chksum += edid[i];
 
-	if (chksum == 0 &&
-			edid[0] == 0 && edid[1] == 0xff && edid[2] == 0xff && edid[3] == 0xff &&
-			edid[4] == 0xff && edid[5] == 0xff && edid[6] == 0xff && edid[7] == 0)
-	{
-		D(bug("[GMA] Valid EDID%d.%d header\n", edid[18], edid[19]));
+        if (chksum == 0 &&
+                        edid[0] == 0 && edid[1] == 0xff && edid[2] == 0xff && edid[3] == 0xff &&
+                        edid[4] == 0xff && edid[5] == 0xff && edid[6] == 0xff && edid[7] == 0)
+        {
+                D(bug("[GMA] Valid EDID%d.%d header\n", edid[18], edid[19]));
 
-		D(bug("[GMA] Established timing: %02x %02x %02x\n", edid[35], edid[36], edid[37]));
-		if (edid[35] & 0x80)
-			createSync(cl, 720, 400, 70, tagsptr, &poolptr);
-		if (edid[35] & 0x40)
-			createSync(cl, 720, 400, 88, tagsptr, &poolptr);
-		if (edid[35] & 0x20)
-			createSync(cl, 640, 480, 60, tagsptr, &poolptr);
-		if (edid[35] & 0x10)
-			createSync(cl, 640, 480, 67, tagsptr, &poolptr);
-		if (edid[35] & 0x08)
-			createSync(cl, 640, 480, 72, tagsptr, &poolptr);
-		if (edid[35] & 0x04)
-			createSync(cl, 640, 480, 75, tagsptr, &poolptr);
-		if (edid[35] & 0x02)
-			createSync(cl, 800, 600, 56, tagsptr, &poolptr);
-		if (edid[35] & 0x01)
-			createSync(cl, 800, 600, 60, tagsptr, &poolptr);
-		if (edid[36] & 0x80)
-			createSync(cl, 800, 600, 72, tagsptr, &poolptr);
-		if (edid[36] & 0x40)
-			createSync(cl, 800, 600, 75, tagsptr, &poolptr);
-		if (edid[36] & 0x20)
-			createSync(cl, 832, 624, 75, tagsptr, &poolptr);
-		if (edid[36] & 0x08)
-			createSync(cl, 1024, 768, 60, tagsptr, &poolptr);
-		if (edid[36] & 0x04)
-			createSync(cl, 1024, 768, 70, tagsptr, &poolptr);
-		if (edid[36] & 0x02)
-			createSync(cl, 1024, 768, 75, tagsptr, &poolptr);
-		if (edid[36] & 0x01)
-			createSync(cl, 1280, 1024, 75, tagsptr, &poolptr);
+                D(bug("[GMA] Established timing: %02x %02x %02x\n", edid[35], edid[36], edid[37]));
+                if (edid[35] & 0x80)
+                        createSync(cl, 720, 400, 70, tagsptr, &poolptr);
+                if (edid[35] & 0x40)
+                        createSync(cl, 720, 400, 88, tagsptr, &poolptr);
+                if (edid[35] & 0x20)
+                        createSync(cl, 640, 480, 60, tagsptr, &poolptr);
+                if (edid[35] & 0x10)
+                        createSync(cl, 640, 480, 67, tagsptr, &poolptr);
+                if (edid[35] & 0x08)
+                        createSync(cl, 640, 480, 72, tagsptr, &poolptr);
+                if (edid[35] & 0x04)
+                        createSync(cl, 640, 480, 75, tagsptr, &poolptr);
+                if (edid[35] & 0x02)
+                        createSync(cl, 800, 600, 56, tagsptr, &poolptr);
+                if (edid[35] & 0x01)
+                        createSync(cl, 800, 600, 60, tagsptr, &poolptr);
+                if (edid[36] & 0x80)
+                        createSync(cl, 800, 600, 72, tagsptr, &poolptr);
+                if (edid[36] & 0x40)
+                        createSync(cl, 800, 600, 75, tagsptr, &poolptr);
+                if (edid[36] & 0x20)
+                        createSync(cl, 832, 624, 75, tagsptr, &poolptr);
+                if (edid[36] & 0x08)
+                        createSync(cl, 1024, 768, 60, tagsptr, &poolptr);
+                if (edid[36] & 0x04)
+                        createSync(cl, 1024, 768, 70, tagsptr, &poolptr);
+                if (edid[36] & 0x02)
+                        createSync(cl, 1024, 768, 75, tagsptr, &poolptr);
+                if (edid[36] & 0x01)
+                        createSync(cl, 1280, 1024, 75, tagsptr, &poolptr);
 
-		//createSync(cl, 736, 566, 60, tagsptr, &poolptr);
+                //createSync(cl, 736, 566, 60, tagsptr, &poolptr);
 
-		D(bug("[GMA] Standard timing identification:\n"));
+                D(bug("[GMA] Standard timing identification:\n"));
 
-		for (i=38; i < 54; i+=2)
-		{
-			int w, h = 0, freq;
-			w = edid[i] * 8 + 248;
-			if (w > 400)
-			{
-				freq = (edid[i+1] & 0x3f) + 60;
-				switch (edid[i+1] >> 6)
-				{
-				case 0: /* 16:10 */
-					h = (w * 10) / 16;
-					break;
-				case 1: /* 4:3 */
-					h = (w * 3) / 4;
-					break;
-				case 2: /* 5:4 */
-					h = (w * 4) / 5;
-					break;
-				case 3: /* 16:9 */
-					h = (w * 9) / 16;
-					break;
-				}
-				createSync(cl, w, h, freq, tagsptr, &poolptr);
-			}
-		}
+                for (i=38; i < 54; i+=2)
+                {
+                        int w, h = 0, freq;
+                        w = edid[i] * 8 + 248;
+                        if (w > 400)
+                        {
+                                freq = (edid[i+1] & 0x3f) + 60;
+                                switch (edid[i+1] >> 6)
+                                {
+                                case 0: /* 16:10 */
+                                        h = (w * 10) / 16;
+                                        break;
+                                case 1: /* 4:3 */
+                                        h = (w * 3) / 4;
+                                        break;
+                                case 2: /* 5:4 */
+                                        h = (w * 4) / 5;
+                                        break;
+                                case 3: /* 16:9 */
+                                        h = (w * 9) / 16;
+                                        break;
+                                }
+                                createSync(cl, w, h, freq, tagsptr, &poolptr);
+                        }
+                }
 
-		for (i=54; i < 126; i+= 18)
-		{
-			if (edid[i] || edid[i+1])
-			{
-				int ha, hb, va, vb, hsync_o, hsync_w, vsync_o, vsync_w, pixel;
-				ha = edid[i+2];
-				hb = edid[i+3];
-				ha |= (edid[i+4] >> 4) << 8;
-				hb |= (edid[i+4] & 0x0f) << 8;
-				va = edid[i+5];
-				vb = edid[i+6];
-				va |= (edid[i+7] >> 4) << 8;
-				vb |= (edid[i+7] & 0x0f) << 8;
-				hsync_o = edid[i+8];
-				hsync_w = edid[i+9];
-				vsync_o = edid[i+10] >> 4;
-				vsync_w = edid[i+10] & 0x0f;
-				hsync_o |= 0x300 & ((edid[i+11] >> 6) << 8);
-				hsync_w |= 0x300 & ((edid[i+11] >> 4) << 8);
-				vsync_o |= 0x30 & ((edid[i+11] >> 2) << 4);
-				vsync_w |= 0x30 & ((edid[i+11]) << 4);
+                for (i=54; i < 126; i+= 18)
+                {
+                        if (edid[i] || edid[i+1])
+                        {
+                                int ha, hb, va, vb, hsync_o, hsync_w, vsync_o, vsync_w, pixel;
+                                ha = edid[i+2];
+                                hb = edid[i+3];
+                                ha |= (edid[i+4] >> 4) << 8;
+                                hb |= (edid[i+4] & 0x0f) << 8;
+                                va = edid[i+5];
+                                vb = edid[i+6];
+                                va |= (edid[i+7] >> 4) << 8;
+                                vb |= (edid[i+7] & 0x0f) << 8;
+                                hsync_o = edid[i+8];
+                                hsync_w = edid[i+9];
+                                vsync_o = edid[i+10] >> 4;
+                                vsync_w = edid[i+10] & 0x0f;
+                                hsync_o |= 0x300 & ((edid[i+11] >> 6) << 8);
+                                hsync_w |= 0x300 & ((edid[i+11] >> 4) << 8);
+                                vsync_o |= 0x30 & ((edid[i+11] >> 2) << 4);
+                                vsync_w |= 0x30 & ((edid[i+11]) << 4);
 
-				pixel = (edid[i] | (edid[i+1] << 8));
+                                pixel = (edid[i] | (edid[i+1] << 8));
 
-				D(bug("[GMA] Modeline: "));
-				D(bug("%dx%d Pixel: %d0 kHz %d %d %d %d   %d %d %d %d\n", ha, va, pixel,
-						ha, hb, hsync_o, hsync_w,
-						va, vb, vsync_o, vsync_w));
+                                D(bug("[GMA] Modeline: "));
+                                D(bug("%dx%d Pixel: %d0 kHz %d %d %d %d   %d %d %d %d\n", ha, va, pixel,
+                                                ha, hb, hsync_o, hsync_w,
+                                                va, vb, vsync_o, vsync_w));
 
-				description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
-				snprintf(description, MAX_MODE_NAME_LEN, "GMA: %dx%d@%d N",
-					ha, va, (int)(((pixel * 10 / (uint32_t)(ha + hb)) * 1000)
-					/ ((uint32_t)(va + vb))));
+                                description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
+                                snprintf(description, MAX_MODE_NAME_LEN, "GMA: %dx%d@%d N",
+                                        ha, va, (int)(((pixel * 10 / (uint32_t)(ha + hb)) * 1000)
+                                        / ((uint32_t)(va + vb))));
 
-				PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, poolptr);
+                                PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, poolptr);
 
-				PUSH_TAG(&poolptr, aHidd_Sync_Description, description);
-				PUSH_TAG(&poolptr, aHidd_Sync_PixelClock, pixel*10000);
+                                PUSH_TAG(&poolptr, aHidd_Sync_Description, description);
+                                PUSH_TAG(&poolptr, aHidd_Sync_PixelClock, pixel*10000);
 
-				PUSH_TAG(&poolptr, aHidd_Sync_HDisp, ha);
-				PUSH_TAG(&poolptr, aHidd_Sync_HSyncStart, ha+hsync_o);
-				PUSH_TAG(&poolptr, aHidd_Sync_HSyncEnd, ha+hsync_o+hsync_w);
-				PUSH_TAG(&poolptr, aHidd_Sync_HTotal, ha+hb);
+                                PUSH_TAG(&poolptr, aHidd_Sync_HDisp, ha);
+                                PUSH_TAG(&poolptr, aHidd_Sync_HSyncStart, ha+hsync_o);
+                                PUSH_TAG(&poolptr, aHidd_Sync_HSyncEnd, ha+hsync_o+hsync_w);
+                                PUSH_TAG(&poolptr, aHidd_Sync_HTotal, ha+hb);
 
-				PUSH_TAG(&poolptr, aHidd_Sync_VDisp, va);
-				PUSH_TAG(&poolptr, aHidd_Sync_VSyncStart, va+vsync_o);
-				PUSH_TAG(&poolptr, aHidd_Sync_VSyncEnd, va+vsync_o+vsync_w);
-				PUSH_TAG(&poolptr, aHidd_Sync_VTotal, va+vb);
+                                PUSH_TAG(&poolptr, aHidd_Sync_VDisp, va);
+                                PUSH_TAG(&poolptr, aHidd_Sync_VSyncStart, va+vsync_o);
+                                PUSH_TAG(&poolptr, aHidd_Sync_VSyncEnd, va+vsync_o+vsync_w);
+                                PUSH_TAG(&poolptr, aHidd_Sync_VTotal, va+vb);
 
-				PUSH_TAG(&poolptr, aHidd_Sync_VMin, va);
-				PUSH_TAG(&poolptr, aHidd_Sync_VMax, 4096);
-				PUSH_TAG(&poolptr, aHidd_Sync_HMin, ha);
-				PUSH_TAG(&poolptr, aHidd_Sync_HMax,  4096);
+                                PUSH_TAG(&poolptr, aHidd_Sync_VMin, va);
+                                PUSH_TAG(&poolptr, aHidd_Sync_VMax, 4096);
+                                PUSH_TAG(&poolptr, aHidd_Sync_HMin, ha);
+                                PUSH_TAG(&poolptr, aHidd_Sync_HMax,  4096);
 
-				PUSH_TAG(&poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
-				PUSH_TAG(&poolptr, TAG_DONE, 0);
+                                PUSH_TAG(&poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
+                                PUSH_TAG(&poolptr, TAG_DONE, 0);
 
-			}
-			else
-			{
-				switch (edid[i+3])
-				{
-				case 0xff:
-					D(bug("[GMA] Monitor Serial: %s\n", &edid[i+5]));
-					break;
-				case 0xfe:
-					D(bug("[GMA] ASCII String: %s\n", &edid[i+5]));
-					break;
-				case 0xfc:
-					D(bug("[GMA] Monitor Name: %s\n", &edid[i+5]));
-					break;
-				case 0xfd:
-					if (edid[i+10] == 0 && edid[i+11] == 0x0a)
-					{
-						D(bug("[GMA] Monitor limits: H: %d - %d kHz, V: %d - %d Hz, PixelClock: %dMHz\n",
-								edid[i+7], edid[i+8], edid[i+5], edid[i+6], edid[i+9]*10));
-					}
-					break;
-				default:
-					D(bug("[GMA] Entry %02x\n", edid[i+3]));
+                        }
+                        else
+                        {
+                                switch (edid[i+3])
+                                {
+                                case 0xff:
+                                        D(bug("[GMA] Monitor Serial: %s\n", &edid[i+5]));
+                                        break;
+                                case 0xfe:
+                                        D(bug("[GMA] ASCII String: %s\n", &edid[i+5]));
+                                        break;
+                                case 0xfc:
+                                        D(bug("[GMA] Monitor Name: %s\n", &edid[i+5]));
+                                        break;
+                                case 0xfd:
+                                        if (edid[i+10] == 0 && edid[i+11] == 0x0a)
+                                        {
+                                                D(bug("[GMA] Monitor limits: H: %d - %d kHz, V: %d - %d Hz, PixelClock: %dMHz\n",
+                                                                edid[i+7], edid[i+8], edid[i+5], edid[i+6], edid[i+9]*10));
+                                        }
+                                        break;
+                                default:
+                                        D(bug("[GMA] Entry %02x\n", edid[i+3]));
 
-				}
-			}
-		}
+                                }
+                        }
+                }
 
-		D(bug("[GMA] %d additional pages available\n", edid[126]));
-	}
-	else
-		D(bug("[GMA] Not a valid EDID data\n"));
+                D(bug("[GMA] %d additional pages available\n", edid[126]));
+        }
+        else
+                D(bug("[GMA] Not a valid EDID data\n"));
 }
 
 
@@ -449,99 +449,99 @@ OOP_Object *METHOD(INTELG45, Root, New)
 //        { TAG_DONE, 0UL }
 //    };
 
-	OOP_Object *i2cBus = NULL;
+        OOP_Object *i2cBus = NULL;
 
     modetags = tags = AllocVecPooled(sd->MemPool,
         sizeof (struct TagItem) * (3 + SYNC_LIST_COUNT + 1));
     poolptr = AllocVecPooled(sd->MemPool,
         sizeof(struct TagItem) * SYNC_TAG_COUNT * SYNC_LIST_COUNT);
 
-	struct TagItem i2c_attrs[] = {
-//			{ aHidd_I2C_HoldTime,   	40 },
-//			{ aHidd_I2C_RiseFallTime,   40 },
-			{ TAG_DONE, 0UL }
-	};
+        struct TagItem i2c_attrs[] = {
+//                      { aHidd_I2C_HoldTime,           40 },
+//                      { aHidd_I2C_RiseFallTime,   40 },
+                        { TAG_DONE, 0UL }
+        };
 
-	tags->ti_Tag = aHidd_Gfx_PixFmtTags;
-	tags->ti_Data = (IPTR)pftags_24bpp;
-	tags++;
+        tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+        tags->ti_Data = (IPTR)pftags_24bpp;
+        tags++;
 
-	tags->ti_Tag = aHidd_Gfx_PixFmtTags;
-	tags->ti_Data = (IPTR)pftags_16bpp;
-	tags++;
+        tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+        tags->ti_Data = (IPTR)pftags_16bpp;
+        tags++;
 
-//	tags->ti_Tag = aHidd_Gfx_PixFmtTags;
-//	tags->ti_Data = (IPTR)pftags_15bpp;
-//	tags++;
+//      tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+//      tags->ti_Data = (IPTR)pftags_15bpp;
+//      tags++;
 
-	if( sd->pipe == PIPE_B )
-	{
-		char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
-		snprintf(description, MAX_MODE_NAME_LEN, "GMA_LVDS:%dx%d",
-			sd->lvds_fixed.hdisp, sd->lvds_fixed.vdisp);
+        if( sd->pipe == PIPE_B )
+        {
+                char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
+                snprintf(description, MAX_MODE_NAME_LEN, "GMA_LVDS:%dx%d",
+                        sd->lvds_fixed.hdisp, sd->lvds_fixed.vdisp);
 
-		//native lcd mode
-		struct TagItem sync_native[]={
-		{ aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
-		{ aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
-		{ aHidd_Sync_HSyncStart,sd->lvds_fixed.hstart },
-		{ aHidd_Sync_HSyncEnd,  sd->lvds_fixed.hend },
-		{ aHidd_Sync_HTotal,    sd->lvds_fixed.htotal },
-		{ aHidd_Sync_VDisp,     sd->lvds_fixed.vdisp },
-		{ aHidd_Sync_VSyncStart,sd->lvds_fixed.vstart },
-		{ aHidd_Sync_VSyncEnd,  sd->lvds_fixed.vend },
-		{ aHidd_Sync_VTotal,    sd->lvds_fixed.vtotal },
-		{ aHidd_Sync_VMin,     sd->lvds_fixed.vdisp},
-		{ aHidd_Sync_VMax,     4096},
-		{ aHidd_Sync_HMin,     sd->lvds_fixed.hdisp},
-		{ aHidd_Sync_HMax,     4096},
-		{ aHidd_Sync_Description, (IPTR)description },
-		{ TAG_DONE, 0UL }};
+                //native lcd mode
+                struct TagItem sync_native[]={
+                { aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
+                { aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
+                { aHidd_Sync_HSyncStart,sd->lvds_fixed.hstart },
+                { aHidd_Sync_HSyncEnd,  sd->lvds_fixed.hend },
+                { aHidd_Sync_HTotal,    sd->lvds_fixed.htotal },
+                { aHidd_Sync_VDisp,     sd->lvds_fixed.vdisp },
+                { aHidd_Sync_VSyncStart,sd->lvds_fixed.vstart },
+                { aHidd_Sync_VSyncEnd,  sd->lvds_fixed.vend },
+                { aHidd_Sync_VTotal,    sd->lvds_fixed.vtotal },
+                { aHidd_Sync_VMin,     sd->lvds_fixed.vdisp},
+                { aHidd_Sync_VMax,     4096},
+                { aHidd_Sync_HMin,     sd->lvds_fixed.hdisp},
+                { aHidd_Sync_HMax,     4096},
+                { aHidd_Sync_Description, (IPTR)description },
+                { TAG_DONE, 0UL }};
 
-		MAKE_SYNC(640x480_60,   25174,
+                MAKE_SYNC(640x480_60,   25174,
          640,  656,  752,  800,
          480,  490,  492,  525,
          "GMA_LVDS:640x480");
-		
-		tags->ti_Tag =  aHidd_Gfx_SyncTags;
-		tags->ti_Data = (IPTR)sync_640x480_60;
-		tags++;
-		
-		tags->ti_Tag =  aHidd_Gfx_SyncTags;
-		tags->ti_Data = (IPTR)sync_native;
-		tags++;
-		
-	}
-	else
-	{
-		i2cBus = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
+                
+                tags->ti_Tag =  aHidd_Gfx_SyncTags;
+                tags->ti_Data = (IPTR)sync_640x480_60;
+                tags++;
+                
+                tags->ti_Tag =  aHidd_Gfx_SyncTags;
+                tags->ti_Data = (IPTR)sync_native;
+                tags++;
+                
+        }
+        else
+        {
+                i2cBus = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
 
-		if (i2cBus)
-		{
-			if (HIDD_I2C_ProbeAddress(i2cBus, 0xa0))
-			{
-				struct TagItem attrs[] = {
-						{ aHidd_I2CDevice_Driver,	(IPTR)i2cBus	},
-						{ aHidd_I2CDevice_Address,	0xa0            },
-						{ aHidd_I2CDevice_Name,		(IPTR)"Display"	},
-						{ TAG_DONE, 				0UL 			}
-				};
+                if (i2cBus)
+                {
+                        if (HIDD_I2C_ProbeAddress(i2cBus, 0xa0))
+                        {
+                                struct TagItem attrs[] = {
+                                                { aHidd_I2CDevice_Driver,       (IPTR)i2cBus    },
+                                                { aHidd_I2CDevice_Address,      0xa0            },
+                                                { aHidd_I2CDevice_Name,         (IPTR)"Display" },
+                                                { TAG_DONE,                             0UL                     }
+                                };
 
-				D(bug("[GMA] I2C display device found\n"));
+                                D(bug("[GMA] I2C display device found\n"));
 
-				OOP_Object *i2cDev = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+                                OOP_Object *i2cDev = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
 
-				if (i2cDev)
-				{
-					G45_parse_ddc(cl, &tags, poolptr, i2cDev);
-				}
-			}
-		}
+                                if (i2cDev)
+                                {
+                                        G45_parse_ddc(cl, &tags, poolptr, i2cDev);
+                                }
+                        }
+                }
 
-	}
+        }
 
-	tags->ti_Tag = TAG_DONE;
-	tags->ti_Data = 0;
+        tags->ti_Tag = TAG_DONE;
+        tags->ti_Data = 0;
 
     struct TagItem mytags[] = {
         { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
@@ -561,20 +561,20 @@ OOP_Object *METHOD(INTELG45, Root, New)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-		struct g45data * gfxdata = OOP_INST_DATA(cl, o);
-		gfxdata->i2cobj = i2cBus;
+                struct g45data * gfxdata = OOP_INST_DATA(cl, o);
+                gfxdata->i2cobj = i2cBus;
         sd->GMAObject = o;
 
-		/* Create compositor object */
-		{
-			struct TagItem comptags [] =
-			{
-				{ aHidd_Compositor_GfxHidd, (IPTR)o },
-				{ TAG_DONE, TAG_DONE }
-			};
-			sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
-			/* TODO: Check if object was created, how to handle ? */
-		}
+                /* Create compositor object */
+                {
+                        struct TagItem comptags [] =
+                        {
+                                { aHidd_Compositor_GfxHidd, (IPTR)o },
+                                { TAG_DONE, TAG_DONE }
+                        };
+                        sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
+                        /* TODO: Check if object was created, how to handle ? */
+                }
     }
 
     FreeVecPooled(sd->MemPool, modetags);
@@ -593,78 +593,78 @@ void METHOD(INTELG45, Root, Get)
     BOOL found = FALSE;
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
-    	switch (idx)
-    	{
-    	case aoHidd_Gfx_SupportsHWCursor:
-    		*msg->storage = (IPTR)TRUE;
-    		found = TRUE;
-    		break;
+        switch (idx)
+        {
+        case aoHidd_Gfx_SupportsHWCursor:
+                *msg->storage = (IPTR)TRUE;
+                found = TRUE;
+                break;
 
-    	case aoHidd_Gfx_NoFrameBuffer:
-    		*msg->storage = (IPTR)TRUE;
-    		found = TRUE;
-    		break;
+        case aoHidd_Gfx_NoFrameBuffer:
+                *msg->storage = (IPTR)TRUE;
+                found = TRUE;
+                break;
 
         case aoHidd_Gfx_HWSpriteTypes:
             *msg->storage = vHidd_SpriteType_DirectColor;
             found = TRUE;
             return;
 
-    	case aoHidd_Gfx_DPMSLevel:
-    		*msg->storage = SD(cl)->dpms;
-    		found = TRUE;
-    		break;
-    	}
+        case aoHidd_Gfx_DPMSLevel:
+                *msg->storage = SD(cl)->dpms;
+                found = TRUE;
+                break;
+        }
     }
 
     if (!found)
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     return;
 }
 
 void METHOD(INTELG45, Root, Set)
 {
-	D(bug("[GMA] Root Set\n"));
+        D(bug("[GMA] Root Set\n"));
 
-	ULONG idx;
-	struct TagItem *tag;
-	struct TagItem *tags = msg->attrList;
+        ULONG idx;
+        struct TagItem *tag;
+        struct TagItem *tags = msg->attrList;
 
-	while ((tag = NextTagItem(&tags)))
-	{
-		if (IS_GFX_ATTR(tag->ti_Tag, idx))
-		{
-			switch(idx)
-			{
-			case aoHidd_Gfx_DPMSLevel:
-				LOCK_HW
-				uint32_t adpa = readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK;
-				switch (tag->ti_Data)
-				{
-				case vHidd_Gfx_DPMSLevel_On:
-					adpa |= G45_ADPA_DPMS_ON;
-					break;
-				case vHidd_Gfx_DPMSLevel_Off:
-					adpa |= G45_ADPA_DPMS_OFF;
-					break;
-				case vHidd_Gfx_DPMSLevel_Standby:
-					adpa |= G45_ADPA_DPMS_STANDBY;
-					break;
-				case vHidd_Gfx_DPMSLevel_Suspend:
-					adpa |= G45_ADPA_DPMS_SUSPEND;
-					break;
-				}
-				writel(adpa, sd->Card.MMIO + G45_ADPA);
-				sd->dpms = tag->ti_Data;
+        while ((tag = NextTagItem(&tags)))
+        {
+                if (IS_GFX_ATTR(tag->ti_Tag, idx))
+                {
+                        switch(idx)
+                        {
+                        case aoHidd_Gfx_DPMSLevel:
+                                LOCK_HW
+                                uint32_t adpa = readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK;
+                                switch (tag->ti_Data)
+                                {
+                                case vHidd_Gfx_DPMSLevel_On:
+                                        adpa |= G45_ADPA_DPMS_ON;
+                                        break;
+                                case vHidd_Gfx_DPMSLevel_Off:
+                                        adpa |= G45_ADPA_DPMS_OFF;
+                                        break;
+                                case vHidd_Gfx_DPMSLevel_Standby:
+                                        adpa |= G45_ADPA_DPMS_STANDBY;
+                                        break;
+                                case vHidd_Gfx_DPMSLevel_Suspend:
+                                        adpa |= G45_ADPA_DPMS_SUSPEND;
+                                        break;
+                                }
+                                writel(adpa, sd->Card.MMIO + G45_ADPA);
+                                sd->dpms = tag->ti_Data;
 
-				UNLOCK_HW
-				break;
-			}
-		}
-	}
+                                UNLOCK_HW
+                                break;
+                        }
+                }
+        }
 
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 
@@ -691,12 +691,12 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
         /* Check for displayable - not needed - displayable has ModeID and we don't
            distinguish between on-screen and off-screen bitmaps */
         modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-        if (vHidd_ModeID_Invalid != modeid) 
+        if (vHidd_ModeID_Invalid != modeid)
         {
             /* User supplied a valid modeid. We can use our bitmap class */
-            mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
-            mytags[0].ti_Data	= (IPTR)SD(cl)->BMClass;
-        } 
+            mytags[0].ti_Tag    = aHidd_BitMap_ClassPtr;
+            mytags[0].ti_Data   = (IPTR)SD(cl)->BMClass;
+        }
 
         /* Check if bitmap is a planar bitmap */
         stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
@@ -707,23 +707,23 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
         }
         
         /* We init a new message struct */
-        mymsg.mID	= msg->mID;
-        mymsg.cl	= msg->cl;
-        mymsg.attrList	= mytags;
+        mymsg.mID       = msg->mID;
+        mymsg.cl        = msg->cl;
+        mymsg.attrList  = mytags;
 
         /* Pass the new message to the superclass */
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     }
     else if (SD(cl)->basegallium && (msg->cl == SD(cl)->basegallium))
     {
-		/* Create the gallium 3d driver object .. */
+                /* Create the gallium 3d driver object .. */
         object = OOP_NewObject(NULL, CLID_Hidd_Gallium_IntelGMA, msg->attrList);
     }
     else if (SD(cl)->basei2c && (msg->cl == SD(cl)->basei2c))
     {
-		struct g45data * gfxdata = OOP_INST_DATA(cl, o);
+                struct g45data * gfxdata = OOP_INST_DATA(cl, o);
         /* Expose the i2c bus object .. */
-		object = gfxdata->i2cobj;
+                object = gfxdata->i2cobj;
     }
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -737,13 +737,13 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
     sd->CursorVisible = msg->visible;
     if (msg->visible)
     {
-		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
-				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+                writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
+                                sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
     }
     else
     {
-		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
-				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+                writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
+                                sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
     }
     UpdateCursor(sd);
 }
@@ -751,9 +751,9 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
 
 void METHOD(INTELG45, Hidd_Gfx, SetCursorPos)
 {
-	SetCursorPosition(sd,msg->x,msg->y);
-	sd->pointerx = msg->x;
-	sd->pointery = msg->y;
+        SetCursorPosition(sd,msg->x,msg->y);
+        sd->pointerx = msg->x;
+        sd->pointery = msg->y;
 }
 
 BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
@@ -761,8 +761,8 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
     if (msg->shape == NULL)
     {
         sd->CursorVisible = 0;
-		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
-				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+                writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
+                                sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
     }
     else
     {
@@ -780,8 +780,8 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
            curimg[x] = 0;
 
         HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
-		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
-				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+                writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
+                                sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
     }
     UpdateCursor(sd);
 
@@ -816,12 +816,12 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
         /* Case -1: (To be fixed) one of the bitmaps have chunky outside GFX mem */
         if (!bm_src->fbgfx || !bm_dst->fbgfx)
         {
-        	D(bug("[GMA] one of bitmaps outside VRAM! CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
-        			bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
-        			bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
-        			msg->width, msg->height));
+                D(bug("[GMA] one of bitmaps outside VRAM! CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
+                                bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
+                                bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
+                                msg->width, msg->height));
 
-        	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
         /* Case 0: one of bitmaps is 8bpp, whereas the other is TrueColor one */
         else if ((bm_src->depth <= 8 || bm_dst->depth <= 8) &&
@@ -834,7 +834,7 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
         /* Case 1: both bitmaps have the same depth - use Blit engine */
         else if (bm_src->depth == bm_dst->depth)
         {
-        	LOCK_MULTI_BITMAP
+                LOCK_MULTI_BITMAP
             LOCK_BITMAP_BM(bm_src)
             LOCK_BITMAP_BM(bm_dst)
             UNLOCK_MULTI_BITMAP
@@ -845,13 +845,13 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
 
             br00 = (2 << 29) | (0x53 << 22) | (6);
             if (bm_dst->bpp == 4)
-            	br00 |= 3 << 20;
+                br00 |= 3 << 20;
 
             br13 = bm_dst->pitch | ROP_table[mode].rop;
             if (bm_dst->bpp == 4)
-            	br13 |= 3 << 24;
+                br13 |= 3 << 24;
             else if (bm_dst->bpp == 2)
-            	br13 |= 1 << 24;
+                br13 |= 1 << 24;
 
             br22 = msg->destX | (msg->destY << 16);
             br23 = (msg->destX + msg->width) | (msg->destY + msg->height) << 16;
@@ -881,10 +881,10 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
         }
         else /* Case 2: different bitmaps.Use 3d hardware. */
         {
-        	D(bug("[GMA] Depth mismatch! CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
-        			bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
-        			bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
-        			msg->width, msg->height));
+                D(bug("[GMA] Depth mismatch! CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
+                                bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
+                                bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
+                                msg->width, msg->height));
 
             LOCK_MULTI_BITMAP
             LOCK_BITMAP_BM(bm_src)
@@ -941,11 +941,11 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
     }
 
     /* Get Sync and PixelFormat properties */
-    struct pHidd_Gfx_GetMode __getmodemsg = 
+    struct pHidd_Gfx_GetMode __getmodemsg =
     {
-        .modeID =	modeid,
-        .syncPtr =	&sync,
-        .pixFmtPtr =	&pf,
+        .modeID =       modeid,
+        .syncPtr =      &sync,
+        .pixFmtPtr =    &pf,
     }, *getmodemsg = &__getmodemsg;
 
     getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
@@ -959,56 +959,56 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
     OOP_GetAttr(sync, aHidd_Sync_HSyncEnd,      &hend);
     OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,      &vend);
     OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
-    OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);    
+    OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);
 
     D(bug("[IntelG45] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
     pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
 
-	if (bmdata->state && sd->VisibleBitmap != bmdata)
-	{
-		/* Suppose bm has properly allocated state structure */
-		if (bmdata->fbgfx)
-		{
-			bmdata->usecount++;
-			SetCursorPosition(sd,0,0);
-			LOCK_HW
-			sd->VisibleBitmap = bmdata;
-			G45_LoadState(sd, bmdata->state);
-			UNLOCK_HW
-			SetCursorPosition(sd,sd->pointerx,sd->pointery);
-			return TRUE;
-		}
-	}
-	
-	return FALSE;     
+        if (bmdata->state && sd->VisibleBitmap != bmdata)
+        {
+                /* Suppose bm has properly allocated state structure */
+                if (bmdata->fbgfx)
+                {
+                        bmdata->usecount++;
+                        SetCursorPosition(sd,0,0);
+                        LOCK_HW
+                        sd->VisibleBitmap = bmdata;
+                        G45_LoadState(sd, bmdata->state);
+                        UNLOCK_HW
+                        SetCursorPosition(sd,sd->pointerx,sd->pointery);
+                        return TRUE;
+                }
+        }
+        
+        return FALSE;
 }
 
 
 BOOL HIDD_INTELG45_SetFramebuffer(OOP_Object * bm)
 {
-	OOP_Class * cl = OOP_OCLASS(bm);
-	GMABitMap_t * bmdata = OOP_INST_DATA(cl, bm);
-	//bug("[IntelG45] HIDD_INTELG45_SetFramebuffer %x %d,%d\n",bmdata,bmdata->xoffset,bmdata->yoffset);
-	if (bmdata->fbgfx)
-	{
-		char *linoff_reg = sd->Card.MMIO + ((sd->pipe == PIPE_A) ? G45_DSPALINOFF : G45_DSPBLINOFF);
-		char *stride_reg = sd->Card.MMIO + ((sd->pipe == PIPE_A) ? G45_DSPASTRIDE : G45_DSPBSTRIDE);
-		
-		// bitmap width in bytes
-		writel( bmdata->state->dspstride , stride_reg );
-		
-		// framebuffer address + possible xy offset  
-		writel(	bmdata->framebuffer - ( bmdata->yoffset * bmdata->pitch +
-										bmdata->xoffset * bmdata->bpp ) ,linoff_reg );
-		readl( linoff_reg );	
-		return TRUE;
-	}
-	//bug("[IntelG45] HIDD_INTELG45_SetFramebuffer: not Framebuffer Bitmap!\n");
+        OOP_Class * cl = OOP_OCLASS(bm);
+        GMABitMap_t * bmdata = OOP_INST_DATA(cl, bm);
+        //bug("[IntelG45] HIDD_INTELG45_SetFramebuffer %x %d,%d\n",bmdata,bmdata->xoffset,bmdata->yoffset);
+        if (bmdata->fbgfx)
+        {
+                char *linoff_reg = sd->Card.MMIO + ((sd->pipe == PIPE_A) ? G45_DSPALINOFF : G45_DSPBLINOFF);
+                char *stride_reg = sd->Card.MMIO + ((sd->pipe == PIPE_A) ? G45_DSPASTRIDE : G45_DSPBSTRIDE);
+                
+                // bitmap width in bytes
+                writel( bmdata->state->dspstride , stride_reg );
+                
+                // framebuffer address + possible xy offset
+                writel( bmdata->framebuffer - ( bmdata->yoffset * bmdata->pitch +
+                                                                                bmdata->xoffset * bmdata->bpp ) ,linoff_reg );
+                readl( linoff_reg );
+                return TRUE;
+        }
+        //bug("[IntelG45] HIDD_INTELG45_SetFramebuffer: not Framebuffer Bitmap!\n");
     return FALSE;
 }
 
 
-static struct HIDD_ModeProperties modeprops = 
+static struct HIDD_ModeProperties modeprops =
 {
     DIPF_IS_SPRITES,
     1,
@@ -1051,5 +1051,5 @@ const struct OOP_InterfaceDescr INTELG45_ifdescr[] =
 {
     {INTELG45_Root_descr    , IID_Root    , NUM_INTELG45_Root_METHODS    },
     {INTELG45_Hidd_Gfx_descr, IID_Hidd_Gfx, NUM_INTELG45_Hidd_Gfx_METHODS},
-    {NULL		    , NULL	  , 0				 }
+    {NULL                   , NULL        , 0                            }
 };

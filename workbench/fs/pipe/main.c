@@ -24,22 +24,22 @@ __startup static AROS_PROCH(pipe_main, argstr, argsize, sysBase)
 void startup(void)
 #endif
 {
-	AROS_PROCFUNC_INIT
+        AROS_PROCFUNC_INIT
 
         SysBase = sysBase;
 
-	struct DosPacket *dp;
-	struct MsgPort *mp;
+        struct DosPacket *dp;
+        struct MsgPort *mp;
 
-	mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
+        mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
 
-	WaitPort(mp);
+        WaitPort(mp);
 
-	dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+        dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
 
-	handler(dp);
+        handler(dp);
 
         return RETURN_OK;
 
-	AROS_PROCFUNC_EXIT
+        AROS_PROCFUNC_EXIT
 }

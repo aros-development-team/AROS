@@ -60,8 +60,8 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
     /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
+        This function is single-threaded by exec by calling Forbid.
+        Never break the Forbid() or strange things might happen.
     */
     D(bug("Inside expungefunc\n"));
 
@@ -90,23 +90,23 @@ AROS_UFH3(int, CleanMem,
     
     ForeachNodeSafe(&LIBBASE->diskfontlist, dfh, dfh2)
     {
-	if (dfh->dfh_TF.tf_Accessors < 1)
-	{
-	    /* Possible paranoia check */
-	    if (!(dfh->dfh_TF.tf_Flags & FPF_REMOVED))
-	    {
-		/* Unlink from GfxBase->TextFonts */
-		REMOVE(&dfh->dfh_TF.tf_Message.mn_Node);
+        if (dfh->dfh_TF.tf_Accessors < 1)
+        {
+            /* Possible paranoia check */
+            if (!(dfh->dfh_TF.tf_Flags & FPF_REMOVED))
+            {
+                /* Unlink from GfxBase->TextFonts */
+                REMOVE(&dfh->dfh_TF.tf_Message.mn_Node);
 
-		StripFont(&dfh->dfh_TF);
+                StripFont(&dfh->dfh_TF);
 
-		/* Unlink from DiskfontBase->diskfontlist */
+                /* Unlink from DiskfontBase->diskfontlist */
 
-		REMOVE(&dfh->dfh_DF);
+                REMOVE(&dfh->dfh_DF);
 
-		UnLoadSeg(dfh->dfh_Segment);
-	    }
-	}
+                UnLoadSeg(dfh->dfh_Segment);
+            }
+        }
     }
     
     D(bug("CleanMem Finished\n"));

@@ -10,14 +10,14 @@
      Currently Supports:
 
         i386 compatable families...
-            Intel P5/P54C/P55C/P24T/P6/P2/P3/PM/Itanium(IA-64) 
+            Intel P5/P54C/P55C/P24T/P6/P2/P3/PM/Itanium(IA-64)
 
 *****************************************************************************************************/
 
 #include "x86.h"
 
 /********************************************
-		         Structures
+                         Structures
  ********************************************/
 
 #define i386_intel_MAXBRANDS 23
@@ -40,7 +40,7 @@ char *i386_intel_Brands[i386_intel_MAXBRANDS] = {
     "0.13 µm Intel Celeron 4 mobile (0F27h)/0.13 µm Intel Pentium 4 mobile (samples)",
     "not supported",
     "not supported",
-    "not supported",    
+    "not supported",
     "not supported",
     "not supported",
     "not supported",
@@ -48,7 +48,7 @@ char *i386_intel_Brands[i386_intel_MAXBRANDS] = {
 };
 
 /********************************************
-		     Intel CPU Features
+                     Intel CPU Features
  ********************************************/
 
 char *Intel_feature_flags[] = {
@@ -195,13 +195,13 @@ char   *i386_intel_TLB_decode ( int tlb, char *BUFF_STR )
         sprintf( BUFF_STR,"2nd-level cache: 128KB, 8-way set assoc, sectored, 64 byte line size\n" );
         break;
     case 0x7a:
-        sprintf( BUFF_STR,"2nd-level cache: 256KB, 8-way set assoc, sectored, 64 byte line size\n" );    
+        sprintf( BUFF_STR,"2nd-level cache: 256KB, 8-way set assoc, sectored, 64 byte line size\n" );
         break;
     case 0x7b:
         sprintf( BUFF_STR,"2nd-level cache: 512KB, 8-way set assoc, sectored, 64 byte line size\n" );
         break;
     case 0x7c:
-        sprintf( BUFF_STR,"2nd-level cache: 1MB, 8-way set assoc, sectored, 64 byte line size\n" );    
+        sprintf( BUFF_STR,"2nd-level cache: 1MB, 8-way set assoc, sectored, 64 byte line size\n" );
         break;
 
 
@@ -341,58 +341,58 @@ void    parse_i386_Intel ( int maxi, struct i386_compat_intern * CPUi386 )
                 switch ( model )
                 {
                 case 0:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX-25/33");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX-25/33");
+                        break;
                 case 1:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX-50");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX-50");
+                        break;
                 case 2:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486SX");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486SX");
+                        break;
                 case 3:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX2");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX2");
+                        break;
                 case 4:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486SL");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486SL");
+                        break;
                 case 5:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486SX2");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486SX2");
+                        break;
                 case 7:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX2-WB (write-back enhanced)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX2-WB (write-back enhanced)");
+                        break;
                 case 8:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX4");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX4");
+                        break;
                 case 9:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX4-WB (write-back enhanced)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "486DX4-WB (write-back enhanced)");
+                        break;
                 }
             break;
             case 5:
                 switch ( model )
                 {
                 case 0:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P5 A-step");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P5 A-step");
+                        break;
                 case 1:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P5");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P5");
+                        break;
                 case 2:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P54C");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P54C");
+                        break;
                 case 3:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P24T Overdrive");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P24T Overdrive");
+                        break;
                 case 4:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P55C");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P55C");
+                        break;
                 case 7:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P54C");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P54C");
+                        break;
                 case 8:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P55C (0.25µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "P55C (0.25µm)");
+                        break;
                 }
             break;
             case 6:
@@ -400,51 +400,51 @@ void    parse_i386_Intel ( int maxi, struct i386_compat_intern * CPUi386 )
                 {
                 case 0:
                     Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium Pro (P6 A-step)");
-	                break;
+                        break;
                 case 1:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium Pro (P6)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium Pro (P6)");
+                        break;
                 case 3:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium II Model 3 (0.28 µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium II Model 3 (0.28 µm)");
+                        break;
                 case 5:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium II Model 5/Xeon/Celeron (0.25 µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium II Model 5/Xeon/Celeron (0.25 µm)");
+                        break;
                 case 6:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Celeron (PII with on-die L2 cache)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Celeron (PII with on-die L2 cache)");
+                        break;
                 case 7:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III/Pentium III Xeon external L2 cache (0.25 µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III/Pentium III Xeon external L2 cache (0.25 µm)");
+                        break;
                 case 8:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III/Pentium III Xeon with 256 KB on-die L2 cache (0.18 µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III/Pentium III Xeon with 256 KB on-die L2 cache (0.18 µm)");
+                        break;
                 case 9:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "PM - with 1 MB on-die L2 cache  (0.13 µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "PM - with 1 MB on-die L2 cache  (0.13 µm)");
+                        break;
                 case 10:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III with 1 or 2 MB on-die L2 cache (0.18 µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III with 1 or 2 MB on-die L2 cache (0.18 µm)");
+                        break;
                 case 11:
-	                Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III with 256 or 512 KB on-die L2 cache (0.13 µm)");
-	                break;
+                        Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium III with 256 or 512 KB on-die L2 cache (0.13 µm)");
+                        break;
                 }
             break;
-		    case 15:
-			    switch ( model )
+                    case 15:
+                            switch ( model )
                 {
-			    case 0:
-			    case 1:			
+                            case 0:
+                            case 1:
                     Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium 4/Celeron (0.18)");
-				    break;
-			    case 2:
+                                    break;
+                            case 2:
                     Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium 4/Celeron (0.13)");
                     break;
-			    case 3:
+                            case 3:
                     Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "Pentium 4 (0.09)");
                     break;
-			    }
-	            break;
+                            }
+                    break;
 
             }
             Intel_CPU_IDENTITY_cnt = AddBufferLine(Intel_CPU_IDENTITY_cnt, Intel_CPU_IDENTITY, "\n");
@@ -481,17 +481,17 @@ void    parse_i386_Intel ( int maxi, struct i386_compat_intern * CPUi386 )
                 int maxe = eax;
                 if( maxe >= 0x80000004 )
                 {
-	                int i;
+                        int i;
 
-	                Intel_CPU_NAME_cnt = AddBufferLine(Intel_CPU_NAME_cnt, Intel_CPU_NAME, "    Extended brand string: \"" );
-	                for( i=0x80000002; i<=0x80000004 ;i++ )
+                        Intel_CPU_NAME_cnt = AddBufferLine(Intel_CPU_NAME_cnt, Intel_CPU_NAME, "    Extended brand string: \"" );
+                        for( i=0x80000002; i<=0x80000004 ;i++ )
                     {
-	                    unsigned long eax,ebx,ecx,edx;
+                            unsigned long eax,ebx,ecx,edx;
 
-	                    i386_cpuid(i,eax,ebx,ecx,edx);	
-	                    Intel_CPU_NAME_cnt = i386_sprintregs(Intel_CPU_NAME_cnt, Intel_CPU_NAME, eax,ebx,ecx,edx);
-	                }
-	                Intel_CPU_NAME_cnt = AddBufferLine(Intel_CPU_NAME_cnt, Intel_CPU_NAME, "\"\n");
+                            i386_cpuid(i,eax,ebx,ecx,edx);
+                            Intel_CPU_NAME_cnt = i386_sprintregs(Intel_CPU_NAME_cnt, Intel_CPU_NAME, eax,ebx,ecx,edx);
+                        }
+                        Intel_CPU_NAME_cnt = AddBufferLine(Intel_CPU_NAME_cnt, Intel_CPU_NAME, "\"\n");
                 }
             }
             if ( clf )
@@ -500,7 +500,7 @@ void    parse_i386_Intel ( int maxi, struct i386_compat_intern * CPUi386 )
                 Intel_CPU_FEATURES_cnt = AddBufferLine(Intel_CPU_FEATURES_cnt, Intel_CPU_FEATURES, BUFF_STR);
             }
             
-            if ( apic_id ) 
+            if ( apic_id )
             {
                 sprintf( BUFF_STR,"    Initial APIC ID: %d\n", apic_id );
                 Intel_CPU_FEATURES_cnt = AddBufferLine(Intel_CPU_FEATURES_cnt, Intel_CPU_FEATURES, BUFF_STR);
@@ -543,24 +543,24 @@ void    parse_i386_Intel ( int maxi, struct i386_compat_intern * CPUi386 )
                   
                 if (( ebx & 0x80000000 ) == 0 )
                 {
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx >> 8, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx >> 16, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx >> 24, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx >> 8, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx >> 16, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ebx >> 24, BUFF_STR ));
                 }
                 if (( ecx & 0x80000000 ) == 0 )
                 {
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx >> 8, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx >> 16, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx >> 24, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx >> 8, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx >> 16, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( ecx >> 24, BUFF_STR ));
                 }
                 if (( edx & 0x80000000 ) == 0 )
                 {
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx >> 8, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx >> 16, BUFF_STR ));
-	                Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx >> 24, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx >> 8, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx >> 16, BUFF_STR ));
+                        Intel_CPU_CACHE_cnt = AddBufferLine(Intel_CPU_CACHE_cnt, Intel_CPU_CACHE, i386_intel_TLB_decode( edx >> 24, BUFF_STR ));
                 }
             }
         }

@@ -44,7 +44,7 @@ struct ScreenModeProperties_DATA
         MUIA_Image_Spec     , MUII_CheckMark,        \
         MUIA_Image_FreeVert , TRUE,                  \
         MUIA_Background     , MUII_ButtonBack,       \
-        MUIA_ShowSelState   , FALSE                 
+        MUIA_ShowSelState   , FALSE
 
 #define HLeft(obj...) \
     (IPTR)(HGroup, (IPTR)GroupSpacing(0), Child, (IPTR)(obj), Child, (IPTR)HSpace(0), End)
@@ -101,7 +101,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
             Child, (IPTR)RectangleObject, End,
             Child, (IPTR)RectangleObject, End,
 
-        End,  
+        End,
         
         TAG_MORE, (IPTR)message->ops_AttrList
     );
@@ -110,7 +110,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         goto err;
     
     D(bug("[smproperties] Created ScreenModeProperties object 0x%p\n", self));
-    data = INST_DATA(CLASS, self);    
+    data = INST_DATA(CLASS, self);
     
     data->objWidth   = objWidth;
     data->objHeight  = objHeight;
@@ -201,7 +201,7 @@ static inline UWORD AdjustHeight(UWORD height, struct ScreenModeProperties_DATA 
 
 IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
-    struct ScreenModeProperties_DATA *data = INST_DATA(CLASS, self);    
+    struct ScreenModeProperties_DATA *data = INST_DATA(CLASS, self);
     struct TagItem *tags;
     struct TagItem *tag;
     ULONG id        = INVALID_ID;
@@ -294,13 +294,13 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                         depth_tags[3].ti_Tag = MUIA_Numeric_Value;
                         depth_tags[4].ti_Data = TRUE;
                     } else if (val > dim.MaxDepth) {
-                    	/* Make sure depth is always <= dim.MaxDepth */
+                        /* Make sure depth is always <= dim.MaxDepth */
                         depth_tags[3].ti_Tag = MUIA_Numeric_Value;
                         depth_tags[3].ti_Data = dim.MaxDepth;
-                    }	
+                    }
                 }
                
-                /* Enable autoscroll if one of the maximum sizes is bigger than 
+                /* Enable autoscroll if one of the maximum sizes is bigger than
                    the resolution.  */
                    
                 autoscroll = data->MaxWidth > data->DefWidth  ||
@@ -328,7 +328,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 SetAttrs(data->objHeight, MUIA_String_Integer, height, TAG_DONE);
                 SetAttrsA(data->depth,  depth_tags);
 
-                SetAttrs(data->autoscroll, no_notify, TRUE, 
+                SetAttrs(data->autoscroll, no_notify, TRUE,
                                            MUIA_Disabled, !autoscroll,
                                            MUIA_Selected, autoscroll,
                                            TAG_DONE);
@@ -403,7 +403,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 
 IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
-    struct ScreenModeProperties_DATA *data = INST_DATA(CLASS, self);    
+    struct ScreenModeProperties_DATA *data = INST_DATA(CLASS, self);
     
     switch (message->opg_AttrID)
     {
@@ -444,7 +444,7 @@ IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *mess
 
 ZUNE_CUSTOMCLASS_3
 (
-    ScreenModeProperties, NULL, MUIC_Group, NULL,   
+    ScreenModeProperties, NULL, MUIC_Group, NULL,
     OM_NEW,     struct opSet *,
     OM_GET,     struct opGet *,
     OM_SET,     struct opSet *

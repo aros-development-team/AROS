@@ -52,8 +52,8 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
     if (catalog != NULL)
     {
         return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+    }
+    else
     {
         return CatCompArray[id].cca_Str;
     }
@@ -65,7 +65,7 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 /*** Methods ****************************************************************/
 Object *LoginWindow__OM_NEW
 (
-    Class *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message
 )
 {
     int                     authm_count         = 0,
@@ -85,9 +85,9 @@ Object *LoginWindow__OM_NEW
                             user                = NULL,
                             pass                = NULL;
     char                    *authmethodList[20] = { NULL };
-    struct LoginWindow_DATA *data               = NULL; 
+    struct LoginWindow_DATA *data               = NULL;
     struct TagItem          *tstate             = message->ops_AttrList,
-                            *tag                = NULL;    
+                            *tag                = NULL;
     struct Catalog          *catalog            = NULL;
     Object                  *imageGroup         = NULL,
                             *img_logo           = NULL,
@@ -136,7 +136,7 @@ Object *LoginWindow__OM_NEW
         case MUIA_LoginWindow_Method:
             authmethodList[authm_count] = StrDup((STRPTR) tag->ti_Data);
             authm_count++;
-            break; 
+            break;
 
         case MUIA_LoginWindow_UserName_Status:
             if (nametypeset) break;
@@ -178,27 +178,27 @@ Object *LoginWindow__OM_NEW
     
     case LWA_UNT_Read:
         nameUser =  TextObject,
-	    MUIA_Text_Editable, FALSE,
-	    MUIA_Text_Multiline, FALSE,
-	End;
+            MUIA_Text_Editable, FALSE,
+            MUIA_Text_Multiline, FALSE,
+        End;
         break;
     case LWA_UNT_Disabled:
         nameUser =  StringObject,
-	    StringFrame,
+            StringFrame,
             MUIA_Disabled, TRUE,
-	    MUIA_String_AdvanceOnCR,TRUE,
-	    MUIA_CycleChain, TRUE,
-	End;
+            MUIA_String_AdvanceOnCR,TRUE,
+            MUIA_CycleChain, TRUE,
+        End;
         break;
     case LWA_UNT_None:
         nameUser = HVSpace;
         break;
     default:
         nameUser =  StringObject,
-		    StringFrame,
-		    MUIA_String_AdvanceOnCR,TRUE,
-		    MUIA_CycleChain,	    TRUE,
-	        End;
+                    StringFrame,
+                    MUIA_String_AdvanceOnCR,TRUE,
+                    MUIA_CycleChain,        TRUE,
+                End;
         break;
     }
 
@@ -207,8 +207,8 @@ Object *LoginWindow__OM_NEW
     case LWA_METH_Disabled:
         logonMethod = PoplistObject,
             MUIA_Disabled, TRUE,
-	    MUIA_Popstring_String, (IPTR) StringObject, StringFrame, End,
-	    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
+            MUIA_Popstring_String, (IPTR) StringObject, StringFrame, End,
+            MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
         End;
         break;
     case LWA_METH_None:
@@ -217,8 +217,8 @@ Object *LoginWindow__OM_NEW
         break;
     default:
         logonMethod = PoplistObject,
-		    MUIA_Popstring_String, (IPTR) StringObject, StringFrame, End,
-		    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
+                    MUIA_Popstring_String, (IPTR) StringObject, StringFrame, End,
+                    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
                 End;
         break;
     }
@@ -242,13 +242,13 @@ Object *LoginWindow__OM_NEW
     if (!contents)
     {
         int                     i;
-	char                    tmpversion[8]   ="\0",
-	                        tmphostname[32] ="\0",
+        char                    tmpversion[8]   ="\0",
+                                tmphostname[32] ="\0",
                                 strbuff[1024]   = "\0";
         STRPTR                  version         = NULL,
                                 hostname        = NULL;
 
-	if (GetVar("Kickstart", &tmpversion[0], 8, GVF_GLOBAL_ONLY) == -1)
+        if (GetVar("Kickstart", &tmpversion[0], 8, GVF_GLOBAL_ONLY) == -1)
         {
             ArosInquire( AI_ArosVersion, (ULONG)&i, TAG_DONE);
             __sprintf(&tmpversion[0],"%d\0",i);
@@ -256,9 +256,9 @@ Object *LoginWindow__OM_NEW
         version = StrDup( &tmpversion[0] );
 
         if (GetVar("HostName", &tmphostname[0], 32, GVF_GLOBAL_ONLY) == -1) hostname = StrDup( "?" );
-	else
+        else
         {
-	    for (i = 0; tmphostname[i] && (tmphostname[i] != '.'); i++);
+            for (i = 0; tmphostname[i] && (tmphostname[i] != '.'); i++);
             {
                 if (tmphostname[i] == '.') tmphostname[i] = '\0';
             }
@@ -310,7 +310,7 @@ Object *LoginWindow__OM_NEW
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
-    	MUIA_Window_Title,	(IPTR) title,
+        MUIA_Window_Title,      (IPTR) title,
         MUIA_Window_Activate,   TRUE,
         MUIA_Window_NoMenus,    TRUE,
         MUIA_Window_CloseGadget, FALSE,
@@ -338,24 +338,24 @@ Object *LoginWindow__OM_NEW
                         MUIA_Weight,  0,
                         Child, (IPTR) img_user,
                         Child, (IPTR) (nameUser = StringObject,
-			    StringFrame,
-		            MUIA_String_Contents, (IPTR) user,
-			    MUIA_String_AdvanceOnCR, TRUE,
-			    MUIA_CycleChain, TRUE,
-		        End),
+                            StringFrame,
+                            MUIA_String_Contents, (IPTR) user,
+                            MUIA_String_AdvanceOnCR, TRUE,
+                            MUIA_CycleChain, TRUE,
+                        End),
                     End),
 
                     Child, (IPTR) (passUser = StringObject,
-			StringFrame,
-		        MUIA_String_Contents,	(IPTR) pass,
+                        StringFrame,
+                        MUIA_String_Contents,   (IPTR) pass,
                         MUIA_String_Secret,     TRUE,
-			MUIA_String_AdvanceOnCR,TRUE,
-			MUIA_CycleChain,	TRUE,
-		    End),
+                        MUIA_String_AdvanceOnCR,TRUE,
+                        MUIA_CycleChain,        TRUE,
+                    End),
 
-    	    	    Child, (IPTR) (logonMethod = PoplistObject,
-		        MUIA_Popstring_String, (IPTR) StringObject, StringFrame, MUIA_String_Contents, (IPTR) logonString, End,
-		        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
+                    Child, (IPTR) (logonMethod = PoplistObject,
+                        MUIA_Popstring_String, (IPTR) StringObject, StringFrame, MUIA_String_Contents, (IPTR) logonString, End,
+                        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
                         MUIA_Poplist_Array,     (IPTR) authmethodList,
                     End),
 
@@ -441,13 +441,13 @@ Object *LoginWindow__OM_NEW
         /*-- Setup notifications -------------------------------------------*/
 
         DoMethod
-        ( 
+        (
             self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             (IPTR) cancelButton, 2, MUIA_Pressed, FALSE
         );
         
         DoMethod
-        ( 
+        (
             okButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR) self, 2, MUIM_Application_ReturnID, LWA_RV_OK
         );
@@ -468,7 +468,7 @@ Object *LoginWindow__OM_NEW
 
 IPTR LoginWindow__OM_DISPOSE
 (
-    Class *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message
 )
 {
     struct LoginWindow_DATA *data = INST_DATA(CLASS, self);
@@ -547,7 +547,7 @@ IPTR LoginWindow__OM_GET
 
     case MUIA_LoginWindow_UserName:
         *store = (IPTR) data->lwd_UserName;
-        break;   
+        break;
 
     case MUIA_LoginWindow_UserPass:
         *store = (IPTR) data->lwd_UserPass;

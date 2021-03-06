@@ -494,7 +494,7 @@ BOOL IconWindowIconList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bd
                         bdrp_namepart = FilePart(bdrp_fullfile);
                         bdrp_currfile_dob = GetIconTags
                           (
-                            bdrp_fullfile, 
+                            bdrp_fullfile,
                             ICONGETA_FailIfUnavailable, FALSE,
                             ICONGETA_Label,             bdrp_namepart,
                             TAG_DONE
@@ -705,84 +705,84 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Background Notificat
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_IconListMode, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_IconListMode
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_Mode, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_Mode
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_MaxLineLen, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_MaxLineLen
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_MultiLine, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_MultiLine
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_MultiLineOnFocus, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_MultiLineOnFocus
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_Icon_HorizontalSpacing, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_Icon_HorizontalSpacing
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_Icon_VerticalSpacing, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_Icon_VerticalSpacing
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_Icon_ImageSpacing, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_Icon_ImageSpacing
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_HorizontalPadding, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_HorizontalPadding
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_VerticalPadding, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_VerticalPadding
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_BorderWidth, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_BorderWidth
           );
 
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_BorderHeight, MUIV_EveryTime,
-            (IPTR) self, 3, 
+            (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_BorderHeight
           );
     }
@@ -796,7 +796,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Background Notificat
             DoMethod
               (
                 prefs, MUIM_Notify, MUIA_IconWindowExt_NetworkBrowser_Show, MUIV_EveryTime,
-                (IPTR) self, 3, 
+                (IPTR) self, 3,
                 MUIM_CallHook, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook, (IPTR)CLASS
               );
         }
@@ -968,14 +968,14 @@ IPTR IconWindowIconList__MUIM_HandleEvent
 
     D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent()\n"));
 
-    if(imsg->Class == IDCMP_DISKINSERTED) 
+    if(imsg->Class == IDCMP_DISKINSERTED)
     {
         D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKINSERTED\n"));
         DoMethod(self, MUIM_IconList_Update);
     DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
     }
-    else if (imsg->Class == IDCMP_DISKREMOVED) 
+    else if (imsg->Class == IDCMP_DISKREMOVED)
     {
         D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKREMOVED\n"));
         DoMethod(self, MUIM_IconList_Update);
@@ -1126,7 +1126,7 @@ IPTR IconWindowIconList__MUIM_IconList_Update
                 struct DiskObject    *_nb_dob = NULL;
                 _nb_dob = GetIconTags
                   (
-                    "ENV:SYS/def_NetworkHost", 
+                    "ENV:SYS/def_NetworkHost",
                     ICONGETA_FailIfUnavailable, FALSE,
                     ICONGETA_Label,             (IPTR)"Network Access..",
                     TAG_DONE
@@ -1171,7 +1171,7 @@ IPTR IconWindowIconList__MUIM_IconList_Update
 
                         _nb_dob = GetIconTags
                           (
-                            "ENV:SYS/def_UserHome", 
+                            "ENV:SYS/def_UserHome",
                             ICONGETA_FailIfUnavailable, FALSE,
                             ICONGETA_Label,             (IPTR)"User Files..",
                             TAG_DONE

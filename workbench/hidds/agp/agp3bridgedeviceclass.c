@@ -55,7 +55,7 @@ VOID Agp3BridgeDevice__Root__Dispose(OOP_Class * cl, OOP_Object * o, OOP_Msg msg
 BOOL METHOD(Agp3BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 {
     struct HIDDGenericBridgeDeviceData * gbddata =
-        OOP_INST_DATA(SD(cl)->genericBridgeDeviceClass, o);    
+        OOP_INST_DATA(SD(cl)->genericBridgeDeviceClass, o);
 
     /* Subclass is required to perform the detection */
     if (!gbddata->bridge)

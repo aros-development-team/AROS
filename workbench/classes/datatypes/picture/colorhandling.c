@@ -92,16 +92,16 @@ BOOL ConvertTC2TC( struct Picture_Data *pd )
     DestRP.BitMap = pd->DestBM;
     if( !pd->Scale )
     {
-        success = WritePixelArray(  pd->SrcBuffer,		// src buffer
-                                    0,				// src x
-                                    0,				// src y
-                                    pd->SrcWidthBytes,		// src mod
-                                    &DestRP,			// rastport
-                                    0,				// dest x
-                                    0,				// dest y
-                                    pd->SrcWidth,		// width
-                                    pd->SrcHeight,		// height
-                                    (pd->SrcPixelFormat != -1) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);	// src format
+        success = WritePixelArray(  pd->SrcBuffer,              // src buffer
+                                    0,                          // src x
+                                    0,                          // src y
+                                    pd->SrcWidthBytes,          // src mod
+                                    &DestRP,                    // rastport
+                                    0,                          // dest x
+                                    0,                          // dest y
+                                    pd->SrcWidth,               // width
+                                    pd->SrcHeight,              // height
+                                    (pd->SrcPixelFormat != -1) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);  // src format
     }
     else
     {
@@ -122,17 +122,17 @@ BOOL ConvertCM2TC( struct Picture_Data *pd )
     DestRP.BitMap = pd->DestBM;
     if( !pd->Scale )
     {
-        success = WriteLUTPixelArray(   pd->SrcBuffer,	// src buffer
-                                        0,			// src x
-                                        0,			// src y
-                                        pd->SrcWidthBytes,	// src mod
-                                        &DestRP,		// rastport
-                                        pd->ColTableXRGB,	// coltable
-                                        0,			// dest x
-                                        0,			// dest y
-                                        pd->SrcWidth,	// width
-                                        pd->SrcHeight,	// height
-                                        CTABFMT_XRGB8 );	// coltable format
+        success = WriteLUTPixelArray(   pd->SrcBuffer,  // src buffer
+                                        0,                      // src x
+                                        0,                      // src y
+                                        pd->SrcWidthBytes,      // src mod
+                                        &DestRP,                // rastport
+                                        pd->ColTableXRGB,       // coltable
+                                        0,                      // dest x
+                                        0,                      // dest y
+                                        pd->SrcWidth,   // width
+                                        pd->SrcHeight,  // height
+                                        CTABFMT_XRGB8 );        // coltable format
     }
     else
     {
@@ -265,45 +265,45 @@ static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
     srcyptr = pd->SrcBuffer;
     for( desty=0; desty<pd->DestHeight; desty++ )
     {
-        if( srcyinc )	// incremented source line after last line scaling ?
+        if( srcyinc )   // incremented source line after last line scaling ?
             ScaleLineSimple( srcyptr, destline, destwidth, srcpixelbytes, pd->XScale );
         srcypos += pd->YScale;
         srcyinc = (srcypos >> 16) - srcy;
         // D(bug("picture.datatype/TC2TC Scale: srcy %d desty %d srcypos %06lx srcyinc %d\n", srcy, desty, srcypos, srcyinc));
         if( pixelformat == PBPAFMT_LUT8 )
         {
-            success = WriteLUTPixelArray(   destline,		// src buffer
-                                            0,			// src x
-                                            0,			// src y
-                                            destwidth,		// src mod
-                                            &rp,		// rastport
-                                            pd->ColTableXRGB,	// coltable
-                                            0,			// dest x
-                                            desty,		// dest y
-                                            destwidth,		// width
-                                            1,			// height
-                                            CTABFMT_XRGB8 );	// coltable format
+            success = WriteLUTPixelArray(   destline,           // src buffer
+                                            0,                  // src x
+                                            0,                  // src y
+                                            destwidth,          // src mod
+                                            &rp,                // rastport
+                                            pd->ColTableXRGB,   // coltable
+                                            0,                  // dest x
+                                            desty,              // dest y
+                                            destwidth,          // width
+                                            1,                  // height
+                                            CTABFMT_XRGB8 );    // coltable format
         }
         else
         {
             D(bug("[picture.datatype] pixfmt %08x\n", pd->SrcPixelFormat);)
-            success = WritePixelArray(	destline,		// src buffer
-                                        0,			// src x
-                                        0,			// src y
-                                        destwidth,		// src mod
-                                        &rp,			// rastport
-                                        0,			// dest x
-                                        desty,			// dest y
-                                        destwidth,		// width
-                                        1,			// height
+            success = WritePixelArray(  destline,               // src buffer
+                                        0,                      // src x
+                                        0,                      // src y
+                                        destwidth,              // src mod
+                                        &rp,                    // rastport
+                                        0,                      // dest x
+                                        desty,                  // dest y
+                                        destwidth,              // width
+                                        1,                      // height
                                         // src format (if specified, otherwise fallback to ARGB)
                                         (pd->SrcPixelFormat != -1 && pd->SrcPixelFormat != 0) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);
         }
         if( !success ) return FALSE;
         if( srcyinc )
         {
-            if( srcyinc == 1 )	srcyptr += pd->SrcWidthBytes;
-            else		srcyptr += pd->SrcWidthBytes * srcyinc;
+            if( srcyinc == 1 )  srcyptr += pd->SrcWidthBytes;
+            else                srcyptr += pd->SrcWidthBytes * srcyinc;
             srcy += srcyinc;
         }
     }
@@ -611,7 +611,7 @@ BOOL CreateMaskPlane( struct Picture_Data *pd )
             UBYTE maskbyte = 0x00;
 
             for(x = 0; x < srcwidth; x++)
-            {		    
+            {
                 if( *srcbuf++ != transp )
                     maskbyte |= mask;
 
@@ -729,7 +729,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
             destcolregs = pd->DestColRegs;
             for( desty=0; desty<pd->DestHeight; desty++ )
             {
-                if( srcyinc )	// incremented source line after last line scaling ?
+                if( srcyinc )   // incremented source line after last line scaling ?
                 {
                     if( scale )
                     {
@@ -786,8 +786,8 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                                     destwidth );
                 if( srcyinc )
                 {
-                    if( srcyinc == 1 )	srcbuf += pd->SrcWidthBytes;
-                    else		srcbuf += pd->SrcWidthBytes * srcyinc;
+                    if( srcyinc == 1 )  srcbuf += pd->SrcWidthBytes;
+                    else                srcbuf += pd->SrcWidthBytes * srcyinc;
                     srcy += srcyinc;
                 }
             }
@@ -797,7 +797,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
             D(bug("picture.datatype/RemapTC2CM: remapping buffer without dithering\n"));
             for( desty=0; desty<pd->DestHeight; desty++ )
             {
-                if( srcyinc )	// incremented source line after last line scaling ?
+                if( srcyinc )   // incremented source line after last line scaling ?
                 {
                     thissrc = srcbuf;
                     thisdest = srcline;
@@ -831,8 +831,8 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                                     destwidth );
                 if( srcyinc )
                 {
-                    if( srcyinc == 1 )	srcbuf += pd->SrcWidthBytes;
-                    else		srcbuf += pd->SrcWidthBytes * srcyinc;
+                    if( srcyinc == 1 )  srcbuf += pd->SrcWidthBytes;
+                    else                srcbuf += pd->SrcWidthBytes * srcyinc;
                     srcy += srcyinc;
                 }
             }
@@ -862,8 +862,8 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     if( NumColors < DestNumColors )
         DestNumColors = NumColors;
 
-    memset( pd->DestColRegs, 0xFF, 768*sizeof(ULONG) );	/* initialize GRegs table */
-    memset( pd->SparseTable, 0x0, 256 );		/* initialize Sparse table */
+    memset( pd->DestColRegs, 0xFF, 768*sizeof(ULONG) ); /* initialize GRegs table */
+    memset( pd->SparseTable, 0x0, 256 );                /* initialize Sparse table */
     pd->NumSparse = NumColors;
 
     /*
@@ -881,7 +881,7 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     /*
      *  Determine the number of colors in histogram
      */
-    { 
+    {
         UBYTE *sb = pd->SrcBuffer;
     
         for( i=0; i<height; i++ )
@@ -936,7 +936,7 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
      *  Remap source buffer to dest Bitmap
      */
     D(bug("picture.datatype/RemapCM2CM: remapping buffer to new pens\n"));
-    { 
+    {
         struct RastPort DestRP;
         ULONG x, srcy, srcyinc, srcypos;
         ULONG desty;
@@ -965,7 +965,7 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
         srcypos = 0;
         for( desty=0; desty<pd->DestHeight; desty++ )
         {
-            if( srcyinc )	// incremented source line after last line scaling ?
+            if( srcyinc )       // incremented source line after last line scaling ?
             {
                 thissrc = srcbuf;
                 thisdest = srcline;
@@ -991,8 +991,8 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
                                 destwidth );
             if( srcyinc )
             {
-                if( srcyinc == 1 )	srcbuf += pd->SrcWidthBytes;
-                else		srcbuf += pd->SrcWidthBytes * srcyinc;
+                if( srcyinc == 1 )      srcbuf += pd->SrcWidthBytes;
+                else            srcbuf += pd->SrcWidthBytes * srcyinc;
                 srcy += srcyinc;
             }
         }

@@ -140,7 +140,7 @@ STATIC VOID RenderPalette(struct PaletteData *data, struct RastPort *rp, Class *
 
     top  = pbox->Top;
 
-    colors_left = data->pd_NumColors;    
+    colors_left = data->pd_NumColors;
     SetDrMd(rp, JAM1);
 
     for (row = data->pd_NumRows; row; row --)
@@ -152,7 +152,7 @@ STATIC VOID RenderPalette(struct PaletteData *data, struct RastPort *rp, Class *
             SetAPen(rp, GetPalettePen(data, currentcolor));
 
             RectFill(   rp, left, top,
-                        left + data->pd_ColWidth - VSPACING - 1, 
+                        left + data->pd_ColWidth - VSPACING - 1,
                         top + data->pd_RowHeight - HSPACING - 1 );
 
             D(bug(  "Rectfilling area (%d, %d, %d, %d)\n with color %d", left, top,
@@ -175,7 +175,7 @@ STATIC VOID RenderPalette(struct PaletteData *data, struct RastPort *rp, Class *
 
 /**********************************************************************************************/
 
-VOID UpdateActiveColor( struct PaletteData  *data, 
+VOID UpdateActiveColor( struct PaletteData  *data,
                         struct DrawInfo     *dri,
                         struct RastPort     *rp,
                         Class               *cl)
@@ -199,7 +199,7 @@ VOID UpdateActiveColor( struct PaletteData  *data,
                 left, top, left + data->pd_ColWidth, top + data->pd_RowHeight, data->pd_OldColor));
 
         /* Clear area with BACKGROUNDPEN */
-        RectFill(   rp, 
+        RectFill(   rp,
                     left - VBORDER,
                     top - HBORDER,
                     left + data->pd_ColWidth - 1,
@@ -240,7 +240,7 @@ VOID UpdateActiveColor( struct PaletteData  *data,
         RectFill(   rp, left, top,
                     left + 1, bottom);
 
-        /* right */    
+        /* right */
         RectFill(   rp, right - 1, top,
                     right, bottom);
 
@@ -340,7 +340,7 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
             case GTPA_Depth:        /* [ISU] */
                 /* NumColors tag overrides Depth tag! */
                 if (!numcolorstag_found)
-                {            
+                {
                         data->pd_NumColors = (1 << ((UBYTE)tidata));
 
                         D(bug("Depth initialized to %d\n", tidata));
@@ -354,7 +354,7 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
 
                 data->pd_OldColor = data->pd_Color;
                 data->pd_Color = (UBYTE)tidata;
-                D(bug("Color set to %d\n", tidata));            
+                D(bug("Color set to %d\n", tidata));
                 retval = 1UL;
                 break;
 
@@ -413,7 +413,7 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
         /* convert pen number to index */
     
         if (data->pd_ColorTable)
-        {    
+        {
                 WORD i;
 
             /* convert pen number to index number */
@@ -550,7 +550,7 @@ IPTR GTPalette__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
     struct PaletteData  *data   = INST_DATA(cl, g);
     struct IBox         *gbox   = &(data->pd_GadgetBox),
                         *pbox   = &(data->pd_PaletteBox),
-                        *indbox = &(data->pd_IndicatorBox); 
+                        *indbox = &(data->pd_IndicatorBox);
     UWORD               cols, rows, cols_p2;
     WORD                leftover_width, leftover_height;
     
@@ -563,14 +563,14 @@ IPTR GTPalette__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
     if (!msg->gpl_Initial)
     {
 
-        struct RastPort *rp;    
+        struct RastPort *rp;
     
         if ((rp = ObtainGIRPort(msg->gpl_GInfo)))
         {
             SetAPen(rp, msg->gpl_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
             D(bug(  "Clearing area (%d, %d, %d, %d)\n",
                     gbox->Left, gbox->Top, gbox->Left + gbox->Width, gbox->Top + gbox->Height));
-            RectFill(   rp, gbox->Left, gbox->Top, 
+            RectFill(   rp, gbox->Left, gbox->Top,
                         gbox->Left + gbox->Width - 1, gbox->Top + gbox->Height - 1);
 
             ReleaseGIRPort(rp);
@@ -662,7 +662,7 @@ IPTR GTPalette__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
     struct RastPort     *rp;
     struct IBox         *gbox = &(data->pd_GadgetBox);
     
-    EnterFunc(bug("Palette::Render()\n"));    
+    EnterFunc(bug("Palette::Render()\n"));
 
     rp = msg->gpr_RPort;
  
@@ -802,7 +802,7 @@ IPTR GTPalette__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
     
             retval = GMR_MEACTIVE;
         
-        } /* if (gadget activated is a result of user input) */        
+        } /* if (gadget activated is a result of user input) */
         else
         {
                 retval = GMR_NOREUSE;
@@ -856,7 +856,7 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                 */
 
                 D(bug("IECLASS_RAWMOUSE: SELECTUP\n"));
-#if 0             
+#if 0
                 if (!InsidePalette(data, x, y))
                 {
                     /* Left released outside of gadget area, go back
@@ -874,7 +874,7 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                 }
                 else
                 {
-#endif             
+#endif
                     D(bug(  "Left released inside gadget, color=%d\n", GetPalettePen(data, data->pd_Color)));
                             *(msg->gpi_Termination) = GetPalettePen(data, data->pd_Color);
                             retval = GMR_VERIFY;
@@ -914,7 +914,7 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             
                 retval = GMR_MEACTIVE;
             
-            } 
+            }
             break;
         
 

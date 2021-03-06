@@ -11,9 +11,9 @@
 
         i386 compatable families...
             AMD 486/5x86/K5/K6/K6-II/K6-III/Athlon/Duron/Opteron/Athlon64
-            Intel P5/P54C/P55C/P24T/P6/P2/P3/PM/Itanium(IA-64) 
+            Intel P5/P54C/P55C/P24T/P6/P2/P3/PM/Itanium(IA-64)
             Cyrix  5x86/M1/MediaGX/M2
-            UMC  
+            UMC
             NexGen  Nx586
             Centaur  C6/C2/C3
             Rise Technology mP6
@@ -30,14 +30,14 @@
 #include "cpuinfo.h"
 
 /********************************************
-		    Version Information
+                    Version Information
  ********************************************/
 
 const TEXT version[] = VERSTAG;
 BOOL    VERBOSE=FALSE;
 
 /********************************************
-		       C Functions
+                       C Functions
  ********************************************/
 
 BOOL    isLastNode ( struct MinNode *CurrNode )
@@ -56,7 +56,7 @@ BOOL    isLastNode ( struct MinNode *CurrNode )
 
 int     AddBufferLine ( int buffpos, char *buffer, char *line )
 {
-	ULONG                   size = strlen( line );
+        ULONG                   size = strlen( line );
 
     sprintf ( buffer + buffpos, line );
     return  ( buffpos += size );
@@ -64,7 +64,7 @@ int     AddBufferLine ( int buffpos, char *buffer, char *line )
 }
 
 /********************************************
-		Actual Code... Main Entry
+                Actual Code... Main Entry
  ********************************************/
 
 int     main ( void )
@@ -165,9 +165,9 @@ int     main ( void )
                     FoundCPUs = (struct CPU_Definition *)CPUNode->mln_Succ;                         /* get the next cpu in the list .. */
 
                     //if ( cpu_count > MAX_CPU )
-                    //{ 
+                    //{
                         //printf("WARNING: Number of CPUs in list exceeds MAX no of CPUS [%d]\n", MAX_CPU);
-                        //error = RETURN_FAIL; 
+                        //error = RETURN_FAIL;
                         //break;
                     //}
                 } while  ( isLastNode( CPUNode ) == FALSE );
@@ -180,16 +180,16 @@ int     main ( void )
 
         } while  ( isLastNode( FamilyNode ) == FALSE );
 
-        /* .. */     
+        /* .. */
         printf("Processor List Complete..\n");
 
         if (cpu_count != (CPUList->CPU_Physical))
         {
-            error = RETURN_FAIL;        
+            error = RETURN_FAIL;
             printf("WARNING: Number of CPU's in list != registered number (list = %d,Registered=  %d).\n",cpu_count, CPUList->CPU_Physical);
         }
     }
-    else 
+    else
     {
         error = RETURN_FAIL;
         printf("ERROR: Couldnt open cpu.resource.\n");

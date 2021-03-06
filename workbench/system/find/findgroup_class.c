@@ -346,7 +346,7 @@ AROS_UFH3S(void, view_func,
         D(bug("[Find::view_func] viewing %s\n", entry->fullname));
         con = Open("CON:////Find Output/CLOSE/AUTO/WAIT", MODE_OLDFILE);
         snprintf(command, sizeof command, "SYS:Utilities/Multiview \"%s\"", entry->fullname);
-        if (SystemTags(command, 
+        if (SystemTags(command,
             SYS_Asynch, TRUE,
             SYS_Input,  con,
             SYS_Output, NULL,
@@ -510,7 +510,7 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             StringFrame,
                             MUIA_String_Contents, contents,
                             MUIA_CycleChain, 1,
-                        End,                    
+                        End,
                     End,
                     Child, HGroup,
                         GroupFrame,

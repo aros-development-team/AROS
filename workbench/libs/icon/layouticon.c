@@ -47,14 +47,14 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
         struct IconBase *, IconBase, 32, Icon)
 
 /*  FUNCTION
-	Adapt a palette-mapped icon for display.
-	
+        Adapt a palette-mapped icon for display.
+        
     INPUTS
 
     RESULT
 
     NOTES
-	Not implemented.
+        Not implemented.
 
     EXAMPLE
 
@@ -493,7 +493,7 @@ static BOOL scaleToBounds(ULONG SrcWidth, ULONG SrcHeight,
 {
     ULONG scaleXsrc, scaleYsrc, scaleXdst, scaleYdst;
 
-    if (MaxWidth <= 0 || MaxHeight <= 0) 
+    if (MaxWidth <= 0 || MaxHeight <= 0)
         return FALSE;
 
     /* Scaling calculations

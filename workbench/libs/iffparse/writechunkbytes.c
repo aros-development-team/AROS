@@ -9,29 +9,29 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH3(LONG, WriteChunkBytes,
+        AROS_LH3(LONG, WriteChunkBytes,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
-	AROS_LHA(APTR              , buf, A1),
-	AROS_LHA(LONG              , numBytes, D0),
+        AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(APTR              , buf, A1),
+        AROS_LHA(LONG              , numBytes, D0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 11, IFFParse)
+        struct Library *, IFFParseBase, 11, IFFParse)
 
 /*  FUNCTION
-	Writes given number of bytes in the supplied buffer into the
-	current chunk. Attempts to write past the endo of the chunk will
-	be truncated.
+        Writes given number of bytes in the supplied buffer into the
+        current chunk. Attempts to write past the endo of the chunk will
+        be truncated.
 
     INPUTS
-	iff	   - pointer to IFFHandle struct.
-	buf	   -  buffer with data to write.
-	numBytes  - number of bytes to write.
+        iff        - pointer to IFFHandle struct.
+        buf        -  buffer with data to write.
+        numBytes  - number of bytes to write.
 
     RESULT
-	actual	  -  (positive) number of bytes actually written.
-		    (negative) IFFERR_#? indicating unsuccessful write.
+        actual    -  (positive) number of bytes actually written.
+                    (negative) IFFERR_#? indicating unsuccessful write.
     NOTES
 
     EXAMPLE
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	PushChunk(), PopChunk(), WriteChunkRecords()
+        PushChunk(), PopChunk(), WriteChunkRecords()
 
     INTERNALS
 
@@ -53,7 +53,7 @@
     LONG byteswritten;
 
     DEBUG_WRITECHUNKBYTES(dprintf("WriteChunkBytes: iff 0x%lx buf 0x%lx size %d\n",
-			    iff, buf, numBytes));
+                            iff, buf, numBytes));
 
     /* Get the top contextnode */
     cn = TopChunk(iff);
@@ -61,11 +61,11 @@
     /* Is the numBytes known for this chunk ? */
     if (cn->cn_Size != IFFSIZE_UNKNOWN)
     {
-	/* We must truncate attempts to write larger than the chunksize */
-	placeleft = cn->cn_Size - cn->cn_Scan;
-	if  (numBytes > placeleft)
+        /* We must truncate attempts to write larger than the chunksize */
+        placeleft = cn->cn_Size - cn->cn_Scan;
+        if  (numBytes > placeleft)
 
-	numBytes = placeleft;
+        numBytes = placeleft;
     }
 
 
@@ -74,8 +74,8 @@
 
     if (byteswritten > 0)
     {
-	/* No error */
-	cn->cn_Scan += byteswritten;
+        /* No error */
+        cn->cn_Scan += byteswritten;
     }
 
     DEBUG_WRITECHUNKBYTES(dprintf("WriteChunkBytes: return %ld\n", byteswritten));

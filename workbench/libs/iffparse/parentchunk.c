@@ -9,26 +9,26 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH1(struct ContextNode *, ParentChunk,
+        AROS_LH1(struct ContextNode *, ParentChunk,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ContextNode *, contextNode, A0),
+        AROS_LHA(struct ContextNode *, contextNode, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 30, IFFParse)
+        struct Library *, IFFParseBase, 30, IFFParse)
 
 /*  FUNCTION
-	Returns a pointer to the parent context node to the given
-	one on the context node stack. The parent context node
-	represents the chunk enclosing the chunk given.
-	This can be use together with CurrentChunk() to iterate the
-	context node stack top-down.
+        Returns a pointer to the parent context node to the given
+        one on the context node stack. The parent context node
+        represents the chunk enclosing the chunk given.
+        This can be use together with CurrentChunk() to iterate the
+        context node stack top-down.
 
     INPUTS
-	contextNode  - pointer to a context node.
+        contextNode  - pointer to a context node.
 
     RESULT
-	parent	    -  pointer to the parent context node or NULL if none.
+        parent      -  pointer to the parent context node or NULL if none.
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	CurrentChunk()
+        CurrentChunk()
 
     INTERNALS
 
@@ -61,7 +61,7 @@
     */
 
     if (!parentcn->cn_Node.mln_Succ)
-	parentcn = NULL;
+        parentcn = NULL;
 
     return (parentcn);
 

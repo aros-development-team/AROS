@@ -2,7 +2,7 @@
     Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: Country data for Österreich (Austria)
-          based on the Amiga Developer CD 2.1 file -: 
+          based on the Amiga Developer CD 2.1 file -:
           NDK/NDK_3.5/Examples/Locale/Countries/make_country_files.c
 */
 

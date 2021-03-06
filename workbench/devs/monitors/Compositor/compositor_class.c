@@ -153,7 +153,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
     DRECALC(bug("[Compositor:%s] Display rect [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(compdata->displayrect)));
 
     /*
-     * This function assumes bitmapstack is in correct Z order: 
+     * This function assumes bitmapstack is in correct Z order:
      * from topmost to bottom most
      */
     if ((dispvisregion = NewRegion()) != NULL)
@@ -251,7 +251,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
                     n->sbmflags |= STACKNODEF_VISIBLE;
                 }
 
-                DRECALC(bug("[Compositor:%s] HiddBitmap 0x%p, topedge %d, visible %d\n", __PRETTY_FUNCTION__, 
+                DRECALC(bug("[Compositor:%s] HiddBitmap 0x%p, topedge %d, visible %d\n", __PRETTY_FUNCTION__,
                             n->bm, n->topedge, (n->sbmflags & STACKNODEF_VISIBLE)));
             }
             else
@@ -291,7 +291,7 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
 
     if (!(n->sbmflags & COMPF_ALPHA))
     {
-        DREDRAWBM(bug("[Compositor:%s] Blitting %dx%d [from %d, %d]\n", __PRETTY_FUNCTION__, blitwidth, blitheight, 
+        DREDRAWBM(bug("[Compositor:%s] Blitting %dx%d [from %d, %d]\n", __PRETTY_FUNCTION__, blitwidth, blitheight,
               rect->MinX - n->leftedge, rect->MinY - n->topedge));
 
         HIDD_Gfx_CopyBox(compdata->gfx, n->bm,
@@ -536,7 +536,7 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
     }
 }
 
-/*  
+/*
 
 There are several cases that needs to be handled in this code. They are documented
 below. Please read it before making changes.
@@ -606,8 +606,8 @@ Additional rule:
 */
 static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata, BOOL newtop)
 {
-    /* 
-     * If the topbitmap covers the complete screen, show it instead of 
+    /*
+     * If the topbitmap covers the complete screen, show it instead of
      * displaybitmap. Remember that screen bitmap -> composited bitmap
      * mirroring has a negative impact on performance.
      */
@@ -769,7 +769,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     }
 
     /*
-     * (a) - disposing of previous compositing buffers needs to happen after mode switch 
+     * (a) - disposing of previous compositing buffers needs to happen after mode switch
      * since it could have been the current screenbitmap
      */
     if (!(compdata->flags & COMPSTATEF_HASALPHA) && (oldintermedbitmap))
@@ -926,7 +926,7 @@ VOID CompositorParseConfig(struct HIDDCompositorData *compdata)
         FreeDosObject(DOS_RDARGS, rdargs);
     }
     
-    me->pr_WindowPtr = old_windowptr;    
+    me->pr_WindowPtr = old_windowptr;
 }
 
 AROS_UFH3(void, CompositorDefaultBackFillFunc,
@@ -1214,7 +1214,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
          */
         ForeachNode(&compdata->bitmapstack, n)
         {
-            HIDDCompositorValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge, 
+            HIDDCompositorValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge,
                 compdata->displayrect.MaxX - compdata->displayrect.MinX + 1,
                 compdata->displayrect.MaxY - compdata->displayrect.MinY + 1);
             DSTACK(bug("[Compositor] %s: Bitmap 0x%p, display size %d x %d, validated position (%ld, %ld)\n", __PRETTY_FUNCTION__,
@@ -1268,7 +1268,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
 
             srcrect.MinX = n->leftedge + msg->x;
             srcrect.MinY = n->topedge + msg->y;
-            srcrect.MaxX = srcrect.MinX + msg->width - 1; 
+            srcrect.MaxX = srcrect.MinX + msg->width - 1;
             srcrect.MaxY = srcrect.MinY + msg->height - 1;
                 DUPDATE(bug("[Composit] %s: Bitmap rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1));
 
@@ -1407,7 +1407,7 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
              * HIDDCompositorToggleCompositing() does this itself, for improved
              * visual appearance.
              */
-            HIDDCompositorToggleCompositing(compdata, FALSE);    
+            HIDDCompositorToggleCompositing(compdata, FALSE);
         }
         else
             HIDDCompositorRedrawVisibleRegions(compdata, NULL);

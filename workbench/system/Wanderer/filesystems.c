@@ -6,15 +6,15 @@
 #include "locale.h"
 
 /**
- * Displays a requset window asking the user if he is absolutely sure to overwrite and unprotect a file. The answeres are 
+ * Displays a requset window asking the user if he is absolutely sure to overwrite and unprotect a file. The answeres are
  * recorded in the OpModes struct and the request window is opened by calling the askHook.
- * 
+ *
  * Params: destPath -> Target path
  *         opModes  -> OpModes struct where the answers are stored
  *         askHook  -> Hook responsible for opening a request window
  *         askData  -> FileCopyData struct containg the data displayed by the askHook
  *         fib      -> FileInfoBlock struct for the file in question
- * 
+ *
  * Result: TRUE if user accept to overwrite and unprotect (if necessary), FALSE if not
  */
 static BOOL askToOverwriteAndUnprotect(CONST_STRPTR destPath, struct OpModes *opModes, struct Hook *askHook, struct FileCopyData *askData, struct FileInfoBlock *fib)
@@ -74,15 +74,15 @@ static BOOL askToOverwriteAndUnprotect(CONST_STRPTR destPath, struct OpModes *op
 }
 
 /**
- * Displays a requset window asking the user if he is absolutely sure to delete and unprotect a file. The answeres are 
+ * Displays a requset window asking the user if he is absolutely sure to delete and unprotect a file. The answeres are
  * recorded in the OpModes struct and the request window is opened by calling the askHook.
- * 
+ *
  * Params: destPath -> Target path
  *         opModes  -> OpModes struct where the answers are stored
  *         askHook  -> Hook responsible for opening a request window
  *         askData  -> FileCopyData struct containg the data displayed by the askHook
  *         fib      -> Sourde file's FileInfoBlock struct
- * 
+ *
  * Result: TRUE if user accepted to delete and unprotect (if necessary), FALSE if not
  */
 static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, CONST_STRPTR infoFilePath, struct FileInfoBlock *fib)
@@ -135,13 +135,13 @@ static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, 
 /**
  * Function responsible for doing the actual file copy by reading and writing a set of bytes from the source file and writing them
  * to the target file. Is also responsible for updating the progress window displayed on the desktop.
- * 
+ *
  * Params: sourcePath  -> Source file path
  *         destPath    -> Target file path
  *         fib         -> Source file's FileInfoBlock struct
  *         displayHook -> Hook showing a progress window
  *         userdata    -> Structure containing pointers to various UI elements used by the displayHook
- * 
+ *
  * Result: FALSE if everything went ok, TRUE if user aborted the operation or anything failed
  */
 static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, struct FileInfoBlock *fib, struct Hook *displayHook, APTR userdata)
@@ -229,7 +229,7 @@ static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, stru
 
                 Close(out);
                 
-                if (!stop) 
+                if (!stop)
                 {
                     CopyFileInfo(fib, sourcePath, destPath);
                 }
@@ -259,11 +259,11 @@ static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, stru
 
 /**
  * Deletes a file from the filesystem and updates a progress window accordingly.
- * 
- * Params: path        -> File to be deleted 
+ *
+ * Params: path        -> File to be deleted
  *         displayHook -> Hook responsible for displaying a progress window
  *         userdata    -> Structure containing pointers to various UI elements used by the displayHook
- * 
+ *
  * Result: TRUE if operation was aborted or anything failed, FALSE if not
  */
 static BOOL deleteSingleFile(CONST_STRPTR path, struct Hook *displayHook, APTR userdata)
@@ -302,12 +302,12 @@ static BOOL deleteSingleFile(CONST_STRPTR path, struct Hook *displayHook, APTR u
 }
 
 /**
- * Moves a file from one location to another. 
- * 
- * Params: sourcePath  -> Source file path 
+ * Moves a file from one location to another.
+ *
+ * Params: sourcePath  -> Source file path
  *         dstDir      -> Target file path
- *         newDir      -> If set to true, file already exists check is skipped. 
- * 
+ *         newDir      -> If set to true, file already exists check is skipped.
+ *
  * Result: TRUE if operation was aborted or anything failed, FALSE if not
  */
 static BOOL moveFile(CONST_STRPTR sourcePath, CONST_STRPTR destDir, BOOL newDir)
@@ -382,7 +382,7 @@ static BOOL deleteDirectoryContents(CONST_STRPTR path, struct OpModes *opModes, 
 }
 
 /**
- * Helper function that checks if target file/directory already exists 
+ * Helper function that checks if target file/directory already exists
  */
 BOOL checkIfAlreadyExists(CONST_STRPTR targetPath, CONST_STRPTR sourcePath, struct Hook *askHook, struct OpModes *opModes)
 {
@@ -408,19 +408,19 @@ BOOL checkIfAlreadyExists(CONST_STRPTR targetPath, CONST_STRPTR sourcePath, stru
 }
 
 /**
- * Copies a singe file from one path to another. 
- * 
+ * Copies a singe file from one path to another.
+ *
  * Params: sourcePath         -> Source file path
  *         sourceInfoFilePath -> Source .info file path
- *         targetDir          -> Target file path 
+ *         targetDir          -> Target file path
  *         hasInfoFile        -> If true the file being copied has an .info file
  *         askHook            -> Hook responsible for displaying a query window
- *         opModes            -> Structure responsible for holding answers to the queries 
+ *         opModes            -> Structure responsible for holding answers to the queries
  *         userdata           -> Structure containing pointers to various UI elements used by the displayHook
  *         displayHook        -> Hook responsible for showing a progress window
  *         fib                -> Source file's FileInfoBlock struct
  *         inDir              -> If true the file being copied is part of a directory copy
- * 
+ *
  * Result: TRUE if the operation was aborted or anything failed, FALSE if not
  *
  */
@@ -549,10 +549,10 @@ BOOL infoFileSetup(CONST_STRPTR sourcePath, STRPTR *sourceInfoFilePath, STRPTR *
 /**
  * Creates a new directory for the give path and returns a write lock for the newly created directory.
  * If the directory already exists, a write lock for the existing directory is returned.
- * 
+ *
  * Params: path -> Full path to the new directory
- * 
- * Result: write lock for directory 
+ *
+ * Result: write lock for directory
  */
 BPTR CreateDirectory(CONST_STRPTR path)
 {
@@ -620,11 +620,11 @@ BOOL IsOnSameDevice(CONST_STRPTR path1, CONST_STRPTR path2)
 }
 
 /**
- * Moves all content from one path to another. The path can point to a directory, regular file or info file. 
- * 
+ * Moves all content from one path to another. The path can point to a directory, regular file or info file.
+ *
  * Params: sourcePath -> Source file path
  *         targetDir  -> Target directory
- * 
+ *
  * Result: FALSE if operation ended successfully, TRUE if it was stopped prematurely
  */
 BOOL MoveContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir)
@@ -673,16 +673,16 @@ BOOL MoveContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir)
 }
 
 /**
- * Copies all content from one path to another. The source path can point to a directory, regular file or info file. 
- * 
- * Params: sourcePath  -> Source path 
+ * Copies all content from one path to another. The source path can point to a directory, regular file or info file.
+ *
+ * Params: sourcePath  -> Source path
  *         targetDir   -> Target path
  *         displayHook -> Hook used to display a progress window
  *         askHook     -> Hook used to display a request window
  *         opModes     -> Holds data for various user choices
  *         userdata    -> Contains a pointer to a struct with all the Zune objects used by the display Hook
  *         first       -> Must be set to true for the initial call (if copying a directory, this function will be called recursively)
- * 
+ *
  * Result: FALSE if operation ended successfully, TRUE if it was stopped prematurely
  */
 BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *displayHook, struct Hook *askHook, struct OpModes *opModes, APTR userdata, BOOL first)
@@ -772,14 +772,14 @@ BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *d
 }
 
 /**
- * Deletes all content from the given path. The path can point to a directory, regular file or info file. 
- * 
+ * Deletes all content from the given path. The path can point to a directory, regular file or info file.
+ *
  * Params: path        -> File path
  *         opModes     -> Holds data for various user choices
  *         askHook     -> Hook used to display a request window
  *         displayHook -> Hook used to display a progress window
  *         userdata    -> Contains a pointer to a struct with all the Zune objects used by the display Hook
- * 
+ *
  * Result: FALSE if operation ended successfully, TRUE if it was stopped prematurely
  */
 BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct Hook *displayHook, APTR userdata)

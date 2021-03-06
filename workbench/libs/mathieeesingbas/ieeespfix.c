@@ -58,7 +58,7 @@
     {
         SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
         return 0;
-    } 
+    }
     
     Shift = (y & IEEESPExponent_Mask) >> 23;
     Shift -=0x7e;

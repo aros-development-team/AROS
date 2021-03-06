@@ -42,7 +42,7 @@ static BPTR oldlock = (BPTR)-1;
 static STRPTR illegal_chars = "/:";
 static BOOL isInfoFile = FALSE;
 
-static BOOL checkIfInfoFile(CONST_STRPTR path) 
+static BOOL checkIfInfoFile(CONST_STRPTR path)
 {
     return (strncmp(path + strlen(path) - 5, ".info", 5) == 0);
 }
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     parentlock = startup->sm_ArgList[1].wa_Lock;
     oldname    = startup->sm_ArgList[1].wa_Name;
 
-    if (checkIfInfoFile(oldname)) 
+    if (checkIfInfoFile(oldname))
     {
         isInfoFile = TRUE;
         WORD len = strlen(oldname);
@@ -130,7 +130,7 @@ static void MakeGUI(void)
                     MUIA_Frame, MUIV_Frame_String,
                 End),
             End),
-            Child, (IPTR) (RectangleObject, 
+            Child, (IPTR) (RectangleObject,
                 MUIA_Rectangle_HBar, TRUE,
                 MUIA_FixHeight,      2,
             End),
@@ -142,7 +142,7 @@ static void MakeGUI(void)
         End),
     End;
     
-    if (!app) 
+    if (!app)
         Cleanup(_(MSG_FAILED_CREATE_APP));
 
     DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
@@ -191,7 +191,7 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     {
         MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
         goto end;
-    }    
+    }
     strcpy(oldinfoname, oldname);
     strcat(oldinfoname, ".info");
 
@@ -200,7 +200,7 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     {
         MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
         goto end;
-    }    
+    }
     strcpy(newinfoname, newname);
     strcat(newinfoname, ".info");
 

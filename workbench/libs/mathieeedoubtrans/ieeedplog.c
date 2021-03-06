@@ -79,7 +79,7 @@
     {
         Set_Value64C
         (
-            Res, 
+            Res,
             (IEEEDPSign_Mask_Hi + IEEEDPExponent_Mask_Hi),
             (IEEEDPSign_Mask_Lo + IEEEDPExponent_Mask_Lo)
         );
@@ -87,8 +87,8 @@
     }
     /* check for argument == 0 or argument == +infinity */
     if
-    ( 
-           is_eqC(y, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo) 
+    (
+           is_eqC(y, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo)
         || is_eqC(y, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo)
     )
     {
@@ -103,11 +103,11 @@
     AND64QC(tmp, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
     OR64QC(tmp, 0x3fe00000, 0x0);
     ld_M = intern_IEEEDPLd
-    ( 
+    (
         (struct MathIeeeDoubTransBase *) MathIeeeDoubTransBase,
         tmp
     );
-    /*      
+    /*
                       ld M + E
         ln(fnum1) =  --------
                         ld e

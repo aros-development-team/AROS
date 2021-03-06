@@ -165,7 +165,7 @@ BOOL Prefs_ImportFH(BPTR fh)
     if (chunk_map & (1 << 0)) {
         D(bug("LoadPrefs: PTXT\n"));
 
-        IMPORT_WORD(txt.pt_PaperType); 
+        IMPORT_WORD(txt.pt_PaperType);
         IMPORT_WORD(txt.pt_PaperSize);
         IMPORT_WORD(txt.pt_PaperLength);
         IMPORT_WORD(txt.pt_Pitch);
@@ -224,7 +224,7 @@ BOOL Prefs_ExportFH(BPTR fh)
     struct PrinterDeviceUnitPrefs devunit = printerprefs.pp_DeviceUnit;
     struct PrinterGfxPrefs gfx = printerprefs.pp_Gfx;
 
-    EXPORT_WORD(txt.pt_PaperType); 
+    EXPORT_WORD(txt.pt_PaperType);
     EXPORT_WORD(txt.pt_PaperSize);
     EXPORT_WORD(txt.pt_PaperLength);
     EXPORT_WORD(txt.pt_Pitch);

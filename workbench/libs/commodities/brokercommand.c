@@ -24,12 +24,12 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, name   , A0),
-	AROS_LHA(ULONG , command, D0),
+        AROS_LHA(STRPTR, name   , A0),
+        AROS_LHA(ULONG , command, D0),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 33, Commodities)
+        struct Library *, CxBase, 33, Commodities)
 
 /*  FUNCTION
 
@@ -65,7 +65,7 @@
 
 {
     AROS_LIBFUNC_INIT
-	
+        
     static char Exg[] = "Exchange";
     
     ULONG error;
@@ -73,7 +73,7 @@
     
     if (name == NULL)
     {
-	name = Exg;
+        name = Exg;
     }
     
     D(bug("Notifying %s\n", name));
@@ -99,27 +99,27 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase)
     
     if (broker == NULL)
     {
-	return -1;
+        return -1;
     }
     
     if (broker->co_Ext.co_BExt->bext_MsgPort == NULL)
     {
-	if (command == CXCMD_KILL && broker->co_Ext.co_BExt->bext_Task != NULL)
-	{
-	    /* Tell the task to shut itself down */
-	    Signal(broker->co_Ext.co_BExt->bext_Task, SIGBREAKF_CTRL_E);
+        if (command == CXCMD_KILL && broker->co_Ext.co_BExt->bext_Task != NULL)
+        {
+            /* Tell the task to shut itself down */
+            Signal(broker->co_Ext.co_BExt->bext_Task, SIGBREAKF_CTRL_E);
 
-	    return 0;
-	}
-	
-	return -2;
+            return 0;
+        }
+        
+        return -2;
     }
     
     msg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_SINGLE, CxBase);
     
     if (msg == NULL)
     {
-	return -3;
+        return -3;
     }
     
     msg->cxm_ID = command;

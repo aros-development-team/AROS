@@ -541,7 +541,7 @@ VOID _ADCMD_FREE(struct IOAudio *audioio, ETASK *eta)
 
                     D(bug("NEWD: CMD_FREE freed unit (%d)\n", chan));
                 }
-                //else	error = ADIOERR_NOALLOCATION;
+                //else  error = ADIOERR_NOALLOCATION;
             }
             else
             {
@@ -591,7 +591,7 @@ VOID _CMD_WRITE(struct IOAudio *audioio, ETASK *eta, EUNIT *unit)
     //ablo = audioio->ioa_Data;
     //do
     //{
-    //	D(bug("%d ",*ablo,0,0,0,0));
+    //  D(bug("%d ",*ablo,0,0,0,0));
     //
     //}while((counter++) < 100);
     //D(bug("\n",0, 0,0,0,0));
@@ -950,7 +950,7 @@ VOID free_EUnit(ETASK *estruct, EUNIT *unit)
         else
         {
             D(bug("NEWD: free_Unit() waitcyclelist is NOT empty (unit %d).\n", unit->eu_id));
-        } 
+        }
     );
 
     if (!(CheckIO((struct IORequest *) &unit->eu_ahireq)))
@@ -967,7 +967,7 @@ VOID free_EUnit(ETASK *estruct, EUNIT *unit)
  * ------------
  *
  * Initializes the unit block. The unit is just an iorequest to interact with AHI or TIMER device.
- * 	Returns the unit or NULL if fails.
+ *      Returns the unit or NULL if fails.
  *
  * >Syn
  * *unit = InitEUnit(*etask,channel,*msgport)
@@ -1125,7 +1125,7 @@ VOID TaskBody( VOID)
                                  UnitInitAhi(unit); // Ok send soon now the pre-cached.
                                  }
 
-                                 while(ioaudioreq = (struct IOAudio*)  RemHead(&unit->eu_writewaitlist))	  // Examine for this unit only one request in waiting status.
+                                 while(ioaudioreq = (struct IOAudio*)  RemHead(&unit->eu_writewaitlist))          // Examine for this unit only one request in waiting status.
                                  {
                                  D(bug("NEWD: Founded ioreq (%d) in writewaitlist, now i process it.\n",ioaudioreq,0,0,0,0));
 
@@ -1133,7 +1133,7 @@ VOID TaskBody( VOID)
 
                                  if(unit->eu_audioio)
                                  {
-                                 break;			// If the precached is empty you can exit.
+                                 break;                 // If the precached is empty you can exit.
                                  }
                                  }
                                  */

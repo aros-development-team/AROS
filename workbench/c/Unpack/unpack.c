@@ -29,18 +29,18 @@
     RESULT
 
         Standard DOS error codes.
-	
+        
     NOTES
 
-        This command is not a tool like lha, lzx or unzip. 
+        This command is not a tool like lha, lzx or unzip.
         The .pkg files may be created with the python program
         in tools/package/pkg and compressed with bzip2 afterwards.
 
-	
+        
     EXAMPLE
 
         Unpack AROS.pkg TO Ram:
-	
+        
     BUGS
 
     SEE ALSO
@@ -76,7 +76,7 @@ AROS_SH2
 {
     AROS_SHCOMMAND_INIT
     
-    BPTR oldDir           = BNULL, 
+    BPTR oldDir           = BNULL,
          newDir           = BNULL;
     APTR pkg              = NULL;
     

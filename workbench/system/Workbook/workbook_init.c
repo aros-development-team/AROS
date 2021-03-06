@@ -26,13 +26,13 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     DOSBase = OpenLibrary("dos.library", 0);
     if ( DOSBase == NULL ) {
-    	D(bug("[Workbook] What? No dos.library?\n"));
-    	return FALSE;
+        D(bug("[Workbook] What? No dos.library?\n"));
+        return FALSE;
     }
 
     seg = CreateSegList(WorkbookMain);
     if (seg != BNULL) {
-    	AddSegment("Workbook", seg, CMD_INTERNAL);
+        AddSegment("Workbook", seg, CMD_INTERNAL);
     }
 
     CloseLibrary(DOSBase);

@@ -48,10 +48,10 @@ void PrinterPrefs_Handler(STRPTR filename)
         struct Preferences prefs;
         GetPrefs(&prefs, sizeof(prefs));
 
-    	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
-	{
-	    struct ContextNode *cn = CurrentChunk(iff);
-	    switch(cn->cn_ID)
+        while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
+        {
+            struct ContextNode *cn = CurrentChunk(iff);
+            switch(cn->cn_ID)
             {
                 case ID_PTXT:
                     ptp = LoadChunk(iff, sizeof(struct PrinterTxtPrefs), MEMF_ANY);
@@ -116,8 +116,8 @@ void PrinterPrefs_Handler(STRPTR filename)
                     }
                     break;
             }
-	}
-	KillIFF(iff);
+        }
+        KillIFF(iff);
         SetPrefs(&prefs, sizeof(prefs), TRUE);
     }
 }

@@ -10,22 +10,22 @@
     NAME */
 #include <clib/cgxvideo_protos.h>
 
-	AROS_LH1(void, UnlockVLayer,
+        AROS_LH1(void, UnlockVLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
+        AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
 
 /*  LOCATION */
-	struct Library *, CGXVideoBase, 11, Cgxvideo)
+        struct Library *, CGXVideoBase, 11, Cgxvideo)
 
 /*  FUNCTION
-	Unlocks a previouly locked video layer
+        Unlocks a previouly locked video layer
 
     INPUTS
-	VLayerHandle - pointer to a previously created videolayer handle
+        VLayerHandle - pointer to a previously created videolayer handle
 
     RESULT
-	none
+        none
 
     NOTES
 
@@ -35,7 +35,7 @@
         This function is unimplemented.
 
     SEE ALSO
-	LockVLayer()
+        LockVLayer()
 
     INTERNALS
 

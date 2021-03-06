@@ -35,10 +35,10 @@
 
     appWindow  --  pointer to the AppWindow (as returned by AddAppWindow()) to
                    try to remove the drop zone from; a value of NULL will
-		   result in no operation
+                   result in no operation
     dropZone   --  pointer to an AppWindowDropZone (as returned by
                    AddAppWindowDropZone()); a value of NULL will result in
-		   no operation
+                   no operation
 
     RESULT
 
@@ -67,32 +67,32 @@
 
     struct AppWindowDropZone *dz;
 
-    BOOL found = FALSE;		/* Is the drop zone 'dropZone' added to the
-				   window 'aw'? */
+    BOOL found = FALSE;         /* Is the drop zone 'dropZone' added to the
+                                   window 'aw'? */
 
     if ((aw == NULL) || (dropZone == NULL))
     {
-	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
+        SetIoErr(ERROR_REQUIRED_ARG_MISSING);
 
-	return FALSE;
+        return FALSE;
     }
 
     LockWorkbench();
     ForeachNode(&aw->aw_DropZones, dz)
     {
-	if (dz == dropZone)
-	{
-	    found = TRUE;
-	    break;
-	}
+        if (dz == dropZone)
+        {
+            found = TRUE;
+            break;
+        }
     }
 
     if (!found)
     {
-	UnlockWorkbench();
-	SetIoErr(ERROR_OBJECT_NOT_FOUND);
+        UnlockWorkbench();
+        SetIoErr(ERROR_OBJECT_NOT_FOUND);
 
-	return FALSE;
+        return FALSE;
     }
 
     Remove((struct Node *)dropZone);
@@ -101,7 +101,7 @@
     FreeVec(dropZone);
 
     /* NotifyWorkbench(WBNOTIFY_Delete, WBNOTIFY_DropZone, WorkbenchBase); */
-	
+        
     return TRUE;
 
     AROS_LIBFUNC_EXIT

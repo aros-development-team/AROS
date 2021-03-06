@@ -16,7 +16,7 @@
 
     LOCATION
 
-	C:
+        C:
 
     FUNCTION
 
@@ -72,7 +72,7 @@
 
 #define ARG_TEMPLATE    "FILE/M/A,ALL/S,QUIET/S,FORCE/S,FOLLOWLINKS/S"
 
-enum 
+enum
 {
     ARG_FILE = 0,
     ARG_ALL,
@@ -91,7 +91,7 @@ static char cmdname[] = "Delete";
 
 
 int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
-	     BOOL force, BOOL forcelinks);
+             BOOL force, BOOL forcelinks);
 
 int __nocommandline;
 
@@ -100,39 +100,39 @@ int main(void)
     struct RDArgs      *rda;
     struct AnchorPath  *ap;
     IPTR                args[NOOFARGS] = { (IPTR) NULL, FALSE, FALSE, FALSE, FALSE };
-    int	                retval         = RETURN_OK;
+    int                 retval         = RETURN_OK;
 
     ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
-		  MEMF_ANY | MEMF_CLEAR);
+                  MEMF_ANY | MEMF_CLEAR);
 
     if (ap != NULL)
     {
-	ap->ap_Strlen = MAX_PATH_LEN;
-	
-	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+        ap->ap_Strlen = MAX_PATH_LEN;
+        
+        rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
-	if (rda != NULL)
-	{
-	    /* Convert arguments into (less complex) variables */
-	    STRPTR *files = (STRPTR *)args[ARG_FILE];
-	    BOOL    all = (BOOL)args[ARG_ALL];
-	    BOOL    quiet = (BOOL)args[ARG_QUIET];
-	    BOOL    force = (BOOL)args[ARG_FORCE];
-	    BOOL    followlinks = (BOOL)args[ARG_FOLLOWLINKS];
+        if (rda != NULL)
+        {
+            /* Convert arguments into (less complex) variables */
+            STRPTR *files = (STRPTR *)args[ARG_FILE];
+            BOOL    all = (BOOL)args[ARG_ALL];
+            BOOL    quiet = (BOOL)args[ARG_QUIET];
+            BOOL    force = (BOOL)args[ARG_FORCE];
+            BOOL    followlinks = (BOOL)args[ARG_FOLLOWLINKS];
 
-	    retval = doDelete(ap, files, all, quiet, force, followlinks);
-	    
-	    FreeArgs(rda);
-	}
-	else
-	{
-	    PrintFault(IoErr(), cmdname);
-	    retval = RETURN_FAIL;
-	}	
+            retval = doDelete(ap, files, all, quiet, force, followlinks);
+            
+            FreeArgs(rda);
+        }
+        else
+        {
+            PrintFault(IoErr(), cmdname);
+            retval = RETURN_FAIL;
+        }
     }
     else
     {
-	retval = RETURN_FAIL;
+        retval = RETURN_FAIL;
     }
     
     FreeVec(ap);
@@ -201,7 +201,7 @@ static inline BOOL isDirectory(struct AnchorPath *ap, BOOL followflag)
 #define isDeletable(fib) (!((fib)->fib_Protection & FIBF_DELETE))
 
 int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
-	     BOOL force, BOOL forcelinks)
+             BOOL force, BOOL forcelinks)
 {
     LONG  match = 0;
     int   i;
@@ -217,37 +217,37 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
     for (i = 0; files[i] != NULL; i++)
     {
-	/* Index for last character in the current file name (pattern name) */
-	int lastIndex = strlen(files[i]) - 1;
+        /* Index for last character in the current file name (pattern name) */
+        int lastIndex = strlen(files[i]) - 1;
 
-	if (files[i][lastIndex] == ':')
-	{
-	    struct DosList *dl = LockDosList(LDF_ALL | LDF_READ);
-	    
-	    if (FindDosEntry(dl, (CONST_STRPTR)files[i], LDF_ALL | LDF_READ))
-	    {
-		MatchEnd(ap);
-		UnLockDosList(LDF_ALL | LDF_READ);
-		
-		Printf("%s is a device and cannot be deleted\n", files[i]);
-		
-		return RETURN_FAIL;
-	    }
-	    UnLockDosList(LDF_ALL | LDF_READ);
-	}
+        if (files[i][lastIndex] == ':')
+        {
+            struct DosList *dl = LockDosList(LDF_ALL | LDF_READ);
+            
+            if (FindDosEntry(dl, (CONST_STRPTR)files[i], LDF_ALL | LDF_READ))
+            {
+                MatchEnd(ap);
+                UnLockDosList(LDF_ALL | LDF_READ);
+                
+                Printf("%s is a device and cannot be deleted\n", files[i]);
+                
+                return RETURN_FAIL;
+            }
+            UnLockDosList(LDF_ALL | LDF_READ);
+        }
 
-	for (match = MatchFirst(files[i], ap); match == 0;
-	     match = MatchNext(ap))
-	{
-	    firstmatch = FALSE;
+        for (match = MatchFirst(files[i], ap); match == 0;
+             match = MatchNext(ap))
+        {
+            firstmatch = FALSE;
 
-	    if (CheckSignal(SIGBREAKF_CTRL_C))
-	    {
-		MatchEnd(ap);
-		PrintFault(ERROR_BREAK,"");
+            if (CheckSignal(SIGBREAKF_CTRL_C))
+            {
+                MatchEnd(ap);
+                PrintFault(ERROR_BREAK,"");
 
-		return  RETURN_ERROR;
-	    }
+                return  RETURN_ERROR;
+            }
 
             if (deleteit)
             {
@@ -270,45 +270,45 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                 deleteit = FALSE;
             }
 
-	    /* If this is a directory, we enter it regardless if the ALL
-	       switch is set. */
-	    if (isDirectory(ap, forcelinks))
-	    {
-		/* This is a directory. It's important to check if we just left
-		   the directory or is about to enter it. This is because we
-		   cannot delete a directory until we have deleted all the
-		   files in it. */
-		if (ap->ap_Flags & APF_DIDDIR)
-		{
-		    /* If we get here, we are in ALL mode and have deleted
-		       all the files inside the dir (if none were protected
-		       and such). */
+            /* If this is a directory, we enter it regardless if the ALL
+               switch is set. */
+            if (isDirectory(ap, forcelinks))
+            {
+                /* This is a directory. It's important to check if we just left
+                   the directory or is about to enter it. This is because we
+                   cannot delete a directory until we have deleted all the
+                   files in it. */
+                if (ap->ap_Flags & APF_DIDDIR)
+                {
+                    /* If we get here, we are in ALL mode and have deleted
+                       all the files inside the dir (if none were protected
+                       and such). */
 
-		    ap->ap_Flags &= ~APF_DIDDIR;
+                    ap->ap_Flags &= ~APF_DIDDIR;
 
-		    /* Now go on and delete the directory */
-		}
-		else
-		{
-		    /* We stumbled upon a directory */
+                    /* Now go on and delete the directory */
+                }
+                else
+                {
+                    /* We stumbled upon a directory */
 
-		    if(all)
-		    {
-			ap->ap_Flags |= APF_DODIR;
+                    if(all)
+                    {
+                        ap->ap_Flags |= APF_DODIR;
 
-			/* We don't want to delete a directory before deleting
-			   possible files inside it. Thus, match next file */
-			continue;
-		    }
+                        /* We don't want to delete a directory before deleting
+                           possible files inside it. Thus, match next file */
+                        continue;
+                    }
 
-		    /* If all is not set, DeleteFile() will return an error
-		       in case the directory was not empty. */
-		}
-	    }
+                    /* If all is not set, DeleteFile() will return an error
+                       in case the directory was not empty. */
+                }
+            }
             /* Mark the entry for deletion */
             deleteit = TRUE;
 
-	    /* Check permissions */
+            /* Check permissions */
             if (!isDeletable(&ap->ap_Info))
             {
                 /* Consider delete protected file/dir 'deleted' */
@@ -324,7 +324,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                 }
             }
             strcpy(name, ap->ap_Buf);
-	}
+        }
         MatchEnd(ap);
         if (deleteit)
         {

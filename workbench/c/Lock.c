@@ -7,52 +7,52 @@
 /**************************************************************************
 
     NAME
-	Lock
+        Lock
 
     FORMAT
-	Lock <drive> [ON|OFF] [<passkey>]
+        Lock <drive> [ON|OFF] [<passkey>]
 
     SYNOPSIS
-	DRIVE/A,ON/S,OFF/S,PASSKEY
+        DRIVE/A,ON/S,OFF/S,PASSKEY
 
     LOCATION
-	C:
+        C:
 
     FUNCTION
-	Lock will cause the specified device or partition to be made write-
-	protected or write-enabled. This write protection is a soft write
-	protection which is handled by the volume filesystem. Hence the
-	protection will be reset (to writable) on the next system reboot.
+        Lock will cause the specified device or partition to be made write-
+        protected or write-enabled. This write protection is a soft write
+        protection which is handled by the volume filesystem. Hence the
+        protection will be reset (to writable) on the next system reboot.
 
-	It is possible to specify an optional passkey which can be used to
-	password protect the locking. The same passkey that is used to lock
-	the volume must be used to unlock the volume. The passkey may be
-	any number of characters in length.
+        It is possible to specify an optional passkey which can be used to
+        password protect the locking. The same passkey that is used to lock
+        the volume must be used to unlock the volume. The passkey may be
+        any number of characters in length.
 
-	The volume given MUST be the device or root volume name, not an
-	assign.
+        The volume given MUST be the device or root volume name, not an
+        assign.
 
     EXAMPLE
-	
-	1.SYS:> Lock Work:
+        
+        1.SYS:> Lock Work:
 
-	    This will lock the volume called Work: without a passkey.
+            This will lock the volume called Work: without a passkey.
 
-	1.SYS:> Lock Work:
-	1.SYS:> MakeDir Work:SomeDir
-	Can't create directory Work:Test
-	MakeDir: Disk is write-protected
+        1.SYS:> Lock Work:
+        1.SYS:> MakeDir Work:SomeDir
+        Can't create directory Work:Test
+        MakeDir: Disk is write-protected
 
-	    The volume Work: is locked, so it is impossible to create a
-	    directory.
+            The volume Work: is locked, so it is impossible to create a
+            directory.
 
-	1.SYS:> Lock Work: OFF
+        1.SYS:> Lock Work: OFF
 
-	    This will unlock the volume work.
+            This will unlock the volume work.
 
-	1.SYS:> Lock Work: MyPassword
+        1.SYS:> Lock Work: MyPassword
 
-	    This will lock Work: with the passkey "MyPassword"
+            This will lock Work: with the passkey "MyPassword"
 
 **************************************************************************/
 #define DEBUG 0
@@ -66,12 +66,12 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-#define ARG_TEMPLATE	"DRIVE/A,ON/S,OFF/S,PASSKEY"
-#define ARG_DRIVE	0
-#define ARG_ON		1
-#define ARG_OFF		2
-#define ARG_PASSKEY	3
-#define TOTAL_ARGS	4
+#define ARG_TEMPLATE    "DRIVE/A,ON/S,OFF/S,PASSKEY"
+#define ARG_DRIVE       0
+#define ARG_ON          1
+#define ARG_OFF         2
+#define ARG_PASSKEY     3
+#define TOTAL_ARGS      4
 
 const TEXT version[] = "$VER: Lock 41.3 (7.12.2011)";
 static const char exthelp[] =
@@ -122,57 +122,57 @@ int main(void)
 
     if((rda = AllocDosObject(DOS_RDARGS, NULL)))
     {
-	rda->RDA_ExtHelp = (STRPTR)exthelp;
-	if((rd = ReadArgs(ARG_TEMPLATE, args, NULL)))
-	{
-	    /* Firstly, find out the volume */
-	    dp = GetDeviceProc((STRPTR)args[ARG_DRIVE], NULL);
+        rda->RDA_ExtHelp = (STRPTR)exthelp;
+        if((rd = ReadArgs(ARG_TEMPLATE, args, NULL)))
+        {
+            /* Firstly, find out the volume */
+            dp = GetDeviceProc((STRPTR)args[ARG_DRIVE], NULL);
 
-	    if(    dp == NULL || dp->dvp_DevNode == NULL 
-		|| (   dp->dvp_DevNode->dol_Type != DLT_DEVICE 
-		    && dp->dvp_DevNode->dol_Type != DLT_VOLUME )
-	    )
-	    {
-		if( dp != NULL )
-    		    error = ERROR_OBJECT_WRONG_TYPE;
-		else
-		    error = IoErr();
-	    }
-	    else
-	    {
-	        /* First of find out current state. */
-	        if (args[ARG_ON] && args[ARG_OFF])
-	        {
-	        	/* Both are set? */
-	        	error = ERROR_TOO_MANY_ARGS;
-	        }
-	        else if (args[ARG_OFF])
-	        {
-	            error = unlockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY])) ? IoErr() : 0;
-	        }
-	        else
-	        {
+            if(    dp == NULL || dp->dvp_DevNode == NULL
+                || (   dp->dvp_DevNode->dol_Type != DLT_DEVICE
+                    && dp->dvp_DevNode->dol_Type != DLT_VOLUME )
+            )
+            {
+                if( dp != NULL )
+                    error = ERROR_OBJECT_WRONG_TYPE;
+                else
+                    error = IoErr();
+            }
+            else
+            {
+                /* First of find out current state. */
+                if (args[ARG_ON] && args[ARG_OFF])
+                {
+                        /* Both are set? */
+                        error = ERROR_TOO_MANY_ARGS;
+                }
+                else if (args[ARG_OFF])
+                {
+                    error = unlockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY])) ? IoErr() : 0;
+                }
+                else
+                {
                     error = lockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY])) ? IoErr() : 0;
-	        }
-	    }
+                }
+            }
 
-	    if( dp )
-		FreeDeviceProc(dp);
+            if( dp )
+                FreeDeviceProc(dp);
 
-	    FreeArgs(rd);
-	} /* if( ReadArgs() ) */
-	else
-	    error = IoErr();
+            FreeArgs(rd);
+        } /* if( ReadArgs() ) */
+        else
+            error = IoErr();
 
-	FreeDosObject(DOS_RDARGS, rda);
+        FreeDosObject(DOS_RDARGS, rda);
     } /* if( AllocDosObject() ) */
     else
-	error = ERROR_NO_FREE_STORE;
+        error = ERROR_NO_FREE_STORE;
 
     if( error != 0 )
     {
-	PrintFault(error, "Lock");
-	return RETURN_FAIL;
+        PrintFault(error, "Lock");
+        return RETURN_FAIL;
     }
 
     SetIoErr(0);

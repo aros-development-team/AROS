@@ -1109,7 +1109,7 @@ int i, max = 0;
         max = GetPL(pl, _CHOICES).intval;
 
         if ( max > 32 )
-        { 
+        {
             error = SCRIPTERROR;
             traperr("More than 32 choices given!\n", NULL);
         }
@@ -1293,7 +1293,7 @@ BOOL j;
         max = GetPL(pl, _CHOICES).intval;
 
         if ( max > 32 )
-        { 
+        {
             error = SCRIPTERROR;
             traperr("More than 32 choices given!\n", NULL);
         }

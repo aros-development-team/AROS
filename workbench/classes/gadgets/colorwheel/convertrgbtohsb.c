@@ -28,7 +28,7 @@
         struct Library *, ColorWheelBase, 6, ColorWheel)
 
 /*  FUNCTION
-        Converts a color from an RGB representation to an 
+        Converts a color from an RGB representation to an
         HSB representation
 
     INPUTS
@@ -73,32 +73,32 @@
     }
     else
     {
-	delta = max - min;
+        delta = max - min;
 
-	if (R == max)
-	{
+        if (R == max)
+        {
             H = FixDiv( (G - B), delta );
-	}
-	else if (G == max)
-	{
+        }
+        else if (G == max)
+        {
             H = INT_TO_FIXED( 2 ) + FixDiv( (B - R), delta );
-	}
-	else if (B == max)
-	{
+        }
+        else if (B == max)
+        {
             H = INT_TO_FIXED( 4 ) + FixDiv( (R - G), delta );
         }
-	
-	H *= 60;
+        
+        H *= 60;
 
-	if (H < 0 )
-	{
+        if (H < 0 )
+        {
             H += INT_TO_FIXED( 360 );
-	}
-	
-	H /= 360;
-    }	
+        }
+        
+        H /= 360;
+    }
 
-    hsb->cw_Hue 	= H | ( H << 16 );
+    hsb->cw_Hue         = H | ( H << 16 );
     hsb->cw_Saturation  = S | ( S << 16 );
     hsb->cw_Brightness  = I | ( I << 16 );
 
@@ -132,36 +132,36 @@
     }
     else
     {
-	delta = max - min;
+        delta = max - min;
 
-	if (R == max)
-	{
+        if (R == max)
+        {
             H = (G - B) / delta;
-	}
-	else if (G == max)
-	{
+        }
+        else if (G == max)
+        {
             H = 2.0 + (B - R) / delta;
-	}
-	else if (B == max)
-	{
+        }
+        else if (B == max)
+        {
             H = 4.0 + (R - G) / delta;
         }
-	
-	H = H * 60.0;
+        
+        H = H * 60.0;
 
-	if (H < 0.0)
-	{
+        if (H < 0.0)
+        {
             H = H + 360;
-	}
-	
-	H = H / 360.0;
+        }
+        
+        H = H / 360.0;
     }
     
-    hsb->cw_Hue 	= (ULONG) rint (H * 0xFFFFFFFF);
-    hsb->cw_Saturation 	= (ULONG) rint (S * 0xFFFFFFFF);
-    hsb->cw_Brightness 	= (ULONG) rint (I * 0xFFFFFFFF);
+    hsb->cw_Hue         = (ULONG) rint (H * 0xFFFFFFFF);
+    hsb->cw_Saturation  = (ULONG) rint (S * 0xFFFFFFFF);
+    hsb->cw_Brightness  = (ULONG) rint (I * 0xFFFFFFFF);
       
-#else      
+#else
     DOUBLE R, G, B, H, S, I, a;
 
     R = (DOUBLE) rgb->cw_Red / (DOUBLE) 0xFFFFFFFF;
@@ -173,7 +173,7 @@
     S = 1.0 - (a/I);
     H = acos ((0.5*(R-G)+(R-B))/sqrt(pow(R-G, 2.0) + (R-B)*(G-B)));
     if (B/I > G/I)
-	H = PI2 - H;
+        H = PI2 - H;
     H /= PI2;
 
     hsb->cw_Hue = (ULONG) rint (H * 0xFFFFFFFF);

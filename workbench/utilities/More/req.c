@@ -42,12 +42,12 @@
 #define GAD_EXTRA_WIDTH 16
 #define GAD_EXTRA_HEIGHT 6
 
-enum {GAD_FIND_TEXT = 1, 
-      GAD_FIND_OK, 
+enum {GAD_FIND_TEXT = 1,
+      GAD_FIND_OK,
       GAD_FIND_CANCEL};
 
-enum {GAD_GOTO_STRING = 1, 
-      GAD_GOTO_OK, 
+enum {GAD_GOTO_STRING = 1,
+      GAD_GOTO_OK,
       GAD_GOTO_CANCEL};
 
 /****************************************************************************************/
@@ -126,8 +126,8 @@ void Make_Goto_Requester(void)
     ng.ng_GadgetID = GAD_GOTO_STRING;
     ng.ng_Flags = PLACETEXT_IN;
 
-    gotogad = CreateGadget(INTEGER_KIND, gad, &ng, GTIN_MaxChars, 8, 
-                                                STRINGA_Justification, GACT_STRINGCENTER, 
+    gotogad = CreateGadget(INTEGER_KIND, gad, &ng, GTIN_MaxChars, 8,
+                                                STRINGA_Justification, GACT_STRINGCENTER,
                                                 TAG_DONE);
 
     ng.ng_TopEdge += gadheight + GAD_SPACING_Y;
@@ -148,24 +148,24 @@ void Make_Goto_Requester(void)
         FreeGadgets(gotogadlist);
         gotogadlist = 0;
     } else {
-        gotowin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr, 
-                                    WA_Left, scr->MouseX - (winwidth / 2), 
-                                    WA_Top, scr->MouseY - (winheight / 2), 
-                                    WA_Width, winwidth, 
-                                    WA_Height, winheight, 
-                                    WA_AutoAdjust, TRUE, 
-                                    WA_Title, (IPTR)MSG(MSG_JUMP_TITLE), 
-                                    WA_CloseGadget, TRUE, 
-                                    WA_DepthGadget, TRUE, 
-                                    WA_DragBar, TRUE, 
-                                    WA_Activate, TRUE, 
-                                    WA_SimpleRefresh, TRUE, 
+        gotowin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr,
+                                    WA_Left, scr->MouseX - (winwidth / 2),
+                                    WA_Top, scr->MouseY - (winheight / 2),
+                                    WA_Width, winwidth,
+                                    WA_Height, winheight,
+                                    WA_AutoAdjust, TRUE,
+                                    WA_Title, (IPTR)MSG(MSG_JUMP_TITLE),
+                                    WA_CloseGadget, TRUE,
+                                    WA_DepthGadget, TRUE,
+                                    WA_DragBar, TRUE,
+                                    WA_Activate, TRUE,
+                                    WA_SimpleRefresh, TRUE,
                                     WA_IDCMP, IDCMP_CLOSEWINDOW |
                                              IDCMP_REFRESHWINDOW |
                                              IDCMP_VANILLAKEY |
                                              BUTTONIDCMP |
-                                             INTEGERIDCMP, 
-                                    WA_Gadgets, (IPTR)gotogadlist, 
+                                             INTEGERIDCMP,
+                                    WA_Gadgets, (IPTR)gotogadlist,
                                     TAG_DONE);
 
         if (!gotowin)
@@ -209,7 +209,7 @@ BOOL Handle_Goto_Requester(LONG *line)
 
                     case GAD_GOTO_STRING:
                     case GAD_GOTO_OK:
-                        GT_GetGadgetAttrs(gotogad, gotowin, 0, GTIN_Number, (IPTR)&l, 
+                        GT_GetGadgetAttrs(gotogad, gotowin, 0, GTIN_Number, (IPTR)&l,
                                                             TAG_DONE);
                         rc = TRUE;
                         break;
@@ -300,7 +300,7 @@ void Make_Find_Requester(void)
     ng.ng_GadgetID = GAD_FIND_TEXT;
     ng.ng_Flags = PLACETEXT_IN;
 
-    findgad = CreateGadget(STRING_KIND, gad, &ng, GTST_MaxChars, 256, 
+    findgad = CreateGadget(STRING_KIND, gad, &ng, GTST_MaxChars, 256,
                                                TAG_DONE);
 
     ng.ng_TopEdge += gadheight + GAD_SPACING_Y;
@@ -321,24 +321,24 @@ void Make_Find_Requester(void)
         FreeGadgets(findgadlist);
         findgadlist = 0;
     } else {
-        findwin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr, 
-                                    WA_Left, scr->MouseX - (winwidth / 2), 
-                                    WA_Top, scr->MouseY - (winheight / 2), 
-                                    WA_Width, winwidth, 
-                                    WA_Height, winheight, 
-                                    WA_AutoAdjust, TRUE, 
-                                    WA_Title, (IPTR)MSG(MSG_FIND_TITLE), 
-                                    WA_CloseGadget, TRUE, 
-                                    WA_DepthGadget, TRUE, 
-                                    WA_DragBar, TRUE, 
-                                    WA_Activate, TRUE, 
-                                    WA_SimpleRefresh, TRUE, 
+        findwin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr,
+                                    WA_Left, scr->MouseX - (winwidth / 2),
+                                    WA_Top, scr->MouseY - (winheight / 2),
+                                    WA_Width, winwidth,
+                                    WA_Height, winheight,
+                                    WA_AutoAdjust, TRUE,
+                                    WA_Title, (IPTR)MSG(MSG_FIND_TITLE),
+                                    WA_CloseGadget, TRUE,
+                                    WA_DepthGadget, TRUE,
+                                    WA_DragBar, TRUE,
+                                    WA_Activate, TRUE,
+                                    WA_SimpleRefresh, TRUE,
                                     WA_IDCMP, IDCMP_CLOSEWINDOW |
                                               IDCMP_REFRESHWINDOW |
                                               IDCMP_VANILLAKEY |
                                               BUTTONIDCMP |
-                                              INTEGERIDCMP, 
-                                    WA_Gadgets, (IPTR)findgadlist, 
+                                              INTEGERIDCMP,
+                                    WA_Gadgets, (IPTR)findgadlist,
                                     TAG_DONE);
 
         if (!findwin)
@@ -382,7 +382,7 @@ WORD Handle_Find_Requester(char **text)
 
                     case GAD_FIND_TEXT:
                     case GAD_FIND_OK:
-                        GT_GetGadgetAttrs(findgad, findwin, 0, GTST_String, (IPTR)&sp, 
+                        GT_GetGadgetAttrs(findgad, findwin, 0, GTST_String, (IPTR)&sp,
                                                             TAG_DONE);
                         strcpy(searchtext, sp);
 

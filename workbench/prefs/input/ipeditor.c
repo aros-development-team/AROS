@@ -71,9 +71,9 @@ static void keytypes_display_func(struct Hook *h, char **array, struct ListviewE
 }
 
 AROS_UFH3(static void, setFunction,
-	  AROS_UFHA(struct Hook *, h, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(APTR *, msg, A1))
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(Object *, obj, A2),
+          AROS_UFHA(APTR *, msg, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -83,15 +83,15 @@ AROS_UFH3(static void, setFunction,
 
     DoMethod(data->iped_KeyTypes, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
     SET(kmobj, MUIA_Keymap_Keymap, entry);
-    SET(obj, MUIA_PrefsEditor_Changed, TRUE);   
+    SET(obj, MUIA_PrefsEditor_Changed, TRUE);
 
     AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(static void, setEnableFunction,
-	  AROS_UFHA(struct Hook *, h, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(APTR, msg, A1))
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(Object *, obj, A2),
+          AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -106,9 +106,9 @@ AROS_UFH3(static void, setEnableFunction,
 }
 
 AROS_UFH3(static void, switchEnableFunction,
-	  AROS_UFHA(struct Hook *, h, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(APTR, msg, A1))
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(Object *, obj, A2),
+          AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -186,35 +186,35 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)ColGroup(3),
                             Child, (IPTR)Label1(__(MSG_GAD_KEY_DEF)),
                             Child, (IPTR)(defKey = KeymapObject,
-                            	MUIA_Weight, 255,
+                                MUIA_Weight, 255,
                             End),
-                            Child, (IPTR)(setDefKey = TextObject, 
-                            	ButtonFrame,
-				MUIA_Font, MUIV_Font_Button,
-				MUIA_Text_HiCharIdx, '_',
-				MUIA_Text_Contents, __(MSG_GAD_KEY_SET),
-				MUIA_Text_PreParse, (IPTR)"\33c",
-				MUIA_InputMode, MUIV_InputMode_RelVerify,
-				MUIA_Background, MUII_ButtonBack,
-				MUIA_CycleChain, TRUE,
-				MUIA_Disabled, TRUE,
-			    End),
+                            Child, (IPTR)(setDefKey = TextObject,
+                                ButtonFrame,
+                                MUIA_Font, MUIV_Font_Button,
+                                MUIA_Text_HiCharIdx, '_',
+                                MUIA_Text_Contents, __(MSG_GAD_KEY_SET),
+                                MUIA_Text_PreParse, (IPTR)"\33c",
+                                MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                MUIA_Background, MUII_ButtonBack,
+                                MUIA_CycleChain, TRUE,
+                                MUIA_Disabled, TRUE,
+                            End),
                             Child, (IPTR)Label1(__(MSG_GAD_KEY_ALT)),
                             Child, (IPTR)(altKey = KeymapObject,
-                            	MUIA_Weight, 255,
-                            	MUIA_Disabled, TRUE,
+                                MUIA_Weight, 255,
+                                MUIA_Disabled, TRUE,
                             End),
-                            Child, (IPTR)(setAltKey = TextObject, 
-                            	ButtonFrame,
-				MUIA_Font, MUIV_Font_Button,
-				MUIA_Text_HiCharIdx, '_',
-				MUIA_Text_Contents, __(MSG_GAD_KEY_SET),
-				MUIA_Text_PreParse, (IPTR)"\33c",
-				MUIA_InputMode, MUIV_InputMode_RelVerify,
-				MUIA_Background, MUII_ButtonBack,
-				MUIA_CycleChain, TRUE,
-				MUIA_Disabled, TRUE,
-			    End),
+                            Child, (IPTR)(setAltKey = TextObject,
+                                ButtonFrame,
+                                MUIA_Font, MUIV_Font_Button,
+                                MUIA_Text_HiCharIdx, '_',
+                                MUIA_Text_Contents, __(MSG_GAD_KEY_SET),
+                                MUIA_Text_PreParse, (IPTR)"\33c",
+                                MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                MUIA_Background, MUII_ButtonBack,
+                                MUIA_CycleChain, TRUE,
+                                MUIA_Disabled, TRUE,
+                            End),
                         End,
                     End,
                     Child, (IPTR)VGroup,
@@ -241,8 +241,8 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             GroupFrameT(__(MSG_GAD_KEY_SWITCH)),
                             Child, (IPTR)Label1(__(MSG_GAD_KEY_SWITCH_ENABLE)),
                             Child, (IPTR)HGroup,
-                            	Child, (IPTR)(switchEnable = MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            	Child, (IPTR)MUI_MakeObject(MUIO_HSpace, 0),
+                                Child, (IPTR)(switchEnable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                Child, (IPTR)MUI_MakeObject(MUIO_HSpace, 0),
                             End,
                             Child, (IPTR)Label1(__(MSG_GAD_KEY_SWITCH_KEY)),
                             Child, (IPTR)(switchKey = MUI_NewObject("HotkeyString.mcc",
@@ -312,12 +312,12 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iped_DoubleClickDelay = DoubleClickDelay;
         data->iped_LeftHandedMouse = LeftHandedMouse;
 
-	data->iped_setHook.h_Entry = (HOOKFUNC)setFunction;
-	data->iped_setHook.h_Data = data;
-	data->iped_setEnableHook.h_Entry = (HOOKFUNC)setEnableFunction;
-	data->iped_setEnableHook.h_Data = data;
-	data->iped_switchEnableHook.h_Entry = (HOOKFUNC)switchEnableFunction;
-	data->iped_switchEnableHook.h_Data = data;
+        data->iped_setHook.h_Entry = (HOOKFUNC)setFunction;
+        data->iped_setHook.h_Data = data;
+        data->iped_setEnableHook.h_Entry = (HOOKFUNC)setEnableFunction;
+        data->iped_setEnableHook.h_Data = data;
+        data->iped_switchEnableHook.h_Entry = (HOOKFUNC)switchEnableFunction;
+        data->iped_switchEnableHook.h_Data = data;
 
         IPTR root;
 
@@ -371,13 +371,13 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             defKey);
 
         DoMethod(setAltKey, MUIM_Notify, MUIA_Pressed, FALSE,
-            	 self, 3, MUIM_CallHook, &data->iped_setHook, altKey);
+                 self, 3, MUIM_CallHook, &data->iped_setHook, altKey);
 
         DoMethod(switchEnable, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        	 self, 2, MUIM_CallHook, &data->iped_switchEnableHook);
+                 self, 2, MUIM_CallHook, &data->iped_switchEnableHook);
 
-	DoMethod(switchKey, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
-		 self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(switchKey, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+                 self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
 
         DoMethod
         (
@@ -449,7 +449,7 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
     }
     else
     {
-	strncpy(inputprefs.ip_Keymap, DEFAULT_KEYMAP, sizeof(inputprefs.ip_Keymap));
+        strncpy(inputprefs.ip_Keymap, DEFAULT_KEYMAP, sizeof(inputprefs.ip_Keymap));
         strncpy(inputprefs.ip_KeymapName, DEFAULT_KEYMAP, sizeof(inputprefs.ip_KeymapName));
     }
 
@@ -461,20 +461,20 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
 
     GET(data->iped_AltKey, MUIA_Keymap_Keymap, &entry);
     if (entry)
-	strncpy(kmsprefs.kms_AltKeymap, entry->realname, sizeof(kmsprefs.kms_AltKeymap));
+        strncpy(kmsprefs.kms_AltKeymap, entry->realname, sizeof(kmsprefs.kms_AltKeymap));
     else
-	kmsprefs.kms_AltKeymap[0] = 0;
+        kmsprefs.kms_AltKeymap[0] = 0;
 
     GET(data->iped_SwitchKey, MUIA_String_Contents, &key);
     if (ParseIX(key, &ix))
     {
-	D(Printf("Gadgets2Prefs: IX parse error\n"));
-	kmsprefs.kms_SwitchQual = KMS_QUAL_DISABLE;
-	kmsprefs.kms_SwitchCode = KMS_CODE_NOKEY;
+        D(Printf("Gadgets2Prefs: IX parse error\n"));
+        kmsprefs.kms_SwitchQual = KMS_QUAL_DISABLE;
+        kmsprefs.kms_SwitchCode = KMS_CODE_NOKEY;
     }
     else
     {
-	D(Printf("Gadgets2Prefs: Switch qualifier 0x%04lX, code 0x%04lX\n", ix.ix_Qualifier, ix.ix_Code));
+        D(Printf("Gadgets2Prefs: Switch qualifier 0x%04lX, code 0x%04lX\n", ix.ix_Qualifier, ix.ix_Code));
         kmsprefs.kms_SwitchQual = ix.ix_Qualifier;
         /*
          * ParseIX() sets ix_Code to zero if the expressions consists only of qualifiers.
@@ -482,7 +482,7 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
          * This means that this key can't be a hotkey.
          * CHECKME: is it the same as in AmigaOS(tm), or it's AROS bug?
          */
-	kmsprefs.kms_SwitchCode = ix.ix_Code ? ix.ix_Code : KMS_CODE_NOKEY;
+        kmsprefs.kms_SwitchCode = ix.ix_Code ? ix.ix_Code : KMS_CODE_NOKEY;
     }
 
     return TRUE;
@@ -498,8 +498,8 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     {
         IX_VERSION,
         IECLASS_RAWKEY,
-	RAWKEY_LAMIGA,
-	0xFFFF,
+        RAWKEY_LAMIGA,
+        0xFFFF,
         kmsprefs.kms_SwitchQual,
         IX_NORMALQUALS,
         0
@@ -513,10 +513,10 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
      * This is HotKeyString.mcc's feature.
      */
     if (kmsprefs.kms_SwitchCode != KMS_CODE_NOKEY)
-    	ix.ix_Code = kmsprefs.kms_SwitchCode;
+        ix.ix_Code = kmsprefs.kms_SwitchCode;
 
     if (!keymap[0])
-    	keymap = inputprefs.ip_Keymap;
+        keymap = inputprefs.ip_Keymap;
 
     NNSET(data->iped_RepeatRate, MUIA_Numeric_Value, (IPTR) rrate);
     NNSET(data->iped_RepeatDelay, MUIA_Numeric_Value, (IPTR) rdelay);
@@ -529,8 +529,8 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     {
         if (!stricmp(keymap, entry->realname))
             SET(data->iped_DefKey, MUIA_Keymap_Keymap, entry);
-	if (!stricmp(kmsprefs.kms_AltKeymap, entry->realname))
-	    SET(data->iped_AltKey, MUIA_Keymap_Keymap, entry);
+        if (!stricmp(kmsprefs.kms_AltKeymap, entry->realname))
+            SET(data->iped_AltKey, MUIA_Keymap_Keymap, entry);
     }
 
     IPTR    active = 0;

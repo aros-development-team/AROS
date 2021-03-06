@@ -20,16 +20,16 @@
 
     FUNCTION
 
-	Displays content of a file
-	
+        Displays content of a file
+        
     INPUTS
 
-	FROM   -- one or more files to display
-	TO     -- print output to file
-	OPT    -- H or N (see HEX or NUMBER)
-	HEX    -- displays output in hexadecimal format
-	NUMBER -- the lines are numbered
-	          HEX and NUMBER are mutually exclusive
+        FROM   -- one or more files to display
+        TO     -- print output to file
+        OPT    -- H or N (see HEX or NUMBER)
+        HEX    -- displays output in hexadecimal format
+        NUMBER -- the lines are numbered
+                  HEX and NUMBER are mutually exclusive
 
     RESULT
 
@@ -37,8 +37,8 @@
 
     EXAMPLE
 
-	Type abc.txt
-	Type xyz.dat HEX
+        Type abc.txt
+        Type xyz.dat HEX
 
     BUGS
 
@@ -59,7 +59,7 @@
 const TEXT version[] = "$VER: Type 42.1 (20.10.2005)\n";
 
 #define BUFSIZE 8192
-#define MAX_PATH_LEN	512
+#define MAX_PATH_LEN    512
 
 enum
 {
@@ -91,14 +91,14 @@ static int put(struct file *f)
     buf=f->buf;
     while(size)
     {
-	subsize=Write(f->fd,buf,size);
-	if(subsize<=0)
-	{
-	    f->error=IoErr();
-	    return 1;
-	}
-	buf+=subsize;
-	size-=subsize;
+        subsize=Write(f->fd,buf,size);
+        if(subsize<=0)
+        {
+            f->error=IoErr();
+            return 1;
+        }
+        buf+=subsize;
+        size-=subsize;
     }
     f->cur=f->buf;
     f->cnt=BUFSIZE;
@@ -111,9 +111,9 @@ static int get(struct file *f)
     LONG size;
     size=Read(f->fd,f->buf,BUFSIZE);
     if(size<0)
-	f->error=IoErr();
+        f->error=IoErr();
     if(size<=0)
-	return -1;
+        return -1;
     f->cnt=size-1;
     f->cur=f->buf;
     return *f->cur++;
@@ -126,23 +126,23 @@ static void putlinequick(struct file *f, ULONG offset, UBYTE *buf)
     o=f->cur;
     if(offset>=0x10000)
     {
-	if(offset>=0x100000)
-	{
-	    if(offset>=0x1000000)
-	    {
-		if(offset>=0x10000000)
-		{
-		    *o++=hs[(offset>>28)&0xf];
-		    f->cnt--;
-		}
-		*o++=hs[(offset>>24)&0xf];
-		f->cnt--;
-	    }
-	    *o++=hs[(offset>>20)&0xf];
-	    f->cnt--;
-	}
-	*o++=hs[(offset>>16)&0xf];
-	f->cnt--;
+        if(offset>=0x100000)
+        {
+            if(offset>=0x1000000)
+            {
+                if(offset>=0x10000000)
+                {
+                    *o++=hs[(offset>>28)&0xf];
+                    f->cnt--;
+                }
+                *o++=hs[(offset>>24)&0xf];
+                f->cnt--;
+            }
+            *o++=hs[(offset>>20)&0xf];
+            f->cnt--;
+        }
+        *o++=hs[(offset>>16)&0xf];
+        f->cnt--;
     }
     *o++=hs[(offset>>12)&0xf];
     *o++=hs[(offset>>8)&0xf];
@@ -153,19 +153,19 @@ static void putlinequick(struct file *f, ULONG offset, UBYTE *buf)
     b=buf;
     for(i=0;i<4;i++)
     {
-	for(k=0;k<4;k++)
-	{
-	    c=*b++;
-	    *o++=hs[c>>4];
-	    *o++=hs[c&0xf];
-	}
-	*o++=' ';
+        for(k=0;k<4;k++)
+        {
+            c=*b++;
+            *o++=hs[c>>4];
+            *o++=hs[c&0xf];
+        }
+        *o++=' ';
     }
     b=buf;
     for(i=0;i<16;i++)
     {
-	c=*b++;
-	*o++=(c&0x7f)>=0x20&&c!=0x7f?c:'.';
+        c=*b++;
+        *o++=(c&0x7f)>=0x20&&c!=0x7f?c:'.';
     }
     *o++='\n';
     f->cur=o;
@@ -178,57 +178,57 @@ static int putline(struct file *f, ULONG offset, UBYTE *buf, ULONG num)
     UBYTE *b;
     if(offset>=0x10000)
     {
-	if(offset>=0x10000000&&putc(f,hs[(offset>>28)&0xf]))
-	    return 1;
-	if(offset>=0x1000000&&putc(f,hs[(offset>>24)&0xf]))
-	    return 1;
-	if(offset>=0x100000&&putc(f,hs[(offset>>20)&0xf]))
-	    return 1;
-	if(offset>=0x10000&&putc(f,hs[(offset>>16)&0xf]))
-	    return 1;
+        if(offset>=0x10000000&&putc(f,hs[(offset>>28)&0xf]))
+            return 1;
+        if(offset>=0x1000000&&putc(f,hs[(offset>>24)&0xf]))
+            return 1;
+        if(offset>=0x100000&&putc(f,hs[(offset>>20)&0xf]))
+            return 1;
+        if(offset>=0x10000&&putc(f,hs[(offset>>16)&0xf]))
+            return 1;
     }
     if(putc(f,hs[(offset>>12)&0xf]))
-	return 1;
+        return 1;
     if(putc(f,hs[(offset>>8)&0xf]))
-	return 1;
+        return 1;
     if(putc(f,hs[(offset>>4)&0xf]))
-	return 1;
+        return 1;
     if(putc(f,hs[offset&0xf]))
-	return 1;
+        return 1;
     if(putc(f,':'))
-	return 1;
+        return 1;
     if(putc(f,' '))
-	return 1;
+        return 1;
     b=buf;
     for(i=0;i<16;i++)
     {
-	if(i<num)
-	{
-	    c=*b++;
-	    if(putc(f,hs[c>>4]))
-		return 1;
-	    if(putc(f,hs[c&0xf]))
-		return 1;
-	}else
-	{
-	    if(putc(f,' '))
-		return 1;
-	    if(putc(f,' '))
-		return 1;
-	}
-	if((i&3)==3)
-	    if(putc(f,' '))
-		return 1;
+        if(i<num)
+        {
+            c=*b++;
+            if(putc(f,hs[c>>4]))
+                return 1;
+            if(putc(f,hs[c&0xf]))
+                return 1;
+        }else
+        {
+            if(putc(f,' '))
+                return 1;
+            if(putc(f,' '))
+                return 1;
+        }
+        if((i&3)==3)
+            if(putc(f,' '))
+                return 1;
     }
     b=buf;
     for(i=0;i<num;i++)
     {
-	c=*b++;
-	if(putc(f,(c&0x7f)>=0x20&&c!=0x7f?c:'.'))
-	    return 1;
+        c=*b++;
+        if(putc(f,(c&0x7f)>=0x20&&c!=0x7f?c:'.'))
+            return 1;
     }
     if(putc(f,'\n'))
-	return 1;
+        return 1;
     return 0;
 }
 
@@ -242,56 +242,56 @@ LONG hexdumpfile(struct file *in, struct file *out)
     tty=IsInteractive(out->fd);
     for(;;)
     {
-	if(in->cnt>16)
-	{
-	    b=in->cur;
-	    n=16;
-	    in->cur+=16;
-	    in->cnt-=16;
-	}else
-	{
-	    b=buf;
-	    for(n=0;n<16;n++)
-	    {
-		c=getc(in);
-		if(c<0)
-		{
-		    break;
-		}
-		b[n]=c;
-	    }
-	}
-	if(n==16)
-	{
-	    if(out->cnt>=63)
-		putlinequick(out,offset,b);
-	    else
-		if(putline(out,offset,b,n))
-		{
-		    retval = RETURN_ERROR;
-		    break;
-		}
-	}else
-	{
-	    if(n)
-		putline(out,offset,b,n);
-	    if(out->cur!=out->buf)
-		put(out);
-	    break;
-	}
-	if(tty)
-	    if(put(out))
-	    {
-	    	retval = RETURN_ERROR;
-		break;
-	    }
-	offset+=n;
-	
-	if (CheckSignal(SIGBREAKF_CTRL_C))
-	{
-	    retval = RETURN_WARN;
-	    break;
-	}
+        if(in->cnt>16)
+        {
+            b=in->cur;
+            n=16;
+            in->cur+=16;
+            in->cnt-=16;
+        }else
+        {
+            b=buf;
+            for(n=0;n<16;n++)
+            {
+                c=getc(in);
+                if(c<0)
+                {
+                    break;
+                }
+                b[n]=c;
+            }
+        }
+        if(n==16)
+        {
+            if(out->cnt>=63)
+                putlinequick(out,offset,b);
+            else
+                if(putline(out,offset,b,n))
+                {
+                    retval = RETURN_ERROR;
+                    break;
+                }
+        }else
+        {
+            if(n)
+                putline(out,offset,b,n);
+            if(out->cur!=out->buf)
+                put(out);
+            break;
+        }
+        if(tty)
+            if(put(out))
+            {
+                retval = RETURN_ERROR;
+                break;
+            }
+        offset+=n;
+        
+        if (CheckSignal(SIGBREAKF_CTRL_C))
+        {
+            retval = RETURN_WARN;
+            break;
+        }
     }
     
     return retval;
@@ -315,7 +315,7 @@ void putlinenumber(struct file * out, unsigned short line)
       putc(out, ' ');
 
     x/=10;
-  }  
+  }
   
   putc(out, ' ');
 }
@@ -330,64 +330,64 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
       putlinenumber(out, ++line);
     
     if(1/*IsInteractive(out->fd)*/)
-	for(;;)
-	{
-	    c=getc(in);
+        for(;;)
+        {
+            c=getc(in);
 
-	    if(c<0)
-	    {
-	        if (lastc!='\n')
-	          putc(out, '\n');
+            if(c<0)
+            {
+                if (lastc!='\n')
+                  putc(out, '\n');
 
                 put(out);
-		break;
+                break;
             }
 
-	    if (lastc==0x0a && showline)
-	      putlinenumber(out, ++line);
+            if (lastc==0x0a && showline)
+              putlinenumber(out, ++line);
 
-	    if(putc(out,c)||(c=='\n' && put(out)))
-	    {
-	        if (c!='\n')
-	          putc(out, '\n');
+            if(putc(out,c)||(c=='\n' && put(out)))
+            {
+                if (c!='\n')
+                  putc(out, '\n');
 
-	        put(out);
-		retval = RETURN_ERROR;
-		break;
-	    }
-	
-	    if ((c == '\n') && CheckSignal(SIGBREAKF_CTRL_C))
-	    {
-	    	retval = ERROR_BREAK;
-		break;
-	    }
-	    lastc = c;
-	}
-	
+                put(out);
+                retval = RETURN_ERROR;
+                break;
+            }
+        
+            if ((c == '\n') && CheckSignal(SIGBREAKF_CTRL_C))
+            {
+                retval = ERROR_BREAK;
+                break;
+            }
+            lastc = c;
+        }
+        
     return retval;
 }
 
 static LONG processfile(CONST_STRPTR name, struct file *in, struct file *out, IPTR *args, LONG *numfiles)
 {
-	LONG error = 0;
+        LONG error = 0;
 
-	in->fd = Open(name, MODE_OLDFILE);
-	if (in->fd)
-	{
-		(*numfiles)++;
-		in->cnt = 0;
+        in->fd = Open(name, MODE_OLDFILE);
+        if (in->fd)
+        {
+                (*numfiles)++;
+                in->cnt = 0;
 
-		if (args[ARG_HEX])
-			error = hexdumpfile(in, out);
-		else
-			error = dumpfile(in, out, args[ARG_NUMBER]);
+                if (args[ARG_HEX])
+                        error = hexdumpfile(in, out);
+                else
+                        error = dumpfile(in, out, args[ARG_NUMBER]);
 
-		Close(in->fd);
-	}
-	else
-		error = IoErr();
+                Close(in->fd);
+        }
+        else
+                error = IoErr();
 
-	return error;
+        return error;
 }
 
 int __nocommandline;
@@ -410,8 +410,8 @@ int main (void)
     rda=ReadArgs("FROM/A/M,TO/K,OPT/K,HEX/S,NUMBER/S",args,NULL);
     if(rda==NULL)
     {
-	PrintFault(IoErr(),"Type");
-	return RETURN_FAIL;
+        PrintFault(IoErr(),"Type");
+        return RETURN_FAIL;
     }
     names=(STRPTR *)args[0];
 
@@ -420,85 +420,85 @@ int main (void)
 
     if(in!=NULL&&out!=NULL)
     {
-	out->cur=out->buf;
-	out->cnt=BUFSIZE;
-	apath.apath.ap_BreakBits  = SIGBREAKF_CTRL_C;
-	apath.apath.ap_FoundBreak = 0;
-	apath.apath.ap_Flags      = 0;
-	apath.apath.ap_Strlen     = MAX_PATH_LEN;
-	if (args[ARG_TO])
-		out->fd = Open((STRPTR) args[ARG_TO], MODE_NEWFILE);
-	else
-		out->fd=Output();
-	if (out->fd)
-	{
-		while(*names!=NULL)
-		{
-			ULONG numfiles = 0;
-			LONG error;
+        out->cur=out->buf;
+        out->cnt=BUFSIZE;
+        apath.apath.ap_BreakBits  = SIGBREAKF_CTRL_C;
+        apath.apath.ap_FoundBreak = 0;
+        apath.apath.ap_Flags      = 0;
+        apath.apath.ap_Strlen     = MAX_PATH_LEN;
+        if (args[ARG_TO])
+                out->fd = Open((STRPTR) args[ARG_TO], MODE_NEWFILE);
+        else
+                out->fd=Output();
+        if (out->fd)
+        {
+                while(*names!=NULL)
+                {
+                        ULONG numfiles = 0;
+                        LONG error;
 
-			error = processfile(*names, in, out, args, &numfiles);
-			if (error == 0)
-			{
-			    names++;
-			    continue;
-			}
+                        error = processfile(*names, in, out, args, &numfiles);
+                        if (error == 0)
+                        {
+                            names++;
+                            continue;
+                        }
 
-			for (error = MatchFirst(*names, &apath.apath);
-			     !error;
-			     error = MatchNext(&apath.apath))
-			{
-				error = processfile(apath.apath.ap_Buf, in, out, args, &numfiles);
-				if (error)
-					break;
-			}
-			MatchEnd(&apath.apath);
+                        for (error = MatchFirst(*names, &apath.apath);
+                             !error;
+                             error = MatchNext(&apath.apath))
+                        {
+                                error = processfile(apath.apath.ap_Buf, in, out, args, &numfiles);
+                                if (error)
+                                        break;
+                        }
+                        MatchEnd(&apath.apath);
 
-			if (numfiles == 0 && error == ERROR_NO_MORE_ENTRIES)
-			{
-				error = -1;
-			}
+                        if (numfiles == 0 && error == ERROR_NO_MORE_ENTRIES)
+                        {
+                                error = -1;
+                        }
 
-			if (error && error != ERROR_NO_MORE_ENTRIES)
-			{
-				if (*names && error != ERROR_BREAK)
-				{
-					Printf("TYPE: can't open %s\n", (IPTR) *names);
-				}
+                        if (error && error != ERROR_NO_MORE_ENTRIES)
+                        {
+                                if (*names && error != ERROR_BREAK)
+                                {
+                                        Printf("TYPE: can't open %s\n", (IPTR) *names);
+                                }
 
-				if (error != -1)
-				{
-					PrintFault(error, NULL);
-					SetIoErr(error);
-				}
+                                if (error != -1)
+                                {
+                                        PrintFault(error, NULL);
+                                        SetIoErr(error);
+                                }
 
-				break;
-			}
-		names++;
-		}
+                                break;
+                        }
+                names++;
+                }
 
-		if (args[ARG_TO])
-			Close(out->fd);
+                if (args[ARG_TO])
+                        Close(out->fd);
 
-		/* If all files got dumped, return ok, else error.
-		*/
-		retval = *names ? RETURN_ERROR : RETURN_OK;
-	} else
-	{
-		PrintFault(IoErr(), NULL);
-	}
+                /* If all files got dumped, return ok, else error.
+                */
+                retval = *names ? RETURN_ERROR : RETURN_OK;
+        } else
+        {
+                PrintFault(IoErr(), NULL);
+        }
     }else
     {
-	PrintFault(ERROR_NO_FREE_STORE,"Type");
-	retval = RETURN_ERROR;
+        PrintFault(ERROR_NO_FREE_STORE,"Type");
+        retval = RETURN_ERROR;
     }
 
     if(in!=NULL)
-	FreeMem(in,sizeof(struct file));
+        FreeMem(in,sizeof(struct file));
     if(out!=NULL)
-	FreeMem(out,sizeof(struct file));
+        FreeMem(out,sizeof(struct file));
     if(rda!=NULL)
-	FreeArgs(rda);
-	
+        FreeArgs(rda);
+        
     return retval;
 }

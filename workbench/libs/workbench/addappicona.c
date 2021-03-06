@@ -63,47 +63,47 @@
     msgport   --  message port to which notification messages will be sent
     diskobj   --  pointer to a DiskObject structure filled in as described
                   below:
-		      do_Magic    --  0
-		      do_Version  --  0
-		      do_Gadget   --  a gadget structure filled in as follows:
-		             NextGadget    --  NULL
-			     LeftEdge      --  0
-			     TopEdge       --  0
-			     Width         --  width of icon hit box
-			     Height        --  height of icon hit box
-			     Flags         --  0 or GADGHIMAGE
-			     Activation    --  0
-			     GadgetType    --  0
-			     GadgetRender  --  pointer to an Image structure
-			                       filled in as follows:
-				   LeftEdge    --  0
-				   TopEdge     --  0
-				   Width       --  width of image (must be <=
-				                   width of icon hit box)
-				   Height      --  height of image (must be <=
-				                   height of icon hit box)
-				   Depth       --  number of bit planes of
-				                   image
-				   ImageData   --  pointer to word aligned
-				                   image data
-				   PlanePick   --  plane mask
-				                   ((1 << depth) - 1)
-				   PlaneOnOff  --  0
-				   NextImage   --  NULL
-			     SelectRender   --  NULL
-			     GadgetText     --  NULL
-			     MutualExclude  --  NULL
-			     SpecialInfo    --  NULL
-			     GadgetID       --  NULL
-			     UserData       --  NULL
-		      do_Type         --  0
-		      do_DefaultTool  --  NULL
-		      do_ToolTypes    --  NULL
-		      do_CurrentX     --  NO_ICON_POSITION (recommended)
-		      do_CurrentY     --  NO_ICON_POSITION (recommended)
-		      do_DrawerData   --  NULL
-		      do_ToolWindow   --  NULL
-		      do_StackSize    --  0
+                      do_Magic    --  0
+                      do_Version  --  0
+                      do_Gadget   --  a gadget structure filled in as follows:
+                             NextGadget    --  NULL
+                             LeftEdge      --  0
+                             TopEdge       --  0
+                             Width         --  width of icon hit box
+                             Height        --  height of icon hit box
+                             Flags         --  0 or GADGHIMAGE
+                             Activation    --  0
+                             GadgetType    --  0
+                             GadgetRender  --  pointer to an Image structure
+                                               filled in as follows:
+                                   LeftEdge    --  0
+                                   TopEdge     --  0
+                                   Width       --  width of image (must be <=
+                                                   width of icon hit box)
+                                   Height      --  height of image (must be <=
+                                                   height of icon hit box)
+                                   Depth       --  number of bit planes of
+                                                   image
+                                   ImageData   --  pointer to word aligned
+                                                   image data
+                                   PlanePick   --  plane mask
+                                                   ((1 << depth) - 1)
+                                   PlaneOnOff  --  0
+                                   NextImage   --  NULL
+                             SelectRender   --  NULL
+                             GadgetText     --  NULL
+                             MutualExclude  --  NULL
+                             SpecialInfo    --  NULL
+                             GadgetID       --  NULL
+                             UserData       --  NULL
+                      do_Type         --  0
+                      do_DefaultTool  --  NULL
+                      do_ToolTypes    --  NULL
+                      do_CurrentX     --  NO_ICON_POSITION (recommended)
+                      do_CurrentY     --  NO_ICON_POSITION (recommended)
+                      do_DrawerData   --  NULL
+                      do_ToolWindow   --  NULL
+                      do_StackSize    --  0
 
     taglist  --  tags (see below)
 
@@ -167,10 +167,10 @@
 
           result = hookFunc(hook, reserved, arm);
 
-	  where the 'hookFunc' has the prototype
+          where the 'hookFunc' has the prototype
 
-	  LONG hookFunc(struct Hook *hook, APTR reserved,
-	                struct AppIconRenderMsg *arm);
+          LONG hookFunc(struct Hook *hook, APTR reserved,
+                        struct AppIconRenderMsg *arm);
 
     If the hook function returns TRUE, the regular image of the AppIcon will
     be drawn; if it returns FALSE, nothing will be drawn. This allows you to
@@ -211,15 +211,15 @@
     struct AppIcon *appIcon;
 
     if (diskobj == NULL || msgport == NULL ||
-	diskobj->do_Gadget.GadgetRender == NULL)
+        diskobj->do_Gadget.GadgetRender == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     appIcon = AllocVec(sizeof(struct AppIcon), MEMF_CLEAR | MEMF_ANY);
     
     if (appIcon == NULL)
-    {     
+    {
         return NULL;
     }
 
@@ -232,108 +232,108 @@
     while ((tag = NextTagItem(&tagState)))
     {
         switch (tag->ti_Tag)
-	{
-	case WBAPPICONA_SupportsOpen:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsOpen;
-	    }
-	    break;
+        {
+        case WBAPPICONA_SupportsOpen:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsOpen;
+            }
+            break;
 
-	case WBAPPICONA_SupportsCopy:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsCopy;
-	    }
-	    break;
+        case WBAPPICONA_SupportsCopy:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsCopy;
+            }
+            break;
 
-	case WBAPPICONA_SupportsRename:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsRename;
-	    }
-	    break;
+        case WBAPPICONA_SupportsRename:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsRename;
+            }
+            break;
 
-	case WBAPPICONA_SupportsInformation:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsInformation;
-	    }
-	    break;
+        case WBAPPICONA_SupportsInformation:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsInformation;
+            }
+            break;
 
-	case WBAPPICONA_SupportsSnapshot:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsSnapshot;
-	    }
-	    break;
+        case WBAPPICONA_SupportsSnapshot:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsSnapshot;
+            }
+            break;
 
-	case WBAPPICONA_SupportsUnSnapshot:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsUnSnapshot;
-	    }
-	    break;
-	    
-	case WBAPPICONA_SupportsLeaveOut:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsLeaveOut;
-	    }
-	    break;
-	    
-	case WBAPPICONA_SupportsPutAway:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsPutAway;
-	    }
-	    break;
+        case WBAPPICONA_SupportsUnSnapshot:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsUnSnapshot;
+            }
+            break;
+            
+        case WBAPPICONA_SupportsLeaveOut:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsLeaveOut;
+            }
+            break;
+            
+        case WBAPPICONA_SupportsPutAway:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsPutAway;
+            }
+            break;
 
-	case WBAPPICONA_SupportsDelete:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsDelete;
-	    }
-	    break;
-	    
-	case WBAPPICONA_SupportsFormatDisk:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsFormatDisk;
-	    }
-	    break;
-	    
-	case WBAPPICONA_SupportsEmptyTrash:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_SupportsEmptyTrash;
-	    }
-	    break;
-	    
-	case WBAPPICONA_PropagatePosition:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_PropagatePosition;
-	    }
-	    break;
+        case WBAPPICONA_SupportsDelete:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsDelete;
+            }
+            break;
+            
+        case WBAPPICONA_SupportsFormatDisk:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsFormatDisk;
+            }
+            break;
+            
+        case WBAPPICONA_SupportsEmptyTrash:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_SupportsEmptyTrash;
+            }
+            break;
+            
+        case WBAPPICONA_PropagatePosition:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_PropagatePosition;
+            }
+            break;
 
-	case WBAPPICONA_RenderHook:
-	    if (appIcon->ai_RenderHook != NULL)
-	    {
-		appIcon->ai_RenderHook = (struct Hook *)tag->ti_Data;
-	    }
-	    break;
-	    
-	case WBAPPICONA_NotifySelectState:
-	    if (tag->ti_Data)
-	    {
-		appIcon->ai_Flags |= WBAPPICONF_NotifySelectState;
-	    }
-	    break;
+        case WBAPPICONA_RenderHook:
+            if (appIcon->ai_RenderHook != NULL)
+            {
+                appIcon->ai_RenderHook = (struct Hook *)tag->ti_Data;
+            }
+            break;
+            
+        case WBAPPICONA_NotifySelectState:
+            if (tag->ti_Data)
+            {
+                appIcon->ai_Flags |= WBAPPICONF_NotifySelectState;
+            }
+            break;
         }
     }
 
-	appIcon->ai_DiskObject = diskobj;
+        appIcon->ai_DiskObject = diskobj;
 
     LockWorkbench();
     AddTail(&WorkbenchBase->wb_AppIcons, (struct Node *)appIcon);

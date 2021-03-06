@@ -37,7 +37,7 @@ extern OOP_MethodID HiddPCIDeviceBase;
 
 struct SysexpPCIEnum_data
 {
-    struct SysexpBase *ed_sysexpbase; 
+    struct SysexpBase *ed_sysexpbase;
     struct MUI_NListtree_TreeNode *ed_tn;
     OOP_Object *ed_Controller;
 };

@@ -59,7 +59,7 @@ OOP_Object * METHOD(AGP, Hidd_AGP, GetBridgeDevice)
     /* Find bridge device matching hardware */
     if (!SD(cl)->bridgedevice)
     {
-        struct ClassName * name = NULL;        
+        struct ClassName * name = NULL;
         struct HIDDAGPData * adata = OOP_INST_DATA(cl, o);
 
         ForeachNode(&adata->classes, name)

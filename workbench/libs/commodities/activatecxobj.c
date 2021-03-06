@@ -19,17 +19,17 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(CxObj *, co,   A0),
-	AROS_LHA(LONG,    true, D0),
+        AROS_LHA(CxObj *, co,   A0),
+        AROS_LHA(LONG,    true, D0),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 7, Commodities)
+        struct Library *, CxBase, 7, Commodities)
 
 /*  FUNCTION
 
     Activates/deactivates a given commodity object. (An inactive object
-    doesn't perform its function on its input - it just passes it on to 
+    doesn't perform its function on its input - it just passes it on to
     the next object.) The activation depends on the value of 'true'; if
     it's TRUE the object is activated, if it's FALSE it's deactivated.
         All objects are created in the active state except for brokers;
@@ -72,23 +72,23 @@
     
     if (co == NULL)
     {
-	return 0;
+        return 0;
     }
 
     temp = (co->co_Flags & COF_ACTIVE);
 
     if (true)
     {
-	co->co_Flags |= COF_ACTIVE;
+        co->co_Flags |= COF_ACTIVE;
     }
     else
     {
-	co->co_Flags &= ~COF_ACTIVE;
+        co->co_Flags &= ~COF_ACTIVE;
     }
 
     if (co->co_Node.ln_Type == CX_BROKER)
     {
-	BrokerCommand(NULL, CXCMD_LIST_CHG);
+        BrokerCommand(NULL, CXCMD_LIST_CHG);
     }
 
     return temp;

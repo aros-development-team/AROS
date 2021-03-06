@@ -130,9 +130,9 @@ struct WPEditor_AdvancedBackgroundWindow_DATA
                         *wpedabwd_Window_Icon_ViewMode,
                         *wpedabwd_Window_Icon_ViewModeLabel,
 #if defined(DEBUG_MULTLINE)
-                        *wpedabwd_Window_IconLabel_TextMultiLine, 
-                        *wpedabwd_Window_IconLabel_MultiLineonFocus, 
-                        *wpedabwd_Window_IconLabel_MultiLineNo,     
+                        *wpedabwd_Window_IconLabel_TextMultiLine,
+                        *wpedabwd_Window_IconLabel_MultiLineonFocus,
+                        *wpedabwd_Window_IconLabel_MultiLineNo,
 #endif
                         *wpedabwd_Window_Icon_HorSpacing,
                         *wpedabwd_Window_Icon_VertSpacing,
@@ -157,24 +157,24 @@ struct WPEditor_DATA
     struct WPEditor_ViewSettingsObject                  *wped_ViewSettings_Current;
 
     Object                                              *wped_FirstBGImSpecObj,
-                                                        *wped_FirstBGAdvancedObj;    
+                                                        *wped_FirstBGAdvancedObj;
 
     ULONG                                               wped_DimensionsSet;
                                                         
     Object                                              *wped_ViewSettings_GroupObj,
                                                         *wped_ViewSettings_SpacerObj,
                                                         *wped_c_NavigationMethod,
-                                                        *wped_cm_ToolbarEnabled, 
+                                                        *wped_cm_ToolbarEnabled,
                                                         *wped_IconDropMode,
 #if defined(DEBUG_CHANGESCREENTITLE)
-                                                        *wped_s_screentitle, 
+                                                        *wped_s_screentitle,
 #endif
                                                         *wped_toolbarpreview,
 #if defined(DEBUG_NETWORKBROWSER)
-                                                        *wped_cm_EnableNetworkBrowser, 
+                                                        *wped_cm_EnableNetworkBrowser,
 #endif
 #if defined(DEBUG_SHOWUSERFILES)
-                                                        *wped_cm_EnableUserFiles, 
+                                                        *wped_cm_EnableUserFiles,
 #endif
                                                         *wped_toolbarGroup;
     struct Hook                                         wped_Hook_CloseAdvancedOptions;
@@ -326,8 +326,8 @@ AROS_UFH3(
 
         ForeachNode(&_wpeditor_intern_ViewSettings, _viewSettings_Node)
         {
-            GET(_viewSettings_Node->wpedbo_AdvancedOptionsObject, 
-                MUIA_Disabled, 
+            GET(_viewSettings_Node->wpedbo_AdvancedOptionsObject,
+                MUIA_Disabled,
                 &_viewSettings_Node->wpedbo_state_AdvancedDisabled);
 
             SET(_viewSettings_Node->wpedbo_ImageSpecObject, MUIA_Disabled, TRUE);//1_Disable
@@ -434,7 +434,7 @@ AROS_UFH3(
             }
         }
 
-        /*Enable this and remove *_Disable instructions over 
+        /*Enable this and remove *_Disable instructions over
           when discovered the zune refresh problem...*/
         //SET(data->wped_ViewSettings_GroupObj, MUIA_Disabled, TRUE);
 
@@ -476,7 +476,7 @@ AROS_UFH3(
 
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc()\n"));
     
-    /*Enable this and remove *_Enable instructions under 
+    /*Enable this and remove *_Enable instructions under
       when discovered the zune refresh problem...*/
     //SET(data->wped_ViewSettings_GroupObj, MUIA_Disabled, FALSE);
 
@@ -763,8 +763,8 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Allocated %d TileModes  - A
                     Object *new_TileModeObj = NULL;
 
 D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Creating TileModes Cycle gadget\n"));
-                    new_TileModeObj = MUI_MakeObject(MUIO_Cycle, 
-                                       NULL, 
+                    new_TileModeObj = MUI_MakeObject(MUIO_Cycle,
+                                       NULL,
                                        data->wped_ViewSettings_Current->wpedbo_BFTileModeNames
                                       );
 
@@ -870,8 +870,8 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Allocated %d RenderModes  -
             Object *new_RenderModeObj = NULL;
 
 D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Creating RenderModes Cycle gadget\n"));
-            new_RenderModeObj = MUI_MakeObject(MUIO_Cycle, 
-                               NULL, 
+            new_RenderModeObj = MUI_MakeObject(MUIO_Cycle,
+                               NULL,
                                data->wped_ViewSettings_Current->wpedbo_BFRenderModeNames
                               );
             if (new_RenderModeObj)
@@ -939,16 +939,16 @@ struct WPEditor_ViewSettingsObject *WPEditor__FindViewSettingObjects(char * this
 
 /*WPEditor__NewViewSettingObjects(): Add new ViewSetting object to
  *scrollgroup in left part of Appearance page;
- *It wants the name of new ViewSetting object, and if this 
+ *It wants the name of new ViewSetting object, and if this
  *ViewSetting object supports a backfill;
  *The function creates a new 50x50 MUIC_Popimage (a private class
  *which is composed by an  imagebutton connected to a setting
- *window) which has "MSG_SELECT_WORKBENCH_BACKGROUND" as window 
+ *window) which has "MSG_SELECT_WORKBENCH_BACKGROUND" as window
  *title;
  *Image contained in MUIC_Popimage is going to be inserted by a call
  *WPEditor__MUIM_PrefsEditor_ImportFH() during the initialization
  *of WPEditor Zune object and when these objects must be repainted;
- *If backfillsupport is TRUE a button labelled "Advanced" is 
+ *If backfillsupport is TRUE a button labelled "Advanced" is
  *created and hooked to WandererPrefs_Hook_CheckImageFunc();
  *The new MUIC_Popimage and eventually an "Advanced" button
  *are added as attributes to a ViewSetting object, and this last one
@@ -963,7 +963,7 @@ struct WPEditor_ViewSettingsObject *WPEditor__NewViewSettingObjects(char * this_
 D(bug("[WPEditor] WPEditor__NewViewSettingObjects('%s')\n", this_Name));
     _viewSettings_Current = AllocMem(sizeof(struct WPEditor_ViewSettingsObject), MEMF_ANY|MEMF_CLEAR);
     if (_viewSettings_Current)
-    {    
+    {
         _viewSettings_Current->wpedbo_ViewName = AllocVec(strlen(this_Name) + 1, MEMF_ANY|MEMF_CLEAR);
         if (_viewSettings_Current->wpedbo_ViewName)
         {
@@ -1015,17 +1015,17 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *_WP_Navigation_InnerHGrp4 = NULL,
             *_WP_Navigator_ScreenTitleObj = NULL,
 #endif
-            *_WP_NavigationObj = NULL,    
+            *_WP_NavigationObj = NULL,
             *_WP_Appearance_GroupObj = NULL,
             *_WP_ViewSettings_GroupObj = NULL,
             *_WP_ViewSettings_SpacerObj = NULL,
             *_WP_ViewSettings_VirtGrpObj = NULL,
             *_WP_ViewSettings_ScrollGrpObj = NULL,
 #if defined(DEBUG_NETWORKBROWSER)
-            *_WP_NetworkBrowser_EnabledObj = NULL, 
+            *_WP_NetworkBrowser_EnabledObj = NULL,
 #endif
 #if defined(DEBUG_SHOWUSERFILES)
-            *_WP_UserFiles_ShowFileFolderObj = NULL, 
+            *_WP_UserFiles_ShowFileFolderObj = NULL,
 #endif
             *_WP_Toolbar_EnabledObj = NULL,
             *_WP_Toolbar_GroupObj = NULL,
@@ -1049,7 +1049,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *_WP_AdvancedView_ScaleModeGrpObj = NULL,
             *_WP_AdvancedView_TileModeGrpObj = NULL,
             *_WP_AdvancedView_TileModeObjContainer = NULL,
-            *_WP_AdvancedView_TileModeObj = NULL, 
+            *_WP_AdvancedView_TileModeObj = NULL,
             *_WP_AdvancedView_X_OffsetObj = NULL,
             *_WP_AdvancedView_Y_OffsetObj = NULL,
             *_WP_AdvancedView_IconRenderGrpObj = NULL,
@@ -1105,7 +1105,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     _wpeditor_intern_MainPageNames[WPD_TOOLBAR] = (STRPTR)_(MSG_TOOLBAR);
 
     _WP_Prefs_PageGroupObj = (Object *)RegisterObject,
-                    MUIA_Register_Titles, (IPTR) _wpeditor_intern_MainPageNames,      
+                    MUIA_Register_Titles, (IPTR) _wpeditor_intern_MainPageNames,
                 End;
 /*END _WP_Prefs_PageGroupObj-------------------------------------------------*/
 
@@ -1113,7 +1113,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
     _WP_NavigationObj = (Object *)GroupObject, End;
 
-    _WP_Navigation_VGrp1 = (Object *)VGroup,                    // general 
+    _WP_Navigation_VGrp1 = (Object *)VGroup,                    // general
                     MUIA_FrameTitle, __(MSG_NAVIGATION),
                     MUIA_Frame, MUIV_Frame_Group,
                     MUIA_Group_Horiz, FALSE,
@@ -1148,7 +1148,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 #endif
 
 #if defined(DEBUG_CHANGESCREENTITLE)
-    _WP_Navigation_HGrp2 = (Object *)HGroup,                   
+    _WP_Navigation_HGrp2 = (Object *)HGroup,
                     MUIA_FrameTitle, (IPTR)_(MSG_WANDERERSCREENTITLE),
                     MUIA_Group_SameSize, TRUE,
                     MUIA_Frame, MUIV_Frame_Group,
@@ -1172,7 +1172,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 /*_WP_Appearance_GroupObj: "Appearance" page group---------------------------*/
 
-    _WP_Appearance_GroupObj = (Object *)GroupObject,                     // appearance 
+    _WP_Appearance_GroupObj = (Object *)GroupObject,                     // appearance
                     MUIA_Group_SameSize, FALSE,
                     MUIA_Group_Horiz, TRUE,
                 End;
@@ -1182,16 +1182,16 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                     MUIA_Group_SameSize, FALSE,
                     MUIA_Scrollgroup_FreeHoriz, FALSE,
                     MUIA_Scrollgroup_FreeVert, TRUE,
-                    MUIA_Scrollgroup_Contents, 
+                    MUIA_Scrollgroup_Contents,
                     (IPTR) (_WP_ViewSettings_VirtGrpObj = (Object *)VirtgroupObject,
                         MUIA_FrameTitle, (IPTR)_(MSG_VIEWSETTINGS),
                         MUIA_Frame, MUIV_Frame_ReadList,
                         MUIA_Virtgroup_Input, FALSE,
                     End),
-                End;    
+                End;
 
-    /*_WP_ViewSettings_GroupObj is going to contain nodes 
-      of list called _wpeditor_intern_ViewSettings, 
+    /*_WP_ViewSettings_GroupObj is going to contain nodes
+      of list called _wpeditor_intern_ViewSettings,
       it's created after in this function...;
     */
     _WP_ViewSettings_GroupObj = (Object *)GroupObject,
@@ -1204,7 +1204,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 /*_WP_Toolbar_GroupObj: "Toolbar" page group---------------------------------*/
     
-    _WP_Toolbar_GroupObj = (Object *)GroupObject,                     // toolbar 
+    _WP_Toolbar_GroupObj = (Object *)GroupObject,                     // toolbar
                    MUIA_Group_SameSize, FALSE,
                 End;
     
@@ -1236,7 +1236,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                    MUIA_FrameTitle, __(MSG_PREVIEW),
                    MUIA_Frame, MUIV_Frame_Group,
                    MUIA_Group_SameSize, FALSE,
-                End;    
+                End;
 
     _WP_Toolbar_InnerGroupObj4 = (Object *)HGroup,
                     MUIA_HorizWeight, 0,
@@ -1311,7 +1311,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_Toolbar_InnerGroupObj2 , OM_ADDMEMBER,HVSpace);
 
     DoMethod(_WP_Toolbar_InnerGroupObj1 , OM_ADDMEMBER,_WP_Toolbar_InnerGroupObj2);
-    DoMethod(_WP_Toolbar_InnerGroupObj1 , OM_ADDMEMBER,_WP_Toolbar_InnerGroupObj3);    
+    DoMethod(_WP_Toolbar_InnerGroupObj1 , OM_ADDMEMBER,_WP_Toolbar_InnerGroupObj3);
 
 
     DoMethod(_WP_Toolbar_GroupObj, OM_ADDMEMBER,_WP_Toolbar_InnerGroupObj1);
@@ -1353,7 +1353,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                 End;
     /*END _WP_AdvancedViewPageGroupObj-------------------------------------------------*/
 
-    /*Draw Mode Group----------------------------------------------------*/        
+    /*Draw Mode Group----------------------------------------------------*/
     _WP_AdvancedViewBackgroundGrpObj = (Object *)VGroup,
                     MUIA_FrameTitle, (IPTR)_(MSG_BACKGROUNDOPTIONS),
                     MUIA_Frame, MUIV_Frame_Group,
@@ -1385,7 +1385,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     _WP_AdvancedView_TileModeObjContainer = (Object *)HGroup, Child, (IPTR)_WP_AdvancedView_TileModeObj, End;
     /*END AdvancedView_TileModeNames cicle button----------------*/
 
-    _WP_AdvancedView_TileModeGrpObj = (Object *)GroupObject,    
+    _WP_AdvancedView_TileModeGrpObj = (Object *)GroupObject,
                     MUIA_Group_SameSize, FALSE,
                     MUIA_FrameTitle, (IPTR)_(MSG_TILEMODEOPTIONS),
                     MUIA_Frame, MUIV_Frame_Group,
@@ -1670,7 +1670,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ 0x%p\n", self));
 #if defined(DEBUG_MULTLINE)
             advancedView_data->wpedabwd_Window_IconLabel_TextMultiLine        = _WP_AdvancedView_IconLabel_TextMultiLineObj;
             advancedView_data->wpedabwd_Window_IconLabel_MultiLineonFocus     = _WP_AdvancedView_IconLabel_MultiLineonFocusObj;
-            advancedView_data->wpedabwd_Window_IconLabel_MultiLineNo          = _WP_AdvancedView_IconLabel_MultiLineNoObj;        
+            advancedView_data->wpedabwd_Window_IconLabel_MultiLineNo          = _WP_AdvancedView_IconLabel_MultiLineNoObj;
 #endif
             advancedView_data->wpedabwd_Window_IconLabel_HorPadd              = _WP_AdvancedView_IconLabel_HorPaddObj;
             advancedView_data->wpedabwd_Window_IconLabel_VertPadd             = _WP_AdvancedView_IconLabel_VertPaddObj;
@@ -1722,7 +1722,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advanced
         (
             data->wped_cm_ToolbarEnabled, MUIM_Notify, MUIA_Selected, FALSE,
             (IPTR)data->wped_c_NavigationMethod, 3, MUIM_Set, MUIA_Cycle_Active, 0
-        ); 
+        );
 
         DoMethod
         (
@@ -1781,7 +1781,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advanced
 
             DoMethod
             (
-                data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_TextMultiLine, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,  
+                data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_TextMultiLine, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
                 (IPTR)data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MultiLineNo, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue
             );
 
@@ -1805,10 +1805,10 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advanced
 
         }
 
-        /*--------------------*/        
+        /*--------------------*/
 
         /*Initialization and setup of _wpeditor_intern_ViewSettings----------*/
-            /*_wpeditor_intern_ViewSettings is a 
+            /*_wpeditor_intern_ViewSettings is a
           list of objects attached to
           _WP_ViewSettings_GroupObj;
         */
@@ -1835,14 +1835,14 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Adding ViewSetting Objects for '%s' to Prefs
                             MUIA_Frame, MUIV_Frame_None,
                             MUIA_Group_Columns, 2,
                                 Child, (IPTR) HVSpace,
-                            Child, (IPTR) HVSpace,    
+                            Child, (IPTR) HVSpace,
                             Child, (IPTR) Label1(_viewSettings_Node->wpedbo_ViewName),
                             Child, (IPTR) _viewSettings_Node->wpedbo_ImageSpecObject,
                             Child, (IPTR) HVSpace,
                             Child, (IPTR) HVSpace,
                         End;
 
-            if ((thisViewImspecGrp) && (data->wped_FirstBGImSpecObj == NULL)) 
+            if ((thisViewImspecGrp) && (data->wped_FirstBGImSpecObj == NULL))
                 data->wped_FirstBGImSpecObj = thisViewImspecGrp;
 
             if (_viewSettings_Node->wpedbo_AdvancedOptionsObject)
@@ -1855,7 +1855,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Adding ViewSetting Objects for '%s' to Prefs
                                 Child, (IPTR) _viewSettings_Node->wpedbo_AdvancedOptionsObject,
                             End;
 
-                if ((thisViewAdvancedGrp) && (data->wped_FirstBGAdvancedObj == NULL)) 
+                if ((thisViewAdvancedGrp) && (data->wped_FirstBGAdvancedObj == NULL))
                     data->wped_FirstBGAdvancedObj = thisViewAdvancedGrp;
             }
 
@@ -1881,7 +1881,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: GUI Objects inserted in Prefs GUI ..\n"));
                     (
                         _viewSettings_Node->wpedbo_ImageSpecObject,
                         MUIM_Notify, MUIA_Imagedisplay_Spec, MUIV_EveryTime,
-                        (IPTR)self, 3, MUIM_CallHook, 
+                        (IPTR)self, 3, MUIM_CallHook,
                         &_viewSettings_Node->wpedbo_Hook_CheckImage, _viewSettings_Node
                     );
 
@@ -1920,7 +1920,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Failed to create GUI ..\n"));
 }
 
 
-/*BOOL WPEditor_ProccessGlobalChunk(): read a TagItem global_chunk (from global setting) 
+/*BOOL WPEditor_ProccessGlobalChunk(): read a TagItem global_chunk (from global setting)
  *and memorize its value into correspondent attribute of an object of the gui...;
  */
 BOOL WPEditor_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem32 *global_chunk, IPTR chunk_size)
@@ -2077,7 +2077,7 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: GUI Objects inserted in Pr
             DoMethod (
                 _viewSettings_Node->wpedbo_ImageSpecObject,
                 MUIM_Notify, MUIA_Imagedisplay_Spec, MUIV_EveryTime,
-                (IPTR)self, 3, MUIM_CallHook, 
+                (IPTR)self, 3, MUIM_CallHook,
                 &_viewSettings_Node->wpedbo_Hook_CheckImage, _viewSettings_Node
             );
 
@@ -2127,7 +2127,7 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Freeing old ViewSetting Ta
 
         int tag_count = (chunk_size - _viewSettings_TagOffset)/sizeof(struct TagItem32);
 
-        _viewSettings_Node->wpedbo_Options = AllocVec((tag_count + 1) * sizeof(struct TagItem32), 
+        _viewSettings_Node->wpedbo_Options = AllocVec((tag_count + 1) * sizeof(struct TagItem32),
                                   MEMF_ANY|MEMF_CLEAR
                                  );
         if (_viewSettings_Node->wpedbo_Options)
@@ -2136,13 +2136,13 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Allocated new Tag storage 
              
             CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpedbo_Options, tag_count * sizeof(struct TagItem32));
 
-#if AROS_BIG_ENDIAN            
+#if AROS_BIG_ENDIAN
             BYTE num = 0;
             do {
                 _viewSettings_Node->wpedbo_Options[num].ti_Tag = AROS_LE2LONG(_viewSettings_Node->wpedbo_Options[num].ti_Tag);
                 _viewSettings_Node->wpedbo_Options[num].ti_Data = AROS_LE2LONG(_viewSettings_Node->wpedbo_Options[num].ti_Data);
             } while(++num < tag_count);
-#endif        
+#endif
             _viewSettings_Node->wpedbo_Options[tag_count].ti_Tag = TAG_DONE;
         }
     }
@@ -2159,7 +2159,7 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Allocated new Tag storage 
 */
 IPTR WPEditor__MUIM_PrefsEditor_ImportFH
 (
-    Class *CLASS, Object *self, 
+    Class *CLASS, Object *self,
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
@@ -2186,9 +2186,9 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Iff current handle 0x%p, 
     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
     if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
-    {        
+    {
         do
-        {                
+        {
             if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
             {
                 D(context = CurrentChunk(handle));
@@ -2254,14 +2254,14 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
                                         WPEditor_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
                                         
                                     }
-                                }//END if (error == this_chunk_size)    
+                                }//END if (error == this_chunk_size)
 
                                 if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
                                 {
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: End of Data chunk ..\n"));
                                 }
                             }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
-                        }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)                
+                        }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
                     }//END if (this_chunk_name)
                 }//END if ((error = ReadChunkBytes(handle, chunk_buffer, WP_IFF_CHUNK_BUFFER_SIZE)))
             }//END if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
@@ -2320,7 +2320,7 @@ D(bug("[WPEditor] Failed to open stream!, returncode %ld!\n", error));
 
 
 /*IPTR WPEditor__MUIM_PrefsEditor_ExportFH(): definition of an abstract function from
- *MUIC_PrefsEditor; This function basically memorized in the correspondent iff prefs file 
+ *MUIC_PrefsEditor; This function basically memorized in the correspondent iff prefs file
  *of Wanderer prefs the changes made with Wanderer prefs window...;
  */
 IPTR WPEditor__MUIM_PrefsEditor_ExportFH
@@ -2370,7 +2370,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write Preference File Hea
                 {
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Preference File Header PopChunk() = %ld\n", error));
                     goto exportFH_CloseFORM;
-                }     
+                }
             }
             else
             {
@@ -2392,7 +2392,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindow_WindowNavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
             _wp_GlobalTagCounter += 1;
 
-            // save iconwindow drop mode 
+            // save iconwindow drop mode
             _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_IconDropMode);
             GET(data->wped_IconDropMode, MUIA_Cycle_Active, &ti_Data);
             _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
@@ -2430,10 +2430,10 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Header PopChunk(
             {
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Wanderer Prefs Header Chunk : Error! %d \n", error));
                 goto exportFH_CloseFORM;
-            }    
+            }
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'global' Wanderer Prefs Data Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, globaldatasize)) == 0) 
+            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, globaldatasize)) == 0)
             {
                 error = WriteChunkBytes(handle, _wp_GlobalTags, globaldatasize);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Data Chunk | Wrote %d bytes (data size = %d bytes)\n", error, globaldatasize));
@@ -2469,10 +2469,10 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' Header PopChunk
             {
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' Wanderer Prefs Header Chunk : Error! %d \n", error));
                 goto exportFH_CloseFORM;
-            }    
+            }
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'network' Wanderer Prefs Data Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct TagItem))) == 0) 
+            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct TagItem))) == 0)
             {
                 struct TagItem32 __wp_networkconfig[2];
 
@@ -2519,16 +2519,16 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' Header PopC
             {
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' Wanderer Prefs Header Chunk : Error! %d \n", error));
                 goto exportFH_CloseFORM;
-            }    
+            }
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'screentitle' Wanderer Prefs Data Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, IFFSIZE_UNKNOWN)) == 0) 
+            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, IFFSIZE_UNKNOWN)) == 0)
             {
                 // save screentitle options
                 UBYTE *screentitlestr = NULL;
 
                 GET(data->wped_s_screentitle, MUIA_String_Contents, &screentitlestr);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' string to write %s\n", screentitlestr));            
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' string to write %s\n", screentitlestr));
                 error = WriteChunkBytes(handle, screentitlestr, strlen(screentitlestr) + 1);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' string written %s\n", screentitlestr));
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' Data Chunk | Wrote %d bytes\n", error));
@@ -2768,7 +2768,7 @@ D(bug("[WPEditor] WPEditor__MUIM_Show()\n"));
 
         GET(data->wped_ViewSettings_GroupObj, MUIA_Height, &viewsettingsbox_Height);
         
-D(bug("[WPEditor] WPEditor__MUIM_Show: WindowObj @ 0x%p, Real Window @ 0x%p, %d, %d [%d x %d]\n", 
+D(bug("[WPEditor] WPEditor__MUIM_Show: WindowObj @ 0x%p, Real Window @ 0x%p, %d, %d [%d x %d]\n",
             this_Win,
             thisWin_Window,
             thisWin_X, thisWin_Y,
@@ -2793,7 +2793,7 @@ D(bug("[WPEditor] WPEditor__MUIM_Show: ViewSettings Group height = %d\n", viewse
                     thisWin_Height = (thisWin_Height - viewsettingsbox_Height) + (2 * NEWHEIGHT);
                     thisWin_Y = thisWin_Y + ((viewsettingsbox_Height - (2 * NEWHEIGHT))/2);
 
-D(bug("[WPEditor] WPEditor__MUIM_Show: Changing windows dimensions to  %d, %d [%d x %d]\n", 
+D(bug("[WPEditor] WPEditor__MUIM_Show: Changing windows dimensions to  %d, %d [%d x %d]\n",
             thisWin_X, thisWin_Y,
             thisWin_Width, thisWin_Height));
 

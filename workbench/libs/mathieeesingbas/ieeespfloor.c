@@ -23,7 +23,7 @@
     INPUTS
 
     RESULT
-	IEEE single precision floating point
+        IEEE single precision floating point
 
         Flags:
           zero     : result is zero

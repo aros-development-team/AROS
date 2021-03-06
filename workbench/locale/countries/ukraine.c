@@ -2,7 +2,7 @@
     Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
 
     Desc: Country data for Ukrajina (Ukraine).
-    Author: Stefan Haubenthal <polluks@sdf.lonestar.org> 
+    Author: Stefan Haubenthal <polluks@sdf.lonestar.org>
 */
 
 #include "country_locale.h"

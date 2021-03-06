@@ -11,9 +11,9 @@
 
         i386 compatable families...
             AMD 486/5x86/K5/K6/K6-II/K6-III/Athlon/Duron/Opteron/Athlon64
-            Intel P5/P54C/P55C/P24T/P6/P2/P3/PM/Itanium(IA-64) 
+            Intel P5/P54C/P55C/P24T/P6/P2/P3/PM/Itanium(IA-64)
             Cyrix  5x86/M1/MediaGX/M2
-            UMC  
+            UMC
             NexGen  Nx586
             Centaur  C6/C2/C3
             Rise Technology mP6
@@ -30,7 +30,7 @@
 #include "x86.h"
 
 /********************************************
-		    Variables
+                    Variables
  ********************************************/
 
 ULONG   st_low, st_high, end_low, end_high;
@@ -65,7 +65,7 @@ void    i386_printregs ( int eax,int ebx,int ecx,int edx )
 int     i386_sprintregs ( int buffpos, char *buffer, int eax,int ebx,int ecx,int edx) /* returns buffer position */
 {
     char                    out[17];
-	ULONG                   size;
+        ULONG                   size;
 
     i386_getregs( out, eax, ebx, ecx, edx );
     size = strlen( out );
@@ -78,44 +78,44 @@ int     i386_sprintregs ( int buffpos, char *buffer, int eax,int ebx,int ecx,int
 
 void    Convert32 (unsigned long value)
 {
-	int                         loop;
+        int                         loop;
 
-	for( loop=0 ; loop<32 ; loop++, value <<= 1 )
+        for( loop=0 ; loop<32 ; loop++, value <<= 1 )
     {
-		putchar( ( 1 << 31 & value ) ? '1' : '0' );
+                putchar( ( 1 << 31 & value ) ? '1' : '0' );
 
-		if ( loop == 23 || loop == 15 || loop == 7 )	putchar(' ');
-	}
-	putchar('\n');
+                if ( loop == 23 || loop == 15 || loop == 7 )    putchar(' ');
+        }
+        putchar('\n');
 }
 
 /********************************************/
 
 void    Convert64(unsigned long long value)
 {
-	Convert32 ( value >> 32 );
-	printf ("           ");
-	Convert32 ( value );
+        Convert32 ( value >> 32 );
+        printf ("           ");
+        Convert32 ( value );
 }
 
 /********************************************/
 
 void    i386_Parse_MSR ( unsigned int msr, int size)
 {
-	unsigned long               msrvala=0,msrvalb=0;
+        unsigned long               msrvala=0,msrvalb=0;
     unsigned long long          msrres;
 
     i386_rdmsr( msr, msrvala, msrvalb );
     msrres = ( ( (unsigned long long)msrvalb << 32 ) | msrvala );
 
-	if ( msrres  == 1 )
+        if ( msrres  == 1 )
     {
-		printf ( "MSR: 0x%08x=0x%08llx : ", msr, msrres );
-		if ( size == 32 ) Convert32( msrres );
-		if ( size == 64 ) Convert64( msrres );
-		return;
-	}
-	printf ("  Couldn't read MSR 0x%x\n", msr );
+                printf ( "MSR: 0x%08x=0x%08llx : ", msr, msrres );
+                if ( size == 32 ) Convert32( msrres );
+                if ( size == 64 ) Convert64( msrres );
+                return;
+        }
+        printf ("  Couldn't read MSR 0x%x\n", msr );
 }
 
 /********************************************/
@@ -126,30 +126,30 @@ void    i386_Parse_MSR ( unsigned int msr, int size)
 
 int     i386_cpuspeed ( void )
 {
-	int                         loops;
+        int                         loops;
 
     Forbid();
 
-	/* Setup timer */
-	outb((inb(0x61) & ~0x02) | 0x01, 0x61);
-	outb(0xb0, 0x43); 
-	outb(TICKS & 0xff, 0x42);
-	outb(TICKS >> 8, 0x42);
+        /* Setup timer */
+        outb((inb(0x61) & ~0x02) | 0x01, 0x61);
+        outb(0xb0, 0x43);
+        outb(TICKS & 0xff, 0x42);
+        outb(TICKS >> 8, 0x42);
 
-	asm("rdtsc":"=a" (st_low),"=d" (st_high));
+        asm("rdtsc":"=a" (st_low),"=d" (st_high));
 
-	loops = 0;
+        loops = 0;
 
-	do loops++;
-	while ((inb(0x61) & 0x20) == 0);
+        do loops++;
+        while ((inb(0x61) & 0x20) == 0);
 
-	asm( "rdtsc\n\t" "subl st_low,%%eax\n\t" "subl st_high,%%edx\n\t" :"=a" (end_low), "=d" (end_high)	);
+        asm( "rdtsc\n\t" "subl st_low,%%eax\n\t" "subl st_high,%%edx\n\t" :"=a" (end_low), "=d" (end_high)      );
 
     Permit();
 
-	if (loops < 4 || end_low < 50000) return(-1);                      /* Make sure we have a credible result */
+        if (loops < 4 || end_low < 50000) return(-1);                      /* Make sure we have a credible result */
 
-	return( end_low/48 );
+        return( end_low/48 );
 }
 
 /********************************************/
@@ -169,16 +169,16 @@ ULONG    i386_approx_mhz ( void )
 
         if (speed < 1000000)
         {
-			speed += 50;                                            /* for rounding         */
+                        speed += 50;                                            /* for rounding         */
 
             printf("%d.%02d Mhz\n",speed/1000,(speed/100)%10);
-		}
-        else 
+                }
+        else
         {
-			speed += 500;                                           /* for rounding         */
+                        speed += 500;                                           /* for rounding         */
             printf("%d Mhz\n",speed/1000);
-		}
-	}
+                }
+        }
     return speed;
 }
 
@@ -223,20 +223,20 @@ void    parse_i386 ( struct i386_compat_intern * CPUi386, ULONG CPU_ID )
 
 /* Use the first 4 letters of the vender string to ID our processor.. */
 
-/*      
+/*
 
         EBX-EDX-ECX             Vendor
 
-        "AuthenticAMD"        AMD processor 
-        "GenuineIntel"        Intel processor 
-        "CyrixInstead"        Cyrix processor 
-        "UMC UMC UMC "        UMC processor 
-        "NexGenDriven"        NexGen processor 
-        "CentaurHauls"        Centaur processor 
-        "RiseRiseRise"        Rise Technology processor 
-        "SiS SiS SiS "        SiS processor 
-        "GenuineTMx86"        Transmeta processor 
-        "Geode by NSC"        National Semiconductor processor 
+        "AuthenticAMD"        AMD processor
+        "GenuineIntel"        Intel processor
+        "CyrixInstead"        Cyrix processor
+        "UMC UMC UMC "        UMC processor
+        "NexGenDriven"        NexGen processor
+        "CentaurHauls"        Centaur processor
+        "RiseRiseRise"        Rise Technology processor
+        "SiS SiS SiS "        SiS processor
+        "GenuineTMx86"        Transmeta processor
+        "Geode by NSC"        National Semiconductor processor
 */
 
     switch(ebx)
@@ -245,7 +245,7 @@ void    parse_i386 ( struct i386_compat_intern * CPUi386, ULONG CPU_ID )
         parse_i386_AMD(maxi, CPUi386);
         break;
 
-    case 0x756e6547:                          
+    case 0x756e6547:
         switch(ecx)
         {
         case 0x6c65746e:

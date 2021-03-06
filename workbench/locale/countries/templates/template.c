@@ -9,7 +9,7 @@
 #include <libraries/locale.h>
 
 /*  Country data template/example.
-    Authors should add their name, and optionaly email address in the top 
+    Authors should add their name, and optionaly email address in the top
     section of this file.
 
     Note: NULL values in strings that actually mean something __MUST__

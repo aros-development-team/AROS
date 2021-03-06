@@ -46,7 +46,7 @@
         For compatibility reasons these cases are handled specially:
         
         Absolute path:
-            Prints the expanded path if it exists and is a file 
+            Prints the expanded path if it exists and is a file
             and no RES argument is given.
             
         Path which ends with a ':':
@@ -160,7 +160,7 @@ int main(void)
             {
                 /* Check for absolute path */
                 found |= FindCommandInAbsolutePath(commandName, colon, fib);
-                D(bug("Absolute path\n"));                
+                D(bug("Absolute path\n"));
             }
             else
             {
@@ -385,7 +385,7 @@ static BOOL FindResidentCommand(STRPTR name)
         
     /* Look in both system and normal list. Or rather, in the normal list
        ONLY if it wasn't found in the system list. This is what the Amiga
-       Which does thus not giving the whole picture if you have 'cmd' 
+       Which does thus not giving the whole picture if you have 'cmd'
        resident while 'cmd' is an internal command also. However, if this
        is the case, you may never access it as the system list is searched
         first by the Shell? */

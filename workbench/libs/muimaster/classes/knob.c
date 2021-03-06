@@ -82,10 +82,10 @@ static const UBYTE knob_rle[] =  /* hand-encoded, BTW ;-) */
     1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
     0, 1, 2, RLE_REP(2,3), RLE_REP(15,0), RLE_REP(2,1), 2, 3, 0,
     0, 1, 2, RLE_REP(2,3), RLE_REP(15,0), RLE_REP(2,1), 2, 3, 0,
-    RLE_REP(2,0), 1, 2, RLE_REP(2,3), RLE_REP(13,0), RLE_REP(2,1), 2, 3, RLE_REP(2,0),    
+    RLE_REP(2,0), 1, 2, RLE_REP(2,3), RLE_REP(13,0), RLE_REP(2,1), 2, 3, RLE_REP(2,0),
     RLE_REP(3,0), 1, 2, RLE_REP(3,1), RLE_REP(9,0), RLE_REP(3,1), 2, 3, RLE_REP(3,0),
     RLE_REP(4,0), 3, 2, RLE_REP(13,1), 2, 3, RLE_REP(4,0),
-    RLE_REP(5,0), 3, RLE_REP(2,2), RLE_REP(9,1), RLE_REP(2,2), 3, RLE_REP(5,0),    
+    RLE_REP(5,0), 3, RLE_REP(2,2), RLE_REP(9,1), RLE_REP(2,2), 3, RLE_REP(5,0),
     RLE_REP(6,0), RLE_REP(2,3), RLE_REP(9,2), RLE_REP(2,3), RLE_REP(6,0),
     RLE_REP(8,0), RLE_REP(9,3), RLE_REP(8,0),
     

@@ -101,8 +101,8 @@
 const TEXT version[] = "$VER: Eval 41.2 (14.7.2011)\n";
 
 #define  ARG_TEMPLATE  "VALUE1/A,OP,VALUE2/M,TO/K,LFORMAT/K"
-enum 
-{ 
+enum
+{
     ARG_VALUE1 = 0,
     ARG_OP,
     ARG_VALUE2,
@@ -122,7 +122,7 @@ int main(void)
     int  retval = RETURN_OK;
 
     IPTR args[] = { (IPTR)NULL,
-                    (IPTR)NULL, 
+                    (IPTR)NULL,
                     (IPTR)NULL,
                     (IPTR)NULL,
                     (IPTR)NULL };
@@ -182,7 +182,7 @@ int main(void)
                 }
             }
 
-            if (toFile == NULL || file != BNULL) {                    
+            if (toFile == NULL || file != BNULL) {
                 if (lFormat != NULL)
                 {
                     printLformat(lFormat, g_result);

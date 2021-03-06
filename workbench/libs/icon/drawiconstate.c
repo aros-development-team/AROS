@@ -17,42 +17,42 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH7(void, DrawIconStateA,
+        AROS_LH7(void, DrawIconStateA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *,   rp,       A0),
-	AROS_LHA(struct DiskObject *, icon,     A1),
-	AROS_LHA(STRPTR,              label,    A2),
-	AROS_LHA(LONG,                leftEdge, D0),
-	AROS_LHA(LONG,                topEdge,  D1),
-	AROS_LHA(ULONG,               state,    D2),
-	AROS_LHA(struct TagItem *,    tags,     A3),
+        AROS_LHA(struct RastPort *,   rp,       A0),
+        AROS_LHA(struct DiskObject *, icon,     A1),
+        AROS_LHA(STRPTR,              label,    A2),
+        AROS_LHA(LONG,                leftEdge, D0),
+        AROS_LHA(LONG,                topEdge,  D1),
+        AROS_LHA(ULONG,               state,    D2),
+        AROS_LHA(struct TagItem *,    tags,     A3),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 27, Icon)
+        struct IconBase *, IconBase, 27, Icon)
 
 /*  FUNCTION
-	Draw an icon like an image.
-	
+        Draw an icon like an image.
+        
     INPUTS
-	rp       - rastport to draw into
-	icon     - the icon
-	label    - label string
-	leftEdge, 
-	topEdge  - drawing position 
-	state    - drawing state, see intuition/imageclass.h
+        rp       - rastport to draw into
+        icon     - the icon
+        label    - label string
+        leftEdge,
+        topEdge  - drawing position
+        state    - drawing state, see intuition/imageclass.h
     
     RESULT
 
     NOTES
-	Only very limited implemented.
+        Only very limited implemented.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	intuition/imageclass.h
+        intuition/imageclass.h
 
     INTERNALS
 
@@ -192,14 +192,14 @@
 #endif
 
         /* Planar maps */
-	if (bm)
-	{
+        if (bm)
+        {
 #if DEBUG
-	    int i;
+            int i;
 
-	    bug("[%s] Using Bitmap: 0x%p, BitMask 0x%p\n", __func__, bm, mask);
-	    for (i = 0; i < bm->Depth; i++)
-	        bug("[%s] Planes[%d] = %p\n", __func__, i, bm->Planes[i]);
+            bug("[%s] Using Bitmap: 0x%p, BitMask 0x%p\n", __func__, bm, mask);
+            for (i = 0; i < bm->Depth; i++)
+                bug("[%s] Planes[%d] = %p\n", __func__, i, bm->Planes[i]);
 #endif
 
             if (mask) {

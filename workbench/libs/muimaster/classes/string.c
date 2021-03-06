@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 2003-2018, The AROS Development Team. All rights reserved.
 */
 
@@ -433,7 +433,7 @@ static BOOL Buffer_KillMarked(struct MUI_StringData *data)
         return FALSE;
 
     //kprintf("Buffer_KillMarked 2  markstart %d  markstop %d\n",
-    //    markstart, markstop);    
+    //    markstart, markstop);
 
     if (markstart > markstop)
     {
@@ -894,7 +894,7 @@ static WORD MaxDispPos(struct IClass *cl, Object *obj)
         numchars = data->NumChars + 1;  /* Take cursor into account */
 
 /*            This has already been done by UpdateDisp() which called us
-        strinfo->Buffer[strinfo->NumChars] = 0x20; 
+        strinfo->Buffer[strinfo->NumChars] = 0x20;
 
 */
     }
@@ -1158,7 +1158,7 @@ static VOID TextM(Object *obj, struct MUI_StringData *data,
         SetABPenDrMd(rp, textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
         Text(rp, text, textlen);
     }
-    //kprintf("\n");        
+    //kprintf("\n");
 }
 
 /**************************************************************************

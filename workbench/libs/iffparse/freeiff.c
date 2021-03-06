@@ -9,19 +9,19 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH1(void, FreeIFF,
+        AROS_LH1(void, FreeIFF,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(struct IFFHandle *, iff, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 9, IFFParse)
+        struct Library *, IFFParseBase, 9, IFFParse)
 
 /*  FUNCTION
-	Frees an IFFHandle struct previously allocated by AllocIFF.
+        Frees an IFFHandle struct previously allocated by AllocIFF.
 
     INPUTS
-	iff - pointer to an IFFHandle struct.
+        iff - pointer to an IFFHandle struct.
     RESULT
 
     NOTES
@@ -31,7 +31,7 @@
     BUGS
 
     SEE ALSO
-	AllocIFF(), CloseIFF()
+        AllocIFF(), CloseIFF()
 
     INTERNALS
 
@@ -40,26 +40,26 @@
     AROS_LIBFUNC_INIT
     struct IntContextNode   * cn;
     struct LocalContextItem * node,
-			    * nextnode;
+                            * nextnode;
 
     if (iff != NULL)
     {
-	/*
-	    We should free the LCIs of the default context-node
-	    ( CollectionItems and such )
-	*/
-	cn = (struct IntContextNode*)RootChunk (iff);
+        /*
+            We should free the LCIs of the default context-node
+            ( CollectionItems and such )
+        */
+        cn = (struct IntContextNode*)RootChunk (iff);
 
-	node = (struct LocalContextItem*)cn->cn_LCIList.mlh_Head;
+        node = (struct LocalContextItem*)cn->cn_LCIList.mlh_Head;
 
-	while ((nextnode = (struct LocalContextItem*)node->lci_Node.mln_Succ))
-	{
-	    PurgeLCI (node, IPB(IFFParseBase));
+        while ((nextnode = (struct LocalContextItem*)node->lci_Node.mln_Succ))
+        {
+            PurgeLCI (node, IPB(IFFParseBase));
 
-	    node = nextnode;
-	}
+            node = nextnode;
+        }
 
-	FreeMem (iff, sizeof (struct IntIFFHandle));
+        FreeMem (iff, sizeof (struct IntIFFHandle));
     }
     
     AROS_LIBFUNC_EXIT

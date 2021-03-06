@@ -40,7 +40,7 @@ static void GetIntegers(STRPTR v, LONG *v1, LONG *v2)
     if (c)
     {
         cnt = sscanf(c, "%31s %31s", va1, va2);
-	D(bug("Decoration/GetIntegers: va1='%s', va2='%s'\n", va1, va2));
+        D(bug("Decoration/GetIntegers: va1='%s', va2='%s'\n", va1, va2));
         if (cnt == 1)
         {
             *v1 = -1;
@@ -120,7 +120,7 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
     lock = Lock(path, ACCESS_READ);
     if (lock)
         olddir = CurrentDir(lock);
-    else 
+    else
         return;
 
     file = Open("Menu/Config", MODE_OLDFILE);
@@ -328,7 +328,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
             line = FGets(file, buffer, 256);
             if (line)
             {
-		D(bug("Decoration/ReadSystemConfig: Parsing line '%s'\n", line));
+                D(bug("Decoration/ReadSystemConfig: Parsing line '%s'\n", line));
                 if ((v = strstr(line, "NoInactiveSelected ")) == line) {
                     dc->GadgetsThreeState = GetBool(v, "Yes");
                 } else if ((v = strstr(line, "FrameStyle ")) == line) {
@@ -471,7 +471,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
             }
         }
         while(line);
-	D(bug("Decoration/LoadSystemConfig: file has been read\n"));
+        D(bug("Decoration/LoadSystemConfig: file has been read\n"));
         Close(file);
     }
 

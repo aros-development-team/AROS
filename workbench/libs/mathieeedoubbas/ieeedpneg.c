@@ -24,12 +24,12 @@
         y - IEEE double precision floating point number.
 
     RESULT
-	x - the negation of y.
+        x - the negation of y.
 
-	Flags:
-	  zero	   : result is zero
-	  negative : result is negative
-	  overflow : 0
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
 
     NOTES
 
@@ -42,7 +42,7 @@
 
     INTERNALS
         Algorithm:
-	Flip the sign-bit (even for zeroes).
+        Flip the sign-bit (even for zeroes).
 
 *****************************************************************************/
 {
@@ -55,7 +55,7 @@
     
     if
     (
-           is_eqC(*Qy, 0x0, 0x0 ) 
+           is_eqC(*Qy, 0x0, 0x0 )
         || is_eqC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo)
     )
     {

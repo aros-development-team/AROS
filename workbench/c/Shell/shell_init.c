@@ -64,17 +64,17 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     DOSBase = OpenLibrary("dos.library", 0);
     if ( DOSBase == NULL ) {
-    	D(bug("[Shell] What? No dos.library?\n"));
-    	return FALSE;
+        D(bug("[Shell] What? No dos.library?\n"));
+        return FALSE;
     }
 
     seg = CreateSegList(ShellStart);
     if (seg != BNULL) {
-	AddSegment("shell", seg, CMD_SYSTEM);
+        AddSegment("shell", seg, CMD_SYSTEM);
 #ifdef __mc68000
-	AddSegment("CLI", MKBADDR(Shell_CLISeg), CMD_SYSTEM);
+        AddSegment("CLI", MKBADDR(Shell_CLISeg), CMD_SYSTEM);
 #else
-	AddSegment("CLI", seg, CMD_SYSTEM);
+        AddSegment("CLI", seg, CMD_SYSTEM);
 #endif
     }
  

@@ -89,7 +89,7 @@ static struct NewBroker nb =
     NBU_NOTIFY | NBU_UNIQUE,
     0,
     0,
-    NULL,                             
+    NULL,
     0
 };
 
@@ -119,11 +119,11 @@ static CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } 
-    else 
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    }
+    else
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
@@ -133,14 +133,14 @@ static BOOL Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
-	catalog = OpenCatalog
-	    ( 
-	     NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
-	    );
+        catalog = OpenCatalog
+            (
+             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
+            );
     }
     else
     {
-	catalog = NULL;
+        catalog = NULL;
     }
 
     return TRUE;
@@ -159,19 +159,19 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
-    easyStruct.es_StructSize	= sizeof(easyStruct);
-    easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= _(MSG_NOCAPSLOCK_CXNAME);
-    easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+    easyStruct.es_StructSize    = sizeof(easyStruct);
+    easyStruct.es_Flags         = 0;
+    easyStruct.es_Title         = _(MSG_NOCAPSLOCK_CXNAME);
+    easyStruct.es_TextFormat    = msgString;
+    easyStruct.es_GadgetFormat  = _(MSG_OK);
 
     if (IntuitionBase != NULL && !Cli() )
     {
-	EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
+        EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
     }
     else
     {
-	PutStr(msgString);
+        PutStr(msgString);
     }
 }
 
@@ -185,27 +185,27 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (Cli() != NULL)
     {
-	struct RDArgs *rda;
-	IPTR          *args[] = { NULL };
+        struct RDArgs *rda;
+        IPTR          *args[] = { NULL };
 
-	rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
+        rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
 
-	if (rda != NULL)
-	{
-	    if (args[ARG_PRI] != NULL)
-	    {
-		nb.nb_Pri = (BYTE)(*args[ARG_PRI]);
-	    }
-	}
+        if (rda != NULL)
+        {
+            if (args[ARG_PRI] != NULL)
+            {
+                nb.nb_Pri = (BYTE)(*args[ARG_PRI]);
+            }
+        }
 
-	FreeArgs(rda);
+        FreeArgs(rda);
     }
     else
     {
-	UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
+        UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
 
-	nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
-	ArgArrayDone();
+        nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+        ArgArrayDone();
     }
 
     nb.nb_Name = _(MSG_NOCAPSLOCK_CXNAME);
@@ -216,9 +216,9 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (as->as_msgPort == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
+        showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
 
-	return FALSE;
+        return FALSE;
     }
 
     nb.nb_Port = as->as_msgPort;
@@ -227,31 +227,31 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (as->as_broker == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
 
     filterObj = CxFilter(NULL);
     if (filterObj == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_CREATE_CUSTOM));
+        showSimpleMessage(_(MSG_CANT_CREATE_CUSTOM));
 
-	return FALSE;
+        return FALSE;
     }
     else
     {
-	static IX ix =
-	{
-	    IX_VERSION,
-	    IECLASS_RAWKEY,
-	    0,
-	    0,
-	    IEQUALIFIER_CAPSLOCK,
-	    IEQUALIFIER_CAPSLOCK,
-	    0
-	};
+        static IX ix =
+        {
+            IX_VERSION,
+            IECLASS_RAWKEY,
+            0,
+            0,
+            IEQUALIFIER_CAPSLOCK,
+            IEQUALIFIER_CAPSLOCK,
+            0
+        };
 
-	SetFilterIX(filterObj, &ix);
-	AttachCxObj(as->as_broker, filterObj);
+        SetFilterIX(filterObj, &ix);
+        AttachCxObj(as->as_broker, filterObj);
     }
 
 
@@ -259,9 +259,9 @@ static BOOL initiate(int argc, char **argv, APState *as)
 
     if (customObj == NULL)
     {
-	showSimpleMessage(_(MSG_CANT_CREATE_CUSTOM));
+        showSimpleMessage(_(MSG_CANT_CREATE_CUSTOM));
 
-	return FALSE;
+        return FALSE;
     }
 
     AttachCxObj(filterObj, customObj);
@@ -278,18 +278,18 @@ static void freeResources(APState *as)
 
     if (CxBase != NULL)
     {
-	if (as->as_broker != NULL)
-	{
-	    DeleteCxObjAll(as->as_broker);
-	}
+        if (as->as_broker != NULL)
+        {
+            DeleteCxObjAll(as->as_broker);
+        }
     }
 
     if (as->as_msgPort != NULL)
     {
         while ((cxm = GetMsg(as->as_msgPort)))
-	{
-	    ReplyMsg(cxm);
-	}
+        {
+            ReplyMsg(cxm);
+        }
 
         DeleteMsgPort(as->as_msgPort);
     }
@@ -317,47 +317,47 @@ static void handleCx(APState *as)
 
     while (!quit)
     {
-	signals = Wait((1 << nb.nb_Port->mp_SigBit) | SIGBREAKF_CTRL_C);
+        signals = Wait((1 << nb.nb_Port->mp_SigBit) | SIGBREAKF_CTRL_C);
 
-	if (signals & (1 << nb.nb_Port->mp_SigBit))
-	{
-	    while ((msg = (CxMsg *)GetMsg(as->as_msgPort)))
-	    {
-		switch (CxMsgType(msg))
-		{
-		    case CXM_COMMAND:
-			switch (CxMsgID(msg))
-			{
-			    case CXCMD_DISABLE:
-				ActivateCxObj(as->as_broker, FALSE);
-				break;
+        if (signals & (1 << nb.nb_Port->mp_SigBit))
+        {
+            while ((msg = (CxMsg *)GetMsg(as->as_msgPort)))
+            {
+                switch (CxMsgType(msg))
+                {
+                    case CXM_COMMAND:
+                        switch (CxMsgID(msg))
+                        {
+                            case CXCMD_DISABLE:
+                                ActivateCxObj(as->as_broker, FALSE);
+                                break;
 
-			    case CXCMD_ENABLE:
-				ActivateCxObj(as->as_broker, TRUE);
-				break;
+                            case CXCMD_ENABLE:
+                                ActivateCxObj(as->as_broker, TRUE);
+                                break;
 
-			    case CXCMD_UNIQUE:
-				/* Running the program twice <=> quit */
-				/* Fall through */
+                            case CXCMD_UNIQUE:
+                                /* Running the program twice <=> quit */
+                                /* Fall through */
 
-			    case CXCMD_KILL:
-				quit = TRUE;
-				break;
+                            case CXCMD_KILL:
+                                quit = TRUE;
+                                break;
 
-			} /* switch(CxMsgID(msg)) */
+                        } /* switch(CxMsgID(msg)) */
 
-			break;
-		} /* switch (CxMsgType(msg))*/
+                        break;
+                } /* switch (CxMsgType(msg))*/
 
-		ReplyMsg((struct Message *)msg);
+                ReplyMsg((struct Message *)msg);
 
-	    } /* while((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
-	}	    
+            } /* while((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
+        }
 
-	if (signals & SIGBREAKF_CTRL_C)
-	{
-	    quit = TRUE;
-	}
+        if (signals & SIGBREAKF_CTRL_C)
+        {
+            quit = TRUE;
+        }
 
     } /* while (!quit) */
 }
@@ -371,11 +371,11 @@ int main(int argc, char **argv)
 
     if (initiate(argc, argv, &aState))
     {
-	handleCx(&aState);
+        handleCx(&aState);
     }
     else
     {
-	error = RETURN_FAIL;
+        error = RETURN_FAIL;
     }
 
     freeResources(&aState);

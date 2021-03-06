@@ -11,7 +11,7 @@
 #include "realtime_intern.h"
 
 struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
-				  struct Library *RealTimeBase);
+                                  struct Library *RealTimeBase);
 
 /*****************************************************************************
 
@@ -24,12 +24,12 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct Player  *, player , A0), 
-	AROS_LHA(struct TagItem *, tagList, A1),
+        AROS_LHA(struct Player  *, player , A0),
+        AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 9, RealTime)
+        struct Library *, RealTimeBase, 9, RealTime)
 
 /*  FUNCTION
 
@@ -77,47 +77,47 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
     while ((tag = NextTagItem(&tl)) != NULL)
     {
-	switch(tag->ti_Tag)
-	{
-	case PLAYER_Name:
-	    player->pl_Link.ln_Name = (APTR)tag->ti_Data;
-	    break;
+        switch(tag->ti_Tag)
+        {
+        case PLAYER_Name:
+            player->pl_Link.ln_Name = (APTR)tag->ti_Data;
+            break;
 
-	case PLAYER_Hook:
-	    player->pl_Hook = (struct Hook *)tag->ti_Data;
-	    break;
+        case PLAYER_Hook:
+            player->pl_Hook = (struct Hook *)tag->ti_Data;
+            break;
 
-	case PLAYER_Priority:
-	    player->pl_Link.ln_Pri = (BYTE)tag->ti_Data;
+        case PLAYER_Priority:
+            player->pl_Link.ln_Pri = (BYTE)tag->ti_Data;
 
-	    if (player->pl_Link.ln_Succ != NULL)
-	    {
-		/* If this node has been (is) inserted before, then remove it
-		   and put it in the right place. */
+            if (player->pl_Link.ln_Succ != NULL)
+            {
+                /* If this node has been (is) inserted before, then remove it
+                   and put it in the right place. */
 
-		/* Is this player attached to a conductor? */
-		if (player->pl_Source != NULL)
-		{		    
-		    lock = LockRealTime(RT_CONDUCTORS);
-		    Remove((struct Node *)player);
-		    Enqueue((struct List *)&player->pl_Source->cdt_Players,
-			    (struct Node *)player);
-		    UnlockRealTime(lock);
-		}
-		else
-		{
-		    if(error != NULL)
-		    {
-			*error = RTE_NOCONDUCTOR;
-		    }
+                /* Is this player attached to a conductor? */
+                if (player->pl_Source != NULL)
+                {
+                    lock = LockRealTime(RT_CONDUCTORS);
+                    Remove((struct Node *)player);
+                    Enqueue((struct List *)&player->pl_Source->cdt_Players,
+                            (struct Node *)player);
+                    UnlockRealTime(lock);
+                }
+                else
+                {
+                    if(error != NULL)
+                    {
+                        *error = RTE_NOCONDUCTOR;
+                    }
 
-		    return FALSE;
-		}
-	    }
+                    return FALSE;
+                }
+            }
 
-	    break;
+            break;
 
-	case PLAYER_Conductor:
+        case PLAYER_Conductor:
 
             D(bug("Found PLAYER_Conductor tag\n"));
 
@@ -161,144 +161,144 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
                 if (error != NULL)
                 {
                     *error = RTE_NOCONDUCTOR;
-		    return FALSE;
+                    return FALSE;
                 }
             }
             break;
 
-	case PLAYER_Ready:
-	    if ((BOOL)tag->ti_Data)
-	    {
-		struct Conductor *conductor = player->pl_Source;
+        case PLAYER_Ready:
+            if ((BOOL)tag->ti_Data)
+            {
+                struct Conductor *conductor = player->pl_Source;
 
-		player->pl_Flags |= PLAYERF_READY;
+                player->pl_Flags |= PLAYERF_READY;
 
-		if (conductor != NULL)
-		{
-		    ObtainSemaphoreShared(&conductor->cdt_Lock);
+                if (conductor != NULL)
+                {
+                    ObtainSemaphoreShared(&conductor->cdt_Lock);
 
-		    if (conductor->cdt_Barrier != NULL)
-		    {
-			Signal(conductor->cdt_Barrier, SIGF_SINGLE);
-		    }
+                    if (conductor->cdt_Barrier != NULL)
+                    {
+                        Signal(conductor->cdt_Barrier, SIGF_SINGLE);
+                    }
 
-		    ReleaseSemaphore(&conductor->cdt_Lock);
-		}
-	    }
-	    else
-	    {
-		player->pl_Flags &= ~PLAYERF_READY;
-	    }
-		
-	    break;
+                    ReleaseSemaphore(&conductor->cdt_Lock);
+                }
+            }
+            else
+            {
+                player->pl_Flags &= ~PLAYERF_READY;
+            }
+                
+            break;
 
-	case PLAYER_AlarmTime:
-	    player->pl_Flags |= PLAYERF_ALARMSET;
-	    player->pl_AlarmTime = (LONG)tag->ti_Data;
-	    break;
+        case PLAYER_AlarmTime:
+            player->pl_Flags |= PLAYERF_ALARMSET;
+            player->pl_AlarmTime = (LONG)tag->ti_Data;
+            break;
 
-	case PLAYER_Alarm:
-	    if ((BOOL)tag->ti_Data)
-	    {
-		player->pl_Flags |= PLAYERF_ALARMSET;
-	    }
-	    else
-	    {
-		player->pl_Flags &= ~PLAYERF_ALARMSET;
-	    }
+        case PLAYER_Alarm:
+            if ((BOOL)tag->ti_Data)
+            {
+                player->pl_Flags |= PLAYERF_ALARMSET;
+            }
+            else
+            {
+                player->pl_Flags &= ~PLAYERF_ALARMSET;
+            }
 
-	    break;
+            break;
 
-	case PLAYER_AlarmSigTask:
-	    if ((struct Task *)tag->ti_Data == NULL)
-	    {
-		player->pl_Flags &= ~PLAYERF_ALARMSET;
-	    }
-		
-	    player->pl_Task = (struct Task *)tag->ti_Data;
-	    break;
+        case PLAYER_AlarmSigTask:
+            if ((struct Task *)tag->ti_Data == NULL)
+            {
+                player->pl_Flags &= ~PLAYERF_ALARMSET;
+            }
+                
+            player->pl_Task = (struct Task *)tag->ti_Data;
+            break;
 
-	case PLAYER_AlarmSigBit:
-	    if ((BYTE)tag->ti_Data == -1)
-	    {
-		player->pl_Flags &= ~PLAYERF_ALARMSET;
-	    }
+        case PLAYER_AlarmSigBit:
+            if ((BYTE)tag->ti_Data == -1)
+            {
+                player->pl_Flags &= ~PLAYERF_ALARMSET;
+            }
 
-	    /* We could use player->pl_Link.ln_Type here */
-	    player->pl_Reserved0 = (BYTE)tag->ti_Data;      /* NOTE! */
-	    break;
+            /* We could use player->pl_Link.ln_Type here */
+            player->pl_Reserved0 = (BYTE)tag->ti_Data;      /* NOTE! */
+            break;
 
-	case PLAYER_Quiet:
-	    if ((BOOL)tag->ti_Data)
-	    {
-		player->pl_Flags |= PLAYERF_QUIET;
-	    }
-	    else
-	    {
-		player->pl_Flags &= ~PLAYERF_QUIET;
-	    }
-		
-	    break;
+        case PLAYER_Quiet:
+            if ((BOOL)tag->ti_Data)
+            {
+                player->pl_Flags |= PLAYERF_QUIET;
+            }
+            else
+            {
+                player->pl_Flags &= ~PLAYERF_QUIET;
+            }
+                
+            break;
 
-	case PLAYER_UserData:
-	    player->pl_UserData = (APTR)tag->ti_Data;
-	    break;
+        case PLAYER_UserData:
+            player->pl_UserData = (APTR)tag->ti_Data;
+            break;
 
-	case PLAYER_ID:
-	    player->pl_PlayerID = (UWORD)tag->ti_Data;
-	    break;
+        case PLAYER_ID:
+            player->pl_PlayerID = (UWORD)tag->ti_Data;
+            break;
 
-	case PLAYER_Conducted:
-	    if ((BOOL)tag->ti_Data)
-	    {
-		player->pl_Flags |= PLAYERF_CONDUCTED;
-	    }
-	    else
-	    {
-		player->pl_Flags &= ~PLAYERF_CONDUCTED;
-	    }
+        case PLAYER_Conducted:
+            if ((BOOL)tag->ti_Data)
+            {
+                player->pl_Flags |= PLAYERF_CONDUCTED;
+            }
+            else
+            {
+                player->pl_Flags &= ~PLAYERF_CONDUCTED;
+            }
 
-	    break;
+            break;
 
-	case PLAYER_ExtSync:
-	    lock = LockRealTime(RT_CONDUCTORS);
+        case PLAYER_ExtSync:
+            lock = LockRealTime(RT_CONDUCTORS);
 
-	    if ((BOOL)tag->ti_Data)
-	    {
-		if (player->pl_Source->cdt_Flags & CONDUCTF_EXTERNAL)
-		{
-		    /* Only one external synchronizer at a time, please */
-		    UnlockRealTime(lock);
+            if ((BOOL)tag->ti_Data)
+            {
+                if (player->pl_Source->cdt_Flags & CONDUCTF_EXTERNAL)
+                {
+                    /* Only one external synchronizer at a time, please */
+                    UnlockRealTime(lock);
 
-		    return FALSE;
-		}
+                    return FALSE;
+                }
 
-		player->pl_Source->cdt_Flags |= CONDUCTF_EXTERNAL;
-		player->pl_Flags |= PLAYERF_EXTSYNC;
-	    }
-	    else
-	    {
-		/* If this player was the external synchronizer, we
-		   clean up */
-		if (player->pl_Flags & PLAYERF_EXTSYNC)
-		{
-		    player->pl_Source->cdt_Flags &= ~CONDUCTF_EXTERNAL;
-		    player->pl_Source->cdt_Flags &= ~CONDUCTF_GOTTICK;
-		}
+                player->pl_Source->cdt_Flags |= CONDUCTF_EXTERNAL;
+                player->pl_Flags |= PLAYERF_EXTSYNC;
+            }
+            else
+            {
+                /* If this player was the external synchronizer, we
+                   clean up */
+                if (player->pl_Flags & PLAYERF_EXTSYNC)
+                {
+                    player->pl_Source->cdt_Flags &= ~CONDUCTF_EXTERNAL;
+                    player->pl_Source->cdt_Flags &= ~CONDUCTF_GOTTICK;
+                }
 
-		player->pl_Flags &= ~PLAYERF_EXTSYNC;
-	    }
+                player->pl_Flags &= ~PLAYERF_EXTSYNC;
+            }
 
-	    UnlockRealTime(lock);
+            UnlockRealTime(lock);
 
-	    break;
-	}
+            break;
+        }
     }
 
     /* Consistency checks */
     if (player->pl_Task == NULL)
     {
-	player->pl_Flags &= ~PLAYERF_ALARMSET;
+        player->pl_Flags &= ~PLAYERF_ALARMSET;
     }
 
     return TRUE;
@@ -307,19 +307,19 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 } /* SetPlayerAttrsA */
 
 struct Conductor *createConductor(BOOL private, LONG *error, STRPTR name,
-				  struct Library *RealTimeBase)
+                                  struct Library *RealTimeBase)
 {
-    struct Conductor *cd = AllocMem(sizeof(struct Conductor), 
-				    MEMF_PUBLIC | MEMF_CLEAR);
+    struct Conductor *cd = AllocMem(sizeof(struct Conductor),
+                                    MEMF_PUBLIC | MEMF_CLEAR);
 
     if (cd == NULL)
     {
-	if (error != NULL)
-	{
-	    *error = RTE_NOMEMORY;
-	}
+        if (error != NULL)
+        {
+            *error = RTE_NOMEMORY;
+        }
 
-	return NULL;
+        return NULL;
     }
 
     cd->cdt_Link.ln_Name = name;
@@ -337,20 +337,20 @@ struct Conductor *createConductor(BOOL private, LONG *error, STRPTR name,
 
     if (private)
     {
-	cd->cdt_Flags |= CONDUCTF_PRIVATE;
+        cd->cdt_Flags |= CONDUCTF_PRIVATE;
     }
 
     {
-	/* Add the conductor to the realtime library conductor list */
-	APTR lock;
+        /* Add the conductor to the realtime library conductor list */
+        APTR lock;
 
-	lock = LockRealTime(RT_CONDUCTORS);
-	
-	AddTail((struct List *)&GPB(RealTimeBase)->rtb_ConductorList,
-		(struct Node *)cd);
-	
-	UnlockRealTime(lock);
-    }	
+        lock = LockRealTime(RT_CONDUCTORS);
+        
+        AddTail((struct List *)&GPB(RealTimeBase)->rtb_ConductorList,
+                (struct Node *)cd);
+        
+        UnlockRealTime(lock);
+    }
 
     return cd;
 }

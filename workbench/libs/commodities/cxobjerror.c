@@ -15,11 +15,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(CxObj *, co, A0),
+        AROS_LHA(CxObj *, co, A0),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 11, Commodities)
+        struct Library *, CxBase, 11, Commodities)
 
 /*  FUNCTION
 

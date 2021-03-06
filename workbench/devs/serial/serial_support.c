@@ -16,7 +16,7 @@
 /**************************************************************************
   Copy data from the buffer where it is collected to the destination buffer
   in the IORequest structure
-  The return value indicates whether the request could be satisfied 
+  The return value indicates whether the request could be satisfied
   completely or not.
 **************************************************************************/
 
@@ -36,9 +36,9 @@ BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * ioreq)
 
     count++;
     index++;
-    /*  
+    /*
     **  The buffer is organized in a circular fashion with
-    **  length SU->su_InBufLength 
+    **  length SU->su_InBufLength
      */
     if (index == SU->su_InBufLength)
       index = 0;
@@ -52,14 +52,14 @@ BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * ioreq)
   if (count == ioreq->io_Length)
     return TRUE;
   
-  /* The request could not be satisfied completely */ 
+  /* The request could not be satisfied completely */
   return FALSE;
 }
 
 /**************************************************************************
   Copy data from the buffer where it is collected to the destination buffer
   in the IORequest structure
-  The return value indicates whether the request could be satisfied 
+  The return value indicates whether the request could be satisfied
   completely or not.
 **************************************************************************/
 
@@ -80,13 +80,13 @@ BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * ioreq)
     {
       end = TRUE;
       break;
-    } 
+    }
 
     count++;
     index++;
-    /*  
+    /*
     **  The buffer is organized in a circular fashion with
-    **  length SU->su_InBufLength 
+    **  length SU->su_InBufLength
      */
     if (index == SU->su_InBufLength)
       index = 0;
@@ -111,7 +111,7 @@ BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * ioreq)
 }
 
 
-struct SerialUnit * findUnit(struct serialbase * SerialDevice, 
+struct SerialUnit * findUnit(struct serialbase * SerialDevice,
                              ULONG unitnum)
 {
   struct SerialUnit * su;

@@ -23,7 +23,7 @@
     INPUTS
 
     RESULT
-	FFP number
+        FFP number
 
         Flags:
           zero     : result is zero

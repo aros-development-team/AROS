@@ -2,7 +2,7 @@
     Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
 
     Desc: Country data for España (Spain)
-          based on the Amiga Developer CD 2.1 file -: 
+          based on the Amiga Developer CD 2.1 file -:
           NDK/NDK_3.5/Examples/Locale/Countries/make_country_files.c
 */
 
@@ -72,6 +72,6 @@ struct IntCountryPrefs spainPrefs =
         CT_7MON
     },
     "$VER: spain.country 44.0 (02.04.2019)",
-    "Espa\xF1""a", 
+    "Espa\xF1""a",
     "Countries/Spain"
 };

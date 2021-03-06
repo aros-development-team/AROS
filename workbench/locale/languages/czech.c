@@ -34,7 +34,7 @@ void *const functable[] =
     /* 0 - 3 */
     &AROS_SLIB_ENTRY(null, language,0),
     &AROS_SLIB_ENTRY(null, language,0),
-    &AROS_SLIB_ENTRY(null, language,0),    
+    &AROS_SLIB_ENTRY(null, language,0),
     &AROS_SLIB_ENTRY(getlangstring, language,9),
     (void *)-1
 };

@@ -23,11 +23,11 @@
         struct IconBase *, IconBase, 29, Icon)
 
 /*  FUNCTION
-	Creates an empty DiskObject structure.
+        Creates an empty DiskObject structure.
 
     INPUTS
-	type - WBDISK, WBDRAWER, WBTOOL, WBPROJECT,
-	       WBGARBAGE, WBDEVICE or WBKICK
+        type - WBDISK, WBDRAWER, WBTOOL, WBPROJECT,
+               WBGARBAGE, WBDEVICE or WBKICK
 
     RESULT
 

@@ -224,7 +224,7 @@ STRPTR ProcessUserScreenTitle(STRPTR screentitle_Template)
 
   if (screentitle_Template == NULL)
   {
-D(bug("[Wanderer:Prefs] ProcessUserScreenTitle(),EXTERN screentitle = NULL\n"));   
+D(bug("[Wanderer:Prefs] ProcessUserScreenTitle(),EXTERN screentitle = NULL\n"));
     return screentitle_Template;
   }
   else
@@ -236,7 +236,7 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle('%s')\n", screentitle_Template));
 
   if (screentitle_TemplateLen > sizeof(temp)-1)
   {
-D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen = %d\n", screentitle_TemplateLen));   
+D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen = %d\n", screentitle_TemplateLen));
     return (STRPTR)NULL;
   }
   
@@ -404,7 +404,7 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen =
 
 ///ExpandEnvName()
 /* Expand a passed in env: string to its full location */
-/* Wanderer doesnt free this mem at the moment but should 
+/* Wanderer doesnt free this mem at the moment but should
    incase it is every closed */
 static CONST_STRPTR ExpandEnvName(CONST_STRPTR env_path)
 {
@@ -427,7 +427,7 @@ static CONST_STRPTR ExpandEnvName(CONST_STRPTR env_path)
             strcpy(fullpath, tmp_envbuff);
             AddPart(fullpath, env_path + 4, 1019);
             return fullpath;
-        }     
+        }
     }
 
     //We couldnt expand it so just use as is ..
@@ -567,7 +567,7 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         data->wpd_NavigationMethod = (LONG)tag->ti_Data;
         break;
 
-      case MUIA_IconWindow_IconDropMode: 
+      case MUIA_IconWindow_IconDropMode:
         data->wpd_IconDropMode = (ULONG)tag->ti_Data;
         break;
 
@@ -817,7 +817,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload()\n"));
   if (!(handle = AllocIFF()))
     return FALSE;
 
-  handle->iff_Stream = (IPTR)Open(wandererPrefs_PrefsFile, MODE_OLDFILE); 
+  handle->iff_Stream = (IPTR)Open(wandererPrefs_PrefsFile, MODE_OLDFILE);
 
   if (!handle->iff_Stream)
     return FALSE;
@@ -863,7 +863,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n
 
                   error = ReadChunkBytes
                         (
-                          handle, 
+                          handle,
                           chunk_buffer,
                           this_chunk_size
                         );
@@ -894,13 +894,13 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
 D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", view_name));
                       WandererPrefs_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
                     }
-                  }//END if (error == this_chunk_size)  
+                  }//END if (error == this_chunk_size)
                   if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
                   {
 D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload: TAG_DONE) of Data chunk ..\n"));
                   }
                 }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
-              }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)       
+              }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
             }//END if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_ANY|MEMF_CLEAR)))
           }//END if ((error=ReadChunkBytes(handle, chunk_buffer, IFF_CHUNK_BUFFER_SIZE)))
         }

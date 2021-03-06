@@ -48,7 +48,7 @@ static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
     };
     Object *memTotal, *memFree, *GARTTotal, *GARTFree;
     IPTR name, driver;
-    OOP_Object *gfxhidd_obj = 
+    OOP_Object *gfxhidd_obj =
         (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
 
     OOP_GetAttr(gfxhidd_obj, aHidd_HardwareName, &name);
@@ -64,13 +64,13 @@ static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
             Child, (VGroup,
                 Child, (VGroup,
                     GroupFrameT("Details"),
-                    Child, ColGroup(2), 
+                    Child, ColGroup(2),
                         Child, Label("Device:"),
-                        Child, LLabel(name), 
+                        Child, LLabel(name),
                         Child, Label("Manufacturer:"),
-                        Child, LLabel(""), 
+                        Child, LLabel(""),
                         Child, Label("Driver:"),
-                        Child, LLabel(driver), 
+                        Child, LLabel(driver),
                     End,
                 End),
                 Child, (HGroup,
@@ -80,20 +80,20 @@ static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                         Child, Label("Video RAM"),
                         Child, Label("GART"),
                     End),
-                    Child, (ColGroup(2), 
+                    Child, (ColGroup(2),
                         Child, Label("Total"),
                         Child, Label("Free"),
                         Child, (IPTR)(memTotal = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
-                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"N/A", 
+                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"N/A",
                         End),
                         Child, (IPTR)(memFree = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
-                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"",
                         End),
                         Child, (IPTR)(GARTTotal = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
-                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"N/A", 
+                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"N/A",
                         End),
                         Child, (IPTR)(GARTFree = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
-                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
+                                MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"",
                         End),
                     End),
                 End),

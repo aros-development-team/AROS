@@ -25,7 +25,7 @@
 
       GLAContext glACreateContext(
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       struct TagItem *tagList)
 
 /*  FUNCTION
@@ -61,7 +61,7 @@
                      GLA_Height + GLA_Top + GLA_Bottom should equal the height
                      of the rastport. The GLA_Height is interchangable at
                      cration time with GLA_Bottom. Later durring window resizing
-                     , height is calculated from scalled top, bottom and window 
+                     , height is calculated from scalled top, bottom and window
                      height.
 
         GLA_Screen - pointer to Screen onto which scene is to be rendered. When
@@ -80,7 +80,7 @@
         GLA_AlphaFlag - ignored. All rendering is done with alpha channel.
 
         GLA_NoDepth - disables the depth/Z buffer. Depth buffer is enabled by
-                      default and is 16 or 24 bit based on rendering 
+                      default and is 16 or 24 bit based on rendering
                       capabilities.
 
         GLA_NoStencil - disables the stencil buffer. Stencil buffer is enabled
@@ -102,8 +102,8 @@
 *****************************************************************************/
 {
     struct mesa3dgl_context * ctx = NULL;
-    struct TagItem pscreen_tags[] = 
-    { 
+    struct TagItem pscreen_tags[] =
+    {
             { CPS_PipeFriendBitMap,     0       },
             { CPS_PipeScreenDriver,     0       },
             { TAG_DONE,                 0       }
@@ -129,13 +129,13 @@
     {
         bug("%s: ERROR - failed to select visible rastport\n", __func__);
         goto error_out;
-    }    
+    }
 
     D(bug("[MESA3DGL] %s: visible_rp @ 0x%p\n", __func__, ctx->visible_rp));
     pscreen_tags[0].ti_Data = (IPTR)ctx->visible_rp->BitMap;
     D(bug("[MESA3DGL] %s:   _bmap @ 0x%p\n", __func__, pscreen_tags[0].ti_Data));
 
-    MESA3DGLStandardInit(ctx, tagList);   
+    MESA3DGLStandardInit(ctx, tagList);
 
     if (CreatePipeV(pscreen_tags))
     {

@@ -42,7 +42,7 @@ static Object *PCIWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         NULL
     };
     IPTR name, driver;
-    OOP_Object *pcihidd_obj = 
+    OOP_Object *pcihidd_obj =
         (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
 
 //    OOP_GetAttr(pcihidd_obj, aHidd_HardwareName, &name);

@@ -80,14 +80,14 @@ static IPTR menudecor_getmenuspaces(Class *cl, Object *obj, struct mdpGetMenuSpa
     msg->mdp_ItemInnerTop = 2;
     msg->mdp_ItemInnerRight = 2;
     msg->mdp_ItemInnerBottom = 1;
-    if ((data->dc->MenuTileLeft + data->dc->MenuTileRight) > (data->dc->MenuInnerLeft + data->dc->MenuInnerRight)) 
-        msg->mdp_MinWidth = data->dc->MenuTileLeft + data->dc->MenuTileRight; 
-    else 
+    if ((data->dc->MenuTileLeft + data->dc->MenuTileRight) > (data->dc->MenuInnerLeft + data->dc->MenuInnerRight))
+        msg->mdp_MinWidth = data->dc->MenuTileLeft + data->dc->MenuTileRight;
+    else
         msg->mdp_MinWidth = data->dc->MenuInnerLeft + data->dc->MenuInnerRight;
 
-    if ((data->dc->MenuTileTop + data->dc->MenuTileBottom) > (data->dc->MenuInnerTop + data->dc->MenuInnerBottom)) 
-        msg->mdp_MinHeight = data->dc->MenuTileTop + data->dc->MenuTileBottom; 
-    else 
+    if ((data->dc->MenuTileTop + data->dc->MenuTileBottom) > (data->dc->MenuInnerTop + data->dc->MenuInnerBottom))
+        msg->mdp_MinHeight = data->dc->MenuTileTop + data->dc->MenuTileBottom;
+    else
         msg->mdp_MinHeight = data->dc->MenuInnerTop + data->dc->MenuInnerBottom;
 
     return TRUE;
@@ -247,7 +247,7 @@ static void DisposeMenuSkinning(struct menudecor_data *data)
 {
 }
 
-static BOOL InitMenuSkinning(struct menudecor_data *data, struct DecorImages * di, struct DecorConfig * dc) 
+static BOOL InitMenuSkinning(struct menudecor_data *data, struct DecorImages * di, struct DecorConfig * dc)
 {
     if ((!dc) || (!di))
         return FALSE;

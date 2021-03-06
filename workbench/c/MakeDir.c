@@ -75,50 +75,50 @@ int main(void)
 
     if(rda != NULL)
     {
-	int      i = 0;
-	STRPTR  *name = (STRPTR *)args[ARG_NAME];
+        int      i = 0;
+        STRPTR  *name = (STRPTR *)args[ARG_NAME];
 
-	if((name == NULL) || (*name == NULL))
-	{
-	    error = ERROR_REQUIRED_ARG_MISSING;
-	    result = RETURN_FAIL;
-	}
-	else
-	{
-	    for(i = 0; name[i] != NULL; i++)
-	    {
+        if((name == NULL) || (*name == NULL))
+        {
+            error = ERROR_REQUIRED_ARG_MISSING;
+            result = RETURN_FAIL;
+        }
+        else
+        {
+            for(i = 0; name[i] != NULL; i++)
+            {
                 if (args[ARG_ALL])
                     lock = CreateDirAll(name[i]);
                 else
-		    lock = CreateDir(name[i]);
+                    lock = CreateDir(name[i]);
 
-		if(lock != BNULL)
-		{
-		    UnLock(lock);
-		    if (result != RETURN_ERROR)
-			result = RETURN_OK;
-		}
-		else
-		{
-		    error = IoErr();
-		    PutStr("Cannot create directory ");
-		    PutStr(name[i]);
-		    PutStr("\n");
-		    result = RETURN_ERROR;
-		}
-	    }
-	}
+                if(lock != BNULL)
+                {
+                    UnLock(lock);
+                    if (result != RETURN_ERROR)
+                        result = RETURN_OK;
+                }
+                else
+                {
+                    error = IoErr();
+                    PutStr("Cannot create directory ");
+                    PutStr(name[i]);
+                    PutStr("\n");
+                    result = RETURN_ERROR;
+                }
+            }
+        }
 
-	FreeArgs(rda);
+        FreeArgs(rda);
     }
     else
-	{
-	    error = ERROR_REQUIRED_ARG_MISSING;
-	    result = RETURN_FAIL;
-	}
+        {
+            error = ERROR_REQUIRED_ARG_MISSING;
+            result = RETURN_FAIL;
+        }
 
     if(result != RETURN_OK)
-	PrintFault(error, "MakeDir");
+        PrintFault(error, "MakeDir");
 
     return result;
 }

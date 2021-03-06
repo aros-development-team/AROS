@@ -7,7 +7,7 @@
 #include <proto/dos.h>
 #include <proto/timer.h>
 
-/* 
+/*
     The purpose of this file is to provide implementation for C functions part
     of arosnixc.library in code where one does not want to use this library.
 */

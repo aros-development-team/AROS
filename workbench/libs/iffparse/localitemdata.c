@@ -9,23 +9,23 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH1(APTR, LocalItemData,
+        AROS_LH1(APTR, LocalItemData,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct LocalContextItem *, localItem, A0),
+        AROS_LHA(struct LocalContextItem *, localItem, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 32, IFFParse)
+        struct Library *, IFFParseBase, 32, IFFParse)
 
 /*  FUNCTION
-	Returns a  pointer to the userdata allocated in AllocLocalItem.
-	This function returns NULL for an input of NULL.
+        Returns a  pointer to the userdata allocated in AllocLocalItem.
+        This function returns NULL for an input of NULL.
 
     INPUTS
-	localItem - pointer to a LocalContextItem struct or NULL.
+        localItem - pointer to a LocalContextItem struct or NULL.
 
     RESULT
-	data	  - pointer to user data or NULL.
+        data      - pointer to user data or NULL.
 
     NOTES
 
@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-	AllocLocalItem(), FreeLocalItem()
+        AllocLocalItem(), FreeLocalItem()
 
     INTERNALS
 
@@ -46,9 +46,9 @@
 
     return
     (
-	localItem !=NULL ?
-	GetIntLCI(localItem)->lci_UserData :
-	NULL
+        localItem !=NULL ?
+        GetIntLCI(localItem)->lci_UserData :
+        NULL
     );
 
     AROS_LIBFUNC_EXIT

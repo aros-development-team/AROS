@@ -38,69 +38,69 @@ int main(void)
 
     if (WBenchMsg) {
         olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
-	myname = WBenchMsg->sm_ArgList[0].wa_Name;
+        myname = WBenchMsg->sm_ArgList[0].wa_Name;
     } else {
-	struct Process *me = (struct Process *)FindTask(NULL);
+        struct Process *me = (struct Process *)FindTask(NULL);
     
-	if (me->pr_CLI) {
+        if (me->pr_CLI) {
             struct CommandLineInterface *cli = BADDR(me->pr_CLI);
-	
-	    myname = AROS_BSTR_ADDR(cli->cli_CommandName);
-	} else
-	    myname = me->pr_Task.tc_Node.ln_Name;
-    }   
+        
+            myname = AROS_BSTR_ADDR(cli->cli_CommandName);
+        } else
+            myname = me->pr_Task.tc_Node.ln_Name;
+    }
     D(Printf("Command name: %s\n", myname));
 
     icon = GetDiskObject(myname);
     D(Printf("Icon 0x%p\n", icon));
 
     if (icon) {
-	args.hidd = FindToolType(icon->do_ToolTypes, "CLASS");
+        args.hidd = FindToolType(icon->do_ToolTypes, "CLASS");
         args.lib = FindToolType(icon->do_ToolTypes, "LIBRARY");
     }
 
     if (!WBenchMsg) {
         rdargs = ReadArgs("CLASS=HIDD/A,LIBRARY=LIB", (IPTR *)&args, NULL);
-	D(Printf("RDArgs 0x%p\n", rdargs));
+        D(Printf("RDArgs 0x%p\n", rdargs));
     }
  
     D(Printf("CLASS=%s, LIBRARY=%s\n", args.hidd ? args.hidd : "<none>",
-	     args.lib ? args.lib : "<none>"));
+             args.lib ? args.lib : "<none>"));
  
     if (args.hidd)
     {
         OOP_Class *cl;
-	struct Library *gfxlib = NULL;
+        struct Library *gfxlib = NULL;
 
-	cl = OOP_FindClass(args.hidd);
-	if (!cl)
-	{
-	    if (args.lib)
-	    {
-		gfxlib = OpenLibrary(args.lib, 0);
-	        if (!gfxlib)
-		    res = RETURN_ERROR;
-	    }
-	    
-	    if (res == RETURN_OK)
-	    {
-		cl = OOP_FindClass(args.hidd);
-		if (cl)
-		{
-		    if (AddDisplayDriverA(cl, NULL, NULL))
-		    {
-			res = RETURN_FAIL;
-		    }
-		}
-		else
-		    res = RETURN_ERROR;
-		
-		if ((res != RETURN_OK) && gfxlib)
-		    CloseLibrary(gfxlib);
-	    }
-	}
+        cl = OOP_FindClass(args.hidd);
+        if (!cl)
+        {
+            if (args.lib)
+            {
+                gfxlib = OpenLibrary(args.lib, 0);
+                if (!gfxlib)
+                    res = RETURN_ERROR;
+            }
+            
+            if (res == RETURN_OK)
+            {
+                cl = OOP_FindClass(args.hidd);
+                if (cl)
+                {
+                    if (AddDisplayDriverA(cl, NULL, NULL))
+                    {
+                        res = RETURN_FAIL;
+                    }
+                }
+                else
+                    res = RETURN_ERROR;
+                
+                if ((res != RETURN_OK) && gfxlib)
+                    CloseLibrary(gfxlib);
+            }
+        }
     } else
-	res = RETURN_ERROR;
+        res = RETURN_ERROR;
 
     if (rdargs)
         FreeArgs(rdargs);

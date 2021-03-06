@@ -96,23 +96,23 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
         {
             /* Add the new local variable to the list.
              */
-	    if
-	    (
-	        !SetVar(SHArg(NAME),
+            if
+            (
+                !SetVar(SHArg(NAME),
                         SHArg(STRING),
                         -1,
                         GVF_LOCAL_ONLY)
             )
-	    {
-	        return RETURN_ERROR;
+            {
+                return RETURN_ERROR;
             }
-	}
+        }
     }
     else
     {
-	SetProc = (struct Process *)FindTask(NULL);
+        SetProc = (struct Process *)FindTask(NULL);
 
-	ForeachNode(&(SetProc->pr_LocalVars), SetNode)
+        ForeachNode(&(SetProc->pr_LocalVars), SetNode)
         {
             if (SetNode->lv_Node.ln_Type == LV_VAR)
             {

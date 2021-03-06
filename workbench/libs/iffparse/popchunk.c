@@ -9,24 +9,24 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH1(LONG, PopChunk,
+        AROS_LH1(LONG, PopChunk,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
+        AROS_LHA(struct IFFHandle *, iff, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 15, IFFParse)
+        struct Library *, IFFParseBase, 15, IFFParse)
 
 /*  FUNCTION
-	Pops a context node of the context stack. Usually called
-	in write mode to signal the end of a chunk.
+        Pops a context node of the context stack. Usually called
+        in write mode to signal the end of a chunk.
 
 
     INPUTS
-	iff    - pointer to IFFHandle struct.
+        iff    - pointer to IFFHandle struct.
 
     RESULT
-	error  -  0 if successful, IFFERR_#? otherwise.
+        error  -  0 if successful, IFFERR_#? otherwise.
 
     NOTES
 
@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-	PushChunk()
+        PushChunk()
 
     INTERNALS
 
@@ -55,7 +55,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ContextNode	*cn;
+    struct ContextNode  *cn;
 
     LONG err;
 
@@ -71,78 +71,78 @@
     /* Is the IFFHandle opened in Read or Write mode ? */
     if (iff->iff_Flags & IFFF_WRITE)
     {
-	/* Write mode. We should update cn_Size *INSIDE the stream,
-	if the chunk was pushed with IFFSIZE_UNKNOWN */
+        /* Write mode. We should update cn_Size *INSIDE the stream,
+        if the chunk was pushed with IFFSIZE_UNKNOWN */
 
-	if (cn->cn_Size == IFFSIZE_UNKNOWN)
-	{
+        if (cn->cn_Size == IFFSIZE_UNKNOWN)
+        {
 
-	    err = SeekStream
-	    (
-		iff,
-		/* minus is for seeking backwards. Remember: evt. chunk types
-		for composite chunks are allready in cn_Scan */
-		- ( cn->cn_Scan + sizeof(ULONG) ),
-		IPB(IFFParseBase)
-	    );
+            err = SeekStream
+            (
+                iff,
+                /* minus is for seeking backwards. Remember: evt. chunk types
+                for composite chunks are allready in cn_Scan */
+                - ( cn->cn_Scan + sizeof(ULONG) ),
+                IPB(IFFParseBase)
+            );
 
-	    if (err) return (err);
+            if (err) return (err);
 
-	    size = cn->cn_Scan;
+            size = cn->cn_Scan;
 
-	    /* Write the chunk size */
-	    err = WriteStreamLong
-	    (
-		iff,
-		&size,
-		IPB(IFFParseBase)
-	    );
+            /* Write the chunk size */
+            err = WriteStreamLong
+            (
+                iff,
+                &size,
+                IPB(IFFParseBase)
+            );
 
-	    if (err < 0) return (err);
+            if (err < 0) return (err);
 
-	    /* Seek towards end of chunk again */
-	    err = SeekStream
-	    (
-		iff,
-		size,
-		IPB(IFFParseBase)
-	    );
+            /* Seek towards end of chunk again */
+            err = SeekStream
+            (
+                iff,
+                size,
+                IPB(IFFParseBase)
+            );
 
-	    if (err) return (err);
+            if (err) return (err);
 
-	}
-	else  /* IFFSIZE known at PushChunk() time */
-	    size = cn->cn_Size;
+        }
+        else  /* IFFSIZE known at PushChunk() time */
+            size = cn->cn_Size;
 
 
-	/* Write a pad byte if chunk is not word-aligned */
-	if (size % 2)
-	{
-	    err =  WriteStream
-	    (
-		iff,
-		&nullbyte,
-		1,
-		IPB(IFFParseBase)
-	    );
-	    
-	    if (err < 0) return (err);
-	    size++;
-	}
+        /* Write a pad byte if chunk is not word-aligned */
+        if (size % 2)
+        {
+            err =  WriteStream
+            (
+                iff,
+                &nullbyte,
+                1,
+                IPB(IFFParseBase)
+            );
+            
+            if (err < 0) return (err);
+            size++;
+        }
 
-	if
-	(
-	    GetIntIH(iff)->iff_BufferStartDepth
-	==
-	    iff->iff_Depth
-	)
-	{
-	    /* a routine that writes the buffer to stream and reinstallss the old streamhandler */
+        if
+        (
+            GetIntIH(iff)->iff_BufferStartDepth
+        ==
+            iff->iff_Depth
+        )
+        {
+            /* a routine that writes the buffer to stream and reinstallss the old streamhandler */
 
-	    err = ExitBufferedStream(iff, IPB(IFFParseBase));
-	    if (err) return (err);
+            err = ExitBufferedStream(iff, IPB(IFFParseBase));
+            if (err) return (err);
 
-	}
+        }
     }
 
     /* Actually pop the top context-node. (Done for both handles in Read & Write mode) */
@@ -155,12 +155,12 @@
     {
         cn = TopChunk(iff);
 
-	/* Might work without this check, because there seems to be always at
-	   least one contextnode --> see AllocIFF) */
-	if (cn->cn_Node.mln_Succ)
-	{
-	    cn->cn_Scan += size + sizeof(ULONG) + sizeof(ULONG);
-	}
+        /* Might work without this check, because there seems to be always at
+           least one contextnode --> see AllocIFF) */
+        if (cn->cn_Node.mln_Succ)
+        {
+            cn->cn_Scan += size + sizeof(ULONG) + sizeof(ULONG);
+        }
     }
     
     return 0;

@@ -18,11 +18,11 @@ AROS_LH1(BOOL, MemInfoNVD,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct NVInfo *, nvInfo, A0),
+        AROS_LHA(struct NVInfo *, nvInfo, A0),
 
 /*  LOCATION */
 
-	struct Library *, nvdBase, 8, NVDisk)
+        struct Library *, nvdBase, 8, NVDisk)
 
 /*  FUNCTION
 
@@ -59,29 +59,29 @@ AROS_LH1(BOOL, MemInfoNVD,
 ******************************************************************************/
 
 {
-    AROS_LIBFUNC_INIT    
+    AROS_LIBFUNC_INIT
 
     struct InfoData info;
 
     if(Info(GPB(nvdBase)->nvd_location, &info))
     {
-	nvInfo->nvi_MaxStorage = info.id_NumBlocks*info.id_BytesPerBlock;
+        nvInfo->nvi_MaxStorage = info.id_NumBlocks*info.id_BytesPerBlock;
 
-	/* 3 blocks are subtracted at it may be the case a new application wants
-	   to store a new item. Then the 'appName' directory will take one block,
-	   the new file will take at least one block and possibly a new directory
-	   block may need to be created containing the 'appName' directory */
+        /* 3 blocks are subtracted at it may be the case a new application wants
+           to store a new item. Then the 'appName' directory will take one block,
+           the new file will take at least one block and possibly a new directory
+           block may need to be created containing the 'appName' directory */
 
-	if(info.id_NumBlocks < 3)
-	    nvInfo->nvi_FreeStorage = 0;
-	else
-	{
-	    nvInfo->nvi_FreeStorage =
-		(info.id_NumBlocks - info.id_NumBlocksUsed - 3)*info.id_BytesPerBlock;
-	}
+        if(info.id_NumBlocks < 3)
+            nvInfo->nvi_FreeStorage = 0;
+        else
+        {
+            nvInfo->nvi_FreeStorage =
+                (info.id_NumBlocks - info.id_NumBlocksUsed - 3)*info.id_BytesPerBlock;
+        }
     }
     else
-	return FALSE;
+        return FALSE;
 
     return TRUE;
 

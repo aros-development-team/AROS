@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2021, The AROS Development Team. 
+    Copyright (C) 2010-2021, The AROS Development Team.
     All rights reserved.
     
 */
@@ -17,11 +17,11 @@
 #include <proto/popupmenu.h>
 extern struct PopupMenuBase * PopupMenuBase;
 
-	struct PM_IDLst *PM_ExLst(
+        struct PM_IDLst *PM_ExLst(
 
 /*  SYNOPSIS */
-	ULONG id, 
-	...)
+        ULONG id,
+        ...)
 
 /*  FUNCTION
 

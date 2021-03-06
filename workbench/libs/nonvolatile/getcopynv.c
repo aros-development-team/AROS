@@ -18,13 +18,13 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(STRPTR, appName,        A0),
-	AROS_LHA(STRPTR, itemName,       A1),
-	AROS_LHA(BOOL,   killRequesters, D1),
+        AROS_LHA(STRPTR, appName,        A0),
+        AROS_LHA(STRPTR, itemName,       A1),
+        AROS_LHA(BOOL,   killRequesters, D1),
 
 /*  LOCATION */
 
-	struct Library *, nvBase, 5, Nonvolatile)
+        struct Library *, nvBase, 5, Nonvolatile)
 
 /*  FUNCTION
 
@@ -64,19 +64,19 @@
     APTR result;
 
     if(appName == NULL || itemName == NULL)
-	return NULL;
+        return NULL;
 
     if(strpbrk(appName, ":/") != NULL ||
        strpbrk(itemName, ":/") != NULL)
-	return NULL;
+        return NULL;
 
     if(killRequesters)
-	me->pr_WindowPtr = (APTR)-1;
+        me->pr_WindowPtr = (APTR)-1;
 
     result = ReadNVDData(appName, itemName);
 
     if(killRequesters)
-	me->pr_WindowPtr = oldReq;
+        me->pr_WindowPtr = oldReq;
 
     return result;
 

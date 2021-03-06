@@ -25,7 +25,7 @@
         specified port about actions the application is supposed to carry out.
         
         All messages sent to the message port are of struct WBHandlerMessage,
-        which is specified in <workbench/handler.h>. The wbhm_Type field 
+        which is specified in <workbench/handler.h>. The wbhm_Type field
         identifies the type of message and which part of the wbhm_Data union
         is relevant. The following types are currently defined:
         
@@ -44,7 +44,7 @@
             Request to open the specified drawer.
             
         WBHM_TYPE_UPDATE
-            The state of the specified disk object has changed, and this 
+            The state of the specified disk object has changed, and this
             message serves as a notification and suggestion that you should
             update its visual representation to the user. For example, it
             might have been deleted or renamed.

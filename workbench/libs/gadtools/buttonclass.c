@@ -38,28 +38,28 @@
 
 Object *GTButton__OM_NEW(Class * cl, Object * obj, struct opSet *msg)
 {
-    struct ButtonData	*data;
-    struct DrawInfo 	*dri;
-    struct Image 	*frame;
-    struct TagItem 	tags[] =
+    struct ButtonData   *data;
+    struct DrawInfo     *dri;
+    struct Image        *frame;
+    struct TagItem      tags[] =
     {
-	{IA_Width	, 0UL		},
-	{IA_Height	, 0UL		},
-	{IA_Resolution	, 0UL		},
-	{IA_FrameType	, FRAME_BUTTON	},
-	{TAG_DONE			}
+        {IA_Width       , 0UL           },
+        {IA_Height      , 0UL           },
+        {IA_Resolution  , 0UL           },
+        {IA_FrameType   , FRAME_BUTTON  },
+        {TAG_DONE                       }
     };
 
     dri = (struct DrawInfo *) GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
     if (!dri)
-	return NULL;
+        return NULL;
 
     tags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
     tags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
     tags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
     frame = (struct Image *) NewObjectA(NULL, FRAMEICLASS, tags);
     if (!frame)
-	return NULL;
+        return NULL;
 
     tags[0].ti_Tag = GA_Image;
     tags[0].ti_Data = (IPTR) frame;
@@ -67,8 +67,8 @@ Object *GTButton__OM_NEW(Class * cl, Object * obj, struct opSet *msg)
     tags[1].ti_Data = (IPTR) msg->ops_AttrList;
     obj = (Object *) DoSuperMethod(cl, obj, OM_NEW, (IPTR) tags, (IPTR) msg->ops_GInfo);
     if (!obj) {
-	DisposeObject(frame);
-	return NULL;
+        DisposeObject(frame);
+        return NULL;
     }
     data = INST_DATA(cl, obj);
     data->dri = dri;
@@ -81,32 +81,32 @@ Object *GTButton__OM_NEW(Class * cl, Object * obj, struct opSet *msg)
 
 IPTR GTButton__OM_SET(Class * cl, Object * obj, struct opSet * msg)
 {
-    IPTR 		retval = 0UL;
-    struct TagItem 	*tag, tags[2];
+    IPTR                retval = 0UL;
+    struct TagItem      *tag, tags[2];
 
     /* Catch everything, but GA_Disabled. */
     tag = FindTagItem(GA_Disabled, msg->ops_AttrList);
     if (tag) {
-	tags[0].ti_Tag = GA_Disabled;
-	tags[0].ti_Data = tag->ti_Data;
-	tags[1].ti_Tag = TAG_DONE;
-	DoSuperMethod(cl, obj, OM_SET, (IPTR) tags, (IPTR) msg->ops_GInfo);
-	retval = TRUE;
+        tags[0].ti_Tag = GA_Disabled;
+        tags[0].ti_Data = tag->ti_Data;
+        tags[1].ti_Tag = TAG_DONE;
+        DoSuperMethod(cl, obj, OM_SET, (IPTR) tags, (IPTR) msg->ops_GInfo);
+        retval = TRUE;
     }
 
     /* Redraw the gadget, if an attribute was changed and if this is the
        objects' base-class. */
     if ((retval) && (OCLASS(obj) == cl)) {
         struct gpRender rmsg;
-	rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
-	if (rmsg.gpr_RPort) {
-	    rmsg.MethodID = GM_RENDER;
-	    rmsg.gpr_GInfo = msg->ops_GInfo;
-	    rmsg.gpr_Redraw = GREDRAW_UPDATE;
-	    DoMethodA(obj, &rmsg);
-	    ReleaseGIRPort(rmsg.gpr_RPort);
-	    retval = FALSE;
-	}
+        rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
+        if (rmsg.gpr_RPort) {
+            rmsg.MethodID = GM_RENDER;
+            rmsg.gpr_GInfo = msg->ops_GInfo;
+            rmsg.gpr_Redraw = GREDRAW_UPDATE;
+            DoMethodA(obj, &rmsg);
+            ReleaseGIRPort(rmsg.gpr_RPort);
+            retval = FALSE;
+        }
     }
 
     return retval;
@@ -120,28 +120,28 @@ IPTR GTButton__OM_GET(Class * cl, Object * obj, struct opGet *msg)
     
     switch (msg->opg_AttrID)
     {
-	case GTA_GadgetKind:
-	case GTA_ChildGadgetKind:
-	    *(msg->opg_Storage) = BUTTON_KIND;
-	    retval = 1UL;
-	    break;
+        case GTA_GadgetKind:
+        case GTA_ChildGadgetKind:
+            *(msg->opg_Storage) = BUTTON_KIND;
+            retval = 1UL;
+            break;
 
-	default:
-	    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-	    break;
+        default:
+            retval = DoSuperMethodA(cl, obj, (Msg)msg);
+            break;
 
     }
     
-    return retval;  
+    return retval;
 }
 
 /**********************************************************************************************/
 
 IPTR GTButton__GM_RENDER(Class * cl, struct Gadget * g, struct gpRender * msg)
 {
-    IPTR 		retval = 0UL;
-    UWORD 		old_gadgetflags;
-    struct IntuiText 	*old_gadgettext;
+    IPTR                retval = 0UL;
+    UWORD               old_gadgetflags;
+    struct IntuiText    *old_gadgettext;
     
     /* Georg Steger: Hack, because IntuiTexts are not centered
        by button gadget class */

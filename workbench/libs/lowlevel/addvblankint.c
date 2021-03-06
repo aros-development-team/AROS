@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include "lowlevel_intern.h"
@@ -17,7 +17,7 @@
 
       AROS_LH2(APTR, AddVBlankInt,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(APTR, intRoutine, A0),
       AROS_LHA(APTR, intData, A1),
 
@@ -58,22 +58,22 @@
 
     if (intRoutine == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     ObtainSemaphore(&LowLevelBase->ll_Lock);
 
     if (LowLevelBase->ll_VBlank.is_Code == NULL)
     {
-	LowLevelBase->ll_VBlank.is_Code = intRoutine;
-	LowLevelBase->ll_VBlank.is_Data = intData;
+        LowLevelBase->ll_VBlank.is_Code = intRoutine;
+        LowLevelBase->ll_VBlank.is_Data = intData;
 
-	AddIntServer(INTB_VERTB, &LowLevelBase->ll_VBlank);
-	result = (APTR)&LowLevelBase->ll_VBlank;
+        AddIntServer(INTB_VERTB, &LowLevelBase->ll_VBlank);
+        result = (APTR)&LowLevelBase->ll_VBlank;
     }
     else
     {
-	result = NULL;
+        result = NULL;
     }
 
     ReleaseSemaphore(&LowLevelBase->ll_Lock);

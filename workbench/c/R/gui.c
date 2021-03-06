@@ -316,7 +316,7 @@ BOOL create_gui(struct Req *req)
                     Child, HVSpace,
                     Child, chk_group,
                 End,
-                Child, (IPTR) (RectangleObject, 
+                Child, (IPTR) (RectangleObject,
                     MUIA_Rectangle_HBar, TRUE,
                     MUIA_FixHeight,      2,
                 End),
@@ -444,7 +444,7 @@ BOOL set_defaults(struct Req *req)
                         SET(req->cargs[i].object, MUIA_String_Contents, array[i]);
                     }
                 }
-                success = TRUE; 
+                success = TRUE;
                 FreeArgs(rda);
             }
             FreeDosObject(DOS_RDARGS, rda);

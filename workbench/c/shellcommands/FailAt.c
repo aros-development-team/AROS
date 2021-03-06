@@ -7,52 +7,52 @@
 /**************************************************************************
 
     NAME
-	FailAt
+        FailAt
 
     FORMAT
-	FailAt <limit>
+        FailAt <limit>
 
     SYNOPSIS
-	RCLIM/N
+        RCLIM/N
 
     LOCATION
-	C:
+        C:
 
     FUNCTION
-	FailAt sets the return code limit of the current shell script. If
-	any command returns with a failure code of this value or higher
-	the script shall abort.
+        FailAt sets the return code limit of the current shell script. If
+        any command returns with a failure code of this value or higher
+        the script shall abort.
 
-	Common failure codes are:
-	    0	- No error
-	    5	- Warning
-	    10  - Error
-	    20	- Failure
+        Common failure codes are:
+            0   - No error
+            5   - Warning
+            10  - Error
+            20  - Failure
 
-	The normal value for the return code limit is 10.
+        The normal value for the return code limit is 10.
 
     NOTES
         If this command is called in a script that is executed from another
         script, the new fail level will be inherited by the parent script.
 
     EXAMPLE
-	If we have a script with the commands
+        If we have a script with the commands
 
-	    Copy RAM:SomeFile DF0:
-	    Echo "Done!"
+            Copy RAM:SomeFile DF0:
+            Echo "Done!"
 
-	and the file RAM:SomeFile does not exist, the Copy command will
-	return with:
+        and the file RAM:SomeFile does not exist, the Copy command will
+        return with:
 
-	    Copy: object not found
-	    Copy: returned with error code 20
+            Copy: object not found
+            Copy: returned with error code 20
 
-	and the script will abort. However if you include the command
+        and the script will abort. However if you include the command
 
-	    FailAt 21
+            FailAt 21
 
-	then the script will complete since the return code from Copy is
-	less than the return code limit.
+        then the script will complete since the return code from Copy is
+        less than the return code limit.
 
 **************************************************************************/
 
@@ -76,22 +76,22 @@ AROS_SHAH(LONG *, , RCLIM,/N, NULL, "The new return code limit"))
 
     if (cli == NULL)
     {
-	return RETURN_FAIL;
+        return RETURN_FAIL;
     }
 
     /* Write current fail level */
     if (SHArg(RCLIM) == NULL)
     {
-	Printf("Fail limit: %ld\n", cli->cli_FailLevel);
+        Printf("Fail limit: %ld\n", cli->cli_FailLevel);
     }
     /* Set new fail level */
     else
     {
-	cli->cli_FailLevel = *SHArg(RCLIM);
+        cli->cli_FailLevel = *SHArg(RCLIM);
     }
 
     return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
 }
-	    
+            

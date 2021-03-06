@@ -28,22 +28,22 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH10(ULONG, WritePixelArray,
+        AROS_LH10(ULONG, WritePixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR             , src		, A0),
-	AROS_LHA(UWORD            , srcx	, D0),
-	AROS_LHA(UWORD            , srcy	, D1),
-	AROS_LHA(UWORD            , srcmod	, D2),
-	AROS_LHA(struct RastPort *, rp		, A1),
-	AROS_LHA(UWORD            , destx	, D3),
-	AROS_LHA(UWORD            , desty	, D4),
-	AROS_LHA(UWORD            , width	, D5),
-	AROS_LHA(UWORD            , height	, D6),
-	AROS_LHA(UBYTE            , srcformat	, D7),
+        AROS_LHA(APTR             , src         , A0),
+        AROS_LHA(UWORD            , srcx        , D0),
+        AROS_LHA(UWORD            , srcy        , D1),
+        AROS_LHA(UWORD            , srcmod      , D2),
+        AROS_LHA(struct RastPort *, rp          , A1),
+        AROS_LHA(UWORD            , destx       , D3),
+        AROS_LHA(UWORD            , desty       , D4),
+        AROS_LHA(UWORD            , width       , D5),
+        AROS_LHA(UWORD            , height      , D6),
+        AROS_LHA(UBYTE            , srcformat   , D7),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 21, Cybergraphics)
+        struct Library *, CyberGfxBase, 21, Cybergraphics)
 
 /*  FUNCTION
         Copies all or part of a rectangular block of raw pixel values to a
@@ -142,30 +142,30 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     struct Rectangle rr;
 
     if ((!width) || (!height))
-    	return 0;
+        return 0;
 
     if (RECTFMT_GREY8 == srcformat)
     {
-	/* This just uses our builtin palette */
-	return WriteLUTPixelArray(src, srcx, srcy, srcmod,
-	    	    	    	  rp, GetCGFXBase(CyberGfxBase)->greytab,
-	    	    	    	  destx, desty, width, height, CTABFMT_XRGB8);
+        /* This just uses our builtin palette */
+        return WriteLUTPixelArray(src, srcx, srcy, srcmod,
+                                  rp, GetCGFXBase(CyberGfxBase)->greytab,
+                                  destx, desty, width, height, CTABFMT_XRGB8);
     }
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap))
     {
-    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArray() !!!\n"));
-    	return 0;
+        D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArray() !!!\n"));
+        return 0;
     }
     
     if (RECTFMT_LUT8 == srcformat)
     {
-	/* Actually this is the same as WriteChunkyPixels() with return value */
-    	return WritePixels8(rp, src, srcmod,
-    			    destx, desty,
-			    destx + width - 1, desty + height - 1,
-			    NULL, TRUE);
+        /* Actually this is the same as WriteChunkyPixels() with return value */
+        return WritePixels8(rp, src, srcmod,
+                            destx, desty,
+                            destx + width - 1, desty + height - 1,
+                            NULL, TRUE);
     }
 
     bppix = GetRectFmtBytesPerPixel(srcformat, rp, CyberGfxBase);
@@ -194,7 +194,7 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     UBYTE *array  = data->array + data->modulo * srcy + data->bppix * srcx;
 
     HIDD_BM_PutImage(dstbm_obj, dst_gc, array, data->modulo,
-    		     rect->MinX, rect->MinY, width, height, data->pixfmt);
+                     rect->MinX, rect->MinY, width, height, data->pixfmt);
 
     return width * height;
 }

@@ -104,7 +104,7 @@ APTR             Pool;
 
 
 /* catalog string id:s */
-enum 
+enum
 {
     UNIT,
     DEVTITLE,
@@ -122,7 +122,7 @@ enum
 };
 
 
-struct InfoDosNode 
+struct InfoDosNode
 {
     struct InfoDosNode *Next;
     ULONG               IsVolume;
@@ -140,7 +140,7 @@ struct DiskTypeList
     STRPTR  str;
 };
 
-struct DiskTypeList dtl[] = 
+struct DiskTypeList dtl[] =
 {
     { ID_DOS_DISK,              "OFS"           },
     { ID_FFS_DISK,              "FFS"           },
@@ -390,7 +390,7 @@ BOOL ScanDosList(STRPTR *filter)
         idn->Task     = ndl->dol_Task;
         idn->IsVolume = type == DLT_VOLUME;
         
-        while((idn->Name[len] = name[len])) 
+        while((idn->Name[len] = name[len]))
             len++;
         
         if(type == DLT_VOLUME)
@@ -415,7 +415,7 @@ BOOL ScanDosList(STRPTR *filter)
             if (len > MaxLen)
                 MaxLen = len;
             
-            if (fssm) 
+            if (fssm)
             {
                 struct DosEnvec *de;
                 de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
@@ -458,16 +458,16 @@ BOOL ScanDosList(STRPTR *filter)
 void PrintNum(ULONG num)
 {
     /* MBytes ? */
-    if(num > 1023) 
+    if(num > 1023)
     {
         ULONG  x, xx;
         char   fmt = 'M';
         
         /* GBytes ? */
         if(num > 0xfffff)
-        { 
-            num >>= 10; 
-            fmt = 'G'; 
+        {
+            num >>= 10;
+            fmt = 'G';
         }
         
         num = ExtUDivMod32(UMult32(num, 100) >> 10, 100, &x);
@@ -485,8 +485,8 @@ void PrintNum(ULONG num)
         }
 
         VLPrintf(BIGNUMFMT, "%5ld.%ld%lc", num, x, fmt);
-    } 
-    else 
+    }
+    else
     {
         VLPrintf(SMALLNUMFMT, "%7ldK", num);
     }
@@ -501,7 +501,7 @@ STRPTR GetFSysStr(ULONG DiskType)
     
     do {
         if(dtlptr->id == DiskType)
-        { 
+        {
             ptr = dtlptr->str;
             break;
         }
@@ -654,7 +654,7 @@ void doInfo()
                         BOOL gotinfo = FALSE;
                         /* if first device to print, print title */
                         if(first || blocks)
-                        {    
+                        {
                             if(!first)
                                 Printf("\n");
 
@@ -719,12 +719,12 @@ void doInfo()
                                 y = ComputeKBytes(id->id_NumBlocksUsed, id->id_BytesPerBlock);
                                 
                                 PrintNum(x);
-                                PrintNum(y); 
+                                PrintNum(y);
                                 PrintNum(x - y);
                                 
                                 if(x > 0xfffff)
-                                { 
-                                    x >>= 10; 
+                                {
+                                    x >>= 10;
                                     y >>= 10;
                                 }
                                 
@@ -791,7 +791,7 @@ void doInfo()
             }
             
             /* show volumes */
-            if(vols || (!devs && !disks)) 
+            if(vols || (!devs && !disks))
             {
                 if(!first)
                     PutStr("\n");
@@ -802,7 +802,7 @@ void doInfo()
                 for(MaxLen = 15, idn = head; idn; idn = idn->Next)
                 {
                     if(idn->IsVolume)
-                    {     
+                    {
                         LONG len = strlen(idn->Name);
                         
                         if(len > MaxLen)

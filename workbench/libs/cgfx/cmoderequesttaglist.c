@@ -10,14 +10,14 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH2(ULONG, CModeRequestTagList,
+        AROS_LH2(ULONG, CModeRequestTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR            , , A0),
-	AROS_LHA(struct TagItem *, , A1),
+        AROS_LHA(APTR            , , A0),
+        AROS_LHA(struct TagItem *, , A1),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 11, Cybergraphics)
+        struct Library *, CyberGfxBase, 11, Cybergraphics)
 
 /*  FUNCTION
         Displays a requester that allows the user to select an RTG screenmode.

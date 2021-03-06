@@ -24,7 +24,7 @@ LONG rxsupp_baddr(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **
     *argstring = NULL;
     
     if (LengthArgstring(ARG1(msg)) != sizeof(void *))
-	return ERR10_018;
+        return ERR10_018;
     
     ptr = BADDR(*(BPTR *)ARG1(msg));
     

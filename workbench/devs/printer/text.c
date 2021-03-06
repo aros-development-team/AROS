@@ -180,7 +180,7 @@ LONG Printer_Text_Command(struct PrinterData *pd, UWORD command, UBYTE p0, UBYTE
         txt->pt_Spacing = pd->pd_Preferences.PrintSpacing;
     }
 
-    for (; *cmd; cmd++) { 
+    for (; *cmd; cmd++) {
         D(bug("%s: command=%d '%c'(%d), ped_DoSpecial=%p \n", __func__, command, *cmd, *cmd, ped->ped_DoSpecial));
 
         if ((TEXT)*cmd == (TEXT)'\377' && ped->ped_DoSpecial) {
@@ -317,7 +317,7 @@ LONG Printer_Text_Write(struct PrinterData *pd, UBYTE *text, LONG length)
 
     for (;(length < 0 && *text) || (length > 0); text++, length--) {
         LONG cmd;
-        D(bug("%s: c='%c' (\\%o)\n", __func__, *text, *text)); 
+        D(bug("%s: c='%c' (\\%o)\n", __func__, *text, *text));
         cmd = doState(&state, *text, parm, &pindex);
         if (cmd == -2)
             continue;

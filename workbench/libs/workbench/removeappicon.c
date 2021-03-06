@@ -54,7 +54,7 @@
 
     if (appIcon == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
     
     LockWorkbench();

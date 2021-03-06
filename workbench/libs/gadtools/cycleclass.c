@@ -32,14 +32,14 @@
 
 /**********************************************************************************************/
 
-#define CYCLEIMAGEWIDTH     19 
+#define CYCLEIMAGEWIDTH     19
 
-#define GadToolsBase 	    ((struct GadToolsBase_intern *)cl->cl_UserData)
+#define GadToolsBase        ((struct GadToolsBase_intern *)cl->cl_UserData)
 
 /**********************************************************************************************/
 
 STATIC VOID rendercyclelabel(Class *cl, struct Gadget *gad, STRPTR string,
-                      	     struct RastPort *rp, struct GadgetInfo *ginfo)
+                             struct RastPort *rp, struct GadgetInfo *ginfo)
 {
     UWORD   *pens = ginfo->gi_DrInfo->dri_Pens;
     WORD    x,y,h;
@@ -68,15 +68,15 @@ STATIC VOID rendercyclelabel(Class *cl, struct Gadget *gad, STRPTR string,
 
     for(y = 0; y < 4; y++)
     {
-    	RectFill(rp,x + y,
-		       gad->TopEdge + gad->Height - 1 - h - y - 1,
-		       x + 6 - y, 
-		       gad->TopEdge + gad->Height - 1 - h - y - 1); 
-		       
-	RectFill(rp,x + y,
-		       gad->TopEdge + h + y + 1,
-		       x + 6 - y,
-		       gad->TopEdge + h + y + 1); 
+        RectFill(rp,x + y,
+                       gad->TopEdge + gad->Height - 1 - h - y - 1,
+                       x + 6 - y,
+                       gad->TopEdge + gad->Height - 1 - h - y - 1);
+                       
+        RectFill(rp,x + y,
+                       gad->TopEdge + h + y + 1,
+                       x + 6 - y,
+                       gad->TopEdge + h + y + 1);
     }
 }
 
@@ -98,19 +98,19 @@ BOOL pointingadget(struct Gadget *gad, struct GadgetInfo *gi, WORD x, WORD y)
 /**********************************************************************************************/
 
 IPTR GTCycle__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
-{ 
-    struct CycleData 	*data;
-    struct TextAttr 	*tattr;
-    struct TagItem  	imgtags[] =
+{
+    struct CycleData    *data;
+    struct TextAttr     *tattr;
+    struct TagItem      imgtags[] =
     {
-        { IA_Width	, 0 		},
-        { IA_Height	, 0 		},
-        { IA_EdgesOnly	, FALSE		},
-	{ IA_FrameType	, FRAME_BUTTON	},
-        { TAG_DONE	, 0UL 		}
+        { IA_Width      , 0             },
+        { IA_Height     , 0             },
+        { IA_EdgesOnly  , FALSE         },
+        { IA_FrameType  , FRAME_BUTTON  },
+        { TAG_DONE      , 0UL           }
     };
-    STRPTR  	    	*labels;
-    struct Gadget    	*g;
+    STRPTR              *labels;
+    struct Gadget       *g;
     
     g = (struct Gadget *)DoSuperMethodA(cl, objcl, (Msg)msg);
     if (!g)
@@ -158,7 +158,7 @@ IPTR GTCycle__OM_DISPOSE(Class *cl, struct Gadget * g, Msg msg)
     
     if (g->GadgetRender)
         DisposeObject(g->GadgetRender);
-	
+        
     if (data->font) CloseFont(data->font);
     
     return DoSuperMethodA(cl,(Object *)g,msg);
@@ -168,12 +168,12 @@ IPTR GTCycle__OM_DISPOSE(Class *cl, struct Gadget * g, Msg msg)
 
 IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    struct CycleData 	*data = INST_DATA(cl, o);
-    struct TagItem  	*tag;
+    struct CycleData    *data = INST_DATA(cl, o);
+    struct TagItem      *tag;
     struct TagItem *taglist = msg->ops_AttrList;
-    STRPTR  	    	*mylabels;
-    BOOL    	    	rerender = FALSE;
-    IPTR    	    	result;
+    STRPTR              *mylabels;
+    BOOL                rerender = FALSE;
+    IPTR                result;
 
     result = DoSuperMethodA(cl, o, (Msg)msg);
 
@@ -182,29 +182,29 @@ IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
         switch(tag->ti_Tag)
         {
             case GTCY_Labels:
-        	data->labels = (STRPTR *)tag->ti_Data;
-        	data->numlabels = 0;
-		data->active = 0;
-        	mylabels = data->labels;
-        	if (mylabels)
-        	{
+                data->labels = (STRPTR *)tag->ti_Data;
+                data->numlabels = 0;
+                data->active = 0;
+                mylabels = data->labels;
+                if (mylabels)
+                {
                     while (mylabels[0])
                     {
-                	data->numlabels++;
-                	mylabels++;
+                        data->numlabels++;
+                        mylabels++;
                     }
-        	}
-        	rerender = TRUE;
-        	break;
+                }
+                rerender = TRUE;
+                break;
 
             case GTCY_Active:
-        	data->active = tag->ti_Data;
-        	rerender = TRUE;
-        	break;
+                data->active = tag->ti_Data;
+                rerender = TRUE;
+                break;
 
-	    case GA_Disabled:
-		rerender = TRUE;
-		break;
+            case GA_Disabled:
+                rerender = TRUE;
+                break;
         }
     }
 
@@ -214,9 +214,9 @@ IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
     {
         struct gpRender rmsg;
         if(data->active > data->numlabels-1)
-	    data->active = 0;
+            data->active = 0;
 
-	//kprintf("Rerendering\n");
+        //kprintf("Rerendering\n");
 
         rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
         if(rmsg.gpr_RPort)
@@ -238,27 +238,27 @@ IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 IPTR GTCycle__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct CycleData *data   = INST_DATA(cl, o);
-    IPTR    	      retval = FALSE;
+    IPTR              retval = FALSE;
     
     switch (msg->opg_AttrID)
     {
-	case GTA_GadgetKind:
-	case GTA_ChildGadgetKind:
-	    *(msg->opg_Storage) = CYCLE_KIND;
-	    retval = 1UL;
-	    break;
+        case GTA_GadgetKind:
+        case GTA_ChildGadgetKind:
+            *(msg->opg_Storage) = CYCLE_KIND;
+            retval = 1UL;
+            break;
 
-    	case GTCY_Active:
-	    *(msg->opg_Storage) = (IPTR)data->active;
-	    break;
-	    
-	case GTCY_Labels:
-	    *(msg->opg_Storage) = (IPTR)data->labels;
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    break;
+        case GTCY_Active:
+            *(msg->opg_Storage) = (IPTR)data->active;
+            break;
+            
+        case GTCY_Labels:
+            *(msg->opg_Storage) = (IPTR)data->labels;
+            break;
+            
+        default:
+            retval = DoSuperMethodA(cl, o, (Msg)msg);
+            break;
     }
     
     return retval;
@@ -277,9 +277,9 @@ IPTR GTCycle__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
                    msg->gpr_GInfo->gi_DrInfo);
 
     if (data->font)
-    	SetFont(msg->gpr_RPort, data->font);
+        SetFont(msg->gpr_RPort, data->font);
     else
-	SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
+        SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
 
     if (data->labels)
     {
@@ -291,11 +291,11 @@ IPTR GTCycle__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
     {
         DoDisabledPattern(msg->gpr_RPort,
                           g->LeftEdge,
-			  g->TopEdge,
+                          g->TopEdge,
                           g->LeftEdge + g->Width - 1,
-			  g->TopEdge + g->Height - 1,
-			  msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
-			  GadToolsBase);
+                          g->TopEdge + g->Height - 1,
+                          msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
+                          GadToolsBase);
     }
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
@@ -311,17 +311,17 @@ IPTR GTCycle__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 IPTR GTCycle__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 {
     return pointingadget(g,
-    			 msg->gpht_GInfo,
-			 msg->gpht_Mouse.X,
-			 msg->gpht_Mouse.Y) ? GMR_GADGETHIT : 0;
+                         msg->gpht_GInfo,
+                         msg->gpht_Mouse.X,
+                         msg->gpht_Mouse.Y) ? GMR_GADGETHIT : 0;
 }
 
 /**********************************************************************************************/
 
 IPTR GTCycle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
-{	
-    struct RastPort 	*rp;
-    IPTR    	    	retval;
+{
+    struct RastPort     *rp;
+    IPTR                retval;
     
     g->Flags |= GFLG_SELECTED;
     
@@ -330,11 +330,11 @@ IPTR GTCycle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
     {
         struct gpRender rmsg =
         {
-	    GM_RENDER,
-	    msg->gpi_GInfo,
-	    rp,
-	    GREDRAW_UPDATE
-	};
+            GM_RENDER,
+            msg->gpi_GInfo,
+            rp,
+            GREDRAW_UPDATE
+        };
         DoMethodA((Object *)g, (Msg)&rmsg);
         ReleaseGIRPort(rp);
         retval = GMR_MEACTIVE;
@@ -351,9 +351,9 @@ IPTR GTCycle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 
 IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-    struct RastPort 	*rp;
-    struct CycleData 	*data;
-    IPTR    	    	retval = GMR_MEACTIVE;
+    struct RastPort     *rp;
+    struct CycleData    *data;
+    IPTR                retval = GMR_MEACTIVE;
 
     data = INST_DATA(cl, g);
     
@@ -364,31 +364,31 @@ IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
             if (g->Flags & GFLG_SELECTED)
             {
                 /* mouse is over gadget */
-		
-        	data->active++;
-        	if (data->active == data->numlabels)
+                
+                data->active++;
+                if (data->active == data->numlabels)
                     data->active = 0;
 
-		
+                
                 *msg->gpi_Termination = data->active;
                 retval = GMR_NOREUSE | GMR_VERIFY;
             }
-	    else
-	    {
+            else
+            {
                 /* mouse is not over gadget */
                 retval = GMR_NOREUSE;
-	    }
+            }
 
         }
-	else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
+        else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
         {
             struct gpHitTest htmsg =
             {
-	    	GM_HITTEST,
-		msg->gpi_GInfo,
+                GM_HITTEST,
+                msg->gpi_GInfo,
                 { msg->gpi_Mouse.X, msg->gpi_Mouse.Y },
             };
-	    
+            
             if (DoMethodA((Object *)g, (Msg)&htmsg) != GMR_GADGETHIT)
             {
                 if (g->Flags & GFLG_SELECTED)
@@ -399,18 +399,18 @@ IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
                     {
                         struct gpRender rmsg =
                         {
-			    GM_RENDER,
-			    msg->gpi_GInfo,
-			    rp,
-			    GREDRAW_UPDATE
-			};
-			
+                            GM_RENDER,
+                            msg->gpi_GInfo,
+                            rp,
+                            GREDRAW_UPDATE
+                        };
+                        
                         DoMethodA((Object *)g, (Msg)&rmsg);
                         ReleaseGIRPort(rp);
                     }
                 }
             }
-	    else
+            else
             {
                 if (!(g->Flags & GFLG_SELECTED))
                 {
@@ -420,22 +420,22 @@ IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
                     {
                         struct gpRender rmsg =
                         {
-			    GM_RENDER,
-			    msg->gpi_GInfo,
-			    rp,
-			    GREDRAW_UPDATE
-			};
-			
+                            GM_RENDER,
+                            msg->gpi_GInfo,
+                            rp,
+                            GREDRAW_UPDATE
+                        };
+                        
                         DoMethodA((Object *)g, (Msg)&rmsg);
                         ReleaseGIRPort(rp);
                     }
                 }
             }
         }
-	else if (msg->gpi_IEvent->ie_Code == MENUDOWN)
-	{
+        else if (msg->gpi_IEvent->ie_Code == MENUDOWN)
+        {
             retval = GMR_REUSE;
-	}
+        }
     }
     
     return retval;
@@ -453,13 +453,13 @@ IPTR GTCycle__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *ms
     if (rp)
     {
         struct gpRender rmsg =
-	{
-	    GM_RENDER,
-	    msg->gpgi_GInfo,
-	    rp,
-	    GREDRAW_UPDATE
-	};
-	
+        {
+            GM_RENDER,
+            msg->gpgi_GInfo,
+            rp,
+            GREDRAW_UPDATE
+        };
+        
         DoMethodA((Object *)g, (Msg)&rmsg);
         ReleaseGIRPort(rp);
     }

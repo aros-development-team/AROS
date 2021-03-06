@@ -15,7 +15,7 @@ static void add128(ULONG *s, ULONG *d)
        d[i] += s[i] + ovl;
        ovl = 0;
        if (o > d[i])
-       	   ovl = 1;
+           ovl = 1;
     }
 }
 
@@ -33,7 +33,7 @@ static void add128(ULONG *s, ULONG *d)
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Multiplies two IEEE double precision numbers.
+        Multiplies two IEEE double precision numbers.
 
     INPUTS
         y - first multiplicand.
@@ -66,7 +66,7 @@ static void add128(ULONG *s, ULONG *d)
     QUAD * Qz = (QUAD *)&z;
 
     D(bug("%08x %08x * %08x %08x\n",
-        (ULONG)Get_High32of64(*Qy), (ULONG)Get_Low32of64(*Qy), 
+        (ULONG)Get_High32of64(*Qy), (ULONG)Get_Low32of64(*Qy),
         (ULONG)Get_High32of64(*Qz), (ULONG)Get_Low32of64(*Qz)));
 
     sign = ((Get_High32of64(*Qy) ^ Get_High32of64(*Qz)) & IEEEDPSign_Mask_Hi) != 0;

@@ -119,17 +119,17 @@ static LONG parseType(struct TableTypeNode *ttn, ULONG id_len, char *ident, stru
         struct TypeNode *tn = AllocMem(sizeof(struct TypeNode), MEMF_PUBLIC | MEMF_CLEAR);
 
         if (tn == NULL)
-	    return ERROR_NO_FREE_STORE;
+            return ERROR_NO_FREE_STORE;
 
         tn->type.id_len = id_len;
 
-	switch (ttn->pti->pti_Type)
-	{
-	case PHPTT_GPT:
-	    UUID_Parse(ident, (uuid_t *)&tn->type.id);
-	    break;
+        switch (ttn->pti->pti_Type)
+        {
+        case PHPTT_GPT:
+            UUID_Parse(ident, (uuid_t *)&tn->type.id);
+            break;
 
-	default:
+        default:
             strcpyESC(tn->type.id, ident);
             break;
         }
@@ -201,10 +201,10 @@ LONG parsePrefs(char *buffer, LONG size)
 
     while (csrc.CS_CurChr < csrc.CS_Length)
     {
-    	DB2(bug("[parsePrefs] Cur %d, Length %d\n", csrc.CS_CurChr, csrc.CS_Length));
+        DB2(bug("[parsePrefs] Cur %d, Length %d\n", csrc.CS_CurChr, csrc.CS_Length));
         res = ReadItem(ident, 256, &csrc);
 
-	DB2(bug("[parsePrefs] Got item %d (%s)\n", res, ident));
+        DB2(bug("[parsePrefs] Got item %d (%s)\n", res, ident));
 
         switch (res)
         {
@@ -221,13 +221,13 @@ LONG parsePrefs(char *buffer, LONG size)
             }
             else
             {
-            	switch (current)
-            	{
-            	case Section_Devices:
+                switch (current)
+                {
+                case Section_Devices:
                     addDeviceName(ident);
                     break;
 
-		case Section_TableIDs:
+                case Section_TableIDs:
                     if (strcasecmp(ident, "TableType") == 0)
                     {
                         res = ReadItem(ident, 256, &csrc);
@@ -265,7 +265,7 @@ LONG parsePrefs(char *buffer, LONG size)
                             }
                             break;
 
-			default:
+                        default:
                             printf("LINE %d: Unexpected item after TableType\n", line);
                             return 0;
                         }
@@ -320,9 +320,9 @@ LONG parsePrefs(char *buffer, LONG size)
                                 break;
 
                             case ITEM_EQUAL:
-                            	res = ReadItem(ident, 256, &csrc);
-                            	switch (res)
-                            	{
+                                res = ReadItem(ident, 256, &csrc);
+                                switch (res)
+                                {
                                 case ITEM_ERROR:
                                     return IoErr();
 
@@ -350,14 +350,14 @@ LONG parsePrefs(char *buffer, LONG size)
                     }
                     else
                     {
-                    	res = parseType(ttn, id_len, ident, &csrc, line);
-                    	if (res)
-                    	    return res;
+                        res = parseType(ttn, id_len, ident, &csrc, line);
+                        if (res)
+                            return res;
                     }
         
-        	    break;
+                    break;
 
-		default:
+                default:
                     printf("LINE %d: Unexpected item '%s' in prefs\n", line, ident);
                     return 0;
                 }
@@ -365,9 +365,9 @@ LONG parsePrefs(char *buffer, LONG size)
             break;
 
         case ITEM_QUOTED:
-	    res = parseType(ttn, id_len, ident, &csrc, line);
-	    if (res)
-	    	return res;
+            res = parseType(ttn, id_len, ident, &csrc, line);
+            if (res)
+                return res;
 
             break;
 
@@ -376,12 +376,12 @@ LONG parsePrefs(char *buffer, LONG size)
             break;
         }
 
-	/*
-	 * Intentional ReadItem() bug workaround.
-	 * Ungets '\n' every time, causing an infinite loop without this adjustment.
-	 */
+        /*
+         * Intentional ReadItem() bug workaround.
+         * Ungets '\n' every time, causing an infinite loop without this adjustment.
+         */
         if ((csrc.CS_CurChr < csrc.CS_Length) && (buffer[csrc.CS_CurChr] == '\n'))
-	    csrc.CS_CurChr++;
+            csrc.CS_CurChr++;
     }
 
    hdtbicon = GetIconTags("HDToolBox",
@@ -392,23 +392,23 @@ LONG parsePrefs(char *buffer, LONG size)
     if (hdtbicon != NULL)
     {
 D(bug("[HDToolBox] Got our Icon..\n"));
-	if (hdtbicon->do_ToolTypes)
-	{
-	    char *tt = NULL, *devicename;
-	    int   i  = 0;
+        if (hdtbicon->do_ToolTypes)
+        {
+            char *tt = NULL, *devicename;
+            int   i  = 0;
 D(bug("[HDToolBox] Icon has tooltypes..\n"));
 
-	    while ((tt = hdtbicon->do_ToolTypes[i]) != NULL)
-	    {
+            while ((tt = hdtbicon->do_ToolTypes[i]) != NULL)
+            {
                 if (strncmp(hdtbicon->do_ToolTypes[i], "DEVICE=", 7) == 0)
                 {
-		    devicename = hdtbicon->do_ToolTypes[i] + 7;
+                    devicename = hdtbicon->do_ToolTypes[i] + 7;
 D(bug("[HDToolBox] Adding Device '%s' from ToolType\n", devicename));
-		    addDeviceName(devicename);
-		}
-		i++;
-	    }
-	}
+                    addDeviceName(devicename);
+                }
+                i++;
+            }
+        }
     }
 
     // EBR uses same types as MBR
@@ -418,7 +418,7 @@ D(bug("[HDToolBox] Adding Device '%s' from ToolType\n", devicename));
     return 0;
 }
 
-void LoadPrefs(STRPTR filename) 
+void LoadPrefs(STRPTR filename)
 {
     struct FileInfoBlock fib;
     char *buffer;

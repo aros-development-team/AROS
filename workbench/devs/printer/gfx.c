@@ -125,7 +125,7 @@ ULONG zrgbof(struct ColorMap *cm, ULONG index)
     ULONG blue8  = (hibits & 0x000f) << 4;
 
     if (cm->Type > COLORMAP_TYPE_V1_2) {
-        UWORD lobits = cm->LowColorBits[index]; 
+        UWORD lobits = cm->LowColorBits[index];
 
         red8   |= (lobits & 0x0f00) >> 8;
         green8 |= (lobits & 0x00f0) >> 4;
@@ -337,7 +337,7 @@ bug("tp->Mode = 0x%04x\n", tp->Mode);
             case PRTA_8BitGuns:
                 di.di_8BitGuns = (BOOL)tag->ti_Data;
                 break;
-            case PRTA_ConvertSource: 
+            case PRTA_ConvertSource:
                 di.di_ConvertSource = (BOOL)tag->ti_Data;
                 break;
             case PRTA_FloydDithering:

@@ -20,11 +20,11 @@
         AROS_LH2(APTR, MUIS_OpenPubFile,
 
 /*  SYNOPSIS */
-	AROS_LHA(char*, name,  A0),
-	AROS_LHA(ULONG, mode, D0),
+        AROS_LHA(char*, name,  A0),
+        AROS_LHA(ULONG, mode, D0),
 
 /*  LOCATION */
-	struct Library *, MUIScreenBase, 9, MUIScreen)
+        struct Library *, MUIScreenBase, 9, MUIScreen)
 
 /*  FUNCTION
 
@@ -53,38 +53,38 @@
 
     if ((iff = AllocIFF()))
     {
-    	if ((iff->iff_Stream = (IPTR) Open(name, mode)))
-	{
-	    InitIFFasDOS(iff);
-	    if (!OpenIFF(iff, (mode == MODE_OLDFILE ? IFFF_READ : IFFF_WRITE)))
-	    {
-		if (mode == MODE_NEWFILE)
-		{
-		    if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
-		    {
-			if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
-			{
-			    struct FilePrefHeader head;
+        if ((iff->iff_Stream = (IPTR) Open(name, mode)))
+        {
+            InitIFFasDOS(iff);
+            if (!OpenIFF(iff, (mode == MODE_OLDFILE ? IFFF_READ : IFFF_WRITE)))
+            {
+                if (mode == MODE_NEWFILE)
+                {
+                    if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
+                    {
+                        if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
+                        {
+                            struct FilePrefHeader head;
     
-			    head.ph_Version  = 0; // FIXME: shouold be PHV_CURRENT, but see <prefs/prefhdr.h> 
-			    head.ph_Type     = 0;
-			    head.ph_Flags[0] =
-			    head.ph_Flags[1] =
-			    head.ph_Flags[2] =
-			    head.ph_Flags[3] = 0;
+                            head.ph_Version  = 0; // FIXME: shouold be PHV_CURRENT, but see <prefs/prefhdr.h>
+                            head.ph_Type     = 0;
+                            head.ph_Flags[0] =
+                            head.ph_Flags[1] =
+                            head.ph_Flags[2] =
+                            head.ph_Flags[3] = 0;
     
-			    if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
-			    {
-				PopChunk(iff);
-				return (APTR) iff;
-			    }
-			}
-		    }
-		}
-		else
-		    return (APTR) iff;
-	    }
-	}
+                            if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
+                            {
+                                PopChunk(iff);
+                                return (APTR) iff;
+                            }
+                        }
+                    }
+                }
+                else
+                    return (APTR) iff;
+            }
+        }
     }
 
     return NULL;

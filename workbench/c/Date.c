@@ -23,12 +23,12 @@
 
     INPUTS
 
-	DAY  -- sets date by name (monday, tuesday, ... , tomorrow, yesterday)
-	DATE -- sets date in format DD-MMM-YY.
-	        For MMM either the number or the first 3 letters of the
-	        month in English	
-	TIME -- sets time in format HH:MM:SS
-	TO   -- output is sent to file          
+        DAY  -- sets date by name (monday, tuesday, ... , tomorrow, yesterday)
+        DATE -- sets date in format DD-MMM-YY.
+                For MMM either the number or the first 3 letters of the
+                month in English
+        TIME -- sets time in format HH:MM:SS
+        TO   -- output is sent to file
 
     RESULT
 
@@ -36,8 +36,8 @@
 
     EXAMPLE
 
-	date 2-feb-06
-	date 21:10
+        date 2-feb-06
+        date 21:10
 
     BUGS
 
@@ -75,10 +75,10 @@ static WORD chrcount(STRPTR s, UBYTE c)
     
     while((sc = *s++))
     {
-    	if (sc == c) retval++;
+        if (sc == c) retval++;
     }
     
-    return retval;    
+    return retval;
 }
 
 int setdate(STRPTR *day_date_time)
@@ -88,18 +88,18 @@ int setdate(STRPTR *day_date_time)
     struct timerequest *timerReq;
     struct MsgPort     *timerMP;
     struct DateTime    dt;
-    WORD    	       i, count;
-    UBYTE   	       fulltime[9];
-    STRPTR  	       realtime = NULL, realdate = NULL;
+    WORD               i, count;
+    UBYTE              fulltime[9];
+    STRPTR             realtime = NULL, realdate = NULL;
     
     for(i = 0; i < 3; i++)
     {
-    	if (day_date_time[i] == NULL) continue;
-	
+        if (day_date_time[i] == NULL) continue;
+        
         if (chrcount(day_date_time[i], '-'))
         {
             /* must be date */
-	    
+            
             realdate = day_date_time[i];
         }
         else if ((count = chrcount(day_date_time[i], ':')))
@@ -131,12 +131,12 @@ int setdate(STRPTR *day_date_time)
             
             if (!realdate) realdate = day_date_time[i];
         }
-	
+        
     }
 
     dt.dat_Format  = FORMAT_DOS;
     dt.dat_Flags   = DTF_FUTURE;
-    dt.dat_StrDay  = NULL; /* StrToDate ignores this anyway */	
+    dt.dat_StrDay  = NULL; /* StrToDate ignores this anyway */
     dt.dat_StrDate = realdate;
     dt.dat_StrTime = realtime;
 
@@ -148,8 +148,8 @@ int setdate(STRPTR *day_date_time)
                 "- use DD-MMM-YY or <dayname> or yesterday etc. to set date\n"
                 "      HH:MM:SS or HH:MM to set time\n");
         error = RETURN_FAIL;
-    } 
-    else 
+    }
+    else
     {
         timerMP = CreateMsgPort();
         if (timerMP)
@@ -158,7 +158,7 @@ int setdate(STRPTR *day_date_time)
 
             if (timerReq)
             {
-                timererror = OpenDevice(TIMERNAME, UNIT_VBLANK, 
+                timererror = OpenDevice(TIMERNAME, UNIT_VBLANK,
                             &timerReq->tr_node, 0L);
                 if(timererror == 0)
                 {
@@ -172,7 +172,7 @@ int setdate(STRPTR *day_date_time)
                     DoIO(&timerReq->tr_node);
  
                     CloseDevice(&timerReq->tr_node);
-                } 
+                }
                 else
                 {
                     PutStr("Date: Error opening timer.device\n");
@@ -183,7 +183,7 @@ int setdate(STRPTR *day_date_time)
             else
             {
                     PutStr("Date: Error creating timerequest\n");
-                    error = RETURN_FAIL; 	    
+                    error = RETURN_FAIL;
             }
             DeleteMsgPort(timerMP);
         }
@@ -205,7 +205,7 @@ int printdate(STRPTR filename)
     int error = RETURN_OK;
     struct DateTime dt;
     char daystring[LEN_DATSTRING * 2], datestring[LEN_DATSTRING * 2],
-	timestring[LEN_DATSTRING * 2], resstring[LEN_DATSTRING*6+1];
+        timestring[LEN_DATSTRING * 2], resstring[LEN_DATSTRING*6+1];
     
     if(filename != NULL)
     {
@@ -216,7 +216,7 @@ int printdate(STRPTR filename)
     if(file != (BPTR)NULL)
     {
         int pos = 0;
-	
+        
         DateStamp(&dt.dat_Stamp);
 
         dt.dat_Format = FORMAT_DOS; // FORMAT_DEF;
@@ -275,7 +275,7 @@ int main(void)
                 if (args[ARG_VER] != NULL)
                     printdate(args[ARG_VER]);
             }
-        } 
+        }
         else
         {
             error = printdate(args[ARG_VER]);

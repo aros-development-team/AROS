@@ -135,7 +135,7 @@ BOOL allocPens(struct ColorMap *cm, penarray_t *pens)
         pens->pen[0] = -1;
     }
 
-    return FALSE;                            
+    return FALSE;
 }
 
 void releasePens(penarray_t *pens)
@@ -241,7 +241,7 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         D(
             bug("[PaletteEditor] %s: editor obj @ 0x%p\n", __func__, self);
             bug("[PaletteEditor] %s: palette obj @ 0x%p\n", __func__, data->palpe_palette);
-        )        
+        )
         DoMethod
         (
             data->palpe_palette, MUIM_Notify, MUIA_Palette_Entries, MUIV_EveryTime,
@@ -404,7 +404,7 @@ IPTR PalEditor__MUIM_Cleanup
         if (data->restore)
         {
             D(bug("[PaletteEditor] %s: restoring %d entries ...\n", __func__, data->count);)
-            LoadRGB4(&_screen(self)->ViewPort, data->origcols, data->count);   
+            LoadRGB4(&_screen(self)->ViewPort, data->origcols, data->count);
         }
         data->restore = FALSE;
         data->count = 0;

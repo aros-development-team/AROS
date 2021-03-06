@@ -16,7 +16,7 @@
 
 #include <aros/debug.h>
 
-#define DEBUG_CREATECXOBJ(x)	;
+#define DEBUG_CREATECXOBJ(x)    ;
 
 
 VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
@@ -26,13 +26,13 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 
 /*  SYNOPSIS */
 
-	AROS_LHA(ULONG, type, D0),
-	AROS_LHA(IPTR,  arg1, A0),
-	AROS_LHA(IPTR,  arg2, A1),
+        AROS_LHA(ULONG, type, D0),
+        AROS_LHA(IPTR,  arg1, A0),
+        AROS_LHA(IPTR,  arg2, A1),
 
 /*  LOCATION */
 
-	struct Library *, CxBase, 5, Commodities)
+        struct Library *, CxBase, 5, Commodities)
 
 /*  FUNCTION
 
@@ -45,7 +45,7 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 
     type  -  the type of the commodity object to be created. Possible
              types are defined in <libraries/commodities.h>.
-    arg1  -  depends on the value of 'type' above.  
+    arg1  -  depends on the value of 'type' above.
     arg2  -  depends on the value of 'type' above.
 
     RESULT
@@ -84,11 +84,11 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
     CxObj *co;
 
     DEBUG_CREATECXOBJ(dprintf("CreateCxObj: type %lu Arg1 0x%lx Arg2 0x%lx\n",
-			      type, arg1, arg2));
+                              type, arg1, arg2));
 
     if ((co = (CxObj *)AllocCxStructure(CX_OBJECT, type, CxBase)) == NULL)
     {
-	return NULL;      /* No memory for object */
+        return NULL;      /* No memory for object */
     }
 
     D(bug("CreateCxObject: Memory for object allocated.\n"));
@@ -102,42 +102,42 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
     switch (type)
     {
     case CX_FILTER:
-	SetFilter(co, (STRPTR)arg1);
-	break;
-	
+        SetFilter(co, (STRPTR)arg1);
+        break;
+        
     case CX_TYPEFILTER:
-	/* Obsolete and undocumented */
-	break;
-	
+        /* Obsolete and undocumented */
+        break;
+        
     case CX_SEND:
-	co->co_Ext.co_SendExt->sext_MsgPort = (struct MsgPort *)arg1;
-	co->co_Ext.co_SendExt->sext_ID = (ULONG)arg2;
-	break;
-	
+        co->co_Ext.co_SendExt->sext_MsgPort = (struct MsgPort *)arg1;
+        co->co_Ext.co_SendExt->sext_ID = (ULONG)arg2;
+        break;
+        
     case CX_SIGNAL:
-	co->co_Ext.co_SignalExt->sixt_Task = (struct Task *)arg1;
-	co->co_Ext.co_SignalExt->sixt_SigBit = (UBYTE)arg2;
-	break;
-	
+        co->co_Ext.co_SignalExt->sixt_Task = (struct Task *)arg1;
+        co->co_Ext.co_SignalExt->sixt_SigBit = (UBYTE)arg2;
+        break;
+        
     case CX_TRANSLATE:
-	co->co_Ext.co_IE = (struct InputEvent *)arg1;
-	break;
-	
+        co->co_Ext.co_IE = (struct InputEvent *)arg1;
+        break;
+        
     case CX_BROKER:
-	BrokerFunc(co, (struct NewBroker *)arg1, CxBase);
-	break;
-	
+        BrokerFunc(co, (struct NewBroker *)arg1, CxBase);
+        break;
+        
     case CX_DEBUG:
-	co->co_Ext.co_DebugID = arg1;
-	break;
-	
+        co->co_Ext.co_DebugID = arg1;
+        break;
+        
     case CX_CUSTOM:
-	co->co_Ext.co_CustomExt->cext_Action = (APTR)arg1;
-	co->co_Ext.co_CustomExt->cext_ID = arg2;
-	break;
-	
-    default: 
-	break;
+        co->co_Ext.co_CustomExt->cext_Action = (APTR)arg1;
+        co->co_Ext.co_CustomExt->cext_ID = arg2;
+        break;
+        
+    default:
+        break;
     }
     
     DEBUG_CREATECXOBJ(dprintf("CreateCxObject: Leaving...\n"));

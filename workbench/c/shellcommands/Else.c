@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /*****************************************************************************
@@ -19,8 +19,8 @@
     FUNCTION
 
         Separate the 'true' and 'false' blocks of an If statement. The block
-	following an Else command is executed if the condition in the previous
-	If statement was false.
+        following an Else command is executed if the condition in the previous
+        If statement was false.
 
     INPUTS
 
@@ -31,10 +31,10 @@
     EXAMPLE
 
         If EXISTS Sys:Devs
-	    Copy random.device Sys:Devs/
-	Else
-	    Echo "Cannot find Sys:Devs"
-	EndIf
+            Copy random.device Sys:Devs/
+        Else
+            Echo "Cannot find Sys:Devs"
+        EndIf
 
     BUGS
 
@@ -68,69 +68,69 @@ AROS_SH0(Else,41.1)
 
     if ((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
-	BOOL found = FALSE;
-	int  level = 1;
-	char buffer[256];
-	int a = 0;
+        BOOL found = FALSE;
+        int  level = 1;
+        char buffer[256];
+        int a = 0;
 
-	SelectInput(cli->cli_CurrentInput);
+        SelectInput(cli->cli_CurrentInput);
 
-	while (!found)
-	{
-	    LONG status;
-	    int temp;
+        while (!found)
+        {
+            LONG status;
+            int temp;
 
-	    status = ReadItem(buffer, sizeof(buffer), NULL);
+            status = ReadItem(buffer, sizeof(buffer), NULL);
 
-	    if (status == ITEM_ERROR)
-	        break;
+            if (status == ITEM_ERROR)
+                break;
 
-	    if (status == ITEM_NOTHING)
-	    {
-		if (a == ENDSTREAMCH)
-		    break;
-		else
-		    goto next;
-	    }
+            if (status == ITEM_NOTHING)
+            {
+                if (a == ENDSTREAMCH)
+                    break;
+                else
+                    goto next;
+            }
 
-	    switch ((temp = FindArg("IF,ENDIF", buffer)))
-	    {
-	    case 0:
-		level++;
-		break;
-		
-	    case 1:
-		level--;
+            switch ((temp = FindArg("IF,ENDIF", buffer)))
+            {
+            case 0:
+                level++;
+                break;
+                
+            case 1:
+                level--;
 
-		if (level == 0)
-		{
-		    found = TRUE;
-		}
+                if (level == 0)
+                {
+                    found = TRUE;
+                }
 
-		break;
-	    }
+                break;
+            }
 
 next:
-	    /* Take care of long and empty lines */
-	    do
-	    {
-		a = FGetC(Input());
-	    } while(a != '\n' && a != ENDSTREAMCH);
-	    
-	}
+            /* Take care of long and empty lines */
+            do
+            {
+                a = FGetC(Input());
+            } while(a != '\n' && a != ENDSTREAMCH);
+            
+        }
 
-	if (!found)
-	{
-	    PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "Else");
+        if (!found)
+        {
+            PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "Else");
 
-	    return RETURN_FAIL;
-	}
+            return RETURN_FAIL;
+        }
     }
     else
     {
-	PrintFault(ERROR_SCRIPT_ONLY, "Else");
+        PrintFault(ERROR_SCRIPT_ONLY, "Else");
 
-	return RETURN_ERROR;
+        return RETURN_ERROR;
     }
 
     return RETURN_OK;

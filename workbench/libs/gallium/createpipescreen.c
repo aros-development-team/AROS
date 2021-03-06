@@ -22,7 +22,7 @@
 
       AROS_LH1(struct pipe_screen *, CreatePipeScreen,
 
-/*  SYNOPSIS */ 
+/*  SYNOPSIS */
       AROS_LHA(PipeHandle_t, pipe, A0),
 
 /*  LOCATION */

@@ -94,9 +94,9 @@ LONG parsePrefs(char *buffer, LONG size)
         case ITEM_UNQUOTED:
             if (ident[0] == '#')
             {
-            	/* Skip over to the end of line */
+                /* Skip over to the end of line */
                 while ((csrc.CS_CurChr < csrc.CS_Length) && (buffer[csrc.CS_CurChr] != '\n'))
-		    csrc.CS_CurChr++;
+                    csrc.CS_CurChr++;
 
                 goto next_line;
             }
@@ -104,7 +104,7 @@ LONG parsePrefs(char *buffer, LONG size)
         case ITEM_QUOTED:
             p = ident;
             for (i = 0; i < 4; i++)
-            { 
+            {
                 UBYTE c;
 
                 if (!*p)
@@ -158,30 +158,30 @@ LONG parsePrefs(char *buffer, LONG size)
         res = strlen(ident);
         tn = AllocPooled(pool, sizeof(struct HandlerNode) + res);
         if (tn == NULL)
-	    return ERROR_NO_FREE_STORE;
-	
-	tn->id   = id;
-	tn->mask = mask;
+            return ERROR_NO_FREE_STORE;
+        
+        tn->id   = id;
+        tn->mask = mask;
         CopyMem(ident, tn->handler, res + 1);
 
         AddTail((struct List *)&handlerlist, (struct Node *)tn);
 
 next_line:
-	/*
-	 * Intentional ReadItem() bug workaround.
-	 * Ungets '\n' every time, causing an infinite loop without this adjustment.
-	 */
+        /*
+         * Intentional ReadItem() bug workaround.
+         * Ungets '\n' every time, causing an infinite loop without this adjustment.
+         */
         if ((csrc.CS_CurChr < csrc.CS_Length) && (buffer[csrc.CS_CurChr] == '\n'))
         {
             line++;
-	    csrc.CS_CurChr++;
-	}
+            csrc.CS_CurChr++;
+        }
     }
 
     return 0;
 }
 
-static LONG LoadPrefs(STRPTR filename) 
+static LONG LoadPrefs(STRPTR filename)
 {
     struct FileInfoBlock fib;
     char *buffer;
@@ -205,7 +205,7 @@ static LONG LoadPrefs(STRPTR filename)
                     if (size == fib.fib_Size)
                         retval = parsePrefs(buffer, size);
                     else
-                    	retval = IoErr();
+                        retval = IoErr();
 
                     FreeMem(buffer, fib.fib_Size);
                 }
@@ -242,11 +242,11 @@ static BOOL IsMounted(struct DeviceNode *dn)
     
     while ((dl = NextDosEntry(dl, LDF_DEVICES)))
     {
-    	if (dl == (struct DosList *)dn)
-    	{
-    	    ret = TRUE;
-    	    break;
-    	}
+        if (dl == (struct DosList *)dn)
+        {
+            ret = TRUE;
+            break;
+        }
     }
 
     UnLockDosList(LDF_DEVICES|LDF_READ);
@@ -281,7 +281,7 @@ int main(void)
 
             if ((!dn->dn_Task) && (!dn->dn_SegList) && (!dn->dn_Handler) && dn->dn_Startup)
             {
-		struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
+                struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
 
                 D(bug("[Automount] Not mounted\n"));
 
@@ -338,7 +338,7 @@ int main(void)
         }
     }
     else if (res != -1)
-    	PrintFault(res, "Automount");
+        PrintFault(res, "Automount");
 
     DeletePool(pool);
     return RETURN_OK;

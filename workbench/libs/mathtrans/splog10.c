@@ -104,7 +104,7 @@
     
     ld_M = intern_SPLd((fnum1 & FFPMantisse_Mask) | 0x40);
     
-    /*               
+    /*
                       ld M + E
         log(fnum1) =  --------
                         ld 10

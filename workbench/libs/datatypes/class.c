@@ -149,7 +149,7 @@ static IPTR SetAttributes(struct Library *DataTypesBase, Class *CLASS, Object *o
         case DTA_ObjName:
             if(dto->dto_ObjName)
             {
-                FreeVec(dto->dto_ObjName); 
+                FreeVec(dto->dto_ObjName);
                 dto->dto_ObjName = NULL;
             }
 
@@ -342,7 +342,7 @@ static IPTR GetAttribute(struct Library *DataTypesBase, Class *CLASS, Object *ob
 
     case DTA_Name:          *store = (IPTR)dto->dto_Name;     break;
     case DTA_SourceType:    *store = dto->dto_SourceType;      break;
-    case DTA_Handle:	    *store = (IPTR)dto->dto_Handle;   break;
+    case DTA_Handle:        *store = (IPTR)dto->dto_Handle;   break;
     case DTA_DataType:      *store = (IPTR)dto->dto_DataType; break;
     case DTA_Domain:        *store = (IPTR)&dto->dto_Domain;  break;
 
@@ -469,7 +469,7 @@ AROS_UFH3(IPTR, Dispatcher,
                         
                             case DTST_CLIPBOARD:
                                 newdto->dto_Name[0] = '0' + (UBYTE)nametag->ti_Data;
-                                break;				
+                                break;
                         }
                             
                         if(!(newdto->dto_DataType = (struct DataType *)GetTagData(DTA_DataType, (IPTR)NULL, attrs)))
@@ -627,7 +627,7 @@ AROS_UFH3(IPTR, Dispatcher,
                                                 {
                                                     dtsi->si_Flags &= ~DTSIF_HIGHLIGHT;
                                                     
-                                                    DoMethod(object, DTM_CLEARSELECTED, 
+                                                    DoMethod(object, DTM_CLEARSELECTED,
                                                              (IPTR)((struct gpInput *)msg)->gpi_GInfo);
                                                 }
                                             }
@@ -822,7 +822,7 @@ AROS_UFH3(IPTR, Dispatcher,
                     SetAPen(rp, -1);
                     
                     rp->LinePtrn = dto->dto_LinePtrn;
-                    DrawBox((struct Library *)DataTypesBase, rp, 
+                    DrawBox((struct Library *)DataTypesBase, rp,
                             (LONG)dto->dto_StartX, (LONG)dto->dto_StartY,
                             (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
                     
@@ -946,7 +946,7 @@ AROS_UFH3(IPTR, Dispatcher,
                 dto->dto_Handle = NULL;
             }
         }
-        D(bug("[datatypes.library:dtclass] framebox done\n"));	
+        D(bug("[datatypes.library:dtclass] framebox done\n"));
         break;
         
     case DTM_ABORTPRINT:

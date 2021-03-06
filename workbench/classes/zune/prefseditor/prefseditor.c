@@ -34,7 +34,7 @@
 /*** Methods ****************************************************************/
 Object *PrefsEditor__OM_NEW
 (
-    Class *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message
 )
 {
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg)message);
@@ -42,7 +42,7 @@ Object *PrefsEditor__OM_NEW
     if (self != NULL)
     {
         SETUP_INST_DATA;
-	
+        
         /*-- Set defaults --------------------------------------------------*/
         data->ped_CanSave = TRUE;
         data->ped_CanTest = TRUE;
@@ -79,9 +79,9 @@ IPTR PrefsEditor__MUIM_Setup
     }
     
     /*-- Store backup of initial preferences -------------------------------*/
-    data->ped_BackupFH = CreateTemporary(data->ped_BackupPath, BACKUP_PREFIX);    
+    data->ped_BackupFH = CreateTemporary(data->ped_BackupPath, BACKUP_PREFIX);
     if (data->ped_BackupFH != BNULL)
-    {    
+    {
         if
         (
             !DoMethod
@@ -144,7 +144,7 @@ IPTR PrefsEditor__MUIM_Cleanup
 
 IPTR PrefsEditor__OM_DISPOSE
 (
-    Class *CLASS, Object *self, Msg message 
+    Class *CLASS, Object *self, Msg message
 )
 {
     SETUP_INST_DATA;
@@ -165,8 +165,8 @@ IPTR PrefsEditor__OM_SET
     struct TagItem *tag,
                     noforward_attrs[] =
                     {
-	                { MUIA_Group_Forward, FALSE        },
-	                { TAG_MORE,           (IPTR)tstate }
+                        { MUIA_Group_Forward, FALSE        },
+                        { TAG_MORE,           (IPTR)tstate }
                     };
     struct opSet noforward_message = *message;
     noforward_message.ops_AttrList = noforward_attrs;
@@ -281,8 +281,8 @@ IPTR PrefsEditor__MUIM_PrefsEditor_ExportToDirectory
         );
         
         CurrentDir(oldcd);
-	
-	UnLock(lock);
+        
+        UnLock(lock);
     }
     
     return success;
@@ -309,7 +309,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_ImportFromDirectory
         
         CurrentDir(oldcd);
 
-	UnLock(lock);
+        UnLock(lock);
 
     }
     
@@ -339,7 +339,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Export
 )
 {
     BOOL success = FALSE;
-    BPTR fh;     
+    BPTR fh;
     
     fh = Open(message->filename, MODE_NEWFILE);
     
@@ -347,7 +347,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Export
     {
         /* Attempt to create missing directories */
         /* MakeDirs() will modify the string in-place */
-        STRPTR tmp = StrDup(message->filename); 
+        STRPTR tmp = StrDup(message->filename);
         if (tmp != NULL)
         {
             MakeDirs(tmp);
@@ -388,8 +388,8 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Revert
 {
     SETUP_INST_DATA;
     
-    if (Seek(data->ped_BackupFH, 0, OFFSET_BEGINNING) == -1) 
-		 return FALSE;//error
+    if (Seek(data->ped_BackupFH, 0, OFFSET_BEGINNING) == -1)
+                 return FALSE;//error
     
     if
     (
@@ -403,7 +403,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Revert
         return TRUE;
     }
 
-     return FALSE;//error   
+     return FALSE;//error
    
 }
 

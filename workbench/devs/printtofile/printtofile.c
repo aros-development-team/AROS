@@ -17,7 +17,7 @@
 
 #include "printtofile_intern.h"
 
-BOOL pu_OpenFile(struct PrintToFileBase *PrintToFileBase, 
+BOOL pu_OpenFile(struct PrintToFileBase *PrintToFileBase,
                  struct PrintToFileUnit *pu)
 {
     struct FileRequester *fr;
@@ -123,7 +123,7 @@ end:
 }
 
 AROS_LH1(LONG, AbortIO,
- AROS_LHA(struct IORequest *, io, A1), 
+ AROS_LHA(struct IORequest *, io, A1),
           struct PrintToFileBase *, PrintToFileBase, 6, PrintToFile)
 {
     AROS_LIBFUNC_INIT

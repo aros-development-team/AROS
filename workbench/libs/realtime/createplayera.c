@@ -20,11 +20,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct TagItem *, tagList, A0),
+        AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */
 
-	struct Library *, RealTimeBase, 7, RealTime)
+        struct Library *, RealTimeBase, 7, RealTime)
 
 /*  FUNCTION
 
@@ -42,23 +42,23 @@
 
     PLAYER_Hook (struct Hook *)  --  Function to call every time the time
                                      changes; default is none. The hook is
-				     called with
+                                     called with
 
-				     a0 -- address of Hook structure
-				     a1 -- message (see <libraries/realtime.h>)
-				     a2 -- address of Player structure
+                                     a0 -- address of Hook structure
+                                     a1 -- message (see <libraries/realtime.h>)
+                                     a2 -- address of Player structure
 
-				     Be aware of that the function is not
-				     necessarily called TICK_FREQ times per
-				     second: this is the upper limit of times
-				     it may be called.
+                                     Be aware of that the function is not
+                                     necessarily called TICK_FREQ times per
+                                     second: this is the upper limit of times
+                                     it may be called.
 
     PLAYER_Priority (BYTE)       --  The priority of the player; default is 0.
 
     PLAYER_Conductor (STRPTR)    --  The name of the conductor to link the
                                      player to. If the conductor doesn't exist,
-				     it's created automatically. Passing ~0
-				     creates a private conductor.
+                                     it's created automatically. Passing ~0
+                                     creates a private conductor.
 
     PLAYER_Ready (BOOL)          --  Set / clear the ready flag; default is
                                      TRUE.
@@ -71,18 +71,18 @@
 
     PLAYER_AlarmSigTask (struct Task *)
                                  --  The task to signal when the alarm goes
-				     off; default is no task. If no task is
-				     specified PLAYERF_ALARMSET is turned
-				     off.
+                                     off; default is no task. If no task is
+                                     specified PLAYERF_ALARMSET is turned
+                                     off.
 
     PLAYER_AlarmSigBit (BYTE)    --  Signal bit to use for the alarm or -1
                                      to disable signalling; default is -1.
 
     PLAYER_Quiet (BOOL)          --  Specify whether this player should be
                                      ignored or not; default is FALSE.
-				     Generally only used by external sync
-				     applications.
-				     
+                                     Generally only used by external sync
+                                     applications.
+                                     
     PLAYER_UserData (VOID *)     --  Set pointer to user specific data;
                                      default is NULL.
 
@@ -96,10 +96,10 @@
 
     PLAYER_ErrorCode (LONG *)    --  Optional pointer to a LONG that will
                                      contain an error code if the function
-				     fails. Possible error values are:
+                                     fails. Possible error values are:
 
-				     RTE_NOMEMORY  --  memory allocation failed
-				     RTE_NOTIMER   --  timer allocation failed
+                                     RTE_NOMEMORY  --  memory allocation failed
+                                     RTE_NOTIMER   --  timer allocation failed
 
     RESULT
 
@@ -124,8 +124,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Player  *player = AllocMem(sizeof(struct Player), 
-				      MEMF_PUBLIC | MEMF_CLEAR);
+    struct Player  *player = AllocMem(sizeof(struct Player),
+                                      MEMF_PUBLIC | MEMF_CLEAR);
     LONG           *error;
 
     D(bug("Entering CreatePlayerA()\n"));
@@ -134,27 +134,27 @@
 
     if (player == NULL)
     {
-	if (error != NULL)
-	{
-	    *error = RTE_NOMEMORY;
-	}
+        if (error != NULL)
+        {
+            *error = RTE_NOMEMORY;
+        }
 
-	return NULL;
+        return NULL;
     }
 
     /* Set default values */
-    player->pl_Reserved0 = -1;	          /* AlarmSigBit */
+    player->pl_Reserved0 = -1;            /* AlarmSigBit */
     player->pl_Flags |= PLAYERF_READY;
 
     D(bug("Calling SetPlayerAttrsA()\n"));
 
     if (SetPlayerAttrsA(player, tagList))
     {
-	return player;
+        return player;
     }
     else
     {
-	return NULL;
+        return NULL;
     }
 
     AROS_LIBFUNC_EXIT

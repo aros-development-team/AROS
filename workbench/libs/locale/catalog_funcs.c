@@ -6,7 +6,7 @@
 #include "locale_intern.h"
 
 /*
-** Dispose the catalog's strings but not the Catalog structure 
+** Dispose the catalog's strings but not the Catalog structure
 ** itself.
 */
 void dispose_catalog(struct IntCatalog * cat,

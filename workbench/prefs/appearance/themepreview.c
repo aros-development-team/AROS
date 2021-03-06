@@ -142,7 +142,7 @@ IPTR ThemePreview__MUIM_AskMinMax(struct IClass *CLASS, Object *self, struct MUI
 }
 
 IPTR ThemePreview__MUIM_Draw(struct IClass *CLASS, Object *self, struct MUIP_Draw *message)
-{   
+{
     SETUP_INST_DATA;
 
     APTR        clip;

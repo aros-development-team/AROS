@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
 

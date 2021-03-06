@@ -36,7 +36,7 @@ BOOL GUI_Open()
         );
         
         window = OpenWindowTags
-        ( 
+        (
             NULL,
             WA_Title,         (IPTR) "Unpacking...",
             WA_InnerWidth,           width,
@@ -48,7 +48,7 @@ BOOL GUI_Open()
             WA_DragBar,              TRUE,
             WA_CustomScreen,  (IPTR) screen,
             TAG_DONE
-        );        
+        );
         
         if( background != NULL && window != NULL )
         {

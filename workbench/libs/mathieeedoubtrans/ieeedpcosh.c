@@ -45,7 +45,7 @@
     /* y &= ( IEEEDPMantisse_Mask + IEEEDPExponent_Mask ); */
     AND64QC
     (
-        y, 
+        y,
         (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
         (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo)
     );
@@ -77,7 +77,7 @@
     
     if
     (
-           is_eqC(Res, 0x0, 0x0) 
+           is_eqC(Res, 0x0, 0x0)
         || is_lessSC(Res, 0x0, 0x0)
     )
     {

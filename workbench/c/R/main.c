@@ -189,7 +189,7 @@ static BOOL get_template(struct Req *req)
     for (i = 0; i < 20 && output_fh == BNULL; i++)
     {
         sprintf(out_file_name, "t:%08u.request.outfile", (unsigned int)i);
-        output_fh = Open(out_file_name, MODE_NEWFILE); 
+        output_fh = Open(out_file_name, MODE_NEWFILE);
     }
     if (output_fh == BNULL)
     {
@@ -199,7 +199,7 @@ static BOOL get_template(struct Req *req)
     for (i = 0; i < 20 && input_fh == BNULL; i++)
     {
         sprintf(in_file_name, "t:%08u.request.infile", (unsigned int)i);
-        input_fh = Open(in_file_name, MODE_NEWFILE); 
+        input_fh = Open(in_file_name, MODE_NEWFILE);
     }
     if (input_fh == BNULL)
     {
@@ -438,7 +438,7 @@ static void execute_command(struct Req *req)
                 if (!req->cargs[i].m_flag && strchr(str, ' ') && str[0] != '\"')
                 {
                     quote = TRUE;
-                }                    
+                }
                 strcat(cmd, " ");
                 strcat(cmd, req->cargs[i].argname);
                 strcat(cmd, " ");

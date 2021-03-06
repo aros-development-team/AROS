@@ -129,7 +129,7 @@ static LONG identify(CONST_STRPTR filename, BOOL verbose)
                 Printf("%s:\t%s/%s\n", filename, gid_str, dth->dth_Name);
             }
             else
-            {   
+            {
                 ULONG gid = AROS_LONG2BE(dth->dth_GroupID),
                       id  = AROS_LONG2BE(dth->dth_ID);
                 

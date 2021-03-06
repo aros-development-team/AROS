@@ -23,7 +23,7 @@
         
     INPUTS
 
-        PATH    -- path  
+        PATH    -- path
         ADD     -- adds path
         SHOW    -- shows path
         RESET   -- removes existing path and replaces it by new path
@@ -202,13 +202,13 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
             PathEntryPtr
         cur = NULL;
 
-    	for (cur = PE(cli->cli_CommandDir); cur; cur = PE(cur->next))
-    	{
+        for (cur = PE(cli->cli_CommandDir); cur; cur = PE(cur->next))
+        {
             NameFromLock (cur->lock, Buffer, sizeof (Buffer));
             
             PutStr(Buffer);
             PutStr("\n");
-    	}
+        }
 
         PutStr("C:\n");
     }
@@ -220,12 +220,12 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
 
 
 /** find the specfied path name in the specified CLI's path list.
- * 
+ *
  * @autodoc:function if the path specified by pathName is in the path list of
  * the specified CLI the corresponding path entry is returned. the path entry's
  * predecessor is stored in the specified location if the storage pointer is
  * not NULL.
- * 
+ *
  */
 static PathEntryPtr
 FindPathEntry(CommandLineInterfacePtr cli, STRPTR pathName,
@@ -273,15 +273,15 @@ FindPathEntry(CommandLineInterfacePtr cli, STRPTR pathName,
             PrintFault(IoErr(), pathName);
     }
     
-    return(entry);        
+    return(entry);
 }
 
 
 /* insert a path entry for the specified path
- * 
+ *
  * create and insert a path entry for the specified path name. the new path
  * entry is inserted after the specified predecessor.
- * 
+ *
  * returns the path entry or NULL for failure.
  */
 static PathEntryPtr

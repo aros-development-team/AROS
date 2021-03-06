@@ -15,20 +15,20 @@
         AROS_LH2(void, GT_RefreshWindow,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window *, win, A0),
-	AROS_LHA(struct Requester *,req,A1),
+        AROS_LHA(struct Window *, win, A0),
+        AROS_LHA(struct Requester *,req,A1),
 
 /*  LOCATION */
-	struct Library *, GadToolsBase, 14, GadTools)
+        struct Library *, GadToolsBase, 14, GadTools)
 
 /*  FUNCTION
-	You have to call this function as soon as a window containing
-	gadtools gadgets was opened or after you have performed a
-	RefreshGList().
+        You have to call this function as soon as a window containing
+        gadtools gadgets was opened or after you have performed a
+        RefreshGList().
 
     INPUTS
         win - Window to refresh.
-	req - Not used. Provide NULL for now.
+        req - Not used. Provide NULL for now.
 
     RESULT
 

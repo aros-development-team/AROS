@@ -47,19 +47,19 @@ static LONG stopchunks[] =
 
 static void SetInputPrefs(struct FileInputPrefs *prefs)
 {
-    struct KeyMapNode	  *kmn;
-    struct Preferences	   p;
-    struct IOStdReq	   ioreq;
+    struct KeyMapNode     *kmn;
+    struct Preferences     p;
+    struct IOStdReq        ioreq;
 
     char *keymap = prefs->ip_KeymapName;
 
     if (!keymap[0])
-	keymap = prefs->ip_Keymap;
+        keymap = prefs->ip_Keymap;
     D(bug("[InputPrefs] Keymap name: %s\n", keymap));
 
     kmn = OpenKeymap(keymap);
     if (kmn)
-	SetKeyMapDefault(&kmn->kn_KeyMap);
+        SetKeyMapDefault(&kmn->kn_KeyMap);
 
     GetPrefs(&p, sizeof(p));
 
@@ -75,12 +75,12 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
     p.KeyRptSpeed.tv_micro = GETLONG(prefs->ip_KeyRptSpeed_micro);
     if (GETWORD(prefs->ip_MouseAccel))
     {
-    	p.EnableCLI |= MOUSE_ACCEL;
+        p.EnableCLI |= MOUSE_ACCEL;
     }
     else
     {
-    	p.EnableCLI &= ~MOUSE_ACCEL;
-    }     
+        p.EnableCLI &= ~MOUSE_ACCEL;
+    }
     
     SetPrefs(&p, sizeof(p), FALSE);
 
@@ -89,19 +89,19 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
 
     if (!OpenDevice("input.device", 0, (struct IORequest *)&ioreq, 0))
     {
-	struct InputDevice *InputBase = (struct InputDevice *)ioreq.io_Device;
+        struct InputDevice *InputBase = (struct InputDevice *)ioreq.io_Device;
 
-	D(bug("[InputPrefs] Opened input.device v%d.%d\n", InputBase->id_Device.dd_Library.lib_Version,
-	      InputBase->id_Device.dd_Library.lib_Revision));
-	/* AROS input.device support this since v41.3 */
-	if ((InputBase->id_Device.dd_Library.lib_Version >= 41) &&
-	    (InputBase->id_Device.dd_Library.lib_Revision >= 3))
-	{
-	    InputBase->id_Flags = prefs->ip_SwitchMouseButtons[3] ? IDF_SWAP_BUTTONS : 0;
-	    D(bug("[InputPrefs] Flags set to 0x%08lX\n", InputBase->id_Flags));
-	}
+        D(bug("[InputPrefs] Opened input.device v%d.%d\n", InputBase->id_Device.dd_Library.lib_Version,
+              InputBase->id_Device.dd_Library.lib_Revision));
+        /* AROS input.device support this since v41.3 */
+        if ((InputBase->id_Device.dd_Library.lib_Version >= 41) &&
+            (InputBase->id_Device.dd_Library.lib_Revision >= 3))
+        {
+            InputBase->id_Flags = prefs->ip_SwitchMouseButtons[3] ? IDF_SWAP_BUTTONS : 0;
+            D(bug("[InputPrefs] Flags set to 0x%08lX\n", InputBase->id_Flags));
+        }
 
-	CloseDevice((struct IORequest *)&ioreq);
+        CloseDevice((struct IORequest *)&ioreq);
     }
 }
 
@@ -115,70 +115,70 @@ void InputPrefs_Handler(STRPTR filename)
     
     if ((iff = CreateIFF(filename, stopchunks, 2)))
     {
-	/*
-	 * Disable keymap switcher.
-	 * It will stay disabled if the file does not contain KMSW chunk.
-	 * This is done for backwards compatibility.
-	 */
-	KMSBase->kms_SwitchQual = KMS_QUAL_DISABLE;
+        /*
+         * Disable keymap switcher.
+         * It will stay disabled if the file does not contain KMSW chunk.
+         * This is done for backwards compatibility.
+         */
+        KMSBase->kms_SwitchQual = KMS_QUAL_DISABLE;
 
-	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
-	{
-	    struct ContextNode *cn;
-	    struct FileInputPrefs *inputprefs;
-    	    struct KMSPrefs *kmsprefs;
+        while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
+        {
+            struct ContextNode *cn;
+            struct FileInputPrefs *inputprefs;
+            struct KMSPrefs *kmsprefs;
 
-	    D(bug("InputPrefs_Handler: ParseIFF okay\n"));
-	    cn = CurrentChunk(iff);
+            D(bug("InputPrefs_Handler: ParseIFF okay\n"));
+            cn = CurrentChunk(iff);
 
-	    switch (cn->cn_ID)
-	    {
-	    case ID_INPT:
-		D(bug("InputPrefs_Handler: INPT chunk\n"));
+            switch (cn->cn_ID)
+            {
+            case ID_INPT:
+                D(bug("InputPrefs_Handler: INPT chunk\n"));
 
-		inputprefs = LoadChunk(iff, sizeof(struct FileInputPrefs), MEMF_ANY);
-		if (inputprefs)
-		{
-		    SetInputPrefs(inputprefs);
-		    FreeVec(inputprefs);
-		}
-		break;
+                inputprefs = LoadChunk(iff, sizeof(struct FileInputPrefs), MEMF_ANY);
+                if (inputprefs)
+                {
+                    SetInputPrefs(inputprefs);
+                    FreeVec(inputprefs);
+                }
+                break;
 
-	    case ID_KMSW:
-		D(bug("InputPrefs_Handler: KMSW chunk\n"));
+            case ID_KMSW:
+                D(bug("InputPrefs_Handler: KMSW chunk\n"));
 
-		kmsprefs = LoadChunk(iff, sizeof(struct KMSPrefs), MEMF_ANY);
-		if (kmsprefs)
-		{
-		    D(bug("KMS Chunk @ 0x%p\n", kmsprefs));
-		    if (kmsprefs->kms_Enabled)
-		    {
-			struct KeyMapNode *alt_km;
+                kmsprefs = LoadChunk(iff, sizeof(struct KMSPrefs), MEMF_ANY);
+                if (kmsprefs)
+                {
+                    D(bug("KMS Chunk @ 0x%p\n", kmsprefs));
+                    if (kmsprefs->kms_Enabled)
+                    {
+                        struct KeyMapNode *alt_km;
 
-			D(bug("KMS Enabled\n"));
+                        D(bug("KMS Enabled\n"));
 
-			D(bug("Attempting to use AltKeymap name @ 0x%p\n", kmsprefs->kms_AltKeymap));
-			D(bug("AltKeymap name '%s'\n", kmsprefs->kms_AltKeymap));
+                        D(bug("Attempting to use AltKeymap name @ 0x%p\n", kmsprefs->kms_AltKeymap));
+                        D(bug("AltKeymap name '%s'\n", kmsprefs->kms_AltKeymap));
 
-			alt_km = OpenKeymap(kmsprefs->kms_AltKeymap);
+                        alt_km = OpenKeymap(kmsprefs->kms_AltKeymap);
 
-			D(bug("Keymap @ 0x%p\n", alt_km));
+                        D(bug("Keymap @ 0x%p\n", alt_km));
 
-			if (alt_km)
-			{
-			    KMSBase->kms_SwitchQual = AROS_BE2WORD(kmsprefs->kms_SwitchQual);
-			    KMSBase->kms_SwitchCode = AROS_BE2WORD(kmsprefs->kms_SwitchCode);
-			    KMSBase->kms_AltKeymap  = &alt_km->kn_KeyMap;
-			}
-		    }
+                        if (alt_km)
+                        {
+                            KMSBase->kms_SwitchQual = AROS_BE2WORD(kmsprefs->kms_SwitchQual);
+                            KMSBase->kms_SwitchCode = AROS_BE2WORD(kmsprefs->kms_SwitchCode);
+                            KMSBase->kms_AltKeymap  = &alt_km->kn_KeyMap;
+                        }
+                    }
 
-		    FreeVec(kmsprefs);
-		}
-		break;
-	    }
-	} /* while(ParseIFF(iff, IFFPARSE_SCAN) == 0) */
+                    FreeVec(kmsprefs);
+                }
+                break;
+            }
+        } /* while(ParseIFF(iff, IFFPARSE_SCAN) == 0) */
 
-   	KillIFF(iff);
+        KillIFF(iff);
 
     } /* if ((iff = CreateIFF(filename))) */
     

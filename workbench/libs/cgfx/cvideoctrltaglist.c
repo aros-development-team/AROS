@@ -20,14 +20,14 @@
 #include <proto/cybergraphics.h>
 
 
-	AROS_LH2(void, CVideoCtrlTagList,
+        AROS_LH2(void, CVideoCtrlTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, vp, A0),
-	AROS_LHA(struct TagItem  *, tags, A1),
+        AROS_LHA(struct ViewPort *, vp, A0),
+        AROS_LHA(struct TagItem  *, tags, A1),
 
 /*  LOCATION */
-	struct Library *, CyberGfxBase, 27, Cybergraphics)
+        struct Library *, CyberGfxBase, 27, Cybergraphics)
 
 /*  FUNCTION
         Controls video output. It currently only allows adjustment of
@@ -65,8 +65,8 @@
     
     struct TagItem htags[] =
     {
-	{ aHidd_Gfx_DPMSLevel,	0UL	},
-	{ TAG_DONE, 0UL }    
+        { aHidd_Gfx_DPMSLevel,  0UL     },
+        { TAG_DONE, 0UL }
     };
     
     BOOL dpms_found = FALSE;
@@ -75,62 +75,62 @@
     
     for (tstate = tags; (tag = NextTagItem(&tstate)); )
     {
-    	switch (tag->ti_Tag)
-	{
-	    case SETVC_DPMSLevel:
-	    	dpmslevel = tag->ti_Data;
-		dpms_found = TRUE;
-	    	break;
-	    
-	    default:
-	    	D(bug("!!! UNKNOWN TAG IN CVideoCtrlTagList(): %x !!!\n"
-			, tag->ti_Tag));
-		break;
-	    
-	} /* switch() */
-	
+        switch (tag->ti_Tag)
+        {
+            case SETVC_DPMSLevel:
+                dpmslevel = tag->ti_Data;
+                dpms_found = TRUE;
+                break;
+            
+            default:
+                D(bug("!!! UNKNOWN TAG IN CVideoCtrlTagList(): %x !!!\n"
+                        , tag->ti_Tag));
+                break;
+            
+        } /* switch() */
+        
     } /* for (each tagitem) */
     
    
     if (dpms_found)
-    {  
+    {
     
-	/* Convert to hidd dpms level */
-	switch (dpmslevel)
-	{
-	    case DPMS_ON:
-	    	hdpms = vHidd_Gfx_DPMSLevel_On;
-	    	break;
+        /* Convert to hidd dpms level */
+        switch (dpmslevel)
+        {
+            case DPMS_ON:
+                hdpms = vHidd_Gfx_DPMSLevel_On;
+                break;
 
-	    case DPMS_STANDBY:
-	    	hdpms = vHidd_Gfx_DPMSLevel_Standby;
-	    	break;
+            case DPMS_STANDBY:
+                hdpms = vHidd_Gfx_DPMSLevel_Standby;
+                break;
 
-	    case DPMS_SUSPEND:
-	    	hdpms = vHidd_Gfx_DPMSLevel_Suspend;
-	    	break;
+            case DPMS_SUSPEND:
+                hdpms = vHidd_Gfx_DPMSLevel_Suspend;
+                break;
 
-	    case DPMS_OFF:
-	    	hdpms = vHidd_Gfx_DPMSLevel_Off;
-	    	break;
-	
-	    default:
-	    	D(bug("!!! UNKNOWN DPMS LEVEL IN CVideoCtrlTagList(): %x !!!\n"
-	    	    , dpmslevel));
-		    
-		dpms_found = FALSE;
-		break;
-	
-	}
+            case DPMS_OFF:
+                hdpms = vHidd_Gfx_DPMSLevel_Off;
+                break;
+        
+            default:
+                D(bug("!!! UNKNOWN DPMS LEVEL IN CVideoCtrlTagList(): %x !!!\n"
+                    , dpmslevel));
+                    
+                dpms_found = FALSE;
+                break;
+        
+        }
     }
     
     if (dpms_found)
     {
-	htags[0].ti_Data = hdpms;
+        htags[0].ti_Data = hdpms;
     }
     else
     {
-    	htags[0].ti_Tag = TAG_IGNORE;
+        htags[0].ti_Tag = TAG_IGNORE;
     }
     
     OOP_GetAttr(HIDD_BM_OBJ(vp->RasInfo->BitMap), aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);

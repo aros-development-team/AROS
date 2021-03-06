@@ -27,17 +27,17 @@ LONG rxsupp_delay(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **
     len = strlen(arg);
     if (len == 0)
     {
-	*argstring = NULL;
-	return ERR10_018;
+        *argstring = NULL;
+        return ERR10_018;
     }
 
     for (pos = 0; pos < len; pos++)
     {
-	if (!isdigit(arg[pos]))
-	{
-	    *argstring = NULL;
-	    return ERR10_018;
-	}
+        if (!isdigit(arg[pos]))
+        {
+            *argstring = NULL;
+            return ERR10_018;
+        }
     }
     
     Delay(atoi(arg));

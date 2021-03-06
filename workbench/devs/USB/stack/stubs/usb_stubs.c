@@ -444,7 +444,7 @@ OOP_Object *HIDD_USBHub_GetChild(OOP_Object *obj, uint8_t port)
 
 }
 
-APTR HIDD_USBDrv_CreatePipe(OOP_Object *obj, enum USB_PipeType	type,
+APTR HIDD_USBDrv_CreatePipe(OOP_Object *obj, enum USB_PipeType  type,
         BOOL fullspeed, uint8_t address, uint8_t endpoint, uint8_t period, uint32_t maxpacket, uint32_t timeout)
 {
     STATIC_MID;
