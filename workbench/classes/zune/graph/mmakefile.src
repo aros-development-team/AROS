@@ -1,4 +1,3 @@
-# $Id$
 include $(SRCDIR)/config/aros.cfg
 
 USER_CFLAGS := $(PARANOIA_CFLAGS)

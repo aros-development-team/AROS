@@ -1,5 +1,4 @@
-# Copyright © 2016, The AROS Development Team. All rights reserved.
-# $Id$
+# Copyright (C) 2016, The AROS Development Team. All rights reserved.
 # Makefile to make WiMP tool.
 
 include $(SRCDIR)/config/aros.cfg

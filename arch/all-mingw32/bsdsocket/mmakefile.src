@@ -1,4 +1,3 @@
-#   $Id$
 include $(SRCDIR)/config/aros.cfg
 
 #MM workbench-libs-bsdsocket-mingw32: bsdsocket-mingw32-native

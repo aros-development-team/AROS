@@ -1,5 +1,4 @@
 # Makefile to build the Atheros HAL.
-# $Id$
 
 include $(SRCDIR)/config/aros.cfg
 

@@ -1,4 +1,3 @@
-# $Id$
 
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.

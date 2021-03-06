@@ -1,4 +1,3 @@
-# $Id$
 # Makefile to make Find tool.
 
 include $(SRCDIR)/config/aros.cfg

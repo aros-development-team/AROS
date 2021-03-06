@@ -1,6 +1,5 @@
 # parthenogenesis: Tool to make a bootable USB device for Sam4xx machines
 # 
-# $Id$
 
 include $(SRCDIR)/config/aros.cfg
 

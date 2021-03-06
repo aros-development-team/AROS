@@ -1,5 +1,4 @@
 # Makefile to copy amiga-m68k drivers for AHI.
-# $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
