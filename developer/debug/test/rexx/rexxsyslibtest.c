@@ -41,4 +41,4 @@ int main(void)
   CloseLibrary((struct Library *)RexxSysBase);
   exit(0);
 }
-	 
+         

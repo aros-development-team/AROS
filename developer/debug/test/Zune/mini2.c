@@ -34,50 +34,50 @@ int main(void)
     static char *radio_entries2[] = {"Paris","London",NULL};
 
     app = ApplicationObject,
-   	SubWindow, wnd = WindowObject,
-    	    WindowContents, VGroup,
-	Child, HGroup,
-	    MUIA_InputMode, MUIV_InputMode_Immediate,
+        SubWindow, wnd = WindowObject,
+            WindowContents, VGroup,
+        Child, HGroup,
+            MUIA_InputMode, MUIV_InputMode_Immediate,
 /*              MUIA_ShowSelState, FALSE, */
-	    Child, ImageObject,
+            Child, ImageObject,
                 MUIA_ShowSelState, FALSE,
-	        MUIA_Image_FontMatch, TRUE,
-	        MUIA_Image_Spec, MUII_RadioButton,
-	        MUIA_Frame, MUIV_Frame_None,
-   	        End,
-	    Child, TextObject,
+                MUIA_Image_FontMatch, TRUE,
+                MUIA_Image_Spec, MUII_RadioButton,
+                MUIA_Frame, MUIV_Frame_None,
+                End,
+            Child, TextObject,
                 MUIA_ShowSelState, FALSE,
-	        MUIA_Text_Contents, "London",
-	        MUIA_Frame, MUIV_Frame_None,
-	        MUIA_Text_PreParse, "\33l",
-	        End,
-	End,
-		End,
-	    End,
-	End;
+                MUIA_Text_Contents, "London",
+                MUIA_Frame, MUIV_Frame_None,
+                MUIA_Text_PreParse, "\33l",
+                End,
+        End,
+                End,
+            End,
+        End;
 
     if (app)
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 /*  #if 0 */
-	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
 /*  #endif */
-	set(wnd, MUIA_Window_Open, TRUE);
+        set(wnd, MUIA_Window_Open, TRUE);
 
 /*  #if 0 */
-	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-		if (sigs & SIGBREAKF_CTRL_C) break;
-		if (sigs & SIGBREAKF_CTRL_D) break;
-	    }
-	}
+        while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+                if (sigs & SIGBREAKF_CTRL_D) break;
+            }
+        }
 /*  #endif */
-	set(wnd, MUIA_Window_Open, FALSE);
-	MUI_DisposeObject(app);
+        set(wnd, MUIA_Window_Open, FALSE);
+        MUI_DisposeObject(app);
     }
     
     return 0;

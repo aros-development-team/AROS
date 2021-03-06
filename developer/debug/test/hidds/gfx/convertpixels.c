@@ -37,8 +37,8 @@ static UWORD rgb15[8];
 static ULONG argb_inv[8];
 
 static void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt,
-		   APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt,
-		   ULONG width, ULONG height, OOP_Object *bm)
+                   APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt,
+                   ULONG width, ULONG height, OOP_Object *bm)
 {
     OOP_Object *gfxhidd = NULL;
     OOP_Object *srcpf, *dstpf;
@@ -49,7 +49,7 @@ static void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFm
 
     if (!gfxhidd) {
         printf("ConvertPixels(): Failed to obtain graphics driver\n");
-	return;
+        return;
     }
 
     srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, srcPixFmt);
@@ -57,13 +57,13 @@ static void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFm
 
     if (!srcpf || !dstpf)
     {
-    	printf("ConvertPixels(): Bad source (%ld) or dest (%ld) pixfmt!\n", srcPixFmt, dstPixFmt);
-	return;
+        printf("ConvertPixels(): Bad source (%ld) or dest (%ld) pixfmt!\n", srcPixFmt, dstPixFmt);
+        return;
     }
 
-    HIDD_BM_ConvertPixels(bm, &src, (HIDDT_PixelFormat *)srcpf, srcMod, 
-    	    	    	  &dst, (HIDDT_PixelFormat *)dstpf, dstMod,
-			  width, height, NULL);
+    HIDD_BM_ConvertPixels(bm, &src, (HIDDT_PixelFormat *)srcpf, srcMod,
+                          &dst, (HIDDT_PixelFormat *)dstpf, dstMod,
+                          width, height, NULL);
 }
 
 int main(void)
@@ -73,35 +73,35 @@ int main(void)
     HiddBitMapAttrBase = OOP_ObtainAttrBase(IID_Hidd_BitMap);
     if (!HiddBitMapAttrBase) {
         printf("Failed to obtain IID_Hidd_BitMap\n");
-	return RETURN_FAIL;
+        return RETURN_FAIL;
     }
     
     bitmap = AllocBitMap(1, 1, 16, 0, NULL);
     if (!bitmap) {
         printf("Failed to allocate a placeholder bitmap!\n");
-	OOP_ReleaseAttrBase(IID_Hidd_BitMap);
-	return RETURN_FAIL;
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+        return RETURN_FAIL;
     }
 
     ConvertPixels(argb, 0, SRC_PIXFMT, rgb15, 0, DST_PIXFMT, 8, 1, HIDD_BM_OBJ(bitmap));
     ConvertPixels(rgb15, 0, DST_PIXFMT, argb_inv, 0, SRC_PIXFMT, 8, 1, HIDD_BM_OBJ(bitmap));
     
     {
-    	int i;
-	
-	for(i = 0; i < 8; i++)
-	{
-	    printf("ARGB32 %08x = RGB15 %04x (%02x %02x %02x) (%3d%% %3d%% %3d%%) [%08x]\n",
-	    	    (unsigned int)argb[i], rgb15[i],
-		    (rgb15[i] & 0x7C00) >> 10,
-		    (rgb15[i] & 0x03E0) >> 5,
-		    (rgb15[i] & 0x001F),
-		    ((rgb15[i] & 0x7C00) >> 10) * 100 / 31,
-		    ((rgb15[i] & 0x03E0) >> 5) * 100 / 31,
-		    (rgb15[i] & 0x001F) * 100 / 31,
-		    (unsigned int)argb_inv[i]
-		    );
-	}
+        int i;
+        
+        for(i = 0; i < 8; i++)
+        {
+            printf("ARGB32 %08x = RGB15 %04x (%02x %02x %02x) (%3d%% %3d%% %3d%%) [%08x]\n",
+                    (unsigned int)argb[i], rgb15[i],
+                    (rgb15[i] & 0x7C00) >> 10,
+                    (rgb15[i] & 0x03E0) >> 5,
+                    (rgb15[i] & 0x001F),
+                    ((rgb15[i] & 0x7C00) >> 10) * 100 / 31,
+                    ((rgb15[i] & 0x03E0) >> 5) * 100 / 31,
+                    (rgb15[i] & 0x001F) * 100 / 31,
+                    (unsigned int)argb_inv[i]
+                    );
+        }
     }
     
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);

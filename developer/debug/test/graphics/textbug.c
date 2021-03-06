@@ -18,18 +18,18 @@ static void dotest(void)
     BOOL quitme = FALSE;
     
     win = OpenWindowTags(NULL, WA_Left, 20,
-    	    	    	       WA_Top, 20,
-			       WA_Width, 300,
-			       WA_Height, 100,
-			       WA_Activate, TRUE,
-			       WA_CloseGadget, TRUE,
-			       WA_DepthGadget, TRUE,
-			       WA_Title, (IPTR)"TextBug",
-			       WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_RAWKEY,
-			       TAG_DONE);
+                               WA_Top, 20,
+                               WA_Width, 300,
+                               WA_Height, 100,
+                               WA_Activate, TRUE,
+                               WA_CloseGadget, TRUE,
+                               WA_DepthGadget, TRUE,
+                               WA_Title, (IPTR)"TextBug",
+                               WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_RAWKEY,
+                               TAG_DONE);
     if (!win)
     {
-    	return;
+        return;
     }
     
     SetSoftStyle(win->RPort, FSF_BOLD, AskSoftStyle(win->RPort));
@@ -53,18 +53,18 @@ static void dotest(void)
     
     while(!quitme)
     {
-    	WaitPort(win->UserPort);
-	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-	{
-	    switch(msg->Class)
-	    {
-	    	case IDCMP_CLOSEWINDOW:
-		    quitme = TRUE;
-		    break;
-		    
-	    }
-	    ReplyMsg((struct Message *)msg);
-	}
+        WaitPort(win->UserPort);
+        while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+        {
+            switch(msg->Class)
+            {
+                case IDCMP_CLOSEWINDOW:
+                    quitme = TRUE;
+                    break;
+                    
+            }
+            ReplyMsg((struct Message *)msg);
+        }
     }
     
     CloseWindow(win);

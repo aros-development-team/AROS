@@ -47,10 +47,10 @@ static void Cleanup(char *msg)
 
     if (msg)
     {
-	printf("taskswitchbench: %s\n",msg);
-	rc = RETURN_WARN;
+        printf("taskswitchbench: %s\n",msg);
+        rc = RETURN_WARN;
     } else {
-	rc = RETURN_OK;
+        rc = RETURN_OK;
     }
 
     Forbid();
@@ -73,12 +73,12 @@ static void OpenLibs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
     {
-	Cleanup("Can't open intuition.library V39!");
+        Cleanup("Can't open intuition.library V39!");
     }
 
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
     {
-	Cleanup("Can't open graphics.library V39!");
+        Cleanup("Can't open graphics.library V39!");
     }
 
 }
@@ -89,33 +89,33 @@ static void GetVisual(void)
 {
     if (!(scr = LockPubScreen(0)))
     {
-	Cleanup("Can't lock pub screen!");
+        Cleanup("Can't lock pub screen!");
     }
 }
 
 /****************************************************************************************/
 
 static void MakeWin(void)
-{	
+{
     if (!(win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
-				 WA_Left,10,
-				 WA_Top,10,
-				 WA_Width,600,
-				 WA_Height,scr->WBorTop + scr->Font->ta_YSize + 1 +
-				 	   scr->WBorBottom +
-					   scr->Font->ta_YSize * 2,
-				 WA_Title,(IPTR)"Press RETURN key to start and any key to stop!",
-				 WA_SimpleRefresh,TRUE,
-				 WA_CloseGadget,TRUE,
-				 WA_DepthGadget,TRUE,
-				 WA_DragBar,TRUE,
-				 WA_Activate,TRUE,
-				 WA_IDCMP,IDCMP_CLOSEWINDOW |
-				 	  IDCMP_VANILLAKEY |
-					  IDCMP_REFRESHWINDOW,
-				 TAG_DONE)))
+                                 WA_Left,10,
+                                 WA_Top,10,
+                                 WA_Width,600,
+                                 WA_Height,scr->WBorTop + scr->Font->ta_YSize + 1 +
+                                           scr->WBorBottom +
+                                           scr->Font->ta_YSize * 2,
+                                 WA_Title,(IPTR)"Press RETURN key to start and any key to stop!",
+                                 WA_SimpleRefresh,TRUE,
+                                 WA_CloseGadget,TRUE,
+                                 WA_DepthGadget,TRUE,
+                                 WA_DragBar,TRUE,
+                                 WA_Activate,TRUE,
+                                 WA_IDCMP,IDCMP_CLOSEWINDOW |
+                                          IDCMP_VANILLAKEY |
+                                          IDCMP_REFRESHWINDOW,
+                                 TAG_DONE)))
     {
-	Cleanup("Can't open window!");
+        Cleanup("Can't open window!");
     }
 
     ScreenToFront(win->WScreen);
@@ -131,18 +131,18 @@ static void Task1(void)
     for(;;)
     {
         ULONG sigs;
-	BOOL stop = FALSE;
-	
-	SetSignal(0, SIGF_HELLO);
+        BOOL stop = FALSE;
+        
+        SetSignal(0, SIGF_HELLO);
         Wait(SIGF_INIT);
-	Signal(maintask, SIGF_READY);
-	
-	while(!stop)
-	{
-	    sigs = Wait(SIGF_STOP | SIGF_HELLO);
-	    if (sigs & SIGF_STOP) stop = TRUE;
-	    if (sigs & SIGF_HELLO) Signal(OTHERTASK, SIGF_HELLO);
-	}
+        Signal(maintask, SIGF_READY);
+        
+        while(!stop)
+        {
+            sigs = Wait(SIGF_STOP | SIGF_HELLO);
+            if (sigs & SIGF_STOP) stop = TRUE;
+            if (sigs & SIGF_HELLO) Signal(OTHERTASK, SIGF_HELLO);
+        }
     }
 }
 
@@ -156,22 +156,22 @@ static void Task2(void)
     for(;;)
     {
         ULONG sigs;
-	BOOL stop = FALSE;
+        BOOL stop = FALSE;
 
-	SetSignal(0, SIGF_HELLO);	
+        SetSignal(0, SIGF_HELLO);
         Wait(SIGF_INIT);
-	Signal(maintask, SIGF_READY);
-	
-	while(!stop)
-	{
-	    sigs = Wait(SIGF_STOP | SIGF_HELLO);
-	    if (sigs & SIGF_STOP) stop = TRUE;
-	    if (sigs & SIGF_HELLO)
-	    {
-	        Signal(OTHERTASK, SIGF_HELLO);
-		counter++;
-	    }
-	}
+        Signal(maintask, SIGF_READY);
+        
+        while(!stop)
+        {
+            sigs = Wait(SIGF_STOP | SIGF_HELLO);
+            if (sigs & SIGF_STOP) stop = TRUE;
+            if (sigs & SIGF_HELLO)
+            {
+                Signal(OTHERTASK, SIGF_HELLO);
+                counter++;
+            }
+        }
     }
 }
 
@@ -223,9 +223,9 @@ static void Action(void)
         char c = '0' + i;
  
         Delay(25); /* should be 50 (1 sec), but AROS clock is somewhat slow */
-	
-	Move(rp, x, y + rp->TxBaseline);
-	Text(rp, &c, 1);
+        
+        Move(rp, x, y + rp->TxBaseline);
+        Text(rp, &c, 1);
     }
     
     /* start everything by sending hello to first task */
@@ -266,27 +266,27 @@ static void HandleAll(void)
 
     while(!quitme)
     {
-	WaitPort(win->UserPort);
-	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-	{
-	    switch(msg->Class)
-	    {
-		case IDCMP_CLOSEWINDOW:
-		    quitme = TRUE;
-		    break;
+        WaitPort(win->UserPort);
+        while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+        {
+            switch(msg->Class)
+            {
+                case IDCMP_CLOSEWINDOW:
+                    quitme = TRUE;
+                    break;
 
-		case IDCMP_REFRESHWINDOW:
-		    BeginRefresh(win);
-		    EndRefresh(win,TRUE);
-		    break;
-			
-		case IDCMP_VANILLAKEY:
-		    if (msg->Code == 13) Action();
-		    break;
-		
-	    }
-	    ReplyMsg((struct Message *)msg);
-	}
+                case IDCMP_REFRESHWINDOW:
+                    BeginRefresh(win);
+                    EndRefresh(win,TRUE);
+                    break;
+                        
+                case IDCMP_VANILLAKEY:
+                    if (msg->Code == 13) Action();
+                    break;
+                
+            }
+            ReplyMsg((struct Message *)msg);
+        }
     }
 }
 

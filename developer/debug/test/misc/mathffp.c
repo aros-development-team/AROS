@@ -56,9 +56,9 @@ void domul(realfloat a, realfloat b)
     
     puts("");
     printf("mathffp  : %f x %f = %f (hex %x)\n",
-	   converttofloat(x.i), converttofloat(y.i), converttofloat(res.i), res.i);
-    printf("realfloat: %f x %f = %f\n",   
-	   a, b, a * b);
+           converttofloat(x.i), converttofloat(y.i), converttofloat(res.i), res.i);
+    printf("realfloat: %f x %f = %f\n",
+           a, b, a * b);
     
 }
 

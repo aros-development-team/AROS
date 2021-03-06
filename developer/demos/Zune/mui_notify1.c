@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 1999, David Le Corfec.
     Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
@@ -82,7 +82,7 @@ int main (void)
 
         DoMethod(obj, MUIM_Notify, MUIA_UserData, MUIV_EveryTime, MUIV_Notify_Self,
                  3, MUIM_Set, MUIA_ObjectID, 19);
-	printf("MUIM_Notify OK\n");
+        printf("MUIM_Notify OK\n");
 
         set(obj, MUIA_ObjectID, 12);
         get(obj, MUIA_ObjectID, &val);
@@ -92,9 +92,9 @@ int main (void)
         get(obj, MUIA_ObjectID, &val);
         printf("id = %ld (should be 19) after notification\n", (long)val);
 
-	set(obj, MUIA_ObjectID, 14);
-	set(obj, MUIA_UserData, 22);
-	get(obj, MUIA_ObjectID, &val);
+        set(obj, MUIA_ObjectID, 14);
+        set(obj, MUIA_UserData, 22);
+        get(obj, MUIA_ObjectID, &val);
         printf("id = %ld (should be 14) after notification\n", (long)val);
 
         MUI_DisposeObject(obj);

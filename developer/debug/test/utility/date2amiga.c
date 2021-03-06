@@ -26,48 +26,48 @@ int main(void)
 {
     if (!(UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 36)))
     {
-    	printf("Can't open utility.library!\n");
+        printf("Can't open utility.library!\n");
     }
     else
     {
-	do
-	{
-    	    dt.dat_Stamp.ds_Days = days;
-	    dt.dat_Format = FORMAT_DOS;
-	    dt.dat_StrDate = s;
+        do
+        {
+            dt.dat_Stamp.ds_Days = days;
+            dt.dat_Format = FORMAT_DOS;
+            dt.dat_StrDate = s;
 
-	    DateToStr(&dt);
+            DateToStr(&dt);
 
-	    dt.dat_Stamp.ds_Days = -1;
-	    StrToDate(&dt);
+            dt.dat_Stamp.ds_Days = -1;
+            StrToDate(&dt);
 
-	    //printf("date \"%s\" day = %ld\n", s, days);
+            //printf("date \"%s\" day = %ld\n", s, days);
 
-	    if (dt.dat_Stamp.ds_Days != days)
-	    {
-		printf("StrToDate showed bad results for date \"%s\" (day #%ld). "
-	    	       "StrToDate thought it was day #%ld\n", s, (long)days, (long)dt.dat_Stamp.ds_Days);
-	    }
-	    else
-	    {
-	    	Amiga2Date(seconds, &cd);
-		if ((secresult = Date2Amiga(&cd)) != seconds)
-		{
-		    printf("Date2Amiga gave wrong values for date \"%s\" (day #%ld)"
-		           " (secs %ld) -> wrong secs is %ld"
-			   " --> clockdate: year = %d month = %d day = %d\n"
-			   , s, (long)days, (long)seconds, (long)secresult, (int)cd.year, (int)cd.month, (int)cd.mday);
-		}
-		
-	    }
+            if (dt.dat_Stamp.ds_Days != days)
+            {
+                printf("StrToDate showed bad results for date \"%s\" (day #%ld). "
+                       "StrToDate thought it was day #%ld\n", s, (long)days, (long)dt.dat_Stamp.ds_Days);
+            }
+            else
+            {
+                Amiga2Date(seconds, &cd);
+                if ((secresult = Date2Amiga(&cd)) != seconds)
+                {
+                    printf("Date2Amiga gave wrong values for date \"%s\" (day #%ld)"
+                           " (secs %ld) -> wrong secs is %ld"
+                           " --> clockdate: year = %d month = %d day = %d\n"
+                           , s, (long)days, (long)seconds, (long)secresult, (int)cd.year, (int)cd.month, (int)cd.mday);
+                }
+                
+            }
 
-	    days++;
-    	    seconds += 86400;
-	    
-	} while (days < 36525 /* 2078-01-01: same as 1978 in FORMAT_DOS */
-	    && (SetSignal(0, 0) & SIGBREAKF_CTRL_C) == 0);
+            days++;
+            seconds += 86400;
+            
+        } while (days < 36525 /* 2078-01-01: same as 1978 in FORMAT_DOS */
+            && (SetSignal(0, 0) & SIGBREAKF_CTRL_C) == 0);
 
-	CloseLibrary((struct Library *)UtilityBase);
+        CloseLibrary((struct Library *)UtilityBase);
     }
 
     return 0;

@@ -11,7 +11,7 @@
 #define BLOCK_MASK ~(BLOCK_SIZE - 1)
 #define BLOCK_COUNT 16
 
-int main() 
+int main()
 {
     void *blocks[BLOCK_COUNT];
     int i;

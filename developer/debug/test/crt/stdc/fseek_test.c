@@ -124,7 +124,7 @@ int test_fseek_ftell_preparation(const char * fopenflags)
     {
         report_failure("Pointer for test file not closed.");
         return -1;
-    }   
+    }
 
     // zero buffer
     erase_buffer(writedata, buffersize);
@@ -149,7 +149,7 @@ int test_fseek_ftell_preparation(const char * fopenflags)
     if (fseek(testfilepointer, 0, SEEK_SET) != 0)
     {
         report_failure_strerror();
-        report_failure("Failed to seek to file beginning.");           
+        report_failure("Failed to seek to file beginning.");
         return -1;
     }
 
@@ -162,11 +162,11 @@ int test_fseek_ftell()
 
     /* Expects that testfilepointer is opened in correct mode */
     int ftellposition = 0;
-    char conv[16] = {0};    
+    char conv[16] = {0};
 
     report_progress("Start test_fseek_ftell");
 
-    /* 
+    /*
      * TEST
      */
 
@@ -200,11 +200,11 @@ int test_fseek_ftell()
     test_report_success("Correct position in stream reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */ 
+     */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -238,11 +238,11 @@ int test_fseek_ftell()
     test_report_success("Correct position in stream reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */ 
+     */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -276,11 +276,11 @@ int test_fseek_ftell()
     test_report_success("Correct position in stream reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -314,11 +314,11 @@ int test_fseek_ftell()
     test_report_success("Correct position in stream reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -352,11 +352,11 @@ int test_fseek_ftell()
     test_report_success("Correct position in stream reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -390,11 +390,11 @@ int test_fseek_ftell()
     test_report_success("Correct position in stream reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -428,7 +428,7 @@ int test_fseek_ftell()
     test_report_success("Correct position in stream reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
@@ -441,7 +441,7 @@ int test_fseek_ftell_wrapper(const char * fopenflags)
 
     int result = test_fseek_ftell_preparation(fopenflags);
     if (result != 0)
-    {   
+    {
         report_failure("Preparation failed");
     }
     else
@@ -483,7 +483,7 @@ int test_fseek_and_fread_preparation(const char * fopenflags)
     {
         report_failure("Pointer for test file not closed.");
         return -1;
-    }   
+    }
 
     // initialize with random data (always the same because of const seed)
     srand(1);
@@ -513,7 +513,7 @@ int test_fseek_and_fread_preparation(const char * fopenflags)
         if (fseek(testfilepointer, 0, SEEK_SET) != 0)
         {
             report_failure_strerror();
-            report_failure("Failed to seek to file beginning (w+b).");           
+            report_failure("Failed to seek to file beginning (w+b).");
             return -1;
         }
     }
@@ -559,7 +559,7 @@ int test_fseek_and_fread_preparation(const char * fopenflags)
         if (fseek(testfilepointer, 0, SEEK_SET) != 0)
         {
             report_failure_strerror();
-            report_failure("Failed to seek to file beginning (w+b).");           
+            report_failure("Failed to seek to file beginning (w+b).");
             return -1;
         }
     }
@@ -595,7 +595,7 @@ int test_fseek_and_fread()
     int i = 0;
     size_t operationsize = 0;
 
-    /* 
+    /*
      * TEST
      */
 
@@ -628,14 +628,14 @@ int test_fseek_and_fread()
         return -1;
     }
     test_report_success("Read data match written data.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -666,14 +666,14 @@ int test_fseek_and_fread()
         return -1;
     }
     test_report_success("Read data match written data.");
-    test_report_success("SUCCESS"); 
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -705,12 +705,12 @@ int test_fseek_and_fread()
     test_report_success("Read data match written data.");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -743,12 +743,12 @@ int test_fseek_and_fread()
     test_report_success("SUCCESS");
 
 
-    /* 
+    /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -787,12 +787,12 @@ int test_fseek_and_fread()
     test_report_success("Read data match written data.");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -809,7 +809,7 @@ int test_fseek_and_fread()
             test_report_failure_strerror();
             test_report_failure("Error different than expected reported");
             return -1;
-        }   
+        }
     }
     else
     {
@@ -819,12 +819,12 @@ int test_fseek_and_fread()
     test_report_success("Error reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -863,12 +863,12 @@ int test_fseek_and_fread()
     test_report_success("Error reported");
     test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -899,7 +899,7 @@ int test_fseek_and_fread()
             test_report_failure_strerror();
             test_report_failure("Error different than expected reported");
             return -1;
-        }   
+        }
     }
     else
     {
@@ -909,12 +909,12 @@ int test_fseek_and_fread()
     test_report_success("Error reported");
     test_report_success("SUCCESS");
 
-   /* 
+   /*
      * TEST END
-     */  
+     */
 
 
-    /* 
+    /*
      * TEST
      */
     
@@ -938,7 +938,7 @@ int test_fseek_and_fread()
             test_report_failure_strerror();
             test_report_failure("Error different than expected reported");
             return -1;
-        }   
+        }
     }
     else
     {
@@ -956,7 +956,7 @@ int test_fseek_and_fread_wrapper(const char * fopenflags)
 
     int result = test_fseek_and_fread_preparation(fopenflags);
     if (result != 0)
-    {   
+    {
         report_failure("Preparation failed");
     }
     else
@@ -979,7 +979,7 @@ int test_fseek_fwrite_fread_preparation()
     {
         report_failure("Pointer for test file not closed.");
         return -1;
-    }   
+    }
 
     // Initilize random write buffer
     srand(1);
@@ -1006,7 +1006,7 @@ int test_fseek_fwrite_fread_preparation()
     if (fseek(testfilepointer, 0, SEEK_SET) != 0)
     {
         report_failure_strerror();
-        report_failure("Failed to seek to file beginning (w+b).");           
+        report_failure("Failed to seek to file beginning (w+b).");
         return -1;
     }
 
@@ -1029,7 +1029,7 @@ int test_fseek_fwrite_fread_preparation()
     if (fseek(testfilepointer, 0, SEEK_SET) != 0)
     {
         report_failure_strerror();
-        report_failure("Failed to seek to file beginning (w+b).");           
+        report_failure("Failed to seek to file beginning (w+b).");
         return -1;
     }
 
@@ -1052,7 +1052,7 @@ int test_fseek_fwrite_fread()
     for (i = 0; i < buffersize; i++)
         randomwritebuffer[i] = (char)rand();
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1106,13 +1106,13 @@ int test_fseek_fwrite_fread()
         return -1;
     }
     test_report_success("Read data match written data for second chunk.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1158,13 +1158,13 @@ int test_fseek_fwrite_fread()
         return -1;
     }
     test_report_success("Read data match written data.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1216,13 +1216,13 @@ int test_fseek_fwrite_fread()
         return -1;
     }
     test_report_success("Read data match written data for second chunk.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1268,13 +1268,13 @@ int test_fseek_fwrite_fread()
         return -1;
     }
     test_report_success("Read data match written data.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1321,7 +1321,7 @@ int test_fseek_fwrite_fread()
         test_report_failure("Failed to read chunk of data.");
         return -1;
     }
-    test_report_progress("Chunk read.");        
+    test_report_progress("Chunk read.");
     if (compare_buffers(readdatabuffer1, zerobuffer, chunksize) != 0)
     {
         test_report_failure("Read data does not match written data for first chunk");
@@ -1334,13 +1334,13 @@ int test_fseek_fwrite_fread()
         return -1;
     }
     test_report_success("Read data match written data for second chunk.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1393,9 +1393,9 @@ int test_fseek_fwrite_fread()
         return -1;
     }
     test_report_success("Read data match written data for second chunk.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
@@ -1408,7 +1408,7 @@ int test_fseek_fwrite_fread_wrapper()
 
     int result = test_fseek_fwrite_fread_preparation();
     if (result != 0)
-    {   
+    {
         report_failure("Preparation failed");
     }
     else
@@ -1431,7 +1431,7 @@ int test_fseek_fwrite_fread_append_preparation()
     {
         report_failure("Pointer for test file not closed.");
         return -1;
-    }   
+    }
 
     // Initilize random write buffer
     srand(1);
@@ -1458,7 +1458,7 @@ int test_fseek_fwrite_fread_append_preparation()
     if (fseek(testfilepointer, 0, SEEK_SET) != 0)
     {
         report_failure_strerror();
-        report_failure("Failed to seek to file beginning (w+b).");           
+        report_failure("Failed to seek to file beginning (w+b).");
         return -1;
     }
 
@@ -1513,7 +1513,7 @@ int test_fseek_fwrite_fread_append()
     for (i = 0; i < buffersize; i++)
         randomwritebuffer[i] = (char)rand();
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1567,13 +1567,13 @@ int test_fseek_fwrite_fread_append()
         return -1;
     }
     test_report_success("Read data match written data for second chunk.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1619,13 +1619,13 @@ int test_fseek_fwrite_fread_append()
         return -1;
     }
     test_report_success("Read data match written data.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1673,13 +1673,13 @@ int test_fseek_fwrite_fread_append()
         return -1;
     }
     test_report_success("Error reported.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1725,13 +1725,13 @@ int test_fseek_fwrite_fread_append()
         return -1;
     }
     test_report_success("Read data match written data.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1791,13 +1791,13 @@ int test_fseek_fwrite_fread_append()
         return -1;
     }
     test_report_success("Read data match written data for second chunk.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
-    /* 
+    /*
      * TEST
      */
 
@@ -1850,9 +1850,9 @@ int test_fseek_fwrite_fread_append()
         return -1;
     }
     test_report_success("Read data match written data for second chunk.");
-    test_report_success("SUCCESS");   
+    test_report_success("SUCCESS");
 
-    /* 
+    /*
      * TEST END
      */
 
@@ -1865,7 +1865,7 @@ int test_fseek_fwrite_fread_append_wrapper()
 
     int result = test_fseek_fwrite_fread_append_preparation();
     if (result != 0)
-    {   
+    {
         report_failure("Preparation failed");
     }
     else

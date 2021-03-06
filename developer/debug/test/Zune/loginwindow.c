@@ -25,9 +25,9 @@
 
 Object *app;
 
-#define ARG_TEMPLATE	"LOCAL/S"
-#define ARG_LOCAL	0
-#define TOTAL_ARGS	1
+#define ARG_TEMPLATE    "LOCAL/S"
+#define ARG_LOCAL       0
+#define TOTAL_ARGS      1
 
 int main(void)
 {
@@ -40,9 +40,9 @@ int main(void)
 
     if (!(SecurityBase = (struct SecurityBase *)OpenLibrary("security.library", 0)))
     {
-	PutStr("Opening of security.library failed\n");
-	error = ERROR_INVALID_RESIDENT_LIBRARY;
-	goto LibError;
+        PutStr("Opening of security.library failed\n");
+        error = ERROR_INVALID_RESIDENT_LIBRARY;
+        goto LibError;
     }
 
     args = ReadArgs( ARG_TEMPLATE, argarray, NULL);
@@ -50,52 +50,52 @@ int main(void)
     if (argarray[ARG_LOCAL])
     {
         app = ApplicationObject,
-   	    SubWindow, LoginWin = LoginWindowObject,
+            SubWindow, LoginWin = LoginWindowObject,
             End,
-	    End;
+            End;
     }
     else
     {
         string = "Test User";
         app = ApplicationObject,
-   	    SubWindow, LoginWin = LoginWindowObject,
+            SubWindow, LoginWin = LoginWindowObject,
                 MUIA_LoginWindow_UserName, (IPTR)string,
                 MUIA_LoginWindow_Method, (IPTR)"smb: NAHOMENET Domain",
-	        MUIA_LoginWindow_Method, (IPTR)"smb: aros.org Domain",
-	        MUIA_LoginWindow_Method, (IPTR)"smb: Dialup Connection...",
-	        MUIA_LoginWindow_Cancel_Disabled, TRUE,
+                MUIA_LoginWindow_Method, (IPTR)"smb: aros.org Domain",
+                MUIA_LoginWindow_Method, (IPTR)"smb: Dialup Connection...",
+                MUIA_LoginWindow_Cancel_Disabled, TRUE,
             End,
-	    End;
+            End;
     }
 
     if (app)
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 
-	DoMethod
+        DoMethod
         (
-            LoginWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 
+            LoginWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app,
             2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
         );
 
-	set(LoginWin,MUIA_Window_Open,TRUE);
+        set(LoginWin,MUIA_Window_Open,TRUE);
 
-	while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
+        while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
                 if (sigs == LWA_RV_OK)
                     break;
 
                 sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-		
+                
                 if (sigs & SIGBREAKF_CTRL_C)
                     break;
-		if (sigs & SIGBREAKF_CTRL_D)
+                if (sigs & SIGBREAKF_CTRL_D)
                     break;
 
-	    }
-	}
+            }
+        }
 
         if (sigs == LWA_RV_OK)
         {
@@ -112,10 +112,10 @@ int main(void)
             Printf("  i shouldnt really say this but your password is '%s'\n",userPass);
             Printf("\n  you have logged on using '%s'\n",loginMeth);
 
-	    FreeVec(string);
-	    FreeVec(userName);
-	    FreeVec(userPass);
-	    FreeVec(loginMeth);
+            FreeVec(string);
+            FreeVec(userName);
+            FreeVec(userPass);
+            FreeVec(loginMeth);
 
             error = RETURN_OK;
         }
@@ -123,7 +123,7 @@ int main(void)
         {
             PutStr(" User canceled");
         }
-	MUI_DisposeObject(app);
+        MUI_DisposeObject(app);
     }
     else
     {

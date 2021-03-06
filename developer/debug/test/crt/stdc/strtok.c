@@ -74,7 +74,7 @@ int main(void)
 }
 
 
-void cleanup() 
+void cleanup()
 {
     /* Nothing to clean up */
 }

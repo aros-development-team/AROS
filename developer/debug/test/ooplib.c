@@ -44,16 +44,16 @@ struct Task *CreateServerTask(APTR taskparams);
 #define CLID_Timer "timerclass"
 
 #define IID_Timer "Timer"
-#define moTimer_Start 	0
-#define moTimer_Stop  	1
+#define moTimer_Start   0
+#define moTimer_Stop    1
 #define moTimer_PrintElapsed 2
-#define moTimer_TestMethod	3
+#define moTimer_TestMethod      3
 
-#define TimerBase	(__ITimer)
-#define M_Timer_Start		(TimerBase + moTimer_Start)
-#define M_Timer_Stop		(TimerBase + moTimer_Stop)
-#define M_Timer_PrintElapsed	(TimerBase + moTimer_PrintElapsed)
-#define M_Timer_TestMethod	(TimerBase + moTimer_TestMethod)
+#define TimerBase       (__ITimer)
+#define M_Timer_Start           (TimerBase + moTimer_Start)
+#define M_Timer_Stop            (TimerBase + moTimer_Stop)
+#define M_Timer_PrintElapsed    (TimerBase + moTimer_PrintElapsed)
+#define M_Timer_TestMethod      (TimerBase + moTimer_TestMethod)
 
 
 // #define GLOBAL_CLASS
@@ -89,176 +89,176 @@ int main (int argc, char **argv)
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
     if (OOPBase)
     {
-	D(bug("Got OOPBase\n"));
-    	if ( 
-	       ( __IMeta   	  = OOP_GetAttrBase( IID_Meta	))
-	    && ( __ITimer  	  = OOP_GetAttrBase( IID_Timer	)) 
-	    && ( __IMethod 	  = OOP_GetAttrBase( IID_Method	)) 
-	    && ( __IServer 	  = OOP_GetAttrBase( IID_Server	)) 
-	    && ( __IInterface 	  = OOP_GetAttrBase( IID_Interface	)) 
-	    
-	    )
-	{
+        D(bug("Got OOPBase\n"));
+        if (
+               ( __IMeta          = OOP_GetAttrBase( IID_Meta   ))
+            && ( __ITimer         = OOP_GetAttrBase( IID_Timer  ))
+            && ( __IMethod        = OOP_GetAttrBase( IID_Method ))
+            && ( __IServer        = OOP_GetAttrBase( IID_Server ))
+            && ( __IInterface     = OOP_GetAttrBase( IID_Interface      ))
+            
+            )
+        {
 
-	    D(bug("Got IDs\n"));
+            D(bug("Got IDs\n"));
 
-	    timercl = MakeTimerClass();
-	    printf("Timercl: %p\n", timercl);
-	    if (timercl)
-	    {
-	        /* Create the server task */
-		struct Task *servertask;
-		OOP_Object *timer;
-		struct TagItem tags[] = {{TAG_DONE, 0UL}};
-		
-		D(bug("Creating new timer object\n"));
+            timercl = MakeTimerClass();
+            printf("Timercl: %p\n", timercl);
+            if (timercl)
+            {
+                /* Create the server task */
+                struct Task *servertask;
+                OOP_Object *timer;
+                struct TagItem tags[] = {{TAG_DONE, 0UL}};
+                
+                D(bug("Creating new timer object\n"));
 
-		timer = OOP_NewObject(timercl, NULL, tags);
-		D(bug("timer object created\n"));
+                timer = OOP_NewObject(timercl, NULL, tags);
+                D(bug("timer object created\n"));
 
-		if (timer)
-		{
-		    OOP_Method *m;
-		    ULONG test_mid = OOP_GetMethodID(IID_Timer, moTimer_TestMethod);
-		    struct TagItem iftags[] =
-		    {
-		    	{ aInterface_TargetObject,	(IPTR)timer},
-			{ aInterface_InterfaceID,	(IPTR)IID_Timer},
-			{ TAG_DONE, 0UL }
-		    };
-		    struct TagItem mtags[] =
-		    {
-		    	{aMethod_TargetObject, (IPTR)timer		},
-			{aMethod_Message,	(IPTR)&test_mid	},
-			{aMethod_MethodID,	test_mid	},
-			{TAG_DONE,}
-		    };
-		    
-		    register OOP_Interface *iftimer;
-		    m = (OOP_Method *)OOP_NewObject(NULL, CLID_Method, mtags);
-		    if (m)
-		    {
-		        printf("Method object created, output: %ld\n",
-				OOP_CallMethod(m));
-				
-			OOP_DisposeObject((OOP_Object *)m);
-		    }
-		    
-		    
+                if (timer)
+                {
+                    OOP_Method *m;
+                    ULONG test_mid = OOP_GetMethodID(IID_Timer, moTimer_TestMethod);
+                    struct TagItem iftags[] =
+                    {
+                        { aInterface_TargetObject,      (IPTR)timer},
+                        { aInterface_InterfaceID,       (IPTR)IID_Timer},
+                        { TAG_DONE, 0UL }
+                    };
+                    struct TagItem mtags[] =
+                    {
+                        {aMethod_TargetObject, (IPTR)timer              },
+                        {aMethod_Message,       (IPTR)&test_mid },
+                        {aMethod_MethodID,      test_mid        },
+                        {TAG_DONE,}
+                    };
+                    
+                    register OOP_Interface *iftimer;
+                    m = (OOP_Method *)OOP_NewObject(NULL, CLID_Method, mtags);
+                    if (m)
+                    {
+                        printf("Method object created, output: %ld\n",
+                                OOP_CallMethod(m));
+                                
+                        OOP_DisposeObject((OOP_Object *)m);
+                    }
+                    
+                    
 
-		    D(bug("Local timer obj created\n"));
-		    
-		    iftimer = (OOP_Interface *)OOP_NewObject(NULL, CLID_Interface, iftags);
-		    if (iftimer)
-		    {
-			ULONG test_mid;
+                    D(bug("Local timer obj created\n"));
+                    
+                    iftimer = (OOP_Interface *)OOP_NewObject(NULL, CLID_Interface, iftags);
+                    if (iftimer)
+                    {
+                        ULONG test_mid;
 
-			register OOP_Msg msg = (OOP_Msg)&test_mid;
+                        register OOP_Msg msg = (OOP_Msg)&test_mid;
 
-			ULONG i;
+                        ULONG i;
 
-			D(bug("iftimer object created\n"));
+                        D(bug("iftimer object created\n"));
 
-			printf("Doing %ld invocations using interface objects\n",
-			    		NUM_IF_INVOCATIONS);
+                        printf("Doing %ld invocations using interface objects\n",
+                                        NUM_IF_INVOCATIONS);
 
-			test_mid = M_Timer_Start;
-			iftimer->callMethod(iftimer, (OOP_Msg)&test_mid);
+                        test_mid = M_Timer_Start;
+                        iftimer->callMethod(iftimer, (OOP_Msg)&test_mid);
 
-			test_mid = M_Timer_TestMethod;
+                        test_mid = M_Timer_TestMethod;
 
-			for (i = 0; i < NUM_IF_INVOCATIONS; i ++)
-			{
-			    iftimer->callMethod(iftimer, msg);
-			}
+                        for (i = 0; i < NUM_IF_INVOCATIONS; i ++)
+                        {
+                            iftimer->callMethod(iftimer, msg);
+                        }
 
-			test_mid = M_Timer_Stop;
-			iftimer->callMethod(iftimer, (OOP_Msg)&test_mid);
+                        test_mid = M_Timer_Stop;
+                        iftimer->callMethod(iftimer, (OOP_Msg)&test_mid);
 
-			printf("Time elapsed: ");
+                        printf("Time elapsed: ");
 
-			test_mid = M_Timer_PrintElapsed;
-		    	iftimer->callMethod(iftimer, (OOP_Msg)&test_mid);
+                        test_mid = M_Timer_PrintElapsed;
+                        iftimer->callMethod(iftimer, (OOP_Msg)&test_mid);
 
-			test_mid = M_Timer_TestMethod;
-			printf ("Result of testmethod: %ld\n", iftimer->callMethod(iftimer, (OOP_Msg)&test_mid));
-
-
-		    	OOP_DisposeObject((OOP_Object *)iftimer);
-		    }
-
-		    OOP_DisposeObject(timer);
-		}
-		
-		
-		sp.Caller = FindTask(NULL);
-
-		sp.SigBit = AllocSignal(-1L);
+                        test_mid = M_Timer_TestMethod;
+                        printf ("Result of testmethod: %ld\n", iftimer->callMethod(iftimer, (OOP_Msg)&test_mid));
 
 
+                        OOP_DisposeObject((OOP_Object *)iftimer);
+                    }
 
-		D(bug("Creating server task\n"));
+                    OOP_DisposeObject(timer);
+                }
+                
+                
+                sp.Caller = FindTask(NULL);
 
-
-		servertask = CreateServerTask(&sp);
-		if (servertask)
-		{
-
-		    OOP_Object *server;
-
-		    D(bug("server task created: %p\n", servertask));
-
-		    Wait(1L << sp.SigBit);
-		    D(bug("server task has initialized itself: %p\n", servertask));
+                sp.SigBit = AllocSignal(-1L);
 
 
-		    if ( (server = OOP_FindServer(MYSERVERID)) )
-		    {
-		        OOP_Object *timer;
 
-			D(bug("Server found: %p\n", server));
-
-		        if ( (timer = Server_FindObject(server, MYTIMERID)) )
-			{
-			    ULONG test_mid;
-
-			    ULONG i;
-
-			    printf("Doing %ld invocations using IPC\n",
-			    		NUM_INVOCATIONS);
-
-			    test_mid = OOP_GetMethodID(IID_Timer, moTimer_Start);
-			    OOP_DoMethod(timer, (OOP_Msg)&test_mid);
-
-			    test_mid = OOP_GetMethodID(IID_Timer, moTimer_TestMethod);
-			    for (i = 0; i < NUM_INVOCATIONS; i ++)
-			    {
-			    	OOP_DoMethod(timer, (OOP_Msg)&test_mid);
-			    }
-
-			    test_mid = OOP_GetMethodID(IID_Timer, moTimer_Stop);
-			    OOP_DoMethod(timer, (OOP_Msg)&test_mid);
-
-			    printf("Time elapsed: ");
-
-			    test_mid = OOP_GetMethodID(IID_Timer, moTimer_PrintElapsed);
-		    	    OOP_DoMethod(timer, (OOP_Msg)&test_mid);
-
-			    test_mid = OOP_GetMethodID(IID_Timer, moTimer_TestMethod);
-			    printf ("Result of testmethod: %ld\n", OOP_DoMethod(timer, (OOP_Msg)&test_mid));
+                D(bug("Creating server task\n"));
 
 
-			}
+                servertask = CreateServerTask(&sp);
+                if (servertask)
+                {
 
-		    }
-		    
-		} 
-		    
-		FreeTimerClass(timercl);
-	    }
+                    OOP_Object *server;
+
+                    D(bug("server task created: %p\n", servertask));
+
+                    Wait(1L << sp.SigBit);
+                    D(bug("server task has initialized itself: %p\n", servertask));
+
+
+                    if ( (server = OOP_FindServer(MYSERVERID)) )
+                    {
+                        OOP_Object *timer;
+
+                        D(bug("Server found: %p\n", server));
+
+                        if ( (timer = Server_FindObject(server, MYTIMERID)) )
+                        {
+                            ULONG test_mid;
+
+                            ULONG i;
+
+                            printf("Doing %ld invocations using IPC\n",
+                                        NUM_INVOCATIONS);
+
+                            test_mid = OOP_GetMethodID(IID_Timer, moTimer_Start);
+                            OOP_DoMethod(timer, (OOP_Msg)&test_mid);
+
+                            test_mid = OOP_GetMethodID(IID_Timer, moTimer_TestMethod);
+                            for (i = 0; i < NUM_INVOCATIONS; i ++)
+                            {
+                                OOP_DoMethod(timer, (OOP_Msg)&test_mid);
+                            }
+
+                            test_mid = OOP_GetMethodID(IID_Timer, moTimer_Stop);
+                            OOP_DoMethod(timer, (OOP_Msg)&test_mid);
+
+                            printf("Time elapsed: ");
+
+                            test_mid = OOP_GetMethodID(IID_Timer, moTimer_PrintElapsed);
+                            OOP_DoMethod(timer, (OOP_Msg)&test_mid);
+
+                            test_mid = OOP_GetMethodID(IID_Timer, moTimer_TestMethod);
+                            printf ("Result of testmethod: %ld\n", OOP_DoMethod(timer, (OOP_Msg)&test_mid));
+
+
+                        }
+
+                    }
+                    
+                }
+                    
+                FreeTimerClass(timercl);
+            }
 
         }
-	CloseLibrary(OOPBase);
+        CloseLibrary(OOPBase);
 
     }
     return (0);
@@ -276,13 +276,13 @@ VOID SubTime(struct timeval *dest, struct timeval *src)
 {
     while(src->tv_usec > 999999)
     {
-	src->tv_sec++;
-	src->tv_usec -= 1000000;
+        src->tv_sec++;
+        src->tv_usec -= 1000000;
     }
     while(dest->tv_usec > 999999)
     {
-	dest->tv_sec++;
-	dest->tv_usec -= 1000000;
+        dest->tv_sec++;
+        dest->tv_usec -= 1000000;
     }
 
     dest->tv_usec -= src->tv_usec;
@@ -290,8 +290,8 @@ VOID SubTime(struct timeval *dest, struct timeval *src)
 
     if(dest->tv_usec < 0)
     {
-	dest->tv_usec += 1000000;
-	dest->tv_sec--;
+        dest->tv_usec += 1000000;
+        dest->tv_sec--;
     }
 
     return;
@@ -341,8 +341,8 @@ OOP_Object *o, OOP_Msg msg)
     struct TimerData *data = OOP_INST_DATA(tcl, o);
 
     kprintf("%ld secs and %ld micros\n"
-    	,data->elapsed_time.tv_sec
-    	,data->elapsed_time.tv_usec);
+        ,data->elapsed_time.tv_sec
+        ,data->elapsed_time.tv_usec);
 
 }
 
@@ -361,27 +361,27 @@ OOP_Class *MakeTimerClass()
 
     struct OOP_MethodDescr methods[] =
     {
-	{(IPTR (*)())_Timer_Start,		moTimer_Start},
-	{(IPTR (*)())_Timer_Stop,		moTimer_Stop},
-	{(IPTR (*)())_Timer_PrintElapsed,	moTimer_PrintElapsed},
-	{(IPTR (*)())_Timer_TestMethod,		moTimer_TestMethod},
-	{NULL, 0UL}
+        {(IPTR (*)())_Timer_Start,              moTimer_Start},
+        {(IPTR (*)())_Timer_Stop,               moTimer_Stop},
+        {(IPTR (*)())_Timer_PrintElapsed,       moTimer_PrintElapsed},
+        {(IPTR (*)())_Timer_TestMethod,         moTimer_TestMethod},
+        {NULL, 0UL}
 
     };
 
     struct OOP_InterfaceDescr ifdescr[] =
     {
-    	{ methods, "Timer", 4},
-	{ NULL, 0UL, 0UL}
+        { methods, "Timer", 4},
+        { NULL, 0UL, 0UL}
     };
 
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,		(IPTR)CLID_Root},
-	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{aMeta_ID,			(IPTR)CLID_Timer},
-	{aMeta_InstSize,		(IPTR)sizeof (struct TimerData)},
-	{TAG_DONE, 0UL}
+        {aMeta_SuperID,         (IPTR)CLID_Root},
+        {aMeta_InterfaceDescr,          (IPTR)ifdescr},
+        {aMeta_ID,                      (IPTR)CLID_Timer},
+        {aMeta_InstSize,                (IPTR)sizeof (struct TimerData)},
+        {TAG_DONE, 0UL}
     };
 #ifndef GLOBAL_CLASS
 OOP_Class *tcl;
@@ -393,7 +393,7 @@ OOP_Class *tcl;
 
     if (tcl)
     {
-//    	OOP_AddClass(tcl);
+//      OOP_AddClass(tcl);
     }
 
     return (tcl);
@@ -416,7 +416,7 @@ VOID TaskEntryPoint(struct ServerParam *p)
 
     struct TagItem server_tags[] =
     {
-	{ TAG_DONE, 0UL}
+        { TAG_DONE, 0UL}
     };
 
 
@@ -425,40 +425,40 @@ VOID TaskEntryPoint(struct ServerParam *p)
     server = OOP_NewObject(NULL, CLID_Server, server_tags);
     if (server)
     {
-    	D(bug("st: server created\n"));
-    	if (OOP_AddServer(server, MYSERVERID))
-	{
+        D(bug("st: server created\n"));
+        if (OOP_AddServer(server, MYSERVERID))
+        {
 
-    	    OOP_Object *timer;
+            OOP_Object *timer;
 
-    	    struct TagItem timer_tags[] =
-    	    {
-		{ TAG_DONE, 0UL}
-    	    };
-    	    D(bug("st: server added\n"));
+            struct TagItem timer_tags[] =
+            {
+                { TAG_DONE, 0UL}
+            };
+            D(bug("st: server added\n"));
 
-	    timer = OOP_NewObject(timercl, NULL, timer_tags);
-	    if (timer)
-	    {
-    	    	D(bug("st: timer created\n"));
-		if (Server_AddObject(server, timer, MYTIMERID))
-		{
-		     D(bug("st: timer added to server\n"));
+            timer = OOP_NewObject(timercl, NULL, timer_tags);
+            if (timer)
+            {
+                D(bug("st: timer created\n"));
+                if (Server_AddObject(server, timer, MYTIMERID))
+                {
+                     D(bug("st: timer added to server\n"));
 
-		     Signal(p->Caller, 1L << p->SigBit);
+                     Signal(p->Caller, 1L << p->SigBit);
 
-		     Server_Run(server);
+                     Server_Run(server);
 
-		     Server_RemoveObject(server, MYTIMERID);
-		     success = TRUE;
+                     Server_RemoveObject(server, MYTIMERID);
+                     success = TRUE;
 
-		}
-		OOP_DisposeObject(timer);
+                }
+                OOP_DisposeObject(timer);
 
-	    }
-	    OOP_RemoveServer(MYSERVERID);
-	}
-	OOP_DisposeObject(server);
+            }
+            OOP_RemoveServer(MYSERVERID);
+        }
+        OOP_DisposeObject(server);
 
 
     }
@@ -467,8 +467,8 @@ VOID TaskEntryPoint(struct ServerParam *p)
     /* Just in case */
     if (!success)
     {
-    	D(bug("st: No success\n"));
-	Signal(p->Caller, 1L << p->SigBit);
+        D(bug("st: No success\n"));
+        Signal(p->Caller, 1L << p->SigBit);
     }
     return;
 
@@ -482,32 +482,32 @@ struct Task *CreateServerTask(APTR taskparams)
     task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
     if (task)
     {
-    	NEWLIST(&task->tc_MemEntry);
-    	task->tc_Node.ln_Type=NT_TASK;
-    	task->tc_Node.ln_Name="demoserver";
-    	task->tc_Node.ln_Pri = 0;
+        NEWLIST(&task->tc_MemEntry);
+        task->tc_Node.ln_Type=NT_TASK;
+        task->tc_Node.ln_Name="demoserver";
+        task->tc_Node.ln_Pri = 0;
 
-    	stack=AllocMem(SERVERTASK_STACKSIZE, MEMF_PUBLIC);
-    	if(stack != NULL)
-    	{
-	    task->tc_SPLower=stack;
-	    task->tc_SPUpper=(BYTE *)stack + SERVERTASK_STACKSIZE;
+        stack=AllocMem(SERVERTASK_STACKSIZE, MEMF_PUBLIC);
+        if(stack != NULL)
+        {
+            task->tc_SPLower=stack;
+            task->tc_SPUpper=(BYTE *)stack + SERVERTASK_STACKSIZE;
 
 #if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
-	    ((APTR *)task->tc_SPUpper)[-1] = taskparams;
+            task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
+            ((APTR *)task->tc_SPUpper)[-1] = taskparams;
 #else
-	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
-	    *(APTR *)task->tc_SPLower = taskparams;
+            task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
+            *(APTR *)task->tc_SPLower = taskparams;
 #endif
 
-	    if(AddTask(task, TaskEntryPoint, NULL) != NULL)
-	    {
-	    	/* Everything went OK */
-	    	return (task);
-	    }
-	    FreeMem(stack, SERVERTASK_STACKSIZE);
-    	}
+            if(AddTask(task, TaskEntryPoint, NULL) != NULL)
+            {
+                /* Everything went OK */
+                return (task);
+            }
+            FreeMem(stack, SERVERTASK_STACKSIZE);
+        }
         FreeMem(task,sizeof(struct Task));
     }
     return (NULL);

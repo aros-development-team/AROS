@@ -8,7 +8,7 @@
 
 int main(void)
 {
-    const char *cmd = "../stdc/argv0_slave", *arg1 = "../stdc/argv0_slave"; 
+    const char *cmd = "../stdc/argv0_slave", *arg1 = "../stdc/argv0_slave";
     execl(cmd, cmd, arg1, NULL);
 
     return FAIL;

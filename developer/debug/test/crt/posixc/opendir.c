@@ -20,5 +20,5 @@ int main()
 void cleanup()
 {
     if(dir)
-	closedir(dir);
+        closedir(dir);
 }

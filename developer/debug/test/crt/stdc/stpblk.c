@@ -6,7 +6,7 @@
 #include <string.h>
 #include "test.h"
 
-int main() 
+int main()
 {
     char *hello = "  Hello";
     char *empty = "       ";
@@ -19,7 +19,7 @@ int main()
     return OK;
 }
 
-void cleanup() 
+void cleanup()
 {
     /* Nothing to clean up */
 }

@@ -84,11 +84,11 @@ static void getvisual(void)
     
     if (1)
     {
-    	LONG val;
-	
-	val = GetCyberMapAttr(scr->RastPort.BitMap,CYBRMATTR_PIXFMT);
-	
-	printf("cgfx attribute = %ld\n", (long)val); 
+        LONG val;
+        
+        val = GetCyberMapAttr(scr->RastPort.BitMap,CYBRMATTR_PIXFMT);
+        
+        printf("cgfx attribute = %ld\n", (long)val);
     }
 
     if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) <= 8)
@@ -102,31 +102,31 @@ static void getvisual(void)
 
 static void makewin(void)
 {
-    win = OpenWindowTags(NULL, WA_CustomScreen	, (IPTR)scr, 
-    			       WA_InnerWidth	, SCREENWIDTH,
-    			       WA_InnerHeight	, SCREENHEIGHT,
-			       WA_Title		, (IPTR)"ReadPixelArray",
-			       WA_DragBar	, TRUE,
-			       WA_DepthGadget	, TRUE,
-			       WA_CloseGadget	, TRUE,
-			       WA_Activate	, TRUE,
-			       WA_BackFill  	, (IPTR)LAYERS_NOBACKFILL,
-			       WA_IDCMP		, IDCMP_CLOSEWINDOW |
-			       			  IDCMP_RAWKEY,
-			       TAG_DONE);
-			       
+    win = OpenWindowTags(NULL, WA_CustomScreen  , (IPTR)scr,
+                               WA_InnerWidth    , SCREENWIDTH,
+                               WA_InnerHeight   , SCREENHEIGHT,
+                               WA_Title         , (IPTR)"ReadPixelArray",
+                               WA_DragBar       , TRUE,
+                               WA_DepthGadget   , TRUE,
+                               WA_CloseGadget   , TRUE,
+                               WA_Activate      , TRUE,
+                               WA_BackFill      , (IPTR)LAYERS_NOBACKFILL,
+                               WA_IDCMP         , IDCMP_CLOSEWINDOW |
+                                                  IDCMP_RAWKEY,
+                               TAG_DONE);
+                               
    if (!win) cleanup("Can't open window");
 
-   rp = win->RPort; 
+   rp = win->RPort;
 }
 
 /***********************************************************************************/
 
 #define KC_LEFT         0x4F
-#define KC_RIGHT     	0x4E
-#define KC_UP        	0x4C
-#define KC_DOWN      	0x4D
-#define KC_ESC       	0x45
+#define KC_RIGHT        0x4E
+#define KC_UP           0x4C
+#define KC_DOWN         0x4D
+#define KC_ESC          0x45
 
 /***********************************************************************************/
 
@@ -137,21 +137,21 @@ static void getevents(void)
     while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
     {
         switch(msg->Class)
-	{
-	    case IDCMP_CLOSEWINDOW:
-	        Keys[KC_ESC] = 1;
-		break;
-		
-	    case IDCMP_RAWKEY:
-	        {
-		    WORD code = msg->Code & ~IECODE_UP_PREFIX;
-		    
-		    Keys[code] = (code == msg->Code) ? 1 : 0;
+        {
+            case IDCMP_CLOSEWINDOW:
+                Keys[KC_ESC] = 1;
+                break;
+                
+            case IDCMP_RAWKEY:
+                {
+                    WORD code = msg->Code & ~IECODE_UP_PREFIX;
+                    
+                    Keys[code] = (code == msg->Code) ? 1 : 0;
 
-		}
-	        break;
+                }
+                break;
 
-	}
+        }
         ReplyMsg((struct Message *)msg);
     }
 
@@ -166,42 +166,42 @@ static void action(void)
     
     if (buf)
     {
-    	ReadPixelArray(buf,
-	    	       0,
-		       0,
-		       SCREENWIDTH * sizeof(ULONG),
-		       win->RPort,
-		       win->BorderLeft,
-		       win->BorderTop,
-		       SCREENWIDTH,
-		       SCREENHEIGHT,
-		       RECTFMT_ARGB);
+        ReadPixelArray(buf,
+                       0,
+                       0,
+                       SCREENWIDTH * sizeof(ULONG),
+                       win->RPort,
+                       win->BorderLeft,
+                       win->BorderTop,
+                       SCREENWIDTH,
+                       SCREENHEIGHT,
+                       RECTFMT_ARGB);
 
-    	for(i = 0; i < SCREENWIDTH * SCREENHEIGHT * 4; i += 4)
-	{
-	    buf[i + 1] /= 2;
-	    buf[i + 2] /= 2;
-	    buf[i + 3] /= 2;	    
-	}
-	
-    	WritePixelArray(buf,
-	    		0,
-			0,
-			SCREENWIDTH * sizeof(ULONG),
-			win->RPort,
-			win->BorderLeft,
-			win->BorderTop,
-			SCREENWIDTH,
-			SCREENHEIGHT,
-			RECTFMT_ARGB);
-		       
+        for(i = 0; i < SCREENWIDTH * SCREENHEIGHT * 4; i += 4)
+        {
+            buf[i + 1] /= 2;
+            buf[i + 2] /= 2;
+            buf[i + 3] /= 2;
+        }
+        
+        WritePixelArray(buf,
+                        0,
+                        0,
+                        SCREENWIDTH * sizeof(ULONG),
+                        win->RPort,
+                        win->BorderLeft,
+                        win->BorderTop,
+                        SCREENWIDTH,
+                        SCREENHEIGHT,
+                        RECTFMT_ARGB);
+                       
     }
     
     while (!Keys[KC_ESC])
     {
-    	WaitPort(win->UserPort);
+        WaitPort(win->UserPort);
         getevents();
-	
+        
     } /* while(!Keys[KC_ESC]) */
 
     FreeVec(buf);

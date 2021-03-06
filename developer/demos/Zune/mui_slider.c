@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 1999, David Le Corfec.
     Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
@@ -74,10 +74,10 @@ int main (int argc, char **argv)
     if (!openmuimaster()) return 20;
 
     app = ApplicationObject,
-	SubWindow, mainWin = WindowObject,
-	    MUIA_Window_Title, "Input modes",
-	    WindowContents, VGroup,
-	        Child, SliderObject,
+        SubWindow, mainWin = WindowObject,
+            MUIA_Window_Title, "Input modes",
+            WindowContents, VGroup,
+                Child, SliderObject,
                    MUIA_Numeric_Value, 50,
                 End,
             End,
@@ -86,33 +86,33 @@ int main (int argc, char **argv)
 
     if (!app)
     {
-	fprintf(stderr, "can't create application object.\n");
-	goto error;
+        fprintf(stderr, "can't create application object.\n");
+        goto error;
     }
 
     DoMethod(mainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	     (IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+             (IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     set(mainWin, MUIA_Window_Open, TRUE);
     if (!XGET(mainWin, MUIA_Window_Open))
     {
-	MUI_DisposeObject(app);
-	fprintf(stderr, "%s : can't open main window.\n", argv[0]);
-	goto error;
+        MUI_DisposeObject(app);
+        fprintf(stderr, "%s : can't open main window.\n", argv[0]);
+        goto error;
     }
 
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 
-	while (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
-	       != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-	        sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-	        if (sigs & SIGBREAKF_CTRL_C) break;
-	    }
-	}
+        while (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
+               != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+            }
+        }
     }
     
     set(mainWin, MUIA_Window_Open, FALSE);

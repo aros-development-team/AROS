@@ -42,7 +42,7 @@ int main()
 void cleanup()
 {
     if(fd != -1)
-	close(fd);
+        close(fd);
     if(fd2 != -1)
-	close(fd2);
+        close(fd2);
 }

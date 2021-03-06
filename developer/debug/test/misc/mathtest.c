@@ -79,34 +79,34 @@ int main(int argc, char **argv)
 
     Darg1 = (double *)&QArg1;
 
-    #define DEF_FFPOne		0x80000041UL
-    #define DEF_FFPTwo		0x80000042UL
-    #define DEF_FFPMinusOne 	0x800000C1UL
-    #define DEF_FFPOnehalf	0x80000040UL
-    #define DEF_FFPNull		0x00000000UL
+    #define DEF_FFPOne          0x80000041UL
+    #define DEF_FFPTwo          0x80000042UL
+    #define DEF_FFPMinusOne     0x800000C1UL
+    #define DEF_FFPOnehalf      0x80000040UL
+    #define DEF_FFPNull         0x00000000UL
 
-    #define DEF_SPOne		0x3f800000UL
-    #define DEF_SPTwo		0x40000000UL
-    #define DEF_SPOnehalf	0x3f000000UL
+    #define DEF_SPOne           0x3f800000UL
+    #define DEF_SPTwo           0x40000000UL
+    #define DEF_SPOnehalf       0x3f000000UL
     
-    #define DEF_DPOne		0x3ff0000000000000ULL
-    #define DEF_DPMinusOne	0xbff0000000000000ULL
-    #define DEF_DPTwo		0x4000000000000000ULL
-    #define DEF_DPThree		0x4008000000000000ULL
+    #define DEF_DPOne           0x3ff0000000000000ULL
+    #define DEF_DPMinusOne      0xbff0000000000000ULL
+    #define DEF_DPTwo           0x4000000000000000ULL
+    #define DEF_DPThree         0x4008000000000000ULL
     #define DEF_DPFour          0x4010000000000000ULL
-    #define DEF_DPTwenty        0x4034000000000000ULL     
+    #define DEF_DPTwenty        0x4034000000000000ULL
     
-    ptr = (LONG *)&FFPOne; 	*ptr = DEF_FFPOne;
-    ptr = (LONG *)&FFPTwo; 	*ptr = DEF_FFPTwo;
-    ptr = (LONG *)&FFPMinusOne;	*ptr = DEF_FFPMinusOne;
-    ptr = (LONG *)&FFPOnehalf;	*ptr = DEF_FFPOnehalf;
-    ptr = (LONG *)&FFPNull; 	*ptr = DEF_FFPNull;
+    ptr = (LONG *)&FFPOne;      *ptr = DEF_FFPOne;
+    ptr = (LONG *)&FFPTwo;      *ptr = DEF_FFPTwo;
+    ptr = (LONG *)&FFPMinusOne; *ptr = DEF_FFPMinusOne;
+    ptr = (LONG *)&FFPOnehalf;  *ptr = DEF_FFPOnehalf;
+    ptr = (LONG *)&FFPNull;     *ptr = DEF_FFPNull;
     
-    ptr = (LONG *)&SPOne; 	*ptr = DEF_SPOne;
-    ptr = (LONG *)&SPOnehalf; 	*ptr = DEF_SPOnehalf;
-    ptr = (LONG *)&SPTwo; 	*ptr = DEF_SPTwo;
+    ptr = (LONG *)&SPOne;       *ptr = DEF_SPOne;
+    ptr = (LONG *)&SPOnehalf;   *ptr = DEF_SPOnehalf;
+    ptr = (LONG *)&SPTwo;       *ptr = DEF_SPTwo;
 
-/* if you deactivate #define float LONG something very funny happens here:    
+/* if you deactivate #define float LONG something very funny happens here:
 Printf("two: %x <-> %x \n",*ptr,SPTwo);
 Printf("two: %x <-> %x \n",SPTwo,*ptr);
 */
@@ -136,7 +136,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-	    Printf ("FAIL: " #func " " #arg1 " in line %ld " \
+            Printf ("FAIL: " #func " " #arg1 " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                  (unsigned long)(((QUAD)*double_resptr) >> 32), \
@@ -145,7 +145,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
         } \
         else \
         { \
-	    Printf ("(little endian) FAIL: " #func " " #arg1 " in line %ld " \
+            Printf ("(little endian) FAIL: " #func " " #arg1 " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)*(((LONG *)double_resptr) + 1), \
@@ -165,7 +165,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-	    Printf ("FAIL: " #func " in line %ld " \
+            Printf ("FAIL: " #func " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)(((QUAD)*double_resptr) >> 32), \
@@ -196,7 +196,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-	    Printf ("FAIL: " #func " " #arg1 " in line %ld " \
+            Printf ("FAIL: " #func " " #arg1 " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)(((QUAD)*double_resptr) >> 32), \
@@ -226,7 +226,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-	    Printf ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %ld " \
+            Printf ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)(((QUAD)*double_resptr ) >> 32), \
@@ -253,22 +253,22 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathBase = OpenLibrary("mathffp.library", 0L)))
     {
-	Printf ("Couldn't open mathffp.library\n");
-	return RETURN_FAIL;
+        Printf ("Couldn't open mathffp.library\n");
+        return RETURN_FAIL;
     }
-	
+        
     Printf("\nValidating 'mathffp' functionality...\n");
 
     /* this should set the zero-bit*/
-    wanted = DEF_FFPNull;	CHECK(SPAbs,(0),wanted);
+    wanted = DEF_FFPNull;       CHECK(SPAbs,(0),wanted);
 
-    wanted = DEF_FFPNull;	CHECK(SPFlt,(0),wanted);
-    wanted = DEF_FFPOne;	CHECK(SPFlt,(1),wanted);
-    wanted = DEF_FFPTwo;	CHECK(SPFlt,(2),wanted);
-    wanted = DEF_FFPMinusOne;	CHECK(SPFlt,(-1),wanted);
-    wanted = DEF_FFPTwo;	CHECK(SPAdd,(FFPOne, FFPOne),wanted);
-    wanted = DEF_FFPOnehalf;	CHECK(SPDiv,(FFPTwo, FFPOne),wanted);
-    wanted = DEF_FFPTwo;	CHECK(SPMul,(FFPOne, FFPTwo),wanted);
+    wanted = DEF_FFPNull;       CHECK(SPFlt,(0),wanted);
+    wanted = DEF_FFPOne;        CHECK(SPFlt,(1),wanted);
+    wanted = DEF_FFPTwo;        CHECK(SPFlt,(2),wanted);
+    wanted = DEF_FFPMinusOne;   CHECK(SPFlt,(-1),wanted);
+    wanted = DEF_FFPTwo;        CHECK(SPAdd,(FFPOne, FFPOne),wanted);
+    wanted = DEF_FFPOnehalf;    CHECK(SPDiv,(FFPTwo, FFPOne),wanted);
+    wanted = DEF_FFPTwo;        CHECK(SPMul,(FFPOne, FFPTwo),wanted);
 
     CHECK(SPMul, (SPFlt(-1000), SPFlt(-10)), 0x9c40004e);
     CHECK(SPDiv, (SPFlt(-10), SPFlt(-1000)), 0xc8000047);
@@ -290,8 +290,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathTransBase = OpenLibrary("mathtrans.library", 0L)))
     {
-	Printf ("Couldn't open mathtrans.library\n");
-	return RETURN_FAIL;
+        Printf ("Couldn't open mathtrans.library\n");
+        return RETURN_FAIL;
     }
 
     Printf("\nValidating 'mathtrans' functionality...\n");
@@ -312,8 +312,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0L)))
     {
-	Printf ("Couldn't open mathieeesingbas.library\n");
-	return RETURN_FAIL;
+        Printf ("Couldn't open mathieeesingbas.library\n");
+        return RETURN_FAIL;
     }
 
     Printf("\nValidating 'mathieeesingbas' functionality...\n");
@@ -324,8 +324,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeSingTransBase = OpenLibrary("mathieeesingtrans.library", 0L)))
     {
-	Printf ("Couldn't open mathieeesingtrans.library\n");
-	return RETURN_FAIL;
+        Printf ("Couldn't open mathieeesingtrans.library\n");
+        return RETURN_FAIL;
     }
 
     Printf("\nValidating 'mathieeesingtrans' functionality...\n");
@@ -346,8 +346,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeDoubBasBase = OpenLibrary("mathieeedoubbas.library", 0L)))
     {
-	Printf ("Couldn't open mathieeedoubbas.library\n");
-	return RETURN_FAIL;
+        Printf ("Couldn't open mathieeedoubbas.library\n");
+        return RETURN_FAIL;
     }
     
     Printf("\nValidating 'mathieeedoubbas' functionality...\n");
@@ -370,8 +370,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeDoubTransBase = OpenLibrary("mathieeedoubtrans.library", 0L)))
     {
-	Printf ("Couldn't open mathieeedoubtrans.library\n");
-	return RETURN_FAIL;
+        Printf ("Couldn't open mathieeedoubtrans.library\n");
+        return RETURN_FAIL;
     }
     
     Printf("\nValidating 'mathieeedoubtrans' functionality...\n");

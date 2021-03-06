@@ -24,15 +24,15 @@ static void entry(void)
     Signal(parent,1<<sigbit1);
     if(sigbit2>=0)
     {
-	for(i=0;i<9;i++)
-	{
-	    Wait(1<<sigbit2);
-	    cnt++;
-	}
-	for(i=0;i<10000;i++)
-	    cnt++;
+        for(i=0;i<9;i++)
+        {
+            Wait(1<<sigbit2);
+            cnt++;
+        }
+        for(i=0;i<10000;i++)
+            cnt++;
 
-	FreeSignal(sigbit2);
+        FreeSignal(sigbit2);
     }
     Wait(0);/* Let the parent remove me */
 }
@@ -46,41 +46,41 @@ int main(int argc, char* argv[])
     sigbit1=AllocSignal(-1);
     if(sigbit1>=0)
     {
-	t=(struct Task *)AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-	if(t!=NULL)
-	{
-	    UBYTE *s;
-	    s=(UBYTE *)AllocMem(STACKSIZE, MEMF_PUBLIC|MEMF_CLEAR);
-	    if(s!=NULL)
-	    {
-		t->tc_Node.ln_Type=NT_TASK;
-		t->tc_Node.ln_Pri=1;
-		t->tc_Node.ln_Name="new task";
-		t->tc_SPLower=s;
-		t->tc_SPUpper=s+STACKSIZE;
+        t=(struct Task *)AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+        if(t!=NULL)
+        {
+            UBYTE *s;
+            s=(UBYTE *)AllocMem(STACKSIZE, MEMF_PUBLIC|MEMF_CLEAR);
+            if(s!=NULL)
+            {
+                t->tc_Node.ln_Type=NT_TASK;
+                t->tc_Node.ln_Pri=1;
+                t->tc_Node.ln_Name="new task";
+                t->tc_SPLower=s;
+                t->tc_SPUpper=s+STACKSIZE;
 #if AROS_STACK_GROWS_DOWNWARDS
-		t->tc_SPReg=(UBYTE *)t->tc_SPUpper-SP_OFFSET;
+                t->tc_SPReg=(UBYTE *)t->tc_SPUpper-SP_OFFSET;
 #else
-		t->tc_SPReg=(UBYTE *)t->tc_SPLower-SP_OFFSET;
+                t->tc_SPReg=(UBYTE *)t->tc_SPLower-SP_OFFSET;
 #endif
-		NEWLIST(&t->tc_MemEntry);
-		AddTask(t,&entry,NULL);
-		Wait(1<<sigbit1);
-		if(sigbit2>=0)
-		{
-		    int i;
-		    for(i=0;i<10;i++)
-		    {
-			Signal(t,1<<sigbit2);
-			printf("%d\n",cnt);
-		    }
-		    RemTask(t);
-		}
-		FreeMem(s,STACKSIZE);
-	    }
-	    FreeMem(t,sizeof(struct Task));
-	}
-	FreeSignal(sigbit1);
+                NEWLIST(&t->tc_MemEntry);
+                AddTask(t,&entry,NULL);
+                Wait(1<<sigbit1);
+                if(sigbit2>=0)
+                {
+                    int i;
+                    for(i=0;i<10;i++)
+                    {
+                        Signal(t,1<<sigbit2);
+                        printf("%d\n",cnt);
+                    }
+                    RemTask(t);
+                }
+                FreeMem(s,STACKSIZE);
+            }
+            FreeMem(t,sizeof(struct Task));
+        }
+        FreeSignal(sigbit1);
     }
     return 0;
 }

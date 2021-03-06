@@ -11,7 +11,7 @@
 
 #include <aros/shcommands.h>
 
-TEXT const printertxt[] = 
+TEXT const printertxt[] =
         "aRIS\033c\n"
         "aRIN\033#1\n"
         "aIND\033DaIND\n"

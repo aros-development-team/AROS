@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
 
-    Desc: Benchmark for: 
+    Desc: Benchmark for:
           cybergraphics.library/WritePixelArray
           cybergraphics.library/WritePixelArrayAlpha
           cybergraphics.library/ReadPixelArray
@@ -62,7 +62,7 @@ struct
     LONG id;
 }
 pixfmt_table[] =
-{    
+{
     P(RECTFMT_RGB),
     P(RECTFMT_RGBA),
     P(RECTFMT_ARGB),
@@ -112,7 +112,7 @@ struct Window   *win;
 
 static void cleanup(STRPTR msg, ULONG retcode)
 {
-    if (msg) 
+    if (msg)
     {
         fprintf(stderr, "pixelarray: %s\n", msg);
     }
@@ -187,12 +187,12 @@ static void printresults(LONG t, LONG i)
     QUAD q;
 
     printf("Function             : %s\n", functionname);
-    printf("Pixel format         : %s   Width: %d   Height %d\n\n", 
+    printf("Pixel format         : %s   Width: %d   Height %d\n\n",
         pixfmt_table[pixfmt_index].name, (int)width, (int)height);
     printf("Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf("Blits                : %d\n", (int)i);
     printf("Blits/sec            : %f\n", i * 1000000.0 / t);
-    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n", 
+    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n",
         (double)t / i,
         (double)t / i / 1000000.0,
         (int)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
@@ -224,7 +224,7 @@ static void action_pixelarray(void)
 
     if (!win)
     {
-        cleanup("Can't open window!", RETURN_FAIL);    
+        cleanup("Can't open window!", RETURN_FAIL);
     }
     
     width = win->Width;

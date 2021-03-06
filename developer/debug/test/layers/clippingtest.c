@@ -36,7 +36,7 @@ static void Cleanup(char *msg)
 {
     if (msg)
     {
-	printf("clippingtest: %s\n",msg);
+        printf("clippingtest: %s\n",msg);
     }
 
     if (win) CloseWindow(win);
@@ -60,17 +60,17 @@ static void OpenLibs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
     {
-	Cleanup("Can't open intuition.library V39!");
+        Cleanup("Can't open intuition.library V39!");
     }
 
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
     {
-	Cleanup("Can't open graphics.library V39!");
+        Cleanup("Can't open graphics.library V39!");
     }
 
     if (!(LayersBase = OpenLibrary("layers.library",39)))
     {
-	Cleanup("Can't open layers.library V39!");
+        Cleanup("Can't open layers.library V39!");
     }
 }
 
@@ -78,26 +78,26 @@ static void GetArguments(void)
 {
     if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
     {
-	DosError();
+        DosError();
     }
 }
 
 static void MakeWin(void)
 {
     win = OpenWindowTags(0,WA_Left,10,
-			   WA_Top,20,
-			   WA_Width,200,
-			   WA_Height,200,
-			   WA_Title,(IPTR)"Press key to flip color!",
-			   WA_CloseGadget,TRUE,
-			   WA_DepthGadget,TRUE,
-			   WA_DragBar,TRUE,
-			   WA_Activate,TRUE,
-			   args[ARG_SIMPLE] ? WA_SimpleRefresh : TAG_IGNORE, TRUE,
-			   WA_IDCMP,IDCMP_CLOSEWINDOW |
-				    IDCMP_VANILLAKEY |
-				    IDCMP_REFRESHWINDOW,
-			   TAG_DONE);
+                           WA_Top,20,
+                           WA_Width,200,
+                           WA_Height,200,
+                           WA_Title,(IPTR)"Press key to flip color!",
+                           WA_CloseGadget,TRUE,
+                           WA_DepthGadget,TRUE,
+                           WA_DragBar,TRUE,
+                           WA_Activate,TRUE,
+                           args[ARG_SIMPLE] ? WA_SimpleRefresh : TAG_IGNORE, TRUE,
+                           WA_IDCMP,IDCMP_CLOSEWINDOW |
+                                    IDCMP_VANILLAKEY |
+                                    IDCMP_REFRESHWINDOW,
+                           TAG_DONE);
 
     if (!win) Cleanup("Can't open window!");
 
@@ -136,53 +136,53 @@ static void Action(void)
 
     while(!quitme)
     {
-	WaitPort(win->UserPort);
-	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-	{
-	    switch(msg->Class)
-	    {
-	    case IDCMP_CLOSEWINDOW:
-		quitme = TRUE;
-		break;
+        WaitPort(win->UserPort);
+        while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+        {
+            switch(msg->Class)
+            {
+            case IDCMP_CLOSEWINDOW:
+                quitme = TRUE;
+                break;
 
-	    case IDCMP_VANILLAKEY:
-	        switch (msg->Code)
-	        {
-	        case 'c':
-	        case 'C':
-	        if (installed)
-	        {
-	            InstallClipRegion(lay, oldclip);
-	            installed = FALSE;
-	        }
-	        else
-	        {
-	            oldclip = InstallClipRegion(lay, clip);
-	            installed = TRUE;
-	        }    
-		/* Fallthrough */
+            case IDCMP_VANILLAKEY:
+                switch (msg->Code)
+                {
+                case 'c':
+                case 'C':
+                if (installed)
+                {
+                    InstallClipRegion(lay, oldclip);
+                    installed = FALSE;
+                }
+                else
+                {
+                    oldclip = InstallClipRegion(lay, clip);
+                    installed = TRUE;
+                }
+                /* Fallthrough */
 
-	        default:
-		    col = 3 - col;
-		    SetAPen(rp,col);
-		    RectFill(rp,0,0,1000,1000);
-		    break;
-		}
+                default:
+                    col = 3 - col;
+                    SetAPen(rp,col);
+                    RectFill(rp,0,0,1000,1000);
+                    break;
+                }
 
-	    case IDCMP_REFRESHWINDOW:
-		BeginRefresh(win);
-		SetAPen(rp,col);
-		RectFill(rp,0,0,1000,1000);					
-		EndRefresh(win,TRUE);
-		break;
-	    }
+            case IDCMP_REFRESHWINDOW:
+                BeginRefresh(win);
+                SetAPen(rp,col);
+                RectFill(rp,0,0,1000,1000);
+                EndRefresh(win,TRUE);
+                break;
+            }
 
-	    ReplyMsg((struct Message *)msg);
-	}
+            ReplyMsg((struct Message *)msg);
+        }
     }
 
     if (installed)
-	InstallClipRegion(lay, oldclip);
+        InstallClipRegion(lay, oldclip);
     DisposeRegion(clip);
 }
 

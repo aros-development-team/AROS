@@ -18,21 +18,21 @@ static void HexDump(const UBYTE *data, ULONG count)
 
     for (t=0; t<end; t++)
     {
-	if ((t&15) == 0)
-	    printf("0x%08X:", (unsigned)t);
+        if ((t&15) == 0)
+            printf("0x%08X:", (unsigned)t);
 
-	if ((t&3) == 0)
-	    printf(" ");
+        if ((t&3) == 0)
+            printf(" ");
 
-	if (t < count)
-	    printf("%02x", ((UBYTE *)data)[t]);
-	else
-	    printf("  ");
+        if (t < count)
+            printf("%02x", ((UBYTE *)data)[t]);
+        else
+            printf("  ");
 
-	if ((t&15) == 15)
-	{
-	    printf("\n");
-	}
+        if ((t&15) == 15)
+        {
+            printf("\n");
+        }
     }
 } /* hexdump */
 
@@ -42,7 +42,7 @@ int main(void)
 
     setjmp(buf);
 
-    me = FindTask(NULL);    
+    me = FindTask(NULL);
     printf("Task 0x%p (%s), stack 0x%p - 0x%p\n", me, me->tc_Node.ln_Name, me->tc_SPLower, me->tc_SPUpper);
     printf("Function at 0x%p\n", main);
     printf("Buffer at 0x%p (%u bytes)\n", buf, (unsigned int)sizeof(buf));

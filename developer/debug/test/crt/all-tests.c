@@ -41,22 +41,22 @@ void runtests(char *buffer, char *tests[])
 
     for( i = 0; tests[i] != NULL; i++ )
     {
-    	total++;
-	sprintf( buffer, "%s >T:TestOutput/test-%d.log", tests[i], i );
+        total++;
+        sprintf( buffer, "%s >T:TestOutput/test-%d.log", tests[i], i );
 
-	rc = system( buffer );
+        rc = system( buffer );
 
-	if( rc == OK ) 
-	{
-	    printf( "." );
-	    fflush( stdout );
-	} 
-	else 
-	{
-	    failed++;
-	    printf( "F" );
-	    fflush( stdout );
-	}
+        if( rc == OK )
+        {
+            printf( "." );
+            fflush( stdout );
+        }
+        else
+        {
+            failed++;
+            printf( "F" );
+            fflush( stdout );
+        }
     }
 }
 
@@ -72,13 +72,13 @@ int main()
     runtests(buffer, posixc_tests);
 
     printf( "\n\nPerformed %d tests: %d succeeded, %d failed.\n",
-        total, total - failed, failed );  
+        total, total - failed, failed );
 
-    if( failed > 0 ) 
+    if( failed > 0 )
     {
-    	printf( "\nError messages:\n" );
-    	system( "join T:TestOutput/test-#? as T:TestOutput/all-tests.log" );
-	system( "type T:TestOutput/all-tests.log" );
+        printf( "\nError messages:\n" );
+        system( "join T:TestOutput/test-#? as T:TestOutput/all-tests.log" );
+        system( "type T:TestOutput/all-tests.log" );
     }
 
     system( "delete T:TestOutput ALL QUIET" );

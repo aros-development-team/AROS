@@ -21,7 +21,7 @@ int main()
     int i;
 
     for(i = 0; i < BUFLEN; i++)
-	source[i] = str[i % strlen(str)];
+        source[i] = str[i % strlen(str)];
 
     TEST((pipe(filedes) == 0));
     TEST((write(filedes[1], source, BUFLEN) == BUFLEN));
@@ -29,7 +29,7 @@ int main()
     TEST((memcmp(source, destination, BUFLEN) == 0));
 
     for(i = 0; i < BUFLEN; i++)
-	source[i] = str2[i % strlen(str2)];
+        source[i] = str2[i % strlen(str2)];
 
     TEST((write(filedes[1], source, BUFLEN) == BUFLEN));
     TEST((read(filedes[0], destination, BUFLEN) == BUFLEN));
@@ -37,11 +37,11 @@ int main()
     
     for(i = 0; i < 10000; i++)
     {
-	char src = i % 256;
-	char dst;
-	TESTFALSE((write(filedes[1], &src, 1) == 1));
-	TESTFALSE((read(filedes[0], &dst, 1) == 1));
-	TESTFALSE((src == dst));
+        char src = i % 256;
+        char dst;
+        TESTFALSE((write(filedes[1], &src, 1) == 1));
+        TESTFALSE((read(filedes[0], &dst, 1) == 1));
+        TESTFALSE((src == dst));
     }
     printf("10000 read-writes passed, line %d.\n", __LINE__);
 
@@ -54,11 +54,11 @@ int main()
 
     for(i = 0; i < 10000; i++)
     {
-	char src = i % 256;
-	char dst;
-	TESTFALSE((write(filedes[1], &src, 1) == 1));
-	TESTFALSE((read(dupfiledes[0], &dst, 1) == 1));
-	TESTFALSE((src == dst));
+        char src = i % 256;
+        char dst;
+        TESTFALSE((write(filedes[1], &src, 1) == 1));
+        TESTFALSE((read(dupfiledes[0], &dst, 1) == 1));
+        TESTFALSE((src == dst));
     }
     printf("10000 read-writes passed, line %d.\n", __LINE__);
 
@@ -71,11 +71,11 @@ int main()
 
     for(i = 0; i < 10000; i++)
     {
-	char src = i % 256;
-	char dst;
-	TESTFALSE((write(dupfiledes[1], &src, 1) == 1));
-	TESTFALSE((read(filedes[0], &dst, 1) == 1));
-	TESTFALSE((src == dst));
+        char src = i % 256;
+        char dst;
+        TESTFALSE((write(dupfiledes[1], &src, 1) == 1));
+        TESTFALSE((read(filedes[0], &dst, 1) == 1));
+        TESTFALSE((src == dst));
     }
     printf("10000 read-writes passed, line %d.\n", __LINE__);
 
@@ -85,11 +85,11 @@ int main()
 
     for(i = 0; i < 10000; i++)
     {
-	char src = i % 256;
-	char dst;
-	TESTFALSE((write(dupfiledes[1], &src, 1) == 1));
-	TESTFALSE((read(dupfiledes[0], &dst, 1) == 1));
-	TESTFALSE((src == dst));
+        char src = i % 256;
+        char dst;
+        TESTFALSE((write(dupfiledes[1], &src, 1) == 1));
+        TESTFALSE((read(dupfiledes[0], &dst, 1) == 1));
+        TESTFALSE((src == dst));
     }
     printf("10000 read-writes passed, line %d.\n", __LINE__);
 
@@ -104,11 +104,11 @@ int main()
     
     for(i = 0; i < 10000; i++)
     {
-	char src = i % 256;
-	char dst;
-	TESTFALSE((write(filedes[1], &src, 1) == 1));
-	TESTFALSE((read(filedes[0], &dst, 1) == 1));
-	TESTFALSE((src == dst));
+        char src = i % 256;
+        char dst;
+        TESTFALSE((write(filedes[1], &src, 1) == 1));
+        TESTFALSE((read(filedes[0], &dst, 1) == 1));
+        TESTFALSE((src == dst));
     }
     printf("10000 read-writes passed, line %d.\n", __LINE__);
 
@@ -119,11 +119,11 @@ int main()
 void cleanup()
 {
     if(filedes[0])
-	close(filedes[0]);
+        close(filedes[0]);
     if(filedes[1])
-	close(filedes[1]);
+        close(filedes[1]);
     if(dupfiledes[0])
-	close(dupfiledes[0]);
+        close(dupfiledes[0]);
     if(dupfiledes[1])
-	close(dupfiledes[1]);
+        close(dupfiledes[1]);
 }

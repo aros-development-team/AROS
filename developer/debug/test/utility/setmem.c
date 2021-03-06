@@ -168,7 +168,7 @@ int main(void)
             iter <<= 1;
         }
 
-		FreeMem(perfbuffer, (10 * 1024 * 1024) << 1);
+                FreeMem(perfbuffer, (10 * 1024 * 1024) << 1);
 
         CloseDevice(&timereq);
     }

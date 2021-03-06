@@ -52,7 +52,7 @@ void action(void)
     font = OpenDiskFont(&ta);
     if (font)
     {
-	CloseFont(font);
+        CloseFont(font);
     }
 }
 

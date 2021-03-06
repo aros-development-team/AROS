@@ -34,7 +34,7 @@ int main()
     return OK;
 }
 
-void cleanup() 
+void cleanup()
 {
     remove(testfilename);
 }

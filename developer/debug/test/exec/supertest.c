@@ -15,44 +15,44 @@ extern IPTR b(void);
 #ifdef __mc68000
 #define HAVE_ASM_CODE
 asm(
-"	.text\n"
-"	.balign 2\n"
-"	.globl	a\n"
+"       .text\n"
+"       .balign 2\n"
+"       .globl  a\n"
 "a:\n"
-"	movew	%sr,%d0\n"
-"	rts\n"
-"	.globl	b\n"
+"       movew   %sr,%d0\n"
+"       rts\n"
+"       .globl  b\n"
 "b:\n"
-"	movew	%sp@,%d0\n"
-"	rte\n"
+"       movew   %sp@,%d0\n"
+"       rte\n"
 );
 #endif
 #ifdef __i386__
 #define HAVE_ASM_CODE
 __asm__(
-"	.globl	a\n"
+"       .globl  a\n"
 "a:\n"
-"	pushf\n"
-"	popl	%eax\n"
-"	ret\n"
-"	.globl	b\n"
+"       pushf\n"
+"       popl    %eax\n"
+"       ret\n"
+"       .globl  b\n"
 "b:\n"
-"	movl	%esp,%eax\n"
-"	iret\n"
+"       movl    %esp,%eax\n"
+"       iret\n"
 );
 #endif
 #ifdef __x86_64__
 #define HAVE_ASM_CODE
 __asm__(
-"	.globl	a\n"
+"       .globl  a\n"
 "a:\n"
-"	pushf\n"
-"	popq	%rax\n"
-"	ret\n"
-"	.globl	b\n"
+"       pushf\n"
+"       popq    %rax\n"
+"       ret\n"
+"       .globl  b\n"
 "b:\n"
-"	movq	%rsp, %rax\n"
-"	iretq\n"
+"       movq    %rsp, %rax\n"
+"       iretq\n"
 );
 #endif
 #endif
@@ -69,7 +69,7 @@ int main(void)
     Printf("SetSR()             : %08lx\n",SetSR(0,0));
     
     if (KernelBase)
-    	Printf("KrnIsSuper()        : %d\n", KrnIsSuper());
+        Printf("KrnIsSuper()        : %d\n", KrnIsSuper());
 
     Printf("Task stack          : 0x%p - 0x%p\n", me->tc_SPLower, me->tc_SPUpper);
     Printf("Supervisor stack    : 0x%p - 0x%p\n", SysBase->SysStkLower, SysBase->SysStkUpper);
@@ -85,21 +85,21 @@ int main(void)
 #endif
 
         if (KernelBase)
-    	    issuper = KrnIsSuper();
+            issuper = KrnIsSuper();
 
-	bug("Leaving SuperState...\n");
-    	UserState(ssp);
+        bug("Leaving SuperState...\n");
+        UserState(ssp);
 
-	if (KernelBase)
-	    Printf("Supervisor mode test: %d\n", issuper);
+        if (KernelBase)
+            Printf("Supervisor mode test: %d\n", issuper);
 
-	Printf("Saved stack         : 0x%p\n", ssp);
+        Printf("Saved stack         : 0x%p\n", ssp);
 #ifdef HAVE_ASM_CODE
-	Printf("Supervisor flags    : 0x%p\n", ar);
+        Printf("Supervisor flags    : 0x%p\n", ar);
 #endif
     }
     else
-       	Printf("!!! SuperState() failed to enter supervisor mode (returned NULL) !!!\n");
+        Printf("!!! SuperState() failed to enter supervisor mode (returned NULL) !!!\n");
 
 #ifdef HAVE_ASM_CODE
     Printf("User flags          : 0x%p\n", a());

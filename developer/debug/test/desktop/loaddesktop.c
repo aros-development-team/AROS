@@ -83,7 +83,7 @@ int main(void)
     icTags[5].ti_Tag=TAG_END;
     icTags[5].ti_Data=0;
 
-	kprintf("here1\n");
+        kprintf("here1\n");
 
     app=ApplicationObject,
         SubWindow, win=WindowObject,

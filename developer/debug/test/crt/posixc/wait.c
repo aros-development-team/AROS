@@ -21,41 +21,41 @@ int main()
     pid = vfork();
     if((int) pid > 0)
     {
-	printf("I'm parent, I have a child with pid %d\n", (int) pid);
-	printf("Waiting for child to exit.\n");
-	wait_pid = wait(&status);
-	TEST((wait_pid == pid));
-	printf("Child %d exited with exit status %d\n", (int) wait_pid, status);
-	TEST((status == EXIT_STATUS));
+        printf("I'm parent, I have a child with pid %d\n", (int) pid);
+        printf("Waiting for child to exit.\n");
+        wait_pid = wait(&status);
+        TEST((wait_pid == pid));
+        printf("Child %d exited with exit status %d\n", (int) wait_pid, status);
+        TEST((status == EXIT_STATUS));
     }
     else if(pid == 0)
     {
-	printf("Exiting with status %d\n", EXIT_STATUS);
-	_exit(EXIT_STATUS);
+        printf("Exiting with status %d\n", EXIT_STATUS);
+        _exit(EXIT_STATUS);
     }
     else
     {
-	TEST(0);
+        TEST(0);
     }
 
     pid = vfork();
     if((int) pid > 0)
     {
-	printf("I'm parent, I have a child with pid %d\n", (int) pid);
-	printf("Waiting for child to exit.\n");
-	wait_pid = wait(&status);
-	TEST((wait_pid == pid));
-	printf("Child %d exited with exit status %d\n", (int) wait_pid, status);
-	TEST((status == 0));
+        printf("I'm parent, I have a child with pid %d\n", (int) pid);
+        printf("Waiting for child to exit.\n");
+        wait_pid = wait(&status);
+        TEST((wait_pid == pid));
+        printf("Child %d exited with exit status %d\n", (int) wait_pid, status);
+        TEST((status == 0));
     }
     else if(pid == 0)
     {
-	execve("C:Echo", argv0, envp);
-	_exit(EXIT_STATUS);
+        execve("C:Echo", argv0, envp);
+        _exit(EXIT_STATUS);
     }
     else
     {
-	TEST(0);
+        TEST(0);
     }
     return 0;
 }

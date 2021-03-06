@@ -14,7 +14,7 @@ int main(void)
     bug("Nest level: %u\n", ++level);
 
     if (level < 20)
-    	main();
+        main();
 
     bug("About to call exit()...\n");
 

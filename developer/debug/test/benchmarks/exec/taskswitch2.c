@@ -6,7 +6,7 @@
 #include <sys/time.h>
 
 #ifndef __AROS__
-/* 
+/*
    This is a trick to make the timer.device's timeval struct not clash with the
    sys/time.h's one. I'm using gettymeofday 'cause I'm lazy and don't wanna
    bother with timer.device myself :)
@@ -53,8 +53,8 @@ void Task1Entry()
         if (Wait(SIGF_HELLO | SIGF_STOP) == SIGF_HELLO)
             Signal(task2, SIGF_HELLO);
         else
-    	{
-     	    Wait(SIGF_BYE);
+        {
+            Wait(SIGF_BYE);
             return;
         }
     }
@@ -79,7 +79,7 @@ void Task2Entry()
 
 int __nocommandline = 1;
 
-/* 
+/*
    define this to non-zero if you want the benchmark to end automatically
    when it realizes that there's no need to continue.
 
@@ -99,7 +99,7 @@ int main(void)
         "The test is starting.\n"
         #if !SELF_TIMED_TEST
         "Press CTRL-C to stop the test and get the results.\n"
-	"Wait a few seconds before doing so, in order to get a more accurate result\n\n"
+        "Wait a few seconds before doing so, in order to get a more accurate result\n\n"
         #endif
     );
 

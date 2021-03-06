@@ -44,10 +44,10 @@ static void Cleanup(char *msg)
 
     if (msg)
     {
-    	Printf("crlist: %s\n",msg);
-	rc = RETURN_WARN;
+        Printf("crlist: %s\n",msg);
+        rc = RETURN_WARN;
     } else {
-    	rc = RETURN_OK;
+        rc = RETURN_OK;
     }
 
     if (MyArgs) FreeArgs(MyArgs);
@@ -60,8 +60,8 @@ static void GetArguments(void)
 {
     if (!(MyArgs = ReadArgs(ARG_TEMPLATE,Args,0)))
     {
-    	Fault(IoErr(),0,s,255);
-	Cleanup(s);
+        Fault(IoErr(),0,s,255);
+        Cleanup(s);
     }
 }
 
@@ -71,78 +71,78 @@ static void Show(struct RastPort *rp, struct ClipRect *cr)
 
     while(cr)
     {
-    	Printf("#%04ld (%4ld,%4ld) - (%4ld, %4ld)  Size: %4ld x %4ld  %s%s\n",
-		++count,
-		cr->bounds.MinX,
-		cr->bounds.MinY,
-		cr->bounds.MaxX,
-		cr->bounds.MaxY,
-		cr->bounds.MaxX - cr->bounds.MinX + 1,
-		cr->bounds.MaxY - cr->bounds.MinY + 1,
-		(cr->lobs ? "HIDDEN " : ""),
-		(cr->BitMap ? "BITMAP ": ""));
+        Printf("#%04ld (%4ld,%4ld) - (%4ld, %4ld)  Size: %4ld x %4ld  %s%s\n",
+                ++count,
+                cr->bounds.MinX,
+                cr->bounds.MinY,
+                cr->bounds.MaxX,
+                cr->bounds.MaxY,
+                cr->bounds.MaxX - cr->bounds.MinX + 1,
+                cr->bounds.MaxY - cr->bounds.MinY + 1,
+                (cr->lobs ? "HIDDEN " : ""),
+                (cr->BitMap ? "BITMAP ": ""));
 
-	if (cr->BitMap && Args[ARG_EXTRA])
-	{
-	    ULONG w = GetBitMapAttr(cr->BitMap, BMA_WIDTH);
-	    ULONG h = GetBitMapAttr(cr->BitMap, BMA_HEIGHT);
+        if (cr->BitMap && Args[ARG_EXTRA])
+        {
+            ULONG w = GetBitMapAttr(cr->BitMap, BMA_WIDTH);
+            ULONG h = GetBitMapAttr(cr->BitMap, BMA_HEIGHT);
 
-	    Printf("  -> BitMap 0x%p, size %ld x %ld\n", cr->BitMap, w, h);
-	}
+            Printf("  -> BitMap 0x%p, size %ld x %ld\n", cr->BitMap, w, h);
+        }
 
-	for(i = 0; i < (Args[ARG_FAST] ? 1 : 8);i++)
-	{
-	    SetAPen(rp,1 + (i & 1));
-	    RectFill(rp,cr->bounds.MinX,cr->bounds.MinY,cr->bounds.MaxX,cr->bounds.MinY);
-	    RectFill(rp,cr->bounds.MaxX,cr->bounds.MinY,cr->bounds.MaxX,cr->bounds.MaxY);
-	    RectFill(rp,cr->bounds.MinX,cr->bounds.MaxY,cr->bounds.MaxX,cr->bounds.MaxY);
-	    RectFill(rp,cr->bounds.MinX,cr->bounds.MinY,cr->bounds.MinX,cr->bounds.MaxY);
-	    
-	    if (!Args[ARG_FAST]) Delay(10);
-	}
-	
-	if (Args[ARG_NUMBERS])
-	{
-	    __sprintf(s,"%d",count);
-	    i = TextLength(rp,s,strlen(s));
-	    
-	    x = (cr->bounds.MinX + cr->bounds.MaxX - i) / 2;
-	    y = (cr->bounds.MinY + cr->bounds.MaxY - rp->TxHeight) / 2;
-	    
-	    if (x < 0)
-	    {
-	    	x = 0;
-	    } else if (x >= scr->Width - i)
-	    {
-	    	x = scr->Width - i - 1;
-	    }
-	  
-	    if (y < 0)
-	    {
-	    	y = 0;
-	    } else if (y >= scr->Height - rp->TxHeight)
-	    {
-	    	y = scr->Height - rp->TxHeight - 1;
-	    }
-	    
-	    i = strlen(s);
-	    
-	    SetAPen(rp,1);
-	    Move(rp,x + 1, y + 1 + rp->TxBaseline);
-	    Text(rp,s,i);
-	    
-	    SetAPen(rp,2);
-	    Move(rp,x, y + rp->TxBaseline);
-	    Text(rp,s,i);
-	}
-    	cr = cr->Next;
+        for(i = 0; i < (Args[ARG_FAST] ? 1 : 8);i++)
+        {
+            SetAPen(rp,1 + (i & 1));
+            RectFill(rp,cr->bounds.MinX,cr->bounds.MinY,cr->bounds.MaxX,cr->bounds.MinY);
+            RectFill(rp,cr->bounds.MaxX,cr->bounds.MinY,cr->bounds.MaxX,cr->bounds.MaxY);
+            RectFill(rp,cr->bounds.MinX,cr->bounds.MaxY,cr->bounds.MaxX,cr->bounds.MaxY);
+            RectFill(rp,cr->bounds.MinX,cr->bounds.MinY,cr->bounds.MinX,cr->bounds.MaxY);
+            
+            if (!Args[ARG_FAST]) Delay(10);
+        }
+        
+        if (Args[ARG_NUMBERS])
+        {
+            __sprintf(s,"%d",count);
+            i = TextLength(rp,s,strlen(s));
+            
+            x = (cr->bounds.MinX + cr->bounds.MaxX - i) / 2;
+            y = (cr->bounds.MinY + cr->bounds.MaxY - rp->TxHeight) / 2;
+            
+            if (x < 0)
+            {
+                x = 0;
+            } else if (x >= scr->Width - i)
+            {
+                x = scr->Width - i - 1;
+            }
+          
+            if (y < 0)
+            {
+                y = 0;
+            } else if (y >= scr->Height - rp->TxHeight)
+            {
+                y = scr->Height - rp->TxHeight - 1;
+            }
+            
+            i = strlen(s);
+            
+            SetAPen(rp,1);
+            Move(rp,x + 1, y + 1 + rp->TxBaseline);
+            Text(rp,s,i);
+            
+            SetAPen(rp,2);
+            Move(rp,x, y + rp->TxBaseline);
+            Text(rp,s,i);
+        }
+        cr = cr->Next;
     }
 }
 
 AROS_UFH3(static void, ClipRectHook,
-	  AROS_UFHA(struct Hook *, h, A0),
-	  AROS_UFHA(struct RastPort *, rp, A2),
-	  AROS_UFHA(struct BackFillMessage *, msg, A1))
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(struct RastPort *, rp, A2),
+          AROS_UFHA(struct BackFillMessage *, msg, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -175,7 +175,7 @@ static void Action(void)
 
     if (!(rp = CloneRastPort(&scr->RastPort)))
     {
-    	Cleanup("Can't clone screen rastport!");
+        Cleanup("Can't clone screen rastport!");
     }
     SetDrMd(rp,JAM1);
 
@@ -190,7 +190,7 @@ static void Action(void)
 
     if (Args[ARG_HOOK])
     {
-    	struct Rectangle rect = {20, 20, win->Width - 40 + 1, win->Height - 40 + 1};
+        struct Rectangle rect = {20, 20, win->Width - 40 + 1, win->Height - 40 + 1};
 
         Printf("Running ClipRectHook on Window's RastPort 0x%p, BitMap 0x%p, Layer 0x%p...\n", win->RPort, win->RPort->BitMap, lay);
         DoHookClipRects(&crHook, win->RPort, &rect);

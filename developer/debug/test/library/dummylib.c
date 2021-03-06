@@ -48,7 +48,7 @@ LONG printx(LONG nargs, ...)
 
     baseval = DummyBase->lastval;
 
-    va_start(args, nargs); 
+    va_start(args, nargs);
 
     if (DOSBase) {
         for (i = 0; i < nargs; i++) {

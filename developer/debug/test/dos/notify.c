@@ -46,10 +46,10 @@ int main(int argc, char **argv)
     if (msg)
     {
         printf("notified\n");
-	ReplyMsg(msg);
+        ReplyMsg(msg);
     }
     else
-    	printf("CTRL-C received\n");
+        printf("CTRL-C received\n");
 
     EndNotify(nr);
     DeleteMsgPort(port);

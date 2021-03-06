@@ -40,42 +40,42 @@ int main(void)
     Object *a, *b, *c, *d;
 
     app = ApplicationObject,
-   	SubWindow, wnd = WindowObject,
-    	    MUIA_Window_Title, "col",
-	    MUIA_Window_Activate, TRUE,
-    	    WindowContents, d = HGroup,
-		   GroupFrameT("Background"),
-			       Child, c = VGroup,
-		   Child, a = PopimageObject, End,
-		   Child, b = MakeLabel("Window"),
-			       End,
-			       Child, VGroup,
-		   Child, PopimageObject, End,
-		   Child, MakeLabel("Requester"),
-			       End,
-	End,
-	End,
-	End;
+        SubWindow, wnd = WindowObject,
+            MUIA_Window_Title, "col",
+            MUIA_Window_Activate, TRUE,
+            WindowContents, d = HGroup,
+                   GroupFrameT("Background"),
+                               Child, c = VGroup,
+                   Child, a = PopimageObject, End,
+                   Child, b = MakeLabel("Window"),
+                               End,
+                               Child, VGroup,
+                   Child, PopimageObject, End,
+                   Child, MakeLabel("Requester"),
+                               End,
+        End,
+        End,
+        End;
 
     if (app)
     {
-	ULONG sigs = 0;
-	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	set(wnd, MUIA_Window_Open, TRUE);
+        ULONG sigs = 0;
+        DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        set(wnd, MUIA_Window_Open, TRUE);
 
-	printf("%d[%p] %d[%p] %d[%p] %d\n", _maxwidth(a), a, _maxwidth(b), b, _maxwidth(c), c, _maxwidth(d));
+        printf("%d[%p] %d[%p] %d[%p] %d\n", _maxwidth(a), a, _maxwidth(b), b, _maxwidth(c), c, _maxwidth(d));
 
-	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-		if (sigs & SIGBREAKF_CTRL_C) break;
-		
-	    }
-	}
-	set(wnd, MUIA_Window_Open, FALSE);
-	MUI_DisposeObject(app);
+        while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+                
+            }
+        }
+        set(wnd, MUIA_Window_Open, FALSE);
+        MUI_DisposeObject(app);
     }
     
     return 0;

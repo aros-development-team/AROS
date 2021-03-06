@@ -29,12 +29,12 @@ int main(void)
         CONST_STRPTR two;
         ULONG three,four,five,size;
     } __packed args = {
-	"one",
-	"two",
-	3,
-	4,
-	5,
-	6,
+        "one",
+        "two",
+        3,
+        4,
+        5,
+        6,
     };
 
     /*

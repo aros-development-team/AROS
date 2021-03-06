@@ -28,15 +28,15 @@ int main(int argc, char* argv[])
 
     struct NewBroker brok =
     {
-	NB_VERSION,
-	"AROS TestBroker",
-	"SDuvan 20.04.98",
-	"Broker for testing the commodities library",
-	0,
-	0,
-	0,
-	NULL,			/* nb_Port - will be initialized below */
-	0
+        NB_VERSION,
+        "AROS TestBroker",
+        "SDuvan 20.04.98",
+        "Broker for testing the commodities library",
+        0,
+        0,
+        0,
+        NULL,                   /* nb_Port - will be initialized below */
+        0
     };
 
 
@@ -49,16 +49,16 @@ int main(int argc, char* argv[])
     IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39);
 
     window = OpenWindowTags(NULL,
-			    WA_IDCMP,	IDCMP_RAWKEY,
-			    WA_Height, 50,
-			    WA_Width, 100,
-			    TAG_END);
+                            WA_IDCMP,   IDCMP_RAWKEY,
+                            WA_Height, 50,
+                            WA_Width, 100,
+                            TAG_END);
     
     if(!window)
     {
-	fprintf(stderr, "Window failed to open.\n");
-	exit(1);
-    }    
+        fprintf(stderr, "Window failed to open.\n");
+        exit(1);
+    }
 
 
     fprintf(stderr, "Testing commodities.library...\n");
@@ -69,8 +69,8 @@ int main(int argc, char* argv[])
     
     if(CxBase == NULL)
     {
-	fprintf(stderr, "Couldn't open commodities.library.\n");
-	return -1;
+        fprintf(stderr, "Couldn't open commodities.library.\n");
+        return -1;
     }
     
     fprintf(stderr, "Calling CxBroker().\n");
@@ -84,8 +84,8 @@ int main(int argc, char* argv[])
     if(myBroker == NULL)
     {
         fprintf(stderr, "Error in creating object.\n");
-	CloseLibrary(CxBase);
-	return -1;
+        CloseLibrary(CxBase);
+        return -1;
     }
     
     fprintf(stderr, "Creating filter object.\n");
@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
     if(!filter)
     {
         fprintf(stderr, "Error in creating filter.\n");
-	CloseLibrary(CxBase);
-	return -1;
+        CloseLibrary(CxBase);
+        return -1;
     }
 
     fprintf(stderr, "Filter created.\n");
@@ -106,26 +106,26 @@ int main(int argc, char* argv[])
     fflush(stderr);
 
     {
-	/*	int sig = AllocSignal(-1); */
-	
-	/* trans = CxSignal(FindTask(NULL), sig); */
-	/* trans = CxDebug(1); */
-	trans = CxTranslate(&myie); 
-	if(!trans)
-	{
-	    fprintf(stderr, "Error in creating translator.\n");
-	    return -1;
-	}
-	
-	AttachCxObj(filter, trans);
-	
-	ActivateCxObj(myBroker, TRUE);
-	
-	fprintf(stderr, "Broker activated.\n");
-	fflush(stderr);
-	
-	Wait(SIGBREAKF_CTRL_C);
-	/*	Wait(SIGBREAKF_CTRL_C | 1 << sig); */
+        /*      int sig = AllocSignal(-1); */
+        
+        /* trans = CxSignal(FindTask(NULL), sig); */
+        /* trans = CxDebug(1); */
+        trans = CxTranslate(&myie);
+        if(!trans)
+        {
+            fprintf(stderr, "Error in creating translator.\n");
+            return -1;
+        }
+        
+        AttachCxObj(filter, trans);
+        
+        ActivateCxObj(myBroker, TRUE);
+        
+        fprintf(stderr, "Broker activated.\n");
+        fflush(stderr);
+        
+        Wait(SIGBREAKF_CTRL_C);
+        /*      Wait(SIGBREAKF_CTRL_C | 1 << sig); */
     }
 
     fprintf(stderr, "Deleting all objects.\n");

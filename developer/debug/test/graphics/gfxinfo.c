@@ -129,35 +129,35 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
         printf    ("  ms_KillView            %p\n"    ,  mspc->ms_KillView);
 
     if (mspc->ms_Special) {
-	PrintNode("SpecialMonitor", &mspc->ms_Special->spm_Node);
+        PrintNode("SpecialMonitor", &mspc->ms_Special->spm_Node);
         printf   ("  spm_Flags  0x%04X\n",  mspc->ms_Special->spm_Flags);
         printf   ("  do_monitor %p\n"    ,  mspc->ms_Special->do_monitor);
         printf   ("  reserved1  %p\n"    ,  mspc->ms_Special->reserved1);
-	printf   ("  reserved2  %p\n"    ,  mspc->ms_Special->reserved2);
-	printf   ("  reserved3  %p\n"    ,  mspc->ms_Special->reserved3);
-	PrintASI ("  hblank    "         , &mspc->ms_Special->hblank);
-	PrintASI ("  vblank    "         , &mspc->ms_Special->vblank);
-	PrintASI ("  hsync     "         , &mspc->ms_Special->hsync);
-	PrintASI ("  vsync     "         , &mspc->ms_Special->vsync);
+        printf   ("  reserved2  %p\n"    ,  mspc->ms_Special->reserved2);
+        printf   ("  reserved3  %p\n"    ,  mspc->ms_Special->reserved3);
+        PrintASI ("  hblank    "         , &mspc->ms_Special->hblank);
+        PrintASI ("  vblank    "         , &mspc->ms_Special->vblank);
+        PrintASI ("  hsync     "         , &mspc->ms_Special->hsync);
+        PrintASI ("  vsync     "         , &mspc->ms_Special->vsync);
     }
     
     if (args.displaydb) {
         /* We don't use DisplayInfoDataBaseSemaphore here because it may be
-	   not initialized in fake MonitorSpecs.
-	   What is done here is actually hack. Noone will ever need in
-	   a common software. I examined many systems and these lists
-	   were either empty or not initialized at all. However
-	   there can be a theoretical possibility that something uses them. */
+           not initialized in fake MonitorSpecs.
+           What is done here is actually hack. Noone will ever need in
+           a common software. I examined many systems and these lists
+           were either empty or not initialized at all. However
+           there can be a theoretical possibility that something uses them. */
         struct Node *n = mspc->DisplayInfoDataBase.lh_Head;
 
-	if (n && mspc->DisplayInfoDataBase.lh_TailPred) {
-	    printf("DisplayInfoDataBase\n");
-	    for (; n->ln_Succ; n = n->ln_Succ) {
-	        printf("  Node %p %s\n", n, n->ln_Name);
-	        printf("    ln_Type %d\n", n->ln_Type);
+        if (n && mspc->DisplayInfoDataBase.lh_TailPred) {
+            printf("DisplayInfoDataBase\n");
+            for (; n->ln_Succ; n = n->ln_Succ) {
+                printf("  Node %p %s\n", n, n->ln_Name);
+                printf("    ln_Type %d\n", n->ln_Type);
                 printf("    ln_Pri  %d\n", n->ln_Pri);
-	    }
-	}
+            }
+        }
     }
 }
 
@@ -175,15 +175,15 @@ int main(void)
     rda = ReadArgs("NOSPECS/S,NOMODES/S,FORCESPECS/S,DISPLAYDB/S", (IPTR *)&args, NULL);
     if (!rda) {
         printf("You may supply the following switches:\n"
-	       "NOSPECS    - Do not list MonitorSpecs in GfxBase\n"
-	       "NOMODES    - Do not list Mode IDs\n"
-	       "FORCESPECS - When listing Mode IDs, list MonitorSpec contents even if this MonitorSpec\n"
-	       "             is found in the GfxBase list. Use this in conjunction with NOSPECS to get\n"
-	       "             a valid information\n"
-	       "DISPLAYDB  - attempt to list internal nodes of DisplayInfoDataBase lists inside MonitorSpecs.\n"
-	       "             May crash or output garbage since it is not proven yet that these nodes actually\n"
-	       "             have names.\n");
-	return RETURN_FAIL;
+               "NOSPECS    - Do not list MonitorSpecs in GfxBase\n"
+               "NOMODES    - Do not list Mode IDs\n"
+               "FORCESPECS - When listing Mode IDs, list MonitorSpec contents even if this MonitorSpec\n"
+               "             is found in the GfxBase list. Use this in conjunction with NOSPECS to get\n"
+               "             a valid information\n"
+               "DISPLAYDB  - attempt to list internal nodes of DisplayInfoDataBase lists inside MonitorSpecs.\n"
+               "             May crash or output garbage since it is not proven yet that these nodes actually\n"
+               "             have names.\n");
+        return RETURN_FAIL;
     }
 
     CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
@@ -195,11 +195,11 @@ int main(void)
     {
         printf("cybergraphics.library v%u.%u\n", CyberGfxBase->lib_Version, CyberGfxBase->lib_Revision);
 #ifdef __amigaos4__
-	ICyberGfx = (struct CyberGfxIFace *)GetInterface((struct Library *)CyberGfxBase, "main", 1, NULL);
+        ICyberGfx = (struct CyberGfxIFace *)GetInterface((struct Library *)CyberGfxBase, "main", 1, NULL);
 #endif
     }
     if (P96Base)
-	printf("Picasso96API.library  v%u.%u\n", P96Base->lib_Version, P96Base->lib_Revision);
+        printf("Picasso96API.library  v%u.%u\n", P96Base->lib_Version, P96Base->lib_Revision);
     printf("\n");
 
     printf("GfxBase %p\n", GfxBase);
@@ -222,16 +222,16 @@ int main(void)
     if (!args.nospecs) {
             printf("*********** MonitorSpecs ***********\n\n");
 
-	  /* It's a good idea to lock this semaphore. It seems to be present in all OSes
+          /* It's a good idea to lock this semaphore. It seems to be present in all OSes
             (at least in AmigaOS v3, MorphOS and AROS)
-	    However at least on AmigaOS v3 we can't call NextDisplayInfo() and such
-	    while the lock is held. */
+            However at least on AmigaOS v3 we can't call NextDisplayInfo() and such
+            while the lock is held. */
             ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
             for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
                 PrintMonitorSpec(mspc);
-	        printf("\n");
+                printf("\n");
             }
-	    ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+            ReleaseSemaphore(GfxBase->MonitorListSemaphore);
     }
 
     if (!args.nomodes) {
@@ -243,101 +243,101 @@ int main(void)
             break;
         }
               
-	ULONG len;
+        ULONG len;
 
         modeid = NextDisplayInfo(modeid);
         if (modeid == INVALID_ID)
             break;
 
-	printf("ModeID 0x%08X ", (unsigned)modeid);
-	memset(&ni, 0, sizeof(ni));
-	len = GetDisplayInfoData(NULL, (UBYTE *)&ni, sizeof(ni), DTAG_NAME, modeid);
-	if (len > 0)
-	    printf("%s\n", ni.Name);
-	else
-	    printf("no NameInfo\n");
+        printf("ModeID 0x%08X ", (unsigned)modeid);
+        memset(&ni, 0, sizeof(ni));
+        len = GetDisplayInfoData(NULL, (UBYTE *)&ni, sizeof(ni), DTAG_NAME, modeid);
+        if (len > 0)
+            printf("%s\n", ni.Name);
+        else
+            printf("no NameInfo\n");
 
-	printf("DisplayInfo handle: %p\n", FindDisplayInfo(modeid));
+        printf("DisplayInfo handle: %p\n", FindDisplayInfo(modeid));
 #ifndef NO_CGX_API
-	if (CyberGfxBase)
-	    printf("IsCyberModeID: %d\n", IsCyberModeID(modeid));
+        if (CyberGfxBase)
+            printf("IsCyberModeID: %d\n", IsCyberModeID(modeid));
 #endif
 
-	memset(&di, 0, sizeof(di));
-	len = GetDisplayInfoData(NULL, (UBYTE *)&di, sizeof(di), DTAG_DISP, modeid);
-	if (len > 0) {
-	    printf    ("DisplayInfo (%u bytes)\n", (unsigned)len);
-	    printf    ("  NotAvailable     0x%04X\n",  di.NotAvailable);
-	    printf    ("  PropertyFlags    0x%08X\n",  (unsigned)di.PropertyFlags);
-	    PrintPoint("  Resolution      "         , &di.Resolution);
-	    printf    ("  PixelSpeed       %u\n"    ,  di.PixelSpeed);
-	    printf    ("  NumStdSprites    %u\n"    ,  di.NumStdSprites);
-	    printf    ("  PaletteRange     %u\n"    ,  di.PaletteRange);
-	    PrintPoint("  SpriteResolution"         , &di.SpriteResolution);
-	    printf    ("  RedBits          %u\n"    ,  di.RedBits);
-	    printf    ("  GreenBits        %u\n"    ,  di.GreenBits);
-	    printf    ("  BlueBits         %u\n"    ,  di.BlueBits);
-	} else
-	    printf("No DisplayInfo\n");
+        memset(&di, 0, sizeof(di));
+        len = GetDisplayInfoData(NULL, (UBYTE *)&di, sizeof(di), DTAG_DISP, modeid);
+        if (len > 0) {
+            printf    ("DisplayInfo (%u bytes)\n", (unsigned)len);
+            printf    ("  NotAvailable     0x%04X\n",  di.NotAvailable);
+            printf    ("  PropertyFlags    0x%08X\n",  (unsigned)di.PropertyFlags);
+            PrintPoint("  Resolution      "         , &di.Resolution);
+            printf    ("  PixelSpeed       %u\n"    ,  di.PixelSpeed);
+            printf    ("  NumStdSprites    %u\n"    ,  di.NumStdSprites);
+            printf    ("  PaletteRange     %u\n"    ,  di.PaletteRange);
+            PrintPoint("  SpriteResolution"         , &di.SpriteResolution);
+            printf    ("  RedBits          %u\n"    ,  di.RedBits);
+            printf    ("  GreenBits        %u\n"    ,  di.GreenBits);
+            printf    ("  BlueBits         %u\n"    ,  di.BlueBits);
+        } else
+            printf("No DisplayInfo\n");
 
-	memset(&dims, 0, sizeof(dims));
-	len = GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid);
-	if (len > 0) {
-	    printf        ("DimensionInfo (%u bytes)\n", (unsigned)len);
-	    printf        ("  MaxDepth        %u\n",  dims.MaxDepth);
-	    printf        ("  MinRasterWidth  %u\n",  dims.MinRasterWidth);
-	    printf        ("  MinRasterHeight %u\n",  dims.MinRasterHeight);
-	    printf        ("  MaxRasterWidth  %u\n",  dims.MaxRasterWidth);
-	    printf        ("  MaxRasterHeight %u\n",  dims.MaxRasterHeight);
-	    PrintRectangle("  Nominal        "     , &dims.Nominal);
-	    PrintRectangle("  MaxOScan       "     , &dims.MaxOScan);
-	    PrintRectangle("  VideoOScan     "     , &dims.VideoOScan);
-	    PrintRectangle("  TxtOScan       "     , &dims.TxtOScan);
-	    PrintRectangle("  StdOScan       "     , &dims.StdOScan);
-	} else
-	    printf("No DimensionInfo\n");
+        memset(&dims, 0, sizeof(dims));
+        len = GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid);
+        if (len > 0) {
+            printf        ("DimensionInfo (%u bytes)\n", (unsigned)len);
+            printf        ("  MaxDepth        %u\n",  dims.MaxDepth);
+            printf        ("  MinRasterWidth  %u\n",  dims.MinRasterWidth);
+            printf        ("  MinRasterHeight %u\n",  dims.MinRasterHeight);
+            printf        ("  MaxRasterWidth  %u\n",  dims.MaxRasterWidth);
+            printf        ("  MaxRasterHeight %u\n",  dims.MaxRasterHeight);
+            PrintRectangle("  Nominal        "     , &dims.Nominal);
+            PrintRectangle("  MaxOScan       "     , &dims.MaxOScan);
+            PrintRectangle("  VideoOScan     "     , &dims.VideoOScan);
+            PrintRectangle("  TxtOScan       "     , &dims.TxtOScan);
+            PrintRectangle("  StdOScan       "     , &dims.StdOScan);
+        } else
+            printf("No DimensionInfo\n");
 
-	memset(&mon, 0, sizeof(mon));
-	len = GetDisplayInfoData(NULL, (UBYTE *)&mon, sizeof(mon), DTAG_MNTR, modeid);
-	if (len > 0) {
-	    printf        ("MonitorInfo (%u bytes)\n", (unsigned)len);
-	    PrintName     ("  Mspc               "         , &mon.Mspc->ms_Node);
-	    PrintPoint    ("  ViewPosition       "         , &mon.ViewPosition);
-	    PrintPoint    ("  ViewResolution     "         , &mon.ViewResolution);
-	    PrintRectangle("  ViewPositionRange  "         , &mon.ViewPositionRange);
-	    printf        ("  TotalRows           %u\n"    ,  mon.TotalRows);
-	    printf        ("  TotalColorClocks    %u\n"    ,  mon.TotalColorClocks);
-	    printf        ("  MinRow              %u\n"    ,  mon.MinRow);
+        memset(&mon, 0, sizeof(mon));
+        len = GetDisplayInfoData(NULL, (UBYTE *)&mon, sizeof(mon), DTAG_MNTR, modeid);
+        if (len > 0) {
+            printf        ("MonitorInfo (%u bytes)\n", (unsigned)len);
+            PrintName     ("  Mspc               "         , &mon.Mspc->ms_Node);
+            PrintPoint    ("  ViewPosition       "         , &mon.ViewPosition);
+            PrintPoint    ("  ViewResolution     "         , &mon.ViewResolution);
+            PrintRectangle("  ViewPositionRange  "         , &mon.ViewPositionRange);
+            printf        ("  TotalRows           %u\n"    ,  mon.TotalRows);
+            printf        ("  TotalColorClocks    %u\n"    ,  mon.TotalColorClocks);
+            printf        ("  MinRow              %u\n"    ,  mon.MinRow);
             printf        ("  Compatibility       %d\n"    ,  mon.Compatibility);
-	    PrintPoint    ("  MouseTicks         "         , &mon.MouseTicks);
-	    PrintPoint    ("  DefaultViewPosition"         , &mon.DefaultViewPosition);
-	    printf        ("  PreferredModeID     0x%08X\n",  (unsigned)mon.PreferredModeID);
+            PrintPoint    ("  MouseTicks         "         , &mon.MouseTicks);
+            PrintPoint    ("  DefaultViewPosition"         , &mon.DefaultViewPosition);
+            printf        ("  PreferredModeID     0x%08X\n",  (unsigned)mon.PreferredModeID);
 
-	    if (args.allspecs)
-	        mspc = NULL;
-	    else {
-	        ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
-	        for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
-	            if (mspc == mon.Mspc)
-		        break;
-		}
-		ReleaseSemaphore(GfxBase->MonitorListSemaphore);
-	    }
-	    if ((mspc != mon.Mspc) && mon.Mspc)
-	        PrintMonitorSpec(mon.Mspc);
+            if (args.allspecs)
+                mspc = NULL;
+            else {
+                ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
+                for (mspc = (struct MonitorSpec *)GfxBase->MonitorList.lh_Head; mspc->ms_Node.xln_Succ; mspc = (struct MonitorSpec *)mspc->ms_Node.xln_Succ) {
+                    if (mspc == mon.Mspc)
+                        break;
+                }
+                ReleaseSemaphore(GfxBase->MonitorListSemaphore);
+            }
+            if ((mspc != mon.Mspc) && mon.Mspc)
+                PrintMonitorSpec(mon.Mspc);
 
-	} else
-	    printf("No MonitorInfo\n");
+        } else
+            printf("No MonitorInfo\n");
 
-	printf("\n");
+        printf("\n");
       }
     }
 
     printf("*************** End ****************\n");
     if (P96Base)
-	CloseLibrary(P96Base);
+        CloseLibrary(P96Base);
     if (CyberGfxBase)
-	CloseLibrary(CyberGfxBase);
+        CloseLibrary(CyberGfxBase);
     
     FreeArgs(rda);
     return 0;

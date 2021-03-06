@@ -90,31 +90,31 @@ static void getvisual(void)
 
 static void makewin(void)
 {
-    win = OpenWindowTags(NULL, WA_CustomScreen	, (IPTR)scr, 
-    			       WA_InnerWidth	, SCREENWIDTH,
-    			       WA_InnerHeight	, SCREENHEIGHT,
-			       WA_Title		, (IPTR)"BltTemplateAlpha: Moving mouse is useless!",
-			       WA_DragBar	, TRUE,
-			       WA_DepthGadget	, TRUE,
-			       WA_CloseGadget	, TRUE,
-			       WA_Activate	, TRUE,
-			       WA_IDCMP		, IDCMP_CLOSEWINDOW,
-			       WA_BackFill  	, (IPTR) LAYERS_NOBACKFILL,
-			       TAG_DONE);
-			       
+    win = OpenWindowTags(NULL, WA_CustomScreen  , (IPTR)scr,
+                               WA_InnerWidth    , SCREENWIDTH,
+                               WA_InnerHeight   , SCREENHEIGHT,
+                               WA_Title         , (IPTR)"BltTemplateAlpha: Moving mouse is useless!",
+                               WA_DragBar       , TRUE,
+                               WA_DepthGadget   , TRUE,
+                               WA_CloseGadget   , TRUE,
+                               WA_Activate      , TRUE,
+                               WA_IDCMP         , IDCMP_CLOSEWINDOW,
+                               WA_BackFill      , (IPTR) LAYERS_NOBACKFILL,
+                               TAG_DONE);
+                               
     if (!win) cleanup("Can't open window");
 
-    rp = win->RPort; 
+    rp = win->RPort;
 
 }
 
 /***********************************************************************************/
 
 #define KC_LEFT         0x4F
-#define KC_RIGHT     	0x4E
-#define KC_UP        	0x4C
-#define KC_DOWN      	0x4D
-#define KC_ESC       	0x45
+#define KC_RIGHT        0x4E
+#define KC_UP           0x4C
+#define KC_DOWN         0x4D
+#define KC_ESC          0x45
 
 /***********************************************************************************/
 
@@ -125,10 +125,10 @@ static void action(void)
     int x, y;
     for(y = 0; y < SCREENHEIGHT; y++)
     {
-    	for(x = 0; x < SCREENWIDTH; x++)
-	{
-	    buf[y * SCREENWIDTH + x] = (y + x) & 255;   
-	}	
+        for(x = 0; x < SCREENWIDTH; x++)
+        {
+            buf[y * SCREENWIDTH + x] = (y + x) & 255;
+        }
     }
     
     SetABPenDrMd(rp, 1, 2, JAM1);
@@ -136,7 +136,7 @@ static void action(void)
     BltTemplateAlpha(buf, 0, SCREENWIDTH, rp, win->BorderLeft, win->BorderTop, SCREENWIDTH, SCREENHEIGHT);
     
     
-    WaitPort(win->UserPort);   
+    WaitPort(win->UserPort);
 }
 
 /***********************************************************************************/

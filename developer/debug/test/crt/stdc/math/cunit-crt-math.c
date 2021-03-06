@@ -17,11 +17,11 @@
 
 #if 0
 todo:
-int	ilogb(double) __pure2;
-double	scalbn(double, int);
-double	scalbln(double, long);
-double	nextafter(double, double);
-double	nexttoward(double, long double);
+int     ilogb(double) __pure2;
+double  scalbn(double, int);
+double  scalbln(double, long);
+double  nextafter(double, double);
+double  nexttoward(double, long double);
 #endif
 
 /* The suite initialization function.

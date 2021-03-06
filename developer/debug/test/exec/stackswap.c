@@ -81,9 +81,9 @@ int main(void)
     sss.stk_Lower = AllocMem(STACK_SIZE, MEMF_ANY);
     if (!sss.stk_Lower)
     {
-	print("Failed to allocate new stack!\n");
+        print("Failed to allocate new stack!\n");
 
-	return 1;
+        return 1;
     }
 
     sss.stk_Upper = sss.stk_Lower + STACK_SIZE;

@@ -53,13 +53,13 @@ void cleanup(void);
     {                                                                        \
         const ULONG x = xytable[i].x;                                        \
         const ULONG y = xytable[i].y;                                        \
-	struct RastPort *rport = benchwin->RPort;                            \
-	                                                                     \
+        struct RastPort *rport = benchwin->RPort;                            \
+                                                                             \
         SetAPen(benchwin->RPort, pen);                                       \
                                                                              \
-	function;                                                            \
+        function;                                                            \
                                                                              \
-	i++;                                                                 \
+        i++;                                                                 \
     }                                                                        \
     GetSysTime(&end);                                                        \
     SubTime(&end,&start);                                                    \
@@ -79,15 +79,15 @@ int main(int argc, char **argv)
 {
     if (init())
     {
-	DOTEST(DrawCircle(rport, x, y, 10));
-	DOTEST(DrawEllipse(rport, x, y, 10, 20));
-	DOTEST({Move(rport, x, y); Text(rport, "BenchMark", 9);});
-	DOTEST(WritePixel(rport, x, y));
-	DOTEST(RectFill(rport, x, y, x+50, y+50));
-	DOTEST
-	(({
-	    WORD pnts[] = {x, y, x+10, y+10, x+50, y+50}; PolyDraw(rport, 3,pnts);
-	}));
+        DOTEST(DrawCircle(rport, x, y, 10));
+        DOTEST(DrawEllipse(rport, x, y, 10, 20));
+        DOTEST({Move(rport, x, y); Text(rport, "BenchMark", 9);});
+        DOTEST(WritePixel(rport, x, y));
+        DOTEST(RectFill(rport, x, y, x+50, y+50));
+        DOTEST
+        (({
+            WORD pnts[] = {x, y, x+10, y+10, x+50, y+50}; PolyDraw(rport, 3,pnts);
+        }));
     }
     cleanup();
 

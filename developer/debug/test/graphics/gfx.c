@@ -10,7 +10,7 @@
 #include <aros/oldprograms.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rastport.h>
-#include <graphics/regions.h> 
+#include <graphics/regions.h>
 #include <stdio.h>
 
 struct NewWindow MyWin =
@@ -18,7 +18,7 @@ struct NewWindow MyWin =
     20,20,300,200,-1,-1,IDCMP_CLOSEWINDOW|/*IDCMP_DELTAMOVE|*/IDCMP_MOUSEMOVE,
     WINDOWCLOSE|WINDOWDRAG|WINDOWDEPTH|WINDOWSIZING|WFLG_SMART_REFRESH|WFLG_REPORTMOUSE,
     NULL,NULL,(char *)"Testwindow",
-    NULL,NULL,0,0,0,0,WBENCHSCREEN 
+    NULL,NULL,0,0,0,0,WBENCHSCREEN
   };
 
 struct GfxBase * GfxBase;
@@ -113,7 +113,7 @@ int main(void)
 /**/
 /*
         AreaEllipse(rp, 110, 30, 50, 20);
-        AreaEnd(rp);        
+        AreaEnd(rp);
 */
 /*
         Move(rp,0,0);
@@ -124,7 +124,7 @@ int main(void)
         SetAPen(rp, 1);
         Flood(rp,0,50,50);
 */
-/*        
+/*
         ScrollRaster(&IntuitionBase->ActiveScreen->RastPort,
                      -1,
                      -1,
@@ -145,7 +145,7 @@ int main(void)
 
     
         while (TRUE)
-        {               
+        {
           WaitPort(TheDude->UserPort);
           Msg = (struct IntuiMessage *)GetMsg(TheDude->UserPort);
           if (IDCMP_CLOSEWINDOW == Msg->Class)

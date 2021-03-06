@@ -38,10 +38,10 @@ static void Cleanup(char *msg)
 
     if (msg)
     {
-	printf("semtorture: %s\n",msg);
-	rc = RETURN_WARN;
+        printf("semtorture: %s\n",msg);
+        rc = RETURN_WARN;
     } else {
-	rc = RETURN_OK;
+        rc = RETURN_OK;
     }
 
     Forbid();
@@ -71,12 +71,12 @@ static void OpenLibs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
     {
-	Cleanup("Can't open intuition.library V39!");
+        Cleanup("Can't open intuition.library V39!");
     }
 
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
     {
-	Cleanup("Can't open graphics.library V39!");
+        Cleanup("Can't open graphics.library V39!");
     }
 
 }
@@ -87,31 +87,31 @@ static void GetVisual(void)
 {
     if (!(scr = LockPubScreen(0)))
     {
-	Cleanup("Can't lock pub screen!");
+        Cleanup("Can't lock pub screen!");
     }
 }
 
 /****************************************************************************************/
 
 static void MakeWin(void)
-{	
+{
     if (!(win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
-				 WA_Left,10,
-				 WA_Top,10,
-				 WA_Width,300,
-				 WA_Height,scr->WBorTop + scr->Font->ta_YSize + 1,
-				 WA_Title,(IPTR)"Press RETURN key to start!",
-				 WA_SimpleRefresh,TRUE,
-				 WA_CloseGadget,TRUE,
-				 WA_DepthGadget,TRUE,
-				 WA_DragBar,TRUE,
-				 WA_Activate,TRUE,
-				 WA_IDCMP,IDCMP_CLOSEWINDOW |
-				 	  IDCMP_VANILLAKEY |
-					  IDCMP_REFRESHWINDOW,
-				 TAG_DONE)))
+                                 WA_Left,10,
+                                 WA_Top,10,
+                                 WA_Width,300,
+                                 WA_Height,scr->WBorTop + scr->Font->ta_YSize + 1,
+                                 WA_Title,(IPTR)"Press RETURN key to start!",
+                                 WA_SimpleRefresh,TRUE,
+                                 WA_CloseGadget,TRUE,
+                                 WA_DepthGadget,TRUE,
+                                 WA_DragBar,TRUE,
+                                 WA_Activate,TRUE,
+                                 WA_IDCMP,IDCMP_CLOSEWINDOW |
+                                          IDCMP_VANILLAKEY |
+                                          IDCMP_REFRESHWINDOW,
+                                 TAG_DONE)))
     {
-	Cleanup("Can't open window!");
+        Cleanup("Can't open window!");
     }
 
     ScreenToFront(win->WScreen);
@@ -126,11 +126,11 @@ static void Task1(void)
     
     for(;;)
     {
-	ObtainSemaphore(&sem);
-	a += b + c;
-	b += a + c;
-	c += a + b;
-	ReleaseSemaphore(&sem);
+        ObtainSemaphore(&sem);
+        a += b + c;
+        b += a + c;
+        c += a + b;
+        ReleaseSemaphore(&sem);
     }
 }
 
@@ -142,10 +142,10 @@ static void Task2(void)
     
     for(;;)
     {
-    	ObtainSemaphore(&sem);
-	a -= b;
-	b += a;
-	ReleaseSemaphore(&sem);
+        ObtainSemaphore(&sem);
+        a -= b;
+        b += a;
+        ReleaseSemaphore(&sem);
     }
 }
 
@@ -181,27 +181,27 @@ static void HandleAll(void)
 
     while(!quitme)
     {
-	WaitPort(win->UserPort);
-	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-	{
-	    switch(msg->Class)
-	    {
-		case IDCMP_CLOSEWINDOW:
-		    quitme = TRUE;
-		    break;
+        WaitPort(win->UserPort);
+        while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+        {
+            switch(msg->Class)
+            {
+                case IDCMP_CLOSEWINDOW:
+                    quitme = TRUE;
+                    break;
 
-		case IDCMP_REFRESHWINDOW:
-		    BeginRefresh(win);
-		    EndRefresh(win,TRUE);
-		    break;
-			
-		case IDCMP_VANILLAKEY:
-		    if (msg->Code == 13) Action();
-		    break;
-		
-	    }
-	    ReplyMsg((struct Message *)msg);
-	}
+                case IDCMP_REFRESHWINDOW:
+                    BeginRefresh(win);
+                    EndRefresh(win,TRUE);
+                    break;
+                        
+                case IDCMP_VANILLAKEY:
+                    if (msg->Code == 13) Action();
+                    break;
+                
+            }
+            ReplyMsg((struct Message *)msg);
+        }
     }
 }
 

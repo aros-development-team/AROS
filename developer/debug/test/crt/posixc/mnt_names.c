@@ -11,7 +11,7 @@
 #include <sys/mount.h> /* mnt_names is defined here */
 #include "test.h"
 
-int main() 
+int main()
 {
     TEST(strcmp(mnt_names[MOUNT_NONE], "none") == 0);
     TEST(strcmp(mnt_names[MOUNT_UFS], "ufs") == 0);
@@ -26,6 +26,6 @@ int main()
     return OK;
 }
 
-void cleanup() 
+void cleanup()
 {
 }

@@ -15,15 +15,15 @@ int main (int argc, char ** argv)
 
     if(DummyBase!=NULL)
     {
-	c=add(a,b);
+        c=add(a,b);
 
-	d=asl(a,b);
+        d=asl(a,b);
 
-	Printf((STRPTR)"%ld+%ld=%ld\n", a, b, c);
+        Printf((STRPTR)"%ld+%ld=%ld\n", a, b, c);
 
-	Printf((STRPTR)"%ld<<%ld=%ld\n", a, b, d);
+        Printf((STRPTR)"%ld<<%ld=%ld\n", a, b, d);
 
-	CloseLibrary((struct Library *)DummyBase);
+        CloseLibrary((struct Library *)DummyBase);
     }
     else
         FPuts(Output(),(STRPTR)"Failed to open dummy.library");

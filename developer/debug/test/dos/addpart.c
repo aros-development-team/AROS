@@ -26,7 +26,7 @@ int test(STRPTR p1, CONST_STRPTR p2, CONST_STRPTR expected)
     if (strcmp(buffer, expected) != 0)
     {
         printf("AddPart() created string %s; expected was %s\n", buffer, expected);
-        return 1;        
+        return 1;
     }
     return 0;
 }

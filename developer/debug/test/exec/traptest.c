@@ -14,21 +14,21 @@ int main(int argc, char **argv)
 
     if (argc > 1)
     {
-    	if (!stricmp("illegal", argv[1]))
-    	{
-    	    do_illegal = 1;
-    	    if (argc > 2)
-    	    	ptr = (int *)atol(argv[2]);
-    	}
+        if (!stricmp("illegal", argv[1]))
+        {
+            do_illegal = 1;
+            if (argc > 2)
+                ptr = (int *)atol(argv[2]);
+        }
     }
 
     if (!do_illegal)
     {
-    	a = 3;
-    	b = 0;
-	printf("Attempting to divide by zero...\n");
-	c = a/b;
-	printf("Done, result is: %d!\n", c);
+        a = 3;
+        b = 0;
+        printf("Attempting to divide by zero...\n");
+        c = a/b;
+        printf("Done, result is: %d!\n", c);
     }
 
     printf("Trying illegal access at 0x%p now...\n", ptr);

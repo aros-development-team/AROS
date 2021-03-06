@@ -22,16 +22,16 @@ int main(void)
     RexxSysBase = OpenLibrary("rexxsyslib.library", 0);
     if (RexxSysBase == NULL)
     {
-	puts("Error opening rexxsyslib.library");
-	return 20;
+        puts("Error opening rexxsyslib.library");
+        return 20;
     }
     
     port = CreatePort("VARTEST", 1);
     if (port == NULL)
     {
-	puts("Error creating port");
-	CloseLibrary(RexxSysBase);
-	return 20;
+        puts("Error creating port");
+        CloseLibrary(RexxSysBase);
+        return 20;
     }
 
     printf("Port created %p, waiting for message\n", port);
@@ -40,33 +40,33 @@ int main(void)
     puts("Got a message");
     if (!IsRexxMsg(msg))
     {
-	puts("Message is not a rexxmsg");
-	ReplyMsg((struct Message *)msg);
-	DeletePort(port);
-	CloseLibrary(RexxSysBase);
-	return 20;
+        puts("Message is not a rexxmsg");
+        ReplyMsg((struct Message *)msg);
+        DeletePort(port);
+        CloseLibrary(RexxSysBase);
+        return 20;
     }
 
     puts("Is a rexx message");
     if (!CheckRexxMsg(msg))
     {
-	puts("Message is not from rexx interpreter");
-	msg->rm_Result1 = RC_ERROR;
-	ReplyMsg((struct Message *)msg);
-	DeletePort(port);
-	CloseLibrary(RexxSysBase);
-	return 20;
+        puts("Message is not from rexx interpreter");
+        msg->rm_Result1 = RC_ERROR;
+        ReplyMsg((struct Message *)msg);
+        DeletePort(port);
+        CloseLibrary(RexxSysBase);
+        return 20;
     }
 
     puts("Message is from the rexx interpreter");
     if (GetRexxVar(msg, "A", &value) != RC_OK)
     {
-	puts("Error during retrieval of value!");
+        puts("Error during retrieval of value!");
     }
     else
     {
-	printf("Length string: %d\n", (int)strlen(value));
-	printf("Value of A: %s\n", value);
+        printf("Length string: %d\n", (int)strlen(value));
+        printf("Value of A: %s\n", value);
     }
     
     SetRexxVar(msg, "A", "2", 1);

@@ -62,8 +62,8 @@ static void getarguments(void)
     myargs = ReadArgs(ARG_TEMPLATE, args, NULL);
     if (!myargs)
     {
-    	Fault(IoErr(), 0, s, 255);
-	cleanup(s);
+        Fault(IoErr(), 0, s, 255);
+        cleanup(s);
     }
     
     fontname = (STRPTR)args[ARG_NAME];
@@ -94,8 +94,8 @@ static void openfont(void)
     struct TTextAttr ta;
     struct TagItem tags[] =
     {
-    	{TA_DeviceDPI, (xdpi << 16) | ydpi  },
-    	{TAG_DONE   	    	      	    }
+        {TA_DeviceDPI, (xdpi << 16) | ydpi  },
+        {TAG_DONE                           }
     };
     
     ta.tta_Name = fontname;
@@ -114,28 +114,28 @@ static void openfont(void)
     
     printf("Opened font addr = %p\n", font);
     printf("Opened font has xsize = %d ysize = %d  baseline = %d  flags = 0x%x  style = 0x%x\n",
-    	    font->tf_XSize,
-	    font->tf_YSize,
-	    font->tf_Baseline,
-	    font->tf_Flags,
-	    font->tf_Style);
+            font->tf_XSize,
+            font->tf_YSize,
+            font->tf_Baseline,
+            font->tf_Flags,
+            font->tf_Style);
     printf("boldsmear = %d\n", font->tf_BoldSmear);
     printf("tf_CharData = %p\n", font->tf_CharData);
         
     if (font->tf_Flags & FPF_DISKFONT)
     {
-    	struct DiskFontHeader *dfh = (struct DiskFontHeader *)(((UBYTE *)font) - (UBYTE *)OFFSET(DiskFontHeader, dfh_TF));
-    	
-	printf("DiskFontHeader:\n");
-	printf("  succ %p\n", dfh->dfh_DF.ln_Succ);
-	printf("  pred %p\n", dfh->dfh_DF.ln_Pred);
-	printf("  type %x\n", dfh->dfh_DF.ln_Type);
-	printf("  pri  %x\n", dfh->dfh_DF.ln_Pri);
-	printf("  name %p (%s)\n", dfh->dfh_DF.ln_Name, dfh->dfh_DF.ln_Name);
-	printf("  FileID %x\n", dfh->dfh_FileID);
-	printf("  Revision %x\n", dfh->dfh_Revision);
-	printf("  Segment  %p\n", BADDR(dfh->dfh_Segment));
-	printf("  Name %p (%s)\n", dfh->dfh_Name, dfh->dfh_Name);
+        struct DiskFontHeader *dfh = (struct DiskFontHeader *)(((UBYTE *)font) - (UBYTE *)OFFSET(DiskFontHeader, dfh_TF));
+        
+        printf("DiskFontHeader:\n");
+        printf("  succ %p\n", dfh->dfh_DF.ln_Succ);
+        printf("  pred %p\n", dfh->dfh_DF.ln_Pred);
+        printf("  type %x\n", dfh->dfh_DF.ln_Type);
+        printf("  pri  %x\n", dfh->dfh_DF.ln_Pri);
+        printf("  name %p (%s)\n", dfh->dfh_DF.ln_Name, dfh->dfh_DF.ln_Name);
+        printf("  FileID %x\n", dfh->dfh_FileID);
+        printf("  Revision %x\n", dfh->dfh_Revision);
+        printf("  Segment  %p\n", BADDR(dfh->dfh_Segment));
+        printf("  Name %p (%s)\n", dfh->dfh_Name, dfh->dfh_Name);
     }
     
     printf("tf_Message:\n");
@@ -150,59 +150,59 @@ static void openfont(void)
     printf("textfontextension:\n");
     if (ExtendFont(font, 0))
     {
-    	struct TextFontExtension *tfe = ((struct TextFontExtension *)font->tf_Extension);
-    	struct TagItem *extension = tfe->tfe_Tags;
-	struct TagItem *tag, *tstate = extension;
-	LONG dpivalue;
-	
-	printf("  taglist:\n");
-	while((tag = NextTagItem(&tstate)))
-	{
+        struct TextFontExtension *tfe = ((struct TextFontExtension *)font->tf_Extension);
+        struct TagItem *extension = tfe->tfe_Tags;
+        struct TagItem *tag, *tstate = extension;
+        LONG dpivalue;
+        
+        printf("  taglist:\n");
+        while((tag = NextTagItem(&tstate)))
+        {
             printf("    {%08x,%p}\n", (unsigned)tag->ti_Tag, (void *)tag->ti_Data);
-	}
-	
-	dpivalue = GetTagData(TA_DeviceDPI, 0, extension);
-	
-	printf("  ta_devicedpi of opened font is: xdpi %ld  ydpi: %ld\n",
-	    	(long)(dpivalue >> 16), (long)(dpivalue & 0xFFFF));
-	
-	printf("  tfe_MatchWord %x\n", tfe->tfe_MatchWord);
-	printf("  tfe_Flags0 %x\n", tfe->tfe_Flags0);
-	printf("  tfe_Flags1 %x\n", tfe->tfe_Flags1);
-	printf("  tfe_OrigReplyPort %p\n", tfe->tfe_OrigReplyPort);
-	printf("  tfe_OFontPatchS %p\n", tfe->tfe_OFontPatchS);
-	printf("  tfe_OFontPatchK %p\n", tfe->tfe_OFontPatchK);
-	
+        }
+        
+        dpivalue = GetTagData(TA_DeviceDPI, 0, extension);
+        
+        printf("  ta_devicedpi of opened font is: xdpi %ld  ydpi: %ld\n",
+                (long)(dpivalue >> 16), (long)(dpivalue & 0xFFFF));
+        
+        printf("  tfe_MatchWord %x\n", tfe->tfe_MatchWord);
+        printf("  tfe_Flags0 %x\n", tfe->tfe_Flags0);
+        printf("  tfe_Flags1 %x\n", tfe->tfe_Flags1);
+        printf("  tfe_OrigReplyPort %p\n", tfe->tfe_OrigReplyPort);
+        printf("  tfe_OFontPatchS %p\n", tfe->tfe_OFontPatchS);
+        printf("  tfe_OFontPatchK %p\n", tfe->tfe_OFontPatchK);
+        
     }
     if (font->tf_Style & FSF_COLORFONT)
     {
-    	struct ColorTextFont *ctf = (struct ColorTextFont *)font;
-	WORD i;
-	
-	printf(" ctf_Flags %x\n", ctf->ctf_Flags);
-	printf(" ctf_Depth %x\n", ctf->ctf_Depth);
-	printf(" ctf_FgColor %x\n", ctf->ctf_FgColor);
-	printf(" ctf_Low %x\n", ctf->ctf_Low);
-	printf(" ctf_High %x\n", ctf->ctf_High);
-	printf(" ctf_PlanePick %x\n", ctf->ctf_PlanePick);
-	printf(" ctf_PlaneOnOff %x\n", ctf->ctf_PlaneOnOff);
-	printf(" ctf_colorFontColors %p\n", ctf->ctf_ColorFontColors);
+        struct ColorTextFont *ctf = (struct ColorTextFont *)font;
+        WORD i;
+        
+        printf(" ctf_Flags %x\n", ctf->ctf_Flags);
+        printf(" ctf_Depth %x\n", ctf->ctf_Depth);
+        printf(" ctf_FgColor %x\n", ctf->ctf_FgColor);
+        printf(" ctf_Low %x\n", ctf->ctf_Low);
+        printf(" ctf_High %x\n", ctf->ctf_High);
+        printf(" ctf_PlanePick %x\n", ctf->ctf_PlanePick);
+        printf(" ctf_PlaneOnOff %x\n", ctf->ctf_PlaneOnOff);
+        printf(" ctf_colorFontColors %p\n", ctf->ctf_ColorFontColors);
 
-	for(i = 0; i <8; i++)
-	{
-	    printf(" ctf_CharData[%d] %p\n", i, ctf->ctf_CharData[i]);
-	}	
+        for(i = 0; i <8; i++)
+        {
+            printf(" ctf_CharData[%d] %p\n", i, ctf->ctf_CharData[i]);
+        }
     }
     
     {
-    	struct TextFont *tf = (struct TextFont *)GfxBase->TextFonts.lh_Head;
-	
-	printf("SYSFONTLIST:\n");
-	while(tf->tf_Message.mn_Node.ln_Succ)
-	{
-	    printf("  addr %p  name %s size %d\n", tf, tf->tf_Message.mn_Node.ln_Name, tf->tf_YSize);
-	    tf = (struct TextFont *)tf->tf_Message.mn_Node.ln_Succ;
-	}
+        struct TextFont *tf = (struct TextFont *)GfxBase->TextFonts.lh_Head;
+        
+        printf("SYSFONTLIST:\n");
+        while(tf->tf_Message.mn_Node.ln_Succ)
+        {
+            printf("  addr %p  name %s size %d\n", tf, tf->tf_Message.mn_Node.ln_Name, tf->tf_YSize);
+            tf = (struct TextFont *)tf->tf_Message.mn_Node.ln_Succ;
+        }
     }
 }
 
@@ -225,36 +225,36 @@ static void action(void)
     
     for(i = font->tf_LoChar; i <= font->tf_HiChar + 1; i++)
     {
-    	printf("#%03d  kerning = %s%4d%s blackwidth = %4ld spacing = %s%4d%s\n",
-	       i,
-	       font->tf_CharKern ? "" : "[",
-	       (font->tf_CharKern ? ((WORD *)font->tf_CharKern)[i - font->tf_LoChar] : 0),
-	       font->tf_CharKern ? "" : "]",
-	       (long)((LONG *)font->tf_CharLoc)[i - font->tf_LoChar] & 0xFFFF,
-	       font->tf_CharSpace ? "" : "[",
-	       (font->tf_CharSpace ? ((WORD *)font->tf_CharSpace)[i - font->tf_LoChar] : 0),
-	       font->tf_CharSpace ? "" : "]");
+        printf("#%03d  kerning = %s%4d%s blackwidth = %4ld spacing = %s%4d%s\n",
+               i,
+               font->tf_CharKern ? "" : "[",
+               (font->tf_CharKern ? ((WORD *)font->tf_CharKern)[i - font->tf_LoChar] : 0),
+               font->tf_CharKern ? "" : "]",
+               (long)((LONG *)font->tf_CharLoc)[i - font->tf_LoChar] & 0xFFFF,
+               font->tf_CharSpace ? "" : "[",
+               (font->tf_CharSpace ? ((WORD *)font->tf_CharSpace)[i - font->tf_LoChar] : 0),
+               font->tf_CharSpace ? "" : "]");
 
-    	if (font->tf_CharKern) totcharkern += ((WORD *)font->tf_CharKern)[i - font->tf_LoChar];
-	if (font->tf_CharSpace)
-	{
-	    ULONG old_totcharspace = totcharspace;
-	    totcharspace += ((WORD *)font->tf_CharSpace)[i - font->tf_LoChar];
-	    if (totcharspace != old_totcharspace) numcharspace++;
-	}
-	
-    	totcharsize += ((LONG *)font->tf_CharLoc)[i - font->tf_LoChar] & 0xFFFF;
-	
-	if ((i >= 110) && (font->tf_CharKern && font->tf_CharSpace))
-	{
-	    ULONG old_totsomething = totsomething;
-	    totsomething += ((WORD *)font->tf_CharSpace)[i - font->tf_LoChar] +
-	    	    	    ((WORD *)font->tf_CharKern)[i - font->tf_LoChar];
-			    
-	    if (totsomething != old_totsomething) 
-	    numsomething++;
-	    
-	}
+        if (font->tf_CharKern) totcharkern += ((WORD *)font->tf_CharKern)[i - font->tf_LoChar];
+        if (font->tf_CharSpace)
+        {
+            ULONG old_totcharspace = totcharspace;
+            totcharspace += ((WORD *)font->tf_CharSpace)[i - font->tf_LoChar];
+            if (totcharspace != old_totcharspace) numcharspace++;
+        }
+        
+        totcharsize += ((LONG *)font->tf_CharLoc)[i - font->tf_LoChar] & 0xFFFF;
+        
+        if ((i >= 110) && (font->tf_CharKern && font->tf_CharSpace))
+        {
+            ULONG old_totsomething = totsomething;
+            totsomething += ((WORD *)font->tf_CharSpace)[i - font->tf_LoChar] +
+                            ((WORD *)font->tf_CharKern)[i - font->tf_LoChar];
+                            
+            if (totsomething != old_totsomething)
+            numsomething++;
+            
+        }
     }
     
     if (numsomething) printf("average something = %ld\n", (long)(totsomething / numsomething));
@@ -276,28 +276,28 @@ static void showfont(void)
     
     if ((scr = LockPubScreen(NULL)))
     {
-    	win = OpenWindowTags(NULL, WA_PubScreen, scr,
-	    	    	    	   WA_InnerWidth, te.te_Width + 6,
-				   WA_InnerHeight, te.te_Height + 6,
-				   WA_CloseGadget, TRUE,
-				   WA_DragBar, TRUE,
-				   WA_DepthGadget, TRUE,
-				   WA_Activate, TRUE,
-				   WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY,
-				   WA_Title, "FontInfo",
-				   TAG_DONE);
-				   
-	if (win)
-	{
-	    SetFont(win->RPort, font);
-	    SetAPen(win->RPort, 1);
-	    Move(win->RPort, win->BorderLeft + 3 - te.te_Extent.MinX,
-	    	    	     win->BorderTop + 3 - te.te_Extent.MinY);
-	    Text(win->RPort, text, strlen(text));
-	    WaitPort(win->UserPort);
-	    CloseWindow(win);
-	}			   
-    	UnlockPubScreen(NULL, scr);
+        win = OpenWindowTags(NULL, WA_PubScreen, scr,
+                                   WA_InnerWidth, te.te_Width + 6,
+                                   WA_InnerHeight, te.te_Height + 6,
+                                   WA_CloseGadget, TRUE,
+                                   WA_DragBar, TRUE,
+                                   WA_DepthGadget, TRUE,
+                                   WA_Activate, TRUE,
+                                   WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY,
+                                   WA_Title, "FontInfo",
+                                   TAG_DONE);
+                                   
+        if (win)
+        {
+            SetFont(win->RPort, font);
+            SetAPen(win->RPort, 1);
+            Move(win->RPort, win->BorderLeft + 3 - te.te_Extent.MinX,
+                             win->BorderTop + 3 - te.te_Extent.MinY);
+            Text(win->RPort, text, strlen(text));
+            WaitPort(win->UserPort);
+            CloseWindow(win);
+        }
+        UnlockPubScreen(NULL, scr);
     }
 }
 

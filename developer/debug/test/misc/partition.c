@@ -31,7 +31,7 @@ static UQUAD getStartBlock(struct PartitionHandle *ph)
     }
 
     return ret;
-}        
+}
 
 void PrintDE(struct DosEnvec *de, ULONG i) {
 ULONG a;
@@ -86,7 +86,7 @@ void PrintPInfo(struct PartitionHandle *ph, ULONG i)
         printf("  ");
     printf("StartBlock     = %llu\n", (unsigned long long)start);
     for (a = i + 1; a; a--)
-        printf("  ");    
+        printf("  ");
     printf("EndBlock       = %llu\n", (unsigned long long)end);
 
     abs = getStartBlock(ph->root);
@@ -94,7 +94,7 @@ void PrintPInfo(struct PartitionHandle *ph, ULONG i)
         printf("  ");
     printf("Abs StartBlock = %llu\n", (unsigned long long)(start + abs));
     for (a = i + 1; a; a--)
-        printf("  ");    
+        printf("  ");
     printf("Abs EndBlock   = %llu\n", (unsigned long long)(end + abs));
 
     PrintPartitionTable(ph, i + 1);

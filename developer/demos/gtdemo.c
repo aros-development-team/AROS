@@ -137,8 +137,8 @@ struct NewGadget listviewgad =
 struct Node lv_nodes[NUMLVNODES];
 struct List lv_list;
 STRPTR lv_texts[] = {"This", "is", "a", "demo", "of", "the", "GadTools", "listview.",
-	"Try", "scrolling", "and", "selecting", "entries",
-	"One", "Two", "Three", "Four", "Five", "Six", "Seven"};
+        "Try", "scrolling", "and", "selecting", "entries",
+        "One", "Two", "Three", "Four", "Five", "Six", "Seven"};
 
 
 STRPTR mxlabels[] =
@@ -164,9 +164,9 @@ VOID initlvnodes(struct List *list, struct Node *nodes, STRPTR *texts, WORD numn
     
     for (i = 0; i < numnodes; i ++)
     {
-    	AddTail(list, &(nodes[i]));
-    	nodes[i].ln_Name = texts[i];
-    	
+        AddTail(list, &(nodes[i]));
+        nodes[i].ln_Name = texts[i];
+        
     }
     return;
 }
@@ -176,12 +176,12 @@ BOOL openlibs()
     IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 37);
     GadToolsBase = OpenLibrary("gadtools.library", 0);
     if (!IntuitionBase) {
-	printf("GTDemo: Error opening intuition.library\n");
-	return FALSE;
+        printf("GTDemo: Error opening intuition.library\n");
+        return FALSE;
     }
     if (!GadToolsBase) {
         printf("GTDemo: Error opening gadtools.library\n");
-	return FALSE;
+        return FALSE;
     }
     return TRUE;
 }
@@ -204,26 +204,26 @@ struct Gadget *gt_init()
     scr = LockPubScreen(NULL);
     vi = GetVisualInfoA(scr, NULL);
     if (vi != NULL)
-	gad = CreateContext(&glist);
-	
+        gad = CreateContext(&glist);
+        
     if ((dri = GetScreenDrawInfo(scr)))
     {
-    	topoffset = dri->dri_Font->tf_YSize + scr->WBorTop - 10 + 5;
-	
-	buttongad.ng_TopEdge   += topoffset;
-	checkbox.ng_TopEdge    += topoffset;
-	cyclegad.ng_TopEdge    += topoffset;
-	mxgad.ng_TopEdge       += topoffset;
-	palettegad.ng_TopEdge  += topoffset;
-	textgad.ng_TopEdge     += topoffset;
-	numbergad.ng_TopEdge   += topoffset;
-	slidergad.ng_TopEdge   += topoffset;
-	scrollergad.ng_TopEdge += topoffset;
-	stringgad.ng_TopEdge   += topoffset;
-	integergad.ng_TopEdge  += topoffset;
-	listviewgad.ng_TopEdge += topoffset;
-	
-	FreeScreenDrawInfo(scr,dri);
+        topoffset = dri->dri_Font->tf_YSize + scr->WBorTop - 10 + 5;
+        
+        buttongad.ng_TopEdge   += topoffset;
+        checkbox.ng_TopEdge    += topoffset;
+        cyclegad.ng_TopEdge    += topoffset;
+        mxgad.ng_TopEdge       += topoffset;
+        palettegad.ng_TopEdge  += topoffset;
+        textgad.ng_TopEdge     += topoffset;
+        numbergad.ng_TopEdge   += topoffset;
+        slidergad.ng_TopEdge   += topoffset;
+        scrollergad.ng_TopEdge += topoffset;
+        stringgad.ng_TopEdge   += topoffset;
+        integergad.ng_TopEdge  += topoffset;
+        listviewgad.ng_TopEdge += topoffset;
+        
+        FreeScreenDrawInfo(scr,dri);
     }
     
     return gad;
@@ -243,34 +243,34 @@ void gt_end()
 BOOL openwin()
 {
     win = OpenWindowTags(NULL,
-			 WA_PubScreen, (IPTR)scr,
-			 WA_Left, 0,
-			 WA_Top, 0,
-			 WA_Width, 700,
-			 WA_Height, 300 + topoffset,
-			 WA_Title, (IPTR)"GTDemo",
-			 WA_IDCMP,
-			     BUTTONIDCMP |
-			     CHECKBOXIDCMP |
+                         WA_PubScreen, (IPTR)scr,
+                         WA_Left, 0,
+                         WA_Top, 0,
+                         WA_Width, 700,
+                         WA_Height, 300 + topoffset,
+                         WA_Title, (IPTR)"GTDemo",
+                         WA_IDCMP,
+                             BUTTONIDCMP |
+                             CHECKBOXIDCMP |
                              CYCLEIDCMP |
                              MXIDCMP |
                              PALETTEIDCMP |
                              SLIDERIDCMP |
-			     SCROLLERIDCMP |
-			     ARROWIDCMP |
+                             SCROLLERIDCMP |
+                             ARROWIDCMP |
                              IDCMP_GADGETUP |
-			     IDCMP_VANILLAKEY |
-			     IDCMP_CLOSEWINDOW |
-			     IDCMP_REFRESHWINDOW,
-//			 WA_SimpleRefresh, TRUE,
-			 WA_Gadgets, (IPTR)glist,
-			 WA_DragBar, TRUE,
-			 WA_CloseGadget, TRUE,
-			 WA_DepthGadget, TRUE,
-			 TAG_DONE);
+                             IDCMP_VANILLAKEY |
+                             IDCMP_CLOSEWINDOW |
+                             IDCMP_REFRESHWINDOW,
+//                       WA_SimpleRefresh, TRUE,
+                         WA_Gadgets, (IPTR)glist,
+                         WA_DragBar, TRUE,
+                         WA_CloseGadget, TRUE,
+                         WA_DepthGadget, TRUE,
+                         TAG_DONE);
     if (!win) {
-	printf("GTDemo: Error opening window\n");
-	return FALSE;
+        printf("GTDemo: Error opening window\n");
+        return FALSE;
     }
     return TRUE;
 }
@@ -306,72 +306,72 @@ D(bug("Created checkbox gadget: %p\n", gad));
                        TAG_DONE);
 D(bug("Created cycle gadget: %p\n", gad));
     gad = CreateGadget(MX_KIND, gad, &mxgad,
-		       GTMX_Labels, (IPTR)&mxlabels,
+                       GTMX_Labels, (IPTR)&mxlabels,
                        GTMX_Scaled, TRUE,
                        GTMX_TitlePlace, PLACETEXT_ABOVE,
-		       TAG_DONE);
+                       TAG_DONE);
 
 D(bug("Created mx gadget: %p\n", gad));
     gad = CreateGadget(PALETTE_KIND, gad, &palettegad,
-    		       GTPA_NumColors,		6,
-    		       GTPA_IndicatorHeight,	30,
-    		       GTPA_Color,		0,
-		       TAG_DONE);
+                       GTPA_NumColors,          6,
+                       GTPA_IndicatorHeight,    30,
+                       GTPA_Color,              0,
+                       TAG_DONE);
 
 D(bug("Created palette gadget: %p\n", gad));
     gad = CreateGadget(TEXT_KIND, gad, &textgad,
-    		       GTTX_Text,	(IPTR)"Text display",
-    		       GTTX_CopyText,	TRUE,
-    		       GTTX_Border,	TRUE,
-    		       GTTX_Justification,	GTJ_CENTER,
-		       TAG_DONE);
+                       GTTX_Text,       (IPTR)"Text display",
+                       GTTX_CopyText,   TRUE,
+                       GTTX_Border,     TRUE,
+                       GTTX_Justification,      GTJ_CENTER,
+                       TAG_DONE);
 
 D(bug("Created text gadget: %p\n", gad));
     gad = CreateGadget(NUMBER_KIND, gad, &numbergad,
-    		       GTNM_Number,	10,
-    		       GTNM_Border,	TRUE,
-    		       GTNM_Justification,	GTJ_CENTER,
-		       TAG_DONE);
+                       GTNM_Number,     10,
+                       GTNM_Border,     TRUE,
+                       GTNM_Justification,      GTJ_CENTER,
+                       TAG_DONE);
     
 D(bug("Created number gadget: %p\n", gad));
     gad = CreateGadget(SLIDER_KIND, gad, &slidergad,
-    		       GTSL_Min,		10,
-    		       GTSL_Max,		20,
-    		       GTSL_Level,		12,
-    		       GTSL_MaxLevelLen,	3,
-    		       GTSL_LevelFormat,	(IPTR)"%2ld",
-    		       GTSL_LevelPlace,		PLACETEXT_RIGHT,
-    		       GTSL_Justification,	GTJ_RIGHT,
-    		       PGA_Freedom,		LORIENT_HORIZ,
-		       TAG_DONE);
+                       GTSL_Min,                10,
+                       GTSL_Max,                20,
+                       GTSL_Level,              12,
+                       GTSL_MaxLevelLen,        3,
+                       GTSL_LevelFormat,        (IPTR)"%2ld",
+                       GTSL_LevelPlace,         PLACETEXT_RIGHT,
+                       GTSL_Justification,      GTJ_RIGHT,
+                       PGA_Freedom,             LORIENT_HORIZ,
+                       TAG_DONE);
 
 
 D(bug("Created slider gadget: %p\n", gad));
     gad = CreateGadget(SCROLLER_KIND, gad, &scrollergad,
-    		       GTSC_Top,		2,
-    		       GTSC_Total,		10,
-    		       GTSC_Visible,		2,
-    		       GTSC_Arrows,		10,
-    		       GA_RelVerify,		TRUE,
-    		       PGA_Freedom,		LORIENT_VERT,
-		       TAG_DONE);
+                       GTSC_Top,                2,
+                       GTSC_Total,              10,
+                       GTSC_Visible,            2,
+                       GTSC_Arrows,             10,
+                       GA_RelVerify,            TRUE,
+                       PGA_Freedom,             LORIENT_VERT,
+                       TAG_DONE);
 
 D(bug("Created scroller gadget: %p\n", gad));
     gad = strgad = CreateGadget(STRING_KIND, gad, &stringgad,
-    		       GTST_String,		(IPTR)"Blahblahblah",
-    		       GTST_MaxChars,		80,
-    		       GTSC_Visible,		2,
-    		       GA_Immediate,		TRUE,
-		       TAG_DONE);
+                       GTST_String,             (IPTR)"Blahblahblah",
+                       GTST_MaxChars,           80,
+                       GTSC_Visible,            2,
+                       GA_Immediate,            TRUE,
+                       TAG_DONE);
 
 D(bug("Created string gadget: %p\n", gad));
 
     gad = integergadget = CreateGadget(INTEGER_KIND, gad, &integergad,
-    		       GTIN_Number,		100,
-    		       GTIN_MaxChars,		5,
-    		       STRINGA_Justification,	GACT_STRINGCENTER,
-    		       GA_Immediate,		TRUE,
-		       TAG_DONE);
+                       GTIN_Number,             100,
+                       GTIN_MaxChars,           5,
+                       STRINGA_Justification,   GACT_STRINGCENTER,
+                       GA_Immediate,            TRUE,
+                       TAG_DONE);
 
 D(bug("Created integer gadget: %p\n", gad));
 
@@ -379,9 +379,9 @@ D(bug("Created integer gadget: %p\n", gad));
     initlvnodes(&lv_list, lv_nodes, lv_texts, NUMLVNODES);
 D(bug("Inited lv nodes\n"));
     gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
-    		GTLV_Labels,	(IPTR)&lv_list,
-    		GTLV_ReadOnly,	FALSE,
-		TAG_DONE);
+                GTLV_Labels,    (IPTR)&lv_list,
+                GTLV_ReadOnly,  FALSE,
+                TAG_DONE);
 
 D(bug("Created listview gadget: %p\n", gad));
 
@@ -419,30 +419,30 @@ void handlewin()
     struct IntuiMessage *msg;
 
     GT_SetGadgetAttrs(strgad,win,NULL,GTST_String, (IPTR)"Hello",
-    				      TAG_DONE);
-	
+                                      TAG_DONE);
+        
     GT_SetGadgetAttrs(integergadget,win,NULL,GTIN_Number,1000,TAG_DONE);
-    			      
+                              
     while (ready == FALSE) {
-	WaitPort(win->UserPort);
-	msg = GT_GetIMsg(win->UserPort);
-	if (msg != NULL) {
-	    switch (msg->Class) {
-	    case IDCMP_REFRESHWINDOW:
-		GT_BeginRefresh(win);
-		draw_bevels(win, vi);
-		GT_EndRefresh(win, TRUE);
-		D(bug("Got IDCMP_REFRESHWINDOW msg\n"));
-		break;
+        WaitPort(win->UserPort);
+        msg = GT_GetIMsg(win->UserPort);
+        if (msg != NULL) {
+            switch (msg->Class) {
+            case IDCMP_REFRESHWINDOW:
+                GT_BeginRefresh(win);
+                draw_bevels(win, vi);
+                GT_EndRefresh(win, TRUE);
+                D(bug("Got IDCMP_REFRESHWINDOW msg\n"));
+                break;
             case IDCMP_VANILLAKEY:
                 if (msg->Code != 0x1B) /* if escape, quit */
                     break;
-	    case IDCMP_CLOSEWINDOW:
-		ready = TRUE;
-		break;
-	    case IDCMP_GADGETDOWN:
-		printf("Gadget %d pressed",
-		       ((struct Gadget *) msg->IAddress)->GadgetID);
+            case IDCMP_CLOSEWINDOW:
+                ready = TRUE;
+                break;
+            case IDCMP_GADGETDOWN:
+                printf("Gadget %d pressed",
+                       ((struct Gadget *) msg->IAddress)->GadgetID);
                 switch (((struct Gadget *) msg->IAddress)->GadgetID) {
                 case ID_MX:
                     printf(" (active: %d)", msg->Code);
@@ -451,43 +451,43 @@ void handlewin()
                 printf("\n");
                 break;
             case IDCMP_MOUSEMOVE:
-            	if (msg->IAddress)
-            	{
-            	    switch (((struct Gadget *) msg->IAddress)->GadgetID) {
-            	    case ID_SLIDER:
-            	    	printf("Slider moved to value %d\n", msg->Code);
-            	    	break;
-            	    	
-            	    case ID_SCROLLER:
-            	    	printf("Scroller moved to value %d\n", msg->Code);
-            	    	break;
+                if (msg->IAddress)
+                {
+                    switch (((struct Gadget *) msg->IAddress)->GadgetID) {
+                    case ID_SLIDER:
+                        printf("Slider moved to value %d\n", msg->Code);
+                        break;
+                        
+                    case ID_SCROLLER:
+                        printf("Scroller moved to value %d\n", msg->Code);
+                        break;
 
-            	    }
+                    }
 
-            	}
-            	break;
-            	
-	    case IDCMP_GADGETUP:
-		printf("Gadget %d released",
-		       ((struct Gadget *) msg->IAddress)->GadgetID);
-		switch (((struct Gadget *) msg->IAddress)->GadgetID) {
-		case ID_BUTTON:
-		    ready = TRUE;
-		    break;
-		    
-		case ID_PALETTE:
-		    printf(" (color: %d)", msg->Code);
-		    break;
-		
-		case ID_LISTVIEW:
-		    printf(" (lv item: %d)", msg->Code);
-		    break;
-		
-		case ID_CYCLE:
-		    printf(" (cycle item: %d)", msg->Code);
-		    break;
-		           
-		case ID_CHECKBOX:{
+                }
+                break;
+                
+            case IDCMP_GADGETUP:
+                printf("Gadget %d released",
+                       ((struct Gadget *) msg->IAddress)->GadgetID);
+                switch (((struct Gadget *) msg->IAddress)->GadgetID) {
+                case ID_BUTTON:
+                    ready = TRUE;
+                    break;
+                    
+                case ID_PALETTE:
+                    printf(" (color: %d)", msg->Code);
+                    break;
+                
+                case ID_LISTVIEW:
+                    printf(" (lv item: %d)", msg->Code);
+                    break;
+                
+                case ID_CYCLE:
+                    printf(" (cycle item: %d)", msg->Code);
+                    break;
+                           
+                case ID_CHECKBOX:{
                     BOOL checked;
 
                     checked = msg->Code;
@@ -499,12 +499,12 @@ void handlewin()
                                       GA_Disabled, (IPTR)checked, TAG_DONE);
                     break;
                 }
-		}
-		printf("\n");
-		break;
-	    }
-	    GT_ReplyIMsg(msg);
-	}
+                }
+                printf("\n");
+                break;
+            }
+            GT_ReplyIMsg(msg);
+        }
     }
 }
 
@@ -519,28 +519,28 @@ int main()
     struct Task *idtask;
     SDInit();
     if ((idtask = FindTask("input.device")))
-    	idtask->tc_UserData = NULL;
-#endif    	
+        idtask->tc_UserData = NULL;
+#endif
 
     if (openlibs() != FALSE) {
-	struct Gadget *gad;
+        struct Gadget *gad;
 
-	gad = gt_init();
-	gad = makegadgets(gad);
-	if (gad != NULL) {
-	    if (openwin() != FALSE) {
-		draw_bevels(win, vi);
-		handlewin();
-		CloseWindow(win);
-	    } else
-		error = RETURN_FAIL;
-	} else
-	    error = RETURN_FAIL;
-	    
-	D(bug("Doing gt_end()\n"));
-	gt_end();
+        gad = gt_init();
+        gad = makegadgets(gad);
+        if (gad != NULL) {
+            if (openwin() != FALSE) {
+                draw_bevels(win, vi);
+                handlewin();
+                CloseWindow(win);
+            } else
+                error = RETURN_FAIL;
+        } else
+            error = RETURN_FAIL;
+            
+        D(bug("Doing gt_end()\n"));
+        gt_end();
     } else
-	error = RETURN_FAIL;
+        error = RETURN_FAIL;
 
 D(bug("closing libs\n"));
     closelibs();

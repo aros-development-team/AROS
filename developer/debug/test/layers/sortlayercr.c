@@ -93,8 +93,8 @@ int main(void)
     if (LayersBase)
     {
         makecrs();
-	action();
-	
+        action();
+        
         CloseLibrary(LayersBase);
     }
     

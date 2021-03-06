@@ -64,9 +64,9 @@ static void TestRead(UBYTE *location)
      * remember trap code and check it later here.
      */
     if (trap == -1)
-	printf("Success, value is 0x%02X\n", val);
+        printf("Success, value is 0x%02X\n", val);
     else
-	printf("Hit trap 0x%08X\n", trap);
+        printf("Hit trap 0x%08X\n", trap);
 
 #endif
 }
@@ -106,15 +106,15 @@ int main(void)
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
     {
-	printf("Failed to open kernel.resource!\n");
-	return 1;
+        printf("Failed to open kernel.resource!\n");
+        return 1;
     }
 
     if (!KrnStatMemory(0, KMS_PageSize, &page, TAG_DONE))
     {
-	printf("MMU support is not implemented for this system!\n"
-	       "kernel.resource memory allocator will not work!\n");
-	return 1;
+        printf("MMU support is not implemented for this system!\n"
+               "kernel.resource memory allocator will not work!\n");
+        return 1;
     }
     printf("System page size: %u (0x%08X)\n", (unsigned)page, (unsigned)page);
 
@@ -123,8 +123,8 @@ int main(void)
     printf("Allocated test region (%u bytes) at 0x%p\n", (unsigned)TestLength, TestArea);
     if (!TestArea)
     {
-	printf("Failed to allocate test region!\n");
-	return 1;
+        printf("Failed to allocate test region!\n");
+        return 1;
     }
 
     /* Install trap handler */
@@ -135,7 +135,7 @@ int main(void)
     TestArea->mh_Node.ln_Succ = NULL;
     TestArea->mh_Node.ln_Type = NT_MEMORY;
     TestArea->mh_Node.ln_Name = "Kernel allocator test area";
-    TestArea->mh_Node.ln_Pri  = 127;			/* This MemHeader must be the first in the list, otherwise KrnFreePages() will find a wrong one */
+    TestArea->mh_Node.ln_Pri  = 127;                    /* This MemHeader must be the first in the list, otherwise KrnFreePages() will find a wrong one */
     TestArea->mh_Attributes   = MEMF_FAST;
     TestArea->mh_Lower        = TestArea;
     TestArea->mh_Upper        = TestArea->mh_Lower + TestLength - 1;
@@ -150,11 +150,11 @@ int main(void)
     KrnInitMemory(TestArea);
     if (mc->mc_Next || mc->mc_Bytes)
     {
-	printf("KrnInitMemory() failed:\n"
-	       "  mc_Next  is 0x%p\n"
-	       "  mc_Bytes is %lu\n",
-	       mc->mc_Next, mc->mc_Bytes);
-	goto exit;
+        printf("KrnInitMemory() failed:\n"
+               "  mc_Next  is 0x%p\n"
+               "  mc_Bytes is %lu\n",
+               mc->mc_Next, mc->mc_Bytes);
+        goto exit;
     }
 
     printf("Testing initial no-access protection...\n");
@@ -207,8 +207,8 @@ int main(void)
     printf("Region at 0x%p\n", region3);
     if (region3)
     {
-	printf("WARNING!!! This should have been NULL!\n");
-	KrnFreePages(region3, page);
+        printf("WARNING!!! This should have been NULL!\n");
+        KrnFreePages(region3, page);
     }
 
     printf("Freeing region1...\n");
@@ -286,9 +286,9 @@ int main(void)
 exit:
     if (TestArea->mh_Node.ln_Succ)
     {
-	Forbid();
-	Remove(&TestArea->mh_Node);
-	Permit();
+        Forbid();
+        Remove(&TestArea->mh_Node);
+        Permit();
     }
     FreeMem(TestArea, TestLength);
 

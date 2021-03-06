@@ -16,8 +16,8 @@ int main(void)
     port = CreatePort("PORTTEST", 0);
     if (port==NULL)
     {
-	puts("Error creating port");
-	return 20;
+        puts("Error creating port");
+        return 20;
     }
     
     WaitPort(port);

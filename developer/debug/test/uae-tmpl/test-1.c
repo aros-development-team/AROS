@@ -13,21 +13,21 @@ void hexdump (const void * start, int size);
 #define __check(v1,op,v2) \
     if (debug) \
     { \
-	printf ("Check: " #v1 " " #op " " #v2 "\n"); \
-	hexdump (&v1, sizeof (v1)); \
-	hexdump (&v2, sizeof (v2)); \
+        printf ("Check: " #v1 " " #op " " #v2 "\n"); \
+        hexdump (&v1, sizeof (v1)); \
+        hexdump (&v2, sizeof (v2)); \
     } \
     if (!(v1 op v2) ) \
     { \
-	printf ("%s:%d: Check failed: " #v1 " " #op " " #v2 " (%d - %d)\n", \
-		__FILE__, __LINE__, (int)v1, (int)v2); \
+        printf ("%s:%d: Check failed: " #v1 " " #op " " #v2 " (%d - %d)\n", \
+                __FILE__, __LINE__, (int)v1, (int)v2); \
     }
 #define check(op) \
     do { \
-	__check (s,op,w) \
-	__check (us,op,uw) \
-	__check (l,op,L) \
-	__check (ul,op,UL) \
+        __check (s,op,w) \
+        __check (us,op,uw) \
+        __check (l,op,L) \
+        __check (ul,op,UL) \
     } \
     while (0)
 
@@ -48,14 +48,14 @@ void hexdump (const void * start, int size);
     
 int main (int argc, char ** argv)
 {
-    short	   s;
+    short          s;
     unsigned short us;
-    long	   l;
+    long           l;
     unsigned long  ul;
-    WORD	   w;
-    UWORD	   uw;
-    LONG	   L;
-    ULONG	   UL;
+    WORD           w;
+    UWORD          uw;
+    LONG           L;
+    ULONG          UL;
 
     int debug = (argc != 1);
 

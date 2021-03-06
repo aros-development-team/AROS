@@ -28,32 +28,32 @@ struct Window * window;
 
 void doall(void);
 struct Screen * openscreen(void);
-void closescreen(struct Screen * screen); 
+void closescreen(struct Screen * screen);
 
 APTR BltBitMapPtr;
 
 int main(int argc, char **argv)
 {
-    if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
+    if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0)))
     {
-	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
+        if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0)))
         {
-	  if ((LayersBase = OpenLibrary("layers.library", 0))) 
+          if ((LayersBase = OpenLibrary("layers.library", 0)))
           {
-	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
-	    {
-              if ((screen = openscreen())) 
+            if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
+            {
+              if ((screen = openscreen()))
               {
-		doall();
-		closescreen(screen);
-	      }
+                doall();
+                closescreen(screen);
+              }
               CloseLibrary((struct Library *)DOSBase);
-	    }
+            }
             CloseLibrary(LayersBase);
-	  }
-	  CloseLibrary((struct Library *)GfxBase);
-	}
-	CloseLibrary((struct Library *) IntuitionBase);
+          }
+          CloseLibrary((struct Library *)GfxBase);
+        }
+        CloseLibrary((struct Library *) IntuitionBase);
     }
     return 0;
 } /* main */
@@ -83,7 +83,7 @@ struct Layer *layers[10];
 void freelayers(void)
 {
   int i;
-  for (i=0; i < 10; i++) 
+  for (i=0; i < 10; i++)
   {
     if (NULL != layers[i])
     {
@@ -117,7 +117,7 @@ void createupfrontlayer(void)
     if (layers[i] == NULL)
       break;
   }
-  if (i < 10) 
+  if (i < 10)
   {
       printf("Backdroplayer [y/N]: ");
       scanf("%c", &c);
@@ -146,7 +146,7 @@ void createupfrontlayer(void)
       
       flags |= LAYERSMART;
 
-      layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+      layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                      screen->RastPort.BitMap,
                                      x0,
                                      y0,
@@ -175,7 +175,7 @@ void createbehindlayer(void)
     if (layers[i] == NULL)
       break;
   }
-  if (i < 10) 
+  if (i < 10)
   {
       printf("Backdroplayer [y/N]: ");
       scanf("%c", &c);
@@ -204,7 +204,7 @@ void createbehindlayer(void)
       
       flags |= LAYERSMART;
     
-      layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+      layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                      screen->RastPort.BitMap,
                                      x0,
                                      y0,
@@ -226,15 +226,15 @@ void deletelayer(void)
   int i;
   printf("Delete layer with id: ");
   scanf("%d", &i);
-  if (layers[i]) 
+  if (layers[i])
   {
     DeleteLayer(0, layers[i]);
     if (layers[i]->SuperBitMap)
       FreeBitMap(layers[i]->SuperBitMap);
     printf("Deleted layer with id %d\n",i);
     layers[i] = NULL;
-  } 
-  else 
+  }
+  else
   {
     printf("No layer with id %d\n",i);
   }
@@ -248,8 +248,8 @@ void upfrontlayer(void)
   if (layers[i]) {
     UpfrontLayer(0, layers[i]);
     printf("Moved layer with id %d upfront\n",i);
-  } 
-  else 
+  }
+  else
   {
     printf("No layer with id %d\n",i);
   }
@@ -263,8 +263,8 @@ void behindlayer(void)
   if (layers[i]) {
     BehindLayer(0, layers[i]);
     printf("Moved layer with id %d behind\n",i);
-  } 
-  else 
+  }
+  else
   {
     printf("No layer with id %d\n",i);
   }
@@ -280,8 +280,8 @@ void movelayerinfrontof(void)
   if (layers[i1] && layers[i2]) {
     MoveLayerInFrontOf(layers[i1], layers[i2]);
     printf("Moved layer with id %d in front of layer with id %d\n",i1,i2);
-  } 
-  else 
+  }
+  else
   {
     printf("No layer with id %d or id %d\n",i1,i2);
   }
@@ -406,11 +406,11 @@ void frame(struct Layer * layer)
     SetAPen(layer->rp, 1);
     Move(layer->rp, 0,0);
     Draw(layer->rp, layer->bounds.MaxX - layer->bounds.MinX, 0);
-    Draw(layer->rp, layer->bounds.MaxX - layer->bounds.MinX, 
+    Draw(layer->rp, layer->bounds.MaxX - layer->bounds.MinX,
                     layer->bounds.MaxY - layer->bounds.MinY);
     Draw(layer->rp, 0, layer->bounds.MaxY - layer->bounds.MinY);
     Draw(layer->rp, 0, 0);
-    Draw(layer->rp, layer->bounds.MaxX - layer->bounds.MinX, 
+    Draw(layer->rp, layer->bounds.MaxX - layer->bounds.MinX,
                     layer->bounds.MaxY - layer->bounds.MinY);
    
     for (c=0; c <= width; c= c+(width&0x0f)+i )
@@ -418,7 +418,7 @@ void frame(struct Layer * layer)
       i+=2;
       Move(layer->rp,c,0);
       Draw(layer->rp,c,layer->bounds.MaxY - layer->bounds.MinY);
-    } 
+    }
 }
 
 void Frame(void)
@@ -426,12 +426,12 @@ void Frame(void)
   int i;
   printf("Framing layer with id: ");
   scanf("%d", &i);
-  if (layers[i]) 
+  if (layers[i])
   {
     /* Draw a Frame */
     frame(layers[i]);
-  } 
-  else 
+  }
+  else
   {
     printf("No layer with id %d\n",i);
   }
@@ -442,7 +442,7 @@ void GenerateLayers1(void)
   int i;
   i = unusedlayer();
   if (i==-1) return;
-  layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  10,
                                  10,
@@ -455,7 +455,7 @@ void GenerateLayers1(void)
   
   i = unusedlayer();
   if (i==-1) return;
-  layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  50,
                                  50,
@@ -468,7 +468,7 @@ void GenerateLayers1(void)
   
   i = unusedlayer();
   if (i==-1) return;
-  layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  20,
                                  20,
@@ -484,7 +484,7 @@ void GenerateLayers2(void)
 {
   int i;
   i = unusedlayer();
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  10,
                                  10,
@@ -496,7 +496,7 @@ void GenerateLayers2(void)
   frame(layers[i]);
 
   i = unusedlayer();
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  50,
                                  50,
@@ -508,7 +508,7 @@ void GenerateLayers2(void)
   frame(layers[i]);
 
   i = unusedlayer();
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  70,
                                  130,
@@ -536,7 +536,7 @@ void GenerateLayers3(void)
 {
   int i;
   i = unusedlayer();
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  110,
                                  110,
@@ -548,7 +548,7 @@ void GenerateLayers3(void)
   frame(layers[i]);
 
   i = unusedlayer();
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  150,
                                  150,
@@ -560,7 +560,7 @@ void GenerateLayers3(void)
   frame(layers[i]);
 
   i = unusedlayer();
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  70,
                                  130,
@@ -592,7 +592,7 @@ void GenerateLayers4(void)
     i = unusedlayer();
     if (-1 == i)
       return;
-    layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+    layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                    screen->RastPort.BitMap,
                                    10+c*10,
                                    10+c*10,
@@ -610,7 +610,7 @@ void DemoA(void)
 #define DELAYTIME 50
   int i;
   printf("Deleting all previously generated layers...\n");
-  for (i = 0; i < 10; i++) 
+  for (i = 0; i < 10; i++)
   {
     if (layers[i])
     {
@@ -624,7 +624,7 @@ void DemoA(void)
   printf("Activate other X-window (Amiga Screen) and always press a key\nto see what is going on\n");
   printf("Creating layer %i.\n",i);
   Delay(DELAYTIME);
-  layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  10,
                                  10,
@@ -637,7 +637,7 @@ void DemoA(void)
 
   printf("Creating layer %i.\n",++i);
   Delay(DELAYTIME);
-  layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  20,
                                  5,
@@ -649,7 +649,7 @@ void DemoA(void)
 
   printf("Creating layer %i.\n",++i);
   Delay(DELAYTIME);
-  layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  5,
                                  50,
@@ -661,7 +661,7 @@ void DemoA(void)
 
   printf("Creating layer %i.\n",++i);
   Delay(DELAYTIME);
-  layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[i] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  80,
                                  5,
@@ -669,7 +669,7 @@ void DemoA(void)
                                  200,
                                  LAYERSMART,
                                  NULL);
-  frame(layers[i]); 
+  frame(layers[i]);
    
   i = 0;
   printf("Moving layer %i in front of all other layers.\n",i);
@@ -735,7 +735,7 @@ void DemoB(void)
 #define DELAYTIME 100
   int i;
   printf("Deleting all previously generated layers...\n");
-  for (i = 0; i < 10; i++) 
+  for (i = 0; i < 10; i++)
   {
     if (layers[i])
     {
@@ -749,7 +749,7 @@ void DemoB(void)
   printf("Activate other X-window (Amiga Screen) and always press a key\nto see what is going on\n");
   printf("Creating behind-layer %i.\n",i);
   Delay(DELAYTIME);
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  10,
                                  10,
@@ -762,7 +762,7 @@ void DemoB(void)
 
   printf("Creating behind-layer %i.\n",++i);
   Delay(DELAYTIME);
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  50,
                                  50,
@@ -775,7 +775,7 @@ void DemoB(void)
 
   printf("Creating behind-layer %i.\n",++i);
   Delay(DELAYTIME);
-  layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+  layers[i] = CreateBehindLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  70,
                                  30,
@@ -860,7 +860,7 @@ void DemoC()
     i = 50;
     while (i>0 && (TRUE == MoveLayer(0, layers[2], 2, -1)))
       i--;
-  }  
+  }
   if (layers[3])
   {
     printf("Moving layer 3...\n");
@@ -885,7 +885,7 @@ void DemoC()
       DeleteLayer(0, layers[i]);
     layers[i] = NULL;
     i++;
-  }    
+  }
 }
 
 
@@ -895,7 +895,7 @@ void DemoD()
   int c;
   struct BitMap * sb;
   printf("Deleting all previously generated layers...\n");
-  for (i = 0; i < 10; i++) 
+  for (i = 0; i < 10; i++)
   {
     if (layers[i])
     {
@@ -909,7 +909,7 @@ void DemoD()
 
   sb = AllocBitMap(91,91,1,BMF_CLEAR,NULL);
 
-  layers[0] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[0] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  10,
                                  10,
@@ -921,7 +921,7 @@ void DemoD()
   frame(layers[0]);
 
   sb = AllocBitMap(71,71,1,BMF_CLEAR,NULL);
-  layers[1] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[1] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  50,
                                  50,
@@ -933,7 +933,7 @@ void DemoD()
   frame(layers[1]);
 
   sb = AllocBitMap(71,61,1,BMF_CLEAR,NULL);
-  layers[2] = CreateUpfrontLayer(&screen->LayerInfo, 
+  layers[2] = CreateUpfrontLayer(&screen->LayerInfo,
                                  screen->RastPort.BitMap,
                                  70,
                                  30,
@@ -1088,7 +1088,7 @@ void DemoD()
     DeleteLayer(0, layers[i]);
     layers[i] = NULL;
     i++;
-  }  
+  }
 }
 
 void DumpCliprects(void)
@@ -1126,9 +1126,9 @@ void DumpCliprects(void)
       printf("This cliprect is visible!\n");
     c++;
     CR=CR->Next;
-  }  
+  }
 
-  printf("-------------------------------------\n");  
+  printf("-------------------------------------\n");
 }
 
 void doall(void)
@@ -1138,18 +1138,18 @@ void doall(void)
   for (i = 0; i < 10; i++)
     layers[i] = NULL;
 
-  for (;;) 
+  for (;;)
   {
     printf("> ");
     fflush(stdout);
     scanf("%s", buf);
   
-    if (!strcmp(buf,"quit")) 
+    if (!strcmp(buf,"quit"))
     {
        freelayers();
        return;
-    } 
-    else if (!strcmp(buf, "help")) 
+    }
+    else if (!strcmp(buf, "help"))
     {
         printf("quit help createupfrontlayer [cul] createbehindlayer [cbl] deletelayer [dl]\n");
         printf("behindlayerupfrontlayer [ul] movelayerinfrontof [mlio]\n");
@@ -1157,91 +1157,91 @@ void doall(void)
         printf("motion [mot] DumpCliprects [dc] \n");
         printf("Frame [F]  DemoA DemoB DemoC DemoD\n");
         printf("Generate a few layers: [gl1,gl2,gl3,gl4]\n");
-    } 
-    else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
+    }
+    else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul"))
     {
       createupfrontlayer();
-    } 
-    else if (!strcmp(buf, "createbehindlayer") || !strcmp(buf, "cbl")) 
+    }
+    else if (!strcmp(buf, "createbehindlayer") || !strcmp(buf, "cbl"))
     {
       createbehindlayer();
-    } 
-    else if (!strcmp(buf, "deletelayer") || !strcmp(buf, "dl")) 
+    }
+    else if (!strcmp(buf, "deletelayer") || !strcmp(buf, "dl"))
     {
       deletelayer();
-    } 
-    else if (!strcmp(buf, "behindlayer") || !strcmp(buf, "bl")) 
+    }
+    else if (!strcmp(buf, "behindlayer") || !strcmp(buf, "bl"))
     {
       behindlayer();
-    } 
-    else if (!strcmp(buf, "upfrontlayer") || !strcmp(buf, "ul")) 
+    }
+    else if (!strcmp(buf, "upfrontlayer") || !strcmp(buf, "ul"))
     {
       upfrontlayer();
-    } 
-    else if (!strcmp(buf, "movelayerinfrontof") || !strcmp(buf, "mlio")) 
+    }
+    else if (!strcmp(buf, "movelayerinfrontof") || !strcmp(buf, "mlio"))
     {
       movelayerinfrontof();
     }
-    else if (!strcmp(buf, "movelayer") || !strcmp(buf, "ml")) 
+    else if (!strcmp(buf, "movelayer") || !strcmp(buf, "ml"))
     {
       movelayer();
-    }     
-    else if (!strcmp(buf, "movesizelayer") || !strcmp(buf, "msl")) 
+    }
+    else if (!strcmp(buf, "movesizelayer") || !strcmp(buf, "msl"))
     {
       movesizelayer();
-    }     
-    else if (!strcmp(buf, "sizelayer") || !strcmp(buf, "sl")) 
+    }
+    else if (!strcmp(buf, "sizelayer") || !strcmp(buf, "sl"))
     {
       sizelayer();
-    }     
-    else if (!strcmp(buf, "scrolllayer") || !strcmp(buf, "scl")) 
+    }
+    else if (!strcmp(buf, "scrolllayer") || !strcmp(buf, "scl"))
     {
       scrolllayer();
-    }     
-    else if (!strcmp(buf, "motion") || !strcmp(buf, "mot")) 
+    }
+    else if (!strcmp(buf, "motion") || !strcmp(buf, "mot"))
     {
       motion();
-    }     
-    else if (!strcmp(buf, "Frame")  || !strcmp(buf, "F")) 
+    }
+    else if (!strcmp(buf, "Frame")  || !strcmp(buf, "F"))
     {
       Frame();
-    } 
-    else if (!strcmp(buf, "DemoA")) 
+    }
+    else if (!strcmp(buf, "DemoA"))
     {
       DemoA();
-    } 
-    else if (!strcmp(buf, "DemoB")) 
+    }
+    else if (!strcmp(buf, "DemoB"))
     {
       DemoB();
-    } 
-    else if (!strcmp(buf, "DemoC")) 
+    }
+    else if (!strcmp(buf, "DemoC"))
     {
       DemoC();
-    } 
-    else if (!strcmp(buf, "DemoD")) 
+    }
+    else if (!strcmp(buf, "DemoD"))
     {
       DemoD();
-    } 
-    else if (!strcmp(buf, "gl1")) 
+    }
+    else if (!strcmp(buf, "gl1"))
     {
       GenerateLayers1();
-    } 
-    else if (!strcmp(buf, "gl2")) 
+    }
+    else if (!strcmp(buf, "gl2"))
     {
       GenerateLayers2();
-    } 
-    else if (!strcmp(buf, "gl3")) 
+    }
+    else if (!strcmp(buf, "gl3"))
     {
       GenerateLayers3();
-    } 
-    else if (!strcmp(buf, "gl4")) 
+    }
+    else if (!strcmp(buf, "gl4"))
     {
       GenerateLayers4();
-    } 
-    else if (!strcmp(buf, "dc")) 
+    }
+    else if (!strcmp(buf, "dc"))
     {
       DumpCliprects();
-    } 
+    }
     else
       printf("Unknown command. Try 'help'.\n");
   }

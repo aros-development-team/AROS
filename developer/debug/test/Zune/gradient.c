@@ -49,35 +49,35 @@ int main(void)
                     MUIA_Image_FreeHoriz, TRUE,
                     MUIA_Image_FreeVert,  TRUE,
                 End,
-	        Child, TextObject,
- 	            ButtonFrame,
-	            MUIA_Background, (IPTR)"7:v,bbbbbbbb,bbbbbbbb,bbbbbbbb-77777777,77777777,77777777",
-	            MUIA_Text_Contents, "\033cWoho I see colors on the wall ...",
-	        End,
+                Child, TextObject,
+                    ButtonFrame,
+                    MUIA_Background, (IPTR)"7:v,bbbbbbbb,bbbbbbbb,bbbbbbbb-77777777,77777777,77777777",
+                    MUIA_Text_Contents, "\033cWoho I see colors on the wall ...",
+                End,
             End,
         End,
     End;
 
     if (app)
     {
-	ULONG sigs = 0;
-	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
-		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        ULONG sigs = 0;
+        DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
+                 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-	set(wnd, MUIA_Window_Open, TRUE);
+        set(wnd, MUIA_Window_Open, TRUE);
 
-	while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
-	      != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-		if (sigs & SIGBREAKF_CTRL_C) break;
-		if (sigs & SIGBREAKF_CTRL_D) break;
-	    }
-	}
-	set(wnd, MUIA_Window_Open, FALSE);
-	MUI_DisposeObject(app);
+        while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
+              != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+                if (sigs & SIGBREAKF_CTRL_D) break;
+            }
+        }
+        set(wnd, MUIA_Window_Open, FALSE);
+        MUI_DisposeObject(app);
     }
     
     return 0;

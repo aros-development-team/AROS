@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 1999, David Le Corfec.
     Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
@@ -133,7 +133,7 @@ Test_New(struct IClass *cl, Object *obj, struct opSet *msg)
      */
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
-	return 0;
+        return 0;
     /*
      * Set default values to attributes.
      */
@@ -142,11 +142,11 @@ Test_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->b = 0;
     /*
      * Init attributes.
-     */ 
+     */
     if ((tag = FindTagItem(MUIA_Test_A, msg->ops_AttrList)))
-	data->a = tag->ti_Data;
+        data->a = tag->ti_Data;
     if ((tag = FindTagItem(MUIA_Test_B, msg->ops_AttrList)))
-	data->b = tag->ti_Data;
+        data->b = tag->ti_Data;
     /*
      * Return newly constructed object.
      */
@@ -171,15 +171,15 @@ Test_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     */
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-	switch (tag->ti_Tag)
-	{
-	case MUIA_Test_A:
-	    data->a = tag->ti_Data;
-	    break;
-	case MUIA_Test_B:
-	    data->b = tag->ti_Data;
-	    break;
-	}
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Test_A:
+            data->a = tag->ti_Data;
+            break;
+        case MUIA_Test_B:
+            data->b = tag->ti_Data;
+            break;
+        }
     }
     /*
      * To handle unkown attributes and notifications.
@@ -200,11 +200,11 @@ Test_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
     case MUIA_Test_A:
-	STORE = (ULONG) data->a;
-	return(TRUE);
+        STORE = (ULONG) data->a;
+        return(TRUE);
     case MUIA_Test_B:
-	STORE = (ULONG) data->b;
-	return(TRUE);
+        STORE = (ULONG) data->b;
+        return(TRUE);
     }
 
     /* Our handler didn't understand the attribute, we simply pass
@@ -248,9 +248,9 @@ Test_Print(struct IClass *cl, Object *obj, struct MUIP_Test_Print *msg)
 __asm IPTR Test_Dispatcher(register __a0 Class *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 AROS_UFH3S(IPTR, Test_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
+        AROS_UFHA(Class  *, cl,  A0),
+        AROS_UFHA(Object *, obj, A2),
+        AROS_UFHA(Msg     , msg, A1))
 #endif
 {
     AROS_USERFUNC_INIT
@@ -260,19 +260,19 @@ AROS_UFH3S(IPTR, Test_Dispatcher,
      */
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
-	case OM_NEW:
-	    return(Test_New(cl, obj, (struct opSet *) msg));
-	case OM_SET:
-	    return(Test_Set(cl, obj, (struct opSet *)msg));
-	case OM_GET:
-	    return(Test_Get(cl, obj, (struct opGet *)msg));
-	case MUIM_Test_Print:
-	    return(Test_Print(cl, obj, (APTR)msg));
-	case MUIM_Test_GetBoth:
-	    return(Test_GetBoth(cl, obj, (APTR)msg));
+        /* Whenever an object shall be created using NewObject(), it will be
+        ** sent a OM_NEW method.
+        */
+        case OM_NEW:
+            return(Test_New(cl, obj, (struct opSet *) msg));
+        case OM_SET:
+            return(Test_Set(cl, obj, (struct opSet *)msg));
+        case OM_GET:
+            return(Test_Get(cl, obj, (struct opGet *)msg));
+        case MUIM_Test_Print:
+            return(Test_Print(cl, obj, (APTR)msg));
+        case MUIM_Test_GetBoth:
+            return(Test_GetBoth(cl, obj, (APTR)msg));
     }
     /*
      * We didn't understand the last method, so call our superclass.
@@ -320,7 +320,7 @@ ExtendedTest_New(struct IClass *cl, Object *obj, struct opSet *msg)
      */
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
-	return 0;
+        return 0;
     /*
      * Set default values to attributes.
      */
@@ -331,18 +331,18 @@ ExtendedTest_New(struct IClass *cl, Object *obj, struct opSet *msg)
      * Setup notifications on our attributes.
      */
     DoMethod(obj, MUIM_Notify,
-	     MUIA_Test_A,                /* attribute to watch */
-	     MUIV_EveryTime,             /* notify when setting to everything */
-	     (IPTR)obj,                  /* object to call on notification */
+             MUIA_Test_A,                /* attribute to watch */
+             MUIV_EveryTime,             /* notify when setting to everything */
+             (IPTR)obj,                  /* object to call on notification */
              1,                          /* number of parameters following */
              MUIM_ExtendedTest_Update);  /* method to invoke */
 
     DoMethod(obj, MUIM_Notify,
-	     MUIA_Test_B,
-	     MUIV_EveryTime,
-	     (IPTR)obj,
-	     1,
-	     MUIM_ExtendedTest_Update);
+             MUIA_Test_B,
+             MUIV_EveryTime,
+             (IPTR)obj,
+             1,
+             MUIM_ExtendedTest_Update);
     /*
      * Return newly constructed object.
      */
@@ -355,7 +355,7 @@ ExtendedTest_New(struct IClass *cl, Object *obj, struct opSet *msg)
  */
 static IPTR
 ExtendedTest_Update(struct IClass *cl, Object *obj,
-		    struct MUIP_ExtendedTest_Update *noMsg)
+                    struct MUIP_ExtendedTest_Update *noMsg)
 {
     struct ExtendedTestData *data = INST_DATA(cl, obj);
     int a;
@@ -374,15 +374,15 @@ ExtendedTest_Update(struct IClass *cl, Object *obj,
  */
 static IPTR
 ExtendedTest_Print(struct IClass *cl, Object *obj,
-		   struct MUIP_ExtendedTest_Print *noMsg)
+                   struct MUIP_ExtendedTest_Print *noMsg)
 {
     struct ExtendedTestData *data = INST_DATA(cl, obj);
 
     DoMethod(obj, MUIM_Test_Print);
     printf("Sum: %d. Average: %d. Usecount: %d.\n",
-	   data->sum,
-	   data->average,
-	   data->usecount);
+           data->sum,
+           data->average,
+           data->usecount);
 
     return FALSE;
 }
@@ -395,9 +395,9 @@ ExtendedTest_Print(struct IClass *cl, Object *obj,
 __asm IPTR ExtendedTest_Dispatcher(register __a0 Class *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
 AROS_UFH3S(IPTR, ExtendedTest_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
+        AROS_UFHA(Class  *, cl,  A0),
+        AROS_UFHA(Object *, obj, A2),
+        AROS_UFHA(Msg     , msg, A1))
 #endif
 {
     AROS_USERFUNC_INIT
@@ -407,15 +407,15 @@ AROS_UFH3S(IPTR, ExtendedTest_Dispatcher,
      */
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
+        /* Whenever an object shall be created using NewObject(), it will be
+        ** sent a OM_NEW method.
+        */
     case OM_NEW:
-	return(ExtendedTest_New(cl, obj, (struct opSet *) msg));
+        return(ExtendedTest_New(cl, obj, (struct opSet *) msg));
     case MUIM_ExtendedTest_Print:
-	return(ExtendedTest_Print(cl, obj, (APTR)msg));
+        return(ExtendedTest_Print(cl, obj, (APTR)msg));
     case MUIM_ExtendedTest_Update:
-	return(ExtendedTest_Update(cl, obj, (APTR)msg));
+        return(ExtendedTest_Update(cl, obj, (APTR)msg));
     }
     /*
      * We didn't understand the last method, so call our superclass.
@@ -440,51 +440,51 @@ int main (void)
     if (!openmuimaster()) return 20;
 
     testClass = MUI_CreateCustomClass(NULL, MUIC_Notify, NULL,
-				      sizeof(struct TestData),
-				      Test_Dispatcher);
+                                      sizeof(struct TestData),
+                                      Test_Dispatcher);
     if (!testClass)
     {
-	printf("cannot create Test class\n");
-	result = 5;
-	goto error;
+        printf("cannot create Test class\n");
+        result = 5;
+        goto error;
     }
     extendedTestClass = MUI_CreateCustomClass(NULL, NULL, testClass,
-					      sizeof(struct ExtendedTestData),
-					      ExtendedTest_Dispatcher);
+                                              sizeof(struct ExtendedTestData),
+                                              ExtendedTest_Dispatcher);
     if (!extendedTestClass)
     {
-	MUI_DeleteCustomClass(testClass);
-	printf("cannot create ExtendedTest class\n");
-	result = 5;
-	goto error;
+        MUI_DeleteCustomClass(testClass);
+        printf("cannot create ExtendedTest class\n");
+        result = 5;
+        goto error;
     }
 
     obj = NewObject(extendedTestClass->mcc_Class, NULL,
-		    MUIA_Test_A, 10,
-		    MUIA_Test_B, 20,
-		    TAG_DONE);
+                    MUIA_Test_A, 10,
+                    MUIA_Test_B, 20,
+                    TAG_DONE);
     if (obj)
     {
-	int x;
-	int y;
+        int x;
+        int y;
 
-	printf("\nSum and Average will be automatically calculated"
-	    " after each change of A and B values.\n\n");
-	printf("- Show the contents of the object:\n");
-	DoMethod(obj, MUIM_ExtendedTest_Print);
+        printf("\nSum and Average will be automatically calculated"
+            " after each change of A and B values.\n\n");
+        printf("- Show the contents of the object:\n");
+        DoMethod(obj, MUIM_ExtendedTest_Print);
 
-	printf("\n- Set the A attribute of the object to 5 and check its new contents:\n");
-	set(obj, MUIA_Test_A, 5);
-	DoMethod(obj, MUIM_ExtendedTest_Print);
+        printf("\n- Set the A attribute of the object to 5 and check its new contents:\n");
+        set(obj, MUIA_Test_A, 5);
+        DoMethod(obj, MUIM_ExtendedTest_Print);
 
-	printf("\n- Set the B attribute of the object to 10 and check its new contents:\n");
-	set(obj, MUIA_Test_B, 10);
-	DoMethod(obj, MUIM_ExtendedTest_Print);
+        printf("\n- Set the B attribute of the object to 10 and check its new contents:\n");
+        set(obj, MUIA_Test_B, 10);
+        DoMethod(obj, MUIM_ExtendedTest_Print);
 
-	printf("\n- Get the A and B attributes using MUIP structure:\n");
-	DoMethod(obj, MUIM_Test_GetBoth, (IPTR)&x, (IPTR)&y);
-	printf("Values returned: %d %d.\n", x, y);
-	DisposeObject(obj);
+        printf("\n- Get the A and B attributes using MUIP structure:\n");
+        DoMethod(obj, MUIM_Test_GetBoth, (IPTR)&x, (IPTR)&y);
+        printf("Values returned: %d %d.\n", x, y);
+        DisposeObject(obj);
     }
     MUI_DeleteCustomClass(extendedTestClass);
     MUI_DeleteCustomClass(testClass);

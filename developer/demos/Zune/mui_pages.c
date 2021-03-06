@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 1999, David Le Corfec.
     Copyright (C) 2002, The AROS Development Team.
     All rights reserved.
@@ -78,77 +78,77 @@ int main (int argc, char **argv)
     if (!openmuimaster()) return 20;
 
     app = ApplicationObject,
-	SubWindow, mainWin = WindowObject,
-	    MUIA_Window_Title, "Pages",
-	    WindowContents, VGroup,
+        SubWindow, mainWin = WindowObject,
+            MUIA_Window_Title, "Pages",
+            WindowContents, VGroup,
                 Child, VGroup,
-   		    GroupFrame,
-		    Child, HGroup,
-			Child, stepb[0] = RectangleObject,
-				MUIA_Rectangle_BarTitle, "prev",
-	                        MUIA_CycleChain, TRUE,
-				MUIA_InnerLeft, 20,
-				MUIA_FixHeight, 20,
-				MUIA_InputMode, MUIV_InputMode_RelVerify,
-				MUIA_Background, MUII_ButtonBack,
-				ButtonFrame,
-			End,
-			Child, stepb[1] = RectangleObject,
-				MUIA_Rectangle_BarTitle, "next",
-	                        MUIA_CycleChain, TRUE,
-				MUIA_InnerLeft, 20,
-				MUIA_InputMode, MUIV_InputMode_RelVerify,
-				MUIA_Background, MUII_ButtonBack,
-				ButtonFrame,
-			End,
-		    End,
+                    GroupFrame,
+                    Child, HGroup,
+                        Child, stepb[0] = RectangleObject,
+                                MUIA_Rectangle_BarTitle, "prev",
+                                MUIA_CycleChain, TRUE,
+                                MUIA_InnerLeft, 20,
+                                MUIA_FixHeight, 20,
+                                MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                MUIA_Background, MUII_ButtonBack,
+                                ButtonFrame,
+                        End,
+                        Child, stepb[1] = RectangleObject,
+                                MUIA_Rectangle_BarTitle, "next",
+                                MUIA_CycleChain, TRUE,
+                                MUIA_InnerLeft, 20,
+                                MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                MUIA_Background, MUII_ButtonBack,
+                                ButtonFrame,
+                        End,
+                    End,
 
-	            Child, MUI_MakeObject(MUIO_HBar, 4),
-		    Child, HGroup,
-			Child, b[0] = RectangleObject,
-				MUIA_Rectangle_BarTitle, "1",
-	                        MUIA_CycleChain, TRUE,
-				MUIA_InputMode, MUIV_InputMode_RelVerify,
-				MUIA_FixHeight, 20,
-				MUIA_Background, MUII_ButtonBack,
-				ButtonFrame,
-			End,
-			Child, b[1] = RectangleObject,
-				MUIA_Rectangle_BarTitle, "2",
-	                        MUIA_CycleChain, TRUE,
-				MUIA_InputMode, MUIV_InputMode_RelVerify,
-				MUIA_FixHeight, 20,
-				MUIA_Background, MUII_ButtonBack,
-				ButtonFrame,
-			End,
-			Child, b[2] = RectangleObject,
-				MUIA_Rectangle_BarTitle, "3",
-	                        MUIA_CycleChain, TRUE,
-				MUIA_InputMode, MUIV_InputMode_RelVerify,
-				MUIA_FixHeight, 20,
-				MUIA_Background, MUII_ButtonBack,
-				ButtonFrame,
-			End,
-		    End,
+                    Child, MUI_MakeObject(MUIO_HBar, 4),
+                    Child, HGroup,
+                        Child, b[0] = RectangleObject,
+                                MUIA_Rectangle_BarTitle, "1",
+                                MUIA_CycleChain, TRUE,
+                                MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                MUIA_FixHeight, 20,
+                                MUIA_Background, MUII_ButtonBack,
+                                ButtonFrame,
+                        End,
+                        Child, b[1] = RectangleObject,
+                                MUIA_Rectangle_BarTitle, "2",
+                                MUIA_CycleChain, TRUE,
+                                MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                MUIA_FixHeight, 20,
+                                MUIA_Background, MUII_ButtonBack,
+                                ButtonFrame,
+                        End,
+                        Child, b[2] = RectangleObject,
+                                MUIA_Rectangle_BarTitle, "3",
+                                MUIA_CycleChain, TRUE,
+                                MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                MUIA_FixHeight, 20,
+                                MUIA_Background, MUII_ButtonBack,
+                                ButtonFrame,
+                        End,
+                    End,
                 End,
-	        Child, pages = HGroup,
-	            MUIA_Group_PageMode, TRUE,
-	            InputListFrame,
-	            MUIA_Background, MUII_PageBack,
-	            Child, RectangleObject,
-	                    MUIA_FixWidth, 50,
-	                    MUIA_Background, MUII_SHADOW,
-                            MUIA_Rectangle_BarTitle, "Rect1",
-	            End,
+                Child, pages = HGroup,
+                    MUIA_Group_PageMode, TRUE,
+                    InputListFrame,
+                    MUIA_Background, MUII_PageBack,
                     Child, RectangleObject,
-	                    MUIA_FixWidth, 30,
+                            MUIA_FixWidth, 50,
+                            MUIA_Background, MUII_SHADOW,
+                            MUIA_Rectangle_BarTitle, "Rect1",
+                    End,
+                    Child, RectangleObject,
+                            MUIA_FixWidth, 30,
                             MUIA_FixHeight, 30,
-	                    MUIA_Background, MUII_SHINE,
+                            MUIA_Background, MUII_SHINE,
                             MUIA_Rectangle_BarTitle, "Rect2",
                     End,
                     Child, RectangleObject,
                             MUIA_FixHeight, 50,
-	                    MUIA_Background, MUII_FILL,
+                            MUIA_Background, MUII_FILL,
                             MUIA_Rectangle_BarTitle, "Rect3",
                     End,
                 End,
@@ -158,26 +158,26 @@ int main (int argc, char **argv)
 
     if (!app)
     {
-	fprintf(stderr, "can't create application object.\n");
-	goto error;
+        fprintf(stderr, "can't create application object.\n");
+        goto error;
     }
 
     DoMethod(mainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	     (IPTR)app, 2,
-	     MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+             (IPTR)app, 2,
+             MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     DoMethod(stepb[0], MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
-	     (IPTR)pages, 3, MUIM_Set,
-	     MUIA_Group_ActivePage, MUIV_Group_ActivePage_Prev);
+             (IPTR)pages, 3, MUIM_Set,
+             MUIA_Group_ActivePage, MUIV_Group_ActivePage_Prev);
 
     DoMethod(stepb[1], MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
-	     (IPTR)pages, 3, MUIM_Set,
-	     MUIA_Group_ActivePage, MUIV_Group_ActivePage_Next);
+             (IPTR)pages, 3, MUIM_Set,
+             MUIA_Group_ActivePage, MUIV_Group_ActivePage_Next);
 
     for (i = 0; i < 3; i++)
     {
-	DoMethod(b[i], MUIM_Notify, MUIA_Pressed, FALSE,
-		 (IPTR)pages, 3, MUIM_Set, MUIA_Group_ActivePage, i);
+        DoMethod(b[i], MUIM_Notify, MUIA_Pressed, FALSE,
+                 (IPTR)pages, 3, MUIM_Set, MUIA_Group_ActivePage, i);
     }
     /*
      * Open window and ALWAYS check.
@@ -185,23 +185,23 @@ int main (int argc, char **argv)
     set(mainWin, MUIA_Window_Open, TRUE);
     if (!XGET(mainWin, MUIA_Window_Open))
     {
-	MUI_DisposeObject(app);
-	fprintf(stderr, "can't open main window.\n");
-	goto error;
+        MUI_DisposeObject(app);
+        fprintf(stderr, "can't open main window.\n");
+        goto error;
     }
 
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 
-	while (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
-	       != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-	        sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-	        if (sigs & SIGBREAKF_CTRL_C) break;
-	    }
-	}
+        while (DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
+               != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+            }
+        }
     }
     
     set(mainWin, MUIA_Window_Open, FALSE);

@@ -38,7 +38,7 @@ int main(void)
     FPrintf(out, "Stored value 69 in slot %ld\n", slot1);
 
     FPrintf(out, "Checking value in subtask\n");
-    struct Process *proc = 
+    struct Process *proc =
         CreateNewProcTags(
             NP_Entry, printslot1, NP_Name, "Check slot1",
             NP_Synchronous, TRUE, TAG_DONE

@@ -37,19 +37,19 @@ LONG entry()
 
     for(i = 0; i < ITERATIONS; i++)
     {
-	if(!flock(fd, LOCK_EX))
-	{
-	    int tmp = *counter;
-	    Delay(1);
-	    *counter = tmp + 1;
-	    printf("\rprogress: %.2f%%", *counter * 100.0 / (NPROCS * ITERATIONS));
-	    flock(fd, LOCK_UN);
-	}
-	else
-	{
-	    close(fd);
-	    return -1;
-	}
+        if(!flock(fd, LOCK_EX))
+        {
+            int tmp = *counter;
+            Delay(1);
+            *counter = tmp + 1;
+            printf("\rprogress: %.2f%%", *counter * 100.0 / (NPROCS * ITERATIONS));
+            flock(fd, LOCK_UN);
+        }
+        else
+        {
+            close(fd);
+            return -1;
+        }
     }
 
     close(fd);
@@ -78,14 +78,14 @@ int main()
 
     close(fd);
 
-    /* Create NPROCS processes increasing counter ITERATIONS times in an ugly 
+    /* Create NPROCS processes increasing counter ITERATIONS times in an ugly
        way */
     int counter = 0;
     struct Process *procs[NPROCS];
     ULONG ids[NPROCS];
     struct TagItem tags[] =
     {
-	{ NP_Entry,         (IPTR) entry     },
+        { NP_Entry,         (IPTR) entry     },
         { NP_Name,          (IPTR) "flocker" },
         { NP_Output,        (IPTR) Output()  },
         { NP_CloseOutput,   (IPTR) FALSE     },
@@ -98,16 +98,16 @@ int main()
     InitSemaphore(&sem);
     for(i = 0; i < NPROCS; i++)
     {
-	procs[i] = CreateNewProc(tags);
-	TEST((procs[i]));
-	ids[i] = GetETask(procs[i])->et_UniqueID;
-	Signal((struct Task *)procs[i], SIGBREAKF_CTRL_C);
+        procs[i] = CreateNewProc(tags);
+        TEST((procs[i]));
+        ids[i] = GetETask(procs[i])->et_UniqueID;
+        Signal((struct Task *)procs[i], SIGBREAKF_CTRL_C);
     }
     
     for(i = 0; i < NPROCS; i++)
     {
-	ChildWait(ids[i]);
-	ChildFree(ids[i]);
+        ChildWait(ids[i]);
+        ChildFree(ids[i]);
     }
     putchar('\n');
     

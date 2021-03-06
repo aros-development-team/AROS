@@ -31,8 +31,8 @@ int main(void)
     if (!pool)
     {
         Permit();
-	output("Failed to create pool!\n");
-	return 1;
+        output("Failed to create pool!\n");
+        return 1;
     }
 
     output("Available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
@@ -40,21 +40,21 @@ int main(void)
     output("Allocating 200 small chunks...\n");
     for (i = 0; i < 200; i++)
     {
-	chunks[i] = AllocPooled(pool, 50);
-	if (!chunks[i])
-	{
-	    output("Failed to allocate chunk %u!\n", i);
-	    break;
-	}
+        chunks[i] = AllocPooled(pool, 50);
+        if (!chunks[i])
+        {
+            output("Failed to allocate chunk %u!\n", i);
+            break;
+        }
     }
     output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 
     output("Now freeing them...\n");
     for (i = 0; i < 200; i++)
     {
-	if (!chunks[i])
-	    break;
-	FreePooled(pool, chunks[i], 50);
+        if (!chunks[i])
+            break;
+        FreePooled(pool, chunks[i], 50);
     }
     output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 

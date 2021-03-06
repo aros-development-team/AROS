@@ -75,7 +75,7 @@ static void draw_stuff(void)
 {
     SetAPen(rp, 1);
     Move(rp, 100, 50);
-    Text(rp, "Press any key to quit", 21); 
+    Text(rp, "Press any key to quit", 21);
     
     Move(rp, 100, 100);
     Draw(rp, 500, 100);

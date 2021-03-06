@@ -21,8 +21,8 @@
  * real and imaginary parts
  */
 typedef struct {
-	double r;
-	double i;
+        double r;
+        double i;
 } complexno_t;
 
 struct WorkersWork
@@ -31,7 +31,7 @@ struct WorkersWork
     ULONG         workOversamp;
     ULONG         workOver2;
     spinlock_t      *lock;
-    complexno_t workTrajectories[];  
+    complexno_t workTrajectories[];
 };
 
 ULONG calculateTrajectory(struct WorkersWork *workload, double r, double i)

@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 1999, David Le Corfec.
     Copyright (C) 2002-2003, The AROS Development Team.
     All rights reserved.
@@ -101,41 +101,41 @@ int main (int argc, char **argv)
     if (!(openmuimaster())) return 20;
 
     app = ApplicationObject,
-	SubWindow, mainWin = WindowObject,
-	    MUIA_Window_Title, (IPTR)"Input modes",
-	    WindowContents, VGroup,
-	        Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_RelVerify")),
+        SubWindow, mainWin = WindowObject,
+            MUIA_Window_Title, (IPTR)"Input modes",
+            WindowContents, VGroup,
+                Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_RelVerify")),
                 Child, SimpleChainedButton("Hello world, \33u\33iyo\n"
-					   "\33l\33iHello \33bworld\33n, yo\n"
-					   "\33iHello world, yo\n"
-					   "_Hello \33uwo\0331r\33bl\33n\33ud\33n, \33iyo\n"
-					   "\33cI \33ilove MUI\n"
-					   "HelloH \33b\33ihello\33nH"),
-	        Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_Toggle")),
+                                           "\33l\33iHello \33bworld\33n, yo\n"
+                                           "\33iHello world, yo\n"
+                                           "_Hello \33uwo\0331r\33bl\33n\33ud\33n, \33iyo\n"
+                                           "\33cI \33ilove MUI\n"
+                                           "HelloH \33b\33ihello\33nH"),
+                Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_Toggle")),
                 Child, VSpace(0),
-	        Child, HGroup,
+                Child, HGroup,
                     MUIA_Frame, MUIV_Frame_Group,
                     MUIA_FrameTitle, (IPTR)"The quick brown fox jumps over the lazy dog",
-	            MUIA_Background, MUII_GroupBack,
-	            Child, ChainedCheckmark("My first checkmark"),
+                    MUIA_Background, MUII_GroupBack,
+                    Child, ChainedCheckmark("My first checkmark"),
                 End,
-	        Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_Immediate")),
-	        Child, HGroup,
-	            MUIA_Frame, MUIV_Frame_Group,
-  	            MUIA_FrameTitle, (IPTR)"Radio",
-  	            MUIA_FixHeight, 30,
-	            Child, radio1 = RectangleObject,
+                Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_Immediate")),
+                Child, HGroup,
+                    MUIA_Frame, MUIV_Frame_Group,
+                    MUIA_FrameTitle, (IPTR)"Radio",
+                    MUIA_FixHeight, 30,
+                    Child, radio1 = RectangleObject,
                             MUIA_CycleChain, TRUE,
-	                    MUIA_ControlChar, 'i',
-	                    MUIA_InputMode, MUIV_InputMode_Immediate,
-	                    MUIA_Background, MUII_ButtonBack,
+                            MUIA_ControlChar, 'i',
+                            MUIA_InputMode, MUIV_InputMode_Immediate,
+                            MUIA_Background, MUII_ButtonBack,
                             MUIA_Frame, MUIV_Frame_Button,
-	            End,
+                    End,
                     Child, radio2 = RectangleObject,
                             MUIA_CycleChain, TRUE,
-	                    MUIA_ControlChar, 'o',
-	                    MUIA_InputMode, MUIV_InputMode_Immediate,
-	                    MUIA_Background, MUII_ButtonBack,
+                            MUIA_ControlChar, 'o',
+                            MUIA_InputMode, MUIV_InputMode_Immediate,
+                            MUIA_Background, MUII_ButtonBack,
                             MUIA_Frame, MUIV_Frame_Button,
                     End,
                 End,
@@ -145,21 +145,21 @@ int main (int argc, char **argv)
 
     if (!app)
     {
-	kprintf("can't create application object.\n");
-	result = 20;
-	goto error;
+        kprintf("can't create application object.\n");
+        result = 20;
+        goto error;
     }
 
 kprintf("*** MUIM_Notify on MUIA_Window_CloseRequest...\n");
     DoMethod(mainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	     _U(app), 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+             _U(app), 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
 kprintf("*** set up radio1...\n");
     set(radio1, MUIA_Selected, TRUE);
     DoMethod(radio1, MUIM_Notify, MUIA_Selected, TRUE,
-	     _U(radio2), 3, MUIM_Set, MUIA_Selected, FALSE);
+             _U(radio2), 3, MUIM_Set, MUIA_Selected, FALSE);
     DoMethod(radio2, MUIM_Notify, MUIA_Selected, TRUE,
-	     _U(radio1), 3, MUIM_Set, MUIA_Selected, FALSE);
+             _U(radio1), 3, MUIM_Set, MUIA_Selected, FALSE);
 
     /*
      * Open window and ALWAYS check.
@@ -168,25 +168,25 @@ kprintf("*** open window...\n");
     set(mainWin, MUIA_Window_Open, TRUE);
     if (!XGET(mainWin, MUIA_Window_Open))
     {
-	MUI_DisposeObject(app);
-	kprintf("%s : can't open main window.\n", argv[0]);
-	result = 5;
-	goto error;
+        MUI_DisposeObject(app);
+        kprintf("%s : can't open main window.\n", argv[0]);
+        result = 5;
+        goto error;
     }
 
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 
 kprintf("*** main loop...\n");
-	while (DoMethod(app, MUIM_Application_NewInput, _U(&sigs))
-	       != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-	        sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-	        if (sigs & SIGBREAKF_CTRL_C) break;
-	    }
-	}
+        while (DoMethod(app, MUIM_Application_NewInput, _U(&sigs))
+               != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+            }
+        }
     }
 
 kprintf("*** close window...\n");

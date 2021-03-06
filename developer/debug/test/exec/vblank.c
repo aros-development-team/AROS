@@ -36,7 +36,7 @@ int main(void)
     
     while (!(CheckSignal(SIGBREAKF_CTRL_C)))
     {
-    	Printf("\rVBlank counter: %lu          ", counter);
+        Printf("\rVBlank counter: %lu          ", counter);
     }
     
     RemIntServer(INTB_VERTB, &vblank_int);

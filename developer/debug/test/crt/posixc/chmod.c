@@ -11,7 +11,7 @@
 
 char testfilename[] = "RAM:__TEST__";
 
-int main() 
+int main()
 {
     struct stat buf;
     int fd;
@@ -45,7 +45,7 @@ int main()
     return OK;
 }
 
-void cleanup() 
+void cleanup()
 {
     remove(testfilename);
 }

@@ -58,7 +58,7 @@ static void printresults(LONG timems, LONG blits)
 
 static void cleanup(STRPTR msg, ULONG retcode)
 {
-    if (msg) 
+    if (msg)
         fprintf(stderr, "text: %s\n", msg);
 
     exit(retcode);
@@ -81,7 +81,7 @@ LONG            pixfmt = RECTFMT_ARGB;
 
 #include <ctype.h>
 // it's supposed to become a shared library one day ...
-// 
+//
 // current implementation:
 // on pciids_Open(), the file is read in memory, then
 // an index is built (in computeVendorIndexes()), as an array
@@ -339,7 +339,7 @@ AROS_UFH3(void, Enumerator,
     pciids_GetVendorName(vendorid, vendor, 100);
     pciids_GetDeviceName(vendorid, productid, product, 100);
 
-    printf("|Video card|0x%x:0x%x %s %s", 
+    printf("|Video card|0x%x:0x%x %s %s",
         (unsigned)vendorid, (unsigned)productid, vendor, product);
     if (agpcap) printf(" AGP");
     if (pciecap) printf(" PCIe");
@@ -406,7 +406,7 @@ static void detectsystem()
     {
         ULONG processorcount;
         ULONG i;
-        struct TagItem tags [] = 
+        struct TagItem tags [] =
         {
             { GCIT_NumberOfProcessors, (IPTR)&processorcount },
             { 0, (IPTR)NULL }
@@ -421,7 +421,7 @@ static void detectsystem()
             UQUAD frequency = 0;
             STRPTR modelstr = NULL;
 
-            struct TagItem tags [] = 
+            struct TagItem tags [] =
             {
                 { GCIT_SelectedProcessor, (IPTR)i },
                 { GCIT_ProcessorSpeed, (IPTR)&frequency },

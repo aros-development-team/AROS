@@ -7,7 +7,7 @@
 /*** Main *******************************************************************/
 int main()
 {
-    struct timeval  tv_start, 
+    struct timeval  tv_start,
                     tv_end;
     int             count   = 100000000;
     double          elapsed = 0.0;
@@ -21,15 +21,15 @@ int main()
     gettimeofday(&tv_start, NULL);
     
     for(i = 0; i < count; i++)
-    {    
-        DoMethod(object, MUIM_Test_Dummy);        
+    {
+        DoMethod(object, MUIM_Test_Dummy);
     }
     
     gettimeofday(&tv_end, NULL);
     
     DisposeObject(object);
     
-    elapsed = ((double)(((tv_end.tv_sec * 1000000) + tv_end.tv_usec) 
+    elapsed = ((double)(((tv_end.tv_sec * 1000000) + tv_end.tv_usec)
             - ((tv_start.tv_sec * 1000000) + tv_start.tv_usec)))/1000000.0;
     
     printf

@@ -18,7 +18,7 @@ static void StartCommand(void)
     
   SystemTags("type in:", SYS_Input, (IPTR) fh);
     
-  Signal(t, 1<<sig);  
+  Signal(t, 1<<sig);
 }
 
 int main(void)
@@ -27,10 +27,10 @@ int main(void)
     
     SystemTags
     (
-        "dir", 
-        SYS_Asynch,        TRUE, 
+        "dir",
+        SYS_Asynch,        TRUE,
         SYS_Input,  (IPTR) Open("NIL:", MODE_OLDFILE),
-        SYS_Output, (IPTR) Open("RAW:////Dir/CLOSE/WAIT", MODE_NEWFILE), 
+        SYS_Output, (IPTR) Open("RAW:////Dir/CLOSE/WAIT", MODE_NEWFILE),
         TAG_DONE
     );
     
@@ -39,7 +39,7 @@ int main(void)
         "systemtags2_slave",
         SYS_Asynch, TRUE,
         SYS_Input,  SYS_DupStream,
-        SYS_Output, SYS_DupStream, 
+        SYS_Output, SYS_DupStream,
         TAG_DONE
     );
     

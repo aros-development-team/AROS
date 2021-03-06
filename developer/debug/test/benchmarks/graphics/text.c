@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2011, The AROS Development Team. All rights reserved.
 
-    Desc: Benchmark for: 
+    Desc: Benchmark for:
           graphics.library/Text
 */
 /*****************************************************************************
@@ -72,7 +72,7 @@ struct Window   *win;
 
 static void cleanup(STRPTR msg, ULONG retcode)
 {
-    if (msg) 
+    if (msg)
     {
         fprintf(stderr, "text: %s\n", msg);
     }
@@ -134,7 +134,7 @@ static void printresults(LONG t, LONG i)
     printf("Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf("Blits                : %d\n", (int)i);
     printf("Blits/sec            : %f\n", i * 1000000.0 / t);
-    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n", 
+    printf("Time/blit            : %f us (%f s) (%d%% of 25Hz Frame)\n",
         (double)t / i,
         (double)t / i / 1000000.0,
         (int)(100.0 * ((double)t / i) / (1000000.0 / 25.0)));
@@ -170,7 +170,7 @@ static void action_text(void)
 
     if (!win)
     {
-        cleanup("Can't open window!", RETURN_FAIL);    
+        cleanup("Can't open window!", RETURN_FAIL);
     }
     
     width = win->Width;
@@ -229,7 +229,7 @@ static void action_text(void)
             }
     }
 
-    printresults(t, i);    
+    printresults(t, i);
 
     
     CloseWindow(win);

@@ -33,8 +33,8 @@ int main (int argc, char **argv)
     UnixIOBase = OpenLibrary("DEVS:Drivers/unixio.hidd", 42);
     if (!UnixIOBase)
     {
-    	fprintf(stderr, "can't open unixio.hidd\n");
-    	goto exit;
+        fprintf(stderr, "can't open unixio.hidd\n");
+        goto exit;
     }
 
     if ((unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL)) == NULL) {
@@ -148,7 +148,7 @@ exit:
     if (fd >= 0) Hidd_UnixIO_CloseFile(unixio, fd, NULL);
     if (unixio != NULL)  OOP_DisposeObject(unixio);
     if (UnixIOBase)
-    	CloseLibrary(UnixIOBase);
+        CloseLibrary(UnixIOBase);
     if (OOPBase != NULL) CloseLibrary(OOPBase);
 
     return failed ? 1 : 0;

@@ -34,7 +34,7 @@ struct Test_DATA
 
 Object *Test__OM_NEW
 (
-    Class *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message
 )
 {
     struct Test_DATA *data = NULL;
@@ -62,11 +62,11 @@ IPTR Test__MUIM_Test_Dummy
 {
     struct Test_DATA *data = INST_DATA(CLASS, self);
     
-    /* 
+    /*
         Need to do *something* so that the compiler doesn't optimize away
         this function call completely...
     */
-    data->td_Dummy1 += data->td_Dummy2; 
+    data->td_Dummy1 += data->td_Dummy2;
     
     return TRUE;
 }
@@ -93,7 +93,7 @@ BOOL Test_Initialize()
 {
     Test_CLASS = MUI_CreateCustomClass
     (
-        NULL, MUIC_Notify, NULL, 
+        NULL, MUIC_Notify, NULL,
         sizeof(struct Test_DATA), Test_Dispatcher
     );
 

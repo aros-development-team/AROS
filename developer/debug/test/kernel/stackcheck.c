@@ -23,9 +23,9 @@ int main(void)
 
     for (i = 1; i < 6; i++)
     {
-	printf("%d...\n", i);
-	/* Delay() should eventually end up in core_Dispatch() which should kill us */
-	Delay(50);
+        printf("%d...\n", i);
+        /* Delay() should eventually end up in core_Dispatch() which should kill us */
+        Delay(50);
     }
 
     printf("Stack checking FAILED! GO FIX IT!\n");

@@ -24,22 +24,22 @@
 
 /*****************************************************************************************/
 
-struct IntuitionBase 	*IntuitionBase;
-struct GfxBase 		*GfxBase;
-struct UtilityBase	*UtilityBase;
-struct Library 		*GradientSliderBase;
-struct Library 		*ColorWheelBase;
+struct IntuitionBase    *IntuitionBase;
+struct GfxBase          *GfxBase;
+struct UtilityBase      *UtilityBase;
+struct Library          *GradientSliderBase;
+struct Library          *ColorWheelBase;
 
-static struct Screen 	*scr;
-static struct DrawInfo 	*dri;
-static struct ViewPort	*vp;
-static struct ColorMap	*cm;
-static struct Window 	*win;
-static struct Gadget 	*gradgad, *wheelgad;
-static WORD		pen1 = -1, pen2 = -1;
-static BOOL		truecolor;
+static struct Screen    *scr;
+static struct DrawInfo  *dri;
+static struct ViewPort  *vp;
+static struct ColorMap  *cm;
+static struct Window    *win;
+static struct Gadget    *gradgad, *wheelgad;
+static WORD             pen1 = -1, pen2 = -1;
+static BOOL             truecolor;
 
-static WORD 		pens[] = {1, 2, ~0};
+static WORD             pens[] = {1, 2, ~0};
 
 /*****************************************************************************************/
 
@@ -50,8 +50,8 @@ static void cleanup(char *msg)
     if (win)
     {
         if (wheelgad) RemoveGadget(win, wheelgad);
-    	if (gradgad) RemoveGadget(win, gradgad);
-	CloseWindow(win);
+        if (gradgad) RemoveGadget(win, gradgad);
+        CloseWindow(win);
     }
     
     if (wheelgad) DisposeObject((Object *)wheelgad);
@@ -142,16 +142,16 @@ static void makegads(void)
 {
     struct ColorWheelRGB    rgb;
     struct ColorWheelHSB    hsb;
-    Object  	    	    *im;
-    WORD    	    	    sizeheight = 14;
-    WORD    	    	    gradx, grady, gradw, gradh;
-    WORD    	    	    wheelx, wheely, wheelw, wheelh;
+    Object                  *im;
+    WORD                    sizeheight = 14;
+    WORD                    gradx, grady, gradw, gradh;
+    WORD                    wheelx, wheely, wheelw, wheelh;
     
     im = NewObject(NULL, SYSICLASS, SYSIA_DrawInfo, (IPTR)dri, SYSIA_Which, SIZEIMAGE, TAG_DONE);
     if (im)
     {
-    	sizeheight = ((struct Image *)im)->Height;
-	DisposeObject(im);
+        sizeheight = ((struct Image *)im)->Height;
+        DisposeObject(im);
     }
     
     wheelx = scr->WBorLeft + BORDERX;
@@ -164,29 +164,29 @@ static void makegads(void)
     gradw = GRADWIDTH;
     gradh = -(scr->WBorTop + scr->Font->ta_YSize + 1 + sizeheight + BORDERY * 2);
     
-    gradgad = (struct Gadget *)NewObject(0, "gradientslider.gadget", GA_RelRight	, gradx,
-								     GA_Top		, grady,
-								     GA_Width		, gradw,
-								     GA_RelHeight	, gradh,
-								     GRAD_PenArray	, (IPTR)pens,
-								     GRAD_KnobPixels	, 10,
-								     PGA_Freedom	, LORIENT_VERT,
-								     TAG_DONE);
-					 
+    gradgad = (struct Gadget *)NewObject(0, "gradientslider.gadget", GA_RelRight        , gradx,
+                                                                     GA_Top             , grady,
+                                                                     GA_Width           , gradw,
+                                                                     GA_RelHeight       , gradh,
+                                                                     GRAD_PenArray      , (IPTR)pens,
+                                                                     GRAD_KnobPixels    , 10,
+                                                                     PGA_Freedom        , LORIENT_VERT,
+                                                                     TAG_DONE);
+                                         
     if (!gradgad) cleanup("Can't create gradientslider gadget!");
     
-    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left		, wheelx,
-    								  GA_Top		, wheely,
-								  GA_RelWidth		, wheelw,
-								  GA_RelHeight		, wheelh,
-								  GA_RelVerify		, TRUE,
-								  WHEEL_Screen		, (IPTR)scr,
-								  WHEEL_BevelBox	, TRUE,
-								  WHEEL_GradientSlider	, (IPTR)gradgad,
-								  GA_Previous		, (IPTR)gradgad,
-								  ICA_TARGET		, ICTARGET_IDCMP,
-								  TAG_DONE);
-								  
+    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left               , wheelx,
+                                                                  GA_Top                , wheely,
+                                                                  GA_RelWidth           , wheelw,
+                                                                  GA_RelHeight          , wheelh,
+                                                                  GA_RelVerify          , TRUE,
+                                                                  WHEEL_Screen          , (IPTR)scr,
+                                                                  WHEEL_BevelBox        , TRUE,
+                                                                  WHEEL_GradientSlider  , (IPTR)gradgad,
+                                                                  GA_Previous           , (IPTR)gradgad,
+                                                                  ICA_TARGET            , ICTARGET_IDCMP,
+                                                                  TAG_DONE);
+                                                                  
     if (!wheelgad) cleanup("Can't create colorwheel gadget!");
     
     GetAttr(WHEEL_HSB, (Object *)wheelgad, (IPTR *)&hsb);
@@ -200,30 +200,30 @@ static void makegads(void)
 
 static void makewin(void)
 {
-    win = OpenWindowTags(0, WA_PubScreen	, (IPTR)scr,
-    			    WA_Left		, 10,
-			    WA_Top		, 20,
-			    WA_Width		, 200,
-			    WA_Height		, 190,
-			    WA_MinWidth		, 50,
-			    WA_MinHeight	, 50,
-			    WA_MaxWidth		, 4000,
-			    WA_MaxHeight	, 4000,
-			    WA_AutoAdjust	, TRUE,
-			    WA_Title		, (IPTR)"ColorWheel",
-			    WA_CloseGadget	, TRUE,
-			    WA_DragBar		, TRUE,
-			    WA_DepthGadget	, TRUE,
-			    WA_SizeGadget	, TRUE,
-			    WA_SizeBBottom	, TRUE,
-			    WA_Activate		, TRUE,
-			    WA_ReportMouse	, TRUE,
-			    WA_IDCMP		, IDCMP_CLOSEWINDOW | IDCMP_IDCMPUPDATE,
-			    WA_Gadgets		, (IPTR)gradgad,
-			    TAG_DONE);
-			    
+    win = OpenWindowTags(0, WA_PubScreen        , (IPTR)scr,
+                            WA_Left             , 10,
+                            WA_Top              , 20,
+                            WA_Width            , 200,
+                            WA_Height           , 190,
+                            WA_MinWidth         , 50,
+                            WA_MinHeight        , 50,
+                            WA_MaxWidth         , 4000,
+                            WA_MaxHeight        , 4000,
+                            WA_AutoAdjust       , TRUE,
+                            WA_Title            , (IPTR)"ColorWheel",
+                            WA_CloseGadget      , TRUE,
+                            WA_DragBar          , TRUE,
+                            WA_DepthGadget      , TRUE,
+                            WA_SizeGadget       , TRUE,
+                            WA_SizeBBottom      , TRUE,
+                            WA_Activate         , TRUE,
+                            WA_ReportMouse      , TRUE,
+                            WA_IDCMP            , IDCMP_CLOSEWINDOW | IDCMP_IDCMPUPDATE,
+                            WA_Gadgets          , (IPTR)gradgad,
+                            TAG_DONE);
+                            
     if (!win) cleanup("Can't open window!");
-			    
+                            
 }
 
 /*****************************************************************************************/
@@ -231,47 +231,47 @@ static void makewin(void)
 static void handleall(void)
 {
     struct IntuiMessage *msg;
-    BOOL		quitme = FALSE;
+    BOOL                quitme = FALSE;
     
     while(!quitme)
     {
         WaitPort(win->UserPort);
-	
-	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-	{
-	    switch(msg->Class)
-	    {
-	        case IDCMP_CLOSEWINDOW:
-		    quitme = TRUE;
-		    break;
-		
-		case IDCMP_IDCMPUPDATE:
-		    {
-		        struct ColorWheelRGB rgb;
-			struct ColorWheelHSB hsb;
-			struct TagItem	     *tags = (struct TagItem *)msg->IAddress;
-			
-			hsb.cw_Hue        = GetTagData(WHEEL_Hue, 0, tags);
-			hsb.cw_Saturation = GetTagData(WHEEL_Saturation, 0, tags);
-			hsb.cw_Brightness = 0xFFFFFFFF;
+        
+        while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+        {
+            switch(msg->Class)
+            {
+                case IDCMP_CLOSEWINDOW:
+                    quitme = TRUE;
+                    break;
+                
+                case IDCMP_IDCMPUPDATE:
+                    {
+                        struct ColorWheelRGB rgb;
+                        struct ColorWheelHSB hsb;
+                        struct TagItem       *tags = (struct TagItem *)msg->IAddress;
+                        
+                        hsb.cw_Hue        = GetTagData(WHEEL_Hue, 0, tags);
+                        hsb.cw_Saturation = GetTagData(WHEEL_Saturation, 0, tags);
+                        hsb.cw_Brightness = 0xFFFFFFFF;
 
-			ConvertHSBToRGB(&hsb, &rgb);
-			
-			SetRGB32(vp, pen1, rgb.cw_Red, rgb.cw_Green, rgb.cw_Blue);
-			
-			if (truecolor)
-			{
-			    RefreshGList(gradgad, win, 0, 1);
-			}
-		    }
-		    break;
-		    
-	    } /* switch(msg->Class) */
-	    
-	    ReplyMsg((struct Message *)msg);
-	    
-	} /* while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
-	
+                        ConvertHSBToRGB(&hsb, &rgb);
+                        
+                        SetRGB32(vp, pen1, rgb.cw_Red, rgb.cw_Green, rgb.cw_Blue);
+                        
+                        if (truecolor)
+                        {
+                            RefreshGList(gradgad, win, 0, 1);
+                        }
+                    }
+                    break;
+                    
+            } /* switch(msg->Class) */
+            
+            ReplyMsg((struct Message *)msg);
+            
+        } /* while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
+        
     } /* while(!quitme) */
     
 }

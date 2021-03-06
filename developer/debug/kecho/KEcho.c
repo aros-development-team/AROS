@@ -68,7 +68,7 @@ AROS_SHA(BOOL,     , NOLINE, /S,   FALSE))
     if (a) while (*a != NULL)
     {
         kprintf("%s", *a);
-	a++;
+        a++;
         if (*a)
             kprintf(" ");
     }

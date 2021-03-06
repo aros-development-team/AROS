@@ -23,37 +23,37 @@ static void showacflags(struct AChain *ac)
 
     if (flags & DDF_PatternBit)
     {
-	flags &= ~DDF_PatternBit;
-	printf("DDF_PatternBit ");
+        flags &= ~DDF_PatternBit;
+        printf("DDF_PatternBit ");
     }
 
     if (flags & DDF_ExaminedBit)
     {
-	flags &= ~DDF_ExaminedBit;
-	printf("DDF_ExaminedBit ");
+        flags &= ~DDF_ExaminedBit;
+        printf("DDF_ExaminedBit ");
     }
 
     if (flags & DDF_Completed)
     {
-	flags &= ~DDF_Completed;
-	printf("DDF_Completed ");
+        flags &= ~DDF_Completed;
+        printf("DDF_Completed ");
     }
 
     if (flags & DDF_AllBit)
     {
-	flags &= ~DDF_AllBit;
-	printf("DDF_All ");
+        flags &= ~DDF_AllBit;
+        printf("DDF_All ");
     }
 
     if (flags & DDF_Single)
     {
-	 flags &= ~DDF_Single;
-	 printf("DDF_Single ");
+         flags &= ~DDF_Single;
+         printf("DDF_Single ");
     }
 
     if (flags)
     {
-	 printf("UNKNOWN = %8x ", flags);
+         printf("UNKNOWN = %8x ", flags);
     }
 
     printf(")");
@@ -63,10 +63,10 @@ static void showaclist(struct AChain *ac)
 {
     while(ac)
     {
-	printf("achain: address = %p flags = %x ", ac, ac->an_Flags);
-	showacflags(ac);
-	printf(" string=\"%s\"\n", ac->an_String);
-	ac = ac->an_Child;
+        printf("achain: address = %p flags = %x ", ac, ac->an_Flags);
+        showacflags(ac);
+        printf(" string=\"%s\"\n", ac->an_String);
+        ac = ac->an_Child;
     }
 
 }
@@ -115,7 +115,7 @@ static void getarguments(void)
     }
     
     filename = (char *)args[ARG_FILE];
-    all = args[ARG_ALL] ? TRUE : FALSE;  
+    all = args[ARG_ALL] ? TRUE : FALSE;
 }
 
 /****************************************************************************************/
@@ -133,40 +133,40 @@ static void my_matchme(char *pattern, BOOL all)
 
     if (error != 0)
     {
-	printf("MatchFirst: error = %d\n", (int)error);
+        printf("MatchFirst: error = %d\n", (int)error);
     }
     else
     {
         printf("direntrytype = %d\n", (int)AP->ap_Info.fib_DirEntryType);
         if (!(AP->ap_Flags & APF_ITSWILD) &&
-	     (AP->ap_Info.fib_DirEntryType > 0))
-	{
-	     /* pattern was an explicitely named directory */
-	     AP->ap_Flags |= APF_DODIR;
-	}
-	
-	printf("ap_Flags = %x\n", AP->ap_Flags);
-	NameFromLock(AP->ap_Current->an_Lock, s, 300);
-	printf("BaseLock = \"%s\"\n", s);
+             (AP->ap_Info.fib_DirEntryType > 0))
+        {
+             /* pattern was an explicitely named directory */
+             AP->ap_Flags |= APF_DODIR;
+        }
+        
+        printf("ap_Flags = %x\n", AP->ap_Flags);
+        NameFromLock(AP->ap_Current->an_Lock, s, 300);
+        printf("BaseLock = \"%s\"\n", s);
 
-	showaclist(AP->ap_Base);
+        showaclist(AP->ap_Base);
 
-	while(error == 0)
-	{
-	    if (AP->ap_Flags & APF_DIDDIR)
-	    {
-	        printf("DIDDIR: ");
-	    } else {
-	        if (all && (AP->ap_Info.fib_DirEntryType > 0))
-		{
-		    AP->ap_Flags |= APF_DODIR;
-		    printf("DOING DIR: ");
-		}
-	    }
-	    printf("fib_FileName = \"%s\"\n", AP->ap_Info.fib_FileName);
+        while(error == 0)
+        {
+            if (AP->ap_Flags & APF_DIDDIR)
+            {
+                printf("DIDDIR: ");
+            } else {
+                if (all && (AP->ap_Info.fib_DirEntryType > 0))
+                {
+                    AP->ap_Flags |= APF_DODIR;
+                    printf("DOING DIR: ");
+                }
+            }
+            printf("fib_FileName = \"%s\"\n", AP->ap_Info.fib_FileName);
 
-	    error = MatchNext(AP);
-	}
+            error = MatchNext(AP);
+        }
 
     }
 

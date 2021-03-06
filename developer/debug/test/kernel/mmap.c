@@ -31,15 +31,15 @@ int main(void)
 
     if (!KernelBase)
     {
-	printf("Failed to open kernel.resource!\n");
-	return 20;
+        printf("Failed to open kernel.resource!\n");
+        return 20;
     }
 
     tags = KrnGetBootInfo();
     if (!tags)
     {
-    	printf("No boot information from the bootstrap!\n");
-    	return 20;
+        printf("No boot information from the bootstrap!\n");
+        return 20;
     }
 
     mmap = (struct mb_mmap *)GetTagData(KRN_MMAPAddress, 0, tags);
@@ -62,11 +62,11 @@ int main(void)
             type = 0;
 
 #if __WORDSIZE < 64
-	memaddr |= (unsigned long long)mmap->addr_high << 32;
-	memlen  |= (unsigned long long)mmap->len_high << 32;
+        memaddr |= (unsigned long long)mmap->addr_high << 32;
+        memlen  |= (unsigned long long)mmap->len_high << 32;
 #endif
 
-	printf("Entry size %d type %d <%s> addr 0x%016llx len 0x%016llx\n", mmap->size, mmap->type, types[type], memaddr, memlen);
+        printf("Entry size %d type %d <%s> addr 0x%016llx len 0x%016llx\n", mmap->size, mmap->type, types[type], memaddr, memlen);
 
         len -= mmap->size + 4;
         mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap + 4);

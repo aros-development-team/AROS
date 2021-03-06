@@ -6,7 +6,7 @@
 #include <string.h>
 #include "test.h"
 
-int main() 
+int main()
 {
 
   int i;
@@ -27,7 +27,7 @@ int main()
     return OK;
 }
 
-void cleanup() 
+void cleanup()
 {
     /* Nothing to clean up */
 }

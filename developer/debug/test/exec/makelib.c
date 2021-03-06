@@ -19,12 +19,12 @@
 
 struct DummyBase
 {
-    struct Library		library;
-    struct ExecBase		*sysbase;
+    struct Library              library;
+    struct ExecBase             *sysbase;
 };
 
 #undef SysBase
-#define SysBase     	(DummyBase->sysbase)
+#define SysBase         (DummyBase->sysbase)
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -34,7 +34,7 @@ struct DummyBase
 AROS_UFH3(struct DummyBase *,LIB_init,
         AROS_LHA(struct DummyBase *, DummyBase, D0),
         AROS_LHA(ULONG, seglist, A0),
-	AROS_LHA(struct ExecBase *, sysbase, A6))
+        AROS_LHA(struct ExecBase *, sysbase, A6))
 {
     AROS_USERFUNC_INIT
     
@@ -79,9 +79,9 @@ AROS_UFH1(ULONG,LIB_expunge,
     AROS_USERFUNC_INIT
 
     if (DummyBase->library.lib_OpenCnt == 0)
-	Remove((struct Node *)DummyBase);
+        Remove((struct Node *)DummyBase);
     else
-	DummyBase->library.lib_Flags |= LIBF_DELEXP;
+        DummyBase->library.lib_Flags |= LIBF_DELEXP;
     return 0;
 
     AROS_USERFUNC_EXIT
@@ -98,8 +98,8 @@ AROS_UFH1(ULONG,LIB_close,
 
     DummyBase->library.lib_OpenCnt--;
     if (!DummyBase->library.lib_OpenCnt)
-	if (DummyBase->library.lib_Flags & LIBF_DELEXP)
-	    ret = AROS_UFC1(ULONG,LIB_expunge,
+        if (DummyBase->library.lib_Flags & LIBF_DELEXP)
+            ret = AROS_UFC1(ULONG,LIB_expunge,
                             AROS_UFCA(struct DummyBase *, DummyBase, A6));
     return ret;
 
@@ -134,21 +134,21 @@ int AddDummy(void)
     D(bug("*** at %s:%d\n", __FUNCTION__, __LINE__));
 
     dummylib = MakeLibrary(function_array,NULL,
-			   (ULONG_FUNC)LIB_init,
-			   sizeof(struct DummyBase),BNULL);
+                           (ULONG_FUNC)LIB_init,
+                           sizeof(struct DummyBase),BNULL);
 
     D(bug("*** at %s:%d\n", __FUNCTION__, __LINE__));
     if (dummylib)
     {
-	AddLibrary(dummylib);
+        AddLibrary(dummylib);
 #if DUMMY_OPEN_BUG
-	D(bug("%s: before OpenLibrary\n", __FUNCTION__));
-	dummy = OpenLibrary("dummy.library", 0); /* segfaults */
-	D(bug("%s: after OpenLibrary\n", __FUNCTION__));
-	if (!dummy)
-	    return 0;
+        D(bug("%s: before OpenLibrary\n", __FUNCTION__));
+        dummy = OpenLibrary("dummy.library", 0); /* segfaults */
+        D(bug("%s: after OpenLibrary\n", __FUNCTION__));
+        if (!dummy)
+            return 0;
 #endif
-	return 1;
+        return 1;
     }
     return 0;
 }
@@ -156,10 +156,10 @@ int AddDummy(void)
 int RemoveDummy(void)
 {
     if (dummy)
-	CloseLibrary(dummy);
+        CloseLibrary(dummy);
     if (dummylib)
     {
-	RemLibrary(dummylib);
+        RemLibrary(dummylib);
     }
     return 1;
 }

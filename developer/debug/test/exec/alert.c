@@ -42,25 +42,25 @@ int main(int argc, char **argv)
 
     for (i = 1; i < argc; i++)
     {
-    	if (!stricmp(argv[i], "deadend"))
-	    n = AN_BogusExcpt;
-	else if (!stricmp(argv[i], "supervisor"))
-	    super = TRUE;
+        if (!stricmp(argv[i], "deadend"))
+            n = AN_BogusExcpt;
+        else if (!stricmp(argv[i], "supervisor"))
+            super = TRUE;
     }
 
     if (super)
     {
 
-	D(bug("Calling supervisor alert...\n"));
+        D(bug("Calling supervisor alert...\n"));
 
-	MyInt.is_Data = (APTR)n;
-	MyInt.is_Code = (APTR)superAlert;
+        MyInt.is_Data = (APTR)n;
+        MyInt.is_Code = (APTR)superAlert;
 
-	Cause(&MyInt);
+        Cause(&MyInt);
     }
     else
     {
-    	Alert(n);
+        Alert(n);
     }
 
     return 0;

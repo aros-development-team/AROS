@@ -91,7 +91,7 @@ const struct inittable datatable=
     { { I_CPYO(1,W,O(device.dd_Library.lib_Version     )), { 1 } } },
     { { I_CPYO(1,W,O(device.dd_Library.lib_Revision    )), { 0 } } },
     { { I_CPYO(1,L,O(device.dd_Library.lib_IdString    )), { (IPTR)&version[6] } } },
-	I_END ()
+        I_END ()
 };
 
 #undef O
@@ -99,7 +99,7 @@ const struct inittable datatable=
 AROS_LH2(struct dummybase *, init,
  AROS_LA(struct dummybase *, dummybase, D0),
  AROS_LA(BPTR,               segList,   A0),
-	   struct ExecBase *, SysBase, 0, dummy)
+           struct ExecBase *, SysBase, 0, dummy)
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
@@ -123,13 +123,13 @@ AROS_LH3(void, open,
  AROS_LA(struct dummyrequest *, iob, A1),
  AROS_LA(ULONG,                 unitnum, D0),
  AROS_LA(ULONG,                 flags, D0),
-	   struct dummybase *, dummybase, 1, dummy)
+           struct dummybase *, dummybase, 1, dummy)
 {
     AROS_LIBFUNC_INIT
     /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
+        This function is single-threaded by exec by calling Forbid.
+        If you break the Forbid() another task may enter this function
+        at the same time. Take care.
     */
 
     /* Keep compiler happy */
@@ -137,8 +137,8 @@ AROS_LH3(void, open,
     flags=0;
 
     /*
-	Normally you'd init the unit and set the unit field here -
-	but this is only a dummy without child tasks.
+        Normally you'd init the unit and set the unit field here -
+        but this is only a dummy without child tasks.
     */
 
     /* I have one more opener. */
@@ -155,13 +155,13 @@ AROS_LH3(void, open,
 
 AROS_LH1(BPTR, close,
  AROS_LA(struct dummyrequest *, iob, A1),
-	   struct dummybase *, dummybase, 2, dummy)
+           struct dummybase *, dummybase, 2, dummy)
 {
     AROS_LIBFUNC_INIT
     /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
+        This function is single-threaded by exec by calling Forbid.
+        If you break the Forbid() another task may enter this function
+        at the same time. Take care.
     */
 
     /* Let any following attemps to use the device crash hard. */
@@ -170,10 +170,10 @@ AROS_LH1(BPTR, close,
     /* I have one fewer opener. */
     if(!--dummybase->device.dd_Library.lib_OpenCnt)
     {
-	/* Delayed expunge pending? */
-	if(dummybase->device.dd_Library.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the device */
-	    return expunge();
+        /* Delayed expunge pending? */
+        if(dummybase->device.dd_Library.lib_Flags&LIBF_DELEXP)
+            /* Then expunge the device */
+            return expunge();
     }
     return 0;
     AROS_LIBFUNC_EXIT
@@ -185,16 +185,16 @@ AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
 
     BPTR ret;
     /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
+        This function is single-threaded by exec by calling Forbid.
+        Never break the Forbid() or strange things might happen.
     */
 
     /* Test for openers. */
     if(dummybase->device.dd_Library.lib_OpenCnt)
     {
-	/* Set the delayed expunge flag and return. */
-	dummybase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-	return 0;
+        /* Set the delayed expunge flag and return. */
+        dummybase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
+        return 0;
     }
 
     /* Get rid of the device. Remove it from the list. */
@@ -205,7 +205,7 @@ AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
 
     /* Free the memory. */
     FreeMem((char *)dummybase-dummybase->device.dd_Library.lib_NegSize,
-	    dummybase->device.dd_Library.lib_NegSize+dummybase->device.dd_Library.lib_PosSize);
+            dummybase->device.dd_Library.lib_NegSize+dummybase->device.dd_Library.lib_PosSize);
 
     return ret;
     AROS_LIBFUNC_EXIT
@@ -219,7 +219,7 @@ AROS_LH0I(int, null, struct dummybase *, dummybase, 4, dummy)
 
 AROS_LH1(void, beginio,
  AROS_LA(struct dummyrequest *, iob, A1),
-	   struct dummybase *, dummybase, 5, dummy)
+           struct dummybase *, dummybase, 5, dummy)
 {
     AROS_LIBFUNC_INIT
 
@@ -227,37 +227,37 @@ AROS_LH1(void, beginio,
     iob->iorequest.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 
     /*
-	Dispatch command (the quick bit tells me that it is allowed to
-	wait on the user's context. I'll ignore it here and do everything quick.)
+        Dispatch command (the quick bit tells me that it is allowed to
+        wait on the user's context. I'll ignore it here and do everything quick.)
     */
     switch(iob->iorequest.io_Command)
     {
-	case 0x1:
-	    iob->iorequest.io_Error=0;
-	    iob->id=++(dummybase->count);
-	    break;
-	default:
-	    iob->iorequest.io_Error=IOERR_NOCMD;
-	    break;
-	/*
-	    Commands dispatched to a cild task and processed asynchronbously
-	    clear the quick bit before the end of beginio.
-	*/
+        case 0x1:
+            iob->iorequest.io_Error=0;
+            iob->id=++(dummybase->count);
+            break;
+        default:
+            iob->iorequest.io_Error=IOERR_NOCMD;
+            break;
+        /*
+            Commands dispatched to a cild task and processed asynchronbously
+            clear the quick bit before the end of beginio.
+        */
     }
 
     /*
-	The request is finished now - so send it back.
-	Note that something that was done quick and had the quick bit set
-	doesn't need a ReplyMsg().
+        The request is finished now - so send it back.
+        Note that something that was done quick and had the quick bit set
+        doesn't need a ReplyMsg().
     */
     if(!(iob->iorequest.io_Flags&IOF_QUICK))
-	ReplyMsg(&iob->iorequest.io_Message);
+        ReplyMsg(&iob->iorequest.io_Message);
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH1I(LONG, abortio,
  AROS_LA(struct dummyrequest *, iob, A1),
-	   struct dummybase *, dummybase, 6, dummy)
+           struct dummybase *, dummybase, 6, dummy)
 {
     AROS_LIBFUNC_INIT
     /* Get compiler happy */

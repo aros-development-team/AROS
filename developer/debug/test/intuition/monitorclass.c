@@ -38,41 +38,41 @@ int main(void)
     
     if (!monitors)
     {
-	printf("Failed to obtain monitors list!\n");
-	return 0;
+        printf("Failed to obtain monitors list!\n");
+        return 0;
     }
     
     for (mon = monitors; *mon; mon++)
     {
-	STRPTR name, drvname;
-	ULONG *pfs;
-	UBYTE i;
+        STRPTR name, drvname;
+        ULONG *pfs;
+        UBYTE i;
 
-	GetAttr(MA_MonitorName, *mon, (IPTR *)&name);
-	GetAttr(MA_DriverName, *mon, (IPTR *)&drvname);
-	printf("Monitor %p %s %s\n", *mon, name, drvname);
+        GetAttr(MA_MonitorName, *mon, (IPTR *)&name);
+        GetAttr(MA_DriverName, *mon, (IPTR *)&drvname);
+        printf("Monitor %p %s %s\n", *mon, name, drvname);
 
-	printf("Supported pixelformats:\n");
-	GetAttr(MA_PixelFormats, *mon, (IPTR *)&pfs);
-	for (i = PIXFMT_LUT8; i <= PIXFMT_RGBA32; i++)
-	    printf(" %7s %s\n", pfnames[i], pfs[i] ? "yes" : "no");
+        printf("Supported pixelformats:\n");
+        GetAttr(MA_PixelFormats, *mon, (IPTR *)&pfs);
+        for (i = PIXFMT_LUT8; i <= PIXFMT_RGBA32; i++)
+            printf(" %7s %s\n", pfnames[i], pfs[i] ? "yes" : "no");
 
-	printf("Preferred pixelformats:\n");
-	for (i = 0; depths[i]; i++)
-	{
-	    IPTR pf;
+        printf("Preferred pixelformats:\n");
+        for (i = 0; depths[i]; i++)
+        {
+            IPTR pf;
 
-	    printf(" %2d ", depths[i]);
-	    DoMethod(*mon, MM_GetDefaultPixelFormat, depths[i], (IPTR *)&pf);
+            printf(" %2d ", depths[i]);
+            DoMethod(*mon, MM_GetDefaultPixelFormat, depths[i], (IPTR *)&pf);
 
-	    if (pf <= PIXFMT_RGBA32)
-		printf("%s\n", pfnames[pf]);
-	    else if (pf == -1)
-		printf("Not supported\n");
-	    else
-		printf("Unknown (%ld)\n", pf);
-	}
-	printf("\n");
+            if (pf <= PIXFMT_RGBA32)
+                printf("%s\n", pfnames[pf]);
+            else if (pf == -1)
+                printf("Not supported\n");
+            else
+                printf("Unknown (%ld)\n", pf);
+        }
+        printf("\n");
     }
     
     FreeMonitorList(monitors);

@@ -25,15 +25,15 @@ static IPTR DynlistDisplayFunc(struct Hook *hook, char **columns, char **entry)
 {
     if(entry == NULL)
     {
-	columns[0] = "Column 1";
-	columns[1] = "Column 2";
-	columns[2] = "Column 3";
+        columns[0] = "Column 1";
+        columns[1] = "Column 2";
+        columns[2] = "Column 3";
     }
     else
     {
-	columns[0] = entry[0];
-	columns[1] = entry[1];
-	columns[2] = entry[2];
+        columns[0] = entry[0];
+        columns[1] = entry[1];
+        columns[2] = entry[2];
     }
     return TRUE;
 }
@@ -59,7 +59,7 @@ static IPTR MutateFunc(struct Hook *hook, Object *caller, void *data)
     char **entry;
     get(list, MUIA_List_Active, &active);
     if (active == MUIV_List_Active_Off)
-	return FALSE;
+        return FALSE;
 
     DoMethod(list, MUIM_List_GetEntry, active, &entry);
     entry[0] = "A very long entry";
@@ -71,7 +71,7 @@ static IPTR MutateFunc(struct Hook *hook, Object *caller, void *data)
 }
 
 int main(void)
-{    
+{
     struct Hook addHook, displayHook, mutateHook;
     addHook.h_Entry = HookEntry;
     addHook.h_SubEntry = (HOOKFUNC) AddFunc;
@@ -81,62 +81,62 @@ int main(void)
     mutateHook.h_SubEntry = (HOOKFUNC) MutateFunc;
     
     app = ApplicationObject,
-   	SubWindow, wnd = WindowObject,
-    	    MUIA_Window_Title, "Dynamic list",
-	    MUIA_Window_Activate, TRUE,
+        SubWindow, wnd = WindowObject,
+            MUIA_Window_Title, "Dynamic list",
+            MUIA_Window_Activate, TRUE,
 
-    	    WindowContents, VGroup,
-    	    	Child, list = ListObject,
-		    MUIA_List_DisplayHook, &displayHook,
-		    MUIA_List_Format, "BAR,BAR,",
-		    MUIA_List_Title, TRUE,
-		    End,
-		Child, HGroup,
-		    Child, str1 = StringObject, End,
-		    Child, str2 = StringObject, End,
-		    Child, str3 = StringObject, End,
-		    End,
-		Child, HGroup,
-		    Child, bt1 = SimpleButton("Add"),
-		    Child, bt2 = SimpleButton("Remove"),
-		    Child, bt3 = SimpleButton("Grow"),
-		    End,
-		End,
-	    End,
-	End;
+            WindowContents, VGroup,
+                Child, list = ListObject,
+                    MUIA_List_DisplayHook, &displayHook,
+                    MUIA_List_Format, "BAR,BAR,",
+                    MUIA_List_Title, TRUE,
+                    End,
+                Child, HGroup,
+                    Child, str1 = StringObject, End,
+                    Child, str2 = StringObject, End,
+                    Child, str3 = StringObject, End,
+                    End,
+                Child, HGroup,
+                    Child, bt1 = SimpleButton("Add"),
+                    Child, bt2 = SimpleButton("Remove"),
+                    Child, bt3 = SimpleButton("Grow"),
+                    End,
+                End,
+            End,
+        End;
 
     if (app)
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 
-	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-	    app, (IPTR) 2, 
-	    MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+            app, (IPTR) 2,
+            MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-	DoMethod(bt1, MUIM_Notify, MUIA_Pressed, FALSE,
-		(IPTR) bt1, 3,
-		MUIM_CallHook, &addHook, list);
+        DoMethod(bt1, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR) bt1, 3,
+                MUIM_CallHook, &addHook, list);
 
-	DoMethod(bt2, MUIM_Notify, MUIA_Pressed, FALSE,
-		(IPTR) list, 2,
-		MUIM_List_Remove, MUIV_List_Remove_First);
+        DoMethod(bt2, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR) list, 2,
+                MUIM_List_Remove, MUIV_List_Remove_First);
 
         DoMethod(bt3, MUIM_Notify, MUIA_Pressed, FALSE,
                 (IPTR) list, 3,
                 MUIM_CallHook, &mutateHook, NULL);
 
-	set(wnd,MUIA_Window_Open,TRUE);
+        set(wnd,MUIA_Window_Open,TRUE);
 
-	while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-		sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-		if (sigs & SIGBREAKF_CTRL_C) break;
-	    }
-	}
+        while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+            }
+        }
 
-	MUI_DisposeObject(app);
+        MUI_DisposeObject(app);
     }
     
     return 0;

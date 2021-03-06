@@ -20,8 +20,8 @@ static inline void AccessTest(ULONG *ptr, BOOL trash)
     if (!trash)
         return;
 
-    ptr[-1] = 0x40302010;	/* This should NOT cause mungwall warning */
-    ptr[0]  = 0x01020304;	/* This SHOULD produce mungwall warning   */
+    ptr[-1] = 0x40302010;       /* This should NOT cause mungwall warning */
+    ptr[0]  = 0x01020304;       /* This SHOULD produce mungwall warning   */
 }
 
 static LONG test_allocabs(APTR block0, BOOL trash, BOOL leak, BOOL notlsf)

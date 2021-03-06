@@ -14,10 +14,10 @@ void hexdump (const void * start, int size)
 
     for (t=0; size > 0; t++, size--)
     {
-	if (!(t & 15)) printf ("%08lx: ", ((long)ptr));
-	printf ("%02x", *ptr++);
-	if ((t & 3) == 3) putchar (' ');
-	if ((t & 15) == 15) putchar ('\n');
+        if (!(t & 15)) printf ("%08lx: ", ((long)ptr));
+        printf ("%02x", *ptr++);
+        if ((t & 3) == 3) putchar (' ');
+        if ((t & 15) == 15) putchar ('\n');
     }
 
     if (t & 15) putchar ('\n');
@@ -47,7 +47,7 @@ int main (int argc, char ** argv)
 
     // Note that the pointer must be casted but the compiler will print
     // a warning if the cast is missing:
-    //	warning: cannot pass objects of type `APTR' through `...'
+    //  warning: cannot pass objects of type `APTR' through `...'
     // These three lines must print the same values.
     printf ("APTR %p %p\n", &lptr, (void *)ptr);
     hexdump (&ptr, sizeof (ptr));
@@ -63,7 +63,7 @@ int main (int argc, char ** argv)
 
     // Note that the pointer must be casted but the compiler will print
     // a warning if the cast is missing:
-    //	warning: cannot pass objects of type `STRPTR' through `...'
+    //  warning: cannot pass objects of type `STRPTR' through `...'
     // The first line must print two equal pointers and the second line
     // must print two times "hello".
     printf ("string %p %p\n", p1, (void *)p2);

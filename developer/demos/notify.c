@@ -22,13 +22,13 @@ int main(int argc, char* argv[])
         "created in RAM:\n");
     
     struct NotifyRequest *nr = AllocVec(sizeof(struct NotifyRequest),
-					MEMF_CLEAR);
+                                        MEMF_CLEAR);
     BPTR lock;
 
     if (nr == NULL)
     {
-	printf("Could not allocate memory.\n");
-	exit(1);
+        printf("Could not allocate memory.\n");
+        exit(1);
     }
 
     nr->nr_Name = "Olle";
@@ -40,8 +40,8 @@ int main(int argc, char* argv[])
 
     if (lock == BNULL)
     {
-	printf("Could not lock Ram Disk:\n");
-	exit(1);
+        printf("Could not lock Ram Disk:\n");
+        exit(1);
     }
 
     CurrentDir(lock);

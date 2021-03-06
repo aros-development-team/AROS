@@ -37,22 +37,22 @@ int main(void)
     s1=AllocSignal(-1);
     if(s1>=0)
     {
-	printf("sig1: %d\n",s1);
-	s2=AllocSignal(-1);
-	if(s2>=0)
-	{
-	    struct Task *task = FindTask(NULL);
-	    printf("sig2: %d\n",s2);
-	    oldexc=task->tc_ExceptCode;
-	    task->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,Test,0);
-	    SetExcept(1<<s2,1<<s2);
-	    Signal(task,(1<<s2)|(1<<s1));
-	    SetExcept(0,1<<s2);
-	    task->tc_ExceptCode=oldexc;
-	    printf("got: %08lx\n",(unsigned long)s);
-	    FreeSignal(s2);
-	}
-	FreeSignal(s1);
+        printf("sig1: %d\n",s1);
+        s2=AllocSignal(-1);
+        if(s2>=0)
+        {
+            struct Task *task = FindTask(NULL);
+            printf("sig2: %d\n",s2);
+            oldexc=task->tc_ExceptCode;
+            task->tc_ExceptCode=&AROS_SLIB_ENTRY(handler,Test,0);
+            SetExcept(1<<s2,1<<s2);
+            Signal(task,(1<<s2)|(1<<s1));
+            SetExcept(0,1<<s2);
+            task->tc_ExceptCode=oldexc;
+            printf("got: %08lx\n",(unsigned long)s);
+            FreeSignal(s2);
+        }
+        FreeSignal(s1);
     }
     return 0;
 }

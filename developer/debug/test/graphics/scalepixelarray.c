@@ -91,36 +91,36 @@ static void getvisual(void)
 
 static void makewin(void)
 {
-    win = OpenWindowTags(NULL, WA_CustomScreen	, (IPTR)scr, 
-    			       WA_InnerWidth	, SCREENWIDTH,
-    			       WA_InnerHeight	, SCREENHEIGHT,
-    			       WA_MinWidth	, 50,
-    			       WA_MinHeight	, 50,
-    			       WA_MaxWidth	, -1,
-    			       WA_MaxHeight	, -1,
-			       WA_Title		, (IPTR)"ScalePixelArray: Resize window!",
-			       WA_DragBar	, TRUE,
-			       WA_DepthGadget	, TRUE,
-			       WA_CloseGadget	, TRUE,
-			       WA_SizeGadget	, TRUE,
-			       WA_Activate	, TRUE,
-			       WA_IDCMP		, IDCMP_CLOSEWINDOW |
-			       			  IDCMP_RAWKEY |
+    win = OpenWindowTags(NULL, WA_CustomScreen  , (IPTR)scr,
+                               WA_InnerWidth    , SCREENWIDTH,
+                               WA_InnerHeight   , SCREENHEIGHT,
+                               WA_MinWidth      , 50,
+                               WA_MinHeight     , 50,
+                               WA_MaxWidth      , -1,
+                               WA_MaxHeight     , -1,
+                               WA_Title         , (IPTR)"ScalePixelArray: Resize window!",
+                               WA_DragBar       , TRUE,
+                               WA_DepthGadget   , TRUE,
+                               WA_CloseGadget   , TRUE,
+                               WA_SizeGadget    , TRUE,
+                               WA_Activate      , TRUE,
+                               WA_IDCMP         , IDCMP_CLOSEWINDOW |
+                                                  IDCMP_RAWKEY |
                                                   IDCMP_NEWSIZE,
-			       TAG_DONE);
-			       
+                               TAG_DONE);
+                               
    if (!win) cleanup("Can't open window");
 
-   rp = win->RPort; 
+   rp = win->RPort;
 }
 
 /***********************************************************************************/
 
 #define KC_LEFT         0x4F
-#define KC_RIGHT     	0x4E
-#define KC_UP        	0x4C
-#define KC_DOWN      	0x4D
-#define KC_ESC       	0x45
+#define KC_RIGHT        0x4E
+#define KC_UP           0x4C
+#define KC_DOWN         0x4D
+#define KC_ESC          0x45
 
 /***********************************************************************************/
 
@@ -131,21 +131,21 @@ static void getevents(void)
     while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
     {
         switch(msg->Class)
-	{
-	    case IDCMP_CLOSEWINDOW:
-	        Keys[KC_ESC] = 1;
-		break;
-		
-	    case IDCMP_RAWKEY:
-	        {
-		    WORD code = msg->Code & ~IECODE_UP_PREFIX;
-		    
-		    Keys[code] = (code == msg->Code) ? 1 : 0;
+        {
+            case IDCMP_CLOSEWINDOW:
+                Keys[KC_ESC] = 1;
+                break;
+                
+            case IDCMP_RAWKEY:
+                {
+                    WORD code = msg->Code & ~IECODE_UP_PREFIX;
+                    
+                    Keys[code] = (code == msg->Code) ? 1 : 0;
 
-		}
-	        break;
+                }
+                break;
 
-	}
+        }
         ReplyMsg((struct Message *)msg);
     }
 
@@ -173,90 +173,90 @@ static void action(void)
     
     LONG col;
     
-    ar1 = 0xFF; ag1 = 0xFF; ab1 = 0xFF; 
-    ar2 = 0xFF; ag2 = 0x00; ab2 = 0x00; 
-    ar3 = 0x00; ag3 = 0xFF; ab3 = 0x00; 
-    ar4 = 0x00; ag4 = 0x00; ab4 = 0xFF; 
+    ar1 = 0xFF; ag1 = 0xFF; ab1 = 0xFF;
+    ar2 = 0xFF; ag2 = 0x00; ab2 = 0x00;
+    ar3 = 0x00; ag3 = 0xFF; ab3 = 0x00;
+    ar4 = 0x00; ag4 = 0x00; ab4 = 0xFF;
 
-    r1 = 0xFF; g1 = 0xFF; b1 = 0xFF; 
-    r2 = 0xFF; g2 = 0x00; b2 = 0x00; 
-    r3 = 0x00; g3 = 0xFF; b3 = 0x00; 
-    r4 = 0x00; g4 = 0x00; b4 = 0xFF; 
+    r1 = 0xFF; g1 = 0xFF; b1 = 0xFF;
+    r2 = 0xFF; g2 = 0x00; b2 = 0x00;
+    r3 = 0x00; g3 = 0xFF; b3 = 0x00;
+    r4 = 0x00; g4 = 0x00; b4 = 0xFF;
     
     while(!Keys[KC_ESC])
     {
         x = scr->MouseX;
-	if (x < 0) x = 0; else if (x >= scr->Width) x = scr->Width - 1;
-	
-	r1 = ar1 + (ar2 - ar1) * x / (scr->Width - 1);
-	g1 = ag1 + (ag2 - ag1) * x / (scr->Width - 1);
-	b1 = ab1 + (ab2 - ab1) * x / (scr->Width - 1);
-	
-	r2 = ar2 + (ar3 - ar2) * x / (scr->Width - 1);
-	g2 = ag2 + (ag3 - ag2) * x / (scr->Width - 1);
-	b2 = ab2 + (ab3 - ab2) * x / (scr->Width - 1);
+        if (x < 0) x = 0; else if (x >= scr->Width) x = scr->Width - 1;
+        
+        r1 = ar1 + (ar2 - ar1) * x / (scr->Width - 1);
+        g1 = ag1 + (ag2 - ag1) * x / (scr->Width - 1);
+        b1 = ab1 + (ab2 - ab1) * x / (scr->Width - 1);
+        
+        r2 = ar2 + (ar3 - ar2) * x / (scr->Width - 1);
+        g2 = ag2 + (ag3 - ag2) * x / (scr->Width - 1);
+        b2 = ab2 + (ab3 - ab2) * x / (scr->Width - 1);
 
-	r3 = ar3 + (ar4 - ar3) * x / (scr->Width - 1);
-	g3 = ag3 + (ag4 - ag3) * x / (scr->Width - 1);
-	b3 = ab3 + (ab4 - ab3) * x / (scr->Width - 1);
+        r3 = ar3 + (ar4 - ar3) * x / (scr->Width - 1);
+        g3 = ag3 + (ag4 - ag3) * x / (scr->Width - 1);
+        b3 = ab3 + (ab4 - ab3) * x / (scr->Width - 1);
 
-	r4 = ar4 + (ar1 - ar4) * x / (scr->Width - 1);
-	g4 = ag4 + (ag1 - ag4) * x / (scr->Width - 1);
-	b4 = ab4 + (ab1 - ab4) * x / (scr->Width - 1);
-	
-	
+        r4 = ar4 + (ar1 - ar4) * x / (scr->Width - 1);
+        g4 = ag4 + (ag1 - ag4) * x / (scr->Width - 1);
+        b4 = ab4 + (ab1 - ab4) * x / (scr->Width - 1);
+        
+        
         for(y = 0; y < SCREENHEIGHT; y ++)
-	{
-	    for(x = 0; x < SCREENWIDTH; x++)
-	    {
-	        tr1 = r1 + (r2 - r1) * x / (SCREENWIDTH - 1);
-		tg1 = g1 + (g2 - g1) * x / (SCREENWIDTH - 1);
-		tb1 = b1 + (b2 - b1) * x / (SCREENWIDTH - 1);
-	
-		tr2 = r3 + (r4 - r3) * x / (SCREENWIDTH - 1);
-		tg2 = g3 + (g4 - g3) * x / (SCREENWIDTH - 1);
-		tb2 = b3 + (b4 - b3) * x / (SCREENWIDTH - 1);
-		
-		tr3 = r1 + (r3 - r1) * y / (SCREENHEIGHT - 1);
-		tg3 = g1 + (g3 - g1) * y / (SCREENHEIGHT - 1);
-		tb3 = b1 + (b3 - b1) * y / (SCREENHEIGHT - 1);
-		
-		tr4 = r2 + (r4 - r2) * y / (SCREENHEIGHT - 1);
-		tg4 = g2 + (g4 - g2) * y / (SCREENHEIGHT - 1);
-		tb4 = b2 + (b4 - b2) * y / (SCREENHEIGHT - 1);
-		
-		ttr1 = tr1 + (tr2 - tr1) * y / (SCREENHEIGHT - 1);
-		ttg1 = tg1 + (tg2 - tg1) * y / (SCREENHEIGHT - 1);
-		ttb1 = tb1 + (tb2 - tb1) * y / (SCREENHEIGHT - 1);
-		
-		ttr2 = tr3 + (tr4 - tr3) * x / (SCREENWIDTH - 1);
-		ttg2 = tg3 + (tg4 - tg3) * x / (SCREENWIDTH - 1);
-		ttb2 = tb3 + (tb4 - tb3) * x / (SCREENWIDTH - 1);
-		
-		tttr = (ttr1 + ttr2) / 2;
-		tttg = (ttg1 + ttg2) / 2;
-		tttb = (ttb1 + ttb2) / 2;
+        {
+            for(x = 0; x < SCREENWIDTH; x++)
+            {
+                tr1 = r1 + (r2 - r1) * x / (SCREENWIDTH - 1);
+                tg1 = g1 + (g2 - g1) * x / (SCREENWIDTH - 1);
+                tb1 = b1 + (b2 - b1) * x / (SCREENWIDTH - 1);
+        
+                tr2 = r3 + (r4 - r3) * x / (SCREENWIDTH - 1);
+                tg2 = g3 + (g4 - g3) * x / (SCREENWIDTH - 1);
+                tb2 = b3 + (b4 - b3) * x / (SCREENWIDTH - 1);
+                
+                tr3 = r1 + (r3 - r1) * y / (SCREENHEIGHT - 1);
+                tg3 = g1 + (g3 - g1) * y / (SCREENHEIGHT - 1);
+                tb3 = b1 + (b3 - b1) * y / (SCREENHEIGHT - 1);
+                
+                tr4 = r2 + (r4 - r2) * y / (SCREENHEIGHT - 1);
+                tg4 = g2 + (g4 - g2) * y / (SCREENHEIGHT - 1);
+                tb4 = b2 + (b4 - b2) * y / (SCREENHEIGHT - 1);
+                
+                ttr1 = tr1 + (tr2 - tr1) * y / (SCREENHEIGHT - 1);
+                ttg1 = tg1 + (tg2 - tg1) * y / (SCREENHEIGHT - 1);
+                ttb1 = tb1 + (tb2 - tb1) * y / (SCREENHEIGHT - 1);
+                
+                ttr2 = tr3 + (tr4 - tr3) * x / (SCREENWIDTH - 1);
+                ttg2 = tg3 + (tg4 - tg3) * x / (SCREENWIDTH - 1);
+                ttb2 = tb3 + (tb4 - tb3) * x / (SCREENWIDTH - 1);
+                
+                tttr = (ttr1 + ttr2) / 2;
+                tttg = (ttg1 + ttg2) / 2;
+                tttb = (ttb1 + ttb2) / 2;
 
 #if AROS_BIG_ENDIAN
-		col = (tttr << 16) + (tttg << 8) + tttb;
-#else		
-		col = (tttb << 24) + (tttg << 16) + (tttr << 8);
-#endif		
-		//kprintf("col[%d,%d] = %08x\n", x,y,col);
-	        tab[y * SCREENWIDTH + x] = col;
-		
-	    } /* for(y = 0; y < SCREENHEIGHT; y ++) */
-	    
-	} /* for(y = 0; y < SCREENHEIGHT; y ++) */
-	
+                col = (tttr << 16) + (tttg << 8) + tttb;
+#else
+                col = (tttb << 24) + (tttg << 16) + (tttr << 8);
+#endif
+                //kprintf("col[%d,%d] = %08x\n", x,y,col);
+                tab[y * SCREENWIDTH + x] = col;
+                
+            } /* for(y = 0; y < SCREENHEIGHT; y ++) */
+            
+        } /* for(y = 0; y < SCREENHEIGHT; y ++) */
+        
         ScalePixelArray(tab, SCREENWIDTH, SCREENHEIGHT,
             SCREENWIDTH * sizeof(LONG), win->RPort,
             win->BorderLeft, win->BorderTop,
             win->Width - win->BorderLeft - win->BorderRight,
             win->Height - win->BorderTop - win->BorderBottom, RECTFMT_ARGB);
-	
+        
         getevents();
-	
+        
     } /* while(!Keys[KC_ESC]) */
 }
 

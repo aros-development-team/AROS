@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     if (ret == -1)
     {
         perror(argv[1]);
-	return 20;
+        return 20;
     }
 
     return ret;

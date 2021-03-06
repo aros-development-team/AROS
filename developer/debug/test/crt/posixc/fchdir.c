@@ -49,7 +49,7 @@ int main()
 void cleanup()
 {
     if(fd != -1)
-	close(fd);
+        close(fd);
     
     DeleteFile("T:__TEST__");
 }

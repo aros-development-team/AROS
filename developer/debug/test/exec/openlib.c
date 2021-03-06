@@ -27,42 +27,42 @@ static const char version[] __attribute__((used)) = "$VER: openlib.c 45.0 (16.1.
 
 #define ARG_TEMPLATE "LIBRARY/A,DIRTY/S"
 
-enum 
+enum
 {
-	ARG_LIBNAME,
-	ARG_DIRTY,
-	NOOFARGS
+        ARG_LIBNAME,
+        ARG_DIRTY,
+        NOOFARGS
 };
 
 int main(int argc, char **argv)
 {
-	IPTR args[NOOFARGS] = {0,      // ARG_LIBNAME
-	                       FALSE   // ARG_DIRTY
-	                     };
-	struct RDArgs *rda;
-	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-	if (NULL != rda)
-	{
-		if (args[ARG_LIBNAME]!=0)
-		{
-			APTR tmpBase = OpenLibrary((CONST_STRPTR) args[ARG_LIBNAME],0);
-			if (tmpBase != 0)
-			{
-				printf ("OPENLIB.c: Succesfully opened !\n");
+        IPTR args[NOOFARGS] = {0,      // ARG_LIBNAME
+                               FALSE   // ARG_DIRTY
+                             };
+        struct RDArgs *rda;
+        rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+        if (NULL != rda)
+        {
+                if (args[ARG_LIBNAME]!=0)
+                {
+                        APTR tmpBase = OpenLibrary((CONST_STRPTR) args[ARG_LIBNAME],0);
+                        if (tmpBase != 0)
+                        {
+                                printf ("OPENLIB.c: Succesfully opened !\n");
 
-				if (args[ARG_DIRTY] == FALSE)
-				{
-					CloseLibrary(tmpBase);
-					printf ("OPENLIB.c: Library closed\n");
-				} 
+                                if (args[ARG_DIRTY] == FALSE)
+                                {
+                                        CloseLibrary(tmpBase);
+                                        printf ("OPENLIB.c: Library closed\n");
+                                }
 
-			}else{
-				printf("OPENLIB.c: Library open FAILED!\n");
-			}
-		}else{
-			printf("OPENLIB.c: Please specify a library to open!\n");
-		}
-		FreeArgs(rda);
-	}	
-	return 0;
+                        }else{
+                                printf("OPENLIB.c: Library open FAILED!\n");
+                        }
+                }else{
+                        printf("OPENLIB.c: Please specify a library to open!\n");
+                }
+                FreeArgs(rda);
+        }
+        return 0;
 }

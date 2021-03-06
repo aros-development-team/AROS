@@ -28,11 +28,11 @@ int main(int argc,char *argv[])
     ULONG sigs;
     struct Hook saveHook, useHook;
 
-    const char *sex[] = 
+    const char *sex[] =
     {
-	"male",
-	"female",
-	NULL
+        "male",
+        "female",
+        NULL
     };
     
     const char *hair_color[] =
@@ -109,7 +109,7 @@ int main(int argc,char *argv[])
         {
             sigs = Wait(sigs | SIGBREAKF_CTRL_C);
             if (sigs & SIGBREAKF_CTRL_C)
-        	break;
+                break;
         }
     }
 

@@ -60,12 +60,12 @@ void testGPBSE(void)
     CU_SKIP_IF(DummyBase == NULL);
     if(DummyBase != NULL)
     {
-	c=add(a,b);
+        c=add(a,b);
         if (c != a + b)
         {
             CU_FAIL("3 != add(1, 2)");
         }
-	d=asl(a,b);
+        d=asl(a,b);
         if (d == (a << b))
         {
             CU_PASS("");

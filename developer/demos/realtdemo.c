@@ -22,9 +22,9 @@
 
 
 AROS_UFP3(ULONG, myFunc,
-	  AROS_UFPA(struct Hook *  , hook   , A0),
-	  AROS_UFPA(struct Player *, player , A2),
-	  AROS_UFPA(struct pmTime *, message, A1));
+          AROS_UFPA(struct Hook *  , hook   , A0),
+          AROS_UFPA(struct Player *, player , A2),
+          AROS_UFPA(struct pmTime *, message, A1));
 
 
 int main(int argc, char* argv[])
@@ -33,9 +33,9 @@ int main(int argc, char* argv[])
     struct Hook myHook;
 
     struct TagItem tags[] = { { PLAYER_Name     , (IPTR)"Test player" },
-			      { PLAYER_Hook     , (IPTR)&myHook },
-			      { PLAYER_Conductor, (IPTR)"Test conductor" },
-			      { TAG_DONE        , (IPTR)NULL } };
+                              { PLAYER_Hook     , (IPTR)&myHook },
+                              { PLAYER_Conductor, (IPTR)"Test conductor" },
+                              { TAG_DONE        , (IPTR)NULL } };
 
     struct Player *player;
 
@@ -45,26 +45,26 @@ int main(int argc, char* argv[])
 
     if (RealTimeBase == NULL)
     {
-	printf("Couldn't open realtime.library\n");
-	exit(1);
+        printf("Couldn't open realtime.library\n");
+        exit(1);
     }
 
     player = CreatePlayerA(tags);
 
     if (player == NULL)
     {
-	printf("Couldn't create player\n");
-	CloseLibrary(RealTimeBase);
-	exit(1);
+        printf("Couldn't create player\n");
+        CloseLibrary(RealTimeBase);
+        exit(1);
     }
 
     SetConductorState(player, CONDSTATE_RUNNING, 0);
 
     {
-	struct TagItem tags[] = { { PLAYER_Ready, TRUE },
-				  { TAG_DONE,     0 } };
+        struct TagItem tags[] = { { PLAYER_Ready, TRUE },
+                                  { TAG_DONE,     0 } };
 
-	SetPlayerAttrsA(player, tags);
+        SetPlayerAttrsA(player, tags);
     }
 
     Wait(SIGBREAKF_CTRL_C);
@@ -78,33 +78,33 @@ int main(int argc, char* argv[])
 
 
 AROS_UFH3(ULONG, myFunc,
-	  AROS_UFHA(struct Hook *  , hook   , A0),
-	  AROS_UFHA(struct Player *, player , A2),
-	  AROS_UFHA(struct pmTime *, message, A1))
+          AROS_UFHA(struct Hook *  , hook   , A0),
+          AROS_UFHA(struct Player *, player , A2),
+          AROS_UFHA(struct pmTime *, message, A1))
 {
     AROS_USERFUNC_INIT
 
     switch (message->pmt_Method)
     {
     case PM_TICK:
-	kprintf("Tick at clock %u\n", message->pmt_Time);
-	break;
+        kprintf("Tick at clock %u\n", message->pmt_Time);
+        break;
 
     case PM_POSITION:
-	kprintf("Position change: Clock %u\n", message->pmt_Time);
-	break;
+        kprintf("Position change: Clock %u\n", message->pmt_Time);
+        break;
 
     case PM_SHUTTLE:
-	kprintf("Shuttling into clock %u\n", message->pmt_Time);
-	break;
+        kprintf("Shuttling into clock %u\n", message->pmt_Time);
+        break;
 
     case PM_STATE:
-	kprintf("State change... old state = %u\n",
-		((struct pmState *)message)->pms_OldState);
+        kprintf("State change... old state = %u\n",
+                ((struct pmState *)message)->pms_OldState);
 
     default:
-	kprintf("Error: Bogus message with method %u\n", message->pmt_Method);
-	break;
+        kprintf("Error: Bogus message with method %u\n", message->pmt_Method);
+        break;
     }
 
     return 0;

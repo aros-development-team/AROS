@@ -23,8 +23,8 @@ int main (int argc, char ** argv)
 
     if (!fh)
     {
-	printf ("Couldn't open file (1)\n");
-	return 10;
+        printf ("Couldn't open file (1)\n");
+        return 10;
     }
 
     WriteByte (fh, 0x11);
@@ -40,8 +40,8 @@ int main (int argc, char ** argv)
 
     if (!fh)
     {
-	printf ("Couldn't open file (2)\n");
-	return 10;
+        printf ("Couldn't open file (2)\n");
+        return 10;
     }
 
     ReadByte (fh, &b);

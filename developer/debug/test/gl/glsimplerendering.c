@@ -105,13 +105,13 @@ void prepare_shader_program()
     shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram); 
+    glLinkProgram(shaderProgram);
     glGetProgramInfoLog(shaderProgram, BUFFER_LEN, &len, buffer);
     printf("Shader program compile output: %s\n", buffer);
 
     DOTRACE(bug("\n[GLSimpeRend] Loading finished\n");)
 
-#undef BUFFER_LEN    
+#undef BUFFER_LEN
 }
 
 void cleanup_shader_program()
@@ -216,7 +216,7 @@ void render()
     glCullFace(GL_BACK);
     glDepthFunc(GL_LESS);
     glEnable(GL_DEPTH_TEST);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
     angle += angle_inc;
@@ -224,7 +224,7 @@ void render()
 
 #if USE_PERSPECTIVE == 1
     glTranslatef(0.0, 0.0, -6.0);
-#endif    
+#endif
     glPushMatrix();
     glRotatef(angle, 0.0, 1.0, 0.0);
     glTranslatef(0.0, 0.0, 0.25);
@@ -238,7 +238,7 @@ void render()
     glASwapBuffers(glcont);
 
     DOTRACE(bug("\n[GLSimpeRend] Render finished\n");)
-}    
+}
 
 #define VISIBLE_WIDTH 300
 #define VISIBLE_HEIGHT 300
@@ -310,7 +310,7 @@ void initgl()
 
 void deinitgl()
 {
-    if (glcont) 
+    if (glcont)
     {
         cleanup_shader_program();
         glADestroyContext(glcont);
@@ -506,7 +506,7 @@ int main(void)
         angle_inc = ((double)(currmicrosecs - lastmicrosecs) / 1000000.0) * DEGREES_PER_SECOND;
         lastmicrosecs = currmicrosecs;
         
-        framecnt++; 
+        framecnt++;
 #endif
         render();
         HandleIntuiMessages();

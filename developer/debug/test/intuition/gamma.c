@@ -29,7 +29,7 @@
  * Otherwise the playing user might end up in a completely
  * black screen with zeroed out gamma.
  */
-#define BOTTOM_LIMIT 128 
+#define BOTTOM_LIMIT 128
 
 struct Library         *GradientSliderBase;
 struct Library         *ColorWheelBase;
@@ -297,7 +297,7 @@ static void makewin(void)
                          WA_Gadgets     , rgad,
                          TAG_DONE);
 
-    if (!win) cleanup("Can't open window!");                
+    if (!win) cleanup("Can't open window!");
 }
 
 /*****************************************************************************************/

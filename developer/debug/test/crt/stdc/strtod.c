@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-const char * strings [] = 
+const char * strings [] =
 {
     "1e1",
     "1.2e2",

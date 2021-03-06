@@ -3,7 +3,7 @@
 
     Desc: A short demo for the features of Intuition and Graphics
 */
-#define ENABLE_PURIFY	1
+#define ENABLE_PURIFY   1
 
 #include <exec/memory.h>
 #include <dos/dos.h>
@@ -34,7 +34,7 @@
 #else
 #   define D(x)     /* eps */
 #endif
-#define bug	kprintf
+#define bug     kprintf
 
 static const char version[] __attribute__((used)) = "$VER: demowin 41.1 (14.3.1997)\n";
 
@@ -144,15 +144,15 @@ void Refresh (struct RastPort * rp)
 
     for (pen=1; pen<16; pen++)
     {
-	SetAPen (rp, pen);
+        SetAPen (rp, pen);
 
-	for ( ; t<tend; t++)
-	{
-	    DrawEllipse (rp, 160, 150, t, t>>1);
-	    DrawEllipse (rp, 160, 151, t, t>>1);
-	}
+        for ( ; t<tend; t++)
+        {
+            DrawEllipse (rp, 160, 150, t, t>>1);
+            DrawEllipse (rp, 160, 151, t, t>>1);
+        }
 
-	tend += 10;
+        tend += 10;
     }
 
     SetAPen (rp, 0);
@@ -160,18 +160,18 @@ void Refresh (struct RastPort * rp)
 
     for (y=0; y<20; y++)
     {
-	for (x=0; x<100; x++)
-	{
-	    pen = (LONG)ReadPixel (rp, x+100,y+100);
-	    SetAPen (rp, pen);
-	    WritePixel (rp, x+450, y+140);
-	}
+        for (x=0; x<100; x++)
+        {
+            pen = (LONG)ReadPixel (rp, x+100,y+100);
+            SetAPen (rp, pen);
+            WritePixel (rp, x+450, y+140);
+        }
     }
 }
 
 #define GAD_WID     100
 #define GAD_HEI     30
-#define BORDER	    20
+#define BORDER      20
 
 WORD BorderData[6*2*2] =
 {
@@ -279,10 +279,10 @@ DemoGadget12 =
     -(BORDER+2*ARROWLEFT1_WIDTH), -((GAD_HEI+BORDER)*3),
     ARROWLEFT1_WIDTH, ARROWLEFT1_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_RELRIGHT
-	| GFLG_RELBOTTOM
-	| GFLG_GADGIMAGE
-	, /* Flags */
+        | GFLG_RELRIGHT
+        | GFLG_RELBOTTOM
+        | GFLG_GADGIMAGE
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &ArrowLeft0Image, &ArrowLeft1Image, /* Render */
@@ -297,10 +297,10 @@ DemoGadget11 =
     -(BORDER+1*ARROWLEFT1_WIDTH), -((GAD_HEI+BORDER)*3),
     ARROWLEFT1_WIDTH, ARROWLEFT1_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_RELRIGHT
-	| GFLG_RELBOTTOM
-	| GFLG_GADGIMAGE
-	, /* Flags */
+        | GFLG_RELRIGHT
+        | GFLG_RELBOTTOM
+        | GFLG_GADGIMAGE
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &ArrowRight0Image, &ArrowRight1Image, /* Render */
@@ -315,10 +315,10 @@ DemoGadget10 =
     -(BORDER+ARROWDOWN1_WIDTH), -((GAD_HEI+BORDER)*3+ARROWLEFT1_HEIGHT+0*ARROWDOWN1_HEIGHT-5),
     ARROWDOWN1_WIDTH, ARROWDOWN1_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_RELRIGHT
-	| GFLG_RELBOTTOM
-	| GFLG_GADGIMAGE
-	, /* Flags */
+        | GFLG_RELRIGHT
+        | GFLG_RELBOTTOM
+        | GFLG_GADGIMAGE
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &ArrowDown0Image, &ArrowDown1Image, /* Render */
@@ -333,10 +333,10 @@ DemoGadget9 =
     -(BORDER+ARROWDOWN1_WIDTH), -((GAD_HEI+BORDER)*3+ARROWLEFT1_HEIGHT+1*ARROWDOWN1_HEIGHT-5),
     ARROWDOWN1_WIDTH, ARROWDOWN1_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_RELRIGHT
-	| GFLG_RELBOTTOM
-	| GFLG_GADGIMAGE
-	, /* Flags */
+        | GFLG_RELRIGHT
+        | GFLG_RELBOTTOM
+        | GFLG_GADGIMAGE
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &ArrowUp0Image, &ArrowUp1Image, /* Render */
@@ -351,13 +351,13 @@ DemoGadget8 =
     -(BORDER+ARROWDOWN1_WIDTH+GAD_WID), -((GAD_HEI+BORDER)*3+GAD_WID),
     GAD_WID, GAD_WID, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_RELRIGHT
-	| GFLG_RELBOTTOM
-	, /* Flags */
+        | GFLG_RELRIGHT
+        | GFLG_RELBOTTOM
+        , /* Flags */
     GACT_IMMEDIATE
-	| GACT_RELVERIFY
-	| GACT_TOGGLESELECT
-	, /* Activation */
+        | GACT_RELVERIFY
+        | GACT_TOGGLESELECT
+        , /* Activation */
     GTYP_PROPGADGET, /* Type */
     NULL, NULL, /* Render */
     NULL, /* Text */
@@ -371,13 +371,13 @@ DemoGadget7 =
     -(BORDER+ARROWDOWN1_WIDTH), BORDER,
     ARROWDOWN1_WIDTH, -(GAD_HEI*3+BORDER*4+2*ARROWDOWN1_HEIGHT), /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_RELRIGHT
-	| GFLG_RELHEIGHT
-	, /* Flags */
+        | GFLG_RELRIGHT
+        | GFLG_RELHEIGHT
+        , /* Flags */
     GACT_IMMEDIATE
-	| GACT_RELVERIFY
-	| GACT_TOGGLESELECT
-	, /* Activation */
+        | GACT_RELVERIFY
+        | GACT_TOGGLESELECT
+        , /* Activation */
     GTYP_PROPGADGET, /* Type */
     NULL, NULL, /* Render */
     NULL, /* Text */
@@ -391,13 +391,13 @@ DemoGadget6 =
     BORDER, -((GAD_HEI+BORDER)*3),
     -(1+2*BORDER+2*ARROWLEFT0_WIDTH), ARROWLEFT0_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_RELBOTTOM
-	| GFLG_RELWIDTH
-	, /* Flags */
+        | GFLG_RELBOTTOM
+        | GFLG_RELWIDTH
+        , /* Flags */
     GACT_IMMEDIATE
-	| GACT_RELVERIFY
-	| GACT_TOGGLESELECT
-	, /* Activation */
+        | GACT_RELVERIFY
+        | GACT_TOGGLESELECT
+        , /* Activation */
     GTYP_PROPGADGET, /* Type */
     NULL, NULL, /* Render */
     NULL, /* Text */
@@ -410,13 +410,13 @@ DemoGadget5 =
     &DemoGadget6, /* NextGadget */
     BORDER+(GAD_WID+BORDER)*4, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_LABELSTRING
-	| GFLG_RELBOTTOM
-	, /* Flags */
+        | GFLG_LABELSTRING
+        | GFLG_RELBOTTOM
+        , /* Flags */
     GACT_IMMEDIATE
-	| GACT_RELVERIFY
-	| GACT_TOGGLESELECT
-	, /* Activation */
+        | GACT_RELVERIFY
+        | GACT_TOGGLESELECT
+        , /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, &DemoITopBorder, /* Render */
     (struct IntuiText *)"_Toggle", /* Text */
@@ -429,9 +429,9 @@ DemoGadget4 =
     &DemoGadget5, /* NextGadget */
     BORDER+(GAD_WID+BORDER)*3, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
     GFLG_GADGHNONE
-	| GFLG_LABELITEXT
-	| GFLG_RELBOTTOM
-	, /* Flags */
+        | GFLG_LABELITEXT
+        | GFLG_RELBOTTOM
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, NULL, /* Render */
@@ -446,10 +446,10 @@ DemoGadget3 =
     BORDER+(GAD_WID+BORDER)*2, -((GAD_HEI+BORDER)*2),
     IMAGEBUTTON0_WIDTH, IMAGEBUTTON0_HEIGHT, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_LABELSTRING
-	| GFLG_RELBOTTOM
-	| GFLG_GADGIMAGE
-	, /* Flags */
+        | GFLG_LABELSTRING
+        | GFLG_RELBOTTOM
+        | GFLG_GADGIMAGE
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &ImageButton0Image, &ImageButton1Image, /* Render */
@@ -463,9 +463,9 @@ DemoGadget2 =
     &DemoGadget3, /* NextGadget */
     BORDER+(GAD_WID+BORDER)*1, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
     GFLG_GADGHBOX
-	| GFLG_LABELSTRING
-	| GFLG_RELBOTTOM
-	, /* Flags */
+        | GFLG_LABELSTRING
+        | GFLG_RELBOTTOM
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, NULL, /* Render */
@@ -479,9 +479,9 @@ DemoGadget1 =
     &DemoGadget2, /* NextGadget */
     BORDER+(GAD_WID+BORDER)*0, -((GAD_HEI+BORDER)*2), GAD_WID, GAD_HEI, /* hit box */
     GFLG_GADGHCOMP
-	| GFLG_LABELSTRING
-	| GFLG_RELBOTTOM
-	, /* Flags */
+        | GFLG_LABELSTRING
+        | GFLG_RELBOTTOM
+        , /* Flags */
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, NULL, /* Render */
@@ -495,9 +495,9 @@ ExitGadget =
     &DemoGadget1, /* NextGadget */
     BORDER, -(GAD_HEI+BORDER), GAD_WID, GAD_HEI, /* hit box */
     GFLG_GADGHIMAGE
-	| GFLG_LABELSTRING
-	| GFLG_RELBOTTOM
-	, /* Flags */
+        | GFLG_LABELSTRING
+        | GFLG_RELBOTTOM
+        , /* Flags */
     GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, &DemoITopBorder, /* Render */
@@ -515,9 +515,9 @@ int main (int argc, char ** argv)
     struct IOStdReq cioreq;
     struct InputEvent ievent =
     {
-	NULL,
-	IECLASS_RAWKEY,
-	/* ... */
+        NULL,
+        IECLASS_RAWKEY,
+        /* ... */
     };
     int cont, draw;
     int prop;
@@ -529,14 +529,14 @@ int main (int argc, char ** argv)
 
     if (!GfxBase)
     {
-	fprintf (stderr, "Couldn't open %s\n", GRAPHICSNAME);
-	goto end;
+        fprintf (stderr, "Couldn't open %s\n", GRAPHICSNAME);
+        goto end;
     }
 
     if (!IntuitionBase)
     {
-	fprintf (stderr, "Couldn't open %s\n", INTUITIONNAME);
-	goto end;
+        fprintf (stderr, "Couldn't open %s\n", INTUITIONNAME);
+        goto end;
     }
 
     cioreq.io_Message.mn_Length = sizeof(struct IOStdReq);
@@ -544,62 +544,62 @@ int main (int argc, char ** argv)
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
     ConsoleDevice = cioreq.io_Device;
     printf ("Opening console.device=%p (%s)\n", ConsoleDevice,
-	ConsoleDevice && ConsoleDevice->dd_Library.lib_Node.ln_Name ?
-	        (const char *)ConsoleDevice->dd_Library.lib_Node.ln_Name :
-	        "(NULL)");
+        ConsoleDevice && ConsoleDevice->dd_Library.lib_Node.ln_Name ?
+                (const char *)ConsoleDevice->dd_Library.lib_Node.ln_Name :
+                "(NULL)");
 
     if (!ConsoleDevice)
     {
-	fprintf (stderr, "Couldn't open console\n");
-	return 10;
+        fprintf (stderr, "Couldn't open console\n");
+        return 10;
     }
 
     frame = NewObject (NULL, FRAMEICLASS
-	, IA_Width,  GAD_WID
-	, IA_Height, GAD_HEI
-	, TAG_END
+        , IA_Width,  GAD_WID
+        , IA_Height, GAD_HEI
+        , TAG_END
     );
 
     gadget = NewObject (NULL, FRBUTTONCLASS
-	, GA_Left,	BORDER*2+GAD_WID
-	, GA_RelBottom, -(GAD_HEI+BORDER)
-	, GA_Width,	GAD_WID
-	, GA_Height,	GAD_HEI
-	, GA_Previous,	(IPTR)&DemoGadget12
-	, GA_Text,	(IPTR)"_Exit"
-	, GA_RelVerify, TRUE
-	, GA_ID,	1
-	, GA_Image,	(IPTR)frame
-	, TAG_END
+        , GA_Left,      BORDER*2+GAD_WID
+        , GA_RelBottom, -(GAD_HEI+BORDER)
+        , GA_Width,     GAD_WID
+        , GA_Height,    GAD_HEI
+        , GA_Previous,  (IPTR)&DemoGadget12
+        , GA_Text,      (IPTR)"_Exit"
+        , GA_RelVerify, TRUE
+        , GA_ID,        1
+        , GA_Image,     (IPTR)frame
+        , TAG_END
     );
 
     win = OpenWindowTags (NULL
-	, WA_Title,	    (IPTR)"Open a window demo"
-	, WA_Left,	    100
-	, WA_Top,	    50
-	, WA_Width,	    640
-	, WA_Height,	    512
-	, WA_DragBar,	    TRUE
-	, WA_CloseGadget,   TRUE
-	, WA_DepthGadget,   TRUE
-	, WA_IDCMP,	    IDCMP_RAWKEY
-			    | IDCMP_REFRESHWINDOW
-			    | IDCMP_MOUSEBUTTONS
-			    | IDCMP_MOUSEMOVE
-			    | IDCMP_GADGETDOWN
-			    | IDCMP_GADGETUP
-			    | IDCMP_CLOSEWINDOW
-	, WA_SimpleRefresh, TRUE
-	, WA_GimmeZeroZero, TRUE
-	, WA_Gadgets,	    (IPTR)&ExitGadget
-	, TAG_END
+        , WA_Title,         (IPTR)"Open a window demo"
+        , WA_Left,          100
+        , WA_Top,           50
+        , WA_Width,         640
+        , WA_Height,        512
+        , WA_DragBar,       TRUE
+        , WA_CloseGadget,   TRUE
+        , WA_DepthGadget,   TRUE
+        , WA_IDCMP,         IDCMP_RAWKEY
+                            | IDCMP_REFRESHWINDOW
+                            | IDCMP_MOUSEBUTTONS
+                            | IDCMP_MOUSEMOVE
+                            | IDCMP_GADGETDOWN
+                            | IDCMP_GADGETUP
+                            | IDCMP_CLOSEWINDOW
+        , WA_SimpleRefresh, TRUE
+        , WA_GimmeZeroZero, TRUE
+        , WA_Gadgets,       (IPTR)&ExitGadget
+        , TAG_END
     );
     D(printf("OpenWindow win=%p\n", win));
 
     if (!win)
     {
-	fprintf (stderr, "Couldn't open window\n");
-	return 10;
+        fprintf (stderr, "Couldn't open window\n");
+        return 10;
     }
 
     rp = win->RPort;
@@ -609,10 +609,10 @@ int main (int argc, char ** argv)
     RefreshGList(&DemoGadget4,win,NULL,1);
     
     if (!gadget)
-	printf ("Warning: Couldn't create gadget\n");
+        printf ("Warning: Couldn't create gadget\n");
 
     if (!frame)
-	printf ("Warning: Couldn't create frame\n");
+        printf ("Warning: Couldn't create frame\n");
 
     cont = 1;
     draw = 0;
@@ -623,339 +623,339 @@ int main (int argc, char ** argv)
 
     while (cont)
     {
-	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
-	{
-	    /* D("Got msg\n"); */
-	    switch (im->Class)
-	    {
-	    case IDCMP_CLOSEWINDOW:
-	    	cont = 0;
-		break;
-		
-	    case IDCMP_RAWKEY: {
-		UBYTE buf[10];
-		int   len;
-		int   t;
+        if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
+        {
+            /* D("Got msg\n"); */
+            switch (im->Class)
+            {
+            case IDCMP_CLOSEWINDOW:
+                cont = 0;
+                break;
+                
+            case IDCMP_RAWKEY: {
+                UBYTE buf[10];
+                int   len;
+                int   t;
 
-		ievent.ie_Code	    = im->Code;
-		ievent.ie_Qualifier = im->Qualifier;
+                ievent.ie_Code      = im->Code;
+                ievent.ie_Qualifier = im->Qualifier;
 
-		len = RawKeyConvert (&ievent, buf, sizeof (buf), NULL);
+                len = RawKeyConvert (&ievent, buf, sizeof (buf), NULL);
 
-		printf ("Key %s %3ld + Qual %08lx=\""
-		    , (im->Code & 0x8000) ? "up  " : "down"
-		    , (long)(im->Code & 0xFF)
-		    , (unsigned long)im->Qualifier
-		);
+                printf ("Key %s %3ld + Qual %08lx=\""
+                    , (im->Code & 0x8000) ? "up  " : "down"
+                    , (long)(im->Code & 0xFF)
+                    , (unsigned long)im->Qualifier
+                );
 
-		if (len < 0)
-		{
-		    printf ("\" (buffer too short)");
-		    break;
-		}
+                if (len < 0)
+                {
+                    printf ("\" (buffer too short)");
+                    break;
+                }
 
-		for (t=0; t<len; t++)
-		{
-		    if (buf[t] < 32 || (buf[t] >= 127 && buf[t] < 160))
-		    {
-			switch (buf[t])
-			{
-			case '\n':
-			    printf ("\\n");
-			    break;
+                for (t=0; t<len; t++)
+                {
+                    if (buf[t] < 32 || (buf[t] >= 127 && buf[t] < 160))
+                    {
+                        switch (buf[t])
+                        {
+                        case '\n':
+                            printf ("\\n");
+                            break;
 
-			case '\t':
-			    printf ("\\t");
-			    break;
+                        case '\t':
+                            printf ("\\t");
+                            break;
 
-			case '\b':
-			    printf ("\\b");
-			    break;
+                        case '\b':
+                            printf ("\\b");
+                            break;
 
-			case '\r':
-			    printf ("\\r");
-			    break;
+                        case '\r':
+                            printf ("\\r");
+                            break;
 
-			case 0x1B:
-			    printf ("^[");
-			    break;
+                        case 0x1B:
+                            printf ("^[");
+                            break;
 
-			default:
-			    printf ("\\x%02x", buf[t]);
-			    break;
-			} /* switch */
-		    }
-		    else
-			putc (buf[t], stdout);
-		}
-		printf ("\"\n");
+                        default:
+                            printf ("\\x%02x", buf[t]);
+                            break;
+                        } /* switch */
+                    }
+                    else
+                        putc (buf[t], stdout);
+                }
+                printf ("\"\n");
 
-		if (*buf == '\x1b' && len == 1)
-		{
-		    if (len == 1)
-			cont = 0;
-		}
+                if (*buf == '\x1b' && len == 1)
+                {
+                    if (len == 1)
+                        cont = 0;
+                }
 
-		break; }
+                break; }
 
-	    case IDCMP_MOUSEBUTTONS:
-		switch (im->Code)
-		{
-		case SELECTDOWN:
-		    SetAPen (rp, 2);
-		    Move (rp, im->MouseX, im->MouseY);
-		    draw = 1;
-		    break;
+            case IDCMP_MOUSEBUTTONS:
+                switch (im->Code)
+                {
+                case SELECTDOWN:
+                    SetAPen (rp, 2);
+                    Move (rp, im->MouseX, im->MouseY);
+                    draw = 1;
+                    break;
 
-		case SELECTUP:
-		    draw = 0;
-		    break;
+                case SELECTUP:
+                    draw = 0;
+                    break;
 
-		case MIDDLEDOWN:
-		    SetAPen (rp, 1);
-		    Move (rp, im->MouseX, im->MouseY);
-		    draw = 1;
-		    break;
+                case MIDDLEDOWN:
+                    SetAPen (rp, 1);
+                    Move (rp, im->MouseX, im->MouseY);
+                    draw = 1;
+                    break;
 
-		case MIDDLEUP:
-		    draw = 0;
-		    break;
+                case MIDDLEUP:
+                    draw = 0;
+                    break;
 
-		case MENUDOWN:
-		    SetAPen (rp, 3);
-		    Move (rp, im->MouseX, im->MouseY);
-		    draw = 1;
-		    break;
+                case MENUDOWN:
+                    SetAPen (rp, 3);
+                    Move (rp, im->MouseX, im->MouseY);
+                    draw = 1;
+                    break;
 
-		case MENUUP:
-		    draw = 0;
-		    break;
+                case MENUUP:
+                    draw = 0;
+                    break;
 
-		}
+                }
 
-		break;
+                break;
 
-	    case IDCMP_MOUSEMOVE:
-		if (draw)
-		    Draw (rp, im->MouseX, im->MouseY);
+            case IDCMP_MOUSEMOVE:
+                if (draw)
+                    Draw (rp, im->MouseX, im->MouseY);
 
-		break;
+                break;
 
-	    case IDCMP_REFRESHWINDOW:
-		printf ("REFRESHWINDOW\n");
-		BeginRefresh (win);
-		Refresh (rp);
-		EndRefresh (win, TRUE);
-		break;
+            case IDCMP_REFRESHWINDOW:
+                printf ("REFRESHWINDOW\n");
+                BeginRefresh (win);
+                Refresh (rp);
+                EndRefresh (win, TRUE);
+                break;
 
-	    case IDCMP_GADGETDOWN: {
-		struct Gadget * gadget;
-		LONG pot;
+            case IDCMP_GADGETDOWN: {
+                struct Gadget * gadget;
+                LONG pot;
 
-		gadget = (struct Gadget *)im->IAddress;
+                gadget = (struct Gadget *)im->IAddress;
 
-		printf ("User pressed gadget %d\n", gadget->GadgetID);
+                printf ("User pressed gadget %d\n", gadget->GadgetID);
 
-		switch (gadget->GadgetID)
-		{
-		case 10: /* Up */
-		    pot = DemoPropInfo3.VertPot - DemoPropInfo3.VertBody;
+                switch (gadget->GadgetID)
+                {
+                case 10: /* Up */
+                    pot = DemoPropInfo3.VertPot - DemoPropInfo3.VertBody;
 
-		    if (pot < 0)
-			pot = 0;
+                    if (pot < 0)
+                        pot = 0;
 
-		    NewModifyProp (&DemoGadget7
-			, win
-			, NULL
-			, DemoPropInfo2.Flags
-			, DemoPropInfo2.HorizPot
-			, pot
-			, DemoPropInfo2.HorizBody
-			, DemoPropInfo2.VertBody
-			, 1
-		    );
-		    NewModifyProp (&DemoGadget8
-			, win
-			, NULL
-			, DemoPropInfo3.Flags
-			, DemoPropInfo3.HorizPot
-			, pot
-			, DemoPropInfo3.HorizBody
-			, DemoPropInfo3.VertBody
-			, 1
-		    );
+                    NewModifyProp (&DemoGadget7
+                        , win
+                        , NULL
+                        , DemoPropInfo2.Flags
+                        , DemoPropInfo2.HorizPot
+                        , pot
+                        , DemoPropInfo2.HorizBody
+                        , DemoPropInfo2.VertBody
+                        , 1
+                    );
+                    NewModifyProp (&DemoGadget8
+                        , win
+                        , NULL
+                        , DemoPropInfo3.Flags
+                        , DemoPropInfo3.HorizPot
+                        , pot
+                        , DemoPropInfo3.HorizBody
+                        , DemoPropInfo3.VertBody
+                        , 1
+                    );
 
-		    break;
+                    break;
 
-		case 11: /* Down */
-		    pot = DemoPropInfo3.VertPot + DemoPropInfo3.VertBody;
+                case 11: /* Down */
+                    pot = DemoPropInfo3.VertPot + DemoPropInfo3.VertBody;
 
-		    if (pot > MAXPOT)
-			pot = MAXPOT;
+                    if (pot > MAXPOT)
+                        pot = MAXPOT;
 
-		    NewModifyProp (&DemoGadget7
-			, win
-			, NULL
-			, DemoPropInfo2.Flags
-			, DemoPropInfo2.HorizPot
-			, pot
-			, DemoPropInfo2.HorizBody
-			, DemoPropInfo2.VertBody
-			, 1
-		    );
-		    NewModifyProp (&DemoGadget8
-			, win
-			, NULL
-			, DemoPropInfo3.Flags
-			, DemoPropInfo3.HorizPot
-			, pot
-			, DemoPropInfo3.HorizBody
-			, DemoPropInfo3.VertBody
-			, 1
-		    );
+                    NewModifyProp (&DemoGadget7
+                        , win
+                        , NULL
+                        , DemoPropInfo2.Flags
+                        , DemoPropInfo2.HorizPot
+                        , pot
+                        , DemoPropInfo2.HorizBody
+                        , DemoPropInfo2.VertBody
+                        , 1
+                    );
+                    NewModifyProp (&DemoGadget8
+                        , win
+                        , NULL
+                        , DemoPropInfo3.Flags
+                        , DemoPropInfo3.HorizPot
+                        , pot
+                        , DemoPropInfo3.HorizBody
+                        , DemoPropInfo3.VertBody
+                        , 1
+                    );
 
-		    break;
+                    break;
 
-		case 12: /* Right */
-		    pot = DemoPropInfo1.HorizPot + DemoPropInfo1.HorizBody;
+                case 12: /* Right */
+                    pot = DemoPropInfo1.HorizPot + DemoPropInfo1.HorizBody;
 
-		    if (pot > MAXPOT)
-			pot = MAXPOT;
+                    if (pot > MAXPOT)
+                        pot = MAXPOT;
 
-		    NewModifyProp (&DemoGadget6
-			, win
-			, NULL
-			, DemoPropInfo1.Flags
-			, pot
-			, DemoPropInfo1.VertPot
-			, DemoPropInfo1.HorizBody
-			, DemoPropInfo1.VertBody
-			, 1
-		    );
-		    NewModifyProp (&DemoGadget8
-			, win
-			, NULL
-			, DemoPropInfo3.Flags
-			, pot
-			, DemoPropInfo3.VertPot
-			, DemoPropInfo3.HorizBody
-			, DemoPropInfo3.VertBody
-			, 1
-		    );
+                    NewModifyProp (&DemoGadget6
+                        , win
+                        , NULL
+                        , DemoPropInfo1.Flags
+                        , pot
+                        , DemoPropInfo1.VertPot
+                        , DemoPropInfo1.HorizBody
+                        , DemoPropInfo1.VertBody
+                        , 1
+                    );
+                    NewModifyProp (&DemoGadget8
+                        , win
+                        , NULL
+                        , DemoPropInfo3.Flags
+                        , pot
+                        , DemoPropInfo3.VertPot
+                        , DemoPropInfo3.HorizBody
+                        , DemoPropInfo3.VertBody
+                        , 1
+                    );
 
-		    break;
+                    break;
 
-		case 13: /* Left */
-		    pot = DemoPropInfo1.HorizPot - DemoPropInfo1.HorizBody;
+                case 13: /* Left */
+                    pot = DemoPropInfo1.HorizPot - DemoPropInfo1.HorizBody;
 
-		    if (pot < 0)
-			pot = 0;
+                    if (pot < 0)
+                        pot = 0;
 
-		    NewModifyProp (&DemoGadget6
-			, win
-			, NULL
-			, DemoPropInfo1.Flags
-			, pot
-			, DemoPropInfo1.VertPot
-			, DemoPropInfo1.HorizBody
-			, DemoPropInfo1.VertBody
-			, 1
-		    );
-		    NewModifyProp (&DemoGadget8
-			, win
-			, NULL
-			, DemoPropInfo3.Flags
-			, pot
-			, DemoPropInfo3.VertPot
-			, DemoPropInfo3.HorizBody
-			, DemoPropInfo3.VertBody
-			, 1
-		    );
+                    NewModifyProp (&DemoGadget6
+                        , win
+                        , NULL
+                        , DemoPropInfo1.Flags
+                        , pot
+                        , DemoPropInfo1.VertPot
+                        , DemoPropInfo1.HorizBody
+                        , DemoPropInfo1.VertBody
+                        , 1
+                    );
+                    NewModifyProp (&DemoGadget8
+                        , win
+                        , NULL
+                        , DemoPropInfo3.Flags
+                        , pot
+                        , DemoPropInfo3.VertPot
+                        , DemoPropInfo3.HorizBody
+                        , DemoPropInfo3.VertBody
+                        , 1
+                    );
 
-		    break;
+                    break;
 
-		}
+                }
 
-		break; }
+                break; }
 
-	    case IDCMP_GADGETUP: {
-		struct Gadget * gadget;
+            case IDCMP_GADGETUP: {
+                struct Gadget * gadget;
 
-		gadget = (struct Gadget *)im->IAddress;
+                gadget = (struct Gadget *)im->IAddress;
 
-		printf ("User released gadget %d\n", gadget->GadgetID);
+                printf ("User released gadget %d\n", gadget->GadgetID);
 
-		if (gadget->GadgetID == 1)
-		    cont = 0;
-		else if (gadget->GadgetID == 2)
-		{
-		    prop ++;
+                if (gadget->GadgetID == 1)
+                    cont = 0;
+                else if (gadget->GadgetID == 2)
+                {
+                    prop ++;
 
-		    switch (prop)
-		    {
-		    case 0:
-			NewModifyProp (&DemoGadget6, win, NULL,
-			    DemoPropInfo1.Flags,
-			    0, 0, MAXBODY, MAXBODY, 1);
-			NewModifyProp (&DemoGadget7, win, NULL,
-			    DemoPropInfo2.Flags,
-			    0, 0, MAXBODY, MAXBODY, 1);
-			NewModifyProp (&DemoGadget8, win, NULL,
-			    DemoPropInfo3.Flags,
-			    0, 0, MAXBODY, MAXBODY, 1);
-			break;
+                    switch (prop)
+                    {
+                    case 0:
+                        NewModifyProp (&DemoGadget6, win, NULL,
+                            DemoPropInfo1.Flags,
+                            0, 0, MAXBODY, MAXBODY, 1);
+                        NewModifyProp (&DemoGadget7, win, NULL,
+                            DemoPropInfo2.Flags,
+                            0, 0, MAXBODY, MAXBODY, 1);
+                        NewModifyProp (&DemoGadget8, win, NULL,
+                            DemoPropInfo3.Flags,
+                            0, 0, MAXBODY, MAXBODY, 1);
+                        break;
 
-		    case 1:
-			NewModifyProp (&DemoGadget6, win, NULL,
-			    DemoPropInfo1.Flags,
-			    0, 0, MAXBODY/2, MAXBODY, 1);
-			NewModifyProp (&DemoGadget7, win, NULL,
-			    DemoPropInfo2.Flags,
-			    0, 0, MAXBODY, MAXBODY/2, 1);
-			NewModifyProp (&DemoGadget8, win, NULL,
-			    DemoPropInfo3.Flags,
-			    0, 0, MAXBODY/2, MAXBODY/2, 1);
-			break;
+                    case 1:
+                        NewModifyProp (&DemoGadget6, win, NULL,
+                            DemoPropInfo1.Flags,
+                            0, 0, MAXBODY/2, MAXBODY, 1);
+                        NewModifyProp (&DemoGadget7, win, NULL,
+                            DemoPropInfo2.Flags,
+                            0, 0, MAXBODY, MAXBODY/2, 1);
+                        NewModifyProp (&DemoGadget8, win, NULL,
+                            DemoPropInfo3.Flags,
+                            0, 0, MAXBODY/2, MAXBODY/2, 1);
+                        break;
 
-		    case 2:
-			NewModifyProp (&DemoGadget6, win, NULL,
-			    DemoPropInfo1.Flags,
-			    MAXPOT, 0, MAXBODY/2, MAXBODY, 1);
-			NewModifyProp (&DemoGadget7, win, NULL,
-			    DemoPropInfo2.Flags,
-			    0, MAXPOT, MAXBODY, MAXBODY/2, 1);
-			NewModifyProp (&DemoGadget8, win, NULL,
-			    DemoPropInfo3.Flags,
-			    MAXPOT, MAXPOT, MAXBODY/2, MAXBODY/2, 1);
-			break;
+                    case 2:
+                        NewModifyProp (&DemoGadget6, win, NULL,
+                            DemoPropInfo1.Flags,
+                            MAXPOT, 0, MAXBODY/2, MAXBODY, 1);
+                        NewModifyProp (&DemoGadget7, win, NULL,
+                            DemoPropInfo2.Flags,
+                            0, MAXPOT, MAXBODY, MAXBODY/2, 1);
+                        NewModifyProp (&DemoGadget8, win, NULL,
+                            DemoPropInfo3.Flags,
+                            MAXPOT, MAXPOT, MAXBODY/2, MAXBODY/2, 1);
+                        break;
 
-		    default:
-			NewModifyProp (&DemoGadget6, win, NULL,
-			    DemoPropInfo1.Flags,
-			    0, 0, MAXBODY/9, MAXBODY, 1);
-			NewModifyProp (&DemoGadget7, win, NULL,
-			    DemoPropInfo2.Flags,
-			    0, 0, MAXBODY, MAXBODY/9, 1);
-			NewModifyProp (&DemoGadget8, win, NULL,
-			    DemoPropInfo3.Flags,
-			    0, 0, MAXBODY/9, MAXBODY/9, 1);
-			prop = -1;
-			break;
+                    default:
+                        NewModifyProp (&DemoGadget6, win, NULL,
+                            DemoPropInfo1.Flags,
+                            0, 0, MAXBODY/9, MAXBODY, 1);
+                        NewModifyProp (&DemoGadget7, win, NULL,
+                            DemoPropInfo2.Flags,
+                            0, 0, MAXBODY, MAXBODY/9, 1);
+                        NewModifyProp (&DemoGadget8, win, NULL,
+                            DemoPropInfo3.Flags,
+                            0, 0, MAXBODY/9, MAXBODY/9, 1);
+                        prop = -1;
+                        break;
 
-		    }
-		}
+                    }
+                }
 
-		break; }
+                break; }
 
-	    } /* switch */
+            } /* switch */
 
-	    ReplyMsg ((struct Message *)im);
-	}
-	else
-	{
-	    /* D("Waiting\n"); */
-	    Wait (1L << win->UserPort->mp_SigBit);
-	}
+            ReplyMsg ((struct Message *)im);
+        }
+        else
+        {
+            /* D("Waiting\n"); */
+            Wait (1L << win->UserPort->mp_SigBit);
+        }
     }
 
     D(bug("CloseWindow (%p)\n", win));
@@ -963,19 +963,19 @@ int main (int argc, char ** argv)
 
 end:
     if (gadget)
-	DisposeObject (gadget);
+        DisposeObject (gadget);
 
     if (frame)
-	DisposeObject (frame);
+        DisposeObject (frame);
 
     if (GfxBase)
-	CloseLibrary ((struct Library *)GfxBase);
+        CloseLibrary ((struct Library *)GfxBase);
 
     if (IntuitionBase)
-	CloseLibrary ((struct Library *)IntuitionBase);
+        CloseLibrary ((struct Library *)IntuitionBase);
 
     if (ConsoleDevice)
-	CloseDevice ((struct IORequest *)&cioreq);
+        CloseDevice ((struct IORequest *)&cioreq);
 
     return 0;
 }

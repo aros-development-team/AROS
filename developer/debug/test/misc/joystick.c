@@ -46,7 +46,7 @@ static void printjoyport(ULONG val)
     
     for(i = 31; i >= 0; i--)
     {
-    	printf("%d", (val & (1 << i)) ? 1 : 0);
+        printf("%d", (val & (1 << i)) ? 1 : 0);
     }
     
     printf(" - ");
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
             new = ReadJoyPort(unit);
             if (new != old)
             {
-	            old = new;
+                    old = new;
                 printjoyport(new);
             }
 

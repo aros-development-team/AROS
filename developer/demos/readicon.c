@@ -36,33 +36,33 @@ void DoWindow (struct DiskObject * dobj)
 
     if (!GfxBase)
     {
-	printf ("Couldn't open %s\n", GRAPHICSNAME);
-	goto end;
+        printf ("Couldn't open %s\n", GRAPHICSNAME);
+        goto end;
     }
 
     if (!IntuitionBase)
     {
-	printf ("Couldn't open intuition.library\n");
-	goto end;
+        printf ("Couldn't open intuition.library\n");
+        goto end;
     }
 
     win = OpenWindowTags (NULL
-	, WA_Title,	    (IPTR)"Show an icon"
-	, WA_DragBar,       TRUE
-	, WA_CloseGadget,   TRUE
-	, WA_DepthGadget,   TRUE
-	, WA_Activate,      TRUE
-	, WA_Left,	    100
-	, WA_Top,	    100
-	, WA_InnerWidth,    dobj->do_Gadget.Width * 3 + 40
-	, WA_InnerHeight,   dobj->do_Gadget.Height + 20
-	, WA_IDCMP,	    IDCMP_RAWKEY | IDCMP_CLOSEWINDOW
-	, WA_SimpleRefresh, TRUE
-	, TAG_END
+        , WA_Title,         (IPTR)"Show an icon"
+        , WA_DragBar,       TRUE
+        , WA_CloseGadget,   TRUE
+        , WA_DepthGadget,   TRUE
+        , WA_Activate,      TRUE
+        , WA_Left,          100
+        , WA_Top,           100
+        , WA_InnerWidth,    dobj->do_Gadget.Width * 3 + 40
+        , WA_InnerHeight,   dobj->do_Gadget.Height + 20
+        , WA_IDCMP,         IDCMP_RAWKEY | IDCMP_CLOSEWINDOW
+        , WA_SimpleRefresh, TRUE
+        , TAG_END
     );
 
     if (!win)
-	goto end;
+        goto end;
 
     rp = win->RPort;
 
@@ -81,44 +81,44 @@ void DoWindow (struct DiskObject * dobj)
 
     while (cont)
     {
-	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
-	{
-	    /* D("Got msg\n"); */
-	    printf("Got msg %lx\n", (long)im->Class);
-	    
-	    switch (im->Class)
-	    {
-	    case IDCMP_CLOSEWINDOW:
-	    	cont = FALSE;
-    	    	break;
-		
-	    case IDCMP_RAWKEY:
-	    	if (!(im->Code & IECODE_UP_PREFIX))
-		{
-		    cont = FALSE;
-		}
-		break;
+        if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
+        {
+            /* D("Got msg\n"); */
+            printf("Got msg %lx\n", (long)im->Class);
+            
+            switch (im->Class)
+            {
+            case IDCMP_CLOSEWINDOW:
+                cont = FALSE;
+                break;
+                
+            case IDCMP_RAWKEY:
+                if (!(im->Code & IECODE_UP_PREFIX))
+                {
+                    cont = FALSE;
+                }
+                break;
 
-	    }
+            }
 
-	    ReplyMsg ((struct Message *)im);
-	}
-	else
-	{
-	    /* D("Waiting\n"); */
-	    Wait (1L << win->UserPort->mp_SigBit);
-	}
+            ReplyMsg ((struct Message *)im);
+        }
+        else
+        {
+            /* D("Waiting\n"); */
+            Wait (1L << win->UserPort->mp_SigBit);
+        }
     }
 
 end:
     if (win)
-	CloseWindow (win);
+        CloseWindow (win);
 
     if (GfxBase)
-	CloseLibrary ((struct Library *)GfxBase);
+        CloseLibrary ((struct Library *)GfxBase);
 
     if (IntuitionBase)
-	CloseLibrary ((struct Library *)IntuitionBase);
+        CloseLibrary ((struct Library *)IntuitionBase);
 
     return;
 } /* DoWindow */
@@ -138,105 +138,105 @@ int main (int argc, char ** argv)
 
     if (!IconBase)
     {
-	printf ("Couldn't open %s\n", ICONNAME);
-	return RETURN_FAIL;
+        printf ("Couldn't open %s\n", ICONNAME);
+        return RETURN_FAIL;
     }
 
     rda = ReadArgs ("IconFile/A", (IPTR *)&arg, NULL);
 
     if (rda)
     {
-	if (!(dobj = GetDiskObject (arg)) )
-	{
-	    printf ("Cannot open icon for %s: ", arg);
-	    PrintFault (IoErr(), "");
-	    rc = 10;
-	}
-	else
-	{
-	    /* hexdump (dobj, 0L, sizeof (struct DiskObject)); */
+        if (!(dobj = GetDiskObject (arg)) )
+        {
+            printf ("Cannot open icon for %s: ", arg);
+            PrintFault (IoErr(), "");
+            rc = 10;
+        }
+        else
+        {
+            /* hexdump (dobj, 0L, sizeof (struct DiskObject)); */
 
-	    printf ("Some information about the icon:\n"
-		"Magic = %d\n"
-		"Version = %d\n"
-		"Type = %d\n"
-		"Gadget: %dx%d+%d+%d Flags=%x Act=%x Type=%d\n"
-		"Stack = %ld\n"
-		, dobj->do_Magic
-		, dobj->do_Version
-		, dobj->do_Type
-		, dobj->do_Gadget.Width
-		, dobj->do_Gadget.Height
-		, dobj->do_Gadget.LeftEdge
-		, dobj->do_Gadget.TopEdge
-		, dobj->do_Gadget.Flags
-		, dobj->do_Gadget.Activation
-		, dobj->do_Gadget.GadgetType
-		, (long)dobj->do_StackSize
-	    );
+            printf ("Some information about the icon:\n"
+                "Magic = %d\n"
+                "Version = %d\n"
+                "Type = %d\n"
+                "Gadget: %dx%d+%d+%d Flags=%x Act=%x Type=%d\n"
+                "Stack = %ld\n"
+                , dobj->do_Magic
+                , dobj->do_Version
+                , dobj->do_Type
+                , dobj->do_Gadget.Width
+                , dobj->do_Gadget.Height
+                , dobj->do_Gadget.LeftEdge
+                , dobj->do_Gadget.TopEdge
+                , dobj->do_Gadget.Flags
+                , dobj->do_Gadget.Activation
+                , dobj->do_Gadget.GadgetType
+                , (long)dobj->do_StackSize
+            );
 
-	    if (dobj->do_Gadget.GadgetRender)
-	    {
-		printf ("GImage: %dx%d+%d+%d\n"
-		    , IM(dobj->do_Gadget.GadgetRender)->Width
-		    , IM(dobj->do_Gadget.GadgetRender)->Height
-		    , IM(dobj->do_Gadget.GadgetRender)->LeftEdge
-		    , IM(dobj->do_Gadget.GadgetRender)->TopEdge
-		);
+            if (dobj->do_Gadget.GadgetRender)
+            {
+                printf ("GImage: %dx%d+%d+%d\n"
+                    , IM(dobj->do_Gadget.GadgetRender)->Width
+                    , IM(dobj->do_Gadget.GadgetRender)->Height
+                    , IM(dobj->do_Gadget.GadgetRender)->LeftEdge
+                    , IM(dobj->do_Gadget.GadgetRender)->TopEdge
+                );
 
-		/* hexdump (IM(dobj->do_Gadget.GadgetRender)->ImageData
-		    , 0L
-		    , 720
-		); */
-	    }
-	    else
-	    {
-		printf ("GImage: none\n");
-	    }
+                /* hexdump (IM(dobj->do_Gadget.GadgetRender)->ImageData
+                    , 0L
+                    , 720
+                ); */
+            }
+            else
+            {
+                printf ("GImage: none\n");
+            }
 
-	    if (dobj->do_Gadget.SelectRender)
-	    {
-		printf ("SImage: %dx%d+%d+%d\n"
-		    , IM(dobj->do_Gadget.SelectRender)->Width
-		    , IM(dobj->do_Gadget.SelectRender)->Height
-		    , IM(dobj->do_Gadget.SelectRender)->LeftEdge
-		    , IM(dobj->do_Gadget.SelectRender)->TopEdge
-		);
+            if (dobj->do_Gadget.SelectRender)
+            {
+                printf ("SImage: %dx%d+%d+%d\n"
+                    , IM(dobj->do_Gadget.SelectRender)->Width
+                    , IM(dobj->do_Gadget.SelectRender)->Height
+                    , IM(dobj->do_Gadget.SelectRender)->LeftEdge
+                    , IM(dobj->do_Gadget.SelectRender)->TopEdge
+                );
 
-		/* hexdump (IM(dobj->do_Gadget.SelectRender)->ImageData
-		    , 0L
-		    , 720
-		); */
-	    }
-	    else
-	    {
-		printf ("SImage: none\n");
-	    }
+                /* hexdump (IM(dobj->do_Gadget.SelectRender)->ImageData
+                    , 0L
+                    , 720
+                ); */
+            }
+            else
+            {
+                printf ("SImage: none\n");
+            }
 
-	    printf ("DefaultTool: %s\n", dobj->do_DefaultTool);
+            printf ("DefaultTool: %s\n", dobj->do_DefaultTool);
 
-	    printf ("ToolTypes:\n");
+            printf ("ToolTypes:\n");
 
-	    if (dobj->do_ToolTypes)
-		for (t=0; dobj->do_ToolTypes[t]; t++)
-		    printf ("TT %d: %s\n", t, dobj->do_ToolTypes[t]);
-	    else
-		printf ("--- none ---\n");
+            if (dobj->do_ToolTypes)
+                for (t=0; dobj->do_ToolTypes[t]; t++)
+                    printf ("TT %d: %s\n", t, dobj->do_ToolTypes[t]);
+            else
+                printf ("--- none ---\n");
 
-	    if (!PutDiskObject ("readicon", dobj))
-		PrintFault (IoErr(), "Writing of icon to readicon.info failed");
+            if (!PutDiskObject ("readicon", dobj))
+                PrintFault (IoErr(), "Writing of icon to readicon.info failed");
 
-	    DoWindow (dobj);
+            DoWindow (dobj);
 
-	    FreeDiskObject (dobj);
-	}
+            FreeDiskObject (dobj);
+        }
 
-	FreeArgs (rda);
+        FreeArgs (rda);
     }
     else
     {
         PrintFault(IoErr(), argv[0]);
-	rc = 10;
+        rc = 10;
     }
     
     return rc;

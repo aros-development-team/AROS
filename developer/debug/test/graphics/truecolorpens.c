@@ -103,32 +103,32 @@ static void getvisual(void)
 
 static void makewin(void)
 {
-    win = OpenWindowTags(NULL, WA_CustomScreen	, (IPTR)scr, 
-    			       WA_InnerWidth	, SCREENWIDTH,
-    			       WA_InnerHeight	, SCREENHEIGHT,
-			       WA_Title		, (IPTR)"TrueColorPens: Press SPACE!",
-			       WA_DragBar	, TRUE,
-			       WA_DepthGadget	, TRUE,
-			       WA_CloseGadget	, TRUE,
-			       WA_Activate	, TRUE,
-			       WA_GimmeZeroZero , TRUE,
-			       WA_IDCMP		, IDCMP_CLOSEWINDOW |
-			       			  IDCMP_RAWKEY,
-			       TAG_DONE);
-			       
+    win = OpenWindowTags(NULL, WA_CustomScreen  , (IPTR)scr,
+                               WA_InnerWidth    , SCREENWIDTH,
+                               WA_InnerHeight   , SCREENHEIGHT,
+                               WA_Title         , (IPTR)"TrueColorPens: Press SPACE!",
+                               WA_DragBar       , TRUE,
+                               WA_DepthGadget   , TRUE,
+                               WA_CloseGadget   , TRUE,
+                               WA_Activate      , TRUE,
+                               WA_GimmeZeroZero , TRUE,
+                               WA_IDCMP         , IDCMP_CLOSEWINDOW |
+                                                  IDCMP_RAWKEY,
+                               TAG_DONE);
+                               
    if (!win) cleanup("Can't open window");
 
-   rp = win->RPort; 
+   rp = win->RPort;
 }
 
 /***********************************************************************************/
 
 #define KC_LEFT         0x4F
-#define KC_RIGHT     	0x4E
-#define KC_UP        	0x4C
-#define KC_DOWN      	0x4D
-#define KC_ESC       	0x45
-#define KC_SPACE    	0x40
+#define KC_RIGHT        0x4E
+#define KC_UP           0x4C
+#define KC_DOWN         0x4D
+#define KC_ESC          0x45
+#define KC_SPACE        0x40
 
 /***********************************************************************************/
 
@@ -139,21 +139,21 @@ static void getevents(void)
     while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
     {
         switch(msg->Class)
-	{
-	    case IDCMP_CLOSEWINDOW:
-	        Keys[KC_ESC] = 1;
-		break;
-		
-	    case IDCMP_RAWKEY:
-	        {
-		    WORD code = msg->Code & ~IECODE_UP_PREFIX;
-		    
-		    Keys[code] = (code == msg->Code) ? 1 : 0;
+        {
+            case IDCMP_CLOSEWINDOW:
+                Keys[KC_ESC] = 1;
+                break;
+                
+            case IDCMP_RAWKEY:
+                {
+                    WORD code = msg->Code & ~IECODE_UP_PREFIX;
+                    
+                    Keys[code] = (code == msg->Code) ? 1 : 0;
 
-		}
-	        break;
+                }
+                break;
 
-	}
+        }
         ReplyMsg((struct Message *)msg);
     }
 
@@ -184,84 +184,84 @@ static void action(void)
 
     while(!Keys[KC_ESC])
     {
-    	struct ColorWheelHSB cwhsb = {hue, 0xFFFFFFFF, 0xFFFFFFFF};
-	struct ColorWheelRGB cwrgb;
+        struct ColorWheelHSB cwhsb = {hue, 0xFFFFFFFF, 0xFFFFFFFF};
+        struct ColorWheelRGB cwrgb;
 
-    	WaitTOF();
-	
-    	ConvertHSBToRGB(&cwhsb, &cwrgb);
-		
-    	rgb = (cwrgb.cw_Red & 0xFF000000) >> 8;
-	rgb += (cwrgb.cw_Green & 0xFF000000) >> 16;
-	rgb += (cwrgb.cw_Blue & 0xFF000000) >> 24;
-	
-	SetRPAttrs(rp, RPTAG_FgColor, rgb,
-	    	       RPTAG_BgColor, 0xFFFFFF - rgb,
-	    	       RPTAG_PenMode, FALSE,
-	    	       TAG_DONE);
-		       
-    	switch(mode)
-	{
-	    case 0:
-	    	SetDrMd(rp, JAM1);
-		WritePixel(rp, x, y);
-		WritePixel(rp, x + 1, y);
-		WritePixel(rp, x, y + 1);
-		WritePixel(rp, x + 1, y + 1);
-		break;
+        WaitTOF();
+        
+        ConvertHSBToRGB(&cwhsb, &cwrgb);
+                
+        rgb = (cwrgb.cw_Red & 0xFF000000) >> 8;
+        rgb += (cwrgb.cw_Green & 0xFF000000) >> 16;
+        rgb += (cwrgb.cw_Blue & 0xFF000000) >> 24;
+        
+        SetRPAttrs(rp, RPTAG_FgColor, rgb,
+                       RPTAG_BgColor, 0xFFFFFF - rgb,
+                       RPTAG_PenMode, FALSE,
+                       TAG_DONE);
+                       
+        switch(mode)
+        {
+            case 0:
+                SetDrMd(rp, JAM1);
+                WritePixel(rp, x, y);
+                WritePixel(rp, x + 1, y);
+                WritePixel(rp, x, y + 1);
+                WritePixel(rp, x + 1, y + 1);
+                break;
 
-	    case 1:
-		SetDrMd(rp, JAM1);
-		Move(rp, x, y);
-		Text(rp, "Text JAM1", 4);
-	    	break;
-		
-	    case 2:
-		SetDrMd(rp, JAM2);
-		Move(rp, x, y);
-		Text(rp, "Text JAM2", 4);
-	    	break;
-	    	
-	    case 3:
-	    	SetDrMd(rp, JAM1);
-		RectFill(rp, x, y, x + 30, y + 30);
-		break;
-		
-	    case 4:
-	    	SetDrMd(rp, JAM1);
-		Move(rp, x, y);
-		Draw(rp, x + 30, y);
-		Draw(rp, x + 30, y + 30);
-    	    	Draw(rp, x, y + 30);
-		Draw(rp, x, y);
-		break;
-		
-	    case 5:
-	    	SetDrMd(rp, JAM1);
-		DrawEllipse(rp, x, y, 30, 30);
-		break;
+            case 1:
+                SetDrMd(rp, JAM1);
+                Move(rp, x, y);
+                Text(rp, "Text JAM1", 4);
+                break;
+                
+            case 2:
+                SetDrMd(rp, JAM2);
+                Move(rp, x, y);
+                Text(rp, "Text JAM2", 4);
+                break;
+                
+            case 3:
+                SetDrMd(rp, JAM1);
+                RectFill(rp, x, y, x + 30, y + 30);
+                break;
+                
+            case 4:
+                SetDrMd(rp, JAM1);
+                Move(rp, x, y);
+                Draw(rp, x + 30, y);
+                Draw(rp, x + 30, y + 30);
+                Draw(rp, x, y + 30);
+                Draw(rp, x, y);
+                break;
+                
+            case 5:
+                SetDrMd(rp, JAM1);
+                DrawEllipse(rp, x, y, 30, 30);
+                break;
 
-	    case 6:
-	    	InitArea(&area_info, area_buffer, MAX_VECTORS);
-		AreaEllipse(rp, x, y, 30, 30);
-	    	AreaEnd(rp);
-		break;
-	}
+            case 6:
+                InitArea(&area_info, area_buffer, MAX_VECTORS);
+                AreaEllipse(rp, x, y, 30, 30);
+                AreaEnd(rp);
+                break;
+        }
 
         getevents();
-	
-	if (Keys[KC_SPACE])
-	{
-	    Keys[KC_SPACE] = 0;
-	    mode = (mode + 1) % 7;
-	    hue = 0;
-	}
-	
-	x += dx; if ((x > SCREENWIDTH) || (x < 0)) dx = -dx;
-	y += dy; if ((y > SCREENHEIGHT) || (y < 0)) dy = -dy;
-	
-	hue += 0x1000000;
-	
+        
+        if (Keys[KC_SPACE])
+        {
+            Keys[KC_SPACE] = 0;
+            mode = (mode + 1) % 7;
+            hue = 0;
+        }
+        
+        x += dx; if ((x > SCREENWIDTH) || (x < 0)) dx = -dx;
+        y += dy; if ((y > SCREENHEIGHT) || (y < 0)) dy = -dy;
+        
+        hue += 0x1000000;
+        
     } /* while(!Keys[KC_ESC]) */
 
     if (raster != NULL)

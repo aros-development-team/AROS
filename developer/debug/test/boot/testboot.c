@@ -25,23 +25,23 @@ void __startup start(struct TagItem *tags)
     kprintf("Taglist at 0x%p:\n", tags);
     for (; tags->ti_Tag != TAG_DONE; tags++)
     {
-    	kprintf("0x%08lX 0x%p\n", tags->ti_Tag, tags->ti_Data);
+        kprintf("0x%08lX 0x%p\n", tags->ti_Tag, tags->ti_Data);
 
-    	switch (tags->ti_Tag)
-    	{
-    	case KRN_VBEModeInfo:
-	    vbemode = (struct vbe_mode *)tags->ti_Data;
-	    break;
-	}
+        switch (tags->ti_Tag)
+        {
+        case KRN_VBEModeInfo:
+            vbemode = (struct vbe_mode *)tags->ti_Data;
+            break;
+        }
     }
 
     if (vbemode)
     {
-    	kprintf("VBE mode structure at 0x%p\n", vbemode);
-    	kprintf("Mode : %dx%dx%d\n", vbemode->x_resolution, vbemode->y_resolution, vbemode->bits_per_pixel);
-    	kprintf("Base : 0x%08X\n", vbemode->phys_base);
-    	kprintf("Pitch: %u\n", vbemode->bytes_per_scanline);
-    	kprintf("Flags: 0x%08X\n", vbemode->mode_attributes);
+        kprintf("VBE mode structure at 0x%p\n", vbemode);
+        kprintf("Mode : %dx%dx%d\n", vbemode->x_resolution, vbemode->y_resolution, vbemode->bits_per_pixel);
+        kprintf("Base : 0x%08X\n", vbemode->phys_base);
+        kprintf("Pitch: %u\n", vbemode->bytes_per_scanline);
+        kprintf("Flags: 0x%08X\n", vbemode->mode_attributes);
     }
 
     for (;;);

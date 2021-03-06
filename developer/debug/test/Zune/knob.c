@@ -34,57 +34,57 @@ int main(void)
     MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
 
     app = ApplicationObject,
-   	SubWindow, wnd = WindowObject,
-    	    MUIA_Window_Title, "knob",
-	    MUIA_Window_Activate, TRUE,
+        SubWindow, wnd = WindowObject,
+            MUIA_Window_Title, "knob",
+            MUIA_Window_Activate, TRUE,
 
-    	    WindowContents, VGroup,
-    	    	Child, slider = SliderObject,
-		    MUIA_CycleChain, TRUE,
-		    MUIA_Numeric_Min, 10,
-		    MUIA_Numeric_Max, 144,
-		    End,
-		Child, HGroup,
-		    Child, HVSpace,
-		    Child, knob = KnobObject,
-		    	MUIA_CycleChain, TRUE,
-		    	MUIA_Numeric_Min, 10,
-		    	MUIA_Numeric_Max, 144,
-		    	End,
-		    Child, HVSpace,
-		    End,
-		End,
-	    End,
-	End;
+            WindowContents, VGroup,
+                Child, slider = SliderObject,
+                    MUIA_CycleChain, TRUE,
+                    MUIA_Numeric_Min, 10,
+                    MUIA_Numeric_Max, 144,
+                    End,
+                Child, HGroup,
+                    Child, HVSpace,
+                    Child, knob = KnobObject,
+                        MUIA_CycleChain, TRUE,
+                        MUIA_Numeric_Min, 10,
+                        MUIA_Numeric_Max, 144,
+                        End,
+                    Child, HVSpace,
+                    End,
+                End,
+            End,
+        End;
 
     if (app)
     {
-	ULONG sigs = 0;
+        ULONG sigs = 0;
 
-	DoMethod
+        DoMethod
         (
-            wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 
+            wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app,
             2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
         );
-	
-	DoMethod(slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-	    	 (IPTR)knob, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
-	DoMethod(knob, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-	    	 (IPTR)slider, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
+        
+        DoMethod(slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+                 (IPTR)knob, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
+        DoMethod(knob, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+                 (IPTR)slider, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
 
-	set(wnd,MUIA_Window_Open,TRUE);
+        set(wnd,MUIA_Window_Open,TRUE);
 
-	while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
-	{
-	    if (sigs)
-	    {
-		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-		if (sigs & SIGBREAKF_CTRL_C) break;
-		if (sigs & SIGBREAKF_CTRL_D) break;
-	    }
-	}
+        while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
+        {
+            if (sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+                if (sigs & SIGBREAKF_CTRL_D) break;
+            }
+        }
 
-	MUI_DisposeObject(app);
+        MUI_DisposeObject(app);
     }
 
     CloseLibrary(MUIMasterBase);
