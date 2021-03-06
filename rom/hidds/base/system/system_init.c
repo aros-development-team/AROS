@@ -31,14 +31,14 @@ static int System_Init(LIBBASETYPEPTR LIBBASE)
     OOP_Object *hwroot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
     if (hwroot)
     {
-	csd->hwAttrBase = OOP_ObtainAttrBase(IID_HW);
-	csd->hwMethodBase = OOP_GetMethodID(IID_HW, 0);
+        csd->hwAttrBase = OOP_ObtainAttrBase(IID_HW);
+        csd->hwMethodBase = OOP_GetMethodID(IID_HW, 0);
 
-	if (HW_AddDriver(hwroot, csd->oopclass, NULL))
-	{
-	    D(bug("[HiddSystem] %s: initialised\n", __PRETTY_FUNCTION__));
-	    return TRUE;
-	}
+        if (HW_AddDriver(hwroot, csd->oopclass, NULL))
+        {
+            D(bug("[HiddSystem] %s: initialised\n", __PRETTY_FUNCTION__));
+            return TRUE;
+        }
     }
     D(bug("[HiddSystem] %s: failed\n", __PRETTY_FUNCTION__));
     

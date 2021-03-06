@@ -32,16 +32,16 @@ AROS_INTH1(static ResetHandler, struct EFIBase *, EFIBase)
     switch (action)
     {
     case SD_ACTION_COLDREBOOT:
-    	efiAction = EFI_Reset_Cold;
-    	break;
+        efiAction = EFI_Reset_Cold;
+        break;
 
     case SD_ACTION_POWEROFF:
-    	efiAction = EFI_Reset_Shutdown;
-    	break;
+        efiAction = EFI_Reset_Shutdown;
+        break;
 
     default:
-    	/* Unknown action */
-    	return FALSE;
+        /* Unknown action */
+        return FALSE;
     }
 
     /* Use EFI runtime services to perform the action */
@@ -63,15 +63,15 @@ static int efi_Init(struct EFIBase *EFIBase)
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
     {
-    	return FALSE;
+        return FALSE;
     }
 
     tag = LibFindTagItem(KRN_EFISystemTable, KrnGetBootInfo());
     if (!tag)
     {
-    	D(bug("[EFI] No EFI system table from the bootstrap!\n"));
+        D(bug("[EFI] No EFI system table from the bootstrap!\n"));
 
-    	return FALSE;
+        return FALSE;
     }
 
     EFIBase->System = (struct EFI_SystemTable *)tag->ti_Data;
@@ -79,14 +79,14 @@ static int efi_Init(struct EFIBase *EFIBase)
 
     if (!CheckTable(&EFIBase->System->Hdr, EFI_SYSTEM_TABLE_SIGNATURE))
     {
-    	D(bug("[EFI] System table broken\n"));
-    	return FALSE;
+        D(bug("[EFI] System table broken\n"));
+        return FALSE;
     }
 
     if (CheckTable(&EFIBase->System->RuntimeServices->Hdr, EFI_RUNTIME_SERVICES_SIGNATURE))
     {
-    	EFIBase->Runtime = EFIBase->System->RuntimeServices;
-    	D(bug("[EFI] Valid runtime services table at 0x%p\n", EFIBase->Runtime));
+        EFIBase->Runtime = EFIBase->System->RuntimeServices;
+        D(bug("[EFI] Valid runtime services table at 0x%p\n", EFIBase->Runtime));
 
         /* Install EFI reset/power-off mechanism */
         EFIBase->reset_handler.is_Node.ln_Pri = -56;

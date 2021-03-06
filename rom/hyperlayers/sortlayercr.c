@@ -48,27 +48,27 @@ AROS_UFP2(BOOL, (*CompFunc),
 #include <proto/layers.h>
 #include "layers_intern.h"
 
-	AROS_LH3(void, SortLayerCR,
+        AROS_LH3(void, SortLayerCR,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, layer, A0),
-	AROS_LHA(LONG          , dx,    D0),
-	AROS_LHA(LONG          , dy,    D1),
+        AROS_LHA(struct Layer *, layer, A0),
+        AROS_LHA(LONG          , dx,    D0),
+        AROS_LHA(LONG          , dy,    D1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 35, Layers)
+        struct LayersBase *, LayersBase, 35, Layers)
 
 /*  FUNCTION
-	Sorts the list of ClipRects associated with the given layer.
-	The direction of the sort is indicated by dx and dy.
+        Sorts the list of ClipRects associated with the given layer.
+        The direction of the sort is indicated by dx and dy.
 
     INPUTS
-	layer -- the layer with the ClipRect list to sort
-	dx -- the left/right ordering
-	dy -- the up/down ordering
+        layer -- the layer with the ClipRect list to sort
+        dx -- the left/right ordering
+        dy -- the up/down ordering
 
     RESULT
-	The layer->ClipRect pointer now points to a sorted list of ClipRects.
+        The layer->ClipRect pointer now points to a sorted list of ClipRects.
 
     NOTES
 
@@ -79,11 +79,11 @@ AROS_UFP2(BOOL, (*CompFunc),
     SEE ALSO
 
     INTERNALS
-	Implemented as an InsertSort on a singly linked list.
+        Implemented as an InsertSort on a singly linked list.
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
@@ -93,32 +93,32 @@ AROS_UFP2(BOOL, (*CompFunc),
 
     if(dy > 0)
     {
-	_SLCR_SortClipRects(layer, _SLCR_CompFunc_Down);
+        _SLCR_SortClipRects(layer, _SLCR_CompFunc_Down);
 
-	if (dx > 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_RightDown);
-	else
-	if (dx < 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_LeftDown);
+        if (dx > 0)
+            _SLCR_SortClipRects(layer, _SLCR_CompFunc_RightDown);
+        else
+        if (dx < 0)
+            _SLCR_SortClipRects(layer, _SLCR_CompFunc_LeftDown);
     }
     else
     if (dy < 0)
     {
-	_SLCR_SortClipRects(layer, _SLCR_CompFunc_Up);
+        _SLCR_SortClipRects(layer, _SLCR_CompFunc_Up);
 
-	if (dx > 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_RightUp);
-	else
-	if (dx < 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_LeftUp);
+        if (dx > 0)
+            _SLCR_SortClipRects(layer, _SLCR_CompFunc_RightUp);
+        else
+        if (dx < 0)
+            _SLCR_SortClipRects(layer, _SLCR_CompFunc_LeftUp);
     }
     else
     {
-	if (dx > 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Right);
-	else
-	if (dx < 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Left);
+        if (dx > 0)
+            _SLCR_SortClipRects(layer, _SLCR_CompFunc_Right);
+        else
+        if (dx < 0)
+            _SLCR_SortClipRects(layer, _SLCR_CompFunc_Left);
     }
 
     AROS_LIBFUNC_EXIT
@@ -213,32 +213,32 @@ AROS_UFP2(BOOL, (*CompFunc),
     struct ClipRect *FirstCR;
 
     if(!layer->ClipRect)
-	return;
+        return;
 
     FirstCR = NULL;
 
     for(CurCR = layer->ClipRect, CRptr = &FirstCR; ; )
     {
-	NextCR = CurCR->Next;
-	CurCR->Next = *CRptr;
-	*CRptr = CurCR;
+        NextCR = CurCR->Next;
+        CurCR->Next = *CRptr;
+        *CRptr = CurCR;
 
-	if(!NextCR)
-	    break;
+        if(!NextCR)
+            break;
 
-	for(CurCR = NextCR, CRptr = &FirstCR; ; )
-	{
-	    if(!(NextCR = *CRptr))
-		break;
+        for(CurCR = NextCR, CRptr = &FirstCR; ; )
+        {
+            if(!(NextCR = *CRptr))
+                break;
 
-	    if(AROS_UFC2(BOOL, (*CompFunc),
+            if(AROS_UFC2(BOOL, (*CompFunc),
                          AROS_UFCA(struct ClipRect *, CurCR, A0),
                          AROS_UFCA(struct ClipRect *, NextCR, A1)))
 
-		break;
+                break;
 
-	    CRptr = &NextCR->Next;
-	}
+            CRptr = &NextCR->Next;
+        }
     }
 
     layer->ClipRect = FirstCR;

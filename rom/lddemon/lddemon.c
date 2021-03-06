@@ -65,17 +65,17 @@ AROS_LD1(void, RemLibrary,
 
 struct LDDMsg
 {
-    struct Message 	 ldd_Msg;	    /* Message link */
-    struct MsgPort	 ldd_ReplyPort;	    /* Callers ReplyPort */
+    struct Message       ldd_Msg;           /* Message link */
+    struct MsgPort       ldd_ReplyPort;     /* Callers ReplyPort */
 
-    STRPTR		 ldd_Name;	    /* Name of thing to load */
+    STRPTR               ldd_Name;          /* Name of thing to load */
 
-    STRPTR		 ldd_BaseDir;	    /* Base directory to load from */
+    STRPTR               ldd_BaseDir;       /* Base directory to load from */
 #if INIT_IN_LDDEMON_CONTEXT
-    struct Library	 *ldd_Return;	    /* Loaded and initialized Library */
-    struct List		 *ldd_List;	    /* List to add */
+    struct Library       *ldd_Return;       /* Loaded and initialized Library */
+    struct List          *ldd_List;         /* List to add */
 #else
-    BPTR		 ldd_Return;	    /* Loaded seglist */
+    BPTR                 ldd_Return;        /* Loaded seglist */
 #endif
 };
 
@@ -134,7 +134,7 @@ static BPTR LDLoad(struct IntLDDemonBase *ldBase, struct Process *caller, STRPTR
                 me->pr_HomeDir = caller->pr_HomeDir;
                 seglist = LDLoadSeg(name);
                 me->pr_HomeDir = oldHomeDir;
-            }	
+            }
         }
     }
     else if (!strstr(name, ":")) {
@@ -192,7 +192,7 @@ static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, s
     struct Node *node = NULL;
     BPTR seg = seglist;
 
-    /* we may not have any extension fields */ 
+    /* we may not have any extension fields */
     const int sizeofresident = offsetof(struct Resident, rt_Init) + sizeof(APTR);
 
     while(seg)
@@ -205,7 +205,7 @@ static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, s
                 size -= sizeof(BPTR) + sizeof(ULONG);
             size >= sizeofresident;
             size -= 2, addr += 2
-//	    size -= AROS_PTRALIGN, addr += AROS_PTRALIGN
+//          size -= AROS_PTRALIGN, addr += AROS_PTRALIGN
         )
         {
             struct Resident *res = (struct Resident *)addr;
@@ -213,7 +213,7 @@ static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, s
                 && res->rt_MatchTag == res )
             {
                 D(bug("[LDInit] Calling InitResident(%p) on %s\n", res, res->rt_Name));
-                /* AOS compatibility requirement. 
+                /* AOS compatibility requirement.
                  * Ramlib ignores InitResident() return code.
                  * After InitResident() it checks if lib/dev appeared
                  * in Exec lib/dev list via FindName().
@@ -318,7 +318,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
     struct IntLDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
 #if defined(__AROSEXEC_SMP__)
     void *ExecLockBase = ldBase->dl_ExecLockRes;
-#endif    
+#endif
     struct Library *DOSBase = ldBase->dl_DOSBase;
     STRPTR stripped_libname = FilePart(libname);
     struct Library *tmplib;
@@ -448,7 +448,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
 
     if (!tmplib)
     {
-        /* 
+        /*
          * The library is not on disk so check Resident List.
          * It can be there if it is resident but was flushed.
          */
@@ -835,9 +835,9 @@ static ULONG LDDemon_Init(struct IntLDDemonBase *ldBase)
 #endif
 
     /*
-     *	Grab the semaphore ourself. The reason for this is that it will
-     *	cause all other tasks to wait until we have finished initialising
-     *	before they try and open something.
+     *  Grab the semaphore ourself. The reason for this is that it will
+     *  cause all other tasks to wait until we have finished initialising
+     *  before they try and open something.
      */
     ObtainSemaphore(&ldBase->dl_LDObjectsListSigSem);
 

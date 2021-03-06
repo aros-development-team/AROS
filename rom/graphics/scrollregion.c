@@ -14,29 +14,29 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH4(BOOL, ScrollRegion,
+        AROS_LH4(BOOL, ScrollRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region *,    region, A0),
-	AROS_LHA(struct Rectangle *, rect,   A1),
-	AROS_LHA(WORD,               dx,     D0),
-	AROS_LHA(WORD,               dy,     D1),
+        AROS_LHA(struct Region *,    region, A0),
+        AROS_LHA(struct Rectangle *, rect,   A1),
+        AROS_LHA(WORD,               dx,     D0),
+        AROS_LHA(WORD,               dy,     D1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 185, Graphics)
+        struct GfxBase *, GfxBase, 185, Graphics)
 
 /*  FUNCTION
-	Scroll the rectangles in the region by the amount of pixels specified, within the
+        Scroll the rectangles in the region by the amount of pixels specified, within the
         specified rectangle.
 
     INPUTS
-	region - pointer to a region structure
-	rect   - pointer to the rectangle within which the scrolling has to happen.
+        region - pointer to a region structure
+        rect   - pointer to the rectangle within which the scrolling has to happen.
                  If NULL, the region's bounds are used instead.
-	dx, dy - the amount of pixels by which to scroll the region. Negative values mean
+        dx, dy - the amount of pixels by which to scroll the region. Negative values mean
                  respectively left and up, positive values mean right and down.
     RESULT
-	TRUE if the operation succeeded, FALSE otherwise.
+        TRUE if the operation succeeded, FALSE otherwise.
 
     NOTES
        This function doesn't exist in AmigaOS
@@ -46,7 +46,7 @@
     BUGS
 
     SEE ALSO
-	NewRegion()
+        NewRegion()
 
     INTERNALS
 
@@ -71,7 +71,7 @@
         cutRegion = AndRectRegionND(region, rect);
         if (cutRegion)
         {
-	    struct Region *newRegion;
+            struct Region *newRegion;
 
             TranslateRect(Bounds(cutRegion), dx, dy);
 
@@ -82,7 +82,7 @@
             {
                 if (OrRegionRegion(cutRegion, newRegion))
                 {
-		    _SwapRegions(region, newRegion);
+                    _SwapRegions(region, newRegion);
 
                     res = TRUE;
                 }

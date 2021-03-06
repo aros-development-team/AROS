@@ -14,13 +14,13 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, ClearEOL,
+        AROS_LH1(void, ClearEOL,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 7, Graphics)
+        struct GfxBase *, GfxBase, 7, Graphics)
 
 /*  FUNCTION
 
@@ -58,7 +58,7 @@
 
     SetDrMd(rp, oldDrMd ^ INVERSVID);
     RectFill(rp, rp->cp_x, rp->cp_y - rp->TxBaseline, width - 1,
-	     rp->cp_y - rp->TxBaseline + rp->Font->tf_YSize - 1);
+             rp->cp_y - rp->TxBaseline + rp->Font->tf_YSize - 1);
     SetDrMd(rp, oldDrMd);
 
     AROS_LIBFUNC_EXIT

@@ -18,35 +18,35 @@
 #endif
 
 /*    NAME */
-	#include <proto/exec.h>
+        #include <proto/exec.h>
 
-	AROS_LH1(void, ObtainSemaphore,
+        AROS_LH1(void, ObtainSemaphore,
 
 /*    SYNOPSIS */
-	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
+        AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
 /*    LOCATION */
-	struct ExecBase *, SysBase, 94, Exec)
+        struct ExecBase *, SysBase, 94, Exec)
 
 /*    FUNCTION
-	Obtain an exclusive lock on a semaphore. If the semaphore is already
-	in use by another task this function will wait until the semaphore
-	becomes free.
+        Obtain an exclusive lock on a semaphore. If the semaphore is already
+        in use by another task this function will wait until the semaphore
+        becomes free.
 
     INPUTS
-	sigSem - Pointer to semaphore structure
+        sigSem - Pointer to semaphore structure
 
     RESULT
 
     NOTES
-	This function preserves all registers.
+        This function preserves all registers.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	ReleaseSemaphore()
+        ReleaseSemaphore()
 
     INTERNALS
 

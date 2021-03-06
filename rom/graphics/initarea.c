@@ -12,29 +12,29 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH3(void, InitArea,
+        AROS_LH3(void, InitArea,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct AreaInfo *, areainfo  , A0),
-	AROS_LHA(void *           , buffer    , A1),
-	AROS_LHA(WORD             , maxvectors, D0),
+        AROS_LHA(struct AreaInfo *, areainfo  , A0),
+        AROS_LHA(void *           , buffer    , A1),
+        AROS_LHA(WORD             , maxvectors, D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 47, Graphics)
+        struct GfxBase *, GfxBase, 47, Graphics)
 
 /*  FUNCTION
-	This function initializes an areainfo structure. The size of the
-	passed pointer to the buffer should be 5 times as large as
-	maxvectors (in bytes).
+        This function initializes an areainfo structure. The size of the
+        passed pointer to the buffer should be 5 times as large as
+        maxvectors (in bytes).
 
     INPUTS
-	areainfo   - pointer to AreaInfo structure to be initialized
-	buffer     - pointer to free memory to collect vectors
-	maxvectors - maximum number of vectors the buffer can hold.
+        areainfo   - pointer to AreaInfo structure to be initialized
+        buffer     - pointer to free memory to collect vectors
+        maxvectors - maximum number of vectors the buffer can hold.
 
     RESULT
-	Areainfo structure initialized such that it will hold the vectors
-	created by AreaMove, AreaDraw and AreaEllipse (AreaCircle).
+        Areainfo structure initialized such that it will hold the vectors
+        created by AreaMove, AreaDraw and AreaEllipse (AreaCircle).
 
     NOTES
 
@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	AreaDraw(), AreaMove(), AreaEllipse(), AreaCircle(), graphics/rastport.h
+        AreaDraw(), AreaMove(), AreaEllipse(), AreaCircle(), graphics/rastport.h
 
     INTERNALS
 

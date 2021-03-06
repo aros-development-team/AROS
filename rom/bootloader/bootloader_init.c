@@ -35,7 +35,7 @@ static void GetCmdLine(char *Kernel_Args, struct BootLoaderBase *BootLoaderBase)
 
     /* Sanity check against broken bootstraps */
     if (!Kernel_Args)
-    	return;
+        return;
 
     D(bug("[BootLdr] Kernel arguments: %s\n", Kernel_Args));
 
@@ -44,45 +44,45 @@ static void GetCmdLine(char *Kernel_Args, struct BootLoaderBase *BootLoaderBase)
     buff = AllocMem(len, MEMF_ANY);
     if (buff)
     {
-	CopyMem(Kernel_Args, buff, len);
+        CopyMem(Kernel_Args, buff, len);
 
-	while (1)
-	{
-	    struct Node *node;
+        while (1)
+        {
+            struct Node *node;
 
-	    /* remove any leading spaces */
-	    buff = stpblk(buff);
+            /* remove any leading spaces */
+            buff = stpblk(buff);
 
-	    /* Hit end of line (trailing spaces) ? Exit if so. */
-	    if (!*buff)
-	    	break;
+            /* Hit end of line (trailing spaces) ? Exit if so. */
+            if (!*buff)
+                break;
 
-	    /* Allocate node and insert into list */
-	    node = AllocMem(sizeof(struct Node),MEMF_ANY);
-	    if (!node)
-	    	break;
+            /* Allocate node and insert into list */
+            node = AllocMem(sizeof(struct Node),MEMF_ANY);
+            if (!node)
+                break;
 
-	    node->ln_Name = buff;
-	    AddTail(&(BootLoaderBase->Args), node);
+            node->ln_Name = buff;
+            AddTail(&(BootLoaderBase->Args), node);
 
-	    /* We now have the command line */
-	    BootLoaderBase->Flags |= BL_FLAGS_CMDLINE;
+            /* We now have the command line */
+            BootLoaderBase->Flags |= BL_FLAGS_CMDLINE;
 
-	    /* Skip up to a next space or EOL */
-	    while (*buff != '\0' && !isspace(*buff))
-		buff++;
+            /* Skip up to a next space or EOL */
+            while (*buff != '\0' && !isspace(*buff))
+                buff++;
 
-	    /* End of line ? If yes, we are done. */
-	    if (!*buff)
-	    {
-		D(bug("[BootLdr] Init: Last argument %s\n", node->ln_Name));
-		break;
-	    }
+            /* End of line ? If yes, we are done. */
+            if (!*buff)
+            {
+                D(bug("[BootLdr] Init: Last argument %s\n", node->ln_Name));
+                break;
+            }
 
-	    /* Split the line and repeat */
-	    *buff++ = 0;
-	    D(bug("[BootLdr] Init: Argument %s\n", node->ln_Name));
-	}
+            /* Split the line and repeat */
+            *buff++ = 0;
+            D(bug("[BootLdr] Init: Argument %s\n", node->ln_Name));
+        }
     }
 }
 
@@ -95,8 +95,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     struct Library *UtilityBase;
     struct vbe_mode *vmi = NULL;
     struct vbe_controller *vci = NULL;
-    UWORD vmode = 0x00FF;	/* Dummy mode number by default		  */
-    UBYTE palette = 0;		/* By default we don't know palette width */
+    UWORD vmode = 0x00FF;       /* Dummy mode number by default           */
+    UBYTE palette = 0;          /* By default we don't know palette width */
 
     D(bug("[BootLdr] Init\n"));
 
@@ -112,32 +112,32 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     
     while ((tag = NextTagItem(&bootinfo)))
     {
-    	switch (tag->ti_Tag)
-    	{
-    	case KRN_BootLoader:
-    	    BootLoaderBase->LdrName = (STRPTR)tag->ti_Data;
-    	    break;
+        switch (tag->ti_Tag)
+        {
+        case KRN_BootLoader:
+            BootLoaderBase->LdrName = (STRPTR)tag->ti_Data;
+            break;
 
-    	case KRN_CmdLine:
-    	    GetCmdLine((char *)tag->ti_Data, BootLoaderBase);
-    	    break;
+        case KRN_CmdLine:
+            GetCmdLine((char *)tag->ti_Data, BootLoaderBase);
+            break;
 
-    	case KRN_VBEModeInfo:
-    	    vmi = (struct vbe_mode *)tag->ti_Data;
-    	    break;
+        case KRN_VBEModeInfo:
+            vmi = (struct vbe_mode *)tag->ti_Data;
+            break;
 
-	case KRN_VBEControllerInfo:
-	    vci = (struct vbe_controller *)tag->ti_Data;
-	    break;
+        case KRN_VBEControllerInfo:
+            vci = (struct vbe_controller *)tag->ti_Data;
+            break;
 
-	case KRN_VBEMode:
-	    vmode = tag->ti_Data;
-	    break;
+        case KRN_VBEMode:
+            vmode = tag->ti_Data;
+            break;
 
-	case KRN_VBEPaletteWidth:
-	    palette = tag->ti_Data;
-	    break;
-	}
+        case KRN_VBEPaletteWidth:
+            palette = tag->ti_Data;
+            break;
+        }
     }
 
     /* Get VESA mode information */
@@ -146,65 +146,65 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     /* We support only graphical framebuffers here. */
     if (vmi && (vmi->mode_attributes & VM_GRAPHICS))
     {
-	BootLoaderBase->Vesa = AllocMem(sizeof(struct VesaInfo), MEMF_CLEAR);
+        BootLoaderBase->Vesa = AllocMem(sizeof(struct VesaInfo), MEMF_CLEAR);
 
-	if (BootLoaderBase->Vesa)
-	{
-	    /* If we don't have VBEControllerInfo, this is VBE v2 mode structure */
-	    unsigned short version = 0x0200;
+        if (BootLoaderBase->Vesa)
+        {
+            /* If we don't have VBEControllerInfo, this is VBE v2 mode structure */
+            unsigned short version = 0x0200;
 
-	    if (vci)
-	    {
-		D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08X\n", vci->capabilities));
+            if (vci)
+            {
+                D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08X\n", vci->capabilities));
 
-	    	version = vci->version;
-		/* FrameBufferSize is in KBytes! */
-	    	BootLoaderBase->Vesa->FrameBufferSize = vci->total_memory << 6;
-	    }
+                version = vci->version;
+                /* FrameBufferSize is in KBytes! */
+                BootLoaderBase->Vesa->FrameBufferSize = vci->total_memory << 6;
+            }
 
-	    BootLoaderBase->Vesa->XSize            = vmi->x_resolution;
-	    BootLoaderBase->Vesa->YSize            = vmi->y_resolution;
-	    BootLoaderBase->Vesa->BitsPerPixel     = vmi->bits_per_pixel;
-	    BootLoaderBase->Vesa->ModeNumber	   = vmode;
-	    BootLoaderBase->Vesa->PaletteWidth	   = palette;
+            BootLoaderBase->Vesa->XSize            = vmi->x_resolution;
+            BootLoaderBase->Vesa->YSize            = vmi->y_resolution;
+            BootLoaderBase->Vesa->BitsPerPixel     = vmi->bits_per_pixel;
+            BootLoaderBase->Vesa->ModeNumber       = vmode;
+            BootLoaderBase->Vesa->PaletteWidth     = palette;
 
-	    /* Framebuffer pointer is only valid for VBE v2 and better */
-	    if (version >= 0x0200)
-		BootLoaderBase->Vesa->FrameBuffer = (APTR)(IPTR)vmi->phys_base;
+            /* Framebuffer pointer is only valid for VBE v2 and better */
+            if (version >= 0x0200)
+                BootLoaderBase->Vesa->FrameBuffer = (APTR)(IPTR)vmi->phys_base;
 
-	    if (version >= 0x0300)
-	    {
-	    	/* VBE v3 structures specify linear framebuffer parameters in separate fields */
-	    	BootLoaderBase->Vesa->BytesPerLine     = vmi->linear_bytes_per_scanline;
-	    	BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->linear_red_mask_size-1]<<vmi->linear_red_field_position;
-	    	BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->linear_blue_mask_size-1]<<vmi->linear_blue_field_position;
-	    	BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->linear_green_mask_size-1]<<vmi->linear_green_field_position;
-	    	BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->linear_reserved_mask_size-1]<<vmi->linear_reserved_field_position;
-	    	BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->linear_red_field_position - vmi->linear_red_mask_size;
-	    	BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->linear_blue_field_position - vmi->linear_blue_mask_size;
-	    	BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->linear_green_field_position - vmi->linear_green_mask_size;
-	    	BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->linear_reserved_field_position - vmi->linear_reserved_mask_size;
-	    }
-	    else
-	    {
-	    	BootLoaderBase->Vesa->BytesPerLine     = vmi->bytes_per_scanline;
-	    	BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->red_mask_size-1]<<vmi->red_field_position;
-	    	BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->blue_mask_size-1]<<vmi->blue_field_position;
-	    	BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->green_mask_size-1]<<vmi->green_field_position;
-	    	BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->reserved_mask_size-1]<<vmi->reserved_field_position;
-	    	BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->red_field_position - vmi->red_mask_size;
-	    	BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->blue_field_position - vmi->blue_mask_size;
-	    	BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->green_field_position - vmi->green_mask_size;
-	    	BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->reserved_field_position - vmi->reserved_mask_size;
-	    }
+            if (version >= 0x0300)
+            {
+                /* VBE v3 structures specify linear framebuffer parameters in separate fields */
+                BootLoaderBase->Vesa->BytesPerLine     = vmi->linear_bytes_per_scanline;
+                BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->linear_red_mask_size-1]<<vmi->linear_red_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->linear_blue_mask_size-1]<<vmi->linear_blue_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->linear_green_mask_size-1]<<vmi->linear_green_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->linear_reserved_mask_size-1]<<vmi->linear_reserved_field_position;
+                BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->linear_red_field_position - vmi->linear_red_mask_size;
+                BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->linear_blue_field_position - vmi->linear_blue_mask_size;
+                BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->linear_green_field_position - vmi->linear_green_mask_size;
+                BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->linear_reserved_field_position - vmi->linear_reserved_mask_size;
+            }
+            else
+            {
+                BootLoaderBase->Vesa->BytesPerLine     = vmi->bytes_per_scanline;
+                BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->red_mask_size-1]<<vmi->red_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->blue_mask_size-1]<<vmi->blue_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->green_mask_size-1]<<vmi->green_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->reserved_mask_size-1]<<vmi->reserved_field_position;
+                BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->red_field_position - vmi->red_mask_size;
+                BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->blue_field_position - vmi->blue_mask_size;
+                BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->green_field_position - vmi->green_mask_size;
+                BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->reserved_field_position - vmi->reserved_mask_size;
+            }
 
-	    D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n", BootLoaderBase->Vesa->ModeNumber,
-		  BootLoaderBase->Vesa->XSize, BootLoaderBase->Vesa->YSize, BootLoaderBase->Vesa->BitsPerPixel));
-	    D(bug("[BootLdr] Init: Vesa FB at 0x%p size %d kB\n", BootLoaderBase->Vesa->FrameBuffer,
-		  BootLoaderBase->Vesa->FrameBufferSize));
-	    D(bug("[BootLdr] Init: Vesa mode palette width: %d\n", BootLoaderBase->Vesa->PaletteWidth));
-	    D(bug("[BootLdr] Init: Vesa mode direct color flags %02X\n", vmi->direct_color_mode_info));
-	}
+            D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n", BootLoaderBase->Vesa->ModeNumber,
+                  BootLoaderBase->Vesa->XSize, BootLoaderBase->Vesa->YSize, BootLoaderBase->Vesa->BitsPerPixel));
+            D(bug("[BootLdr] Init: Vesa FB at 0x%p size %d kB\n", BootLoaderBase->Vesa->FrameBuffer,
+                  BootLoaderBase->Vesa->FrameBufferSize));
+            D(bug("[BootLdr] Init: Vesa mode palette width: %d\n", BootLoaderBase->Vesa->PaletteWidth));
+            D(bug("[BootLdr] Init: Vesa mode direct color flags %02X\n", vmi->direct_color_mode_info));
+        }
     }
 
     CloseLibrary(UtilityBase);

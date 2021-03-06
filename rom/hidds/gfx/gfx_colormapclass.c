@@ -55,40 +55,40 @@ OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct colormap_data    *data;
-    ULONG   	    	    numentries;
-    struct TagItem  	    *tag, *tstate;
-    BOOL    	    	    ok = FALSE;
+    ULONG                   numentries;
+    struct TagItem          *tag, *tstate;
+    BOOL                    ok = FALSE;
     
     EnterFunc(bug("ColorMap::New()\n"));
     numentries = 256;
     
     for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); )
     {
-    	ULONG idx;
-	
-    	if (IS_COLORMAP_ATTR(tag->ti_Tag, idx))
-	{
-	    switch (idx)
-	    {
-	    	case aoHidd_ColorMap_NumEntries:
-		    numentries = tag->ti_Data;
-		    if (numentries > 256 || numentries < 0)
-		    {
-		     	D(bug("!!! ILLEGAL value for NumEntries in ColorMap::New()\n"));
-		    }
-		    break;
-		   
-	    } /* switch */
-	
-	}
+        ULONG idx;
+        
+        if (IS_COLORMAP_ATTR(tag->ti_Tag, idx))
+        {
+            switch (idx)
+            {
+                case aoHidd_ColorMap_NumEntries:
+                    numentries = tag->ti_Data;
+                    if (numentries > 256 || numentries < 0)
+                    {
+                        D(bug("!!! ILLEGAL value for NumEntries in ColorMap::New()\n"));
+                    }
+                    break;
+                   
+            } /* switch */
+        
+        }
     }
     
     /* Create the object */
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
-    	return NULL;
-	
+        return NULL;
+        
     data = OOP_INST_DATA(cl, o);
     
     data->clut.entries = numentries;
@@ -96,16 +96,16 @@ OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data->clut.colors = AllocMem(sizeof (HIDDT_Color) * data->clut.entries, MEMF_CLEAR);
     if (NULL != data->clut.colors)
     {
-	ok = TRUE;
+        ok = TRUE;
     }
     
     if (!ok)
     {
-    	ULONG dispose_mid;
-	
-	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
-	o = NULL;
+        ULONG dispose_mid;
+        
+        dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+        OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+        o = NULL;
     }
     
     ReturnPtr("ColorMap::New", OOP_Object *, o);
@@ -121,12 +121,12 @@ VOID CM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
    
     if (NULL != data->clut.colors)
     {
-	FreeMem(data->clut.colors, data->clut.entries * sizeof (HIDDT_Color));
+        FreeMem(data->clut.colors, data->clut.entries * sizeof (HIDDT_Color));
 
-	/* To detect use of already freed mem */
-	data->clut.colors = (void *)0xDEADBEEF;
+        /* To detect use of already freed mem */
+        data->clut.colors = (void *)0xDEADBEEF;
     }
-	     
+             
     OOP_DoSuperMethod(cl, o, msg);
     
     return;
@@ -137,28 +137,28 @@ VOID CM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID CM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct colormap_data *data;
-    ULONG   	    	idx;
+    ULONG               idx;
     
     EnterFunc(bug("ColorMap::Get()\n"));
     data = OOP_INST_DATA(cl, o);
     
     if (IS_COLORMAP_ATTR(msg->attrID, idx))
     {
-    	switch (idx)
-	{
-	    case aoHidd_ColorMap_NumEntries:
-	    	*msg->storage = data->clut.entries;
-		break;
-	    
-	    default:
-	    	D(bug("!!! Unknown colormap attr in ColorMap::Get()\n"));
-		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
-	}
+        switch (idx)
+        {
+            case aoHidd_ColorMap_NumEntries:
+                *msg->storage = data->clut.entries;
+                break;
+            
+            default:
+                D(bug("!!! Unknown colormap attr in ColorMap::Get()\n"));
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                break;
+        }
     }
     else
     {
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
     ReturnVoid("ColorMap::Get");
@@ -232,13 +232,13 @@ static inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelForma
 *****************************************************************************************/
 
 BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
-				  struct pHidd_ColorMap_SetColors *msg)
+                                  struct pHidd_ColorMap_SetColors *msg)
 {
     struct colormap_data    *data;
-    ULONG   	    	    numnew;
-    ULONG   	    	    i, col_idx;
-    HIDDT_Color     	    *col;
-    HIDDT_PixelFormat 	    *pf;
+    ULONG                   numnew;
+    ULONG                   i, col_idx;
+    HIDDT_Color             *col;
+    HIDDT_PixelFormat       *pf;
 
     data = OOP_INST_DATA(cl, o);
 
@@ -248,19 +248,19 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
     
     if (numnew > data->clut.entries)
     {
-     	/* Reallocate and copy */
-	HIDDT_Color *newmap;
-	
-	newmap = AllocMem(sizeof (*newmap) * numnew, MEMF_ANY);
-	if (NULL == newmap)
-	    return FALSE;
-	    
-	memcpy(newmap, data->clut.colors, sizeof (*newmap) * data->clut.entries);
-	
-	FreeMem(data->clut.colors, sizeof (*newmap) * data->clut.entries);
-	
-	data->clut.colors  = newmap;
-	data->clut.entries = numnew;
+        /* Reallocate and copy */
+        HIDDT_Color *newmap;
+        
+        newmap = AllocMem(sizeof (*newmap) * numnew, MEMF_ANY);
+        if (NULL == newmap)
+            return FALSE;
+            
+        memcpy(newmap, data->clut.colors, sizeof (*newmap) * data->clut.entries);
+        
+        FreeMem(data->clut.colors, sizeof (*newmap) * data->clut.entries);
+        
+        data->clut.colors  = newmap;
+        data->clut.entries = numnew;
     }
      
     /* Insert the new colors */
@@ -269,31 +269,31 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
     pf = (HIDDT_PixelFormat *)msg->pixFmt;
     
     for (i = 0; i < msg->numColors; i ++)
-    {    
-    	/* Set the color */
-	*col = msg->colors[i];
-	
-	/* Set the pixval using the supplied pixel format */
-	if (IS_TRUECOLOR(pf))
-	{
-	    /* Map the color to a HIDDT_Pixel */
-	    msg->colors[i].pixval = col->pixval = int_map_truecolor(col, pf);
-	
-	}
-	else
-	{
-	    msg->colors[i].pixval = col->pixval = (HIDDT_Pixel)col_idx;
-	}
-	
-/*	bug("ColMap::SetColors: col %d (%x %x %x %x) mapped to %x\n"
-		, col_idx
-		, col->red, col->green, col->blue, col->alpha
-		, msg->colors[i].pixval);
-	
+    {
+        /* Set the color */
+        *col = msg->colors[i];
+        
+        /* Set the pixval using the supplied pixel format */
+        if (IS_TRUECOLOR(pf))
+        {
+            /* Map the color to a HIDDT_Pixel */
+            msg->colors[i].pixval = col->pixval = int_map_truecolor(col, pf);
+        
+        }
+        else
+        {
+            msg->colors[i].pixval = col->pixval = (HIDDT_Pixel)col_idx;
+        }
+        
+/*      bug("ColMap::SetColors: col %d (%x %x %x %x) mapped to %x\n"
+                , col_idx
+                , col->red, col->green, col->blue, col->alpha
+                , msg->colors[i].pixval);
+        
 */
 
-	col ++;
-	col_idx ++;
+        col ++;
+        col_idx ++;
     }
     
     return TRUE;
@@ -333,7 +333,7 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
 *****************************************************************************************/
 
 HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
-					struct pHidd_ColorMap_GetPixel *msg)
+                                        struct pHidd_ColorMap_GetPixel *msg)
 {
     struct colormap_data *data;
      
@@ -341,13 +341,13 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
      
     if (msg->pixelNo < 0 || msg->pixelNo >= data->clut.entries)
     {
-	D(bug("!!! Invalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
-		msg->pixelNo,
-		data->clut.entries));
-	
-    	// *((ULONG *)0) = 0;
-	return (HIDDT_Pixel)-1;
-	
+        D(bug("!!! Invalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+                msg->pixelNo,
+                data->clut.entries));
+        
+        // *((ULONG *)0) = 0;
+        return (HIDDT_Pixel)-1;
+        
     }
     
     return data->clut.colors[msg->pixelNo].pixval;
@@ -388,7 +388,7 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 *****************************************************************************************/
 
 BOOL CM__Hidd_ColorMap__GetColor(OOP_Class *cl, OOP_Object *o,
-				 struct pHidd_ColorMap_GetColor *msg)
+                                 struct pHidd_ColorMap_GetColor *msg)
 {
     struct colormap_data *data;
     
@@ -396,11 +396,11 @@ BOOL CM__Hidd_ColorMap__GetColor(OOP_Class *cl, OOP_Object *o,
     
     if (msg->colorNo < 0 || msg->colorNo >= data->clut.entries)
     {
-	D(bug("!!! Invalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
-		msg->colorNo,
-		data->clut.entries));
-		
-	return FALSE;
+        D(bug("!!! Invalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+                msg->colorNo,
+                data->clut.entries));
+                
+        return FALSE;
     }
     
     *msg->colorReturn = data->clut.colors[msg->colorNo];

@@ -24,19 +24,19 @@
 
     NAME */
 
-	AROS_LH1(void, AddResource,
+        AROS_LH1(void, AddResource,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, resource, A1),
+        AROS_LHA(APTR, resource, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 81, Exec)
+        struct ExecBase *, SysBase, 81, Exec)
 
 /*  FUNCTION
-	Adds a given resource to the system's resource list.
+        Adds a given resource to the system's resource list.
 
     INPUTS
-	resource - Pointer to a ready for use resource.
+        resource - Pointer to a ready for use resource.
 
     RESULT
 
@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	RemResource(), OpenResource()
+        RemResource(), OpenResource()
 
     INTERNALS
 
@@ -85,24 +85,24 @@
         KernelBase = resource;
         DINIT("Post-kernel init");
 
-	/* If there's no MMU support, PageSize will stay zero */
-	KrnStatMemory(0, KMS_PageSize, &PrivExecBase(SysBase)->PageSize, TAG_DONE);
+        /* If there's no MMU support, PageSize will stay zero */
+        KrnStatMemory(0, KMS_PageSize, &PrivExecBase(SysBase)->PageSize, TAG_DONE);
 
-	/*
-	 * On MMU-less hardware kernel.resource will report zero page size.
-	 * In this case we use MEMCHUNK_TOTAL as allocation granularity.
-	 * This is because our Allocate() relies on the fact that all chunks
-	 * are at least MemChunk-aligned, otherwise we end up in
-	 * "Corrupt memory list" alert.
-	 */
-	if (!PrivExecBase(SysBase)->PageSize)
-	    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
+        /*
+         * On MMU-less hardware kernel.resource will report zero page size.
+         * In this case we use MEMCHUNK_TOTAL as allocation granularity.
+         * This is because our Allocate() relies on the fact that all chunks
+         * are at least MemChunk-aligned, otherwise we end up in
+         * "Corrupt memory list" alert.
+         */
+        if (!PrivExecBase(SysBase)->PageSize)
+            PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
-	DINIT("Memory page size: %lu", PrivExecBase(SysBase)->PageSize);
+        DINIT("Memory page size: %lu", PrivExecBase(SysBase)->PageSize);
 
-	/* We print the notice here because kprintf() works only after KernelBase is set up */
-	if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
-	    RawDoFmt("[exec] Mungwall enabled\n", NULL, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+        /* We print the notice here because kprintf() works only after KernelBase is set up */
+        if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
+            RawDoFmt("[exec] Mungwall enabled\n", NULL, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
     }
 
     AROS_LIBFUNC_EXIT

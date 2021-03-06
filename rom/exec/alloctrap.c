@@ -10,13 +10,13 @@
 
     NAME */
 
-	AROS_LH1(LONG, AllocTrap,
+        AROS_LH1(LONG, AllocTrap,
 
 /*  SYNOPSIS */
-	AROS_LHA(long, trapNum, D0),
+        AROS_LHA(long, trapNum, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 57, Exec)
+        struct ExecBase *, SysBase, 57, Exec)
 
 /*  FUNCTION
 
@@ -53,9 +53,9 @@
         /*
         * To get the last nonzero bit in a number I use a&~a+1:
         * Given a number that ends with a row of zeros  xxxx1000
-        * I first toggle all bits in that number	 XXXX0111
+        * I first toggle all bits in that number         XXXX0111
         * then add 1 to toggle all but the last 0 again XXXX1000
-        * and AND this with the original number	 00001000
+        * and AND this with the original number  00001000
         *
         * And since ~a+1=-a I can use a&-a instead.
         *

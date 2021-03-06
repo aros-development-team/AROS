@@ -19,14 +19,14 @@
     NAME */
 #include <proto/task.h>
 
-	AROS_LH2(BOOL, AddTaskHook,
+        AROS_LH2(BOOL, AddTaskHook,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Hook *, tHook, A0),
-	AROS_LHA(ULONG, thType, D0),
+        AROS_LHA(struct Hook *, tHook, A0),
+        AROS_LHA(ULONG, thType, D0),
 
 /*  LOCATION */
-	struct TaskResBase *, TaskResBase, 10, Task)
+        struct TaskResBase *, TaskResBase, 10, Task)
 
 /*  FUNCTION
 

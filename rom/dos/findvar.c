@@ -96,7 +96,7 @@
         var = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
         
         ForeachNode(&pr->pr_LocalVars, var)
-        { 
+        {
             LONG res;
             
             if (var->lv_Node.ln_Type == type)

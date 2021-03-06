@@ -14,14 +14,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(BOOL, secKill,
+        AROS_LH1(BOOL, secKill,
 
 /*  SYNOPSIS */
-	/* (task) */
-	AROS_LHA(struct Task *, task, D0),
+        /* (task) */
+        AROS_LHA(struct Task *, task, D0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 30, Security)
+        struct SecurityBase *, secBase, 30, Security)
 
 /*  FUNCTION
 
@@ -56,7 +56,7 @@
     D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
     xowner = GetTaskExtOwner(secBase, FindTask(NULL));
-    if (task && (task != FindTask(NULL)) && 
+    if (task && (task != FindTask(NULL)) &&
                     (task != (struct Task*)secBase->Server) &&
              (secGetRelationshipA(xowner, 0, NULL) & secRelF_ROOT_UID)) {
         Disable();

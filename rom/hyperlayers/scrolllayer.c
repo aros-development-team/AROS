@@ -16,23 +16,23 @@
 
     NAME */
 
-	AROS_LH4(void, ScrollLayer,
+        AROS_LH4(void, ScrollLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG          , dummy, A0),
-	AROS_LHA(struct Layer *, l    , A1),
-	AROS_LHA(LONG          , dx   , D0),
-	AROS_LHA(LONG          , dy   , D1),
+        AROS_LHA(LONG          , dummy, A0),
+        AROS_LHA(struct Layer *, l    , A1),
+        AROS_LHA(LONG          , dx   , D0),
+        AROS_LHA(LONG          , dy   , D1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 12, Layers)
+        struct LayersBase *, LayersBase, 12, Layers)
 
 /*  FUNCTION
         For superbitmapped layers this function work like this:.
         It updates the contents of the superbitmap with what is
         visible on the display, repositions the superbitmap
         and redraws the display.
-        For non-superbitmapped layers, all subsequent (x,y) pairs 
+        For non-superbitmapped layers, all subsequent (x,y) pairs
         are adjusted by the scroll(x,y) value in the layer. If
         ScrollLayer(-10,-3) was called and (0,0) is drawn it will
         finally end up at coordinates (10, 3) in the superbitmap.
@@ -57,8 +57,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
@@ -89,7 +89,7 @@
   
   UnlockLayer(l);
 
-  return;  
+  return;
 
   AROS_LIBFUNC_EXIT
 } /* ScrollLayer */

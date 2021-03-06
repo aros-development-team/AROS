@@ -31,19 +31,19 @@ static const struct ViewPort defaultViewPort =
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, InitVPort,
+        AROS_LH1(void, InitVPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, vp, A0),
+        AROS_LHA(struct ViewPort *, vp, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 34, Graphics)
+        struct GfxBase *, GfxBase, 34, Graphics)
 
 /*  FUNCTION
-	Initializes a ViewPort structure.
+        Initializes a ViewPort structure.
 
     INPUTS
-	view - The View to initialize.
+        view - The View to initialize.
 
     RESULT
         ViewPort is initialized to it`s default values - doesn't care about

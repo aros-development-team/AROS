@@ -28,29 +28,29 @@
         struct GfxBase *, GfxBase, 71, Graphics)
 
 /*  FUNCTION
-	Move sprite to a new position on the screen. Coordinates
-	are specified relatively to given ViewPort, or relatively
-	to the entire View (physical display) if the ViewPort is NULL.
+        Move sprite to a new position on the screen. Coordinates
+        are specified relatively to given ViewPort, or relatively
+        to the entire View (physical display) if the ViewPort is NULL.
 
-	This function works also with extended sprites, since
-	struct SimpleSprite is a part of struct ExtSprite.
+        This function works also with extended sprites, since
+        struct SimpleSprite is a part of struct ExtSprite.
 
     INPUTS
-	vp     - a ViewPort for relative sprite positioning or NULL
-	sprite - a pointer to a sprite descriptor structure
-	x      - a new X coordinate
-	y      - a new Y coordinate
+        vp     - a ViewPort for relative sprite positioning or NULL
+        sprite - a pointer to a sprite descriptor structure
+        x      - a new X coordinate
+        y      - a new Y coordinate
 
     RESULT
-	None.
+        None.
 
     NOTES
-	AROS currently supports only one sprite #0 for mouse pointer.
-	Other sprite numbers are ignored by this function.
+        AROS currently supports only one sprite #0 for mouse pointer.
+        Other sprite numbers are ignored by this function.
 
-	ViewPort is also used in order to specify the physical display.
-	If it's not specified, Amiga(tm) chipset display is assumed.
-	This is available only on Amiga(tm) architecture.
+        ViewPort is also used in order to specify the physical display.
+        If it's not specified, Amiga(tm) chipset display is assumed.
+        This is available only on Amiga(tm) architecture.
 
     EXAMPLE
 
@@ -72,12 +72,12 @@
     if (vp) {
         sprite->x = x + vp->DxOffset;
         sprite->y = y + vp->DyOffset;
-	mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
+        mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
     } else {
         sprite->x = x;
-	sprite->y = y;
-	/* TODO: obviously this should use a chipset driver. Currently we have no one. */
-	return;
+        sprite->y = y;
+        /* TODO: obviously this should use a chipset driver. Currently we have no one. */
+        return;
     }
 
     if (sprite->num) /* We have only sprite #0 for the mouse cursor */

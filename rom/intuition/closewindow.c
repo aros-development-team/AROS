@@ -26,12 +26,12 @@
 /******************************************************************************/
 
 #define MUST_UNLOCK_SCREEN(window,screen) (((GetPrivScreen(screen)->pubScrNode != NULL) && \
-    	    	    	    	    	   (window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE)
+                                           (window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE)
 
 struct CloseWindowActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
+    struct Window           *window;
 };
 
 VOID int_closewindow(struct CloseWindowActionMsg *msg,
@@ -78,12 +78,12 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     AROS_LIBFUNC_INIT
 
     struct CloseWindowActionMsg  msg;
-    struct MsgPort          	*userport;
+    struct MsgPort              *userport;
 #if USE_IDCMPUPDATE_MESSAGECACHE
-    struct IntuiMessage     	*messagecache;
+    struct IntuiMessage         *messagecache;
 #endif
-    struct Screen           	*screen;
-    BOOL            	    	 do_unlockscreen;
+    struct Screen               *screen;
+    BOOL                         do_unlockscreen;
 
     DEBUG_CLOSEWINDOW(dprintf("CloseWindow: Window 0x%lx\n", window));
 
@@ -116,7 +116,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         while (cw)
         {
             struct Window * _cw;
-	    
+            
             _cw = cw->nextchild;
             CloseWindow(cw);
             cw = _cw;
@@ -193,7 +193,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         DEBUG_CLOSEWINDOW(dprintf("CloseWindow: Reply UserPort Msgs\n"));
         while ((im = (struct IntuiMessage *) GetMsg (userport)))
         {
-	    im->IDCMPWindow = 0;
+            im->IDCMPWindow = 0;
             im->Code = 0;
             im->Qualifier = 0;
             ReplyMsg ((struct Message *)im);
@@ -244,7 +244,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         switch(gadget->GadgetType & GTYP_GTYPEMASK)
         {
             case GTYP_CUSTOMGADGET:
-        	{
+                {
                     struct gpGoInactive gpgi;
 
                     gpgi.MethodID   = GM_GOINACTIVE;
@@ -255,21 +255,21 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
                     if (iihd->ActiveSysGadget)
                     {
-                	gadget = iihd->ActiveSysGadget;
-                	iihd->ActiveSysGadget = NULL;
+                        gadget = iihd->ActiveSysGadget;
+                        iihd->ActiveSysGadget = NULL;
 
-                	if (IS_BOOPSI_GADGET(gadget))
-                	{
+                        if (IS_BOOPSI_GADGET(gadget))
+                        {
                             Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
-                	}
+                        }
                     }
-        	}
-        	break;
+                }
+                break;
 
             case GTYP_STRGADGET:
             case GTYP_BOOLGADGET:
-        	gadget->Flags &= ~GFLG_SELECTED;
-        	break;
+                gadget->Flags &= ~GFLG_SELECTED;
+                break;
         }
 
         gadget->Activation &= ~GACT_ACTIVEGADGET;
@@ -321,20 +321,20 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     if (!IntuitionBase->ActiveWindow)
     {
         /* If so, we need to find out which window to make
-	   active now. We first check whether we have a "parent",
-	   which is a window that was open before the one we're closing. */
+           active now. We first check whether we have a "parent",
+           which is a window that was open before the one we're closing. */
         if (window->Parent)
             ActivateWindow (window->Parent);
-	else
-	/* Otherwise, we find out which was the latest one, and activate it.
-	   It's debatable whether this is the best policy, but this is how
-	   AmigaOS(TM) does it.  */
-	if ((win2 = window->Descendant))
-	{
-	    for (;win2->Descendant; win2 = win2->Descendant);
+        else
+        /* Otherwise, we find out which was the latest one, and activate it.
+           It's debatable whether this is the best policy, but this is how
+           AmigaOS(TM) does it.  */
+        if ((win2 = window->Descendant))
+        {
+            for (;win2->Descendant; win2 = win2->Descendant);
                 ActivateWindow (win2);
-	}
-    }       
+        }
+    }
 
     /* Make sure the Screen's window list is still valid */
 
@@ -396,7 +396,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     if (window->FirstRequest)
     {
         struct Requester *r = window->FirstRequest;
-	
+        
         while (r)
         {
             if (r->ReqLayer) DeleteLayer(0,r->ReqLayer);
@@ -428,11 +428,11 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     /* Push ExitScreen Message to the Screensdecoration Class */
     struct wdpExitWindow       wemsg;
 
-    wemsg.MethodID 	       = WDM_EXITWINDOW;
+    wemsg.MethodID             = WDM_EXITWINDOW;
     wemsg.wdp_UserBuffer       = ((struct IntWindow *)window)->DecorUserBuffer;
     wemsg.wdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
-    DoMethodA(((struct IntScreen *)(screen))->WinDecorObj, (Msg)&wemsg);	
+    DoMethodA(((struct IntScreen *)(screen))->WinDecorObj, (Msg)&wemsg);
 
     if (((struct IntWindow *)window)->DecorUserBuffer)
     {

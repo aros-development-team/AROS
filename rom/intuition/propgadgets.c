@@ -33,37 +33,37 @@ extern IPTR HookEntry();
 BOOL isonborder(struct Gadget *gadget,struct Window *window);
 
 static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct DrawInfo *dri,
-    	    	    	    	 struct Rectangle *rect, struct Rectangle *proprect,
-				 struct Rectangle *knobrect, struct PropInfo *pi,
-				 struct RastPort *rp, BOOL onborder,
-				 struct IntuitionBase *IntuitionBase)
+                                 struct Rectangle *rect, struct Rectangle *proprect,
+                                 struct Rectangle *knobrect, struct PropInfo *pi,
+                                 struct RastPort *rp, BOOL onborder,
+                                 struct IntuitionBase *IntuitionBase)
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
 
     if (onborder)
     {
-	struct wdpDrawBorderPropBack msg;
+        struct wdpDrawBorderPropBack msg;
 
-	msg.MethodID 	    = WDM_DRAW_BORDERPROPBACK;
+        msg.MethodID        = WDM_DRAW_BORDERPROPBACK;
 
-	msg.wdp_Window      = win;
+        msg.wdp_Window      = win;
     msg.wdp_TrueColor   = (((struct IntScreen *)win->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
     msg.wdp_UserBuffer  = ((struct IntWindow *)win)->DecorUserBuffer;
 
-	msg.wdp_RPort 	    = rp;
-	msg.wdp_Gadget      = gad;
-	msg.wdp_RenderRect  = rect;
-	msg.wdp_PropRect    = proprect;
-	msg.wdp_KnobRect    = knobrect;
-	msg.wdp_Flags 	    = 0;
-	msg.wdp_Dri         = dri;
+        msg.wdp_RPort       = rp;
+        msg.wdp_Gadget      = gad;
+        msg.wdp_RenderRect  = rect;
+        msg.wdp_PropRect    = proprect;
+        msg.wdp_KnobRect    = knobrect;
+        msg.wdp_Flags       = 0;
+        msg.wdp_Dri         = dri;
 
-	DoMethodA(((struct IntScreen *)(win->WScreen))->WinDecorObj, (Msg)&msg);	
+        DoMethodA(((struct IntScreen *)(win->WScreen))->WinDecorObj, (Msg)&msg);
     }
     else
     {
-	static CONST UWORD pattern[] = {0x5555,0xAAAA};
+        static CONST UWORD pattern[] = {0x5555,0xAAAA};
         struct Hook *dhook = NULL;
 
         if ((gad->Flags & GFLG_EXTENDED) != 0)
@@ -77,19 +77,19 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
 
             struct wdpDrawBorderPropBack msg;
 
-            msg.MethodID 	    = WDM_DRAW_BORDERPROPBACK;
+            msg.MethodID            = WDM_DRAW_BORDERPROPBACK;
 
             msg.wdp_Window      = win;
             msg.wdp_TrueColor   = (((struct IntScreen *)win->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-            msg.wdp_RPort 	    = rp;
+            msg.wdp_RPort           = rp;
             msg.wdp_Gadget      = gad;
             msg.wdp_RenderRect  = rect;
             msg.wdp_PropRect    = proprect;
             msg.wdp_KnobRect    = knobrect;
-            msg.wdp_Flags 	    = 0;
+            msg.wdp_Flags           = 0;
             msg.wdp_Dri         = dri;
 
-            CallHookPkt(dhook, (Object *) gad, (Msg)&msg);	
+            CallHookPkt(dhook, (Object *) gad, (Msg)&msg);
         }
         else
         {
@@ -101,7 +101,7 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
                 SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
                 SetBPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
 
-                RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY); 
+                RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
                 SetAfPt(rp, NULL, 0);
             }
             else
@@ -115,11 +115,11 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
 
 
 VOID HandlePropSelectDown(struct Gadget *gadget, struct Window *w, struct Requester *req,
-    	    	    	  UWORD mouse_x, UWORD mouse_y, struct IntuitionBase *IntuitionBase)
+                          UWORD mouse_x, UWORD mouse_y, struct IntuitionBase *IntuitionBase)
 {
-    struct BBox     	 knob;
-    struct PropInfo 	*pi;
-    UWORD   	    	 dx, dy, flags;
+    struct BBox          knob;
+    struct PropInfo     *pi;
+    UWORD                dx, dy, flags;
 
     pi = (struct PropInfo *)gadget->SpecialInfo;
 
@@ -194,9 +194,9 @@ VOID HandlePropSelectDown(struct Gadget *gadget, struct Window *w, struct Reques
     }
 
     if (mouse_x >= knob.Left &&
-    	mouse_y >= knob.Top &&
-	mouse_x < knob.Left + knob.Width &&
-	mouse_y < knob.Top + knob.Height)
+        mouse_y >= knob.Top &&
+        mouse_x < knob.Left + knob.Width &&
+        mouse_y < knob.Top + knob.Height)
     {
         flags |= KNOBHIT;
     }
@@ -215,7 +215,7 @@ VOID HandlePropSelectDown(struct Gadget *gadget, struct Window *w, struct Reques
 }
 
 VOID HandlePropSelectUp(struct Gadget *gadget, struct Window *w,
-    	    	    	struct Requester *req, struct IntuitionBase *IntuitionBase)
+                        struct Requester *req, struct IntuitionBase *IntuitionBase)
 {
     struct PropInfo * pi;
 
@@ -242,7 +242,7 @@ VOID HandlePropSelectUp(struct Gadget *gadget, struct Window *w,
 }
 
 VOID HandlePropMouseMove(struct Gadget *gadget, struct Window *w,struct Requester *req,
-    	    	    	 LONG dx, LONG dy, struct IntuitionBase *IntuitionBase)
+                         LONG dx, LONG dy, struct IntuitionBase *IntuitionBase)
 {
     struct BBox      knob;
     struct PropInfo *pi;
@@ -327,7 +327,7 @@ VOID HandlePropMouseMove(struct Gadget *gadget, struct Window *w,struct Requeste
 int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 {
     struct PropInfo *pi;
-    WORD    	     x, y;
+    WORD             x, y;
     
     pi = (struct PropInfo *)propGadget->SpecialInfo;
 
@@ -417,12 +417,12 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * req, struct IntuitionBase * IntuitionBase)
 {
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct PropInfo 	*pi;
-    struct DrawInfo  	*dri;
-    struct GadgetInfo 	 gi;
-    struct RastPort 	*rp = 0;
-    struct BBox     	 bbox, kbox;
-    BOOL    	    	 onborder;
+    struct PropInfo     *pi;
+    struct DrawInfo     *dri;
+    struct GadgetInfo    gi;
+    struct RastPort     *rp = 0;
+    struct BBox          bbox, kbox;
+    BOOL                 onborder;
 
     D(bug("RefreshPropGadget(gad=%p, win=%s, req=%p)\n", gadget, window->Title, req));
 
@@ -460,7 +460,7 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                                  bbox.Left + bbox.Width - 1,
                                  bbox.Top + bbox.Height - 1,
                                  IntuitionBase);
-				 
+                                 
                         bbox.Left ++; bbox.Top ++;
                         bbox.Width -= 2; bbox.Height -= 2;
                     }
@@ -493,14 +493,14 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 
                     {
                         struct Rectangle tmprect;
-			
+                        
                         tmprect.MinX = bbox.Left;
                         tmprect.MaxX = bbox.Left + bbox.Width - 1;
                         tmprect.MinY = bbox.Top;
                         tmprect.MaxY = bbox.Top + bbox.Height - 1;
 
                         RenderPropBackground(gadget, window, dri, &tmprect, &tmprect, NULL,
-			    	    	     pi, rp, onborder, IntuitionBase);
+                                             pi, rp, onborder, IntuitionBase);
                     }
                 } // if (CalcKnob
                 break;
@@ -535,12 +535,12 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 {
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    struct DrawInfo  	*dri;
-    struct RastPort 	*rp;
-    struct PropInfo 	*pi;
+    struct DrawInfo     *dri;
+    struct RastPort     *rp;
+    struct PropInfo     *pi;
     struct GadgetInfo    gi;
-    UWORD   	    	 flags;
-    BOOL    	    	 onborder;
+    UWORD                flags;
+    BOOL                 onborder;
 
     D(bug("RefresPropGadgetKnob(flags=%d, clear=%p, knob = %p, win=%s)\n",
           flags, clear, knob, window->Title));
@@ -559,45 +559,45 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
         if ((rp = ObtainGIRPort(&gi)))
         {
             struct BBox      bbox;
-    	    struct Rectangle brect;
-	    struct Rectangle krect;
-	    
+            struct Rectangle brect;
+            struct Rectangle krect;
+            
             CalcBBox (window, req, gadget, &bbox);
-	    
-	    if ((bbox.Width < 1) || (bbox.Height < 1))
-	    {
+            
+            if ((bbox.Width < 1) || (bbox.Height < 1))
+            {
                 ReleaseGIRPort(rp);
-    	        FreeScreenDrawInfo(window->WScreen, (struct DrawInfo *)dri);
+                FreeScreenDrawInfo(window->WScreen, (struct DrawInfo *)dri);
 
-	    	return;
-	    }
-	    
-    	    brect.MinX = bbox.Left;
-	    brect.MinY = bbox.Top;
-	    brect.MaxX = bbox.Left + bbox.Width - 1;
-	    brect.MaxY = bbox.Top + bbox.Height - 1;
-	    
-    	    krect.MinX = knob->Left;
-	    krect.MinY = knob->Top;
-	    krect.MaxX = knob->Left + knob->Width - 1;
-	    krect.MaxY = knob->Top + knob->Height - 1;
-	    
+                return;
+            }
+            
+            brect.MinX = bbox.Left;
+            brect.MinY = bbox.Top;
+            brect.MaxX = bbox.Left + bbox.Width - 1;
+            brect.MaxY = bbox.Top + bbox.Height - 1;
+            
+            krect.MinX = knob->Left;
+            krect.MinY = knob->Top;
+            krect.MaxX = knob->Left + knob->Width - 1;
+            krect.MaxY = knob->Top + knob->Height - 1;
+            
             SetDrMd (rp, JAM2);
 
             if (clear)
             {
                 struct Rectangle a, b, clearrects[4];
-                WORD         	 i, nrects;
+                WORD             i, nrects;
 
-    	    #if (!(PROP_RENDER_OPTIMIZATION))
+            #if (!(PROP_RENDER_OPTIMIZATION))
                 if (!(flags & PROPBORDERLESS))
                 {
                     clear->Left ++; clear->Top ++;
                     clear->Width -= 2; clear->Height -= 2;
                 }
-    	    #endif
+            #endif
 
-    	    #if 0
+            #if 0
                 D(bug("RefresPropGadgetKnob: clear Left %d Top %d Width %d Height %d\n",
                       clear->Left,
                       clear->Top,
@@ -609,8 +609,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                       knob->Top,
                       knob->Width,
                       knob->Height));
-    	    #endif
-	    
+            #endif
+            
                 a.MinX = clear->Left;
                 a.MinY = clear->Top;
                 a.MaxX = clear->Left + clear->Width - 1;
@@ -620,8 +620,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                 b.MinY = knob->Top;
                 b.MaxX = knob->Left + knob->Width - 1;
                 b.MaxY = knob->Top + knob->Height - 1;
-		
-    	    #if 0
+                
+            #if 0
                 D(bug("RefresPropGadgetKnob: a MinX %d MinY %d MaxX %d MaxY %d\n",
                       a.MinX,
                       a.MinY,
@@ -633,13 +633,13 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                       b.MinY,
                       b.MaxX,
                       b.MaxY));
-    	    #endif
-	    
+            #endif
+            
                 nrects = SubtractRectFromRect(&a, &b, clearrects);
 
                 D(bug("RefresPropGadgetKnob: nrects %d\n",
                       nrects));
-    	    #if 0
+            #if 0
                 D(bug("RefresPropGadgetKnob: clearrects[0] MinX %d MinY %d MaxX %d MaxY %d\n",
                       clearrects[0].MinX,
                       clearrects[0].MinY,
@@ -663,7 +663,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                       clearrects[3].MinY,
                       clearrects[3].MaxX,
                       clearrects[3].MaxY));
-    	    #endif
+            #endif
 
                 /*kprintf("\n=== oldknob = %d,%d-%d,%d   newknob = %d,%d-%d,%d\n",
                     a.MinX,
@@ -678,7 +678,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                 for(i = 0; i < nrects; i++)
                 {
                     RenderPropBackground(gadget, window, dri, &clearrects[i], &brect, &krect,
-		    	    	    	 pi, rp, onborder, IntuitionBase);
+                                         pi, rp, onborder, IntuitionBase);
                 }
 
             } /* if (clear) */
@@ -696,21 +696,21 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                 if (onborder)
                 {
                     struct wdpDrawBorderPropKnob msg;
-                    struct Rectangle 	    	 knobrect;
+                    struct Rectangle             knobrect;
                     knobrect.MinX = knob->Left;
                     knobrect.MinY = knob->Top;
                     knobrect.MaxX = knob->Left + knob->Width - 1;
                     knobrect.MaxY = knob->Top + knob->Height - 1;
 
-                    msg.MethodID    	= WDM_DRAW_BORDERPROPKNOB;
+                    msg.MethodID        = WDM_DRAW_BORDERPROPKNOB;
                     msg.wdp_TrueColor   = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
                     msg.wdp_UserBuffer  = ((struct IntWindow *)window)->DecorUserBuffer;
-                    msg.wdp_Window  	= window;
-                    msg.wdp_RPort   	= rp;
-                    msg.wdp_Gadget  	= gadget;
+                    msg.wdp_Window      = window;
+                    msg.wdp_RPort       = rp;
+                    msg.wdp_Gadget      = gadget;
                     msg.wdp_RenderRect  = &knobrect;
-                    msg.wdp_PropRect	= &brect;
-                    msg.wdp_Flags   	= hit ? WDF_DBPK_HIT : 0;
+                    msg.wdp_PropRect    = &brect;
+                    msg.wdp_Flags       = hit ? WDF_DBPK_HIT : 0;
                     msg.wdp_Dri         = dri;
 
                     DoMethodA(((struct IntScreen *)(window->WScreen))->WinDecorObj, (Msg)&msg);
@@ -729,19 +729,19 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                     }
                     if (dhook) {
                         struct wdpDrawBorderPropKnob msg;
-                        struct Rectangle 	    	 knobrect;
+                        struct Rectangle                 knobrect;
                         knobrect.MinX = knob->Left;
                         knobrect.MinY = knob->Top;
                         knobrect.MaxX = knob->Left + knob->Width - 1;
                         knobrect.MaxY = knob->Top + knob->Height - 1;
-                        msg.MethodID    	= WDM_DRAW_BORDERPROPKNOB;
+                        msg.MethodID            = WDM_DRAW_BORDERPROPKNOB;
                         msg.wdp_TrueColor   = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-                        msg.wdp_Window  	= window;
-                        msg.wdp_RPort   	= rp;
-                        msg.wdp_Gadget  	= gadget;
+                        msg.wdp_Window          = window;
+                        msg.wdp_RPort           = rp;
+                        msg.wdp_Gadget          = gadget;
                         msg.wdp_RenderRect  = &knobrect;
-                        msg.wdp_PropRect	= &brect;
-                        msg.wdp_Flags   	= hit ? WDF_DBPK_HIT : 0;
+                        msg.wdp_PropRect        = &brect;
+                        msg.wdp_Flags           = hit ? WDF_DBPK_HIT : 0;
                         msg.wdp_Dri         = dri;
 
                         CallHookPkt(dhook, (Object *) gadget, (Msg)&msg);
@@ -835,24 +835,24 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
             {
                 struct Image *image = (struct Image *)gadget->GadgetRender;
 
-    	    #if 0 /* CHECKME */
+            #if 0 /* CHECKME */
                 if (knob->Top + image->Height <= bbox.Top + bbox.Height &&
                     knob->Left + image->Width <= bbox.Left + bbox.Width)
-	    #endif
+            #endif
                 {
-		#if 1
+                #if 1
                     image->LeftEdge = knob->Left - bbox.Left;
                     image->TopEdge = knob->Top - bbox.Top;
-    	    	    // image->Width = knob->Width;
-		    // image->Height = knob->Height;
-		    
+                    // image->Width = knob->Width;
+                    // image->Height = knob->Height;
+                    
                     DrawImageState(rp,
                                    image,
                                    bbox.Left,
                                    bbox.Top,
                                    IDS_NORMAL,
                                    (struct DrawInfo *)dri);
-		#else
+                #else
                     image->LeftEdge = 0;
                     image->TopEdge = 0;
 
@@ -862,14 +862,14 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                                    knob->Top,
                                    IDS_NORMAL,
                                    (struct DrawInfo *)dri);
-		#endif
+                #endif
                 }
             }
 
             if (gadget->Flags & GFLG_DISABLED)
             {
                 RenderDisabledPattern(rp, (struct DrawInfo *)dri,
-		    	    	      brect.MinX, brect.MinY,
+                                      brect.MinX, brect.MinY,
                                       brect.MaxX, brect.MaxY, IntuitionBase);
             }
 

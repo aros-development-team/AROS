@@ -15,20 +15,20 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH8(struct Layer *, CreateBehindLayerTagList,
+        AROS_LH8(struct Layer *, CreateBehindLayerTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
-	AROS_LHA(struct BitMap     *, bm, A1),
+        AROS_LHA(struct Layer_Info *, li, A0),
+        AROS_LHA(struct BitMap     *, bm, A1),
         AROS_LHA(LONG               , x0, D0),
         AROS_LHA(LONG               , y0, D1),
         AROS_LHA(LONG               , x1, D2),
         AROS_LHA(LONG               , y1, D3),
-	AROS_LHA(LONG               , flags, D4),
-	AROS_LHA(struct TagItem    *, tagList, A2),
+        AROS_LHA(LONG               , flags, D4),
+        AROS_LHA(struct TagItem    *, tagList, A2),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 40, Layers)
+        struct LayersBase *, LayersBase, 40, Layers)
 
 /*  FUNCTION
         Create a new layer according to the tags given.
@@ -36,11 +36,11 @@
     INPUTS
         li    - pointer to LayerInfo structure
         bm    - pointer to common bitmap
-	x0,y0 - upper left corner of the layer (in parent layer coords)
-	x1,y1 - lower right corner of the layer (in parent layer coords)
+        x0,y0 - upper left corner of the layer (in parent layer coords)
+        x1,y1 - lower right corner of the layer (in parent layer coords)
         flags - choose the type of layer by setting some flags
                 If it is to be a super bitmap layer then the tag
-                LA_SUPERBITMAP must be provided along with a 
+                LA_SUPERBITMAP must be provided along with a
                 pointer to a valid super bitmap.
         tagList - a list of tags that specify the properties of the
                   layer. The following tags are currently supported:
@@ -69,7 +69,7 @@
                   
         
     RESULT
-        Pointer to the newly created layer. NULL if layer could not be 
+        Pointer to the newly created layer. NULL if layer could not be
         created (Probably out of memory).
         If the layer is created successfully you must not free its shape.
         The shape is automatically freed when the layer is deleted.

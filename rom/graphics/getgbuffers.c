@@ -12,58 +12,58 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH3(BOOL, GetGBuffers,
+        AROS_LH3(BOOL, GetGBuffers,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct AnimOb *, anOb, A0),
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(BOOL , db, D0),
+        AROS_LHA(struct AnimOb *, anOb, A0),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(BOOL , db, D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 28, Graphics)
+        struct GfxBase *, GfxBase, 28, Graphics)
 
 /*  FUNCTION
-	Allocate all buffers for a whole AnimOb. In particular this
-	means getting buffers for
-	- BorderLine
-	- SaveBuffer
-	- CollMask
-	- ImageShadow (points to the same memory as CollMask does)
-	- if db is set to TRUE the user wants double-buffering, so we need
-	  - DBufPacket
-	  - BufBuffer
+        Allocate all buffers for a whole AnimOb. In particular this
+        means getting buffers for
+        - BorderLine
+        - SaveBuffer
+        - CollMask
+        - ImageShadow (points to the same memory as CollMask does)
+        - if db is set to TRUE the user wants double-buffering, so we need
+          - DBufPacket
+          - BufBuffer
 
     INPUTS
         anOb = pointer to AnimOb structure to be added to list of
-	       AnimObs
-	rp   = pointer to a valid RastPort with initialized GelsInfo
-	       structure
-	db   = TRUE when double-buffering is wanted
+               AnimObs
+        rp   = pointer to a valid RastPort with initialized GelsInfo
+               structure
+        db   = TRUE when double-buffering is wanted
 
     RESULT
-	TRUE, if all the memory allocations were successful, otherwise
-	FALSE
+        TRUE, if all the memory allocations were successful, otherwise
+        FALSE
 
     NOTES
-	If an AnimOb is passed to GetGBuffers twice new buffers will
-	be allocated and therefore old pointers to buffers will be
-	lost in space.
+        If an AnimOb is passed to GetGBuffers twice new buffers will
+        be allocated and therefore old pointers to buffers will be
+        lost in space.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	FreeGBuffers(), graphics/gels.h
+        FreeGBuffers(), graphics/gels.h
 
     INTERNALS
-	Are real VSprites possible as a part of an AnimOb?
-	If yes, then different sizes of memory would have to be
-	allocated for BorderLine and CollMask. Currently the
-	sizes of memory allocated for this are most of the time
-	too large as they are just allocated for a Bob. If this
-	code is changed then the code of FreeGBuffers() will
-	have to be changed, too, and this text can be erased :-))
+        Are real VSprites possible as a part of an AnimOb?
+        If yes, then different sizes of memory would have to be
+        allocated for BorderLine and CollMask. Currently the
+        sizes of memory allocated for this are most of the time
+        too large as they are just allocated for a Bob. If this
+        code is changed then the code of FreeGBuffers() will
+        have to be changed, too, and this text can be erased :-))
 
     HISTORY
 
@@ -102,7 +102,7 @@
          the SaveBuffer */
       memsize *= (CurVSprite -> Depth);
       if (NULL ==(CurBob -> SaveBuffer =  AllocMem(memsize, MEMF_CHIP|MEMF_CLEAR)))
-      	return FALSE;
+        return FALSE;
 
 
       /* allocate width*2 bytes = width words for BorderLine

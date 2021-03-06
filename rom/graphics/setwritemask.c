@@ -12,14 +12,14 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH2(ULONG, SetWriteMask,
+        AROS_LH2(ULONG, SetWriteMask,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp,   A0),
-	AROS_LHA(ULONG            , mask, D0),
+        AROS_LHA(struct RastPort *, rp,   A0),
+        AROS_LHA(ULONG            , mask, D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 164, Graphics)
+        struct GfxBase *, GfxBase, 164, Graphics)
 
 /*  FUNCTION
 
@@ -38,8 +38,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {

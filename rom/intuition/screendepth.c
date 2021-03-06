@@ -14,8 +14,8 @@
 struct ScreenDepthActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Screen   	    *screen;
-    ULONG   	    	     flags;
+    struct Screen           *screen;
+    ULONG                    flags;
 };
 
 static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
@@ -62,18 +62,18 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
     EXAMPLE
 
     BUGS
-        I am not sure, if it is enough to just send a SNOTIFY message to one 
-        screen. I would suggest, the former FirstScreen gets a SDEPTH_TOBACK 
+        I am not sure, if it is enough to just send a SNOTIFY message to one
+        screen. I would suggest, the former FirstScreen gets a SDEPTH_TOBACK
         message and the new FirstScreen gets a SDEPTH_TOFRONT message.
         Currently only the screen supplied with ScreenDepth gets a message.
 
         But those messages need to be sent in front of the actual
         screen depth change because of the SNOTIFY_WAIT_REPLY-flag must be
-        able to block the action. But we only know after int_screendepth(), 
-        if there was a change and which change took place. 
+        able to block the action. But we only know after int_screendepth(),
+        if there was a change and which change took place.
 
-        So I leave it, as it is. This way SNOTIFY_WAIT_REPLY should work 
-        at least. Is there something written in the AutoDocs, how this has 
+        So I leave it, as it is. This way SNOTIFY_WAIT_REPLY should work
+        at least. Is there something written in the AutoDocs, how this has
         to be done (each screen gets a message)?
 
         (o1i)
@@ -108,7 +108,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                             struct IntuitionBase *IntuitionBase)
 {
     struct Screen   *screen = msg->screen;
-    ULONG   	     flags = msg->flags;
+    ULONG            flags = msg->flags;
     ULONG            ilock = LockIBase(0); /* before access to FirstScreen */
     struct Screen   *family = NULL,
                     *current = IntuitionBase->FirstScreen,
@@ -145,7 +145,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
             BOOL changed = FALSE;
             if ( previous ) /* I'm not the very first screen */
             {
-            	changed = TRUE;
+                changed = TRUE;
                 if ( flags & SDEPTH_INFAMILY )
                 {
                     if ( GetPrivScreen(current)->SpecialFlags & SF_IsChild )
@@ -212,11 +212,11 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
             } /* if (previous) */
 
-	    if (!changed)
-		goto end;
-	    /* The screen has been made frontmost, activate its monitor */
-	    ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->IMonitorNode, -1, -1, IntuitionBase);
-	    IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
+            if (!changed)
+                goto end;
+            /* The screen has been made frontmost, activate its monitor */
+            ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->IMonitorNode, -1, -1, IntuitionBase);
+            IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
         } /* if SDEPTH_TO_FRONT */
 
         else if ( flags & SDEPTH_TOBACK )
@@ -359,10 +359,10 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
             } /* ! SDEPTH_INFAMILY */
             if (!changed)
-		goto end;
-	    /* We have just brought the screen to back. We want to stay on the current monitor,
-	       so we activate the frontmost screen on THIS monitor */
-	    IntuitionBase->ActiveScreen = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
+                goto end;
+            /* We have just brought the screen to back. We want to stay on the current monitor,
+               so we activate the frontmost screen on THIS monitor */
+            IntuitionBase->ActiveScreen = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
         } /* if SDEPTH_TO_BACK */
     } /* if (current) */
 

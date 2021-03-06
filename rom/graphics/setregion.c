@@ -13,14 +13,14 @@
     NAME */
 #include <clib/graphics_protos.h>
 
-	AROS_LH2(BOOL, SetRegion,
+        AROS_LH2(BOOL, SetRegion,
 
 /*  SYNOPSIS */
         AROS_LHA(struct Region *, src , A0),
         AROS_LHA(struct Region *, dest, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 181, Graphics)
+        struct GfxBase *, GfxBase, 181, Graphics)
 
 /*  FUNCTION
         Sets the destination region to the source region.
@@ -31,7 +31,7 @@
         If the system runs out of memory during allocation
         of RegionRectangles the destination Region will
         .
-	
+        
     INPUTS
 
     RESULT
@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	NewRegion(), DisposeRegion()
+        NewRegion(), DisposeRegion()
 
     INTERNALS
 

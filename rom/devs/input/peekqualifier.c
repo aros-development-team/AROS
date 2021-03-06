@@ -11,13 +11,13 @@
     NAME */
 #include <clib/input_protos.h>
 
-	AROS_LH0(UWORD, PeekQualifier,
+        AROS_LH0(UWORD, PeekQualifier,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct Device *, InputBase, 7, Input)
+        struct Device *, InputBase, 7, Input)
 
 /*  FUNCTION
 

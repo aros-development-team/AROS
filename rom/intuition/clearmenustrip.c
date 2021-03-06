@@ -23,7 +23,7 @@
         change menu data.
 
     INPUTS
-	window - the window from which the menu bar should be detached
+        window - the window from which the menu bar should be detached
 
     RESULT
 
@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-	SetMenuStrip()
+        SetMenuStrip()
 
     INTERNALS
 

@@ -17,21 +17,21 @@
 
     NAME */
 
-	AROS_LH1(LONG, BeginUpdate,
+        AROS_LH1(LONG, BeginUpdate,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l, A0),
+        AROS_LHA(struct Layer *, l, A0),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 13, Layers)
+        struct LayersBase *, LayersBase, 13, Layers)
 
 /*  FUNCTION
         Converts the damage list to ClipRects and exchanges the
         two lists for faster redrawing. This routine allows a
         faster update of the display as it will only be rendered
         in the damaged areas.
-        This routine will automatically lock the layer to prevent 
-        changes.   
+        This routine will automatically lock the layer to prevent
+        changes.
 
     INPUTS
         l - pointer to layer
@@ -52,17 +52,17 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
 
   struct Region *damage_region, *visible_damage_region;
-  /* 
-  ** Convert the list of regionrectangles in the damage list 
-  ** to a cliprect list. 
+  /*
+  ** Convert the list of regionrectangles in the damage list
+  ** to a cliprect list.
   */
 
   LockLayer(0, l);
@@ -77,11 +77,11 @@
       damage_region = NewRegion();
       if (damage_region)
       {
-      	if (!OrRegionRegion(l->DamageList, damage_region))
-      	{
-      	    DisposeRegion(damage_region);
-      	    damage_region = NULL;
-      	}
+        if (!OrRegionRegion(l->DamageList, damage_region))
+        {
+            DisposeRegion(damage_region);
+            damage_region = NULL;
+        }
       }
   }
 
@@ -112,7 +112,7 @@
                                            l,
                                            FALSE,
                                            damage_region,
-					   LayersBase);
+                                           LayersBase);
 
   if (IS_SMARTREFRESH(l))
   {
@@ -120,11 +120,11 @@
                                 l->cr2,
                                 l->ClipRect,
                                 0,
-				0,
+                                0,
                                 FALSE,
                                 FALSE,
-				FALSE,
-				LayersBase);
+                                FALSE,
+                                LayersBase);
 
   }
 

@@ -12,50 +12,50 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH3(void, FreeGBuffers,
+        AROS_LH3(void, FreeGBuffers,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct AnimOb *, anOb, A0),
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(BOOL , db, D0),
+        AROS_LHA(struct AnimOb *, anOb, A0),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(BOOL , db, D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 100, Graphics)
+        struct GfxBase *, GfxBase, 100, Graphics)
 
 /*  FUNCTION
-	Deallocate all buffers for a whole AnimOb. In particular this
-	means getting buffers for
-	- BorderLine
-	- SaveBuffer
-	- CollMask
-	- ImageShadow (points to the same memory as CollMask does)
-	- if db is set to TRUE the user wants double-buffering, so we need
-	  - DBufPacket
-	  - BufBuffer
+        Deallocate all buffers for a whole AnimOb. In particular this
+        means getting buffers for
+        - BorderLine
+        - SaveBuffer
+        - CollMask
+        - ImageShadow (points to the same memory as CollMask does)
+        - if db is set to TRUE the user wants double-buffering, so we need
+          - DBufPacket
+          - BufBuffer
 
     INPUTS
         anOb = pointer to AnimOb structure to be added to list of
-	       AnimObs
-	rp   = pointer to a valid RastPort with initialized GelsInfo
-	       structure
-	db   = TRUE when double-buffering is wanted
+               AnimObs
+        rp   = pointer to a valid RastPort with initialized GelsInfo
+               structure
+        db   = TRUE when double-buffering is wanted
 
     RESULT
 
     NOTES
-	A call to GetGBuffers() that resulted in a partially allocation
-	of the required buffers will result in a deallocation of these
-	buffers. (Possible incompatibility with the real thing, though)
+        A call to GetGBuffers() that resulted in a partially allocation
+        of the required buffers will result in a deallocation of these
+        buffers. (Possible incompatibility with the real thing, though)
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	GetGBuffers(), graphics/rastport.h, graphics/gels.h
+        GetGBuffers(), graphics/rastport.h, graphics/gels.h
 
     INTERNALS
-	See FreeGBuffers() !!
+        See FreeGBuffers() !!
 
     HISTORY
 

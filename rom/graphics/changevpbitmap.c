@@ -69,29 +69,29 @@
 
     if (GfxBase->ActiView)
     {
-    	for (vp2 = GfxBase->ActiView->ViewPort; vp2; vp2 = vp2->Next)
-    	{
-    	    /* First check if the updated ViewPort is currently on display */
-	    if (vp2 == vp)
-	    {
-		if (!(vp2->Modes & VP_HIDE))
-		{
-	    	    /*
-	    	     * If yes, we need to rebuild driver's display. Look up the driver
-	    	     * and its ViewPorts chain and redisplay it.
-	    	     * We don't check against vpd == NULL because we already know
-	    	     * there's at least one ViewPort (our one) in the chain.
-	    	     */
-	    	    struct monitor_driverdata *mdd = GET_VP_DRIVERDATA(vp);
-	    	    struct HIDD_ViewPortData *vpd = driver_FindViewPorts(GfxBase->ActiView, mdd, GfxBase);
+        for (vp2 = GfxBase->ActiView->ViewPort; vp2; vp2 = vp2->Next)
+        {
+            /* First check if the updated ViewPort is currently on display */
+            if (vp2 == vp)
+            {
+                if (!(vp2->Modes & VP_HIDE))
+                {
+                    /*
+                     * If yes, we need to rebuild driver's display. Look up the driver
+                     * and its ViewPorts chain and redisplay it.
+                     * We don't check against vpd == NULL because we already know
+                     * there's at least one ViewPort (our one) in the chain.
+                     */
+                    struct monitor_driverdata *mdd = GET_VP_DRIVERDATA(vp);
+                    struct HIDD_ViewPortData *vpd = driver_FindViewPorts(GfxBase->ActiView, mdd, GfxBase);
 
-		    HIDD_Gfx_PrepareViewPorts(mdd->gfxhidd, vpd, GfxBase->ActiView);
-	    	    driver_LoadViewPorts(vpd, GfxBase->ActiView, mdd, GfxBase);
-	    	}
+                    HIDD_Gfx_PrepareViewPorts(mdd->gfxhidd, vpd, GfxBase->ActiView);
+                    driver_LoadViewPorts(vpd, GfxBase->ActiView, mdd, GfxBase);
+                }
 
-	    	break;
-	    }
-	}
+                break;
+            }
+        }
     }
 
     ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);

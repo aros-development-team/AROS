@@ -447,7 +447,7 @@ static char *NextWord(char *s)
             }
 
             kprintf("%p:%p %s %s+0x%p\n", sym_l, sym_h, modname, symname, (APTR)ptr - (APTR)sym_l);
-        } 
+        }
         else if (strcmp(comm, "QT") == 0 && strcmp(data, "00000000") == 0)
         {
             kprintf("Quitting SAD...\n");

@@ -62,7 +62,7 @@
         msg->ExecMessage.mn_Length       = sizeof(struct ExtIntuiMessage);
         msg->ExecMessage.mn_ReplyPort    = window ? window->WindowPort : GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
-        msg->IDCMPWindow            	 = window;
+        msg->IDCMPWindow                 = window;
     }
 
     DEBUG_ALLOCINTUIMESSAGE(dprintf("AllocIntuiMessage: Window 0x%lx Port 0x%lx Msg 0x%lx\n",

@@ -16,23 +16,23 @@
 
     NAME */
 
-	AROS_LH1(ULONG, TypeOfMem,
+        AROS_LH1(ULONG, TypeOfMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, address, A1),
+        AROS_LHA(APTR, address, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 89, Exec)
+        struct ExecBase *, SysBase, 89, Exec)
 
 /*  FUNCTION
-	Return type of memory at a given address or 0 if there is no memory
-	there.
+        Return type of memory at a given address or 0 if there is no memory
+        there.
 
     INPUTS
-	address - Address to test
+        address - Address to test
 
     RESULT
-	The memory flags you would give to AllocMem().
+        The memory flags you would give to AllocMem().
 
     NOTES
 

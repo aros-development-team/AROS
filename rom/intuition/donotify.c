@@ -32,8 +32,8 @@
  
 */
 static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdate *msg,
-                    	    	    	    ULONG class, UWORD code, APTR IAddress,
-                    	    	    	    struct IntuitionBase *IntuitionBase)
+                                            ULONG class, UWORD code, APTR IAddress,
+                                            struct IntuitionBase *IntuitionBase)
 {
     struct IntuiMessage *imsg;
 
@@ -43,8 +43,8 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
 
     if( imsg )
     {
-        imsg->Class 	= class;
-        imsg->Code  	= code;
+        imsg->Class     = class;
+        imsg->Code      = code;
         imsg->Qualifier = (msg->opu_Flags & OPUF_INTERIM) ? IEQUALIFIER_REPEAT : 0; //tells SendIntuiMessage if the message is OK to be dropped
         imsg->IAddress  = IAddress;
         imsg->MouseX    = msg->opu_GInfo->gi_Window->MouseX;
@@ -153,28 +153,28 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
                     else
                     {
                         if (msg->opu_GInfo)
-			{
-			    struct Window *win;
-			    
+                        {
+                            struct Window *win;
+                            
                             if ((win = msg->opu_GInfo->gi_Window))
-			    {
+                            {
                                 if (win->UserPort)
-				{
+                                {
                                     if (win->IDCMPFlags & IDCMP_IDCMPUPDATE)
                                     {
                                         struct TagItem  *ti;
-                                        UWORD       	 code = 0;
+                                        UWORD            code = 0;
 
                                         if ((ti = FindTagItem(ICSPECIAL_CODE, ic->ic_CloneTags)))
                                         {
                                             code = ti->ti_Data & 0xFFFF;
                                         }
-					
-				    #if !USE_IDCMPUPDATE_MESSAGECACHE
-				    	if (!(msg->opu_Flags & OPUF_INTERIM) ||
-					    (IW(win)->num_repeatevents < IW(win)->repeatqueue))
-					{
-    	    	    	    	    #endif	    	    
+                                        
+                                    #if !USE_IDCMPUPDATE_MESSAGECACHE
+                                        if (!(msg->opu_Flags & OPUF_INTERIM) ||
+                                            (IW(win)->num_repeatevents < IW(win)->repeatqueue))
+                                        {
+                                    #endif
 
                                             SendIDCMPUpdate( cl, o, msg, IDCMP_IDCMPUPDATE,
                                                              code, ic->ic_CloneTags, IntuitionBase );
@@ -184,14 +184,14 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
 
                                             ic->ic_CloneTags = NULL;
 
-				    #if !USE_IDCMPUPDATE_MESSAGECACHE
-				    	}
-    	    	    	    	    #endif	    	    
+                                    #if !USE_IDCMPUPDATE_MESSAGECACHE
+                                        }
+                                    #endif
 
                                     }
-				}
-			    }
-			}
+                                }
+                            }
+                        }
                     }
 
                     FreeTagItems(ic->ic_CloneTags);

@@ -22,7 +22,7 @@
         struct Library *, PartitionBase, 10, Partition)
 
 /*  FUNCTION
-        Create a new partition table. 
+        Create a new partition table.
 
     INPUTS
         root - partition to create table in

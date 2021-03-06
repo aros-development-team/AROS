@@ -16,19 +16,19 @@
 /*****************************************************************************************
 
     NAME
-	--background_subsystem--
+        --background_subsystem--
 
     LOCATION
-	CLID_Hidd_Mouse
+        CLID_Hidd_Mouse
 
     NOTES
-	This class represents a "hub" for collecting input from various
-	pointing devices (mice, tablets, touchscreens, etc) in the
-	system. Events from all pointing devices are merged into a
+        This class represents a "hub" for collecting input from various
+        pointing devices (mice, tablets, touchscreens, etc) in the
+        system. Events from all pointing devices are merged into a
         single stream and propagated to all clients.
 
-	In order to get an access to pointing input subsystem you need to
-	create an object of CLID_Hidd_Mouse class. The actual returned
+        In order to get an access to pointing input subsystem you need to
+        create an object of CLID_Hidd_Mouse class. The actual returned
         object is a singletone, you do not have to dispose it, and every
         call will return the same object pointer. After getting this object
         you can, for example, register your driver using moHW_AddDriver

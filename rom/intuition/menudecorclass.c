@@ -94,10 +94,10 @@ IPTR MenuDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
-    	data = INST_DATA(cl, obj);
+        data = INST_DATA(cl, obj);
 
-	data->userbuffersize = (ULONG) GetTagData(MDA_UserBuffer, 0, msg->ops_AttrList);
-	
+        data->userbuffersize = (ULONG) GetTagData(MDA_UserBuffer, 0, msg->ops_AttrList);
+        
     }
     
     return (IPTR)obj;
@@ -111,19 +111,19 @@ IPTR MenuDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    	case MDA_UserBuffer:
-	    *msg->opg_Storage = (IPTR) data->userbuffersize;
-	    break;
+        case MDA_UserBuffer:
+            *msg->opg_Storage = (IPTR) data->userbuffersize;
+            break;
 
-	case MDA_TrueColorOnly:
-	    *msg->opg_Storage = FALSE;
-	    break;
-	    
-	default:
-	    return DoSuperMethodA(cl, obj, (Msg)msg);
+        case MDA_TrueColorOnly:
+            *msg->opg_Storage = FALSE;
+            break;
+            
+        default:
+            return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     
-    return 1;    
+    return 1;
 }
     
 
@@ -136,9 +136,9 @@ IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpG
 
     switch(msg->mdp_Which)
     {
-    	case SUBMENUIMAGE:
-    	    *msg->mdp_Width = 0;
-    	    *msg->mdp_Height = 0;
+        case SUBMENUIMAGE:
+            *msg->mdp_Width = 0;
+            *msg->mdp_Height = 0;
             struct  RastPort *rp = CreateRastPort();
             if (rp)
             {
@@ -149,17 +149,17 @@ IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpG
                 *msg->mdp_Height = TextExt.te_Height;
                 FreeRastPort(rp);
             }
-	       break;
+               break;
 
         case MENUCHECK:
             *msg->mdp_Width = REFWIDTH / 2 + 4; // reffont->tf_XSize * 3 / 2;
             *msg->mdp_Height= REFHEIGHT;
             break;
 
-    	default:
-	       *msg->mdp_Width = DEFSIZE_WIDTH;
-	       *msg->mdp_Height = DEFSIZE_HEIGHT;
-	       break;
+        default:
+               *msg->mdp_Width = DEFSIZE_WIDTH;
+               *msg->mdp_Height = DEFSIZE_HEIGHT;
+               break;
     }
 
     return TRUE;
@@ -169,20 +169,20 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct RastPort 	 *rport = msg->mdp_RPort;
-    UWORD   	    	 *pens = DRI(msg->mdp_Dri)->dri_Pens;
-    LONG    	     	  left = msg->mdp_X;
-    LONG    	     	  top = msg->mdp_Y;
-    LONG   	          width = msg->mdp_Width;
-    LONG   	    	  height = msg->mdp_Height;
-    LONG    	    	  right = left + width - 1;
-    LONG    	    	  bottom = top + height - 1;
+    struct RastPort      *rport = msg->mdp_RPort;
+    UWORD                *pens = DRI(msg->mdp_Dri)->dri_Pens;
+    LONG                  left = msg->mdp_X;
+    LONG                  top = msg->mdp_Y;
+    LONG                  width = msg->mdp_Width;
+    LONG                  height = msg->mdp_Height;
+    LONG                  right = left + width - 1;
+    LONG                  bottom = top + height - 1;
     
     SetDrMd(rport, JAM1);
     
     switch(msg->mdp_Which)
     {
-    	case SUBMENUIMAGE:
+        case SUBMENUIMAGE:
         {
             if (MENUS_AMIGALOOK(IntuitionBase))
             {
@@ -197,12 +197,12 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             SetDrMd(rport, JAM1);
             WORD x = left;
 
-    	    Move(rport, x, top + rport->Font->tf_Baseline);
+            Move(rport, x, top + rport->Font->tf_Baseline);
             Text(rport, "\xBB", 1);
             break;
         }
 
-    	case MENUCHECK:
+        case MENUCHECK:
         {
             if (MENUS_AMIGALOOK(IntuitionBase))
             {
@@ -222,10 +222,10 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             break;
         }
 
-	case AMIGAKEY:
-	{
+        case AMIGAKEY:
+        {
             struct TextFont *oldfont;
-            UBYTE   	     oldstyle;
+            UBYTE            oldstyle;
             
             if (MENUS_AMIGALOOK(IntuitionBase))
             {
@@ -298,7 +298,7 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             WritePixel(rport, right, top);
             WritePixel(rport, right, bottom);
             WritePixel(rport, left, bottom);
-	}
+        }
     }
     return TRUE;
 }

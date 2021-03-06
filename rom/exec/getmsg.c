@@ -18,24 +18,24 @@
 
     NAME */
 
-	AROS_LH1(struct Message *, GetMsg,
+        AROS_LH1(struct Message *, GetMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, port, A0),
+        AROS_LHA(struct MsgPort *, port, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 62, Exec)
+        struct ExecBase *, SysBase, 62, Exec)
 
 /*  FUNCTION
-	Get a message from a given messageport. This function doesn't wait
-	and returns NULL if the messageport is empty. Therefore it's
-	generally a good idea to WaitPort() or Wait() on the given port first.
+        Get a message from a given messageport. This function doesn't wait
+        and returns NULL if the messageport is empty. Therefore it's
+        generally a good idea to WaitPort() or Wait() on the given port first.
 
     INPUTS
-	port - Pointer to messageport
+        port - Pointer to messageport
 
     RESULT
-	Pointer to message removed from the port.
+        Pointer to message removed from the port.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	WaitPort(), PutMsg()
+        WaitPort(), PutMsg()
 
     INTERNALS
 

@@ -381,7 +381,7 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
             rdata->inquiry_data.response_format = 2;
             rdata->inquiry_data.additional_length = 32;
 
-            /* 
+            /*
              * Use the vendor specific area to set the TRIM status
              */
             if (at->at_identify.support_dsm) {

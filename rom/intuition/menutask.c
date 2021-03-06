@@ -180,7 +180,7 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                     {
                         case IECLASS_RAWMOUSE:
                             if (msg->ie.ie_Code == IECODE_NOBUTTON)
-                            {   
+                            {
                                 HandleMouseMove(mhd, IntuitionBase);
                             }
                             else
@@ -427,7 +427,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
             ie->ie_TimeStamp.tv_secs, ie->ie_TimeStamp.tv_micro)
             || mhd->keepmenuup);
         if (sticky)
-	    break;
+            break;
 
     case SELECTDOWN:
         if (!sticky)
@@ -483,7 +483,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 
 /**************************************************************************************************/
 
-static void HandleCheckItem(struct Window *win, struct MenuItem *item, 
+static void HandleCheckItem(struct Window *win, struct MenuItem *item,
                             struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     /* Note: If you change something here, you probably must also change
@@ -599,7 +599,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
             
             for(i = 0; m != menu; m = m->NextMenu) i++;
     
-            y1 = mhd->innertop + i * mhd->menubaritemheight; 
+            y1 = mhd->innertop + i * mhd->menubaritemheight;
             y2 = y1 + mhd->menubaritemheight - 1;
 
         }
@@ -842,7 +842,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         msg.mdp_ItemInnerBottom = 0;
         msg.mdp_MinWidth = 0;
         msg.mdp_MinHeight = 0;
-        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);    
+        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
         mhd->innerleft = msg.mdp_InnerLeft;
         mhd->innerright = msg.mdp_InnerRight;
         mhd->innertop = msg.mdp_InnerTop;
@@ -1113,7 +1113,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
     msg.mdp_ItemInnerTop = 0;
     msg.mdp_ItemInnerRight = 0;
     msg.mdp_ItemInnerBottom = 0;
-    DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);    
+    DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
     mhd->menuinnerleft = msg.mdp_InnerLeft;
     mhd->menuinnerright = msg.mdp_InnerRight;
     mhd->menuinnertop = msg.mdp_InnerTop;
@@ -1393,7 +1393,7 @@ static void KillSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         msg.MethodID       = MDM_EXITMENU;
         msg.mdp_TrueColor  = mhd->TrueColor;
         msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
-        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);    
+        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
 
         if (mhd->SubDecorUserBuffer)
         {
@@ -1474,7 +1474,7 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
                 PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
             }
         if (item->SubItem)
-        { 
+        {
         DrawImageState(rp, mhd->submenuimage, offx + item->Width - mhd->submenuimage->Width, offy + item->TopEdge + ((item->Height - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
             ((struct IntuiText*) item->ItemFill)->NextText = save;
             Permit();
@@ -1786,7 +1786,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
                     PrintIText(rp, it, x1, y1);
                 }
             if (item->SubItem)
-            { 
+            {
             DrawImageState(rp, mhd->submenuimage, offx + item->Width - mhd->submenuimage->Width, offy + item->TopEdge + ((item->Height - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
                 ((struct IntuiText*) fill)->NextText = save;
                 Permit();
@@ -1829,7 +1829,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
                     PrintIText(rp, it, x1, y1);
                 }
             if (item->SubItem)
-            { 
+            {
             DrawImageState(rp, mhd->submenuimage, offx + item->Width - mhd->submenuimage->Width, offy + item->TopEdge + ((item->Height - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
                 ((struct IntuiText*) fill)->NextText = save;
                 Permit();

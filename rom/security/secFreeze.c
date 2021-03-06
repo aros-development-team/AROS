@@ -12,17 +12,17 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(BOOL, secFreeze,
+        AROS_LH1(BOOL, secFreeze,
 
 /*  SYNOPSIS */
-	/* (task) */
-	AROS_LHA(struct Task *, task, D0),
+        /* (task) */
+        AROS_LHA(struct Task *, task, D0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 31, Security)
+        struct SecurityBase *, secBase, 31, Security)
 
 /*  FUNCTION
-	Freeze a task or process
+        Freeze a task or process
 
     INPUTS
 
@@ -31,7 +31,7 @@
 
 
     NOTES
-	This function may be called by root only!
+        This function may be called by root only!
 
     EXAMPLE
 
@@ -54,7 +54,7 @@
     D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
     xowner = GetTaskExtOwner(secBase, FindTask(NULL));
-    if (task && (task != FindTask(NULL)) && 
+    if (task && (task != FindTask(NULL)) &&
                     (task != (struct Task*)secBase->Server) &&
              (secGetRelationshipA(xowner, 0, NULL) & secRelF_ROOT_UID)) {
         Disable();

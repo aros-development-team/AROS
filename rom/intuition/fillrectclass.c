@@ -50,19 +50,19 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
         switch(tag->ti_Tag)
         {
             case IA_APattern:
-        	((struct Image *)obj)->ImageData = (APTR)tag->ti_Data;
-        	retval = 1;
-        	break;
+                ((struct Image *)obj)->ImageData = (APTR)tag->ti_Data;
+                retval = 1;
+                break;
 
             case IA_APatSize:
-        	data->apatsize = (WORD)tag->ti_Data;
-        	retval = 1;
-        	break;
+                data->apatsize = (WORD)tag->ti_Data;
+                retval = 1;
+                break;
 
             case IA_Mode:
-        	data->mode = (WORD)tag->ti_Data;
-        	retval = 1;
-        	break;
+                data->mode = (WORD)tag->ti_Data;
+                retval = 1;
+                break;
         }
     }
 
@@ -77,7 +77,7 @@ IPTR FillRectClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct FillRectData *data = INST_DATA(cl, obj);
     struct RastPort      rp;
-    WORD            	 x1, y1, x2, y2;
+    WORD                 x1, y1, x2, y2;
 
     if (!((struct impDraw *)msg)->imp_RPort) return 0;
 
@@ -114,7 +114,7 @@ IPTR FillRectClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
-	fillrect_set(cl, obj, msg);
+        fillrect_set(cl, obj, msg);
 
     return (IPTR)obj;
 }

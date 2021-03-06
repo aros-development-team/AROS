@@ -15,21 +15,21 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(BOOL, AttemptLockLayerRom,
+        AROS_LH1(BOOL, AttemptLockLayerRom,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l, A5),
+        AROS_LHA(struct Layer *, l, A5),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 109, Graphics)
+        struct GfxBase *, GfxBase, 109, Graphics)
 
 /*  FUNCTION
         Try to lock the current layer. If it is already locked this
         function will return FALSE, TRUE otherwise.
         If the layer could be locked successfully nesting will take place
-        which means that for every successful locking of a layer 
-        UnlockLayerRom() has to be called for that layer to let other 
-        tasks access that layer. 
+        which means that for every successful locking of a layer
+        UnlockLayerRom() has to be called for that layer to let other
+        tasks access that layer.
 
     INPUTS
         l - pointer to layer

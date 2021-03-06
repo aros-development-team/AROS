@@ -12,22 +12,22 @@
     NAME */
 #include <proto/utility.h>
 
-	AROS_LH1I(UBYTE, ToLower,
+        AROS_LH1I(UBYTE, ToLower,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, character, D0),
+        AROS_LHA(ULONG, character, D0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 30, Utility)
+        struct UtilityBase *, UtilityBase, 30, Utility)
 
 /*  FUNCTION
-	Convert a character to lower case.
+        Convert a character to lower case.
 
     INPUTS
-	character - The character to convert.
+        character - The character to convert.
 
     RESULT
-	Equivalent lower case character.
+        Equivalent lower case character.
 
     NOTES
 
@@ -47,12 +47,12 @@
 
     return
     (
-	(character >= 'A' && character <= 'Z')
-	|| (character >= 0xC0
-	    && character <= 0xDE
-	    && character != 0xD7)
-	? character + 0x20
-	: character
+        (character >= 'A' && character <= 'Z')
+        || (character >= 0xC0
+            && character <= 0xDE
+            && character != 0xD7)
+        ? character + 0x20
+        : character
     );
 
     AROS_LIBFUNC_EXIT

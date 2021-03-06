@@ -12,21 +12,21 @@
 
     NAME */
 
-	AROS_LH1(void, SendIO,
+        AROS_LH1(void, SendIO,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IORequest *, iORequest, A1),
+        AROS_LHA(struct IORequest *, iORequest, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 77, Exec)
+        struct ExecBase *, SysBase, 77, Exec)
 
 /*  FUNCTION
-	Start an asynchronous I/O request by calling the device's BeginIO()
-	vector. After sending the messages asynchronously you can wait for
-	the message to be replied at the I/O reply port.
+        Start an asynchronous I/O request by calling the device's BeginIO()
+        vector. After sending the messages asynchronously you can wait for
+        the message to be replied at the I/O reply port.
 
     INPUTS
-	iORequest - Pointer to iorequest structure.
+        iORequest - Pointer to iorequest structure.
 
     RESULT
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	OpenDevice(), CloseDevice(), DoIO(), CheckIO(), AbortIO(), WaitIO()
+        OpenDevice(), CloseDevice(), DoIO(), CheckIO(), AbortIO(), WaitIO()
 
     INTERNALS
 
@@ -51,8 +51,8 @@
 
     /* Call BeginIO() vector */
     AROS_LVO_CALL1NR(void,
-	AROS_LCA(struct IORequest *,iORequest,A1),
-	struct Device *,iORequest->io_Device,5,
+        AROS_LCA(struct IORequest *,iORequest,A1),
+        struct Device *,iORequest->io_Device,5,
     );
 
     AROS_LIBFUNC_EXIT

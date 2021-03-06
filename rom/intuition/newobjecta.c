@@ -91,7 +91,7 @@
 
             while (tag = NextTagItem(&state))
             {
-            	dprintf("\t%08lx %08lx\n", tag->ti_Tag, tag->ti_Data);
+                dprintf("\t%08lx %08lx\n", tag->ti_Tag, tag->ti_Data);
             }
         }
     )
@@ -116,9 +116,9 @@
     D(bug("classPtr: %p\n", classPtr));
 
     /* Try to create a new object */
-    method.MethodID 	= OM_NEW;
+    method.MethodID     = OM_NEW;
     method.ops_AttrList = tagList;
-    method.ops_GInfo 	= NULL;
+    method.ops_GInfo    = NULL;
     object = (Object *) CoerceMethodA (classPtr, (Object *)classPtr, (Msg)&method);
 
     /* Release the lock on the class. Rootclass also has increased this count. */

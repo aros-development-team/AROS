@@ -177,7 +177,7 @@ const char *const Dos_SubstDateTable[]=
                     {
                         days += diffdays - 7;
                     }
-                }               
+                }
             #else
                 days = curr.ds_Days;
 

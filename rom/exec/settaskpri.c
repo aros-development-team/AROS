@@ -84,7 +84,7 @@
 #endif
     Disable();
 #if defined(__AROSEXEC_SMP__)
-    if (task->tc_State == TS_READY) 
+    if (task->tc_State == TS_READY)
         EXEC_LOCK_WRITE(task_listlock);
     else
         EXEC_LOCK_READ(task_listlock);

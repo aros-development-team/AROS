@@ -17,26 +17,26 @@
 
     NAME */
 
-	AROS_LH1(struct Task *, FindTask,
+        AROS_LH1(struct Task *, FindTask,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, A1),
+        AROS_LHA(CONST_STRPTR, name, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 49, Exec)
+        struct ExecBase *, SysBase, 49, Exec)
 
 /*  FUNCTION
-	Find a task with a given name or get the address of the current task.
-	Finding the address of the current task is a very quick function
-	call, but finding a special task is a very CPU intensive instruction.
-	Note that generally a task may already be gone when this function
-	returns.
+        Find a task with a given name or get the address of the current task.
+        Finding the address of the current task is a very quick function
+        call, but finding a special task is a very CPU intensive instruction.
+        Note that generally a task may already be gone when this function
+        returns.
 
     INPUTS
-	name - Pointer to name or NULL for current task.
+        name - Pointer to name or NULL for current task.
 
     RESULT
-	Address of task structure found.
+        Address of task structure found.
 
     NOTES
 
@@ -59,7 +59,7 @@
 
     /* Quick return for a quick argument */
     if (name == NULL)
-	return thisTask;
+        return thisTask;
 
     /* Always protect task lists */
 #if defined(__AROSEXEC_SMP__)
@@ -78,13 +78,13 @@
         EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskWaitSpinLock);
         listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
 #endif
-	/* Then into the waiting list. */
-	ret = (struct Task *)FindName(&SysBase->TaskWait, name);
-	if (ret == NULL)
-	{
-	    /*
-		Finally test the running task(s). This is mainly of importance on smp systems.
-	    */
+        /* Then into the waiting list. */
+        ret = (struct Task *)FindName(&SysBase->TaskWait, name);
+        if (ret == NULL)
+        {
+            /*
+                Finally test the running task(s). This is mainly of importance on smp systems.
+            */
 #if defined(__AROSEXEC_SMP__)
             EXEC_UNLOCK_AND_ENABLE(listlock);
             EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock);
@@ -99,18 +99,18 @@
             }
 #else
 
-	    char *s1;
-	    const char *s2 = name;
+            char *s1;
+            const char *s2 = name;
             s1 = thisTask->tc_Node.ln_Name;
-	    /* Check as long as the names are identical. */
-	    while (*s1++ == *s2)
-		/* Terminator found? */
-		if (!*s2++)
-		{
-		    /* Got it. */
-		    ret = thisTask;
-		    break;
-		}
+            /* Check as long as the names are identical. */
+            while (*s1++ == *s2)
+                /* Terminator found? */
+                if (!*s2++)
+                {
+                    /* Got it. */
+                    ret = thisTask;
+                    break;
+                }
 #endif
         }
     }

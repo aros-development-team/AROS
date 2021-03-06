@@ -15,31 +15,31 @@
 struct bitmap_render_data
 {
     struct render_special_info rsi;
-    ULONG   	    	       minterm;
-    struct BitMap   	      *srcbm;
-    OOP_Object      	      *srcbm_obj;
+    ULONG                      minterm;
+    struct BitMap             *srcbm;
+    OOP_Object                *srcbm_obj;
 };
 
 static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
-    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-    	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
+                           OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                           struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct bitmap_render_data *brd = bitmap_rd;
-    OOP_Object		      *gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
-    WORD		       width  = rect->MaxX - rect->MinX + 1;
-    WORD		       height = rect->MaxY - rect->MinY + 1;
-    BOOL		       res;
+    OOP_Object                *gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
+    WORD                       width  = rect->MaxX - rect->MinX + 1;
+    WORD                       height = rect->MaxY - rect->MinY + 1;
+    BOOL                       res;
 
 //    D(bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
-//	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY, GfxBase));
+//      , bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY, GfxBase));
 
     /*
      * Get some info on the colormaps. We have to make sure
      * that we have the appropriate mapping tables set.
      */
     res = int_bltbitmap(brd->srcbm, brd->srcbm_obj, srcx, srcy,
-    			brd->rsi.curbm, dstbm_obj, rect->MinX, rect->MinY,
-    			width, height, brd->minterm, gfxhidd, dst_gc, GfxBase);
+                        brd->rsi.curbm, dstbm_obj, rect->MinX, rect->MinY,
+                        width, height, brd->minterm, gfxhidd, dst_gc, GfxBase);
 
    return res ? width * height : 0;
 }
@@ -49,45 +49,45 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH9 (void, BltBitMapRastPort,
+        AROS_LH9 (void, BltBitMapRastPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct BitMap   *, srcBitMap, A0),
-	AROS_LHA(WORD             , xSrc, D0),
-	AROS_LHA(WORD             , ySrc, D1),
-	AROS_LHA(struct RastPort *, destRP, A1),
-	AROS_LHA(WORD             , xDest, D2),
-	AROS_LHA(WORD             , yDest, D3),
-	AROS_LHA(WORD             , xSize, D4),
-	AROS_LHA(WORD             , ySize, D5),
-	AROS_LHA(ULONG            , minterm, D6),
+        AROS_LHA(struct BitMap   *, srcBitMap, A0),
+        AROS_LHA(WORD             , xSrc, D0),
+        AROS_LHA(WORD             , ySrc, D1),
+        AROS_LHA(struct RastPort *, destRP, A1),
+        AROS_LHA(WORD             , xDest, D2),
+        AROS_LHA(WORD             , yDest, D3),
+        AROS_LHA(WORD             , xSize, D4),
+        AROS_LHA(WORD             , ySize, D5),
+        AROS_LHA(ULONG            , minterm, D6),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 101, Graphics)
-	    
+        struct GfxBase *, GfxBase, 101, Graphics)
+            
 /*  FUNCTION
-	Moves part of a bitmap around or into another bitmap.
+        Moves part of a bitmap around or into another bitmap.
 
     INPUTS
-	srcBitMap - Copy from this bitmap.
-	xSrc, ySrc - This is the upper left corner of the area to copy.
-	destRP - Destination RastPort.
-	xDest, yDest - Upper left corner where to place the copy
-	xSize, ySize - The size of the area to copy
-	minterm - How to copy. See BltBitMap() for an explanation.
+        srcBitMap - Copy from this bitmap.
+        xSrc, ySrc - This is the upper left corner of the area to copy.
+        destRP - Destination RastPort.
+        xDest, yDest - Upper left corner where to place the copy
+        xSize, ySize - The size of the area to copy
+        minterm - How to copy. See BltBitMap() for an explanation.
 
     RESULT
-	TRUE.
+        TRUE.
 
     NOTES
-	If special hardware is available, this function will use it.
+        If special hardware is available, this function will use it.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	ClipBlit()
+        ClipBlit()
 
     INPUTS
 
@@ -101,13 +101,13 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
 {
     AROS_LIBFUNC_INIT
      
-    struct bitmap_render_data 	brd;
-    struct Rectangle 	    	rr;
-    OOP_Object      	    	*gc;
-    Point   	    	    	src;
+    struct bitmap_render_data   brd;
+    struct Rectangle            rr;
+    OOP_Object                  *gc;
+    Point                       src;
 
     EnterFunc(bug("BltBitMapRastPort(%d %d %d, %d, %d, %d, %x, %p, %p)\n"
-    	, xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, srcBitMap, destRP));
+        , xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, srcBitMap, destRP));
 
     FIX_GFXCOORD(xSrc);
     FIX_GFXCOORD(ySrc);
@@ -117,10 +117,10 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
     if (NULL == brd.srcbm_obj)
     {
-    	return;
+        return;
     }
 
-    brd.minterm	= minterm;
+    brd.minterm = minterm;
     brd.srcbm = srcBitMap;
 
     /* Get RastPort's GC and set the correct ROP */

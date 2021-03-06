@@ -20,7 +20,7 @@
         AROS_LH1(OOP_AttrBase, OOP_ObtainAttrBase,
 
 /*  SYNOPSIS */
-        AROS_LHA(CONST_STRPTR  	, interfaceID, A0),
+        AROS_LHA(CONST_STRPTR   , interfaceID, A0),
 
 /*  LOCATION */
         struct Library *, OOPBase, 6, OOP)
@@ -32,7 +32,7 @@
         with attribute offsets to generate attribute IDs.
 
     INPUTS
-        interfaceID	- globally unique interface identifier.
+        interfaceID     - globally unique interface identifier.
                           for which to obtain an attrbase.
 
     RESULT
@@ -75,7 +75,7 @@
     if (idb)
     {
 
-        /* If so, it has been stored in the hashtable, and we have 
+        /* If so, it has been stored in the hashtable, and we have
         ** to return the same numeric ID now.
         */
         if (idb->attrbase == (ULONG)-1)
@@ -121,7 +121,7 @@
             {
                 FreeMem(idb, sizeof (struct iid_bucket));
 
-/* Throw exception here ? */		
+/* Throw exception here ? */
                 base = 0UL;
             }
         }

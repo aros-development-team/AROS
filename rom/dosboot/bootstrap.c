@@ -85,13 +85,13 @@ static BOOL GetBootNodeDeviceUnit(struct BootNode *bn, BPTR *device, IPTR *unit,
     if (de == NULL || (de->de_TableSize & 0xffffff00) != 0 || de->de_TableSize < DE_BOOTBLOCKS)
     {
         D(bug("[DOSBoot:bootstrap] %s: (%p == NULL) or invalid de_TableSize (%08x)\n", __func__, de, de->de_TableSize));
-    	return FALSE;
+        return FALSE;
     }
     *bootblocks = de->de_BootBlocks * de->de_SizeBlock * sizeof(ULONG);
     if (*bootblocks == 0)
     {
         D(bug("[DOSBoot:bootstrap] %s: No bootblocks\n", __func__));
-    	return FALSE;
+        return FALSE;
     }
     return TRUE;
 }
@@ -124,7 +124,7 @@ static BOOL BootBlockCheck(UBYTE *bootblock, ULONG bootblock_size)
     ULONG dostype;
 
     if (!BootBlockCheckSum(bootblock, bootblock_size))
-    	return FALSE;
+        return FALSE;
     if (!(fsr = OpenResource("FileSystem.resource")))
         return FALSE;
     dostype = AROS_LONG2BE(*(ULONG*)bootblock);
@@ -245,9 +245,9 @@ static BOOL dosboot_BootBlock(struct IOStdReq *io, struct BootNode *bn, struct E
         * We hope it won't do any harm for NDOS game disks.
        */
        AROS_UFC3NR(void, init,
-       		 AROS_UFCA(APTR, NULL, D0),
-       		 AROS_UFCA(BPTR, BNULL, A0),
-       		 AROS_UFCA(struct ExecBase *, SysBase, A6));
+                 AROS_UFCA(APTR, NULL, D0),
+                 AROS_UFCA(BPTR, BNULL, A0),
+                 AROS_UFCA(struct ExecBase *, SysBase, A6));
     }
 
 #ifdef __mc68000

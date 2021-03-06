@@ -26,7 +26,7 @@
         date1, date2 - The two dates to compare.
 
     RESULT
-        < 0 if date1 is later than date2, == 0 if they are equal or > 0 
+        < 0 if date1 is later than date2, == 0 if they are equal or > 0
         if date2 is later than date1.
 
     NOTES

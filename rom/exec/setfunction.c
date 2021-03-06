@@ -16,48 +16,48 @@
 
     NAME */
 
-	AROS_LH3(APTR, SetFunction,
+        AROS_LH3(APTR, SetFunction,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Library *, library,     A1),
-	AROS_LHA(LONG,             funcOffset,  A0),
-	AROS_LHA(APTR,             newFunction, D0),
+        AROS_LHA(struct Library *, library,     A1),
+        AROS_LHA(LONG,             funcOffset,  A0),
+        AROS_LHA(APTR,             newFunction, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 70, Exec)
+        struct ExecBase *, SysBase, 70, Exec)
 
 /*  FUNCTION
-	Replaces a certain jumptable entry with another one. This function only
-	Forbid()s taskswitching but doesn't Disable() interrupts. You have
-	to do your own arbitration for functions which are callable from
-	interrupts.
+        Replaces a certain jumptable entry with another one. This function only
+        Forbid()s taskswitching but doesn't Disable() interrupts. You have
+        to do your own arbitration for functions which are callable from
+        interrupts.
 
     INPUTS
-	library     - Pointer to library structure.
-	funcOffset  - Offset of the jumpvector from the library base address in
-		      bytes. It's the negative LVO (library vector offset)
-		      multiplied with LIB_VECTSIZE.
-	newFunction - New jumptable entry (pointer to the new function).
+        library     - Pointer to library structure.
+        funcOffset  - Offset of the jumpvector from the library base address in
+                      bytes. It's the negative LVO (library vector offset)
+                      multiplied with LIB_VECTSIZE.
+        newFunction - New jumptable entry (pointer to the new function).
 
     RESULT
-	Old jumptable entry (pointer to the old function).
+        Old jumptable entry (pointer to the old function).
 
     NOTES
-	While it's more or less safe to patch a library vector with
-	SetFunction() it's not possible to safely remove the patch later.
-	So don't use this function if it can be avoided.
+        While it's more or less safe to patch a library vector with
+        SetFunction() it's not possible to safely remove the patch later.
+        So don't use this function if it can be avoided.
 
     EXAMPLE
-	Patch of the function Open() from dos.library:
-	You can find the LVO of 5 in clib/dos_protos.h.
-	SetFunction(DOSBase, -5 * LIB_VECTSIZE, NewOpen);
-	NewOpen must be prepared with AROS_UFH macros.
+        Patch of the function Open() from dos.library:
+        You can find the LVO of 5 in clib/dos_protos.h.
+        SetFunction(DOSBase, -5 * LIB_VECTSIZE, NewOpen);
+        NewOpen must be prepared with AROS_UFH macros.
 
     BUGS
-	None.
+        None.
 
     SEE ALSO
-	MakeLibrary(), MakeFunctions(), SumLibrary()
+        MakeLibrary(), MakeFunctions(), SumLibrary()
 
     INTERNALS
 
@@ -72,8 +72,8 @@
     funcOffset = (-funcOffset) / LIB_VECTSIZE;
 
     /*
-	Arbitrate for the jumptable. This isn't enough for interrupt callable
-	functions - but it need not be.
+        Arbitrate for the jumptable. This isn't enough for interrupt callable
+        functions - but it need not be.
     */
     Forbid();
 

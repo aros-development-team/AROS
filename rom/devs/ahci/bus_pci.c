@@ -26,10 +26,10 @@
 
 #include "ahci.h"
 
-typedef struct 
+typedef struct
 {
     struct AHCIBase *AHCIBase;
-    struct List	    devices;
+    struct List     devices;
     OOP_AttrBase    HiddPCIDeviceAttrBase;
     OOP_MethodID    HiddPCIDriverMethodBase;
 } EnumeratorArgs;
@@ -56,7 +56,7 @@ void ahci_release(device_t dev)
 
     HIDD_PCIDevice_Release(dev->dev_Object);
     FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
-}    
+}
 
 /*
  * PCI BUS ENUMERATOR
@@ -109,10 +109,10 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
         D(bug("[AHCI:PCI] Device is already in use by %s\n", __func__, owner));
         FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
         return;
-    }        
+    }
 
     AHCIBase->ahci_HostCount++;
-	
+        
     AddTail(&a->devices, (struct Node *)dev);
 
     return;
@@ -136,11 +136,11 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
     {
         {aHidd_Name             , (IPTR)ahciDeviceName          },
         {aHidd_HardwareName     , 0                             },
-        {aHidd_Producer		, 0                             },
+        {aHidd_Producer         , 0                             },
 #define AHCI_TAG_VEND 2
-        {aHidd_Product		, 0                             },
+        {aHidd_Product          , 0                             },
 #define AHCI_TAG_PROD 3
-        {aHidd_DriverData	, 0                             },
+        {aHidd_DriverData       , 0                             },
 #define AHCI_TAG_DATA 4
         {TAG_DONE               , 0                             }
     };
@@ -172,9 +172,9 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
     }
 
     D(bug("[AHCI:PCI] %s: Registering Detected Hosts..\n", __func__));
-	
+        
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
-	char revbuf[32];
+        char revbuf[32];
         ULONG reg;
 
         if ((ahci_tags[AHCI_TAG_VEND].ti_Data = dev->dev_softc->sc_ad->ad_vendor) == 0)
@@ -182,16 +182,16 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
         if ((ahci_tags[AHCI_TAG_PROD].ti_Data = dev->dev_softc->sc_ad->ad_product) == 0)
             ahci_tags[AHCI_TAG_PROD].ti_Data = pci_get_device(dev);
 
-	/* check the revision */
+        /* check the revision */
         ULONG ioh = pci_read_config(dev, PCIR_BAR(5), 4);
-	reg = *(u_int32_t *)((IPTR)ioh + AHCI_REG_VS);
-	if (reg & 0x0000FF) {
-		ksnprintf(revbuf, sizeof(revbuf), "AHCI %d.%d.%d",
-			  (reg >> 16), (UBYTE)(reg >> 8), (UBYTE)reg);
-	} else {
-		ksnprintf(revbuf, sizeof(revbuf), "AHCI %d.%d",
-			  (reg >> 16), (UBYTE)(reg >> 8));
-	}
+        reg = *(u_int32_t *)((IPTR)ioh + AHCI_REG_VS);
+        if (reg & 0x0000FF) {
+                ksnprintf(revbuf, sizeof(revbuf), "AHCI %d.%d.%d",
+                          (reg >> 16), (UBYTE)(reg >> 8), (UBYTE)reg);
+        } else {
+                ksnprintf(revbuf, sizeof(revbuf), "AHCI %d.%d",
+                          (reg >> 16), (UBYTE)(reg >> 8));
+        }
         dev->dev_revision = AllocVec(strlen(revbuf) + 1, MEMF_CLEAR);
         CopyMem(revbuf, (APTR)dev->dev_revision, strlen(revbuf));
         ahci_tags[1].ti_Data = (IPTR)AllocVec(strlen(revbuf) + 16, MEMF_CLEAR);

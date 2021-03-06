@@ -25,9 +25,9 @@ extern const char scsi_LibID[];
 extern const int scsi_End;
 
 AROS_UFP3(static APTR, scsi_Wait,
-	  AROS_UFPA(void *, dummy, D0),
-	  AROS_UFPA(BPTR, segList, A0),
-	  AROS_UFPA(struct ExecBase *, SysBase, A6));
+          AROS_UFPA(void *, dummy, D0),
+          AROS_UFPA(BPTR, segList, A0),
+          AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 const struct Resident scsi_BootWait =
 {
@@ -56,9 +56,9 @@ const struct Resident scsi_BootWait =
  */
 
 AROS_UFH3(static APTR, scsi_Wait,
-	  AROS_UFPA(void *, dummy, D0),
-	  AROS_UFPA(BPTR, segList, A0),
-	  AROS_UFPA(struct ExecBase *, SysBase, A6))
+          AROS_UFPA(void *, dummy, D0),
+          AROS_UFPA(BPTR, segList, A0),
+          AROS_UFPA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 

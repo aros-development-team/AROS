@@ -13,14 +13,14 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(LONG, AttachPalExtra,
+        AROS_LH2(LONG, AttachPalExtra,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ColorMap *, cm, A0),
-	AROS_LHA(struct ViewPort *, vp, A1),
+        AROS_LHA(struct ColorMap *, cm, A0),
+        AROS_LHA(struct ViewPort *, vp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 139, Graphics)
+        struct GfxBase *, GfxBase, 139, Graphics)
 
 /*  FUNCTION
         Allocates a PalExtra structure and attaches it to the
@@ -59,75 +59,75 @@
     pe = AllocMem(sizeof(struct PaletteExtra), MEMF_CLEAR|MEMF_PUBLIC);
     if (NULL != pe)
     {
-	/* 
-	** if you change the number of byte allocated here then you
-	** must also make chnages to FreeColorMap()!
-	*/
-	pe->pe_RefCnt    = AllocMem(cm->Count * sizeof(PalExtra_RefCnt_Type), MEMF_CLEAR);
-	pe->pe_AllocList = AllocMem(cm->Count * sizeof(PalExtra_AllocList_Type), MEMF_ANY);
+        /*
+        ** if you change the number of byte allocated here then you
+        ** must also make chnages to FreeColorMap()!
+        */
+        pe->pe_RefCnt    = AllocMem(cm->Count * sizeof(PalExtra_RefCnt_Type), MEMF_CLEAR);
+        pe->pe_AllocList = AllocMem(cm->Count * sizeof(PalExtra_AllocList_Type), MEMF_ANY);
 
-	if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList)
-	{
-	    UWORD sharablecolors, bmdepth;
-	    
-	    sharablecolors = cm->Count;
+        if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList)
+        {
+            UWORD sharablecolors, bmdepth;
+            
+            sharablecolors = cm->Count;
 
-    	    /* cm->Count may contain more entries than 2 ^ bitmapdepth,
-	       for pointer sprite colors, etc. Sharablecolors OTOH is
-	       limited to 2 ^ bitmapdepth */
-	         
-	    bmdepth = GetBitMapAttr(vp->RasInfo->BitMap, BMA_DEPTH);
-	    if (bmdepth < 8)
-	    {
-	    	if ((1L << bmdepth) < sharablecolors)
-		{
-		    sharablecolors = 1L << bmdepth;
-		}
-	    }
-	    	    
-	    /* initialize the AllocList BYTE-array */
-	    ULONG i = 0;
+            /* cm->Count may contain more entries than 2 ^ bitmapdepth,
+               for pointer sprite colors, etc. Sharablecolors OTOH is
+               limited to 2 ^ bitmapdepth */
+                 
+            bmdepth = GetBitMapAttr(vp->RasInfo->BitMap, BMA_DEPTH);
+            if (bmdepth < 8)
+            {
+                if ((1L << bmdepth) < sharablecolors)
+                {
+                    sharablecolors = 1L << bmdepth;
+                }
+            }
+                    
+            /* initialize the AllocList BYTE-array */
+            ULONG i = 0;
 
-	    /* CHECKME: Should probably say "i < sharablecolors", but might
-	       not actually cause anything bad either, even if it doesn't. */	       
-    	    while (i < cm->Count) 
-	    {
+            /* CHECKME: Should probably say "i < sharablecolors", but might
+               not actually cause anything bad either, even if it doesn't. */
+            while (i < cm->Count)
+            {
                 PALEXTRA_ALLOCLIST(pe, i) = (PalExtra_AllocList_Type)i-1;
                 i++;
-	    }
+            }
 
-	    /* connect the PaletteExtra structure to the ColorMap */
-	    cm ->PalExtra = pe;
+            /* connect the PaletteExtra structure to the ColorMap */
+            cm ->PalExtra = pe;
 
-	    /* initialize the Palette Extra structure */
-	    InitSemaphore(&pe->pe_Semaphore);
-	    pe->pe_ViewPort = vp;
+            /* initialize the Palette Extra structure */
+            InitSemaphore(&pe->pe_Semaphore);
+            pe->pe_ViewPort = vp;
 
-	    pe->pe_FirstFree   = sharablecolors-1;
-	    pe->pe_NFree       = sharablecolors;
-	    pe->pe_FirstShared = (UWORD)-1;
-	    pe->pe_NShared     = 0;
+            pe->pe_FirstFree   = sharablecolors-1;
+            pe->pe_NFree       = sharablecolors;
+            pe->pe_FirstShared = (UWORD)-1;
+            pe->pe_NShared     = 0;
 
-	    /* set all entries in the color table to be shareable
+            /* set all entries in the color table to be shareable
                pe_SharableColors is not the number of colors but the last color index! */
 
-	    pe->pe_SharableColors = sharablecolors - 1;
-	    
-	} /* if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList) */
-	else
-	{
-	    /* some memory allocation failed */
-	    if (pe->pe_RefCnt)
+            pe->pe_SharableColors = sharablecolors - 1;
+            
+        } /* if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList) */
+        else
+        {
+            /* some memory allocation failed */
+            if (pe->pe_RefCnt)
                 FreeMem(pe->pe_RefCnt, cm->Count * sizeof(PalExtra_RefCnt_Type));
-	    if (pe->pe_AllocList) 
+            if (pe->pe_AllocList)
                 FreeMem(pe->pe_AllocList, cm->Count* sizeof(PalExtra_AllocList_Type));
-	    FreeMem(pe, sizeof(struct PaletteExtra));
-	    return 1;
-	}
-	
+            FreeMem(pe, sizeof(struct PaletteExtra));
+            return 1;
+        }
+        
     } /* if (NULL != pe) */
     else
-	return 1;
+        return 1;
 
     return 0;
 

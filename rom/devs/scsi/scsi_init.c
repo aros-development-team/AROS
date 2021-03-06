@@ -71,9 +71,9 @@ BOOL scsi_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct scsi_Unit *unit)
         else
             dosdevname[2] = 'A' - 10 + unit->su_UnitNum;
     
-        pp[0] 		    = (IPTR)dosdevname;
-        pp[1]		    = (IPTR)MOD_NAME_STRING;
-        pp[2]		    = unit->su_UnitNum;
+        pp[0]               = (IPTR)dosdevname;
+        pp[1]               = (IPTR)MOD_NAME_STRING;
+        pp[2]               = unit->su_UnitNum;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
         pp[DE_SIZEBLOCK    + 4] = 1 << (unit->su_SectorShift - 2);
         pp[DE_NUMHEADS     + 4] = unit->su_Heads;
@@ -135,7 +135,7 @@ static CONST_STRPTR const methBaseIDs[] =
 
 static int SCSI_init(struct scsiBase *SCSIBase)
 {
-    struct BootLoaderBase	*BootLoaderBase;
+    struct BootLoaderBase       *BootLoaderBase;
 
     D(bug("[SCSI--] %s: scsi.device Initialization\n", __PRETTY_FUNCTION__));
 
@@ -149,7 +149,7 @@ static int SCSI_init(struct scsiBase *SCSIBase)
     SCSIBase->scsi_Poll    = FALSE;
 
     /*
-     * start initialization: 
+     * start initialization:
      * obtain kernel parameters
      */
     BootLoaderBase = OpenResource("bootloader.resource");
@@ -205,7 +205,7 @@ static int SCSI_init(struct scsiBase *SCSIBase)
         return FALSE;
     }
     /*
-     * I've decided to use memory pools again. Alloc everything needed from 
+     * I've decided to use memory pools again. Alloc everything needed from
      * a pool, so that we avoid memory fragmentation.
      */
     SCSIBase->scsi_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
@@ -256,7 +256,7 @@ static int SCSI_init(struct scsiBase *SCSIBase)
                        TASKTAG_NAME       , "SCSI.daemon",
                        TASKTAG_STACKSIZE  , STACK_SIZE,
                        TASKTAG_TASKMSGPORT, &SCSIBase->DaemonPort,
-                       TASKTAG_PRI        , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri than handler tasks */
+                       TASKTAG_PRI        , TASK_PRI - 1,       /* The daemon should have a little bit lower Pri than handler tasks */
                        TASKTAG_ARG1       , SCSIBase,
                        TAG_DONE))
     {

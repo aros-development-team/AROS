@@ -16,21 +16,21 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(struct Region *, AndRectRegionND,
+        AROS_LH2(struct Region *, AndRectRegionND,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region    *, Reg, A0),
-	AROS_LHA(struct Rectangle *, Rect, A1),
+        AROS_LHA(struct Region    *, Reg, A0),
+        AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 186, Graphics)
+        struct GfxBase *, GfxBase, 186, Graphics)
 
 /*  FUNCTION
         Remove everything inside 'region' that is outside 'rectangle'
 
     INPUTS
-	region - pointer to Region structure
-	rectangle - pointer to Rectangle structure
+        region - pointer to Region structure
+        rectangle - pointer to Rectangle structure
 
     RESULT
         The resulting region or NULL in case there's no enough free memory
@@ -40,15 +40,15 @@
     BUGS
 
     SEE ALSO
-	AndRegionRegion(), OrRectRegion(), XorRectRegion(), ClearRectRegion()
-	NewRegion()
+        AndRegionRegion(), OrRectRegion(), XorRectRegion(), ClearRectRegion()
+        NewRegion()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
-	16-01-97    mreckt  initial version
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
+        16-01-97    mreckt  initial version
 
 *****************************************************************************/
 {
@@ -58,28 +58,28 @@
 
     if (IS_RECT_EVIL(Rect))
     {
-    	return Res;
+        return Res;
     }
 
     if (!Reg->RegionRectangle)
     {
-	/* The region is already empty, return empty copy */
-    	return Res;
+        /* The region is already empty, return empty copy */
+        return Res;
     }
 
     if (Res)
     {
-	if (Rect->MinX <= MinX(Reg) &&
+        if (Rect->MinX <= MinX(Reg) &&
             Rect->MinY <= MinY(Reg) &&
             Rect->MaxX >= MaxX(Reg) &&
             Rect->MaxY >= MaxY(Reg))
-    	{
-    	    /* The rectangle completely covers the region. Make a plain copy. */
-	    if (_CopyRegionRectangles(Reg, Res, GfxBase))
-	    	return Res;
-    	}
-    	else
-    	{
+        {
+            /* The rectangle completely covers the region. Make a plain copy. */
+            if (_CopyRegionRectangles(Reg, Res, GfxBase))
+                return Res;
+        }
+        else
+        {
             struct RegionRectangle rr;
 
             rr.bounds = *Rect;
@@ -87,12 +87,12 @@
             rr.Prev   = NULL;
 
             if (_DoOperationBandBand(_AndBandBand,
-				     MinX(Reg), 0, MinY(Reg), 0,
-			             Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase))
+                                     MinX(Reg), 0, MinY(Reg), 0,
+                                     Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase))
             {
-            	_TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
+                _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
 
-            	return Res;
+                return Res;
             }
         }
 

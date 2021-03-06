@@ -16,14 +16,14 @@
 
     NAME */
 
-	AROS_LH2(struct Interrupt *, SetIntVector,
+        AROS_LH2(struct Interrupt *, SetIntVector,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG,              intNumber, D0),
-	AROS_LHA(struct Interrupt *, interrupt, A1),
+        AROS_LHA(ULONG,              intNumber, D0),
+        AROS_LHA(struct Interrupt *, interrupt, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 27, Exec)
+        struct ExecBase *, SysBase, 27, Exec)
 
 /*  FUNCTION
 
@@ -56,13 +56,13 @@
 
     if (interrupt)
     {
-	SysBase->IntVects[intNumber].iv_Data = interrupt->is_Data;
-	SysBase->IntVects[intNumber].iv_Code = interrupt->is_Code;
+        SysBase->IntVects[intNumber].iv_Data = interrupt->is_Data;
+        SysBase->IntVects[intNumber].iv_Code = interrupt->is_Code;
     }
     else
     {
-	SysBase->IntVects[intNumber].iv_Data = (APTR)~0;
-	SysBase->IntVects[intNumber].iv_Code = (void *)~0;
+        SysBase->IntVects[intNumber].iv_Data = (APTR)~0;
+        SysBase->IntVects[intNumber].iv_Code = (void *)~0;
     }
 
     EXEC_UNLOCK_LIST_AND_ENABLE(&SysBase->IntrList);

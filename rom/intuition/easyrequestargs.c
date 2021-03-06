@@ -61,7 +61,7 @@
     AROS_LIBFUNC_INIT
 
     struct Window *req;
-    LONG    	   result;
+    LONG           result;
 
     req = BuildEasyRequestArgs(window, easyStruct,
                                IDCMP_ptr != NULL ? *IDCMP_ptr : 0, argList);

@@ -20,13 +20,13 @@
     NAME */
 #include <proto/processor.h>
 
-	AROS_LH1(void, GetCPUInfo,
+        AROS_LH1(void, GetCPUInfo,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, tagList, A0),
+        AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */
-	struct ProcessorBase *, ProcessorBase, 1, Processor)
+        struct ProcessorBase *, ProcessorBase, 1, Processor)
 
 /*  FUNCTION
 
@@ -39,12 +39,12 @@
 
     TAGS
 
-        GCIT_SelectedProcessor - (ULONG) When this tag is set correctly, information 
-                                 about choosen processor is provided. If this 
-                                 tag is missing or this tag has invalid value, 
+        GCIT_SelectedProcessor - (ULONG) When this tag is set correctly, information
+                                 about choosen processor is provided. If this
+                                 tag is missing or this tag has invalid value,
                                  information about first processor is returned.
 
-        GCIT_NumberOfProcessors - (ULONG *) Provides the number of processors 
+        GCIT_NumberOfProcessors - (ULONG *) Provides the number of processors
                                  present in the system.
 
         GCIT_ModelString - (CONST_STRPTR *) Provides the name of the model of the
@@ -57,7 +57,7 @@
                           unit using one of the VECTORTYPE_XXX values.
 
         GCIT_Architecture - (ULONG *) Provides designation of processor
-                            architecture using one of the PROCESSORARCH_XXX 
+                            architecture using one of the PROCESSORARCH_XXX
                             values.
 
         GCIT_Endianness - (ULONG *) Provides designation of current processor
@@ -69,7 +69,7 @@
 
         GCIT_ProcessorLoad - (ULONG *) Provides the current CPU load (0-0xffffffff)
 
-        Cache sizes - (ULONG *) Following tags are used to retrieve size of 
+        Cache sizes - (ULONG *) Following tags are used to retrieve size of
                       specified caches.
                       
                       GCIT_L1CacheSize

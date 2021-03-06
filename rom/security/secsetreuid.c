@@ -13,15 +13,15 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(int, secsetreuid,
+        AROS_LH2(int, secsetreuid,
 
 /*  SYNOPSIS */
-	/* (ruid, euid) */
-	AROS_LHA(int, ruid, D0),
-	AROS_LHA(int, euid, D1),
+        /* (ruid, euid) */
+        AROS_LHA(int, ruid, D0),
+        AROS_LHA(int, euid, D1),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 45, Security)
+        struct SecurityBase *, secBase, 45, Security)
 
 /*  FUNCTION
 

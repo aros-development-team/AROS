@@ -11,39 +11,39 @@
 
     NAME */
 
-	AROS_LH2I(void, AddHead,
+        AROS_LH2I(void, AddHead,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct List *, list, A0),
-	AROS_LHA(struct Node *, node, A1),
+        AROS_LHA(struct List *, list, A0),
+        AROS_LHA(struct Node *, node, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 40, Exec)
+        struct ExecBase *, SysBase, 40, Exec)
 
 /*  FUNCTION
-	Insert Node node as the first node of the list.
+        Insert Node node as the first node of the list.
 
     INPUTS
-	list - The list to insert the node into
-	node - This node is to be inserted
+        list - The list to insert the node into
+        node - This node is to be inserted
 
     RESULT
-	None.
+        None.
 
     NOTES
 
     EXAMPLE
-	struct List * list;
-	struct Node * pred;
+        struct List * list;
+        struct Node * pred;
 
-	// Insert Node at top
-	AddHead (list, node);
+        // Insert Node at top
+        AddHead (list, node);
 
     BUGS
 
     SEE ALSO
-	libamiga/NewList(), AddTail(), Insert(), Remove(), RemHead(), RemTail(),
-	Enqueue()
+        libamiga/NewList(), AddTail(), Insert(), Remove(), RemHead(), RemTail(),
+        Enqueue()
 
     INTERNALS
 
@@ -54,19 +54,19 @@
     ASSERT_VALID_PTR(list);
 
     /*
-	Make the node point to the old first node in the list and to the
-	head of the list.
+        Make the node point to the old first node in the list and to the
+        head of the list.
     */
-    node->ln_Succ	   = list->lh_Head;
-    node->ln_Pred	   = (struct Node *)&list->lh_Head;
+    node->ln_Succ          = list->lh_Head;
+    node->ln_Pred          = (struct Node *)&list->lh_Head;
 
     /*
-	New we come before the old first node which must now point to us
-	and the same applies to the pointer to-the-first-node in the
-	head of the list.
+        New we come before the old first node which must now point to us
+        and the same applies to the pointer to-the-first-node in the
+        head of the list.
     */
     list->lh_Head->ln_Pred = node;
-    list->lh_Head	   = node;
+    list->lh_Head          = node;
     AROS_LIBFUNC_EXIT
 } /* AddHead */
 

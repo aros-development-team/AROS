@@ -12,11 +12,11 @@
 struct RemoveGListActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-    struct Gadget   	    *gadget;
-    LONG    	    	     numGad;
-    UWORD   	    	     count;
-    BOOL    	    	     success;
+    struct Window           *window;
+    struct Gadget           *gadget;
+    LONG                     numGad;
+    UWORD                    count;
+    BOOL                     success;
 };
 
 static VOID int_removeglist(struct RemoveGListActionMsg *msg,
@@ -39,16 +39,16 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
         struct IntuitionBase *, IntuitionBase, 74, Intuition)
 
 /*  FUNCTION
-	Remove sublist of gadgets from a window.
+        Remove sublist of gadgets from a window.
 
     INPUTS
-	remPtr - window from which gadgets should be removed
-	gadget - pointer gadget to be removed
-	numGad - number of gadgets to remove. Use -1 to remove
-	         all gadgets to the end of the list.
+        remPtr - window from which gadgets should be removed
+        gadget - pointer gadget to be removed
+        numGad - number of gadgets to remove. Use -1 to remove
+                 all gadgets to the end of the list.
 
     RESULT
-	Ordinal number of the removed gadget or -1 on failure
+        Ordinal number of the removed gadget or -1 on failure
 
     NOTES
 
@@ -57,7 +57,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
     BUGS
 
     SEE ALSO
-	RemoveGadget(), AddGadget(), AddGList()
+        RemoveGadget(), AddGadget(), AddGList()
 
     INTERNALS
 
@@ -122,9 +122,9 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
             /* stegerg: don't do this. DOpus for example relies on gadget->NextGadget
                not being touched */
             /* Emm: but the autodocs say it is done for V36 ??? */
-    	#if 0
+        #if 0
             last->NextGadget = NULL;
-    	#endif
+        #endif
         }
 
 
@@ -174,7 +174,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
 {
     struct Window   *remPtr = msg->window;
     struct Gadget   *gadget = msg->gadget;
-    LONG    	     numGad = msg->numGad;
+    LONG             numGad = msg->numGad;
     struct Gadget   *pred;
     struct Gadget   *last;
     struct IIHData  *iihdata;

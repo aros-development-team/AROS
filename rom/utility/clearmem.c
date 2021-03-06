@@ -7,14 +7,14 @@
     NAME */
 #include <proto/utility.h>
 
-	AROS_LH2(VOID, ClearMem,
+        AROS_LH2(VOID, ClearMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, destination, A0),
-	AROS_LHA(ULONG, size, D0),
+        AROS_LHA(APTR, destination, A0),
+        AROS_LHA(ULONG, size, D0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 50, Utility)
+        struct UtilityBase *, UtilityBase, 50, Utility)
 
 /*  FUNCTION
 

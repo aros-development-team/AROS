@@ -16,9 +16,9 @@
 struct SetWindowTitlesActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-    CONST_STRPTR    	     windowTitle;
-    CONST_STRPTR    	     screenTitle;
+    struct Window           *window;
+    CONST_STRPTR             windowTitle;
+    CONST_STRPTR             screenTitle;
 };
 
 static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
@@ -92,7 +92,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     struct Window   *window = msg->window;
     CONST_STRPTR     windowTitle = msg->windowTitle;
     CONST_STRPTR     screenTitle = msg->screenTitle;
-    BOOL    	     change = TRUE;
+    BOOL             change = TRUE;
 
     LOCKWINDOWLAYERS(window);
 
@@ -128,7 +128,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
         {
             if (screenTitle)
-        	/* FIXME: Should we be strdup()ing this? */
+                /* FIXME: Should we be strdup()ing this? */
                 window->WScreen->Title = (UBYTE *)screenTitle;
             else
                 window->WScreen->Title = window->WScreen->DefaultTitle;

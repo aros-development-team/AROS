@@ -20,80 +20,80 @@
 #include <dos/filehandler.h>
 #include <proto/expansion.h>
 
-	AROS_LH1(struct DeviceNode *, MakeDosNode,
+        AROS_LH1(struct DeviceNode *, MakeDosNode,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, parmPacket, A0),
+        AROS_LHA(APTR, parmPacket, A0),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 24, Expansion)
+        struct ExpansionBase *, ExpansionBase, 24, Expansion)
 
 /*  FUNCTION
-	MakeDosNode() will create a DeviceNode structure suitable for
-	passing to dos.library which contains all the information about
-	a device stored in the parmPacket array. This will allow you to
-	enter a DOS device into the system from the information contained
-	in a DosEnvec structure (such as in a RigidDiskBlock PartitionBlock
-	structure).
+        MakeDosNode() will create a DeviceNode structure suitable for
+        passing to dos.library which contains all the information about
+        a device stored in the parmPacket array. This will allow you to
+        enter a DOS device into the system from the information contained
+        in a DosEnvec structure (such as in a RigidDiskBlock PartitionBlock
+        structure).
 
-	MakeDosNode() will allocate the memory that it needs to construct
-	the DeviceNode, the strings and a FileSysStartupMsg that is passed
-	to the filesystem handler on startup.
+        MakeDosNode() will allocate the memory that it needs to construct
+        the DeviceNode, the strings and a FileSysStartupMsg that is passed
+        to the filesystem handler on startup.
 
-	You can use AddBootNode() to add a node to the system.
+        You can use AddBootNode() to add a node to the system.
 
     INPUTS
-	parmPacket  -   an IPTR array containing the device parameters
-			required to initialize the structures. This is a
-			variable length structure. See also the DosEnvec
-			structure in dos/filehandler.h
+        parmPacket  -   an IPTR array containing the device parameters
+                        required to initialize the structures. This is a
+                        variable length structure. See also the DosEnvec
+                        structure in dos/filehandler.h
 
-	    Index       Description
-	    --------    -----------
-	    0           Exec string with dos device name (eg. DH0)
-	    1           Exec string with exec device name (eg. fdsk.device)
-	    2           unit number of device to open
-	    3           flags (for OpenDevice())
-	    4           length of the remaining data
-	    5-n         environment data - consists of:
+            Index       Description
+            --------    -----------
+            0           Exec string with dos device name (eg. DH0)
+            1           Exec string with exec device name (eg. fdsk.device)
+            2           unit number of device to open
+            3           flags (for OpenDevice())
+            4           length of the remaining data
+            5-n         environment data - consists of:
 
-	    5           Size of standard device block in 32 bit longwords
-	    6           not used; 0
-	    7           # of heads - drive specific
-	    8           # of sectors per block - not used; 0
-	    9           # of blocks per track - drive specific
-	    10          # of reserved blocks at the start of the partition
-	    11          # of reserved blocks at the end of the partition
-	    12          device interleave
-	    13          starting cylinder of partition
-	    14          end cylinder of partition
-	    15          initial number of buffers
-	    16          type of memory for buffers (CHIP, FAST,...)
-	    17          max number of bytes to transfer at one time
-	    18          address mask allowable for DMA transfers
-	    19          boot priority for autobootable devices
-	    20          standard DOS filesystem ID (eg 'DOS\1')
-	    21          baud rate for serial handler
-	    22          control word for handler/filesystem
-	    23          number of boot blocks on this partition
+            5           Size of standard device block in 32 bit longwords
+            6           not used; 0
+            7           # of heads - drive specific
+            8           # of sectors per block - not used; 0
+            9           # of blocks per track - drive specific
+            10          # of reserved blocks at the start of the partition
+            11          # of reserved blocks at the end of the partition
+            12          device interleave
+            13          starting cylinder of partition
+            14          end cylinder of partition
+            15          initial number of buffers
+            16          type of memory for buffers (CHIP, FAST,...)
+            17          max number of bytes to transfer at one time
+            18          address mask allowable for DMA transfers
+            19          boot priority for autobootable devices
+            20          standard DOS filesystem ID (eg 'DOS\1')
+            21          baud rate for serial handler
+            22          control word for handler/filesystem
+            23          number of boot blocks on this partition
 
     RESULT
-	deviceNode  -   An initialized DeviceNode structure, or NULL if
-			the required memory could not be allocated. The
-			caller will have to modify this structure before
-			passing it to AddBootNode().
+        deviceNode  -   An initialized DeviceNode structure, or NULL if
+                        the required memory could not be allocated. The
+                        caller will have to modify this structure before
+                        passing it to AddBootNode().
 
     NOTES
-	There are a number of fields of the DeviceNode structure that this
-	function cannot initialize due to a lack of information. You
-	should fill these in yourself.
+        There are a number of fields of the DeviceNode structure that this
+        function cannot initialize due to a lack of information. You
+        should fill these in yourself.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	AddBootNode(), AddDosNode(), dos.library/MakeDosEntry()
+        AddBootNode(), AddDosNode(), dos.library/MakeDosEntry()
 
     INTERNALS
 
@@ -109,11 +109,11 @@
     STRPTR s1, s2 = 0;
     BSTR   bs1, bs2;
     int    strLen1, strLen2, sz1, sz2;
-    int    i;			/* Loop variable */
+    int    i;                   /* Loop variable */
 
     if (parmPacket == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* This is the environment structure */
@@ -128,11 +128,11 @@
     /* There doesn't have to exist an underlying block device */
     if ((STRPTR)((IPTR *)parmPacket)[1] != NULL)
     {
-	strLen2 = strlen((STRPTR)((IPTR *)parmPacket)[1]);
+        strLen2 = strlen((STRPTR)((IPTR *)parmPacket)[1]);
     }
     else
     {
-	strLen2 = 0;
+        strLen2 = 0;
     }
     sz2 = AROS_BSTR_MEMSIZE4LEN(strLen2 + 1);
 
@@ -160,12 +160,12 @@
     
     for (i = 0; i < strLen1; i++)
     {
-	AROS_BSTR_putchar(bs1, i, ((STRPTR)((IPTR *)parmPacket)[0])[i]);
+        AROS_BSTR_putchar(bs1, i, ((STRPTR)((IPTR *)parmPacket)[0])[i]);
     }
 
     for (i = 0; i < strLen2; i++)
     {
-	AROS_BSTR_putchar(bs2, i, ((STRPTR)((IPTR *)parmPacket)[1])[i]);
+        AROS_BSTR_putchar(bs2, i, ((STRPTR)((IPTR *)parmPacket)[1])[i]);
     }
     
     AROS_BSTR_setstrlen(bs1, strLen1 > 255 ? 255 : strLen1);
@@ -195,7 +195,7 @@
      * filesystems expecting AllocMem() to return memory fully corresponding to the mask.
      */
     if ((de->de_TableSize >= DE_MASK) && (!(de->de_Mask & 0x7FFFFFFF)))
-	de->de_BufMemType |= MEMF_31BIT;
+        de->de_BufMemType |= MEMF_31BIT;
 #endif
 
     return dn;

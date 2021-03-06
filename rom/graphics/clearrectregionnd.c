@@ -16,21 +16,21 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(struct Region *, ClearRectRegionND,
+        AROS_LH2(struct Region *, ClearRectRegionND,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region    *, Reg, A0),
-	AROS_LHA(struct Rectangle *, Rect, A1),
+        AROS_LHA(struct Region    *, Reg, A0),
+        AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 192, Graphics)
+        struct GfxBase *, GfxBase, 192, Graphics)
 
 /*  FUNCTION
-	Clear the given Rectangle from the given Region
+        Clear the given Rectangle from the given Region
 
     INPUTS
-	region - pointer to Region structure
-	rectangle - pointer to Rectangle structure
+        region - pointer to Region structure
+        rectangle - pointer to Rectangle structure
 
     RESULT
         The resulting region or NULL in case there's no enough free memory
@@ -40,15 +40,15 @@
     BUGS
 
     SEE ALSO
-	AndRegionRegion(), OrRectRegion(), XorRectRegion(), ClearRectRegion()
-	NewRegion()
+        AndRegionRegion(), OrRectRegion(), XorRectRegion(), ClearRectRegion()
+        NewRegion()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
-	16-01-97    mreckt  initial version
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
+        16-01-97    mreckt  initial version
 
 *****************************************************************************/
 {
@@ -57,24 +57,24 @@
     struct Region *Res = NewRegion();
 
     if (!Res)
-    	return NULL;
+        return NULL;
 
     if (!Reg->RegionRectangle        ||
-	IS_RECT_EVIL(Rect)           ||
+        IS_RECT_EVIL(Rect)           ||
         !overlap(*Rect, Reg->bounds))
     {
-	/* Nothing to clear. Make a plain copy. */
-	if (!_CopyRegionRectangles(Reg, Res, GfxBase))
-	{
-	    DisposeRegion(Res);
-	    Res = NULL;
-	}
+        /* Nothing to clear. Make a plain copy. */
+        if (!_CopyRegionRectangles(Reg, Res, GfxBase))
+        {
+            DisposeRegion(Res);
+            Res = NULL;
+        }
     }
 
     else if (Rect->MinX > MinX(Reg) || Rect->MinY > MinY(Reg) ||
-	     Rect->MaxX < MaxX(Reg) || Rect->MaxY < MaxY(Reg))
+             Rect->MaxX < MaxX(Reg) || Rect->MaxY < MaxY(Reg))
     {
-    	/* Partial overlapping detected. Do the complete algorithm. */
+        /* Partial overlapping detected. Do the complete algorithm. */
         struct RegionRectangle rr;
 
         rr.bounds = *Rect;
@@ -89,7 +89,7 @@
                 0,
                 MinX(Reg),
                 0,
-	        MinY(Reg),
+                MinY(Reg),
                 &rr,
                 Reg->RegionRectangle,
                 &Res->RegionRectangle,
@@ -100,7 +100,7 @@
         {
             _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
         }
-	else
+        else
         {
             DisposeRegion(Res);
             Res = NULL;

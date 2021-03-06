@@ -15,21 +15,21 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH9(struct Layer *, CreateBehindHookLayer,
+        AROS_LH9(struct Layer *, CreateBehindHookLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
-	AROS_LHA(struct BitMap     *, bm, A1),
-	AROS_LHA(LONG               , x0, D0),
-	AROS_LHA(LONG               , y0, D1),
-	AROS_LHA(LONG               , x1, D2),
-	AROS_LHA(LONG               , y1, D3),
-	AROS_LHA(LONG               , flags, D4),
-	AROS_LHA(struct Hook       *, hook, A3),
-	AROS_LHA(struct BitMap     *, bm2, A2),
+        AROS_LHA(struct Layer_Info *, li, A0),
+        AROS_LHA(struct BitMap     *, bm, A1),
+        AROS_LHA(LONG               , x0, D0),
+        AROS_LHA(LONG               , y0, D1),
+        AROS_LHA(LONG               , x1, D2),
+        AROS_LHA(LONG               , y1, D3),
+        AROS_LHA(LONG               , flags, D4),
+        AROS_LHA(struct Hook       *, hook, A3),
+        AROS_LHA(struct BitMap     *, bm2, A2),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 32, Layers)
+        struct LayersBase *, LayersBase, 32, Layers)
 
 /*  FUNCTION
         Create a new layer at the given position and with the
@@ -42,8 +42,8 @@
         filled with a certain pattern. The backfill hook has to
         do that.
         If a super bitmap layer is wanted the flags LAYERSUPER and
-        the flag LAYERSMART have to be set and a pointer to a 
-        bitmap must also be passed to this function. 
+        the flag LAYERSMART have to be set and a pointer to a
+        bitmap must also be passed to this function.
 
     INPUTS
         li    - pointer to LayerInfo structure
@@ -58,10 +58,10 @@
                                 (struct Rectangle) bounds,
                                 (WORD) offsetx,
                                 (WORD) offsety ]
-        bm2   - pointer to optional super bitmap. 
+        bm2   - pointer to optional super bitmap.
         
     RESULT
-        Pointer to the newly created layer. NULL if layer could not be 
+        Pointer to the newly created layer. NULL if layer could not be
         created (Probably out of memory).
         
     NOTES
@@ -77,17 +77,17 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     return CreateBehindLayerTags(li, bm, x0, y0, x1, y1, flags,
-  				 LA_BackfillHook, hook,
-  				 LA_SuperBitMap, bm2,
-  				 TAG_DONE);
+                                 LA_BackfillHook, hook,
+                                 LA_SuperBitMap, bm2,
+                                 TAG_DONE);
 
     AROS_LIBFUNC_EXIT
 } /* CreateBehindHookLayer */

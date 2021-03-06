@@ -58,8 +58,8 @@ static ULONG GetOffset(struct Library *PartitionBase, struct PartitionHandle *ph
 }
 
 static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
-			       struct FileSysStartupMsg *fssm, struct PartitionHandle *table,
-			       struct PartitionHandle *pn, struct ExecBase *SysBase)
+                               struct FileSysStartupMsg *fssm, struct PartitionHandle *table,
+                               struct PartitionHandle *pn, struct ExecBase *SysBase)
 {
     UBYTE name[32];
     ULONG i, blockspercyl;
@@ -141,15 +141,15 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
 
     if ((pp[4 + DE_TABLESIZE] < DE_DOSTYPE) || (pp[4 + DE_DOSTYPE] == 0))
     {
-    	/*
-    	 * partition.library reports DosType == 0 for unknown filesystems.
-    	 * However dos.library will mount such DeviceNodes using rn_DefaultHandler
-    	 * (FFS). This is done for compatibility with 3rd party expansion ROMs.
-    	 * Here we ignore partitions with DosType == 0 and won't enter them into
-    	 * mountlist.
-    	 */
-    	D(bug("[Boot] Unknown DosType for %s, skipping partition\n"));
-    	return;
+        /*
+         * partition.library reports DosType == 0 for unknown filesystems.
+         * However dos.library will mount such DeviceNodes using rn_DefaultHandler
+         * (FFS). This is done for compatibility with 3rd party expansion ROMs.
+         * Here we ignore partitions with DosType == 0 and won't enter them into
+         * mountlist.
+         */
+        D(bug("[Boot] Unknown DosType for %s, skipping partition\n"));
+        return;
     }
 
     if (pttype != PHPTT_RDB)
@@ -237,8 +237,8 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
 }
 
 static BOOL CheckTables(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase,
-			struct FileSysStartupMsg *fssm,	struct PartitionHandle *table,
-			struct ExecBase *SysBase)
+                        struct FileSysStartupMsg *fssm, struct PartitionHandle *table,
+                        struct ExecBase *SysBase)
 {
     BOOL retval = FALSE;
     struct PartitionHandle *ph;
@@ -278,17 +278,17 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
     /* If we already have filesystem handler, don't do anything */
     if (dn->dn_SegList == BNULL && dn->dn_Handler == BNULL)
     {
-    	struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
+        struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
 
-	if (fssm && fssm->fssm_Device)
-	{
+        if (fssm && fssm->fssm_Device)
+        {
             struct PartitionHandle *pt = OpenRootPartition(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit);
 
-	    if (pt)
+            if (pt)
             {
                 res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
 
-           	CloseRootPartition(pt);
+                CloseRootPartition(pt);
            }
         }
     }
@@ -329,6 +329,6 @@ void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
 
         ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
-	CloseLibrary(PartitionBase);
+        CloseLibrary(PartitionBase);
     }
 }

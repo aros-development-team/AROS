@@ -45,8 +45,8 @@
         filled with a certain pattern. The backfill hook has to
         do that.
         If a super bitmap layer is wanted the flags LAYERSUPER and
-        the flag LAYERSMART have to be set and a pointer to a 
-        bitmap must also be passed to this function. 
+        the flag LAYERSMART have to be set and a pointer to a
+        bitmap must also be passed to this function.
 
     INPUTS
         li    - pointer to LayerInfo structure
@@ -61,7 +61,7 @@
                                 (struct Rectangle) bounds,
                                 (WORD) offsetx,
                                 (WORD) offsety ]
-        bm2   - pointer to optional super bitmap. 
+        bm2   - pointer to optional super bitmap.
 
     RESULT
         pointer to layer if successful, NULL otherwise
@@ -87,9 +87,9 @@
     AROS_LIBFUNC_INIT
 
     return CreateUpfrontLayerTags(li, bm, x0, y0, x1, y1, flags,
-  				  LA_BackfillHook, hook,
-  				  LA_SuperBitMap, bm2,
-  				  TAG_DONE);
+                                  LA_BackfillHook, hook,
+                                  LA_SuperBitMap, bm2,
+                                  TAG_DONE);
 
     AROS_LIBFUNC_EXIT
 } /* CreateUpfrontHookLayer */

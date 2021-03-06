@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <string.h>
@@ -41,11 +41,11 @@ BOOL GetIDs(struct IDDescr *idDescr, struct IntOOPBase *OOPBase)
 {
     while (idDescr->ID)
     {
-    	*(idDescr->Storage) = OOP_ObtainAttrBase(idDescr->ID);
-	if (0UL == *(idDescr->Storage))
-	    return (FALSE);
-	    
-	idDescr ++;
+        *(idDescr->Storage) = OOP_ObtainAttrBase(idDescr->ID);
+        if (0UL == *(idDescr->Storage))
+            return (FALSE);
+            
+        idDescr ++;
     }
     return (TRUE);
 }
@@ -90,7 +90,7 @@ BOOL init_mi_methodbase(CONST_STRPTR interface_id, ULONG *methodbase_ptr, struct
        if (*methodbase_ptr != mbase)
        {
            /* Methodbase had allready been inited, reset current ID */
-	   OOPBase->ob_CurrentMethodBase --;
+           OOPBase->ob_CurrentMethodBase --;
        }
    }
    ReturnBool ("init_mi_methodbase", success);
@@ -101,7 +101,7 @@ BOOL init_mi_methodbase(CONST_STRPTR interface_id, ULONG *methodbase_ptr, struct
 **  init_methodbase()  **
 ************************/
 
-/* Adds the local ID equivalent to the global string ID 
+/* Adds the local ID equivalent to the global string ID
    to the ID hashtable
 */
 
@@ -113,62 +113,62 @@ BOOL init_methodbase(CONST_STRPTR interface_id, ULONG methodbase, ULONG *methodb
     
     
     EnterFunc(bug("init_methodbase(interface_id=%s, methodbase=%ld)\n",
-    	interface_id, methodbase));
-	
+        interface_id, methodbase));
+        
     ObtainSemaphore(&OOPBase->ob_IIDTableLock);
-	
+        
     /* Has ID allready been mapped to a methodbase ? */
     idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interface_id, (struct IntOOPBase *)OOPBase);
     if (idb)
     {
-	if (idb->methodbase == (ULONG)-1)
-	{
-	    idb->methodbase = methodbase;
-	}
-	
-	*methodbase_ptr = idb->methodbase;
+        if (idb->methodbase == (ULONG)-1)
+        {
+            idb->methodbase = methodbase;
+        }
+        
+        *methodbase_ptr = idb->methodbase;
         inited = TRUE;
-	
+        
     }
     else
     {
     
-    	D(bug("Initing methodbase...\n"));
-	
-	
-    	/* If not, then map it and create a new bucket in the
-	** hashtable to store it
-	*/
-	idb = AllocMem(sizeof (struct iid_bucket), MEMF_ANY);
-	if (idb)
-	{
-	    idb->interface_id = AllocVec(strlen(interface_id) + 1, MEMF_ANY);
-	    if (idb->interface_id)
-	    {
-	    	D(bug("Allocated bucket\n"));
-	    	strcpy(idb->interface_id, interface_id);
-		
-		/* Get next free ID, and increase the free ID to mark it as used */
-		
-		idb->methodbase = methodbase;
-		*methodbase_ptr = methodbase;
-		
-		/* Leave attrbase field unitialized */
-		idb->attrbase = (ULONG)-1;
-		
-		/* Insert bucket into hash table */
-		InsertBucket(iidtable, (struct Bucket *)idb, (struct IntOOPBase *)OOPBase);
-		inited = TRUE;
-	    }
-	    else
-	    {
-	    	FreeMem(idb, sizeof (struct iid_bucket));
-	    }
-	}
+        D(bug("Initing methodbase...\n"));
+        
+        
+        /* If not, then map it and create a new bucket in the
+        ** hashtable to store it
+        */
+        idb = AllocMem(sizeof (struct iid_bucket), MEMF_ANY);
+        if (idb)
+        {
+            idb->interface_id = AllocVec(strlen(interface_id) + 1, MEMF_ANY);
+            if (idb->interface_id)
+            {
+                D(bug("Allocated bucket\n"));
+                strcpy(idb->interface_id, interface_id);
+                
+                /* Get next free ID, and increase the free ID to mark it as used */
+                
+                idb->methodbase = methodbase;
+                *methodbase_ptr = methodbase;
+                
+                /* Leave attrbase field unitialized */
+                idb->attrbase = (ULONG)-1;
+                
+                /* Insert bucket into hash table */
+                InsertBucket(iidtable, (struct Bucket *)idb, (struct IntOOPBase *)OOPBase);
+                inited = TRUE;
+            }
+            else
+            {
+                FreeMem(idb, sizeof (struct iid_bucket));
+            }
+        }
     }
     if (idb)
     {
-    	idb->refcount ++;
+        idb->refcount ++;
     }
 
     ReleaseSemaphore(&OOPBase->ob_IIDTableLock);
@@ -189,17 +189,17 @@ VOID release_idbucket(CONST_STRPTR interface_id, struct IntOOPBase *OOPBase)
     idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interface_id, OOPBase);
     if (idb)
     {
-    	/* Reduce interface bucket's refcount */
-	idb->refcount --;
-	
-	/* Last ref released ? */
-	if (idb->refcount == 0)
-	{
-	    /* Remove and free the bucket */
-	    RemoveBucket(iidtable, (struct Bucket *)idb);
-	    FreeVec(idb->interface_id);
-	    FreeMem(idb, sizeof (struct iid_bucket));
-	}
+        /* Reduce interface bucket's refcount */
+        idb->refcount --;
+        
+        /* Last ref released ? */
+        if (idb->refcount == 0)
+        {
+            /* Remove and free the bucket */
+            RemoveBucket(iidtable, (struct Bucket *)idb);
+            FreeVec(idb->interface_id);
+            FreeMem(idb, sizeof (struct iid_bucket));
+        }
     }
     
     ReleaseSemaphore(&OOPBase->ob_IIDTableLock);
@@ -207,7 +207,7 @@ VOID release_idbucket(CONST_STRPTR interface_id, struct IntOOPBase *OOPBase)
     ReturnVoid ("ReleaseAttrBase");
 }
 
-/* Increase an idbucket's refcount, to lock it. 
+/* Increase an idbucket's refcount, to lock it.
    Calling this function MUST ONLY be used for IFs
    that are known to exist in the IID table
 */

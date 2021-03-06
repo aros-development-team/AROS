@@ -38,10 +38,10 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
         struct IntuitionBase *, IntuitionBase, 76, Intuition)
 
 /*  FUNCTION
-	Redraw window borders.
+        Redraw window borders.
 
     INPUTS
-	window - pointer to a window whose borders should be redrawn
+        window - pointer to a window whose borders should be redrawn
 
     RESULT
 
@@ -91,7 +91,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
         {
             LOCK_REFRESH(window->WScreen);
             LOCKGADGET(IntuitionBase)
-    	#if 1
+        #if 1
             if ((rp->Layer==NULL) ||
                     ((!(window->Flags & WFLG_GIMMEZEROZERO)) && (rp->Layer != window->RPort->Layer)))
             {
@@ -101,7 +101,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
                 dprintf("RefreshWindowFrame: RPort's layer 0x%lx BorderRPort's layer 0x%lx\n",window->RPort,window->RPort->Layer,window->BorderRPort,window->BorderRPort->Layer);
             }
 
-    	#endif
+        #endif
 
             LockLayer(0,rp->Layer);
 
@@ -111,7 +111,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
             rp->Layer->Scroll_X = 0;
             rp->Layer->Scroll_Y = 0;
 
-    	#ifdef GADGETCLIPPING
+        #ifdef GADGETCLIPPING
             gadgetclipregion = NewRegion();
             if (gadgetclipregion)
             {
@@ -130,31 +130,31 @@ VOID int_RefreshWindowFrame(struct Window *window,
             }
 
             old_clipregion = InstallClipRegion(rp->Layer, gadgetclipregion);
-    	#else
-    	    old_clipregion = InstallClipRegion(rp->Layer, NULL);
-    	#endif
+        #else
+            old_clipregion = InstallClipRegion(rp->Layer, NULL);
+        #endif
 
-    	    {
-    		struct wdpDrawWinBorder  msg;
+            {
+                struct wdpDrawWinBorder  msg;
 
-		msg.MethodID 	    	= WDM_DRAW_WINBORDER;
-		msg.wdp_TrueColor       = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-		msg.wdp_Window 	    	= window;
-		msg.wdp_RPort     	= rp;
-    	    	msg.wdp_Flags	    	= (mustbe == REFRESHGAD_TOPBORDER) ? WDF_DWB_TOP_ONLY : 0;
-		msg.wdp_Dri             = dri;
-		msg.wdp_UserBuffer      = ((struct IntWindow *)window)->DecorUserBuffer;
-		DoMethodA(((struct IntScreen *)(window->WScreen))->WinDecorObj, (Msg)&msg);		
-    	    }
+                msg.MethodID            = WDM_DRAW_WINBORDER;
+                msg.wdp_TrueColor       = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
+                msg.wdp_Window          = window;
+                msg.wdp_RPort           = rp;
+                msg.wdp_Flags           = (mustbe == REFRESHGAD_TOPBORDER) ? WDF_DWB_TOP_ONLY : 0;
+                msg.wdp_Dri             = dri;
+                msg.wdp_UserBuffer      = ((struct IntWindow *)window)->DecorUserBuffer;
+                DoMethodA(((struct IntScreen *)(window->WScreen))->WinDecorObj, (Msg)&msg);
+            }
 
-    	#ifdef GADGETCLIPPING
+        #ifdef GADGETCLIPPING
             InstallClipRegion(rp->Layer,NULL);
-    	#endif
+        #endif
 
             /* Emm: RefreshWindowFrame() is documented to refresh *all* the gadgets,
              * but when a window is activated/deactivated, only border gadgets
              * are refreshed. */
-    	#if 1
+        #if 1
             /* Refresh rel gadgets first, since wizard.library (burn in hell!) seems
              * to rely on that. */
             int_refreshglist(window->FirstGadget,
@@ -171,21 +171,21 @@ VOID int_RefreshWindowFrame(struct Window *window,
                              mustbe,
                              mustnotbe | REFRESHGAD_REL,
                              IntuitionBase);
-    	#else
-	    int_refreshglist(window->FirstGadget,
-        		     window,
-        		     NULL,
-        		     -1,
-        		     mustbe,
-        		     mustnotbe,
-        		     IntuitionBase);
-    	#endif
+        #else
+            int_refreshglist(window->FirstGadget,
+                             window,
+                             NULL,
+                             -1,
+                             mustbe,
+                             mustnotbe,
+                             IntuitionBase);
+        #endif
 
             InstallClipRegion(rp->Layer,old_clipregion);
 
-    	#ifdef GADGETCLIPPING
+        #ifdef GADGETCLIPPING
             if (gadgetclipregion) DisposeRegion(gadgetclipregion);
-    	#endif
+        #endif
 
             rp->Layer->Scroll_X = old_scroll_x;
             rp->Layer->Scroll_Y = old_scroll_y;
@@ -252,7 +252,7 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
         if (qualified)
         {
             struct Rectangle rect;
-	    
+            
             rect.MinX = left;
             rect.MinY = top;
             rect.MaxX = right;

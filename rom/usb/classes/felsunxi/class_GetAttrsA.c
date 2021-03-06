@@ -15,15 +15,15 @@
 
     NAME */
 
-	AROS_LH3(ULONG, GetAttrsA,
+        AROS_LH3(ULONG, GetAttrsA,
 
 /*  SYNOPSIS */
-    	AROS_LHA(ULONG,            type,      D0),
-    	AROS_LHA(APTR,             usbstruct, A0),
-    	AROS_LHA(struct TagItem *, taglist,   A1),
-	
+        AROS_LHA(ULONG,            type,      D0),
+        AROS_LHA(APTR,             usbstruct, A0),
+        AROS_LHA(struct TagItem *, taglist,   A1),
+        
 /*  LOCATION */
-	LIBBASETYPEPTR, FELSunxiBase, 5, FELSunxi)
+        LIBBASETYPEPTR, FELSunxiBase, 5, FELSunxi)
 
 /*  FUNCTION
 

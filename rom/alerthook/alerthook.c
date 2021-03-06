@@ -28,8 +28,8 @@ struct Errors
 static const UBYTE Alerthook_name[];
 static const UBYTE Alerthook_version[];
 static AROS_UFP3(ULONG, Alerthook_init,
-    AROS_UFPA(void *,		    dummy1,  D0),
-    AROS_UFPA(BPTR,		    dummy2,  A0),
+    AROS_UFPA(void *,               dummy1,  D0),
+    AROS_UFPA(BPTR,                 dummy2,  A0),
     AROS_UFPA(struct ExecBase *,    SysBase, A6)
 );
 
@@ -93,8 +93,8 @@ mystrcpy(STRPTR dest, STRPTR src, LONG len)
 }
 
 static AROS_UFH3(ULONG, Alerthook_init,
-    AROS_UFHA(void *,		    dummy1,  D0),
-    AROS_UFHA(BPTR,		    dummy2,  A0),
+    AROS_UFHA(void *,               dummy1,  D0),
+    AROS_UFHA(BPTR,                 dummy2,  A0),
     AROS_UFHA(struct ExecBase *,    SysBase, A6)
 )
 {
@@ -102,9 +102,9 @@ static AROS_UFH3(ULONG, Alerthook_init,
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
-	Clear memory location zero (a cookie for the delayed guru after reset).
-	Some machines will keep putting a guru up during every reset if I don't
-	do this here.
+        Clear memory location zero (a cookie for the delayed guru after reset).
+        Some machines will keep putting a guru up during every reset if I don't
+        do this here.
     */
     ULONG *location_zero = (void *)0;
 
@@ -241,9 +241,9 @@ static const struct Errors subsystems[] =
     { 0x33,     "gadtools " },
     { 0x34,     "utility " },
 
-    { 0x40,	"aros " },
-    { 0x41,	"oop " },
-    { 0x42,	"hidd " },
+    { 0x40,     "aros " },
+    { 0x41,     "oop " },
+    { 0x42,     "hidd " },
 
     /* This takes in 0x35 as well... */
     { 0x00,     "unknown " }

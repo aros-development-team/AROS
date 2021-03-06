@@ -15,38 +15,38 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 
-	AROS_LH2I(struct Node *, FindName,
+        AROS_LH2I(struct Node *, FindName,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct List *, list, A0),
-	AROS_LHA(CONST_STRPTR, name, A1),
+        AROS_LHA(struct List *, list, A0),
+        AROS_LHA(CONST_STRPTR, name, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 46, Exec)
+        struct ExecBase *, SysBase, 46, Exec)
 
 /*  FUNCTION
-	Look for a node with a certain name in a list.
+        Look for a node with a certain name in a list.
 
     INPUTS
-	list - Search this list.
-	name - This is the name to look for.
+        list - Search this list.
+        name - This is the name to look for.
 
     RESULT
 
     NOTES
-	The search is case-sensitive, so "Hello" will not find a node
-	named "hello".
+        The search is case-sensitive, so "Hello" will not find a node
+        named "hello".
 
-	The list must contain complete Nodes and no MinNodes.
+        The list must contain complete Nodes and no MinNodes.
 
-	When supplied with a NULL list argument, defaults to the exec port list.
+        When supplied with a NULL list argument, defaults to the exec port list.
 
     EXAMPLE
-	struct List * list;
-	struct Node * node;
+        struct List * list;
+        struct Node * node;
 
-	// Look for a node with the name "Hello"
-	node = FindName (list, "Hello");
+        // Look for a node with the name "Hello"
+        node = FindName (list, "Hello");
 
     BUGS
 
@@ -59,8 +59,8 @@
     AROS_LIBFUNC_INIT
     struct Node * node;
 /* FIX !
-	FindName supplied with a NULL list defaults to the exec port list
-	Changed in lists.c as well....
+        FindName supplied with a NULL list defaults to the exec port list
+        Changed in lists.c as well....
 */
     if( !list )
     {
@@ -76,19 +76,19 @@
     /* Look through the list */
     for (node=GetHead(list); node; node=GetSucc(node))
     {
-	/* Only compare the names if this node has one. */
-	if(node->ln_Name)
-	{
-	    /* Check the node. If we found it, stop. */
-	    if (!strcmp (node->ln_Name, name))
-		break;
-	}
+        /* Only compare the names if this node has one. */
+        if(node->ln_Name)
+        {
+            /* Check the node. If we found it, stop. */
+            if (!strcmp (node->ln_Name, name))
+                break;
+        }
     }
 
     /*
-	If we found a node, this will contain the pointer to it. If we
-	didn't, this will be NULL (either because the list was
-	empty or because we tried all nodes in the list)
+        If we found a node, this will contain the pointer to it. If we
+        didn't, this will be NULL (either because the list was
+        empty or because we tried all nodes in the list)
     */
     return node;
     AROS_LIBFUNC_EXIT

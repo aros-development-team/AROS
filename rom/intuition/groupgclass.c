@@ -44,8 +44,8 @@ static void recalcgroupsize(Class *cl, struct Gadget *g)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
-    struct Gadget      	*member, *memberstate;
-    WORD            	 w, h, width = 0/*g->Width*/, height = 0/*g->Height*/;
+    struct Gadget       *member, *memberstate;
+    WORD                 w, h, width = 0/*g->Width*/, height = 0/*g->Height*/;
 
     memberstate = (struct Gadget *)data->memberlist.mlh_Head;
     while((member = NextObject(&memberstate)))
@@ -73,8 +73,8 @@ struct Gadget *next_tabcycleobject(Class *cl, struct Gadget *g)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
-    struct Gadget      	*member, *memberstate, *actobj;
-    struct Gadget      	*rc = NULL;
+    struct Gadget       *member, *memberstate, *actobj;
+    struct Gadget       *rc = NULL;
 
     actobj = data->activegad;
 
@@ -122,8 +122,8 @@ struct Gadget *prev_tabcycleobject(Class *cl, struct Gadget *g)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
-    struct Gadget      	*member, *memberstate, *actobj;
-    struct Gadget      	*prevmember = NULL, *rc = NULL;
+    struct Gadget       *member, *memberstate, *actobj;
+    struct Gadget       *prevmember = NULL, *rc = NULL;
 
     actobj = data->activegad;
 
@@ -193,10 +193,10 @@ IPTR GroupGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
-    struct Gadget      	*member, *memberstate;
-    WORD            	 dx, new_groupleft, old_groupleft = g->LeftEdge;
-    WORD            	 dy, new_grouptop , old_grouptop  = g->TopEdge;
-    IPTR            	 rc;
+    struct Gadget       *member, *memberstate;
+    WORD                 dx, new_groupleft, old_groupleft = g->LeftEdge;
+    WORD                 dy, new_grouptop , old_grouptop  = g->TopEdge;
+    IPTR                 rc;
 
     rc = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 
@@ -268,8 +268,8 @@ IPTR GroupGClass__OM_ADDMEMBER(Class *cl, struct Gadget *g, struct opMember *msg
     struct GroupGData   *data = INST_DATA(cl, g);
     struct opAddTail     m;
     struct opSet         m2;
-    struct TagItem  	 tags[3];
-    IPTR            	 rc;
+    struct TagItem       tags[3];
+    IPTR                 rc;
 
     m.MethodID  = OM_ADDTAIL;
     m.opat_List = (struct List *)&data->memberlist;
@@ -302,7 +302,7 @@ IPTR GroupGClass__OM_REMMEMBER(Class *cl, struct Gadget *g, struct opMember *msg
 {
     struct opSet    m2;
     struct TagItem  tags[3];
-    IPTR    	    rc;
+    IPTR            rc;
     STACKULONG      method = OM_REMOVE;
 
     rc = DoMethodA(msg->opam_Object, (Msg)&method);
@@ -334,9 +334,9 @@ IPTR GroupGClass__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
     struct gpHitTest     m;
-    struct Gadget      	*member, *memberstate;
-    WORD            	 x, y;
-    IPTR            	 rc = 0;
+    struct Gadget       *member, *memberstate;
+    WORD                 x, y;
+    IPTR                 rc = 0;
 
     m = *msg;
 
@@ -382,8 +382,8 @@ IPTR GroupGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *ms
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
-    struct gpInput  	 m;
-    IPTR            	 rc;
+    struct gpInput       m;
+    IPTR                 rc;
 
     /* If someone activates us with ActivateGadget(), activegad will be NULL.
      * In that case, activate the first object.
@@ -391,7 +391,7 @@ IPTR GroupGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *ms
     if (!data->activegad)
     {
         struct Gadget *memberstate = (struct Gadget *)data->memberlist.mlh_Head;
-	
+        
         data->activegad = NextObject(&memberstate);
     }
 
@@ -447,7 +447,7 @@ IPTR GroupGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *ms
 IPTR GroupGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct GroupGData   *data = INST_DATA(cl, g);
-    IPTR            	 rc;
+    IPTR                 rc;
 
     ASSERT_VALID_PTR(data->activegad);
 
@@ -462,8 +462,8 @@ IPTR GroupGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive
 IPTR GroupGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct GroupGData	*data = INST_DATA(cl, g);
-    struct Gadget	*member, *memberstate;
+    struct GroupGData   *data = INST_DATA(cl, g);
+    struct Gadget       *member, *memberstate;
 
     memberstate = (struct Gadget *)data->memberlist.mlh_Head;
     while((member = NextObject(&memberstate)))

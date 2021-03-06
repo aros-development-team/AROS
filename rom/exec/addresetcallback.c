@@ -13,30 +13,30 @@
 
     NAME */
 
-	AROS_LH1(BOOL, AddResetCallback,
+        AROS_LH1(BOOL, AddResetCallback,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Interrupt *, interrupt, A0),
+        AROS_LHA(struct Interrupt *, interrupt, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 167, Exec)
+        struct ExecBase *, SysBase, 167, Exec)
 
 /*  FUNCTION
-	Install a system reset notification callback. The callback
-	will be called whenever system reboot is performed.
+        Install a system reset notification callback. The callback
+        will be called whenever system reboot is performed.
 
-	The given Interrupt structure is inserted into the callback list
-	according to its priority. The callback code is called with the same
-	arguments as an interrupt server.
+        The given Interrupt structure is inserted into the callback list
+        according to its priority. The callback code is called with the same
+        arguments as an interrupt server.
 
     INPUTS
-	interrupt - A pointer to an Interrupt structure
+        interrupt - A pointer to an Interrupt structure
 
     RESULT
-	TRUE for success, FALSE for failure
+        TRUE for success, FALSE for failure
 
     NOTES
-	This function is compatible with AmigaOS v4.
+        This function is compatible with AmigaOS v4.
 
     EXAMPLE
 
@@ -45,8 +45,8 @@
     SEE ALSO
 
     INTERNALS
-	On AROS this function cannot fail. Return value is present for
-	AmigaOS v4 compatibility.
+        On AROS this function cannot fail. Return value is present for
+        AmigaOS v4 compatibility.
 
 ******************************************************************************/
 {

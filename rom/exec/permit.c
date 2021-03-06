@@ -48,7 +48,7 @@
 
         (*) On EXECSMP builds, Forbid() only aplies to the processor
             it is called from. Data which needs to be protected from
-            parallel access will also require a spinlock.  
+            parallel access will also require a spinlock.
 
     EXAMPLE
         On uniprocessor builds of AROS, it is generally not necessary/

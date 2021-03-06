@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /*  HISTORY:  23.7.98  SDuvan  Implemented based on BattClock code. */

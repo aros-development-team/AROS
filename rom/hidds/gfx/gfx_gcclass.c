@@ -234,8 +234,8 @@ OOP_Object *GC__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
         /* Override defaults with user suplied attrs */
 
-	OOP_SetAttrs(obj, msg->attrList);
-    	/* GC__Root__Set(cl, obj, &set_msg); */
+        OOP_SetAttrs(obj, msg->attrList);
+        /* GC__Root__Set(cl, obj, &set_msg); */
 
     } /* if(obj) */
 
@@ -249,7 +249,7 @@ VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     HIDDT_GC_Intern *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
 
     EnterFunc(bug("GC::Set()\n"));
 
@@ -261,32 +261,32 @@ VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
             switch(idx)
             {
                 case aoHidd_GC_Foreground:
-		    data->fg = tag->ti_Data;
-		    break;
-		    
+                    data->fg = tag->ti_Data;
+                    break;
+                    
                 case aoHidd_GC_Background:
-		    data->bg = tag->ti_Data;
-		    break;
-		    
+                    data->bg = tag->ti_Data;
+                    break;
+                    
                 case aoHidd_GC_DrawMode:
-		    data->drMode = tag->ti_Data;
-		    break;
-		    
+                    data->drMode = tag->ti_Data;
+                    break;
+                    
                 case aoHidd_GC_ColorMask:
-		    data->colMask = tag->ti_Data;
-		    break;
-		    
-                case aoHidd_GC_LinePattern: 
-		    data->linePat = (UWORD) tag->ti_Data;
-		    break;
+                    data->colMask = tag->ti_Data;
+                    break;
+                    
+                case aoHidd_GC_LinePattern:
+                    data->linePat = (UWORD) tag->ti_Data;
+                    break;
 
-                case aoHidd_GC_LinePatternCnt: 
-		    data->linePatCnt = (UWORD) tag->ti_Data;
-		    break;
+                case aoHidd_GC_LinePatternCnt:
+                    data->linePatCnt = (UWORD) tag->ti_Data;
+                    break;
 
                 case aoHidd_GC_ColorExpansionMode:
-		    data->colExp = tag->ti_Data;
-		    break;
+                    data->colExp = tag->ti_Data;
+                    break;
             }
         }
     }
@@ -299,7 +299,7 @@ VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 {
     HIDDT_GC_Intern *data = OOP_INST_DATA(cl, obj);
-    ULONG   	    idx;
+    ULONG           idx;
 
     EnterFunc(bug("GC::Get() attrID: %i  storage: %p\n", msg->attrID, msg->storage));
 
@@ -308,36 +308,36 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         switch(idx)
         {
             case aoHidd_GC_Foreground:
-	    	 *msg->storage = data->fg;
-		 break;
-		 
+                 *msg->storage = data->fg;
+                 break;
+                 
             case aoHidd_GC_Background:
-	    	 *msg->storage = data->bg;
-		 break;
-		 
+                 *msg->storage = data->bg;
+                 break;
+                 
             case aoHidd_GC_DrawMode:
-	    	*msg->storage = data->drMode;
-		break;
+                *msg->storage = data->drMode;
+                break;
 
             case aoHidd_GC_ColorMask:
-	    	*msg->storage = data->colMask;
-		break;
+                *msg->storage = data->colMask;
+                break;
 
             case aoHidd_GC_LinePattern:
-	    	*msg->storage = data->linePat;
-		break;
+                *msg->storage = data->linePat;
+                break;
 
             case aoHidd_GC_LinePatternCnt:
-	    	*msg->storage = data->linePatCnt;
-		break;
-		
+                *msg->storage = data->linePatCnt;
+                break;
+                
             case aoHidd_GC_ColorExpansionMode:
-	    	*msg->storage = data->colExp;
-		break;
-		
-	    default:
-	    	OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
-		break;
+                *msg->storage = data->colExp;
+                break;
+                
+            default:
+                OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
+                break;
         }
     }
     else
@@ -361,7 +361,7 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         hidd.gfx.gc
 
     FUNCTION
-    	Install a clipping rectangle on a GC.
+        Install a clipping rectangle on a GC.
 
     INPUTS
         obj    - a GC object
@@ -369,17 +369,17 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         x2, y2 - bottom-right coordinate of the clipping rectangle
 
     RESULT
-    	None
+        None
 
     NOTES
-    	Since the GC is just a data container, installing clipping rectangle doesn't magically
-    	applies it to all operations. Graphics driver method which uses the GC needs to support
-    	it explicitly. Currently clipping is supported only by Draw and DrawEllipse methods.
+        Since the GC is just a data container, installing clipping rectangle doesn't magically
+        applies it to all operations. Graphics driver method which uses the GC needs to support
+        it explicitly. Currently clipping is supported only by Draw and DrawEllipse methods.
 
-	Use this method if and only if the GC object was created by you. graphics.library
-	internally operates on temporary GC objects, which are allocated only partially. They
-	don't have storage space for clipping rectangle data, and attempt to use this
-	method on such a GC will result in memory trashing.
+        Use this method if and only if the GC object was created by you. graphics.library
+        internally operates on temporary GC objects, which are allocated only partially. They
+        don't have storage space for clipping rectangle data, and attempt to use this
+        method on such a GC will result in memory trashing.
 
     EXAMPLE
 
@@ -424,13 +424,13 @@ VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetC
         hidd.gfx.gc
 
     FUNCTION
-    	Uninstalls the clipping rectangle (whatever it is) from the GC.
+        Uninstalls the clipping rectangle (whatever it is) from the GC.
 
     INPUTS
         obj - a GC object
 
     RESULT
-    	None
+        None
 
     NOTES
 

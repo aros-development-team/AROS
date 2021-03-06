@@ -57,49 +57,49 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
 
     switch (EG(o)->Flags & GFLG_LABELMASK)
     {
-	case GFLG_LABELITEXT:
+        case GFLG_LABELITEXT:
             /* ITexts must not to be centered! */
 
-    	    /* frbuttonclass sets fg/bg/drawmode attributes */
+            /* frbuttonclass sets fg/bg/drawmode attributes */
             int_PrintIText(rp, EG(o)->GadgetText, container.Left,container.Top, TRUE, IntuitionBase);
             break;
 
-	case GFLG_LABELSTRING:
+        case GFLG_LABELSTRING:
             len = strlen ((STRPTR) EG(o)->GadgetText);
 
             if (len > 0UL)
             {
-        	ULONG x;
-        	ULONG y;
+                ULONG x;
+                ULONG y;
 
-        	x = container.Left + (container.Width / 2);
-        	x -= LabelWidth (rp,
-                        	 (STRPTR)EG(o)->GadgetText, len, IntuitionBase) / 2;
-        	y = container.Top + (container.Height / 2) +
+                x = container.Left + (container.Width / 2);
+                x -= LabelWidth (rp,
+                                 (STRPTR)EG(o)->GadgetText, len, IntuitionBase) / 2;
+                y = container.Top + (container.Height / 2) +
                     rp->Font->tf_Baseline;
-        	y -= rp->Font->tf_YSize / 2;
-        	SetAPen (rp, pens[TEXTPEN]);
-        	Move (rp, x, y);
-        	RenderLabel (rp,
+                y -= rp->Font->tf_YSize / 2;
+                SetAPen (rp, pens[TEXTPEN]);
+                Move (rp, x, y);
+                RenderLabel (rp,
                              (STRPTR) EG(o)->GadgetText, len,
                              IntuitionBase);
             }
             break;
 
-	case GFLG_LABELIMAGE:
+        case GFLG_LABELIMAGE:
             /* center image position */
 
             x = container.Left + ((container.Width / 2) -
-                        	  (IM(EG(o)->GadgetText)->Width / 2)) - IM(EG(o)->GadgetText)->LeftEdge;
+                                  (IM(EG(o)->GadgetText)->Width / 2)) - IM(EG(o)->GadgetText)->LeftEdge;
 
             y = container.Top + ((container.Height / 2) -
-                        	 (IM(EG(o)->GadgetText)->Height / 2)) - IM(EG(o)->GadgetText)->TopEdge;
+                                 (IM(EG(o)->GadgetText)->Height / 2)) - IM(EG(o)->GadgetText)->TopEdge;
             //dprintf("printgadgetlabel: o %p w %d h %d x %d y %d l %d t %d\n", o,IM(EG(o)->GadgetText)->Width,IM(EG(o)->GadgetText)->Height,x,y,IM(EG(o)->GadgetText)->LeftEdge,IM(EG(o)->GadgetText)->TopEdge);
 
             DrawImageState(rp, IM(EG(o)->GadgetText),
-                	   x, y,
-                	   ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
-                	   msg->gpr_GInfo->gi_DrInfo);
+                           x, y,
+                           ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+                           msg->gpr_GInfo->gi_DrInfo);
             break;
 
     } /* switch (EG(o)->Flags & GFLG_LABELMASK) */
@@ -236,7 +236,7 @@ void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
 {
     switch (gad->GadgetType & (GTYP_GADGETTYPE & ~GTYP_SYSGADGET))
     {
-	case GTYP_SCRGADGET:
+        case GTYP_SCRGADGET:
             box->Left   = 0;
             box->Top    = 0;
             box->Width  = scr->Width;
@@ -244,7 +244,7 @@ void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
 
             break;
 
-	case GTYP_GZZGADGET:
+        case GTYP_GZZGADGET:
             /* stegerg: this means gadget is in window border! */
 
             box->Left   = 0;
@@ -254,7 +254,7 @@ void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
 
             break;
 
-	case GTYP_REQGADGET:
+        case GTYP_REQGADGET:
             box->Left   = req->LeftEdge + win->BorderLeft;
             box->Top    = req->TopEdge + win->BorderTop;
             box->Width  = req->Width;
@@ -262,27 +262,27 @@ void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
 
             break;
 
-	default:
+        default:
             if (win->Flags & WFLG_GIMMEZEROZERO)
             {
-        	/* stegerg: domain.left and domain.top must not be added
-        	   to gadget position when it is rendered, because gadgets
-        	   in the innerlayer of a gzz gadget are already shifted
-        	   thanks to the innerlayer. */
+                /* stegerg: domain.left and domain.top must not be added
+                   to gadget position when it is rendered, because gadgets
+                   in the innerlayer of a gzz gadget are already shifted
+                   thanks to the innerlayer. */
 
-        	box->Left   = win->BorderLeft;
-        	box->Top    = win->BorderTop;
+                box->Left   = win->BorderLeft;
+                box->Top    = win->BorderTop;
 
-        	box->Width  = win->Width - win->BorderLeft - win->BorderRight;
-        	box->Height = win->Height - win->BorderTop - win->BorderBottom;
+                box->Width  = win->Width - win->BorderLeft - win->BorderRight;
+                box->Height = win->Height - win->BorderTop - win->BorderBottom;
 
             }
             else
             {
-        	box->Left   = 0;
-        	box->Top    = 0;
-        	box->Width  = win->Width;
-        	box->Height = win->Height;
+                box->Left   = 0;
+                box->Top    = 0;
+                box->Width  = win->Width;
+                box->Height = win->Height;
 
             }
 
@@ -466,7 +466,7 @@ void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 /**********************************************************************************************/
 
 void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
-    	    	    	BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
+                        BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
 {
     struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
@@ -490,7 +490,7 @@ void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
     else
     {
         num_loops = 2;
-	clipto = NULL; /* Don't do any border clipping for GZZ windows */
+        clipto = NULL; /* Don't do any border clipping for GZZ windows */
     }
 
     for(i = 0; i < num_loops; i++, rp = rp2)
@@ -556,12 +556,12 @@ void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
                         }
 
                         if (!onlydamagelist)
-			{
-    	    	    	    if (!clipto || AndRectRect(&rect, clipto, &rect))
-	    	    	    {
- 			    	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-			    }
-			}
+                        {
+                            if (!clipto || AndRectRect(&rect, clipto, &rect))
+                            {
+                                EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+                            }
+                        }
 
                     }
 
@@ -630,24 +630,24 @@ ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
         if (gadget->Flags & GFLG_DISABLED)
         {
             if (gadget->Flags & GFLG_SELECTED)
-	    {
+            {
                 state = IDS_INACTIVEDISABLED; /* Hmm ... there's no INACTIVEDISABLEDSELECTED */
-	    }
+            }
             else
-	    {
+            {
                 state = IDS_INACTIVEDISABLED;
-	    }
+            }
         }
         else
         {
             if (gadget->Flags & GFLG_SELECTED)
-	    {
+            {
                 state = IDS_INACTIVESELECTED;
-	    }
+            }
             else
-	    {
+            {
                 state = IDS_INACTIVENORMAL;
-	    }
+            }
         }
     }
     else
@@ -655,24 +655,24 @@ ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
         if (gadget->Flags & GFLG_DISABLED)
         {
             if (gadget->Flags & GFLG_SELECTED)
-	    {
+            {
                 state = IDS_SELECTEDDISABLED;
-	    }
+            }
             else
-	    {
+            {
                 state = IDS_DISABLED;
-	    }
+            }
         }
         else
         {
             if (gadget->Flags & GFLG_SELECTED)
-	    {
+            {
                 state = IDS_SELECTED;
-	    }
+            }
             else
-	    {
+            {
                 state = IDS_NORMAL;
-	    }
+            }
         }
     }
 

@@ -12,7 +12,7 @@
 #include "cmd_protos.h"
 #include "pci_protos.h"
 
-#define	UtilityBase	base->hd_UtilityBase
+#define UtilityBase     base->hd_UtilityBase
 
 const char devname[] = MOD_NAME_STRING;
 CONST_STRPTR xfer_names[] = {"CONTROL", "BULK", "ISO", "INT"};

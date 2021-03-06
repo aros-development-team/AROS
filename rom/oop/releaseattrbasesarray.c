@@ -11,14 +11,14 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 
-	AROS_LH2(void, OOP_ReleaseAttrBasesArray,
+        AROS_LH2(void, OOP_ReleaseAttrBasesArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(OOP_AttrBase *, bases, A0),
+        AROS_LHA(OOP_AttrBase *, bases, A0),
         AROS_LHA(CONST_STRPTR const *, ids, A1),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 24, OOP)
+        struct Library *, OOPBase, 24, OOP)
 
 /*  FUNCTION
         Release several attribute ID bases, stored in linear array.

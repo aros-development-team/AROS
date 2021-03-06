@@ -189,7 +189,7 @@ void getDeviceData(STRPTR device)
     }
     else
         UnLockDosList(LDF_DEVICES|LDF_READ);
-}           
+}
 
 AROS_UFH3(void, start_function,
     AROS_UFHA(struct Hook *, h,      A0),
@@ -344,7 +344,7 @@ BOOL GUIinit()
                             MUIA_Bitmap_Height, 348,
                         End, // ImageObject
                     End, // VGroup
-                    Child, VGroup, 
+                    Child, VGroup,
                         Child, VGroup, GroupFrameT(_(MSG_SELECTION)),
                             Child, DevList = ListObject,
                                 InputListFrame,
@@ -361,7 +361,7 @@ BOOL GUIinit()
         End; // ApplicationObject
 
     if (app)
-    {   
+    {
         /* Quit application if the windowclosegadget or the esc key is pressed. */
         struct DosList *dl,*dll;
         
@@ -394,7 +394,7 @@ BOOL GUIinit()
         DoMethod(RefreshButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)app, 3, MUIM_CallHook, (IPTR)&refresh_hook);
 
-        DoMethod(DevList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, 
+        DoMethod(DevList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
             (IPTR)DevList, 2, MUIM_CallHook, (IPTR)&select_hook);
 
         DoMethod(MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
@@ -440,7 +440,7 @@ int main(int argc, char *argv[])
 
             struct Window *window = (struct Window *)xget(MainWindow, MUIA_Window_Window);
 
-            bm = AllocBitMap(500, 350, 
+            bm = AllocBitMap(500, 350,
                  GetBitMapAttr(window->RPort->BitMap, BMA_DEPTH), BMF_CLEAR,
                  window->RPort->BitMap);
             rp = CreateRastPort();

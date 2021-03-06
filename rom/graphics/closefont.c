@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$	$Log
+    $Id$        $Log
 
     Desc: Graphics function CloseFont()
 */
@@ -14,19 +14,19 @@
 #include <graphics/text.h>
 #include <proto/graphics.h>
 
-	AROS_LH1(void, CloseFont,
+        AROS_LH1(void, CloseFont,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TextFont *, textFont, A1),
+        AROS_LHA(struct TextFont *, textFont, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 13, Graphics)
+        struct GfxBase *, GfxBase, 13, Graphics)
 
 /*  FUNCTION
-	Close a font.
+        Close a font.
 
     INPUTS
-	font - font pointer from OpenFont() or OpenDiskFont()
+        font - font pointer from OpenFont() or OpenDiskFont()
 
     RESULT
 
@@ -41,8 +41,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -56,7 +56,7 @@
     textFont->tf_Accessors--;
     if ((textFont->tf_Accessors == 0) && !(textFont->tf_Flags & FPF_ROMFONT))
     {
-    	RemFont(textFont);
+        RemFont(textFont);
     }
     Permit();
 

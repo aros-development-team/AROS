@@ -13,13 +13,13 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, UnlockLayerRom,
+        AROS_LH1(void, UnlockLayerRom,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l,   A5),
+        AROS_LHA(struct Layer *, l,   A5),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 73, Graphics)
+        struct GfxBase *, GfxBase, 73, Graphics)
 
 /*  FUNCTION
         Unlocks a previously locked layer for access by other applications
@@ -29,7 +29,7 @@
         This functions does the same as layers/UnlockLayerRom()
 
     INPUTS
-	l - pointer to layer structure
+        l - pointer to layer structure
 
     RESULT
 
@@ -42,7 +42,7 @@
 
     SEE ALSO
         LockLayerRom(), hyperlayers.library/LockLayer()
-	hyperlayers.library/UnLockLayer()
+        hyperlayers.library/UnLockLayer()
 
     INTERNALS
 

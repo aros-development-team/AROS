@@ -120,7 +120,7 @@
                     {
                         /* FIXME: handle the error condition if OpenWorkBench() fails */
                         /* What to do if OpenWorkBench() fails? Try until it succeeds?
-                           Try for a finite amount of times? Don't try and do nothing 
+                           Try for a finite amount of times? Don't try and do nothing
                            at all? */
                     }
                 }

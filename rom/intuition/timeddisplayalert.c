@@ -22,31 +22,31 @@
         struct IntuitionBase *, IntuitionBase, 137, Intuition)
 
 /*  FUNCTION
-	Display an alert with automatic time-out. See DisplayAlert()
-	documentation.
+        Display an alert with automatic time-out. See DisplayAlert()
+        documentation.
 
     INPUTS
-	alertnumber - Alert code
-	string - Text data to display
-	height - Total height of alert display in pixels
-	time   - Timeout measured in display frame refresh periods.
+        alertnumber - Alert code
+        string - Text data to display
+        height - Total height of alert display in pixels
+        time   - Timeout measured in display frame refresh periods.
 
     RESULT
-	TRUE or FALSE depending on user's reaction. FALSE in case of timeout.
+        TRUE or FALSE depending on user's reaction. FALSE in case of timeout.
 
     NOTES
-	See DisplayAlert() documentation for detailed description of
-	parameters.
+        See DisplayAlert() documentation for detailed description of
+        parameters.
 
     EXAMPLE
 
     BUGS
-	In AROS timeout is currently not implemented. Note that this
-	function is obsolete and strongly deprecated for use in software.
-	It is present only for backwards compatibility with AmigaOS(tm).
+        In AROS timeout is currently not implemented. Note that this
+        function is obsolete and strongly deprecated for use in software.
+        It is present only for backwards compatibility with AmigaOS(tm).
 
     SEE ALSO
-	DisplayAlert()
+        DisplayAlert()
 
     INTERNALS
 

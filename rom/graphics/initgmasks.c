@@ -12,17 +12,17 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, InitGMasks,
+        AROS_LH1(void, InitGMasks,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct AnimOb *, anOb, A0),
+        AROS_LHA(struct AnimOb *, anOb, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 29, Graphics)
+        struct GfxBase *, GfxBase, 29, Graphics)
 
 /*  FUNCTION
-	For every component's sequence initialize the Masks by calling
-	InitMasks()
+        For every component's sequence initialize the Masks by calling
+        InitMasks()
 
     INPUTS
         anOb = pointer to the AnimOb
@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	InitGels(), InitMasks(), graphics/gels.h
+        InitGels(), InitMasks(), graphics/gels.h
 
     INTERNALS
 

@@ -275,32 +275,32 @@ IPTR DragBarClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender * msg)
               container.Top + container.Height - 1));
 
         RectFill(rp,
-        	 container.Left,
-        	 container.Top,
-        	 container.Left + container.Width - 1,
-        	 container.Top + container.Height - 2);
+                 container.Left,
+                 container.Top,
+                 container.Left + container.Width - 1,
+                 container.Top + container.Height - 2);
 
         /* Draw a thin dark line around the bar */
 
         SetAPen(rp, pens[SHINEPEN]);
         RectFill(rp,container.Left,
-        	 container.Top,
-        	 container.Left,
-        	 container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
+                 container.Top,
+                 container.Left,
+                 container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
         RectFill(rp,container.Left + 1,
-        	 container.Top,
-        	 container.Left + container.Width - 1,
-        	 container.Top);
+                 container.Top,
+                 container.Left + container.Width - 1,
+                 container.Top);
 
         SetAPen(rp,pens[SHADOWPEN]);
         RectFill(rp,container.Left + container.Width - 1,
-        	 container.Top + 1,
-        	 container.Left + container.Width - 1,
-        	 container.Top + container.Height - 1);
+                 container.Top + 1,
+                 container.Left + container.Width - 1,
+                 container.Top + container.Height - 1);
         RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
-        	 container.Top + container.Height - 1,
-        	 container.Left + container.Width - 2,
-        	 container.Top + container.Height - 1);
+                 container.Top + container.Height - 1,
+                 container.Left + container.Width - 2,
+                 container.Top + container.Height - 1);
 
         /* Render the titlebar */
         if (NULL != win->Title)
@@ -339,7 +339,7 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
     struct GfxBase    *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct InputEvent *ie = msg->gpi_IEvent;
-    IPTR    	       retval = GMR_NOREUSE;
+    IPTR               retval = GMR_NOREUSE;
 
     if (ie)
     {
@@ -390,10 +390,10 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 
             if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE))
             {
-    	    #ifdef USEGADGETLOCK
-	    	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-		data->drag_inputhandlerlock = TRUE;
-		
+            #ifdef USEGADGETLOCK
+                ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+                data->drag_inputhandlerlock = TRUE;
+                
                 if (AttemptSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock))
                 {
                     data->drag_gadgetlock = TRUE;
@@ -402,16 +402,16 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
                 {
                     goto fail;
                 }
-    	    #endif
-    	    #ifndef DELAYEDDRAG
+            #endif
+            #ifndef DELAYEDDRAG
                 LockLayers(&w->WScreen->LayerInfo);
                 data->drag_layerlock = TRUE;
-    	    #endif
+            #endif
             } else {
                 /* MOVEHACK ? */
                 if (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_PRIVILEDGEDREFRESH)
                 {
-    	    	#ifdef __MORPHOS__
+                #ifdef __MORPHOS__
                     data->movetask =
                         NewCreateTask(TASKTAG_CODETYPE, CODETYPE_PPC, TASKTAG_PC, (ULONG)MoveTask,
                                         TASKTAG_PRI, 0,
@@ -420,16 +420,16 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
                                         TASKTAG_PPC_ARG3,(ULONG)w->WScreen,
                                         TASKTAG_PPC_ARG4,(ULONG)IntuitionBase,
                                         TAG_DONE);
-    	    	#else
-    	    	// FIXME!
-    	    	/* FIXME: Implemente MOVEHACK support for AROS (?) */
-    	    	#endif
+                #else
+                // FIXME!
+                /* FIXME: Implemente MOVEHACK support for AROS (?) */
+                #endif
                 }
             }
 
             SetDrMd(data->rp, COMPLEMENT);
 
-    	#ifndef DELAYEDDRAG
+        #ifndef DELAYEDDRAG
             if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE))
                 drawwindowframe(w->WScreen
                         , data->rp
@@ -441,29 +441,29 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
                            );
 
             data->isrendered = TRUE;
-    	#endif
+        #endif
 
             data->drag_canceled = FALSE;
 
             {
                 UQUAD currenttime;
-		
+                
                 currenttime = ie->ie_TimeStamp.tv_secs;
                 currenttime = currenttime * 50;
                 currenttime += ie->ie_TimeStamp.tv_micro / 20000;
-		
+                
                 data->lasteventtime = currenttime;
             }
 
             /* size mouse bounds such that mouse pointer cannot move if window cannot move, if offscreenlayers is turned off */
-	    if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
-            	struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-		iihd->MouseBoundsActiveFlag = TRUE;
-            	iihd->MouseBoundsLeft = data->mousex;
-            	iihd->MouseBoundsRight = w->WScreen->Width - (w->Width - data->mousex);
-            	iihd->MouseBoundsTop = data->mousey;
-            	iihd->MouseBoundsBottom = w->WScreen->Height - (w->Height - data->mousey);
-	    }
+            if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
+                struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+                iihd->MouseBoundsActiveFlag = TRUE;
+                iihd->MouseBoundsLeft = data->mousex;
+                iihd->MouseBoundsRight = w->WScreen->Width - (w->Width - data->mousex);
+                iihd->MouseBoundsTop = data->mousey;
+                iihd->MouseBoundsBottom = w->WScreen->Height - (w->Height - data->mousey);
+            }
 
             return GMR_MEACTIVE;
         }
@@ -482,12 +482,12 @@ fail:
             ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
             data->drag_gadgetlock = FALSE;
         }
-	
-	if (data->drag_inputhandlerlock)
-	{
-	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-	    data->drag_inputhandlerlock = FALSE;
-	}
+        
+        if (data->drag_inputhandlerlock)
+        {
+            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+            data->drag_inputhandlerlock = FALSE;
+        }
     #endif
 
     #ifdef USEWINDOWLOCK
@@ -507,13 +507,13 @@ fail:
 
 IPTR DragBarClass__GM_MOVETEST(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-    IPTR    	    	 retval = MOVETEST_MOVE;
+    IPTR                 retval = MOVETEST_MOVE;
 #ifdef SKINS
     struct dragbar_data *data = INST_DATA(cl, g);
     struct Window       *w = msg->gpi_GInfo->gi_Window;
-    struct InputEvent 	 myie;
-    LONG            	 new_left;
-    LONG            	 new_top;
+    struct InputEvent    myie;
+    LONG                 new_left;
+    LONG                 new_top;
 
     CopyMem(msg->gpi_IEvent,&myie,sizeof (struct InputEvent));
     myie.ie_Code = 0x68; //mouse_leftpress
@@ -563,7 +563,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
     struct GfxBase    *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct GadgetInfo *gi = msg->gpi_GInfo;
-    IPTR    	       retval = GMR_MEACTIVE;
+    IPTR               retval = GMR_MEACTIVE;
 
     if (gi)
     {
@@ -588,10 +588,10 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
 
             case IECODE_NOBUTTON:
                 {
-                    struct Screen   	*scr = w->WScreen;
-                    struct InputEvent 	 myie;
-                    LONG            	 new_left;
-                    LONG            	 new_top;
+                    struct Screen       *scr = w->WScreen;
+                    struct InputEvent    myie;
+                    LONG                 new_left;
+                    LONG                 new_top;
 
                     /* Can we move to the new position, or is window at edge of display ? */
                     new_left = scr->MouseX - data->mousex;
@@ -600,12 +600,12 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                     CopyMem(ie,&myie,sizeof (struct InputEvent));
                     myie.ie_Code = SELECTDOWN; //mouse_leftpress
 
-    	    	#ifdef SKINS
+                #ifdef SKINS
                     if ((!((GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS) && (w->WScreen->LayerInfo.Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))) ||
                         MatchHotkey(&myie,IA_TOGGLEOFFSCREEN,IntuitionBase))
-    	    	#else
+                #else
                     if (!((GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS) && (w->WScreen->LayerInfo.Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS)))
-    	    	#endif
+                #endif
                     {
                         if (new_left < 0)
                         {
@@ -626,7 +626,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                             data->mousex += new_left - correct_left;
                             new_left = correct_left;
                         }
-			
+                        
                         if (new_top + w->Height > scr->Height)
                         {
                             LONG correct_top;
@@ -644,13 +644,13 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                         {
                             /* Erase old frame */
                             drawwindowframe(w->WScreen
-                                	    , data->rp
-                                	    , data->curleft
-                                	    , data->curtop
-                                	    , data->curleft + w->Width  - 1
-                                	    , data->curtop  + w->Height - 1
-                                	    , IntuitionBase
-                                	    );
+                                            , data->rp
+                                            , data->curleft
+                                            , data->curtop
+                                            , data->curleft + w->Width  - 1
+                                            , data->curtop  + w->Height - 1
+                                            , IntuitionBase
+                                            );
                         }
 
                         data->curleft = new_left;
@@ -663,7 +663,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                             if (newx || newy)
                             {
                                 UQUAD currenttime;
-				
+                                
                                 currenttime = ie->ie_TimeStamp.tv_secs;
                                 currenttime = currenttime * 50;
                                 currenttime += ie->ie_TimeStamp.tv_micro / 20000;
@@ -671,10 +671,10 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                                 if (currenttime > data->lasteventtime + 10) //10 delay should result in intuitick freq
                                 {
                                     ih_fire_intuimessage(w,
-                                        		 IDCMP_CHANGEWINDOW,
-                                        		 CWCODE_MOVESIZE,
-                                        		 w,
-                                        		 IntuitionBase);
+                                                         IDCMP_CHANGEWINDOW,
+                                                         CWCODE_MOVESIZE,
+                                                         w,
+                                                         IntuitionBase);
                                     data->lasteventtime = currenttime;
                                 }
 
@@ -683,11 +683,11 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                                     Forbid();
                                     Signal(data->movetask,WSIG_MOVE);
                                     Permit();
-				    
+                                    
                                     CheckLayers(w->WScreen, IntuitionBase);
                                 }
-				else
-				{
+                                else
+                                {
                                     struct Requester *req;
 
                                     LockLayers(&w->WScreen->LayerInfo);
@@ -754,12 +754,12 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                             #endif
                                 /* Rerender the window frame */
                             drawwindowframe(w->WScreen
-                                	    , data->rp
-                                	    , data->curleft
-                                	    , data->curtop
-                                	    , data->curleft + w->Width  - 1
-                                	    , data->curtop  + w->Height - 1
-                                	    , IntuitionBase);
+                                            , data->rp
+                                            , data->curleft
+                                            , data->curtop
+                                            , data->curleft + w->Width  - 1
+                                            , data->curtop  + w->Height - 1
+                                            , IntuitionBase);
                             data->isrendered = TRUE;
                         }
 
@@ -783,7 +783,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
             if ((!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE)) && (!data->drag_layerlock))
             {
                 UQUAD currenttime;
-		
+                
                 currenttime = ie->ie_TimeStamp.tv_secs;
                 currenttime = currenttime * 50;
                 currenttime += ie->ie_TimeStamp.tv_micro / 20000;
@@ -810,7 +810,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
             if (data->movetask)
             {
                 UQUAD currenttime;
-		
+                
                 currenttime = ie->ie_TimeStamp.tv_secs;
                 currenttime = currenttime * 50;
                 currenttime += ie->ie_TimeStamp.tv_micro / 20000;
@@ -843,7 +843,7 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct dragbar_data *data;
-    struct Window   	*w;
+    struct Window       *w;
 
     data = INST_DATA(cl, g);
     
@@ -883,26 +883,26 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
     if (!data->drag_canceled)// && !(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE))
     {
         MoveWindow(w
-        	   , data->curleft - w->LeftEdge    /* dx */
-        	   , data->curtop  - w->TopEdge /* dy */
-        	  );
+                   , data->curleft - w->LeftEdge    /* dx */
+                   , data->curtop  - w->TopEdge /* dy */
+                  );
 
     }
 
     if (data->drag_canceled && (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE))
     {
         MoveWindow(w
-        	   , data->startleft - w->LeftEdge /* dx */
-        	   , data->starttop - w->TopEdge /* dy */
-        	  );
+                   , data->startleft - w->LeftEdge /* dx */
+                   , data->starttop - w->TopEdge /* dy */
+                  );
     }
 
 
     ih_fire_intuimessage(w,
-        		 IDCMP_CHANGEWINDOW,
-        		 CWCODE_MOVESIZE,
-        		 w,
-        		 IntuitionBase);
+                         IDCMP_CHANGEWINDOW,
+                         CWCODE_MOVESIZE,
+                         w,
+                         IntuitionBase);
 
     data->drag_canceled = TRUE;
 
@@ -912,7 +912,7 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
         data->drag_layerlock = FALSE;
     }
 
-#ifdef USEGADGETLOCK    
+#ifdef USEGADGETLOCK
     if (data->drag_gadgetlock)
     {
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
@@ -921,8 +921,8 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
 
     if (data->drag_inputhandlerlock)
     {
-    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-	data->drag_inputhandlerlock = FALSE;
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+        data->drag_inputhandlerlock = FALSE;
     }
 #endif
 
@@ -974,7 +974,7 @@ IPTR DragBarClass__OM_NEW(Class *cl, Object *o, Msg msg)
     struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, msg);
     if (g)
     {
-	g->GadgetType |= GTYP_SYSGADGET | GTYP_WDRAGGING;
+        g->GadgetType |= GTYP_SYSGADGET | GTYP_WDRAGGING;
     }
     
     return (IPTR)g;
@@ -1067,13 +1067,13 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct InputEvent   *ie = msg->gpi_IEvent;
-    IPTR            	 retval = GMR_NOREUSE;
+    IPTR                 retval = GMR_NOREUSE;
 
     if (ie)
     {
         /* The gadget was activated via mouse input */
         struct sizebutton_data  *data;
-        struct Window       	*w;
+        struct Window           *w;
 
         /* There is no point in rerendering ourseleves her, as this
            is done by a call to RefreshWindowFrame() in the intuition inputhandler
@@ -1143,10 +1143,10 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
 
             if (!OPAQUESIZE)
             {
-    	    #ifdef USEGADGETLOCK
-	    	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-		data->drag_inputhandlerlock = TRUE;
-		
+            #ifdef USEGADGETLOCK
+                ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+                data->drag_inputhandlerlock = TRUE;
+                
                 if (AttemptSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock))
                 {
                     data->drag_gadgetlock = TRUE;
@@ -1155,32 +1155,32 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
                 {
                     goto fail;
                 }
-    	    #endif
-    	    #ifndef DELAYEDSIZE
+            #endif
+            #ifndef DELAYEDSIZE
                 LockLayers(&w->WScreen->LayerInfo);
                 data->drag_layerlock = TRUE;
-    	    #endif
+            #endif
             }
 
             SetDrMd(data->rp, COMPLEMENT);
 
-    	#ifndef DELAYEDSIZE
+        #ifndef DELAYEDSIZE
             if(!OPAQUESIZE)
                 drawwindowframe(w->WScreen
-                        	, data->rp
-                        	, data->left
-                        	, data->top
-                        	, data->left + data->width  - 1
-                        	, data->top  + data->height - 1
-                        	, IntuitionBase
+                                , data->rp
+                                , data->left
+                                , data->top
+                                , data->left + data->width  - 1
+                                , data->top  + data->height - 1
+                                , IntuitionBase
                                 );
 
             data->isrendered = TRUE;
-    	#endif
+        #endif
 
             {
                 UQUAD currenttime;
-		
+                
                 currenttime = ie->ie_TimeStamp.tv_secs;
                 currenttime = currenttime * 50;
                 currenttime += ie->ie_TimeStamp.tv_micro / 20000;
@@ -1190,17 +1190,17 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
             data->drag_canceled = FALSE;
 
             /* size mouse bounds such that mouse pointer cannot move if window cannot size, if offscreenlayers is turned off */
-	    if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
-            	struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-		LONG mousex = data->mouseoffsetx - data->LeftEdge;
-		LONG mousey = data->mouseoffsety - data->TopEdge;
+            if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
+                struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+                LONG mousex = data->mouseoffsetx - data->LeftEdge;
+                LONG mousey = data->mouseoffsety - data->TopEdge;
 
-		iihd->MouseBoundsActiveFlag = TRUE;
-            	iihd->MouseBoundsLeft = 0;
-            	iihd->MouseBoundsRight = w->WScreen->Width - (w->Width - mousex);
-            	iihd->MouseBoundsTop = 0;
-            	iihd->MouseBoundsBottom = w->WScreen->Height - (w->Height - mousey);
-	    }
+                iihd->MouseBoundsActiveFlag = TRUE;
+                iihd->MouseBoundsLeft = 0;
+                iihd->MouseBoundsRight = w->WScreen->Width - (w->Width - mousex);
+                iihd->MouseBoundsTop = 0;
+                iihd->MouseBoundsBottom = w->WScreen->Height - (w->Height - mousey);
+            }
 
             return GMR_MEACTIVE;
         }
@@ -1219,12 +1219,12 @@ fail:
             ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
             data->drag_gadgetlock = FALSE;
         }
-	
-	if (data->drag_inputhandlerlock)
-	{
-	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-	    data->drag_inputhandlerlock = FALSE;
-	}
+        
+        if (data->drag_inputhandlerlock)
+        {
+            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+            data->drag_inputhandlerlock = FALSE;
+        }
 #endif
 
 #ifdef USEWINDOWLOCK
@@ -1250,13 +1250,13 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
 #endif
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct GadgetInfo   *gi = msg->gpi_GInfo;
-    IPTR            	 retval = GMR_MEACTIVE;
+    IPTR                 retval = GMR_MEACTIVE;
 
     if (gi)
     {
-        struct InputEvent   	*ie = msg->gpi_IEvent;
+        struct InputEvent       *ie = msg->gpi_IEvent;
         struct sizebutton_data  *data = INST_DATA(cl, g);
-        struct Window       	*w = msg->gpi_GInfo->gi_Window;
+        struct Window           *w = msg->gpi_GInfo->gi_Window;
 
         switch (ie->ie_Class)
         {
@@ -1275,7 +1275,7 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
                     LONG             new_height = 0;
 
                     /* Can we move to the new position, or is window at edge of display ? */
-    	    	#ifdef SKINS
+                #ifdef SKINS
                     switch(data->drag_type)
                     {
                         case SIZETYPE_BOTTOM:
@@ -1318,10 +1318,10 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
                             new_height = data->Height;
                             break;
                     }
-    	    	#else
+                #else
                     new_width   = data->Width + scr->MouseX - data->mouseoffsetx;
                     new_height  = data->Height + scr->MouseY - data->mouseoffsety;
-    	    	#endif
+                #endif
                     if (new_width < 0)
                         new_width = 1;
 
@@ -1389,13 +1389,13 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
                         {
                             /* Erase old frame */
                             drawwindowframe(w->WScreen
-                                	    , data->rp
-                                	    , data->left
-                                	    , data->top
-                                	    , data->left + data->width  - 1
-                                	    , data->top  + data->height - 1
-                                	    , IntuitionBase
-                                	    );
+                                            , data->rp
+                                            , data->left
+                                            , data->top
+                                            , data->left + data->width  - 1
+                                            , data->top  + data->height - 1
+                                            , IntuitionBase
+                                            );
 
                         }
 
@@ -1443,13 +1443,13 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
 
                         if (!OPAQUESIZE)
                             drawwindowframe(w->WScreen
-                                	    , data->rp
-                                	    , data->left
-                                	    , data->top
-                                	    , data->left + data->width  - 1
-                                	    , data->top  + data->height - 1
-                                	    , IntuitionBase
-                                	    );
+                                            , data->rp
+                                            , data->left
+                                            , data->top
+                                            , data->left + data->width  - 1
+                                            , data->top  + data->height - 1
+                                            , IntuitionBase
+                                            );
 
                         data->isrendered = TRUE;
 
@@ -1485,20 +1485,20 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
                     data->drag_layerlock = TRUE;
 
                     drawwindowframe(w->WScreen
-                        	    , data->rp
-                        	    , data->left
-                        	    , data->top
-                        	    , data->left + data->width  - 1
-                        	    , data->top  + data->height - 1
-                        	    , IntuitionBase
-                        	    );
+                                    , data->rp
+                                    , data->left
+                                    , data->top
+                                    , data->left + data->width  - 1
+                                    , data->top  + data->height - 1
+                                    , IntuitionBase
+                                    );
                     data->lasteventtime = currenttime;
                     data->isrendered = TRUE;
                 }
             }
             #endif
 
-    	#if USE_OPAQUESIZE
+        #if USE_OPAQUESIZE
             if (OPAQUESIZE)
             {
                 data->drag_ticks --;
@@ -1509,7 +1509,7 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
                     data->drag_ticks = 2;
                 }
             }
-    	#endif /* USE_OPAQUESIZE */
+        #endif /* USE_OPAQUESIZE */
 
             break;
 
@@ -1554,13 +1554,13 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
         /* Erase old frame */
         if (!OPAQUESIZE)
             drawwindowframe(w->WScreen
-                	    , data->rp
-                	    , data->left
-                	    , data->top
-                	    , data->left + data->width  - 1
-                	    , data->top  + data->height - 1
-                	    , IntuitionBase
-                	    );
+                            , data->rp
+                            , data->left
+                            , data->top
+                            , data->left + data->width  - 1
+                            , data->top  + data->height - 1
+                            , IntuitionBase
+                            );
 
     }
     else
@@ -1587,8 +1587,8 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
     
     if (data->drag_inputhandlerlock)
     {
-    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-	data->drag_inputhandlerlock = FALSE;
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+        data->drag_inputhandlerlock = FALSE;
     }
 #endif
 
@@ -1609,8 +1609,8 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
         {
             DoMoveSizeWindow(w,data->LeftEdge,data->TopEdge,data->Width,data->Height,TRUE,IntuitionBase);
         }
-	else
-	{
+        else
+        {
             DoMoveSizeWindow(w,data->left,data->top,data->width,data->height,TRUE,IntuitionBase);
         }
         //ChangeWindowBox(w,data->left,data->top,data->width,data->height);
@@ -1639,7 +1639,7 @@ IPTR SizeButtonClass__OM_NEW(Class *cl, Object *o, Msg msg)
     struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, msg);
     if (g)
     {
-	g->GadgetType |= GTYP_SYSGADGET | GTYP_SIZING;
+        g->GadgetType |= GTYP_SYSGADGET | GTYP_SIZING;
     }
     
     return (IPTR)g;

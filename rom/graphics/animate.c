@@ -12,29 +12,29 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(void, Animate,
+        AROS_LH2(void, Animate,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct AnimOb **, anKey, A0),
-	AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(struct AnimOb **, anKey, A0),
+        AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 27, Graphics)
+        struct GfxBase *, GfxBase, 27, Graphics)
 
 /*  FUNCTION
-	Animate every AnimOb in the list. In particular do the following:
-	- update location and velocities
-	- call AnimOb's special routine if supplied
-	- for every component of the Anim ob do:
-	  - switch to new sequence if current sequence times out
-	  - call the special routine of the component if supplied
-	  - set the the coordinates of the VSprite of this
-	    sequence to whatever these routines cause
+        Animate every AnimOb in the list. In particular do the following:
+        - update location and velocities
+        - call AnimOb's special routine if supplied
+        - for every component of the Anim ob do:
+          - switch to new sequence if current sequence times out
+          - call the special routine of the component if supplied
+          - set the the coordinates of the VSprite of this
+            sequence to whatever these routines cause
 
     INPUT
-	anKey = address of a pointer to the first AnimOb in the list
+        anKey = address of a pointer to the first AnimOb in the list
                 (same address that was passed to AddAnimOb!)
-	rp    = pointer to a valid RastPort structure
+        rp    = pointer to a valid RastPort structure
 
     RESULT
 
@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	AddAnimOb(), graphics/rastport.h, graphics/gels.h
+        AddAnimOb(), graphics/rastport.h, graphics/gels.h
 
     INTERNALS
 
@@ -131,27 +131,27 @@
 
         /* as this sequence is complete we might have to add the
          * RingX/YTrans to AnX/Y if the appropriate flags was set
-	 */
+         */
         if (0 != (CurSeqAnimComp -> Flags & RINGTRIGGER))
         {
           CurAnimOb -> AnY += CurAnimOb -> RingYTrans;
           CurAnimOb -> AnX += CurAnimOb -> RingXTrans;
         }
 
-	/* calculate the coordinates of the VSprite
+        /* calculate the coordinates of the VSprite
          * here [0.5 .. 1.4999] is rounded to 1
-	 *	[1.5 .. 2.4999] is rounded to 2 and so on
+         *      [1.5 .. 2.4999] is rounded to 2 and so on
          */
         coord = (CurSeqAnimComp -> NextSeq -> YTrans + CurAnimOb -> AnY ) >> 5;
         /* for better accuracy */
         if (0 != (coord & 1))
-         	coord += 2;
+                coord += 2;
         NewVSprite -> Y = (coord >> 1);
 
         coord = (CurSeqAnimComp -> NextSeq -> XTrans + CurAnimOb -> AnX ) >> 5;
         /* for better accuracy */
         if (0 != (coord & 1))
-         	coord += 2;
+                coord += 2;
         NewVSprite -> X = (coord >> 1);
 
         CurVSprite -> Y = 0x8001;
@@ -174,14 +174,14 @@
                   CurAnimOb      -> AnY ) >> 5;
         /* for better accuracy */
         if (0 != (coord & 1))
-         	coord += 2;
+                coord += 2;
         CurVSprite -> Y = (coord >> 1);
 
         coord = ( CurSeqAnimComp -> XTrans +
                   CurAnimOb -> AnX      ) >> 5;
         /* for better accuracy */
         if (0 != (coord & 1))
-         	coord += 2;
+                coord += 2;
         CurVSprite -> X = (coord >> 1);
 
       }

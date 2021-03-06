@@ -14,29 +14,29 @@
 
 #include "timer_intern.h"
 
-	AROS_LH1(ULONG, ReadEClock,
+        AROS_LH1(ULONG, ReadEClock,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct EClockVal *, dest, A0),
+        AROS_LHA(struct EClockVal *, dest, A0),
 
 /*  LOCATION */
-	struct TimerBase *, TimerBase, 10, Timer)
+        struct TimerBase *, TimerBase, 10, Timer)
 
 /*  FUNCTION
-	ReadEClock() reads current value of E-Clock and stores
+        ReadEClock() reads current value of E-Clock and stores
         it in the destination EClockVal structure passed as
         argument. It also returns the frequency of EClock of the
         system.
 
         This call is supposed to be very fast.
     INPUTS
-	dest    -   Destination EClockVal
+        dest    -   Destination EClockVal
 
     RESULT
-	The EClock frequency (tics/s)
+        The EClock frequency (tics/s)
 
     NOTES
-	This function is safe to call from interrupts.
+        This function is safe to call from interrupts.
 
     EXAMPLE
 
@@ -47,7 +47,7 @@
     INTERNALS
 
     HISTORY
-	19-08-2005  schulz   Implemented.
+        19-08-2005  schulz   Implemented.
 
 *****************************************************************************/
 {

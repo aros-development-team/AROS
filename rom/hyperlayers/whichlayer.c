@@ -18,19 +18,19 @@
 
     NAME */
 
-	AROS_LH3(struct Layer *, WhichLayer,
+        AROS_LH3(struct Layer *, WhichLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
-	AROS_LHA(LONG               , x,  D0),
-	AROS_LHA(LONG               , y,  D1),
+        AROS_LHA(struct Layer_Info *, li, A0),
+        AROS_LHA(LONG               , x,  D0),
+        AROS_LHA(LONG               , y,  D1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 22, Layers)
+        struct LayersBase *, LayersBase, 22, Layers)
 
 /*  FUNCTION
         Determines in which layer the point (x,y) is to be found.
-        Starts with the frontmost layer. 
+        Starts with the frontmost layer.
 
     INPUTS
         li - pointer to Layers_Info structure
@@ -53,8 +53,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {

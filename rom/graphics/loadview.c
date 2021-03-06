@@ -23,14 +23,14 @@
         struct GfxBase *, GfxBase, 37, Graphics)
 
 /*  FUNCTION
-	Display a new view
+        Display a new view
 
     INPUTS
         view - pointer to the View structure which contains the pointer to the
                constructed coprocessor instructions list, or NULL
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -53,8 +53,8 @@
 
     if (GfxBase->ActiView != view)
     {
-	GfxBase->ActiView = view;
-	DoViewFunction(view, driver_LoadViewPorts, GfxBase);
+        GfxBase->ActiView = view;
+        DoViewFunction(view, driver_LoadViewPorts, GfxBase);
     }
 
     ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);

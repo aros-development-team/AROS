@@ -13,23 +13,23 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(void, AddBob,
+        AROS_LH2(void, AddBob,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Bob *, bob, A0),
-	AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(struct Bob *, bob, A0),
+        AROS_LHA(struct RastPort *, rp, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 16, Graphics)
+        struct GfxBase *, GfxBase, 16, Graphics)
 
 /*  FUNCTION
-	The Bob is linked into the current gel list via AddVSprite.
-	The Bob's flags are set up.
+        The Bob is linked into the current gel list via AddVSprite.
+        The Bob's flags are set up.
 
     INPUTS
-	Bob = pointer to Bob to be added to gel list
-	rp  = pointer to RastPort that has an initilized GelsInfo linked
-	      to it (see InitGels()).
+        Bob = pointer to Bob to be added to gel list
+        rp  = pointer to RastPort that has an initilized GelsInfo linked
+              to it (see InitGels()).
 
     RESULT
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	InitGels(), AddVSprite(), graphics/rastport.h, graphics/gels.h
+        InitGels(), AddVSprite(), graphics/rastport.h, graphics/gels.h
 
     INTERNALS
 
@@ -48,24 +48,24 @@
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 
-	if (NULL != rp->GelsInfo) {
+        if (NULL != rp->GelsInfo) {
 
-		/*
-		 * Check whether the head and tail VSprite
-		 * were alone before. If so, then give them
-		 * a IntVSprite structure now.
-		 */
-		if (rp->GelsInfo->gelHead->NextVSprite ==
-		    rp->GelsInfo->gelTail) {
-			_CreateIntVSprite(rp->GelsInfo->gelHead, NULL, GfxBase);
-			_CreateIntVSprite(rp->GelsInfo->gelTail, NULL, GfxBase);
-		}
-		bob->Flags &= 0x00FF;
-		bob->Flags |= BWAITING;
-		AddVSprite (bob->BobVSprite, rp);
-	}
-	
-	AROS_LIBFUNC_EXIT
+                /*
+                 * Check whether the head and tail VSprite
+                 * were alone before. If so, then give them
+                 * a IntVSprite structure now.
+                 */
+                if (rp->GelsInfo->gelHead->NextVSprite ==
+                    rp->GelsInfo->gelTail) {
+                        _CreateIntVSprite(rp->GelsInfo->gelHead, NULL, GfxBase);
+                        _CreateIntVSprite(rp->GelsInfo->gelTail, NULL, GfxBase);
+                }
+                bob->Flags &= 0x00FF;
+                bob->Flags |= BWAITING;
+                AddVSprite (bob->BobVSprite, rp);
+        }
+        
+        AROS_LIBFUNC_EXIT
 } /* AddBob */

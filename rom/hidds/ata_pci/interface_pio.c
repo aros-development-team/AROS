@@ -82,7 +82,7 @@ void ata_outsl(struct pio_data *data, APTR address, ULONG count)
 {
     if (count & 2)
     {
-	ata_outsw(data, address, count);
+        ata_outsw(data, address, count);
     }
     else
     {

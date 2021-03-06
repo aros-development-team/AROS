@@ -2451,7 +2451,7 @@ VOID int_openscreen(struct OpenScreenActionMsg *msg,
     }
 
     /* AROS: Allways attempt to activate monitor, current FirstScreen can be using a different one! */
-	ActivateMonitor(screen->IMonitorNode, -1, -1, IntuitionBase);
+        ActivateMonitor(screen->IMonitorNode, -1, -1, IntuitionBase);
 
     /* set the default pub screen */
     if (IBase->IControlPrefs.ic_Flags & ICF_DEFPUBSCREEN)

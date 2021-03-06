@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$	$Log
+    $Id$        $Log
 
     Desc: Graphics function SetABPenDrMd()
 */
@@ -14,35 +14,35 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH4I(void, SetABPenDrMd,
+        AROS_LH4I(void, SetABPenDrMd,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(ULONG            , apen, D0),
-	AROS_LHA(ULONG            , bpen, D1),
-	AROS_LHA(ULONG            , drawMode, D2),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(ULONG            , apen, D0),
+        AROS_LHA(ULONG            , bpen, D1),
+        AROS_LHA(ULONG            , drawMode, D2),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 149, Graphics)
+        struct GfxBase *, GfxBase, 149, Graphics)
 
 /*  FUNCTION
-	Changes the foreground and background pen and the drawmode in one
-	step.
+        Changes the foreground and background pen and the drawmode in one
+        step.
 
     INPUTS
-	rp - Modify this RastPort
-	apen - The new foreground pen
-	bpen - The new background pen
-	drawmode - The new drawmode
+        rp - Modify this RastPort
+        apen - The new foreground pen
+        bpen - The new background pen
+        drawmode - The new drawmode
 
     RESULT
-	None.
+        None.
 
     NOTES
-	This function is faster than the sequence SetAPen(), SetBPen(),
-	SetDrMd().
+        This function is faster than the sequence SetAPen(), SetBPen(),
+        SetDrMd().
 
-    	This functions turns on PenMode for the RastPort.
+        This functions turns on PenMode for the RastPort.
 
     EXAMPLE
 
@@ -53,8 +53,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {

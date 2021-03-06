@@ -23,7 +23,7 @@
         struct DosLibrary *, DOSBase, 158, Dos)
 
 /*  FUNCTION
-        This routine writes an unformatted string to the default output.  No 
+        This routine writes an unformatted string to the default output.  No
         newline is appended to the string and any error is returned.  This
         routine is buffered.
 

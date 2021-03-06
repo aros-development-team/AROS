@@ -14,22 +14,22 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(VOID, OOP_DisposeObject,
+        AROS_LH1(VOID, OOP_DisposeObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(OOP_Object  *, obj, A0),
+        AROS_LHA(OOP_Object  *, obj, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 10, OOP)
+        struct Library *, OOPBase, 10, OOP)
 
 /*  FUNCTION
-	Delete an object that was previously allocated with OOP_NewObject().
+        Delete an object that was previously allocated with OOP_NewObject().
 
     INPUTS
-    	obj	- pointer to object to dispose.
+        obj     - pointer to object to dispose.
 
     RESULT
-    	None.
+        None.
 
     NOTES
 
@@ -38,13 +38,13 @@
     BUGS
 
     SEE ALSO
-    	OOP_NewObject()
+        OOP_NewObject()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+        29-10-95    digulla automatically created from
+                            intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
@@ -53,7 +53,7 @@
     ULONG mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
     
     EnterFunc(bug("OOP_DisposeObject(classID=%s)\n",
-    		OOP_OCLASS(obj)->ClassNode.ln_Name));
+                OOP_OCLASS(obj)->ClassNode.ln_Name));
 
     if (obj == NULL) return;
 

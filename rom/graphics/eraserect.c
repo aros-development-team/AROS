@@ -21,27 +21,27 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH5(void, EraseRect,
+        AROS_LH5(void, EraseRect,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(LONG             , xMin, D0),
-	AROS_LHA(LONG             , yMin, D1),
-	AROS_LHA(LONG             , xMax, D2),
-	AROS_LHA(LONG             , yMax, D3),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(LONG             , xMin, D0),
+        AROS_LHA(LONG             , yMin, D1),
+        AROS_LHA(LONG             , xMax, D2),
+        AROS_LHA(LONG             , yMax, D3),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 135, Graphics)
+        struct GfxBase *, GfxBase, 135, Graphics)
 
 /*  FUNCTION
-	Fill a rectangular area with the current BackFill hook.
-	If layered the BackFill hook is used.
-	If non-layered the region is cleared.
+        Fill a rectangular area with the current BackFill hook.
+        If layered the BackFill hook is used.
+        If non-layered the region is cleared.
 
     INPUTS
-	rp        - destination RastPort
-	xMin,yMin - upper left corner
-	xMax,YMax - lower right corner
+        rp        - destination RastPort
+        xMin,yMin - upper left corner
+        xMax,YMax - lower right corner
 
     RESULT
 
@@ -56,8 +56,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {

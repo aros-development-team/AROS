@@ -12,21 +12,21 @@
 
     NAME */
 
-	AROS_LH1(void, RemPort,
+        AROS_LH1(void, RemPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, port, A1),
+        AROS_LHA(struct MsgPort *, port, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 60, Exec)
+        struct ExecBase *, SysBase, 60, Exec)
 
 /*  FUNCTION
-	Remove a public port from the public port list to make it private
-	again. Any further attempts to find this port in the public port
-	list will fail.
+        Remove a public port from the public port list to make it private
+        again. Any further attempts to find this port in the public port
+        list will fail.
 
     INPUTS
-	port - Pointer to messageport structure.
+        port - Pointer to messageport structure.
 
     RESULT
 

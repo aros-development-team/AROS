@@ -140,8 +140,8 @@ UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
 {
     struct Library  *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct MenuItem *item, *sub;
-    UWORD   	     menunum, itemnum = 0, subnum = 0;
-    BOOL    	     found = FALSE;
+    UWORD            menunum, itemnum = 0, subnum = 0;
+    BOOL             found = FALSE;
 
     DEBUG_FINDMENUSHORTCUT(dprintf("FindMenuShortCut: Menu 0x%lx key 0x%lx <%c> do_click_op 0x%lx\n",menu,key,key,do_click_op));
 

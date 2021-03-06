@@ -30,12 +30,12 @@
         taglist - list of attributes; unknown tags are ignored
 
     TAGS
-        FST_ID      (ULONG *)		- Get 4-character FS ID
-        FST_NAME    (STRPTR *)		- Get a pointer to FS name
+        FST_ID      (ULONG *)           - Get 4-character FS ID
+        FST_NAME    (STRPTR *)          - Get a pointer to FS name
         FST_FSENTRY (struct FileSysEntry *) - Fill in given FileSysEntry.
 
     RESULT
-    	None.
+        None.
 
     NOTES
         Name is returned as a pointer to an internally allocated string. You
@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-    	FindFileSystemA()
+        FindFileSystemA()
 
     INTERNALS
 
@@ -68,14 +68,14 @@
 
     while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
-    	handler->getFileSystemAttr(PartitionBase, (struct FileSysHandle *)handle, tag);
-    	
-    	/*
-    	 * TODO: handler returns TRUE if it knows the attribute and FALSE otherwise.
-    	 * If we ever have more partition table types which can handle embedded
-    	 * filesystem handlers, this can be expanded similar to GetPartitionAttrs(),
-    	 * and we will have some generic code here.
-    	 */
+        handler->getFileSystemAttr(PartitionBase, (struct FileSysHandle *)handle, tag);
+        
+        /*
+         * TODO: handler returns TRUE if it knows the attribute and FALSE otherwise.
+         * If we ever have more partition table types which can handle embedded
+         * filesystem handlers, this can be expanded similar to GetPartitionAttrs(),
+         * and we will have some generic code here.
+         */
     }
 
     AROS_LIBFUNC_EXIT

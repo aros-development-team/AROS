@@ -56,31 +56,31 @@
     /* We should really have dos.library online now */
     D(bug("[LoadBootPartitions] DOSBase 0x%p\n", DOSBase));
     if (!DOSBase)
-    	return ERROR_INVALID_RESIDENT_LIBRARY;
+        return ERROR_INVALID_RESIDENT_LIBRARY;
 
     ObtainSemaphore(&PBASE(PartitionBase)->bootSem);
 
     ForeachNodeSafe(&PBASE(PartitionBase)->bootList, bfs, bfs2)
     {
-    	ULONG res;
-	/*
-	 * Unfortunately we have no way to process errors here.
-	 * Well, let's hope that everything will be okay.
-	 */
-	D(bug("[LoadBootPartitions] Loading %s...\n", bfs->ln.ln_Name));
+        ULONG res;
+        /*
+         * Unfortunately we have no way to process errors here.
+         * Well, let's hope that everything will be okay.
+         */
+        D(bug("[LoadBootPartitions] Loading %s...\n", bfs->ln.ln_Name));
 
-	res = AddFS(PartitionBase, bfs->handle);
-	if (res)
-	{
-	    lasterr = res;
-	}
-	else
-	{
-	    /* A filesystem is loaded, remove it from the queue and free associated data. */
-	    Remove(&bfs->ln);
-	    bfs->handle->handler->freeFileSystem(bfs->handle);
-	    FreeMem(bfs, sizeof(struct BootFileSystem));
-	}
+        res = AddFS(PartitionBase, bfs->handle);
+        if (res)
+        {
+            lasterr = res;
+        }
+        else
+        {
+            /* A filesystem is loaded, remove it from the queue and free associated data. */
+            Remove(&bfs->ln);
+            bfs->handle->handler->freeFileSystem(bfs->handle);
+            FreeMem(bfs, sizeof(struct BootFileSystem));
+        }
     }
 
     ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);

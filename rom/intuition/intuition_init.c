@@ -82,12 +82,12 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     struct Library *OOPBase;
     struct GfxBase *GfxBase;
     struct OOP_ABDescr attrbases[] = {
-	{IID_Hidd       , &GetPrivIBase(LIBBASE)->HiddAttrBase      },
-	{IID_Hidd_Gfx   , &GetPrivIBase(LIBBASE)->HiddGfxAttrBase   },
-	{IID_Hidd_Sync   , &GetPrivIBase(LIBBASE)->HiddSyncAttrBase   },
-	{IID_Hidd_BitMap, &GetPrivIBase(LIBBASE)->HiddBitMapAttrBase},
-	{IID_Hidd_PixFmt, &GetPrivIBase(LIBBASE)->HiddPixFmtAttrBase},
-	{NULL           , NULL				             }
+        {IID_Hidd       , &GetPrivIBase(LIBBASE)->HiddAttrBase      },
+        {IID_Hidd_Gfx   , &GetPrivIBase(LIBBASE)->HiddGfxAttrBase   },
+        {IID_Hidd_Sync   , &GetPrivIBase(LIBBASE)->HiddSyncAttrBase   },
+        {IID_Hidd_BitMap, &GetPrivIBase(LIBBASE)->HiddBitMapAttrBase},
+        {IID_Hidd_PixFmt, &GetPrivIBase(LIBBASE)->HiddPixFmtAttrBase},
+        {NULL           , NULL                                       }
     };
 
     DEBUG_INIT(dprintf("LIB_Init: base 0x%p\n", LIBBASE));
@@ -121,7 +121,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
 
     if (!OOP_ObtainAttrBases(attrbases))
-	return FALSE;
+        return FALSE;
 
     /* FIXME: This libInit is all broken if something should fail, but do we care? */
     /* FIXME: If something fails we're screwed anyway... */
@@ -134,7 +134,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->IBaseLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
 
     if (!GetPrivIBase(LIBBASE)->IBaseLock)
-	return FALSE;
+        return FALSE;
 
     InitSemaphore(GetPrivIBase(LIBBASE)->IBaseLock);
 
@@ -189,17 +189,17 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
      * even before IPrefs is loaded.
      */
     {
-	struct Color32 *p;
-	ULONG   	    i;
+        struct Color32 *p;
+        ULONG               i;
 
-	p = GetPrivIBase(LIBBASE)->Colors;
+        p = GetPrivIBase(LIBBASE)->Colors;
 
-	for (i = 0; i < COLORTABLEENTRIES; i++)
-	{
-	    p[i].red = coltab[i*3];
-	    p[i].green = coltab[i*3+1];
-	    p[i].blue = coltab[i*3+2];
-	}
+        for (i = 0; i < COLORTABLEENTRIES; i++)
+        {
+            p[i].red = coltab[i*3];
+            p[i].green = coltab[i*3+1];
+            p[i].blue = coltab[i*3+2];
+        }
     }
     LIBBASE->PointerAlpha = 0x9F9F;
 
@@ -210,11 +210,11 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     DEBUG_INIT(dprintf("LIB_Init: create menu handler task\n"));
     /* FIXME: no cleanup routines for MenuHandler task */
     if (!InitDefaultMenuHandler(GetPubIBase(LIBBASE)))
-	return FALSE;
+        return FALSE;
 
     /* FIXME: no cleanup routines for ScreennotifyHandler task */
     if (!InitDefaultScreennotifyHandler(GetPubIBase(LIBBASE)))
-	return FALSE;
+        return FALSE;
 
 
     DEBUG_INIT(dprintf("LIB_Init: load default preferences\n"));
@@ -226,7 +226,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 #ifdef SKINS
     if (!GetPrivIBase(LIBBASE)->SmallMenuPool)
     {
-	if (!(GetPrivIBase(LIBBASE)->SmallMenuPool = CreatePool(MEMF_SEM_PROTECTED,(sizeof (struct SmallMenuEntry))*20,(sizeof (struct SmallMenuEntry))*20))) return NULL;
+        if (!(GetPrivIBase(LIBBASE)->SmallMenuPool = CreatePool(MEMF_SEM_PROTECTED,(sizeof (struct SmallMenuEntry))*20,(sizeof (struct SmallMenuEntry))*20))) return NULL;
     }
 #endif
 
@@ -239,12 +239,12 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->FrameSize = FRAMESIZE_THIN;
 
     {
-	WORD i;
+        WORD i;
            
-	for(i = 0; i < RESOURCELIST_HASHSIZE; i++)
-	{
-	    NewList((struct List *)&GetPrivIBase(LIBBASE)->ResourceList[i]);
-	}
+        for(i = 0; i < RESOURCELIST_HASHSIZE; i++)
+        {
+            NewList((struct List *)&GetPrivIBase(LIBBASE)->ResourceList[i]);
+        }
     }
 
     GetPrivIBase(LIBBASE)->ScrDecorClass = FindClass(SCRDECORCLASS);
@@ -252,7 +252,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->MenuDecorClass = FindClass(MENUDECORCLASS);
     GetPrivIBase(LIBBASE)->MenuDecorTags = NULL;
     GetPrivIBase(LIBBASE)->WinDecorClass = FindClass(WINDECORCLASS);
-    GetPrivIBase(LIBBASE)->WinDecorTags = NULL;    
+    GetPrivIBase(LIBBASE)->WinDecorTags = NULL;
     LIBBASE->ViewLord_ok = FALSE;
 
     DEBUG_INIT(dprintf("LIB_Init: Setting up pointers...\n"));
@@ -268,7 +268,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     if
     (
-           !GetPrivIBase(LIBBASE)->DefaultPointer 
+           !GetPrivIBase(LIBBASE)->DefaultPointer
         || !GetPrivIBase(LIBBASE)->BusyPointer
     )
     {
@@ -321,133 +321,133 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 
     if (!GetPrivIBase(LIBBASE)->InputMP)
     {
-	if (!(GetPrivIBase(LIBBASE)->InputMP = CreateMsgPort()))
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't create port\n"));
-	    return FALSE;
-	}
+        if (!(GetPrivIBase(LIBBASE)->InputMP = CreateMsgPort()))
+        {
+            DEBUG_OPEN(dprintf("LIB_Open: can't create port\n"));
+            return FALSE;
+        }
     }
 
     if (!GetPrivIBase(LIBBASE)->InputIO)
     {
-	if (!(GetPrivIBase(LIBBASE)->InputIO = (struct IOStdReq *)
-	      CreateIORequest(GetPrivIBase(LIBBASE)->InputMP, sizeof (struct IOStdReq))) )
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't create iorequest\n"));
-	    return FALSE;
-	}
+        if (!(GetPrivIBase(LIBBASE)->InputIO = (struct IOStdReq *)
+              CreateIORequest(GetPrivIBase(LIBBASE)->InputMP, sizeof (struct IOStdReq))) )
+        {
+            DEBUG_OPEN(dprintf("LIB_Open: can't create iorequest\n"));
+            return FALSE;
+        }
     }
 
     if (!GetPrivIBase(LIBBASE)->InputDeviceOpen)
     {
-	if (!OpenDevice("input.device", -1, (struct IORequest *)GetPrivIBase(LIBBASE)->InputIO, 0))
-	{
-	    GetPrivIBase(LIBBASE)->InputDeviceOpen = TRUE;
-	    GetPrivIBase(LIBBASE)->InputBase = (struct Library *)GetPrivIBase(LIBBASE)->InputIO->io_Device;
-	}
-	else
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't open input.device\n"));
-	    return FALSE;
-	}
+        if (!OpenDevice("input.device", -1, (struct IORequest *)GetPrivIBase(LIBBASE)->InputIO, 0))
+        {
+            GetPrivIBase(LIBBASE)->InputDeviceOpen = TRUE;
+            GetPrivIBase(LIBBASE)->InputBase = (struct Library *)GetPrivIBase(LIBBASE)->InputIO->io_Device;
+        }
+        else
+        {
+            DEBUG_OPEN(dprintf("LIB_Open: can't open input.device\n"));
+            return FALSE;
+        }
     }
 
     if (!GetPrivIBase(LIBBASE)->InputHandler)
     {
-	D(bug("Initializing inputhandler\n"));
-	if ( !(GetPrivIBase(LIBBASE)->InputHandler = InitIIH(GetPubIBase(LIBBASE))) )
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't init input handler\n"));
-	    return FALSE;
-	}
-	
-	D(bug("Adding inputhandler\n"));
-	GetPrivIBase(LIBBASE)->InputIO->io_Data = (APTR)GetPrivIBase(LIBBASE)->InputHandler;
-	GetPrivIBase(LIBBASE)->InputIO->io_Command = IND_ADDHANDLER;
+        D(bug("Initializing inputhandler\n"));
+        if ( !(GetPrivIBase(LIBBASE)->InputHandler = InitIIH(GetPubIBase(LIBBASE))) )
+        {
+            DEBUG_OPEN(dprintf("LIB_Open: can't init input handler\n"));
+            return FALSE;
+        }
+        
+        D(bug("Adding inputhandler\n"));
+        GetPrivIBase(LIBBASE)->InputIO->io_Data = (APTR)GetPrivIBase(LIBBASE)->InputHandler;
+        GetPrivIBase(LIBBASE)->InputIO->io_Command = IND_ADDHANDLER;
 
-	D(bug("Calling DoIO()\n"));
-	DoIO((struct IORequest *)GetPrivIBase(LIBBASE)->InputIO);
-	D(bug("DoIO() called\n"));
+        D(bug("Calling DoIO()\n"));
+        DoIO((struct IORequest *)GetPrivIBase(LIBBASE)->InputIO);
+        D(bug("DoIO() called\n"));
     }
 
     if (!LIBBASE->ViewLord_ok)
     {
 #ifdef __MORPHOS__
-	struct ViewExtra *ve;
+        struct ViewExtra *ve;
 
-	if (!(ve = GfxNew(VIEW_EXTRA_TYPE)))
-	{
-	    GetPrivIBase(LIBBASE)->GfxBase = NULL;
-	    DEBUG_OPEN(dprintf("LIB_Open: can't create view extra\n"));
-	    return FALSE;
-	}
+        if (!(ve = GfxNew(VIEW_EXTRA_TYPE)))
+        {
+            GetPrivIBase(LIBBASE)->GfxBase = NULL;
+            DEBUG_OPEN(dprintf("LIB_Open: can't create view extra\n"));
+            return FALSE;
+        }
 #endif
-	D(bug("[intuition] Calling InitView()\n"));
-	InitView(&LIBBASE->Base.ViewLord);
+        D(bug("[intuition] Calling InitView()\n"));
+        InitView(&LIBBASE->Base.ViewLord);
         InitSemaphore(&LIBBASE->ViewLordLock);
 #ifdef __MORPHOS__
-	GfxAssociate(&LIBBASE->Base.ViewLord, ve);
+        GfxAssociate(&LIBBASE->Base.ViewLord, ve);
 
-	GetPrivIBase(LIBBASE)->ViewLordExtra = ve;
-	GetPrivIBase(LIBBASE)->SpriteNum = -1;
+        GetPrivIBase(LIBBASE)->ViewLordExtra = ve;
+        GetPrivIBase(LIBBASE)->SpriteNum = -1;
 #endif
-	LIBBASE->ViewLord_ok = TRUE;
+        LIBBASE->ViewLord_ok = TRUE;
     }
     
     if (!GetPrivIBase(LIBBASE)->ScreenFont)
-	GetPrivIBase(LIBBASE)->ScreenFont = GetPrivIBase(LIBBASE)->GfxBase->DefaultFont;
+        GetPrivIBase(LIBBASE)->ScreenFont = GetPrivIBase(LIBBASE)->GfxBase->DefaultFont;
 
 #if 0 /* CHECKME: stegerg: backport, disabled */
     if (!(GetPrivIBase(LIBBASE)->TopazFont))
     {
-	struct TextAttr textattr = {"topaz.font",8,0,FPF_ROMFONT};
-	GetPrivIBase(LIBBASE)->TopazFont = OpenFont(&textattr);
+        struct TextAttr textattr = {"topaz.font",8,0,FPF_ROMFONT};
+        GetPrivIBase(LIBBASE)->TopazFont = OpenFont(&textattr);
     }
 #endif
 
     if (!GetPrivIBase(LIBBASE)->TimerBase)
     {
-	if (!(GetPrivIBase(LIBBASE)->TimerMP = CreateMsgPort()))
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't create timer port\n"));
-	    return FALSE; /* don't close anything */
-	}
-	
-	if (!(GetPrivIBase(LIBBASE)->TimerIO = (struct timerequest *)CreateIORequest(GetPrivIBase(LIBBASE)->TimerMP, sizeof(struct timerequest))))
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't create timer ioreq\n"));
-	    return FALSE; /* don't close anything */
-	}
+        if (!(GetPrivIBase(LIBBASE)->TimerMP = CreateMsgPort()))
+        {
+            DEBUG_OPEN(dprintf("LIB_Open: can't create timer port\n"));
+            return FALSE; /* don't close anything */
+        }
+        
+        if (!(GetPrivIBase(LIBBASE)->TimerIO = (struct timerequest *)CreateIORequest(GetPrivIBase(LIBBASE)->TimerMP, sizeof(struct timerequest))))
+        {
+            DEBUG_OPEN(dprintf("LIB_Open: can't create timer ioreq\n"));
+            return FALSE; /* don't close anything */
+        }
 
-	if (OpenDevice(TIMERNAME,UNIT_VBLANK, (struct IORequest *)GetPrivIBase(LIBBASE)->TimerIO,0))
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't open timer.device\n"));
-	    return FALSE; /* don't close anything */
-	}
+        if (OpenDevice(TIMERNAME,UNIT_VBLANK, (struct IORequest *)GetPrivIBase(LIBBASE)->TimerIO,0))
+        {
+            DEBUG_OPEN(dprintf("LIB_Open: can't open timer.device\n"));
+            return FALSE; /* don't close anything */
+        }
 
-	GetPrivIBase(LIBBASE)->TimerBase = (struct Library *)GetPrivIBase(LIBBASE)->TimerIO->tr_node.io_Device;
+        GetPrivIBase(LIBBASE)->TimerBase = (struct Library *)GetPrivIBase(LIBBASE)->TimerIO->tr_node.io_Device;
 
-	SetPrefs(&GetPrivIBase(LIBBASE)->DefaultPreferences, sizeof(struct Preferences), FALSE);
+        SetPrefs(&GetPrivIBase(LIBBASE)->DefaultPreferences, sizeof(struct Preferences), FALSE);
     }
 
 #if 0
     if (((struct Library *)LIBBASE)->lib_OpenCnt == 0)
     {
-	//check if dos is opened!!!
-	((struct DosLibrary *)DOSBase)->dl_IntuitionBase =
-	    (struct Library *)LIBBASE;
+        //check if dos is opened!!!
+        ((struct DosLibrary *)DOSBase)->dl_IntuitionBase =
+            (struct Library *)LIBBASE;
 
-	/* Install intuition's version of DisplayError() that puts up
-	 a requester with Retry/Cancel options */
-	GetPrivIBase(LIBBASE)->OldDisplayErrorFunc =
-	    SetFunction(DOSBase, -81*LIB_VECTSIZE,
-			AROS_SLIB_ENTRY(DisplayError, Intuition, 81));
+        /* Install intuition's version of DisplayError() that puts up
+         a requester with Retry/Cancel options */
+        GetPrivIBase(LIBBASE)->OldDisplayErrorFunc =
+            SetFunction(DOSBase, -81*LIB_VECTSIZE,
+                        AROS_SLIB_ENTRY(DisplayError, Intuition, 81));
     }
 #else
 # ifdef SKINS
     if (((struct Library *)LIBBASE)->lib_OpenCnt == 0)
     {
-	InitSkinManager(GetPubIBase(LIBBASE));
+        InitSkinManager(GetPubIBase(LIBBASE));
     }
 # endif
 #endif
@@ -455,15 +455,15 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     /* FIXME: no cleanup routines for MenuHandler task */
     if (!GetPrivIBase(LIBBASE)->MenuHandlerPort)
     {
-	if (!InitDefaultMenuHandler(GetPubIBase(LIBBASE)))
-	    return FALSE;
+        if (!InitDefaultMenuHandler(GetPubIBase(LIBBASE)))
+            return FALSE;
     }
 
     /* FIXME: no cleanup routines for ScreennotifyHandler task */
     if (!GetPrivIBase(LIBBASE)->ScreenNotifyReplyPort)
     {
-	if (!InitDefaultScreennotifyHandler(GetPubIBase(LIBBASE)))
-	    return FALSE;
+        if (!InitDefaultScreennotifyHandler(GetPubIBase(LIBBASE)))
+            return FALSE;
     }
 
 #ifdef INTUITION_NOTIFY_SUPPORT
@@ -471,7 +471,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
      */
     if (!GetPrivIBase(LIBBASE)->ScreenNotifyBase)
     {
-	GetPrivIBase(LIBBASE)->ScreenNotifyBase = sn_Init(GetPubIBase(LIBBASE));
+        GetPrivIBase(LIBBASE)->ScreenNotifyBase = sn_Init(GetPubIBase(LIBBASE));
     }
 
 # if 0 /* not finished yet - Piru */
@@ -479,7 +479,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
      */
     if (!GetPrivIBase(LIBBASE)->NotifyIntuitionBase)
     {
-	GetPrivIBase(LIBBASE)->NotifyIntuitionBase = ni_Init(GetPubIBase(LIBBASE));
+        GetPrivIBase(LIBBASE)->NotifyIntuitionBase = ni_Init(GetPubIBase(LIBBASE));
     }
 # endif
 #endif

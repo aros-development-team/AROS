@@ -23,30 +23,30 @@
 /****************************************************************************************/
 
 #define RENDERGADGET(win,gad,rend)                  \
-    if (rend)                               	    \
-    {                       	    	    	    \
-    	if (gad->Flags & GFLG_GADGIMAGE)    	    \
-    	{                   	    	    	    \
-    	    DrawImageState (rp              	    \
-    	    	    	    , (struct Image *)rend  \
-    	    	    	    , bbox.Left             \
-    	    	    	    , bbox.Top              \
-    	    	    	    , state         	    \
-    	    	    	    , dri           	    \
-    	    	    	   );               	    \
-    	}                   	    	    	    \
-    	else                	    	    	    \
-    	{                   	    	    	    \
-    	    DrawBorder (rp                  	    \
-    	    	    	, (struct Border *)rend     \
-    	    	    	, bbox.Left         	    \
-    	    	    	, bbox.Top          	    \
-    	    	       );                   	    \
-    	}                   	    	    	    \
+    if (rend)                                       \
+    {                                               \
+        if (gad->Flags & GFLG_GADGIMAGE)            \
+        {                                           \
+            DrawImageState (rp                      \
+                            , (struct Image *)rend  \
+                            , bbox.Left             \
+                            , bbox.Top              \
+                            , state                 \
+                            , dri                   \
+                           );                       \
+        }                                           \
+        else                                        \
+        {                                           \
+            DrawBorder (rp                          \
+                        , (struct Border *)rend     \
+                        , bbox.Left                 \
+                        , bbox.Top                  \
+                       );                           \
+        }                                           \
     }
 
 #define GETRENDER(gad)  (gad->SelectRender && (gad->Flags & GFLG_SELECTED)) ? \
-    	    	    	gad->SelectRender : gad->GadgetRender;
+                        gad->SelectRender : gad->GadgetRender;
 
 #define BOXSIZEX 4
 #define BOXSIZEY 4
@@ -69,11 +69,11 @@ static void RenderBoolLabel(struct RastPort *rp, struct Gadget *gadget, struct B
         switch (gadget->Flags & GFLG_LABELMASK)
         {
             case GFLG_LABELITEXT:
-        	PrintIText (rp, gadget->GadgetText, bbox->Left, bbox->Top);
-        	break;
+                PrintIText (rp, gadget->GadgetText, bbox->Left, bbox->Top);
+                break;
 
             case GFLG_LABELSTRING:
-        	{
+                {
                     STRPTR text = (STRPTR) gadget->GadgetText;
                     int    len, labelwidth, labelheight;
 
@@ -86,19 +86,19 @@ static void RenderBoolLabel(struct RastPort *rp, struct Gadget *gadget, struct B
                     SetDrMd (rp, JAM1);
 
                     Move (rp, bbox->Left + bbox->Width  / 2 - labelwidth / 2,
-                	  bbox->Top  + bbox->Height / 2 - labelheight / 2 + rp->Font->tf_Baseline);
+                          bbox->Top  + bbox->Height / 2 - labelheight / 2 + rp->Font->tf_Baseline);
 
                     RenderLabel (rp, text, len, IntuitionBase);
                     break;
-        	}
+                }
 
             case GFLG_LABELIMAGE:
-        	DrawImageState (rp, (struct Image *)gadget->GadgetText,
-                        	bbox->Left,
-                        	bbox->Top,
-                        	IDS_NORMAL,
-                        	dri);
-        	break;
+                DrawImageState (rp, (struct Image *)gadget->GadgetText,
+                                bbox->Left,
+                                bbox->Top,
+                                IDS_NORMAL,
+                                dri);
+                break;
 
         } /* switch (gadget->Flags & GFLG_LABELMASK) */
 
@@ -112,12 +112,12 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * requester, struct IntuitionBase * IntuitionBase)
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct RastPort 	*rp;
+    struct RastPort     *rp;
     struct GadgetInfo    gi;
-    struct DrawInfo 	*dri;
-    struct BBox     	 bbox;
-    ULONG           	 state;
-    APTR            	 render;
+    struct DrawInfo     *dri;
+    struct BBox          bbox;
+    ULONG                state;
+    APTR                 render;
 
     DEBUG_REFRESHBOOLGADGET(dprintf("RefreshBoolGadget: gadget %p window %p req %p\n",
                                     gadget, window, requester));
@@ -137,14 +137,14 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
     switch (gadget->Flags & GFLG_GADGHIGHBITS)
     {
-	case GFLG_GADGHIMAGE:
+        case GFLG_GADGHIMAGE:
             render = GETRENDER(gadget);
             RENDERGADGET(window,gadget,render);
             break;
 
-	case GFLG_GADGHCOMP:
-	case GFLG_GADGHNONE:
-	case GFLG_GADGHBOX:
+        case GFLG_GADGHCOMP:
+        case GFLG_GADGHNONE:
+        case GFLG_GADGHBOX:
             render = gadget->GadgetRender;
             RENDERGADGET(window,gadget,render);
             break;
@@ -158,20 +158,20 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
         switch (gadget->Flags & GFLG_GADGHIGHBITS)
         {
             case GFLG_GADGHCOMP:
-        	if (gadget->Flags & GFLG_SELECTED)
-        	{
+                if (gadget->Flags & GFLG_SELECTED)
+                {
                     SetDrMd (rp, COMPLEMENT);
 
                     RectFill (rp, bbox.Left,
                               bbox.Top,
                               bbox.Left + bbox.Width - 1,
                               bbox.Top + bbox.Height - 1);
-        	}
-        	break;
+                }
+                break;
 
             case GFLG_GADGHBOX:
-        	if (gadget->Flags & GFLG_SELECTED)
-        	{
+                if (gadget->Flags & GFLG_SELECTED)
+                {
                     SetDrMd (rp, COMPLEMENT);
 
                     RectFill (rp, bbox.Left - BOXSIZEX,
@@ -183,9 +183,9 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
                               bbox.Top,
                               bbox.Left + bbox.Width - 1,
                               bbox.Top + bbox.Height - 1);
-        	}
+                }
 
-        	break;
+                break;
 
         } /* Highlight after contents have been drawn */
 
@@ -217,11 +217,11 @@ void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct GadgetInfo    gi;
-    struct RastPort 	*rp;
-    struct DrawInfo 	*dri;
-    struct BBox     	 bbox;
-    ULONG           	 state;
-    APTR            	 render;
+    struct RastPort     *rp;
+    struct DrawInfo     *dri;
+    struct BBox          bbox;
+    ULONG                state;
+    APTR                 render;
 
     DEBUG_REFRESHBOOLGADGET(dprintf("RefreshBoolGadgetState: gadget %p window %p req %p\n",
                                     gadget, window, requester));
@@ -243,7 +243,7 @@ void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
 
     switch (gadget->Flags & GFLG_GADGHIGHBITS)
     {
-	case GFLG_GADGHIMAGE:
+        case GFLG_GADGHIMAGE:
             render = GETRENDER(gadget);
             RENDERGADGET(window,gadget,render);
             RenderBoolLabel(rp, gadget, &bbox, dri, IntuitionBase);
@@ -256,27 +256,27 @@ void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
         switch (gadget->Flags & GFLG_GADGHIGHBITS)
         {
             case GFLG_GADGHCOMP:
-        	SetDrMd (rp, COMPLEMENT);
+                SetDrMd (rp, COMPLEMENT);
 
-        	RectFill (rp, bbox.Left,
-                	  bbox.Top,
-                	  bbox.Left + bbox.Width - 1,
-                	  bbox.Top + bbox.Height - 1);
-        	break;
+                RectFill (rp, bbox.Left,
+                          bbox.Top,
+                          bbox.Left + bbox.Width - 1,
+                          bbox.Top + bbox.Height - 1);
+                break;
 
             case GFLG_GADGHBOX:
-        	SetDrMd (rp, COMPLEMENT);
+                SetDrMd (rp, COMPLEMENT);
 
-        	RectFill (rp, bbox.Left - BOXSIZEX,
-                	  bbox.Top  - BOXSIZEY,
-                	  bbox.Left + bbox.Width  - 1 + BOXSIZEX,
-                	  bbox.Top  + bbox.Height - 1 + BOXSIZEY);
+                RectFill (rp, bbox.Left - BOXSIZEX,
+                          bbox.Top  - BOXSIZEY,
+                          bbox.Left + bbox.Width  - 1 + BOXSIZEX,
+                          bbox.Top  + bbox.Height - 1 + BOXSIZEY);
 
-        	RectFill (rp, bbox.Left,
-                	  bbox.Top,
-                	  bbox.Left + bbox.Width - 1,
-                	  bbox.Top + bbox.Height - 1);
-        	break;
+                RectFill (rp, bbox.Left,
+                          bbox.Top,
+                          bbox.Left + bbox.Width - 1,
+                          bbox.Top + bbox.Height - 1);
+                break;
 
         } /* switch (gadget->Flags & GFLG_GADGHIGHBITS) */
 

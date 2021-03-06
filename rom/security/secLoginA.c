@@ -10,14 +10,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(ULONG, secLoginA,
+        AROS_LH1(ULONG, secLoginA,
 
 /*  SYNOPSIS */
-	/* void */
-	AROS_LHA(struct TagItem *, taglist, A0),
+        /* void */
+        AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 6, Security)
+        struct SecurityBase *, secBase, 6, Security)
 
 /*  FUNCTION
 

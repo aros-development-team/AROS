@@ -56,7 +56,7 @@
 
 struct ETextFont
 {
-    struct TextFont	etf_Font;
+    struct TextFont     etf_Font;
 };
 
 /* *********************** RastPort extra data handling *********************** */
@@ -67,16 +67,16 @@ struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct G
 
     if (alloc && !dd)
     {
-    	dd = AllocVec(sizeof(struct gfx_driverdata), MEMF_CLEAR);
-    	if (dd)
-    	{
-    	    rp->RP_Extra    = dd;
-    	    dd->dd_RastPort = rp;
-    	}
+        dd = AllocVec(sizeof(struct gfx_driverdata), MEMF_CLEAR);
+        if (dd)
+        {
+            rp->RP_Extra    = dd;
+            dd->dd_RastPort = rp;
+        }
     }
 
     return dd;
-}    
+}
 
 /* *********************** Display driver handling *********************** */
 
@@ -97,59 +97,59 @@ int driver_init(struct GfxBase * GfxBase)
     
     /* Init the needed attrbases */
 
-    __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
-    __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
-    __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
-    __IHidd_PixFmt  	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
-    __IHidd_PlanarBM 	= OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
-    __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
+    __IHidd_BitMap      = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    __IHidd_GC          = OOP_ObtainAttrBase(IID_Hidd_GC);
+    __IHidd_Sync        = OOP_ObtainAttrBase(IID_Hidd_Sync);
+    __IHidd_PixFmt      = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
+    __IHidd_PlanarBM    = OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
+    __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
     __IHidd_FakeGfxHidd = OOP_ObtainAttrBase(IID_Hidd_FakeGfxHidd);
 
     if (__IHidd_BitMap   &&
         __IHidd_GC       &&
-	__IHidd_Sync     &&
-	__IHidd_PixFmt   &&
-	__IHidd_PlanarBM &&
-	__IHidd_Gfx      &&
-	__IHidd_FakeGfxHidd)
+        __IHidd_Sync     &&
+        __IHidd_PixFmt   &&
+        __IHidd_PlanarBM &&
+        __IHidd_Gfx      &&
+        __IHidd_FakeGfxHidd)
     {
         CDD(GfxBase)->gcClass = OOP_FindClass(CLID_Hidd_GC);
-    	if (!CDD(GfxBase)->gcClass)
-    	    return FALSE;
+        if (!CDD(GfxBase)->gcClass)
+            return FALSE;
 
-	/* Init display mode database */
-	InitSemaphore(&CDD(GfxBase)->displaydb_sem);
-	CDD(GfxBase)->invalid_id = INVALID_ID;
-	CDD(GfxBase)->last_id = AROS_RTG_MONITOR_ID;
+        /* Init display mode database */
+        InitSemaphore(&CDD(GfxBase)->displaydb_sem);
+        CDD(GfxBase)->invalid_id = INVALID_ID;
+        CDD(GfxBase)->last_id = AROS_RTG_MONITOR_ID;
 
-	/* Init software driver */
-	CDD(GfxBase)->memorygfx = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, baseGfx, NULL);
-	DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
+        /* Init software driver */
+        CDD(GfxBase)->memorygfx = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, baseGfx, NULL);
+        DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
 
-	if (CDD(GfxBase)->memorygfx)
-	{
-	    struct TagItem bm_create_tags[] =
-	    {
-		{ aHidd_BitMap_GfxHidd , (IPTR)CDD(GfxBase)->memorygfx },
-		{ aHidd_PlanarBM_BitMap, 0			       },
-		{ TAG_DONE	       , 0			       }
-	    };
+        if (CDD(GfxBase)->memorygfx)
+        {
+            struct TagItem bm_create_tags[] =
+            {
+                { aHidd_BitMap_GfxHidd , (IPTR)CDD(GfxBase)->memorygfx },
+                { aHidd_PlanarBM_BitMap, 0                             },
+                { TAG_DONE             , 0                             }
+            };
 
-	    CDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
-	    DEBUG_INIT(bug("[driver_init] Planar bitmap cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
+            CDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
+            DEBUG_INIT(bug("[driver_init] Planar bitmap cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
 
-	    if (CDD(GfxBase)->planarbm_cache)
-	    {
-		CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, NULL, GfxBase);
-		DEBUG_INIT(bug("[driver_init] GC cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
+            if (CDD(GfxBase)->planarbm_cache)
+            {
+                CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, NULL, GfxBase);
+                DEBUG_INIT(bug("[driver_init] GC cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
 
-		if (CDD(GfxBase)->gc_cache)
-		    ReturnInt("driver_init", int, TRUE);
+                if (CDD(GfxBase)->gc_cache)
+                    ReturnInt("driver_init", int, TRUE);
 
-		delete_object_cache(CDD(GfxBase)->planarbm_cache, GfxBase);
-	    }
-	    OOP_DisposeObject(CDD(GfxBase)->memorygfx);
-	}
+                delete_object_cache(CDD(GfxBase)->planarbm_cache, GfxBase);
+            }
+            OOP_DisposeObject(CDD(GfxBase)->memorygfx);
+        }
     }
 
     ReturnInt("driver_init", int, FALSE);
@@ -159,9 +159,9 @@ int driver_init(struct GfxBase * GfxBase)
 static OOP_Object *create_framebuffer(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     struct TagItem fbtags[] = {
-    	{ aHidd_BitMap_FrameBuffer,	TRUE	},
-	{ aHidd_BitMap_ModeID,		0	},
-	{ TAG_DONE, 0 }
+        { aHidd_BitMap_FrameBuffer,     TRUE    },
+        { aHidd_BitMap_ModeID,          0       },
+        { TAG_DONE, 0 }
     };
 
     HIDDT_ModeID hiddmode;
@@ -170,11 +170,11 @@ static OOP_Object *create_framebuffer(struct monitor_driverdata *mdd, struct Gfx
     /* Get the highest available resolution at the best possible depth */
     hiddmode = get_best_resolution_and_depth(mdd, GfxBase);
     if (vHidd_ModeID_Invalid == hiddmode) {
-    	D(bug("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n"));
+        D(bug("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n"));
     } else {
-    	/* Create the framebuffer object */
-	fbtags[1].ti_Data = hiddmode;
-	fb = HIDD_Gfx_CreateObject(mdd->gfxhidd, PrivGBase(GfxBase)->basebm, fbtags);
+        /* Create the framebuffer object */
+        fbtags[1].ti_Data = hiddmode;
+        fb = HIDD_Gfx_CreateObject(mdd->gfxhidd, PrivGBase(GfxBase)->basebm, fbtags);
     }
 
     return fb;
@@ -209,7 +209,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 
     /* Count number of display modes */
     for (m = modes; *m != vHidd_ModeID_Invalid; m ++)
-	cnt++;
+        cnt++;
 
     mdd = AllocVec(sizeof(struct monitor_driverdata) + cnt * sizeof(struct DisplayInfoHandle), MEMF_PUBLIC|MEMF_CLEAR);
     D(bug("[driver_Setup] Allocated driverdata at 0x%p\n", mdd));
@@ -231,33 +231,33 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     for (i = 0; i <= cnt; i++)
     {
         mdd->modes[i].id  = modes[i];
-	mdd->modes[i].drv = mdd;
+        mdd->modes[i].drv = mdd;
 
-	/* Watch out! The last record in the array is terminator (vHidd_ModeID_Invalid) */
-	if ((i < cnt) && (!compose))
-	{
-	    HIDD_Gfx_ModeProperties(gfxhidd, modes[i], &props, sizeof(props));
-	    compose |= props.CompositionFlags;
+        /* Watch out! The last record in the array is terminator (vHidd_ModeID_Invalid) */
+        if ((i < cnt) && (!compose))
+        {
+            HIDD_Gfx_ModeProperties(gfxhidd, modes[i], &props, sizeof(props));
+            compose |= props.CompositionFlags;
 
-	    if (!can_compose)
-	    {
-		OOP_Object *sync, *pf;
-		IPTR colmod;
+            if (!can_compose)
+            {
+                OOP_Object *sync, *pf;
+                IPTR colmod;
 
-		HIDD_Gfx_GetMode(gfxhidd, modes[i], &sync, &pf);
-		OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+                HIDD_Gfx_GetMode(gfxhidd, modes[i], &sync, &pf);
+                OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-	    	if (colmod == vHidd_ColorModel_TrueColor)
-	    	{
-		    /*
-		     * At the moment software compositor supports only truecolor screens.
-		     * There also definitions for DirectColor, gray, etc, but there is
-		     * no such hardware supported by now.
-		     */
-	    	    can_compose = TRUE;
-	    	}
-	    }
-	}
+                if (colmod == vHidd_ColorModel_TrueColor)
+                {
+                    /*
+                     * At the moment software compositor supports only truecolor screens.
+                     * There also definitions for DirectColor, gray, etc, but there is
+                     * no such hardware supported by now.
+                     */
+                    can_compose = TRUE;
+                }
+            }
+        }
     }
 
     HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
@@ -274,18 +274,18 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     }
     else
     {
-	D(bug("[driver_Setup] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
+        D(bug("[driver_Setup] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
 
-	mdd->gfxhidd = init_fakegfxhidd(gfxhidd, GfxBase);
-	if (mdd->gfxhidd)
-	    mdd->flags |= DF_UseFakeGfx;
-	else
-	    ok = FALSE;
+        mdd->gfxhidd = init_fakegfxhidd(gfxhidd, GfxBase);
+        if (mdd->gfxhidd)
+            mdd->flags |= DF_UseFakeGfx;
+        else
+            ok = FALSE;
     }
 
     if (ok)
     {
-	D(bug("[driver_Setup] Ok, framebuffer type %ld\n", fbtype));
+        D(bug("[driver_Setup] Ok, framebuffer type %ld\n", fbtype));
 
         /*
          * Instantiate framebuffer if needed.
@@ -298,31 +298,31 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
             mdd->flags |= DF_DirectFB;
 
         case vHidd_FrameBuffer_Mirrored:
-	    mdd->framebuffer = create_framebuffer(mdd, GfxBase);
+            mdd->framebuffer = create_framebuffer(mdd, GfxBase);
             break;
-	}
+        }
 
-	if ((fbtype == vHidd_FrameBuffer_None) || mdd->framebuffer)
-	{
-	    D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
+        if ((fbtype == vHidd_FrameBuffer_None) || mdd->framebuffer)
+        {
+            D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
 
-	    if ((!compose) && can_compose)
-	    {
-		D(bug("[driver_Setup] Software screen composition required\n"));
+            if ((!compose) && can_compose)
+            {
+                D(bug("[driver_Setup] Software screen composition required\n"));
 
-		mdd->flags |= DF_SoftCompose;
-		compositor_Setup(mdd, GfxBase);
-	    }
+                mdd->flags |= DF_SoftCompose;
+                compositor_Setup(mdd, GfxBase);
+            }
 
-	    return mdd;
-	}
+            return mdd;
+        }
 
-	if (mdd->framebuffer)
-	    OOP_DisposeObject(mdd->framebuffer);
+        if (mdd->framebuffer)
+            OOP_DisposeObject(mdd->framebuffer);
     } /* if (fake gfx stuff ok) */
 
     if (mdd->flags & DF_UseFakeGfx)
-	OOP_DisposeObject(mdd->gfxhidd);
+        OOP_DisposeObject(mdd->gfxhidd);
 
     FreeVec(mdd);
 
@@ -344,7 +344,7 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     /* Notify Intuition */
     if (CDD(GfxBase)->DriverNotify)
-	CDD(GfxBase)->DriverNotify(mdd->userdata, FALSE, CDD(GfxBase)->notify_data);
+        CDD(GfxBase)->DriverNotify(mdd->userdata, FALSE, CDD(GfxBase)->notify_data);
 
     /* Dispose associated stuff */
     OOP_DisposeObject(mdd->compositor);
@@ -362,10 +362,10 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 #if 0 /* Unused? */
 
 static ULONG getbitmappixel(struct BitMap *bm
-	, LONG x
-	, LONG y
-	, UBYTE depth
-	, UBYTE plane_mask)
+        , LONG x
+        , LONG y
+        , UBYTE depth
+        , UBYTE plane_mask)
 {
     UBYTE i;
     ULONG idx;
@@ -381,19 +381,19 @@ static ULONG getbitmappixel(struct BitMap *bm
         pen <<= 1; /* stegerg: moved to here, was inside if!? */
 
         if ((1L << i) & plane_mask)
-	{
-	    UBYTE *plane = bm->Planes[i];
-	
-	    if (plane == (PLANEPTR)-1)
-	    {
-	        pen |= 1;
-	    }
-	    else if (plane != NULL)
-	    {
-		if ((plane[idx] & mask) != 0)
-		    pen |= 1;
-	    }
-	}
+        {
+            UBYTE *plane = bm->Planes[i];
+        
+            if (plane == (PLANEPTR)-1)
+            {
+                pen |= 1;
+            }
+            else if (plane != NULL)
+            {
+                if ((plane[idx] & mask) != 0)
+                    pen |= 1;
+            }
+        }
 
     }
     return pen;
@@ -449,26 +449,26 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
 
     if (mdd->compositor)
     {
-    	/*
-    	 * Compositor present. Give ViewPorts chain to it.
-    	 * For improved visual appearance it will call Show itself and return its result.
-    	 * The compositor is expected to handle all possible failures internally. If some
-    	 * internal error happens, it must fail back to single HIDD_Gfx_Show().
-    	 */
-    	fb = compositor_LoadViewPorts(mdd->compositor, vpd, &compositing, GfxBase);
-    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Compositor returned 0x%p, active: %d\n", fb, compositing));
+        /*
+         * Compositor present. Give ViewPorts chain to it.
+         * For improved visual appearance it will call Show itself and return its result.
+         * The compositor is expected to handle all possible failures internally. If some
+         * internal error happens, it must fail back to single HIDD_Gfx_Show().
+         */
+        fb = compositor_LoadViewPorts(mdd->compositor, vpd, &compositing, GfxBase);
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Compositor returned 0x%p, active: %d\n", fb, compositing));
     }
     else
     {
-    	/*
-     	 * First check if the bitmap is already displayed. If so, do nothing (because
-     	 * displaying the same bitmap twice may cause some problems)
-     	 */
-    	if (mdd->frontbm == bitmap)
+        /*
+         * First check if the bitmap is already displayed. If so, do nothing (because
+         * displaying the same bitmap twice may cause some problems)
+         */
+        if (mdd->frontbm == bitmap)
             return 0;
 
-    	fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
-    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
+        fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
     }
 
     /* Summary of possible responses (when no error happened):
@@ -479,25 +479,25 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
     */
     if (fb)
     {
-	/* The screen is not empty, 'fb' is on display now. */
+        /* The screen is not empty, 'fb' is on display now. */
         IPTR width, height;
 
-	/* Uninstall the framebuffer from old frontmost BitMap (if present) */
-	UninstallFB(mdd, GfxBase);
+        /* Uninstall the framebuffer from old frontmost BitMap (if present) */
+        UninstallFB(mdd, GfxBase);
 
-    	/*
-     	 * We need to always remember our new frontmost bitmap, even if we do not work
-     	 * with a framebuffer. This is needed for the check against showing the same
-     	 * bitmap twice.
-     	 */
-    	mdd->frontbm = bitmap;
+        /*
+         * We need to always remember our new frontmost bitmap, even if we do not work
+         * with a framebuffer. This is needed for the check against showing the same
+         * bitmap twice.
+         */
+        mdd->frontbm = bitmap;
 
-	/*
-	 * Install the framebuffer into new bitmap. Only if software composition is inactive.
-	 * If it is active, our BitMap is mirrored, not replaced.
-	 */
-	if (!compositing)
-	    InstallFB(mdd, GfxBase);
+        /*
+         * Install the framebuffer into new bitmap. Only if software composition is inactive.
+         * If it is active, our BitMap is mirrored, not replaced.
+         */
+        if (!compositing)
+            InstallFB(mdd, GfxBase);
 
         /* Tell the driver to refresh the screen */
         OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
@@ -508,11 +508,11 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
     }
     else
     {
-    	/*
-    	 * Screen is empty, simply reset the current bitmap.
-    	 * Only framebuffer-less driver can return NULL. So we don't need
-    	 * to call UninstallFB() here.
-    	 */
+        /*
+         * Screen is empty, simply reset the current bitmap.
+         * Only framebuffer-less driver can return NULL. So we don't need
+         * to call UninstallFB() here.
+         */
         mdd->frontbm = NULL;
     }
 
@@ -538,22 +538,22 @@ void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     if ((mdd->flags & DF_DirectFB) && mdd->frontbm)
     {
-	struct BitMap *bitmap = mdd->frontbm;
-    	OOP_Object *pf;
+        struct BitMap *bitmap = mdd->frontbm;
+        OOP_Object *pf;
 
-    	/* Backup original data */
-    	mdd->bm_bak     = HIDD_BM_OBJ(bitmap);
-    	mdd->colmod_bak = HIDD_BM_COLMOD(bitmap);
-    	mdd->colmap_bak = HIDD_BM_COLMAP(bitmap);
+        /* Backup original data */
+        mdd->bm_bak     = HIDD_BM_OBJ(bitmap);
+        mdd->colmod_bak = HIDD_BM_COLMOD(bitmap);
+        mdd->colmap_bak = HIDD_BM_COLMAP(bitmap);
 
-    	/* Insert the framebuffer in its place */
-    	OOP_GetAttr(mdd->framebuffer, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+        /* Insert the framebuffer in its place */
+        OOP_GetAttr(mdd->framebuffer, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 
-    	HIDD_BM_OBJ(bitmap)    = mdd->framebuffer;
-    	HIDD_BM_COLMOD(bitmap) = OOP_GET(pf, aHidd_PixFmt_ColorModel);
-    	HIDD_BM_COLMAP(bitmap) = (OOP_Object *)OOP_GET(mdd->framebuffer, aHidd_BitMap_ColorMap);
+        HIDD_BM_OBJ(bitmap)    = mdd->framebuffer;
+        HIDD_BM_COLMOD(bitmap) = OOP_GET(pf, aHidd_PixFmt_ColorModel);
+        HIDD_BM_COLMAP(bitmap) = (OOP_Object *)OOP_GET(mdd->framebuffer, aHidd_BitMap_ColorMap);
 
-    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Installed framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm, mdd->bm_bak));
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Installed framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm, mdd->bm_bak));
     }
 }
 
@@ -570,7 +570,7 @@ void UninstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
         HIDD_BM_COLMOD(oldbm) = mdd->colmod_bak;
         HIDD_BM_COLMAP(oldbm) = mdd->colmap_bak;
 
-	/* No framebuffer installed */
+        /* No framebuffer installed */
         mdd->bm_bak = NULL;
     }
 }
@@ -582,13 +582,13 @@ struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor
 
     for (vp = view->ViewPort; vp; vp = vp->Next)
     {
-	if (!(vp->Modes & VP_HIDE))
-	{
-	    struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+        if (!(vp->Modes & VP_HIDE))
+        {
+            struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
 
-	    if (VPE_DRIVER(vpe) == mdd)
-	    	return VPE_DATA(vpe);
-	}
+            if (VPE_DRIVER(vpe) == mdd)
+                return VPE_DATA(vpe);
+        }
     }
     return NULL;
 }
@@ -613,16 +613,16 @@ ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase)
 
         /*
          * Find the first visible ViewPort for this display. It
-	 * will be a start of bitmaps chain to process.
-	 */
-	if (view)
-	    vpd = driver_FindViewPorts(view, mdd, GfxBase);
+         * will be a start of bitmaps chain to process.
+         */
+        if (view)
+            vpd = driver_FindViewPorts(view, mdd, GfxBase);
 
-	rc = fn(vpd, view, mdd, GfxBase);
+        rc = fn(vpd, view, mdd, GfxBase);
 
-	/* Interrupt immediately if the callback returned error */
-	if (rc)
-	    break;
+        /* Interrupt immediately if the callback returned error */
+        if (rc)
+            break;
     }
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);

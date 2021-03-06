@@ -33,8 +33,8 @@ BOOL int_LoadDecorator(const char *name, struct IntScreen *screen, struct Intuit
     {
         struct DosLibrary *DOSBase = GetPrivIBase(IntuitionBase)->DOSBase;
 
-	/* Open dos.library only once, when first needed */
-	if (!DOSBase)
+        /* Open dos.library only once, when first needed */
+        if (!DOSBase)
             GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
         if (DOSBase)
@@ -49,9 +49,9 @@ BOOL int_LoadDecorator(const char *name, struct IntScreen *screen, struct Intuit
                     struct NewDecorator *d = (struct NewDecorator *) node;
 
                     if ((d->nd_IntPattern != NULL) && (screen->Screen.Title != NULL))
-                    {	
-                    	if (MatchPattern(d->nd_IntPattern, screen->Screen.Title))
-                    	    nd = d;
+                    {
+                        if (MatchPattern(d->nd_IntPattern, screen->Screen.Title))
+                            nd = d;
                     }
                 }
             }
@@ -143,7 +143,7 @@ BOOL int_InitDecorator(struct Screen *screen)
     BOOL ok;
     struct sdpInitScreen msg;
 
-    msg.MethodID 	= SDM_INITSCREEN;
+    msg.MethodID        = SDM_INITSCREEN;
     msg.sdp_Screen      = screen;
     msg.sdp_TrueColor   = (GetPrivScreen(screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
     msg.sdp_FontHeight  = GetPrivScreen(screen)->DInfo.dri_Font->tf_YSize;
@@ -189,6 +189,6 @@ void int_CalcSkinInfo(struct Screen *screen, struct IntuitionBase *IntuitionBase
         lmsg.sdp_Flags      = SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
         lmsg.sdp_UserBuffer = ((struct IntScreen *)screen)->DecorUserBuffer;
 
-	DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, &lmsg.MethodID);
+        DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, &lmsg.MethodID);
     }
-}    
+}

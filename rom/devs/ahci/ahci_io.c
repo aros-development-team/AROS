@@ -82,7 +82,7 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     ULONG sector_size, bmask;
     BOOL done = TRUE;
     /* It's safe to allocate these on the stack, since they
-     * will never be referenced once the ahci_scsi_*_io() 
+     * will never be referenced once the ahci_scsi_*_io()
      * routine returns.
      */
     struct SCSICmd scsi = {};

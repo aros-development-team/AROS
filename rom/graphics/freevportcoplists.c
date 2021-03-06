@@ -19,21 +19,21 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, FreeVPortCopLists,
+        AROS_LH1(void, FreeVPortCopLists,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, vp, A0),
+        AROS_LHA(struct ViewPort *, vp, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 90, Graphics)
+        struct GfxBase *, GfxBase, 90, Graphics)
 
 /*  FUNCTION
-	Deallocate all memory associated with the CopList structures
-	for display, color, sprite and the user copper list. The
-	corresponding fields in this structure will be set to NULL.
+        Deallocate all memory associated with the CopList structures
+        for display, color, sprite and the user copper list. The
+        corresponding fields in this structure will be set to NULL.
 
     INPUTS
-	vp - pointer to a ViewPort structure
+        vp - pointer to a ViewPort structure
 
     RESULT
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	graphics/view.h
+        graphics/view.h
 
     INTERNALS
 
@@ -60,24 +60,24 @@
     D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
     if (vpe)
     {
-	/* Free the associated DriverData */
-    	struct HIDD_ViewPortData *vpd = VPE_DATA(vpe);
+        /* Free the associated DriverData */
+        struct HIDD_ViewPortData *vpd = VPE_DATA(vpe);
 
-	if (vpd)
-	{
-	    /* Do driver-specific cleanup */
-	    HIDD_Gfx_CleanViewPort(VPE_DRIVER(vpe)->gfxhidd, vpd);
+        if (vpd)
+        {
+            /* Do driver-specific cleanup */
+            HIDD_Gfx_CleanViewPort(VPE_DRIVER(vpe)->gfxhidd, vpd);
 
-	    FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
+            FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
 
-	    vpe->DriverData[0] = NULL;
-	}
+            vpe->DriverData[0] = NULL;
+        }
 
-    	if (vpe->Flags & VPXF_FREE_ME)
-    	{
-    	    D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
-    	    GfxFree(&vpe->n);
-    	}
+        if (vpe->Flags & VPXF_FREE_ME)
+        {
+            D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
+            GfxFree(&vpe->n);
+        }
     }
 
     AROS_LIBFUNC_EXIT

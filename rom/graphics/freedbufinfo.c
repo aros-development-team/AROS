@@ -17,11 +17,11 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct DBufInfo *, db, A1),
+        AROS_LHA(struct DBufInfo *, db, A1),
 
 /*  LOCATION */
 
-	struct GfxBase *, GfxBase, 162, Graphics)
+        struct GfxBase *, GfxBase, 162, Graphics)
 
 /*  FUNCTION
 

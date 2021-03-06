@@ -13,14 +13,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(int, secsetgid,
+        AROS_LH1(int, secsetgid,
 
 /*  SYNOPSIS */
-	/* (gid) */
-	AROS_LHA(UWORD, gid, D0),
+        /* (gid) */
+        AROS_LHA(UWORD, gid, D0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 42, Security)
+        struct SecurityBase *, secBase, 42, Security)
 
 /*  FUNCTION
 

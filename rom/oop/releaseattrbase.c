@@ -15,28 +15,28 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(VOID, OOP_ReleaseAttrBase,
+        AROS_LH1(VOID, OOP_ReleaseAttrBase,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR	, interfaceID, A0),
+        AROS_LHA(CONST_STRPTR   , interfaceID, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 9, OOP)
+        struct Library *, OOPBase, 9, OOP)
 
 /*  FUNCTION
-	Release an OOP_AttrBase previosly obtained with
-	OOP_ObtainAttrBase()
-	
+        Release an OOP_AttrBase previosly obtained with
+        OOP_ObtainAttrBase()
+        
 
     INPUTS
-    	interfaceID	- globally unique interface identifier.
-			  for which to release an attrbase.
+        interfaceID     - globally unique interface identifier.
+                          for which to release an attrbase.
 
     RESULT
-    	None.
+        None.
 
     NOTES
-    	The call must be paired with OOP_ObtainAttrBase().
+        The call must be paired with OOP_ObtainAttrBase().
 
     EXAMPLE
 

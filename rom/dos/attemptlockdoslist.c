@@ -89,7 +89,7 @@
     }
 
 /* This came from MorphOS source code, however looks strange.
-   Commented out but left for reference.    
+   Commented out but left for reference.
     if (dl)
         Forbid(); */
     if (!dl) {

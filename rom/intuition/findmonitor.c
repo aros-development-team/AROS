@@ -25,11 +25,11 @@ void *FindMonitorNode(ULONG id, struct IntuitionBase *IntuitionBase)
     for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ)
     {
         cfmsg.ModeID = id;
-	if (DoMethodA((Object *)n, &cfmsg))
-	{
-	    ret = n;
-	    break;
-	}
+        if (DoMethodA((Object *)n, &cfmsg))
+        {
+            ret = n;
+            break;
+        }
     }
 
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);

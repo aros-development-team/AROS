@@ -48,9 +48,9 @@
 
     if (window)
     {
-        ULONG 	lock;
+        ULONG   lock;
         Object *pointer = (Object *)GetTagData(WA_Pointer, 0, taglist);
-        BOOL	busy = (GetTagData(WA_BusyPointer, FALSE, taglist) != 0) ? TRUE : FALSE;
+        BOOL    busy = (GetTagData(WA_BusyPointer, FALSE, taglist) != 0) ? TRUE : FALSE;
 
         DEBUG_SETPOINTER(dprintf("SetWindowPointer: %spointer 0x%p\n",
                                 (busy) ? "busy" : "",

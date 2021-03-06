@@ -67,7 +67,7 @@
     AROS_LIBFUNC_INIT
 
     struct opSet ops;
-    IPTR    	 result;
+    IPTR         result;
 
     DEBUG_SETGADGETATTRS(dprintf("SetGadgetAttrs[%x]: Gadget 0x%lx Window 0x%lx Requester 0x%lx Tags 0x%lx\n",
                                  &ops, gadget, window, requester, tagList));

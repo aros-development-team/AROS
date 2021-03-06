@@ -14,31 +14,31 @@
 
     NAME */
 
-	AROS_LH2(APTR, CreateIORequest,
+        AROS_LH2(APTR, CreateIORequest,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, ioReplyPort, A0),
-	AROS_LHA(ULONG,            size,        D0),
+        AROS_LHA(struct MsgPort *, ioReplyPort, A0),
+        AROS_LHA(ULONG,            size,        D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 109, Exec)
+        struct ExecBase *, SysBase, 109, Exec)
 
 /*  FUNCTION
-	Create an I/O request structure bound to a given messageport.
-	I/O requests are normally used to communicate with exec devices
-	but can be used as normal messages just as well.
+        Create an I/O request structure bound to a given messageport.
+        I/O requests are normally used to communicate with exec devices
+        but can be used as normal messages just as well.
 
     INPUTS
-	ioReplyPort - Pointer to that one of your messageports where
-		      the messages are replied to. A NULL port is legal
-		      but then the function fails always.
-	size	    - Size of the message structure including the struct
-		      IORequest header. The minimal allowable size is that
-		      of a struct Message.
+        ioReplyPort - Pointer to that one of your messageports where
+                      the messages are replied to. A NULL port is legal
+                      but then the function fails always.
+        size        - Size of the message structure including the struct
+                      IORequest header. The minimal allowable size is that
+                      of a struct Message.
 
     RESULT
-	Pointer to a new I/O request structure or NULL if the function
-	failed.
+        Pointer to a new I/O request structure or NULL if the function
+        failed.
 
     NOTES
 
@@ -58,18 +58,18 @@
 
     /* A NULL ioReplyPort is legal but has no effect */
     if(ioReplyPort==NULL)
-	return NULL;
+        return NULL;
 
     /* Allocate the memory */
     ret=(struct IORequest *)AllocMem(size,MEMF_PUBLIC|MEMF_CLEAR);
 
     if(ret!=NULL)
     {
-	/* Initialize it. */
-	ret->io_Message.mn_ReplyPort=ioReplyPort;
+        /* Initialize it. */
+        ret->io_Message.mn_ReplyPort=ioReplyPort;
 
-	/* This size is needed to free the memory at DeleteIORequest() time. */
-	ret->io_Message.mn_Length=size;
+        /* This size is needed to free the memory at DeleteIORequest() time. */
+        ret->io_Message.mn_Length=size;
     }
 
     /* All done. */

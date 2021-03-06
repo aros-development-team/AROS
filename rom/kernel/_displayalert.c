@@ -81,10 +81,10 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
     {
         text = PrintCentered(text, KernelBase);
 
-        if (*text == 0)	/* Handle early NULL terminator */
+        if (*text == 0) /* Handle early NULL terminator */
             break;
 
-        text++;	/* Skip a newline */
+        text++; /* Skip a newline */
     }
 
     PrintFrame(KernelBase);

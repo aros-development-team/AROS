@@ -12,14 +12,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(void, secRemMonitor,
+        AROS_LH1(void, secRemMonitor,
 
 /*  SYNOPSIS */
-	/* (monitor) */
-	AROS_LHA(struct secMonitor *, monitor, A0),
+        /* (monitor) */
+        AROS_LHA(struct secMonitor *, monitor, A0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 29, Security)
+        struct SecurityBase *, secBase, 29, Security)
 
 /*  FUNCTION
 

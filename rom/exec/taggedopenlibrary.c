@@ -36,48 +36,48 @@ static const char * const copyrights[] =
 
 /*****i* exec.library/TaggedOpenLibrary **************************************
 
-	TaggedOpenLibrary -- open a library by tag (V39)
+        TaggedOpenLibrary -- open a library by tag (V39)
 
     NAME */
-	AROS_LH1(APTR, TaggedOpenLibrary,
+        AROS_LH1(APTR, TaggedOpenLibrary,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, tag, D0),
+        AROS_LHA(LONG, tag, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 135, Exec)
+        struct ExecBase *, SysBase, 135, Exec)
 
 /*  FUNCTION
-	Opens a library given by tag.
+        Opens a library given by tag.
 
-	All libraries will be opened with version number 0.
+        All libraries will be opened with version number 0.
 
-	If the library cannot be opened the first try, this function calls
-	FindResident and InitResident on the library, and tries again.
+        If the library cannot be opened the first try, this function calls
+        FindResident and InitResident on the library, and tries again.
 
     INPUTS
-	tag -  Which library or text string to return.
+        tag -  Which library or text string to return.
 
     RESULT
-	Pointer to library or pointer to text string.
+        Pointer to library or pointer to text string.
 
     NOTES
-	THIS FUNCTION IS PRIVATE/INTERNAL.
-	TaggedOpenLibrary provides a means for  system ROM modules
-	to open the standard system libraries without having to include
-	the library name in string form.
-	TaggedOpenLibrary also provides the standard system copyright
-	notice.
+        THIS FUNCTION IS PRIVATE/INTERNAL.
+        TaggedOpenLibrary provides a means for  system ROM modules
+        to open the standard system libraries without having to include
+        the library name in string form.
+        TaggedOpenLibrary also provides the standard system copyright
+        notice.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	OpenLibrary(), FindResident(), InitResident()
+        OpenLibrary(), FindResident(), InitResident()
 
     INTERNALS
-	No checks are made on the validity of the tag.
+        No checks are made on the validity of the tag.
 
 ******************************************************************************/
 {
@@ -88,25 +88,25 @@ static const char * const copyrights[] =
 
     if(tag > 0)
     {
-	/*
-	    Try to open the library. If it opened, return.
-	*/
-	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
+        /*
+            Try to open the library. If it opened, return.
+        */
+        if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
 #if (0)
-	/*
-	    If it didn't open, FindResident(), InitResident(), and then
-	    try to open it again.
-	*/
-	if(!(res = FindResident(libnames[tag-1]))) return NULL;
-	InitResident(res, BNULL);
-	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
+        /*
+            If it didn't open, FindResident(), InitResident(), and then
+            try to open it again.
+        */
+        if(!(res = FindResident(libnames[tag-1]))) return NULL;
+        InitResident(res, BNULL);
+        if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
 #endif
     }
-    else 
+    else
         if(tag < 0) return( (APTR)copyrights[(-tag)-1] );
 
     /*
-	If we get here, tag must be 0, or the lib didn't open.
+        If we get here, tag must be 0, or the lib didn't open.
     */
     return NULL;
 

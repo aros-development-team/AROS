@@ -64,58 +64,58 @@ static OOP_Object *_Root_New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     /* Pares params */
 
     /* Object from other process which we create a proxy for */
-    realobject = (OOP_Object *)GetTagData(aProxy_RealObject,	NULL, msg->attrList);
+    realobject = (OOP_Object *)GetTagData(aProxy_RealObject,    NULL, msg->attrList);
     
     /* MsgPort to pass method invocation throgh.
        Note that one could very well use a socket or a pipe to pass
        the methods
     */
     
-    serverport = (struct MsgPort *)GetTagData(aProxy_Port, 	NULL, msg->attrList);
+    serverport = (struct MsgPort *)GetTagData(aProxy_Port,      NULL, msg->attrList);
     
     /* Those two params MUST be supplied */
     if ( !(realobject && serverport) )
-    	return (NULL);
+        return (NULL);
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
         struct ProxyData *data;
-	ULONG disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	    
-	data = (struct ProxyData *)OOP_INST_DATA(cl, o);
-	
-	/* Clear the instance data */
-	memset(data, 0, sizeof (struct ProxyData));
-	
-	/* This is ugly, as we will soon run out of sigbits */
-	data->ReplyPort = CreateMsgPort();
-	if (data->ReplyPort)
-	{
-	    /* Allocate MEMF_PUBLIC message struct */
-	    data->Message = AllocMem(sizeof (struct ProxyMsg), MEMF_PUBLIC);
-	    if (data->Message)
-	    {
-	    	struct ProxyMsg *pm = data->Message;
-		
-		/* Save the instance data */
-	    	data->RealObject = realobject;
-	    	data->ServerPort = serverport;
-		
-		/* Preinitialize some fields in the message struct */
-    		pm->pm_Message.mn_Length    = sizeof (struct ProxyMsg);
-    		pm->pm_Message.mn_ReplyPort = data->ReplyPort;
-    		pm->pm_Object = realobject;
+        ULONG disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            
+        data = (struct ProxyData *)OOP_INST_DATA(cl, o);
+        
+        /* Clear the instance data */
+        memset(data, 0, sizeof (struct ProxyData));
+        
+        /* This is ugly, as we will soon run out of sigbits */
+        data->ReplyPort = CreateMsgPort();
+        if (data->ReplyPort)
+        {
+            /* Allocate MEMF_PUBLIC message struct */
+            data->Message = AllocMem(sizeof (struct ProxyMsg), MEMF_PUBLIC);
+            if (data->Message)
+            {
+                struct ProxyMsg *pm = data->Message;
+                
+                /* Save the instance data */
+                data->RealObject = realobject;
+                data->ServerPort = serverport;
+                
+                /* Preinitialize some fields in the message struct */
+                pm->pm_Message.mn_Length    = sizeof (struct ProxyMsg);
+                pm->pm_Message.mn_ReplyPort = data->ReplyPort;
+                pm->pm_Object = realobject;
 
-	    	ReturnPtr("Proxy::New", OOP_Object *, o);
+                ReturnPtr("Proxy::New", OOP_Object *, o);
 
-	    }
-	    DeleteMsgPort(data->ReplyPort);
-	    
-	}
-	
-	OOP_CoerceMethod(cl, o, (OOP_Msg)&disp_mid);
-	
+            }
+            DeleteMsgPort(data->ReplyPort);
+            
+        }
+        
+        OOP_CoerceMethod(cl, o, (OOP_Msg)&disp_mid);
+        
     }
     ReturnPtr("Proxy::New", OOP_Object *, NULL);
 }
@@ -129,11 +129,11 @@ static VOID _Root_Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     /* Delete the replyport.. */
     if (data->ReplyPort)
-    	DeleteMsgPort(data->ReplyPort);
-	
+        DeleteMsgPort(data->ReplyPort);
+        
     /* .. the message struct.. */
     if (data->Message)
-    	FreeMem(data->Message, sizeof (struct ProxyMsg));
+        FreeMem(data->Message, sizeof (struct ProxyMsg));
 
     /* .. and the object itself. */
     OOP_DoSuperMethod(cl, o, msg);
@@ -149,7 +149,7 @@ static VOID _Root_Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 *****************/
 /* The proxy has a custom DoMethod() call that
    handles passing the method on to the server's MsgPort.
-*/   
+*/
 
 static IPTR _Proxy_DoMethod(OOP_Object *o, OOP_Msg msg)
 {
@@ -185,26 +185,26 @@ OOP_Class *init_proxyclass(struct Library *OOPBase)
 
     struct OOP_MethodDescr root_methods[] =
     {
-	{(IPTR (*)())_Root_New,			moRoot_New},
-	{(IPTR (*)())_Root_Dispose,		moRoot_Dispose},
-	{ NULL, 0UL }
+        {(IPTR (*)())_Root_New,                 moRoot_New},
+        {(IPTR (*)())_Root_Dispose,             moRoot_Dispose},
+        { NULL, 0UL }
     };
     
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-    	{ root_methods,		IID_Root, 2},
-	{ NULL, 0UL, 0UL}
+        { root_methods,         IID_Root, 2},
+        { NULL, 0UL, 0UL}
     };
     
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,			(IPTR)CLID_Root},
-	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{aMeta_ID,			(IPTR)CLID_Proxy},
-	{aMeta_InstSize,		(IPTR)sizeof (struct ProxyData) },
-	{aMeta_DoMethod,		(IPTR)_Proxy_DoMethod},
-	{TAG_DONE, 0UL}
+        {aMeta_SuperID,                 (IPTR)CLID_Root},
+        {aMeta_InterfaceDescr,          (IPTR)ifdescr},
+        {aMeta_ID,                      (IPTR)CLID_Proxy},
+        {aMeta_InstSize,                (IPTR)sizeof (struct ProxyData) },
+        {aMeta_DoMethod,                (IPTR)_Proxy_DoMethod},
+        {TAG_DONE, 0UL}
     };
 
     
@@ -216,7 +216,7 @@ OOP_Class *init_proxyclass(struct Library *OOPBase)
     if (cl)
     {
         cl->UserData = OOPBase;
-    	OOP_AddClass(cl);
+        OOP_AddClass(cl);
     }
     
     ReturnPtr ("InitProxyClass", OOP_Class *, cl);

@@ -24,20 +24,20 @@
 
     NAME */
 
-	AROS_LH1(void, RemLibrary,
+        AROS_LH1(void, RemLibrary,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Library *, library,A1),
+        AROS_LHA(struct Library *, library,A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 67, Exec)
+        struct ExecBase *, SysBase, 67, Exec)
 
 /*  FUNCTION
-	Calls the given library's expunge vector, thus trying to delete it.
-	The library may refuse to do so and still be open after this call.
+        Calls the given library's expunge vector, thus trying to delete it.
+        The library may refuse to do so and still be open after this call.
 
     INPUTS
-	library - Pointer to the library structure.
+        library - Pointer to the library structure.
 
     RESULT
 
@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-	AddLibrary(), MakeLibrary(), MakeFunctions(), InitStruct(), SumLibrary()
+        AddLibrary(), MakeLibrary(), MakeFunctions(), InitStruct(), SumLibrary()
 
     INTERNALS
 
@@ -58,21 +58,21 @@
     BPTR seglist;
 
     D(bug("RemLibrary $%lx (\"%s\") by \"%s\"\n", library,
-	library ? library->lib_Node.ln_Name : "(null)",
-	GET_THIS_TASK->tc_Node.ln_Name));
+        library ? library->lib_Node.ln_Name : "(null)",
+        GET_THIS_TASK->tc_Node.ln_Name));
 
     /* Arbitrate for the library list */
     Forbid();
 
     /* Call expunge vector */
     seglist = AROS_LVO_CALL1(BPTR,
-    	    	    	AROS_LCA(struct Library *, library, D0),
-    	    	    	struct Library *,library,3,);
+                        AROS_LCA(struct Library *, library, D0),
+                        struct Library *,library,3,);
     /*
-	Normally you'd expect the library to be expunged if this returns
-	non-zero, but this is only exec which doesn't know anything about
-	seglists - therefore dos.library has to SetFunction() into this
-	vector for the additional functionality.
+        Normally you'd expect the library to be expunged if this returns
+        non-zero, but this is only exec which doesn't know anything about
+        seglists - therefore dos.library has to SetFunction() into this
+        vector for the additional functionality.
     */
 
     /* All done. */

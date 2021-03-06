@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <exec/types.h>
@@ -19,7 +19,7 @@ ULONG color_distance(struct ColorMap * cm,
                      ULONG b,
                      ULONG index)
 {
-    /* 
+    /*
     ** I am assuming 24 bit colors that are represented in the color map as
     ** follows:
     ** cm->ColorTable is a pointer to an array of UWORDs where every
@@ -47,9 +47,9 @@ ULONG color_distance(struct ColorMap * cm,
     if (cm->Type > COLORMAP_TYPE_V1_2) {
         UWORD c2 = cm->LowColorBits[index];
 
-	r1 |= (c2 >> 8) & 0x000f;
-	g1 |= (c2 >> 4) & 0x000f;
-	b1 |= (c2 >> 0) & 0x000f;
+        r1 |= (c2 >> 8) & 0x000f;
+        g1 |= (c2 >> 4) & 0x000f;
+        b1 |= (c2 >> 0) & 0x000f;
     }
 
     dr = (WORD)(r >> (32-8)) - (WORD)r1;
@@ -73,22 +73,22 @@ BOOL color_equal(struct ColorMap * cm,
     if (cm->ColorTable[index] != (((r >> 20) & 0x0f00) |
                                               ((g >> 24) & 0x00f0) |
                                               ((b >> 28) & 0x000f)))
-	return FALSE;
+        return FALSE;
 
     if ((cm->Type > COLORMAP_TYPE_V1_2) &&
        cm->LowColorBits[index] != (((r >> 16) & 0x0f00) |
-                                        	((g >> 20) & 0x00f0) |
-                                        	((b >> 24) & 0x000f)))
+                                                ((g >> 20) & 0x00f0) |
+                                                ((b >> 24) & 0x000f)))
         return FALSE;
 
     return TRUE;
 }
 
 VOID color_get(struct ColorMap *cm,
-		ULONG *r,
-		ULONG *g,
-		ULONG *b,
-		ULONG index)
+                ULONG *r,
+                ULONG *g,
+                ULONG *b,
+                ULONG index)
 {
     UWORD hibits = cm->ColorTable[index];
 
@@ -99,7 +99,7 @@ VOID color_get(struct ColorMap *cm,
     if (cm->Type > COLORMAP_TYPE_V1_2) {
         UWORD lobits = cm->LowColorBits[index];
 
-	red8   |= (lobits & 0x0f00) >> 8;
+        red8   |= (lobits & 0x0f00) >> 8;
         green8 |= (lobits & 0x00f0) >> 4;
         blue8  |= (lobits & 0x000f);
     }

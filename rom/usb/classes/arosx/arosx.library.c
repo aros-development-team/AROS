@@ -146,25 +146,25 @@ AROS_LH2(struct AROSX_EventHook *, AROSX_AddEventHandler,
             ObtainSemaphore(&arosxb->arosxc_lock);
 
             arosxc = arosxb->arosxc_0;
-            if( (((msgmask>>28) & 1) && (arosxc->status.connected)) ) {                
+            if( (((msgmask>>28) & 1) && (arosxc->status.connected)) ) {
                 AROSXClass_SendEvent(arosxb, ((1<<28) | ((arosxc->controller_type)<<20) | AROSX_EHMF_CONNECT), (APTR)1, (APTR)2);
                 mybug(-1, ("Sent connect event for 0\n"));
             }
 
             arosxc = arosxb->arosxc_1;
-            if( (((msgmask>>28) & 2) && (arosxc->status.connected)) ) {                
+            if( (((msgmask>>28) & 2) && (arosxc->status.connected)) ) {
                 AROSXClass_SendEvent(arosxb, ((2<<28) | ((arosxc->controller_type)<<20) | AROSX_EHMF_CONNECT), (APTR)1, (APTR)2);
                 mybug(-1, ("Sent connect event for 1\n"));
             }
 
             arosxc = arosxb->arosxc_2;
-            if( (((msgmask>>28) & 4) && (arosxc->status.connected)) ) {                
+            if( (((msgmask>>28) & 4) && (arosxc->status.connected)) ) {
                 AROSXClass_SendEvent(arosxb, ((4<<28) | ((arosxc->controller_type)<<20) | AROSX_EHMF_CONNECT), (APTR)1, (APTR)2);
                 mybug(-1, ("Sent connect event for 2\n"));
             }
 
             arosxc = arosxb->arosxc_3;
-            if( (((msgmask>>28) & 8) && (arosxc->status.connected)) ) {                
+            if( (((msgmask>>28) & 8) && (arosxc->status.connected)) ) {
                 AROSXClass_SendEvent(arosxb, ((8<<28) | ((arosxc->controller_type)<<20) | AROSX_EHMF_CONNECT), (APTR)1, (APTR)2);
                 mybug(-1, ("Sent connect event for 3\n"));
             }

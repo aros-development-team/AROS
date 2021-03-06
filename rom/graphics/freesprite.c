@@ -22,7 +22,7 @@
 
 /*  FUNCTION
         Free a via GetSprite previously allocated sprite.
-        Don't even dare to free a sprite you didn't allocate.   
+        Don't even dare to free a sprite you didn't allocate.
 
     INPUTS
         pick - number of sprite in range 0-7

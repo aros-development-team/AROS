@@ -99,7 +99,7 @@
     {
         AROS_ATOMIC_DEC(iclass->cl_Super->cl_SubclassCount);
         
-        DeletePool(iclass->cl_MemoryPool); 
+        DeletePool(iclass->cl_MemoryPool);
         FreeMem(iclass, sizeof(Class));
         
         rv = TRUE;

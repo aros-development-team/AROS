@@ -2,7 +2,7 @@
     Copyright (C) 2011-2017, The AROS Development Team. All rights reserved.
 
     Desc: Update specified region of the bitmap, taking software composition into account.
-    	  Private function for cybergraphics.library support.
+          Private function for cybergraphics.library support.
 */
 
 #include "graphics_intern.h"
@@ -12,12 +12,12 @@
 #include <hidd/gfx.h>
 
 AROS_LH5(void, UpdateBitMap,
-	 AROS_LHA(struct BitMap *, bitmap, A0),
-	 AROS_LHA(UWORD, x     , D0),
-	 AROS_LHA(UWORD, y     , D1),
-	 AROS_LHA(UWORD, width , D2),
-	 AROS_LHA(UWORD, height, D3),
-	 struct GfxBase *, GfxBase, 201, Graphics)
+         AROS_LHA(struct BitMap *, bitmap, A0),
+         AROS_LHA(UWORD, x     , D0),
+         AROS_LHA(UWORD, y     , D1),
+         AROS_LHA(UWORD, width , D2),
+         AROS_LHA(UWORD, height, D3),
+         struct GfxBase *, GfxBase, 201, Graphics)
 {
     AROS_LIBFUNC_INIT
 
@@ -32,7 +32,7 @@ void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWOR
     struct monitor_driverdata *mdd = GET_BM_DRIVERDATA(bitmap);
 
     if (mdd->compositor)
-    	compositor_UpdateBitMap(mdd->compositor, bm, x, y, width, height, GfxBase);
+        compositor_UpdateBitMap(mdd->compositor, bm, x, y, width, height, GfxBase);
     else
-    	HIDD_BM_UpdateRect(bm, x, y, width, height);
+        HIDD_BM_UpdateRect(bm, x, y, width, height);
 }

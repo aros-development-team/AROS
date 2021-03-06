@@ -163,7 +163,7 @@ VOID i8042Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             *msg->storage = (IPTR)mice_str[data->mouse_protocol];
             return;
         }
-    }    
+    }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

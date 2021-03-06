@@ -34,7 +34,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     if (!KernelBase)
     {
         /* we should probably halt the system ..*/
-    	return FALSE;
+        return FALSE;
     }
 
 #if defined(__AROSEXEC_SMP__)

@@ -45,9 +45,9 @@
                 KMS_SmallestAlloc (IPTR)  - Get size of the smallest allocated chunk in bytes
                 KMS_LargestFree   (IPTR)  - Get size of the largest free chunk in bytes
                 KMS_SmallestFree  (IPTR)  - Get size of the smallest free chunk in bytes
-                KMS_NumAlloc	  (IPTR)  - Get number of allocated chunks
-                KMS_NumFree	  (IPTR)  - Get number of free chunks
-                KMS_PageSize	  (ULONG) - Get memory page size
+                KMS_NumAlloc      (IPTR)  - Get number of allocated chunks
+                KMS_NumFree       (IPTR)  - Get number of free chunks
+                KMS_PageSize      (ULONG) - Get memory page size
 
         flags - Flags which specify physical properties of the memory to query.
                 These are the same flags as passed to exec.library/AllocMem().

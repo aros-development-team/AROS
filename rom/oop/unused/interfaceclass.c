@@ -34,8 +34,8 @@ struct interface_data
     /* The pointer to the interface's methods should indeed not
        be public.
     */
-    struct IFMethod	*methodtable;
-};    
+    struct IFMethod     *methodtable;
+};
 
 
 struct interface_object
@@ -75,18 +75,18 @@ static OOP_Object *interface_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     /* We MUST have those two parameters, to be able to
        create an interface object */
     if ( !(if_obj && if_id ) )
-    	ReturnPtr("Interface::New", Object *, NULL);
+        ReturnPtr("Interface::New", Object *, NULL);
 
-	
+        
     D(bug("Trying to find interface: %s\n", if_id));
 
     /* Try to find interface in the target object's class*/
     if_mtab = findinterface(OOP_OCLASS(if_obj), if_id);
     
-    if (!if_mtab) 
-    	/* Not supported. Failed. */
-    	ReturnPtr("Interface::New", OOP_Object *, NULL);
-	
+    if (!if_mtab)
+        /* Not supported. Failed. */
+        ReturnPtr("Interface::New", OOP_Object *, NULL);
+        
     D(bug("mtab found: %p\n", if_mtab));
     
     /* Allocate mem for the interface object */
@@ -95,29 +95,29 @@ static OOP_Object *interface_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     {
 
         D(bug("obj alloced\n"));
-	
-	/* The interface object remebers it's target object.
-	   Convenience for the user + he can store interface
-	   objects instead of a pointer to the object itself.
-	   (He doesn't have to store both)
-	*/
-	
-	ifo->data.public.targetObject = if_obj;
-	
-	
-	/* Function for calling a method on an interface obect.
-	   Just use a standard one, but we could add support
-	   for letting the user override the function with his own.
-	*/
-	ifo->data.public.callMethod = StdCallIF;
-	
-	/* The interface object must have some methods to call :-) */
-	ifo->data.methodtable = if_mtab;
-	
-	/* Initialize OCLASS(interfaceobject) */
-	ifo->oclass	= cl;
-	
-	ReturnPtr ("Interface::New", OOP_Object *, (OOP_Object *)&(ifo->data.public));
+        
+        /* The interface object remebers it's target object.
+           Convenience for the user + he can store interface
+           objects instead of a pointer to the object itself.
+           (He doesn't have to store both)
+        */
+        
+        ifo->data.public.targetObject = if_obj;
+        
+        
+        /* Function for calling a method on an interface obect.
+           Just use a standard one, but we could add support
+           for letting the user override the function with his own.
+        */
+        ifo->data.public.callMethod = StdCallIF;
+        
+        /* The interface object must have some methods to call :-) */
+        ifo->data.methodtable = if_mtab;
+        
+        /* Initialize OCLASS(interfaceobject) */
+        ifo->oclass     = cl;
+        
+        ReturnPtr ("Interface::New", OOP_Object *, (OOP_Object *)&(ifo->data.public));
     }
     ReturnPtr ("Interface::New", OOP_Object *, NULL);
     
@@ -168,24 +168,24 @@ OOP_Class *init_interfaceclass(struct Library *OOPBase)
 
     struct OOP_MethodDescr methods[] =
     {
-	{(IPTR (*)())interface_new,		moRoot_New},
-	{(IPTR (*)())interface_dispose,		moRoot_Dispose},
-	{ NULL, 0UL }
+        {(IPTR (*)())interface_new,             moRoot_New},
+        {(IPTR (*)())interface_dispose,         moRoot_Dispose},
+        { NULL, 0UL }
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-    	{ methods, IID_Root, 2},
-	{ NULL, 0UL, 0UL}
+        { methods, IID_Root, 2},
+        { NULL, 0UL, 0UL}
     };
     
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,		(IPTR)NULL},
-	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{aMeta_ID,			(IPTR)CLID_Interface},
-	{aMeta_InstSize,		(IPTR)sizeof (struct interface_data)},
-	{TAG_DONE, 0UL}
+        {aMeta_SuperID,         (IPTR)NULL},
+        {aMeta_InterfaceDescr,          (IPTR)ifdescr},
+        {aMeta_ID,                      (IPTR)CLID_Interface},
+        {aMeta_InstSize,                (IPTR)sizeof (struct interface_data)},
+        {TAG_DONE, 0UL}
     };
 
     
@@ -197,7 +197,7 @@ OOP_Class *init_interfaceclass(struct Library *OOPBase)
     if (cl)
     {
         cl->UserData = OOPBase;
-    	OOP_AddClass(cl);
+        OOP_AddClass(cl);
     }
     
     ReturnPtr ("init_interfaceclass", OOP_Class *, cl);

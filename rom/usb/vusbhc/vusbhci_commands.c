@@ -66,18 +66,18 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
             } ReleaseSemaphore(&unit->intrxfer_queue_lock);
 
             /*
-            	Must have been a request for the roothub intr queue or not...
-            	When a device gets unbind we get an iorequest followed by an abort command
-            	can't find the request... Maybe the roothub intr code is broken
+                Must have been a request for the roothub intr queue or not...
+                When a device gets unbind we get an iorequest followed by an abort command
+                can't find the request... Maybe the roothub intr code is broken
             */
             if(ret == FALSE) {
-				ObtainSemaphore(&unit->roothub.intrxfer_queue_lock); {
+                                ObtainSemaphore(&unit->roothub.intrxfer_queue_lock); {
                     ioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
                     ReplyMsg(&ioreq->iouh_Req.io_Message);
                     mybug_unit(-1, ("    removed\n"));
                     ret = TRUE;
-	            } ReleaseSemaphore(&unit->roothub.intrxfer_queue_lock);
+                    } ReleaseSemaphore(&unit->roothub.intrxfer_queue_lock);
             }
             break;
 

@@ -18,12 +18,12 @@
 
 struct draw_render_data
 {
-    WORD x1, y1, x2, y2;    
+    WORD x1, y1, x2, y2;
 };
 
 static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
-    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-    	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
+                           OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                           struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct draw_render_data *drd = draw_rd;
 
@@ -34,9 +34,9 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     GC_DOCLIP(dst_gc) = rect;
 
     HIDD_BM_DrawLine(dstbm_obj, dst_gc, drd->x1 + rect->MinX - srcx,
-    	    	    	    	    	drd->y1 + rect->MinY - srcy,
-					drd->x2 + rect->MinX - srcx,
-					drd->y2 + rect->MinY - srcy); 
+                                        drd->y1 + rect->MinY - srcy,
+                                        drd->x2 + rect->MinX - srcx,
+                                        drd->y2 + rect->MinY - srcy);
 
     /*
      * After we exit this routine, 'rect' will be not valid any more.
@@ -51,34 +51,34 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
 
     NAME */
 
-	AROS_LH3(void, Draw,
+        AROS_LH3(void, Draw,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(WORD             , x, D0),
-	AROS_LHA(WORD             , y, D1),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(WORD             , x, D0),
+        AROS_LHA(WORD             , y, D1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 41, Graphics)
+        struct GfxBase *, GfxBase, 41, Graphics)
 
 /*  FUNCTION
-	Draw a line from the current pen position to the given coordinate.
+        Draw a line from the current pen position to the given coordinate.
 
     INPUTS
-    	rp  - destination RastPort.
-	x,y - line end coordinate.
+        rp  - destination RastPort.
+        x,y - line end coordinate.
 
     RESULT
 
     NOTES
-    	Not yet implemented:
-	
-	  - handle layer->Scroll_X/Scroll_Y.
-	  
-	  - handle FRST_DOT which indicates whether to draw
-	    or to don't draw first pixel of line. Important
-	    for COMPLEMENT drawmode.
-	
+        Not yet implemented:
+        
+          - handle layer->Scroll_X/Scroll_Y.
+          
+          - handle FRST_DOT which indicates whether to draw
+            or to don't draw first pixel of line. Important
+            for COMPLEMENT drawmode.
+        
     EXAMPLE
 
     BUGS
@@ -88,18 +88,18 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct Rectangle 	    rr;
-    OOP_Object      	    *gc;
+    struct Rectangle        rr;
+    OOP_Object              *gc;
     struct draw_render_data drd;
-    WORD    	    	    dx;
-    WORD    	    	    x1, y1;
+    WORD                    dx;
+    WORD                    x1, y1;
 
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
@@ -109,24 +109,24 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
 
     if (x1 > x)
     {
-	rr.MinX = x;
-	rr.MaxX = x1;
+        rr.MinX = x;
+        rr.MaxX = x1;
     }
     else
     {
-    	rr.MinX = x1;
-	rr.MaxX = x;
+        rr.MinX = x1;
+        rr.MaxX = x;
     }
     
     if (y1 > y)
     {
-	rr.MinY = y;
-	rr.MaxY = y1;
+        rr.MinY = y;
+        rr.MaxY = y1;
     }
     else
     {
-    	rr.MinY = y1;
-	rr.MaxY = y;
+        rr.MinY = y1;
+        rr.MaxY = y;
     }
 
     gc = GetDriverData(rp, GfxBase);

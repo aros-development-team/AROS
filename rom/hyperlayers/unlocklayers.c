@@ -19,13 +19,13 @@
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
-	AROS_LH1(void, UnlockLayers,
+        AROS_LH1(void, UnlockLayers,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
+        AROS_LHA(struct Layer_Info *, li, A0),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 19, Layers)
+        struct LayersBase *, LayersBase, 19, Layers)
 
 /*  FUNCTION
         First unlocks all layers found in the list, then
@@ -47,12 +47,12 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT  
+  AROS_LIBFUNC_INIT
 
   struct Layer * l = li->top_layer;
 
@@ -61,10 +61,10 @@
   while (NULL != l)
   {
     UnlockLayer(l);
-    l = l->back;  
-  } 
+    l = l->back;
+  }
 
-  UnlockLayerInfo(li);   
+  UnlockLayerInfo(li);
 
   AROS_LIBFUNC_EXIT
 } /* UnlockLayers */

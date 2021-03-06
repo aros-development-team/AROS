@@ -35,7 +35,7 @@
 
     NOTES
         We cannot guarantee that the public screen, the name of which you got
-        by using this function, is available when you call for instance 
+        by using this function, is available when you call for instance
         LockPubScreen(). Therefore you must be prepared to handle failure of
         that kind of functions.
 

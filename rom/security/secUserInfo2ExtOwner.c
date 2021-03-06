@@ -13,14 +13,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(struct secExtOwner *, secUserInfo2ExtOwner,
+        AROS_LH1(struct secExtOwner *, secUserInfo2ExtOwner,
 
 /*  SYNOPSIS */
-	/* (info) */
-	AROS_LHA(struct secUserInfo *, info, A0),
+        /* (info) */
+        AROS_LHA(struct secUserInfo *, info, A0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 24, Security)
+        struct SecurityBase *, secBase, 24, Security)
 
 /*  FUNCTION
 

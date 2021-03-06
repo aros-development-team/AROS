@@ -9,9 +9,9 @@
 struct SetDMRequestActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-    struct Requester 	    *dmrequest;
-    BOOL    	    	     success;
+    struct Window           *window;
+    struct Requester        *dmrequest;
+    BOOL                     success;
 };
 
 static VOID int_setdmrequest(struct SetDMRequestActionMsg *msg,

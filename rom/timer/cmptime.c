@@ -13,43 +13,43 @@
 #include <devices/timer.h>
 #include <proto/timer.h>
 
-	AROS_LH2(LONG, CmpTime,
+        AROS_LH2(LONG, CmpTime,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct timeval *, dest, A0),
-	AROS_LHA(struct timeval *, src, A1),
+        AROS_LHA(struct timeval *, dest, A0),
+        AROS_LHA(struct timeval *, src, A1),
 
 /*  LOCATION */
-	struct Device *, TimerBase, 9, Timer)
+        struct Device *, TimerBase, 9, Timer)
 
 /*  FUNCTION
-	CmpTime() will compare two timeval's for magnitude, and return
-	which is the larger.
+        CmpTime() will compare two timeval's for magnitude, and return
+        which is the larger.
 
     INPUTS
-	dest    -   Destination timeval
-	src     -   Source timeval
+        dest    -   Destination timeval
+        src     -   Source timeval
 
     RESULT
-	-1 if dest has more time than src (i.e. dest > src)
-	 0 if dest and src are the same (i.e. dest == src)
-	+1 if dest has less time than src (i.e. dest < src)
+        -1 if dest has more time than src (i.e. dest > src)
+         0 if dest and src are the same (i.e. dest == src)
+        +1 if dest has less time than src (i.e. dest < src)
 
     NOTES
-	This function is safe to call from interrupts.
+        This function is safe to call from interrupts.
 
     EXAMPLE
 
     BUGS
-	The registers A0 and A1 may not be preserved.
+        The registers A0 and A1 may not be preserved.
 
     SEE ALSO
-	AddTime(), SubTime()
+        AddTime(), SubTime()
 
     INTERNALS
 
     HISTORY
-	18-02-1997  iaint   Implemented.
+        18-02-1997  iaint   Implemented.
 
 *****************************************************************************/
 {

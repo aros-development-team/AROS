@@ -14,21 +14,21 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH2I(void, SetDrMd,
+        AROS_LH2I(void, SetDrMd,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(ULONG            , drawMode, D0),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(ULONG            , drawMode, D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 59, Graphics)
+        struct GfxBase *, GfxBase, 59, Graphics)
 
 /*  FUNCTION
-	Set the drawing mode for lines, fills and text.
+        Set the drawing mode for lines, fills and text.
 
     INPUTS
-	rp       - RastPort
-	drawMode - see graphics/rastport.h for possible flags.
+        rp       - RastPort
+        drawMode - see graphics/rastport.h for possible flags.
 
     RESULT
 
@@ -43,8 +43,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {

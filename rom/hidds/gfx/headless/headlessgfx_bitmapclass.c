@@ -36,8 +36,8 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-	struct HeadlessGfxBitMapData *data;
-	data = OOP_INST_DATA(cl, o);
+        struct HeadlessGfxBitMapData *data;
+        data = OOP_INST_DATA(cl, o);
     } /* if created object */
 
     ReturnPtr("HeadlessGfx.BitMap::New()", OOP_Object *, o);
@@ -48,16 +48,16 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct HeadlessGfxBitMapData *data = OOP_INST_DATA(cl, o);
-    ULONG   	       idx;
+    ULONG              idx;
 
     if (IS_BM_ATTR(msg->attrID, idx))
     {
-	switch (idx)
-	{
-	case aoHidd_BitMap_Visible:
-	    *msg->storage = data->disp;
-	    return;
-	}
+        switch (idx)
+        {
+        case aoHidd_BitMap_Visible:
+            *msg->storage = data->disp;
+            return;
+        }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -68,7 +68,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct HeadlessGfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
+    ULONG           idx;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
@@ -78,11 +78,11 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             switch(idx)
             {
             case aoHidd_BitMap_Visible:
-		D(bug("[HeadlessGfx:BitMap] Setting Visible to %d\n", tag->ti_Data));
-		data->disp = tag->ti_Data;
-		break;
-	    }
-	}
+                D(bug("[HeadlessGfx:BitMap] Setting Visible to %d\n", tag->ti_Data));
+                data->disp = tag->ti_Data;
+                break;
+            }
+        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

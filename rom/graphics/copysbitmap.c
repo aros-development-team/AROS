@@ -12,22 +12,22 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, CopySBitMap,
+        AROS_LH1(void, CopySBitMap,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l, A0),
+        AROS_LHA(struct Layer *, l, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 75, Graphics)
+        struct GfxBase *, GfxBase, 75, Graphics)
 
 /*  FUNCTION
         If the layer has a superbitmap all the parts that are visible will
         be refreshed with what is in the superbitmap. This function should
         be called after the SuperBitMap of the layer was synchronized with
-        SyncSBitMap() and manipulated. 
+        SyncSBitMap() and manipulated.
 
     INPUTS
-        l  - pointer to superbitmapped layer 
+        l  - pointer to superbitmapped layer
 
     RESULT
         The layer will show the true contents of the superbitmap that is

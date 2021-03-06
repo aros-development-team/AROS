@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 /****************************************************************************************/
@@ -50,7 +50,7 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
     }
     else if (code >= 128) /* Keymaps at the moment support only 128 keys */
     {
-        valid = FALSE; 
+        valid = FALSE;
     }
     else
     {

@@ -24,20 +24,20 @@
 
     NAME */
 
-	AROS_LH1(void, CloseLibrary,
+        AROS_LH1(void, CloseLibrary,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Library *, library, A1),
+        AROS_LHA(struct Library *, library, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 69, Exec)
+        struct ExecBase *, SysBase, 69, Exec)
 
 /*  FUNCTION
-	Closes a previously opened library. It is legal to call this function
-	with a NULL pointer.
+        Closes a previously opened library. It is legal to call this function
+        with a NULL pointer.
 
     INPUTS
-	library - Pointer to library structure or NULL.
+        library - Pointer to library structure or NULL.
 
     RESULT
 
@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-	OpenLibrary()
+        OpenLibrary()
 
     INTERNALS
 
@@ -58,35 +58,35 @@
     BPTR seglist;
 
     D(bug("CloseLibrary $%lx (\"%s\") by \"%s\"\n", library,
-	library ? library->lib_Node.ln_Name : "(null)",
-	GET_THIS_TASK->tc_Node.ln_Name));
+        library ? library->lib_Node.ln_Name : "(null)",
+        GET_THIS_TASK->tc_Node.ln_Name));
 
     /* Something to do? */
     if(library!=NULL)
     {
-	ASSERT_VALID_PTR(library);
+        ASSERT_VALID_PTR(library);
 
-	/* Single-thread the close routine. */
-	Forbid();
+        /* Single-thread the close routine. */
+        Forbid();
 
-	/* Do the close */
-	seglist = AROS_LVO_CALL0(BPTR,struct Library *,library,2,);
-	/*
-	    Normally you'd expect the library to be expunged if this returns
-	    non-zero, but this is only exec which doesn't know anything about
-	    seglists - therefore dos.library has to SetFunction() into this
-	    vector for the additional functionality.
-	*/
+        /* Do the close */
+        seglist = AROS_LVO_CALL0(BPTR,struct Library *,library,2,);
+        /*
+            Normally you'd expect the library to be expunged if this returns
+            non-zero, but this is only exec which doesn't know anything about
+            seglists - therefore dos.library has to SetFunction() into this
+            vector for the additional functionality.
+        */
 
-	/* All done. */
-	Permit();
+        /* All done. */
+        Permit();
     }
     else
     {
-	/* Local vars not guaranteed to be initialised to 0. I initialise
-	   it here to save an assignment in case the close went ok (common
-	   path optimization). */
-	seglist = 0;
+        /* Local vars not guaranteed to be initialised to 0. I initialise
+           it here to save an assignment in case the close went ok (common
+           path optimization). */
+        seglist = 0;
     }
 
     AROS_COMPAT_SETD0(seglist);

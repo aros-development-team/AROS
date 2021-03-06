@@ -91,7 +91,7 @@ static LONG dummy_init(void);
       {
         case VIEW_EXTRA_TYPE:
           ((struct ViewExtra *)Result)->Monitor = GfxBase->natural_monitor;
-	     /* FindName() can't work here until ABI v1 release
+             /* FindName() can't work here until ABI v1 release
              FindName((struct List *)(&(GfxBase -> MonitorList)), DEFAULT_MONITOR_NAME);*/
           break;
         case VIEWPORT_EXTRA_TYPE:

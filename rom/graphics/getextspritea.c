@@ -41,10 +41,10 @@
     SEE ALSO
 
     INTERNALS
-    	AROS does not have complete sprite system, instead it has a (hacky)
-	minimal implementation enough to drive mouse pointer as a single
-	sprite #0. This assumes that this sprite is always allocated by the OS
-	itself and can't be used by user applications. So we just return error.
+        AROS does not have complete sprite system, instead it has a (hacky)
+        minimal implementation enough to drive mouse pointer as a single
+        sprite #0. This assumes that this sprite is always allocated by the OS
+        itself and can't be used by user applications. So we just return error.
 
     HISTORY
 

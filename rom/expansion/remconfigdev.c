@@ -10,23 +10,23 @@
     NAME */
 #include <proto/expansion.h>
 
-	AROS_LH1(void, RemConfigDev,
+        AROS_LH1(void, RemConfigDev,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ConfigDev *, configDev, A0),
+        AROS_LHA(struct ConfigDev *, configDev, A0),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 18, Expansion)
+        struct ExpansionBase *, ExpansionBase, 18, Expansion)
 
 /*  FUNCTION
-	This routine will remove the given ConfigDev from the list
-	of Configuration Devices in the system.
+        This routine will remove the given ConfigDev from the list
+        of Configuration Devices in the system.
 
     INPUTS
-	configDev   -   The ConfigDev structure to remove.
+        configDev   -   The ConfigDev structure to remove.
 
     RESULT
-	The ConfigDev structure will be removed from the systems list.
+        The ConfigDev structure will be removed from the systems list.
 
     NOTES
 
@@ -35,13 +35,13 @@
     BUGS
 
     SEE ALSO
-	AddConfigDev()
+        AddConfigDev()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
+        27-11-96    digulla automatically created from
+                            expansion_lib.fd and clib/expansion_protos.h
 
 *****************************************************************************/
 {
@@ -49,9 +49,9 @@
 
     if(configDev)
     {
-	ObtainConfigBinding();
-	Remove((struct Node *)configDev);
-	ReleaseConfigBinding();
+        ObtainConfigBinding();
+        Remove((struct Node *)configDev);
+        ReleaseConfigBinding();
     }
 
     AROS_LIBFUNC_EXIT

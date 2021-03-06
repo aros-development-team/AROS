@@ -117,7 +117,7 @@
     UnLockDosList(LDF_ENTRY|LDF_WRITE);
     UnLockDosList(LDF_ALL | LDF_READ);
 
-    return success;    
+    return success;
 
     AROS_LIBFUNC_EXIT
 } /* AddDosEntry */

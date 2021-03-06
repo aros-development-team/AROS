@@ -12,30 +12,30 @@
 
     NAME */
 
-	AROS_LH1(void, ChildFree,
+        AROS_LH1(void, ChildFree,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, tid, D0),
+        AROS_LHA(ULONG, tid, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 123, Exec)
+        struct ExecBase *, SysBase, 123, Exec)
 
 /*  FUNCTION
-	Clean up after a child process.
+        Clean up after a child process.
 
     INPUTS
-	tid	--  Id of the child to clean up. This is not the same as
-		    the Task pointer.
+        tid     --  Id of the child to clean up. This is not the same as
+                    the Task pointer.
 
     RESULT
-	The child will be freed.
+        The child will be freed.
 
     NOTES
-	This function will work correctly only for child tasks that are
-	processes created with NP_NotifyOnDeath set to TRUE.
+        This function will work correctly only for child tasks that are
+        processes created with NP_NotifyOnDeath set to TRUE.
 
-	Calling ChildFree() on a running child is likely to crash your
-	system badly.
+        Calling ChildFree() on a running child is likely to crash your
+        system badly.
 
     EXAMPLE
 
@@ -55,7 +55,7 @@
     et = FindChild(tid);
     if(et != NULL)
     {
-	Remove((struct Node *)et);
+        Remove((struct Node *)et);
 
         ExpungeETask(et);
     }

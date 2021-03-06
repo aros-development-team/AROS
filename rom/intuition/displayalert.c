@@ -23,28 +23,28 @@ static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *f
     /* First count number of lines */
     do
     {
-        s += 3;		/* Skip coordinates			      */
-	while (*s++);	/* Skip text bytes including NULL terminator  */
-	lines++;
-    } while (*s++);	/* This automatically skips continuation byte */
+        s += 3;         /* Skip coordinates                           */
+        while (*s++);   /* Skip text bytes including NULL terminator  */
+        lines++;
+    } while (*s++);     /* This automatically skips continuation byte */
 
     res = AllocVec(sizeof(struct IntuiText) * lines, MEMF_ANY);
     if (!res)
-	return NULL;
+        return NULL;
 
     s = string;
     for (i = 0; i < lines; i++)
     {
-	res[i].FrontPen = 1;
-	res[i].BackPen  = 0;
-	res[i].DrawMode = JAM2;
-	res[i].LeftEdge = AROS_BE2WORD(*((UWORD *)s));
-	s += 2;
-	res[i].TopEdge  = *s++ - TOPAZ_8_BASELINE;
-	res[i].ITextFont = font;
-	res[i].IText = s;
-	while(*s++);
-	res[i].NextText = *s++ ? &res[i+1] : NULL;
+        res[i].FrontPen = 1;
+        res[i].BackPen  = 0;
+        res[i].DrawMode = JAM2;
+        res[i].LeftEdge = AROS_BE2WORD(*((UWORD *)s));
+        s += 2;
+        res[i].TopEdge  = *s++ - TOPAZ_8_BASELINE;
+        res[i].ITextFont = font;
+        res[i].IText = s;
+        while(*s++);
+        res[i].NextText = *s++ ? &res[i+1] : NULL;
     }
 
     return res;
@@ -66,7 +66,7 @@ static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *f
         struct IntuitionBase *, IntuitionBase, 15, Intuition)
 
 /*  FUNCTION
-	Bring up an alert with the given message.
+        Bring up an alert with the given message.
 
     INPUTS
         alertnumber - Value determining type of alert. For historical reasons,
@@ -113,22 +113,22 @@ static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *f
     AROS_LIBFUNC_INIT
 
     struct TextAttr font = {
-	"topaz.font",
-	8,
-	FS_NORMAL,
-	0
+        "topaz.font",
+        8,
+        FS_NORMAL,
+        0
     };
     struct IntuiText postext = {
-	1, 0, JAM2,
-	0, 0,
-	NULL,
-	"Ok"
+        1, 0, JAM2,
+        0, 0,
+        NULL,
+        "Ok"
     };
     struct IntuiText negtext = {
-	1, 0, JAM2,
-	0, 0,
-	NULL,
-	"Cancel"
+        1, 0, JAM2,
+        0, 0,
+        NULL,
+        "Cancel"
     };
     struct IntuiText *body = displayalert_makebody(string, &font);
     struct Window *req;
@@ -136,39 +136,39 @@ static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *f
 
     if (body)
     {
-	char *buf;
-	unsigned int l1, l2;
-	struct Task *t = FindTask(NULL);
+        char *buf;
+        unsigned int l1, l2;
+        struct Task *t = FindTask(NULL);
 
-	l1 = strlen(title);
-	l2 = strlen(t->tc_Node.ln_Name) + 1;
-	buf = AllocMem(l1 + l2, MEMF_ANY);
-	if (buf)
-	{
-	    CopyMem(title, buf, l1);
-	    CopyMem(t->tc_Node.ln_Name, &buf[l1], l2);
+        l1 = strlen(title);
+        l2 = strlen(t->tc_Node.ln_Name) + 1;
+        buf = AllocMem(l1 + l2, MEMF_ANY);
+        if (buf)
+        {
+            CopyMem(title, buf, l1);
+            CopyMem(t->tc_Node.ln_Name, &buf[l1], l2);
 
-	    /*
-	     * This is actually the same as AutoRequest(), without IDCMP processing.
-	     * We use internal function instead of BuildSysRequest() because the latter
-	     * does not allow to specify own title for the requester. In order to stay
-	     * compatible with various patches which modify system requesters look and
-	     * feel we call all three functions by their internal entry points.
-	     */
-	    if (alertnumber & AT_DeadEnd)
-		req = buildsysreq_intern(NULL, buf, body, NULL, &postext, 0, 640, height, IntuitionBase);
-	    else
-		req = buildsysreq_intern(NULL, buf, body, &postext, &negtext, 0, 640, height, IntuitionBase);
+            /*
+             * This is actually the same as AutoRequest(), without IDCMP processing.
+             * We use internal function instead of BuildSysRequest() because the latter
+             * does not allow to specify own title for the requester. In order to stay
+             * compatible with various patches which modify system requesters look and
+             * feel we call all three functions by their internal entry points.
+             */
+            if (alertnumber & AT_DeadEnd)
+                req = buildsysreq_intern(NULL, buf, body, NULL, &postext, 0, 640, height, IntuitionBase);
+            else
+                req = buildsysreq_intern(NULL, buf, body, &postext, &negtext, 0, 640, height, IntuitionBase);
 
             if (req)
-	    {
-		while ((ret = sysreqhandler_intern(req, NULL, TRUE, IntuitionBase)) == -2);
-		freesysreq_intern(req, IntuitionBase);
-	    }
+            {
+                while ((ret = sysreqhandler_intern(req, NULL, TRUE, IntuitionBase)) == -2);
+                freesysreq_intern(req, IntuitionBase);
+            }
 
-	    FreeMem(buf, l1 + l2);
-	}
-	FreeVec(body);
+            FreeMem(buf, l1 + l2);
+        }
+        FreeVec(body);
     }
 
     return ret;

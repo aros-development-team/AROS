@@ -10,14 +10,14 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH2(void, FreeExpansionMem,
+        AROS_LH2(void, FreeExpansionMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, startSlot, D0),
-	AROS_LHA(ULONG, numSlots, D1),
+        AROS_LHA(ULONG, startSlot, D0),
+        AROS_LHA(ULONG, numSlots, D1),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 15, Expansion)
+        struct ExpansionBase *, ExpansionBase, 15, Expansion)
 
 /*  FUNCTION
 
@@ -37,8 +37,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
+        27-11-96    digulla automatically created from
+                            expansion_lib.fd and clib/expansion_protos.h
 
 *****************************************************************************/
 {

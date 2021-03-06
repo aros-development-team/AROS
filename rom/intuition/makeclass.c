@@ -10,7 +10,7 @@
 #include <proto/exec.h>
 #include "intuition_intern.h"
 
-#define MAX_PUDDLE_SIZE	(16 * 1024)	/* Maximum puddle size */
+#define MAX_PUDDLE_SIZE (16 * 1024)     /* Maximum puddle size */
 
 /*****************************************************************************
 
@@ -125,25 +125,25 @@
             );
             
             if (iclass != NULL)
-	    {
-	    	int perpuddle;
+            {
+                int perpuddle;
 
                 /* Initialize fields */
-		iclass->cl_Super      = superClassPtr;
-		iclass->cl_ID	      = classID;
-		iclass->cl_InstOffset = superClassPtr->cl_InstOffset +
-					superClassPtr->cl_InstSize;
-		iclass->cl_InstSize   = instanceSize;
-		iclass->cl_Flags      = flags;
-                iclass->cl_ObjectSize = iclass->cl_InstOffset 
+                iclass->cl_Super      = superClassPtr;
+                iclass->cl_ID         = classID;
+                iclass->cl_InstOffset = superClassPtr->cl_InstOffset +
+                                        superClassPtr->cl_InstSize;
+                iclass->cl_InstSize   = instanceSize;
+                iclass->cl_Flags      = flags;
+                iclass->cl_ObjectSize = iclass->cl_InstOffset
                                       + iclass->cl_InstSize
                                       + sizeof(struct _Object);
 
-		/* Try to limit the puddle to MAX_PUDDLE_SIZE.
-		 * This comes in to play, for example, with
-		 * picture.library, where 32 instances of the
-		 * picture class is a whopping 280K.
-		 */
+                /* Try to limit the puddle to MAX_PUDDLE_SIZE.
+                 * This comes in to play, for example, with
+                 * picture.library, where 32 instances of the
+                 * picture class is a whopping 280K.
+                 */
                 perpuddle = MAX_PUDDLE_SIZE / iclass->cl_ObjectSize;
                 if (perpuddle == 0)
                     perpuddle = 1;
@@ -153,7 +153,7 @@
                 /* Initialize memory subsystem */
                 iclass->cl_MemoryPool = CreatePool
                 (
-                    MEMF_ANY | MEMF_CLEAR | MEMF_SEM_PROTECTED, 
+                    MEMF_ANY | MEMF_CLEAR | MEMF_SEM_PROTECTED,
                     perpuddle * iclass->cl_ObjectSize, iclass->cl_ObjectSize
                 );
                    

@@ -38,7 +38,7 @@
  *                     - global variables are now in a struct Globals *global
  * 02-Sep-94   fmu   Display READ TOC for Apple CD 150 drives.
  * 01-Sep-94   fmu   Workaround for bad NEC 3X READ TOC command in
- *		     Has_Audio_Tracks() and Data_Tracks().
+ *                   Has_Audio_Tracks() and Data_Tracks().
  * 20-Aug-94   fmu   New function Find_Last_Session ().
  * 23-Jul-94   fmu   Last index modified from 99 to 1 in Start_Play_Audio().
  * 18-May-94   fmu   New drive model: MODEL_CDU_8002 (= Apple CD 150).
@@ -86,7 +86,7 @@
 #include <exec/interrupts.h>
 
 AROS_INTH1(CDChangeHandler, struct CDVDBase *, global)
-{ 
+{
     AROS_INTFUNC_INIT
 
     Signal(&global->DosProc->pr_Task, global->g_changeint_sigbit);
@@ -106,14 +106,14 @@ AROS_INTH1(CDChangeHandler, struct CDVDBase *, global)
  */
 
 CDROM *Open_CDROM
-	(
-	        struct CDVDBase *global,
-		char *p_device,
-		int p_scsi_id,
-		uint32_t p_memory_type,
-		int p_std_buffers,
-		int p_file_buffers
-	)
+        (
+                struct CDVDBase *global,
+                char *p_device,
+                int p_scsi_id,
+                uint32_t p_memory_type,
+                int p_std_buffers,
+                int p_file_buffers
+        )
 {
     CDROM *cd;
     int i;
@@ -124,117 +124,117 @@ CDROM *Open_CDROM
      */
     do
     {
-	err = CDROMERR_NO_MEMORY;
-	cd = AllocVec (sizeof (CDROM), MEMF_PUBLIC | MEMF_CLEAR | p_memory_type);
+        err = CDROMERR_NO_MEMORY;
+        cd = AllocVec (sizeof (CDROM), MEMF_PUBLIC | MEMF_CLEAR | p_memory_type);
 
-	if (NULL == cd)
-	    break;
+        if (NULL == cd)
+            break;
 
-	cd->global = global;
-	cd->buffers_cnt  = p_std_buffers;
+        cd->global = global;
+        cd->buffers_cnt  = p_std_buffers;
 
-	/*
-	 * change: allocating 16 * SCSI_BUFSIZE * bufs; min access unit 32kB!
-	 */
-	cd->buffer_data  = AllocVec (((SCSI_BUFSIZE * p_std_buffers) << 4) + 15, MEMF_PUBLIC | p_memory_type);
-	if (NULL == cd->buffer_data)
-	    break;
-	
-	cd->buffer_io = AllocVec(SCSI_BUFSIZE, p_memory_type);
-	if (NULL == cd->buffer_io)
-	    break;
+        /*
+         * change: allocating 16 * SCSI_BUFSIZE * bufs; min access unit 32kB!
+         */
+        cd->buffer_data  = AllocVec (((SCSI_BUFSIZE * p_std_buffers) << 4) + 15, MEMF_PUBLIC | p_memory_type);
+        if (NULL == cd->buffer_data)
+            break;
+        
+        cd->buffer_io = AllocVec(SCSI_BUFSIZE, p_memory_type);
+        if (NULL == cd->buffer_io)
+            break;
 
-	cd->buffers = AllocVec (sizeof (unsigned char *) * p_std_buffers, MEMF_PUBLIC);
-	if (NULL == cd->buffers)
-	    break;
+        cd->buffers = AllocVec (sizeof (unsigned char *) * p_std_buffers, MEMF_PUBLIC);
+        if (NULL == cd->buffers)
+            break;
 
-	cd->current_sectors = AllocVec (sizeof (long) * p_std_buffers, MEMF_PUBLIC);
-	if (NULL == cd->current_sectors)
-	    break;
+        cd->current_sectors = AllocVec (sizeof (long) * p_std_buffers, MEMF_PUBLIC);
+        if (NULL == cd->current_sectors)
+            break;
 
-	cd->last_used = AllocVec (sizeof (uint32_t) * p_std_buffers, MEMF_PUBLIC | MEMF_CLEAR);
-	if (NULL == cd->last_used)
-	    break;
+        cd->last_used = AllocVec (sizeof (uint32_t) * p_std_buffers, MEMF_PUBLIC | MEMF_CLEAR);
+        if (NULL == cd->last_used)
+            break;
 
 
-	/* 
-	 * make the buffer quad-word aligned. This greatly helps
-	 * performance on '040-powered systems with DMA SCSI
-	 * controllers.
-	 */
-	cd->buffers[0] = (UBYTE *)(((IPTR)cd->buffer_data + 15) & ~15);
-	cd->current_sectors[0] = -1;
+        /*
+         * make the buffer quad-word aligned. This greatly helps
+         * performance on '040-powered systems with DMA SCSI
+         * controllers.
+         */
+        cd->buffers[0] = (UBYTE *)(((IPTR)cd->buffer_data + 15) & ~15);
+        cd->current_sectors[0] = -1;
 
-	for (i=1; i<cd->buffers_cnt; i++)
-	{
-	    cd->current_sectors[i] = -1;
-	    cd->buffers[i] = cd->buffers[i-1] + (SCSI_BUFSIZE << 4);
-	}
+        for (i=1; i<cd->buffers_cnt; i++)
+        {
+            cd->current_sectors[i] = -1;
+            cd->buffers[i] = cd->buffers[i-1] + (SCSI_BUFSIZE << 4);
+        }
 
-	err = CDROMERR_MSGPORT;
-	cd->port = CreateMsgPort ();
-	if (NULL == cd->port)
-	    break;
+        err = CDROMERR_MSGPORT;
+        cd->port = CreateMsgPort ();
+        if (NULL == cd->port)
+            break;
 
-	err = CDROMERR_IOREQ;
-	cd->scsireq = (struct IOStdReq *)CreateIORequest (cd->port, sizeof (struct IOExtTD));
-	if (NULL == cd->scsireq)
-	    break;
+        err = CDROMERR_IOREQ;
+        cd->scsireq = (struct IOStdReq *)CreateIORequest (cd->port, sizeof (struct IOExtTD));
+        if (NULL == cd->scsireq)
+            break;
 
-	err = CDROMERR_DEVICE;
-	if (OpenDevice ((UBYTE *) p_device, p_scsi_id, (struct IORequest *) cd->scsireq, 0))
-	    break;
+        err = CDROMERR_DEVICE;
+        if (OpenDevice ((UBYTE *) p_device, p_scsi_id, (struct IORequest *) cd->scsireq, 0))
+            break;
 
-	cd->device_open = TRUE;
+        cd->device_open = TRUE;
 
-	if (global->g_scan_interval < 0) {
-	    /* Add media change interrupts */
-	    cd->iochangeint = (struct IOStdReq *)AllocVec(sizeof (struct IOExtTD), MEMF_PUBLIC);
-	    if (NULL == cd->iochangeint)
-		break;
-	    CopyMem(cd->scsireq, cd->iochangeint, sizeof (struct IOExtTD));
-	    cd->changeint.is_Node.ln_Type = NT_INTERRUPT;
-	    cd->changeint.is_Node.ln_Name = "CDFS ChangeInt";
-	    cd->changeint.is_Data = (APTR)global;
-	    cd->changeint.is_Code = (VOID_FUNC)CDChangeHandler;
-	    cd->iochangeint->io_Length  = sizeof(struct Interrupt);
-	    cd->iochangeint->io_Data    = &cd->changeint;
-	    cd->iochangeint->io_Command = TD_ADDCHANGEINT;
-	    SendIO((struct IORequest *)cd->iochangeint);
-	}
+        if (global->g_scan_interval < 0) {
+            /* Add media change interrupts */
+            cd->iochangeint = (struct IOStdReq *)AllocVec(sizeof (struct IOExtTD), MEMF_PUBLIC);
+            if (NULL == cd->iochangeint)
+                break;
+            CopyMem(cd->scsireq, cd->iochangeint, sizeof (struct IOExtTD));
+            cd->changeint.is_Node.ln_Type = NT_INTERRUPT;
+            cd->changeint.is_Node.ln_Name = "CDFS ChangeInt";
+            cd->changeint.is_Data = (APTR)global;
+            cd->changeint.is_Code = (VOID_FUNC)CDChangeHandler;
+            cd->iochangeint->io_Length  = sizeof(struct Interrupt);
+            cd->iochangeint->io_Data    = &cd->changeint;
+            cd->iochangeint->io_Command = TD_ADDCHANGEINT;
+            SendIO((struct IORequest *)cd->iochangeint);
+        }
 
-	cd->scsireq->io_Command = CMD_CLEAR;
-	DoIO ((struct IORequest *) cd->scsireq);
+        cd->scsireq->io_Command = CMD_CLEAR;
+        DoIO ((struct IORequest *) cd->scsireq);
 
-	cd->t_changeint = -1;
-	cd->t_changeint2 = -2;
+        cd->t_changeint = -1;
+        cd->t_changeint2 = -2;
 
-	/* The LUN is the 2nd digit of the SCSI id number: */
-	cd->lun = (p_scsi_id / 10) % 10;
+        /* The LUN is the 2nd digit of the SCSI id number: */
+        cd->lun = (p_scsi_id / 10) % 10;
 
-	/* 'tick' is incremented every time a sector is accessed. */
-	cd->tick = 0;
-	err = CDROMERR_OK;
+        /* 'tick' is incremented every time a sector is accessed. */
+        cd->tick = 0;
+        err = CDROMERR_OK;
     } while (0);
 
     if (CDROMERR_OK != err)
     {
-	Cleanup_CDROM(cd);
-	cd = NULL;
+        Cleanup_CDROM(cd);
+        cd = NULL;
     }
 
     return cd;
 }
 
 int Do_SCSI_Command
-	(
-		CDROM *p_cd,
-		unsigned char *p_buf,
-		long p_buf_length,
-		unsigned char *p_command,
-		int p_length,
-		int p_direction
-	)
+        (
+                CDROM *p_cd,
+                unsigned char *p_buf,
+                long p_buf_length,
+                unsigned char *p_command,
+                int p_length,
+                int p_direction
+        )
 {
     p_cd->scsireq->io_Length   = sizeof (struct SCSICmd);
     p_cd->scsireq->io_Data     = (APTR) &p_cd->cmd;
@@ -255,21 +255,21 @@ int Do_SCSI_Command
         0 != p_cd->cmd.scsi_Status)
     {
         Clear_Sector_Buffers(p_cd);
-	return 0;
+        return 0;
     }
     else
-	return 1;
+        return 1;
 }
 
 int Read_From_Drive
-	(
-		CDROM *p_cd,
-		unsigned char *p_buf,
-		long p_buf_length,
+        (
+                CDROM *p_cd,
+                unsigned char *p_buf,
+                long p_buf_length,
 
-		long p_sector,
-		int p_number_of_sectors
-	)
+                long p_sector,
+                int p_number_of_sectors
+        )
 {
     p_cd->scsireq->io_Length   = 2048 * p_number_of_sectors;
     p_cd->scsireq->io_Data     = (APTR) p_buf;
@@ -281,16 +281,16 @@ int Read_From_Drive
 
     if (0 != DoIO((struct IORequest*) p_cd->scsireq))
     {
-	D(bug("[CDVDFS]\tTransfer failed: %ld\n", (long)p_cd->scsireq->io_Error));
+        D(bug("[CDVDFS]\tTransfer failed: %ld\n", (long)p_cd->scsireq->io_Error));
         Clear_Sector_Buffers(p_cd);
-	return 0;
+        return 0;
     }
 
     D(bug("[CDVDFS]\tTransfer successful.\n"));
     return 1;
 }
 
-/* 
+/*
  * USAGE NOTE >> VERY IMPORTANT <<
  * this procedure delivers you buffer that is 'valid' until the next 16-sector-boundary.
  * if you want to read from sec 14 till 34, then you have to do 3 calls (14-16, 16-32, 32-34)
@@ -309,34 +309,34 @@ int Read_Chunk(CDROM *p_cd, long p_sector)
 
     for (i=0; i<p_cd->buffers_cnt; i++)
     {
-	if ((p_sector & ~0xf) != p_cd->current_sectors[i])
-	    continue;
+        if ((p_sector & ~0xf) != p_cd->current_sectors[i])
+            continue;
 
-	/*
-	 * get buffer offset
-	 */
-	D(bug("[CDVDFS]\tSector already cached\n"));
-	p_cd->buffer = p_cd->buffers[i] + ((p_sector & 0xf) << 11);
+        /*
+         * get buffer offset
+         */
+        D(bug("[CDVDFS]\tSector already cached\n"));
+        p_cd->buffer = p_cd->buffers[i] + ((p_sector & 0xf) << 11);
 
-	/*
-	 * try most frequently used
-	 */
-	p_cd->last_used[i] += 2;
-	for (i=0; i<p_cd->buffers_cnt; i++)
-	{
-	    if (p_cd->last_used[i] > 0)
-		p_cd->last_used[i] -= 1;
-	}
+        /*
+         * try most frequently used
+         */
+        p_cd->last_used[i] += 2;
+        for (i=0; i<p_cd->buffers_cnt; i++)
+        {
+            if (p_cd->last_used[i] > 0)
+                p_cd->last_used[i] -= 1;
+        }
 
-	return 1;
+        return 1;
     }
 
-    /* 
+    /*
      * find an empty buffer position:
      */
     for (loc=0; loc<p_cd->buffers_cnt; loc++)
-	if (p_cd->current_sectors[loc] == -1)
-	    break;
+        if (p_cd->current_sectors[loc] == -1)
+            break;
 
     /*
      * no free buffer position; remove the buffer that is unused
@@ -344,15 +344,15 @@ int Read_Chunk(CDROM *p_cd, long p_sector)
      */
     if (loc==p_cd->buffers_cnt)
     {
-	uint32_t oldest_tick = UINT_MAX;
-	uint32_t tick;
+        uint32_t oldest_tick = UINT_MAX;
+        uint32_t tick;
 
-	for (loc=0, i=0; i<p_cd->buffers_cnt; i++)
-	{
-	    tick = p_cd->last_used[i];
-	    if (tick < oldest_tick)
-		loc = i, oldest_tick = tick;
-	}
+        for (loc=0, i=0; i<p_cd->buffers_cnt; i++)
+        {
+            tick = p_cd->last_used[i];
+            if (tick < oldest_tick)
+                loc = i, oldest_tick = tick;
+        }
     }
 
     /*
@@ -374,37 +374,37 @@ int Read_Chunk(CDROM *p_cd, long p_sector)
 
     if (status)
     {
-	p_cd->current_sectors[loc] = p_sector & ~0xf;
-	p_cd->buffer = p_cd->buffers[loc] + ((p_sector & 0xf) << 11);
-	p_cd->last_used[loc] = 1000;
+        p_cd->current_sectors[loc] = p_sector & ~0xf;
+        p_cd->buffer = p_cd->buffers[loc] + ((p_sector & 0xf) << 11);
+        p_cd->last_used[loc] = 1000;
     }
 
     return status;
 }
 
-int Test_Unit_Ready(CDROM *p_cd) 
+int Test_Unit_Ready(CDROM *p_cd)
 {
     p_cd->scsireq->io_Command = TD_CHANGENUM;
 
     if (0 != DoIO ((struct IORequest *) p_cd->scsireq))
-	return FALSE;
+        return FALSE;
 
     p_cd->t_changeint = p_cd->scsireq->io_Actual;
 
     p_cd->scsireq->io_Command = TD_CHANGESTATE;
-    if ((0 != DoIO ((struct IORequest *) p_cd->scsireq)) || 
-	(0 != p_cd->scsireq->io_Actual))
-	return FALSE;
+    if ((0 != DoIO ((struct IORequest *) p_cd->scsireq)) ||
+        (0 != p_cd->scsireq->io_Actual))
+        return FALSE;
 
     return TRUE;
 }
 
 int Mode_Select
-	(
-		CDROM *p_cd,
-		int p_mode,
-		int p_block_length
-	)
+        (
+                CDROM *p_cd,
+                int p_mode,
+                int p_block_length
+        )
 {
     uint8_t cmd[6] = { };
     unsigned char mode[12] = { };
@@ -430,7 +430,7 @@ int Inquire (CDROM *p_cd, t_inquiry_data *p_data)
     cmd[4] = 96;
 
     if (!Do_SCSI_Command(p_cd,p_cd->buffer_io,96,cmd,6,SCSIF_READ))
-	return FALSE;
+        return FALSE;
 
     CopyMem(p_cd->buffer_io, p_data, sizeof (*p_data));
     return 1;
@@ -438,10 +438,10 @@ int Inquire (CDROM *p_cd, t_inquiry_data *p_data)
 
 
 t_toc_data *Read_TOC
-	(
-		CDROM *p_cd,
-		uint32_t *p_toc_len
-	)
+        (
+                CDROM *p_cd,
+                uint32_t *p_toc_len
+        )
 {
     uint8_t cmd[10] = { };
     uint32_t toc_len = 0;
@@ -454,7 +454,7 @@ t_toc_data *Read_TOC
     cmd[7] = 0;
     cmd[8] = 4;
     if (0 == Do_SCSI_Command(p_cd, buf, 4, cmd, 10, SCSIF_READ))
-	return NULL;
+        return NULL;
 
     /*
      * toc len = len field + field contents
@@ -470,7 +470,7 @@ t_toc_data *Read_TOC
      * make sure it never happens (shouldn't)
      */
     if (toc_len > SCSI_BUFSIZE)
-	return NULL;
+        return NULL;
 
     /*
      * read complete TOC
@@ -478,7 +478,7 @@ t_toc_data *Read_TOC
     cmd[7] = toc_len >> 8;
     cmd[8] = toc_len & 0xff;
     if (0 == Do_SCSI_Command(p_cd, buf, toc_len, cmd, 10, SCSIF_READ))
-	return NULL;
+        return NULL;
 
     /*
      * We pass back the TOC length that the caller would expect to find in
@@ -489,7 +489,7 @@ t_toc_data *Read_TOC
     return (t_toc_data *) (buf + 4);
 }
 
-int Has_Audio_Tracks(CDROM *p_cd) 
+int Has_Audio_Tracks(CDROM *p_cd)
 {
     uint32_t toc_len;
     t_toc_data *toc;
@@ -497,7 +497,7 @@ int Has_Audio_Tracks(CDROM *p_cd)
 
     toc = Read_TOC (p_cd, &toc_len);
     if (!toc)
-	return FALSE;
+        return FALSE;
 
     /*
      * calc num TOC entries
@@ -510,9 +510,9 @@ int Has_Audio_Tracks(CDROM *p_cd)
      */
     for (i=0; i<len; i++)
     {
-	if ((99 >= toc[i].track_number) && 
-	    (0  == (toc[i].flags & 4)))
-	    return toc[i].track_number;
+        if ((99 >= toc[i].track_number) &&
+            (0  == (toc[i].flags & 4)))
+            return toc[i].track_number;
     }
     return FALSE;
 }
@@ -525,7 +525,7 @@ int Has_Audio_Tracks(CDROM *p_cd)
  *  number of tracks or -1 on error.
  */
 
-int Data_Tracks(CDROM *p_cd, uint32_t** p_buf) 
+int Data_Tracks(CDROM *p_cd, uint32_t** p_buf)
 {
     int cnt=0;
     uint32_t toc_len;
@@ -537,41 +537,41 @@ int Data_Tracks(CDROM *p_cd, uint32_t** p_buf)
      */
     toc = Read_TOC(p_cd, &toc_len);
     if (!toc)
-	return -1;
+        return -1;
 
     /*
      * calc TOC entries count
      */
     len = toc_len >> 3;
 
-    /* 
+    /*
      * count number of data tracks:
      */
     for (i=0; i<len; i++)
     {
-	if ((99 >= toc[i].track_number) && 
-	    (0  != (toc[i].flags & 4)))
-	    cnt++;
+        if ((99 >= toc[i].track_number) &&
+            (0  != (toc[i].flags & 4)))
+            cnt++;
     }
 
     if (cnt == 0)
-	return 0;
+        return 0;
 
-    /* 
+    /*
      * allocate memory for output buffer:
      */
     *p_buf = (uint32_t*) AllocVec (cnt * sizeof (uint32_t*), MEMF_PUBLIC);
     if (!*p_buf)
-	return -1;
+        return -1;
 
-    /* 
+    /*
      * fill output buffer:
      */
     for (i=0, j=0; i<len; i++)
     {
-	if ((99 >= toc[i].track_number) && 
-	    (0  != (toc[i].flags & 4)))
-	    (*p_buf)[j++] = toc[i].address;
+        if ((99 >= toc[i].track_number) &&
+            (0  != (toc[i].flags & 4)))
+            (*p_buf)[j++] = toc[i].address;
     }
 
     return cnt;
@@ -586,7 +586,7 @@ inline void block2msf (uint32_t blk, unsigned char *msf)
     msf[2] = blk % 75;
 }
 
-int Start_Play_Audio(CDROM *p_cd) 
+int Start_Play_Audio(CDROM *p_cd)
 {
     uint8_t cmd[10] = { };
     uint32_t start = 0xffffffff,end;
@@ -601,7 +601,7 @@ int Start_Play_Audio(CDROM *p_cd)
      */
     toc = Read_TOC (p_cd, &toc_len);
     if (!toc)
-	return FALSE;
+        return FALSE;
 
     /*
      * calc len
@@ -613,28 +613,28 @@ int Start_Play_Audio(CDROM *p_cd)
      */
     for (i=0; i<len; i++)
     {
-	if ((99 >= toc[i].track_number) && 
-	    (0  == (toc[i].flags & 4)))
-	{
-	    start=toc[i].address;
-	    break;
-	}
+        if ((99 >= toc[i].track_number) &&
+            (0  == (toc[i].flags & 4)))
+        {
+            start=toc[i].address;
+            break;
+        }
     }
 
     /*
      * no audio - leave.
      */
     if (0xffffffff == start)
-	return FALSE;
+        return FALSE;
 
     /*
      * find end of audio track
      */
     for (; i<len; i++)
     {
-	if (((99 < toc[i].track_number) && (toc[i].track_number > 99)) || 
-	    (0  != (toc[i].flags & 4)))
-	    break;
+        if (((99 < toc[i].track_number) && (toc[i].track_number > 99)) ||
+            (0  != (toc[i].flags & 4)))
+            break;
     }
     end=toc[i].address;
 
@@ -647,38 +647,38 @@ int Start_Play_Audio(CDROM *p_cd)
     return Do_SCSI_Command(p_cd, 0, 0, cmd, 10, SCSIF_READ);
 }
 
-int Stop_Play_Audio(CDROM *p_cd) 
+int Stop_Play_Audio(CDROM *p_cd)
 {
     uint8_t cmd[6] = { };
     cmd[0] = 0x1b;
     return Do_SCSI_Command(p_cd, 0, 0, cmd, 6, SCSIF_READ);
 }
 
-void Cleanup_CDROM (CDROM *p_cd) 
+void Cleanup_CDROM (CDROM *p_cd)
 {
     if (p_cd->iochangeint) {
-	p_cd->iochangeint->io_Length  = sizeof(struct Interrupt);
-	p_cd->iochangeint->io_Data    = &p_cd->changeint;
-	p_cd->iochangeint->io_Command = TD_REMCHANGEINT;
-	DoIO((struct IORequest *)p_cd->iochangeint);
-	FreeVec(p_cd->iochangeint);
+        p_cd->iochangeint->io_Length  = sizeof(struct Interrupt);
+        p_cd->iochangeint->io_Data    = &p_cd->changeint;
+        p_cd->iochangeint->io_Command = TD_REMCHANGEINT;
+        DoIO((struct IORequest *)p_cd->iochangeint);
+        FreeVec(p_cd->iochangeint);
     }
     if (p_cd->device_open)
-	CloseDevice ((struct IORequest *) p_cd->scsireq);
+        CloseDevice ((struct IORequest *) p_cd->scsireq);
     if (p_cd->scsireq)
-	DeleteIORequest((struct IORequest *)p_cd->scsireq);
+        DeleteIORequest((struct IORequest *)p_cd->scsireq);
     if (p_cd->port)
-	DeleteMsgPort (p_cd->port);
+        DeleteMsgPort (p_cd->port);
     if (p_cd->last_used)
-	FreeVec (p_cd->last_used);
+        FreeVec (p_cd->last_used);
     if (p_cd->current_sectors)
-	FreeVec (p_cd->current_sectors);
+        FreeVec (p_cd->current_sectors);
     if (p_cd->buffers)
-	FreeVec (p_cd->buffers);
+        FreeVec (p_cd->buffers);
     if (p_cd->buffer_io)
-	FreeVec (p_cd->buffer_io);
+        FreeVec (p_cd->buffer_io);
     if (p_cd->buffer_data)
-	FreeVec (p_cd->buffer_data);
+        FreeVec (p_cd->buffer_data);
     FreeVec (p_cd);
 }
 
@@ -687,7 +687,7 @@ void Clear_Sector_Buffers (CDROM *p_cd)
     int i;
 
     for (i=0; i<p_cd->buffers_cnt; i++)
-	p_cd->current_sectors[i] = -1;
+        p_cd->current_sectors[i] = -1;
 }
 
 /* Finds offset of last session. (Not supported by all CDROM drives)
@@ -711,13 +711,13 @@ int Find_Last_Session(CDROM *p_cd, uint32_t *p_result)
      */
     *p_result = 0;
 
-    /* 
-     * Ask the scsi device for the length of this TOC 
+    /*
+     * Ask the scsi device for the length of this TOC
      */
     cmd[7] = 0;
     cmd[8] = 12;
     if (!Do_SCSI_Command(p_cd, data, 12, cmd, sizeof(cmd), SCSIF_READ))
-	return FALSE;
+        return FALSE;
 
     /*
      * check if we are dealing with a DATA track here.

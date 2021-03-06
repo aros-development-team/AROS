@@ -81,7 +81,7 @@
             UnLock(dl->dol_Lock);
 
             if (al)
-            {       
+            {
                 dl->dol_misc.dol_assign.dol_List = al->al_Next;
                 dl->dol_Lock = al->al_Lock;
                 FreeVec(al);

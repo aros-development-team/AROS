@@ -25,7 +25,7 @@ extern void banm_ShowFrame(struct Screen *scr, BOOL init, struct DOSBootBase *DO
 #define STATEF_POINTERHIDE              (1 << 2)
 
 #if defined(__OOP_NOATTRBASES__)
-static CONST_STRPTR const attrbaseIDs[] = 
+static CONST_STRPTR const attrbaseIDs[] =
 {
     IID_Hidd_BitMap,
     NULL
@@ -108,7 +108,7 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
         SetAPen(&scr->RastPort, 0);
         RectFill(&scr->RastPort, 0, 0, scr->Width, scr->Height);
         DOSBootBase->animData = ad;
-        DOSBootBase->delayTicks = 25;	/* We run at 2 frames per second */
+        DOSBootBase->delayTicks = 25;   /* We run at 2 frames per second */
 
         banm_ShowFrame(scr, TRUE, DOSBootBase);
         return ad;

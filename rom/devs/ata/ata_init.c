@@ -53,10 +53,10 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     {
         TEXT dosdevname[4];
         struct ataBase *ATABase;
-        struct TagItem ATAIDTags[] = 
+        struct TagItem ATAIDTags[] =
         {
             {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
-            {TAG_DONE,              0                       }  
+            {TAG_DONE,              0                       }
         };
         IPTR pp[24];
 
@@ -76,7 +76,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
         if ((unit->au_IDNode = HIDD_Storage_AllocateID(ATABase->storageRoot, ATAIDTags)))
         {
             D(bug("[ATA>>] %s: unit ID allocated @ 0x%p\n", __func__, unit->au_IDNode);)
-            pp[0] 		    = (IPTR)unit->au_IDNode->ln_Name;
+            pp[0]                   = (IPTR)unit->au_IDNode->ln_Name;
         }
         else
         {
@@ -88,11 +88,11 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                 dosdevname[2] += unit->au_UnitNum % 10;
             else
                 dosdevname[2] = 'A' - 10 + unit->au_UnitNum;
-            pp[0] 		    = (IPTR)dosdevname;
+            pp[0]                   = (IPTR)dosdevname;
         }
 
-        pp[1]		    = (IPTR)MOD_NAME_STRING;
-        pp[2]		    = unit->au_UnitNum;
+        pp[1]               = (IPTR)MOD_NAME_STRING;
+        pp[2]               = unit->au_UnitNum;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
         pp[DE_SIZEBLOCK    + 4] = 1 << (unit->au_SectorShift - 2);
         pp[DE_NUMHEADS     + 4] = unit->au_Heads;
@@ -157,7 +157,7 @@ static CONST_STRPTR const methBaseIDs[] =
 
 static int ATA_init(struct ataBase *ATABase)
 {
-    struct BootLoaderBase	*BootLoaderBase;
+    struct BootLoaderBase       *BootLoaderBase;
 
     D(bug("[ATA--] %s: ata.device Initialization\n", __func__));
 
@@ -171,7 +171,7 @@ static int ATA_init(struct ataBase *ATABase)
     ATABase->ata_Poll    = FALSE;
 
     /*
-     * start initialization: 
+     * start initialization:
      * obtain kernel parameters
      */
     BootLoaderBase = OpenResource("bootloader.resource");
@@ -227,7 +227,7 @@ static int ATA_init(struct ataBase *ATABase)
         return FALSE;
     }
     /*
-     * I've decided to use memory pools again. Alloc everything needed from 
+     * I've decided to use memory pools again. Alloc everything needed from
      * a pool, so that we avoid memory fragmentation.
      */
     ATABase->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);

@@ -55,7 +55,7 @@
     AROS_LIBFUNC_INIT
 
     struct Gadget *pred;
-    UWORD   	   count;
+    UWORD          count;
 
     EXTENDUWORD(position);
 

@@ -10,13 +10,13 @@
 
     NAME */
 
-	AROS_LH1(void, FreeTrap,
+        AROS_LH1(void, FreeTrap,
 
 /*  SYNOPSIS */
-	AROS_LHA(long, trapNum, D0),
+        AROS_LHA(long, trapNum, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 58, Exec)
+        struct ExecBase *, SysBase, 58, Exec)
 
 /*  FUNCTION
 

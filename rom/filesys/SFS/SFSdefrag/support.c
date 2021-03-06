@@ -66,7 +66,7 @@ VOID ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL u
             
     MUI_Request
     (
-        application, window, 0, "SFS Defrag", "Ok", 
+        application, window, 0, "SFS Defrag", "Ok",
         "%s:\n%s%s%s%s", "ERROR", message, newline, extra, period
     );
 }

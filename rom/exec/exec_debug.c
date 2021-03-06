@@ -32,7 +32,7 @@ const char * const ExecFlagNames[] =
     "InitResident",
     "InitCode",
     "FindResident",
-    (char *)-1,		/* Reserved bit		*/
+    (char *)-1,         /* Reserved bit         */
     "CreateLibrary",
     "SetFunction",
     "NewSetFunction",
@@ -45,20 +45,20 @@ const char * const ExecFlagNames[] =
     "AddDosNode",
     "PCI",
     "RamLib",
-    (char *)-1,		/* NoLogServer		*/
-    (char *)-1,		/* NoLogWindow		*/
-    (char *)-1,		/* LogFile		*/
-    (char *)-1,		/* LogKPrintF		*/
-    (char *)-1,		/* PermMemTrack		*/
+    (char *)-1,         /* NoLogServer          */
+    (char *)-1,         /* NoLogWindow          */
+    (char *)-1,         /* LogFile              */
+    (char *)-1,         /* LogKPrintF           */
+    (char *)-1,         /* PermMemTrack         */
     "MemTrack",
-    (char *)-1,		/* CyberGuardDelay	*/
+    (char *)-1,         /* CyberGuardDelay      */
     "LogExtended",
     "LoadSeg",
     "UnloadSeg",
-    (char *)-1,		/* PPCStart		*/
+    (char *)-1,         /* PPCStart             */
     "CGXDebug",
     "InvZeroPage",
-    (char *)-1,		/* Reserved bit		*/
+    (char *)-1,         /* Reserved bit         */
     "Init",
     NULL
 };
@@ -69,7 +69,7 @@ void ExecLog(struct ExecBase *SysBase, ULONG flags, const char *format, ...)
 
     flags &= SysBase->ex_DebugFlags;
     if (!flags)
-    	return;
+        return;
 
     va_start(ap, format);
     VLog(SysBase, flags, ExecFlagNames, format, ap);
@@ -97,61 +97,61 @@ ULONG ParseFlags(char *opts, const char * const *FlagNames)
     if (*opts == '"')
     {
         quoted = 1;
-    	opts++;
+        opts++;
     }
 
     while (isalpha(*opts))
     {
-    	char *p = opts + 1;
-    	unsigned int i;
+        char *p = opts + 1;
+        unsigned int i;
 
-	/* Find the end of the word */
-    	while (isalpha(*p))
-	    p++;
+        /* Find the end of the word */
+        while (isalpha(*p))
+            p++;
 
-	/* "ALL" means all flags */
-	if (!strnicmp(opts, "all", 3))
-	    return -1;
+        /* "ALL" means all flags */
+        if (!strnicmp(opts, "all", 3))
+            return -1;
 
-	/* Decode flag name */
-	for (i = 0; FlagNames[i]; i++)
-    	{
-    	    const char *flagName = FlagNames[i];
+        /* Decode flag name */
+        for (i = 0; FlagNames[i]; i++)
+        {
+            const char *flagName = FlagNames[i];
 
-    	    if (flagName == (char *)-1)
-    	    	continue;
+            if (flagName == (char *)-1)
+                continue;
 
-    	    if (!strnicmp(opts, flagName, strlen(flagName)))
-    	    {
-    	    	ret |= (1UL << i);
-    	    	break;
-    	    }
-    	}
+            if (!strnicmp(opts, flagName, strlen(flagName)))
+            {
+                ret |= (1UL << i);
+                break;
+            }
+        }
 
-	if (quoted)
-	{
-	    /* Skip separator characters */
-	    while (!isalpha(*p))
-	    {
-	    	/* If we hit closing quotes or end of line, this is the end */
-	    	if (*p == '"')
-	    	    return ret;
+        if (quoted)
+        {
+            /* Skip separator characters */
+            while (!isalpha(*p))
+            {
+                /* If we hit closing quotes or end of line, this is the end */
+                if (*p == '"')
+                    return ret;
 
-	    	if (*p == 0)
-	    	    return ret;
-	    }
+                if (*p == 0)
+                    return ret;
+            }
 
-	    /* Next word is found */
-	    opts = p;
-	}
-	else
-	{
-	    /* If the string is not quoted, only single comma is allowed as a separator */
-    	    if (*p != ',')
-		break;
+            /* Next word is found */
+            opts = p;
+        }
+        else
+        {
+            /* If the string is not quoted, only single comma is allowed as a separator */
+            if (*p != ',')
+                break;
 
-	    opts = p + 1;
-	}
+            opts = p + 1;
+        }
     }
 
     return ret;
@@ -171,14 +171,14 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, 
     /* Prepend tag (if known) */
     for (i = 0; FlagNames[i]; i++)
     {
-    	if (FlagNames[i] == (char *)-1)
-    	    continue;
+        if (FlagNames[i] == (char *)-1)
+            continue;
 
-    	if (flags & (1UL << i))
-    	{
-	    RawDoFmt("[EXEC] %s: ", (APTR)&FlagNames[i], (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
-	    break;
-	}
+        if (flags & (1UL << i))
+        {
+            RawDoFmt("[EXEC] %s: ", (APTR)&FlagNames[i], (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+            break;
+        }
     }
 
     /* Output the message and append a newline (in order not to bother about it every time) */

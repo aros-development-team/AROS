@@ -61,7 +61,7 @@
         /* If we have a colormap, get ModeID from it */
         modeid = vp->ColorMap->VPModeID;
     else if (IS_HIDD_BM(vp->RasInfo->BitMap))
-	modeid = GET_BM_MODEID(vp->RasInfo->BitMap);
+        modeid = GET_BM_MODEID(vp->RasInfo->BitMap);
     else
         modeid = INVALID_ID;
 

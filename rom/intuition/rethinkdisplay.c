@@ -64,9 +64,9 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
     struct Screen    *screen;
     struct ViewPort  *viewport;
     struct ViewPort **viewportptr;
-    UWORD   	      modes;
-    LONG    	      failure = 0;
-    ULONG   	      ilock = 0;
+    UWORD             modes;
+    LONG              failure = 0;
+    ULONG             ilock = 0;
 
     if (msg->lock)
         ilock = LockIBase(0);
@@ -89,14 +89,14 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
         screen->ViewPort.Modes |= SPRITES;
         screen->ViewPort.Modes &= ~VP_HIDE;
 
-	/* Not needed. Perhaps... Pavel Fedin <pavel_fedin@mail.ru>
-	if (!(GetPrivScreen(screen)->SpecialFlags & SF_Compose)) {
+        /* Not needed. Perhaps... Pavel Fedin <pavel_fedin@mail.ru>
+        if (!(GetPrivScreen(screen)->SpecialFlags & SF_Compose)) {
             while ((screen = screen->NextScreen))
                 screen->ViewPort.Modes |= VP_HIDE;
         }
-	*/
+        */
         /* Build the list of viewports in the view */
-	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Building viewports list\n"));
+        DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Building viewports list\n"));
         viewportptr = &IntuitionBase->ViewLord.ViewPort;
         for (screen = IntuitionBase->FirstScreen; screen; screen = screen->NextScreen)
         {
@@ -104,7 +104,7 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
 
             if ((screen->ViewPort.Modes & VP_HIDE) == 0)
             {
-		DEBUG_RETHINKDISPLAY(bug("RethinkDisplay: Adding ViewPort 0x%p for screen 0x%p\n", &screen->ViewPort, screen));
+                DEBUG_RETHINKDISPLAY(bug("RethinkDisplay: Adding ViewPort 0x%p for screen 0x%p\n", &screen->ViewPort, screen));
                 *viewportptr = &screen->ViewPort;
                 viewportptr = &screen->ViewPort.Next;
             }
@@ -112,11 +112,11 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
         *viewportptr = NULL;
 
         /* Find view mode */
-	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Find view mode\n"));
+        DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Find view mode\n"));
         modes = (IntuitionBase->ViewLord.Modes & ~LACE) | SPRITES;
         for (viewport = IntuitionBase->ViewLord.ViewPort; viewport; viewport = viewport->Next) {
             modes |= viewport->Modes & LACE;
-	}
+        }
 
         /* Reinitialize the view */
         IntuitionBase->ViewLord.DxOffset = 0; /***/
@@ -128,16 +128,16 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
 #endif
         /* Rebuild copper lists for screens needing a mode change */
 
-	DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Making viewports\n"));
+        DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Making viewports\n"));
         for (viewport = IntuitionBase->ViewLord.ViewPort; viewport; viewport = viewport->Next)
         {
             if ((viewport->Modes ^ modes) & LACE)
             {
                 LONG error;
-		
+                
                 viewport->Modes = (viewport->Modes & ~LACE) | (modes & LACE);
                 error = MakeVPort(&IntuitionBase->ViewLord, viewport);
-		
+                
                 if (error)
                     failure = error;
             }
@@ -178,7 +178,7 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
                         GetPrivScreen(screen)->GammaControl.Active = TRUE;
                         DoMethodA((Object *)m, &sgmsg);
                     }
-	        }
+                }
 
                 ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
                 ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);

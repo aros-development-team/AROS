@@ -10,14 +10,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(BOOL, secUnloadPlugin,
+        AROS_LH1(BOOL, secUnloadPlugin,
 
 /*  SYNOPSIS */
-	/* void */
-	AROS_LHA(STRPTR, name, A0),
+        /* void */
+        AROS_LHA(STRPTR, name, A0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 51, Security)
+        struct SecurityBase *, secBase, 51, Security)
 
 /*  FUNCTION
 

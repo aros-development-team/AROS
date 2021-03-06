@@ -154,19 +154,19 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
      */
     do
     {
-        IPTR start = p;		/* Starting page of the block being examined */
-        IPTR free = 0;		/* Count of free pages in the block */
+        IPTR start = p;         /* Starting page of the block being examined */
+        IPTR free = 0;          /* Count of free pages in the block */
 
         while (P_STATUS(head->map[p]) == P_FREE)
         {
-            UBYTE cnt = P_COUNT(head->map[p]);	/* Get (partial) block length */
+            UBYTE cnt = P_COUNT(head->map[p]);  /* Get (partial) block length */
 
-            free += cnt;			/* Add length to total count */
-            p += cnt;				/* Advance past the block    */
+            free += cnt;                        /* Add length to total count */
+            p += cnt;                           /* Advance past the block    */
 
-            if (p == head->size)		/* Reached end of this memory chunk ? */
+            if (p == head->size)                /* Reached end of this memory chunk ? */
                 break;
-            if (p > head->size)			/* Went past the chunk? This must never happen! */
+            if (p > head->size)                 /* Went past the chunk? This must never happen! */
                 Alert(AN_MemCorrupt);
         }
 
@@ -252,7 +252,7 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
         /* Calculate starting address of the first page */
         addr = head->start + candidate * head->pageSize;
         /* Update free memory counter */
-        mh->mh_Free -= size;	
+        mh->mh_Free -= size;
     }
 
     if (KernelBase)
@@ -306,8 +306,8 @@ APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size)
     p = start;
     while (P_STATUS(head->map[p]) == P_FREE)
     {
-        p += P_COUNT(head->map[p]);		/* Advance past the block    */
-        if (p >= start + pages)			/* Counted enough free pages? */
+        p += P_COUNT(head->map[p]);             /* Advance past the block    */
+        if (p >= start + pages)                 /* Counted enough free pages? */
         {
             /* Allocate the block and exit */
             ret = addr;
@@ -315,9 +315,9 @@ APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size)
             break;
         }
 
-        if (p == head->size)			/* Reached end of this memory chunk? */
+        if (p == head->size)                    /* Reached end of this memory chunk? */
             break;
-        if (p > head->size)			/* Went past the chunk? This must never happen! */
+        if (p > head->size)                     /* Went past the chunk? This must never happen! */
             Alert(AN_MemCorrupt);
     }
 
@@ -379,7 +379,7 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
     head->pageSize    = pageSize;
 
     /*
-     * Page-align boundaries. 
+     * Page-align boundaries.
      * We intentionally make it start pointing to the previous page,
      * we'll jump to the next page later, in the loop.
      */
@@ -434,23 +434,23 @@ void mm_Protect(struct MemHeader *mh, struct KernelBase *KernelBase)
     /* TODO */
 }
 
-#define SET_LARGEST(ptr, val)	\
-    if (ptr)			\
-    {				\
-        if (val > *ptr)		\
-            *ptr = val;		\
+#define SET_LARGEST(ptr, val)   \
+    if (ptr)                    \
+    {                           \
+        if (val > *ptr)         \
+            *ptr = val;         \
     }
 
-#define SET_SMALLEST(ptr, val)	\
-    if (ptr)			\
-    {				\
-        if (*ptr)		\
-        {			\
-            if (val < *ptr)	\
-                *ptr = val;	\
-        }			\
-        else			\
-            *ptr = val;		\
+#define SET_SMALLEST(ptr, val)  \
+    if (ptr)                    \
+    {                           \
+        if (*ptr)               \
+        {                       \
+            if (val < *ptr)     \
+                *ptr = val;     \
+        }                       \
+        else                    \
+            *ptr = val;         \
     }
 
 /* Get statistics from the specified MemHeader */
@@ -524,18 +524,18 @@ void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct 
 
             do
             {
-                UBYTE cnt = P_COUNT(head->map[p]);	/* Get (partial) block length */
+                UBYTE cnt = P_COUNT(head->map[p]);      /* Get (partial) block length */
 
-                blksize += cnt;				/* Add length to total count */
-                p += cnt;				/* Advance past the block    */
+                blksize += cnt;                         /* Add length to total count */
+                p += cnt;                               /* Advance past the block    */
 
-                if (p == head->size)			/* Reached end of this memory chunk ? */
+                if (p == head->size)                    /* Reached end of this memory chunk ? */
                     break;
-                if (p > head->size)			/* Went past the chunk? This must never happen! */
+                if (p > head->size)                     /* Went past the chunk? This must never happen! */
                     Alert(AN_MemCorrupt);
             } while (P_STATUS(head->map[p]) == blkstate);
 
-            blksize *= head->pageSize;			/* Convert to bytes */
+            blksize *= head->pageSize;                  /* Convert to bytes */
 
             if (blkstate == P_ALLOC)
             {

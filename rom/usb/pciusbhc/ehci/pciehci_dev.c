@@ -66,7 +66,7 @@ static int Close(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq) {
 }
 
 AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 5, pciehci) {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 
     LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
@@ -81,12 +81,12 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR
 
     if (ioreq->iouh_Req.io_Command < NSCMD_DEVICEQUERY) {
         switch (ioreq->iouh_Req.io_Command) {
-			case CMD_RESET:
+                        case CMD_RESET:
                 KPRINTF2(DBL_DEVIO,("cmdReset\n"));
                 ret = cmdReset(ioreq, ehu, ehd);
                 break;
 
-			case CMD_FLUSH:
+                        case CMD_FLUSH:
                 KPRINTF2(DBL_DEVIO,("cmdFlush\n"));
 //              ret = cmdFlush(ioreq, ehu, ehd);
                 break;
@@ -96,42 +96,42 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR
                 ret = cmdQueryDevice(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_USBRESET:
+                        case UHCMD_USBRESET:
                 KPRINTF2(DBL_DEVIO,("cmdUsbReset\n"));
                 ret = cmdUsbReset(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_USBRESUME:
+                        case UHCMD_USBRESUME:
                 KPRINTF2(DBL_DEVIO,("cmdUsbResume\n"));
                 ret = cmdUsbResume(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_USBSUSPEND:
+                        case UHCMD_USBSUSPEND:
                 KPRINTF2(DBL_DEVIO,("cmdUsbSuspend\n"));
                 ret = cmdUsbSuspend(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_USBOPER:
+                        case UHCMD_USBOPER:
                 KPRINTF2(DBL_DEVIO,("cmdUsbOper\n"));
                 ret = cmdUsbOper(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_CONTROLXFER:
+                        case UHCMD_CONTROLXFER:
                 KPRINTF2(DBL_DEVIO,("cmdControlXFer\n"));
 //              ret = cmdControlXFer(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_BULKXFER:
+                        case UHCMD_BULKXFER:
                 KPRINTF2(DBL_DEVIO,("cmdBulkXFer\n"));
 //              ret = cmdBulkXFer(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_INTXFER:
+                        case UHCMD_INTXFER:
                 KPRINTF2(DBL_DEVIO,("cmdIntXFer\n"));
 //              ret = cmdIntXFer(ioreq, ehu, ehd);
                 break;
 
-			case UHCMD_ISOXFER:
+                        case UHCMD_ISOXFER:
                 KPRINTF2(DBL_DEVIO,("cmdIsoXFer\n"));
 //              ret = cmdIsoXFer(ioreq, ehu, ehd);
                 break;
@@ -177,18 +177,18 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR
         }
     }
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 }
 
 AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 6, pciehci) {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 
 //  LIBBASETYPE *ehd = (LIBBASETYPE *) LIBBASE;
 
     KPRINTF2(DBL_DEVIO,("EHC AbortIO: \n"));
 
     return TRUE;
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 }
 
 UWORD cmdQueryDevice(struct IOUsbHWReq *ioreq, struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {

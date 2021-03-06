@@ -24,8 +24,8 @@
 #include LC_LIBDEFS_FILE
 
 AROS_UFH3(IPTR, ACPIButton_PowerEventHandle,
-    AROS_UFHA(struct Hook *, hook, A0), 
-    AROS_UFHA(APTR, object, A2), 
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(APTR, object, A2),
     AROS_UFHA(APTR, message, A1)
 )
 {
@@ -55,8 +55,8 @@ AROS_UFH3(IPTR, ACPIButton_PowerEventHandle,
 }
 
 AROS_UFH3(IPTR, ACPIButton_SleepEventHandle,
-    AROS_UFHA(struct Hook *, hook, A0), 
-    AROS_UFHA(APTR, object, A2), 
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(APTR, object, A2),
     AROS_UFHA(APTR, message, A1)
 )
 {
@@ -75,8 +75,8 @@ AROS_UFH3(IPTR, ACPIButton_SleepEventHandle,
 }
 
 AROS_UFH3(IPTR, ACPIButton_LidEventHandle,
-    AROS_UFHA(struct Hook *, hook, A0), 
-    AROS_UFHA(APTR, object, A2), 
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(APTR, object, A2),
     AROS_UFHA(APTR, message, A1)
 )
 {
@@ -116,9 +116,9 @@ BOOL ACPIButton_MatchDeviceID(ACPI_DEVICE_INFO *acpiDevInfo, char *deviceID)
 #undef _csd
 
 static ACPI_STATUS ACPIButton_DeviceQuery(ACPI_HANDLE handle,
-				UINT32 level,
-				void *context,
-				void **retval)
+                                UINT32 level,
+                                void *context,
+                                void **retval)
 {
     struct acpibuttonclass_staticdata    *_csd = (struct acpibuttonclass_staticdata *)context;
     ACPI_DEVICE_INFO            *acpiDevInfo = NULL;

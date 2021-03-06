@@ -100,15 +100,15 @@ AROS propgclass at the moment does not copy this behaviour!!!!
 *****************************************************************************************/
 
 #define SetGadgetType(gad, type)    ((struct Gadget *)gad)->GadgetType &= ~GTYP_GTYPEMASK; \
-    	    	    	    	    ((struct Gadget *)gad)->GadgetType |= type;
+                                    ((struct Gadget *)gad)->GadgetType |= type;
 
-#define PRIVFLAG_NICERENDER 	    1
-#define PRIVFLAG_NICENOTIFY 	    2
+#define PRIVFLAG_NICERENDER         1
+#define PRIVFLAG_NICENOTIFY         2
 
 /****************************************************************************************/
 
 static VOID FindScrollerValues(UWORD total, UWORD visible, UWORD top,
-    	    	    	       WORD overlap, UWORD *body, UWORD *pot)
+                               WORD overlap, UWORD *body, UWORD *pot)
 {
     UWORD hidden;
 
@@ -180,8 +180,8 @@ static VOID UpdateTop(Class *cl, struct Gadget *g, struct GadgetInfo *gi, BOOL f
     ** Also triggers notifcation if PGA_Top has changed.
     */
 
-    struct PropGData	*data = (struct PropGData *)INST_DATA(cl, g);
-    UWORD           	 top, pot;
+    struct PropGData    *data = (struct PropGData *)INST_DATA(cl, g);
+    UWORD                top, pot;
 
     D(bug("PropGClass: UpdateTop()\n"));
 
@@ -209,9 +209,9 @@ static VOID UpdateTop(Class *cl, struct Gadget *g, struct GadgetInfo *gi, BOOL f
 
 #define SETFLAG(flagvar, boolvar, flag) \
     if (boolvar)            \
-    	flagvar |= flag;    \
+        flagvar |= flag;    \
     else                    \
-    	flagvar &= ~flag;
+        flagvar &= ~flag;
 
 /****************************************************************************************/
 
@@ -219,16 +219,16 @@ IPTR PropGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    struct TagItem  	*tag, *tstate;
+    struct TagItem      *tag, *tstate;
     struct PropGData    *data;
-    struct BBox     	 old_knobbox;
-    struct opSet    	 method;
-    UWORD     	    	 newtop;
-    BOOL            	 set_flag = FALSE;
-    BOOL            	 was_disabled = FALSE;
-    BOOL            	 full_redraw = FALSE;
-    BOOL            	 old_knobbox_ok = FALSE;
-    IPTR            	 retval;
+    struct BBox          old_knobbox;
+    struct opSet         method;
+    UWORD                newtop;
+    BOOL                 set_flag = FALSE;
+    BOOL                 was_disabled = FALSE;
+    BOOL                 full_redraw = FALSE;
+    BOOL                 old_knobbox_ok = FALSE;
+    IPTR                 retval;
 
     data = INST_DATA(cl, g);
     tstate = msg->ops_AttrList;
@@ -408,7 +408,7 @@ IPTR PropGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
             method.gpr_GInfo  = msg->ops_GInfo;
             method.gpr_RPort  = rp;
             method.gpr_Redraw = full_redraw ? GREDRAW_REDRAW : GREDRAW_UPDATE;
-	    
+            
             DoMethodA((Object *)g, (Msg)&method);
 
             ReleaseGIRPort(rp);
@@ -583,7 +583,7 @@ IPTR PropGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
             /* enable buffering to speed up refresh */
             ((struct IntWindow *)(msg->gpi_GInfo->gi_Window))->specialflags |= SPFLAG_WANTBUFFER;
 
-    	#ifdef PROPHACK
+        #ifdef PROPHACK
             ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask =
                 NewCreateTask(TASKTAG_CODETYPE, CODETYPE_PPC, TASKTAG_PC, (ULONG)PropRefreshTask,
                                 TASKTAG_PRI,0,
@@ -592,7 +592,7 @@ IPTR PropGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
                                 TASKTAG_PPC_ARG3,(ULONG)msg->gpi_GInfo->gi_Window,
                                 TASKTAG_PPC_ARG4,(ULONG)msg->gpi_GInfo->gi_Requester,
                                 TAG_DONE);
-    	#endif
+        #endif
         
         } /* if not knob was hit */
 
@@ -651,9 +651,9 @@ IPTR PropGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
     #ifdef PROPHACK
         if (((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask)
         {
-            ULONG   	 oldSignals = SetSignal(0,SIGF_INTUITION);
+            ULONG        oldSignals = SetSignal(0,SIGF_INTUITION);
             struct Task *task = ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask;
-            ULONG   	 signals = 0;
+            ULONG        signals = 0;
 
             Forbid();
             ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask = 0;
@@ -732,14 +732,14 @@ IPTR PropGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 
         if (CalcKnobSize(g, &new_knobbox))
         {
-    	#if PROP_RENDER_OPTIMIZATION
+        #if PROP_RENDER_OPTIMIZATION
             RefreshPropGadgetKnob (g, data->old_knobbox, &new_knobbox, msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, IntuitionBase);
-    	#else
+        #else
             struct BBox gbox;
 
             CalcBBox (msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, g, &gbox);
             RefreshPropGadgetKnob (g, &gbox, &new_knobbox, msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, IntuitionBase);
-    	#endif
+        #endif
         }
 
         data->old_knobbox = 0;
@@ -775,9 +775,9 @@ IPTR PropGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive 
     #ifdef PROPHACK
         if (((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask)
         {
-            ULONG   	 oldSignals = SetSignal(0,SIGF_INTUITION);
+            ULONG        oldSignals = SetSignal(0,SIGF_INTUITION);
             struct Task *task = ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask;
-            ULONG   	 signals = 0;
+            ULONG        signals = 0;
 
             Forbid();
             ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->PropTask = 0;

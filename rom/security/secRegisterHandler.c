@@ -10,14 +10,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(ULONG, secRegisterHandler,
+        AROS_LH1(ULONG, secRegisterHandler,
 
 /*  SYNOPSIS */
-	/* void */
-	AROS_LHA(struct plugin_ops *, ops, A0),
+        /* void */
+        AROS_LHA(struct plugin_ops *, ops, A0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 47, Security)
+        struct SecurityBase *, secBase, 47, Security)
 
 /*  FUNCTION
 

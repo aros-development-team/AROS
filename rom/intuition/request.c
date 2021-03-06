@@ -10,9 +10,9 @@
 struct RequestActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Requester 	    *requester;
-    struct Window   	    *window;
-    BOOL    	    	     success;
+    struct Requester        *requester;
+    struct Window           *window;
+    BOOL                     success;
 };
 
 static VOID int_request(struct RequestActionMsg *msg,
@@ -81,16 +81,16 @@ static VOID int_request(struct RequestActionMsg *msg,
                         struct IntuitionBase *IntuitionBase)
 {
     struct LayersBase       *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
-    struct Requester 	    *requester = msg->requester;
-    struct Window   	    *window = msg->window;
-  //ULONG   	    	     layerflags = 0;
-    int     	    	     left, top, right, bottom;
-  //LONG    	    	     lock;
-    struct Gadget   	    *gadgets;
-    int     	    	     wleft = window->LeftEdge + window->BorderLeft;
-    int     	    	     wtop = window->TopEdge + window->BorderTop;
-    int     	    	     wright = window->LeftEdge + window->Width - window->BorderRight- 1;
-    int     	    	     wbottom = window->TopEdge + window->Height - window->BorderBottom- 1;
+    struct Requester        *requester = msg->requester;
+    struct Window           *window = msg->window;
+  //ULONG                    layerflags = 0;
+    int                      left, top, right, bottom;
+  //LONG                     lock;
+    struct Gadget           *gadgets;
+    int                      wleft = window->LeftEdge + window->BorderLeft;
+    int                      wtop = window->TopEdge + window->BorderTop;
+    int                      wright = window->LeftEdge + window->Width - window->BorderRight- 1;
+    int                      wbottom = window->TopEdge + window->Height - window->BorderBottom- 1;
 
     if (requester->Flags & POINTREL)
     {
@@ -140,16 +140,16 @@ static VOID int_request(struct RequestActionMsg *msg,
     
     if ((right >= left) && (bottom >= top))
     {
-	requester->ReqLayer = CreateUpfrontHookLayer(
-                	      &window->WScreen->LayerInfo
-                	      , window->WScreen->RastPort.BitMap
-                	      , left
-                	      , top
-                	      , right
-                	      , bottom
-                	      , (requester->Flags & SIMPLEREQ ? LAYERSIMPLE : LAYERSMART)
-                	      , LAYERS_NOBACKFILL
-                	      , NULL);
+        requester->ReqLayer = CreateUpfrontHookLayer(
+                              &window->WScreen->LayerInfo
+                              , window->WScreen->RastPort.BitMap
+                              , left
+                              , top
+                              , right
+                              , bottom
+                              , (requester->Flags & SIMPLEREQ ? LAYERSIMPLE : LAYERSMART)
+                              , LAYERS_NOBACKFILL
+                              , NULL);
     }
     
     if (requester->ReqLayer)

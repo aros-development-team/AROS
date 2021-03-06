@@ -10,15 +10,15 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH3(void, WriteExpansionWord,
+        AROS_LH3(void, WriteExpansionWord,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR , board, A0),
-	AROS_LHA(ULONG, offset, D0),
-	AROS_LHA(ULONG, word, D1),
+        AROS_LHA(APTR , board, A0),
+        AROS_LHA(ULONG, offset, D0),
+        AROS_LHA(ULONG, word, D1),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 27, Expansion)
+        struct ExpansionBase *, ExpansionBase, 27, Expansion)
 
 /*  FUNCTION
 

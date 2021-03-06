@@ -25,22 +25,22 @@
     NAME */
 #include "exec_util.h"
 
-	struct ETask * Exec_FindChild(
+        struct ETask * Exec_FindChild(
 
 /*  SYNOPSIS */
-	ULONG	    id,
-	struct ExecBase *SysBase)
+        ULONG       id,
+        struct ExecBase *SysBase)
 
 /*  FUNCTION
-	Scan through the current tasks children list searching for the task
-	whose et_UniqueID field matches.
+        Scan through the current tasks children list searching for the task
+        whose et_UniqueID field matches.
 
     INPUTS
-	id	-   The task ID to match.
+        id      -   The task ID to match.
 
     RESULT
-	Address of the ETask structure that matches, or
-	NULL otherwise.
+        Address of the ETask structure that matches, or
+        NULL otherwise.
 
     NOTES
         This is an internal exec.library function not exported from the
@@ -66,14 +66,14 @@
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_LOCK(&IntETask(thisET)->iet_TaskLock, NULL, SPINLOCK_MODE_READ);
 #endif
-	ForeachNode (&thisET->et_Children, et)
-	{
-	    if (et->et_UniqueID == id)
+        ForeachNode (&thisET->et_Children, et)
+        {
+            if (et->et_UniqueID == id)
             {
-		retVal = et;
+                retVal = et;
                 break;
             }
-	}
+        }
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(&IntETask(thisET)->iet_TaskLock);
 #endif
@@ -152,10 +152,10 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 
 #ifdef DEBUG_ETASK
     {
-	int len = strlen(task->tc_Node.ln_Name) + 1;
-	IntETask(et)->iet_Me = AllocVec(len, MEMF_CLEAR|MEMF_PUBLIC);
-	if (IntETask(et)->iet_Me != NULL)
-	    CopyMem(task->tc_Node.ln_Name, IntETask(et)->iet_Me, len);
+        int len = strlen(task->tc_Node.ln_Name) + 1;
+        IntETask(et)->iet_Me = AllocVec(len, MEMF_CLEAR|MEMF_PUBLIC);
+        if (IntETask(et)->iet_Me != NULL)
+            CopyMem(task->tc_Node.ln_Name, IntETask(et)->iet_Me, len);
     }
 #endif
 
@@ -167,19 +167,19 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
     {
         //TODO: Replace with UUID!
 
-	/*
-	 *	Add some fuzz on wrapping. It's likely that the early numbers
-	 *	where taken by somebody else.
-	 */
-	if(++SysBase->ex_TaskID == 0)
-	    SysBase->ex_TaskID = 1024;
+        /*
+         *      Add some fuzz on wrapping. It's likely that the early numbers
+         *      where taken by somebody else.
+         */
+        if(++SysBase->ex_TaskID == 0)
+            SysBase->ex_TaskID = 1024;
 
-	Disable();
+        Disable();
         D(bug("[EXEC:ETask] Init: Checking for existing ID...\n");)
-	if (FindTaskByPID(SysBase->ex_TaskID) == NULL)
-	    et->et_UniqueID = SysBase->ex_TaskID;
+        if (FindTaskByPID(SysBase->ex_TaskID) == NULL)
+            et->et_UniqueID = SysBase->ex_TaskID;
         D(bug("[EXEC:ETask] Init: done\n");)
-	Enable();
+        Enable();
     }
    
     D(bug("[EXEC:ETask] Init:     Task ID : %08x\n", et->et_UniqueID);)
@@ -192,7 +192,7 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_LOCK(&IntETask(parentEtask)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-	ADDHEAD(&parentEtask->et_Children, et);
+        ADDHEAD(&parentEtask->et_Children, et);
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(&IntETask(parentEtask)->iet_TaskLock);
 #endif
@@ -213,7 +213,7 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
 
     if(!(task->tc_Flags & TF_ETASK) ||
         ((et = task->tc_UnionETask.tc_ETask) == NULL))
-	return;
+        return;
 
     D(bug("[EXEC:ETask] Cleanup: Task @ 0x%p, ETask @ 0x%p\n", task, et);)
 
@@ -255,7 +255,7 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
             {
 #if defined(__AROSEXEC_SMP__)
                 EXEC_SPINLOCK_LOCK(&IntETask(parent)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
-#endif                
+#endif
                 ADDTAIL(&parent->et_Children, child);
 #if defined(__AROSEXEC_SMP__)
                 EXEC_SPINLOCK_UNLOCK(&IntETask(parent)->iet_TaskLock);
@@ -267,19 +267,19 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
         EXEC_SPINLOCK_UNLOCK(&IntETask(et)->iet_TaskLock);
 #endif
 
-        /* Notify parent only if child was created with NP_NotifyOnDeath set 
+        /* Notify parent only if child was created with NP_NotifyOnDeath set
            to TRUE */
         if(parent != NULL)
         {
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_LOCK(&IntETask(parent)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
-#endif   
+#endif
             REMOVE(et);
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(&IntETask(parent)->iet_TaskLock);
 #endif
             if(
-               (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) && 
+               (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) &&
                (((struct Process*) task)->pr_Flags & PRF_NOTIFYONDEATH)
             )
             {
@@ -330,7 +330,7 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     struct Task *t;
 
     if (!task)
-	return FALSE;
+        return FALSE;
 
     Forbid();
 #if defined(__AROSEXEC_SMP__)
@@ -364,21 +364,21 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 #else
     if (task == GET_THIS_TASK)
     {
-    	Permit();
-    	return TRUE;
+        Permit();
+        return TRUE;
     }
 #endif
 
     ForeachNode(&SysBase->TaskReady, t)
     {
-    	if (task == t)
-    	{
+        if (task == t)
+        {
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
             Permit();
-    	    return TRUE;
-    	}
+            return TRUE;
+        }
     }
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskReadySpinLock);
@@ -388,14 +388,14 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 #endif
     ForeachNode(&SysBase->TaskWait, t)
     {
-    	if (task == t)
-    	{
+        if (task == t)
+        {
 #if defined(__AROSEXEC_SMP__)
             EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
             Permit();
-    	    return TRUE;
-    	}
+            return TRUE;
+        }
     }
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskWaitSpinLock);

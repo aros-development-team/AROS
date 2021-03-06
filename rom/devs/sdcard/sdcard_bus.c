@@ -375,9 +375,9 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                             D(bug("[SDBus%02u] %s: #         READ_BL_LEN : %dbytes\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, pp[DE_SIZEBLOCK + 4] / sdcUnit->sdcu_Sectors));
                             D(bug("[SDBus%02u] %s: #         C_SIZE : %d\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcUnit->sdcu_Cylinders));
 
-                            pp[0] 		        = (IPTR)str_mmc0;
-                            pp[1]		        = (IPTR)MOD_NAME_STRING;
-                            pp[2]		        = 0;
+                            pp[0]                       = (IPTR)str_mmc0;
+                            pp[1]                       = (IPTR)MOD_NAME_STRING;
+                            pp[2]                       = 0;
                             pp[DE_TABLESIZE    + 4]     = DE_BOOTBLOCKS;
                             pp[DE_NUMHEADS     + 4]     = sdcUnit->sdcu_Heads;
                             pp[DE_BLKSPERTRACK + 4]     = 1;

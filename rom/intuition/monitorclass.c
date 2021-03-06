@@ -777,7 +777,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         Query supported mouse pointer sprite formats.
 
         The returned value is a combination of the following bit flags:
-          PointerType_3Plus1 - color 0 transparent, 1-3 visible	(Amiga(tm)
+          PointerType_3Plus1 - color 0 transparent, 1-3 visible (Amiga(tm)
                                chipset sprite)
           PointerType_2Plus1 - color 0 transparent, 1 undefined (can be for
                                example clear or inverse), 2-3 visible
@@ -1045,10 +1045,10 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /*i**************************************************************************/
 
-#define Relink(nextAttr, prev, prevAttr, next)		\
-    if (prev)						\
-        SetAttrs(prev, nextAttr, next, TAG_DONE);	\
-    if (next)						\
+#define Relink(nextAttr, prev, prevAttr, next)          \
+    if (prev)                                           \
+        SetAttrs(prev, nextAttr, next, TAG_DONE);       \
+    if (next)                                           \
         SetAttrs(next, prevAttr, prev, TAG_DONE)
 
 IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
@@ -1344,7 +1344,7 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
         obj         - A monitor object
         MethodID    - MM_GetRootBitMap
         PixelFormat - A CyberGraphX pixelformat code to get root bitmap for
-        Store	    - A storage where root bitmap pointer will be placed.
+        Store       - A storage where root bitmap pointer will be placed.
 
     RESULT
         Undefined.
@@ -1398,7 +1398,7 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
         obj         - A monitor object to query
         MethodID    - MM_Query3DSupport
         PixelFormat - A CyberGraphX pixelformat code
-        Store	    - A pointer to a storage where return value will be placed
+        Store       - A pointer to a storage where return value will be placed
 
     RESULT
         Undefined.
@@ -1461,13 +1461,13 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
     INPUTS
         obj      - A monitor object to query
         MethodID - MM_GetDefaultGammaTables
-        Red	 - A pointer to an array of 256 bytes where gamma correction
+        Red      - A pointer to an array of 256 bytes where gamma correction
                    data for the red component will be placed. You may specify
                    a NULL pointer in order to ignore this component.
-        Green	 - A pointer to an array of 256 bytes where gamma correction
+        Green    - A pointer to an array of 256 bytes where gamma correction
                    data for the green component will be placed. You may
                    specify a NULL pointer in order to ignore this component.
-        Blue	 - A pointer to an array of 256 bytes where gamma correction
+        Blue     - A pointer to an array of 256 bytes where gamma correction
                    data for the blue component will be placed. You may specify
                    a NULL pointer in order to ignore this component.
 
@@ -1520,8 +1520,8 @@ void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGet
     INPUTS
         obj      - A monitor object
         MethodID - MM_GetDefaultPixelFormat
-        Depth	 - Depth to ask about
-        Store	 - A pointer to an ULONG location where CyberGraphX
+        Depth    - Depth to ask about
+        Store    - A pointer to an ULONG location where CyberGraphX
                    pixelformat number will be placed. -1 means unsupported
                    depth.
 
@@ -1587,9 +1587,9 @@ IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGet
         obj         - A monitor object
         MethodID    - MM_GetPointerBounds
         PointerType - Pointer type (one of PointerType_...)
-        Width	    - A pointer to an ULONG location where width will be
+        Width       - A pointer to an ULONG location where width will be
                       placed.
-        Height	    - A pointer to an ULONG location where height will be
+        Height      - A pointer to an ULONG location where height will be
                       placed.
 
     RESULT
@@ -1709,7 +1709,7 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
     struct TagItem tags[] =
     {
         {aHidd_Gfx_DPMSLevel, vHidd_Gfx_DPMSLevel_Off},
-        {TAG_DONE	    , 0			     }    
+        {TAG_DONE           , 0                      }
     };
     
     return OOP_SetAttrs(data->handle->gfxhidd, tags);
@@ -1759,7 +1759,7 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
     struct TagItem tags[] =
     {
         {aHidd_Gfx_DPMSLevel, vHidd_Gfx_DPMSLevel_On},
-        {TAG_DONE	    , 0			    }    
+        {TAG_DONE           , 0                     }
     };
     
     return OOP_SetAttrs(data->handle->gfxhidd, tags);
@@ -1784,13 +1784,13 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
     INPUTS
         obj      - A monitor object to query
         MethodID - MM_GetDefaultGammaTables
-        Red	 - A pointer to an array of 256 bytes where gamma correction
+        Red      - A pointer to an array of 256 bytes where gamma correction
                    data for the red component is placed. You may specify a
                    NULL pointer in order to ignore this component.
-        Green	 - A pointer to an array of 256 bytes where gamma correction
+        Green    - A pointer to an array of 256 bytes where gamma correction
                    data for the green component is placed. You may specify a
                    NULL pointer in order to ignore this component.
-        Blue	 - A pointer to an array of 256 bytes where gamma correction
+        Blue     - A pointer to an array of 256 bytes where gamma correction
                    data for the blue component is placed. You may specify a
                    NULL pointer in order to ignore this component.
 

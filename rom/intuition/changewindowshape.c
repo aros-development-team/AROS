@@ -12,9 +12,9 @@
 struct ChangeWindowShapeActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-    struct Region   	    *shape;
-    struct Hook     	    *callback;
+    struct Window           *window;
+    struct Region           *shape;
+    struct Hook             *callback;
 };
 
 static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,

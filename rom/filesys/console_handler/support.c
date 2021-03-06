@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: Support functions for console handler. 
+    Desc: Support functions for console handler.
 */
 
 /****************************************************************************************/

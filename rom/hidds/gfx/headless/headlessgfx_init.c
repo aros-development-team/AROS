@@ -35,8 +35,8 @@ static void FreeAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
     
     for (i = 0; i < num; i++)
     {
-	if (bases[i])
-	    OOP_ReleaseAttrBase(iftable[i]);
+        if (bases[i])
+            OOP_ReleaseAttrBase(iftable[i]);
     }
 }
 
@@ -46,12 +46,12 @@ static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 
     for (i = 0; i < num; i++)
     {
-	bases[i] = OOP_ObtainAttrBase(iftable[i]);
-	if (!bases[i])
-	{
-	    FreeAttrBases(iftable, bases, i);
-	    return FALSE;
-	}
+        bases[i] = OOP_ObtainAttrBase(iftable[i]);
+        if (!bases[i])
+        {
+            FreeAttrBases(iftable, bases, i);
+            return FALSE;
+        }
     }
 
     return TRUE;
@@ -88,7 +88,7 @@ static int HeadlessGfx_Init(LIBBASETYPEPTR LIBBASE)
             xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
             D(bug("[HeadlessGfx] BitMap class @ 0x%p\n", xsd->basebm));
 
-            /* 
+            /*
              * It is unknown (and no way to know) what hardware part this driver uses.
              * In order to avoid conflicts with disk-based native-mode hardware
              * drivers it needs to be removed from the system when some other driver
@@ -109,7 +109,7 @@ static int HeadlessGfx_Init(LIBBASETYPEPTR LIBBASE)
     }
     else
     {
-	D(bug("[HeadlessGfx] Failed to open graphics.library!\n"));
+        D(bug("[HeadlessGfx] Failed to open graphics.library!\n"));
     }
     return res;
 }

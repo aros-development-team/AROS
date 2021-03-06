@@ -26,20 +26,20 @@
 /*i***************************************************************************
 
     NAME
-	--background_screenclass--
+        --background_screenclass--
 
     LOCATION
-	screenclass
+        screenclass
 
     NOTES
-	In AROS screens are BOOPSI objects. It is possible to modify certain
-	properties of the screen by using the SetAttrs() and GetAttr()
-	functions. screenclass by itself is private to the system and does not
-	have a public ID. The user can't create objects of this class
-	manually. Screens are created and destroyed as usual, using
-	the OpenScreen() and CloseScreen() functions.
+        In AROS screens are BOOPSI objects. It is possible to modify certain
+        properties of the screen by using the SetAttrs() and GetAttr()
+        functions. screenclass by itself is private to the system and does not
+        have a public ID. The user can't create objects of this class
+        manually. Screens are created and destroyed as usual, using
+        the OpenScreen() and CloseScreen() functions.
 
-	This class is fully compatible with MorphOS starting from v2.x.
+        This class is fully compatible with MorphOS starting from v2.x.
 
 *****************************************************************************/
 
@@ -137,7 +137,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_Top
 
     SYNOPSIS
-	[ISG], LONG
+        [ISG], LONG
 
     LOCATION
         screenclass
@@ -163,7 +163,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_Width
 
     SYNOPSIS
-	[I.G], LONG
+        [I.G], LONG
 
     LOCATION
         screenclass
@@ -189,7 +189,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_Height
 
     SYNOPSIS
-	[I.G], LONG
+        [I.G], LONG
 
     LOCATION
         screenclass
@@ -215,7 +215,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_Depth
 
     SYNOPSIS
-	[I.G], LONG
+        [I.G], LONG
 
     LOCATION
         screenclass
@@ -244,7 +244,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_PubName
 
     SYNOPSIS
-	[I.G], STRPTR
+        [I.G], STRPTR
 
     LOCATION
         screenclass
@@ -270,7 +270,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_DisplayID
 
     SYNOPSIS
-	[I.G], LONG
+        [I.G], LONG
 
     LOCATION
         screenclass
@@ -296,7 +296,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_Behind
 
     SYNOPSIS
-	[I.G], LONG
+        [I.G], LONG
 
     LOCATION
         screenclass
@@ -326,7 +326,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_MonitorName
 
     SYNOPSIS
-	[I.G], LONG
+        [I.G], LONG
 
     LOCATION
         screenclass
@@ -354,7 +354,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_MonitorObject
 
     SYNOPSIS
-	[..G], Object *
+        [..G], Object *
 
     LOCATION
         screenclass
@@ -382,7 +382,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_TopLeftScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
@@ -416,7 +416,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_TopMiddleScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
@@ -449,13 +449,13 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_TopRightScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
 
     FUNCTION
-	Get a pointer to a screen displayed on a monitor placed in top-right
+        Get a pointer to a screen displayed on a monitor placed in top-right
         diagonal direction relative to this screen's one. If the frontmost
         screen on the given monitor is not public, NULL will be returned.
 
@@ -482,13 +482,13 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_MiddleLeftScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in left
+        Get a pointer to a public screen displayed on a monitor placed in left
         direction relative to this screen's one. If the frontmost screen on
         the given monitor is not public, NULL will be returned.
 
@@ -515,13 +515,13 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_MiddleRightScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in left
+        Get a pointer to a public screen displayed on a monitor placed in left
         direction relative to this screen's one. If the frontmost screen on
         the given monitor is not public, NULL will be returned.
 
@@ -548,13 +548,13 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_BottomLeftScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in
+        Get a pointer to a public screen displayed on a monitor placed in
         bottom-left diagonal direction relative to this screen's one. If the
         frontmost screen on the given monitor is not public, NULL will be
         returned.
@@ -582,13 +582,13 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_BottomMiddleScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in
+        Get a pointer to a public screen displayed on a monitor placed in
         bottom direction relative to this screen's one. If the frontmost
         screen on the given monitor is not public, NULL will be returned.
 
@@ -615,13 +615,13 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_BottomRightScreen
 
     SYNOPSIS
-	[..G], struct Screen *
+        [..G], struct Screen *
 
     LOCATION
         screenclass
 
     FUNCTION
-	Get a pointer to a screen displayed on a monitor placed in
+        Get a pointer to a screen displayed on a monitor placed in
         bottom-right diagonal direction relative to this screen's one. If the
         frontmost screen on the given monitor is not public, NULL will be
         returned.
@@ -649,7 +649,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_StopBlanker
 
     SYNOPSIS
-	[S..], BOOL
+        [S..], BOOL
 
     LOCATION
         screenclass
@@ -676,7 +676,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_ShowPointer
 
     SYNOPSIS
-	[ISG], BOOL
+        [ISG], BOOL
 
     LOCATION
         screenclass
@@ -704,7 +704,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         SA_GammaControl
 
     SYNOPSIS
-	[I..], BOOL
+        [I..], BOOL
 
     LOCATION
         screenclass

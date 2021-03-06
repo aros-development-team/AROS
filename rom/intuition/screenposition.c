@@ -73,26 +73,26 @@
 
     if ((flags & SPOS_FORCEDRAG) || (GetPrivScreen(screen)->SpecialFlags & SF_Draggable)) {
     
-	/* First we update the viewport, then attempt to scroll. The bitmap may refuse to scroll
-	   too far, in this case offsets in the ViewPort will be adjusted to reflect the real situation.
-	   TODO: check if additional bounding has to be implemented. Graphics driver could for example let
-	   to scroll the bitmap completely out of the display. */
+        /* First we update the viewport, then attempt to scroll. The bitmap may refuse to scroll
+           too far, in this case offsets in the ViewPort will be adjusted to reflect the real situation.
+           TODO: check if additional bounding has to be implemented. Graphics driver could for example let
+           to scroll the bitmap completely out of the display. */
         if (flags & SPOS_ABSOLUTE) {
-	    D(bug("[ScreenPosition] Absolute position: (%d, %d)\n", x1, y1));
-	    screen->ViewPort.DxOffset = x1;
-	    screen->ViewPort.DyOffset = y1;
-	} else {
-	    D(bug("[ScreenPosition] Relative position: (%d, %d)\n", x1, y1));
-	    screen->ViewPort.DxOffset = screen->LeftEdge + x1;
-	    screen->ViewPort.DyOffset = screen->TopEdge  + y1;
-	}
-	D(bug("[ScreenPosition] Scroll to: (%d, %d)\n",screen->ViewPort.DxOffset, screen->ViewPort.DyOffset));
-	ScrollVPort(&screen->ViewPort);
+            D(bug("[ScreenPosition] Absolute position: (%d, %d)\n", x1, y1));
+            screen->ViewPort.DxOffset = x1;
+            screen->ViewPort.DyOffset = y1;
+        } else {
+            D(bug("[ScreenPosition] Relative position: (%d, %d)\n", x1, y1));
+            screen->ViewPort.DxOffset = screen->LeftEdge + x1;
+            screen->ViewPort.DyOffset = screen->TopEdge  + y1;
+        }
+        D(bug("[ScreenPosition] Scroll to: (%d, %d)\n",screen->ViewPort.DxOffset, screen->ViewPort.DyOffset));
+        ScrollVPort(&screen->ViewPort);
 
-	/* Bring back the actual resulting values to our screen structure */
-	D(bug("[ScreenPosition] Scroll result: (%d, %d)\n",screen->ViewPort.DxOffset, screen->ViewPort.DyOffset));
-	screen->LeftEdge = screen->ViewPort.DxOffset;
-	screen->TopEdge = screen->ViewPort.DyOffset;
+        /* Bring back the actual resulting values to our screen structure */
+        D(bug("[ScreenPosition] Scroll result: (%d, %d)\n",screen->ViewPort.DxOffset, screen->ViewPort.DyOffset));
+        screen->LeftEdge = screen->ViewPort.DxOffset;
+        screen->TopEdge = screen->ViewPort.DyOffset;
     }
 
     AROS_LIBFUNC_EXIT

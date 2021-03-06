@@ -95,7 +95,7 @@
             break;
 
         /*
-            FreeArgs() will not free a RDArgs without a RDA_DAList, 
+            FreeArgs() will not free a RDArgs without a RDA_DAList,
             see that function for more information as to why...
         */
         case DOS_RDARGS:

@@ -157,7 +157,7 @@ AROS_LH1(void, ISAPNP_FreeDevice,
 //           dev->isapnpd_Node.ln_Name != NULL ? dev->isapnpd_Node.ln_Name : "" );
 
 
-  while( ( id = (struct ISAPNP_Identifier*) 
+  while( ( id = (struct ISAPNP_Identifier*)
              RemHead( (struct List*) &dev->isapnpd_IDs ) ) )
   {
 //    KPrintF( "Nuking (compatible) device %s%03lx%lx\n",
@@ -168,7 +168,7 @@ AROS_LH1(void, ISAPNP_FreeDevice,
 
   ISAPNP_FreeResourceGroup( dev->isapnpd_Options, res );
 
-  while( ( r = (struct ISAPNP_Resource*) 
+  while( ( r = (struct ISAPNP_Resource*)
                RemHead( (struct List*) &dev->isapnpd_Resources ) ) )
   {
     ISAPNP_FreeResource( r, res );
@@ -231,13 +231,13 @@ AROS_LH1(void, ISAPNP_FreeResourceGroup,
 
 //  KPrintF( "Nuking resource group.\n" );
 
-  while( ( r = (struct ISAPNP_Resource*) 
+  while( ( r = (struct ISAPNP_Resource*)
                RemHead( (struct List*) &rg->isapnprg_Resources ) ) )
   {
     ISAPNP_FreeResource( r, res );
   }
 
-  while( ( child_rg = (struct ISAPNP_ResourceGroup*) 
+  while( ( child_rg = (struct ISAPNP_ResourceGroup*)
                       RemHead( (struct List*) &rg->isapnprg_ResourceGroups ) ) )
   {
     ISAPNP_FreeResourceGroup( child_rg, res );

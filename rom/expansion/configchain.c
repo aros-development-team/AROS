@@ -10,13 +10,13 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH1(void, ConfigChain,
+        AROS_LH1(void, ConfigChain,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, baseAddr, A0),
+        AROS_LHA(APTR, baseAddr, A0),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 11, Expansion)
+        struct ExpansionBase *, ExpansionBase, 11, Expansion)
 
 /*  FUNCTION
 
@@ -35,8 +35,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
+        27-11-96    digulla automatically created from
+                            expansion_lib.fd and clib/expansion_protos.h
 
 *****************************************************************************/
 {

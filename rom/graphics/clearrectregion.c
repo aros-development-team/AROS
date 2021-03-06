@@ -13,24 +13,24 @@
     NAME */
 #include <clib/graphics_protos.h>
 
-	AROS_LH2(BOOL, ClearRectRegion,
+        AROS_LH2(BOOL, ClearRectRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region    *, Reg   , A0),
-	AROS_LHA(struct Rectangle *, Rect, A1),
+        AROS_LHA(struct Region    *, Reg   , A0),
+        AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 87, Graphics)
+        struct GfxBase *, GfxBase, 87, Graphics)
 
 /*  FUNCTION
-	Clear the given Rectangle from the given Region
+        Clear the given Rectangle from the given Region
 
     INPUTS
-	region - pointer to a Region structure
-	rectangle - pointer to a Rectangle structure
+        region - pointer to a Region structure
+        rectangle - pointer to a Rectangle structure
 
     RESULT
-	FALSE if not enough memory was available, else TRUE
+        FALSE if not enough memory was available, else TRUE
 
     NOTES
 
@@ -39,14 +39,14 @@
     BUGS
 
     SEE ALSO
-	AndRectRegion(), OrRectRegion(), XorRectRegion()
+        AndRectRegion(), OrRectRegion(), XorRectRegion()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
-	20-01-96    mreckt  initial version
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
+        20-01-96    mreckt  initial version
 
 *****************************************************************************/
 {
@@ -86,7 +86,7 @@
             0,
             MinX(Reg),
             0,
-	    MinY(Reg),
+            MinY(Reg),
             &rr,
             Reg->RegionRectangle,
             &Res.RegionRectangle,
@@ -95,7 +95,7 @@
         )
     )
     {
-	ClearRegion(Reg);
+        ClearRegion(Reg);
 
         *Reg = Res;
 

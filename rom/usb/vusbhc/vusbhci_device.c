@@ -232,7 +232,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
     WORD ret = RC_OK;
 
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
-    ioreq->iouh_Req.io_Error				   = UHIOERR_NO_ERROR;
+    ioreq->iouh_Req.io_Error                               = UHIOERR_NO_ERROR;
 
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 

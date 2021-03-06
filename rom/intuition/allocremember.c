@@ -38,10 +38,10 @@
     NOTES
 
     EXAMPLE
-	struct Remember *remkey;
-	remkey = NULL;
-	AllocRemember(&remkey, BUFSIZE, MEMF_ANY);
-	FreeRemember(&remkey, TRUE);
+        struct Remember *remkey;
+        remkey = NULL;
+        AllocRemember(&remkey, BUFSIZE, MEMF_ANY);
+        FreeRemember(&remkey, TRUE);
 
     BUGS
 
@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
 
     struct Remember *newKey;
-    APTR    	     ptr = NULL;
+    APTR             ptr = NULL;
 
     DEBUG_REMEMBER(dprintf("AllocRemember: Key 0x%lx Size 0x%lx Flags 0x%08lx\n",
                            rememberKey, size, flags));
@@ -68,9 +68,9 @@
         if (ptr)
         {
             newKey->NextRemember = *rememberKey;
-            newKey->Memory  	 = ptr;
+            newKey->Memory       = ptr;
             newKey->RememberSize = size;
-	    
+            
             *rememberKey = newKey;
         }
         else

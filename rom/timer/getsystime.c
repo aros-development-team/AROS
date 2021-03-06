@@ -14,38 +14,38 @@
 #include <devices/timer.h>
 #include <proto/timer.h>
 
-	AROS_LH1(void, GetSysTime,
+        AROS_LH1(void, GetSysTime,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct timeval *, dest, A0),
+        AROS_LHA(struct timeval *, dest, A0),
 
 /*  LOCATION */
-	struct Device *, TimerBase, 11, Timer)
+        struct Device *, TimerBase, 11, Timer)
 
 /*  FUNCTION
-	GetSysTime() will fill in the supplied timeval with the current
-	system time.
+        GetSysTime() will fill in the supplied timeval with the current
+        system time.
 
     INPUTS
-	dest    -   A pointer to the timeval you want the time stored in.
+        dest    -   A pointer to the timeval you want the time stored in.
 
     RESULT
-	The timeval "dest" will be filled with the current system time.
+        The timeval "dest" will be filled with the current system time.
 
     NOTES
-	This function is safe to call from interrupts.
+        This function is safe to call from interrupts.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	TR_GETSYSTIME, TR_SETSYSTIME
+        TR_GETSYSTIME, TR_SETSYSTIME
 
     INTERNALS
 
     HISTORY
-	18-02-1997  iaint   Implemented.
+        18-02-1997  iaint   Implemented.
 
 *****************************************************************************/
 {

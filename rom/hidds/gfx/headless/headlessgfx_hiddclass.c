@@ -31,48 +31,48 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 {
     struct TagItem pftags[] =
     {
-    	{ aHidd_PixFmt_RedShift     , 0			      }, /* 0 */
-	{ aHidd_PixFmt_GreenShift   , 0			      }, /* 1 */
-	{ aHidd_PixFmt_BlueShift    , 0			      }, /* 2 */
-	{ aHidd_PixFmt_AlphaShift   , 0			      }, /* 3 */
-	{ aHidd_PixFmt_RedMask      , 0x000000FC	      }, /* 4 */
-	{ aHidd_PixFmt_GreenMask    , 0x0000FC00	      }, /* 5 */
-	{ aHidd_PixFmt_BlueMask     , 0x00FC0000	      }, /* 6 */
-	{ aHidd_PixFmt_AlphaMask    , 0x00000000	      }, /* 7 */
-	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette}, /* 8 */
-	{ aHidd_PixFmt_Depth	    , 4			      }, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel, 1			      }, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel , 4			      }, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_LUT8    }, /* 12 */
-	{ aHidd_PixFmt_CLUTShift    , 0			      }, /* 13 */
-	{ aHidd_PixFmt_CLUTMask	    , 0x0f		      }, /* 14 */
-	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky }, /* 15 */
-	{ TAG_DONE		    , 0UL		      }
+        { aHidd_PixFmt_RedShift     , 0                       }, /* 0 */
+        { aHidd_PixFmt_GreenShift   , 0                       }, /* 1 */
+        { aHidd_PixFmt_BlueShift    , 0                       }, /* 2 */
+        { aHidd_PixFmt_AlphaShift   , 0                       }, /* 3 */
+        { aHidd_PixFmt_RedMask      , 0x000000FC              }, /* 4 */
+        { aHidd_PixFmt_GreenMask    , 0x0000FC00              }, /* 5 */
+        { aHidd_PixFmt_BlueMask     , 0x00FC0000              }, /* 6 */
+        { aHidd_PixFmt_AlphaMask    , 0x00000000              }, /* 7 */
+        { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette}, /* 8 */
+        { aHidd_PixFmt_Depth        , 4                       }, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel, 1                       }, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel , 4                       }, /* 11 */
+        { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_LUT8    }, /* 12 */
+        { aHidd_PixFmt_CLUTShift    , 0                       }, /* 13 */
+        { aHidd_PixFmt_CLUTMask     , 0x0f                    }, /* 14 */
+        { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky }, /* 15 */
+        { TAG_DONE                  , 0UL                     }
     };
     struct TagItem sync_mode[] =
     {
         {aHidd_Sync_PixelClock,         0                       },
         {aHidd_Sync_HTotal,             1024                    },
-	{aHidd_Sync_HDisp,              1024                    },
-	{aHidd_Sync_VDisp,              768                     },
-	{aHidd_Sync_HMax,               16384                   },
-	{aHidd_Sync_VMax,               16384                   },
-	{aHidd_Sync_Description,        (IPTR)"Headless:%hx%v"  },
-	{TAG_DONE,                      0UL                     }
+        {aHidd_Sync_HDisp,              1024                    },
+        {aHidd_Sync_VDisp,              768                     },
+        {aHidd_Sync_HMax,               16384                   },
+        {aHidd_Sync_VMax,               16384                   },
+        {aHidd_Sync_Description,        (IPTR)"Headless:%hx%v"  },
+        {TAG_DONE,                      0UL                     }
     };
     struct TagItem modetags[] =
     {
-	{aHidd_Gfx_PixFmtTags, (IPTR)pftags},
-	{aHidd_Gfx_SyncTags,   (IPTR)sync_mode},
-	{TAG_DONE, 0UL}
+        {aHidd_Gfx_PixFmtTags, (IPTR)pftags},
+        {aHidd_Gfx_SyncTags,   (IPTR)sync_mode},
+        {TAG_DONE, 0UL}
     };
     struct TagItem msgNewTags[] =
     {
-	{ aHidd_Gfx_ModeTags, (IPTR)modetags},
+        { aHidd_Gfx_ModeTags, (IPTR)modetags},
         { aHidd_Name            , (IPTR)"headlessgfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"Headless Display Controller"   },
         { aHidd_ProducerName    , (IPTR)"The AROS Dev Team"  },
-	{ TAG_MORE, 0UL}
+        { TAG_MORE, 0UL}
     };
     struct pRoot_New msgNew;
 
@@ -81,7 +81,7 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     /* Protect against some stupid programmer wishing to
        create one more Headless driver */
     if (XSD(cl)->headlessgfxhidd)
-	return NULL;
+        return NULL;
 
     if ((msgNewTags[4].ti_Data = (IPTR)msg->attrList) == 0)
         msgNewTags[4].ti_Tag = TAG_DONE;
@@ -92,10 +92,10 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&msgNew);
     if (o)
     {
-	struct HeadlessGfxHiddData *data = OOP_INST_DATA(cl, o);
+        struct HeadlessGfxHiddData *data = OOP_INST_DATA(cl, o);
 
-	D(bug("Got object from super\n"));
-	XSD(cl)->headlessgfxhidd = o;
+        D(bug("Got object from super\n"));
+        XSD(cl)->headlessgfxhidd = o;
     }
     ReturnPtr("HeadlessGfx::New", OOP_Object *, o);
 }

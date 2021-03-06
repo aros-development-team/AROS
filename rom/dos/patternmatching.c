@@ -233,7 +233,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
                 POP(t, pat, str);
                 
                 if(t && *str)
-                { 
+                {
                     PUSH(1, pat, str + 1);
                 }
             }
@@ -252,7 +252,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
                     POP(t, pat, str);
 
                     if(t && *str)
-                    { 
+                    {
                         PUSH(1, pat, str + 1);
                     }
 
@@ -371,7 +371,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
                 POP(t, pat, str);
 
                 if(t && *str)
-                { 
+                {
                     PUSH(1, pat, str + 1);
                 }
             }
@@ -408,7 +408,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
             break;
 
         } /* switch(*pat) */
-    } /* while(TRUE) */ 
+    } /* while(TRUE) */
 
  end:
     
@@ -571,7 +571,7 @@ LONG patternParse(CONST_STRPTR Source, STRPTR Dest, LONG DestLength,
                 if(!a)
                 {
                     ERROR(ERROR_BAD_TEMPLATE);
-                }               
+                }
             } while(a != ']');
 
             PUT(P_CLASS);

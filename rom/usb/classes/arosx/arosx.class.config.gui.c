@@ -288,7 +288,7 @@ AROS_UFH0(void, nGUITask)
                     End),
                 End;
 
-                if(gui->App) 
+                if(gui->App)
                 {
                     DoMethod(gui->MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
                              gui->App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);

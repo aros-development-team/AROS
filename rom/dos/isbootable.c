@@ -102,7 +102,7 @@ BOOL __dos_IsBootable(struct DosLibrary * DOSBase, BPTR lock)
     {
         UnLoadSeg(seg);
 
-        D(bug("[__dos_IsBootable] Success!\n"));        
+        D(bug("[__dos_IsBootable] Success!\n"));
         return TRUE;
     }
 

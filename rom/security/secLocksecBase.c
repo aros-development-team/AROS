@@ -14,13 +14,13 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(struct secPointers *, secLocksecBase,
+        AROS_LH0(struct secPointers *, secLocksecBase,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 37, Security)
+        struct SecurityBase *, secBase, 37, Security)
 
 /*  FUNCTION
 

@@ -18,12 +18,12 @@
 struct ellipse_render_data
 {
     struct render_special_info rsi;
-    WORD a, b;    
+    WORD a, b;
 };
 
 static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
-    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-    	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
+                           OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                           struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct ellipse_render_data *erd = ellipse_rd;
 
@@ -34,7 +34,7 @@ static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
     GC_DOCLIP(dst_gc) = rect;
 
     HIDD_BM_DrawEllipse(dstbm_obj, dst_gc, erd->a + rect->MinX - srcx, erd->b + rect->MinY - srcy,
-					   erd->a, erd->b);
+                                           erd->a, erd->b);
 
     /*
      * After we exit this routine, 'rect' will be not valid any more.
@@ -51,26 +51,26 @@ static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH5(void, DrawEllipse,
+        AROS_LH5(void, DrawEllipse,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(WORD             , xCenter, D0),
-	AROS_LHA(WORD             , yCenter, D1),
-	AROS_LHA(WORD             , a, D2),
-	AROS_LHA(WORD             , b, D3),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(WORD             , xCenter, D0),
+        AROS_LHA(WORD             , yCenter, D1),
+        AROS_LHA(WORD             , a, D2),
+        AROS_LHA(WORD             , b, D3),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 30, Graphics)
+        struct GfxBase *, GfxBase, 30, Graphics)
 
 /*  FUNCTION
-	Draw an ellipse
+        Draw an ellipse
 
     INPUTS
-	rp              - destination RastPort
-	xCenter,yCenter - coordinate of centerpoint
-	a               - radius in x direction
-	b               - radius in y direction
+        rp              - destination RastPort
+        xCenter,yCenter - coordinate of centerpoint
+        a               - radius in x direction
+        b               - radius in y direction
 
     RESULT
 
@@ -85,14 +85,14 @@ static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct Rectangle 	rr;
+    struct Rectangle    rr;
     struct ellipse_render_data erd;
 
     FIX_GFXCOORD(xCenter);
@@ -100,7 +100,7 @@ static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
     FIX_GFXCOORD(a);
     FIX_GFXCOORD(b);
     
-    /* bug("driver_DrawEllipse(%d %d %d %d)\n", xCenter, yCenter, a, b);	
+    /* bug("driver_DrawEllipse(%d %d %d %d)\n", xCenter, yCenter, a, b);
     */
     rr.MinX = xCenter - a;
     rr.MinY = yCenter - b;

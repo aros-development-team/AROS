@@ -18,58 +18,58 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, BitMapScale,
+        AROS_LH1(void, BitMapScale,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct BitScaleArgs *, bitScaleArgs, A0),
+        AROS_LHA(struct BitScaleArgs *, bitScaleArgs, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 113, Graphics)
+        struct GfxBase *, GfxBase, 113, Graphics)
 
 /*  FUNCTION
-	Scale a source bit map to a destination bit map other than
-	the source bit map.
+        Scale a source bit map to a destination bit map other than
+        the source bit map.
 
     INPUTS
-	Pass a BitScaleArgs structure filled with the following arguments
-	to this function:
-	  bsa_SrcX, bsa_SrcY - upper left coordinate in source bitmap
-	  bsa_SrcWidth, bsa_SrcHeight - Width and Height of source bitmap
-	  bsa_DestX, bsa_DestY - upper left coordinate in destination
-	                         bitmap
-	  bsa_DestWidth, bsa_DestHeight - this function will set these
-	        values. Use the bsa_???Factor for scaling
-	  bsa_XSrcFactor:bsa_XDestFactor - Set these to get approximately
+        Pass a BitScaleArgs structure filled with the following arguments
+        to this function:
+          bsa_SrcX, bsa_SrcY - upper left coordinate in source bitmap
+          bsa_SrcWidth, bsa_SrcHeight - Width and Height of source bitmap
+          bsa_DestX, bsa_DestY - upper left coordinate in destination
+                                 bitmap
+          bsa_DestWidth, bsa_DestHeight - this function will set these
+                values. Use the bsa_???Factor for scaling
+          bsa_XSrcFactor:bsa_XDestFactor - Set these to get approximately
                 the same ratio as bsa_SrcWidth:bsa_DestWidth, but
-	        usually not exactly the same number.
-	  bsa_YSrcFactor:bsa_YDestFactor - Set these to get approximately
-	        the same ratio as bsa_SrcHeight:DestHeight, but
-	        usually not exactly the same number.
-	  bsa_SrcBitMap - pointer to source bitmap to be scaled
-	  bsa_DestBitMap - pointer to destination bitmap which will
-	                   hold the scaled bitmap. Make sure it's
-	                   big enough!
-	  bsa_Flags - reserved for future use. Set it to zero!
-	  bsa_XDDA, bsa_YDDA - for future use.
-	  bsa_Reserved1, bsa_Reserved2 - for future use.
+                usually not exactly the same number.
+          bsa_YSrcFactor:bsa_YDestFactor - Set these to get approximately
+                the same ratio as bsa_SrcHeight:DestHeight, but
+                usually not exactly the same number.
+          bsa_SrcBitMap - pointer to source bitmap to be scaled
+          bsa_DestBitMap - pointer to destination bitmap which will
+                           hold the scaled bitmap. Make sure it's
+                           big enough!
+          bsa_Flags - reserved for future use. Set it to zero!
+          bsa_XDDA, bsa_YDDA - for future use.
+          bsa_Reserved1, bsa_Reserved2 - for future use.
 
     RESULT
-	  bsa_DestWidth and bsa_DestHeight will be set by this function
+          bsa_DestWidth and bsa_DestHeight will be set by this function
 
     NOTES
-	- Overlapping source and destination bitmaps are not supported
-	- Make sure that you provide enough memory for the destination
-	  bitmap to hold the result
-	- In the destination bitmap only the area where the scaled
-	  source bitmap is put into is changed. A frame of the old
-	  bitmap is left.
+        - Overlapping source and destination bitmaps are not supported
+        - Make sure that you provide enough memory for the destination
+          bitmap to hold the result
+        - In the destination bitmap only the area where the scaled
+          source bitmap is put into is changed. A frame of the old
+          bitmap is left.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	ScalerDiv(), graphics/scale.h
+        ScalerDiv(), graphics/scale.h
 
     INTERNALS
 
@@ -105,8 +105,8 @@
         /* Try to get a CLUT for the bitmaps */
         if (IS_HIDD_BM(bitScaleArgs->bsa_SrcBitMap)) {
             if (NULL != HIDD_BM_COLMAP(bitScaleArgs->bsa_SrcBitMap))
-    	        srcflags |= FLG_HASCOLMAP;
-    	    srcflags |= GET_COLMOD_FLAGS(bitScaleArgs->bsa_SrcBitMap);
+                srcflags |= FLG_HASCOLMAP;
+            srcflags |= GET_COLMOD_FLAGS(bitScaleArgs->bsa_SrcBitMap);
         } else {
              /* Amiga BM */
              srcflags |= FLG_PALETTE;
@@ -115,23 +115,23 @@
         if (IS_HIDD_BM(bitScaleArgs->bsa_DestBitMap)) {
             if (NULL != HIDD_BM_COLMAP(bitScaleArgs->bsa_DestBitMap))
                dstflags |= FLG_HASCOLMAP;
-    	    dstflags |= GET_COLMOD_FLAGS(bitScaleArgs->bsa_DestBitMap);
+            dstflags |= GET_COLMOD_FLAGS(bitScaleArgs->bsa_DestBitMap);
         } else {
             /* Amiga BM */
             dstflags |= FLG_PALETTE;
         }
-    	
+        
 
         if (    (srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
             /* palettized with no colmap. Need to get a colmap from dest */
             if (dstflags == FLG_TRUECOLOR) {
-    	
+        
                 D(bug("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n"));
                 colmaps_ok = FALSE;
                 success = FALSE;
-    	    
+            
             } else if (dstflags == (FLG_TRUECOLOR | FLG_HASCOLMAP)) {
-    	
+        
                 /* Use the dest colmap for src */
                 HIDD_BM_SetColorMap(srcbm_obj, HIDD_BM_COLMAP(bitScaleArgs->bsa_DestBitMap));
 
@@ -139,17 +139,17 @@
         }
 
         if (   (dstflags == FLG_PALETTE || dstflags == FLG_STATICPALETTE)) {
-    	    /* palettized with no pixtab. Need to get a pixtab from dest */
+            /* palettized with no pixtab. Need to get a pixtab from dest */
             if (srcflags == FLG_TRUECOLOR) {
                 D(bug("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n"));
                 colmaps_ok = FALSE;
                 success = FALSE;
-    	    
+            
             } else if (srcflags == (FLG_TRUECOLOR | FLG_HASCOLMAP)) {
-    	
+        
                 /* Use the src colmap for dst */
                 HIDD_BM_SetColorMap(dstbm_obj, HIDD_BM_COLMAP(bitScaleArgs->bsa_SrcBitMap));
-    	    
+            
                 dst_colmap_set = TRUE;
             }
         }
@@ -159,49 +159,49 @@
             struct monitor_driverdata *driver, *dst_driver;
             OOP_Object *bm_obj;
             HIDDT_DrawMode old_drmd;
-	    struct TagItem cbtags[] = {
-    		{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
-    		{ TAG_DONE, 0 }
-	    };
+            struct TagItem cbtags[] = {
+                { aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
+                { TAG_DONE, 0 }
+            };
 
-	    OOP_GetAttr(tmp_gc, aHidd_GC_DrawMode, &old_drmd);	    
-	    OOP_SetAttrs(tmp_gc, cbtags);
+            OOP_GetAttr(tmp_gc, aHidd_GC_DrawMode, &old_drmd);
+            OOP_SetAttrs(tmp_gc, cbtags);
 
             bitScaleArgs->bsa_DestWidth = ScalerDiv(bitScaleArgs->bsa_SrcWidth,
                                            bitScaleArgs->bsa_XDestFactor,
-                                           bitScaleArgs->bsa_XSrcFactor);     
+                                           bitScaleArgs->bsa_XSrcFactor);
     
             bitScaleArgs->bsa_DestHeight = ScalerDiv(bitScaleArgs->bsa_SrcHeight,
                                             bitScaleArgs->bsa_YDestFactor,
                                             bitScaleArgs->bsa_YSrcFactor);
 
-	    /*
-	     * Select a driver to call. The same as in BltBitMap(), but select
-	     * bitmap object instead of driver object.
-	     */
-	    driver     = GET_BM_DRIVERDATA(bitScaleArgs->bsa_SrcBitMap);
-	    dst_driver = GET_BM_DRIVERDATA(bitScaleArgs->bsa_DestBitMap);
+            /*
+             * Select a driver to call. The same as in BltBitMap(), but select
+             * bitmap object instead of driver object.
+             */
+            driver     = GET_BM_DRIVERDATA(bitScaleArgs->bsa_SrcBitMap);
+            dst_driver = GET_BM_DRIVERDATA(bitScaleArgs->bsa_DestBitMap);
 
-	    if (driver == (struct monitor_driverdata *)CDD(GfxBase))
-	    	bm_obj = dstbm_obj;
-	    else if (dst_driver->flags & DF_UseFakeGfx)
-	    	bm_obj = dstbm_obj;
-	    else
-	    	bm_obj = srcbm_obj;
+            if (driver == (struct monitor_driverdata *)CDD(GfxBase))
+                bm_obj = dstbm_obj;
+            else if (dst_driver->flags & DF_UseFakeGfx)
+                bm_obj = dstbm_obj;
+            else
+                bm_obj = srcbm_obj;
 
-    	    HIDD_BM_BitMapScale(bm_obj
-	    	, srcbm_obj
-    		, dstbm_obj
-    		, bitScaleArgs
-		, tmp_gc
-    	    );
-    	    update_bitmap(bitScaleArgs->bsa_DestBitMap, dstbm_obj,
-    	    		  bitScaleArgs->bsa_DestX, bitScaleArgs->bsa_DestY,
-    	    		  bitScaleArgs->bsa_DestWidth, bitScaleArgs->bsa_DestHeight,
-    	    		  GfxBase);
+            HIDD_BM_BitMapScale(bm_obj
+                , srcbm_obj
+                , dstbm_obj
+                , bitScaleArgs
+                , tmp_gc
+            );
+            update_bitmap(bitScaleArgs->bsa_DestBitMap, dstbm_obj,
+                          bitScaleArgs->bsa_DestX, bitScaleArgs->bsa_DestY,
+                          bitScaleArgs->bsa_DestWidth, bitScaleArgs->bsa_DestHeight,
+                          GfxBase);
 
-	    cbtags[0].ti_Data = old_drmd;
-	    OOP_SetAttrs(tmp_gc, cbtags);
+            cbtags[0].ti_Data = old_drmd;
+            OOP_SetAttrs(tmp_gc, cbtags);
         } /* if () */
     
         if (src_colmap_set)
@@ -227,7 +227,7 @@
     /*
      * Algorithm for plain Amiga bitmaps.
      */
-    /* 
+    /*
      * Unfortunately it's not possible to use 16/32 bit copying on bitmaps with this
      * algorithm as there might be an odd number of bits per line in a bitmap and
      * this creates problems when accessing the 2nd, 4th and so on line.
@@ -304,7 +304,7 @@
       LONG accuxd = - (dxs >> 1);
       DEF_USIZE ReadMask;
       ULONG possible_columns, columncounter;
-      ULONG this_x; 
+      ULONG this_x;
 
       while (count < DestWidth)
       {
@@ -438,7 +438,7 @@
     /* let's get rid of the allocated memory */
     FreeMem(LinePattern, sizeof(UWORD) * bitScaleArgs -> bsa_DestHeight);
 
-    #undef DEF_USIZE 
+    #undef DEF_USIZE
     #undef DEF_SIZE
     #undef DEF_NUMBITSMINUS1
     #undef DEF_ANDMASK

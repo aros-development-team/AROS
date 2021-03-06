@@ -99,7 +99,7 @@
             
             stringpos = strchr(dirname, ':');
             if (!stringpos) stringpos = dirname;
-        }       
+        }
         else
         {
             /* Filename is a fully qualified path including
@@ -233,11 +233,11 @@
         }
         
         /*
-            Handle leading '/'s 
+            Handle leading '/'s
         */
         while (*filename == '/')
         {
-            filename ++; 
+            filename ++;
             while ((dirname[didx] != '/') && (dirname[didx] != ':') && didx)
                 didx --;
             
@@ -248,7 +248,7 @@
             if  (!didx)
                 break;
             
-            /* 
+            /*
                 Another leading '/' ?.
                 Only move up a dir if we are not at the root
             */
@@ -256,10 +256,10 @@
                 didx --;
                 
         }
-        /* If at root, don't overwrite the ':' */ 
+        /* If at root, don't overwrite the ':' */
         if (dirname[didx] == ':')
              didx ++;
-        /* 
+        /*
             if filename not only was a number of '/'s but also contained
             a subpath, then be sure to skip the found '/' of dirname.
         */

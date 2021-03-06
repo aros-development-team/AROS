@@ -56,28 +56,28 @@ static const struct _dt {
 static const struct _pt {
     IPTR    part,type;
 } PartTypes[] = {
-    { 0x01, AROS_MAKE_ID('F','A','T',' ')  },	/* DOS 12-bit FAT */
-    { 0x04, AROS_MAKE_ID('F','A','T',' ')  },	/* DOS 16-bit FAT (up to 32M) */
-    { 0x06, AROS_MAKE_ID('F','A','T',' ')  },	/* DOS 16-bit FAT (over 32M) */
-    { 0x07, AROS_MAKE_ID('N','T','F','S')  },	/* Windows NT NTFS */
-    { 0x0b, AROS_MAKE_ID('V','F','A','T')  },	/* W95 FAT32 */
-    { 0x0c, AROS_MAKE_ID('V','F','A','T')  },	/* W95 LBA FAT32 */
-    { 0x0e, AROS_MAKE_ID('F','A','T',' ')  },	/* W95 16-bit LBA FAT */
-    { 0x2c, AROS_MAKE_ID('D','O','S','\0') },	/* AOS OFS */
-    { 0x2d, AROS_MAKE_ID('D','O','S','\1') },	/* AOS FFS */
-    { 0x2e, AROS_MAKE_ID('D','O','S','\3') },	/* AOS FFS-I */
-    { 0x2f, AROS_MAKE_ID('S','F','S','\0') },	/* AOS SFS */
-    { 0x80, AROS_MAKE_ID('M','N','X','\0') },	/* MINIX until 1.4a */
-    { 0x81, AROS_MAKE_ID('M','N','X','\1') },	/* MINIX since 1.4b */
-    { 0x83, AROS_MAKE_ID('E','X','T','\2') },	/* linux native partition */
-    { 0x8e, AROS_MAKE_ID('L','V','M','\0') },	/* linux LVM partition */
-    { 0x9f, AROS_MAKE_ID('B','S','D','\0') },	/* BSD/OS */
-    { 0xa5, AROS_MAKE_ID('B','S','D','\1') },	/* NetBSD, FreeBSD */
-    { 0xa6, AROS_MAKE_ID('B','S','D','\2') },	/* OpenBSD */
-    { 0xdb, AROS_MAKE_ID('C','P','M','\2') },	/* CPM/M */
-    { 0xeb, AROS_MAKE_ID('B','E','F','S')  },	/* BeOS FS */
-    { 0xec, AROS_MAKE_ID('S','K','Y','\0') },	/* SkyOS FS */
-    { 0xfd, AROS_MAKE_ID('R','A','I','D')  },	/* linux RAID with autodetect */
+    { 0x01, AROS_MAKE_ID('F','A','T',' ')  },   /* DOS 12-bit FAT */
+    { 0x04, AROS_MAKE_ID('F','A','T',' ')  },   /* DOS 16-bit FAT (up to 32M) */
+    { 0x06, AROS_MAKE_ID('F','A','T',' ')  },   /* DOS 16-bit FAT (over 32M) */
+    { 0x07, AROS_MAKE_ID('N','T','F','S')  },   /* Windows NT NTFS */
+    { 0x0b, AROS_MAKE_ID('V','F','A','T')  },   /* W95 FAT32 */
+    { 0x0c, AROS_MAKE_ID('V','F','A','T')  },   /* W95 LBA FAT32 */
+    { 0x0e, AROS_MAKE_ID('F','A','T',' ')  },   /* W95 16-bit LBA FAT */
+    { 0x2c, AROS_MAKE_ID('D','O','S','\0') },   /* AOS OFS */
+    { 0x2d, AROS_MAKE_ID('D','O','S','\1') },   /* AOS FFS */
+    { 0x2e, AROS_MAKE_ID('D','O','S','\3') },   /* AOS FFS-I */
+    { 0x2f, AROS_MAKE_ID('S','F','S','\0') },   /* AOS SFS */
+    { 0x80, AROS_MAKE_ID('M','N','X','\0') },   /* MINIX until 1.4a */
+    { 0x81, AROS_MAKE_ID('M','N','X','\1') },   /* MINIX since 1.4b */
+    { 0x83, AROS_MAKE_ID('E','X','T','\2') },   /* linux native partition */
+    { 0x8e, AROS_MAKE_ID('L','V','M','\0') },   /* linux LVM partition */
+    { 0x9f, AROS_MAKE_ID('B','S','D','\0') },   /* BSD/OS */
+    { 0xa5, AROS_MAKE_ID('B','S','D','\1') },   /* NetBSD, FreeBSD */
+    { 0xa6, AROS_MAKE_ID('B','S','D','\2') },   /* OpenBSD */
+    { 0xdb, AROS_MAKE_ID('C','P','M','\2') },   /* CPM/M */
+    { 0xeb, AROS_MAKE_ID('B','E','F','S')  },   /* BeOS FS */
+    { 0xec, AROS_MAKE_ID('S','K','Y','\0') },   /* SkyOS FS */
+    { 0xfd, AROS_MAKE_ID('R','A','I','D')  },   /* linux RAID with autodetect */
     { 0, 0 }
 };
 
@@ -171,7 +171,7 @@ static VOID AddPartitionVolume(struct NepClassMS *ncm,
             GetPartitionAttrs(pn, (struct TagItem *)tags);
             D(bug("[Boot] Partition name: %s bootable: %d\n", name, bootable));
             /* BHFormat complains if this bit is not set, and it's really wrong to have it unset. So we explicitly set it here.
-	       Pavel Fedin <sonic_amiga@rambler.ru> */
+               Pavel Fedin <sonic_amiga@rambler.ru> */
             pp[4 + DE_TABLESIZE] = DE_BOOTBLOCKS;
             pp[4 + DE_BUFMEMTYPE] |= MEMF_PUBLIC;
         }
@@ -220,10 +220,10 @@ static VOID AddPartitionVolume(struct NepClassMS *ncm,
             /* set some fs specific fields */
             switch(ptyp.id[0])
             {
-                case 0x2c:	/* OFS */
-                case 0x2d:	/* FFS */
-                case 0x2e:	/* FFS I */
-                case 0x2f:	/* SFS */
+                case 0x2c:      /* OFS */
+                case 0x2d:      /* FFS */
+                case 0x2e:      /* FFS I */
+                case 0x2f:      /* SFS */
                     pp[4 + DE_SECSPERBLOCK] = 1;
                     pp[4 + DE_RESERVEDBLKS] = 2;
                     pp[4 + DE_BOOTBLOCKS] = 2;

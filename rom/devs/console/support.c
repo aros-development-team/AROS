@@ -34,20 +34,20 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
 #define ESC 0x1B
 #define CSI 0x9B
 
-#define NIL		0x00
-#define BELL	 	0x07
-#define BACKSPACE 	0x08
-#define HTAB		0x09
-#define LINEFEED	0x0A
-#define VTAB		0x0B
-#define FORMFEED	0x0C
-#define CARRIAGE_RETURN	0x0D
-#define SHIFT_OUT	0x0E
-#define SHIFT_IN	0x0F
-#define INDEX		0x84
-#define NEXT_LINE	0x85
-#define H_TAB_SET	0x88
-#define REVERSE_INDEX	0x8D
+#define NIL             0x00
+#define BELL            0x07
+#define BACKSPACE       0x08
+#define HTAB            0x09
+#define LINEFEED        0x0A
+#define VTAB            0x0B
+#define FORMFEED        0x0C
+#define CARRIAGE_RETURN 0x0D
+#define SHIFT_OUT       0x0E
+#define SHIFT_IN        0x0F
+#define INDEX           0x84
+#define NEXT_LINE       0x85
+#define H_TAB_SET       0x88
+#define REVERSE_INDEX   0x8D
 
 
 #define FIRST_CSI_CMD 0x40

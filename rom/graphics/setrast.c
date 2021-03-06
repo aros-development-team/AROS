@@ -14,14 +14,14 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH2(void, SetRast,
+        AROS_LH2(void, SetRast,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(ULONG            , pen, D0),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(ULONG            , pen, D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 39, Graphics)
+        struct GfxBase *, GfxBase, 39, Graphics)
 
 /*  FUNCTION
 
@@ -50,8 +50,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -68,7 +68,7 @@
     pixval = BM_PIXEL(bm, pen);
      
     fillrect_pendrmd(rp, 0, 0, width  - 1, height - 1, pixval,
-    	    	     vHidd_GC_DrawMode_Copy, TRUE, GfxBase);
+                     vHidd_GC_DrawMode_Copy, TRUE, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* SetRast */

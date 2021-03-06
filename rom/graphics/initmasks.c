@@ -12,17 +12,17 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, InitMasks,
+        AROS_LH1(void, InitMasks,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct VSprite *, vs, A0),
+        AROS_LHA(struct VSprite *, vs, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 21, Graphics)
+        struct GfxBase *, GfxBase, 21, Graphics)
 
 /*  FUNCTION
-	Creates the standard BorderLine and CollMask masks of the VSprite.
-	VSprites and Bobs are treated accordingly.
+        Creates the standard BorderLine and CollMask masks of the VSprite.
+        VSprites and Bobs are treated accordingly.
 
     INPUTS
         vs = pointer to VSprite structure
@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	InitGels(), InitGMasks(), graphics/gels.h
+        InitGels(), InitGMasks(), graphics/gels.h
 
     INTERNALS
 
@@ -69,7 +69,7 @@
     WORD Data = PlaneData[count];
     LONG z;
     for (z = 1; z < depth; z++)
-    	Data |= PlaneData[count + z*WordsPerPlane];
+        Data |= PlaneData[count + z*WordsPerPlane];
     (vs -> CollMask)[count] = Data;
   }
 
@@ -77,12 +77,12 @@
      lines */
   for (count = 0 ; count < WordsPerLine; count++)
   {
-  	WORD * CollMask = vs -> CollMask;
-  	WORD Data = CollMask[count];
-  	LONG z;
-  	for (z = 1; z < vs-> Height; z++)
-  	  Data |= CollMask[count + z*WordsPerLine];
-  	(vs -> BorderLine)[count] = Data;
+        WORD * CollMask = vs -> CollMask;
+        WORD Data = CollMask[count];
+        LONG z;
+        for (z = 1; z < vs-> Height; z++)
+          Data |= CollMask[count + z*WordsPerLine];
+        (vs -> BorderLine)[count] = Data;
   }
 
   AROS_LIBFUNC_EXIT

@@ -22,38 +22,38 @@ struct IORequest *sdcard_OpenTimer(LIBBASETYPEPTR LIBBASE)
     struct MsgPort *p = CreateMsgPort();
     if (NULL != p)
     {
-	struct IORequest *io = CreateIORequest(p, sizeof(struct timerequest));
+        struct IORequest *io = CreateIORequest(p, sizeof(struct timerequest));
 
-	if (NULL != io)
-	{
-	    /*
-	     * ok. ECLOCK does not have too great resolution, either.
-	     * we will have to sacrifice our performance a little bit, meaning, the 400ns will turn into (worst case) 2us.
-	     * hopefully we won't have to call that TOO often...
-	     */
-	    if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))	
-	    {
-		if (NULL == LIBBASE->sdcard_TimerBase)
-		{
-		    LIBBASE->sdcard_TimerBase = io->io_Device;
-		}
-		return io;
-	    }
-	    else
-	    {
-		bug("[SDCard  ] Failed to open timer.device, unit MICROHZ\n");
-	    }
-	    DeleteIORequest(io);
-	}
-	else
-	{
-	    bug("[SDCard  ] Failed to create timerequest\n");
-	}
-	DeleteMsgPort(p);
+        if (NULL != io)
+        {
+            /*
+             * ok. ECLOCK does not have too great resolution, either.
+             * we will have to sacrifice our performance a little bit, meaning, the 400ns will turn into (worst case) 2us.
+             * hopefully we won't have to call that TOO often...
+             */
+            if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))
+            {
+                if (NULL == LIBBASE->sdcard_TimerBase)
+                {
+                    LIBBASE->sdcard_TimerBase = io->io_Device;
+                }
+                return io;
+            }
+            else
+            {
+                bug("[SDCard  ] Failed to open timer.device, unit MICROHZ\n");
+            }
+            DeleteIORequest(io);
+        }
+        else
+        {
+            bug("[SDCard  ] Failed to create timerequest\n");
+        }
+        DeleteMsgPort(p);
     }
     else
     {
-	bug("[SDCard  ] Failed to create timer port\n");
+        bug("[SDCard  ] Failed to create timer port\n");
     }
 
     return NULL;
@@ -63,10 +63,10 @@ void sdcard_CloseTimer(struct IORequest *tmr)
 {
     if (NULL != tmr)
     {
-	struct MsgPort *p = tmr->io_Message.mn_ReplyPort;
-	CloseDevice(tmr);
-	DeleteIORequest(tmr);
-	DeleteMsgPort(p);
+        struct MsgPort *p = tmr->io_Message.mn_ReplyPort;
+        CloseDevice(tmr);
+        DeleteIORequest(tmr);
+        DeleteMsgPort(p);
     }
 }
 
@@ -82,8 +82,8 @@ ULONG sdcard_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
     sigs = Wait(sigs | sig);
     if (0 == (sigs & sig))
     {
-	if (!CheckIO(tmr))
-	    AbortIO(tmr);
+        if (!CheckIO(tmr))
+            AbortIO(tmr);
     }
     WaitIO(tmr);
 

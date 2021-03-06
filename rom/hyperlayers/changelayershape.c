@@ -17,20 +17,20 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH3(struct Region *, ChangeLayerShape,
+        AROS_LH3(struct Region *, ChangeLayerShape,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer  *, l          , A0),
-	AROS_LHA(struct Region *, newshape   , A1),
-	AROS_LHA(struct Hook   *, callback   , A2),
+        AROS_LHA(struct Layer  *, l          , A0),
+        AROS_LHA(struct Region *, newshape   , A1),
+        AROS_LHA(struct Hook   *, callback   , A2),
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 37, Layers)
+        struct LayersBase *, LayersBase, 37, Layers)
 
 /*  FUNCTION
        Changes the shape of the layer on the fly.
        When the shape of a layer is changed the current pixel content
        is copied into its ClipRects so no information is lost.
-       The user can provide a callback hook that will be 
+       The user can provide a callback hook that will be
        called when the current layer's information is all backed up
        in ClipRects. The signature of the callback should look as follows:
 
@@ -101,21 +101,21 @@
 
     if (NULL != callback)
     {
-	struct ShapeHookMsg msg;
+        struct ShapeHookMsg msg;
 
-	msg.Action    = SHAPEHOOKACTION_CHANGELAYERSHAPE;
-	msg.NewShape  = l->shaperegion;    
-	msg.OldShape  = l->shaperegion;
-	msg.NewBounds = &l->bounds;
-	msg.OldBounds = &l->bounds;    
+        msg.Action    = SHAPEHOOKACTION_CHANGELAYERSHAPE;
+        msg.NewShape  = l->shaperegion;
+        msg.OldShape  = l->shaperegion;
+        msg.NewBounds = &l->bounds;
+        msg.OldBounds = &l->bounds;
     
-	/*
-	 * call the callback to the user to give me a new shape
-	 * The user can manipulate the cliprects of the layer
-	 * l and can have a look at the current shape.
-	 */
-	if (CallHookPkt(callback, l, &msg))
-	    l->shaperegion = msg.NewShape;
+        /*
+         * call the callback to the user to give me a new shape
+         * The user can manipulate the cliprects of the layer
+         * l and can have a look at the current shape.
+         */
+        if (CallHookPkt(callback, l, &msg))
+            l->shaperegion = msg.NewShape;
     }
     else
     {
@@ -127,17 +127,17 @@
     
     DisposeRegion(l->shape);
     /*
-     * At this point l->shaperegion holds the layer that is to be 
+     * At this point l->shaperegion holds the layer that is to be
      * installed. Let's cut it down to the actually visible part.
      */
     
     l->shape = NewRegion();
     if (l->shape)
     {
-    	struct Rectangle r = {0, 0, l->Width - 1, l->Height - 1};
+        struct Rectangle r = {0, 0, l->Width - 1, l->Height - 1};
 
-    	OrRectRegion(l->shape, &r);
-    	/* FIXME: handle error here */
+        OrRectRegion(l->shape, &r);
+        /* FIXME: handle error here */
     }
     
     if (l->shaperegion)
@@ -182,13 +182,13 @@
        * Make the new layer and its family visible
        * Since the parent might have become bigger more
        * of the children might become visible...
-       */    
+       */
       _l = lfirst;
       lparent = l->parent;
       
       while (1)
       {
-        if (IS_VISIBLE(_l) && 
+        if (IS_VISIBLE(_l) &&
             (DO_OVERLAP(&cutnewshape.bounds, &_l->visibleshape->bounds) ||
              DO_OVERLAP(&cutoldshape.bounds, &_l->visibleshape->bounds)))
         {

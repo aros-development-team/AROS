@@ -759,7 +759,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
     }
 }
 
-/* 
+/*
  * TODO:
  * During transition period four routines below use nommu allocator.
  * When transition is complete they should use them only if MMU

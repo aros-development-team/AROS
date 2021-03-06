@@ -10,32 +10,32 @@
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
-	AROS_LH3(IPTR, NewStackSwap,
+        AROS_LH3(IPTR, NewStackSwap,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct StackSwapStruct *, sss, A0),
-	AROS_LHA(LONG_FUNC, entry, A1),
-	AROS_LHA(struct StackSwapArgs *, args, A2),
+        AROS_LHA(struct StackSwapStruct *, sss, A0),
+        AROS_LHA(LONG_FUNC, entry, A1),
+        AROS_LHA(struct StackSwapArgs *, args, A2),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 134, Exec)
+        struct ExecBase *, SysBase, 134, Exec)
 
 /*  FUNCTION
-	Calls a function with a new stack. 
+        Calls a function with a new stack.
 
     INPUTS
-	sss     -   A structure containing the values for the upper, lower
-		    and current bounds of the stack you wish to use.
-	entry	-   Address of the function to call.
-	args	-   A structure (actually an array) containing up to 8
-		    function arguments. May be NULL.
+        sss     -   A structure containing the values for the upper, lower
+                    and current bounds of the stack you wish to use.
+        entry   -   Address of the function to call.
+        args    -   A structure (actually an array) containing up to 8
+                    function arguments. May be NULL.
 
     RESULT
-	The value returned by your function.
+        The value returned by your function.
 
     NOTES
-	This function is mostly compatible with MorphOS's NewPPCStackSwap()
-	function.
+        This function is mostly compatible with MorphOS's NewPPCStackSwap()
+        function.
 
     EXAMPLE
 
@@ -43,10 +43,10 @@
         Do not attempt to pass in a prebuilt stack - it will be erased.
 
     SEE ALSO
-	StackSwap()
+        StackSwap()
 
     INTERNALS
-	This function MUST be replaced in $(KERNEL) or $(ARCH).
+        This function MUST be replaced in $(KERNEL) or $(ARCH).
 
 ******************************************************************************/
 {

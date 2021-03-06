@@ -19,70 +19,70 @@
 #include <utility/tagitem.h>
 #include <proto/graphics.h>
 
-	AROS_LH2(void, SetRPAttrsA,
+        AROS_LH2(void, SetRPAttrsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A0),
-	AROS_LHA(struct TagItem  *, tags, A1),
+        AROS_LHA(struct RastPort *, rp, A0),
+        AROS_LHA(struct TagItem  *, tags, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 173, Graphics)
+        struct GfxBase *, GfxBase, 173, Graphics)
 
 /*  FUNCTION
-	Modify rastport with values from a taglist.
+        Modify rastport with values from a taglist.
 
     INPUTS
-	rp   - RastPort
-	tags - see below
+        rp   - RastPort
+        tags - see below
 
     TAGS
-	RPTAG_Font (struct TextFont *)  - Font for Text()
-	RPTAG_APen (UBYTE)              - Primary rendering pen
-	RPTAG_BPen (UBYTE)              - Secondary rendering pen
-	RPTAG_DrMd (UBYTE)              - Drawing mode (graphics/rastport.h)
-	RPTAG_OutlinePen (UBYTE)        - Area Outline pen
-	RPTAG_WriteMask (ULONG)         - Bit mask for writing
+        RPTAG_Font (struct TextFont *)  - Font for Text()
+        RPTAG_APen (UBYTE)              - Primary rendering pen
+        RPTAG_BPen (UBYTE)              - Secondary rendering pen
+        RPTAG_DrMd (UBYTE)              - Drawing mode (graphics/rastport.h)
+        RPTAG_OutlinePen (UBYTE)        - Area Outline pen
+        RPTAG_WriteMask (ULONG)         - Bit mask for writing
 
-	The following tags are compatible with MorphOS (V51) :
+        The following tags are compatible with MorphOS (V51) :
 
-	RPTAG_FgColor (ULONG)           - Primary rendering color in A8R8G8B8
-	                                  format. Only working on
-	                                  hicolor/truecolor bitmaps/screens.
-	RPTAG_BgColor (ULONG)           - Secondary rendering color in
-	                                  A8R8G8B8 format. Only working on
-	                                  hicolor/truecolor bitmaps/screens.
-	RPTAG_PenMode (BOOL)            - TRUE if traditional pen numbers
-	                                  should be used, FALSE if direct RGB
-	                                  colors should be used. Has no effect
-	                                  on non-RTG displays.
+        RPTAG_FgColor (ULONG)           - Primary rendering color in A8R8G8B8
+                                          format. Only working on
+                                          hicolor/truecolor bitmaps/screens.
+        RPTAG_BgColor (ULONG)           - Secondary rendering color in
+                                          A8R8G8B8 format. Only working on
+                                          hicolor/truecolor bitmaps/screens.
+        RPTAG_PenMode (BOOL)            - TRUE if traditional pen numbers
+                                          should be used, FALSE if direct RGB
+                                          colors should be used. Has no effect
+                                          on non-RTG displays.
 
-	The following tags are compatible with AmigaOSv4 (V51) :
+        The following tags are compatible with AmigaOSv4 (V51) :
 
-	RPTAG_RemapColorFonts (BOOL)    - Automatically remap colorfonts to
-	                                  their color on hicolor/truecolor
-	                                  screens.
+        RPTAG_RemapColorFonts (BOOL)    - Automatically remap colorfonts to
+                                          their color on hicolor/truecolor
+                                          screens.
 
-	AROS-specific extensions
+        AROS-specific extensions
 
-	RPTAG_ClipRectangle (struct Rectangle *) - Clipping rectangle
-	RPTAG_ClipRectangleFlags (LONG) - RPCRF_RELRIGHT | RPCRF_RELBOTTOM
-	                                  (see graphics/rpattrs.h)
+        RPTAG_ClipRectangle (struct Rectangle *) - Clipping rectangle
+        RPTAG_ClipRectangleFlags (LONG) - RPCRF_RELRIGHT | RPCRF_RELBOTTOM
+                                          (see graphics/rpattrs.h)
 
     RESULT
-	None.
+        None.
 
     NOTES
-    	Setting one of RPTAG_ClipRectangle or RPTAG_ClipRectangleFlags
-	allocates internal extra data for the RastPort. After finishing using
-	this RastPort, you need to manually deallocate the extra data using
-	FreeVec(rp->RP_Extra).
+        Setting one of RPTAG_ClipRectangle or RPTAG_ClipRectangleFlags
+        allocates internal extra data for the RastPort. After finishing using
+        this RastPort, you need to manually deallocate the extra data using
+        FreeVec(rp->RP_Extra).
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	GetRPAttrsA(), graphics/rpattr.h
+        GetRPAttrsA(), graphics/rpattr.h
 
     INTERNALS
 
@@ -95,111 +95,111 @@
     
     while ((tag = NextTagItem (&tstate)))
     {
-	switch (tag->ti_Tag)
-	{
-	    case RPTAG_Font:
-		SetFont (rp, (struct TextFont *)(tag->ti_Data));
-		break;
+        switch (tag->ti_Tag)
+        {
+            case RPTAG_Font:
+                SetFont (rp, (struct TextFont *)(tag->ti_Data));
+                break;
 
-	    case RPTAG_APen:
-		SetAPen (rp, tag->ti_Data);
-		break;
+            case RPTAG_APen:
+                SetAPen (rp, tag->ti_Data);
+                break;
 
-	    case RPTAG_BPen:
-		SetBPen (rp, tag->ti_Data);
-		break;
+            case RPTAG_BPen:
+                SetBPen (rp, tag->ti_Data);
+                break;
 
-	    case RPTAG_DrMd:
-		SetDrMd (rp, tag->ti_Data);
-		break;
+            case RPTAG_DrMd:
+                SetDrMd (rp, tag->ti_Data);
+                break;
 
-	    case RPTAG_OutlinePen:
-		SetOutlinePen (rp, tag->ti_Data);
-		break;
+            case RPTAG_OutlinePen:
+                SetOutlinePen (rp, tag->ti_Data);
+                break;
 
-	    case RPTAG_WriteMask:
-		SetWriteMask (rp, tag->ti_Data);
-		break;
+            case RPTAG_WriteMask:
+                SetWriteMask (rp, tag->ti_Data);
+                break;
 
-	    case RPTAG_MaxPen:
-		break;
+            case RPTAG_MaxPen:
+                break;
 
-	    case RPTAG_DrawBounds:
-		break;
+            case RPTAG_DrawBounds:
+                break;
 
-	    case RPTAG_PenMode:
-	    	D(bug("[SetRPAttrs] RastPort 0x%p, PenMode set to %ld\n", rp, tag->ti_Data));
-	    	if (tag->ti_Data)
-		    rp->Flags &= ~RPF_NO_PENS;
-		else
-		    rp->Flags |= RPF_NO_PENS;
-		break;
+            case RPTAG_PenMode:
+                D(bug("[SetRPAttrs] RastPort 0x%p, PenMode set to %ld\n", rp, tag->ti_Data));
+                if (tag->ti_Data)
+                    rp->Flags &= ~RPF_NO_PENS;
+                else
+                    rp->Flags |= RPF_NO_PENS;
+                break;
 
-	    case RPTAG_FgColor:
-	    case RPTAG_BgColor:
-	    	D(bug("[SetRPAttrs] RastPort 0x%p, setting %sColor to 0x%08lX\n", rp, (tag->ti_Tag == RPTAG_FgColor) ? "Fg" : "Bg", tag->ti_Data));
+            case RPTAG_FgColor:
+            case RPTAG_BgColor:
+                D(bug("[SetRPAttrs] RastPort 0x%p, setting %sColor to 0x%08lX\n", rp, (tag->ti_Tag == RPTAG_FgColor) ? "Fg" : "Bg", tag->ti_Data));
 
-		if (rp->BitMap && IS_HIDD_BM(rp->BitMap))
-		{
-		    /* Map ARGB8888 color value to bitmap's format */
-		    HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
-		    HIDDT_Color col;
-		    HIDDT_Pixel pixval;
-		    ULONG rgb = (ULONG)tag->ti_Data;
+                if (rp->BitMap && IS_HIDD_BM(rp->BitMap))
+                {
+                    /* Map ARGB8888 color value to bitmap's format */
+                    HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
+                    HIDDT_Color col;
+                    HIDDT_Pixel pixval;
+                    ULONG rgb = (ULONG)tag->ti_Data;
 
-		    /* HIDDT_ColComp are 16 Bit */
-		    col.alpha	= (HIDDT_ColComp)((rgb >> 16) & 0x0000FF00);
-		    col.red	= (HIDDT_ColComp)((rgb >> 8) & 0x0000FF00);
-		    col.green	= (HIDDT_ColComp)(rgb & 0x0000FF00);
-		    col.blue	= (HIDDT_ColComp)((rgb << 8) & 0x0000FF00);
+                    /* HIDDT_ColComp are 16 Bit */
+                    col.alpha   = (HIDDT_ColComp)((rgb >> 16) & 0x0000FF00);
+                    col.red     = (HIDDT_ColComp)((rgb >> 8) & 0x0000FF00);
+                    col.green   = (HIDDT_ColComp)(rgb & 0x0000FF00);
+                    col.blue    = (HIDDT_ColComp)((rgb << 8) & 0x0000FF00);
 
-		    pixval = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+                    pixval = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
 
-		    if (tag->ti_Tag == RPTAG_FgColor)
-		    	_gc->fg = pixval;
-		    else
-		    	_gc->bg = pixval;
-		}
-		break;
+                    if (tag->ti_Tag == RPTAG_FgColor)
+                        _gc->fg = pixval;
+                    else
+                        _gc->bg = pixval;
+                }
+                break;
 
-	    case RPTAG_ClipRectangle:
-	    	driverdata = AllocDriverData(rp, tag->ti_Data, GfxBase);
-	    	if (driverdata)
-	    	{
-	    	    if (tag->ti_Data)
-	    	    {
-		    	driverdata->dd_ClipRectangle = *(struct Rectangle *)tag->ti_Data;
-			driverdata->dd_ClipRectangleFlags |= RPCRF_VALID;
-		    }
-		    else
-		    {
-		    	driverdata->dd_ClipRectangleFlags &= ~RPCRF_VALID;
-		    }
-		}
-		break;
+            case RPTAG_ClipRectangle:
+                driverdata = AllocDriverData(rp, tag->ti_Data, GfxBase);
+                if (driverdata)
+                {
+                    if (tag->ti_Data)
+                    {
+                        driverdata->dd_ClipRectangle = *(struct Rectangle *)tag->ti_Data;
+                        driverdata->dd_ClipRectangleFlags |= RPCRF_VALID;
+                    }
+                    else
+                    {
+                        driverdata->dd_ClipRectangleFlags &= ~RPCRF_VALID;
+                    }
+                }
+                break;
 
-	    case RPTAG_ClipRectangleFlags:
-	    	driverdata = AllocDriverData(rp, TRUE, GfxBase);
-		if (driverdata)
-		{
-		    driverdata->dd_ClipRectangleFlags &= ~(RPCRF_RELRIGHT | RPCRF_RELBOTTOM);
-		    driverdata->dd_ClipRectangleFlags |= (tag->ti_Data & (RPCRF_RELRIGHT | RPCRF_RELBOTTOM));
-		}
-	    	break;
+            case RPTAG_ClipRectangleFlags:
+                driverdata = AllocDriverData(rp, TRUE, GfxBase);
+                if (driverdata)
+                {
+                    driverdata->dd_ClipRectangleFlags &= ~(RPCRF_RELRIGHT | RPCRF_RELBOTTOM);
+                    driverdata->dd_ClipRectangleFlags |= (tag->ti_Data & (RPCRF_RELRIGHT | RPCRF_RELBOTTOM));
+                }
+                break;
 
-	    case RPTAG_RemapColorFonts:
-	    	if (tag->ti_Data)
-		{
-		    rp->Flags |= RPF_REMAP_COLORFONTS;
-		}
-		else
-		{
-		    rp->Flags &= ~RPF_REMAP_COLORFONTS;
-		}
-		break;
-		
-	} /* switch (tag) */
-	
+            case RPTAG_RemapColorFonts:
+                if (tag->ti_Data)
+                {
+                    rp->Flags |= RPF_REMAP_COLORFONTS;
+                }
+                else
+                {
+                    rp->Flags &= ~RPF_REMAP_COLORFONTS;
+                }
+                break;
+                
+        } /* switch (tag) */
+        
     } /* while (tag) */
 
     AROS_LIBFUNC_EXIT

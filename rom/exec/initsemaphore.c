@@ -12,27 +12,27 @@
 
     NAME */
 
-	AROS_LH1I(void, InitSemaphore,
+        AROS_LH1I(void, InitSemaphore,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
+        AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 93, Exec)
+        struct ExecBase *, SysBase, 93, Exec)
 
 /*  FUNCTION
-	Prepares a semaphore structure for use by the exec semaphore system,
-	i.e. this function must be called after allocating the semaphore and
-	before using it or the semaphore functions will fail.
+        Prepares a semaphore structure for use by the exec semaphore system,
+        i.e. this function must be called after allocating the semaphore and
+        before using it or the semaphore functions will fail.
 
     INPUTS
-	sigSem - Pointer to semaphore structure
+        sigSem - Pointer to semaphore structure
 
     RESULT
 
     NOTES
-	Semaphores are shared between the tasks that use them and must
-	therefore lie in public (or at least shared) memory.
+        Semaphores are shared between the tasks that use them and must
+        therefore lie in public (or at least shared) memory.
 
     EXAMPLE
 

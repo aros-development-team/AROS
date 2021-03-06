@@ -12,28 +12,28 @@
     NAME */
 #include <proto/utility.h>
 
-	AROS_LH3(LONG, Strnicmp,
+        AROS_LH3(LONG, Strnicmp,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, string1, A0),
-	AROS_LHA(CONST_STRPTR, string2, A1),
-	AROS_LHA(LONG,   length,  D0),
+        AROS_LHA(CONST_STRPTR, string1, A0),
+        AROS_LHA(CONST_STRPTR, string2, A1),
+        AROS_LHA(LONG,   length,  D0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 28, Utility)
+        struct UtilityBase *, UtilityBase, 28, Utility)
 
 /*  FUNCTION
-	Compares two strings treating lower and upper case characters
-	as identical up to a given maximum number of characters.
+        Compares two strings treating lower and upper case characters
+        as identical up to a given maximum number of characters.
 
     INPUTS
-	string1, string2 - The strings to compare.
-	length		 - maximum number of characters to compare.
+        string1, string2 - The strings to compare.
+        length           - maximum number of characters to compare.
 
     RESULT
-	<0  if string1 <  string2
-	==0 if string1 == string2
-	>0  if string1 >  string2
+        <0  if string1 <  string2
+        ==0 if string1 == string2
+        >0  if string1 >  string2
 
     NOTES
 
@@ -54,14 +54,14 @@
 
     /* 0 characters are always identical */
     if(!length)
-	return 0;
+        return 0;
 
     /* Loop as long as the strings are identical and valid. */
     do
     {
-	/* Get characters, convert them to lower case. */
-	c1=ToLower (*string1++);
-	c2=ToLower (*string2++);
+        /* Get characters, convert them to lower case. */
+        c1=ToLower (*string1++);
+        c2=ToLower (*string2++);
     }while(c1==c2&&c1&&--length);
 
     /* Get result. */

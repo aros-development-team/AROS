@@ -18,7 +18,7 @@
 
 #include "dos_intern.h"
 
-static LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 #define MAX_SOFT_LINK_NESTING 16 /* Maximum level of soft links nesting */
@@ -80,7 +80,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
         D(bug("[Open] = %p, Error = %d\n", ok ? MKBADDR(ret) : BNULL, IoErr()));
         if (ok)
         {
-            return MKBADDR(ret);            
+            return MKBADDR(ret);
         }
         else
         {
@@ -126,7 +126,7 @@ static LONG dupHandle(struct FileHandle *fh, BPTR lock, struct DosLibrary *DOSBa
 
 /* Try to open name recursively calling itself in case it's a soft link.
    Store result in handle. Return boolean value indicating result. */
-static LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
     /* Get pointer to process structure */
@@ -204,7 +204,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
             error = fs_Open(handle, port, cur, accessMode, name, DOSBase);
         }
-        else 
+        else
         {
             filename++;
             do

@@ -19,15 +19,15 @@
  * LA_InFrontOf and LA_Behind are intentionally left
  * because they allow to implement AmigaOS4-compatible functionality.
  */
-struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG x0, LONG y0, 
-				 LONG x1, LONG y1, LONG flags, int priority, struct TagItem *tagList,
-				 struct LayersBase *LayersBase)
+struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG x0, LONG y0,
+                                 LONG x1, LONG y1, LONG flags, int priority, struct TagItem *tagList,
+                                 struct LayersBase *LayersBase)
 {
   struct BitMap * superbitmap = NULL;
   struct Hook * hook = NULL, *shapehook = NULL;
   APTR win = 0;
   int visible = TRUE;
-  struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL; 
+  struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL;
   struct Layer * l;
   struct Region * layershape = NULL, *shape;
   struct TagItem *tag, *tstate = tagList;
@@ -35,7 +35,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
   while((tag = NextTagItem(&tstate)))
   {
     switch (tag->ti_Tag)
-    { 
+    {
     case LA_BackfillHook:
         hook = (struct Hook *)tag->ti_Data;
         break;
@@ -65,18 +65,18 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
         break;
 
     case LA_ShapeHook:
-	shapehook = (struct Hook *)tag->ti_Data;
-	break;
+        shapehook = (struct Hook *)tag->ti_Data;
+        break;
 
     case LA_WindowPtr:
-      	win = (APTR)tag->ti_Data;
-      	break;
+        win = (APTR)tag->ti_Data;
+        break;
 
     }
 
   } /* while((tag = NextTagItem(&tstate))) */
   
-  if ((flags & LAYERSUPER) && (NULL == superbitmap)) 
+  if ((flags & LAYERSUPER) && (NULL == superbitmap))
     return NULL;
 
   if (!parent)
@@ -89,27 +89,27 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       if (priority != ROOTPRIORITY) /* avoid endless recursion */
       {
         struct TagItem tags[] =
-	{
-	    {LA_Hidden, TRUE     	},
-	    {TAG_DONE	    	    	}
-	};
+        {
+            {LA_Hidden, TRUE            },
+            {TAG_DONE                   }
+        };
 
         if (!(CreateLayerTagList(li,
-	    	    	    	 bm,
-				 0,
-				 0,
-				 GetBitMapAttr(bm, BMA_WIDTH) - 1,
-				 GetBitMapAttr(bm, BMA_HEIGHT) - 1,
-				 0,
-				 ROOTPRIORITY,
-				 tags,
-				 LayersBase)))
-	{
-	  li->check_lp = NULL;
-	  return NULL;
-	}
-	
-	parent = li->check_lp;
+                                 bm,
+                                 0,
+                                 0,
+                                 GetBitMapAttr(bm, BMA_WIDTH) - 1,
+                                 GetBitMapAttr(bm, BMA_HEIGHT) - 1,
+                                 0,
+                                 ROOTPRIORITY,
+                                 tags,
+                                 LayersBase)))
+        {
+          li->check_lp = NULL;
+          return NULL;
+        }
+        
+        parent = li->check_lp;
       }
     }
   }
@@ -117,7 +117,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
   /*
    * User gives coordinates reltive to parent.
    * Adjust the shape to the absolute coordinates
-   * If this is the root layer, I don't have to 
+   * If this is the root layer, I don't have to
    * do anything. I recognize the root layer if there
    * is no parent.
    */
@@ -136,22 +136,22 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
 
   if (shapehook)
   {
-    	struct ShapeHookMsg msg;
-    	struct Rectangle NewBounds, OldBounds;
+        struct ShapeHookMsg msg;
+        struct Rectangle NewBounds, OldBounds;
 
-	msg.NewShape  = layershape;
-	msg.OldShape  = layershape;
-    	msg.NewBounds = &NewBounds;
-    	msg.OldBounds = &OldBounds;
+        msg.NewShape  = layershape;
+        msg.OldShape  = layershape;
+        msg.NewBounds = &NewBounds;
+        msg.OldBounds = &OldBounds;
 
-    	NewBounds.MinX = x0;
-    	NewBounds.MinY = y0;
-    	NewBounds.MaxX = x1;
-    	NewBounds.MaxY = y1;
-    	OldBounds.MinX = 0;
-    	OldBounds.MinY = 0;
-    	OldBounds.MaxX = 0;
-    	OldBounds.MaxY = 0;
+        NewBounds.MinX = x0;
+        NewBounds.MinY = y0;
+        NewBounds.MaxX = x1;
+        NewBounds.MaxY = y1;
+        OldBounds.MinX = 0;
+        OldBounds.MinY = 0;
+        OldBounds.MaxX = 0;
+        OldBounds.MaxY = 0;
 
         if (CallHookPkt(shapehook, NULL, &msg))
             layershape = msg.NewShape;
@@ -210,7 +210,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
     if (NULL == (l->DamageList = NewRegion()))
       goto failexit;
     if (NULL == (l->VisibleRegion = NewRegion()))
-      goto failexit; 
+      goto failexit;
     if (NULL == (l->visibleshape = NewRegion()))
       goto failexit;
     
@@ -261,7 +261,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
           {
             lastgood = infrontof;
             infrontof = infrontof->front;
-            if (NULL == infrontof || 
+            if (NULL == infrontof ||
                 infrontof->priority > l->priority)
             {
               infrontof = lastgood;
@@ -325,7 +325,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       /*
        * Does this layer have a layer in front of it?
        * If yes, then take that layer's VisibleRegion and
-       * cut out that layer's shape. This is then the 
+       * cut out that layer's shape. This is then the
        * VisibleRegion of my layer.
        */
       if (l->front)

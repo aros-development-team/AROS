@@ -16,56 +16,56 @@
 #include <libraries/expansion.h>
 #include <proto/expansion.h>
 
-	AROS_LH3(BOOL, AddDosNode,
+        AROS_LH3(BOOL, AddDosNode,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG               , bootPri, D0),
-	AROS_LHA(ULONG              , flags, D1),
-	AROS_LHA(struct DeviceNode *, deviceNode, A0),
+        AROS_LHA(LONG               , bootPri, D0),
+        AROS_LHA(ULONG              , flags, D1),
+        AROS_LHA(struct DeviceNode *, deviceNode, A0),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 25, Expansion)
+        struct ExpansionBase *, ExpansionBase, 25, Expansion)
 
 /*  FUNCTION
-	This is the old function for adding devices to the system. It
-	is recommended that you use the AddBootNode() function.
+        This is the old function for adding devices to the system. It
+        is recommended that you use the AddBootNode() function.
 
-	Unlike AddBootNode() you will have to add a BootNode to the
-	system yourself.
+        Unlike AddBootNode() you will have to add a BootNode to the
+        system yourself.
 
     INPUTS
-	bootPri     -   The priority of the device (-128 --> 127).
-	flags       -   Flags (ADNF_STARTPROC etc)
-	deviceNode  -   The device to add to the system.
+        bootPri     -   The priority of the device (-128 --> 127).
+        flags       -   Flags (ADNF_STARTPROC etc)
+        deviceNode  -   The device to add to the system.
 
     RESULT
-	non-zero if everything succeeded, zero on failure.
+        non-zero if everything succeeded, zero on failure.
 
     NOTES
-	It is much better to use AddBootNode() as it will also
-	construct the BootNode structure, and add it to the system.
+        It is much better to use AddBootNode() as it will also
+        construct the BootNode structure, and add it to the system.
 
     EXAMPLE
-	//  Add a bootable disk to the system. This will start a
-	//  file handler process immediately.
+        //  Add a bootable disk to the system. This will start a
+        //  file handler process immediately.
 
-	if( AddDosNode( 0, ADNF_STARTPROC, MakeDosNode( paramPacket )))
-	{
-	    // AddDosNode() ok
-	}
+        if( AddDosNode( 0, ADNF_STARTPROC, MakeDosNode( paramPacket )))
+        {
+            // AddDosNode() ok
+        }
 
     BUGS
 
     SEE ALSO
-	AddBootNode(), MakeDosNode()
+        AddBootNode(), MakeDosNode()
 
     INTERNALS
 
     HISTORY
-	19-05-07    sonic   Rewritten to use dos.library for starting up
-			    a handler.
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
+        19-05-07    sonic   Rewritten to use dos.library for starting up
+                            a handler.
+        27-11-96    digulla automatically created from
+                            expansion_lib.fd and clib/expansion_protos.h
 
 *****************************************************************************/
 {
@@ -73,7 +73,7 @@
 
     /*
      * Before V36 Kickstart, no public function existed to add BOOTNODES.
-     * If an older expansion.library is in use, driver code would needed 
+     * If an older expansion.library is in use, driver code would needed
      * to manually construct a BootNode and Enqueue() it to the mount list.
      *
      * This maps to the pre v36 hidden function, that was identical

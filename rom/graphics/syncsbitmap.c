@@ -12,22 +12,22 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, SyncSBitMap,
+        AROS_LH1(void, SyncSBitMap,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l, A0),
+        AROS_LHA(struct Layer *, l, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 74, Graphics)
+        struct GfxBase *, GfxBase, 74, Graphics)
 
 /*  FUNCTION
         If the layer has a superbitmap all the parts that are visible will
         be copied into the superbitmap. This is usually not done except when
-        parts of a superbitmapped layer become hidden the visible parts are 
+        parts of a superbitmapped layer become hidden the visible parts are
         stored into the superbitmap.
 
     INPUTS
-        l  - pointer to superbitmapped layer 
+        l  - pointer to superbitmapped layer
 
     RESULT
         The superbitmap will be synchronized with the visible part. The

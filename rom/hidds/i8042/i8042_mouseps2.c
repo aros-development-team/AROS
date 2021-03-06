@@ -205,17 +205,17 @@ void PS2Mouse_InitTask(OOP_Class *cl, OOP_Object *o)
     if (!tmr)
     {
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
-	DeleteMsgPort(p);
+        DeleteMsgPort(p);
         data->irq = 0;
         Signal(thisTask->tc_UserData, SIGF_SINGLE);
         return;
     }
 
-    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, tmr, 0))	
+    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, tmr, 0))
     {
         D(bug("[i8042:PS2Mouse] Failed to open timer.device, unit MICROHZ\n");)
         DeleteIORequest(tmr);
-	DeleteMsgPort(p);
+        DeleteMsgPort(p);
         data->irq = 0;
         Signal(thisTask->tc_UserData, SIGF_SINGLE);
         return;

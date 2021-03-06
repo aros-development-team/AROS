@@ -52,7 +52,7 @@
     BUGS
 
     SEE ALSO
-	intuition/screens.h
+        intuition/screens.h
 
     INTERNALS
 
@@ -84,8 +84,8 @@
                 if (nd->nd_IntPattern)
                 {
                     struct DosLibrary *DOSBase = GetPrivIBase(IntuitionBase)->DOSBase;
-		    if (!DOSBase)
-                    	GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS);
+                    if (!DOSBase)
+                        GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
                     if (DOSBase)
                     {

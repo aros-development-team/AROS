@@ -16,14 +16,14 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH2(LONG, ChangeLayerVisibility,
+        AROS_LH2(LONG, ChangeLayerVisibility,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l      , A0),
-	AROS_LHA(int           , visible, D0),
+        AROS_LHA(struct Layer *, l      , A0),
+        AROS_LHA(int           , visible, D0),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 41, Layers)
+        struct LayersBase *, LayersBase, 41, Layers)
 
 /*  FUNCTION
        Makes the given layer visible or invisible.
@@ -31,7 +31,7 @@
        cliprects and therefore rendering will go into the void.
 
     INPUTS
-       L       - pointer to layer 
+       L       - pointer to layer
        visible - TRUE or FALSE
 
     RESULT
@@ -39,8 +39,8 @@
        FALSE - layer could not be changed to new state
   
     NOTES
-    	This is an AROS private function, providing support
-    	for showing/hiding windows in intuition.
+        This is an AROS private function, providing support
+        for showing/hiding windows in intuition.
 
     EXAMPLE
 

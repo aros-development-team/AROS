@@ -60,7 +60,7 @@ ReqA( const char* text, APTR args );
 void
 ReqA( const char* text, APTR args, struct ISAPNPBase *res )
 {
-  struct EasyStruct es = 
+  struct EasyStruct es =
   {
     sizeof (struct EasyStruct),
     0,
@@ -228,7 +228,7 @@ HandleStartArgs( struct ISAPNP_Card* card,
       BYTE revision;
       LONG serial;
 
-      if( ParseID( *tool_types + 13, 
+      if( ParseID( *tool_types + 13,
                    &manufacturer, &product, &revision, &serial, NULL ) )
       {
         struct ISAPNP_Card* card = NULL;
@@ -257,7 +257,7 @@ HandleStartArgs( struct ISAPNP_Card* card,
       LONG serial;
       WORD log_dev;
 
-      if( ParseID( *tool_types + 15, 
+      if( ParseID( *tool_types + 15,
                    &manufacturer, &product, &revision, &serial, &log_dev ) )
       {
         if( log_dev == -1 )
@@ -354,7 +354,7 @@ HandleStartArgs( struct ISAPNP_Card* card,
         
         if( card->isapnpc_Devices.lh_Head->ln_Succ != NULL )
         {
-          dev_num = ( (struct ISAPNP_Device*) 
+          dev_num = ( (struct ISAPNP_Device*)
                       card->isapnpc_Devices.lh_TailPred )->isapnpd_DeviceNumber;
           ++dev_num;
         }
@@ -385,7 +385,7 @@ HandleStartArgs( struct ISAPNP_Card* card,
               {
                 struct ISAPNP_IRQResource* r;
         
-                r = (struct ISAPNP_IRQResource*) 
+                r = (struct ISAPNP_IRQResource*)
                     ISAPNP_AllocResource( ISAPNP_NT_IRQ_RESOURCE, res );
             
                 if( r == NULL )
@@ -419,7 +419,7 @@ HandleStartArgs( struct ISAPNP_Card* card,
               {
                 struct ISAPNP_DMAResource* r;
         
-                r = (struct ISAPNP_DMAResource*) 
+                r = (struct ISAPNP_DMAResource*)
                     ISAPNP_AllocResource( ISAPNP_NT_DMA_RESOURCE, res );
             
                 if( r == NULL )
@@ -474,7 +474,7 @@ HandleStartArgs( struct ISAPNP_Card* card,
                 return FALSE;
               }
 
-              r = (struct ISAPNP_IOResource*) 
+              r = (struct ISAPNP_IOResource*)
                   ISAPNP_AllocResource( ISAPNP_NT_IO_RESOURCE, res );
             
               if( r == NULL )

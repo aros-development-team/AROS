@@ -101,10 +101,10 @@ static int wd33c93Probe(struct scsiwd33c93Base *base)
                     struct TagItem scsi_tags[] =
                     {
                         {aHidd_Name             , (IPTR)scsiWD33c93Name         },
-                        {aHidd_HardwareName     , (IPTR)A2091ControllerName 	},
-                        {aHidd_Producer         , 514				            },
+                        {aHidd_HardwareName     , (IPTR)A2091ControllerName     },
+                        {aHidd_Producer         , 514                                       },
                         {aHidd_Product          , cd->cd_Rom.er_Product         },
-                        {TAG_DONE               , 0				                }
+                        {TAG_DONE               , 0                                             }
                     };
                     scsiA2091 = HW_AddDriver(base->storageRoot, base->scsiClass, scsi_tags);
                     if (scsiA2091)

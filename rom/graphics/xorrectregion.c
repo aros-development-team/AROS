@@ -12,44 +12,44 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(BOOL, XorRectRegion,
+        AROS_LH2(BOOL, XorRectRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region    *, Reg,  A0),
-	AROS_LHA(struct Rectangle *, Rect, A1),
+        AROS_LHA(struct Region    *, Reg,  A0),
+        AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 93, Graphics)
+        struct GfxBase *, GfxBase, 93, Graphics)
 
 /*  FUNCTION
-	Exclusive-OR the given rectangle to the given
-	region
+        Exclusive-OR the given rectangle to the given
+        region
 
     INPUTS
-	region - pointer to a region structure
-	rectangle - pointer to a rectangle structure
+        region - pointer to a region structure
+        rectangle - pointer to a rectangle structure
 
     RESULT
-	TRUE if the operation was successful, else FALSE
-	(out of memory)
+        TRUE if the operation was successful, else FALSE
+        (out of memory)
 
     NOTES
-	All relevant data is copied, you may throw away the
-	given rectangle after calling this function
+        All relevant data is copied, you may throw away the
+        given rectangle after calling this function
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	AndRectRegion(), OrRectRegion(), ClearRectRegion()
+        AndRectRegion(), OrRectRegion(), ClearRectRegion()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
-	19-01-97    mreckt  intital version
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
+        19-01-97    mreckt  intital version
 
 *****************************************************************************/
 {

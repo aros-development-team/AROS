@@ -21,7 +21,7 @@ static OOP_Object *FindBridge(OOP_Class *cl, OOP_Object *drv, UBYTE bus);
 static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
     struct MinList *irq_routing, OOP_Object *pcidev);
 
-/* 
+/*
     Returns 0 for no device, 1 for non-multi device and 2 for
     a multifunction device
 
@@ -303,16 +303,16 @@ static const UBYTE attrTable[] =
 /*****************************************************************************************
 
     NAME
-	moHidd_PCI_EnumDevices
+        moHidd_PCI_EnumDevices
 
     SYNOPSIS
-	void OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_EnumDrivers *Msg);
+        void OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_EnumDrivers *Msg);
 
-	void HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *callback,
+        void HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *callback,
                                   const struct TagItem *requirements);
 
     LOCATION
-	CLID_Hidd_PCI
+        CLID_Hidd_PCI
 
     FUNCTION
         This method calls the callback hook for every PCI device in the system
@@ -321,8 +321,8 @@ static const UBYTE attrTable[] =
         managed by all drivers present in the system.
 
     INPUTS
-	obj          - A PCI subsystem object.
-	callback     - A user-supplied hook which will be called for every device.
+        obj          - A PCI subsystem object.
+        callback     - A user-supplied hook which will be called for every device.
         requirements - A TagList specifying search parameters.
 
         The hook will be called with the following parameters:
@@ -345,7 +345,7 @@ static const UBYTE attrTable[] =
             tHidd_PCI_Driver            - a pointer to bus driver object [V4]
 
     RESULT
-	None.
+        None.
 
     NOTES
 

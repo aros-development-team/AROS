@@ -149,7 +149,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
                 dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
                 dp->dvp_Lock = BNULL;
                 dp->dvp_DevNode = NULL;
-            } 
+            }
             dp->dvp_Flags = 0;
             return dp;
         }

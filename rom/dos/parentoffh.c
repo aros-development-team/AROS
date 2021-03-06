@@ -39,12 +39,12 @@
     BUGS
 
     SEE ALSO
-        Lock(), UnLock(), ParentDir() 
+        Lock(), UnLock(), ParentDir()
 
     INTERNALS
 
 *****************************************************************************/
-{  
+{
     AROS_LIBFUNC_INIT
 
     struct FileHandle *handle = BADDR(fh);

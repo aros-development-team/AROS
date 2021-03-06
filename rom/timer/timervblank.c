@@ -33,7 +33,7 @@ int vblank_Init(struct TimerBase *LIBBASE)
     LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
     LIBBASE->tb_VBlankInt.is_Node.ln_Name = LIBBASE->tb_Device.dd_Library.lib_Node.ln_Name;
     LIBBASE->tb_VBlankInt.is_Code         = (VOID_FUNC)VBlankInt;
-    LIBBASE->tb_VBlankInt.is_Data	  = LIBBASE;
+    LIBBASE->tb_VBlankInt.is_Data         = LIBBASE;
 
     AddIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
     return TRUE; /* We can't fail */
@@ -48,7 +48,7 @@ static int vblank_Expunge(struct TimerBase *base)
 {
     /* ln_Succ will ne non-empty if this Node was added to a list */
     if (base->tb_VBlankInt.is_Node.ln_Succ)
-	RemIntServer(INTB_VERTB, &base->tb_VBlankInt);
+        RemIntServer(INTB_VERTB, &base->tb_VBlankInt);
 
     return TRUE;
 }

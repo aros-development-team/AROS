@@ -78,7 +78,7 @@ static CONST_STRPTR const methBaseIDs[] =
 
 static int AHCI_Init(struct AHCIBase *AHCIBase)
 {
-    struct BootLoaderBase	*BootLoaderBase;
+    struct BootLoaderBase       *BootLoaderBase;
 
     D(bug("[AHCI--] %s()\n", __func__);)
 
@@ -188,8 +188,8 @@ static int AHCI_Open
 {
     struct cam_sim *tmp, *unit = NULL;
 
-    /* 
-     * Assume it failed 
+    /*
+     * Assume it failed
      */
     iorq->io_Error = IOERR_OPENFAIL;
 

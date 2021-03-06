@@ -46,7 +46,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
         len -= tmp;
         flg |= DMA_Continue;
 
-        /* 
+        /*
          * check if we're crossing the magic 64k boundary:
          */
         while (0 < tmp)

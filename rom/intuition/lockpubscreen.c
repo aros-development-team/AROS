@@ -34,7 +34,7 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
         and there isn't any, the Workbench screen will be automatically opened
         and locked.
 
-        The local variable PUBSCREEN can be used to override the name of the 
+        The local variable PUBSCREEN can be used to override the name of the
         default public screen to use ("set PUBSCREEN mypubscreen").
         If the screen does not exist, the PUBSCREEN content is ignored.
 
@@ -108,16 +108,16 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
             if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
             {
                 struct LocalVar *var = FindVar("PUBSCREEN", 0);
-                if(var) 
+                if(var)
                 {
                     DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: found PUBSCREEN variable: %s\n", var->lv_Value));
                     /* Only use var, if screen really exists and is not in private state. */
                     struct PubScreenNode *psn;
                     psn = findcasename(list, (UBYTE *)var->lv_Value);
-                    if(psn != NULL) 
+                    if(psn != NULL)
                     {
                         ASSERT_VALID_PTR(psn);
-                        if( !(psn->psn_Flags & PSNF_PRIVATE) ) 
+                        if( !(psn->psn_Flags & PSNF_PRIVATE) )
                         {
                             name=var->lv_Value;
                         }
@@ -153,7 +153,7 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
     else
     {
         struct PubScreenNode *psn;
-	
+        
         ASSERT_VALID_PTR(name);
 
         /* Browse the public screen list */

@@ -36,7 +36,7 @@ extern void AROS_SLIB_ENTRY(SecurityRemTask,Exec,48)(void);
 /****************************************************************************************/
 static int Security_AfterDOS(LIBBASETYPEPTR secBase)
 {
-     D(bug( DEBUG_NAME_STR " %s(%p)\n", __func__, secBase);) 
+     D(bug( DEBUG_NAME_STR " %s(%p)\n", __func__, secBase);)
 
      /*
      *  Open dos.library, intuition.library and utility.library V37+,
@@ -58,7 +58,7 @@ static int Security_AfterDOS(LIBBASETYPEPTR secBase)
     */
 
     secBase->LogInfo.li_LocaleBase = OpenLibrary("locale.library",37);
-    if	(secBase->LogInfo.li_LocaleBase) {
+    if  (secBase->LogInfo.li_LocaleBase) {
             secBase->LogInfo.li_Catalog = OpenCatalog(0,SECURITYCATALOGNAME,
                                                      OC_BuiltInLanguage,"english",
                                                      OC_Version,SECURITYCATALOGVERSION,
@@ -75,15 +75,15 @@ static int Security_AfterDOS(LIBBASETYPEPTR secBase)
     /*
      *  Patch dos.library functions:
      *
-     *			LoadSeg()
-     *			NewLoadSeg()
-     *			UnLoadSeg()
-     *			InternalLoadSeg()
-     *			InternalUnLoadSeg()
-     *			CreateProc()
-     *			CreateNewProc()
-     *			RunCommand()
-     *			SetProtection()
+     *                  LoadSeg()
+     *                  NewLoadSeg()
+     *                  UnLoadSeg()
+     *                  InternalLoadSeg()
+     *                  InternalUnLoadSeg()
+     *                  CreateProc()
+     *                  CreateNewProc()
+     *                  RunCommand()
+     *                  SetProtection()
      *
      */
 #if (0)
@@ -122,9 +122,9 @@ static int Security_AfterDOS(LIBBASETYPEPTR secBase)
      */
 
     if (!StartServer(secBase))
-		return(FALSE);
+                return(FALSE);
 
-	return(TRUE);
+        return(TRUE);
 }
 
 static int Security_Init(LIBBASETYPEPTR secBase)
@@ -197,8 +197,8 @@ static int Security_Init(LIBBASETYPEPTR secBase)
     /*
      *  Patch exec.library functions:
      *
-     *			AddTask()
-     *			RemTask()
+     *                  AddTask()
+     *                  RemTask()
      *
      *  This must be done inside this Forbid()/Permit() pair
      *  to prevent the birth of orphan-tasks
@@ -207,11 +207,11 @@ static int Security_Init(LIBBASETYPEPTR secBase)
     secBase->OLDRemTask = SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 48, (APTR) AROS_SLIB_ENTRY(SecurityRemTask, Exec, 48));
     Permit();
 
-	// TODO: only call the following if we can FindName dos.library in the library list.
-	// If not we are called during rom startup - and it will be handled by the resident.
+        // TODO: only call the following if we can FindName dos.library in the library list.
+        // If not we are called during rom startup - and it will be handled by the resident.
 
     if (!Security_AfterDOS(secBase))
-		return(FALSE);
+                return(FALSE);
 
     return(TRUE);
 }

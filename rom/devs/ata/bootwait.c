@@ -24,9 +24,9 @@ extern const char ata_LibID[];
 extern const int ata_End;
 
 AROS_UFP3(static APTR, ata_Wait,
-	  AROS_UFPA(void *, dummy, D0),
-	  AROS_UFPA(BPTR, segList, A0),
-	  AROS_UFPA(struct ExecBase *, SysBase, A6));
+          AROS_UFPA(void *, dummy, D0),
+          AROS_UFPA(BPTR, segList, A0),
+          AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 const struct Resident ata_BootWait =
 {
@@ -55,9 +55,9 @@ const struct Resident ata_BootWait =
  */
 
 AROS_UFH3(static APTR, ata_Wait,
-	  AROS_UFPA(void *, dummy, D0),
-	  AROS_UFPA(BPTR, segList, A0),
-	  AROS_UFPA(struct ExecBase *, SysBase, A6))
+          AROS_UFPA(void *, dummy, D0),
+          AROS_UFPA(BPTR, segList, A0),
+          AROS_UFPA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 

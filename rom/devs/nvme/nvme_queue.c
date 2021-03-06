@@ -27,7 +27,7 @@ struct nvme_queue *nvme_alloc_queue(device_t dev, int qid, int depth, int vector
 {
     struct NVMEBase *NVMEBase = dev->dev_NVMEBase;;
     unsigned extra = 0; //DIV_ROUND_UP(depth, 8) + (depth *
-					//	sizeof(struct nvme_cmd_info));
+                                        //      sizeof(struct nvme_cmd_info));
     struct nvme_queue *nvmeq;
     
     D(bug ("[NVME:QUEUE] %s(0x%p, %u, %u, %d)\n", __func__, dev, qid, depth, vector);)

@@ -129,7 +129,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
                 /* parse capabilities ... */
                 cap = dev->dev_nvmeregbase->cap;
-#if (0)                
+#if (0)
                 timeout = ((NVME_CAP_TIMEOUT(cap) + 1) * HZ / 2) + jiffies;
 #endif
                 dev->db_stride = NVME_CAP_STRIDE(cap);

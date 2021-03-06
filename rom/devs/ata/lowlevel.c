@@ -196,23 +196,23 @@ static void ata_IRQPIORead(struct ata_Unit *unit, UBYTE status)
 {
     if (status & ATAF_DATAREQ)
     {
-	DIRQ(bug("[ATA%02ld] %s: PIOReadData - DRQ.\n", unit->au_UnitNum, __func__));
+        DIRQ(bug("[ATA%02ld] %s: PIOReadData - DRQ.\n", unit->au_UnitNum, __func__));
 
         Unit_InS(unit, unit->au_cmd_data, unit->au_cmd_length);
 
-	/*
-	 * Adjust data pointer and counter. If there's more data left for
-	 * this transfer, keep same handler and wait for next interrupt
-	 */
-	unit->au_cmd_data += unit->au_cmd_length;
-	unit->au_cmd_total -= unit->au_cmd_length;
-	if (unit->au_cmd_total != 0)
-	{
-	    if (unit->au_cmd_length > unit->au_cmd_total)
-		unit->au_cmd_length = unit->au_cmd_total;
-	    return;
-	}
-	DIRQ(bug("[ATA%02ld] %s: PIOReadData - transfer completed.\n",
+        /*
+         * Adjust data pointer and counter. If there's more data left for
+         * this transfer, keep same handler and wait for next interrupt
+         */
+        unit->au_cmd_data += unit->au_cmd_length;
+        unit->au_cmd_total -= unit->au_cmd_length;
+        if (unit->au_cmd_total != 0)
+        {
+            if (unit->au_cmd_length > unit->au_cmd_total)
+                unit->au_cmd_length = unit->au_cmd_total;
+            return;
+        }
+        DIRQ(bug("[ATA%02ld] %s: PIOReadData - transfer completed.\n",
             unit->au_UnitNum, __func__));
     }
     else
@@ -240,9 +240,9 @@ static void ata_IRQPIOWrite(struct ata_Unit *unit, UBYTE status)
      * handler and wait for next interrupt
      */
     if (status & ATAF_DATAREQ) {
-	DIRQ(bug("[ATA%02ld] IRQ: PIOWriteData - DRQ.\n", unit->au_UnitNum));
-	ata_PIOWriteBlk(unit);
-	return;
+        DIRQ(bug("[ATA%02ld] IRQ: PIOWriteData - DRQ.\n", unit->au_UnitNum));
+        ata_PIOWriteBlk(unit);
+        return;
     }
     else if (unit->au_cmd_total != 0)
         unit->au_cmd_error = HFERR_BadStatus;
@@ -499,7 +499,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
      * and say it went fine (i mean it)
      */
     if (stout)
-	*stout = status;
+        *stout = status;
     return res;
 }
 
@@ -689,19 +689,19 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     if (block->method == CM_PIOWrite)
     {
     DATA(bug("[ATA%02ld] %s: waiting for PIO write completion ...\n", unit->au_UnitNum, __func__);)
-	if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, FALSE, FALSE, &status)) {
-	    DERROR(bug("[ATA%02ld] %s: PIOWrite - no response from device. Status %02X\n", unit->au_UnitNum, __func__, status));
-	    return IOERR_UNITBUSY;
-	}
-	if (status & ATAF_DATAREQ) {
-	    DATA(bug("[ATA%02ld] %s: PIOWrite - DRQ.\n", unit->au_UnitNum, __func__));
-	    ata_PIOWriteBlk(unit);
-	}
-	else
-	{
-	    DERROR(bug("[ATA%02ld] %s: PIOWrite - bad status: %02X\n", unit->au_UnitNum, __func__, status));
-	    return HFERR_BadStatus;
-	}
+        if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, FALSE, FALSE, &status)) {
+            DERROR(bug("[ATA%02ld] %s: PIOWrite - no response from device. Status %02X\n", unit->au_UnitNum, __func__, status));
+            return IOERR_UNITBUSY;
+        }
+        if (status & ATAF_DATAREQ) {
+            DATA(bug("[ATA%02ld] %s: PIOWrite - DRQ.\n", unit->au_UnitNum, __func__));
+            ata_PIOWriteBlk(unit);
+        }
+        else
+        {
+            DERROR(bug("[ATA%02ld] %s: PIOWrite - bad status: %02X\n", unit->au_UnitNum, __func__, status));
+            return HFERR_BadStatus;
+        }
     }
 
     /*
@@ -951,7 +951,7 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
         blk->length  = part << unit->au_SectorShift;
 
         DATA(bug("[ATA%02ld] Transfer of %ld sectors from %x%08x\n", unit->au_UnitNum, part, (ULONG)(blk->blk >> 32), (ULONG)blk->blk));
-        // If bounce buffer is active, 
+        // If bounce buffer is active,
         if (bounce_buffer && blk->method == CM_DMAWrite)
         {
             DATA(bug("[ATA%02ld] Copy %d bytes from source %p to bounce buffer %p\n", unit->au_UnitNum, blk->length, buffer, bounce_buffer));
@@ -1100,7 +1100,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
  *          like all firmwares set up the best DMA mode. But what if the firmware
  *          didn't set it up for some reason (the add-on controller which has been
  *          ignored by it
- *          for example) ? Shouldn't we check unit->au_UseModes here ? 
+ *          for example) ? Shouldn't we check unit->au_UseModes here ?
  */
 #if 0
     struct ataBase *ATABase = bus->ab_Base;

@@ -14,43 +14,43 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(struct Region *, XorRectRegionND,
+        AROS_LH2(struct Region *, XorRectRegionND,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region    *, Reg,  A0),
-	AROS_LHA(struct Rectangle *, Rect, A1),
+        AROS_LHA(struct Region    *, Reg,  A0),
+        AROS_LHA(struct Rectangle *, Rect, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 190, Graphics)
+        struct GfxBase *, GfxBase, 190, Graphics)
 
 /*  FUNCTION
-	Exclusive-OR the given rectangle to the given
-	region
+        Exclusive-OR the given rectangle to the given
+        region
 
     INPUTS
-	region - pointer to a region structure
-	rectangle - pointer to a rectangle structure
+        region - pointer to a region structure
+        rectangle - pointer to a rectangle structure
 
     RESULT
-	The resulting region or NULL in case there's no enough free memory
+        The resulting region or NULL in case there's no enough free memory
 
     NOTES
-	All relevant data is copied, you may throw away the
-	given rectangle after calling this function
+        All relevant data is copied, you may throw away the
+        given rectangle after calling this function
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	AndRectRegion(), OrRectRegion(), ClearRectRegion()
+        AndRectRegion(), OrRectRegion(), ClearRectRegion()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
-	19-01-97    mreckt  intital version
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
+        19-01-97    mreckt  intital version
 
 *****************************************************************************/
 {
@@ -61,14 +61,14 @@
 
     if (IS_RECT_EVIL(Rect))
     {
-	/* Empty rectangle. Just make a plain copy of Reg. */
-    	struct Region *ret = NewRegion();
+        /* Empty rectangle. Just make a plain copy of Reg. */
+        struct Region *ret = NewRegion();
 
-	if (_CopyRegionRectangles(Reg, ret, GfxBase))
-	    return ret;
+        if (_CopyRegionRectangles(Reg, ret, GfxBase))
+            return ret;
 
-	DisposeRegion(ret);
-	return NULL;
+        DisposeRegion(ret);
+        return NULL;
     }
 
     InitRegion(&R);

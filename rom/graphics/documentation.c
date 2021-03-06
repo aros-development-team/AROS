@@ -18,10 +18,10 @@ macro have the same name but differ in case, e.g. CWait() and CWAIT().
 
 /*****************************************************************************
 
-    NAME 
+    NAME
         AreaCircle(
 
-    SYNOPSIS 
+    SYNOPSIS
         rp,
         cx,
         cy,
@@ -52,10 +52,10 @@ macro have the same name but differ in case, e.g. CWait() and CWAIT().
 
 /*****************************************************************************
 
-    NAME 
+    NAME
         CINIT(
 
-    SYNOPSIS 
+    SYNOPSIS
         c,
         n );
 
@@ -84,10 +84,10 @@ macro have the same name but differ in case, e.g. CWait() and CWAIT().
 
 /*****************************************************************************
 
-    NAME 
+    NAME
         CEND(
 
-    SYNOPSIS 
+    SYNOPSIS
         c );
 
     LOCATION

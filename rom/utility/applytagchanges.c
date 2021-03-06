@@ -13,14 +13,14 @@
     NAME */
 #include <proto/utility.h>
 
-	AROS_LH2(void, ApplyTagChanges,
+        AROS_LH2(void, ApplyTagChanges,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, list,       A0),
-	AROS_LHA(struct TagItem *, changelist, A1),
+        AROS_LHA(struct TagItem *, list,       A0),
+        AROS_LHA(struct TagItem *, changelist, A1),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 31, Utility)
+        struct UtilityBase *, UtilityBase, 31, Utility)
 
 /*  FUNCTION
 
@@ -47,37 +47,37 @@
     /* Loop over the whole list */
     for(;;)
     {
-	switch(list->ti_Tag)
-	{
-	    /* End of list */
-	    case TAG_END:
-		return;
-	    /* Ignore this tag */
-	    case TAG_IGNORE:
-		break;
-	    /* Jump to new tag list */
-	    case TAG_MORE:
-		list=(struct TagItem *)list->ti_Data;
-		continue;
-	    /* Ignore this and skip the next ti_Data tags */
-	    case TAG_SKIP:
-		list+=list->ti_Data;
-		break;
-	    /* Normal tag */
-	    default:
-	    {
-		struct TagItem *tagitem;
-		/* Try to find it in the changelist */
-		tagitem=FindTagItem(list->ti_Tag,changelist);
+        switch(list->ti_Tag)
+        {
+            /* End of list */
+            case TAG_END:
+                return;
+            /* Ignore this tag */
+            case TAG_IGNORE:
+                break;
+            /* Jump to new tag list */
+            case TAG_MORE:
+                list=(struct TagItem *)list->ti_Data;
+                continue;
+            /* Ignore this and skip the next ti_Data tags */
+            case TAG_SKIP:
+                list+=list->ti_Data;
+                break;
+            /* Normal tag */
+            default:
+            {
+                struct TagItem *tagitem;
+                /* Try to find it in the changelist */
+                tagitem=FindTagItem(list->ti_Tag,changelist);
 
-		if(tagitem!=NULL)
-		    /* Found it. Replace it. */
-		    list->ti_Data=tagitem->ti_Data;
-		break;
-	    }
-	}
-	/* Got to next tag */
-	list++;
+                if(tagitem!=NULL)
+                    /* Found it. Replace it. */
+                    list->ti_Data=tagitem->ti_Data;
+                break;
+            }
+        }
+        /* Got to next tag */
+        list++;
     }
     AROS_LIBFUNC_EXIT
 } /* ApplyTagChanges */

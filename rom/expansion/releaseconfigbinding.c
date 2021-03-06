@@ -11,24 +11,24 @@
     NAME */
 #include <proto/expansion.h>
 
-	AROS_LH0(void, ReleaseConfigBinding,
+        AROS_LH0(void, ReleaseConfigBinding,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 21, Expansion)
+        struct ExpansionBase *, ExpansionBase, 21, Expansion)
 
 /*  FUNCTION
-	This function will release the lock obtained by
-	ObtainConfigBinding(). It will release the SignalSemaphore,
-	and allow others to bind to drivers.
+        This function will release the lock obtained by
+        ObtainConfigBinding(). It will release the SignalSemaphore,
+        and allow others to bind to drivers.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	ObtainConfigBinding()
+        ObtainConfigBinding()
 
     INTERNALS
 

@@ -13,46 +13,46 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(WORD, GetSprite,
+        AROS_LH2(WORD, GetSprite,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct SimpleSprite *, sprite, A0),
-	AROS_LHA(WORD                 , pick  , D0),
+        AROS_LHA(struct SimpleSprite *, sprite, A0),
+        AROS_LHA(WORD                 , pick  , D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 68, Graphics)
+        struct GfxBase *, GfxBase, 68, Graphics)
 
-/*  FUNCTION          	
-	Try to get a hardware sprite for the simple sprite manager.
-	There are eight sprites available in the system and by calling
-	this function you can allocate one for yourself. You have to
-	call this function before talking to other sprite routines.
-	If you want a 15 color sprite, you must allocate both sprites
-	(see the manual!) and set the SPRITE_ATTACHED bit in the
-	odd sprite's posctldata array.
-	
+/*  FUNCTION
+        Try to get a hardware sprite for the simple sprite manager.
+        There are eight sprites available in the system and by calling
+        this function you can allocate one for yourself. You have to
+        call this function before talking to other sprite routines.
+        If you want a 15 color sprite, you must allocate both sprites
+        (see the manual!) and set the SPRITE_ATTACHED bit in the
+        odd sprite's posctldata array.
+        
 
     INPUTS
-	sprite - pointer to a SimpleSprite structure
-	pick   - number of the sprite (0-7) of -1 if you just want
-		 the next available sprite
+        sprite - pointer to a SimpleSprite structure
+        pick   - number of the sprite (0-7) of -1 if you just want
+                 the next available sprite
 
     RESULT
-	-1 - if the selected sprite is not available (pick was 0-7) or
-	     no further sprites are available (pick was -1). -1 will
-	     also be found in the SimpleSprite structure.
-	0-7: The sprite number of your allocated sprite. The number will
-	     also be found in the SimpleSprite structure.
+        -1 - if the selected sprite is not available (pick was 0-7) or
+             no further sprites are available (pick was -1). -1 will
+             also be found in the SimpleSprite structure.
+        0-7: The sprite number of your allocated sprite. The number will
+             also be found in the SimpleSprite structure.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	On some machines this will never return anything else than -1!
+        On some machines this will never return anything else than -1!
 
     SEE ALSO
-	FreeSprite(), ChangeSprite(), MoveSprite(), GetSprite(), graphics/sprite.h
+        FreeSprite(), ChangeSprite(), MoveSprite(), GetSprite(), graphics/sprite.h
 
     INTERNALS
 

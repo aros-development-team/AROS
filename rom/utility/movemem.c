@@ -7,15 +7,15 @@
     NAME */
 #include <proto/utility.h>
 
-	AROS_LH3(VOID, MoveMem,
+        AROS_LH3(VOID, MoveMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, source, A0),
-	AROS_LHA(APTR, destination, A1),
-	AROS_LHA(ULONG, size, D0),
+        AROS_LHA(APTR, source, A0),
+        AROS_LHA(APTR, destination, A1),
+        AROS_LHA(ULONG, size, D0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 51, Utility)
+        struct UtilityBase *, UtilityBase, 51, Utility)
 
 /*  FUNCTION
 

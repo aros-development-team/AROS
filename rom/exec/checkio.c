@@ -12,23 +12,23 @@
 
     NAME */
 
-	AROS_LH1I(struct IORequest *, CheckIO,
+        AROS_LH1I(struct IORequest *, CheckIO,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IORequest *, iORequest, A1),
+        AROS_LHA(struct IORequest *, iORequest, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 78, Exec)
+        struct ExecBase *, SysBase, 78, Exec)
 
 /*  FUNCTION
-	Check if an I/O request is completed.
+        Check if an I/O request is completed.
 
     INPUTS
-	iORequest - Pointer to iorequest structure.
+        iORequest - Pointer to iorequest structure.
 
     RESULT
-	Pointer to the iorequest structure or NULL if the device is still
-	at work.
+        Pointer to the iorequest structure or NULL if the device is still
+        at work.
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	OpenDevice(), CloseDevice(), DoIO(), SendIO(), AbortIO(), WaitIO()
+        OpenDevice(), CloseDevice(), DoIO(), SendIO(), AbortIO(), WaitIO()
 
     INTERNALS
 
@@ -46,17 +46,17 @@
     AROS_LIBFUNC_INIT
 
     /*
-	The I/O request is still in use if it wasn't done quick
-	and isn't yet replied (ln_Type==NT_MESSAGE).
+        The I/O request is still in use if it wasn't done quick
+        and isn't yet replied (ln_Type==NT_MESSAGE).
     */
     if(!(iORequest->io_Flags&IOF_QUICK)&&
        iORequest->io_Message.mn_Node.ln_Type==NT_MESSAGE)
 
-	/* Still in use */
-	return NULL;
+        /* Still in use */
+        return NULL;
     else
-	/* done */
-	return iORequest;
+        /* done */
+        return iORequest;
 
     AROS_LIBFUNC_EXIT
 } /* CheckIO */

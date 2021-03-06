@@ -26,24 +26,24 @@
         struct IntuitionBase *, IntuitionBase, 79, Intuition)
 
 /*  FUNCTION
-	Query overscan dimensions. The resulting rectangle can be used
-	with SA_DisplayID.
+        Query overscan dimensions. The resulting rectangle can be used
+        with SA_DisplayID.
 
-	Overscan types:
-	OSCAN_TEXT: completely visible. Left/Top is always 0,0.
-	OSCAN_STANDARD: visible bounds of monitor. Left/Top may be negative.
-	OSCAN_MAX: The largest displayable region.
-	OSCAN_VIDEO: The absolute largest region that the graphics.library
-	    can display.  This region must be used as-is.
+        Overscan types:
+        OSCAN_TEXT: completely visible. Left/Top is always 0,0.
+        OSCAN_STANDARD: visible bounds of monitor. Left/Top may be negative.
+        OSCAN_MAX: The largest displayable region.
+        OSCAN_VIDEO: The absolute largest region that the graphics.library
+            can display.  This region must be used as-is.
 
     INPUTS
-	displayid - ID to be queried
-	rect      - Pointer to struct Rectangle to store result
-	oscantype - OSCAN_TEXT, OSCAN_STANDARD, OSCAN_MAX, OSCAN_VIDEO
+        displayid - ID to be queried
+        rect      - Pointer to struct Rectangle to store result
+        oscantype - OSCAN_TEXT, OSCAN_STANDARD, OSCAN_MAX, OSCAN_VIDEO
 
     RESULT
-	TRUE  - Monitorspec exists
-	FALSE - Monitorspec doesn't exist
+        TRUE  - Monitorspec exists
+        FALSE - Monitorspec doesn't exist
 
     NOTES
 
@@ -61,7 +61,7 @@
 
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct DimensionInfo diminfo;
-    LONG              	 retval = FALSE;
+    LONG                 retval = FALSE;
 
     DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: displayid 0x%lx rect 0x%lx oscantype 0x%lx\n",
                                 displayid,
@@ -82,30 +82,30 @@
         switch(oscantype)
         {
             case OSCAN_TEXT:
-        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_TEXT\n"));
-        	memcpy(rect,&diminfo.TxtOScan,sizeof(struct Rectangle));
-        	break;
+                DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_TEXT\n"));
+                memcpy(rect,&diminfo.TxtOScan,sizeof(struct Rectangle));
+                break;
 
             case OSCAN_STANDARD:
-        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_STANDARD\n"));
-        	memcpy(rect,&diminfo.StdOScan,sizeof(struct Rectangle));
-        	break;
+                DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_STANDARD\n"));
+                memcpy(rect,&diminfo.StdOScan,sizeof(struct Rectangle));
+                break;
 
             case OSCAN_MAX:
-        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_MAX\n"));
-        	memcpy(rect,&diminfo.MaxOScan,sizeof(struct Rectangle));
-        	break;
+                DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_MAX\n"));
+                memcpy(rect,&diminfo.MaxOScan,sizeof(struct Rectangle));
+                break;
 
             case OSCAN_VIDEO:
-        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_VIDEO\n"));
-        	memcpy(rect,&diminfo.VideoOScan,sizeof(struct Rectangle));
-        	break;
+                DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_VIDEO\n"));
+                memcpy(rect,&diminfo.VideoOScan,sizeof(struct Rectangle));
+                break;
 
             default:
-        	DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_????\n"));
-        	/* or should we assume OSCAN_TEXT? */
-        	retval = FALSE;
-        	break;
+                DEBUG_QUERYOVERSCAN(dprintf("LIB_QueryOverscan: OSCAN_????\n"));
+                /* or should we assume OSCAN_TEXT? */
+                retval = FALSE;
+                break;
 
         } /* switch(oscantype) */
 

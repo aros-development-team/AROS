@@ -14,10 +14,10 @@ static int UtilityInit(LIBBASETYPEPTR LIBBASE)
     GetIntUtilityBase(LIBBASE)->ub_LastID = 0;
 
     /*
-	I no longer allocate memory here for the global namespace, since
-	that is not quite legal. (AllocMem is not Forbid() protected).
+        I no longer allocate memory here for the global namespace, since
+        that is not quite legal. (AllocMem is not Forbid() protected).
 
-	Also makes this a little bit shorter. (In time and length).
+        Also makes this a little bit shorter. (In time and length).
     */
     InitSemaphore(&GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_Lock);
     NEWLIST((struct List *)&GetIntUtilityBase(LIBBASE)->ub_NameSpace.ns_List);

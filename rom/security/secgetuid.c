@@ -13,13 +13,13 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(UWORD, secgetuid,
+        AROS_LH0(UWORD, secgetuid,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 39, Security)
+        struct SecurityBase *, secBase, 39, Security)
 
 /*  FUNCTION
 

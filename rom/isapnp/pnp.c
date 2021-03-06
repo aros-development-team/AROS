@@ -121,7 +121,7 @@ DecodeID( UBYTE* buf, struct ISAPNP_Identifier* id )
   }
 
   id->isapnpid_Vendor[ 0 ]  = 0x40 + ( buf[ 0 ] >> 2 );
-  id->isapnpid_Vendor[ 1 ]  = 0x40 + ( ( ( buf[ 0 ] & 0x03 ) << 3 ) | 
+  id->isapnpid_Vendor[ 1 ]  = 0x40 + ( ( ( buf[ 0 ] & 0x03 ) << 3 ) |
                                        ( buf[ 1 ] >> 5 ) );
   id->isapnpid_Vendor[ 2 ]  = 0x40 + ( buf[ 1 ] & 0x1f );
   id->isapnpid_Vendor[ 3 ]  = 0;
@@ -216,7 +216,7 @@ ReadSerialIdentifier( struct ISAPNP_Card* card,
   
   card->isapnpc_SerialNumber = ( buf[ 7 ] << 25 ) |
                                ( buf[ 6 ] << 16 ) |
-                               ( buf[ 5 ] << 8 )  | 
+                               ( buf[ 5 ] << 8 )  |
                                  buf[ 4 ];
 
   return TRUE;
@@ -376,7 +376,7 @@ ReadResourceData( struct ISAPNP_Card* card,
       {
         struct ISAPNP_IRQResource* r;
         
-        r = (struct ISAPNP_IRQResource*) 
+        r = (struct ISAPNP_IRQResource*)
             ISAPNP_AllocResource( ISAPNP_NT_IRQ_RESOURCE, res );
             
         if( r == NULL )
@@ -408,7 +408,7 @@ ReadResourceData( struct ISAPNP_Card* card,
       {
         struct ISAPNP_DMAResource* r;
         
-        r = (struct ISAPNP_DMAResource*) 
+        r = (struct ISAPNP_DMAResource*)
             ISAPNP_AllocResource( ISAPNP_NT_DMA_RESOURCE, res );
             
         if( r == NULL )
@@ -471,7 +471,7 @@ ReadResourceData( struct ISAPNP_Card* card,
           saved_options = options;
         }
 
-        Enqueue( (struct List*) &saved_options->isapnprg_ResourceGroups, 
+        Enqueue( (struct List*) &saved_options->isapnprg_ResourceGroups,
                  (struct Node*) rg );
 
         options = rg;
@@ -492,7 +492,7 @@ ReadResourceData( struct ISAPNP_Card* card,
       {
         struct ISAPNP_IOResource* r;
         
-        r = (struct ISAPNP_IOResource*) 
+        r = (struct ISAPNP_IOResource*)
             ISAPNP_AllocResource( ISAPNP_NT_IO_RESOURCE, res );
             
         if( r == NULL )
@@ -523,7 +523,7 @@ ReadResourceData( struct ISAPNP_Card* card,
       {
         struct ISAPNP_IOResource* r;
         
-        r = (struct ISAPNP_IOResource*) 
+        r = (struct ISAPNP_IOResource*)
             ISAPNP_AllocResource( ISAPNP_NT_IO_RESOURCE, res );
             
         if( r == NULL )
@@ -641,7 +641,7 @@ ReadResourceData( struct ISAPNP_Card* card,
 ******************************************************************************/
 
 static ULONG
-AddCards( UBYTE              rd_data_port_value, 
+AddCards( UBYTE              rd_data_port_value,
           struct ISAPNPBase* res )
 {
   UBYTE csn = 0;
@@ -719,8 +719,8 @@ AROS_LH0(BOOL, ISAPNP_ScanCards,
              PNPISA_CCF_RESET_CSN,
              res );
 
-  for( read_port_value = 0x80; 
-       read_port_value <= 0xff; 
+  for( read_port_value = 0x80;
+       read_port_value <= 0xff;
        read_port_value += 0x10 )
   {
     cards = AddCards( read_port_value, res );
@@ -787,7 +787,7 @@ FindConfiguration( struct ISAPNP_Device*   dev,
       {
         // Handle resource options as well
 
-        for( rg = (struct ISAPNP_ResourceGroup*) 
+        for( rg = (struct ISAPNP_ResourceGroup*)
                   dev->isapnpd_Options->isapnprg_ResourceGroups.mlh_Head;
              ! rc && rg->isapnprg_MinNode.mln_Succ != NULL;
              rg = (struct ISAPNP_ResourceGroup*) rg->isapnprg_MinNode.mln_Succ )
@@ -814,7 +814,7 @@ FindConfiguration( struct ISAPNP_Device*   dev,
               {
                 // Allocate resources for current iterators
 
-                rc = CreateResouces( ril_option, 
+                rc = CreateResouces( ril_option,
                                      (struct List*) &dev->isapnpd_Resources,
                                      res );
                 break;
@@ -885,9 +885,9 @@ FindNextCardConfiguration( struct ISAPNP_Device*   dev,
     rc = FindConfiguration( (struct ISAPNP_Device*) dev->isapnpd_Node.ln_Succ,
                             ctx, res );
   }
-  else 
+  else
   {
-    struct ISAPNP_Card* next_card = (struct ISAPNP_Card*) 
+    struct ISAPNP_Card* next_card = (struct ISAPNP_Card*)
                                     dev->isapnpd_Card->isapnpc_Node.ln_Succ;
 
     if( next_card->isapnpc_Node.ln_Succ != NULL &&
@@ -895,7 +895,7 @@ FindNextCardConfiguration( struct ISAPNP_Device*   dev,
         
     {
       rc = FindConfiguration( (struct ISAPNP_Device*)
-                              next_card->isapnpc_Devices.lh_Head, 
+                              next_card->isapnpc_Devices.lh_Head,
                               ctx, res );
     }
     else
@@ -936,7 +936,7 @@ ProgramConfiguration( struct ISAPNPBase* res )
 
         // Wake the new card
   
-	D(bug( "Woke up card %ld\n", dev->isapnpd_Card->isapnpc_CSN ));
+        D(bug( "Woke up card %ld\n", dev->isapnpd_Card->isapnpc_CSN ));
         SetPnPReg( PNPISA_REG_WAKE, dev->isapnpd_Card->isapnpc_CSN, res );
       }
 
@@ -960,7 +960,7 @@ ProgramConfiguration( struct ISAPNPBase* res )
             {
               if( r->isapnpirqr_IRQMask & ( 1 << b ) )
               {
-		D(bug( "Programmed interrupt %ld in %lx\n", b, int_reg ));
+                D(bug( "Programmed interrupt %ld in %lx\n", b, int_reg ));
                 SetPnPReg( int_reg, b, res);
                 break;
               }
@@ -980,7 +980,7 @@ ProgramConfiguration( struct ISAPNPBase* res )
               b |= 1;
             }
   
-	    D(bug( "Programmed interrupt mode %ld in %lx\n", b, int_reg + 1 ));
+            D(bug( "Programmed interrupt mode %ld in %lx\n", b, int_reg + 1 ));
             SetPnPReg( int_reg + 1, b, res );
             
             int_reg += 2;
@@ -997,7 +997,7 @@ ProgramConfiguration( struct ISAPNPBase* res )
             {
               if( r->isapnpdmar_ChannelMask & ( 1 << b ) )
               {
-		D(bug( "Programmed dma channel %ld in %lx\n", b, dma_reg ));
+                D(bug( "Programmed dma channel %ld in %lx\n", b, dma_reg ));
                 SetPnPReg( dma_reg, b, res );
                 break;
               }
@@ -1012,7 +1012,7 @@ ProgramConfiguration( struct ISAPNPBase* res )
           {
             struct ISAPNP_IOResource* r = (struct ISAPNP_IOResource*) resource;
   
-	    D(bug( "Programmed IO base %04lx in %lx\n", r->isapnpior_MinBase, io_reg ));
+            D(bug( "Programmed IO base %04lx in %lx\n", r->isapnpior_MinBase, io_reg ));
   
             SetPnPReg( io_reg, r->isapnpior_MinBase >> 8, res );
             SetPnPReg( io_reg + 1, r->isapnpior_MinBase & 0xff, res );

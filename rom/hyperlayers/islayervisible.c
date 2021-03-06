@@ -16,19 +16,19 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH1(LONG, IsLayerVisible,
+        AROS_LH1(LONG, IsLayerVisible,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l      , A0),
+        AROS_LHA(struct Layer *, l      , A0),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 43, Layers)
+        struct LayersBase *, LayersBase, 43, Layers)
 
 /*  FUNCTION
        Checks whether the layer is visible or not.
 
     INPUTS
-       L       - pointer to layer 
+       L       - pointer to layer
 
     RESULT
        TRUE  - layer is visible

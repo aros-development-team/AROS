@@ -14,22 +14,22 @@
 
     NAME */
 
-	AROS_LH1(void, AddPort,
+        AROS_LH1(void, AddPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, port, A1),
+        AROS_LHA(struct MsgPort *, port, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 59, Exec)
+        struct ExecBase *, SysBase, 59, Exec)
 
 /*  FUNCTION
-	Add a port to the public port list. The ln_Name and ln_Pri fields
-	must be initialized prior to calling this function, while
-	the port itself is reinitialized before adding. Therefore it's
-	not allowed to add an active port.
+        Add a port to the public port list. The ln_Name and ln_Pri fields
+        must be initialized prior to calling this function, while
+        the port itself is reinitialized before adding. Therefore it's
+        not allowed to add an active port.
 
     INPUTS
-	port - Pointer to messageport structure.
+        port - Pointer to messageport structure.
 
     RESULT
 

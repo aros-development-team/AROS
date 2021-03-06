@@ -8,11 +8,11 @@
 #include "dos_intern.h"
 
 LONG InternalSeek
-( 
-    struct FileHandle *fh, 
-    LONG               position, 
-    LONG               mode, 
-    struct DosLibrary *DOSBase 
+(
+    struct FileHandle *fh,
+    LONG               position,
+    LONG               mode,
+    struct DosLibrary *DOSBase
 )
 {
     LONG  status;
@@ -21,10 +21,10 @@ LONG InternalSeek
     /* Make sure the input parameters are sane. */
     ASSERT_VALID_PTR( fh );
     ASSERT
-    ( 
-           mode == OFFSET_BEGINNING 
-        || mode == OFFSET_END 
-        || mode == OFFSET_CURRENT 
+    (
+           mode == OFFSET_BEGINNING
+        || mode == OFFSET_END
+        || mode == OFFSET_CURRENT
     );
     D(bug("[seek] %x:%d:%d\n", fh, position, mode));
     do {

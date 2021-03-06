@@ -13,15 +13,15 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(struct secGroupInfo *, secGetGroupInfo,
+        AROS_LH2(struct secGroupInfo *, secGetGroupInfo,
 
 /*  SYNOPSIS */
-	/* (info, keytype) */
-	AROS_LHA(struct secGroupInfo *, info, A0),
-	AROS_LHA(ULONG, keytype, D0),
+        /* (info, keytype) */
+        AROS_LHA(struct secGroupInfo *, info, A0),
+        AROS_LHA(ULONG, keytype, D0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 27, Security)
+        struct SecurityBase *, secBase, 27, Security)
 
 /*  FUNCTION
 

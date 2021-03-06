@@ -164,8 +164,8 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
                 }
             #endif
             }
-        } 
-        else 
+        }
+        else
         {
             DEBUG_SETPREFS(dprintf("SetPrefs: no InputIO..don't set Key prefs\n"));
         }
@@ -205,18 +205,18 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
                 struct IOStdReq   req;
     
                 ie.ie_NextEvent     = NULL;
-                ie.ie_Class 	    = IECLASS_NEWPREFS;
+                ie.ie_Class         = IECLASS_NEWPREFS;
                 ie.ie_SubClass      = 0;
-                ie.ie_Code  	    = 0;
+                ie.ie_Code          = 0;
                 ie.ie_Qualifier     = 0;
                 ie.ie_EventAddress  = NULL;
     
-                req.io_Message.mn_ReplyPort 	= port;
-                req.io_Device 	    	    	= GetPrivIBase(IntuitionBase)->InputIO->io_Device;
-                req.io_Unit 	    	    	= GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-                req.io_Command      	    	= IND_WRITEEVENT;
-                req.io_Length 	    	    	= sizeof(ie);
-                req.io_Data 	    	    	= &ie;
+                req.io_Message.mn_ReplyPort     = port;
+                req.io_Device                   = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
+                req.io_Unit                     = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
+                req.io_Command                  = IND_WRITEEVENT;
+                req.io_Length                   = sizeof(ie);
+                req.io_Data                     = &ie;
     
                 DoIO((struct IORequest *)&req);
     

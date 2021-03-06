@@ -28,7 +28,7 @@
         struct DosLibrary *, DOSBase, 52, Dos)
 
 /*  FUNCTION
-        Write a character to a file handle. 
+        Write a character to a file handle.
 
         The write is buffered.
 

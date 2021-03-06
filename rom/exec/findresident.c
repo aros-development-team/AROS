@@ -16,23 +16,23 @@
 
     NAME */
 
-	AROS_LH1(struct Resident *, FindResident,
+        AROS_LH1(struct Resident *, FindResident,
 
 /*  SYNOPSIS */
-	AROS_LHA(const UBYTE *, name, A1),
+        AROS_LHA(const UBYTE *, name, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 16, Exec)
+        struct ExecBase *, SysBase, 16, Exec)
 
 /*  FUNCTION
-	Search for a Resident module in the system resident list.
+        Search for a Resident module in the system resident list.
 
     INPUTS
-	name - pointer to the name of a Resident module to find
+        name - pointer to the name of a Resident module to find
 
     RESULT
-	pointer to the Resident module (struct Resident *), or null if
-	not found.
+        pointer to the Resident module (struct Resident *), or null if
+        not found.
 
     NOTES
 
@@ -50,13 +50,13 @@
 
     IPTR *ptr;
 
-    DFINDRESIDENT("FindResident(\"%s\")", name);    
+    DFINDRESIDENT("FindResident(\"%s\")", name);
 
     ptr = InternalFindResident(name, SysBase->ResModules);
     if (ptr)
     {
-	DFINDRESIDENT("Found at 0x%p", *ptr);
-	return (struct Resident *)*ptr;
+        DFINDRESIDENT("Found at 0x%p", *ptr);
+        return (struct Resident *)*ptr;
     }
 
     DFINDRESIDENT("Not found");
@@ -69,8 +69,8 @@ IPTR *InternalFindResident(const UBYTE *name, IPTR *list)
 {
     if (list)
     {
-	while (*list)
-	{
+        while (*list)
+        {
             /*
              * On amiga, if bit 31 is set then this points to another list of
              * modules rather than pointing to a single module. bit 31 is
@@ -78,17 +78,17 @@ IPTR *InternalFindResident(const UBYTE *name, IPTR *list)
              * 2GB. on these platforms we assume aligned pointers and use bit
              * 0 instead
              */
-	    if (*list & RESLIST_NEXT)
-	    {
-	    	list = (IPTR *)(*list & ~RESLIST_NEXT);
-	    	continue;
-	    }
+            if (*list & RESLIST_NEXT)
+            {
+                list = (IPTR *)(*list & ~RESLIST_NEXT);
+                continue;
+            }
 
-	    if (!(strcmp( ((struct Resident *)*list)->rt_Name, name)))
-		return list;
+            if (!(strcmp( ((struct Resident *)*list)->rt_Name, name)))
+                return list;
 
-	    list++;
-	}
+            list++;
+        }
     }
     return NULL;
 }

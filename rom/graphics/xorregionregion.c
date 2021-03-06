@@ -12,25 +12,25 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(BOOL, XorRegionRegion,
+        AROS_LH2(BOOL, XorRegionRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region *, R1, A0),
-	AROS_LHA(struct Region *, R2, A1),
+        AROS_LHA(struct Region *, R1, A0),
+        AROS_LHA(struct Region *, R2, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 103, Graphics)
+        struct GfxBase *, GfxBase, 103, Graphics)
 
 /*  FUNCTION
-	Exclusive-OR of one region with another region,
-	leaving result in second region.
+        Exclusive-OR of one region with another region,
+        leaving result in second region.
 
     INPUTS
-	region1 - pointer to a region structure
-	region2 - pointer to a region structure
+        region1 - pointer to a region structure
+        region2 - pointer to a region structure
 
     RESULT
-	TRUE if the operation was successful,
+        TRUE if the operation was successful,
         FALSE otherwise (out of memory)
 
     NOTES
@@ -41,14 +41,14 @@
     BUGS
 
     SEE ALSO
-	AndRegionRegion(), OrRegionRegion()
+        AndRegionRegion(), OrRegionRegion()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla  automatically created from
-			     graphics_lib.fd and clib/graphics_protos.h
-	19-01-97    mreckt   intital version
+        27-11-96    digulla  automatically created from
+                             graphics_lib.fd and clib/graphics_protos.h
+        19-01-97    mreckt   intital version
 
         22-09-2001  falemagn changed implementation
 
@@ -78,7 +78,7 @@
         _ClearBandBand,
         MinX(R1),
         MinX(R2),
-	MinY(R1),
+        MinY(R1),
         MinY(R2),
         R1->RegionRectangle,
         R2->RegionRectangle,
@@ -92,7 +92,7 @@
         MinX(R2),
         MinX(R1),
         MinY(R2),
-	MinY(R1),
+        MinY(R1),
         R2->RegionRectangle,
         R1->RegionRectangle,
         &Diff2,

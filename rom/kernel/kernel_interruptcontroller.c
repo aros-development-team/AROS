@@ -21,7 +21,7 @@
 #include <kernel_objects.h>
 
 /* We use own implementation of bug(), so we don't need aros/debug.h */
-#define D(x) 
+#define D(x)
 
 /*****************************************************************************
 

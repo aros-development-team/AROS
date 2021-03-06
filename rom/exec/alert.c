@@ -107,7 +107,7 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
             }
 
             /* Set location */
-            iet->iet_AlertFlags   |= AF_Location;            
+            iet->iet_AlertFlags   |= AF_Location;
             iet->iet_AlertLocation = location;
             iet->iet_AlertStack    = stack;
 

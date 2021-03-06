@@ -10,13 +10,13 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(ULONG, secLogout,
+        AROS_LH0(ULONG, secLogout,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 5, Security)
+        struct SecurityBase *, secBase, 5, Security)
 
 /*  FUNCTION
 

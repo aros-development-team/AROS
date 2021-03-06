@@ -10,13 +10,13 @@
 
     NAME */
 
-	AROS_LH1(ULONG, ObtainQuickVector,
+        AROS_LH1(ULONG, ObtainQuickVector,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, interruptCode, A0),
+        AROS_LHA(APTR, interruptCode, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 131, Exec)
+        struct ExecBase *, SysBase, 131, Exec)
 
 /*  FUNCTION
 

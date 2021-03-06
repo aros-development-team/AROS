@@ -13,41 +13,41 @@
 #include <utility/tagitem.h>
 #include <proto/utility.h>
 
-	AROS_LH1I(struct TagItem *, NextTagItem,
+        AROS_LH1I(struct TagItem *, NextTagItem,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem **, tagListPtr, A0),
+        AROS_LHA(struct TagItem **, tagListPtr, A0),
 
 /*  LOCATION */
-	struct Library *, UtilityBase, 8, Utility)
+        struct Library *, UtilityBase, 8, Utility)
 
 /*  FUNCTION
-	Returns the address of the next tag-item in the list. This
-	routine correctly handles TAG_END, TAG_DONE, TAG_MORE,
-	TAG_IGNORE and TAG_SKIP.
+        Returns the address of the next tag-item in the list. This
+        routine correctly handles TAG_END, TAG_DONE, TAG_MORE,
+        TAG_IGNORE and TAG_SKIP.
 
-	TAG_END and TAG_DONE both terminate a TagItems-array (in
-	fact, TAG_DONE is the same as TAG_END).
+        TAG_END and TAG_DONE both terminate a TagItems-array (in
+        fact, TAG_DONE is the same as TAG_END).
 
-	With TAG_MORE, you can redirect the processing to a new list
-	of tags. Note that the processing will not return to the previous
-	list when a TAG_END/TAG_DONE is encountered.
+        With TAG_MORE, you can redirect the processing to a new list
+        of tags. Note that the processing will not return to the previous
+        list when a TAG_END/TAG_DONE is encountered.
 
-	TAG_IGNORE disables the processing of an entry in the list.
-	This entry is just ignored (We use this technique for filtering).
+        TAG_IGNORE disables the processing of an entry in the list.
+        This entry is just ignored (We use this technique for filtering).
 
-	TAG_SKIP skips this tagitem, and the next number of tagitems as
-	indicated in the tag's ti_Data field.
+        TAG_SKIP skips this tagitem, and the next number of tagitems as
+        indicated in the tag's ti_Data field.
 
     INPUTS
-	tagListPtr - Pointer to an element in a taglist.
+        tagListPtr - Pointer to an element in a taglist.
 
     RESULT
-	Next tag item or NULL if you reached the end of the list.
+        Next tag item or NULL if you reached the end of the list.
 
     NOTES
-	- TAG_MORE works like "go on with new list" instead of "read new
-	  list and go on with the current one".
+        - TAG_MORE works like "go on with new list" instead of "read new
+          list and go on with the current one".
 
     EXAMPLE
 

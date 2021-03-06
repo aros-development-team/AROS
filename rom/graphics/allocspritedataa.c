@@ -22,15 +22,15 @@
 
 #if DEBUG
 
-#define PRINT_PIXFMT(bitmap)						\
+#define PRINT_PIXFMT(bitmap)                                            \
 if (IS_HIDD_BM(bitmap)) {\
-    OOP_Object *pf;							\
-    IPTR stdpf;								\
+    OOP_Object *pf;                                                     \
+    IPTR stdpf;                                                         \
                                                                         \
-    OOP_GetAttr(HIDD_BM_OBJ(bitmap), aHidd_BitMap_PixFmt, (IPTR *)&pf);	\
-    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);			\
+    OOP_GetAttr(HIDD_BM_OBJ(bitmap), aHidd_BitMap_PixFmt, (IPTR *)&pf); \
+    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);                    \
                                                                         \
-    bug("[AllocSpriteData] Bitmap pixelformat: %lu\n", stdpf);		\
+    bug("[AllocSpriteData] Bitmap pixelformat: %lu\n", stdpf);          \
 }
 
 #else
@@ -39,21 +39,21 @@ if (IS_HIDD_BM(bitmap)) {\
 
 #if DEBUG > 1
 
-#define PRINT_BITMAP(bitmap, xmax, ymax)			\
-bug("[AllocSpriteData] Bitmap contents:\n");			\
-{								\
-    OOP_Object *bm = OBTAIN_HIDD_BM(bitmap);			\
-    ULONG x, y;							\
+#define PRINT_BITMAP(bitmap, xmax, ymax)                        \
+bug("[AllocSpriteData] Bitmap contents:\n");                    \
+{                                                               \
+    OOP_Object *bm = OBTAIN_HIDD_BM(bitmap);                    \
+    ULONG x, y;                                                 \
                                                                 \
-    for (y = 0; y < ymax; y++) {				\
-        for (x = 0; x < xmax; x++) {				\
-            HIDDT_Pixel pix = HIDD_BM_GetPixel(bm, x, y);	\
+    for (y = 0; y < ymax; y++) {                                \
+        for (x = 0; x < xmax; x++) {                            \
+            HIDDT_Pixel pix = HIDD_BM_GetPixel(bm, x, y);       \
                                                                 \
-            bug("0x%08lX ", pix);				\
-        }							\
-        bug("\n");						\
-    }								\
-    RELEASE_HIDD_BM(bm, bitmap);				\
+            bug("0x%08lX ", pix);                               \
+        }                                                       \
+        bug("\n");                                              \
+    }                                                           \
+    RELEASE_HIDD_BM(bm, bitmap);                                \
 }
 
 #else
@@ -205,7 +205,7 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
 
                Check if the source bitmap is a HIDD bitmap. If so, we do
                not specify pixelformat and take if from original bitmap
-               instead. 
+               instead.
                In fact the whole trick is a temporary hack. Old display
                drivers will fail to set or display pointer sprite if
                the supplied bitmap is not in LUT8 format. This is wrong

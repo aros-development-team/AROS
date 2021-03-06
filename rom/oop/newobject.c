@@ -17,49 +17,49 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH3(APTR, OOP_NewObject,
+        AROS_LH3(APTR, OOP_NewObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct OOP_IClass  *, classPtr, A0),
-	AROS_LHA(CONST_STRPTR    , classID, A1),
-	AROS_LHA(struct TagItem *, tagList, A2),
+        AROS_LHA(struct OOP_IClass  *, classPtr, A0),
+        AROS_LHA(CONST_STRPTR    , classID, A1),
+        AROS_LHA(struct TagItem *, tagList, A2),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 5, OOP)
+        struct Library *, OOPBase, 5, OOP)
 
 /*  FUNCTION
-	Creates a new object of given class based on the TagItem
-	parameters passed.
+        Creates a new object of given class based on the TagItem
+        parameters passed.
 
     INPUTS
-    	classPtr - pointer to a class. Use this if the class to
-		   create an instance of is private.
-	classID  - Public ID of the class to create an instance of.
-		   Use this if the class is public.
-	tagList  - List of TagItems (creation time attributes),
-		   that specifies what initial properties the new
-		   object should have.
+        classPtr - pointer to a class. Use this if the class to
+                   create an instance of is private.
+        classID  - Public ID of the class to create an instance of.
+                   Use this if the class is public.
+        tagList  - List of TagItems (creation time attributes),
+                   that specifies what initial properties the new
+                   object should have.
 
 
     RESULT
-    	Pointer to the new object, or NULL if object creation failed.
+        Pointer to the new object, or NULL if object creation failed.
 
     NOTES
-    	You should supply one of classPtr and classID, never
-	both. Use NULL for the unspecified one.
+        You should supply one of classPtr and classID, never
+        both. Use NULL for the unspecified one.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	OOP_DisposeObject()
+        OOP_DisposeObject()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+        29-10-95    digulla automatically created from
+                            intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
@@ -68,25 +68,25 @@
     struct pRoot_New p;
     OOP_Object *o;
 
-// bug("OOP_NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
+// bug("OOP_NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);
     EnterFunc(bug("OOP_NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
-		  classPtr, (classID ? (const char *)classID : "(null)"), tagList));
+                  classPtr, (classID ? (const char *)classID : "(null)"), tagList));
 
     if (!classPtr)
     {
-	/* If a public ID was given, find pointer to class */
-	if (classID)
-	    classPtr = OOP_FindClass(classID);
+        /* If a public ID was given, find pointer to class */
+        if (classID)
+            classPtr = OOP_FindClass(classID);
     }
 
     if (!classPtr)
-	ReturnPtr ("OOP_NewObject[No classPtr]", OOP_Object *, NULL);
+        ReturnPtr ("OOP_NewObject[No classPtr]", OOP_Object *, NULL);
 
     /*
      * We don't want the class to be freed while we work on it,
      * so we temporarily increment reference count.
      * Note that real instance counting happens inside rootclass,
-     * where it allocates and frees the memory.     
+     * where it allocates and frees the memory.
      */
     AROS_ATOMIC_INC(MD(classPtr)->objectcount);
 
@@ -98,7 +98,7 @@
     p.attrList = tagList;
     
 /*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
-*/  
+*/
     D(bug("mid=%ld\n", p.mID));
 
     /* Call the New() method of the specified class */
@@ -109,7 +109,7 @@
     AROS_ATOMIC_DEC(MD(classPtr)->objectcount);
 
 /*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
-*/    
+*/
     ReturnPtr ("OOP_NewObject", OOP_Object *, o);
     
     

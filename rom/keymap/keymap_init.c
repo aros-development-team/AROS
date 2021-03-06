@@ -51,7 +51,7 @@ static int KeymapInit(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->DefaultKeymap = &def_km;
 
-    /* Initialize and add the keymap.resource */    
+    /* Initialize and add the keymap.resource */
     LIBBASE->KeymapResource.kr_Node.ln_Type = NT_RESOURCE;
     LIBBASE->KeymapResource.kr_Node.ln_Name = "keymap.resource";
     NEWLIST( &(LIBBASE->KeymapResource.kr_List) );

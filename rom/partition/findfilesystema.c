@@ -26,8 +26,8 @@
         ph      - PartitionHandle to the table
         taglist - Taglist specifying arguments. Possible tags are:
 
-	      FST_ID   - specify ID of the filesystem.
-	      FST_NAME - specify name of the filesystem.
+              FST_ID   - specify ID of the filesystem.
+              FST_NAME - specify name of the filesystem.
 
               If more than one condition is specified for the search, logical
               AND will be applied to them. Empty taglist will give you the
@@ -53,7 +53,7 @@
 
     if (table->table)
     {
-    	struct PTFunctionTable *handler = table->table->handler;
+        struct PTFunctionTable *handler = table->table->handler;
 
         if (handler->findFileSystem)
             return handler->findFileSystem(PartitionBase, table, taglist);

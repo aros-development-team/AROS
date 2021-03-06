@@ -50,7 +50,7 @@
  * bevel.
  */
 static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD shadow,
-    	    	      WORD left, WORD top, WORD width, WORD height, BOOL thicken)
+                      WORD left, WORD top, WORD width, WORD height, BOOL thicken)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
@@ -120,7 +120,7 @@ static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD sha
             /* Thicken Top Side */
             Draw(rport, left + width - 2, top + 1);
         }
-	
+        
     } /* if */
     
 } /* DrawFrame */
@@ -134,74 +134,74 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
     struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct FrameIData   *fid = INST_DATA(cl, o);
 
-    struct TagItem  	*tstate = msg->ops_AttrList;
-    struct TagItem  	*tag;
-    ULONG            	 retval = 0UL;
+    struct TagItem      *tstate = msg->ops_AttrList;
+    struct TagItem      *tag;
+    ULONG                retval = 0UL;
 
     while ((tag = NextTagItem(&tstate)))
     {
         switch(tag->ti_Tag)
         {
             case IA_Recessed:
-        	fid->fid_Recessed   = (BOOL)( tag->ti_Data ? TRUE : FALSE );
-        	break;
+                fid->fid_Recessed   = (BOOL)( tag->ti_Data ? TRUE : FALSE );
+                break;
 
             case IA_EdgesOnly:
-        	fid->fid_EdgesOnly  = (BOOL)( tag->ti_Data ? TRUE : FALSE );
-        	break;
+                fid->fid_EdgesOnly  = (BOOL)( tag->ti_Data ? TRUE : FALSE );
+                break;
 
             case IA_FrameType:
-        	/*
-        	Data values for IA_FrameType (recognized by FrameIClass)
+                /*
+                Data values for IA_FrameType (recognized by FrameIClass)
 
-        	FRAME_DEFAULT:  The standard V37-type frame, which has
-        	thin edges.
-        	FRAME_BUTTON:  Standard button gadget frames, having thicker
-        	sides and edged corners.
-        	FRAME_RIDGE:  A ridge such as used by standard string gadgets.
-        	You can recess the ridge to get a groove image.
-        	FRAME_ICONDROPBOX: A broad ridge which is the standard imagery
-        	for areas in AppWindows where icons may be dropped.
-        	*/
-        	fid->fid_FrameType = (WORD)tag->ti_Data;
+                FRAME_DEFAULT:  The standard V37-type frame, which has
+                thin edges.
+                FRAME_BUTTON:  Standard button gadget frames, having thicker
+                sides and edged corners.
+                FRAME_RIDGE:  A ridge such as used by standard string gadgets.
+                You can recess the ridge to get a groove image.
+                FRAME_ICONDROPBOX: A broad ridge which is the standard imagery
+                for areas in AppWindows where icons may be dropped.
+                */
+                fid->fid_FrameType = (WORD)tag->ti_Data;
 
-        	switch(fid->fid_FrameType)
-        	{
-        	    case FRAME_DEFAULT:
-                	fid->fid_HOffset = fid->fid_VOffset = 1;
-                	break;
+                switch(fid->fid_FrameType)
+                {
+                    case FRAME_DEFAULT:
+                        fid->fid_HOffset = fid->fid_VOffset = 1;
+                        break;
 
-        	    case FRAME_BUTTON:
-                	DEBUG_IFRAME(dprintf("draw_frameiclass: FRAME_BUTTON\n"));
-                	fid->fid_HOffset = 1;
-                	fid->fid_VOffset = 1;
-                	break;
+                    case FRAME_BUTTON:
+                        DEBUG_IFRAME(dprintf("draw_frameiclass: FRAME_BUTTON\n"));
+                        fid->fid_HOffset = 1;
+                        fid->fid_VOffset = 1;
+                        break;
 
-        	    case FRAME_RIDGE:
-                	fid->fid_HOffset = 2;
-                	fid->fid_VOffset = 2;
-                	break;
+                    case FRAME_RIDGE:
+                        fid->fid_HOffset = 2;
+                        fid->fid_VOffset = 2;
+                        break;
 
-        	    case FRAME_ICONDROPBOX:
-                	fid->fid_HOffset = 3;
-                	fid->fid_VOffset = 3;
-                	break;
+                    case FRAME_ICONDROPBOX:
+                        fid->fid_HOffset = 3;
+                        fid->fid_VOffset = 3;
+                        break;
 
-        	} /* switch(fid->fid_FrameType) */
+                } /* switch(fid->fid_FrameType) */
 
-        	if (FRAME_SIZE(IntuitionBase) > 0)
-        	{
+                if (FRAME_SIZE(IntuitionBase) > 0)
+                {
                     fid->fid_HOffset *= 2;
-        	}
-		
-        	if (FRAME_SIZE(IntuitionBase) == 2)
-        	{
+                }
+                
+                if (FRAME_SIZE(IntuitionBase) == 2)
+                {
                     fid->fid_VOffset *= 2;
-        	}
-        	break;
+                }
+                break;
 
         } /* switch */
-	
+        
     } /* while */
 
     return(retval);
@@ -236,17 +236,17 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
 
     DEBUG_IFRAME(dprintf("draw_frameiclass: width %ld height %ld\n",width,height));
 
-    /* we will check the rastport present */    
+    /* we will check the rastport present */
     if(msg->imp_RPort)
     {
-        UWORD 	    	*pens = default_pens;
-        UWORD 	    	 left, top;
-        UWORD 	    	 shine, shadow;
-        BOOL 	    	 selected;
+        UWORD           *pens = default_pens;
+        UWORD            left, top;
+        UWORD            shine, shadow;
+        BOOL             selected;
         struct RastPort *rp = msg->imp_RPort;
-        BYTE	    	 oldapen = rp->FgPen;
-        BYTE	    	 oldbpen = rp->BgPen;
-        BYTE	    	 olddrmd = rp->DrawMode;
+        BYTE             oldapen = rp->FgPen;
+        BYTE             oldbpen = rp->BgPen;
+        BYTE             olddrmd = rp->DrawMode;
 
         /* set up our rendering pens */
         if (msg->imp_DrInfo)
@@ -276,12 +276,12 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
         {
             case IDS_SELECTED:
             case IDS_INACTIVESELECTED:
-        	selected = TRUE;
-        	break;
+                selected = TRUE;
+                break;
 
             default:
-        	selected = FALSE;
-        	break;
+                selected = FALSE;
+                break;
         } /* switch */
 
         /*
@@ -310,7 +310,7 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
         {
             /* swap pens */
             UWORD tmp;
-	    
+            
             tmp = shine;
             shine = shadow;
             shadow = tmp;
@@ -324,23 +324,23 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
         switch(fid->fid_FrameType)
         {
             case FRAME_DEFAULT:
-        	DrawFrame(cl, rp, shine, shadow, left, top, width, height, FALSE);
-        	break;
+                DrawFrame(cl, rp, shine, shadow, left, top, width, height, FALSE);
+                break;
 
             case FRAME_BUTTON:
-        	DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
-        	break;
+                DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
+                break;
 
             case FRAME_RIDGE:
-        	/* render outer pen-inverted thick bevel */
-        	DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
+                /* render outer pen-inverted thick bevel */
+                DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
 
-        	/* render inner thick bevel */
-        	DrawFrame(cl, rp, shadow, shine,
-                    	  left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
-                    	  width - fid->fid_HOffset, height - fid->fid_VOffset,
-                    	  TRUE);
-        	break;
+                /* render inner thick bevel */
+                DrawFrame(cl, rp, shadow, shine,
+                          left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
+                          width - fid->fid_HOffset, height - fid->fid_VOffset,
+                          TRUE);
+                break;
 
             case FRAME_ICONDROPBOX:
             {
@@ -352,7 +352,7 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
 
                 /* render inner thick bevel */
                 DrawFrame(cl, rp, shadow, shine, left + hoffset, top + voffset,
-                    	 width - hoffset * 2, height - voffset * 2, TRUE);
+                         width - hoffset * 2, height - voffset * 2, TRUE);
                 break;
             }
 
@@ -382,14 +382,14 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
             case IDS_DISABLED:
             case IDS_INACTIVEDISABLED:
             case IDS_SELECTEDDISABLED:
-        	RenderDisabledPattern(rp,
+                RenderDisabledPattern(rp,
                                       msg->imp_DrInfo,
                                       left,
                                       top,
                                       left + width - 1,
                                       top + height - 1,
                                       IntuitionBase);
-        	break;
+                break;
         }
 
         SetABPenDrMd(rp, oldapen, oldbpen, olddrmd);
@@ -463,17 +463,17 @@ IPTR FrameIClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-	struct FrameIData *fid = INST_DATA(cl, o);
+        struct FrameIData *fid = INST_DATA(cl, o);
 
-	/* set some defaults */
-	fid->fid_EdgesOnly = FALSE;
-	fid->fid_Recessed  = FALSE;
-	fid->fid_FrameType = FRAME_DEFAULT;
-	fid->fid_HOffset   = 1;
-	fid->fid_VOffset   = 1;
+        /* set some defaults */
+        fid->fid_EdgesOnly = FALSE;
+        fid->fid_Recessed  = FALSE;
+        fid->fid_FrameType = FRAME_DEFAULT;
+        fid->fid_HOffset   = 1;
+        fid->fid_VOffset   = 1;
  
-	/* Handle our special tags - overrides defaults */
-	set_frameiclass(cl, o, msg);
+        /* Handle our special tags - overrides defaults */
+        set_frameiclass(cl, o, msg);
     }
     
     return (IPTR)o;

@@ -10,23 +10,23 @@
 
     NAME */
 
-	AROS_LH1(void, OOP_RemoveClass,
+        AROS_LH1(void, OOP_RemoveClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(OOP_Class *, classPtr, A0),
+        AROS_LHA(OOP_Class *, classPtr, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 11, OOP)
+        struct Library *, OOPBase, 11, OOP)
 
 /*  FUNCTION
-	Remove a class from the list of public classes.
-	The class must have previously added with AddClass().
-	
+        Remove a class from the list of public classes.
+        The class must have previously added with AddClass().
+        
     INPUTS
-    	classPtr - Pointer to class that should be removed.
+        classPtr - Pointer to class that should be removed.
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -35,13 +35,13 @@
     BUGS
 
     SEE ALSO
-    	OOP_AddClass()
+        OOP_AddClass()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+        29-10-95    digulla automatically created from
+                            intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
@@ -49,9 +49,9 @@
 
     if (classPtr)
     {
-	ObtainSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
-	Remove ((struct Node *)classPtr);
-	ReleaseSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
+        ObtainSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
+        Remove ((struct Node *)classPtr);
+        ReleaseSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
 
     }
     

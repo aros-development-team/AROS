@@ -26,9 +26,9 @@
 /* flash() */
 void flash(UWORD);
 
-#define RED	0xf00
-#define GREEN	0x0f0
-#define BLUE	0x00f
+#define RED     0xf00
+#define GREEN   0x0f0
+#define BLUE    0x00f
 
 /*
     Architecture dependent function variations:
@@ -74,19 +74,19 @@ const struct SpecialResident resident =
     (struct Resident*)&resident,
     (APTR)&end,
     RTF_COLDSTART,
-    41, 		/* version */
+    41,                 /* version */
     NT_KICKMEM,
-    106,		/* Just above exec.library.
-			   Because exec is RTF_SINGLETASK, and this is
-			   RTF_COLDSTART, we'll still be started after
-			   exec. */
+    106,                /* Just above exec.library.
+                           Because exec is RTF_SINGLETASK, and this is
+                           RTF_COLDSTART, we'll still be started after
+                           exec. */
     (char *)name,
     (char *)&version[6],
     &start
     },
-    SR_COOKIE,		/* magic cookie to recognize a patchable library */
-    dearray,		/* pointer to array of function status bytes */
-    137 		/* highest vector slot in this library */
+    SR_COOKIE,          /* magic cookie to recognize a patchable library */
+    dearray,            /* pointer to array of function status bytes */
+    137                 /* highest vector slot in this library */
 };
 
 const char name[] = "exec.strap";
@@ -115,13 +115,13 @@ UBYTE dearray[] =
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 100-109 */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 110-119 */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 120-129 */
-    1, 1, 1, 1, 1, 1, 1, 1	  /* 130-137 */
+    1, 1, 1, 1, 1, 1, 1, 1        /* 130-137 */
 };
 
 #define SetFunc(offset,name) \
 { \
     if(dearray[offset]) \
-	SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec,offset)); \
+        SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec,offset)); \
 }
 
 int start(void)
@@ -138,24 +138,24 @@ int start(void)
 #if LMBSUPPORT > 0
     if(!(*ciapra & CIAF_GAMEPORT0))
     {
-	D(bug("\nLMB pressed. Clearing reset vectors and resetting.\n\n"));
-	SysBase->KickTagPtr = SysBase->KickMemPtr = SysBase->KickCheckSum = 0;
-	flash(RED);
-	ColdReboot(); /* Never returns. */
+        D(bug("\nLMB pressed. Clearing reset vectors and resetting.\n\n"));
+        SysBase->KickTagPtr = SysBase->KickMemPtr = SysBase->KickCheckSum = 0;
+        flash(RED);
+        ColdReboot(); /* Never returns. */
     }
 #endif
 
     D(bug("\nexec.strap installing...\n"));
 
     /*
-	This test will have to be changed if we start patching the exec version
-	number.
+        This test will have to be changed if we start patching the exec version
+        number.
     */
     if (SysBase->LibNode.lib_Version < 37)
     {
-	/* Refuse to run on anything less than ROM 2.04 */
-	D(bug("Found kickstart < 37. Exec.strap not started.\n"));
-	return 0;
+        /* Refuse to run on anything less than ROM 2.04 */
+        D(bug("Found kickstart < 37. Exec.strap not started.\n"));
+        return 0;
     }
 
     flash(BLUE);
@@ -170,13 +170,13 @@ int start(void)
 #endif
 
     /*
-	The biggie: SetFunction() as many library vectors as possible.
-	Protection from multitasking is provided by SetFunction (Forbid/Permit).
+        The biggie: SetFunction() as many library vectors as possible.
+        Protection from multitasking is provided by SetFunction (Forbid/Permit).
 
-	Some functions are safe to call even from interrupts, so protect these
-	with Disable/Enable:
-	Alert/Cause/Disable/Enable/FindName/FindPort/FindTask/PutMsg/ReplyMsg/Signal/
-	AddHead/AddTail/Enqueue/RemHead/RemTail/Insert/Remove ... any more?
+        Some functions are safe to call even from interrupts, so protect these
+        with Disable/Enable:
+        Alert/Cause/Disable/Enable/FindName/FindPort/FindTask/PutMsg/ReplyMsg/Signal/
+        AddHead/AddTail/Enqueue/RemHead/RemTail/Insert/Remove ... any more?
     */
     Disable();
 
@@ -207,27 +207,27 @@ int start(void)
     /* The "move.w ccr,d0" should really be implemented as part of the jumptable, for speed.
        Do not patch, for now. */
     if ((cpuflags & AFF_68010) == AFF_68010)
-	SetFunc( 88, GetCC_10);
+        SetFunc( 88, GetCC_10);
 #endif
 
 #if 0
     /*
-	BTW:  What bit(s) is (are) set for the MC68060?
-	ANS:  Bit 7.
-	BTW2: They would really be set by the 68060.library, which will obviously
-	      not have executed at this point in the reset-procedure.
-	ANS:  So we have to recognize it ourselves. Write routine.
-	BTW3: If there is an agreed upon bit for the 68060, we could examine the
-	      type of processor for ourselves in exec.strap, and update AttnFlags
-	      accordingly.
-	ANS:  See 2.
-	BTW4: The 68060 can be recognized by its Processor Configuration Register (PCR).
-	      This register also contains the bit to enable Superscalar Operation,
-	      which we could set at this point in the reset-procedure to speed
-	      things up considerably (if nothing breaks).
-	ANS:  Just try it.
-	BTW5: For the MC68060, we could also enable the Branch Cache at this point.
-	ANS:  Yep.
+        BTW:  What bit(s) is (are) set for the MC68060?
+        ANS:  Bit 7.
+        BTW2: They would really be set by the 68060.library, which will obviously
+              not have executed at this point in the reset-procedure.
+        ANS:  So we have to recognize it ourselves. Write routine.
+        BTW3: If there is an agreed upon bit for the 68060, we could examine the
+              type of processor for ourselves in exec.strap, and update AttnFlags
+              accordingly.
+        ANS:  See 2.
+        BTW4: The 68060 can be recognized by its Processor Configuration Register (PCR).
+              This register also contains the bit to enable Superscalar Operation,
+              which we could set at this point in the reset-procedure to speed
+              things up considerably (if nothing breaks).
+        ANS:  Just try it.
+        BTW5: For the MC68060, we could also enable the Branch Cache at this point.
+        ANS:  Yep.
     */
 
 #warning TODO: Rework
@@ -242,19 +242,19 @@ int start(void)
     SetFunc(128, CachePostDMA);
     if ((cpuflags & AFF_68020) == AFF_68020)
     {
-	SetFunc(106, CacheClearU_20);
+        SetFunc(106, CacheClearU_20);
 
-	if ((cpuflags & AFF_68030) == AFF_68030)
-	{
-	    SetFunc(128, CachePostDMA_30);
+        if ((cpuflags & AFF_68030) == AFF_68030)
+        {
+            SetFunc(128, CachePostDMA_30);
 
-	    if ((cpuflags & AFF_68040) == AFF_68040)
-	    {
-		SetFunc(106, CacheClearU_40);
-		SetFunc(127, CachePreDMA_40);
-		SetFunc(128, CachePostDMA_40);
-	    }
-	}
+            if ((cpuflags & AFF_68040) == AFF_68040)
+            {
+                SetFunc(106, CacheClearU_40);
+                SetFunc(127, CachePreDMA_40);
+                SetFunc(128, CachePostDMA_40);
+            }
+        }
     }
 #endif
     Enable();
@@ -350,16 +350,16 @@ int start(void)
     SetFunc(121, ColdReboot);
 
     /*
-	This test will have to be changed if we start patching the exec version
-	number.
+        This test will have to be changed if we start patching the exec version
+        number.
     */
     if (SysBase->LibNode.lib_Version >= 39)
     {
-	D(bug("Found kickstart >= 39. Extra functions installed.\n"));
-	/* V39+ functions: */
-	SetFunc(129, AddMemHandler);
-	SetFunc(130, RemMemHandler);
-	SetFunc(135, TaggedOpenLibrary);
+        D(bug("Found kickstart >= 39. Extra functions installed.\n"));
+        /* V39+ functions: */
+        SetFunc(129, AddMemHandler);
+        SetFunc(130, RemMemHandler);
+        SetFunc(135, TaggedOpenLibrary);
     }
     /* We don't have to clear any caches, SetFunction takes care of them. */
 
@@ -377,8 +377,8 @@ void flash(UWORD color)
 
     for (x=0; x<1000; x++)
     {
-	for (y = 200; y; y--) *color00 = color;
-	for (y = 200; y; y--) *color00 = 0x000;
+        for (y = 200; y; y--) *color00 = color;
+        for (y = 200; y; y--) *color00 = 0x000;
     }
 }
 

@@ -11,33 +11,33 @@
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH1I(void, NewMinList,
+        AROS_LH1I(void, NewMinList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MinList *, list, A0),
+        AROS_LHA(struct MinList *, list, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 138, Exec)
+        struct ExecBase *, SysBase, 138, Exec)
 
 /*  FUNCTION
-	Initialize a list. After that, you can use functions like
-	AddHead(), AddTail() and Insert() on the list.
+        Initialize a list. After that, you can use functions like
+        AddHead(), AddTail() and Insert() on the list.
 
     INPUTS
-	list - the list to be initialized
+        list - the list to be initialized
 
     RESULT
-	None.
+        None.
 
     NOTES
 
     EXAMPLE
-	See below.
+        See below.
 
     BUGS
 
     SEE ALSO
-	NEWLIST() macro, libamiga/NewList()
+        NEWLIST() macro, libamiga/NewList()
 
     INTERNALS
 

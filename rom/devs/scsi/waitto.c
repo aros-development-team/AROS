@@ -40,8 +40,8 @@ ULONG scsi_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
     D(bug("[SCSI  ] Signals received: %lx ('%s')\n", sigs, t->ln_Name));
     if (0 == (sigs & sig))
     {
-	if (!CheckIO(tmr))
-	    AbortIO(tmr);
+        if (!CheckIO(tmr))
+            AbortIO(tmr);
     }
     WaitIO(tmr);
 

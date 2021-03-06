@@ -64,7 +64,7 @@ static int wd33c93_HiddInit(struct scsiwd33c93Base *base)
     if ((base->scsiClass = OOP_FindClass(CLID_Hidd_SCSI)) == NULL)
     {
         OOP_ReleaseAttrBasesArray(&base->hiddAttrBase, attrBaseIDs);
-        return FALSE; 
+        return FALSE;
     }
     D(
       bug("[SCSI:WD33C93] %s: Base %s Class @ 0x%p\n", __PRETTY_FUNCTION__, CLID_Hidd_SCSI, base->scsiClass);

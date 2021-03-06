@@ -16,14 +16,14 @@
 
     NAME */
 
-	AROS_LH2(void, FontExtent,
+        AROS_LH2(void, FontExtent,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TextFont   *, font      , A0),
-	AROS_LHA(struct TextExtent *, fontExtent, A1),
+        AROS_LHA(struct TextFont   *, font      , A0),
+        AROS_LHA(struct TextExtent *, fontExtent, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 127, Graphics)
+        struct GfxBase *, GfxBase, 127, Graphics)
 
 /*  FUNCTION
 
@@ -65,39 +65,39 @@
 {
     AROS_LIBFUNC_INIT
 
-    WORD i;			   /* Loop variable */
+    WORD i;                        /* Loop variable */
     WORD maxwidth = -0x7fff;
     WORD minwidth =  0x7fff;
     WORD width    =  0;
     
     for(i = 0; i <= font->tf_HiChar - font->tf_LoChar; i++)
     {
-	WORD kern;                 /* Kerning value for the character */
-	WORD wspace;               /* Width of character including CharSpace */
-	
-	kern = 0;
-	
-	if(font->tf_CharKern != NULL)
-	    kern = ((WORD *)font->tf_CharKern)[i];
-	
-	minwidth = min(minwidth, kern);
-	
-	/* tf_CharLoc[2*i+1] contains the width of the glyph bitmap.
-	   But in AROS tf_CharLoc is being handled like an LONG array,
-	   not a WORD array, so the width is tf_CarLoc[i] & 0xFFFF */
-	maxwidth = max(maxwidth, kern + ((((LONG *)font->tf_CharLoc)[i]) & 0xFFFF));
-	
-	if(font->tf_CharSpace != NULL)
-	    wspace = kern + ((WORD *)font->tf_CharSpace)[i];
-	else
-	    /* Is it possible to have kerning values but no CharSpace? */
-	    wspace = kern + font->tf_XSize;
+        WORD kern;                 /* Kerning value for the character */
+        WORD wspace;               /* Width of character including CharSpace */
+        
+        kern = 0;
+        
+        if(font->tf_CharKern != NULL)
+            kern = ((WORD *)font->tf_CharKern)[i];
+        
+        minwidth = min(minwidth, kern);
+        
+        /* tf_CharLoc[2*i+1] contains the width of the glyph bitmap.
+           But in AROS tf_CharLoc is being handled like an LONG array,
+           not a WORD array, so the width is tf_CarLoc[i] & 0xFFFF */
+        maxwidth = max(maxwidth, kern + ((((LONG *)font->tf_CharLoc)[i]) & 0xFFFF));
+        
+        if(font->tf_CharSpace != NULL)
+            wspace = kern + ((WORD *)font->tf_CharSpace)[i];
+        else
+            /* Is it possible to have kerning values but no CharSpace? */
+            wspace = kern + font->tf_XSize;
 
 
-	if(font->tf_Flags & FPF_REVPATH)
-	    width = min(wspace, width);
-	else
-	    width = max(wspace, width);
+        if(font->tf_Flags & FPF_REVPATH)
+            width = min(wspace, width);
+        else
+            width = max(wspace, width);
     }
  
     fontExtent->te_Width       = width;

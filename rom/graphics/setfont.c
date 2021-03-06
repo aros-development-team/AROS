@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$	  $Log
+    $Id$          $Log
 
     Desc: Graphics function SetFont()
 */
@@ -15,24 +15,24 @@
 #include <graphics/text.h>
 #include <proto/graphics.h>
 
-	AROS_LH2(void, SetFont,
+        AROS_LH2(void, SetFont,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(struct TextFont *, textFont, A0),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(struct TextFont *, textFont, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 11, Graphics)
+        struct GfxBase *, GfxBase, 11, Graphics)
 
 /*  FUNCTION
-	Select a new font for rendering strings in a RastPort.
+        Select a new font for rendering strings in a RastPort.
 
     INPUTS
-	rp - Change this RastPort
-	textFont - This is the new font
+        rp - Change this RastPort
+        textFont - This is the new font
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -52,10 +52,10 @@
 
     if (textFont)
     {
-	rp->Font       = textFont;
-	rp->TxWidth    = textFont->tf_XSize;
-	rp->TxHeight   = textFont->tf_YSize;
-	rp->TxBaseline = textFont->tf_Baseline;
+        rp->Font       = textFont;
+        rp->TxWidth    = textFont->tf_XSize;
+        rp->TxHeight   = textFont->tf_YSize;
+        rp->TxBaseline = textFont->tf_Baseline;
     }
     
     AROS_LIBFUNC_EXIT

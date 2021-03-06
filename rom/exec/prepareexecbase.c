@@ -43,9 +43,9 @@ extern struct Resident Exec_resident; /* Need this for lib_IdString */
 
 extern void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx);
 AROS_LD3(ULONG, MakeFunctions,
-	 AROS_LDA(APTR, target, A0),
-	 AROS_LDA(CONST_APTR, functionArray, A1),
-	 AROS_LDA(CONST_APTR, funcDispBase, A2),
+         AROS_LDA(APTR, target, A0),
+         AROS_LDA(CONST_APTR, functionArray, A1),
+         AROS_LDA(CONST_APTR, funcDispBase, A2),
          struct ExecBase *, SysBase, 15, Exec);
 
 /* Default finaliser. */
@@ -62,8 +62,8 @@ static void Exec_TaskFinaliser(void)
 void _aros_not_implemented(char *X)
 {
     kprintf("Unsupported function at offset -0x%h in %s\n",
-	    ABS(*(WORD *)((&X)[-1]-2)),
-	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
+            ABS(*(WORD *)((&X)[-1]-2)),
+            ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
 
 struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
@@ -84,15 +84,15 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 BOOL IsSysBaseValid(struct ExecBase *sysbase)
 {
     if (sysbase == NULL)
-	return FALSE;
+        return FALSE;
 #ifdef __mc68000
     if (((IPTR)sysbase) & 0x80000001)
-	return FALSE;
+        return FALSE;
 #endif
     if (sysbase->ChkBase != ~(IPTR)sysbase)
-	return FALSE;
+        return FALSE;
     if (sysbase->SoftVer != VERSION_NUMBER)
-	return FALSE;
+        return FALSE;
     /* more tests? */
     return GetSysBaseChkSum(sysbase) == 0xffff;
 }
@@ -102,7 +102,7 @@ UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
      UWORD sum = 0;
      UWORD *p = (UWORD*)&sysbase->SoftVer;
      while (p <= &sysbase->ChkSum)
-	sum += *p++;
+        sum += *p++;
      return sum;
 }
 
@@ -152,7 +152,7 @@ static APTR allocmem(struct MemHeader *mh, ULONG size, ULONG attributes)
  *  change this. You WILL break existing ports if you do not modify their code accordingly. There's
  *  nothing really bad in the fact that global SysBase is touched here and changing this does not
  *  really win something.
- *						Pavel Fedin <pavel_fedin@mail.ru>
+ *                                              Pavel Fedin <pavel_fedin@mail.ru>
  */
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 {
@@ -173,12 +173,12 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
      */
     if (IsSysBaseValid(SysBase))
     {
-	ColdCapture  = SysBase->ColdCapture;
-    	CoolCapture  = SysBase->CoolCapture;
-    	WarmCapture  = SysBase->WarmCapture;
-    	KickMemPtr   = SysBase->KickMemPtr; 
-    	KickTagPtr   = SysBase->KickTagPtr;
-    	KickCheckSum = SysBase->KickCheckSum;
+        ColdCapture  = SysBase->ColdCapture;
+        CoolCapture  = SysBase->CoolCapture;
+        WarmCapture  = SysBase->WarmCapture;
+        KickMemPtr   = SysBase->KickMemPtr;
+        KickTagPtr   = SysBase->KickTagPtr;
+        KickCheckSum = SysBase->KickCheckSum;
     }
 
     /* Calculate the size of the vector table */
@@ -190,22 +190,22 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     /* Allocate memory for library base */
     mem = allocmem(mh, negsize + sizeof(struct IntExecBase), MEMF_CLEAR);
     if (!mem)
-    	return NULL;
+        return NULL;
 
     SysBase = mem + negsize;
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data */
     if (!Exec_PreparePlatform(&PD(SysBase), msg))
-	return NULL;
+        return NULL;
 #endif
 
     /* Setup function vectors */
     AROS_CALL3(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec, 15),
-	      AROS_UFCA(APTR, SysBase, A0),
-	      AROS_UFCA(CONST_APTR, LIBFUNCTABLE, A1),
-	      AROS_UFCA(CONST_APTR, NULL, A2),
-	      struct ExecBase *, SysBase);
+              AROS_UFCA(APTR, SysBase, A0),
+              AROS_UFCA(CONST_APTR, LIBFUNCTABLE, A1),
+              AROS_UFCA(CONST_APTR, NULL, A2),
+              struct ExecBase *, SysBase);
 
     /* Set default values */
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
@@ -288,8 +288,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 
     for (i = 0; i < 5; i++)
     {
-	NEWLIST(&SysBase->SoftInts[i].sh_List);
-	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
+        NEWLIST(&SysBase->SoftInts[i].sh_List);
+        SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
     }
 
     NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
@@ -315,35 +315,35 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     args = (char *)LibGetTagData(KRN_CmdLine, 0, msg);
     if (args)
     {
-    	char *opts;
+        char *opts;
 
-	/*
-	 * Enable mungwall before the first AllocMem().
-	 * Yes, we have actually already called stdAlloc() once
-	 * in order to allocate memory for SysBase itself, however
-	 * this is not a real problem because it is never going
-	 * to be freed.
-	 *
-	 * We store mungwall setting in private flags because it must not be
-	 * switched at runtime (or hard crash will happen).
-	 */
-	opts = strcasestr(args, "mungwall");
-	if (opts)
-	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+        /*
+         * Enable mungwall before the first AllocMem().
+         * Yes, we have actually already called stdAlloc() once
+         * in order to allocate memory for SysBase itself, however
+         * this is not a real problem because it is never going
+         * to be freed.
+         *
+         * We store mungwall setting in private flags because it must not be
+         * switched at runtime (or hard crash will happen).
+         */
+        opts = strcasestr(args, "mungwall");
+        if (opts)
+            PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 
-	opts = strcasestr(args, "stacksnoop");
-	if (opts)
-	    PrivExecBase(SysBase)->IntFlags = EXECF_StackSnoop;
+        opts = strcasestr(args, "stacksnoop");
+        if (opts)
+            PrivExecBase(SysBase)->IntFlags = EXECF_StackSnoop;
 
-	/*
-	 * Parse system runtime debug flags.
-	 * These are public. In future they will be editable by prefs program.
-	 * However in order to be able to turn them on during early startup,
-	 * we apply them also here.
-	 */
-	opts = strcasestr(args, "sysdebug=");
-	if (opts)
-	    SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
+        /*
+         * Parse system runtime debug flags.
+         * These are public. In future they will be editable by prefs program.
+         * However in order to be able to turn them on during early startup,
+         * we apply them also here.
+         */
+        opts = strcasestr(args, "sysdebug=");
+        if (opts)
+            SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
     }
 
     NEWLIST(&PrivExecBase(SysBase)->TaskStorageSlots);

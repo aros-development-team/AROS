@@ -12,19 +12,19 @@
 
     NAME */
 
-	AROS_LH1(void, DeleteIORequest,
+        AROS_LH1(void, DeleteIORequest,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, iorequest, A0),
+        AROS_LHA(APTR, iorequest, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 110, Exec)
+        struct ExecBase *, SysBase, 110, Exec)
 
 /*  FUNCTION
-	Delete an I/O request created with CreateIORequest().
+        Delete an I/O request created with CreateIORequest().
 
     INPUTS
-	iorequest - Pointer to I/O request structure or NULL.
+        iorequest - Pointer to I/O request structure or NULL.
 
     RESULT
 
@@ -43,7 +43,7 @@
     AROS_LIBFUNC_INIT
 
     if(iorequest != NULL)
-	/* Just free the memory */
-	FreeMem(iorequest, ((struct Message *)iorequest)->mn_Length);
+        /* Just free the memory */
+        FreeMem(iorequest, ((struct Message *)iorequest)->mn_Length);
     AROS_LIBFUNC_EXIT
 } /* DeleteIORequest() */

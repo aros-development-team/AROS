@@ -20,7 +20,7 @@
 
 /****************************************************************************************/
 
-#define COMPTYPE_NORMAL  1 
+#define COMPTYPE_NORMAL  1
 #define COMPTYPE_PATTERN 2
 #define COMPTYPE_UNKNOWN 3
 
@@ -144,7 +144,7 @@ LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
                 if (comptype == COMPTYPE_PATTERN)
                 {
                     patternend = patternpos;
-                    break;              
+                    break;
                 }
             }
             else if (c == '\0')
@@ -328,7 +328,7 @@ LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase)
         
         for(ac = ap->ap_Base; (ac && !error); ac = ac->an_Child)
         {
-            if (!AddPart(ap->ap_Buf, 
+            if (!AddPart(ap->ap_Buf,
                          ((ac->an_Flags & DDF_PatternBit) ? ac->an_Info.fib_FileName : ac->an_String),
                          ap->ap_Strlen))
             {

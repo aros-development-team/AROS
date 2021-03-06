@@ -443,7 +443,7 @@ static void answer_read_request(struct IOStdReq *req,
 
     D(bug("answer_read_request\n"));
     /* This function assumes that there are at least one character
-       available in the unitsinput buffer 
+       available in the unitsinput buffer
      */
 
     unit = (Object *) req->io_Unit;
@@ -489,9 +489,9 @@ static void answer_read_request(struct IOStdReq *req,
      */
 
 /* bug("receiving task=%s, sigbit=%d\n, mode=%d"
-	, ((struct Task *)req->io_Message.mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name
-	, req->io_Message.mn_ReplyPort->mp_SigBit
-	, req->io_Message.mn_ReplyPort->mp_Flags
+        , ((struct Task *)req->io_Message.mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name
+        , req->io_Message.mn_ReplyPort->mp_SigBit
+        , req->io_Message.mn_ReplyPort->mp_Flags
 );
 */
     ReplyMsg((struct Message *)req);

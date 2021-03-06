@@ -3,9 +3,9 @@
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
-#define	DEBUG_BUILDSYSREQUEST(x)
+#define DEBUG_BUILDSYSREQUEST(x)
 #define DEBUG_FREESYSREQUEST(x)
-#define	DEBUG_SYSREQHANDLER(x)
+#define DEBUG_SYSREQHANDLER(x)
 
 /**********************************************************************************************/
 #include <proto/exec.h>
@@ -48,9 +48,9 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
                                       STRPTR *gadgetlabels,
                                       struct IntuitionBase *IntuitionBase);
 static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
-			        STRPTR *gadgetlabels,
-			        struct Screen *scr,
-			        struct IntuitionBase *IntuitionBase);
+                                STRPTR *gadgetlabels,
+                                struct Screen *scr,
+                                struct IntuitionBase *IntuitionBase);
 static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
                              struct Window *win, struct Screen *scr,
                              struct Gadget *gadgets,
@@ -67,8 +67,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
 /**********************************************************************************************/
 
 struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct IntuiText *bodytext,
-				  struct IntuiText *postext, struct IntuiText *negtext,
-				  ULONG IDCMPFlags, WORD width, WORD height, struct IntuitionBase *IntuitionBase)
+                                  struct IntuiText *postext, struct IntuiText *negtext,
+                                  ULONG IDCMPFlags, WORD width, WORD height, struct IntuitionBase *IntuitionBase)
 {
     struct Screen               *scr = NULL, *lockedscr = NULL;
     struct Window               *req;
@@ -91,7 +91,7 @@ struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct
 
     /* get requester title */
     if (!reqtitle)
-	reqtitle = window ? window->Title : (STRPTR)"System Request"; /* stegerg: should be localized */
+        reqtitle = window ? window->Title : (STRPTR)"System Request"; /* stegerg: should be localized */
 
     /* get screen and screendrawinfo */
     if (window)
@@ -142,20 +142,20 @@ struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct
             {
                 struct TagItem win_tags[] =
                 {
-                    {WA_Width                                       , dims.width    	    	    	    	    	    	    	},
-                    {WA_Height                                      , dims.height                    	    	    	    	    	},
-                    {WA_Left                                        , (scr->Width/2) - (dims.width/2) 	    	    	    	    	},
-                    {WA_Top                                         , (scr->Height/2) - (dims.height/2)     	    	    	    	},
+                    {WA_Width                                       , dims.width                                                        },
+                    {WA_Height                                      , dims.height                                                       },
+                    {WA_Left                                        , (scr->Width/2) - (dims.width/2)                                   },
+                    {WA_Top                                         , (scr->Height/2) - (dims.height/2)                                 },
                     {WA_IDCMP                                       , (IDCMP_GADGETUP | IDCMP_RAWKEY | (IDCMPFlags & ~IDCMP_VANILLAKEY))},
-                    {WA_Gadgets                                     , (IPTR)gadgets                 	    	    	    	    	},
-                    {WA_Title                                       , (IPTR)reqtitle                	    	    	    	    	},
-                    {(lockedscr ? WA_PubScreen : WA_CustomScreen)   , (IPTR)scr                     	    	    	    	    	},
+                    {WA_Gadgets                                     , (IPTR)gadgets                                                     },
+                    {WA_Title                                       , (IPTR)reqtitle                                                    },
+                    {(lockedscr ? WA_PubScreen : WA_CustomScreen)   , (IPTR)scr                                                         },
                     {WA_Flags                                       , WFLG_DRAGBAR     |
-                     	    	    	    	    	    	      WFLG_DEPTHGADGET |
-                     	    	    	    	    	    	      WFLG_ACTIVATE    |
-                     	    	    	    	    	    	      WFLG_RMBTRAP   /*|
-                                                            	      WFLG_SIMPLE_REFRESH*/         	    	    	    	    	},
-                    {TAG_DONE                                                                       	    	    	    	    	}
+                                                                      WFLG_DEPTHGADGET |
+                                                                      WFLG_ACTIVATE    |
+                                                                      WFLG_RMBTRAP   /*|
+                                                                      WFLG_SIMPLE_REFRESH*/                                             },
+                    {TAG_DONE                                                                                                           }
                 };
 
                 req = OpenWindowTagList(NULL, win_tags);
@@ -227,17 +227,17 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
             all events we need */
             case IDCMP_RAWKEY:
             {
-    	    	#define RKBUFLEN 1
-		
-                struct InputEvent ie;
-                char 	    	  rawbuffer[RKBUFLEN];
+                #define RKBUFLEN 1
                 
-                ie.ie_Class 	    = IECLASS_RAWKEY;
+                struct InputEvent ie;
+                char              rawbuffer[RKBUFLEN];
+                
+                ie.ie_Class         = IECLASS_RAWKEY;
                 ie.ie_SubClass      = 0;
-                ie.ie_Code  	    = msg->Code;
+                ie.ie_Code          = msg->Code;
                 ie.ie_Qualifier     = 0;
                 ie.ie_EventAddress  = (APTR *) *((IPTR *)msg->IAddress);
-		
+                
                 if (KeymapBase && MapRawKey(&ie,rawbuffer,RKBUFLEN,0))
                 {
                     if (msg->Qualifier & IEQUALIFIER_LCOMMAND)
@@ -248,8 +248,8 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
                             {
                                 result = 1;
                             }
-			    else
-			    {
+                            else
+                            {
                                 result = 0;
                             }
                         }
@@ -294,9 +294,9 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
 
 void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget   	    	*gadgets;
-    STRPTR  	    	     	*gadgetlabels;
-    struct IntRequestUserData 	*requserdata;
+    struct Gadget               *gadgets;
+    STRPTR                      *gadgetlabels;
+    struct IntRequestUserData   *requserdata;
 
     DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: window 0x%lx\n", (ULONG) window));
 
@@ -345,12 +345,12 @@ static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct TagItem   frame_tags[] =
     {
-        {IA_Left        , req->BorderLeft + OUTERSPACING_X  	    	    	    	    	},
+        {IA_Left        , req->BorderLeft + OUTERSPACING_X                                      },
         {IA_Top         , req->BorderTop + OUTERSPACING_Y                                       },
         {IA_Width       , req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2  },
         {IA_Height      , req->Height - req->BorderTop - req->BorderBottom -
-            	    	  dims->fontheight - OUTERSPACING_Y * 2 -
-            	    	  TEXTGADGETSPACING - BUTTONBORDER_Y * 2                                },
+                          dims->fontheight - OUTERSPACING_Y * 2 -
+                          TEXTGADGETSPACING - BUTTONBORDER_Y * 2                                },
         {IA_Recessed    , TRUE                                                                  },
         {IA_EdgesOnly   , FALSE                                                                 },
         {TAG_DONE                                                                               }
@@ -435,7 +435,7 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
      * See also similar check for width below.
      */
     if (textboxheight > dims->height)
-	dims->height = textboxheight;
+        dims->height = textboxheight;
 
     if (dims->height > scr->Height)
         return FALSE;
@@ -461,13 +461,13 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
     dims->itextleft = scr->WBorLeft + OUTERSPACING_X + TEXTBOXBORDER_X;
     if (textboxwidth <= gadgetswidth)
     {
-	dims->itextleft += (gadgetswidth - textboxwidth) / 2;
-	textboxwidth = gadgetswidth;
+        dims->itextleft += (gadgetswidth - textboxwidth) / 2;
+        textboxwidth = gadgetswidth;
     }
 
     /* EXPERIMENTAL: Ensure that text fits into requested width */
     if (textboxwidth > dims->width)
-	dims->width = textboxwidth;
+        dims->width = textboxwidth;
 
     dims->width += OUTERSPACING_X * 2 + scr->WBorLeft + scr->WBorRight;
     if (dims->width > scr->Width)
@@ -519,12 +519,12 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
         WORD           gadgetid = (currentgadget == (dims->gadgets - 1)) ? 0 : currentgadget + 1;
         struct TagItem gad_tags[] =
         {
-            {GA_ID          , gadgetid 	    	    	    	    },
+            {GA_ID          , gadgetid                              },
             {GA_Previous    , (IPTR)thisgadget                      },
             {GA_Left        , xoffset                               },
             {GA_Top         , dims->height -
-             	    	      scr->WBorBottom - dims->fontheight -
-             	    	      OUTERSPACING_Y - BUTTONBORDER_Y * 2   },
+                              scr->WBorBottom - dims->fontheight -
+                              OUTERSPACING_Y - BUTTONBORDER_Y * 2   },
             {GA_Image       , (IPTR)gadgetframe                     },
             {GA_RelVerify   , TRUE                                  },
             {TAG_DONE                                               }

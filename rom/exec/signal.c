@@ -20,8 +20,8 @@
 #include "kernel_ipi.h"
 
 AROS_UFH3(IPTR, signal_hook,
-    AROS_UFHA(struct IPIHook *, hook, A0), 
-    AROS_UFHA(APTR, object, A2), 
+    AROS_UFHA(struct IPIHook *, hook, A0),
+    AROS_UFHA(APTR, object, A2),
     AROS_UFHA(APTR, message, A1)
 )
 {
@@ -108,7 +108,7 @@ AROS_UFH3(IPTR, signal_hook,
         // We cannot use KrnAllocCPUMask() since this function uses AllocMem
         // And we cannot use AllocMem from interrupts (where Signal() is allowed)...
         ULONG mask[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; // CPU mask large enough for 256 CPUs...
-        void *cpu_mask = &mask; 
+        void *cpu_mask = &mask;
 
         args[0] = (IPTR)SysBase;
         args[1] = (IPTR)task;
@@ -183,7 +183,7 @@ AROS_UFH3(IPTR, signal_hook,
 #endif
             D(bug("[Exec] Signal: TF_EXCEPT set\n");)
 
-            /* 
+            /*
                     if the target task is running (called from within interrupt handler, or from another processor),
                     raise the exception or defer it for later.
                 */

@@ -18,39 +18,39 @@
 
     NAME */
 
-	AROS_LH2(void, PutMsg,
+        AROS_LH2(void, PutMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, port,    A0),
-	AROS_LHA(struct Message *, message, A1),
+        AROS_LHA(struct MsgPort *, port,    A0),
+        AROS_LHA(struct Message *, message, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 61, Exec)
+        struct ExecBase *, SysBase, 61, Exec)
 
 /*  FUNCTION
-	Sends a message to a given message port. Messages are not copied
-	from one task to another but must lie in shared memory instead.
-	Therefore the owner of the message may generally not reuse it before
-	it is returned. But this depends on the two tasks sharing the message.
+        Sends a message to a given message port. Messages are not copied
+        from one task to another but must lie in shared memory instead.
+        Therefore the owner of the message may generally not reuse it before
+        it is returned. But this depends on the two tasks sharing the message.
 
     INPUTS
-	port	- Pointer to messageport.
-	message - Pointer to message.
+        port    - Pointer to messageport.
+        message - Pointer to message.
 
     RESULT
 
     NOTES
-	It is legal to send a message from within interrupts.
+        It is legal to send a message from within interrupts.
 
-	Messages may either trigger a signal at the owner of the messageport
-	or raise a software interrupt, depending on port->mp_Flags&PF_ACTION.
+        Messages may either trigger a signal at the owner of the messageport
+        or raise a software interrupt, depending on port->mp_Flags&PF_ACTION.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	WaitPort(), GetMsg()
+        WaitPort(), GetMsg()
 
     INTERNALS
 
@@ -93,28 +93,28 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 
     if (port->mp_SigTask)
     {
-	ASSERT_VALID_PTR(port->mp_SigTask);
+        ASSERT_VALID_PTR(port->mp_SigTask);
 
-	/* And trigger the action. */
-	switch(port->mp_Flags & PF_ACTION)
-	{
-	    case PA_SIGNAL:
-	    	D(bug("[EXEC] PutMsg: PA_SIGNAL -> Task 0x%p, Signal %08x\n", port->mp_SigTask, (1 << port->mp_SigBit));)
+        /* And trigger the action. */
+        switch(port->mp_Flags & PF_ACTION)
+        {
+            case PA_SIGNAL:
+                D(bug("[EXEC] PutMsg: PA_SIGNAL -> Task 0x%p, Signal %08x\n", port->mp_SigTask, (1 << port->mp_SigBit));)
 
-		/* Send the signal */
-		Signal((struct Task *)port->mp_SigTask, (1 << port->mp_SigBit));
-		break;
+                /* Send the signal */
+                Signal((struct Task *)port->mp_SigTask, (1 << port->mp_SigBit));
+                break;
 
-	    case PA_SOFTINT:
-	    	D(bug("[EXEC] PutMsg: PA_SOFTINT -> Int %s\n", ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name);)
+            case PA_SOFTINT:
+                D(bug("[EXEC] PutMsg: PA_SOFTINT -> Int %s\n", ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name);)
 
-		/* Raise a software interrupt */
-		Cause((struct Interrupt *)port->mp_SoftInt);
-		break;
+                /* Raise a software interrupt */
+                Cause((struct Interrupt *)port->mp_SoftInt);
+                break;
 
-	    case PA_IGNORE:
-		/* Do nothing. */
-		break;
+            case PA_IGNORE:
+                /* Do nothing. */
+                break;
 
             case PA_CALL:
                 D(bug("[EXEC] PutMsg: PA_CALL -> Func @ 0x%p\n", port->mp_SigTask, port);)
@@ -127,6 +127,6 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
                     AROS_UFCA(struct MsgPort *,  port,    D0),
                     AROS_UFCA(struct ExecBase *, SysBase, A6));
                 break;
-	}
+        }
     }
 }

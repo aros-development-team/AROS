@@ -53,7 +53,7 @@
     struct DisplayInfo disp;
     
     if (GetDisplayInfoData(NULL, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeID) == sizeof(disp))
-	return disp.NotAvailable;
+        return disp.NotAvailable;
 
     /* FIXME: Is this correct ? */
     return DI_AVAIL_NOMONITOR;

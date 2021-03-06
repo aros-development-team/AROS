@@ -503,7 +503,7 @@ static BOOL ValidSMARTCmd(struct IORequest *io)
         case SMARTC_TEST_AVAIL:
         case SMARTC_READ_VALUES:
         case SMARTC_READ_THRESHOLDS:
-                    if (!IOStdReq(io)->io_Data) 
+                    if (!IOStdReq(io)->io_Data)
                     {
                         D(bug("[ATA%02ld] %s: invalid io_Data (%p)\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__, IOStdReq(io)->io_Data));
                         io->io_Error = IOERR_BADADDRESS;
@@ -874,7 +874,7 @@ AROS_LH1(ULONG, GetBlkSize,
  */
 void DaemonCode(struct ataBase *ATABase, struct ata_Controller *ataNode)
 {
-    struct IORequest *timer;	// timer
+    struct IORequest *timer;    // timer
     UBYTE b = 0;
     ULONG sigs;
 

@@ -54,34 +54,34 @@
     ObtainSemaphore(&PBASE(PartitionBase)->bootSem);
 
     if (!PBASE(PartitionBase)->pb_DOSBase)
-	PBASE(PartitionBase)->pb_DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+        PBASE(PartitionBase)->pb_DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
     /* If dos.library is available, load the filesystem immediately */
     if (PBASE(PartitionBase)->pb_DOSBase)
     {
-    	ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);
-    	return AddFS(PartitionBase, (struct FileSysHandle *)handle);    
+        ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);
+        return AddFS(PartitionBase, (struct FileSysHandle *)handle);
     }
 
     /* Otherwise we need to queue it to the FSLoader hook (if not already done) */
     if (!((struct FileSysHandle *)handle)->boot)
     {
-    	struct BootFileSystem *bfs = AllocMem(sizeof(struct BootFileSystem), MEMF_ANY);
+        struct BootFileSystem *bfs = AllocMem(sizeof(struct BootFileSystem), MEMF_ANY);
 
-    	if (!bfs)
-    	{
-	    ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);
-    	    return ERROR_NO_FREE_STORE;
-    	}
+        if (!bfs)
+        {
+            ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);
+            return ERROR_NO_FREE_STORE;
+        }
 
-	bfs->ln.ln_Name = handle->ln_Name;
-	bfs->ln.ln_Pri  = handle->ln_Pri;
-	bfs->handle = (struct FileSysHandle *)handle;
+        bfs->ln.ln_Name = handle->ln_Name;
+        bfs->ln.ln_Pri  = handle->ln_Pri;
+        bfs->handle = (struct FileSysHandle *)handle;
 
-	/* This will prevent ClosePartitionTable() from deallocating the handle */
-	((struct FileSysHandle *)handle)->boot = TRUE;
+        /* This will prevent ClosePartitionTable() from deallocating the handle */
+        ((struct FileSysHandle *)handle)->boot = TRUE;
 
-	Enqueue(&((struct PartitionBase_intern *)PartitionBase)->bootList, &bfs->ln);
+        Enqueue(&((struct PartitionBase_intern *)PartitionBase)->bootList, &bfs->ln);
     }
 
     ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);

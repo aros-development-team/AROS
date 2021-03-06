@@ -12,26 +12,26 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH3(void, CMove,
+        AROS_LH3(void, CMove,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct UCopList *, ucl,   A1),
-	AROS_LHA(void *           , reg,   D0),
-	AROS_LHA(WORD             , value, D1),
+        AROS_LHA(struct UCopList *, ucl,   A1),
+        AROS_LHA(void *           , reg,   D0),
+        AROS_LHA(WORD             , value, D1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 62, Graphics)
+        struct GfxBase *, GfxBase, 62, Graphics)
 
 /*  FUNCTION
-	Add a copper move instruction to the given user copper list.
-	The copper is told to move a value to register reg.
-	If you are using CMOVE() a call to CMove() and CBump() will
-	be made.
+        Add a copper move instruction to the given user copper list.
+        The copper is told to move a value to register reg.
+        If you are using CMOVE() a call to CMove() and CBump() will
+        be made.
 
     INPUTS
-	ucl   - pointer to a UCopList structure
-	reg   - hardware register
-	value - 16 bit value to be moved to the hardware register
+        ucl   - pointer to a UCopList structure
+        reg   - hardware register
+        value - 16 bit value to be moved to the hardware register
 
     RESULT
 
@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	CINIT(), CWAIT(), CEND(), graphics/copper.h
+        CINIT(), CWAIT(), CEND(), graphics/copper.h
 
     INTERNALS
 

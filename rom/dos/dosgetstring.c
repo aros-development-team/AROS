@@ -21,7 +21,7 @@
 
 /*  FUNCTION
         Internal DOS function, will return the string corresponding to
-        the number stringNum. 
+        the number stringNum.
 
     INPUTS
         stringNum - The number of the string you want.

@@ -2,7 +2,7 @@
     Copyright  1995-2017, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
 
-    Responsible for executing deferred Intuition actions like MoveWindow, 
+    Responsible for executing deferred Intuition actions like MoveWindow,
     SizeWindow, ActivateWindow, etc.
 */
 
@@ -134,11 +134,11 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
 
     if (AVOID_WINBORDERERASE(IntuitionBase))
     {
-	final_innerrect.MinX = targetwindow->BorderLeft;
-	final_innerrect.MinY = targetwindow->BorderTop;
-	final_innerrect.MaxX = targetwindow->Width  + dx - 1 - targetwindow->BorderRight;
-	final_innerrect.MaxY = targetwindow->Height + dy - 1 - targetwindow->BorderBottom;    
-	clipto = &final_innerrect;
+        final_innerrect.MinX = targetwindow->BorderLeft;
+        final_innerrect.MinY = targetwindow->BorderTop;
+        final_innerrect.MaxX = targetwindow->Width  + dx - 1 - targetwindow->BorderRight;
+        final_innerrect.MaxY = targetwindow->Height + dy - 1 - targetwindow->BorderBottom;
+        clipto = &final_innerrect;
     }
 
     if ( ((dx > 0) && (targetwindow->BorderRight  > 0)) ||
@@ -156,7 +156,7 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
         ** install the regular cliprects of the layer
         ** first. Otherwise the frame might not get cleared correctly.
         */
-    	
+        
         LockLayer(0, L);
 
         oldclipregion = InstallClipRegion(L, NULL);
@@ -174,13 +174,13 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
             rect.MaxX = targetwindow->Width - 1;
             rect.MaxY = targetwindow->Height - 1;
 
-    	    OrRectRegion(L->DamageList, &rect);
+            OrRectRegion(L->DamageList, &rect);
             L->Flags |= LAYERREFRESH;
 
-    	    if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
-	    {
-            	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-	    }
+            if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
+            {
+                EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+            }
 
         }
 
@@ -192,13 +192,13 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
             rect.MaxX = targetwindow->Width - 1;
             rect.MaxY = targetwindow->Height - 1;
 
-	    OrRectRegion(L->DamageList, &rect);
+            OrRectRegion(L->DamageList, &rect);
             L->Flags |= LAYERREFRESH;
 
-    	    if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
-	    {
-            	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-    	    }
+            if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
+            {
+                EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+            }
             
         }
 
@@ -243,14 +243,14 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 
     if ((iihdata->ActiveGadget) && (targetwindow == iihdata->GadgetInfo.gi_Window))
     {
-    	/* In case of active window drag/size gadget the master drag/size gadget never
-	   has GZZ flag set, so pass in real gadget (ActiveSysGadget) */
-	   
+        /* In case of active window drag/size gadget the master drag/size gadget never
+           has GZZ flag set, so pass in real gadget (ActiveSysGadget) */
+           
         GetGadgetDomain(iihdata->ActiveSysGadget ? iihdata->ActiveSysGadget : iihdata->ActiveGadget,
-                	iihdata->GadgetInfo.gi_Screen,
-                	iihdata->GadgetInfo.gi_Window,
-                	NULL,
-                	&iihdata->GadgetInfo.gi_Domain);
+                        iihdata->GadgetInfo.gi_Screen,
+                        iihdata->GadgetInfo.gi_Window,
+                        NULL,
+                        &iihdata->GadgetInfo.gi_Domain);
     }
 
     /* Relayout GFLG_REL??? gadgets */
@@ -261,14 +261,14 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
        position anyway */
        
     {
-    	struct Rectangle innerrect;
-	
-	innerrect.MinX = targetwindow->BorderLeft;
-	innerrect.MinY = targetwindow->BorderTop;
-	innerrect.MaxX = targetwindow->Width - 1 - targetwindow->BorderRight;
-	innerrect.MaxY = targetwindow->Height - 1 - targetwindow->BorderBottom;
-	
-    	EraseRelGadgetArea(
+        struct Rectangle innerrect;
+        
+        innerrect.MinX = targetwindow->BorderLeft;
+        innerrect.MinY = targetwindow->BorderTop;
+        innerrect.MaxX = targetwindow->Width - 1 - targetwindow->BorderRight;
+        innerrect.MaxY = targetwindow->Height - 1 - targetwindow->BorderBottom;
+        
+        EraseRelGadgetArea(
             targetwindow,
             AVOID_WINBORDERERASE(IntuitionBase) ? &innerrect : NULL,
             TRUE, IntuitionBase
@@ -407,16 +407,16 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
                       LONG NewWidth, LONG NewHeight, BOOL send_newsize, struct IntuitionBase *IntuitionBase)
 {
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
-    struct IIHData  	*iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-  //struct IntWindow  	*w       = (struct IntWindow *)targetwindow;
-    struct Layer    	*targetlayer = WLAYER(targetwindow)/*, *L*/;
+    struct IIHData      *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+  //struct IntWindow    *w       = (struct IntWindow *)targetwindow;
+    struct Layer        *targetlayer = WLAYER(targetwindow)/*, *L*/;
     struct Requester    *req;
     struct InputEvent   *ie;
-    LONG            	 OldLeftEdge  = targetwindow->LeftEdge;
-    LONG            	 OldTopEdge   = targetwindow->TopEdge;
-    LONG            	 OldWidth     = targetwindow->Width;
-    LONG            	 OldHeight    = targetwindow->Height;
-    LONG            	 pos_dx, pos_dy, size_dx, size_dy;
+    LONG                 OldLeftEdge  = targetwindow->LeftEdge;
+    LONG                 OldTopEdge   = targetwindow->TopEdge;
+    LONG                 OldWidth     = targetwindow->Width;
+    LONG                 OldHeight    = targetwindow->Height;
+    LONG                 pos_dx, pos_dy, size_dx, size_dy;
 
     /* correct new window coords if necessary */
 
@@ -553,7 +553,7 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
 
     UNLOCK_REFRESH(targetwindow->WScreen);
     
-#if 0    
+#if 0
     if (size_dx || size_dy)
     {
         if (!(((struct IntWindow *)targetwindow)->CustomShape))
@@ -566,7 +566,7 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
             shapemsg.wdp_Window = targetwindow;
             shapemsg.wdp_TrueColor      = (((struct IntScreen *)targetwindow->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
             shapemsg.wdp_UserBuffer     = ((struct IntWindow *)targetwindow)->DecorUserBuffer;
-            shape = DoMethodA(((struct IntScreen *)(targetwindow->WScreen))->WinDecorObj, (Msg)&shapemsg);	
+            shape = DoMethodA(((struct IntScreen *)(targetwindow->WScreen))->WinDecorObj, (Msg)&shapemsg);
 
             if (((struct IntWindow *)targetwindow)->OutlineShape) DisposeRegion(((struct IntWindow *)targetwindow)->OutlineShape);
             ((struct IntWindow *)targetwindow)->OutlineShape = shape;
@@ -614,11 +614,11 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
             port->mp_SigBit  = SIGB_INTUITION;
 
             req.io_Message.mn_ReplyPort = port;
-            req.io_Device 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
-            req.io_Unit 	    	    = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-            req.io_Command      	    = IND_WRITEEVENT;
-            req.io_Length 	    	    = sizeof(ie);
-            req.io_Data 	    	    = &ie;
+            req.io_Device                   = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
+            req.io_Unit                     = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
+            req.io_Command                  = IND_WRITEEVENT;
+            req.io_Length                   = sizeof(ie);
+            req.io_Data                     = &ie;
 
             ie.ie_Class = IECLASS_NULL;
         
@@ -633,7 +633,7 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
             // Set mp_SigBit to -1 so that exec does not free SIGB_INTUITION
             port->mp_SigBit = -1;
             DeleteMsgPort(port);
-        }        
+        }
     }
 }
 
@@ -643,8 +643,8 @@ BOOL DoASyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *)
                    struct IntuiActionMsg *msg, ULONG size,
                    struct IntuitionBase *IntuitionBase)
 {
-    struct IIHData  	    *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    struct Task     	    *me = FindTask(NULL);
+    struct IIHData          *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct Task             *me = FindTask(NULL);
     struct IntuiActionMsg   *new_msg;
 
     if (me == iihd->InputDeviceTask)
@@ -684,8 +684,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
     if (iihdata->ActiveSysGadget)
     {
-     	D(bug("Handle Intuition action messages. Doing nothing because of active drag or resize gadget!\n"));   	
-	return;
+        D(bug("Handle Intuition action messages. Doing nothing because of active drag or resize gadget!\n"));
+        return;
     }
     
     for (;;)

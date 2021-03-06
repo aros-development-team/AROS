@@ -14,38 +14,38 @@
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH0(APTR, SuperState,
+        AROS_LH0(APTR, SuperState,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 25, Exec)
+        struct ExecBase *, SysBase, 25, Exec)
 
 /*  FUNCTION
-	Enter supervisor mode (like Supervisor()), but return on the user
-	stack. This will mean that the user stack variables are still there.
-	A call to UserState() will end this mode.
+        Enter supervisor mode (like Supervisor()), but return on the user
+        stack. This will mean that the user stack variables are still there.
+        A call to UserState() will end this mode.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	The old supervisor stack. This must be passed to UserState(). If the
-	processor was already in supervisor mode, then this function will
-	return NULL. In that case do NOT call UserState().
+        The old supervisor stack. This must be passed to UserState(). If the
+        processor was already in supervisor mode, then this function will
+        return NULL. In that case do NOT call UserState().
 
     NOTES
-	This is not a good function to use, it has limited scope, and will
-	probably be even less useful in the future.
+        This is not a good function to use, it has limited scope, and will
+        probably be even less useful in the future.
 
     EXAMPLE
 
     BUGS
-	You can easily cause your system to cease operating normally.
+        You can easily cause your system to cease operating normally.
 
     SEE ALSO
-	Supervisor(), UserState()
+        Supervisor(), UserState()
 
     INTERNALS
-	For extra details see Supervisor().
+        For extra details see Supervisor().
 
 ******************************************************************************/
 {

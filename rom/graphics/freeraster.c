@@ -13,25 +13,25 @@
 #include <graphics/gfx.h>
 #include <proto/graphics.h>
 
-	AROS_LH3(void, FreeRaster,
+        AROS_LH3(void, FreeRaster,
 
 /*  SYNOPSIS */
-	AROS_LHA(PLANEPTR, p,      A0),
-	AROS_LHA(UWORD,    width,  D0),
-	AROS_LHA(UWORD,    height, D1),
+        AROS_LHA(PLANEPTR, p,      A0),
+        AROS_LHA(UWORD,    width,  D0),
+        AROS_LHA(UWORD,    height, D1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 83, Graphics)
+        struct GfxBase *, GfxBase, 83, Graphics)
 
 /*  FUNCTION
-	Free the single bitplane allocated by AllocRaster().
+        Free the single bitplane allocated by AllocRaster().
 
     INPUTS
-	p - The result of AllocRaster(). Must be non-NULL.
-	width, height - The size of the bitplane as passed to AllocRaster().
+        p - The result of AllocRaster(). Must be non-NULL.
+        width, height - The size of the bitplane as passed to AllocRaster().
 
     RESULT
-	The memory occupied by the bitplane will be returned to the system.
+        The memory occupied by the bitplane will be returned to the system.
 
     NOTES
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	AllocRaster(), AllocBitMap(), FreeBitMap()
+        AllocRaster(), AllocBitMap(), FreeBitMap()
 
     INTERNALS
 

@@ -15,24 +15,24 @@
 
     NAME */
 
-	AROS_LH1(struct SignalSemaphore *, FindSemaphore,
+        AROS_LH1(struct SignalSemaphore *, FindSemaphore,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, A1),
+        AROS_LHA(CONST_STRPTR, name, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 99, Exec)
+        struct ExecBase *, SysBase, 99, Exec)
 
 /*  FUNCTION
-	Find a semaphore with a given name in the system global semaphore list.
-	Note that this call doesn't arbitrate for the list - use Forbid() to
-	do this yourself.
+        Find a semaphore with a given name in the system global semaphore list.
+        Note that this call doesn't arbitrate for the list - use Forbid() to
+        do this yourself.
 
     INPUTS
-	name - Pointer to name.
+        name - Pointer to name.
 
     RESULT
-	Address of semaphore structure found or NULL.
+        Address of semaphore structure found or NULL.
 
     NOTES
 

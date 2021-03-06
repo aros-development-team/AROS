@@ -234,7 +234,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         struct Interrupt *is;
 
         if (i != INTB_SOFTINT)
-        {       
+        {
             struct SoftIntList *sil;
 
             is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList), MEMF_CLEAR|MEMF_PUBLIC);

@@ -196,7 +196,7 @@ IPTR ScrDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
             return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     
-    return 1;    
+    return 1;
 }
     
 
@@ -243,7 +243,7 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
         default:
             *msg->sdp_Width = def_high_width;
             *msg->sdp_Height = def_high_height;
-            break;	    	
+            break;
     }
     
     return TRUE;
@@ -255,15 +255,15 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
 {
     struct IntuitionBase        *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase              *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct RastPort 	        *rp = msg->sdp_RPort;
-    UWORD   	    	        *pens = DRI(msg->sdp_Dri)->dri_Pens;
-    LONG    	    	        state = msg->sdp_State;
-    LONG    	     	        left = msg->sdp_X;
-    LONG    	     	        top = msg->sdp_Y;
-    LONG   	                width = msg->sdp_Width;
-    LONG   	    	        height = msg->sdp_Height;
-    LONG    	    	        right = left + width - 1;
-    LONG    	    	        bottom = top + height - 1;
+    struct RastPort             *rp = msg->sdp_RPort;
+    UWORD                       *pens = DRI(msg->sdp_Dri)->dri_Pens;
+    LONG                        state = msg->sdp_State;
+    LONG                        left = msg->sdp_X;
+    LONG                        top = msg->sdp_Y;
+    LONG                        width = msg->sdp_Width;
+    LONG                        height = msg->sdp_Height;
+    LONG                        right = left + width - 1;
+    LONG                        bottom = top + height - 1;
     UWORD                       frameh, framev;
 
     D(bug("[SCRDECOR] %s()\n", __func__));
@@ -371,10 +371,10 @@ static void findtitlearea(struct Screen *scr, LONG *left, LONG *right)
 IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
-    struct RastPort 	 *rp = msg->sdp_RPort;
-    UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
-    LONG    	    	  left, right;
-    BOOL    	    	  beeping = FALSE;
+    struct RastPort      *rp = msg->sdp_RPort;
+    UWORD                *pens = DRI(msg->sdp_Dri)->dri_Pens;
+    LONG                  left, right;
+    BOOL                  beeping = FALSE;
     
 #if 0
 #if USE_NEWDISPLAYBEEP
@@ -405,10 +405,10 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct RastPort 	 *rp = msg->sdp_RPort;
-    UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
-    LONG    	    	  right, left;
-    BOOL    	    	  beeping = FALSE;
+    struct RastPort      *rp = msg->sdp_RPort;
+    UWORD                *pens = DRI(msg->sdp_Dri)->dri_Pens;
+    LONG                  right, left;
+    BOOL                  beeping = FALSE;
 
     D(bug("[SCRDECOR] %s()\n", __func__));
 

@@ -26,21 +26,21 @@
 
     NAME */
 
-	AROS_LH1(void, CloseDevice,
+        AROS_LH1(void, CloseDevice,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IORequest *, iORequest, A1),
+        AROS_LHA(struct IORequest *, iORequest, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 75, Exec)
+        struct ExecBase *, SysBase, 75, Exec)
 
 /*  FUNCTION
-	Closes a previously opened device. Any outstanding I/O requests must
-	be finished. It is safe to call CloseDevice with a cleared iorequest
-	structure or one that failed to open.
+        Closes a previously opened device. Any outstanding I/O requests must
+        be finished. It is safe to call CloseDevice with a cleared iorequest
+        structure or one that failed to open.
 
     INPUTS
-	iORequest - Pointer to iorequest structure.
+        iORequest - Pointer to iorequest structure.
 
     RESULT
 
@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-	OpenDevice()
+        OpenDevice()
 
     INTERNALS
 
@@ -61,8 +61,8 @@
     BPTR dc_ret;
 
     D(bug("CloseDevice $%lx $%lx (\"%s\") by \"%s\"\n", iORequest, iORequest->io_Device,
-	iORequest->io_Device ? iORequest->io_Device->dd_Library.lib_Node.ln_Name : "(null)",
-	GET_THIS_TASK->tc_Node.ln_Name));
+        iORequest->io_Device ? iORequest->io_Device->dd_Library.lib_Node.ln_Name : "(null)",
+        GET_THIS_TASK->tc_Node.ln_Name));
 
     /* Single-thread the close routine. */
     Forbid();
@@ -70,24 +70,24 @@
     /* Something to do? */
     if(iORequest->io_Device!=NULL)
     {
-	dc_ret = AROS_LVO_CALL1(BPTR,
-	    AROS_LCA(struct IORequest *,iORequest, A1),
-	    struct Device *,iORequest->io_Device,2,
-	);
-	/*
-	    Normally you'd expect the device to be expunged if this returns
-	    non-zero, but this is only exec which doesn't know anything about
-	    seglists - therefore dos.library has to SetFunction() into this
-	    vector for the additional functionality.
-	*/
+        dc_ret = AROS_LVO_CALL1(BPTR,
+            AROS_LCA(struct IORequest *,iORequest, A1),
+            struct Device *,iORequest->io_Device,2,
+        );
+        /*
+            Normally you'd expect the device to be expunged if this returns
+            non-zero, but this is only exec which doesn't know anything about
+            seglists - therefore dos.library has to SetFunction() into this
+            vector for the additional functionality.
+        */
 
-	/* Trash device field */
-	iORequest->io_Device=(struct Device *)-1;
+        /* Trash device field */
+        iORequest->io_Device=(struct Device *)-1;
     }
     else
     {
-	/* local vars not guaranteed to be initialised to 0 */
-	dc_ret = 0;
+        /* local vars not guaranteed to be initialised to 0 */
+        dc_ret = 0;
     }
 
     /* All done. */

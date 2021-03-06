@@ -444,7 +444,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     {
         me->pr_Flags |= PRF_WAITINGFORCHILD;
         
-        old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
+        old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE;
     }
 
     /*
@@ -603,7 +603,7 @@ error:
 end:
 
     if (defaults[19].ti_Data)
-        SetSignal(SIGF_SINGLE, old_sig); 
+        SetSignal(SIGF_SINGLE, old_sig);
 
     return process;
 
@@ -692,7 +692,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
             CopyMem(varNode, newVar, copyLength);
             newVar->lv_Node.ln_Name = (char *)newVar +
                 sizeof(struct LocalVar);
-            D(bug("Variable with name %s copied.\n", 
+            D(bug("Variable with name %s copied.\n",
                       newVar->lv_Node.ln_Name));
             
             if (varNode->lv_Len)
@@ -752,11 +752,11 @@ static void DosEntry(void)
     /* Call user defined exit function before shutting down. */
     if (me->pr_ExitCode != NULL)
     {
-        /* 
+        /*
            The Ralph Babel's guru book says that pr_ExitCode
            is passed the process return code in D0 and pr_ExitData in D1,
            but the Matt Dillon's DICE C implementation of vfork shows that
-           those parameters are passed also on the stack.          
+           those parameters are passed also on the stack.
          */
 #ifdef __mc68000
         asm volatile (
@@ -772,9 +772,9 @@ static void DosEntry(void)
                 : "d0", "d1", "a0", "a1"
         );
 #else
-        /* 
+        /*
            The AROS macros for functions with register parameters don't
-           support both register and stack parameters at once, so we use 
+           support both register and stack parameters at once, so we use
            the stack only on non-m68k. This oughta be fixed somehow.
          */
         me->pr_ExitCode(result, me->pr_ExitData);

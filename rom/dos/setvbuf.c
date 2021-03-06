@@ -44,7 +44,7 @@
                will be rounded up to 208), or -1.
 
     RESULT
-        0 if operation succeeded. 
+        0 if operation succeeded.
 
 *****************************************************************************/
 {
@@ -66,16 +66,16 @@
 
     switch (type)
     {
-        case BUF_LINE: 
-            fh->fh_Flags = (fh->fh_Flags & ~FHF_NOBUF) | FHF_LINEBUF; 
+        case BUF_LINE:
+            fh->fh_Flags = (fh->fh_Flags & ~FHF_NOBUF) | FHF_LINEBUF;
             break;
         
-        case BUF_FULL: 
-            fh->fh_Flags = fh->fh_Flags & ~(FHF_NOBUF | FHF_LINEBUF); 
+        case BUF_FULL:
+            fh->fh_Flags = fh->fh_Flags & ~(FHF_NOBUF | FHF_LINEBUF);
             break;
         
-        case BUF_NONE: 
-            fh->fh_Flags = (fh->fh_Flags | FHF_NOBUF) & ~FHF_LINEBUF; 
+        case BUF_NONE:
+            fh->fh_Flags = (fh->fh_Flags | FHF_NOBUF) & ~FHF_LINEBUF;
             break;
         
         default:
@@ -152,7 +152,7 @@ BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
         return FALSE;
     fhinput = BADDR(fh);
 
-    /* Handle the trivial case, where we have enough room 
+    /* Handle the trivial case, where we have enough room
      * in the minimal buffer.
      *
      * For AOS 1.3 C:Run compatabilty, the injected buffer

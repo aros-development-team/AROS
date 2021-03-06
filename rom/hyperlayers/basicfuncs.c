@@ -61,16 +61,16 @@ void BltRPtoCR(struct RastPort *    rp,
                ULONG                Mode,
                struct LayersBase *  LayersBase)
 {
-    BltBitMap(rp->BitMap, 
-              cr->bounds.MinX, 
+    BltBitMap(rp->BitMap,
+              cr->bounds.MinX,
               cr->bounds.MinY,
-	      cr->BitMap, 
-	      ALIGN_OFFSET(cr->bounds.MinX), 0,
-	      cr->bounds.MaxX - cr->bounds.MinX + 1,
-	      cr->bounds.MaxY - cr->bounds.MinY + 1,
-	      Mode, 
-	      ~0, 
-	      NULL);
+              cr->BitMap,
+              ALIGN_OFFSET(cr->bounds.MinX), 0,
+              cr->bounds.MaxX - cr->bounds.MinX + 1,
+              cr->bounds.MaxY - cr->bounds.MinY + 1,
+              Mode,
+              ~0,
+              NULL);
 
 }
 
@@ -79,17 +79,17 @@ void BltCRtoRP(struct RastPort *   rp,
                ULONG               Mode,
                struct LayersBase  * LayersBase)
 {
-    BltBitMap(cr->BitMap, 
-              ALIGN_OFFSET(cr->bounds.MinX), 
+    BltBitMap(cr->BitMap,
+              ALIGN_OFFSET(cr->bounds.MinX),
               0,
-	      rp->BitMap, 
-	      cr->bounds.MinX, 
-	      cr->bounds.MinY,
-	      cr->bounds.MaxX - cr->bounds.MinX + 1,
-	      cr->bounds.MaxY - cr->bounds.MinY + 1,
-	      Mode, 
-	      ~0, 
-	      NULL);
+              rp->BitMap,
+              cr->bounds.MinX,
+              cr->bounds.MinY,
+              cr->bounds.MaxX - cr->bounds.MinX + 1,
+              cr->bounds.MaxY - cr->bounds.MinY + 1,
+              Mode,
+              ~0,
+              NULL);
 
 }
 
@@ -155,10 +155,10 @@ void _CallLayerHook(struct Hook * h,
         AROS_UFCA(struct Hook *,         h   ,A0),
         AROS_UFCA(struct RastPort *,     rp  ,A2),
         AROS_UFCA(struct layerhookmsg *, &msg,A1)
-    );  
+    );
   }
   
-}         
+}
 
 
 /***************************************************************************/
@@ -221,10 +221,10 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
 BOOL _AllocExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
 {
     if(++li->fatten_count != 0)
-	return TRUE;
+        return TRUE;
 
     if(!(li->LayerInfo_extra = AllocMem(sizeof(struct LayerInfo_extra),MEMF_PUBLIC|MEMF_CLEAR)))
-	return FALSE;
+        return FALSE;
 
     NewList((struct List *)&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList);
 
@@ -237,7 +237,7 @@ BOOL _AllocExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
 void _FreeExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
 {
     if(--li->fatten_count >= 0)
-	return;
+        return;
 
     /* Kill Root Layer */
     
@@ -246,7 +246,7 @@ void _FreeExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
     li->check_lp = NULL;
 
     if(li->LayerInfo_extra == NULL)
-	return;
+        return;
     
     FreeMem(li->LayerInfo_extra, sizeof(struct LayerInfo_extra));
 
@@ -263,10 +263,10 @@ BOOL SafeAllocExtLI(struct Layer_Info * li,
 
     /* Check to see if we can ignore the rest of this call. :-) */
     if(li->Flags & NEWLAYERINFO_CALLED)
-	return TRUE;
+        return TRUE;
 
     if(_AllocExtLayerInfo(li, LayersBase))
-	return TRUE;
+        return TRUE;
 
     UnlockLayerInfo(li);
 
@@ -280,7 +280,7 @@ void SafeFreeExtLI(struct Layer_Info * li,
                    struct LayersBase * LayersBase)
 {
     if(!(li->Flags & NEWLAYERINFO_CALLED))
-	_FreeExtLayerInfo(li, LayersBase);
+        _FreeExtLayerInfo(li, LayersBase);
 
     UnlockLayerInfo(li);
 }
@@ -323,7 +323,7 @@ struct ClipRect * _AllocClipRect(struct Layer * L, struct LayersBase *LayersBase
     L->SuperSaveClipRectCounter--;
 
     CR->Flags  = 0;
-    CR->Next   = NULL; 
+    CR->Next   = NULL;
     CR->lobs   = NULL;
     CR->BitMap = NULL;
     return CR;
@@ -338,7 +338,7 @@ struct ClipRect * _AllocClipRect(struct Layer * L, struct LayersBase *LayersBase
 
 void _FreeClipRect(struct ClipRect   * CR,
                    struct Layer      * L,
-		   struct LayersBase * LayersBase)
+                   struct LayersBase * LayersBase)
 {
   if (L->SuperSaveClipRectCounter < MAXSUPERSAVECLIPRECTS)
   {
@@ -359,17 +359,17 @@ void _FreeClipRect(struct ClipRect   * CR,
 
 void _FreeClipRectListBM(struct Layer * L,
                          struct ClipRect * CR,
-			 struct LayersBase *LayersBase)
+                         struct LayersBase *LayersBase)
 {
   struct ClipRect * _CR = CR;
-  BOOL isSmart; 
+  BOOL isSmart;
   if ((L->Flags & (LAYERSUPER|LAYERSMART)) == LAYERSMART)
     isSmart = TRUE;
   else
     isSmart = FALSE;
  
   /*
-   * This function is not watching for the upper limit of 
+   * This function is not watching for the upper limit of
    * pre allocated cliprects.
    */
   L->SuperSaveClipRectCounter++;
@@ -406,7 +406,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,
                                              struct Region * inverter,
-					     struct LayersBase *LayersBase)
+                                             struct LayersBase *LayersBase)
 {
   int looped = FALSE;
   struct ClipRect * firstcr = NULL, * cr;
@@ -487,11 +487,11 @@ int _CopyClipRectsToClipRects(struct Layer * l,
                               struct ClipRect * oldcr,
                               struct ClipRect * newcr,
                               int srcdx,
-			      int destdx,
+                              int destdx,
                               int backupmode,
                               int freelist,
                               int addtodamagelist,
-			      struct LayersBase *LayersBase)
+                              struct LayersBase *LayersBase)
 {
   struct BitMap * display_bm = l->rp->BitMap;
   
@@ -509,8 +509,8 @@ int _CopyClipRectsToClipRects(struct Layer * l,
       if (AndRectRect(&_cr->bounds, &oldcr->bounds, &intersect))
       {
         LONG xSize = intersect.MaxX - intersect.MinX + 1;
-	LONG ySize = intersect.MaxY - intersect.MinY + 1;
-	
+        LONG ySize = intersect.MaxY - intersect.MinY + 1;
+        
         /*
          * Is this new one supposed to be invisible?
          */
@@ -520,7 +520,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
           /*
            * The new one is supposed to be invisible.
            * So for SIMPLEREFRESH layers I don't have to
-           * do anything if 
+           * do anything if
            * a) not in backupmode or
            * b) old cr was invisible
            */
@@ -532,7 +532,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
             
               _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
 
-/* FIXME: 
+/* FIXME:
  * stegerg: Not sure if this is a good idea. What for example if
  * updating is done in several passes? And CopyClipRectsToClipRects is
  * used by all kinds of functions including BeginUpdate/EndUpdate/InstallClipRegion/etc.
@@ -628,7 +628,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
             LONG ySrc, yDest;
             struct BitMap * destbm;
             
-            if (IS_SUPERREFRESH(l)) 
+            if (IS_SUPERREFRESH(l))
               destbm = l->SuperBitMap;
             else
               destbm = _cr->BitMap;
@@ -636,9 +636,9 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
             /*
              * Does the source rect have a bitmap (off screen)
              * or is it on the screen.
-             */            
+             */
             if (oldcr->lobs && !IS_SUPERREFRESH(l))
-            { 
+            {
               /*
                * Copy from hidden bitmap to hidden bitmap
                */
@@ -660,9 +660,9 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
                 xSrc = 0;
               }
               
-	      xSrc  += ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
-	      xDest += ALIGN_OFFSET(_cr->bounds.MinX + destdx);
-	      
+              xSrc  += ALIGN_OFFSET(oldcr->bounds.MinX + srcdx);
+              xDest += ALIGN_OFFSET(_cr->bounds.MinX + destdx);
+              
               ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
               if (ySrc < 0)
               {
@@ -695,7 +695,7 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
                 xSrc = _cr->bounds.MinX;
                 if (IS_SUPERREFRESH(l))
                   xDest = SCROLLSIGN l->Scroll_X;
-                else 
+                else
                   xDest = ALIGN_OFFSET((_cr->bounds.MinX + destdx));
               }
               
@@ -770,8 +770,8 @@ kprintf("%s: backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
            * this. If it has nothing backed up then I must
            * add a part to the damage list.
            */
-          if (IS_SIMPLEREFRESH(l) && 
-              (NULL != oldcr->lobs) && 
+          if (IS_SIMPLEREFRESH(l) &&
+              (NULL != oldcr->lobs) &&
               (NULL == oldcr->BitMap))
           {
             if (NULL != oldcr->lobs && NULL == oldcr->BitMap)
@@ -965,7 +965,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
    * area of the damage list of a simple refresh layer
    */
 
-  if (IS_SIMPLEREFRESH(l) && 
+  if (IS_SIMPLEREFRESH(l) &&
       (l->Flags & LAYERREFRESH) &&
       FALSE == backupmode &&
       FALSE == addtodamagelist)
@@ -983,7 +983,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
     rr = dr->RegionRectangle;
     while (rr)
     {
-      _TranslateRect(&rr->bounds, 
+      _TranslateRect(&rr->bounds,
                      dr->bounds.MinX + l->bounds.MinX,
                      dr->bounds.MinY + l->bounds.MinY);
 
@@ -995,12 +995,12 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
                      rr->bounds.MinY,
                      LayersBase);
 
-      _TranslateRect(&rr->bounds, 
+      _TranslateRect(&rr->bounds,
                      -dr->bounds.MinX-l->bounds.MinX,
                      -dr->bounds.MinY-l->bounds.MinY);
       rr = rr->Next;
  
-    }    
+    }
   }
 
   return TRUE;
@@ -1045,12 +1045,12 @@ int _BackupPartsOfLayer(struct Layer * l,
          _CopyClipRectsToClipRects(l,
                                    l->ClipRect /* source */,
                                    newcr  /* destination */,
-		                   0,
+                                   0,
                                    dx,
                                    backupsimplerefresh,
                                    TRUE,
                                    TRUE,
-			           LayersBase);
+                                   LayersBase);
 
           l->ClipRect = newcr;
      }
@@ -1107,14 +1107,14 @@ int _ShowPartsOfLayer(struct Layer * l,
       DisposeRegion(r);
 
       _CopyClipRectsToClipRects(l,
-				l->ClipRect /* source */,
-				newcr /* destination */,
-				0,
-				0,
-				FALSE,
-				TRUE,
-				FALSE,
-				LayersBase);
+                                l->ClipRect /* source */,
+                                newcr /* destination */,
+                                0,
+                                0,
+                                FALSE,
+                                TRUE,
+                                FALSE,
+                                LayersBase);
 
 
       l->ClipRect = newcr;
@@ -1295,7 +1295,7 @@ void _BackFillRegion(struct Layer * l,
 
       /* Region coords are screen relative, but damagelist coords are layer relative! */
 
-      _TranslateRect(&rect, 
+      _TranslateRect(&rect,
                      r->bounds.MinX - l->bounds.MinX,
                      r->bounds.MinY - l->bounds.MinY);
 #if 0
@@ -1309,7 +1309,7 @@ kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
 #endif
       OrRectRegion(l->DamageList, &rect);
 
-      _TranslateRect(&rect, 
+      _TranslateRect(&rect,
                      -r->bounds.MinX + l->bounds.MinX,
                      -r->bounds.MinY + l->bounds.MinY);
 
@@ -1327,7 +1327,7 @@ kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
     
     _TranslateRect(&r->bounds, -l->bounds.MinX, -l->bounds.MinY);
     AndRegionRegion(l->shaperegion, r);
-    _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);    
+    _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);
   }
   
   RR  = r->RegionRectangle;
@@ -1360,8 +1360,8 @@ kprintf("\t\t: %s Clearing rect : %d/%d-%d/%d  layer: %p, hook: %p, bitmap: %p\n
 }
 
 struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
-    	    	    	    	    	  WORD srcdx, WORD destdx,
-    	    	    	    	    	  struct LayersBase *LayersBase)
+                                          WORD srcdx, WORD destdx,
+                                          struct LayersBase *LayersBase)
 {
   struct Region * OldRegion;
   BOOL updating = FALSE;
@@ -1381,30 +1381,30 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 
     /* is there a clipregion currently installed? */
     if (NULL != OldRegion)
-    { 
+    {
       /*
        *  Copy the contents of the region cliprects to the regular
-       *  cliprects if layer is a SMARTLAYER. Also free the list of 
+       *  cliprects if layer is a SMARTLAYER. Also free the list of
        *  region cliprects.
        */
       if (NULL != l->ClipRect)
       {
-	if (IS_SMARTREFRESH(l))
-	  _CopyClipRectsToClipRects(l,
-	                            l->ClipRect,
-	                            l->_cliprects,
-	                            srcdx,
-				    destdx,
-	                            FALSE,
-	                            TRUE,
-				    FALSE,
-				    LayersBase);
-	else
+        if (IS_SMARTREFRESH(l))
+          _CopyClipRectsToClipRects(l,
+                                    l->ClipRect,
+                                    l->_cliprects,
+                                    srcdx,
+                                    destdx,
+                                    FALSE,
+                                    TRUE,
+                                    FALSE,
+                                    LayersBase);
+        else
           _FreeClipRectListBM(l, l->ClipRect, LayersBase);
       }
 
       /* restore the regular ClipRects */
-      l->ClipRect = l->_cliprects;    
+      l->ClipRect = l->_cliprects;
 
     }
 
@@ -1432,18 +1432,18 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
                                                l,
                                                FALSE,
                                                region,
-					       LayersBase);
+                                               LayersBase);
       DisposeRegion(r);
 
       _CopyClipRectsToClipRects(l,
                                 l->_cliprects,
                                 l->ClipRect,
                                 srcdx,
-				destdx,
+                                destdx,
                                 FALSE,
                                 FALSE,
-				TRUE,
-				LayersBase); /* stegerg: should be FALSE. but that does not work??? */
+                                TRUE,
+                                LayersBase); /* stegerg: should be FALSE. but that does not work??? */
 
       _TranslateRect(&region->bounds, -l->bounds.MinX, -l->bounds.MinY);
 

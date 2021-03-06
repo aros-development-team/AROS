@@ -15,10 +15,10 @@ static void PRINT_UUID(uuid_t *id)
 
     bug("[EFI] Table UUID: 0x%08X-%04X-%04X-%02X%02X-",
         id->time_low, id->time_mid, id->time_hi_and_version,
-    	id->clock_seq_hi_and_reserved, id->clock_seq_low);
+        id->clock_seq_hi_and_reserved, id->clock_seq_low);
 
     for (i = 0; i < sizeof(id->node); i++)
-    	bug("%02X", id->node[i]);
+        bug("%02X", id->node[i]);
 
     RawPutChar('\n');
 }
@@ -35,19 +35,19 @@ static void PRINT_UUID(uuid_t *id)
         AROS_LH1(void *, EFI_FindConfigTable,
 
 /*  SYNOPSIS */
-	AROS_LHA(const uuid_t *, Guid, A0),
+        AROS_LHA(const uuid_t *, Guid, A0),
 
 /*  LOCATION */
-	struct EFIBase *, EFIBase, 1, Efi)
+        struct EFIBase *, EFIBase, 1, Efi)
 
 /*  FUNCTION
-	Locate a configuration table by GUID
+        Locate a configuration table by GUID
 
     INPUTS
-	Guid - a pointer to a GUID structure
+        Guid - a pointer to a GUID structure
 
     RESULT
-	A pointer to a table or NULL if nothing found.
+        A pointer to a table or NULL if nothing found.
 
     NOTES
 
@@ -68,16 +68,16 @@ static void PRINT_UUID(uuid_t *id)
 
     /* Safety */
     if (!conf)
-    	return NULL;
+        return NULL;
 
     for (i = 0; i < EFIBase->System->NumEntries; i++)
     {
-    	PRINT_UUID(&conf[i].VendorGUID);
+        PRINT_UUID(&conf[i].VendorGUID);
 
-    	if (!memcmp(&conf[i].VendorGUID, Guid, sizeof(uuid_t)))
-    	{
-    	    return conf[i].Table;
-    	}
+        if (!memcmp(&conf[i].VendorGUID, Guid, sizeof(uuid_t)))
+        {
+            return conf[i].Table;
+        }
     }
 
     return NULL;

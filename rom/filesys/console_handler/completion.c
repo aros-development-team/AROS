@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #define DEBUG 0
@@ -399,13 +399,13 @@ static void DoScan(struct filehandle *fh, struct completioninfo *ci)
 
 /****************************************************************************************/
 
-#define BUTTON_EXTRA_WIDTH  	16
-#define BUTTON_EXTRA_HEIGHT 	6
-#define BORDER_X    	    	4
-#define BORDER_Y    	    	4
-#define BUTTON_SPACING_X    	8
-#define LV_BUTTON_SPACING_Y 	4
-#define LV_EXTRA_HEIGHT     	4
+#define BUTTON_EXTRA_WIDTH      16
+#define BUTTON_EXTRA_HEIGHT     6
+#define BORDER_X                4
+#define BORDER_Y                4
+#define BUTTON_SPACING_X        8
+#define LV_BUTTON_SPACING_Y     4
+#define LV_EXTRA_HEIGHT         4
 
 #define ID_LISTVIEW 1
 #define ID_OK       2

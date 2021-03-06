@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$	$Log
+    $Id$        $Log
 
     Desc: Graphics function ScrollRaster()
 */
@@ -14,19 +14,19 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH7(void, ScrollRaster,
+        AROS_LH7(void, ScrollRaster,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(LONG             , dx, D0),
-	AROS_LHA(LONG             , dy, D1),
-	AROS_LHA(LONG             , xMin, D2),
-	AROS_LHA(LONG             , yMin, D3),
-	AROS_LHA(LONG             , xMax, D4),
-	AROS_LHA(LONG             , yMax, D5),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(LONG             , dx, D0),
+        AROS_LHA(LONG             , dy, D1),
+        AROS_LHA(LONG             , xMin, D2),
+        AROS_LHA(LONG             , yMin, D3),
+        AROS_LHA(LONG             , xMax, D4),
+        AROS_LHA(LONG             , yMax, D5),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 66, Graphics)
+        struct GfxBase *, GfxBase, 66, Graphics)
 
 /*  FUNCTION
       Scroll the contents of a rastport (dx,dy) towards (0,0).
@@ -42,7 +42,7 @@
 
     INPUTS
       rp    - pointer to rastport
-      dx,dy - distance to move in x and y direction. Positive values go 
+      dx,dy - distance to move in x and y direction. Positive values go
               towards (0,0)
       xMin,yMin - upper left  hand corner of the affected rectangle
       xMax,yMax - lower right hand corner of the affected rectangle
@@ -60,8 +60,8 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        29-10-95    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -82,32 +82,32 @@
        space with calls to RectFill
      */
 
-    /* 
+    /*
        adjust xMax and yMax in case the lower right corner would be outside
        the rastport
     */
     /* Is it a window's rastport ? */
     if (NULL != rp->Layer)
     {
-	struct Layer * L = rp->Layer;
-	
-	if (xMax > (L->bounds.MaxX - L->bounds.MinX) )
-	    xMax = (L->bounds.MaxX - L->bounds.MinX) ;
-	    
-	if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
-	    yMax = (L->bounds.MaxY - L->bounds.MinY) ;
+        struct Layer * L = rp->Layer;
+        
+        if (xMax > (L->bounds.MaxX - L->bounds.MinX) )
+            xMax = (L->bounds.MaxX - L->bounds.MinX) ;
+            
+        if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
+            yMax = (L->bounds.MaxY - L->bounds.MinY) ;
 
     }
     else
     {
-	/* this one belongs to a screen */
-	struct BitMap * bm = rp->BitMap;
-	ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
-	ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-	if ((ULONG)xMax >= width )
-	    xMax = width - 1;
-	if ((ULONG)yMax >= height)
-	    yMax = height - 1;
+        /* this one belongs to a screen */
+        struct BitMap * bm = rp->BitMap;
+        ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
+        ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
+        if ((ULONG)xMax >= width )
+            xMax = width - 1;
+        if ((ULONG)yMax >= height)
+            yMax = height - 1;
     }
 
     absdx = (dx >= 0) ? dx : -dx;
@@ -120,18 +120,18 @@
 
     if ((absdx >= width) || (absdy >= height))
     {
-	SetDrMd(rp, old_drmd ^ INVERSVID);
-	RectFill(rp, xMin, yMin, xMax, yMax);
-	SetDrMd(rp, old_drmd);
-	
-	return;
+        SetDrMd(rp, old_drmd ^ INVERSVID);
+        RectFill(rp, xMin, yMin, xMax, yMax);
+        SetDrMd(rp, old_drmd);
+        
+        return;
     }
 
     if (!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
          return;
 
-    /* 
-       The raster is scrolled and I fill the empty area with the 
+    /*
+       The raster is scrolled and I fill the empty area with the
        RectFill()
      */
 
@@ -140,46 +140,46 @@
     /* was it scrolled left or right? */
     if (0 != dx)
     {
-	if (dx > 0)
-	{
-	    /* scrolled towards left, clearing on the right */
-	    RectFill (rp,
+        if (dx > 0)
+        {
+            /* scrolled towards left, clearing on the right */
+            RectFill (rp,
                       xMax - dx + 1,
                       yMin,
                       xMax,
                       yMax);
-	}
-	else
-	{
-	    /* scrolled towards right, clearing on the left */
-	    RectFill (rp,
+        }
+        else
+        {
+            /* scrolled towards right, clearing on the left */
+            RectFill (rp,
                       xMin,
                       yMin,
-                      xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */ 
+                      xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */
                       yMax);
-	}
+        }
     }
 
     if (0 != dy)
     {
-	if (dy > 0)
-	{
-	    /* scrolled up, clearing on the bottom */
-	    RectFill (rp,
+        if (dy > 0)
+        {
+            /* scrolled up, clearing on the bottom */
+            RectFill (rp,
                       xMin,
                       yMax - dy + 1,
                       xMax,
                       yMax);
-	}
-	else
-	{
-	    /* scrolled down, clearing on the top */
-	    RectFill (rp,
+        }
+        else
+        {
+            /* scrolled down, clearing on the top */
+            RectFill (rp,
                       xMin,
                       yMin,
-                      xMax, 
+                      xMax,
                       yMin - dy - 1);
-	}
+        }
     }
 
     SetDrMd(rp, old_drmd);

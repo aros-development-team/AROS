@@ -9,25 +9,25 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/utility.h>
+        #include <proto/utility.h>
 
-	AROS_LH1(void, FreeNamedObject,
+        AROS_LH1(void, FreeNamedObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct NamedObject *, object, A0),
+        AROS_LHA(struct NamedObject *, object, A0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 41, Utility)
+        struct UtilityBase *, UtilityBase, 41, Utility)
 
 /*  FUNCTION
-	Frees a NamedObject previously allocated by AllocNamedObject().
+        Frees a NamedObject previously allocated by AllocNamedObject().
 
     INPUTS
-	object	    -	The NamedObject that you wish to free.
+        object      -   The NamedObject that you wish to free.
 
     RESULT
-	The memory used by the NamedObject will be returned to the
-	systems free memory pool.
+        The memory used by the NamedObject will be returned to the
+        systems free memory pool.
 
     NOTES
 
@@ -36,25 +36,25 @@
     BUGS
 
     SEE ALSO
-	utility/name.h, AllocNamedObjectA()
+        utility/name.h, AllocNamedObjectA()
 
     INTERNALS
-	AllocMem:
-	    NameSpace;
-	AllocVec:
-	    IntNamedObject, Object.
+        AllocMem:
+            NameSpace;
+        AllocVec:
+            IntNamedObject, Object.
 
-	FreeNamedObject() may have to deal with only a partially allocated
-	object from AllocNamedObject() which has come across an error.
+        FreeNamedObject() may have to deal with only a partially allocated
+        object from AllocNamedObject() which has come across an error.
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	11-08-96    iaint   Adapted for AROS code.
-	08-10-96    iaint   Modified after discussion in AROS-DEV.
-	19-10-96    iaint   Finished above.
-	16-04-01    iaint   Combined the memory for the name and
-			    IntNamedObject as an optimisation.
+        29-10-95    digulla automatically created from
+                            utility_lib.fd and clib/utility_protos.h
+        11-08-96    iaint   Adapted for AROS code.
+        08-10-96    iaint   Modified after discussion in AROS-DEV.
+        19-10-96    iaint   Finished above.
+        16-04-01    iaint   Combined the memory for the name and
+                            IntNamedObject as an optimisation.
 
 *****************************************************************************/
 {
@@ -62,15 +62,15 @@
 
     if( object )
     {
-	struct IntNamedObject *no = GetIntNamedObject(object);
+        struct IntNamedObject *no = GetIntNamedObject(object);
 
-	if(object->no_Object && no->no_FreeObject)
-	    FreeVec(object->no_Object);
+        if(object->no_Object && no->no_FreeObject)
+            FreeVec(object->no_Object);
 
-	if(no->no_NameSpace)
-	    FreeMem(no->no_NameSpace, sizeof(struct NameSpace));
+        if(no->no_NameSpace)
+            FreeMem(no->no_NameSpace, sizeof(struct NameSpace));
 
-	FreeVec(object);
+        FreeVec(object);
     }
     AROS_LIBFUNC_EXIT
 

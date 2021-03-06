@@ -12,32 +12,32 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(void, LoadRGB32,
+        AROS_LH2(void, LoadRGB32,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, vp, A0),
-	AROS_LHA(const ULONG     *, table, A1),
+        AROS_LHA(struct ViewPort *, vp, A0),
+        AROS_LHA(const ULONG     *, table, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 147, Graphics)
+        struct GfxBase *, GfxBase, 147, Graphics)
 
 /*  FUNCTION
-	Load RGB color values from table.
+        Load RGB color values from table.
 
     INPUTS
-	vp    - ViewPort
-	table - pointer to table of records
-	        1 Word with the number of colors to load
-	        1 Word with the first color to be loaded.
-	        3 Longwords representing a left justified 32 bit RGB triplet.
-	        The list is terminated by a count value of 0.
+        vp    - ViewPort
+        table - pointer to table of records
+                1 Word with the number of colors to load
+                1 Word with the first color to be loaded.
+                3 Longwords representing a left justified 32 bit RGB triplet.
+                The list is terminated by a count value of 0.
     RESULT
 
     NOTES
 
     EXAMPLE
-	ULONG table[] = { 1l << 16 + 0 , 0xffffffff , 0 , 0 , 0}
-	ULONG table[] = { 256l << 16 + 0 , r1 , g1 , b1 , r2 , g2 , b2 , ..... 0}
+        ULONG table[] = { 1l << 16 + 0 , 0xffffffff , 0 , 0 , 0}
+        ULONG table[] = { 256l << 16 + 0 , r1 , g1 , b1 , r2 , g2 , b2 , ..... 0}
 
     BUGS
 
@@ -46,8 +46,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -62,31 +62,31 @@
     if (table)
     {
         ULONG count;
-	
+        
         /* table is terminated by a count value of 0 */
-	
-	while ((count = (*table) >> 16))
-	{
+        
+        while ((count = (*table) >> 16))
+        {
             ULONG first, t;
 
-	    first = (*table) & 0xFFFF;
+            first = (*table) & 0xFFFF;
 
-	    table ++;
+            table ++;
 
-	    D(bug("[LoadRGB32] Setting %u colors starting from %u\n", count, first));
-	    for (t = 0; t < count; t++)
-	    {
-		D(bug("[LoadRGB32] Color %u R 0x%08lX G 0x%08lX B %08lX\n", t + first, table[0], table[1], table[2]));
-		SetRGB32 (vp,
-	    		  t + first,
-			  table[0],
-			  table[1],
-			  table[2]);
+            D(bug("[LoadRGB32] Setting %u colors starting from %u\n", count, first));
+            for (t = 0; t < count; t++)
+            {
+                D(bug("[LoadRGB32] Color %u R 0x%08lX G 0x%08lX B %08lX\n", t + first, table[0], table[1], table[2]));
+                SetRGB32 (vp,
+                          t + first,
+                          table[0],
+                          table[1],
+                          table[2]);
 
-		table += 3;
-	    }
+                table += 3;
+            }
 
-	} /* while (*table) */
+        } /* while (*table) */
     }
     
     AROS_LIBFUNC_EXIT

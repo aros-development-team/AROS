@@ -21,17 +21,17 @@
 
     NAME */
 
-	AROS_LH5(LONG, MoveSizeLayer,
+        AROS_LH5(LONG, MoveSizeLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l , A0),
-	AROS_LHA(LONG          , dx, D0),
-	AROS_LHA(LONG          , dy, D1),
-	AROS_LHA(LONG          , dw, D2),
-	AROS_LHA(LONG          , dh, D3),
+        AROS_LHA(struct Layer *, l , A0),
+        AROS_LHA(LONG          , dx, D0),
+        AROS_LHA(LONG          , dy, D1),
+        AROS_LHA(LONG          , dw, D2),
+        AROS_LHA(LONG          , dh, D3),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 30, Layers)
+        struct LayersBase *, LayersBase, 30, Layers)
 
 /*  FUNCTION
         Moves and resizes the layer in one step. Collects damage lists
@@ -103,7 +103,7 @@
       AndRegionRegion(l->VisibleRegion, olddamage);
       AndRegionRegion(l->visibleshape, olddamage);
       _TranslateRect(&olddamage->bounds, -l->bounds.MinX, -l->bounds.MinY);
-    	
+        
       IL(l)->intflags |= INTFLAG_AVOID_BACKFILL;
     }
   }
@@ -116,9 +116,9 @@
   
   /* First create newshape with 0,0 origin, because l->shaperegion is in layer coords */
   
-  newshape = NewRectRegion(0, 
-                           0, 
-                           l->bounds.MaxX - l->bounds.MinX + dw, 
+  newshape = NewRectRegion(0,
+                           0,
+                           l->bounds.MaxX - l->bounds.MinX + dw,
                            l->bounds.MaxY - l->bounds.MinY + dh);
 
   if (IL(l)->shapehook)
@@ -128,18 +128,18 @@
 
     if ((dx || dy) && (dw || dh))
     {
-    	msg.Action = SHAPEHOOKACTION_MOVESIZELAYER;
+        msg.Action = SHAPEHOOKACTION_MOVESIZELAYER;
     }
     else if (dx || dy)
     {
-    	msg.Action = SHAPEHOOKACTION_MOVELAYER;
+        msg.Action = SHAPEHOOKACTION_MOVELAYER;
     }
     else
     {
-    	msg.Action = SHAPEHOOKACTION_SIZELAYER;
+        msg.Action = SHAPEHOOKACTION_SIZELAYER;
     }
 
-    msg.NewShape  = l->shaperegion;    
+    msg.NewShape  = l->shaperegion;
     msg.OldShape  = l->shaperegion;
     msg.NewBounds = &NewBounds;
     msg.OldBounds = &l->bounds;
@@ -150,7 +150,7 @@
     NewBounds.MaxY = l->bounds.MaxY + dy + dh;
     
     if (CallHookPkt(IL(l)->shapehook, l, &msg))
-	l->shaperegion = msg.NewShape;
+        l->shaperegion = msg.NewShape;
   }
 
   if (l->shaperegion)
@@ -237,7 +237,7 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
   ClearRegion(&cutnewshape);
 
   /*
-   * Now I need to move the layer and all its familiy to the new 
+   * Now I need to move the layer and all its familiy to the new
    * location.
    */
   oldshape = l->shape;
@@ -252,7 +252,7 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
 #if 0
 kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
         __FUNCTION__);
-#endif    
+#endif
 
     if (1/* IS_VISIBLE(_l) */)
     {
@@ -282,7 +282,7 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
       cr = cr->Next;
     }
     
-    if (l != _l)   
+    if (l != _l)
     {
       _TranslateRect(&_l->shape->bounds, dx, dy);
 
@@ -305,7 +305,7 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
   l->Height += dh;
 
 
-  /* 
+  /*
    * Now make them visible again.
    */
   _l = first;
@@ -348,8 +348,8 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
 kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
         __FUNCTION__);
 #endif
-    if (IS_VISIBLE(_l) && 
-       (  DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) || 
+    if (IS_VISIBLE(_l) &&
+       (  DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) ||
           DO_OVERLAP(   &oldshape->bounds, &_l->shape->bounds) ))
     {
       ClearRegion(_l->VisibleRegion);
@@ -382,7 +382,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
 
   ClearRegion(&rtmp);
     
-  /*  
+  /*
    * Now I need to clear the old layer at its previous place..
    * But I may only clear those parts where no layer has become
    * visible in the meantime.

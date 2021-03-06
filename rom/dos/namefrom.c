@@ -90,7 +90,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
             else if(!first)
             {
                 if (name > buffer)
-                {                   
+                {
                     *--name = '/';
                 }
                 else
@@ -104,7 +104,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
                         s2--;
         
                         if (name - (s2 - s1) >= buffer)
-                        { 
+                        {
                             while(s2 > s1)
                         {
                             *--name = *--s2;

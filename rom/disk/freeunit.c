@@ -8,12 +8,12 @@
 #include <resources/disk.h>
 
 AROS_LH1(void, FreeUnit,
-	 AROS_LHA(LONG, unitNum, D0),
-	 struct DiscResource *, DiskBase, 2, Disk)
+         AROS_LHA(LONG, unitNum, D0),
+         struct DiscResource *, DiskBase, 2, Disk)
 {
     AROS_LIBFUNC_INIT
 
-	DiskBase->dr_Flags &= ~(1 << unitNum);
+        DiskBase->dr_Flags &= ~(1 << unitNum);
 
     AROS_LIBFUNC_EXIT
 }

@@ -43,31 +43,31 @@ static int pix_written;
     NAME */
 #include <clib/graphics_protos.h>
 
-	AROS_LH4(BOOL, Flood,
+        AROS_LH4(BOOL, Flood,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(ULONG            , mode, D2),
-	AROS_LHA(LONG             , x, D0),
-	AROS_LHA(LONG             , y, D1),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(ULONG            , mode, D2),
+        AROS_LHA(LONG             , x, D0),
+        AROS_LHA(LONG             , y, D1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 55, Graphics)
+        struct GfxBase *, GfxBase, 55, Graphics)
 
 /*  FUNCTION
-	Flood fill a RastPort.
+        Flood fill a RastPort.
 
     INPUTS
-	rp   - destination RastPort
-	mode - 0: fill adjacent pixels which don't have color of OPen.
-	       1: fill adjacent pixels which have the same pen as of coordinate x,y.
-	x,y  - coordinate to start filling.
+        rp   - destination RastPort
+        mode - 0: fill adjacent pixels which don't have color of OPen.
+               1: fill adjacent pixels which have the same pen as of coordinate x,y.
+        x,y  - coordinate to start filling.
 
     RESULT
 
     NOTES
-	The RastPort must have a TmpRas raster whose size is as large as of
-	that of the RastPort.
+        The RastPort must have a TmpRas raster whose size is as large as of
+        that of the RastPort.
 
     EXAMPLE
 
@@ -78,8 +78,8 @@ static int pix_written;
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -93,7 +93,7 @@ static int pix_written;
     BOOL success;
     
     EnterFunc(bug("Flood(rp=%p, mode=%d, x=%d, y=%d)\n"
-    		, rp, mode, x, y));
+                , rp, mode, x, y));
 
 #if DEBUG_FLOOD
     fail_count = 0;
@@ -102,17 +102,17 @@ static int pix_written;
     
     /* Check for tmpras */
     if (NULL == tmpras)
-    	ReturnBool("Flood (No tmpras)",  FALSE);
+        ReturnBool("Flood (No tmpras)",  FALSE);
 
     if (NULL != rp->Layer)
     {
-    	fi.rp_width  = rp->Layer->Width;
-    	fi.rp_height = rp->Layer->Height;
+        fi.rp_width  = rp->Layer->Width;
+        fi.rp_height = rp->Layer->Height;
     }
     else
     {
-    	fi.rp_width  = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
-    	fi.rp_height = GetBitMapAttr(rp->BitMap, BMA_HEIGHT);
+        fi.rp_width  = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
+        fi.rp_height = GetBitMapAttr(rp->BitMap, BMA_HEIGHT);
     }
     
     
@@ -120,14 +120,14 @@ static int pix_written;
     needed_size = bpr * fi.rp_height;
     
     if (tmpras->Size < needed_size)
-    	ReturnBool("Flood (To small tmpras)",  FALSE);
+        ReturnBool("Flood (To small tmpras)",  FALSE);
     
 
     /* Clear the needed part of tmpras */
 
-/*    
+/*
     
-!!! Maybe we should use BltClear() here, since 
+!!! Maybe we should use BltClear() here, since
 !!! tmpras allways reside in CHIP RAM
      */
      
@@ -136,20 +136,20 @@ static int pix_written;
     
     if (mode == 0)
     {
-    	/* Outline mode */
-	D(bug("Getting outline pen\n"));
-	fi.fillpen = GetOutlinePen(rp);
-	D(bug("Got pen\n"));
-	
-	fi.isfillable = outline_isfillable;
+        /* Outline mode */
+        D(bug("Getting outline pen\n"));
+        fi.fillpen = GetOutlinePen(rp);
+        D(bug("Got pen\n"));
+        
+        fi.isfillable = outline_isfillable;
     }
     else
     {
-    	/* Color mode */
-	D(bug("Reading pixel\n"));
-	fi.fillpen = ReadPixel(rp, x, y);
-	D(bug("pixel read: %d\n", fi.fillpen));
-	fi.isfillable = color_isfillable;
+        /* Color mode */
+        D(bug("Reading pixel\n"));
+        fi.fillpen = ReadPixel(rp, x, y);
+        D(bug("pixel read: %d\n", fi.fillpen));
+        fi.isfillable = color_isfillable;
     }
     
     fi.rasptr = tmpras->RasPtr;
@@ -171,7 +171,7 @@ static int pix_written;
     SetAPen(rp, fi.orig_apen);
     
     ReturnBool("Flood",  success);
-	
+        
     AROS_LIBFUNC_EXIT
 } /* Flood */
 
@@ -184,9 +184,9 @@ static VOID settmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr, UBYTE state
     UBYTE mask = XCOORD_TO_MASK( x );
     
     if (state)
-	rasptr[idx] |= mask;
+        rasptr[idx] |= mask;
     else
-    	rasptr[idx] &= ~mask;
+        rasptr[idx] &= ~mask;
     
     return;
 }
@@ -198,11 +198,11 @@ static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr )
     BOOL state;
     
 /* D(bug("gettmpraspixel (%d, %d, %d): idx=%d, mask=%d, rasptr[idx]=%d, state=%d\n"
-		,x, y, bpr, idx, mask, rasptr[idx], rasptr[idx] & mask));
+                ,x, y, bpr, idx, mask, rasptr[idx], rasptr[idx] & mask));
 */
     state = ((rasptr[idx] & mask) != 0);
 
-/* D(bug("Returning %d\n", state));    
+/* D(bug("Returning %d\n", state));
 */
     return state;
 }
@@ -220,17 +220,17 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
 
     if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
     {
-/*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
-	fill = FALSE;
+/*      D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
+        fill = FALSE;
 #if DEBUG_FLOOD
-	fail_count ++;
+        fail_count ++;
 #endif
     }
     else
     {
-	fill = (fi->fillpen == ReadPixel(fi->rp, x, y));
+        fill = (fi->fillpen == ReadPixel(fi->rp, x, y));
     }
-	
+        
     return fill;
 }
 
@@ -238,27 +238,27 @@ static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
 {
     BOOL fill;
 /*    EnterFunc(bug("outline_isfillable(fi=%p, x=%d, y=%d)\n",
-    	fi, x, y));
-*/    
+        fi, x, y));
+*/
     if (x < 0 || y < 0 || x >= fi->rp_width || y >= fi->rp_height)
         return FALSE;
 
     if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
     {
-/*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
-	fill = FALSE;
+/*      D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
+        fill = FALSE;
 #if DEBUG_FLOOD
-	fail_count ++;
+        fail_count ++;
 #endif
     }
     else
     {
-	fill = (fi->fillpen != ReadPixel(fi->rp, x, y));
+        fill = (fi->fillpen != ReadPixel(fi->rp, x, y));
     }
-	
+        
 /*    D(bug("fillpen: %d, pen: %d\n", fi->fillpen, ReadPixel(fi->rp, x, y)));
-*/	
-	
+*/
+        
 /*    ReturnBool("outline_isfillable", fill);
 */
     return fill;
@@ -276,12 +276,12 @@ static VOID putfillpixel(struct fillinfo *fi, LONG x, LONG y)
     
     if (fi->rp->AreaPtrn)
     {
-    	set_pixel = pattern_pen(fi->rp
-		, x, y
-		, fi->orig_apen
-		, fi->orig_bpen
-		, &pixval
-		, GfxBase);
+        set_pixel = pattern_pen(fi->rp
+                , x, y
+                , fi->orig_apen
+                , fi->orig_bpen
+                , &pixval
+                , GfxBase);
     }
     else
     {
@@ -324,8 +324,8 @@ static VOID init_stack(struct stack *s)
 static BOOL push(struct stack *s, LONG x, LONG y)
 {
    if (s->current == STACKSIZE)
-   	return FALSE;
-	
+        return FALSE;
+        
    s->items[s->current].x = x;
    s->items[s->current].y = y;
 
@@ -338,8 +338,8 @@ static BOOL push(struct stack *s, LONG x, LONG y)
 static BOOL pop(struct stack *s, LONG *xptr, LONG *yptr)
 {
     if (s->current == 0)
-    	return FALSE;
-	
+        return FALSE;
+        
     s->current --;
     
     
@@ -359,10 +359,10 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
     struct stack stack;
     
     EnterFunc(bug("filline(fi=%p, start_x=%d, start_y=%d)\n"
-    	,fi, start_x, start_y));
-	
+        ,fi, start_x, start_y));
+        
     init_stack(&stack);
-	
+        
     for (;;) {
     /* Scan right */
     
@@ -372,59 +372,59 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
     for (x = start_x + 1; ; x ++)
     {
     
-    	if (fi->isfillable(fi, x, start_y))
-	{
-	    putfillpixel(fi, x, start_y);
-	    
-	    /* Check above */
-	    if (x > rightmost_above)
-	    {
-	        if (fi->isfillable(fi, x, start_y - 1))
-		{
-		    /* Find rightmost pixel */
-		    
-		    for (rightmost_above = x; ; rightmost_above ++)
-		    {
-		        if (!fi->isfillable(fi, rightmost_above + 1, start_y - 1))
-			    break;
-		    }
-		    
-		    /* Fill that line */
-		    if (!push(&stack, rightmost_above, start_y - 1))
-		    	ReturnBool("filline (stack full)", FALSE);
-/*		    filline(fi, rightmost_above, start_y - 1);
-*/		}
-		
-	    }
-	    
-	    /* Check below */
-	    
-	    if (x > rightmost_below)
-	    {
-	        if (fi->isfillable(fi, x, start_y + 1))
-		{
-		    /* Find rightmost pixel */
-		    
-		    for (rightmost_below = x; ; rightmost_below ++)
-		    {
-		        if (!fi->isfillable(fi, rightmost_below + 1, start_y + 1))
-			    break;
-		    }
-		    
-		    /* Fill that line */
-		    if (!push(&stack, rightmost_below, start_y + 1))
-		    	ReturnBool("filline (stack full)", FALSE);
-		    
-/*		    filline(fi, rightmost_below, start_y + 1);
-*/		}
-		
-	    }
-	    
-	}
-	else
-	    break;
+        if (fi->isfillable(fi, x, start_y))
+        {
+            putfillpixel(fi, x, start_y);
+            
+            /* Check above */
+            if (x > rightmost_above)
+            {
+                if (fi->isfillable(fi, x, start_y - 1))
+                {
+                    /* Find rightmost pixel */
+                    
+                    for (rightmost_above = x; ; rightmost_above ++)
+                    {
+                        if (!fi->isfillable(fi, rightmost_above + 1, start_y - 1))
+                            break;
+                    }
+                    
+                    /* Fill that line */
+                    if (!push(&stack, rightmost_above, start_y - 1))
+                        ReturnBool("filline (stack full)", FALSE);
+/*                  filline(fi, rightmost_above, start_y - 1);
+*/              }
+                
+            }
+            
+            /* Check below */
+            
+            if (x > rightmost_below)
+            {
+                if (fi->isfillable(fi, x, start_y + 1))
+                {
+                    /* Find rightmost pixel */
+                    
+                    for (rightmost_below = x; ; rightmost_below ++)
+                    {
+                        if (!fi->isfillable(fi, rightmost_below + 1, start_y + 1))
+                            break;
+                    }
+                    
+                    /* Fill that line */
+                    if (!push(&stack, rightmost_below, start_y + 1))
+                        ReturnBool("filline (stack full)", FALSE);
+                    
+/*                  filline(fi, rightmost_below, start_y + 1);
+*/              }
+                
+            }
+            
+        }
+        else
+            break;
 
-    } /* for (scan right)  */ 
+    } /* for (scan right)  */
     
     
     /* scan left */
@@ -437,63 +437,63 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
     {
         
     
-    	if (fi->isfillable(fi, x, start_y))
-	{
-	    putfillpixel(fi, x, start_y);
-	    
-	    /* Check above */
-	    if (x <= leftmost_above)
-	    {
-	        if (fi->isfillable(fi, x, start_y - 1))
-		{
-		    /* Find rightmost pixel */
-		    
-		    for (leftmost_above = x; ; leftmost_above --)
-		    {
-		        if (!fi->isfillable(fi, leftmost_above - 1, start_y - 1))
-			    break;
-		    }
-		    
-		    /* Fill that line */
-		    if (!push(&stack, leftmost_above, start_y - 1))
-		    	ReturnBool("filline (stack full)", FALSE);
-/*		    filline(fi, leftmost_above, start_y - 1);
-*/		}
-		
-	    }
-	    
-	    /* Check below */
-	    
-	    if (x < leftmost_below)
-	    {
-	        if (fi->isfillable(fi, x, start_y + 1))
-		{
-		    /* Find rightmost pixel */
-		    
-		    for (leftmost_below = x; ; leftmost_below --)
-		    {
-		        if (!fi->isfillable(fi, leftmost_below - 1, start_y + 1))
-			    break;
-		    }
-		    
-		    /* Fill that line */
-		    if (!push(&stack, leftmost_below, start_y + 1))
-		       	ReturnBool("filline (stack full)", FALSE);
-		    
-/*		    filline(fi, leftmost_below, start_y + 1);
-*/		}
-		
-	    }
-	    
-	}
-	else
-	    break;
+        if (fi->isfillable(fi, x, start_y))
+        {
+            putfillpixel(fi, x, start_y);
+            
+            /* Check above */
+            if (x <= leftmost_above)
+            {
+                if (fi->isfillable(fi, x, start_y - 1))
+                {
+                    /* Find rightmost pixel */
+                    
+                    for (leftmost_above = x; ; leftmost_above --)
+                    {
+                        if (!fi->isfillable(fi, leftmost_above - 1, start_y - 1))
+                            break;
+                    }
+                    
+                    /* Fill that line */
+                    if (!push(&stack, leftmost_above, start_y - 1))
+                        ReturnBool("filline (stack full)", FALSE);
+/*                  filline(fi, leftmost_above, start_y - 1);
+*/              }
+                
+            }
+            
+            /* Check below */
+            
+            if (x < leftmost_below)
+            {
+                if (fi->isfillable(fi, x, start_y + 1))
+                {
+                    /* Find rightmost pixel */
+                    
+                    for (leftmost_below = x; ; leftmost_below --)
+                    {
+                        if (!fi->isfillable(fi, leftmost_below - 1, start_y + 1))
+                            break;
+                    }
+                    
+                    /* Fill that line */
+                    if (!push(&stack, leftmost_below, start_y + 1))
+                        ReturnBool("filline (stack full)", FALSE);
+                    
+/*                  filline(fi, leftmost_below, start_y + 1);
+*/              }
+                
+            }
+            
+        }
+        else
+            break;
 
-    } /* for (scan left)  */ 
+    } /* for (scan left)  */
 
     
     if (!pop(&stack, &start_x, &start_y))
-    	break;  
+        break;
 D(bug("\t\t\tpop(%d, %d)\n", start_x, start_y));
     
   } /* forever */

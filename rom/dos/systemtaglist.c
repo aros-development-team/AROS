@@ -327,7 +327,7 @@
         extern void BCPL_RunHandler(void);
         entry = BCPL_RunHandler;
     }
-    else 
+    else
 #endif
     {
         D(bug("[SystemTagList] C 'shell' shell selected\n"));

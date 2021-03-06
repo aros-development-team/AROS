@@ -74,7 +74,7 @@
     }
     else if (type != CUSTOMSCREEN)
     {
-	/* FIXME: Handle CUSTOMSCREEN */
+        /* FIXME: Handle CUSTOMSCREEN */
         screen = NULL;
     }
     

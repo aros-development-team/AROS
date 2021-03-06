@@ -74,7 +74,7 @@ CONST_STRPTR nvmeControllerName = "Non-Volatile Memory Express Controller";
 
 static int NVME_Init(struct NVMEBase *NVMEBase)
 {
-    struct BootLoaderBase	*BootLoaderBase;
+    struct BootLoaderBase       *BootLoaderBase;
     BOOL enabled = TRUE;
 
     D(bug("[NVME--] %s: %s Initialization\n", __func__, nvmeDeviceName);)
@@ -226,10 +226,10 @@ static int NVME_Close
  *   etc..
  */
 
-typedef struct 
+typedef struct
 {
     struct NVMEBase *NVMEBase;
-    struct List	    devices;
+    struct List     devices;
 } EnumeratorArgs;
 
 static
@@ -262,10 +262,10 @@ AROS_UFH3(void, nvme_PCIEnumerator_h,
         D(bug("[NVME:PCI] %s: Device is already in use by %s\n", __func__, owner));
         FreePooled(NVMEBase->nvme_MemPool, dev, sizeof(*dev));
         return;
-    }        
+    }
 
     NVMEBase->nvme_HostCount++;
-	
+        
     AddTail(&a->devices, (struct Node *)dev);
 
     return;
@@ -289,11 +289,11 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
     {
         {aHidd_Name             , (IPTR)nvmeDeviceName          },
         {aHidd_HardwareName     , (IPTR)nvmeControllerName      },
-        {aHidd_Producer		, 0                             },
+        {aHidd_Producer         , 0                             },
 #define NVME_TAG_VEND 2
-        {aHidd_Product		, 0                             },
+        {aHidd_Product          , 0                             },
 #define NVME_TAG_PROD 3
-        {aHidd_DriverData	, 0                             },
+        {aHidd_DriverData       , 0                             },
 #define NVME_TAG_DATA 4
         {TAG_DONE               , 0                             }
     };
@@ -325,7 +325,7 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
     }
 
     D(bug("[NVME:PCI] %s: Registering Detected Hosts..\n", __func__));
-	
+        
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_VendorID , &nvme_tags[NVME_TAG_VEND].ti_Data);
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_ProductID, &nvme_tags[NVME_TAG_PROD].ti_Data);

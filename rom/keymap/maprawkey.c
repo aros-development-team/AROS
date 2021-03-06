@@ -215,7 +215,7 @@
                     WORD dk_idx = 0; /* Defaults to 0, which is the index to be used into the transition table */
                     WORD dki_1;
 
-                    /* Get deadkey index for Prev1 */   
+                    /* Get deadkey index for Prev1 */
                     dki_1 = GetDeadKeyIndex(event->ie_Prev1DownCode, event->ie_Prev1DownQual, keyMap);
                     if (dki_1 != -1) /* Was it a dead key ? */
                     {
@@ -257,7 +257,7 @@
             break;
     } /* switch (ki.Key_MapType & (KC_NOQUAL|KCF_STRING|KCF_DEAD|KCF_NOP)) */
 
-done:                   
+done:
     ReturnInt ("MapRawKey", WORD, bufinfo.CharsWritten);
     
 overflow:

@@ -47,14 +47,14 @@ static VOID notifypressed(Class *cl, struct Gadget *g, struct GadgetInfo *ginfo,
 
     struct TagItem  ntags[] =
     {
-        { GA_ID	    , 0UL   },
-        { TAG_DONE   	    }
+        { GA_ID     , 0UL   },
+        { TAG_DONE          }
     };
 
-    method.MethodID 	= OM_NOTIFY;
+    method.MethodID     = OM_NOTIFY;
     method.opu_AttrList = ntags;
-    method.opu_GInfo 	= ginfo;
-    method.opu_Flags 	= flags;
+    method.opu_GInfo    = ginfo;
+    method.opu_Flags    = flags;
 
     ntags[0].ti_Data = ((g->Flags & GFLG_SELECTED) ? g->GadgetID : - g->GadgetID);
 
@@ -73,17 +73,17 @@ IPTR ButtonGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
     if (g)
     {
-	ti = FindTagItem(GA_Image, msg->ops_AttrList);
-	if (ti)
-	{
-    	    struct Image *im = (struct Image *)g->GadgetRender;
+        ti = FindTagItem(GA_Image, msg->ops_AttrList);
+        if (ti)
+        {
+            struct Image *im = (struct Image *)g->GadgetRender;
 
-    	    if (im)
-	    {
-		g->Width  = im->Width;
-		g->Height = im->Height;
-	    }
-	};  
+            if (im)
+            {
+                g->Width  = im->Width;
+                g->Height = im->Height;
+            }
+        };
     }
     
     return (IPTR)g;
@@ -96,47 +96,47 @@ IPTR ButtonGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem *ti;
-    IPTR    	    retval;
+    IPTR            retval;
         
     retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 
     /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-	* because it would circumvent the subclass from fully overriding it.
-	* The check of cl == OCLASS(o) should fail if we have been
-	* subclassed, and we have gotten here via DoSuperMethodA().
-	*/
+        * because it would circumvent the subclass from fully overriding it.
+        * The check of cl == OCLASS(o) should fail if we have been
+        * subclassed, and we have gotten here via DoSuperMethodA().
+        */
 
     ti = FindTagItem(GA_Image, msg->ops_AttrList);
     if (ti)
     {
-    	struct Image *im = (struct Image *)g->GadgetRender;
-		
-    	if (im)
-	{
-	    g->Width  = im->Width;
-	    g->Height = im->Height;
-	}
+        struct Image *im = (struct Image *)g->GadgetRender;
+                
+        if (im)
+        {
+            g->Width  = im->Width;
+            g->Height = im->Height;
+        }
     };
     
     if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(g)) ) )
     {
-    	struct GadgetInfo *gi = msg->ops_GInfo;
-	
-	if (gi)
-	{
-	    struct RastPort *rp = ObtainGIRPort(gi);
+        struct GadgetInfo *gi = msg->ops_GInfo;
+        
+        if (gi)
+        {
+            struct RastPort *rp = ObtainGIRPort(gi);
 
-	    if (rp)
-	    {
+            if (rp)
+            {
                 struct gpRender rmsg;
                 rmsg.MethodID = GM_RENDER;
                 rmsg.gpr_GInfo = gi;
                 rmsg.gpr_RPort = rp;
                 rmsg.gpr_Redraw = GREDRAW_REDRAW;
-		DoMethodA((Object *)g, &rmsg);
-		ReleaseGIRPort(rp);
-	    }
-	}
+                DoMethodA((Object *)g, &rmsg);
+                ReleaseGIRPort(rp);
+            }
+        }
     }
 
     return retval;
@@ -151,9 +151,9 @@ IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
     /* We will let the AROS gadgetclass test if it is safe to render */
     if ( DoSuperMethodA(cl, (Object *)g, (Msg)msg) != 0 && msg->gpr_GInfo)
     {
-        UWORD 	    	*pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+        UWORD           *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
         struct RastPort *rp = msg->gpr_RPort;
-        struct IBox 	 container;
+        struct IBox      container;
 
         SANITY_CHECKR(msg->gpr_RPort, 0)
 
@@ -210,7 +210,7 @@ IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
             if ((g->SelectRender != NULL) &&
                 (g->Flags & GFLG_SELECTED)) /* render selected image */
             {
-	    	/* No centering of the image inside the gadget to be done! */
+                /* No centering of the image inside the gadget to be done! */
 
                 DrawImageState(rp,
                            (struct Image *)g->SelectRender,
@@ -220,8 +220,8 @@ IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
             }
             else if ( g->GadgetRender != NULL ) /* render normal image */
             {
-	    	/* No centering of the image inside the gadget to be done! */
-		
+                /* No centering of the image inside the gadget to be done! */
+                
                 DrawImageState(rp,
                            (struct Image *)g->GadgetRender,
                            container.Left, container.Top,
@@ -292,7 +292,7 @@ IPTR ButtonGClass__GM_GOACTIVE(Class * cl, struct Gadget * g, struct gpInput * m
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GadgetInfo *gi = msg->gpi_GInfo;
-    IPTR    	       retval = GMR_NOREUSE;
+    IPTR               retval = GMR_NOREUSE;
 
 
     if (gi)
@@ -340,7 +340,7 @@ IPTR ButtonGClass__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput 
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GadgetInfo  *gi = msg->gpi_GInfo;
-    IPTR    	    	retval = GMR_MEACTIVE;
+    IPTR                retval = GMR_MEACTIVE;
 
     if (gi)
     {
@@ -349,120 +349,120 @@ IPTR ButtonGClass__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput 
         switch( ie->ie_Class )
         {
             case IECLASS_RAWMOUSE:
-        	switch( ie->ie_Code )
-        	{
-        	case SELECTUP:
+                switch( ie->ie_Code )
+                {
+                case SELECTUP:
                     if( g->Flags & GFLG_SELECTED )
                     {
-                	struct RastPort *rp;
+                        struct RastPort *rp;
 
-                	/* mouse is over gadget */
-                	g->Flags &= ~GFLG_SELECTED;
+                        /* mouse is over gadget */
+                        g->Flags &= ~GFLG_SELECTED;
 
-                	if ((rp = ObtainGIRPort(gi)))
-                	{
+                        if ((rp = ObtainGIRPort(gi)))
+                        {
                             struct gpRender method;
-			    
+                            
                             method.MethodID   = GM_RENDER;
                             method.gpr_GInfo  = gi;
                             method.gpr_RPort  = rp;
                             method.gpr_Redraw = GREDRAW_UPDATE;
-			    
+                            
                             DoMethodA((Object *)g, (Msg)&method);
-			    
+                            
                             ReleaseGIRPort(rp);
-                	}
-			
-                	retval = GMR_NOREUSE | GMR_VERIFY;
-                	/* This doesn't really make sense, as Termination will
-                	 * be sent in msg->Code. The original intuition puts
-                	 * junk here.
-                	 */
-                	*msg->gpi_Termination = IDCMP_GADGETUP;
+                        }
+                        
+                        retval = GMR_NOREUSE | GMR_VERIFY;
+                        /* This doesn't really make sense, as Termination will
+                         * be sent in msg->Code. The original intuition puts
+                         * junk here.
+                         */
+                        *msg->gpi_Termination = IDCMP_GADGETUP;
                     }
                     else
-                	retval = GMR_NOREUSE;
+                        retval = GMR_NOREUSE;
 
                     notifypressed(cl, g, gi, 0);
                     break;
 
-        	case IECODE_NOBUTTON:
+                case IECODE_NOBUTTON:
                     {
-                	struct gpHitTest gpht;
+                        struct gpHitTest gpht;
 
-                	gpht.MethodID     = GM_HITTEST;
-                	gpht.gpht_GInfo   = gi;
-                	gpht.gpht_Mouse.X = ((struct gpInput *)msg)->gpi_Mouse.X;
-                	gpht.gpht_Mouse.Y = ((struct gpInput *)msg)->gpi_Mouse.Y;
+                        gpht.MethodID     = GM_HITTEST;
+                        gpht.gpht_GInfo   = gi;
+                        gpht.gpht_Mouse.X = ((struct gpInput *)msg)->gpi_Mouse.X;
+                        gpht.gpht_Mouse.Y = ((struct gpInput *)msg)->gpi_Mouse.Y;
 
-                	/*
-                	   This case handles selection state toggling when the
-                	   left button is depressed and the mouse is moved
-                	   around on/off the gadget bounds.
-                	*/
-                	if ( DoMethodA((Object *)g, (Msg)&gpht) == GMR_GADGETHIT )
-                	{
+                        /*
+                           This case handles selection state toggling when the
+                           left button is depressed and the mouse is moved
+                           around on/off the gadget bounds.
+                        */
+                        if ( DoMethodA((Object *)g, (Msg)&gpht) == GMR_GADGETHIT )
+                        {
                             if ( (g->Flags & GFLG_SELECTED) == 0 )
                             {
-                        	struct RastPort *rp;
+                                struct RastPort *rp;
 
-                        	/* mouse is over gadget */
-                        	g->Flags |= GFLG_SELECTED;
+                                /* mouse is over gadget */
+                                g->Flags |= GFLG_SELECTED;
 
-                        	if ((rp = ObtainGIRPort(gi)))
-                        	{
+                                if ((rp = ObtainGIRPort(gi)))
+                                {
                                     struct gpRender method;
-				    
+                                    
                                     method.MethodID   = GM_RENDER;
                                     method.gpr_GInfo  = gi;
                                     method.gpr_RPort  = rp;
                                     method.gpr_Redraw = GREDRAW_UPDATE;
-				    
+                                    
                                     DoMethodA((Object *)g, (Msg)&method);
-				    
+                                    
                                     ReleaseGIRPort(rp);
-                        	}
+                                }
                             }
-                	}
-                	else
-                	{
+                        }
+                        else
+                        {
                             if ( (g->Flags & GFLG_SELECTED) != 0 )
                             {
-                        	struct RastPort *rp;
+                                struct RastPort *rp;
 
-                        	/* mouse is not over gadget */
-                        	g->Flags &= ~GFLG_SELECTED;
+                                /* mouse is not over gadget */
+                                g->Flags &= ~GFLG_SELECTED;
 
-                        	if ((rp = ObtainGIRPort(gi)))
-                        	{
+                                if ((rp = ObtainGIRPort(gi)))
+                                {
                                     struct gpRender method;
-				    
+                                    
                                     method.MethodID   = GM_RENDER;
                                     method.gpr_GInfo  = gi;
                                     method.gpr_RPort  = rp;
                                     method.gpr_Redraw = GREDRAW_UPDATE;
-				    
+                                    
                                     DoMethodA((Object *)g, (Msg)&method);
-				    
+                                    
                                     ReleaseGIRPort(rp);
-                        	}
+                                }
                             }
-                	}
-                	break;
-			
+                        }
+                        break;
+                        
                     } /**/
 
-        	default:
+                default:
                     retval = GMR_REUSE;
                     *((struct gpInput *)msg)->gpi_Termination = 0UL;
                     break;
-		    
-        	} /* switch( ie->ie_Code ) */
-        	break;
+                    
+                } /* switch( ie->ie_Code ) */
+                break;
 
             case IECLASS_TIMER:
-        	notifypressed(cl, g, msg->gpi_GInfo, OPUF_INTERIM);
-        	break;
+                notifypressed(cl, g, msg->gpi_GInfo, OPUF_INTERIM);
+                break;
 
         } /* switch( ie->ie_Class ) */
 
@@ -499,7 +499,7 @@ IPTR ButtonGClass__GM_GOINACTIVE(Class * cl, struct Gadget *g, struct gpGoInacti
                 method.gpr_GInfo  = gi;
                 method.gpr_RPort  = rp;
                 method.gpr_Redraw = GREDRAW_REDRAW;
-		
+                
                 DoMethodA((Object *)g, (Msg)&method);
 
                 ReleaseGIRPort(rp);
@@ -508,7 +508,7 @@ IPTR ButtonGClass__GM_GOINACTIVE(Class * cl, struct Gadget *g, struct gpGoInacti
                 method2.opu_AttrList = NULL;
                 method2.opu_GInfo    = gi;
                 method2.opu_Flags    = 0;
-		
+                
                 DoMethodA((Object *)g, (Msg)&method2);
             }
         }

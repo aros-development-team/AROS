@@ -41,7 +41,7 @@ static int libInit(LIBBASETYPEPTR arosxb)
     arosxb->arosxc_2 = AROSXClass_CreateController(arosxb, 2);
     arosxb->arosxc_3 = AROSXClass_CreateController(arosxb, 3);
 
-	InitSemaphore(&arosxb->arosxc_lock);
+        InitSemaphore(&arosxb->arosxc_lock);
     InitSemaphore(&arosxb->event_lock);
 
     memset(&arosxb->event_reply_port, 0, sizeof(arosxb->event_reply_port));
@@ -50,7 +50,7 @@ static int libInit(LIBBASETYPEPTR arosxb)
 
     NewList(&arosxb->event_port_list);
 
-	arosxb->AROSXBase = AROSXInit();
+        arosxb->AROSXBase = AROSXInit();
 
 #define AROSXBase   arosxb->AROSXBase
 
@@ -63,7 +63,7 @@ static int libInit(LIBBASETYPEPTR arosxb)
     AROSXBase->arosxb = arosxb;
 
     mybug(-1, ("AROSX: AROSXBase 0x%08lx\n", AROSXBase));
-	//AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
+        //AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
 
     mybug(0, ("libInit: Ok\n"));
 
@@ -162,7 +162,7 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
         mybug(0, ("nepHidAttemptInterfaceBinding(%08lx) Nibble check %d\n", pif, nibble_check));
         nDebugMem(ps, xinput_desc, xinput_desc[0]);
 
-        if( (xinput_desc[6] != 129) | (nibble_check != xinput_desc[0]) ) 
+        if( (xinput_desc[6] != 129) | (nibble_check != xinput_desc[0]) )
         {
             mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Not a gamepad! (that we know of...)\n", pif));
             CloseLibrary(ps);
@@ -188,7 +188,7 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
                     //FreeSignal(arosxc->ReadySignal);
                     psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &arosxc->devname, TAG_END);
 
-					psdSafeRawDoFmt(arosxc->name, 64, "%s (%01x)", arosxc->devname, arosxc->id);
+                                        psdSafeRawDoFmt(arosxc->name, 64, "%s (%01x)", arosxc->devname, arosxc->id);
 
                     psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Play it again, '%s'!", arosxc->name);
 
@@ -403,7 +403,7 @@ struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, 
         }
     }
 
-    AROSXClass_DestroyController(arosxb, arosxc);    
+    AROSXClass_DestroyController(arosxb, arosxc);
 
     return NULL;
 
@@ -586,7 +586,7 @@ AROS_UFH0(void, nHidTask)
     ULONG sigs;
 
     UBYTE *epinbuf;
-	UBYTE *ep0buf;
+        UBYTE *ep0buf;
 
     LONG ioerr;
     ULONG len;
@@ -604,8 +604,8 @@ AROS_UFH0(void, nHidTask)
         arosxc->TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigBit = arosxc->TimerMP->mp_SigBit;
         arosxc->TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
-    	epinbuf = arosxc->EPInBuf;
-		ep0buf  = arosxc->EP0Buf;
+        epinbuf = arosxc->EPInBuf;
+                ep0buf  = arosxc->EP0Buf;
 
         arosxc->status.signallost = TRUE;
 
@@ -621,23 +621,23 @@ AROS_UFH0(void, nHidTask)
 
         psdPipeSetup(arosxc->EP0Pipe, URTF_IN|URTF_VENDOR|URTF_INTERFACE, 0x01, 0x0100, 0x00);
         do {
-        	ioerr = psdDoPipe(arosxc->EP0Pipe, ep0buf, 20);
-    	} while(ioerr);
+                ioerr = psdDoPipe(arosxc->EP0Pipe, ep0buf, 20);
+        } while(ioerr);
 
-    	mybug(0, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
-            	    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
-        	        ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
+        mybug(0, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
+                    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
+                        ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
 
         arosxc->status.wireless = (ep0buf[18]&(1<<0))? TRUE:FALSE;
 
-		/*
-			:) First
+                /*
+                        :) First
 
             Wireless Logitech F710
-			EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 01 00
-			 - What we have here is a bitmask for all(?) the inputs
-			 - We're the first, I think...
-			 - If this holds true then the analog thumb stick values aren't exactly 16-bit wide :)
+                        EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 01 00
+                         - What we have here is a bitmask for all(?) the inputs
+                         - We're the first, I think...
+                         - If this holds true then the analog thumb stick values aren't exactly 16-bit wide :)
             EPIn: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
 
             Wired Logitech F310
@@ -666,29 +666,29 @@ AROS_UFH0(void, nHidTask)
               0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
              17  33  16   1   1  37 129  20   3   3   3   4  19   2   8   3   3
 
-		*/
+                */
 
         /*
-        	Set led ring to gamepad number. Should flash for a while and then lid on constantly.
+                Set led ring to gamepad number. Should flash for a while and then lid on constantly.
         */
 
-    	UBYTE *bufout;
-    	bufout = arosxc->EPOutBuf;
+        UBYTE *bufout;
+        bufout = arosxc->EPOutBuf;
 
-    	bufout[0] = 0x01;
-    	bufout[1] = 0x03;
-    	bufout[2] = arosxc->id + 2;
-    	bufout[3] = 0x00;
-    	bufout[4] = 0x00;
-    	bufout[5] = 0x00;
-    	bufout[6] = 0x00;
-    	bufout[7] = 0x00;
-		bufout[8] = 0x00;
-    	bufout[9] = 0x00;
-    	bufout[10] = 0x00;
-		bufout[11] = 0x00;
+        bufout[0] = 0x01;
+        bufout[1] = 0x03;
+        bufout[2] = arosxc->id + 2;
+        bufout[3] = 0x00;
+        bufout[4] = 0x00;
+        bufout[5] = 0x00;
+        bufout[6] = 0x00;
+        bufout[7] = 0x00;
+                bufout[8] = 0x00;
+        bufout[9] = 0x00;
+        bufout[10] = 0x00;
+                bufout[11] = 0x00;
 
-    	psdDoPipe(arosxc->EPOutPipe, bufout, 12);
+        psdDoPipe(arosxc->EPOutPipe, bufout, 12);
 
         psdSendPipe(arosxc->EPInPipe, epinbuf, 20);
         do
@@ -720,8 +720,8 @@ AROS_UFH0(void, nHidTask)
                         psdDelayMS(200);
                     }
                     /*
-                    	TODO: One Chinese gamepad doesn't wait for new input but sends data back at once (8mS apart...)
-                    		   - Check if response is the same and not much time has elapsed between and set some babble flag and force wait between calls
+                        TODO: One Chinese gamepad doesn't wait for new input but sends data back at once (8mS apart...)
+                                   - Check if response is the same and not much time has elapsed between and set some babble flag and force wait between calls
                     */
                     //psdDelayMS(1);
                     psdSendPipe(arosxc->EPInPipe, epinbuf, 20);
@@ -803,10 +803,10 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *arosxc, UBYTE *buf, ULONG len
     /*
         Works at least with Logitech F710
     */
-	arosxc->status.signallost = (buf[14]&(1<<4))? FALSE:TRUE;
+        arosxc->status.signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
- 	/*
-    	This will map everything according to Microsoft game controller API
+        /*
+        This will map everything according to Microsoft game controller API
         Check if our gamepad needs a timestamp (change on inputs)
     */
     arosx_gamepad_new.Buttons = (UWORD)(buf[2]<<0) | (buf[3]<<8);
@@ -936,26 +936,26 @@ struct AROSXClassController * nAllocHid(void)
 
                                 if((arosxc->EP0Buf = psdAllocVec(100)))
                                 {
-                                	if((arosxc->EPInBuf = psdAllocVec(100)))
-                                	{
-                                    	if((arosxc->EPOutPipe = psdAllocPipe(arosxc->Device, arosxc->TaskMsgPort, arosxc->EPOut)))
-                                    	{
-                                        	psdSetAttrs(PGA_PIPE, arosxc->EPOutPipe,
-                                            	PPA_NakTimeout, FALSE,
-                                            	PPA_AllowRuntPackets, TRUE,
-                                           		TAG_END);
+                                        if((arosxc->EPInBuf = psdAllocVec(100)))
+                                        {
+                                        if((arosxc->EPOutPipe = psdAllocPipe(arosxc->Device, arosxc->TaskMsgPort, arosxc->EPOut)))
+                                        {
+                                                psdSetAttrs(PGA_PIPE, arosxc->EPOutPipe,
+                                                PPA_NakTimeout, FALSE,
+                                                PPA_AllowRuntPackets, TRUE,
+                                                        TAG_END);
 
-                                        	if((arosxc->EPOutBuf = psdAllocVec(100)))
-                                        	{
-                                            	arosxc->Task = thistask;
-                                            	return(arosxc);
-                                        	}
-                                        	psdFreePipe(arosxc->EPOutPipe);
-                                    	}
-                                    	psdFreeVec(arosxc->EPInBuf);
-                                	}
-                                	psdFreeVec(arosxc->EP0Buf);
-                            	}
+                                                if((arosxc->EPOutBuf = psdAllocVec(100)))
+                                                {
+                                                arosxc->Task = thistask;
+                                                return(arosxc);
+                                                }
+                                                psdFreePipe(arosxc->EPOutPipe);
+                                        }
+                                        psdFreeVec(arosxc->EPInBuf);
+                                        }
+                                        psdFreeVec(arosxc->EP0Buf);
+                                }
                                 psdFreePipe(arosxc->EPInPipe);
                             }
                             psdFreePipe(arosxc->EP0Pipe);

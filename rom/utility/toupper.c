@@ -12,65 +12,65 @@
     NAME */
 #include <proto/utility.h>
 
-	AROS_LH1I(UBYTE, ToUpper,
+        AROS_LH1I(UBYTE, ToUpper,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, character, D0),
+        AROS_LHA(ULONG, character, D0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 29, Utility)
+        struct UtilityBase *, UtilityBase, 29, Utility)
 
 /*  FUNCTION
-	Convert a character to uppercase
+        Convert a character to uppercase
 
     INPUTS
-	character   - The character that you want changed.
+        character   - The character that you want changed.
 
     RESULT
-	The uppercase version of that character.
+        The uppercase version of that character.
 
     NOTES
-	Currently only works for ASCII characters. Would not be difficult
-	to adapt for other character sets (Unicode for example).
+        Currently only works for ASCII characters. Would not be difficult
+        to adapt for other character sets (Unicode for example).
 
-	This function is patched by the locale.library, so you should be
-	prepared for different results when running under different
-	languages.
+        This function is patched by the locale.library, so you should be
+        prepared for different results when running under different
+        languages.
 
     EXAMPLE
-	STRPTR string; UBYTE chr;
+        STRPTR string; UBYTE chr;
 
-	\* Convert a string to uppercase *\
-	while( chr = *string )
-	{
-	    *string = ToUpper( chr );
-	    string++;
-	}
+        \* Convert a string to uppercase *\
+        while( chr = *string )
+        {
+            *string = ToUpper( chr );
+            string++;
+        }
 
     BUGS
 
     SEE ALSO
-	ToLower()
+        ToLower()
 
     INTERNALS
-	This function is patched by locale.library.
+        This function is patched by locale.library.
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	10-08-96    iaint   Created from tolower.c from AROSdev15
+        29-10-95    digulla automatically created from
+                            utility_lib.fd and clib/utility_protos.h
+        10-08-96    iaint   Created from tolower.c from AROSdev15
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     return
     (
-	(character >= 'a' && character <= 'z')
-	|| (character >= 0xE0
-	    && character <= 0xEE
-	    && character != 0xE7)
-	? character - 0x20
-	: character
+        (character >= 'a' && character <= 'z')
+        || (character >= 0xE0
+            && character <= 0xEE
+            && character != 0xE7)
+        ? character - 0x20
+        : character
     );
 
     AROS_LIBFUNC_EXIT

@@ -743,7 +743,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
             Device descriptor tree:
 
             Device descriptor
-            Config descriptor 
+            Config descriptor
             ...String descriptor
             BOS descriptor
             ...SS capability descriptor
@@ -1053,7 +1053,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
 
     if(!ioerr) {
-    	KPRINTF(2, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
+        KPRINTF(2, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
 
         if(uhps.wPortStatus & UPSF_PORT_ENABLE) {
             KPRINTF(2, ("Disabling port %u\n", port));
@@ -1127,12 +1127,12 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                             } else {
                                 IPTR needssplit = 0;
 
-				                /* Some hubs (Apple Keyboard bultin hub) report speed correctly only after reset */
+                                                /* Some hubs (Apple Keyboard bultin hub) report speed correctly only after reset */
                                 if (uhps.wPortStatus & UPSF_PORT_LOW_SPEED) {
                                     psdSetAttrs(PGA_DEVICE, pd, DA_IsLowspeed, TRUE, TAG_END);
-                    		        KPRINTF(2, ("    It's a lowspeed device!\n"));
-		                            islowspeed = TRUE;
-		                        }
+                                        KPRINTF(2, ("    It's a lowspeed device!\n"));
+                                            islowspeed = TRUE;
+                                        }
 
                                 // inherit needs split from hub
                                 psdGetAttrs(PGA_DEVICE, nch->nch_Device, DA_NeedsSplitTrans, &needssplit, TAG_END);

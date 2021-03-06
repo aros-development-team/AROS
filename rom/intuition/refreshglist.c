@@ -242,26 +242,26 @@ void rendergadget(struct Gadget *gadgets,struct Window *window, struct Requester
 {
     switch (gadgets->GadgetType & GTYP_GTYPEMASK)
     {
-	case GTYP_BOOLGADGET:
+        case GTYP_BOOLGADGET:
             RefreshBoolGadget (gadgets, window, requester, IntuitionBase);
             break;
 
-	case GTYP_GADGET0002:
+        case GTYP_GADGET0002:
             break;
 
-	case GTYP_PROPGADGET:
+        case GTYP_PROPGADGET:
             RefreshPropGadget (gadgets, window, requester, IntuitionBase);
             break;
 
-	case GTYP_STRGADGET:
+        case GTYP_STRGADGET:
             RefreshStrGadget (gadgets, window, requester, IntuitionBase);
             break;
 
-	case GTYP_CUSTOMGADGET:
+        case GTYP_CUSTOMGADGET:
             RefreshBoopsiGadget (gadgets, window, requester, IntuitionBase);
             break;
 
-	default:
+        default:
             RefreshBoolGadget (gadgets, window, requester, IntuitionBase);
             break;
 

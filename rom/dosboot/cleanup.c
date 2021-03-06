@@ -16,9 +16,9 @@ extern const char Dosboot_LibID[];
 extern const int Dosboot_End;
 
 AROS_UFP3(static APTR, dosboot_Cleanup,
-	  AROS_UFPA(void *, dummy, D0),
-	  AROS_UFPA(BPTR, segList, A0),
-	  AROS_UFPA(struct ExecBase *, SysBase, A6));
+          AROS_UFPA(void *, dummy, D0),
+          AROS_UFPA(BPTR, segList, A0),
+          AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 const struct Resident db_Cleanup =
 {
@@ -35,9 +35,9 @@ const struct Resident db_Cleanup =
 };
 
 AROS_UFH3(static APTR, dosboot_Cleanup,
-	  AROS_UFPA(void *, dummy, D0),
-	  AROS_UFPA(BPTR, segList, A0),
-	  AROS_UFPA(struct ExecBase *, SysBase, A6))
+          AROS_UFPA(void *, dummy, D0),
+          AROS_UFPA(BPTR, segList, A0),
+          AROS_UFPA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -45,15 +45,15 @@ AROS_UFH3(static APTR, dosboot_Cleanup,
     
     if (!base)
     {
-    	/* ??? What ??? */
-    	return NULL;
+        /* ??? What ??? */
+        return NULL;
     }
 
     D(bug("[dosboot cleanup] Boot screen 0x%p\n", base->bm_Screen));
     if (base->bm_Screen)
     {
-    	/* Close "No boot media" screen. This is actually what we are here for. */
-    	CloseBootScreen(base->bm_Screen, base);
+        /* Close "No boot media" screen. This is actually what we are here for. */
+        CloseBootScreen(base->bm_Screen, base);
     }
     anim_Stop(base);
 

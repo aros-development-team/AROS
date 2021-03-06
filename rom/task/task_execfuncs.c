@@ -74,7 +74,7 @@ AROS_LH4(APTR, NewAddTask,
                 AROS_LCA(APTR,              initialPC, A2),
                 AROS_LCA(APTR,              finalPC,   A3),
                 AROS_LCA(struct TagItem *,  nat_Tags,   A4),
-		struct ExecBase *, SysBase);
+                struct ExecBase *, SysBase);
 
     AROS_LIBFUNC_EXIT
 }

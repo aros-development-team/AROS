@@ -59,10 +59,10 @@ struct FileSysReader
 };
 
 static AROS_UFH4(LONG, ReadFunc,
-	AROS_UFHA(BPTR, file,   D1),
-	AROS_UFHA(APTR, buffer, D2),
-	AROS_UFHA(LONG, length, D3),
-	AROS_UFHA(struct Library *, DOSBase, A6))
+        AROS_UFHA(BPTR, file,   D1),
+        AROS_UFHA(APTR, buffer, D2),
+        AROS_UFHA(LONG, length, D3),
+        AROS_UFHA(struct Library *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -71,26 +71,26 @@ static AROS_UFH4(LONG, ReadFunc,
     UBYTE *outbuf = buffer;
 
     while (length > 0) {
-    	ULONG size = length;
+        ULONG size = length;
 
-    	if (size + fsr->offset > fsr->size)
-    	    size = fsr->size - fsr->offset;
-    	if (size > 0) {
-    	    UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
-	    CopyMem(inbuf, outbuf, size);
-	}
+        if (size + fsr->offset > fsr->size)
+            size = fsr->size - fsr->offset;
+        if (size > 0) {
+            UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
+            CopyMem(inbuf, outbuf, size);
+        }
 
-	outsize += size;
-	fsr->offset += size;
-	length -= size;
-	outbuf += size;
+        outsize += size;
+        fsr->offset += size;
+        length -= size;
+        outbuf += size;
 
-	if (fsr->offset == fsr->size) {
-	    fsr->offset = 0;
-	    fsr->count++;
-	    if (fsr->count == fsr->fsn->fsblocks)
-	    	break;
-	}
+        if (fsr->offset == fsr->size) {
+            fsr->offset = 0;
+            fsr->count++;
+            if (fsr->count == fsr->fsn->fsblocks)
+                break;
+        }
 
     }
 
@@ -100,10 +100,10 @@ static AROS_UFH4(LONG, ReadFunc,
 }
 
 static AROS_UFH4(LONG, SeekFunc,
-	AROS_UFHA(BPTR, file,   D1),
-	AROS_UFHA(LONG, pos,    D2),
-	AROS_UFHA(LONG, mode,   D3),
-	AROS_UFHA(struct Library *, DOSBase, A6))
+        AROS_UFHA(BPTR, file,   D1),
+        AROS_UFHA(LONG, pos,    D2),
+        AROS_UFHA(LONG, mode,   D3),
+        AROS_UFHA(struct Library *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -118,7 +118,7 @@ static AROS_UFH4(LONG, SeekFunc,
     }
 
     if (pos < 0 || pos >= fsr->size)
-    	return -1;
+        return -1;
 
     fsr->offset = pos;
 
@@ -136,7 +136,7 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 #ifndef __mc68000
     /* Prevent loading hunk files on non-m68k */
     if (AROS_BE2LONG(node->filesystem[0].lsb_LoadData[0]) == 0x000003f3)
-    	return BNULL;
+        return BNULL;
 #endif
 
     FunctionArray[0] = (LONG_FUNC)ReadFunc;
@@ -199,7 +199,7 @@ struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
             )
         {
             return 0;
-        }              
+        }
     }
     for (i=0;i<RDB_LOCATION_LIMIT; i++)
     {
@@ -330,7 +330,7 @@ struct FileSysNode *fn;
         {
             CopyMem(buffer, &fn->fhb, sizeof(struct FileSysHeaderBlock));
 
-	    /* Fill in common part of the handle */
+            /* Fill in common part of the handle */
             fn->h.ln.ln_Name = fn->fhb.fhb_FileSysName;
             fn->h.ln.ln_Pri  = 0;
             fn->h.handler    = &FilesystemRDB;
@@ -420,14 +420,14 @@ UBYTE i;
 
     buffer = AllocVec(root->de.de_SizeBlock << 2, MEMF_PUBLIC);
     if (!buffer)
-    	return 1;
+        return 1;
     data = AllocMem(sizeof(struct RDBData), MEMF_PUBLIC);
     if (data)
     {
         for (i=0;i<RDB_LOCATION_LIMIT; i++)
         {
             if (readBlock(PartitionBase, root, i, buffer) != 0) {
-            	FreeVec(buffer);
+                FreeVec(buffer);
                 return 1;
             }
             CopyMem(buffer, &data->rdb, sizeof(struct RigidDiskBlock));
@@ -557,9 +557,9 @@ struct RDBData *data;
 
     while ((fn = (struct FileSysNode *)RemTail(&data->fsheaderlist)))
     {
-	/* Do not deallocate filesystem handles which are queued for loading */
-    	if (!fn->h.boot)
-    	    PartitionRDBFreeFileSystem(&fn->h);
+        /* Do not deallocate filesystem handles which are queued for loading */
+        if (!fn->h.boot)
+            PartitionRDBFreeFileSystem(&fn->h);
     }
     FreeMem(data, sizeof(struct RDBData));
 }
@@ -605,7 +605,7 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
     ULONG block;
 
     if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
-	return 0;
+        return 0;
 
     data = root->table->data;
     block = data->rdbblock+1; /* RDB will be written at the end */
@@ -857,9 +857,9 @@ struct PartitionHandle *PartitionRDBAddPartition(struct Library *PartitionBase, 
 {
     if (FindTagItem(PT_DOSENVEC, taglist) != NULL)
     {
- 	struct PartitionBlock *pblock;
-	struct PartitionHandle *ph;
-    	struct PartitionHandle *oph;
+        struct PartitionBlock *pblock;
+        struct PartitionHandle *ph;
+        struct PartitionHandle *oph;
 
         ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
         if (ph)
@@ -953,7 +953,7 @@ struct RDBData *data;
 struct RigidDiskBlock *rdb;
 
     if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
-    	    return 0;
+            return 0;
 
     data = root->table->data;
     CopyMem(&data->rdb, root->buffer, sizeof(struct RigidDiskBlock));
@@ -972,21 +972,21 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
     struct TagItem *nameTag = FindTagItem(FST_NAME, tags);
 
     for (fn = (struct FileSysNode *)data->fsheaderlist.lh_Head; fn->h.ln.ln_Succ;
-    	 fn = (struct FileSysNode *)fn->h.ln.ln_Succ)
+         fn = (struct FileSysNode *)fn->h.ln.ln_Succ)
     {
-	if (idTag)
-	{
-	    if (fn->fhb.fhb_DosType != idTag->ti_Data)
-	    	continue;
-	}
+        if (idTag)
+        {
+            if (fn->fhb.fhb_DosType != idTag->ti_Data)
+                continue;
+        }
 
-	if (nameTag)
-	{
-	    if (strcmp(fn->fhb.fhb_FileSysName, (char *)nameTag->ti_Data))
-	    	continue;
-	}
+        if (nameTag)
+        {
+            if (strcmp(fn->fhb.fhb_FileSysName, (char *)nameTag->ti_Data))
+                continue;
+        }
 
-	return &fn->h.ln;
+        return &fn->h.ln;
     }
 
     return NULL;
@@ -995,9 +995,9 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
 BPTR PartitionRDBLoadFileSystem(struct PartitionBase_intern *PartitionBase, struct FileSysHandle *fn)
 {
     if (PartitionBase->pb_DOSBase)
-    	return LoadFS((struct FileSysNode *)fn, (struct DosLibrary *)PartitionBase->pb_DOSBase);
+        return LoadFS((struct FileSysNode *)fn, (struct DosLibrary *)PartitionBase->pb_DOSBase);
     else
-	return BNULL;
+        return BNULL;
 }
 
 static LONG PartitionRDBGetFileSystemAttr(struct Library *PartitionBase, struct FileSysHandle *fn, const struct TagItem *tag)
@@ -1016,35 +1016,35 @@ static LONG PartitionRDBGetFileSystemAttr(struct Library *PartitionBase, struct 
         return TRUE;
 
     case FST_FSENTRY:
-	fse = (struct FileSysEntry *)tag->ti_Data;
+        fse = (struct FileSysEntry *)tag->ti_Data;
 
-	/* RDB filesystems are not prioritized */
-	fse->fse_Node.ln_Pri = 0;
+        /* RDB filesystems are not prioritized */
+        fse->fse_Node.ln_Pri = 0;
 
-	/*
-	 * Don't use CopyMem() or something like that.
-	 * First, you need to deal with endianess.
-	 * Second, some things are actually pointers, you need
-	 * to sign-extend them on 64 bits.
-	 */
-	fse->fse_DosType    = AROS_BE2LONG(fhb->fhb_DosType);
-	fse->fse_Version    = AROS_BE2LONG(fhb->fhb_Version);
-	fse->fse_PatchFlags = AROS_BE2LONG(fhb->fhb_PatchFlags);
-	fse->fse_Type	    = AROS_BE2LONG(fhb->fhb_Type);
-	fse->fse_Task	    = AROS_BE2LONG(fhb->fhb_Task);
-	fse->fse_Lock	    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Lock);
-	/* Just for convenience. This is expected to be zero. */
-	fse->fse_Handler    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Handler);
-	fse->fse_StackSize  = AROS_BE2LONG(fhb->fhb_StackSize);
-	fse->fse_Priority   = AROS_BE2LONG(fhb->fhb_Priority);
-	fse->fse_Startup    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Startup);
-	/* Skip fse_SegList */
-	fse->fse_GlobalVec  = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_GlobalVec);
-	return TRUE;
+        /*
+         * Don't use CopyMem() or something like that.
+         * First, you need to deal with endianess.
+         * Second, some things are actually pointers, you need
+         * to sign-extend them on 64 bits.
+         */
+        fse->fse_DosType    = AROS_BE2LONG(fhb->fhb_DosType);
+        fse->fse_Version    = AROS_BE2LONG(fhb->fhb_Version);
+        fse->fse_PatchFlags = AROS_BE2LONG(fhb->fhb_PatchFlags);
+        fse->fse_Type       = AROS_BE2LONG(fhb->fhb_Type);
+        fse->fse_Task       = AROS_BE2LONG(fhb->fhb_Task);
+        fse->fse_Lock       = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Lock);
+        /* Just for convenience. This is expected to be zero. */
+        fse->fse_Handler    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Handler);
+        fse->fse_StackSize  = AROS_BE2LONG(fhb->fhb_StackSize);
+        fse->fse_Priority   = AROS_BE2LONG(fhb->fhb_Priority);
+        fse->fse_Startup    = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_Startup);
+        /* Skip fse_SegList */
+        fse->fse_GlobalVec  = (BPTR)(SIPTR)AROS_BE2LONG(fhb->fhb_GlobalVec);
+        return TRUE;
 
     case FST_VERSION:
-	*((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_Version);
-	return TRUE;
+        *((ULONG *)tag->ti_Data) = AROS_BE2LONG(fhb->fhb_Version);
+        return TRUE;
     }
 
     return 0;

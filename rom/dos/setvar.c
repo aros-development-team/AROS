@@ -113,9 +113,9 @@
                 /* delete old value of that existing variable */
                 FreeMem(lv->lv_Value,lv->lv_Len);
             }
-            else 
+            else
             {
-                /* 
+                /*
                 ** create a LocalVar-structure and insert it into the list
                 */
                 if (NULL != (lv = AllocVec(sizeof(struct LocalVar) + nameLen + 1,
@@ -134,11 +134,11 @@
                     CopyMem(name, lv->lv_Node.ln_Name, nameLen);
                     lv->lv_Flags = flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM);
           
-                    /* 
+                    /*
                     ** First let's see whether we have to add it at the head
                     ** of the list as the list is still empty   OR
                     ** the very first element is already greater than the one
-                    ** we want to insert 
+                    ** we want to insert
                     */
           
                     if (n == (struct LocalVar *)&(pr->pr_LocalVars.mlh_Tail) ||
@@ -151,7 +151,7 @@
                     {
                         /*
                         ** Now we can be sure that we will have to insert
-                        ** somewhere behind the first element in the list 
+                        ** somewhere behind the first element in the list
                         */
                         ForeachNode(&pr->pr_LocalVars, n)
                         {
@@ -198,7 +198,7 @@
         } /* set a local variable */
         
         /* Ok, try and set a global variable. */
-        if ((flags & GVF_LOCAL_ONLY) == 0) 
+        if ((flags & GVF_LOCAL_ONLY) == 0)
         {
             BPTR file;
             /* as a standard: look for the file in ENV: if no path is
@@ -232,7 +232,7 @@
             }
 
             /* Let's see whether we're supposed to make a copy of this to
-             * envarc also... 
+             * envarc also...
              */
             if (0 != (flags & GVF_SAVE_VAR))
             {

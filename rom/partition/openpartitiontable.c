@@ -59,9 +59,9 @@
 
             if (root->table)
             {
-            	LONG retval;
+                LONG retval;
 
-	        NEWLIST(&root->table->list);
+                NEWLIST(&root->table->list);
 
                 root->table->type    = pst[0]->type;
                 root->table->handler = (void *)pst[0];

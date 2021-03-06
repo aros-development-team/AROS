@@ -10,13 +10,13 @@
 extern void readunitid_internal (struct DiscResource*, LONG unitNum);
 
 AROS_LH1(ULONG, ReadUnitID,
-	 AROS_LHA(LONG, unitNum, D0),
-	 struct DiscResource *, DiskBase, 6, Disk)
+         AROS_LHA(LONG, unitNum, D0),
+         struct DiscResource *, DiskBase, 6, Disk)
 {
     AROS_LIBFUNC_INIT
 
-	readunitid_internal (DiskBase, unitNum);
-	return DiskBase->dr_UnitID[unitNum];
+        readunitid_internal (DiskBase, unitNum);
+        return DiskBase->dr_UnitID[unitNum];
 
     AROS_LIBFUNC_EXIT
 }

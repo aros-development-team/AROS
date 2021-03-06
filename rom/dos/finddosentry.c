@@ -75,7 +75,7 @@
         size--;
     }
 
-    /* Follow the list */   
+    /* Follow the list */
     for (;;)
     {
         /* Get next entry. Return NULL if there is none. */

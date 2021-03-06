@@ -73,7 +73,7 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem  *tag, *tstate;
     struct StrGData *data = INST_DATA(cl, g);
-    IPTR    	     retval = (IPTR)0;
+    IPTR             retval = (IPTR)0;
 
     for (tstate = msg->ops_AttrList; (tag = NextTagItem(&tstate)); )
     {
@@ -84,8 +84,8 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
         {
 
             case STRINGA_LongVal:       /* [ISGNU] */
-        	if (msg->MethodID != OM_NEW)
-        	{
+                if (msg->MethodID != OM_NEW)
+                {
 
                     /* OM_NEW STRINGA_LongVal is handled in strg_new! */
 
@@ -97,96 +97,96 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
                     g->Activation |= GACT_LONGINT;
                     retval = 1UL;
                     notify = TRUE;
-        	}
-        	break;
+                }
+                break;
 
             case STRINGA_TextVal:       /* [ISGNU] */
-        	if (msg->MethodID != OM_NEW)
-        	{
+                if (msg->MethodID != OM_NEW)
+                {
                     /* OM_NEW STRINGA_TextVal is handled in strg_new! */
 
                     strcpy(data->StrInfo.Buffer, (STRPTR)tidata ? (STRPTR)tidata : (STRPTR)"");
                     g->Activation &= ~GACT_LONGINT;
                     retval = 1UL;
                     notify = TRUE;
-        	}
-        	break;
+                }
+                break;
 
             case STRINGA_MaxChars:      /* [I] */
-        	data->StrInfo.MaxChars = (WORD)tidata;
-        	break;
+                data->StrInfo.MaxChars = (WORD)tidata;
+                break;
 
             case STRINGA_Buffer:        /* [I] */
-        	data->StrInfo.Buffer = (STRPTR)tidata;
-        	break;
+                data->StrInfo.Buffer = (STRPTR)tidata;
+                break;
 
             case STRINGA_UndoBuffer:    /* [I] */
-        	data->StrInfo.UndoBuffer = (STRPTR)tidata;
-        	break;
+                data->StrInfo.UndoBuffer = (STRPTR)tidata;
+                break;
 
             case STRINGA_WorkBuffer:    /* [I] */
-        	data->StrExtend.WorkBuffer = (STRPTR)tidata;
-        	break;
+                data->StrExtend.WorkBuffer = (STRPTR)tidata;
+                break;
 
             case STRINGA_BufferPos:     /* [ISU] */
-        	data->StrInfo.BufferPos = (WORD)tidata;
-        	retval = 1UL;
-        	break;
+                data->StrInfo.BufferPos = (WORD)tidata;
+                retval = 1UL;
+                break;
 
             case STRINGA_DispPos:       /* [ISU] */
-        	data->StrInfo.DispPos = (WORD)tidata;
-        	retval = 1UL;
-        	break;
+                data->StrInfo.DispPos = (WORD)tidata;
+                retval = 1UL;
+                break;
 
             case STRINGA_AltKeyMap:     /* [IS] */
-        	data->StrInfo.AltKeyMap = (struct KeyMap *)tidata;
-        	break;
+                data->StrInfo.AltKeyMap = (struct KeyMap *)tidata;
+                break;
 
             case STRINGA_Font:      /* [IS] */
-        	data->StrExtend.Font = (struct TextFont *)tidata;
-        	retval = 1UL;
-        	break;
+                data->StrExtend.Font = (struct TextFont *)tidata;
+                retval = 1UL;
+                break;
 
             case STRINGA_Pens:      /* [IS] */
-        	data->StrExtend.Pens[0] = ((LONG)tidata) & 0x0000FFFF;
-        	data->StrExtend.Pens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
-        	retval = 1UL;
-        	break;
+                data->StrExtend.Pens[0] = ((LONG)tidata) & 0x0000FFFF;
+                data->StrExtend.Pens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
+                retval = 1UL;
+                break;
 
             case STRINGA_ActivePens:    /* [IS] */
-        	data->StrExtend.ActivePens[0] = ((LONG)tidata) & 0x0000FFFF;
-        	data->StrExtend.ActivePens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
-        	retval = 1UL;
-        	break;
+                data->StrExtend.ActivePens[0] = ((LONG)tidata) & 0x0000FFFF;
+                data->StrExtend.ActivePens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
+                retval = 1UL;
+                break;
 
             case STRINGA_EditHook:      /* [I] */
-        	data->StrExtend.EditHook = (struct Hook *)tidata;
-        	break;
+                data->StrExtend.EditHook = (struct Hook *)tidata;
+                break;
 
             case STRINGA_EditModes:     /* [IS] */
-        	data->StrExtend.InitialModes = (ULONG)tidata;
-        	break;
+                data->StrExtend.InitialModes = (ULONG)tidata;
+                break;
 
             case STRINGA_ReplaceMode:   /* [IS] */
-        	SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_REPLACE);
-        	break;
+                SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_REPLACE);
+                break;
 
             case STRINGA_FixedFieldMode:    /* [IS] */
-        	SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_FIXEDFIELD);
-        	break;
+                SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_FIXEDFIELD);
+                break;
 
             case STRINGA_NoFilterMode:  /* [IS] */
-        	SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_NOFILTER);
-        	break;
+                SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_NOFILTER);
+                break;
 
             case STRINGA_Justification: /* [IS] */
-        	g->Activation |= (UWORD)tidata;
-        	retval = 1UL;
-        	break;
+                g->Activation |= (UWORD)tidata;
+                retval = 1UL;
+                break;
 
             case STRINGA_ExitHelp:
-        	SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_EXITHELP);
-        	break;
+                SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_EXITHELP);
+                break;
 
 
         } /* switch (currently parsed tag) */
@@ -196,9 +196,9 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 #if 0 /* FIXME: Why don't we support notification? */
             struct TagItem notify_tags[] =
             {
-        	{ 0UL	    , 0UL   	    	},
-        	{ GA_ID     , g->GadgetID	},
-        	{ TAG_END   	    	    	}
+                { 0UL       , 0UL               },
+                { GA_ID     , g->GadgetID       },
+                { TAG_END                       }
             };
             struct opUpdate nmsg =
             {
@@ -208,7 +208,7 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
             notify_tags[0].ti_Data = tidata;
 
             DoSuperMethodA(cl, (Object *)g, (Msg)&nmsg);
-	    
+            
 #endif
         } /* if (the currently parsed attr supports notification) */
     } /* for (each tag in taglist) */
@@ -223,25 +223,25 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 IPTR StrGClass__OM_GET(Class *cl, struct Gadget * g, struct opGet *msg)
 {
     struct StrGData *data = INST_DATA(cl, g);
-    IPTR    	     retval = 1UL;
+    IPTR             retval = 1UL;
 
     switch (msg->opg_AttrID)
     {
-	case STRINGA_LongVal:   /* [ISGNU] */
+        case STRINGA_LongVal:   /* [ISGNU] */
             if (g->Activation & GACT_LONGINT)
-        	*(msg->opg_Storage) = (IPTR)data->StrInfo.LongInt;
+                *(msg->opg_Storage) = (IPTR)data->StrInfo.LongInt;
             else
-        	*(msg->opg_Storage) = 0UL;
+                *(msg->opg_Storage) = 0UL;
             break;
 
-	case STRINGA_TextVal:   /* [ISGNU] */
+        case STRINGA_TextVal:   /* [ISGNU] */
             if (!(g->Activation & GACT_LONGINT))
-        	*(msg->opg_Storage) = (IPTR)data->StrInfo.Buffer;
+                *(msg->opg_Storage) = (IPTR)data->StrInfo.Buffer;
             else
-        	*(msg->opg_Storage) = 0UL;
+                *(msg->opg_Storage) = 0UL;
             break;
 
-	default:
+        default:
             retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
             break;
     }
@@ -261,8 +261,8 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
     {
         struct TagItem  *ti;
         struct StrGData *data = INST_DATA(cl, g);
-        STRPTR      	 textval;
-        WORD        	 maxchars;
+        STRPTR           textval;
+        WORD             maxchars;
 
         /*
 
@@ -278,7 +278,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
 
         /* If no buffers have been supplied, then allocate them */
         maxchars = data->StrInfo.MaxChars;
-	
+        
         if (!data->StrInfo.Buffer)
         {
             data->StrInfo.Buffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
@@ -287,7 +287,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
             data->StrInfo.Buffer[0] = '\0';
             data->Flags |= SFLG_BUFFER_ALLOCATED;
         }
-	
+        
         if (!data->StrInfo.UndoBuffer)
         {
             data->StrInfo.UndoBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
@@ -296,7 +296,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
             data->StrInfo.UndoBuffer[0] = '\0';
             data->Flags |= SFLG_UNDOBUF_ALLOCATED;
         }
-	
+        
         if (!data->StrExtend.WorkBuffer)
         {
             data->StrExtend.WorkBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
@@ -314,7 +314,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
             D(bug("strgclass:Initializing string gadget to text value %s\n", textval));
             g->Activation &= ~GACT_LONGINT;
         }
-	
+        
         ti = FindTagItem(STRINGA_LongVal, msg->ops_AttrList);
         if (ti != NULL)
         {
@@ -368,9 +368,9 @@ IPTR StrGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     UpdateStrGadget(g,
-        	    msg->gpr_GInfo->gi_Window,
-        	    msg->gpr_GInfo->gi_Requester,
-        	    IntuitionBase);
+                    msg->gpr_GInfo->gi_Window,
+                    msg->gpr_GInfo->gi_Requester,
+                    IntuitionBase);
     
     return (IPTR)0;
 }
@@ -382,10 +382,10 @@ IPTR StrGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 IPTR StrGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    IPTR    	    	 ret;
-    IPTR    	    	 retval = GMR_MEACTIVE;
-    UWORD   	    	 imsgcode;
-    struct InputEvent 	*ie = msg->gpi_IEvent;
+    IPTR                 ret;
+    IPTR                 retval = GMR_MEACTIVE;
+    UWORD                imsgcode;
+    struct InputEvent   *ie = msg->gpi_IEvent;
 
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
@@ -433,11 +433,11 @@ IPTR StrGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
     {
 
         ret = HandleStrInput(g
-		     ,msg->gpi_GInfo
+                     ,msg->gpi_GInfo
                      ,ie
                      ,&imsgcode
                      ,IntuitionBase
-	);
+        );
 
 
         if (ret & (SGA_END|SGA_PREVACTIVE|SGA_NEXTACTIVE))
@@ -482,7 +482,7 @@ IPTR StrGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *
     if (rp)
     {
         struct gpRender method;
-	
+        
         method.MethodID   = GM_RENDER;
         method.gpr_GInfo  = msg->gpgi_GInfo;
         method.gpr_RPort  = rp;
@@ -509,10 +509,10 @@ IPTR StrGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *
     tags[1].ti_Data = g->GadgetID;
     tags[2].ti_Tag  = TAG_END;
 
-    nmsg.MethodID   	= OM_NOTIFY;
+    nmsg.MethodID       = OM_NOTIFY;
     nmsg.opu_AttrList   = tags;
-    nmsg.opu_GInfo  	= msg->gpgi_GInfo;
-    nmsg.opu_Flags  	= 0;
+    nmsg.opu_GInfo      = msg->gpgi_GInfo;
+    nmsg.opu_Flags      = 0;
 
     DoSuperMethodA(cl, (Object *)g, (Msg)&nmsg);
 
@@ -527,38 +527,38 @@ IPTR StrGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     if (msg->gpi_IEvent)
     {
-	UWORD imsgcode;
+        UWORD imsgcode;
 
-	HandleStrInput(g, msg->gpi_GInfo,
-		       msg->gpi_IEvent, &imsgcode, IntuitionBase
-	);
+        HandleStrInput(g, msg->gpi_GInfo,
+                       msg->gpi_IEvent, &imsgcode, IntuitionBase
+        );
 
     }
     else
     {
-	struct StrGData   *data = INST_DATA(cl, g);
-	struct RastPort   *rp;
-	struct GadgetInfo *gi = msg->gpi_GInfo;
-	
-	g->Flags |= GFLG_SELECTED;
-	if (data->StrInfo.UndoBuffer)
-	{
-	    strcpy(data->StrInfo.UndoBuffer, data->StrInfo.Buffer);
-	}
+        struct StrGData   *data = INST_DATA(cl, g);
+        struct RastPort   *rp;
+        struct GadgetInfo *gi = msg->gpi_GInfo;
+        
+        g->Flags |= GFLG_SELECTED;
+        if (data->StrInfo.UndoBuffer)
+        {
+            strcpy(data->StrInfo.UndoBuffer, data->StrInfo.Buffer);
+        }
 
-	if ((rp = ObtainGIRPort(gi)))
-	{
-	    struct gpRender method;
-		    
-	    method.MethodID   = GM_RENDER;
-	    method.gpr_GInfo  = gi;
-	    method.gpr_RPort  = rp;
-	    method.gpr_Redraw = GREDRAW_REDRAW;
-		    
-	    DoMethodA((Object *)g, (Msg)&method);
-		    
-	    ReleaseGIRPort(rp);
-	}
+        if ((rp = ObtainGIRPort(gi)))
+        {
+            struct gpRender method;
+                    
+            method.MethodID   = GM_RENDER;
+            method.gpr_GInfo  = gi;
+            method.gpr_RPort  = rp;
+            method.gpr_Redraw = GREDRAW_REDRAW;
+                    
+            DoMethodA((Object *)g, (Msg)&method);
+                    
+            ReleaseGIRPort(rp);
+        }
     }
     return (IPTR)GMR_MEACTIVE;
 }
@@ -581,26 +581,26 @@ IPTR StrGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
      */
     if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(g)) ) )
     {
-	struct GadgetInfo *gi = msg->ops_GInfo;
-	
-	if (gi)
-	{
-	    struct RastPort *rp = ObtainGIRPort(gi);
-		    
-	    if (rp)
-	    {
-		struct gpRender method;
-			
-		method.MethodID   = GM_RENDER;
-		method.gpr_GInfo  = gi;
-		method.gpr_RPort  = rp;
-		method.gpr_Redraw = GREDRAW_REDRAW;
-			
-		DoMethodA((Object *)g, (Msg)&method);
-			
-		ReleaseGIRPort(rp);
-	    } /* if */
-	} /* if */
+        struct GadgetInfo *gi = msg->ops_GInfo;
+        
+        if (gi)
+        {
+            struct RastPort *rp = ObtainGIRPort(gi);
+                    
+            if (rp)
+            {
+                struct gpRender method;
+                        
+                method.MethodID   = GM_RENDER;
+                method.gpr_GInfo  = gi;
+                method.gpr_RPort  = rp;
+                method.gpr_Redraw = GREDRAW_REDRAW;
+                        
+                DoMethodA((Object *)g, (Msg)&method);
+                        
+                ReleaseGIRPort(rp);
+            } /* if */
+        } /* if */
     } /* if */
 
     return retval;

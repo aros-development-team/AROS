@@ -23,19 +23,19 @@ static const struct View defaultView =
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, InitView,
+        AROS_LH1(void, InitView,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct View *, view, A1),
+        AROS_LHA(struct View *, view, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 60, Graphics)
+        struct GfxBase *, GfxBase, 60, Graphics)
 
 /*  FUNCTION
-	Initializes a View structure.
+        Initializes a View structure.
 
     INPUTS
-	view - The View to initialize.
+        view - The View to initialize.
 
     RESULT
         View is initialized to it`s default values - doesn't care about

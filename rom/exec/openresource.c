@@ -17,23 +17,23 @@
 
     NAME */
 
-	AROS_LH1(APTR, OpenResource,
+        AROS_LH1(APTR, OpenResource,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, resName, A1),
+        AROS_LHA(CONST_STRPTR, resName, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 83, Exec)
+        struct ExecBase *, SysBase, 83, Exec)
 
 /*  FUNCTION
-	Return a pointer to a previously installed resource addressed by
-	name.  If this name can't be found NULL is returned.
+        Return a pointer to a previously installed resource addressed by
+        name.  If this name can't be found NULL is returned.
 
     INPUTS
-	resName - Pointer to the resource's name.
+        resName - Pointer to the resource's name.
 
     RESULT
-	Pointer to resource or NULL.
+        Pointer to resource or NULL.
 
     NOTES
 
@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	AddResource(), RemResource()
+        AddResource(), RemResource()
 
     INTERNALS
 

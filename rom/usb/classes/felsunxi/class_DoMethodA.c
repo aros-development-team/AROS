@@ -15,14 +15,14 @@
 
     NAME */
 
-	AROS_LH2(IPTR, DoMethodA,
+        AROS_LH2(IPTR, DoMethodA,
 
 /*  SYNOPSIS */
-    	AROS_LHA(ULONG,  methodid,   D0),
-    	AROS_LHA(IPTR *, methoddata, A1),
-	
+        AROS_LHA(ULONG,  methodid,   D0),
+        AROS_LHA(IPTR *, methoddata, A1),
+        
 /*  LOCATION */
-	LIBBASETYPEPTR, LIBBASE, 7, FELSunxi)
+        LIBBASETYPEPTR, LIBBASE, 7, FELSunxi)
 
 /*  FUNCTION
 

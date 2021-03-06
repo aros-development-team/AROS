@@ -293,11 +293,11 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     {
         IPTR PCIIntLine = 0, AdminIntLine;
 #if defined(USE_MSI)
-        struct TagItem vectreqs[] = 
+        struct TagItem vectreqs[] =
         {
             { tHidd_PCIVector_Min,      1                       },
             { tHidd_PCIVector_Max,      KrnGetCPUCount()        },
-            { TAG_DONE,                 0                       } 
+            { TAG_DONE,                 0                       }
         };
 #endif
         int depth, hwqcnt = 1;
@@ -386,19 +386,19 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     {   tHidd_PCIVector_Native, (IPTR)-1        },
                     {   TAG_DONE,               0               }
                 };
-				
+                                
                 int flags;
 
-                HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);                
+                HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);
 
                 if ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1))
                 {
-					UBYTE qIRQ = (UBYTE)vecAttribs[0].ti_Data, qVect = (UBYTE)vecAttribs[1].ti_Data;
+                                        UBYTE qIRQ = (UBYTE)vecAttribs[0].ti_Data, qVect = (UBYTE)vecAttribs[1].ti_Data;
                     D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", vecAttribs[0].ti_Data, vecAttribs[1].ti_Data);)
 #else
                 int flags;
-				{
-					UBYTE qIRQ = (UBYTE)AdminIntLine, qVect = (UBYTE)AdminIntLine;
+                                {
+                                        UBYTE qIRQ = (UBYTE)AdminIntLine, qVect = (UBYTE)AdminIntLine;
 #endif
 
                     data->ab_Dev->dev_Queues[nn + 1]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * depth, MEMF_CLEAR);
@@ -549,10 +549,10 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         if (ExpansionBase)
                         {
                             const TEXT dosdevstem[3] = "HD";
-                            struct TagItem NVMEIDTags[] = 
+                            struct TagItem NVMEIDTags[] =
                             {
                                 {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
-                                {TAG_DONE,              0                       }  
+                                {TAG_DONE,              0                       }
                             };
                             struct DeviceNode *devnode;
 
@@ -593,9 +593,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                                 unit->nu_Cyl /= 3;
                             } while (1);
                             
-                            pp[0] 		    = (IPTR)data->ab_IDNode->ln_Name;
-                            pp[1]		    = (IPTR)MOD_NAME_STRING;
-                            pp[2]		    = unit->au_UnitNum;
+                            pp[0]                   = (IPTR)data->ab_IDNode->ln_Name;
+                            pp[1]                   = (IPTR)MOD_NAME_STRING;
+                            pp[2]                   = unit->au_UnitNum;
                             pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
                             pp[DE_SIZEBLOCK    + 4] = 1 << unit->au_SecShift;
                             pp[DE_NUMHEADS     + 4] = unit->nu_Heads;

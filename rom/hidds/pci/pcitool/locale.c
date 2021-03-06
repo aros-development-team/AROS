@@ -21,11 +21,11 @@ CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     }
     else
     {
-	return (CONST_STRPTR)CatCompArray[id].cca_Str;
+        return (CONST_STRPTR)CatCompArray[id].cca_Str;
     }
 }
 

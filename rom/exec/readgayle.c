@@ -17,13 +17,13 @@
     AROS_LH0(ULONG, ReadGayle,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 136, Exec)
+        struct ExecBase *, SysBase, 136, Exec)
 
 /*  FUNCTION
     Gets the Gayle ID
 
     INPUTS
-	None.
+        None.
 
     RESULT
 

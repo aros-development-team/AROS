@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <proto/exec.h>
@@ -22,10 +22,10 @@
 
 #include "input_intern.h"
 
-#define SEND_INPUT_REQUEST(io, ie, cmd)	\
-    io->io_Command = cmd;			\
-    io->io_Data = (APTR)ie;			\
-    io->io_Length = sizeof (struct InputEvent);	\
+#define SEND_INPUT_REQUEST(io, ie, cmd) \
+    io->io_Command = cmd;                       \
+    io->io_Data = (APTR)ie;                     \
+    io->io_Length = sizeof (struct InputEvent); \
     SendIO((struct IORequest *)io)
 
 
@@ -34,30 +34,30 @@
 #define SEND_GPD_REQUEST(gpdio, gpdie) \
     SEND_INPUT_REQUEST(gpdio, gpdie, GPD_READEVENT)
 
-#define SEND_TIMER_REQUEST(timerio)			\
-	timerio->tr_node.io_Command = TR_ADDREQUEST;	\
-	timerio->tr_time.tv_secs = 0;			\
-	timerio->tr_time.tv_micro = 100000;		\
-	SendIO((struct IORequest *)timerio)
+#define SEND_TIMER_REQUEST(timerio)                     \
+        timerio->tr_node.io_Command = TR_ADDREQUEST;    \
+        timerio->tr_time.tv_secs = 0;                   \
+        timerio->tr_time.tv_micro = 100000;             \
+        SendIO((struct IORequest *)timerio)
 
-#define SEND_KEYTIMER_REQUEST(timerio,time)		\
-	timerio->tr_node.io_Command = TR_ADDREQUEST;	\
-	timerio->tr_time = time;			\
-	SendIO((struct IORequest *)timerio)
+#define SEND_KEYTIMER_REQUEST(timerio,time)             \
+        timerio->tr_node.io_Command = TR_ADDREQUEST;    \
+        timerio->tr_time = time;                        \
+        SendIO((struct IORequest *)timerio)
 
 #define ABORT_KEYTIMER_REQUEST \
-	if (!CheckIO(&keytimerio->tr_node)) AbortIO(&keytimerio->tr_node); \
-	WaitIO(&keytimerio->tr_node); \
-	SetSignal(0, keytimersig);
+        if (!CheckIO(&keytimerio->tr_node)) AbortIO(&keytimerio->tr_node); \
+        WaitIO(&keytimerio->tr_node); \
+        SetSignal(0, keytimersig);
 
 #define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
-			IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
-			IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
-			IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
-			IEQUALIFIER_NUMERICPAD /* | IEQUALIFIER_REPEAT */)
+                        IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
+                        IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
+                        IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
+                        IEQUALIFIER_NUMERICPAD /* | IEQUALIFIER_REPEAT */)
 
 #define MOUSE_QUALIFIERS (IEQUALIFIER_LEFTBUTTON | IEQUALIFIER_RBUTTON | \
-			  IEQUALIFIER_MIDBUTTON)
+                          IEQUALIFIER_MIDBUTTON)
 
 
 #define DEBUG 0
@@ -323,7 +323,7 @@ void ProcessEvents(struct inputbase *InputDevice)
 
                 case IND_ADDEVENT:
                     {
-                        /* 
+                        /*
                          * IND_ADDEVENT command allows client to send multiple
                          * RAWKEY or RAWMOUSE events to the input.device. All
                          * other classes will be ignored.

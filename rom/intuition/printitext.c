@@ -60,18 +60,18 @@
 } /* PrintIText */
 
 void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
-            	    LONG leftOffset, LONG topOffset, BOOL ignore_attributes,
-		    struct IntuitionBase *IntuitionBase)
+                    LONG leftOffset, LONG topOffset, BOOL ignore_attributes,
+                    struct IntuitionBase *IntuitionBase)
 {
 
     struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    IPTR   	     apen;
-    IPTR   	     bpen;
-    IPTR   	     drmd;
+    IPTR             apen;
+    IPTR             bpen;
+    IPTR             drmd;
 #ifdef __MORPHOS__
-    IPTR   	     penmode;
+    IPTR             penmode;
 #endif
-    UBYTE   	     style;
+    UBYTE            style;
     struct TextFont *font;
     struct TextFont *newfont = NULL;
 
@@ -96,12 +96,12 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
     /* For all borders... */
     for ( ; iText; iText = iText->NextText)
     {
-    	if (!ignore_attributes)
-	{
+        if (!ignore_attributes)
+        {
             /* Change RastPort to the colors/mode specified */
             SetABPenDrMd (rp, iText->FrontPen, iText->BackPen, iText->DrawMode);
-    	}
-	
+        }
+        
         if (iText->ITextFont)
         {
             newfont = OpenFont (iText->ITextFont);

@@ -15,34 +15,34 @@
 
     NAME */
 
-	AROS_LH1(ULONG, AttemptSemaphore,
+        AROS_LH1(ULONG, AttemptSemaphore,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
+        AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 96, Exec)
+        struct ExecBase *, SysBase, 96, Exec)
 
 /*  FUNCTION
-	Tries to get an exclusive lock on a signal semaphore. If the semaphore
-	is already in use by another task, this function does not wait but
-	returns false instead.
+        Tries to get an exclusive lock on a signal semaphore. If the semaphore
+        is already in use by another task, this function does not wait but
+        returns false instead.
 
     INPUTS
-	sigSem - Pointer to semaphore structure.
+        sigSem - Pointer to semaphore structure.
 
     RESULT
-	TRUE if the semaphore could be obtained, FALSE otherwise.
+        TRUE if the semaphore could be obtained, FALSE otherwise.
 
     NOTES
-	The lock must be freed with ReleaseSemaphore().
+        The lock must be freed with ReleaseSemaphore().
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	ReleaseSemaphore()
+        ReleaseSemaphore()
 
     INTERNALS
 

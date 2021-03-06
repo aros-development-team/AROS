@@ -14,41 +14,41 @@
 #include <devices/timer.h>
 #include <proto/timer.h>
 
-	AROS_LH2(void, SubTime,
+        AROS_LH2(void, SubTime,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct timeval *, dest, A0),
-	AROS_LHA(struct timeval *, src, A1),
+        AROS_LHA(struct timeval *, dest, A0),
+        AROS_LHA(struct timeval *, src, A1),
 
 /*  LOCATION */
-	struct Device *, TimerBase, 8, Timer)
+        struct Device *, TimerBase, 8, Timer)
 
 /*  FUNCTION
-	SubTime() will subtract the src timeval from the destination
-	timeval, ie "dest - src --> dest".
+        SubTime() will subtract the src timeval from the destination
+        timeval, ie "dest - src --> dest".
 
     INPUTS
-	dest    -   Destination timeval
-	src     -   Source timeval
+        dest    -   Destination timeval
+        src     -   Source timeval
 
     RESULT
-	The timeval dest will contain the sum (dest - src).
+        The timeval dest will contain the sum (dest - src).
 
     NOTES
-	This function is safe to call from interrupts.
+        This function is safe to call from interrupts.
 
     EXAMPLE
 
     BUGS
-	May not preserve registers.
+        May not preserve registers.
 
     SEE ALSO
-	AddTime(), CmpTime()
+        AddTime(), CmpTime()
 
     INTERNALS
 
     HISTORY
-	18-02-1997  iaint   Implemented.
+        18-02-1997  iaint   Implemented.
 
 *****************************************************************************/
 {

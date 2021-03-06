@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
 
     struct opSet ops;
-    ULONG   	 result;
+    ULONG        result;
 
     DEBUG_SETATTRS(dprintf("SetAttrs[0x%p]: Object 0x%p Tags 0x%p\n", &ops, object, tagList));
 

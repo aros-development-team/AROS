@@ -16,13 +16,13 @@
     NAME */
 #include <proto/layers.h>
 
-	AROS_LH1(void, ThinLayerInfo,
+        AROS_LH1(void, ThinLayerInfo,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
+        AROS_LHA(struct Layer_Info *, li, A0),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 27, Layers)
+        struct LayersBase *, LayersBase, 27, Layers)
 
 /*  FUNCTION
 
@@ -41,8 +41,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {

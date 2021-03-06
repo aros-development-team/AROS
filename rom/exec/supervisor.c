@@ -13,55 +13,55 @@
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH1(IPTR, Supervisor,
+        AROS_LH1(IPTR, Supervisor,
 
 /*  SYNOPSIS */
-	AROS_LHA(void *, userFunction, A5),
+        AROS_LHA(void *, userFunction, A5),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 5, Exec)
+        struct ExecBase *, SysBase, 5, Exec)
 
 /*  FUNCTION
-	Supervisor will allow a short privileged instruction sequence to
-	be called from user mode. This has very few uses, and it is probably
-	better to use any system supplied method to do anything.
+        Supervisor will allow a short privileged instruction sequence to
+        be called from user mode. This has very few uses, and it is probably
+        better to use any system supplied method to do anything.
 
-	The function supplied will be called as if it was a system interrupt,
-	notably this means that you must *NOT* make any system calls or
-	use any system data structures, and on certain systems you must
-	use special methods to leave the code.
+        The function supplied will be called as if it was a system interrupt,
+        notably this means that you must *NOT* make any system calls or
+        use any system data structures, and on certain systems you must
+        use special methods to leave the code.
 
-	The code will not be passed any parameters. However it has access to all
-	CPU registers.
+        The code will not be passed any parameters. However it has access to all
+        CPU registers.
 
     INPUTS
-	userFunction -  The address of the code you want called in supervisor
-			mode.
+        userFunction -  The address of the code you want called in supervisor
+                        mode.
 
     RESULT
-	The code will be called.
+        The code will be called.
 
     NOTES
-    	On some architectures this function is impossible or infeasible to implement.
-    	In this case it throws a recoverable alert.
+        On some architectures this function is impossible or infeasible to implement.
+        In this case it throws a recoverable alert.
 
-	Currently this function works only on x86 and PowerPC native kickstarts.
+        Currently this function works only on x86 and PowerPC native kickstarts.
 
     EXAMPLE
 
     BUGS
-	You can very easily make the system unusable with this function.
-	In fact it is recommended that you do not use it at all.
+        You can very easily make the system unusable with this function.
+        In fact it is recommended that you do not use it at all.
 
     SEE ALSO
-	SuperState(), UserState()
+        SuperState(), UserState()
 
     INTERNALS
-	You can do what you want with this function, even ignoring it if
-	you don't think it makes any sense. But it could be quite useful
-	to make it run something under different protection levels.
+        You can do what you want with this function, even ignoring it if
+        you don't think it makes any sense. But it could be quite useful
+        to make it run something under different protection levels.
 
-	You should trust that the programmer know what they are doing :-)
+        You should trust that the programmer know what they are doing :-)
 
 ******************************************************************************/
 {

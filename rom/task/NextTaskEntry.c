@@ -26,7 +26,7 @@
         AROS_LHA(ULONG           , flags, D0),
 
 /*  LOCATION */
-	struct TaskResBase *, TaskResBase, 3, Task)
+        struct TaskResBase *, TaskResBase, 3, Task)
 
 /*  FUNCTION
         Looks for the next task list entry with the right type. The list
@@ -131,7 +131,7 @@
             }
         }
         retVal = taskList->tlp_Current;
-    }        
+    }
 #endif /* TASKRES_ENABLE */
 
     return retVal;

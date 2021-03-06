@@ -29,9 +29,9 @@
         lock - Lock to get parent directory of.
 
     RESULT
-        Returns a lock to the parent directory or NULL, in which case the 
-        supplied lock has no parent directory (because it is the root 
-        directory) or an error occured. IoErr() returns 0 in the former case 
+        Returns a lock to the parent directory or NULL, in which case the
+        supplied lock has no parent directory (because it is the root
+        directory) or an error occured. IoErr() returns 0 in the former case
         and a different value on error.
 
     NOTES

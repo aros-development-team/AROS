@@ -83,10 +83,10 @@ static const struct Errors subsystems[] =
     { 0x33,     "gadtools " },
     { 0x34,     "utility " },
 
-    { 0x40,	"aros " },
-    { 0x41,	"oop " },
-    { 0x42,	"hidd " },
-    { 0x43,	"partition.library " },
+    { 0x40,     "aros " },
+    { 0x41,     "oop " },
+    { 0x42,     "hidd " },
+    { 0x43,     "partition.library " },
 
     /* This takes in 0x35 as well... */
     { 0x00,     "unknown " }
@@ -483,15 +483,15 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR locatio
     /* For AT_CPU alerts NULL location is also valid */
     if (location || (type == AT_CPU))
     {
-	buf = FormatLocation(buf, locstring, location, SysBase);
+        buf = FormatLocation(buf, locstring, location, SysBase);
 
-	D(bug("[FormatAlert] Location string:\n%s\n", buffer));
+        D(bug("[FormatAlert] Location string:\n%s\n", buffer));
     }
 
     /* For AN_StackProbe limits information is useful */
     if ((alertNum & ~AT_DeadEnd) == AN_StackProbe)
     {
-    	buf = NewRawDoFmt(stkstring, RAWFMTFUNC_STRING, buf, task->tc_SPLower, task->tc_SPUpper) - 1;
+        buf = NewRawDoFmt(stkstring, RAWFMTFUNC_STRING, buf, task->tc_SPLower, task->tc_SPUpper) - 1;
     }
 
     return buf;
@@ -502,9 +502,9 @@ STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *task, struct Exe
     STRPTR taskName;
 
     if (Exec_CheckTask(task, SysBase))
-    	taskName = task->tc_Node.ln_Name;
+        taskName = task->tc_Node.ln_Name;
     else
-    	taskName = "-- task not found -- ";
+        taskName = "-- task not found -- ";
     
     return NewRawDoFmt(text, RAWFMTFUNC_STRING, buffer, task, taskName) - 1;
 }
@@ -523,44 +523,44 @@ STRPTR FormatLocation(STRPTR buf, const char *text, APTR location, struct ExecBa
     if (DebugBase)
     {
         if (DecodeLocation(location,
-				    DL_ModuleName , &modname, DL_SegmentNumber, &segnum ,
-				    DL_SegmentName, &segname, DL_SegmentStart , &segaddr,
-				    DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
-				    TAG_DONE))
-	{	    
-	    if (!segname)
-	    	segname = "- unknown -";
+                                    DL_ModuleName , &modname, DL_SegmentNumber, &segnum ,
+                                    DL_SegmentName, &segname, DL_SegmentStart , &segaddr,
+                                    DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
+                                    TAG_DONE))
+        {
+            if (!segname)
+                segname = "- unknown -";
 
-	    buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, buf, modname, segnum, segname, segaddr, location - segaddr) - 1;
+            buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, buf, modname, segnum, segname, segaddr, location - segaddr) - 1;
 
-	    if (symaddr)
-	    {
-	    	if (!symname)
-		    symname = "- unknown -";
+            if (symaddr)
+            {
+                if (!symname)
+                    symname = "- unknown -";
 
-		buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, location - symaddr) - 1;
-	    }
+                buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, location - symaddr) - 1;
+            }
         }
     }
     else if (KernelBase)
     {
-    	/*
-    	 * If there's no debug.library yet, we likely crashed in boot code.
-    	 * In this case kickstart location information can be helpful.
-    	 * TODO: Perhaps we should get debug info and locate a module manually?
-    	 * It can be not that big code duplication, but will help if the crash
-    	 * happens not in the first module.
-    	 */
-    	struct TagItem *tags = KrnGetBootInfo();
+        /*
+         * If there's no debug.library yet, we likely crashed in boot code.
+         * In this case kickstart location information can be helpful.
+         * TODO: Perhaps we should get debug info and locate a module manually?
+         * It can be not that big code duplication, but will help if the crash
+         * happens not in the first module.
+         */
+        struct TagItem *tags = KrnGetBootInfo();
 
-    	if (tags)
-    	{   
-    	    IPTR klow  = LibGetTagData(KRN_KernelLowest, 0, tags);
-	    IPTR kbase = LibGetTagData(KRN_KernelBase, 0, tags);
-	    IPTR khi   = LibGetTagData(KRN_KernelHighest, 0, tags);
+        if (tags)
+        {
+            IPTR klow  = LibGetTagData(KRN_KernelLowest, 0, tags);
+            IPTR kbase = LibGetTagData(KRN_KernelBase, 0, tags);
+            IPTR khi   = LibGetTagData(KRN_KernelHighest, 0, tags);
 
-	    buf = NewRawDoFmt("\nKickstart location: Lowest 0x%p, Base 0x%p, Highest 0x%p\n", RAWFMTFUNC_STRING, buf, klow, kbase, khi) - 1;
-	}
+            buf = NewRawDoFmt("\nKickstart location: Lowest 0x%p, Base 0x%p, Highest 0x%p\n", RAWFMTFUNC_STRING, buf, klow, kbase, khi) - 1;
+        }
     }
 
     return buf;

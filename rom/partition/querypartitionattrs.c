@@ -54,7 +54,7 @@ static const struct PartitionAttribute defaultPartitionAttrs[] =
 
     if (table->table)
     {
-    	struct PTFunctionTable *handler = table->table->handler;
+        struct PTFunctionTable *handler = table->table->handler;
 
         return handler->partitionAttrs;
     }

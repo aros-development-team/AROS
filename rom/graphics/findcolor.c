@@ -9,19 +9,19 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+        #include <clib/graphics_protos.h>
 
-	AROS_LH5(ULONG, FindColor,
+        AROS_LH5(ULONG, FindColor,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ColorMap *, cm    , A3),
-	AROS_LHA(ULONG            , r     , D1),
-	AROS_LHA(ULONG            , g     , D2),
-	AROS_LHA(ULONG            , b     , D3),
-	AROS_LHA(ULONG            , maxpen, D4),
+        AROS_LHA(struct ColorMap *, cm    , A3),
+        AROS_LHA(ULONG            , r     , D1),
+        AROS_LHA(ULONG            , g     , D2),
+        AROS_LHA(ULONG            , b     , D3),
+        AROS_LHA(ULONG            , maxpen, D4),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 168, Graphics)
+        struct GfxBase *, GfxBase, 168, Graphics)
 
 /*  FUNCTION
         Find the closest matching color in the given colormap.
@@ -58,20 +58,20 @@
 
     if (NULL != cm)
     {
-	ULONG index = 0;
-	ULONG best_distance = (ULONG)-1;
-	ULONG distance;
+        ULONG index = 0;
+        ULONG best_distance = (ULONG)-1;
+        ULONG distance;
 
-	if (-1 == maxpen && NULL != cm->PalExtra)
-	{
-	    /* pe_SharableColors is not the number of colors but the last color index! */
-	    maxpen = cm->PalExtra->pe_SharableColors;
-	}
-	
-	if (maxpen >= cm->Count) maxpen = cm->Count - 1;
-	
-	while (index <= maxpen)
-	{
+        if (-1 == maxpen && NULL != cm->PalExtra)
+        {
+            /* pe_SharableColors is not the number of colors but the last color index! */
+            maxpen = cm->PalExtra->pe_SharableColors;
+        }
+        
+        if (maxpen >= cm->Count) maxpen = cm->Count - 1;
+        
+        while (index <= maxpen)
+        {
             distance = color_distance(cm,r,g,b,index);
             if (distance < best_distance)
             {
@@ -79,7 +79,7 @@
                 retval = index;
             }
             index++;
-	} 
+        }
     }
 
     return retval;

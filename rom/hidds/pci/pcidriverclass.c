@@ -38,7 +38,7 @@ OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     This method is not implemented here (aka it should be the abstract class),
     and should be well defined in all PCI drivers.
 */
-ULONG PCIDrv__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+ULONG PCIDrv__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     /* Wheeeee! Someone has forgotten to reimplement ReadConfigLong! */
@@ -72,11 +72,11 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     development of PCI drivers and reduce their size.
 */
 
-UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
+UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_ReadConfigByte *msg)
 {
     /*
-     * First, read whole ConfigWord from PCI config space, using defined 
+     * First, read whole ConfigWord from PCI config space, using defined
      * method
      */
     ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
@@ -85,7 +85,7 @@ UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
     return (temp >> ((msg->reg & 3) * 8)) & 0xff;
 }
 
-UWORD PCIDrv__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
+UWORD PCIDrv__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_ReadConfigWord *msg)
 {
     ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->device, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
@@ -157,7 +157,7 @@ APTR PCIDrv__Hidd_PCIDriver__PCItoCPU(OOP_Class *cl, OOP_Object *o,
 }
 
 /*
-    PCIDriver::MapPCI(Address, Length) maps the Length bytes of PCI address 
+    PCIDriver::MapPCI(Address, Length) maps the Length bytes of PCI address
     space at Address to the CPU address space.
 */
 APTR PCIDrv__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,

@@ -10,8 +10,8 @@
 struct ShowTitleActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Screen   	    *screen;
-    BOOL    	    	     showit;
+    struct Screen           *screen;
+    BOOL                     showit;
 };
 
 static VOID int_showtitle(struct ShowTitleActionMsg *msg,

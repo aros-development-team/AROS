@@ -16,7 +16,7 @@ struct KernelBase *AllocKernelBase(struct ExecBase *SysBase)
     ULONG i = FUNCTIONS_COUNT * LIB_VECTSIZE;
 
     /* Align vector table size */
-    i  = ((i - 1) / sizeof(IPTR) + 1) * sizeof(IPTR);    
+    i  = ((i - 1) / sizeof(IPTR) + 1) * sizeof(IPTR);
 
     /* Allocate the memory */
     mem = AllocMem(i + sizeof(struct KernelBase), MEMF_PUBLIC|MEMF_CLEAR);

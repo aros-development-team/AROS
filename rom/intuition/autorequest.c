@@ -47,8 +47,8 @@
     AROS_LIBFUNC_INIT
 
     struct Window *req;
-    ULONG   	   idcmp;
-    LONG    	   result;
+    ULONG          idcmp;
+    LONG           result;
 
     EXTENDWORD(width);EXTENDWORD(height);
 

@@ -13,7 +13,7 @@
 struct WindowToFrontActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
+    struct Window           *window;
 };
 
 static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
@@ -75,10 +75,10 @@ static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
                               struct IntuitionBase *IntuitionBase)
 {
     struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
-    struct Window   	*window = msg->window;
-    struct Layer    	*layer = WLAYER(window);
-    struct Screen   	*screen = window->WScreen;
-    struct Requester 	*req;
+    struct Window       *window = msg->window;
+    struct Layer        *layer = WLAYER(window);
+    struct Screen       *screen = window->WScreen;
+    struct Requester    *req;
 
     DEBUG_WINDOWTOFRONT(dprintf("IntWindowToFront: Window 0x%lx\n", window));
 

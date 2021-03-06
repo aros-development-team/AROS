@@ -13,10 +13,10 @@
 struct ActivateGadgetActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-    struct Requester	    *requester;
-    struct Gadget   	    *gadget;
-    BOOL    	    	     success;
+    struct Window           *window;
+    struct Requester        *requester;
+    struct Gadget           *gadget;
+    BOOL                     success;
 };
 
 #define DEBUG_ACTIVATEGADGET(x) ;
@@ -77,7 +77,7 @@ static VOID int_activategadget(struct ActivateGadgetActionMsg *msg,
                 ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
             {
                 struct ActivateGadgetActionMsg msg;
-		
+                
                 msg.window    = window;
                 msg.requester = requester;
                 msg.gadget    = gadget;
@@ -124,9 +124,9 @@ static VOID int_activategadget(struct ActivateGadgetActionMsg *msg,
     struct Gadget    *gadget = msg->gadget;
 
     DEBUG_ACTIVATEGADGET(dprintf("int_ActivateGadget: Gadget 0x%lx Window 0x%lx Req 0x%lx\n",
-                	 gadget,
-                	 window,
-                	 req));
+                         gadget,
+                         window,
+                         req));
 
     msg->success = FALSE;
 

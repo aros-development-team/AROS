@@ -52,7 +52,7 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 { */
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    UWORD   	    *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+    UWORD           *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
     struct RastPort *rp = msg->gpr_RPort;
     struct IBox      container;
 
@@ -105,15 +105,15 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
         {
             {IA_Width , g->Width },
             {IA_Height, g->Height},
-            {TAG_DONE        	     }
+            {TAG_DONE                }
         };
 
         if ((g->SelectRender != NULL) &&
             (g->Flags & GFLG_SELECTED)) /* render selected image */
         {
             ULONG x, y;
-	    struct Image *sr = g->SelectRender;
-	    
+            struct Image *sr = g->SelectRender;
+            
             if(sr->Depth == CUSTOMIMAGEDEPTH)
             {
                 // ONLY DO THIS FOR REAL IMAGE OBJECTS (cyfm 31/12/02)
@@ -133,8 +133,8 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
         else if ( g->GadgetRender != NULL ) /* render normal image */
         {
             ULONG x, y;
-	    struct Image *gr = g->GadgetRender;
-	    
+            struct Image *gr = g->GadgetRender;
+            
             if(gr->Depth == CUSTOMIMAGEDEPTH)
             {
                 // ONLY DO THIS FOR REAL IMAGE OBJECTS (cyfm 31/12/02)
@@ -193,10 +193,10 @@ void frbutton_setsize(Class *cl, struct Gadget *g, struct opSet *msg)
             FindTagItem(GA_Height, msg->ops_AttrList) == NULL) &&
             image && g->Flags & GFLG_GADGIMAGE)
     {
-        struct IBox 	 contents, frame;
+        struct IBox      contents, frame;
         struct DrawInfo *dri = msg->ops_GInfo ? msg->ops_GInfo->gi_DrInfo : NULL;
-        BOOL 	    	 do_framebox = TRUE;
-	
+        BOOL             do_framebox = TRUE;
+        
         DEBUG_FRBUTTON(dprintf("frbutton_setsize: image %p flags 0x%lx\n", image,g->Flags));
 
         dri = (APTR)GetTagData(GA_DrawInfo, (IPTR)dri, msg->ops_AttrList);
@@ -209,29 +209,29 @@ void frbutton_setsize(Class *cl, struct Gadget *g, struct opSet *msg)
           //break;
 
             case GFLG_LABELSTRING:
-        	if (dri)
-        	{
+                if (dri)
+                {
                     struct RastPort rp;
-                    STRPTR  	    text = (STRPTR)g->GadgetText;
+                    STRPTR          text = (STRPTR)g->GadgetText;
 
                     InitRastPort(&rp);
                     SetFont(&rp, dri->dri_Font);
 
                     contents.Height = dri->dri_Font->tf_YSize;
                     contents.Width = LabelWidth(&rp, text, strlen(text), IntuitionBase);
-        	}
-        	else
+                }
+                else
                     do_framebox = FALSE;
-        	break;
+                break;
 
             case GFLG_LABELIMAGE:
-        	contents.Width  = ((struct Image *)g->GadgetText)->Width;
-        	contents.Height = ((struct Image *)g->GadgetText)->Height;
-        	break;
+                contents.Width  = ((struct Image *)g->GadgetText)->Width;
+                contents.Height = ((struct Image *)g->GadgetText)->Height;
+                break;
 
             default:
-        	do_framebox = FALSE;
-        	break;
+                do_framebox = FALSE;
+                break;
         }
 
         DEBUG_FRBUTTON(dprintf("frbutton_setsize: do_framebox %d contents %d %d %d %d\n", do_framebox,
@@ -239,9 +239,9 @@ void frbutton_setsize(Class *cl, struct Gadget *g, struct opSet *msg)
         if (do_framebox)
         {
             struct impFrameBox method;
-            int     	       width, height;
+            int                width, height;
 
-            method.MethodID 	   = IM_FRAMEBOX;
+            method.MethodID        = IM_FRAMEBOX;
             method.imp_ContentsBox = &contents;
             method.imp_FrameBox    = &frame;
             method.imp_DrInfo      = dri;
@@ -303,7 +303,7 @@ IPTR FrButtonClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     if (g)
     {
-	frbutton_setsize(cl, g, msg);
+        frbutton_setsize(cl, g, msg);
     }
     return (IPTR)g;
 }
@@ -324,26 +324,26 @@ IPTR FrButtonClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
      */
     if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
     {
-	struct GadgetInfo *gi = msg->ops_GInfo;
-		
-	if (gi)
-	{
-	    struct RastPort *rp = ObtainGIRPort(gi);
-		    
-	    if (rp)
-	    {
-		struct gpRender method;
-			
-		method.MethodID   = GM_RENDER;
-		method.gpr_GInfo  = gi;
-		method.gpr_RPort  = rp;
-		method.gpr_Redraw = GREDRAW_REDRAW;
-			
-		DoMethodA(o, (Msg)&method);
-			
-		ReleaseGIRPort(rp);
-	    }
-	}
+        struct GadgetInfo *gi = msg->ops_GInfo;
+                
+        if (gi)
+        {
+            struct RastPort *rp = ObtainGIRPort(gi);
+                    
+            if (rp)
+            {
+                struct gpRender method;
+                        
+                method.MethodID   = GM_RENDER;
+                method.gpr_GInfo  = gi;
+                method.gpr_RPort  = rp;
+                method.gpr_Redraw = GREDRAW_REDRAW;
+                        
+                DoMethodA(o, (Msg)&method);
+                        
+                ReleaseGIRPort(rp);
+            }
+        }
     }
     
     return retval;

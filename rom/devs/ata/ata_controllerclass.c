@@ -22,15 +22,15 @@ const char ata_IDEName[] = "IDE Controller";
 OOP_Object *ATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct ataBase *ATABase = cl->UserData;
-//	char *ataControllerName = (char *)GetTagData(aHidd_HardwareName, (IPTR)ata_IDEName, msg->attrList);
+//      char *ataControllerName = (char *)GetTagData(aHidd_HardwareName, (IPTR)ata_IDEName, msg->attrList);
 
     OOP_Object *ataController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (ataController)
     {
         struct ata_Controller *data = OOP_INST_DATA(cl, ataController);
-//		data->ac_Node.ln_Name = ataControllerName;
+//              data->ac_Node.ln_Name = ataControllerName;
 
-//		D(bug ("[ATA:Controller] Root__New: New '%s' Controller Obj @ 0x%p\n", ataControllerName, ataController);)
+//              D(bug ("[ATA:Controller] Root__New: New '%s' Controller Obj @ 0x%p\n", ataControllerName, ataController);)
 
         /*register the controller in ata.device */
         D(bug ("[ATA:Controller] %s: Controller Entry @ 0x%p\n", __func__, data);)
@@ -48,7 +48,7 @@ OOP_Object *ATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                            TASKTAG_NAME       , "ATA.daemon",
                            TASKTAG_STACKSIZE  , STACK_SIZE,
                            TASKTAG_TASKMSGPORT, &data->DaemonPort,
-                           TASKTAG_PRI        , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri than handler tasks */
+                           TASKTAG_PRI        , TASK_PRI - 1,   /* The daemon should have a little bit lower Pri than handler tasks */
                            TASKTAG_ARG1       , ATABase,
                            TASKTAG_ARG2       , data,
                            TAG_DONE))

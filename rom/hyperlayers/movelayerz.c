@@ -105,7 +105,7 @@ int _MoveLayerBehind(struct Layer *l,
     if (IS_VISIBLE(_l))
       ClearRegionRegion(_l->visibleshape, &show);
 
-    _l = _l->back; 
+    _l = _l->back;
   }
 
   ClearRegion(&show);
@@ -176,7 +176,7 @@ int _MoveLayerToFront(struct Layer * l,
         break;
         
       _l = _l->front;
-    }    
+    }
   }
 
   _l = lbehind;
@@ -187,7 +187,7 @@ int _MoveLayerToFront(struct Layer * l,
     /*
      * Now I have to move the layer family in front of layer lbehind.
      * Nothing changes for the layers in front of layer lbehind, but on
-     * the layers behind (including first->front) I must back up some of 
+     * the layers behind (including first->front) I must back up some of
      * their parts that the new family might be hiding no.
      * Once I step on the layer that was behind the layer l
      * I can stop because those layers are already hidden well
@@ -209,7 +209,7 @@ int _MoveLayerToFront(struct Layer * l,
       DisposeRegion(backupr);
 
     /*
-     * Now I must make the layer family of l visible 
+     * Now I must make the layer family of l visible
      * (lfirst to and including l)
      */
     _l = first;
@@ -222,7 +222,7 @@ int _MoveLayerToFront(struct Layer * l,
         _ShowPartsOfLayer(_l, &r, LayersBase);
       }
       else
-        SetRegion(&r, _l->VisibleRegion);      
+        SetRegion(&r, _l->VisibleRegion);
 
       if (_l == l)
         break;

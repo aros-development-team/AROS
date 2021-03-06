@@ -11,23 +11,23 @@
 #include <utility/date.h>
 #include <proto/utility.h>
 
-	AROS_LH1(ULONG, Date2Amiga,
+        AROS_LH1(ULONG, Date2Amiga,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ClockData *, date, A0),
+        AROS_LHA(struct ClockData *, date, A0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 21, Utility)
+        struct UtilityBase *, UtilityBase, 21, Utility)
 
 /*  FUNCTION
-	Converts the information given in the struct ClockData *date, into
-	the number of seconds that have past since the 1st of January 1978.
+        Converts the information given in the struct ClockData *date, into
+        the number of seconds that have past since the 1st of January 1978.
 
     INPUTS
-	date	-   Contains the information about the time.
+        date    -   Contains the information about the time.
 
     RESULT
-	The number of seconds since 1.1.1978
+        The number of seconds since 1.1.1978
 
     NOTES
 
@@ -36,14 +36,14 @@
     BUGS
 
     SEE ALSO
-	Amiga2Date(), CheckDate()
+        Amiga2Date(), CheckDate()
 
     INTERNALS
-	Bit of a hack in the leap year handling.
+        Bit of a hack in the leap year handling.
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
+        29-10-95    digulla automatically created from
+                            utility_lib.fd and clib/utility_protos.h
 
 *****************************************************************************/
 {
@@ -70,12 +70,12 @@
        is a leap year. So the first year I can really deal with is either
        1977 or 1981. So I choose 1977 (the year I was born in :)
 
-	Then, to get the number of leap years I divide by 4.
-	However, if year is a year which is a leap year, then this year
-	will not be counted, so I have to check for this.
+        Then, to get the number of leap years I divide by 4.
+        However, if year is a year which is a leap year, then this year
+        will not be counted, so I have to check for this.
 
-	If year % 4 == 3, then we are in a leap year, and if the month
-	is after February, then I can add a leap year.
+        If year % 4 == 3, then we are in a leap year, and if the month
+        is after February, then I can add a leap year.
     */
 
 #if 1
@@ -85,10 +85,10 @@
 
     if (((year % 400) == 0) || (((year % 4) == 0) && !((year % 100) == 0)))
     {
-    	/* data->year is a leap year. So dayspermonth table was wrong if
-	   month >= March */
-	   
-	if (date->month >= 3) time += 86400;
+        /* data->year is a leap year. So dayspermonth table was wrong if
+           month >= March */
+           
+        if (date->month >= 3) time += 86400;
     }
     
     year--;
@@ -101,14 +101,14 @@
     year++;
     leaps = year / 4;
     if( (year % 4 == 3) && (date->month > 2))
-	leaps++;
+        leaps++;
 
     /* If the year is greater than the year 2100, or it is the
        year 2100 and after February, then we also have to subtract
        a leap year, as the year 2100 is NOT a leap year.
     */
     if( ( year > 123) || ((year == 123) && (date->month > 2)) )
-	leaps--;
+        leaps--;
 
     time += leaps * 86400;
 #endif

@@ -19,9 +19,9 @@
 struct EBRData
 {
     UBYTE type;
-    ULONG ebr_block_no;	/* Home block of the record itself */
-    ULONG block_no;	/* Start partition block	   */
-    ULONG block_count;	/* Length of partition in blocks   */
+    ULONG ebr_block_no; /* Home block of the record itself */
+    ULONG block_no;     /* Start partition block           */
+    ULONG block_count;  /* Length of partition in blocks   */
 };
 
 static LONG PartitionEBRCheckPartitionTable
@@ -39,7 +39,7 @@ struct PartitionType type;
 struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
 
     if ((root->de.de_SizeBlock << 2) > sizeof(sector))
-    	return 0;
+        return 0;
 
     if (readBlock(PartitionBase, root, 0, &sector.mbr) == 0)
     {
@@ -63,7 +63,7 @@ struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
 }
 
 static struct PartitionHandle *PartitionEBRNewHandle(struct Library *PartitionBase, struct PartitionHandle *root,
-						     UBYTE type, ULONG block_no, ULONG block_count, ULONG ebr_block_no)
+                                                     UBYTE type, ULONG block_no, ULONG block_count, ULONG ebr_block_no)
 {
     struct PartitionHandle *ph;
 
@@ -85,8 +85,8 @@ static struct PartitionHandle *PartitionEBRNewHandle(struct Library *PartitionBa
             /* Initialize DosEnvec and DriveGeometry */
             initPartitionHandle(root, ph, block_no, block_count);
 
-	    /* Map type ID to a DOSType */
-	    setDosType(&ph->de, MBR_FindDosType(data->type));
+            /* Map type ID to a DOSType */
+            setDosType(&ph->de, MBR_FindDosType(data->type));
 
             return ph;
         }
@@ -379,12 +379,12 @@ static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase,
         return TRUE;
 
     case PT_STARTBLOCK:
-	*((UQUAD *)tag->ti_Data) = data->block_no;
-	return TRUE;
+        *((UQUAD *)tag->ti_Data) = data->block_no;
+        return TRUE;
 
     case PT_ENDBLOCK:
-	*((UQUAD *)tag->ti_Data) = data->block_no + data->block_count - 1;
-	return TRUE;
+        *((UQUAD *)tag->ti_Data) = data->block_no + data->block_count - 1;
+        return TRUE;
     }
 
     return 0;
@@ -400,7 +400,7 @@ static LONG PartitionEBRSetPartitionAttrs(struct Library *PartitionBase, struct 
         switch (tag->ti_Tag)
         {
         case PT_DOSENVEC:
-	    // TO DO: move handle to new position in list
+            // TO DO: move handle to new position in list
             CopyMem((struct DosEnvec *)tag->ti_Data, &ph->de, sizeof(struct DosEnvec));
             break;
         case PT_TYPE:

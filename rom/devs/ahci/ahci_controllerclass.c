@@ -94,7 +94,7 @@ BOOL AHCI__Hidd_StorageController__SetUpBus(OOP_Class *cl, OOP_Object *o, struct
 {
     struct AHCIBase *AHCIBase = cl->UserData;
 #if (0)
-	struct ahci_Controller *data = OOP_INST_DATA(cl, o);
+        struct ahci_Controller *data = OOP_INST_DATA(cl, o);
 #endif
 
     D(bug ("[AHCI:Controller] Hidd_StorageController__SetUpBus(%p)\n", Msg->busObject);)

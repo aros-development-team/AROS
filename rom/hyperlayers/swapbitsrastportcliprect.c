@@ -12,14 +12,14 @@
 
     NAME */
 
-	AROS_LH2(void, SwapBitsRastPortClipRect,
+        AROS_LH2(void, SwapBitsRastPortClipRect,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A0),
-	AROS_LHA(struct ClipRect *, cr, A1),
+        AROS_LHA(struct RastPort *, rp, A0),
+        AROS_LHA(struct ClipRect *, cr, A1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 21, Layers)
+        struct LayersBase *, LayersBase, 21, Layers)
 
 /*  FUNCTION
 
@@ -43,9 +43,9 @@
 {
   AROS_LIBFUNC_INIT
 
-  /* 
-     First allocate a BitMap where the BitMap Data of the RastPort's 
-     bitmap will go into. 
+  /*
+     First allocate a BitMap where the BitMap Data of the RastPort's
+     bitmap will go into.
   */
   struct BitMap * NewBM;
   
@@ -73,7 +73,7 @@
   
   /*
      Display the contents of the ClipRect's BitMap.
-   */  
+   */
 
   BltBitMap(cr->BitMap,
             ALIGN_OFFSET(cr->bounds.MinX),

@@ -55,34 +55,34 @@
 
     if (root->table)
     {
-    	struct PTFunctionTable *handler = root->table->handler;
-    	struct TagItem *tag;
+        struct PTFunctionTable *handler = root->table->handler;
+        struct TagItem *tag;
 
-    	while ((tag = NextTagItem((struct TagItem **)&taglist)))
-    	{
-    	    LONG sup;
+        while ((tag = NextTagItem((struct TagItem **)&taglist)))
+        {
+            LONG sup;
 
-	    if (handler->getPartitionTableAttr)
+            if (handler->getPartitionTableAttr)
                 sup = handler->getPartitionTableAttr(PartitionBase, root, tag);
             else
                 sup = 0;
 
-	    if (!sup)
-	    {
-	        switch (tag->ti_Tag)
-	        {
-	        case PTT_TYPE:
-            	    *((LONG *)tag->ti_Data) = root->table->type;
-            	    break;
+            if (!sup)
+            {
+                switch (tag->ti_Tag)
+                {
+                case PTT_TYPE:
+                    *((LONG *)tag->ti_Data) = root->table->type;
+                    break;
 
-		case PTT_MAXLEADIN:
-	        case PTT_RESERVED:
-	        case PTT_MAX_PARTITIONS:
-	            *((LONG *)tag->ti_Data) = 0;
-	            break;
-	        }
-	    }
-	}
+                case PTT_MAXLEADIN:
+                case PTT_RESERVED:
+                case PTT_MAX_PARTITIONS:
+                    *((LONG *)tag->ti_Data) = 0;
+                    break;
+                }
+            }
+        }
 
         return 1;
     }

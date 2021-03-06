@@ -658,7 +658,7 @@ void SCSIBus__Hidd_StorageBus__EnumUnits(OOP_Class *cl, OOP_Object *o, struct pH
     D(bug ("[SCSI:Bus] Hidd_StorageBus__EnumUnits()\n");)
 
     if (data->sb_Units[0])
-	stop = CALLHOOKPKT(msg->callback, data->sb_Units[0], msg->hookMsg);
+        stop = CALLHOOKPKT(msg->callback, data->sb_Units[0], msg->hookMsg);
     if ((!stop) && (data->sb_Units[1]))
          stop = CALLHOOKPKT(msg->callback, data->sb_Units[1], msg->hookMsg);
 }
@@ -947,7 +947,7 @@ BOOL Hidd_SCSIBus_Start(OOP_Object *o, struct scsiBase *SCSIBase)
                         aHidd_Bus_IRQData   , sb,
                         TAG_DONE);
     
-    /* scan bus - try to locate all devices (disables irq) */    
+    /* scan bus - try to locate all devices (disables irq) */
     scsi_InitBus(sb);
 
     if ((sb->sb_Dev[0] == DEV_NONE) && (sb->sb_Dev[1] == DEV_NONE) &&

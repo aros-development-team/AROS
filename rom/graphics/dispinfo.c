@@ -39,26 +39,26 @@ HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struc
     ULONG best_depth = 0;
 
     for (dh = mdd->modes; dh->id != vHidd_ModeID_Invalid; dh++) {
-	OOP_Object *sync, *pf;
-	IPTR depth;
+        OOP_Object *sync, *pf;
+        IPTR depth;
 
-	HIDD_Gfx_GetMode(mdd->gfxhidd, dh->id, &sync, &pf);
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+        HIDD_Gfx_GetMode(mdd->gfxhidd, dh->id, &sync, &pf);
+        OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
-	if (depth >= best_depth) {
-	    IPTR width, height;
-	    ULONG res;
+        if (depth >= best_depth) {
+            IPTR width, height;
+            ULONG res;
 
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
-	    res = width * height;
-	    if (res > best_resolution) {
-		ret = dh->id;
+            res = width * height;
+            if (res > best_resolution) {
+                ret = dh->id;
                 best_resolution = res;
-	    }
-	    best_depth = depth;
-	}
+            }
+            best_depth = depth;
+        }
     }
     return ret;
 }
@@ -71,14 +71,14 @@ struct monitor_driverdata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxB
     OOP_Object *drv;
 
     if (!mspc)
-    	return NULL;
+        return NULL;
 
     /*
      * FIXME: NULL ms_Object will likely mean chipset MonitorSpec (they don't have 1:1 relation with sync objects)
      * Process this correctly here. Or am i wrong ?
      */
     if (!mspc->ms_Object)
-    	 return NULL;
+         return NULL;
 
     OOP_GetAttr((OOP_Object *)mspc->ms_Object, aHidd_Sync_GfxHidd, (IPTR *)&drv);
 
@@ -86,15 +86,15 @@ struct monitor_driverdata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxB
 
     for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
     {
-	/*
-	 * Sync objects know nothing about fakegfx proxy class.
-	 * They carry a pointer to a real driver object.
-	 */
-    	if (mdd->gfxhidd_orig == drv)
-    	{
-    	    ret = mdd;
-    	    break;
-    	}
+        /*
+         * Sync objects know nothing about fakegfx proxy class.
+         * They carry a pointer to a real driver object.
+         */
+        if (mdd->gfxhidd_orig == drv)
+        {
+            ret = mdd;
+            break;
+        }
     }
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);

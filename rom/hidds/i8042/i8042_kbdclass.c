@@ -63,7 +63,7 @@ static void Keyboard_IntHandler(struct kbd_data *data, void *unused)
 
     D(
         bug("[i8042:Kbd] %s()\n", __func__);
-        bug("[i8042:Kbd] %s: ki - {\n", __func__); 
+        bug("[i8042:Kbd] %s: ki - {\n", __func__);
     )
     for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--)
     {
@@ -134,18 +134,18 @@ void KbdCntrlTask(OOP_Class *cl, OOP_Object *o)
     if (!data->ioTimer)
     {
         D(bug("[i8042:Kbd] Failed to create Timer MsgPort..\n"));
-	DeleteMsgPort(p);
+        DeleteMsgPort(p);
         data->LEDSigBit = (ULONG)-1;
         Signal(data->CtrlTask->tc_UserData, SIGF_SINGLE);
         return;
     }
 
-    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->ioTimer, 0))	
+    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->ioTimer, 0))
     {
         D(bug("[i8042:Kbd] Failed to open timer.device, unit MICROHZ\n");)
         DeleteIORequest(data->ioTimer);
         data->ioTimer = NULL;
-	DeleteMsgPort(p);
+        DeleteMsgPort(p);
         data->LEDSigBit = (ULONG)-1;
         Signal(data->CtrlTask->tc_UserData, SIGF_SINGLE);
         return;
@@ -178,7 +178,7 @@ void KbdCntrlTask(OOP_Class *cl, OOP_Object *o)
         data->LEDSigBit = (ULONG)-1;
         Signal(data->CtrlTask->tc_UserData, SIGF_SINGLE);
         DeleteIORequest(io);
-	DeleteMsgPort(p);
+        DeleteMsgPort(p);
         return;
     }
 
@@ -397,7 +397,7 @@ static void kbd_irq_process_key(struct kbd_data *data, UBYTE keycode, struct Exe
         if (data->prev_keycode == 0xE0)
         {
             data->prev_keycode = 0;
-            event = 0x4000 | keycode;       
+            event = 0x4000 | keycode;
 
             if (downkeycode < NUM_E0KEYS)
             {
@@ -438,7 +438,7 @@ static void kbd_irq_process_key(struct kbd_data *data, UBYTE keycode, struct Exe
         {
             amigacode = std_keytable[downkeycode];
             if (amigacode != NOKEY) amigacode |= releaseflag;
-        }           
+        }
     }
 
     switch(event)
@@ -571,7 +571,7 @@ static void kbd_irq_process_key(struct kbd_data *data, UBYTE keycode, struct Exe
         /*
         ** Must be a repeated key. Ignore it, because we have our
         ** own kbd repeating in input.device
-        */          
+        */
         return;
     }
 
@@ -674,7 +674,7 @@ static int kbd_reset(struct kbd_data *data)
     kbd_write_command_w(data->ioTimer, KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
 #if 0
-    kbd_write_output_w(data->ioTimer,  KBD_MODE_KCC    | // set parameters: scan code to pc conversion, 
+    kbd_write_output_w(data->ioTimer,  KBD_MODE_KCC    | // set parameters: scan code to pc conversion,
                             KBD_MODE_KBD_INT    | //                enable mouse and keyboard,
                      KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
                      KBD_MODE_SYS);

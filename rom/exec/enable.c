@@ -60,7 +60,7 @@
 
         (*) On EXECSMP builds, Enable() only applies to the processor
             it is called from. Data which needs to be protected from
-            parallel access will also require a spinlock.            
+            parallel access will also require a spinlock.
 
     EXAMPLE
         In most userspace code, you will not want to use this function.

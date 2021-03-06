@@ -67,7 +67,7 @@ LONG RAMMain(void)
    /* Open libraries */
    handler = AllocMem(sizeof(struct Handler), MEMF_CLEAR);
    if(handler == NULL)
-   	return RETURN_FAIL;		
+        return RETURN_FAIL;
 
 #ifndef __AROS__
    SysBase = AbsExecBase;
@@ -75,8 +75,8 @@ LONG RAMMain(void)
 
    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, DOS_VERSION);
    if(DOSBase == NULL) {
-	FreeMem(handler, sizeof(struct Handler));
-   	return RETURN_FAIL;
+        FreeMem(handler, sizeof(struct Handler));
+        return RETURN_FAIL;
    }
 
    /* Process start-up packet */

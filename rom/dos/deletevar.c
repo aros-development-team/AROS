@@ -65,7 +65,7 @@
   AROS_LIBFUNC_INIT
 
   if(name)
-  {  
+  {
     if((flags & GVF_GLOBAL_ONLY) == 0)
     {
       struct LocalVar *lv = NULL;

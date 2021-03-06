@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    int     	     i;
+    int              i;
     struct Menu     *thismenu;
     struct MenuItem *thisitem;
 
@@ -71,12 +71,12 @@
             else
             {
                 thisitem = thismenu->FirstItem;
-		
+                
                 for (i = 0; i < ITEMNUM(menunumber) && thisitem; i++)
                 {
                     thisitem = thisitem->NextItem;
                 }
-		
+                
                 if (thisitem)
                 {
                     if (SUBNUM(menunumber) != NOSUB && thisitem->SubItem)
@@ -88,15 +88,15 @@
                         }
                     }
                 }
-		
+                
                 if (thisitem)
                 {
                     thisitem->Flags &= ~ITEMENABLED;
                 }
             }
-	    
+            
         } /* if (thismenu) */
-	
+        
     } /* if (MENUNUM(menunumber) != NOMENU) */
 
     AROS_LIBFUNC_EXIT

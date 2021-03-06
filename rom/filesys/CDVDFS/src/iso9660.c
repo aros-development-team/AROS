@@ -10,7 +10,7 @@
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
- * 
+ *
  * 20-Apr-10 neil    - Added work-around for Rock Ridge discs that have
  *                     version numbers in file names.
  * 10-Feb-10 neil    - Removed error in fetching Rock Ridge names.
@@ -84,10 +84,10 @@ int Get_Volume_Name(VOLUME *p_volume, char *buf, int buflen)
 
     D(bug("[CDVDFS]\tGet_Volume_Name()\n"));
     if (p_volume->protocol == PRO_JOLIET)
-	return Get_Joliet_Name(p_volume->global, iso_name, buf, 32);
+        return Get_Joliet_Name(p_volume->global, iso_name, buf, 32);
     else {
-	CopyMem(iso_name, buf, 32);
-	return 32;
+        CopyMem(iso_name, buf, 32);
+        return 32;
     }
 }
 
@@ -97,23 +97,23 @@ int Get_File_Name(VOLUME *volume, directory_record *dir, char *buf, int buflen)
     
     D(bug("[CDVDFS]\tGet_File_Name()\n"));
 
-    switch (volume->protocol) 
+    switch (volume->protocol)
     {
-	case PRO_JOLIET:
-	    len = Get_Joliet_Name(volume->global, dir->file_id, buf, dir->file_id_length);
-	    break;
+        case PRO_JOLIET:
+            len = Get_Joliet_Name(volume->global, dir->file_id, buf, dir->file_id_length);
+            break;
 
-	case PRO_ROCK:
-	    len = Get_RR_File_Name(volume, dir, buf, buflen);
-	    if (len > 0)
-		break;
+        case PRO_ROCK:
+            len = Get_RR_File_Name(volume, dir, buf, buflen);
+            if (len > 0)
+                break;
 
-	    /* Fall through... */
+            /* Fall through... */
 
-	default:
-	    len = dir->file_id_length;
-	    CopyMem(dir->file_id, buf, len);
-	    break;
+        default:
+            len = dir->file_id_length;
+            CopyMem(dir->file_id, buf, len);
+            break;
     }
     buf[len] = 0;
     return len;
@@ -129,7 +129,7 @@ int Get_File_Name(VOLUME *volume, directory_record *dir, char *buf, int buflen)
  * Returns TRUE iff the ISO protocol is used; FALSE otherwise.
  */
 
-t_bool Uses_Iso_Protocol(CDROM *p_cdrom, t_ulong *p_offset) 
+t_bool Uses_Iso_Protocol(CDROM *p_cdrom, t_ulong *p_offset)
 {
     int i, len;
     t_ulong *buf;
@@ -142,40 +142,40 @@ t_bool Uses_Iso_Protocol(CDROM *p_cdrom, t_ulong *p_offset)
        */
     if ((len = Data_Tracks(p_cdrom, &buf)) < 0)
     {
-	*p_offset = 0;
-	if (!Read_Chunk(p_cdrom, 16))
-	    return FALSE;  
-	return StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0;
+        *p_offset = 0;
+        if (!Read_Chunk(p_cdrom, 16))
+            return FALSE;
+        return StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0;
     }
 
     if (len == 0)
-	return FALSE;
+        return FALSE;
 
     /*
        Use a vendor-specific command to find the offset of the last
 session:
 */
     if (
-	    Find_Last_Session(p_cdrom, p_offset) &&
-	    Read_Chunk(p_cdrom, 16 + *p_offset) &&
-	    StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0
+            Find_Last_Session(p_cdrom, p_offset) &&
+            Read_Chunk(p_cdrom, 16 + *p_offset) &&
+            StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0
        )
     {
-	FreeVec (buf);
-	return TRUE;
+        FreeVec (buf);
+        return TRUE;
     }
 
     /* Search all data tracks for valid primary volume descriptors: */
     for (i=len-1; i>=0; i--)
     {
-	*p_offset = buf[i];
-	if (!Read_Chunk(p_cdrom, 16 + *p_offset))
-	    continue;
-	if (StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0)
-	{
-	    FreeVec (buf);
-	    return TRUE;
-	}
+        *p_offset = buf[i];
+        if (!Read_Chunk(p_cdrom, 16 + *p_offset))
+            continue;
+        if (StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0)
+        {
+            FreeVec (buf);
+            return TRUE;
+        }
     }
 
     FreeVec (buf);
@@ -185,11 +185,11 @@ session:
        also check sector 16:
        */
     if (!Read_Chunk(p_cdrom, 16))
-	return FALSE;
+        return FALSE;
     if (StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0)
     {
-	*p_offset = 0;
-	return TRUE;
+        *p_offset = 0;
+        return TRUE;
     }
 
     return FALSE;
@@ -203,17 +203,17 @@ session:
  * Returns TRUE iff the High Sierra protocol is used; FALSE otherwise.
  */
 
-t_bool Uses_High_Sierra_Protocol(CDROM *p_cdrom) 
+t_bool Uses_High_Sierra_Protocol(CDROM *p_cdrom)
 {
     D(bug("[CDVDFS]\tUses_High_Sierra_Protocol()\n"));
     if (!Read_Chunk(p_cdrom, 16))
-	return FALSE;
+        return FALSE;
 
     return StrNCmp((char *) p_cdrom->buffer + 9, "CDROM", 5) == 0;
 }
 
 static t_handler const g_iso_handler;
-t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong p_svd_offset) 
+t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong p_svd_offset)
 {
     struct CDVDBase *global = p_volume->global;
     long loc = p_svd_offset + p_offset;
@@ -224,54 +224,54 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
     p_volume->vol_info = AllocMem (sizeof (t_iso_vol_info), MEMF_PUBLIC);
     if (!p_volume->vol_info)
     {
-	global->iso_errno = ISOERR_NO_MEMORY;
-	return FALSE;
+        global->iso_errno = ISOERR_NO_MEMORY;
+        return FALSE;
     }
 
     for (;;)
     {
-	if (!Read_Chunk(p_volume->cd, loc))
-	{
-	    global->iso_errno = ISOERR_SCSI_ERROR;
-	    FreeMem (p_volume->vol_info, sizeof (t_iso_vol_info));
-	    return FALSE;
-	}
+        if (!Read_Chunk(p_volume->cd, loc))
+        {
+            global->iso_errno = ISOERR_SCSI_ERROR;
+            FreeMem (p_volume->vol_info, sizeof (t_iso_vol_info));
+            return FALSE;
+        }
 
-	if ((p_volume->cd->buffer[0] == 1) || (p_volume->cd->buffer[0] == 2))
-	{
-	    CopyMem
-		(
-		 p_volume->cd->buffer,
-		 &VOL(p_volume,pvd),
-		 sizeof (prim_vol_desc)
-		);
-	    break;
-	}
+        if ((p_volume->cd->buffer[0] == 1) || (p_volume->cd->buffer[0] == 2))
+        {
+            CopyMem
+                (
+                 p_volume->cd->buffer,
+                 &VOL(p_volume,pvd),
+                 sizeof (prim_vol_desc)
+                );
+            break;
+        }
 
-	if (p_volume->cd->buffer[0] == 255 || loc > 1000)
-	{
-	    global->iso_errno = ISOERR_NO_PVD;
-	    FreeMem (p_volume->vol_info, sizeof (t_iso_vol_info));
-	    return FALSE;
-	}
+        if (p_volume->cd->buffer[0] == 255 || loc > 1000)
+        {
+            global->iso_errno = ISOERR_NO_PVD;
+            FreeMem (p_volume->vol_info, sizeof (t_iso_vol_info));
+            return FALSE;
+        }
 
-	loc++;
+        loc++;
     }
 
     VOL(p_volume,skip) = p_skip;
 
     switch (VOL(p_volume,pvd).block_size)
     {
-	case 512:
-	    VOL(p_volume,blockshift) = 2;
-	    break;
-	case 1024:
-	    VOL(p_volume,blockshift) = 1;
-	    break;
-	case 2048:
-	default:
-	    VOL(p_volume,blockshift) = 0;
-	    break;
+        case 512:
+            VOL(p_volume,blockshift) = 2;
+            break;
+        case 1024:
+            VOL(p_volume,blockshift) = 1;
+            break;
+        case 2048:
+        default:
+            VOL(p_volume,blockshift) = 0;
+            break;
     }
 
     /*
@@ -285,13 +285,13 @@ t_bool Iso_Init_Vol_Info(VOLUME *p_volume, int p_skip, t_ulong p_offset, t_ulong
        */
 
     if (
-	    p_volume->protocol == PRO_ROCK || p_volume->protocol == PRO_JOLIET ||
-	    !StrNCmp(VOL(p_volume,pvd).system_id,"CDTV",4) ||
-	    !StrNCmp(VOL(p_volume,pvd).system_id,"AMIGA",5)
+            p_volume->protocol == PRO_ROCK || p_volume->protocol == PRO_JOLIET ||
+            !StrNCmp(VOL(p_volume,pvd).system_id,"CDTV",4) ||
+            !StrNCmp(VOL(p_volume,pvd).system_id,"AMIGA",5)
        )
-	p_volume->mixed_char_filenames = TRUE;
+        p_volume->mixed_char_filenames = TRUE;
     else
-	p_volume->mixed_char_filenames = FALSE;
+        p_volume->mixed_char_filenames = FALSE;
 
     return TRUE;
 }
@@ -302,7 +302,7 @@ void Iso_Close_Vol_Info(VOLUME *p_volume)
     FreeMem (p_volume->vol_info, sizeof (t_iso_vol_info));
 }
 
-CDROM_OBJ *Iso_Alloc_Obj(struct CDVDBase *global, int p_length_of_dir_record) 
+CDROM_OBJ *Iso_Alloc_Obj(struct CDVDBase *global, int p_length_of_dir_record)
 {
     CDROM_OBJ *obj;
     
@@ -311,25 +311,25 @@ CDROM_OBJ *Iso_Alloc_Obj(struct CDVDBase *global, int p_length_of_dir_record)
     obj = AllocMem (sizeof (CDROM_OBJ), MEMF_PUBLIC | MEMF_CLEAR);
     if (!obj)
     {
-	global->iso_errno = ISOERR_NO_MEMORY;
-	return NULL;
+        global->iso_errno = ISOERR_NO_MEMORY;
+        return NULL;
     }
 
     obj->global = global;
     obj->obj_info = AllocMem (sizeof (t_iso_obj_info), MEMF_PUBLIC);
     if (!obj->obj_info)
     {
-	FreeMem (obj, sizeof (CDROM_OBJ));
-	return NULL;
+        FreeMem (obj, sizeof (CDROM_OBJ));
+        return NULL;
     }
 
     OBJ(obj,dir) = AllocMem (p_length_of_dir_record, MEMF_PUBLIC);
     if (!OBJ(obj,dir))
     {
-	global->iso_errno = ISOERR_NO_MEMORY;
-	FreeMem (obj->obj_info, sizeof (t_iso_obj_info));
-	FreeMem (obj, sizeof (CDROM_OBJ));
-	return NULL;
+        global->iso_errno = ISOERR_NO_MEMORY;
+        FreeMem (obj->obj_info, sizeof (t_iso_obj_info));
+        FreeMem (obj, sizeof (CDROM_OBJ));
+        return NULL;
     }
 
     D(bug("[CDVDFS]\tIso_Alloc_Obj = %08lx\n", obj));
@@ -340,7 +340,7 @@ CDROM_OBJ *Iso_Alloc_Obj(struct CDVDBase *global, int p_length_of_dir_record)
 /* Get the "CDROM object" for the root directory of the volume.
  */
 
-CDROM_OBJ *Iso_Open_Top_Level_Directory(VOLUME *p_volume) 
+CDROM_OBJ *Iso_Open_Top_Level_Directory(VOLUME *p_volume)
 {
     CDROM_OBJ *obj;
     
@@ -348,17 +348,17 @@ CDROM_OBJ *Iso_Open_Top_Level_Directory(VOLUME *p_volume)
 
     obj = Iso_Alloc_Obj(p_volume->global, VOL(p_volume,pvd).root.length);
     if (!obj)
-	return NULL;
+        return NULL;
 
     obj->directory_f = TRUE;
     obj->volume = p_volume;
     obj->pos = 0;
     CopyMem
-	(
-	 &VOL(p_volume,pvd).root,
-	 OBJ(obj,dir),
-	 VOL(p_volume,pvd).root.length
-	);
+        (
+         &VOL(p_volume,pvd).root,
+         OBJ(obj,dir),
+         VOL(p_volume,pvd).root.length
+        );
 
     return obj;
 }
@@ -381,32 +381,32 @@ int Names_Equal(VOLUME *volume, directory_record *dir, char *p_name)
 
     if (Strnicmp(buf, p_name, len) == 0 && p_name[len] == 0)
     {
-	D(bug("[CDVDFS]\t-> Equal\n"));
-	return TRUE;
+        D(bug("[CDVDFS]\t-> Equal\n"));
+        return TRUE;
     }
 
     if (volume->protocol == PRO_ROCK
-	&& !(buf[len-2] == ';' && buf[len-1] == '1'))
+        && !(buf[len-2] == ';' && buf[len-1] == '1'))
     {
-	D(bug("[CDVDFS]\t-> Not Equal\n"));
-	return FALSE;
+        D(bug("[CDVDFS]\t-> Not Equal\n"));
+        return FALSE;
     }
 
     /* compare without version number: */
 
     for (pos=len-1; pos>=0; pos--)
-	if (buf[pos] == ';')
-	    break;
+        if (buf[pos] == ';')
+            break;
 
     if (pos>=0)
     {
-	D(bug("[CDVDFS]\t-> checking some more\n"));
-	return (Strnicmp(buf, p_name, pos) == 0 && p_name[pos] == 0);
+        D(bug("[CDVDFS]\t-> checking some more\n"));
+        return (Strnicmp(buf, p_name, pos) == 0 && p_name[pos] == 0);
     }
     else
     {
-	D(bug("[CDVDFS]\t-> Not Equal\n"));
-	return FALSE;
+        D(bug("[CDVDFS]\t-> Not Equal\n"));
+        return FALSE;
     }
 }
 
@@ -414,7 +414,7 @@ int Names_Equal(VOLUME *volume, directory_record *dir, char *p_name)
  * p_location is a LOGICAL BLOCK number.
  */
 directory_record *Get_Directory_Record
-	(VOLUME *p_volume, uint32_t p_location, uint32_t p_offset)
+        (VOLUME *p_volume, uint32_t p_location, uint32_t p_offset)
 {
     struct CDVDBase *global = p_volume->global;
     int len;
@@ -426,28 +426,28 @@ directory_record *Get_Directory_Record
 
     if (!Read_Chunk(p_volume->cd, loc))
     {
-	D(bug("[CDVDFS]\tRead failed\n"));
-	global->iso_errno = ISOERR_SCSI_ERROR;
-	return NULL;
+        D(bug("[CDVDFS]\tRead failed\n"));
+        global->iso_errno = ISOERR_SCSI_ERROR;
+        return NULL;
     }
 
     len = p_volume->cd->buffer[p_offset & 2047];
     if (len)
     {
-	CopyMem(p_volume->cd->buffer + (p_offset & 2047), p_volume->buffer, len);
-	D({
-	    int x;
-	    directory_record *dr = (directory_record*)p_volume->buffer;
-	    bug("[CDVDFS]\tEntry: >");
-	    for (x=0; x<dr->file_id_length; x++)
-		bug("%c", dr->file_id[x]);
-	    bug("<\n");
-	 });
+        CopyMem(p_volume->cd->buffer + (p_offset & 2047), p_volume->buffer, len);
+        D({
+            int x;
+            directory_record *dr = (directory_record*)p_volume->buffer;
+            bug("[CDVDFS]\tEntry: >");
+            for (x=0; x<dr->file_id_length; x++)
+                bug("%c", dr->file_id[x]);
+            bug("<\n");
+         });
     }
     else
     {
-	D(bug("[CDVDFS]\t== Last entry ==\n"));
-	p_volume->buffer[0] = 0;  /* mark as last record */
+        D(bug("[CDVDFS]\t== Last entry ==\n"));
+        p_volume->buffer[0] = 0;  /* mark as last record */
     }
 
     return (directory_record *)p_volume->buffer;
@@ -469,56 +469,56 @@ CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
     D(bug("[CDVDFS]\tIso_Create_Directory_Obj(%ld)\n", p_location));
 
     if (p_location == VOL(p_volume,pvd).root.extent_loc)
-	return Iso_Open_Top_Level_Directory(p_volume);
+        return Iso_Open_Top_Level_Directory(p_volume);
 
     dir = Get_Directory_Record(p_volume, p_location, 0);
     if (!dir)
     {
-	D(bug("[CDVDFS]\tNo directory record for '.'\n"));
-	return NULL;
+        D(bug("[CDVDFS]\tNo directory record for '.'\n"));
+        return NULL;
     }
 
     dir = Get_Directory_Record(p_volume, p_location, dir->length);
     if (!dir)
     {
-	D(bug("[CDVDFS]\tNo directory record for '..'\n"));
-	return NULL;
+        D(bug("[CDVDFS]\tNo directory record for '..'\n"));
+        return NULL;
     }
 
     loc = dir->extent_loc;
     len = dir->data_length;
     for (;;)
     {
-	if (offset >= len)
-	{
-	    D(bug("[CDVDFS]\tNo more elements.\n"));
-	    return NULL;
-	}
+        if (offset >= len)
+        {
+            D(bug("[CDVDFS]\tNo more elements.\n"));
+            return NULL;
+        }
 
-	dir = Get_Directory_Record(p_volume, loc, offset);
-	if (!dir)
-	{
-	    D(bug("[CDVDFS]\tFailed to read next entry\n"));
-	    return NULL;
-	}
+        dir = Get_Directory_Record(p_volume, loc, offset);
+        if (!dir)
+        {
+            D(bug("[CDVDFS]\tFailed to read next entry\n"));
+            return NULL;
+        }
 
-	if (!dir->length)
-	{
-	    D(bug("[CDVDFS]\tAdvancing to next sector\n"));
-	    /* go to next logical sector: */
-	    offset = (offset & 0xfffff800) + 2048;
-	    continue;
-	}
-	if (dir->extent_loc == p_location)
-	    break;
-	offset += dir->length;
+        if (!dir->length)
+        {
+            D(bug("[CDVDFS]\tAdvancing to next sector\n"));
+            /* go to next logical sector: */
+            offset = (offset & 0xfffff800) + 2048;
+            continue;
+        }
+        if (dir->extent_loc == p_location)
+            break;
+        offset += dir->length;
     }
 
     obj = Iso_Alloc_Obj(global, dir->length);
     if (!obj)
     {
-	D(bug("[CDVDFS]\tFailed to allocate object\n"));
-	return NULL;
+        D(bug("[CDVDFS]\tFailed to allocate object\n"));
+        return NULL;
     }
 
     obj->directory_f = TRUE;
@@ -551,76 +551,76 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
     dir = Get_Directory_Record(p_dir->volume, loc, 0);
     if (!dir)
     {
-	D(bug("[CDVDFS]\tNo directory record for '.'\n"));
-	return NULL;
+        D(bug("[CDVDFS]\tNo directory record for '.'\n"));
+        return NULL;
     }
 
     offset = dir->length;
     dir = Get_Directory_Record(p_dir->volume, loc, offset);
     if (!dir)
     {
-	D(bug("[CDVDFS]\tNo directory record for '..'\n"));
-	return NULL;
+        D(bug("[CDVDFS]\tNo directory record for '..'\n"));
+        return NULL;
     }
 
     offset += dir->length;
     for (;;)
     {
-	if (offset >= len)
-	{
-	    D(bug("[CDVDFS]\tNo more directory records\n"));
-	    global->iso_errno = ISOERR_NOT_FOUND;
-	    return NULL;
-	}
+        if (offset >= len)
+        {
+            D(bug("[CDVDFS]\tNo more directory records\n"));
+            global->iso_errno = ISOERR_NOT_FOUND;
+            return NULL;
+        }
 
-	dir = Get_Directory_Record(p_dir->volume, loc, offset);
-	if (!dir)
-	{
-	    D(bug("[CDVDFS]\tFailed to read directory records\n"));
-	    return NULL;
-	}
+        dir = Get_Directory_Record(p_dir->volume, loc, offset);
+        if (!dir)
+        {
+            D(bug("[CDVDFS]\tFailed to read directory records\n"));
+            return NULL;
+        }
 
-	if (!dir->length)
-	{
-	    /* go to next logical sector: */
-	    D(bug("[CDVDFS]\tRead dir advancing to next sector\n"));
-	    offset = (offset & 0xfffff800) + 2048;
-	    continue;
-	}
+        if (!dir->length)
+        {
+            /* go to next logical sector: */
+            D(bug("[CDVDFS]\tRead dir advancing to next sector\n"));
+            offset = (offset & 0xfffff800) + 2048;
+            continue;
+        }
 
-	/* We skip files that are marked as associated */
-	if (((dir->flags & FILE_FLAG_ASSOCIATED) == 0) &&
-		Names_Equal(p_dir->volume, dir, p_name))
-	    break;
-	
-	D(bug("[CDVDFS]\tRead dir advancing to next record\n"));
-	offset += dir->length;
+        /* We skip files that are marked as associated */
+        if (((dir->flags & FILE_FLAG_ASSOCIATED) == 0) &&
+                Names_Equal(p_dir->volume, dir, p_name))
+            break;
+        
+        D(bug("[CDVDFS]\tRead dir advancing to next record\n"));
+        offset += dir->length;
     }
 
     if (p_dir->volume->protocol == PRO_ROCK && (cl = RR_Child_Link(p_dir->volume, dir)) >= 0)
     {
-	return Iso_Create_Directory_Obj(p_dir->volume, cl);
+        return Iso_Create_Directory_Obj(p_dir->volume, cl);
     }
 
     obj = Iso_Alloc_Obj(global, dir->length);
     if (!obj)
     {
-	D(bug("[CDVDFS]\tFailed to create object\n"));
-	return NULL;
+        D(bug("[CDVDFS]\tFailed to create object\n"));
+        return NULL;
     }
 
     obj->directory_f = (dir->flags & FILE_FLAG_DIRECTORY);
     obj->protection = (dir->flags & FILE_FLAG_HIDDEN) ? FIBF_HIDDEN : 0;
     if (p_dir->volume->protocol == PRO_ROCK && Is_A_Symbolic_Link(p_dir->volume, dir, &obj->protection))
     {
-	obj->symlink_f = 1;
-	obj->directory_f = 0;
+        obj->symlink_f = 1;
+        obj->directory_f = 0;
     }
     CopyMem(dir, OBJ(obj,dir), dir->length);
     obj->volume = p_dir->volume;
     obj->pos = 0;
     if (!obj->directory_f)
-	OBJ(obj,parent_loc) = loc;
+        OBJ(obj,parent_loc) = loc;
     
     D(bug("[CDVDFS]\tObject %08lx created and initialized\n", obj));
 
@@ -630,7 +630,7 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
 /* Close a "CDROM object" and deallocate all associated resources.
  */
 
-void Iso_Close_Obj(CDROM_OBJ *p_object) 
+void Iso_Close_Obj(CDROM_OBJ *p_object)
 {
     D(bug("[CDVDFS]\tIso_Close_Obj(%08lx)\n", p_object));
     FreeMem (OBJ(p_object,dir), OBJ(p_object,dir)->length);
@@ -642,7 +642,7 @@ void Iso_Close_Obj(CDROM_OBJ *p_object)
 /* Read bytes from a file.
  */
 
-int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length) 
+int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 {
     struct CDVDBase *global = p_file->global;
     uint32_t loc;
@@ -661,22 +661,22 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 
     if (p_file->pos == OBJ(p_file,dir)->data_length)
     {
-	/* at end of file: */
-	return 0;
+        /* at end of file: */
+        return 0;
     }
 
     blockshift = VOL(vol,blockshift);
     /* 'firstblock' is the first logical block of the file section: */
     firstblock =
-	OBJ(p_file,dir)->extent_loc + OBJ(p_file,dir)->ext_attr_length;
+        OBJ(p_file,dir)->extent_loc + OBJ(p_file,dir)->ext_attr_length;
     /*
        'offset' is the offset of the first logical block of the file
        extent from the first logical (2048-byte-)sector.
        */
     if (blockshift)
-	offset = ((firstblock & ((1<<blockshift)-1))<< (11-blockshift));
+        offset = ((firstblock & ((1<<blockshift)-1))<< (11-blockshift));
     else
-	offset = 0;
+        offset = 0;
     /*
        'ext_loc' is the first logical sector of the file extent.
        'loc' is the first logical sector to be read.
@@ -695,58 +695,58 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 
     while (todo)
     {
-	D(bug("[CDVDFS]\tRead: BPos: %6ld; FPos: %6ld; Ofst: %6ld; Blck: %6ld;\n", buf_pos, p_file->pos, offset, loc));
+        D(bug("[CDVDFS]\tRead: BPos: %6ld; FPos: %6ld; Ofst: %6ld; Blck: %6ld;\n", buf_pos, p_file->pos, offset, loc));
 
-	if (!Read_Chunk(cd, loc))
-	{
-	    global->iso_errno = ISOERR_SCSI_ERROR;
-	    return -1;
-	}
+        if (!Read_Chunk(cd, loc))
+        {
+            global->iso_errno = ISOERR_SCSI_ERROR;
+            return -1;
+        }
 
-	/*
-	 * how much data left in a file?
-	 */
-	remain_file = OBJ(p_file,dir)->data_length - p_file->pos;
+        /*
+         * how much data left in a file?
+         */
+        remain_file = OBJ(p_file,dir)->data_length - p_file->pos;
 
-	/*
-	 * how much data remain in file vs chunk?
-	 */
-	remain = (remain_block < remain_file) ? remain_block : remain_file;
+        /*
+         * how much data remain in file vs chunk?
+         */
+        remain = (remain_block < remain_file) ? remain_block : remain_file;
 
-	/*
-	 * and how much user wants to read?
-	 */
-	len = (todo < remain) ? todo : remain;
+        /*
+         * and how much user wants to read?
+         */
+        len = (todo < remain) ? todo : remain;
 
-	D(bug("[CDVDFS]\tRead: Chnk: %6ld; File: %6ld; Todo: %6ld; Read: %6ld;\n", remain_block, remain_file, todo, len));
-	/*
-	 * copy read data
-	 */
-	CopyMem ((APTR) (cd->buffer + offset), (APTR) (p_buffer + buf_pos), len);
+        D(bug("[CDVDFS]\tRead: Chnk: %6ld; File: %6ld; Todo: %6ld; Read: %6ld;\n", remain_block, remain_file, todo, len));
+        /*
+         * copy read data
+         */
+        CopyMem ((APTR) (cd->buffer + offset), (APTR) (p_buffer + buf_pos), len);
 
-	/*
-	 * update positions, offsets, todo
-	 */
-	buf_pos += len;
-	p_file->pos += len;
-	todo -= len;
+        /*
+         * update positions, offsets, todo
+         */
+        buf_pos += len;
+        p_file->pos += len;
+        todo -= len;
 
-	/*
-	 * if read it all - end
-	 */
-	if (p_file->pos >= OBJ(p_file,dir)->data_length)
-	    break;
+        /*
+         * if read it all - end
+         */
+        if (p_file->pos >= OBJ(p_file,dir)->data_length)
+            break;
 
-	remain_block = (SCSI_BUFSIZE << 4);
-	offset = 0;
+        remain_block = (SCSI_BUFSIZE << 4);
+        offset = 0;
 
-	loc = (loc + 16) &~ 15;
+        loc = (loc + 16) &~ 15;
     }
 
     return buf_pos;
 }
 
-t_ulong Extract_Date(struct CDVDBase *global, directory_record *p_dir_record) 
+t_ulong Extract_Date(struct CDVDBase *global, directory_record *p_dir_record)
 {
     struct ClockData ClockData;
 
@@ -760,15 +760,15 @@ t_ulong Extract_Date(struct CDVDBase *global, directory_record *p_dir_record)
     ClockData.year  = p_dir_record->year + 1900;
 
     if (CheckDate (&ClockData))
-	return Date2Amiga (&ClockData);
+        return Date2Amiga (&ClockData);
     else
-	return 0;
+        return 0;
 }
 
 /* Return information on a "CDROM object."
  */
 
-int Iso_CDROM_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info) 
+int Iso_CDROM_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info)
 {
     int len;
     
@@ -776,30 +776,30 @@ int Iso_CDROM_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info)
 
     if (Iso_Is_Top_Level_Object (p_obj))
     {
-	p_info->name_length = 1;
-	p_info->name[0] = ':';
-	p_info->directory_f = TRUE;
-	p_info->file_length = 0;
-	p_info->date = Volume_Creation_Date(p_obj->volume);
-	p_info->protection = 0;
-	p_info->comment_length = 0;
+        p_info->name_length = 1;
+        p_info->name[0] = ':';
+        p_info->directory_f = TRUE;
+        p_info->file_length = 0;
+        p_info->date = Volume_Creation_Date(p_obj->volume);
+        p_info->protection = 0;
+        p_info->comment_length = 0;
     }
     else
     {
-	directory_record *rec = OBJ(p_obj, dir);
+        directory_record *rec = OBJ(p_obj, dir);
 
-	p_info->name_length = Get_File_Name(p_obj->volume, rec, p_info->name, sizeof(p_info->name));
-	p_info->directory_f = p_obj->directory_f;
-	p_info->symlink_f = p_obj->symlink_f;
-	p_info->file_length = OBJ(p_obj,dir)->data_length;
-	p_info->date = Extract_Date(p_obj->global, OBJ(p_obj,dir));
-	p_info->protection = p_obj->protection;
+        p_info->name_length = Get_File_Name(p_obj->volume, rec, p_info->name, sizeof(p_info->name));
+        p_info->directory_f = p_obj->directory_f;
+        p_info->symlink_f = p_obj->symlink_f;
+        p_info->file_length = OBJ(p_obj,dir)->data_length;
+        p_info->date = Extract_Date(p_obj->global, OBJ(p_obj,dir));
+        p_info->protection = p_obj->protection;
 
-	if (p_obj->volume->protocol == PRO_ROCK &&
-		(len = Get_RR_File_Comment(p_obj->volume, rec, &p_info->protection, p_info->comment, sizeof(p_info->comment))) > 0)
-	    p_info->comment_length = len;
-	else
-	    p_info->comment_length = 0;
+        if (p_obj->volume->protocol == PRO_ROCK &&
+                (len = Get_RR_File_Comment(p_obj->volume, rec, &p_info->protection, p_info->comment, sizeof(p_info->comment))) > 0)
+            p_info->comment_length = len;
+        else
+            p_info->comment_length = 0;
     }
 
     return 1;
@@ -809,7 +809,7 @@ int Iso_CDROM_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info)
  */
 
 int Iso_Examine_Next
-	(CDROM_OBJ *p_dir, CDROM_INFO *p_info, uint32_t *p_offset)
+        (CDROM_OBJ *p_dir, CDROM_INFO *p_info, uint32_t *p_offset)
 {
     struct CDVDBase *global = p_dir->global;
     uint32_t offset;
@@ -820,62 +820,62 @@ int Iso_Examine_Next
 
     if (!p_dir->directory_f || p_dir->symlink_f)
     {
-	global->iso_errno = ISOERR_BAD_ARGUMENTS;
-	return 0;
+        global->iso_errno = ISOERR_BAD_ARGUMENTS;
+        return 0;
     }
 
     if (*p_offset == 0)
     {
-	/* skip first two directory entries: */
+        /* skip first two directory entries: */
 
-	rec = Get_Directory_Record
-	    (
-	     p_dir->volume,
-	     OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
-	     0
-	    );
-	if (!rec)
-	    return 0;
+        rec = Get_Directory_Record
+            (
+             p_dir->volume,
+             OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
+             0
+            );
+        if (!rec)
+            return 0;
 
-	offset = rec->length;
+        offset = rec->length;
 
-	rec = Get_Directory_Record
-	    (
-	     p_dir->volume,
-	     OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
-	     offset
-	    );
-	if (!rec)
-	    return 0;
+        rec = Get_Directory_Record
+            (
+             p_dir->volume,
+             OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
+             offset
+            );
+        if (!rec)
+            return 0;
 
-	*p_offset = offset + rec->length;
+        *p_offset = offset + rec->length;
     }
 
     do {
-	for (;;)
-	{
-	    if (OBJ(p_dir,dir)->data_length <= *p_offset)
-		return 0;
+        for (;;)
+        {
+            if (OBJ(p_dir,dir)->data_length <= *p_offset)
+                return 0;
 
-	    rec = Get_Directory_Record
-		(
-		 p_dir->volume,
-		 OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
-		 *p_offset
-		);
-	    if (!rec)
-		return 0;
+            rec = Get_Directory_Record
+                (
+                 p_dir->volume,
+                 OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
+                 *p_offset
+                );
+            if (!rec)
+                return 0;
 
-	    if (rec->length == 0)
-	    {
-		/* go to next logical sector: */
-		*p_offset = (*p_offset & 0xfffff800) + 2048;
-	    }
-	    else
-		break;
-	}
+            if (rec->length == 0)
+            {
+                /* go to next logical sector: */
+                *p_offset = (*p_offset & 0xfffff800) + 2048;
+            }
+            else
+                break;
+        }
 
-	*p_offset += rec->length;
+        *p_offset += rec->length;
     } while (rec->flags & FILE_FLAG_ASSOCIATED);
 
     p_info->name_length = Get_File_Name(p_dir->volume, rec, p_info->name, sizeof(p_info->name));
@@ -884,28 +884,28 @@ int Iso_Examine_Next
 
     if (p_dir->volume->protocol == PRO_ROCK && Is_A_Symbolic_Link(p_dir->volume, rec, &p_info->protection))
     {
-	p_info->symlink_f = 1;
-	p_info->directory_f = 0;
+        p_info->symlink_f = 1;
+        p_info->directory_f = 0;
     }
-    else if (p_dir->volume->protocol == PRO_ROCK &&	Has_System_Use_Field(p_dir->volume, rec, "CL"))
+    else if (p_dir->volume->protocol == PRO_ROCK &&     Has_System_Use_Field(p_dir->volume, rec, "CL"))
     {
-	p_info->symlink_f = 0;
-	p_info->directory_f = 1;
+        p_info->symlink_f = 0;
+        p_info->directory_f = 1;
     }
     else
     {
-	p_info->symlink_f = 0;
-	p_info->directory_f = rec->flags & FILE_FLAG_DIRECTORY;
+        p_info->symlink_f = 0;
+        p_info->directory_f = rec->flags & FILE_FLAG_DIRECTORY;
     }
 
     p_info->file_length = rec->data_length;
     p_info->date = Extract_Date(global, rec);
 
     if (p_dir->volume->protocol == PRO_ROCK &&
-	    (len = Get_RR_File_Comment(p_dir->volume, rec, &p_info->protection, p_info->comment, sizeof(p_info->name))) > 0)
-	p_info->comment_length = len;
+            (len = Get_RR_File_Comment(p_dir->volume, rec, &p_info->protection, p_info->comment, sizeof(p_info->name))) > 0)
+        p_info->comment_length = len;
     else
-	p_info->comment_length = 0;
+        p_info->comment_length = 0;
 
     p_info->suppl_info = rec;
 
@@ -915,7 +915,7 @@ int Iso_Examine_Next
 /* Clone a "CDROM object info."
  */
 
-void *Iso_Clone_Obj_Info(void *p_info) 
+void *Iso_Clone_Obj_Info(void *p_info)
 {
     t_iso_obj_info *info = (t_iso_obj_info *) p_info;
     t_iso_obj_info *new;
@@ -924,15 +924,15 @@ void *Iso_Clone_Obj_Info(void *p_info)
 
     new = AllocMem (sizeof (t_iso_obj_info), MEMF_PUBLIC);
     if (!new)
-	return NULL;
+        return NULL;
 
     CopyMem(info, new, sizeof (t_iso_obj_info));
 
     new->dir = AllocMem (info->dir->length, MEMF_PUBLIC);
     if (!new->dir)
     {
-	FreeMem (new, sizeof (t_iso_obj_info));
-	return NULL;
+        FreeMem (new, sizeof (t_iso_obj_info));
+        return NULL;
     }
     CopyMem(info->dir, new->dir, info->dir->length);
 
@@ -942,7 +942,7 @@ void *Iso_Clone_Obj_Info(void *p_info)
 /* Find parent directory.
  */
 
-CDROM_OBJ *Iso_Find_Parent(CDROM_OBJ *p_object) 
+CDROM_OBJ *Iso_Find_Parent(CDROM_OBJ *p_object)
 {
     directory_record *dir;
     uint32_t dir_loc;
@@ -951,25 +951,25 @@ CDROM_OBJ *Iso_Find_Parent(CDROM_OBJ *p_object)
     D(bug("[CDVDFS]\tIso_Find_Parent(%08lx)\n", p_object));
 
     if (p_object->directory_f)
-	dir_loc =
-	    OBJ(p_object,dir)->extent_loc + OBJ(p_object,dir)->ext_attr_length;
+        dir_loc =
+            OBJ(p_object,dir)->extent_loc + OBJ(p_object,dir)->ext_attr_length;
     else
-	dir_loc = OBJ(p_object,parent_loc);
+        dir_loc = OBJ(p_object,parent_loc);
 
     dir = Get_Directory_Record(p_object->volume, dir_loc, 0);
     if (!dir)
-	return NULL;
+        return NULL;
 
     if (p_object->directory_f)
     {
-	dir = Get_Directory_Record(p_object->volume, dir_loc, dir->length);
-	if (!dir)
-	    return NULL;
-	if (
-		p_object->volume->protocol == PRO_ROCK &&
-		(pl = RR_Parent_Link(p_object->volume, dir)) >= 0
-	   )
-	    return Iso_Create_Directory_Obj(p_object->volume, pl);
+        dir = Get_Directory_Record(p_object->volume, dir_loc, dir->length);
+        if (!dir)
+            return NULL;
+        if (
+                p_object->volume->protocol == PRO_ROCK &&
+                (pl = RR_Parent_Link(p_object->volume, dir)) >= 0
+           )
+            return Iso_Create_Directory_Obj(p_object->volume, pl);
     }
 
     return Iso_Create_Directory_Obj(p_object->volume, dir->extent_loc);
@@ -981,8 +981,8 @@ CDROM_OBJ *Iso_Find_Parent(CDROM_OBJ *p_object)
 t_bool Iso_Is_Top_Level_Object (CDROM_OBJ *p_object)
 {
     return p_object->directory_f &&
-	OBJ(p_object,dir)->extent_loc ==
-	VOL(p_object->volume,pvd).root.extent_loc;
+        OBJ(p_object,dir)->extent_loc ==
+        VOL(p_object->volume,pvd).root.extent_loc;
 }
 
 /* Test if two objects are equal.
@@ -991,7 +991,7 @@ t_bool Iso_Is_Top_Level_Object (CDROM_OBJ *p_object)
 t_bool Iso_Same_Objects (CDROM_OBJ *p_obj1, CDROM_OBJ *p_obj2)
 {
     return (OBJ(p_obj1,dir)->extent_loc ==
-	    OBJ(p_obj2,dir)->extent_loc);
+            OBJ(p_obj2,dir)->extent_loc);
 }
 
 /*
@@ -1004,7 +1004,7 @@ int Digs_To_Int (char *p_digits, int p_num)
     int i;
 
     for (i=0; i<p_num; i++)
-	result = result * 10 + p_digits[i] - '0';
+        result = result * 10 + p_digits[i] - '0';
 
     return result;
 }
@@ -1013,7 +1013,7 @@ int Digs_To_Int (char *p_digits, int p_num)
  * Return volume creation date as number of seconds since 1-Jan-1978:
  */
 
-t_ulong Iso_Creation_Date(VOLUME *p_volume) 
+t_ulong Iso_Creation_Date(VOLUME *p_volume)
 {
     struct CDVDBase *global = p_volume->global;
     struct ClockData ClockData;
@@ -1022,7 +1022,7 @@ t_ulong Iso_Creation_Date(VOLUME *p_volume)
     D(bug("[CDVDFS]\tIso_Creation_Date\n"));
 
     ClockData.sec   = Digs_To_Int (dt+12, 2);
-    ClockData.min	  = Digs_To_Int (dt+10, 2);
+    ClockData.min         = Digs_To_Int (dt+10, 2);
     ClockData.hour  = Digs_To_Int (dt+8, 2);
     ClockData.mday  = Digs_To_Int (dt+6, 2);
     ClockData.wday  = 0; /* is ignored by CheckDate() and Date2Amiga() */
@@ -1030,9 +1030,9 @@ t_ulong Iso_Creation_Date(VOLUME *p_volume)
     ClockData.year  = Digs_To_Int (dt, 4);
 
     if (CheckDate (&ClockData))
-	return Date2Amiga (&ClockData);
+        return Date2Amiga (&ClockData);
     else
-	return 0;
+        return 0;
 }
 
 t_ulong Iso_Volume_Size (VOLUME *p_volume)
@@ -1056,12 +1056,12 @@ void Iso_Volume_ID(VOLUME *p_volume, char *p_buffer, int p_buf_length)
     iso_len = Get_Volume_Name(p_volume, buf, sizeof(buf));
     for (; iso_len; iso_len--)
     {
-	if (buf[iso_len-1] != ' ')
-	    break;
+        if (buf[iso_len-1] != ' ')
+            break;
     }
     len = (iso_len > p_buf_length-1) ? p_buf_length-1 : iso_len;
     if (len > 0)
-	CopyMem(buf, p_buffer, len);
+        CopyMem(buf, p_buffer, len);
     p_buffer[len] = 0;
 }
 
@@ -1075,7 +1075,7 @@ t_ulong Iso_File_Length (CDROM_OBJ *p_obj)
     return OBJ(p_obj,dir)->data_length;
 }
 
-static t_handler const g_iso_handler = 
+static t_handler const g_iso_handler =
 {
     Iso_Close_Vol_Info,
     Iso_Open_Top_Level_Directory,

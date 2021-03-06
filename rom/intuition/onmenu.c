@@ -73,33 +73,33 @@
             else
             {
                 thisitem = thismenu->FirstItem;
-		
+                
                 for (i = 0; i < ITEMNUM(menunumber) && thisitem; i++)
                 {
                     thisitem = thisitem->NextItem;
                 }
-		
+                
                 if (thisitem)
                 {
                     if (SUBNUM(menunumber) != NOSUB && thisitem->SubItem)
                     {
                         thisitem = thisitem->SubItem;
-			
+                        
                         for (i = 0; i < SUBNUM(menunumber) && thisitem; i++)
                         {
                             thisitem = thisitem->NextItem;
                         }
                     }
                 }
-		
+                
                 if (thisitem)
                 {
                     thisitem->Flags |= ITEMENABLED;
                 }
             }
-	    
+            
         } /* if (thismenu) */
-	
+        
     } /* if (MENUNUM(menunumber) != NOMENU) */
 
     AROS_LIBFUNC_EXIT

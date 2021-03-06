@@ -12,25 +12,25 @@
 
     NAME */
 
-	AROS_LH1(void, RemSemaphore,
+        AROS_LH1(void, RemSemaphore,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct SignalSemaphore *, sigSem, A1),
+        AROS_LHA(struct SignalSemaphore *, sigSem, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 101, Exec)
+        struct ExecBase *, SysBase, 101, Exec)
 
 /*  FUNCTION
-	Removes a semaphore from the system public semaphore list.
+        Removes a semaphore from the system public semaphore list.
 
     INPUTS
-	sigSem - Pointer to semaphore structure
+        sigSem - Pointer to semaphore structure
 
     RESULT
 
     NOTES
-	Semaphores are shared between the tasks that use them and must
-	therefore lie in public (or at least shared) memory.
+        Semaphores are shared between the tasks that use them and must
+        therefore lie in public (or at least shared) memory.
 
     EXAMPLE
 

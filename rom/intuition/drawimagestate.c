@@ -115,7 +115,7 @@
             UWORD   shift;
             ULONG   planeonoff, planepick;
 
-    	#if !USE_BLTBITMAPRASTPORT
+        #if !USE_BLTBITMAPRASTPORT
 
             ULONG   lastPen = 0;
             ULONG   pen = 0;
@@ -124,12 +124,12 @@
             UWORD * bits[8];
             WORD    xoff, yoff, plane;
 
-    	#define START_BITMASK   0x8000
+        #define START_BITMASK   0x8000
 
             /* Change RastPort to the mode I need */
             SetDrMd (rp, JAM1);
 
-    	#endif
+        #endif
 
             /*  kprintf("*** Drawing Image %x. Next Image = %x\n widht = %d  height = %d  depth = %d  planepick = %d  planeonoff = %d\n",
             image,image->NextImage,
@@ -139,7 +139,7 @@
             planepick  = image->PlanePick;
             planeonoff = image->PlaneOnOff & ~planepick;
 
-    	#if USE_FASTPLANEPICK0
+        #if USE_FASTPLANEPICK0
 
             if (planepick == 0)
             {
@@ -153,7 +153,7 @@
                 continue;
             }
 
-    	#endif
+        #endif
 
             /* Use x to store size of one image plane */
             x = ((image->Width + 15) >> 4) * image->Height;
@@ -161,20 +161,20 @@
 
             shift = 1;
 
-    	#if USE_BLTBITMAPRASTPORT
+        #if USE_BLTBITMAPRASTPORT
             {
                 struct BitMap bitmap;
                 int depth;
                 int imagedepth = image->Depth;
 
-    	    #if 0
+            #if 0
                 /* The "8" (instead of image->Depth) seems to be correct,
                    as for example DOpus uses prop gadget knob images with
                    a depth of 0 (planepick 0, planeonoff color) */
 
                 depth = 8;
-    	    #else
-    	    	/* That makes far more sense than just a 8
+            #else
+                /* That makes far more sense than just a 8
                 * R.Schmidt...still doesn`t resolve some weird icon problem i have
                 */
                 //depth = rp->BitMap->Depth;
@@ -185,7 +185,7 @@
                 depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
                 if (depth > 8)
                     depth = 8;
-    	    #endif
+            #endif
                 InitBitMap(&bitmap, depth, image->Width, image->Height);
 
                 for(d = 0; d < depth; d++)
@@ -213,7 +213,7 @@
                                   (state == IDS_SELECTED) ? 0x30 : 0xC0);
             }
 
-    	#else
+        #else
 
 
             for(d = 0; d < image->Depth;d++)
@@ -288,7 +288,7 @@
 
             } /* for (y=0; y < image->Height; y++, yoff++) */
 
-    	#endif
+        #endif
         }
 
         image = image->NextImage;

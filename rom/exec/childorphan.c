@@ -11,32 +11,32 @@
 
     NAME */
 
-	AROS_LH1(ULONG, ChildOrphan,
+        AROS_LH1(ULONG, ChildOrphan,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, tid, D0),
+        AROS_LHA(ULONG, tid, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 124, Exec)
+        struct ExecBase *, SysBase, 124, Exec)
 
 /*  FUNCTION
-	ChildOrphan() will detach the specified task from its parent
-	task's child task tree. This is useful if the parent task will be
-	exiting, and no longer needs to be told about child task events.
+        ChildOrphan() will detach the specified task from its parent
+        task's child task tree. This is useful if the parent task will be
+        exiting, and no longer needs to be told about child task events.
 
-	Note that the default Task finaliser will orphan any remaining
-	children when the task exits. This function can be used if you just
-	do not wish to be told about a particular task.
+        Note that the default Task finaliser will orphan any remaining
+        children when the task exits. This function can be used if you just
+        do not wish to be told about a particular task.
 
     INPUTS
-	tid	--  The ID of the task to orphan, or 0 for all tasks. Note
-		    that it is NOT the pointer to the task.
+        tid     --  The ID of the task to orphan, or 0 for all tasks. Note
+                    that it is NOT the pointer to the task.
 
     RESULT
-	Will return 0 on success or CHILD_* on an error.
+        Will return 0 on success or CHILD_* on an error.
 
-	The child/children will no longer participate in child task
-	actions.
+        The child/children will no longer participate in child task
+        actions.
 
     NOTES
 
@@ -55,43 +55,43 @@
     struct Task *ThisTask = GET_THIS_TASK;
     struct ETask *et, *child;
 
-	if (ThisTask)
-	{
-		et = GetETask(ThisTask);
-		if (et == NULL)
-		return CHILD_NOTNEW;
+        if (ThisTask)
+        {
+                et = GetETask(ThisTask);
+                if (et == NULL)
+                return CHILD_NOTNEW;
 
-		if (tid == 0L)
-		{
-			Forbid();
-		ForeachNode(&et->et_Children, child)
-		{
-			/*
-			Don't need to Remove(), because I'll blow away the entire
-			list at the end of the loop.
-			*/
-			child->et_Parent = NULL;
-		}
-		NEWLIST(&et->et_Children);
-			Permit();
-		}
-		else
-		{
-			Forbid();
-		child = FindChild(tid);
-		if (child != NULL)
-		{
-			child->et_Parent = NULL;
-			Remove((struct Node *)child);
-		}
-		else
-		{
-				Permit();
-			return CHILD_NOTFOUND;
-		}
-		Permit();
-		}
-	}
+                if (tid == 0L)
+                {
+                        Forbid();
+                ForeachNode(&et->et_Children, child)
+                {
+                        /*
+                        Don't need to Remove(), because I'll blow away the entire
+                        list at the end of the loop.
+                        */
+                        child->et_Parent = NULL;
+                }
+                NEWLIST(&et->et_Children);
+                        Permit();
+                }
+                else
+                {
+                        Forbid();
+                child = FindChild(tid);
+                if (child != NULL)
+                {
+                        child->et_Parent = NULL;
+                        Remove((struct Node *)child);
+                }
+                else
+                {
+                                Permit();
+                        return CHILD_NOTFOUND;
+                }
+                Permit();
+                }
+        }
     return 0;
 
     AROS_LIBFUNC_EXIT

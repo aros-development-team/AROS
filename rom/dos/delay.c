@@ -54,14 +54,14 @@
     timermp.mp_Node.ln_Type = NT_MSGPORT;
     timermp.mp_Flags        = PA_SIGNAL;
     timermp.mp_SigBit       = SIGB_SINGLE;
-    timermp.mp_SigTask      = FindTask(NULL);    
+    timermp.mp_SigTask      = FindTask(NULL);
     NEWLIST(&timermp.mp_MsgList);
     
     /* clone timerequest in DOSBase */
     CopyMem(DOSBase->dl_TimeReq, &timerio, sizeof(timerio));
 
     timerio.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    timerio.tr_node.io_Message.mn_ReplyPort    = &timermp;    
+    timerio.tr_node.io_Message.mn_ReplyPort    = &timermp;
     timerio.tr_node.io_Command                 = TR_ADDREQUEST;
     timerio.tr_time.tv_secs                    = timeout / TICKS_PER_SECOND;
     timerio.tr_time.tv_micro                   = 1000000UL / TICKS_PER_SECOND * (timeout % TICKS_PER_SECOND);

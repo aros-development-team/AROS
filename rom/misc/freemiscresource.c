@@ -11,12 +11,12 @@
 
     NAME */
 
-	AROS_LH1(VOID , FreeMiscResource,
-		 AROS_LHA(ULONG,  unitNum, D0),
+        AROS_LH1(VOID , FreeMiscResource,
+                 AROS_LHA(ULONG,  unitNum, D0),
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	APTR, MiscBase, 2, Misc)
+        APTR, MiscBase, 2, Misc)
 
 /*  FUNCTION
 

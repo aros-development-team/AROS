@@ -18,7 +18,7 @@
 #include "dos_intern.h"
 #include "fs_driver.h"
 
-static LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 #define MAX_SOFT_LINK_NESTING 16 /* Maximum level of soft links nesting */
@@ -147,9 +147,9 @@ BOOL pseudoLock(CONST_STRPTR name, LONG lockMode, BPTR *lock, LONG *ret, struct 
 }
 
 
-/* Try to lock name recursively calling itself in case it's a soft link. 
+/* Try to lock name recursively calling itself in case it's a soft link.
    Store result in handle. Return boolean value indicating result. */
-static LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
+static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
     /* Get pointer to process structure */
@@ -194,12 +194,12 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
         error = fs_LocateObject(handle, port, lock, name, accessMode, DOSBase);
         SetIoErr(error);
     }
-    else 
+    else
     {
         filename++;
         do
         {
-            if ((dvp = GetDeviceProc(name, dvp)) == NULL) 
+            if ((dvp = GetDeviceProc(name, dvp)) == NULL)
             {
                 error = IoErr();
                 break;

@@ -105,16 +105,16 @@ LONG deviceError(LONG err)
     switch (err)
     {
     case 0:
-    	return 0;
+        return 0;
 
     case TDERR_WriteProt:
-    	return ERROR_DISK_WRITE_PROTECTED;
+        return ERROR_DISK_WRITE_PROTECTED;
 
     case TDERR_SeekError:
-    	return ERROR_SEEK_ERROR;
+        return ERROR_SEEK_ERROR;
     
     default:
-    	return ERROR_NOT_A_DOS_DISK;
+        return ERROR_NOT_A_DOS_DISK;
     }
 }
 
@@ -191,8 +191,8 @@ void setDosType(struct DosEnvec *de, ULONG type)
     case ID_FFS_DISK:
     case ID_INTER_FFS_DISK:
     case ID_SFS_BE_DISK:
-    	de->de_TableSize      = DE_BOOTBLOCKS;
-    	de->de_Reserved       = 2;
-    	de->de_BootBlocks     = 2;
+        de->de_TableSize      = DE_BOOTBLOCKS;
+        de->de_Reserved       = 2;
+        de->de_BootBlocks     = 2;
     }
 }

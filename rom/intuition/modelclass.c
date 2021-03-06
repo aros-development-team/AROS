@@ -35,9 +35,9 @@ IPTR ModelClass__OM_NEW(Class *cl, Object *o, Msg msg)
     
     if ((o = (Object *)DoSuperMethodA(cl, o, msg)))
     {
-	data = INST_DATA(cl, o);
+        data = INST_DATA(cl, o);
 
-	NEWLIST(&data->memberlist);
+        NEWLIST(&data->memberlist);
     };
     
     return (IPTR)o;
@@ -50,20 +50,20 @@ IPTR ModelClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
     for(;;)
     {
-	/* free all member objects */
+        /* free all member objects */
 
-	Object *member, *objstate;
-	ULONG method;
+        Object *member, *objstate;
+        ULONG method;
 
-	objstate = (Object *)data->memberlist.mlh_Head;
-	member = NextObject(&objstate);
-	if (!member) break;
+        objstate = (Object *)data->memberlist.mlh_Head;
+        member = NextObject(&objstate);
+        if (!member) break;
 
-	method = OM_REMOVE;
-	DoMethodA(member, (Msg)&method);
+        method = OM_REMOVE;
+        DoMethodA(member, (Msg)&method);
 
-	DisposeObject(member);
-	
+        DisposeObject(member);
+        
     }
     
     return DoSuperMethodA(cl, o, msg);
@@ -99,39 +99,39 @@ IPTR ModelClass__OM_UPDATE(Class *cl, Object *o, struct opUpdate *msg)
 
     if (!IsListEmpty(&data->memberlist))
     {
-	STACKULONG method = ICM_CHECKLOOP;
+        STACKULONG method = ICM_CHECKLOOP;
 
-	if (DoMethodA(o, (Msg)&method) == 0) /* avoid loops */
-	{
-	    struct TagItem *clonetags;
+        if (DoMethodA(o, (Msg)&method) == 0) /* avoid loops */
+        {
+            struct TagItem *clonetags;
 
-	    if ((clonetags = CloneTagItems(msg->opu_AttrList)))
-	    {
-		struct opUpdate  opu = *msg;
-		Object          *member, *objstate;
+            if ((clonetags = CloneTagItems(msg->opu_AttrList)))
+            {
+                struct opUpdate  opu = *msg;
+                Object          *member, *objstate;
 
-		opu.MethodID     = OM_UPDATE; /* not OM_NOTIFY! */
-		opu.opu_AttrList = clonetags;
+                opu.MethodID     = OM_UPDATE; /* not OM_NOTIFY! */
+                opu.opu_AttrList = clonetags;
 
-		method = ICM_SETLOOP;
-		DoMethodA(o, (Msg)&method);
+                method = ICM_SETLOOP;
+                DoMethodA(o, (Msg)&method);
 
-		objstate = (Object *)data->memberlist.mlh_Head;
-		while((member = NextObject(&objstate)))
-		{
-		    DoMethodA(member, (Msg)&opu);
+                objstate = (Object *)data->memberlist.mlh_Head;
+                while((member = NextObject(&objstate)))
+                {
+                    DoMethodA(member, (Msg)&opu);
 
-		    /* in case the member object poked around in the taglist: */
-		    RefreshTagItemClones(clonetags, msg->opu_AttrList);
-		}
+                    /* in case the member object poked around in the taglist: */
+                    RefreshTagItemClones(clonetags, msg->opu_AttrList);
+                }
 
-		method = ICM_CLEARLOOP;
-		DoMethodA(o, (Msg)&method);
+                method = ICM_CLEARLOOP;
+                DoMethodA(o, (Msg)&method);
 
-		FreeTagItems(clonetags);
-	    }
+                FreeTagItems(clonetags);
+            }
 
-	} /* if (DoMethod(o, ICM_CHECKLOOP) == 0) */
+        } /* if (DoMethod(o, ICM_CHECKLOOP) == 0) */
 
     } /* if (!IsListEmpty(&data->memberlist)) */
 

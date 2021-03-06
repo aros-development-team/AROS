@@ -14,12 +14,12 @@
 
     NAME */
 
-	AROS_LH0(VOID, WaitTOF,
+        AROS_LH0(VOID, WaitTOF,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 45, Graphics)
+        struct GfxBase *, GfxBase, 45, Graphics)
 
 /*  FUNCTION
 
@@ -49,7 +49,7 @@
     AROS_LIBFUNC_INIT
 
     struct Node wait;  /* We cannot use the task's node here as that is
-			  used to queue the task in Wait() */
+                          used to queue the task in Wait() */
 
     wait.ln_Name = (char *)FindTask(NULL);
     SetSignal(0, SIGF_SINGLE);

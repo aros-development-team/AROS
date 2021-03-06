@@ -11,23 +11,23 @@
 #include <graphics/text.h>
 #include <proto/graphics.h>
 
-	AROS_LH2(void, AskFont,
+        AROS_LH2(void, AskFont,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(struct TextAttr *, textAttr, A0),
+        AROS_LHA(struct RastPort *, rp, A1),
+        AROS_LHA(struct TextAttr *, textAttr, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 79, Graphics)
+        struct GfxBase *, GfxBase, 79, Graphics)
 
 /*  FUNCTION
-	Query the attributes of the current font in a RastPort.
+        Query the attributes of the current font in a RastPort.
 
     INPUTS
-	rp - Query this RastPort.
+        rp - Query this RastPort.
 
     RESULT
-	textAttr will contain a description of the font.
+        textAttr will contain a description of the font.
 
     NOTES
 

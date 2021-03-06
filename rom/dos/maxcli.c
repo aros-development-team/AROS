@@ -44,14 +44,14 @@
     AROS_LIBFUNC_INIT
     
     IPTR *taskarray = BADDR(DOSBase->dl_Root->rn_TaskArray);
-    /* 
+    /*
        The first IPTR in the taskarray contains the size of the
        taskarray = the max. number of processes the taskarray
-       can currently hold. 
+       can currently hold.
     */
     IPTR retval = taskarray[0];
     
-    /* 
+    /*
        Not all of the fields in the array may contain a valid
        pointer to a process and they might be NULL instead. So
        I search that array backwards until I find a valid entry.

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
 
-    Desc: Queue a beam-synchronized Blit 
+    Desc: Queue a beam-synchronized Blit
 */
 
 #include <proto/exec.h>
@@ -44,7 +44,7 @@
         blitter, a blitter is simulated. Therefore all code that will
         be executed in the function that is called must not contain
         code that is hacking the blitter's register but should contain
-        calls to graphics functions instead.      
+        calls to graphics functions instead.
 
     EXAMPLE
 
@@ -67,7 +67,7 @@
   Disable();
   
   if (NULL == GfxBase->bsblthd)
-  { 
+  {
     /* OwnBlitter() only if both lists are empty */
     if (NULL == GfxBase->blthd)
       OwnBlitter();
@@ -76,7 +76,7 @@
     GfxBase->bsblthd = bn;
     GfxBase->bsblttl = bn;
 
-    /* In this case the following also has to happen: 
+    /* In this case the following also has to happen:
        It is my understanding that at the end of every blit an interrupt
        occurs that can take care of any blits in this queue or allow
        a taks to wake up when it was blocked due to a call to OwnBlitter.
@@ -84,7 +84,7 @@
        time if no calls to blitterfunctions are made. Therefore this
        blit might be queued forever. To avoid this I have to cause
        a Blitter interrupt, if no task owns the blitter right now.
-       (BlitOwner) 
+       (BlitOwner)
     */
     /*
       !!! missing code here!! See explanation above!

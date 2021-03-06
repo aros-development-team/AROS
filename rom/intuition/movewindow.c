@@ -11,9 +11,9 @@
 struct MoveWindowActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-    LONG    	    	     dx;
-    LONG    	    	     dy;
+    struct Window           *window;
+    LONG                     dx;
+    LONG                     dy;
 };
 
 static VOID int_movewindow(struct MoveWindowActionMsg *msg,

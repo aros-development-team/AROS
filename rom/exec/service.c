@@ -44,8 +44,8 @@ void ServiceTask(struct ExecBase *SysBase)
              * So, currently we ignore this.
              */
 
-	    switch (task->tc_State)
-	    {
+            switch (task->tc_State)
+            {
 #if defined(__AROSEXEC_SMP__)
             case TS_TOMBSTONED:
                 if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (GetIntETask(serviceTask)->iet_CpuNumber== (IPTR)task->tc_UserData))

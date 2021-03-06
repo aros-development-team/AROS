@@ -69,10 +69,10 @@
 
     switch (msg->MethodID)
     {
-	case OM_NEW:
+        case OM_NEW:
             iclass = (Class *) o;
-	    
-            /* 
+            
+            /*
                 Get memory for the instance data. The class knows how much is
                 needed. NOTE: The object argument is actually the class!
             */
@@ -84,49 +84,49 @@
 
             if (o)
             {
-        	_OBJ(o)->o_Class = iclass;
+                _OBJ(o)->o_Class = iclass;
 
-        	AROS_ATOMIC_INC(iclass->cl_ObjectCount);
+                AROS_ATOMIC_INC(iclass->cl_ObjectCount);
 
-        	retval = (IPTR) BASEOBJECT(o);
+                retval = (IPTR) BASEOBJECT(o);
             }
             break;
 
-	case OM_DISPOSE:
-            /* 
+        case OM_DISPOSE:
+            /*
                 Free memory. Caller is responsible that everything else
-                is already cleared! 
+                is already cleared!
             */
             iclass = OCLASS(o);
 
             free
             (
-        	iclass->cl_MemoryPool, _OBJECT(o), iclass->cl_ObjectSize
+                iclass->cl_MemoryPool, _OBJECT(o), iclass->cl_ObjectSize
             );
             
             AROS_ATOMIC_DEC(iclass->cl_ObjectCount);
             break;
 
-	case OM_ADDTAIL:
+        case OM_ADDTAIL:
             /* Add <o> to list. */
             AddTail (((struct opAddTail *)msg)->opat_List, (struct Node *) _OBJECT(o));
             retval = TRUE;
             break;
 
-	case OM_REMOVE:
+        case OM_REMOVE:
             /* Remove object from list. */
             Remove ((struct Node *) _OBJECT(o));
             retval = TRUE;
             break;
 
-	case OM_SET:
-	case OM_GET:
-	case OM_UPDATE:
-	case OM_NOTIFY:
-	case OM_ADDMEMBER:
-	case OM_REMMEMBER:
+        case OM_SET:
+        case OM_GET:
+        case OM_UPDATE:
+        case OM_NOTIFY:
+        case OM_ADDMEMBER:
+        case OM_REMMEMBER:
 
-	default:
+        default:
             /* Ignore */
             break;
 

@@ -20,38 +20,38 @@
 
     NAME */
 
-	AROS_LH1(ULONG, Wait,
+        AROS_LH1(ULONG, Wait,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, signalSet, D0),
+        AROS_LHA(ULONG, signalSet, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 53, Exec)
+        struct ExecBase *, SysBase, 53, Exec)
 
 /*  FUNCTION
-	Wait until some signals are sent to the current task. If any signal
-	of the specified set is already set when entering this function it
-	returns immediately. Since almost any event in the OS can send a
-	signal to your task if you specify it to do so signals are a very
-	powerful mechanism.
+        Wait until some signals are sent to the current task. If any signal
+        of the specified set is already set when entering this function it
+        returns immediately. Since almost any event in the OS can send a
+        signal to your task if you specify it to do so signals are a very
+        powerful mechanism.
 
     INPUTS
-	signalSet - The set of signals to wait for.
+        signalSet - The set of signals to wait for.
 
     RESULT
-	The set of active signals.
+        The set of active signals.
 
     NOTES
-	Naturally it's not allowed to wait in supervisor mode.
+        Naturally it's not allowed to wait in supervisor mode.
 
-	Calling Wait() breaks an active Disable() or Forbid().
+        Calling Wait() breaks an active Disable() or Forbid().
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	Signal(), SetSignal(), AllocSignal(), FreeSignal()
+        Signal(), SetSignal(), AllocSignal(), FreeSignal()
 
     INTERNALS
 
@@ -70,8 +70,8 @@
     /* If at least one of the signals is already set do not wait. */
     while (!(thisTask->tc_SigRecvd & signalSet))
     {
-	/* Set the wait signal mask */
-	thisTask->tc_SigWait = signalSet;
+        /* Set the wait signal mask */
+        thisTask->tc_SigWait = signalSet;
 
         D(bug("[Exec] Wait: Moving '%s' @ 0x%p to Task Wait queue\n", thisTask->tc_Node.ln_Name, thisTask);)
         D(bug("[Exec] Wait: Task state = %08x\n", thisTask->tc_State);)
@@ -91,18 +91,18 @@
         Enqueue(&SysBase->TaskWait, &thisTask->tc_Node);
 #endif
 
-	/* And switch to the next ready task. */
-	KrnSwitch();
+        /* And switch to the next ready task. */
+        KrnSwitch();
 
-	/*
-	    OK. Somebody awakened us. This means that either the
-	    signals are there or it's just a finished task exception.
-	    Test again to be sure (see above).
-	*/
+        /*
+            OK. Somebody awakened us. This means that either the
+            signals are there or it's just a finished task exception.
+            Test again to be sure (see above).
+        */
         D(bug("[Exec] Wait: Awoken...\n");)
 
-	/* Restore TDNestCnt. */
-	TDNESTCOUNT_SET(thisTask->tc_TDNestCnt);
+        /* Restore TDNestCnt. */
+        TDNESTCOUNT_SET(thisTask->tc_TDNestCnt);
     }
     /* Get active signals. */
     rcvd = (thisTask->tc_SigRecvd & signalSet);

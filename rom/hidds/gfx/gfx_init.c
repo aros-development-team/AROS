@@ -45,42 +45,42 @@
 */
 
 #define PFAF(x) (1L << aoHidd_PixFmt_ ## x)
-#define PF_COMMON_AF (   PFAF(Depth) | PFAF(BitsPerPixel) | PFAF(BytesPerPixel)	\
-		       | PFAF(ColorModel) | PFAF(BitMapType) )
-		       
+#define PF_COMMON_AF (   PFAF(Depth) | PFAF(BitsPerPixel) | PFAF(BytesPerPixel) \
+                       | PFAF(ColorModel) | PFAF(BitMapType) )
+                       
 #define PF_TRUECOLOR_AF ( PFAF(RedMask)  | PFAF(GreenMask)  | PFAF(BlueMask)  | PFAF(AlphaMask) | \
-			  PFAF(RedShift) | PFAF(GreenShift) | PFAF(BlueShift) | PFAF(AlphaShift))
-			  
+                          PFAF(RedShift) | PFAF(GreenShift) | PFAF(BlueShift) | PFAF(AlphaShift))
+                          
 #define PF_PALETTE_AF ( PFAF(CLUTMask) | PFAF(CLUTShift) | PFAF(RedMask) | PFAF(GreenMask) | \
-			PFAF(BlueMask) )
-		       
+                        PFAF(BlueMask) )
+                       
 #define PFAO(x) (aoHidd_PixFmt_ ## x)
   
 /****************************************************************************************/
 
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
-    	    	       ULONG ATTRCHECK(pixfmt), struct class_static_data *csd)
+                       ULONG ATTRCHECK(pixfmt), struct class_static_data *csd)
 {
     IPTR attrs[num_Hidd_PixFmt_Attrs] = {0};
     struct Library *OOPBase = csd->cs_OOPBase;
 
     if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_PixFmt_Attrs,
-    	    	    	    &ATTRCHECK(pixfmt), HiddPixFmtAttrBase))
+                            &ATTRCHECK(pixfmt), HiddPixFmtAttrBase))
     {
-	D(bug("!!! parse_pixfmt_tags: ERROR PARSING TAGS THROUGH OOP_ParseAttrs !!!\n"));
-	return FALSE;
+        D(bug("!!! parse_pixfmt_tags: ERROR PARSING TAGS THROUGH OOP_ParseAttrs !!!\n"));
+        return FALSE;
     }
 
     if (PF_COMMON_AF != (PF_COMMON_AF & ATTRCHECK(pixfmt)))
     {
-	D(bug("!!! parse_pixfmt_tags: Missing PixFmt attributes passed to parse_pixfmt_tags(): %x !!!\n", ATTRCHECK(pixfmt)));
-	return FALSE;
+        D(bug("!!! parse_pixfmt_tags: Missing PixFmt attributes passed to parse_pixfmt_tags(): %x !!!\n", ATTRCHECK(pixfmt)));
+        return FALSE;
     }
     
     /* Set the common attributes */
-    pf->depth		= attrs[PFAO(Depth)];
-    pf->size		= attrs[PFAO(BitsPerPixel)];
-    pf->bytes_per_pixel	= attrs[PFAO(BytesPerPixel)];
+    pf->depth           = attrs[PFAO(Depth)];
+    pf->size            = attrs[PFAO(BitsPerPixel)];
+    pf->bytes_per_pixel = attrs[PFAO(BytesPerPixel)];
     /* Fill in only real StdPixFmt specification. Special values (Native and Native32)
        are not allowed here */
     if (attrs[PFAO(StdPixFmt)] >= num_Hidd_PseudoStdPixFmt)
@@ -91,50 +91,50 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
     
     if (ATTRCHECK(pixfmt) & PFAF(SwapPixelBytes))
     {
-    	SET_PF_SWAPPIXELBYTES_FLAG(pf, attrs[PFAO(SwapPixelBytes)]);
+        SET_PF_SWAPPIXELBYTES_FLAG(pf, attrs[PFAO(SwapPixelBytes)]);
     }
     
     /* Set the colormodel specific stuff */
     switch (HIDD_PF_COLMODEL(pf))
     {
-    	case vHidd_ColorModel_TrueColor:
-	    /* Check that we got all the truecolor describing stuff */
-	    if (PF_TRUECOLOR_AF != (PF_TRUECOLOR_AF & ATTRCHECK(pixfmt)))
-	    {
-		 D(bug("!!! Unsufficient true color format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n"));
-		 return FALSE;
-	    }
-	    
-	    /* Set the truecolor stuff */
-	    pf->red_mask	= attrs[PFAO(RedMask)];
-	    pf->green_mask	= attrs[PFAO(GreenMask)];
-	    pf->blue_mask	= attrs[PFAO(BlueMask)];
-	    pf->alpha_mask	= attrs[PFAO(AlphaMask)];
-	    
-	    pf->red_shift	= attrs[PFAO(RedShift)];
-	    pf->green_shift	= attrs[PFAO(GreenShift)];
-	    pf->blue_shift	= attrs[PFAO(BlueShift)];
-	    pf->alpha_shift	= attrs[PFAO(AlphaShift)];
-	    break;
-	
-	case vHidd_ColorModel_Palette:
-	case vHidd_ColorModel_StaticPalette:
-	    if ( PF_PALETTE_AF != (PF_PALETTE_AF & ATTRCHECK(pixfmt)))
-	    {
-		 D(bug("!!! Unsufficient palette format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n"));
-		 return FALSE;
-	    }
-	    
-	    /* set palette stuff */
-	    pf->clut_mask	= attrs[PFAO(CLUTMask)];
-	    pf->clut_shift	= attrs[PFAO(CLUTShift)];
+        case vHidd_ColorModel_TrueColor:
+            /* Check that we got all the truecolor describing stuff */
+            if (PF_TRUECOLOR_AF != (PF_TRUECOLOR_AF & ATTRCHECK(pixfmt)))
+            {
+                 D(bug("!!! Unsufficient true color format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n"));
+                 return FALSE;
+            }
+            
+            /* Set the truecolor stuff */
+            pf->red_mask        = attrs[PFAO(RedMask)];
+            pf->green_mask      = attrs[PFAO(GreenMask)];
+            pf->blue_mask       = attrs[PFAO(BlueMask)];
+            pf->alpha_mask      = attrs[PFAO(AlphaMask)];
+            
+            pf->red_shift       = attrs[PFAO(RedShift)];
+            pf->green_shift     = attrs[PFAO(GreenShift)];
+            pf->blue_shift      = attrs[PFAO(BlueShift)];
+            pf->alpha_shift     = attrs[PFAO(AlphaShift)];
+            break;
+        
+        case vHidd_ColorModel_Palette:
+        case vHidd_ColorModel_StaticPalette:
+            if ( PF_PALETTE_AF != (PF_PALETTE_AF & ATTRCHECK(pixfmt)))
+            {
+                 D(bug("!!! Unsufficient palette format describing attrs to pixfmt in parse_pixfmt_tags() !!!\n"));
+                 return FALSE;
+            }
+            
+            /* set palette stuff */
+            pf->clut_mask       = attrs[PFAO(CLUTMask)];
+            pf->clut_shift      = attrs[PFAO(CLUTShift)];
 
-	    pf->red_mask	= attrs[PFAO(RedMask)];
-	    pf->green_mask	= attrs[PFAO(GreenMask)];
-	    pf->blue_mask	= attrs[PFAO(BlueMask)];
+            pf->red_mask        = attrs[PFAO(RedMask)];
+            pf->green_mask      = attrs[PFAO(GreenMask)];
+            pf->blue_mask       = attrs[PFAO(BlueMask)];
 
-	    break;
-	    
+            break;
+            
     } /* shift (colormodel) */
     
     return TRUE;
@@ -142,7 +142,7 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
 
 /****************************************************************************************/
 
-/* 
+/*
     Create an empty object and initialize it the "ugly" way. This only works with
     CLID_Hidd_PixFmt and CLID_Hidd_Sync classes
 */
@@ -150,18 +150,18 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
 /****************************************************************************************/
 
 static OOP_Object *create_and_init_object(OOP_Class *cl, UBYTE *data, ULONG datasize,
-    	    	    	    	    	  struct class_static_data *csd)
+                                          struct class_static_data *csd)
 {
     OOP_Object *o;
     struct Library *OOPBase = csd->cs_OOPBase;
-			
+                        
     o = OOP_NewObject(cl, NULL, NULL);
     if (NULL == o)
     {
-	D(bug("!!! UNABLE TO CREATE OBJECT IN create_and_init_object() !!!\n"));
-	return NULL;
+        D(bug("!!! UNABLE TO CREATE OBJECT IN create_and_init_object() !!!\n"));
+        return NULL;
     }
-	    
+            
     memcpy(o, data, datasize);
     
     return o;
@@ -175,7 +175,7 @@ static VOID delete_pixfmts(struct class_static_data *csd)
     struct Library *OOPBase = csd->cs_OOPBase;
 
     ForeachNodeSafe(&csd->pflist, n, safe)
-	OOP_DisposeObject((OOP_Object *)PIXFMT_OBJ(n));
+        OOP_DisposeObject((OOP_Object *)PIXFMT_OBJ(n));
 }
 
 /****************************************************************************************/
@@ -192,17 +192,17 @@ static BOOL create_std_pixfmts(struct class_static_data *csd)
     {
         pf = (struct pixfmt_data *)create_and_init_object(csd->pixfmtclass, (UBYTE *)&stdpfs[i],  sizeof (stdpfs[i]), csd);
 
-	if (!pf)
-	{
-	    D(bug("FAILED TO CREATE PIXEL FORMAT %d\n", i));
-	    delete_pixfmts(csd);
-	    ReturnBool("create_stdpixfmts", FALSE);
-	}
+        if (!pf)
+        {
+            D(bug("FAILED TO CREATE PIXEL FORMAT %d\n", i));
+            delete_pixfmts(csd);
+            ReturnBool("create_stdpixfmts", FALSE);
+        }
 
-	csd->std_pixfmts[i] = &pf->pf;
-	/* We don't use semaphore protection here because we do this only during class init stage */
-	pf->refcount = 1;
-	AddTail((struct List *)&csd->pflist, (struct Node *)&pf->node);
+        csd->std_pixfmts[i] = &pf->pf;
+        /* We don't use semaphore protection here because we do this only during class init stage */
+        pf->refcount = 1;
+        AddTail((struct List *)&csd->pflist, (struct Node *)&pf->node);
     }
     ReturnBool("create_stdpixfmts", TRUE);
 }
@@ -232,9 +232,9 @@ static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR const *interfaces
     
     for (i = 0; i < count; i++)
     {
-    	bases[i] = OOP_ObtainAttrBase(interfaces[i]);
-    	if (!bases[i])
-    	    failed++;
+        bases[i] = OOP_ObtainAttrBase(interfaces[i]);
+        if (!bases[i])
+            failed++;
     }
     
     return failed;
@@ -246,8 +246,8 @@ static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR const *interfaces
     
     for (i = 0; i < count; i++)
     {
-    	if (bases[i])
-    	    OOP_ReleaseAttrBase(interfaces[i]);
+        if (bases[i])
+            OOP_ReleaseAttrBase(interfaces[i]);
     }
 }
 
@@ -258,9 +258,9 @@ static ULONG GetMethodBases(OOP_MethodID *bases, CONST_STRPTR const *interfaces,
 
     for (i = 0; i < count; i++)
     {
-    	bases[i] = OOP_GetMethodID(interfaces[i], 0);
-    	if (bases[i] == -1)
-    	    failed++;
+        bases[i] = OOP_GetMethodID(interfaces[i], 0);
+        if (bases[i] == -1)
+            failed++;
     }
 
     return failed;
@@ -285,19 +285,19 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
     if (!(csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY)))
     {
         D(bug("[HiddGfx] %s: failed to open utility.library\n", __func__));
-	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
+        ReturnInt("init_gfxhiddclass", ULONG, FALSE);
     }
  
     if (ObtainAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES, OOPBase))
     {
         D(bug("[HiddGfx] %s: Failed to obtain class Attribute Bases\n", __func__));
-	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
+        ReturnInt("init_gfxhiddclass", ULONG, FALSE);
     }
 
     if (GetMethodBases(csd->methodBases, interfaces, NUM_METHODBASES, OOPBase))
     {
         D(bug("[HiddGfx] %s: Failed to obtain class Method Bases\n", __func__));
-	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
+        ReturnInt("init_gfxhiddclass", ULONG, FALSE);
     }
 
     InitSemaphore(&csd->sema);
@@ -318,7 +318,7 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
         return TRUE;
     }
 
-    ReturnInt("init_gfxhiddclass", BOOL, FALSE);    
+    ReturnInt("init_gfxhiddclass", BOOL, FALSE);
 }
 
 /****************************************************************************************/

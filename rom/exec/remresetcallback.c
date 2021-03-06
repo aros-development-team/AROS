@@ -13,25 +13,25 @@
 
     NAME */
 
-	AROS_LH1I(void, RemResetCallback,
+        AROS_LH1I(void, RemResetCallback,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Interrupt *, interrupt, A0),
+        AROS_LHA(struct Interrupt *, interrupt, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 168, Exec)
+        struct ExecBase *, SysBase, 168, Exec)
 
 /*  FUNCTION
-	Remove reset handler previously installed using AddResetCallBack()
+        Remove reset handler previously installed using AddResetCallBack()
 
     INPUTS
-	interrupt - A pointer to an Interrupt structure
+        interrupt - A pointer to an Interrupt structure
 
     RESULT
-	None.
+        None.
 
     NOTES
-	This function is compatible with AmigaOS v4.
+        This function is compatible with AmigaOS v4.
 
     EXAMPLE
 

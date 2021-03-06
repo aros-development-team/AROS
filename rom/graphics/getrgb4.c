@@ -11,26 +11,26 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(ULONG, GetRGB4,
+        AROS_LH2(ULONG, GetRGB4,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ColorMap *, colormap, A0),
-	AROS_LHA(LONG             , entry   , D0),
+        AROS_LHA(struct ColorMap *, colormap, A0),
+        AROS_LHA(LONG             , entry   , D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 97, Graphics)
+        struct GfxBase *, GfxBase, 97, Graphics)
 
 /*  FUNCTION
-	Read a value from the ColorMap. Use this function, as the colormap
-	is subject to change.
+        Read a value from the ColorMap. Use this function, as the colormap
+        is subject to change.
 
     INPUTS
-	colormap - pointer to ColorMap structure
-	entry	 - index into colormap
+        colormap - pointer to ColorMap structure
+        entry    - index into colormap
 
     RESULT
-	-1 	: if no valid entry. (index too high)
-	other	: UWORD RGB value, 4 bits per electron gun, right justified
+        -1      : if no valid entry. (index too high)
+        other   : UWORD RGB value, 4 bits per electron gun, right justified
 
     NOTES
 
@@ -39,10 +39,10 @@
     BUGS
 
     SEE ALSO
-	GetColorMap(), FreeColorMap(), SetRGB4(), LoadRGB4(), graphics/view.h
+        GetColorMap(), FreeColorMap(), SetRGB4(), LoadRGB4(), graphics/view.h
 
     INTERNALS
-	This function depends on the structure of ColorMap->ColorTable.
+        This function depends on the structure of ColorMap->ColorTable.
 
     HISTORY
 

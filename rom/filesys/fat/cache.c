@@ -4,20 +4,20 @@
     Disk cache.
  */
 
-/* 
+/*
  * This is an LRU copyback cache.
  *
  * The cache consists of a fixed number of cache blocks, each of which can
  * hold a contiguous range of disk blocks (each range is of a fixed
  * length). Each range is addressed by its base block number, calculated by
  * applying a mask to the requested block number.
- * 
+ *
  * Each cache block contains two Exec list nodes, so it can be part of two
  * lists simultaneously. The first node links a block into a hash table
  * list, while the second links it into either the free list or the dirty
  * list. Initially, all cache blocks are present in the free list, and are
  * absent from the hash table.
- * 
+ *
  * When a disk block is requested by the client, the range that contains
  * that disk block is calculated. The range is then sought by looking up
  * the hash table. Each position in the hash table holds a list containing
@@ -25,26 +25,26 @@
  * blocks are not used internally) that map to that hash location. Each
  * list in the hash table is typically very short, so look-up time is
  * quick.
- * 
+ *
  * If the requested range is not in the hash table, a cache block is
  * removed from the head of the free list and from any hash table list it
  * is in, and used to read the appropriate range from disk. This block is
  * then added to the hash table at its new location.
- * 
+ *
  * Two elements are returned to the client when a requested block is found:
  * an opaque cache block handle, and a pointer to the data buffer.
- * 
+ *
  * When a range is freed, it remains in the hash table so that it can be
  * found quickly if needed again. Unless dirty, it is also added to the
  * tail of the free list through its second list node. The block then
  * remains in the hash table until reused for a different range.
- * 
+ *
  * If a disk block is marked dirty by the client, the entire containing
  * range is marked dirty and added to the tail of the dirty list through
  * the cache block's second node. The dirty list is flushed periodically
  * (currently once per second), and additionally whenever the free list
  * becomes empty.
- * 
+ *
  */
 
 #include <dos/dos.h>

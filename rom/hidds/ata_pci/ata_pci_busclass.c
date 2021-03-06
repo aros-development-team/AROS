@@ -133,7 +133,7 @@ OOP_Object *PCIATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
                 HIDD_PCIDriver_FreePCIMem(data->pciDriver, data->dmaBuf);
                 data->dmaBuf = NULL;
             }
-	    D(bug("[ATA:PCI:Bus] %s: DMA Buf @ 0x%p\n", __func__, data->dmaBuf));
+            D(bug("[ATA:PCI:Bus] %s: DMA Buf @ 0x%p\n", __func__, data->dmaBuf));
         }
 nodma:
         if (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED)
@@ -340,7 +340,7 @@ APTR PCIATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_M
     dma = (struct dma_data *)OOP_DoSuperMethod(cl, o, msg);
     if (dma)
     {
-	D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: DMA private data @ 0x%p\n", dma));
+        D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: DMA private data @ 0x%p\n", dma));
 
         dma->au_DMAPort = (port_t)data->bus->atapb_DMABase;
         dma->ab_PRD     = data->dmaBuf;

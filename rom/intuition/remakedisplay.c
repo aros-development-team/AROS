@@ -45,8 +45,8 @@
 
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Screen   *screen;
-    ULONG   	     ilock = LockIBase(0);
-    LONG    	     failure = 0;
+    ULONG            ilock = LockIBase(0);
+    LONG             failure = 0;
 
     for (screen = IntuitionBase->FirstScreen; screen; screen = screen->NextScreen)
     {

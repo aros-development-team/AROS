@@ -26,7 +26,7 @@
         AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct TaskResBase *, TaskResBase, 2, Task)
+        struct TaskResBase *, TaskResBase, 2, Task)
 
 /*  FUNCTION
         Frees a lock on the task lists given by LockTaskList().

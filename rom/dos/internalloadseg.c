@@ -82,7 +82,7 @@
 
     #define SEGFUNC(id, format) {id, InternalLoadSeg_##format D(, (STRPTR)#format)}
     
-    static const segfunc_t funcs[] = 
+    static const segfunc_t funcs[] =
     {
         SEGFUNC(0x7f454c46, ELF),
         SEGFUNC(0x000003f3, AOS)
@@ -166,7 +166,7 @@ APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG req)
         
     /* Note that the result is ULONG-aligned even on 64 bits! */
     *((ULONG*)p) = (ULONG)size;
-    return p + sizeof(ULONG);       
+    return p + sizeof(ULONG);
 }
 
 void _ilsFreeVec(SIPTR *funcarray, void *buf)

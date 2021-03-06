@@ -70,7 +70,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
     
     LIBBASE->hash_table = AllocMem(GFXASSOCIATE_HASHSIZE * sizeof(APTR), MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
-	return FALSE;
+        return FALSE;
 
     LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
     LIBBASE->ActiViewCprSemaphore = &PrivGBase(GfxBase)->view_sema;
@@ -86,10 +86,10 @@ static int GfxInit(struct GfxBase *LIBBASE)
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );
     if (!(PrivGBase(GfxBase)->regionpool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
-						      sizeof(struct Region) * 20,
-						      sizeof(struct Region) * 20)))
+                                                      sizeof(struct Region) * 20,
+                                                      sizeof(struct Region) * 20)))
     {
-    	return FALSE;
+        return FALSE;
     }
 
     NEWLIST(&PrivGBase(GfxBase)->ChunkPoolList);
@@ -116,7 +116,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
 
     if (!LIBBASE->DefaultFont)
     {
-    	struct TextAttr sysTA;
+        struct TextAttr sysTA;
         sysTA.ta_Name  = (STRPTR)SYSFONTNAME;
         sysTA.ta_YSize = 8;
         sysTA.ta_Style = FS_NORMAL;
@@ -133,16 +133,16 @@ static int GfxOpen(struct GfxBase *LIBBASE)
 
     if(! LIBBASE->VBlank)
     {
-	NEWLIST(&LIBBASE->TOF_WaitQ);
-	LIBBASE->vbsrv.is_Code         = (VOID_FUNC)TOF_VBlank;
-	LIBBASE->vbsrv.is_Data         = LIBBASE;
-	LIBBASE->vbsrv.is_Node.ln_Name = "Graphics TOF server";
-	LIBBASE->vbsrv.is_Node.ln_Pri  = 10;
-	LIBBASE->vbsrv.is_Node.ln_Type = NT_INTERRUPT;
-	
-	/* Add a VBLANK server to take care of TOF waiting tasks. */
-	AddIntServer(INTB_VERTB, &LIBBASE->vbsrv);
-	LIBBASE->VBlank = 50;
+        NEWLIST(&LIBBASE->TOF_WaitQ);
+        LIBBASE->vbsrv.is_Code         = (VOID_FUNC)TOF_VBlank;
+        LIBBASE->vbsrv.is_Data         = LIBBASE;
+        LIBBASE->vbsrv.is_Node.ln_Name = "Graphics TOF server";
+        LIBBASE->vbsrv.is_Node.ln_Pri  = 10;
+        LIBBASE->vbsrv.is_Node.ln_Type = NT_INTERRUPT;
+        
+        /* Add a VBLANK server to take care of TOF waiting tasks. */
+        AddIntServer(INTB_VERTB, &LIBBASE->vbsrv);
+        LIBBASE->VBlank = 50;
     }
 
     return TRUE;
@@ -162,10 +162,10 @@ AROS_INTH1(TOF_VBlank, struct GfxBase *, GfxBase)
     GfxBase->VBCounter++;
     if(!IsListEmpty(&GfxBase->TOF_WaitQ))
     {
-	ForeachNode(&GfxBase->TOF_WaitQ, tNode)
-	{
-	    Signal((struct Task *)tNode->ln_Name, SIGF_SINGLE);
-	}
+        ForeachNode(&GfxBase->TOF_WaitQ, tNode)
+        {
+            Signal((struct Task *)tNode->ln_Name, SIGF_SINGLE);
+        }
     }
 
     return 0;

@@ -12,17 +12,17 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH3(ULONG, secGetRelationshipA,
+        AROS_LH3(ULONG, secGetRelationshipA,
 
 /*  SYNOPSIS */
-	/* (user, owner, taglist) */
-	AROS_LHA(struct secExtOwner *, user, D0),
-	AROS_LHA(ULONG, owner, D1),
-	AROS_LHA(struct TagItem *, taglist, A0),
+        /* (user, owner, taglist) */
+        AROS_LHA(struct secExtOwner *, user, D0),
+        AROS_LHA(ULONG, owner, D1),
+        AROS_LHA(struct TagItem *, taglist, A0),
 
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 23, Security)
+        struct SecurityBase *, secBase, 23, Security)
 
 /*  FUNCTION
 

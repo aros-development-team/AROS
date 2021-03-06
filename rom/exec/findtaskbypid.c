@@ -15,27 +15,27 @@
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH1(struct Task *, FindTaskByPID,
+        AROS_LH1(struct Task *, FindTaskByPID,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, id, D0),
+        AROS_LHA(ULONG, id, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 166, Exec)
+        struct ExecBase *, SysBase, 166, Exec)
 
 /*  FUNCTION
-	Scan through the task lists searching for the task whose
-	et_UniqueID field matches.
+        Scan through the task lists searching for the task whose
+        et_UniqueID field matches.
 
     INPUTS
-	id	-   The task ID to match.
+        id      -   The task ID to match.
 
     RESULT
-	Address of the Task control structure that matches, or
-	NULL otherwise.
+        Address of the Task control structure that matches, or
+        NULL otherwise.
 
     NOTES
-    	This function is source-compatible with MorphOS.
+        This function is source-compatible with MorphOS.
 
     EXAMPLE
 
@@ -63,11 +63,11 @@
     ForeachNode(&PrivExecBase(SysBase)->TaskRunning, t)
     {
         D(bug("[EXEC] %s: trying Running Task @ 0x%p\n", __func__, t);)
-	et = GetETask(t);
-	if (et != NULL && et->et_UniqueID == id)
+        et = GetETask(t);
+        if (et != NULL && et->et_UniqueID == id)
         {
             EXEC_UNLOCK_AND_ENABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-	    return t;
+            return t;
         }
     }
     EXEC_UNLOCK_AND_ENABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock);
@@ -76,11 +76,11 @@
     ForeachNode(&PrivExecBase(SysBase)->TaskSpinning, t)
     {
         D(bug("[EXEC] %s: trying Spinning Task @ 0x%p\n", __func__, t);)
-	et = GetETask(t);
-	if (et != NULL && et->et_UniqueID == id)
+        et = GetETask(t);
+        if (et != NULL && et->et_UniqueID == id)
         {
             EXEC_UNLOCK_AND_ENABLE(&PrivExecBase(SysBase)->TaskSpinningLock);
-	    return t;
+            return t;
         }
     }
     EXEC_UNLOCK_AND_ENABLE(&PrivExecBase(SysBase)->TaskSpinningLock);
@@ -91,27 +91,27 @@
     if ((t = thisTask) != NULL)
     {
         D(bug("[EXEC] %s: trying ThisTask @ 0x%p\n", __func__, t);)
-	et = GetETask(t);
-	if (et != NULL && et->et_UniqueID == id)
+        et = GetETask(t);
+        if (et != NULL && et->et_UniqueID == id)
         {
             Enable();
-	    return t;
+            return t;
         }
     }
 #endif
-    /*	Next, go through the ready list */
+    /*  Next, go through the ready list */
     ForeachNode(&SysBase->TaskReady, t)
     {
         D(bug("[EXEC] %s: trying Ready Task @ 0x%p\n", __func__, t);)
-	et = GetETask(t);
-	if (et != NULL && et->et_UniqueID == id)
+        et = GetETask(t);
+        if (et != NULL && et->et_UniqueID == id)
         {
 #if defined(__AROSEXEC_SMP__)
             EXEC_UNLOCK_AND_ENABLE(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #else
             Enable();
 #endif
-	    return t;
+            return t;
         }
     }
 #if defined(__AROSEXEC_SMP__)
@@ -124,15 +124,15 @@
     {
         D(bug("[EXEC] %s: trying Waiting Task @ 0x%p\n", __func__, t);)
 
-	et = GetETask(t);
-	if (et != NULL && et->et_UniqueID == id)
+        et = GetETask(t);
+        if (et != NULL && et->et_UniqueID == id)
         {
 #if defined(__AROSEXEC_SMP__)
             EXEC_UNLOCK_AND_ENABLE(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #else
             Enable();
 #endif
-	    return t;
+            return t;
         }
     }
 

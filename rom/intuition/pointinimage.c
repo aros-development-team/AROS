@@ -48,10 +48,10 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    BOOL    	    	result = FALSE;
-    WORD    	    	X = (point >> 16L);
-    WORD    	    	Y =  point & 0x0000FFFFL;
-    struct impHitTest 	method;
+    BOOL                result = FALSE;
+    WORD                X = (point >> 16L);
+    WORD                Y =  point & 0x0000FFFFL;
+    struct impHitTest   method;
 
     if (image != NULL)
     {
@@ -60,7 +60,7 @@
             method.MethodID    = IM_HITTEST;
             method.imp_Point.X = X;
             method.imp_Point.Y = Y;
-	    
+            
             result = DoMethodA((Object *)image, (Msg)&method) != 0;
         }
         else

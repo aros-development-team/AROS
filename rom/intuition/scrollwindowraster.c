@@ -19,7 +19,7 @@
 struct ScrollWindowRasterMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
+    struct Window           *window;
 };
 
 static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
@@ -169,10 +169,10 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
                     affected by the scroll
 
     RESULT
-	None.
+        None.
 
     NOTES
-	This function is compatible with MorphOS.
+        This function is compatible with MorphOS.
 
     EXAMPLE
 

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <devices/keymap.h>
@@ -194,7 +194,7 @@ static CONST UBYTE hikeymaptypes[] =
   2 = `
   3 = ^
   4 = ~
-  5 = " 
+  5 = "
   6 = °
   
 */
@@ -313,62 +313,62 @@ STATIC CONST UBYTE n_descr[] =
 
 STATIC CONST UBYTE f_descr[] =
 {
-    0, 'f', 
-    0, 'F', 
+    0, 'f',
+    0, 'F',
     DPF_DEAD, 1,
     DPF_DEAD, 1,
-    0, 0x6, 
-    0, 0x6, 
-    0, 0x86, 
-    0, 0x86, 
+    0, 0x6,
+    0, 0x6,
+    0, 0x86,
+    0, 0x86,
 };
 
 STATIC CONST UBYTE g_descr[] =
 {
-    0, 'g', 
-    0, 'G', 
+    0, 'g',
+    0, 'G',
     DPF_DEAD, 2,
     DPF_DEAD, 2,
-    0, 0x7, 
-    0, 0x7, 
-    0, 0x87, 
-    0, 0x87, 
+    0, 0x7,
+    0, 0x7,
+    0, 0x87,
+    0, 0x87,
 };
 
 STATIC CONST UBYTE h_descr[] =
 {
-    0, 'h', 
-    0, 'H', 
+    0, 'h',
+    0, 'H',
     DPF_DEAD, 3,
     DPF_DEAD, 3,
-    0, 0x8, 
-    0, 0x8, 
-    0, 0x88, 
-    0, 0x88, 
+    0, 0x8,
+    0, 0x8,
+    0, 0x88,
+    0, 0x88,
 };
 
 STATIC CONST UBYTE j_descr[] =
 {
-    0, 'j', 
-    0, 'J', 
+    0, 'j',
+    0, 'J',
     DPF_DEAD, 4,
     DPF_DEAD, 4,
-    0, 0xa, 
-    0, 0xa, 
-    0, 0x8a, 
-    0, 0x8a, 
+    0, 0xa,
+    0, 0xa,
+    0, 0x8a,
+    0, 0x8a,
 };
 
 STATIC CONST UBYTE k_descr[] =
 {
-    0, 'k', 
-    0, 'K', 
+    0, 'k',
+    0, 'K',
     DPF_DEAD, 5,
     DPF_DEAD, 5,
-    0, 0xb, 
-    0, 0xb, 
-    0, 0x8b, 
-    0, 0x8b, 
+    0, 0xb,
+    0, 0xb,
+    0, 0x8b,
+    0, 0x8b,
 };
 
 
@@ -459,7 +459,7 @@ static CONST IPTR lokeymap[] =
 ** ..
 ** ..
 **
-** The number of strings depends on the qualifier flags 
+** The number of strings depends on the qualifier flags
 ** set in the keymap type.
 */
 
@@ -873,7 +873,7 @@ CONST struct KeyMap def_km =
 
     };
 
-#else 
+#else
 
     const BYTE keymaptype_table[8][8] =
     {

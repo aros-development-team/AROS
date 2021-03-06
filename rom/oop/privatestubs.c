@@ -35,7 +35,7 @@ VOID meta_freedisptabs(OOP_Object *o)
     
     if (!OOPBase->ob_M_meta_freedisptabs)
         OOPBase->ob_M_meta_freedisptabs = OOP_GetMethodID(IID_Meta, MO_meta_freedisptabs);
-	
+        
     p.mid = OOPBase->ob_M_meta_freedisptabs;
     
     OOP_DoMethod(o, (OOP_Msg)&p);
@@ -52,14 +52,14 @@ struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, CONST_STRPTR 
     
     if (!OOPBase->ob_M_meta_iterateifs)
         OOPBase->ob_M_meta_iterateifs = OOP_GetMethodID(IID_Meta, MO_meta_iterateifs);
-	
-    p.mid		= OOPBase->ob_M_meta_iterateifs;
-    p.iterval_ptr	= iterval_ptr;
-    p.interface_id_ptr	= interface_id_ptr;
-    p.num_methods_ptr	= num_methods_ptr;
+        
+    p.mid               = OOPBase->ob_M_meta_iterateifs;
+    p.iterval_ptr       = iterval_ptr;
+    p.interface_id_ptr  = interface_id_ptr;
+    p.num_methods_ptr   = num_methods_ptr;
     
     return (struct IFMethod *)OOP_DoMethod(o, (OOP_Msg)&p);
-	
+        
 }
 
 struct IFMethod *meta_getifinfo(OOP_Object *o, CONST_STRPTR interface_id, ULONG *num_methods_ptr)
@@ -69,10 +69,10 @@ struct IFMethod *meta_getifinfo(OOP_Object *o, CONST_STRPTR interface_id, ULONG 
     
     if (!OOPBase->ob_M_meta_getifinfo)
         OOPBase->ob_M_meta_getifinfo = OOP_GetMethodID(IID_Meta, MO_meta_getifinfo);
-	
-    p.mid		= OOPBase->ob_M_meta_getifinfo;
-    p.interface_id	= interface_id;
-    p.num_methods_ptr	= num_methods_ptr;
+        
+    p.mid               = OOPBase->ob_M_meta_getifinfo;
+    p.interface_id      = interface_id;
+    p.num_methods_ptr   = num_methods_ptr;
     
     return (struct IFMethod *)OOP_DoMethod(o, (OOP_Msg)&p);
 }
@@ -87,9 +87,9 @@ struct IFMethod *meta_findmethod(OOP_Object *o, OOP_MethodID method_to_find, str
     
     if (!iOOPBase->ob_M_meta_findmethod)
         iOOPBase->ob_M_meta_findmethod = OOP_GetMethodID(IID_Meta, MO_meta_findmethod);
-	
-    p.mid		= iOOPBase->ob_M_meta_findmethod;
-    p.method_to_find	= method_to_find;
+        
+    p.mid               = iOOPBase->ob_M_meta_findmethod;
+    p.method_to_find    = method_to_find;
     
     return (struct IFMethod *)OOP_DoMethod(o, (OOP_Msg)&p);
 }

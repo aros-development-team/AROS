@@ -79,37 +79,37 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                             rc = LIBUSBCALL(libusb_get_active_config_descriptor, dev, &config);
                             if(rc == LIBUSB_SUCCESS) {
-                            	bug("\nGot active config descriptor %d...\n", i);
+                                bug("\nGot active config descriptor %d...\n", i);
                             }
 
-							num_interfaces = config->bNumInterfaces;
-							//LIBUSBCALL(libusb_free_config_descriptor, config);
+                                                        num_interfaces = config->bNumInterfaces;
+                                                        //LIBUSBCALL(libusb_free_config_descriptor, config);
 
                             for (i=0; i<num_interfaces; i++) {
                                 if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i) == 1) {
                                     bug("Kernel driver is active on interface %d...\n", i);
 
-									rc = LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, i);
+                                                                        rc = LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, i);
 
                                     rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
                                     if (rc != LIBUSB_SUCCESS) {
                                         bug("    Failed to detach it...\n");
                                     }
                                 } else {
-                                	bug("Kernel driver is not active on interface %d...\n", i);
+                                        bug("Kernel driver is not active on interface %d...\n", i);
                                 }
 
                                 if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i) == 1) {
                                     bug("Kernel driver is active on interface %d...\n", i);
 
-									rc = LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, i);
+                                                                        rc = LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, i);
 
                                     rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
                                     if (rc != LIBUSB_SUCCESS) {
                                         bug("    Failed to detach it...\n");
                                     }
                                 } else {
-                                	bug("Kernel driver is not active on interface %d...\n", i);
+                                        bug("Kernel driver is not active on interface %d...\n", i);
                                 }
                             }
                             
@@ -133,9 +133,9 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                                 //break;
                             }
 
-                			//unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_CONNECTION;
-                			//unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
-                			//uhwCheckRootHubChanges(unit);
+                                        //unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_CONNECTION;
+                                        //unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
+                                        //uhwCheckRootHubChanges(unit);
 
                             unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
                             unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
@@ -319,18 +319,18 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
     ReplyMsg(&ioreq->iouh_Req.io_Message);
 
     switch(xfr_type) {
-    	case LIBUSB_TRANSFER_TYPE_CONTROL:
-    		unit->ctrlxfer_pending = FALSE;
-    	break;
-    	case LIBUSB_TRANSFER_TYPE_INTERRUPT:
-    		unit->intrxfer_pending = FALSE;
-    	break;
-    	case LIBUSB_TRANSFER_TYPE_BULK:
-    		unit->bulkxfer_pending = FALSE;
-    	break;
-    	case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
-    		unit->isocxfer_pending = FALSE;
-    	break;
+        case LIBUSB_TRANSFER_TYPE_CONTROL:
+                unit->ctrlxfer_pending = FALSE;
+        break;
+        case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+                unit->intrxfer_pending = FALSE;
+        break;
+        case LIBUSB_TRANSFER_TYPE_BULK:
+                unit->bulkxfer_pending = FALSE;
+        break;
+        case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
+                unit->isocxfer_pending = FALSE;
+        break;
     }
 
 }
@@ -351,31 +351,31 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     UWORD wIndex             = (ioreq->iouh_SetupData.wIndex);
     UWORD wLength            = (ioreq->iouh_SetupData.wLength);
 
-	mybug_unit(-1, ("bmRequestType   ( "));
+        mybug_unit(-1, ("bmRequestType   ( "));
 
-	if(bmRequestType&URTF_IN) {
-		mybug(-1, ("URTF_IN "));
-	} else {
-		mybug(-1, ("URTF_OUT "));
-	}
-	if(bmRequestType_raw == URTF_STANDARD) mybug(-1, ("URTF_STANDARD "));
-	//if(bmRequestType_raw == URTF_DEVICE) mybug(-1, ("URTF_DEVICE "));
-	mybug(-1, (")\n"));
+        if(bmRequestType&URTF_IN) {
+                mybug(-1, ("URTF_IN "));
+        } else {
+                mybug(-1, ("URTF_OUT "));
+        }
+        if(bmRequestType_raw == URTF_STANDARD) mybug(-1, ("URTF_STANDARD "));
+        //if(bmRequestType_raw == URTF_DEVICE) mybug(-1, ("URTF_DEVICE "));
+        mybug(-1, (")\n"));
 
-	if( (bmRequestType_raw == URTF_STANDARD) ) {
-		mybug_unit(-1, ("bRequest        "));
-		if(bRequest == USR_GET_STATUS) mybug(-1, ("USR_GET_STATUS\n"));
-		if(bRequest == USR_CLEAR_FEATURE) mybug(-1, ("USR_CLEAR_FEATURE\n"));
-		if(bRequest == USR_SET_FEATURE) mybug(-1, ("USR_SET_FEATURE\n"));
-		if(bRequest == USR_SET_ADDRESS) mybug(-1, ("USR_SET_ADDRESS\n"));
-		if(bRequest == USR_GET_DESCRIPTOR) mybug(-1, ("USR_GET_DESCRIPTOR\n"));
-		if(bRequest == USR_SET_DESCRIPTOR) mybug(-1, ("USR_SET_DESCRIPTOR\n"));
-		if(bRequest == USR_GET_CONFIGURATION) mybug(-1, ("USR_GET_CONFIGURATION\n"));
-		if(bRequest == USR_SET_CONFIGURATION) mybug(-1, ("USR_SET_CONFIGURATION\n"));
-		if(bRequest == USR_GET_INTERFACE) mybug(-1, ("USR_GET_INTERFACE\n"));
-		if(bRequest == USR_SET_INTERFACE) mybug(-1, ("USR_SET_INTERFACE\n"));
-		if(bRequest == USR_SYNCH_FRAME) mybug(-1, ("USR_SYNCH_FRAME\n"));
-	}
+        if( (bmRequestType_raw == URTF_STANDARD) ) {
+                mybug_unit(-1, ("bRequest        "));
+                if(bRequest == USR_GET_STATUS) mybug(-1, ("USR_GET_STATUS\n"));
+                if(bRequest == USR_CLEAR_FEATURE) mybug(-1, ("USR_CLEAR_FEATURE\n"));
+                if(bRequest == USR_SET_FEATURE) mybug(-1, ("USR_SET_FEATURE\n"));
+                if(bRequest == USR_SET_ADDRESS) mybug(-1, ("USR_SET_ADDRESS\n"));
+                if(bRequest == USR_GET_DESCRIPTOR) mybug(-1, ("USR_GET_DESCRIPTOR\n"));
+                if(bRequest == USR_SET_DESCRIPTOR) mybug(-1, ("USR_SET_DESCRIPTOR\n"));
+                if(bRequest == USR_GET_CONFIGURATION) mybug(-1, ("USR_GET_CONFIGURATION\n"));
+                if(bRequest == USR_SET_CONFIGURATION) mybug(-1, ("USR_SET_CONFIGURATION\n"));
+                if(bRequest == USR_GET_INTERFACE) mybug(-1, ("USR_GET_INTERFACE\n"));
+                if(bRequest == USR_SET_INTERFACE) mybug(-1, ("USR_SET_INTERFACE\n"));
+                if(bRequest == USR_SYNCH_FRAME) mybug(-1, ("USR_SYNCH_FRAME\n"));
+        }
 
     mybug_unit(-1, ("ioreq->iouh_SetupData.bmRequestType %x\n", ioreq->iouh_SetupData.bmRequestType));
     mybug_unit(-1, ("ioreq->iouh_SetupData.bRequest      %x\n", ioreq->iouh_SetupData.bRequest));
@@ -395,14 +395,14 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
                     mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
                     ioreq->iouh_Actual = ioreq->iouh_Length;
 
-    				/* Set error codes */
-    				ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR & 0xff;
+                                /* Set error codes */
+                                ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR & 0xff;
 
-    				/* Terminate the iorequest */
-    				ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
-    				ReplyMsg(&ioreq->iouh_Req.io_Message);
+                                /* Terminate the iorequest */
+                                ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+                                ReplyMsg(&ioreq->iouh_Req.io_Message);
 
-					unit->ctrlxfer_pending = FALSE;
+                                        unit->ctrlxfer_pending = FALSE;
 
                     return UHIOERR_NO_ERROR;
                 break;
@@ -416,37 +416,37 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout*2);
 
     if(rc<0) {
-    	switch(rc) {
-        	case LIBUSB_ERROR_TIMEOUT:
-            	mybug_unit(-1, ("LIBUSB_TRANSFER_TIMED_OUT\n"));
-            	err = UHIOERR_TIMEOUT;
-        	break;
+        switch(rc) {
+                case LIBUSB_ERROR_TIMEOUT:
+                mybug_unit(-1, ("LIBUSB_TRANSFER_TIMED_OUT\n"));
+                err = UHIOERR_TIMEOUT;
+                break;
 
-        	case LIBUSB_ERROR_PIPE:
-            	mybug_unit(-1, ("LIBUSB_ERROR_PIPE\n"));
-            	err = UHIOERR_STALL;
-        	break;
+                case LIBUSB_ERROR_PIPE:
+                mybug_unit(-1, ("LIBUSB_ERROR_PIPE\n"));
+                err = UHIOERR_STALL;
+                break;
 
-        	case LIBUSB_ERROR_NO_DEVICE:
-            	mybug_unit(-1, ("LIBUSB_TRANSFER_NO_DEVICE\n"));
-            	err = UHIOERR_USBOFFLINE;
-        	break;
+                case LIBUSB_ERROR_NO_DEVICE:
+                mybug_unit(-1, ("LIBUSB_TRANSFER_NO_DEVICE\n"));
+                err = UHIOERR_USBOFFLINE;
+                break;
 
-        	case LIBUSB_ERROR_BUSY:
-            	mybug_unit(-1, ("LIBUSB_ERROR_BUSY\n"));
-            	err = UHIOERR_STALL;
-        	break;
+                case LIBUSB_ERROR_BUSY:
+                mybug_unit(-1, ("LIBUSB_ERROR_BUSY\n"));
+                err = UHIOERR_STALL;
+                break;
 
-        	case LIBUSB_ERROR_INVALID_PARAM:
-            	mybug_unit(-1, ("LIBUSB_ERROR_INVALID_PARAM\n"));
-            	err = UHIOERR_STALL;
-        	break;
-    	}
-	} else {
-		mybug_unit(-1, ("LIBUSB_TRANSFER_COMPLETED\n"));
-		ioreq->iouh_Actual = rc;
+                case LIBUSB_ERROR_INVALID_PARAM:
+                mybug_unit(-1, ("LIBUSB_ERROR_INVALID_PARAM\n"));
+                err = UHIOERR_STALL;
+                break;
+        }
+        } else {
+                mybug_unit(-1, ("LIBUSB_TRANSFER_COMPLETED\n"));
+                ioreq->iouh_Actual = rc;
         err = UHIOERR_NO_ERROR;
-	}
+        }
 
     /* Set error codes */
     ioreq->iouh_Req.io_Error = err & 0xff;
@@ -455,10 +455,10 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
     ReplyMsg(&ioreq->iouh_Req.io_Message);
 
-	unit->ctrlxfer_pending = FALSE;
+        unit->ctrlxfer_pending = FALSE;
 
     mybug_unit(-1, ("Done!\n\n"));
-    return UHIOERR_NO_ERROR;   
+    return UHIOERR_NO_ERROR;
 }
 
 
@@ -476,9 +476,9 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     mybug_unit(0, ("Allocating transfer...\n"));
 
     xfr = LIBUSBCALL(libusb_alloc_transfer, 0);
-	if (xfr == NULL) {
-	    mybug_unit(-1, ("   Failed.\n"));
-	}
+        if (xfr == NULL) {
+            mybug_unit(-1, ("   Failed.\n"));
+        }
 
     UWORD timeout;
 
@@ -523,7 +523,7 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
         break;
     }
 
-    return UHIOERR_NO_ERROR;  
+    return UHIOERR_NO_ERROR;
 }
 
 int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
@@ -540,9 +540,9 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
     mybug_unit(0, ("Allocating transfer...\n"));
 
     xfr = LIBUSBCALL(libusb_alloc_transfer, 0);
-	if (xfr == NULL) {
-	    mybug_unit(-1, ("   Failed.\n"));
-	}
+        if (xfr == NULL) {
+            mybug_unit(-1, ("   Failed.\n"));
+        }
 
     UWORD timeout;
 
@@ -607,9 +607,9 @@ int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
     mybug_unit(-1, ("Allocating transfer...\n"));
 
     xfr = LIBUSBCALL(libusb_alloc_transfer, 1);
-	if (xfr == NULL) {
-	    mybug_unit(-1, ("   Failed.\n"));
-	}
+        if (xfr == NULL) {
+            mybug_unit(-1, ("   Failed.\n"));
+        }
 
     switch(ioreq->iouh_Dir) {
         case UHDIR_IN:
@@ -645,6 +645,6 @@ int do_libusb_isoc_transfer(struct IOUsbHWReq *ioreq) {
         break;
     }
     */
-    return UHIOERR_NO_ERROR;    
+    return UHIOERR_NO_ERROR;
 }
 

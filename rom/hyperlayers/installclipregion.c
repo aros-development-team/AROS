@@ -16,19 +16,19 @@
 
     NAME */
 
-	AROS_LH2(struct Region *, InstallClipRegion,
+        AROS_LH2(struct Region *, InstallClipRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer  *, l     , A0),
-	AROS_LHA(struct Region *, region, A1),
+        AROS_LHA(struct Layer  *, l     , A0),
+        AROS_LHA(struct Region *, region, A1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 29, Layers)
+        struct LayersBase *, LayersBase, 29, Layers)
 
 /*  FUNCTION
        Install a transparent Clip region in the layer. All subsequent
        graphics call to the rastport of the layer will be clipped to
-       that region. 
+       that region.
        None of the system functions will free the ClipRegion for you,
        so you will have to call InstallClipRegion(l, NULL) before
        closing a window or deleting a layer.
@@ -50,8 +50,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {

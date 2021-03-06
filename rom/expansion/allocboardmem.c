@@ -10,13 +10,13 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH1(void, AllocBoardMem,
+        AROS_LH1(void, AllocBoardMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, slotSpec, D0),
+        AROS_LHA(ULONG, slotSpec, D0),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 7, Expansion)
+        struct ExpansionBase *, ExpansionBase, 7, Expansion)
 
 /*  FUNCTION
 

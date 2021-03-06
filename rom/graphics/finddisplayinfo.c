@@ -25,7 +25,7 @@
         struct GfxBase *, GfxBase, 121, Graphics)
 
 /*  FUNCTION
-	Search for a DisplayInfo which matches the ID key.
+        Search for a DisplayInfo which matches the ID key.
 
     INPUTS
         ID - identifier
@@ -65,7 +65,7 @@
     /* Find display driver data */
     for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
         if (mdd->id == (ID & mdd->mask))
-	    break;
+            break;
     }
     if (!mdd)
         return NULL;
@@ -75,8 +75,8 @@
 
     /* Go through all mode records of this driver */
     for (ret = mdd->modes; ret->id != vHidd_ModeID_Invalid; ret++) {
-	if (ret->id == hiddmode)
-	    return ret;
+        if (ret->id == hiddmode)
+            return ret;
     }
 
     return NULL;

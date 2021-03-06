@@ -30,7 +30,7 @@ static AROS_INTH1(ahciBus_Reset, struct ahci_Bus *, bus)
     struct AHCIBase *AHCIBase = bus->ab_Base;
     OOP_Object *obj = (void *)bus - AHCIBase->busClass->InstOffset;
 
- 	D(bug ("[AHCI:Bus] ahciBus_Reset(%p)\n", bus);)
+        D(bug ("[AHCI:Bus] ahciBus_Reset(%p)\n", bus);)
 
     HIDD_AHCIBus_Shutdown(obj);
 
@@ -215,23 +215,23 @@ BOOL Hidd_AHCIBus_Start(OOP_Object *o, struct AHCIBase *AHCIBase)
     D(bug ("[AHCI:Bus] AHCIBus_Start(%p)\n", o);)
 #if (0)
     struct ahci_Bus *ab = OOP_INST_DATA(AHCIBase->busClass, o);
-	struct ahci_port *ap = ab->ab_Port;
+        struct ahci_port *ap = ab->ab_Port;
 
-	while (ap->ap_signal & AP_SIGF_INIT)
-		ahci_os_sleep(100);
-	ahci_os_lock_port(ap);
-	if (ahci_cam_attach(ap) == 0) {
-		ahci_cam_changed(ap, NULL, -1);
-		ahci_os_unlock_port(ap);
-		while ((ap->ap_flags & AP_F_SCAN_COMPLETED) == 0) {
-			ahci_os_sleep(100);
-		}
-	} else {
-		ahci_os_unlock_port(ap);
-	}
+        while (ap->ap_signal & AP_SIGF_INIT)
+                ahci_os_sleep(100);
+        ahci_os_lock_port(ap);
+        if (ahci_cam_attach(ap) == 0) {
+                ahci_cam_changed(ap, NULL, -1);
+                ahci_os_unlock_port(ap);
+                while ((ap->ap_flags & AP_F_SCAN_COMPLETED) == 0) {
+                        ahci_os_sleep(100);
+                }
+        } else {
+                ahci_os_unlock_port(ap);
+        }
 #endif
 
-	return TRUE;
+        return TRUE;
 }
 
 

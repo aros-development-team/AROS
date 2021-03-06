@@ -28,7 +28,7 @@
               (((UBYTE *)s)[1] << 8)  | \
               ((UBYTE *)s)[2];          \
         s = (UBYTE *)s + 3;             \
-    } while (0);                         
+    } while (0);
 
 #else
 #define GETPIX24(s, pix)                \
@@ -38,7 +38,7 @@
               (((UBYTE *)s)[1] << 8)  | \
               ((UBYTE *)s)[0];          \
         s = (UBYTE *)s + 3;             \
-    } while (0);                         
+    } while (0);
 
 #endif
 
@@ -377,7 +377,7 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
         src += msg->srcMod;
         dst += msg->dstMod;
         DB2(bug("\n"));
-    } 
+    }
     
     *msg->srcPixels = src;
     *msg->dstBuf    = dst;
@@ -536,7 +536,7 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
   In the latter case this conversion will be done inside the method below.
   This means that we can call an internal function directly
   to do the conversion and save two method calls.
-*/  
+*/
 
 /****************************************************************************************/
 

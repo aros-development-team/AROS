@@ -61,7 +61,7 @@
 
     struct Menu     *thismenu;
     struct MenuItem *thisitem = NULL;
-    int     	     i;
+    int              i;
 
     DEBUG_ITEMADDRESS(dprintf("ItemAddress: Strip %p Number 0x%lx (%d/%d/%d)\n",
                               menustrip, menunumber, MENUNUM(menunumber),

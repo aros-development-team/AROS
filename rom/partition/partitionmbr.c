@@ -84,7 +84,7 @@ LONG MBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandl
     if (readBlock(PartitionBase, root, 0, blk) == 0)
     {
         /* Check it doesn't look like a FAT boot sector */
-	ULONG sectorsize, clustersectors;
+        ULONG sectorsize, clustersectors;
 
         /* Valid sector size: 512, 1024, 2048, 4096 */
         sectorsize = AROS_LE2WORD(blk->u.bs.bpb_bytes_per_sect);
@@ -103,16 +103,16 @@ LONG MBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandl
         if (blk->u.bs.bpb_media < 0xF0)
             res = 1;
 
-	if (res)
-	{
-	    struct PCPartitionTable *pcpt = blk->u.mbr.pcpt;
+        if (res)
+        {
+            struct PCPartitionTable *pcpt = blk->u.mbr.pcpt;
 
-	    /* Check status bytes of all partition slots and block signature */
+            /* Check status bytes of all partition slots and block signature */
             if ((AROS_LE2WORD(blk->u.mbr.magic) != MBR_MAGIC) ||
-                (!MBR_STATUS_VALID(pcpt[0].status)) || (!MBR_STATUS_VALID(pcpt[1].status)) || 
-            	(!MBR_STATUS_VALID(pcpt[2].status)) || (!MBR_STATUS_VALID(pcpt[3].status)))
+                (!MBR_STATUS_VALID(pcpt[0].status)) || (!MBR_STATUS_VALID(pcpt[1].status)) ||
+                (!MBR_STATUS_VALID(pcpt[2].status)) || (!MBR_STATUS_VALID(pcpt[3].status)))
             {
-            	res = 0;
+                res = 0;
             }
         }
     }
@@ -127,11 +127,11 @@ static LONG PartitionMBRCheckPartitionTable(struct Library *PartitionBase, struc
 
     /* MBR can be placed only in the root of the disk */
     if (root->root)
-    	return 0;
+        return 0;
 
-    blk = AllocMem(root->de.de_SizeBlock << 2, MEMF_ANY);    
+    blk = AllocMem(root->de.de_SizeBlock << 2, MEMF_ANY);
     if (!blk)
-    	return 0;
+        return 0;
 
     res = MBRCheckPartitionTable(PartitionBase, root, blk);
 
@@ -160,10 +160,10 @@ static struct PartitionHandle *PartitionMBRNewHandle(struct Library *PartitionBa
                 /* initialize DosEnvec and DriveGeometry */
                 initPartitionHandle(root, ph, AROS_LE2LONG(data->entry->first_sector), AROS_LE2LONG(data->entry->count_sector));
 
-		/* Map type ID to a DOSType */
-		setDosType(&ph->de, MBR_FindDosType(data->entry->type));
+                /* Map type ID to a DOSType */
+                setDosType(&ph->de, MBR_FindDosType(data->entry->type));
 
-		/* Set position as priority */
+                /* Set position as priority */
                 ph->ln.ln_Pri = MBR_MAX_PARTITIONS - 1 - position;
                 return ph;
             }
@@ -343,10 +343,10 @@ static struct PartitionHandle *PartitionMBRAddPartition(struct Library *Partitio
 
     if (tag)
     {
-    	struct PCPartitionTable *entry;
-    	struct PartitionHandle *ph;
-    	struct DosEnvec *de = (struct DosEnvec *)tag->ti_Data;
-    	WORD pos = -1, i;
+        struct PCPartitionTable *entry;
+        struct PartitionHandle *ph;
+        struct DosEnvec *de = (struct DosEnvec *)tag->ti_Data;
+        WORD pos = -1, i;
 
         tag = FindTagItem(PT_POSITION, taglist);
         if (tag != NULL)
@@ -440,12 +440,12 @@ static LONG PartitionMBRGetPartitionAttr(struct Library *PartitionBase,
         return TRUE;
 
     case PT_STARTBLOCK:
-	*((UQUAD *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector);
-	return TRUE;
+        *((UQUAD *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector);
+        return TRUE;
 
     case PT_ENDBLOCK:
-	*((UQUAD *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector) + AROS_LE2LONG(data->entry->count_sector) - 1;
-	return TRUE;
+        *((UQUAD *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector) + AROS_LE2LONG(data->entry->count_sector) - 1;
+        return TRUE;
     }
 
     /* Everything else gets default values */

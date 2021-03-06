@@ -45,7 +45,7 @@
 
     if (root->table)
     {
-    	struct PTFunctionTable *handler = root->table->handler;
+        struct PTFunctionTable *handler = root->table->handler;
 
         if (handler->writePartitionTable)
             return handler->writePartitionTable(PartitionBase, root);

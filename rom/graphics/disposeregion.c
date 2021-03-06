@@ -15,23 +15,23 @@
     NAME */
 #include <clib/graphics_protos.h>
 
-	AROS_LH1(void, DisposeRegion,
+        AROS_LH1(void, DisposeRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region *, region, A0),
+        AROS_LHA(struct Region *, region, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 89, Graphics)
+        struct GfxBase *, GfxBase, 89, Graphics)
 
 /*  FUNCTION
-	Frees all memory allocated by this region, including its
-	RegionRectangles.
+        Frees all memory allocated by this region, including its
+        RegionRectangles.
 
     INPUTS
-	region - pointer to a Region structure
+        region - pointer to a Region structure
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -40,14 +40,14 @@
     BUGS
 
     SEE ALSO
-	NewRegion()
+        NewRegion()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
-	15-01-97    mreckt  initial version
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
+        15-01-97    mreckt  initial version
 
 *****************************************************************************/
 {

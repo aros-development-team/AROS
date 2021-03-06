@@ -18,14 +18,14 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 
-	AROS_LH2(ULONG, OOP_ObtainAttrBasesArray,
+        AROS_LH2(ULONG, OOP_ObtainAttrBasesArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(OOP_AttrBase *, bases, A0),
+        AROS_LHA(OOP_AttrBase *, bases, A0),
         AROS_LHA(CONST_STRPTR const *, ids, A1),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 23, OOP)
+        struct Library *, OOPBase, 23, OOP)
 
 /*  FUNCTION
         Obtain several attribute base IDs, storing them in linear array.
@@ -61,7 +61,7 @@
     {
         *bases = OOP_ObtainAttrBase(*ids);
 
-	if (*bases == 0)
+        if (*bases == 0)
             failed++;
 
         bases++;

@@ -16,14 +16,14 @@
 #include <proto/layers.h>
 #include "layers_intern.h"
 
-	AROS_LH2(void, LockLayer,
+        AROS_LH2(void, LockLayer,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG          , dummy, A0),
-	AROS_LHA(struct Layer *, layer, A1),
+        AROS_LHA(LONG          , dummy, A0),
+        AROS_LHA(struct Layer *, layer, A1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 16, Layers)
+        struct LayersBase *, LayersBase, 16, Layers)
 
 /*  FUNCTION
         Locks a layer for exclusive access by this task.

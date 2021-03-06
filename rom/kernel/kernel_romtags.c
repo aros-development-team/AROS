@@ -35,7 +35,7 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
     return -1;
 }
 
-/* 
+/*
  * Allocate memory space for boot-time usage. Returns address and size of the usable area.
  * It's strongly adviced to return enough space to store resident list of sane length.
  */
@@ -121,12 +121,12 @@ static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IP
 
 APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 {
-    UWORD	    *end;
-    UWORD	    *ptr;		/* Start looking here */
+    UWORD           *end;
+    UWORD           *ptr;               /* Start looking here */
     struct Resident *res;               /* module found */
-    ULONG	    i;
-    BOOL	    sorted;
-    /* 
+    ULONG           i;
+    BOOL            sorted;
+    /*
      * We don't know resident list size until it's created. Because of this, we use two-step memory allocation
      * for this purpose.
      * First we dequeue some space from the MemHeader, and remember its starting address and size. Then we

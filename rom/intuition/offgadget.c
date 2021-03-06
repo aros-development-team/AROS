@@ -61,7 +61,7 @@
     {
         struct TagItem set_tags[] =
         {
-            {GA_Disabled, TRUE	},
+            {GA_Disabled, TRUE  },
             {TAG_END            }
         };
 

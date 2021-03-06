@@ -15,20 +15,20 @@
 
     NAME */
 
-	AROS_LH1(void, ReplyMsg,
+        AROS_LH1(void, ReplyMsg,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Message *, message, A1),
+        AROS_LHA(struct Message *, message, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 63, Exec)
+        struct ExecBase *, SysBase, 63, Exec)
 
 /*  FUNCTION
-	Send a message back to where it came from. It's generally not
-	wise to access the fields of a message after it has been replied.
+        Send a message back to where it came from. It's generally not
+        wise to access the fields of a message after it has been replied.
 
     INPUTS
-	message - a message got with GetMsg().
+        message - a message got with GetMsg().
 
     RESULT
 
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	WaitPort(), GetMsg(), PutMsg()
+        WaitPort(), GetMsg(), PutMsg()
 
     INTERNALS
 
@@ -54,13 +54,13 @@
 
     /* Not set? Only mark the message as no longer sent. */
     if(port==NULL)
-	message->mn_Node.ln_Type=NT_FREEMSG;
+        message->mn_Node.ln_Type=NT_FREEMSG;
     else
     {
-	/* Mark the message as replied */
-	message->mn_Node.ln_Type=NT_REPLYMSG;
+        /* Mark the message as replied */
+        message->mn_Node.ln_Type=NT_REPLYMSG;
 
-	InternalPutMsg(port, message, SysBase);
+        InternalPutMsg(port, message, SysBase);
     }
 
     AROS_LIBFUNC_EXIT

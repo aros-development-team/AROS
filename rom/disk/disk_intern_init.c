@@ -14,11 +14,11 @@
 
 void readunitid_internal (struct DiscResource *DiskBase, LONG unitNum)
 {
-	bug("disk.resource not implemented DF%d: ID read attempt\n", unitNum);
+        bug("disk.resource not implemented DF%d: ID read attempt\n", unitNum);
 }
 
 BOOL disk_internal_init (struct DiscResource *DiskBase)
 {
-	bug("disk.resource initialization not implemented\n");
-	return 0;
+        bug("disk.resource initialization not implemented\n");
+        return 0;
 }

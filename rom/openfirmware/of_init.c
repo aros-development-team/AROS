@@ -46,36 +46,36 @@ AROS_LH1(void *, OF_OpenKey,
 
     if (*Key != '/')
     {
-    	D(bug("[OF] Key must have absolute path\n"));
+        D(bug("[OF] Key must have absolute path\n"));
     }
     else
     {
-    	root = LIBBASE->of_Root;
+        root = LIBBASE->of_Root;
 
-    	while(*Key)
-    	{
-    		Key++;
-    		for (i=0; i < 63; i++)
-    		{
-    			if (*Key == '/' || *Key == 0)
-    				break;
-    			ptrbuf[i] = *Key;
-    			Key++;
-    		}
+        while(*Key)
+        {
+                Key++;
+                for (i=0; i < 63; i++)
+                {
+                        if (*Key == '/' || *Key == 0)
+                                break;
+                        ptrbuf[i] = *Key;
+                        Key++;
+                }
 
-    		ptrbuf[i] = 0;
+                ptrbuf[i] = 0;
 
-    		D(bug("[OF] looking for child '%s'\n", ptrbuf));
+                D(bug("[OF] looking for child '%s'\n", ptrbuf));
 
-    		ForeachNode(&root->on_children, node)
-    		{
-    			if (!my_strcmp(node->on_name, ptrbuf))
-    			{
-    				root = node;
-    				break;
-    			}
-    		}
-    	}
+                ForeachNode(&root->on_children, node)
+                {
+                        if (!my_strcmp(node->on_name, ptrbuf))
+                        {
+                                root = node;
+                                break;
+                        }
+                }
+        }
     }
 
     return root;
@@ -103,9 +103,9 @@ AROS_LH2I(void *, OF_GetChild,
     of_node_t *last = (of_node_t *)Prev;
 
     if (last)
-    	return GetSucc(last);
+        return GetSucc(last);
     else
-    	return GetHead(&node->on_children);
+        return GetHead(&node->on_children);
 
     AROS_LIBFUNC_EXIT
 }
@@ -122,14 +122,14 @@ AROS_LH2I(void *, OF_FindProperty,
 
     ForeachNode(&node->on_properties, p)
     {
-    	if (!my_strcmp(p->op_name, name))
-    	{
-    		prop = p;
-			break;
-		}
+        if (!my_strcmp(p->op_name, name))
+        {
+                prop = p;
+                        break;
+                }
     }
 
-	return prop;
+        return prop;
 
     AROS_LIBFUNC_EXIT
 }
@@ -145,9 +145,9 @@ AROS_LH2I(void *, OF_GetProperty,
     of_property_t *last = (of_property_t *)Prev;
 
     if (last)
-    	return GetSucc(last);
+        return GetSucc(last);
     else
-    	return GetHead(&node->on_properties);
+        return GetHead(&node->on_properties);
 
     AROS_LIBFUNC_EXIT
 }
@@ -161,9 +161,9 @@ AROS_LH1I(uint32_t, OF_GetPropLen,
     of_property_t *prop = (of_property_t *)Key;
 
     if (prop)
-    	return prop->op_length;
+        return prop->op_length;
     else
-    	return 0;
+        return 0;
 
     AROS_LIBFUNC_EXIT
 }
@@ -177,9 +177,9 @@ AROS_LH1I(char *, OF_GetPropName,
     of_property_t *prop = (of_property_t *)Key;
 
     if (prop)
-    	return prop->op_name;
+        return prop->op_name;
     else
-    	return "(null)";
+        return "(null)";
 
     AROS_LIBFUNC_EXIT
 }
@@ -193,9 +193,9 @@ AROS_LH1I(void *, OF_GetPropValue,
     of_property_t *prop = (of_property_t *)Key;
 
     if (prop)
-    	return prop->op_value;
+        return prop->op_value;
     else
-    	return NULL;
+        return NULL;
 
     AROS_LIBFUNC_EXIT
 }
@@ -203,34 +203,34 @@ AROS_LH1I(void *, OF_GetPropValue,
 
 static int OF_Init(LIBBASETYPEPTR LIBBASE)
 {
-	void *KernelBase = OpenResource("kernel.resource");
+        void *KernelBase = OpenResource("kernel.resource");
 
-	D(bug("[OF] OpenFirmware_Init\n"));
+        D(bug("[OF] OpenFirmware_Init\n"));
 
-	if (KernelBase)
-	{
-		struct TagItem *tags = KrnGetBootInfo();
+        if (KernelBase)
+        {
+                struct TagItem *tags = KrnGetBootInfo();
 
-		if (tags)
-		{
-			intptr_t oftree;
-			D(bug("[OF] BootInto @ %08x\n", tags));
+                if (tags)
+                {
+                        intptr_t oftree;
+                        D(bug("[OF] BootInto @ %08x\n", tags));
 
-			oftree = GetTagData(KRN_OpenFirmwareTree, 0, tags);
+                        oftree = GetTagData(KRN_OpenFirmwareTree, 0, tags);
 
-			if (oftree)
-			{
-				D(bug("[OF] OpenFirmware root at %08x\n", oftree));
-				LIBBASE->of_Root = (of_node_t *)oftree;
+                        if (oftree)
+                        {
+                                D(bug("[OF] OpenFirmware root at %08x\n", oftree));
+                                LIBBASE->of_Root = (of_node_t *)oftree;
 
-				return TRUE;
-			}
-			D(else bug("[OF] No OpenFirmware tree passed from bootloader\n"));
-		}
-		D(else bug("[OF] No BootInfo found\n"));
-	}
+                                return TRUE;
+                        }
+                        D(else bug("[OF] No OpenFirmware tree passed from bootloader\n"));
+                }
+                D(else bug("[OF] No BootInfo found\n"));
+        }
 
-	return FALSE;
+        return FALSE;
 }
 
 ADD2INITLIB(OF_Init, 0)

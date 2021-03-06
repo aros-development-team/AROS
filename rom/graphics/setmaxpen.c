@@ -11,28 +11,28 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH2(void, SetMaxPen,
+        AROS_LH2(void, SetMaxPen,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp    , A0),
-	AROS_LHA(ULONG            , maxpen, D0),
+        AROS_LHA(struct RastPort *, rp    , A0),
+        AROS_LHA(ULONG            , maxpen, D0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 165, Graphics)
+        struct GfxBase *, GfxBase, 165, Graphics)
 
 /*  FUNCTION
-	Set the maximum pen value for a rastport. This will instruct the
-	graphics.library that the owner of the rastport will not be rendering
-	in any colors whose index is >maxpen. Therefore speed optimizations
-	on certain operations are possible and will be done.
+        Set the maximum pen value for a rastport. This will instruct the
+        graphics.library that the owner of the rastport will not be rendering
+        in any colors whose index is >maxpen. Therefore speed optimizations
+        on certain operations are possible and will be done.
 
-	Basically this call sets the rastport mask, if this would improve speed.
-	On devices where masking would slow things down (chunky pixels), it will
-	be a no-op.
+        Basically this call sets the rastport mask, if this would improve speed.
+        On devices where masking would slow things down (chunky pixels), it will
+        be a no-op.
 
     INPUTS
-	rp     = pointer to a valid RastPort structure
-	maxpen = longword pen value
+        rp     = pointer to a valid RastPort structure
+        maxpen = longword pen value
 
     RESULT
 
@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	SetWriteMask()
+        SetWriteMask()
 
     INTERNALS
 

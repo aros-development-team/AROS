@@ -17,22 +17,22 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(APTR, OOP_FindClass,
+        AROS_LH1(APTR, OOP_FindClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, classID, A0),
+        AROS_LHA(CONST_STRPTR, classID, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 22, OOP)
+        struct Library *, OOPBase, 22, OOP)
 
 /*  FUNCTION
-	Finds a class with given ID in the list of public classes.
+        Finds a class with given ID in the list of public classes.
 
     INPUTS
-	classID  - Public ID of the class to find.
+        classID  - Public ID of the class to find.
 
     RESULT
-    	Pointer to a public class or NULL if there's no such class
+        Pointer to a public class or NULL if there's no such class
 
     NOTES
 
@@ -41,12 +41,12 @@
     BUGS
 
     SEE ALSO
-	OOP_AddClass()
+        OOP_AddClass()
 
     INTERNALS
 
     HISTORY
-	V42 - initial implementation
+        V42 - initial implementation
 
 *****************************************************************************/
 

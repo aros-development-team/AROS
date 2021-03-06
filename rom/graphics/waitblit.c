@@ -8,25 +8,25 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+        #include <clib/graphics_protos.h>
 
-	AROS_LH0(void, WaitBlit,
+        AROS_LH0(void, WaitBlit,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 38, Graphics)
+        struct GfxBase *, GfxBase, 38, Graphics)
 
 /*  FUNCTION
-	Wait for the blitter to return to finish, ie. the function returns
-	when the blitter is idle.
+        Wait for the blitter to return to finish, ie. the function returns
+        when the blitter is idle.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	None.
+        None.
 
     NOTES
 

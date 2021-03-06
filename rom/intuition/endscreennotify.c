@@ -60,7 +60,7 @@
         FreeVec(((struct IntScreenNotify*) notify)->pubname);
         Remove((struct Node *) notify);
         FreeVec((void *)notify);
-    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
     }
 
     ReturnPtr ("EndScreenNotify", BOOL, back);

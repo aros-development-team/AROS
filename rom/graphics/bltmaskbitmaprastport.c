@@ -17,14 +17,14 @@
 struct bltmask_render_data
 {
     struct render_special_info rsi;
-    struct BitMap   	       *srcbm;
-    OOP_Object      	       *srcbm_obj;
-    PLANEPTR	    	       mask;
+    struct BitMap              *srcbm;
+    OOP_Object                 *srcbm_obj;
+    PLANEPTR                   mask;
 };
 
 static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
-    	    	    	    OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-    	    	    	    struct Rectangle *rect, struct GfxBase *GfxBase)
+                            OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                            struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct bltmask_render_data *brd = bltmask_rd;
     WORD width  = rect->MaxX - rect->MinX + 1;
@@ -43,37 +43,37 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
     NAME */
 #include <clib/graphics_protos.h>
 
-	AROS_LH10(void, BltMaskBitMapRastPort,
+        AROS_LH10(void, BltMaskBitMapRastPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct BitMap   *, srcBitMap, A0),
-	AROS_LHA(WORD             , xSrc, D0),
-	AROS_LHA(WORD             , ySrc, D1),
-	AROS_LHA(struct RastPort *, destRP, A1),
-	AROS_LHA(WORD             , xDest, D2),
-	AROS_LHA(WORD             , yDest, D3),
-	AROS_LHA(WORD             , xSize, D4),
-	AROS_LHA(WORD             , ySize, D5),
-	AROS_LHA(ULONG            , minterm, D6),
-	AROS_LHA(PLANEPTR         , bltMask, A2),
+        AROS_LHA(struct BitMap   *, srcBitMap, A0),
+        AROS_LHA(WORD             , xSrc, D0),
+        AROS_LHA(WORD             , ySrc, D1),
+        AROS_LHA(struct RastPort *, destRP, A1),
+        AROS_LHA(WORD             , xDest, D2),
+        AROS_LHA(WORD             , yDest, D3),
+        AROS_LHA(WORD             , xSize, D4),
+        AROS_LHA(WORD             , ySize, D5),
+        AROS_LHA(ULONG            , minterm, D6),
+        AROS_LHA(PLANEPTR         , bltMask, A2),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 106, Graphics)
+        struct GfxBase *, GfxBase, 106, Graphics)
 
 /*  FUNCTION
-	Copies a part of a bitmap to another bitmap with using a mask.
+        Copies a part of a bitmap to another bitmap with using a mask.
 
     INPUTS
-	srcBitMap - Copy from this bitmap.
-	xSrc, ySrc - This is the upper left corner of the area to copy.
-	destRP - Destination RastPort.
-	xDest, yDest - Upper left corner where to place the copy
-	xSize, ySize - The size of the area to copy
-	minterm - How to copy. See BltBitMap() for an explanation.
-	bltMask - The mask bitplane must be of the same size as the source bitmap.
+        srcBitMap - Copy from this bitmap.
+        xSrc, ySrc - This is the upper left corner of the area to copy.
+        destRP - Destination RastPort.
+        xDest, yDest - Upper left corner where to place the copy
+        xSize, ySize - The size of the area to copy
+        minterm - How to copy. See BltBitMap() for an explanation.
+        bltMask - The mask bitplane must be of the same size as the source bitmap.
 
     RESULT
-	TRUE.
+        TRUE.
 
     NOTES
 
@@ -82,7 +82,7 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
     BUGS
 
     SEE ALSO
-	ClipBlit()
+        ClipBlit()
 
     INPUTS
 
@@ -93,17 +93,17 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
-    struct bltmask_render_data 	brd;
-    struct Rectangle 	    	rr;
-    OOP_Object      	    	*gc;
-    Point   	    	    	src;
+    struct bltmask_render_data  brd;
+    struct Rectangle            rr;
+    OOP_Object                  *gc;
+    Point                       src;
 
     EnterFunc(bug("BltMaskBitMapRastPort(%p (%d*%d), %d*%d, %p, %d*%d, %d*%d, %02x, %p)\n",
         srcBitMap, srcBitMap->BytesPerRow, srcBitMap->Rows, xSrc, ySrc,
@@ -119,7 +119,7 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
     if (NULL == brd.srcbm_obj)
     {
-    	return;
+        return;
     }
 
     brd.srcbm = srcBitMap;
@@ -138,7 +138,7 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
 
     do_render_with_gc(destRP, &src, &rr, bltmask_render, &brd, gc, TRUE, TRUE, GfxBase);
 
-    RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);    
+    RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
     ReturnVoid("BltBitMapRastPort");
 
     AROS_LIBFUNC_EXIT

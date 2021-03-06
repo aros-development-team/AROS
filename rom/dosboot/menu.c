@@ -110,7 +110,7 @@ static LONG rightto(LIBBASETYPEPTR DOSBootBase, LONG width, LONG right)
     return DOSBootBase->bm_Screen->Width - width - right;
 }
 
-static struct Gadget *createGadgetsBoot(LIBBASETYPEPTR DOSBootBase) 
+static struct Gadget *createGadgetsBoot(LIBBASETYPEPTR DOSBootBase)
 {
     LONG cx = centerx((struct DOSBootBase *)DOSBootBase, 280);
 
@@ -177,7 +177,7 @@ static void freeGadgetsUseCancel(LIBBASETYPEPTR DOSBootBase)
     freeButtonGadget(DOSBootBase->bm_MainGadgets.cancel, (struct DOSBootBase *)DOSBootBase);
 }
 
-static struct Gadget *createGadgets(LIBBASETYPEPTR DOSBootBase, WORD page) 
+static struct Gadget *createGadgets(LIBBASETYPEPTR DOSBootBase, WORD page)
 {
     if (page == PAGE_MAIN)
         return createGadgetsBoot(DOSBootBase);
@@ -553,7 +553,7 @@ static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
 #define KB_MATRIXSIZE  (KB_MAXKEYS/(sizeof(UBYTE)*8))
 #define ioStd(x) ((struct IOStdReq *)x)
 
-static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase) 
+static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
 {
     BOOL success = FALSE;
     struct MsgPort *mp = NULL;
@@ -606,7 +606,7 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
                 }
                 CloseDevice(io);
             }
-            DeleteIORequest(io); 
+            DeleteIORequest(io);
         }
         DeleteMsgPort(mp);
     }

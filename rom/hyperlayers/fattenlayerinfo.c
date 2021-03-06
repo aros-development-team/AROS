@@ -16,13 +16,13 @@
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
-	AROS_LH1(LONG, FattenLayerInfo,
+        AROS_LH1(LONG, FattenLayerInfo,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
+        AROS_LHA(struct Layer_Info *, li, A0),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 26, Layers)
+        struct LayersBase *, LayersBase, 26, Layers)
 
 /*  FUNCTION
 
@@ -41,8 +41,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
@@ -51,7 +51,7 @@
     D(bug("FattenLayerInfo(li @ $%lx)\n", li));
 
     if(!_AllocExtLayerInfo(li, LayersBase))
-	return FALSE;
+        return FALSE;
 
     li->Flags |= NEWLAYERINFO_CALLED;
 

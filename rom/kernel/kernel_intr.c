@@ -27,7 +27,7 @@
  * which save and restore CPU context. cpu_Dispatch() is allowed just to
  * jump to the saved context and not return here.
  */
-void core_ExitInterrupt(regs_t *regs) 
+void core_ExitInterrupt(regs_t *regs)
 {
     /* Soft interrupt requested? It's high time to do it */
     if (SysBase->SysFlags & SFF_SoftInt)
@@ -37,7 +37,7 @@ void core_ExitInterrupt(regs_t *regs)
     if (TDNESTCOUNT_GET < 0)
     {
         /*
-         * Do not disturb task if it's not necessary. 
+         * Do not disturb task if it's not necessary.
          * Reschedule only if switch pending flag is set. Exit otherwise.
          */
         if (FLAG_SCHEDSWITCH_ISSET)

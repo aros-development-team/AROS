@@ -149,7 +149,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     /* By default we create 1-plane bitmap */
     depth = GetTagData(aHidd_BitMap_Depth, 1, msg->attrList);
 
-    /* Not late initialization. Get some info on the bitmap */  
+    /* Not late initialization. Get some info on the bitmap */
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperrow);
     OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
@@ -348,9 +348,9 @@ VOID PBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     mask      = 1;
 
     for (i = 0; i < data->bitmap->Depth; i++, mask <<=1, plane ++)
-    {  
+    {
         if ((*plane != NULL) && (*plane != (UBYTE *)-1))
-        {       
+        {
             if(msg->pixel & mask)
             {
                 *(*plane + offset) = *(*plane + offset) | pixel;
@@ -392,7 +392,7 @@ ULONG PBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
             retval = retval | (1 << i);
         }
         else if (*plane != NULL)
-        {       
+        {
             if(*(*plane + offset) & pixel)
             {
                 retval = retval | (1 << i);
@@ -400,7 +400,7 @@ ULONG PBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
         }
     }
 
-    return retval; 
+    return retval;
 }
 
 /****************************************************************************************/
@@ -566,7 +566,7 @@ VOID PBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
     UBYTE                   **plane;
     ULONG                   planeoffset;
-    struct planarbm_data    *data;  
+    struct planarbm_data    *data;
     UBYTE                   prefill;
     
     data = OOP_INST_DATA(cl, o);

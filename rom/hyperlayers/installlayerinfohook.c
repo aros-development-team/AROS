@@ -16,26 +16,26 @@
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
-	AROS_LH2(struct Hook *, InstallLayerInfoHook,
+        AROS_LH2(struct Hook *, InstallLayerInfoHook,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer_Info *, li, A0),
-	AROS_LHA(struct Hook       *, hook, A1),
+        AROS_LHA(struct Layer_Info *, li, A0),
+        AROS_LHA(struct Hook       *, hook, A1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 34, Layers)
+        struct LayersBase *, LayersBase, 34, Layers)
 
 /*  FUNCTION
         Install a backfill hook into the LayerInfo structure. This
         backfill hook will be called to clear the areas where there
-        is no layer. It will be used for every layer.        
+        is no layer. It will be used for every layer.
 
     INPUTS
         li - pointer to layer info
 
     RESULT
-        If there was a backfill hook installed before it will be 
-        returned. LAYERS_BACKFILL will be returned if the default 
+        If there was a backfill hook installed before it will be
+        returned. LAYERS_BACKFILL will be returned if the default
         backfill hook was installed, LAYERS_NOBACKFILL if there
         was nothing to be called for clearing an area.
 
@@ -53,8 +53,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
@@ -64,7 +64,7 @@
 
     D(bug("InstallLayerInfoHook(li @ $%lx, hook @ $%lx)\n", li, hook));
 
-    LockLayerInfo(li);    
+    LockLayerInfo(li);
 
     OldHook = li->BlankHook;
 
@@ -72,9 +72,9 @@
     
     if (li->check_lp)
     {
-    	LockLayer(0, li->check_lp);
-	li->check_lp->BackFill = hook;
-	UnlockLayer(li->check_lp);
+        LockLayer(0, li->check_lp);
+        li->check_lp->BackFill = hook;
+        UnlockLayer(li->check_lp);
     }
     
     UnlockLayerInfo(li);

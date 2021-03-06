@@ -664,7 +664,7 @@ void ATABus__Hidd_StorageBus__EnumUnits(OOP_Class *cl, OOP_Object *o, struct pHi
     D(bug ("[ATA:Bus] Hidd_StorageBus__EnumUnits()\n");)
 
     if (data->ab_Units[0])
-	stop = CALLHOOKPKT(msg->callback, data->ab_Units[0], msg->hookMsg);
+        stop = CALLHOOKPKT(msg->callback, data->ab_Units[0], msg->hookMsg);
     if ((!stop) && (data->ab_Units[1]))
          stop = CALLHOOKPKT(msg->callback, data->ab_Units[1], msg->hookMsg);
 }
@@ -954,7 +954,7 @@ BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
                         aHidd_Bus_IRQData   , ab,
                         TAG_DONE);
     
-    /* scan bus - try to locate all devices (disables irq) */    
+    /* scan bus - try to locate all devices (disables irq) */
     ata_InitBus(ab);
 
     if ((ab->ab_Dev[0] == DEV_NONE) && (ab->ab_Dev[1] == DEV_NONE) &&

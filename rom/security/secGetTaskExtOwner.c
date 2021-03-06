@@ -11,14 +11,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(struct secExtOwner *, secGetTaskExtOwner,
+        AROS_LH1(struct secExtOwner *, secGetTaskExtOwner,
 
 /*  SYNOPSIS */
-	/* (task) */
-	AROS_LHA(struct Task *, task, D0),
+        /* (task) */
+        AROS_LHA(struct Task *, task, D0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 21, Security)
+        struct SecurityBase *, secBase, 21, Security)
 
 /*  FUNCTION
 

@@ -18,13 +18,13 @@
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
-	AROS_LH0(struct Layer_Info *, NewLayerInfo,
+        AROS_LH0(struct Layer_Info *, NewLayerInfo,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 24, Layers)
+        struct LayersBase *, LayersBase, 24, Layers)
 
 /*  FUNCTION
 
@@ -43,8 +43,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
+        27-11-96    digulla automatically created from
+                            layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
@@ -55,7 +55,7 @@
     D(bug("NewLayerInfo(void)\n"));
 
     if(!(li = (struct Layer_Info *)AllocMem(sizeof(struct Layer_Info), MEMF_PUBLIC)))
-	return NULL;
+        return NULL;
 
     InitLayers(li);
 

@@ -145,13 +145,13 @@ void ov772x_reg_write(struct InstData *data, UBYTE reg, UBYTE *val) {
 
     UBYTE tmp = reg;
 
-	ov534_reg_write(data, OV534_REG_MS_ADDRESS, &tmp);
+        ov534_reg_write(data, OV534_REG_MS_ADDRESS, &tmp);
 
     tmp = *val;
-	ov534_reg_write(data, OV534_REG_DO, &tmp);
+        ov534_reg_write(data, OV534_REG_DO, &tmp);
 
     tmp = OV534_OP_WRITE_3;
-	ov534_reg_write(data, OV534_REG_CTRL, &tmp);
+        ov534_reg_write(data, OV534_REG_CTRL, &tmp);
 
 }
 
@@ -159,15 +159,15 @@ UBYTE ov772x_reg_read(struct InstData *data, UBYTE reg) {
 
     UBYTE tmp = reg;
 
-	ov534_reg_write(data, OV534_REG_MS_ADDRESS, &tmp);
+        ov534_reg_write(data, OV534_REG_MS_ADDRESS, &tmp);
 
     tmp = OV534_OP_WRITE_2;
-	ov534_reg_write(data, OV534_REG_CTRL, &tmp);
+        ov534_reg_write(data, OV534_REG_CTRL, &tmp);
 
     tmp = OV534_OP_READ_2;
-	ov534_reg_write(data, OV534_REG_CTRL, &tmp);
+        ov534_reg_write(data, OV534_REG_CTRL, &tmp);
 
-	ov534_reg_read(data, OV534_REG_DI, &tmp);
+        ov534_reg_read(data, OV534_REG_DI, &tmp);
 
     return(tmp);
 }
@@ -253,7 +253,7 @@ void allocdevice(struct InstData *data) {
                             ov534_reg_write(data, OV534_REG_MS_ID, &regval);
 
                             /* probe the sensor */
-                        	mybug(-1, ("Sensor ID: %02x%02x\n", ov772x_reg_read(data, OV772X_REG_PID), ov772x_reg_read(data, OV772X_REG_VER)));
+                                mybug(-1, ("Sensor ID: %02x%02x\n", ov772x_reg_read(data, OV772X_REG_PID), ov772x_reg_read(data, OV772X_REG_VER)));
 
                             return;
 
@@ -265,7 +265,7 @@ void allocdevice(struct InstData *data) {
                     }
 
                 } else {
-                    mybug(-1, ("allocdevice failed to allocate endpoint 0 pipe (CONTROL)\n"));   
+                    mybug(-1, ("allocdevice failed to allocate endpoint 0 pipe (CONTROL)\n"));
                 }
 
             }
@@ -280,7 +280,7 @@ void allocdevice(struct InstData *data) {
 }
 
 IPTR mNew(Class *cl, Object *obj, struct opSet *msg) {
-	mybug(-1, ("mNew gets called\n"));
+        mybug(-1, ("mNew gets called\n"));
 
     if((obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg))) {
         struct InstData *data = INST_DATA(cl, obj);
@@ -318,7 +318,7 @@ IPTR mNew(Class *cl, Object *obj, struct opSet *msg) {
 }
 
 IPTR mDispose(Class *cl, Object *obj, struct opGet *msg) {
-	mybug(-1, ("mDispose gets called\n"));
+        mybug(-1, ("mDispose gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
     //mybug(-1, ("resolutionvga %d\n", data->resolutionvga));
@@ -339,7 +339,7 @@ IPTR mDispose(Class *cl, Object *obj, struct opGet *msg) {
 }
 
 IPTR mSetup(Class *cl, Object *obj, struct MUIP_Setup *msg) {
-	mybug(-1, ("mSetup gets called\n"));
+        mybug(-1, ("mSetup gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
     
@@ -353,12 +353,12 @@ IPTR mSetup(Class *cl, Object *obj, struct MUIP_Setup *msg) {
 
 
 IPTR mCleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg) {
-	mybug(-1, ("mCleanup gets called\n"));
+        mybug(-1, ("mCleanup gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
 
-    DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->tmreventihn); 
-//	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->psdeventihn);
+    DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->tmreventihn);
+//      DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->psdeventihn);
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -408,36 +408,36 @@ IPTR mGet(Class *cl, Object *obj, struct opGet *msg) {
     IPTR retval = TRUE;
     
     switch(msg->opg_AttrID) {
-    	case MUIA_Resolution:
-	        *msg->opg_Storage = data->resolutionvga;
+        case MUIA_Resolution:
+                *msg->opg_Storage = data->resolutionvga;
             mybug(-1, ("mGet MUIA_Resolution = %d\n", data->resolutionvga));
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-	    break;
+            break;
+            
+        default:
+            retval = DoSuperMethodA(cl, obj, (Msg)msg);
+            break;
     }
     
     return retval;
 }
 
 IPTR mAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg) {
-	mybug(-1, ("mAskMinMax gets called\n"));
+        mybug(-1, ("mAskMinMax gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
 
-	DoSuperMethodA(cl, obj, (Msg)msg);
+        DoSuperMethodA(cl, obj, (Msg)msg);
 
-    if(data->resolutionvga) {    
-	    msg->MinMaxInfo->MinWidth  += 640;
-	    msg->MinMaxInfo->MinHeight += 480;
-	    msg->MinMaxInfo->DefWidth  += 640;
-	    msg->MinMaxInfo->DefHeight += 480;
+    if(data->resolutionvga) {
+            msg->MinMaxInfo->MinWidth  += 640;
+            msg->MinMaxInfo->MinHeight += 480;
+            msg->MinMaxInfo->DefWidth  += 640;
+            msg->MinMaxInfo->DefHeight += 480;
     } else {
-	    msg->MinMaxInfo->MinWidth  += 320;
-	    msg->MinMaxInfo->MinHeight += 240;
-	    msg->MinMaxInfo->DefWidth  += 320;
-	    msg->MinMaxInfo->DefHeight += 240;
+            msg->MinMaxInfo->MinWidth  += 320;
+            msg->MinMaxInfo->MinHeight += 240;
+            msg->MinMaxInfo->DefWidth  += 320;
+            msg->MinMaxInfo->DefHeight += 240;
     }
 
     return TRUE;
@@ -447,7 +447,7 @@ IPTR mShow(Class *cl, Object *obj, struct MUIP_Show *msg) {
     mybug(-1, ("mShow gets called\n"));
 
     struct InstData *data = INST_DATA(cl, obj);
-    IPTR    	      retval;
+    IPTR              retval;
 
     data->guisleep = FALSE;
 
@@ -547,8 +547,8 @@ IPTR mDraw(Class *cl, Object *obj, struct MUIP_Draw *msg) {
 
     struct InstData *data = INST_DATA(cl, obj);
 
-    WORD    	      y;
-    IPTR    	      retval;
+    WORD              y;
+    IPTR              retval;
 
     static ULONG sec=0, mic=0, lastTick=0, currTick=0;
     
@@ -556,7 +556,7 @@ IPTR mDraw(Class *cl, Object *obj, struct MUIP_Draw *msg) {
     
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
 
-    if(data->ps3eye_ep1pipe) {        
+    if(data->ps3eye_ep1pipe) {
         for(y= 0; y < _mheight(obj); y++) {
             WORD col;
             col = ((y + data->pos) / 8) % 2;
@@ -685,10 +685,10 @@ int main(void) {
                 MUIA_Window_Title, "PS3Eye",
                     MUIA_Window_Activate, TRUE,
                         WindowContents, HGroup,
-		    		        Child, HGroup,
-		    			        MUIA_Weight, 100,
-		    			        Child, custom = NewObject(mcc->mcc_Class, NULL, TAG_DONE),
-		    		        End,
+                                        Child, HGroup,
+                                                MUIA_Weight, 100,
+                                                Child, custom = NewObject(mcc->mcc_Class, NULL, TAG_DONE),
+                                        End,
 
                             Child, VGroup,
                                 MUIA_Weight, 1,

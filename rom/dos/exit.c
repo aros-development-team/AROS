@@ -21,7 +21,7 @@
  * Similar construction should work on all CPUs. I guess this is what
  * is used by Exit() routine.
  *
- * For other CPUs we don't keep exact stack layout and consider it 
+ * For other CPUs we don't keep exact stack layout and consider it
  * private. Only Exit() knows what to do with it. However we keep stack
  * size value where it was, some code relies on it.
  */

@@ -37,13 +37,13 @@ const char pcidevBridgeInfinName[] = "PCI InfiniBand-to-PCI Host Bridge";
 /*****************************************************************************************
 
     NAME
-	aoHidd_PCIDevice_Owner
+        aoHidd_PCIDevice_Owner
 
     SYNOPSIS
-	[..G], APTR
+        [..G], APTR
 
     LOCATION
-	CLID_Hidd_PCIDevice
+        CLID_Hidd_PCIDevice
 
     FUNCTION
         Returns name of current device's owner or NULL if the device is
@@ -177,7 +177,7 @@ void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct 
         if (msg->val)
             msiflags |= PCIMSIF_ENABLE;
         D(bug("[PCIDevice] %s: MSI flags = %04x\n", __func__, msiflags);)
-        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);        
+        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);
     }
 }
 
@@ -556,7 +556,7 @@ VOID PCIDev__Hidd_PCIDevice__Release(OOP_Class *cl, OOP_Object *o,
 
 /*
     PCIDevice::New method is invoked by base pci class. It passes to the device
-    class information about the driver this class should use and location of 
+    class information about the driver this class should use and location of
     created device on the PCI bus handled by given driver.
 */
 OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -618,7 +618,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             UBYTE ht;
             
             /*
-                Get the header type in order to determine whether it is a 
+                Get the header type in order to determine whether it is a
                 device or bridge
             */
             ht = getByte(cl, o, PCICS_HEADERTYPE) & PCIHT_MASK;
@@ -655,7 +655,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 &dev->strClass, &dev->strSubClass, &dev->strInterface);
 
             /* Satisfy BUG watchers ;) */
-            D(bug("[PCIDevice] %02x.%02x.%x = %04.4lx:%04.4lx (%s %s %s)\n", 
+            D(bug("[PCIDevice] %02x.%02x.%x = %04.4lx:%04.4lx (%s %s %s)\n",
                 dev->bus, dev->dev, dev->sub,
                 dev->VendorID, dev->ProductID,
                 dev->strClass, dev->strSubClass, dev->strInterface));
@@ -679,7 +679,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                         dev->dev, dev->sub, (PCICS_EXPROM_BASE - PCICS_BAR0) >> 2);
             
             /*
-                Bridges specify only first two base addresses. If not bridge, 
+                Bridges specify only first two base addresses. If not bridge,
                 check the rest now
             */
             if (! dev->isBridge)

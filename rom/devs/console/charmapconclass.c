@@ -34,11 +34,11 @@
 #undef ConsoleDevice
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
-#define	PROP_FLAGS \
-	AUTOKNOB | FREEVERT | PROPNEWLOOK | PROPBORDERLESS
+#define PROP_FLAGS \
+        AUTOKNOB | FREEVERT | PROPNEWLOOK | PROPBORDERLESS
 
-#define CODE_COPY	'C'
-#define CODE_PASTE	'V'
+#define CODE_COPY       'C'
+#define CODE_PASTE      'V'
 
 extern const STRPTR CONCLIP_PORTNAME;
 
@@ -67,8 +67,8 @@ struct charmapcondata
     struct charmap_line *top_of_scrollback;
     /* The line currently displayed at the top of the screen */
     struct charmap_line *top_of_window;
-    /* Saved position for the top of the screen at the end of 
-       the buffer; where the buffer is reset to if there is 
+    /* Saved position for the top of the screen at the end of
+       the buffer; where the buffer is reset to if there is
        output while scrolling */
     struct charmap_line *saved_top_of_window;
     ULONG saved_scrollback_pos;
@@ -563,7 +563,7 @@ static VOID charmapcon_scroll_to(Class *cl, Object *o, ULONG y)
     off = old_pos - data->scrollback_pos;
 
     /* A whole screenful? If so we have no choice but a full refresh
-     * (though we could double buffer... Not sure that's worth the 
+     * (though we could double buffer... Not sure that's worth the
      * memory cost)
      */
     if (abs(off) > CHAR_YMAX(o))
@@ -815,7 +815,7 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
             UBYTE fgpen = line->fgpen[start];
             UBYTE bgpen = line->bgpen[start];
 
-            /* Is any part of this line part of a selection? 
+            /* Is any part of this line part of a selection?
              * If so, we bake in a state transition on "stop".
              * This code is messy - there must be a nicer way.
              */
@@ -900,7 +900,7 @@ static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
 
         /* We want to make sure we have lines covering the window once
            there's something to scroll back, as that simplies resize handling
-           etc. 
+           etc.
          */
         if (!line->next && yc <= toLine)
         {
@@ -1234,7 +1234,7 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o,
                     x, y, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o),
                     GFX_YMAX(o)));
 
-                /* We need to clear these lines 
+                /* We need to clear these lines
                  */
                 LONG old_min_y =
                     MIN(data->select_y_min, data->select_y_max);

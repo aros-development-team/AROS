@@ -10,7 +10,7 @@
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
- * 
+ *
  * 11-Aug-10 sonic     - Fixed for 64-bit compatibility
  * 27-Aug-07 sonic   - Register_Volume_Node() now takes separate pointer to a volume name.
  * 19-Sep-94   fmu   Fixed bug in Reinstall_Locks()
@@ -64,7 +64,7 @@ void Register_Lock (LOCK *p_lock)
   new->pathlist = Copy_Path_List (obj_p->pathlist, FALSE);
 
   new->vol_name = (char*) AllocMem (strlen (global->g_vol_name+1) + 1,
-  				    MEMF_PUBLIC);
+                                    MEMF_PUBLIC);
   if (!new->vol_name) {
     BUG(dbprintf ("[Cannot install lock on '%s']", pathname);)
     FreeMem (new, sizeof (t_lock_node));
@@ -140,7 +140,7 @@ int Reinstall_Locks (struct CDVDBase *global)
         BUG(dbprintf (global, "]\n");)
       } else {
         BUG(dbprintf (global, "(FAILED) ]\n");)
-	continue;
+        continue;
       }
       ptr->lock->fl_Link = (BPTR)obj;
     }
@@ -157,24 +157,24 @@ void Register_File_Handle(CDROM_OBJ *p_obj)
 struct CDVDBase *global = p_obj->global;
 t_fh_node *new;
 
-	new = (t_fh_node*) AllocMem (sizeof (t_fh_node), MEMF_PUBLIC);
-	if (!new)
-	{
-		return;
-	}
+        new = (t_fh_node*) AllocMem (sizeof (t_fh_node), MEMF_PUBLIC);
+        if (!new)
+        {
+                return;
+        }
 
-	new->vol_name = (char*) AllocMem (StrLen (global->g_vol_name+1) + 1, MEMF_PUBLIC);
-	if (!new->vol_name)
-	{
-		FreeMem (new, sizeof (t_fh_node));
-		return;
-	}
-	StrCpy (new->vol_name, global->g_vol_name+1);
+        new->vol_name = (char*) AllocMem (StrLen (global->g_vol_name+1) + 1, MEMF_PUBLIC);
+        if (!new->vol_name)
+        {
+                FreeMem (new, sizeof (t_fh_node));
+                return;
+        }
+        StrCpy (new->vol_name, global->g_vol_name+1);
 
-	new->obj = p_obj;
-	new->devlist = global->DevList;
-	new->next = global->g_fh_list;
-	global->g_fh_list = new;
+        new->obj = p_obj;
+        new->devlist = global->DevList;
+        new->next = global->g_fh_list;
+        global->g_fh_list = new;
 
 }
 
@@ -185,17 +185,17 @@ void Unregister_File_Handle(CDROM_OBJ *p_obj) {
 t_fh_node *ptr, *old;
 struct CDVDBase *global = p_obj->global;
   
-	for (ptr=global->g_fh_list, old = NULL; ptr; old = ptr, ptr = ptr->next)
-		if (ptr->obj == p_obj && StrCmp (global->g_vol_name+1, ptr->vol_name) == 0)
-		{
-			if (old)
-				old->next = ptr->next;
-			else
-				global->g_fh_list = ptr->next;
-			FreeMem (ptr->vol_name, StrLen (ptr->vol_name) + 1);
-			FreeMem (ptr, sizeof (t_fh_node));
-			return;
-		}
+        for (ptr=global->g_fh_list, old = NULL; ptr; old = ptr, ptr = ptr->next)
+                if (ptr->obj == p_obj && StrCmp (global->g_vol_name+1, ptr->vol_name) == 0)
+                {
+                        if (old)
+                                old->next = ptr->next;
+                        else
+                                global->g_fh_list = ptr->next;
+                        FreeMem (ptr->vol_name, StrLen (ptr->vol_name) + 1);
+                        FreeMem (ptr, sizeof (t_fh_node));
+                        return;
+                }
 }
 
 /*  Update the volume pointer for all CDROM_OBJs which are used as
@@ -222,14 +222,14 @@ struct DeviceList *Find_Dev_List (CDROM_OBJ *p_obj) {
 struct CDVDBase *global = p_obj->global;
 t_fh_node *ptr;
 
-	for (ptr=global->g_fh_list; ptr; ptr = ptr->next)
-	{
-		if (ptr->obj == p_obj)
-		{
-			return ptr->devlist;
-		}
-	}
-	return NULL;
+        for (ptr=global->g_fh_list; ptr; ptr = ptr->next)
+        {
+                if (ptr->obj == p_obj)
+                {
+                        return ptr->devlist;
+                }
+        }
+        return NULL;
 }
 
 /*  Register a volume node as owned by this handler.
@@ -239,21 +239,21 @@ void Register_Volume_Node(struct CDVDBase *global, struct DeviceList *p_volume, 
 t_vol_reg_node *new;
 int len;
   
-	new = (t_vol_reg_node*) AllocMem (sizeof (t_vol_reg_node), MEMF_PUBLIC);
-	if (!new)
-		return;
+        new = (t_vol_reg_node*) AllocMem (sizeof (t_vol_reg_node), MEMF_PUBLIC);
+        if (!new)
+                return;
 
-	new->volume = p_volume;
-	len = strlen(Name) + 1;
-	new->name = (char*) AllocMem (len, MEMF_PUBLIC);
-	if (!new)
-	{
-		FreeMem (new, sizeof (t_vol_reg_node));
-		return;
-	}
-	CopyMem(Name, new->name, len);
-	new->next = global->g_volume_list;
-	global->g_volume_list = new;
+        new->volume = p_volume;
+        len = strlen(Name) + 1;
+        new->name = (char*) AllocMem (len, MEMF_PUBLIC);
+        if (!new)
+        {
+                FreeMem (new, sizeof (t_vol_reg_node));
+                return;
+        }
+        CopyMem(Name, new->name, len);
+        new->next = global->g_volume_list;
+        global->g_volume_list = new;
 }
 
 /*  Remove the registration for the volume node.
@@ -262,19 +262,19 @@ int len;
 void Unregister_Volume_Node(struct CDVDBase *global, struct DeviceList *p_volume) {
 t_vol_reg_node *ptr, *old;
 
-	for (ptr=global->g_volume_list, old=NULL; ptr; old=ptr, ptr=ptr->next)
-	{
-		if (p_volume == ptr->volume)
-		{
-			if (old)
-				old->next = ptr->next;
-			else
-				global->g_volume_list = ptr->next;
-			FreeMem (ptr->name, StrLen (ptr->name) + 1);
-			FreeMem (ptr, sizeof (t_vol_reg_node));
-			return;
-		}
-	}
+        for (ptr=global->g_volume_list, old=NULL; ptr; old=ptr, ptr=ptr->next)
+        {
+                if (p_volume == ptr->volume)
+                {
+                        if (old)
+                                old->next = ptr->next;
+                        else
+                                global->g_volume_list = ptr->next;
+                        FreeMem (ptr->name, StrLen (ptr->name) + 1);
+                        FreeMem (ptr, sizeof (t_vol_reg_node));
+                        return;
+                }
+        }
 }
 
 /*  Find a volume node with a matching name.
@@ -283,10 +283,10 @@ t_vol_reg_node *ptr, *old;
 struct DeviceList *Find_Volume_Node(struct CDVDBase *global, char *p_name) {
 t_vol_reg_node *ptr;
 
-	for (ptr=global->g_volume_list; ptr; ptr=ptr->next)
-	{
-		if (Stricmp (ptr->name, p_name) == 0)
-			return ptr->volume;
-	}
-	return NULL;
+        for (ptr=global->g_volume_list; ptr; ptr=ptr->next)
+        {
+                if (Stricmp (ptr->name, p_name) == 0)
+                        return ptr->volume;
+        }
+        return NULL;
 }

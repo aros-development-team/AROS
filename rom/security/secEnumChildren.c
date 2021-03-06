@@ -11,33 +11,33 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH3(LONG, secEnumChildren,
+        AROS_LH3(LONG, secEnumChildren,
 
 /*  SYNOPSIS */
-	/* (parent, children, size) */
-	AROS_LHA(struct Task *, parent, A0),
-	AROS_LHA(struct Task **, children, A1),
-	AROS_LHA(LONG, size, D0),
+        /* (parent, children, size) */
+        AROS_LHA(struct Task *, parent, A0),
+        AROS_LHA(struct Task **, children, A1),
+        AROS_LHA(LONG, size, D0),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 36, Security)
+        struct SecurityBase *, secBase, 36, Security)
 
 /*  FUNCTION
-	Enumerate the children of a given task.
+        Enumerate the children of a given task.
 
     INPUTS
-	parent - the Task we are interested in (and may be NULL -> calling task),
-	children - an array we should populate
-	size - the size of the supplied array (children)
+        parent - the Task we are interested in (and may be NULL -> calling task),
+        children - an array we should populate
+        size - the size of the supplied array (children)
 
     RESULT
-	If the size is too small, we return -(num children) to indicate the size of
-	the buffer needed for a successful call.
-	This means that a program could call us with a size of -1 to ask us how big
-	the buffer should be.
+        If the size is too small, we return -(num children) to indicate the size of
+        the buffer needed for a successful call.
+        This means that a program could call us with a size of -1 to ask us how big
+        the buffer should be.
 
     NOTES
-	This is designed to replace secGetChildren/secFreeTaskVec.
+        This is designed to replace secGetChildren/secFreeTaskVec.
 
     EXAMPLE
 
@@ -61,7 +61,7 @@
     D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
     ObtainSemaphore(&secBase->TaskOwnerSem);
-    if ( (node = FindTaskNode(secBase, 
+    if ( (node = FindTaskNode(secBase,
             parent ? parent : FindTask(NULL)
             )) )
     {
@@ -69,7 +69,7 @@
             goto leave;
 
         /* Allow a program to ask how big a buffer to use */
-        if ((node->ChildrenCount > size) || (children == NULL))	{
+        if ((node->ChildrenCount > size) || (children == NULL)) {
             result = - node->ChildrenCount;
             goto leave;
         }

@@ -14,30 +14,30 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH3(IPTR, OOP_GetAttr,
+        AROS_LH3(IPTR, OOP_GetAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(OOP_Object		*, object, A0),
-	AROS_LHA(OOP_AttrID         , attrID, A1),
-	AROS_LHA(IPTR		*, storage, A2),
+        AROS_LHA(OOP_Object             *, object, A0),
+        AROS_LHA(OOP_AttrID         , attrID, A1),
+        AROS_LHA(IPTR           *, storage, A2),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 16, OOP)
+        struct Library *, OOPBase, 16, OOP)
 
 /*  FUNCTION
-	Gets the specifed attribute from the object,
-	and puts it into storage.
+        Gets the specifed attribute from the object,
+        and puts it into storage.
 
     INPUTS
-    	object	- pointer to object from which we want to
-	          get an attribute.
-		  
-	attrID  - Attribute ID for property to get.
-	
-	storage - Pointer to IPTR the fetched data should be put into.
+        object  - pointer to object from which we want to
+                  get an attribute.
+                  
+        attrID  - Attribute ID for property to get.
+        
+        storage - Pointer to IPTR the fetched data should be put into.
 
     RESULT
-    	Undefined.
+        Undefined.
 
     NOTES
 
@@ -46,7 +46,7 @@
     BUGS
 
     SEE ALSO
-	OOP_SetAttrs()
+        OOP_SetAttrs()
 
     INTERNALS
 
@@ -61,11 +61,11 @@
     
     if (!iOOPBase->ob_mRoot_Get)
         iOOPBase->ob_mRoot_Get = OOP_GetMethodID(IID_Root, moRoot_Get);
-	
-	
-    p.mID	= iOOPBase->ob_mRoot_Get;
-    p.attrID	= attrID;
-    p.storage	= storage;
+        
+        
+    p.mID       = iOOPBase->ob_mRoot_Get;
+    p.attrID    = attrID;
+    p.storage   = storage;
     
     /* Call the Get() method on the object */
     

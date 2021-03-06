@@ -12,13 +12,13 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(BPTR, secGetConfigDirLock,
+        AROS_LH0(BPTR, secGetConfigDirLock,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 20, Security)
+        struct SecurityBase *, secBase, 20, Security)
 
 /*  FUNCTION
               Get a Shared Lock on the Directory of the Configuration File

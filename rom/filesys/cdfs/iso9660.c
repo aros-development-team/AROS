@@ -844,7 +844,7 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
         }
 
         err = ERROR_NO_MORE_ENTRIES;
-    } 
+    }
 
     fib->fib_DiskKey = offset;
 

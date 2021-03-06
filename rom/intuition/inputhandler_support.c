@@ -444,7 +444,7 @@ IPTR Locked_DoMethodA (struct Window *w, struct Gadget *g, Msg message, struct I
     }
     
     LOCKGADGET(IntuitionBase)
-    rc = Custom_DoMethodA(IntuitionBase, g, message);   
+    rc = Custom_DoMethodA(IntuitionBase, g, message);
     UNLOCKGADGET(IntuitionBase)
 
     if (lock)
@@ -1438,7 +1438,7 @@ struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
             != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
-	/* Check if top of screen is highest so far */
+        /* Check if top of screen is highest so far */
         if (scr->TopEdge < highest->TopEdge)
             highest = scr;
     }

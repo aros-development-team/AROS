@@ -10,29 +10,29 @@
 
     NAME */
 
-	AROS_LH1(ULONG, ChildStatus,
+        AROS_LH1(ULONG, ChildStatus,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, tid, D0),
+        AROS_LHA(ULONG, tid, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 125, Exec)
+        struct ExecBase *, SysBase, 125, Exec)
 
 /*  FUNCTION
-	Return the status of a child task. This allows the Task to
-	determine whether a particular child task is still running or not.
+        Return the status of a child task. This allows the Task to
+        determine whether a particular child task is still running or not.
 
     INPUTS
-	tid	--  The ID of the task to examine. Note that it is _NOT_
-		    a task pointer.
+        tid     --  The ID of the task to examine. Note that it is _NOT_
+                    a task pointer.
 
     RESULT
-	One of the CHILD_* values.
+        One of the CHILD_* values.
 
     NOTES
-	This function will work correctly only for child tasks that are
-	processes created with NP_NotifyOnDeath set to TRUE. Otherwise
-	it may report CHILD_NOTFOUND even if child already exited.
+        This function will work correctly only for child tasks that are
+        processes created with NP_NotifyOnDeath set to TRUE. Otherwise
+        it may report CHILD_NOTFOUND even if child already exited.
 
     EXAMPLE
 
@@ -46,10 +46,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task	    *ThisTask = GET_THIS_TASK;
+    struct Task     *ThisTask = GET_THIS_TASK;
     struct ETask    *et;
     struct ETask    *child;
-    ULONG	     status = CHILD_NOTFOUND;
+    ULONG            status = CHILD_NOTFOUND;
 
     if (ThisTask)
     {

@@ -14,13 +14,13 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, LockLayerRom,
+        AROS_LH1(void, LockLayerRom,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Layer *, l,   A5),
+        AROS_LHA(struct Layer *, l,   A5),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 72, Graphics)
+        struct GfxBase *, GfxBase, 72, Graphics)
 
 /*  FUNCTION
         Locks the layer. Returns when the layer is locked for

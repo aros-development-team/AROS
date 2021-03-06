@@ -12,13 +12,13 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(struct secUserInfo *, secAllocUserInfo,
+        AROS_LH0(struct secUserInfo *, secAllocUserInfo,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 9, Security)
+        struct SecurityBase *, secBase, 9, Security)
 
 /*  FUNCTION
 

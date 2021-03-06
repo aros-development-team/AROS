@@ -16,13 +16,13 @@
 #include <oop/oop.h>
 #include <proto/oop.h>
 
-	AROS_LH1(VOID, OOP_ReleaseAttrBases,
+        AROS_LH1(VOID, OOP_ReleaseAttrBases,
 
 /*  SYNOPSIS */
-	AROS_LHA(const struct OOP_ABDescr *, abd, A0),
+        AROS_LHA(const struct OOP_ABDescr *, abd, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 19, OOP)
+        struct Library *, OOPBase, 19, OOP)
 
 /*  FUNCTION
 
@@ -50,10 +50,10 @@
     for (; abd->interfaceID; abd ++)
     {
         if ( *abd->attrBase != 0 )
-	{
-	    OOP_ReleaseAttrBase(abd->interfaceID);
-	    *abd->attrBase = 0;
-	}
+        {
+            OOP_ReleaseAttrBase(abd->interfaceID);
+            *abd->attrBase = 0;
+        }
     }
     
     

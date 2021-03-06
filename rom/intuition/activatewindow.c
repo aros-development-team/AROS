@@ -22,7 +22,7 @@
 struct ActivateWindowActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
+    struct Window           *window;
 };
 
 static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
@@ -90,25 +90,25 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                                struct IntuitionBase *IntuitionBase)
 {
-    struct IIHData  	*iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct IIHData      *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     /* On the Amiga ActivateWindow is delayed if there
        is an active gadget (altough this does not seem
        to be true for string gadgets). We just ignore
        ActivateWindow in such a case. */
 
-    struct Window   	*window = msg->window;
-    ULONG   	     	 lock;
-    struct Window   	*oldactive;
-    Object  	    	*pointer = NULL;
-    struct IntScreen 	*scr = NULL;
-    struct InputEvent 	*ie;
+    struct Window       *window = msg->window;
+    ULONG                lock;
+    struct Window       *oldactive;
+    Object              *pointer = NULL;
+    struct IntScreen    *scr = NULL;
+    struct InputEvent   *ie;
 
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
 //    if (window->Flags & WFLG_TOOLBOX) return;
 
     if ((!iihdata->ActiveGadget) ||
-    	(iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
+        (iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
     {
 
         lock = LockIBase(0UL);
@@ -130,7 +130,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                              0,
                              oldactive,
                              IntuitionBase);
-			     
+                             
                 scr = GetPrivScreen(oldactive->WScreen);
                 scr->Screen.Title = scr->Screen.DefaultTitle;
             }
@@ -139,7 +139,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
             {
                 /*
                     Tasks are allowed to modify window->Flags, for example
-                     set/clear WFLG_RMBTRAP. It is not certain that every 
+                     set/clear WFLG_RMBTRAP. It is not certain that every
                      compiler on every machine produces an atomic instruction.
                 */
                 /* FIXME: check that window->Flags is atomically set everywhere */
@@ -151,13 +151,13 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
                 scr = GetPrivScreen(window->WScreen);
                 if (window->ScreenTitle)
-		{
+                {
                     scr->Screen.Title = window->ScreenTitle;
-		}
-		else
-		{
-		    scr->Screen.Title = scr->Screen.DefaultTitle;
-		}
+                }
+                else
+                {
+                    scr->Screen.Title = scr->Screen.DefaultTitle;
+                }
             }
 
             /* now set the ActiveScreen! */
@@ -172,7 +172,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                 {
 
                     /* this avoids mouse "jump" effect */
-		    /* .. but causes setting wrong coordinates - sonic
+                    /* .. but causes setting wrong coordinates - sonic
                     scr->Screen.MouseX = old->MouseX;
                     scr->Screen.MouseY = old->MouseY;*/
 
@@ -274,19 +274,19 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     if (window && window->UserPort)
     {
         struct Task *apptask = window->UserPort->mp_SigTask;
-	
+        
         if (apptask && (!apptask->tc_SigWait) && (apptask->tc_State == TS_WAIT))
         {
             //task is DEAD!
             //give some visual feedback to the user
-	    
+            
             IW(window)->specialflags |= SPFLAG_IAMDEAD;
 
             int_refreshwindowframe(window,REFRESHGAD_TOPBORDER,0,IntuitionBase);
 
         }
-	else
-	{
+        else
+        {
             IW(window)->specialflags &= ~SPFLAG_IAMDEAD;
         }
     }

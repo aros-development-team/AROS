@@ -61,7 +61,7 @@ static VOID snipmapcon_dispose(Class *cl, Object *o, Msg msg)
 static VOID snipmapcon_copy(Class *cl, Object *o, Msg msg)
 {
     /* FIXME: This really should happen here, but currently,
-       charmapcon contains the selection code, and it's hard to 
+       charmapcon contains the selection code, and it's hard to
        extract.
      */
     DoSuperMethodA(cl, o, (Msg) msg);

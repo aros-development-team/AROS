@@ -28,7 +28,7 @@
 void DefaultScreennotifyHandler(struct ScreennotifyTaskParams *taskparams)
 {
     struct MsgPort          *port = NULL;
-    BOOL            	     success = FALSE;
+    BOOL                     success = FALSE;
 
     if ((port  = CreateMsgPort()))
     {
@@ -77,7 +77,7 @@ BOOL InitDefaultScreennotifyHandler(struct IntuitionBase *IntuitionBase)
 {
     struct ScreennotifyTaskParams   params;
     struct Task                    *task;
-    BOOL            	            result = FALSE;
+    BOOL                            result = FALSE;
 
     params.intuitionBase = IntuitionBase;
     params.Caller    = FindTask(NULL);
@@ -85,12 +85,12 @@ BOOL InitDefaultScreennotifyHandler(struct IntuitionBase *IntuitionBase)
 
     SetSignal(0, SIGF_INTUITION);
 
-    task = NewCreateTask(TASKTAG_NAME	  , SCREENNOTIFYTASK_NAME,
-    			 TASKTAG_PRI	  , SCREENNOTIFYTASK_PRIORITY,
-    			 TASKTAG_STACKSIZE, SCREENNOTIFYTASK_STACKSIZE,
-    			 TASKTAG_PC	  , DefaultScreennotifyHandler,
-    			 TASKTAG_ARG1	  , &params,
-    			 TAG_DONE);
+    task = NewCreateTask(TASKTAG_NAME     , SCREENNOTIFYTASK_NAME,
+                         TASKTAG_PRI      , SCREENNOTIFYTASK_PRIORITY,
+                         TASKTAG_STACKSIZE, SCREENNOTIFYTASK_STACKSIZE,
+                         TASKTAG_PC       , DefaultScreennotifyHandler,
+                         TASKTAG_ARG1     , &params,
+                         TAG_DONE);
 
     if (task)
     {

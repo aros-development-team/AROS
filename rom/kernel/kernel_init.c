@@ -67,7 +67,7 @@ DEFINESET(INITLIB)
  * It can use kernel's own memory allocator (if implemented) for KernelBase creation.
  * This allows not to rely on working exec's memory management before kernel.resource
  * is set up. This can simplify exec.library code on MMU-aware systems.
- * exec.library catches our AddResource() and sets up its pooled memory manager. 
+ * exec.library catches our AddResource() and sets up its pooled memory manager.
  */
 
 AROS_UFH3S(struct KernelBase *, Kernel_Init,

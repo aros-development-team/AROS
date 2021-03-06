@@ -22,40 +22,40 @@
 /*
  * displays requester on screen or puts text to the debug buffer
  */
-LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, RAWARG args) 
+LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, RAWARG args)
 {
-	LONG answer = 0;
-	char* options[] =
-	{
-		"Cancel",
-		"Retry|Cancel",
-		"Check disk|Cancel",
-		"Continue|Cancel",
-		"Continue",
-		NULL
-	};
-	struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,options[type]};
-	struct IntuitionBase *IntuitionBase;
+        LONG answer = 0;
+        char* options[] =
+        {
+                "Cancel",
+                "Retry|Cancel",
+                "Check disk|Cancel",
+                "Continue|Cancel",
+                "Continue",
+                NULL
+        };
+        struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,options[type]};
+        struct IntuitionBase *IntuitionBase;
 
-	IntuitionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
-	if (IntuitionBase != NULL)
-	{
-	    es.es_TextFormat=string;
+        IntuitionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+        if (IntuitionBase != NULL)
+        {
+            es.es_TextFormat=string;
 
-	    if (IntuitionBase->FirstScreen != NULL)
-	    {
-		answer = EasyRequestArgs(NULL,&es,NULL,args);
-	    }
-	    CloseLibrary((struct Library *)IntuitionBase);
-	}
-	else
-	{
-	    /* We use serial for error printing when gfx.hidd is not initialized */
-	    RawDoFmt(string, args, RAWFMTFUNC_SERIAL, NULL);
-	    RawPutChar('\n');
-	}
+            if (IntuitionBase->FirstScreen != NULL)
+            {
+                answer = EasyRequestArgs(NULL,&es,NULL,args);
+            }
+            CloseLibrary((struct Library *)IntuitionBase);
+        }
+        else
+        {
+            /* We use serial for error printing when gfx.hidd is not initialized */
+            RawDoFmt(string, args, RAWFMTFUNC_SERIAL, NULL);
+            RawPutChar('\n');
+        }
 
-	return answer;
+        return answer;
 }
 
 LONG showError(struct AFSBase *afsbase, ULONG error, ...)

@@ -12,19 +12,19 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH6(LONG, secAccess_Control,
+        AROS_LH6(LONG, secAccess_Control,
 
 /*  SYNOPSIS */
-	/* (fs, task, owner, prot) */
-	AROS_LHA(ULONG, contextflags, D1),
-	AROS_LHA(APTR, context, A1),
-	AROS_LHA(struct secExtOwner *, task, A2),
-	AROS_LHA(ULONG, objectowner, D2),
-	AROS_LHA(LONG, objectprot, D3),
-	AROS_LHA(LONG, access_type, D4),
+        /* (fs, task, owner, prot) */
+        AROS_LHA(ULONG, contextflags, D1),
+        AROS_LHA(APTR, context, A1),
+        AROS_LHA(struct secExtOwner *, task, A2),
+        AROS_LHA(ULONG, objectowner, D2),
+        AROS_LHA(LONG, objectprot, D3),
+        AROS_LHA(LONG, access_type, D4),
 
 /*  LOCATION */
-	struct SecurityBase *, secBase, 33, Security)
+        struct SecurityBase *, secBase, 33, Security)
 
 /*  FUNCTION
 
@@ -56,21 +56,21 @@
 
     D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
-    switch (contextflags)	{
+    switch (contextflags)       {
         case secAC_FILESYSTEM_CONTEXT:
             {
                 /* Context the a msgport of a filesystem */
-                if (context != NULL)	{
+                if (context != NULL)    {
                     /* Find the secVolume for the FileSystem */
                     ObtainSemaphore(&secBase->VolumesSem);
                     vol = secBase->Volumes;
-                    while(vol)	{
+                    while(vol)  {
                         if (vol->Process == (struct MsgPort*)context)
                             break;
                         vol = vol->Next;
                     }
                     ReleaseSemaphore(&secBase->VolumesSem);
-                } 
+                }
             }
             break;
         case secAC_IGNORE_CONTEXT:

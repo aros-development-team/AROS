@@ -29,7 +29,7 @@ VOID DoGMLayout(struct Gadget *glist, struct Window *win, struct Requester *req,
                                   GFLG_RELWIDTH | GFLG_RELHEIGHT))))
         {
             struct gpLayout lmsg;
-	    
+            
             lmsg.MethodID    = GM_LAYOUT;
             lmsg.gpl_GInfo   = NULL;
             lmsg.gpl_Initial = initial;

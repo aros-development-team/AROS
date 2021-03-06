@@ -29,18 +29,18 @@ static IPTR *CopyResidents(IPTR *list, IPTR *dst, IPTR *oldlist)
 
     while(*list)
     {
-	IPTR *oldresident;
+        IPTR *oldresident;
 
-	if (*list & RESLIST_NEXT)
-	{
-	    list = (IPTR *)(*list & ~RESLIST_NEXT);
-	    continue;
-	}
+        if (*list & RESLIST_NEXT)
+        {
+            list = (IPTR *)(*list & ~RESLIST_NEXT);
+            continue;
+        }
 
-	RomTag = (struct Resident*)*list;
+        RomTag = (struct Resident*)*list;
 
 #ifdef PRINT_LIST
-	bug("* %p: %4d %02x %3d \"%s\"\n",
+        bug("* %p: %4d %02x %3d \"%s\"\n",
             RomTag,
             RomTag->rt_Pri,
             RomTag->rt_Flags,
@@ -48,31 +48,31 @@ static IPTR *CopyResidents(IPTR *list, IPTR *dst, IPTR *oldlist)
             RomTag->rt_Name);
 #endif
 
-	/* Try to find a resident with this name in original list */
-	oldresident = InternalFindResident(RomTag->rt_Name, oldlist);
-	if (oldresident)
-	{
-	    /*
-	     * If found, check version.
-	     * The resident is replaced if:
-	     * a) Version of new resident is greater than version of old one.
-	     * b) Versions are equal, but priority of new resident is greater than priority of old one.
-	     */
-	    struct Resident *OldRomTag = (struct Resident *)*oldresident;
+        /* Try to find a resident with this name in original list */
+        oldresident = InternalFindResident(RomTag->rt_Name, oldlist);
+        if (oldresident)
+        {
+            /*
+             * If found, check version.
+             * The resident is replaced if:
+             * a) Version of new resident is greater than version of old one.
+             * b) Versions are equal, but priority of new resident is greater than priority of old one.
+             */
+            struct Resident *OldRomTag = (struct Resident *)*oldresident;
 
-	    if ((OldRomTag->rt_Version >= RomTag->rt_Version) ||
-		(OldRomTag->rt_Version == RomTag->rt_Version && OldRomTag->rt_Pri >= RomTag->rt_Pri))
-	    {
-	    	oldresident = NULL;
-	    }
-	}
-	
-	if (oldresident)
-	    *oldresident = *list;
-	else
-	    *dst++ = *list;
+            if ((OldRomTag->rt_Version >= RomTag->rt_Version) ||
+                (OldRomTag->rt_Version == RomTag->rt_Version && OldRomTag->rt_Pri >= RomTag->rt_Pri))
+            {
+                oldresident = NULL;
+            }
+        }
+        
+        if (oldresident)
+            *oldresident = *list;
+        else
+            *dst++ = *list;
 
-	list++;
+        list++;
     }
     
     /* Terminate the list */
@@ -87,14 +87,14 @@ static int CountResidents(IPTR *list)
 
     while(*list)
     {
-	if (*list & RESLIST_NEXT)
-	{
-	    list = (IPTR *)(*list & ~RESLIST_NEXT);
-	    continue;
-	}
+        if (*list & RESLIST_NEXT)
+        {
+            list = (IPTR *)(*list & ~RESLIST_NEXT);
+            continue;
+        }
 
-	cnt++;
-	list++;
+        cnt++;
+        list++;
     }
     return cnt;
 }
@@ -108,21 +108,21 @@ static void SortResidents(IPTR *list)
     num = CountResidents(list);
     do
     {
-    	sorted = TRUE;
+        sorted = TRUE;
 
-    	for (i = 0; i < num - 1; i++)
-    	{
-    	    if (RomTag[i]->rt_Pri < RomTag[i+1]->rt_Pri)
-    	    {
-    	    	struct Resident *tmp;
+        for (i = 0; i < num - 1; i++)
+        {
+            if (RomTag[i]->rt_Pri < RomTag[i+1]->rt_Pri)
+            {
+                struct Resident *tmp;
 
-    	    	tmp = RomTag[i+1];
-    	    	RomTag[i+1] = RomTag[i];
-    	    	RomTag[i] = tmp;
+                tmp = RomTag[i+1];
+                RomTag[i+1] = RomTag[i];
+                RomTag[i] = tmp;
 
-    	    	sorted = FALSE;
-    	    }
-    	}
+                sorted = FALSE;
+            }
+        }
     } while (!sorted);
 }
 
@@ -140,7 +140,7 @@ static void AddToResidentList(IPTR *list)
     /* Allocate space for the new list */
     newlist = AllocMem((oldcnt + addcnt + 1) * sizeof(struct Resident*), MEMF_PUBLIC);
     if (!newlist)
-    	return;
+        return;
 
     /* Merge two lists and sort. */
     tmplist = CopyResidents(SysBase->ResModules, newlist, NULL);
@@ -157,17 +157,17 @@ static void AddToResidentList(IPTR *list)
 #ifndef NO_RUNTIME_DEBUG
     if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
     {
-    	int i;
+        int i;
     
-    	DINITCODE("Resident modules after KickTags merge:");
+        DINITCODE("Resident modules after KickTags merge:");
 
-	for (i = 0; i < addcnt + oldcnt; i++)
-	{
-    	    struct Resident *RomTag = (struct Resident*)newlist[i];
+        for (i = 0; i < addcnt + oldcnt; i++)
+        {
+            struct Resident *RomTag = (struct Resident*)newlist[i];
 
             NewRawDoFmt("+ %p: %4ld %02x %3ld \"%s\"\n", (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL,
-		        RomTag, RomTag->rt_Pri, RomTag->rt_Flags, RomTag->rt_Version, RomTag->rt_Name);
-	}
+                        RomTag, RomTag->rt_Pri, RomTag->rt_Flags, RomTag->rt_Version, RomTag->rt_Name);
+        }
     }
 #endif
 }
@@ -182,13 +182,13 @@ void InitKickTags(struct ExecBase *SysBase)
 
     if (chkold != chk)
     {
-    	DINITCODE("Kicktag checksum mismatch %08lx!=%08lx", chkold, chk);
+        DINITCODE("Kicktag checksum mismatch %08lx!=%08lx", chkold, chk);
 
-    	SysBase->KickMemPtr = NULL;
-    	SysBase->KickTagPtr = NULL;
-    	SysBase->KickCheckSum = 0;
+        SysBase->KickMemPtr = NULL;
+        SysBase->KickTagPtr = NULL;
+        SysBase->KickCheckSum = 0;
 
-    	return;
+        return;
     }
 
     /*
@@ -197,29 +197,29 @@ void InitKickTags(struct ExecBase *SysBase)
      */
     while (ml) /* single linked! */
     {
-    	UWORD i;
+        UWORD i;
 
-	DINITCODE("KickMemList 0x%p, NumEntries: %u", ml->ml_NumEntries);
-    	for (i = 0; i < ml->ml_NumEntries; i++)
-    	{
-    	    DINITCODE(" + Addr 0x%p, Len %u", ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length);
+        DINITCODE("KickMemList 0x%p, NumEntries: %u", ml->ml_NumEntries);
+        for (i = 0; i < ml->ml_NumEntries; i++)
+        {
+            DINITCODE(" + Addr 0x%p, Len %u", ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length);
 
-    	    /* 
-    	     * Use the non-Munwalling AllocAbs, since regions may be consecutive.
-    	     * Mungwall headers can trash them in this case.
-    	     */
-    	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase))
-    	    {
-		DINITCODE("KickMem allocation failed");
-		/* Should we free already allocated KickMem lists? */
- 	    	return;
- 	    }
-    	}
-    	ml = (struct MemList*)ml->ml_Node.ln_Succ;
+            /*
+             * Use the non-Munwalling AllocAbs, since regions may be consecutive.
+             * Mungwall headers can trash them in this case.
+             */
+            if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase))
+            {
+                DINITCODE("KickMem allocation failed");
+                /* Should we free already allocated KickMem lists? */
+                return;
+            }
+        }
+        ml = (struct MemList*)ml->ml_Node.ln_Succ;
     }
 
     if (SysBase->KickTagPtr)
     {
-    	AddToResidentList(SysBase->KickTagPtr);
+        AddToResidentList(SysBase->KickTagPtr);
     }
 }

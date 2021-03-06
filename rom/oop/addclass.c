@@ -12,40 +12,40 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(VOID, OOP_AddClass,
+        AROS_LH1(VOID, OOP_AddClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(OOP_Class  *, classPtr, A0),
+        AROS_LHA(OOP_Class  *, classPtr, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 8, OOP)
+        struct Library *, OOPBase, 8, OOP)
 
 /*  FUNCTION
-	Adds a class to the public list of classes.
-	This means that any process can create objects of this
-	class.
+        Adds a class to the public list of classes.
+        This means that any process can create objects of this
+        class.
 
     INPUTS
-    	classPtr - Pointer to the class to make public.
+        classPtr - Pointer to the class to make public.
 
     RESULT
-    	None.
+        None.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	Would be faster to use a hashtable to look up class IDs
+        Would be faster to use a hashtable to look up class IDs
 
     SEE ALSO
-    	OOP_RemoveClass()
+        OOP_RemoveClass()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+        29-10-95    digulla automatically created from
+                            intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
@@ -54,12 +54,12 @@
     if (classPtr)
     {
     
-    	ObtainSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
+        ObtainSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
     
-    	AddTail((struct List *)&GetOBase(OOPBase)->ob_ClassList
-    		,(struct Node *)classPtr);
+        AddTail((struct List *)&GetOBase(OOPBase)->ob_ClassList
+                ,(struct Node *)classPtr);
     
-    	ReleaseSemaphore( & GetOBase(OOPBase)->ob_ClassListLock );
+        ReleaseSemaphore( & GetOBase(OOPBase)->ob_ClassListLock );
     }
     
     return;

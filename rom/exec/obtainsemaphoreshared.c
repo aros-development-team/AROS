@@ -20,37 +20,37 @@
 #endif
 
 /*  NAME */
-	#include <proto/exec.h>
+        #include <proto/exec.h>
 
-	AROS_LH1(void, ObtainSemaphoreShared,
+        AROS_LH1(void, ObtainSemaphoreShared,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
+        AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 113, Exec)
+        struct ExecBase *, SysBase, 113, Exec)
 
 /*  FUNCTION
-	Get a shared lock on a semaphore. If the lock cannot be obtained
-	immediately this function waits. There may be more than one shared
-	locks at the same time but only one exclusive one. An exclusive
-	lock prevents shared locks. Shared locks are released with
-	ReleaseSemaphore().
+        Get a shared lock on a semaphore. If the lock cannot be obtained
+        immediately this function waits. There may be more than one shared
+        locks at the same time but only one exclusive one. An exclusive
+        lock prevents shared locks. Shared locks are released with
+        ReleaseSemaphore().
 
     INPUTS
-	sigSem - Pointer to semaphore structure
+        sigSem - Pointer to semaphore structure
 
     RESULT
 
     NOTES
-	This function preserves all registers.
+        This function preserves all registers.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	ReleaseSemaphore()
+        ReleaseSemaphore()
 
     INTERNALS
 

@@ -25,7 +25,7 @@ static int common_Init(struct TimerBase *LIBBASE)
 
     /* Initialise the lists */
     for (i = 0; i < NUM_LISTS; i++)
-	NEWLIST(&LIBBASE->tb_Lists[i]);
+        NEWLIST(&LIBBASE->tb_Lists[i]);
 
     return TRUE;
 }

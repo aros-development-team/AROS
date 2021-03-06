@@ -16,14 +16,14 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct BitMap *, bm,     A0),
-	AROS_LHA(BYTE           , depth,  D0),
-	AROS_LHA(UWORD          , width,  D1),
-	AROS_LHA(UWORD          , height, D2),
+        AROS_LHA(struct BitMap *, bm,     A0),
+        AROS_LHA(BYTE           , depth,  D0),
+        AROS_LHA(UWORD          , width,  D1),
+        AROS_LHA(UWORD          , height, D2),
 
 /*  LOCATION */
 
-	struct Library *, GfxBase, 65, Graphics)
+        struct Library *, GfxBase, 65, Graphics)
 
 /*  FUNCTION
 

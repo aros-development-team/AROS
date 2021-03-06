@@ -25,7 +25,7 @@
 
 /*  FUNCTION
         Find a CLI process by its task number. The number must be greater
-        than 0. 
+        than 0.
 
     INPUTS
         num - The task number of the CLI to find.

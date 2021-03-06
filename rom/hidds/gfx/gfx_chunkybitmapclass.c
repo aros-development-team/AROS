@@ -29,14 +29,14 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct chunkybm_data    *data;
-    OOP_Object      	    *pf;
-    IPTR   	    	    bytesperrow, bytesperpixel;
-    struct TagItem	    *tag;
-    OOP_MethodID	    dispose_mid;
+    OOP_Object              *pf;
+    IPTR                    bytesperrow, bytesperpixel;
+    struct TagItem          *tag;
+    OOP_MethodID            dispose_mid;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
-    	return NULL;
+        return NULL;
 
     /* Initialize the instance data to 0 */
     data = OOP_INST_DATA(cl, o);
@@ -47,34 +47,34 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
     /* Get some dimensions of the bitmap */
     OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperrow);
-    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel,	&bytesperpixel);
+    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
 
     data->bytesperpixel = bytesperpixel;
-    data->bytesperrow	= bytesperrow;
+    data->bytesperrow   = bytesperrow;
 
     tag = FindTagItem(aHidd_ChunkyBM_Buffer, msg->attrList);
     if (tag)
     {
-    	/*
-    	 * NULL user-supplied buffer is valid.
-    	 * In this case we create a bitmap with no buffer. We can attach it later.
-    	 */
-    	data->own_buffer = FALSE;
-    	data->buffer     = (APTR)tag->ti_Data;
+        /*
+         * NULL user-supplied buffer is valid.
+         * In this case we create a bitmap with no buffer. We can attach it later.
+         */
+        data->own_buffer = FALSE;
+        data->buffer     = (APTR)tag->ti_Data;
 
-    	return o;
+        return o;
     }
     else
     {
-    	IPTR height;
+        IPTR height;
 
-    	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+        OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 
-    	data->own_buffer = TRUE;
-    	data->buffer = AllocVec(height * bytesperrow, MEMF_ANY | MEMF_CLEAR);
-    	
-    	if (data->buffer)
-    	    return o;
+        data->own_buffer = TRUE;
+        data->buffer = AllocVec(height * bytesperrow, MEMF_ANY | MEMF_CLEAR);
+        
+        if (data->buffer)
+            return o;
     }
 
     /* free all on error */
@@ -93,8 +93,8 @@ void CBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     data = OOP_INST_DATA(cl, o);
     
     if (data->own_buffer)
-    	FreeVec(data->buffer);
-	
+        FreeVec(data->buffer);
+        
     OOP_DoSuperMethod(cl, o, msg);
     
     return;
@@ -103,7 +103,7 @@ void CBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /****************************************************************************************/
 
 VOID CBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
-				struct pHidd_BitMap_PutPixel *msg)
+                                struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE *dest;
     
@@ -116,52 +116,52 @@ VOID CBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     
     switch(data->bytesperpixel)
     {
-	case 1:
-	    *((UBYTE *) dest) = (UBYTE) msg->pixel;
-	    break;
-		
-	case 2:
-	    *((UWORD *) dest) = (UWORD) msg->pixel;
-	    break;
-	    
-	case 3:
-    	#if AROS_BIG_ENDIAN
-	    dest[0] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
-	    dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
-	    dest[2] = (UBYTE)msg->pixel & 0x000000FF;
-	#else
-	    dest[0] = (UBYTE)msg->pixel & 0x000000FF;
-	    dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
-	    dest[2] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
-	#endif
-	    break;
-		
-/*	 if (1 == ( ((IPTR)dest) & 1) )
+        case 1:
+            *((UBYTE *) dest) = (UBYTE) msg->pixel;
+            break;
+                
+        case 2:
+            *((UWORD *) dest) = (UWORD) msg->pixel;
+            break;
+            
+        case 3:
+        #if AROS_BIG_ENDIAN
+            dest[0] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
+            dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
+            dest[2] = (UBYTE)msg->pixel & 0x000000FF;
+        #else
+            dest[0] = (UBYTE)msg->pixel & 0x000000FF;
+            dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
+            dest[2] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
+        #endif
+            break;
+                
+/*       if (1 == ( ((IPTR)dest) & 1) )
                 {
                   *((UBYTE *) dest++) = (UBYTE) msg->pixel >> 16;
                   *((UWORD *) dest  ) = (UWORD) msg->pixel;
                 }
                 else
                 {
-                  *((UWORD *) dest++) = (UWORD) msg->pixel >> 8; 
+                  *((UWORD *) dest++) = (UWORD) msg->pixel >> 8;
                   *((UBYTE *) dest  ) = (UBYTE) msg->pixel;
                 }
-		break;
+                break;
 */
-	case 4:
-	    *((ULONG *) dest) = (ULONG) msg->pixel;
-	    break;
+        case 4:
+            *((ULONG *) dest) = (ULONG) msg->pixel;
+            break;
     }
-	
+        
 }
 
 /****************************************************************************************/
 
 ULONG CBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
-				 struct pHidd_BitMap_GetPixel *msg)
+                                 struct pHidd_BitMap_GetPixel *msg)
 {
-    HIDDT_Pixel     	    retval = 0;
-    UBYTE   	    	    *src;
+    HIDDT_Pixel             retval = 0;
+    UBYTE                   *src;
     struct chunkybm_data    *data;
     
     data = OOP_INST_DATA(cl, o);
@@ -170,28 +170,28 @@ ULONG CBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 
     switch(data->bytesperpixel)
     {
-	case 1:
-	    retval = (HIDDT_Pixel) *((UBYTE *) src);
-	    break;
-	    
-	case 2:
-	    retval = (HIDDT_Pixel) *((UWORD *) src);
-	    break;
-	    
-	case 3:
-	#if AROS_BIG_ENDIAN
-	    retval = (HIDDT_Pixel) (src[0] << 16) + (src[1] << 8) + src[2];
-    	#else
-	    retval = (HIDDT_Pixel) (src[2] << 16) + (src[1] << 8) + src[0];
-	#endif
-	    break;
-	    
-	    //(*((UBYTE *) src++) << 16) | *((UWORD *) src));
-	    //break;
-	
-	case 4:
-	    retval = ((ULONG) *((ULONG *) src));
-	    break;
+        case 1:
+            retval = (HIDDT_Pixel) *((UBYTE *) src);
+            break;
+            
+        case 2:
+            retval = (HIDDT_Pixel) *((UWORD *) src);
+            break;
+            
+        case 3:
+        #if AROS_BIG_ENDIAN
+            retval = (HIDDT_Pixel) (src[0] << 16) + (src[1] << 8) + src[2];
+        #else
+            retval = (HIDDT_Pixel) (src[2] << 16) + (src[1] << 8) + src[0];
+        #endif
+            break;
+            
+            //(*((UBYTE *) src++) << 16) | *((UWORD *) src));
+            //break;
+        
+        case 4:
+            retval = ((ULONG) *((ULONG *) src));
+            break;
     }
 
     return retval;
@@ -202,78 +202,78 @@ ULONG CBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 VOID CBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct chunkybm_data  *data =OOP_INST_DATA(cl, o);
-    HIDDT_Pixel     	   fg = GC_FG(msg->gc);
-    HIDDT_DrawMode  	   mode = GC_DRMD(msg->gc);
-    ULONG   	    	   mod;
+    HIDDT_Pixel            fg = GC_FG(msg->gc);
+    HIDDT_DrawMode         mode = GC_DRMD(msg->gc);
+    ULONG                  mod;
 
     mod = data->bytesperrow;
 
     switch(mode)
     {
         case vHidd_GC_DrawMode_Copy:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-		    HIDD_BM_FillMemRect8(o,
-	    	    	    		 data->buffer,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 mod,
-					 fg);
-		    break;
-		    
-		case 2:
-		    HIDD_BM_FillMemRect16(o,
-	    	    	    		 data->buffer,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 mod,
-					 fg);
-		    break;
-	    
-	    	case 3:
-		    HIDD_BM_FillMemRect24(o,
-	    	    	    		 data->buffer,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 mod,
-					 fg);
-		    break;
-		
-	    	case 4:
-		    HIDD_BM_FillMemRect32(o,
-	    	    	    		 data->buffer,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 mod,
-					 fg);
-		    break;
-		
-	    }
-	    break;
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_FillMemRect8(o,
+                                         data->buffer,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         mod,
+                                         fg);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_FillMemRect16(o,
+                                         data->buffer,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         mod,
+                                         fg);
+                    break;
+            
+                case 3:
+                    HIDD_BM_FillMemRect24(o,
+                                         data->buffer,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         mod,
+                                         fg);
+                    break;
+                
+                case 4:
+                    HIDD_BM_FillMemRect32(o,
+                                         data->buffer,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         mod,
+                                         fg);
+                    break;
+                
+            }
+            break;
     
-	case vHidd_GC_DrawMode_Invert:
-	    HIDD_BM_InvertMemRect(o,
-	    	    	    	 data->buffer,
-	    	    	    	 msg->minX * data->bytesperpixel,
-				 msg->minY,
-				 msg->maxX * data->bytesperpixel + data->bytesperpixel - 1,
-				 msg->maxY,
-				 mod);
-	    break;
-	    
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
-	    
+        case vHidd_GC_DrawMode_Invert:
+            HIDD_BM_InvertMemRect(o,
+                                 data->buffer,
+                                 msg->minX * data->bytesperpixel,
+                                 msg->minY,
+                                 msg->maxX * data->bytesperpixel + data->bytesperpixel - 1,
+                                 msg->maxY,
+                                 mod);
+            break;
+            
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
+            
     } /* switch(mode) */
     
 }
@@ -288,125 +288,125 @@ VOID CBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
     switch(msg->pixFmt)
     {
-    	case vHidd_StdPixFmt_Native:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-	    	    HIDD_BM_CopyMemBox8(o,
-		    	    		msg->pixels,
-					0,
-					0,
-					data->buffer,
-					msg->x,
-					msg->y,
-					msg->width,
-					msg->height,
-					msg->modulo,
-					data->bytesperrow);
-		    break;
-		    
-		case 2:
-	    	    HIDD_BM_CopyMemBox16(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperrow);
-		    break;
-		   
-		case 3:
-	    	    HIDD_BM_CopyMemBox24(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperrow);
-		    break;
-		
-		case 4:
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperrow);
-		    break;
-		     
-    	    } /* switch(data->bytesperpixel) */
-	    break;
-	
-    	case vHidd_StdPixFmt_Native32:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-		    HIDD_BM_PutMem32Image8(o,
-		    	    	    	   msg->pixels,
-					   data->buffer,
-					   msg->x,
-					   msg->y,
-					   msg->width,
-					   msg->height,
-					   msg->modulo,
-					   data->bytesperrow);
-		    break;
-		    
-		case 2:
-		    HIDD_BM_PutMem32Image16(o,
-		    	    	    	    msg->pixels,
-					    data->buffer,
-					    msg->x,
-					    msg->y,
-					    msg->width,
-					    msg->height,
-					    msg->modulo,
-					    data->bytesperrow);
-		    break;
+        case vHidd_StdPixFmt_Native:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_CopyMemBox8(o,
+                                        msg->pixels,
+                                        0,
+                                        0,
+                                        data->buffer,
+                                        msg->x,
+                                        msg->y,
+                                        msg->width,
+                                        msg->height,
+                                        msg->modulo,
+                                        data->bytesperrow);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_CopyMemBox16(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperrow);
+                    break;
+                   
+                case 3:
+                    HIDD_BM_CopyMemBox24(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperrow);
+                    break;
+                
+                case 4:
+                    HIDD_BM_CopyMemBox32(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperrow);
+                    break;
+                     
+            } /* switch(data->bytesperpixel) */
+            break;
+        
+        case vHidd_StdPixFmt_Native32:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_PutMem32Image8(o,
+                                           msg->pixels,
+                                           data->buffer,
+                                           msg->x,
+                                           msg->y,
+                                           msg->width,
+                                           msg->height,
+                                           msg->modulo,
+                                           data->bytesperrow);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_PutMem32Image16(o,
+                                            msg->pixels,
+                                            data->buffer,
+                                            msg->x,
+                                            msg->y,
+                                            msg->width,
+                                            msg->height,
+                                            msg->modulo,
+                                            data->bytesperrow);
+                    break;
 
-		case 3:
-		    HIDD_BM_PutMem32Image24(o,
-		    	    	    	    msg->pixels,
-					    data->buffer,
-					    msg->x,
-					    msg->y,
-					    msg->width,
-					    msg->height,
-					    msg->modulo,
-					    data->bytesperrow);
-		    break;
+                case 3:
+                    HIDD_BM_PutMem32Image24(o,
+                                            msg->pixels,
+                                            data->buffer,
+                                            msg->x,
+                                            msg->y,
+                                            msg->width,
+                                            msg->height,
+                                            msg->modulo,
+                                            data->bytesperrow);
+                    break;
 
-		case 4:		    
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperrow);
-		    break;
-		    
-	    } /* switch(data->bytesperpixel) */
-	    break;
-	    
-	default:
+                case 4:
+                    HIDD_BM_CopyMemBox32(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperrow);
+                    break;
+                    
+            } /* switch(data->bytesperpixel) */
+            break;
+            
+        default:
             src_pixels = msg->pixels;
             dst_pixels = data->buffer + msg->y * data->bytesperrow
                 + msg->x * data->bytesperpixel;
@@ -541,9 +541,9 @@ VOID CBM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
             }
             break;
 
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
     }
 }
 
@@ -557,125 +557,125 @@ VOID CBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
     switch(msg->pixFmt)
     {
-    	case vHidd_StdPixFmt_Native:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-	    	    HIDD_BM_CopyMemBox8(o,
-		    	    		data->buffer,
-					msg->x,
-					msg->y,
-					msg->pixels,
-					0,
-					0,
-					msg->width,
-					msg->height,
-					data->bytesperrow,
-					msg->modulo);
-		    break;
-		    
-		case 2:
-	    	    HIDD_BM_CopyMemBox16(o,
-		    	    		 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperrow,
-					 msg->modulo);
-		    break;
+        case vHidd_StdPixFmt_Native:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_CopyMemBox8(o,
+                                        data->buffer,
+                                        msg->x,
+                                        msg->y,
+                                        msg->pixels,
+                                        0,
+                                        0,
+                                        msg->width,
+                                        msg->height,
+                                        data->bytesperrow,
+                                        msg->modulo);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_CopyMemBox16(o,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperrow,
+                                         msg->modulo);
+                    break;
 
-		case 3:
-	    	    HIDD_BM_CopyMemBox24(o,
-		    	    		 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperrow,
-					 msg->modulo);
-		    break;
-		   
-		case 4:
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperrow,
-					 msg->modulo);
-		    break;
-		     
-    	    } /* switch(data->bytesperpix) */
-	    break;
+                case 3:
+                    HIDD_BM_CopyMemBox24(o,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperrow,
+                                         msg->modulo);
+                    break;
+                   
+                case 4:
+                    HIDD_BM_CopyMemBox32(o,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperrow,
+                                         msg->modulo);
+                    break;
+                     
+            } /* switch(data->bytesperpix) */
+            break;
 
-    	case vHidd_StdPixFmt_Native32:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-		    HIDD_BM_GetMem32Image8(o,
-		    	    	    	   data->buffer,
-					   msg->x,
-					   msg->y,
-					   msg->pixels,
-					   msg->width,
-					   msg->height,
-					   data->bytesperrow,
-					   msg->modulo);
-		    break;
-		    
-		case 2:
-		    HIDD_BM_GetMem32Image16(o,
-		    	    	    	    data->buffer,
-					    msg->x,
-					    msg->y,
-					    msg->pixels,
-					    msg->width,
-					    msg->height,
-					    data->bytesperrow,
-					    msg->modulo);
-		    break;
+        case vHidd_StdPixFmt_Native32:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_GetMem32Image8(o,
+                                           data->buffer,
+                                           msg->x,
+                                           msg->y,
+                                           msg->pixels,
+                                           msg->width,
+                                           msg->height,
+                                           data->bytesperrow,
+                                           msg->modulo);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_GetMem32Image16(o,
+                                            data->buffer,
+                                            msg->x,
+                                            msg->y,
+                                            msg->pixels,
+                                            msg->width,
+                                            msg->height,
+                                            data->bytesperrow,
+                                            msg->modulo);
+                    break;
 
-		case 3:
-		    HIDD_BM_GetMem32Image24(o,
-		    	    	    	    data->buffer,
-					    msg->x,
-					    msg->y,
-					    msg->pixels,
-					    msg->width,
-					    msg->height,
-					    data->bytesperrow,
-					    msg->modulo);
-		    break;
+                case 3:
+                    HIDD_BM_GetMem32Image24(o,
+                                            data->buffer,
+                                            msg->x,
+                                            msg->y,
+                                            msg->pixels,
+                                            msg->width,
+                                            msg->height,
+                                            data->bytesperrow,
+                                            msg->modulo);
+                    break;
 
-		case 4:		    
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 data->buffer,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperrow,
-					 msg->modulo);
-		    break;
-		    
-	    } /* switch(data->bytesperpixel) */
-	    break;
-	    
-	default:
+                case 4:
+                    HIDD_BM_CopyMemBox32(o,
+                                         data->buffer,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperrow,
+                                         msg->modulo);
+                    break;
+                    
+            } /* switch(data->bytesperpixel) */
+            break;
+            
+        default:
             src_pixels = data->buffer + msg->y * data->bytesperrow
                 + msg->x * data->bytesperpixel;
             dst_pixels = msg->pixels;
@@ -684,9 +684,9 @@ VOID CBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
             HIDD_BM_ConvertPixels(o, &src_pixels, BM_PIXFMT(o),
                 data->bytesperrow, &dst_pixels, (HIDDT_PixelFormat *)dstpf,
                 msg->modulo, msg->width, msg->height, NULL);
-	    
+            
     } /* switch(msg->pixFmt) */
-	    
+            
 }
 
 /****************************************************************************************/
@@ -697,53 +697,53 @@ VOID CBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 
     switch(data->bytesperpixel)
     {
-	case 2:
-	    HIDD_BM_CopyLUTMemBox16(o,
-		    	    	 msg->pixels,
-				 0,
-				 0,
-				 data->buffer,
-				 msg->x,
-				 msg->y,
-				 msg->width,
-				 msg->height,
-				 msg->modulo,
-				 data->bytesperrow,
-				 msg->pixlut);
-	    break;
+        case 2:
+            HIDD_BM_CopyLUTMemBox16(o,
+                                 msg->pixels,
+                                 0,
+                                 0,
+                                 data->buffer,
+                                 msg->x,
+                                 msg->y,
+                                 msg->width,
+                                 msg->height,
+                                 msg->modulo,
+                                 data->bytesperrow,
+                                 msg->pixlut);
+            break;
 
-	case 3:
-	    HIDD_BM_CopyLUTMemBox24(o,
-		    	    	 msg->pixels,
-				 0,
-				 0,
-				 data->buffer,
-				 msg->x,
-				 msg->y,
-				 msg->width,
-				 msg->height,
-				 msg->modulo,
-				 data->bytesperrow,
-				 msg->pixlut);
-	    break;
+        case 3:
+            HIDD_BM_CopyLUTMemBox24(o,
+                                 msg->pixels,
+                                 0,
+                                 0,
+                                 data->buffer,
+                                 msg->x,
+                                 msg->y,
+                                 msg->width,
+                                 msg->height,
+                                 msg->modulo,
+                                 data->bytesperrow,
+                                 msg->pixlut);
+            break;
 
-	case 4:
-	    HIDD_BM_CopyLUTMemBox32(o,
-		    	    	    msg->pixels,
-				    0,
-				    0,
-				    data->buffer,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height,
-				    msg->modulo,
-				    data->bytesperrow,
-				    msg->pixlut);
-	    break;
-	    
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        case 4:
+            HIDD_BM_CopyLUTMemBox32(o,
+                                    msg->pixels,
+                                    0,
+                                    0,
+                                    data->buffer,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height,
+                                    msg->modulo,
+                                    data->bytesperrow,
+                                    msg->pixlut);
+            break;
+            
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     } /* switch(data->bytesperpixel) */
 
@@ -757,70 +757,70 @@ VOID CBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 
     switch(data->bytesperpixel)
     {
-	case 1:
-	    HIDD_BM_PutMemTemplate8(o,
-	    	    	    	    msg->gc,
-				    msg->masktemplate,
-				    msg->modulo,
-				    msg->srcx,
-				    data->buffer,
-				    data->bytesperrow,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height,
-				    msg->inverttemplate);
-	    break;
+        case 1:
+            HIDD_BM_PutMemTemplate8(o,
+                                    msg->gc,
+                                    msg->masktemplate,
+                                    msg->modulo,
+                                    msg->srcx,
+                                    data->buffer,
+                                    data->bytesperrow,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height,
+                                    msg->inverttemplate);
+            break;
 
-	case 2:
-	    HIDD_BM_PutMemTemplate16(o,
-	    	    	    	     msg->gc,
-				     msg->masktemplate,
-				     msg->modulo,
-				     msg->srcx,
-				     data->buffer,
-				     data->bytesperrow,
-				     msg->x,
-				     msg->y,
-				     msg->width,
-				     msg->height,
-				     msg->inverttemplate);
-	    break;
+        case 2:
+            HIDD_BM_PutMemTemplate16(o,
+                                     msg->gc,
+                                     msg->masktemplate,
+                                     msg->modulo,
+                                     msg->srcx,
+                                     data->buffer,
+                                     data->bytesperrow,
+                                     msg->x,
+                                     msg->y,
+                                     msg->width,
+                                     msg->height,
+                                     msg->inverttemplate);
+            break;
 
-	case 3:
-	    HIDD_BM_PutMemTemplate24(o,
-	    	    	    	     msg->gc,
-				     msg->masktemplate,
-				     msg->modulo,
-				     msg->srcx,
-				     data->buffer,
-				     data->bytesperrow,
-				     msg->x,
-				     msg->y,
-				     msg->width,
-				     msg->height,
-				     msg->inverttemplate);
-	    break;
+        case 3:
+            HIDD_BM_PutMemTemplate24(o,
+                                     msg->gc,
+                                     msg->masktemplate,
+                                     msg->modulo,
+                                     msg->srcx,
+                                     data->buffer,
+                                     data->bytesperrow,
+                                     msg->x,
+                                     msg->y,
+                                     msg->width,
+                                     msg->height,
+                                     msg->inverttemplate);
+            break;
 
-	case 4:
-	    HIDD_BM_PutMemTemplate32(o,
-	    	    	    	     msg->gc,
-				     msg->masktemplate,
-				     msg->modulo,
-				     msg->srcx,
-				     data->buffer,
-				     data->bytesperrow,
-				     msg->x,
-				     msg->y,
-				     msg->width,
-				     msg->height,
-				     msg->inverttemplate);
-	    break;
+        case 4:
+            HIDD_BM_PutMemTemplate32(o,
+                                     msg->gc,
+                                     msg->masktemplate,
+                                     msg->modulo,
+                                     msg->srcx,
+                                     data->buffer,
+                                     data->bytesperrow,
+                                     msg->x,
+                                     msg->y,
+                                     msg->width,
+                                     msg->height,
+                                     msg->inverttemplate);
+            break;
 
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    	    break;
-	    
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
+            
     } /* switch(data->bytesperpixel) */
 
 }
@@ -833,94 +833,94 @@ VOID CBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
     switch(data->bytesperpixel)
     {
-	case 1:
-	    HIDD_BM_PutMemPattern8(o,
-	    	    	    	   msg->gc,
-				   msg->pattern,
-				   msg->patternsrcx,
-				   msg->patternsrcy,
-				   msg->patternheight,
-				   msg->patterndepth,
-				   msg->patternlut,
-				   msg->invertpattern,
-				   msg->mask,
-				   msg->maskmodulo,
-				   msg->masksrcx,
-				   data->buffer,
-				   data->bytesperrow,
-				   msg->x,
-				   msg->y,
-				   msg->width,
-				   msg->height);
-	    break;
+        case 1:
+            HIDD_BM_PutMemPattern8(o,
+                                   msg->gc,
+                                   msg->pattern,
+                                   msg->patternsrcx,
+                                   msg->patternsrcy,
+                                   msg->patternheight,
+                                   msg->patterndepth,
+                                   msg->patternlut,
+                                   msg->invertpattern,
+                                   msg->mask,
+                                   msg->maskmodulo,
+                                   msg->masksrcx,
+                                   data->buffer,
+                                   data->bytesperrow,
+                                   msg->x,
+                                   msg->y,
+                                   msg->width,
+                                   msg->height);
+            break;
 
-	case 2:
-	    HIDD_BM_PutMemPattern16(o,
-	    	    	    	    msg->gc,
-				    msg->pattern,
-				    msg->patternsrcx,
-				    msg->patternsrcy,
-				    msg->patternheight,
-				    msg->patterndepth,
-				    msg->patternlut,
-				    msg->invertpattern,
-				    msg->mask,
-				    msg->maskmodulo,
-				    msg->masksrcx,
-				    data->buffer,
-				    data->bytesperrow,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height);
-	    break;
+        case 2:
+            HIDD_BM_PutMemPattern16(o,
+                                    msg->gc,
+                                    msg->pattern,
+                                    msg->patternsrcx,
+                                    msg->patternsrcy,
+                                    msg->patternheight,
+                                    msg->patterndepth,
+                                    msg->patternlut,
+                                    msg->invertpattern,
+                                    msg->mask,
+                                    msg->maskmodulo,
+                                    msg->masksrcx,
+                                    data->buffer,
+                                    data->bytesperrow,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height);
+            break;
 
-	case 3:
-	    HIDD_BM_PutMemPattern24(o,
-	    	    	    	    msg->gc,
-				    msg->pattern,
-				    msg->patternsrcx,
-				    msg->patternsrcy,
-				    msg->patternheight,
-				    msg->patterndepth,
-				    msg->patternlut,
-				    msg->invertpattern,
-				    msg->mask,
-				    msg->maskmodulo,
-				    msg->masksrcx,
-				    data->buffer,
-				    data->bytesperrow,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height);
-	    break;
+        case 3:
+            HIDD_BM_PutMemPattern24(o,
+                                    msg->gc,
+                                    msg->pattern,
+                                    msg->patternsrcx,
+                                    msg->patternsrcy,
+                                    msg->patternheight,
+                                    msg->patterndepth,
+                                    msg->patternlut,
+                                    msg->invertpattern,
+                                    msg->mask,
+                                    msg->maskmodulo,
+                                    msg->masksrcx,
+                                    data->buffer,
+                                    data->bytesperrow,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height);
+            break;
 
-	case 4:
-	    HIDD_BM_PutMemPattern32(o,
-	    	    	    	    msg->gc,
-				    msg->pattern,
-				    msg->patternsrcx,
-				    msg->patternsrcy,
-				    msg->patternheight,
-				    msg->patterndepth,
-				    msg->patternlut,
-				    msg->invertpattern,
-				    msg->mask,
-				    msg->maskmodulo,
-				    msg->masksrcx,
-				    data->buffer,
-				    data->bytesperrow,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height);
-	    break;
+        case 4:
+            HIDD_BM_PutMemPattern32(o,
+                                    msg->gc,
+                                    msg->pattern,
+                                    msg->patternsrcx,
+                                    msg->patternsrcy,
+                                    msg->patternheight,
+                                    msg->patterndepth,
+                                    msg->patternlut,
+                                    msg->invertpattern,
+                                    msg->mask,
+                                    msg->maskmodulo,
+                                    msg->masksrcx,
+                                    data->buffer,
+                                    data->bytesperrow,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height);
+            break;
 
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    	    break;
-	    
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
+            
     } /* switch(data->bytesperpixel) */
     
 }
@@ -962,9 +962,9 @@ VOID CBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     if (IS_CHUNKYBM_ATTR(msg->attrID, idx))
     {
-	switch (idx)
-	{
-    	case aoHidd_ChunkyBM_Buffer:
+        switch (idx)
+        {
+        case aoHidd_ChunkyBM_Buffer:
             *msg->storage = (IPTR)data->buffer;
             return;
         }
@@ -992,7 +992,7 @@ VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
                 case aoHidd_ChunkyBM_Buffer:
                     if (data->own_buffer)
                     {
-    	                FreeVec(data->buffer);
+                        FreeVec(data->buffer);
                         data->own_buffer = FALSE;
                     }
                     data->buffer = (UBYTE *)tag->ti_Data;

@@ -10,14 +10,14 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH2(BOOL, ReadExpansionRom,
+        AROS_LH2(BOOL, ReadExpansionRom,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR              , board, A0),
-	AROS_LHA(struct ConfigDev *, configDev, A1),
+        AROS_LHA(APTR              , board, A0),
+        AROS_LHA(struct ConfigDev *, configDev, A1),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 17, Expansion)
+        struct ExpansionBase *, ExpansionBase, 17, Expansion)
 
 /*  FUNCTION
 
@@ -37,8 +37,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
+        27-11-96    digulla automatically created from
+                            expansion_lib.fd and clib/expansion_protos.h
 
 *****************************************************************************/
 {
@@ -47,7 +47,7 @@
     /* TODO: Write expansion/ReadExpansionRom() */
     aros_print_not_implemented ("ReadExpansionRom");
 
-	return FALSE;
+        return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ReadExpansionRom */

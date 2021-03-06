@@ -77,7 +77,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     }
     
     /*
-    ** it seems like a new taskarray is needed 
+    ** it seems like a new taskarray is needed
     */
     newtaskarray = AllocMem(sizeof(IPTR) + (size + 1)*sizeof(APTR), MEMF_ANY);
     

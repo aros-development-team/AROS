@@ -14,24 +14,24 @@
 
     NAME */
 
-	AROS_LH1(struct MsgPort *, FindPort,
+        AROS_LH1(struct MsgPort *, FindPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, A1),
+        AROS_LHA(CONST_STRPTR, name, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 65, Exec)
+        struct ExecBase *, SysBase, 65, Exec)
 
 /*  FUNCTION
-	Look for a public messageport by name. This function doesn't
-	arbitrate for the port list and must be protected with a Forbid()
-	Permit() pair.
+        Look for a public messageport by name. This function doesn't
+        arbitrate for the port list and must be protected with a Forbid()
+        Permit() pair.
 
     INPUTS
-	port - Pointer to NUL terminated C string.
+        port - Pointer to NUL terminated C string.
 
     RESULT
-	Pointer to struct MsgPort or NULL if there is no port of that name.
+        Pointer to struct MsgPort or NULL if there is no port of that name.
 
     NOTES
 

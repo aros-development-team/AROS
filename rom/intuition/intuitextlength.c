@@ -53,7 +53,7 @@
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort  rp;
     struct TextFont *newfont = NULL;
-    LONG    	     width;
+    LONG             width;
 
     DEBUG_INTUITEXTLENGTH(dprintf("IntuiTextLength(itext 0x%lx)\n",iText));
 

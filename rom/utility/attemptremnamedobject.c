@@ -8,34 +8,34 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/utility.h>
+        #include <proto/utility.h>
 
-	AROS_LH1(LONG, AttemptRemNamedObject,
+        AROS_LH1(LONG, AttemptRemNamedObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct NamedObject *, object, A0),
+        AROS_LHA(struct NamedObject *, object, A0),
 
 /*  LOCATION */
-	struct Library *, UtilityBase, 39, Utility)
+        struct Library *, UtilityBase, 39, Utility)
 
 /*  FUNCTION
-	Checks to see whether a NamedObject can be removed. If the object
-	is in use, or in the process of being removed, this function will
-	return a failure code. If the object can be removed, this function
-	will remove it and the object will be available for freeing.
-	You must have previously have called FindNamedObject() on this
-	object.
+        Checks to see whether a NamedObject can be removed. If the object
+        is in use, or in the process of being removed, this function will
+        return a failure code. If the object can be removed, this function
+        will remove it and the object will be available for freeing.
+        You must have previously have called FindNamedObject() on this
+        object.
 
     INPUTS
-	object	    - NamedObject to attempt to remove. The address of the
-			NameSpace is contained within the NamedObject.
+        object      - NamedObject to attempt to remove. The address of the
+                        NameSpace is contained within the NamedObject.
 
     RESULT
-	If the NamedObject can be removed, then it will be removed from
-	the list. Otherwise the routine will just return.
+        If the NamedObject can be removed, then it will be removed from
+        the list. Otherwise the routine will just return.
 
-	If the NamedObject has a removal message associated with it that
-	message will be returned to the owner of the NamedObject.
+        If the NamedObject has a removal message associated with it that
+        message will be returned to the owner of the NamedObject.
 
     NOTES
 
@@ -44,14 +44,14 @@
     BUGS
 
     SEE ALSO
-	utility/name.h, RemNamedObject(), AddNamedObject()
+        utility/name.h, RemNamedObject(), AddNamedObject()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	11-08-96    iaint   Adapted from stuff I did.
+        29-10-95    digulla automatically created from
+                            utility_lib.fd and clib/utility_protos.h
+        11-08-96    iaint   Adapted from stuff I did.
 
 *****************************************************************************/
 {
@@ -61,12 +61,12 @@
 
     if(no->no_UseCount > 1)
     {
-	return FALSE;
+        return FALSE;
     }
     else
     {
-	RemNamedObject( object, NULL );
-	return TRUE;
+        RemNamedObject( object, NULL );
+        return TRUE;
     }
 
     AROS_LIBFUNC_EXIT

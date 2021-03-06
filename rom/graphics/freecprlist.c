@@ -12,19 +12,19 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, FreeCprList,
+        AROS_LH1(void, FreeCprList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct cprlist *, cprList, A0),
+        AROS_LHA(struct cprlist *, cprList, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 94, Graphics)
+        struct GfxBase *, GfxBase, 94, Graphics)
 
 /*  FUNCTION
-	Deallocate all memory associated with this cprlist structure
+        Deallocate all memory associated with this cprlist structure
 
     INPUTS
-	cprlist - pointer to a cprlist structure
+        cprlist - pointer to a cprlist structure
 
     RESULT
 
@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-	graphics/copper.h
+        graphics/copper.h
 
     INTERNALS
 

@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
 
     struct Screen *defscreen;
-    STRPTR  	   name;
+    STRPTR         name;
 
     DEBUG_GETDEFAULTPUBSCREEN(dprintf("GetDefaultPubScreen()\n"));
 

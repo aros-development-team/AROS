@@ -24,26 +24,26 @@
         struct DosLibrary *, DOSBase, 130, Dos)
 
 /*  FUNCTION
-        Search for a resident segment by name and type (system or user). 
-        The first segment that exactly matches the name and type will be 
+        Search for a resident segment by name and type (system or user).
+        The first segment that exactly matches the name and type will be
         returned. The name is case insensitive. If the system argument is
-        non-zero, only system segments will be returned (i.e. those that 
-        have a negative seg_UC value); if zero, only user segments will 
+        non-zero, only system segments will be returned (i.e. those that
+        have a negative seg_UC value); if zero, only user segments will
         be returned (i.e. those with a non-negative seg_UC value).
 
-        You can continue searching for multiple segments that share the 
-        same name and type by specifying the last returned segment as 
+        You can continue searching for multiple segments that share the
+        same name and type by specifying the last returned segment as
         the seg argument.
 
-        FindSegment() does no locking of the segment list. You should 
-        lock the list by calling Forbid() before calling FindSegment(), 
-        and unlock the list by calling Permit() once you have finished 
+        FindSegment() does no locking of the segment list. You should
+        lock the list by calling Forbid() before calling FindSegment(),
+        and unlock the list by calling Permit() once you have finished
         calling FindSegment().
 
-        If you wish to prevent a user segment from being unloaded, you 
-        must increment its seg_UC value before unlocking the list. Once 
-        finished with the segment, you must decrement its seg_UC value 
-        under Forbid()/Permit() protection. The seg_UC value of system 
+        If you wish to prevent a user segment from being unloaded, you
+        must increment its seg_UC value before unlocking the list. Once
+        finished with the segment, you must decrement its seg_UC value
+        under Forbid()/Permit() protection. The seg_UC value of system
         segments should never be altered.
 
     INPUTS

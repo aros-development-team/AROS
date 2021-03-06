@@ -13,26 +13,26 @@
 
     NAME */
 
-	AROS_LH1(LONG, AbortIO,
+        AROS_LH1(LONG, AbortIO,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IORequest *, iORequest, A1),
+        AROS_LHA(struct IORequest *, iORequest, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 80, Exec)
+        struct ExecBase *, SysBase, 80, Exec)
 
 /*  FUNCTION
-	Calls the AbortIO vector of the appropriate device to stop an
-	asynchronously started io request before completion. This may
-	or may not be done. You still have to do a WaitIO() on the
-	iorequest structure.
+        Calls the AbortIO vector of the appropriate device to stop an
+        asynchronously started io request before completion. This may
+        or may not be done. You still have to do a WaitIO() on the
+        iorequest structure.
 
     INPUTS
-	iORequest - Pointer to iorequest structure.
+        iORequest - Pointer to iorequest structure.
 
     RESULT
-	Errorcode if the abort request failed, 0 if the abort request went
-	well. io_Error will then be set to IOERR_ABORTED.
+        Errorcode if the abort request failed, 0 if the abort request went
+        well. io_Error will then be set to IOERR_ABORTED.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	OpenDevice(), CloseDevice(), DoIO(), SendIO(), WaitIO()
+        OpenDevice(), CloseDevice(), DoIO(), SendIO(), WaitIO()
 
     INTERNALS
 
@@ -52,8 +52,8 @@
     ASSERT_VALID_PTR(iORequest->io_Device);
 
     return AROS_LVO_CALL1(ULONG,
-	AROS_LCA(struct IORequest *,iORequest,A1),
-	struct Device *,iORequest->io_Device,6,
+        AROS_LCA(struct IORequest *,iORequest,A1),
+        struct Device *,iORequest->io_Device,6,
     );
 
     AROS_LIBFUNC_EXIT

@@ -20,7 +20,7 @@
         struct IntuitionBase *, IntuitionBase, 92, Intuition)
 
 /*  FUNCTION
-        Change the status flags for a given public screen. 
+        Change the status flags for a given public screen.
 
     INPUTS
         Scr         - The screen the flags of which to change.

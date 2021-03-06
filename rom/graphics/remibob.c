@@ -9,26 +9,26 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/graphics.h>
+        #include <proto/graphics.h>
 
-	AROS_LH3(void, RemIBob,
+        AROS_LH3(void, RemIBob,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Bob *,      bob, A0),
-	AROS_LHA(struct RastPort *, rp , A1),
-	AROS_LHA(struct ViewPort *, vp , A2),
+        AROS_LHA(struct Bob *,      bob, A0),
+        AROS_LHA(struct RastPort *, rp , A1),
+        AROS_LHA(struct ViewPort *, vp , A2),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 22, Graphics)
+        struct GfxBase *, GfxBase, 22, Graphics)
 
 /*  FUNCTION
-	Remove a Bob immediately from RastPort and gel list.
+        Remove a Bob immediately from RastPort and gel list.
 
 
     INPUTS
-	bob - Bob
-	rp  - RastPort
-	vp  - ViewPort
+        bob - Bob
+        rp  - RastPort
+        vp  - ViewPort
 
     RESULT
 
@@ -46,12 +46,12 @@
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+        AROS_LIBFUNC_INIT
 
-	_ClearBobAndFollowClearPath(bob->BobVSprite,
-	                            rp,
-	                            GfxBase);
-	RemVSprite(bob->BobVSprite);
+        _ClearBobAndFollowClearPath(bob->BobVSprite,
+                                    rp,
+                                    GfxBase);
+        RemVSprite(bob->BobVSprite);
 
-	AROS_LIBFUNC_EXIT
+        AROS_LIBFUNC_EXIT
 } /* RemIBob */

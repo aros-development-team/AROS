@@ -13,21 +13,21 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, WaitBOVP,
+        AROS_LH1(void, WaitBOVP,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, vp, A0),
+        AROS_LHA(struct ViewPort *, vp, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 67, Graphics)
+        struct GfxBase *, GfxBase, 67, Graphics)
 
 /*  FUNCTION
 
     INPUTS
-	vp - pointer to ViewPort structure
+        vp - pointer to ViewPort structure
 
     RESULT
-	None.
+        None.
 
     NOTES
 

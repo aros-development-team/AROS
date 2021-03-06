@@ -12,7 +12,7 @@
 struct WindowToBackActionMsg
 {
     struct IntuiActionMsg  msg;
-    struct Window   	  *window;
+    struct Window         *window;
 };
 
 static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
@@ -74,10 +74,10 @@ static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
                              struct IntuitionBase *IntuitionBase)
 {
     struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
-    struct Window   	*window = msg->window;
-    struct Layer    	*layer = WLAYER(window);
-    struct Screen   	*screen = window->WScreen;
-    struct Requester 	*req;
+    struct Window       *window = msg->window;
+    struct Layer        *layer = WLAYER(window);
+    struct Screen       *screen = window->WScreen;
+    struct Requester    *req;
 
     DEBUG_WINDOWTOBACK(dprintf("IntWindowToBack: Window 0x%lx\n", window));
     

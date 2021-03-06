@@ -25,8 +25,8 @@ static struct FileSysEntry *FindResidentFS(struct FileSysResource *fsr, ULONG do
 
     ForeachNode(&fsr->fsr_FileSysEntries, fsrnode)
     {
-    	if (fsrnode->fse_DosType == dostype && fsrnode->fse_Version >= version)
-    	    return fsrnode;
+        if (fsrnode->fse_DosType == dostype && fsrnode->fse_Version >= version)
+            return fsrnode;
     }
 
     return NULL;
@@ -42,7 +42,7 @@ ULONG AddFS(struct Library *PartitionBase, struct FileSysHandle *fs)
 
     fsr = OpenResource("FileSystem.resource");
     if (!fsr)
-    	return ERROR_INVALID_RESIDENT_LIBRARY;
+        return ERROR_INVALID_RESIDENT_LIBRARY;
 
     GetFileSystemAttrs(&fs->ln, FST_ID, &dostype, FST_VERSION, &version, TAG_DONE);
 
@@ -59,7 +59,7 @@ ULONG AddFS(struct Library *PartitionBase, struct FileSysHandle *fs)
     Permit();
 
     if (fsrnode)
-    	return ERROR_OBJECT_EXISTS;
+        return ERROR_OBJECT_EXISTS;
 
     fsrnode = AllocVec(sizeof(struct FileSysEntry), MEMF_PUBLIC | MEMF_CLEAR);
     if (!fsrnode)
@@ -76,36 +76,36 @@ ULONG AddFS(struct Library *PartitionBase, struct FileSysHandle *fs)
 
     if (fsrnode->fse_SegList)
     {
-    	struct FileSysEntry *dup;
+        struct FileSysEntry *dup;
 
-	/*
-	 * Repeat checking, and insert the filesystem only if still not found.
-	 * If found, unload our seglist and return error.
-	 * This really sucks but nothing can be done with it. Even if we implement
-	 * a global semaphore on the resource original m68k software won't know
-	 * about it.
-	 */
-	Forbid();
+        /*
+         * Repeat checking, and insert the filesystem only if still not found.
+         * If found, unload our seglist and return error.
+         * This really sucks but nothing can be done with it. Even if we implement
+         * a global semaphore on the resource original m68k software won't know
+         * about it.
+         */
+        Forbid();
 
-	dup = FindResidentFS(fsr, dostype, version);
-	if (!dup)
-	    /*
-	     * Entries in the list are not sorted by priority.
-	     * Adding to head makes them sorted by version.
-	     */
-	    AddHead(&fsr->fsr_FileSysEntries, &fsrnode->fse_Node);
+        dup = FindResidentFS(fsr, dostype, version);
+        if (!dup)
+            /*
+             * Entries in the list are not sorted by priority.
+             * Adding to head makes them sorted by version.
+             */
+            AddHead(&fsr->fsr_FileSysEntries, &fsrnode->fse_Node);
 
-	Permit();
+        Permit();
 
-	if (dup)
-	{
-	    UnLoadSeg(fsrnode->fse_SegList);
-	    FreeVec(fsrnode);
+        if (dup)
+        {
+            UnLoadSeg(fsrnode->fse_SegList);
+            FreeVec(fsrnode);
 
-	    return ERROR_OBJECT_EXISTS;
-	}
+            return ERROR_OBJECT_EXISTS;
+        }
 
-	return 0;
+        return 0;
     }
 
     /* InternalLoadSeg() will leave its error code in IoErr() */

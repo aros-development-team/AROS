@@ -119,7 +119,7 @@ initRoutine( REG( d0, struct ISAPNPBase* res ),
 
         NewList( &res->m_Cards );
 
-	/* Base address, on i386 we don't have any mapping
+        /* Base address, on i386 we don't have any mapping
         res->m_Base        = NULL; */
         res->m_RegReadData = 0x0000;
 
@@ -150,7 +150,7 @@ initRoutine( REG( d0, struct ISAPNPBase* res ),
                 else
                 {
                   static const char descr[] = "Non-PnP devices";
-                  char*             d;                
+                  char*             d;
                   
                   d = AllocVec( sizeof( descr ), MEMF_PUBLIC );
                   
@@ -369,7 +369,7 @@ PatchBrokenCards( struct ISAPNPBase* res )
 
     // Nuke all dependent options
 
-    while( ( rg = (struct ISAPNP_ResourceGroup*) 
+    while( ( rg = (struct ISAPNP_ResourceGroup*)
                   RemHead( (struct List*) &dev->isapnpd_Options->isapnprg_ResourceGroups ) )
            != NULL )
     {
@@ -392,9 +392,9 @@ PatchBrokenCards( struct ISAPNPBase* res )
       return FALSE;
     }
 
-    r1->isapnpior_Flags = ISAPNP_IORESOURCE_FF_FULL_DECODE;    
-    r2->isapnpior_Flags = ISAPNP_IORESOURCE_FF_FULL_DECODE;    
-    r3->isapnpior_Flags = ISAPNP_IORESOURCE_FF_FULL_DECODE;    
+    r1->isapnpior_Flags = ISAPNP_IORESOURCE_FF_FULL_DECODE;
+    r2->isapnpior_Flags = ISAPNP_IORESOURCE_FF_FULL_DECODE;
+    r3->isapnpior_Flags = ISAPNP_IORESOURCE_FF_FULL_DECODE;
 
     r1->isapnpior_Alignment = 1;
     r2->isapnpior_Alignment = 1;
@@ -416,7 +416,7 @@ PatchBrokenCards( struct ISAPNPBase* res )
     AddTail( (struct List*) &rg->isapnprg_Resources, (struct Node*) r2 );
     AddTail( (struct List*) &rg->isapnprg_Resources, (struct Node*) r3 );
     
-    AddTail( (struct List*) &dev->isapnpd_Options->isapnprg_ResourceGroups, 
+    AddTail( (struct List*) &dev->isapnpd_Options->isapnprg_ResourceGroups,
              (struct Node*) rg );
   }
   

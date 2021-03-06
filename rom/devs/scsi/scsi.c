@@ -510,7 +510,7 @@ static BOOL ValidSMARTCmd(struct IORequest *io)
         case SMARTC_TEST_AVAIL:
         case SMARTC_READ_VALUES:
         case SMARTC_READ_THRESHOLDS:
-                    if (!IOStdReq(io)->io_Data) 
+                    if (!IOStdReq(io)->io_Data)
                     {
                         D(bug("[SCSI%02ld] %s: invalid io_Data (%p)\n", ((struct scsi_Unit*)io->io_Unit)->su_UnitNum, __func__, IOStdReq(io)->io_Data));
                         io->io_Error = IOERR_BADADDRESS;
@@ -877,7 +877,7 @@ AROS_LH1(ULONG, GetBlkSize,
  */
 void DaemonCode(LIBBASETYPEPTR LIBBASE)
 {
-    struct IORequest *timer;	// timer
+    struct IORequest *timer;    // timer
     UBYTE b = 0;
     ULONG sigs;
 

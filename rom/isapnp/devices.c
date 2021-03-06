@@ -38,7 +38,7 @@
 ******************************************************************************/
 
 AROS_LH5(struct ISAPNP_Card *, ISAPNP_FindCard,
-         AROS_LHA(struct ISAPNP_Card *, last_card, A0), 
+         AROS_LHA(struct ISAPNP_Card *, last_card, A0),
          AROS_LHA(LONG, manufacturer, D0),
          AROS_LHA(WORD, product, D1),
          AROS_LHA(BYTE, revision, D2),
@@ -60,7 +60,7 @@ AROS_LH5(struct ISAPNP_Card *, ISAPNP_FindCard,
 
   while( card->isapnpc_Node.ln_Succ != NULL )
   {
-    if( manufacturer == -1 || 
+    if( manufacturer == -1 ||
         ISAPNP_MAKE_ID( card->isapnpc_ID.isapnpid_Vendor[ 0 ],
                         card->isapnpc_ID.isapnpid_Vendor[ 1 ],
                         card->isapnpc_ID.isapnpid_Vendor[ 2 ] ) == manufacturer )
@@ -91,7 +91,7 @@ AROS_LH5(struct ISAPNP_Card *, ISAPNP_FindCard,
 ******************************************************************************/
 
 AROS_LH4(struct ISAPNP_Device *, ISAPNP_FindDevice,
-         AROS_LHA(struct ISAPNP_Device *, last_device, A0), 
+         AROS_LHA(struct ISAPNP_Device *, last_device, A0),
          AROS_LHA(LONG, manufacturer, D0),
          AROS_LHA(WORD, product, D1),
          AROS_LHA(BYTE, revision, D2),
@@ -123,7 +123,7 @@ AROS_LH4(struct ISAPNP_Device *, ISAPNP_FindDevice,
            id->isapnpid_MinNode.mln_Succ != NULL;
            id = (struct ISAPNP_Identifier*) id->isapnpid_MinNode.mln_Succ )
       {
-        if( manufacturer == -1 || 
+        if( manufacturer == -1 ||
             ISAPNP_MAKE_ID( id->isapnpid_Vendor[ 0 ],
                             id->isapnpid_Vendor[ 1 ],
                             id->isapnpid_Vendor[ 2 ] ) == manufacturer )
@@ -156,8 +156,8 @@ AROS_LH4(struct ISAPNP_Device *, ISAPNP_FindDevice,
 ** Helper functions for the card/device locking functions *********************
 ******************************************************************************/
 
-static int 
-ComparePtr( const void* a, 
+static int
+ComparePtr( const void* a,
             const void* b )
 {
   struct ISAPNP_Card* p1 = *( (struct ISAPNP_Card**) a );

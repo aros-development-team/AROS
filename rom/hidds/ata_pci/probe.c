@@ -64,7 +64,7 @@ CONST_STRPTR ataISAControllerName = "ISA IDE Controller";
 #endif
 
 /* static list of io/irqs that we can handle */
-struct ata__legacybus 
+struct ata__legacybus
 {
     UWORD       lb_Port;
     UWORD       lb_Alt;
@@ -74,7 +74,7 @@ struct ata__legacybus
     const char *lb_Name;
 };
 
-static const struct ata__legacybus LegacyBuses[] = 
+static const struct ata__legacybus LegacyBuses[] =
 {
     {0x1f0, 0x3f4, 14, 0, 0, "ISA IDE0 primary channel"  },
     {0x170, 0x374, 15, 0, 1, "ISA IDE0 secondary channel"},
@@ -97,7 +97,7 @@ static struct IORequest *OpenTimer(void)
 
         if (NULL != io)
         {
-            if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))   
+            if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))
             {
                 return io;
             }
@@ -158,13 +158,13 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     struct TagItem ata_tags[] =
     {
         {aHidd_Name             , (IPTR)ataPCIName              },
-        {aHidd_HardwareName     , (IPTR)ataPCIControllerName	},
-        {aHidd_Producer         , 0				},
+        {aHidd_HardwareName     , (IPTR)ataPCIControllerName    },
+        {aHidd_Producer         , 0                             },
 #define ATA_TAG_VEND 2
-        {aHidd_Product          , 0				},
+        {aHidd_Product          , 0                             },
 #define ATA_TAG_PROD 3
-        {aHW_Device             , (IPTR)Device		        },
-        {TAG_DONE               , 0				}
+        {aHW_Device             , (IPTR)Device                  },
+        {TAG_DONE               , 0                             }
     };
 
     /*
@@ -521,7 +521,7 @@ static int ata_bus_Detect(struct atapciBase *base)
 
     if (scanpci)
     {
-	BOOL doPCIScan = TRUE;
+        BOOL doPCIScan = TRUE;
         /*
          * Attempt to get PCI subsytem object.
          * If this fails, PCI isn't there. But it's not fatal for us.
@@ -542,21 +542,21 @@ static int ata_bus_Detect(struct atapciBase *base)
             if (!base->psd.PCIDeviceAttrBase)
             {
                 if (OOP_ObtainAttrBasesArray(&base->psd.PCIDeviceAttrBase, &pciInterfaceIDs[ATTR_OFFSET]))
-		{
-		    doPCIScan = FALSE;
-		}
+                {
+                    doPCIScan = FALSE;
+                }
                 if (OOP_ObtainMethodBasesArray(&base->psd.PCIMethodBase, pciInterfaceIDs))
-		{
-		    doPCIScan = FALSE;
-		}
+                {
+                    doPCIScan = FALSE;
+                }
             }
 
-	    if (doPCIScan)
-	    {
-		D(bug("[ATA:PCI] ata_bus_Detect: Checking for supported PCI devices ..\n"));
+            if (doPCIScan)
+            {
+                D(bug("[ATA:PCI] ata_bus_Detect: Checking for supported PCI devices ..\n"));
 
- 		HIDD_PCI_EnumDevices(pci, &FindHook, Requirements);
-	    }
+                HIDD_PCI_EnumDevices(pci, &FindHook, Requirements);
+            }
         }
     }
 
@@ -605,7 +605,7 @@ static int ata_bus_Detect(struct atapciBase *base)
             }
         }
     }
-#endif    
+#endif
 
     D(bug("[ATA:PCI] ata_bus_Detect: Registering Probed Buses..\n"));
 
@@ -663,16 +663,16 @@ static int ata_bus_Detect(struct atapciBase *base)
             }
         }
 #ifdef SUPPORT_LEGACY
-	else if ((ata_ISA) && (probedbus->atapb_Parent == ata_ISA))
-		ata_ISA_Ports++;
+        else if ((ata_ISA) && (probedbus->atapb_Parent == ata_ISA))
+                ata_ISA_Ports++;
 #endif
     }
 
 #ifdef SUPPORT_LEGACY
     if ((ata_ISA) && (ata_ISA_Ports == 0))
     {
-	    D(bug("[ATA:PCI] ata_bus_Detect: Disposing Unused ISA controller object\n");)
-	    HW_RemoveDriver(base->psd.storageRoot, ata_ISA);
+            D(bug("[ATA:PCI] ata_bus_Detect: Disposing Unused ISA controller object\n");)
+            HW_RemoveDriver(base->psd.storageRoot, ata_ISA);
     }
 #endif
 

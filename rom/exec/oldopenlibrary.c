@@ -12,17 +12,17 @@
 
     NAME */
 
-	AROS_LH1(struct Library *, OldOpenLibrary,
+        AROS_LH1(struct Library *, OldOpenLibrary,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, libName, A1),
+        AROS_LHA(UBYTE *, libName, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 68, Exec)
+        struct ExecBase *, SysBase, 68, Exec)
 
 /*  FUNCTION
-	This is the same function as OpenLibrary(), only that it uses 0 as
-	version number. This function is obsolete. Don't use it.
+        This is the same function as OpenLibrary(), only that it uses 0 as
+        version number. This function is obsolete. Don't use it.
 
     INPUTS
 
@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-	OpenLibrary()
+        OpenLibrary()
 
     INTERNALS
 

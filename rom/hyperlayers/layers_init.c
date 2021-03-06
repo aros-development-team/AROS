@@ -35,7 +35,7 @@ static int LayersInit(LIBBASETYPEPTR LIBBASE)
     /* Install ourself as graphics.library's layer manager */
     GfxBase->gb_LayersBase = (APTR)LIBBASE;
 
-    return TRUE;    
+    return TRUE;
 }
 
 ADD2INITLIB(LayersInit, 0);

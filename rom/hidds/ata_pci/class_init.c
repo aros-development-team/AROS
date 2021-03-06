@@ -76,7 +76,7 @@ static int pciata_init(struct atapciBase *base)
     if ((base->psd.ataClass = OOP_FindClass(CLID_Hidd_ATA)) == NULL)
     {
         OOP_ReleaseAttrBasesArray(&base->psd.hiddAttrBase, &attrBaseIDs[AB_MANDATORY]);
-        return FALSE; 
+        return FALSE;
     }
     D(
       bug("[ATA:PCI] %s: Base %s Class @ 0x%p\n", __func__, CLID_Hidd_ATA, base->psd.ataClass);
