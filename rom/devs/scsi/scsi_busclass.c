@@ -77,7 +77,7 @@ static AROS_INTH1(ataBus_Reset, struct scsi_Bus *, bus)
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_busclass--
 
     LOCATION
         CLID_Hidd_SCSIBus

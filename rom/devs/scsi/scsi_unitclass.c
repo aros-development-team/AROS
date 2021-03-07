@@ -20,7 +20,7 @@ static const char *str_devicename = "scsi.device";
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_unitclass--
 
     LOCATION
         IID_Hidd_SCSIUnit
