@@ -77,7 +77,7 @@ struct ISAPNP_Card* ISAPNP_FindCard( struct ISAPNP_Card* last_card, LONG manufac
 struct ISAPNP_Device* ISAPNP_FindDevice( struct ISAPNP_Device* last_device, LONG manufacturer, WORD product, BYTE revision );
 
 APTR ISAPNP_LockCardsA( ULONG flags, struct ISAPNP_Card** cards );
-APTR ISAPNP_LockCards( ULONG flags, struct ISAPNP_Card* card, .... );
+APTR ISAPNP_LockCards( ULONG flags, struct ISAPNP_Card* card, ... );
 void ISAPNP_UnlockCards( APTR card_lock_handle );
 
 APTR ISAPNP_LockDevicesA( ULONG flags, struct ISAPNP_Device** devices );
