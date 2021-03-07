@@ -32,7 +32,7 @@
     BUGS
 
     SEE ALSO
-        setvbuf()
+        __posixc_setvbuf()
 
     INTERNALS
         This function is part of the static link lib and not in

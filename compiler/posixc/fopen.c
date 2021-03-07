@@ -71,8 +71,9 @@
         Most modes are not supported right now.
 
     SEE ALSO
-        fclose(), fread(), fwrite(), open(), fgets(), fgetc(),
-        fputs(), fputc(), getc(), putc()
+        __posixc_fclose(), __posixc_fread(), __posixc_fwrite(), open(),
+        __posixc_fgets(), fgetc(), __posixc_fputs(), __posixc_fputc(),
+        getc(), putc()
 
     INTERNALS
 

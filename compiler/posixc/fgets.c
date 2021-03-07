@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_fopen(), gets(), fputs()
+        __posixc_fopen(), __posixc_fputs()
 
     INTERNALS
 

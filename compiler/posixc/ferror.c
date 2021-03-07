@@ -33,7 +33,7 @@
     BUGS
 
     SEE ALSO
-        ferror(), clearerr()
+        clearerr()
 
     INTERNALS
 

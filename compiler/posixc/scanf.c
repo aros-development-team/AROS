@@ -33,8 +33,8 @@
     BUGS
 
     SEE ALSO
-        fscanf(), vscanf(), vfscanf(), stdc.library/sscanf(),
-        stdc.library/vsscanf()
+        __posixc_fscanf(), __posixc_vscanf(), __posixc_vfscanf(),
+        stdc.library/sscanf(), stdc.library/vsscanf()
 
     INTERNALS
 

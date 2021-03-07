@@ -30,7 +30,7 @@
     BUGS
 
     SEE ALSO
-        fread()
+        __posixc_fread()
 
     INTERNALS
 

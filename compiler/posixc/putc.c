@@ -32,7 +32,7 @@
     BUGS
 
     SEE ALSO
-        fputc()
+        __posixc_fputc()
 
     INTERNALS
         putc() is an alias for fputc()

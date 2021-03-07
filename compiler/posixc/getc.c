@@ -31,7 +31,7 @@
     BUGS
 
     SEE ALSO
-        fgetc(), fputc(), putc()
+        fgetc(), __posixc_fputc(), putc()
 
     INTERNALS
         getc() is an alias for fgetc().

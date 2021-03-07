@@ -53,7 +53,7 @@
         modes
 
     SEE ALSO
-        fseek()
+        __posixc_fseek()
 
     INTERNALS
 

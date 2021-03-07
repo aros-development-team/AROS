@@ -48,7 +48,7 @@
         This is still TODO.
 
     SEE ALSO
-        __posixc_get_environptr(), getenv(), setenv()
+        __posixc_get_environptr(), __posixc_getenv(), setenv()
 
     INTERNALS
 

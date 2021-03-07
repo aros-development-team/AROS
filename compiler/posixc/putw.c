@@ -31,7 +31,7 @@
     BUGS
 
     SEE ALSO
-        fwrite()
+        __posixc_fwrite()
 
     INTERNALS
 
