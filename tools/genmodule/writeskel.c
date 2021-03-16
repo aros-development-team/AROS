@@ -27,8 +27,7 @@ static void writeskelfunc(struct config *cfg, struct functionhead *funclist)
 
     fprintf(out,
         "/*\n"
-        "    Copyright \xA9 <year>, The AROS Development Team. All rights reserved.\n"
-        "    $I" "d$\n"
+        "    Copyright (C) <year>, The AROS Development Team. All rights reserved.\n"
         "*/\n\n"
     );
 

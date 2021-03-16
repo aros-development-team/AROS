@@ -1,12 +1,13 @@
-#ifndef GENMODULE_H
-#define GENMODULE_H
-
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: global include for genmodule. Defines global variables and
           the function prototypes.
 */
+
+#ifndef GENMODULE_H
+#define GENMODULE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
