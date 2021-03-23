@@ -1,0 +1,13 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := tiffclass
+
+#MM workbench-datatypes-tiff : includes linklibs
+
+%build_module mmake=workbench-datatypes-tiff \
+    modname=tiff modtype=datatype \
+    files=$(FILES) uselibs="tiff jpeg z"

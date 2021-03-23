@@ -1,0 +1,1662 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := tiffclass
+
+#MM workbench-datatypes-tiff : includes linklibs
+
+
+
+# We will employ a terrifying, but unavoidable, hack here.
+# genmf has no concept of conditionals (ie %ifeq), and MetaMake
+# ignores GNU Make ifeq() statements, but will process any #MM
+# headed lines in the file.
+# 
+# So, to make the following #MM lines conditional on whether we want
+# to build the ABI, Library, or both, we define build_abi= and 
+# build_library as 'M' to enable, or '' to disable, which allows genmf
+# to do the following conversions:
+# 
+#  #MM includes-foo: foo-include
+#    becomes, when build_abi=M
+#  #MM includes-foo: foo-include   <= Processed by MetaMake
+#    but, when build_abi= ...
+#  #M includes-foo: foo-includes   <= ignored by MetaMake! Yes!
+# 
+# Taking full blame for this: Jason S. McMullan <jason.mcmullan@gmail.com>
+
+# Define metamake targets and their dependencies
+#MM workbench-datatypes-tiff
+#MM workbench-datatypes-tiff-quick
+#MM workbench-datatypes-tiff-makefile
+#MM workbench-datatypes-tiff-clean
+
+# ABI targets:
+#MM- includes-all : workbench-datatypes-tiff-includes
+#MM- linklibs-tiff: workbench-datatypes-tiff-linklib
+#MM- linklibs-tiff_rel : workbench-datatypes-tiff-linklib
+#MM- includes-tiff: workbench-datatypes-tiff-includes
+#MM- includes-tiff_rel : workbench-datatypes-tiff-includes
+#MM- workbench-datatypes-tiff : workbench-datatypes-tiff-includes core-linklibs linklibs-tiff linklibs-jpeg linklibs-z
+#MM workbench-datatypes-tiff-linklib : workbench-datatypes-tiff-includes includes-tiff includes-jpeg includes-z
+#MM- workbench-datatypes-tiff-quick : workbench-datatypes-tiff-includes-quick
+#MM workbench-datatypes-tiff-includes : workbench-datatypes-tiff-makefile workbench-datatypes-tiff-includes-dirs \
+#MM     includes-generate-deps workbench-datatypes-tiff-fd
+#MM workbench-datatypes-tiff-includes-quick
+#MM workbench-datatypes-tiff-includes-dirs
+#MM workbench-datatypes-tiff-fd
+
+# Library targets
+#MM workbench-datatypes-tiff-kobj : core-linklibs linklibs-tiff linklibs-jpeg linklibs-z
+#MM workbench-datatypes-tiff-kobj-quick : 
+
+# Library with ABI targets:
+#MM workbench-datatypes-tiff-kobj : workbench-datatypes-tiff-includes core-linklibs linklibs-tiff linklibs-jpeg linklibs-z
+#MM workbench-datatypes-tiff-kobj-quick : workbench-datatypes-tiff-includes-quick
+
+# All MetaMake targets defined by this macro
+workbench-datatypes-tiff_ALLTARGETS       := workbench-datatypes-tiff workbench-datatypes-tiff-quick workbench-datatypes-tiff-clean
+
+ifeq (M,M)
+workbench-datatypes-tiff_ALLTARGETS       += workbench-datatypes-tiff-kobj workbench-datatypes-tiff-kobj-quick
+endif
+
+ifeq (M,M)
+workbench-datatypes-tiff_ALLTARGETS += workbench-datatypes-tiff-includes \
+                 workbench-datatypes-tiff-includes-quick workbench-datatypes-tiff-includes-dirs  \
+                 workbench-datatypes-tiff-linklib workbench-datatypes-tiff-fd
+endif
+
+.PHONY : $(workbench-datatypes-tiff_ALLTARGETS) workbench-datatypes-tiff-makefile
+
+ifeq (tiff,)
+$(error using %build_module: modname may not be empty)
+endif
+ifeq (datatype,)
+$(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+# Default values for variables and arguments
+ifneq (,)
+    workbench-datatypes-tiff_DEFNAME      := tiff_
+else
+    workbench-datatypes-tiff_DEFNAME      := tiff
+endif
+workbench-datatypes-tiff_DEFLINKLIBNAME   := $(workbench-datatypes-tiff_DEFNAME)
+ifneq (,)
+    workbench-datatypes-tiff_LINKLIBNAME  := 
+else
+    workbench-datatypes-tiff_LINKLIBNAME  = $(workbench-datatypes-tiff_DEFLINKLIBNAME)
+endif
+workbench-datatypes-tiff_DEFCPPFLAGS      := $(CPPFLAGS)
+ifneq (,)
+    workbench-datatypes-tiff_DEFCPPFLAGS  += -I
+endif
+workbench-datatypes-tiff_DEFDFLAGS        := $(CFLAGS)
+ifneq (,)
+    workbench-datatypes-tiff_DFLAGS       := 
+else
+    workbench-datatypes-tiff_DFLAGS       = $(workbench-datatypes-tiff_DEFDFLAGS)
+endif
+workbench-datatypes-tiff_DEFDXXFLAGS      := $(CXXFLAGS)
+ifneq (,)
+    workbench-datatypes-tiff_DXXFLAGS     := 
+else
+    workbench-datatypes-tiff_DXXFLAGS     = $(workbench-datatypes-tiff_DEFDXXFLAGS)
+endif
+
+ifeq (target,target)
+ifeq ($(TARGET_LTO),yes)
+workbench-datatypes-tiff_DEFDFLAGS        := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(workbench-datatypes-tiff_DEFDFLAGS))
+workbench-datatypes-tiff_DEFDXXFLAGS      := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(workbench-datatypes-tiff_DEFDXXFLAGS))
+endif
+ifeq ($(TARGET_FUNCINSTR),yes)
+workbench-datatypes-tiff_FUNCINSTR := yes
+workbench-datatypes-tiff_DEFDFLAGS        := $(strip $(FUNCINSTR_FLAGS) $(workbench-datatypes-tiff_DEFDFLAGS))
+workbench-datatypes-tiff_DEFDXXFLAGS      := $(strip $(FUNCINSTR_FLAGS) $(workbench-datatypes-tiff_DEFDXXFLAGS))
+endif
+endif
+
+OBJDIR                              ?= $(GENDIR)/$(CURDIR)
+ifneq (,)
+workbench-datatypes-tiff_OBJDIR                     := 
+else
+workbench-datatypes-tiff_OBJDIR                     := $(OBJDIR)/$(workbench-datatypes-tiff_DEFNAME)
+endif
+ifneq (,)
+workbench-datatypes-tiff_OBJDIR           := $(workbench-datatypes-tiff_OBJDIR)
+endif
+
+## Create genmodule include Makefile for the module
+##
+workbench-datatypes-tiff-makefile         := $(workbench-datatypes-tiff_OBJDIR)/Makefile.$(workbench-datatypes-tiff_DEFNAME)datatype
+workbench-datatypes-tiff-genmakefile : $(workbench-datatypes-tiff-makefile)
+
+
+workbench-datatypes-tiff-genmakefile_OPTS := 
+ifneq (,)
+    workbench-datatypes-tiff-genmakefile_OPTS += -f 
+    workbench-datatypes-tiff-genmakefile_MODNAME := tiff_
+else
+    workbench-datatypes-tiff-genmakefile_MODNAME := tiff
+endif
+workbench-datatypes-tiff-genmakefile_TARGET := Makefile.$(workbench-datatypes-tiff-genmakefile_MODNAME)datatype
+workbench-datatypes-tiff-genmakefile_DEPS := $(GENMODULE)
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-genmakefile_OPTS += -c $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-genmakefile_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-genmakefile_OPTS += -c 
+        workbench-datatypes-tiff-genmakefile_DEPS += 
+    endif 
+else
+    workbench-datatypes-tiff-genmakefile_OPTS += -c $(SRCDIR)/$(CURDIR)/tiff.conf
+    workbench-datatypes-tiff-genmakefile_DEPS += $(SRCDIR)/$(CURDIR)/tiff.conf
+endif
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-genmakefile_OPTS += -o $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-genmakefile_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-genmakefile_OPTS += -o 
+        workbench-datatypes-tiff-genmakefile_DEPS += 
+    endif 
+endif
+ifneq (,)
+    workbench-datatypes-tiff-genmakefile_OPTS += -s 
+endif
+ifneq ($(workbench-datatypes-tiff_OBJDIR),)
+    workbench-datatypes-tiff-genmakefile_OPTS += -d $(workbench-datatypes-tiff_OBJDIR)
+    workbench-datatypes-tiff-genmakefile_TARGET := $(workbench-datatypes-tiff_OBJDIR)/$(workbench-datatypes-tiff-genmakefile_TARGET)
+endif
+
+$(workbench-datatypes-tiff-genmakefile_TARGET) : OPTS := $(workbench-datatypes-tiff-genmakefile_OPTS)
+$(workbench-datatypes-tiff-genmakefile_TARGET) : MODNAME := tiff
+$(workbench-datatypes-tiff-genmakefile_TARGET) : MODTYPE := datatype
+$(workbench-datatypes-tiff-genmakefile_TARGET) : $(workbench-datatypes-tiff-genmakefile_DEPS)
+	$(Q)$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE)
+
+
+ifneq ($(workbench-datatypes-tiff-makefile),)
+$(workbench-datatypes-tiff-makefile) : | $(workbench-datatypes-tiff_OBJDIR)
+else
+$(workbench-datatypes-tiff-makefile) :: $(workbench-datatypes-tiff_OBJDIR)
+endif
+
+GLOB_MKDIRS += $(workbench-datatypes-tiff_OBJDIR)
+
+
+# Do not parse these statements if metatarget is not appropriate
+ifneq ($(filter $(TARGET),$(workbench-datatypes-tiff_ALLTARGETS)),)
+
+# suppress makes warning that the Makefile doesnt yet exist
+# on early passes (it will generate the file as needed though)
+# when we include it.
+-include $(workbench-datatypes-tiff-makefile)
+
+workbench-datatypes-tiff_DEFMODDIR        := $($(workbench-datatypes-tiff_DEFNAME)_MODDIR)
+ifeq (no,yes)
+workbench-datatypes-tiff_DEFMODDIR        := $(AROS_DIR_ARCH)/$(workbench-datatypes-tiff_DEFMODDIR)
+endif
+ifneq (,)
+    workbench-datatypes-tiff_MODDIR       := 
+else
+    workbench-datatypes-tiff_MODDIR       := $(workbench-datatypes-tiff_DEFMODDIR)
+endif
+
+## include files generation
+##
+ifneq (,)
+workbench-datatypes-tiff_INCDIR           := 
+else
+workbench-datatypes-tiff_INCDIR           := $(AROSDIR)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_INCLUDE)
+endif
+workbench-datatypes-tiff_LIBDEFSINC       := $(workbench-datatypes-tiff_OBJDIR)/include/$(workbench-datatypes-tiff_DEFNAME)_libdefs.h
+workbench-datatypes-tiff_DEFLIBDEFSINC    := $(workbench-datatypes-tiff_OBJDIR)/include/$(workbench-datatypes-tiff_DEFNAME)_deflibdefs.h
+
+ifeq (M,M)
+workbench-datatypes-tiff-includes-quick : workbench-datatypes-tiff-includes
+workbench-datatypes-tiff-includes : $(addprefix $(GENINCDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)) \
+    $(addprefix $(workbench-datatypes-tiff_INCDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)) \
+    $(workbench-datatypes-tiff_LIBDEFSINC) $(workbench-datatypes-tiff_DEFLIBDEFSINC)
+
+ifneq ($($(workbench-datatypes-tiff_DEFNAME)_INCLUDES),)
+
+ifneq (,)
+    workbench-datatypes-tiff-includes_MODNAME := tiff_
+else
+    workbench-datatypes-tiff-includes_MODNAME := tiff
+endif
+
+ifneq ($($(workbench-datatypes-tiff-includes_MODNAME)_INCLUDES),)
+
+workbench-datatypes-tiff-includes_TARGETS := $($(workbench-datatypes-tiff-includes_MODNAME)_INCLUDES)
+
+workbench-datatypes-tiff-includes_DEPS := $(GENMODULE)
+workbench-datatypes-tiff-includes_OPTS :=
+
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-includes_OPTS += -c $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-includes_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-includes_OPTS += -c 
+        workbench-datatypes-tiff-includes_DEPS += 
+    endif 
+else
+    workbench-datatypes-tiff-includes_OPTS += -c $(SRCDIR)/$(CURDIR)/tiff.conf
+    workbench-datatypes-tiff-includes_DEPS += $(SRCDIR)/$(CURDIR)/tiff.conf
+endif
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-includes_OPTS += -o $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-includes_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-includes_OPTS += -o 
+        workbench-datatypes-tiff-includes_DEPS += 
+    endif 
+endif
+ifneq (,)
+    workbench-datatypes-tiff-includes_OPTS += -s 
+endif
+ifneq ($(workbench-datatypes-tiff_OBJDIR)/include,)
+    workbench-datatypes-tiff-includes_OPTS += -d $(workbench-datatypes-tiff_OBJDIR)/include
+    workbench-datatypes-tiff-includes_TARGETS := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/include/,$(workbench-datatypes-tiff-includes_TARGETS))
+    workbench-datatypes-tiff-includes_GENINCFLAG=$(workbench-datatypes-tiff_OBJDIR)/include/.tiff.datatype-includes
+else
+    workbench-datatypes-tiff-includes_GENINCFLAG=$(GENDIR)/$(CURDIR)/.tiff.datatype-includes
+endif
+
+$(workbench-datatypes-tiff-includes_TARGETS) : $(workbench-datatypes-tiff-includes_DEPS) $(workbench-datatypes-tiff-includes_GENINCFLAG)
+
+$(workbench-datatypes-tiff-includes_GENINCFLAG) : OPTS := $(workbench-datatypes-tiff-includes_OPTS)
+$(workbench-datatypes-tiff-includes_GENINCFLAG) : MODNAME := tiff
+$(workbench-datatypes-tiff-includes_GENINCFLAG) : MODTYPE := datatype
+$(workbench-datatypes-tiff-includes_GENINCFLAG) : $(workbench-datatypes-tiff-includes_DEPS)
+	$(Q)$(ECHO) "Generating $(MODNAME).$(MODTYPE) includes"
+	$(Q)$(GENMODULE) $(OPTS) writeincludes $(MODNAME) $(MODTYPE)
+	$(Q)$(TOUCH) $@
+endif
+
+
+TMP_SRCDIR := $(workbench-datatypes-tiff_OBJDIR)/include
+
+$(addprefix $(GENINCDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)) : | $(workbench-datatypes-tiff_OBJDIR)/tiff_geninc
+
+$(workbench-datatypes-tiff_OBJDIR)/tiff_geninc : COPYSRCDIR := $(workbench-datatypes-tiff_OBJDIR)/include
+$(workbench-datatypes-tiff_OBJDIR)/tiff_geninc : TGTDIR := $(GENINCDIR)
+$(workbench-datatypes-tiff_OBJDIR)/tiff_geninc : FILES := $($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)
+$(workbench-datatypes-tiff_OBJDIR)/tiff_geninc : $(addprefix $(workbench-datatypes-tiff_OBJDIR)/include/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES))
+	$(Q)for f in $(FILES); do \
+		$(IF) ! $(CMP) -s $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; then \
+			$(CP) $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; \
+		fi ; \
+	done
+	$(Q)$(TOUCH) $@
+
+
+TMP_SRCDIR := $(workbench-datatypes-tiff_OBJDIR)/include
+
+$(addprefix $(workbench-datatypes-tiff_INCDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)) : | $(workbench-datatypes-tiff_OBJDIR)/tiff_incs
+
+$(workbench-datatypes-tiff_OBJDIR)/tiff_incs : COPYSRCDIR := $(workbench-datatypes-tiff_OBJDIR)/include
+$(workbench-datatypes-tiff_OBJDIR)/tiff_incs : TGTDIR := $(workbench-datatypes-tiff_INCDIR)
+$(workbench-datatypes-tiff_OBJDIR)/tiff_incs : FILES := $($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)
+$(workbench-datatypes-tiff_OBJDIR)/tiff_incs : $(addprefix $(workbench-datatypes-tiff_OBJDIR)/include/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES))
+	$(Q)for f in $(FILES); do \
+		$(IF) ! $(CMP) -s $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; then \
+			$(CP) $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; \
+		fi ; \
+	done
+	$(Q)$(TOUCH) $@
+
+workbench-datatypes-tiff_INCDIRS := $(filter-out ./,$(sort $(dir $($(workbench-datatypes-tiff_DEFNAME)_INCLUDES))))
+
+TMPtiff_INCDIRS := \
+    $(workbench-datatypes-tiff_OBJDIR)/include $(addprefix $(workbench-datatypes-tiff_OBJDIR)/include/,$(workbench-datatypes-tiff_INCDIRS)) \
+    $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(workbench-datatypes-tiff_INCDIRS)) \
+    $(workbench-datatypes-tiff_INCDIR) $(addprefix $(workbench-datatypes-tiff_INCDIR)/,$(workbench-datatypes-tiff_INCDIRS))
+
+ifneq (workbench-datatypes-tiff-includes-dirs,)
+workbench-datatypes-tiff-includes-dirs : | $(TMPtiff_INCDIRS)
+else
+workbench-datatypes-tiff-includes-dirs :: $(TMPtiff_INCDIRS)
+endif
+
+GLOB_MKDIRS += $(TMPtiff_INCDIRS)
+
+
+endif
+
+endif
+
+
+workbench-datatypes-tiff-genlibdefs_OPTS := 
+ifneq (,)
+    workbench-datatypes-tiff-genlibdefs_OPTS += -f 
+    workbench-datatypes-tiff-genlibdefs_MODNAME := tiff_
+else
+    workbench-datatypes-tiff-genlibdefs_MODNAME := tiff
+endif
+workbench-datatypes-tiff-genlibdefs_TARGET := $(workbench-datatypes-tiff-genlibdefs_MODNAME)_libdefs.h
+workbench-datatypes-tiff-genlibdefs_DEPS := $(GENMODULE)
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-genlibdefs_OPTS += -c $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-genlibdefs_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-genlibdefs_OPTS += -c 
+        workbench-datatypes-tiff-genlibdefs_DEPS += 
+    endif 
+else
+    workbench-datatypes-tiff-genlibdefs_OPTS += -c $(SRCDIR)/$(CURDIR)/tiff.conf
+    workbench-datatypes-tiff-genlibdefs_DEPS += $(SRCDIR)/$(CURDIR)/tiff.conf
+endif
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-genlibdefs_OPTS += -o $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-genlibdefs_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-genlibdefs_OPTS += -o 
+        workbench-datatypes-tiff-genlibdefs_DEPS += 
+    endif 
+endif
+ifneq (,)
+    workbench-datatypes-tiff-genlibdefs_OPTS += -s 
+endif
+ifneq ($(workbench-datatypes-tiff_OBJDIR)/include,)
+    workbench-datatypes-tiff-genlibdefs_OPTS += -d $(workbench-datatypes-tiff_OBJDIR)/include
+    workbench-datatypes-tiff-genlibdefs_TARGET := $(workbench-datatypes-tiff_OBJDIR)/include/$(workbench-datatypes-tiff-genlibdefs_TARGET)
+endif
+ifneq (,)
+    workbench-datatypes-tiff-genlibdefs_OPTS += -v 
+endif
+
+$(workbench-datatypes-tiff-genlibdefs_TARGET) : OPTS := $(workbench-datatypes-tiff-genlibdefs_OPTS)
+$(workbench-datatypes-tiff-genlibdefs_TARGET) : MODNAME := tiff
+$(workbench-datatypes-tiff-genlibdefs_TARGET) : MODTYPE := datatype
+$(workbench-datatypes-tiff-genlibdefs_TARGET) : $(workbench-datatypes-tiff-genlibdefs_DEPS)
+	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
+	$(Q)$(GENMODULE) $(OPTS) writelibdefs $(MODNAME) $(MODTYPE)
+
+$(workbench-datatypes-tiff_DEFLIBDEFSINC) : FILENAME := $(workbench-datatypes-tiff_LIBDEFSINC)
+$(workbench-datatypes-tiff_DEFLIBDEFSINC) : $(workbench-datatypes-tiff_LIBDEFSINC)
+	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
+	$(Q)$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
+
+$(workbench-datatypes-tiff_LIBDEFSINC) $(workbench-datatypes-tiff_DEFLIBDEFSINC) : | $(workbench-datatypes-tiff_OBJDIR)/include
+
+ifneq (workbench-datatypes-tiff-includes-dirs,)
+workbench-datatypes-tiff-includes-dirs : | $(workbench-datatypes-tiff_OBJDIR)/include
+else
+workbench-datatypes-tiff-includes-dirs :: $(workbench-datatypes-tiff_OBJDIR)/include
+endif
+
+GLOB_MKDIRS += $(workbench-datatypes-tiff_OBJDIR)/include
+
+
+## Extra genmodule src files generation
+## 
+
+workbench-datatypes-tiff-genmodfiles_OPTS :=
+ifneq (,)
+    workbench-datatypes-tiff-genmodfiles_OPTS += -f 
+    workbench-datatypes-tiff-genmodfiles_MODNAME := tiff_
+else
+    workbench-datatypes-tiff-genmodfiles_MODNAME := tiff
+endif
+workbench-datatypes-tiff-genmodfiles_GENTARGETS := $($(workbench-datatypes-tiff-genmodfiles_MODNAME)_STARTFILES) $($(workbench-datatypes-tiff-genmodfiles_MODNAME)_ENDFILES)
+workbench-datatypes-tiff-genmodfiles_STUBTARGETS := $($(workbench-datatypes-tiff-genmodfiles_MODNAME)_LINKLIBFILES) $($(workbench-datatypes-tiff-genmodfiles_MODNAME)_RELLINKLIBFILES)
+workbench-datatypes-tiff-genmodfiles_GENTARGETS := $(addsuffix .c,$(workbench-datatypes-tiff-genmodfiles_GENTARGETS))
+workbench-datatypes-tiff-genmodfiles_STUBTARGETS := $(addsuffix .c,$(workbench-datatypes-tiff-genmodfiles_STUBTARGETS)) \
+               $(addsuffix .S, $($(workbench-datatypes-tiff-genmodfiles_MODNAME)_LINKLIBAFILES) $($(workbench-datatypes-tiff-genmodfiles_MODNAME)_RELLINKLIBAFILES))
+
+workbench-datatypes-tiff-genmodfiles_DEPS := $(GENMODULE)
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-genmodfiles_OPTS += -c $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-genmodfiles_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-genmodfiles_OPTS += -c 
+        workbench-datatypes-tiff-genmodfiles_DEPS += 
+    endif 
+else
+    workbench-datatypes-tiff-genmodfiles_OPTS += -c $(SRCDIR)/$(CURDIR)/tiff.conf
+    workbench-datatypes-tiff-genmodfiles_DEPS += $(SRCDIR)/$(CURDIR)/tiff.conf
+endif
+ifneq (,)
+    ifeq ($(dir ),./)
+        workbench-datatypes-tiff-genmodfiles_OPTS += -o $(SRCDIR)/$(CURDIR)/
+        workbench-datatypes-tiff-genmodfiles_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        workbench-datatypes-tiff-genmodfiles_OPTS += -o 
+        workbench-datatypes-tiff-genmodfiles_DEPS += 
+    endif 
+endif
+ifneq (,)
+    workbench-datatypes-tiff-genmodfiles_OPTS += -s 
+endif
+ifneq ($(workbench-datatypes-tiff_OBJDIR),)
+    workbench-datatypes-tiff-genmodfiles_OPTS += -d $(workbench-datatypes-tiff_OBJDIR)
+    workbench-datatypes-tiff-genmodfiles_TARGETDIR := $(shell echo $(workbench-datatypes-tiff_OBJDIR) | sed 's/^\(.\):\//\/\1\//')
+    workbench-datatypes-tiff-genmodfiles_GENTARGETS := $(addprefix $(workbench-datatypes-tiff-genmodfiles_TARGETDIR)/,$(workbench-datatypes-tiff-genmodfiles_GENTARGETS))
+    workbench-datatypes-tiff-genmodfiles_GENFILEFLAG=$(workbench-datatypes-tiff-genmodfiles_TARGETDIR)/.tiff.datatype-genfiles
+else
+    workbench-datatypes-tiff-genmodfiles_GENFILEFLAG=$(GENDIR)/$(CURDIR)/.tiff.datatype-genfiles
+endif
+ifneq ($(workbench-datatypes-tiff_OBJDIR)/linklib,)
+    workbench-datatypes-tiff-genmodfiles_OPTS += -l $(workbench-datatypes-tiff_OBJDIR)/linklib
+    workbench-datatypes-tiff-genmodfiles_STUBTARGETDIR := $(shell echo $(workbench-datatypes-tiff_OBJDIR)/linklib | sed 's/^\(.\):\//\/\1\//')
+    workbench-datatypes-tiff-genmodfiles_STUBTARGETS := $(addprefix $(workbench-datatypes-tiff-genmodfiles_STUBTARGETDIR)/,$(workbench-datatypes-tiff-genmodfiles_STUBTARGETS))
+    workbench-datatypes-tiff-genmodfiles_TARGETDIRS += $(workbench-datatypes-tiff_OBJDIR)/linklib
+else
+ifneq ($(workbench-datatypes-tiff_OBJDIR),)
+    workbench-datatypes-tiff-genmodfiles_STUBTARGETS := $(addprefix $(workbench-datatypes-tiff-genmodfiles_TARGETDIR)/,$(workbench-datatypes-tiff-genmodfiles_STUBTARGETS))
+endif
+endif
+
+workbench-datatypes-tiff-genmodfiles_TARGETS := $(workbench-datatypes-tiff-genmodfiles_GENTARGETS) $(workbench-datatypes-tiff-genmodfiles_STUBTARGETS)
+ifneq ($(workbench-datatypes-tiff-genmodfiles_TARGETDIRS),)
+$(workbench-datatypes-tiff-genmodfiles_TARGETS) : | $(workbench-datatypes-tiff-genmodfiles_TARGETDIRS)
+endif
+
+$(workbench-datatypes-tiff-genmodfiles_TARGETS) : $(workbench-datatypes-tiff-genmodfiles_DEPS) $(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG)
+
+$(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG) : OPTS := $(workbench-datatypes-tiff-genmodfiles_OPTS)
+$(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG) : MODNAME := tiff
+$(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG) : MODTYPE := datatype
+$(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG) : $(workbench-datatypes-tiff-genmodfiles_DEPS)
+	$(Q)$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
+	$(Q)$(IF) $(TEST) "" = "lib.conf" && $(TEST) -f lib.conf; then \
+		$(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
+	fi
+	$(Q)$(IF) $(TEST) -f libdefs.h; then \
+		$(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
+	fi
+	$(Q)$(GENMODULE) $(OPTS) writefiles $(MODNAME) $(MODTYPE)
+	$(Q)$(TOUCH) $@
+
+$(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG) : $(workbench-datatypes-tiff_DEFLIBDEFSINC) $(workbench-datatypes-tiff-makefile)
+
+
+ifneq ($(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG),)
+$(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG) : | $(workbench-datatypes-tiff_OBJDIR)/linklib
+else
+$(workbench-datatypes-tiff-genmodfiles_GENFILEFLAG) :: $(workbench-datatypes-tiff_OBJDIR)/linklib
+endif
+
+GLOB_MKDIRS += $(workbench-datatypes-tiff_OBJDIR)/linklib
+
+
+ifeq (M,M)
+## Create FD file
+ifeq (,)
+workbench-datatypes-tiff_FDDIR            := $(AROSDIR)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_SDK)/$(AROS_DIR_FD)
+else
+workbench-datatypes-tiff_FDDIR            := /../$(AROS_DIR_FD)
+endif
+workbench-datatypes-tiff-fd : $(workbench-datatypes-tiff_FDDIR)/tiff_lib.fd
+
+
+TMP_TARGET := tiff_lib.fd
+TMP_DEPS := $(GENMODULE)
+TMP_OPTS := 
+ifneq (,)
+    ifeq ($(dir ),./)
+        TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/
+        TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        TMP_OPTS += -c 
+        TMP_DEPS += 
+    endif 
+else
+    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/tiff.conf
+    TMP_DEPS += $(SRCDIR)/$(CURDIR)/tiff.conf
+endif
+ifneq (,)
+    ifeq ($(dir ),./)
+        TMP_OPTS += -o $(SRCDIR)/$(CURDIR)/
+        TMP_DEPS += $(SRCDIR)/$(CURDIR)/
+    else
+        TMP_OPTS += -o 
+        TMP_DEPS += 
+    endif 
+endif
+ifneq (,)
+    TMP_OPTS += -s 
+endif
+ifneq ($(workbench-datatypes-tiff_FDDIR),)
+    TMP_OPTS += -d $(workbench-datatypes-tiff_FDDIR)
+    TMP_TARGET := $(workbench-datatypes-tiff_FDDIR)/$(TMP_TARGET)
+endif
+
+$(TMP_TARGET) : OPTS := $(TMP_OPTS)
+$(TMP_TARGET) : MODNAME := tiff
+$(TMP_TARGET) : MODTYPE := datatype
+$(TMP_TARGET) : $(TMP_DEPS)
+	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
+	$(Q)$(GENMODULE) $(OPTS) writefd $(MODNAME) $(MODTYPE)
+
+$(workbench-datatypes-tiff_FDDIR)/tiff_lib.fd : | $(workbench-datatypes-tiff_FDDIR)
+
+
+ifneq (workbench-datatypes-tiff-fd-setup,)
+workbench-datatypes-tiff-fd-setup : | $(workbench-datatypes-tiff_FDDIR)
+else
+workbench-datatypes-tiff-fd-setup :: $(workbench-datatypes-tiff_FDDIR)
+endif
+
+GLOB_MKDIRS += $(workbench-datatypes-tiff_FDDIR)
+
+endif
+
+## Compilation
+##
+workbench-datatypes-tiff_FILES            := $(FILES)
+workbench-datatypes-tiff_OBJCFILES        := 
+workbench-datatypes-tiff_CXXFILES         := $(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))
+
+workbench-datatypes-tiff_LIBFILES         := 
+workbench-datatypes-tiff_LIBS             := tiff jpeg z
+
+workbench-datatypes-tiff_FDIRS            := $(sort $(dir $(workbench-datatypes-tiff_FILES)))
+
+workbench-datatypes-tiff_FILEMATCH        = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+workbench-datatypes-tiff_MATCHARCH        = $(foreach matchfile,$(2),$(foreach archfile,$(1),$(if $(call workbench-datatypes-tiff_FILEMATCH,$(archfile),$(notdir $(matchfile))),$(matchfile),)))
+workbench-datatypes-tiff_FILTERARCH       = $(filter-out $(call workbench-datatypes-tiff_MATCHARCH,$(1),$(2)),$(2))
+workbench-datatypes-tiff_STARTFILES       := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_STARTFILES))
+workbench-datatypes-tiff_ENDFILES         := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_ENDFILES))
+
+workbench-datatypes-tiff_ARCHOBJS         := $(wildcard $(workbench-datatypes-tiff_OBJDIR)/arch/*.o)
+workbench-datatypes-tiff_LIBARCHOBJS      := $(wildcard $(workbench-datatypes-tiff_OBJDIR)/linklib/arch/*.o)
+workbench-datatypes-tiff_ARCHFILES        := $(basename $(notdir $(workbench-datatypes-tiff_ARCHOBJS)))
+workbench-datatypes-tiff_LIBARCHFILES     := $(basename $(notdir $(workbench-datatypes-tiff_LIBARCHOBJS)))
+workbench-datatypes-tiff_C_NARCHFILES     := $(call workbench-datatypes-tiff_FILTERARCH,$(workbench-datatypes-tiff_ARCHFILES),$(workbench-datatypes-tiff_FILES))
+workbench-datatypes-tiff_CXX_NARCHFILES   := $(call workbench-datatypes-tiff_FILTERARCH,$(workbench-datatypes-tiff_ARCHFILES),$(workbench-datatypes-tiff_CXXFILES))
+workbench-datatypes-tiff_OBJC_NARCHFILES  := $(call workbench-datatypes-tiff_FILTERARCH,$(workbench-datatypes-tiff_ARCHFILES),$(workbench-datatypes-tiff_OBJCFILES))
+workbench-datatypes-tiff_NLIBARCHFILES    := $(call workbench-datatypes-tiff_FILTERARCH,$(workbench-datatypes-tiff_LIBARCHFILES),$(workbench-datatypes-tiff_LIBFILES))
+workbench-datatypes-tiff_ARCHNLIBFILES    := $(call workbench-datatypes-tiff_FILTERARCH,$(workbench-datatypes-tiff_LIBFILES),$(workbench-datatypes-tiff_LIBARCHFILES))
+
+workbench-datatypes-tiff_CPPFLAGS         := $(strip $(CPPFLAGS) -I$(workbench-datatypes-tiff_OBJDIR)/include -include $(workbench-datatypes-tiff_DEFLIBDEFSINC))
+ifneq (,)
+workbench-datatypes-tiff_CPPFLAGS         += -I
+endif
+workbench-datatypes-tiff_LINKLIBCPPFLAGS  := $(workbench-datatypes-tiff_CPPFLAGS)
+workbench-datatypes-tiff_CPPFLAGS         += $(strip $($(workbench-datatypes-tiff_DEFNAME)_CPPFLAGS))
+workbench-datatypes-tiff_LINKLIBCPPFLAGS  += $(strip $($(workbench-datatypes-tiff_DEFNAME)_LINKLIBCPPFLAGS))
+workbench-datatypes-tiff_CFLAGS           := $(strip $(CFLAGS) $($(workbench-datatypes-tiff_DEFNAME)_CFLAGS))
+workbench-datatypes-tiff_LINKLIBCFLAGS    := $(strip $(CFLAGS) $($(workbench-datatypes-tiff_DEFNAME)_LINKLIBCFLAGS))
+workbench-datatypes-tiff_CXXFLAGS         := $(strip $(CXXFLAGS) $($(workbench-datatypes-tiff_DEFNAME)_CXXFLAGS))
+ifeq (target,target)
+ifeq ($(TARGET_LTO),yes)
+workbench-datatypes-tiff_LTOFLAGS         ?= $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH))
+workbench-datatypes-tiff_CFLAGS           := $(strip $(workbench-datatypes-tiff_LTOFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+workbench-datatypes-tiff_LINKLIBCFLAGS    := $(strip $(workbench-datatypes-tiff_LTOFLAGS) $(workbench-datatypes-tiff_LINKLIBCFLAGS))
+workbench-datatypes-tiff_CXXFLAGS         := $(strip $(workbench-datatypes-tiff_LTOFLAGS) $(workbench-datatypes-tiff_CXXFLAGS))
+endif
+ifeq ($(TARGET_FUNCINSTR),yes)
+workbench-datatypes-tiff_SUBSTNULL        :=
+workbench-datatypes-tiff_SUBSTSPACE       := $(workbench-datatypes-tiff_SUBSTNULL) #
+workbench-datatypes-tiff_SUBSTCOMMA       := ,
+workbench-datatypes-tiff_INSTRFUNCFLAGS   ?= $(strip $(FUNCINSTR_FLAGS) -finstrument-functions-exclude-file-list=$(subst $(workbench-datatypes-tiff_SUBSTSPACE),$(workbench-datatypes-tiff_SUBSTCOMMA),$(strip $($(workbench-datatypes-tiff_DEFNAME)_STARTFILES))))
+workbench-datatypes-tiff_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
+workbench-datatypes-tiff_CFLAGS           := $(strip $(workbench-datatypes-tiff_INSTRFUNCFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+workbench-datatypes-tiff_CXXFLAGS         := $(strip $(workbench-datatypes-tiff_INSTRFUNCFLAGS) $(workbench-datatypes-tiff_CXXFLAGS))
+workbench-datatypes-tiff_LIBS             += $(workbench-datatypes-tiff_INSTRFUNCLIBS)
+endif
+endif
+workbench-datatypes-tiff_DFLAGS           := $(strip $(workbench-datatypes-tiff_DFLAGS) $($(workbench-datatypes-tiff_DEFNAME)_DFLAGS))
+workbench-datatypes-tiff_LINKLIBDFLAGS    := $(strip $(workbench-datatypes-tiff_DFLAGS) $($(workbench-datatypes-tiff_DEFNAME)_LINKLIBDFLAGS))
+workbench-datatypes-tiff_DXXFLAGS         := $(strip $(workbench-datatypes-tiff_DXXFLAGS) $($(workbench-datatypes-tiff_DEFNAME)_DXXFLAGS))
+
+ifeq (datatype,library)
+    workbench-datatypes-tiff_LIBSUFFIX    := 
+else
+    workbench-datatypes-tiff_LIBSUFFIX    := .datatype
+endif
+
+ifeq (,)
+workbench-datatypes-tiff_LIBDIR           := $(AROSDIR)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_LIB)
+else
+workbench-datatypes-tiff_LIBDIR           := 
+endif
+
+ifeq (M,M)
+workbench-datatypes-tiff_LINKLIBCFILES    := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$($(workbench-datatypes-tiff_DEFNAME)_LINKLIBFILES))
+workbench-datatypes-tiff_LINKLIBAFILES    := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$($(workbench-datatypes-tiff_DEFNAME)_LINKLIBAFILES))
+ifeq ($(strip $($(workbench-datatypes-tiff_DEFNAME)_LINKLIBFILES) $($(workbench-datatypes-tiff_DEFNAME)_LINKLIBAFILES)  $(workbench-datatypes-tiff_ARCHNLIBFILES)),)
+    workbench-datatypes-tiff_LINKLIB      :=
+else
+    workbench-datatypes-tiff_LINKLIB      := $(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a
+    ifneq (tiff,$(workbench-datatypes-tiff_LINKLIBNAME))
+        workbench-datatypes-tiff_LINKLIB  += $(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a
+    endif
+endif
+workbench-datatypes-tiff_LINKLIBFILES     := $(workbench-datatypes-tiff_LINKLIBCFILES) $(workbench-datatypes-tiff_LINKLIBAFILES)
+
+workbench-datatypes-tiff_RELLINKLIBCFILES := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$($(workbench-datatypes-tiff_DEFNAME)_RELLINKLIBFILES))
+workbench-datatypes-tiff_RELLINKLIBAFILES := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$($(workbench-datatypes-tiff_DEFNAME)_RELLINKLIBAFILES))
+ifeq ($(strip $($(workbench-datatypes-tiff_DEFNAME)_RELLINKLIBFILES) $($(workbench-datatypes-tiff_DEFNAME)_RELLINKLIBAFILES)  $(workbench-datatypes-tiff_ARCHNLIBFILES)),)
+    workbench-datatypes-tiff_RELLINKLIB   :=
+else
+    workbench-datatypes-tiff_RELLINKLIB   := $(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a
+    ifneq (tiff,$(workbench-datatypes-tiff_LINKLIBNAME))
+        workbench-datatypes-tiff_RELLINKLIB += $(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a
+    endif
+endif
+workbench-datatypes-tiff_RELLINKLIBFILES  := $(workbench-datatypes-tiff_RELLINKLIBCFILES) $(workbench-datatypes-tiff_RELLINKLIBAFILES)
+endif
+
+workbench-datatypes-tiff_ENDOBJS          := $(addsuffix .o,$(workbench-datatypes-tiff_ENDFILES))
+workbench-datatypes-tiff_LINKLIBOBJS      := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_NLIBARCHFILES))) $(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/arch/,$(notdir $(workbench-datatypes-tiff_ARCHNLIBFILES))) $(workbench-datatypes-tiff_LINKLIBFILES)) \
+                 
+workbench-datatypes-tiff_RELLINKLIBOBJS   := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_NLIBARCHFILES))) $(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/arch/,$(notdir $(workbench-datatypes-tiff_ARCHNLIBFILES))) $(workbench-datatypes-tiff_RELLINKLIBFILES)) \
+                 
+$(workbench-datatypes-tiff_LINKLIBFILES) $(workbench-datatypes-tiff_RELLINKLIBFILES) : | $(workbench-datatypes-tiff_OBJDIR)/linklib
+$(workbench-datatypes-tiff_LINKLIBOBJS) $(workbench-datatypes-tiff_RELLINKLIBOBJS) : | $(workbench-datatypes-tiff_OBJDIR)/linklib
+
+workbench-datatypes-tiff_CCFILES := $(workbench-datatypes-tiff_C_NARCHFILES)
+workbench-datatypes-tiff_TARGETCCFILES    := $(strip $(workbench-datatypes-tiff_STARTFILES) $(workbench-datatypes-tiff_ENDFILES))
+workbench-datatypes-tiff_LINKLIBCCFILES   := $(strip $(workbench-datatypes-tiff_NLIBARCHFILES) $(workbench-datatypes-tiff_LINKLIBCFILES) $(workbench-datatypes-tiff_RELLINKLIBCFILES))
+workbench-datatypes-tiff_LINKLIBCCGENFILES := $(strip $(workbench-datatypes-tiff_LINKLIBCFILES) $(workbench-datatypes-tiff_RELLINKLIBCFILES))
+
+
+workbench-datatypes-tiff_CXXABSBASENAMES := $(foreach workbench-datatypes-tiff_CXXBASE,$(workbench-datatypes-tiff_CXX_NARCHFILES),$(if $(filter /%,$(workbench-datatypes-tiff_CXXBASE)),$(workbench-datatypes-tiff_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(workbench-datatypes-tiff_CXXBASE))))
+
+ifneq ($(workbench-datatypes-tiff_CXXABSBASENAMES),)
+
+workbench-datatypes-tiff_CXXBASENAMES := $(basename $(workbench-datatypes-tiff_CXXABSBASENAMES))
+
+# Identify the "real" c++ files from the passed in basenames
+workbench-datatypes-tiff_MCXX_FILES  := $(strip $(foreach workbench-datatypes-tiff_CXXBASE,$(workbench-datatypes-tiff_CXXABSBASENAMES), $(firstword $(wildcard $(foreach workbench-datatypes-tiff_EXT, $(AROS_CXXEXTS),$(addsuffix .$(workbench-datatypes-tiff_EXT),$(workbench-datatypes-tiff_CXXBASE)))))))
+
+ifeq (,)
+workbench-datatypes-tiff_MCXX_SRCWILDCARD := %
+else
+workbench-datatypes-tiff_MCXX_SRCWILDCARD := /%
+endif
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR),)
+  workbench-datatypes-tiff_CXXTARGETS := $(notdir $(workbench-datatypes-tiff_CXXBASENAMES:=.o))
+  workbench-datatypes-tiff_CXXDTARGETS := $(notdir $(workbench-datatypes-tiff_CXXBASENAMES:=.d))
+  workbench-datatypes-tiff_MCXX_WILDCARD := %
+else
+  workbench-datatypes-tiff_CXXTARGETS := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_CXXBASENAMES:=.o)))
+  workbench-datatypes-tiff_CXXDTARGETS := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_CXXBASENAMES:=.d)))
+  workbench-datatypes-tiff_MCXX_WILDCARD := $(workbench-datatypes-tiff_OBJDIR)/%
+
+  # Be sure that all source files are generated
+  $(workbench-datatypes-tiff_CXXTARGETS) $(workbench-datatypes-tiff_CXXDTARGETS) : | $(workbench-datatypes-tiff_MCXX_FILES)
+endif
+
+# Adjust compiler flags to suit C++
+workbench-datatypes-tiff_MCXX_CPPFLAGS := $(workbench-datatypes-tiff_CPPFLAGS)
+workbench-datatypes-tiff_CXXFLAGS := $(workbench-datatypes-tiff_CXXFLAGS)
+ifeq ($(workbench-datatypes-tiff_DXXFLAGS),)
+  workbench-datatypes-tiff_DXXFLAGS := $(workbench-datatypes-tiff_CXXFLAGS)
+else
+  workbench-datatypes-tiff_DXXFLAGS := $(workbench-datatypes-tiff_DXXFLAGS)
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,host)
+  workbench-datatypes-tiff_LINK ?= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
+  workbench-datatypes-tiff_STRIP ?= $(HOST_STRIP)
+  workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
+  workbench-datatypes-tiff_CXXCMD:=$(HOST_CXX)
+  workbench-datatypes-tiff_MCXX_CPPFLAGS := $(strip $(HOST_MCXX_CPPFLAGS) $(workbench-datatypes-tiff_MCXX_CPPFLAGS) $(workbench-datatypes-tiff_MCXX_EXTRA_CPPFLAGS))
+  workbench-datatypes-tiff_CXXFLAGS := $(strip $(HOST_CXXFLAGS) $(workbench-datatypes-tiff_CXXFLAGS))
+  workbench-datatypes-tiff_DXXFLAGS := $(strip $(HOST_CXXFLAGS) $(workbench-datatypes-tiff_DXXFLAGS))
+  workbench-datatypes-tiff_CXXIQUOTE:=$(HOST_IQUOTE)
+  workbench-datatypes-tiff_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,target)
+  workbench-datatypes-tiff_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+  workbench-datatypes-tiff_STRIP ?= $(TARGET_STRIP)
+  workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+  workbench-datatypes-tiff_CXXCMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
+  workbench-datatypes-tiff_MCXX_CPPFLAGS := $(strip $(workbench-datatypes-tiff_MCXX_CPPFLAGS) $(workbench-datatypes-tiff_MCXX_EXTRA_CPPFLAGS))
+  workbench-datatypes-tiff_CXXFLAGS := $(strip $(workbench-datatypes-tiff_CXXFLAGS) $(SAFETY_CFLAGS))
+  workbench-datatypes-tiff_DXXFLAGS := $(workbench-datatypes-tiff_DXXFLAGS)
+  workbench-datatypes-tiff_CXXIQUOTE:=$(CFLAGS_IQUOTE)
+  workbench-datatypes-tiff_CXXIQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,kernel)
+  KERNEL_CXX ?= $(KERNEL_CC)
+  workbench-datatypes-tiff_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+  workbench-datatypes-tiff_STRIP ?= $(ECHO) >/dev/null
+  workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+  workbench-datatypes-tiff_CXXCMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+  workbench-datatypes-tiff_CXXFLAGS := $(strip $(KERNEL_MCXX_CPPFLAGS) $(workbench-datatypes-tiff_MCXX_CPPFLAGS) $(workbench-datatypes-tiff_MCXX_EXTRA_CPPFLAGS))
+  workbench-datatypes-tiff_CXXFLAGS := $(strip $(KERNEL_CXXFLAGS) $(workbench-datatypes-tiff_CXXFLAGS))
+  workbench-datatypes-tiff_DXXFLAGS := $(strip $(KERNEL_CXXFLAGS) $(workbench-datatypes-tiff_DXXFLAGS))
+  workbench-datatypes-tiff_CXXIQUOTE:=$(KERNEL_IQUOTE)
+  workbench-datatypes-tiff_CXXIQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+define cxx_multi_recipe_template
+ $(1).o : $(2)
+	$(Q)$(ECHO) "Compiling  $(if $(filter /%,$(2)),$(if $(filter $(SRCDIR)/%,$(abspath $(2))),$(patsubst $(SRCDIR)/%,%,$(abspath $(2))),$(patsubst $(TOP)/%,%,$(abspath $(2)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$(2))))"
+	$(Q)$(IF) $(workbench-datatypes-tiff_CXXCMD) $(workbench-datatypes-tiff_CXXIQUOTE) $(dir $(2)) $(workbench-datatypes-tiff_CXXIQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_CXXIQUOTE) . $(workbench-datatypes-tiff_CXXIQUOTE_END) $(strip $(workbench-datatypes-tiff_CXXFLAGS) $(workbench-datatypes-tiff_MCXX_CPPFLAGS)) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $(2))))"\" -c $(2) -o $(1).o > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$(2): $(workbench-datatypes-tiff_CXXCMD) $(workbench-datatypes-tiff_CXXIQUOTE) $(dir $(2)) $(workbench-datatypes-tiff_CXXIQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_CXXIQUOTE) . $(workbench-datatypes-tiff_CXXIQUOTE_END) $(strip $(workbench-datatypes-tiff_CXXFLAGS) $(workbench-datatypes-tiff_MCXX_CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $(2))))\" -c $(2) -o $(1).o" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Compile failed: $(workbench-datatypes-tiff_CXXCMD) $(workbench-datatypes-tiff_CXXIQUOTE) $(dir $(2)) $(workbench-datatypes-tiff_CXXIQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_CXXIQUOTE) . $(workbench-datatypes-tiff_CXXIQUOTE_END) $(strip $(workbench-datatypes-tiff_CXXFLAGS) $(workbench-datatypes-tiff_MCXX_CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $(2))))\" -c $(2) -o $(1).o" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+
+ $(1).d : $(2)
+	$(Q)$(IF) $(TEST) ! -d $(dir $(1).d) ; then $(MKDIR) $(dir $(1).d) ; else $(NOP) ; fi
+	$(Q)$(ECHO) "Makedepend $(if $(filter /%,$(2)),$(if $(filter $(SRCDIR)/%,$(abspath $(2))),$(patsubst $(SRCDIR)/%,%,$(abspath $(2))),$(patsubst $(TOP)/%,%,$(abspath $(2)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$(2))))..."
+	$(Q)AROS_CC="$(workbench-datatypes-tiff_CXXCMD)" $(MKDEPEND) $(strip $(workbench-datatypes-tiff_DXXFLAGS) $(workbench-datatypes-tiff_MCXX_CPPFLAGS)) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) $(2) -o $(1).d
+endef
+ifeq ($(workbench-datatypes-tiff_OBJDIR),)
+  $(foreach workbench-datatypes-tiff_CXXFILE,$(workbench-datatypes-tiff_MCXX_FILES),$(eval $(call cxx_multi_recipe_template,$(notdir $(basename $(workbench-datatypes-tiff_CXXFILE))),$(workbench-datatypes-tiff_CXXFILE))))
+else
+  $(foreach workbench-datatypes-tiff_CXXFILE,$(workbench-datatypes-tiff_MCXX_FILES),$(eval $(call cxx_multi_recipe_template,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(basename $(workbench-datatypes-tiff_CXXFILE)))),$(workbench-datatypes-tiff_CXXFILE))))
+endif
+
+endif
+
+
+ifneq ($(workbench-datatypes-tiff_OBJC_NARCHFILES),)
+
+ifeq (,)
+workbench-datatypes-tiff_MOBJC_SRCWILDCARD := %
+else
+workbench-datatypes-tiff_MOBJC_SRCWILDCARD := /%
+endif
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR),)
+  workbench-datatypes-tiff_MOBJC_TARGETS := $(addsuffix .o,$(workbench-datatypes-tiff_OBJC_NARCHFILES))
+  workbench-datatypes-tiff_MOBJC_DTARGETS := $(addsuffix .d,$(workbench-datatypes-tiff_OBJC_NARCHFILES))
+  workbench-datatypes-tiff_MOBJC_WILDCARD := %
+else
+  workbench-datatypes-tiff_MOBJC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(workbench-datatypes-tiff_OBJC_NARCHFILES)))
+  workbench-datatypes-tiff_MOBJC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(workbench-datatypes-tiff_OBJC_NARCHFILES)))
+  workbench-datatypes-tiff_MOBJC_WILDCARD := $(workbench-datatypes-tiff_OBJDIR)/%
+
+  # Be sure that all .m files are generated
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : | $(addsuffix .m,$(workbench-datatypes-tiff_OBJC_NARCHFILES))
+
+  # Be sure that all .m files are found
+  workbench-datatypes-tiff_MOBJC_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+  workbench-datatypes-tiff_MOBJC_BASEDIRS := $(shell echo $(sort $(dir $(workbench-datatypes-tiff_OBJC_NARCHFILES))) | sed 's/\(.\):\//\/\1\//g')
+  workbench-datatypes-tiff_MOBJC_DIRS := $(foreach dir, $(workbench-datatypes-tiff_MOBJC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(workbench-datatypes-tiff_MOBJC_SRCDIR)/$(CURDIR)/$(dir)))
+  ifneq ($(workbench-datatypes-tiff_MOBJC_DIRS),)
+    workbench-datatypes-tiff_MOBJC_DIRS := $(shell echo $(workbench-datatypes-tiff_MOBJC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.m $(workbench-datatypes-tiff_MOBJC_DIRS)
+  endif
+endif
+
+# Define the use of cross compiler
+ifeq ($(TARGET_OBJC),)
+  workbench-datatypes-tiff_CC := $(TARGET_CC)
+else
+  workbench-datatypes-tiff_CC := $(TARGET_OBJC)
+endif
+
+# Adjust compiler flags to suit ObjC
+workbench-datatypes-tiff_MOBJC_CPPFLAGS := $(workbench-datatypes-tiff_CPPFLAGS)
+workbench-datatypes-tiff_OBJCFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+workbench-datatypes-tiff_OBJCFLAGS := $(workbench-datatypes-tiff_OBJCFLAGS) -isystem $(AROS_DEVELOPER)/include
+workbench-datatypes-tiff_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(workbench-datatypes-tiff_OBJCFLAGS)))
+ifeq ($(workbench-datatypes-tiff_DFLAGS),)
+  workbench-datatypes-tiff_OBJCDFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+else
+  workbench-datatypes-tiff_OBJCDFLAGS := $(workbench-datatypes-tiff_DFLAGS)
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+  workbench-datatypes-tiff_LINK ?= $(strip $(workbench-datatypes-tiff_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+  workbench-datatypes-tiff_STRIP ?= $(TARGET_STRIP)
+  workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : CMD:=$(strip $(workbench-datatypes-tiff_CC) $(TARGET_SYSROOT))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_MOBJC_CPPFLAGS:=$(strip $(workbench-datatypes-tiff_MOBJC_CPPFLAGS) $(workbench-datatypes-tiff_MOBJC_EXTRA_CPPFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_OBJCFLAGS:=$(strip $(workbench-datatypes-tiff_OBJCFLAGS) $(SAFETY_CFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_OBJCDFLAGS:=$(workbench-datatypes-tiff_OBJCDFLAGS)
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(CFLAGS_IQUOTE)
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+  workbench-datatypes-tiff_LINK ?= $(strip $(HOST_OBJC) $(HOST_LDFLAGS))
+  workbench-datatypes-tiff_STRIP ?= $(HOST_STRIP)
+  workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : CMD:=$(HOST_OBJC)
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_MOBJC_CPPFLAGS:=$(strip $(HOST_MOBJC_CPPFLAGS) $(workbench-datatypes-tiff_MOBJC_CPPFLAGS) $(workbench-datatypes-tiff_MOBJC_EXTRA_CPPFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_OBJCFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_OBJCFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_OBJCDFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_OBJCDFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(HOST_IQUOTE)
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+  KERNEL_OBJC ?= $(KERNEL_CC)
+  workbench-datatypes-tiff_LINK ?= $(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+  workbench-datatypes-tiff_STRIP ?= $(ECHO) >/dev/null
+  workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : CMD:=$(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_MOBJC_CPPFLAGS:=$(strip $(KERNEL_MOBJC_CPPFLAGS) $(workbench-datatypes-tiff_MOBJC_CPPFLAGS) $(workbench-datatypes-tiff_MOBJC_EXTRA_CPPFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_OBJCFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_OBJCFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_OBJCDFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_OBJCDFLAGS))
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(KERNEL_IQUOTE)
+  $(workbench-datatypes-tiff_MOBJC_TARGETS) $(workbench-datatypes-tiff_MOBJC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(workbench-datatypes-tiff_MOBJC_TARGETS) : CPPFLAGS := $(workbench-datatypes-tiff_MOBJC_CPPFLAGS)
+$(workbench-datatypes-tiff_MOBJC_TARGETS) : CFLAGS := $(workbench-datatypes-tiff_OBJCFLAGS)
+$(workbench-datatypes-tiff_MOBJC_TARGETS) : $(workbench-datatypes-tiff_MOBJC_WILDCARD).o : $(workbench-datatypes-tiff_MOBJC_SRCWILDCARD).m
+	$(Q)$(ECHO) "Compiling  $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))"
+	$(Q)$(IF) $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))"\" -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$<: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Compile failed: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+
+$(workbench-datatypes-tiff_MOBJC_DTARGETS) : $(workbench-datatypes-tiff_MOBJC_WILDCARD).d : $(workbench-datatypes-tiff_MOBJC_SRCWILDCARD).m
+	$(Q)$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	$(Q)$(ECHO) "Makedepend $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))..."
+	$(Q)AROS_CC="$(CMD)" $(MKDEPEND) $(strip $(workbench-datatypes-tiff_OBJCDFLAGS) $(workbench-datatypes-tiff_MOBJC_CPPFLAGS)) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) $< -o $@
+
+endif
+
+
+ifeq (,)
+workbench-datatypes-tiff_MC_SRCWILDCARD := %
+else
+workbench-datatypes-tiff_MC_SRCWILDCARD := /%
+endif
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR),)
+workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(workbench-datatypes-tiff_CCFILES))
+workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(workbench-datatypes-tiff_CCFILES))
+workbench-datatypes-tiff_MC_TGTWILDCARD := %
+else
+ifeq (no,no)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_CCFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_CCFILES))))
+else
+ifeq (,)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(workbench-datatypes-tiff_CCFILES)))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(workbench-datatypes-tiff_CCFILES)))
+else
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(patsubst /%,%,$(workbench-datatypes-tiff_CCFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(patsubst /%,%,$(workbench-datatypes-tiff_CCFILES))))
+endif
+endif
+workbench-datatypes-tiff_MC_TGTWILDCARD := $(workbench-datatypes-tiff_OBJDIR)/%
+
+# Be sure that all .c files are generated
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : | $(addsuffix .c,$(workbench-datatypes-tiff_CCFILES))
+
+# Be sure that all .c files are found
+workbench-datatypes-tiff_MC_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+workbench-datatypes-tiff_MC_BASEDIRS := $(shell echo $(sort $(dir $(workbench-datatypes-tiff_CCFILES))) | sed 's/\(.\):\//\/\1\//g')
+workbench-datatypes-tiff_MC_DIRS := $(foreach dir, $(workbench-datatypes-tiff_MC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(workbench-datatypes-tiff_MC_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(workbench-datatypes-tiff_MC_DIRS),)
+    workbench-datatypes-tiff_MC_DIRS := $(shell echo $(workbench-datatypes-tiff_MC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(workbench-datatypes-tiff_MC_DIRS)
+endif
+
+endif
+
+workbench-datatypes-tiff_MC_CPPFLAGS := $(workbench-datatypes-tiff_CPPFLAGS)
+workbench-datatypes-tiff_CFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+ifeq ($(workbench-datatypes-tiff_DFLAGS),)
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+else
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_DFLAGS)
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+workbench-datatypes-tiff_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(TARGET_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(workbench-datatypes-tiff_CFLAGS) $(SAFETY_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(workbench-datatypes-tiff_DFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(CFLAGS_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+workbench-datatypes-tiff_LINK ?= $(strip $(HOST_CC) $(HOST_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(HOST_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $HOST_CC) $(HOST_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(HOST_CC)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(HOST_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(HOST_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+workbench-datatypes-tiff_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(ECHO) >/dev/null
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(KERNEL_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(KERNEL_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(workbench-datatypes-tiff_MC_TARGETS) : CPPFLAGS := $(workbench-datatypes-tiff_MC_CPPFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : CFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).o : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(ECHO) "Compiling  $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))"
+	$(Q)$(IF) $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))"\" -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$<: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Compile failed: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+
+$(workbench-datatypes-tiff_MC_DTARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).d : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	$(Q)$(ECHO) "Makedepend $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))..."
+	$(Q)AROS_CC="$(CMD)" $(MKDEPEND) $(strip $(workbench-datatypes-tiff_DFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS)) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) $< -o $@
+
+ifeq (,)
+workbench-datatypes-tiff_MC_SRCWILDCARD := %
+else
+workbench-datatypes-tiff_MC_SRCWILDCARD := /%
+endif
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR),)
+workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(workbench-datatypes-tiff_TARGETCCFILES))
+workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(workbench-datatypes-tiff_TARGETCCFILES))
+workbench-datatypes-tiff_MC_TGTWILDCARD := %
+else
+ifeq (no,no)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_TARGETCCFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_TARGETCCFILES))))
+else
+ifeq (,)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(workbench-datatypes-tiff_TARGETCCFILES)))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(workbench-datatypes-tiff_TARGETCCFILES)))
+else
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(patsubst /%,%,$(workbench-datatypes-tiff_TARGETCCFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(patsubst /%,%,$(workbench-datatypes-tiff_TARGETCCFILES))))
+endif
+endif
+workbench-datatypes-tiff_MC_TGTWILDCARD := $(workbench-datatypes-tiff_OBJDIR)/%
+
+# Be sure that all .c files are generated
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : | $(addsuffix .c,$(workbench-datatypes-tiff_TARGETCCFILES))
+
+# Be sure that all .c files are found
+workbench-datatypes-tiff_MC_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+workbench-datatypes-tiff_MC_BASEDIRS := $(shell echo $(sort $(dir $(workbench-datatypes-tiff_TARGETCCFILES))) | sed 's/\(.\):\//\/\1\//g')
+workbench-datatypes-tiff_MC_DIRS := $(foreach dir, $(workbench-datatypes-tiff_MC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(workbench-datatypes-tiff_MC_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(workbench-datatypes-tiff_MC_DIRS),)
+    workbench-datatypes-tiff_MC_DIRS := $(shell echo $(workbench-datatypes-tiff_MC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(workbench-datatypes-tiff_MC_DIRS)
+endif
+
+endif
+
+workbench-datatypes-tiff_MC_CPPFLAGS := $(workbench-datatypes-tiff_CPPFLAGS) -D__AROS__
+workbench-datatypes-tiff_CFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+ifeq ($(workbench-datatypes-tiff_DFLAGS),)
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+else
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_DFLAGS)
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+workbench-datatypes-tiff_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(TARGET_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(workbench-datatypes-tiff_CFLAGS) $(SAFETY_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(workbench-datatypes-tiff_DFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(CFLAGS_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+workbench-datatypes-tiff_LINK ?= $(strip $(HOST_CC) $(HOST_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(HOST_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $HOST_CC) $(HOST_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(HOST_CC)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(HOST_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(HOST_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+workbench-datatypes-tiff_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(ECHO) >/dev/null
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(KERNEL_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(KERNEL_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(workbench-datatypes-tiff_MC_TARGETS) : CPPFLAGS := $(workbench-datatypes-tiff_MC_CPPFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : CFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).o : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(ECHO) "Compiling  $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))"
+	$(Q)$(IF) $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))"\" -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$<: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Compile failed: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+
+$(workbench-datatypes-tiff_MC_DTARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).d : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	$(Q)$(ECHO) "Makedepend $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))..."
+	$(Q)AROS_CC="$(CMD)" $(MKDEPEND) $(strip $(workbench-datatypes-tiff_DFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS)) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) $< -o $@
+
+ifeq (,)
+workbench-datatypes-tiff_MC_SRCWILDCARD := %
+else
+workbench-datatypes-tiff_MC_SRCWILDCARD := /%
+endif
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR)/linklib,)
+workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(workbench-datatypes-tiff_NLIBARCHFILES))
+workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(workbench-datatypes-tiff_NLIBARCHFILES))
+workbench-datatypes-tiff_MC_TGTWILDCARD := %
+else
+ifeq (no,no)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_NLIBARCHFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_NLIBARCHFILES))))
+else
+ifeq (,)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(workbench-datatypes-tiff_NLIBARCHFILES)))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(workbench-datatypes-tiff_NLIBARCHFILES)))
+else
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(patsubst /%,%,$(workbench-datatypes-tiff_NLIBARCHFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(patsubst /%,%,$(workbench-datatypes-tiff_NLIBARCHFILES))))
+endif
+endif
+workbench-datatypes-tiff_MC_TGTWILDCARD := $(workbench-datatypes-tiff_OBJDIR)/linklib/%
+
+# Be sure that all .c files are generated
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : | $(addsuffix .c,$(workbench-datatypes-tiff_NLIBARCHFILES))
+
+# Be sure that all .c files are found
+workbench-datatypes-tiff_MC_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+workbench-datatypes-tiff_MC_BASEDIRS := $(shell echo $(sort $(dir $(workbench-datatypes-tiff_NLIBARCHFILES))) | sed 's/\(.\):\//\/\1\//g')
+workbench-datatypes-tiff_MC_DIRS := $(foreach dir, $(workbench-datatypes-tiff_MC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(workbench-datatypes-tiff_MC_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(workbench-datatypes-tiff_MC_DIRS),)
+    workbench-datatypes-tiff_MC_DIRS := $(shell echo $(workbench-datatypes-tiff_MC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(workbench-datatypes-tiff_MC_DIRS)
+endif
+
+endif
+
+workbench-datatypes-tiff_MC_CPPFLAGS := $(workbench-datatypes-tiff_LINKLIBCPPFLAGS) -D__AROS__
+workbench-datatypes-tiff_CFLAGS := $(workbench-datatypes-tiff_LINKLIBCFLAGS)
+ifeq ($(workbench-datatypes-tiff_LINKLIBDFLAGS),)
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_LINKLIBCFLAGS)
+else
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_LINKLIBDFLAGS)
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+workbench-datatypes-tiff_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(TARGET_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(workbench-datatypes-tiff_CFLAGS) $(SAFETY_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(workbench-datatypes-tiff_DFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(CFLAGS_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+workbench-datatypes-tiff_LINK ?= $(strip $(HOST_CC) $(HOST_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(HOST_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $HOST_CC) $(HOST_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(HOST_CC)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(HOST_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(HOST_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+workbench-datatypes-tiff_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(ECHO) >/dev/null
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(KERNEL_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(KERNEL_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(workbench-datatypes-tiff_MC_TARGETS) : CPPFLAGS := $(workbench-datatypes-tiff_MC_CPPFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : CFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).o : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(ECHO) "Compiling  $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))"
+	$(Q)$(IF) $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))"\" -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$<: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Compile failed: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+
+$(workbench-datatypes-tiff_MC_DTARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).d : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	$(Q)$(ECHO) "Makedepend $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))..."
+	$(Q)AROS_CC="$(CMD)" $(MKDEPEND) $(strip $(workbench-datatypes-tiff_DFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS)) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) $< -o $@
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR)/linklib,)
+workbench-datatypes-tiff_MC_SRCWILDCARD := %
+else
+workbench-datatypes-tiff_MC_SRCWILDCARD := $(workbench-datatypes-tiff_OBJDIR)/linklib/%
+endif
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR)/linklib,)
+workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(workbench-datatypes-tiff_LINKLIBCCGENFILES))
+workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(workbench-datatypes-tiff_LINKLIBCCGENFILES))
+workbench-datatypes-tiff_MC_TGTWILDCARD := %
+else
+ifeq (no,no)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_LINKLIBCCGENFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_LINKLIBCCGENFILES))))
+else
+ifeq ($(workbench-datatypes-tiff_OBJDIR)/linklib,)
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(workbench-datatypes-tiff_LINKLIBCCGENFILES)))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(workbench-datatypes-tiff_LINKLIBCCGENFILES)))
+else
+    workbench-datatypes-tiff_MC_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(patsubst $(workbench-datatypes-tiff_OBJDIR)/linklib/%,%,$(workbench-datatypes-tiff_LINKLIBCCGENFILES))))
+    workbench-datatypes-tiff_MC_DTARGETS := $(addsuffix .d,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(patsubst $(workbench-datatypes-tiff_OBJDIR)/linklib/%,%,$(workbench-datatypes-tiff_LINKLIBCCGENFILES))))
+endif
+endif
+workbench-datatypes-tiff_MC_TGTWILDCARD := $(workbench-datatypes-tiff_OBJDIR)/linklib/%
+
+# Be sure that all .c files are generated
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : | $(addsuffix .c,$(workbench-datatypes-tiff_LINKLIBCCGENFILES))
+
+# Be sure that all .c files are found
+workbench-datatypes-tiff_MC_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+workbench-datatypes-tiff_MC_BASEDIRS := $(shell echo $(sort $(dir $(workbench-datatypes-tiff_LINKLIBCCGENFILES))) | sed 's/\(.\):\//\/\1\//g')
+workbench-datatypes-tiff_MC_DIRS := $(foreach dir, $(workbench-datatypes-tiff_MC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(workbench-datatypes-tiff_MC_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(workbench-datatypes-tiff_MC_DIRS),)
+    workbench-datatypes-tiff_MC_DIRS := $(shell echo $(workbench-datatypes-tiff_MC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(workbench-datatypes-tiff_MC_DIRS)
+endif
+
+endif
+
+workbench-datatypes-tiff_MC_CPPFLAGS := $(workbench-datatypes-tiff_LINKLIBCPPFLAGS) -D__AROS__
+workbench-datatypes-tiff_CFLAGS := $(workbench-datatypes-tiff_LINKLIBCFLAGS)
+ifeq ($(workbench-datatypes-tiff_LINKLIBDFLAGS),)
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_LINKLIBCFLAGS)
+else
+  workbench-datatypes-tiff_DFLAGS := $(workbench-datatypes-tiff_LINKLIBDFLAGS)
+endif
+
+ifeq ($(findstring target,host kernel target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+workbench-datatypes-tiff_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(TARGET_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(workbench-datatypes-tiff_CFLAGS) $(SAFETY_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(workbench-datatypes-tiff_DFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(CFLAGS_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (target,host)
+workbench-datatypes-tiff_LINK ?= $(strip $(HOST_CC) $(HOST_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(HOST_STRIP)
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $HOST_CC) $(HOST_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(HOST_CC)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(HOST_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(HOST_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(HOST_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (target,kernel)
+workbench-datatypes-tiff_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+workbench-datatypes-tiff_STRIP ?= $(ECHO) >/dev/null
+workbench-datatypes-tiff_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_MC_CPPFLAGS:=$(strip $(KERNEL_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS) $(workbench-datatypes-tiff_MC_EXTRA_CPPFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_CFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(workbench-datatypes-tiff_DFLAGS))
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE:=$(KERNEL_IQUOTE)
+$(workbench-datatypes-tiff_MC_TARGETS) $(workbench-datatypes-tiff_MC_DTARGETS) : workbench-datatypes-tiff_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(workbench-datatypes-tiff_MC_TARGETS) : CPPFLAGS := $(workbench-datatypes-tiff_MC_CPPFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : CFLAGS := $(workbench-datatypes-tiff_CFLAGS)
+$(workbench-datatypes-tiff_MC_TARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).o : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(ECHO) "Compiling  $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))"
+	$(Q)$(IF) $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))"\" -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$<: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Compile failed: $(CMD) $(workbench-datatypes-tiff_IQUOTE) $(dir $<) $(workbench-datatypes-tiff_IQUOTE) $(SRCDIR)/$(CURDIR) $(workbench-datatypes-tiff_IQUOTE) . $(workbench-datatypes-tiff_IQUOTE_END) $(strip $(CFLAGS) $(CPPFLAGS)) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath $<)))\" -c $< -o $@" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+
+$(workbench-datatypes-tiff_MC_DTARGETS) : $(workbench-datatypes-tiff_MC_TGTWILDCARD).d : $(workbench-datatypes-tiff_MC_SRCWILDCARD).c
+	$(Q)$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	$(Q)$(ECHO) "Makedepend $(if $(filter /%,$<),$(if $(filter $(SRCDIR)/%,$(abspath $<)),$(patsubst $(SRCDIR)/%,%,$(abspath $<)),$(patsubst $(TOP)/%,%,$(abspath $<))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$<)))..."
+	$(Q)AROS_CC="$(CMD)" $(MKDEPEND) $(strip $(workbench-datatypes-tiff_DFLAGS) $(workbench-datatypes-tiff_MC_CPPFLAGS)) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) $< -o $@
+
+ifneq ($(workbench-datatypes-tiff_LINKLIBAFILES),)
+
+ifeq ($(workbench-datatypes-tiff_OBJDIR)/linklib,)
+workbench-datatypes-tiff-MA_TARGETS := $(addsuffix .o,$(workbench-datatypes-tiff_LINKLIBAFILES) $(workbench-datatypes-tiff_RELLINKLIBAFILES))
+workbench-datatypes-tiff-MA_WILDCARD := %
+else
+workbench-datatypes-tiff-MA_TARGETS := $(addsuffix .o,$(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_LINKLIBAFILES) $(workbench-datatypes-tiff_RELLINKLIBAFILES))))
+workbench-datatypes-tiff-MA_WILDCARD := $(workbench-datatypes-tiff_OBJDIR)/linklib/%
+
+# Be sure that all .s files are generated
+$(workbench-datatypes-tiff-MA_TARGETS) : | $(addsuffix .S,$(workbench-datatypes-tiff_LINKLIBAFILES) $(workbench-datatypes-tiff_RELLINKLIBAFILES))
+
+# Be sure that all .c files are found
+workbench-datatypes-tiff-MA_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+workbench-datatypes-tiff-MA_BASEDIRS := $(shell echo $(sort $(dir $(workbench-datatypes-tiff_LINKLIBAFILES) $(workbench-datatypes-tiff_RELLINKLIBAFILES))) | sed 's/\(.\):\//\/\1\//g')
+workbench-datatypes-tiff-MA_DIRS := $(foreach dir, $(workbench-datatypes-tiff-MA_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(workbench-datatypes-tiff-MA_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(workbench-datatypes-tiff-MA_DIRS),)
+    workbench-datatypes-tiff-MA_DIRS := $(shell echo $(workbench-datatypes-tiff-MA_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.S $(workbench-datatypes-tiff-MA_DIRS)
+endif
+
+endif
+
+workbench-datatypes-tiff-MA_ASSEMBLER ?= $(workbench-datatypes-tiff_ASSEMBLER)
+
+$(workbench-datatypes-tiff-MA_TARGETS) : workbench-datatypes-tiff-MA_CMD:= $(workbench-datatypes-tiff-MA_ASSEMBLER)
+
+$(workbench-datatypes-tiff-MA_TARGETS) : CPPFLAGS := $(CPPFLAGS)
+$(workbench-datatypes-tiff-MA_TARGETS) : AFLAGS := $(AFLAGS)
+$(workbench-datatypes-tiff-MA_TARGETS) : $(workbench-datatypes-tiff-MA_WILDCARD).o : %.S
+	$(Q)$(ECHO) "Assembling $(notdir $<)..."
+	$(Q)$(IF) $(workbench-datatypes-tiff-MA_CMD) $(strip $(AFLAGS) $(CPPFLAGS)) $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$(notdir $<): $(workbench-datatypes-tiff-MA_CMD) $(strip $(AFLAGS) $(CPPFLAGS)) $< -o $@" >> $(GENDIR)/errors ; \
+			$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Assemble failed: $(workbench-datatypes-tiff-MA_CMD) $(strip $(AFLAGS) $(CPPFLAGS)) $< -o $@" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+endif
+
+## Linking
+##
+ifeq (,)
+workbench-datatypes-tiff_SUFFIX           := datatype
+else
+workbench-datatypes-tiff_SUFFIX           := 
+endif
+
+ifeq (target,target)
+workbench-datatypes-tiff_ISA_LDFLAGS           := $(TARGET_ISA_OBJCFLAGS)
+endif
+ifeq (target,host)
+workbench-datatypes-tiff_ISA_LDFLAGS           := $(HOST_ISA_OBJCFLAGS)
+endif
+ifeq (target,kernel)
+workbench-datatypes-tiff_ISA_LDFLAGS           := $(KERNEL_ISA_OBJCFLAGS)
+endif
+
+ifeq (M,M)
+# Handlers use dash instead of dot in their names
+ifeq ($(workbench-datatypes-tiff_SUFFIX),handler)
+workbench-datatypes-tiff_MODULE           := $(AROSDIR)/$(workbench-datatypes-tiff_MODDIR)/$(workbench-datatypes-tiff_DEFNAME)-$(workbench-datatypes-tiff_SUFFIX)
+else
+workbench-datatypes-tiff_MODULE           := $(AROSDIR)/$(workbench-datatypes-tiff_MODDIR)/$(workbench-datatypes-tiff_DEFNAME).$(workbench-datatypes-tiff_SUFFIX)
+endif
+workbench-datatypes-tiff_KOBJ             := $(KOBJSDIR)/$(workbench-datatypes-tiff_DEFNAME)_$(workbench-datatypes-tiff_SUFFIX).o
+else
+workbench-datatypes-tiff_MODULE           :=
+workbench-datatypes-tiff_KOBJ             :=
+endif
+
+workbench-datatypes-tiff-quick      : workbench-datatypes-tiff
+workbench-datatypes-tiff            : $(workbench-datatypes-tiff_MODULE) $(workbench-datatypes-tiff_LINKLIB) $(workbench-datatypes-tiff_RELLINKLIB)
+ifeq (M,M)
+workbench-datatypes-tiff-kobj       : $(workbench-datatypes-tiff_KOBJ) $(workbench-datatypes-tiff_LINKLIB) $(workbench-datatypes-tiff_RELLINKLIB)
+workbench-datatypes-tiff-kobj-quick : $(workbench-datatypes-tiff_KOBJ) $(workbench-datatypes-tiff_LINKLIB) $(workbench-datatypes-tiff_RELLINKLIB)
+endif
+ifeq (M,M)
+workbench-datatypes-tiff-linklib    : $(workbench-datatypes-tiff_LINKLIB) $(workbench-datatypes-tiff_RELLINKLIB)
+endif
+
+workbench-datatypes-tiff_OBJS := $(addsuffix .o,$(workbench-datatypes-tiff_STARTFILES)) $(workbench-datatypes-tiff_ARCHOBJS) \
+           $(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_C_NARCHFILES:=.o) $(workbench-datatypes-tiff_CXXFILES:=.o)))
+
+ifeq (yes,yes)
+# Handlers always have entry point
+ifneq (datatype,handler)
+workbench-datatypes-tiff_STARTOBJS        := $(addsuffix .o,$(addprefix $(GENDIR)/,$(RESIDENT_BEGIN)))
+endif
+endif
+
+# Under Windows con* is a reserved name, it refers to console. Files with such names can't be created.
+# This breaks con-handler build. Here we work around this
+ifeq (tiff,con)
+    workbench-datatypes-tiff_ERR          := $(notdir $(workbench-datatypes-tiff_MODULE)).err
+else
+    workbench-datatypes-tiff_ERR          := tiff.err
+endif
+
+ifeq (M,M)
+# The module is linked from all the compiled .o files
+
+TMP_LDFLAGS  := $(LDFLAGS) $($(workbench-datatypes-tiff_DEFNAME)_LDFLAGS) $(workbench-datatypes-tiff_ISA_LDFLAGS)
+# Make a list of the lib files the programs depend on.
+# In LDFLAGS remove white space between -L and directory
+TMP_DIRS := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
+# Filter out only the libdirs and remove -L
+TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+# Add trailing /
+TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+# Add normal linklib path
+TMP_DIRS += $(AROS_LIB)/
+# add lib and .a to static linklib names
+TMP_LIBS := $(addprefix lib,$(addsuffix .a,$(workbench-datatypes-tiff_LIBS) $($(workbench-datatypes-tiff_DEFNAME)_LIBS)))
+# search for the linklibs in the given path, ignore ones not found
+TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
+)
+
+$(workbench-datatypes-tiff_MODULE) : LIB_NAMES := $(workbench-datatypes-tiff_LIBS) $($(workbench-datatypes-tiff_DEFNAME)_LIBS)
+$(workbench-datatypes-tiff_MODULE) : OBJS := $(workbench-datatypes-tiff_STARTOBJS) $(workbench-datatypes-tiff_OBJS) $(USER_OBJS)
+$(workbench-datatypes-tiff_MODULE) : ENDTAG := $(workbench-datatypes-tiff_ENDOBJS)
+$(workbench-datatypes-tiff_MODULE) : ERR := $(workbench-datatypes-tiff_ERR)
+$(workbench-datatypes-tiff_MODULE) : OBJDIR := $(workbench-datatypes-tiff_OBJDIR)
+$(workbench-datatypes-tiff_MODULE) : LDFLAGS := $(TMP_LDFLAGS)
+ifeq (,)
+$(workbench-datatypes-tiff_MODULE) : LIBS := $(addprefix -l,$(LIB_NAMES))
+else
+# Warning: the -L/usr/lib here can result in modules
+# linking against host libs instead of AROS libs (e.g stdc++) !!
+$(workbench-datatypes-tiff_MODULE) : LIBS := $(addprefix -l,$(LIB_NAMES)) \
+                    -L/usr/lib $(addprefix -l,)
+endif 
+$(workbench-datatypes-tiff_MODULE) : $(workbench-datatypes-tiff_STARTOBJS) $(workbench-datatypes-tiff_OBJS) $(USER_OBJS) $(workbench-datatypes-tiff_ENDOBJS) $(TMP_DEPLIBS) $(USER_DEPLIBS)
+	$(Q)$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
+	$(Q)$(IF) $(workbench-datatypes-tiff_LINK) $(NOSTARTUP_LDFLAGS) \
+		$(GENMAP) $(OBJDIR)/$(MODULE).map \
+		$(OBJS) $(LIBS) $(LDFLAGS) $(ENDTAG) \
+		-o $@ 2>&1 > $(OBJDIR)/$(ERR) 2>&1 ; \
+	then \
+		cat $(OBJDIR)/$(ERR); \
+	else \
+		echo "$(workbench-datatypes-tiff_LINK) $(NOSTARTUP_LDFLAGS) $(GENMAP) $(OBJDIR)/$(MODULE).map $(OBJS) $(LIBS) $(LDFLAGS) $(ENDTAG) -o $@"; \
+		cat $(OBJDIR)/$(ERR); \
+		exit 1; \
+	fi
+	$(Q)$(IF) $(TEST) ! -s $(OBJDIR)/$(ERR) ; then $(RM) $(OBJDIR)/$(ERR) ; fi
+	$(Q)$(IF) $(TEST) "$(STRIP)" != ""; then \
+		$(IF) $(TEST) "$(DEBUG)" = "yes"; then \
+			$(STRIP) $@ --only-keep-debug -o $@.dbg ; \
+		fi ; \
+		$(STRIP) $@ ; \
+		$(IF) $(TEST) "$(DEBUG)" = "yes"; then \
+			$(IF) $(TEST) -s $@.dbg ; then \
+				$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@ ; \
+			fi ; \
+		fi ; \
+	fi
+
+endif
+
+ifeq (M,M)
+# Link static lib
+workbench-datatypes-tiff_LC_LINKLIBNAME   := $(shell echo $(workbench-datatypes-tiff_LINKLIBNAME) | tr A-Z a-z)
+workbench-datatypes-tiff_LC_MODNAME       := $(shell echo tiff | tr A-Z a-z)
+ifneq ($(workbench-datatypes-tiff_LINKLIB),)
+
+ifeq (target,target)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(RANLIB)
+endif
+ifeq (target,host)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(HOST_AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(HOST_RANLIB)
+endif
+ifeq (target,kernel)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(KERNEL_AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(KERNEL_RANLIB)
+endif
+
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)$(workbench-datatypes-tiff_LIBSUFFIX).a : $(workbench-datatypes-tiff_LINKLIBOBJS)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(workbench-datatypes-tiff_AR) $@ $^
+	$(Q)$(workbench-datatypes-tiff_RANLIB) $@
+ifneq ($(workbench-datatypes-tiff_LC_MODNAME),$(workbench-datatypes-tiff_LC_LINKLIBNAME))
+
+ifeq (target,target)
+$(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(AR)
+$(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(RANLIB)
+endif
+ifeq (target,host)
+$(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(HOST_AR)
+$(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(HOST_RANLIB)
+endif
+ifeq (target,kernel)
+$(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(KERNEL_AR)
+$(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(KERNEL_RANLIB)
+endif
+
+$(workbench-datatypes-tiff_LIBDIR)/libtiff$(workbench-datatypes-tiff_LIBSUFFIX).a : $(workbench-datatypes-tiff_LINKLIBOBJS)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(workbench-datatypes-tiff_AR) $@ $^
+	$(Q)$(workbench-datatypes-tiff_RANLIB) $@
+endif
+
+
+ifneq ($(workbench-datatypes-tiff_LINKLIB),)
+$(workbench-datatypes-tiff_LINKLIB) : | $(workbench-datatypes-tiff_LIBDIR)
+else
+$(workbench-datatypes-tiff_LINKLIB) :: $(workbench-datatypes-tiff_LIBDIR)
+endif
+
+GLOB_MKDIRS += $(workbench-datatypes-tiff_LIBDIR)
+
+endif
+
+ifneq ($(workbench-datatypes-tiff_RELLINKLIB),)
+
+ifeq (target,target)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(RANLIB)
+endif
+ifeq (target,host)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(HOST_AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(HOST_RANLIB)
+endif
+ifeq (target,kernel)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(KERNEL_AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(KERNEL_RANLIB)
+endif
+
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_LINKLIBNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : $(workbench-datatypes-tiff_RELLINKLIBOBJS)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(workbench-datatypes-tiff_AR) $@ $^
+	$(Q)$(workbench-datatypes-tiff_RANLIB) $@
+ifneq ($(workbench-datatypes-tiff_LC_MODNAME),$(workbench-datatypes-tiff_LC_LINKLIBNAME))
+
+ifeq (target,target)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(RANLIB)
+endif
+ifeq (target,host)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(HOST_AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(HOST_RANLIB)
+endif
+ifeq (target,kernel)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_AR:=$(KERNEL_AR)
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : workbench-datatypes-tiff_RANLIB:=$(KERNEL_RANLIB)
+endif
+
+$(workbench-datatypes-tiff_LIBDIR)/lib$(workbench-datatypes-tiff_DEFNAME)_rel$(workbench-datatypes-tiff_LIBSUFFIX).a : $(workbench-datatypes-tiff_RELLINKLIBOBJS)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(workbench-datatypes-tiff_AR) $@ $^
+	$(Q)$(workbench-datatypes-tiff_RANLIB) $@
+endif
+
+
+ifneq ($(workbench-datatypes-tiff_RELLINKLIB),)
+$(workbench-datatypes-tiff_RELLINKLIB) : | $(workbench-datatypes-tiff_LIBDIR)
+else
+$(workbench-datatypes-tiff_RELLINKLIB) :: $(workbench-datatypes-tiff_LIBDIR)
+endif
+
+GLOB_MKDIRS += $(workbench-datatypes-tiff_LIBDIR)
+
+endif
+endif
+
+ifeq (M,M)
+# Link kernel object file
+workbench-datatypes-tiff_KAUTOLIB         := dos intuition layers graphics oop utility expansion keymap
+
+# Make these symbols local
+workbench-datatypes-tiff_KBASE            := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
+	    UtilityBase ExpansionBase KeymapBase KernelBase
+
+workbench-datatypes-tiff_SYMBOLS := $(workbench-datatypes-tiff_KBASE)
+
+workbench-datatypes-tiff_KLIB             := hiddstubs amiga arossupport autoinit libinit
+workbench-datatypes-tiff_KOBJ_LIBS        := $(filter-out $(workbench-datatypes-tiff_KLIB),$(workbench-datatypes-tiff_LIBS)) $(workbench-datatypes-tiff_KAUTOLIB)
+$(workbench-datatypes-tiff_KOBJ) : LINKLIBS:=$(workbench-datatypes-tiff_KOBJ_LIBS) $($(workbench-datatypes-tiff_DEFNAME)_LIBS)
+$(workbench-datatypes-tiff_KOBJ) : FILTBASES:=$(addprefix -L ,$(workbench-datatypes-tiff_SYMBOLS))
+$(workbench-datatypes-tiff_KOBJ) : USER_LDFLAGS:=$(USER_LDFLAGS)
+$(workbench-datatypes-tiff_KOBJ) : $(workbench-datatypes-tiff_OBJS) $(USER_OBJS) $(workbench-datatypes-tiff_ENDOBJS)
+	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
+	$(Q)$(AROS_LD) -Ur -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
+endif
+
+## Dependency fine-tuning
+##
+workbench-datatypes-tiff_DEPS             := $(addprefix $(workbench-datatypes-tiff_OBJDIR)/,$(notdir $(workbench-datatypes-tiff_CCFILES:=.d) $(workbench-datatypes-tiff_TARGETCCFILES:=.d) $(workbench-datatypes-tiff_CXXFILES:=.d))) $(addprefix $(workbench-datatypes-tiff_OBJDIR)/linklib/,$(notdir $(workbench-datatypes-tiff_LINKLIBCCFILES:=.d)))
+
+ifneq ($(workbench-datatypes-tiff_DEPS),)
+  ifneq (workbench-datatypes-tiff workbench-datatypes-tiff-quick workbench-datatypes-tiff-kobj workbench-datatypes-tiff-kobj-quick,)
+    ifneq ($(findstring $(TARGET),workbench-datatypes-tiff workbench-datatypes-tiff-quick workbench-datatypes-tiff-kobj workbench-datatypes-tiff-kobj-quick),)
+      -include $(workbench-datatypes-tiff_DEPS)
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include $(workbench-datatypes-tiff_DEPS)
+    endif
+  endif
+endif
+
+$(workbench-datatypes-tiff_OBJS) $(workbench-datatypes-tiff_DEPS) : | $(workbench-datatypes-tiff_OBJDIR)/linklib
+
+ifneq ($(workbench-datatypes-tiff_OBJS) $(workbench-datatypes-tiff_DEPS) $(workbench-datatypes-tiff_MODULE) $(workbench-datatypes-tiff_KOBJ),)
+$(workbench-datatypes-tiff_OBJS) $(workbench-datatypes-tiff_DEPS) $(workbench-datatypes-tiff_MODULE) $(workbench-datatypes-tiff_KOBJ) : | $(workbench-datatypes-tiff_OBJDIR) $(AROSDIR)/$(workbench-datatypes-tiff_MODDIR) $(KOBJSDIR)
+else
+$(workbench-datatypes-tiff_OBJS) $(workbench-datatypes-tiff_DEPS) $(workbench-datatypes-tiff_MODULE) $(workbench-datatypes-tiff_KOBJ) :: $(workbench-datatypes-tiff_OBJDIR) $(AROSDIR)/$(workbench-datatypes-tiff_MODDIR) $(KOBJSDIR)
+endif
+
+GLOB_MKDIRS += $(workbench-datatypes-tiff_OBJDIR) $(AROSDIR)/$(workbench-datatypes-tiff_MODDIR) $(KOBJSDIR)
+
+
+# Some include files need to be generated before the .c can be parsed.
+ifneq ($(filter $(TARGET),workbench-datatypes-tiff workbench-datatypes-tiff-includes workbench-datatypes-tiff-quick workbench-datatypes-tiff-kobj workbench-datatypes-tiff-kobj-quick),) # Only for this target these deps are wanted
+
+workbench-datatypes-tiff_DFILE_DEPS := $(workbench-datatypes-tiff_LIBDEFSINC) $(workbench-datatypes-tiff_DEFLIBDEFSINC) \
+    $(addprefix $(workbench-datatypes-tiff_INCDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES))
+$(workbench-datatypes-tiff_DEPS) : $(workbench-datatypes-tiff_DFILE_DEPS)
+endif
+
+workbench-datatypes-tiff_TOCLEAN := $(workbench-datatypes-tiff_OBJS) $(workbench-datatypes-tiff_DEPS) \
+    $(workbench-datatypes-tiff_MODULE) $(workbench-datatypes-tiff_LINKLIB) $(workbench-datatypes-tiff_KOBJ) \
+    $(workbench-datatypes-tiff_OBJDIR)/Makefile.tiffdatatype \
+    $(addprefix $(workbench-datatypes-tiff_OBJDIR)/include/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)) \
+    $(addprefix $(GENINCDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)) \
+    $(addprefix $(workbench-datatypes-tiff_INCDIR)/,$($(workbench-datatypes-tiff_DEFNAME)_INCLUDES)) \
+    $(workbench-datatypes-tiff_OBJDIR)/tiff_geninc $(workbench-datatypes-tiff_OBJDIR)/tiff_incs \
+    $(addsuffix .c,$(workbench-datatypes-tiff_LINKLIBFILES)) $(workbench-datatypes-tiff_LINKLIBOBJS) $(workbench-datatypes-tiff_LIBDEFSINC) \
+    $(workbench-datatypes-tiff_DEFLIBDEFSINC) $(addsuffix .c,$(workbench-datatypes-tiff_STARTFILES) $(workbench-datatypes-tiff_ENDFILES)) \
+    $(workbench-datatypes-tiff_ENDOBJS)
+workbench-datatypes-tiff-clean : FILES              := $(workbench-datatypes-tiff_TOCLEAN)
+workbench-datatypes-tiff-clean ::
+	$(Q)$(ECHO) "Cleaning up for module tiff"
+	$(Q)$(RM) $(FILES)
+
+endif # $(TARGET) in $(workbench-datatypes-tiff_ALLTARGETS)
+
+
+# Delete generated makefiles
+#MM
+clean ::
+	$(Q)$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)
