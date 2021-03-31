@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -202,6 +202,7 @@ const IPTR KnownAttribs[] =
  PDTA_ColorTable2,
  PDTA_Allocated,
  PDTA_NumColors,
+ PDTA_GetNumPictures,
  PDTA_NumAlloc,
  PDTA_Remap,
  PDTA_Screen,
@@ -211,6 +212,7 @@ const IPTR KnownAttribs[] =
  PDTA_ClassBitMap,
  PDTA_NumSparse,
  PDTA_SparseTable,
+ PDTA_WhichPicture,
  GA_Dummy,
  GA_Left,
  GA_RelRight,
@@ -410,6 +412,7 @@ const char *AttribNames[] =
  "PDTA_ColorTable2",
  "PDTA_Allocated",
  "PDTA_NumColors",
+ "PDTA_GetNumPictures",
  "PDTA_NumAlloc",
  "PDTA_Remap",
  "PDTA_Screen",
@@ -419,6 +422,7 @@ const char *AttribNames[] =
  "PDTA_ClassBitMap",
  "PDTA_NumSparse",
  "PDTA_SparseTable",
+ "PDTA_WhichPicture",
  "GA_Dummy",
  "GA_Left",
  "GA_RelRight",
