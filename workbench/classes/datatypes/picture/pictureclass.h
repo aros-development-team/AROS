@@ -1,6 +1,5 @@
 /*
-    Copyright ©	1995-2020, The AROS Development	Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
 */
 
 #define	MIN(a,b) (((a) < (b)) ?	(a) : (b))
