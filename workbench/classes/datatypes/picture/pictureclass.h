@@ -1,5 +1,5 @@
 /*
-    Copyright ©	1995-2020, The AROS Development	Team. All rights reserved.
+    Copyright Â©	1995-2020, The AROS Development	Team. All rights reserved.
     $Id$
 */
 
@@ -26,6 +26,8 @@ struct Picture_Data
     struct ColorRegister  ColMap[256];
     UBYTE		  ColTable[256];
     UWORD		  NumColors;
+    UWORD		  NumPictures;
+    UWORD		  WhichPicture;
     UWORD		  NumAlloc;
     UBYTE		  SparseTable[256];
     UWORD		  NumSparse;
