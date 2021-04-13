@@ -1655,9 +1655,8 @@ IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
     
     BPTR fileHandle;
     int transparent, pad, mask;
-    unsigned char *chunkID; 
     unsigned int width, height, numplanes, y, p;
-    int numcolors, alignwidth, bytesPerRow, i, j, k;
+    int numcolors = 0, alignwidth, bytesPerRow, i, j, k;
     struct BitMapHeader *bmhd;
     struct BitMap *bm;
     struct ColorRegister *colormap;    
@@ -1914,24 +1913,16 @@ IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
 	    
 	//* WRITE ILBM BODY TO FILE *//
 	
-	UBYTE  r,g,b,a;
+	UBYTE  r,g,b;
 	int pBufferOffset = 0;
 	int pBufferLength = (bytesPerRow * 8);
 	int rowSize = (bytesPerRow * 8);
-	UBYTE colorBytes[8]; //Block of 8 colors
-	UBYTE *Buffer;	    
-	UBYTE *planarScanLine;
-	UBYTE bitBuffer[rowSize];
 	UBYTE planarR[rowSize];
 	UBYTE planarG[rowSize];
 	UBYTE planarB[rowSize];
 	UBYTE planarA[rowSize];
-	UBYTE redBuffer[rowSize];
-	UBYTE greenBuffer[rowSize];
-	UBYTE blueBuffer[rowSize];
 	UBYTE chunkyBuffer[bytesPerRow * numplanes];
 	UBYTE planarBuffer[bytesPerRow * numplanes];
-	int scanLineSize = (bytesPerRow * numplanes);
         
 	int bytesPerPixel;	
 	UBYTE *pixelArray;	
@@ -2018,14 +2009,11 @@ IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
 		UBYTE bitBuffer[bytesPerRow * 8];
 		    
 		//* Setup & Initialize Variables. *//
-		int bit = 0;
-		int hOffset = 0;
-		int bitplaneIndex = 0;
 		pBufferOffset = 0;
 		    
 		//* Setup Variables for 'K Loop'. *//
 		UBYTE *source;
-		int x, y, p, bpr, bpl;		
+		int x, p, bpr;
 		bpr = bytesPerRow;
 		
 		//D(bug("picture.datatype/DTM_Write --- convert one chunky scanline to planar data\n"));
