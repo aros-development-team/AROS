@@ -16,6 +16,7 @@ int __stdc_ioerr2errno (int ioerr)
             return 0;
 
         case ERROR_OBJECT_WRONG_TYPE:
+        case ERROR_INVALID_COMPONENT_NAME:
             return EINVAL;
 
         case ERROR_NO_FREE_STORE:
