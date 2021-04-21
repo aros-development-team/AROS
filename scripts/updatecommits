@@ -15,7 +15,7 @@ import datetime
 import sys  
 import importlib
 importlib.reload(sys)
-sys.setdefaultencoding('utf8')
+#sys.setdefaultencoding('utf8')
 
 # regex for parsing a GitHub RSS item
 rssregithub = re.compile(r'''<entry>.*?
