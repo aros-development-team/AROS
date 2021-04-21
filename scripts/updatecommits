@@ -4,7 +4,7 @@
 # in www.aros.org's commits section.
 # The result will be stored in htdocs
 
-from urllib.request import urlopen
+import urllib.request
 import ssl
 import re
 import html.parser
