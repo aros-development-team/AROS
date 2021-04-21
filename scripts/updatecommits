@@ -42,7 +42,7 @@ rsspath='https://github.com/aros-development-team/AROS/commits.atom'
 ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 rssfile = urllib.request.urlopen(rsspath, context=ctx)
 #rssfile = urllib2.urlopen(rsspath)
-content = rssfile.read()
+content = rssfile.read().decode('utf-8')
 rssfile.close()
 
 targetpath='/home/project-web/aros/htdocs/commits.php'
