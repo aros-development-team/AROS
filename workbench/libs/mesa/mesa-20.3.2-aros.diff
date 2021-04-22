@@ -1,0 +1,500 @@
+diff -ruN mesa-20.3.2/include/EGL/eglplatform.h mesa-20.3.2.aros/include/EGL/eglplatform.h
+--- mesa-20.3.2/include/EGL/eglplatform.h	2020-12-31 03:59:57.753211700 +0000
++++ mesa-20.3.2.aros/include/EGL/eglplatform.h	2021-01-12 18:59:02.010000000 +0000
+@@ -107,6 +107,14 @@
+ typedef struct gbm_bo      *EGLNativePixmapType;
+ typedef void               *EGLNativeWindowType;
+ 
++#elif defined(__AROS__)
++
++#include <intuition/intuition.h>
++
++typedef APTR            EGLNativeDisplayType;
++typedef struct Bitmap   *EGLNativePixmapType;
++typedef struct Window   *EGLNativeWindowType;
++
+ #elif defined(__ANDROID__) || defined(ANDROID)
+ 
+ struct ANativeWindow;
+diff -ruN mesa-20.3.2/include/c11/threads_posix.h mesa-20.3.2.aros/include/c11/threads_posix.h
+--- mesa-20.3.2/include/c11/threads_posix.h	2020-12-31 03:59:57.764211700 +0000
++++ mesa-20.3.2.aros/include/c11/threads_posix.h	2021-01-12 18:59:02.010000000 +0000
+@@ -50,6 +50,13 @@
+ 
+ #include <pthread.h>
+ 
++#if defined(__AROS__)
++#undef VOLATILE
++#undef RESTRICT
++#undef STATIC
++#define pthread_sigmask(a,b,c)  (1)
++#endif
++
+ /*---------------------------- macros ----------------------------*/
+ #define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
+ #ifdef INIT_ONCE_STATIC_INIT
+diff -ruN mesa-20.3.2/include/c99_math.h mesa-20.3.2.aros/include/c99_math.h
+--- mesa-20.3.2/include/c99_math.h	2020-12-31 03:59:57.764211700 +0000
++++ mesa-20.3.2.aros/include/c99_math.h	2021-01-12 18:59:02.010000000 +0000
+@@ -180,6 +180,8 @@
+       return FP_NAN;
+    }
+ }
++#elif defined(__AROS__)
++#define fpclassify(x) FP_NORMAL
+ #else
+ #error "Need to include or define an fpclassify function"
+ #endif
+diff -ruN mesa-20.3.2/mesa3dgl.conf mesa-20.3.2.aros/mesa3dgl.conf
+--- mesa-20.3.2/mesa3dgl.conf	1970-01-01 00:00:00.000000000 +0000
++++ mesa-20.3.2.aros/mesa3dgl.conf	2021-01-24 00:17:05.170000000 +0000
+@@ -0,0 +1,8 @@
++##begin config
++basename Mesa3dgl
++version 22.01
++copyright Copyright (C) 1999-2021  Brian Paul, 2003-2021 The AROS Development Team
++rellib z1
++rellib posixc
++rellib stdc
++##end config
+diff -ruN mesa-20.3.2/src/egl/main/egldisplay.c mesa-20.3.2.aros/src/egl/main/egldisplay.c
+--- mesa-20.3.2/src/egl/main/egldisplay.c	2020-12-31 03:59:57.875212000 +0000
++++ mesa-20.3.2.aros/src/egl/main/egldisplay.c	2021-01-12 18:59:02.010000000 +0000
+@@ -72,6 +72,7 @@
+    { _EGL_PLATFORM_X11, "x11" },
+    { _EGL_PLATFORM_WAYLAND, "wayland" },
+    { _EGL_PLATFORM_DRM, "drm" },
++   { _EGL_PLATFORM_AROS, "aros" },
+    { _EGL_PLATFORM_ANDROID, "android" },
+    { _EGL_PLATFORM_HAIKU, "haiku" },
+    { _EGL_PLATFORM_SURFACELESS, "surfaceless" },
+diff -ruN mesa-20.3.2/src/egl/main/egldisplay.h mesa-20.3.2.aros/src/egl/main/egldisplay.h
+--- mesa-20.3.2/src/egl/main/egldisplay.h	2020-12-31 03:59:57.875212000 +0000
++++ mesa-20.3.2.aros/src/egl/main/egldisplay.h	2021-01-12 18:59:02.010000000 +0000
+@@ -47,6 +47,7 @@
+    _EGL_PLATFORM_X11,
+    _EGL_PLATFORM_WAYLAND,
+    _EGL_PLATFORM_DRM,
++   _EGL_PLATFORM_AROS,
+    _EGL_PLATFORM_ANDROID,
+    _EGL_PLATFORM_HAIKU,
+    _EGL_PLATFORM_SURFACELESS,
+diff -ruN mesa-20.3.2/src/gallium/auxiliary/driver_ddebug/dd_util.h mesa-20.3.2.aros/src/gallium/auxiliary/driver_ddebug/dd_util.h
+--- mesa-20.3.2/src/gallium/auxiliary/driver_ddebug/dd_util.h	2020-12-31 03:59:57.915212000 +0000
++++ mesa-20.3.2.aros/src/gallium/auxiliary/driver_ddebug/dd_util.h	2021-01-12 18:59:02.010000000 +0000
+@@ -38,7 +38,7 @@
+ #include "util/u_string.h"
+ 
+ #include "pipe/p_config.h"
+-#if defined(PIPE_OS_UNIX)
++#if defined(PIPE_OS_UNIX) || defined(PIPE_OS_AROS)
+ #include <unistd.h>
+ #include <sys/stat.h>
+ #elif defined(PIPE_OS_WINDOWS)
+diff -ruN mesa-20.3.2/src/gallium/include/pipe/p_compiler.h mesa-20.3.2.aros/src/gallium/include/pipe/p_compiler.h
+--- mesa-20.3.2/src/gallium/include/pipe/p_compiler.h	2020-12-31 03:59:58.130212300 +0000
++++ mesa-20.3.2.aros/src/gallium/include/pipe/p_compiler.h	2021-01-12 18:59:02.010000000 +0000
+@@ -35,6 +35,10 @@
+ 
+ #include "util/macros.h"
+ 
++#if defined(__AROS__)
++#include <sys/types.h>
++#endif
++
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stddef.h>
+diff -ruN mesa-20.3.2/src/gallium/include/pipe/p_config.h mesa-20.3.2.aros/src/gallium/include/pipe/p_config.h
+--- mesa-20.3.2/src/gallium/include/pipe/p_config.h	2020-12-31 03:59:58.130212300 +0000
++++ mesa-20.3.2.aros/src/gallium/include/pipe/p_config.h	2021-01-12 18:59:02.010000000 +0000
+@@ -122,6 +122,10 @@
+ #define PIPE_ARCH_AARCH64
+ #endif
+ 
++#if defined(__mc68000__)
++#define PIPE_ARCH_M68K
++#endif
++
+ /*
+  * Endian detection.
+  */
+@@ -133,6 +137,10 @@
+  */
+ #include "util/detect_os.h"
+ 
++#if DETECT_OS_AROS
++#define PIPE_OS_AROS
++#endif
++
+ #if DETECT_OS_LINUX
+ #define PIPE_OS_LINUX
+ #endif
+diff -ruN mesa-20.3.2/src/mapi/glapi/gen/gl_x86-64_asm.py mesa-20.3.2.aros/src/mapi/glapi/gen/gl_x86-64_asm.py
+--- mesa-20.3.2/src/mapi/glapi/gen/gl_x86-64_asm.py	2020-12-31 03:59:58.246212500 +0000
++++ mesa-20.3.2.aros/src/mapi/glapi/gen/gl_x86-64_asm.py	2021-02-09 15:53:16.000000000 +0000
+@@ -146,7 +146,7 @@
+         print('\tret')
+         print('\t.size\t_x86_64_get_dispatch, .-_x86_64_get_dispatch')
+         print('')
+-        print('#elif defined(HAVE_PTHREAD)')
++        print('#elif defined(HAVE_PTHREAD) && !defined(__AROS__)')
+         print('')
+         print('\t.extern\t_glapi_Dispatch')
+         print('\t.extern\t_gl_DispatchTSD')
+@@ -226,7 +226,7 @@
+         print('\tcall\t_x86_64_get_dispatch@PLT')
+         print('\tmovq\t%u(%%rax), %%r11' % (f.offset * 8))
+         print('\tjmp\t*%r11')
+-        print('#elif defined(HAVE_PTHREAD)')
++        print('#elif defined(HAVE_PTHREAD) && !defined(__AROS__)')
+ 
+         save_all_regs(registers)
+         print('\tcall\t_x86_64_get_dispatch@PLT')
+@@ -240,12 +240,14 @@
+         print('\tjmp\t*%r11')
+ 
+         print('#else')
++        print('# if !defined(__AROS__)')
+         print('\tmovq\t_glapi_Dispatch(%rip), %rax')
+         print('\ttestq\t%rax, %rax')
+         print('\tje\t1f')
+         print('\tmovq\t%u(%%rax), %%r11' % (f.offset * 8))
+         print('\tjmp\t*%r11')
+         print('1:')
++        print('# endif')
+ 
+         save_all_regs(registers)
+         print('\tcall\t_glapi_get_dispatch')
+diff -ruN mesa-20.3.2/src/mapi/glapi/glapi.h mesa-20.3.2.aros/src/mapi/glapi/glapi.h
+--- mesa-20.3.2/src/mapi/glapi/glapi.h	2020-12-31 03:59:58.247212600 +0000
++++ mesa-20.3.2.aros/src/mapi/glapi/glapi.h	2021-01-12 18:59:02.010000000 +0000
+@@ -90,6 +90,11 @@
+ # define GET_DISPATCH() _glapi_tls_Dispatch
+ # define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _glapi_tls_Context
+ 
++#elif defined(__AROS__)
++
++#define GET_DISPATCH() _glapi_get_dispatch()
++#define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _glapi_get_context()
++
+ #else
+ 
+ _GLAPI_EXPORT extern struct _glapi_table *_glapi_Dispatch;
+diff -ruN mesa-20.3.2/src/mapi/u_current.c mesa-20.3.2.aros/src/mapi/u_current.c
+--- mesa-20.3.2/src/mapi/u_current.c	2020-12-31 03:59:58.257212600 +0000
++++ mesa-20.3.2.aros/src/mapi/u_current.c	2021-01-12 18:59:02.010000000 +0000
+@@ -106,6 +106,12 @@
+ __thread void *u_current_context
+     __attribute__((tls_model("initial-exec")));
+ 
++#elif defined(__AROS__)
++#include "tls.h"
++
++DECLARE_STATIC_TLS(u_current_table);
++DECLARE_STATIC_TLS(u_current_context);
++
+ #else
+ 
+ struct _glapi_table *u_current_table =
+@@ -123,14 +129,14 @@
+ void
+ u_current_destroy(void)
+ {
+-#if !defined(USE_ELF_TLS)
++#if !defined(USE_ELF_TLS) && !defined(__AROS__)
+    tss_delete(u_current_table_tsd);
+    tss_delete(u_current_context_tsd);
+ #endif
+ }
+ 
+ 
+-#if !defined(USE_ELF_TLS)
++#if !defined(USE_ELF_TLS) && !defined(__AROS__)
+ 
+ static void
+ u_current_init_tsd(void)
+@@ -232,6 +238,8 @@
+ 
+ #if defined(USE_ELF_TLS)
+    u_current_context = (void *) ptr;
++#elif defined(__AROS__)
++   InsertIntoTLS(u_current_context, (APTR)ptr);
+ #else
+    tss_set(u_current_context_tsd, (void *) ptr);
+    u_current_context = (ThreadSafe) ? NULL : (void *) ptr;
+@@ -248,6 +256,8 @@
+ {
+ #if defined(USE_ELF_TLS)
+    return u_current_context;
++#elif defined(__AROS__)
++   return GetFromTLS(u_current_context);
+ #else
+    if (ThreadSafe)
+       return tss_get(u_current_context_tsd);
+@@ -275,6 +285,8 @@
+ 
+ #if defined(USE_ELF_TLS)
+    u_current_table = (struct _glapi_table *) tbl;
++#elif defined(__AROS__)
++   InsertIntoTLS(u_current_table, (APTR)tbl);
+ #else
+    tss_set(u_current_table_tsd, (void *) tbl);
+    u_current_table = (ThreadSafe) ? NULL : (void *) tbl;
+@@ -289,6 +301,12 @@
+ {
+ #if defined(USE_ELF_TLS)
+    return u_current_table;
++#elif defined(__AROS__)
++   struct _glapi_table *tbl;
++   tbl = (struct _glapi_table *)GetFromTLS(u_current_table);
++   if (tbl == NULL)
++       tbl = (struct _glapi_table *) table_noop_array;
++   return tbl;
+ #else
+    if (ThreadSafe)
+       return (struct _glapi_table *) tss_get(u_current_table_tsd);
+diff -ruN mesa-20.3.2/src/mapi/u_current.h mesa-20.3.2.aros/src/mapi/u_current.h
+--- mesa-20.3.2/src/mapi/u_current.h	2020-12-31 03:59:58.257212600 +0000
++++ mesa-20.3.2.aros/src/mapi/u_current.h	2021-01-12 18:59:02.010000000 +0000
+@@ -34,6 +34,7 @@
+ 
+ extern __thread void *u_current_context
+     __attribute__((tls_model("initial-exec")));
++#elif defined(__AROS__)
+ 
+ #else /* USE_ELF_TLS */
+ 
+diff -ruN mesa-20.3.2/src/util/compiler.h mesa-20.3.2.aros/src/util/compiler.h
+--- mesa-20.3.2/src/util/compiler.h	2020-12-31 03:59:58.381212700 +0000
++++ mesa-20.3.2.aros/src/util/compiler.h	2021-01-16 03:47:32.670000000 +0000
+@@ -54,6 +54,8 @@
+ #elif defined(__APPLE__)
+ #include <CoreFoundation/CFByteOrder.h>
+ #define CPU_TO_LE32( x )	CFSwapInt32HostToLittle( x )
++#elif defined(__AROS__)
++#define CPU_TO_LE32( x )    AROS_BE2LONG( x )
+ #elif defined(__OpenBSD__)
+ #include <sys/types.h>
+ #define CPU_TO_LE32( x )	htole32( x )
+diff -ruN mesa-20.3.2/src/util/detect_os.h mesa-20.3.2.aros/src/util/detect_os.h
+--- mesa-20.3.2/src/util/detect_os.h	2020-12-31 03:59:58.381212700 +0000
++++ mesa-20.3.2.aros/src/util/detect_os.h	2021-01-12 18:59:02.010000000 +0000
+@@ -15,6 +15,11 @@
+ #ifndef DETECT_OS_H
+ #define DETECT_OS_H
+ 
++#if defined(__AROS__)
++#define DETECT_OS_AROS 1
++#define DETECT_OS_AMIGAOS 1
++#endif
++
+ #if defined(__linux__)
+ #define DETECT_OS_LINUX 1
+ #define DETECT_OS_UNIX 1
+diff -ruN mesa-20.3.2/src/util/memstream.c mesa-20.3.2.aros/src/util/memstream.c
+--- mesa-20.3.2/src/util/memstream.c	2020-12-31 03:59:58.384212700 +0000
++++ mesa-20.3.2.aros/src/util/memstream.c	2021-01-12 21:13:20.420000000 +0000
+@@ -51,6 +51,8 @@
+    }
+ 
+    return success;
++#elif defined(__AROS__)
++    return NULL;
+ #else
+    FILE *const f = open_memstream(bufp, sizep);
+    mem->f = f;
+diff -ruN mesa-20.3.2/src/util/os_misc.c mesa-20.3.2.aros/src/util/os_misc.c
+--- mesa-20.3.2/src/util/os_misc.c	2020-12-31 03:59:58.385213000 +0000
++++ mesa-20.3.2.aros/src/util/os_misc.c	2021-01-12 18:59:02.010000000 +0000
+@@ -67,6 +67,8 @@
+ #  include <kernel/OS.h>
+ #elif DETECT_OS_WINDOWS
+ #  include <windows.h>
++#elif DETECT_OS_AROS
++# include <proto/exec.h>
+ #else
+ #error unexpected platform in os_sysinfo.c
+ #endif
+@@ -184,6 +186,9 @@
+    ret = GlobalMemoryStatusEx(&status);
+    *size = status.ullTotalPhys;
+    return (ret == TRUE);
++#elif DETECT_OS_AROS
++   *size = (uint64_t)AvailMem(MEMF_TOTAL);
++   return true;
+ #else
+ #error unexpected platform in os_sysinfo.c
+    return false;
+diff -ruN mesa-20.3.2/src/util/os_misc.h mesa-20.3.2.aros/src/util/os_misc.h
+--- mesa-20.3.2/src/util/os_misc.h	2020-12-31 03:59:58.385213000 +0000
++++ mesa-20.3.2.aros/src/util/os_misc.h	2021-01-12 18:59:02.010000000 +0000
+@@ -39,8 +39,11 @@
+ 
+ #include "detect_os.h"
+ 
++#if DETECT_OS_UNIX || DETECT_OS_AROS
++#  include <sys/types.h>
++#endif
+ 
+-#if DETECT_OS_UNIX
++#if DETECT_OS_UNIX || DETECT_OS_AROS
+ #  include <signal.h> /* for kill() */
+ #  include <unistd.h> /* getpid() */
+ #endif
+diff -ruN mesa-20.3.2/src/util/os_time.c mesa-20.3.2.aros/src/util/os_time.c
+--- mesa-20.3.2/src/util/os_time.c	2020-12-31 03:59:58.385213000 +0000
++++ mesa-20.3.2.aros/src/util/os_time.c	2021-01-12 18:59:02.010000000 +0000
+@@ -37,7 +37,7 @@
+ 
+ #include "util/u_atomic.h"
+ 
+-#if DETECT_OS_UNIX
++#if DETECT_OS_UNIX || DETECT_OS_AROS
+ #  include <unistd.h> /* usleep */
+ #  include <time.h> /* timeval */
+ #  include <sys/time.h> /* timeval */
+@@ -59,7 +59,7 @@
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return tv.tv_nsec + tv.tv_sec*INT64_C(1000000000);
+ 
+-#elif DETECT_OS_UNIX
++#elif DETECT_OS_UNIX || DETECT_OS_AROS
+ 
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+@@ -99,7 +99,7 @@
+    time.tv_nsec = (usecs % 1000000) * 1000;
+    while (clock_nanosleep(CLOCK_MONOTONIC, 0, &time, &time) == EINTR);
+ 
+-#elif DETECT_OS_UNIX
++#elif DETECT_OS_UNIX || DETECT_OS_AROS
+    usleep(usecs);
+ 
+ #elif DETECT_OS_WINDOWS
+@@ -146,7 +146,7 @@
+ 
+    if (timeout == OS_TIMEOUT_INFINITE) {
+       while (p_atomic_read(var)) {
+-#if DETECT_OS_UNIX
++#if DETECT_OS_UNIX || DETECT_OS_AROS
+          sched_yield();
+ #endif
+       }
+@@ -160,7 +160,7 @@
+          if (os_time_timeout(start_time, end_time, os_time_get_nano()))
+             return false;
+ 
+-#if DETECT_OS_UNIX
++#if DETECT_OS_UNIX || DETECT_OS_AROS
+          sched_yield();
+ #endif
+       }
+@@ -182,7 +182,7 @@
+       if (os_time_get_nano() >= timeout)
+          return false;
+ 
+-#if DETECT_OS_UNIX
++#if DETECT_OS_UNIX || DETECT_OS_AROS
+       sched_yield();
+ #endif
+    }
+diff -ruN mesa-20.3.2/src/util/sparse_array.c mesa-20.3.2.aros/src/util/sparse_array.c
+--- mesa-20.3.2/src/util/sparse_array.c	2020-12-31 03:59:58.387212800 +0000
++++ mesa-20.3.2.aros/src/util/sparse_array.c	2021-01-12 21:20:13.590000000 +0000
+@@ -47,6 +47,9 @@
+ 
+ #define NODE_PTR_MASK (~((uintptr_t)NODE_ALLOC_ALIGN - 1))
+ #define NODE_LEVEL_MASK ((uintptr_t)NODE_ALLOC_ALIGN - 1)
++#ifdef NULL_NODE
++#undef NULL_NODE
++#endif
+ #define NULL_NODE 0
+ 
+ static inline uintptr_t
+diff -ruN mesa-20.3.2/src/util/u_endian.h mesa-20.3.2.aros/src/util/u_endian.h
+--- mesa-20.3.2/src/util/u_endian.h	2020-12-31 03:59:58.390212800 +0000
++++ mesa-20.3.2.aros/src/util/u_endian.h	2021-01-12 18:59:02.010000000 +0000
+@@ -87,6 +87,15 @@
+ #define UTIL_ARCH_LITTLE_ENDIAN 1
+ #define UTIL_ARCH_BIG_ENDIAN 0
+ 
++#elif defined(__AROS__)
++#include <aros/cpu.h>
++#if (AROS_BIG_ENDIAN)
++# define UTIL_ARCH_LITTLE_ENDIAN 0
++# define UTIL_ARCH_BIG_ENDIAN 1
++#else
++# define UTIL_ARCH_LITTLE_ENDIAN 1
++# define UTIL_ARCH_BIG_ENDIAN 0
++#endif
+ #endif
+ 
+ #if !defined(UTIL_ARCH_LITTLE_ENDIAN) || !defined(UTIL_ARCH_BIG_ENDIAN)
+diff -ruN mesa-20.3.2/src/util/u_process.c mesa-20.3.2.aros/src/util/u_process.c
+--- mesa-20.3.2/src/util/u_process.c	2020-12-31 03:59:58.390212800 +0000
++++ mesa-20.3.2.aros/src/util/u_process.c	2021-01-12 18:59:02.010000000 +0000
+@@ -44,7 +44,16 @@
+ #include <mach-o/dyld.h>
+ #endif
+ 
+-#if defined(__linux__) && defined(HAVE_PROGRAM_INVOCATION_NAME)
++#if defined(__AROS__)
++# include <proto/exec.h>
++static const char *
++__getProgramName()
++{
++   struct Task *thisTask = FindTask(NULL);
++   return (thisTask->tc_Node.ln_Name);  
++}
++#    define GET_PROGRAM_NAME() __getProgramName()
++#elif defined(__linux__) && defined(HAVE_PROGRAM_INVOCATION_NAME)
+ 
+ static char *path = NULL;
+ 
+diff -ruN mesa-20.3.2/src/util/u_string.h mesa-20.3.2.aros/src/util/u_string.h
+--- mesa-20.3.2/src/util/u_string.h	2020-12-31 03:59:58.390212800 +0000
++++ mesa-20.3.2.aros/src/util/u_string.h	2021-01-12 18:59:02.010000000 +0000
+@@ -76,6 +76,10 @@
+    va_end(ap);
+ }
+ 
++#endif
++
++#if defined(_WIN32) || defined(__AROS__)
++
+ #define vasprintf util_vasprintf
+ static inline int
+ util_vasprintf(char **ret, const char *format, va_list ap)
+@@ -110,6 +114,10 @@
+    return ret;
+ }
+ 
++#endif
++
++#if defined(_WIN32)
++
+ #ifndef strcasecmp
+ #define strcasecmp stricmp
+ #endif
+diff -ruN mesa-20.3.2/src/util/u_thread.h mesa-20.3.2.aros/src/util/u_thread.h
+--- mesa-20.3.2/src/util/u_thread.h	2020-12-31 03:59:58.390212800 +0000
++++ mesa-20.3.2.aros/src/util/u_thread.h	2021-01-12 18:59:02.010000000 +0000
+@@ -103,7 +103,7 @@
+ static inline void u_thread_setname( const char *name )
+ {
+ #if defined(HAVE_PTHREAD)
+-#if DETECT_OS_LINUX || DETECT_OS_CYGWIN || DETECT_OS_SOLARIS
++#if DETECT_OS_LINUX || DETECT_OS_CYGWIN || DETECT_OS_SOLARIS || DETECT_OS_AROS
+    pthread_setname_np(pthread_self(), name);
+ #elif DETECT_OS_FREEBSD || DETECT_OS_OPENBSD
+    pthread_set_name_np(pthread_self(), name);
+@@ -208,7 +208,7 @@
+ static inline int64_t
+ util_thread_get_time_nano(thrd_t thread)
+ {
+-#if defined(HAVE_PTHREAD) && !defined(__APPLE__) && !defined(__HAIKU__)
++#if defined(HAVE_PTHREAD) && !defined(__APPLE__) && !defined(__AROS__) && !defined(__HAIKU__)
+    struct timespec ts;
+    clockid_t cid;
+ 
