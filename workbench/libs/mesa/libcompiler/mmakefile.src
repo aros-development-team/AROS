@@ -1,3 +1,4 @@
+#   $Id$
 #
 #   Build Mesa3DGL private libcompiler.a
 #
@@ -116,6 +117,12 @@ $(top_builddir)/$(CUR_MESADIR)/nir/nir_intrinsics.c: $(nir_intrinsics_c_deps)
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_c_gen) --outdir $(dir $@) || ($(RM) $@; false)
+
+nir_intrinsics_indices_h_gen := $(top_srcdir)/$(CUR_MESADIR)/nir/nir_intrinsics_indices_h.py
+$(top_builddir)/$(CUR_MESADIR)/nir/nir_intrinsics_indices.h: $(top_srcdir)/$(CUR_MESADIR)/nir/nir_intrinsics.py $(nir_intrinsics_indices_h_gen)
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(glapi) && $(PYTHON) $(PYTHON_FLAGS) $(nir_intrinsics_indices_h_gen) --outdir $(dir $@) || ($(RM) $@; false)
 
 nir_opcodes_h_gen := $(top_srcdir)/$(CUR_MESADIR)/nir/nir_opcodes_h.py
 nir_opcodes_h_deps := \

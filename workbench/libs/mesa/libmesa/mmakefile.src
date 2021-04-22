@@ -1,3 +1,4 @@
+#   $Id$
 #
 #   Build Mesa3DGL private libmesa.a
 #
@@ -49,6 +50,14 @@ MESA_GENERATED_C_SOURCES := \
             program/lex.yy.c
 
 ifeq ($(MESAGLVERSION),20.3.2)
+MESAGLMARSHAL:=true
+endif
+
+ifeq ($(MESAGLVERSION),21.0.2)
+MESAGLMARSHAL:=true
+endif
+
+ifeq ($(MESAGLMARSHAL),true)
 MESA_GENERATED_C_SOURCES += \
             main/marshal_generated0.c \
             main/marshal_generated1.c \

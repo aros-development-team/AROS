@@ -64,6 +64,19 @@ $(top_builddir)/$(CUR_MESADIR)/indices/u_unfilled_gen.c: $(top_srcdir)/$(CUR_MES
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
 	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_unfilled_gen.py > $@
 
+u_tracepoints_deps := \
+	$(top_srcdir)/$(CUR_MESADIR)/util/u_tracepoints.py \
+	$(top_srcdir)/$(CUR_MESADIR)/util/u_trace.py
+
+u_tracepoints_c := $(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.c
+u_tracepoints_h := $(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.h
+
+$(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.c \
+$(top_builddir)/$(CUR_MESADIR)/util/u_tracepoints.h: $(u_tracepoints_deps)
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/$(CUR_MESADIR)/util -C $(u_tracepoints_c) -H $(u_tracepoints_h)
+
 #MM
 mesa3d-linklib-galliumauxiliary-generated : $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES) $(filter %.h, $(GENERATED_SOURCES)))
 
