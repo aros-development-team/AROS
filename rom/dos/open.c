@@ -123,6 +123,19 @@ static LONG dupHandle(struct FileHandle *fh, BPTR lock, struct DosLibrary *DOSBa
     return err;
 }
 
+LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase)
+{
+    BPTR lock = BNULL;
+    LONG error;
+
+    /* We already have a DeviceProc structure, so just use internal routine. */
+    error = fs_LocateObject(&lock, dvp->dvp_Port, dvp->dvp_Lock, "", SHARED_LOCK, DOSBase);
+
+    if (!error)
+        CurrentDir(lock);
+
+    return error;
+}
 
 /* Try to open name recursively calling itself in case it's a soft link.
    Store result in handle. Return boolean value indicating result. */

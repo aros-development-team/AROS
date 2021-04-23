@@ -96,7 +96,6 @@ struct vfp
 
 /* Softlink handling */
 STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
-LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase);
 
 /* Packet I/O */
 struct DosPacket *allocdospacket(void);
