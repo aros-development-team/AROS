@@ -43,3 +43,4 @@ config.log
 config.status
 libtool
 stamp-h1
+mmakefile
