@@ -356,7 +356,7 @@ diff -ruN mesa-20.0.8/src/mesa/program/program_parse.y mesa-20.0.8.aros/src/mesa
  %}
  
 -%pure-parser
-+%define api.pure
++%define api.pure full
  %locations
  %lex-param   { struct asm_parser_state *state }
  %parse-param { struct asm_parser_state *state }

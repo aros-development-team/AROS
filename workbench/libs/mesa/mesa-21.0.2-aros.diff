@@ -66,7 +66,7 @@ diff -ruN mesa-21.0.2/src/compiler/glsl/glcpp/glcpp-parse.y mesa-21.0.2.aros/src
  
 -%pure-parser
 -%error-verbose
-+%define api.pure
++%define api.pure full
 +%define parse.error verbose
  
  %locations
@@ -80,7 +80,7 @@ diff -ruN mesa-21.0.2/src/compiler/glsl/glsl_parser.yy mesa-21.0.2.aros/src/comp
  
 -%pure-parser
 -%error-verbose
-+%define api.pure
++%define api.pure full
 +%define parse.error verbose
  
  %locations
