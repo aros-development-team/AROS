@@ -132,8 +132,9 @@ int getc(FILE *stream);
 #if (!defined(_XOPEN_SOURCE) && \
      !defined(_POSIX_SOURCE) && \
      !defined(_BSD_SOURCE))
+#ifdef _STDIO_H_NOMACRO
 int getchar(void);
-#ifndef _STDIO_H_NOMACRO
+#else
 #define getchar()       fgetc(stdin)
 #endif
 char *gets(char *s);

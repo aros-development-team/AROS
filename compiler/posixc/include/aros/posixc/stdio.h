@@ -374,7 +374,9 @@ int puts(const char *s);
 int putchar(int c);
 int printf(const char * restrict format, ...);
 char *gets(char *s);
+#ifndef getchar
 int getchar(void);
+#endif
 size_t fwrite(const void * restrict ptr, size_t size, size_t nmemb,
     FILE * restrict stream);
 long int ftell(FILE *stream);
