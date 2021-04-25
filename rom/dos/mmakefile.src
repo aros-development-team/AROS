@@ -30,7 +30,7 @@ FILES	  := bstr_helper errorlist \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
 	     packethelper namefrom internalloadseg_support \
-	     shell_helper
+	     shell_helper resolvesoftlink
 
 LOADSEG_FILES := internalloadseg \
 		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))

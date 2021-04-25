@@ -337,4 +337,7 @@ BPTR findseg_shell(BOOL isBoot, struct DosLibrary *DOSBase);
  */
 BOOL pseudoLock(CONST_STRPTR name, LONG lockMode, BPTR *lock, LONG *ret, struct DosLibrary *DOSBase);
 
+/* helper for recursively resolving softlinks */
+STRPTR ResolveSoftlink(BPTR lock, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
+
 #endif /* DOS_INTERN_H */
