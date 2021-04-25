@@ -46,7 +46,7 @@ struct stat
     struct timespec st_atim;	    /* time of last access */
     struct timespec st_mtim;	    /* time of last data modification */
     struct timespec st_ctim;	    /* time of last file status change */
-    blksize_t       st_blksize;	    /* optimal blocksize for I/O */
+    __blksize_t     st_blksize;	    /* optimal blocksize for I/O */
 #if defined(__USE_FILE_OFFSET64)
     __blkcnt64_t    st_blocks;      /* blocks allocated for file */
 #else
@@ -69,7 +69,7 @@ struct stat64
     struct timespec st_atim;	    /* time of last access */
     struct timespec st_mtim;	    /* time of last data modification */
     struct timespec st_ctim;	    /* time of last file status change */
-    blksize_t       st_blksize;	    /* optimal blocksize for I/O */
+    __blksize_t     st_blksize;	    /* optimal blocksize for I/O */
     __blkcnt64_t    st_blocks;      /* blocks allocated for file */
     unsigned long   st_flags;	    /* user defined flags for file */
     unsigned long   st_gen;         /* file generation number */
