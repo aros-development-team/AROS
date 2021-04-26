@@ -52,7 +52,7 @@
 
     D(bug("[SetProtection] '%s':%x\n", name, protect));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
+    if (getpacketinfo(DOSBase, BNULL, name, &phs)) {
         status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
         freepacketinfo(DOSBase, &phs);
     }

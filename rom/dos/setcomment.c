@@ -65,7 +65,7 @@
         SetIoErr(ERROR_COMMENT_TOO_BIG);
         return status;
     }
-    if (getpacketinfo(DOSBase, name, &phs)) {
+    if (getpacketinfo(DOSBase, BNULL, name, &phs)) {
         BSTR com = C2BSTR(comment);
         if (com) {
             status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_COMMENT, (SIPTR)NULL, phs.lock, phs.name, com);

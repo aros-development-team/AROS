@@ -64,7 +64,7 @@
     LONG status;
 
     status = DOSFALSE;
-    if (getpacketinfo(DOSBase, name, &phs))
+    if (getpacketinfo(DOSBase, BNULL, name, &phs))
     {
         status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK,
             phs.lock, phs.name, (SIPTR)dest, soft ? LINK_SOFT: LINK_HARD);

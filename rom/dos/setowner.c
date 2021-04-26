@@ -52,7 +52,7 @@
 
     D(bug("[SetOwner] '%s' %x\n", name, owner_info));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
+    if (getpacketinfo(DOSBase, BNULL, name, &phs)) {
         status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_OWNER, (IPTR)NULL, phs.lock, phs.name, (IPTR)owner_info);
         freepacketinfo(DOSBase, &phs);
     }

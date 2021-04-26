@@ -55,7 +55,7 @@
 
     D(bug("[DeleteFile] '%s'\n", name));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
+    if (getpacketinfo(DOSBase, BNULL, name, &phs)) {
         status = dopacket2(DOSBase, NULL, phs.port, ACTION_DELETE_OBJECT, phs.lock, phs.name);
         freepacketinfo(DOSBase, &phs);
     }

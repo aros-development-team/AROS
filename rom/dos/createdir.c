@@ -56,7 +56,7 @@
 
     D(bug("[CreateDir] '%s'\n", name));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
+    if (getpacketinfo(DOSBase, BNULL, name, &phs)) {
         lock = (BPTR)dopacket2(DOSBase, NULL, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
         freepacketinfo(DOSBase, &phs);
     }
