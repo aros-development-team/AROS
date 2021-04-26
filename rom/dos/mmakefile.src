@@ -47,8 +47,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     fault fgetc fgets filepart findarg findcliproc finddosentry findsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
-	     getcurrentdirname getdeviceproc getfilesystask getprogramdir \
-	     getprogramname getprompt getseglistinfo getvar info inhibit \
+	     getcurrentdirname getdeviceproc getdeviceprocrelative getfilesystask \
+	     getprogramdir getprogramname getprompt getseglistinfo getvar info inhibit \
 	     input internalunloadseg ioerr isfilesystem \
 	     isinteractive loadseg lock lockdoslist lockrelative lockrecord lockrecords \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
