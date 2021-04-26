@@ -49,7 +49,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
 	     getcurrentdirname getdeviceproc getdeviceprocrelative getfilesystask \
 	     getprogramdir getprogramname getprompt getseglistinfo getvar info inhibit \
-	     input internalunloadseg ioerr isfilesystem \
+	     input internalunloadseg ioerr isfilesystem isfilesystemrelative \
 	     isinteractive loadseg lock lockdoslist lockrelative lockrecord lockrecords \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
 	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry nil \
