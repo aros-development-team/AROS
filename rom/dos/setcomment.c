@@ -4,14 +4,6 @@
     Desc: Set a filecomment.
 */
 
-#include <aros/debug.h>
-#include <proto/exec.h>
-#include <dos/dosextens.h>
-#include <dos/dos.h>
-#include <proto/dos.h>
-
-#include <string.h>
-
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -56,27 +48,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct PacketHelperStruct phs;
-    LONG status = DOSFALSE;
-
-    D(bug("[SetComment] '%s' '%s'\n", name, comment));
-    if (strlen(comment)>MAXCOMMENTLENGTH)
-    {
-        SetIoErr(ERROR_COMMENT_TOO_BIG);
-        return status;
-    }
-    if (getpacketinfo(DOSBase, BNULL, name, &phs)) {
-        BSTR com = C2BSTR(comment);
-        if (com) {
-            status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_COMMENT, (SIPTR)NULL, phs.lock, phs.name, com);
-            FREEC2BSTR(com);
-        } else {
-            SetIoErr(ERROR_NO_FREE_STORE);
-        }
-        freepacketinfo(DOSBase, &phs);
-    }
-
-    return status;
+    return SetCommentRelative(BNULL, name, comment);
 
     AROS_LIBFUNC_EXIT
 } /* SetComment */

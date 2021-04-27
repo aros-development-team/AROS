@@ -3,10 +3,6 @@
 
     Desc: Set the protection bits of a file.
 */
-#include <aros/debug.h>
-#include <proto/exec.h>
-#include <dos/dosextens.h>
-#include <proto/dos.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -46,18 +42,8 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    LONG status = 0;
-    struct PacketHelperStruct phs;
 
-    D(bug("[SetProtection] '%s':%x\n", name, protect));
-
-    if (getpacketinfo(DOSBase, BNULL, name, &phs)) {
-        status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
-        freepacketinfo(DOSBase, &phs);
-    }
- 
-    return status;
+    return SetProtectionRelative(BNULL, name, protect);
 
     AROS_LIBFUNC_EXIT
 } /* SetProtection */
