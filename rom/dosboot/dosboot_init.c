@@ -124,32 +124,8 @@ static void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
     DOSBootBase->db_BootNode = bn;
 }
 
-/* This makes the selected boot device the actual
- * boot device. It also updates the boot flags.
- */
-static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
-{
-    struct BootNode *bn;
 
-    bn = DOSBootBase->db_BootNode;
-
-    if (bn != NULL)
-    {
-        Remove((struct Node *)bn);
-        bn->bn_Node.ln_Type = NT_BOOTNODE;
-        bn->bn_Node.ln_Pri = 127;
-        /* We use AddHead() instead of Enqueue() here
-         * to *insure* that this gets to the front of
-         * the boot list.
-         */
-        AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)bn);
-    }
-
-    IntExpBase(DOSBootBase->bm_ExpansionBase)->BootFlags =
-        DOSBootBase->db_BootFlags;
-}
-
-int dosboot_Init(LIBBASETYPEPTR LIBBASE)
+int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
 {
     struct ExpansionBase *ExpansionBase;
     void *BootLoaderBase;
@@ -157,7 +133,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
     ULONG t;
     STRPTR bootDeviceName = NULL;
 
-    LIBBASE->delayTicks = 50;
+    DOSBootBase->delayTicks = 50;
 
     D(bug("dosboot_Init: GO GO GO!\n"));
 
@@ -172,7 +148,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 
     ExpansionBase->Flags |= EBF_SILENTSTART;
 
-    LIBBASE->bm_ExpansionBase = ExpansionBase;
+    DOSBootBase->bm_ExpansionBase = ExpansionBase;
 
     /*
      * Search the kernel parameters for the bootdelay=%d string. It determines the
@@ -207,11 +183,11 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
                  */
                 else if (0 == stricmp(node->ln_Name, "nomonitors"))
                 {
-                    LIBBASE->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
+                    DOSBootBase->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
                 }
                 else if (0 == stricmp(node->ln_Name, "nocomposition"))
                 {
-                    LIBBASE->db_BootFlags |= BF_NO_COMPOSITION;
+                    DOSBootBase->db_BootFlags |= BF_NO_COMPOSITION;
                 }
                 else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
                 {
@@ -219,48 +195,117 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
                 }
                 else if (0 == stricmp(node->ln_Name, "econsole"))
                 {
-                    LIBBASE->db_BootFlags |= BF_EMERGENCY_CONSOLE;
+                    DOSBootBase->db_BootFlags |= BF_EMERGENCY_CONSOLE;
                     D(bug("[Boot] Emergency console selected\n"));
                 }
             }
-            IntExpBase(ExpansionBase)->BootFlags = LIBBASE->db_BootFlags;
+            IntExpBase(ExpansionBase)->BootFlags = DOSBootBase->db_BootFlags;
         }
     }
 
     /* Scan for any additional partition volumes */
-    dosboot_BootScan(LIBBASE);
+    dosboot_BootScan(DOSBootBase);
 
     /* Select the initial boot device, so that the choice is available in the menu */
-    selectBootDevice(LIBBASE, bootDeviceName);
+    selectBootDevice(DOSBootBase, bootDeviceName);
+
+
+    // Set all devices ENALBED by default
+    {
+        ListLength(&ExpansionBase->MountList, DOSBootBase->devicesCount);
+
+        if (DOSBootBase->devicesCount > 0)
+        {
+            DOSBootBase->devicesEnabled = AllocVec (DOSBootBase->devicesCount * 2, MEMF_FAST|MEMF_CLEAR);
+
+            for(int i=0; i<DOSBootBase->devicesCount; i++)
+            {
+                DOSBootBase->devicesEnabled[i] = TRUE;
+            }
+        }
+    }
+
 
     /* Show the boot menu if needed */
-    bootmenu_Init(LIBBASE, WantBootMenu);
+    bootmenu_Init(DOSBootBase, WantBootMenu);
 
-    /* Set final boot device */
-    setBootDevice(LIBBASE);
+
+    // Disable selected Devices
+    // and
+    // Set final boot device
+    if (DOSBootBase->devicesCount > 0)
+    {
+        struct List tempList;
+        struct BootNode *bn, *temp;
+        int index = 0;
+
+        NewList(&tempList);
+
+        ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
+
+        Forbid(); /* .. access to ExpansionBase->MountList */
+
+        while ((temp = (struct BootNode *)RemHead(&ExpansionBase->MountList)) != NULL)
+        {
+            AddTail(&tempList, (struct Node *) temp);
+        }
+
+        ForeachNodeSafe (&tempList, bn, temp)
+        {
+            if (DOSBootBase->devicesEnabled[index++] == TRUE)
+            {
+                if (bn == DOSBootBase->db_BootNode)
+                {
+                    bn->bn_Node.ln_Type = NT_BOOTNODE;
+                    bn->bn_Node.ln_Pri = 127;
+                    AddHead(&ExpansionBase->MountList, &bn->bn_Node);
+                }
+                else
+                {
+                    AddTail(&ExpansionBase->MountList, &bn->bn_Node);
+                }
+            }
+        }
+
+        Permit();
+
+        ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
+
+
+        if (DOSBootBase->devicesEnabled != NULL)
+        {
+            FreeVec(DOSBootBase->devicesEnabled);
+        }
+
+    }
+
+
+    /* updates the boot flags */
+    IntExpBase(DOSBootBase->bm_ExpansionBase)->BootFlags = DOSBootBase->db_BootFlags;
+
 
     /* We want to be able to find ourselves in RTF_AFTERDOS */
-    LIBBASE->bm_Screen = NULL;
-    AddResource(&LIBBASE->db_Node);
+    DOSBootBase->bm_Screen = NULL;
+    AddResource(&DOSBootBase->db_Node);
 
     /* Attempt to boot until we succeed */
     for (;;)
     {
-        dosboot_BootStrap(LIBBASE);
+        dosboot_BootStrap(DOSBootBase);
 
-        if (!LIBBASE->bm_Screen)
-            LIBBASE->bm_Screen = NoBootMediaScreen(LIBBASE);
+        if (!DOSBootBase->bm_Screen)
+            DOSBootBase->bm_Screen = NoBootMediaScreen(DOSBootBase);
 
         D(bug("No bootable disk was found.\n"));
         D(bug("Please insert a bootable disk in any drive.\n"));
         D(bug("Retrying in 3 seconds...\n"));
 
-        for (t = 0; t < 150; t += LIBBASE->delayTicks)
+        for (t = 0; t < 150; t += DOSBootBase->delayTicks)
         {
-            bootDelay(LIBBASE->delayTicks);
+            bootDelay(DOSBootBase->delayTicks);
 
-            if (LIBBASE->bm_Screen)
-                anim_Animate(LIBBASE->bm_Screen, LIBBASE);
+            if (DOSBootBase->bm_Screen)
+                anim_Animate(DOSBootBase->bm_Screen, DOSBootBase);
         }
     }
 

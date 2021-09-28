@@ -3,6 +3,6 @@
 
 #include "dosboot_intern.h"
 
-int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu);
+int bootmenu_Init(LIBBASETYPEPTR DOSBootBase, BOOL WantBootMenu);
 
 #endif

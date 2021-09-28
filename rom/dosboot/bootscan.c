@@ -302,9 +302,9 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
 }
 
 /* Scan all partitions manually for additional volumes that can be mounted. */
-void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
+void dosboot_BootScan(LIBBASETYPEPTR DOSBootBase)
 {
-    struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
+    struct ExpansionBase *ExpansionBase = DOSBootBase->bm_ExpansionBase;
     APTR PartitionBase;
     struct BootNode *bootNode, *temp;
     struct List rootList;

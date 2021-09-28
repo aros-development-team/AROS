@@ -14,7 +14,6 @@
 #include <exec/lists.h>
 #include <graphics/gfxbase.h>
 
-#include "gadgets.h"
 #include "bootflags.h"
 
 #define BUFSIZE 100
@@ -36,16 +35,22 @@ struct DOSBootBase
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
     struct IntuitionBase *bm_IntuitionBase;
+    struct GadToolsBase  *bm_GadToolsBase;
+    APTR                  bm_VisualInfo;
     struct ExpansionBase *bm_ExpansionBase;
     struct Screen        *bm_Screen;		/* Screen					  */
     struct Window        *bm_Window;		/* Window and gadgets		  */
-    struct MainGadgets    bm_MainGadgets;
     APTR                   bm_BootNode; /* Boot node selected in the menu */
 
     struct BootConfig     bm_BootConfig;	/* Current HIDD configuration     */
     APTR		  animData;		/* Animation stuff		  */
     ULONG		  delayTicks;		/* Delay period. Can be adjusted by animation code */
     WORD		  bottomY;
+
+    WORD                  devicesCount;
+    BOOL                 *devicesEnabled;
+    struct List           bootList;
+    struct List           devicesList;
 };
 
 void InitBootConfig(struct BootConfig *bootcfg);
@@ -61,6 +66,7 @@ void anim_Stop(struct DOSBootBase *DOSBootBase);
 void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 
 #define IntuitionBase DOSBootBase->bm_IntuitionBase
+#define GadToolsBase DOSBootBase->bm_GadToolsBase
 #define GfxBase DOSBootBase->bm_GfxBase
 
 /* Check to see if the bootnode is bootable */
