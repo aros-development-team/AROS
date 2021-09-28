@@ -216,7 +216,7 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
 
         if (DOSBootBase->devicesCount > 0)
         {
-            DOSBootBase->devicesEnabled = AllocVec (DOSBootBase->devicesCount * 2, MEMF_FAST|MEMF_CLEAR);
+            DOSBootBase->devicesEnabled = AllocVec (DOSBootBase->devicesCount * sizeof(BOOL) * 2, MEMF_FAST|MEMF_CLEAR);
 
             for(int i=0; i<DOSBootBase->devicesCount; i++)
             {

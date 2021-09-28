@@ -321,7 +321,7 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                 }
 
 
-                NewRawDoFmt("%s %5s: %s [%08lx]%5d%c %4d %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
+                NewRawDoFmt("%s%6s: %s [%08lx]%5d%c %4d %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
                     (DOSBootBase->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
                     AROS_BSTR_ADDR(dn->dn_Name),
                     dostype,
@@ -334,7 +334,7 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
             }
             else if (!devopen)
             {
-                NewRawDoFmt("%s %5s: [device open error] %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
+                NewRawDoFmt("%s%6s: [device open error] %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
                     (DOSBootBase->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
                     AROS_BSTR_ADDR(dn->dn_Name),
                     AROS_BSTR_ADDR(fssm->fssm_Device),
@@ -342,7 +342,7 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
             }
             else if (!ismedia)
             {
-                NewRawDoFmt("%s %5s: [no media] %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
+                NewRawDoFmt("%s%6s: [no media] %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
                     (DOSBootBase->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
                     AROS_BSTR_ADDR(dn->dn_Name),
                     AROS_BSTR_ADDR(fssm->fssm_Device),
