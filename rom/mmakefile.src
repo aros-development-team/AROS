@@ -123,7 +123,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-keyboard \
 #MM     kernel-hidd \
 #MM     kernel-oop \
-#MM     kernel-layers
+#MM     kernel-layers \
+#MM     workbench-libs-gadtools
 
 # This is what kickstart base package consists of.
 # These modules are architecture-independent and can work on both hosted and native systems.
@@ -131,7 +132,7 @@ include $(SRCDIR)/config/aros.cfg
 BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := ram con
 BASE_HIDD     := hiddclass gfx keyboard mouse
-BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
+BASE_LIBS     := aros debug dos gadtools graphics intuition keymap layers oop utility
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
 %make_package mmake=kernel-package-base file=$(AROS_BOOT)/aros-base.pkg \

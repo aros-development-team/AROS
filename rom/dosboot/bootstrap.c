@@ -283,9 +283,9 @@ static inline void dosboot_BootDos(void)
 /* Attempt to boot, first from the BootNode boot blocks,
  * then via the DOS handlers
  */
-LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
+LONG dosboot_BootStrap(LIBBASETYPEPTR DOSBootBase)
 {
-    struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
+    struct ExpansionBase *ExpansionBase = DOSBootBase->bm_ExpansionBase;
     int i, nodes;
 
     /*
