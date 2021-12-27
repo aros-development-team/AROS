@@ -59,6 +59,9 @@ struct functionarg *funcaddarg
         (*argptr)->noargname = 0;
         (*argptr)->varargs = 0;
 
+        /* Set noargname, varargs, type, name here (in a better way) */
+        free(getargtype((*argptr)));
+
         funchead->argcount++;
     }
     else
