@@ -456,6 +456,34 @@ char *getargtype(struct functionarg *funcarg)
         while (isspace(*(end-1))) end--;
     }
 
+    /* Special case of pointer to function */
+    if (*(end-1)==')')
+    {
+        char *pb = NULL, *pe = NULL;
+        int len = 0;
+        pb = begin;
+        while (*(pb)!='(') pb++;
+        while (*(pb)!='*') pb++;
+        pb++;
+        pe=pb;
+        while (*(pe)!=')') pe++;
+        len = pe-pb;
+        funcarg->name = malloc(len+1);
+        strncpy(funcarg->name, pb, len);
+        funcarg->name[len] = '\0';
+
+        while ((*pe)!='\0')
+        {
+            *pb=*pe;
+            pb++;pe++;
+        }
+        *pb='\0';
+        funcarg->type = strdup(s);
+
+        return s;
+    }
+    else
+    {
     /* Skip over the argument name */
     while (!isspace(*(end-1)) && *(end-1)!='*')
     {
@@ -485,6 +513,7 @@ char *getargtype(struct functionarg *funcarg)
             }
         }
         end--;
+    }
     }
 
     /* Add * for the brackets */
