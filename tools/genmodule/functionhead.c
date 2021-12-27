@@ -510,7 +510,7 @@ char *getargname(const struct functionarg *funcarg)
     while (*(end-1)==']')
     {
         end--;
-        while (isspace(*(end-1))) end--;
+        while (isspace(*(end-1)) || isdigit(*(end-1))) end--;
         if (*(end-1)!='[')
             return NULL;
         end--;
