@@ -24,6 +24,7 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
         funchead->aliases = NULL;
         funchead->interface = NULL;
         funchead->method = NULL;
+        funchead->varargtype = 0;
         funchead->novararg = 0;
         funchead->priv= 0;
         funchead->unusedlibbase = 0;

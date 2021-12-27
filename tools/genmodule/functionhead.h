@@ -40,6 +40,7 @@ struct functionhead {
     unsigned int lvo; /* Only for library functions, not methods */
     struct stringlist *interface; /* Only for HIDD class */
     char *method; /* Only for HIID class */
+    char varargtype; /* Type of vararg 1 - TagList, 2 - va_list, 3 - RAWARG, 4 - ... */
     int version;  /* First library version number this appeared in*/
     int novararg : 1; /* Are varargs allowed for this function ? */
     int priv     : 1; /* Is function private */
