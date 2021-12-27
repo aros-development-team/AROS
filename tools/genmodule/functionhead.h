@@ -16,10 +16,15 @@
 
 enum libcall { INVALID, STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 
+struct functionhead;
+
 struct functionarg {
     struct functionarg *next;
+    struct functionhead *parent;
     char *arg;
     char *reg;
+    int noargname : 1; /* This argument has no name */
+    int varargs : 1; /* This argument is ... */
 };
 
 struct functionhead {
@@ -64,7 +69,7 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
  * to only contain the type afterwards.
  * Function return 0 when it did not understand the input, 1 otherwise
  */
-char *getargtype(const struct functionarg *funcarg);
+char *getargtype(struct functionarg *funcarg);
 char *getargname(const struct functionarg *funcarg);
 
 #endif //FUNCTIONHEAD_H

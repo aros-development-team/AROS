@@ -53,6 +53,9 @@ struct functionarg *funcaddarg
         (*argptr)->next = NULL;
         (*argptr)->arg  = (arg == NULL) ? NULL : strdup(arg);
         (*argptr)->reg  = (reg  == NULL) ? NULL : strdup(reg);
+        (*argptr)->parent  = funchead;
+        (*argptr)->noargname = 0;
+        (*argptr)->varargs = 0;
 
         funchead->argcount++;
     }
@@ -426,7 +429,7 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
     }
 }
 
-char *getargtype(const struct functionarg *funcarg)
+char *getargtype(struct functionarg *funcarg)
 {
     char *s, *begin, *end;
     unsigned int brackets = 0, i;
@@ -455,9 +458,24 @@ char *getargtype(const struct functionarg *funcarg)
     {
         if (begin == end)
         {
-            free(s);
-            fprintf(stderr, "no argument type or name found for arg: %s\n", funcarg->arg);
-            exit(20);
+            /* Support special cases */
+            if (strcmp(s, "void") == 0)
+            {
+                funcarg->noargname = 1;
+                return s;
+            }
+            else if (strcmp(s, "...") == 0)
+            {
+                funcarg->noargname = 1;
+                funcarg->varargs = 1;
+                return s;
+            }
+            else
+            {
+                free(s);
+                fprintf(stderr, "no argument type or name found for arg: %s in function %s\n", funcarg->arg, funcarg->parent->name);
+                exit(20);
+            }
         }
         end--;
     }
@@ -478,6 +496,13 @@ char *getargname(const struct functionarg *funcarg)
 {
     char *s, *begin, *end;
     int len;
+
+    if (funcarg->noargname)
+    {
+        s = malloc(1);
+        s[0] = '\0';
+        return s;
+    }
 
     /* Count the [] at the end of the argument */
     end = funcarg->arg+strlen(funcarg->arg);
