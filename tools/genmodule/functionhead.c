@@ -57,7 +57,7 @@ struct functionarg *funcaddarg
         (*argptr)->name = NULL;
         (*argptr)->reg  = (reg  == NULL) ? NULL : strdup(reg);
         (*argptr)->parent  = funchead;
-        (*argptr)->varargs = 0;
+        (*argptr)->ellipsis = 0;
 
         /* Set noargname, varargs, type, name here (in a better way) */
         free(getargtype((*argptr)));
@@ -501,7 +501,7 @@ char *getargtype(struct functionarg *funcarg)
             }
             else if (strcmp(s, "...") == 0)
             {
-                funcarg->varargs = 1;
+                funcarg->ellipsis = 1;
                 if (funcarg->type == NULL) funcarg->type = strdup(s);
                 if (funcarg->name == NULL) funcarg->name = strdup("");
                 return s;

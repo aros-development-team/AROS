@@ -25,7 +25,7 @@ struct functionarg {
     char *type;
     char *name;
     char *reg;
-    int varargs : 1; /* This argument is ... */
+    int ellipsis : 1; /* This argument is ... */
 };
 
 struct functionhead {

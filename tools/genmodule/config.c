@@ -1946,7 +1946,7 @@ static void readsectionfunctionlist(const char *type, struct functionhead **func
             /* Check if function is a vararg-type function */
             for (arglistit = (*funclistptr)->arguments; arglistit!=NULL; arglistit = arglistit->next)
             {
-                if (arglistit->varargs)
+                if (arglistit->ellipsis)
                 {
                     (*funclistptr)->varargtype = 4;
                     break;
