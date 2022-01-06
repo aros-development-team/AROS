@@ -13,7 +13,7 @@
 void writelinkentries(struct config *cfg)
 {
     FILE *out;
-    char moduleversname[512];
+    char moduleversname[256];
     char name[512];
     struct functionhead *funclistit;
     unsigned int lvo;
