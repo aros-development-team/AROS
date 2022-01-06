@@ -25,7 +25,6 @@ struct functionarg {
     char *type;
     char *name;
     char *reg;
-    int noargname : 1; /* This argument has no name */
     int varargs : 1; /* This argument is ... */
 };
 
