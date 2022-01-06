@@ -63,15 +63,4 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclist);
 void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *funclist);
 
-/* getargtype remove the variable name from a variable definition and leave return
- * the type of the variable
- * [] at the end will be added as * in the variable type
- * e.g. char *var[] => type: char **, name: var
- * This is a destructive function and will change to string pointed to by def
- * to only contain the type afterwards.
- * Function return 0 when it did not understand the input, 1 otherwise
- */
-char *getargtype(struct functionarg *funcarg);
-char *getargname(const struct functionarg *funcarg);
-
 #endif //FUNCTIONHEAD_H

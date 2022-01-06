@@ -8,6 +8,18 @@
 #include "functionhead.h"
 #include "config.h"
 
+/* getargtype remove the variable name from a variable definition and leave return
+ * the type of the variable
+ * [] at the end will be added as * in the variable type
+ * e.g. char *var[] => type: char **, name: var
+ * This is a destructive function and will change to string pointed to by def
+ * to only contain the type afterwards.
+ * Function return 0 when it did not understand the input, 1 otherwise
+ */
+static char *getargtype(struct functionarg *funcarg);
+static char *getargname(const struct functionarg *funcarg);
+
+
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 {
     struct functionhead *funchead = malloc(sizeof(struct functionhead));
@@ -434,7 +446,7 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
     }
 }
 
-char *getargtype(struct functionarg *funcarg)
+static char *getargtype(struct functionarg *funcarg)
 {
     char *s, *begin, *end;
     unsigned int brackets = 0, i;
@@ -526,7 +538,7 @@ char *getargtype(struct functionarg *funcarg)
     return s;
 }
 
-char *getargname(const struct functionarg *funcarg)
+static char *getargname(const struct functionarg *funcarg)
 {
     char *s, *begin, *end;
     int len;
