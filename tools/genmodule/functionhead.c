@@ -493,17 +493,11 @@ char *getargtype(struct functionarg *funcarg)
         if (begin == end)
         {
             /* Support special cases */
-            if (strcmp(s, "void") == 0)
+            if ((strcmp(s, "void") == 0) || (strcmp(s, "...") == 0))
             {
                 if (funcarg->type == NULL) funcarg->type = strdup(s);
                 if (funcarg->name == NULL) funcarg->name = strdup("");
-                return s;
-            }
-            else if (strcmp(s, "...") == 0)
-            {
-                funcarg->ellipsis = 1;
-                if (funcarg->type == NULL) funcarg->type = strdup(s);
-                if (funcarg->name == NULL) funcarg->name = strdup("");
+                if (strcmp(s, "...") == 0) funcarg->ellipsis = 1;
                 return s;
             }
             else
