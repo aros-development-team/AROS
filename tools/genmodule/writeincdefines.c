@@ -5,8 +5,8 @@
 */
 #include "genmodule.h"
 
-static void writedefineregister(FILE *, struct functionhead *, struct config *, char);
-static void writedefinevararg(FILE *, struct functionhead *, struct config *, char, char *);
+static void writedefineregister(FILE *, struct functionhead *, struct config *);
+static void writedefinevararg(FILE *, struct functionhead *, struct config *, char *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
 void writeincdefines(struct config *cfg)
@@ -116,7 +116,7 @@ void writeincdefines(struct config *cfg)
     {
         if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo) && funclistit->libcall != STACK)
         {
-            char isvararg = 0, *varargname = NULL, *lastname;
+            char *varargname = NULL, *lastname;
 
             fprintf(out,
                     "\n"
@@ -138,15 +138,15 @@ void writeincdefines(struct config *cfg)
 
                 if (*(funclistit->name + strlen(funclistit->name) - 1) == 'A')
                 {
-                    isvararg = 1;
+                    funclistit->varargtype = 1;
                     varargname = strdup(funclistit->name);
                     varargname[strlen(funclistit->name)-1] = '\0';
                     if (arglistit && strncmp(arglistit->arg, "RAWARG",6) == 0)
-                        isvararg = 3;
+                        funclistit->varargtype = 3;
                 }
                 else if (strcmp(funclistit->name + strlen(funclistit->name) - 7, "TagList") == 0)
                 {
-                    isvararg = 1;
+                    funclistit->varargtype = 1;
                     /* TagList has to be changed to Tags at the end of the functionname */
                     varargname = strdup(funclistit->name);
                     varargname[strlen(funclistit->name)-4] = 's';
@@ -156,19 +156,19 @@ void writeincdefines(struct config *cfg)
                          && (strcasecmp(lastname, "args") == 0 || strcasecmp(lastname, "arglist") == 0)
                 )
                 {
-                    isvararg = 1;
+                    funclistit->varargtype = 1;
                     varargname = strdup(funclistit->name);
                     varargname[strlen(funclistit->name)-4] = '\0';
                 }
                 else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "va_list", 7) == 0))
                 {
-                    isvararg = 2;
+                    funclistit->varargtype = 2;
                     varargname = malloc(strlen(funclistit->name));
                     strcpy(varargname, &funclistit->name[1]);
                 }
                 else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "RAWARG", 6) == 0))
                 {
-                    isvararg = 3;
+                    funclistit->varargtype = 3;
                     varargname = malloc(strlen(funclistit->name));
                     strcpy(varargname, &funclistit->name[1]);
                 }
@@ -192,7 +192,7 @@ void writeincdefines(struct config *cfg)
 
                             if (*p == '*')
                             {
-                                isvararg = 1;
+                                funclistit->varargtype = 1;
                                 varargname = malloc(strlen(funclistit->name) + 5);
                                 strcpy(varargname, funclistit->name);
                                 strcat(varargname, "Tags");
@@ -202,10 +202,10 @@ void writeincdefines(struct config *cfg)
                 }
             }
 
-            writedefineregister(out, funclistit, cfg, isvararg);
-            if (!funclistit->novararg && isvararg)
+            writedefineregister(out, funclistit, cfg);
+            if (!funclistit->novararg && funclistit->varargtype)
             {
-                writedefinevararg(out, funclistit, cfg, isvararg, varargname);
+                writedefinevararg(out, funclistit, cfg, varargname);
                 free(varargname);
             }
             writealiases(out, funclistit, cfg);
@@ -232,7 +232,7 @@ void writeincdefines(struct config *cfg)
 }
 
 void
-writedefineregister(FILE *out, struct functionhead *funclistit, struct config *cfg, char isvararg)
+writedefineregister(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit;
     int count, isvoid, nquad = 0, narg = 0;
@@ -353,7 +353,7 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
 }
 
 void
-writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg, char isvararg, char *varargname)
+writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg, char *varargname)
 {
     struct functionarg *arglistit = funclistit->arguments;
     int isvoid;
@@ -361,7 +361,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
     isvoid = strcmp(funclistit->type, "void") == 0
         || strcmp(funclistit->type, "VOID") == 0;
 
-    if (isvararg == 1)
+    if (funclistit->varargtype == 1)
     {
         int count;
         char *type;
@@ -418,7 +418,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
                 "#endif /* !NO_INLINE_STDARG */\n"
         );
     }
-    else if (isvararg == 2)
+    else if (funclistit->varargtype == 2)
     {
         int count;
         struct functionarg *lastarg;
@@ -491,7 +491,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
                 "#endif /* !NO_INLINE_STDARG */\n"
         );
     }
-    else if (isvararg == 3)
+    else if (funclistit->varargtype == 3)
     {
         int count;
 
