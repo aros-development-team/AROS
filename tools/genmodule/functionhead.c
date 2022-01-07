@@ -8,17 +8,10 @@
 #include "functionhead.h"
 #include "config.h"
 
-/* getargtype remove the variable name from a variable definition and leave return
- * the type of the variable
- * [] at the end will be added as * in the variable type
+/* [] at the end will be added as * in the variable type
  * e.g. char *var[] => type: char **, name: var
- * This is a destructive function and will change to string pointed to by def
- * to only contain the type afterwards.
- * Function return 0 when it did not understand the input, 1 otherwise
  */
-static char *getargtype(struct functionarg *funcarg);
-static char *getargname(const struct functionarg *funcarg);
-
+void parsetypeandname(struct functionarg *funcarg);
 
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 {
@@ -71,8 +64,7 @@ struct functionarg *funcaddarg
         (*argptr)->parent  = funchead;
         (*argptr)->ellipsis = 0;
 
-        /* Set noargname, varargs, type, name here (in a better way) */
-        free(getargtype((*argptr)));
+        parsetypeandname((*argptr));
 
         funchead->argcount++;
     }
@@ -422,10 +414,11 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
     }
 }
 
-static char *getargtype(struct functionarg *funcarg)
+void parsetypeandname(struct functionarg *funcarg)
 {
-    char *s, *begin, *end;
+    char *s, *begin, *end, *endname;
     unsigned int brackets = 0, i;
+    int len = 0;
 
     begin = s = strdup(funcarg->arg);
 
@@ -441,41 +434,43 @@ static char *getargtype(struct functionarg *funcarg)
         if (*(end-1)!='[')
         {
             free(s);
-            return NULL;
+            fprintf(stderr, "unmatched brackets found for arg: %s in function %s\n", funcarg->arg, funcarg->parent->name);
+            exit(20);
         }
         end--;
         while (isspace(*(end-1))) end--;
     }
 
-    /* Special case of pointer to function */
+    /* Pointer to function argument requires special handling */
     if (*(end-1)==')')
     {
-        char *pb = NULL, *pe = NULL;
-        int len = 0;
-        pb = begin;
-        while (*(pb)!='(') pb++;
-        while (*(pb)!='*') pb++;
-        pb++;
-        pe=pb;
-        while (*(pe)!=')') pe++;
-        len = pe-pb;
+        end = begin;
+        while (*(end)!='(') end++;
+        while (*(end)!='*') end++;
+        end++;
+        endname=end;
+        while (*(endname)!=')') endname++;
+        /* end - endname => name */
+        len = endname-end;
         funcarg->name = malloc(len+1);
-        strncpy(funcarg->name, pb, len);
+        strncpy(funcarg->name, end, len);
         funcarg->name[len] = '\0';
 
-        while ((*pe)!='\0')
+        /* Copy rest of function pointer type over name is s */
+        while ((*endname)!='\0')
         {
-            *pb=*pe;
-            pb++;pe++;
+            *end=*endname;
+            end++;endname++;
         }
-        *pb='\0';
+        *end='\0';
         funcarg->type = strdup(s);
 
-        return s;
+        free(s);
+        return;
     }
-    else
-    {
-    /* Skip over the argument name */
+
+    /* Regular argument */
+    endname = end;
     while (!isspace(*(end-1)) && *(end-1)!='*')
     {
         if (begin == end)
@@ -486,7 +481,9 @@ static char *getargtype(struct functionarg *funcarg)
                 if (funcarg->type == NULL) funcarg->type = strdup(s);
                 if (funcarg->name == NULL) funcarg->name = strdup("");
                 if (strcmp(s, "...") == 0) funcarg->ellipsis = 1;
-                return s;
+
+                free(s);
+                return;
             }
             else
             {
@@ -497,7 +494,12 @@ static char *getargtype(struct functionarg *funcarg)
         }
         end--;
     }
-    }
+
+    /* begin - end => type, end - endname => name */
+    len = endname-end;
+    funcarg->name = malloc(len+1);
+    strncpy(funcarg->name, end, len);
+    funcarg->name[len] = '\0';
 
     /* Add * for the brackets */
     while (isspace(*(end-1))) end--;
@@ -507,40 +509,8 @@ static char *getargtype(struct functionarg *funcarg)
         end++;
     }
     *end='\0';
-
     if (funcarg->type == NULL) funcarg->type = strdup(s);
-    if (funcarg->name == NULL) funcarg->name = getargname(funcarg);
 
-    return s;
-}
-
-static char *getargname(const struct functionarg *funcarg)
-{
-    char *s, *begin, *end;
-    int len;
-
-    /* Count the [] at the end of the argument */
-    end = funcarg->arg+strlen(funcarg->arg);
-    while (isspace(*(end-1))) end--;
-    while (*(end-1)==']')
-    {
-        end--;
-        while (isspace(*(end-1)) || isalnum(*(end-1))) end--;
-        if (*(end-1)!='[')
-            return NULL;
-        end--;
-        while (isspace(*(end-1))) end--;
-    }
-
-    /* Go to the beginning of the argument name */
-    begin = end;
-    while (!isspace(*(begin-1)) && *(begin-1)!='*') begin--;
-
-    /* Copy the name */
-    len = end - begin;
-    s = malloc(len+1);
-    strncpy(s, begin, len);
-    s[len] = '\0';
-
-    return s;
+    free(s);
+    return;
 }
