@@ -101,7 +101,6 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
     struct functionhead *funclistit;
     struct functionarg *arglistit;
-    char *type, *name;
     int first;
 
     for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
@@ -146,16 +145,12 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                  arglistit = arglistit->next
             )
             {
-                type = getargtype(arglistit);
-                name = getargname(arglistit);
-                assert(name != NULL && type != NULL);
+                assert(arglistit->name != NULL && arglistit->type != NULL);
 
                 fprintf(out,
                         "         AROS_LHA(%s, %s, %s),\n",
-                        type, name, arglistit->reg
+                        arglistit->type, arglistit->name, arglistit->reg
                 );
-                free(type);
-                free(name);
             }
             fprintf(out,
                     "         %s, %s, %u, %s)\n"
@@ -171,13 +166,11 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                  arglistit = arglistit->next, first = 0
             )
             {
-                name = getargname(arglistit);
-                assert(name != NULL);
+                assert(arglistit->name != NULL);
 
                 if (!first)
                     fprintf(out, ", ");
-                fprintf(out, "%s", name);
-                free(name);
+                fprintf(out, "%s", arglistit->name);
             }
             fprintf(out,
                     ");\n\n"
@@ -200,16 +193,12 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                      arglistit = arglistit->next
                 )
                 {
-                    type = getargtype(arglistit);
-                    name = getargname(arglistit);
-                    assert(type != NULL && name != NULL);
+                    assert(arglistit->type != NULL && arglistit->name != NULL);
 
                     fprintf(out,
                             "         AROS_LDA(%s, %s, %s),\n",
-                            type, name, arglistit->reg
+                            arglistit->type, arglistit->name, arglistit->reg
                     );
-                    free(type);
-                    free(name);
                 }
                 fprintf(out,
                         "         LIBBASETYPEPTR, %s, %u, %s\n"
@@ -235,17 +224,13 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                     }
                     arglistit->reg[2] = 0;
 
-                    type = getargtype(arglistit);
-                    name = getargname(arglistit);
-                    assert(type != NULL && name != NULL);
+                    assert(arglistit->type != NULL && arglistit->name != NULL);
 
                     fprintf(out,
                             "         AROS_LDAQUAD(%s, %s, %s, %s),\n",
-                            type, name, arglistit->reg, arglistit->reg+3
+                            arglistit->type, arglistit->name, arglistit->reg, arglistit->reg+3
                     );
                     arglistit->reg[2] = '/';
-                    free(type);
-                    free(name);
                 }
                 fprintf(out,
                         "         LIBBASETYPEPTR, %s, %u, %s\n"
@@ -267,7 +252,6 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 {
     struct functionhead *funclistit;
     struct functionarg *arglistit;
-    char *type, *name;
     int first;
 
     for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
@@ -324,16 +308,12 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                         arglistit = arglistit->next
                     )
                     {
-                        type = getargtype(arglistit);
-                        name = getargname(arglistit);
-                        assert(type != NULL && name != NULL);
+                        assert(arglistit->type != NULL && arglistit->name != NULL);
 
                         fprintf(out,
                                 "         AROS_LPA(%s, %s, %s),\n",
-                                type, name, arglistit->reg
+                                arglistit->type, arglistit->name, arglistit->reg
                         );
-                        free(type);
-                        free(name);
                     }
                     fprintf(out,
                             "         LIBBASETYPEPTR, %s, %u, %s\n"
@@ -359,17 +339,13 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                         }
                         arglistit->reg[2] = 0;
 
-                        type = getargtype(arglistit);
-                        name = getargname(arglistit);
-                        assert(type != NULL && name != NULL);
+                        assert(arglistit->type != NULL && arglistit->name != NULL);
 
                         fprintf(out,
                                 "         AROS_LPAQUAD(%s, %s, %s, %s),\n",
-                                type, name, arglistit->reg, arglistit->reg+3
+                                arglistit->type, arglistit->name, arglistit->reg, arglistit->reg+3
                         );
                         arglistit->reg[2] = '/';
-                        free(type);
-                        free(name);
                     }
                     fprintf(out,
                             "         LIBBASETYPEPTR, %s, %u, %s\n"
