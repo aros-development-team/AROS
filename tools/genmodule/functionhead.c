@@ -487,9 +487,20 @@ void parsetypeandname(struct functionarg *funcarg)
             }
             else
             {
-                free(s);
-                fprintf(stderr, "no argument type or name found for arg: %s in function %s\n", funcarg->arg, funcarg->parent->name);
-                exit(20);
+                if (funcarg->reg == NULL)
+                {
+                    /* Allow empty argument names for non-reg-call functions */
+                    funcarg->type = strdup(s);
+                    funcarg->name = strdup("noname");
+                    free(s);
+                    return;
+                }
+                else
+                {
+                    free(s);
+                    fprintf(stderr, "no argument type or name found for arg: %s in function %s\n", funcarg->arg, funcarg->parent->name);
+                    exit(20);
+                }
             }
         }
         end--;
