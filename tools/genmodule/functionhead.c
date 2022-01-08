@@ -478,8 +478,8 @@ void parsetypeandname(struct functionarg *funcarg)
             /* Support special cases */
             if ((strcmp(s, "void") == 0) || (strcmp(s, "...") == 0))
             {
-                if (funcarg->type == NULL) funcarg->type = strdup(s);
-                if (funcarg->name == NULL) funcarg->name = strdup("");
+                funcarg->type = strdup(s);
+                funcarg->name = strdup("");
                 if (strcmp(s, "...") == 0) funcarg->ellipsis = 1;
 
                 free(s);
