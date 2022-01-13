@@ -53,7 +53,12 @@
 ******************************************************************************/
 {
     size_t cnt;
-    fdesc *fdesc = __getfdesc(stream->fd);
+    fdesc *fdesc;
+
+    if (size == 0 || nblocks == 0)
+        return 0;
+
+    fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)
     {
