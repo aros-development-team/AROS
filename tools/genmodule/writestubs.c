@@ -174,7 +174,6 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
 {
     struct stringlist *aliasesit;
     struct functionarg *arglistit;
-    char *type, *name;
 
     if (funclistit->libcall != STACK)
     {
@@ -219,15 +218,11 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
                  arglistit = arglistit->next
             )
             {
-                type = getargtype(arglistit);
-                name = getargname(arglistit);
-                assert(type != NULL && name != NULL);
+                assert(arglistit->type != NULL && arglistit->name != NULL);
 
                 fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
-                        type, name, arglistit->reg
+                        arglistit->type, arglistit->name, arglistit->reg
                 );
-                free(type);
-                free(name);
             }
         }
         else /* nquad != 0 */
@@ -257,15 +252,13 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
             {
                 char *quad2 = strchr(arglistit->reg, '/');
 
-                type = getargtype(arglistit);
-                name = getargname(arglistit);
-                assert(type != NULL && name != NULL);
+                assert(arglistit->type != NULL && arglistit->name != NULL);
 
                 if (quad2) {
                     *quad2 = 0;
                     fprintf(out,
                             "         AROS_LCAQUAD(%s, %s, %s, %s), \\\n",
-                            type, name, arglistit->reg, quad2+1
+                            arglistit->type, arglistit->name, arglistit->reg, quad2+1
                     );
                     *quad2 = '/';
                 }
@@ -273,11 +266,9 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
                 {
                     fprintf(out,
                             "         AROS_LCA(%s, %s, %s), \\\n",
-                            type, name, arglistit->reg
+                            arglistit->type, arglistit->name, arglistit->reg
                     );
                 }
-                free(type);
-                free(name);
             }
         }
 

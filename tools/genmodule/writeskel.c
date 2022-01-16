@@ -13,7 +13,6 @@ static void writeskelfunc(struct config *cfg, struct functionhead *funclist)
     FILE *out;
     char line[256], *banner;
     struct functionarg *arglistit;
-    char *type, *name;
     int first;
 
     snprintf(line, 255, "%s/%s.c", cfg->gendir, funclist->internalname);
@@ -46,16 +45,12 @@ static void writeskelfunc(struct config *cfg, struct functionhead *funclist)
              arglistit = arglistit->next
         )
         {
-            type = getargtype(arglistit);
-            name = getargname(arglistit);
-            assert(name != NULL && type != NULL);
+            assert(arglistit->name != NULL && arglistit->type != NULL);
 
             fprintf(out,
                     "        AROS_LHA(%s, %s, %s),\n",
-                    type, name, arglistit->reg
+                    arglistit->type, arglistit->name, arglistit->reg
             );
-            free(type);
-            free(name);
         }
 
         fprintf(out,

@@ -12,7 +12,6 @@
 static void writethunkfunc(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
     struct functionarg *arglistit;
-    char *type, *name;
     int is_void;
     
     is_void = (strcasecmp(funclist->type, "void") == 0);
@@ -27,12 +26,8 @@ static void writethunkfunc(FILE *out, struct config *cfg, struct functionhead *f
          arglistit = arglistit->next
     )
     {
-        type = getargtype(arglistit);
-        name = getargname(arglistit);
-        assert(name != NULL && type != NULL);
-        fprintf(out, ", %s %s", type, name);
-        free(name);
-        free(type);
+        assert(arglistit->name != NULL && arglistit->type != NULL);
+        fprintf(out, ", %s %s", arglistit->type, arglistit->name);
     }
     fprintf(out, ");\n\n");
 
@@ -46,16 +41,12 @@ static void writethunkfunc(FILE *out, struct config *cfg, struct functionhead *f
          arglistit = arglistit->next
     )
     {
-        type = getargtype(arglistit);
-        name = getargname(arglistit);
-        assert(name != NULL && type != NULL);
+        assert(arglistit->name != NULL && arglistit->type != NULL);
 
         fprintf(out,
                 "        AROS_LHA(%s, %s, %s),\n",
-                type, name, arglistit->reg
+                arglistit->type, arglistit->name, arglistit->reg
         );
-        free(type);
-        free(name);
     }
 
     fprintf(out,
@@ -76,10 +67,8 @@ static void writethunkfunc(FILE *out, struct config *cfg, struct functionhead *f
          arglistit = arglistit->next
     )
     {
-        name = getargname(arglistit);
-        assert(name != NULL);
-        fprintf(out, ", %s", name);
-        free(name);
+        assert(arglistit->name != NULL);
+        fprintf(out, ", %s", arglistit->name);
     }
     fprintf(out, ");\n\n");
     fprintf(out,

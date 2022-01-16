@@ -9,7 +9,6 @@
 static void write_fd_func(FILE *out, struct functionhead *funclistit, unsigned int lvo)
 {
     struct functionarg *arglistit;
-    char *variable;
 
     if (funclistit->lvo > lvo + 1)
     {
@@ -30,13 +29,7 @@ static void write_fd_func(FILE *out, struct functionhead *funclistit, unsigned i
             fprintf(out, ",");
 
         /* Print only variable name */
-        variable = arglistit->arg + strlen(arglistit->arg) - 1;
-        while ((variable >= arglistit->arg) &&
-               (isalnum(*variable) || (*variable == '_')))
-        {
-            variable--;
-        }
-        fprintf(out, "%s", variable + 1);
+        fprintf(out, "%s", arglistit->name);
     }
     fprintf(out, ")(");
 }

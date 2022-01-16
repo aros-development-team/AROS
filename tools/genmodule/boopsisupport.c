@@ -70,8 +70,6 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
             methlistit = methlistit->next
         )
         {
-            char *type;
-
             fprintf(out, "        ");
             for
             (
@@ -96,8 +94,7 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
             fprintf(out, "CLASS, ");
 
             arglistit = arglistit->next;
-            type = getargtype(arglistit);
-            if (type == NULL)
+            if (arglistit->type == NULL)
             {
                 fprintf(stderr,
                         "Argument \"%s\" not understood for function %s\n",
@@ -105,12 +102,10 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
                 );
                 exit(20);
             }
-            fprintf(out, "(%s)self, ", type);
-            free(type);
+            fprintf(out, "(%s)self, ", arglistit->type);
 
             arglistit = arglistit->next;
-            type = getargtype(arglistit);
-            if (type == NULL)
+            if (arglistit->type == NULL)
             {
                 fprintf(stderr,
                         "Argument \"%s\" not understood for function %s\n",
@@ -118,8 +113,7 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
                 );
                 exit(20);
             }
-            fprintf(out, "(%s) message);", type);
-            free(type);
+            fprintf(out, "(%s) message);", arglistit->type);
 
             if (strcmp(methlistit->type, "void") == 0)
                 fprintf(out, " break;");

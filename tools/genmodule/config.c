@@ -1763,6 +1763,7 @@ static void readsectionfunctionlist(const char *type, struct functionhead **func
              */
             char c, *args[64], *regs[64], *funcname, *cp;
             int len, argcount = 0, regcount = 0, brcount = 0;
+            struct functionarg *arglistit;
 
             cp = strchr(line,'#');
             if (cp)
@@ -1941,6 +1942,16 @@ static void readsectionfunctionlist(const char *type, struct functionhead **func
             }
             else
                 exitfileerror(20, "wrong char '%c' at position %d\n", *s, (int)(s-line) + 1);
+
+            /* Check if function is a vararg-type function */
+            for (arglistit = (*funclistptr)->arguments; arglistit!=NULL; arglistit = arglistit->next)
+            {
+                if (arglistit->ellipsis)
+                {
+                    (*funclistptr)->varargtype = 4;
+                    break;
+                }
+            }
         }
     }
 }

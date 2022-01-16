@@ -8,6 +8,11 @@
 #include "functionhead.h"
 #include "config.h"
 
+/* [] at the end will be added as * in the variable type
+ * e.g. char *var[] => type: char **, name: var
+ */
+void parsetypeandname(struct functionarg *funcarg);
+
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 {
     struct functionhead *funchead = malloc(sizeof(struct functionhead));
@@ -24,6 +29,7 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
         funchead->aliases = NULL;
         funchead->interface = NULL;
         funchead->method = NULL;
+        funchead->varargtype = 0;
         funchead->novararg = 0;
         funchead->priv= 0;
         funchead->unusedlibbase = 0;
@@ -52,7 +58,13 @@ struct functionarg *funcaddarg
     {
         (*argptr)->next = NULL;
         (*argptr)->arg  = (arg == NULL) ? NULL : strdup(arg);
+        (*argptr)->type = NULL;
+        (*argptr)->name = NULL;
         (*argptr)->reg  = (reg  == NULL) ? NULL : strdup(reg);
+        (*argptr)->parent  = funchead;
+        (*argptr)->ellipsis = 0;
+
+        parsetypeandname((*argptr));
 
         funchead->argcount++;
     }
@@ -81,7 +93,6 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
     struct functionhead *funclistit;
     struct functionarg *arglistit;
-    char *type, *name;
     int first;
 
     for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
@@ -126,16 +137,12 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                  arglistit = arglistit->next
             )
             {
-                type = getargtype(arglistit);
-                name = getargname(arglistit);
-                assert(name != NULL && type != NULL);
+                assert(arglistit->name != NULL && arglistit->type != NULL);
 
                 fprintf(out,
                         "         AROS_LHA(%s, %s, %s),\n",
-                        type, name, arglistit->reg
+                        arglistit->type, arglistit->name, arglistit->reg
                 );
-                free(type);
-                free(name);
             }
             fprintf(out,
                     "         %s, %s, %u, %s)\n"
@@ -151,13 +158,11 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                  arglistit = arglistit->next, first = 0
             )
             {
-                name = getargname(arglistit);
-                assert(name != NULL);
+                assert(arglistit->name != NULL);
 
                 if (!first)
                     fprintf(out, ", ");
-                fprintf(out, "%s", name);
-                free(name);
+                fprintf(out, "%s", arglistit->name);
             }
             fprintf(out,
                     ");\n\n"
@@ -180,16 +185,12 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                      arglistit = arglistit->next
                 )
                 {
-                    type = getargtype(arglistit);
-                    name = getargname(arglistit);
-                    assert(type != NULL && name != NULL);
+                    assert(arglistit->type != NULL && arglistit->name != NULL);
 
                     fprintf(out,
                             "         AROS_LDA(%s, %s, %s),\n",
-                            type, name, arglistit->reg
+                            arglistit->type, arglistit->name, arglistit->reg
                     );
-                    free(type);
-                    free(name);
                 }
                 fprintf(out,
                         "         LIBBASETYPEPTR, %s, %u, %s\n"
@@ -215,17 +216,13 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                     }
                     arglistit->reg[2] = 0;
 
-                    type = getargtype(arglistit);
-                    name = getargname(arglistit);
-                    assert(type != NULL && name != NULL);
+                    assert(arglistit->type != NULL && arglistit->name != NULL);
 
                     fprintf(out,
                             "         AROS_LDAQUAD(%s, %s, %s, %s),\n",
-                            type, name, arglistit->reg, arglistit->reg+3
+                            arglistit->type, arglistit->name, arglistit->reg, arglistit->reg+3
                     );
                     arglistit->reg[2] = '/';
-                    free(type);
-                    free(name);
                 }
                 fprintf(out,
                         "         LIBBASETYPEPTR, %s, %u, %s\n"
@@ -247,7 +244,6 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 {
     struct functionhead *funclistit;
     struct functionarg *arglistit;
-    char *type, *name;
     int first;
 
     for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
@@ -304,16 +300,12 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                         arglistit = arglistit->next
                     )
                     {
-                        type = getargtype(arglistit);
-                        name = getargname(arglistit);
-                        assert(type != NULL && name != NULL);
+                        assert(arglistit->type != NULL && arglistit->name != NULL);
 
                         fprintf(out,
                                 "         AROS_LPA(%s, %s, %s),\n",
-                                type, name, arglistit->reg
+                                arglistit->type, arglistit->name, arglistit->reg
                         );
-                        free(type);
-                        free(name);
                     }
                     fprintf(out,
                             "         LIBBASETYPEPTR, %s, %u, %s\n"
@@ -339,17 +331,13 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                         }
                         arglistit->reg[2] = 0;
 
-                        type = getargtype(arglistit);
-                        name = getargname(arglistit);
-                        assert(type != NULL && name != NULL);
+                        assert(arglistit->type != NULL && arglistit->name != NULL);
 
                         fprintf(out,
                                 "         AROS_LPAQUAD(%s, %s, %s, %s),\n",
-                                type, name, arglistit->reg, arglistit->reg+3
+                                arglistit->type, arglistit->name, arglistit->reg, arglistit->reg+3
                         );
                         arglistit->reg[2] = '/';
-                        free(type);
-                        free(name);
                     }
                     fprintf(out,
                             "         LIBBASETYPEPTR, %s, %u, %s\n"
@@ -426,41 +414,103 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
     }
 }
 
-char *getargtype(const struct functionarg *funcarg)
+void parsetypeandname(struct functionarg *funcarg)
 {
-    char *s, *begin, *end;
+    char *s, *begin, *end, *endname;
     unsigned int brackets = 0, i;
+    int len = 0;
 
     begin = s = strdup(funcarg->arg);
 
     /* Count the [] at the end of the argument */
     end = begin+strlen(begin);
     while (isspace(*(end-1))) end--;
+
     while (*(end-1)==']')
     {
         brackets++;
         end--;
-        while (isspace(*(end-1)) || isdigit(*(end-1))) end--;
+        while (isspace(*(end-1)) || isalnum(*(end-1))) end--;
         if (*(end-1)!='[')
         {
             free(s);
-            return NULL;
+            fprintf(stderr, "unmatched brackets found for arg: %s in function %s\n", funcarg->arg, funcarg->parent->name);
+            exit(20);
         }
         end--;
         while (isspace(*(end-1))) end--;
     }
 
-    /* Skip over the argument name */
+    /* Pointer to function argument requires special handling */
+    if (*(end-1)==')')
+    {
+        end = begin;
+        while (*(end)!='(') end++;
+        while (*(end)!='*') end++;
+        end++;
+        endname=end;
+        while (*(endname)!=')') endname++;
+        /* end - endname => name */
+        len = endname-end;
+        funcarg->name = malloc(len+1);
+        strncpy(funcarg->name, end, len);
+        funcarg->name[len] = '\0';
+
+        /* Copy rest of function pointer type over name is s */
+        while ((*endname)!='\0')
+        {
+            *end=*endname;
+            end++;endname++;
+        }
+        *end='\0';
+        funcarg->type = strdup(s);
+
+        free(s);
+        return;
+    }
+
+    /* Regular argument */
+    endname = end;
     while (!isspace(*(end-1)) && *(end-1)!='*')
     {
         if (begin == end)
         {
-            free(s);
-            fprintf(stderr, "no argument type or name found for arg: %s\n", funcarg->arg);
-            exit(20);
+            /* Support special cases */
+            if ((strcmp(s, "void") == 0) || (strcmp(s, "...") == 0))
+            {
+                funcarg->type = strdup(s);
+                funcarg->name = strdup("");
+                if (strcmp(s, "...") == 0) funcarg->ellipsis = 1;
+
+                free(s);
+                return;
+            }
+            else
+            {
+                if (funcarg->reg == NULL)
+                {
+                    /* Allow empty argument names for non-reg-call functions */
+                    funcarg->type = strdup(s);
+                    funcarg->name = strdup("noname");
+                    free(s);
+                    return;
+                }
+                else
+                {
+                    free(s);
+                    fprintf(stderr, "no argument type or name found for arg: %s in function %s\n", funcarg->arg, funcarg->parent->name);
+                    exit(20);
+                }
+            }
         }
         end--;
     }
+
+    /* begin - end => type, end - endname => name */
+    len = endname-end;
+    funcarg->name = malloc(len+1);
+    strncpy(funcarg->name, end, len);
+    funcarg->name[len] = '\0';
 
     /* Add * for the brackets */
     while (isspace(*(end-1))) end--;
@@ -470,37 +520,8 @@ char *getargtype(const struct functionarg *funcarg)
         end++;
     }
     *end='\0';
+    if (funcarg->type == NULL) funcarg->type = strdup(s);
 
-    return s;
-}
-
-char *getargname(const struct functionarg *funcarg)
-{
-    char *s, *begin, *end;
-    int len;
-
-    /* Count the [] at the end of the argument */
-    end = funcarg->arg+strlen(funcarg->arg);
-    while (isspace(*(end-1))) end--;
-    while (*(end-1)==']')
-    {
-        end--;
-        while (isspace(*(end-1))) end--;
-        if (*(end-1)!='[')
-            return NULL;
-        end--;
-        while (isspace(*(end-1))) end--;
-    }
-
-    /* Go to the beginning of the argument name */
-    begin = end;
-    while (!isspace(*(begin-1)) && *(begin-1)!='*') begin--;
-
-    /* Copy the name */
-    len = end - begin;
-    s = malloc(len+1);
-    strncpy(s, begin, len);
-    s[len] = '\0';
-
-    return s;
+    free(s);
+    return;
 }

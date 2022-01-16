@@ -16,10 +16,16 @@
 
 enum libcall { INVALID, STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 
+struct functionhead;
+
 struct functionarg {
     struct functionarg *next;
+    struct functionhead *parent;
     char *arg;
+    char *type;
+    char *name;
     char *reg;
+    int ellipsis : 1; /* This argument is ... */
 };
 
 struct functionhead {
@@ -33,6 +39,7 @@ struct functionhead {
     unsigned int lvo; /* Only for library functions, not methods */
     struct stringlist *interface; /* Only for HIDD class */
     char *method; /* Only for HIID class */
+    char varargtype; /* Type of vararg 1 - TagList, 2 - va_list, 3 - RAWARG, 4 - ... */
     int version;  /* First library version number this appeared in*/
     int novararg : 1; /* Are varargs allowed for this function ? */
     int priv     : 1; /* Is function private */
@@ -55,16 +62,5 @@ struct config;
 void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist);
 void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclist);
 void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *funclist);
-
-/* getargtype remove the variable name from a variable definition and leave return
- * the type of the variable
- * [] at the end will be added as * in the variable type
- * e.g. char *var[] => type: char **, name: var
- * This is a destructive function and will change to string pointed to by def
- * to only contain the type afterwards.
- * Function return 0 when it did not understand the input, 1 otherwise
- */
-char *getargtype(const struct functionarg *funcarg);
-char *getargname(const struct functionarg *funcarg);
 
 #endif //FUNCTIONHEAD_H

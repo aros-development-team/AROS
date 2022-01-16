@@ -44,7 +44,7 @@ static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
 void writemakefile(struct config *cfg)
 {
     FILE *out;
-    char moduleversname[512];
+    char moduleversname[256];
     char name[512];
     struct stringlist *s;
 
