@@ -73,6 +73,7 @@ struct IntExecBase
     struct List                 AllocatorCtxList;               /* List of allocator contexts for system mem headers            */
     struct Exec_PlatformData    PlatformData;                   /* Platform-specific stuff                                      */
     struct SupervisorAlertTask  SAT;
+    ULONG                       SupervisorDeadEndCnt;           /* Counter of reaching AT_DeadEnd under Supervisor mode         */
     char                        AlertBuffer[ALERT_BUFFER_SIZE]; /* Buffer for alert text                                        */
     void                       *ExecLogBase;
 #if defined(__AROSEXEC_BROKENMEMLOCK__)

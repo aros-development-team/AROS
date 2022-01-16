@@ -55,6 +55,13 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
             struct IntETask * iet = GetIntETask(t);
             Disable();
 
+            if (PrivExecBase(SysBase)->SupervisorDeadEndCnt > 0)
+            {
+                /* An alert happened when trying to reboot. Do emergency shutdown to avoid
+                    an infinite crash loop */
+                ShutdownA(SD_FLAG_EMERGENCY | SD_ACTION_POWEROFF);
+            }
+
             Alert_DisplayKrnAlert(t, alertNum | AT_DeadEnd, iet->iet_AlertLocation, iet->iet_AlertStack,
                     iet->iet_AlertType, (APTR)&iet->iet_AlertData, SysBase);
 
@@ -62,6 +69,7 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
             {
                 /* Um, we have to do something here in order to prevent the
                    computer from continuing... */
+                PrivExecBase(SysBase)->SupervisorDeadEndCnt++;
                 ColdReboot();
                 ShutdownA(SD_ACTION_COLDREBOOT);
             }
