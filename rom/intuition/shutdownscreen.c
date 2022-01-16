@@ -29,7 +29,8 @@ AROS_INTH1(ShutdownScreenHandler, struct Interrupt *, handler)
 {
     AROS_INTFUNC_INIT
 
-    ShowShutdownScreen();
+    if (!(handler->is_Node.ln_Type & SD_FLAG_EMERGENCY))
+        ShowShutdownScreen();
 
     return FALSE;
 
