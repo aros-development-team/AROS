@@ -15,9 +15,11 @@
 
 #define UtilityBase     (pb->pb_UtilityBase)
 
+#define OUTBUF_SIZE 1024
+
 struct debugArgs {
     struct Node pa_Node;
-    char outbuf[1024];
+    char outbuf[OUTBUF_SIZE];
 };
 
 struct debugBase {
@@ -116,20 +118,21 @@ LONG debug_handler(struct ExecBase *SysBase)
             break;
         case ACTION_WRITE:
             if ((pa = (struct debugArgs *)dp->dp_Arg1)) {
+                ULONG len = dp->dp_Arg3 > OUTBUF_SIZE - 1 ? OUTBUF_SIZE - 1 : dp->dp_Arg3;
                 pa->outbuf[0] = '\0';
-                if (is_ascii((char *)dp->dp_Arg2, dp->dp_Arg3))
+                if (is_ascii((char *)dp->dp_Arg2, len))
                 {
-                    CopyMem((APTR)dp->dp_Arg2, pa->outbuf, dp->dp_Arg3);
-                    pa->outbuf[dp->dp_Arg3] = '\0';
+                    CopyMem((APTR)dp->dp_Arg2, pa->outbuf, len);
+                    pa->outbuf[len] = '\0';
                 }
                 else
                 {
                     int i;
-                    for (i = 0; i < (dp->dp_Arg3 >> 1); i ++)
+                    for (i = 0; i < (len >> 1); i ++)
                         pa->outbuf[i] = *(UBYTE *)(dp->dp_Arg2 + (i << 1) + 1);
                 }
                 kprintf("%s", pa->outbuf);
-                dp->dp_Res1 = dp->dp_Arg3;
+                dp->dp_Res1 = len;
                 dp->dp_Res2 = 0;
             } else {
                 dp->dp_Res1 = DOSFALSE;
