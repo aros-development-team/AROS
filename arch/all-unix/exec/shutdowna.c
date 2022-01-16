@@ -23,7 +23,7 @@ AROS_LH1(ULONG, ShutdownA,
 
     int exitcode;
 
-    switch(action)
+    switch(action & SD_ACTION_MASK)
     {
     case SD_ACTION_POWEROFF:
         exitcode = 0;
