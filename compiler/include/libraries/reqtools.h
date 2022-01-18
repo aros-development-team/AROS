@@ -101,11 +101,12 @@ struct ReqToolsPrefs
     /* Size of preferences (_without_ this field, the semaphore and IsLoaded) */
     ULONG 			PrefsSize;
     struct SignalSemaphore 	PrefsSemaphore;
-    BOOL IsLoaded; /* To avoid multiple loading of preferences */
 
     /* Start of real preferences */
     ULONG 			Flags;
     struct ReqDefaults 		ReqDefaults[RTPREF_NR_OF_REQ];
+
+    BOOL IsLoaded; /* To avoid multiple loading of preferences */
 };
 
 #ifdef __AROS__
