@@ -118,7 +118,6 @@ void CountNewLinesAndChars(REGPARAM(d0, UBYTE, chr),
 APTR DofmtArgs (char *buff, char *fmt, ...)
 {
     APTR retval;
-    char *str = buff;
 #ifdef __AROS__
     va_list ap;
 
@@ -127,9 +126,10 @@ APTR DofmtArgs (char *buff, char *fmt, ...)
      * - we will use VNewRawDoFmt() instead.
      */
     va_start(ap, fmt);
-    retval = VNewRawDoFmt(fmt, (VOID_FUNC)RAWFMTFUNC_STRING, &str, ap);
+    retval = VNewRawDoFmt(fmt, (VOID_FUNC)RAWFMTFUNC_STRING, buff, ap);
     va_end(ap);
 #else
+    char *str = buff;
     retval = RawDoFmt(fmt, &fmt + 1, (VOID_FUNC)puttostr, &str);
 #endif
 
