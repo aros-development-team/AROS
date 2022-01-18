@@ -24,7 +24,6 @@
 
 #include <string.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/libraries.h>
