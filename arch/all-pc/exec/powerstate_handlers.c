@@ -18,7 +18,7 @@ AROS_INTH1(Exec_X86ColdResetHandler, struct Interrupt *, handler)
 {
     AROS_INTFUNC_INIT
 
-    UBYTE action = handler->is_Node.ln_Type;
+    UBYTE action = handler->is_Node.ln_Type & SD_ACTION_MASK;
 
     if (action == SD_ACTION_COLDREBOOT)
     {
@@ -35,7 +35,7 @@ AROS_INTH1(Exec_X86WarmResetHandler, struct Interrupt *, handler)
 {
     AROS_INTFUNC_INIT
 
-    UBYTE action = handler->is_Node.ln_Type;
+    UBYTE action = handler->is_Node.ln_Type & SD_ACTION_MASK;
 
     if (action == SD_ACTION_WARMREBOOT)
     {

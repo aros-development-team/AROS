@@ -366,6 +366,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     PrivExecBase(SysBase)->ExecLockBase = NULL;
     PrivExecBase(SysBase)->ExecLockBase = ExecLock__PrepareBase(mh);
 #endif
+    PrivExecBase(SysBase)->SupervisorDeadEndCnt = 0;
 
     D(bug("[Exec] %s: Preperation complete.\n"));
 

@@ -26,7 +26,7 @@ AROS_INTH1(static ResetHandler, struct EFIBase *, EFIBase)
 {
     AROS_INTFUNC_INIT
 
-    UBYTE action = EFIBase->reset_handler.is_Node.ln_Type;
+    UBYTE action = EFIBase->reset_handler.is_Node.ln_Type & SD_ACTION_MASK;
     IPTR efiAction;
 
     switch (action)

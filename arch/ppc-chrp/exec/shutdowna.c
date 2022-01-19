@@ -34,9 +34,9 @@ AROS_LH1(ULONG, ShutdownA,
 
     if (RTASBase)
     {
-        if (action == SD_ACTION_COLDREBOOT)
+        if ((action & SD_ACTION_MASK) == SD_ACTION_COLDREBOOT)
                 rtas_call(SysBase, "system-reboot", 0, 1, NULL);
-        else if (action ==SD_ACTION_POWEROFF)
+        else if ((action &  SD_ACTION_MASK) ==SD_ACTION_POWEROFF)
                 rtas_call(SysBase, "power-off", 2, 1, NULL, -1, -1);
     }
 

@@ -18,7 +18,7 @@ AROS_LH1(ULONG, ShutdownA,
        while it's running. There's no sense in this beyond this point, so we simply Disable() */
     Disable();
 
-    switch(action)
+    switch(action & SD_ACTION_MASK)
     {
     case SD_ACTION_POWEROFF:
         PD(SysBase).ExitProcess(0);

@@ -168,12 +168,20 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
      * system and user-friendly) way to post alerts.
      */
     Disable();
-    Exec_SystemAlert(alertNum, location, stack, type, data, SysBase);
 
+    if (PrivExecBase(SysBase)->SupervisorDeadEndCnt > 0)
+    {
+        /* An alert happened when trying to reboot. Do emergency shutdown to avoid
+           an infinite crash loop */
+        ShutdownA(SD_FLAG_EMERGENCY | SD_ACTION_POWEROFF);
+    }
+
+    Exec_SystemAlert(alertNum, location, stack, type, data, SysBase);
     if (alertNum & AT_DeadEnd)
     {
         /* Um, we have to do something here in order to prevent the
            computer from continuing... */
+        PrivExecBase(SysBase)->SupervisorDeadEndCnt++;
         ColdReboot();
         ShutdownA(SD_ACTION_COLDREBOOT);
     }

@@ -17,7 +17,7 @@ AROS_LH1(ULONG, ShutdownA,
 {
     AROS_LIBFUNC_INIT
 
-    switch (action) {
+    switch (action & SD_ACTION_MASK) {
     case SD_ACTION_POWEROFF:
     {
         /* No stock Amiga hardware is known to support this.
