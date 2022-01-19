@@ -3240,6 +3240,9 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Window_Sleep:
             if (tag->ti_Data)
             {
+                if (!(data->wd_Flags & MUIWF_OPENED))
+                    break;
+
                 data->wd_SleepCount++;
                 if (data->wd_RenderInfo.mri_Window
                     && (data->wd_SleepCount == 1))
