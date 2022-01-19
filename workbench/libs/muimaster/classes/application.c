@@ -1094,32 +1094,29 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
                 if (tag->ti_Data)
                 {
                     data->app_SleepCount++;
-                    if (data->app_SleepCount == 1)
+                    get(obj, MUIA_Application_WindowList, &wlist);
+                    if (wlist)
                     {
-                        get(obj, MUIA_Application_WindowList, &wlist);
-                        if (wlist)
+                        wstate = wlist->lh_Head;
+                        while ((curwin = NextObject(&wstate)))
                         {
-                            wstate = wlist->lh_Head;
-                            while ((curwin = NextObject(&wstate)))
-                            {
-                                set(curwin, MUIA_Window_Sleep, TRUE);
-                            }
+                            set(curwin, MUIA_Window_Sleep, TRUE);
                         }
                     }
                 }
                 else
                 {
-                    data->app_SleepCount--;
                     if (data->app_SleepCount == 0)
+                        break;
+
+                    data->app_SleepCount--;
+                    get(obj, MUIA_Application_WindowList, &wlist);
+                    if (wlist)
                     {
-                        get(obj, MUIA_Application_WindowList, &wlist);
-                        if (wlist)
+                        wstate = wlist->lh_Head;
+                        while ((curwin = NextObject(&wstate)))
                         {
-                            wstate = wlist->lh_Head;
-                            while ((curwin = NextObject(&wstate)))
-                            {
-                                set(curwin, MUIA_Window_Sleep, FALSE);
-                            }
+                            set(curwin, MUIA_Window_Sleep, FALSE);
                         }
                     }
                 }
