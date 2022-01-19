@@ -3269,6 +3269,9 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             }
             else
             {
+                if (data->wd_SleepCount == 0)
+                    break;
+
                 data->wd_SleepCount--;
                 if (data->wd_RenderInfo.mri_Window
                     && (data->wd_SleepCount == 0))
