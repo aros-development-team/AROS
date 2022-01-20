@@ -80,7 +80,6 @@ struct MUI_ApplicationData
     STRPTR                  app_Version_Number;
     STRPTR                  app_Version_Date;
     STRPTR                  app_Version_Extra;
-    WORD                    app_SleepCount; // attribute nests
     ULONG                   app_TimerOutstanding;
     ULONG                   app_MenuAction; /* Remember last action */
     BOOL                    app_ForceQuit;
@@ -1093,7 +1092,6 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
 
                 if (tag->ti_Data)
                 {
-                    data->app_SleepCount++;
                     get(obj, MUIA_Application_WindowList, &wlist);
                     if (wlist)
                     {
@@ -1106,10 +1104,6 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
                 }
                 else
                 {
-                    if (data->app_SleepCount == 0)
-                        break;
-
-                    data->app_SleepCount--;
                     get(obj, MUIA_Application_WindowList, &wlist);
                     if (wlist)
                     {
