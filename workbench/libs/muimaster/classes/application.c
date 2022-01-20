@@ -1090,28 +1090,13 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
                 APTR wstate;
                 Object *curwin;
 
-                if (tag->ti_Data)
+                get(obj, MUIA_Application_WindowList, &wlist);
+                if (wlist)
                 {
-                    get(obj, MUIA_Application_WindowList, &wlist);
-                    if (wlist)
+                    wstate = wlist->lh_Head;
+                    while ((curwin = NextObject(&wstate)))
                     {
-                        wstate = wlist->lh_Head;
-                        while ((curwin = NextObject(&wstate)))
-                        {
-                            set(curwin, MUIA_Window_Sleep, TRUE);
-                        }
-                    }
-                }
-                else
-                {
-                    get(obj, MUIA_Application_WindowList, &wlist);
-                    if (wlist)
-                    {
-                        wstate = wlist->lh_Head;
-                        while ((curwin = NextObject(&wstate)))
-                        {
-                            set(curwin, MUIA_Window_Sleep, FALSE);
-                        }
+                        set(curwin, MUIA_Window_Sleep, tag->ti_Data ? TRUE : FALSE);
                     }
                 }
             }
