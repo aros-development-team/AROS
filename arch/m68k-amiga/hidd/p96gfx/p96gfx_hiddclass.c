@@ -746,8 +746,14 @@ static void P96GFXCl__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struc
         LOCK_HW
 
         /* no display */
+        /* When changing, check P96GFXBitmap__HideScreen */
         SetDisplay(cid, FALSE);
         SetSwitch(cid, FALSE);
+        if (cid->disp)
+        {
+            cid->disp->locked--;
+            cid->disp = NULL;
+        }
 
         UNLOCK_HW
     }
