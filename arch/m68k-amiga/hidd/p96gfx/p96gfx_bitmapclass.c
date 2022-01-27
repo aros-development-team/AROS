@@ -271,7 +271,6 @@ static void P96GFXBitmap__HideScreen(OOP_Class *cl, OOP_Object *o, struct P96Gfx
 {
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct p96gfx_carddata *cid = data->gfxCardData;
-    struct p96gfx_staticdata *csd = CSD(cl);
 
     D(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p (%p:%d)\n",
         __func__, bm, bm->VideoData, bm->memsize));
@@ -279,7 +278,6 @@ static void P96GFXBitmap__HideScreen(OOP_Class *cl, OOP_Object *o, struct P96Gfx
     SetInterrupt(cid, FALSE);
     SetDisplay(cid, FALSE);
     SetSwitch(cid, FALSE);
-    cid->dmodeid = 0;
     bm->locked--;
     cid->disp = NULL;
 }
@@ -506,7 +504,6 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 
                             cid->dwidth = dwidth;
                             cid->dheight = dheight;
-                            cid->dmodeid = modeid;
 
                             {
                                 UBYTE *palette, *clut = data->gfxCardData->boardinfo + PSSO_BoardInfo_CLUT;
