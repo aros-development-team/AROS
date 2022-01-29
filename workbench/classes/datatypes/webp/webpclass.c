@@ -200,6 +200,12 @@ IPTR WebP__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
     D(bug("[webp.datatype] %s()\n", __func__));
 
     if (dtw->dtw_Mode == DTWM_RAW) {
+        /* A NULL file handle is a NOP */
+        if(!dtw->dtw_FileHandle) {
+            D(bug("[webp.datatype] %s(): empty Filehandle - just testing\n", __func__));
+            return TRUE;
+        }
+
         D(bug("[webp.datatype] %s: exporting in webp format...\n", __func__));
 
         error = WebP_Export(cl, o, dtw);
