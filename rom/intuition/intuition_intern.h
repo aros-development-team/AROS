@@ -6,6 +6,7 @@
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
+#include <aros/config.h>
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>

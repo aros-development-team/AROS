@@ -5,8 +5,6 @@
 
 /****************************************************************************************/
 
-#include <aros/config.h>
-
 #include <proto/exec.h>
 #include <proto/execlock.h>
 #include <proto/intuition.h>
