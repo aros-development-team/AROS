@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: X11 gfx HIDD for AROS.
 */
@@ -851,7 +851,6 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
     XVisualInfo *visinfo;
     int template_mask;
     int numvisuals;
-    XImage *testimage;
 
     D(bug("[X11:Gfx] %s(0x%p)\n", __func__, xsd);)
 
@@ -883,6 +882,9 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
     }
     else
     {
+        XPixmapFormatValues *pmf;
+        int i, n;
+
         /* Store the visual info structure */
         xsd->vi = AllocMem(sizeof(XVisualInfo), MEMF_ANY);
         memcpy(xsd->vi, visinfo, sizeof(XVisualInfo));
@@ -938,28 +940,51 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
             D(
                 bug("\n");
                 bug("[X11:Gfx] %s: Display Depth = %dbit (Default = %dbit)\n", __func__, DisplayPlanes(xsd->display, DefaultScreen(xsd->display)), DefaultDepth(xsd->display, DefaultScreen(xsd->display)));
-#if (0)
-                bug("[X11:Gfx] %s: %d Bits per Pixel\n", __func__, xsd->depth);
-#endif
+
             )
         }
 
-        /* Create a dummy X image to get bits per pixel */
-        testimage = XCALL(XGetImage, xsd->display, RootWindow(xsd->display,
-                        DefaultScreen(xsd->display)), 0, 0, 1, 1,
-                AllPlanes, ZPixmap);
+        xsd->bytes_per_pixel = 0;
+        pmf = XCALL(XListPixmapFormats, xsd->display, &n);
+        if (pmf) {
+            D(bug("[X11:Gfx] %s: checking pixmapformats for depth bytes per pixel\n", __func__);)
 
-        if (NULL != testimage)
-        {
-            xsd->bytes_per_pixel = (testimage->bits_per_pixel + 7) >> 3;
-            XDestroyImage(testimage);
-        }
-        else
-        {
-            D(bug("[X11:Gfx] %s: failed to create query image\n", __func__));
-            CCALL(raise, SIGSTOP);
+            for (i = 0; i < n; i++) {
+                D(bug("[X11:Gfx] %s:     depth %d, bits_per_pixel %d, scanline_pad %d\n", 
+                    __func__,
+                    pmf[i].depth, pmf[i].bits_per_pixel, pmf[i].scanline_pad);)
+
+                if (pmf[i].depth == DefaultDepth(xsd->display, DefaultScreen(xsd->display)))
+                    xsd->bytes_per_pixel = (pmf[i].bits_per_pixel) >> 3;
+            }
+            XCALL(XFree, (char *) pmf);
         }
 
+        if (xsd->bytes_per_pixel == 0)
+        {
+            XImage *testimage;
+
+            D(bug("[X11:Gfx] %s: attempting to use test image to obtain bytes per pixel\n", __func__);)
+
+            /* Create a dummy X image to get bits per pixel */
+            testimage = XCALL(XGetImage, xsd->display, RootWindow(xsd->display,
+                            DefaultScreen(xsd->display)), 0, 0, 1, 1,
+                    AllPlanes, ZPixmap);
+
+            if (NULL != testimage)
+            {
+                xsd->bytes_per_pixel = (testimage->bits_per_pixel + 7) >> 3;
+                XDestroyImage(testimage);
+            }
+            else
+            {
+                D(bug("[X11:Gfx] %s: failed to create query image\n", __func__));
+                CCALL(raise, SIGSTOP);
+            }
+        }
+        
+        D(bug("[X11:Gfx] %s: %d Bytes per Pixel\n", __func__, xsd->bytes_per_pixel);)
+        
         if (PseudoColor == xsd->vi->class)
         {
             xsd->clut_mask = (1L << xsd->depth) - 1;

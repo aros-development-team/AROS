@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #ifndef X11_HOSTLIB_H
@@ -100,6 +100,7 @@ struct x11_func {
     XClassHint * (*XAllocClassHint) ();
     int (*XSetClassHint) (Display *, Window, XClassHint *);
     int (*XSetInputFocus) ( Display* , Window , int , Time );
+    XPixmapFormatValues *(*XListPixmapFormats)(Display *display, int *count_return);
 #if DEBUG_X11_SYNCHRON
     void (*XSynchronize)(Display *, Bool );
 #endif

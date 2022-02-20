@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include "x11_debug.h"
@@ -116,16 +116,17 @@ static const char *x11_func_names[] = {
     "XRootWindow",
     "XAllocClassHint",
     "XSetClassHint",
-    "XSetInputFocus"
+    "XSetInputFocus",
+    "XListPixmapFormats"
 #if DEBUG_X11_SYNCHRON
     , "XSynchronize"
 #endif
 };
 
 #if DEBUG_X11_SYNCHRON
-#define X11_NUM_FUNCS (83)
+#define X11_NUM_FUNCS (84)
 #else
-#define X11_NUM_FUNCS (82)
+#define X11_NUM_FUNCS (83)
 #endif
 
 
