@@ -94,13 +94,13 @@ struct x11_func {
     int (*XSync) ( Display* , int );
     int (*XAllocColor) ( Display* , Colormap , XColor* );
     int (*XLookupString) ( XKeyEvent* , char* , int , KeySym* , XComposeStatus* );
-    int (*XQueryExtension) (Display *, char*, int*, int*, int*);
-    int (*XDefaultScreen) (Display *);
-    Window (*XRootWindow) (Display *, int);
+    int (*XQueryExtension) (Display*, char*, int*, int*, int*);
+    int (*XDefaultScreen) ( Display* );
+    Window (*XRootWindow) ( Display*, int);
     XClassHint * (*XAllocClassHint) ();
-    int (*XSetClassHint) (Display *, Window, XClassHint *);
+    int (*XSetClassHint) (Display*, Window, XClassHint* );
     int (*XSetInputFocus) ( Display* , Window , int , Time );
-    XPixmapFormatValues *(*XListPixmapFormats)(Display *display, int *count_return);
+    XPixmapFormatValues *(*XListPixmapFormats)( Display* , int* );
 #if DEBUG_X11_SYNCHRON
     void (*XSynchronize)(Display *, Bool );
 #endif
