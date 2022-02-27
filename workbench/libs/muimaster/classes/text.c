@@ -36,8 +36,6 @@ struct MUI_TextData
     CONST_STRPTR preparse;
     TEXT hichar;
     ZText *ztext;
-    LONG xpixel;        /* needed for cursor up/down movements, can be -1 */
-    struct MUI_EventHandlerNode ehn;
 
     LONG update;        /* type of update: 1 - everything,
                          * 2 - insert char, no scroll */
@@ -120,16 +118,6 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         CoerceMethod(cl, obj, OM_DISPOSE);
         return (IPTR) NULL;
     }
-
-/*      D(bug("Text_New(0x%p)\n", obj)); */
-
-    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-    data->ehn.ehn_Priority = 0;
-    data->ehn.ehn_Flags = 0;
-    data->ehn.ehn_Object = obj;
-    data->ehn.ehn_Class = cl;
-
-    data->xpixel = -1;
 
     return (IPTR) obj;
 }
@@ -282,7 +270,6 @@ IPTR Text__MUIM_Setup(struct IClass *cl, Object *obj,
 
     setup_text(data, obj);
 
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) & data->ehn);
     return TRUE;
 }
 
@@ -293,8 +280,6 @@ IPTR Text__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
-
-    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
 
     if (data->ztext)
     {
