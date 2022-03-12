@@ -451,7 +451,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* Please also send mui key events to us, no idea if mui handles this
      * like this */
-    data->mad_ehn.ehn_Flags = MUI_EHF_ALWAYSKEYS;
+    data->mad_ehn.ehn_Flags = MUI_EHF_ALWAYSKEYS | MUI_EHF_GUIMODE;
     data->mad_ehn.ehn_Object = obj;
     data->mad_ehn.ehn_Class = cl;
 
@@ -1956,7 +1956,7 @@ static IPTR event_button(Class *cl, Object *obj,
                     (IPTR) &data->mad_ehn);
             }
             handle_press(cl, obj);
-            return MUI_EventHandlerRC_Eat;
+            return 0;
         }
         break;
 
@@ -1967,7 +1967,7 @@ static IPTR event_button(Class *cl, Object *obj,
         if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
         {
             handle_release(cl, obj, FALSE /* cancel */ );
-            return MUI_EventHandlerRC_Eat;
+            return 0;
         }
         break;
 

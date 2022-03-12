@@ -112,7 +112,7 @@ IPTR Scrollbutton__MUIM_Setup(struct IClass *cl, Object *o, Msg msg)
 
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 0;
-    data->ehn.ehn_Flags = 0;
+    data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
     data->ehn.ehn_Object = o;
     data->ehn.ehn_Class = cl;
 

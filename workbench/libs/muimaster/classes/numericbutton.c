@@ -50,7 +50,7 @@ IPTR Numericbutton__OM_NEW(struct IClass *cl, Object *obj,
 
         data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
         data->ehn.ehn_Priority = 0;
-        data->ehn.ehn_Flags = 0;
+        data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
         data->ehn.ehn_Object = obj;
         data->ehn.ehn_Class = cl;
     }
