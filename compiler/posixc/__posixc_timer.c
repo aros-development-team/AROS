@@ -54,4 +54,4 @@ static void __exit_timerbase(struct PosixCIntBase *PosixCBase)
     }
 }
 
-ADD2EXIT(__exit_timerbase, 0);
+ADD2CLOSELIB(__exit_timerbase, 0);
