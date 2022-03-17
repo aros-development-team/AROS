@@ -135,7 +135,7 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
 
     DOSBootBase->delayTicks = 50;
 
-    D(bug("dosboot_Init: GO GO GO!\n"));
+    D(bug("[boot] dosboot_Init: GO GO GO!\n"));
 
     ExpansionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
@@ -174,7 +174,7 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
                 }
                 else if (0 == stricmp(node->ln_Name, "bootmenu"))
                 {
-                    D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
+                    D(bug("[BootMenu] dosboot_Init: bootmenu Forced with bootloader argument\n"));
                     WantBootMenu = TRUE;
                 }
                 /*
@@ -203,20 +203,26 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
         }
     }
 
+    D(bug("[Boot] Scanning for additional partitions/volumes...\n"));
+
     /* Scan for any additional partition volumes */
     dosboot_BootScan(DOSBootBase);
+
+    D(bug("[Boot] Prepairing initial device...\n"));
 
     /* Select the initial boot device, so that the choice is available in the menu */
     selectBootDevice(DOSBootBase, bootDeviceName);
 
-
+    D(bug("[Boot] Enabling devices\n"));
     // Set all devices ENALBED by default
     {
         ListLength(&ExpansionBase->MountList, DOSBootBase->devicesCount);
+        D(bug("[Boot] %d devices in mountlist (want %d bytes)\n", DOSBootBase->devicesCount, DOSBootBase->devicesCount * sizeof(BOOL) * 2));
 
-        if (DOSBootBase->devicesCount > 0)
+        if ((DOSBootBase->devicesCount > 0) &&
+            ((DOSBootBase->devicesEnabled = AllocVec (DOSBootBase->devicesCount * sizeof(BOOL) * 2, MEMF_ANY|MEMF_CLEAR)) != NULL))
         {
-            DOSBootBase->devicesEnabled = AllocVec (DOSBootBase->devicesCount * sizeof(BOOL) * 2, MEMF_FAST|MEMF_CLEAR);
+            D(bug("[Boot] devices enabled list storage @ 0x%p\n", DOSBootBase->devicesEnabled));
 
             for(int i=0; i<DOSBootBase->devicesCount; i++)
             {
@@ -225,10 +231,11 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
         }
     }
 
-
+    D(bug("[Boot] ** Displaying bootmenu (if wanted) ...\n"));
     /* Show the boot menu if needed */
     bootmenu_Init(DOSBootBase, WantBootMenu);
 
+    D(bug("[Boot] ** Prepairing to boot ...\n"));
 
     // Disable selected Devices
     // and
@@ -252,7 +259,7 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
 
         ForeachNodeSafe (&tempList, bn, temp)
         {
-            if (DOSBootBase->devicesEnabled[index++] == TRUE)
+            if ((!DOSBootBase->devicesEnabled) || (DOSBootBase->devicesEnabled[index++] == TRUE))
             {
                 if (bn == DOSBootBase->db_BootNode)
                 {
@@ -276,17 +283,16 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
         {
             FreeVec(DOSBootBase->devicesEnabled);
         }
-
     }
-
 
     /* updates the boot flags */
     IntExpBase(DOSBootBase->bm_ExpansionBase)->BootFlags = DOSBootBase->db_BootFlags;
 
-
     /* We want to be able to find ourselves in RTF_AFTERDOS */
     DOSBootBase->bm_Screen = NULL;
     AddResource(&DOSBootBase->db_Node);
+
+    D(bug("[Boot] ** Attempting to boot ...\n"));
 
     /* Attempt to boot until we succeed */
     for (;;)
