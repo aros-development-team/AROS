@@ -143,6 +143,8 @@ static BOOL populateGadgets_PageMain(LIBBASETYPEPTR DOSBootBase, struct Gadget *
 {
     struct NewGadget ng;
 
+    D(bug("[BootMenu] populateGadgets_PageMain()\n"));
+
     LONG cx = centerx((struct DOSBootBase *)DOSBootBase, 280);
 
     ng.ng_Width = 280;
@@ -186,13 +188,15 @@ static BOOL populateGadgets_PageMain(LIBBASETYPEPTR DOSBootBase, struct Gadget *
 
 static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *gadget)
 {
+    D(bug("[BootMenu] populateGadgets_PageBoot(0x%p)\n", gadget));
+
     // backup of devicesEnabled to be used if user CANCEL your changes
     for (int i=0; i<DOSBootBase->devicesCount; i++)
     {
         DOSBootBase->devicesEnabled[DOSBootBase->devicesCount + i] = DOSBootBase->devicesEnabled[i];
     }
 
-
+    D(bug("[BootMenu] populateGadgets_PageBoot: enumerating devices..\n"));
     {
         struct List *bootList;
         struct List *devicesList;
@@ -243,7 +247,7 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
 
             if (IsBootableNode(bn))
             {
-                if (listNode = AllocVec(sizeof(struct Node), MEMF_FAST) )
+                if (listNode = AllocVec(sizeof(struct Node), MEMF_ANY) )
                 {
                     listNode->ln_Name = AROS_BSTR_ADDR(dn->dn_Name);
                     listNode->ln_Type = 100L;
@@ -258,7 +262,7 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
             }
 
 
-            if (listNode = AllocVec(sizeof(struct Node) + 96, MEMF_FAST|MEMF_CLEAR) )
+            if (listNode = AllocVec(sizeof(struct Node) + 96, MEMF_ANY|MEMF_CLEAR) )
             {
                 listNode->ln_Name = (char *)(listNode + 1);
                 listNode->ln_Type = 100L;
@@ -353,6 +357,7 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
             listIndex++;
         }
 
+        D(bug("[BootMenu] populateGadgets_PageBoot: gadget @ 0x%p\n", gadget));
 
         if (gadget != NULL)
         {
@@ -418,6 +423,8 @@ static void freeGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase)
 {
     struct Node *node;
 
+    D(bug("[BootMenu] freeGadgets_PageBoot()\n"));
+
     while ((node = RemHead(&DOSBootBase->bootList)) != NULL)
     {
         FreeVec(node);
@@ -435,6 +442,8 @@ static void freeGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase)
 static BOOL populateGadgets(LIBBASETYPEPTR DOSBootBase, struct Gadget *gadget, WORD page)
 {
     struct NewGadget ng;
+
+    D(bug("[BootMenu] populateGadgets()\n"));
 
     ng.ng_Width = 280;
     ng.ng_Height = 15;
@@ -473,6 +482,7 @@ static BOOL populateGadgets(LIBBASETYPEPTR DOSBootBase, struct Gadget *gadget, W
 
     return (gadget != NULL);
 }
+
 static void freeGadgets(LIBBASETYPEPTR DOSBootBase, WORD page)
 {
     switch (page)
@@ -603,11 +613,10 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
                     {
                         struct BootNode *bn;
                         BYTE i = 0;
-                        BYTE pos = msg->Code;
                         Forbid(); /* .. access to ExpansionBase->MountList */
                         ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
                         {
-                            if (pos == i++)
+                            if (msg->Code == i++)
                             {
                                 DOSBootBase->bm_BootNode = bn;
                                 break;
@@ -668,6 +677,8 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
     WORD y = 50, cnt;
     char text[100];
 
+    D(bug("[BootMenu] initPageExpansion()\n"));
+    
     SetAPen(win->RPort, 1);
     cd = NULL;
     cnt = 0;
@@ -695,6 +706,8 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
 static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
 {
     UBYTE *text;
+
+    D(bug("[BootMenu] initPage(%d)\n", page));
 
     if (page == PAGE_DISPLAY)
             text = "Display Options";
@@ -728,6 +741,8 @@ static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD
 {
     struct Gadget *gadlist, *firstGadget;
     WORD newpage = -1;
+
+    D(bug("[BootMenu] initWindow()\n"));
 
     DOSBootBase->bm_GadToolsBase = TaggedOpenLibrary(TAGGEDOPEN_GADTOOLS);
 
