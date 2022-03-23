@@ -267,7 +267,7 @@
             command = cmdcopy;
         }
 
-        ok = vbuf_inject(cis, command, commandlen, DOSBase);
+        ok = vbuf_inject(cis, command, commandlen);
         FreeVec(cmdcopy);
 
         if (!ok)

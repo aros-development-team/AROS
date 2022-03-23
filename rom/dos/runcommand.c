@@ -125,7 +125,7 @@
      * This fixes for example AmigaOS' C:Execute
      */
     D(bug("RunCommand: segList @%p I=0x%p O=%p Args='%*s' Argsize=%u\n", BADDR(segList), Input(), Output(), argsize, argptr, argsize));
-    D(injected = ) vbuf_inject(Input(), argptr, argsize, DOSBase);
+    D(injected = ) vbuf_inject(Input(), argptr, argsize);
     D(bug("RunCommand: Arguments %sinjected into FileHandle %p\n", injected ? "" : "not ", Input()));
 
     /* pr_ReturnAddr is set by CallEntry routine */
