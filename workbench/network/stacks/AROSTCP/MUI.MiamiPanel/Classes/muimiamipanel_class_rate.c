@@ -2,6 +2,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
@@ -15,7 +16,7 @@
 
 /***********************************************************************/
 
-static UBYTE *bpss, *Kbss, *Mbss;
+static CONST_STRPTR bpss = NULL, Kbss = NULL, Mbss = NULL;
 
 struct MiamiPanelRateClass_DATA
 {
@@ -34,7 +35,7 @@ enum
 
 static struct MiamiPanelBase_intern *MiamiPanelBaseIntern;
 
-static ULONG
+static IPTR
 MUIPC_Rate__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
 {
     register struct TagItem *attrs = message->ops_AttrList;
@@ -53,12 +54,12 @@ MUIPC_Rate__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
         message->MethodID = OM_NEW;
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_Rate__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 {
     register struct MiamiPanelRateClass_DATA    *data = INST_DATA(CLASS,self);
@@ -68,7 +69,7 @@ MUIPC_Rate__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 
     for (redraw = FALSE, tstate = message->ops_AttrList; tag = NextTagItem(&tstate); )
     {
-        register ULONG tidata = tag->ti_Data;
+        register IPTR tidata = tag->ti_Data;
 
         switch(tag->ti_Tag)
         {
@@ -156,15 +157,15 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_Rate_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
     if (MiamiPanelBaseIntern->mpb_rateClass = MUI_CreateCustomClass(NULL,MUIC_Gauge,NULL,sizeof(struct MiamiPanelRateClass_DATA), MUIPC_Rate_Dispatcher))
     {
-        bpss = __(MSG_Rate_Bs);
-        Kbss = __(MSG_Rate_KBs);
-        Mbss = __(MSG_Rate_MBs);
+        bpss = _(MSG_Rate_Bs, MiamiPanelBaseIntern);
+        Kbss = _(MSG_Rate_KBs, MiamiPanelBaseIntern);
+        Mbss = _(MSG_Rate_MBs, MiamiPanelBaseIntern);
 
         return TRUE;
     }

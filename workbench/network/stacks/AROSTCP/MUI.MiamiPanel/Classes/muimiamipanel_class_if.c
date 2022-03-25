@@ -3,6 +3,9 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
+
+#include <string.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
@@ -59,21 +62,21 @@ enum
 
 static struct MiamiPanelBase_intern *MiamiPanelBaseIntern;
 
-static ULONG
-MUIPC_If__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_If__OM_NEW(struct IClass *CLASS, Object *self, struct opSet *message)
 {
     struct MiamiPanelIfClass_DATA      temp;
     struct TagItem   *attrs = message->ops_AttrList, *tag;
-    struct MPS_Prefs *prefs = (struct MPS_Prefs *)GetTagData(MPA_Prefs,NULL,attrs);
+    struct MPS_Prefs *prefs = (struct MPS_Prefs *)GetTagData(MPA_Prefs, 0, attrs);
     ULONG            show, lbutton, ontime, traffic, rate, speed, some;
     UBYTE            *name;
 
     memset(&temp,0,sizeof(temp));
 
-    name = (UBYTE *)GetTagData(MPA_If_Name,NULL,attrs);
-    temp.unitv = GetTagData(MPA_If_Unit,-1,attrs);
+    name = (UBYTE *)GetTagData(MPA_If_Name, 0, attrs);
+    temp.unitv = GetTagData(MPA_If_Unit, -1, attrs);
 
-    show    = (tag = FindTagItem(MPA_Show,attrs)) ? tag->ti_Data : SHOW_ALL;
+    show    = (tag = FindTagItem(MPA_Show, attrs)) ? tag->ti_Data : SHOW_ALL;
     lbutton = show & MIAMIPANELV_Init_Flags_ShowStatusButton;
     ontime  = show & MIAMIPANELV_Init_Flags_ShowUpTime;
     traffic = show & MIAMIPANELV_Init_Flags_ShowTotal;
@@ -128,9 +131,9 @@ MUIPC_If__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
 
             TAG_MORE,attrs))
     {
-        struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS,self);
+        struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS, self);
 
-        CopyMem(&temp,data,sizeof(struct MiamiPanelIfClass_DATA));
+        CopyMem(&temp, data, sizeof(struct MiamiPanelIfClass_DATA));
 
         data->busy = BusyObject,
             MUIA_Weight,          50,
@@ -138,67 +141,67 @@ MUIPC_If__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
             MUIA_Busy_Speed,      MUIV_Busy_Speed_User,
         End;
 
-        if (data->cmenu = (APTR)GetTagData(MUIA_ContextMenu,NULL,attrs))
+        if (data->cmenu = (APTR)GetTagData(MUIA_ContextMenu, 0, attrs))
         {
-            data->cmtitle   = (APTR)DoMethod(data->cmenu,MUIM_FindUData,MSG_Menu_Project);
-            data->cmonline  = (APTR)DoMethod(data->cmenu,MUIM_FindUData,MSG_IFGroup_CItem_Online);
-            data->cmoffline = (APTR)DoMethod(data->cmenu,MUIM_FindUData,MSG_IFGroup_CItem_Offline);
+            data->cmtitle   = (APTR)DoMethod(data->cmenu, MUIM_FindUData, MSG_Menu_Project);
+            data->cmonline  = (APTR)DoMethod(data->cmenu, MUIM_FindUData, MSG_IFGroup_CItem_Online);
+            data->cmoffline = (APTR)DoMethod(data->cmenu, MUIM_FindUData, MSG_IFGroup_CItem_Offline);
         }
 
         if (data->lbutton)
-            DoMethod(data->lbutton,MUIM_Notify,MUIA_Pressed,0,(ULONG)self,1,MPM_If_Switch);
+            DoMethod(data->lbutton, MUIM_Notify, MUIA_Pressed, 0, (IPTR)self, 1, MPM_If_Switch);
 
         if (data->rate)
         {
             struct ifnode *ifnode;
 
-            if (ifnode = findIFNode(prefs,name)) data->scale = ifnode->scale;
+            if (ifnode = findIFNode(prefs, name)) data->scale = ifnode->scale;
             else data->scale = DEF_Scale;
 
-            set(data->rate,MUIA_Gauge_Max,data->scale);
+            set(data->rate, MUIA_Gauge_Max, data->scale);
         }
 
         data->this = self;
 
         message->MethodID = OM_SET;
-        DoMethodA(self,(Msg)message);
+        DoMethodA(self, (Msg)message);
         message->MethodID = OM_NEW;
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
 static void
-showBar(Object *self,struct MiamiPanelIfClass_DATA *data,ULONG show)
+showBar(Object *self, struct MiamiPanelIfClass_DATA *data, ULONG show)
 {
     if (data->busy)
     {
         Object *parent;
 
-        get(self,MUIA_Parent,&parent);
-        if (parent) DoMethod(parent,MUIM_Group_InitChange);
-        DoMethod(data->g,MUIM_Group_InitChange);
+        get(self, MUIA_Parent, &parent);
+        if (parent) DoMethod(parent, MUIM_Group_InitChange);
+        DoMethod(data->g, MUIM_Group_InitChange);
 
         if (show)
         {
-            DoMethod(data->g,OM_ADDMEMBER,(ULONG)data->busy);
-            DoMethod(data->g,MUIM_Group_Sort,(ULONG)data->name,/*(ULONG)data->slabel,*/(ULONG)data->state,(ULONG)data->busy,(ULONG)data->lbutton,NULL);
+            DoMethod(data->g, OM_ADDMEMBER, (IPTR)data->busy);
+            DoMethod(data->g, MUIM_Group_Sort, (IPTR)data->name, /*(IPTR)data->slabel,*/(IPTR)data->state, (IPTR)data->busy, (IPTR)data->lbutton, NULL);
         }
-        else DoMethod(data->g,OM_REMMEMBER,(ULONG)data->busy);
+        else DoMethod(data->g, OM_REMMEMBER, (IPTR)data->busy);
 
-        DoMethod(data->g,MUIM_Group_ExitChange);
-        if (parent) DoMethod(parent,MUIM_Group_ExitChange);
+        DoMethod(data->g, MUIM_Group_ExitChange);
+        if (parent) DoMethod(parent, MUIM_Group_ExitChange);
     }
 }
 
 /***********************************************************************/
 
-static ULONG
-changeState(Object *self,struct MiamiPanelIfClass_DATA *data,ULONG state)
+static IPTR
+changeState(Object *self, struct MiamiPanelIfClass_DATA *data, ULONG state)
 {
-    ULONG sstring, busy;
+    IPTR sstring, busy;
 
     if (state & MIAMIPANELV_AddInterface_State_GoingOnline) state = MIAMIPANELV_AddInterface_State_GoingOnline, sstring = MSG_IF_Status_GoingOnline, busy = TRUE;
     else if (state & MIAMIPANELV_AddInterface_State_GoingOffline) state = MIAMIPANELV_AddInterface_State_GoingOffline, sstring = MSG_IF_Status_GoingOffline, busy = TRUE;
@@ -210,11 +213,11 @@ changeState(Object *self,struct MiamiPanelIfClass_DATA *data,ULONG state)
 
     data->statev = state;
 
-    if (data->lbutton) set(data->lbutton,MPA_LButton_State,state);
-    set(data->state,MUIA_Text_Contents, __(sstring));
+    if (data->lbutton) set(data->lbutton, MPA_LButton_State, state);
+    set(data->state, MUIA_Text_Contents, __(sstring));
 
-    if ((data->flags & FLG_UseBusyBar) && !BOOLSAME(data->flags & FLG_BusyBarInUse,busy))
-        showBar(self,data,busy);
+    if ((data->flags & FLG_UseBusyBar) && !BOOLSAME(data->flags & FLG_BusyBarInUse, busy))
+        showBar(self, data, busy);
 
     if (busy) data->flags |= FLG_BusyBarInUse;
     else data->flags &= ~FLG_BusyBarInUse;
@@ -224,26 +227,26 @@ changeState(Object *self,struct MiamiPanelIfClass_DATA *data,ULONG state)
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_If__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_If__OM_SET(struct IClass *CLASS, Object *self, struct opSet *message)
 {
-    struct MiamiPanelIfClass_DATA    *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfClass_DATA    *data = INST_DATA(CLASS, self);
     struct TagItem *tag;
     struct TagItem *tstate;
 
     for (tstate = message->ops_AttrList; tag = NextTagItem(&tstate); )
     {
-        ULONG tidata = tag->ti_Data;
+        IPTR tidata = tag->ti_Data;
 
         switch(tag->ti_Tag)
         {
             case MPA_If_Name:
-                stccpy(data->namev,(UBYTE *)tidata,sizeof(data->namev));
-                set(data->name,MUIA_Text_Contents,tidata);
+                strncpy(data->namev, (UBYTE *)tidata, sizeof(data->namev));
+                set(data->name, MUIA_Text_Contents, tidata);
                 break;
 
             case MPA_If_State:
-                changeState(self,data,tidata);
+                changeState(self, data, tidata);
                 break;
 
             case MPA_If_Ontime:
@@ -251,74 +254,74 @@ MUIPC_If__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
                 break;
 
             case MPA_If_Now:
-                if (data->ontime) set(data->ontime,MPA_Value,tidata-data->ontimev);
+                if (data->ontime) set(data->ontime, MPA_Value, tidata-data->ontimev);
                 break;
 
             case MPA_If_Traffic:
-                if (data->traffic) set(data->traffic,MPA_Value,tidata);
+                if (data->traffic) set(data->traffic, MPA_Value, tidata);
                 break;
 
             case MPA_If_Rate:
-                if (data->rate) set(data->rate,MPA_Value,tidata);
+                if (data->rate) set(data->rate, MPA_Value, tidata);
                 break;
 
             case MPA_If_Speed:
-                if (data->speed) set(data->speed,MUIA_Text_Contents,tidata);
+                if (data->speed) set(data->speed, MUIA_Text_Contents, tidata);
                 break;
 
             case MPA_Prefs:
-                if (!BOOLSAME(data->flags & FLG_UseBusyBar,PREFS(tidata)->flags & MPV_Flags_UseBusyBar))
+                if (!BOOLSAME(data->flags & FLG_UseBusyBar, PREFS(tidata)->flags & MPV_Flags_UseBusyBar))
                 {
                     if (PREFS(tidata)->flags & MPV_Flags_UseBusyBar) data->flags |= FLG_UseBusyBar;
                     else data->flags &= ~FLG_UseBusyBar;
 
                     if (data->flags & FLG_BusyBarInUse)
-                        showBar(self,data,data->flags & FLG_UseBusyBar);
+                        showBar(self, data, data->flags & FLG_UseBusyBar);
                 }
 
                 if (data->rate)
                 {
                     struct ifnode *ifnode;
 
-                    if (ifnode = findIFNode(PREFS(tidata),data->namev))
+                    if (ifnode = findIFNode(PREFS(tidata), data->namev))
                         set(data->rate, MUIA_Gauge_Max, (data->scale = ifnode->scale));
                 }
                 break;
         }
     }
 
-    return DoSuperMethodA(CLASS,self,(Msg)message);
+    return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_If__OM_GET(struct IClass *CLASS,Object *self,struct opGet *message)
+static IPTR
+MUIPC_If__OM_GET(struct IClass *CLASS, Object *self, struct opGet *message)
 {
-    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS, self);
 
     switch(message->opg_AttrID)
     {
         case MPA_If_Unit:   *message->opg_Storage = data->unitv;        return TRUE;
         case MPA_If_State:  *message->opg_Storage = data->statev;       return TRUE;
-        case MPA_If_Name:   *message->opg_Storage = (ULONG)data->namev; return TRUE;
+        case MPA_If_Name:   *message->opg_Storage = (IPTR)data->namev; return TRUE;
         case MPA_If_Scale:  *message->opg_Storage = data->scale;        return TRUE;
-        default: return DoSuperMethodA(CLASS,self,(Msg)message);
+        default: return DoSuperMethodA(CLASS, self, (Msg)message);
     }
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_If__MPM_If_Switch(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_If__MPM_If_Switch(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS, self);
 
     switch (data->statev)
     {
         case MIAMIPANELV_AddInterface_State_GoingOnline:
         case MIAMIPANELV_AddInterface_State_Online:
-            MiamiPanelFun(MIAMIPANELV_CallBack_Code_UnitOffline,data->unitv);
+            MiamiPanelFun(MiamiPanelBaseIntern, MIAMIPANELV_CallBack_Code_UnitOffline, data->unitv);
             break;
 
         case MIAMIPANELV_AddInterface_State_Suspending:
@@ -326,7 +329,7 @@ MUIPC_If__MPM_If_Switch(struct IClass *CLASS,Object *self,Msg message)
             break;
 
         default:
-            MiamiPanelFun(MIAMIPANELV_CallBack_Code_UnitOnline,data->unitv);
+            MiamiPanelFun(MiamiPanelBaseIntern, MIAMIPANELV_CallBack_Code_UnitOnline, data->unitv);
             break;
     }
 
@@ -335,10 +338,10 @@ MUIPC_If__MPM_If_Switch(struct IClass *CLASS,Object *self,Msg message)
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_If__MUIM_ContextMenuBuild(struct IClass *CLASS,Object *self,struct MUIP_ContextMenuBuild *message)
+static IPTR
+MUIPC_If__MUIM_ContextMenuBuild(struct IClass *CLASS, Object *self, struct MUIP_ContextMenuBuild *message)
 {
-    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS, self);
 
     if (data->cmenu)
     {
@@ -363,32 +366,32 @@ MUIPC_If__MUIM_ContextMenuBuild(struct IClass *CLASS,Object *self,struct MUIP_Co
                 break;
         }
 
-        set(data->cmtitle,MUIA_Menu_Title, data->namev);
-        set(data->cmonline,MUIA_Menuitem_Enabled,on);
-        set(data->cmoffline,MUIA_Menuitem_Enabled,off);
+        set(data->cmtitle, MUIA_Menu_Title, data->namev);
+        set(data->cmonline, MUIA_Menuitem_Enabled, on);
+        set(data->cmoffline, MUIA_Menuitem_Enabled, off);
 
         if (data->rate)
-            set((Object *)DoMethod(data->cmenu,MUIM_FindUData,valueToID(data->scale)),MUIA_Menuitem_Checked,TRUE);
+            set((Object *)DoMethod(data->cmenu, MUIM_FindUData, valueToID(data->scale)), MUIA_Menuitem_Checked, TRUE);
 
-        return (ULONG)data->cmenu;
+        return (IPTR)data->cmenu;
     }
 
-    return DoSuperMethodA(CLASS,self,(Msg)message);
+    return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_If__MUIM_ContextMenuChoice(struct IClass *CLASS,Object *self,struct MUIP_ContextMenuChoice *message)
+static IPTR
+MUIPC_If__MUIM_ContextMenuChoice(struct IClass *CLASS, Object *self, struct MUIP_ContextMenuChoice *message)
 {
-    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS,self);
-    ULONG       item = muiUserData(message->item);
+    struct MiamiPanelIfClass_DATA *data = INST_DATA(CLASS, self);
+    IPTR       item = muiUserData(message->item);
 
     switch (item)
     {
         case MSG_IFGroup_CItem_Online:
         case MSG_IFGroup_CItem_Offline:
-            DoMethod(data->this,MPM_If_Switch);
+            DoMethod(data->this, MPM_If_Switch);
             break;
 
         case TAG_SCALE_1: case TAG_SCALE_2:  case TAG_SCALE_3:
@@ -396,8 +399,8 @@ MUIPC_If__MUIM_ContextMenuChoice(struct IClass *CLASS,Object *self,struct MUIP_C
         case TAG_SCALE_7: case TAG_SCALE_8:
             if (data->rate)
             {
-                data->scale = IDToValue((ULONG)item, MiamiPanelBaseIntern);
-                set(data->rate,MUIA_Gauge_Max,data->scale);
+                data->scale = IDToValue((IPTR)item, MiamiPanelBaseIntern);
+                set(data->rate, MUIA_Gauge_Max, data->scale);
             }
             break;
     }
@@ -411,13 +414,13 @@ BOOPSI_DISPATCHER(IPTR, MUIPC_If_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW:                 return MUIPC_If__OM_NEW(CLASS,self,(APTR)message);
-        case OM_SET:                 return MUIPC_If__OM_SET(CLASS,self,(APTR)message);
-        case OM_GET:                 return MUIPC_If__OM_GET(CLASS,self,(APTR)message);
-        case MUIM_ContextMenuChoice: return MUIPC_If__MUIM_ContextMenuChoice(CLASS,self,(APTR)message);
-        case MUIM_ContextMenuBuild:  return MUIPC_If__MUIM_ContextMenuBuild(CLASS,self,(APTR)message);
-        case MPM_If_Switch:          return MUIPC_If__MPM_If_Switch(CLASS,self,(APTR)message);
-        default:                     return DoSuperMethodA(CLASS,self,message);
+        case OM_NEW:                 return MUIPC_If__OM_NEW(CLASS, self, (APTR)message);
+        case OM_SET:                 return MUIPC_If__OM_SET(CLASS, self, (APTR)message);
+        case OM_GET:                 return MUIPC_If__OM_GET(CLASS, self, (APTR)message);
+        case MUIM_ContextMenuChoice: return MUIPC_If__MUIM_ContextMenuChoice(CLASS, self, (APTR)message);
+        case MUIM_ContextMenuBuild:  return MUIPC_If__MUIM_ContextMenuBuild(CLASS, self, (APTR)message);
+        case MPM_If_Switch:          return MUIPC_If__MPM_If_Switch(CLASS, self, (APTR)message);
+        default:                     return DoSuperMethodA(CLASS, self, message);
     }
 	return 0;
 }
@@ -425,11 +428,11 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_If_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
-    return (ULONG)(MiamiPanelBaseIntern->mpb_ifClass = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct MiamiPanelIfClass_DATA), MUIPC_If_Dispatcher));
+    return (IPTR)(MiamiPanelBaseIntern->mpb_ifClass = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct MiamiPanelIfClass_DATA), MUIPC_If_Dispatcher));
 }
 
 /***********************************************************************/

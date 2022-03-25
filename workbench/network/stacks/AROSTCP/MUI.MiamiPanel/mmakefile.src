@@ -34,6 +34,7 @@ MUIMIAMIPANELCLASSES = Classes/muimiamipanel_class_about \
 USER_INCLUDES := -isystem  ./include/ -isystem ../netinclude/  -isystem  ../bsdsocket/
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS) -D__BSD_VISIBLE=1
+USER_LDFLAGS := -static
 
 %build_module mmake=arostcp-libs-muimiamipanel \
     modname=MUI modtype=library modsuffix=MiamiPanel conffile=MUI.MiamiPanel.conf \

@@ -2,6 +2,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
@@ -15,7 +16,7 @@
 
 /***********************************************************************/
 
-static UBYTE *Kbs, *Mbs;
+static CONST_STRPTR Kbs = NULL, Mbs = NULL;
 
 struct MiamiPanelTrafficClass_DATA
 {
@@ -33,40 +34,40 @@ enum
 
 static struct MiamiPanelBase_intern *MiamiPanelBaseIntern;
 
-static ULONG
-MUIPC_Traffic__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_Traffic__OM_NEW(struct IClass *CLASS, Object *self, struct opSet *message)
 {
     register struct TagItem *attrs = message->ops_AttrList;
 
     if (self = (Object *)DoSuperNewTags(CLASS, self, NULL, MUIA_Text_Contents, "0", TAG_MORE, attrs))
     {
         message->MethodID = OM_SET;
-        DoMethodA(self,(Msg)message);
+        DoMethodA(self, (Msg)message);
         message->MethodID = OM_NEW;
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_Traffic__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_Traffic__OM_SET(struct IClass *CLASS, Object *self, struct opSet *message)
 {
-    register struct MiamiPanelTrafficClass_DATA    *data = INST_DATA(CLASS,self);
+    register struct MiamiPanelTrafficClass_DATA    *data = INST_DATA(CLASS, self);
     register struct TagItem *tag;
     struct TagItem          *tstate;
     register ULONG          redraw;
 
     for (redraw = FALSE, tstate = message->ops_AttrList; tag = NextTagItem(&tstate); )
     {
-        register ULONG tidata = tag->ti_Data;
+        register IPTR tidata = tag->ti_Data;
 
         switch(tag->ti_Tag)
         {
             case MPA_Prefs:
-                if (!BOOLSAME(PREFS(tidata)->flags & MPV_Flags_TrafficShort,data->flags & FLG_Short) ||
-                    !BOOLSAME(PREFS(tidata)->flags & MPV_Flags_TrafficNoGrouping,data->flags & FLG_NoGrouping))
+                if (!BOOLSAME(PREFS(tidata)->flags & MPV_Flags_TrafficShort, data->flags & FLG_Short) ||
+                    !BOOLSAME(PREFS(tidata)->flags & MPV_Flags_TrafficNoGrouping, data->flags & FLG_NoGrouping))
                 {
                     if (PREFS(tidata)->flags & MPV_Flags_TrafficShort) data->flags |= FLG_Short;
                     else data->flags &= ~FLG_Short;
@@ -110,14 +111,14 @@ MUIPC_Traffic__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 
                 q = tot/1000000ULL;
                 r = tot%1000000ULL;
-                sprintf(buf1,"%Ld",q);
+                sprintf(buf1, "%Ld", q);
                 if (!(data->flags & FLG_NoGrouping)) grouping(buf1, MiamiPanelBaseIntern);
 
                 qd = r/1000ULL;
                 rd = r%1000ULL;
-                sprintf(buf1,"%Ld",qd);
+                sprintf(buf1, "%Ld", qd);
 
-                sprintf(cont,"%s%s%3.3s %s",buf1,dp,buf2,Mbs);
+                sprintf(cont, "%s%s%3.3s %s", buf1, dp, buf2, Mbs);
             }
             else /* small int */
             {
@@ -131,7 +132,7 @@ MUIPC_Traffic__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 					sprintf(buf, "%u", q);
                     r = r/1000;
                     if (!(data->flags & FLG_NoGrouping)) grouping(buf, MiamiPanelBaseIntern);
-                    sprintf(cont,"%s%s%3.3lu %s",buf,dp,r,Mbs);
+                    sprintf(cont, "%s%s%3.3lu %s", buf, dp, r, Mbs);
                 }
                 else /* Kb */
                 {
@@ -139,7 +140,7 @@ MUIPC_Traffic__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
                     r = tot%1000;
 					sprintf(buf, "%u", q);
                     if (!(data->flags & FLG_NoGrouping)) grouping(buf, MiamiPanelBaseIntern);
-                    sprintf(cont,"%s%s%1.1lu %s",buf,dp,(r<100) ? 0 : r,Kbs);
+                    sprintf(cont, "%s%s%1.1lu %s", buf, dp, (r<100) ? 0 : r, Kbs);
                 }
             }
         }
@@ -153,7 +154,7 @@ MUIPC_Traffic__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 		SetSuperAttrs(CLASS, self, MUIA_Text_Contents, cont, TAG_DONE);
     }
 
-    return DoSuperMethodA(CLASS,self,(Msg)message);
+    return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 
 /***********************************************************************/
@@ -162,9 +163,9 @@ BOOPSI_DISPATCHER(IPTR, MUIPC_Traffic_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_SET: return MUIPC_Traffic__OM_SET(CLASS,self,(APTR)message);
-        case OM_NEW: return MUIPC_Traffic__OM_NEW(CLASS,self,(APTR)message);
-        default:     return DoSuperMethodA(CLASS,self,message);
+        case OM_SET: return MUIPC_Traffic__OM_SET(CLASS, self, (APTR)message);
+        case OM_NEW: return MUIPC_Traffic__OM_NEW(CLASS, self, (APTR)message);
+        default:     return DoSuperMethodA(CLASS, self, message);
     }
 	return 0;
 }
@@ -172,14 +173,14 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_Traffic_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
     if (MiamiPanelBaseIntern->mpb_trafficClass = MUI_CreateCustomClass(NULL, MUIC_Text, NULL, sizeof(struct MiamiPanelTrafficClass_DATA), MUIPC_Traffic_Dispatcher))
     {
-        Kbs = __(MSG_Traffic_KB);
-        Mbs = __(MSG_Traffic_MB);
+        Kbs = _(MSG_Traffic_KB, MiamiPanelBaseIntern);
+        Mbs = _(MSG_Traffic_MB, MiamiPanelBaseIntern);
 
         return TRUE;
     }

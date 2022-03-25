@@ -6,6 +6,8 @@
 
 #include <mui/Urltext_mcc.h>
 
+#include <string.h>
+
 #include "muimiamipanel_intern.h"
 #include "muimiamipanel_misc.h"
 #include "muimiamipanel_locale.h"
@@ -119,11 +121,11 @@ obutton(ULONG label, ULONG help, struct MiamiPanelBase_intern *MiamiPanelBaseInt
 /***********************************************************************/
 
 Object *
-ourlText(UBYTE *url, UBYTE *text, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
+ourlText(CONST_STRPTR url, CONST_STRPTR text, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
     return UrltextObject,
-        MUIA_Urltext_Text,   text,
-        MUIA_Urltext_Url,    url,
+        MUIA_Urltext_Text,   (IPTR)text,
+        MUIA_Urltext_Url,    (IPTR)url,
         MUIA_Urltext_SetMax, 0,
     End;
 }
@@ -144,12 +146,12 @@ ocheck(ULONG key, ULONG help, struct MiamiPanelBase_intern *MiamiPanelBaseIntern
 /***********************************************************************/
 
 Object *
-ocycle(ULONG key, UBYTE **entries, ULONG help, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
+ocycle(ULONG key, CONST_STRPTR *entries, ULONG help, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
     register Object *obj;
 
-    if (obj = MUI_MakeObject(MUIO_Cycle, __(key), (ULONG)entries))
-        SetAttrs(obj, MUIA_CycleChain, TRUE, MUIA_ShortHelp,__(help), TAG_DONE);
+    if (obj = MUI_MakeObject(MUIO_Cycle,  __(key), (IPTR)entries))
+        SetAttrs(obj, MUIA_CycleChain, TRUE, MUIA_ShortHelp, __(help), TAG_DONE);
 
     return obj;
 }
@@ -181,9 +183,10 @@ grouping(UBYTE *source, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
     UBYTE          buf[256];
     register UBYTE *s, *d, c = MiamiPanelBaseIntern->mpb_groupSep[0];
-    int            j;
+    int            j, l;
 
-    for (j = 3, s = source+strlen(source)-1, d = buf; s>=source; j--, d++, s--)
+    l = strlen(source);
+    for (j = 3, s = source + l - 1, d = buf; s >= source; j--, d++, s--)
     {
         if (!j)
         {
@@ -195,14 +198,15 @@ grouping(UBYTE *source, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
     }
     *d = 0;
 
-    for (s = buf+strlen(buf)-1, d = source; s>=buf; d++, s--) *d = *s;
+    l = strlen(buf);
+    for (s = buf + l - 1, d = source; s >= buf; d++, s--) *d = *s;
     *d = 0;
 }
 
 /***********************************************************************/
 
 #if !defined(__AROS__)
-#ifdef __MORPHOS__
+# ifdef __MORPHOS__
 void
 sprintf(UBYTE *to, UBYTE *fmt,...)
 {
@@ -212,7 +216,7 @@ sprintf(UBYTE *to, UBYTE *fmt,...)
   VNewRawDoFmt(fmt, (APTR)0, to, args);
   va_end(args);
 }
-#else
+# else
 static UWORD fmtfunc[] = { 0x16c0, 0x4e75 };
 
 void
@@ -220,23 +224,23 @@ sprintf(UBYTE *to, UBYTE *fmt,...)
 {
     RawDoFmt(fmt, &fmt+1, (APTR)fmtfunc, to);
 }
-#endif
+# endif
 #endif /* !__AROS__ */
 
 /***********************************************************************/
 
 #if !defined(__AROS__)
-#ifdef __MORPHOS__
+# ifdef __MORPHOS__
 static void
 snprintfStuff(void)
 {
     register struct stream *s = (struct stream *)REG_A3;
     register UBYTE         c  = (UBYTE)REG_D0;
-#else
+# else
 static void ASM
 snprintfStuff(REG(d0, UBYTE c), REG(a3, struct stream *s))
 {
-#endif
+# endif
 
     if (!s->stop)
     {
@@ -249,32 +253,32 @@ snprintfStuff(REG(d0, UBYTE c), REG(a3, struct stream *s))
     }
 }
 
-#ifdef __MORPHOS__
+# ifdef __MORPHOS__
 static struct EmulLibEntry snprintfStuffTrap = {TRAP_LIB, 0, (void *)&snprintfStuff};
-#endif
+# endif
 
 
 int STDARGS
 snprintf(UBYTE *buf, int size, UBYTE *fmt,...)
 {
     struct stream s;
-    #ifdef __MORPHOS__
+# ifdef __MORPHOS__
     va_list       va;
 
     va_start(va,fmt);
-    #endif
+# endif
 
     s.buf     = buf;
     s.size    = size;
     s.counter = 0;
     s.stop    = 0;
 
-    #ifdef __MORPHOS__
+# ifdef __MORPHOS__
     RawDoFmt(fmt, va->overflow_arg_area, (APTR)&snprintfStuffTrap, &s);
     va_end(va);
-    #else
+# else
     RawDoFmt(fmt, &fmt+1, (APTR)snprintfStuff, &s);
-    #endif
+# endif
 
     return s.counter-1;
 }

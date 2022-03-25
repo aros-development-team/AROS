@@ -1,6 +1,8 @@
 
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include "muimiamipanel_intern.h"
 #include "muimiamipanel_message.h"
 

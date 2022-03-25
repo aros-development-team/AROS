@@ -2,7 +2,7 @@
 #define _LOCALE_H_
 
 /*
-    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2022, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,9 +18,9 @@
 CONST_STRPTR _(ULONG ID,struct MiamiPanelBase_intern *MiamiPanelBaseIntern);       /* Get a message, as a STRPTR */
 #define __(id) ((IPTR) _(id, MiamiPanelBaseIntern))   /* Get a message, as an IPTR */
 
-void localizeArray ( UBYTE **strings , ULONG *ids );
-void localizeMenus ( struct NewMenu *menu , ULONG *ids );
-void localizeButtonsBar ( struct MUIS_TheBar_Button *buttons , ULONG *ids );
+void localizeArray ( CONST_STRPTR *strings , ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern);
+void localizeMenus ( struct NewMenu *menu , ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern);
+void localizeButtonsBar ( struct MUIS_TheBar_Button *buttons , ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern);
 
 /* Setup ********************************************************************/
 VOID Locale_Initialize(struct MiamiPanelBase_intern *MiamiPanelBaseIntern);

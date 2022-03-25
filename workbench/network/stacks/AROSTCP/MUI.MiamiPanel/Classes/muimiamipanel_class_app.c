@@ -3,6 +3,7 @@
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 #include <proto/icon.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
@@ -135,7 +136,7 @@ IPTR MUIPC_App__OM_NEW
             MUIA_Application_HelpFile,       DEF_Guide,
             MUIA_Application_UseCommodities, FALSE,
             MUIA_Application_SingleTask,     TRUE,
-            MUIA_Application_Menustrip,      strip = MUI_MakeObject(MUIO_MenustripNM, (ULONG)appMenu, MUIO_MenustripNM_CommandKeyCheck),
+            MUIA_Application_Menustrip,      strip = MUI_MakeObject(MUIO_MenustripNM, (IPTR)appMenu, MUIO_MenustripNM_CommandKeyCheck),
             MUIA_Application_UsedClasses,    usedClasses,
 
             SubWindow, temp.win = (temp.prefs.flags & MPV_Flags_BWin) ?
@@ -184,53 +185,53 @@ IPTR MUIPC_App__OM_NEW
         if (data->icon = GetDiskObject(DEF_Icon))
 			SetSuperAttrs(CLASS, self, MUIA_Application_DiskObject,data->icon,TAG_DONE);
         /* Load MUI preferences */
-        DoSuperMethod(CLASS,self,MUIM_Application_Load,(ULONG)MUIV_Application_Load_ENV);
+        DoSuperMethod(CLASS,self,MUIM_Application_Load,(IPTR)MUIV_Application_Load_ENV);
 
         /* Win notifies */
-        DoMethod(temp.win,MUIM_Notify,MUIA_Window_CloseRequest,MUIV_EveryTime,(ULONG)self,1,MPM_Quit);
+        DoMethod(temp.win,MUIM_Notify,MUIA_Window_CloseRequest,MUIV_EveryTime,(IPTR)self,1,MPM_Quit);
 
         /* Menus notifies */
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_About),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,1,MPM_About);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,1,MPM_About);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_AboutMUI),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MUIM_Application_AboutMUI,(ULONG)temp.win);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MUIM_Application_AboutMUI,(IPTR)temp.win);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Hide),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,3,MUIM_Set,MUIA_Application_Iconified,TRUE);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,3,MUIM_Set,MUIA_Application_Iconified,TRUE);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Quit),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,1,MPM_Quit);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,1,MPM_Quit);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Edit),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,1,MPM_Prefs);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,1,MPM_Prefs);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_MUI),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MUIM_Application_OpenConfigWindow,0);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MUIM_Application_OpenConfigWindow,0);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Save),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MPM_Save,TRUE);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MPM_Save,TRUE);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Use),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MPM_Save,FALSE);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MPM_Save,FALSE);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Restore),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MPM_Load,FALSE);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MPM_Load,FALSE);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_LastSaved),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MPM_Load,TRUE);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MPM_Load,TRUE);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Miami_Show),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MPM_Miami,MPV_Miami_Show);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MPM_Miami,MPV_Miami_Show);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Miami_Hide),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MPM_Miami,MPV_Miami_Hide);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MPM_Miami,MPV_Miami_Hide);
 
         DoMethod((Object *)DoMethod(strip,MUIM_FindUData,MSG_Menu_Miami_Quit),MUIM_Notify,
-            MUIA_Menuitem_Trigger,MUIV_EveryTime,(ULONG)self,2,MPM_Miami,MPV_Miami_Quit);
+            MUIA_Menuitem_Trigger,MUIV_EveryTime,(IPTR)self,2,MPM_Miami,MPV_Miami_Quit);
 
         DoSuperMethod(CLASS,self,MUIM_Notify,MUIA_Application_MenuHelp,MUIV_EveryTime,MUIV_Notify_Self,
-            5,MUIM_Application_ShowHelp,(ULONG)temp.win,(ULONG)DEF_Guide,(ULONG)"Menus",0);
+            5,MUIM_Application_ShowHelp,(IPTR)temp.win,(IPTR)DEF_Guide,(IPTR)"Menus",0);
 
         /* Set root preferences */
         set(data->root,MPA_Prefs,&temp.prefs);
@@ -243,12 +244,12 @@ IPTR MUIPC_App__OM_NEW
         }
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
-ULONG MUIPC_App__OM_DISPOSE
+IPTR MUIPC_App__OM_DISPOSE
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -263,7 +264,7 @@ ULONG MUIPC_App__OM_DISPOSE
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__OM_GET
+static IPTR MUIPC_App__OM_GET
 (
     Class *CLASS, Object *self, struct opGet *message
 )
@@ -272,14 +273,14 @@ static ULONG MUIPC_App__OM_GET
 
     switch (message->opg_AttrID)
     {
-        case MPA_Prefs: *message->opg_Storage = (ULONG)&data->prefs; return TRUE;
+        case MPA_Prefs: *message->opg_Storage = (IPTR)&data->prefs; return TRUE;
         default: return DoSuperMethodA(CLASS,self,(Msg)message);
     }
 }
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__OM_SET
+static IPTR MUIPC_App__OM_SET
 (
     Class *CLASS, Object *self, struct opSet *message
 )
@@ -292,7 +293,7 @@ static ULONG MUIPC_App__OM_SET
 
     for (tstate = message->ops_AttrList; tag = NextTagItem(&tstate); )
     {
-        ULONG tidata = tag->ti_Data;
+        IPTR tidata = tag->ti_Data;
 
         switch(tag->ti_Tag)
         {
@@ -332,7 +333,7 @@ static ULONG MUIPC_App__OM_SET
         if (!BOOLSAME(bwin,data->prefs.flags & MPV_Flags_BWin) || !BOOLSAME(bwinBorders,data->prefs.flags & MPV_Flags_BWinBorders))
         {
             set(data->win,MUIA_Window_Open,FALSE);
-            DoSuperMethod(CLASS,self,MUIM_Application_PushMethod,(ULONG)self,1,MPM_Rebuild);
+            DoSuperMethod(CLASS,self,MUIM_Application_PushMethod,(IPTR)self,1,MPM_Rebuild);
         }
 
         freeIFList(&data->prefs, MiamiPanelBaseIntern);
@@ -341,16 +342,16 @@ static ULONG MUIPC_App__OM_SET
         if (noIfList) DoMethod(data->root,MPM_MGroup_GrabIFList);
         else moveMinList(&data->prefs.iflist,&prefs->iflist, MiamiPanelBaseIntern);
 
-        for (get(self,MUIA_Application_WindowList,&l), mstate = (Object *)l->lh_Head; win = NextObject(&mstate); )
+        for (get(self, MUIA_Application_WindowList, &l), mstate = (Object *)l->lh_Head; win = NextObject(&mstate); )
             if (!oneWay || (win!=data->wprefs)) set(win,MPA_Prefs,&data->prefs);
 
-        set(data->root,MPA_Prefs,&data->prefs);
+        set(data->root, MPA_Prefs, &data->prefs);
     }
 
     if (close && !(data->prefs.flags & MPV_Flags_Iconify))
     {
         ticonify->ti_Tag = TAG_IGNORE;
-        DoSuperMethod(CLASS,self,MUIM_Application_PushMethod,(ULONG)self,1,MPM_Quit);
+        DoSuperMethod(CLASS,self,MUIM_Application_PushMethod,(IPTR)self,1,MPM_Quit);
     }
 
     return DoSuperMethodA(CLASS,self,(Msg)message);
@@ -358,7 +359,7 @@ static ULONG MUIPC_App__OM_SET
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__MUIM_Application_AboutMUI
+static IPTR MUIPC_App__MUIM_Application_AboutMUI
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -374,8 +375,8 @@ static ULONG MUIPC_App__MUIM_Application_AboutMUI
                 MUIA_Window_RefWindow,     data->win,
                 MUIA_HelpNode,             "MUI",
             End)
-            DoMethod(data->aboutMUI,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(ULONG)self,5,
-                MUIM_Application_PushMethod,(ULONG)self,2,MPM_DisposeWin,(ULONG)data->aboutMUI);
+            DoMethod(data->aboutMUI,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(IPTR)self,5,
+                MUIM_Application_PushMethod,(IPTR)self,2,MPM_DisposeWin,(IPTR)data->aboutMUI);
     }
 
     openWindow(self, data->aboutMUI, MiamiPanelBaseIntern);
@@ -387,7 +388,7 @@ static ULONG MUIPC_App__MUIM_Application_AboutMUI
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__MUIM_Application_OpenConfigWindow
+static IPTR MUIPC_App__MUIM_Application_OpenConfigWindow
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -403,7 +404,7 @@ static ULONG MUIPC_App__MUIM_Application_OpenConfigWindow
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__MPM_Rebuild
+static IPTR MUIPC_App__MPM_Rebuild
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -440,10 +441,10 @@ static ULONG MUIPC_App__MPM_Rebuild
 
     if (nwin)
     {
-        DoSuperMethod(CLASS,self,OM_REMMEMBER,(ULONG)owin);
+        DoSuperMethod(CLASS,self,OM_REMMEMBER,(IPTR)owin);
         MUI_DisposeObject(owin);
-        DoSuperMethod(CLASS,self,OM_ADDMEMBER,(ULONG)(data->win = nwin));
-        DoMethod(nwin,MUIM_Notify,MUIA_Window_CloseRequest,MUIV_EveryTime,(ULONG)self,1,MPM_Quit);
+        DoSuperMethod(CLASS,self,OM_ADDMEMBER,(IPTR)(data->win = nwin));
+        DoMethod(nwin,MUIM_Notify,MUIA_Window_CloseRequest,MUIV_EveryTime,(IPTR)self,1,MPM_Quit);
         res = TRUE;
         if (!bwin)
         {
@@ -462,7 +463,7 @@ static ULONG MUIPC_App__MPM_Rebuild
 
     set(data->win,WindowContents,data->root);
 
-    if (!openWindow(self, data->win, MiamiPanelBaseIntern)) DoSuperMethod(CLASS,self,MUIM_Application_PushMethod,(ULONG)self,1,MPM_Quit);
+    if (!openWindow(self, data->win, MiamiPanelBaseIntern)) DoSuperMethod(CLASS,self,MUIM_Application_PushMethod,(IPTR)self,1,MPM_Quit);
 	SetSuperAttrs(CLASS, self, MUIA_Application_Sleep, FALSE, TAG_DONE);
 
     return res;
@@ -470,7 +471,7 @@ static ULONG MUIPC_App__MPM_Rebuild
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__MPM_Quit
+static IPTR MUIPC_App__MPM_Quit
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -488,14 +489,14 @@ static ULONG MUIPC_App__MPM_Quit
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_App__MPM_DisposeWin(struct IClass *CLASS,Object *self,struct MPP_DisposeWin *message)
 {
     struct MiamiPanelAppClass_DATA *data = INST_DATA(CLASS,self);
     Object      *win = message->win;
 
     set(win,MUIA_Window_Open,FALSE);
-    DoSuperMethod(CLASS,self,OM_REMMEMBER,(ULONG)win);
+    DoSuperMethod(CLASS,self,OM_REMMEMBER,(IPTR)win);
     MUI_DisposeObject(win);
 
     if (win==data->about) data->about = NULL;
@@ -507,7 +508,7 @@ MUIPC_App__MPM_DisposeWin(struct IClass *CLASS,Object *self,struct MPP_DisposeWi
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__MPM_About
+static IPTR MUIPC_App__MPM_About
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -528,10 +529,10 @@ static ULONG MUIPC_App__MPM_About
 														MUIA_Window_RefWindow, data->win,
 														TAG_DONE))
             {
-                DoSuperMethod(CLASS,self,OM_ADDMEMBER,(ULONG)data->about);
+                DoSuperMethod(CLASS,self,OM_ADDMEMBER,(IPTR)data->about);
 
-                DoMethod(data->about,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(ULONG)self,5,
-                    MUIM_Application_PushMethod,(ULONG)self,2,MPM_DisposeWin,(ULONG)data->about);
+                DoMethod(data->about,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(IPTR)self,5,
+                    MUIM_Application_PushMethod,(IPTR)self,2,MPM_DisposeWin,(IPTR)data->about);
             }
         }
 
@@ -547,7 +548,7 @@ static ULONG MUIPC_App__MPM_About
 
 /***********************************************************************/
 
-static ULONG MUIPC_App__MPM_Prefs
+static IPTR MUIPC_App__MPM_Prefs
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -566,7 +567,7 @@ static ULONG MUIPC_App__MPM_Prefs
 															NULL,
 															MPA_Prefs, &data->prefs,
 															TAG_DONE))
-			DoSuperMethod(CLASS,self,OM_ADDMEMBER,(ULONG)data->wprefs);
+			DoSuperMethod(CLASS,self,OM_ADDMEMBER,(IPTR)data->wprefs);
         }
 
         ReleaseSemaphore(&MiamiPanelBaseIntern->mpb_libSem);
@@ -581,7 +582,7 @@ static ULONG MUIPC_App__MPM_Prefs
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_App__MPM_Save(struct IClass *CLASS,Object *self,struct MPP_Save *message)
 {
     struct MiamiPanelAppClass_DATA *data = INST_DATA(CLASS,self);
@@ -591,11 +592,11 @@ MUIPC_App__MPM_Save(struct IClass *CLASS,Object *self,struct MPP_Save *message)
     if (message->save)
     {
         saveIFFPrefs(DEF_ENVARCFILE, &data->prefs, MiamiPanelBaseIntern);
-        DoSuperMethod(CLASS,self,MUIM_Application_Save,(ULONG)MUIV_Application_Save_ENVARC);
+        DoSuperMethod(CLASS,self,MUIM_Application_Save,(IPTR)MUIV_Application_Save_ENVARC);
     }
 
     saveIFFPrefs(DEF_ENVFILE, &data->prefs, MiamiPanelBaseIntern);
-    DoSuperMethod(CLASS,self,MUIM_Application_Save,(ULONG)MUIV_Application_Save_ENV);
+    DoSuperMethod(CLASS,self,MUIM_Application_Save,(IPTR)MUIV_Application_Save_ENV);
 
     DoMethod(data->win,MUIM_Window_Snapshot,1);
 
@@ -604,7 +605,7 @@ MUIPC_App__MPM_Save(struct IClass *CLASS,Object *self,struct MPP_Save *message)
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_App__MPM_Load(struct IClass *CLASS, Object *self,struct MPP_Load *message)
 {
     struct MPS_Prefs prefs;
@@ -613,7 +614,7 @@ MUIPC_App__MPM_Load(struct IClass *CLASS, Object *self,struct MPP_Load *message)
     if (message->envarc) pres = loadIFFPrefs(MPV_LoadPrefs_EnvArc, &prefs, MiamiPanelBaseIntern);
     else pres = loadIFFPrefs(MPV_LoadPrefs_Env, &prefs, MiamiPanelBaseIntern);
 
-    res = DoSuperMethod(CLASS,self,MUIM_Application_Load,(ULONG)(message->envarc ? MUIV_Application_Load_ENVARC : MUIV_Application_Load_ENV));
+    res = DoSuperMethod(CLASS,self,MUIM_Application_Load,(IPTR)(message->envarc ? MUIV_Application_Load_ENVARC : MUIV_Application_Load_ENV));
 
     if (pres) set(self,MPA_Prefs,&prefs);
     else DisplayBeep(0);
@@ -623,7 +624,7 @@ MUIPC_App__MPM_Load(struct IClass *CLASS, Object *self,struct MPP_Load *message)
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_App__MPM_Miami(struct IClass *CLASS,Object *self,struct MPP_Miami *message)
 {
     ULONG cmd = 0; // gcc
@@ -671,13 +672,13 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_App_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
     if ((MiamiPanelBaseIntern->mpb_appClass = MUI_CreateCustomClass(NULL, MUIC_Application, NULL, sizeof(struct MiamiPanelAppClass_DATA), MUIPC_App_Dispatcher)))
     {
-        localizeMenus(appMenu,AppMenuIDs);
+        localizeMenus(appMenu, AppMenuIDs, MiamiPanelBaseIntern);
 
         return TRUE;
     }

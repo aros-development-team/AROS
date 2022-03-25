@@ -3,6 +3,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
@@ -74,8 +75,8 @@ static struct NewMenu cMenu[] =
 
 static struct MiamiPanelBase_intern *MiamiPanelBaseIntern;
 
-static ULONG
-MUIPC_IfGroup__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_IfGroup__OM_NEW(struct IClass *CLASS, Object *self, struct opSet *message)
 {
     struct TagItem   *attrs = message->ops_AttrList;
     Object           *space;
@@ -90,18 +91,18 @@ MUIPC_IfGroup__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
             Child, space = RectangleObject, /*MUIA_Background, MUII_GroupBack, */End,
             TAG_MORE,attrs))
     {
-        struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS,self);
+        struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS, self);
 
         data->space = space;
-        data->show  = GetTagData(MPA_Show,0,attrs);
+        data->show  = GetTagData(MPA_Show, 0, attrs);
 
-        if (data->cmenu = MUI_MakeObject(MUIO_MenustripNM,(ULONG)cMenu,0))
+        if (data->cmenu = MUI_MakeObject(MUIO_MenustripNM, (IPTR)cMenu, 0))
         {
             if (!(data->show & MIAMIPANELV_Init_Flags_ShowDataTransferRate))
             {
                 Object *cmscale;
 
-                DoMethod(data->cmenu,MUIM_Family_Remove,(ULONG)(cmscale = (Object *)DoMethod(data->cmenu,MUIM_FindUData,MSG_IFGroup_CItem_Scale)));
+                DoMethod(data->cmenu, MUIM_Family_Remove, (IPTR)(cmscale = (Object *)DoMethod(data->cmenu, MUIM_FindUData, MSG_IFGroup_CItem_Scale)));
                 MUI_DisposeObject(cmscale);
             }
         }
@@ -109,21 +110,21 @@ MUIPC_IfGroup__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
         data->flags |= FLG_Bar;
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_IfGroup__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_IfGroup__OM_SET(struct IClass *CLASS, Object *self, struct opSet *message)
 {
-    struct MiamiPanelIfGroupClass_DATA    *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfGroupClass_DATA    *data = INST_DATA(CLASS, self);
     struct TagItem *tag;
     struct TagItem *tstate;
 
     for (tstate = message->ops_AttrList; tag = NextTagItem(&tstate); )
     {
-        ULONG tidata = tag->ti_Data;
+        IPTR tidata = tag->ti_Data;
 
         switch(tag->ti_Tag)
         {
@@ -141,58 +142,58 @@ MUIPC_IfGroup__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 
                     data->flags &= ~FLG_SkipBar;
 
-                    DoSuperMethod(CLASS,self,OM_GET,MUIA_Virtgroup_Height,(ULONG)&vh);
+                    DoSuperMethod(CLASS, self, OM_GET, MUIA_Virtgroup_Height, (IPTR)&vh);
 
                     if (vh>=_height(self))
                     {
                         data->flags |= FLG_Bar;
-                        set(_app(self),MPA_Bar,TRUE);
+                        set(_app(self), MPA_Bar, TRUE);
                     }
                     else
                     {
                         data->flags &= ~FLG_Bar;
-                        set(_app(self),MPA_Bar,FALSE);
+                        set(_app(self), MPA_Bar, FALSE);
                     }
                 }
                 break;
         }
     }
 
-    return DoSuperMethodA(CLASS,self,(Msg)message);
+    return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_IfGroup__OM_DISPOSE(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_IfGroup__OM_DISPOSE(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS, self);
 
     if (data->cmenu) MUI_DisposeObject(data->cmenu);
 
     if (data->flags & FLG_Handler)
-        DoMethod(data->app,MUIM_Application_RemInputHandler,(ULONG)&data->ih);
+        DoMethod(data->app, MUIM_Application_RemInputHandler, (IPTR)&data->ih);
 
-    return DoSuperMethodA(CLASS,self,message);
+    return DoSuperMethodA(CLASS, self, message);
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_IfGroup__MUIM_Setup(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_IfGroup__MUIM_Setup(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS, self);
 
-    if (!DoSuperMethodA(CLASS,self,message)) return FALSE;
+    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
     if (!(data->flags & FLG_Handler))
     {
         data->app = _app(self);
-        memset(&data->ih,0,sizeof(data->ih));
+        memset(&data->ih, 0, sizeof(data->ih));
         data->ih.ihn_Object  = self;
         data->ih.ihn_Method  = MPM_IfGroup_HandleEvent;
-        data->ih.ihn_Signals = 1<<MiamiPanelBaseIntern->mpb_port->mp_SigBit;
-        DoMethod(data->app,MUIM_Application_AddInputHandler,(ULONG)&data->ih);
+        data->ih.ihn_Signals = 1 << MiamiPanelBaseIntern->mpb_port->mp_SigBit;
+        DoMethod(data->app, MUIM_Application_AddInputHandler, (IPTR)&data->ih);
 
         data->flags |= FLG_Handler;
     }
@@ -204,31 +205,31 @@ MUIPC_IfGroup__MUIM_Setup(struct IClass *CLASS,Object *self,Msg message)
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_IfGroup__MUIM_Cleanup(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_IfGroup__MUIM_Cleanup(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS, self);
 
     data->flags &= ~FLG_Setup;
 
-    return DoSuperMethodA(CLASS,self,message);
+    return DoSuperMethodA(CLASS, self, message);
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_IfGroup__MUIM_Show(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_IfGroup__MUIM_Show(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfGroupClass_DATA *data = INST_DATA(CLASS, self);
 
-    if (!DoSuperMethodA(CLASS,self,message)) return FALSE;
+    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
     if (data->flags & FLG_BWin)
     {
-        ULONG bar;
+        IPTR bar;
         ULONG vh;
 
-        DoSuperMethod(CLASS,self,OM_GET,MUIA_Virtgroup_Height,(ULONG)&vh);
+        DoSuperMethod(CLASS, self, OM_GET, MUIA_Virtgroup_Height, (IPTR)&vh);
 
         if (!BOOLSAME(data->flags & FLG_Bar,bar = vh>=_height(self)))
         {
@@ -236,7 +237,7 @@ MUIPC_IfGroup__MUIM_Show(struct IClass *CLASS,Object *self,Msg message)
             else data->flags &= ~FLG_Bar;
 
             if (!(data->flags & FLG_SkipBar))
-                DoMethod(_app(self),MUIM_Application_PushMethod,(ULONG)_app(self),3,MUIM_Set,MPA_Bar,(ULONG)bar);
+                DoMethod(_app(self), MUIM_Application_PushMethod, (IPTR)_app(self), 3, MUIM_Set, MPA_Bar, (IPTR)bar);
         }
     }
 
@@ -246,20 +247,20 @@ MUIPC_IfGroup__MUIM_Show(struct IClass *CLASS,Object *self,Msg message)
 /***********************************************************************/
 
 static Object *
-findInterface(Object *self,long unit)
+findInterface(Object *self, long unit)
 {
     struct List *l;
     Object      *cstate;
     Object      *child;
 
-    get(self,MUIA_Group_ChildList,&l);
+    get(self, MUIA_Group_ChildList, &l);
     cstate = (Object *)l->lh_Head;
 
     while (child = NextObject(&cstate))
     {
-        long u;
+        IPTR u;
 
-        if (get(child,MPA_If_Unit,&u) && (u==unit))
+        if (get(child, MPA_If_Unit, &u) && (u == unit))
             return child;
     }
 
@@ -269,14 +270,14 @@ findInterface(Object *self,long unit)
 /***********************************************************************/
 
 static Object *
-findNextChild(Object *self,Object *from,struct MiamiPanelIfGroupClass_DATA *data)
+findNextChild(Object *self, Object *from, struct MiamiPanelIfGroupClass_DATA *data)
 {
     struct List *l;
     Object      *cstate;
     Object      *child, *space;
-    ULONG       next;
+    IPTR       next;
 
-    get(self,MUIA_Group_ChildList,&l);
+    get(self, MUIA_Group_ChildList, &l);
     cstate = (Object *)l->lh_Head;
     space = data->space;
     next = 0;
@@ -293,7 +294,7 @@ findNextChild(Object *self,Object *from,struct MiamiPanelIfGroupClass_DATA *data
 /***********************************************************************/
 
 static void
-addInterface(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DATA *data,struct MPS_Msg_AddInterface *message)
+addInterface(struct IClass *CLASS, Object *self, struct MiamiPanelIfGroupClass_DATA *data, struct MPS_Msg_AddInterface *message)
 {
     Object           *child, *bar;
     struct MPS_Prefs *prefs;
@@ -306,7 +307,7 @@ addInterface(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DAT
         End;
     else bar = NULL;
 
-    get(_app(self),MPA_Prefs,&prefs);
+    get(_app(self), MPA_Prefs, &prefs);
 
     if (child = NewObject(MiamiPanelBaseIntern->mpb_ifGroupClass->mcc_Class,
         	NULL,
@@ -321,16 +322,16 @@ addInterface(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DAT
             MPA_Prefs,        prefs,
 			TAG_DONE))
     {
-        DoSuperMethod(CLASS,self,MUIM_Group_InitChange);
+        DoSuperMethod(CLASS, self, MUIM_Group_InitChange);
 
-        DoSuperMethod(CLASS,self,OM_REMMEMBER,(ULONG)data->space);
+        DoSuperMethod(CLASS, self, OM_REMMEMBER, (IPTR)data->space);
 
-        if (bar) DoSuperMethod(CLASS,self,OM_ADDMEMBER,(ULONG)bar);
-        DoSuperMethod(CLASS,self,OM_ADDMEMBER,(ULONG)child);
+        if (bar) DoSuperMethod(CLASS, self, OM_ADDMEMBER, (IPTR)bar);
+        DoSuperMethod(CLASS, self, OM_ADDMEMBER, (IPTR)child);
 
-        DoSuperMethod(CLASS,self,OM_ADDMEMBER,(ULONG)data->space);
+        DoSuperMethod(CLASS, self, OM_ADDMEMBER, (IPTR)data->space);
 
-        DoSuperMethod(CLASS,self,MUIM_Group_ExitChange);
+        DoSuperMethod(CLASS, self, MUIM_Group_ExitChange);
         data->children++;
     }
     else if (bar) MUI_DisposeObject(bar);
@@ -339,26 +340,26 @@ addInterface(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DAT
 /***********************************************************************/
 
 static void
-delInterface(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DATA *data,struct MPS_Msg_DelInterface *message)
+delInterface(struct IClass *CLASS,Object *self, struct MiamiPanelIfGroupClass_DATA *data, struct MPS_Msg_DelInterface *message)
 {
     Object *child;
 
-    if (child = findInterface(self,message->unit))
+    if (child = findInterface(self, message->unit))
     {
         register Object *next;
 
-        DoSuperMethod(CLASS,self,MUIM_Group_InitChange);
+        DoSuperMethod(CLASS, self, MUIM_Group_InitChange);
 
         if (next = findNextChild(self, child, data))
         {
-            DoSuperMethod(CLASS,self,OM_REMMEMBER,(ULONG)next);
+            DoSuperMethod(CLASS, self, OM_REMMEMBER, (IPTR)next);
             MUI_DisposeObject(next);
         }
 
-        DoSuperMethod(CLASS,self,OM_REMMEMBER,(ULONG)child);
+        DoSuperMethod(CLASS, self, OM_REMMEMBER, (IPTR)child);
         MUI_DisposeObject(child);
 
-        DoSuperMethod(CLASS,self,MUIM_Group_ExitChange);
+        DoSuperMethod(CLASS, self, MUIM_Group_ExitChange);
 
         data->children--;
     }
@@ -367,12 +368,12 @@ delInterface(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DAT
 /***********************************************************************/
 
 static void
-setInterfaceState(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DATA *data,struct MPS_Msg_SetInterfaceState *message)
+setInterfaceState(struct IClass *CLASS, Object *self, struct MiamiPanelIfGroupClass_DATA *data, struct MPS_Msg_SetInterfaceState *message)
 {
     Object *child;
 
     if (child = findInterface(self,message->unit))
-        SetAttrs(child,MPA_If_State,  message->state,
+        SetAttrs(child, MPA_If_State, message->state,
                        MPA_If_Ontime, message->ontime,
                        TAG_DONE);
 }
@@ -380,45 +381,45 @@ setInterfaceState(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClas
 /***********************************************************************/
 
 static void
-setInterfaceSpeed(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DATA *data,struct MPS_Msg_SetInterfaceSpeed *message)
+setInterfaceSpeed(struct IClass *CLASS, Object *self, struct MiamiPanelIfGroupClass_DATA *data, struct MPS_Msg_SetInterfaceSpeed *message)
 {
     Object *child;
 
-    if (child = findInterface(self,message->unit))
-        set(child,MPA_If_Speed,message->speed);
+    if (child = findInterface(self, message->unit))
+        set(child, MPA_If_Speed, message->speed);
 }
 
 /***********************************************************************/
 
 static void
-interfaceReport(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DATA *data,struct MPS_Msg_InterfaceReport *message)
+interfaceReport(struct IClass *CLASS, Object *self, struct MiamiPanelIfGroupClass_DATA *data, struct MPS_Msg_InterfaceReport *message)
 {
     Object *child;
 
-    if (child = findInterface(self,message->unit))
+    if (child = findInterface(self, message->unit))
         SetAttrs(child,MPA_If_Rate,    message->rate,
                        MPA_If_Now,     message->now,
-                       MPA_If_Traffic, (ULONG)&message->total,
+                       MPA_If_Traffic, (IPTR)&message->total,
                        TAG_DONE);
 }
 
 /***********************************************************************/
 
 static void
-refreshName(struct IClass *CLASS,Object *self,struct MiamiPanelIfGroupClass_DATA *data,struct MPS_Msg_RefreshName *message)
+refreshName(struct IClass *CLASS, Object *self, struct MiamiPanelIfGroupClass_DATA *data, struct MPS_Msg_RefreshName *message)
 {
     Object *child;
 
-    if (child = findInterface(self,message->unit))
-        set(child,MPA_If_Name,message->name);
+    if (child = findInterface(self, message->unit))
+        set(child, MPA_If_Name, message->name);
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_IfGroup__MPM_IfGroup_HandleEvent(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_IfGroup__MPM_IfGroup_HandleEvent(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelIfGroupClass_DATA    *data = INST_DATA(CLASS,self);
+    struct MiamiPanelIfGroupClass_DATA    *data = INST_DATA(CLASS, self);
     struct MPS_Msg *mpsg;
     ULONG          res;
 
@@ -431,41 +432,41 @@ MUIPC_IfGroup__MPM_IfGroup_HandleEvent(struct IClass *CLASS,Object *self,Msg mes
         switch (mpsg->type)
         {
             case MPV_Msg_Type_Cleanup:
-                DoMethod(_app(self),MUIM_Application_PushMethod,(ULONG)_app(self),2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
+                DoMethod(_app(self), MUIM_Application_PushMethod, (IPTR)_app(self), 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
                 break;
 
             case MPV_Msg_Type_AddInterface:
-                addInterface(CLASS,self,data,(APTR)mpsg);
+                addInterface(CLASS, self, data, (APTR)mpsg);
                 break;
 
             case MPV_Msg_Type_DelInterface:
-                delInterface(CLASS,self,data,(APTR)mpsg);
+                delInterface(CLASS, self, data, (APTR)mpsg);
                 break;
 
             case MPV_Msg_Type_SetInterfaceState:
-                setInterfaceState(CLASS,self,data,(APTR)mpsg);
+                setInterfaceState(CLASS, self, data, (APTR)mpsg);
                 break;
 
             case MPV_Msg_Type_SetInterfaceSpeed:
-                setInterfaceSpeed(CLASS,self,data,(APTR)mpsg);
+                setInterfaceSpeed(CLASS, self, data, (APTR)mpsg);
                 break;
 
             case MPV_Msg_Type_InterfaceReport:
-                interfaceReport(CLASS,self,data,(APTR)mpsg);
+                interfaceReport(CLASS, self, data, (APTR)mpsg);
                 break;
 
             case MPV_Msg_Type_RefreshName:
-                refreshName(CLASS,self,data,(APTR)mpsg);
+                refreshName(CLASS, self, data, (APTR)mpsg);
                 break;
 
             case MPV_Msg_Type_ToFront:
             {
-                ULONG iconified;
+                IPTR iconified;
 
-                get(_app(self),MUIA_Application_Iconified,&iconified);
-                if (iconified) set(_app(self),MUIA_Application_Iconified,FALSE);
+                get(_app(self), MUIA_Application_Iconified, &iconified);
+                if (iconified) set(_app(self), MUIA_Application_Iconified, FALSE);
                 else
-                    if (data->flags & FLG_Setup) set(_win(self),MUIA_Window_Open,TRUE);
+                    if (data->flags & FLG_Setup) set(_win(self), MUIA_Window_Open, TRUE);
                     else DisplayBeep(0);
                 break;
             }
@@ -477,11 +478,11 @@ MUIPC_IfGroup__MPM_IfGroup_HandleEvent(struct IClass *CLASS,Object *self,Msg mes
                 if (m->val)
                 {
                     if (!data->refresh++)
-                        DoMethod(self,MUIM_Group_InitChange);
+                        DoMethod(self, MUIM_Group_InitChange);
                 }
                 else
                     if (data->refresh && !--data->refresh)
-                        DoMethod(self,MUIM_Group_ExitChange);
+                        DoMethod(self, MUIM_Group_ExitChange);
                 break;
             }
 
@@ -498,33 +499,33 @@ MUIPC_IfGroup__MPM_IfGroup_HandleEvent(struct IClass *CLASS,Object *self,Msg mes
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_IfGroup__MPM_IfGroup_GrabIFList(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_IfGroup__MPM_IfGroup_GrabIFList(struct IClass *CLASS, Object *self, Msg message)
 {
     struct List      *l;
     Object           *cstate;
     Object           *child;
     struct MPS_Prefs *prefs;
 
-    get(_app(self),MPA_Prefs,&prefs);
+    get(_app(self), MPA_Prefs, &prefs);
     freeIFList(prefs, MiamiPanelBaseIntern);
 
-    get(self,MUIA_Group_ChildList,&l);
+    get(self, MUIA_Group_ChildList, &l);
     cstate = (Object *)l->lh_Head;
 
     while (child = NextObject(&cstate))
     {
         UBYTE  *name;
-        ULONG  scale;
+        IPTR  scale;
 
-        if (get(child,MPA_If_Name,&name))
+        if (get(child, MPA_If_Name, &name))
         {
-            get(child,MPA_If_Scale,&scale);
-            createIFNode(prefs,name,scale, MiamiPanelBaseIntern);
+            get(child, MPA_If_Scale, &scale);
+            createIFNode(prefs, name, scale, MiamiPanelBaseIntern);
         }
     }
 
-    return NULL;
+    return (IPTR)NULL;
 }
 
 /***********************************************************************/
@@ -533,15 +534,15 @@ BOOPSI_DISPATCHER(IPTR, MUIPC_IfGroup_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW:                  return MUIPC_IfGroup__OM_NEW(CLASS,self,(APTR)message);
-        case OM_SET:                  return MUIPC_IfGroup__OM_SET(CLASS,self,(APTR)message);
-        case OM_DISPOSE:              return MUIPC_IfGroup__OM_DISPOSE(CLASS,self,(APTR)message);
-        case MUIM_Setup:              return MUIPC_IfGroup__MUIM_Setup(CLASS,self,(APTR)message);
-        case MUIM_Cleanup:            return MUIPC_IfGroup__MUIM_Cleanup(CLASS,self,(APTR)message);
-        case MUIM_Show:               return MUIPC_IfGroup__MUIM_Show(CLASS,self,(APTR)message);
-        case MPM_IfGroup_HandleEvent: return MUIPC_IfGroup__MPM_IfGroup_HandleEvent(CLASS,self,(APTR)message);
-        case MPM_IfGroup_GrabIFList:  return MUIPC_IfGroup__MPM_IfGroup_GrabIFList(CLASS,self,(APTR)message);
-        default:                      return DoSuperMethodA(CLASS,self,message);
+        case OM_NEW:                  return MUIPC_IfGroup__OM_NEW(CLASS, self, (APTR)message);
+        case OM_SET:                  return MUIPC_IfGroup__OM_SET(CLASS, self, (APTR)message);
+        case OM_DISPOSE:              return MUIPC_IfGroup__OM_DISPOSE(CLASS, self, (APTR)message);
+        case MUIM_Setup:              return MUIPC_IfGroup__MUIM_Setup(CLASS, self, (APTR)message);
+        case MUIM_Cleanup:            return MUIPC_IfGroup__MUIM_Cleanup(CLASS, self, (APTR)message);
+        case MUIM_Show:               return MUIPC_IfGroup__MUIM_Show(CLASS, self, (APTR)message);
+        case MPM_IfGroup_HandleEvent: return MUIPC_IfGroup__MPM_IfGroup_HandleEvent(CLASS, self, (APTR)message);
+        case MPM_IfGroup_GrabIFList:  return MUIPC_IfGroup__MPM_IfGroup_GrabIFList(CLASS, self, (APTR)message);
+        default:                      return DoSuperMethodA(CLASS, self, message);
     }
 	return 0;
 }
@@ -564,66 +565,100 @@ static ULONG defScales[] =
 
 struct TagItem scales[] =
 {
-    TAG_SCALE_1,     6000,
-    TAG_SCALE_2,    12000,
-    TAG_SCALE_3,    32000,
-    TAG_SCALE_4,    64000,
-    TAG_SCALE_5,   128000,
-    TAG_SCALE_6,   256000,
-    TAG_SCALE_7,   512000,
-    TAG_SCALE_8,  1024000,
-    TAG_DONE
+    { TAG_SCALE_1,  0},
+    { TAG_SCALE_2,  0},
+    { TAG_SCALE_3,  0},
+    { TAG_SCALE_4,  0},
+    { TAG_SCALE_5,  0},
+    { TAG_SCALE_6,  0},
+    { TAG_SCALE_7,  0},
+    { TAG_SCALE_8,  0},
+    {TAG_DONE,  0}
 };
 
-static UBYTE scaleStrings[TAG_SCALE_LAST-TAG_SCALE-1][64];
+static UBYTE scaleStrings[TAG_SCALE_LAST - TAG_SCALE - 1][64];
 
-ULONG
+BPTR OpenScales()
+{
+    BPTR lock;
+
+    if ((lock = Lock("MIAMI:Libs", SHARED_LOCK)) != BNULL)
+    {
+        UnLock(lock);
+        if ((lock = Open("MIAMI:Libs/MUI.MiamiPanel.scales", MODE_OLDFILE)) != BNULL)
+            return lock;
+    }
+#if defined(__AROS__)
+    if ((lock = Lock("AROSTCP:Libs", SHARED_LOCK)) != BNULL)
+    {
+        UnLock(lock);
+        if ((lock = Open("AROSTCP:Libs/MUI.MiamiPanel.scales", MODE_OLDFILE)) != BNULL)
+            return lock;
+    }
+#endif
+    return BNULL;
+}
+
+IPTR
 MUIPC_IfGroup_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
-    if (MiamiPanelBaseIntern->mpb_ifGroupClass = MUI_CreateCustomClass(NULL, MUIC_Virtgroup,NULL, sizeof(struct MiamiPanelIfGroupClass_DATA), MUIPC_IfGroup_Dispatcher))
+    if (MiamiPanelBaseIntern->mpb_ifGroupClass = MUI_CreateCustomClass(NULL, MUIC_Virtgroup, NULL, sizeof(struct MiamiPanelIfGroupClass_DATA), MUIPC_IfGroup_Dispatcher))
     {
-        struct NewMenu *nm;
-        struct TagItem *t;
-        UBYTE          *scaleFmt;
-        BPTR           file;
-        ULONG          *ids;
-        int            i;
+        struct Process  *thisTask = (struct Process  *)FindTask(NULL);
+        struct NewMenu  *nm;
+        struct TagItem  *t;
+        CONST_STRPTR    scaleFmt;
+        APTR            wPtr;
+        BPTR            file;
+        ULONG           *ids;
+        int             i;
 
-    for (i = 0, ids = defScales; *ids; ids++, i++) scales[i].ti_Data = *ids;
+        for (i = 0, ids = defScales; *ids; ids++, i++)
+            scales[i].ti_Data = *ids;
 
-        if (file = Open("MIAMI:Libs/MUI.MiamiPanel.scales",MODE_OLDFILE))
+        if (thisTask->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+        {
+            wPtr = thisTask->pr_WindowPtr;
+            thisTask->pr_WindowPtr = 0;
+        }
+
+        if (file = OpenScales())
         {
             UBYTE buf[32];
 
             i = 0;
 
-            while (FGets(file,buf,sizeof(buf)))
+            while (FGets(file, buf, sizeof(buf)))
             {
                 UBYTE *s;
 
-                for (s = buf; *s && *s!='\n' && *s!='\r'; s++);
+                for (s = buf; *s && *s != '\n' && *s != '\r'; s++);
                 *s = 0;
 
-                if (!*buf || *buf==';') continue;
+                if (!*buf || *buf == ';') continue;
 
                 scales[i++].ti_Data = atoi(buf);
-                if (i==TAG_SCALE_LAST-TAG_SCALE-1) break;
+                if (i == TAG_SCALE_LAST - TAG_SCALE - 1) break;
             }
 
             Close(file);
         }
+        if (thisTask->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+            thisTask->pr_WindowPtr = wPtr;
 
-        scaleFmt = __(MSG_IFGroup_CItem_ScaleFmt);
+        scaleFmt = _(MSG_IFGroup_CItem_ScaleFmt, MiamiPanelBaseIntern);
 
-        for (i = 0, t = scales; t->ti_Tag!=TAG_DONE; i++, t++)
-            snprintf(scaleStrings[i],sizeof(scaleStrings[i]),scaleFmt,t->ti_Data/1000);
+        for (i = 0, t = scales; t->ti_Tag != TAG_DONE; i++, t++)
+        {
+            snprintf(scaleStrings[i], sizeof(scaleStrings[i]), scaleFmt, (LONG)t->ti_Data/1000);
+        }
 
-        for (ids = cMenuIDs, nm = cMenu ; nm->nm_Type!=NM_END; nm++)
-            if (nm->nm_Label!=NM_BARLABEL)
-                if (((ULONG)nm->nm_UserData>TAG_SCALE) && ((ULONG)nm->nm_UserData<TAG_SCALE_LAST))
-                    nm->nm_Label = scaleStrings[(ULONG)nm->nm_UserData-TAG_SCALE-1];
-                else nm->nm_Label = __(*ids++);
+        for (ids = cMenuIDs, nm = cMenu ; nm->nm_Type != NM_END; nm++)
+            if (nm->nm_Label != NM_BARLABEL)
+                if (((IPTR)nm->nm_UserData > TAG_SCALE) && ((IPTR)nm->nm_UserData < TAG_SCALE_LAST))
+                    nm->nm_Label = scaleStrings[(IPTR)nm->nm_UserData - TAG_SCALE-1];
+                else nm->nm_Label = _(*ids++, MiamiPanelBaseIntern);
 
         return TRUE;
     }

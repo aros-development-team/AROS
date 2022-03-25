@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>
@@ -15,6 +15,7 @@
 #include <mui/TheBar_mcc.h>
 
 #include "muimiamipanel_intern.h"
+#include "muimiamipanel_locale.h"
 
 /*** Functions **************************************************************/
 /* Main *********************************************************************/
@@ -31,7 +32,7 @@ CONST_STRPTR _(ULONG id, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 }
 
 void
-localizeArray(UBYTE **strings,ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
+localizeArray(CONST_STRPTR *strings, ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
     for (;;)
     {
@@ -47,7 +48,7 @@ localizeArray(UBYTE **strings,ULONG *ids, struct MiamiPanelBase_intern *MiamiPan
 /***********************************************************************/
 
 void
-localizeMenus(struct NewMenu *menu,ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
+localizeMenus(struct NewMenu *menu, ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
     while (menu->nm_Type!=NM_END)
     {
@@ -63,9 +64,9 @@ localizeMenus(struct NewMenu *menu,ULONG *ids, struct MiamiPanelBase_intern *Mia
 /***********************************************************************/
 
 void
-localizeButtonsBar(struct MUIS_TheBar_Button *buttons,ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
+localizeButtonsBar(struct MUIS_TheBar_Button *buttons, ULONG *ids, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
-    while (buttons->img!=MUIV_TheBar_End)
+    while (buttons->img != MUIV_TheBar_End)
     {
         register ULONG t = *ids++;
         register ULONG h = *ids++;
@@ -95,10 +96,10 @@ VOID Locale_Initialize(struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 
 VOID Locale_Deinitialize(struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
-    if(LocaleBase != NULL && MiamiPanelBaseIntern->mpb_cat != NULL)
-        {
-                CloseCatalog(MiamiPanelBaseIntern->mpb_cat);
-                MiamiPanelBaseIntern->mpb_cat = NULL;
-        }
+    if ((LocaleBase != NULL) && (MiamiPanelBaseIntern->mpb_cat != NULL))
+    {
+        CloseCatalog(MiamiPanelBaseIntern->mpb_cat);
+        MiamiPanelBaseIntern->mpb_cat = NULL;
+    }
 }
 

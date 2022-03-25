@@ -13,7 +13,7 @@ saveIFFPrefs(UBYTE *file,struct MPS_Prefs *prefs, struct MiamiPanelBase_intern *
 
     if (iffh = AllocIFF())
     {
-        if (iffh->iff_Stream = Open(file,MODE_NEWFILE))
+        if (iffh->iff_Stream = (IPTR)Open(file,MODE_NEWFILE))
         {
             InitIFFasDOS(iffh);
 
@@ -50,7 +50,7 @@ saveIFFPrefs(UBYTE *file,struct MPS_Prefs *prefs, struct MiamiPanelBase_intern *
                 fail: CloseIFF(iffh);
             }
 
-            Close(iffh->iff_Stream);
+            Close((BPTR)iffh->iff_Stream);
         }
 
         FreeIFF(iffh);
@@ -85,7 +85,7 @@ loadIFFPrefs(ULONG where,struct MPS_Prefs *prefs, struct MiamiPanelBase_intern *
 
         if (file)
         {
-            iffh->iff_Stream = file;
+            iffh->iff_Stream = (IPTR)file;
 
             InitIFFasDOS(iffh);
 

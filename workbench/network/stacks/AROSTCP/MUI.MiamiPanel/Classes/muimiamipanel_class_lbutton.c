@@ -2,18 +2,21 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
 
+#include <mui/Lamp_mcc.h>
+
+#include <string.h>
+
 #include "muimiamipanel_intern.h"
 #include "muimiamipanel_locale.h"
 
-#include <mui/Lamp_mcc.h>
-
 /***********************************************************************/
 
-static UBYTE *ons, *offs, *btFixWidthTxt;
+static CONST_STRPTR ons = NULL, offs = NULL, btFixWidthTxt = NULL;
 
 /***********************************************************************/
 
@@ -27,8 +30,8 @@ struct MiamiPanelLButtonClass_DATA
 
 static struct MiamiPanelBase_intern *MiamiPanelBaseIntern;
 
-static ULONG
-MUIPC_LButton__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_LButton__OM_NEW(struct IClass *CLASS, Object *self, struct opSet *message)
 {
     struct MiamiPanelLButtonClass_DATA    temp;
     struct TagItem *attrs = message->ops_AttrList;
@@ -58,25 +61,25 @@ MUIPC_LButton__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
 
             TAG_MORE,attrs))
     {
-        struct MiamiPanelLButtonClass_DATA *data = INST_DATA(CLASS,self);
+        struct MiamiPanelLButtonClass_DATA *data = INST_DATA(CLASS, self);
 
         CopyMem(&temp, data, sizeof(struct MiamiPanelLButtonClass_DATA));
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_LButton__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_LButton__OM_SET(struct IClass *CLASS, Object *self, struct opSet *message)
 {
-    struct MiamiPanelLButtonClass_DATA    *data = INST_DATA(CLASS,self);
+    struct MiamiPanelLButtonClass_DATA    *data = INST_DATA(CLASS, self);
     struct TagItem *tag;
 
-    if (tag = FindTagItem(MPA_LButton_State,message->ops_AttrList))
+    if (tag = FindTagItem(MPA_LButton_State, message->ops_AttrList))
     {
-        UBYTE  *text;
+        CONST_STRPTR text;
         ULONG  color, dis;
 
         switch (tag->ti_Data)
@@ -118,12 +121,12 @@ MUIPC_LButton__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
                 break;
         }
 
-        if (data->lamp) set(data->lamp,MUIA_Lamp_Color,color);
-        if (text) set(data->text,MUIA_Text_Contents,text);
-        SetSuperAttrs(CLASS,self,MUIA_Disabled,dis,TAG_DONE);
+        if (data->lamp) set(data->lamp, MUIA_Lamp_Color, color);
+        if (text) set(data->text, MUIA_Text_Contents, text);
+        SetSuperAttrs(CLASS, self, MUIA_Disabled, dis, TAG_DONE);
     }
 
-    return DoSuperMethodA(CLASS,self,(Msg)message);
+    return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 
 /***********************************************************************/
@@ -132,9 +135,9 @@ BOOPSI_DISPATCHER(IPTR, MUIPC_LButton_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_SET: return MUIPC_LButton__OM_SET(CLASS,self,(APTR)message);
-        case OM_NEW: return MUIPC_LButton__OM_NEW(CLASS,self,(APTR)message);
-        default:     return DoSuperMethodA(CLASS,self,message);
+        case OM_SET: return MUIPC_LButton__OM_SET(CLASS, self, (APTR)message);
+        case OM_NEW: return MUIPC_LButton__OM_NEW(CLASS, self, (APTR)message);
+        default:     return DoSuperMethodA(CLASS, self, message);
     }
 	return 0;
 }
@@ -142,16 +145,16 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_LButton_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
     if (MiamiPanelBaseIntern->mpb_lbuttonClass = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct MiamiPanelLButtonClass_DATA), MUIPC_LButton_Dispatcher))
     {
-        ons  = __(MSG_IF_Button_Online);
-        offs = __(MSG_IF_Button_Offline);
+        ons  = _(MSG_IF_Button_Online, MiamiPanelBaseIntern);
+        offs = _(MSG_IF_Button_Offline, MiamiPanelBaseIntern);
 
-        if (strlen(ons)>strlen(offs)) btFixWidthTxt = ons;
+        if (strlen(ons) > strlen(offs)) btFixWidthTxt = ons;
         else btFixWidthTxt = offs;
 
         return TRUE;

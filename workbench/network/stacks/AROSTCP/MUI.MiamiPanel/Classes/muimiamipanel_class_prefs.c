@@ -2,6 +2,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
@@ -21,7 +22,7 @@ static ULONG registerLabelsIDs[] =
     MSG_Prefs_Options,
     0
 };
-static UBYTE *registerLabels[IDSSIZE(registerLabelsIDs)];
+static CONST_STRPTR registerLabels[IDSSIZE(registerLabelsIDs)];
 
 static ULONG tformatsIDs[] =
 {
@@ -29,7 +30,7 @@ static ULONG tformatsIDs[] =
     MSG_Prefs_IF_Traffic_Format_Short,
     0
 };
-static UBYTE *tformats[IDSSIZE(tformatsIDs)];
+static CONST_STRPTR tformats[IDSSIZE(tformatsIDs)];
 
 static ULONG rformatsIDs[] =
 {
@@ -37,7 +38,7 @@ static ULONG rformatsIDs[] =
     MSG_Prefs_IF_Rate_Format_Short,
     0
 };
-static UBYTE *rformats[IDSSIZE(rformatsIDs)];
+static CONST_STRPTR rformats[IDSSIZE(rformatsIDs)];
 
 static ULONG positionsIDs[] =
 {
@@ -47,7 +48,7 @@ static ULONG positionsIDs[] =
     MSG_Prefs_Miami_Position_Left,
     0
 };
-static UBYTE *positions[IDSSIZE(positionsIDs)];
+static CONST_STRPTR positions[IDSSIZE(positionsIDs)];
 
 static ULONG vmodesIDs[] =
 {
@@ -56,7 +57,7 @@ static ULONG vmodesIDs[] =
     MSG_Prefs_Miami_ViewMode_Text,
     0
 };
-static UBYTE *vmodes[IDSSIZE(vmodesIDs)];
+static CONST_STRPTR vmodes[IDSSIZE(vmodesIDs)];
 
 static ULONG lpossIDs[] =
 {
@@ -66,7 +67,7 @@ static ULONG lpossIDs[] =
     MSG_Prefs_Miami_LabelPosition_Left,
     0
 };
-static UBYTE *lposs[IDSSIZE(lpossIDs)];
+static CONST_STRPTR lposs[IDSSIZE(lpossIDs)];
 
 static ULONG oniconifiesIDs[] =
 {
@@ -74,7 +75,7 @@ static ULONG oniconifiesIDs[] =
     MSG_Prefs_OI_Hide,
     0
 };
-static UBYTE *oniconifies[IDSSIZE(oniconifiesIDs)];
+static CONST_STRPTR oniconifies[IDSSIZE(oniconifiesIDs)];
 
 static ULONG sblayoutsIDs[] =
 {
@@ -83,7 +84,7 @@ static ULONG sblayoutsIDs[] =
     MSG_Prefs_Miami_BarLayout_Right,
     0
 };
-static UBYTE *sblayouts[IDSSIZE(sblayoutsIDs)];
+static CONST_STRPTR sblayouts[IDSSIZE(sblayoutsIDs)];
 
 /***********************************************************************/
 
@@ -99,9 +100,9 @@ struct MiamiPanelPrefsClass_DATA
     Object           *oniconify;
     Object           *bwin;
     Object           *bwinBorders;
-    #ifdef __MORPHOS__
+#ifdef __MORPHOS__
     Object       *useTransparency;
-    #endif
+#endif
 
     Object           *barLayout;
     Object           *viewMode;
@@ -150,9 +151,9 @@ gadgetsToPrefs(struct MiamiPanelPrefsClass_DATA *data,struct MPS_Prefs *prefs)
     if (XGET(data->oniconify,MUIA_Cycle_Active)) prefs->flags |= MPV_Flags_Iconify;
     if (XGET(data->bwin,MUIA_Selected)) prefs->flags |= MPV_Flags_BWin;
     if (XGET(data->bwinBorders,MUIA_Selected)) prefs->flags |= MPV_Flags_BWinBorders;
-    #ifdef __MORPHOS__
+#ifdef __MORPHOS__
     if (XGET(data->useTransparency,MUIA_Selected)) prefs->flags |= MPV_Flags_UseTransparency;
-    #endif
+#endif
 
     /* barLayout */
     prefs->barLayout = XGET(data->barLayout,MUIA_Cycle_Active);
@@ -197,9 +198,9 @@ prefsToGadgets(struct MiamiPanelPrefsClass_DATA *data,struct MPS_Prefs *prefs)
     set(data->oniconify,MUIA_Cycle_Active,prefs->flags & MPV_Flags_Iconify);
     set(data->bwin,MUIA_Selected,prefs->flags & MPV_Flags_BWin);
     set(data->bwinBorders,MUIA_Selected,prefs->flags & MPV_Flags_BWinBorders);
-    #ifdef __MORPHOS__
-    set(data->useTransparency,MUIA_Selected,prefs->flags & MPV_Flags_UseTransparency);
-    #endif
+#ifdef __MORPHOS__
+    set(data->useTransparency, MUIA_Selected, prefs->flags & MPV_Flags_UseTransparency);
+#endif
 
     /* barLayout */
     set(data->barLayout,MUIA_Cycle_Active,prefs->barLayout);
@@ -224,7 +225,7 @@ prefsToGadgets(struct MiamiPanelPrefsClass_DATA *data,struct MPS_Prefs *prefs)
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_Prefs__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
 {
     struct MiamiPanelPrefsClass_DATA             temp;
@@ -342,10 +343,10 @@ MUIPC_Prefs__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
                                         Child, ollabel1(MSG_Prefs_BWin, MiamiPanelBaseIntern),
                                         Child, temp.bwinBorders = ocheck(MSG_Prefs_BWinBorders,MSG_Prefs_BWinBorders_Help, MiamiPanelBaseIntern),
                                         Child, ollabel1(MSG_Prefs_BWinBorders, MiamiPanelBaseIntern),
-                                        #ifdef __MORPHOS__
+#ifdef __MORPHOS__
                                         Child, temp.useTransparency = ocheck(MSG_Prefs_UseTransparency,MSG_Prefs_UseTransparency_Help, MiamiPanelBaseIntern),
                                         Child, ollabel1(MSG_Prefs_UseTransparency, MiamiPanelBaseIntern),
-                                        #endif
+#endif
                                     End,
                                     Child, HSpace(0),
                                 End,
@@ -371,37 +372,37 @@ MUIPC_Prefs__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
 
             TAG_MORE,attrs))
     {
-        struct MiamiPanelPrefsClass_DATA      *data = INST_DATA(CLASS,self);
-        struct MPS_Prefs *prefs = (struct MPS_Prefs *)GetTagData(MPA_Prefs,NULL,attrs);
+        struct MiamiPanelPrefsClass_DATA      *data = INST_DATA(CLASS, self);
+        struct MPS_Prefs *prefs = (struct MPS_Prefs *)GetTagData(MPA_Prefs, 0, attrs);
 
         CopyMem(&temp,data,sizeof(struct MiamiPanelPrefsClass_DATA));
 
-        DoMethod(self,MUIM_MultiSet,MUIA_Disabled,TRUE,(ULONG)data->raised,(ULONG)data->bwinBorders,TAG_DONE);
+        DoMethod(self,MUIM_MultiSet,MUIA_Disabled,TRUE,(IPTR)data->raised,(IPTR)data->bwinBorders,TAG_DONE);
 
         DoSuperMethod(CLASS,self,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,
             MUIV_Notify_Self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Cancel);
 
         DoMethod(data->borderless,MUIM_Notify,MUIA_Selected,MUIV_EveryTime,
-            (ULONG)data->raised,3,MUIM_Set,MUIA_Disabled,MUIV_NotTriggerValue);
+            (IPTR)data->raised,3,MUIM_Set,MUIA_Disabled,MUIV_NotTriggerValue);
 
         DoMethod(data->bwin,MUIM_Notify,MUIA_Selected,MUIV_EveryTime,
-            (ULONG)data->bwinBorders,3,MUIM_Set,MUIA_Disabled,MUIV_NotTriggerValue);
+            (IPTR)data->bwinBorders,3,MUIM_Set,MUIA_Disabled,MUIV_NotTriggerValue);
 
-        DoMethod(save,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Save);
-        DoMethod(use,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Use);
-        DoMethod(apply,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Apply);
-        DoMethod(test,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Test);
-        DoMethod(cancel,MUIM_Notify,MUIA_Pressed,FALSE,(ULONG)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Cancel);
+        DoMethod(save,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Save);
+        DoMethod(use,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Use);
+        DoMethod(apply,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Apply);
+        DoMethod(test,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Test);
+        DoMethod(cancel,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)self,2,MPM_Prefs_UsePrefs,MPV_Prefs_UsePrefs_Cancel);
 
         prefsToGadgets(data,prefs);
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_Prefs__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 {
     register struct MiamiPanelPrefsClass_DATA    *data = INST_DATA(CLASS,self);
@@ -410,7 +411,7 @@ MUIPC_Prefs__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 
     for (tstate = message->ops_AttrList; tag = NextTagItem(&tstate); )
     {
-        register ULONG tidata = tag->ti_Data;
+        register IPTR tidata = tag->ti_Data;
 
         switch(tag->ti_Tag)
         {
@@ -425,7 +426,7 @@ MUIPC_Prefs__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
 
 /***********************************************************************/
 
-static ULONG
+static IPTR
 MUIPC_Prefs__MPM_Prefs_UsePrefs(struct IClass *CLASS,Object *self,struct MPP_Prefs_UsePrefs *message)
 {
     register struct MiamiPanelPrefsClass_DATA *data = INST_DATA(CLASS,self);
@@ -438,20 +439,20 @@ MUIPC_Prefs__MPM_Prefs_UsePrefs(struct IClass *CLASS,Object *self,struct MPP_Pre
     {
         case MPV_Prefs_UsePrefs_Save:
             gadgetsToPrefs(data,&data->prefs);
-            SetAttrs(_app(self),MPA_Prefs,(ULONG)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
+            SetAttrs(_app(self),MPA_Prefs,(IPTR)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
             DoMethod(_app(self),MPM_Save,TRUE);
             DoMethod(_app(self),MPM_Save,FALSE);
             break;
 
         case MPV_Prefs_UsePrefs_Use:
             gadgetsToPrefs(data,&data->prefs);
-            SetAttrs(_app(self),MPA_Prefs,(ULONG)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
+            SetAttrs(_app(self),MPA_Prefs,(IPTR)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
             DoMethod(_app(self),MPM_Save,FALSE);
             break;
 
         case MPV_Prefs_UsePrefs_Apply:
             gadgetsToPrefs(data,&data->prefs);
-            SetAttrs(_app(self),MPA_Prefs,(ULONG)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
+            SetAttrs(_app(self),MPA_Prefs,(IPTR)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
             break;
 
         case MPV_Prefs_UsePrefs_Test:
@@ -459,19 +460,19 @@ MUIPC_Prefs__MPM_Prefs_UsePrefs(struct IClass *CLASS,Object *self,struct MPP_Pre
             struct MPS_Prefs prefs;
 
             gadgetsToPrefs(data,&prefs);
-            SetAttrs(_app(self),MPA_Prefs,(ULONG)&prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
+            SetAttrs(_app(self),MPA_Prefs,(IPTR)&prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
             data->flags |= FLG_Test;
             break;
         }
 
         case MPV_Prefs_UsePrefs_Cancel:
             SetSuperAttrs(CLASS,self,MUIA_Window_Open,FALSE,TAG_DONE);
-            if (data->flags & FLG_Test) SetAttrs(_app(self),MPA_Prefs,(ULONG)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
+            if (data->flags & FLG_Test) SetAttrs(_app(self),MPA_Prefs,(IPTR)&data->prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
             break;
     }
 
     if (close)
-        DoMethod(_app(self),MUIM_Application_PushMethod,(ULONG)_app(self),2,MPM_DisposeWin,(ULONG)self);
+        DoMethod(_app(self),MUIM_Application_PushMethod,(IPTR)_app(self),2,MPM_DisposeWin,(IPTR)self);
 
     return 0;
 }
@@ -493,20 +494,20 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_Prefs_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
     if (MiamiPanelBaseIntern->mpb_prefsClass = MUI_CreateCustomClass(NULL,MUIC_Window,NULL,sizeof(struct MiamiPanelPrefsClass_DATA),MUIPC_Prefs_Dispatcher))
     {
-        localizeArray(registerLabels,registerLabelsIDs);
-        localizeArray(tformats,tformatsIDs);
-        localizeArray(rformats,rformatsIDs);
-        localizeArray(positions,positionsIDs);
-        localizeArray(vmodes,vmodesIDs);
-        localizeArray(lposs,lpossIDs);
-        localizeArray(oniconifies,oniconifiesIDs);
-        localizeArray(sblayouts,sblayoutsIDs);
+        localizeArray(registerLabels, registerLabelsIDs, MiamiPanelBaseIntern);
+        localizeArray(tformats, tformatsIDs, MiamiPanelBaseIntern);
+        localizeArray(rformats, rformatsIDs, MiamiPanelBaseIntern);
+        localizeArray(positions, positionsIDs, MiamiPanelBaseIntern);
+        localizeArray(vmodes, vmodesIDs, MiamiPanelBaseIntern);
+        localizeArray(lposs, lpossIDs, MiamiPanelBaseIntern);
+        localizeArray(oniconifies, oniconifiesIDs, MiamiPanelBaseIntern);
+        localizeArray(sblayouts, sblayoutsIDs, MiamiPanelBaseIntern);
 
         return TRUE;
     }

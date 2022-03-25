@@ -2,6 +2,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 
@@ -110,7 +111,7 @@ IPTR MUIPC_About__OM_NEW
                     Child, HSpace(0),
                     Child, ColGroup(2),
                         /*Child, olabel(MSG_About_Version),
-                        Child, LLabel((ULONG)lib_vers),*/
+                        Child, LLabel((IPTR)lib_vers),*/
                         Child, olabel(MSG_About_Author, MiamiPanelBaseIntern),
                         Child, ourlText("mailto:"DEF_EMail, DEF_Author, MiamiPanelBaseIntern),
                         Child, olabel(MSG_About_Support, MiamiPanelBaseIntern),
@@ -134,21 +135,21 @@ IPTR MUIPC_About__OM_NEW
         TAG_MORE,attrs))
     {
         Object *app, *space;
-        UBYTE  *tn;
+        CONST_STRPTR tn;
 
-        if ((tn = __(MSG_About_Translation)) && *tn)
+        if ((tn = _(MSG_About_Translation, MiamiPanelBaseIntern)) && *tn)
         {
             Object *sp1, *tti, *sp2 = NULL, *tg; // gcc
 
             if ((sp1 = ohfixspace()) &&
                 (tti = otextitem()) &&
                 (sp2 = ohfixspace()) &&
-                (tg= HGroup, Child, Label((ULONG)tn), Child, HSpace(0),End))
+                (tg= HGroup, Child, Label((IPTR)tn), Child, HSpace(0),End))
             {
-                DoMethod(g, OM_ADDMEMBER, (ULONG)sp1);
-                DoMethod(g, OM_ADDMEMBER, (ULONG)tti);
-                DoMethod(g, OM_ADDMEMBER, (ULONG)sp2);
-                DoMethod(g, OM_ADDMEMBER, (ULONG)tg);
+                DoMethod(g, OM_ADDMEMBER, (IPTR)sp1);
+                DoMethod(g, OM_ADDMEMBER, (IPTR)tti);
+                DoMethod(g, OM_ADDMEMBER, (IPTR)sp2);
+                DoMethod(g, OM_ADDMEMBER, (IPTR)tg);
             }
             else
                 if (sp1)
@@ -162,13 +163,13 @@ IPTR MUIPC_About__OM_NEW
                 }
         }
 
-        if (space = ovfixspace()) DoMethod(g, OM_ADDMEMBER, (ULONG)space);
+        if (space = ovfixspace()) DoMethod(g, OM_ADDMEMBER, (IPTR)space);
 
-        if (app = (Object *)GetTagData(MPA_Application, NULL, attrs))
-            DoMethod(mui, MUIM_Notify, MUIA_Pressed, FALSE, (ULONG)app, 2, MUIM_Application_AboutMUI, GetTagData(MUIA_Window_RefWindow, NULL, attrs));
+        if (app = (Object *)GetTagData(MPA_Application, 0, attrs))
+            DoMethod(mui, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_AboutMUI, GetTagData(MUIA_Window_RefWindow, 0, attrs));
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
@@ -186,11 +187,11 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_About_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
-    return (ULONG)(MiamiPanelBaseIntern->mpb_aboutClass = MUI_CreateCustomClass(NULL, MUIC_Window, NULL, 0, MUIPC_About_Dispatcher));
+    return (IPTR)(MiamiPanelBaseIntern->mpb_aboutClass = MUI_CreateCustomClass(NULL, MUIC_Window, NULL, 0, MUIPC_About_Dispatcher));
 }
 
 /***********************************************************************/

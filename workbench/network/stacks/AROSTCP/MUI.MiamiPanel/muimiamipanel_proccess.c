@@ -3,6 +3,9 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <clib/alib_protos.h>
+
+
 #include <stdarg.h>
 
 #include "muimiamipanel_intern.h"
@@ -37,8 +40,8 @@ AROS_UFH3(void, MiamiPanelProc,
     struct TagItem appObjecttags[] = {MPA_Show, msg->flags,
 															TAG_DONE};
 	
-	app = MUI_NewObjectA(MiamiPanelBaseIntern->mpb_appClass->mcc_Class, appObjecttags);
-	
+	app = (Object *)NewObjectA(MiamiPanelBaseIntern->mpb_appClass->mcc_Class, NULL, appObjecttags);
+
     res = ((MiamiPanelBaseIntern) && (app));
 
     msg->res = res;
@@ -52,7 +55,7 @@ AROS_UFH3(void, MiamiPanelProc,
 
         MiamiPanelBaseIntern->mpb_app = app;
 
-        for (signals = 0; DoMethod(app, MUIM_Application_NewInput, (ULONG)&signals) != MUIV_Application_ReturnID_Quit; )
+        for (signals = 0; DoMethod(app, MUIM_Application_NewInput, (IPTR)&signals) != MUIV_Application_ReturnID_Quit; )
             if (signals && ((signals = Wait(signals | SIGBREAKF_CTRL_C)) & SIGBREAKF_CTRL_C))
                 DoMethod(app, MPM_Quit);
 

@@ -493,7 +493,7 @@ enum
 ** Callback types definitions
 */
 
-typedef long (MiamiPanelCallBackType)(APTR code,LONG count,UBYTE *args);
+typedef long (MiamiPanelCallBackType)(APTR code, LONG count, UBYTE *args);
 
 /*****************************************************************************/
 /*

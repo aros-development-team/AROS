@@ -2,9 +2,12 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
+
+#include <string.h>
 
 #include "muimiamipanel_intern.h"
 #include "muimiamipanel_locale.h"
@@ -24,10 +27,10 @@ struct MiamiPanelMGroupClass_DATA
 
     ULONG                       layout;
 
-    #ifdef __MORPHOS__
+#ifdef __MORPHOS__
     struct MUI_EventHandlerNode eh;
     struct Window               *win;
-    #endif
+#endif
 
     ULONG                       flags;
 };
@@ -75,13 +78,13 @@ static struct MUIS_TheBar_Button buttons[] =
 
 static struct MiamiPanelBase_intern *MiamiPanelBaseIntern;
 
-static ULONG
-MUIPC_MGroup__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_MGroup__OM_NEW(struct IClass *CLASS, Object *self, struct opSet *message)
 {
     struct TagItem   *attrs = message->ops_AttrList;
     Object           *ifGroup, *ifList;
-    struct MPS_Prefs *prefs = (struct MPS_Prefs *)GetTagData(MPA_Prefs,NULL,attrs);
-    ULONG            show = GetTagData(MPA_Show,MIAMIPANELV_Init_Flags_Control,attrs);
+    struct MPS_Prefs *prefs = (struct MPS_Prefs *)GetTagData(MPA_Prefs, 0, attrs);
+    IPTR            show = GetTagData(MPA_Show, MIAMIPANELV_Init_Flags_Control, attrs);
 
     if (self = (Object *)DoSuperNewTags
 		(
@@ -100,7 +103,7 @@ MUIPC_MGroup__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
             End,
             TAG_MORE, attrs))
     {
-        struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+        struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
 
         data->ifGroup = ifGroup;
         data->ifList  = ifList;
@@ -123,43 +126,43 @@ MUIPC_MGroup__OM_NEW(struct IClass *CLASS,Object *self,struct opSet *message)
                     MUIA_TheBar_Pics,             pics,
             End))
         {
-            DoSuperMethod(CLASS,self,OM_ADDMEMBER,(ULONG)data->bar);
+            DoSuperMethod(CLASS, self, OM_ADDMEMBER, (IPTR)data->bar);
 
             if (prefs->layout & (MPV_Layout_Left|MPV_Layout_PureTop))
-                DoSuperMethod(CLASS,self,MUIM_Group_Sort,(ULONG)data->bar,(ULONG)data->ifGroup,NULL);
+                DoSuperMethod(CLASS, self, MUIM_Group_Sort, (IPTR)data->bar, (IPTR)data->ifGroup, NULL);
 
-            DoMethod(data->bar,MUIM_TheBar_DoOnButton,B_SHOW,MUIM_Notify,
-                MUIA_Pressed,FALSE,MUIV_Notify_Application,2,MPM_Miami,MPV_Miami_Show);
+            DoMethod(data->bar, MUIM_TheBar_DoOnButton, B_SHOW,MUIM_Notify,
+                MUIA_Pressed, FALSE, MUIV_Notify_Application, 2, MPM_Miami, MPV_Miami_Show);
 
-            DoMethod(data->bar,MUIM_TheBar_DoOnButton,B_HIDE,MUIM_Notify,
-                MUIA_Pressed,FALSE,MUIV_Notify_Application,2,MPM_Miami,MPV_Miami_Hide);
+            DoMethod(data->bar, MUIM_TheBar_DoOnButton, B_HIDE,MUIM_Notify,
+                MUIA_Pressed, FALSE, MUIV_Notify_Application, 2, MPM_Miami, MPV_Miami_Hide);
 
-            DoMethod(data->bar,MUIM_TheBar_DoOnButton,B_QUIT,MUIM_Notify,
-                MUIA_Pressed,FALSE,MUIV_Notify_Application,2,MPM_Miami,MPV_Miami_Quit);
+            DoMethod(data->bar, MUIM_TheBar_DoOnButton, B_QUIT,MUIM_Notify,
+                MUIA_Pressed, FALSE, MUIV_Notify_Application, 2, MPM_Miami, MPV_Miami_Quit);
         }
 
-        get(data->ifGroup,MUIA_Scrollgroup_VertBar,&data->scrollBar);
+        get(data->ifGroup, MUIA_Scrollgroup_VertBar, &data->scrollBar);
         if (prefs->flags & MPV_Flags_BWin)
         {
             data->flags |= FLG_BWin;
-            set(data->scrollBar,MUIA_ShowMe,FALSE);
+            set(data->scrollBar, MUIA_ShowMe, FALSE);
         }
 
-        CopyMem(prefs,&data->prefs,sizeof(data->prefs));
+        CopyMem(prefs, &data->prefs, sizeof(data->prefs));
     }
 
-    return (ULONG)self;
+    return (IPTR)self;
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_MGroup__MUIM_Setup(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_MGroup__MUIM_Setup(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
 
-    if (!DoSuperMethodA(CLASS,self,(Msg)message)) return FALSE;
-    set(_win(self),MUIA_Window_DefaultObject,data->ifGroup);
+    if (!DoSuperMethodA(CLASS, self, (Msg)message)) return FALSE;
+    set(_win(self), MUIA_Window_DefaultObject, data->ifGroup);
 
     return TRUE;
 }
@@ -274,7 +277,7 @@ MUIPC_MGroup__MUIM_Show(struct IClass *CLASS,Object *self,Msg message)
 
     if (!DoSuperMethodA(CLASS,self,(Msg)message)) return FALSE;
 
-    get(_win(self),MUIA_Window_Window,&data->win);
+    get(_win(self), MUIA_Window_Window, &data->win);
     data->flags |= FLG_Visible;
 
     switchTransparency(CLASS,self,data,data->prefs.flags & MPV_Flags_UseTransparency);
@@ -318,45 +321,46 @@ MUIPC_MGroup__MUIM_HandleEvent(struct IClass *CLASS,Object *self,struct MUIP_Han
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_MGroup__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
+static IPTR
+MUIPC_MGroup__OM_SET(struct IClass *CLASS, Object *self, struct opSet *message)
 {
-    struct MiamiPanelMGroupClass_DATA             *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA             *data = INST_DATA(CLASS, self);
     register struct TagItem *tag;
     struct TagItem          *tstate;
-    #ifdef __MORPHOS__
+#ifdef __MORPHOS__
     register ULONG          res, win = FALSE;
-    #endif
+#endif
 
     for (tstate = message->ops_AttrList; tag = NextTagItem(&tstate); )
     {
-        register ULONG tidata = tag->ti_Data;
+        register IPTR tidata = tag->ti_Data;
 
         switch(tag->ti_Tag)
         {
             case MPA_Prefs:
-                if (memcmp(&data->prefs,PREFS(tidata),sizeof(data->prefs)))
+                if (memcmp(&data->prefs, PREFS(tidata), sizeof(data->prefs)))
                 {
                     if (data->bar)
                     {
-                        ULONG layoutChanged = data->prefs.layout!=PREFS(tidata)->layout;
+                        ULONG layoutChanged = data->prefs.layout != PREFS(tidata)->layout;
 
                         if (layoutChanged)
                         {
-                            DoSuperMethod(CLASS,self,MUIM_Group_InitChange);
+                            DoSuperMethod(CLASS, self, MUIM_Group_InitChange);
 
-                            SetSuperAttrs(CLASS,self,MUIA_Group_Horiz,!(PREFS(tidata)->layout & MPV_Layout_Horiz),TAG_DONE);
+                            SetSuperAttrs(CLASS, self, MUIA_Group_Horiz, !(PREFS(tidata)->layout & MPV_Layout_Horiz), TAG_DONE);
 
                             if (PREFS(tidata)->layout & (MPV_Layout_Left|MPV_Layout_PureTop))
-                                DoSuperMethod(CLASS,self,MUIM_Group_Sort,(ULONG)data->bar,(ULONG)data->ifGroup,NULL);
-                            else DoSuperMethod(CLASS,self,MUIM_Group_Sort,(ULONG)data->ifGroup,(ULONG)data->bar,NULL);
+                                DoSuperMethod(CLASS, self, MUIM_Group_Sort, (IPTR)data->bar, (IPTR)data->ifGroup, NULL);
+                            else DoSuperMethod(CLASS, self, MUIM_Group_Sort, (IPTR)data->ifGroup, (IPTR)data->bar, NULL);
                         }
 
-                        if (layoutChanged || memcmp(&data->prefs.barLayout,&PREFS(tidata)->barLayout,sizeof(ULONG)*4))
+                        if (layoutChanged || memcmp(&data->prefs.barLayout, &PREFS(tidata)->barLayout, sizeof(ULONG)*4))
                         {
-                            DoMethod(data->bar,MUIM_Group_InitChange);
+                            DoMethod(data->bar, MUIM_Group_InitChange);
 
-                            SetAttrs(data->bar,MUIA_Group_Horiz,             PREFS(tidata)->layout & MPV_Layout_Horiz,
+                            SetAttrs(data->bar,
+                                               MUIA_Group_Horiz,             PREFS(tidata)->layout & MPV_Layout_Horiz,
                                                MUIA_TheBar_BarPos,           PREFS(tidata)->barLayout,
                                                MUIA_TheBar_ViewMode,         PREFS(tidata)->viewMode,
                                                MUIA_TheBar_LabelPos,         PREFS(tidata)->labelPos,
@@ -369,80 +373,80 @@ MUIPC_MGroup__OM_SET(struct IClass *CLASS,Object *self,struct opSet *message)
                                                MUIA_TheBar_DragBar,          PREFS(tidata)->btflags & MPV_BTFlags_DragBar,
                                                TAG_DONE);
 
-                            DoMethod(data->bar,MUIM_Group_ExitChange);
+                            DoMethod(data->bar, MUIM_Group_ExitChange);
                         }
 
-                        if (layoutChanged) DoSuperMethod(CLASS,self,MUIM_Group_ExitChange);
+                        if (layoutChanged) DoSuperMethod(CLASS, self, MUIM_Group_ExitChange);
                     }
 
                     if (PREFS(tidata)->flags & MPV_Flags_BWin) data->flags |= FLG_BWin;
                     else data->flags &= ~FLG_BWin;
 
-                    #ifdef __MORPHOS__
+#ifdef __MORPHOS__
                     if ((data->flags & FLG_Visible) && !BOOLSAME(PREFS(tidata)->flags & MPV_Flags_UseTransparency,data->prefs.flags & MPV_Flags_UseTransparency))
                         if (PREFS(tidata)->flags & MPV_Flags_UseTransparency) win = TRUE;
                         else switchTransparency(CLASS,self,data,FALSE);
-                    #endif
+#endif
 
-                    CopyMem(PREFS(tidata),&data->prefs,sizeof(data->prefs));
+                    CopyMem(PREFS(tidata), &data->prefs, sizeof(data->prefs));
                 }
                 break;
 
             case MPA_Bar:
-                set(data->scrollBar,MUIA_ShowMe,tidata);
+                set(data->scrollBar, MUIA_ShowMe, tidata);
                 break;
         }
     }
 
-    #ifdef __MORPHOS__
+#ifdef __MORPHOS__
     res = DoSuperMethodA(CLASS,self,(Msg)message);
 
     if (win)
     {
-        DoMethod(_app(self),MUIM_Application_PushMethod,(ULONG)_win(self),3,MUIM_Set,MUIA_Window_Open,FALSE);
-        DoMethod(_app(self),MUIM_Application_PushMethod,(ULONG)_win(self),3,MUIM_Set,MUIA_Window_Open,TRUE);
-        DoMethod(_app(self),MUIM_Application_PushMethod,(ULONG)_win(self),3,MUIM_Set,MUIA_Window_Activate,TRUE);
-        DoMethod(_app(self),MUIM_Application_PushMethod,(ULONG)self,1,MPM_MGroup_UpdateTransparency);
+        DoMethod(_app(self),MUIM_Application_PushMethod,(IPTR)_win(self),3,MUIM_Set,MUIA_Window_Open,FALSE);
+        DoMethod(_app(self),MUIM_Application_PushMethod,(IPTR)_win(self),3,MUIM_Set,MUIA_Window_Open,TRUE);
+        DoMethod(_app(self),MUIM_Application_PushMethod,(IPTR)_win(self),3,MUIM_Set,MUIA_Window_Activate,TRUE);
+        DoMethod(_app(self),MUIM_Application_PushMethod,(IPTR)self,1,MPM_MGroup_UpdateTransparency);
     }
 
     return res;
-    #else
-    return DoSuperMethodA(CLASS,self,(Msg)message);
-    #endif
+#else
+    return DoSuperMethodA(CLASS, self, (Msg)message);
+#endif
 }
 
 /***********************************************************************/
 #define DD_FACT 5
 
-static ULONG
-MUIPC_MGroup__MUIM_DragQuery(struct IClass *CLASS,Object *self,struct MUIP_DragQuery *message)
+static IPTR
+MUIPC_MGroup__MUIM_DragQuery(struct IClass *CLASS,Object *self, struct MUIP_DragQuery *message)
 {
-    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
 
-    if (message->obj!=data->bar) return MUIV_DragQuery_Refuse;
+    if (message->obj != data->bar) return MUIV_DragQuery_Refuse;
 
     return MUIV_DragQuery_Accept;
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_MGroup__MUIM_DragBegin(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_MGroup__MUIM_DragBegin(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
 
     data->layout = data->prefs.layout;
-    set(data->ifList,MPA_SkipBar,TRUE);
+    set(data->ifList, MPA_SkipBar, TRUE);
 
     return 0;
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_MGroup__MUIM_DragReport(struct IClass *CLASS,Object *self,struct MUIP_DragReport *message)
+static IPTR
+MUIPC_MGroup__MUIM_DragReport(struct IClass *CLASS, Object *self, struct MUIP_DragReport *message)
 {
-    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
     ULONG       layout;
     LONG        x, y, l, t, r, b, w, h;
 
@@ -498,18 +502,18 @@ MUIPC_MGroup__MUIM_DragReport(struct IClass *CLASS,Object *self,struct MUIP_Drag
 
     if (data->prefs.layout!=layout)
     {
-        set(data->bar,MUIA_TheBar_Limbo,TRUE);
-        DoSuperMethod(CLASS,self,MUIM_Group_InitChange);
+        set(data->bar, MUIA_TheBar_Limbo, TRUE);
+        DoSuperMethod(CLASS, self, MUIM_Group_InitChange);
 
-        SetSuperAttrs(CLASS,self,MUIA_Group_Horiz,!(layout & MPV_Layout_Horiz),TAG_DONE);
-        set(data->bar,MUIA_Group_Horiz,layout & MPV_Layout_Horiz);
+        SetSuperAttrs(CLASS, self, MUIA_Group_Horiz,!(layout & MPV_Layout_Horiz), TAG_DONE);
+        set(data->bar, MUIA_Group_Horiz, layout & MPV_Layout_Horiz);
 
         if (layout & (MPV_Layout_Left|MPV_Layout_PureTop))
-            DoSuperMethod(CLASS,self,MUIM_Group_Sort,(ULONG)data->bar,(ULONG)data->ifGroup,NULL);
-        else DoSuperMethod(CLASS,self,MUIM_Group_Sort,(ULONG)data->ifGroup,(ULONG)data->bar,NULL);
+            DoSuperMethod(CLASS, self, MUIM_Group_Sort, (IPTR)data->bar, (IPTR)data->ifGroup, NULL);
+        else DoSuperMethod(CLASS, self, MUIM_Group_Sort, (IPTR)data->ifGroup, (IPTR)data->bar, NULL);
 
-        DoSuperMethod(CLASS,self,MUIM_Group_ExitChange);
-        set(data->bar,MUIA_TheBar_Limbo,FALSE);
+        DoSuperMethod(CLASS, self, MUIM_Group_ExitChange);
+        set(data->bar, MUIA_TheBar_Limbo, FALSE);
 
         if (!BOOLSAME(data->prefs.layout & MPV_Layout_Horiz,layout & MPV_Layout_Horiz))
             data->flags |= FLG_Special;
@@ -523,15 +527,15 @@ MUIPC_MGroup__MUIM_DragReport(struct IClass *CLASS,Object *self,struct MUIP_Drag
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_MGroup__MUIM_DragFinish(struct IClass *CLASS,Object *self,struct MUIP_DragFinish *message)
+static IPTR
+MUIPC_MGroup__MUIM_DragFinish(struct IClass *CLASS, Object *self, struct MUIP_DragFinish *message)
 {
-    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
 
     if (data->flags & FLG_Special)
     {
-        DoSuperMethod(CLASS,self,MUIM_Group_InitChange);
-        DoSuperMethod(CLASS,self,MUIM_Group_ExitChange);
+        DoSuperMethod(CLASS, self, MUIM_Group_InitChange);
+        DoSuperMethod(CLASS, self, MUIM_Group_ExitChange);
         data->flags &= ~FLG_Special;
     }
 
@@ -540,41 +544,41 @@ MUIPC_MGroup__MUIM_DragFinish(struct IClass *CLASS,Object *self,struct MUIP_Drag
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_MGroup__MUIM_DragDrop(struct IClass *CLASS,Object *self,struct MUIP_DragDrop *message)
+static IPTR
+MUIPC_MGroup__MUIM_DragDrop(struct IClass *CLASS,Object *self, struct MUIP_DragDrop *message)
 {
-    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
 
-    if (data->prefs.layout!=data->layout)
+    if (data->prefs.layout != data->layout)
     {
         struct MPS_Prefs prefs, *p;
         Object           *app = _app(self);
 
-        get(app,MPA_Prefs,&p);
-        CopyMem(p,&prefs,sizeof(prefs));
+        get(app, MPA_Prefs, &p);
+        CopyMem(p, &prefs, sizeof(prefs));
         prefs.layout = data->prefs.layout;
-        SetAttrs(app,MPA_Prefs,(ULONG)&prefs,MPA_OneWay,TRUE,MPA_NoIfList,TRUE,TAG_DONE);
+        SetAttrs(app, MPA_Prefs, (IPTR)&prefs, MPA_OneWay, TRUE, MPA_NoIfList, TRUE, TAG_DONE);
     }
 
-    set(data->ifList,MPA_SkipBar,FALSE);
+    set(data->ifList, MPA_SkipBar, FALSE);
 
     return 0;
 }
 
 /***********************************************************************/
 
-static ULONG
-MUIPC_MGroup__MPM_MGroup_GrabIFList(struct IClass *CLASS,Object *self,Msg message)
+static IPTR
+MUIPC_MGroup__MPM_MGroup_GrabIFList(struct IClass *CLASS, Object *self, Msg message)
 {
-    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
+    struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS, self);
 
-    return DoMethod(data->ifList,MPM_IfGroup_GrabIFList);
+    return DoMethod(data->ifList, MPM_IfGroup_GrabIFList);
 }
 
 /***********************************************************************/
 
 #ifdef __MORPHOS__
-static ULONG
+static IPTR
 MUIPC_MGroup__MPM_MGroup_UpdateTransparency(struct IClass *CLASS,Object *self,Msg message)
 {
     struct MiamiPanelMGroupClass_DATA *data = INST_DATA(CLASS,self);
@@ -590,28 +594,28 @@ BOOPSI_DISPATCHER(IPTR, MUIPC_MGroup_Dispatcher, CLASS, self, message)
 {
     switch(message->MethodID)
     {
-        case OM_NEW:                         return MUIPC_MGroup__OM_NEW(CLASS,self,(APTR)message);
-        case OM_SET:                         return MUIPC_MGroup__OM_SET(CLASS,self,(APTR)message);
-        case MUIM_Setup:                     return MUIPC_MGroup__MUIM_Setup(CLASS,self,(APTR)message);
+        case OM_NEW:                         return MUIPC_MGroup__OM_NEW(CLASS, self, (APTR)message);
+        case OM_SET:                         return MUIPC_MGroup__OM_SET(CLASS, self, (APTR)message);
+        case MUIM_Setup:                     return MUIPC_MGroup__MUIM_Setup(CLASS, self, (APTR)message);
 
-        #ifdef __MORPHOS__
+#ifdef __MORPHOS__
         case MUIM_Show:                      return MUIPC_MGroup__MUIM_Show(CLASS,self,(APTR)message);
         case MUIM_Hide:                      return MUIPC_MGroup__MUIM_Hide(CLASS,self,(APTR)message);
         case MUIM_HandleEvent:               return MUIPC_MGroup__MUIM_HandleEvent(CLASS,self,(APTR)message);
-        #endif
+#endif
 
-        case MUIM_DragQuery:                 return MUIPC_MGroup__MUIM_DragQuery(CLASS,self,(APTR)message);
-        case MUIM_DragBegin:                 return MUIPC_MGroup__MUIM_DragBegin(CLASS,self,(APTR)message);
-        case MUIM_DragDrop:                  return MUIPC_MGroup__MUIM_DragDrop(CLASS,self,(APTR)message);
-        case MUIM_DragReport:                return MUIPC_MGroup__MUIM_DragReport(CLASS,self,(APTR)message);
-        case MUIM_DragFinish:                return MUIPC_MGroup__MUIM_DragFinish(CLASS,self,(APTR)message);
+        case MUIM_DragQuery:                 return MUIPC_MGroup__MUIM_DragQuery(CLASS, self, (APTR)message);
+        case MUIM_DragBegin:                 return MUIPC_MGroup__MUIM_DragBegin(CLASS, self, (APTR)message);
+        case MUIM_DragDrop:                  return MUIPC_MGroup__MUIM_DragDrop(CLASS, self, (APTR)message);
+        case MUIM_DragReport:                return MUIPC_MGroup__MUIM_DragReport(CLASS, self, (APTR)message);
+        case MUIM_DragFinish:                return MUIPC_MGroup__MUIM_DragFinish(CLASS, self, (APTR)message);
 
-        case MPM_MGroup_GrabIFList:          return MUIPC_MGroup__MPM_MGroup_GrabIFList(CLASS,self,(APTR)message);
-        #ifdef __MORPHOS__
+        case MPM_MGroup_GrabIFList:          return MUIPC_MGroup__MPM_MGroup_GrabIFList(CLASS, self, (APTR)message);
+#ifdef __MORPHOS__
         case MPM_MGroup_UpdateTransparency:  return MUIPC_MGroup__MPM_MGroup_UpdateTransparency(CLASS,self,(APTR)message);
-        #endif
+#endif
 
-        default:                             return DoSuperMethodA(CLASS,self,message);
+        default:                             return DoSuperMethodA(CLASS, self, message);
     }
 	return 0;
 }
@@ -619,13 +623,13 @@ BOOPSI_DISPATCHER_END
 
 /***********************************************************************/
 
-ULONG
+IPTR
 MUIPC_MGroup_ClassInit(struct MiamiPanelBase_intern *MiamiPanelBase)
 {
 	MiamiPanelBaseIntern = MiamiPanelBase;
     if (MiamiPanelBaseIntern->mpb_mgroupClass = MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct MiamiPanelMGroupClass_DATA), MUIPC_MGroup_Dispatcher))
     {
-        localizeButtonsBar(buttons,buttonsIDs);
+        localizeButtonsBar(buttons, buttonsIDs, MiamiPanelBaseIntern);
 
         return TRUE;
     }

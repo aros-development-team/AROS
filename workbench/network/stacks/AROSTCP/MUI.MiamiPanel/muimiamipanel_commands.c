@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -14,12 +14,17 @@
 ULONG
 MiamiPanelFun(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id, ...)
 {
-    #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
     va_list va;
-    #else
+    APTR val = NULL;
+#else
     UBYTE   *va;
-    #endif
+#endif
     long    num;
+
+#if defined(__MORPHOS__) || defined(__AROS__)
+    va_start(va,id);
+#endif
 
     switch (id)
     {
@@ -32,6 +37,7 @@ MiamiPanelFun(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id, ...)
 
         case MIAMIPANELV_CallBack_Code_UnitOnline:
         case MIAMIPANELV_CallBack_Code_UnitOffline:
+            val = va_arg(va,UBYTE *);
             num = 1;
             break;
 
@@ -39,15 +45,21 @@ MiamiPanelFun(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id, ...)
             return 0;
     }
 
-    #if defined(__MORPHOS__) || defined(__AROS__)
-    va_start(va,id);
-/*
+#if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__)
     if (*(UWORD *)MiamiPanelBaseIntern->mpb_asynccb >= (UWORD)0xFF00) REG_A7 -= 4;
 
     ((ULONG *)REG_A7)[-1] = (ULONG)va->overflow_arg_area;
     ((ULONG *)REG_A7)[-2] = (ULONG)num;
     ((ULONG *)REG_A7)[-3] = (ULONG)id;
+#endif
+    va_end(va);
+#endif
 
+#if defined(__AROS__)
+    (*MiamiPanelBaseIntern->mpb_asynccb)((APTR)id, num, val);
+#else
+/*
     REG_A7 -= 12;
 
     MyEmulHandle->EmulCallDirect68k(MiamiPanelBaseIntern->mpb_asynccb);
@@ -55,11 +67,12 @@ MiamiPanelFun(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id, ...)
     REG_A7 += 12;
     if (*(UWORD *)MiamiPanelBaseIntern->mpb_asynccb >= (UWORD)0xFF00) REG_A7 += 4;
 */
-    va_end(va);
-    #else
+#endif
+
+#if !defined(__MORPHOS__) && !defined(__AROS__)
     va = (UBYTE *)(&id+1);
-    (*MiamiPanelBaseIntern->mpb_asynccb)(id,num,va);
-    #endif
+    (*MiamiPanelBaseIntern->mpb_asynccb)(id, num, va);
+#endif
 
     return 0;
 }
@@ -87,17 +100,17 @@ struct sizes sizes[] =
     MPV_Msg_Type_RefreshName,           sizeof(struct MPS_Msg_RefreshName),
 };
 
-void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
+void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id, ...)
 {
-    #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
     va_list        va;
-    #else
-        #if defined(__AROS__)
+#else
+# if defined(__AROS__)
         
-        #else
+# else
     ULONG          *va;
-        #endif
-    #endif
+# endif
+#endif
     struct MsgPort reply;
     struct MPS_Msg *msg;
     ULONG          size, istoreply;
@@ -126,7 +139,7 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         // We break the rules here: Cleanup must be got
         if (id==MPV_Msg_Type_Cleanup)
             DoMethod(MiamiPanelBaseIntern->mpb_app, MUIM_Application_PushMethod,
-                                                                (ULONG)MiamiPanelBaseIntern->mpb_app,
+                                                                (IPTR)MiamiPanelBaseIntern->mpb_app,
                                                                 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
         ReleaseSemaphore(&MiamiPanelBaseIntern->mpb_libSem);
@@ -135,11 +148,11 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
 
     istoreply = 0;
 
-    #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
     va_start(va,id);
-    #else
+#else
     va = (ULONG *)(&id+1);
-    #endif
+#endif
 
     switch (id)
     {
@@ -151,19 +164,19 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         {
             struct MPS_Msg_AddInterface *m = (struct MPS_Msg_AddInterface *)msg;
 
-            #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
             m->unit   = va_arg(va,long);
             m->name   = va_arg(va,UBYTE *);
             m->state  = va_arg(va,long);
             m->ontime = va_arg(va,long);
             m->speed  = va_arg(va,UBYTE *);
-            #else
+#else
             m->unit   = *va++;
             m->name   = (UBYTE *)*va++;
             m->state  = *va++;
             m->ontime = *va++;
             m->speed  = (UBYTE *)*va;
-            #endif
+#endif
 
             istoreply = 1;
             break;
@@ -173,19 +186,19 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         {
             struct MPS_Msg_InterfaceReport *m = (struct MPS_Msg_InterfaceReport *)msg;
 
-            #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
             m->unit     = va_arg(va,long);
             m->rate     = va_arg(va,long);
             m->now      = va_arg(va,long);
             m->total.hi = va_arg(va,ULONG);
             m->total.lo = va_arg(va,ULONG);
-            #else
+#else
             m->unit     = *va++;
             m->rate     = *va++;
             m->now      = *va++;
             m->total.hi = *va++;
             m->total.lo = *va;
-            #endif
+#endif
 
             break;
         }
@@ -194,11 +207,11 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         {
             struct MPS_Msg_DelInterface *m = (struct MPS_Msg_DelInterface *)msg;
 
-            #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
             m->unit = va_arg(va,long);
-            #else
+#else
             m->unit = *va;
-            #endif
+#endif
 
             break;
         }
@@ -207,15 +220,15 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         {
             struct MPS_Msg_SetInterfaceState *m = (struct MPS_Msg_SetInterfaceState *)msg;
 
-            #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
             m->unit   = va_arg(va,long);
             m->state  = va_arg(va,long);
             m->ontime = va_arg(va,long);
-            #else
+#else
             m->unit   = *va++;
             m->state  = *va++;
             m->ontime = *va;
-            #endif
+#endif
 
             break;
         }
@@ -224,13 +237,13 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         {
             struct MPS_Msg_SetInterfaceSpeed *m = (struct MPS_Msg_SetInterfaceSpeed *)msg;
 
-            #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
             m->unit  = va_arg(va,long);
             m->speed = va_arg(va,UBYTE *);
-            #else
+#else
             m->unit  = *va++;
             m->speed = (UBYTE *)*va;
-            #endif
+#endif
 
             istoreply = 1;
 
@@ -241,13 +254,13 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         {
             struct MPS_Msg_RefreshName *m = (struct MPS_Msg_RefreshName *)msg;
 
-            #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
             m->unit = va_arg(va,long);
             m->name = va_arg(va,UBYTE *);
-            #else
+#else
             m->unit = *va++;
             m->name = (UBYTE *)*va;
-            #endif
+#endif
 
             istoreply = 1;
 
@@ -258,19 +271,19 @@ void DoCommand(struct MiamiPanelBase_intern *MiamiPanelBaseIntern, ULONG id,...)
         {
             struct MPS_Msg_InhibitRefresh *m = (struct MPS_Msg_InhibitRefresh *)msg;
 
-            #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
             m->val = va_arg(va,long);
-            #else
+#else
             m->val = *va;
-            #endif
+#endif
 
             break;
         }
     }
 
-    #if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
     va_end(va);
-    #endif
+#endif
 
     if (istoreply)
     {
