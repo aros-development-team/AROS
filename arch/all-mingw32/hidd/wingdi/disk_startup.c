@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Disk-resident part of GDI display driver
 */
@@ -49,13 +49,13 @@ static ULONG AddDisplays(ULONG num)
         return 0;
 
     gfxclass = GDIBase->gfxclass;
-    old      = GDIBase->displaynum - 1;
+    old      = GDIBase->displaynum;
 
     CloseLibrary(&GDIBase->library);
     D(bug("[GDI] Current displays count: %u\n", old));
 
     /* Add displays if needed */
-    for (i = old; i < num; i++)
+    for (i = old; i < num + 1; i++)
     {
         ULONG err = AddDisplayDriverA(gfxclass, NULL, NULL);
 
