@@ -1,8 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CPPFLAGS := -DDEBUG=1
-
 FILES := startup gdi_hostlib wingdi_hiddclass wingdi_bitmapclass wingdi_kbdclass wingdi_mouseclass
 
 #MM kernel-hidd-wingdi-kobj  : kernel-hidd-wingdi-native devs-monitors-gdi
@@ -13,7 +11,7 @@ FILES := startup gdi_hostlib wingdi_hiddclass wingdi_bitmapclass wingdi_kbdclass
   files=$(FILES) uselibs="hiddstubs"
 
 DISK_FILES  := disk_startup
-DISK_EXEDIR := $(AROS_DEVS)/Monitors
+DISK_EXEDIR := $(AROS_STORAGE)/Monitors
 
 #MM devs-monitors-gdi : iconset-$(AROS_TARGET_ICONSET)-gdi
 
