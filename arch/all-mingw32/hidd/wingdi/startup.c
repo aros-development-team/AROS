@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -53,10 +53,10 @@ static int gdi_Startup(struct gdiclbase *LIBBASE)
         {TAG_DONE          , 0                                 }
     };
 
-    D(bug("[GDI] gdi_Startup()\n"));
+    D(bug("[GDI:Startup] %s()\n", __func__));
 
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-    D(bug("[gdi_Startup] GfxBase 0x%p\n", GfxBase));
+    D(bug("[GDI:Startup] %s: GfxBase 0x%p\n", __func__, GfxBase));
     if (!GfxBase)
         return FALSE;
 
@@ -84,11 +84,14 @@ static int gdi_Startup(struct gdiclbase *LIBBASE)
     /* We use ourselves, and noone else */
     LIBBASE->library.lib_OpenCnt = 1;
 
+    D(bug("[GDI:Startup] %s: Registering Display Driver...\n", __func__));
     /*
      * Now proceed to adding display modes. Install only one instance for the first time.
      * If needed, more displays are added by disk-based part.
      */
     AddDisplayDriver(LIBBASE->xsd.gfxclass, NULL, NULL);
+
+    D(bug("[GDI:Startup] %s: Startup Done...\n", __func__));
 
     CloseLibrary(&GfxBase->LibNode);
     return TRUE;
