@@ -27,8 +27,6 @@
 #include <hidd/gfx.h>
 #include <aros/symbolsets.h>
 
-#define SDEBUG 0
-#define DEBUG 0
 #define DEBUG_TEXT(x)
 #include <aros/debug.h>
 

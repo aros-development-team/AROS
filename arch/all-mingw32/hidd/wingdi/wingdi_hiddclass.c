@@ -30,8 +30,6 @@
 
 #include LC_LIBDEFS_FILE
 
-#define SDEBUG 0
-#define DEBUG 0
 #include <aros/debug.h>
 
 #ifdef DEBUG_POINTER
