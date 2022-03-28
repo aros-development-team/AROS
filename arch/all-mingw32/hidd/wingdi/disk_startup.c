@@ -55,7 +55,7 @@ static ULONG AddDisplays(ULONG num)
     D(bug("[GDI] Current displays count: %u\n", old));
 
     /* Add displays if needed */
-    for (i = old; i < num + 1; i++)
+    for (i = old; i < (old + num); i++)
     {
         ULONG err = AddDisplayDriverA(gfxclass, NULL, NULL);
 
