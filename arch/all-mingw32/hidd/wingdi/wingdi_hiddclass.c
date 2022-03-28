@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: GDI gfx HIDD for AROS.
 */
@@ -92,7 +92,7 @@ static void GfxIntHandler(struct gdi_staticdata *xsd, void *unused)
     if (active)
     {
         xsd->ctl->Active = NULL;
-        D(bug("Activated display data 0x%p\n", active));
+        D(bug("[WinGDI:hidd] Activated display data 0x%p\n", active));
         if (active->cb)
             active->cb(active->cbdata, NULL);
     }

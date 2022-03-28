@@ -37,10 +37,6 @@
 #include "wingdi_bitmap.h"
 
 /****************************************************************************************/
-
-#define AO(x)             (aoHidd_BitMap_ ## x)
-#define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
-
 struct bitmapinfo_mono
 {
     BITMAPINFOHEADER bmiHeader;
@@ -471,7 +467,10 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    OOP_Object  *friend = NULL, *pixfmt;
+#if defined(HIDD_WINGDI_USEFRIEND)
+    OOP_Object  *friend = NULL;
+#endif
+    OOP_Object  *pixfmt;
     APTR         display, my_dc, my_bitmap = NULL;
     APTR         orig_bitmap = NULL;
     ULONG        width, height;
@@ -479,50 +478,38 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     IPTR         win_width  = 0;
     IPTR         win_height = 0;
     IPTR         depth;
-    IPTR         attrs[num_Hidd_BitMap_Attrs];
     struct bitmap_data *data;
     
-    DECLARE_ATTRCHECK(bitmap);
-
     EnterFunc(bug("GDIBM::New()\n"));
+
     /* Parse the attributes */
-    if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Hidd_BitMap_Attrs,
-                            &ATTRCHECK(bitmap), HiddBitMapAttrBase))
-    {
-        D(kprintf("!!! GDIGfx::BitMap() FAILED TO PARSE ATTRS !!!\n"));
-        
-        return NULL;
-    }
-    
-    if (GOT_BM_ATTR(Friend))
-        friend = (OOP_Object *)attrs[AO(Friend)];
-    else
-        friend = NULL;
-        
-    width  = attrs[AO(Width)];
-    height = attrs[AO(Height)];
-    pixfmt = (OOP_Object *)attrs[AO(PixFmt)];
-
-    OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
-
+#if defined(HIDD_WINGDI_USEFRIEND)
+    friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0 , msg->attrList);
+    D(bug("[GDI:Bitmap] %s: Friend @ 0x%p\n", __func__, friend));
     /* Get the device context from the friend bitmap */
-#if 0
     if (NULL != friend)
     {
         OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&friend_drawable);
     }
-#else
-    (void)friend; // Unused
 #endif
 
-    D(bug("Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
+    width  = GetTagData(aHidd_BitMap_Width, 0 , msg->attrList);
+    height = GetTagData(aHidd_BitMap_Height, 0 , msg->attrList);
+
+    pixfmt = (OOP_Object *)GetTagData(aHidd_BitMap_PixFmt, 0 , msg->attrList);
+    D(bug("[GDI:Bitmap] %s: PixFmt @ 0x%p\n", __func__, pixfmt));
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+
+    D(bug("[WinGDI:BitMap] Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
     display = (APTR)GetTagData(aHidd_GDIBitMap_SysDisplay, 0, msg->attrList);
-    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    D(bug("[WinGDI:BitMap] Using GDI display 0x%p\n", display));
+
     /* This relies on the fact that bitmaps with aHidd_BitMap_Displayable set to TRUE always
        also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and i
        beleive it should stay so */
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
     if (modeid != vHidd_ModeID_Invalid) {
-        OOP_Object *gfx = (OOP_Object *)attrs[AO(GfxHidd)];
+        OOP_Object *gfx = (OOP_Object *)GetTagData(aHidd_BitMap_GfxHidd, 0, msg->attrList);
         OOP_Object *sync, *pixfmt;
 
         D(bug("[WinGDI:BitMap] Display driver object: 0x%p\n", gfx));
@@ -540,7 +527,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         D(bug("[WinGDI:BitMap] Memory bitmap: 0x%p\n", my_bitmap));
         if (my_bitmap)
             orig_bitmap = GDICALL(SelectObject, my_dc, my_bitmap);
-        D(bug("[WinGDI:BitMap] Olriginal DC bitmap: 0x%p\n", orig_bitmap));
+        D(bug("[WinGDI:BitMap] Original DC bitmap: 0x%p\n", orig_bitmap));
     }
     Permit();
 
