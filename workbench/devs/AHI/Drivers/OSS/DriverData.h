@@ -1,5 +1,5 @@
-#ifndef AHI_Drivers_AROS_DriverData_h
-#define AHI_Drivers_AROS_DriverData_h
+#ifndef AHI_Drivers_OSS_DriverData_h
+#define AHI_Drivers_OSS_DriverData_h
 
 #include <exec/libraries.h>
 #include <dos/dos.h>
@@ -8,14 +8,14 @@
 
 #include "DriverBase.h"
 
-struct AROSBase
+struct OSSBase
 {
     struct DriverBase driverbase;
 };
 
-#define DRIVERBASE_SIZEOF (sizeof (struct AROSBase))
+#define DRIVERBASE_SIZEOF (sizeof (struct OSSBase))
 
-struct AROSData
+struct OSSData
 {
     struct DriverData   driverdata;
     UBYTE		flags;
@@ -24,9 +24,9 @@ struct AROSData
     BYTE		slavesignal;
     struct Process*	mastertask;
     struct Process*	slavetask;
-    struct AROSBase*	ahisubbase;
+    struct OSSBase*	ahisubbase;
     APTR		mixbuffer;
 };
 
 
-#endif /* AHI_Drivers_AROS_DriverData_h */
+#endif /* AHI_Drivers_OSS_DriverData_h */

@@ -166,6 +166,8 @@ AC_SEARCH_LIBS([IntuitionBase],[auto],,  [AC_MSG_WARN(Who cares?)])
 AC_SEARCH_LIBS([LayoutBase],   [raauto],,[AC_MSG_WARN(Who cares?)])
 AC_SEARCH_LIBS([MUI_NewObject],[mui],,   [AC_MSG_WARN(Who cares?)])
 
+dnl Checks for library functions.
+
 case $host in
  i?86be-pc-amithlon)
   : ${CPU="i686"}
@@ -173,20 +175,21 @@ case $host in
  ;;
 esac
 
-dnl Checks for header files.
+dnl Checks for native driver support header files.
 
-AC_CHECK_HEADERS( proto/oss.h, HAVE_OSS=1, AC_MSG_WARN( "proto/oss.h is missing." ))
 AC_CHECK_HEADERS( asm/io.h, HAVE_ASMIO=1, AC_MSG_WARN( "asm/io.h is missing." ))
 AC_CHECK_HEADERS( libraries/openpci.h, HAVE_OPENPCI=1, AC_MSG_WARN( "libraries/openpci.h is missing." ))
-
-AC_SUBST(HAVE_OSS)
 AC_SUBST(HAVE_ASMIO)
 AC_SUBST(HAVE_OPENPCI)
 
-dnl Check for link libs
+dnl Checks for AROS hosted driver header files.
 
-AC_CHECK_LIB( alsa-bridge, ALSA_Init, HAVE_ALSA=1, AC_MSG_WARN( "alsa-bridge is missing." ))
+AC_CHECK_HEADERS( proto/oss.h, [ AC_MSG_RESULT(Hosted OSS Driver will be built); HAVE_OSS=1],)
+AC_SUBST(HAVE_OSS)
 
+dnl Check for AROS hosted driver support linklibs
+
+AC_CHECK_LIB( alsa-bridge, ALSA_Init,  [ AC_MSG_RESULT(Hosted Alsa Driver will be built); HAVE_ALSA=1],)
 AC_SUBST(HAVE_ALSA)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -195,8 +198,7 @@ AC_C_CONST
 AC_C_INLINE
 AC_C_BIGENDIAN
 
-dnl Checks for library functions.
-
+dnl
 
 AC_OUTPUT(Makefile
           AHI/Makefile
@@ -205,25 +207,25 @@ AC_OUTPUT(Makefile
           Device/Makefile
           Docs/Makefile
           Drivers/Makefile
+          Drivers/Common/Makefile.common
+          Drivers/Device/Makefile
+          Drivers/Filesave/Makefile
+          Drivers/Void/Makefile
           Drivers/ac97/Makefile
           Drivers/VIA-AC97/Makefile
           Drivers/HDAudio/Makefile
-          Drivers/Alsa/Makefile
           Drivers/CMI8738/Makefile
           Drivers/SB128/Makefile
-          Drivers/AROS/Makefile
-          Drivers/Common/Makefile.common
-          Drivers/Device/Makefile
           Drivers/EMU10kx/Makefile
           Drivers/Envy24HT/Makefile
           Drivers/Envy24/Makefile
-          Drivers/Filesave/Makefile
-          Drivers/Void/Makefile
-	  Examples/Makefile
-	  Examples/Device/PlayTest/Makefile
-	  Examples/Extras/CloneAudioModes/Makefile
-	  Examples/Low-level/PlaySineEverywhere/Makefile
-	  Examples/Low-level/Test-7.1/Makefile
-	  Examples/Low-level/ScanAudioModes/Makefile
+          Drivers/Alsa/Makefile
+          Drivers/OSS/Makefile
+          Examples/Makefile
+          Examples/Device/PlayTest/Makefile
+          Examples/Extras/CloneAudioModes/Makefile
+          Examples/Low-level/PlaySineEverywhere/Makefile
+          Examples/Low-level/Test-7.1/Makefile
+          Examples/Low-level/ScanAudioModes/Makefile
           Include/Makefile,
           echo timestamp > stamp-h)

@@ -18,7 +18,7 @@ struct Library *OSSBase = NULL;
 BOOL
 DriverInit( struct DriverBase* AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   DOSBase = OpenLibrary( DOSNAME, 37 );
 
@@ -69,7 +69,7 @@ DriverInit( struct DriverBase* AHIsubBase )
 VOID
 DriverCleanup( struct DriverBase* AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   CloseLibrary( (struct Library*) DOSBase );
   CloseLibrary( OSSBase );

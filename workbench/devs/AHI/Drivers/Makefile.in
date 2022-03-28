@@ -23,9 +23,10 @@ INSTALL_DATA	= @INSTALL_DATA@
 
 VPATH		= @srcdir@
 
-HAVE_OPENPCI	= @HAVE_OPENPCI@
-HAVE_OSS	= @HAVE_OSS@
 HAVE_ASMIO      = @HAVE_ASMIO@
+HAVE_OPENPCI	= @HAVE_OPENPCI@
+
+HAVE_OSS	= @HAVE_OSS@
 HAVE_ALSA	= @HAVE_ALSA@
 
 #
@@ -36,7 +37,7 @@ HAVE_ALSA	= @HAVE_ALSA@
 
 SUBDIRS		= Device Filesave Void
 
-
+# Add supported native drivers
 ifneq ($(strip $(HAVE_ASMIO)),)
 SUBDIRS		+= ac97
 SUBDIRS		+= HDAudio
@@ -50,10 +51,6 @@ SUBDIRS		+= Envy24
 endif
 endif
 
-ifneq ($(strip $(HAVE_OSS)),)
-SUBDIRS		+= AROS
-endif
-
 ifneq ($(strip $(HAVE_OPENPCI)),)
 SUBDIRS		+= EMU10kx
 endif
@@ -62,8 +59,13 @@ ifeq ($(strip $(host)),powerpc-unknown-amigaos)
 SUBDIRS		+= EMU10kx
 endif
 
+# Add supported AROS hosted drivers
 ifneq ($(strip $(HAVE_ALSA)),)
 SUBDIRS		+= Alsa
+endif
+
+ifneq ($(strip $(HAVE_OSS)),)
+SUBDIRS		+= OSS
 endif
 
 all:

@@ -50,20 +50,20 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 		    struct AHIAudioCtrlDrv* AudioCtrl,
 		    struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
   int freq = AudioCtrl->ahiac_MixFreq;
   
-  AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct AROSData ),
+  AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct OSSData ),
 		 MEMF_CLEAR | MEMF_PUBLIC );
 
-#define dd ((struct AROSData*) AudioCtrl->ahiac_DriverData)
+#define dd ((struct OSSData*) AudioCtrl->ahiac_DriverData)
 
   if( dd != NULL )
   {
     dd->slavesignal      = -1;
     dd->mastersignal     = AllocSignal( -1 );
     dd->mastertask       = (struct Process*) FindTask( NULL );
-    dd->ahisubbase       = AROSBase;
+    dd->ahisubbase       = OSSBase;
   }
   else
   {
@@ -117,7 +117,7 @@ void
 _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
 		   struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   if( AudioCtrl->ahiac_DriverData != NULL )
   {
@@ -138,7 +138,7 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   // V6 drivers do not have to preserve all registers
 
@@ -154,7 +154,7 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   // V6 drivers do not have to preserve all registers
 
@@ -171,7 +171,7 @@ _AHIsub_Start( ULONG                   flags,
 	       struct AHIAudioCtrlDrv* AudioCtrl,
 	       struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   AHIsub_Stop( flags, AudioCtrl );
 
@@ -296,7 +296,7 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   // Empty function
 }
@@ -311,7 +311,7 @@ _AHIsub_Stop( ULONG                   flags,
 	      struct AHIAudioCtrlDrv* AudioCtrl,
 	      struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   if( flags & AHISF_PLAY )
   {
@@ -349,7 +349,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
 		 struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
   size_t i;
 
   switch( attribute )
@@ -429,7 +429,7 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 			 struct AHIAudioCtrlDrv* AudioCtrl,
 			 struct DriverBase*      AHIsubBase )
 {
-  struct AROSBase* AROSBase = (struct AROSBase*) AHIsubBase;
+  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
 
   return 0;
 }

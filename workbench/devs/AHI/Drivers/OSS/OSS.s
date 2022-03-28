@@ -2,7 +2,7 @@
 	FORM_START	AHIM
 	
 	CHUNK_START	AUDN
-	.asciz		"aros"
+	.asciz		"OSS"
 	CHUNK_END
 	
 	CHUNK_START	AUDM
@@ -16,7 +16,7 @@
 	LONG2		AHIDB_Name,	2f-1b
 	LONG		TAG_DONE
 2:
-	.asciz		"AROS:HiFi 16 bit mono"
+	.asciz		"OSS:HiFi 16 bit mono"
 	CHUNK_END
 
 	CHUNK_START	AUDM
@@ -30,7 +30,7 @@
 	LONG2		AHIDB_Name,	2f-1b
 	LONG		TAG_DONE
 2:
-	.asciz		"AROS:HiFi 16 bit stereo++"
+	.asciz		"OSS:HiFi 16 bit stereo++"
 	CHUNK_END
 		
 	CHUNK_START	AUDM
@@ -44,7 +44,7 @@
 	LONG2		AHIDB_Name,	2f-1b
 	LONG		TAG_DONE
 2:
-	.asciz		"AROS:16 bit mono"
+	.asciz		"OSS:16 bit mono"
 	CHUNK_END
 
 	CHUNK_START	AUDM
@@ -58,7 +58,7 @@
 	LONG2		AHIDB_Name,	2f-1b
 	LONG		TAG_DONE
 2:
-	.asciz		"AROS:16 bit stereo++"
+	.asciz		"OSS:16 bit stereo++"
 	CHUNK_END
 		
 	FORM_END

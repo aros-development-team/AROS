@@ -7,7 +7,7 @@
 #include "DriverData.h"
 #include "library.h"
 
-#define dd ((struct AROSData*) AudioCtrl->ahiac_DriverData)
+#define dd ((struct OSSData*) AudioCtrl->ahiac_DriverData)
 
 #define min(a,b) ( (a) < (b) ? (a) : (b) )
 
@@ -68,7 +68,7 @@ static void SmallDelay(struct ExecBase *SysBase)
     
     i.is_Code 	      = (APTR)AHITimerTickCode;
     i.is_Data 	      = FindTask(0);
-    i.is_Node.ln_Name = "AROS AHI Driver Timer Tick Server";
+    i.is_Node.ln_Name = "OSS AHI Driver Timer Tick Server";
     i.is_Node.ln_Pri  = 0;
     i.is_Node.ln_Type = NT_INTERRUPT;
     
@@ -85,7 +85,7 @@ Slave( struct ExecBase* SysBase )
 {
   struct AHIAudioCtrlDrv* AudioCtrl;
   struct DriverBase*      AHIsubBase;
-  struct AROSBase*        AROSBase;
+  struct OSSBase*        OSSBase;
   BOOL                    running;
   ULONG                   signals;
 
@@ -94,7 +94,7 @@ Slave( struct ExecBase* SysBase )
 
   AudioCtrl  = (struct AHIAudioCtrlDrv*) FindTask( NULL )->tc_UserData;
   AHIsubBase = (struct DriverBase*) dd->ahisubbase;
-  AROSBase   = (struct AROSBase*) AHIsubBase;
+  OSSBase   = (struct OSSBase*) AHIsubBase;
 
   dd->slavesignal = AllocSignal( -1 );
 

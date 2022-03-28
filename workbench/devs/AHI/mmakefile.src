@@ -8,9 +8,12 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-devs-AHI : workbench-devs-AHI-subsystem AHI-drivers
 
+#MM- AHI-hosted-stubs : \
+#MM                         AHI-alsa-bridge-$(AROS_TARGET_ARCH)
+
 #MM workbench-devs-AHI-subsystem : includes \
 #MM                         linklibs \
-#MM                         AHI-alsa-bridge-$(AROS_TARGET_ARCH) \
+#MM                         AHI-hosted-stubs \
 #MM                         workbench-libs-muimaster-includes
 
 EXEDIR := $(AROSDIR)
