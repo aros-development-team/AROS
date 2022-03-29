@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022 The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for GDI hidd.
     
@@ -27,6 +27,12 @@
 #include <hidd/gfx.h>
 #include <aros/symbolsets.h>
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+#ifndef SDEBUG
+#define SDEBUG 0
+#endif
 #define DEBUG_TEXT(x)
 #include <aros/debug.h>
 

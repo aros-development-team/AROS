@@ -30,11 +30,16 @@
 
 #include LC_LIBDEFS_FILE
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+#ifndef SDEBUG
+#define SDEBUG 0
+#endif
 #include <aros/debug.h>
 
 #ifdef DEBUG_POINTER
-
-#define PRINT_POINTER(image, xsize, xmax, ymax)         \
+# define PRINT_POINTER(image, xsize, xmax, ymax)         \
 bug("[GDIGfx] Pointer data:\n");                        \
 {                                                       \
     ULONG *pix = (ULONG *)image;                        \
@@ -47,7 +52,6 @@ bug("[GDIGfx] Pointer data:\n");                        \
         pix += xsize;                                   \
     }                                                   \
 }
-
 #else
 #define PRINT_POINTER(image, xsize, xmax, ymax)
 #endif
