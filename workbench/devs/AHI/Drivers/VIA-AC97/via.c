@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright (C) 2010-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <config.h>
@@ -299,7 +299,7 @@ static int build_via_table(struct CardData *card, APTR sgbuf1, APTR sgbuf2,
     phys_addr = (ULONG)_sgbuf1;
 #endif
 
-    (*idx)[0].offset = (ULONG)tolittle(phys_addr);
+    (*idx)[0].offset = (APTR)(IPTR)tolittle(phys_addr);
     (*idx)[0].size   = tolittle((OneBufferSize) | VIA_TBL_BIT_FLAG);
 
 #ifdef __amigaos4__
@@ -310,7 +310,7 @@ static int build_via_table(struct CardData *card, APTR sgbuf1, APTR sgbuf2,
     phys_addr = (ULONG)_sgbuf2;
 #endif
 
-    (*idx)[1].offset = (ULONG)tolittle(phys_addr);
+    (*idx)[1].offset = (APTR)(IPTR)tolittle(phys_addr);
     (*idx)[1].size   = tolittle((OneBufferSize) | VIA_TBL_BIT_EOL);
 
     CacheClearE(*idx, sizeof(**idx) * 4, CACRF_ClearD);
