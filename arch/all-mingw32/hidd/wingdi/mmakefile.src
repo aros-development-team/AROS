@@ -28,9 +28,17 @@ NATIVE_LDFLAGS  := -shared -L$(NATIVE_LIBDIR)
 
 USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
 
+#MM kernel-hidd-wingdi-native : AHI-linklibs-WASAPI-native-rc
+
 %build_prog mmake=kernel-hidd-wingdi-native \
     progname=wingdi.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) compiler=kernel uselibs="aroskernel gdi32" \
+    files="$(NATIVE_FILES)" objs="$(GENDIR)/$(CURDIR)/wingdi.o"  compiler=kernel uselibs="aroskernel gdi32" \
     ldflags=$(NATIVE_LDFLAGS)
+
+$(GENDIR)/$(CURDIR)/wingdi.o: $(SRCDIR)/$(CURDIR)/wingdi.rc
+	$(KERNEL_RESCOMP) -i $(SRCDIR)/$(CURDIR)/wingdi.rc -o $(GENDIR)/$(CURDIR)/wingdi.o
+
+#MM
+kernel-hidd-wingdi-native-rc : $(GENDIR)/$(CURDIR)/wingdi.o
 
 %common
