@@ -23,9 +23,17 @@ NATIVE_LDFLAGS := -shared -L$(NATIVE_LIBDIR)
 
 USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
 
+#MM kernel-fs-emul-mingw32-native : kernel-fs-emul-mingw32-native-rc
+
 %build_prog mmake=kernel-fs-emul-mingw32-native \
     progname=emul_handler.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) compiler=kernel uselibs=aroskernel \
+    files="$(NATIVE_FILES)" objs="$(GENDIR)/$(CURDIR)/emul_handler.o" compiler=kernel uselibs=aroskernel \
     ldflags=$(NATIVE_LDFLAGS)
+
+$(GENDIR)/$(CURDIR)/emul_handler.o: $(SRCDIR)/$(CURDIR)/emul_handler.rc
+	$(KERNEL_RESCOMP) -i $(SRCDIR)/$(CURDIR)/emul_handler.rc -o $(GENDIR)/$(CURDIR)/emul_handler.o
+
+#MM
+kernel-fs-emul-mingw32-native-rc: $(GENDIR)/$(CURDIR)/emul_handler.o
 
 %common

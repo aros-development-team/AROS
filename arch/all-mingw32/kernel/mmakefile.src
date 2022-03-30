@@ -25,14 +25,17 @@ NATIVE_LDFLAGS := -shared -Wl,--out-implib,$(NATIVE_LIBDIR)/libaroskernel.a
 USER_INCLUDES :=
 
 #MM
-kernel-kernel-mingw32-native: $(NATIVE_LIBDIR)
+kernel-kernel-mingw32-native: $(NATIVE_LIBDIR) $(GENDIR)/$(CURDIR)/kernel.o
 
 $(NATIVE_LIBDIR):
 	@$(MKDIR) $(NATIVE_LIBDIR)
 
+$(GENDIR)/$(CURDIR)/kernel.o: $(SRCDIR)/$(CURDIR)/kernel.rc
+	$(KERNEL_RESCOMP) -i $(SRCDIR)/$(CURDIR)/kernel.rc -o $(GENDIR)/$(CURDIR)/kernel.o
+
 %build_prog mmake=kernel-kernel-mingw32-native \
     progname=kernel.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) asmfiles=$(NATIVE_AFILES) compiler=kernel \
+    files="$(NATIVE_FILES)" asmfiles="$(NATIVE_AFILES)" objs="$(GENDIR)/$(CURDIR)/kernel.o" compiler=kernel \
     cflags=$(NATIVE_FLAGS) ldflags=$(NATIVE_LDFLAGS)
 
 %common
