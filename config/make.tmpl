@@ -1576,7 +1576,7 @@ BDID := $(BDTARGETID)
 # Build a program
 %define build_prog mmake=/A progname=/A \
     files= objcfiles= cxxfiles= alwayscxxlink=no \
-    asmfiles= objdir="$(GENDIR)/$(CURDIR)" targetdir="$(AROSDIR)/$(CURDIR)" \
+    asmfiles= objs= objdir="$(GENDIR)/$(CURDIR)" targetdir="$(AROSDIR)/$(CURDIR)" \
     cppflags="$(CPPFLAGS)" cflags= dflags= cxxflags= dxxflags= ldflags= \
     aflags="$(AFLAGS)" uselibs= usehostlibs= usestartup=yes detach=no nix=no \
     includedir= libdir= \
@@ -1614,8 +1614,8 @@ endif
 %(mmake)_OBJC_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_OBJCFILES))
 
 TMP_FILES := $(%(mmake)_C_NARCHFILES) $(%(mmake)_CXX_NARCHFILES) $(%(mmake)_ASMFILES) $(%(mmake)_OBJC_NARCHFILES)
-%(mmake)_OBJS := $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES))))
-%(mmake)_DEPS := $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES))))
+%(mmake)_OBJS := $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))) %(objs))
+%(mmake)_DEPS := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))))
 
 %(mmake)_CPPFLAGS :=  %(cppflags)
 ifneq (%(includedir),)
