@@ -1,0 +1,15 @@
+#
+#  Makefile.in for hosted WASAPI sound card driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= WASAPI.audio
+MODEFILE	= WASAPI
+
+OBJECTS		= WASAPI-init.o WASAPI-main.o WASAPI-playslave.o WASAPI-accel.o
+LIBS		= -lWASAPI-bridge
+
+include ../Common/Makefile.common

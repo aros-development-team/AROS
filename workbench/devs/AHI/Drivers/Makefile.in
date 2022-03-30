@@ -28,6 +28,7 @@ HAVE_OPENPCI	= @HAVE_OPENPCI@
 
 HAVE_OSS	= @HAVE_OSS@
 HAVE_ALSA	= @HAVE_ALSA@
+HAVE_WASAPI = @HAVE_WASAPI@
 
 #
 # Targets
@@ -66,6 +67,10 @@ endif
 
 ifneq ($(strip $(HAVE_OSS)),)
 SUBDIRS		+= OSS
+endif
+
+ifneq ($(strip $(HAVE_WASAPI)),)
+SUBDIRS		+= WASAPI
 endif
 
 all:
