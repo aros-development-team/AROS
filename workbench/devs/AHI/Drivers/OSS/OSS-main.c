@@ -117,8 +117,9 @@ void
 _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
 		   struct DriverBase*      AHIsubBase )
 {
+#if (0)
   struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
-
+#endif
   if( AudioCtrl->ahiac_DriverData != NULL )
   {
     OSS_Reset();
@@ -138,8 +139,9 @@ void
 _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
 {
+#if (0)
   struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
-
+#endif
   // V6 drivers do not have to preserve all registers
 
   Forbid();
@@ -154,8 +156,9 @@ void
 _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
+#if (0)
   struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
-
+#endif
   // V6 drivers do not have to preserve all registers
 
   Permit();
@@ -296,8 +299,9 @@ _AHIsub_Update( ULONG                   flags,
 		struct AHIAudioCtrlDrv* AudioCtrl,
 		struct DriverBase*      AHIsubBase )
 {
+#if (0)
   struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
-
+#endif
   // Empty function
 }
 
@@ -411,7 +415,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
       return 1;
 
     case AHIDB_Output:
-      return (IPTR) "AROS";    // We have only one "output"!
+      return (IPTR) "OSS";    // We have only one "output"!
 
     default:
       return def;
