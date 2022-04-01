@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 #include <aros/debug.h>
 
@@ -10,7 +10,7 @@
     NAME */
 #include <clib/cgxvideo_protos.h>
 
-        AROS_LH2(ULONG, GetVLayerAttr,
+        AROS_LH2(IPTR, GetVLayerAttr,
 
 /*  SYNOPSIS */
         AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),

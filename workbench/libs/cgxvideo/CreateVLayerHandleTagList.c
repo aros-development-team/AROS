@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -107,7 +107,7 @@
         layerTags[1].ti_Data = GetTagData(VOA_SrcHeight, 0, TagItems);
         layerTags[2].ti_Data = GetTagData(VOA_SrcType  , 0, TagItems);
 
-        OOP_GetAttr((OOP_Object *)bm->Planes[0], aHidd_BitMap_GfxHidd, &vh->drv);
+        OOP_GetAttr((OOP_Object *)bm->Planes[0], aHidd_BitMap_GfxHidd, (IPTR *)&vh->drv);
         vh->obj = HIDD_Gfx_NewOverlay(vh->drv, layerTags);
     }
     else
