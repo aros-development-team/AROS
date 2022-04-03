@@ -20,13 +20,14 @@
   </tr>
   <tr>
     <td rowspan=2 style="text-align:center">Toolchain</td>
-    <td colspan="3" style="text-align:center">GNU</td>
+    <td colspan="4" style="text-align:center">GNU</td>
     <td style="text-align:center">LLVM</td>
   </tr>
   <tr>
     <td style="text-align:center">6.5.0</td>
     <td style="text-align:center">9.1.0</td>
     <td style="text-align:center">10.2.0</td>
+    <td style="text-align:center">11.2.0</td>
     <td style="text-align:center">10.0</td>
   </tr>
   <tr>
@@ -34,6 +35,7 @@
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=14&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=master"></a>
     </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
@@ -46,12 +48,14 @@
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>pc-x86_64</td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=17&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64?branchName=master"></a>
     </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
@@ -64,6 +68,7 @@
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=15&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-smp?branchName=master"></a>
     </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>raspi-armhf</td>
@@ -73,12 +78,14 @@
     </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>sam440-ppc</td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=20&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-sam440-ppc?branchName=master"></a>
     </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
@@ -99,6 +106,7 @@
     </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=26&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-x86_64-llvm?branchName=master"></a>
     </td>
@@ -111,12 +119,14 @@
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>darwin-x86_64</td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=22&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-x86_64?branchName=master"></a>
     </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
@@ -129,12 +139,14 @@
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>mingw32-i386</td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=23&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-i386?branchName=master"></a>
     </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
