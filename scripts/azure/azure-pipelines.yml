@@ -85,7 +85,7 @@ jobs:
       if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
       fi
-      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
+      command -v brew &>/dev/null || ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
       brew list gawk &>/dev/null || brew install gawk
       brew list gnu-sed &>/dev/null || brew install gnu-sed
       brew list autoconf &>/dev/null || brew install autoconf
@@ -95,8 +95,7 @@ jobs:
       brew list cmake &>/dev/null || brew install cmake
       brew list netpbm &>/dev/null || brew install netpbm
       brew list md5sha1sum &>/dev/null || brew install md5sha1sum
-      brew install caskroom/cask/brew-cask 2> /dev/null
-      brew install --cask xquartz
+      brew list --cask xquartz &>/dev/null || brew install --cask xquartz
       brew list python@3.9 &>/dev/null || brew install python@3.9
       if ! command -v pip3; then
           sudo easy_install pip3
