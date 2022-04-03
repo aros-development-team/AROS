@@ -1,11 +1,26 @@
+#
 # AROS Build pipeline
+#
 # Builds a single target defined in the pipeline variables.
 # set -:
-#    arosbuild.name
-#    arosbuild.target
-#    arosbuild.variant
-#    arosbuild.package  - "system" "boot-iso"
-#    arosbuild.packagefmt - "lha" "zip" "tar.bz2"
+#    arosbuild.name - full name including variant info (e.g. "pc-x86_64-smp")
+#    arosbuild.target - build target (e.g. "pc-x86_64")
+#    arosbuild.variant - variant (e.g. "smp")
+#    arosbuild.package  - "system" or "boot-iso"
+#    arosbuild.packagefmt - "lha", "zip", or "tar.bz2"
+#    arosbuild.vmimage
+#    SF_RSYNC_USER - sourceforge user credentials for file upload
+#    SF_RSYNC_PASSWORD
+#
+# Optional variables -:
+#    arosbuild.nativetoolchain - yes/no
+#    arosbuild.toolchain.family - "llvm", "gnu"
+#    arosbuild.gcc.version -
+#    arosbuild.bootpackage - target to build for boot package if applicable
+#    arosbuild.bootpackagefmt -
+#    arosbuild.withcontrib - yes/no
+#    arosbuild.withtoolchain - yes/no
+#    arosbuild.withunittests - yes/no
 #
 
 trigger:
@@ -230,7 +245,7 @@ jobs:
         CONFIGOPTS="$(AROSCONFIGOPTIONS) --with-kernel-toolchain-prefix=powerpc-apple-darwin10.8.0-"
         echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
       fi
-    condition: and(eq( variables['Agent.OS'], 'Darwin' ), ne( variables['arosbuild.target'], 'darwin-x86_64' ))
+    condition: and(eq( variables['Agent.OS'], 'Darwin' ), and(eq( variables['arosbuild.nativetoolchain'],'yes'), ne( variables['arosbuild.target'], 'darwin-x86_64' )))
     displayName: 'Build native toolchains for MacOS'
 
   - script: |
