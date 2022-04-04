@@ -2438,7 +2438,15 @@ else
 endif
 
 ifeq (%(libdir),)
+ifneq (%(modsuffix),)
+%(mmake)%(flavour)_LIBDIR           := $(GENDIR)/$(CURDIR)
+else
+ifeq (%(modtype),library)
 %(mmake)%(flavour)_LIBDIR           := %(prefix)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_LIB)
+else
+%(mmake)%(flavour)_LIBDIR           := $(GENDIR)/$(CURDIR)
+endif
+endif
 else
 %(mmake)%(flavour)_LIBDIR           := %(libdir)
 endif
