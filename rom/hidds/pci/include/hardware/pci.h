@@ -193,17 +193,13 @@
 #define PCICAP_ADVANCED_FEATURES        0x13
 
 /* MSI capability defines */
-#if (0)
-#define PCIMSI_FLAGS                    0                               /* MSI Control Flags Word */
-#define PCIMSI_NXT                      2                               /* Next ID Byte */
-#define PCIMSI_CAP                      3                               /* MSI Capability Flags Byte */
-#else
+#define PCIMSI_CAP                      0                               /* MSI Capability Flags Byte */
+#define PCIMSI_NXT                      1                               /* Next ID Byte */
 #define PCIMSI_FLAGS                    2                               /* MSI Control Flags Word */
-#endif
 #define PCIMSI_ADDRESSLO                4                               /* MAR Lower 32 bits */
-#define PCIMSI_DATA32                   10                              /* (32-bit) Data Word */
 #define PCIMSI_ADDRESSHI                8                               /* MAR Upper 32 bits (PCIMSIF_64BIT) */
-#define PCIMSI_DATA64                   14                              /* (64-bit) Data Word */
+#define PCIMSI_DATA32                   8                               /* (32-bit) Data Word */
+#define PCIMSI_DATA64                   12                              /* (64-bit) Data Word */
 
 #define PCIMSIB_ENABLE                  0                               /* MSI feature enable(d) */
 #define PCIMSIF_ENABLE                  (1 << PCIMSIB_ENABLE)
