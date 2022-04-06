@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
 
     Desc: i386/x86_64 native PCI device support routines.
 */
@@ -214,11 +214,13 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, st
         if (msiflags & PCIMSIF_ENABLE)
         {
             DMSI(bug("[PCIPC:Device] %s: #%u MSI message vectors\n", __func__, (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)));)
+
             /* MSI is enabled .. but is the requested vector valid? */
             if (msg->vectorno < (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)))
             {
                 struct TagItem *tag, *tags;
                   tags=(struct TagItem *)msg->attribs;
+
                 while((tag = NextTagItem(&tags)))
                 {
                     switch (tag->ti_Tag)
@@ -229,6 +231,9 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, st
 
                         case tHidd_PCIVector_Native:
                             tag->ti_Data = ((data->msimsg & 0xFF) + msg->vectorno);
+                            break;
+
+                        default:
                             break;
                     }
                 }
@@ -308,7 +313,6 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
         {
             DMSI(bug("[PCIPC:Device] %s: Configuring Device with %u MSI vectors...\n", __func__, vectcnt);)
             msiflags |= (ilog2(roundup_pow_of_two(vectcnt)) << 4);
-            DMSI(bug("[PCIPC:Device] %s: flags = %04x\n", __func__, msiflags);)
 
             cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
             cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSLO;
@@ -316,9 +320,10 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
             OOP_DoMethod(o, &cmeth.wcl.mID);
 
             data->msimsg = (UWORD)apicIRQBase + HW_IRQ_BASE;
+
             if (msiflags & PCIMSIF_64BIT)
             {
-                DMSI(bug("[PCIPC:Device] %s: #64bit device!\n", __func__);)
+                DMSI(bug("[PCIPC:Device] %s: -- 64bit device!\n", __func__);)
                 cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
                 cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSHI;
                 cmeth.wcl.val = 0;
@@ -336,6 +341,7 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
                 cmeth.wcw.val = data->msimsg;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
+            DMSI(bug("[PCIPC:Device] %s: -- MSI message = %04x\n", __func__, cmeth.wcw.val);)
 
             msiflags |= PCIMSIF_ENABLE;
             cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
@@ -343,7 +349,12 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
             cmeth.wcw.val = msiflags;
             OOP_DoMethod(o, &cmeth.wcw.mID);
 
-            return TRUE;
+            cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+            cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
+            msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
+            DMSI(bug("[PCIPC:Device] %s: Configured MSI Flags = %04x\n", __func__, msiflags);)
+            if (msiflags & PCIMSIF_ENABLE)
+                return TRUE;
         }
     }
     DMSI(bug("[PCIPC:Device] %s: Failed to obtain/enable MSI vectors\n", __func__);)
