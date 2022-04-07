@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-INCLUDE_FILES := $(call WILDCARD, *.[hi] aros/*.[hi] aros/m68k/*.[hi] asm/*.[hi] exec/*.[hi])
+INCLUDE_FILES := $(call WILDCARD, *.[hi] aros/*.[hi] aros/m68k/*.[hi] asm/*.[hi] exec/*.[hi] hardware/*.[hi])
 
 #MM- includes-copy-amiga-m68k : includes-common-m68k
 
