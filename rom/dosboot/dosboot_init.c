@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Boot AROS
 */
@@ -58,7 +58,7 @@ static void bootDelay(ULONG timeout)
     timerio.tr_node.io_Message.mn_Length        = sizeof(timermp);
 
     if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)&timerio, 0) != 0) {
-        D(bug("dosboot: Can't open timer.device unit 0\n"));
+        D(bug("[DOSBoot] %s: Failed to open timer.device unit 0\n", __func__));
         return;
     }
 
@@ -86,12 +86,12 @@ static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
     return (memcmp(AROS_BSTR_ADDR(bstr),cstr,clen) == 0);
 }
 
-static void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
+static void selectBootDevice(LIBBASETYPEPTR LIBBASE, STRPTR bootDeviceName)
 {
     struct BootNode *bn = NULL;
 
     if (bootDeviceName == NULL &&
-        DOSBootBase->db_BootNode != NULL)
+        LIBBASE->db_BootNode != NULL)
         return;
 
     Forbid(); /* .. access to ExpansionBase->MountList */
@@ -99,7 +99,7 @@ static void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
     if (bootDeviceName != NULL)
     {
         struct BootNode *i;
-        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, i)
+        ForeachNode(&LIBBASE->bm_ExpansionBase->MountList, i)
         {
             struct DeviceNode *dn;
 
@@ -117,15 +117,15 @@ static void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
 
     /* Default */
     if (bn == NULL)
-        bn = (APTR)GetHead(&DOSBootBase->bm_ExpansionBase->MountList);
+        bn = (APTR)GetHead(&LIBBASE->bm_ExpansionBase->MountList);
 
     Permit();
 
-    DOSBootBase->db_BootNode = bn;
+    LIBBASE->db_BootNode = bn;
 }
 
 
-int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
+int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct ExpansionBase *ExpansionBase;
     void *BootLoaderBase;
@@ -133,22 +133,21 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
     ULONG t;
     STRPTR bootDeviceName = NULL;
 
-    DOSBootBase->delayTicks = 50;
+    LIBBASE->delayTicks = 50;
 
-    D(bug("[boot] dosboot_Init: GO GO GO!\n"));
+    D(bug("[DOSBoot] %s: GO GO GO!\n", __func__));
 
     ExpansionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
-
-    D(bug("[Strap] ExpansionBase 0x%p\n", ExpansionBase));
+    D(bug("[DOSBoot] %s: ExpansionBase 0x%p\n", __func__, ExpansionBase));
     if( ExpansionBase == NULL )
     {
-        D(bug( "Could not open expansion.library, something's wrong!\n"));
+        D(bug( "[DOSBoot] %s: Failed to open expansion.library\n", __func__));
         Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
     }
 
     ExpansionBase->Flags |= EBF_SILENTSTART;
 
-    DOSBootBase->bm_ExpansionBase = ExpansionBase;
+    LIBBASE->bm_ExpansionBase = ExpansionBase;
 
     /*
      * Search the kernel parameters for the bootdelay=%d string. It determines the
@@ -168,13 +167,13 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
                 {
                     ULONG delay = atoi(&node->ln_Name[10]);
 
-                    D(bug("[Boot] delay of %d seconds requested.", delay));
+                    D(bug("[DOSBoot] %s: delay of %d seconds requested.", __func__, delay));
                     if (delay)
                         bootDelay(delay * 50);
                 }
                 else if (0 == stricmp(node->ln_Name, "bootmenu"))
                 {
-                    D(bug("[BootMenu] dosboot_Init: bootmenu Forced with bootloader argument\n"));
+                    D(bug("[DOSBoot] %s: bootmenu Forced with bootloader argument\n", __func__));
                     WantBootMenu = TRUE;
                 }
                 /*
@@ -183,11 +182,11 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
                  */
                 else if (0 == stricmp(node->ln_Name, "nomonitors"))
                 {
-                    DOSBootBase->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
+                    LIBBASE->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
                 }
                 else if (0 == stricmp(node->ln_Name, "nocomposition"))
                 {
-                    DOSBootBase->db_BootFlags |= BF_NO_COMPOSITION;
+                    LIBBASE->db_BootFlags |= BF_NO_COMPOSITION;
                 }
                 else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
                 {
@@ -195,52 +194,52 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
                 }
                 else if (0 == stricmp(node->ln_Name, "econsole"))
                 {
-                    DOSBootBase->db_BootFlags |= BF_EMERGENCY_CONSOLE;
-                    D(bug("[Boot] Emergency console selected\n"));
+                    LIBBASE->db_BootFlags |= BF_EMERGENCY_CONSOLE;
+                    D(bug("[DOSBoot] %s: Emergency console selected\n", __func__));
                 }
             }
-            IntExpBase(ExpansionBase)->BootFlags = DOSBootBase->db_BootFlags;
+            IntExpBase(ExpansionBase)->BootFlags = LIBBASE->db_BootFlags;
         }
     }
 
-    D(bug("[Boot] Scanning for additional partitions/volumes...\n"));
+    D(bug("[DOSBoot] Scanning for additional partitions/volumes...\n"));
 
     /* Scan for any additional partition volumes */
-    dosboot_BootScan(DOSBootBase);
+    dosboot_BootScan(LIBBASE);
 
-    D(bug("[Boot] Prepairing initial device...\n"));
+    D(bug("[DOSBoot] Prepairing initial device...\n"));
 
     /* Select the initial boot device, so that the choice is available in the menu */
-    selectBootDevice(DOSBootBase, bootDeviceName);
+    selectBootDevice(LIBBASE, bootDeviceName);
 
-    D(bug("[Boot] Enabling devices\n"));
+    D(bug("[DOSBoot] Enabling devices\n"));
     // Set all devices ENALBED by default
     {
-        ListLength(&ExpansionBase->MountList, DOSBootBase->devicesCount);
-        D(bug("[Boot] %d devices in mountlist (want %d bytes)\n", DOSBootBase->devicesCount, DOSBootBase->devicesCount * sizeof(BOOL) * 2));
+        ListLength(&ExpansionBase->MountList, LIBBASE->devicesCount);
+        D(bug("[DOSBoot] %d devices in mountlist (want %d bytes)\n", LIBBASE->devicesCount, LIBBASE->devicesCount * sizeof(BOOL) * 2));
 
-        if ((DOSBootBase->devicesCount > 0) &&
-            ((DOSBootBase->devicesEnabled = AllocVec (DOSBootBase->devicesCount * sizeof(BOOL) * 2, MEMF_ANY|MEMF_CLEAR)) != NULL))
+        if ((LIBBASE->devicesCount > 0) &&
+            ((LIBBASE->devicesEnabled = AllocVec (LIBBASE->devicesCount * sizeof(BOOL) * 2, MEMF_ANY|MEMF_CLEAR)) != NULL))
         {
-            D(bug("[Boot] devices enabled list storage @ 0x%p\n", DOSBootBase->devicesEnabled));
+            D(bug("[DOSBoot] devices enabled list storage @ 0x%p\n", LIBBASE->devicesEnabled));
 
-            for(int i=0; i<DOSBootBase->devicesCount; i++)
+            for(int i=0; i<LIBBASE->devicesCount; i++)
             {
-                DOSBootBase->devicesEnabled[i] = TRUE;
+                LIBBASE->devicesEnabled[i] = TRUE;
             }
         }
     }
 
-    D(bug("[Boot] ** Displaying bootmenu (if wanted) ...\n"));
+    D(bug("[DOSBoot] ** Displaying bootmenu (if wanted) ...\n"));
     /* Show the boot menu if needed */
-    bootmenu_Init(DOSBootBase, WantBootMenu);
+    bootmenu_Init(LIBBASE, WantBootMenu);
 
-    D(bug("[Boot] ** Prepairing to boot ...\n"));
+    D(bug("[DOSBoot] ** Prepairing to boot ...\n"));
 
     // Disable selected Devices
     // and
     // Set final boot device
-    if (DOSBootBase->devicesCount > 0)
+    if (LIBBASE->devicesCount > 0)
     {
         struct List tempList;
         struct BootNode *bn, *temp;
@@ -259,9 +258,9 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
 
         ForeachNodeSafe (&tempList, bn, temp)
         {
-            if ((!DOSBootBase->devicesEnabled) || (DOSBootBase->devicesEnabled[index++] == TRUE))
+            if ((!LIBBASE->devicesEnabled) || (LIBBASE->devicesEnabled[index++] == TRUE))
             {
-                if (bn == DOSBootBase->db_BootNode)
+                if (bn == LIBBASE->db_BootNode)
                 {
                     bn->bn_Node.ln_Type = NT_BOOTNODE;
                     bn->bn_Node.ln_Pri = 127;
@@ -279,39 +278,39 @@ int dosboot_Init(LIBBASETYPEPTR DOSBootBase)
         ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
 
-        if (DOSBootBase->devicesEnabled != NULL)
+        if (LIBBASE->devicesEnabled != NULL)
         {
-            FreeVec(DOSBootBase->devicesEnabled);
+            FreeVec(LIBBASE->devicesEnabled);
         }
     }
 
     /* updates the boot flags */
-    IntExpBase(DOSBootBase->bm_ExpansionBase)->BootFlags = DOSBootBase->db_BootFlags;
+    IntExpBase(ExpansionBase)->BootFlags = LIBBASE->db_BootFlags;
 
     /* We want to be able to find ourselves in RTF_AFTERDOS */
-    DOSBootBase->bm_Screen = NULL;
-    AddResource(&DOSBootBase->db_Node);
+    LIBBASE->bm_Screen = NULL;
+    AddResource(&LIBBASE->db_Node);
 
-    D(bug("[Boot] ** Attempting to boot ...\n"));
+    D(bug("[DOSBoot] ** Attempting to boot ...\n"));
 
     /* Attempt to boot until we succeed */
     for (;;)
     {
-        dosboot_BootStrap(DOSBootBase);
+        dosboot_BootStrap(LIBBASE);
 
-        if (!DOSBootBase->bm_Screen)
-            DOSBootBase->bm_Screen = NoBootMediaScreen(DOSBootBase);
+        if (!LIBBASE->bm_Screen)
+            LIBBASE->bm_Screen = NoBootMediaScreen(LIBBASE);
 
         D(bug("No bootable disk was found.\n"));
         D(bug("Please insert a bootable disk in any drive.\n"));
         D(bug("Retrying in 3 seconds...\n"));
 
-        for (t = 0; t < 150; t += DOSBootBase->delayTicks)
+        for (t = 0; t < 150; t += LIBBASE->delayTicks)
         {
-            bootDelay(DOSBootBase->delayTicks);
+            bootDelay(LIBBASE->delayTicks);
 
-            if (DOSBootBase->bm_Screen)
-                anim_Animate(DOSBootBase->bm_Screen, DOSBootBase);
+            if (LIBBASE->bm_Screen)
+                anim_Animate(LIBBASE->bm_Screen, LIBBASE);
         }
     }
 

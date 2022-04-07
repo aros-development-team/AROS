@@ -2,7 +2,7 @@
 #define DOSBOOT_INTERN_H
 
 /*
-   Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2022, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Internal definitions for dosboot
@@ -28,24 +28,24 @@ struct BootConfig
 
 struct DOSBootBase
 {
-    struct Node           db_Node;		/* Node for linking into the list */
+    struct Node           db_Node;              /* Node for linking into the list                          */
     ULONG                 db_BootFlags;         /* Bootup flags (identical to IntExpansionBase->BootFlags) */
 
-    struct BootNode      *db_BootNode;		/* Device to boot up from	  */
+    struct BootNode      *db_BootNode;          /* Device to boot up from                                  */
 
-    struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
+    struct GfxBase       *bm_GfxBase;           /* Library bases                                           */
     struct IntuitionBase *bm_IntuitionBase;
     struct GadToolsBase  *bm_GadToolsBase;
     APTR                  bm_VisualInfo;
     struct ExpansionBase *bm_ExpansionBase;
-    struct Screen        *bm_Screen;		/* Screen					  */
-    struct Window        *bm_Window;		/* Window and gadgets		  */
-    APTR                   bm_BootNode; /* Boot node selected in the menu */
+    struct Screen        *bm_Screen;            /* Screen                                                  */
+    struct Window        *bm_Window;            /* Window and gadgets                                      */
+    APTR                  bm_BootNode;          /* Boot node selected in the menu                          */
 
-    struct BootConfig     bm_BootConfig;	/* Current HIDD configuration     */
-    APTR		  animData;		/* Animation stuff		  */
-    ULONG		  delayTicks;		/* Delay period. Can be adjusted by animation code */
-    WORD		  bottomY;
+    struct BootConfig     bm_BootConfig;        /* Current HIDD configuration                              */
+    APTR                  animData;	            /* Animation stuff                                         */
+    ULONG                 delayTicks;           /* Delay period. Can be adjusted by animation code         */
+    WORD                  bottomY;
 
     WORD                  devicesCount;
     BOOL                 *devicesEnabled;

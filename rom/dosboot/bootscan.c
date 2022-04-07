@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Discover all mountable partitions
 */
@@ -74,7 +74,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     BOOL appended, changed;
     struct Node *fsnode;
 
-    D(bug("[Boot] AddPartitionVolume\n"));
+    D(bug("[DOSBoot:bootscan] %s()\n", __func__));
     GetPartitionTableAttrsTags(table, PTT_TYPE, &pttype, TAG_DONE);
 
     attrs = QueryPartitionAttrs(table);
@@ -83,7 +83,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
 
     if (attrs->attribute != TAG_DONE)
     {
-        D(bug("[Boot] RDB/GPT partition\n"));
+        D(bug("[DOSBoot:bootscan] %s: RDB/GPT partition\n", __func__));
 
         /* partition has a name => RDB/GPT partition */
         tags[0] = PT_NAME;
@@ -95,11 +95,11 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
         tags[6] = TAG_DONE;
         GetPartitionAttrs(pn, (struct TagItem *)tags);
 
-        D(bug("[Boot] Partition name: %s bootable: %d\n", name, bootable));
+        D(bug("[DOSBoot:bootscan] %s: Partition name: %s bootable: %d\n", __func__, name, bootable));
     }
     else
     {
-        D(bug("[Boot] MBR/EBR partition\n"));
+        D(bug("[DOSBoot:bootscan] %s: MBR/EBR partition\n", __func__));
 
         /* partition doesn't have a name => MBR/EBR partition */
         tags[0] = PT_POSITION;
@@ -136,7 +136,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
         name[i++] = '0' + (UBYTE)(ppos % 10);
         name[i] = '\0';
 
-        D(bug("[Boot] Partition name: %s\n", name));
+        D(bug("[DOSBoot:bootscan] %s: Partition name: %s\n", __func__, name));
     }
 
     if ((pp[4 + DE_TABLESIZE] < DE_DOSTYPE) || (pp[4 + DE_DOSTYPE] == 0))
@@ -148,7 +148,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
          * Here we ignore partitions with DosType == 0 and won't enter them into
          * mountlist.
          */
-        D(bug("[Boot] Unknown DosType for %s, skipping partition\n"));
+        D(bug("[DOSBoot:bootscan] %s: Unknown DosType, skipping partition\n", __func__));
         return;
     }
 
@@ -191,8 +191,8 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     blockspercyl = pp[4 + DE_BLKSPERTRACK] * pp[4 + DE_NUMHEADS];
     if (i % blockspercyl != 0)
     {
-        D(bug("[Boot] Start block of subtable not on cylinder boundary: "
-            "%ld (Blocks per Cylinder = %ld)\n", i, blockspercyl));
+        D(bug("[DOSBoot:bootscan] %s: Start block of subtable not on cylinder boundary: "
+            "%ld (Blocks per Cylinder = %ld)\n", __func__, i, blockspercyl));
         return;
     }
     i /= blockspercyl;
@@ -224,14 +224,14 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
 
     fsnode = FindFileSystem(table, FST_ID, pp[4 + DE_DOSTYPE], TAG_DONE);
     if (fsnode) {
-        D(bug("[Boot] Found on-disk filesystem 0x%08x\n", pp[4 + DE_DOSTYPE]));
+        D(bug("[DOSBoot:bootscan] %s: Found on-disk filesystem 0x%08x\n", __func__, pp[4 + DE_DOSTYPE]));
         AddBootFileSystem(fsnode);
     }
 
     devnode = MakeDosNode(pp);
     if (devnode != NULL) {
         AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, ADNF_STARTPROC, devnode, NULL);
-        D(bug("[Boot] AddBootNode(%b, 0, 0x%p, NULL)\n",  devnode->dn_Name, pp[4 + DE_DOSTYPE]));
+        D(bug("[DOSBoot:bootscan] %s: AddBootNode(%b, 0, 0x%p, NULL)\n", __func__, devnode->dn_Name, pp[4 + DE_DOSTYPE]));
         return;
     }
 }
@@ -267,7 +267,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
     struct DeviceNode *dn = bn->bn_DeviceNode;
     BOOL res = FALSE;
 
-    D(bug("CheckPartitions('%b') handler seglist = %x, handler = %s\n", dn->dn_Name,
+    D(bug("[DOSBoot:bootscan] %s('%b')\n[DOSBoot:bootscan] %s: handler seglist = %x, handler = %s\n", __func__, dn->dn_Name, __func__,
             dn->dn_SegList, AROS_BSTR_ADDR(dn->dn_Handler)));
 
     /* Examples:
@@ -302,9 +302,9 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
 }
 
 /* Scan all partitions manually for additional volumes that can be mounted. */
-void dosboot_BootScan(LIBBASETYPEPTR DOSBootBase)
+void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
 {
-    struct ExpansionBase *ExpansionBase = DOSBootBase->bm_ExpansionBase;
+    struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
     APTR PartitionBase;
     struct BootNode *bootNode, *temp;
     struct List rootList;

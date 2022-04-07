@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Boot AROS
 */
@@ -283,9 +283,9 @@ static inline void dosboot_BootDos(void)
 /* Attempt to boot, first from the BootNode boot blocks,
  * then via the DOS handlers
  */
-LONG dosboot_BootStrap(LIBBASETYPEPTR DOSBootBase)
+LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
 {
-    struct ExpansionBase *ExpansionBase = DOSBootBase->bm_ExpansionBase;
+    struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
     int i, nodes;
 
     /*

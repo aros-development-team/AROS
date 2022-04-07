@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
    Desc: Main bootmenu code
 */
@@ -36,6 +36,8 @@
 #include "dosboot_intern.h"
 #include "menu.h"
 
+#define GUI_SCALE_TEST
+
 #define PAGE_MAIN 1
 #define PAGE_BOOT 2
 #define PAGE_DISPLAY 3
@@ -61,6 +63,12 @@
 #endif
 #endif
 
+#if defined(GUI_SCALE_TEST)
+static const char strtopazfont[] = "topaz.font";
+static struct TextAttr Topaz80 = { (char *)strtopazfont, 8, 0, 0, };
+static struct TextAttr Topaz110 = { (char *)strtopazfont, 11, 0, 0, };
+#endif
+
 #ifdef INITHIDDS_KLUDGE
 
 /*
@@ -68,12 +76,12 @@
  * It's still needed for ATI driver on PowerPC native.
  */
 
-static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootBase)
+static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR LIBBASE)
 {
     OOP_Class *gfxclass;
     BOOL success = FALSE;
 
-    D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
+    D(bug("[DOSBoot:bootmenu] %s('%s')\n", __func__, gfxclassname));
     
     GfxBase = (void *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (GfxBase)
@@ -94,42 +102,42 @@ static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootB
     ReturnBool ("init_gfxhidd", success);
 }
 
-static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
+static BOOL initHidds(LIBBASETYPEPTR LIBBASE)
 {
-    struct BootConfig *bootcfg = &DOSBootBase->bm_BootConfig;
+    struct BootConfig *bootcfg = &LIBBASE->bm_BootConfig;
 
-    D(bug("[BootMenu] initHidds()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
 
     if (bootcfg->gfxhidd) {
         if (!OpenLibrary(bootcfg->gfxlib, 0))
             return FALSE;
 
-        if (!init_gfx(bootcfg->gfxhidd, bootcfg->bootmode, DOSBootBase))
+        if (!init_gfx(bootcfg->gfxhidd, bootcfg->bootmode, LIBBASE))
             return FALSE;
     }
 
-    D(bug("[BootMenu] initHidds: Hidds initialised\n"));
+    D(bug("[DOSBoot:bootmenu] %s: Hidds initialised\n", __func__));
     return TRUE;
 }
 
 #endif
 
-static LONG centerx(LIBBASETYPEPTR DOSBootBase, LONG width)
+static LONG centerx(LIBBASETYPEPTR LIBBASE, LONG width)
 {
-    return (DOSBootBase->bm_Screen->Width - width) / 2;
+    return (LIBBASE->bm_Screen->Width - width) / 2;
 }
 
-static LONG rightto(LIBBASETYPEPTR DOSBootBase, LONG width, LONG right)
+static LONG rightto(LIBBASETYPEPTR LIBBASE, LONG width, LONG right)
 {
-    return DOSBootBase->bm_Screen->Width - width - right;
+    return LIBBASE->bm_Screen->Width - width - right;
 }
 
 
 
 
-static void centertext(LIBBASETYPEPTR DOSBootBase, BYTE pen, WORD y, const char *text)
+static void centertext(LIBBASETYPEPTR LIBBASE, BYTE pen, WORD y, const char *text)
 {
-    struct Window *win = DOSBootBase->bm_Window;
+    struct Window *win = LIBBASE->bm_Window;
     SetAPen(win->RPort, pen);
     Move(win->RPort, win->Width / 2 - TextLength(win->RPort, text, strlen(text)) / 2, y);
     Text(win->RPort, text, strlen(text));
@@ -139,19 +147,19 @@ static void centertext(LIBBASETYPEPTR DOSBootBase, BYTE pen, WORD y, const char 
 //////////////////////////////////////////////////////////////////////////
 
 
-static BOOL populateGadgets_PageMain(LIBBASETYPEPTR DOSBootBase, struct Gadget *gadget)
+static BOOL populateGadgets_PageMain(LIBBASETYPEPTR LIBBASE, struct Gadget *gadget)
 {
     struct NewGadget ng;
 
-    D(bug("[BootMenu] populateGadgets_PageMain()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
 
-    LONG cx = centerx((struct DOSBootBase *)DOSBootBase, 280);
+    LONG cx = centerx((LIBBASETYPEPTR)LIBBASE, 280);
 
     ng.ng_Width = 280;
     ng.ng_Height = 15;
     ng.ng_TextAttr = NULL;
     ng.ng_Flags = 0;
-    ng.ng_VisualInfo = DOSBootBase->bm_VisualInfo;
+    ng.ng_VisualInfo = LIBBASE->bm_VisualInfo;
     ng.ng_UserData = 0;
 
     if (gadget != NULL)
@@ -184,19 +192,56 @@ static BOOL populateGadgets_PageMain(LIBBASETYPEPTR DOSBootBase, struct Gadget *
     return (gadget != NULL);
 }
 
-
-
-static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *gadget)
+static void getGUIScale(LIBBASETYPEPTR LIBBASE, UWORD *scalex, UWORD *scaley)
 {
-    D(bug("[BootMenu] populateGadgets_PageBoot(0x%p)\n", gadget));
+    *scalex = 0;
+    *scaley = 0;
 
-    // backup of devicesEnabled to be used if user CANCEL your changes
-    for (int i=0; i<DOSBootBase->devicesCount; i++)
+#if !defined(GUI_SCALE_TEST)
+    if (LIBBASE->bm_Screen->Width > 370)
+        *scalex = 1;
+    if (LIBBASE->bm_Screen->Height > 290)
+        *scaley = 1;
+#else
+    while ((320 << (*scalex + 1)) <= LIBBASE->bm_Screen->Width)
+        *scalex += 1;
+    while ((200 << (*scaley + 1)) <= LIBBASE->bm_Screen->Height)
+        *scaley += 1;
+#endif
+}
+
+static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR LIBBASE, struct Gadget *gadget)
+{
+    UWORD offx = 0, scalex, scaley;
+    struct TextAttr *guifont;
+    struct TextFont *font;
+
+    D(bug("[DOSBoot:bootmenu] %s(0x%p)\n", __func__, gadget));
+
+    // scale and center the list elements to the display
+    getGUIScale(LIBBASE, &scalex, &scaley);
+    offx = centerx((LIBBASETYPEPTR)LIBBASE, (320 << scalex));
+
+#if defined(GUI_SCALE_TEST)
+    if (scalex > 1 && scaley > 0)
+        guifont = &Topaz110;
+    else
+#endif
+        guifont = &Topaz80;
+    font = OpenFont(guifont);
+    if (!font)
     {
-        DOSBootBase->devicesEnabled[DOSBootBase->devicesCount + i] = DOSBootBase->devicesEnabled[i];
+        bug("[DOSBoot:bootmenu] %s: Failed to open topaz.font %u\n", __func__, guifont->ta_YSize);
+        guifont = NULL;
     }
 
-    D(bug("[BootMenu] populateGadgets_PageBoot: enumerating devices..\n"));
+    // backup of devicesEnabled to be used if user CANCEL your changes
+    for (int i=0; i<LIBBASE->devicesCount; i++)
+    {
+        LIBBASE->devicesEnabled[LIBBASE->devicesCount + i] = LIBBASE->devicesEnabled[i];
+    }
+
+    D(bug("[DOSBoot:bootmenu] %s: enumerating devices..\n", __func__));
     {
         struct List *bootList;
         struct List *devicesList;
@@ -208,14 +253,13 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
         struct BootNode *bn;
         UWORD listIndex = 0;
 
-        NEWLIST (&DOSBootBase->bootList);
-        NEWLIST (&DOSBootBase->devicesList);
+        NEWLIST (&LIBBASE->bootList);
+        NEWLIST (&LIBBASE->devicesList);
 
-        bootList = &DOSBootBase->bootList;
-        devicesList = &DOSBootBase->devicesList;
+        bootList = &LIBBASE->bootList;
+        devicesList = &LIBBASE->devicesList;
 
-
-        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
+        ForeachNode(&LIBBASE->bm_ExpansionBase->MountList, bn)
         {
             struct DeviceNode *dn = bn->bn_DeviceNode;
             struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
@@ -224,9 +268,8 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
             struct MsgPort *port;
             char dostype[5];
             UBYTE i;
-            ULONG size;
+            UQUAD size;
             BOOL devopen, ismedia;
-
 
             if (!fssm || !fssm->fssm_Device)
             {
@@ -244,7 +287,6 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                 }
             }
 
-
             if (IsBootableNode(bn))
             {
                 if (listNode = AllocVec(sizeof(struct Node), MEMF_ANY) )
@@ -255,12 +297,11 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                     AddTail (bootList, listNode);
                 }
 
-                if (DOSBootBase->db_BootNode == bn)
+                if (LIBBASE->db_BootNode == bn)
                 {
                     bootNodeSelected = listIndex;
                 }
             }
-
 
             if (listNode = AllocVec(sizeof(struct Node) + 96, MEMF_ANY|MEMF_CLEAR) )
             {
@@ -269,7 +310,6 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                 listNode->ln_Pri = 0;
                 AddTail (devicesList, listNode);
             }
-
 
             devopen = ismedia = FALSE;
             if ((port = (struct MsgPort*)CreateMsgPort()))
@@ -293,10 +333,9 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                 DeleteMsgPort(port);
             }
 
-
             if (de && ismedia)
             {
-                STRPTR sunit = "kMGT";
+                STRPTR sunit = "KMGTPE";
 
                 for (i = 0; i < 4; i++)
                 {
@@ -308,7 +347,6 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                         dostype[i] = '.';
                 }
                 dostype[4] = 0;
-
 
                 size = (de->de_HighCyl - de->de_LowCyl + 1) * de->de_Surfaces * de->de_BlocksPerTrack;
 
@@ -324,9 +362,8 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                     sunit++;
                 }
 
-
                 NewRawDoFmt("%s%6s: %s [%08lx]%5d%c %4d %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
-                    (DOSBootBase->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
+                    (LIBBASE->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
                     AROS_BSTR_ADDR(dn->dn_Name),
                     dostype,
                     de->de_DosType,
@@ -339,7 +376,7 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
             else if (!devopen)
             {
                 NewRawDoFmt("%s%6s: [device open error] %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
-                    (DOSBootBase->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
+                    (LIBBASE->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
                     AROS_BSTR_ADDR(dn->dn_Name),
                     AROS_BSTR_ADDR(fssm->fssm_Device),
                     fssm->fssm_Unit);
@@ -347,17 +384,16 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
             else if (!ismedia)
             {
                 NewRawDoFmt("%s%6s: [no media] %s-%ld", RAWFMTFUNC_STRING, listNode->ln_Name,
-                    (DOSBootBase->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
+                    (LIBBASE->devicesEnabled[listIndex]? "Enabled: " : "Disabled:"),
                     AROS_BSTR_ADDR(dn->dn_Name),
                     AROS_BSTR_ADDR(fssm->fssm_Device),
                     fssm->fssm_Unit);
             }
 
-
             listIndex++;
         }
 
-        D(bug("[BootMenu] populateGadgets_PageBoot: gadget @ 0x%p\n", gadget));
+        D(bug("[DOSBoot:bootmenu] %s: gadget @ 0x%p\n", __func__, gadget));
 
         if (gadget != NULL)
         {
@@ -369,23 +405,21 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
                 { GTLV_MakeVisible, 0},
                 { TAG_DONE }
             };
-
             struct NewGadget bootGadget;
 
-            bootGadget.ng_LeftEdge = 10;
+            bootGadget.ng_LeftEdge = offx  + (5 << scalex);
             bootGadget.ng_TopEdge = 40;
-            bootGadget.ng_Width = 100;
-            bootGadget.ng_Height = 100;
+            bootGadget.ng_Width = (50 << scalex);
+            bootGadget.ng_Height = (100 << scaley);
             bootGadget.ng_GadgetText = "Boot from:";
-            bootGadget.ng_TextAttr = NULL;
+            bootGadget.ng_TextAttr = guifont;
             bootGadget.ng_GadgetID = BUTTONLIST_BOOT;
             bootGadget.ng_Flags = 0;
-            bootGadget.ng_VisualInfo = DOSBootBase->bm_VisualInfo;
+            bootGadget.ng_VisualInfo = LIBBASE->bm_VisualInfo;
             bootGadget.ng_UserData = 0;
 
             gadget = CreateGadgetA(LISTVIEW_KIND, gadget, &bootGadget, bootTAGS);
         }
-
 
         if (gadget != NULL)
         {
@@ -400,15 +434,15 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
 
             struct NewGadget devicesGadget;
 
-            devicesGadget.ng_LeftEdge = 120;
+            devicesGadget.ng_LeftEdge = offx + (60 << scalex);
             devicesGadget.ng_TopEdge = 40;
-            devicesGadget.ng_Width = 510;
-            devicesGadget.ng_Height = 100;
+            devicesGadget.ng_Width = (260 << scalex);
+            devicesGadget.ng_Height = (100 << scaley);
             devicesGadget.ng_GadgetText = "Devices List";
-            devicesGadget.ng_TextAttr = NULL;
+            devicesGadget.ng_TextAttr = guifont;
             devicesGadget.ng_GadgetID = BUTTONLIST_DEVICES;
             devicesGadget.ng_Flags = 0;
-            devicesGadget.ng_VisualInfo = DOSBootBase->bm_VisualInfo;
+            devicesGadget.ng_VisualInfo = LIBBASE->bm_VisualInfo;
             devicesGadget.ng_UserData = 0;
 
             gadget = CreateGadgetA(LISTVIEW_KIND, gadget, &devicesGadget, devicesTAGS);
@@ -418,47 +452,62 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase, struct Gadget *
     return (gadget != NULL);
 }
 
-
-static void freeGadgets_PageBoot(LIBBASETYPEPTR DOSBootBase)
+static void freeGadgets_PageBoot(LIBBASETYPEPTR LIBBASE)
 {
     struct Node *node;
 
-    D(bug("[BootMenu] freeGadgets_PageBoot()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
 
-    while ((node = RemHead(&DOSBootBase->bootList)) != NULL)
+    while ((node = RemHead(&LIBBASE->bootList)) != NULL)
     {
         FreeVec(node);
     }
 
-
-    while ((node = RemHead(&DOSBootBase->devicesList)) != NULL)
+    while ((node = RemHead(&LIBBASE->devicesList)) != NULL)
     {
         FreeVec(node);
     }
 }
 
+static BOOL populateGadgets_PageDisplay(LIBBASETYPEPTR LIBBASE, struct Gadget *gadget)
+{
+    D(bug("[DOSBoot:bootmenu] %s(0x%p)\n", __func__, gadget));
+}
 
+static void freeGadgets_PageDisplay(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
+}
 
-static BOOL populateGadgets(LIBBASETYPEPTR DOSBootBase, struct Gadget *gadget, WORD page)
+static BOOL populateGadgets_PageExpansion(LIBBASETYPEPTR LIBBASE, struct Gadget *gadget)
+{
+    D(bug("[DOSBoot:bootmenu] %s(0x%p)\n", __func__, gadget));
+}
+
+static void freeGadgets_PageExpansion(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
+}
+
+static BOOL populateGadgets(LIBBASETYPEPTR LIBBASE, struct Gadget *gadget, WORD page)
 {
     struct NewGadget ng;
 
-    D(bug("[BootMenu] populateGadgets()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
 
     ng.ng_Width = 280;
     ng.ng_Height = 15;
     ng.ng_TextAttr = NULL;
     ng.ng_Flags = 0;
-    ng.ng_VisualInfo = DOSBootBase->bm_VisualInfo;
+    ng.ng_VisualInfo = LIBBASE->bm_VisualInfo;
     ng.ng_UserData = 0;
-
 
     if (gadget != NULL)
     {
         ng.ng_GadgetText = (page == PAGE_MAIN ? "Boot" : "Use");
         ng.ng_GadgetID = (page == PAGE_MAIN ? BUTTON_BOOT : BUTTON_USE);
         ng.ng_LeftEdge = 16;
-        ng.ng_TopEdge = DOSBootBase->bottomY;
+        ng.ng_TopEdge = LIBBASE->bottomY;
         gadget = CreateGadgetA(BUTTON_KIND, gadget, &ng, NULL);
     }
 
@@ -466,35 +515,34 @@ static BOOL populateGadgets(LIBBASETYPEPTR DOSBootBase, struct Gadget *gadget, W
     {
         ng.ng_GadgetText = (page == PAGE_MAIN ? "Boot With No Startup-Sequence" : "Cancel");
         ng.ng_GadgetID = (page == PAGE_MAIN ? BUTTON_BOOT_WNSS : BUTTON_CANCEL);
-        ng.ng_LeftEdge = rightto((struct DOSBootBase *)DOSBootBase, 280, 16);
-        ng.ng_TopEdge = DOSBootBase->bottomY;
+        ng.ng_LeftEdge = rightto((LIBBASETYPEPTR)LIBBASE, 280, 16);
+        ng.ng_TopEdge = LIBBASE->bottomY;
         gadget = CreateGadgetA(BUTTON_KIND, gadget, &ng, NULL);
     }
 
-
     switch (page)
     {
-    case PAGE_MAIN:            populateGadgets_PageMain(DOSBootBase, gadget); break;
-    case PAGE_BOOT:            populateGadgets_PageBoot(DOSBootBase, gadget); break;
-//    case PAGE_DISPLAY:        populateGadgets_PageDisplay(DOSBootBase, gadget); break;
-//    case PAGE_EXPANSION:    populateGadgets_PageExpansion(DOSBootBase, gadget); break;
+    case PAGE_MAIN:            populateGadgets_PageMain(LIBBASE, gadget); break;
+    case PAGE_BOOT:            populateGadgets_PageBoot(LIBBASE, gadget); break;
+    case PAGE_DISPLAY:        populateGadgets_PageDisplay(LIBBASE, gadget); break;
+    case PAGE_EXPANSION:    populateGadgets_PageExpansion(LIBBASE, gadget); break;
     }
 
     return (gadget != NULL);
 }
 
-static void freeGadgets(LIBBASETYPEPTR DOSBootBase, WORD page)
+static void freeGadgets(LIBBASETYPEPTR LIBBASE, WORD page)
 {
     switch (page)
     {
-//    case PAGE_MAIN:            freeGadgets_PageMain(DOSBootBase); break;
-    case PAGE_BOOT:            freeGadgets_PageBoot(DOSBootBase); break;
-//    case PAGE_DISPLAY:        freeGadgets_PageDisplay(DOSBootBase); break;
-//    case PAGE_EXPANSION:    freeGadgets_PageExpansion(DOSBootBase); break;
+//    case PAGE_MAIN:            freeGadgets_PageMain(LIBBASE); break;
+    case PAGE_BOOT:            freeGadgets_PageBoot(LIBBASE); break;
+    case PAGE_DISPLAY:        freeGadgets_PageDisplay(LIBBASE); break;
+    case PAGE_EXPANSION:    freeGadgets_PageExpansion(LIBBASE); break;
     }
 }
 
-static void toggleMode(LIBBASETYPEPTR DOSBootBase)
+static void toggleMode(LIBBASETYPEPTR LIBBASE)
 {
 #ifdef mc68000
     /*
@@ -508,13 +556,13 @@ static void toggleMode(LIBBASETYPEPTR DOSBootBase)
 #endif
 }
 
-static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
+static UWORD msgLoop(LIBBASETYPEPTR LIBBASE, struct Window *win, WORD page)
 {
     WORD exit = -1;
     struct IntuiMessage *msg;
     struct Gadget *g;
 
-    D(bug("[BootMenu] msgLoop(DOSBootBase @ %p, Window @ %p)\n", DOSBootBase, win));
+    D(bug("[DOSBoot:bootmenu] %s(0x%p, Window @ 0x%p)\n", __func__, LIBBASE, win));
 
     do
     {
@@ -533,20 +581,20 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
                     {
                         BYTE pos = msg->Code - 'a', i = 0;
                         struct BootNode *bn;
-                        DOSBootBase->bm_BootNode = NULL;
+                        LIBBASE->bm_BootNode = NULL;
 
                         Forbid(); // .. access to ExpansionBase->MountList
-                        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
+                        ForeachNode(&LIBBASE->bm_ExpansionBase->MountList, bn)
                         {
                             if (i++ == pos)
                             {
-                                DOSBootBase->bm_BootNode = bn;
+                                LIBBASE->bm_BootNode = bn;
                                 break;
                             }
                         }
                         Permit();
 
-                        if (DOSBootBase->bm_BootNode != NULL)
+                        if (LIBBASE->bm_BootNode != NULL)
                         {
                             // Refresh itself
                             exit = PAGE_BOOT;
@@ -555,7 +603,7 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
                     }
 */                  else
                     {
-                        toggleMode(DOSBootBase);
+                        toggleMode(LIBBASE);
                     }
                 }
                 else if (msg->Class == IDCMP_GADGETUP)
@@ -565,23 +613,23 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
                     switch (g->GadgetID)
                     {
                     case BUTTON_BOOT:
-                        DOSBootBase->db_BootFlags &= ~BF_NO_STARTUP_SEQUENCE;
+                        LIBBASE->db_BootFlags &= ~BF_NO_STARTUP_SEQUENCE;
                         exit = EXIT_BOOT;
                         break;
 
                     case BUTTON_BOOT_WNSS:
-                        DOSBootBase->db_BootFlags |= BF_NO_STARTUP_SEQUENCE;
+                        LIBBASE->db_BootFlags |= BF_NO_STARTUP_SEQUENCE;
                         exit = EXIT_BOOT_WNSS;
                         break;
 
                     case BUTTON_CANCEL:
                         if (page == PAGE_BOOT)
                         {
-                            DOSBootBase->bm_BootNode = NULL;
+                            LIBBASE->bm_BootNode = NULL;
 
-                            for (int i=0; i<DOSBootBase->devicesCount; i++)
+                            for (int i=0; i<LIBBASE->devicesCount; i++)
                             {
-                                DOSBootBase->devicesEnabled[i] = DOSBootBase->devicesEnabled[DOSBootBase->devicesCount + i];
+                                LIBBASE->devicesEnabled[i] = LIBBASE->devicesEnabled[LIBBASE->devicesCount + i];
                             }
                         }
                         exit = PAGE_MAIN;
@@ -590,8 +638,8 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
                     case BUTTON_USE:
                         /* Preserve selected value */
                         if (page == PAGE_BOOT)
-                            if (DOSBootBase->bm_BootNode != NULL)
-                                DOSBootBase->db_BootNode = DOSBootBase->bm_BootNode;
+                            if (LIBBASE->bm_BootNode != NULL)
+                                LIBBASE->db_BootNode = LIBBASE->bm_BootNode;
                         /* Fallthrough */
                     case BUTTON_CONTINUE:
                         exit = PAGE_MAIN;
@@ -614,11 +662,11 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
                         struct BootNode *bn;
                         BYTE i = 0;
                         Forbid(); /* .. access to ExpansionBase->MountList */
-                        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
+                        ForeachNode(&LIBBASE->bm_ExpansionBase->MountList, bn)
                         {
                             if (msg->Code == i++)
                             {
-                                DOSBootBase->bm_BootNode = bn;
+                                LIBBASE->bm_BootNode = bn;
                                 break;
                             }
                         }
@@ -630,15 +678,15 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
                     {
                         UWORD pos = msg->Code;
 
-                        DOSBootBase->devicesEnabled[pos] = !DOSBootBase->devicesEnabled[pos];
+                        LIBBASE->devicesEnabled[pos] = !LIBBASE->devicesEnabled[pos];
 
-                        struct Node * node = (&DOSBootBase->devicesList)->lh_Head;
+                        struct Node * node = (&LIBBASE->devicesList)->lh_Head;
                         while (pos-- > 0)
                         {
                             node = node->ln_Succ;
                         }
 
-                        strncpy(node->ln_Name, (DOSBootBase->devicesEnabled[msg->Code]? "Enabled: " : "Disabled:"), 9);
+                        strncpy(node->ln_Name, (LIBBASE->devicesEnabled[msg->Code]? "Enabled: " : "Disabled:"), 9);
 
                         //GT_RefreshWindow(win, NULL);
 
@@ -654,7 +702,7 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
         }
         else
         {
-            D(bug("[BootMenu] msgLoop: Window lacks a userport!\n"));
+            D(bug("[DOSBoot:bootmenu] %s: Window lacks a userport!\n", __func__));
             Wait(0);
         }
     }
@@ -669,15 +717,15 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
     return exit;
 }
 
-static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
+static void initPageExpansion(LIBBASETYPEPTR LIBBASE)
 {
-    struct Window *win = DOSBootBase->bm_Window;
-    struct ExpansionBase *ExpansionBase = DOSBootBase->bm_ExpansionBase;
+    struct Window *win = LIBBASE->bm_Window;
+    struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
     struct ConfigDev *cd;
     WORD y = 50, cnt;
     char text[100];
 
-    D(bug("[BootMenu] initPageExpansion()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
     
     SetAPen(win->RPort, 1);
     cd = NULL;
@@ -703,11 +751,11 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
    }
 }
 
-static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
+static void initPage(LIBBASETYPEPTR LIBBASE, WORD page)
 {
     UBYTE *text;
 
-    D(bug("[BootMenu] initPage(%d)\n", page));
+    D(bug("[DOSBoot:bootmenu] initPage(%d)\n", page));
 
     if (page == PAGE_DISPLAY)
             text = "Display Options";
@@ -717,54 +765,54 @@ static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
         text = "Boot Options";
     else
         text = "AROS Early Startup Control";
-    centertext(DOSBootBase, 2, 10, text);
+    centertext(LIBBASE, 2, 10, text);
     
     if (page == PAGE_BOOT)
     {
         /* Set the default */
-        if (DOSBootBase->bm_BootNode == NULL)
-            DOSBootBase->bm_BootNode = DOSBootBase->db_BootNode;
+        if (LIBBASE->bm_BootNode == NULL)
+            LIBBASE->bm_BootNode = LIBBASE->db_BootNode;
     }
     else if (page == PAGE_EXPANSION)
-        initPageExpansion(DOSBootBase);
+        initPageExpansion(LIBBASE);
 
     if (page == PAGE_MAIN && (GfxBase->DisplayFlags & (NTSC | PAL))) {
-            ULONG modeid = GetVPModeID(&DOSBootBase->bm_Screen->ViewPort);
+            ULONG modeid = GetVPModeID(&LIBBASE->bm_Screen->ViewPort);
             if (modeid != INVALID_ID && (((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID) || ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID))) {
-            centertext(DOSBootBase, 1, 30, "(press a key to toggle the display between PAL and NTSC)");
+            centertext(LIBBASE, 1, 30, "(press a key to toggle the display between PAL and NTSC)");
         }
     }
 
 }
 
-static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD page)
+static WORD initWindow(LIBBASETYPEPTR LIBBASE, struct BootConfig *bcfg, WORD page)
 {
     struct Gadget *gadlist, *firstGadget;
     WORD newpage = -1;
 
-    D(bug("[BootMenu] initWindow()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
 
-    DOSBootBase->bm_GadToolsBase = TaggedOpenLibrary(TAGGEDOPEN_GADTOOLS);
+    LIBBASE->bm_GadToolsBase = TaggedOpenLibrary(TAGGEDOPEN_GADTOOLS);
 
-    DOSBootBase->bm_VisualInfo = GetVisualInfoA(DOSBootBase->bm_Screen, NULL);
+    LIBBASE->bm_VisualInfo = GetVisualInfoA(LIBBASE->bm_Screen, NULL);
 
     firstGadget = CreateContext(&gadlist);
 
 
-    if (populateGadgets(DOSBootBase, firstGadget, page))
+    if (populateGadgets(LIBBASE, firstGadget, page))
     {
         struct NewWindow nw =
         {
             0, 0,                            /* Left, Top */
-            DOSBootBase->bm_Screen->Width,   /* Width, Height */
-            DOSBootBase->bm_Screen->Height,
+            LIBBASE->bm_Screen->Width,   /* Width, Height */
+            LIBBASE->bm_Screen->Height,
             0, 1,                            /* DetailPen, BlockPen */
             IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN, /* IDCMPFlags */
             WFLG_SMART_REFRESH | WFLG_BORDERLESS | WFLG_ACTIVATE, /* Flags */
             gadlist,                         /* FirstGadget */
             NULL,                            /* CheckMark */
             NULL,                            /* Title */
-            DOSBootBase->bm_Screen,             /* Screen */
+            LIBBASE->bm_Screen,             /* Screen */
             NULL,                            /* BitMap */
             0, 0,                                /* MinWidth, MinHeight */
             0, 0,                            /* MaxWidth, MaxHeight */
@@ -772,48 +820,48 @@ static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD
         };
 
 
-        if ((DOSBootBase->bm_Window = OpenWindow(&nw)) != NULL)
+        if ((LIBBASE->bm_Window = OpenWindow(&nw)) != NULL)
         {
-            D(bug("[BootMenu] initScreen: Window opened @ %p\n", DOSBootBase->bm_Window));
-            D(bug("[BootMenu] initScreen: Window RastPort @ %p\n", DOSBootBase->bm_Window->RPort));
-            D(bug("[BootMenu] initScreen: Window UserPort @ %p\n", DOSBootBase->bm_Window->UserPort));
+            D(bug("[DOSBoot:bootmenu] %s: Window opened @ 0x%p\n", __func__, LIBBASE->bm_Window));
+            D(bug("[DOSBoot:bootmenu] %s: Window RastPort @ 0x%p\n", __func__, LIBBASE->bm_Window->RPort));
+            D(bug("[DOSBoot:bootmenu] %s: Window UserPort @ 0x%p\n", __func__, LIBBASE->bm_Window->UserPort));
 
-            initPage(DOSBootBase, page);
+            initPage(LIBBASE, page);
 
-            newpage = msgLoop(DOSBootBase, DOSBootBase->bm_Window, page);
+            newpage = msgLoop(LIBBASE, LIBBASE->bm_Window, page);
 
-            freeGadgets(DOSBootBase, page);
+            freeGadgets(LIBBASE, page);
         }
-        CloseWindow(DOSBootBase->bm_Window);
+        CloseWindow(LIBBASE->bm_Window);
     }
 
     FreeGadgets(gadlist);
 
-    FreeVisualInfo(DOSBootBase->bm_VisualInfo);
+    FreeVisualInfo(LIBBASE->bm_VisualInfo);
 
-    CloseLibrary((struct Library *)DOSBootBase->bm_GadToolsBase);
+    CloseLibrary((struct Library *)LIBBASE->bm_GadToolsBase);
     
     return newpage;
 }
 
-static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
+static BOOL initScreen(LIBBASETYPEPTR LIBBASE, struct BootConfig *bcfg)
 {
     WORD page;
 
-    D(bug("[BootMenu] initScreen()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
 
     page = -1;
-    DOSBootBase->bm_Screen = OpenBootScreen(DOSBootBase);
-    if (DOSBootBase->bm_Screen)
+    LIBBASE->bm_Screen = OpenBootScreen(LIBBASE);
+    if (LIBBASE->bm_Screen)
     {
-        DOSBootBase->bottomY = DOSBootBase->bm_Screen->Height - (DOSBootBase->bm_Screen->Height > 256 ? 32 : 16);
-        D(bug("[BootMenu] initScreen: Screen opened @ %p\n",  DOSBootBase->bm_Screen));
+        LIBBASE->bottomY = LIBBASE->bm_Screen->Height - (LIBBASE->bm_Screen->Height > 256 ? 32 : 16);
+        D(bug("[DOSBoot:bootmenu] %s: Screen opened @ 0x%p\n", __func__, LIBBASE->bm_Screen));
 
         page = PAGE_MAIN;
         do {
-            page = initWindow(DOSBootBase, bcfg, page);
+            page = initWindow(LIBBASE, bcfg, page);
         } while (page != EXIT_BOOT && page != EXIT_BOOT_WNSS);
-        CloseBootScreen(DOSBootBase->bm_Screen, DOSBootBase);
+        CloseBootScreen(LIBBASE->bm_Screen, LIBBASE);
     }
     return page >= 0;
 }
@@ -823,7 +871,7 @@ static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
 #define KB_MATRIXSIZE  (KB_MAXKEYS/(sizeof(UBYTE)*8))
 #define ioStd(x) ((struct IOStdReq *)x)
 
-static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
+static BOOL buttonsPressed(LIBBASETYPEPTR LIBBASE)
 {
     BOOL success = FALSE;
     struct MsgPort *mp = NULL;
@@ -852,7 +900,7 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
         {
             if (0 == OpenDevice("keyboard.device", 0, io, 0))
             {
-                D(bug("[BootMenu] buttonsPressed: Checking KBD_READMATRIX\n"));
+                D(bug("[DOSBoot:bootmenu] %s: Checking KBD_READMATRIX\n", __func__));
                 ioStd(io)->io_Command = KBD_READMATRIX;
                 ioStd(io)->io_Data = matrix;
                 ioStd(io)->io_Length = sizeof(matrix);
@@ -861,7 +909,7 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
                 {
                     D(
                         int i;
-                        D(bug("[BootMenu] buttonsPressed: Matrix : "));
+                        D(bug("[DOSBoot:bootmenu] %s: Matrix : ", __func__));
                         for (i = 0; i < ioStd(io)->io_Actual; i ++)
                         {
                                 D(bug("%02x ", matrix[i]));
@@ -870,7 +918,7 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
                     );
                     if (matrix[RAWKEY_SPACE/8] & (1<<(RAWKEY_SPACE%8)))
                     {
-                            D(bug("[BootMenu] SPACEBAR pressed\n"));
+                            D(bug("[DOSBoot:bootmenu] %s: SPACEBAR press detected\n", __func__));
                             success = TRUE;
                     }
                 }
@@ -883,11 +931,11 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
     return success;
 }
 
-int bootmenu_Init(LIBBASETYPEPTR DOSBootBase, BOOL WantBootMenu)
+int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
 {
     BOOL bmi_RetVal = FALSE;
 
-    D(bug("[BootMenu] bootmenu_Init()\n"));
+    D(bug("[DOSBoot:bootmenu] %s()\n", __func__));
 
 #ifdef INITHIDDS_KLUDGE
    /*
@@ -895,20 +943,20 @@ int bootmenu_Init(LIBBASETYPEPTR DOSBootBase, BOOL WantBootMenu)
     * This urgently needs to be fixed. After fixing this kludge
     * will not be needed any more.
     */
-    InitBootConfig(&DOSBootBase->bm_BootConfig);
-    if (!initHidds(DOSBootBase))
+    InitBootConfig(&LIBBASE->bm_BootConfig);
+    if (!initHidds(LIBBASE))
         return FALSE;
 #endif
 
     /* check keyboard if needed */
     if (!WantBootMenu)
-        WantBootMenu = buttonsPressed(DOSBootBase);
+        WantBootMenu = buttonsPressed(LIBBASE);
 
     /* Bring up early startup menu if requested */
     if (WantBootMenu)
     {
-        D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
-        bmi_RetVal = initScreen(DOSBootBase, &DOSBootBase->bm_BootConfig);
+        D(kprintf("[DOSBoot:bootmenu] %s: Entering Boot Menu ...\n", __func__));
+        bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
     }
 
     return bmi_RetVal;
