@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -47,9 +47,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 {
     struct Task *task;
     struct ExceptionContext *ctx;
-#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
     apicid_t cpunum = KrnGetCPUNumber();
-#endif
 
     DSCHED(
         bug("[Kernel:%03u] cpu_Dispatch()\n", cpunum);
@@ -95,13 +93,31 @@ void cpu_Dispatch(struct ExceptionContext *regs)
          */
         if (ctx->Flags & ECF_FPXS)
         {
-            DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring AVX registers\n", cpunum);)
-            asm volatile("xrstor (%0)"::"r"(ctx->XSData));
+            if (ctx->XSData)
+            {
+                DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring AVX registers\n", cpunum);)
+                asm volatile("xrstor (%0)"::"r"(ctx->XSData));
+            }
+            else
+            {
+                bug("[Kernel:%03u] cpu_Dispatch: AVX reg storage missing for task 0x%p\n", cpunum, task);
+                bug("[Kernel:%03u] cpu_Dispatch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
+                bug("[Kernel:%03u] cpu_Dispatch:         ctx data @ %p\n", cpunum, ctx);
+            }
         }
         else if (ctx->Flags & ECF_FPFXS)
         {
-            DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring SSE registers\n", cpunum);)
-            asm volatile("fxrstor (%0)"::"r"(ctx->FXSData));
+            if (ctx->FXSData)
+            {
+                DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring SSE registers\n", cpunum);)
+                asm volatile("fxrstor (%0)"::"r"(ctx->FXSData));
+            }
+            else
+            {
+                bug("[Kernel:%03u] cpu_Dispatch: SSE reg storage missing for task 0x%p\n", cpunum, task);
+                bug("[Kernel:%03u] cpu_Dispatch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
+                bug("[Kernel:%03u] cpu_Dispatch:         ctx data @ %p\n", cpunum, ctx);
+            }
         }
     }
 #if defined(__AROSEXEC_SMP__)
@@ -163,7 +179,7 @@ void cpu_Switch(struct ExceptionContext *regs)
         * Copy current task's context into the ETask structure. Note that context on stack
         * misses SSE data pointer.
         */
-        CopyMemQuick(regs, ctx, sizeof(struct ExceptionContext) - sizeof(struct FPXSContext *));
+        CopyMemQuick(regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
         ctx->Flags = ECF_SEGMENTS;
 
         /*
@@ -172,15 +188,35 @@ void cpu_Switch(struct ExceptionContext *regs)
         */
         if (ctx->FPUCtxSize > sizeof(struct FPXSContext))
         {
-            DSCHED(bug("[Kernel:%03u] cpu_Switch: saving AVX registers\n", cpunum);)
-            asm volatile("xsave (%0)"::"r"(ctx->XSData));
-            ctx->Flags |= ECF_FPXS;
+            if (ctx->XSData)
+            {
+                DSCHED(bug("[Kernel:%03u] cpu_Switch: saving AVX registers\n", cpunum);)
+                asm volatile("xsave (%0)"::"r"(ctx->XSData));
+                ctx->Flags |= ECF_FPXS;
+            }
+            else
+            {
+                bug("[Kernel:%03u] cpu_Switch: AVX reg storage missing for task 0x%p\n", cpunum, task);
+                bug("[Kernel:%03u] cpu_Switch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
+                bug("[Kernel:%03u] cpu_Switch:         ctx data @ %p\n", cpunum, ctx);
+                ctx->Flags &= ~ECF_FPXS;
+            }
         }
         else if (ctx->FPUCtxSize == sizeof(struct FPFXSContext))
         {
-            DSCHED(bug("[Kernel:%03u] cpu_Switch: saving SSE registers\n", cpunum);)
-            asm volatile("fxsave (%0)"::"r"(ctx->FXSData));
-            ctx->Flags |= ECF_FPFXS;
+            if (ctx->FXSData)
+            {
+                DSCHED(bug("[Kernel:%03u] cpu_Switch: saving SSE registers\n", cpunum);)
+                asm volatile("fxsave (%0)"::"r"(ctx->FXSData));
+                ctx->Flags |= ECF_FPFXS;
+            }
+            else
+            {
+                bug("[Kernel:%03u] cpu_Switch: SSE reg storage missing for task 0x%p\n", cpunum, task);
+                bug("[Kernel:%03u] cpu_Switch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
+                bug("[Kernel:%03u] cpu_Switch:         ctx data @ %p\n", cpunum, ctx);
+                ctx->Flags &= ~ECF_FPFXS;
+            }
         }
 
         /* Set task's tc_SPReg */
