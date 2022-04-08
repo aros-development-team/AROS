@@ -36,7 +36,9 @@
 #include "dosboot_intern.h"
 #include "menu.h"
 
-#define GUI_SCALE_TEST
+#if !defined(__mc68000__)
+#define BOOTGUI_SCALE
+#endif
 
 #define PAGE_MAIN 1
 #define PAGE_BOOT 2
@@ -63,7 +65,7 @@
 #endif
 #endif
 
-#if defined(GUI_SCALE_TEST)
+#if defined(BOOTGUI_SCALE)
 static const char strtopazfont[] = "topaz.font";
 static struct TextAttr Topaz80 = { (char *)strtopazfont, 8, 0, 0, };
 static struct TextAttr Topaz110 = { (char *)strtopazfont, 11, 0, 0, };
@@ -197,7 +199,7 @@ static void getGUIScale(LIBBASETYPEPTR LIBBASE, UWORD *scalex, UWORD *scaley)
     *scalex = 0;
     *scaley = 0;
 
-#if !defined(GUI_SCALE_TEST)
+#if !defined(BOOTGUI_SCALE)
     if (LIBBASE->bm_Screen->Width > 370)
         *scalex = 1;
     if (LIBBASE->bm_Screen->Height > 290)
@@ -214,7 +216,9 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR LIBBASE, struct Gadget *gadg
 {
     UWORD offx = 0, scalex, scaley;
     struct TextAttr *guifont;
+#if defined(BOOTGUI_SCALE)
     struct TextFont *font;
+#endif
 
     D(bug("[DOSBoot:bootmenu] %s(0x%p)\n", __func__, gadget));
 
@@ -222,11 +226,10 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR LIBBASE, struct Gadget *gadg
     getGUIScale(LIBBASE, &scalex, &scaley);
     offx = centerx((LIBBASETYPEPTR)LIBBASE, (320 << scalex));
 
-#if defined(GUI_SCALE_TEST)
+#if defined(BOOTGUI_SCALE)
     if (scalex > 1 && scaley > 0)
         guifont = &Topaz110;
     else
-#endif
         guifont = &Topaz80;
     font = OpenFont(guifont);
     if (!font)
@@ -234,6 +237,9 @@ static BOOL populateGadgets_PageBoot(LIBBASETYPEPTR LIBBASE, struct Gadget *gadg
         bug("[DOSBoot:bootmenu] %s: Failed to open topaz.font %u\n", __func__, guifont->ta_YSize);
         guifont = NULL;
     }
+#else
+    guifont = NULL;
+#endif
 
     // backup of devicesEnabled to be used if user CANCEL your changes
     for (int i=0; i<LIBBASE->devicesCount; i++)
