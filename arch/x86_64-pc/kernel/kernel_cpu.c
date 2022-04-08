@@ -176,14 +176,7 @@ void cpu_Switch(struct ExceptionContext *regs)
         ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
         /*
-        * Copy current task's context into the ETask structure. Note that context on stack
-        * misses SSE data pointer.
-        */
-        CopyMemQuick(regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
-        ctx->Flags = ECF_SEGMENTS;
-
-        /*
-        * Cache x86 FPU / XMM / AVX512 / MXCSR state
+        * Cache x86 FPU / XMM / AVX512 / MXCSR state first
         * NB: See the note about lazy saving of the fpu above!!
         */
         if (ctx->FPUCtxSize > sizeof(struct FPXSContext))
@@ -218,6 +211,13 @@ void cpu_Switch(struct ExceptionContext *regs)
                 ctx->Flags &= ~ECF_FPFXS;
             }
         }
+
+        /*
+        * Copy current task's context into the ETask structure. Note that context on stack
+        * misses SSE data pointer.
+        */
+        CopyMemQuick(regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
+        ctx->Flags = ECF_SEGMENTS;
 
         /* Set task's tc_SPReg */
         task->tc_SPReg = (APTR)regs->rsp;
