@@ -9,7 +9,7 @@
 
 * All builds are scheduled to run at 00:00 UTC.
 * The builds are made using the scripts/azure-pipelines.yml file. Further details can be found in that file.
-* Currently all builds are configured using default toolchain settings, except the pc-x86_64-smp target which uses the experimental gcc 9.1.0 patch.
+* GCC 6.5.0 builds are configured using default toolchain settings. Newer GCC builds may also use newer versions of binutils.
 * The main AROS target and distfiles are built for each arch.
 * The builds are downloadable via http://www.aros.org/nightly1.php [![Download AROS Research Operating System](https://img.shields.io/sourceforge/dt/aros.svg)](https://sourceforge.net/projects/aros/files/nightly2/).
 
@@ -112,6 +112,26 @@
     </td>
   </tr>
   <tr>
+    <td>linux-arm</td>
+    <td style="text-align:center">
+      <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=29&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-arm?branchName=master"></a>
+    </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+  </tr>
+  <tr>
+    <td>linux-armhf</td>
+    <td style="text-align:center">
+      <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=28&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-armhf?branchName=master"></a>
+    </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+  </tr>
+  <tr>
     <td>darwin-i386</td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=24&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-i386?branchName=master"></a>
@@ -143,11 +163,21 @@
   </tr>
   <tr>
     <td>mingw32-i386</td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=23&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-i386?branchName=master"></a>
     </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+  </tr>
+  <tr>
+    <td>mingw32-x86_64</td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center">
+      <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=30&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-x86_64?branchName=master"></a>
+    </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
   </tr>
