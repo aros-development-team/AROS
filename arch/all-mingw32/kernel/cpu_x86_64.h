@@ -201,7 +201,7 @@ struct AROSCPUContext
     if (regs->ContextFlags & CONTEXT_FLOATING_POINT)					\
     {											\
 	ctx->regs.Flags |= ECF_FPFXS;							\
-	CopyMemQuick(&regs->FltSave, ctx->regs.FXData, sizeof(XMM_SAVE_AREA32));	\
+	CopyMemQuick(&regs->FltSave, ctx->regs.FXSData, sizeof(XMM_SAVE_AREA32));	\
     }											\
     CopyMemQuick(&regs->P1Home, ctx->PHome, 6 * sizeof(IPTR));				\
     CopyMemQuick(regs->VectorRegister, &ctx->vec, sizeof(struct VectorContext));
@@ -215,7 +215,7 @@ struct AROSCPUContext
     if (ctx->regs.Flags & ECF_FPFXS)							\
     {											\
 	regs->ContextFlags |= CONTEXT_FLOATING_POINT;					\
-	CopyMemQuick(ctx->regs.FXData, &regs->FltSave, sizeof(XMM_SAVE_AREA32));	\
+	CopyMemQuick(ctx->regs.FXSData, &regs->FltSave, sizeof(XMM_SAVE_AREA32));	\
 	regs->MxCsr = regs->FltSave.MxCsr;						\
     }											\
     CopyMemQuick(ctx->PHome, &regs->P1Home, 6 * sizeof(IPTR));				\
@@ -231,7 +231,7 @@ struct AROSCPUContext
     if (src->ContextFlags & CONTEXT_FLOATING_POINT)	\
     {							\
 	dest.Flags |= ECF_FPFXS;				\
-	dest.FXData = &src->FltSave;			\
+	dest.FXSData = &src->FltSave;			\
     }
 
 #define TRAP_RESTOREREGS(dest, src)			\
@@ -251,11 +251,11 @@ struct AROSCPUContext
     {											\
         IPTR fpdata = (IPTR)(dest) + sizeof(struct AROSCPUContext);			\
 	fpdata = (fpdata + 15) & ~15;							\
-	(dest)->FXData = (struct FPXContext *)fpdata;					\
-	CopyMemQuick((src)->FXData, (dest)->FXData, sizeof(struct FPXContext));		\
+	(dest)->FXSData = (struct FPFXSContext *)fpdata;					\
+	CopyMemQuick((src)->FXSData, (dest)->FXSData, sizeof(struct FPFXSContext));		\
     }											\
     else										\
-	(dest)->FXData = NULL;
+	(dest)->FXSData = NULL;
 
 #define GET_SP(ctx) (void *)ctx->regs.rsp
 

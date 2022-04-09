@@ -233,12 +233,13 @@ void __declspec(dllexport) __aros core_raise(DWORD code, const ULONG_PTR n)
     while (Sleep_Mode);
 }
 
-unsigned long __declspec(dllexport) __aros StartClock(unsigned int irq, unsigned int TimerPeriod)
+unsigned long __declspec(dllexport) __aros StartClock(unsigned int irq, DWORD TimerHz)
 {
-    LARGE_INTEGER TimerValue;
-
-    TimerPeriod = 1000 / TimerPeriod;
-    TimerValue.QuadPart  = -10000 * (LONGLONG)TimerPeriod;
+    LONG TimerPeriod =
+        1000 / TimerHz;
+    const LARGE_INTEGER TimerValue = {
+        .QuadPart  = -10000 * (LONGLONG)TimerPeriod
+    };
 
     return SetWaitableTimer(IntObjects[irq], &TimerValue, TimerPeriod, NULL, NULL, 0);
 }
