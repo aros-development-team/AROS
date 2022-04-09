@@ -143,21 +143,21 @@
   </tr>
   <tr>
     <td>darwin-x86_64</td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=22&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-x86_64?branchName=master"></a>
     </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
-    <td style="text-align:center"> --- </td>
-    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>darwin-ppc</td>
+    <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=25&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-ppc?branchName=master"></a>
     </td>
-    <td style="text-align:center"> --- </td>
-    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
   </tr>
