@@ -89,6 +89,10 @@ jobs:
         sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
         CONFIGOPTS="$CONFIGOPTS --with-kernel-toolchain-prefix=i686-w64-mingw32-"
       fi
+      if [ "$AROSBUILD_TARGET" = "mingw32-x86_64" ]; then
+        sudo apt-get install -y mingw-w64-x86-64-dev gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools
+        CONFIGOPTS="$CONFIGOPTS --with-kernel-toolchain-prefix=x86_64-w64-mingw32-"
+      fi
       CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
       echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS;]$CONFIGOPTS"
     condition: eq( variables['Agent.OS'], 'Linux' )
