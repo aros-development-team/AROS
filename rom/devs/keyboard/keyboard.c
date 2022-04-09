@@ -135,12 +135,14 @@ static int GM_UNIQUENAME(Open)
 {
     struct Library *OOPBase = GM_OOPBASE_FIELD(KBBase);
 
+#ifndef __mc68000 //According to Thore and BigGun, this doesn't allow for games coded against older Kickstarts.  Removing this check for now
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
         D(bug("keyport.device/open: IORequest structure passed to OpenDevice is too small!\n"));
         ioreq->io_Error = IOERR_OPENFAIL;
         return FALSE;
     }
+#endif
     
     if(KBBase->kb_keyEventBuffer == NULL)
     {
