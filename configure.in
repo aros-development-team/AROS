@@ -42,11 +42,18 @@ target_grub2_version=$default_grub2_version
 
 AC_MSG_CHECKING([for AROS style target])
 
+stripped_host_os=$host_os
+case "$host_os" in
+    darwin*)
+        stripped_host_os="darwin"
+        ;;
+esac
+
 if test "$target" = "NONE" ; then
-    target=$host_os-$host_cpu
+    target=$stripped_host_os-$host_cpu
 else
     if test "$target" = "" ; then
-        target=$host_os-$host_cpu
+        target=$stripped_host_os-$host_cpu
     fi
 fi
 AC_MSG_RESULT($target)
@@ -1315,7 +1322,7 @@ case "$target_os" in
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
-                target_cpu="arm"
+                target_cpu="armhf"
                 aros_object_format="armelf_aros"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
@@ -1325,7 +1332,6 @@ case "$target_os" in
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_STRICT_ALIASING)"
                 aros_c_libs="$aros_c_libs -laeabi"
-                gcc_default_float_abi="hard"
                 android_tool_dir_prefix="arm-linux-androideabi"
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
@@ -1333,6 +1339,7 @@ case "$target_os" in
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                gcc_default_cpu="armv7-a"
                 aros_target_cpu="arm"
                 aros_object_format="armelf_aros"
                 aros_flavour="emulation"
@@ -1816,6 +1823,7 @@ case "$target_os" in
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
+                target_cpu="armhf"
                 # we intentionaly leave
                 # gcc_default_cpu empty here
                 # so the correct value is loaded
