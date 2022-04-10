@@ -2339,7 +2339,8 @@ case "$aros_target_cpu" in
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
         aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
         aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
-        aros_kernel_cflags="$aros_kernel_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
+        aros_kernel_cflags="$aros_kernel_cflags"
+        aros_kernel_export_cflags="$aros_kernel_export_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
         ;;
     i386)
         aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
@@ -3039,7 +3040,7 @@ AC_MSG_CHECKING([whether usb3.0 code is enabled])
 AC_ARG_ENABLE(usb30_code,AC_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
 if test "$usb30_code" = "yes" ; then
     aros_config_cppflags="$aros_config_cppflags -DAROS_USB30_CODE"
-    aros_kernel_cflags="$aros_kernel_cflags -DAROS_USB30_CODE"
+    aros_kernel_cppflags="$aros_kernel_cppflags -DAROS_USB30_CODE"
 fi
 AC_MSG_RESULT($usb30_code)
 
@@ -3321,6 +3322,8 @@ aros_target_options+="$export_newline""# Enable Nouveau Gfx Driver$export_newlin
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
+
+aros_kernel_cflags="$aros_kernel_cflags $aros_kernel_export_cflags"
 
 dnl strip trailing spaces ...
 CC=m4_normalize($CC)
