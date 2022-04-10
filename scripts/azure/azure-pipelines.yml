@@ -638,6 +638,17 @@ jobs:
     displayName: 'Creating $(arosbuild.name) package(s)'
 
   - script: |
+      grep "missing translation" $(arosbuild.package)-$(arosbuild.name).log > translations-missing.txt
+      grep "trailing ellipsis" $(arosbuild.package)-$(arosbuild.name).log > translations-ellipsis.txt
+      grep "trailing blanks for identifier" $(arosbuild.package)-$(arosbuild.name).log > translations-blanks.txt
+      grep "mismatching placeholders" $(arosbuild.package)-$(arosbuild.name).log > translations-placeholders.txt
+      grep "missing in catalog description" $(arosbuild.package)-$(arosbuild.name).log > translations-notincatalog.txt
+      grep "UTF8 conversion failed" $(arosbuild.package)-$(arosbuild.name).log > translations-utf8.txt
+    workingDirectory: '$(AROSLOGSDIR)'
+    condition: eq( variables['arosbuild.log.parsetranslations'], 'yes' )
+    displayName: 'Parsing translation errors in build log..'
+
+  - script: |
       cd $(AROSBUILDDIR)
       for deplog in *.deplog; do
         if [ -f $deplog ]; then
@@ -711,7 +722,6 @@ jobs:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     displayName: 'Deploying build'
-
 
   - script: |
       brew uninstall --force node
