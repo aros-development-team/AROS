@@ -718,7 +718,7 @@ endif
 $(%(mmake)_MC_TARGETS) : CPPFLAGS := $(%(mmake)_MC_CPPFLAGS)
 $(%(mmake)_MC_TARGETS) : CFLAGS := $(%(mmake)_CFLAGS)
 $(%(mmake)_MC_TARGETS) : $(%(mmake)_MC_TGTWILDCARD).o : $(%(mmake)_MC_SRCWILDCARD).c
-	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="$(incextra)"
+	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
 
 $(%(mmake)_MC_DTARGETS) : $(%(mmake)_MC_TGTWILDCARD).d : $(%(mmake)_MC_SRCWILDCARD).c
 	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_MC_CPPFLAGS))"
@@ -2185,9 +2185,9 @@ ifeq (%(modtype),)
 $(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
 endif
 ifneq (%(incextra),)
-%(mmake)_INCEXTRA  := "%(incextra)"
+%(mmake)_INCEXTRA  := %(incextra)
 else
-%(mmake)_INCEXTRA  :=  "$(TOP)/$(CURDIR)/.."
+%(mmake)_INCEXTRA  := $(TOP)/$(CURDIR)/..
 endif
 ifeq (%(compiler),host)
 ifeq (%(alwayscxxlink),yes)
