@@ -335,6 +335,7 @@ jobs:
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    condition: ne( variables['SF_RSYNC_USER'], '' )
     displayName: 'Deploying source package(s)'
 
   - script: |
@@ -433,7 +434,7 @@ jobs:
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
-    condition: eq( variables['arosbuild.withtoolchain'], 'yes' )
+    condition: and( eq( variables['arosbuild.withtoolchain'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
     displayName: 'Deploying toolchain'
 
   - script: |
@@ -721,6 +722,7 @@ jobs:
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    condition: ne( variables['SF_RSYNC_USER'], '' )
     displayName: 'Deploying build'
 
   - script: |
@@ -797,7 +799,7 @@ jobs:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     continueOnError: true
-    condition: eq( variables['arosbuild.withunittests'], 'yes' )
+    condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
     displayName: 'Performing Unit testing with CUnit'
 
   - task: CopyFiles@2
