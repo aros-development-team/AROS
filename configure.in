@@ -3119,14 +3119,6 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         dnl find x11 stuff
         AC_PATH_X
 
-        if test -n "$x_includes"; then
-            X_CFLAGS="$X_CFLAGS -I$x_includes"
-        fi
-
-        if test -n "$x_libraries"; then
-            X_LIBS="$X_LIBS -L$x_libraries"
-        fi
-
         if test "x-$no_x" = "x-yes" ; then
 
             dnl didn't find it
@@ -3142,6 +3134,25 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 aros_target_options+="$export_newline""# Enable X11 HostGL 3D Passthrough$export_newline""OPT_HOST_X11_HOSTGL           := yes$export_newline"
             fi
             ENABLE_X11=1
+
+            case "$host_os" in
+                darwin*)
+                    if test -z "$x_includes"; then
+                        x_includes="/usr/X11/include"
+                    fi
+                    if test -z "$x_libraries"; then
+                        x_libraries="/usr/X11/lib"
+                    fi
+                ;;
+            esac      
+
+            if test -n "$x_includes"; then
+                X_CFLAGS="$X_CFLAGS -I$x_includes"
+            fi
+
+            if test -n "$x_libraries"; then
+                X_LIBS="$X_LIBS -L$x_libraries"
+            fi
 
             aros_host_x11_cflags="$X_CFLAGS"
             aros_host_x11_ldflags="$X_LIBS  -lX11"
