@@ -27,19 +27,20 @@ endif
 
 all: makedirs $(mmake_objdir)/mmake$(EXEEXT)
 
-makedirs:
-	@for dir in $(mmake_objdir) $(DEPDIR) ; do \
-	    if [ ! -d $$dir ]; then \
-		$(MKDIR_P) "$$dir" ; \
-	    else true ; fi ; \
-	done
+makedirs: $(mmake_objdir) $(DEPDIR)
 
-$(mmake_objdir)/%.o: $(mmake_srcdir)/%.c
+$(DEPDIR):
+	@$(MKDIR_P) "$(DEPDIR)"
+
+$(mmake_objdir):
+	@$(MKDIR_P) "$(mmake_objdir)"
+	
+$(mmake_objdir)/%.o: $(mmake_srcdir)/%.c | $(mmake_objdir) $(DEPDIR)
 	@echo "Compiling  $(patsubst $(mmake_srcdir)/%,%,$<)"
 	@$(COMPILE) -MT $(mmake_objdir)/$*.o -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $(mmake_objdir)/$*.o $(mmake_srcdir)/$*.c
 	@mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 
-$(mmake_objdir)/mmake$(EXEEXT): $(mmake_OBJECTS)
+$(mmake_objdir)/mmake$(EXEEXT): $(mmake_OBJECTS) | $(mmake_objdir)
 	@echo "Linking  $(patsubst $(mmake_objdir)/%,%,$@)"
 	@rm -f $(mmake_objdir)/mmake$(EXEEXT)
 	@$(LINK) $(mmake_OBJECTS) $(mmake_LDADD) $(LIBS)
