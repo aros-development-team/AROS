@@ -22,17 +22,17 @@ endif
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
-%define compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip $(CFLAGS) $(CPPFLAGS))" from="$<" to="$@" iquote="$(CFLAGS_IQUOTE)" iquote_end="$(CFLAGS_IQUOTE_END)"
+%define compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip $(CFLAGS) $(CPPFLAGS))" from="$<" to="$@" incextra="$(TOP)/$(CURDIR)" iquote="$(CFLAGS_IQUOTE)" iquote_end="$(CFLAGS_IQUOTE_END)"
 	$(Q)$(ECHO) "Compiling  $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))"
-	$(Q)$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))"\" -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	$(Q)$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))"\" -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-			$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) $(TOP)/$(CURDIR) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+			$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
 		else \
 			$(NOP) ; \
 		fi ; \
 	else \
-		$(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) $(TOP)/$(CURDIR) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" 1>&2 ; \
+		$(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" 1>&2 ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
 	fi
@@ -311,7 +311,7 @@ GLOB_MKDIRS += %(dirs)
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile mmake=TMP basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= targetdir= compiler=target
+%define rule_compile mmake=TMP basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) incextra="$(TOP)/$(CURDIR)" dflags= targetdir= compiler=target
 
 %(mmake)_NIXFLAG ?= -nix
 
@@ -386,7 +386,7 @@ endif
 $(%(mmake)_TARGETBASE).o : CPPFLAGS := $(%(mmake)_C_CPPFLAGS)
 $(%(mmake)_TARGETBASE).o : CFLAGS := $(%(mmake)_CFLAGS)
 $(%(mmake)_TARGETBASE).o : %(basename).c
-	%compile_q cmd="$(%(mmake)_CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)"
+	%compile_q cmd="$(%(mmake)_CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
 
 ifeq (%(nix),yes)
   $(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_DFLAGS))
@@ -409,7 +409,7 @@ $(%(mmake)_TARGETBASE).d : %(basename).c
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile_cxx mmake=TMP basename=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= targetdir= compiler=target
+%define rule_compile_cxx mmake=TMP basename=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= targetdir= compiler=target incextra="$(TOP)/$(CURDIR)"
 
 ifneq (%(basename),)
 %(mmake)_NIXFLAG ?= -nix
@@ -484,7 +484,7 @@ endif
 $(%(mmake)_TARGETBASE).o : CPPFLAGS := $(%(mmake)_CXX_CPPFLAGS)
 $(%(mmake)_TARGETBASE).o : CXXFLAGS := $(%(mmake)_CXXFLAGS)
 $(%(mmake)_TARGETBASE).o : %(basename).cpp
-	%compile_q cmd="$(%(mmake)_CMD)" opt="$(strip $(CXXFLAGS) $(CPPFLAGS))" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)"
+	%compile_q cmd="$(%(mmake)_CMD)" opt="$(strip $(CXXFLAGS) $(CPPFLAGS))" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
 
 ifeq (%(nix),yes)
   $(%(mmake)_TARGETBASE).d : %(mmake)_DXXFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_DXXFLAGS))
@@ -510,7 +510,7 @@ endif
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .m file
-%define rule_compile_objc mmake=TMP basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= targetdir= compiler=target
+%define rule_compile_objc mmake=TMP basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= targetdir= compiler=target incextra="$(TOP)/$(CURDIR)"
 
 ifneq (%(basename),)
 %(mmake)_NIXFLAG ?= -nix
@@ -593,7 +593,7 @@ endif
 $(%(mmake)_TARGETBASE).o : CPPFLAGS := $(%(mmake)_OBJC_CPPFLAGS)
 $(%(mmake)_TARGETBASE).o : CFLAGS := $(%(mmake)_OBJCFLAGS)
 $(%(mmake)_TARGETBASE).o : %(basename).m
-	%compile_q cmd="$(%(mmake)_CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)"
+	%compile_q cmd="$(%(mmake)_CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
 
 ifeq (%(nix),yes)
   $(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_OBJCDFLAGS))
@@ -623,7 +623,7 @@ endif
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= srcdir= targetdir= \
-    compiler=target usetree=no
+    compiler=target usetree=no incextra="$(TOP)/$(CURDIR)"
 
 ifeq (%(srcdir),)
 %(mmake)_MC_SRCWILDCARD := %
@@ -718,7 +718,7 @@ endif
 $(%(mmake)_MC_TARGETS) : CPPFLAGS := $(%(mmake)_MC_CPPFLAGS)
 $(%(mmake)_MC_TARGETS) : CFLAGS := $(%(mmake)_CFLAGS)
 $(%(mmake)_MC_TARGETS) : $(%(mmake)_MC_TGTWILDCARD).o : $(%(mmake)_MC_SRCWILDCARD).c
-	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)"
+	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="$(incextra)"
 
 $(%(mmake)_MC_DTARGETS) : $(%(mmake)_MC_TGTWILDCARD).d : $(%(mmake)_MC_SRCWILDCARD).c
 	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_MC_CPPFLAGS))"
@@ -743,7 +743,7 @@ $(%(mmake)_MC_DTARGETS) : $(%(mmake)_MC_TGTWILDCARD).d : $(%(mmake)_MC_SRCWILDCA
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_cxx_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= \
-    targetdir= compiler=target srcdir=
+    targetdir= compiler=target srcdir= incextra="$(TOP)/$(CURDIR)"
 
 %(mmake)_CXXABSBASENAMES := $(foreach %(mmake)_CXXBASE,%(basenames),$(if $(filter /%,$(%(mmake)_CXXBASE)),$(%(mmake)_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(%(mmake)_CXXBASE))))
 
@@ -828,7 +828,7 @@ endif
 
 define cxx_multi_recipe_template
  $(1).o : $(2)
- 	%compile_q cmd="$(%(mmake)_CXXCMD)" opt="$(strip $(%(mmake)_CXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" iquote="$(%(mmake)_CXXIQUOTE)" iquote_end="$(%(mmake)_CXXIQUOTE_END)" from="$(2)" to="$(1).o"
+ 	%compile_q cmd="$(%(mmake)_CXXCMD)" opt="$(strip $(%(mmake)_CXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" iquote="$(%(mmake)_CXXIQUOTE)" iquote_end="$(%(mmake)_CXXIQUOTE_END)" from="$(2)" to="$(1).o" incextra="%(incextra)"
 
  $(1).d : $(2)
  	%mkdepend_q cc="$(%(mmake)_CXXCMD)" flags="$(strip $(%(mmake)_DXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" from="$(2)" to="$(1).d"
@@ -861,7 +861,7 @@ endif
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_objc_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= \
-    targetdir= compiler=target srcdir=
+    targetdir= compiler=target srcdir= incextra="$(TOP)/$(CURDIR)"
 
 ifneq (%(basenames),)
 
@@ -958,7 +958,7 @@ endif
 $(%(mmake)_MOBJC_TARGETS) : CPPFLAGS := $(%(mmake)_MOBJC_CPPFLAGS)
 $(%(mmake)_MOBJC_TARGETS) : CFLAGS := $(%(mmake)_OBJCFLAGS)
 $(%(mmake)_MOBJC_TARGETS) : $(%(mmake)_MOBJC_WILDCARD).o : $(%(mmake)_MOBJC_SRCWILDCARD).m
-	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)"
+	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
 
 $(%(mmake)_MOBJC_DTARGETS) : $(%(mmake)_MOBJC_WILDCARD).d : $(%(mmake)_MOBJC_SRCWILDCARD).m
 	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_MOBJC_CPPFLAGS))"
@@ -2113,7 +2113,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
     objdir= moduledir= prefix="$(AROSDIR)" \
     linklibname= uselibs= usehostlibs= \
     compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
-    include_set=includes-all includedir= libdir= \
+    include_set=includes-all includedir= incextra= libdir= \
     build_abi= build_library= stripdebug="$(DEBUG)"
 
 # We will employ a terrifying, but unavoidable, hack here.
@@ -2184,7 +2184,11 @@ endif
 ifeq (%(modtype),)
 $(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
 endif
-
+ifneq (%(incextra),)
+%(mmake)_INCEXTRA  := "%(incextra)"
+else
+%(mmake)_INCEXTRA  :=  "$(TOP)/$(CURDIR)/.."
+endif
 ifeq (%(compiler),host)
 ifeq (%(alwayscxxlink),yes)
 %(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
@@ -2493,27 +2497,27 @@ $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_RELLINKLIBOBJS) : | $(%(m
 %rule_compile_cxx_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_CXX_NARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cxxflags="$(%(mmake)%(flavour)_CXXFLAGS)" dxxflags="$(%(mmake)%(flavour)_DXXFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
 %rule_compile_objc_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_OBJC_NARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_CCFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_TARGETCCFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_NLIBARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
     cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_LINKLIBCFLAGS)" dflags="$(%(mmake)%(flavour)_LINKLIBDFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_LINKLIBCCGENFILES)" srcdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
     cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_LINKLIBCFLAGS)" dflags="$(%(mmake)%(flavour)_LINKLIBDFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
 
 ifneq ($(%(mmake)%(flavour)_LINKLIBAFILES),)
 %rule_assemble_multi  mmake=%(mmake)%(flavour) \
@@ -2673,7 +2677,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix="$(AROSDIR)" \
   linklibname= uselibs= usehostlibs= \
   compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
-  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)"
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)" incextra=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
@@ -2684,7 +2688,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" funcinstr=%(funcinstr) lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
    include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
-   build_abi=M build_library=M stripdebug="%(stripdebug)"
+   build_abi=M build_library=M stripdebug="%(stripdebug)" incextra="%(incextra)"
 
 %end
 #------------------------------------------------------------------------------
@@ -2701,7 +2705,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix="$(AROSDIR)" \
   linklibname= uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
-  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)"
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)" incextra=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
@@ -2712,7 +2716,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
   nostartup="%(nostartup)" archspecific="%(archspecific)" \
   include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
-  build_abi=M build_library= stripdebug="%(stripdebug)"
+  build_abi=M build_library= stripdebug="%(stripdebug)" incextra="%(incextra)"
 
 %end
 #------------------------------------------------------------------------------
@@ -2730,7 +2734,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix="$(AROSDIR)" \
   uselibs= usehostlibs= \
   compiler=target lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
-  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)"
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)" incextra=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" \
@@ -2741,7 +2745,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
    include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
-   build_abi= build_library=M stripdebug="%(stripdebug)"
+   build_abi= build_library=M stripdebug="%(stripdebug)" incextra="%(incextra)"
 
 %end
 #------------------------------------------------------------------------------
@@ -3086,7 +3090,7 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 #   specify the name here matching the original module. this insures multiple modules
 #   built from the same makefile will not pollute each other.
 %define build_archspecific files= cxxfiles= asmfiles= linklibfiles= linklibobjs= mainmmake=/A maindir=/A arch=/A \
- cppflags="$(CPPFLAGS)" cflags= dflags= aflags="$(AFLAGS)" compiler=target objdir= modname=
+ cppflags="$(CPPFLAGS)" cflags= dflags= aflags="$(AFLAGS)" compiler=target objdir= modname= incextra=
 
 ifeq (%(files) %(linklibfiles) %(linklibobjs) %(asmfiles),)
     $(error no files or asmfiles given)
@@ -3137,6 +3141,11 @@ endif
 #MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-includes
 #MM- %(mainmmake)-%(arch)-includes : %(mainmmake)-includes
 
+ifneq (%(incextra),)
+    BD_INCEXTRA$(BDID)  := "%(incextra)"
+else
+    BD_INCEXTRA$(BDID)  :=  "$(TOP)/%(maindir)"
+endif
 ifneq (%(objdir),)
     BD_OBJROOT$(BDID)  := %(objdir)
 else
@@ -3226,9 +3235,9 @@ endif
 
 ifeq ($(TARGET),$(BD_TARGET))
 $(BD_LIBOBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
-	%compile_q cmd="$(TMP_CMD)" opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote="$(TMP_IQUOTE)" iquote_end="$(TMP_IQUOTE_END)"
+	%compile_q cmd="$(TMP_CMD)" opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote="$(TMP_IQUOTE)" iquote_end="$(TMP_IQUOTE_END)" incextra="$(BD_INCEXTRA$(BDID))"
 $(BD_OBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
-	%compile_q cmd="$(TMP_CMD)" opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote="$(TMP_IQUOTE)" iquote_end="$(TMP_IQUOTE_END)"
+	%compile_q cmd="$(TMP_CMD)" opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote="$(TMP_IQUOTE)" iquote_end="$(TMP_IQUOTE_END)" incextra="$(BD_INCEXTRA$(BDID))"
 endif
 
 ifeq (%(dflags),)
