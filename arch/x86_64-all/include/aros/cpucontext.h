@@ -2,12 +2,14 @@
 #define AROS_X86_64_CPUCONTEXT_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context definition for x86-64 processors
     Lang: english
 */
+
+#include <aros/config.h>
 
 typedef struct
 {
@@ -83,7 +85,9 @@ struct ExceptionContext
     struct FPFXSContext *FXSData;       /* Pointer to legacy SSE FXSAVE 512 byte context area   */
     struct FPXSContext *XSData;         /* Pointer to AVX XSAVE context area                    */
     };
+#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
     ULONG FPUCtxSize;
+#endif
 };
 
 enum enECFlags

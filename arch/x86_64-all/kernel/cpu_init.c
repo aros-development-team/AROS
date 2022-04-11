@@ -1,6 +1,8 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
+
+#include <proto/exec.h>
 
 #include <aros/config.h>
 #include <aros/symbolsets.h>
@@ -10,33 +12,21 @@
 #include "kernel_base.h"
 #include <kernel_debug.h>
 
-#define D(x)
+#define D(x) x
 
 static int cpu_Init(struct KernelBase *KernelBase)
 {
+#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
     ULONG XContextSize = 0;
     ULONG AVXOffs = 0;
+#endif
 
     D(bug("[Kernel] %s: KernelBase @ 0x%p\n", __func__, KernelBase);)
 
-#if AROS_FLAVOUR == AROS_FLAVOUR_EMULATION
-    /* check if the host enabled xgetbv */
-#if (0)
-    if (rdcr(cr4) & _CR4_OSXSBV)
-    {
-        D(bug("[Kernel] %s: Host has enabled xgetbv/xsetbv!\n", __func__, KernelBase);)
-
-        // TODO: get the correct host values ..
-        AVXOffs = 1;
-        XContextSize = 0;
-    }
-#endif
-#else
+    KernelBase->kb_ContextSize = 0;
+#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
     D(bug("[Kernel] %s: Checking for XSAVE/AVX availability...\n", __func__, KernelBase);)
 
-    /* Check CPUID to see if the processor
-     * has support for XSAVE/AVX
-     */
     asm volatile (
         "    mov $0x01, %%eax\n\t"
         "    cpuid\n\t"
@@ -60,14 +50,11 @@ static int cpu_Init(struct KernelBase *KernelBase)
         :
         : "%eax", "%ebx", "%ecx", "%edx"
     );
-#endif
 
     if (AVXOffs)
     {
         ULONG featMask;
 
-        /* Use AVX/XSAVE support */
-#if AROS_FLAVOUR != AROS_FLAVOUR_EMULATION
         D(bug("[Kernel] %s: Adjusting CR0 flags ...\n", __func__);)
         /* Enable monitoring media instruction to generate #NM when CR0.TS is set.
          * Disable coprocessor emulation.
@@ -79,8 +66,8 @@ static int cpu_Init(struct KernelBase *KernelBase)
          * Enable xgetvb/xsetvb
          */
         wrcr(cr4, rdcr(cr4) | _CR4_OSXMMEXCPT | _CR4_OSXSBV);
-#endif
-        D(bug("[Kernel] %s: Enabling Saving AVX context...\n", __func__);)
+
+        D(bug("[Kernel] %s: Enabling AVX context Load/Save...\n", __func__);)
         asm volatile (
             "    xor        %%rcx, %%rcx\n\t"
             "    xgetbv\n\t"                                                            /* Load XCR0 register                           */
@@ -92,17 +79,16 @@ static int cpu_Init(struct KernelBase *KernelBase)
 
         D(
             bug("[Kernel] %s: AVX feature mask %08x\n", __func__, featMask);
-            bug("[Kernel] %s: AVX required size = %u + %u, 64byte align\n", __func__, sizeof(struct AROSCPUContext), XContextSize);
+            bug("[Kernel] %s: AVX required size = %u\n", __func__, XContextSize);
         )
-        KernelBase->kb_ContextSize = AROS_ROUNDUP2(XContextSize + sizeof(struct AROSCPUContext), 64);
+        KernelBase->kb_ContextSize = AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 64) + XContextSize;
     }
-    else
+#endif
+    if (KernelBase->kb_ContextSize == 0)
     {
         /* All x86-64 processors have SSE/FXSAVE */
-        D(bug("[Kernel] %s: SSE required size = %u + %u, 16byte align\n", __func__, sizeof(struct AROSCPUContext), sizeof(struct FPFXSContext));)
-        KernelBase->kb_ContextSize = AROS_ROUNDUP2(sizeof(struct FPFXSContext) + sizeof(struct AROSCPUContext), 16);
+        KernelBase->kb_ContextSize = AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 16) + sizeof(struct FPFXSContext);
     }
-
     D(bug("[Kernel] %s: CPU Context size = %u bytes\n", __func__, KernelBase->kb_ContextSize);)
 
     return TRUE;
