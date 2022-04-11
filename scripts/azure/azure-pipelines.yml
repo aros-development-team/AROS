@@ -796,7 +796,7 @@ jobs:
         rm "./boot/$arosexehost/AROSBootstrap.conf.bak"
         chmod 744 "./boot/$arosexehost/AROSBootstrap"
         echo "Launching CUnit tests under AROS $AGENT_OS hosted ..."
-        DISPLAY=:1 $(TIMEOUTCMD) 5m "./boot/$arosexehost/AROSBootstrap"
+        DISPLAY=:1 $(TIMEOUTCMD) 5m "./boot/$arosexehost/AROSBootstrap" || UNITTESTFAILFLAG="true"
         for entry in ./*-Results.xml
         do
           if [ -f  "$entry" ]; then
@@ -811,6 +811,7 @@ jobs:
           sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html" $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/htdocs/unittests/
         fi
       fi
+      echo "##vso[task.setvariable variable=UNITTESTFAILFLAG;]$UNITTESTFAILFLAG"
       echo "AROS Hosted Cunit Test Phase completed"
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
@@ -821,7 +822,7 @@ jobs:
 
   - task: CopyFiles@2
     continueOnError: true
-    condition: eq( variables['arosbuild.withunittests'], 'yes' )
+    condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['UNITTESTFAILFLAG'], 'true' ))
     inputs:
       SourceFolder: '$(AROSLOGSDIR)'
       contents: '**/*-Results.xml'
@@ -829,7 +830,7 @@ jobs:
 
   - task: PublishBuildArtifacts@1
     continueOnError: true
-    condition: eq( variables['arosbuild.withunittests'], 'yes' )
+    condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['UNITTESTFAILFLAG'], 'true' ))
     displayName: Publish unit test build artifacts
     inputs:
       pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/unittests
@@ -837,7 +838,7 @@ jobs:
 
   - task: PublishTestResults@2
     continueOnError: true
-    condition: eq( variables['arosbuild.withunittests'], 'yes' )
+    condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['UNITTESTFAILFLAG'], 'true' ))
     inputs:
       testRunner: 'JUnit'
       testResultsFiles: '**/*.xml'
