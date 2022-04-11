@@ -2775,6 +2775,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
 ac_aux_dir=
 for ac_dir in scripts/autoconf "$srcdir"/scripts/autoconf; do
   if test -f "$ac_dir/install-sh"; then
@@ -7649,10 +7650,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-$as_echo "#define HAVE_ST_BLKSIZE 1" >>confdefs.h
-
 fi
-
 
 ac_fn_c_check_member "$LINENO" "struct stat" "st_blocks" "ac_cv_member_struct_stat_st_blocks" "$ac_includes_default"
 if test "x$ac_cv_member_struct_stat_st_blocks" = xyes; then :
@@ -7682,10 +7680,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-$as_echo "#define HAVE_ST_RDEV 1" >>confdefs.h
-
 fi
-
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether struct tm is in sys/time.h or time.h" >&5
 $as_echo_n "checking whether struct tm is in sys/time.h or time.h... " >&6; }

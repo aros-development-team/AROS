@@ -1,4 +1,4 @@
-dnl Copyright (C) 1997-2019, The AROS Development Team. All rights reserved.
+dnl Copyright (C) 1997-2022, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -13,8 +13,9 @@ dnl Lang: english
 # Here starts the first section of the configure.in file.
 # ------------------------------------------------------------------------
 
-AC_INIT(mmakefile)
-AC_PREREQ(2.61)
+AC_INIT
+AC_CONFIG_SRCDIR([mmakefile])
+AC_PREREQ([2.69])
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 AC_CONFIG_MACRO_DIR(scripts/autoconf/m4)
 
@@ -87,7 +88,7 @@ AC_MSG_RESULT($target_cpu)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([which prefs set to use])
-AC_ARG_WITH(aros-prefs,AC_HELP_STRING([--with-aros-prefs=PREFSSET],[Use the preferences from the set defined by PREFSSET (defaults to AROS normal config, 'classic' provides a config more like traditional workbench - and better suited to weaker systems)]),config_prefs_set="$withval",config_prefs_set="")
+AC_ARG_WITH(aros-prefs,AS_HELP_STRING([--with-aros-prefs=PREFSSET],[Use the preferences from the set defined by PREFSSET (defaults to AROS normal config, 'classic' provides a config more like traditional workbench - and better suited to weaker systems)]),config_prefs_set="$withval",config_prefs_set="")
 if test "$config_prefs_set" != "" ; then
     msg_result=$config_prefs_set
 else
@@ -117,7 +118,7 @@ HOST_WANTS_DBUS=
 HOST_WANTS_DLOPEN=
 
 default_c_compilers="gcc clang cc"
-AC_ARG_WITH(c-compiler,AC_HELP_STRING([--with-c-compiler=VERSION],[Use specified c compiler for building AROS]),use_c_compiler="$withval",use_c_compiler="")
+AC_ARG_WITH(c-compiler,AS_HELP_STRING([--with-c-compiler=VERSION],[Use specified c compiler for building AROS]),use_c_compiler="$withval",use_c_compiler="")
 if test "$use_c_compiler" = ""; then
     host_c_compilers="$default_c_compilers"
 else
@@ -126,7 +127,7 @@ else
 fi
 
 default_cxx_compilers="g++ clang++ c++"
-AC_ARG_WITH(cxx-compiler,AC_HELP_STRING([--with-cxx-compiler=VERSION],[Use specified c++ compiler building AROS]),use_cxx_compiler="$withval",use_cxx_compiler="")
+AC_ARG_WITH(cxx-compiler,AS_HELP_STRING([--with-cxx-compiler=VERSION],[Use specified c++ compiler building AROS]),use_cxx_compiler="$withval",use_cxx_compiler="")
 if test "$use_cxx_compiler" = ""; then
         host_cxx_compilers="$default_cxx_compilers"
 else
@@ -671,9 +672,9 @@ AC_HEADER_STAT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
-AC_STRUCT_ST_BLKSIZE
+AC_CHECK_MEMBERS([struct stat.st_blksize])
 AC_STRUCT_ST_BLOCKS
-AC_STRUCT_ST_RDEV
+AC_CHECK_MEMBERS([struct stat.st_rdev])
 AC_STRUCT_TM
 AC_STRUCT_TIMEZONE
 AC_TYPE_OFF_T
@@ -695,7 +696,7 @@ AC_FUNC_MMAP
 AC_MSG_CHECKING([whether ${CC_BASE} accepts -fno-common])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-common"
-AC_TRY_COMPILE(,, use_no_common="yes", use_no_common="no")
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[use_no_common="yes"],[use_no_common="no"])
 AC_MSG_RESULT($use_no_common)
 if test "x-$use_no_common" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -fno-common"
@@ -720,7 +721,7 @@ CFLAGS="$save_cflags"
 AC_MSG_CHECKING([whether ${CC_BASE} accepts -fno-stack-protector])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-stack-protector"
-AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[use_no_stack_protector="yes"],[use_no_stack_protector="no"])
 AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -fno-stack-protector"
@@ -735,7 +736,7 @@ CFLAGS="$save_cflags"
 AC_MSG_CHECKING([whether ${CC_BASE} accepts -Wno-pointer-sign])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
-AC_TRY_COMPILE(,, use_no_sign_warning="yes", use_no_sign_warning="no")
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[use_no_sign_warning="yes"],[use_no_sign_warning="no"])
 AC_MSG_RESULT($use_no_sign_warning)
 if test "x-$use_no_sign_warning" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -Wno-pointer-sign"
@@ -749,7 +750,7 @@ CFLAGS="$save_cflags"
 AC_MSG_CHECKING([whether ${CC_BASE} accepts -fgnu89-inline])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fgnu89-inline"
-AC_TRY_COMPILE(,, use_gnu89_inline="yes", use_gnu89_inline="no")
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[use_gnu89_inline="yes"],[use_gnu89_inline="no"])
 AC_MSG_RESULT($use_gnu89_inline)
 if test "x-$use_gnu89_inline" = "x-yes" ; then
     gnu89_inline="-fgnu89-inline"
@@ -762,7 +763,7 @@ CFLAGS="$save_cflags"
 #
 AC_MSG_CHECKING([whether ${CC_BASE} accepts -iquote])
 CFLAGS="$CFLAGS -iquote."
-AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[has_iquote="yes"],[has_iquote="no"])
 AC_MSG_RESULT($has_iquote)
 if test "x-$has_iquote" = "x-yes" ; then
     host_cflags_iquote=-iquote
@@ -832,12 +833,12 @@ ignore_undefined_symbols=""
 need_x11="auto"
 
 AC_MSG_CHECKING([Which toolchain family to use ...])
-AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="$default_toolchain_family")
+AC_ARG_WITH(toolchain,AS_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="$default_toolchain_family")
 AC_MSG_RESULT($aros_toolchain)
 
 
 AC_MSG_CHECKING([if we should enable link time optimizations (LTO)])
-AC_ARG_ENABLE(lto,AC_HELP_STRING([--enable-lto=[yes|no]],[Enable link time optimizations if the target compiler supports them (default=no)]),
+AC_ARG_ENABLE(lto,AS_HELP_STRING([--enable-lto=[yes|no]],[Enable link time optimizations if the target compiler supports them (default=no)]),
  aros_config_lto="$enableval",aros_config_lto="no")
 if test "$aros_config_lto" != "no"; then
     aros_config_lto="yes"
@@ -845,7 +846,7 @@ fi
 AC_MSG_RESULT($aros_config_lto)
 
 AC_MSG_CHECKING([if we should enable coverage instrumentation])
-AC_ARG_ENABLE(coverage,AC_HELP_STRING([--enable-coverage=[yes|no]],[Enable coverage instrumentation if the target compiler supports it (default=no)]),
+AC_ARG_ENABLE(coverage,AS_HELP_STRING([--enable-coverage=[yes|no]],[Enable coverage instrumentation if the target compiler supports it (default=no)]),
  aros_config_coverage="$enableval",aros_config_coverage="no")
 if test "$aros_config_coverage" != "no"; then
     aros_config_coverage="yes"
@@ -926,7 +927,7 @@ esac
 #-----------------------------------------------------------------------------
 
 AC_MSG_CHECKING([which type of build to do])
-AC_ARG_ENABLE(build_type,AC_HELP_STRING([--enable-build-type=TYPE],[Select the build type. Available types are: personal, nightly, snapshot, milestone, release. Do NOT use this option unless you know what you are doing! (default=personal)]),build_type=$enableval,build_type="personal")
+AC_ARG_ENABLE(build_type,AS_HELP_STRING([--enable-build-type=TYPE],[Select the build type. Available types are: personal, nightly, snapshot, milestone, release. Do NOT use this option unless you know what you are doing! (default=personal)]),build_type=$enableval,build_type="personal")
 
 if test "$build_type" = "nightly"; then
     build_type_string="NIGHTLY"
@@ -949,7 +950,7 @@ AC_MSG_RESULT($build_type)
 all_debug_types="messages stack modules mungwall symbols"
 
 AC_MSG_CHECKING([which debug types to enable])
-AC_ARG_ENABLE(debug,AC_HELP_STRING([--enable-debug=list],[Enable different types of debug. Commas or whitespaces can be used to separate the items in the list. Available types of debug are: all, none, messages, stack, mungwall, modules, symbols. If no list is provided then "all" is assumed. (default=none)]),
+AC_ARG_ENABLE(debug,AS_HELP_STRING([--enable-debug=list],[Enable different types of debug. Commas or whitespaces can be used to separate the items in the list. Available types of debug are: all, none, messages, stack, mungwall, modules, symbols. If no list is provided then "all" is assumed. (default=none)]),
  debug="$enableval",debug="")
 
 if test "$debug" = "" -o "$debug" = "no"; then
@@ -1013,7 +1014,7 @@ aros_debug_ldflags="$aros_symbols_debug"
 #   always run 'ccache distcc compiler' in that order for the best performance.
 #
 AC_MSG_CHECKING([whether to enable distcc])
-AC_ARG_ENABLE(distcc,AC_HELP_STRING([--enable-distcc],[Use distcc as a front end to the compiler (default=no).]),distcc="$enableval",distcc="no")
+AC_ARG_ENABLE(distcc,AS_HELP_STRING([--enable-distcc],[Use distcc as a front end to the compiler (default=no).]),distcc="$enableval",distcc="no")
 if test "$distcc" != "" -a "$distcc" != "no"; then
     # AC_CHECK_PROG will print out the result in this case
     AC_PATH_PROG(DISTCC,[distcc],distcc,)
@@ -1022,7 +1023,7 @@ else
 fi
 
 AC_MSG_CHECKING([whether to enable ccache])
-AC_ARG_ENABLE(ccache,AC_HELP_STRING([--enable-ccache],[Use ccache as a front end to the compiler (default=no).]),ccache="$enableval",ccache="no")
+AC_ARG_ENABLE(ccache,AS_HELP_STRING([--enable-ccache],[Use ccache as a front end to the compiler (default=no).]),ccache="$enableval",ccache="no")
 if test "$ccache" != "" -a "$ccache" != "no"; then
     # AC_CHECK_PROG will print out the result in this case
     AC_CHECK_PROG(CCACHE,[ccache],ccache,)
@@ -1032,7 +1033,7 @@ fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific host gcc version to use])
-AC_ARG_WITH(kernel-gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use gcc-VERSION for building bootstrap]),kernel_tool_version="$withval",kernel_tool_version="")
+AC_ARG_WITH(kernel-gcc-version,AS_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use gcc-VERSION for building bootstrap]),kernel_tool_version="$withval",kernel_tool_version="")
 if test "$kernel_tool_version" != "" ; then
     msg_result=$kernel_tool_version
 else
@@ -1042,7 +1043,7 @@ AC_MSG_RESULT($msg_result)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what optimization flags to use])
-AC_ARG_WITH(optimization,AC_HELP_STRING([--with-optimization=FLAGS],[Use optimization flags FLAGS (e.g --with-optimization=-O2).]),optimization_level="$withval",optimization_level="unknown")
+AC_ARG_WITH(optimization,AS_HELP_STRING([--with-optimization=FLAGS],[Use optimization flags FLAGS (e.g --with-optimization=-O2).]),optimization_level="$withval",optimization_level="unknown")
 if test "$optimization_level" = "unknown"; then
     dnl use the toolchain defaults for normal and debug builds
     optimization="default"
@@ -1059,7 +1060,7 @@ AC_MSG_RESULT($optimization)
 paranoia_default=yes
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([which paranoia flags to use])
-AC_ARG_WITH(paranoia,AC_HELP_STRING([--with-paranoia=(yes|no|FLAGS)],[Specific compiler warning FLAGS to enable for paranoia builds (default=-Wall -Werror)]),[paranoia_flags="$withval"],[paranoia_flags="$paranoia_default"])
+AC_ARG_WITH(paranoia,AS_HELP_STRING([--with-paranoia=(yes|no|FLAGS)],[Specific compiler warning FLAGS to enable for paranoia builds (default=-Wall -Werror)]),[paranoia_flags="$withval"],[paranoia_flags="$paranoia_default"])
 if test "$paranoia_flags" = "no"; then
         paranoia_flags="$""(WARN_ALL) -Werror-implicit-function-declaration"
         msg_result="none"
@@ -1074,7 +1075,7 @@ aros_warn_flags="$aros_warn_flags $paranoia_flags"
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what target variant to enable])
-AC_ARG_ENABLE(target_variant,AC_HELP_STRING([--enable-target-variant=NAME],[Enable a specific target variant (default=none)]),target_variant=$enableval,target_variant="")
+AC_ARG_ENABLE(target_variant,AS_HELP_STRING([--enable-target-variant=NAME],[Enable a specific target variant (default=none)]),target_variant=$enableval,target_variant="")
 if test "$target_variant" = ""; then
     aros_target_variant=""
     aros_target_suffix=""
@@ -1099,26 +1100,26 @@ ENABLE_EXECSMP=
 case "$aros_target_variant" in
 ios)
     AC_MSG_CHECKING([XCode path])
-    AC_ARG_WITH(xcode,AC_HELP_STRING([--with-xcode=PATH],[Specify XCode path for iOS targets (default=/Developer).]),aros_xcode_path="$withval",aros_xcode_path="/Developer")
+    AC_ARG_WITH(xcode,AS_HELP_STRING([--with-xcode=PATH],[Specify XCode path for iOS targets (default=/Developer).]),aros_xcode_path="$withval",aros_xcode_path="/Developer")
     AC_MSG_RESULT($aros_xcode_path)
 
     AC_MSG_CHECKING([what iOS SDK version to use])
-    AC_ARG_WITH(sdk-version,AC_HELP_STRING([--with-sdk-version=VERSION],[Use iOS SDK version VERSION (default=4.1).]),aros_sdk_version="$withval",aros_sdk_version="4.1")
+    AC_ARG_WITH(sdk-version,AS_HELP_STRING([--with-sdk-version=VERSION],[Use iOS SDK version VERSION (default=4.1).]),aros_sdk_version="$withval",aros_sdk_version="4.1")
     AC_MSG_RESULT($aros_sdk_version)
 
     ;;
 
 "android")
     AC_MSG_CHECKING([Android SDK path])
-    AC_ARG_WITH(sdk,AC_HELP_STRING([--with-sdk=PATH],[Specify Android SDK path (default=$default_android_sdk).]),aros_android_sdk="$withval",aros_android_sdk=$default_android_sdk)
+    AC_ARG_WITH(sdk,AS_HELP_STRING([--with-sdk=PATH],[Specify Android SDK path (default=$default_android_sdk).]),aros_android_sdk="$withval",aros_android_sdk=$default_android_sdk)
     AC_MSG_RESULT($aros_android_sdk)
 
     AC_MSG_CHECKING([Android NDK path])
-    AC_ARG_WITH(ndk,AC_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=none).]),aros_android_ndk="$withval",aros_android_ndk="none")
+    AC_ARG_WITH(ndk,AS_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=none).]),aros_android_ndk="$withval",aros_android_ndk="none")
     AC_MSG_RESULT($aros_android_ndk)
 
     AC_MSG_CHECKING([what Android SDK version to use])
-    AC_ARG_WITH(sdk-version,AC_HELP_STRING([--with-sdk-version=LEVEL],[Use Android SDK for API LEVEL (default=12).]),aros_sdk_version="$withval",aros_sdk_version="12")
+    AC_ARG_WITH(sdk-version,AS_HELP_STRING([--with-sdk-version=LEVEL],[Use Android SDK for API LEVEL (default=12).]),aros_sdk_version="$withval",aros_sdk_version="12")
     AC_MSG_RESULT($aros_sdk_version)
 
     aros_android_level=android-$aros_sdk_version
@@ -1136,7 +1137,7 @@ ios)
 
     if test "$aros_android_ndk" != "none"; then
         AC_MSG_CHECKING([what Android NDK version to use])
-        AC_ARG_WITH(ndk-version,AC_HELP_STRING([--with-ndk-version=LEVEL],[Use Android NDK for API LEVEL (default=9).]),aros_ndk_version="$withval",aros_ndk_version="9")
+        AC_ARG_WITH(ndk-version,AS_HELP_STRING([--with-ndk-version=LEVEL],[Use Android NDK for API LEVEL (default=9).]),aros_ndk_version="$withval",aros_ndk_version="9")
         AC_MSG_RESULT($aros_ndk_version)
     fi
 
@@ -1146,7 +1147,7 @@ ios)
     fi
 
     AC_MSG_CHECKING([Build debug or release apk])
-    AC_ARG_WITH(apk-version,AC_HELP_STRING([--with-apk-version=(release|debug)],[Which version of AROSBootstrap.apk to compile. Release version needs key for signing, debug version will only run in emulator. (default=release)]),aros_android_antapk=$withval,aros_android_antapk=release)
+    AC_ARG_WITH(apk-version,AS_HELP_STRING([--with-apk-version=(release|debug)],[Which version of AROSBootstrap.apk to compile. Release version needs key for signing, debug version will only run in emulator. (default=release)]),aros_android_antapk=$withval,aros_android_antapk=release)
     if test $aros_android_antapk != release -a $aros_android_antapk != debug; then
         AC_MSG_ERROR([apk-version has to be release or debug])
     fi
@@ -1896,7 +1897,7 @@ case "$target_os" in
 
         case "$target_cpu" in
             *m68k*)
-                AC_ARG_ENABLE(amigaos_compliance,AC_HELP_STRING([--enable-amigaos-compliance=VERSION],[Enforce userspace AmigaOS compliance to a specific KickStart version (default=none).]),aros_amigaos_compliance="$enableval")
+                AC_ARG_ENABLE(amigaos_compliance,AS_HELP_STRING([--enable-amigaos-compliance=VERSION],[Enforce userspace AmigaOS compliance to a specific KickStart version (default=none).]),aros_amigaos_compliance="$enableval")
                 aros_enable_mmu=no
                 aros_target_cpu="m68k"
                 aros_object_format="m68kelf"
@@ -2060,16 +2061,16 @@ aros_target_toolchain="no"
 aros_kernel_sysroot=""
 
 AC_MSG_CHECKING([Kernel toolchain prefix])
-AC_ARG_WITH(kernel-toolchain-prefix,AC_HELP_STRING([--with-kernel-toolchain-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"])
+AC_ARG_WITH(kernel-toolchain-prefix,AS_HELP_STRING([--with-kernel-toolchain-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"])
 AC_MSG_RESULT($kernel_tool_prefix)
 
 AC_MSG_CHECKING([ELF toolchain prefix])
-AC_ARG_WITH(elf-toolchain-prefix,AC_HELP_STRING([--with-elf-toolchain-prefix=...],[Specify crosscompile toolchain prefix to wrap for AROS objects]),[elf_tool_prefix="$withval"
+AC_ARG_WITH(elf-toolchain-prefix,AS_HELP_STRING([--with-elf-toolchain-prefix=...],[Specify crosscompile toolchain prefix to wrap for AROS objects]),[elf_tool_prefix="$withval"
                                                  crosstools_guess="no"])
 AC_MSG_RESULT($elf_tool_prefix)
 
 AC_MSG_CHECKING([AROS toolchain prefix])
-AC_ARG_WITH(aros-toolchain,AC_HELP_STRING([--with-aros-toolchain=PREFIX],[Specify prebuilt AROS toolchain. Use yes for default name]),[aros_tool_prefix="$withval"
+AC_ARG_WITH(aros-toolchain,AS_HELP_STRING([--with-aros-toolchain=PREFIX],[Specify prebuilt AROS toolchain. Use yes for default name]),[aros_tool_prefix="$withval"
                 crosstools_guess="no"])
 if test "$aros_tool_prefix" = "yes" ; then
     aros_tool_prefix=$aros_target_cpu-aros-
@@ -2079,7 +2080,7 @@ AC_MSG_RESULT($aros_tool_prefix)
 #-----------------------------------------------------------------------------
 #   Checking if we should build crosstools..
 AC_MSG_CHECKING([whether to build crosstools])
-AC_ARG_ENABLE(crosstools,AC_HELP_STRING([--disable-crosstools],[Do not build cross-compiler toolchain]),crosstools="$enableval",crosstools="$crosstools_guess")
+AC_ARG_ENABLE(crosstools,AS_HELP_STRING([--disable-crosstools],[Do not build cross-compiler toolchain]),crosstools="$enableval",crosstools="$crosstools_guess")
 AC_MSG_RESULT($crosstools)
 
 if test "${crosstools}" = "yes"; then
@@ -2093,7 +2094,7 @@ if test "${crosstools}" = "yes" || test "${crosstools_guess}" = "no"; then
 fi
 
 AC_MSG_CHECKING([where to install the crosstools binaries])
-AC_ARG_WITH(aros-toolchain-install,AC_HELP_STRING([--with-aros-toolchain-install=DIR],[Where to install or search for cross tools binaries]),[aros_toolchain_install=$withval])
+AC_ARG_WITH(aros-toolchain-install,AS_HELP_STRING([--with-aros-toolchain-install=DIR],[Where to install or search for cross tools binaries]),[aros_toolchain_install=$withval])
 if test "x$aros_toolchain_install" = "x"; then
     AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
 else
@@ -2111,7 +2112,7 @@ AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_CHECKING([what specific target binutils version to use])
 fi
-AC_ARG_WITH(binutils-version,AC_HELP_STRING([--with-binutils-version=VERSION],[Use binutils-VERSION for building AROS]),use_binutils_version="$withval",use_binutils_version="")
+AC_ARG_WITH(binutils-version,AS_HELP_STRING([--with-binutils-version=VERSION],[Use binutils-VERSION for building AROS]),use_binutils_version="$withval",use_binutils_version="")
 if test "$use_binutils_version" = ""; then
         target_binutils_version="$default_binutils_version"
 else
@@ -2139,7 +2140,7 @@ AC_DEFUN([CROSS_GCC_VERSION], [
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_CHECKING([what specific target gcc version to use])
 fi
-AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Compile gcc-VERSION for AROS]),use_gcc_version="$withval",use_gcc_version="")
+AC_ARG_WITH(gcc-version,AS_HELP_STRING([--with-gcc-version=VERSION],[Compile gcc-VERSION for AROS]),use_gcc_version="$withval",use_gcc_version="")
 if test "$use_gcc_version" = ""; then
     if test "${crosstools}" = "no"; then
       if test "x$aros_toolchain_install" != "x"; then
@@ -2215,7 +2216,7 @@ AC_DEFUN([CROSS_LLVM_VERSION], [
 if test "$aros_toolchain" = "llvm" ; then
     AC_MSG_CHECKING([what specific target llvm version to use])
 fi
-AC_ARG_WITH(llvm-version,AC_HELP_STRING([--with-llvm-version=VERSION],[Compile llvm-VERSION for AROS]),use_llvm_version="$withval",use_llvm_version="")
+AC_ARG_WITH(llvm-version,AS_HELP_STRING([--with-llvm-version=VERSION],[Compile llvm-VERSION for AROS]),use_llvm_version="$withval",use_llvm_version="")
 if test "$use_llvm_version" = ""; then
     if test "${crosstools}" = "no"; then
       if test "x$aros_toolchain_install" != "x"; then
@@ -2234,7 +2235,7 @@ if test "$aros_toolchain" = "llvm" ; then
 fi
 
 AC_MSG_CHECKING([whether to enable Objective-C suppport])
-AC_ARG_ENABLE(objc,AC_HELP_STRING([--enable-objc],[Enable Objectve-C support (default=no)]),objc="$enableval",objc="no")
+AC_ARG_ENABLE(objc,AS_HELP_STRING([--enable-objc],[Enable Objectve-C support (default=no)]),objc="$enableval",objc="no")
 AC_MSG_RESULT($objc)
 if test "x$objc" = "xyes"; then
     objc_target="$objc"
@@ -2243,7 +2244,7 @@ else
 fi
 
 AC_MSG_CHECKING([whether to enable Java suppport])
-AC_ARG_ENABLE(java,AC_HELP_STRING([--enable-java],[Enable Java support (default=no)]),java="$enableval",java="no")
+AC_ARG_ENABLE(java,AS_HELP_STRING([--enable-java],[Enable Java support (default=no)]),java="$enableval",java="no")
 AC_MSG_RESULT($java)
 if test "x$java" != "xno"; then
     java_target="$java"
@@ -2267,7 +2268,7 @@ case "$aros_target_cpu" in
         aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
         
         AC_MSG_CHECKING([Which minimum CPU to use])
-        AC_ARG_WITH(cpu,AC_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
+        AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
         AC_MSG_RESULT($aros_gcc_cpu)
         if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
             aros_target_cpu_extra=$aros_gcc_cpu
@@ -2301,15 +2302,15 @@ case "$aros_target_cpu" in
         aros_target_nostartup_objects="$""(AROS_LIB)/arm-exidx-unwind.o"
 
         AC_MSG_CHECKING([Which minimum CPU to use])
-        AC_ARG_WITH(cpu,AC_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
+        AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
         AC_MSG_RESULT($aros_gcc_cpu)
 
         AC_MSG_CHECKING([Which minimum FPU to use])
-        AC_ARG_WITH(fpu,AC_HELP_STRING([--with-fpu=<spec>],[Specify minumum FPU (default=$gcc_default_fpu).]),aros_gcc_fpu="$withval",aros_gcc_fpu=$gcc_default_fpu)
+        AC_ARG_WITH(fpu,AS_HELP_STRING([--with-fpu=<spec>],[Specify minumum FPU (default=$gcc_default_fpu).]),aros_gcc_fpu="$withval",aros_gcc_fpu=$gcc_default_fpu)
         AC_MSG_RESULT($aros_gcc_fpu)
 
         AC_MSG_CHECKING([Which floating point ABI to use])
-        AC_ARG_WITH(float,AC_HELP_STRING([--with-float=<spec>],[Specify floating point ABI (default=$gcc_default_float_abi).]),aros_gcc_float_abi="$withval",aros_gcc_float_abi=$gcc_default_float_abi)
+        AC_ARG_WITH(float,AS_HELP_STRING([--with-float=<spec>],[Specify floating point ABI (default=$gcc_default_float_abi).]),aros_gcc_float_abi="$withval",aros_gcc_float_abi=$gcc_default_float_abi)
         AC_MSG_RESULT($aros_gcc_float_abi)
 
         AC_MSG_CHECKING([Which ARM mode to use])
@@ -2372,7 +2373,7 @@ if test "$gcc_target_cpu" != ""; then
 fi
 
 AC_MSG_CHECKING([where to download sourcecode for external ports])
-AC_ARG_WITH(portssources,AC_HELP_STRING([--with-portssources=DIR],[Where to download sourcecode for external ports]),with_portssrcdir=$withval,with_portssrcdir="default")
+AC_ARG_WITH(portssources,AS_HELP_STRING([--with-portssources=DIR],[Where to download sourcecode for external ports]),with_portssrcdir=$withval,with_portssrcdir="default")
 if test "$with_portssrcdir" = "default"; then
     AROS_PORTSSRCDIR="$AROS_BUILDDIR_UNIX/bin/Sources"
 else
@@ -2381,7 +2382,7 @@ fi
 AC_MSG_RESULT($AROS_PORTSSRCDIR)
 
 AC_MSG_CHECKING([which bootloader to use])
-AC_ARG_WITH(bootloader,AC_HELP_STRING([--with-bootloader=NAME],[Use a specific bootloader]),target_bootloader=$withval,target_bootloader=$target_bootloader)
+AC_ARG_WITH(bootloader,AS_HELP_STRING([--with-bootloader=NAME],[Use a specific bootloader]),target_bootloader=$withval,target_bootloader=$target_bootloader)
 if test "$target_bootloader" = "none"; then
     aros_target_bootloader=""
 else
@@ -2390,7 +2391,7 @@ fi
 AC_MSG_RESULT($target_bootloader)
 
 AC_MSG_CHECKING([which icon-set to use])
-AC_ARG_WITH(iconset,AC_HELP_STRING([--with-iconset=NAME],[Use a specific Icon-set (default=Gorilla).]),target_iconset=$withval,target_iconset="default")
+AC_ARG_WITH(iconset,AS_HELP_STRING([--with-iconset=NAME],[Use a specific Icon-set (default=Gorilla).]),target_iconset=$withval,target_iconset="default")
 if test "$target_iconset" = "default"; then
     aros_target_iconset="Gorilla"
     target_iconset="default (Gorilla)"
@@ -2400,7 +2401,7 @@ fi
 AC_MSG_RESULT($target_iconset)
 
 AC_MSG_CHECKING([which GUI Theme to use])
-AC_ARG_WITH(theme,AC_HELP_STRING([--with-theme=NAME],[Use a specific GUI Theme]),target_guitheme=$withval,target_guitheme="default")
+AC_ARG_WITH(theme,AS_HELP_STRING([--with-theme=NAME],[Use a specific GUI Theme]),target_guitheme=$withval,target_guitheme="default")
 if test "$target_guitheme" = "default"; then
     aros_target_guitheme="Ice"
 else
@@ -2409,7 +2410,7 @@ fi
 AC_MSG_RESULT($aros_target_guitheme)
 
 AC_MSG_CHECKING([which version of mesa to build ...])
-AC_ARG_WITH(mesagl,AC_HELP_STRING([--with-mesagl=family],[Which version of MesaGL to build (defaults to 20.0.8)]),aros_mesagl="$withval",aros_mesagl="20.0.8")
+AC_ARG_WITH(mesagl,AS_HELP_STRING([--with-mesagl=family],[Which version of MesaGL to build (defaults to 20.0.8)]),aros_mesagl="$withval",aros_mesagl="20.0.8")
 AC_MSG_RESULT($aros_mesagl)
 aros_target_options+="$export_newline""# Enable MesaGL$export_newline""OPT_MESAGL               := $aros_mesagl$export_newline"
 
@@ -2812,7 +2813,7 @@ aros_plain_nm="${prefix}${toolchain_nm}"
 aros_plain_ar="${prefix}${toolchain_ar}"
 
 AC_ARG_ENABLE(includes,
-AC_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
+AS_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
 [aros_target_incl=$enable_includes], [aros_target_incl=no])
 
 if test "x$aros_target_incl" = "xno"; then
@@ -2939,7 +2940,7 @@ if test "x$test_kernel_cc" != "xno"; then
         CC="$aros_kernel_cc"
         AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
         if test "x-$crosstools" != "x-yes"; then
-            AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
+            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[use_no_stack_protector="yes"],[use_no_stack_protector="no"])
         else
             # we do know it is supported for the smallest version of gcc we are going to build
             # we assume it's also supported by later versions
@@ -2948,7 +2949,7 @@ if test "x$test_kernel_cc" != "xno"; then
         AC_MSG_RESULT($use_no_stack_protector)
         AC_MSG_CHECKING([whether ${CC} accepts -iquote])
         if test "x-$crosstools" != "x-yes"; then
-            AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[has_iquote="yes"],[has_iquote="no"])
         else
             # we do know it is supported for the smallest version of gcc we are going to build
             # we assume it's also supported by later versions
@@ -2977,7 +2978,7 @@ if test "x$test_kernel_cc" != "xno"; then
     CFLAGS="$save_cflags -Wl,--hash-style=sysv"
     CC="$aros_kernel_cc"
     AC_MSG_CHECKING([whether ${CC} accepts -Wl,--hash-style=sysv])
-    AC_TRY_LINK(,, use_hash_style="yes", use_hash_style="no")
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[use_hash_style="yes"],[use_hash_style="no"])
     AC_MSG_RESULT($use_hash_style)
     if test "x-$use_hash_style" = "x-yes" ; then
         aros_kernel_cflags="$aros_kernel_cflags -Wl,--hash-style=sysv"
@@ -2997,7 +2998,7 @@ AC_SUBST(kernel_cflags_iquote_end)
 
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
-AC_ARG_WITH(resolution,AC_HELP_STRING([--with-resolution=XRESxYRESxDEPTH],[Default resolution of the initial WorkbenchScreen]),resolution=$withval,resolution=none)
+AC_ARG_WITH(resolution,AS_HELP_STRING([--with-resolution=XRESxYRESxDEPTH],[Default resolution of the initial WorkbenchScreen]),resolution=$withval,resolution=none)
 # We require an argument, so map --with/--without ("yes"/"no") to "none" specified
 if test "$resolution" = "yes" ; then
     resolution="none"
@@ -3017,7 +3018,7 @@ aros_cv_nominal_depth=$aros_nominal_depth
 
 dnl See if the user wants the serial debug output for native flavour
 AC_MSG_CHECKING([whether serial debug is enabled])
-AC_ARG_WITH(serial-debug,AC_HELP_STRING([--with-serial-debug],[Enable serial debug output in native (default=no)]),serial_debug=$withval,serial_debug=none)
+AC_ARG_WITH(serial-debug,AS_HELP_STRING([--with-serial-debug],[Enable serial debug output in native (default=no)]),serial_debug=$withval,serial_debug=none)
 if test "$aros_serial_debug" = 0 ; then
     serial_debug_forced=""
     if test "$serial_debug" = "yes" ; then
@@ -3039,7 +3040,7 @@ fi
 
 dnl See if the user wants the palm debug output hack for palm native flavour
 AC_MSG_CHECKING([whether palm debug hack is enabled])
-AC_ARG_ENABLE(palm_debug_hack,AC_HELP_STRING([--enable-palm-debug-hack],[Enable palm debug output hack in palm native (default=no)]),palm_debug_hack="yes",palm_debug_hack="no")
+AC_ARG_ENABLE(palm_debug_hack,AS_HELP_STRING([--enable-palm-debug-hack],[Enable palm debug output hack in palm native (default=no)]),palm_debug_hack="yes",palm_debug_hack="no")
 if test "$palm_debug_hack" = "yes" ; then
     aros_palm_debug_hack="1"
 fi
@@ -3047,7 +3048,7 @@ AC_MSG_RESULT($palm_debug_hack)
 
 dnl See if dev wants the usb3.0 code
 AC_MSG_CHECKING([whether usb3.0 code is enabled])
-AC_ARG_ENABLE(usb30_code,AC_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
+AC_ARG_ENABLE(usb30_code,AS_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
 if test "$usb30_code" = "yes" ; then
     aros_config_cppflags="$aros_config_cppflags -DAROS_USB30_CODE"
     aros_kernel_cppflags="$aros_kernel_cppflags -DAROS_USB30_CODE"
@@ -3056,7 +3057,7 @@ AC_MSG_RESULT($usb30_code)
 
 dnl See if the user wants nesting supervisor activated for unix flavour
 AC_MSG_CHECKING([whether nesting supervisor support is enabled])
-AC_ARG_ENABLE(nesting_supervisor,AC_HELP_STRING([--enable-nesting-supervisor],[Enable nesting supervisor support in unix (default=no)]),nesting_supervisor="yes",nesting_supervisor="no")
+AC_ARG_ENABLE(nesting_supervisor,AS_HELP_STRING([--enable-nesting-supervisor],[Enable nesting supervisor support in unix (default=no)]),nesting_supervisor="yes",nesting_supervisor="no")
 if test "$nesting_supervisor" = "yes" ; then
     aros_nesting_supervisor="1"
 fi
@@ -3068,7 +3069,7 @@ dnl set $aros_enable_mmu to "yes" or "no" to do this
 if test "$aros_enable_mmu" = "" ; then
     AC_MSG_CHECKING([whether MMU support is enabled])
     dnl Enabled by default
-    AC_ARG_ENABLE(mmu,AC_HELP_STRING([--disable-mmu],[Disable MMU support (default=enabled)]),aros_enable_mmu=$enableval,aros_enable_mmu="yes")
+    AC_ARG_ENABLE(mmu,AS_HELP_STRING([--disable-mmu],[Disable MMU support (default=enabled)]),aros_enable_mmu=$enableval,aros_enable_mmu="yes")
     if test "$aros_enable_mmu" = "" ; then
         aros_enable_mmu="yes"
     fi
@@ -3102,8 +3103,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
 
 
     dnl x11 hidd
-    AC_ARG_ENABLE(x11_hidd, AC_HELP_STRING([--enable-x11-hidd],
-                                           [build X11 hidd for hosted (default=auto)]),
+    AC_ARG_ENABLE(x11_hidd, AS_HELP_STRING([--enable-x11-hidd],[build X11 hidd for hosted (default=auto)]),
                                            x11_hidd="$enableval",
                                            x11_hidd="$need_x11")
     case "x-$x11_hidd" in
@@ -3158,8 +3158,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             aros_host_x11_ldflags="$X_LIBS  -lX11"
 
             dnl setup shared memory extensions
-            AC_ARG_ENABLE(x11_shm, AC_HELP_STRING([--enable-x11-shm],
-                                                  [use X11 shared memory (default=auto)]),
+            AC_ARG_ENABLE(x11_shm, AS_HELP_STRING([--enable-x11-shm],[use X11 shared memory (default=auto)]),
                                                   x11_hidd_shm="$enableval",
                                                   x11_hidd_shm="auto")
             case "x-$x11_hidd_shm" in
@@ -3204,8 +3203,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
 
             
             dnl setup vidmode (fullscreen) extensions
-            AC_ARG_ENABLE(x11_vidmode, AC_HELP_STRING([--enable-x11-vidmode],
-                                                      [use X11 vidmode extension (default=auto)]),
+            AC_ARG_ENABLE(x11_vidmode, AS_HELP_STRING([--enable-x11-vidmode],[use X11 vidmode extension (default=auto)]),
                                                       x11_hidd_vidmode="$enableval",
                                                       x11_hidd_vidmode="auto")
             case "x-$x11_hidd_vidmode" in
@@ -3243,8 +3241,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
     fi
 
     dnl sdl hidd
-    AC_ARG_ENABLE(sdl_hidd, AC_HELP_STRING([--enable-sdl-hidd],
-                                           [build SDL hidd for hosted (default=auto)]),
+    AC_ARG_ENABLE(sdl_hidd, AS_HELP_STRING([--enable-sdl-hidd],[build SDL hidd for hosted (default=auto)]),
                                            sdl_hidd="$enableval",
                                            sdl_hidd="auto")
     case "x-$sdl_hidd" in
@@ -3279,7 +3276,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
     if test "x-$HOST_WANTS_DBUS" = "x-yes" ; then
         dnl See if the user wants dbus.library
         AC_MSG_CHECKING([whether building of dbus.library is enabled])
-        AC_ARG_ENABLE(dbus,AC_HELP_STRING([--enable-dbus],[Enable DBUS support via dbus.library (default=no)]),dbus="yes",dbus="no")
+        AC_ARG_ENABLE(dbus,AS_HELP_STRING([--enable-dbus],[Enable DBUS support via dbus.library (default=no)]),dbus="yes",dbus="no")
         if test "$dbus" = "yes" ; then
             DBUS_CFLAGS=`pkg-config --cflags dbus-1`
             DBUS_LIBFLAGS=`pkg-config --libs dbus-1`
