@@ -33,18 +33,15 @@ AROS_LH0(void *, KrnCreateContext,
     {
         IPTR fpdata;
 
+        D(bug("[Kernel] %s: Context data @ 0x%p\n", __func__, ctx);)
 #if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
-        if (KernelBase->kb_ContextSize > AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 16) + sizeof(struct FPFXSContext))
+        if (KernelBase->kb_ContextSize > (sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) +  16))
         {
-            /* AVX state
-             * NB: we dont need to know its actual size,
-             * just that the header is 128+64bytes bigger than the legacy context
-             */
-            ctx->FPUCtxSize = sizeof(struct FPFXSContext) + (128 + 64);
-            fpdata = (IPTR)ctx + AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 64);
-            D(bug("[Kernel] %s: AVX context data @ 0x%p\n", __func__, fpdata);)
+            ctx->FPUCtxSize = KernelBase->kb_ContextSize - (sizeof(struct AROSCPUContext) +  64);
+            fpdata = AROS_ROUNDUP2((IPTR)ctx + sizeof(struct AROSCPUContext), 64);
             ctx->Flags  = ECF_FPXS;
             ctx->XSData = (struct FPXSContext *)fpdata;
+            D(bug("[Kernel] %s: AVX context data @ 0x%p (size = %u)\n", __func__, ctx->XSData, ctx->FPUCtxSize);)
         }
         else
         {
@@ -53,10 +50,10 @@ AROS_LH0(void *, KrnCreateContext,
 #else
         {
 #endif
-            fpdata = (IPTR)ctx + AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 16);
-            D(bug("[Kernel] %s: SSE context data @ 0x%p\n", __func__, fpdata);)
+            fpdata = AROS_ROUNDUP2((IPTR)ctx + sizeof(struct AROSCPUContext), 16);
             ctx->Flags  = ECF_FPFXS;
             ctx->FXSData = (struct FPFXSContext *)fpdata;
+            D(bug("[Kernel] %s: SSE context data @ 0x%p\n", __func__, ctx->FXSData);)
         }
 
         /* Set up default values for some registers */
