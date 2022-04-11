@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(MetaMake,0.7)
+AC_INIT([MetaMake],[0.7])
 AC_REVISION($Revision$)dnl
-AC_PREREQ(2.61)
+AC_PREREQ([2.69])
 AC_CONFIG_AUX_DIR(.)
 AC_CONFIG_SRCDIR(mmake.c)
 
@@ -35,7 +35,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(stdarg.h string.h unistd.h sys/stat.h sys/types.h netinet/in.h)
 
 AC_MSG_CHECKING([where to build objfiles])
-AC_ARG_WITH(objfiledir,AC_HELP_STRING([--with-objfiledir=DIR],[Build Object Files in DIR]),with_objfiles="$withval",with_objfiles="sourcedir")
+AC_ARG_WITH(objfiledir,AS_HELP_STRING([--with-objfiledir=DIR],[Build Object Files in DIR]),with_objfiles="$withval",with_objfiles="sourcedir")
 if test "$with_objfiles" = "sourcedir"; then
     mmake_srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
     mmake_objdir="${mmake_srcpwd}/obj"
@@ -58,4 +58,5 @@ AC_SUBST(METAMAKE_BUILDDIR)
 AC_SUBST(METAMAKE_SRCDIR)
 
 AC_CONFIG_HEADERS(config.h)
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
