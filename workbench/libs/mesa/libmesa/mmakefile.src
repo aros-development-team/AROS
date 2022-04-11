@@ -256,7 +256,7 @@ $(top_builddir)/$(CUR_MESADIR)/program/lex.yy.c: $(top_srcdir)/$(CUR_MESADIR)/pr
 $(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.c $(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.h: $(top_srcdir)/$(CUR_MESADIR)/program/program_parse.y
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
-	$(Q)$(BISON) $(BFLAGS) -p "_mesa_program_" -v -d --output=$(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.c $<
+	$(BISON) $(BFLAGS) -p "_mesa_program_" -v -d --output=$(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.c $<
 
 MESA3DGL_MESA_GENERATED_C_SOURCES := \
             $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(MESA_GENERATED_C_SOURCES))
