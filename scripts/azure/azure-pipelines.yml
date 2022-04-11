@@ -484,6 +484,10 @@ jobs:
           exit 5
         fi
       }
+      if [ "$AROSBUILDENVPATH" != "" ]; then
+          export PATH="$AROSBUILDENVPATH"
+          echo "Using PATH=$AROSBUILDENVPATH"
+      fi
       execute make -j $(BUILDTHREADS)
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) core system'
@@ -498,6 +502,10 @@ jobs:
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
       }
+      if [ "$AROSBUILDENVPATH" != "" ]; then
+          export PATH="$AROSBUILDENVPATH"
+          echo "Using PATH=$AROSBUILDENVPATH"
+      fi
       execute make -j $(BUILDTHREADS) boot-distfiles
       if [ -f /tmp/_aros_build_failed ]; then
         touch /tmp/_aros_boot_build_failed
@@ -522,6 +530,10 @@ jobs:
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
       }
+      if [ "$AROSBUILDENVPATH" != "" ]; then
+          export PATH="$AROSBUILDENVPATH"
+          echo "Using PATH=$AROSBUILDENVPATH"
+      fi
       execute make -j $(BUILDTHREADS) distfiles
       if [ -f /tmp/_aros_build_failed ]; then
         touch /tmp/_aros_distfiles_build_failed
@@ -544,6 +556,10 @@ jobs:
       }
       cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib
       mv $(AROSCONTRIBSRCDIR) $(AROSSRCDIR)/contrib
+      if [ "$AROSBUILDENVPATH" != "" ]; then
+          export PATH="$AROSBUILDENVPATH"
+          echo "Using PATH=$AROSBUILDENVPATH"
+      fi
       execute make -j $(BUILDTHREADS) contrib
       mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
       if [ -f /tmp/_aros_build_failed ]; then
