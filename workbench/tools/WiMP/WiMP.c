@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     WiMP -- Window manipulation program.
  */
@@ -170,7 +170,7 @@ static LONG get_selected(struct Screen **scr, struct Window **win)
     *scr = NULL;
     *win = NULL;
 
-    struct ListEntry *le;
+    struct ListEntry *le = NULL;
     DoMethod(list_gad, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&le);
 
     if (le)
