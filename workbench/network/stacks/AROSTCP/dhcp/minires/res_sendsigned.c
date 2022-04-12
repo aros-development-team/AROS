@@ -68,7 +68,10 @@ res_nsendsigned(res_state statp,
 	bufsize = msglen + 1024;
 	newmsg = (double *) malloc(bufsize);
 	if (newmsg == NULL)
+	{
+		free(nstatp);
 		return ISC_R_NOMEMORY;
+	}
 	memcpy(newmsg, msg, msglen);
 	newmsglen = msglen;
 
