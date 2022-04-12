@@ -32,7 +32,7 @@ CFLAGS =		$(DEFS) -Wall -Wstrict-prototypes \
 LDFLAGS =		@LDFLAGS@
 
 # Used when building fd2inline, fd2inline.guide and the archives.
-VERSION =		1.37
+VERSION =		1.39
 
 AMIGAOS_FD_PATH =	@amigaos_fd_path@
 AMIGAOS_HEADER_PATH =	@amigaos_header_path@

@@ -21,7 +21,7 @@
  * Version 1.3x	by Martin Blom
  *              See fd2inline.guide/fd2inline.info for details.
  *
- * version 1.38 by AROS development team
+ * version 1.39 by AROS development team
  *
  *****************************************************************************/
 
@@ -3121,12 +3121,24 @@ main(int argc, char** argv)
    {
       char *str=fdfilename+strlen(fdfilename)-8;
       while (str!=fdfilename && str[-1]!='/' && str[-1]!=':')
-	 str--;
-//lcs      strncpy(BaseNamL, str, strlen(str)-7);
-      strncpy(BaseNamU, str, strlen(str)-7);
-      BaseNamU[strlen(str)-7]='\0';
-      strcpy(BaseNamL, BaseNamU);
-      strcpy(BaseNamC, BaseNamU);
+		str--;
+	  int basenameLen = strlen(str)-7;
+	  if (basenameLen < sizeof(BaseNamU))
+	  {
+	     char tmpchr = str[basenameLen];
+		 str[basenameLen] = '\0';
+		 strncpy(BaseNamU, str, sizeof(BaseNamU) -1);
+		 str[basenameLen] = tmpchr;
+		 BaseNamU[basenameLen]='\0';
+		 strcpy(BaseNamL, BaseNamU);
+		 strcpy(BaseNamC, BaseNamU);
+	  }
+	  else
+	  {
+		 str[basenameLen] = '\0';
+		 fprintf(stderr, "'%s' too long.\n", str);
+		 return EXIT_FAILURE;
+	  }
    }
    else
    {
