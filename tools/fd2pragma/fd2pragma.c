@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.195 (24.05.2015) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.196 (12.04.2022) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -322,6 +322,7 @@ static const char version[] =
                           Added AROS support in the proto file.
  2.195 24.05.15 : (phx) Merge data-register pairs from the FD file for
         64-bit data types when generating vbcc 68k assembler inlines.
+ 2.196 12.04.22 : (Kalamatee) Use snprintf to prevent potential buffer overflow.
 */
 
 /* A short note, how fd2pragma works.
@@ -7961,7 +7962,13 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if((k = strlen(name) + 2) >= 16)
   {
-    arh->ar_name[sprintf(arh->ar_name, "#1/%ld", k)] = ' ';
+    int arname_len = snprintf(arh->ar_name, sizeof(arh->ar_name), "#1/%ld", k);
+    if (arname_len > 0)
+      arh->ar_name[arname_len] = ' ';
+    else
+    {
+      DoError(ERR_UNKNOWN_ERROR, 0);
+    }
   }
   else
   {
@@ -8672,7 +8679,13 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if((k = strlen(name) + 2) >= 16)
   {
-    arh->ar_name[sprintf(arh->ar_name, "#1/%ld", k)] = ' ';
+    int arname_len = snprintf(arh->ar_name, sizeof(arh->ar_name),"#1/%ld", k);
+    if (arname_len > 0)
+      arh->ar_name[arname_len] = ' ';
+    else
+    {
+      DoError(ERR_UNKNOWN_ERROR, 0);
+    }
   }
   else
   {
