@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -41,6 +41,10 @@ Boston, MA 02111-1307, USA.  */
 #define debug(a) a
 #else
 #define debug(v)
+#endif
+
+#if !defined(__AROS__)
+#define POSIX_EXEC
 #endif
 
 struct List projects;
@@ -508,6 +512,10 @@ execute (struct Project * prj, const char * cmd, const char * in,
         const char * out, const char * args)
 {
     char buffer[4096];
+#if defined(POSIX_EXEC)
+    char cmdout[1035];
+    FILE *cmdpipe;
+#endif
     char * cmdstr;
     int rc;
 
@@ -539,7 +547,22 @@ execute (struct Project * prj, const char * cmd, const char * in,
     if (verbose)
         printf ("[MMAKE] Executing %s...\n", cmdstr);
 
+#if !defined(POSIX_EXEC)
     rc = system (cmdstr);
+#else
+    cmdpipe = popen(cmdstr, "r");
+    if (cmdpipe != NULL) {
+        rc = 0;
+        while (fgets(cmdout, sizeof(cmdout), cmdpipe) != NULL) {
+            if (strstr(cmdout, ": Nothing to be done for") != NULL)
+                break;
+            printf("%s", cmdout);
+        }
+        pclose(cmdpipe);
+    }
+    else
+        rc = 2;
+#endif
 
     if (rc)
     {
