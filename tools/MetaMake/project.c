@@ -526,7 +526,7 @@ execute (struct Project * prj,
 {
     char buffer[4096];
 #if defined(POSIX_EXEC)
-    char cmdout[1035];
+    char cmdout[PATH_MAX];
     FILE *cmdpipe;
 #endif
     char * cmdstr;
@@ -567,9 +567,9 @@ execute (struct Project * prj,
     if (cmdpipe != NULL) {
         int msg = 0;
         rc = 0;
-        while (fgets(cmdout, sizeof(cmdout), cmdpipe) != NULL) {
+        while (fgets(cmdout, PATH_MAX, cmdpipe) != NULL) {
             if (strstr(cmdout, ": Nothing to be done for") != NULL)
-                break;
+                continue;
             if (!msg)
             {
                 if (!quiet)
