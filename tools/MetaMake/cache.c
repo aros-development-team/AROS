@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -564,7 +564,11 @@ regeneratemf (struct Cache_priv * cache, struct List * regeneratefiles)
     fclose (f);
 
     setvar (&cache->project->vars, "MMLIST", tmpname);
-    if (!execute (cache->project, cache->project->genmakefilescript,"-","-",""))
+    if (!execute (cache->project, cache->project->genmakefilescript,
+#if defined(POSIX_EXEC)
+            NULL, NULL,
+#endif
+            "-","-",""))
     {
         error ("Error regenerating makefile");
         exit (10);
