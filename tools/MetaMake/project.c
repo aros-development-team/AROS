@@ -566,7 +566,6 @@ execute (struct Project * prj,
     cmdpipe = popen(cmdstr, "r");
     if (cmdpipe != NULL) {
         int msg = 0;
-        rc = 0;
         while (fgets(cmdout, PATH_MAX, cmdpipe) != NULL) {
             if (strstr(cmdout, ": Nothing to be done for") != NULL)
                 continue;
@@ -583,7 +582,7 @@ execute (struct Project * prj,
             }
             printf("%s", cmdout);
         }
-        pclose(cmdpipe);
+        rc = pclose(cmdpipe);
     }
     else
         rc = 2;
