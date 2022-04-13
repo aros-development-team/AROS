@@ -5,7 +5,7 @@
 #define __MMAKE_PROJECT_H
 
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -26,6 +26,10 @@ Boston, MA 02111-1307, USA.  */
 
 #include "list.h"
 #include "cache.h"
+
+#if !defined(__AROS__)
+#define POSIX_EXEC
+#endif
 
 struct Project
 {
@@ -54,8 +58,18 @@ void initprojects (void);
 void expungeprojects (void);
 struct Project * findproject (const char * pname);
 struct Project * getfirstproject (void);
-void maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int depth, unsigned int offset);
-int execute (struct Project * prj, const char * cmd, const char * in,
-             const char * out, const char * args);
-
+void maketarget (FILE * deplogfh,
+        struct Project * prj,
+        char * tname,
+        unsigned int depth,
+        unsigned int offset);
+int execute (struct Project * prj,
+        const char * cmd,
+#if defined(POSIX_EXEC)
+        const char * tname,
+        const char * path,
+#endif
+        const char * in,
+        const char * out,
+        const char * args);
 #endif /* __MMAKE_PROJECT_H */

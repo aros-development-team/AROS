@@ -43,10 +43,6 @@ Boston, MA 02111-1307, USA.  */
 #define debug(v)
 #endif
 
-#if !defined(__AROS__)
-#define POSIX_EXEC
-#endif
-
 struct List projects;
 static struct Project * defaultprj = NULL;
 
@@ -87,7 +83,11 @@ readvars (struct Project * prj)
 
             printf ("[MMAKE] Generating %s...\n", fn);
 
-            if (!execute (prj, gen, "-", "-", ""))
+            if (!execute (prj, gen,
+#if defined(POSIX_EXEC)
+                NULL, NULL,
+#endif
+                "-", "-", ""))
             {
                 error ("Error while creating \"%s\" with \"%s\"", fn, gen);
                 exit (10);
@@ -290,6 +290,7 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
 
     strcat (buffer, tname);
 
+#if !defined(POSIX_EXEC)
     if (!quiet)
     {
         if (path && path[0] != 0)
@@ -297,8 +298,13 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
         else
             printf ("[MMAKE] >> Making %s\n", tname);
     }
+#endif
 
-    if (!execute (prj, prj->maketool, "-", "-", buffer))
+    if (!execute (prj, prj->maketool,
+#if defined(POSIX_EXEC)
+        tname, path,
+#endif
+        "-", "-", buffer))
     {
         error ("Error while running make in %s", path);
         exit (10);
@@ -508,8 +514,15 @@ getfirstproject (void)
 }
 
 int
-execute (struct Project * prj, const char * cmd, const char * in,
-        const char * out, const char * args)
+execute (struct Project * prj,
+        const char * cmd,
+#if defined(POSIX_EXEC)
+        const char * tname,
+        const char * path,
+#endif
+        const char * in,
+        const char * out,
+        const char * args)
 {
     char buffer[4096];
 #if defined(POSIX_EXEC)
@@ -552,10 +565,22 @@ execute (struct Project * prj, const char * cmd, const char * in,
 #else
     cmdpipe = popen(cmdstr, "r");
     if (cmdpipe != NULL) {
+        int msg = 0;
         rc = 0;
         while (fgets(cmdout, sizeof(cmdout), cmdpipe) != NULL) {
             if (strstr(cmdout, ": Nothing to be done for") != NULL)
                 break;
+            if (!msg)
+            {
+                if (!quiet)
+                {
+                    if (tname && path && path[0] != 0)
+                        printf ("[MMAKE] Making %s in %s\n", tname, path);
+                    else if (tname)
+                        printf ("[MMAKE] >> Making %s\n", tname);
+                }
+                msg = 1;
+            }
             printf("%s", cmdout);
         }
         pclose(cmdpipe);
