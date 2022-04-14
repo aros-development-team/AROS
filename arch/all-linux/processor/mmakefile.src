@@ -1,0 +1,14 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/rom/processor
+
+FILES := \
+    processor_hostcpu \
+    processor_hostlib
+
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
+    arch=linux files=$(FILES)
+
+%common

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -14,6 +14,10 @@
 
 #include "processor_intern.h"
 #include "processor_arch_intern.h"
+
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+extern UQUAD GetHostProcessorFrequency(int cpuno);
+#endif
 
 /*
  * This code can't work on hosted because rdmsr instruction requires supervisor privilege.
@@ -397,6 +401,10 @@ UQUAD GetCurrentProcessorFrequency(struct ProcessorBase *ProcessorBase, struct X
     {
         /* use PStates? */
     }
+#else
+#if defined(USE_HOSTCPU)
+    retFreq = GetHostProcessorFrequency(0);
+#endif
 #endif
 
     return retFreq;
