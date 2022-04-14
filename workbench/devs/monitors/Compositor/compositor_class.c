@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -150,7 +150,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
     struct Region               *dispvisregion = NULL;
     ULONG                       oldflags = compdata->flags;
 
-    DRECALC(bug("[Compositor:%s] Display rect [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(compdata->displayrect)));
+    DRECALC(bug("[Compositor] %s: Display rect [%d, %d - %d, %d]\n", __func__, _RECT(compdata->displayrect)));
 
     /*
      * This function assumes bitmapstack is in correct Z order:
@@ -166,7 +166,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
             DisposeRegion(compdata->alpharegion);
             compdata->alpharegion = NULL;
         }
-        DRECALC(bug("[Compositor:%s] DisplayRegion @ 0x%p\n", __PRETTY_FUNCTION__, dispvisregion));
+        DRECALC(bug("[Compositor] %s: DisplayRegion @ 0x%p\n", __func__, dispvisregion));
 
         ForeachNodeSafe(&compdata->bitmapstack, n, tmpn)
         {
@@ -189,7 +189,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
                 tmprect.MinY = n->topedge;
                 tmprect.MaxY = n->topedge  + OOP_GET(n->bm, aHidd_BitMap_Height) - 1;
 
-                DRECALC(bug("[Compositor:%s] Screen Rect [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
+                DRECALC(bug("[Compositor] %s: Screen Rect [%d, %d - %d, %d]\n", __func__, _RECT(tmprect)));
 
                 OrRectRegion(n->screenregion, &tmprect); // Start with the Screen's dimensions ..
                 AndRegionRegion(dispvisregion, n->screenregion); // And adjust for the "Display"
@@ -251,22 +251,22 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
                     n->sbmflags |= STACKNODEF_VISIBLE;
                 }
 
-                DRECALC(bug("[Compositor:%s] HiddBitmap 0x%p, topedge %d, visible %d\n", __PRETTY_FUNCTION__,
+                DRECALC(bug("[Compositor] %s: HiddBitmap 0x%p, topedge %d, visible %d\n", __func__,
                             n->bm, n->topedge, (n->sbmflags & STACKNODEF_VISIBLE)));
             }
             else
             {
-                DRECALC(bug("[Compositor:%s] Failed to create Screen Region\n", __PRETTY_FUNCTION__));
+                DRECALC(bug("[Compositor] %s: Failed to create Screen Region\n", __func__));
             }
         }
         DisposeRegion(dispvisregion);
         if (compdata->flags != oldflags)
         {
             ULONG newflags = (~oldflags) & compdata->flags;
-            DRECALC(bug("[Compositor:%s] Newly set flags %08x\n", __PRETTY_FUNCTION__, newflags));
+            DRECALC(bug("[Compositor] %s: Newly set flags %08x\n", __func__, newflags));
             if ((!(newflags & COMPSTATEF_HASALPHA)) && (oldflags & COMPSTATEF_HASALPHA))
             {
-                DRECALC(bug("[Compositor:%s] Alpha removed\n", __PRETTY_FUNCTION__));
+                DRECALC(bug("[Compositor] %s: Alpha removed\n", __func__));
                 if (compdata->alpharegion)
                     DisposeRegion(compdata->alpharegion);
 
@@ -276,7 +276,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
     }
     else
     {
-        DRECALC(bug("[Compositor:%s] Failed to create Display Region\n", __PRETTY_FUNCTION__));
+        DRECALC(bug("[Compositor] %s: Failed to create Display Region\n", __func__));
     }
 }
 
@@ -286,45 +286,48 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
     ULONG blitwidth  = rect->MaxX - rect->MinX + 1;
     ULONG blitheight = rect->MaxY - rect->MinY + 1;
 
-    DREDRAWBM(bug("[Compositor:%s] Redraw HiddBitMap 0x%p, Rect[%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, n->bm,
+    DREDRAWBM(bug("[Compositor] %s: Redraw HiddBitMap 0x%p, Rect[%d, %d - %d, %d]\n", __func__, n->bm,
                       rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 
-    if (!(n->sbmflags & COMPF_ALPHA))
+    if (renderTarget)
     {
-        DREDRAWBM(bug("[Compositor:%s] Blitting %dx%d [from %d, %d]\n", __PRETTY_FUNCTION__, blitwidth, blitheight,
-              rect->MinX - n->leftedge, rect->MinY - n->topedge));
-
-        HIDD_Gfx_CopyBox(compdata->gfx, n->bm,
-                        /* Transform to source bitmap coord system */
-                        rect->MinX - n->leftedge, rect->MinY - n->topedge,
-                        renderTarget,
-                        rect->MinX, rect->MinY, blitwidth, blitheight,
-                        compdata->gc);
-    }
-    else
-    {
-        UBYTE *baseaddress;
-        ULONG width, height, banksize, memsize;
-        IPTR modulo;
-
-        DREDRAWBM(bug("[Compositor:%s] AlphaBlending %dx%d @ %d,%d to %d,%d\n", __PRETTY_FUNCTION__,
-              blitwidth, blitheight,
-              rect->MinX - n->leftedge, rect->MinY - n->topedge, rect->MinX, rect->MinY));
-
-        if (HIDD_BM_ObtainDirectAccess(n->bm, &baseaddress, &width, &height, &banksize, &memsize))
+        if (!(n->sbmflags & COMPF_ALPHA))
         {
-            DREDRAWBM(bug("[Compositor:%s] Alpha baseaddress @ 0x%p\n", __PRETTY_FUNCTION__, baseaddress));
-            OOP_GetAttr(n->bm, aHidd_BitMap_BytesPerRow, &modulo);
-            HIDD_BM_PutAlphaImage(renderTarget, compdata->gfx , baseaddress + ((rect->MinY - n->topedge) * modulo) + ((rect->MinX - n->leftedge) << 2), modulo,
-                                                rect->MinX, rect->MinY, blitwidth, blitheight);
-            HIDD_BM_ReleaseDirectAccess(n->bm);
+            DREDRAWBM(bug("[Compositor] %s: Blitting %dx%d [from %d, %d]\n", __func__, blitwidth, blitheight,
+                  rect->MinX - n->leftedge, rect->MinY - n->topedge));
+
+            HIDD_Gfx_CopyBox(compdata->gfx, n->bm,
+                            /* Transform to source bitmap coord system */
+                            rect->MinX - n->leftedge, rect->MinY - n->topedge,
+                            renderTarget,
+                            rect->MinX, rect->MinY, blitwidth, blitheight,
+                            compdata->gc);
+        }
+        else
+        {
+            UBYTE *baseaddress;
+            ULONG width, height, banksize, memsize;
+            IPTR modulo;
+
+            DREDRAWBM(bug("[Compositor] %s: AlphaBlending %dx%d @ %d,%d to %d,%d\n", __func__,
+                  blitwidth, blitheight,
+                  rect->MinX - n->leftedge, rect->MinY - n->topedge, rect->MinX, rect->MinY));
+
+            if (HIDD_BM_ObtainDirectAccess(n->bm, &baseaddress, &width, &height, &banksize, &memsize))
+            {
+                DREDRAWBM(bug("[Compositor] %s: Alpha baseaddress @ 0x%p\n", __func__, baseaddress));
+                OOP_GetAttr(n->bm, aHidd_BitMap_BytesPerRow, &modulo);
+                HIDD_BM_PutAlphaImage(renderTarget, compdata->gfx , baseaddress + ((rect->MinY - n->topedge) * modulo) + ((rect->MinX - n->leftedge) << 2), modulo,
+                                                    rect->MinX, rect->MinY, blitwidth, blitheight);
+                HIDD_BM_ReleaseDirectAccess(n->bm);
+            }
         }
     }
 }
 
 static inline void HIDDCompositorFillRect(struct HIDDCompositorData *compdata, OOP_Object *renderTarget, ULONG MinX, ULONG MinY, ULONG MaxX, ULONG MaxY)
 {
-    DREDRAWSCR(bug("[Compositor:%s] Filling [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__,
+    DREDRAWSCR(bug("[Compositor] %s: Filling [%d, %d - %d, %d]\n", __func__,
                    MinX, MinY, MaxX, MaxY));
 
     HIDD_BM_FillRect(renderTarget, compdata->gc,
@@ -342,7 +345,7 @@ static VOID HIDDCompositorRedrawAlphaRegions(struct HIDDCompositorData *compdata
     if (compdata->intermedbitmap)
         renderTarget = compdata->intermedbitmap;
 
-    DREDRAWSCR(if (drawrect){ bug("[Compositor:%s] Rect [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT((*drawrect))); })
+    DREDRAWSCR(if (drawrect){ bug("[Compositor] %s: Rect [%d, %d - %d, %d]\n", __func__, _RECT((*drawrect))); })
 
     OOP_GetAttr(renderTarget, aHidd_BitMap_BMStruct, (IPTR *)&backbm);
 
@@ -356,12 +359,12 @@ static VOID HIDDCompositorRedrawAlphaRegions(struct HIDDCompositorData *compdata
         {
             struct RegionRectangle *srrect;
 
-            DREDRAWSCR(bug("[Compositor:%s] Alpha Screen Region @ 0x%p HiddBitMap @ 0x%p\n", __PRETTY_FUNCTION__,
+            DREDRAWSCR(bug("[Compositor] %s: Alpha Screen Region @ 0x%p HiddBitMap @ 0x%p\n", __func__,
                                n->screenregion, n->bm));
 
             if ((srrect = n->screenregion->RegionRectangle) != NULL)
             {
-                DREDRAWSCR(bug("[Compositor:%s] Compositing Visible Alpha Regions..\n", __PRETTY_FUNCTION__));
+                DREDRAWSCR(bug("[Compositor] %s: Compositing Visible Alpha Regions..\n", __func__));
                 while (srrect)
                 {
                     alpharect.MinX = srrect->bounds.MinX + n->screenregion->bounds.MinX;
@@ -371,7 +374,7 @@ static VOID HIDDCompositorRedrawAlphaRegions(struct HIDDCompositorData *compdata
 
                     if (!(drawrect) || AndRectRect(drawrect, &alpharect, &alpharect))
                     {
-                        DREDRAWSCR(bug("[Compositor:%s] Alpha-Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(alpharect)));
+                        DREDRAWSCR(bug("[Compositor] %s: Alpha-Region [%d, %d - %d, %d]\n", __func__, _RECT(alpharect)));
 
                         if ((n->prealphacomphook) && (backbm != NULL))
                         {
@@ -404,7 +407,10 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
     struct BitMap       *clearbm;
     struct StackBitMapNode *n;
 
-    DREDRAWSCR(bug("[Compositor:%s] Redrawing Display (GfxBase @ 0x%p)\n", __PRETTY_FUNCTION__, GfxBase));
+    DREDRAWSCR(bug("[Compositor] %s: Redrawing Display (GfxBase @ 0x%p)\n", __func__, GfxBase));
+
+    if (!renderTarget)
+        return;
 
     if (!(drawrect))
     {
@@ -422,7 +428,7 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
         else
             OrRectRegion(dispvisregion, &compdata->displayrect);
 
-        DRECALC(bug("[Compositor:%s] Display rect [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(compdata->displayrect)));
+        DRECALC(bug("[Compositor] %s: Display rect [%d, %d - %d, %d]\n", __func__, _RECT(compdata->displayrect)));
 
         ForeachNode(&compdata->bitmapstack, n)
         {
@@ -431,13 +437,13 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
                 (n->screenregion))
             {
                 struct RegionRectangle * srrect;
-                DREDRAWSCR(bug("[Compositor:%s] Screen Region @ 0x%p HiddBitMap @ 0x%p\n", __PRETTY_FUNCTION__,
+                DREDRAWSCR(bug("[Compositor] %s: Screen Region @ 0x%p HiddBitMap @ 0x%p\n", __func__,
                                n->screenregion, n->bm));
 
                 // Render the visable regions ..
                 if ((srrect = n->screenregion->RegionRectangle) != NULL)
                 {
-                    DREDRAWSCR(bug("[Compositor:%s] Redrawing Visible Screen Regions..\n", __PRETTY_FUNCTION__));
+                    DREDRAWSCR(bug("[Compositor] %s: Redrawing Visible Screen Regions..\n", __func__));
                     while (srrect)
                     {
                         tmprect.MinX = srrect->bounds.MinX + n->screenregion->bounds.MinX;
@@ -447,7 +453,7 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
 
                         if (!(drawrect) || AndRectRect(drawrect, &tmprect, &tmprect))
                         {
-                            DREDRAWSCR(bug("[Compositor:%s] Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
+                            DREDRAWSCR(bug("[Compositor] %s: Region [%d, %d - %d, %d]\n", __func__, _RECT(tmprect)));
 
                             HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &tmprect);
                             if (renderTarget == compdata->displaybitmap)
@@ -476,7 +482,7 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
 
             if (!(drawrect) || AndRectRect(drawrect, &tmprect, &tmprect))
             {
-                DREDRAWSCR(bug("[Compositor:%s] Render Display Void Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
+                DREDRAWSCR(bug("[Compositor] %s: Render Display Void Region [%d, %d - %d, %d]\n", __func__, _RECT(tmprect)));
 
                 if (clearbm)
                 {
@@ -504,7 +510,7 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
     }
     if (renderTarget != compdata->displaybitmap)
     {
-        DREDRAWSCR(bug("[Compositor:%s] Copying Alpha Intermediary BitMap\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
+        DREDRAWSCR(bug("[Compositor] %s: Copying Alpha Intermediary BitMap\n", __func__, _RECT(tmprect)));
         if (!(drawrect))
         {
             HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
@@ -623,7 +629,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     /* (a) If mode change is needed, enforce opening a new screen */
     if (compdata->modeschanged)
     {
-        DTOGGLE(bug("[Compositor:%s] Display Mode changed\n", __PRETTY_FUNCTION__));
+        DTOGGLE(bug("[Compositor] %s: Display Mode changed\n", __func__));
         compdata->displaybitmap = NULL;
     }
 
@@ -646,7 +652,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
              * displaybitmap == NULL means we were in passthrough mode before,
              * or have just changed display mode - set up screen for composition.
              */
-            DTOGGLE(bug("[Compositor:%s] Initialising Display-Compositor..\n", __PRETTY_FUNCTION__));
+            DTOGGLE(bug("[Compositor] %s: Initialising Display-Compositor..\n", __func__));
 
             if (compdata->fb)
             {
@@ -656,7 +662,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
                  * then change framebuffer's video mode.
                  * Framebuffer is the only bitmap which can change its ModeID on the fly.
                  */
-                DTOGGLE(bug("[Compositor:%s] Using Display Famebuffer HiddBitMap @ 0x%p\n", __PRETTY_FUNCTION__, compdata->fb));
+                DTOGGLE(bug("[Compositor] %s: Using Display Famebuffer HiddBitMap @ 0x%p\n", __func__, compdata->fb));
 
                  /* Do this comparison in order not to show the framebuffer twice */
                 if (olddisplaybitmap != compdata->fb)
@@ -667,7 +673,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
                      * 2. The result of this will always match compdata->fb.
                      * 3. Internally this is a simple blit operation, it can't fail.
                      */
-                    DTOGGLE(bug("[Compositor:%s] Copying old Famebuffer BitMap\n", __PRETTY_FUNCTION__));
+                    DTOGGLE(bug("[Compositor] %s: Copying old Famebuffer BitMap\n", __func__));
                     compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, compdata->fb, fHidd_Gfx_Show_CopyBack);
                 }
 
@@ -690,7 +696,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
                 if (tmpBM)
                 {
                     compdata->displaybitmap = HIDD_BM_OBJ(tmpBM);
-                    DTOGGLE(bug("[Compositor:%s] Created Compositor Display BitMap @ 0x%p [HiddBitMap @ 0x%p]\n", __PRETTY_FUNCTION__, tmpBM, compdata->displaybitmap));
+                    DTOGGLE(bug("[Compositor] %s: Created Compositor Display BitMap @ 0x%p [HiddBitMap @ 0x%p]\n", __func__, tmpBM, compdata->displaybitmap));
 
                     /* Mode changed, this bitmap will be shown later */
                     newsdispbitmap = compdata->displaybitmap;
@@ -719,7 +725,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
             if (tmpBM)
             {
                 compdata->intermedbitmap = HIDD_BM_OBJ(tmpBM);
-                DTOGGLE(bug("[Compositor:%s] Allocated Alpha Intermediary BitMap @ 0x%p [HiddBitMap @ 0x%p]\n", __PRETTY_FUNCTION__, tmpBM, compdata->intermedbitmap));
+                DTOGGLE(bug("[Compositor] %s: Allocated Alpha Intermediary BitMap @ 0x%p [HiddBitMap @ 0x%p]\n", __func__, tmpBM, compdata->intermedbitmap));
             }
         }
         else if (!(compdata->flags & COMPSTATEF_HASALPHA) && (compdata->intermedbitmap))
@@ -745,7 +751,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         compdata->displaybitmap = NULL;
     }
 
-    DTOGGLE(bug("[Compositor:%s] oldcompbm 0x%p, topbm 0x%p, dispbm 0x%p, newdispbm 0x%p\n", __PRETTY_FUNCTION__,
+    DTOGGLE(bug("[Compositor] %s: oldcompbm 0x%p, topbm 0x%p, dispbm 0x%p, newdispbm 0x%p\n", __func__,
             olddisplaybitmap, compdata->topbitmap, compdata->displaybitmap, newsdispbitmap));
 
     /*
@@ -757,7 +763,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         IPTR w, h;
 
         compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, newsdispbitmap, fHidd_Gfx_Show_CopyBack);
-        DTOGGLE(bug("[Compositor:%s] Displayed HiddBitMap 0x%p, Show returned 0x%p\n", __PRETTY_FUNCTION__, newsdispbitmap, compdata->screenbitmap));
+        DTOGGLE(bug("[Compositor] %s: Displayed HiddBitMap 0x%p, Show returned 0x%p\n", __func__, newsdispbitmap, compdata->screenbitmap));
 
         /* After Show we need Update for mirroring drivers */
         if (compdata->screenbitmap)
@@ -776,7 +782,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     {
         struct BitMap *freebm;
 
-        DTOGGLE(bug("[Compositor:%s] Disposing old alpha-intermediate bitmap 0x%p\n", __PRETTY_FUNCTION__, oldintermedbitmap));
+        DTOGGLE(bug("[Compositor] %s: Disposing old alpha-intermediate bitmap 0x%p\n", __func__, oldintermedbitmap));
 
         OOP_GetAttr(oldintermedbitmap, aHidd_BitMap_BMStruct, (IPTR *)&freebm);
         if (freebm)
@@ -791,7 +797,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     {
         struct BitMap *freebm;
 
-        DTOGGLE(bug("[Compositor:%s] Disposing old display bitmap 0x%p\n", __PRETTY_FUNCTION__, olddisplaybitmap));
+        DTOGGLE(bug("[Compositor] %s: Disposing old display bitmap 0x%p\n", __func__, olddisplaybitmap));
 
         OOP_GetAttr(olddisplaybitmap, aHidd_BitMap_BMStruct, (IPTR *)&freebm);
         if (freebm)
@@ -864,7 +870,7 @@ VOID CompositorParseConfig(struct HIDDCompositorData *compdata)
     APTR old_windowptr;
     int len;
 
-    D(bug("[Composit] %s(0x%p)\n", __PRETTY_FUNCTION__, compdata));
+    D(bug("[Compositor] %s(0x%p)\n", __func__, compdata));
 
     /* Disable DOS Requesters (GetVar() -> "Please insert volume ENV:"),
        because this can hang boot process if WB screen is not open
@@ -881,7 +887,7 @@ VOID CompositorParseConfig(struct HIDDCompositorData *compdata)
     rdargs = AllocDosObjectTags(DOS_RDARGS, TAG_END);
     if (rdargs != NULL)
     {
-        D(bug("[Composit] %s: RDArgs @ 0x%p\n", __PRETTY_FUNCTION__, rdargs));
+        D(bug("[Compositor] %s: RDArgs @ 0x%p\n", __func__, rdargs));
 
         if ((len = GetVar(COMPOSITOR_PREFS, CompConfig, 1024, GVF_GLOBAL_ONLY)) != -1)
         {
@@ -938,7 +944,7 @@ AROS_UFH3(void, CompositorDefaultBackFillFunc,
 
     struct HIDDCompositorData *compdata = h->h_Data;
 
-    D(bug("[Composit] %s: HIDDCompositorData @ 0x%p\n", __PRETTY_FUNCTION__, compdata));
+    D(bug("[Compositor] %s: HIDDCompositorData @ 0x%p\n", __func__, compdata));
 
     HIDDCompositorFillRect(compdata, HIDD_BM_OBJ(bm), msg->bounds->MinX, msg->bounds->MinY, msg->bounds->MaxX, msg->bounds->MaxY);
 
@@ -948,7 +954,7 @@ AROS_UFH3(void, CompositorDefaultBackFillFunc,
 /* PUBLIC METHODS */
 OOP_Object *METHOD(Compositor, Root, New)
 {
-    D(bug("[Composit] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Compositor] %s()\n", __func__));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 
@@ -957,14 +963,14 @@ OOP_Object *METHOD(Compositor, Root, New)
         OOP_MethodID disposemid;
         struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
 
-        D(bug("[Composit] %s: Compositor @ 0x%p, data @ 0x%p\n", __PRETTY_FUNCTION__, o, compdata));
+        D(bug("[Compositor] %s: Compositor @ 0x%p, data @ 0x%p\n", __func__, o, compdata));
 
         CompositorParseConfig(compdata);
 
         compdata->capabilities = (ULONG)GetTagData(aHidd_Compositor_State, compdata->capabilities, msg->attrList);
         compdata->flags |= COMPSTATEF_DEEPLUT;
 
-        D(bug("[Composit] %s: Compositor Capabilities: %08lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
+        D(bug("[Compositor] %s: Compositor Capabilities: %08lx\n", __func__, compdata->capabilities));
 
         compdata->displaymode = vHidd_ModeID_Invalid;
 
@@ -980,7 +986,7 @@ OOP_Object *METHOD(Compositor, Root, New)
         compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositor_GfxHidd, 0, msg->attrList);
         compdata->fb  = (OOP_Object *)GetTagData(aHidd_Compositor_FrameBuffer, 0, msg->attrList);
 
-        D(bug("[Composit] %s: DisplayID %08lx for Gfx Driver @ 0x%p\n", __PRETTY_FUNCTION__, compdata->displayid, compdata->gfx));
+        D(bug("[Compositor] %s: DisplayID %08lx for Gfx Driver @ 0x%p\n", __func__, compdata->displayid, compdata->gfx));
 
         GfxBase = (APTR)OpenLibrary("graphics.library", 41);
         IntuitionBase = (APTR)OpenLibrary("intuition.library", 50);
@@ -991,7 +997,7 @@ OOP_Object *METHOD(Compositor, Root, New)
             /* Create GC object that will be used for drawing operations */
             compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, OOP_FindClass(CLID_Hidd_GC), NULL);
 
-            D(bug("[Composit] %s: Compositor GC @ %p\n", __PRETTY_FUNCTION__, compdata->gc));
+            D(bug("[Compositor] %s: Compositor GC @ %p\n", __func__, compdata->gc));
 
             if ((compdata->gfx) && (compdata->gc))
                     return o;
@@ -1010,7 +1016,7 @@ void METHOD(Compositor, Root, Dispose)
 
     D(
         struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
-        bug("[Composit] %s: HIDDCompositorData @ 0x%p\n", __PRETTY_FUNCTION__, compdata);
+        bug("[Compositor] %s: HIDDCompositorData @ 0x%p\n", __func__, compdata);
       )
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
@@ -1029,18 +1035,18 @@ VOID METHOD(Compositor, Root, Get)
             case aoHidd_Compositor_Capabilities:
             {
                 *msg->storage = (IPTR)CAPABILITY_FLAGS;
-                D(bug("[Composit] %s: Compositor Capabilities: %lx\n", __PRETTY_FUNCTION__, *msg->storage));
+                D(bug("[Compositor] %s: Compositor Capabilities: %lx\n", __func__, *msg->storage));
                 return;
             }
             case aoHidd_Compositor_State:
             {
                 *msg->storage = (IPTR)(compdata->capabilities & CAPABILITY_FLAGS);
-                D(bug("[Composit] %s: Compositor State: %lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
+                D(bug("[Compositor] %s: Compositor State: %lx\n", __func__, compdata->capabilities));
                 return;
             }
             case aoHidd_Compositor_BackFillHook:
             {
-                D(bug("[Composit] %s: BackFillHook: 0x%p\n", __PRETTY_FUNCTION__, compdata->backfillhook));
+                D(bug("[Compositor] %s: BackFillHook: 0x%p\n", __func__, compdata->backfillhook));
                 *msg->storage = (IPTR)compdata->backfillhook;
                 return;
             }
@@ -1064,7 +1070,7 @@ VOID METHOD(Compositor, Root, Set)
             {
                 case aoHidd_Compositor_State:
                 {
-                    D(bug("[Composit] %s: Compositor Capabilities State: %lx -> ", __PRETTY_FUNCTION__, compdata->capabilities));
+                    D(bug("[Compositor] %s: Compositor Capabilities State: %lx -> ", __func__, compdata->capabilities));
                     compdata->capabilities = (ULONG)(tag->ti_Data & CAPABILITY_FLAGS);
                     D(bug("%lx\n", compdata->capabilities));
                     break;
@@ -1073,12 +1079,12 @@ VOID METHOD(Compositor, Root, Set)
                 {
                     if (tag->ti_Data)
                     {
-                        D(bug("[Composit] %s: BackFillHook: 0x%p -> 0x%p\n", __PRETTY_FUNCTION__, compdata->backfillhook, tag->ti_Data));
+                        D(bug("[Compositor] %s: BackFillHook: 0x%p -> 0x%p\n", __func__, compdata->backfillhook, tag->ti_Data));
                         compdata->backfillhook = (struct Hook *)tag->ti_Data;
                     }
                     else
                     {
-                        D(bug("[Composit] %s: Default BackFillHook\n", __PRETTY_FUNCTION__));
+                        D(bug("[Compositor] %s: Default BackFillHook\n", __func__));
                         compdata->backfillhook = &compdata->defaultbackfill;
                     }
                     break;
@@ -1101,7 +1107,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
     BOOL newtop = FALSE;
     BOOL ok = TRUE;
 
-    DSTACK(bug("[Compositor] %s: Top bitmap: 0x%lx\n", __PRETTY_FUNCTION__, msg->data->Bitmap));
+    DSTACK(bug("[Compositor] %s: Top bitmap: 0x%lx\n", __func__, msg->data->Bitmap));
 
     LOCK_COMPOSITOR_WRITE
 
@@ -1112,7 +1118,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
     {
         UNLOCK_COMPOSITOR
 
-        DSTACK(bug("[Compositor] %s: No ViewPort specified\n", __PRETTY_FUNCTION__));
+        DSTACK(bug("[Compositor] %s: No ViewPort specified\n", __func__));
 
         /* Blank screen */
         HIDDCompositorShowSingle(compdata, NULL);
@@ -1134,13 +1140,13 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
              * We need to reset own state and return NULL. graphics.library
              * falls back to no composition in this case.
              */
-            DSTACK(bug("[Compositor] %s: Error allocating StackBitMapNode!!!\n", __PRETTY_FUNCTION__));
+            DSTACK(bug("[Compositor] %s: Error allocating StackBitMapNode!!!\n", __func__));
 
             ok = FALSE;
             break;
         }
 
-        DSTACK(bug("[Compositor] %s: ViewPort 0x%p, offset (%d, %d)\n", __PRETTY_FUNCTION__, vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
+        DSTACK(bug("[Compositor] %s: ViewPort 0x%p, offset (%d, %d)\n", __func__, vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
 
         n->bm                   = vpdata->Bitmap;
         n->sbmflags             = STACKNODEF_DISPLAYABLE;
@@ -1151,14 +1157,14 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
 
         if ((bmScreen = HIDDCompositorFindBitMapScreen(compdata, n->bm)) != NULL)
         {
-            DSTACK(bug("[Compositor] %s: Screen @ 0x%p\n", __PRETTY_FUNCTION__, bmScreen));
+            DSTACK(bug("[Compositor] %s: Screen @ 0x%p\n", __func__, bmScreen));
             GetAttr(SA_CompositingFlags, (Object *)bmScreen, &n->sbmflags);
-            DSTACK(bug("[Compositor] %s: CompositingFlags %08x\n", __PRETTY_FUNCTION__, n->sbmflags));
+            DSTACK(bug("[Compositor] %s: CompositingFlags %08x\n", __func__, n->sbmflags));
             n->sbmflags |= STACKNODEF_DISPLAYABLE;
             if (n->sbmflags & COMPF_ALPHA)
             {
                 GetAttr(SA_AlphaPreCompositingHook, (Object *)bmScreen, (IPTR *)&n->prealphacomphook);
-                DSTACK(bug("[Compositor] %s: Pre-AlphaCompositing Hook @ 0x%p\n", __PRETTY_FUNCTION__, n->prealphacomphook));
+                DSTACK(bug("[Compositor] %s: Pre-AlphaCompositing Hook @ 0x%p\n", __func__, n->prealphacomphook));
             }
         }
 
@@ -1166,7 +1172,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
         {
             bmpxfmt = (OOP_Object *)OOP_GET(n->bm, aHidd_BitMap_PixFmt);
             bmstdfmt = (int)OOP_GET(bmpxfmt, aHidd_PixFmt_StdPixFmt);
-            DSTACK(bug("[Compositor] %s: Screen BitMap PixFmt %lx @ 0x%p\n", __PRETTY_FUNCTION__, bmstdfmt, bmpxfmt));
+            DSTACK(bug("[Compositor] %s: Screen BitMap PixFmt %lx @ 0x%p\n", __func__, bmstdfmt, bmpxfmt));
 
             switch (bmstdfmt)
             {
@@ -1175,7 +1181,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
                 case vHidd_StdPixFmt_RGBA32:
                 case vHidd_StdPixFmt_ABGR32:
                 {
-                    DSTACK(bug("[Compositor] %s: Screen BitMap has Alpha\n", __PRETTY_FUNCTION__));
+                    DSTACK(bug("[Compositor] %s: Screen BitMap has Alpha\n", __func__));
 
                     compdata->flags |= COMPSTATEF_HASALPHA;
                     break;
@@ -1217,7 +1223,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
             HIDDCompositorValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge,
                 compdata->displayrect.MaxX - compdata->displayrect.MinX + 1,
                 compdata->displayrect.MaxY - compdata->displayrect.MinY + 1);
-            DSTACK(bug("[Compositor] %s: Bitmap 0x%p, display size %d x %d, validated position (%ld, %ld)\n", __PRETTY_FUNCTION__,
+            DSTACK(bug("[Compositor] %s: Bitmap 0x%p, display size %d x %d, validated position (%ld, %ld)\n", __func__,
                            n->bm, compdata->displayrect.MaxX - compdata->displayrect.MinX + 1, compdata->displayrect.MaxY - compdata->displayrect.MinY + 1,
                            n->leftedge, n->topedge));
         }
@@ -1235,7 +1241,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
 
     UNLOCK_COMPOSITOR
 
-    DSTACK(bug("[Composit] %s: Done, composited bitmap 0x%p\n", __PRETTY_FUNCTION__, compdata->displaybitmap));
+    DSTACK(bug("[Compositor] %s: Done, composited bitmap 0x%p\n", __func__, compdata->displaybitmap));
 
     /* Tell if the composition is active */
     *msg->active = compdata->displaybitmap ? TRUE : FALSE;
@@ -1253,7 +1259,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
         /* Composition is active, handle redraw if the bitmap is on screen */
         struct StackBitMapNode *n;
 
-        DUPDATE(bug("[Composit] %s: Bitmap 0x%p\n", __PRETTY_FUNCTION__, msg->bm));
+        DUPDATE(bug("[Compositor] %s: Bitmap 0x%p\n", __func__, msg->bm));
 
         LOCK_COMPOSITOR_READ
 
@@ -1270,9 +1276,9 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
             srcrect.MinY = n->topedge + msg->y;
             srcrect.MaxX = srcrect.MinX + msg->width - 1;
             srcrect.MaxY = srcrect.MinY + msg->height - 1;
-                DUPDATE(bug("[Composit] %s: Bitmap rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1));
+                DUPDATE(bug("[Compositor] %s: Bitmap rect [%d, %d -> %d, %d]\n", __func__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1));
 
-            DUPDATE(bug("[Composit] %s: Screen-relative rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, _RECT(srcrect)));
+            DUPDATE(bug("[Compositor] %s: Screen-relative rect [%d, %d -> %d, %d]\n", __func__, _RECT(srcrect)));
 
             struct RegionRectangle * srrect = n->screenregion->RegionRectangle;
             while (srrect)
@@ -1287,13 +1293,13 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
                 if (AndRectRect(&srcrect, &dstandvisrect, &dstandvisrect))
                 {
                     /* Intersection is valid. Blit. */
-                    DUPDATE(bug("[Composit] %s: Clipped rect (%d, %d) - (%d, %d)\n", __PRETTY_FUNCTION__, _RECT(dstandvisrect)));
+                    DUPDATE(bug("[Compositor] %s: Clipped rect (%d, %d) - (%d, %d)\n", __func__, _RECT(dstandvisrect)));
 
                     if (!(n->sbmflags & COMPF_ALPHA))
                     {
                         if ((compdata->alpharegion) && (isRectInRegion(compdata->alpharegion, &dstandvisrect)))
                         {
-                            DUPDATE(bug("[Composit] %s: ** BitMap in Alpha Region!\n", __PRETTY_FUNCTION__));
+                            DUPDATE(bug("[Compositor] %s: ** BitMap in Alpha Region!\n", __func__));
                             updateAlphaBmps = TRUE;
                         }
                         HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &dstandvisrect);
@@ -1327,7 +1333,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
 
         UNLOCK_COMPOSITOR
 
-        DUPDATE(bug("[Composit] %s: Done\n", __PRETTY_FUNCTION__));
+        DUPDATE(bug("[Compositor] %s: Done\n", __func__));
     }
     else
     {
@@ -1382,17 +1388,17 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &disp_height);
     }
 
-    DMOVE(bug("[Composit] %s: Validating bitmap 0x%p, position (%ld, %ld), limits %ld x %ld\n", __PRETTY_FUNCTION__,
+    DMOVE(bug("[Compositor] %s: Validating bitmap 0x%p, position (%ld, %ld), limits %ld x %ld\n", __func__,
               msg->bm, *msg->newxoffset, *msg->newyoffset, disp_width, disp_height));
 
     HIDDCompositorValidateBitMapPositionChange(msg->bm, msg->newxoffset, msg->newyoffset,
                                                     disp_width, disp_height);
 
-    DMOVE(bug("[Composit] %s: Validated position (%ld, %ld)\n", __PRETTY_FUNCTION__, *msg->newxoffset, *msg->newyoffset));
+    DMOVE(bug("[Compositor] %s: Validated position (%ld, %ld)\n", __func__, *msg->newxoffset, *msg->newyoffset));
 
     if (n && ((*msg->newxoffset != n->leftedge) || (*msg->newyoffset != n->topedge)))
     {
-        DMOVE(bug("[Composit] %s: Old position (%ld, %ld)\n", __PRETTY_FUNCTION__, n->leftedge, n->topedge));
+        DMOVE(bug("[Compositor] %s: Old position (%ld, %ld)\n", __func__, n->leftedge, n->topedge));
 
         /* Reflect the change if it happened */
         n->leftedge = *msg->newxoffset;
@@ -1438,7 +1444,7 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapEnable)
                 {TAG_DONE             , 0    }
             };
 
-            D(bug("[Composit] %s: Marking BitMap 0x%lx as Compositable\n", __PRETTY_FUNCTION__, msg->bm));
+            D(bug("[Compositor] %s: Marking BitMap 0x%lx as Compositable\n", __func__, msg->bm));
             OOP_SetAttrs(HIDD_BM_OBJ(msg->bm), composittags);
         }
         return TRUE;
