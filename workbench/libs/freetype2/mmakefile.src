@@ -173,7 +173,7 @@ $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)/freetype-config : $(FT2SRCDIR)
 
 #MM
 workbench-libs-freetype-genincludes : freetype2-fetch $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE) $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)/freetype-config
-	$(NOP)
+	@$(NOP)
 
 FT2INT_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/internal/*.h))
 %copy_includes path=freetype/internal dir=$(FT2SRCDIR)/include/freetype/internal includes=$(FT2INT_INCLUDE_FILES)

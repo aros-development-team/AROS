@@ -129,7 +129,7 @@ includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
 #MM includes-asm_h : includes-copy includes-asm_h-$(CPU)
 #MM
 includes-asm_h:
-	$(NOP)
+	@$(NOP)
 
 ifeq ($(AROS_TOOLCHAIN),gnu)
 GREPTOKEN := ".asciz"
