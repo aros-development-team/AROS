@@ -7,8 +7,12 @@ include $(SRCDIR)/config/aros.cfg
 %copy_files_q mmake=workbench-network-stacks-arostcp-s files="Package-Startup startnet stopnet" \
     dst=$(AROS_SYSTEM)/Network/AROSTCP/S
 
+$(AROS_PACKAGES)/AROSTCP:
+	%fileactionmsg msg="Creating" file="$(AROS_PACKAGES)/AROSTCP"
+	@$(ECHO) "SYS:System/Network/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
+
 #MM
-workbench-network-stacks-arostcp-envpackage :
-	$(ECHO) "SYS:System/Network/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
+workbench-network-stacks-arostcp-envpackage : $(AROS_PACKAGES)/AROSTCP
+	@$(NOP)
 
 #%common
