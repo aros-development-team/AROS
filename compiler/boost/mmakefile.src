@@ -1,7 +1,10 @@
 include $(SRCDIR)/config/aros.cfg
 
-#MM- compiler-boost : compiler-boost-copy
-#MM- compiler-includes : compiler-boost-copy
+#MM- compiler-boost : compiler-boost-geninc-copy compiler-boost-includes-copy
+#MM- compiler-includes : compiler-boost-geninc-copy compiler-boost-includes-copy
 
-%copy_dir_recursive mmake=compiler-boost-copy \
-    dst="$(AROS_INCLUDES)/boost $(GENINCDIR)/boost"
+%copy_dir_recursive mmake=compiler-boost-geninc-copy \
+    dst="$(GENINCDIR)/boost"
+
+%copy_dir_recursive mmake=compiler-boost-includes-copy \
+    dst="$(AROS_INCLUDES)/boost"
