@@ -19,11 +19,15 @@ else
 endif
 %end
 
+%define fileactionmsg msg= file= elipses=
+	$(Q)$(ECHO) "%(msg)  $(if $(filter /%,%(file)),$(if $(filter $(SRCDIR)/%,$(abspath %(file))),$(patsubst $(SRCDIR)/%,%,$(abspath %(file))),$(patsubst $(TOP)/%,%,$(abspath %(file)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(file)))) %(elipses)"
+%end
+
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
 %define compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip $(CFLAGS) $(CPPFLAGS))" from="$<" to="$@" incextra="$(TOP)/$(CURDIR)" iquote="$(CFLAGS_IQUOTE)" iquote_end="$(CFLAGS_IQUOTE_END)"
-	$(Q)$(ECHO) "Compiling  $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))"
+	%fileactionmsg msg="Compiling" file="%(from)"
 	$(Q)$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))"\" -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 			$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
@@ -150,7 +154,7 @@ endif
 # Create the dependency file %(to) for %(from)
 %define mkdepend_q flags="$(strip $(CFLAGS) $(CPPFLAGS))" from=$< to=$@ cc="$(strip $(AROS_CC) $(TARGET_SYSROOT))"
 	%mkdir_q dir="$(dir %(to))"
-	$(Q)$(ECHO) "Makedepend $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))..."
+	%fileactionmsg msg="Makedepend" file="%(from)" elipses="..."
 	$(Q)AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
 %end
 #------------------------------------------------------------------------------
