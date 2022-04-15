@@ -38,9 +38,17 @@ Boston, MA 02111-1307, USA.  */
 #include "mmake.h"
 
 #if defined(DEBUG_PROJECT)
-#define debug(a) a
+#   define debug(a) a
 #else
-#define debug(v)
+#   define debug(v)
+#endif
+
+#if defined(POSIX_EXEC)
+# if defined(__APPLE__)
+#   include <sys/syslimits.h>
+# else
+#   include <limits.h>
+# endif
 #endif
 
 struct List projects;
