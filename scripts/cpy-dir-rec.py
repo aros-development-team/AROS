@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # -*- coding: iso-8859-1 -*-
-# Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+# Copyright (C) 2013-2022, The AROS Development Team. All rights reserved.
 
 # Copy directory 'src' recursively to 'dst' while ignoring
 # all files given by 'ignore' parameter. Only files younger
@@ -71,6 +71,7 @@ state = 0
 sourcedir = "."
 destdirs = []
 ignore = []
+quiet = 0
 
 for arg in sys.argv:
     if arg == "-s":
@@ -79,8 +80,10 @@ for arg in sys.argv:
         state = st_dest
     elif arg == "-e":
         state = st_exclude
+    elif arg == "-q":
+        quiet = 1
     elif arg == "-h":
-        print("Usage: python cpy-dir-rec.py -s <souredir> -d <target directories> [-e <files to exclude>]")
+        print("Usage: python cpy-dir-rec.py -q -s <souredir> -d <target directories> [-e <files to exclude>]")
     elif arg[0] == "-":
         print("cpy-dir-rec: unknown argument %s" % arg)
         sys.exit(1)
@@ -93,5 +96,6 @@ for arg in sys.argv:
             ignore.append(arg)
 
 for destdir in destdirs:
-    print("Copying    directory '%s' to '%s', ignore '%s'" % (sourcedir, destdir, ignore))
+    if quiet == 0:
+        print("Copying    directory '%s' to '%s', ignore '%s'" % (sourcedir, destdir, ignore))
     copy_tree(sourcedir, destdir, ignore)

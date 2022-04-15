@@ -3318,7 +3318,8 @@ endif
 
 #MM
 %(mmake) :
-	$(Q)cd $(SRCDIR)/$(CURDIR) && $(CPYDIRREC) -s %(src) -d %(dst) -e %(excludefiles)
+	$(Q)$(ECHO) "Copying    directory '$(if $(filter /%,%(src)),$(if $(filter $(SRCDIR)/%,$(abspath %(src))),$(patsubst $(SRCDIR)/%,%,$(abspath %(src))),$(patsubst $(TOP)/%,%,$(abspath %(src)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(src))))' to '$(if $(filter /%,%(dst)),$(if $(filter $(SRCDIR)/%,$(abspath %(dst))),$(patsubst $(SRCDIR)/%,%,$(abspath %(dst))),$(patsubst $(TOP)/%,%,$(abspath %(dst)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(dst))))'"
+	$(Q)cd $(SRCDIR)/$(CURDIR) && $(CPYDIRREC) -q -s %(src) -d %(dst) -e %(excludefiles)
 
 %end
 #------------------------------------------------------------------------------
