@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
-# Copyright (C) 2013, The AROS Development Team. All rights reserved.
+# Copyright (C) 2013-2022, The AROS Development Team. All rights reserved.
 # $Id$
 
 """Documentation to guide.
@@ -97,8 +97,6 @@ def parsedoc(filename, targetdir):
 def main():
     sourcedir = sys.argv[1]
     targetdir = sys.argv[2]
-
-    print("gendoc sourcedir " + sourcedir + " targetdir " + targetdir)
 
     if not os.path.exists(targetdir):
         os.mkdir(targetdir)
