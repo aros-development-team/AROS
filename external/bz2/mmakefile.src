@@ -74,13 +74,25 @@ external-bz2-bzip2-install-aliases : \
 %rule_copy from=$(BIN_DIR)/bzmore to=$(BIN_DIR)/bzless
 %rule_copy from=$(BIN_DIR)/bzdiff to=$(BIN_DIR)/bzcmp
 
+$(MAN_DIR)/bzegrep.1: | $(MAN_DIR)
+	%fileactionmsg msg="Creating" file="$(MAN_DIR)/bzegrep.1"
+	@$(ECHO) ".so man1/bzgrep.1" > $(MAN_DIR)/bzegrep.1
+
+$(MAN_DIR)/bzfgrep.1: | $(MAN_DIR)
+	%fileactionmsg msg="Creating" file="$(MAN_DIR)/bzfgrep.1"
+	@$(ECHO) ".so man1/bzgrep.1" > $(MAN_DIR)/bzfgrep.1
+
+$(MAN_DIR)/bzless.1: | $(MAN_DIR)
+	%fileactionmsg msg="Creating" file="$(MAN_DIR)/bzless.1"
+	@$(ECHO) ".so man1/bzmore.1" > $(MAN_DIR)/bzless.1
+
+$(MAN_DIR)/bzcmp.1: | $(MAN_DIR)
+	%fileactionmsg msg="Creating" file="$(MAN_DIR)/bzcmp.1"
+	@$(ECHO) ".so man1/bzdiff.1" > $(MAN_DIR)/bzcmp.1
+
 #MM
-external-bz2-bzip2-install-man :
-	@$(IF) $(TEST) ! -d $(MAN_DIR) ; then $(MKDIR) $(MAN_DIR) ; else $(NOP) ; fi
-	echo ".so man1/bzgrep.1" > $(MAN_DIR)/bzegrep.1
-	echo ".so man1/bzgrep.1" > $(MAN_DIR)/bzfgrep.1
-	echo ".so man1/bzmore.1" > $(MAN_DIR)/bzless.1
-	echo ".so man1/bzdiff.1" > $(MAN_DIR)/bzcmp.1
+external-bz2-bzip2-install-man : $(MAN_DIR)/bzegrep.1 $(MAN_DIR)/bzfgrep.1 $(MAN_DIR)/bzless.1 $(MAN_DIR)/bzcmp.1
+	@$(NOP)
 
 %copy_files_q mmake=external-bz2-bzip2-install-man-cpy files=$(MAN_FILES) dst=$(MAN_DIR)
 
