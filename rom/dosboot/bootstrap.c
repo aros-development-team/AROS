@@ -158,7 +158,7 @@ static inline void SetBootNodeDosType(struct BootNode *bn, ULONG dostype)
 }
 
 
-BOOL dosboot_DevicePresent(struct IORequest*bootDevIO, char *bootDevName, ULONG bootDevUnit)
+BOOL dosboot_DevicePresent(struct IORequest*bootDevIO, BPTR bootDevName, ULONG bootDevUnit)
 {
     char *device = AROS_BSTR_ADDR(bootDevName);
 
