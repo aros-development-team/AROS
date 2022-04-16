@@ -19,7 +19,7 @@ AC_PREREQ([2.69])
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 AC_CONFIG_MACRO_DIR(scripts/autoconf/m4)
 
-CONFIG_DT=`date -u "+%D %T"`
+CONFIG_DT=`date -u "+%d/%m/%Y %T"`
 AC_MSG_NOTICE([date/time (UTC)... $CONFIG_DT])
 
 # Check what host we are running on.

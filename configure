@@ -2807,7 +2807,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-CONFIG_DT=`date -u "+%D %T"`
+CONFIG_DT=`date -u "+%d/%m/%Y %T"`
 { $as_echo "$as_me:${as_lineno-$LINENO}: date/time (UTC)... $CONFIG_DT" >&5
 $as_echo "$as_me: date/time (UTC)... $CONFIG_DT" >&6;}
 
