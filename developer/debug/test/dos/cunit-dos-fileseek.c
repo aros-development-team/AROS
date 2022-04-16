@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2021-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <stdio.h>
@@ -40,14 +40,14 @@ int clean_suite(void)
  */
 void testOPENW(void)
 {
-    CU_ASSERT(NULL != (file = Open( "T:cunit-dos-fileseek.txt", MODE_NEWFILE )));
+    CU_ASSERT(BNULL != (file = Open( "T:cunit-dos-fileseek.txt", MODE_NEWFILE )));
 }
 
 /* Simple test of Write().
  */
 void testWRITE(void)
 {
-    CU_SKIP_IF(file == NULL);
+    CU_SKIP_IF(file == BNULL);
     if (file)
     {
         CU_ASSERT(0 != Write(file,"() does not work!\n",18));
@@ -58,7 +58,7 @@ void testWRITE(void)
  */
 void testCLOSE(void)
 {
-    CU_SKIP_IF(file == NULL);
+    CU_SKIP_IF(file == BNULL);
     if (file)
     {
         CU_ASSERT(0 != Close(file));
@@ -70,14 +70,14 @@ void testCLOSE(void)
  */
 void testOPENR(void)
 {
-    CU_ASSERT(NULL != (file = Open( "T:cunit-dos-fileseek.txt", MODE_OLDFILE)));
+    CU_ASSERT(BNULL != (file = Open( "T:cunit-dos-fileseek.txt", MODE_OLDFILE)));
 }
 
 /* Simple test of Read().
  */
 void testREAD(void)
 {
-    CU_SKIP_IF(file == NULL);
+    CU_SKIP_IF(file == BNULL);
     if (file)
     {
         CU_ASSERT(7 == Read( file, buffer, 7 ));
@@ -88,7 +88,7 @@ void testREAD(void)
  */
 void testSEEK(void)
 {
-    CU_SKIP_IF(file == NULL);
+    CU_SKIP_IF(file == BNULL);
     if (file)
     {
         /* Seek() */
