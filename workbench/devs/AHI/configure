@@ -2304,6 +2304,14 @@ case $host in
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
   resident=""                                        stripflag=""
  ;;
+ i?86-*-aros)
+ : ${CPU="i486"}
+  cflags=""
+  optflags="-m32 -march=${CPU} -O2"
+  linkerflags=""
+  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
+  resident=""                                        stripflag=""
+ ;;
  m68k-unknown-amigaos)
   : ${CPU="68020-60"}
   cflags="-noixemul"
@@ -2312,6 +2320,16 @@ case $host in
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
   resident="-resident"
+  stripflag=""
+ ;;
+ m68k-unknown-aros)
+  : ${CPU="68020-60"}
+  cflags=""
+  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="-m${CPU}"
+  asCPU=`echo ${CPU} | sed 's/-.*//'`
+  asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
+  resident=""
   stripflag=""
  ;;
  powerpc-unknown-amigaos)
@@ -2339,14 +2357,6 @@ $as_echo "#define USE_INLINE_STDARG 1" >>confdefs.h
   asflags="-m${CPU} -mregnames --defsym CPU=${CPU}"
   resident="-mresident32"
   stripflag=""
- ;;
- i?86-*-aros)
- : ${CPU="i486"}
-  cflags=""
-  optflags="-m32 -march=${CPU} -O2"
-  linkerflags=""
-  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
-  resident=""                                        stripflag=""
  ;;
  x86_64-*-aros)
  : ${CPU="x86_64"}
