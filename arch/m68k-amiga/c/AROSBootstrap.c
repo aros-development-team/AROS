@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2020, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2022, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
@@ -26,6 +26,8 @@
 #include <hardware/cpu/memory.h>
 #include <libraries/configvars.h>
 
+#include <aros/bootstruct.h>
+
 /* This much memory is wasted in single reset proof allocation */
 #define ALLOCATION_EXTRA (sizeof(struct MemChunk))
 #define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
@@ -35,24 +37,6 @@
 
 #define SS_STACK_SIZE   0x2000
 #define MAGIC_FAST_SIZE 65536
-
-/* This structure must match with start.c! */
-#define ABS_BOOT_MAGIC 0x4d363802
-struct BootStruct
-{
-    ULONG magic;
-    struct ExecBase *RealBase;
-    struct ExecBase *RealBase2;
-    struct List *mlist;
-    struct TagItem *kerneltags;
-    struct Resident **reslist;
-    struct ExecBase *FakeBase;
-    APTR bootcode;
-    APTR ss_address;
-    LONG ss_size;
-    APTR magicfastmem;
-    LONG magicfastmemsize;
-};
 
 #define BMC_NAME_SIZE 14
 struct BootMemChunk

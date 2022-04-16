@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2022, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -10,6 +10,8 @@
 
 #include <exec/memory.h>
 #include <exec/alerts.h>
+
+#include <aros/bootstruct.h>
 
 #define RGB(r,g,b)	((((r) & 0xf) << 8) | (((g) & 0xf) << 4) | (((b) & 0xf) << 0))
 #define RGB_MASK	RGB(15, 15, 15)
@@ -28,23 +30,6 @@ void __attribute__((interrupt)) Early_Exception(void);
 
 APTR Early_AllocAbs(struct MemHeader *mh, APTR location, IPTR byteSize);
 
-/* Must match with AROSBootstrap.c! */
-#define ABS_BOOT_MAGIC 0x4d363802
-struct BootStruct
-{
-    ULONG magic;
-    struct ExecBase *RealBase;
-    struct ExecBase *RealBase2;
-    struct List *mlist;
-    struct TagItem *kerneltags;
-    struct Resident **reslist;
-    struct ExecBase *FakeBase;
-    APTR bootcode;
-    APTR ss_address;
-    LONG ss_size;
-    APTR magicfastmem;
-    LONG magicfastmemsize;
-};
 struct BootStruct *GetBootStruct(struct ExecBase *eb);
 
 #endif /* EARLY_H */
