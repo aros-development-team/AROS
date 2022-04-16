@@ -2807,6 +2807,10 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
+CONFIG_DT=`date -u "+%D %T"`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: date/time (UTC)... $CONFIG_DT" >&5
+$as_echo "$as_me: date/time (UTC)... $CONFIG_DT" >&6;}
+
 # Check what host we are running on.
 # If a target is not suggested, we use this one.
 # Note that what we call a target, Autoconf calls a host.

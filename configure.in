@@ -19,6 +19,9 @@ AC_PREREQ([2.69])
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 AC_CONFIG_MACRO_DIR(scripts/autoconf/m4)
 
+CONFIG_DT=`date -u "+%D %T"`
+AC_MSG_NOTICE([date/time (UTC)... $CONFIG_DT])
+
 # Check what host we are running on.
 # If a target is not suggested, we use this one.
 # Note that what we call a target, Autoconf calls a host.
