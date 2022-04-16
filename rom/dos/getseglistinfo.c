@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -63,7 +63,7 @@
         ObtainSemaphoreShared(&((struct IntDosBase *)DOSBase)->segsem);
         ForeachNode(&((struct IntDosBase *)DOSBase)->segdata, segnode)
         {
-            if (segnode->ln_Name == seglist)
+            if ((BPTR)segnode->ln_Name == seglist)
             {
                 segfound = segnode;
                 break;
