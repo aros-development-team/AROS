@@ -86,7 +86,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(ELF2HUNK) $(QE2H) "$(AROSDIR)" "$(AROSDIR).HUNK"
 	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
 	@$(RM) -rf "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)/aros.elf"
-	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_ARCH)/aros.hunk.gz" "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)"
+	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_ARCH)/aros.rom.gz" "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)"
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs"
 	@mkisofs -f \
 		-o $@ \

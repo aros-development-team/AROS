@@ -4,11 +4,14 @@ include $(SRCDIR)/config/aros.cfg
 .PHONY: $(DISTDIR)/system-amiga-m68k.adf $(GENDIR)/boot/system-amiga-m68k.adf
 
 #MM bootdisk-amiga-m68k-gen : \
+#MM           host-inflate-$(EBFPACKEDEXES) \
 #MM           kernel-link-amiga-m68k \
 #MM           workbench-c \
 #MM           workbench-devs \
 #MM           workbench-libs-version \
 #MM           workbench-s
+
+#MM- host-inflate-yes : host-inflate-exe-m68k
 
 #MM- bootdisk-amiga-m68k-quick : bootdisk-amiga-m68k
 #MM bootdisk-amiga-m68k : bootdisk-amiga-m68k-gen
@@ -17,38 +20,40 @@ include $(SRCDIR)/config/aros.cfg
 
 ELF2HUNK_FILES := \
     $(AROS_DIR_ARCH)/AROSBootstrap \
+    C/DiskChange \
+    C/LoadWB \
+    C/MakeDir \
+    C/MakeLink \
+    C/Touch \
+    Devs/DOSDrivers/PIPE \
+    Libs/version.library \
+    S/Shell-Startup
+
+INFLATE_FILES := \
     C/Assign \
     C/Avail \
     C/Copy \
     C/Date \
     C/Delete \
     C/Dir \
-    C/DiskChange \
     C/Eval \
     C/Filenote \
     C/IconX \
     C/Install \
     C/Join \
     C/List \
-    C/LoadWB \
-    C/MakeDir \
-    C/MakeLink \
     C/Mount \
     C/Protect \
     C/Relabel \
     C/Rename \
     C/Shutdown \
-    C/Touch \
     C/Type \
     C/Version \
     C/Wait \
-    C/Which \
-    Devs/DOSDrivers/PIPE \
-    Libs/version.library \
-    S/Shell-Startup
+    C/Which
 
 OTHER_FILES := \
-    $(AROS_DIR_ARCH)/aros.hunk.gz \
+    $(AROS_DIR_ARCH)/aros.rom.gz \
     Disk.info \
     README.txt \
     README.txt.info \
@@ -57,13 +62,42 @@ OTHER_FILES := \
 BOOT_SRC_DIR  := $(AROSDIR)
 BOOT_DEST_DIR := $(AROSDIR)/Emergency-Boot
 
+INFLATE_GENDIR := $(GENDIR)/$(CURDIR)/hunk
+
+EBFHUNKROM?=yes
 ELF2HUNK_DEST_FILES := $(addprefix $(BOOT_DEST_DIR)/,$(ELF2HUNK_FILES))
 OTHER_DEST_FILES := $(addprefix $(BOOT_DEST_DIR)/,$(OTHER_FILES))
+ifeq ($(EBFPACKEDEXES),yes)
+INFLATE_GEN_FILES := $(addprefix $(INFLATE_GENDIR)/,$(INFLATE_FILES))
+INFLATE_DEST_FILES := $(addprefix $(BOOT_DEST_DIR)/,$(INFLATE_FILES))
+BOOT_DEST_FILES := $(ELF2HUNK_DEST_FILES) $(INFLATE_DEST_FILES) $(OTHER_DEST_FILES)
+GZIPCMD:=$(TOOLDIR)/zopfli
+GZIPFLAGS:=--i1000
+ifeq ($(EBFHUNKROM),yes)
+EBFROMPACKCMD=$(GZIPCMD) $(GZIPFLAGS) $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.rom && $(RM) $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.rom
+EBFROMMVCMD=$(ELF2HUNK) $(QE2H) $< $@
+else
+EBFROMPACKCMD=$(GZIPCMD) $(GZIPFLAGS) $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.rom && $(RM) $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.rom
+EBFROMMVCMD=$(CP) $< $@
+endif
+EBFROMDEP:=$(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.rom
+else
+ELF2HUNK_DEST_FILES += $(addprefix $(BOOT_DEST_DIR)/,$(INFLATE_FILES))
 BOOT_DEST_FILES := $(ELF2HUNK_DEST_FILES) $(OTHER_DEST_FILES)
+GZIPCMD:=$(GZIP)
+GZIPFLAGS:=-9
+ifeq ($(EBFHUNKROM),yes)
+EBFROMPACKCMD=$(ELF2HUNK) $(QE2H) $< - | $(GZIPCMD) -c $(GZIPFLAGS) - >$@
+else
+EBFROMPACKCMD=$(GZIPCMD) -c $(GZIPFLAGS) $< >$@
+endif
+EBFROMDEP:=$(BOOT_SRC_DIR)/$(AROS_DIR_ARCH)/aros.elf
+endif
 
 # Create directories
 BOOT_DEST_DIRS := $(dir $(BOOT_DEST_FILES))
-GLOB_MKDIRS += $(BOOT_DEST_DIRS) $(DISTDIR) $(GENDIR)/boot
+INFLATE_GEN_DIRS :=  $(dir $(INFLATE_GEN_FILES))
+GLOB_MKDIRS += $(BOOT_DEST_DIRS) $(INFLATE_GEN_DIRS) $(DISTDIR) $(GENDIR)/boot
 
 #MM
 bootdisk-amiga-m68k-clean:
@@ -91,6 +125,13 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot |
 	@$(CP) $< $@
 	@$(CHMOD) +x $@
 
+$(INFLATE_GENDIR)/% : $(BOOT_SRC_DIR)/% | $(INFLATE_GEN_DIRS)
+	@$(ELF2HUNK) $(QE2H) $< $@
+
+$(INFLATE_DEST_FILES) :  $(BOOT_DEST_DIR)/% : $(INFLATE_GENDIR)/% | $(BOOT_DEST_DIRS)
+	%fileactionmsg msg="Deflating" file="$@"
+	@$(PYTHON) $(SRCDIR)/arch/m68k-all/inflate/pack_exe.py -q -s $< -d $@ -t $(TOOLDIR)/ -f $(TOOLDIR)/pack_exe/
+
 $(ELF2HUNK_DEST_FILES) : $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/% | $(BOOT_DEST_DIRS)
 	@$(ELF2HUNK) $(QE2H) $< $@
 
@@ -100,8 +141,11 @@ $(BOOT_DEST_DIR)/Disk.info: $(SRCDIR)/$(CURDIR)/AROSBoot.info.src $(SRCDIR)/$(CU
 $(BOOT_DEST_DIR).info: $(SRCDIR)/$(CURDIR)/Emergency-Boot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
 	@$(ILBMTOICON) $^ $@
 
-$(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.hunk.gz : $(BOOT_SRC_DIR)/$(AROS_DIR_ARCH)/aros.elf | $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)
-	@$(ELF2HUNK) $(QE2H) $< - | gzip -c -9 - >$@
+$(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.rom : $(BOOT_SRC_DIR)/$(AROS_DIR_ARCH)/aros.elf | $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)
+	$(EBFROMMVCMD)
+
+$(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.rom.gz : $(EBFROMDEP) | $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)
+	$(EBFROMPACKCMD)
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
 	echo $(GENDIR)/$(CURDIR)

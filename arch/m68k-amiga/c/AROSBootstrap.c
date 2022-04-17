@@ -607,7 +607,7 @@ static AROS_UFH3(void, aosFree,
 /* Backcalls for LoadSegment
  * using the gzip backend.
  */
-static AROS_UFH4(LONG, elfRead,
+static AROS_UFH4(LONG, LSRead,
     AROS_UFHA(BPTR,  file, D1),
     AROS_UFHA(void *, buf, D2),
     AROS_UFHA(LONG,  size, D3),
@@ -619,7 +619,7 @@ static AROS_UFH4(LONG, elfRead,
 
     AROS_USERFUNC_EXIT
 }
-static AROS_UFH4(LONG, elfSeek,
+static AROS_UFH4(LONG, LSSeek,
     AROS_UFHA(BPTR,  file, D1),
     AROS_UFHA(LONG,   pos, D2),
     AROS_UFHA(LONG,  mode, D3),
@@ -711,7 +711,7 @@ static APTR specialAlloc(ULONG size, ULONG flags, const char *name, BOOL resscan
     return mem + ALLOCATION_EXTRA;
 }
 
-static AROS_UFH3(APTR, elfAlloc,
+static AROS_UFH3(APTR, LSAlloc,
     AROS_UFHA(ULONG, size, D0),
     AROS_UFHA(ULONG, flags, D1),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -723,7 +723,7 @@ static AROS_UFH3(APTR, elfAlloc,
     AROS_USERFUNC_EXIT
 }
 
-static AROS_UFH3(void, elfFree,
+static AROS_UFH3(void, LSFree,
     AROS_UFHA(APTR, addr, A1),
     AROS_UFHA(ULONG, size, D0),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -763,10 +763,10 @@ static BPTR ROMLoad(BSTR bfilename)
     UBYTE *filename;
     BPTR rom = BNULL;
     SIPTR funcarray[] = {
-        (SIPTR)elfRead,
-        (SIPTR)elfAlloc,
-        (SIPTR)elfFree,
-        (SIPTR)elfSeek,
+        (SIPTR)LSRead,
+        (SIPTR)LSAlloc,
+        (SIPTR)LSFree,
+        (SIPTR)LSSeek,
     };
     filename = ConvertBSTR(bfilename);
     if (!filename)
