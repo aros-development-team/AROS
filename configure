@@ -812,6 +812,7 @@ aros_kernel_cc
 aros_kernel_cpp
 target_llvm_version
 target_gcc_version
+GZIP
 ant
 android_tool
 CCACHE
@@ -949,6 +950,7 @@ with_sdk
 with_ndk
 with_ndk_version
 with_apk_version
+enable_ebf_packed_exes
 enable_amigaos_compliance
 with_kernel_toolchain_prefix
 with_elf_toolchain_prefix
@@ -1648,6 +1650,9 @@ Optional Features:
                           (default=no).
   --enable-target-variant=NAME
                           Enable a specific target variant (default=none)
+  --enable-ebf-packed-exes
+                          Create self extracting compressed exes on the
+                          Emergency Boot Floppy
   --enable-amigaos-compliance=VERSION
                           Enforce userspace AmigaOS compliance to a specific
                           KickStart version (default=none).
@@ -6794,9 +6799,6 @@ if test "$pc_cv_python_module_mako" = "no"; then :
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "failed to detect mako templates
 See \`config.log' for more details" "$LINENO" 5; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
 fi
 
 
@@ -8308,8 +8310,8 @@ ignore_undefined_symbols=""
 # Check for X11 by default
 need_x11="auto"
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Which toolchain family to use ..." >&5
-$as_echo_n "checking Which toolchain family to use ...... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which toolchain family to use ..." >&5
+$as_echo_n "checking which toolchain family to use ...... " >&6; }
 
 # Check whether --with-toolchain was given.
 if test "${with_toolchain+set}" = set; then :
@@ -9674,8 +9676,114 @@ $as_echo "$darwin_sdk_path" >&6; }
         ;;
 
     amiga*)
+        # Extract the first word of "gzip", so it can be a program name with args.
+set dummy gzip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_GZIP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$GZIP"; then
+  ac_cv_prog_GZIP="$GZIP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_GZIP="gzip "
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+GZIP=$ac_cv_prog_GZIP
+if test -n "$GZIP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GZIP" >&5
+$as_echo "$GZIP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+        host_extra_cfg+="$export_newline""GZIP                          := $GZIP"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking if we should compress EBF executables" >&5
+$as_echo_n "checking if we should compress EBF executables... " >&6; }
+        # Check whether --enable-ebf-packed-exes was given.
+if test "${enable_ebf_packed_exes+set}" = set; then :
+  enableval=$enable_ebf_packed_exes; aros_pack_exes=$enableval
+else
+  aros_pack_exes="no"
+fi
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_pack_exes" >&5
+$as_echo "$aros_pack_exes" >&6; }
+        if test "$aros_pack_exes" = "yes" ; then
+                          { $as_echo "$as_me:${as_lineno-$LINENO}: checking if Python's crcmod is installed" >&5
+$as_echo_n "checking if Python's crcmod is installed... " >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Python 'crcmod' library" >&5
+$as_echo_n "checking for Python 'crcmod' library... " >&6; }
+if ${pc_cv_python_module_crcmod+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_ext=py
+ac_compile='chmod +x conftest.$ac_ext >&5'
+ac_link='chmod +x conftest.$ac_ext && cp conftest.$ac_ext conftest >&5'
+     if test "$cross_compiling" = yes; then :
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See \`config.log' for more details" "$LINENO" 5; }
+else
+  cat > conftest.$ac_ext <<_ACEOF
+#!$PYTHON
+import sys
+try:
+    import crcmod
+except:
+    sys.exit(1)
+else:
+    sys.exit(0)
+
+
+_ACEOF
+if ac_fn_py_try_run "$LINENO"; then :
+  pc_cv_python_module_crcmod="yes"
+else
+  pc_cv_python_module_crcmod="no"
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+     ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $pc_cv_python_module_crcmod" >&5
+$as_echo "$pc_cv_python_module_crcmod" >&6; }
+if test "$pc_cv_python_module_crcmod" = "no"; then :
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "failed to detect crcmod
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
+             aros_target_options="$aros_target_options$export_newline""EBFPACKEDEXES                 := yes$export_newline"
+        fi
         aros_elf_translate="$""(ELF2HUNK)"
-        make_extra_commands="$export_newline""ELF2HUNK	:= $""(TOOLDIR)/elf2hunk$""(HOST_EXE_SUFFIX)$export_newline"
+        make_extra_commands="$make_extra_commands$export_newline""ELF2HUNK	:= $""(TOOLDIR)/elf2hunk$""(HOST_EXE_SUFFIX)$export_newline"
         aros_target_arch="amiga"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
         aros_shared_default="no"
@@ -10158,8 +10266,8 @@ case "$aros_target_cpu" in
         aros_isa_extra="$aros_isa_extra$m68k_020_ldflags$export_newline$m68k_030_ldflags$export_newline$m68k_040_ldflags$export_newline$m68k_060_ldflags$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum CPU to use" >&5
-$as_echo_n "checking Which minimum CPU to use... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking which minimum CPU to use" >&5
+$as_echo_n "checking which minimum CPU to use... " >&6; }
 
 # Check whether --with-cpu was given.
 if test "${with_cpu+set}" = set; then :
@@ -10199,8 +10307,8 @@ $as_echo "$aros_gcc_cpu" >&6; }
 
         aros_target_nostartup_objects="$""(AROS_LIB)/arm-exidx-unwind.o"
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum CPU to use" >&5
-$as_echo_n "checking Which minimum CPU to use... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking which minimum CPU to use" >&5
+$as_echo_n "checking which minimum CPU to use... " >&6; }
 
 # Check whether --with-cpu was given.
 if test "${with_cpu+set}" = set; then :
@@ -10212,8 +10320,8 @@ fi
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
 $as_echo "$aros_gcc_cpu" >&6; }
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum FPU to use" >&5
-$as_echo_n "checking Which minimum FPU to use... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking which minimum FPU to use" >&5
+$as_echo_n "checking which minimum FPU to use... " >&6; }
 
 # Check whether --with-fpu was given.
 if test "${with_fpu+set}" = set; then :
@@ -10225,8 +10333,8 @@ fi
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_fpu" >&5
 $as_echo "$aros_gcc_fpu" >&6; }
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which floating point ABI to use" >&5
-$as_echo_n "checking Which floating point ABI to use... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking which floating point ABI to use" >&5
+$as_echo_n "checking which floating point ABI to use... " >&6; }
 
 # Check whether --with-float was given.
 if test "${with_float+set}" = set; then :
@@ -10238,8 +10346,8 @@ fi
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_float_abi" >&5
 $as_echo "$aros_gcc_float_abi" >&6; }
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which ARM mode to use" >&5
-$as_echo_n "checking Which ARM mode to use... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking which ARM mode to use" >&5
+$as_echo_n "checking which ARM mode to use... " >&6; }
         if test "$aros_target_cpu_mode" = ""; then
             aros_target_cpu_mode="arm32"
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: Defaulting to $aros_target_cpu_mode" >&5
@@ -10385,7 +10493,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_mesagl" >&5
 $as_echo "$aros_mesagl" >&6; }
-aros_target_options+="$export_newline""# Enable MesaGL$export_newline""OPT_MESAGL               := $aros_mesagl$export_newline"
+aros_target_options+="$export_newline""# Enable MesaGL$export_newline""OPT_MESAGL                    := $aros_mesagl$export_newline"
 
 # Find out if we are cross-compiling (i.e. if we can't use the host compiler
 # for target code)
