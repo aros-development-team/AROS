@@ -1078,7 +1078,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
     {
         if (flags & F_ELFFALLBACK)
         {
-            bug("WARNING: copying ELF file due to %u hunk failure(s).\n", failcnt);
+            bug("WARNING: copying ELF file to %s, due to %u hunk failure(s).\n", target, failcnt);
             lseek(file, 0, SEEK_SET);
             lseek(hunk_fd, 0, SEEK_SET);
             return (copy_to(file, hunk_fd) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
