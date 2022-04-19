@@ -560,9 +560,9 @@ id:KEY37_descr
 '7', '7', '7', '7'
 '8', '8', '8', '8'
 '9', '9', '9', '9'
-## end lokeymaptypes
+## end lokeymap
 
-## begin hikeymaptypes
+## begin hikeymap
 id:space_descr
 8, 8, 8, 8
 id:tab_descr
