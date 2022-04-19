@@ -285,6 +285,13 @@ static void set_error(int err)
 static int must_swap = -1;
 static int flags = 0;
 
+static unsigned int alignedLen(unsigned int len)
+{
+    if (len & 0x3)
+       len += 4;
+    return len >> 2;
+}
+
 static void eh_fixup(struct elfheader *eh)
 {
     /* Endian swaps */
@@ -665,7 +672,7 @@ int write_hunksymbols(int hunk_fd, struct sheader *sh, struct hunkheader **hh, i
     for (i = 0; i < syms ; i++) {
         struct symbol s;
         const char *name;
-        int lsize;
+        int lsize, nlen;
 
         s = sym[i];
         sym_fixup(&s);
@@ -675,7 +682,8 @@ int write_hunksymbols(int hunk_fd, struct sheader *sh, struct hunkheader **hh, i
 
         name = (const char *)(hh[symtab->link]->data + s.name);
         D(bug("\t0x%08x: %s\n", (int)s.value, name));
-        lsize = (strlen(name) + 4) / 4;
+        nlen = strlen(name) + 1;
+        lsize = alignedLen(nlen);
         wlong(hunk_fd, lsize);
         err = write(hunk_fd, name, lsize * 4);
         if (err < 0)
@@ -963,9 +971,10 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
         D(bug("HUNK_HEADER: hunks=%d, first=%d, last=%d\n", hunks, 0, hunks-1));
         wlong(hunk_fd, 0);      /* No name */
     } else {
-        int lsize;
+        int lsize, nlen;
         D(bug("HUNK_HEADER: \"%s\", hunks=%d, first=%d, last=%d\n", libname, hunks, 0, hunks-1));
-        lsize = (strlen(libname) + 4) / 4;
+        nlen = strlen(libname) + 1;
+        lsize = alignedLen(nlen);
         wlong(hunk_fd, lsize);
         err = write(hunk_fd, libname, lsize * 4);
         if (err < 0)
@@ -982,7 +991,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
         if (hh[i]==NULL || hh[i]->hunk < 0)
             continue;
 
-        count = (hh[i]->size + 4) / 4;
+        count = alignedLen(hh[i]->size);
         switch (hh[i]->memflags) {
         case MEMF_CHIP:
             count |= HUNKF_CHIP;
@@ -997,7 +1006,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
             break;
         }
 
-        D(bug("\tHunk #%d, %s, lsize=%d\n", hh[i]->hunk, names[hh[i]->type - HUNK_CODE], (int)(hh[i]->size+4)/4));
+        D(bug("\tHunk #%d, %s, lsize=%d\n", hh[i]->hunk, names[hh[i]->type - HUNK_CODE], (int)(count & ~0xC0000000)));
         wlong(hunk_fd, count);
 
         if ((count & HUNKF_MEMFLAGS) == HUNKF_MEMFLAGS)
@@ -1007,18 +1016,20 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
     int failcnt = 0;
     /* Write all hunks */
     for (i = hunks = 0; i < int_shnum; i++) {
+        int count;
         D(int s;)
 
         if (hh[i]==NULL || hh[i]->hunk < 0)
             continue;
 
+        count = alignedLen(hh[i]->size);
         wlong(hunk_fd, hh[i]->type);
-        wlong(hunk_fd, (hh[i]->size + 4) / 4);
+        wlong(hunk_fd, count);
 
         switch (hh[i]->type) {
         case HUNK_BSS:
             D(
-                bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4));
+                bug("HUNK_BSS: %d longs\n", count);
                 for (s = 0; s < int_shnum; s++) {
                     if (hh[s] && hh[s]->type == HUNK_SYMBOL)
                         write_hunksymbols(hunk_fd, sh, hh, i, s);
@@ -1032,8 +1043,9 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
         case HUNK_DATA:
             {
                 int relocfails;
-                D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
-                err = write(hunk_fd, hh[i]->data, ((hh[i]->size + 4)/4)*4);
+
+                D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", count));
+                err = write(hunk_fd, hh[i]->data, count*4);
                 if (err < 0)
                     return EXIT_FAILURE;
                 D(
@@ -1045,8 +1057,8 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
                 if ((relocfails = write_hunkrelocs(hunk_fd, hh, i)) > 0)
                 {
                     bug("%d relocation(s) failed in HUNK #%d of %s\n", relocfails, hh[i]->hunk, target);
+                    failcnt += 1;
                 }
-                failcnt += 1;
                 wlong(hunk_fd, HUNK_END);
                 D(bug("\tHUNK_END\n"));
             }
