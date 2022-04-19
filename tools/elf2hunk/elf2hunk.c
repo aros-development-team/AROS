@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #define PROTOTYPES
@@ -24,6 +24,7 @@
 
 #define F_VERBOSE       (1 << 0)
 #define F_NOCONVERT     (1 << 1)
+#define F_ELFFALLBACK   (1 << 2)
 
 #if defined(__GNUC__)&&defined(WIN32)
 #include <winsock2.h>
@@ -427,16 +428,16 @@ static int load_header(int file, struct elfheader *eh)
     /* WANT_CLASS should be defined for your target */
     if (eh->ident[EI_CLASS]   != AROS_ELF_CLASS  ||
         eh->ident[EI_VERSION] != EV_CURRENT      ||
-        eh->type              != ET_REL          ||
         eh->ident[EI_DATA]    != AROS_ELF_DATA   ||
-        eh->machine           != AROS_ELF_MACHINE)
+        eh->type              != ET_REL          ||
+        eh->machine != AROS_ELF_MACHINE)
     {
         D(bug("[ELF2HUNK] Object is of wrong type\n"));
         D(bug("[ELF2HUNK] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS]  , AROS_ELF_CLASS ));
         D(bug("[ELF2HUNK] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT     ));
-        D(bug("[ELF2HUNK] type       is %d - should be %d\n", eh->type             , ET_REL         ));
         D(bug("[ELF2HUNK] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA]   , AROS_ELF_DATA  ));
-        D(bug("[ELF2HUNK] machine    is %d - should be %d\n", eh->machine          , AROS_ELF_MACHINE));
+        D(bug("[ELF2HUNK] type       is %04x - should be %04x\n", eh->type             , ET_REL         ));
+        D(bug("[ELF2HUNK] machine    is %04x - should be %04x\n", eh->machine          , AROS_ELF_MACHINE));
 
         set_error(ENOEXEC);
         return 0;
@@ -689,7 +690,7 @@ int write_hunksymbols(int hunk_fd, struct sheader *sh, struct hunkheader **hh, i
 static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
 {
     int relreloc_failed = 0;
-    int relreloc_needed = 0;
+    int relreloc_needed = 0, written = 0;
     int i;
 
     if (hh[h]->relocs == 0)
@@ -721,7 +722,7 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
     wlong(hunk_fd, 0);
 
     wlong(hunk_fd, HUNK_RELRELOC32);
-    D(bug("\tHUNK_RELRELOC32: %d relocations\n", (int)hh[h]->relrelocs));
+    written = 4;
 
     for (i = 0; i < hh[h]->relrelocs; ) {
         int count;
@@ -730,52 +731,63 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
             if (hh[h]->relreloc[count].shid != shid)
                 break;
         count -= i;
+#if (0)            
         if (h == shid) {
             D(bug("RELRELOC32 within one hunk. Discarding...\n"));
             i+=count;
             continue;
         }
+#endif
         if (count > 65535)
+        {
             bug("RELRELOC32 count exceeds 65535!\n");
-        wshort(hunk_fd, count);
-        D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
-        /* Convert from ELF hunk ID to AOS hunk ID */
-        wshort(hunk_fd, hh[shid]->hunk);
-        for (; count > 0; i++, count--) {
-            D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
-            if (hh[h]->relreloc[i].offset > 65535)
-            {
-                if (flags & F_VERBOSE)
+            relreloc_failed++;
+        }
+        else
+        {
+            wshort(hunk_fd, count);
+            written += 2;
+            D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
+            /* Convert from ELF hunk ID to AOS hunk ID */
+            wshort(hunk_fd, hh[shid]->hunk);
+            written += 2;
+            for (; count > 0; i++, count--) {
+                D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
+                if (hh[h]->relreloc[i].offset > 65535)
                 {
-                    bug("relocation offset %d is too big for RELRELOC32\n", hh[h]->relreloc[i].offset);
-                    if ((hh[h]->relreloc[i].symbol) && (strlen(hh[h]->relreloc[i].symbol) > 0))
+                    if (flags & F_VERBOSE)
                     {
-                        bug("  -> failed to relocate symbol '%s'\n", hh[h]->relreloc[i].symbol);
+                        bug("relocation offset %d is too big for RELRELOC32\n", hh[h]->relreloc[i].offset);
+                        if ((hh[h]->relreloc[i].symbol) && (strlen(hh[h]->relreloc[i].symbol) > 0))
+                        {
+                            bug("  -> failed to relocate symbol '%s'\n", hh[h]->relreloc[i].symbol);
+                        }
                     }
+                    relreloc_failed++;
                 }
-                relreloc_failed++;
+                wshort(hunk_fd, hh[h]->relreloc[i].offset);
+                written += 2;
+                relreloc_needed++;
             }
-            wshort(hunk_fd, hh[h]->relreloc[i].offset);
-            relreloc_needed++;
         }
     }
 
     /* If no relrelocs were required, rewind the counter back so that there is no HUNK_RELRELOC32 in the file */
     if (relreloc_needed == 0)
     {
-        D(bug("No relreloc32 written, rewinding file back\n"));
-        lseek(hunk_fd, -4, SEEK_CUR);
+        D(bug("No relreloc32 written, rewinding file back %d bytes\n", -written));
+        lseek(hunk_fd, -written, SEEK_CUR);
     }
     else
     {
         /* Otherwise mark end of the RELRELOC32 by a reloc count of 0 */
         wshort(hunk_fd, 0);
-
         /* If file is now not aligned on 4 bytes, align it */
         if (lseek(hunk_fd, 0, SEEK_CUR) % 4)
         {
             wshort(hunk_fd, 0);
         }
+        D(bug("\tHUNK_RELRELOC32: %d relocations\n", (int)hh[h]->relrelocs));
     }
     return relreloc_failed;
 }
@@ -992,6 +1004,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
             wlong(hunk_fd, hh[i]->memflags | MEMF_PUBLIC | MEMF_CLEAR);
     }
 
+    int failcnt = 0;
     /* Write all hunks */
     for (i = hunks = 0; i < int_shnum; i++) {
         D(int s;)
@@ -1018,7 +1031,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
         case HUNK_CODE:
         case HUNK_DATA:
             {
-                int failcnt;
+                int relocfails;
                 D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
                 err = write(hunk_fd, hh[i]->data, ((hh[i]->size + 4)/4)*4);
                 if (err < 0)
@@ -1029,17 +1042,19 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
                             write_hunksymbols(hunk_fd, sh, hh, i, s);
                     }
                 )
-                if ((failcnt = write_hunkrelocs(hunk_fd, hh, i)) > 0)
+                if ((relocfails = write_hunkrelocs(hunk_fd, hh, i)) > 0)
                 {
-                    bug("%d relocation(s) failed in HUNK #%d of %s\n", failcnt, hh[i]->hunk, target);
+                    bug("%d relocation(s) failed in HUNK #%d of %s\n", relocfails, hh[i]->hunk, target);
                 }
+                failcnt += 1;
                 wlong(hunk_fd, HUNK_END);
                 D(bug("\tHUNK_END\n"));
             }
             break;
         default:
             D(bug("Unsupported allocatable hunk type %d\n", (int)hh[i]->type));
-            return EXIT_FAILURE;
+            failcnt += 1;
+            break;
         }
     }
 
@@ -1059,7 +1074,21 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
     if (strtab)
         free(strtab);
 
-    D(bug("All good, all done.\n"));
+    if (failcnt > 0)
+    {
+        if (flags & F_ELFFALLBACK)
+        {
+            bug("WARNING: copying ELF file due to %u hunk failure(s).\n", failcnt);
+            lseek(file, 0, SEEK_SET);
+            lseek(hunk_fd, 0, SEEK_SET);
+            return (copy_to(file, hunk_fd) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+        }
+        else retval = EXIT_FAILURE;
+    }
+    else
+    {
+        D(bug("All good, all done.\n"));
+    }
     return retval;
 
 error:
@@ -1183,10 +1212,11 @@ int main(int argc, char **argv)
         argc--;
         argv++;
     }
+    flags |= F_ELFFALLBACK;
 
     if (argc != 3) {
-        fprintf(stderr, "Usage:\n%s file.elf file.hunk\n", argv[0]);
-        fprintf(stderr, "%s src-dir dest-dir\n", argv[0]);
+        fprintf(stderr, "Usage:\n%s [-v] file.elf file.hunk\n", argv[0]);
+        fprintf(stderr, "%s -v src-dir dest-dir\n", argv[0]);
         return EXIT_FAILURE;
     }
 

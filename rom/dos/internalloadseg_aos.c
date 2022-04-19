@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -332,86 +332,95 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_RELRELOC32:
-        D(bug("HUNK_RELRELOC32:\n"));
-        while (1)
         {
-          ULONG *addr, val;
-          UWORD offset;
-
-          if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
-            goto end;
-          if (wcount == 0L)
-            break;
-
-          wcount = AROS_BE2WORD(wcount);
-
-          i = wcount;
-          if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
-            goto end;
-
-          wcount = AROS_BE2WORD(wcount);
-
-          D(bug("\tHunk #%ld:\n", wcount));
-          while (i > 0)
+          ULONG Wordcount = 0;
+          D(bug("HUNK_RELRELOC32:\n"));
+          while (1)
           {
-            if (read_block_buffered(fh, &offset, sizeof(offset), funcarray, srb, DOSBase))
+            ULONG *addr, val;
+            UWORD offset;
+
+            Wordcount++;
+            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
+              goto end;
+            if (wcount == 0L)
+              break;
+
+            wcount = AROS_BE2WORD(wcount);
+
+            i = wcount;
+            Wordcount++;
+            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
               goto end;
 
-            offset = AROS_BE2WORD(offset);
+            wcount = AROS_BE2WORD(wcount);
 
-            //D(bug("\t\t0x%06lx\n", offset));
-            addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
+            D(bug("\tHunk #%ld:\n", wcount));
+            while (i > 0)
+            {
+              Wordcount++;
+              if (read_block_buffered(fh, &offset, sizeof(offset), funcarray, srb, DOSBase))
+                goto end;
 
-            val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(wcount) - GETHUNKPTR(lasthunk));
+              offset = AROS_BE2WORD(offset);
 
-            *addr = (ULONG)AROS_LONG2BE(val);
+              //D(bug("\t\t0x%06lx\n", offset));
+              addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
-            --i;
+              val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(wcount) - GETHUNKPTR(lasthunk));
+
+              *addr = (ULONG)AROS_LONG2BE(val);
+
+              --i;
+            }
+          }
+          /* if the amount of words read was odd, then skip the following
+           16-bit word   */
+          if (0x1 == (Wordcount & 0x1)) {
+            read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase);
           }
         }
       break;
-        
+
       case HUNK_ABSRELOC16:
       case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
         {
           ULONG Wordcount = 0;
-          ULONG offset;
 
           while (1)
           {
             ULONG *addr, val;
-            UWORD word;
-            
+            ULONG offset;
+
             Wordcount++;
-            
-            if (read_block_buffered(fh, &word, sizeof(word), funcarray, srb, DOSBase))
+            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
               goto end;
-            if (word == 0L)
+            if (wcount == 0L)
               break;
 
-            word = AROS_BE2LONG(word);
+            wcount = AROS_BE2LONG(wcount);
 
-            i = word;
+            i = wcount;
             Wordcount++;
-            if (read_block_buffered(fh, &word, sizeof(word), funcarray, srb, DOSBase))
+            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
               goto end;
 
-            word = AROS_BE2WORD(word);
+            wcount = AROS_BE2WORD(wcount);
 
-            lcount = word;
+            lcount = wcount;
             D(bug("\tHunk #%ld @%p: %ld relocations\n", lcount, GETHUNKPTR(lasthunk), i));
             while (i > 0)
             {
-              Wordcount++;
               /* read a 16bit number (2 bytes) */
-              if (read_block_buffered(fh, &word, sizeof(word), funcarray, srb, DOSBase))
+              Wordcount++;
+              if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
                 goto end;
 
               /* offset now contains the byte offset in it`s 16 highest bits.
                  These 16 highest bits have to become the 16 lowest bits so
                  we get the word we need.  */
-              offset = AROS_BE2WORD(word);
+              offset = AROS_BE2WORD(wcount);
 
               D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(lcount)));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
@@ -433,8 +442,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           /* if the amount of words read was odd, then skip the following
            16-bit word   */
           if (0x1 == (Wordcount & 0x1)) {
-            UWORD word;
-            read_block_buffered(fh, &word, sizeof(word), funcarray, srb, DOSBase);
+            read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase);
           }
         }
       break;
