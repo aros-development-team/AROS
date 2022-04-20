@@ -204,7 +204,7 @@ static Object *LoadDTPicture(CONST_STRPTR filename, struct Screen *scr, BOOL dtD
         struct BitMapHeader *bmhd = NULL;
         struct FrameInfo fri = { 0 };
 
-        GetDTAttrs(o, PDTA_BitMapHeader, (IPTR) & bmhd, TAG_DONE);
+        GetDTAttrs(o, PDTA_BitMapHeader, (IPTR) &bmhd, TAG_DONE);
         if ((bmhd) && (bmhd->bmh_Masking == mskHasAlpha))
         {
             if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15)
