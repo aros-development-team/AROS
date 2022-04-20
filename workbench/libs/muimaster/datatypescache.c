@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2022, The AROS Development Team. All rights reserved.
 
 */
 
@@ -205,7 +205,7 @@ static Object *LoadDTPicture(CONST_STRPTR filename, struct Screen *scr, BOOL dtD
         struct FrameInfo fri = { 0 };
 
         GetDTAttrs(o, PDTA_BitMapHeader, (IPTR) & bmhd, TAG_DONE);
-        if (bmhd->bmh_Masking == mskHasAlpha)
+        if ((bmhd) && (bmhd->bmh_Masking == mskHasAlpha))
         {
             if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15)
             {
