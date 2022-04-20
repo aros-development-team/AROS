@@ -1,8 +1,7 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2022, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 #include <aros/atomic.h>
 

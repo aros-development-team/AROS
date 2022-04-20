@@ -1,4 +1,4 @@
-#define DEBUG 1
+
 #include <math.h>   // smallpt, a Path Tracer by Kevin Beason, 2008 
 #include <stdlib.h>
 #include <exec/types.h>
