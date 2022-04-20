@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
 
     Disk cache.
  */
@@ -299,25 +299,27 @@ BOOL Cache_Flush(APTR cache)
         != NULL && error == 0)
     {
         /* Write dirty block range to disk */
-
         b = NODE2(n);
-        td_error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size,
-            b->data, c->priv);
-
-        /* Transfer block range to free list if unused, or put back on dirty
-         * list upon an error */
-
-        if(td_error == 0)
+        if (b)
         {
-            b->state = BS_VALID;
-            if(b->use_count == 0)
-                AddTail((struct List *)&c->free_list,
-                    (struct Node *)&b->node2);
-        }
-        else
-        {
-            AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
-            error = ERROR_UNKNOWN;
+            td_error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size,
+                b->data, c->priv);
+
+            /* Transfer block range to free list if unused, or put back on dirty
+             * list upon an error */
+
+            if(td_error == 0)
+            {
+                b->state = BS_VALID;
+                if(b->use_count == 0)
+                    AddTail((struct List *)&c->free_list,
+                        (struct Node *)&b->node2);
+            }
+            else
+            {
+                AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
+                error = ERROR_UNKNOWN;
+            }
         }
     }
 
