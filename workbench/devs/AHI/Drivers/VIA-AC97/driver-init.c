@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
 */
 
 #ifdef __AROS__
@@ -58,7 +58,7 @@ DriverInit( struct DriverBase* ahisubbase )
     struct List         foundCards;
     struct Node         *devTmp;
 
-    bug("[VIA-AC97]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[VIA-AC97]: %s()\n", __func__);)
 
     CardBase->driverdatas = 0;
     CardBase->cards_found = 0;
@@ -96,7 +96,7 @@ DriverInit( struct DriverBase* ahisubbase )
     vendor_device_list[0].device = DEVICE_ID;
     vendor_device_list_size++;
 
-    bug("vendor_device_list_size = %ld\n", vendor_device_list_size);
+    D(bug("vendor_device_list_size = %ld\n", vendor_device_list_size);)
 
     CardBase->cards_found = 0;
     dev = NULL;
@@ -107,7 +107,7 @@ DriverInit( struct DriverBase* ahisubbase )
         
         if (dev != NULL)
         {
-            bug("[VIA-AC97] %s: Found VIA-AC97 #%d [%4x:%4x] pci obj @ 0x%p\n", __PRETTY_FUNCTION__, i, vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
+            D(bug("[VIA-AC97] %s: Found VIA-AC97 #%d [%4x:%4x] pci obj @ 0x%p\n", __func__, i, vendor_device_list[i].vendor, vendor_device_list[i].device, dev);)
             ++CardBase->cards_found;
 
             devTmp = AllocVec(sizeof(struct Node), MEMF_CLEAR);
@@ -121,7 +121,7 @@ DriverInit( struct DriverBase* ahisubbase )
 
     if(CardBase->cards_found == 0 )
     {
-        DebugPrintF("No VIA-AC97 found! :-(\n");
+        D(DebugPrintF("No VIA-AC97 found! :-(\n");)
 #if defined(VERBOSE_REQ)
         Req( "No card present.\n" );
 #endif
@@ -148,14 +148,14 @@ DriverInit( struct DriverBase* ahisubbase )
         Remove(devTmp);
 
         dev = (struct PCIDevice *)devTmp->ln_Name;
-        bug("[VIA-AC97] %s: Preparing card #%d pci obj @ 0x%p\n", __PRETTY_FUNCTION__, card_no, dev);
+        D(bug("[VIA-AC97] %s: Preparing card #%d pci obj @ 0x%p\n", __func__, card_no, dev);)
         CardBase->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
         
         FreeVec(devTmp);
         ++card_no;
     }
 
-    bug("[VIA-AC97] %s: Done.\n", __PRETTY_FUNCTION__);
+    D(bug("[VIA-AC97] %s: Done.\n", __func__);)
 
     return TRUE;
 }
@@ -171,7 +171,7 @@ DriverCleanup( struct DriverBase* AHIsubBase )
   struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
   int i;
 
-    bug("[VIA-AC97]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[VIA-AC97]: %s()\n", __func__);)
 
   for( i = 0; i < CardBase->cards_found; ++i )
   {
