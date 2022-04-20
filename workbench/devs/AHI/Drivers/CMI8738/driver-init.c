@@ -11,7 +11,11 @@ The Original Code is written by Davy Wentzler.
 
 #ifdef __AROS__
 #include <aros/debug.h>
+#if defined(DEBUG) && (DEBUG > 0)
 #define DebugPrintF bug
+#else
+#define DebugPrintF(...)
+#endif
 #endif
 
 #include <exec/memory.h>

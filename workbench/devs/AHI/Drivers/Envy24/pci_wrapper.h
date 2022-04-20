@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2022, The AROS Development Team. All rights reserved.
 */
 
 #ifndef PCI_WRAPPER_H
@@ -178,7 +178,11 @@ ULONG ahi_pci_mem_map(APTR addr, APTR dev);
 
 #ifdef __AROS__
 #include <aros/debug.h>
+#if defined(DEBUG) && (DEBUG > 0)
 #define DebugPrintF bug
+#else
+#define DebugPrintF(...)
+#endif
 #define NT_EXTINTERRUPT NT_INTERRUPT
 #endif
 
