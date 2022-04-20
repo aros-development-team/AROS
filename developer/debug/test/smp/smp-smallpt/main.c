@@ -370,7 +370,10 @@ int main()
                                 break;
 
                             default:
-                                D(bug("[SMP-Smallpt] %s: unhandled message (%d) arrived\n", __func__, msg->mm_Type);)
+                                {
+                                    D(bug("[SMP-Smallpt] %s: unhandled message (%d) arrived\n", __func__, msg->mm_Type);)
+                                }
+                                break;
                         }
                         ReplyMsg(&msg->mm_Message);
                     }
