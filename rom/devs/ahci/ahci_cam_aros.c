@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2020, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2022, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -291,13 +291,13 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
         pp[1]               = (IPTR)MOD_NAME_STRING;
         pp[2]               = unit->au_UnitNum;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
-        pp[DE_SIZEBLOCK    + 4] = at->at_identify.sector_size;
+        pp[DE_SIZEBLOCK    + 4] = at->at_identify.sector_size >> 2;
         pp[DE_NUMHEADS     + 4] = at->at_identify.nheads;
         pp[DE_SECSPERBLOCK + 4] = 1;
         pp[DE_BLKSPERTRACK + 4] = at->at_identify.nsectors;
         pp[DE_RESERVEDBLKS + 4] = 2;
         pp[DE_LOWCYL       + 4] = 0;
-        pp[DE_HIGHCYL      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? (at->at_identify.ncyls-1) : 0;
+        pp[DE_HIGHCYL      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? (at->at_identify.ncyls - 1) : 0;
         pp[DE_NUMBUFFERS   + 4] = 10;
         pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
         pp[DE_MAXTRANSFER  + 4] = 0x00200000;
