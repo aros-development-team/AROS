@@ -233,6 +233,21 @@ tools-crosstools-mpc :
 
 ## Binutils ###
 
+BINUTILS_MAINPATCHSPECS = $(crosstools-binutils--archbase)-aros.diff:$(crosstools-binutils--srcdir):-f,-p1
+ifeq ($(AROS_TARGET_CPU),m68k)
+AMIGAHUNKPATCH := $(call WILDCARD, binutils-$(BINUTILS_VERSION)-amigaoshunk.diff)
+APOLLOPATCH := $(call WILDCARD, binutils-$(BINUTILS_VERSION)-68080.diff)
+ifneq ($(AMIGAHUNKPATCH),)
+BINUTILS_AMIGAHUNKPATCHSPECS = $(crosstools-binutils--archbase)-amigaoshunk.diff:$(crosstools-binutils--srcdir):-f,-p1
+endif
+ifneq ($(APOLLOPATCH),)
+BINUTILS_APOLLOPATCHSPECS = $(crosstools-binutils--archbase)-68080.diff:$(crosstools-binutils--srcdir):-f,-p1
+endif
+BINUTILS_EXTRAPATCHSPECS = $(BINUTILS_AMIGAHUNKPATCHSPECS) $(BINUTILS_APOLLOPATCHSPECS)
+endif
+BINUTILS_PATCHSPECS = $(strip $(BINUTILS_MAINPATCHSPECS) $(BINUTILS_EXTRAPATCHSPECS))
+
+# 	    $(find $(HOSTDIR)/Ports/host/binutils/binutils-$(BINUTILS_VERSION)/ -name *.info -print -exec touch {};)
 #MM
 tools-crosstools-binutils :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
@@ -240,12 +255,12 @@ tools-crosstools-binutils :
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/binutils/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-binutils--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-binutils--build_and_install-quick \
-	    && $(TOUCH) $(binutils-installflag) ; \
+		&& $(TOUCH) $(binutils-installflag) ; \
 	fi
 
 %fetch_and_build mmake=crosstools-binutils package=binutils version=$(BINUTILS_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/binutils" \
-	patch=yes \
+	patch=yes patches_specs=$(BINUTILS_PATCHSPECS) \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="$(BINUTILS_EXTRA_OPTS)"
 
