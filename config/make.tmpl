@@ -4259,7 +4259,7 @@ endif
 #    - create_pkg       = create a distributable package of the compiled sources, defaults to no
 
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target crossbuild=no install_target=install \
-    version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir="$(CURDIR)" package_repo= patch=no patch_repo= \
+    version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir="$(CURDIR)" package_repo= patch=no patch_repo= patches_specs= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
     extraoptions= \
     usecppflags=yes extracppflags= \
@@ -4275,42 +4275,46 @@ endif
 #MM- %(mmake)-create-patch : %(mmake)-%(subpackage)-create-patch
 #MM- %(mmake)-create-patch-quick : %(mmake)-%(subpackage)-create-patch
  
-%(mmake)-archbase                        := %(package)-%(version)
+%(mmake)-archbase                        ?= %(package)-%(version)
 
 ifeq (%(compiler),host)
-    %(mmake)-portdir                     := $(HOSTDIR)/Ports/host/%(package)
+    %(mmake)-portdir                     ?= $(HOSTDIR)/Ports/host/%(package)
 else
-    %(mmake)-portdir                     := $(PORTSDIR)/%(package)
+    %(mmake)-portdir                     ?= $(PORTSDIR)/%(package)
 endif
 
 ifeq (%(prefix),)
-    %(mmake)-prefix                      := $(CONTRIB_DIR)/%(package)
+    %(mmake)-prefix                      ?= $(CONTRIB_DIR)/%(package)
 else
-    %(mmake)-prefix                      := %(prefix)
+    %(mmake)-prefix                      ?= %(prefix)
 endif
 
 ifneq (%(subpackage),)
-    %(mmake)-%(subpackage)-archbase      := %(package)-%(subpackage)-%(version)
+    %(mmake)-%(subpackage)-archbase      ?= %(package)-%(subpackage)-%(version)
 else
-    %(mmake)-%(subpackage)-archbase      := %(package)-%(version)
+    %(mmake)-%(subpackage)-archbase      ?= %(package)-%(version)
 endif
 
 ifneq (%(srcdir),)
-    %(mmake)-%(subpackage)-srcdir        := %(srcdir)
+    %(mmake)-%(subpackage)-srcdir        ?= %(srcdir)
 else
-    %(mmake)-%(subpackage)-srcdir        := $(%(mmake)-archbase)
+    %(mmake)-%(subpackage)-srcdir        ?= $(%(mmake)-archbase)
 endif
 
 ifneq (%(builddir),)
-    %(mmake)-%(subpackage)-builddir      := $(%(mmake)-%(subpackage)-srcdir)/%(builddir)
+    %(mmake)-%(subpackage)-builddir      ?= $(%(mmake)-%(subpackage)-srcdir)/%(builddir)
 else
-    %(mmake)-%(subpackage)-builddir      := $(%(mmake)-%(subpackage)-srcdir)
+    %(mmake)-%(subpackage)-builddir      ?= $(%(mmake)-%(subpackage)-srcdir)
 endif
 
+ifeq (%(patches_specs),)
 ifeq (%(patch),yes)
-    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-f,-p1
+    %(mmake)-%(subpackage)-patches_specs ?= $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-f,-p1
 else
-    %(mmake)-%(subpackage)-patches_specs := ::
+    %(mmake)-%(subpackage)-patches_specs ?= ::
+endif
+else
+    %(mmake)-%(subpackage)-patches_specs ?= %(patches_specs)
 endif
 
 %fetch mmake="%(mmake)-%(subpackage)-fetch" archive="$(%(mmake)-%(subpackage)-archbase)" suffixes="%(suffixes)" \
