@@ -4,7 +4,6 @@
     Desc: i386/x86_64 native PCI device support routines.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/kernel.h>
