@@ -12,7 +12,7 @@
 #include "kernel_debug.h"
 
 #include "apic.h"
-#include "i8259a.h"
+#include "pic_i8259a.h"
 
 #define D(x)
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/asmcall.h>
@@ -23,7 +23,7 @@
 #include "acpi.h"
 #include "apic.h"
 #include "apic_ia32.h"
-#include "i8259a.h"
+#include "pic_i8259a.h"
 
 #define D(x)
 

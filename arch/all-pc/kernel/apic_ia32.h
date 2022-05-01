@@ -1,7 +1,7 @@
 #ifndef APIC_IA32_H
 #define APIC_IA32_H
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IA-32 APIC hardware definitions.
@@ -10,7 +10,7 @@
 
 #include <aros/cpu.h>
 
-#include "i8259a.h"
+#include "pic_i8259a.h"
 
 // From CPU and LAPIC point of view we have 256 interrupt vectors. The first 32 are reserved
 // for CPU exceptions. Further, there are 16 vectors reserved for legacy XT-PIC (which can be

@@ -1,23 +1,24 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Hardware management routines for IBM PC-AT timer
 */
 
 #include <aros/debug.h>
 
-#include <asm/io.h>
 #include <proto/exec.h>
 #include <proto/execlock.h>
+#include <proto/kernel.h>
+
+#include <asm/io.h>
+#include <resources/kernel.h>
 
 #include "ticks.h"
 #include "timer_macros.h"
 
 /*
- * This code uses two channels of the PIT for simplicity:
+ * This code uses one channel of the PIT for simplicity:
  * Channel 0 - sends IRQ 0 on terminal count. We use it as alarm clock.
- * Channel 2 is used as EClock counter. It counts all the time and is never reloaded.
- *           We initialize it in timer_init.c.
  */
 
 /*
@@ -104,11 +105,11 @@ void EClockUpdate(struct TimerBase *TimerBase)
     outb(CH0|ACCESS_LATCH, PIT_CONTROL);        /* Latch the current time value */
     time = ch_read(PIT_CH0);                    /* Read out current 16-bit time */
 
-    D(bug("[Timer] %s: tick prev = %08x\n", __func__, TimerBase->tb_prev_tick));
+    D(bug("[Timer] %s: tick prev = %04x\n", __func__, TimerBase->tb_prev_tick));
 
     EClockAdd(time, TimerBase);                 /* Increment our time counters  */
     TimerBase->tb_prev_tick = time;             /* Remember last counter value as start of new interval */
-    D(bug("[Timer] %s:      new = %08x\n", __func__, TimerBase->tb_prev_tick));
+    D(bug("[Timer] %s:      new = %04x\n", __func__, TimerBase->tb_prev_tick));
 }
 
 void EClockSet(struct TimerBase *TimerBase)
@@ -128,10 +129,10 @@ void Timer0Setup(struct TimerBase *TimerBase)
 #if defined(__AROSEXEC_SMP__)
     struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
 #endif
-    struct timeval time;
     UWORD delay = TimerBase->tb_Platform.tb_ReloadValue;
-    UWORD old_tick;
+    UWORD current_tick;
     struct timerequest *tr;
+    struct timeval time;
 
     D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
 
@@ -143,13 +144,15 @@ void Timer0Setup(struct TimerBase *TimerBase)
         time.tv_micro = tr->tr_time.tv_micro;
         time.tv_secs  = tr->tr_time.tv_secs;
 
+#if (0)
         EClockUpdate(TimerBase);
+#endif
         SUBTIME(&time, &TimerBase->tb_Elapsed);
 
-        if ((LONG)time.tv_secs < 0)
-        {
-            delay = 0;
-        }
+            if ((LONG)time.tv_secs < 0)
+            {
+                delay = 0;
+            }
         else if (time.tv_secs == 0)
         {
             if (time.tv_micro < 20000)
@@ -161,7 +164,9 @@ void Timer0Setup(struct TimerBase *TimerBase)
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
-    if (delay < TimerBase->tb_Platform.tb_ReloadMin) delay = TimerBase->tb_Platform.tb_ReloadMin;
+        if (delay < TimerBase->tb_Platform.tb_ReloadMin)
+            delay = TimerBase->tb_Platform.tb_ReloadMin;
+    }
 
     D(bug("[Timer] %s: reloading hardware timer (delay %u)\n", __func__, delay));
 
@@ -170,7 +175,7 @@ void Timer0Setup(struct TimerBase *TimerBase)
      * In order to keep up with the precision, we pick up this time here.
      */
     outb(CH0|ACCESS_LATCH, PIT_CONTROL);        /* Latch the current time value */
-    old_tick = ch_read(PIT_CH0);                /* Read out current 16-bit time */
+    current_tick = ch_read(PIT_CH0);	    	/* Read out current 16-bit time */
 
     outb(CH0|ACCESS_FULL|MODE_SW_STROBE, PIT_CONTROL);  /* Software strobe mode, 16-bit access  */
     ch_write(delay, PIT_CH0);                           /* Activate the new delay               */
@@ -179,7 +184,7 @@ void Timer0Setup(struct TimerBase *TimerBase)
      * Now, when our new delay is already in progress, we can spend some time
      * on adding previous value to our time counters.
      */
-    EClockAdd(old_tick, TimerBase);
-    /* tb_prev_tick is used by EClockAdd(), so update it only now */
+    EClockAdd(current_tick, TimerBase);
+    /* tb_prev_tick is used by EClockAdd(), so restore it now */
     TimerBase->tb_prev_tick = delay;
 }
