@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-#QE2H ?= -v
+QE2H ?=
 
 DEPACKERFILES := \
 		depacker_main \
@@ -32,8 +32,8 @@ $(inflate-exe-m68k_ELFEXES) : $(inflate-exe-m68k-MA_TARGETS)
 ELF2HUNK_DEST_FILES := $(addprefix $(TOOLDIR)/pack_exe/,$(DEPACKERFILES))
 $(ELF2HUNK_DEST_FILES) : $(TOOLDIR)/pack_exe/% : $(GENDIR)/$(CURDIR)/% | $(TOOLDIR)/pack_exe
 	%fileactionmsg msg="ELFtoHunk" file="$@"
-	@$(TARGET_OBJCOPY) --remove-section=.eh_frame $< $<.tmp
-	@$(ELF2HUNK) $(QE2H) $<.tmp $@
+	$(Q)$(TARGET_OBJCOPY) --remove-section=.eh_frame $< $<.tmp
+	$(Q)$(ELF2HUNK) $(QE2H) $<.tmp $@
 
 #MM
  inflate-exe-m68k : inflate-exe-m68k-gendirs $(ELF2HUNK_DEST_FILES)
