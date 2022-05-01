@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/arossupport.h>
@@ -99,7 +99,7 @@ void ictl_Initialize(struct KernelBase *KernelBase)
 #endif
 
     /* Check if the 8259A has already been registered, if not probe for it */
-    if (!krnFindInterruptController(KernelBase, ICTYPE_I8259A))
+    if (!krnFindInterruptController(KernelBase, IIC_ID_I8259A))
     {
         D(__unused icintrid_t xtpicICInstID;)
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Intel IA-32 APIC driver.
 */
@@ -77,7 +77,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     struct ACPIData *acpiData  = kernPlatD->kb_ACPI;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     APTR ssp;
-    int irq, count = 0;
+    int irq, msibase = 0, count = 0, msiavailable = 0;
 
     DINT(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
 
@@ -87,9 +87,17 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         /* Set up the APIC IRQs for CPU #0 */
         for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < HW_IRQ_COUNT; irq++)
         {
-            if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
+            if ((KERNELIRQ_LIST(irq).lh_Type != KBL_INTERNAL) || (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0)))
             {
-                D(bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);)
+                D(
+                    if (KERNELIRQ_LIST(irq).lh_Type == KBL_INTERNAL)
+                    {
+                        bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);
+                    }
+                )
+                if (count > 31)
+                    msiavailable += count;
+                count = 0;
             }
             else
             {
@@ -97,11 +105,20 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE, FALSE))
                 {
                     bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
+                    if (count > 31)
+                        msiavailable += count;
+                    count = 0;
                 }
-                else
-                    count++;
+                else 
+                {
+                    if ((count++ > 31) && (msibase == 0))
+                        msibase = irq + 1 - count;
+                }
             }
         }
+        if ((count > 31) && (msiavailable == 0))
+            msiavailable = count;
+
         UserState(ssp);
     }
 
@@ -110,7 +127,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
      * most a single MSI device will request) then report that
      * we can use MSI
      */
-    if ((count > 32) && (acpiData->acpi_fadt))
+    if ((count > 31) && (acpiData->acpi_fadt))
     {
         ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
 
@@ -118,8 +135,12 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI)))
         {
             kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
-            apicPrivate->msibase = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT);
+            apicPrivate->msibase = msibase;
             bug("[Kernel:APIC-IA32] MSI Interrupts Allocatable\n");
+            D(
+                bug("[Kernel:APIC-IA32]     start = %u\n", msibase);
+                bug("[Kernel:APIC-IA32]     total = %u\n", msiavailable);
+            )
         }
     }
     return TRUE;
@@ -196,7 +217,7 @@ struct IntrController APICInt_IntrController =
         .ln_Pri = -50
     },
     0,
-    AROS_MAKE_ID('A','P','I','C'),
+    IIC_ID_APIC,
     0,
     NULL,
     APICInt_Register,
@@ -593,9 +614,6 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         APIC_REG(__APICBase, APIC_DFR) = DFR_FLAT;
         APIC_REG(__APICBase, APIC_LDR) = 1 << LDR_ID_SHIFT;
 
-        /* Set Task Priority to 'accept all interrupts' */
-        APIC_REG(__APICBase, APIC_TPR) = 0;
-
         /*
          * Set spurious IRQ vector -:
          *     APIC = enabled
@@ -621,8 +639,15 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 #ifdef CONFIG_LEGACY
         /* Due to the Pentium erratum 3AP. */
         if (maxlvt > 3)
+        {
              APIC_REG(__APICBase, APIC_ESR) = 0;
+             APIC_REG(__APICBase, APIC_ESR) = 0;
+        }
 #endif
+
+        /* Disable performance counter overflow interrupts, if supported */
+        if (((APIC_REG(__APICBase, APIC_VERSION)>>16) & 0xFF) >= 4)
+            APIC_REG(__APICBase, APIC_PCOUNT_VEC) = LVT_MASK;
 
         D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR before enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
 
@@ -631,7 +656,10 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
         /* spec says clear errors after enabling vector. */
         if (maxlvt > 3)
+        {
              APIC_REG(__APICBase, APIC_ESR) = 0;
+             APIC_REG(__APICBase, APIC_ESR) = 0;
+        }
 
         D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR after enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
 
@@ -735,6 +763,22 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
             APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
         }
+
+        /* Clear error status register using back-to-back writes */
+        APIC_REG(__APICBase, APIC_ESR) = 0;
+        APIC_REG(__APICBase, APIC_ESR) = 0;
+
+        /* Ack any pending interrupts */
+        APIC_REG(__APICBase, APIC_EOI) = 0;
+
+        /* Send an Init Level De-Assert to synchronize arbitration ID's. */
+        APIC_REG(__APICBase, APIC_ICRH) = 0;
+        APIC_REG(__APICBase, APIC_ICRL) =  ICR_DSH_ALL | ICR_INT_LEVELTRIG | ICR_DM_INIT;
+        while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS)
+            ;
+
+        /* Set Task Priority to 'accept all interrupts' */
+        APIC_REG(__APICBase, APIC_TPR) = 0;
     }
 }
 
@@ -807,7 +851,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     krnClockSourceUdelay(10 * 1000);
 
     /* Deassert INIT to all - Intel docs says we should use shorthand here! */
-    status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, (2 << 18) | ICR_INT_LEVELTRIG | ICR_DM_INIT);
+    status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, ICR_DSH_ALL | ICR_INT_LEVELTRIG | ICR_DM_INIT);
     if (status_ipisend)
     {
         bug("[Kernel:APIC-IA32.%03u] %s: Error deasserting INIT\n", cpuNo, __func__);

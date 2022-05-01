@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2022, The AROS Development Team. All rights reserved.
 
     Desc: Intel 8259A "Legacy" PIC driver.
 */
@@ -224,7 +224,7 @@ struct IntrController i8259a_IntrController =
         .ln_Pri = 0
     },
     0,
-    ICTYPE_I8259A,
+    IIC_ID_I8259A,
     0,
     NULL,
     i8259a_Register,
