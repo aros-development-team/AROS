@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, The AROS Development Team. All rights reserved
+    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved
 */
  
  #include <aros/debug.h>
@@ -42,6 +42,31 @@
 
 #define DIO(x)
 
+static UQUAD *nvme_allocprps(struct nvme_Unit *unit, APTR addr, IPTR len, APTR *prpbuff, ULONG *cnt)
+{
+    UQUAD *prps = NULL;
+    *cnt = (len / unit->au_Bus->ab_Dev->pagesize) - 1;
+
+    bug("[NVME%02ld] %s()\n", unit->au_UnitNum, __func__);
+    bug("[NVME%02ld] %s: allocation storage for %u prp entries\n", unit->au_UnitNum, __func__, *cnt);
+
+    *prpbuff = AllocMem(unit->au_Bus->ab_Dev->pagesize + (sizeof(UQUAD) * (*cnt + 1)), MEMF_ANY);
+    if (*prpbuff != NULL)
+    {
+        int prp;
+
+        prps = (APTR)(((IPTR)*prpbuff + unit->au_Bus->ab_Dev->pagesize) & ~(unit->au_Bus->ab_Dev->pagesize - 1));
+        bug("[NVME%02ld] %s: prps @ 0x%p (allocated @ 0x%p)\n", unit->au_UnitNum, __func__, prps, *prpbuff);
+
+        for (prp = 0; prp < *cnt; prp++)
+        {
+            prps[prp] = (UQUAD)(IPTR)addr + (unit->au_Bus->ab_Dev->pagesize * (prp + 1));
+            bug("[NVME%02ld] %s:         [%u] = 0x%p\n", unit->au_UnitNum, __func__, prp, (APTR)prps[prp]);
+        }
+    }
+    return prps;
+}
+
 static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 {
     struct IOExtTD *iotd = (struct IOExtTD *)io;
@@ -69,6 +94,36 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         io->io_Error = IOERR_BADADDRESS;
         return TRUE;
     }
+    memset(&cmdio, 0, sizeof(cmdio));
+    ioehandle.ceh_DMA = ioehandle.ceh_DMABuff = NULL;
+    ioehandle.ceh_PRP = ioehandle.ceh_PRPBuff = NULL;
+    if (len > (unit->au_Bus->ab_Dev->pagesize << 1))
+    {
+        if (((IPTR)data & (unit->au_Bus->ab_Dev->pagesize - 1)) != 0)
+        {
+            bug("[NVME%02ld] %s: unaligned buffer start (%p)\n", unit->au_UnitNum, __func__, data);
+            ioehandle.ceh_DMAlen = len + unit->au_Bus->ab_Dev->pagesize;
+            ioehandle.ceh_DMABuff = AllocMem(ioehandle.ceh_DMAlen, MEMF_ANY);
+            ioehandle.ceh_DMA = (APTR)(((IPTR)ioehandle.ceh_DMABuff + unit->au_Bus->ab_Dev->pagesize)  & ~(unit->au_Bus->ab_Dev->pagesize - 1));
+            data = ioehandle.ceh_DMA;
+            bug("[NVME%02ld] %s: using buffer @ %p (alloc @ 0x%p)\n", unit->au_UnitNum, __func__, data, ioehandle.ceh_DMABuff);
+            if (is_write)
+                CopyMem(iotd->iotd_Req.io_Data, data, len);
+        }
+        cmdio.rw.prp1 = (UQUAD)(IPTR)data; // needs to be in LE
+        ioehandle.ceh_PRP = nvme_allocprps(unit, data, len, &ioehandle.ceh_PRPBuff, &ioehandle.ceh_PRPCnt);
+        if ((cmdio.rw.prp2 = (UQUAD)(IPTR)ioehandle.ceh_PRP) == 0)
+        {
+            bug("[NVME%02ld] %s: failed to allocate prp's\n", unit->au_UnitNum, __func__);
+        }
+    }
+    else
+    {
+        cmdio.rw.prp1 = (UQUAD)(IPTR)data; // needs to be in LE
+
+        if (len > unit->au_Bus->ab_Dev->pagesize)
+            cmdio.rw.prp2 = (UQUAD)(IPTR)data + unit->au_Bus->ab_Dev->pagesize;
+    }
 
     ULONG nsid = (unit->au_UnitNum & ((1 << 12) - 1)) + 1;
     queueno = 1 + (KrnGetCPUNumber() % unit->au_Bus->ab_Dev->queuecnt);
@@ -84,7 +139,6 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     Remove(&io->io_Message.mn_Node);
     ReleaseSemaphore(&unit->au_Lock);
     
-    memset(&cmdio, 0, sizeof(cmdio));
     if (is_write) {
             cmdio.rw.op.opcode = nvme_cmd_write;
     } else {
@@ -92,7 +146,6 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
 
     cmdio.rw.nsid = AROS_LONG2LE(nsid);
-    cmdio.rw.prp1 = (UQUAD)(IPTR)data; // needs to be in LE
     cmdio.rw.length = AROS_WORD2LE((len >> unit->au_SecShift) - 1);
     cmdio.rw.slba = off64 >> unit->au_SecShift;
     cmdio.rw.control = 0;
@@ -103,7 +156,7 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     )
 
     CachePreDMA(data, &len, is_write ? DMAFLAGS_PREWRITE : DMAFLAGS_PREREAD);
-    nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle);
+    nvme_submit_iocmd(unit->au_Bus->ab_CE, nvmeq, &cmdio, &ioehandle);
 
     return FALSE;
 }

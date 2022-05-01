@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2020-2022, The AROS Development Team.  All rights reserved.
  */
 
 #ifndef NVME_INTERN_H
@@ -19,6 +19,9 @@
 
 #if !defined(MIN)
 # define MIN(a,b)       (a < b) ? a : b
+#endif
+#if !defined(MAX)
+# define MAX(a,b)       (a > b) ? a : b
 #endif
 
 #define Unit(io) ((struct nvme_Unit *)(io)->io_Unit)
@@ -126,11 +129,13 @@ typedef struct {
     ULONG              	dev_HostID;
 
     UBYTE               dev_mdts;
-    
+
     int                 db_stride;
     struct nvme_registers volatile *dev_nvmeregbase;
     ULONG volatile      *dbs;
-    
+
+    UWORD               pageshift;
+    UWORD               pagesize;
     ULONG               ctrl_config;
     ULONG               queuecnt;
     struct nvme_queue   **dev_Queues;
@@ -140,6 +145,12 @@ struct completionevent_handler
 {
     struct Task *ceh_Task;
     APTR        ceh_Msg;
+    APTR        ceh_PRPBuff;
+    APTR        ceh_PRP;
+    APTR        ceh_DMABuff;
+    APTR        ceh_DMA;
+    ULONG       ceh_PRPCnt;
+    ULONG       ceh_DMAlen;
     ULONG       ceh_SigSet;
     ULONG       ceh_Result;
     UWORD       ceh_Status;
@@ -186,6 +197,7 @@ struct nvme_Bus
     struct NVMEBase     *ab_Base;   /* device self */
     device_t            ab_Dev;
 
+    struct completionevent_handler *ab_CE;
     UWORD               ab_UnitCnt;
     OOP_Object          **ab_Units;
 

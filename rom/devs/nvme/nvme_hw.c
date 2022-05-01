@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -94,22 +94,26 @@ void nvme_complete_event(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
 
 void nvme_process_cq(struct nvme_queue *nvmeq)
 {
-    D(bug ("[NVME:HW] %s(0x%p)\n", __func__, nvmeq);)
-
     UWORD head, phase;
+
+    D(bug ("[NVME:HW] %s(0x%p)\n", __func__, nvmeq);)
 
     head = nvmeq->cq_head;
     phase = nvmeq->cq_phase;
+
+    D(bug ("[NVME:HW] %s: head=%u, phase=%u\n", __func__, head, phase);)
 
     for (;;) {
         struct nvme_completion *cqe = (struct nvme_completion *)&nvmeq->cqba[head];
 
         if ((AROS_LE2WORD(cqe->status) & 1) != phase)
-                break;
+        {
+            break;
+        }
         nvmeq->sq_head = AROS_LE2WORD(cqe->sq_head);
         if (++head == nvmeq->q_depth) {
-                head = 0;
-                phase = !phase;
+            head = 0;
+            phase = !phase;
         }
         nvme_complete_event(nvmeq, cqe);
     }
@@ -122,6 +126,7 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
      */
     if ((head != nvmeq->cq_head) || (phase == nvmeq->cq_phase))
     {
+        D(bug ("[NVME:HW] %s: updating head=%u, phase=%u\n", __func__, head, phase);)
         nvmeq->q_db[1 << nvmeq->dev->db_stride] = head;
         nvmeq->cq_head = head;
         nvmeq->cq_phase = phase;

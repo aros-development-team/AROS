@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -26,6 +26,10 @@
 #include "nvme_hw.h"
 #include "nvme_queue.h"
 #include "nvme_queue_admin.h"
+
+#ifndef PAGESHIFT
+#define PAGESHIFT 12
+#endif
 
 /*
     NVME_AdminIntCode:
@@ -62,8 +66,10 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         D(bug ("[NVME:Controller] Root__New: New Controller Obj @ %p\n", nvmeController);)
 
         /*register the controller in nvme.device */
-        D(bug ("[NVME:Controller] Root__New:     Controller Entry @ 0x%p\n", data);)
-        D(bug ("[NVME:Controller] Root__New:     Controller Data @ 0x%p\n", dev);)
+        D(
+            bug ("[NVME:Controller] Root__New:     Controller Entry @ 0x%p\n", data);
+            bug ("[NVME:Controller] Root__New:     Controller Data @ 0x%p\n", dev);
+        )
 
         data->ac_Class = cl;
         data->ac_Object = nvmeController;
@@ -92,7 +98,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 UQUAD cap;
                 ULONG aqa;
 
-                dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 64, MEMF_CLEAR);
+                dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
                 if (!dev->dev_Queues[0]->cehooks)
                 {
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
@@ -100,10 +106,10 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     // TODO: dispose the controller object
                     return NULL;
                 }
-                dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 64, MEMF_CLEAR);
+                dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
                 if (!dev->dev_Queues[0]->cehandlers)
                 {
-                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 64);
+                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
@@ -114,10 +120,6 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 aqa |= aqa << 16;
 
                 dev->ctrl_config = NVME_CC_ENABLE | NVME_CC_CSS_NVM;
-#if (1)
-                /* TODO: change 9 for the correct page shift value for the platform! */
-                dev->ctrl_config |= (9 - 12) << NVME_CC_MPS_SHIFT;
-#endif
                 dev->ctrl_config |= NVME_CC_ARB_RR | NVME_CC_SHN_NONE;
                 dev->ctrl_config |= NVME_CC_IOSQES | NVME_CC_IOCQES;
 
@@ -125,7 +127,6 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 dev->dev_nvmeregbase->aqa = aqa;
                 dev->dev_nvmeregbase->asq = (UQUAD)(IPTR)dev->dev_Queues[0]->sqba;
                 dev->dev_nvmeregbase->acq = (UQUAD)(IPTR)dev->dev_Queues[0]->cqba;
-                dev->dev_nvmeregbase->cc = dev->ctrl_config;
 
                 /* parse capabilities ... */
                 cap = dev->dev_nvmeregbase->cap;
@@ -134,6 +135,13 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 #endif
                 dev->db_stride = NVME_CAP_STRIDE(cap);
                 D(bug ("[NVME:Controller] Root__New:     doorbell stride = %u\n", dev->db_stride);)
+
+                dev->pageshift = MIN(MAX(((cap >> 48) & 0xf) + 12, PAGESHIFT),
+                    ((cap >> 52) & 0xf) + 12);
+                dev->pagesize = 1UL << (dev->pageshift);
+                D(bug ("[NVME:Controller] Root__New: using pagesize %u (%u shift)\n", dev->pagesize, dev->pageshift);)
+                dev->ctrl_config |= (dev->pageshift - 12) << NVME_CC_MPS_SHIFT;
+                dev->dev_nvmeregbase->cc = dev->ctrl_config;
 
                 /*
                  * Add the initial admin queue interrupt.
@@ -203,7 +211,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 else
                 {
                     D(bug ("[NVME:Controller] Root__New: ERROR - failed to create DMA buffer!\n");)
-                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 64);
+                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
