@@ -37,7 +37,6 @@ AHCIFILES := \
         $(AHCIMODDIR)/ahcibus_window_cl \
         $(AHCIMODDIR)/ahciunit_window_cl
 
-# disabled until a later date ;)
 PCIMODDIR := Modules/PCI
 PCIFILES := \
         sysexp_locale \
@@ -45,6 +44,13 @@ PCIFILES := \
         $(PCIMODDIR)/pci_enum \
         $(PCIMODDIR)/pci_window_cl \
         $(PCIMODDIR)/pcidevice_window_cl
+
+POWERMODDIR := Modules/Power
+POWERFILES := \
+        sysexp_locale \
+        $(POWERMODDIR)/power_init \
+        $(POWERMODDIR)/power_enum \
+        $(POWERMODDIR)/power_window_cl
 
 # disabled until a later date ;)
 GFXMODDIR := Modules/Gfx
@@ -74,6 +80,16 @@ USER_LDFLAGS := -static
     modname=pci modtype=library modsuffix=sysexp \
     files="$(PCIFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
     uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(PCIMODDIR)/pci.conf
+
+#MM workbench-tools-sysexplorer-module-power : workbench-tools-sysexplorer-includes
+#MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-power
+#MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-power-quick
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(POWERMODDIR)
+USER_LDFLAGS := -static
+%build_module mmake=workbench-tools-sysexplorer-module-power \
+    modname=power modtype=library modsuffix=sysexp \
+    files="$(POWERFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+    uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(POWERMODDIR)/power.conf
 
 ##MM workbench-tools-sysexplorer-module-gfx : workbench-tools-sysexplorer-includes
 ##MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-gfx
