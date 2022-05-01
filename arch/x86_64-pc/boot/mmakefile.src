@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-# What our port consists of
+# The "core" AROS components for a bootable system
 
 #MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-pc-gz
 #MM- kernel-link-pc-x86_64 : kernel-pc-x86_64-kernel-gz \
@@ -32,7 +32,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM			   kernel-timer				\
 #MM			   kernel-expansion			\
 #MM			   kernel-pc-acpica  		\
-#MM			   kernel-hidd-acpibutton	\
 #MM			   kernel-pc-hpet    		\
 #MM			   kernel-hidd-i8042    	\
 #MM			   kernel-pc-i386-serial    \
