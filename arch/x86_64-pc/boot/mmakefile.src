@@ -49,11 +49,26 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme
 KDEVS_ARCH  := timer
-KHIDDS      := acpibutton ata_pci bus i8042 parallel pci pcipc serial vesagfx vgagfx storage system
+KHIDDS      := ata_pci bus i8042 parallel pci pcipc serial vesagfx vgagfx storage system
 
 %make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSARCHDIR)/aros-bsp.pkg \
 	devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
         arch_libs=$(KLIBS_ARCH) res=$(KRSRCS) arch_res=$(KRSRCS_ARCH)
+
+# -------- ACPI drivers package --------
+
+#MM- kernel-link-pc-x86_64 : kernel-acpi-gz
+#MM kernel-acpi :	        \
+#MM     kernel-hidd-acpibutton	        \
+#MM     kernel-hidd-acpiacad	        \
+#MM     kernel-hidd-acpibattery
+
+ACPIDEVS        :=
+ACPIRSRCS      :=
+ACPIHIDDS      := acpiacad acpibattery acpibutton
+
+%make_package mmake=kernel-acpi file=$(AROSARCHDIR)/aros-acpi.pkg \
+	 devs=$(ACPIDEVS) res=$(ACPIRSRCS) hidds=$(ACPIHIDDS)
 
 # -------- x86_64-pc legacy drivers package --------
 
