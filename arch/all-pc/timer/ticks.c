@@ -137,7 +137,8 @@ void Timer0Setup(struct TimerBase *TimerBase)
     D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
 
 #if defined(__AROSEXEC_SMP__)
-    if (ExecLockBase) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_READ, 0);
+    if (ExecLockBase)
+        ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_READ, 0);
 #endif
     if ((tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_MICROHZ])) != NULL)
     {
@@ -149,10 +150,10 @@ void Timer0Setup(struct TimerBase *TimerBase)
 #endif
         SUBTIME(&time, &TimerBase->tb_Elapsed);
 
-            if ((LONG)time.tv_secs < 0)
-            {
-                delay = 0;
-            }
+        if ((LONG)time.tv_secs < 0)
+        {
+            delay = 0;
+        }
         else if (time.tv_secs == 0)
         {
             if (time.tv_micro < 20000)
@@ -162,11 +163,11 @@ void Timer0Setup(struct TimerBase *TimerBase)
         }
     }
 #if defined(__AROSEXEC_SMP__)
-    if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
+    if (ExecLockBase)
+        ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
-        if (delay < TimerBase->tb_Platform.tb_ReloadMin)
-            delay = TimerBase->tb_Platform.tb_ReloadMin;
-    }
+    if (delay < TimerBase->tb_Platform.tb_ReloadMin)
+        delay = TimerBase->tb_Platform.tb_ReloadMin;
 
     D(bug("[Timer] %s: reloading hardware timer (delay %u)\n", __func__, delay));
 
