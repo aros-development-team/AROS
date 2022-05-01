@@ -48,7 +48,7 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci bus i8042 parallel pci pcipc serial vesagfx vgagfx storage system
+KHIDDS      := ata_pci bus i8042 parallel pci pcipc power serial vesagfx vgagfx storage system
 
 %make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSARCHDIR)/aros-bsp.pkg \
 	devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
