@@ -243,10 +243,8 @@ APTR Cache_GetBlock(APTR cache, UQUAD blockNum, UBYTE **data)
     }
 
     /* Set data pointer and error, and return cache block handle */
-    if (b)
-        *data = b->data + data_offset;
-    else
-        *data = NULL;
+
+    *data = b->data + data_offset;
     SetIoErr(error);
 
     return b;
@@ -302,22 +300,19 @@ BOOL Cache_Flush(APTR cache)
         /* Write dirty block range to disk */
 
         b = NODE2(n);
-        if (b)
+        error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size, b->data);
+
+        /* Transfer block range to free list if unused, or put back on dirty
+         * list upon an error */
+
+        if(error == 0)
         {
-            error = AccessDisk(TRUE, b->num, RANGE_SIZE, c->block_size, b->data);
-
-            /* Transfer block range to free list if unused, or put back on dirty
-             * list upon an error */
-
-            if(error == 0)
-            {
-                b->state = BS_VALID;
-                if(b->use_count == 0)
-                    AddTail((struct List *)&c->free_list, (struct Node *)&b->node2);
-            }
-            else
-                AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
+            b->state = BS_VALID;
+            if(b->use_count == 0)
+                AddTail((struct List *)&c->free_list, (struct Node *)&b->node2);
         }
+        else
+            AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
     }
 
     SetIoErr(error);
