@@ -2,7 +2,7 @@
 #define ZUNE_GRAPH_H
 
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2022, The AROS Development Team. All rights reserved.
     $Id: $
 */
 
@@ -15,7 +15,7 @@
 #define MUIB_Graph                      (MUIB_AROS | 0x00000000)
 
 /*** Attributes *************************************************************/
-#define MUIA_Graph_InfoText	        (MUIB_Graph | 0x00000001) /* ---  CONST_STRPTR          */
+#define MUIA_Graph_InfoText	            (MUIB_Graph | 0x00000001) /* ---  CONST_STRPTR          */
 #define MUIA_Graph_EntryCount           (MUIB_Graph | 0x00000002) /* ---  IPTR                  */
 #define MUIA_Graph_Aggregate            (MUIB_Graph | 0x00000003) /* ---  BOOL                  */
 #define MUIA_Graph_PeriodCeiling        (MUIB_Graph | 0x00000010) /* ---  IPTR   in ms          */
@@ -23,7 +23,8 @@
 #define MUIA_Graph_PeriodInterval       (MUIB_Graph | 0x00000012) /* ---  IPTR   in ms          */
 #define MUIA_Graph_ValueCeiling         (MUIB_Graph | 0x00000020) /* ---  IPTR                  */
 #define MUIA_Graph_ValueStep            (MUIB_Graph | 0x00000021) /* ---  IPTR                  */
-#define MUIA_Graph_PeriodicTick  	(MUIB_Graph | 0x000000FF) /* ---  BOOL                  */
+#define MUIA_Graph_ManualRefresh  	    (MUIB_Graph | 0x000000FE) /* ---  BOOL                  */
+#define MUIA_Graph_PeriodicTick  	    (MUIB_Graph | 0x000000FF) /* ---  BOOL                  */
 
 /*** Methods ****************************************************************/
 #define MUIM_Graph_GetSourceHandle    	(MUIB_Graph | 0x00000001)

@@ -21,8 +21,8 @@ struct Graph_SourceDATA
 /*** Instance data **********************************************************/
 struct Graph_DATA
 {
-    struct MUI_InputHandlerNode ihn;
-
+    struct MUI_InputHandlerNode         graph_IHN;
+    struct Hook                         graph_DrawUpdateHook;
     IPTR                                graph_Flags;            // see below
 
     struct BitMap   	    	        *graph_BitMap;          // Bitmap we render to ...
@@ -58,10 +58,15 @@ struct Graph_DATA
 };
 
 #define GRAPHF_SETUP    (1 << 0)
-#define GRAPHF_HANDLER  (1 << 1)
-#define GRAPHF_PERIODIC (1 << 2)
-#define GRAPHF_FIXEDLEN (1 << 3)
-#define GRAPHF_AGGR     (1 << 4)
+#define GRAPHF_SHOW    (1 << 1)
+#define GRAPHF_HANDLER  (1 << 2)
+#define GRAPHF_PERIODIC (1 << 3)
+#define GRAPHF_FIXEDLEN (1 << 4)
+#define GRAPHF_AGGR     (1 << 5)
+
+#define GRAPHF_REDRAWUPDATE (1 << 6)
+#define GRAPHF_CLEAR    (1 << 7)
+#define GRAPHF_FILL     (1 << 8)
 
 #define GRAPHF_DRAWAXIS (1 << 10)
 #define GRAPHF_DRAWSEGS (1 << 11)

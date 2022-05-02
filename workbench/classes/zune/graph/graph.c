@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2022, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -18,6 +18,8 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/timer.h>
+
+#include <graphics/gfxmacros.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -161,6 +163,22 @@ IPTR Graph__SumValues(IPTR *start, int count)
     return retVal;
 }
 
+AROS_UFH3(
+    void, Graph__HookFunc_DrawUpdateFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(Object *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    D(bug("[Graph] %s(0x%p)\n", __func__, obj));
+
+    MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+    AROS_USERFUNC_EXIT
+}
+
 /*** Methods ****************************************************************/
 IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
@@ -189,7 +207,9 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
         data->graph_RastPort = NULL;
 
-        data->graph_Flags =  (GRAPHF_DRAWAXIS|GRAPHF_DRAWSEGS);
+        data->graph_Flags =  (GRAPHF_CLEAR | GRAPHF_REDRAWUPDATE | GRAPHF_DRAWAXIS | GRAPHF_DRAWSEGS);
+        data->graph_Flags |= GRAPHF_FILL;
+
         data->graph_BackPen = -1;
         data->graph_AxisPen = -1;
         data->graph_SegmentPen = -1;
@@ -197,18 +217,30 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         /* We always have atleast one source .. */
         Graph__UpdateSourceArray(data, 1);
 
-        data->ihn.ihn_Flags  = MUIIHNF_TIMER;
-        data->ihn.ihn_Method = MUIM_Graph_Timer;
-        data->ihn.ihn_Object = obj;
-        data->ihn.ihn_Millis = 1000;
+        data->graph_IHN.ihn_Flags  = MUIIHNF_TIMER;
+        data->graph_IHN.ihn_Method = MUIM_Graph_Timer;
+        data->graph_IHN.ihn_Object = obj;
+        data->graph_IHN.ihn_Millis = 1000;
 
-        data->graph_PeriodCeiling = data->ihn.ihn_Millis * 10;
-        data->graph_PeriodStepping = data->ihn.ihn_Millis;
+        data->graph_PeriodCeiling = data->graph_IHN.ihn_Millis * 10;
+        data->graph_PeriodStepping = data->graph_IHN.ihn_Millis;
 
         data->graph_ValCeiling = 100;
         data->graph_ValStepping = 10;
 
         SetAttrsA(obj, msg->ops_AttrList);
+
+        if (data->graph_Flags & GRAPHF_REDRAWUPDATE)
+        {
+            D(bug("[Graph] %s: Configuring notification ... \n", __func__);)
+            data->graph_DrawUpdateHook.h_Entry = ( HOOKFUNC )Graph__HookFunc_DrawUpdateFunc;
+            DoMethod
+              (
+                obj, MUIM_Notify, MUIA_Graph_PeriodicTick, TRUE,
+                (IPTR) obj, 3,
+                MUIM_CallHook, &data->graph_DrawUpdateHook, (IPTR)NULL
+              );
+        }
     }
 
     return (IPTR)obj;
@@ -244,6 +276,7 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
     struct Graph_DATA *data = INST_DATA(cl, obj);
     struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
+    IPTR                  count = 0;
     BOOL                  redraw = FALSE;
 
     D(bug("[Graph] %s()\n", __func__);)
@@ -252,35 +285,45 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
     {
         switch(tag->ti_Tag)
         {
+            case MUIA_Graph_PeriodicTick:
+                count++;
+                break;
+
             /* Aggreagte mode plots the sum of source entries/no of sources */
             case MUIA_Graph_Aggregate:
                 data->graph_Flags &= ~GRAPHF_AGGR;
                 if (tag->ti_Data)
                     data->graph_Flags |= GRAPHF_AGGR;
+                count++;
                 break;
 
             /* Set the info text to display */
             case MUIA_Graph_InfoText:
                 Graph__ParseInfoText(cl, obj, (char *)tag->ti_Data);
                 redraw = TRUE;
+                count++;
                 break;
 
             /* Set the input value ceiling and stepping */
             case MUIA_Graph_ValueCeiling:
                 data->graph_ValCeiling = tag->ti_Data;
+                count++;
                 break;
 
             case MUIA_Graph_ValueStep:
                 data->graph_ValStepping = tag->ti_Data;
+                count++;
                 break;
 
             /* Set the period ceiling and stepping */
             case MUIA_Graph_PeriodCeiling:
                 data->graph_PeriodCeiling = tag->ti_Data;
+                count++;
                 break;
 
             case MUIA_Graph_PeriodStep:
                 data->graph_PeriodStepping = tag->ti_Data;
+                count++;
                 break;
 
             /* Set or turn off periodic update mode */
@@ -288,12 +331,12 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                 if (tag->ti_Data)
                 {
                     data->graph_Flags |= GRAPHF_PERIODIC;
-                    data->ihn.ihn_Millis = tag->ti_Data;
-                    SET(obj, MUIA_Graph_EntryCount, (data->graph_PeriodCeiling/ data->ihn.ihn_Millis));
+                    data->graph_IHN.ihn_Millis = tag->ti_Data;
+                    SET(obj, MUIA_Graph_EntryCount, (data->graph_PeriodCeiling/ data->graph_IHN.ihn_Millis));
                     if ((data->graph_Flags & GRAPHF_SETUP) && !(data->graph_Flags & GRAPHF_HANDLER))
                     {
                         data->graph_Flags |= GRAPHF_HANDLER;
-                        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
+                        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->graph_IHN);
                     }
                 }
                 else
@@ -301,10 +344,11 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                     data->graph_Flags &= ~GRAPHF_PERIODIC;
                     if ((data->graph_Flags & GRAPHF_SETUP) && (data->graph_Flags & GRAPHF_HANDLER))
                     {
-                        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+                        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->graph_IHN);
                         data->graph_Flags &= ~GRAPHF_HANDLER;
                     }
                 }
+                count++;
                 break;
 
             /* Set or turn off Fixed entry count mode */
@@ -323,14 +367,27 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                 {
                     data->graph_Flags &= ~GRAPHF_FIXEDLEN;
                 }
+                count++;
+                break;
+
+            case MUIA_Graph_ManualRefresh:
+                if (tag->ti_Data)
+                {
+                    data->graph_Flags &= ~GRAPHF_REDRAWUPDATE;
+                }
+                else
+                {
+                    data->graph_Flags |= GRAPHF_REDRAWUPDATE;
+                }
+                count++;
                 break;
         }
     }
 
-    if (redraw)
+    if ((data->graph_Flags & GRAPHF_SHOW) && (redraw))
         MUI_Redraw(obj, MADF_DRAWUPDATE);
 
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    return count + DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 
@@ -352,7 +409,7 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
             break;
 
         case MUIA_Graph_PeriodInterval:
-            *(msg->opg_Storage) = data->ihn.ihn_Millis;
+            *(msg->opg_Storage) = data->graph_IHN.ihn_Millis;
             break;
 
         default:
@@ -374,7 +431,7 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
     if ((data->graph_Flags & GRAPHF_PERIODIC) && !(data->graph_Flags & GRAPHF_HANDLER))
     {
         data->graph_Flags |= GRAPHF_HANDLER;
-        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
+        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->graph_IHN);
     }
 
     data->graph_Flags |= GRAPHF_SETUP;
@@ -439,6 +496,8 @@ IPTR Graph__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
                                   TAG_DONE);
     }
 
+    data->graph_Flags |= GRAPHF_SHOW;
+
     return TRUE;
 }
 
@@ -448,6 +507,8 @@ IPTR Graph__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
     int i;
 
     D(bug("[Graph] %s()\n", __func__);)
+
+    data->graph_Flags &= ~GRAPHF_SHOW;
 
     if (data->graph_SegmentPen != -1)
     {
@@ -489,7 +550,7 @@ IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 
     if ((data->graph_Flags & GRAPHF_PERIODIC) && (data->graph_Flags & GRAPHF_HANDLER))
     {
-        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
+        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->graph_IHN);
         data->graph_Flags &= ~GRAPHF_HANDLER;
     }
     
@@ -560,10 +621,10 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         objHeight = rect.MaxY - rect.MinY + 1;
         objWidth = rect.MaxX - rect.MinX + 1;
 
-        data->graph_PeriodSize = ((float)objWidth / data->graph_PeriodCeiling) * data->ihn.ihn_Millis;
+        data->graph_PeriodSize = ((float)objWidth / data->graph_PeriodCeiling) * data->graph_IHN.ihn_Millis;
 
         if (data->graph_Flags & GRAPHF_PERIODIC)
-            offset = data->graph_Tick / data->ihn.ihn_Millis;
+            offset = data->graph_Tick / data->graph_IHN.ihn_Millis;
 
         D(
             bug("[Graph] %s: dimensions %d,%d\n", __func__, objWidth, objHeight);
@@ -572,13 +633,100 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         )
 
         // First fill the background ..
-        SetAPen(renderPort, data->graph_BackPen);
-        RectFill(renderPort, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+        if (data->graph_Flags & GRAPHF_CLEAR)
+        {
+            if (data->graph_BackPen != -1)
+                SetAPen(renderPort, data->graph_BackPen);
+            RectFill(renderPort, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+        }
+
+        // fill the Area if wanted ...
+        if ((data->graph_Flags & GRAPHF_FILL) && (data->graph_Sources))
+        {
+            struct RastPort *drp;
+            if ((drp = CloneRastPort(renderPort)))
+            {
+                APTR tmpbuf;
+                if ((tmpbuf = (APTR)AllocMem(objWidth * objHeight * 24, MEMF_CHIP | MEMF_CLEAR)))
+                {
+                    APTR vectors;
+                    if ((vectors = AllocVec((data->graph_EntryCount + 5) * 5, MEMF_ANY | MEMF_CLEAR)))
+                    {
+                        struct AreaInfo fAInfo = {0};
+                        struct TmpRas fRasTmp;
+                        UWORD dither[] =
+                        {
+                            0x5555, 0xAAAA
+                        };
+
+                        D(bug("[Graph] %s: Filling area ...\n", __func__);)
+
+                        drp->AreaInfo = &fAInfo;
+
+                        InitTmpRas(&fRasTmp, tmpbuf, objWidth * objHeight * 24);
+                        drp->TmpRas = &fRasTmp;
+
+                        InitArea( &fAInfo, vectors, data->graph_EntryCount  + 4);
+
+                        for (src = 0; src < data->graph_SourceCount; src ++)
+                        {
+                            UWORD xpos, ypos;
+                            LONG start;
+
+                            if (data->graph_Sources[src].gs_PlotFillPen != -1)
+                                SetAPen(drp, data->graph_Sources[src].gs_PlotFillPen);
+                            else
+                            {
+                                SetAPen(drp, data->graph_Sources[src].gs_PlotPen);
+                                SetAfPt(drp, dither, 1);
+                            }
+
+                            sourceData = &data->graph_Sources[src];
+
+                            if ((start = data->graph_EntryPtr - (objWidth / data->graph_PeriodSize)) < 0)
+                                start = 0;
+
+                            ypos = (objHeight * Graph__SumValues(&sourceData->gs_Entries[start], span))/ data->graph_ValCeiling;
+                            start += span;
+
+                            if (data->graph_Flags & GRAPHF_PERIODIC)
+                                xpos = rect.MaxX - (data->graph_EntryPtr * data->graph_PeriodSize);
+                            else
+                                xpos = rect.MinX - (offset * data->graph_PeriodSize);
+
+                            AreaMove(drp, xpos, rect.MaxY);
+                            AreaDraw(drp, xpos, rect.MaxY - ypos);
+
+                            for (pos = start; pos < data->graph_EntryPtr; pos += span)
+                            {
+                                ypos = (objHeight * Graph__SumValues(&sourceData->gs_Entries[pos], span))/ data->graph_ValCeiling;
+
+                                AreaDraw(drp,
+                                    xpos + (pos * data->graph_PeriodSize),
+                                    rect.MaxY - ypos);
+                            }
+                            AreaDraw(drp,
+                                    xpos + (pos * data->graph_PeriodSize),
+                                    rect.MaxY);
+                            AreaDraw(drp,
+                                 xpos, rect.MaxY);
+                            AreaEnd(drp);
+                        }
+                        FreeVec(vectors);
+                    }
+                    FreeMem(tmpbuf, objWidth * objHeight * 8);
+                }
+                drp->AreaInfo = NULL;
+                drp->TmpRas = NULL;
+                FreeRastPort(drp);
+            }
+        }
 
         if (data->graph_Flags & GRAPHF_DRAWSEGS)
         {
             // Draw the segment divisions..
-            SetAPen(renderPort, data->graph_SegmentPen);
+            if (data->graph_SegmentPen != -1)
+                SetAPen(renderPort, data->graph_SegmentPen);
             data->graph_SegmentSize = (objWidth * data->graph_PeriodStepping) / data->graph_PeriodCeiling;
             if (data->graph_SegmentSize < 2.0)
                 data->graph_SegmentSize = 2.0;
@@ -600,7 +748,8 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         if (data->graph_Flags & GRAPHF_DRAWAXIS)
         {
             // Draw the Axis..
-            SetAPen(renderPort, data->graph_AxisPen);
+            if (data->graph_AxisPen != -1)
+                SetAPen(renderPort, data->graph_AxisPen);
             Move(renderPort, rect.MinX, rect.MinY);
             Draw(renderPort, rect.MaxX, rect.MinY);
             Draw(renderPort, rect.MaxX, rect.MaxY);
@@ -616,6 +765,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                 UWORD xpos, ypos;
                 LONG start;
 
+                SetAPen(renderPort, data->graph_Sources[src].gs_PlotPen);
                 sourceData = &data->graph_Sources[src];
 
                 if ((start = data->graph_EntryPtr - (objWidth / data->graph_PeriodSize)) < 0)
@@ -628,8 +778,6 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                     xpos = rect.MaxX - (data->graph_EntryPtr * data->graph_PeriodSize);
                 else
                     xpos = rect.MinX - (offset * data->graph_PeriodSize);
-
-                SetAPen(renderPort, data->graph_Sources[src].gs_PlotPen);
 
                 if (start == 1)
                     WritePixel(renderPort, xpos, rect.MaxY - ypos);
@@ -653,6 +801,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         if (!IsListEmpty(&data->graph_InfoText))
             SetFont(renderPort, _font(obj));
 
+        SetAPen(renderPort, _pens(obj)[MPEN_TEXT]);
         ForeachNode(&data->graph_InfoText, infoLine)
         {
             UWORD txtLen = strlen(infoLine->ln_Name);
@@ -662,7 +811,6 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
             if (textWidth > 0)
             {
-                SetAPen(renderPort, _pens(obj)[MPEN_TEXT]);
                 Move(renderPort, ((rect.MinX + rect.MaxX) /2) - (textWidth / 2), pos);
                 Text(renderPort, (CONST_STRPTR)infoLine->ln_Name, txtLen);
                 pos += _font(obj)->tf_YSize;
@@ -756,7 +904,7 @@ IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
 
     data = INST_DATA(cl, obj);
 
-    if ((data->graph_Tick += data->ihn.ihn_Millis) > data->graph_PeriodStepping)
+    if ((data->graph_Tick += data->graph_IHN.ihn_Millis) > data->graph_PeriodStepping)
         data->graph_Tick -= data->graph_PeriodStepping;
 
     if (data->graph_Flags & GRAPHF_PERIODIC)
