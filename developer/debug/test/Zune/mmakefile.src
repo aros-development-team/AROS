@@ -19,6 +19,7 @@ FILES  := test             \
           levelmeter       \
           knob             \
           texticonlist     \
+          graph            \
           loginwindow      \
           busy             \
           hideshow         \
