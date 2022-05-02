@@ -81,7 +81,7 @@ USER_LDFLAGS := -static
     files="$(PCIFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
     uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(PCIMODDIR)/pci.conf
 
-#MM workbench-tools-sysexplorer-module-power : workbench-tools-sysexplorer-includes
+#MM workbench-tools-sysexplorer-module-power : workbench-tools-sysexplorer-includes kernel-hidd-power-includes
 #MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-power
 #MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-power-quick
 USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(POWERMODDIR)
