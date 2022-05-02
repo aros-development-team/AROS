@@ -15,11 +15,13 @@
 #include <proto/alib.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
+#include <proto/cybergraphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/timer.h>
 
 #include <graphics/gfxmacros.h>
+#include <cybergraphx/cybergraphics.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -646,8 +648,10 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
             struct RastPort *drp;
             if ((drp = CloneRastPort(renderPort)))
             {
+                IPTR dispDepth = GetCyberMapAttr(drp->BitMap, CYBRMATTR_DEPTH);
                 APTR tmpbuf;
-                if ((tmpbuf = (APTR)AllocMem(objWidth * objHeight * 24, MEMF_CHIP | MEMF_CLEAR)))
+
+                if ((tmpbuf = (APTR)AllocMem(objWidth * objHeight * dispDepth, MEMF_CHIP | MEMF_CLEAR)))
                 {
                     APTR vectors;
                     if ((vectors = AllocVec((data->graph_EntryCount + 5) * 5, MEMF_ANY | MEMF_CLEAR)))
@@ -663,14 +667,14 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
                         drp->AreaInfo = &fAInfo;
 
-                        InitTmpRas(&fRasTmp, tmpbuf, objWidth * objHeight * 24);
+                        InitTmpRas(&fRasTmp, tmpbuf, objWidth * objHeight * dispDepth);
                         drp->TmpRas = &fRasTmp;
 
                         InitArea( &fAInfo, vectors, data->graph_EntryCount  + 4);
 
                         for (src = 0; src < data->graph_SourceCount; src ++)
                         {
-                            UWORD xpos, ypos;
+                            UWORD xpos, ypos, lastpos;
                             LONG start;
 
                             if (data->graph_Sources[src].gs_PlotFillPen != -1)
@@ -697,6 +701,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                             AreaMove(drp, xpos, rect.MaxY);
                             AreaDraw(drp, xpos, rect.MaxY - ypos);
 
+                            lastpos = start;
                             for (pos = start; pos < data->graph_EntryPtr; pos += span)
                             {
                                 ypos = (objHeight * Graph__SumValues(&sourceData->gs_Entries[pos], span))/ data->graph_ValCeiling;
@@ -704,9 +709,10 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                                 AreaDraw(drp,
                                     xpos + (pos * data->graph_PeriodSize),
                                     rect.MaxY - ypos);
+                                lastpos = pos;
                             }
                             AreaDraw(drp,
-                                    xpos + (pos * data->graph_PeriodSize),
+                                    xpos + (lastpos * data->graph_PeriodSize),
                                     rect.MaxY);
                             AreaDraw(drp,
                                  xpos, rect.MaxY);
@@ -891,7 +897,9 @@ IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj, struct MUIP_Graph
 IPTR Graph__MUIM_Graph_Reset(Class *cl, Object *obj, Msg msg)
 {
     D(bug("[Graph] %s()\n", __func__);)
-    
+
+    //TODO: Implement Graph Reset
+
     return 0;
 }
 
