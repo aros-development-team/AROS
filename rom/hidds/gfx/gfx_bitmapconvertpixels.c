@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -169,7 +169,6 @@ static VOID true_to_true(OOP_Class *cl, OOP_Object *o,
     red_diff     = srcfmt->red_shift     - dstfmt->red_shift;
     green_diff  = srcfmt->green_shift    - dstfmt->green_shift;
     blue_diff    = srcfmt->blue_shift    - dstfmt->blue_shift;
-
 
 #if 0
 bug("true_to_true()\n: src = %x  dest = %x srcfmt = %d %d %d %d [%d] destfmt = %d %d %d %d [%d]\n",
@@ -493,16 +492,16 @@ static void native32_to_native(OOP_Class *cl, OOP_Object *o,
 static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
                        struct pHidd_BitMap_ConvertPixels *msg)
 {
-        /* Just do a simple memcpy() of the pixels */
+    /* Just do a simple CopyMem() of the pixels */
     INIT_VARS()
     HIDDT_PixelFormat   *srcfmt = msg->srcPixFmt;
     ULONG               bpl = msg->width * srcfmt->bytes_per_pixel;
-    
+
     /* FIXME: This does not work well for formats with bytes_per_pixel < 1 */
-    
+
     if (msg->srcMod == bpl && msg->dstMod == bpl)
     {
-        memcpy(dst, src, bpl * msg->height);
+        CopyMem(src, dst, bpl * msg->height);
     }
     else
     {
@@ -513,7 +512,7 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
 
         for (i = 0; i < msg->height; i ++)
         {
-            memcpy(dst, src, copy_width);
+            CopyMem(src, dst, copy_width);
             src += msg->srcMod;
             dst += msg->dstMod;
         }
@@ -521,7 +520,6 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
 
     *msg->srcPixels = src;
     *msg->dstBuf    = dst;
-
 }
 
 /****************************************************************************************/
