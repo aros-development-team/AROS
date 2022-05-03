@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Gfx BitMap class implementation.
 */
@@ -3902,19 +3902,12 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     {
         if (linebuf)
         {
-            if (lut)
+            for(x = 0; x < msg->width; x++)
             {
-                for(x = 0; x < msg->width; x++)
-                {
+                if (lut)
                     linebuf[x] = lut[pixarray[x]];
-                }
-            }
-            else
-            {
-                for(x = 0; x < msg->width; x++)
-                {
+                else
                     linebuf[x] = pixarray[x];
-                }
             }
             pixarray += msg->modulo;
 
@@ -3936,21 +3929,13 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
             /* Preserve old fg pen */
             old_fg = GC_FG(gc);
 
-            if (lut)
+            for(x = 0; x < msg->width; x++)
             {
-                for(x = 0; x < msg->width; x++)
-                {
+                if (lut)
                     GC_FG(gc) = lut[pixarray[x]];
-                    DRAWPIXEL(cl, o, gc, msg->x + x, msg->y + y);
-                }
-            }
-            else
-            {
-                for(x = 0; x < msg->width; x++)
-                {
+                else
                     GC_FG(gc) = pixarray[x];
-                    DRAWPIXEL(cl, o, gc, msg->x + x, msg->y + y);
-                }
+                DRAWPIXEL(cl, o, gc, msg->x + x, msg->y + y);
             }
             GC_FG(gc) = old_fg;
 
@@ -4037,31 +4022,20 @@ static void PutTranspImageLUTBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
     {
         UBYTE *pixarray = data->pixarray;
 
-        if (data->lut)
+        for (x = 0; x < width; x++)
         {
-            for (x = 0; x < width; x++)
+            UBYTE pix = *pixarray++;
+            if (pix != data->transparent)
             {
-                UBYTE pix = *pixarray++;
-                    
-                if (pix != data->transparent)
+                if (data->lut)
                     xbuf[x] = data->lut[pix];
-
-            } /* for (x) */
-        }
-        else
-        {
-            for (x = 0; x < width; x++)
-            {
-                UBYTE pix = *pixarray++;
-
-                if (pix != data->transparent)
+                else
                 {
                     if (data->colmap)
                         pix = HIDD_CM_GetPixel(data->colmap, pix);
 
                     xbuf[x] = pix;
                 }
-
             } /* for (x) */
         }
 
@@ -4168,40 +4142,30 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
                             msg->width,
                             1,
                             vHidd_StdPixFmt_Native32);
-            if (lut)
+            for(x = 0; x < msg->width; x++)
             {
+#if (0)
                 /* FIXME: This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway */
-                for(x = 0; x < msg->width; x++)
-                {
+                if (lut)
                     pixarray[x] = (UBYTE)linebuf[x];
-                }
-            }
-            else
-            {
-                for(x = 0; x < msg->width; x++)
-                {
+                else
+#endif
                     pixarray[x] = (UBYTE)linebuf[x];
-                }
             }
             pixarray += msg->modulo;
 
         } /* if (linebuf) */
         else
         {
-            if (lut)
+            for(x = 0; x < msg->width; x++)
             {
+#if (0)
                 /* FIXME: This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway */
-                for(x = 0; x < msg->width; x++)
-                {
+                if (lut)
                     pixarray[x] = (UBYTE)GETPIXEL(cl, o, msg->x + x, msg->y + y);
-                }
-            }
-            else
-            {
-                for(x = 0; x < msg->width; x++)
-                {
+                else
+#endif
                     pixarray[x] = (UBYTE)GETPIXEL(cl, o, msg->x + x, msg->y + y);
-                }
             }
 
             pixarray += msg->modulo;
