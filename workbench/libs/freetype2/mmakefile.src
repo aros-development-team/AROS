@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-freetype-module : freetype2-fetch
 
 FT2NAME         := freetype
-FT2VERS         := 2.10.4
+FT2VERS         := 2.12.1
 ARCHBASE        := $(FT2NAME)-$(FT2VERS)
 
 FT2SRCDIR       := $(PORTSDIR)/$(FT2NAME)2/$(ARCHBASE)
@@ -32,6 +32,9 @@ FT2AUXFILES := \
     psaux/psaux \
     psnames/psnames
 
+FT2AUXDISFILES := \
+    bzip2/ftbzip2
+
 FT2RASTFILES := \
     raster/raster \
     smooth/smooth
@@ -46,7 +49,9 @@ FT2FONTFILES := \
     pcf/pcf \
     pfr/pfr \
     winfonts/winfnt \
-    bdf/bdf
+    bdf/bdf \
+    sdf/sdf \
+    svg/svg
 
 FT2HINTFILES := \
     autofit/autofit

@@ -1,6 +1,6 @@
-diff -ruN freetype-2.10.4/builds/aros/src/base/ftsystem.c freetype-2.10.4.aros/builds/aros/src/base/ftsystem.c
---- freetype-2.10.4/builds/aros/src/base/ftsystem.c	1970-01-01 00:00:00.000000000 +0000
-+++ freetype-2.10.4.aros/builds/aros/src/base/ftsystem.c	2021-01-08 22:52:37.860000000 +0000
+diff -ruN freetype-2.12.1/builds/aros/src/base/ftsystem.c freetype-2.12.1.aros/builds/aros/src/base/ftsystem.c
+--- freetype-2.12.1/builds/aros/src/base/ftsystem.c	1970-01-01 00:00:00.000000000 +0000
++++ freetype-2.12.1.aros/builds/aros/src/base/ftsystem.c	2021-01-08 22:52:37.860000000 +0000
 @@ -0,0 +1,356 @@
 +/***************************************************************************/
 +/*                                                                         */
@@ -358,9 +358,9 @@ diff -ruN freetype-2.10.4/builds/aros/src/base/ftsystem.c freetype-2.10.4.aros/b
 +
 +
 +/* END */
-diff -ruN freetype-2.10.4/src/autofit/afcjk.c freetype-2.10.4.aros/src/autofit/afcjk.c
---- freetype-2.10.4/src/autofit/afcjk.c	2020-08-27 06:17:20.000000000 +0000
-+++ freetype-2.10.4.aros/src/autofit/afcjk.c	2021-01-08 22:34:15.600000000 +0000
+diff -ruN freetype-2.12.1/src/autofit/afcjk.c freetype-2.12.1.aros/src/autofit/afcjk.c
+--- freetype-2.12.1/src/autofit/afcjk.c	2022-01-27 07:43:19.000000000 +0000
++++ freetype-2.12.1.aros/src/autofit/afcjk.c	2022-05-06 19:37:29.628118000 +0000
 @@ -22,6 +22,11 @@
     *
     */
@@ -373,7 +373,7 @@ diff -ruN freetype-2.10.4/src/autofit/afcjk.c freetype-2.10.4.aros/src/autofit/a
  #include <freetype/ftadvanc.h>
  #include <freetype/internal/ftdebug.h>
  
-@@ -69,8 +74,16 @@
+@@ -64,8 +69,16 @@
                                FT_Face        face )
    {
      /* scan the array of segments in each direction */
@@ -389,9 +389,9 @@ diff -ruN freetype-2.10.4/src/autofit/afcjk.c freetype-2.10.4.aros/src/autofit/a
 +    }
 +#endif
  
-     FT_TRACE5(( "\n"
-                 "cjk standard widths computation (style `%s')\n"
-@@ -87,7 +100,15 @@
+     FT_TRACE5(( "\n" ));
+     FT_TRACE5(( "cjk standard widths computation (style `%s')\n",
+@@ -82,7 +95,15 @@
        FT_Error          error;
        FT_ULong          glyph_index;
        int               dim;
@@ -407,7 +407,7 @@ diff -ruN freetype-2.10.4/src/autofit/afcjk.c freetype-2.10.4.aros/src/autofit/a
        AF_Scaler         scaler = &dummy->root.scaler;
  
        AF_StyleClass   style_class  = metrics->root.style_class;
-@@ -268,11 +289,19 @@
+@@ -263,11 +284,19 @@
          }
  #endif
        }
@@ -427,9 +427,9 @@ diff -ruN freetype-2.10.4/src/autofit/afcjk.c freetype-2.10.4.aros/src/autofit/a
    }
  
  
-diff -ruN freetype-2.10.4/src/autofit/aflatin.c freetype-2.10.4.aros/src/autofit/aflatin.c
---- freetype-2.10.4/src/autofit/aflatin.c	2020-08-27 06:17:20.000000000 +0000
-+++ freetype-2.10.4.aros/src/autofit/aflatin.c	2021-01-08 22:36:39.420000000 +0000
+diff -ruN freetype-2.12.1/src/autofit/aflatin.c freetype-2.12.1.aros/src/autofit/aflatin.c
+--- freetype-2.12.1/src/autofit/aflatin.c	2022-01-27 07:43:19.000000000 +0000
++++ freetype-2.12.1.aros/src/autofit/aflatin.c	2022-05-06 19:37:29.628118000 +0000
 @@ -15,6 +15,10 @@
   *
   */
@@ -441,7 +441,7 @@ diff -ruN freetype-2.10.4/src/autofit/aflatin.c freetype-2.10.4.aros/src/autofit
  
  #include <freetype/ftadvanc.h>
  #include <freetype/internal/ftdebug.h>
-@@ -60,8 +64,11 @@
+@@ -55,8 +59,11 @@
                                  FT_Face          face )
    {
      /* scan the array of segments in each direction */
@@ -452,11 +452,11 @@ diff -ruN freetype-2.10.4/src/autofit/aflatin.c freetype-2.10.4.aros/src/autofit
 +    AF_GlyphHintsRec  *hints;
 +#endif
  
-     FT_TRACE5(( "\n"
-                 "latin standard widths computation (style `%s')\n"
-@@ -69,6 +76,15 @@
-                 "\n",
-                 af_style_names[metrics->root.style_class->style] ));
+     FT_TRACE5(( "\n" ));
+     FT_TRACE5(( "latin standard widths computation (style `%s')\n",
+@@ -64,6 +71,15 @@
+     FT_TRACE5(( "=====================================================\n" ));
+     FT_TRACE5(( "\n" ));
  
 +#if defined(__AROS__)
 +    hints = (AF_GlyphHintsRec *)AllocVec(sizeof(AF_GlyphHintsRec) * 2, MEMF_ANY);
@@ -470,7 +470,7 @@ diff -ruN freetype-2.10.4/src/autofit/aflatin.c freetype-2.10.4.aros/src/autofit
      af_glyph_hints_init( hints, face->memory );
  
      metrics->axis[AF_DIMENSION_HORZ].width_count = 0;
-@@ -78,7 +94,13 @@
+@@ -73,7 +89,13 @@
        FT_Error            error;
        FT_ULong            glyph_index;
        int                 dim;
@@ -484,7 +484,7 @@ diff -ruN freetype-2.10.4/src/autofit/aflatin.c freetype-2.10.4.aros/src/autofit
        AF_Scaler           scaler = &dummy->root.scaler;
  
        AF_StyleClass   style_class  = metrics->root.style_class;
-@@ -264,12 +286,21 @@
+@@ -259,12 +281,21 @@
            FT_TRACE5(( "\n" ));
          }
  #endif
@@ -506,64 +506,10 @@ diff -ruN freetype-2.10.4/src/autofit/aflatin.c freetype-2.10.4.aros/src/autofit
    }
  
  
-diff -ruN freetype-2.10.4/src/autofit/aflatin2.c freetype-2.10.4.aros/src/autofit/aflatin2.c
---- freetype-2.10.4/src/autofit/aflatin2.c	2020-08-27 06:17:20.000000000 +0000
-+++ freetype-2.10.4.aros/src/autofit/aflatin2.c	2021-01-08 22:38:08.640000000 +0000
-@@ -68,8 +68,16 @@
-                                  FT_Face          face )
-   {
-     /* scan the array of segments in each direction */
-+#if !defined(__AROS__)
-     AF_GlyphHintsRec  hints[1];
--
-+#else
-+    AF_GlyphHintsRec  *hints = (AF_GlyphHintsRec *)AllocVec(sizeof(AF_GlyphHintsRec) * 2, MEMF_ANY);
-+    if(!hints)
-+    {
-+        /* no reasonable error handling possible */
-+        return;
-+    }
-+#endif
- 
-     af_glyph_hints_init( hints, face->memory );
- 
-@@ -80,7 +88,15 @@
-       FT_Error             error;
-       FT_UInt              glyph_index;
-       int                  dim;
-+#if !defined(__AROS__)
-       AF_LatinMetricsRec   dummy[1];
-+#else
-+      AF_LatinMetricsRec   *dummy = (AF_LatinMetricsRec  *) AllocVec(sizeof(AF_LatinMetricsRec) * 2, MEMF_ANY);
-+      if(!dummy)
-+      {
-+          goto ErrorExit;
-+      }
-+#endif
-       AF_Scaler            scaler = &dummy->root.scaler;
- 
- 
-@@ -167,9 +183,16 @@
-         axis->standard_width          = stdw;
-         axis->extra_light             = 0;
-       }
-+#if defined(__AROS__)
-+    ErrorExit:
-+      FreeVec(dummy);
-+#endif
-     }
- 
-     af_glyph_hints_done( hints );
-+#if defined(__AROS__)
-+    FreeVec(hints);
-+#endif
-   }
- 
- 
-diff -ruN freetype-2.10.4/src/autofit/afmodule.c freetype-2.10.4.aros/src/autofit/afmodule.c
---- freetype-2.10.4/src/autofit/afmodule.c	2020-08-27 06:17:20.000000000 +0000
-+++ freetype-2.10.4.aros/src/autofit/afmodule.c	2021-01-08 22:39:10.760000000 +0000
-@@ -523,8 +523,25 @@
+diff -ruN freetype-2.12.1/src/autofit/afmodule.c freetype-2.12.1.aros/src/autofit/afmodule.c
+--- freetype-2.12.1/src/autofit/afmodule.c	2022-01-27 07:43:19.000000000 +0000
++++ freetype-2.12.1.aros/src/autofit/afmodule.c	2022-05-06 19:37:29.628118000 +0000
+@@ -477,8 +477,25 @@
  
  #else /* !FT_DEBUG_AUTOFIT */
  
@@ -589,7 +535,7 @@ diff -ruN freetype-2.10.4/src/autofit/afmodule.c freetype-2.10.4.aros/src/autofi
  
      FT_UNUSED( size );
  
-@@ -538,6 +555,11 @@
+@@ -492,6 +509,11 @@
      af_loader_done( loader );
      af_glyph_hints_done( hints );
  
