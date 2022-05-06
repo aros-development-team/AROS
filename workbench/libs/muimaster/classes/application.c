@@ -80,7 +80,6 @@ struct MUI_ApplicationData
     STRPTR                  app_Version_Number;
     STRPTR                  app_Version_Date;
     STRPTR                  app_Version_Extra;
-    WORD                    app_SleepCount; // attribute nests
     ULONG                   app_TimerOutstanding;
     ULONG                   app_MenuAction; /* Remember last action */
     BOOL                    app_ForceQuit;
@@ -1091,36 +1090,13 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
                 APTR wstate;
                 Object *curwin;
 
-                if (tag->ti_Data)
+                get(obj, MUIA_Application_WindowList, &wlist);
+                if (wlist)
                 {
-                    data->app_SleepCount++;
-                    if (data->app_SleepCount == 1)
+                    wstate = wlist->lh_Head;
+                    while ((curwin = NextObject(&wstate)))
                     {
-                        get(obj, MUIA_Application_WindowList, &wlist);
-                        if (wlist)
-                        {
-                            wstate = wlist->lh_Head;
-                            while ((curwin = NextObject(&wstate)))
-                            {
-                                set(curwin, MUIA_Window_Sleep, TRUE);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    data->app_SleepCount--;
-                    if (data->app_SleepCount == 0)
-                    {
-                        get(obj, MUIA_Application_WindowList, &wlist);
-                        if (wlist)
-                        {
-                            wstate = wlist->lh_Head;
-                            while ((curwin = NextObject(&wstate)))
-                            {
-                                set(curwin, MUIA_Window_Sleep, FALSE);
-                            }
-                        }
+                        set(curwin, MUIA_Window_Sleep, tag->ti_Data ? TRUE : FALSE);
                     }
                 }
             }
