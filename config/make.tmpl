@@ -747,7 +747,7 @@ $(%(mmake)_MC_DTARGETS) : $(%(mmake)_MC_TGTWILDCARD).d : $(%(mmake)_MC_SRCWILDCA
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_cxx_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= \
-    targetdir= compiler=target srcdir= incextra="$(TOP)/$(CURDIR)"
+    targetdir= compiler=target srcdir= incextra="$(TOP)/$(CURDIR)" usetree=no
 
 %(mmake)_CXXABSBASENAMES := $(foreach %(mmake)_CXXBASE,%(basenames),$(if $(filter /%,$(%(mmake)_CXXBASE)),$(%(mmake)_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(%(mmake)_CXXBASE))))
 
@@ -769,9 +769,15 @@ ifeq (%(targetdir),)
   %(mmake)_CXXDTARGETS := $(notdir $(%(mmake)_CXXBASENAMES:=.d))
   %(mmake)_MCXX_WILDCARD := %
 else
+ifeq (%(usetree),no)
   %(mmake)_CXXTARGETS := $(addprefix %(targetdir)/,$(notdir $(%(mmake)_CXXBASENAMES:=.o)))
   %(mmake)_CXXDTARGETS := $(addprefix %(targetdir)/,$(notdir $(%(mmake)_CXXBASENAMES:=.d)))
   %(mmake)_MCXX_WILDCARD := %(targetdir)/%
+else
+  %(mmake)_CXXTARGETS := $(addprefix %(targetdir)/,$(%(mmake)_CXXBASENAMES:=.o))
+  %(mmake)_CXXDTARGETS := $(addprefix %(targetdir)/,$(%(mmake)_CXXBASENAMES:=.d))
+  %(mmake)_MCXX_WILDCARD := %(targetdir)/%
+endif
 
   # Be sure that all source files are generated
   $(%(mmake)_CXXTARGETS) $(%(mmake)_CXXDTARGETS) : | $(%(mmake)_MCXX_FILES)
@@ -1583,11 +1589,14 @@ BDID := $(BDTARGETID)
     asmfiles= objs= objdir="$(GENDIR)/$(CURDIR)" targetdir="$(AROSDIR)/$(CURDIR)" \
     cppflags="$(CPPFLAGS)" cflags= dflags= cxxflags= dxxflags= ldflags= \
     aflags="$(AFLAGS)" uselibs= usehostlibs= usestartup=yes detach=no nix=no \
-    includedir= libdir= \
+    includedir= libdir= usetree=no \
     compiler=target linker= \
     coverageinstr="$(TARGET_COVERAGEINSTR)" funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)"
 
 .PHONY : %(mmake)
+
+%gen_archspecificrules mainmmake=%(mmake)
+%gen_archspecificrules mainmmake=%(mmake) target=-quick
 
 %(mmake)_PROGNAME  := %(progname)
 %(mmake)_OBJDIR    := %(objdir)
@@ -1612,14 +1621,23 @@ else
 endif
 
 %(mmake)_ARCHOBJS   := $(wildcard $(%(mmake)_OBJDIR)/arch/*.o)
-%(mmake)_ARCHFILES  := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
+ifeq (%(usetree),no)
+    %(mmake)_ARCHFILES     := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
+else
+    %(mmake)_ARCHFILES     := $(basename $(patsubst $(%(mmake)_OBJDIR)/%,%,$(%(mmake)_ARCHOBJS)))
+endif
 %(mmake)_C_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_FILES))
 %(mmake)_CXX_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_CXXFILES))
 %(mmake)_OBJC_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_OBJCFILES))
 
 TMP_FILES := $(%(mmake)_C_NARCHFILES) $(%(mmake)_CXX_NARCHFILES) $(%(mmake)_ASMFILES) $(%(mmake)_OBJC_NARCHFILES)
-%(mmake)_OBJS := $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))) %(objs))
-%(mmake)_DEPS := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))))
+ifeq (%(usetree),no)
+    %(mmake)_OBJS     ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))) %(objs))
+    %(mmake)_DEPS := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))))
+else
+    %(mmake)_OBJS     ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(TMP_FILES))) %(objs))
+    %(mmake)_DEPS := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(TMP_FILES))))
+endif
 
 %(mmake)_CPPFLAGS :=  %(cppflags)
 ifneq (%(includedir),)
@@ -1748,7 +1766,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile_cxx_multi mmake=%(mmake) \
     basenames="$(%(mmake)_CXX_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
     cppflags="$(%(mmake)_CPPFLAGS)" cxxflags="$(%(mmake)_CXXFLAGS)" dxxflags="$(%(mmake)_DXXFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" usetree=%(usetree)
 %rule_compile_objc_multi mmake=%(mmake) \
     basenames="$(%(mmake)_OBJC_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
     cppflags="$(%(mmake)_CPPFLAGS)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
@@ -1756,7 +1774,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile_multi mmake=%(mmake) \
     basenames="$(%(mmake)_C_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
     cppflags="$(%(mmake)_CPPFLAGS)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
-    compiler="%(compiler)"
+    compiler="%(compiler)" usetree=%(usetree)
 %rule_assemble_multi mmake=%(mmake) \
     cmd="$(%(mmake)_ASSEMBLER)" basenames="$(%(mmake)_ASMFILES)" targetdir="$(%(mmake)_OBJDIR)" \
     cppflags="$(%(mmake)_CPPFLAGS)" aflags="$(%(mmake)_AFLAGS)"
@@ -1797,6 +1815,9 @@ endif
     coverageinstr="$(TARGET_COVERAGEINSTR)" funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)"
 
 .PHONY : %(mmake)
+
+%gen_archspecificrules mainmmake=%(mmake)
+%gen_archspecificrules mainmmake=%(mmake) target=-quick
 
 %(mmake)_OBJDIR    := %(objdir)
 %(mmake)_TARGETDIR := %(targetdir)
@@ -2166,6 +2187,12 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 # Library with ABI targets:
 #%(build_library)%(build_abi) %(mmake)-kobj : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #%(build_library)%(build_abi) %(mmake)-kobj-quick : %(mmake)-includes-quick
+
+%gen_archspecificrules mainmmake=%(mmake)
+%gen_archspecificrules mainmmake=%(mmake) target=-linklib
+%gen_archspecificrules mainmmake=%(mmake) target=-kobj
+%gen_archspecificrules mainmmake=%(mmake) target=-kobj-quick
+%gen_archspecificrules mainmmake=%(mmake) target=-quick
 
 # All MetaMake targets defined by this macro
 %(mmake)%(flavour)_ALLTARGETS       := %(mmake) %(mmake)-quick %(mmake)-clean
@@ -2877,7 +2904,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile_cxx_multi mmake=%(mmake) \
     basenames="$(%(mmake)_CXX_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
     cppflags="$(%(mmake)_CPPFLAGS)" cxxflags="$(%(mmake)_CXXFLAGS)" dxxflags="$(%(mmake)_DXXFLAGS)" \
-    compiler="%(compiler)" srcdir="%(srcdir)"
+    compiler="%(compiler)" srcdir="%(srcdir)" usetree="%(usetree)"
 %rule_compile_objc_multi mmake=%(mmake) \
     basenames="$(%(mmake)_OBJC_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
     cppflags="$(%(mmake)_CPPFLAGS)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
@@ -3076,6 +3103,23 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 %end
 
 #------------------------------------------------------------------------------
+
+%define gen_archspecificrules mainmmake=/A target= subtarget=
+#MM- %(mainmmake)%(target)%(subtarget) : \
+#MM			    %(mainmmake)-$(CPU)%(subtarget)
+#MM- %(mainmmake)-$(ARCH)-$(CPU)%(subtarget) : \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)%(subtarget)
+#MM- %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(subtarget) : \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)%(subtarget)
+#MM- %(mainmmake)-$(ARCH)%(subtarget) : \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(subtarget)
+#MM- %(mainmmake)-$(FAMILY)%(subtarget) : \
+#MM			    %(mainmmake)-$(ARCH)%(subtarget)
+#MM- %(mainmmake)-$(CPU)%(subtarget) : \
+#MM			    %(mainmmake)-$(FAMILY)%(subtarget)
+%end
+
+#------------------------------------------------------------------------------
 # Compile files for an arch-specific replacement of code for a module
 # - files: the basenames of the C files to compile.
 # - asmfiles: the basenames of the asm files to assemble.
@@ -3105,42 +3149,6 @@ ifneq (%(cxxfiles),)
 endif
 
 %buildid targets="%(mainmmake)-%(arch)"
-
-#MM- %(mainmmake) : \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) \
-#MM			    %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) \
-#MM			    %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-linklib : \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) \
-#MM			    %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) \
-#MM			    %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-kobj : \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) \
-#MM			    %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) \
-#MM			    %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-kobj-quick : \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-quick \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick \
-#MM			    %(mainmmake)-$(ARCH)-quick \
-#MM			    %(mainmmake)-$(FAMILY)-quick \
-#MM			    %(mainmmake)-$(CPU)-quick
-#MM- %(mainmmake)-quick : \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-quick \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick \
-#MM			    %(mainmmake)-$(ARCH)-quick \
-#MM			    %(mainmmake)-$(FAMILY)-quick \
-#MM			    %(mainmmake)-$(CPU)-quick
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-includes
 #MM- %(mainmmake)-%(arch)-includes : %(mainmmake)-includes
