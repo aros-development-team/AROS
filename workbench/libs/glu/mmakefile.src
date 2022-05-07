@@ -16,8 +16,9 @@ include $(SRCDIR)/config/aros.cfg
 
 REPOSITORIES = ftp://ftp.freedesktop.org/pub/mesa/glu/ \
  ftp://ftp.embeddedarm.com/mirror/yocto/
-ARCHBASE := glu-9.0.0
+ARCHBASE := glu-9.0.2
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
+GLU_SUFFIXES := tar.xz tar.bz2 tar.gz
 
 top_srcdir = $(PORTSDIR)/glu/$(ARCHBASE)
 
@@ -147,10 +148,10 @@ CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
 
 %fetch mmake=workbench-libs-glu-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/glu \
-    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.bz2" \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="$(GLU_SUFFIXES)" \
     patches_specs=$(PATCHSPEC)
 
-%create_patch mmake=workbench-libs-glu-create-patch \
+%create_patch mmake=workbench-libs-glu-create-patch suffixes="$(GLU_SUFFIXES)" \
     archive=$(ARCHBASE) srcdir=$(ARCHBASE) destination=$(PORTSDIR)/glu
 
 %build_module mmake=workbench-libs-glu \
