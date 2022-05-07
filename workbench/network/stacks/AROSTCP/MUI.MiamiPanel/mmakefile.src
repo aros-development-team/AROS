@@ -3,6 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM arostcp-libs-muimiamipanel : \
 #MM     includes-copy \
+#MM     workbench-network-stacks-arostcp-bsdsocket \
 #MM     workbench-zune-classes-lamp-class-includes \
 #MM     contrib-zune-classes-bwin-class-includes \
 #MM     contrib-zune-classes-thebar-class-includes \
@@ -10,8 +11,10 @@ include $(SRCDIR)/config/aros.cfg
 #MM     arostcp-libs-muimiamipanel-catalogs
 
 #MM- arostcp-libs-miamipanel : arostcp-libs-muimiamipanel
+#MM- workbench-network-stacks-arostcp : arostcp-libs-miamipanel
 
-MUIMIAMIPANELCORE = muimiamipanel_init \
+MUIMIAMIPANELCORE = \
+                    muimiamipanel_init \
                     muimiamipanel_funcs \
                     muimiamipanel_commands \
                     muimiamipanel_proccess \
@@ -20,7 +23,8 @@ MUIMIAMIPANELCORE = muimiamipanel_init \
                     muimiamipanel_misc \
                     muimiamipanel_locale
 
-MUIMIAMIPANELCLASSES = Classes/muimiamipanel_class_about \
+MUIMIAMIPANELCLASSES = \
+                       Classes/muimiamipanel_class_about \
                        Classes/muimiamipanel_class_app \
                        Classes/muimiamipanel_class_if \
                        Classes/muimiamipanel_class_ifgroup \
@@ -38,5 +42,5 @@ USER_LDFLAGS := -static
 
 %build_module mmake=arostcp-libs-muimiamipanel \
     modname=MUI modtype=library modsuffix=MiamiPanel conffile=MUI.MiamiPanel.conf \
-    files="$(MUIMIAMIPANELCORE) $(MUIMIAMIPANELCLASSES)"
+    files="$(MUIMIAMIPANELCORE) $(MUIMIAMIPANELCLASSES)" libdir="$(GENDIR)/$(CURDIR)"
 

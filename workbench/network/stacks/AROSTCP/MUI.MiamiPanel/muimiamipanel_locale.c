@@ -2,6 +2,7 @@
     Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <proto/locale.h>
 
@@ -21,14 +22,24 @@
 /* Main *********************************************************************/
 CONST_STRPTR _(ULONG id, struct MiamiPanelBase_intern *MiamiPanelBaseIntern)
 {
-    if (LocaleBase != NULL && MiamiPanelBaseIntern->mpb_cat != NULL)
+    CONST_STRPTR retstr = NULL;
+    int i = 0;
+
+    while (CatCompArray[i].cca_ID != 0)
     {
-        return GetCatalogStr(MiamiPanelBaseIntern->mpb_cat, id, CatCompArray[id].cca_Str);
+        if (CatCompArray[i].cca_ID == id)
+        {
+            retstr = CatCompArray[i].cca_Str;
+            break;
+        }
+        i++;
     }
-    else
+    if ((LocaleBase != NULL) && (MiamiPanelBaseIntern->mpb_cat != NULL))
     {
-        return CatCompArray[id].cca_Str;
+        retstr = GetCatalogStr(MiamiPanelBaseIntern->mpb_cat, id, retstr);
+        return retstr;
     }
+    return retstr;
 }
 
 void
