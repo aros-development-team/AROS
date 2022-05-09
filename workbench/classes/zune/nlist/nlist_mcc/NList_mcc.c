@@ -652,7 +652,7 @@ IPTR mNL_New(struct IClass *cl,Object *obj,struct opSet *msg)
   if ((tag = FindTagItem(MUIA_NList_ConstructHook, taglist)) ||
       (tag = FindTagItem(MUIA_List_ConstructHook, taglist)))
   {
-    if (tag->ti_Data == (ULONG)MUIV_NList_ConstructHook_String)
+    if (tag->ti_Data == (IPTR)MUIV_NList_ConstructHook_String)
       data->NList_ConstructHook = (struct Hook *) &NL_ConstructHook_String;
     else
       data->NList_ConstructHook = (struct Hook *) tag->ti_Data;
@@ -660,7 +660,7 @@ IPTR mNL_New(struct IClass *cl,Object *obj,struct opSet *msg)
   if ((tag = FindTagItem(MUIA_NList_DestructHook, taglist)) ||
       (tag = FindTagItem(MUIA_List_DestructHook, taglist)))
   {
-    if (tag->ti_Data == (ULONG)MUIV_NList_DestructHook_String)
+    if (tag->ti_Data == (IPTR)MUIV_NList_DestructHook_String)
       data->NList_DestructHook = (struct Hook *) &NL_DestructHook_String;
     else
       data->NList_DestructHook = (struct Hook *) tag->ti_Data;

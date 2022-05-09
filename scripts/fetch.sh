@@ -30,7 +30,7 @@ fetch_mirrored()
     $ret
 }
 
-gnu_mirrors="http://mirror.netcologne.de/gnu http://ftp.gnu.org/pub/gnu ftp://ftp.heanet.ie/pub/gnu ftp://mirror.jre655.com/GNU"
+gnu_mirrors="http://mirror.netcologne.de/gnu http://ftpmirror.gnu.org/ http://ftp.gnu.org/pub/gnu"
 
 fetch_gnu()
 {

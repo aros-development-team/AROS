@@ -12,6 +12,7 @@
  */
 #ifndef NO_RUNTIME_DEBUG
 
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/rawfmt.h>
 #include <proto/exec.h>

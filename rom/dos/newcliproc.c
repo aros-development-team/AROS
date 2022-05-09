@@ -227,12 +227,19 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         D(bug("%s: Using old CLI %p\n", __func__, oldcli));
         SetPrompt(AROS_BSTR_ADDR(oldcli->cli_Prompt));
         SetCurrentDirName(AROS_BSTR_ADDR(oldcli->cli_SetName));
-        cli->cli_DefaultStack = oldcli->cli_DefaultStack;
         cli->cli_CommandDir = internal_CopyPath(oldcli->cli_CommandDir, DOSBase);
     } else {
         D(bug("%s: Initializing CLI\n", __func__));
         SetPrompt("%N> ");
         SetCurrentDirName("SYS:");
+    }
+
+    if (cli->cli_DefaultStack == -1) {
+        /* Use the same logic as in case of NP_Cli tag in CreateNewProc()
+           pr_StackSize already contains either a copy of parents cli_DefaultsStack or value passed in
+           NP_StackSize tag */
+        cli->cli_DefaultStack = (me->pr_StackSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
+
         if (cli->cli_DefaultStack < (LONG)(AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT))
             cli->cli_DefaultStack = (LONG)(AROS_STACKSIZE / CLI_DEFAULTSTACK_UNIT);
     }

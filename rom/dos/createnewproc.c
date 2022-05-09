@@ -479,7 +479,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     if (process->pr_Arguments && process->pr_CIS)
     {
         D(bug("[createnewproc] Injecting %d bytes of arguments @%p into FileHandle @%p\n", argsize, process->pr_Arguments, BADDR(process->pr_CIS)));
-        vbuf_inject(process->pr_CIS, process->pr_Arguments, argsize, DOSBase);
+        vbuf_inject(process->pr_CIS, process->pr_Arguments, argsize);
     }
 
     /* Do any last-minute SegList fixups */

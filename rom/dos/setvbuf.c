@@ -143,7 +143,7 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
     return buf;
 }
 
-BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DOSBase)
+BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size)
 {
     FileHandlePtr fhinput;
     STRPTR buf;

@@ -79,7 +79,6 @@ struct p96gfx_carddata
     BOOL                                                superforward; 
 
     UWORD                                               dwidth, dheight;
-    ULONG                                               dmodeid;
 
     UWORD                                               maxwidth[5];
     UWORD                                               maxheight[5];
