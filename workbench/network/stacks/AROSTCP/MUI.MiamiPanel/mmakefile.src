@@ -11,7 +11,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     arostcp-libs-muimiamipanel-catalogs
 
 #MM- arostcp-libs-miamipanel : arostcp-libs-muimiamipanel
-#MM- workbench-network-stacks-arostcp : arostcp-libs-miamipanel
+##MM- workbench-network-stacks-arostcp : arostcp-libs-miamipanel
 
 MUIMIAMIPANELCORE = \
                     muimiamipanel_init \
