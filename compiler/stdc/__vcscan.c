@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Function to scan a string like scanf().
 */
@@ -106,6 +106,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
         {
             size_t width=ULONG_MAX;
             char type,subtype='i',ignore=0;
+            char lltype=0;
             const unsigned char *ptr=format+1;
             size_t i;
 
@@ -118,6 +119,8 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
 
             while(*ptr=='h'||*ptr=='l'||*ptr=='L'||*ptr=='*')
             {
+                if (subtype=='l'&&*ptr=='l')
+                    lltype=1;
                 if(*ptr=='*')
                     ignore=1;
                 else
@@ -396,7 +399,8 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 break;
             default:
             {
-                unsigned long v=0;
+                unsigned long v1=0;
+                unsigned long long llv1=0;
                 int base;
                 int min=0;
 
@@ -464,7 +468,10 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                 base=type=='x'||type=='X'?16:(type=='o'?8:10);
                 while(VAL(isxdigit(c)&&(base!=10||isdigit(c))&&(base!=8||c<='7')))
                 {
-                    v=v*base+(isdigit(c)?c-'0':0)+(isupper(c)?c-'A'+10:0)+(islower(c)?c-'a'+10:0);
+                    if(lltype==1)
+                        llv1=llv1*base+(isdigit(c)?c-'0':0)+(isupper(c)?c-'A'+10:0)+(islower(c)?c-'a'+10:0);
+                    else
+                        v1=v1*base+(isdigit(c)?c-'0':0)+(isupper(c)?c-'A'+10:0)+(islower(c)?c-'a'+10:0);
                     NEXT(c);
                 }
 
@@ -481,32 +488,38 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
 
                 if(type=='u')
                 {
+                    unsigned long long v2=v1;
+                    if (lltype==1) v2=llv1;
                     switch(subtype)
                     {
                         case 'l':
                         case 'L':
-                            *va_arg(args,unsigned long *)=v;
+                            if(lltype==1)
+                                *va_arg(args,unsigned long long*)=v2;
+                            else
+                                *va_arg(args,unsigned long *)=v2;
                             break;
                         case 'i':
-                            *va_arg(args,unsigned int *)=v;
+                            *va_arg(args,unsigned int *)=v2;
                             break;
                         case 'h':
-                            *va_arg(args,unsigned short *)=v;
+                            *va_arg(args,unsigned short *)=v2;
                             break;
                     }
                 }
                 else
                 {
-                    signed long v2;
-                    if(min=='-')
-                        v2=-v;
-                    else
-                        v2=v;
+                    signed long long v2=v1;
+                    if(lltype==1) v2=llv1;
+                    if(min=='-') v2=-v2;
                     switch(subtype)
                     {
                         case 'l':
                         case 'L':
-                            *va_arg(args,signed long *)=v2;
+                            if(lltype==1)
+                                *va_arg(args,signed long long *)=v2;
+                            else
+                                *va_arg(args,signed long *)=v2;
                             break;
                         case 'i':
                             *va_arg(args,signed int *)=v2;
