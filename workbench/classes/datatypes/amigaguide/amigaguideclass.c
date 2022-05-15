@@ -1548,7 +1548,7 @@ IPTR dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
       rv = 1;
    }
 
-   if(err != 0)
+   if(dtobj == NULL || err != 0)
    {
       DB(("error occured %ld for node=\"%s\"\n", err, msg->dtg_NodeName));
 
