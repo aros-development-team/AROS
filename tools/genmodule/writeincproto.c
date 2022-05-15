@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Function to write proto/modulename(_rel).h. Part of genmodule.
 */
@@ -55,16 +55,36 @@ void writeincproto(struct config *cfg)
         fprintf(out,
                 "#ifndef __%s_RELLIBBASE__\n"
                 " #if !defined(__NOLIBBASE__) && !defined(__%s_NOLIBBASE__)\n"
-                "  #if !defined(%s)\n"
-                "   #ifdef __%s_STDLIBBASE__\n"
-                "    extern struct Library *%s;\n"
-                "   #else\n"
-                "    extern %s%s;\n"
-                "   #endif\n"
+                "  #if !defined(%s)\n",
+                cfg->includenameupper,
+                cfg->includenameupper,
+                cfg->libbase
+        );
+        if (!strcmp(cfg->libbasetypeptrextern, "struct Library *"))
+        {
+                fprintf(out,
+                        "   extern %s%s;\n",
+                        cfg->libbasetypeptrextern, cfg->libbase
+                );
+        }
+        else
+        {
+                fprintf(out,
+                        "   #ifdef __%s_STDLIBBASE__\n"
+                        "    extern struct Library *%s;\n"
+                        "   #else\n"
+                        "    extern %s%s;\n"
+                        "   #endif\n",
+                        cfg->includenameupper,
+                        cfg->libbase,
+                        cfg->libbasetypeptrextern, cfg->libbase
+                );
+        }
+        fprintf(out,
                 "  #endif\n"
-                "   #ifndef __aros_getbase_%s\n"
-                "    #define __aros_getbase_%s() (%s)\n"
-                "   #endif\n"
+                "  #ifndef __aros_getbase_%s\n"
+                "   #define __aros_getbase_%s() (%s)\n"
+                "  #endif\n"
                 " #endif /* defined(__NOLIBBASE__) || defined(__DUMMY_NOLIBBASE__) */\n"
                 "#else /* __%s_RELLIBASE__ */\n"
                 " extern const IPTR __aros_rellib_offset_%s;\n"
@@ -82,12 +102,6 @@ void writeincproto(struct config *cfg)
                 "extern %s__aros_getbase_%s(void);\n"
                 "#endif\n"
                 "\n",
-                cfg->includenameupper,
-                cfg->includenameupper,
-                cfg->libbase,
-                cfg->includenameupper,
-                cfg->libbase,
-                cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbase,
                 cfg->libbase, cfg->libbase,
                 cfg->includenameupper,
@@ -128,9 +142,9 @@ void writeincproto(struct config *cfg)
 
     fprintf(out,
             "#if !defined(NOLIBINLINE) && !defined(%s_NOLIBINLINE) && !defined(__%s_RELLIBBASE__)\n"
-            "#   include <inline/%s.h>\n"
+            "# include <inline/%s.h>\n"
             "#elif !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
-            "#   include <defines/%s.h>\n"
+            "# include <defines/%s.h>\n"
             "#endif\n"
             "\n"
             "#endif /* PROTO_%s_H */\n",
