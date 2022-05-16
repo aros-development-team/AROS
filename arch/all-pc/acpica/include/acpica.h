@@ -51,6 +51,7 @@
 #include <acpica/acpixf.h>
 #include <acpica/acexcep.h>
 #include <acpica/aclocal.h>
+#include <acpica/acobject.h>
 #endif
 
 #endif /* LIBRARIES_ACPICA_H */

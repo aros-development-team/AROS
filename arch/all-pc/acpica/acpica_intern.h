@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018, The AROS Development Team
+ * Copyright (C) 2012-2022, The AROS Development Team
  * All rights reserved.
  */
 
@@ -15,8 +15,10 @@
 
 #define ACPICAB_ENABLED 0
 #define ACPICAF_ENABLED (1 << ACPICAB_ENABLED)
-#define ACPICAB_INITIALISED 1
-#define ACPICAF_INITIALISED (1 << ACPICAB_INITIALISED)
+#define ACPICAB_TABLEINIT 1
+#define ACPICAF_TABLEINIT (1 << ACPICAB_TABLEINIT)
+#define ACPICAB_FULLINIT 1
+#define ACPICAF_FULLINIT (1 << ACPICAB_FULLINIT)
 #define ACPICAB_TIMER 7
 #define ACPICAF_TIMER (1 << ACPICAB_TIMER)
 
