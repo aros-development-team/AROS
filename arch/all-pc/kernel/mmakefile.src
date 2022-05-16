@@ -22,7 +22,8 @@ FUNCS	 := \
              spinlock \
              spinunlock \
              schedulecpu \
-             getsystemattr
+             getsystemattr \
+             timestamp
 
 ASMFILES := \
              cli \
