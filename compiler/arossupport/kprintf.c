@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Formats a message and makes sure the user will see it.
 */
@@ -10,6 +10,8 @@
 
 #include <aros/system.h>
 #include <proto/exec.h>
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
 #include <proto/arossupport.h>
 #undef kprintf
 #undef vkprintf
@@ -123,7 +125,15 @@ static inline int kprintf_strlen(const char *c)
     int          result;
 
     va_start (ap, fmt);
-    result = vkprintf (fmt, ap);
+    struct Library *KernelBase = OpenResource("kernel.resource");
+    if (KernelBase)
+    {
+        result = KrnBug(fmt, ap);
+    }
+    else
+    {
+        result = vkprintf (fmt, ap);
+    }
     va_end (ap);
 
     return result;
