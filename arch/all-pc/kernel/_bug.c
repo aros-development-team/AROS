@@ -46,7 +46,7 @@ int krnBug(const char *format, va_list args, APTR kernelBase)
         retval = snprintf(str, 1024, "%08x%08x 0x%p ", timeCur >> 32, timeCur & 0xFFFFFFFF, thisTask);
     newline = FALSE;
     retval = vsnprintf((char *)((IPTR)str + retval), 1024 - retval, format, args);
-    for (i = 0; str[i] != 0 && i < 1024; i++)
+    for (i = 0; i < 1024 && str[i] != 0  ; i++)
     {
         if (str[i] == '\n')
             newline = TRUE;
