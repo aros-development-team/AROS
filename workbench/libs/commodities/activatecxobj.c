@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
 
         AROS_LHA(CxObj *, co,   A0),
-        AROS_LHA(LONG,    true, D0),
+        AROS_LHA(LONG,    actv, D0),
 
 /*  LOCATION */
 
@@ -30,7 +30,7 @@
 
     Activates/deactivates a given commodity object. (An inactive object
     doesn't perform its function on its input - it just passes it on to
-    the next object.) The activation depends on the value of 'true'; if
+    the next object.) The activation depends on the value of 'actv'; if
     it's TRUE the object is activated, if it's FALSE it's deactivated.
         All objects are created in the active state except for brokers;
     remember to activate your broker when you have linked your other
@@ -39,7 +39,7 @@
     INPUTS
 
     co   - a pointer to a commodity object
-    true - boolean telling whether the object should be activated or
+    actv - boolean telling whether the object should be activated or
            deactivated
 
     RESULT
@@ -68,7 +68,7 @@
 
     LONG temp;
 
-    D(bug("Enter ActivateCxObj(cxobj = %p, true = %d)\n", co, true));
+    D(bug("Enter ActivateCxObj(cxobj = %p, actv = %d)\n", co, actv));
     
     if (co == NULL)
     {
@@ -77,7 +77,7 @@
 
     temp = (co->co_Flags & COF_ACTIVE);
 
-    if (true)
+    if (actv)
     {
         co->co_Flags |= COF_ACTIVE;
     }
