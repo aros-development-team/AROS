@@ -17,10 +17,10 @@
 #undef vkprintf
 #include <exec/execbase.h>
 
-#if defined(__AROSEXEC_SMP__)
+#if defined(DEBUG_USEATOMIC)
 #include <aros/atomic.h>
 #include <asm/cpu.h>
-extern volatile ULONG   safedebug;
+extern volatile ULONG   _arosdebuglock;
 #endif
 
 /*
@@ -145,17 +145,17 @@ int vkprintf (const char * format, va_list args)
 #if defined(FULL_SPECIFIERS)
         const unsigned char *const __arossupport_char_decimalpoint = ".";
 #endif
-#if defined(__AROSEXEC_SMP__)
-    if (safedebug & 1)
+#if defined(DEBUG_USEATOMIC)
+    if (_arosdebuglock & 1)
     {
-        while (bit_test_and_set_long((ULONG*)&safedebug, 1)) { asm volatile("pause"); };
+        while (bit_test_and_set_long((ULONG*)&_arosdebuglock, 1)) { asm volatile("pause"); };
     }
 #endif
 #include "fmtprintf.c"
-#if defined(__AROSEXEC_SMP__)
-    if (safedebug & 1)
+#if defined(DEBUG_USEATOMIC)
+    if (_arosdebuglock & 1)
     {
-        __AROS_ATOMIC_AND_L(safedebug, ~(1 << 1));
+        __AROS_ATOMIC_AND_L(_arosdebuglock, ~(1 << 1));
     }
 #endif
   return outcount;

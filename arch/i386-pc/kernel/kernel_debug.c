@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <bootconsole.h>
@@ -11,6 +11,10 @@
 
 __attribute__((section(".data"))) static unsigned int debug_y_resolution = 0;
 __attribute__((section(".data"))) static void *debug_framebuffer = NULL;
+
+#if defined(DEBUG_USEATOMIC)
+volatile ULONG   _arosdebuglock = 1;
+#endif
 
 int krnPutC(int c, struct KernelBase *KernelBase)
 {

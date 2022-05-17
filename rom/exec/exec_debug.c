@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Runtime debugging support
 */
@@ -22,10 +22,10 @@
 
 #include "exec_debug.h"
 
-#if defined(__AROSEXEC_SMP__)
+#if defined(DEBUG_USEATOMIC)
 #include <aros/atomic.h>
 #include <asm/cpu.h>
-extern volatile ULONG   safedebug;
+extern volatile ULONG   _arosdebuglock;
 #endif
 
 const char * const ExecFlagNames[] =
@@ -162,10 +162,10 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, 
 {
     unsigned int i;
 
-#if defined(__AROSEXEC_SMP__)
-    if (safedebug & 1)
+#if defined(DEBUG_USEATOMIC)
+    if (_arosdebuglock & 1)
     {
-        while (bit_test_and_set_long((ULONG*)&safedebug, 1)) { };
+        while (bit_test_and_set_long((ULONG*)&_arosdebuglock, 1)) { };
     }
 #endif
 
@@ -185,10 +185,10 @@ void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, 
     /* Output the message and append a newline (in order not to bother about it every time) */
     VNewRawDoFmt(format, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL, args);
     RawPutChar('\n');
-#if defined(__AROSEXEC_SMP__)
-    if (safedebug & 1)
+#if defined(DEBUG_USEATOMIC)
+    if (_arosdebuglock & 1)
     {
-        __AROS_ATOMIC_AND_L(safedebug, ~(1 << 1));
+        __AROS_ATOMIC_AND_L(_arosdebuglock, ~(1 << 1));
     }
 #endif
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -10,15 +10,14 @@
 #include <kernel_base.h>
 #include <kernel_debug.h>
 
-#if defined(__AROSEXEC_SMP__)
-#include <aros/atomic.h>
-#include <asm/cpu.h>
-extern volatile ULONG   safedebug;
+#include <proto/exec.h>
+#if defined(DEBUG_TIMESTAMP)
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
 #endif
 
-#include <proto/exec.h>
-
-static int UniPutC(int c, struct KernelBase *KernelBase);
+extern UQUAD Kernel_64_KrnTimeStamp(struct KernelBase *);
+static int UniPutC(int, struct KernelBase *);
 
 /*
  * This is internal version of KrnBug(), to be called directly by bug() macro.
@@ -28,23 +27,36 @@ static int UniPutC(int c, struct KernelBase *KernelBase);
  */
 int krnBug(const char *format, va_list args, APTR kernelBase)
 {
+#if defined(DEBUG_TIMESTAMP)
+    static BOOL newline = TRUE;
+    struct Task *thisTask = NULL;
+    if (SysBase != NULL)
+        thisTask = FindTask(NULL);
+    UQUAD timeCur = Kernel_64_KrnTimeStamp(kernelBase);
+#endif
     int retval = 0;
 
-#if defined(__AROSEXEC_SMP__)
-    if (safedebug & 1)
-    {
-        while (bit_test_and_set_long((ULONG*)&safedebug, 1)) { asm volatile("pause"); };
-    }
-#endif
+    KRNDEBUGLOCK
 
+#if defined(DEBUG_TIMESTAMP)
+    char str[1024];
+    int i;
+    //TODO: replace use of snprintf/vsnprintf
+    if (newline)
+        retval = snprintf(str, 1024, "%08x%08x 0x%p ", timeCur >> 32, timeCur & 0xFFFFFFFF, thisTask);
+    newline = FALSE;
+    retval = vsnprintf((char *)((IPTR)str + retval), 1024 - retval, format, args);
+    for (i = 0; str[i] != 0 && i < 1024; i++)
+    {
+        if (str[i] == '\n')
+            newline = TRUE;
+        UniPutC(str[i], KernelBase);
+    }
+#else
     retval = __vcformat(kernelBase, (int (*)(int, void *))UniPutC, format, args);
-
-#if defined(__AROSEXEC_SMP__)
-    if (safedebug & 1)
-    {
-        __AROS_ATOMIC_AND_L(safedebug, ~(1 << 1));
-    }
 #endif
+
+    KRNDEBUGUNLOCK
 
     return retval;
 }

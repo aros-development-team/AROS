@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <bootconsole.h>
@@ -8,8 +8,8 @@
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 
-#if defined(__AROSEXEC_SMP__)
-volatile ULONG   safedebug = 1;
+#if defined(DEBUG_USEATOMIC)
+volatile ULONG   _arosdebuglock = 1;
 #endif
 
 int krnPutC(int c, struct KernelBase *KernelBase)

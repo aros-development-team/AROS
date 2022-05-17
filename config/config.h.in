@@ -13,35 +13,46 @@
 #define AROS_FLAVOUR_LINKLIB            8
 #define AROS_FLAVOUR_BINCOMPAT          16
 
-/* Always enabled for ABIv1 */
+// Always enabled for ABIv1
 #define AROS_DOS_PACKETS                1
 
 #define AROS_AMIGAOS_COMPLIANCE         @aros_amigaos_compliance@
 
 #define AROS_FLAVOUR                    @aros_flavour_uc@
 
-#define AROS_NOMINAL_WIDTH            @aros_nominal_width@
-#define AROS_NOMINAL_HEIGHT           @aros_nominal_height@
-#define AROS_NOMINAL_DEPTH            @aros_nominal_depth@
-
-#define AROS_SERIAL_DEBUG               @aros_serial_debug@
-
-#define AROS_PALM_DEBUG_HACK            @aros_palm_debug_hack@
+#define AROS_NOMINAL_WIDTH              @aros_nominal_width@
+#define AROS_NOMINAL_HEIGHT             @aros_nominal_height@
+#define AROS_NOMINAL_DEPTH              @aros_nominal_depth@
 
 #define AROS_NESTING_SUPERVISOR         @aros_nesting_supervisor@
 
+@PLATFORM_EXECSMP@
+@ENABLE_EXECSMP@
+
+/* DEBUG options                                                        */
+
+// use atomic's to lock access when outputting debug
+#if defined(__AROSEXEC_SMP__) || defined(__AROSPLATFORM_SMP__)
+#define DEBUG_USEATOMIC
+#endif
+
+// prefix debug output with the kernel timestamp and calling task
+#define DEBUG_TIMESTAMP
+
+#define AROS_SERIAL_DEBUG               @aros_serial_debug@
 #define AROS_MUNGWALL_DEBUG             @aros_mungwall_debug@
 #define AROS_STACK_DEBUG                @aros_stack_debug@
 #define AROS_MODULES_DEBUG              @aros_modules_debug@
-#define USE_XSHM                        @DO_XSHM_SUPPORT@
-#define USE_VIDMODE                     @DO_VIDMODE_SUPPORT@
+
+#define AROS_PALM_DEBUG_HACK            @aros_palm_debug_hack@
+
+/* Misc options                                                         */
 
 #define USE_MMU                         @aros_enable_mmu@
 
+#define USE_XSHM                        @DO_XSHM_SUPPORT@
+#define USE_VIDMODE                     @DO_VIDMODE_SUPPORT@
 #define ENABLE_DBUS                     @ENABLE_DBUS@
 #define ENABLE_X11                      @ENABLE_X11@
-
-@PLATFORM_EXECSMP@
-@ENABLE_EXECSMP@
 
 #endif /* AROS_CONFIG_H */
