@@ -13,8 +13,8 @@
 /* See rom/kernel/mapglobal.c for documentation */
 
 AROS_LH4(int, KrnMapGlobal,
-    AROS_LHA(void *, virtual, A0),
-    AROS_LHA(void *, physical, A1),
+    AROS_LHA(void *, virt, A0),
+    AROS_LHA(void *, phys, A1),
     AROS_LHA(uint32_t, length, D0),
     AROS_LHA(KRN_MapAttr, flags, D1),
     struct KernelBase *, KernelBase, 16, Kernel)
@@ -26,7 +26,7 @@ AROS_LH4(int, KrnMapGlobal,
     BOOL supervisor = (flags & MAP_Supervisor) != 0;
     UBYTE cm = (flags & MAP_CacheInhibit) ? CM_SERIALIZED : ((flags & MAP_WriteThrough) ? CM_WRITETHROUGH : CM_COPYBACK);
 
-    return map_region(KernelBase, virtual, physical, length, invalid, readonly, supervisor, cm);
+    return map_region(KernelBase, virt, phys, length, invalid, readonly, supervisor, cm);
 
     AROS_LIBFUNC_EXIT
 }

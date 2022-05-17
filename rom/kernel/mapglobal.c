@@ -17,8 +17,8 @@
         AROS_LH4I(int, KrnMapGlobal,
 
 /*  SYNOPSIS */
-        AROS_LHA(void *, virtual, A0),
-        AROS_LHA(void *, physical, A1),
+        AROS_LHA(void *, virt, A0),
+        AROS_LHA(void *, phys, A1),
         AROS_LHA(uint32_t, length, D0),
         AROS_LHA(KRN_MapAttr, flags, D1),
 
