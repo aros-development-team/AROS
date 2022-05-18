@@ -1,16 +1,19 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 /* TODO:
    Break support (and +(0L) before execution) -- CreateNewProc()?
  */
 
+#define __EXEC_NOLIBBASE__
+
 #include <aros/debug.h>
 
 #include <dos/dos.h>
 #include <dos/stdio.h>
 #include <dos/cliinit.h>
+#include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <exec/lists.h>
 #include <libraries/expansionbase.h>
@@ -22,6 +25,17 @@
 #include <string.h>
 
 #include "Shell.h"
+
+#if defined(DEBUG) && (DEBUG > 0)
+#undef SysBase
+#define SysBase ((struct ExecBase *)(ss->ss_SysBase))
+#undef DOSBase
+#define DOSBase ss->ss_DOSBase
+#if defined(__mc68000__)
+#undef bug
+#define bug  ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf
+#endif
+#endif
 
 /* Prevent inclusion of the ErrorOutput() linklib
  * routine from -lamiga, so that we don't need a global
@@ -36,23 +50,21 @@ static LONG executeLine(ShellState *ss, STRPTR commandArgs);
 
 BOOL setInteractive(struct CommandLineInterface *cli, ShellState *ss)
 {
-    D(bug("Shell %ld: Flags = 0x%lx\n", ss->cliNumber, ss->flags));
-    D(bug("Shell %ld: cli_Interactive = %ld\n", ss->cliNumber,
-        cli->cli_Interactive));
-    D(bug("Shell %ld: cli_Background = %ld\n", ss->cliNumber,
-        cli->cli_Background));
-    D(bug("Shell %ld: cli_CurrentInput = %p\n", ss->cliNumber,
-        cli->cli_CurrentInput));
-    D(bug("Shell %ld: cli_StandardInput = %p\n", ss->cliNumber,
-        cli->cli_StandardInput));
+    D(
+        bug("Shell %ld: Flags = 0x%lx\n", ss->cliNumber, ss->flags);
+        bug("Shell %ld: cli_Interactive = %ld\n", ss->cliNumber, cli->cli_Interactive);
+        bug("Shell %ld: cli_Background = %ld\n", ss->cliNumber, cli->cli_Background);
+        bug("Shell %ld: cli_CurrentInput = %p\n", ss->cliNumber, cli->cli_CurrentInput);
+        bug("Shell %ld: cli_StandardInput = %p\n", ss->cliNumber, cli->cli_StandardInput);
+    )
     if (!cli->cli_Background && IS_SCRIPT)
         cli->cli_Background = DOSTRUE;
 
     cli->cli_Interactive = (cli->cli_Background || IS_SCRIPT || IS_SYSTEM) ? DOSFALSE : DOSTRUE;
-    D(bug("Shell %ld: cli_Interactive => %ld\n", ss->cliNumber,
-        cli->cli_Interactive));
-    D(bug("Shell %ld: cli_Background => %ld\n", ss->cliNumber,
-        cli->cli_Background));
+    D(
+        bug("Shell %ld: cli_Interactive => %ld\n", ss->cliNumber, cli->cli_Interactive);
+        bug("Shell %ld: cli_Background => %ld\n", ss->cliNumber, cli->cli_Background);
+    )
 
     return cli->cli_Interactive;
 }
@@ -82,9 +94,19 @@ LONG interact(ShellState *ss)
             D(bug("Shell %ld: Reading in a line of input...\n",
                 ss->cliNumber));
             error = readLine(ss, cli, &in, &moreLeft);
-            D(bug("Shell %ld: moreLeft=%d, error=%ld, Line is: "
-                "%ld bytes (%s)\n",
-                ss->cliNumber, moreLeft, error, in.len, in.buf));
+            D(
+                char tmpchr;
+                if (in.len > 0)
+                {
+                    tmpchr = in.buf[in.len - 1];
+                    in.buf[in.len - 1] = 0;
+                }
+                bug("Shell %ld: moreLeft=%d, error=%ld, Line is: "
+                    "%ld bytes (%s)\n",
+                    ss->cliNumber, moreLeft, error, in.len, in.buf);
+                if (in.len > 0)
+                    in.buf[in.len - 1] = tmpchr;
+            )
 
             if (error == 0 && in.len > 0)
                 error = checkLine(ss, &in, &out, TRUE);
@@ -179,8 +201,18 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 
     if (result == 0)
     {
-        D(bug("convertLine: haveCommand = %d, out->buf=%s\n", haveCommand,
-            out->buf));
+        D(
+            char tmpchr;
+            if (out->len > 0)
+            {
+                tmpchr = out->buf[out->len - 1];
+                out->buf[out->len - 1] = 0;
+            }
+            bug("convertLine: haveCommand = %d, out->buf=%s\n", haveCommand,
+                out->buf);
+            if (out->len > 0)
+                out->buf[out->len - 1] = tmpchr;
+        )
         /* Only a comment or dot command ? */
         if (haveCommand == FALSE)
             goto exit;
@@ -580,26 +612,29 @@ void setPath(ShellState *ss, BPTR lock)
     else
         dir = CurrentDir(BNULL);
 
-    do
+    if (dir != BNULL)
     {
-        i += 256;
-        buf = AllocVec(i, MEMF_ANY);
-
-        if (buf == NULL)
-            break;
-
-        if (NameFromLock(dir, buf, i))
+        do
         {
-            SetCurrentDirName(buf);
+            i += 256;
+            buf = AllocVec(i, MEMF_ANY);
+
+            if (buf == NULL)
+                break;
+
+            if (NameFromLock(dir, buf, i))
+            {
+                SetCurrentDirName(buf);
+                FreeVec(buf);
+                break;
+            }
+
             FreeVec(buf);
-            break;
-        }
+        }  while (IoErr() == ERROR_LINE_TOO_LONG);
 
-        FreeVec(buf);
-    }  while (IoErr() == ERROR_LINE_TOO_LONG);
-
-    if (lock == BNULL)
-        CurrentDir(dir);
+        if (lock == BNULL)
+            CurrentDir(dir);
+    }
 }
 
 #undef SysBase
