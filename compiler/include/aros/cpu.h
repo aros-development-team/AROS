@@ -1,7 +1,7 @@
 #ifndef AROS_CPU_H
 #define AROS_CPU_H
 /*
-    Copyright ï¿½ 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU independent version of the <aros/cpu.h> header. This is the one
