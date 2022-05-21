@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/multiboot.h>
@@ -29,6 +29,18 @@
 
 #define D(x)
 #define DSTACK(x)
+
+#define KERNEL_DEBUG_BUFFSIZE   1024
+
+#if !defined(TARGET_SECTION_COMMENT)
+#define TARGET_SECTION_COMMENT " #"
+#endif
+
+#if defined(__AROSEXEC_SMP__)
+# define __BUILDSTRXTRA__ "SMP "
+#else
+# define __BUILDSTRXTRA__
+#endif
 
 static APTR core_AllocBootTLS(struct KernBootPrivate *);
 static APTR core_AllocBootTSS(struct KernBootPrivate *);
@@ -67,7 +79,7 @@ static ULONG allocator = ALLOCATOR_TLSF;
  */
 __attribute__((section(".data"))) struct KernBootPrivate *__KernBootPrivate = NULL;
 __attribute__((section(".data"))) IPTR kick_highest = 0;
-__attribute__((section(".rodata"))) struct ExecBase *SysBase = NULL;
+__attribute__((section(".rodata" TARGET_SECTION_COMMENT))) struct ExecBase *SysBase = NULL;
 
 static void boot_start(struct TagItem *msg);
 static char boot_stack[];
@@ -91,6 +103,15 @@ IPTR __startup start64(struct TagItem *msg, ULONG magic)
 }
 
 /*
+ * Display the Kernel banner
+ */
+static void boot_banner()
+{
+    bug("AROS64 - The AROS Research OS\n");
+    bug("64-bit " __BUILDSTRXTRA__ "build. Compiled %s\n", __DATE__);
+}
+
+/*
  * This code is executed only once, after the kickstart is loaded by bootstrap.
  * Its main job is to initialize early debugging console ASAP in order to be able
  * to see what happens. This will deal with both serial and on-screen console.
@@ -104,14 +125,6 @@ static void boot_start(struct TagItem *msg)
 {
     fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
     con_InitTagList(msg);
-
-    bug("AROS64 - The AROS Research OS\n");
-    bug("64-bit ");
-#if defined(__AROSEXEC_SMP__)
-    bug("SMP ");
-#endif
-    bug("build. Compiled %s\n", __DATE__);
-    D(bug("[Kernel] boot_start: Jumped into kernel.resource @ %p [stub @ %p].\n", boot_start, start64));
 
     kernel_cstart(msg);
 }
@@ -166,9 +179,6 @@ void kernel_cstart(const struct TagItem *start_msg)
     /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
 
-    D(bug("[Kernel] %s: Boot data: 0x%p\n", __func__, __KernBootPrivate));
-    DSTACK(bug("[Kernel] %s: Boot stack: 0x%p - 0x%p\n", __func__, boot_stack, boot_stack + STACK_SIZE));
-
     if (__KernBootPrivate == NULL)
     {
         /* This is our first start. */
@@ -216,9 +226,7 @@ void kernel_cstart(const struct TagItem *start_msg)
 
         /* Initialize boot-time memory allocator */
         BootMemPtr   = (void *)khi;
-        BootMemLimit = (void *)mmap->addr + mmap->len;
-
-        D(bug("[Kernel] Bootinfo storage 0x%p - 0x%p\n", BootMemPtr, BootMemLimit));
+        BootMemLimit = (void *)(((IPTR)mmap->addr + mmap->len) - (KERNEL_DEBUG_BUFFSIZE + 1));
 
         /*
          * Our boot taglist is placed by the bootstrap just somewhere in memory.
@@ -268,6 +276,16 @@ void kernel_cstart(const struct TagItem *start_msg)
 
         /* Now allocate KernBootPrivate */
         __KernBootPrivate = krnAllocBootMem(sizeof(struct KernBootPrivate));
+        __KernBootPrivate->debug_buffer = BootMemLimit + 1;
+        __KernBootPrivate->debug_buffsize = KERNEL_DEBUG_BUFFSIZE;
+
+        boot_banner();
+        D(
+            bug("[Kernel] %s: Kernel mem range @ 0x%p - 0x%p\n", __func__, BootMemPtr, BootMemLimit);
+            bug("[Kernel] %s: debug buffer @ 0x%p (%u bytes)\n", __func__, __KernBootPrivate->debug_buffer, __KernBootPrivate->debug_buffsize);
+            bug("[Kernel] %s: Boot data: 0x%p\n", __func__, __KernBootPrivate);
+        )
+        DSTACK(bug("[Kernel] %s: Boot stack: 0x%p - 0x%p\n", __func__, boot_stack, boot_stack + STACK_SIZE));
 
         if (cmdline && vmode && vmode->phys_base && strstr(cmdline, "vesahack"))
         {
@@ -354,7 +372,10 @@ void kernel_cstart(const struct TagItem *start_msg)
      */
     if (!kick_highest)
     {
-        D(bug("[Kernel] Boot-time setup complete\n"));
+        D(
+            bug("[Kernel] %s: Boot-time setup complete\n", __func__);
+            bug("[Kernel] %s: Kernel Allocated Mem = %u bytes\n", __func__, (IPTR)BootMemPtr - (IPTR)LibGetTagData(KRN_KernelHighest, 0, BootMsg));
+        )
         kick_highest = AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
     }
 

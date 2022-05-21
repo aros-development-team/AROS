@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERN_H_
 #define KERNEL_INTERN_H_
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 32bit x86 kernel_intern.h
@@ -31,6 +31,8 @@ struct KernBootPrivate
 {
     IPTR		        _APICBase;		/* Bootstrap APIC base address				*/
     UWORD                       kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
+    ULONG                   debug_buffsize;
+    char                    *debug_buffer;
     APTR                        BOOTTLS,
                                 BOOTGDT,
                                 BOOTIDT;

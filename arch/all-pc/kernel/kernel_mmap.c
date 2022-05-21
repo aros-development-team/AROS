@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -150,6 +150,14 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
                 else
 #endif
                 end = mmap->addr + mmap->len;
+
+                if ((__KernBootPrivate->debug_buffer) && (__KernBootPrivate->debug_buffsize > 0))
+                {
+                    if ((start < (IPTR)__KernBootPrivate->debug_buffer) && (end > (IPTR)__KernBootPrivate->debug_buffer))
+                    {
+                        end = (IPTR)__KernBootPrivate->debug_buffer - 1;
+                    }
+                }
 
                 if ((cur_start < end) && (reg->end > start))
                 {
