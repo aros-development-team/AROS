@@ -17,70 +17,7 @@
 #undef vkprintf
 #include <exec/execbase.h>
 
-#if defined(DEBUG_USEATOMIC)
-#include <aros/atomic.h>
-#include <asm/cpu.h>
-extern volatile ULONG   _arosdebuglock;
-#endif
-
-/*
-  The floating point math code pulls in symbols
-  that cannot be used in the amiga rom
-  */
-#if !defined(__m68k__)
-#define FULL_SPECIFIERS
-#endif
-
-#if defined(FULL_SPECIFIERS)
-#include <float.h>
-#endif
-
-/* provide inline versions of clib functions
-   used in FMTPRINTF */
-   
-/* ctype.h ... */
-static inline int isdigit(int c)
-{
-        return '0' <= c && c <= '9';
-}
-
-static inline unsigned char tolower(unsigned char c)
-{
-        if ((int)c >= (int)'A')
-                c -= 'A'-'a';
-        return c;
-}
-
-#define isprint(x)      (((x) >= ' ' && (x) <= 128) || (x) >= 160)
-
-/* math.h ... */
-#define isnan(x)                1
-#define isinf(x)                1
-#define log10(x)                1
-#define log10l(x)               1
-#define pow(x,y)        1
-#define powl(x,y)               1
-
-/* string.h ... */
-static inline int kprintf_strlen(const char *c)
-{
-    int i = 0;
-    while (*(c++)) i++;
-    return i;
-}
-
-/* limits.h ... */
-#define ULONG_MAX       4294967295UL
-
-/* support macros for FMTPRINTF */
-#define FMTPRINTF_COUT(c)       RawPutChar(c)
-#define FMTPRINTF_STRLEN(str)   kprintf_strlen(str)
-
-#if defined(FULL_SPECIFIERS)
-#define FMTPRINTF_DECIMALPOINT  __arossupport_char_decimalpoint
-#endif
-
-#include "fmtprintf_pre.c"
+extern int vkprintf (const char * format, va_list args);
 
 /*****************************************************************************
 
@@ -139,24 +76,3 @@ static inline int kprintf_strlen(const char *c)
     return result;
 } /* kprintf */
 
-/******************************************************************************/
-int vkprintf (const char * format, va_list args)
-{
-#if defined(FULL_SPECIFIERS)
-        const unsigned char *const __arossupport_char_decimalpoint = ".";
-#endif
-#if defined(DEBUG_USEATOMIC)
-    if (_arosdebuglock & 1)
-    {
-        while (bit_test_and_set_long((ULONG*)&_arosdebuglock, 1)) { asm volatile("pause"); };
-    }
-#endif
-#include "fmtprintf.c"
-#if defined(DEBUG_USEATOMIC)
-    if (_arosdebuglock & 1)
-    {
-        __AROS_ATOMIC_AND_L(_arosdebuglock, ~(1 << 1));
-    }
-#endif
-  return outcount;
-} /* vkprintf */

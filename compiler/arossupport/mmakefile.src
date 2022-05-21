@@ -5,6 +5,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES	:= \
+    _vkprintf \
     calcchecksum \
     clonerastport \
     createbstr \
@@ -32,6 +33,7 @@ FILES	:= \
     readstruct \
     readword \
     removeslist \
+    vkprintf \
     writebyte \
     writedouble \
     writefloat \
