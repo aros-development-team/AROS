@@ -39,22 +39,28 @@ int krnBug(const char *format, va_list args, APTR kernelBase)
     KRNDEBUGLOCK
 
 #if defined(DEBUG_TIMESTAMP)
-    char str[1024];
-    int i;
-    //TODO: replace use of snprintf/vsnprintf
-    if (newline)
-        retval = snprintf(str, 1024, "%08x%08x 0x%p ", timeCur >> 32, timeCur & 0xFFFFFFFF, thisTask);
-    newline = FALSE;
-    retval = vsnprintf((char *)((IPTR)str + retval), 1024 - retval, format, args);
-    for (i = 0; i < 1024 && str[i] != 0  ; i++)
+    if ((__KernBootPrivate->debug_buffer) && (__KernBootPrivate->debug_buffsize > 0))
     {
-        if (str[i] == '\n')
-            newline = TRUE;
-        UniPutC(str[i], KernelBase);
+        int i;
+        //TODO: replace use of snprintf/vsnprintf
+        if (newline)
+            retval = snprintf(__KernBootPrivate->debug_buffer, __KernBootPrivate->debug_buffsize,
+                                     "%08x%08x 0x%p | %03u | ",
+                                     timeCur >> 32, timeCur & 0xFFFFFFFF, thisTask, 0);
+        newline = FALSE;
+        retval = vsnprintf((char *)((IPTR)__KernBootPrivate->debug_buffer + retval), __KernBootPrivate->debug_buffsize - retval, format, args);
+        for (i = 0; i < __KernBootPrivate->debug_buffsize && __KernBootPrivate->debug_buffer[i] != 0  ; i++)
+        {
+            if (__KernBootPrivate->debug_buffer[i] == '\n')
+                newline = TRUE;
+            UniPutC(__KernBootPrivate->debug_buffer[i], KernelBase);
+        }
+        KRNDEBUGUNLOCK
+
+        return retval;
     }
-#else
-    retval = __vcformat(kernelBase, (int (*)(int, void *))UniPutC, format, args);
 #endif
+    retval = __vcformat(kernelBase, (int (*)(int, void *))UniPutC, format, args);
 
     KRNDEBUGUNLOCK
 
