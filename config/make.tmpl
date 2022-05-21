@@ -2807,6 +2807,8 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   cppflags="$(CPPFLAGS)" cflags= dflags= cxxflags= dxxflags= \
   aflags="$(AFLAGS)" compiler=target lto="$(TARGET_LTO)" usetree=no
 
+%gen_archspecificrules mainmmake=%(mmake)
+
 # assign and generate the local variables used in this macro
 %(mmake)_LIBNAME           := %(libname)
 %(mmake)_LINKLIB           := %(libdir)/lib%(libname).a
@@ -3194,7 +3196,13 @@ vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 vpath %.S $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 endif
 
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))" setuptarget="$(BD_OBJS$(BDID))"
+ifneq ($(BD_LINKLIBARCHOBJS$(BDID))$(BD_LINKLIBOBJS$(BDID)),)
+BD_GENDIR$(BDID) := $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
+else
+BD_GENDIR$(BDID) := $(BD_OBJDIR$(BDID))
+endif
+
+%rule_makedirs dirs="$(BD_GENDIR$(BDID))" setuptarget="$(BD_OBJS$(BDID))"
 
 #MM
 %(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
