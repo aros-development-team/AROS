@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     ROMTag scanner.
 */
@@ -22,6 +22,12 @@
 
 #define D(x)
 
+/*
+ * Currently the ROMTag code tries to allocate a 1MB
+ * chunk to store the Resident info.
+ */
+#define ROMTAG_CHUNKSIZE    (1024 * 1024)
+
 static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 {
     ULONG i;
@@ -39,34 +45,67 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
  * Allocate memory space for boot-time usage. Returns address and size of the usable area.
  * It's strongly adviced to return enough space to store resident list of sane length.
  */
-static APTR krnGetSysMem(struct MemHeader *mh, IPTR *size)
+static APTR krnSysMemAlloc(struct MemHeader *mh, IPTR *size)
 {
+    APTR smAlloc = NULL;
+
     if (mh->mh_Attributes & MEMF_MANAGED)
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
-
+        
         if (mhe->mhe_Alloc)
         {
-            *size = 1024*1024;
-            return mhe->mhe_Alloc(mhe, *size, NULL);
+            smAlloc = mhe->mhe_Alloc(mhe, *size, NULL);
         }
-
-        *size = 0;
-        return NULL;
     }
     else
     {
-        /* Just dequeue the first MemChunk. It's assumed that it has the required space for sure. */
         struct MemChunk *mc = mh->mh_First;
+        APTR *nxtPtr = (APTR *)&mh->mh_First;
 
-        mh->mh_First = mc->mc_Next;
-        mh->mh_Free -= mc->mc_Bytes;
+        while (mc->mc_Bytes < *size)
+        {
+            if (mc->mc_Next)
+            {
+                nxtPtr = (APTR *)&mc->mc_Next;
+                mc = mc->mc_Next;
+                continue;
+            }
+            break;
+        }
+        if (mc->mc_Bytes >= *size)
+        {
+            D(bug("[RomTagScanner] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
 
-        D(bug("[RomTagScanner] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
-
-        *size = mc->mc_Bytes;
-        return mc;
+            *nxtPtr = mc->mc_Next;
+            mh->mh_Free -= mc->mc_Bytes;
+            *size = mc->mc_Bytes;
+            smAlloc = mc;
+        }
     }
+    if (!smAlloc)
+        *size = 0;
+    return smAlloc;
+}
+
+static APTR krnGetSysMem(struct MemHeader **mh, IPTR *size)
+{
+    APTR smAlloc;
+
+    *size = ROMTAG_CHUNKSIZE;
+
+    while ((smAlloc = krnSysMemAlloc(*mh, size)) == NULL)
+    {
+        if ((*mh)->mh_Node.ln_Pred && (*mh)->mh_Node.ln_Pred->ln_Pred)
+            *mh = (struct MemHeader *)((*mh)->mh_Node.ln_Pred);
+    }
+    D(
+        if (smAlloc)
+        {
+            bug("[RomTagScanner] Allocated %lu bytes from mh @ 0x%p\n", *size, *mh);
+        }
+    )
+    return smAlloc;
 }
 
 /* Release unused boot-time memory */
@@ -121,11 +160,13 @@ static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IP
 
 APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 {
+    struct MemHeader *usedmh = mh;
     UWORD           *end;
     UWORD           *ptr;               /* Start looking here */
     struct Resident *res;               /* module found */
     ULONG           i;
     BOOL            sorted;
+
     /*
      * We don't know resident list size until it's created. Because of this, we use two-step memory allocation
      * for this purpose.
@@ -133,7 +174,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
      * construct resident list in this area. After it's done, we return part of the used space to the system.
      */
     IPTR chunkSize;
-    struct Resident **RomTag = krnGetSysMem(mh, &chunkSize);
+    struct Resident **RomTag = krnGetSysMem(&usedmh, &chunkSize);
     IPTR  limit = chunkSize / sizeof(APTR);
     ULONG num = 0;
 
@@ -150,7 +191,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
         ptr = (UWORD *)(((IPTR)ptr + 1) & ~1);
         end = (UWORD *)((IPTR)end & ~1);
 
-        D(bug("RomTagScanner: Start = %p, End = %p\n", ptr, end));
+        D(bug("%s: Start = %p, End = %p\n", __func__, ptr, end));
         do
         {
             res = (struct Resident *)ptr;
@@ -216,7 +257,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     RomTag[num] = NULL;
 
     /* Seal our used memory as allocated */
-    krnReleaseSysMem(mh, RomTag, chunkSize, (num + 1) * sizeof(struct Resident *));
+    krnReleaseSysMem(usedmh, RomTag, chunkSize, (num + 1) * sizeof(struct Resident *));
 
     /*
      * Building list is complete, sort RomTags according to their priority.
