@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -11,9 +11,9 @@
 #include <kernel_debug.h>
 
 /*
- * This is internal version of KrnBug(), to be called directly by bug() macro.
- * If you want to reimplement it, override this file.
- * However, generally you won't want to do this, because __vcformat() supports
+ * This is the internal version of KrnBug(), which is called directly by the kernel bug() macro.
+ * To reimplement it, override this file using the build_archspecific metamake macros.
+ * Generally, however, doing this is undesirable because __vcformat() supports
  * AROS-specific extensions, like %b, which are unlikely supported by your host OS.
  */
 int krnBug(const char *format, va_list args, APTR kernelBase)
