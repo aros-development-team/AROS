@@ -22,9 +22,14 @@
 
 #define D(x)
 
+/* The following define prevents the initial
+ * scan to count residents */
+//#define ROMTAG_FLATALLOC
+
 /*
  * Currently the ROMTag code tries to allocate a 1MB
  * chunk to store the Resident info.
+ * TODO: 1MB seems a bit excessive .. look at using a more conservative value
  */
 #define ROMTAG_CHUNKSIZE    (1024 * 1024)
 
@@ -43,7 +48,6 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 
 /*
  * Allocate memory space for boot-time usage. Returns address and size of the usable area.
- * It's strongly adviced to return enough space to store resident list of sane length.
  */
 static APTR krnSysMemAlloc(struct MemHeader *mh, IPTR *size)
 {
@@ -75,7 +79,7 @@ static APTR krnSysMemAlloc(struct MemHeader *mh, IPTR *size)
         }
         if (mc->mc_Bytes >= *size)
         {
-            D(bug("[RomTagScanner] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
+            D(bug("[Kernel] %s: Using chunk 0x%p of %lu bytes\n", __func__, mc, mc->mc_Bytes));
 
             *nxtPtr = mc->mc_Next;
             mh->mh_Free -= mc->mc_Bytes;
@@ -83,8 +87,6 @@ static APTR krnSysMemAlloc(struct MemHeader *mh, IPTR *size)
             smAlloc = mc;
         }
     }
-    if (!smAlloc)
-        *size = 0;
     return smAlloc;
 }
 
@@ -92,17 +94,24 @@ static APTR krnGetSysMem(struct MemHeader **mh, IPTR *size)
 {
     APTR smAlloc;
 
-    *size = ROMTAG_CHUNKSIZE;
+    if (*size == 0)
+        *size = ROMTAG_CHUNKSIZE;
 
     while ((smAlloc = krnSysMemAlloc(*mh, size)) == NULL)
     {
         if ((*mh)->mh_Node.ln_Pred && (*mh)->mh_Node.ln_Pred->ln_Pred)
-            *mh = (struct MemHeader *)((*mh)->mh_Node.ln_Pred);
-    }
-    D(
-        if (smAlloc)
         {
-            bug("[RomTagScanner] Allocated %lu bytes from mh @ 0x%p\n", *size, *mh);
+            *mh = (struct MemHeader *)((*mh)->mh_Node.ln_Pred);
+            D(bug("[Kernel] %s: trying with mh @ 0x%p\n", __func__, *mh);)
+        }
+        else break;
+    }
+    if (!smAlloc)
+        *size = 0;
+    D(
+    else
+        {
+            bug("[Kernel] %s: Allocated %lu bytes from mh @ 0x%p\n", __func__, *size, *mh);
         }
     )
     return smAlloc;
@@ -125,7 +134,7 @@ static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IP
         allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
         chunkSize -= allocSize;
 
-        D(bug("[RomTagScanner] Chunk 0x%p, %lu of %lu bytes used\n", addr, allocSize, chunkSize));
+        D(bug("[Kernel] %s: Chunk 0x%p, %lu of %lu bytes used\n", __func__, addr, allocSize, chunkSize));
 
         if (chunkSize < MEMCHUNK_TOTAL)
             return;
@@ -147,94 +156,100 @@ static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IP
  * with the same name are found, the one with higher version or priority
  * wins.
  *
- * After building list of kernel modules, the KickTagPtr and KickMemPtr are
- * checksummed. If checksum is proper and all memory pointed in KickMemPtr
+ * After building the list of kernel modules, KickTagPtr and KickMemPtr are
+ * checksummed. If the checksum is correct, and all memory pointed to by KickMemPtr
  * may be allocated, then all modules from KickTagPtr are added to RT list
  *
  * Afterwards the proper RomTagList is created (see InitCode() for details)
  * and memory after list and nodes is freed.
  *
- * The array ranges gives a [ start, end ] pair to scan, with an entry of
- * -1 used to break the loop.
+ * The array ranges give a [ start, end ] pair combination to scan, with  -1 used
+ * as the terminating value.
  */
 
-APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
+struct RomScanData
 {
-    struct MemHeader *usedmh = mh;
-    UWORD           *end;
-    UWORD           *ptr;               /* Start looking here */
-    struct Resident *res;               /* module found */
+    struct Resident **RomTag;
+    ULONG           limit;
+    ULONG           num;
+};
+
+typedef BOOL (*RESSCANCALLBACK)(struct Resident *, struct RomScanData *, void *);
+
+/* Callback to count residents */
+static BOOL krnRomResidentCount(struct Resident *res, struct RomScanData *scanData, ULONG *count)
+{
+    *count += 1;
+
+    return TRUE;
+}
+
+/* Callback to add a found resident to the romtag list, or update the entry if it already exists in the list */
+static BOOL krnRomResidentRegister(struct Resident *res, struct RomScanData *scanData, UWORD **ptr)
+{
     ULONG           i;
-    BOOL            sorted;
 
-    /*
-     * We don't know resident list size until it's created. Because of this, we use two-step memory allocation
-     * for this purpose.
-     * First we dequeue some space from the MemHeader, and remember its starting address and size. Then we
-     * construct resident list in this area. After it's done, we return part of the used space to the system.
-     */
-    IPTR chunkSize;
-    struct Resident **RomTag = krnGetSysMem(&usedmh, &chunkSize);
-    IPTR  limit = chunkSize / sizeof(APTR);
-    ULONG num = 0;
+    /* Check if there is an existing module with the same name already */
+    i = findname(scanData->RomTag, scanData->num, res->rt_Name);
+    if (i != -1)
+    {
+        struct Resident *old = scanData->RomTag[i];
+        /*
+            Rules for replacing modules:
+            1. Higher version always wins.
+            2. If the versions are equal, then lower priority
+                looses.
+        */
+        if ((old->rt_Version < res->rt_Version) ||
+            (old->rt_Version == res->rt_Version && old->rt_Pri <= res->rt_Pri))
+        {
+            scanData->RomTag[i] = res;
+        }
+    }
+    else
+    {
+        /* 'limit' is the max number or pointers we can safely store in the RomTag array. */
+        if (scanData->num == scanData->limit)
+            return FALSE;
 
-    if (!RomTag)
-        return NULL;
+        /* New module */
+        scanData->RomTag[scanData->num++] = res;
+    }
+    return TRUE;
+}
 
-    /* Look in whole kickstart for resident modules */
+/*
+ * Scan provided regions looking for residents, and call the provided callback for each found.
+ * If a param is provided, pass that to the callback, otherwise pass a pointer to the scan pointer.
+ */
+static VOID krnScanResidents(UWORD *ranges[], struct RomScanData *scanData, RESSCANCALLBACK scanCallback, void *param)
+{
+    struct Resident *res;
+    UWORD           *end;
+    UWORD           *ptr;
+
+    /* Scan the requested ranges for resident modules */
     while (*ranges != (UWORD *)~0)
     {
         ptr = *ranges++;
         end = *ranges++;
 
-        /* Make sure that addresses are UWORD-aligned. In some circumstances they can be not. */
+        /* Ensure addresses are UWORD-aligned. */
         ptr = (UWORD *)(((IPTR)ptr + 1) & ~1);
         end = (UWORD *)((IPTR)end & ~1);
 
-        D(bug("%s: Start = %p, End = %p\n", __func__, ptr, end));
+        D(bug("[Kernel] %s: Scan range start = %p, end = %p\n", __func__, ptr, end));
         do
         {
             res = (struct Resident *)ptr;
 
-            /* Do we have RTC_MATCHWORD and rt_MatchTag*/
+            /* Is there a Resident module? */
             if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res)
             {
-                /* Yes, it is Resident module. Check if there is module with such name already */
-                i = findname(RomTag, num, res->rt_Name);
-                if (i != -1)
-                {
-                    struct Resident *old = RomTag[i];
-                    /*
-                        Rules for replacing modules:
-                        1. Higher version always wins.
-                        2. If the versions are equal, then lower priority
-                            looses.
-                    */
-                    if ((old->rt_Version < res->rt_Version) ||
-                        (old->rt_Version == res->rt_Version && old->rt_Pri <= res->rt_Pri))
-                    {
-                        RomTag[i] = res;
-                    }
-                }
+                if (!param)
+                    scanCallback(res, scanData, &ptr);
                 else
-                {
-                    /* New module */
-                    RomTag[num++] = res;
-                    /*
-                     * 'limit' holds a length of our MemChunk in pointers.
-                     * Actually it's a number or pointers we can safely store in it (including NULL terminator).
-                     * If it's exceeded, return NULL.
-                     * TODO: If ever needed, this routine can be made smarter. There can be
-                     * the following approaches:
-                     * a) Move the data to a next MemChunk which is bigger than the current one
-                     *    and continue.
-                     * b) In the beginning of this routine, find the largest available MemChunk and use it.
-                     * Note that we exit with destroyed MemChunk here. Anyway, failure here means the system
-                     * is completely unable to boot up.
-                     */
-                    if (num == limit)
-                        return NULL;
-                }
+                    scanCallback(res, scanData, param);
 
                 /* Get address of EndOfResident from RomTag but only when
                  * it's higher then present one - this avoids strange locks
@@ -252,37 +267,69 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
             ptr++;
         } while (ptr < (UWORD*)end);
     }
+}
 
-    /* Terminate the list */
-    RomTag[num] = NULL;
+APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
+{
+    struct MemHeader    *usedmh = mh;
+    struct RomScanData  scanData;
+    IPTR                chunkSize = 0;
 
-    /* Seal our used memory as allocated */
-    krnReleaseSysMem(usedmh, RomTag, chunkSize, (num + 1) * sizeof(struct Resident *));
+#if !defined(ROMTAG_FLATALLOC)
+    scanData.limit = 0;
+    scanData.num = 0;
+    /* Perform an initial scan to determine how much space we need to allocate .. */
+    krnScanResidents(ranges, &scanData, (RESSCANCALLBACK)krnRomResidentCount, &scanData.limit);
 
+    D(bug("[Kernel] %s: Counted %u Residents\n", __func__, scanData.limit);)
+    chunkSize = (scanData.limit + 1) * sizeof(APTR);
+#else
     /*
-     * Building list is complete, sort RomTags according to their priority.
-     * I use BubbleSort algorithm.
+     * We don't know resident list size until it's created. Because of this, we use two-step memory allocation
+     * for this purpose.
+     * First we dequeue some space from the MemHeader, and remember its starting address and size. Then we
+     * construct resident list in this area. After it's done, we return part of the used space to the system.
      */
-    do
+#endif
+    scanData.RomTag = krnGetSysMem(&usedmh, &chunkSize);
+    scanData.limit = (chunkSize / sizeof(APTR)) - 1;
+    scanData.num = 0;
+
+    D(bug("[Kernel] %s: Array allocated @ %p (%u bytes)\n", __func__, scanData.RomTag, chunkSize);)
+
+    if (scanData.RomTag)
     {
-        sorted = TRUE;
+        BOOL sorted;
 
-        for (i = 0; i < num - 1; i++)
+        /* Populate the list of Residents, and terminate */
+        krnScanResidents(ranges, &scanData, (RESSCANCALLBACK)krnRomResidentRegister, NULL);
+        scanData.RomTag[scanData.num] = NULL;
+
+        /* Finalise the used memory, releasing unused space if necessary */
+        krnReleaseSysMem(usedmh, scanData.RomTag, chunkSize, (scanData.num + 1) * sizeof(APTR));
+
+        /* Resident list is built - BubbleSort RomTags according to their priority */
+        do
         {
-            if (RomTag[i]->rt_Pri < RomTag[i+1]->rt_Pri)
+            ULONG           i;
+            sorted = TRUE;
+
+            for (i = 0; i < scanData.num - 1; i++)
             {
-                struct Resident *tmp;
+                if (scanData.RomTag[i]->rt_Pri < scanData.RomTag[i+1]->rt_Pri)
+                {
+                    struct Resident *tmp;
 
-                tmp = RomTag[i+1];
-                RomTag[i+1] = RomTag[i];
-                RomTag[i] = tmp;
+                    tmp = scanData.RomTag[i+1];
+                    scanData.RomTag[i+1] = scanData.RomTag[i];
+                    scanData.RomTag[i] = tmp;
 
-                sorted = FALSE;
+                    sorted = FALSE;
+                }
             }
-        }
-    } while (!sorted);
-
-    return RomTag;
+        } while (!sorted);
+    }
+    return scanData.RomTag;
 }
 
 struct Resident *krnFindResident(struct Resident **resList, const char *name)
