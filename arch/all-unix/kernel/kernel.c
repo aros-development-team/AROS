@@ -53,6 +53,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
     const struct SignalTranslation *s;
     short amigaTrap;
     struct AROSCPUContext ctx;
+    IPTR pc;
 
     SUPERVISOR_ENTER;
 
@@ -78,6 +79,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
      */
     memset(&ctx, 0, sizeof(ctx));
     SAVEREGS(&ctx, regs);
+    pc = PC(regs);
 
     amigaTrap = s->AmigaTrap;
     if (s->CPUTrap != -1)
@@ -98,6 +100,13 @@ static void core_TrapHandler(int sig, regs_t *regs)
     /* Trap handler(s) have possibly modified the context, so
        we convert it back before returning */
     RESTOREREGS(&ctx, regs);
+
+    /* If the program counter has been modified, assume continuing in crash handling subroutine
+       after completing signal handler. Align stack as if return address was passed, so that
+       stack continues being aligned at 16 bytes. This is necessary for x86_64 and should not
+       cause issues for other architectures */
+    if (pc != PC(regs))
+        if ((SP(regs) & 0xf) == 0x0) SP(regs) -= 8;
 
     SUPERVISOR_LEAVE;
 }
