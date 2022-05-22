@@ -41,15 +41,17 @@ int krnBug(const char *format, va_list args, APTR kernelBase)
         //TODO: replace use of snprintf/vsnprintf
         if (newline)
         {
-            struct PlatformData *kernPlatD = (struct PlatformData *)(((struct KernelBase *)kernelBase)->kb_PlatformData);
             struct Task         *debugTask = NULL;
+            struct PlatformData *kernPlatD;
             UQUAD               debugStamp;
             unsigned int        debugCPU;
 
             debugStamp = Kernel_64_KrnTimeStamp(kernelBase);
             if (SysBase != NULL)
                 debugTask = FindTask(NULL);
-            if (kernelBase && kernPlatD && kernPlatD->kb_APIC)
+            if ((kernelBase) &&
+                ((kernPlatD = (struct PlatformData *)(((struct KernelBase *)kernelBase)->kb_PlatformData)) != NULL) &&
+                (kernPlatD->kb_APIC))
                 debugCPU = core_APIC_GetNumber(kernPlatD->kb_APIC);
             else
                 debugCPU = 0;
