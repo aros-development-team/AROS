@@ -1017,7 +1017,7 @@ fi
 # These are the flags to pass when compiling debugged programs
 aros_debug_cppflags="$aros_messages_debug"
 aros_debug_cflags="$aros_symbols_debug"
-aros_debug_cxxflags=
+aros_debug_cxxflags="$aros_symbols_debug"
 aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
 
