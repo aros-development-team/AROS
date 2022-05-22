@@ -100,10 +100,14 @@
 
 #include <stdarg.h>	/* for va_list */
 
+/* exec_debug.c */
+void ExecLog(struct ExecBase *, ULONG, const char *, ...);
+/* exec_flags.c */
 extern const char * const ExecFlagNames[];
-ULONG ParseFlags(char *opts, const char * const *FlagNames);
-void ExecLog(struct ExecBase *SysBase, ULONG flags, const char *format, ...);
-void VLog(struct ExecBase *SysBase, ULONG flags, const char * const *FlagNames, const char *format, va_list args);
+const char *GetFlagName(ULONG, const char * const *);
+ULONG ParseFlags(char *, const char * const *);
+/* exec_vlog.c */
+void VLog(struct ExecBase *, ULONG, const char * const *, const char *, va_list);
 
 #endif
 
