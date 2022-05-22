@@ -415,6 +415,18 @@ diff -ruN binutils-2.32/binutils/configure binutils-2.32-aros/binutils/configure
  int
  main ()
  {
+diff -ruN binutils-2.32/binutils/objcopy.c binutils-2.32.aros/binutils/objcopy.c
+--- binutils-2.32/binutils/objcopy.c	2019-01-19 16:01:33.000000000 +0000
++++ binutils-2.32.aros/binutils/objcopy.c	2022-05-21 10:55:32.285339053 +0000
+@@ -3772,7 +3772,7 @@
+   if (p != NULL)
+     flags = p->flags | (flags & (SEC_HAS_CONTENTS | SEC_RELOC));
+   else if (strip_symbols == STRIP_NONDEBUG
+-	   && (flags & (SEC_ALLOC | SEC_GROUP)) != 0
++	   && (flags & (SEC_ALLOC /*| SEC_GROUP*/)) != 0
+ 	   && !is_nondebug_keep_contents_section (ibfd, isection))
+     {
+       flags &= ~(SEC_HAS_CONTENTS | SEC_LOAD | SEC_GROUP);
 diff -ruN binutils-2.32/binutils/sysdep.h binutils-2.32-aros/binutils/sysdep.h
 --- binutils-2.32/binutils/sysdep.h	2019-01-19 17:01:33.000000000 +0100
 +++ binutils-2.32-aros/binutils/sysdep.h	2019-01-19 17:10:54.000000000 +0100
