@@ -16,24 +16,18 @@
 #include <proto/kernel.h>
 #endif
 
-extern UQUAD Kernel_64_KrnTimeStamp(struct KernelBase *);
 static int UniPutC(int, struct KernelBase *);
 
+#if defined(DEBUG_TIMESTAMP)
+#include "apic.h"
+extern UQUAD Kernel_64_KrnTimeStamp(struct KernelBase *);
+#endif
+
 /*
- * This is internal version of KrnBug(), to be called directly by bug() macro.
- * If you want to reimplement it, override this file.
- * However, generally you won't want to do this, because __vcformat() supports
- * AROS-specific extensions, like %b, which are unlikely supported by your host OS.
- */
+ * This is pc arch specific version of KrnBug(), to be called directly by the kernel bug() macro.
+  */
 int krnBug(const char *format, va_list args, APTR kernelBase)
 {
-#if defined(DEBUG_TIMESTAMP)
-    static BOOL newline = TRUE;
-    struct Task *thisTask = NULL;
-    if (SysBase != NULL)
-        thisTask = FindTask(NULL);
-    UQUAD timeCur = Kernel_64_KrnTimeStamp(kernelBase);
-#endif
     int retval = 0;
 
     KRNDEBUGLOCK
@@ -41,12 +35,29 @@ int krnBug(const char *format, va_list args, APTR kernelBase)
 #if defined(DEBUG_TIMESTAMP)
     if ((__KernBootPrivate->debug_buffer) && (__KernBootPrivate->debug_buffsize > 0))
     {
-        int i;
+        unsigned int i;
+        static BOOL newline = TRUE;
+
         //TODO: replace use of snprintf/vsnprintf
         if (newline)
+        {
+            struct PlatformData *kernPlatD = (struct PlatformData *)(((struct KernelBase *)kernelBase)->kb_PlatformData);
+            struct Task         *debugTask = NULL;
+            UQUAD               debugStamp;
+            unsigned int        debugCPU;
+
+            debugStamp = Kernel_64_KrnTimeStamp(kernelBase);
+            if (SysBase != NULL)
+                debugTask = FindTask(NULL);
+            if (kernelBase && kernPlatD && kernPlatD->kb_APIC)
+                debugCPU = core_APIC_GetNumber(kernPlatD->kb_APIC);
+            else
+                debugCPU = 0;
+
             retval = snprintf(__KernBootPrivate->debug_buffer, __KernBootPrivate->debug_buffsize,
                                      "%08x%08x 0x%p | %03u | ",
-                                     timeCur >> 32, timeCur & 0xFFFFFFFF, thisTask, 0);
+                                     debugStamp >> 32, debugStamp & 0xFFFFFFFF, debugTask, debugCPU);
+        }
         newline = FALSE;
         retval = vsnprintf((char *)((IPTR)__KernBootPrivate->debug_buffer + retval), __KernBootPrivate->debug_buffsize - retval, format, args);
         for (i = 0; i < __KernBootPrivate->debug_buffsize && __KernBootPrivate->debug_buffer[i] != 0  ; i++)
