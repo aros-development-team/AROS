@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     Desc: Internal debugger.
 */
@@ -56,7 +56,7 @@ static char *NextWord(char *s)
         AROS_LH1(void, Debug,
 
 /*  SYNOPSIS */
-        AROS_LHA(unsigned long, flags, D0),
+        AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
         struct ExecBase *, SysBase, 19, Exec)
