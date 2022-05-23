@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2022, The AROS Development Team. All rights reserved.
 # just for building the grub2 utils
 # in provision to use grub-mkimage in InstallAROS
 
@@ -24,7 +24,7 @@ CONFIG_OPTS := \
 		--disable-werror \
 		--program-prefix=
 
-grub2-aros-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
+grub2-aros--touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
 
 %fetch_and_build mmake=grub2-aros \
         package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.gz tar.xz" package_repo=$(GRUB2REPOS) \
