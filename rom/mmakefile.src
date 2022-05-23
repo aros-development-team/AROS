@@ -132,7 +132,7 @@ include $(SRCDIR)/config/aros.cfg
 BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := ram con
 BASE_HIDD     := hiddclass gfx keyboard mouse
-BASE_LIBS     := aros debug dos gadtools graphics intuition keymap layers oop utility
+BASE_LIBS     := aros dos gadtools graphics intuition keymap layers oop utility
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
 %make_package mmake=kernel-package-base file=$(AROS_BOOT)/aros-base.pkg \
