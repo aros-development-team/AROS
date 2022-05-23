@@ -12,9 +12,10 @@ USER_LDFLAGS := -static
 
 -include $(SRCDIR)/arch/all-$(ARCH)/debug/make.opts
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/debug/make.opts
+-include $(SRCDIR)/arch/$(CPU)-all/debug/make.opts
 
 %build_module mmake=kernel-debug \
-  modname=debug modtype=library \
+  modname=debug modtype=library archspecific=yes \
   files="$(FILES) $(FUNCS)" linklibfiles=$(STATICFUNCS)
 
 %common

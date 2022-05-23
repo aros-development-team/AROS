@@ -2,8 +2,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-hvdebug-kobj: includes
-#MM kernel-hvdebug: includes
+#MM kernel-hyperv-debug-kobj: includes
+#MM kernel-hyperv-debug: includes
+
+#MM- kernel-debug-hyperv : kernel-debug-hyperv-$(DEBUG)
+#MM- kernel-debug-hyperv-yes : kernel-hyperv-debug
 
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG
@@ -11,15 +14,15 @@ USER_CPPFLAGS := \
 USER_LDFLAGS := -static
 
 #USER_INCLUDES := -I $(SRCDIR)/rom/exec
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
-		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel
 
 HVDEBUG_FILES :=            \
 	    hyperv-debug    \
 	    hyperv-tasks    \
 	    hyperv-cpu
 
-%build_module mmake=kernel-hvdebug modname=hyperv-debug modtype=resource \
+%build_module mmake=kernel-hyperv-debug \
+    modname=hyperv-debug modtype=resource \
     files="$(HVDEBUG_FILES)"
 
 %copy_includes path=resources
