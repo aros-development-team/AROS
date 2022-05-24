@@ -314,12 +314,12 @@ int	finite(double) __pure2;
  * expose the newer definition, assuming that the language spec takes
  * precedence over the operating system interface spec.
  */
-/* #if __XSI_VISIBLE > 0 && __XSI_VISIBLE < 600 && __ISO_C_VISIBLE < 1999
+#if __XSI_VISIBLE > 0 && __XSI_VISIBLE < 600 && __ISO_C_VISIBLE < 1999
 #undef isinf
-#undef isnan */
+#undef isnan
 int	(isinf)(double) __pure2;
 int	(isnan)(double) __pure2;
-/* #endif */
+#endif
 
 /*
  * double functions extensions; mostly from BSD
