@@ -137,7 +137,7 @@ RASPIFW_BRANCH    := master
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
 
-PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
 PKG_RSRC_ARCH := processor
