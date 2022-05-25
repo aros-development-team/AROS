@@ -631,6 +631,7 @@ HAVE_ASMIO
 EGREP
 GREP
 CPP
+AHI_BUILDHANDLER
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -2310,7 +2311,8 @@ case $host in
   optflags="-m32 -march=${CPU} -O2"
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
-  resident=""                                        stripflag=""
+  resident=""                                        buildhandler="true"
+  stripflag=""
  ;;
  m68k-unknown-amigaos)
   : ${CPU="68020-60"}
@@ -2320,9 +2322,10 @@ case $host in
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
   resident="-resident"
+  buildhandler="true"
   stripflag=""
  ;;
- m68k-unknown-aros)
+ m68k-*-aros)
   : ${CPU="68020-60"}
   cflags=""
   optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
@@ -2330,6 +2333,7 @@ case $host in
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
   resident=""
+  buildhandler="true"
   stripflag=""
  ;;
  powerpc-unknown-amigaos)
@@ -2356,6 +2360,7 @@ $as_echo "#define USE_INLINE_STDARG 1" >>confdefs.h
   linkerflags="-noixemul -mcpu=${CPU}"
   asflags="-m${CPU} -mregnames --defsym CPU=${CPU}"
   resident="-mresident32"
+  buildhandler="true"
   stripflag=""
  ;;
  x86_64-*-aros)
@@ -2365,6 +2370,7 @@ $as_echo "#define USE_INLINE_STDARG 1" >>confdefs.h
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1 --defsym x86_64=1"
   resident=""
+  buildhandler="true"
   stripflag=""
  ;;
  *)
@@ -2386,6 +2392,7 @@ top_builddir=$(pwd)
 : ${LDFLAG_RESIDENT="${resident}"}
 
 : ${DISTDIR="/tmp/${host_alias}-ahi"}
+: ${AHI_BUILDHANDLER="${buildhandler}"}
 
 
 
@@ -4454,6 +4461,8 @@ case $host in
   : ${CPU="i686"}
   LIBS="-lm $LIBS"  ;;
 esac
+
+
 
 
 ac_ext=c

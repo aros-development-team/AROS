@@ -17,6 +17,7 @@ DOSDRVDIR	= ${DISTDIR}/User/Devs/DOSDrivers
 LDIR		= ${DISTDIR}/User/L
 
 build_os	= @build_os@
+host_os     = @host_os@
 
 CC		= @CC@
 STRIP		= @STRIP@ @STRIPFLAGS@
@@ -30,15 +31,28 @@ CFLAGS		= @CFLAGS@ @CFLAG_RESIDENT@
 LDFLAGS		= @LDFLAGS@ @LDFLAG_RESIDENT@
 LIBS		= @LIBS@
 
+ifeq ($(host_os),aros)
+VPATH		= @srcdir@ @srcdir@/aros
+else
 VPATH		= @srcdir@
-
+endif
 
 #
 # Files
 ########################################
 
-OBJECTS		= main.o
+OBJECTS		=
+ifeq ($(host_os),aros)
+LDFLAGS     += -static -nostartfiles
+OBJECTS		+= resident.o
+endif
+OBJECTS		+= main.o
+ifeq ($(host_os),aros)
+OBJECTS		+= resident_end.o
+endif
+
 EXECUTABLE	= AHI-Handler
+
 
 
 #
@@ -59,6 +73,7 @@ maintainer-clean: distclean
 
 install:	all
 	$(INSTALL_PROGRAM) $(EXECUTABLE) $(PREFIX)/L/$(EXECUTABLE)
+	$(INSTALL_DATA) ${srcdir}/AUDIO $(PREFIX)/Devs/DOSDrivers/AUDIO
 
 revup:
 	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev

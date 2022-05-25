@@ -74,23 +74,23 @@ SUBDIRS		+= WASAPI
 endif
 
 all:
-	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
 
 install:
-	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
 
 clean:
-	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
 
 distclean:	clean
-	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
 	$(RM) Makefile
 
 maintainer-clean: distclean
-	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
 
 bindist:
-	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
 	$(INSTALL) -d $(DRIVERDIR) 
 	for d in $(SUBDIRS) Paula Toccata Void Wavetools; do \
 	  cd $(srcdir) && find $${d} -type f -and -not -path '*CVS*' \

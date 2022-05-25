@@ -51,7 +51,8 @@ case $host in
   optflags="-m32 -march=${CPU} -O2"
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
-  resident=""                                      dnl *** Not supported (yet?)
+  resident=""
+  buildhandler="true"
   stripflag=""
  ;;
  m68k-unknown-amigaos)
@@ -62,6 +63,7 @@ case $host in
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
   resident="-resident"
+  buildhandler="true"
   stripflag=""
  ;;
  m68k-*-aros)
@@ -72,6 +74,7 @@ case $host in
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
   resident=""
+  buildhandler="true"
   stripflag=""
  ;;
  powerpc-unknown-amigaos)
@@ -93,6 +96,7 @@ case $host in
   linkerflags="-noixemul -mcpu=${CPU}"
   asflags="-m${CPU} -mregnames --defsym CPU=${CPU}"
   resident="-mresident32"
+  buildhandler="true"
   stripflag=""
  ;;
  x86_64-*-aros)
@@ -102,6 +106,7 @@ case $host in
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1 --defsym x86_64=1"
   resident=""
+  buildhandler="true"
   stripflag=""
  ;;
  *)
@@ -122,6 +127,7 @@ top_builddir=$(pwd)
 : ${LDFLAG_RESIDENT="${resident}"}
 
 : ${DISTDIR="/tmp/${host_alias}-ahi"}
+: ${AHI_BUILDHANDLER="${buildhandler}"}
 
 AC_PREFIX_DEFAULT( / )
 
@@ -184,6 +190,8 @@ case $host in
   LIBS="-lm $LIBS" dnl *** AC_CHECK_LIBS doesn't work with -r ...?
  ;;
 esac
+
+AC_SUBST(AHI_BUILDHANDLER)
 
 dnl Checks for native driver support header files.
 

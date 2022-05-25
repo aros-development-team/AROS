@@ -26,6 +26,10 @@
  */
 
 //#define DEBUG
+#if defined(__AROS__)
+#define __NOLIBBASE__
+#include <aros/debug.h>
+#endif
 
 #include <exec/types.h>
 #include <exec/nodes.h>
@@ -52,24 +56,37 @@
 #include "main.h"
 #include "version.h"
 
+#if defined(__AROS__)
+#define PARAMSYSBASE    struct ExecBase *SysBase,
+#define _SysBase            SysBase
+#define ATTRIBSYSBASE   SysBase,
+#else
+#define PARAMSYSBASE
+#define _SysBase
+#define ATTRIBSYSBASE
+#endif
 
 /*
  *  Prototypes
  */
 
-LONG PlayAndSwap(struct HandlerData *, LONG);
+LONG PlayAndSwap(PARAMSYSBASE struct HandlerData *, LONG);
 long extended2long(extended *);
 void ulong2extended (ULONG, extended *);
 void FillAIFFheader(struct HandlerData *);
 void FillAIFCheader(struct HandlerData *);
 LONG ReadCOMMchunk(struct HandlerData *, UBYTE *, LONG);
-long AllocAudio(int);
+long AllocAudio(PARAMSYSBASE int);
+#if defined(__AROS__)
+void FreeAudio(struct ExecBase *);
+#else
 void FreeAudio(void);
-long ParseArgs(struct HandlerData *, char *);
+#endif
+long ParseArgs(PARAMSYSBASE struct HandlerData *, char *);
 long InitHData(struct HandlerData *);
-void FreeHData(struct HandlerData *);
-void returnpacket (struct DosPacket *);
-void Initialize (void);
+void FreeHData(PARAMSYSBASE struct HandlerData *);
+void returnpacket (PARAMSYSBASE struct DosPacket *);
+void Initialize (PARAMSYSBASE struct DosPacket *);
 void UnInitialize (void);
 
 
@@ -80,10 +97,15 @@ void UnInitialize (void);
 #define min(a,b) ((a)<=(b)?(a):(b))
 #define DOS_TRUE    -1
 #define DOS_FALSE   0
+#if !defined(__AROS__)
 #define BTOC(bptr)  ((void *)((long)(bptr) << 2))
 #define CTOB(cptr)  ((BPTR)(((long)cptr) >> 2))
+#else
+#define BTOC(bptr)  BADDR(bptr)
+#define CTOB(cptr)  MKBADDR(cptr)
+#endif
 
-
+#if !defined(__AROS__)
 /*
  *  My debug stuff....
  */
@@ -119,7 +141,11 @@ KPrintFArgs( UBYTE* fmt,
  *  Global variables
  */
 
-static const char ID[] = "$VER: AHI-Handler " VERS "\r\n";
+static
+#else
+__section(".text.romtag") 
+#endif
+const char ID[] = "$VER: AHI-Handler " VERS "\r\n";
 
 struct MsgPort    *PktPort;
 struct DeviceNode *DevNode;
@@ -163,6 +189,7 @@ struct AIFFHeader AIFFHeader = {
 **** Entry ********************************************************************
 ******************************************************************************/
 
+#if !defined(__AROS__)
 // Disable command line processing
 const long __nocommandline=1;
 
@@ -171,6 +198,10 @@ extern struct Message *_WBenchMsg;
 
 int main(void)
 {
+#else
+LONG handler(struct ExecBase *SysBase)
+{
+#endif
   struct DosPacket *packet;
   struct Process *proc;
 
@@ -183,7 +214,14 @@ int main(void)
   proc = (struct Process *) FindTask (NULL);
 
   PktPort = &proc->pr_MsgPort;
-  Initialize ();
+#if !defined(__AROS__)
+  Initialize ((struct DosPacket *) _WBenchMsg->mn_Node.ln_Name);
+    // Make sure startup code does not reply the message on exit
+  _WBenchMsg = NULL;
+#else
+  WaitPort(PktPort);
+  Initialize (ATTRIBSYSBASE (struct DosPacket *)GetMsg(PktPort)->mn_Node.ln_Name);
+#endif
 
   Running = TRUE;
   AllocCnt = 0;
@@ -271,8 +309,8 @@ int main(void)
           break;
         }
 
-        if( (packet->dp_Res2 = ParseArgs(data, (char *) buf)) ) {
-          FreeHData(data);
+        if ((packet->dp_Res2 = ParseArgs(ATTRIBSYSBASE data, (char *) buf)) != 0) {
+          FreeHData(ATTRIBSYSBASE data);
           packet->dp_Res1 = DOS_FALSE;
           break;
         }
@@ -281,9 +319,9 @@ int main(void)
           unit = *data->args.unit;
         }
 
-        if( (packet->dp_Res2 = AllocAudio(unit)) ) {
-          FreeAudio();
-          FreeHData(data);
+        if( (packet->dp_Res2 = AllocAudio(ATTRIBSYSBASE unit)) ) {
+          FreeAudio(_SysBase);
+          FreeHData(ATTRIBSYSBASE data);
           packet->dp_Res1 = DOS_FALSE;
           break;
         }
@@ -459,7 +497,7 @@ int main(void)
         LONG   length = packet->dp_Arg3, filled;
 
 #ifdef DEBUG
-        kprintf("ACTION_WRITE: 0x%08lx, %ld\n", packet->dp_Arg2, packet->dp_Arg3);
+        kprintf("ACTION_WRITE: 0x%p, %ld\n", src, length);
 #endif
 
         if(data->buffer1 == NULL) {
@@ -504,6 +542,10 @@ int main(void)
             LONG skiplen = 0;
 
             skiplen = ReadCOMMchunk(data, src, length);
+#ifdef DEBUG
+        kprintf("ACTION_WRITE: skiplen = %ld\n", skiplen);
+#endif
+            
             src    += skiplen;
             length -= skiplen;
           }
@@ -533,11 +575,15 @@ int main(void)
         length = min(data->totallength, length);
         filled = min(data->totallength, packet->dp_Arg3);
 
+#ifdef DEBUG
+        kprintf("ACTION_WRITE: length = %ld, filled = %ld\n", length, filled);
+#endif
+
         while(length > 0) {
           LONG thislength;
         
           if(data->offset >= data->length) {
-            packet->dp_Res2 = PlayAndSwap(data, data->length);
+            packet->dp_Res2 = PlayAndSwap(ATTRIBSYSBASE data, data->length);
             if(packet->dp_Res2) {
               packet->dp_Res1 = -1;
               break;
@@ -579,7 +625,7 @@ int main(void)
         // Finish any playing requests
 
         if(data->writing) {
-          PlayAndSwap(data, data->offset);
+          PlayAndSwap(ATTRIBSYSBASE data, data->offset);
 
           if(data->writereq1) {
             WaitIO((struct IORequest *) data->writereq1);
@@ -589,8 +635,8 @@ int main(void)
           }
         }
 
-        FreeHData(data);
-        FreeAudio();
+        FreeHData(ATTRIBSYSBASE data);
+        FreeAudio(_SysBase);
 
 
         break;
@@ -618,9 +664,9 @@ int main(void)
       Running = FALSE;
 
     if (packet) {
-      returnpacket (packet);
+      returnpacket (ATTRIBSYSBASE packet);
 #ifdef DEBUG
-      kprintf("Retured packet\n");
+      kprintf("Returned packet\n");
 #endif
     }
 
@@ -630,7 +676,11 @@ int main(void)
   kprintf("Dying..!\n");
 #endif
   UnInitialize();
+#if !defined(__AROS__)
   _exit (0);
+#else
+    return RETURN_OK;
+#endif
 }
 
 
@@ -642,7 +692,7 @@ int main(void)
  *  Starts to play the current buffer. Handles double buffering.
  */
 
-LONG PlayAndSwap(struct HandlerData *data, LONG length) {
+LONG PlayAndSwap(PARAMSYSBASE struct HandlerData *data, LONG length) {
   void *temp;
 
   temp          = data->buffer1;
@@ -837,7 +887,7 @@ LONG ReadCOMMchunk(struct HandlerData *data, UBYTE *buffer, LONG length) {
     src++;
     len--;
   }
-  return (LONG) src - (LONG) buffer;
+  return (LONG)((SIPTR)src - (SIPTR) buffer);
 }
 
 /******************************************************************************
@@ -848,7 +898,7 @@ LONG ReadCOMMchunk(struct HandlerData *data, UBYTE *buffer, LONG length) {
  *  If the device isn't already open, open it now
  */
 
-long AllocAudio(int unit) {
+long AllocAudio(PARAMSYSBASE int unit) {
   long rc = 0;
 
   if(++AllocCnt == 1) {
@@ -856,7 +906,7 @@ long AllocAudio(int unit) {
       if( (AHIio=(struct AHIRequest *)CreateIORequest(
 	     AHImp,sizeof(struct AHIRequest))) ) {
         AHIio->ahir_Version = 4;
-        AHIDevice=OpenDevice(AHINAME,unit,(struct IORequest *)AHIio,NULL);
+        AHIDevice=OpenDevice(AHINAME,unit,(struct IORequest *)AHIio,0);
       }
     }
 
@@ -879,7 +929,11 @@ long AllocAudio(int unit) {
  *  If we're the last user, close the device now
  */
 
+#if defined(__AROS__)
+void FreeAudio(struct ExecBase *SysBase)
+#else
 void FreeAudio(void)
+#endif
 {
   if(--AllocCnt == 0) {
     if(AHIDevice == 0)
@@ -901,8 +955,29 @@ void FreeAudio(void)
  *  Fill out argument array. Returns 0 on success, else a DOS error code.
  */
 
-long ParseArgs(struct HandlerData *data, char *initstring) {
+long ParseArgs(PARAMSYSBASE struct HandlerData *data, char *initstring) {
+#if defined(__AROS__)
+  struct Library *DOSBase;
+  struct UtilityBase *UtilityBase;
+#endif
   long rc = 0;
+
+#if defined(__AROS__)
+  if ((DOSBase = OpenLibrary("dos.library", 0)) == NULL)
+  {
+#ifdef DEBUG
+    kprintf("[AHI-Handler] %s: failed to open dos.library\n", __func__);
+#endif
+    return ERROR_BAD_TEMPLATE;
+  }
+  if ((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 0)) == NULL)
+  {
+#ifdef DEBUG
+    kprintf("[AHI-Handler] %s: failed to open utility.library\n", __func__);
+#endif
+    return ERROR_BAD_TEMPLATE;
+  }
+#endif
 
   data->rdargs = (struct RDArgs *) AllocDosObjectTags(DOS_RDARGS, TAG_DONE);
   if(data->rdargs)
@@ -915,7 +990,7 @@ long ParseArgs(struct HandlerData *data, char *initstring) {
     data->rdargs2 = ReadArgs(
       "B=BITS/K/N,C=CHANNELS/K/N,F=FREQUENCY/K/N,T=TYPE/K,V=VOLUME/K/N,P=POSITION/K/N,"
       "PRI=PRIORITY/K/N,L=LENGTH/K/N,S=SECONDS/K/N,BUF=BUFFER/K/N,UNIT/K/N",
-      (LONG *) &data->args, data->rdargs);
+      (IPTR *) &data->args, data->rdargs);
 
     if(data->rdargs2 != NULL) {
 
@@ -933,15 +1008,28 @@ long ParseArgs(struct HandlerData *data, char *initstring) {
         data->args.format = AIFC;
       }
       else {
+#ifdef DEBUG
+        kprintf("[AHI-Handler] %s: Unhandled type %s\n", __func__, data->args.type);
+#endif
         rc = ERROR_BAD_TEMPLATE;
       }
     }
     else
+    {
+#ifdef DEBUG
+      kprintf("[AHI-Handler] %s: ReadArgs failed\n", __func__);
+#endif
       rc = ERROR_BAD_TEMPLATE;
+    }
 
   }
   else
     rc = ERROR_NO_FREE_STORE;
+
+#if defined(__AROS__)
+  CloseLibrary((struct Library *)UtilityBase);
+  CloseLibrary(DOSBase);
+#endif
 
   return rc;
 }
@@ -963,7 +1051,7 @@ long ParseArgs(struct HandlerData *data, char *initstring) {
 #define Sstereoflag    2
 
 long InitHData(struct HandlerData *data) {
-  IPTR bits = 8, channels = 1, freq = 8000;
+  ULONG bits = 8, channels = 1, freq = 8000;
   LONG  volume = 100, position = 0, priority = 0, 
         length = MAXINT, buffersize = 32768;
   long rc = 0;
@@ -1069,13 +1157,21 @@ quit:
  *   Deallocate the HandlerData structure
  */
 
-void FreeHData(struct HandlerData *data) {
+void FreeHData(PARAMSYSBASE struct HandlerData *data) {
   if(data) {
+#if defined(__AROS__)
+    struct Library *DOSBase;
+    if ((DOSBase = OpenLibrary("dos.library",0)) != NULL)
+    {
+#endif
     if(data->rdargs2)
       FreeArgs(data->rdargs2);
     if(data->rdargs)
       FreeDosObject(DOS_RDARGS, data->rdargs);
-
+#if defined(__AROS__)
+      CloseLibrary(DOSBase);
+    }
+#endif
     FreeVec(data->buffer1);
     FreeVec(data->buffer2);
     FreeVec(data->readreq);
@@ -1096,7 +1192,7 @@ void FreeHData(struct HandlerData *data) {
  *  GetMsg() of the main routine.
  */
 
-void returnpacket (struct DosPacket *packet) {
+void returnpacket (PARAMSYSBASE struct DosPacket *packet) {
   struct Message *mess;
   struct MsgPort *replyPort;
 
@@ -1128,16 +1224,12 @@ void returnpacket (struct DosPacket *packet) {
  *  under us.
  */
 
-void Initialize () {
+void Initialize (PARAMSYSBASE struct DosPacket *packet) {
   struct DeviceNode *dn;
-  struct DosPacket *packet;
 
   /*
    *        Handle initial message.
    */
-  
-  packet = (struct DosPacket *) _WBenchMsg->mn_Node.ln_Name;
-
   DevNode = dn = BTOC (packet->dp_Arg3);
   dn->dn_Task = NULL;
 
@@ -1145,12 +1237,9 @@ void Initialize () {
   kprintf("Replying it ...\n");
 #endif
 
-  // Make sure startup code does not reply the message on exit
-  _WBenchMsg = NULL;
-  
   packet->dp_Res1 = DOS_TRUE;
   packet->dp_Res2 = 0;
-  returnpacket (packet);
+  returnpacket (ATTRIBSYSBASE packet);
 }
 
 

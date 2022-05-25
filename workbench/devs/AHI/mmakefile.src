@@ -2,11 +2,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- AHI : workbench-devs-AHI
 #MM- AHI-quick : workbench-devs-AHI-quick
 
-#MM- AHI       : workbench-devs-AHI
-
 #MM- workbench-devs-AHI : workbench-devs-AHI-subsystem AHI-drivers
+#MM- workbench-devs-AHI-quick : workbench-devs-AHI-subsystem-quick AHI-drivers-quick
 
 #MM- AHI-hosted-stubs : \
 #MM                         AHI-alsa-bridge-$(AROS_TARGET_ARCH) \

@@ -43,31 +43,31 @@ DEVREADME	= $(host_alias)-ahidev-$(VERSION).$(REVISION).readme
 
 .PHONY:		all clean distclean maintainer-clean bindist revup
 
-SUBDIRS		= AHI AddAudioModes Device Drivers Examples Include
-
-ifneq (@CFLAG_RESIDENT@,)
-SUBDIRS 	+= AHI-Handler
+SUBDIRS     = AHI AddAudioModes Device
+ifeq (@AHI_BUILDHANDLER@,true)
+SUBDIRS     += AHI-Handler
 endif
+SUBDIRS     += Drivers Examples Include
 
 all:
 	@cd Include && $(MAKE) gcc-include
-	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
 
 install:
-	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
 
 clean:
-	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
 	$(RM) $(USRARCHIVE) $(USRREADME) $(DEVARCHIVE) $(DEVREADME)
 
 distclean:
-	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
 	$(RM) $(USRARCHIVE) $(USRREADME) $(DEVARCHIVE) $(DEVREADME) \
 	      config.log config.cache config.status config.h\
 	      stamp-h stamp-h.in Makefile
 
 maintainer-clean:
-	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
 	$(RM) $(USRARCHIVE) $(USRREADME) $(DEVARCHIVE) $(DEVREADME) \
 	      config.log config.cache config.status config.h\
 	      stamp-h stamp-h.in Makefile \
@@ -88,7 +88,7 @@ bindist:
 	$(INSTALL_DATA) ${srcdir}/README.TRANSLATIONS $(CATSRCDIR)
 
 	cd Include && $(MAKE) gcc-include
-	for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+	for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
 
 	-$(RM) $(USRARCHIVE) $(DEVARCHIVE)
 
