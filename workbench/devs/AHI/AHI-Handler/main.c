@@ -1,6 +1,6 @@
 /*
      AHI-Handler - The AUDIO: DOS device for AHI
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2022 The AROS Dev Team
      Copyright (C) 1997-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -269,37 +269,62 @@ LONG handler(struct ExecBase *SysBase)
       case ACTION_FINDOUTPUT: /*  FileHandle,Lock,Name        Bool        */
       {
         struct FileHandle *fh = BTOC (packet->dp_Arg1);
-        unsigned char *base = BTOC (packet->dp_Arg3);
-        unsigned int len = *base;
+        unsigned char *base;
+        unsigned int len;
         char buf[128];
         struct HandlerData *data;
         int unit = AHI_DEFAULT_UNIT;
 
+#if !defined(__AROS__)
+        base = BTOC (packet->dp_Arg3)
+        len = *base;
+#else
+        base = AROS_BSTR_ADDR(packet->dp_Arg3);
+        len = AROS_BSTR_strlen(packet->dp_Arg3);
+#endif
+
+#ifdef DEBUG
+        kprintf("ACTION_FIND#?: fh @ 0x%p\n", (char *) fh);
+        kprintf("ACTION_FIND#?: base @ 0x%p (len = %u)\n", (char *) base, len);
+        kprintf("ACTION_FIND#?:         =  '%s'\n", (char *) base);
+#endif
         // Skip volume name and ':'
-
-        while(*++base != ':')
-          --len;
-        ++base;
-
+        if (len > 0)
         {
-          // Convert /'s to blanks
+          unsigned int cnt;
+          for (cnt = 0; cnt < len; cnt++)
+          {
+            if (base[cnt] == ':')
+            {
+              len = len - ((IPTR)&base[cnt] - (IPTR)base);
+              base = &base[cnt + 1];
+              break;
+            }
+          }
 
-          char *p = base;
+          {
+            // Convert /'s to blanks
+            char *p = base;
 
-          while(*++p)
-            if(*p == '/')
-              *p = ' ';
+            while(*++p)
+              if(*p == '/')
+                *p = ' ';
+          }
+
+          if (len >= sizeof (buf))
+            len = sizeof (buf) - 1;
+
+          strncpy (buf, base, len);
+          if (buf[len - 1] != '\n')
+          {
+            buf[len] = '\n';
+            len += 1;
+          }
         }
-
-        if (len >= sizeof (buf))
-          len = sizeof (buf) - 1;
-
-        strncpy (buf, base, len - 1);
-        buf[len - 1] = '\n';
         buf[len] = 0;
 
 #ifdef DEBUG
-        kprintf("ACTION_FIND#?: %s\n", (char *) buf);
+        kprintf("ACTION_FIND#?: '%s'\n", (char *) buf);
 #endif
 
         data = AllocVec(sizeof(struct HandlerData), MEMF_PUBLIC | MEMF_CLEAR);
