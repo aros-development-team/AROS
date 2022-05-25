@@ -276,7 +276,7 @@ LONG handler(struct ExecBase *SysBase)
         int unit = AHI_DEFAULT_UNIT;
 
 #if !defined(__AROS__)
-        base = BTOC (packet->dp_Arg3)
+        base = BTOC (packet->dp_Arg3);
         len = *base;
 #else
         base = AROS_BSTR_ADDR(packet->dp_Arg3);
