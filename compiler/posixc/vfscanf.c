@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     C99 function vfscanf()
 */
@@ -98,7 +98,7 @@ static int __ungetc(int c, void *_h);
 
     Flush (fdesc->fcb->handle);
     
-    return __vcscan (stream, fgetc, ungetc, format, args);
+    return __vcscan (stream,  __posixc_fgetc, ungetc, format, args);
        
 #endif
 } /* vfscanf */
@@ -138,30 +138,9 @@ static int __getc(void *_h)
     fdesc *fdesc = h->fdesc;
     int c;
 
-    /* Note: changes here might require changes in fgetc.c!! */
-
-    FLUSHONREADCHECK
-
-    c = FGetC(h->fdesc->fcb->handle);
-    
-    if (c == EOF)
-    {
-        c = IoErr();
-        
-        if (c)
-        {
-            errno = __stdc_ioerr2errno(c);
-            h->stream->flags |= __POSIXC_STDIO_ERROR;
-        }
-        else
-        {
-            h->stream->flags |= __POSIXC_STDIO_EOF;
-        }
-        
-        c = EOF;
-    }
-
-    return c;
+/* include the common posixc getc code */
+#define getcstream h->stream
+#include "__getc.c"
 }
 
 #endif

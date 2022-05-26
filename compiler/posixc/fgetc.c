@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     C99 function fgetc().
 */
@@ -60,27 +60,7 @@ int  __posixc_fgetc (   FILE * stream)
         return EOF;
     }
 
-    /* Note: changes here might require changes in vfscanf.c!! */
-
-    FLUSHONREADCHECK
-
-    c = FGetC (fdesc->fcb->handle);
-    if (c == EOF)
-    {
-        c = IoErr ();
-
-        if (c)
-        {
-            errno = __stdc_ioerr2errno (c);
-
-            stream->flags |= __POSIXC_STDIO_ERROR;
-        }
-        else
-            stream->flags |= __POSIXC_STDIO_EOF;
-
-        c = EOF;
-    }
-
-    return c;
+/* include the common posixc getc code */
+#define getcstream stream
+#include "__getc.c"
 } /* fgetc */
-

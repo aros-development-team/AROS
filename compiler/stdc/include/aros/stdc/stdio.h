@@ -2,7 +2,7 @@
 #define _STDC_STDIO_H_
 
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdio.h
@@ -120,10 +120,10 @@ int vsscanf(const char * restrict s, const char * restrict format,
 	va_list arg);
 
 /* Character input/output functions */
-int fgetc(FILE *stream);
 #if (!defined(_XOPEN_SOURCE) && \
      !defined(_POSIX_SOURCE) && \
      !defined(_BSD_SOURCE))
+int fgetc(FILE *stream);
 char *fgets(char * restrict s, int n, FILE * restrict stream);
 int fputc(int c, FILE *stream);
 int fputs(const char * restrict s, FILE * restrict stream);

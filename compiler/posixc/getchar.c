@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     C99 function getchar().
 */
 
+#include <aros/debug.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
@@ -41,7 +42,7 @@
     BUGS
 
     SEE ALSO
-        fgetc(), getc(), __posixc_fputc(), putc()
+        __posixc_fgetc(), getc(), __posixc_fputc(), putc()
 
     INTERNALS
 
@@ -49,7 +50,17 @@
 {
     struct PosixCBase *PosixCBase =
         (struct PosixCBase *)__aros_getbase_PosixCBase();
+    int retval;
 
-    return fgetc(PosixCBase->_stdin);
+    D(
+        bug("[POSIXC] %s(0x%p)\n", __func__, PosixCBase);
+        bug("[POSIXC] %s: stdin @ 0x%p\n", __func__, PosixCBase->_stdin);
+    )
+
+    retval = __posixc_fgetc(PosixCBase->_stdin);
+
+    D(bug("[POSIXC] %s: returning %08x\n", __func__, retval);)
+
+    return retval;
 } /* getc */
 

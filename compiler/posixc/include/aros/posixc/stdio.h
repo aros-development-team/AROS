@@ -2,7 +2,7 @@
 #define _POSIXC_STDIO_H_
 
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdio.h
@@ -355,6 +355,13 @@ static __inline__  char *fgets(char * restrict s, int n, FILE * restrict stream)
 {
     return __posixc_fgets(s, n, stream);
 }
+
+int __posixc_fgetc(FILE *stream);
+static __inline__  int fgetc(FILE *stream)
+{
+    return __posixc_fgetc(stream);
+}
+
 #else
 int vscanf(const char * restrict format, va_list arg);
 int vprintf(const char * restrict format, va_list arg);
@@ -390,6 +397,7 @@ int fputs(const char * restrict s, FILE * restrict stream);
 int fputc(int c, FILE *stream);
 int fprintf(FILE * restrict stream, const char * restrict format, ...);
 char *fgets(char * restrict s, int n, FILE * restrict stream);
+int fgetc(FILE *stream);
 #endif
 
 /* Implement deprecated POSIX.1-2001 functions as static inline functions. */
