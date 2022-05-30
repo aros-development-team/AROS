@@ -98,6 +98,8 @@ static Object *main_page_group; /* contains the selelected group */
 static Object *main_page_group_displayed; /* The current displayed group */
 static Object *main_page_space; /* a space object */
 
+char titlebuf[255];
+
 void close_classes(void)
 {
     delete_listview_class();
@@ -379,7 +381,6 @@ int init_gui(void)
     Object *test_button;
     Object *cancel_button;
     STRPTR wintitle;
-    char titlebuf[255];
     
     main_page_entries[ 0].name = (char *)_(MSG_DSC_SYSTEM);
     main_page_entries[ 0].mcp_icon = systemclass_get_icon();
