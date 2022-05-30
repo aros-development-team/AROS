@@ -78,7 +78,7 @@ $(AROS_LIB)/pkgconfig/libpng.pc : $(ARCHSRCDIR)/libpng.pc.in $(SRCDIR)/$(CURDIR)
 	       -e 's|@libdir@|$${prefix}/lib|' \
 	       -e 's|@prefix@|/Developer|' \
 	       -e 's|@LIBS@||' \
-	       -e 's|@PNGLIB_VERSION@|1.6.3|' \
+	       -e 's|@PNGLIB_VERSION@|$(LIBPNGVERSION)|' \
 	       -e 's| -I$${includedir}||' \
 	       $< >$@
 
