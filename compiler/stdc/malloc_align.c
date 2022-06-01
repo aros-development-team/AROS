@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
 
     AROS extension function malloc_align().
 */
@@ -66,21 +66,19 @@
     }
 
     /* allocate enough space to satisfy the alignment and save some info */
-    mem = malloc(size + alignment + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)));
-    if (mem == NULL)
+    orig = malloc(size + alignment + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)));
+    if (orig == NULL)
     {
         errno = ENOMEM;
         return NULL;
     }
 
     /* if it's already aligned correctly, then we just use it as-is */
-    if (((IPTR) mem & (alignment-1)) == 0)
-        return mem;
-
-    orig = mem;
+    if (((IPTR) orig & (alignment-1)) == 0)
+        return orig;
 
     /* move forward to an even alignment boundary */
-    mem = (char *) (((IPTR) mem + alignment - 1) & -alignment);
+    mem = (char *) (((IPTR) orig + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)) + alignment - 1) & -alignment);
     tmp = mem;
 
     /* store a magic number in the place that free() will look for the
@@ -89,7 +87,7 @@
     *((size_t *) tmp) = MEMALIGN_MAGIC;
 
     /* then store the original pointer before it, for free() to find */
-    tmp -= sizeof(void *);
+    tmp -= AROS_ALIGN(sizeof(void *));
     *((void **) tmp) = orig;
 
     return mem;
