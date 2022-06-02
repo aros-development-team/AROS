@@ -37,7 +37,7 @@ int     get_irq_list(char *buf);
 /****************************************************************************************/
 
 AROS_LH1(void, Debug,
-    AROS_LHA(unsigned long, flags, D0),
+    AROS_LHA(ULONG, flags, D0),
     struct ExecBase *, SysBase, 19, Exec)
 {
     AROS_LIBFUNC_INIT

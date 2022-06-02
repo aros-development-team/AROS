@@ -18,7 +18,7 @@ extern struct Library * MUIMasterBase;
         APTR MUI_AllocAslRequestTags (
 
 /*  SYNOPSIS */
-        unsigned long reqType,
+        ULONG reqType,
         Tag tag1,
         ...)
 
