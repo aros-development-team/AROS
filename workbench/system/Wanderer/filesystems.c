@@ -1,5 +1,5 @@
 /*
-    Copyright 2007-2021, The AROS Development Team. All rights reserved.
+    Copyright 2007-2022, The AROS Development Team. All rights reserved.
 */
 #include "filesystems.h"
 #include "filesystems_utilities.h"
@@ -526,7 +526,7 @@ BOOL infoFileSetup(CONST_STRPTR sourcePath, STRPTR *sourceInfoFilePath, STRPTR *
     BOOL doFileExists = FileExists(sourcePath);
 
     *sourceInfoFilePath = ConstructInfofileName(sourcePath);
-    if (sourceInfoFilePath == NULL)
+    if (*sourceInfoFilePath == NULL)
     {
         return TRUE;
     }
