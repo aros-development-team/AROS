@@ -634,13 +634,13 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
         D(kprintf("%s: Sector size: %d bytes\n", ATANAME(ap, atx), at->at_identify.sector_size));
 
 #if 1 /* Temporary debugging... */
-    int i;
-    kprintf("%s: ATA IDENTIFY\n", ATANAME(ap, atx));
-    for (i = 0; i < 128; i++) {
-        if ((i%8) == 0) kprintf("%s %3d:", ATANAME(ap, atx), i);
-        kprintf(" %04x", ((uint16_t *)(&at->at_identify))[i]);
-        if ((i%8) == 7) kprintf("\n");
-    }
+            int i;
+            kprintf("%s: ATA IDENTIFY\n", ATANAME(ap, atx));
+            for (i = 0; i < 128; i++) {
+                if ((i%8) == 0) kprintf("%s %3d:", ATANAME(ap, atx), i);
+                kprintf(" %04x", ((uint16_t *)(&at->at_identify))[i]);
+                if ((i%8) == 7) kprintf("\n");
+            }
 #endif
 
         return (0);
@@ -925,11 +925,17 @@ err:
                 struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
                 struct TagItem unitAttrs[] =
                 {
-                    {aHidd_DriverData   , (IPTR)OOP_INST_DATA(AHCIBase->busClass, ap->ap_Object)        },
-                    {TAG_DONE           , 0                                                             }
+                    {aHidd_DriverData   , 0 },
+                    {TAG_DONE           , 0 }
                 };
                 OOP_Object *unitObj;
                 struct ahci_Unit *unit;
+
+                if (ap->ap_Object)
+                {
+                    D(bug("[AHCI] %s: attaching unit to bus @ 0x%p\n", __func__, ap->ap_Object);)
+                    unitAttrs[0].ti_Data = (IPTR)OOP_INST_DATA(AHCIBase->busClass, ap->ap_Object);
+                }
 
                 at->at_probe = ATA_PROBE_GOOD;
                 if (atx == NULL)
