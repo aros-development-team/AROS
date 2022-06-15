@@ -46,6 +46,18 @@ typedef int file_t;
 #define DISK_BASE   'a'
 #endif
 
+#ifdef HOST_OS_linux
+# ifndef _STAT_VER
+#  if defined (__aarch64__)
+#   define _STAT_VER 0
+#  elif defined (__x86_64__)
+#   define _STAT_VER 1
+#  else
+#   define _STAT_VER 3
+#  endif
+# endif
+#endif
+
 /* AROS includes don't define struct stat64, this shuts up warning when compiling host-independent part */
 struct stat64;
 
