@@ -11,9 +11,11 @@ globalvarfile $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/gen/host/config/host
 globalvarfile $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)@aros_target_suffix@/gen/config/target.cfg
 genglobalvarfile sh $(TOP)/configure
 
+ignoredir .git
+ignoredir .github
+ignoredir .svn
+ignoredir .unmaintained
 ignoredir CVS
 ignoredir bin
 ignoredir intuition.morphos
-ignoredir .svn
-ignoredir .unmaintained
-ignoredir distfiles
+ignoredir distfiles@mmake_ignore_dirs@
