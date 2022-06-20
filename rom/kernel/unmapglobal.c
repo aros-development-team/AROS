@@ -17,7 +17,7 @@
         AROS_LH2I(int, KrnUnmapGlobal,
 
 /*  SYNOPSIS */
-        AROS_LHA(void *, virtual, A0),
+        AROS_LHA(void *, virt, A0),
         AROS_LHA(uint32_t, length, D0),
 
 /*  LOCATION */

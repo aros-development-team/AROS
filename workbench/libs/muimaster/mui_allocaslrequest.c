@@ -13,7 +13,7 @@
         AROS_LH2(APTR, MUI_AllocAslRequest,
 
 /*  SYNOPSIS */
-        AROS_LHA(unsigned long, reqType, D0),
+        AROS_LHA(ULONG, reqType, D0),
         AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */

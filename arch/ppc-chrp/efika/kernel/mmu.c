@@ -401,8 +401,8 @@ AROS_LH3(void, KrnSetProtection,
 }
 
 AROS_LH4(int, KrnMapGlobal,
-         AROS_LHA(void *, virtual, A0),
-         AROS_LHA(void *, physical, A1),
+         AROS_LHA(void *, virt, A0),
+         AROS_LHA(void *, phys, A1),
          AROS_LHA(uint32_t, length, D0),
          AROS_LHA(KRN_MapAttr, flags, D1),
          struct KernelBase *, KernelBase, 16, Kernel)
@@ -413,10 +413,10 @@ AROS_LH4(int, KrnMapGlobal,
     uint32_t msr;
     uint32_t ppc_prot = mmu_protection(flags);
 
-    D(bug("[KRN] KrnMapGlobal(%08x->%08x %08x %04x)\n", virtual, physical, length, flags));
+    D(bug("[KRN] KrnMapGlobal(%08x->%08x %08x %04x)\n", virt, phys, length, flags));
 
     msr = goSuper();
-    retval = mmu_map_area((uint64_t)virtual & 0xffffffff, physical, length, ppc_prot);
+    retval = mmu_map_area((uint64_t)virt & 0xffffffff, phys, length, ppc_prot);
     wrmsr(msr);
 
     return retval;
@@ -425,7 +425,7 @@ AROS_LH4(int, KrnMapGlobal,
 }
 
 AROS_LH2(int, KrnUnmapGlobal,
-                AROS_LHA(void *, virtual, A0),
+                AROS_LHA(void *, virt, A0),
                 AROS_LHA(uint32_t, length, D0),
                 struct KernelBase *, KernelBase, 17, Kernel)
 {
@@ -433,16 +433,16 @@ AROS_LH2(int, KrnUnmapGlobal,
 
         int retval = 0;
         uint32_t msr;
-        uintptr_t virt = (uintptr_t)virtual;
+        uintptr_t virt2 = (uintptr_t)virt;
         virt &= ~4095;
         length = (length + 4095) & ~4095;
 
         msr = goSuper();
         while(length)
         {
-                pte_t *pte = find_pte(virt);
+                pte_t *pte = find_pte(virt2);
                 pte->vsid = 0;
-                virt += 4096;
+                virt2 += 4096;
                 length -= 4096;
         }
         goUser(msr);

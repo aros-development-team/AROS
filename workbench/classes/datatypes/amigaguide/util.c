@@ -595,25 +595,31 @@ BPTR GetFileLock(Class *cl, Object *obj,
       UBYTE path[128];
       UBYTE language[64];
       BPTR dir;
-      GetVar("language", language, sizeof(language), GVF_GLOBAL_ONLY);
 
-      mysprintf(cb, path, sizeof(path), "PROGDIR:Help/%s", language);
+
+      if (GetVar("language", language, sizeof(language), GVF_GLOBAL_ONLY) > 0)
       {
-         dir = Lock(path, SHARED_LOCK);
-         if(dir != BNULL)
-         {
-            lock = MyLock(cb, file, nodetype, dir);
-         }
+        /* Continue only if language is set. Otherwise PROGDIR:Help from MultiView actually
+          maps to SYS:Utilities/Help program and a file lock is used as a directory lock
+          causing random problems */
+        mysprintf(cb, path, sizeof(path), "PROGDIR:Help/%s", language);
+        {
+           dir = Lock(path, SHARED_LOCK);
+           if(dir != BNULL)
+           {
+              lock = MyLock(cb, file, nodetype, dir);
+           }
 
-         if(lock == BNULL)
-         {
-            mysprintf(cb, path, sizeof(path), "Help:%s", language);
-            dir = Lock(path, SHARED_LOCK);
-            if(dir != BNULL)
-            {
-               lock = MyLock(cb, file, nodetype, dir);
-            }
-         }
+           if(lock == BNULL)
+           {
+              mysprintf(cb, path, sizeof(path), "Help:%s", language);
+              dir = Lock(path, SHARED_LOCK);
+              if(dir != BNULL)
+              {
+                 lock = MyLock(cb, file, nodetype, dir);
+              }
+           }
+        }
       }
 
       if(lock == BNULL)

@@ -745,7 +745,7 @@ Object *Timezone__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         IDCMP_ACTIVEWINDOW |
         IDCMP_INACTIVEWINDOW;
     data->ehn.ehn_Priority = 0;
-    data->ehn.ehn_Flags    = 0;
+    data->ehn.ehn_Flags    = MUI_EHF_GUIMODE;
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
 

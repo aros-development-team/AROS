@@ -4148,22 +4148,19 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                             data->last_active = pos.entry;
                             data->last_secs = msg->imsg->Seconds;
                             data->last_mics = msg->imsg->Micros;
-                        }
 
-                        /* Look out for mouse movement, timer and
-                           inactive-window events while mouse button is
-                           down */
-                        DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                            (IPTR) &data->ehn);
-                        data->ehn.ehn_Events |= (IDCMP_MOUSEMOVE
-                            | IDCMP_INTUITICKS |IDCMP_INACTIVEWINDOW);
-                        DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                            (IPTR) &data->ehn);
+                            /* Look out for mouse movement, timer and inactive-window events while mouse button is down */
+                            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
+                            data->ehn.ehn_Events |= (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS |IDCMP_INACTIVEWINDOW);
+                            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
+                        }
                     }
                 }
             }
             else
             {
+                /* Do not check for _isinobject, so that button releases once mouse leaves the object are still
+                   registered and the drag-selection is turned off */
                 if (msg->imsg->Code == SELECTUP && data->mouse_click)
                 {
                     /* cache click position ... */

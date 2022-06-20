@@ -637,6 +637,27 @@ UBYTE   notdone = 1;
                 }
 openbreak:
                 break;
+                case ACTION_FH_FROM_LOCK: /* FHArg1, Lock   Bool */
+                {
+                    CDROM_OBJ *obj = getlockfile (global, packet->dp_Arg2);
+                    CDROM_OBJ *new;
+
+                    if (obj->volume != global->g_volume)
+                    {
+                        /* old lock from another disk: */
+                        error = ERROR_DEVICE_NOT_MOUNTED;
+                        break;
+                    }
+                    new = Clone_Object (obj);
+                    if (!new)
+                        error = ERROR_NO_FREE_STORE;
+                    else
+                    {
+                        ((FH *)BADDR(packet->dp_Arg1))->fh_Arg1 = (IPTR)new;
+                        cdunlock (BADDR(packet->dp_Arg2));
+                    }
+                }
+                break;
                 case ACTION_READ: /* FHArg1,CPTRBuffer,Length   ActLength */
                 {
                         CDROM_OBJ *obj = (CDROM_OBJ *) packet->dp_Arg1;
@@ -883,13 +904,18 @@ openbreak:
                         }
                 }
                 break;
+                case ACTION_COPY_DIR_FH:/*       FHArg1,                    Lock       */
                 case ACTION_COPY_DIR:   /*       Lock,                      Lock       */
                 {
                         if (packet->dp_Arg1)
                         {
-                                CDROM_OBJ *obj = getlockfile (global, packet->dp_Arg1);
+                                CDROM_OBJ *obj;
                                 CDROM_OBJ *new;
 
+                                if (packet->dp_Type == ACTION_COPY_DIR_FH)
+                                    obj = (CDROM_OBJ*) packet->dp_Arg1;
+                                else
+                                    obj = getlockfile (global, packet->dp_Arg1);
                                 if (obj->volume != global->g_volume)
                                 {
                                         /* old lock from another disk: */

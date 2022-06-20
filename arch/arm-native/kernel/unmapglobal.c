@@ -11,7 +11,7 @@
 #include <proto/kernel.h>
 
 AROS_LH2I(int, KrnUnmapGlobal,
-        AROS_LHA(void *, virtual, A0),
+        AROS_LHA(void *, virt, A0),
         AROS_LHA(uint32_t, length, D0),
         struct KernelBase *, KernelBase, 17, Kernel)
 {
@@ -19,7 +19,7 @@ AROS_LH2I(int, KrnUnmapGlobal,
 
     int retval = 0;
 
-    D(bug("[Kernel] KrnMapGlobal(%08x, %08x)\n", virtual, length));
+    D(bug("[Kernel] KrnUnmapGlobal(%08x, %08x)\n", virt, length));
 
     return retval;
 

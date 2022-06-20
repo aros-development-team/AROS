@@ -349,7 +349,7 @@ static Object *charmapcon_new(Class *cl, Object *o, struct opSet *msg)
          */
         SetMem(data, 0, sizeof(struct charmapcondata));
 
-        data->scrollback_max = 500;     /* FIXME: Don't hardcode it */
+        data->scrollback_max = 1000;    /* FIXME: Don't hardcode it */
         data->ccd_GfxBase = newGfxBase;
         charmapcon_add_prop(cl, o);
 

@@ -15,7 +15,7 @@
 /*  SYNOPSIS */
         AROS_LHA(struct FreeList *, freelist, A0),
         AROS_LHA(APTR             , mem, A1),
-        AROS_LHA(unsigned long    , size, A2),
+        AROS_LHA(IPTR             , size, A2),
 
 /*  LOCATION */
         struct IconBase *, IconBase, 12, Icon)
