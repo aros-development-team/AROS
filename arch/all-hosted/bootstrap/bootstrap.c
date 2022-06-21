@@ -163,7 +163,7 @@ char *join_string(int argc, char **argv)
 int bootstrap(int argc, char ** argv)
 {
     int i = 1;
-    unsigned int memSize = 64;
+    unsigned int memSize = 256;
     int def_memSize = 1;
     char *config = DefaultConfig;
     FILE *file;
