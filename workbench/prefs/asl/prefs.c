@@ -178,38 +178,15 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
-    // aslprefs.Flags = 0;
-    
-    // aslprefs.ReqDefaults[ RTPREF_OTHERREQ      ].ReqPos = REQPOS_POINTER;
-    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].Size = 75;
-    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].Size =
-    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].Size =
-    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].Size = 65;
-    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].ReqPos =
-    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].ReqPos =
-    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].ReqPos =
-    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].ReqPos =
-    // aslprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].ReqPos = REQPOS_TOPLEFTSCR;
-    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].LeftOffset =
-    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].LeftOffset =
-    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].LeftOffset =
-    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].LeftOffset =
-    // aslprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].LeftOffset =
-    // aslprefs.ReqDefaults[ RTPREF_OTHERREQ      ].LeftOffset = 25;
-    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].TopOffset =
-    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].TopOffset =
-    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].TopOffset =
-    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].TopOffset =
-    // aslprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].TopOffset =
-    // aslprefs.ReqDefaults[ RTPREF_OTHERREQ      ].TopOffset = 18;
-    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].MinEntries = 10;
-    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].MinEntries =
-    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].MinEntries =
-    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].MinEntries = 6;
-    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].MaxEntries = 50;
-    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].MaxEntries =
-    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].MaxEntries =
-    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].MaxEntries = 10;
+
+    aslprefs.ap_SortBy              = 0;
+    aslprefs.ap_SortDrawers         = 1;
+    aslprefs.ap_SortOrder           = 0;
+    aslprefs.ap_SizePosition        = 0;
+    aslprefs.ap_RelativeLeft        = 0;
+    aslprefs.ap_RelativeTop         = 0;
+    aslprefs.ap_RelativeWidth       = 30;
+    aslprefs.ap_RelativeHeight      = 75;
 
     return TRUE;
 }

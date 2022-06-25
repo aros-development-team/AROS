@@ -44,7 +44,7 @@ struct AslEditor_DATA
 
 /*********************************************************************************************/
 
-static struct Hook  selectdefaultshook, updatedefaultshook;
+static struct Hook  updatedefaultshook;
 static CONST_STRPTR position_labels[7], size_labels[3];
 
 /*********************************************************************************************/
@@ -52,18 +52,25 @@ static CONST_STRPTR position_labels[7], size_labels[3];
 static void SelectDefaultsHook(struct Hook *hook, Object *self, struct AslEditor_DATA **data)
 {
     struct AslPrefs *prefs = &aslprefs;
-    // IPTR active = 0;
 
-    // D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
     
-    // GET(self, MUIA_Cycle_Active, &active);
+    /* Hardcode for now */
+    NNSET((*data)->positionobj, MUIA_Cycle_Active, 2);
+    NNSET((*data)->sizeobj, MUIA_Cycle_Active, 1);
 
-    // NNSET((*data)->positionobj, MUIA_Cycle_Active, prefs->ReqDefaults[active].ReqPos);
-    // NNSET((*data)->sizepercentobj, MUIA_Numeric_Value, prefs->ReqDefaults[active].Size);
-    // NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ReqDefaults[active].LeftOffset);
-    // NNSET((*data)->offsetyobj, MUIA_String_Integer, prefs->ReqDefaults[active].TopOffset);
-    // NNSET((*data)->minvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MinEntries);
-    // NNSET((*data)->maxvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MaxEntries);
+    /* Use prefs */
+    NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ap_RelativeLeft);
+    NNSET((*data)->offsetyobj, MUIA_String_Integer, prefs->ap_RelativeTop);
+
+    NNSET((*data)->widthpercentobj, MUIA_Numeric_Value, prefs->ap_RelativeWidth);
+    NNSET((*data)->heightpercentobj, MUIA_Numeric_Value, prefs->ap_RelativeHeight);
+
+    /* Disable non-editable for now */
+    NNSET((*data)->positionobj, MUIA_Disabled, TRUE);
+    NNSET((*data)->sizeobj, MUIA_Disabled, TRUE);
+    NNSET((*data)->offsetxobj, MUIA_Disabled, TRUE);
+    NNSET((*data)->offsetyobj, MUIA_Disabled, TRUE);
 }
 
 static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct AslEditor_DATA **data)
@@ -151,27 +158,16 @@ BOOL Gadgets2AslPrefs(struct AslEditor_DATA *data)
 BOOL AslPrefs2Gadgets(struct AslEditor_DATA *data)
 {
     struct AslPrefs *prefs = &aslprefs;
-    // IPTR active = 0;
+    IPTR active = 0;
 
-    // D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
-    // NNSET(data->poptofrontobj, MUIA_Selected, (prefs->Flags & RTPRF_NOSCRTOFRONT) ? 0 : 1);
-    // NNSET(data->usesysfontobj, MUIA_Selected, (prefs->Flags & RTPRF_DEFAULTFONT) ? 1 : 0);
-    // NNSET(data->usefunckeysobj, MUIA_Selected, (prefs->Flags & RTPRF_FKEYS) ? 1 : 0);
-    // if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == 0)
-    //     active = 0;
-    // else if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == RTPRB_DOWHEEL)
-    //     active = 1;
-    // else
-    //     active = 2;
-    // NNSET(data->colorwheelstyleobj, MUIA_Cycle_Active, active);
-    // NNSET(data->immediatesortobj, MUIA_Selected, (prefs->Flags & RTPRF_IMMSORT) ? 1 : 0);
-    // NNSET(data->drawersfirstobj, MUIA_Selected, (prefs->Flags & RTPRF_DIRSFIRST) ? 1 : 0);
-    // NNSET(data->drawersmixedobj, MUIA_Selected, (prefs->Flags & RTPRF_DIRSMIXED) ? 1 : 0);
-    // NNSET(data->diskactivityobj, MUIA_Selected, (prefs->Flags & RTPRF_NOLED) ? 0 : 1);
-    // NNSET(data->mmbobj, MUIA_Selected, (prefs->Flags & RTPRF_MMBPARENT) ? 1 : 0);
+    NNSET(data->drawersfirstobj, MUIA_Selected, (prefs->ap_SortDrawers) ? 1 : 0);
 
-    // SelectDefaultsHook(NULL, data->defaultsforobj, &data);
+    SelectDefaultsHook(NULL, NULL, &data);
+
+    /* Disable non-editable for now */
+    NNSET(data->drawersfirstobj, MUIA_Disabled, TRUE);
 
     return TRUE;
 }
@@ -230,8 +226,6 @@ IPTR AslEditor__OM_NEW
 
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
-    selectdefaultshook.h_Entry = HookEntry;
-    selectdefaultshook.h_SubEntry = (HOOKFUNC)SelectDefaultsHook;
     updatedefaultshook.h_Entry = HookEntry;
     updatedefaultshook.h_SubEntry = (HOOKFUNC)UpdateDefaultsHook;
 
