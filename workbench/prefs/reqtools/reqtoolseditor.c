@@ -482,31 +482,31 @@ IPTR ReqToolsEditor__OM_NEW
 
         DoMethod
         (
-            sizepercentobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            sizepercentobj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            offsetxobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            offsetxobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            offsetyobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            offsetyobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            minvisobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            minvisobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            maxvisobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            maxvisobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
