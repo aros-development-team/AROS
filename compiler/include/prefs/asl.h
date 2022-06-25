@@ -28,6 +28,6 @@ struct AslPrefs
     WORD    ap_RelativeTop;
     UBYTE   ap_RelativeWidth;
     UBYTE   ap_RelativeHeight;
-};
+} __packed;
 
 #endif /* PREFS_ASL_H */
