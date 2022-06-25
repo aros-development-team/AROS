@@ -31,7 +31,7 @@
 
 /*********************************************************************************************/
 
-struct ReqToolsPrefs reqtoolsprefs;
+struct AslPrefs aslprefs;
 
 /*********************************************************************************************/
 
@@ -54,29 +54,29 @@ static BOOL Prefs_Load(STRPTR from)
 BOOL Prefs_ImportFH(BPTR fh)
 {
 #if (AROS_BIG_ENDIAN)
-#define loadprefs reqtoolsprefs
+#define loadprefs aslprefs
 #else
-    struct ReqToolsPrefs    loadprefs;
+    struct AslPrefs    loadprefs;
     int                     i;
 #endif
     BOOL                    retval = FALSE;
 
-    if (Read(fh, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
-    {
-#if (!(AROS_BIG_ENDIAN))
-        reqtoolsprefs.Flags = AROS_BE2LONG(loadprefs.Flags);
-        for(i = 0;i < RTPREF_NR_OF_REQ; i++)
-        {
-            reqtoolsprefs.ReqDefaults[i].Size = AROS_BE2LONG(loadprefs.ReqDefaults[i].Size);
-            reqtoolsprefs.ReqDefaults[i].ReqPos = AROS_BE2LONG(loadprefs.ReqDefaults[i].ReqPos);
-            reqtoolsprefs.ReqDefaults[i].LeftOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].LeftOffset);
-            reqtoolsprefs.ReqDefaults[i].TopOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].TopOffset);
-            reqtoolsprefs.ReqDefaults[i].MinEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MinEntries);
-            reqtoolsprefs.ReqDefaults[i].MaxEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MaxEntries);
-        }
-#endif
-        retval = TRUE;
-    }
+//     if (Read(fh, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
+//     {
+// #if (!(AROS_BIG_ENDIAN))
+//         aslprefs.Flags = AROS_BE2LONG(loadprefs.Flags);
+//         for(i = 0;i < RTPREF_NR_OF_REQ; i++)
+//         {
+//             aslprefs.ReqDefaults[i].Size = AROS_BE2LONG(loadprefs.ReqDefaults[i].Size);
+//             aslprefs.ReqDefaults[i].ReqPos = AROS_BE2LONG(loadprefs.ReqDefaults[i].ReqPos);
+//             aslprefs.ReqDefaults[i].LeftOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].LeftOffset);
+//             aslprefs.ReqDefaults[i].TopOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].TopOffset);
+//             aslprefs.ReqDefaults[i].MinEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MinEntries);
+//             aslprefs.ReqDefaults[i].MaxEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MaxEntries);
+//         }
+// #endif
+//         retval = TRUE;
+//     }
     
     return retval;
 }
@@ -86,31 +86,31 @@ BOOL Prefs_ImportFH(BPTR fh)
 BOOL Prefs_ExportFH(BPTR fh)
 {
 #if (AROS_BIG_ENDIAN)
-#define saveprefs reqtoolsprefs
+#define saveprefs aslprefs
 #else
-    struct ReqToolsPrefs    saveprefs;
+    struct AslPrefs    saveprefs;
     int                     i;
 #endif
     BOOL                    retval = FALSE;
 
     D(bug("SavePrefsFH: fh: %lx\n", fh));
 
-#if (!(AROS_BIG_ENDIAN))
-    saveprefs.Flags = AROS_LONG2BE(reqtoolsprefs.Flags);
-    for(i = 0; i < RTPREF_NR_OF_REQ; i++)
-    {
-        saveprefs.ReqDefaults[i].Size = AROS_LONG2BE(reqtoolsprefs.ReqDefaults[i].Size);
-        saveprefs.ReqDefaults[i].ReqPos = AROS_LONG2BE(reqtoolsprefs.ReqDefaults[i].ReqPos);
-        saveprefs.ReqDefaults[i].LeftOffset = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].LeftOffset);
-        saveprefs.ReqDefaults[i].TopOffset = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].TopOffset);
-        saveprefs.ReqDefaults[i].MinEntries = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].MinEntries);
-        saveprefs.ReqDefaults[i].MaxEntries = AROS_WORD2BE(reqtoolsprefs.ReqDefaults[i].MaxEntries);
-    }
-#endif
-    if (Write(fh, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
-    {
-        retval = TRUE;
-    }
+// #if (!(AROS_BIG_ENDIAN))
+//     saveprefs.Flags = AROS_LONG2BE(aslprefs.Flags);
+//     for(i = 0; i < RTPREF_NR_OF_REQ; i++)
+//     {
+//         saveprefs.ReqDefaults[i].Size = AROS_LONG2BE(aslprefs.ReqDefaults[i].Size);
+//         saveprefs.ReqDefaults[i].ReqPos = AROS_LONG2BE(aslprefs.ReqDefaults[i].ReqPos);
+//         saveprefs.ReqDefaults[i].LeftOffset = AROS_WORD2BE(aslprefs.ReqDefaults[i].LeftOffset);
+//         saveprefs.ReqDefaults[i].TopOffset = AROS_WORD2BE(aslprefs.ReqDefaults[i].TopOffset);
+//         saveprefs.ReqDefaults[i].MinEntries = AROS_WORD2BE(aslprefs.ReqDefaults[i].MinEntries);
+//         saveprefs.ReqDefaults[i].MaxEntries = AROS_WORD2BE(aslprefs.ReqDefaults[i].MaxEntries);
+//     }
+// #endif
+//     if (Write(fh, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
+//     {
+//         retval = TRUE;
+//     }
 
     return retval;
 }
@@ -178,38 +178,38 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
-    reqtoolsprefs.Flags = 0;
+    // aslprefs.Flags = 0;
     
-    reqtoolsprefs.ReqDefaults[ RTPREF_OTHERREQ      ].ReqPos = REQPOS_POINTER;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FILEREQ       ].Size = 75;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FONTREQ       ].Size =
-    reqtoolsprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].Size =
-    reqtoolsprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].Size = 65;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FILEREQ       ].ReqPos =
-    reqtoolsprefs.ReqDefaults[ RTPREF_FONTREQ       ].ReqPos =
-    reqtoolsprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].ReqPos =
-    reqtoolsprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].ReqPos =
-    reqtoolsprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].ReqPos = REQPOS_TOPLEFTSCR;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FILEREQ       ].LeftOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_FONTREQ       ].LeftOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].LeftOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].LeftOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].LeftOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_OTHERREQ      ].LeftOffset = 25;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FILEREQ       ].TopOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_FONTREQ       ].TopOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].TopOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].TopOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].TopOffset =
-    reqtoolsprefs.ReqDefaults[ RTPREF_OTHERREQ      ].TopOffset = 18;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FILEREQ       ].MinEntries = 10;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FONTREQ       ].MinEntries =
-    reqtoolsprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].MinEntries =
-    reqtoolsprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].MinEntries = 6;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FILEREQ       ].MaxEntries = 50;
-    reqtoolsprefs.ReqDefaults[ RTPREF_FONTREQ       ].MaxEntries =
-    reqtoolsprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].MaxEntries =
-    reqtoolsprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].MaxEntries = 10;
+    // aslprefs.ReqDefaults[ RTPREF_OTHERREQ      ].ReqPos = REQPOS_POINTER;
+    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].Size = 75;
+    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].Size =
+    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].Size =
+    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].Size = 65;
+    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].ReqPos =
+    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].ReqPos =
+    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].ReqPos =
+    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].ReqPos =
+    // aslprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].ReqPos = REQPOS_TOPLEFTSCR;
+    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].LeftOffset =
+    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].LeftOffset =
+    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].LeftOffset =
+    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].LeftOffset =
+    // aslprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].LeftOffset =
+    // aslprefs.ReqDefaults[ RTPREF_OTHERREQ      ].LeftOffset = 25;
+    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].TopOffset =
+    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].TopOffset =
+    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].TopOffset =
+    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].TopOffset =
+    // aslprefs.ReqDefaults[ RTPREF_PALETTEREQ    ].TopOffset =
+    // aslprefs.ReqDefaults[ RTPREF_OTHERREQ      ].TopOffset = 18;
+    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].MinEntries = 10;
+    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].MinEntries =
+    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].MinEntries =
+    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].MinEntries = 6;
+    // aslprefs.ReqDefaults[ RTPREF_FILEREQ       ].MaxEntries = 50;
+    // aslprefs.ReqDefaults[ RTPREF_FONTREQ       ].MaxEntries =
+    // aslprefs.ReqDefaults[ RTPREF_SCREENMODEREQ ].MaxEntries =
+    // aslprefs.ReqDefaults[ RTPREF_VOLUMEREQ     ].MaxEntries = 10;
 
     return TRUE;
 }

@@ -60,97 +60,97 @@ static CONST_STRPTR colorwheelstyle_labels[4], defaultsfor_labels[7], position_l
 
 static void SelectDefaultsHook(struct Hook *hook, Object *self, struct AslEditor_DATA **data)
 {
-    struct ReqToolsPrefs *prefs = &reqtoolsprefs;
-    IPTR active = 0;
+    struct AslPrefs *prefs = &aslprefs;
+    // IPTR active = 0;
 
-    D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
+    // D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
     
-    GET(self, MUIA_Cycle_Active, &active);
+    // GET(self, MUIA_Cycle_Active, &active);
 
-    NNSET((*data)->positionobj, MUIA_Cycle_Active, prefs->ReqDefaults[active].ReqPos);
-    NNSET((*data)->sizepercentobj, MUIA_Numeric_Value, prefs->ReqDefaults[active].Size);
-    NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ReqDefaults[active].LeftOffset);
-    NNSET((*data)->offsetyobj, MUIA_String_Integer, prefs->ReqDefaults[active].TopOffset);
-    NNSET((*data)->minvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MinEntries);
-    NNSET((*data)->maxvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MaxEntries);
+    // NNSET((*data)->positionobj, MUIA_Cycle_Active, prefs->ReqDefaults[active].ReqPos);
+    // NNSET((*data)->sizepercentobj, MUIA_Numeric_Value, prefs->ReqDefaults[active].Size);
+    // NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ReqDefaults[active].LeftOffset);
+    // NNSET((*data)->offsetyobj, MUIA_String_Integer, prefs->ReqDefaults[active].TopOffset);
+    // NNSET((*data)->minvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MinEntries);
+    // NNSET((*data)->maxvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MaxEntries);
 }
 
 static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct AslEditor_DATA **data)
 {
-    struct ReqToolsPrefs *prefs = &reqtoolsprefs;
-    IPTR active = 0, tmpval;
-    BOOL changed = FALSE;
+    struct AslPrefs *prefs = &aslprefs;
+    // IPTR active = 0, tmpval;
+    // BOOL changed = FALSE;
 
-    D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
+    // D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
     
-    GET((*data)->defaultsforobj, MUIA_Cycle_Active, &active);
+    // GET((*data)->defaultsforobj, MUIA_Cycle_Active, &active);
 
-    tmpval = prefs->ReqDefaults[active].ReqPos;
-    if ((prefs->ReqDefaults[active].ReqPos = XGET((*data)->positionobj, MUIA_Cycle_Active)) != tmpval)
-        changed = TRUE;
-    tmpval = prefs->ReqDefaults[active].Size;
-    if ((prefs->ReqDefaults[active].Size = XGET((*data)->sizepercentobj, MUIA_Numeric_Value)) != tmpval)
-        changed = TRUE;
-    tmpval = prefs->ReqDefaults[active].LeftOffset;
-    if ((prefs->ReqDefaults[active].LeftOffset = XGET((*data)->offsetxobj, MUIA_String_Integer)) != tmpval)
-        changed = TRUE;
-    tmpval = prefs->ReqDefaults[active].TopOffset;
-    if ((prefs->ReqDefaults[active].TopOffset = XGET((*data)->offsetyobj, MUIA_String_Integer)) != tmpval)
-        changed = TRUE;
-    tmpval = prefs->ReqDefaults[active].MinEntries;
-    if ((prefs->ReqDefaults[active].MinEntries = XGET((*data)->minvisobj, MUIA_String_Integer)) != tmpval)
-        changed = TRUE;
-    tmpval = prefs->ReqDefaults[active].MaxEntries;
-    if ((prefs->ReqDefaults[active].MaxEntries = XGET((*data)->maxvisobj, MUIA_String_Integer)) != tmpval)
-        changed = TRUE;
+    // tmpval = prefs->ReqDefaults[active].ReqPos;
+    // if ((prefs->ReqDefaults[active].ReqPos = XGET((*data)->positionobj, MUIA_Cycle_Active)) != tmpval)
+    //     changed = TRUE;
+    // tmpval = prefs->ReqDefaults[active].Size;
+    // if ((prefs->ReqDefaults[active].Size = XGET((*data)->sizepercentobj, MUIA_Numeric_Value)) != tmpval)
+    //     changed = TRUE;
+    // tmpval = prefs->ReqDefaults[active].LeftOffset;
+    // if ((prefs->ReqDefaults[active].LeftOffset = XGET((*data)->offsetxobj, MUIA_String_Integer)) != tmpval)
+    //     changed = TRUE;
+    // tmpval = prefs->ReqDefaults[active].TopOffset;
+    // if ((prefs->ReqDefaults[active].TopOffset = XGET((*data)->offsetyobj, MUIA_String_Integer)) != tmpval)
+    //     changed = TRUE;
+    // tmpval = prefs->ReqDefaults[active].MinEntries;
+    // if ((prefs->ReqDefaults[active].MinEntries = XGET((*data)->minvisobj, MUIA_String_Integer)) != tmpval)
+    //     changed = TRUE;
+    // tmpval = prefs->ReqDefaults[active].MaxEntries;
+    // if ((prefs->ReqDefaults[active].MaxEntries = XGET((*data)->maxvisobj, MUIA_String_Integer)) != tmpval)
+    //     changed = TRUE;
     
-    if (changed)
-    {
-        SET( _parent(self), MUIA_PrefsEditor_Changed, TRUE);
-    }
+    // if (changed)
+    // {
+    //     SET( _parent(self), MUIA_PrefsEditor_Changed, TRUE);
+    // }
 }
 
 /*********************************************************************************************/
 
 BOOL Gadgets2AslPrefs(struct AslEditor_DATA *data)
 {
-    struct ReqToolsPrefs *prefs = &reqtoolsprefs;
+    struct AslPrefs *prefs = &aslprefs;
     IPTR active = 0;
 
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
     // Clear options we are about to set..
-    prefs->Flags &= ~(RTPRF_NOSCRTOFRONT | RTPRF_DEFAULTFONT | RTPRF_FKEYS | RTPRB_DOWHEEL | RTPRB_FANCYWHEEL | RTPRF_IMMSORT | RTPRF_DIRSFIRST | RTPRF_DIRSMIXED | RTPRF_NOLED | RTPRF_MMBPARENT);
+    // prefs->Flags &= ~(RTPRF_NOSCRTOFRONT | RTPRF_DEFAULTFONT | RTPRF_FKEYS | RTPRB_DOWHEEL | RTPRB_FANCYWHEEL | RTPRF_IMMSORT | RTPRF_DIRSFIRST | RTPRF_DIRSMIXED | RTPRF_NOLED | RTPRF_MMBPARENT);
 
-    GET(data->poptofrontobj, MUIA_Selected, &active);
-    if (active == 0)
-        prefs->Flags |= RTPRF_NOSCRTOFRONT;
-    GET(data->usesysfontobj, MUIA_Selected, &active);
-    if (active != 0)
-        prefs->Flags |= RTPRF_DEFAULTFONT;
-    GET(data->usefunckeysobj, MUIA_Selected, &active);
-    if (active != 0)
-        prefs->Flags |= RTPRF_FKEYS;
-    GET(data->colorwheelstyleobj, MUIA_Cycle_Active, &active);
-    if (active > 0)
-        prefs->Flags |= RTPRB_DOWHEEL;
-    if (active > 1)
-        prefs->Flags |= RTPRB_FANCYWHEEL;
-    GET(data->immediatesortobj, MUIA_Selected, &active);
-    if (active != 0)
-        prefs->Flags |= RTPRF_IMMSORT;
-    GET(data->drawersfirstobj, MUIA_Selected, &active);
-    if (active != 0)
-        prefs->Flags |= RTPRF_DIRSFIRST;
-    GET(data->drawersmixedobj, MUIA_Selected, &active);
-    if (active != 0)
-        prefs->Flags |= RTPRF_DIRSMIXED;
-    GET(data->diskactivityobj, MUIA_Selected, &active);
-    if (active == 0)
-        prefs->Flags |= RTPRF_NOLED;
-    GET(data->mmbobj, MUIA_Selected, &active);
-    if (active != 0)
-        prefs->Flags |= RTPRF_MMBPARENT;
+    // GET(data->poptofrontobj, MUIA_Selected, &active);
+    // if (active == 0)
+    //     prefs->Flags |= RTPRF_NOSCRTOFRONT;
+    // GET(data->usesysfontobj, MUIA_Selected, &active);
+    // if (active != 0)
+    //     prefs->Flags |= RTPRF_DEFAULTFONT;
+    // GET(data->usefunckeysobj, MUIA_Selected, &active);
+    // if (active != 0)
+    //     prefs->Flags |= RTPRF_FKEYS;
+    // GET(data->colorwheelstyleobj, MUIA_Cycle_Active, &active);
+    // if (active > 0)
+    //     prefs->Flags |= RTPRB_DOWHEEL;
+    // if (active > 1)
+    //     prefs->Flags |= RTPRB_FANCYWHEEL;
+    // GET(data->immediatesortobj, MUIA_Selected, &active);
+    // if (active != 0)
+    //     prefs->Flags |= RTPRF_IMMSORT;
+    // GET(data->drawersfirstobj, MUIA_Selected, &active);
+    // if (active != 0)
+    //     prefs->Flags |= RTPRF_DIRSFIRST;
+    // GET(data->drawersmixedobj, MUIA_Selected, &active);
+    // if (active != 0)
+    //     prefs->Flags |= RTPRF_DIRSMIXED;
+    // GET(data->diskactivityobj, MUIA_Selected, &active);
+    // if (active == 0)
+    //     prefs->Flags |= RTPRF_NOLED;
+    // GET(data->mmbobj, MUIA_Selected, &active);
+    // if (active != 0)
+    //     prefs->Flags |= RTPRF_MMBPARENT;
 
     return TRUE;
 }
@@ -159,28 +159,28 @@ BOOL Gadgets2AslPrefs(struct AslEditor_DATA *data)
 
 BOOL AslPrefs2Gadgets(struct AslEditor_DATA *data)
 {
-    struct ReqToolsPrefs *prefs = &reqtoolsprefs;
-    IPTR active = 0;
+    struct AslPrefs *prefs = &aslprefs;
+    // IPTR active = 0;
 
-    D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
+    // D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
-    NNSET(data->poptofrontobj, MUIA_Selected, (prefs->Flags & RTPRF_NOSCRTOFRONT) ? 0 : 1);
-    NNSET(data->usesysfontobj, MUIA_Selected, (prefs->Flags & RTPRF_DEFAULTFONT) ? 1 : 0);
-    NNSET(data->usefunckeysobj, MUIA_Selected, (prefs->Flags & RTPRF_FKEYS) ? 1 : 0);
-    if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == 0)
-        active = 0;
-    else if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == RTPRB_DOWHEEL)
-        active = 1;
-    else
-        active = 2;
-    NNSET(data->colorwheelstyleobj, MUIA_Cycle_Active, active);
-    NNSET(data->immediatesortobj, MUIA_Selected, (prefs->Flags & RTPRF_IMMSORT) ? 1 : 0);
-    NNSET(data->drawersfirstobj, MUIA_Selected, (prefs->Flags & RTPRF_DIRSFIRST) ? 1 : 0);
-    NNSET(data->drawersmixedobj, MUIA_Selected, (prefs->Flags & RTPRF_DIRSMIXED) ? 1 : 0);
-    NNSET(data->diskactivityobj, MUIA_Selected, (prefs->Flags & RTPRF_NOLED) ? 0 : 1);
-    NNSET(data->mmbobj, MUIA_Selected, (prefs->Flags & RTPRF_MMBPARENT) ? 1 : 0);
+    // NNSET(data->poptofrontobj, MUIA_Selected, (prefs->Flags & RTPRF_NOSCRTOFRONT) ? 0 : 1);
+    // NNSET(data->usesysfontobj, MUIA_Selected, (prefs->Flags & RTPRF_DEFAULTFONT) ? 1 : 0);
+    // NNSET(data->usefunckeysobj, MUIA_Selected, (prefs->Flags & RTPRF_FKEYS) ? 1 : 0);
+    // if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == 0)
+    //     active = 0;
+    // else if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == RTPRB_DOWHEEL)
+    //     active = 1;
+    // else
+    //     active = 2;
+    // NNSET(data->colorwheelstyleobj, MUIA_Cycle_Active, active);
+    // NNSET(data->immediatesortobj, MUIA_Selected, (prefs->Flags & RTPRF_IMMSORT) ? 1 : 0);
+    // NNSET(data->drawersfirstobj, MUIA_Selected, (prefs->Flags & RTPRF_DIRSFIRST) ? 1 : 0);
+    // NNSET(data->drawersmixedobj, MUIA_Selected, (prefs->Flags & RTPRF_DIRSMIXED) ? 1 : 0);
+    // NNSET(data->diskactivityobj, MUIA_Selected, (prefs->Flags & RTPRF_NOLED) ? 0 : 1);
+    // NNSET(data->mmbobj, MUIA_Selected, (prefs->Flags & RTPRF_MMBPARENT) ? 1 : 0);
 
-    SelectDefaultsHook(NULL, data->defaultsforobj, &data);
+    // SelectDefaultsHook(NULL, data->defaultsforobj, &data);
 
     return TRUE;
 }

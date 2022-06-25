@@ -7,7 +7,7 @@
 #ifndef _PREFS_H_
 #define _PREFS_H_
 
-#include <libraries/reqtools.h>
+#include <prefs/asl.h>
 #include <dos/dos.h>
 
 /*********************************************************************************************/
@@ -19,7 +19,7 @@ BOOL Prefs_Default(VOID);
 
 /*********************************************************************************************/
 
-extern struct ReqToolsPrefs reqtoolsprefs;
+extern struct AslPrefs aslprefs;
 
 /*********************************************************************************************/
 
