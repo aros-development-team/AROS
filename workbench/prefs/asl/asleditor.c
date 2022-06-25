@@ -313,13 +313,13 @@ IPTR AslEditor__OM_NEW
 
         DoMethod
         (
-            offsetxobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            offsetxobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            offsetyobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            offsetyobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
