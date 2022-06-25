@@ -27,24 +27,15 @@
 
 struct AslEditor_DATA
 {
-    Object *poptofrontobj;
-    Object *usesysfontobj;
-    Object *usefunckeysobj;
-    Object *colorwheelstyleobj;
-
-    Object *immediatesortobj;
     Object *drawersfirstobj;
-    Object *drawersmixedobj;
-    Object *diskactivityobj;
-    Object *mmbobj;
 
-    Object *defaultsforobj;
-    Object *sizepercentobj;
-    Object *minvisobj;
-    Object *maxvisobj;
     Object *positionobj;
     Object *offsetxobj;
     Object *offsetyobj;
+
+    Object *sizeobj;
+    Object *heightpercentobj;
+    Object *widthpercentobj;
 };
 
 /*********************************************************************************************/
@@ -54,7 +45,7 @@ struct AslEditor_DATA
 /*********************************************************************************************/
 
 static struct Hook  selectdefaultshook, updatedefaultshook;
-static CONST_STRPTR colorwheelstyle_labels[4], defaultsfor_labels[7], position_labels[6];
+static CONST_STRPTR position_labels[7], size_labels[3];
 
 /*********************************************************************************************/
 
@@ -219,31 +210,23 @@ IPTR AslEditor__OM_NEW
     struct AslEditor_DATA *data = NULL;
 
     struct TagItem AslStringifyTags[] = {
-        { MUIA_Numeric_Value, 0 },
-        { MUIA_Numeric_Min, 0   },
-        { MUIA_Numeric_Max, 100 },
-        { TAG_DONE, (IPTR)NULL  }
+        { MUIA_Numeric_Value, 25 },
+        { MUIA_Numeric_Min, 25   },
+        { MUIA_Numeric_Max, 100  },
+        { TAG_DONE, (IPTR)NULL   }
     };
 
     //
-    Object *poptofrontobj;
-    Object *usesysfontobj;
-    Object *usefunckeysobj;
-    Object *colorwheelstyleobj;
 
-    Object *immediatesortobj;
     Object *drawersfirstobj;
-    Object *drawersmixedobj;
-    Object *diskactivityobj;
-    Object *mmbobj;
 
-    Object *defaultsforobj;
     Object *positionobj;
-    Object *sizepercentobj;
     Object *offsetxobj;
     Object *offsetyobj;
-    Object *minvisobj;
-    Object *maxvisobj;
+
+    Object *sizeobj;
+    Object *heightpercentobj;
+    Object *widthpercentobj;
 
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
@@ -252,24 +235,18 @@ IPTR AslEditor__OM_NEW
     updatedefaultshook.h_Entry = HookEntry;
     updatedefaultshook.h_SubEntry = (HOOKFUNC)UpdateDefaultsHook;
 
-    colorwheelstyle_labels[0] = _(MSG_WHEEL_NONE);
-    colorwheelstyle_labels[1] = _(MSG_WHEEL_SIMPLE);
-    colorwheelstyle_labels[2] = _(MSG_WHEEL_FANCY);
-
-    defaultsfor_labels[0] = _(MSG_FILEREQ);
-    defaultsfor_labels[1] = _(MSG_FONTREQ);
-    defaultsfor_labels[2] = _(MSG_PALETTEREQ);
-    defaultsfor_labels[3] = _(MSG_SCRMODEREQ);
-    defaultsfor_labels[4] = _(MSG_VOLUMEREQ);
-    defaultsfor_labels[5] = _(MSG_OTHERREQ);
-
-    position_labels[0] = _(MSG_POINTER);
+    position_labels[0] = "Default";
     position_labels[1] = _(MSG_CENTERWIN);
     position_labels[2] = _(MSG_CENTERSCR);
-    position_labels[3] = _(MSG_TOPLEFTWIN);
-    position_labels[4] = _(MSG_TOPLEFTSCR);
+    position_labels[3] = _(MSG_TOPLEFTWIN); // Allow offset
+    position_labels[4] = _(MSG_TOPLEFTSCR); // Allow offset
+    position_labels[5] = _(MSG_POINTER);
 
-    sizepercentobj = (Object *)NewObjectA(AslStringify_CLASS->mcc_Class, NULL, AslStringifyTags);
+    size_labels[0] = "Default";
+    size_labels[1] = "Relative";
+
+    heightpercentobj = (Object *)NewObjectA(AslStringify_CLASS->mcc_Class, NULL, AslStringifyTags);
+    widthpercentobj = (Object *)NewObjectA(AslStringify_CLASS->mcc_Class, NULL, AslStringifyTags);
 
     self = (Object *) DoSuperNewTags
     (
@@ -280,59 +257,11 @@ IPTR AslEditor__OM_NEW
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Asl",
 
         Child, HGroup,
-            Child, (IPTR)VGroup,
-                MUIA_Weight, 0,
-                Child, VGroup,
-                    GroupFrameT(__(MSG_GENERAL)),
-                    Child, HGroup,
-                        Child, ColGroup(2),
-                            Child, (poptofrontobj = AslEditor__Checkmark()),
-                            Child, LLabel1(__(MSG_POPSCREEN)),
-                            Child, (usesysfontobj = AslEditor__Checkmark()),
-                            Child, LLabel1(__(MSG_DEFAULTFONT)),
-                            Child, (usefunckeysobj = AslEditor__Checkmark()),
-                            Child, LLabel1(__(MSG_FKEYS)),
-                        End,
-                        Child, HVSpace,
-                    End,
-                    Child, HGroup,
-                        Child, Label1(__(MSG_DOWHEEL)),
-                        Child, (colorwheelstyleobj = AslEditor__Cycle(colorwheelstyle_labels)),
-                        Child, HVSpace,
-                    End,
-                End,
-                Child, HGroup,
-                    GroupFrameT(__(MSG_FILEREQUESTER)),
-                    Child, ColGroup(2),
-                        Child, (immediatesortobj = AslEditor__Checkmark()),
-                        Child, LLabel1(__(MSG_IMMEDIATESORT)),
-                        Child, (drawersfirstobj = AslEditor__Checkmark()),
-                        Child, LLabel1(__(MSG_DRAWERSFIRST)),
-                        Child, (drawersmixedobj = AslEditor__Checkmark()),
-                        Child, LLabel1(__(MSG_DRAWERSMIXED)),
-                        Child, (diskactivityobj = AslEditor__Checkmark()),
-                        Child, LLabel1(__(MSG_LED)),
-                        Child, (mmbobj = AslEditor__Checkmark()),
-                        Child, LLabel1(__(MSG_MMB_PARENT)),
-                    End,
-                    Child, HVSpace,
-                End,
-            End,
             Child, VGroup,
-                GroupFrameT(__(MSG_DEFAULTS)),
-                    Child, HGroup,
-                        Child, Label1(__(MSG_REQUESTER)),
-                        Child, (defaultsforobj = AslEditor__Cycle(defaultsfor_labels)),
-                    End,
-                    Child, RectangleObject,
-                        MUIA_VertWeight, 0,
-                        MUIA_Rectangle_HBar, TRUE,
-                    End,
+                GroupFrameT(__(MSG_GENERAL)),
                 Child, ColGroup(2),
                     Child, Label1(__(MSG_POSITION)),
                     Child, (positionobj = AslEditor__Cycle(position_labels)),
-                    Child, Label1(__(MSG_SIZE)),
-                    Child, sizepercentobj,
                     Child, Label1(__(MSG_OFFSET)),
                     Child, HVSpace,
                     Child, Label1("X:"),
@@ -357,30 +286,22 @@ IPTR AslEditor__OM_NEW
                         End),
                         Child, HVSpace,
                     End,
-                    Child, Label1(__(MSG_NR_OF_ENTRIES)),
+                    Child, Label1("Size"),
+                    Child, (sizeobj = AslEditor__Cycle(size_labels)),
+                    Child, Label1("Size (% of visible width):"),
+                    Child, widthpercentobj,
+                    Child, Label1(__(MSG_SIZE)),
+                    Child, heightpercentobj,
+                End,
+                Child, HVSpace,
+            End,
+            Child, HGroup,
+                GroupFrameT(__(MSG_FILEREQUESTER)),
+                Child, ColGroup(2),
+                    Child, (drawersfirstobj = AslEditor__Checkmark()),
+                    Child, LLabel1(__(MSG_DRAWERSFIRST)),
                     Child, HVSpace,
-                    Child, Label1(__(MSG_MIN)),
-                    Child, HGroup,
-                        Child, (IPTR)(minvisobj = StringObject,
-                            StringFrame,
-                            MUIA_Weight, 0,
-                            MUIA_CycleChain, TRUE,
-                            MUIA_String_Accept, (IPTR)"0123456789",
-                            MUIA_FixWidthTxt, (IPTR)"55555",
-                        End),
-                        Child, HVSpace,
-                    End,
-                    Child, Label1(__(MSG_MAX)),
-                    Child, HGroup,
-                        Child, (IPTR)(maxvisobj = StringObject,
-                            StringFrame,
-                            MUIA_Weight, 0,
-                            MUIA_CycleChain, TRUE,
-                            MUIA_String_Accept, (IPTR)"0123456789",
-                            MUIA_FixWidthTxt, (IPTR)"55555",
-                        End),
-                        Child, HVSpace,
-                    End,
+                    Child, HVSpace,
                 End,
                 Child, HVSpace,
             End,
@@ -394,54 +315,15 @@ IPTR AslEditor__OM_NEW
         
         D(bug("[AslEditor.class] %s: Self @ 0x%p, Data @ 0x%p\n", __PRETTY_FUNCTION__, self, data));
 
-        data->colorwheelstyleobj = colorwheelstyleobj;
-        data->poptofrontobj = poptofrontobj;
-        data->usesysfontobj = usesysfontobj;
-        data->usefunckeysobj = usefunckeysobj;
-
-        data->immediatesortobj = immediatesortobj;
         data->drawersfirstobj = drawersfirstobj;
-        data->drawersmixedobj = drawersmixedobj;
-        data->diskactivityobj = diskactivityobj;
-        data->mmbobj = mmbobj;
 
-        data->defaultsforobj = defaultsforobj;
         data->positionobj = positionobj;
-        data->sizepercentobj = sizepercentobj;
         data->offsetxobj = offsetxobj;
         data->offsetyobj = offsetyobj;
-        data->minvisobj = minvisobj;
-        data->maxvisobj = maxvisobj;
 
-        DoMethod
-        (
-            poptofrontobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            usesysfontobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            usefunckeysobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            colorwheelstyleobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            immediatesortobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
+        data->sizeobj = sizeobj;
+        data->heightpercentobj = heightpercentobj;
+        data->widthpercentobj = widthpercentobj;
 
         DoMethod
         (
@@ -451,37 +333,25 @@ IPTR AslEditor__OM_NEW
 
         DoMethod
         (
-            drawersmixedobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            diskactivityobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            mmbobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-
-        DoMethod
-        (
-            defaultsforobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)defaultsforobj, 3, MUIM_CallHook, (IPTR)&selectdefaultshook, (IPTR)data
-        );
-
-        DoMethod
-        (
-            positionobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            sizeobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            sizepercentobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            heightpercentobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
+        );
+
+        DoMethod
+        (
+            widthpercentobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
+        );
+
+        DoMethod
+        (
+            positionobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
@@ -494,18 +364,6 @@ IPTR AslEditor__OM_NEW
         DoMethod
         (
             offsetyobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
-        );
-
-        DoMethod
-        (
-            minvisobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
-        );
-
-        DoMethod
-        (
-            maxvisobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
