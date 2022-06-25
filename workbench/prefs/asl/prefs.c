@@ -52,32 +52,64 @@ static BOOL Prefs_Load(STRPTR from)
 
 BOOL Prefs_ImportFH(BPTR fh)
 {
-#if (AROS_BIG_ENDIAN)
-#define loadprefs aslprefs
-#else
-    struct AslPrefs    loadprefs;
-    int                     i;
-#endif
-    BOOL                    retval = FALSE;
+    struct IFFHandle    *handle;
+    BOOL                 success = TRUE;
+    LONG                 error;
 
-//     if (Read(fh, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
-//     {
-// #if (!(AROS_BIG_ENDIAN))
-//         aslprefs.Flags = AROS_BE2LONG(loadprefs.Flags);
-//         for(i = 0;i < RTPREF_NR_OF_REQ; i++)
-//         {
-//             aslprefs.ReqDefaults[i].Size = AROS_BE2LONG(loadprefs.ReqDefaults[i].Size);
-//             aslprefs.ReqDefaults[i].ReqPos = AROS_BE2LONG(loadprefs.ReqDefaults[i].ReqPos);
-//             aslprefs.ReqDefaults[i].LeftOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].LeftOffset);
-//             aslprefs.ReqDefaults[i].TopOffset = AROS_BE2WORD(loadprefs.ReqDefaults[i].TopOffset);
-//             aslprefs.ReqDefaults[i].MinEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MinEntries);
-//             aslprefs.ReqDefaults[i].MaxEntries = AROS_BE2WORD(loadprefs.ReqDefaults[i].MaxEntries);
-//         }
-// #endif
-//         retval = TRUE;
-//     }
-    
-    return retval;
+    if (!(handle = AllocIFF()))
+    {
+        ShowMessage(_(MSG_CANT_ALLOCATE_IFFPTR));
+        return(FALSE);
+    }
+
+    handle->iff_Stream = (IPTR) fh;
+    InitIFFasDOS(handle);
+
+    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
+    {
+        BYTE i;
+
+        // FIXME: We want some sanity checking here!
+
+        if ((error = StopChunk(handle, ID_PREF, ID_ASL)) == 0)
+        {
+            if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
+            {
+                struct AslPrefs loadprefs;
+
+                error = ReadChunkBytes(handle, &loadprefs, sizeof(struct AslPrefs));
+
+                if (error < 0)
+                {
+                    printf("Error: ReadChunkBytes() returned %d!\n", (int)error);
+                }
+
+                CopyMem(&loadprefs, &aslprefs, sizeof(struct AslPrefs));
+                aslprefs.ap_RelativeLeft    = AROS_BE2WORD(loadprefs.ap_RelativeLeft);
+                aslprefs.ap_RelativeTop     = AROS_BE2WORD(loadprefs.ap_RelativeTop);
+            }
+            else
+            {
+                printf("ParseIFF() failed, returncode %d!\n", (int)error);
+                success = FALSE;
+            }
+        }
+        else
+        {
+            printf("StopChunk() failed, returncode %d!\n", (int)error);
+            success = FALSE;
+        }
+
+        CloseIFF(handle);
+    }
+    else
+    {
+        ShowMessage(_(MSG_CANT_OPEN_STREAM));
+    }
+
+    FreeIFF(handle);
+
+    return success;
 }
 
 /*********************************************************************************************/
