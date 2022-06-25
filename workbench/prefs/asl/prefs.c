@@ -221,7 +221,7 @@ BOOL Prefs_Default(VOID)
     aslprefs.ap_SortBy              = 0;
     aslprefs.ap_SortDrawers         = 1;
     aslprefs.ap_SortOrder           = 0;
-    aslprefs.ap_SizePosition        = 0;
+    aslprefs.ap_SizePosition        = 0x40 /* override */ | 0x10 /* relative */ | 0x02 /* center on screen */;
     aslprefs.ap_RelativeLeft        = 0;
     aslprefs.ap_RelativeTop         = 0;
     aslprefs.ap_RelativeWidth       = 30;

@@ -56,8 +56,8 @@ static void SelectDefaultsHook(struct Hook *hook, Object *self, struct AslEditor
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
     
     /* Hardcode for now */
-    NNSET((*data)->positionobj, MUIA_Cycle_Active, 2);
-    NNSET((*data)->sizeobj, MUIA_Cycle_Active, 1);
+    NNSET((*data)->positionobj, MUIA_Cycle_Active, prefs->ap_SizePosition & 0x7);
+    NNSET((*data)->sizeobj, MUIA_Cycle_Active, (prefs->ap_SizePosition & 0x10) >> 4);
 
     /* Use prefs */
     NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ap_RelativeLeft);
@@ -76,36 +76,31 @@ static void SelectDefaultsHook(struct Hook *hook, Object *self, struct AslEditor
 static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct AslEditor_DATA **data)
 {
     struct AslPrefs *prefs = &aslprefs;
-    // IPTR active = 0, tmpval;
-    // BOOL changed = FALSE;
+    IPTR tmpval;
+    BOOL changed = FALSE;
 
-    // D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
-    
-    // GET((*data)->defaultsforobj, MUIA_Cycle_Active, &active);
+    D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
-    // tmpval = prefs->ReqDefaults[active].ReqPos;
-    // if ((prefs->ReqDefaults[active].ReqPos = XGET((*data)->positionobj, MUIA_Cycle_Active)) != tmpval)
-    //     changed = TRUE;
-    // tmpval = prefs->ReqDefaults[active].Size;
-    // if ((prefs->ReqDefaults[active].Size = XGET((*data)->sizepercentobj, MUIA_Numeric_Value)) != tmpval)
-    //     changed = TRUE;
-    // tmpval = prefs->ReqDefaults[active].LeftOffset;
-    // if ((prefs->ReqDefaults[active].LeftOffset = XGET((*data)->offsetxobj, MUIA_String_Integer)) != tmpval)
-    //     changed = TRUE;
-    // tmpval = prefs->ReqDefaults[active].TopOffset;
-    // if ((prefs->ReqDefaults[active].TopOffset = XGET((*data)->offsetyobj, MUIA_String_Integer)) != tmpval)
-    //     changed = TRUE;
-    // tmpval = prefs->ReqDefaults[active].MinEntries;
-    // if ((prefs->ReqDefaults[active].MinEntries = XGET((*data)->minvisobj, MUIA_String_Integer)) != tmpval)
-    //     changed = TRUE;
-    // tmpval = prefs->ReqDefaults[active].MaxEntries;
-    // if ((prefs->ReqDefaults[active].MaxEntries = XGET((*data)->maxvisobj, MUIA_String_Integer)) != tmpval)
-    //     changed = TRUE;
-    
-    // if (changed)
-    // {
-    //     SET( _parent(self), MUIA_PrefsEditor_Changed, TRUE);
-    // }
+    // TODO: implement reading from gadgets
+    prefs->ap_SizePosition = 0x40 /* override */ | 0x10 /* relative */ | 0x02 /* center on screen */;
+
+    tmpval = prefs->ap_RelativeWidth;
+    if ((prefs->ap_RelativeWidth = XGET((*data)->widthpercentobj, MUIA_Numeric_Value)) != tmpval)
+        changed = TRUE;
+    tmpval = prefs->ap_RelativeHeight;
+    if ((prefs->ap_RelativeHeight = XGET((*data)->heightpercentobj, MUIA_Numeric_Value)) != tmpval)
+        changed = TRUE;
+    tmpval = prefs->ap_RelativeLeft;
+    if ((prefs->ap_RelativeLeft = XGET((*data)->offsetxobj, MUIA_String_Integer)) != tmpval)
+        changed = TRUE;
+    tmpval = prefs->ap_RelativeTop;
+    if ((prefs->ap_RelativeTop = XGET((*data)->offsetyobj, MUIA_String_Integer)) != tmpval)
+        changed = TRUE;
+
+    if (changed)
+    {
+        SET( _parent(self), MUIA_PrefsEditor_Changed, TRUE);
+    }
 }
 
 /*********************************************************************************************/
@@ -116,39 +111,6 @@ BOOL Gadgets2AslPrefs(struct AslEditor_DATA *data)
     IPTR active = 0;
 
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
-
-    // Clear options we are about to set..
-    // prefs->Flags &= ~(RTPRF_NOSCRTOFRONT | RTPRF_DEFAULTFONT | RTPRF_FKEYS | RTPRB_DOWHEEL | RTPRB_FANCYWHEEL | RTPRF_IMMSORT | RTPRF_DIRSFIRST | RTPRF_DIRSMIXED | RTPRF_NOLED | RTPRF_MMBPARENT);
-
-    // GET(data->poptofrontobj, MUIA_Selected, &active);
-    // if (active == 0)
-    //     prefs->Flags |= RTPRF_NOSCRTOFRONT;
-    // GET(data->usesysfontobj, MUIA_Selected, &active);
-    // if (active != 0)
-    //     prefs->Flags |= RTPRF_DEFAULTFONT;
-    // GET(data->usefunckeysobj, MUIA_Selected, &active);
-    // if (active != 0)
-    //     prefs->Flags |= RTPRF_FKEYS;
-    // GET(data->colorwheelstyleobj, MUIA_Cycle_Active, &active);
-    // if (active > 0)
-    //     prefs->Flags |= RTPRB_DOWHEEL;
-    // if (active > 1)
-    //     prefs->Flags |= RTPRB_FANCYWHEEL;
-    // GET(data->immediatesortobj, MUIA_Selected, &active);
-    // if (active != 0)
-    //     prefs->Flags |= RTPRF_IMMSORT;
-    // GET(data->drawersfirstobj, MUIA_Selected, &active);
-    // if (active != 0)
-    //     prefs->Flags |= RTPRF_DIRSFIRST;
-    // GET(data->drawersmixedobj, MUIA_Selected, &active);
-    // if (active != 0)
-    //     prefs->Flags |= RTPRF_DIRSMIXED;
-    // GET(data->diskactivityobj, MUIA_Selected, &active);
-    // if (active == 0)
-    //     prefs->Flags |= RTPRF_NOLED;
-    // GET(data->mmbobj, MUIA_Selected, &active);
-    // if (active != 0)
-    //     prefs->Flags |= RTPRF_MMBPARENT;
 
     return TRUE;
 }
@@ -333,13 +295,13 @@ IPTR AslEditor__OM_NEW
 
         DoMethod
         (
-            heightpercentobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            heightpercentobj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            widthpercentobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            widthpercentobj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
