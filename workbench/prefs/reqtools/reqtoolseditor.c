@@ -46,6 +46,8 @@ struct ReqToolsEditor_DATA
     Object *positionobj;
     Object *offsetxobj;
     Object *offsetyobj;
+
+    BOOL noupdatehook;
 };
 
 /*********************************************************************************************/
@@ -70,10 +72,12 @@ static void SelectDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsE
 
     NNSET((*data)->positionobj, MUIA_Cycle_Active, prefs->ReqDefaults[active].ReqPos);
     NNSET((*data)->sizepercentobj, MUIA_Numeric_Value, prefs->ReqDefaults[active].Size);
+    (*data)->noupdatehook = TRUE;
     NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ReqDefaults[active].LeftOffset);
     NNSET((*data)->offsetyobj, MUIA_String_Integer, prefs->ReqDefaults[active].TopOffset);
     NNSET((*data)->minvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MinEntries);
     NNSET((*data)->maxvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MaxEntries);
+    (*data)->noupdatehook = FALSE;
 }
 
 static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsEditor_DATA **data)
@@ -81,6 +85,9 @@ static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsE
     struct ReqToolsPrefs *prefs = &reqtoolsprefs;
     IPTR active = 0, tmpval;
     BOOL changed = FALSE;
+
+    if ((*data)->noupdatehook)
+        return;
 
     D(bug("[ReqToolsEditor.class] %s()\n", __PRETTY_FUNCTION__));
     
@@ -113,7 +120,7 @@ static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsE
 
 /*********************************************************************************************/
 
-BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
+static BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
 {
     struct ReqToolsPrefs *prefs = &reqtoolsprefs;
     IPTR active = 0;
@@ -158,7 +165,7 @@ BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
 
 /*********************************************************************************************/
 
-BOOL ReqToolsPrefs2Gadgets(struct ReqToolsEditor_DATA *data)
+static BOOL ReqToolsPrefs2Gadgets(struct ReqToolsEditor_DATA *data)
 {
     struct ReqToolsPrefs *prefs = &reqtoolsprefs;
     IPTR active = 0;
@@ -413,6 +420,8 @@ IPTR ReqToolsEditor__OM_NEW
         data->offsetyobj = offsetyobj;
         data->minvisobj = minvisobj;
         data->maxvisobj = maxvisobj;
+
+        data->noupdatehook = TRUE;
 
         DoMethod
         (
