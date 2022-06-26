@@ -36,6 +36,8 @@ struct AslEditor_DATA
     Object *sizeobj;
     Object *heightpercentobj;
     Object *widthpercentobj;
+
+    BOOL noupdatehook;
 };
 
 /*********************************************************************************************/
@@ -60,8 +62,10 @@ static void SelectDefaultsHook(struct Hook *hook, Object *self, struct AslEditor
     NNSET((*data)->sizeobj, MUIA_Cycle_Active, (prefs->ap_SizePosition & 0x10) >> 4);
 
     /* Use prefs */
+    (*data)->noupdatehook = TRUE;
     NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ap_RelativeLeft);
     NNSET((*data)->offsetyobj, MUIA_String_Integer, prefs->ap_RelativeTop);
+    (*data)->noupdatehook = FALSE;
 
     NNSET((*data)->widthpercentobj, MUIA_Numeric_Value, prefs->ap_RelativeWidth);
     NNSET((*data)->heightpercentobj, MUIA_Numeric_Value, prefs->ap_RelativeHeight);
@@ -78,6 +82,9 @@ static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct AslEditor
     struct AslPrefs *prefs = &aslprefs;
     IPTR tmpval;
     BOOL changed = FALSE;
+
+    if ((*data)->noupdatehook)
+        return;
 
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
