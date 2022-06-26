@@ -30,6 +30,9 @@
 
 /*****************************************************************************************/
 
+#define DEF_WIDTH   400
+#define DEF_HEIGHT  500
+
 /* Requester type specific default data */
 const struct IntFileReq def_filereq =
 {
@@ -50,7 +53,7 @@ const struct IntFileReq def_filereq =
         NULL,                   /* PositiveText         */
         NULL,                   /* NegativeText         */
         -1, -1,                 /* --> center on screen */
-        300, 300,               /* Width/Height         */
+        DEF_WIDTH, DEF_HEIGHT,  /* Width/Height         */
         IF_POPTOFRONT
     },
 
@@ -93,7 +96,7 @@ const struct IntSMReq def_smreq =
         NULL,                           /* PositiveText         */
         NULL,                           /* NegativeText         */
         -1, -1,                         /* --> center on screen */
-        300, 300,                       /* Width/Height         */
+        DEF_WIDTH, DEF_HEIGHT,          /* Width/Height         */
         IF_POPTOFRONT
     },
 
@@ -142,7 +145,7 @@ const struct IntFontReq def_fontreq =
         NULL,                           /* PositiveText         */
         NULL,                           /* NegativeText         */
         -1, -1,                         /* --> center on screen */
-        300, 300,                       /* Width/Height         */
+        DEF_WIDTH, DEF_HEIGHT,          /* Width/Height         */
         IF_POPTOFRONT
     },
     {"topaz", 8, FS_NORMAL,FPF_ROMFONT},/* Default textattr     */

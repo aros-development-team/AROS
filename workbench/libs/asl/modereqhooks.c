@@ -926,7 +926,7 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                         {
                             SMActivateMode(ld, active, 0, AslBase);
 
-                            if (imsg->Code) /* TRUE if double clicked */
+                            if (imsg->Code & ASLLV_CODE_DOUBLECLICK) /* TRUE if double clicked */
                             {
                                 retval = SMGetSelectedMode(ld, AslBase);
                             }

@@ -192,6 +192,9 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
             win = OpenWindowTagList(&nw, wintags);
             if (win)
             {
+                struct Window *oldwinptr = (struct Window *) -1;
+                struct Process *Self;
+
                 if (!privateidcmp)
                 {
                     win->UserPort = intreq->ir_Window->UserPort;
@@ -230,6 +233,18 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
                 D(bug("Window limits set\n"));
 
                 SetFont(win->RPort, ld->ld_Font);
+
+
+                /* Set process windowpointer to catch possible requesters
+                    to correct screen & relative to requester window. - Piru
+                    */
+                Self = (struct Process *) FindTask(NULL);
+                if (Self->pr_WindowPtr != (struct Window *) -1)
+                {
+                    oldwinptr = Self->pr_WindowPtr;
+                    Self->pr_WindowPtr = win;
+                }
+
 
                 /* Layout the requester */
                 ld->ld_Command = LDCMD_LAYOUT;
@@ -278,6 +293,11 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
                     CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase));
 
                 } /* if (CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase))) */
+
+                if (oldwinptr != (struct Window *) -1)
+                {
+                    Self->pr_WindowPtr = oldwinptr;
+                }
 
                 /* win is closed in FreeCommon */
 

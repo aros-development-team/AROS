@@ -1447,13 +1447,19 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                                 case ASLLV_FRNTYPE_DIRECTORY:
                                     if (node->subtype > 0)
                                     {
+                                        /* 14-May-2003 bugfix: If multiselecting, don't enter the directory unless if doubleclicked.
+                                            */
+                                        if ((imsg->Code & ASLLV_CODE_DOUBLECLICK) ||
+                                            !(imsg->Code & ASLLV_CODE_MULTISELECT))
+                                        {
                                         FRAddPath((STRPTR)node->text[0], ld, AslBase);
+                                        }
                                     }
                                     else
                                     {
                                         FRSetFile((STRPTR)node->text[0], ld, AslBase);
 
-                                        if (    (imsg->Code)                           /* TRUE if double clicked */
+                                        if ((imsg->Code & ASLLV_CODE_DOUBLECLICK) /* TRUE if double clicked */
                                              && !(ifreq->ifr_Flags1 & FRF_DOSAVEMODE)) /* disallowed in save mode */
                                         {
                                             retval = FRGetSelectedFiles(ld, AslBase);

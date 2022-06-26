@@ -37,9 +37,4 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRNewDrawerRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRDropFromDifferentDrawersRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
-
-
-
-
-
-
+BOOL FRIsDupeVolume(CONST_STRPTR volname, struct LayoutData *ld, struct AslBase_intern *AslBase);

@@ -1088,7 +1088,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                     break;
 
                 case RAWKEY_NM_WHEEL_UP:
-                    FOChangeActiveFont(ld, -3, imsg->Qualifier, FALSE, AslBase);
+                    FOChangeActiveFont(ld, -1, imsg->Qualifier, FALSE, AslBase);
                     break;
 
                 case CURSORDOWN:
@@ -1104,7 +1104,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                     break;
 
                 case RAWKEY_NM_WHEEL_DOWN:
-                    FOChangeActiveFont(ld, 3, imsg->Qualifier, FALSE, AslBase);
+                    FOChangeActiveFont(ld, 1, imsg->Qualifier, FALSE, AslBase);
                     break;
             }
             break;
@@ -1146,7 +1146,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                         {
                             FOActivateFont(ld, active, (LONG)size, AslBase);
 
-                            if (imsg->Code) /* TRUE if double clicked */
+                            if (imsg->Code & ASLLV_CODE_DOUBLECLICK) /* TRUE if double clicked */
                             {
                                 retval = FOGetSelectedFont(ld, AslBase);
                             }
@@ -1168,7 +1168,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                             FOSetSizeString((IPTR)node->ln_Name, ld, AslBase);
                             FOUpdatePreview(ld, AslBase);
 
-                            if (imsg->Code) /* TRUE if double clicked */
+                            if (imsg->Code & ASLLV_CODE_DOUBLECLICK) /* TRUE if double clicked */
                             {
                                 retval = FOGetSelectedFont(ld, AslBase);
                             }
@@ -1192,6 +1192,8 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                     }
                     else if ((imsg->Code == 0) || (imsg->Code == 9))
                     {
+                        /* 10-May-2003 bugfix: Update the font selection in the listview. */
+                        FOChangeActiveFont(ld, 0, 0, TRUE, AslBase);
                         FOUpdatePreview(ld, AslBase);
                         break;
                     }

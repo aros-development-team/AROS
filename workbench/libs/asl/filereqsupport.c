@@ -146,12 +146,12 @@ void FRFreeListviewNode(struct ASLLVFileReqNode *node, struct LayoutData *ld, st
     {
         if (node->text[i] && !(node->dontfreetext & (1 << i)))
         {
-            FreePooled(ld->ld_IntReq->ir_MemPool, node->text[i], strlen(node->text[i]) + 1);
+            FreeVecPooled(ld->ld_IntReq->ir_MemPool, node->text[i]);
         }
     }
 
     if (node->type == ASLLV_FRNTYPE_VOLUMES)
-        FreePooled(ld->ld_IntReq->ir_MemPool, node->node.ln_Name, strlen(node->node.ln_Name) + 1);
+        FreeVecPooled(ld->ld_IntReq->ir_MemPool, node->node.ln_Name);
 
     FreePooled(ld->ld_IntReq->ir_MemPool, node, sizeof(struct ASLLVFileReqNode));
 }
@@ -334,6 +334,11 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
     BPTR                        lock;
     BOOL                        dopatternstring = FALSE, success = FALSE;
 
+    if (1) // SyncronMode
+    {
+        SetBusyPointer(ld, AslBase);
+    }
+
     FRDirectoryScanSymbolState(ld, TRUE, AslBase);
 
     FRFreeListviewList(ld, AslBase);
@@ -374,7 +379,13 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 
                 if (!ok)
                 {
-                    if (IoErr() == ERROR_NO_MORE_ENTRIES) break;
+                    if (IoErr() == ERROR_NO_MORE_ENTRIES)
+                    {
+                        /* 19-jan-2003: Don't leave bogus IoErr().. - Piru
+                            */
+                        SetIoErr(0);
+                        break;
+                    }
                     success = FALSE;
                     continue;
                 }
@@ -436,12 +447,12 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
                     {
                         ULONG ret;
                         UWORD *funcptr = ifreq->ifr_HookFunc;
-                        ULONG *p = (ULONG *)REG_A7 - 3;
+                        LONG *p = ((ULONG *)REG_A7) - 3;
 
+                        REG_A7 = (ULONG)p;
                         p[0] = (ULONG)FRF_FILTERFUNC;
                         p[1] = (ULONG)&ap;
                         p[2] = (ULONG)freq;
-                        REG_A7 = (ULONG)p;
 
                         if (*funcptr >= (UWORD)0xFF00)
                             REG_A7 -= 4;
@@ -453,7 +464,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
                         if (*funcptr >= (UWORD)0xFF00)
                             REG_A7 += 4;
 
-                        REG_A7 += (3*4);
+                        REG_A7 += 3 * sizeof(ULONG);
 
                         if (ret != 0)
                             addentry = FALSE;
@@ -525,17 +536,19 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
                                                                                    AslBase);
                         }
 
-                        if (fib->fib_DirEntryType > 0)
+                        if (fib->fib_DirEntryType >= 0)
                         {
                             node->text[1] = GetString(MSG_FILEREQ_LV_DRAWER, GetIR(ifreq)->ir_Catalog, AslBase);
                             node->dontfreetext |= (1 << 1);
                         } else {
-                            node->text[1] = PooledUIntegerToString(fib->fib_Size,
+                            node->text[1] = PooledIntegerToString("%lu", (ULONG)fib->fib_Size,
                                                                   ld->ld_IntReq->ir_MemPool,
                                                                   AslBase);
 
-                            MARK_DO_MULTISEL(node);
+                            //MARK_DO_MULTISEL(node);
                         }
+                        /* 19-jan-2003. Fixed the "selected drawer not visible in multiselect" bug - Piru */
+                        MARK_DO_MULTISEL(node);
 
                         dt.dat_Stamp = fib->fib_Date;
                         dt.dat_Format = FORMAT_DOS;
@@ -592,6 +605,11 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 
     FRDirectoryScanSymbolState(ld, FALSE, AslBase);
 
+    if (1) // SyncronMode
+    {
+        ClearBusyPointer(ld, AslBase);
+    }
+
     return success;
 }
 
@@ -643,6 +661,11 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct DosList      *dlist;
     BOOL                success = TRUE;
 
+    if (1) // SyncronMode
+    {
+        SetBusyPointer(ld, AslBase);
+    }
+
     FRDirectoryScanSymbolState(ld, TRUE, AslBase);
 
     FRFreeListviewList(ld, AslBase);
@@ -653,6 +676,15 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
     while ((dlist = NextDosEntry(dlist, LDF_VOLUMES | LDF_ASSIGNS)) != NULL)
     {
         struct ASLLVFileReqNode *node;
+
+        /* 3-Aug-2003 bugfix: Don't display ejected volumes. - Piru */
+        if (!dlist->dol_Name || (dlist->dol_Type == DLT_VOLUME && !dlist->dol_Task))
+        {
+            //if (BADDR(dlist->dol_Name))
+            //	dprintf("FRGetVolumes: skipped '%s'\n", BADDR(dlist->dol_Name) + 1);
+
+            continue;
+        }
 
         if ((node = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct ASLLVFileReqNode))))
         {
@@ -688,11 +720,19 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
                                 if (devname[devlen-1] == 0) devlen--;
 
-                                node->text[1] = AllocPooled(ld->ld_IntReq->ir_MemPool, devlen + 3);
+                                node->text[1] = AllocVecPooled(ld->ld_IntReq->ir_MemPool, devlen + 3);
+                                if (node->text[1])
+                                {
                                 node->text[1][0] = '(';
                                 strncpy(&node->text[1][1], devname, devlen);
                                 node->text[1][devlen+1] = ')';
                                 node->text[1][devlen+2] = 0;
+                                }
+                                else
+                                {
+                                    node->text[1] = "";
+                                    node->dontfreetext |= (1 << 1);
+                                }
 
                                 break;
                             }
@@ -727,6 +767,11 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     FRDirectoryScanSymbolState(ld, FALSE, AslBase);
 
+    if (1) // SyncronMode
+    {
+        ClearBusyPointer(ld, AslBase);
+    }
+
     return success;
 }
 
@@ -746,6 +791,61 @@ void FRSetPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 
 /*****************************************************************************************/
 
+BOOL FRValidPath(CONST_STRPTR path, struct AslBase_intern *AslBase)
+{
+    char pathstring[MAX_PATH_LEN];
+    BPTR lock;
+    int len, depth;
+    BOOL ret = FALSE;
+
+    /* Figure out how many '/'s are there in the pathstring end.
+     */
+    len = strlen(path);
+    for (depth = 0; len && path[len - 1] == '/'; len--)
+    {
+        depth--;
+    }
+    //dprintf("FRValidPath: backslash depth %ld\n", depth);
+
+    /* Cut the string before first '/' in the end
+     */
+    memcpy(pathstring, path, len);
+    pathstring[len] = '\0';
+    //dprintf("FRValidPath: lock \"%s\"\n", pathstring);
+    lock = Lock(pathstring, ACCESS_READ);
+    if (lock)
+    {
+        ret = TRUE;
+
+        len = NameFromLock(lock, pathstring, sizeof(pathstring));
+        UnLock(lock);
+        if (len)
+        {
+            /* Count path depth
+                */
+            char *pt = strchr(pathstring, ':');
+            pt = pt ? pt + 1 : pathstring;
+            depth++;
+
+            for (; *pt; pt++)
+            {
+            if (*pt == '/')
+                depth++;
+            }
+            //dprintf("FRValidPath: resulting depth %ld\n", depth);
+
+            if (depth < 0)
+            ret = FALSE;
+        }
+        //else dprintf("FRValidPath: namefromlock failed!\n");
+    }
+    //else dprintf("FRValidPath: couldn't lock \"%s\", return FALSE!\n", pathstring);
+
+    return ret;
+}
+
+/*****************************************************************************************/
+
 BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     char                pathstring[MAX_PATH_LEN];
@@ -753,6 +853,15 @@ BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 
     strcpy(pathstring, path);
     fixpath(pathstring);
+
+#if 1
+    if (!FRValidPath(pathstring, AslBase))
+    {
+        //dprintf("FRNewPath: can't lock \"%s\", ignore new path\n", pathstring);
+        //DisplayBeep(ld->ld_Window->WScreen);
+        return result;
+    }
+#endif
 
     FRSetPath(pathstring, ld, AslBase);
 
@@ -778,6 +887,41 @@ BOOL FRAddPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 
     return result;
 
+}
+
+/*****************************************************************************************/
+
+BOOL FRUpdatePath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData   *udata = (struct FRUserData *)ld->ld_UserData;
+    char    pathstring[MAX_PATH_LEN], *gadpath;
+
+    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&gadpath);
+
+    strcpy(pathstring, gadpath);
+    if (udata->Flags & FRFLG_SUBDIR_ADDED)
+    {
+        *(FilePart(pathstring)) = '\0';
+    }
+    if (!AddPart(pathstring, path, MAX_PATH_LEN))
+        return FALSE;
+
+    fixpath(pathstring);
+
+#if 1
+    if (!FRValidPath(pathstring, AslBase))
+    {
+        //dprintf("FRUpdatePath: can't lock \"%s\", ignore new path\n", pathstring);
+        //DisplayBeep(ld->ld_Window->WScreen);
+        return FALSE;
+    }
+#endif
+
+    FRSetPath(pathstring, ld, AslBase);
+
+    udata->Flags |= FRFLG_SUBDIR_ADDED;
+
+    return TRUE;
 }
 
 /*****************************************************************************************/
@@ -900,7 +1044,7 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
             {
                 if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
                 {
-                    if (stricmp(node->node.ln_Name, buffer) == 0) dojump = FALSE;
+                    if (Stricmp(node->node.ln_Name, buffer) == 0) dojump = FALSE;
                 }
             }
 
@@ -1130,7 +1274,7 @@ D(bug("[ASL] delete() name = '%s'\n", name));
                 {
                     if (node->node.ln_Name)
                     {
-                        if (stricmp(node->node.ln_Name, name2) == 0)
+                        if (Stricmp(node->node.ln_Name, name2) == 0)
                         {
                             Remove(&node->node);
                             FRFreeListviewNode(node, ld, AslBase);
@@ -1297,3 +1441,30 @@ void FRDropFromDifferentDrawersRequester(struct LayoutData *ld, struct AslBase_i
 
 /*****************************************************************************************/
 
+BOOL FRIsDupeVolume(CONST_STRPTR volname, struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    BOOL ret = FALSE;
+    struct DosList *dl;
+    UBYTE name[64]; /* Should be more than enough. - Piru */
+
+    SplitName(volname, ':', name, 0, sizeof(name) - 1);
+
+    dl = LockDosList(LDF_READ | LDF_VOLUMES);
+    dl = FindDosEntry(dl, name, LDF_VOLUMES);
+    if (dl)
+    {
+      dl = NextDosEntry(dl, LDF_READ | LDF_VOLUMES);
+      if (dl)
+      {
+        if (FindDosEntry(dl, name, LDF_VOLUMES))
+        {
+          ret = TRUE;
+        }
+      }
+    }
+    UnLockDosList(LDF_READ | LDF_VOLUMES);
+
+    return ret;
+}
+
+/*****************************************************************************************/
