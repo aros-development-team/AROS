@@ -1,23 +1,16 @@
 /*
-   Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+   Copyright (C) 2013-2022, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <devices/rawkeycodes.h>
-#include <mui/HotkeyString_mcc.h>
 #include <zune/prefseditor.h>
 #include <zune/customclasses.h>
 
-#include <proto/alib.h>
-#include <proto/commodities.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/alib.h>
-
-#include <string.h>
-#include <stdio.h>
 
 #include "reqtoolseditor.h"
 #include "reqtoolsstringify.h"
