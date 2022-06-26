@@ -131,7 +131,7 @@ BOOL AslPrefs2Gadgets(struct AslEditor_DATA *data)
 
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
-    NNSET(data->drawersfirstobj, MUIA_Selected, (prefs->ap_SortDrawers) ? 1 : 0);
+    NNSET(data->drawersfirstobj, MUIA_Selected, (prefs->ap_SortDrawers == 0) ? 1 : 0);
 
     SelectDefaultsHook(NULL, NULL, &data);
 
