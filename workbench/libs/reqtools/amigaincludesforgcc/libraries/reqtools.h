@@ -61,6 +61,10 @@
 #include <utility/utility.h>
 #endif	/* UTILITY_TAGITEM_H */
 
+#ifndef INTUITION_INTUITION_H
+#include <intuition/intuition.h>
+#endif	/* INTUITION_INTUITION_H */
+
 #define	REQTOOLSNAME		 "reqtools.library"
 #define	REQTOOLSVERSION		 38L
 
@@ -90,19 +94,21 @@ struct ReqDefaults
     UWORD TopOffset;
     UWORD MinEntries;
     UWORD MaxEntries;
-};
+} __packed;
 
 struct ReqToolsPrefs
 {
     /* Size of preferences (_without_ this field, the semaphore and IsLoaded) */
     ULONG 			PrefsSize;
     struct SignalSemaphore 	PrefsSemaphore;
-    BOOL IsLoaded; /* To avoid multiple loading of preferences */
 
-    /* Start of real preferences */
+    /* Start of real preferences (saved/loaded from ReqTools.prefs) */
     ULONG 			Flags;
     struct ReqDefaults 		ReqDefaults[RTPREF_NR_OF_REQ];
-};
+    /* End of real preferences */
+
+    BOOL IsLoaded; /* To avoid multiple loading of preferences */
+} __packed;
 
 #ifdef __AROS__
 #define RTPREFS_SIZE		(4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
@@ -166,7 +172,9 @@ struct ReqToolsBase
     /* The RealOpenCnt is for the buffered AvailFonts feature.  Since
        Kickstart 3.0 offers low memory handlers a release of ReqTools for 3.0
        will not use this field and start using the normal OpenCnt again. */
+    /* Obsolete, at least for AROS. Dont know about AmigaOS. -ksvalast. */
     UWORD 			RealOpenCnt;
+
     UWORD 			AvailFontsLock;
     struct AvailFontsHeader 	*AvailFontsHeader;
     ULONG 			FontsAssignType;
