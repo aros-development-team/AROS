@@ -121,7 +121,7 @@ static BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
     D(bug("[ReqToolsEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
     // Clear options we are about to set..
-    prefs->Flags &= ~(RTPRF_NOSCRTOFRONT | RTPRF_DEFAULTFONT | RTPRF_FKEYS | RTPRB_DOWHEEL | RTPRB_FANCYWHEEL | RTPRF_IMMSORT | RTPRF_DIRSFIRST | RTPRF_DIRSMIXED | RTPRF_NOLED | RTPRF_MMBPARENT);
+    prefs->Flags &= ~(RTPRF_NOSCRTOFRONT | RTPRF_DEFAULTFONT | RTPRF_FKEYS | RTPRF_DOWHEEL | RTPRF_FANCYWHEEL | RTPRF_IMMSORT | RTPRF_DIRSFIRST | RTPRF_DIRSMIXED | RTPRF_NOLED | RTPRF_MMBPARENT);
 
     GET(data->poptofrontobj, MUIA_Selected, &active);
     if (active == 0)
@@ -134,9 +134,9 @@ static BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
         prefs->Flags |= RTPRF_FKEYS;
     GET(data->colorwheelstyleobj, MUIA_Cycle_Active, &active);
     if (active > 0)
-        prefs->Flags |= RTPRB_DOWHEEL;
+        prefs->Flags |= RTPRF_DOWHEEL;
     if (active > 1)
-        prefs->Flags |= RTPRB_FANCYWHEEL;
+        prefs->Flags |= RTPRF_FANCYWHEEL;
     GET(data->immediatesortobj, MUIA_Selected, &active);
     if (active != 0)
         prefs->Flags |= RTPRF_IMMSORT;
@@ -168,9 +168,9 @@ static BOOL ReqToolsPrefs2Gadgets(struct ReqToolsEditor_DATA *data)
     NNSET(data->poptofrontobj, MUIA_Selected, (prefs->Flags & RTPRF_NOSCRTOFRONT) ? 0 : 1);
     NNSET(data->usesysfontobj, MUIA_Selected, (prefs->Flags & RTPRF_DEFAULTFONT) ? 1 : 0);
     NNSET(data->usefunckeysobj, MUIA_Selected, (prefs->Flags & RTPRF_FKEYS) ? 1 : 0);
-    if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == 0)
+    if ((prefs->Flags & (RTPRF_DOWHEEL | RTPRF_FANCYWHEEL)) == 0)
         active = 0;
-    else if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == RTPRB_DOWHEEL)
+    else if ((prefs->Flags & (RTPRF_DOWHEEL | RTPRF_FANCYWHEEL)) == RTPRF_DOWHEEL)
         active = 1;
     else
         active = 2;
