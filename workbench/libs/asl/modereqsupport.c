@@ -51,10 +51,10 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct DimensionInfo diminfo;
     struct DisplayInfo   dispinfo;
     struct NameInfo      nameinfo;
-    UBYTE                name[DISPLAYNAMELEN + 1];
+    UBYTE                name[DISPLAYNAMELEN];
     ULONG                displayid = INVALID_ID;
 
-    while(INVALID_ID != (displayid = NextDisplayInfo(displayid)))
+    while ((displayid = NextDisplayInfo(displayid)) != INVALID_ID)
     {
         D(bug("SMGetModes: DisplayID 0x%8x\n", displayid));
 
@@ -69,7 +69,7 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
             {
                 D(bug("SMGetModes: Got NameInfo. Name = \"%s\"\n", nameinfo.Name));
 
-                strcpy(name, nameinfo.Name);
+                stccpy(name, nameinfo.Name, sizeof(name));
             } else {
                 sprintf(name, "%dx%dx%d",
                         diminfo.Nominal.MaxX - diminfo.Nominal.MinX + 1,
@@ -133,7 +133,7 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
         } /* if diminfo and dispinfo could be retrieved */
 
-    } /* while(INVALID_ID != (displayid = NextDisplayInfo(displayid))) */
+    } /* while ((displayid = NextDisplayInfo(displayid)) != INVALID_ID) */
 
     if (ismreq->ism_CustomSMList)
     {
@@ -338,11 +338,17 @@ void SMActivateMode(struct LayoutData *ld, WORD which, LONG depth, struct AslBas
 
         if (dispmode->dm_DimensionInfo.MaxDepth > 8)
         {
-            sprintf(text, "%ld", 1L << dispmode->dm_DimensionInfo.MaxDepth);
+            i = dispmode->dm_DimensionInfo.MaxDepth;
+#if 0
+            /* 3rd feb 2003 bugfix: Strip down alpha bits... - Piru */
+            if (i == 32)
+                i = 24;
+#endif
+            sprintf(text, "%lu", 1UL << i);
             *array++ = text;
 
             udata->ColorDepth[0]     =
-            udata->RealColorDepth[0] = dispmode->dm_DimensionInfo.MaxDepth;
+            udata->RealColorDepth[0] = i;
 
             udata->NumColorEntries = 1;
 
@@ -384,15 +390,21 @@ void SMActivateMode(struct LayoutData *ld, WORD which, LONG depth, struct AslBas
         else
         {
             max = ismreq->ism_MaxDepth;
-            if (dispmode->dm_DimensionInfo.MaxDepth < max)
-                max = dispmode->dm_DimensionInfo.MaxDepth;
+            i = dispmode->dm_DimensionInfo.MaxDepth;
+#if 0
+            /* 3rd feb 2003 bugfix: Strip down alpha bits... - Piru */
+            if (i == 32)
+                i = 24;
+#endif
+            if (i < max)
+                max = i;
 
             min = ismreq->ism_MinDepth;
             if (min > max) max = min;
 
             for(i = min; i <= max; i++)
             {
-                sprintf(text, "%ld", 1L << i);
+                sprintf(text, "%lu", 1UL << i);
                 *array++ = text;
 
                 udata->ColorDepth[i - min]     =

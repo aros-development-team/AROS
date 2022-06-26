@@ -242,8 +242,6 @@ struct ASLLVFileReqNode
 #define LDCMD_HANDLEAPPWINDOW   4
 /* Cleanup anything requester specific allocated in INIT, LAYOUT or HANDLEEVENTS */
 #define LDCMD_CLEANUP           5
-/* Handle ir_ExtMsgPort messages */
-#define LDCMD_HANDLEEXTMSG      6
 
 /* Special retuen value for HANDLEEVENTS to express that the
 user has successfully requested something and hit "OK" */

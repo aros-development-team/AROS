@@ -659,24 +659,30 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
     struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
     APTR                req = ld->ld_Req;
     struct IntuiMessage *imsg;
-    struct MsgPort      *port;
+    struct MsgPort      *winport;
     BOOL                success = TRUE;
     BOOL                terminated = FALSE;
+    ULONG               winmask;
     
     EnterFunc(bug("HandleEvents(ld=%p, reqinfo=%p)\n", ld, reqinfo));
-    port = ld->ld_Window->UserPort;
+
+    winport = ld->ld_Window->UserPort;
+    if (!winport)
+        winport = ld->ld_Window->WindowPort;
+    winmask = 1L << winport->mp_SigBit;
     
-    if (!port)
-        port = ld->ld_Window->WindowPort;
 
     while (!terminated)
     {
+        ULONG sigmask;
         if (ld->ld_AppMsgPort)
-            Wait((1L << port->mp_SigBit) | (1L << ld->ld_AppMsgPort->mp_SigBit));
+            sigmask = Wait(winmask | (1L << ld->ld_AppMsgPort->mp_SigBit));
         else
-            Wait((1L << port->mp_SigBit));
+            sigmask = Wait(winmask);
 
-        while ((imsg = (struct IntuiMessage *)GetMsg(port)))
+        if (sigmask & winmask)
+        {
+        while ((imsg = (struct IntuiMessage *)GetMsg(winport)))
         {
             if ((imsg->IDCMPWindow == ld->ld_Window) ||
                 (imsg->IDCMPWindow == ld->ld_Window2))
@@ -736,7 +742,8 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
             }
             ReplyMsg((struct Message *)imsg);
 
-        } /* while ((imsg = (struct IntuiMessage *)GetMsg(port))) */
+        } /* while ((imsg = (struct IntuiMessage *)GetMsg(winport))) */
+        }
 
         while ((ld->ld_AppMsgPort) && (ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort)))
         {
@@ -1159,6 +1166,32 @@ AROS_UFH3(ULONG, StringEditFunc,
                     sgw->EditOp  = EO_SPECIAL;
                     sgw->Code    = STRINGCODE_CURSORDOWN;
                     sgw->Actions = SGA_END;
+                    break;
+#if 1
+                case RAWKEY_O:	/* Ok */
+                case RAWKEY_P:	/* Parent */
+                    if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND)
+                    {
+                        sgw->Code    = STRINGCODE_NOP;
+                        sgw->Actions = SGA_END | SGA_REUSE;
+                        break;
+                    }
+                    /* FALL THRU */
+#endif
+                default:
+                    /* do buffer change checks? - Piru */
+                    if (hook->h_SubEntry)
+                    {
+                        /* Buffer changed ?
+                        * Could do something smarter like skipping keys that can't change string..
+                        * - Piru
+                        */
+                        if (strcmp(sgw->WorkBuffer, sgw->PrevBuffer) != 0)
+                        {
+                            sgw->Code    = STRINGCODE_STRCHANGED;
+                            sgw->Actions = SGA_USE | SGA_END;
+                        }
+                    }
                     break;
             }
             break;

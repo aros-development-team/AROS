@@ -60,6 +60,7 @@ struct FRUserData
     struct List                 ListviewList;
     struct Hook                 ListviewHook;
     struct Hook                 StringEditHook;
+    struct Hook                 FileEditHook;
     STRPTR                      SelectPattern;
     UWORD                       ButWidth;
     UWORD                       ButHeight;

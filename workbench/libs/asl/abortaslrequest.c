@@ -57,6 +57,11 @@
     {
         if (reqnode->rn_ReqWindow)
         {
+#ifdef __MORPHOS__
+            /* NOTE: This is asyncron, but so is the original. - Piru */
+            WindowAction(reqnode->rn_ReqWindow, WAC_SENDIDCMPCLOSE, 0);
+#else
+
             struct MsgPort      mp;
             struct IntuiMessage msg;
             BYTE                sig;
@@ -87,10 +92,14 @@
 
             SetSignal(0, 1L << sig);
             PutMsg(reqnode->rn_ReqWindow->UserPort, &msg.ExecMessage);
+            /* Release the semaphore lock to avoid deadlock - Piru */
+            ReleaseSemaphore(&(ASLB(AslBase)->ReqListSem));
             WaitPort(&mp);
 
             if (sig != SIGB_SINGLE) FreeSignal(sig);
 
+            return;
+#endif
         } /* if (reqnode->rn_ReqWindow) */
 
     } /* if (reqnode) */

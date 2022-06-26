@@ -87,10 +87,12 @@ AROS_UFH3(VOID, SMTagHook,
     struct TagItem  *tag;
     struct TagItem  *tstate;
     struct IntSMReq *ismreq;
+    struct ScreenModeRequester *req;
 
     EnterFunc(bug("SMTagHook(hook=%p, pta=%p)\n", hook, pta));
 
     ismreq = (struct IntSMReq *)pta->pta_IntReq;
+    req = (struct ScreenModeRequester *)pta->pta_Req;
 
     tstate = pta->pta_Tags;
     while ((tag = NextTagItem(&tstate)) != NULL)
@@ -108,78 +110,76 @@ AROS_UFH3(VOID, SMTagHook,
                 break;
 
             case ASLSM_DoAutoScroll:
-                if (tidata)
-                    ismreq->ism_Flags |= ISMF_DOAUTOSCROLL;
-                else
-                    ismreq->ism_Flags &= ~ISMF_DOAUTOSCROLL;
+#define doflag(x) if (tidata) ismreq->ism_Flags |= (x); else ismreq->ism_Flags &= (ULONG) ~(x)
+                doflag(ISMF_DOAUTOSCROLL);
                 break;
 
             case ASLSM_DoDepth:
-                if (tidata)
-                    ismreq->ism_Flags |= ISMF_DODEPTH;
-                else
-                    ismreq->ism_Flags &= ~ISMF_DODEPTH;
+                doflag(ISMF_DODEPTH);
                 break;
 
             case ASLSM_DoWidth:
-                if (tidata)
-                    ismreq->ism_Flags |= ISMF_DOWIDTH;
-                else
-                    ismreq->ism_Flags &= ~ISMF_DOWIDTH;
+                doflag(ISMF_DOWIDTH);
                 break;
 
             case ASLSM_DoHeight:
-                if (tidata)
-                    ismreq->ism_Flags |= ISMF_DOHEIGHT;
-                else
-                    ismreq->ism_Flags &= ~ISMF_DOHEIGHT;
+                doflag(ISMF_DOHEIGHT);
                 break;
 
             case ASLSM_DoOverscanType:
-                if (tidata)
-                    ismreq->ism_Flags |= ISMF_DOOVERSCAN;
-                else
-                    ismreq->ism_Flags &= ~ISMF_DOOVERSCAN;
+                doflag(ISMF_DOOVERSCAN);
+#undef doflag
                 break;
 
             case ASLSM_UserData:
-                ((struct ScreenModeRequester *)pta->pta_Req)->sm_UserData = (APTR)tidata;
+                req->sm_UserData = (APTR)tidata;
                 break;
 
             case ASLSM_InitialAutoScroll:
-                ismreq->ism_AutoScroll = tidata ? TRUE : FALSE;
+                ismreq->ism_AutoScroll =
+                req->sm_AutoScroll = tidata ? TRUE : FALSE;
                 break;
 
             case ASLSM_InitialDisplayDepth:
-                ismreq->ism_DisplayDepth = tidata;
+                ismreq->ism_DisplayDepth =
+                req->sm_DisplayDepth = tidata;
                 break;
 
             case ASLSM_InitialDisplayWidth:
-                ismreq->ism_DisplayWidth = tidata;
+                ismreq->ism_DisplayWidth =
+                req->sm_DisplayWidth =
+                req->sm_BitMapWidth = tidata;
                 break;
 
             case ASLSM_InitialDisplayHeight:
-                ismreq->ism_DisplayHeight = tidata;
+                ismreq->ism_DisplayHeight =
+                req->sm_DisplayHeight =
+                req->sm_BitMapHeight = tidata;
                 break;
 
             case ASLSM_InitialDisplayID:
-                ismreq->ism_DisplayID = tidata;
+                ismreq->ism_DisplayID =
+                req->sm_DisplayID = tidata;
                 break;
 
             case ASLSM_InitialInfoLeftEdge:
-                ismreq->ism_InfoLeftEdge = tidata;
+                ismreq->ism_InfoLeftEdge =
+                req->sm_InfoLeftEdge = tidata;
                 break;
 
             case ASLSM_InitialInfoTopEdge:
-                ismreq->ism_InfoTopEdge = tidata;
+                ismreq->ism_InfoTopEdge =
+                req->sm_InfoTopEdge = tidata;
                 break;
 
             case ASLSM_InitialInfoOpened:
-                ismreq->ism_InfoOpened = tidata ? TRUE : FALSE;
+                ismreq->ism_InfoOpened =
+                req->sm_InfoOpened = tidata ? TRUE : FALSE;
                 break;
 
             case ASLSM_InitialOverscanType:
-                ismreq->ism_OverscanType = (((LONG)tidata >= OSCAN_TEXT) &&
+                ismreq->ism_OverscanType =
+                req->sm_OverscanType     = (((LONG)tidata >= OSCAN_TEXT) &&
                                            ((LONG)tidata <= OSCAN_VIDEO)) ? tidata: OSCAN_TEXT;
                 break;
 
@@ -321,9 +321,12 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
         { ID_BUTCANCEL  , GetIR(ismreq)->ir_NegativeText , MSG_MODEREQ_NEGATIVE_GAD, &cool_cancelimage , &udata->CancelBut  }
     };
 #endif
+#if SREQ_COOL_BUTTONS
+    WORD                y2;
+#endif
     Object              *gad;
     LONG                error;
-    WORD                gadrows, x, y, w, h, i, y2;
+    WORD                gadrows, x, y, w, h, i;
     WORD                labelwidth = 0, maxcyclewidth = 0;
 
 
@@ -870,7 +873,7 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                     break;
 
                 case RAWKEY_NM_WHEEL_UP:
-                    SMChangeActiveLVItem(ld, -3, imsg->Qualifier, AslBase);
+                    SMChangeActiveLVItem(ld, -1, imsg->Qualifier, AslBase);
                     break;
 
                 case CURSORDOWN:
@@ -886,7 +889,7 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                     break;
 
                 case RAWKEY_NM_WHEEL_DOWN:
-                    SMChangeActiveLVItem(ld, 3, imsg->Qualifier, AslBase);
+                    SMChangeActiveLVItem(ld, 1, imsg->Qualifier, AslBase);
                     break;
             }
             break;
@@ -960,7 +963,7 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                         dispmode = SMGetActiveMode(ld, AslBase);
                         ASSERT_VALID_PTR(dispmode);
 
-                        height  = SMGetWidth (ld, AslBase);
+                        height  = SMGetHeight (ld, AslBase);
 
                         SMFixValues(ld, dispmode, 0, &height, 0, AslBase);
                     }
@@ -1088,7 +1091,7 @@ STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *Asl
     struct ScreenModeRequester  *req = (struct ScreenModeRequester *)ld->ld_Req;
     struct DisplayMode          *dispmode;
     struct Rectangle            *rect;
-    LONG                        width, height;
+    LONG                        width, height, depth;
 
     dispmode = SMGetActiveMode(ld, AslBase);
     ASSERT_VALID_PTR(dispmode);
@@ -1116,7 +1119,8 @@ STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *Asl
     SMFixValues(ld, dispmode, &width, 0, 0, AslBase);
 
     ismreq->ism_DisplayWidth =
-    req->sm_DisplayWidth     = width;
+    req->sm_DisplayWidth     =
+    req->sm_BitMapWidth      = width;
 
     /* Height */
 
@@ -1130,20 +1134,22 @@ STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *Asl
     SMFixValues(ld, dispmode, 0, &height, 0, AslBase);
 
     ismreq->ism_DisplayHeight =
-    req->sm_DisplayHeight     = height;
+    req->sm_DisplayHeight     =
+    req->sm_BitMapHeight      = height;
 
     /* Depth */
 
     if (ismreq->ism_Flags & ISMF_DODEPTH)
     {
-        ismreq->ism_DisplayDepth = SMGetDepth(ld, 0, AslBase);
+        depth = SMGetDepth(ld, 0, AslBase);
     }
     else
     {
-        ismreq->ism_DisplayDepth = dispmode->dm_DimensionInfo.MaxDepth;
+        depth = dispmode->dm_DimensionInfo.MaxDepth;
     }
 
-    req->sm_DisplayDepth = ismreq->ism_DisplayDepth;
+    ismreq->ism_DisplayDepth =
+    req->sm_DisplayDepth     = depth;
 
     /* AutoScroll */
     if (ismreq->ism_Flags & ISMF_DOAUTOSCROLL)

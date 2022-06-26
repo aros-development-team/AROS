@@ -175,10 +175,12 @@ AROS_UFH3(VOID, FOTagHook,
     struct TagItem           *tag;
     struct TagItem *tstate;
     struct IntFontReq    *iforeq;
+    struct FontRequester *req;
 
     EnterFunc(bug("FOTagHook(hook=%p, pta=%p)\n", hook, pta));
 
     iforeq = (struct IntFontReq *)pta->pta_IntReq;
+    req = (struct FontRequester *)pta->pta_Req;
 
     tstate = pta->pta_Tags;
     while ((tag = NextTagItem(&tstate)) != NULL)
@@ -188,32 +190,56 @@ AROS_UFH3(VOID, FOTagHook,
         switch (tag->ti_Tag)
         {
             case ASLFO_InitialName:
-                if (tidata)
-                    iforeq->ifo_TextAttr.ta_Name = (STRPTR)tidata;
+            {
+                STRPTR new;
+
+                new = (STRPTR) (tidata ? tidata : (IPTR) "");
+                new = VecPooledCloneString(new, NULL, GetIR(iforeq)->ir_MemPool, AslBase);
+                if (new)
+                {
+                    MyFreeVecPooled(req->fo_TAttr.tta_Name, AslBase);
+                    iforeq->ifo_TextAttr.ta_Name = req->fo_TAttr.tta_Name = req->fo_Attr.ta_Name = new;
+                }
                 break;
+            }
 
             case ASLFO_InitialSize:
-                iforeq->ifo_TextAttr.ta_YSize = (UWORD)tidata;
+                iforeq->ifo_TextAttr.ta_YSize =
+                req->fo_TAttr.tta_YSize =
+                req->fo_Attr.ta_YSize =
+                (UWORD)tidata;
                 break;
 
             case ASLFO_InitialStyle:
-                iforeq->ifo_TextAttr.ta_Style = (UBYTE)tidata;
+                iforeq->ifo_TextAttr.ta_Style =
+                req->fo_TAttr.tta_Style =
+                req->fo_Attr.ta_Style =
+                (UBYTE)tidata;
                 break;
 
             case ASLFO_InitialFlags:
-                iforeq->ifo_TextAttr.ta_Flags = (UBYTE)tidata;
+                iforeq->ifo_TextAttr.ta_Flags =
+                req->fo_TAttr.tta_Flags =
+                req->fo_Attr.ta_Flags =
+                (UBYTE)tidata;
                 break;
 
             case ASLFO_InitialFrontPen:
-                iforeq->ifo_FrontPen = (UBYTE)tidata;
+                iforeq->ifo_FrontPen =
+                req->fo_FrontPen =
+                (UBYTE)tidata;
                 break;
 
             case ASLFO_InitialBackPen:
-                iforeq->ifo_BackPen = (UBYTE)tidata;
+                iforeq->ifo_BackPen =
+                req->fo_BackPen =
+                (UBYTE)tidata;
                 break;
 
             case ASLFO_InitialDrawMode:
-                iforeq->ifo_DrawMode = (UBYTE)tidata;
+                iforeq->ifo_DrawMode =
+                req->fo_DrawMode =
+                (UBYTE)tidata;
                 break;
 
             case ASLFO_Flags:
@@ -221,38 +247,24 @@ AROS_UFH3(VOID, FOTagHook,
                 break;
 
             case ASLFO_DoFrontPen:
-                if (tidata)
-                    iforeq->ifo_Flags |= FOF_DOFRONTPEN;
-                else
-                    iforeq->ifo_Flags &= ~FOF_DOFRONTPEN;
+#define doflag(x) if (tidata) iforeq->ifo_Flags |= (x); else iforeq->ifo_Flags &= (ULONG) ~(x)
+                doflag(FOF_DOFRONTPEN);
                 break;
 
             case ASLFO_DoBackPen:
-                if (tidata)
-                    iforeq->ifo_Flags |= FOF_DOBACKPEN;
-                else
-                    iforeq->ifo_Flags &= ~FOF_DOBACKPEN;
+                doflag(FOF_DOBACKPEN);
                 break;
 
             case ASLFO_DoStyle:
-                if (tidata)
-                    iforeq->ifo_Flags |= FOF_DOSTYLE;
-                else
-                    iforeq->ifo_Flags &= ~FOF_DOSTYLE;
+                doflag(FOF_DOSTYLE);
                 break;
 
             case ASLFO_DoDrawMode:
-                if (tidata)
-                    iforeq->ifo_Flags |= FOF_DODRAWMODE;
-                else
-                    iforeq->ifo_Flags &= ~FOF_DODRAWMODE;
+                doflag(FOF_DODRAWMODE);
                 break;
 
             case ASLFO_FixedWidthOnly:
-                if (tidata)
-                    iforeq->ifo_Flags |= FOF_FIXEDWIDTHONLY;
-                else
-                    iforeq->ifo_Flags &= ~FOF_FIXEDWIDTHONLY;
+                doflag(FOF_FIXEDWIDTHONLY);
                 break;
 
             case ASLFO_MinHeight:
@@ -293,6 +305,10 @@ AROS_UFH3(VOID, FOTagHook,
 
             case ASLFO_SampleText:
                 iforeq->ifo_SampleText = (STRPTR)tidata;
+                break;
+
+            case ASLFR_UserData:
+                req->fo_UserData = (APTR)tidata;
                 break;
 
             default:
@@ -392,7 +408,10 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 #endif
     Object              *gad;
     LONG                error;
-    WORD                gadrows, x, y, w, h, i, y2;
+    WORD                gadrows, x, y, w, h, i;
+#if FOREQ_COOL_BUTTONS
+    WORD                y2;
+#endif
     WORD                sizelvwidth, labelwidth = 0, maxgadcolwidth = 0;
 
     NEWLIST(&udata->NameListviewList);

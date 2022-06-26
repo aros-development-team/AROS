@@ -991,7 +991,7 @@ void FRSetFile(STRPTR file, struct LayoutData *ld, struct AslBase_intern *AslBas
 
 /*****************************************************************************************/
 
-void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct Gadget *gad, struct AslBase_intern *AslBase)
+void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, ULONG quali, struct Gadget *gad, struct AslBase_intern *AslBase)
 {
     struct FRUserData           *udata = (struct FRUserData *)ld->ld_UserData;
     struct IntFileReq           *ifreq = (struct IntFileReq *)ld->ld_IntReq;
@@ -1011,7 +1011,22 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 
     mainstrgad = (struct Gadget *)((ifreq->ifr_Flags2 & FRF_DRAWERSONLY) ? udata->PathGad : udata->FileGad);
 
-    if (total < 1) return;
+    if (total < 1)
+    {
+        /* If LVUP_NOGADUPDATE is set, re-activate the gadget. - Piru
+            */
+        if (quali & LVUP_NOGADUPDATE)
+        {
+            if (gad)
+            {
+                ActivateGadget(gad, ld->ld_Window, NULL);
+            } else {
+                FRActivateMainStringGadget(ld, AslBase);
+            }
+        }
+
+        return;
+    }
 
     if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
     {
@@ -1078,24 +1093,42 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 
     SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
 
-    if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
+    /* Update the string gadgets, unless special flag LVUP_NOGADUPDATE is set. - Piru
+     */
+    if (!(quali & LVUP_NOGADUPDATE))
     {
-        if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+        if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
         {
-            FRSetPath(node->node.ln_Name, ld, AslBase);
-        } else {
             char pathstring[MAX_FILE_LEN];
 
             strcpy(pathstring, node->node.ln_Name);
-            if (node->subtype > 0)
+
+            if ((node->subtype > 0) && (!(udata->Flags & FRFLG_SHOWING_VOLUMES)))
+            {
+                strcat(pathstring, "/");
+            }
+            else if (udata->Flags & FRFLG_SHOWING_VOLUMES)
+            {
+                strcat(pathstring, ":");
+            }
+            
+            if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
             {
                 if (udata->Flags & FRFLG_SHOWING_VOLUMES)
-                    strcat(pathstring, ":");
+                {
+                    /* 21-Jul-2003 bugfix: replace path completely. - Piru
+                        */
+                    FRSetPath(pathstring, ld, AslBase);
+                }
                 else
-                    strcat(pathstring, "/");
+                {
+                    /* 21-Jul-2003 bugfix: update part of the path. - Piru
+                        */
+                    FRUpdatePath(pathstring, ld, AslBase);
+                }
+            } else {
+                FRSetFile(pathstring, ld, AslBase);
             }
-
-            FRSetFile(pathstring, ld, AslBase);
         }
     }
 
