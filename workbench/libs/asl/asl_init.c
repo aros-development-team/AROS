@@ -18,6 +18,8 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/iffparse.h>
+#include <prefs/prefhdr.h>
 
 #include "asl_intern.h"
 #include LC_LIBDEFS_FILE
@@ -173,6 +175,7 @@ LONG CoolImagesBase_version = -1;
 /*****************************************************************************************/
 
 VOID InitReqInfo(struct AslBase_intern *);
+VOID LoadPrefs(struct AslBase_intern *);
 
 /*****************************************************************************************/
 
@@ -185,6 +188,8 @@ static int InitBase(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->ReqListSem);
 
     InitReqInfo(LIBBASE);
+
+    LoadPrefs(LIBBASE);
 
     return TRUE;
 }
@@ -245,6 +250,49 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     bzero(&(reqinfo->GadgetryHook), sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry      = (void *)AROS_ASMSYMNAME(SMTagHook);
     reqinfo->GadgetryHook.h_Entry       = (void *)AROS_ASMSYMNAME(SMGadgetryHook);
+}
+
+/*****************************************************************************************/
+
+VOID LoadPrefs(struct AslBase_intern *AslBase)
+{
+    struct IFFHandle            *iff;
+    struct Library              *IFFParseBase;
+
+    IFFParseBase = OpenLibrary("iffparse.library", 0);
+    if (IFFParseBase)
+    {
+        iff = AllocIFF();
+        if (iff)
+        {
+            iff->iff_Stream = (IPTR)Open("ENV:Sys/Asl.prefs", MODE_OLDFILE);
+            if (iff->iff_Stream)
+            {
+                InitIFFasDOS(iff);
+                if (OpenIFF(iff, IFFF_READ) == 0)
+                {
+                    if (StopChunk(iff, ID_PREF, ID_ASL) == 0)
+                    {
+                        if (ParseIFF(iff, IFFPARSE_SCAN) == 0)
+                        {
+                            ReadChunkBytes(iff, &AslBase->Prefs, sizeof(struct AslPrefs));
+
+                            AslBase->Prefs.ap_RelativeLeft  = AROS_BE2WORD(AslBase->Prefs.ap_RelativeLeft);
+                            AslBase->Prefs.ap_RelativeTop   = AROS_BE2WORD(AslBase->Prefs.ap_RelativeTop);
+                        }
+                    }
+
+                    CloseIFF(iff);
+                } /* if (OpenIFF(iff)) */
+                Close((BPTR)iff->iff_Stream);
+
+            } /* if (iff->iff_Stream) */
+            FreeIFF(iff);
+
+        } /* if (iff) */
+        CloseLibrary(IFFParseBase);
+
+    } /* if (IFFParseBase) */
 }
 
 /*****************************************************************************************/

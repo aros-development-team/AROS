@@ -45,7 +45,13 @@
 #    include "layout.h"
 #endif
 
-#include <dos/dos.h>
+#ifndef DOS_DOS_H
+#    include <dos/dos.h>
+#endif
+
+#ifndef PREFS_ASL_H
+#    include <prefs/asl.h>
+#endif
 
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
@@ -277,6 +283,7 @@ struct AslBase_intern
     struct Library              Lib;
     struct MinList              ReqList;
     struct SignalSemaphore      ReqListSem;
+    struct AslPrefs             Prefs;
     struct AslReqInfo           ReqInfo[3];
     Class                       *aslpropclass;
     Class                       *aslarrowclass;
