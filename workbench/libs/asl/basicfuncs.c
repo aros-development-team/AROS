@@ -221,6 +221,7 @@ VOID ParseCommonTags
             case ASLSM_InitialWidth:
             case ASL_Width: */ /* Obsolete */
                 intreq->ir_Width = (UWORD)tidata;
+                intreq->ir_Flags &= ~IF_SIZE_REL;
                 break;
 
             case ASLFR_InitialHeight:
@@ -228,6 +229,7 @@ VOID ParseCommonTags
             case ASLSM_InitialHeight:
             case ASL_Height: */ /* Obsolete */
                 intreq->ir_Height = (UWORD)tidata;
+                intreq->ir_Flags &= ~IF_SIZE_REL;
                 break;
 
             default:

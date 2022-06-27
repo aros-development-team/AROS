@@ -275,6 +275,7 @@ struct AslReqInfo
 #define IF_POPTOFRONT    (1 << 4)
 #define IF_POPPEDTOFRONT (1 << 5)
 #define IF_OPENINACTIVE  (1 << 6)
+#define IF_SIZE_REL      (1 << 7) /* Should the width/height calculation be relative */
 
 #define GetIR(ir) ((struct IntReq *)ir)
 

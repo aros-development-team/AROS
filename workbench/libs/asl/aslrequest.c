@@ -136,9 +136,24 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 
             memset(&nw, 0L, sizeof (struct NewWindow));
 
-            nw.Width    = (intreq->ir_Width > ld->ld_MinWidth) ? intreq->ir_Width : ld->ld_MinWidth;
-            nw.Height   = (intreq->ir_Height > ld->ld_MinHeight) ? intreq->ir_Height : ld->ld_MinHeight;
+            /* Size */
+            if (intreq->ir_Flags & IF_SIZE_REL)
+            {
+                nw.Width    = ld->ld_Screen->ViewPort.DWidth * ASLB(AslBase)->Prefs.ap_RelativeWidth / 100;
+                nw.Height   = ld->ld_Screen->ViewPort.DHeight * ASLB(AslBase)->Prefs.ap_RelativeHeight / 100;
+                /* Used only once. Next time requester is opened, it will remember it positions and size */
+                intreq->ir_Flags &= ~IF_SIZE_REL;
+            }
+            else
+            {
+                nw.Width    = intreq->ir_Width;
+                nw.Height   = intreq->ir_Height;
+            }
 
+            if (nw.Width < ld->ld_MinWidth) nw.Width = ld->ld_MinWidth;
+            if (nw.Height < ld->ld_MinHeight) nw.Height = ld->ld_MinHeight;
+
+            /* Position */
             if (intreq->ir_LeftEdge >= 0)
             {
                 nw.LeftEdge = intreq->ir_LeftEdge;
