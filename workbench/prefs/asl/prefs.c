@@ -25,8 +25,8 @@
 
 /*********************************************************************************************/
 
-#define PREFS_PATH_ENVARC "ENVARC:Asl.prefs"
-#define PREFS_PATH_ENV    "ENV:Asl.prefs"
+#define PREFS_PATH_ENVARC "ENVARC:SYS/Asl.prefs"
+#define PREFS_PATH_ENV    "ENV:SYS/Asl.prefs"
 
 /*********************************************************************************************/
 

@@ -216,7 +216,7 @@ IPTR AslEditor__OM_NEW
         CLASS, self, NULL,
 
         MUIA_PrefsEditor_Name,     __(MSG_WINDOW_TITLE),
-        MUIA_PrefsEditor_Path,     (IPTR) "Asl.prefs",
+        MUIA_PrefsEditor_Path,     (IPTR) "SYS/Asl.prefs",
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Asl",
 
         Child, HGroup,
