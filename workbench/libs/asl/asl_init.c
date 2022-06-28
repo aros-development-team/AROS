@@ -189,14 +189,26 @@ static int InitBase(LIBBASETYPEPTR LIBBASE)
 
     InitReqInfo(LIBBASE);
 
-    LoadPrefs(LIBBASE);
-
-    return TRUE;
+    return 1;
 }
 
 /*****************************************************************************************/
 
 ADD2INITLIB(InitBase, 0);
+
+/*****************************************************************************************/
+
+static int OpenBase(LIBBASETYPEPTR LIBBASE)
+{
+    if (!(LIBBASE->Prefs.ap_Reserved[0] & 0x1))
+        LoadPrefs(LIBBASE);
+
+    return 1;
+}
+
+/*****************************************************************************************/
+
+ADD2OPENLIB(OpenBase, 0);
 
 /*****************************************************************************************/
 
@@ -279,6 +291,7 @@ VOID LoadPrefs(struct AslBase_intern *AslBase)
 
                             AslBase->Prefs.ap_RelativeLeft  = AROS_BE2WORD(AslBase->Prefs.ap_RelativeLeft);
                             AslBase->Prefs.ap_RelativeTop   = AROS_BE2WORD(AslBase->Prefs.ap_RelativeTop);
+                            AslBase->Prefs.ap_Reserved[0]   |= 0x1; /* loaded */
                         }
                     }
 
