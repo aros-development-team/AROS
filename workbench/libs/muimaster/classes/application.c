@@ -551,6 +551,9 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
 
         case MUIA_Application_Commands:
             data->app_Commands = (struct MUI_Command *)tag->ti_Data;
+            /* MUI by default enabled Rexx port. Zune does not. Enable port at least
+             * if the commands are passed */
+            data->app_UseRexx = TRUE;
             break;
 
         case MUIA_Application_RexxHook:
