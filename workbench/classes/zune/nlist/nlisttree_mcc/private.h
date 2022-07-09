@@ -123,11 +123,11 @@
 
 /*** Special attribute values ***/
 
-#define MUIV_NListtree_Active_Off                           0
-#define MUIV_NListtree_Active_Parent                        -2
-#define MUIV_NListtree_Active_First                         -3
-#define MUIV_NListtree_Active_FirstVisible                  -4
-#define MUIV_NListtree_Active_LastVisible                   -5
+#define MUIV_NListtree_Active_Off                           ((IPTR)0)
+#define MUIV_NListtree_Active_Parent                        ((IPTR)-2)
+#define MUIV_NListtree_Active_First                         ((IPTR)-3)
+#define MUIV_NListtree_Active_FirstVisible                  ((IPTR)-4)
+#define MUIV_NListtree_Active_LastVisible                   ((IPTR)-5)
 
 #define MUIV_NListtree_ActiveList_Off                       0
 
@@ -136,20 +136,20 @@
 #define MUIV_NListtree_AutoVisible_FirstOpen                2
 #define MUIV_NListtree_AutoVisible_Expand                   3
 
-#define MUIV_NListtree_CompareHook_Head                     0
-#define MUIV_NListtree_CompareHook_Tail                     -1
-#define MUIV_NListtree_CompareHook_LeavesTop                -2
-#define MUIV_NListtree_CompareHook_LeavesMixed              -3
-#define MUIV_NListtree_CompareHook_LeavesBottom             -4
+#define MUIV_NListtree_CompareHook_Head                     ((IPTR)0)
+#define MUIV_NListtree_CompareHook_Tail                     ((IPTR)-1)
+#define MUIV_NListtree_CompareHook_LeavesTop                ((IPTR)-2)
+#define MUIV_NListtree_CompareHook_LeavesMixed              ((IPTR)-3)
+#define MUIV_NListtree_CompareHook_LeavesBottom             ((IPTR)-4)
 
-#define MUIV_NListtree_ConstructHook_String                 -1
+#define MUIV_NListtree_ConstructHook_String                 ((IPTR)-1)
 #define MUIV_NListtree_ConstructHook_Flag_AutoCreate        (1<<15)
 
-#define MUIV_NListtree_CopyToClipHook_Default               0
+#define MUIV_NListtree_CopyToClipHook_Default               ((IPTR)0)
 
-#define MUIV_NListtree_DestructHook_String                  -1
+#define MUIV_NListtree_DestructHook_String                  ((IPTR)-1)
 
-#define MUIV_NListtree_DisplayHook_Default                  -1
+#define MUIV_NListtree_DisplayHook_Default                  ((IPTR)-1)
 
 #define MUIV_NListtree_DoubleClick_Off                      -1
 #define MUIV_NListtree_DoubleClick_All                      -2
@@ -162,18 +162,18 @@
 #define MUIV_NListtree_DropType_Onto                        3
 #define MUIV_NListtree_DropType_Sorted                      4
 
-#define MUIV_NListtree_FindNameHook_CaseSensitive           0
-#define MUIV_NListtree_FindNameHook_CaseInsensitive         -1
-#define MUIV_NListtree_FindNameHook_PartCaseSensitive       -2
-#define MUIV_NListtree_FindNameHook_PartCaseInsensitive     -3
-#define MUIV_NListtree_FindNameHook_PointerCompare          -4
+#define MUIV_NListtree_FindNameHook_CaseSensitive           ((IPTR)0)
+#define MUIV_NListtree_FindNameHook_CaseInsensitive         ((IPTR)-1)
+#define MUIV_NListtree_FindNameHook_PartCaseSensitive       ((IPTR)-2)
+#define MUIV_NListtree_FindNameHook_PartCaseInsensitive     ((IPTR)-3)
+#define MUIV_NListtree_FindNameHook_PointerCompare          ((IPTR)-4)
 #define MUIV_NListtree_FindNameHook_Part                    MUIV_NListtree_FindNameHook_PartCaseSensitive /* obsolete */
 
-#define MUIV_NListtree_FindUserDataHook_CaseSensitive       0
-#define MUIV_NListtree_FindUserDataHook_CaseInsensitive     -1
-#define MUIV_NListtree_FindUserDataHook_Part                -2
-#define MUIV_NListtree_FindUserDataHook_PartCaseInsensitive -3
-#define MUIV_NListtree_FindUserDataHook_PointerCompare      -4
+#define MUIV_NListtree_FindUserDataHook_CaseSensitive       ((IPTR)0)
+#define MUIV_NListtree_FindUserDataHook_CaseInsensitive     ((IPTR)-1)
+#define MUIV_NListtree_FindUserDataHook_Part                ((IPTR)-2)
+#define MUIV_NListtree_FindUserDataHook_PartCaseInsensitive ((IPTR)-3)
+#define MUIV_NListtree_FindUserDataHook_PointerCompare      ((IPTR)-4)
 
 #define MUIV_NListtree_MultiSelect_None                     0
 #define MUIV_NListtree_MultiSelect_Default                  1
@@ -182,7 +182,7 @@
 
 #define MUIV_NListtree_MultiSelect_Flag_AutoSelectChilds    (1<<31) /*i*/
 
-#define MUIV_NListtree_ShowTree_Toggle                      -1
+#define MUIV_NListtree_ShowTree_Toggle                      ((IPTR)-1)
 
 
 

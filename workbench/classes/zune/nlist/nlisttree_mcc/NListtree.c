@@ -4362,9 +4362,9 @@ static VOID SetAttributes( struct NListtree_Data *data, struct opSet *msg, BOOL 
       case MUIA_NListtree_Active:
       {
         D(DBF_GETSET, "SET MUIA_NListtree_Active");
-        if((tag->ti_Data == (ULONG)MUIV_NListtree_Active_Off) ||
+        if((tag->ti_Data == (IPTR)MUIV_NListtree_Active_Off) ||
            (tag->ti_Data == (IPTR)&data->RootList) ||
-           ((tag->ti_Data == (ULONG)MUIV_NListtree_Active_Parent) &&
+           ((tag->ti_Data == (IPTR)MUIV_NListtree_Active_Parent) &&
             (data->ActiveNode == (APTR)MUIV_NListtree_Active_Off))
           )
         {
@@ -4378,7 +4378,7 @@ static VOID SetAttributes( struct NListtree_Data *data, struct opSet *msg, BOOL 
           /*
           **  Parent of the active node.
           */
-          if(tag->ti_Data == (ULONG)MUIV_NListtree_Active_Parent)
+          if(tag->ti_Data == (IPTR)MUIV_NListtree_Active_Parent)
           {
             tag->ti_Data = (IPTR)GetParent( data->ActiveNode );
           }
@@ -4386,13 +4386,13 @@ static VOID SetAttributes( struct NListtree_Data *data, struct opSet *msg, BOOL 
           /*
           **  First list entry (visible or not).
           */
-          if(tag->ti_Data == (ULONG)MUIV_NListtree_Active_First)
+          if(tag->ti_Data == (IPTR)MUIV_NListtree_Active_First)
             tag->ti_Data = (IPTR)GetHead( (struct List *)&data->RootList.ln_List );
 
           /*
           **  First visible entry.
           */
-          if(tag->ti_Data == (ULONG)MUIV_NListtree_Active_FirstVisible)
+          if(tag->ti_Data == (IPTR)MUIV_NListtree_Active_FirstVisible)
           {
             LONG firstvisible;
 
@@ -4405,7 +4405,7 @@ static VOID SetAttributes( struct NListtree_Data *data, struct opSet *msg, BOOL 
           /*
           **  Last visible entry.
           */
-          if(tag->ti_Data == (ULONG)MUIV_NListtree_Active_LastVisible)
+          if(tag->ti_Data == (IPTR)MUIV_NListtree_Active_LastVisible)
           {
             LONG lastvisible;
 
@@ -4634,7 +4634,7 @@ static VOID SetAttributes( struct NListtree_Data *data, struct opSet *msg, BOOL 
 
       case MUIA_NListtree_CopyToClipHook:
       {
-        if ( tag->ti_Data == MUIV_NListtree_CopyToClipHook_Default )
+        if ( tag->ti_Data == (IPTR)MUIV_NListtree_CopyToClipHook_Default )
         {
           D(DBF_GETSET, "SET MUIA_NListtree_CopyToClipHook: MUIV_NListtree_CopyToClipHook_Default");
 
@@ -4947,7 +4947,7 @@ static VOID SetAttributes( struct NListtree_Data *data, struct opSet *msg, BOOL 
 
       case MUIA_NListtree_ShowTree:
       {
-        if(tag->ti_Data == (ULONG)MUIV_NListtree_ShowTree_Toggle)
+        if(tag->ti_Data == (IPTR)MUIV_NListtree_ShowTree_Toggle)
         {
           if(isFlagSet(data->Flags, NLTF_NO_TREE))
             CLEAR_FLAG(data->Flags, NLTF_NO_TREE);
