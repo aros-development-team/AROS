@@ -32,6 +32,13 @@
 /*  FUNCTION
 
     INPUTS
+        lock - Lock to directory or disk
+        name - Name of the object in directory.
+               Note: also for def icons, name has to be passed without .info
+               extension to be able to edit def icon attributes. Passing a
+               name.info should open information on the .info file itself (a
+               binary file without any icon attributes). This behavior is
+               confirmed with Workbench.
 
     RESULT
 
@@ -40,6 +47,7 @@
     EXAMPLE
 
     BUGS
+        screen argument is currently ingored
 
     SEE ALSO
 

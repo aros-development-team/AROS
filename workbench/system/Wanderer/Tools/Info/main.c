@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2022, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -709,10 +709,7 @@ int main(int argc, char **argv)
     struct AnchorPath *ap = NULL;
     struct DateStamp *ds = NULL;
     struct DateTime dt;
-#if 0 /* unused */
-    IPTR dte;
-#endif
-    STRPTR name = NULL, file = NULL, type = NULL;
+    STRPTR file = NULL, type = NULL;
     BPTR cd, lock;
     LONG  returnid = 0;
     ULONG protection;
@@ -723,7 +720,7 @@ int main(int argc, char **argv)
     char time[LEN_DATSTRING];
     char  dow[LEN_DATSTRING];
     char datetime[2*LEN_DATSTRING];
-    UBYTE flags[8] = {0}, lname[MAXFILENAMELENGTH];
+    UBYTE flags[8] = {0}, lname[MAXFILENAMELENGTH] = {0};
 
     char *pages[] = {_(MSG_INFORMATION),_(MSG_PROTECTION),_(MSG_TOOLTYPES),NULL};
     char * typeNames[] =
@@ -748,7 +745,7 @@ int main(int argc, char **argv)
         /* start from wanderer only */
         PrintFault(ERROR_FILE_NOT_OBJECT, argv[0]);
         retval = RETURN_FAIL;
-    goto funcmain_exit;
+        goto funcmain_exit;
     }
 
     startup = (struct WBStartup *) argv;
@@ -759,7 +756,7 @@ int main(int argc, char **argv)
         PrintFault(ERROR_REQUIRED_ARG_MISSING, argv[0]);
 D(bug("[WBInfo] required arg missing\n"));
         retval = RETURN_FAIL;
-    goto funcmain_exit;
+        goto funcmain_exit;
     }
 
     lock = startup->sm_ArgList[1].wa_Lock;
@@ -768,31 +765,17 @@ D(bug("[WBInfo] arg parent lock 0x%p: '%s'\n", lock, lname));
 
     if (startup->sm_ArgList[1].wa_Name != NULL)
     {
-    if ((name = AllocVec(strlen(startup->sm_ArgList[1].wa_Name) + 1, MEMF_CLEAR)) != NULL)
-    {
-        CopyMem(startup->sm_ArgList[1].wa_Name, name, strlen(startup->sm_ArgList[1].wa_Name));
-        if ((strlen(name) > 5)
-        && (strcmp(name + strlen(name) - 5, ".info") == 0))
-        {
-        file = AllocVec(strlen(name) - 4, MEMF_CLEAR);
-        CopyMem(name, file , strlen(name) - 5);
-        }
-        else
-        {
-        file = AllocVec(strlen(name) + 1, MEMF_CLEAR);
-        CopyMem(name, file, strlen(name));
-        }
-    D(bug("[WBInfo] arg name 0x%p: '%s', file = '%s'\n", name, name, file));
-    }
+        file = startup->sm_ArgList[1].wa_Name;
+D(bug("[WBInfo] arg name 0x%p: '%s'\n", startup->sm_ArgList[1].wa_Name, startup->sm_ArgList[1].wa_Name));
     }
     cd = CurrentDir(lock);
-    if (name == NULL)
+    if (lname[0] == 0)
     {
         /* directory not found*/
         PrintFault(ERROR_DIR_NOT_FOUND, argv[0]);
 D(bug("[WBInfo] dir not found\n"));
         retval = RETURN_FAIL;
-    goto funcmain_exit;
+        goto funcmain_exit;
     };
 
     ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
@@ -801,22 +784,32 @@ D(bug("[WBInfo] dir not found\n"));
         PrintFault(ERROR_NO_FREE_STORE, argv[0]);
 D(bug("[WBInfo] no free store\n"));
         retval = RETURN_FAIL;
-    goto funcmain_exit;
+        goto funcmain_exit;
     }
 
     ap->ap_Strlen = MAX_PATH_LEN;
 
-    if (0 != MatchFirst(name, ap))
+    if (0 != MatchFirst(file, ap))
     {
-D(bug("[WBInfo] pass to diskinfo\n"));
-        OpenWorkbenchObject(
-            "WANDERER:Tools/DiskInfo",
-            WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[1].wa_Lock,
-            WBOPENA_ArgName, (IPTR) startup->sm_ArgList[1].wa_Name,
-            TAG_DONE);
+        /* Directly matching file failed, maybe it's a def icon */
+        STRPTR fileinfo = AllocVec(strlen(file) + 5 + 1, MEMF_CLEAR);
+        ULONG res = 0;
 
-        retval = RETURN_OK;
-    goto funcmain_exit;
+        sprintf(fileinfo, "%s.info", file);
+        res = MatchFirst(fileinfo, ap);
+        FreeVec(fileinfo);
+        if (0 != res)
+        {
+D(bug("[WBInfo] pass to diskinfo\n"));
+            OpenWorkbenchObject(
+                "WANDERER:Tools/DiskInfo",
+                WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[1].wa_Lock,
+                WBOPENA_ArgName, (IPTR) startup->sm_ArgList[1].wa_Name,
+                TAG_DONE);
+
+            retval = RETURN_OK;
+            goto funcmain_exit;
+        }
     };
 
     ap->ap_BreakBits = SIGBREAKF_CTRL_C;
@@ -836,10 +829,8 @@ D(bug("[WBInfo] scan file\n"));
         dt.dat_StrDay = dow;
         dt.dat_StrDate = date;
         dt.dat_StrTime = time;
-#if 0 /* unused */
-        dte =
-#endif
-               DateToStr(&dt);
+
+        DateToStr(&dt);
         sprintf(datetime, "%s %s", time, date);
 
         /* fill size */
@@ -880,7 +871,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
     } else {
         PrintFault(ERROR_OBJECT_WRONG_TYPE, argv[0]);
 
-    retval = RETURN_FAIL;
+        retval = RETURN_FAIL;
         goto funcmain_exit;
     }
 
@@ -920,27 +911,26 @@ D(bug("[WBInfo] icon type is: %s\n", type));
     }
 
         if (icon->do_Type!=WBDRAWER)
-                {
-                sprintf(pathname, "%s",lname);
-                } else {
-                int path_x;
-                int path_y = 58;
-                char *ch;
-                
-                sprintf(pathname, "%s",lname);
-                ch = strrchr (pathname, path_y);
-                path_x = strlen (ch);
+        {
+            sprintf(pathname, "%s",lname);
+        } else {
+            int path_x;
+            int path_y = 58;
+            char *ch;
 
-                if (path_x > 1)
-                        sprintf(pathname, "%s/%s", lname, name);
-                else
-                        sprintf(pathname, "%s%s", lname, name);
+            sprintf(pathname, "%s",lname);
+            ch = strrchr (pathname, path_y);
+            path_x = strlen (ch);
 
-                }
+            if (path_x > 1)
+                sprintf(pathname, "%s/%s", lname, file);
+            else
+                sprintf(pathname, "%s%s", lname, file);
+        }
  
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.8 ("ADATE") © 2003-2016 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.9 ("ADATE") © 2003-2022 The AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenustripObject,
@@ -1357,7 +1347,7 @@ D(bug("[WBInfo: RETURNID_QUERYVERSION\n"));
                     MUIA_Background, MUII_TextBack,
                     MUIA_Text_SetMin, FALSE,
                     MUIA_Text_PreParse, (IPTR) "\33r",
-                    MUIA_Text_Contents, (IPTR) GetVersion(name, lock),
+                    MUIA_Text_Contents, (IPTR) GetVersion(file, lock),
                 End;
 
                 DoMethod(versiongrp, MUIM_Group_InitChange);
@@ -1391,13 +1381,13 @@ waitscan:
                 if (scanStruct->scanProcess != NULL)
                 goto waitscan;
 
-                ULONG dirnamelen = strlen(lname) + strlen(name);
+                ULONG dirnamelen = strlen(lname) + strlen(file);
                 scanStruct->scanState = SCANRUN;
                 scanStruct->scanDir = AllocVec(dirnamelen + 2, MEMF_CLEAR); /* 2 == path separator + \0 at end */
-D(bug("[WBInfo]: lname '%s', name '%s', (%d bytes)\n", lname, name, dirnamelen));
+D(bug("[WBInfo]: lname '%s', name '%s', (%d bytes)\n", lname, file, dirnamelen));
 
                 CopyMem(lname, scanStruct->scanDir, strlen(lname));
-                AddPart(scanStruct->scanDir, name, dirnamelen + 2);
+                AddPart(scanStruct->scanDir, file, dirnamelen + 2);
 
                 char * tmp_Name = AllocVec(strlen(scanStruct->scanDir) + 24, MEMF_CLEAR);
                 sprintf(tmp_Name, "Calculating size of %s ..", scanStruct->scanDir);
@@ -1450,7 +1440,5 @@ funcmain_exit:
     if (scanStruct) FreeMem(scanStruct, sizeof(struct DirScanProcess));
     if (icon) FreeDiskObject(icon);
     FreeVec(ap);
-    FreeVec(file);
-    FreeVec(name);
     return retval;
 }

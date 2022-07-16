@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2022, The AROS Development Team. All rights reserved.
 */
 
 #define ZCC_QUIET
@@ -1891,54 +1891,46 @@ void wanderer_menufunc_icon_information()
                 STRPTR name, file;
 
                 file = entry->ile_IconEntry->ie_IconNode.ln_Name;
-                D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__, file));
-
-attemptlock:
-
                 D(bug("[Wanderer] %s: Trying with '%s'\n", __PRETTY_FUNCTION__, file));
 
                 if ((lock = Lock(file, ACCESS_READ)) == BNULL)
                 {
+                    ULONG flen = strlen(file);
                     D(bug("[Wanderer] %s: couldnt lock '%s'\n", __PRETTY_FUNCTION__, file));
-                    if ((strlen(file) > 5)
-                        && (strcmp(file + strlen(file) - 5, ".info") != 0)
-                        && (file[strlen(file) -1] != ':'))
+                    if ((flen > 5)
+                        && (strcmp(file + flen - 5, ".info") != 0)
+                        && (file[flen -1] != ':'))
                     {
-                        D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n",
-                                __PRETTY_FUNCTION__));
-                        file = AllocVec(strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 6, MEMF_CLEAR);
-                        if (file == NULL)
-                        {
-                            UnLock(lock);
-                            return;
-                        }
-                        sprintf(file, "%s.info", entry->ile_IconEntry->ie_IconNode.ln_Name);
-                        goto attemptlock;
+                        STRPTR tmp;
+                        D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n", __PRETTY_FUNCTION__));
+                        tmp = AllocVec(flen + 6, MEMF_CLEAR);
+                        if (tmp == NULL) return;
+
+                        sprintf(tmp, "%s.info", file);
+                        D(bug("[Wanderer] %s: Trying with '%s'\n", __PRETTY_FUNCTION__, tmp));
+                        lock = Lock(tmp, ACCESS_READ);
+                        FreeVec(tmp);
+
+                        if (lock == BNULL) return;
                     }
+                }
+
+                name = FilePart(file);
+                if (name[0])
+                {
+                    parent = ParentDir(lock);
+                    UnLock(lock);
                 }
                 else
                 {
-                    name = FilePart(file);
-                    if (name[0])
-                    {
-                        parent = ParentDir(lock);
-                        UnLock(lock);
-                    }
-                    else
-                    {
-                        parent = lock;
-                    }
-
-                    D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n",
-                            __PRETTY_FUNCTION__, name, lock));
-                    WBInfo(parent, name, NULL);
-
-                    UnLock(parent);
+                    parent = lock;
                 }
-                if (file != (STRPTR)entry->ile_IconEntry->ie_IconNode.ln_Name)
-                {
-                    FreeVec(file);
-                }
+
+                D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n",
+                        __PRETTY_FUNCTION__, name, lock));
+                WBInfo(parent, name, NULL);
+
+                UnLock(parent);
             }
         }
         else
