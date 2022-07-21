@@ -421,7 +421,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
             if (num_trans == 1)
             {
                 bmhd->bmh_Masking = mskHasTransparentColor;
-                bmhd->bmh_Transparent = *trans;
+                bmhd->bmh_Transparent = 0;
             }
             else
             {
