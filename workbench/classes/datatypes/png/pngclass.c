@@ -298,11 +298,20 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
         {
             if (num_trans > 1)
             {
-                D(bug("[png.datatype] %s: converting palette with mixed-alpha to truecolor\n", __func__);)
+                int i, num_nonopaque = 0;
 
-                png_set_palette_to_rgb(png.png_ptr);
-                png_set_tRNS_to_alpha(png.png_ptr);
-                png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
+                /* Check if there is more than one non-opaque color */
+                for (i = 0; i < num_trans; i++)
+                    if (trans[i] != 255) num_nonopaque++;
+
+                if (num_nonopaque > 1)
+                {
+                    D(bug("[png.datatype] %s: converting palette with mixed-alpha to truecolor, nonopaque %d\n",
+                        __func__, num_nonopaque));
+
+                    png_set_tRNS_to_alpha(png.png_ptr);
+                    png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
+                }
             }
         }
     }
@@ -410,43 +419,23 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
         png_bytep trans;
         int       num_trans;
 
-        D(bug("[png.datatype] %s: handling mask\n", __func__);)
+        D(bug("[png.datatype] %s: handling mask\n", __func__));
 
         if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
         {
-            png_byte best_trans = 255;
-            int      i, best_index = 0;
+            int i, best_index = 0;
 
-            D(bug("[png.datatype] %s: %d trans @ 0x%p\n", __func__, num_trans, trans);)
-            if (num_trans == 1)
+            D(bug("[png.datatype] %s: %d trans @ 0x%p\n", __func__, num_trans, trans));
+
+            if (num_trans > 0)
             {
+                /* We already checked above that there is either only one transparent entry
+                   (num_trans == 1) or there is only one non-opaque color (non_opaque == 1) */
                 bmhd->bmh_Masking = mskHasTransparentColor;
-                bmhd->bmh_Transparent = 0;
-            }
-            else
-            {
-                bug("[png.datatype] %s: alpha-mask handling failed", __func__);
-#if (0)
-                // This code is disabled - it is wrong/broken
-                for(i = 0; i < num_trans; i++, trans++)
-                {
-                    D(bug("[png.datatype] %s: #%02d  = %02x\n", __func__, i, *trans);)
+                for (i = 0; i < num_trans; i++)
+                    if (trans[i] != 255) { best_index = i; break; }
 
-                    if (*trans < best_trans)
-                    {
-                        best_trans = *trans;
-                        best_index = i;
-                    }
-                }
-
-                if (best_trans < 128) /* 128 = randomly choosen */
-                {
-                    D(bug("[png.datatype] %s: transparent color = %d\n", __func__, best_index);)
-
-                    bmhd->bmh_Masking = mskHasTransparentColor;
-                    bmhd->bmh_Transparent = best_index;
-                }
-#endif
+                bmhd->bmh_Transparent = best_index;
             }
         }
     }
@@ -539,7 +528,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
                     if(!DoSuperMethod(cl, o,
                                       PDTM_WRITEPIXELARRAY, /* Method_ID */
                                       (IPTR) buf,           /* PixelData */
-                                      png.dtbuffer_format,          /* PixelFormat */
+                                      png.dtbuffer_format,  /* PixelFormat */
                                       0,                    /* PixelArrayMod (number of bytes per row) */
                                       0,                    /* Left edge */
                                       y,                    /* Top edge */
