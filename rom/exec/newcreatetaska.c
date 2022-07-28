@@ -127,7 +127,7 @@ static const struct newMemList MemTemplate =
             break;
 
         case TASKTAG_STACKSIZE:
-            nml.nml_ME[1].me_Length = AROS_ALIGN(tag->ti_Data);
+            nml.nml_ME[1].me_Length = AROS_ALIGN((ULONG)tag->ti_Data);
             break;
 
         case TASKTAG_NAME:
@@ -160,6 +160,14 @@ static const struct newMemList MemTemplate =
             break;
         }
     }
+
+    /* We need a minimum stack to handle interrupt contexts. Additionally confirned on MorphOS that
+       it sets a minimum fixed size of stack */
+    if (nml.nml_ME[1].me_Length < AROS_STACKSIZE)
+    {
+        nml.nml_ME[1].me_Length = AROS_STACKSIZE;
+    }
+
 
     DADDTASK("NewCreateTaskA: name %s", taskname ? taskname : "<NULL>");
 
