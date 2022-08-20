@@ -88,16 +88,29 @@
 
         width = bm->BytesPerRow * 8;
 
-        for (plane=0; plane < bm->Depth; plane ++)
+        /* Is Interleaved? */
+        if(bm->Flags & BMF_INTERLEAVED)
         {
-            /* Take care of two special cases: plane pointers containing NULL or -1
-             * are supported by BltBitMap() as all 0's and all 1's planes
-             */
-            if (bm->Planes[plane] && bm->Planes[plane] != (PLANEPTR)-1)
+            if(bm->Planes[0])
             {
-                ASSERT_VALID_PTR(bm->Planes[plane]);
-                FreeRaster (bm->Planes[plane], width, bm->Rows);
+              ASSERT_VALID_PTR(bm->Planes[0]);
+              FreeRaster (bm->Planes[0], width*bm->Depth, bm->Rows);
             }
+        }
+        else
+        {
+            for (plane=0; plane < bm->Depth; plane ++)
+            {
+                /* Take care of two special cases: plane pointers containing NULL or -1
+                 * are supported by BltBitMap() as all 0's and all 1's planes
+                 */
+                if (bm->Planes[plane] && bm->Planes[plane] != (PLANEPTR)-1)
+                {
+                    ASSERT_VALID_PTR(bm->Planes[plane]);
+                    FreeRaster (bm->Planes[plane], width, bm->Rows);
+                }
+            }
+
         }
 
         FreeMem (bm, sizeof(struct BitMap) +
