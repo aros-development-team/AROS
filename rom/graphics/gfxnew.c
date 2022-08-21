@@ -95,9 +95,11 @@ static LONG dummy_init(void);
              FindName((struct List *)(&(GfxBase -> MonitorList)), DEFAULT_MONITOR_NAME);*/
           break;
         case VIEWPORT_EXTRA_TYPE:
+          /* Already handled above */
           break;
         case SPECIAL_MONITOR_TYPE:
-          /* ((struct SpecialMonitor *)Result).do_monitor = */
+          /* Init already handled above */
+          ((struct SpecialMonitor *)Result)->do_monitor = (void *)GfxBase->default_monitor;
         break;
         case MONITOR_SPEC_TYPE:
           /* ((struct MonitorSpec *)Result)->ms_transform = */
