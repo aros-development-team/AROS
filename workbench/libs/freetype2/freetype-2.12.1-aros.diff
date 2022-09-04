@@ -155,16 +155,19 @@ diff -ruN freetype-2.12.1/builds/aros/src/base/ftsystem.c freetype-2.12.1.aros/b
 +  {
 +    void* retval;
 +
-+    D(bug("Entering ft_free(memory=%x, cur_size=%ld, new_size=%ld, block=%x)\n",
++    D(bug("Entering ft_realloc(memory=%x, cur_size=%ld, new_size=%ld, block=%x)\n",
 +	  memory, cur_size, new_size, block));
 +
 +    if ((retval = ft_alloc( memory, new_size )) != NULL)
 +    {
-+        CopyMem( block, retval, cur_size );
++        long copy_size = cur_size;
++        if (new_size < cur_size)
++            copy_size = new_size;
++        CopyMem( block, retval, copy_size );
 +        ft_free( memory, block );
 +    }
 +
-+    D(bug("Leaving ft_free retval=%x\n", retval));
++    D(bug("Leaving ft_realloc retval=%x\n", retval));
 +
 +    return retval;
 +  }
