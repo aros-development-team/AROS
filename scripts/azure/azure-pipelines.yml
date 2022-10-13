@@ -79,11 +79,14 @@ jobs:
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
       sudo apt-get install -y python3-mako python3-distutils libswitch-perl gperf gcc-multilib g++ ccache
       sudo apt-get install -y jlha-utils wget
+      if [ "$AROSBUILD_TARGET" = "amiga-m68k" ]; then
+        sudo apt-get install -y python3-crcmod
+      fi
       if [ "$AROSBUILD_TARGET" = "linux-arm" ]; then
-        sudo apt-get install libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
+        sudo apt-get install -y libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
       fi
       if [ "$AROSBUILD_TARGET" = "linux-armhf" ]; then
-        sudo apt-get install libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+        sudo apt-get install -y libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
       fi
       if [ "$AROSBUILD_TARGET" = "mingw32-i386" ]; then
         sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
