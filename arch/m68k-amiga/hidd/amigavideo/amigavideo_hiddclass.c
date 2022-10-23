@@ -879,6 +879,28 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct
     return TRUE;
 }
 
+BOOL AmigaVideoCl__Hidd_Gfx__SetSpriteShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetSpriteShape *msg, int spritenum)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
+    IPTR width, height;
+    UWORD maxw, maxh;
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+
+    maxw = (csd->aga ? 64 : 16);
+    maxh = maxw * 2;
+
+    if (width > maxw || height > maxh)
+        return FALSE;
+
+    if (!new_setsprite(cl, o, width, height, msg, spritenum))
+        return FALSE;
+
+    return TRUE;
+}
+
 BOOL AmigaVideoCl__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, ULONG Type, ULONG *Width, ULONG *Height)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
@@ -911,10 +933,40 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct p
     return TRUE;
 }
 
+BOOL AmigaVideoCl__Hidd_Gfx__SetSpritePos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetSpritePos *msg, int spritenum)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    UBYTE res = 0, cursy;
+    BOOL interlace = FALSE;
+
+    struct amigabm_data *bm;
+    ForeachNode(csd->compositedbms, bm)
+    {
+        cursy = msg->y;
+        if (csd->interlaced)
+            cursy >>= 1;
+        if (cursy < ((bm->topedge + bm->displayheight) >> bm->interlace))
+        {
+            res = bm->res;
+            interlace = (bm->interlace != 0);
+            break;
+        }
+    }
+
+    new_setspritepos(csd, msg->x, msg->y, res, interlace, spritenum);
+    return TRUE;
+}
+
 VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     setspritevisible(csd, msg->visible);
+}
+
+VOID AmigaVideoCl__Hidd_Gfx__SetSpriteVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetSpriteVisible *msg, int spritenum)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    new_setspritevisible(csd, msg->visible, spritenum);
 }
 
 ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)

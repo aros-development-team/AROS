@@ -70,9 +70,9 @@
 
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
 
-    /* We have only sprite #0 for the mouse pointer */
+    /* We have only sprite #0 for the mouse pointer 
     if (newsprite->es_SimpleSprite.num)
-        return 0;
+        return 0;*/
 
     /* Pick up position from old sprite */
     newsprite->es_SimpleSprite.x = oldsprite->es_SimpleSprite.x;
@@ -85,9 +85,18 @@
     if (vp) {
         /* Pick up display driver from ViewPort's bitmap */
         mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
-        res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, 0, 0);
-        if (res)
-            HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+	if(newsprite->es_SimpleSprite.num == 0)
+	{
+	  res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, 0, 0);
+	  if (res)
+	      HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+	}
+	else
+	{
+	    res = HIDD_Gfx_SetSpriteShape(mdd->gfxhidd, bitmap, 0, 0, newsprite->es_SimpleSprite.num);
+	    if (res)
+	      HIDD_Gfx_SetSpriteVisible(mdd->gfxhidd, TRUE, newsprite->es_SimpleSprite.num);
+	}
     } else
         /* TODO: NULL ViewPort means Amiga(tm) chipset display */
         res = FALSE;

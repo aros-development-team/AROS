@@ -85,6 +85,15 @@ static VOID setnullsprite(struct amigavideo_staticdata *csd)
         csd->copper1_spritept[2] = (UWORD)(((ULONG)p) >> 0);
     }
  }
+
+static VOID new_setnullsprite(struct amigavideo_staticdata *csd, int spritenum)
+{
+    if (csd->new_copper1_spritept[spritenum]) {
+        UWORD *p = csd->sprite_null;
+        csd->new_copper1_spritept[spritenum][0] = (UWORD)(((ULONG)p) >> 16);
+        csd->new_copper1_spritept[spritenum][2] = (UWORD)(((ULONG)p) >> 0);
+    }
+ }
  
 VOID resetsprite(struct amigavideo_staticdata *csd)
 {
@@ -93,6 +102,15 @@ VOID resetsprite(struct amigavideo_staticdata *csd)
     csd->sprite = NULL;
     FreeMem(sprite, csd->spritedatasize);
     csd->sprite_width = csd->sprite_height = 0;
+}
+
+VOID new_resetsprite(struct amigavideo_staticdata *csd, int spritenum)
+{
+    UWORD *sprite = csd->new_sprite[spritenum];
+    new_setnullsprite(csd, spritenum);
+    csd->new_sprite[spritenum] = NULL;
+    FreeMem(sprite, csd->new_spritedatasize[spritenum]);
+    csd->new_sprite_width[spritenum] = csd->new_sprite_height[spritenum] = 0;
 }
 
 VOID setfmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
@@ -621,6 +639,9 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     setbitmap(csd, bm);
 
     setspritepos(csd, csd->spritex, csd->spritey, bm->res, bm->interlace);
+    
+    for(i=1;i<8;i++)
+      new_setspritepos(csd, csd->new_spritex[i], csd->new_spritey[i], bm->res, bm->interlace, i);
 
     D(bug("[AmigaVideo] %s: done\n", __func__));
 
@@ -712,6 +733,85 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
     return TRUE;
 }
 
+BOOL new_setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHidd_Gfx_SetCursorShape *msg, int spritenum)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
+    OOP_MethodID HiddGfxBase = csd->cs_HiddGfxBase;
+    OOP_MethodID HiddBitMapBase = csd->cs_HiddBitMapBase;
+    struct amigabm_data *data = OOP_INST_DATA(cl, o);
+    OOP_Object *bmPFObj = NULL;
+    HIDDT_PixelFormat *bmPF;
+    IPTR pf, bmcmod;
+    UWORD fetchsize;
+    UWORD bitmapwidth = width;
+    UWORD y, *p;
+
+    D(bug("[AmigaVideo] %s()\n", __func__));
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR*)&bmPFObj);
+    OOP_GetAttr(bmPFObj, aHidd_PixFmt_ColorModel, &bmcmod);
+    if (bmcmod == vHidd_ColorModel_TrueColor)
+    {
+        OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
+        bmPF = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(o, pf);
+    }
+
+    if (csd->aga && csd->aga_enabled && width > 16)
+        csd->fmode_spr = 2;
+    else
+        csd->fmode_spr = 0;
+    D(bug("[AmigaVideo] %s: fmode_spr = %x\n", __func__, csd->fmode_spr));
+    fetchsize = 2 << csd->fmode_spr;
+    width = 16 << csd->fmode_spr;
+
+    if (width != csd->new_sprite_width[spritenum] || height != csd->new_sprite_height[spritenum]) {
+        new_resetsprite(csd, spritenum);
+        csd->new_spritedatasize[spritenum] = fetchsize * 2 + fetchsize * height * 2 + fetchsize * 2;
+        csd->new_sprite[spritenum] = AllocMem(csd->new_spritedatasize[spritenum], MEMF_CHIP | MEMF_CLEAR);
+        if (!csd->new_sprite[spritenum])
+            return FALSE;
+        csd->new_sprite_width[spritenum] = width;
+        csd->new_sprite_height[spritenum] = height;
+        csd->new_sprite_offset_x[spritenum] = msg->xoffset;
+        csd->new_sprite_offset_y[spritenum] = msg->yoffset;
+    }
+    p = csd->new_sprite[spritenum];
+    p += fetchsize;
+    for(y = 0; y < height; y++) {
+        UWORD xx, xxx, x;
+        for (xx = 0, xxx = 0; xx < width; xx += 16, xxx++) {
+            UWORD pix1 = 0, pix2 = 0;
+            for(x = 0; x < 16; x++) {
+                UBYTE c = 0;
+                if (xx + x < bitmapwidth)
+                {
+                    if (bmcmod != vHidd_ColorModel_TrueColor)
+                        c = HIDD_BM_GetPixel(msg->shape, xx + x, y);
+                    else
+                    {
+                        HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, xx + x, y);
+                        c = 0;
+                        if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
+                            c = av__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF));
+                        else c = 0;
+                    }
+                }
+                pix1 <<= 1;
+                pix2 <<= 1;
+                pix1 |= (c & 1) ? 1 : 0;
+                pix2 |= (c & 2) ? 1 : 0;
+            }
+            p[xxx] = pix1;
+            p[xxx + fetchsize / 2] = pix2;
+        }
+        p += fetchsize;
+    }
+    new_setspritepos(csd, csd->spritex, csd->spritey, data->res, data->interlace, spritenum);
+    new_setspritevisible(csd, csd->spritevisible[spritenum], spritenum);
+    return TRUE;
+}
+
 VOID setspritepos(struct amigavideo_staticdata *csd, WORD x, WORD y, UBYTE res, BOOL interlace)
 {
     UWORD ctl, pos;
@@ -737,6 +837,34 @@ VOID setspritepos(struct amigavideo_staticdata *csd, WORD x, WORD y, UBYTE res, 
     csd->spritectl = ctl;
 }
 
+VOID new_setspritepos(struct amigavideo_staticdata *csd, WORD x, WORD y, UBYTE res, BOOL interlace, int spritenum)
+{
+    UWORD ctl, pos;
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+
+    csd->new_spritex[spritenum] = x;
+    csd->new_spritey[spritenum] = y;
+    if (!csd->new_sprite[spritenum] || csd->new_sprite_height[spritenum] == 0)
+        return;
+
+    x += csd->new_sprite_offset_x[spritenum] << res;
+    x <<= (2 - res); // convert x to shres coordinates
+    x += (csd->startx - 1) << 2; // display left edge offset
+
+    if (interlace)
+        y >>= 1; // y is always in nonlaced
+    y += csd->starty;
+    y += csd->new_sprite_offset_y[spritenum];
+
+    pos = (y << 8) | (x >> 3);
+    ctl = ((y + csd->new_sprite_height[spritenum]) << 8);
+    ctl |= ((y >> 8) << 2) | (((y + csd->new_sprite_height[spritenum]) >> 8) << 1) | ((x >> 2) & 1) | ((x & 3) << 3);
+    csd->new_spritepos[spritenum] = pos;
+    csd->new_spritectl[spritenum] = ctl;
+    custom->spr[spritenum].pos = pos;
+    custom->spr[spritenum].ctl = ctl;
+}
+
 VOID setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
 {
     D(bug("[AmigaVideo] %s()\n", __func__));
@@ -759,6 +887,31 @@ VOID setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
         }
     } else {
         setnullsprite(csd);
+    }
+}
+
+VOID new_setspritevisible(struct amigavideo_staticdata *csd, BOOL visible, int spritenum)
+{
+    D(bug("[AmigaVideo] %s()\n", __func__));
+    
+    csd->spritevisible[spritenum] = visible;
+    if (visible) {
+        if (csd->new_copper1_spritept[spritenum]) {
+            UWORD *p = csd->new_sprite[spritenum];
+            struct amigabm_data *bm;
+            ForeachNode(csd->compositedbms, bm)
+            {
+                if (csd->new_spritey[spritenum] < ((bm->topedge + bm->displayheight) >> bm->interlace))
+                {
+                    setfmode(csd, bm);
+                    break;
+                }
+            }
+            csd->new_copper1_spritept[spritenum][0] = (UWORD)(((ULONG)p) >> 16);
+            csd->new_copper1_spritept[spritenum][2] = (UWORD)(((ULONG)p) >> 0);
+        }
+    } else {
+        new_setnullsprite(csd, spritenum);
     }
 }
 
@@ -1486,6 +1639,15 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
         p[0] = csd->spritepos;
         p[1 << csd->fmode_spr] = csd->spritectl;
     }
+    
+    for(int i=1; i<8; i++)
+    {
+      if (csd->new_sprite[i]) {
+          UWORD *p = csd->new_sprite[i];
+          p[0] = csd->new_spritepos[i];
+          p[1 << csd->fmode_spr] = csd->new_spritectl[i];
+      }
+    }
 
     if (bqvar & BQ_BEAMSYNC)
         bqvar |= BQ_MISSED;
@@ -1554,6 +1716,14 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     /* Reset now we have the bases */
     resetcustom(csd);
     resetsprite(csd);
+    
+    new_resetsprite(csd, 1);
+    new_resetsprite(csd, 2);
+    new_resetsprite(csd, 3);
+    new_resetsprite(csd, 4);
+    new_resetsprite(csd, 5);
+    new_resetsprite(csd, 6);
+    new_resetsprite(csd, 7);
 
     csd->inter.is_Code         = (APTR)gfx_vblank;
     csd->inter.is_Data         = csd;

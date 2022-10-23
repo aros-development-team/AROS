@@ -81,9 +81,8 @@
     }
 
     if (sprite->num) /* We have only sprite #0 for the mouse cursor */
-        return;
-
-    HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);
+        HIDD_Gfx_SetSpritePos(mdd->gfxhidd, sprite->x, sprite->y, sprite->num);
+    else HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);
 
     AROS_LIBFUNC_EXIT
 } /* MoveSprite */
