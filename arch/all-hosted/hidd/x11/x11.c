@@ -43,6 +43,15 @@ VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 #undef XSD
 #define XSD(cl) xsd
 
+struct KeyReleaseInfo
+{
+    BOOL f12_down;
+#if BETTER_REPEAT_HANDLING
+    XEvent keyrelease_event;
+    BOOL keyrelease_pending;
+#endif
+};
+
 /****************************************************************************************/
 
 AROS_INTH1(x11VBlank, struct Task *, task)
@@ -60,14 +69,234 @@ AROS_INTH1(x11VBlank, struct Task *, task)
 
 /****************************************************************************************/
 
+static VOID x11task_process_xevent(struct x11_staticdata *xsd, struct MinList *xwindowlist, XEvent *event,
+        struct KeyReleaseInfo *kri, struct MinList *nmsg_list)
+{
+    struct xwinnode *node;
+    BOOL window_found = FALSE;
+    KeySym ks;
+
+    ForeachNode(xwindowlist, node)
+    {
+        if (node->xwindow == event->xany.window)
+        {
+            window_found = TRUE;
+            break;
+        }
+    }
+
+    if (x11clipboard_want_event(event))
+    {
+        x11clipboard_handle_event(xsd, event);
+    }
+
+    if (window_found)
+    {
+        D(bug("Got event for window %x\n", event->xany.window));
+        switch (event->type)
+        {
+        case GraphicsExpose:
+            break;
+
+        case Expose:
+            LOCK_X11
+            X11BM_ExposeFB(OOP_INST_DATA(OOP_OCLASS(node->bmobj), node->bmobj), event->xexpose.x,
+                    event->xexpose.y, event->xexpose.width, event->xexpose.height);
+            UNLOCK_X11
+            break;
+
+        case ConfigureRequest:
+            bug("!!! CONFIGURE REQUEST !!\n");
+            break;
+
+#if 0
+        /* stegerg: not needed */
+        case ConfigureNotify:
+        {
+            /* The window has been resized */
+
+            XConfigureEvent *me;
+            struct notify_msg *nmsg, *safe;
+
+            me = (XConfigureEvent *)event;
+            ForeachNodeSafe(&nmsg_list, nmsg, safe)
+            {
+                if ( me->window == nmsg->xwindow
+                        && nmsg->notify_type == NOTY_RESIZEWINDOW)
+                {
+                    /*  The window has now been mapped.
+                        Send reply to app */
+
+                    Remove((struct Node *)nmsg);
+                    ReplyMsg((struct Message *)nmsg);
+                }
+            }
+
+            break;
+        }
+#endif
+
+        case ButtonPress:
+            xsd->x_time = event->xbutton.time;
+            D(bug("ButtonPress event\n"));
+
+            ObtainSemaphoreShared(&xsd->sema);
+            if (xsd->mousehidd)
+                Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, event);
+            ReleaseSemaphore(&xsd->sema);
+            break;
+
+        case ButtonRelease:
+            xsd->x_time = event->xbutton.time;
+            D(bug("ButtonRelease event\n"));
+
+            ObtainSemaphoreShared(&xsd->sema);
+            if (xsd->mousehidd)
+                Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, event);
+            ReleaseSemaphore(&xsd->sema);
+            break;
+
+        case MotionNotify:
+            xsd->x_time = event->xmotion.time;
+            D(bug("Motionnotify event\n"));
+
+            ObtainSemaphoreShared(&xsd->sema);
+            if (xsd->mousehidd)
+                Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, event);
+            ReleaseSemaphore(&xsd->sema);
+            break;
+
+        case FocusOut:
+#if !BETTER_REPEAT_HANDLING
+            LOCK_X11
+            XCALL(XAutoRepeatOn, xsd->display);
+            UNLOCK_X11
+#endif
+            break;
+
+        case FocusIn:
+            /* Call the user supplied callback func, if supplied */
+            if (NULL != xsd->activecallback)
+            {
+                xsd->activecallback(xsd->callbackdata, NULL);
+            }
+            break;
+
+        case KeyPress:
+            xsd->x_time = event->xkey.time;
+
+            LOCK_X11
+#if !BETTER_REPEAT_HANDLING
+            XCALL(XAutoRepeatOff, XSD(cl)->display);
+#endif
+            ks = XCALL(XLookupKeysym, (XKeyEvent *)event, 0);
+            if (ks == XK_F12)
+            {
+                kri->f12_down = TRUE;
+            }
+            else if (kri->f12_down && ((ks == XK_Q) || (ks == XK_q)))
+            {
+                CCALL(raise, SIGINT);
+            }
+            UNLOCK_X11
+
+            ObtainSemaphoreShared(&xsd->sema);
+            if (xsd->kbdhidd)
+            {
+                Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, event);
+            }
+            ReleaseSemaphore(&xsd->sema);
+            break;
+
+        case KeyRelease:
+            xsd->x_time = event->xkey.time;
+
+#if BETTER_REPEAT_HANDLING
+            kri->keyrelease_pending = TRUE;
+            kri->keyrelease_event = *event;
+#else
+            LOCK_X11
+            if (XCALL(XLookupKeysym, event, 0) == XK_F12)
+            {
+                kri->f12_down = FALSE;
+            }
+            XCALL(XAutoRepeatOn, XSD(cl)->display);
+            UNLOCK_X11
+
+            ObtainSemaphoreShared( &xsd->sema );
+            if (xsd->kbdhidd)
+            {
+                Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, event);
+            }
+            ReleaseSemaphore( &xsd->sema );
+#endif
+            break;
+
+        case EnterNotify:
+            break;
+
+        case LeaveNotify:
+            break;
+
+        case MapNotify:
+        {
+
+            XMapEvent *me;
+            struct notify_msg *nmsg, *safe;
+            struct xwinnode *node;
+
+            me = (XMapEvent *) event;
+
+            ForeachNodeSafe(nmsg_list, nmsg, safe)
+            {
+                if (me->window == nmsg->xwindow && nmsg->notify_type == NOTY_MAPWINDOW)
+                {
+                    /*  The window has now been mapped.
+                        Send reply to app */
+
+                    Remove((struct Node *) nmsg);
+                    ReplyMsg((struct Message *) nmsg);
+                }
+            }
+
+            /* Find it in the window list and mark it as mapped */
+
+            ForeachNode(&xwindowlist, node)
+            {
+                if (node->xwindow == me->window)
+                {
+                    node->window_mapped = TRUE;
+                }
+            }
+
+            break;
+        }
+
+#if !ADJUST_XWIN_SIZE
+        case ClientMessage:
+        if (event->xclient.data.l[0] == xsd->delete_win_atom)
+        {
+            CCALL(raise, SIGINT);
+        }
+        break;
+#endif
+
+        } /* switch (X11 event type) */
+
+    } /* if (is event for HIDD window) */
+
+}
+
+/****************************************************************************************/
+
 VOID x11task_entry(struct x11task_params *xtpparam)
 {
     ULONG notifysig;
     struct MinList nmsg_list;
     struct MinList xwindowlist;
     ULONG hostclipboardmask;
-    BOOL f12_down = FALSE;
-    KeySym ks;
+    struct KeyReleaseInfo kri;
+    kri.f12_down = FALSE;
 
     /* copy needed parameter's because they are allocated on the parent's stack */
 
@@ -114,8 +343,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     {
         XEvent event;
 #if BETTER_REPEAT_HANDLING
-        XEvent keyrelease_event;
-        BOOL keyrelease_pending = FALSE;
+        kri.keyrelease_pending = FALSE;
 #endif
         struct notify_msg *nmsg;
         ULONG sigs;
@@ -302,7 +530,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
         {
             struct xwinnode *node;
             int pending;
-            BOOL window_found = FALSE;
 
             LOCK_X11
             XCALL(XFlush, xsd->display);
@@ -313,23 +540,23 @@ VOID x11task_entry(struct x11task_params *xtpparam)
             if (pending == 0)
             {
 #if BETTER_REPEAT_HANDLING
-                if (keyrelease_pending)
+                if (kri.keyrelease_pending)
                 {
                     LOCK_X11
-                    if (XCALL(XLookupKeysym, (XKeyEvent *)&keyrelease_event, 0)
+                    if (XCALL(XLookupKeysym, (XKeyEvent *)&kri.keyrelease_event, 0)
                             == XK_F12)
                     {
-                        f12_down = FALSE;
+                        kri.f12_down = FALSE;
                     }
                     UNLOCK_X11
 
                     ObtainSemaphoreShared(&xsd->sema);
                     if (xsd->kbdhidd)
                     {
-                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &keyrelease_event);
+                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &kri.keyrelease_event);
                     }
                     ReleaseSemaphore(&xsd->sema);
-                    keyrelease_pending = FALSE;
+                    kri.keyrelease_pending = FALSE;
                 }
 #endif
 
@@ -344,7 +571,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
             D(bug("Got Event for X=%d\n", event.xany.window));
 
 #if BETTER_REPEAT_HANDLING
-            if (keyrelease_pending)
+            if (kri.keyrelease_pending)
             {
                 BOOL repeated_key = FALSE;
 
@@ -352,15 +579,15 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                  the idea for this was coming from GII, whatever that
                  is. */
 
-                if ((event.xany.window == keyrelease_event.xany.window)
+                if ((event.xany.window == kri.keyrelease_event.xany.window)
                         && (event.type == KeyPress)
-                        && (event.xkey.keycode == keyrelease_event.xkey.keycode)
-                        && ((event.xkey.time - keyrelease_event.xkey.time) < 2))
+                        && (event.xkey.keycode == kri.keyrelease_event.xkey.keycode)
+                        && ((event.xkey.time - kri.keyrelease_event.xkey.time) < 2))
                 {
                     repeated_key = TRUE;
                 }
 
-                keyrelease_pending = FALSE;
+                kri.keyrelease_pending = FALSE;
 
                 if (repeated_key)
                 {
@@ -369,17 +596,17 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                 }
 
                 LOCK_X11
-                if (XCALL(XLookupKeysym, (XKeyEvent *)&keyrelease_event, 0)
+                if (XCALL(XLookupKeysym, (XKeyEvent *)&kri.keyrelease_event, 0)
                         == XK_F12)
                 {
-                    f12_down = FALSE;
+                    kri.f12_down = FALSE;
                 }
                 UNLOCK_X11
 
                 ObtainSemaphoreShared(&xsd->sema);
                 if (xsd->kbdhidd)
                 {
-                    Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &keyrelease_event);
+                    Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &kri.keyrelease_event);
                 }
                 ReleaseSemaphore(&xsd->sema);
             }
@@ -422,214 +649,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
             }
 #endif
 
-            ForeachNode(&xwindowlist, node)
-            {
-                if (node->xwindow == event.xany.window)
-                {
-                    window_found = TRUE;
-                    break;
-                }
-            }
-
-            if (x11clipboard_want_event(&event))
-            {
-                x11clipboard_handle_event(xsd, &event);
-            }
-
-            if (window_found)
-            {
-                D(bug("Got event for window %x\n", event.xany.window));
-                switch (event.type)
-                {
-                case GraphicsExpose:
-                    break;
-
-                case Expose:
-                    LOCK_X11
-                    X11BM_ExposeFB(OOP_INST_DATA(OOP_OCLASS(node->bmobj), node->bmobj), event.xexpose.x,
-                            event.xexpose.y, event.xexpose.width, event.xexpose.height);
-                    UNLOCK_X11
-                    break;
-
-                case ConfigureRequest:
-                    bug("!!! CONFIGURE REQUEST !!\n");
-                    break;
-
-#if 0
-                /* stegerg: not needed */
-                case ConfigureNotify:
-                {
-                    /* The window has been resized */
-
-                    XConfigureEvent *me;
-                    struct notify_msg *nmsg, *safe;
-
-                    me = (XConfigureEvent *)&event;
-                    ForeachNodeSafe(&nmsg_list, nmsg, safe)
-                    {
-                        if ( me->window == nmsg->xwindow
-                                && nmsg->notify_type == NOTY_RESIZEWINDOW)
-                        {
-                            /*  The window has now been mapped.
-                             Send reply to app */
-
-                            Remove((struct Node *)nmsg);
-                            ReplyMsg((struct Message *)nmsg);
-                        }
-                    }
-
-                    break;
-                }
-#endif
-
-                case ButtonPress:
-                    xsd->x_time = event.xbutton.time;
-                    D(bug("ButtonPress event\n"));
-
-                    ObtainSemaphoreShared(&xsd->sema);
-                    if (xsd->mousehidd)
-                        Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, &event);
-                    ReleaseSemaphore(&xsd->sema);
-                    break;
-
-                case ButtonRelease:
-                    xsd->x_time = event.xbutton.time;
-                    D(bug("ButtonRelease event\n"));
-
-                    ObtainSemaphoreShared(&xsd->sema);
-                    if (xsd->mousehidd)
-                        Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, &event);
-                    ReleaseSemaphore(&xsd->sema);
-                    break;
-
-                case MotionNotify:
-                    xsd->x_time = event.xmotion.time;
-                    D(bug("Motionnotify event\n"));
-
-                    ObtainSemaphoreShared(&xsd->sema);
-                    if (xsd->mousehidd)
-                        Hidd_Mouse_X11_HandleEvent(xsd->mousehidd, &event);
-                    ReleaseSemaphore(&xsd->sema);
-                    break;
-
-                case FocusOut:
-#if !BETTER_REPEAT_HANDLING
-                    LOCK_X11
-                    XCALL(XAutoRepeatOn, xsd->display);
-                    UNLOCK_X11
-#endif
-                    break;
-
-                case FocusIn:
-                    /* Call the user supplied callback func, if supplied */
-                    if (NULL != xsd->activecallback)
-                    {
-                        xsd->activecallback(xsd->callbackdata, NULL);
-                    }
-                    break;
-
-                case KeyPress:
-                    xsd->x_time = event.xkey.time;
-
-                    LOCK_X11
-#if !BETTER_REPEAT_HANDLING
-                    XCALL(XAutoRepeatOff, XSD(cl)->display);
-#endif
-                    ks = XCALL(XLookupKeysym, (XKeyEvent *)&event, 0);
-                    if (ks == XK_F12)
-                    {
-                        f12_down = TRUE;
-                    }
-                    else if (f12_down && ((ks == XK_Q) || (ks == XK_q)))
-                    {
-                        CCALL(raise, SIGINT);
-                    }
-                    UNLOCK_X11
-
-                    ObtainSemaphoreShared(&xsd->sema);
-                    if (xsd->kbdhidd)
-                    {
-                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &event);
-                    }
-                    ReleaseSemaphore(&xsd->sema);
-                    break;
-
-                case KeyRelease:
-                    xsd->x_time = event.xkey.time;
-
-#if BETTER_REPEAT_HANDLING
-                    keyrelease_pending = TRUE;
-                    keyrelease_event = event;
-#else
-                    LOCK_X11
-                    if (XCALL(XLookupKeysym, &event, 0) == XK_F12)
-                    {
-                        f12_down = FALSE;
-                    }
-                    XCALL(XAutoRepeatOn, XSD(cl)->display);
-                    UNLOCK_X11
-
-                    ObtainSemaphoreShared( &xsd->sema );
-                    if (xsd->kbdhidd)
-                    {
-                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &event);
-                    }
-                    ReleaseSemaphore( &xsd->sema );
-#endif
-                    break;
-
-                case EnterNotify:
-                    break;
-
-                case LeaveNotify:
-                    break;
-
-                case MapNotify:
-                {
-
-                    XMapEvent *me;
-                    struct notify_msg *nmsg, *safe;
-                    struct xwinnode *node;
-
-                    me = (XMapEvent *) &event;
-
-                    ForeachNodeSafe(&nmsg_list, nmsg, safe)
-                    {
-                        if (me->window == nmsg->xwindow && nmsg->notify_type == NOTY_MAPWINDOW)
-                        {
-                            /*  The window has now been mapped.
-                             Send reply to app */
-
-                            Remove((struct Node *) nmsg);
-                            ReplyMsg((struct Message *) nmsg);
-                        }
-                    }
-
-                    /* Find it in the window list and mark it as mapped */
-
-                    ForeachNode(&xwindowlist, node)
-                    {
-                        if (node->xwindow == me->window)
-                        {
-                            node->window_mapped = TRUE;
-                        }
-                    }
-
-                    break;
-                }
-
-#if !ADJUST_XWIN_SIZE
-                    case ClientMessage:
-                    if (event.xclient.data.l[0] == xsd->delete_win_atom)
-                    {
-                        CCALL(raise, SIGINT);
-                    }
-                    break;
-#endif
-
-                } /* switch (X11 event type) */
-
-            } /* if (is event for HIDD window) */
+            x11task_process_xevent(xsd, &xwindowlist, &event, &kri, &nmsg_list);
 
         } /* while (events from X)  */
 
