@@ -289,6 +289,80 @@ static VOID x11task_process_xevent(struct x11_staticdata *xsd, struct MinList *x
 
 /****************************************************************************************/
 
+static VOID x11task_keyrelease_pre(struct x11_staticdata *xsd, struct KeyReleaseInfo *kri)
+{
+#if BETTER_REPEAT_HANDLING
+    if (kri->keyrelease_pending)
+    {
+        LOCK_X11
+        if (XCALL(XLookupKeysym, (XKeyEvent *)&kri->keyrelease_event, 0)
+                == XK_F12)
+        {
+            kri->f12_down = FALSE;
+        }
+        UNLOCK_X11
+
+        ObtainSemaphoreShared(&xsd->sema);
+        if (xsd->kbdhidd)
+        {
+            Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &kri->keyrelease_event);
+        }
+        ReleaseSemaphore(&xsd->sema);
+        kri->keyrelease_pending = FALSE;
+    }
+#endif
+}
+
+/****************************************************************************************/
+
+static BOOL x11task_keyrelease_post(struct x11_staticdata *xsd, struct KeyReleaseInfo *kri, XEvent *event)
+{
+#if BETTER_REPEAT_HANDLING
+    if (kri->keyrelease_pending)
+    {
+        BOOL repeated_key = FALSE;
+
+        /* Saw this in SDL/X11 code, where a comment says that
+            the idea for this was coming from GII, whatever that
+            is. */
+
+        if ((event->xany.window == kri->keyrelease_event.xany.window)
+                && (event->type == KeyPress)
+                && (event->xkey.keycode == kri->keyrelease_event.xkey.keycode)
+                && ((event->xkey.time - kri->keyrelease_event.xkey.time) < 2))
+        {
+            repeated_key = TRUE;
+        }
+
+        kri->keyrelease_pending = FALSE;
+
+        if (repeated_key)
+        {
+            /* Drop both previous keyrelease and this keypress event. */
+            TRUE;
+        }
+
+        LOCK_X11
+        if (XCALL(XLookupKeysym, (XKeyEvent *)&kri->keyrelease_event, 0)
+                == XK_F12)
+        {
+            kri->f12_down = FALSE;
+        }
+        UNLOCK_X11
+
+        ObtainSemaphoreShared(&xsd->sema);
+        if (xsd->kbdhidd)
+        {
+            Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &kri->keyrelease_event);
+        }
+        ReleaseSemaphore(&xsd->sema);
+    }
+#endif
+    return FALSE;
+}
+
+/****************************************************************************************/
+
 VOID x11task_entry(struct x11task_params *xtpparam)
 {
     ULONG notifysig;
@@ -539,26 +613,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
             if (pending == 0)
             {
-#if BETTER_REPEAT_HANDLING
-                if (kri.keyrelease_pending)
-                {
-                    LOCK_X11
-                    if (XCALL(XLookupKeysym, (XKeyEvent *)&kri.keyrelease_event, 0)
-                            == XK_F12)
-                    {
-                        kri.f12_down = FALSE;
-                    }
-                    UNLOCK_X11
-
-                    ObtainSemaphoreShared(&xsd->sema);
-                    if (xsd->kbdhidd)
-                    {
-                        Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &kri.keyrelease_event);
-                    }
-                    ReleaseSemaphore(&xsd->sema);
-                    kri.keyrelease_pending = FALSE;
-                }
-#endif
+                x11task_keyrelease_pre(xsd, &kri);
 
                 /* Get out of for(;;) loop */
                 break;
@@ -570,47 +625,8 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 
             D(bug("Got Event for X=%d\n", event.xany.window));
 
-#if BETTER_REPEAT_HANDLING
-            if (kri.keyrelease_pending)
-            {
-                BOOL repeated_key = FALSE;
-
-                /* Saw this in SDL/X11 code, where a comment says that
-                 the idea for this was coming from GII, whatever that
-                 is. */
-
-                if ((event.xany.window == kri.keyrelease_event.xany.window)
-                        && (event.type == KeyPress)
-                        && (event.xkey.keycode == kri.keyrelease_event.xkey.keycode)
-                        && ((event.xkey.time - kri.keyrelease_event.xkey.time) < 2))
-                {
-                    repeated_key = TRUE;
-                }
-
-                kri.keyrelease_pending = FALSE;
-
-                if (repeated_key)
-                {
-                    /* Drop both previous keyrelease and this keypress event. */
-                    continue;
-                }
-
-                LOCK_X11
-                if (XCALL(XLookupKeysym, (XKeyEvent *)&kri.keyrelease_event, 0)
-                        == XK_F12)
-                {
-                    kri.f12_down = FALSE;
-                }
-                UNLOCK_X11
-
-                ObtainSemaphoreShared(&xsd->sema);
-                if (xsd->kbdhidd)
-                {
-                    Hidd_Kbd_X11_HandleEvent(xsd->kbdhidd, &kri.keyrelease_event);
-                }
-                ReleaseSemaphore(&xsd->sema);
-            }
-#endif
+            if (x11task_keyrelease_post(xsd, &kri, &event))
+                continue;
 
             if (event.type == MappingNotify)
             {
