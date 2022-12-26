@@ -423,12 +423,12 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
         if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
         {
-            int i, best_index = 0;
-
             D(bug("[png.datatype] %s: %d trans @ 0x%p\n", __func__, num_trans, trans));
 
             if (num_trans > 0)
             {
+                int i, best_index = 0;
+
                 /* We already checked above that there is either only one transparent entry
                    (num_trans == 1) or there is only one non-opaque color (non_opaque == 1) */
                 bmhd->bmh_Masking = mskHasTransparentColor;
