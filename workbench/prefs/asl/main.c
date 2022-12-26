@@ -26,9 +26,6 @@
 
 int main(int argc, char **argv)
 {
-    Object *application;
-    Object *window;
-
     Locale_Initialize();
 
     /* init */
@@ -41,6 +38,8 @@ int main(int argc, char **argv)
         else
         {
             struct Screen *pScreen = NULL;
+            Object *application;
+            Object *window;
 
             if (ARG(PUBSCREEN))
                 pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));

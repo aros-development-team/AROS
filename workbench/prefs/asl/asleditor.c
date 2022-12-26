@@ -114,9 +114,6 @@ static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct AslEditor
 
 BOOL Gadgets2AslPrefs(struct AslEditor_DATA *data)
 {
-    struct AslPrefs *prefs = &aslprefs;
-    IPTR active = 0;
-
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
     return TRUE;
@@ -127,7 +124,6 @@ BOOL Gadgets2AslPrefs(struct AslEditor_DATA *data)
 BOOL AslPrefs2Gadgets(struct AslEditor_DATA *data)
 {
     struct AslPrefs *prefs = &aslprefs;
-    IPTR active = 0;
 
     D(bug("[AslEditor.class] %s()\n", __PRETTY_FUNCTION__));
 

@@ -54,7 +54,7 @@ BOOL Prefs_ImportFH(BPTR fh)
 {
     struct IFFHandle    *handle;
     BOOL                 success = TRUE;
-    LONG                 error;
+
 
     if (!(handle = AllocIFF()))
     {
@@ -65,10 +65,9 @@ BOOL Prefs_ImportFH(BPTR fh)
     handle->iff_Stream = (IPTR) fh;
     InitIFFasDOS(handle);
 
-    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
+    if ((OpenIFF(handle, IFFF_READ)) == 0)
     {
-        BYTE i;
-
+        LONG error;
         // FIXME: We want some sanity checking here!
 
         if ((error = StopChunk(handle, ID_PREF, ID_ASL)) == 0)
@@ -119,7 +118,6 @@ BOOL Prefs_ExportFH(BPTR fh)
     struct PrefHeader header;
     struct IFFHandle *handle;
     BOOL              success = TRUE;
-    LONG              error   = 0;
 
     memset(&header, 0, sizeof(struct PrefHeader));
 
@@ -129,10 +127,10 @@ BOOL Prefs_ExportFH(BPTR fh)
 
         InitIFFasDOS(handle);
 
-        if (!(error = OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
+        if (!(OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
         {
-            BYTE i;
             struct AslPrefs saveprefs = {0};
+            LONG            error;
 
             PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
 
@@ -156,7 +154,7 @@ BOOL Prefs_ExportFH(BPTR fh)
             saveprefs.ap_RelativeLeft   = AROS_WORD2BE(aslprefs.ap_RelativeLeft);
             saveprefs.ap_RelativeTop    = AROS_WORD2BE(aslprefs.ap_RelativeTop);
 
-            error = WriteChunkBytes(handle, &saveprefs, sizeof(struct AslPrefs));
+            WriteChunkBytes(handle, &saveprefs, sizeof(struct AslPrefs));
             error = PopChunk(handle);
 
             if (error != 0) // TODO: We need some error checking here!

@@ -268,13 +268,12 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
 
 VOID LoadPrefs(struct AslBase_intern *AslBase)
 {
-    struct IFFHandle            *iff;
-    struct Library              *IFFParseBase;
+    struct Library *IFFParseBase;
 
     IFFParseBase = OpenLibrary("iffparse.library", 0);
     if (IFFParseBase)
     {
-        iff = AllocIFF();
+        struct IFFHandle *iff = AllocIFF();
         if (iff)
         {
             iff->iff_Stream = (IPTR)Open("ENV:Sys/Asl.prefs", MODE_OLDFILE);

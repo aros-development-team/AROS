@@ -29,19 +29,21 @@ BOOL ReadArguments(int argc, char **argv)
     {
         struct WBStartup *wbmsg = (struct WBStartup *)argv;
         struct WBArg *wbarg = wbmsg->sm_ArgList;
-        struct DiskObject *dobj;
-        STRPTR *toolarray;
-        STRPTR tooltype;
 
         if (wbmsg->sm_NumArgs > 1)
         {
             wbarg++;
             if (wbarg->wa_Lock && *wbarg->wa_Name)
             {
+                struct DiskObject *dobj;
+
                 olddir = CurrentDir(wbarg->wa_Lock);
                 dobj = GetDiskObject(wbarg->wa_Name);
                 if (dobj)
                 {
+                    STRPTR *toolarray;
+                    STRPTR tooltype;
+
                     args[FROM] = (IPTR)wbarg->wa_Name;
                     toolarray = dobj->do_ToolTypes;
                     tooltype = FindToolType(toolarray, "ACTION");
