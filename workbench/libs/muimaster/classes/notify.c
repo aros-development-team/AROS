@@ -279,8 +279,25 @@ static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
     if (tag->ti_Tag != nnode->nn_TrigAttr)
         return;
 
+    if (nnode->nn_TrigVal == MUIV_EveryTime)
+    {
+        donotify = TRUE;
+    }
+    else if (nnode->nn_TrigAttr == MUIA_Window_InputEvent)
+    {
+        if (MatchIX((struct InputEvent *)tag->ti_Data,
+                &((struct NotifyNodeIX *)nnode)->ix))
+        {
+            donotify = TRUE;
+        }
+    }
+    else if (nnode->nn_TrigVal == tag->ti_Data)
+    {
+        donotify = TRUE;
+    }
+
     /* Is the notification already being performed? */
-    if (nnode->nn_Active)
+    if (donotify && nnode->nn_Active)
     {
         static int counter;
 
@@ -319,23 +336,6 @@ static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
 
 #endif
         return;
-    }
-
-    if (nnode->nn_TrigVal == MUIV_EveryTime)
-    {
-        donotify = TRUE;
-    }
-    else if (nnode->nn_TrigAttr == MUIA_Window_InputEvent)
-    {
-        if (MatchIX((struct InputEvent *)tag->ti_Data,
-                &((struct NotifyNodeIX *)nnode)->ix))
-        {
-            donotify = TRUE;
-        }
-    }
-    else if (nnode->nn_TrigVal == tag->ti_Data)
-    {
-        donotify = TRUE;
     }
 
     if (donotify)

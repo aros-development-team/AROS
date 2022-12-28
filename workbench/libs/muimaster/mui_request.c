@@ -92,6 +92,33 @@ AROS_UFH2S(void, len_func,
     Object *req_group;
     Object *req_but[32]; /* shouldn't be more than 32 buttons per requester */
 
+#ifdef __AROS__
+    /* Repack IPTR[] to RAWARG */
+    RAWARG _params;
+    ULONG *_index;
+    ULONG _indexsize = 0, _datasize = 0;
+    UBYTE *ptr;
+    GetDataStreamFromFormat(format, NULL, NULL, NULL, NULL, &_indexsize);
+    _index = (ULONG *)alloca(_indexsize + sizeof(ULONG));
+    GetDataStreamFromFormat(format, NULL, NULL, &_datasize, _index, &_indexsize);
+    _index[_indexsize / sizeof(ULONG)] = _datasize;
+    _params = (RAWARG)alloca(_datasize);
+    ptr = (UBYTE *)_params;
+
+    for (int i = 0; i < _indexsize / sizeof (ULONG); i++)
+    {
+        UBYTE dsize = _index[i + 1] - _index[i];
+
+        switch(dsize)
+        {
+            case (2): *(UWORD *)ptr = (UWORD)((IPTR*)params)[i]; break;
+            case (4): *(ULONG *)ptr = (ULONG)((IPTR*)params)[i]; break;
+            case (8): *(UQUAD *)ptr = (UQUAD)((IPTR*)params)[i]; break;
+        }
+        ptr += dsize;
+    }
+#endif
+
     if (!app)
     {
         struct EasyStruct es;
@@ -100,12 +127,12 @@ AROS_UFH2S(void, len_func,
         es.es_Title        = title;
         es.es_TextFormat   = format;
         es.es_GadgetFormat = gadgets;
-        return EasyRequestArgs(NULL,&es,NULL,params);
+        return EasyRequestArgs(NULL,&es,NULL,_params);
     }
 
     reqtxt_len = 0;
 #ifdef __AROS__
-    RawDoFmt(format,params,(VOID_FUNC)AROS_ASMSYMNAME(len_func),&reqtxt_len);
+    RawDoFmt(format,_params,(VOID_FUNC)AROS_ASMSYMNAME(len_func),&reqtxt_len);
 #else
     RawDoFmt(format,params,(void(*)())&len_func,&reqtxt_len);
 #endif
@@ -118,7 +145,7 @@ AROS_UFH2S(void, len_func,
     {
         char *reqtxtptr = reqtxt;
 
-        RawDoFmt(format, params, (VOID_FUNC)AROS_ASMSYMNAME(cpy_func),
+        RawDoFmt(format, _params, (VOID_FUNC)AROS_ASMSYMNAME(cpy_func),
             &reqtxtptr);
     }
 #else

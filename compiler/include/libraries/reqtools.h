@@ -94,7 +94,7 @@ struct ReqDefaults
     UWORD TopOffset;
     UWORD MinEntries;
     UWORD MaxEntries;
-};
+} __packed;
 
 struct ReqToolsPrefs
 {
@@ -102,12 +102,13 @@ struct ReqToolsPrefs
     ULONG 			PrefsSize;
     struct SignalSemaphore 	PrefsSemaphore;
 
-    /* Start of real preferences */
+    /* Start of real preferences (saved/loaded from ReqTools.prefs) */
     ULONG 			Flags;
     struct ReqDefaults 		ReqDefaults[RTPREF_NR_OF_REQ];
+    /* End of real preferences */
 
     BOOL IsLoaded; /* To avoid multiple loading of preferences */
-};
+} __packed;
 
 #ifdef __AROS__
 #define RTPREFS_SIZE		(4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
@@ -157,7 +158,6 @@ struct ReqToolsBase
              confused by the library bases below.  Add the rt_ prefix to the
              library names to fix the problem (e.g. rt_IntuitionBase). */
 
-
     /* The following library bases may be read and used by your program */
     struct IntuitionBase 	*IntuitionBase;
     struct GfxBase 		*GfxBase;
@@ -169,8 +169,11 @@ struct ReqToolsBase
 
     /* PRIVATE FIELDS, THESE WILL CHANGE FROM RELEASE TO RELEASE! */
 
+    /* The RealOpenCnt is for the buffered AvailFonts feature.  Since
+       Kickstart 3.0 offers low memory handlers a release of ReqTools for 3.0
+       will not use this field and start using the normal OpenCnt again. */
     /* Obsolete, at least for AROS. Dont know about AmigaOS. -ksvalast. */
-    UWORD  RealOpenCnt;
+    UWORD 			RealOpenCnt;
 
     UWORD 			AvailFontsLock;
     struct AvailFontsHeader 	*AvailFontsHeader;

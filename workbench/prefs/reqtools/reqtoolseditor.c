@@ -1,23 +1,16 @@
 /*
-   Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+   Copyright (C) 2013-2022, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <devices/rawkeycodes.h>
-#include <mui/HotkeyString_mcc.h>
 #include <zune/prefseditor.h>
 #include <zune/customclasses.h>
 
-#include <proto/alib.h>
-#include <proto/commodities.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/alib.h>
-
-#include <string.h>
-#include <stdio.h>
 
 #include "reqtoolseditor.h"
 #include "reqtoolsstringify.h"
@@ -46,6 +39,8 @@ struct ReqToolsEditor_DATA
     Object *positionobj;
     Object *offsetxobj;
     Object *offsetyobj;
+
+    BOOL noupdatehook;
 };
 
 /*********************************************************************************************/
@@ -70,10 +65,12 @@ static void SelectDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsE
 
     NNSET((*data)->positionobj, MUIA_Cycle_Active, prefs->ReqDefaults[active].ReqPos);
     NNSET((*data)->sizepercentobj, MUIA_Numeric_Value, prefs->ReqDefaults[active].Size);
+    (*data)->noupdatehook = TRUE;
     NNSET((*data)->offsetxobj, MUIA_String_Integer, prefs->ReqDefaults[active].LeftOffset);
     NNSET((*data)->offsetyobj, MUIA_String_Integer, prefs->ReqDefaults[active].TopOffset);
     NNSET((*data)->minvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MinEntries);
     NNSET((*data)->maxvisobj, MUIA_String_Integer, prefs->ReqDefaults[active].MaxEntries);
+    (*data)->noupdatehook = FALSE;
 }
 
 static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsEditor_DATA **data)
@@ -81,6 +78,9 @@ static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsE
     struct ReqToolsPrefs *prefs = &reqtoolsprefs;
     IPTR active = 0, tmpval;
     BOOL changed = FALSE;
+
+    if ((*data)->noupdatehook)
+        return;
 
     D(bug("[ReqToolsEditor.class] %s()\n", __PRETTY_FUNCTION__));
     
@@ -113,7 +113,7 @@ static void UpdateDefaultsHook(struct Hook *hook, Object *self, struct ReqToolsE
 
 /*********************************************************************************************/
 
-BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
+static BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
 {
     struct ReqToolsPrefs *prefs = &reqtoolsprefs;
     IPTR active = 0;
@@ -121,7 +121,7 @@ BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
     D(bug("[ReqToolsEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
     // Clear options we are about to set..
-    prefs->Flags &= ~(RTPRF_NOSCRTOFRONT | RTPRF_DEFAULTFONT | RTPRF_FKEYS | RTPRB_DOWHEEL | RTPRB_FANCYWHEEL | RTPRF_IMMSORT | RTPRF_DIRSFIRST | RTPRF_DIRSMIXED | RTPRF_NOLED | RTPRF_MMBPARENT);
+    prefs->Flags &= ~(RTPRF_NOSCRTOFRONT | RTPRF_DEFAULTFONT | RTPRF_FKEYS | RTPRF_DOWHEEL | RTPRF_FANCYWHEEL | RTPRF_IMMSORT | RTPRF_DIRSFIRST | RTPRF_DIRSMIXED | RTPRF_NOLED | RTPRF_MMBPARENT);
 
     GET(data->poptofrontobj, MUIA_Selected, &active);
     if (active == 0)
@@ -134,9 +134,9 @@ BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
         prefs->Flags |= RTPRF_FKEYS;
     GET(data->colorwheelstyleobj, MUIA_Cycle_Active, &active);
     if (active > 0)
-        prefs->Flags |= RTPRB_DOWHEEL;
+        prefs->Flags |= RTPRF_DOWHEEL;
     if (active > 1)
-        prefs->Flags |= RTPRB_FANCYWHEEL;
+        prefs->Flags |= RTPRF_FANCYWHEEL;
     GET(data->immediatesortobj, MUIA_Selected, &active);
     if (active != 0)
         prefs->Flags |= RTPRF_IMMSORT;
@@ -158,7 +158,7 @@ BOOL Gadgets2ReqToolsPrefs(struct ReqToolsEditor_DATA *data)
 
 /*********************************************************************************************/
 
-BOOL ReqToolsPrefs2Gadgets(struct ReqToolsEditor_DATA *data)
+static BOOL ReqToolsPrefs2Gadgets(struct ReqToolsEditor_DATA *data)
 {
     struct ReqToolsPrefs *prefs = &reqtoolsprefs;
     IPTR active = 0;
@@ -168,9 +168,9 @@ BOOL ReqToolsPrefs2Gadgets(struct ReqToolsEditor_DATA *data)
     NNSET(data->poptofrontobj, MUIA_Selected, (prefs->Flags & RTPRF_NOSCRTOFRONT) ? 0 : 1);
     NNSET(data->usesysfontobj, MUIA_Selected, (prefs->Flags & RTPRF_DEFAULTFONT) ? 1 : 0);
     NNSET(data->usefunckeysobj, MUIA_Selected, (prefs->Flags & RTPRF_FKEYS) ? 1 : 0);
-    if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == 0)
+    if ((prefs->Flags & (RTPRF_DOWHEEL | RTPRF_FANCYWHEEL)) == 0)
         active = 0;
-    else if ((prefs->Flags & (RTPRB_DOWHEEL | RTPRB_FANCYWHEEL)) == RTPRB_DOWHEEL)
+    else if ((prefs->Flags & (RTPRF_DOWHEEL | RTPRF_FANCYWHEEL)) == RTPRF_DOWHEEL)
         active = 1;
     else
         active = 2;
@@ -414,6 +414,8 @@ IPTR ReqToolsEditor__OM_NEW
         data->minvisobj = minvisobj;
         data->maxvisobj = maxvisobj;
 
+        data->noupdatehook = TRUE;
+
         DoMethod
         (
             poptofrontobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
@@ -482,31 +484,31 @@ IPTR ReqToolsEditor__OM_NEW
 
         DoMethod
         (
-            sizepercentobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            sizepercentobj, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            offsetxobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            offsetxobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            offsetyobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            offsetyobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            minvisobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            minvisobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
         DoMethod
         (
-            maxvisobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            maxvisobj, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&updatedefaultshook, (IPTR)data
         );
 
