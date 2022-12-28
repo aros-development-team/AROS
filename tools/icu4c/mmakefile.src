@@ -9,8 +9,8 @@ ICU_PKGNAME := icu4c
 ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
 
 ICU_EXTRA_OPTS = \
-        --bindir=$(CROSSTOOLSDIR) \
-        --sbindir=$(CROSSTOOLSDIR) \
+        --bindir=$(TOOLDIR) \
+        --sbindir=$(TOOLDIR) \
         --enable-static \
         --disable-strict \
         --disable-dyload \
@@ -22,13 +22,13 @@ ICU_EXTRA_OPTS = \
 
 ICU_REPOSITORY := https://github.com/unicode-org/icu/releases/download/release-$(ICU_MAJOR)-$(ISU_MINOR)
 
-icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
+icu-installflag := $(TOOLDIR)/.installflag-icu-$(ICU_VERSION)
 
 #MM
 tools-crosstools-icu :
-	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	@$(IF) ! $(TEST) -d $(TOOLDIR) \
 	    || ! $(TEST) -f $(icu-installflag) ; then \
-	       $(RM) $(CROSSTOOLSDIR)/$(ICU_PKGNAME)/.files-touched \
+	       $(RM) $(TOOLDIR)/$(ICU_PKGNAME)/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-icu--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-icu--build_and_install-quick \
 	    && $(TOUCH) $(icu-installflag) ; \
@@ -36,9 +36,9 @@ tools-crosstools-icu :
 
 HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(HOST_CXXFLAGS)))
 
-# specify the gendir for icu to be in HOSTDIR so it ends up under CROSSTOOLSDIR, and can be reused
+# specify the gendir for icu to be in HOSTDIR so can be reused
 %fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-src compiler=host \
-	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
-	patch=yes srcdir=icu builddir=source gendir=$(CROSSTOOLSDIR) basedir= \
-	prefix="$(CROSSTOOLSDIR)" \
+	package_repo="$(TOOLDIR)" suffixes="tgz" \
+	patch=yes srcdir=icu builddir=source gendir=$(TOOLDIR) basedir= \
+	prefix="$(TOOLDIR)" \
 	extraoptions="$(ICU_EXTRA_OPTS)" extracflags=$(ICU_FLAGS)
