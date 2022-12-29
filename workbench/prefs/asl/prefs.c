@@ -6,16 +6,14 @@
 
 /*********************************************************************************************/
 
-#include <aros/macros.h>
-
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <prefs/prefhdr.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
-
-#include <aros/cpu.h>
-#include <devices/inputevent.h>
+#include <proto/iffparse.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -23,6 +21,7 @@
 
 #include "prefs.h"
 #include "misc.h"
+#include "locale.h"
 
 /*********************************************************************************************/
 
@@ -85,34 +84,74 @@ BOOL Prefs_ImportFH(BPTR fh)
 
 BOOL Prefs_ExportFH(BPTR fh)
 {
-#if (AROS_BIG_ENDIAN)
-#define saveprefs aslprefs
-#else
-    struct AslPrefs    saveprefs;
-    int                     i;
-#endif
-    BOOL                    retval = FALSE;
+    struct PrefHeader header;
+    struct IFFHandle *handle;
+    BOOL              success = TRUE;
+    LONG              error   = 0;
 
-    D(bug("SavePrefsFH: fh: %lx\n", fh));
+    memset(&header, 0, sizeof(struct PrefHeader));
 
-// #if (!(AROS_BIG_ENDIAN))
-//     saveprefs.Flags = AROS_LONG2BE(aslprefs.Flags);
-//     for(i = 0; i < RTPREF_NR_OF_REQ; i++)
-//     {
-//         saveprefs.ReqDefaults[i].Size = AROS_LONG2BE(aslprefs.ReqDefaults[i].Size);
-//         saveprefs.ReqDefaults[i].ReqPos = AROS_LONG2BE(aslprefs.ReqDefaults[i].ReqPos);
-//         saveprefs.ReqDefaults[i].LeftOffset = AROS_WORD2BE(aslprefs.ReqDefaults[i].LeftOffset);
-//         saveprefs.ReqDefaults[i].TopOffset = AROS_WORD2BE(aslprefs.ReqDefaults[i].TopOffset);
-//         saveprefs.ReqDefaults[i].MinEntries = AROS_WORD2BE(aslprefs.ReqDefaults[i].MinEntries);
-//         saveprefs.ReqDefaults[i].MaxEntries = AROS_WORD2BE(aslprefs.ReqDefaults[i].MaxEntries);
-//     }
-// #endif
-//     if (Write(fh, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
-//     {
-//         retval = TRUE;
-//     }
+    if ((handle = AllocIFF()))
+    {
+        handle->iff_Stream = (IPTR)fh;
 
-    return retval;
+        InitIFFasDOS(handle);
+
+        if (!(error = OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
+        {
+            BYTE i;
+            struct AslPrefs saveprefs = {0};
+
+            PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+
+            header.ph_Version = PHV_CURRENT;
+            header.ph_Type    = 0;
+
+            PushChunk(handle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+
+            WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
+
+            PopChunk(handle);
+
+            error = PushChunk(handle, ID_PREF, ID_ASL, sizeof(struct AslPrefs));
+
+            if (error != 0) // TODO: We need some error checking here!
+            {
+                printf("error: PushChunk() = %d\n", (int)error);
+            }
+
+            CopyMem(&aslprefs, &saveprefs, sizeof(struct AslPrefs));
+            saveprefs.ap_RelativeLeft   = AROS_WORD2BE(aslprefs.ap_RelativeLeft);
+            saveprefs.ap_RelativeTop    = AROS_WORD2BE(aslprefs.ap_RelativeTop);
+
+            error = WriteChunkBytes(handle, &saveprefs, sizeof(struct AslPrefs));
+            error = PopChunk(handle);
+
+            if (error != 0) // TODO: We need some error checking here!
+            {
+                printf("error: PopChunk() = %d\n", (int)error);
+            }
+
+            // Terminate the FORM
+            PopChunk(handle);
+        }
+        else
+        {
+            ShowMessage(_(MSG_CANT_OPEN_STREAM));
+            success = FALSE;
+        }
+
+        CloseIFF(handle);
+        FreeIFF(handle);
+    }
+    else // AllocIFF()
+    {
+        // Do something more here - if IFF allocation has failed, something isn't right
+        ShowMessage(_(MSG_CANT_ALLOCATE_IFFPTR));
+        success = FALSE;
+    }
+
+    return success;
 }
 
 /*********************************************************************************************/
