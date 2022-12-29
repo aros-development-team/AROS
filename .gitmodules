@@ -205,3 +205,6 @@
 [submodule "workbench/system/Wanderer/Tools/Info/catalogs"]
 	path = workbench/system/Wanderer/Tools/Info/catalogs
 	url = https://github.com/aros-translation-team/info.git
+[submodule "workbench/prefs/asl/catalogs"]
+	path = workbench/prefs/asl/catalogs
+	url = https://github.com/aros-translation-team/asl-prefs.git
