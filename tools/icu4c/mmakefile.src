@@ -38,7 +38,7 @@ HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-d
 
 # specify the gendir for icu to be in HOSTDIR so can be reused
 %fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-src compiler=host \
-	package_repo="$(TOOLDIR)" suffixes="tgz" \
+	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
 	patch=yes srcdir=icu builddir=source gendir=$(TOOLDIR) basedir= \
 	prefix="$(TOOLDIR)" \
 	extraoptions="$(ICU_EXTRA_OPTS)" extracflags=$(ICU_FLAGS)
