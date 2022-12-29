@@ -88,6 +88,8 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ULONG                afshortage = 0, afsize = 100;
     WORD                 i;
 
+    SetBusyPointer(ld, AslBase);
+
     FOFreeFonts(ld, AslBase);
 
     do
@@ -106,7 +108,11 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     } while (udata->AFH && afshortage);
 
-    if (!udata->AFH) return ERROR_NO_FREE_STORE;
+    if (!udata->AFH)
+    {
+        ClearBusyPointer(ld, AslBase);
+        return ERROR_NO_FREE_STORE;
+    }
 
     SortAvailFonts(udata->AFH, AslBase);
 
@@ -164,12 +170,12 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
             {
                 ULONG ret;
                 UWORD *funcptr = iforeq->ifo_HookFunc;
-                ULONG *p = (ULONG *)REG_A7 - 3;
+                ULONG *p = ((ULONG *)REG_A7) - 3;
 
+                REG_A7 = (ULONG)p;
                 p[0] = (ULONG)FOF_FILTERFUNC;
                 p[1] = (ULONG)&avf_start->af_Attr;
                 p[2] = (ULONG)ld->ld_Req;
-                REG_A7 = (ULONG)p;
 
                 if (*funcptr >= (UWORD)0xFF00)
                     REG_A7 -= 4;
@@ -181,7 +187,7 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
                 if (*funcptr >= (UWORD)0xFF00)
                     REG_A7 += 4;
 
-                REG_A7 += (3*4);
+                REG_A7 += 3 * sizeof(ULONG);
 
                 if (!ret) continue;
             }
@@ -261,6 +267,8 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
         FORestore(ld, fontname, fontsize, AslBase);
 
     }
+
+    ClearBusyPointer(ld, AslBase);
 
     return IsListEmpty(&udata->NameListviewList) ? ERROR_NO_MORE_ENTRIES : 0;
 
@@ -416,7 +424,7 @@ void FOChangeActiveFont(struct LayoutData *ld, WORD delta, UWORD quali, BOOL jum
                 {
                     if ((node = (struct ASLLVFontReqNode *)FindListNode(&udata->NameListviewList, (WORD)active)))
                     {
-                        if (stricmp(node->node.ln_Name, buffer) == 0) dojump = FALSE;
+                        if (Stricmp(node->node.ln_Name, buffer) == 0) dojump = FALSE;
                     }
                 }
 
@@ -521,7 +529,7 @@ void FOActivateFont(struct LayoutData *ld, WORD which, LONG size, struct AslBase
         size_tags[0].ti_Data = (IPTR)&fontnode->SizeList;
         ForeachNode(&fontnode->SizeList, node)
         {
-            MARK_UNSELECTED(node);
+            //not needed... - Piru MARK_UNSELECTED(node);
             if ((IPTR)node->ln_Name == size)
             {
                 size_tags[1].ti_Data = size_tags[2].ti_Data = sizelvindex;
@@ -587,7 +595,7 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 
 /*****************************************************************************************/
 
-void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct AslBase_intern *AslBase)
+void FORestore(struct LayoutData *ld, CONST_STRPTR fontname, LONG fontsize, struct AslBase_intern *AslBase)
 {
     struct FOUserData       *udata = (struct FOUserData *)ld->ld_UserData;
     struct IntFontReq       *iforeq = (struct IntFontReq *)ld->ld_IntReq;
@@ -601,6 +609,8 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
     char                    *sp;
     WORD                    i = 0;
 
+    fontname = fontname ? fontname : (CONST_STRPTR) "";
+
     strlcpy(initialfontname, fontname, sizeof initialfontname);
     if ((sp = strchr(initialfontname, '.'))) *sp = '\0';
 
@@ -610,7 +620,7 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
 
     ForeachNode(&udata->NameListviewList, fontnode)
     {
-        if (stricmp(fontnode->node.ln_Name, initialfontname) == 0) break;
+        if (Stricmp(fontnode->node.ln_Name, initialfontname) == 0) break;
         i++;
     }
 

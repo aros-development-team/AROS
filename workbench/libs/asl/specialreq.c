@@ -48,8 +48,10 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
     Object              *okbutton = NULL;
     Object              *cancelbutton = NULL;
     Object              *textstring = NULL;
-    WORD                x, x2, y, y2, winwidth, winheight;
+    WORD                x, x2, y, winwidth, winheight;
     WORD                buttonwidth, buttonheight;
+#if SPECIALREQ_COOL_BUTTONS
+    WORD                y2;
 #if USE_SHARED_COOLIMAGES
     const struct CoolImage *useimg = NULL;
     const struct CoolImage *cancelimg = NULL;
@@ -58,13 +60,14 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
     #define cool_cancelimage    (*cancelimg)
 
 #endif
+#endif
 
     STRPTR              retval = NULL;
 
     /* Init */
 
-#if USE_SHARED_COOLIMAGES
 #if SPECIALREQ_COOL_BUTTONS
+#if USE_SHARED_COOLIMAGES
     if (CoolImagesBase)
     {
         useimg    = COOL_ObtainImageA(COOL_USEIMAGE_ID, NULL);
@@ -83,10 +86,10 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
 
     x = TextLength(&ld->ld_DummyRP, oktext, strlen(oktext));
 
+#if SPECIALREQ_COOL_BUTTONS
 #if USE_SHARED_COOLIMAGES
     if (useimg)
 #endif
-#if SPECIALREQ_COOL_BUTTONS
     if (ld->ld_TrueColor)
     {
         x += IMAGEBUTTONEXTRAWIDTH + cool_useimage.width;
@@ -95,10 +98,10 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
 
     x2 = TextLength(&ld->ld_DummyRP, canceltext, strlen(canceltext));
 
+#if SPECIALREQ_COOL_BUTTONS
 #if USE_SHARED_COOLIMAGES
     if (cancelimg)
 #endif
-#if SPECIALREQ_COOL_BUTTONS
     if (ld->ld_TrueColor)
     {
         x2 += IMAGEBUTTONEXTRAWIDTH + cool_cancelimage.width;
@@ -153,6 +156,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
             {TAG_DONE                                   }
         };
 
+#if SPECIALREQ_COOL_BUTTONS
 #if USE_SHARED_COOLIMAGES
         if (useimg)
         {
@@ -163,6 +167,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
         button_tags[3].ti_Tag  = ASLBT_CoolImage;
         button_tags[3].ti_Data = (IPTR)&cool_useimage;
 #endif
+#endif
 
         okbutton = NewObjectA(AslBase->aslbuttonclass, NULL, button_tags);
 
@@ -171,6 +176,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
         button_tags[1].ti_Data = (IPTR)okbutton;
         button_tags[2].ti_Data = CANCEL_ID;
 
+#if SPECIALREQ_COOL_BUTTONS
 #if USE_SHARED_COOLIMAGES
         if (!cancelimg)
         {
@@ -182,6 +188,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
         }
 #else
         button_tags[3].ti_Data = (IPTR)&cool_cancelimage;
+#endif
 #endif
 
         button_tags[5].ti_Data += buttonwidth * 2;

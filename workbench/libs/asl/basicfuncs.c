@@ -221,6 +221,7 @@ VOID ParseCommonTags
             case ASLSM_InitialWidth:
             case ASL_Width: */ /* Obsolete */
                 intreq->ir_Width = (UWORD)tidata;
+                intreq->ir_Flags &= ~IF_SIZE_REL;
                 break;
 
             case ASLFR_InitialHeight:
@@ -228,6 +229,7 @@ VOID ParseCommonTags
             case ASLSM_InitialHeight:
             case ASL_Height: */ /* Obsolete */
                 intreq->ir_Height = (UWORD)tidata;
+                intreq->ir_Flags &= ~IF_SIZE_REL;
                 break;
 
             default:
@@ -659,24 +661,30 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
     struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
     APTR                req = ld->ld_Req;
     struct IntuiMessage *imsg;
-    struct MsgPort      *port;
+    struct MsgPort      *winport;
     BOOL                success = TRUE;
     BOOL                terminated = FALSE;
+    ULONG               winmask;
     
     EnterFunc(bug("HandleEvents(ld=%p, reqinfo=%p)\n", ld, reqinfo));
-    port = ld->ld_Window->UserPort;
+
+    winport = ld->ld_Window->UserPort;
+    if (!winport)
+        winport = ld->ld_Window->WindowPort;
+    winmask = 1L << winport->mp_SigBit;
     
-    if (!port)
-        port = ld->ld_Window->WindowPort;
 
     while (!terminated)
     {
+        ULONG sigmask;
         if (ld->ld_AppMsgPort)
-            Wait((1L << port->mp_SigBit) | (1L << ld->ld_AppMsgPort->mp_SigBit));
+            sigmask = Wait(winmask | (1L << ld->ld_AppMsgPort->mp_SigBit));
         else
-            Wait((1L << port->mp_SigBit));
+            sigmask = Wait(winmask);
 
-        while ((imsg = (struct IntuiMessage *)GetMsg(port)))
+        if (sigmask & winmask)
+        {
+        while ((imsg = (struct IntuiMessage *)GetMsg(winport)))
         {
             if ((imsg->IDCMPWindow == ld->ld_Window) ||
                 (imsg->IDCMPWindow == ld->ld_Window2))
@@ -736,7 +744,8 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
             }
             ReplyMsg((struct Message *)imsg);
 
-        } /* while ((imsg = (struct IntuiMessage *)GetMsg(port))) */
+        } /* while ((imsg = (struct IntuiMessage *)GetMsg(winport))) */
+        }
 
         while ((ld->ld_AppMsgPort) && (ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort)))
         {
@@ -964,7 +973,7 @@ char *PooledCloneString(const char *name1, const char *name2, APTR pool,
     WORD len1 = strlen(name1) + 1;
     WORD len2 = name2 ? strlen(name2) : 0;
 
-    if ((clone = AllocPooled(pool, len1 + len2)))
+    if ((clone = AllocVecPooled(pool, len1 + len2)))
     {
         CopyMem(name1, clone, len1);
         if (name2) CopyMem(name2, clone + len1 - 1, len2 + 1);
@@ -979,7 +988,7 @@ char *PooledCloneStringLen(const char *name1, ULONG len1, const char *name2, ULO
                            struct AslBase_intern *AslBase)
 {
     char *clone;
-    if ((clone = AllocPooled(pool, len1 + len2 + 1)))
+    if ((clone = AllocVecPooled(pool, len1 + len2 + 1)))
     {
         CopyMem(name1, clone, len1);
         clone[len1] = '\0';
@@ -1044,20 +1053,20 @@ AROS_UFH2 (void, puttostr,
 /* This is used for printing out fib_Size, which is why
  * is takes a IPTR instead of a ULONG
  */
-char *PooledUIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase)
+char *PooledIntegerToString(CONST_STRPTR fmt, IPTR value, APTR pool, struct AslBase_intern *AslBase)
 {
-    char buffer[30];
+    char buffer[40];
     char *str = buffer;
     char *clone;
     WORD len;
 
     /* Create the text */
 
-    RawDoFmt("%iu", (RAWARG)&value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
+    RawDoFmt(fmt, (RAWARG)&value, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
 
     len = strlen(buffer) + 1;
 
-    if ((clone = AllocPooled(pool, len)))
+    if ((clone = AllocVecPooled(pool, len)))
     {
         CopyMem(buffer, clone, len);
     }
@@ -1101,6 +1110,28 @@ void CloseWindowSafely(struct Window *window, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
+VOID SetBusyPointer(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    if (!ld->ld_Window)
+        return;
+
+    SetWindowPointer(ld->ld_Window,
+        WA_BusyPointer, TRUE,
+        WA_PointerDelay, TRUE,
+        TAG_DONE);
+}
+
+VOID ClearBusyPointer(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    if (!ld->ld_Window)
+        return;
+
+    SetWindowPointer(ld->ld_Window,
+        TAG_DONE);
+}
+
+/*****************************************************************************************/
+
 AROS_UFH3(ULONG, StringEditFunc,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(struct SGWork *,          sgw,            A2),
@@ -1137,6 +1168,32 @@ AROS_UFH3(ULONG, StringEditFunc,
                     sgw->EditOp  = EO_SPECIAL;
                     sgw->Code    = STRINGCODE_CURSORDOWN;
                     sgw->Actions = SGA_END;
+                    break;
+#if 1
+                case RAWKEY_O:	/* Ok */
+                case RAWKEY_P:	/* Parent */
+                    if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND)
+                    {
+                        sgw->Code    = STRINGCODE_NOP;
+                        sgw->Actions = SGA_END | SGA_REUSE;
+                        break;
+                    }
+                    /* FALL THRU */
+#endif
+                default:
+                    /* do buffer change checks? - Piru */
+                    if (hook->h_SubEntry)
+                    {
+                        /* Buffer changed ?
+                        * Could do something smarter like skipping keys that can't change string..
+                        * - Piru
+                        */
+                        if (strcmp(sgw->WorkBuffer, sgw->PrevBuffer) != 0)
+                        {
+                            sgw->Code    = STRINGCODE_STRCHANGED;
+                            sgw->Actions = SGA_USE | SGA_END;
+                        }
+                    }
                     break;
             }
             break;

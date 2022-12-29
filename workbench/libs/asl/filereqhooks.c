@@ -112,7 +112,9 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
         {
             case ASLLV_FRNTYPE_DIRECTORY:
                 if (node->subtype > 0)
+                {
                     textpen = SHINEPEN;
+                }
                 break;
             case ASLLV_FRNTYPE_VOLUMES:
                 switch(node->subtype)
@@ -126,27 +128,25 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
                 break;
         }
 
-        SetDrMd(rp, JAM1);
-
         switch (msg->lvdm_State)
         {
             case ASLLVR_SELECTED:
-                erasepen = FILLPEN;
-                textpen = FILLTEXTPEN;
+                erasepen = savemode ? textpen : FILLPEN;
+                textpen  = savemode ? TEXTPEN : FILLTEXTPEN;
 
             /* Fall through */
 
             case ASLLVR_NORMAL:
             {
-                WORD              numfit;
-                struct TextExtent te;
 
-                SetAPen(rp, dri->dri_Pens[erasepen]);
+                SetABPenDrMd(rp, dri->dri_Pens[erasepen], 0, JAM1);;
                 RectFill(rp, min_x, min_y, max_x, max_y);
 
                 if (node)
                 {
                     struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;
+                    WORD numfit;
+                    struct TextExtent te;
                     WORD               i;
 
                     SetFont(rp, ld->ld_Font);
@@ -240,18 +240,21 @@ AROS_UFH3(VOID, FRTagHook,
 {
     AROS_USERFUNC_INIT
 
-          struct TagItem    *tag;
-          struct TagItem    *tstate;
-          struct IntFileReq *ifreq;
-    IPTR                     tidata;
+    struct TagItem    *tag;
+    struct TagItem    *tstate;
+    struct IntFileReq *ifreq;
+    IPTR              tidata;
+    struct FileRequester *req;
 
     EnterFunc(bug("FRTagHook(hook=%p, pta=%p)\n", hook, pta));
 
     ifreq = (struct IntFileReq *)pta->pta_IntReq;
+    req   = (struct FileRequester *)pta->pta_Req;
 
     tstate = pta->pta_Tags;
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
+        STRPTR new;
         tidata = tag->ti_Data;
 
         switch (tag->ti_Tag)
@@ -260,25 +263,40 @@ AROS_UFH3(VOID, FRTagHook,
             and therefor we only use one of them, but the effect is for all of them
             */
             case ASLFR_InitialDrawer:
-            /*        case ASL_Dir:  Obsolete */
-                if (tidata)
-                    ifreq->ifr_Drawer = (STRPTR)tidata;
+            /* case ASL_Dir:  Obsolete */
+                new = (STRPTR) (tidata ? tidata : (IPTR) "");
+                new = VecPooledCloneString(new, NULL, GetIR(ifreq)->ir_MemPool, AslBase);
+                if (new)
+                {
+                    MyFreeVecPooled(req->fr_Drawer, AslBase);
+                    ifreq->ifr_Drawer = req->fr_Drawer = new;
+                }
                 break;
 
             case ASLFR_InitialFile:
             /* case ASL_File:  Obsolete */
-                if (tidata)
-                    ifreq->ifr_File = (STRPTR)tidata;
+                new = (STRPTR) (tidata ? tidata : (IPTR) "");
+                new = VecPooledCloneString(new, NULL, GetIR(ifreq)->ir_MemPool, AslBase);
+                if (new)
+                {
+                    MyFreeVecPooled(req->fr_File, AslBase);
+                    ifreq->ifr_File = req->fr_File = new;
+                }
                 break;
 
             case ASLFR_InitialPattern:
             /*        case ASL_Pattern:  Obsolete */
-                if (tidata)
-                    ifreq->ifr_Pattern = (STRPTR)tidata;
+                new = (STRPTR) (tidata ? tidata : (IPTR) "");
+                new = VecPooledCloneString(new, NULL, GetIR(ifreq)->ir_MemPool, AslBase);
+                if (new)
+                {
+                    MyFreeVecPooled(req->fr_Pattern, AslBase);
+                    ifreq->ifr_Pattern = req->fr_Pattern = new;
+                }
                 break;
 
             case ASLFR_UserData:
-                ((struct FileRequester *)pta->pta_Req)->fr_UserData = (APTR)tidata;
+                req->fr_UserData = (APTR)tidata;
                 break;
 
             /* Options */
@@ -401,6 +419,15 @@ AROS_UFH3(VOID, FRTagHook,
     {
         ifreq->ifr_Flags1 &= ~FRF_DOMULTISELECT;
     }
+
+    /* 20-jan-2003: Copy some fields from internal structure to public.
+     * fix some problems with for example CygnusEd getting bogus requester
+     * size.
+     */
+    req->fr_LeftEdge = GetIR(ifreq)->ir_LeftEdge;
+    req->fr_TopEdge  = GetIR(ifreq)->ir_TopEdge;
+    req->fr_Width    = GetIR(ifreq)->ir_Width;
+    req->fr_Height   = GetIR(ifreq)->ir_Height;
 
     ReturnVoid("FRTagHook");
 
@@ -526,11 +553,15 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     NEWLIST(&udata->ListviewList);
 
     udata->StringEditHook.h_Entry    = (APTR)AROS_ASMSYMNAME(StringEditFunc);
-    udata->StringEditHook.h_SubEntry = NULL;
+    udata->StringEditHook.h_SubEntry = (APTR) 0;  /* No buffer change checks */
     udata->StringEditHook.h_Data     = AslBase;
 
+    udata->FileEditHook.h_Entry      = (APTR)AROS_ASMSYMNAME(StringEditFunc);
+    udata->FileEditHook.h_SubEntry   = (APTR) 1;  /* Special flag, do buffer change checks */
+    udata->FileEditHook.h_Data       = AslBase;
+
     udata->ListviewHook.h_Entry      = (APTR)AROS_ASMSYMNAME(ASLFRRenderHook);
-    udata->ListviewHook.h_SubEntry   = NULL;
+    udata->ListviewHook.h_SubEntry   = (APTR) ifreq;
     udata->ListviewHook.h_Data       = AslBase;
 
     /* calc. min. size */
@@ -878,6 +909,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
             string_tags[5].ti_Data = (IPTR)si[i].text;
             string_tags[6].ti_Data = si[i].maxchars;
             string_tags[7].ti_Data = si[i].gadid;
+            string_tags[11].ti_Data = i == 2 ? (IPTR)&udata->FileEditHook : (IPTR)&udata->StringEditHook;
 
             *(si[i].objvar) = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
             if (!gad) goto failure;
@@ -909,6 +941,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     SetAttrs(udata->Listview, ASLLV_Labels, (IPTR)&udata->ListviewList,
                               TAG_DONE);
+    /* 10-Mar-2003 bugfix: Jump to the closest filename the listview - Piru
+     */
+    FRChangeActiveLVItem(ld, 0, LVUP_NOGADUPDATE, (struct Gadget *)udata->FileGad, AslBase);
 
     ld->ld_GList = (struct Gadget *)udata->Listview;
 
@@ -1266,7 +1301,12 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                         break;
 
                     case ID_STRFILE:
-                        if (imsg->Code == STRINGCODE_CURSORUP)
+                        if (imsg->Code == STRINGCODE_STRCHANGED)
+                        {
+                            FRChangeActiveLVItem(ld, 0, LVUP_NOGADUPDATE, (struct Gadget *)udata->FileGad, AslBase);
+                            break;
+                        }
+                        else if (imsg->Code == STRINGCODE_CURSORUP)
                         {
                             FRChangeActiveLVItem(ld, -1, imsg->Qualifier, (struct Gadget *)udata->FileGad, AslBase);
                             break;
@@ -1298,7 +1338,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                                     FRNewPath(filestring, ld, AslBase);
                                     FRSetFile("", ld, AslBase);
                                 }
-                                else if (stricmp(filestring,  "/") == 0)
+                                else if (strcmp(filestring,  "/") == 0)
                                 {
                                     FRParentPath(ld, AslBase);
                                     FRSetFile("", ld, AslBase);
@@ -1415,8 +1455,13 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                             {
                                 if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
                                 {
-                                    retval = FRGetSelectedFiles(ld, ASLB(AslBase));
-                                    break;
+                                    /* 21-Jul-2003 bugfix: Now return actually enter subdirs
+                                    * instead of terminating the requester. - Piru
+                                    */
+                                    //retval = FRGetSelectedFiles(ld, ASLB(AslBase));
+                                    //break;
+                                    ActivateGadget((struct Gadget *)udata->PathGad, ld->ld_Window, NULL);
+                                    udata->Flags &= ~FRFLG_SUBDIR_ADDED;
                                 }
                                 else
                                 {
@@ -1438,22 +1483,59 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
                         if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
                         {
+                            ULONG len;
+#define MAXDEVNAME 64
+                            UBYTE devname[MAXDEVNAME];
+
                             switch(node->type)
                             {
                                 case ASLLV_FRNTYPE_VOLUMES:
-                                    FRNewPath((STRPTR)node->text[0], ld, AslBase);
+                                    /* Get "Name:" out of "(Name)" */
+                                    len = strlen(node->text[1]);
+                                    if (len > 2 && len < (MAXDEVNAME + 1))
+                                    {
+                                        memcpy(devname, &node->text[1][1], len - 2);
+                                        devname[len - 2] = ':';
+                                        devname[len - 1] = '\0';
+                                    }
+                                    else
+                                    {
+                                        devname[0] = '\0';
+                                    }
+
+                                    if (FRIsDupeVolume((STRPTR)node->text[0], ld, AslBase) && devname[0])
+                                    {
+                                        /* Dupe volumes: Use devicename to avoid confusion! - Piru */
+                                        if (!FRNewPath(devname, ld, AslBase))
+                                        {
+                                            FRNewPath((STRPTR)node->text[0], ld, AslBase);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!FRNewPath((STRPTR)node->text[0], ld, AslBase) && devname[0])
+                                        {
+                                            FRNewPath(devname, ld, AslBase);
+                                        }
+                                    }
                                     break;
 
                                 case ASLLV_FRNTYPE_DIRECTORY:
                                     if (node->subtype > 0)
                                     {
+                                        /* 14-May-2003 bugfix: If multiselecting, don't enter the directory unless if doubleclicked.
+                                            */
+                                        if ((imsg->Code & ASLLV_CODE_DOUBLECLICK) ||
+                                            !(imsg->Code & ASLLV_CODE_MULTISELECT))
+                                        {
                                         FRAddPath((STRPTR)node->text[0], ld, AslBase);
+                                        }
                                     }
                                     else
                                     {
                                         FRSetFile((STRPTR)node->text[0], ld, AslBase);
 
-                                        if (    (imsg->Code)                           /* TRUE if double clicked */
+                                        if ((imsg->Code & ASLLV_CODE_DOUBLECLICK) /* TRUE if double clicked */
                                              && !(ifreq->ifr_Flags1 & FRF_DOSAVEMODE)) /* disallowed in save mode */
                                         {
                                             retval = FRGetSelectedFiles(ld, AslBase);
@@ -1508,6 +1590,9 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                                         FRSetFile(ifreq->ifr_File, ld, AslBase);
                                     }
                                     FRNewPath(ifreq->ifr_Drawer, ld, AslBase);
+                                    /* 10-Mar-2003 bugfix: Jump to the closest filename the listview - Piru
+                                        */
+                                    FRChangeActiveLVItem(ld, 0, LVUP_NOGADUPDATE, (struct Gadget *)udata->FileGad, AslBase);
                                     break;
 
                                 case FRMEN_PARENT:
@@ -1739,6 +1824,19 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
 
                 req->fr_ArgList = wbarg;
 
+                /* 12-feb-2003 bugfix: only get from listview if more than one file is selected.
+                 * this fix the annoying 'autocomplete-on-return-for-multiselect' -bug reported
+                 * by bigfoot. - Piru
+                 */
+
+                /* 22-jul-2003 bugfix: Also be careful to build entry for single file,
+                 * but only if file-stringgadget has a filename. - Piru
+                 */
+
+                if (numargs > 1 || req->fr_File[0])
+                {
+                    if (numargs > 1)
+                    {
                 ForeachNode(&udata->ListviewList, node)
                 {
                     if (i == numselected) break;
@@ -1756,8 +1854,9 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
                     }
 
                 } /* ForeachNode(&udata->ListviewList, node) */
+                    }
 
-                if (i == 0)
+                if (i == 0 && req->fr_File[0])
                 {
                     if ((wbarg->wa_Name = VecPooledCloneString(req->fr_File, NULL, intreq->ir_MemPool, AslBase)))
                     {
@@ -1774,6 +1873,8 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
                     req->fr_NumArgs = i;
                     lock = 0; /* clear lock to avoid that it is unlocked below */
                 }
+
+            } /* if (numargs > 1) */
 
             } /* if ((wbarg = MyAllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs, AslBase))) */
 

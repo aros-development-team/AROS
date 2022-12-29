@@ -84,6 +84,9 @@
         {
             CopyMem(reqinfo->DefaultReq, intreq, reqinfo->IntReqSize);
 
+            if (ASLB(AslBase)->Prefs.ap_SizePosition & 0x10)
+                intreq->ir_Flags |= IF_SIZE_REL;
+
             if (intreq->ir_MemPoolPuddle)
             {
                 intreq->ir_MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,

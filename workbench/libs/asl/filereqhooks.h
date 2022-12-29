@@ -60,6 +60,7 @@ struct FRUserData
     struct List                 ListviewList;
     struct Hook                 ListviewHook;
     struct Hook                 StringEditHook;
+    struct Hook                 FileEditHook;
     STRPTR                      SelectPattern;
     UWORD                       ButWidth;
     UWORD                       ButHeight;
@@ -73,6 +74,7 @@ struct FRUserData
 
 #define FRFLG_LAYOUTED          (1 << 0)
 #define FRFLG_SHOWING_VOLUMES   (1 << 1)
+#define FRFLG_SUBDIR_ADDED      (1 << 2)
 
 /* Menu IDs */
 

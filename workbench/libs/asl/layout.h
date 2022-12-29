@@ -93,6 +93,7 @@ struct AslBase_intern;
 #define STRINGCODE_CURSORUP     1
 #define STRINGCODE_CURSORDOWN   2
 #define STRINGCODE_NOP          3
+#define STRINGCODE_STRCHANGED   4
 
 /*****************************************************************************************/
 
@@ -214,6 +215,8 @@ struct ASLLVFileReqNode
 #define MARK_NO_MULTISEL(x) (((struct Node *)(x))->ln_Pri &= ~NODEPRIF_MULTISEL)
 #define IS_MULTISEL(x)      (((struct Node *)(x))->ln_Pri &   NODEPRIF_MULTISEL)
 
+#define ASLLV_CODE_DOUBLECLICK		(1 << 0)
+#define ASLLV_CODE_MULTISELECT		(1 << 1)
 
 /*****************************************************************************************/
 

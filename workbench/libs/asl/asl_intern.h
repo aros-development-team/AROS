@@ -45,7 +45,13 @@
 #    include "layout.h"
 #endif
 
-#include <dos/dos.h>
+#ifndef DOS_DOS_H
+#    include <dos/dos.h>
+#endif
+
+#ifndef PREFS_ASL_H
+#    include <prefs/asl.h>
+#endif
 
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
@@ -269,6 +275,7 @@ struct AslReqInfo
 #define IF_POPTOFRONT    (1 << 4)
 #define IF_POPPEDTOFRONT (1 << 5)
 #define IF_OPENINACTIVE  (1 << 6)
+#define IF_SIZE_REL      (1 << 7) /* Should the width/height calculation be relative */
 
 #define GetIR(ir) ((struct IntReq *)ir)
 
@@ -277,6 +284,7 @@ struct AslBase_intern
     struct Library              Lib;
     struct MinList              ReqList;
     struct SignalSemaphore      ReqListSem;
+    struct AslPrefs             Prefs;
     struct AslReqInfo           ReqInfo[3];
     Class                       *aslpropclass;
     Class                       *aslarrowclass;
@@ -316,8 +324,10 @@ char *PooledCloneStringLen(const char *name1, ULONG len1, const char *name2, ULO
 char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern *AslBase);
 char *VecPooledCloneString(const char *name1, const char *name2, APTR pool,
                            struct AslBase_intern *AslBase);
-char *PooledUIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase);
+char *PooledIntegerToString(CONST_STRPTR fmt, IPTR value, APTR pool, struct AslBase_intern *AslBase);
 void CloseWindowSafely(struct Window *window, struct AslBase_intern *AslBase);
+VOID SetBusyPointer(struct LayoutData *, struct AslBase_intern *);
+VOID ClearBusyPointer(struct LayoutData *, struct AslBase_intern *);
 
 AROS_UFP3(ULONG, StringEditFunc,
     AROS_UFPA(struct Hook *,            hook,           A0),

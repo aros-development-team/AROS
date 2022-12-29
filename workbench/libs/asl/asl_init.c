@@ -18,6 +18,8 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/iffparse.h>
+#include <prefs/prefhdr.h>
 
 #include "asl_intern.h"
 #include LC_LIBDEFS_FILE
@@ -29,6 +31,9 @@
 #include <aros/debug.h>
 
 /*****************************************************************************************/
+
+#define DEF_WIDTH   400
+#define DEF_HEIGHT  500
 
 /* Requester type specific default data */
 const struct IntFileReq def_filereq =
@@ -50,7 +55,7 @@ const struct IntFileReq def_filereq =
         NULL,                   /* PositiveText         */
         NULL,                   /* NegativeText         */
         -1, -1,                 /* --> center on screen */
-        300, 300,               /* Width/Height         */
+        DEF_WIDTH, DEF_HEIGHT,  /* Width/Height         */
         IF_POPTOFRONT
     },
 
@@ -93,7 +98,7 @@ const struct IntSMReq def_smreq =
         NULL,                           /* PositiveText         */
         NULL,                           /* NegativeText         */
         -1, -1,                         /* --> center on screen */
-        300, 300,                       /* Width/Height         */
+        DEF_WIDTH, DEF_HEIGHT,          /* Width/Height         */
         IF_POPTOFRONT
     },
 
@@ -142,7 +147,7 @@ const struct IntFontReq def_fontreq =
         NULL,                           /* PositiveText         */
         NULL,                           /* NegativeText         */
         -1, -1,                         /* --> center on screen */
-        300, 300,                       /* Width/Height         */
+        DEF_WIDTH, DEF_HEIGHT,          /* Width/Height         */
         IF_POPTOFRONT
     },
     {"topaz", 8, FS_NORMAL,FPF_ROMFONT},/* Default textattr     */
@@ -170,6 +175,7 @@ LONG CoolImagesBase_version = -1;
 /*****************************************************************************************/
 
 VOID InitReqInfo(struct AslBase_intern *);
+VOID LoadPrefs(struct AslBase_intern *);
 
 /*****************************************************************************************/
 
@@ -183,12 +189,26 @@ static int InitBase(LIBBASETYPEPTR LIBBASE)
 
     InitReqInfo(LIBBASE);
 
-    return TRUE;
+    return 1;
 }
 
 /*****************************************************************************************/
 
 ADD2INITLIB(InitBase, 0);
+
+/*****************************************************************************************/
+
+static int OpenBase(LIBBASETYPEPTR LIBBASE)
+{
+    if (!(LIBBASE->Prefs.ap_Reserved[0] & 0x1))
+        LoadPrefs(LIBBASE);
+
+    return 1;
+}
+
+/*****************************************************************************************/
+
+ADD2OPENLIB(OpenBase, 0);
 
 /*****************************************************************************************/
 
@@ -242,6 +262,49 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     bzero(&(reqinfo->GadgetryHook), sizeof (struct Hook));
     reqinfo->ParseTagsHook.h_Entry      = (void *)AROS_ASMSYMNAME(SMTagHook);
     reqinfo->GadgetryHook.h_Entry       = (void *)AROS_ASMSYMNAME(SMGadgetryHook);
+}
+
+/*****************************************************************************************/
+
+VOID LoadPrefs(struct AslBase_intern *AslBase)
+{
+    struct Library *IFFParseBase;
+
+    IFFParseBase = OpenLibrary("iffparse.library", 0);
+    if (IFFParseBase)
+    {
+        struct IFFHandle *iff = AllocIFF();
+        if (iff)
+        {
+            iff->iff_Stream = (IPTR)Open("ENV:Sys/Asl.prefs", MODE_OLDFILE);
+            if (iff->iff_Stream)
+            {
+                InitIFFasDOS(iff);
+                if (OpenIFF(iff, IFFF_READ) == 0)
+                {
+                    if (StopChunk(iff, ID_PREF, ID_ASL) == 0)
+                    {
+                        if (ParseIFF(iff, IFFPARSE_SCAN) == 0)
+                        {
+                            ReadChunkBytes(iff, &AslBase->Prefs, sizeof(struct AslPrefs));
+
+                            AslBase->Prefs.ap_RelativeLeft  = AROS_BE2WORD(AslBase->Prefs.ap_RelativeLeft);
+                            AslBase->Prefs.ap_RelativeTop   = AROS_BE2WORD(AslBase->Prefs.ap_RelativeTop);
+                            AslBase->Prefs.ap_Reserved[0]   |= 0x1; /* loaded */
+                        }
+                    }
+
+                    CloseIFF(iff);
+                } /* if (OpenIFF(iff)) */
+                Close((BPTR)iff->iff_Stream);
+
+            } /* if (iff->iff_Stream) */
+            FreeIFF(iff);
+
+        } /* if (iff) */
+        CloseLibrary(IFFParseBase);
+
+    } /* if (IFFParseBase) */
 }
 
 /*****************************************************************************************/

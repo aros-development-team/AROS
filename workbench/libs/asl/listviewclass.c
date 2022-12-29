@@ -454,13 +454,13 @@ IPTR AslListView__OM_SET(Class * cl, Object * o, struct opSet * msg)
             case ASLLV_Active:
                 {
                     struct Node *node;
-                    WORD        n = 0;
                     WORD        old_active = data->active;
 
                     data->active = (WORD)tidata;
 
                     if (data->domultiselect)
                     {
+                        WORD n = 0;
                         ForeachNode(data->labels, node)
                         {
                             if (IS_MULTISEL(node) && IS_SELECTED(node) && (n != data->active))
@@ -796,7 +796,9 @@ IPTR AslListView__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             switch(code)
             {
                 case SELECTUP:
-                    *msg->gpi_Termination = data->doubleclicked;
+                    *msg->gpi_Termination =
+                        (data->doubleclicked ? ASLLV_CODE_DOUBLECLICK : 0) |
+                        (data->multiselecting ? ASLLV_CODE_MULTISELECT : 0);
                     retval = GMR_VERIFY | GMR_NOREUSE;
                     break;
 
@@ -823,6 +825,41 @@ IPTR AslListView__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                             {
                                 MARK_UNSELECTED(old);
                                 rendersingleitem(cl, o, msg->gpi_GInfo, data->active);
+                            }
+                            else
+                            {
+                                ULONG i;
+                                struct Node *tmp;
+
+                                if (n > data->active)
+                                {
+                                    if (n-data->active > 1)
+                                    {
+                                        for (i = data->active+1; i < n; i++)
+                                        {
+                                            tmp = findnode(cl, o, i);
+
+                                            if (!IS_SELECTED(tmp))
+                                            {
+                                                MARK_SELECTED(tmp);
+                                                rendersingleitem(cl, o, msg->gpi_GInfo, i);
+                                            }
+                                        }
+                                    }
+                                }
+                                else if(data->active-n > 1)
+                                {
+                                    for(i = data->active-1; i > n; i--)
+                                    {
+                                        tmp = findnode(cl, o, i);
+
+                                        if (!IS_SELECTED(tmp))
+                                        {
+                                            MARK_SELECTED(findnode(cl, o, i));
+                                            rendersingleitem(cl, o, msg->gpi_GInfo, i);
+                                        }
+                                    }
+                                }
                             }
 
                             MARK_SELECTED(new);

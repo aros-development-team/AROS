@@ -136,9 +136,24 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 
             memset(&nw, 0L, sizeof (struct NewWindow));
 
-            nw.Width    = (intreq->ir_Width > ld->ld_MinWidth) ? intreq->ir_Width : ld->ld_MinWidth;
-            nw.Height   = (intreq->ir_Height > ld->ld_MinHeight) ? intreq->ir_Height : ld->ld_MinHeight;
+            /* Size */
+            if (intreq->ir_Flags & IF_SIZE_REL)
+            {
+                nw.Width    = ld->ld_Screen->ViewPort.DWidth * ASLB(AslBase)->Prefs.ap_RelativeWidth / 100;
+                nw.Height   = ld->ld_Screen->ViewPort.DHeight * ASLB(AslBase)->Prefs.ap_RelativeHeight / 100;
+                /* Used only once. Next time requester is opened, it will remember it positions and size */
+                intreq->ir_Flags &= ~IF_SIZE_REL;
+            }
+            else
+            {
+                nw.Width    = intreq->ir_Width;
+                nw.Height   = intreq->ir_Height;
+            }
 
+            if (nw.Width < ld->ld_MinWidth) nw.Width = ld->ld_MinWidth;
+            if (nw.Height < ld->ld_MinHeight) nw.Height = ld->ld_MinHeight;
+
+            /* Position */
             if (intreq->ir_LeftEdge >= 0)
             {
                 nw.LeftEdge = intreq->ir_LeftEdge;
@@ -192,6 +207,9 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
             win = OpenWindowTagList(&nw, wintags);
             if (win)
             {
+                struct Window *oldwinptr = (struct Window *) -1;
+                struct Process *Self;
+
                 if (!privateidcmp)
                 {
                     win->UserPort = intreq->ir_Window->UserPort;
@@ -230,6 +248,18 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
                 D(bug("Window limits set\n"));
 
                 SetFont(win->RPort, ld->ld_Font);
+
+
+                /* Set process windowpointer to catch possible requesters
+                    to correct screen & relative to requester window. - Piru
+                    */
+                Self = (struct Process *) FindTask(NULL);
+                if (Self->pr_WindowPtr != (struct Window *) -1)
+                {
+                    oldwinptr = Self->pr_WindowPtr;
+                    Self->pr_WindowPtr = win;
+                }
+
 
                 /* Layout the requester */
                 ld->ld_Command = LDCMD_LAYOUT;
@@ -278,6 +308,11 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
                     CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase));
 
                 } /* if (CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase))) */
+
+                if (oldwinptr != (struct Window *) -1)
+                {
+                    Self->pr_WindowPtr = oldwinptr;
+                }
 
                 /* win is closed in FreeCommon */
 
