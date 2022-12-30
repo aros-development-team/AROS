@@ -41,6 +41,16 @@ AROS_UFH2S(void, len_func,
     
     AROS_USERFUNC_EXIT
 }
+
+static void muiDataStreamFromFormat(CONST_STRPTR format, APTR dataStream,  ULONG *dataSize,
+                             ULONG *indexStream, ULONG *indexSize, ...)
+{
+    va_list empty;
+    va_start(empty, indexSize);
+    GetDataStreamFromFormat(format, empty, dataStream, dataSize,
+                        indexStream, indexSize);
+    va_end(empty);
+}
 #endif
 
 /*****************************************************************************
@@ -98,9 +108,9 @@ AROS_UFH2S(void, len_func,
     ULONG *_index;
     ULONG _indexsize = 0, _datasize = 0;
     UBYTE *ptr;
-    GetDataStreamFromFormat(format, NULL, NULL, NULL, NULL, &_indexsize);
+    muiDataStreamFromFormat(format, NULL, NULL, NULL, &_indexsize);
     _index = (ULONG *)alloca(_indexsize + sizeof(ULONG));
-    GetDataStreamFromFormat(format, NULL, NULL, &_datasize, _index, &_indexsize);
+    muiDataStreamFromFormat(format, NULL, &_datasize, _index, &_indexsize);
     _index[_indexsize / sizeof(ULONG)] = _datasize;
     _params = (RAWARG)alloca(_datasize);
     ptr = (UBYTE *)_params;
