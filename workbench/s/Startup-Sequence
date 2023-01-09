@@ -3,13 +3,13 @@ SetClock LOAD
 FailAt 21
 
 If NOT EXISTS "RAM:Clipboards"
-    Makedir "RAM:Clipboards"
+    MakeDir "RAM:Clipboards"
 EndIf
 If NOT EXISTS "RAM:T"
-    Makedir "RAM:T"
+    MakeDir "RAM:T"
 EndIf
 If NOT EXISTS "RAM:ENV"
-    Makedir "RAM:ENV"
+    MakeDir "RAM:ENV"
     Assign "ENV:" "RAM:ENV"
 EndIf
 
@@ -56,36 +56,36 @@ EndIf
 
 If EXISTS "Sys:RexxC"
     Path "Sys:RexxC" ADD QUIET
-Endif
+EndIf
 
 Copy >NIL: "ENVARC:" "ENV:" ALL NOPRO NOREQ PAT "~(def_#?.info)"
 
 If EXISTS "ENV:SYS/theme.var"
     Assign "THEME:" "${SYS/theme.var}"
-else
+Else
     Assign "THEME:" "THEMES:AROSDefault"
-endif
+EndIf
 If EXISTS "THEME:Images"
     Assign "IMAGES:"  "THEME:Images" PREPEND
-endif
+EndIf
 
 Touch >NIL: "FONTS:__TEST__"
 If WARN
     Makedir "RAM:Fonts"
     Assign "FONTS:" "RAM:Fonts"
     Copy >NIL: "SYS:Fonts" "FONTS:" ALL CLONE NOREQ
-Endif
+EndIf
 Assign >NIL: "FONTS:" "FONTS:Russian" ADD
 
-IF EXISTS "FONTS:__TEST__"
+If EXISTS "FONTS:__TEST__"
     Delete "FONTS:__TEST__" QUIET
-Endif
+EndIf
 
 If NOT EXISTS "FONTS:fixed.font"
     FixFonts
 EndIf
 
-AddDatatypes REFRESH QUIET
+AddDataTypes REFRESH QUIET
 IPrefs
 PsdStackLoader >NIL:
 Run <NIL: >NIL: QUIET ConClip
@@ -99,7 +99,7 @@ If EXISTS "C:Decoration"
     If EXISTS "ENV:SYS/theme.var"
         C:Decoration <NIL: >NIL:
     EndIf
-Endif
+EndIf
 
 Assign EXISTS "Extras:" >NIL:
 If WARN
@@ -111,10 +111,10 @@ If WARN
             Assign "Extras:" "NIL:" >NIL:
         EndIf
     EndIf
-Endif
+EndIf
 
 If EXISTS "ENV:SYS/Packages"
-    List "ENV:SYS/Packages" NOHEAD FILES TO "T:P" LFORMAT="If EXISTS ${SYS/Packages/%N}*NCD ${SYS/Packages/%N}*NIf EXISTS S/%N-Startup*NExecute S/%N-Startup*NElse*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*NEndif*N"
+    List "ENV:SYS/Packages" NOHEAD FILES TO "T:P" LFORMAT="If EXISTS ${SYS/Packages/%N}*NCD ${SYS/Packages/%N}*NIf EXISTS S/%N-Startup*NExecute S/%N-Startup*NElse*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndIf*NEndIf*NEndIf*N"
     Execute "T:P"
     Delete "T:P" QUIET
     CD "SYS:"
