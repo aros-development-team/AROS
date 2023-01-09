@@ -7,7 +7,7 @@
 import urllib.request
 import ssl
 import re
-import html.parser
+import html
 
 # We must set the encoding or HTMLParser().unescape() fails with error
 # "UnicodeDecodeError: 'ascii' codec can't decode byte..."
@@ -16,6 +16,11 @@ import sys
 import importlib
 importlib.reload(sys)
 #sys.setdefaultencoding('utf8')
+
+if sys.version_info[0] >= 3:
+    hparse = html
+else:
+    hparse = html.parser.HTMLParser()
 
 # regex for parsing a GitHub RSS item
 rssregithub = re.compile(r'''<entry>.*?
@@ -68,10 +73,10 @@ for entry in rssregithub.finditer(content):
 <h2><a href="%s" target="_top">%s | %s | %s </a></h2>
 %s\n''' % (
     entry.group('link'),
-    html.parser.HTMLParser().unescape(entry.group('commit')),
-    html.parser.HTMLParser().unescape(entry.group('creator')),
-    html.parser.HTMLParser().unescape(entry.group('pubDate')),
-    html.parser.HTMLParser().unescape(entry.group('description'))))
+    hparse.unescape(entry.group('commit')),
+    hparse.unescape(entry.group('creator')),
+    hparse.unescape(entry.group('pubDate')),
+    hparse.unescape(entry.group('description'))))
 
 targetfile.write('</body>\n</html>\n')
 
