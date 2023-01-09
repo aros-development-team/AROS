@@ -1,4 +1,4 @@
-# Copyright (C) 2022, The AROS Development Team. All rights reserved.
+# Copyright (C) 2022-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -19,7 +19,7 @@ NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := WASAPI_native
 
-NATIVE_LDFLAGS  := -shared -L$(NATIVE_LIBDIR) -Wl,--subsystem,windows,--out-implib,libwasapiaudio.a
+NATIVE_LDFLAGS  := -shared -static-libgcc -L$(NATIVE_LIBDIR) -Wl,--subsystem,windows,--out-implib,libwasapiaudio.a
 
 USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
 

@@ -20,7 +20,7 @@ NATIVE_FILES  := host_debug host_intr host_mmu
 NATIVE_AFILES := leaveinterrupt_$(CPU)
 
 NATIVE_CFLAGS := $(KERNEL_CLFAGS) -Winline
-NATIVE_LDFLAGS := -shared -Wl,--out-implib,$(NATIVE_LIBDIR)/libaroskernel.a
+NATIVE_LDFLAGS := -shared -static-libgcc -Wl,--out-implib,$(NATIVE_LIBDIR)/libaroskernel.a
 
 USER_INCLUDES :=
 
@@ -36,6 +36,6 @@ $(GENDIR)/$(CURDIR)/kernel.o: $(SRCDIR)/$(CURDIR)/kernel.rc
 %build_prog mmake=kernel-kernel-mingw32-native \
     progname=kernel.dll targetdir=$(NATIVE_BINDIR) \
     files="$(NATIVE_FILES)" asmfiles="$(NATIVE_AFILES)" objs="$(GENDIR)/$(CURDIR)/kernel.o" compiler=kernel \
-    cflags=$(NATIVE_FLAGS) ldflags=$(NATIVE_LDFLAGS)
+    cflags=$(NATIVE_CFLAGS) ldflags=$(NATIVE_LDFLAGS)
 
 %common

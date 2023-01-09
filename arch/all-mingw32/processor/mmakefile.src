@@ -15,7 +15,7 @@ NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := processor_hostcpu
 
-NATIVE_LDFLAGS  := -shared -L$(NATIVE_LIBDIR) -Wl,--subsystem,windows,--out-implib,libwincpu.a
+NATIVE_LDFLAGS  := -shared -static-libgcc -L$(NATIVE_LIBDIR) -Wl,--subsystem,windows,--out-implib,libwincpu.a
 
 USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
 

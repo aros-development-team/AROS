@@ -24,7 +24,7 @@ NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := gdi_native
 
-NATIVE_LDFLAGS  := -shared -L$(NATIVE_LIBDIR)
+NATIVE_LDFLAGS  := -shared -static-libgcc -L$(NATIVE_LIBDIR)
 
 USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
 
