@@ -125,7 +125,8 @@ static int glx_hostlib_init(LIBBASETYPEPTR LIBBASE)
     }
 
     if ((glx_handle = hostlib_load_so(GLX_SOFILE, glx_func_names, (void **) &glx_func)) == NULL)
-        return FALSE;
+        if ((glx_handle = hostlib_load_so(GLX_SOFILE_FALLBACK, glx_func_names, (void **) &glx_func)) == NULL)
+            return FALSE;
 
     load_gl_functions(gl_func_names, (void **) &gl_func);
 
