@@ -658,6 +658,11 @@ static int IntelGMA_WS_ApertureSize(struct i915_winsys *iws)
     return allocated_mem;
 }
 
+static void IntelGMA_WS_Destroy(struct i915_winsys *iws)
+{
+    D(bug("[IntelGMA:Gallium] %s()\n", __func__));
+}
+
 // ****************************************************************************
 //                                                                Gallium Hidd Methods
 // ****************************************************************************
@@ -680,7 +685,7 @@ OOP_Object *METHOD(GalliumIntelGMA, Root, New)
         data->gma_obj = o;
         data->gma_winsys.pci_id = sd->ProductID;
 
-        data->gma_winsys.destroy                    = NULL;
+        data->gma_winsys.destroy                    = IntelGMA_WS_Destroy;
         data->gma_winsys.batchbuffer_create         = IntelGMA_WS_BatchbufferCreate;
         data->gma_winsys.validate_buffers           = IntelGMA_WS_ValidateBuffers;
         data->gma_winsys.batchbuffer_reloc          = IntelGMA_WS_BatchbufferReloc;
