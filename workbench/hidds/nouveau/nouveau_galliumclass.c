@@ -28,6 +28,12 @@ HIDDNouveauFlushFrontBuffer( struct pipe_screen *screen,
     /* No Op */
 }
 
+static VOID
+HIDDNouveauDestroyWinSys(struct pipe_winsys *ws)
+{
+    /* No Op */
+}
+
 /* Wraps the nouveau_bo from resource into 2D bitmap class data */
 static BOOL
 HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resource,
@@ -123,6 +129,7 @@ OOP_Object *METHOD(NouveauGallium, Root, New)
     if (o)
     {
         struct HIDDGalliumNouveauData *data = OOP_INST_DATA(cl, o);
+        data->nouveau_winsys.destroy = HIDDNouveauDestroyWinSys;
         data->nouveau_obj = o;
     }
 
