@@ -79,8 +79,6 @@ static VOID ReportEvents(struct DevUnit *unit, ULONG events,
 static VOID UnitTask();
 static UWORD ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
    struct DevBase *base);
-static VOID WriteMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
-   UWORD value, struct DevBase *base);
 
 
 /****i* nvidianet.device/CreateUnit ****************************************
@@ -2068,45 +2066,6 @@ static UWORD ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
       & NV_REG_MIICTRLF_INUSE) != 0);
 
    return (UWORD)unit->LELongIn(unit->card, NV_REG_MIIDATA);
-}
-
-
-
-/****i* nvidianet.device/WriteMII ******************************************
-*
-*   NAME
-*       WriteMII -- Write to a register on an MII PHY.
-*
-*   SYNOPSIS
-*       WriteMII(unit, phy_no, reg_no, value)
-*
-*       VOID WriteMII(struct DevUnit *, UWORD, UWORD, UWORD);
-*
-*   INPUTS
-*       unit - Device unit.
-*       phy_no - .
-*       reg_no - .
-*       value - value to write to MII register.
-*   
-*   RESULT
-*       None.
-*
-****************************************************************************
-*
-*/
-
-static VOID WriteMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
-   UWORD value, struct DevBase *base)
-{
-   unit->LELongOut(unit->card, NV_REG_MIIDATA, value);
-   unit->LELongOut(unit->card, NV_REG_MIICTRL,
-      NV_REG_MIICTRLF_WRITE
-      | phy_no << NV_REG_MIICTRLB_PHYNO
-      | reg_no << NV_REG_MIICTRLB_REGNO);
-   while((unit->LELongIn(unit->card, NV_REG_MIICTRL)
-      & NV_REG_MIICTRLF_INUSE) != 0);
-
-   return;
 }
 
 
