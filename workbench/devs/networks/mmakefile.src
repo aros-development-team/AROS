@@ -4,6 +4,7 @@
 #MM     workbench-devs-networks-etherlink3 \
 #MM     workbench-devs-networks-intelpro100 \
 #MM     workbench-devs-networks-nforce-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-nvidianet \
 #MM     workbench-devs-networks-pcnet32-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-ppp \
 #MM     workbench-devs-networks-prism2 \
@@ -13,5 +14,4 @@
 #MM     workbench-devs-networks-rtl8139 \
 #MM     workbench-devs-networks-rtl8168-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-rtl8169-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-sis900-$(AROS_TARGET_CPU) \
-#MM     workbench-devs-networks-nvidianet
+#MM     workbench-devs-networks-sis900-$(AROS_TARGET_CPU)
