@@ -268,8 +268,6 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
     AddPart(srcPath, ARCHBOOTDIR, srcLen);
     sprintf(dstPath, "%s:%s", data->install_SysTarget, ARCHBOOTDIR);
 
-    data->bl_TargetUnit = XGET(data->bl_TargetUnit, MUIA_String_Integer);
-
     D(
         bug("[InstallAROS] %s: Boot Device = %s/%d\n", __func__, data->bl_TargetDevice, data->bl_TargetUnit);
         bug("[InstallAROS] %s: Source Path = '%s'\n", __func__, srcPath);
