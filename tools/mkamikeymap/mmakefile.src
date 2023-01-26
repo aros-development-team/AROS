@@ -8,6 +8,10 @@ USER_INCLUDES := -I$(GENINCDIR)
 EXEDIR := $(dir $(MKAMIKEYMAP))
 FILES := mkamikeymap config parsedescriptor writekeymap
 
+# Workaround - in debug build, TARGET objcopy is used to add debug link, however mkamikeymap is a host-side program.
+# Triggered when cross-compiling armhf on x86_64
+tools-mkkeymap_STRIPDEBUG := no
+
 %build_prog mmake=tools-mkkeymap \
     progname="$(notdir $(MKAMIKEYMAP))" targetdir=$(EXEDIR) \
     files="$(FILES)" compiler=host
