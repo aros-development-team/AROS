@@ -14,8 +14,12 @@
 #include <exec/types.h>
 #include <aros/arm/cpucontext.h>
 
-#ifndef __AROS_EXEC_LIBRARY__
+#ifdef __AROS_EXEC_LIBRARY__
 
+struct ucontext;
+typedef struct ucontext regs_t;
+
+#else
 /*
  * This part is included only in host-specific code because it relies
  * on host includes! __AROS_EXEC_LIBRARY__ definition is used to indicate
@@ -50,6 +54,8 @@ struct ucontext
 #else
 #include <ucontext.h>
 #endif
+
+typedef ucontext_t regs_t;
 
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
@@ -121,8 +127,6 @@ do {											\
 
 /* We emulate 6 exceptions of ARM CPU (all but softint) */
 #define EXCEPTIONS_COUNT 6
-
-typedef struct ucontext regs_t;
 
 /* This structure is used to save/restore registers */
 struct AROSCPUContext
