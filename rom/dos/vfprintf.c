@@ -42,7 +42,7 @@ AROS_UFH2(void,vfp_hook,
 /*  SYNOPSIS */
         AROS_LHA(BPTR,         file,     D1),
         AROS_LHA(CONST_STRPTR, format,   D2),
-        AROS_LHA(const IPTR *, argarray, D3),
+        AROS_LHA(RAWARG,       argarray, D3),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 59, Dos)
@@ -78,7 +78,7 @@ AROS_UFH2(void,vfp_hook,
     vfp.count = 0;
     vfp.DOSBase = DOSBase;
 
-    (void)RawDoFmt(format, (APTR)argarray,
+    (void)RawDoFmt(format, argarray,
                    (VOID_FUNC)AROS_ASMSYMNAME(vfp_hook), &vfp);
 
     /* Remove the last character (which is a NUL character) */
