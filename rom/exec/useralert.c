@@ -18,6 +18,17 @@
 #include "exec_util.h"
 #include "exec_locks.h"
 
+/* Remove formating strings from buffer. They might have been added by... disassebler in form of 'mov %dx, ...'. */
+static VOID Sanitize(STRPTR buffer)
+{
+    LONG i = 0;
+    while(buffer[i] != 0)
+    {
+        if (buffer[i] == '%') buffer[i] = ' ';
+        i++;
+    }
+}
+
 static LONG SafeEasyRequest(struct EasyStruct *es, BOOL full, struct IntuitionBase *IntuitionBase)
 {
     LONG result;
@@ -106,6 +117,9 @@ reshow:
             {
                 /* 'More' has been pressed. Append full alert data */
                 FormatAlertExtra(end, iet->iet_AlertStack, iet ? iet->iet_AlertType : AT_NONE, iet ? &iet->iet_AlertData : NULL, SysBase);
+
+                /* Sanite the text before using in BuildEasyRequestArgs. Make sure all formatting strings are removed */
+                Sanitize(end);
 
                 /* Re-post the alert, without 'More...' this time */
                 es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? full_deadend_buttons : full_recoverable_buttons;
