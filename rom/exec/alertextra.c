@@ -31,7 +31,7 @@ static const char illegalstr[] = "\n0x%P ******************************** <illeg
  */
 void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
-        struct Library *DebugBase = PrivExecBase(SysBase)->DebugBase;
+    struct Library *DebugBase = PrivExecBase(SysBase)->DebugBase;
     char *buf = buffer;
     APTR dissCtx;
 
@@ -54,83 +54,80 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
 
     }
 
-        if (DebugBase && (((struct DebugBase *)DebugBase)->db_Flags & DBFF_DISASSEMBLE))
+    if (DebugBase && (((struct DebugBase *)DebugBase)->db_Flags & DBFF_DISASSEMBLE))
+    {
+        struct ExceptionContext *ctx = (struct ExceptionContext *)data;
+
+        buf = Alert_AddString(buf, "\n\nDisassembly:\n");
+
+        if (TypeOfMem((APTR)ctx->PC))
         {
-                struct ExceptionContext *ctx = (struct ExceptionContext *)data;
+            struct TagItem instrTags[] =
+            {
+                { DCIT_Instruction_Offset,      0 },
+                { DCIT_Instruction_HexStr,      0 },
+                { DCIT_Instruction_Asm,         0 },
+                { TAG_DONE,                     0 }
+            };
+            char insPad[(__WORDSIZE/2) + 1];
+            APTR tmpbuf, symaddr, symend = NULL;
+            char *symname = NULL;
+            ULONG x,inslen;
 
-                buf = Alert_AddString(buf, "\n\nDisassembly:\n");
-
-                if (TypeOfMem((APTR)ctx->PC))
+            if (DecodeLocation((APTR)ctx->PC,
+                                DL_SymbolName, &symname,
+                                DL_SymbolStart, &symaddr,
+                                DL_SymbolEnd, &symend,
+                                TAG_DONE))
+            {
+                if (symname)
+                    buf = NewRawDoFmt("\n%p <%s>:\n", RAWFMTFUNC_STRING, buf, symaddr, symname) - 1;
+                if (symaddr < (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR))))
                 {
-                        struct TagItem instrTags[] =
-                        {
-                                { DCIT_Instruction_Offset,      0 },
-                                { DCIT_Instruction_HexStr,      0 },
-                                { DCIT_Instruction_Asm,         0 },
-                                { TAG_DONE,                             0 }
-                        };
-                        char insPad[(__WORDSIZE/2) + 1];
-                        APTR tmpbuf, symaddr, symend = NULL;
-                        char *symname = NULL;
-                        ULONG x,inslen;
-
-                        if (DecodeLocation((APTR)ctx->PC,
-                                                        DL_SymbolName, &symname,
-                                                        DL_SymbolStart, &symaddr,
-                                                        DL_SymbolEnd, &symend,
-                                                        TAG_DONE))
-                        {
-                                if (symname)
-                                        buf = NewRawDoFmt("\n%p <%s>:\n", RAWFMTFUNC_STRING, buf, symaddr, symname) - 1;
-                                if (symaddr < (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR))))
-                                {
-                                        buf = NewRawDoFmt("-skipping %p -> %p:\n", RAWFMTFUNC_STRING, buf, symaddr, (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR)))) - 1;
-                                        symaddr = (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR)));
-                                }
-                                if (!symend || (symend > (APTR)(ctx->PC + ((DISS_DEPTH / 2) * sizeof(IPTR)))))
-                                        symend = (APTR)(ctx->PC + ((DISS_DEPTH / 2) *sizeof(IPTR)));
-                        }
-                        else
-                        {
-                                symaddr = (APTR)ctx->PC;
-                                symend = (APTR)(ctx->PC + (DISS_DEPTH *sizeof(IPTR)));
-                        }
-                        if ((dissCtx = InitDisassembleCtx(symaddr, symend, (APTR)ctx->PC)) != NULL)
-                        {
-                                if (!symname)
-                                        buf = NewRawDoFmt("\n%p:\n", RAWFMTFUNC_STRING, buf, symaddr) - 1;
-
-                                while (DisassembleCtx(dissCtx) != 0) {
-                                        if (GetCtxInstructionA(dissCtx, instrTags))
-                                        {
-                                                /* output the offset */
-                                                buf = NewRawDoFmt("%4d%s: ", RAWFMTFUNC_STRING, buf,
-                                                                                                         instrTags[0].ti_Data, (instrTags[0].ti_Data == 0) ? "*" : " ") - 1;
-
-                                                /* output the raw instruction hexcode */
-                                                tmpbuf = NewRawDoFmt("%s", RAWFMTFUNC_STRING, buf, instrTags[1].ti_Data);
-                                                inslen = (ULONG)((IPTR)tmpbuf - (IPTR)buf);
-                                                buf = tmpbuf - 1;
-                                                for (x = 0; x < ((__WORDSIZE/2) - inslen); x++)
-                                                {
-                                                        insPad[x] = ' ';
-                                                }
-                                                insPad[x] = '\0';
-
-                                                /* output the padding, and disassembled code */
-                                                buf = NewRawDoFmt("%s - %s\n", RAWFMTFUNC_STRING, buf,
-                                                                                                         insPad,
-                                                                                                         instrTags[2].ti_Data) - 1;
-                                        }
-                                }
-                                FreeDisassembleCtx(dissCtx);
-                        }
+                    buf = NewRawDoFmt("-skipping %p -> %p:\n", RAWFMTFUNC_STRING, buf, symaddr, (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR)))) - 1;
+                    symaddr = (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR)));
                 }
-                else
-                {
-                        buf = NewRawDoFmt(illegalstr, RAWFMTFUNC_STRING, buf, (APTR)ctx->PC);
+                if (!symend || (symend > (APTR)(ctx->PC + ((DISS_DEPTH / 2) * sizeof(IPTR)))))
+                    symend = (APTR)(ctx->PC + ((DISS_DEPTH / 2) *sizeof(IPTR)));
+            }
+            else
+            {
+                symaddr = (APTR)ctx->PC;
+                symend = (APTR)(ctx->PC + (DISS_DEPTH *sizeof(IPTR)));
+            }
+            if ((dissCtx = InitDisassembleCtx(symaddr, symend, (APTR)ctx->PC)) != NULL)
+            {
+                if (!symname)
+                    buf = NewRawDoFmt("\n%p:\n", RAWFMTFUNC_STRING, buf, symaddr) - 1;
+
+                while (DisassembleCtx(dissCtx) != 0) {
+                    if (GetCtxInstructionA(dissCtx, instrTags))
+                    {
+                        /* output the offset */
+                        buf = NewRawDoFmt("%4d%s: ", RAWFMTFUNC_STRING, buf, instrTags[0].ti_Data, (instrTags[0].ti_Data == 0) ? "*" : " ") - 1;
+
+                        /* output the raw instruction hexcode */
+                        tmpbuf = NewRawDoFmt("%s", RAWFMTFUNC_STRING, buf, instrTags[1].ti_Data);
+                        inslen = (ULONG)((IPTR)tmpbuf - (IPTR)buf);
+                        buf = tmpbuf - 1;
+                        for (x = 0; x < ((__WORDSIZE/2) - inslen); x++)
+                        {
+                            insPad[x] = ' ';
+                        }
+                        insPad[x] = '\0';
+
+                        /* output the padding, and disassembled code */
+                        buf = NewRawDoFmt("%s - %s\n", RAWFMTFUNC_STRING, buf, insPad, instrTags[2].ti_Data) - 1;
+                    }
                 }
+                FreeDisassembleCtx(dissCtx);
+            }
         }
+        else
+        {
+            buf = NewRawDoFmt(illegalstr, RAWFMTFUNC_STRING, buf, (APTR)ctx->PC);
+        }
+    }
 
     /* If we have AlertStack, compose a backtrace */
     if (stack)
