@@ -74,6 +74,12 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
             char *symname = NULL;
             ULONG x,inslen;
 
+            /* Always start disassembly at valid instruction:
+                a) symbol start OR
+                b) PC
+               End disassembly at symbol end or after offset greater
+               than being show. This guarantess correct disassemly of memory
+            */
             if (DecodeLocation((APTR)ctx->PC,
                                 DL_SymbolName, &symname,
                                 DL_SymbolStart, &symaddr,
@@ -82,29 +88,40 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
             {
                 if (symname)
                     buf = NewRawDoFmt("\n%p <%s>:\n", RAWFMTFUNC_STRING, buf, symaddr, symname) - 1;
-                if (symaddr < (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR))))
-                {
-                    buf = NewRawDoFmt("-skipping %p -> %p:\n", RAWFMTFUNC_STRING, buf, symaddr, (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR)))) - 1;
-                    symaddr = (APTR)(ctx->PC - ((DISS_DEPTH / 2) * sizeof(IPTR)));
-                }
-                if (!symend || (symend > (APTR)(ctx->PC + ((DISS_DEPTH / 2) * sizeof(IPTR)))))
-                    symend = (APTR)(ctx->PC + ((DISS_DEPTH / 2) *sizeof(IPTR)));
+
+                if (!symend || (symend > (APTR)(ctx->PC + ((sizeof(IPTR) * DISS_DEPTH)))))
+                    symend = (APTR)(ctx->PC + (sizeof(IPTR) * DISS_DEPTH));
             }
             else
             {
                 symaddr = (APTR)ctx->PC;
-                symend = (APTR)(ctx->PC + (DISS_DEPTH *sizeof(IPTR)));
+                symend = (APTR)(ctx->PC + (sizeof(IPTR) * DISS_DEPTH));
             }
+
             if ((dissCtx = InitDisassembleCtx(symaddr, symend, (APTR)ctx->PC)) != NULL)
             {
-                if (!symname)
-                    buf = NewRawDoFmt("\n%p:\n", RAWFMTFUNC_STRING, buf, symaddr) - 1;
+                APTR startaddr = NULL;
 
                 while (DisassembleCtx(dissCtx) != 0) {
                     if (GetCtxInstructionA(dissCtx, instrTags))
                     {
+                        const LONG offset = (LONG)instrTags[0].ti_Data;
+
+                        if (offset < -(LONG)(sizeof(IPTR) * DISS_DEPTH / 2))
+                            continue; /* Skip initial instructions */
+                        else if (offset > (LONG)(sizeof(IPTR) * DISS_DEPTH / 2))
+                            continue; /* Skip ending instructions */
+                        else if (startaddr == NULL)
+                        {
+                            startaddr = (APTR)ctx->PC + offset;
+                            if (offset != 0)
+                                buf = NewRawDoFmt("<skipping %ld bytes>\n", RAWFMTFUNC_STRING, buf, startaddr - symaddr) - 1;
+
+                            buf = NewRawDoFmt("\n%p:\n", RAWFMTFUNC_STRING, buf, startaddr) - 1;
+                        }
+
                         /* output the offset */
-                        buf = NewRawDoFmt("%4d%s: ", RAWFMTFUNC_STRING, buf, instrTags[0].ti_Data, (instrTags[0].ti_Data == 0) ? "*" : " ") - 1;
+                        buf = NewRawDoFmt("%4d%s: ", RAWFMTFUNC_STRING, buf, offset, (offset == 0) ? "*" : " ") - 1;
 
                         /* output the raw instruction hexcode */
                         tmpbuf = NewRawDoFmt("%s", RAWFMTFUNC_STRING, buf, instrTags[1].ti_Data);
