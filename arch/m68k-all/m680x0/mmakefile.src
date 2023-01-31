@@ -2,6 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-c-m68k : kernel-m680x0
+#MM kernel-m680x0-m68k : includes-asm_h
 
 FILES := init
 AFILES := m68k_060sp
