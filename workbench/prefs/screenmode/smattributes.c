@@ -269,7 +269,7 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     }
                 }
 
-                if ((pclock != (ULONG)-1) && (GetDisplayInfoData(NULL, (UBYTE *)&mi, sizeof(mi), DTAG_MNTR, tag->ti_Data)))
+                if ((pclock != (ULONG)-1) && (pclock != 0) && (GetDisplayInfoData(NULL, (UBYTE *)&mi, sizeof(mi), DTAG_MNTR, tag->ti_Data)))
                 {
                     IPTR values[2];
 
