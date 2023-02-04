@@ -304,6 +304,8 @@ void PCIATABus__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             break;
         }
     }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 APTR PCIATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
