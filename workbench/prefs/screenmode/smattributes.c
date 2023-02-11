@@ -273,13 +273,16 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 {
                     if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
                     {
-                        ULONG values[2];
+                        ULONG values[2] = {0};
                         ULONG phz = (1000000000/ pclock);
                         ULONG pcline = (280/ pclock) * mi.TotalColorClocks;
 
-                        values[0] = phz / pcline;
-                        values[1] = values[0] / mi.TotalRows;
-                        values[0] /= 1000;
+                        if ((pcline != 0) && (mi.TotalRows != 0))
+                        {
+                            values[0] = phz / pcline;
+                            values[1] = values[0] / mi.TotalRows;
+                            values[0] /= 1000;
+                        }
                         RawDoFmt("%ldHz", (RAWARG)&values[1], RAWFMTFUNC_STRING, buffer);
                         set(data->objFreqH, MUIA_Text_Contents, buffer);
 
