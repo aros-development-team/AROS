@@ -271,10 +271,9 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 
                 if ((pclock != (ULONG)-1) && (pclock != 0) && (GetDisplayInfoData(NULL, (UBYTE *)&mi, sizeof(mi), DTAG_MNTR, tag->ti_Data)))
                 {
-                    IPTR values[2];
-
                     if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
                     {
+                        ULONG values[2];
                         ULONG phz = (1000000000/ pclock);
                         ULONG pcline = (280/ pclock) * mi.TotalColorClocks;
 
