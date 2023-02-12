@@ -837,10 +837,15 @@ ExecuteOSI (
     return (AE_OK);
 }
 
+BOOL __aros_setoffsettable(char *base);
+
 static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
 {
     ACPI_STATUS err;
     const UINT8 initlevel = ACPI_FULL_INITIALIZATION;
+
+    /* "open" acpia.library for this task, otherwise __aros_getbase_ACPICABase will not work on all ABIs */
+    __aros_setoffsettable((char *)ACPICABase);
 
     D(bug("[ACPI] %s: Starting Full initialization...\n", __func__);)
 
