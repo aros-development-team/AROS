@@ -10,6 +10,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/alib.h>
 
 #include "ia_install.h"
 #include "ia_installoption_intern.h"
@@ -29,7 +30,7 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         Object *iaObj = (Object *)GetTagData(MUIA_InstallOption_Obj, 0, message->ops_AttrList);
         if (!iaObj)
         {
-            switch((LONG)iaID)
+            switch((SIPTR)iaID)
             {
                 case MUIV_InstallOptionID_Source:
                     {
@@ -59,8 +60,8 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         {
             struct TagItem newTags[] =
             {
-                { MUIA_Group_Child,     iaObj                   },
-                { TAG_MORE,             message->ops_AttrList   }
+                { MUIA_Group_Child, (IPTR)iaObj                 },
+                { TAG_MORE,         (IPTR)message->ops_AttrList }
             };
             struct opSet newMsg =
             {
@@ -79,7 +80,7 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                 data->iod_OptionTag = GetTagData(MUIA_InstallOption_ValueTag, (iaTag != (IPTR)1) ? iaTag : (IPTR)-1, message->ops_AttrList);
                 SET(data->iod_Object, MUIA_UserData, self);
             }
-            return self;
+            return (IPTR)self;
         }
     }
     return (IPTR)NULL;
@@ -94,10 +95,10 @@ IPTR InstallOption__OM_GET(Class * CLASS, Object * self, struct opGet *message)
     switch(message->opg_AttrID)
     {
         case MUIA_InstallOption_Obj:
-            *message->opg_Storage = data->iod_Object;
+            *message->opg_Storage = (IPTR)data->iod_Object;
             return TRUE;
         case MUIA_InstallOption_ID:
-            *message->opg_Storage = data->iod_ID;
+            *message->opg_Storage = (IPTR)data->iod_ID;
             return TRUE;
         case MUIA_InstallOption_ValueTag:
             *message->opg_Storage = data->iod_OptionTag;

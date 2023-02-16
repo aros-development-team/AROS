@@ -3,6 +3,8 @@
 */
 
 #include <aros/debug.h>
+#include <proto/dos.h>
+#include <string.h>
 
 #include "ia_locale.h"
 #include "ia_install.h"

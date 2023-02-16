@@ -5,7 +5,7 @@ struct InstallOption_Data
 {
     Object      *iod_Object;
     char        *iod_ID;
-    IPTR        *iod_OptionTag;
+    IPTR        iod_OptionTag;
     IPTR        iod_OptionVal;
 };
 

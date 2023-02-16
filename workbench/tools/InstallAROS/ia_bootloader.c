@@ -94,16 +94,16 @@ struct BootLoaderInfo BootLoaderData[] = {
     },
 #endif
     {
-        -1,
-        -1,
-        -1,
-        -1
+        (CONST_STRPTR)-1,
+        (CONST_STRPTR)-1,
+        (CONST_STRPTR)-1,
+        (CONST_STRPTR)-1
     }
 };
 
 #define BOOTLOADER_PATH_LEN 64  /* Must be large enough to contain any of the bootloader match strings */
 
-BOOL _matchPath(char **match)
+BOOL _matchPath(CONST_STRPTR *match)
 {
     ULONG matchSrcLen = strlen(source_Path) + BOOTLOADER_PATH_LEN;
     TEXT matchSrc[matchSrcLen];
@@ -131,7 +131,7 @@ void BOOTLOADER_InitSupport(void)
 
     D(bug("[InstallAROS] %s()\n", __func__));
 
-    for (i = 0; ( BootLoaderData[i].match != -1); i++)
+    for (i = 0; BootLoaderData[i].match != (CONST_STRPTR)-1; i++)
     {
         D(bug("[InstallAROS] %s: #%d = '%s'\n", __func__, i, BootLoaderData[i].path));
 
