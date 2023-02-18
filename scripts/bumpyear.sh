@@ -1,7 +1,7 @@
 #!/bin/bash
 
 START_YEAR=1995
-OLD_YEAR=2021
+OLD_YEAR=2022
 NEW_YEAR=2023
 SUB=s/$START_YEAR-$OLD_YEAR/$START_YEAR-$NEW_YEAR/g
 echo "$SUB"
@@ -30,25 +30,13 @@ sed -i "$SUB" $DOC_PATH/targets/www/template/languages/sv
 
 # warning: the following are within a submodule
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/aboutaros.cd
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/croatian.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/czech.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/danish.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/dutch.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/finnish.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/french.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/german.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/italian.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/polish.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/portuguese.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/russian.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/spanish.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/swedish.ct
+for catalog in `find $SOURCE_PATH/workbench/system/AboutAROS/catalogs/ -name *.ct` ; do sed -i "$SUB" $catalog ;
+done
 
 START_YEAR=2002
 SUB=s/$START_YEAR-$OLD_YEAR/$START_YEAR-$NEW_YEAR/g
 echo "$SUB"
 
 sed -i "$SUB" $SOURCE_PATH/workbench/libs/muimaster/catalogs/muimaster.cd
-sed -i "$SUB" $SOURCE_PATH/workbench/libs/muimaster/catalogs/german.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/libs/muimaster/catalogs/polish.ct
-sed -i "$SUB" $SOURCE_PATH/workbench/libs/muimaster/catalogs/russian.ct
+for catalog in `find $SOURCE_PATH/workbench/libs/muimaster/catalogs -name *.ct` ; do sed -i "$SUB" $catalog ;
+done

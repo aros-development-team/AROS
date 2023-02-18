@@ -20,7 +20,7 @@ ext_entry:
     .word 0xffff
     .word 0xffff
     .asciz "AROS EXT Extension Libraries"
-    .asciz "Copyright \251 1995-2022 "
+    .asciz "Copyright \251 1995-2023 "
     .asciz "The AROS Development Team, "
     .asciz "All Rights Reserved."
     .asciz ADATE
