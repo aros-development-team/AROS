@@ -2,7 +2,7 @@
 
 START_YEAR=1995
 OLD_YEAR=2021
-NEW_YEAR=2022
+NEW_YEAR=2023
 SUB=s/$START_YEAR-$OLD_YEAR/$START_YEAR-$NEW_YEAR/g
 echo "$SUB"
 
@@ -13,6 +13,20 @@ sed -i "$SUB" $SOURCE_PATH/arch/m68k-amiga/boot/ext_entry.S
 sed -i "$SUB" $SOURCE_PATH/arch/m68k-amiga/boot/rom_entry.S
 sed -i "$SUB" $SOURCE_PATH/rom/dos/boot.c
 sed -i "$SUB" $SOURCE_PATH/rom/exec/taggedopenlibrary.c
+
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/cs
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/de
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/el
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/en
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/es
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fi
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fr
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/it
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/nl
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pl
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/ru
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/sv
 
 # warning: the following are within a submodule
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/aboutaros.cd
@@ -29,20 +43,6 @@ sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/portuguese.ct
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/russian.ct
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/spanish.ct
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/swedish.ct
-
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/cs
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/de
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/el
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/en
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/es
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fi
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fr
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/it
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/nl
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pl
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pt
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/ru
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/sv
 
 START_YEAR=2002
 SUB=s/$START_YEAR-$OLD_YEAR/$START_YEAR-$NEW_YEAR/g
