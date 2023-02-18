@@ -13,7 +13,7 @@ steps:
     sshEndpoint:
     runOptions: 'inline'
     inline:
-    cd $(PROJWEBDIR)
-    ./scripts/nightly2-update
+      cd $(PROJWEBDIR)
+      ./scripts/nightly2-update
     interpreterCommand: '/bin/bash'
     readyTimeout: '20000' # string. Required. SSH handshake timeout. Default: 20000.
