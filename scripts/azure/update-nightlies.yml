@@ -1,0 +1,19 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+    PROJWEBDIR:  '/home/project-web' # Location script is run from
+
+steps:
+- task: SSH@0
+  inputs:
+    sshEndpoint:
+    runOptions: 'inline'
+    inline:
+    cd $(PROJWEBDIR)
+    ./scripts/nightly2-update
+    interpreterCommand: '/bin/bash'
+    readyTimeout: '20000' # string. Required. SSH handshake timeout. Default: 20000.
