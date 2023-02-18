@@ -8,12 +8,12 @@ variables:
     PROJWEBDIR:  '/home/project-web' # Location script is run from
 
 steps:
-- task: SSH@0
-  inputs:
-    sshEndpoint:
-    runOptions: 'inline'
-    inline:
-      cd $(PROJWEBDIR)
-      ./scripts/nightly2-update
-    interpreterCommand: '/bin/bash'
-    readyTimeout: '20000' # string. Required. SSH handshake timeout. Default: 20000.
+  - script: |
+      mkdir -p ~/.ssh
+      #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+      sshpass -p $MAPPED_PASS ssh -l $MAPPED_USER shell.sourceforge.net "cd $(PROJWEBDIR); ./aros/scripts/nightly2-update"
+    env:
+      MAPPED_USER: $(SF_RSYNC_USER)
+      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    condition: ne( variables['SF_RSYNC_USER'], '' )
+    displayName: 'Updating nightly builds'
