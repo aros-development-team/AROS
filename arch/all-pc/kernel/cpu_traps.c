@@ -77,13 +77,16 @@ static const char AmigaTraps[AMIGATRAP_COUNT] =
     -1
 };
 
+extern BOOL IsKernelBaseReady(struct ExecBase *SysBase);
+
 void cpu_Trap(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
     D(bug("[Kernel] %s(%u)\n", __func__, irq_number));
 
     if (!krnRunExceptionHandlers(KernelBase, irq_number, regs))
     {
-        if ((irq_number < AMIGATRAP_COUNT) && (AmigaTraps[irq_number] != -1))
+        if (IsKernelBaseReady(SysBase) &&
+            (irq_number < AMIGATRAP_COUNT) && (AmigaTraps[irq_number] != -1))
         {
             D(bug("[Kernel] %s(%u): Forwarding to exec <Amiga trap #%d, exception error %08x>\n", __func__, irq_number, AmigaTraps[irq_number], error_code);)
 
