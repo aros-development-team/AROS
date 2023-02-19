@@ -80,16 +80,23 @@ int krnBug(const char *format, va_list args, APTR kernelBase)
     return retval;
 }
 
+extern BOOL IsKernelBaseReady(struct ExecBase *SysBase);
+
 /*
  * This is yet another character stuffing callback for debug output. This one unifies the output
  * with debug output from outside the kernel where possible, allowing kernel debug output to be
  * redirected alongside that other output (e.g. with Sashimi or Bifteck).
  */
+/*
+ * Default implementation of RawPutChar requires KernelBase to be setup. Check for this. Otherwise
+ * since SysBase is setup first (PrepareExecBase), before SysBase->KernelBase is setup (Kernel_Init)
+ * just checking for SysBase causes some debug early to be lost.
+ */
 static int UniPutC(int c, struct KernelBase *KernelBase)
 {
     int result;
 
-    if (SysBase != NULL)
+    if (IsKernelBaseReady(SysBase))
     {
         RawPutChar(c);
         result = 1;
