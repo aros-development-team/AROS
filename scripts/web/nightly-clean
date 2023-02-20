@@ -4,12 +4,13 @@
 # Removes incomplete or broken nightly build files from the upload directory.
 
 #-- Setup & Configuration ----------------------------------------------------
-ROOT=/home/groups/a/ar/aros
+#ROOT=/home/groups/a/ar/aros
+ROOT=/home/project-web/aros
 SRC="$ROOT/uploads/nightly"
 LOCK="$SRC.lock"
 
 #-- Acquire Lock -------------------------------------------------------------
-lockfile -r 0 "$LOCK"
+aros/bin/lockfile -r 0 "$LOCK"
 if [[ $? != 0 ]]; then
     echo Could not acquire lock. Aborting...
     exit 1

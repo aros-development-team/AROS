@@ -1,15 +1,14 @@
 #!/bin/bash
 
 ##############################################################################
-# Moves nightly build files from the uploads directory to the sourceforge
+# Moves build files from the uploads directory to the sourceforge
 # release files directory. Checks the integrity of files before moving, so
 # incomplete or broken files are not available for download.
 
 #-- Configuration & Setup ----------------------------------------------------
-#ROOT=/home/groups/a/ar/aros
 ROOT=/home/project-web/aros
-SRC=$ROOT/uploads/nightly
-DST=$ROOT/frs/nightly
+SRC=$ROOT/uploads/$TYPE
+DST=$ROOT/htdocs/downloads/$TYPE
 LOCK=$SRC.lock
 
 umask 0002 
@@ -41,7 +40,7 @@ function md5check()
 }
 
 #-- Acquire Lock -------------------------------------------------------------
-aros/bin/lockfile -r 0 "$LOCK"
+$ROOT/bin/lockfile -r 0 "$LOCK"
 if [[ $? != 0 ]]; then
     echo Could not acquire lock. Aborting...
     exit 1
@@ -103,8 +102,8 @@ echo "Skipping search for old versions of:" $file
                 fi
 
                 # Move file to download dir
-                cp "$file" $dst/
-                cp "$file.md5" $dst/
+                mv -f "$file" $dst/
+                mv -f "$file.md5" $dst/
             fi
         else
             echo "! $file"
@@ -112,6 +111,7 @@ echo "Skipping search for old versions of:" $file
     fi
 done
 IFS=$OLDIFS
+cd -
 
 #-- Release Lock -------------------------------------------------------------
 rm -f "$LOCK"

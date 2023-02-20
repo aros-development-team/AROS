@@ -1,15 +1,15 @@
 #!/bin/bash
 
 ##############################################################################
-# Moves nightly build files from the uploads directory to the website
-# download directory. Checks the integrity of files before moving, so
-#  incomplete or broken files are not available for download.
+# Copies nightly build files from the uploads directory to the sourceforge
+# release files directory. Checks the integrity of files before moving, so
+# incomplete or broken files are not available for download.
 
 #-- Configuration & Setup ----------------------------------------------------
 #ROOT=/home/groups/a/ar/aros
 ROOT=/home/project-web/aros
-SRC=$ROOT/uploads/nightly
-DST=$ROOT/htdocs/downloads/nightly
+SRC=$ROOT/uploads/nightly2
+DST=$ROOT/frs/nightly2
 LOCK=$SRC.lock
 
 umask 0002 
@@ -103,8 +103,8 @@ echo "Skipping search for old versions of:" $file
                 fi
 
                 # Move file to download dir
-                mv -f "$file" $dst/
-                mv -f "$file.md5" $dst/
+                cp "$file" $dst/
+                cp "$file.md5" $dst/
             fi
         else
             echo "! $file"
@@ -112,6 +112,17 @@ echo "Skipping search for old versions of:" $file
     fi
 done
 IFS=$OLDIFS
+
+#-- Prune Downloads Directory ------------------------------------------------
+#cd "$DST"
+
+#count=$(($(ls -1 | wc -l) - 1))
+#for directory in *; do
+#    if [[ $count -gt 0 ]]; then
+#        rm -rf "$directory"
+#        count=$((count - 1))
+#    fi
+#done
 
 #-- Release Lock -------------------------------------------------------------
 rm -f "$LOCK"
