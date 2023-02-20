@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -48,6 +48,7 @@
 #endif
 #define DIRQ(x)
 #define DIO(x)
+//#define NVME_DUMP_READS
 
 /*
     NVME_IOIntCode:
@@ -135,6 +136,8 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
                 }
                 if (nvmeq->cehandlers[i]->ceh_PRP)
                 {
+                    ULONG prplen = nvmeq->cehandlers[i]->ceh_PRPCnt << 3;
+                    CachePostDMA(nvmeq->cehandlers[i]->ceh_PRP, &prplen, DMAFLAGS_POSTREAD);
                     if (nvmeq->cehandlers[i]->ceh_DMA)
                     {
                         DIO(bug ("[NVME:Bus] %s: Releasing DMA Buffer @ %p\n", __func__, nvmeq->cehandlers[i]->ceh_DMABuff);)
@@ -448,7 +451,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                     memset(&c, 0, sizeof(c));
                     c.create_cq.op.opcode = nvme_admin_create_cq;
-                    c.create_cq.prp1 = (IPTR)data->ab_Dev->dev_Queues[nn + 1]->cqba; // Needs to be LE
+                    c.create_cq.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)data->ab_Dev->dev_Queues[nn + 1]->cqba);
                     c.create_cq.cqid = AROS_WORD2LE(nn + 1);
                     c.create_cq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->q_depth - 1);
                     c.create_cq.cq_flags = AROS_WORD2LE(flags);
@@ -462,7 +465,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                         memset(&c, 0, sizeof(c));
                         c.create_sq.op.opcode = nvme_admin_create_sq;
-                        c.create_sq.prp1 = (IPTR)data->ab_Dev->dev_Queues[nn + 1]->sqba; // Needs to be LE
+                        c.create_sq.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)data->ab_Dev->dev_Queues[nn + 1]->sqba);
                         c.create_sq.sqid = AROS_WORD2LE(nn + 1);
                         c.create_sq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->q_depth - 1);
                         c.create_sq.sq_flags = AROS_WORD2LE(flags);
@@ -522,7 +525,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             memset(buffer, 0, 8192);
             memset(&c, 0, sizeof(c));
             c.identify.op.opcode = nvme_admin_identify;
-            c.identify.prp1 = (UQUAD)(IPTR)buffer;
+            c.identify.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)buffer);
             c.identify.nsid = AROS_LONG2LE(nn + 1);
             c.identify.cns = 0;
 
@@ -532,18 +535,26 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
             if ((!busehandle.ceh_Status) && (id_ns->ncap != 0))
             {
-                int lbaf = id_ns->flbas & 0xf;
+                int i, lbaf = id_ns->flbas & 0xf;
                 lbaStart = 0;
 
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     ncap = %p\n", nn + 1, id_ns->ncap);)
-            
+                /*
+                	nlbaf = Number of supported LBA Formats
+                */
+                D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     nlbaf = %u, current = lbaf[%u]\n", nn + 1, id_ns->nlbaf + 1, lbaf);)
+
+                for (i = 0; i < id_ns->nlbaf + 1; i++)
+                {
+                    D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u       lbaf[%u], ms = %u, ds = %u, rp = %u\n", nn + 1, i, id_ns->lbaf[i].ms, id_ns->lbaf[i].ds, id_ns->lbaf[i].rp);)
+                }
                 struct nvme_lba_range_type *rt = (struct nvme_lba_range_type *)(IPTR)buffer + 4096;
 
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u lba_range_type buffer @ 0x%p\n", nn + 1, rt);)
 
                 memset(&c, 0, sizeof(c));
                 c.features.op.opcode = nvme_admin_get_features;
-                c.features.prp1 = (UQUAD)(IPTR)rt;
+                c.features.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)rt);
                 c.features.fid = AROS_LONG2LE(NVME_FEAT_LBA_RANGE);
                 c.features.nsid = AROS_LONG2LE(nn + 1);
 
@@ -593,7 +604,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             };
                             struct DeviceNode *devnode;
 
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %u\n", 1 << id_ns->lbaf[lbaf].ds);)
+                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1 << id_ns->lbaf[lbaf].ds);)
                             D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9));)
 
                             unit->au_SecShift = id_ns->lbaf[lbaf].ds;

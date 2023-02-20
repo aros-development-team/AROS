@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved
+    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved
 */
  
  #include <aros/debug.h>
@@ -53,6 +53,7 @@ static UQUAD *nvme_allocprps(struct nvme_Unit *unit, APTR addr, IPTR len, APTR *
     *prpbuff = AllocMem(unit->au_Bus->ab_Dev->pagesize + (sizeof(UQUAD) * (*cnt + 1)), MEMF_ANY);
     if (*prpbuff != NULL)
     {
+        ULONG len = (*cnt) << 3;
         int prp;
 
         prps = (APTR)(((IPTR)*prpbuff + unit->au_Bus->ab_Dev->pagesize) & ~(unit->au_Bus->ab_Dev->pagesize - 1));
@@ -63,8 +64,61 @@ static UQUAD *nvme_allocprps(struct nvme_Unit *unit, APTR addr, IPTR len, APTR *
             prps[prp] = (UQUAD)(IPTR)addr + (unit->au_Bus->ab_Dev->pagesize * (prp + 1));
             bug("[NVME%02ld] %s:         [%u] = 0x%p\n", unit->au_UnitNum, __func__, prp, (APTR)prps[prp]);
         }
+        CachePreDMA(prps, &len, DMAFLAGS_PREREAD);
     }
     return prps;
+}
+
+/*
+	; PRP2 Calculation -:
+	; < 4k = only set PRP1
+	; 4k - 8k = set PRP2 to the second 4k
+	; > 8k = PRP2 points to a list of more PRPs
+*/
+static BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *ioehandle, struct nvme_Unit *unit, ULONG len, APTR *data, BOOL is_write)
+{
+    APTR _data = *data;
+
+    if (len > (unit->au_Bus->ab_Dev->pagesize << 1))
+    {
+        D(bug("[NVME%02ld] %s: >8k transfer\n", unit->au_UnitNum, __func__);)
+
+        if (((IPTR)*data & (unit->au_Bus->ab_Dev->pagesize - 1)) != 0)
+        {
+            D(bug("[NVME%02ld] %s: unaligned buffer start (%p)\n", unit->au_UnitNum, __func__, *data);)
+            ioehandle->ceh_DMAlen = len + unit->au_Bus->ab_Dev->pagesize;
+            ioehandle->ceh_DMABuff = AllocMem(ioehandle->ceh_DMAlen, MEMF_ANY);
+            ioehandle->ceh_DMA = (APTR)(((IPTR)ioehandle->ceh_DMABuff + unit->au_Bus->ab_Dev->pagesize)  & ~(unit->au_Bus->ab_Dev->pagesize - 1));
+            *data = ioehandle->ceh_DMA;
+            D(bug("[NVME%02ld] %s: using buffer @ %p (alloc @ 0x%p)\n", unit->au_UnitNum, __func__, *data, ioehandle->ceh_DMABuff);)
+            if (is_write)
+                CopyMem(_data, *data, len);
+        }
+        cmdio->rw.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)*data);
+
+        ioehandle->ceh_PRP = nvme_allocprps(unit, *data, len, &ioehandle->ceh_PRPBuff, &ioehandle->ceh_PRPCnt);
+        if ((cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)(IPTR)ioehandle->ceh_PRP)) == 0)
+        {
+            D(bug("[NVME%02ld] %s: failed to allocate prp's\n", unit->au_UnitNum, __func__);)
+            return FALSE;
+        }
+    }
+    else
+    {
+        cmdio->rw.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)*data);
+
+        if (len > unit->au_Bus->ab_Dev->pagesize)
+        {
+            D(bug("[NVME%02ld] %s: <= 8k transfer\n", unit->au_UnitNum, __func__);)
+
+            cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)(IPTR)*data + unit->au_Bus->ab_Dev->pagesize);
+        }
+        else
+        {
+            D(bug("[NVME%02ld] %s: <= 4k transfer\n", unit->au_UnitNum, __func__);)
+        }
+    }
+    return TRUE;
 }
 
 static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
@@ -80,49 +134,34 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     int queueno;
 
     D(
-        bug("[NVME%02ld] %s(%08x%08x)\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF);
+        bug("[NVME%02ld] %s(%08x%08x, %u) %s\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF, len, is_write ? "WRITE" : "READ");
+
         bug("[NVME%02ld] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus);
         bug("[NVME%02ld] %s: bus dev @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev);
 
         bug("[NVME%02ld] %s: %u queues available\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev->queuecnt);
     )
 
-    if (((off64 >> unit->au_SecShift) > unit->au_High)
-        || len == 0)
+    if ((off64 >> unit->au_SecShift) > unit->au_High)
     {
-        bug("[NVME%02ld] %s: %x > %x\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift), unit->au_High);
+        bug("[NVME%02ld] %s: BADADDRESS %x > %x\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift), unit->au_High);
         io->io_Error = IOERR_BADADDRESS;
         return TRUE;
     }
+    else if (len == 0)
+    {
+        bug("[NVME%02ld] %s: BADLENGTH %x > %x\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift), unit->au_High);
+        io->io_Error = IOERR_BADLENGTH;
+        return TRUE;
+    }
+
     memset(&cmdio, 0, sizeof(cmdio));
     ioehandle.ceh_DMA = ioehandle.ceh_DMABuff = NULL;
     ioehandle.ceh_PRP = ioehandle.ceh_PRPBuff = NULL;
-    if (len > (unit->au_Bus->ab_Dev->pagesize << 1))
+    if (!nvme_initprp(&cmdio, &ioehandle, unit, len, &data, is_write))
     {
-        if (((IPTR)data & (unit->au_Bus->ab_Dev->pagesize - 1)) != 0)
-        {
-            bug("[NVME%02ld] %s: unaligned buffer start (%p)\n", unit->au_UnitNum, __func__, data);
-            ioehandle.ceh_DMAlen = len + unit->au_Bus->ab_Dev->pagesize;
-            ioehandle.ceh_DMABuff = AllocMem(ioehandle.ceh_DMAlen, MEMF_ANY);
-            ioehandle.ceh_DMA = (APTR)(((IPTR)ioehandle.ceh_DMABuff + unit->au_Bus->ab_Dev->pagesize)  & ~(unit->au_Bus->ab_Dev->pagesize - 1));
-            data = ioehandle.ceh_DMA;
-            bug("[NVME%02ld] %s: using buffer @ %p (alloc @ 0x%p)\n", unit->au_UnitNum, __func__, data, ioehandle.ceh_DMABuff);
-            if (is_write)
-                CopyMem(iotd->iotd_Req.io_Data, data, len);
-        }
-        cmdio.rw.prp1 = (UQUAD)(IPTR)data; // needs to be in LE
-        ioehandle.ceh_PRP = nvme_allocprps(unit, data, len, &ioehandle.ceh_PRPBuff, &ioehandle.ceh_PRPCnt);
-        if ((cmdio.rw.prp2 = (UQUAD)(IPTR)ioehandle.ceh_PRP) == 0)
-        {
-            bug("[NVME%02ld] %s: failed to allocate prp's\n", unit->au_UnitNum, __func__);
-        }
-    }
-    else
-    {
-        cmdio.rw.prp1 = (UQUAD)(IPTR)data; // needs to be in LE
-
-        if (len > unit->au_Bus->ab_Dev->pagesize)
-            cmdio.rw.prp2 = (UQUAD)(IPTR)data + unit->au_Bus->ab_Dev->pagesize;
+        io->io_Error = IOERR_BADADDRESS;
+        return TRUE;
     }
 
     ULONG nsid = (unit->au_UnitNum & ((1 << 12) - 1)) + 1;
@@ -179,15 +218,20 @@ AROS_LH1(void, BeginIO,
         CMD_UPDATE,
         CMD_CLEAR,
         TD_CHANGESTATE,
+        TD_SEEK,
         TD_FORMAT,
         TD_GETGEOMETRY,
         TD_MOTOR,
         TD_PROTSTATUS,
         TD_READ64,
         TD_WRITE64,
+        TD_SEEK64,
+        TD_FORMAT64,
         NSCMD_DEVICEQUERY,
         NSCMD_TD_READ64,
         NSCMD_TD_WRITE64,
+        NSCMD_TD_SEEK64,
+        NSCMD_TD_FORMAT64,
         0
     };
     struct IOExtTD *iotd = (struct IOExtTD *)io;
@@ -222,26 +266,10 @@ AROS_LH1(void, BeginIO,
     ReleaseSemaphore(&unit->au_Lock);
 
     switch (io->io_Command) {
-    case CMD_WRITE:
-        D(bug("[NVME%02ld] CMD_WRITE ", unit->au_UnitNum);)
-        off64  = iotd->iotd_Req.io_Offset;
-        D(bug("%08x%08x (%u)\n", off64 >> 32, off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
-        done = nvme_sector_rw(io, off64, TRUE);
-        break;
-
-    case TD_WRITE64:
-    case NSCMD_TD_WRITE64:
-        D(bug("[NVME%02ld] TD_WRITE64 ", unit->au_UnitNum);)
-        off64  = iotd->iotd_Req.io_Offset;
-        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
-        D(bug("%08x%08x (%u)\n", off64 >> 32, off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
-        done = nvme_sector_rw(io, off64, TRUE);
-        break;
-
     case CMD_READ:
         D(bug("[NVME%02ld] CMD_READ ", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
-        D(bug("%08x%08x (%u)\n", off64 >> 32, off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
+        D(bug("%08x (%u)\n", off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
         done = nvme_sector_rw(io, off64, FALSE);
         break;
 
@@ -254,22 +282,57 @@ AROS_LH1(void, BeginIO,
         done = nvme_sector_rw(io, off64, FALSE);
         break;
 
-    case TD_FORMAT:
-        D(bug("[NVME%02ld] TD_FORMAT\n", unit->au_UnitNum);)
-        if (len & (unit->au_SecCnt << unit->au_SecShift - 1))
-            goto bad_length;
+    case CMD_WRITE:
+        D(bug("[NVME%02ld] CMD_WRITE ", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
-        if (off64 & (unit->au_SecCnt << unit->au_SecShift - 1))
-            goto bad_address;
+        D(bug("%08x (%u)\n", off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
         done = nvme_sector_rw(io, off64, TRUE);
         break;
 
+    case TD_WRITE64:
+    case NSCMD_TD_WRITE64:
+        D(bug("[NVME%02ld] TD_WRITE64 ", unit->au_UnitNum);)
+        off64  = iotd->iotd_Req.io_Offset;
+        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
+        D(bug("%08x%08x (%u)\n", off64 >> 32, off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
+        done = nvme_sector_rw(io, off64, TRUE);
+        break;
+
+    case TD_FORMAT:
+        D(bug("[NVME%02ld] TD_FORMAT\n", unit->au_UnitNum);)
+        off64  = iotd->iotd_Req.io_Offset;
+        done = nvme_sector_rw(io, off64, TRUE);
+        break;
+
+    case TD_FORMAT64:
+    case NSCMD_TD_FORMAT64:
+        D(bug("[NVME%02ld] TD_FORMAT64\n", unit->au_UnitNum);)
+        off64  = iotd->iotd_Req.io_Offset;
+        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
+        done = nvme_sector_rw(io, off64, TRUE);
+        break;
+
+    case TD_SEEK:
+        D(bug("[NVME%02ld] TD_SEEK\n", unit->au_UnitNum);)
+        IOStdReq(io)->io_Actual = 0;
+        done = TRUE;
+        break;
+
+    case TD_SEEK64:
+    case NSCMD_TD_SEEK64:
+        D(bug("[NVME%02ld] TD_SEEK64\n", unit->au_UnitNum);)
+        IOStdReq(io)->io_Actual = 0;
+        done = TRUE;
+        break;
+
     case TD_CHANGESTATE:
+        D(bug("[NVME%02ld] TD_CHANGESTATE\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
 
     case NSCMD_DEVICEQUERY:
+        D(bug("[NVME%02ld] TD_DEVICEQUERY\n", unit->au_UnitNum);)
         if (len < sizeof(*nsqr))
             goto bad_length;
 
@@ -284,16 +347,19 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_PROTSTATUS:
+        D(bug("[NVME%02ld] TD_PROTSTATUS\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
 
     case TD_GETDRIVETYPE:
+        D(bug("[NVME%02ld] TD_GETDRIVETYPE\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = DRIVE_NEWSTYLE;
         done = TRUE;
         break;
 
     case TD_GETGEOMETRY:
+        D(bug("[NVME%02ld] TD_GETGEOMETRY\n", unit->au_UnitNum);)
         if (len < sizeof(*geom))
             goto bad_length;
 
@@ -317,17 +383,20 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_MOTOR:
+        D(bug("[NVME%02ld] TD_MOTOR\n", unit->au_UnitNum);)
         // FIXME: Tie in with power management
         IOStdReq(io)->io_Actual = 1;
         done = TRUE;
         break;
     
     case CMD_CLEAR:
+        D(bug("[NVME%02ld] TD_CLEAR\n", unit->au_UnitNum);)
         // FIXME: Implemennt cache invalidate
         done = TRUE;
         break;
 
     case CMD_UPDATE:
+        D(bug("[NVME%02ld] TD_UPDATE\n", unit->au_UnitNum);)
         // FIXME: Implement cache flush
         done = TRUE;
         break;

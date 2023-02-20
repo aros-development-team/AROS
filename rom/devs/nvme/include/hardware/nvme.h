@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2020-2023, The AROS Development Team.  All rights reserved.
  */
 
 #ifndef _HARDWARE_NVME_H
@@ -262,7 +262,7 @@ struct nvme_command {
 
 struct nvme_lbaf {
     UWORD			ms;
-    UBYTE			ds;
+    UBYTE			ds; // LBA Data Size - should be >= 9 (9 = 512byte sectors. 12 = 4096bytes sectors)
     UBYTE			rp;
 };
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -118,12 +118,6 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
         nvme_complete_event(nvmeq, cqe);
     }
 
-    /* If the controller ignores the cq head doorbell and continuously
-     * writes to the queue, it is theoretically possible to wrap around
-     * the queue twice and mistakenly return IRQ_NONE.  Linux only
-     * requires that 0.1% of your interrupts are handled, so this isn't
-     * a big problem.
-     */
     if ((head != nvmeq->cq_head) || (phase == nvmeq->cq_phase))
     {
         D(bug ("[NVME:HW] %s: updating head=%u, phase=%u\n", __func__, head, phase);)
