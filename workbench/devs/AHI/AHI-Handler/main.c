@@ -1,6 +1,6 @@
 /*
      AHI-Handler - The AUDIO: DOS device for AHI
-     Copyright (C) 2017-2022 The AROS Dev Team
+     Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1997-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -25,7 +25,10 @@
  *
  */
 
-//#define DEBUG
+#if !defined(DEBUG)
+#define DEBUG 0
+#endif
+
 #if defined(__AROS__)
 #define __NOLIBBASE__
 #include <aros/debug.h>
@@ -89,7 +92,6 @@ void returnpacket (PARAMSYSBASE struct DosPacket *);
 void Initialize (PARAMSYSBASE struct DosPacket *);
 void UnInitialize (void);
 
-
 /*
  *  Some macros
  */
@@ -128,7 +130,7 @@ KPrintFArgs( UBYTE* fmt,
   RawDoFmt( fmt, args, (void(*)(void)) rawputchar_m68k, SysBase );
 }
 
-#define kprintf( fmt, ... )        \
+#define bug( fmt, ... )        \
 ({                                 \
   IPTR _args[] = { __VA_ARGS__ }; \
   KPrintFArgs( (fmt), _args );     \
@@ -207,10 +209,8 @@ LONG handler(struct ExecBase *SysBase)
 
   BOOL Running;
 
-#ifdef DEBUG
-  kprintf("The very first call...\n");
-#endif
-  
+  D(bug("[AHI-Handler] %s: The very first call...\n", __func__);)
+
   proc = (struct Process *) FindTask (NULL);
 
   PktPort = &proc->pr_MsgPort;
@@ -226,9 +226,7 @@ LONG handler(struct ExecBase *SysBase)
   Running = TRUE;
   AllocCnt = 0;
 
-#ifdef DEBUG
-  kprintf("Init\n");
-#endif
+  D(bug("[AHI-Handler] %s: Init\n", __func__);)
 
   /*
    *        Main Loop
@@ -241,9 +239,8 @@ LONG handler(struct ExecBase *SysBase)
       Wait (1 << PktPort->mp_SigBit);
     packet = (struct DosPacket *) msg->mn_Node.ln_Name;
 
-#ifdef DEBUG
-    kprintf ("Got packet: %ld\n", packet->dp_Type);
-#endif
+    D(bug("[AHI-Handler] %s: Got packet: %ld\n", __func__, packet->dp_Type);)
+
     /*
      *  default return value
      */
@@ -283,11 +280,11 @@ LONG handler(struct ExecBase *SysBase)
         len = AROS_BSTR_strlen(packet->dp_Arg3);
 #endif
 
-#ifdef DEBUG
-        kprintf("ACTION_FIND#?: fh @ 0x%p\n", (char *) fh);
-        kprintf("ACTION_FIND#?: base @ 0x%p (len = %u)\n", (char *) base, len);
-        kprintf("ACTION_FIND#?:         =  '%s'\n", (char *) base);
-#endif
+        D(
+          bug("[AHI-Handler] %s: ACTION_FIND#?: fh @ 0x%p\n", __func__, (char *) fh);
+          bug("[AHI-Handler] %s: ACTION_FIND#?: base @ 0x%p (len = %u)\n", __func__, (char *) base, len);
+          bug("[AHI-Handler] %s: ACTION_FIND#?:         =  '%s'\n", __func__, (char *) base);
+        )
         // Skip volume name and ':'
         if (len > 0)
         {
@@ -323,9 +320,7 @@ LONG handler(struct ExecBase *SysBase)
         }
         buf[len] = 0;
 
-#ifdef DEBUG
-        kprintf("ACTION_FIND#?: '%s'\n", (char *) buf);
-#endif
+        D(bug("[AHI-Handler] %s: ACTION_FIND#?: '%s'\n", __func__, (char *) buf);)
 
         data = AllocVec(sizeof(struct HandlerData), MEMF_PUBLIC | MEMF_CLEAR);
         if(! data) {
@@ -350,7 +345,6 @@ LONG handler(struct ExecBase *SysBase)
           packet->dp_Res1 = DOS_FALSE;
           break;
         }
-
 
         fh->fh_Arg1 = (IPTR) data;
         fh->fh_Port = DOS_TRUE;
@@ -379,9 +373,7 @@ LONG handler(struct ExecBase *SysBase)
         UBYTE *dest   = (void *) packet->dp_Arg2;
         LONG   length, filled;
 
-#ifdef DEBUG
-        kprintf("ACTION_READ: 0x%08lx, %ld\n", packet->dp_Arg2, packet->dp_Arg3);
-#endif
+        D(bug("[AHI-Handler] %s: ACTION_READ: 0x%08lx, %ld\n", __func__, packet->dp_Arg2, packet->dp_Arg3);)
 
         if(! data->initialized) {
           packet->dp_Res2 = InitHData(data);
@@ -521,9 +513,7 @@ LONG handler(struct ExecBase *SysBase)
         UBYTE *src    = (void *) packet->dp_Arg2;
         LONG   length = packet->dp_Arg3, filled;
 
-#ifdef DEBUG
-        kprintf("ACTION_WRITE: 0x%p, %ld\n", src, length);
-#endif
+        D(bug("[AHI-Handler] %s: ACTION_WRITE: 0x%p, %ld\n", __func__, src, length);)
 
         if(data->buffer1 == NULL) {
           // Check headers?
@@ -567,9 +557,7 @@ LONG handler(struct ExecBase *SysBase)
             LONG skiplen = 0;
 
             skiplen = ReadCOMMchunk(data, src, length);
-#ifdef DEBUG
-        kprintf("ACTION_WRITE: skiplen = %ld\n", skiplen);
-#endif
+        D(bug("[AHI-Handler] %s: ACTION_WRITE: skiplen = %ld\n", __func__, skiplen);)
             
             src    += skiplen;
             length -= skiplen;
@@ -600,9 +588,7 @@ LONG handler(struct ExecBase *SysBase)
         length = min(data->totallength, length);
         filled = min(data->totallength, packet->dp_Arg3);
 
-#ifdef DEBUG
-        kprintf("ACTION_WRITE: length = %ld, filled = %ld\n", length, filled);
-#endif
+        D(bug("[AHI-Handler] %s: ACTION_WRITE: length = %ld, filled = %ld\n", __func__, length, filled);)
 
         while(length > 0) {
           LONG thislength;
@@ -636,9 +622,7 @@ LONG handler(struct ExecBase *SysBase)
       {
         struct HandlerData *data = (struct HandlerData *) packet->dp_Arg1;
 
-#ifdef DEBUG
-        kprintf("ACTION_END\n");
-#endif
+        D(bug("[AHI-Handler] %s: ACTION_END\n", __func__);)
 
         // Abort any reading requests
 
@@ -676,9 +660,7 @@ LONG handler(struct ExecBase *SysBase)
       /***********************************************************************/
 
       default:
-#ifdef DEBUG
-	kprintf("Unknown packet!\n");
-#endif
+	D(bug("[AHI-Handler] %s: Unknown packet!\n", __func__);)
         packet->dp_Res1 = DOS_FALSE;
         packet->dp_Res2 = ERROR_ACTION_NOT_KNOWN;
         break;
@@ -690,16 +672,12 @@ LONG handler(struct ExecBase *SysBase)
 
     if (packet) {
       returnpacket (ATTRIBSYSBASE packet);
-#ifdef DEBUG
-      kprintf("Returned packet\n");
-#endif
+      D(bug("[AHI-Handler] %s: Returned packet\n", __func__);)
     }
-
   } /* for */
 
-#ifdef DEBUG
-  kprintf("Dying..!\n");
-#endif
+  D(bug("[AHI-Handler] %s: Dying..!\n", __func__);)
+
   UnInitialize();
 #if !defined(__AROS__)
   _exit (0);
@@ -990,16 +968,14 @@ long ParseArgs(PARAMSYSBASE struct HandlerData *data, char *initstring) {
 #if defined(__AROS__)
   if ((DOSBase = OpenLibrary("dos.library", 0)) == NULL)
   {
-#ifdef DEBUG
-    kprintf("[AHI-Handler] %s: failed to open dos.library\n", __func__);
-#endif
+    D(bug("[AHI-Handler] %s: failed to open dos.library\n", __func__);)
+
     return ERROR_BAD_TEMPLATE;
   }
   if ((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 0)) == NULL)
   {
-#ifdef DEBUG
-    kprintf("[AHI-Handler] %s: failed to open utility.library\n", __func__);
-#endif
+    D(bug("[AHI-Handler] %s: failed to open utility.library\n", __func__);)
+
     return ERROR_BAD_TEMPLATE;
   }
 #endif
@@ -1033,17 +1009,15 @@ long ParseArgs(PARAMSYSBASE struct HandlerData *data, char *initstring) {
         data->args.format = AIFC;
       }
       else {
-#ifdef DEBUG
-        kprintf("[AHI-Handler] %s: Unhandled type %s\n", __func__, data->args.type);
-#endif
+        D(bug("[AHI-Handler] %s: Unhandled type %s\n", __func__, data->args.type);)
+
         rc = ERROR_BAD_TEMPLATE;
       }
     }
     else
     {
-#ifdef DEBUG
-      kprintf("[AHI-Handler] %s: ReadArgs failed\n", __func__);
-#endif
+      D(bug("[AHI-Handler] %s: ReadArgs failed\n", __func__);)
+
       rc = ERROR_BAD_TEMPLATE;
     }
 
@@ -1258,9 +1232,7 @@ void Initialize (PARAMSYSBASE struct DosPacket *packet) {
   DevNode = dn = BTOC (packet->dp_Arg3);
   dn->dn_Task = NULL;
 
-#ifdef DEBUG
-  kprintf("Replying it ...\n");
-#endif
+  D(bug("[AHI-Handler] %s: Replying it ...\n", __func__);)
 
   packet->dp_Res1 = DOS_TRUE;
   packet->dp_Res2 = 0;
