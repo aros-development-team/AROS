@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2023 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -178,8 +178,11 @@ LONG LockFile(struct DirEntry *de, LONG access, struct ExtFileLock **lock)
     InitDirHandle(glob->data, fl->dir, FALSE);
 
     fl->entry->data = de->data;		/* filesystem data */
-    fl->entry->entryname = AllocVec(strlen(de->entryname) + 1, MEMF_ANY|MEMF_CLEAR);
-    CopyMem(de->entryname, fl->entry->entryname, strlen(de->entryname));
+    if (de->entryname)
+    {
+        fl->entry->entryname = AllocVec(strlen(de->entryname) + 1, MEMF_ANY|MEMF_CLEAR);
+        CopyMem(de->entryname, fl->entry->entryname, strlen(de->entryname));
+    }
     fl->entry->entrytype = de->entrytype;
 
     fl->entry->no = de->no;
@@ -207,12 +210,15 @@ LONG LockFile(struct DirEntry *de, LONG access, struct ExtFileLock **lock)
         gl->first_cluster = fl->entry->entry->mftrec_no * glob->data->mft_size;
         
         gl->attr = fl->entry->entrytype;
-	if (fl->entry->entry)
-	    gl->size = fl->entry->entry->size;
+        if (fl->entry->entry)
+            gl->size = fl->entry->entry->size;
 
-	gl->name[0] = strlen(fl->entry->entryname) + 1;
-	CopyMem(fl->entry->entryname, &gl->name[1], gl->name[0]);
-	
+        if (fl->entry->entryname)
+        {
+            gl->name[0] = strlen(fl->entry->entryname) + 1;
+            CopyMem(fl->entry->entryname, &gl->name[1], gl->name[0]);
+        }
+
         NEWLIST(&gl->locks);
 
         ADDTAIL(&glob->data->info->locks, gl);
