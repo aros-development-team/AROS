@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- debug-tools : debug-tools-devtest
+
+USER_LDFLAGS :=
+
+%build_prog mmake=debug-tools-devtest \
+    progname=DevTest targetdir=$(AROS_DEBUG) \
+    files=devtest
+
+%common
