@@ -451,11 +451,12 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                     }
                     if (pn->ln.ln_Succ)
                     {
+                        ULONG ppos;
                         tags[0].ti_Tag = PT_POSITION;
-                        tags[0].ti_Data = (STACKIPTR) & type;
+                        tags[0].ti_Data = (STACKIPTR) & ppos;
                         tags[1].ti_Tag = TAG_DONE;
                         GetPartitionAttrs(pn, tags);
-                        volume->partnum = (UBYTE) type;
+                        volume->partnum = (UBYTE) ppos;
                         retval = TRUE;
                         D(bug
                           ("[install] Primary partition found: partnum=%d\n",
@@ -498,11 +499,12 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                                 }
                                 if (pn->ln.ln_Succ)
                                 {
+                                    ULONG ppos;
                                     tags[0].ti_Tag = PT_POSITION;
-                                    tags[0].ti_Data = (STACKIPTR) & type;
+                                    tags[0].ti_Data = (STACKIPTR) & ppos;
                                     GetPartitionAttrs(pn, tags);
                                     volume->partnum =
-                                        MBR_MAX_PARTITIONS + (UBYTE) type;
+                                        MBR_MAX_PARTITIONS + (UBYTE) ppos;
                                     retval = TRUE;
                                     D(bug
                                       ("[install] Logical partition found: partnum=%d\n",

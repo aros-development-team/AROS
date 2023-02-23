@@ -395,11 +395,12 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
                                         }
                                         if (pn->ln.ln_Succ)
                                         {
+                                                ULONG ppos;
                                                 tags[0].ti_Tag = PT_POSITION;
-                                                tags[0].ti_Data = (STACKIPTR)&type;
+                                                tags[0].ti_Data = (STACKIPTR)&ppos;
                                                 tags[1].ti_Tag = TAG_DONE;
                                                 GetPartitionAttrs(pn, tags);
-                                                volume->partnum = (UBYTE)type;
+                                                volume->partnum = (UBYTE)ppos;
                                                 retval = TRUE;
                                                 D(bug("[install-i386] Primary partition found: partnum=%ld\n", volume->partnum));
                                         }
@@ -435,10 +436,11 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
                                                                 }
                                                                 if (pn->ln.ln_Succ)
                                                                 {
+                                                                        ULONG ppos;
                                                                         tags[0].ti_Tag = PT_POSITION;
-                                                                        tags[0].ti_Data = (STACKIPTR)&type;
+                                                                        tags[0].ti_Data = (STACKIPTR)&ppos;
                                                                         GetPartitionAttrs(pn, tags);
-                                                                        volume->partnum = MBR_MAX_PARTITIONS + (UBYTE)type;
+                                                                        volume->partnum = MBR_MAX_PARTITIONS + (UBYTE)ppos;
                                                                         retval = TRUE;
                                                                         D(bug("[install-i386] Logical partition found: partnum=%ld\n", volume->partnum));
                                                                 }
