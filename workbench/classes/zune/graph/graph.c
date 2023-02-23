@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -720,7 +720,7 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                         }
                         FreeVec(vectors);
                     }
-                    FreeMem(tmpbuf, objWidth * objHeight * 8);
+                    FreeMem(tmpbuf, objWidth * objHeight * dispDepth);
                 }
                 drp->AreaInfo = NULL;
                 drp->TmpRas = NULL;
