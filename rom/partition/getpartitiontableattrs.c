@@ -72,7 +72,7 @@
                 switch (tag->ti_Tag)
                 {
                 case PTT_TYPE:
-                    *((LONG *)tag->ti_Data) = root->table->type;
+                    *((ULONG *)tag->ti_Data) = root->table->type;
                     break;
 
                 case PTT_MAXLEADIN:
