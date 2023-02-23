@@ -1205,7 +1205,7 @@ void mainloop(void) {
                   }
               /*  else if(packet->dp_Arg4!=LINK_SOFT) {
                     returnpacket(DOSFALSE,ERROR_BAD_NUMBER);
-                  } */  /* Check removed because DOS apparantely defines non-zero as being a Soft link! */
+                  } */  /* Check removed because DOS apparently defines non-zero as being a Soft link! */
                   else {
                     struct ExtFileLock *lock;
                     LONG errorcode;
@@ -1529,7 +1529,7 @@ void mainloop(void) {
                       
 
                       s=BADDR(globals->packet->dp_Arg1);
-                      d=oc->object[0].name;
+                      d=&oc->object[0].name[0];
                       d[copybstrasstr((BSTR)globals->packet->dp_Arg1, d, 30)+1] = 0;
 #if 0
                       len=*s++;
@@ -3126,7 +3126,7 @@ LONG readroots(void)
     rb1okay=FALSE;
   }
   
-  _DEBUG(("checkchecksum(cb1)=%d, rb1->bheader.id=%08x (wanted %08x), rb1->bheader.ownblock=%d\n",
+  _DEBUG(("checkchecksum(cb1)=%d, rb1->bheader.id=%08x (wanted %08x), rb1->bheader.ownblock=%u\n",
     checkchecksum(cb1),BE2L(rb1->bheader.id), DOSTYPE_ID, BE2L(rb1->bheader.be_ownblock)
     ));
 
@@ -3135,7 +3135,7 @@ LONG readroots(void)
     rb2okay=FALSE;
   }
 
-  _DEBUG(("checkchecksum(cb2)=%d, rb2->bheader.id=%08x, rb2->bheader.ownblock=%d, rb2->be_totalblocks =%d\n",
+  _DEBUG(("checkchecksum(cb2)=%d, rb2->bheader.id=%08x, rb2->bheader.ownblock=%u, rb2->be_totalblocks =%u\n",
     checkchecksum(cb2),BE2L(rb2->bheader.id), BE2L(rb2->bheader.be_ownblock), BE2L(rb2->be_totalblocks)
     ));
 
