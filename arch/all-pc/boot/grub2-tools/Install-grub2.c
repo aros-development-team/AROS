@@ -174,7 +174,7 @@ void fillGeometry(struct Volume *volume, struct DosEnvec *de)
 {
     ULONG spc;
 
-    D(bug("[install] fillGeometry(%x)\n", volume));
+    D(bug("[install] fillGeometry(0x%p)\n", volume));
 
     spc = de->de_Surfaces * de->de_BlocksPerTrack;
     volume->SizeBlock = de->de_SizeBlock;
@@ -188,7 +188,7 @@ void nsdCheck(struct Volume *volume)
     struct NSDeviceQueryResult nsdq;
     UWORD *cmdcheck;
 
-    D(bug("[install] nsdCheck(%x)\n", volume));
+    D(bug("[install] nsdCheck(0x%p)\n", volume));
 
     if (((volume->startblock + volume->countblock) *    /* last block */
          ((volume->SizeBlock << 2) / 512)       /* 1 portion (block) equals 512 (bytes) */
@@ -330,7 +330,7 @@ static ULONG _readwriteBlock(struct Volume *volume,
 
 ULONG readBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
 {
-    D(bug("[install] readBlock(vol:%x, block:%d, %d bytes)\n",
+    D(bug("[install] readBlock(vol:0x%p, block:%d, %d bytes)\n",
           volume, block, size));
 
     return _readwriteBlock(volume, block, buffer, size, volume->readcmd);
@@ -369,7 +369,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
     struct PartitionHandle *ph;
     ULONG dos_id;
 
-    D(bug("[install] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
+    D(bug("[install] isvalidFileSystem(0x%p, %s, %d)\n", volume, device, unit));
 
     if (readBlock(volume, 0, volume->blockbuffer, 512))
     {
@@ -549,7 +549,7 @@ struct Volume *getGrubStageVolume(CONST_STRPTR device, ULONG unit,
 
     volume = initVolume(device, unit, flags, de);
 
-    D(bug("[install] getGrubStageVolume(): volume=%x\n", volume));
+    D(bug("[install] getGrubStageVolume(): volume=0x%p\n", volume));
 
     if (volume)
     {
