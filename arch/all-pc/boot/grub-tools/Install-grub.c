@@ -356,13 +356,13 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
                         if (OpenPartitionTable(ph) == 0)
                         {
                         struct TagItem tags[3];
-                        IPTR type;
+                        ULONG ttype;
 
                                 tags[1].ti_Tag = TAG_DONE;
                                 tags[0].ti_Tag = PTT_TYPE;
-                                tags[0].ti_Data = (STACKIPTR)&type;
+                                tags[0].ti_Data = (STACKIPTR)&ttype;
                                 GetPartitionTableAttrs(ph, tags);
-                                if (type == PHPTT_MBR)
+                                if (ttype == PHPTT_MBR)
                                 {
                                 struct PartitionHandle *pn;
                                 struct DosEnvec de;
@@ -408,10 +408,10 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
                                                 if (OpenPartitionTable(extph) == 0)
                                                 {
                                                         tags[0].ti_Tag = PTT_TYPE;
-                                                        tags[0].ti_Data = (STACKIPTR)&type;
+                                                        tags[0].ti_Data = (STACKIPTR)&ttype;
                                                         tags[1].ti_Tag = TAG_DONE;
                                                         GetPartitionTableAttrs(extph, tags);
-                                                        if (type == PHPTT_EBR)
+                                                        if (ttype == PHPTT_EBR)
                                                         {
                                                                 tags[0].ti_Tag = PT_DOSENVEC;
                                                                 tags[0].ti_Data = (STACKIPTR)&de;
@@ -449,7 +449,7 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
                                 }
                                 else
                                 {
-                                        if (type == PHPTT_RDB)
+                                        if (ttype == PHPTT_RDB)
                                         {
                                                 /* just use whole hard disk */
                                                 retval = TRUE;
