@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -208,15 +208,16 @@ IPTR ProcessorGraph__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     SETUP_PROCGRAPH_INST_DATA;
     BOOL singlemode = (BOOL)(data->pg_Flags & PROCGF_SINGLE);
+    APTR hooks = data->pg_GraphReadHooks, graphs = data->pg_Graphs;
     IPTR retVal;
 
     D(bug("[SysMon:ProcGraph] %s()\n", __func__));
 
     retVal = DoSuperMethodA(CLASS, self, message);
 
-    FreeVec(data->pg_GraphReadHooks);
+    FreeVec(hooks);
     if (!singlemode)
-        FreeVec(data->pg_Graphs);
+        FreeVec(graphs);
 
     return retVal;
 }
