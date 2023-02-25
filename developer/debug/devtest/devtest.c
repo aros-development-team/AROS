@@ -44,13 +44,13 @@ const char *version = "\0$VER: devtest 1.3 ("__DATE__") © Chris Hooper";
 #define CDERR_InvalidState   37
 #else
 #include <devices/cd.h>
+#if !defined(__AROS__)
 #if !defined(INLINE_EXEC_H)
 #include <inline/exec.h>
 #endif
 #if !defined(INLINE_DOS_H)
 #include <inline/dos.h>
 #endif
-#if !defined(__AROS__)
 struct ExecBase *SysBase;
 struct ExecBase *DOSBase;
 #endif
