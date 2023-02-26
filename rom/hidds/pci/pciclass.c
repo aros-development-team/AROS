@@ -236,6 +236,15 @@ static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
                 /* We have to look for a routing entry that matches the parent bridge instead, so first find the
                    bridge */
                 bridge = FindBridge(cl, drv, bus);
+                if (!bridge)
+                {
+                    IPTR tmp;
+                    OOP_GetAttr(pcidev, aHidd_PCIDevice_Bus, &tmp);
+                    OOP_GetAttr(pcidev, aHidd_PCIDevice_Dev, &dev);
+                    bug("[PCI] %s: No match on bus %d and no bridge. "
+                        "Failing to re-assign INTLine for device  %02x on bus %d\n", __func__, bus, dev, tmp);
+                    break;
+                }
                 OOP_GetAttr(bridge, aHidd_PCIDevice_Bus, &bus);
 
                 /* Swizzle the INT pin as we traverse up to the parent bridge */
