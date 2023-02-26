@@ -201,8 +201,7 @@ static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
 
     if (d == (IPTR)drv && line != 0)
     {
-        /* For the first loop iteration, it's simpler to consider the device
-         * it's own bridge! */
+        /* For the first loop iteration, it's simpler to consider the device it's own bridge! */
         bridge = pcidev;
 
         while (!irq_found)
@@ -210,8 +209,8 @@ static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
             OOP_GetAttr(bridge, aHidd_PCIDevice_Bus, &bus);
             OOP_GetAttr(bridge, aHidd_PCIDevice_Dev, &dev);
 
-            D(bug("[PCI] %s: Looking for routing for device %02x"
-                " and INT%c on bus %d\n", __func__, dev, 'A' + line - 1, bus));
+            D(bug("[PCI] %s: Looking for routing for device %02x and INT%c on bus %d\n", __func__, dev,
+                'A' + line - 1, bus));
 
             ForeachNode(irq_routing, e)
             {
@@ -224,8 +223,7 @@ static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
                         {TAG_DONE, 0UL}
                     };
 
-                    D(bug("[PCI] %s: Got a match. Setting INTLine to %d\n",
-                        __func__, e->re_IRQ));
+                    D(bug("[PCI] %s: Got a match. Setting INTLine to %d\n", __func__, e->re_IRQ));
                     OOP_SetAttrs(pcidev, attr);
                     irq_found = TRUE;
                 }
@@ -233,18 +231,16 @@ static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
 
             if (!irq_found)
             {
-                D(bug("[PCI] %s: No match on bus %d. Trying parent bridge...\n",
-                    __func__, bus));
+                D(bug("[PCI] %s: No match on bus %d. Trying parent bridge...\n", __func__, bus));
 
-                /* We have to look for a routing entry that matches the
-                 * parent bridge instead, so first find the bridge */
+                /* We have to look for a routing entry that matches the parent bridge instead, so first find the
+                   bridge */
                 bridge = FindBridge(cl, drv, bus);
                 OOP_GetAttr(bridge, aHidd_PCIDevice_Bus, &bus);
 
-                /* Swizzle the INT pin as we traverse up to the parent
-                 * bridge */
-                D(bug("[PCI] %s:Swizzling the IRQPin from INT%c to INT%c\n",
-                    __func__, 'A' + line - 1, 'A' + (line - 1 + dev) % 4));
+                /* Swizzle the INT pin as we traverse up to the parent bridge */
+                D(bug("[PCI] %s:Swizzling the IRQPin from INT%c to INT%c\n", __func__, 'A' + line - 1,
+                    'A' + (line - 1 + dev) % 4));
                 line = (line - 1 + dev) % 4 + 1;
             }
         }
