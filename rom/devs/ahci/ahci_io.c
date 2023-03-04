@@ -202,14 +202,19 @@ AROS_LH1(void, BeginIO,
         TD_CHANGESTATE,
         TD_EJECT,
         TD_FORMAT,
+        TD_FORMAT64,
         TD_GETGEOMETRY,
         TD_MOTOR,
         TD_PROTSTATUS,
         TD_READ64,
         TD_REMCHANGEINT,
+        TD_SEEK,
+        TD_SEEK64,
         TD_WRITE64,
         NSCMD_DEVICEQUERY,
+        NSCMD_TD_FORMAT64,
         NSCMD_TD_READ64,
+        NSCMD_TD_SEEK64,
         NSCMD_TD_WRITE64,
         0
     };
@@ -340,14 +345,38 @@ AROS_LH1(void, BeginIO,
         IOStdReq(io)->io_Actual = sizeof(*geom);
         done = TRUE;
         break;
+
     case TD_FORMAT:
-        if (len & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
+        if (len > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
             goto bad_length;
         off64  = iotd->iotd_Req.io_Offset;
-        if (off64 & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
+        if (off64 > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
             goto bad_address;
         done = ahci_sector_rw(io, off64, TRUE);
         break;
+
+    case TD_FORMAT64:
+    case NSCMD_TD_FORMAT64:
+        if (len > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
+            goto bad_length;
+        off64  = iotd->iotd_Req.io_Offset;
+        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
+        if (off64 > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
+            goto bad_address;
+        done = ahci_sector_rw(io, off64, TRUE);
+        break;
+
+    case TD_SEEK:
+        IOStdReq(io)->io_Actual = 0;
+        done = TRUE;
+        break;
+
+    case TD_SEEK64:
+    case NSCMD_TD_SEEK64:
+        IOStdReq(io)->io_Actual = 0;
+        done = TRUE;
+        break;
+
     case TD_MOTOR:
         D(
             AHCI_UNIT_DBG
@@ -357,26 +386,31 @@ AROS_LH1(void, BeginIO,
         IOStdReq(io)->io_Actual = 1;
         done = TRUE;
         break;
+
     case CMD_WRITE:
         off64  = iotd->iotd_Req.io_Offset;
         done = ahci_sector_rw(io, off64, TRUE);
         break;
+
     case TD_WRITE64:
     case NSCMD_TD_WRITE64:
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
         done = ahci_sector_rw(io, off64, TRUE);
         break;
+
     case CMD_READ:
         off64  = iotd->iotd_Req.io_Offset;
         done = ahci_sector_rw(io, off64, FALSE);
         break;
+
     case TD_READ64:
     case NSCMD_TD_READ64:
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
         done = ahci_sector_rw(io, off64, FALSE);
         break;
+
     case HD_SCSICMD:
         if (sizeof(struct SCSICmd) != len)
             goto bad_length;
@@ -387,6 +421,7 @@ AROS_LH1(void, BeginIO,
         else
             goto bad_cmd;
         break;
+
     case TD_ADDCHANGEINT:
         D(
             AHCI_UNIT_DBG
@@ -395,6 +430,7 @@ AROS_LH1(void, BeginIO,
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         break;
+
     case TD_REMCHANGEINT:
         D(
             AHCI_UNIT_DBG
@@ -404,14 +440,17 @@ AROS_LH1(void, BeginIO,
             goto bad_cmd;
         done = TRUE;
         break;
+
     case CMD_CLEAR:
         // FIXME: Implemennt cache invalidate
         done = TRUE;
         break;
+
     case CMD_UPDATE:
         // FIXME: Implement cache flush
         done = TRUE;
         break;
+
     default:
         bug("ahci.device %d: Unknown IO command %d\n", unit->sim_Unit, io->io_Command);
 bad_cmd:
