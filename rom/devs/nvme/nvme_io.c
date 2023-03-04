@@ -44,25 +44,29 @@
 
 static UQUAD *nvme_allocprps(struct nvme_Unit *unit, APTR addr, IPTR len, APTR *prpbuff, ULONG *cnt)
 {
-    UQUAD *prps = NULL;
+    UQUAD *prps = NULL, pages = 0, page;
     *cnt = (len / unit->au_Bus->ab_Dev->pagesize) - 1;
 
-    bug("[NVME%02ld] %s()\n", unit->au_UnitNum, __func__);
-    bug("[NVME%02ld] %s: allocation storage for %u prp entries\n", unit->au_UnitNum, __func__, *cnt);
+    pages = (((*cnt) << 3) / unit->au_Bus->ab_Dev->pagesize) + 1;
 
-    *prpbuff = AllocMem(unit->au_Bus->ab_Dev->pagesize + (sizeof(UQUAD) * (*cnt + 1)), MEMF_ANY);
+    D(
+     bug("[NVME%02ld] %s()\n", unit->au_UnitNum, __func__);
+     bug("[NVME%02ld] %s: allocation storage for %u prp entries (%u pages)\n", unit->au_UnitNum, __func__, *cnt, pages);
+    )
+
+    *prpbuff = AllocMem((pages + 1) * unit->au_Bus->ab_Dev->pagesize, MEMF_ANY);
     if (*prpbuff != NULL)
     {
         ULONG len = (*cnt) << 3;
         int prp;
 
         prps = (APTR)(((IPTR)*prpbuff + unit->au_Bus->ab_Dev->pagesize) & ~(unit->au_Bus->ab_Dev->pagesize - 1));
-        bug("[NVME%02ld] %s: prps @ 0x%p (allocated @ 0x%p)\n", unit->au_UnitNum, __func__, prps, *prpbuff);
+        D(bug("[NVME%02ld] %s: prps @ 0x%p (allocated @ 0x%p)\n", unit->au_UnitNum, __func__, prps, *prpbuff);)
 
         for (prp = 0; prp < *cnt; prp++)
         {
             prps[prp] = (UQUAD)(IPTR)addr + (unit->au_Bus->ab_Dev->pagesize * (prp + 1));
-            bug("[NVME%02ld] %s:         [%u] = 0x%p\n", unit->au_UnitNum, __func__, prp, (APTR)prps[prp]);
+            D(bug("[NVME%02ld] %s:         [%u] = 0x%p\n", unit->au_UnitNum, __func__, prp, (APTR)prps[prp]);)
         }
         CachePreDMA(prps, &len, DMAFLAGS_PREREAD);
     }
@@ -91,8 +95,6 @@ static BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_hand
             ioehandle->ceh_DMA = (APTR)(((IPTR)ioehandle->ceh_DMABuff + unit->au_Bus->ab_Dev->pagesize)  & ~(unit->au_Bus->ab_Dev->pagesize - 1));
             *data = ioehandle->ceh_DMA;
             D(bug("[NVME%02ld] %s: using buffer @ %p (alloc @ 0x%p)\n", unit->au_UnitNum, __func__, *data, ioehandle->ceh_DMABuff);)
-            if (is_write)
-                CopyMem(_data, *data, len);
         }
         cmdio->rw.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)*data);
 
@@ -100,11 +102,31 @@ static BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_hand
         if ((cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)(IPTR)ioehandle->ceh_PRP)) == 0)
         {
             D(bug("[NVME%02ld] %s: failed to allocate prp's\n", unit->au_UnitNum, __func__);)
+
+            if (_data != *data)
+            {
+                FreeMem(ioehandle->ceh_DMABuff, ioehandle->ceh_DMAlen);
+                ioehandle->ceh_DMAlen = 0;
+                ioehandle->ceh_DMABuff = NULL;
+                ioehandle->ceh_DMA = NULL;
+                *data = _data;
+            }
             return FALSE;
         }
+        if ((_data != *data) && (is_write))
+            CopyMem(_data, *data, len);
     }
     else
     {
+        if ((len > unit->au_Bus->ab_Dev->pagesize) && (((IPTR)*data & (unit->au_Bus->ab_Dev->pagesize - 1)) != 0))
+        {
+            D(bug("[NVME%02ld] %s: unaligned buffer start (%p)\n", unit->au_UnitNum, __func__, *data);)
+            ioehandle->ceh_DMAlen = len + unit->au_Bus->ab_Dev->pagesize;
+            ioehandle->ceh_DMABuff = AllocMem(ioehandle->ceh_DMAlen, MEMF_ANY);
+            ioehandle->ceh_DMA = (APTR)(((IPTR)ioehandle->ceh_DMABuff + unit->au_Bus->ab_Dev->pagesize)  & ~(unit->au_Bus->ab_Dev->pagesize - 1));
+            *data = ioehandle->ceh_DMA;
+            D(bug("[NVME%02ld] %s: using buffer @ %p (alloc @ 0x%p)\n", unit->au_UnitNum, __func__, *data, ioehandle->ceh_DMABuff);)
+        }
         cmdio->rw.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)*data);
 
         if (len > unit->au_Bus->ab_Dev->pagesize)
@@ -112,7 +134,9 @@ static BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_hand
             D(bug("[NVME%02ld] %s: <= 8k transfer\n", unit->au_UnitNum, __func__);)
 
             cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)(IPTR)*data + unit->au_Bus->ab_Dev->pagesize);
-        }
+            if ((_data != *data) && (is_write))
+                CopyMem(_data, *data, len);
+            }
         else
         {
             D(bug("[NVME%02ld] %s: <= 4k transfer\n", unit->au_UnitNum, __func__);)
@@ -134,7 +158,7 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     int queueno;
 
     D(
-        bug("[NVME%02ld] %s(%08x%08x, %u) %s\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF, len, is_write ? "WRITE" : "READ");
+        bug("[NVME%02ld] %s(%08x%08x, 0x%p, %u) %s\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF, data, len, is_write ? "WRITE" : "READ");
 
         bug("[NVME%02ld] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus);
         bug("[NVME%02ld] %s: bus dev @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev);
@@ -186,7 +210,7 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 
     cmdio.rw.nsid = AROS_LONG2LE(nsid);
     cmdio.rw.length = AROS_WORD2LE((len >> unit->au_SecShift) - 1);
-    cmdio.rw.slba = off64 >> unit->au_SecShift;
+    cmdio.rw.slba = AROS_QUAD2LE(off64 >> unit->au_SecShift);
     cmdio.rw.control = 0;
     cmdio.rw.dsmgmt = 0;
 
@@ -379,6 +403,19 @@ AROS_LH1(void, BeginIO,
         geom->dg_DeviceType   = DG_DIRECT_ACCESS;
         geom->dg_Flags        = 0;
         IOStdReq(io)->io_Actual = sizeof(*geom);
+        done = TRUE;
+        break;
+
+    case TD_ADDCHANGEINT:
+        D(bug("[NVME%02ld] TD_ADDCHANGEINT\n", unit->au_UnitNum);)
+        if (io->io_Flags & IOF_QUICK)
+            goto bad_cmd;
+        break;
+
+    case TD_REMCHANGEINT:
+        D(bug("[NVME%02ld] TD_REMCHANGEINT\n", unit->au_UnitNum);)
+        if (io->io_Flags & IOF_QUICK)
+            goto bad_cmd;
         done = TRUE;
         break;
 

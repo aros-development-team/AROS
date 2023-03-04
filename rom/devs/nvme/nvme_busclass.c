@@ -73,8 +73,6 @@ static AROS_INTH1(NVME_IOIntCode, struct nvme_queue *, nvmeq)
 static void nvme_iotask(struct nvme_queue *nvmeq)
 {
     struct Task *thisTask = FindTask(NULL);
-    APTR dma;
-    LONG iolen;
     int i;
 
     DIO(
@@ -89,78 +87,10 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
             if ((nvmeq->cehandlers[i]) && (nvmeq->cehandlers[i]->ceh_Reply))
             {
                 struct IOExtTD *iotd = (struct IOExtTD *)nvmeq->cehandlers[i]->ceh_Msg;
-
-                nvmeq->cehandlers[i]->ceh_Reply = FALSE;
-                nvmeq->cehandlers[i]->ceh_Msg = NULL;
-
-                dma = iotd->iotd_Req.io_Data;
-                iolen = (LONG)iotd->iotd_Req.io_Length;
-
-                DIO(bug ("[NVME:Bus] %s: completing queue entry #%u\n", __func__, i);)
-                if (nvmeq->cehandlers[i]->ceh_PRP && nvmeq->cehandlers[i]->ceh_DMA)
-                    dma = nvmeq->cehandlers[i]->ceh_DMA;
-                DIO(bug ("[NVME:Bus] %s: dma data @ 0x%p\n", __func__, dma);)
-
-                if ((iotd->iotd_Req.io_Command == CMD_WRITE) ||
-                    (iotd->iotd_Req.io_Command == TD_WRITE64) ||
-                    (iotd->iotd_Req.io_Command == NSCMD_TD_WRITE64) ||
-                    (iotd->iotd_Req.io_Command == TD_FORMAT))
-                {
-                    CachePostDMA(dma, &iolen, DMAFLAGS_POSTWRITE);
-                }
-                else
-                {
-                    UBYTE *tmpdata = iotd->iotd_Req.io_Data;
-                    ULONG x;
-
-                    CachePostDMA(dma, &iolen, DMAFLAGS_POSTREAD);
-                    if (nvmeq->cehandlers[i]->ceh_PRP && nvmeq->cehandlers[i]->ceh_DMA)
-                    {
-                        DIO(bug ("[NVME:Bus] %s: Transfering DMA buffer @ %p to %p\n", __func__, nvmeq->cehandlers[i]->ceh_DMA, iotd->iotd_Req.io_Data);)
-                        CopyMem(nvmeq->cehandlers[i]->ceh_DMA, iotd->iotd_Req.io_Data, iotd->iotd_Req.io_Length);
-                        DIO(bug ("[NVME:Bus] %s: %u bytes copied\n", __func__, iolen);)
-                    }
-#if defined(NVME_DUMP_READS)
-                    bug("[NVME:Bus] %s: Read Data-:", __func__);
-                    for (x = 0; x < iotd->iotd_Req.io_Length; x++)
-                    {
-                        if ((x % 10) == 0)
-                        {
-                            bug("\n                    ");
-                        }
-                        bug("%02x ", (UBYTE)tmpdata[x]);
-                    }
-                    if ((x % 10) != 0)
-                        bug("\n");
-#endif
-                }
-                if (nvmeq->cehandlers[i]->ceh_PRP)
-                {
-                    ULONG prplen = nvmeq->cehandlers[i]->ceh_PRPCnt << 3;
-                    CachePostDMA(nvmeq->cehandlers[i]->ceh_PRP, &prplen, DMAFLAGS_POSTREAD);
-                    if (nvmeq->cehandlers[i]->ceh_DMA)
-                    {
-                        DIO(bug ("[NVME:Bus] %s: Releasing DMA Buffer @ %p\n", __func__, nvmeq->cehandlers[i]->ceh_DMABuff);)
-                        FreeMem(nvmeq->cehandlers[i]->ceh_DMABuff, nvmeq->cehandlers[i]->ceh_DMAlen);
-                        nvmeq->cehandlers[i]->ceh_DMA = nvmeq->cehandlers[i]->ceh_DMABuff = NULL;
-                    }
-                    DIO(bug ("[NVME:Bus] %s: Releasing PRPs @ %p\n", __func__, nvmeq->cehandlers[i]->ceh_PRPBuff);)
-                    FreeMem(nvmeq->cehandlers[i]->ceh_PRPBuff, nvmeq->dev->pagesize + ((nvmeq->cehandlers[i]->ceh_PRPCnt + 1) * sizeof(UQUAD)));
-                    nvmeq->cehandlers[i]->ceh_PRP = nvmeq->cehandlers[i]->ceh_PRPBuff = NULL;
-                }
-                if (nvmeq->cehandlers[i]->ceh_Status)
-                {
-                    UBYTE sct = (nvmeq->cehandlers[i]->ceh_Status >> 4) & 0x7, sc = (nvmeq->cehandlers[i]->ceh_Status >> 7) & 0xFF;
-                    iotd->iotd_Req.io_Error = IOERR_ABORTED;
-                    DIO(bug("[NVME:Bus] %s: NVME IO Error %u-%u\n", __func__, sct, sc);)
-                }
-                else
-                {
-                    iotd->iotd_Req.io_Error = 0;
-                    iotd->iotd_Req.io_Actual = iotd->iotd_Req.io_Length;
-                }
-
                 nvmeq->cehandlers[i] = NULL;
+
+                D(bug ("[NVME:Bus] %s: replying to IO @ 0x%p\n", __func__, iotd);)
+
                 ReplyMsg((struct Message *)iotd);
             }
         }
@@ -604,11 +534,10 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             };
                             struct DeviceNode *devnode;
 
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1 << id_ns->lbaf[lbaf].ds);)
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9));)
-
                             unit->au_SecShift = id_ns->lbaf[lbaf].ds;
+                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1 << unit->au_SecShift);)
                             unit->au_SecCnt = id_ns->nsze << (unit->au_SecShift - 9);
+                            D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", unit->au_SecCnt);)
                             unit->au_Low = lbaStart;
                             unit->au_High = lbaEnd - 1;
                             unit->au_Bus = data;
@@ -620,6 +549,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             if (unit->nu_Cyl < unit->au_SecCnt)
                                 unit->nu_Cyl = ~((ULONG)0);
                             unit->nu_Cyl /= 63;
+
                             /* divide by 2 */
                             do
                             {
@@ -630,6 +560,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                                 unit->nu_Heads <<= 1;
                                 unit->nu_Cyl >>= 1;
                             } while (1);
+
                             /* divide by 3 */
                             do
                             {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -10,6 +10,7 @@
 #include <asm/io.h>
 #include <hidd/pci.h>
 #include <interface/Hidd_PCIDriver.h>
+#include <exec/errors.h>
 
 #include <string.h>
 
@@ -19,6 +20,7 @@
 
 #include "nvme_intern.h"
 #include "nvme_hw.h"
+#include "nvme_queue_io.h"
 
 /*
     IO Queue Support Functions
@@ -29,9 +31,91 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
     D(bug ("[NVME:IOQ] %s(0x%p)\n", __func__, cqe);)
     if (nvmeq->cehandlers[cqe->command_id])
     {
+        D(bug ("[NVME:IOQ] %s: completing queue entry #%u\n", __func__, cqe->command_id);)
+
         nvmeq->cehandlers[cqe->command_id]->ceh_Reply = TRUE;
         nvmeq->cehandlers[cqe->command_id]->ceh_Result = AROS_LE2LONG(cqe->result);
-        nvmeq->cehandlers[cqe->command_id]->ceh_Status = (AROS_LE2WORD(cqe->status) >> 1) & ~(3 << 2);
+        nvmeq->cehandlers[cqe->command_id]->ceh_Status = (AROS_LE2WORD(cqe->status) >> 1) & ~(3 << 12); //Cache the status flag masking out the reserved bits
+
+        {
+            struct IOExtTD *iotd = (struct IOExtTD *)nvmeq->cehandlers[cqe->command_id]->ceh_Msg;
+            APTR dma;
+            LONG iolen;
+
+            dma = iotd->iotd_Req.io_Data;
+            iolen = (LONG)iotd->iotd_Req.io_Length;
+
+            if (nvmeq->cehandlers[cqe->command_id]->ceh_DMA)
+                dma = nvmeq->cehandlers[cqe->command_id]->ceh_DMA;
+            D(bug ("[NVME:IOQ] %s: dma data @ 0x%p\n", __func__, dma);)
+
+            if ((iotd->iotd_Req.io_Command == CMD_WRITE) ||
+                (iotd->iotd_Req.io_Command == TD_WRITE64) ||
+                (iotd->iotd_Req.io_Command == NSCMD_TD_WRITE64) ||
+                (iotd->iotd_Req.io_Command == TD_FORMAT))
+            {
+                CachePostDMA(dma, &iolen, DMAFLAGS_POSTWRITE);
+            }
+            else
+            {
+                UBYTE *tmpdata = iotd->iotd_Req.io_Data;
+                ULONG x;
+
+                CachePostDMA(dma, &iolen, DMAFLAGS_POSTREAD);
+                if (nvmeq->cehandlers[cqe->command_id]->ceh_DMA)
+                {
+                    D(bug ("[NVME:IOQ] %s: Transfering DMA buffer @ %p to %p\n", __func__, nvmeq->cehandlers[cqe->command_id]->ceh_DMA, iotd->iotd_Req.io_Data);)
+                    CopyMem(nvmeq->cehandlers[cqe->command_id]->ceh_DMA, iotd->iotd_Req.io_Data, iotd->iotd_Req.io_Length);
+                    D(bug ("[NVME:IOQ] %s: %u bytes copied\n", __func__, iolen);)
+                }
+#if defined(NVME_DUMP_READS)
+                bug("[NVME:IOQ] %s: Read Data-:", __func__);
+                for (x = 0; x < iotd->iotd_Req.io_Length; x++)
+                {
+                    if ((x % 10) == 0)
+                    {
+                        bug("\n                    ");
+                    }
+                    bug("%02x ", (UBYTE)tmpdata[x]);
+                }
+                if ((x % 10) != 0)
+                    bug("\n");
+#endif
+            }
+            /* Free up allocations used for the transfer */
+            if (nvmeq->cehandlers[cqe->command_id]->ceh_PRP)
+            {
+                ULONG prplen = nvmeq->cehandlers[cqe->command_id]->ceh_PRPCnt << 3, pages = (((nvmeq->cehandlers[cqe->command_id]->ceh_PRPCnt) << 3) / nvmeq->dev->pagesize) + 1;
+                CachePostDMA(nvmeq->cehandlers[cqe->command_id]->ceh_PRP, &prplen, DMAFLAGS_POSTREAD);
+                D(bug ("[NVME:IOQ] %s: Releasing PRPs @ %p\n", __func__, nvmeq->cehandlers[cqe->command_id]->ceh_PRPBuff);)
+                FreeMem(nvmeq->cehandlers[cqe->command_id]->ceh_PRPBuff, (pages + 1) * nvmeq->dev->pagesize);
+                nvmeq->cehandlers[cqe->command_id]->ceh_PRP = nvmeq->cehandlers[cqe->command_id]->ceh_PRPBuff = NULL;
+            }
+            if (nvmeq->cehandlers[cqe->command_id]->ceh_DMA)
+            {
+                D(bug ("[NVME:IOQ] %s: Releasing DMA Buffer @ %p\n", __func__, nvmeq->cehandlers[cqe->command_id]->ceh_DMABuff);)
+                FreeMem(nvmeq->cehandlers[cqe->command_id]->ceh_DMABuff, nvmeq->cehandlers[cqe->command_id]->ceh_DMAlen);
+                nvmeq->cehandlers[cqe->command_id]->ceh_DMA = nvmeq->cehandlers[cqe->command_id]->ceh_DMABuff = NULL;
+                nvmeq->cehandlers[cqe->command_id]->ceh_DMAlen = 0;
+            }
+
+            if (nvmeq->cehandlers[cqe->command_id]->ceh_Status)
+            {
+#if (0)
+                UBYTE sct = (nvmeq->cehandlers[cqe->command_id]->ceh_Status >> 4) & 0x7, sc = (nvmeq->cehandlers[cqe->command_id]->ceh_Status >> 7) & 0xFF;
+#else
+                UBYTE sct = (nvmeq->cehandlers[cqe->command_id]->ceh_Status >> 7) & 0x7, sc = (nvmeq->cehandlers[cqe->command_id]->ceh_Status) & 0x7F;
+#endif
+                iotd->iotd_Req.io_Error = IOERR_ABORTED;
+                D(bug("[NVME:IOQ] %s: NVME IO Error %u:%u\n", __func__, sct, sc);)
+            }
+            else
+            {
+                iotd->iotd_Req.io_Error = 0;
+                iotd->iotd_Req.io_Actual = iotd->iotd_Req.io_Length;
+            }
+        }
+
         D(bug ("[NVME:IOQ] %s: Signaling 0x%p (%08x)\n", __func__, nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);)
         Signal(nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);
     }
