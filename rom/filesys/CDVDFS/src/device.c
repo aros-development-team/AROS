@@ -5,7 +5,7 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2020 The AROS Development Team
+ *              (C) Copyright 2002-2023 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
@@ -783,13 +783,32 @@ openbreak:
                                     if (errcode == ERROR_NO_DISK) {
                                         id->id_DiskType = ID_NO_DISK_PRESENT;
                                     } else if (!errcode) {
-                                        id->id_DiskType = ID_DOS_DISK;
+                                        int protocol, skip;
+                                        t_ulong offset, svd_offset;
+
+                                        protocol = Which_Protocol (global->g_cd, TRUE, TRUE, &skip, &offset, &svd_offset);
+                                        switch (protocol)
+                                        {
+                                        case PRO_HIGH_SIERRA:
+                                                id->id_DiskType = ID_HSIERRA_DISK;
+                                                break;
+                                        case PRO_ROCK:
+                                                id->id_DiskType = ID_ISO9660RR_DISK;
+                                                break;
+                                        case PRO_JOLIET:
+                                                id->id_DiskType = ID_ISO9660JOL_DISK;
+                                                break;
+                                        default:
+                                                // PRO_ISO
+                                                id->id_DiskType = ID_ISO9660_DISK;
+                                                break;
+                                        }
                                         id->id_NumBlocks= Volume_Size (global->g_volume);
-                                         id->id_BytesPerBlock = Block_Size (global->g_volume);
+                                        id->id_BytesPerBlock = Block_Size (global->g_volume);
                                         id->id_VolumeNode = MKBADDR(global->DevList);
                                     } else {
                                         /* For example empty CD-R */
-                                        id->id_DiskType = ID_UNREADABLE_DISK;
+                                        id->id_DiskType = ID_NOT_REALLY_DOS;
                                         id->id_NumBlocks = 0;
                                         id->id_BytesPerBlock = 2048;
                                     }
