@@ -2,7 +2,7 @@
 #define DOS_FILESYSTEMIDS_H
 
 /*
-    Copyright © 2014-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2014-2023, The AROS Development Team. All rights reserved.
     $Id: dos.h 49655 2014-09-21 23:01:25Z neil $
 
     Desc: Additional id_DiskType Filesystem Id's
@@ -23,7 +23,7 @@
 
 #define ID_AFS0_DISK                    AROS_MAKE_ID('A','F','S',0)             /* AFS file system                              */
 #define ID_AFS1_DISK                    AROS_MAKE_ID('A','F','S',1)             /* AFS file system (experimental)               */
-#define ID_AFS_muFS_DISK	        AROS_MAKE_ID('m','u','A','F')           /* muFS AFS file system                         */
+#define ID_AFS_muFS_DISK                AROS_MAKE_ID('m','u','A','F')           /* muFS AFS file system                         */
 
 #define ID_PFS_DISK                     AROS_MAKE_ID('P','F','S',1)             /* PFS file system 1                            */
 #define ID_PFS2_DISK                    AROS_MAKE_ID('P','F','S',2)             /* PFS file system 2                            */
@@ -38,6 +38,8 @@
 #define ID_HSIERRA_DISK                 AROS_MAKE_ID('C','D','0','0')           /* CD-ROM - High Sierra format                  */
 #define ID_ISO9660_DISK                 AROS_MAKE_ID('C','D','0','1')           /* CD-ROM - ISO9660 format                      */
 #define ID_CACHECDFS_DISK               ID_ISO9660_DISK
+#define ID_ISO9660RR_DISK               AROS_MAKE_ID('C','D','0','2')           /* CD-ROM - ISO9660 + RockRidge extensions      */
+#define ID_ISO9660JOL_DISK              AROS_MAKE_ID('C','D','0','3')           /* CD-ROM - ISO9660 + Joliet extensions         */
 #define ID_ASIMCDFS_DISK                AROS_MAKE_ID(0x66,0x2d,0xab,0xac)       /* CD-ROM - AsimCDFS                            */
 
 #define ID_SFS_BE_DISK                  AROS_MAKE_ID('S','F','S',0)             /* Smart File System - Big Endian               */
@@ -49,7 +51,7 @@
 #define ID_FAT16_DISK                   AROS_MAKE_ID('F','A','T',1)
 #define ID_FAT32_DISK                   AROS_MAKE_ID('F','A','T',2)
 
-#define ID_NTFS_DISK 		        AROS_MAKE_ID('N','T','F','S')
+#define ID_NTFS_DISK                    AROS_MAKE_ID('N','T','F','S')
 
 #define ID_MAC_DISK                     AROS_MAKE_ID('M','S','H',0)             /* MSH\0 - CrossDos MACDisk ?!                  */
 #define ID_MAC_DISK2                    AROS_MAKE_ID('M','A','C',0)             /* MAC\0 - xfs mac disk                         */
