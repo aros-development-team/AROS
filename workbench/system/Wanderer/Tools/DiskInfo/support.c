@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2005-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>
@@ -45,7 +45,22 @@ VOID ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL u
     );
 }
 
-ULONG FormatSize(STRPTR buffer, ULONG bufsize, ULONG blocks, ULONG totalblocks, ULONG bytesperblock, BOOL showPercentage)
+VOID FormatSize(STRPTR buffer, ULONG bufsize, ULONG size)
+{
+    static STRPTR suffixes[] = {" bytes", "K", "M", "G", "T", "P"};
+    DOUBLE internalsize = (DOUBLE)size;
+    ULONG divcount = 0;
+
+    while (internalsize > 1024)
+    {
+        internalsize /= 1024;
+        divcount++;
+    }
+    
+    snprintf(buffer, bufsize, "%.1f%s", internalsize, suffixes[divcount]);
+}
+
+ULONG FormatBlocksSized(STRPTR buffer, ULONG bufsize, ULONG blocks, ULONG totalblocks, ULONG bytesperblock, BOOL showPercentage)
 {
     static STRPTR suffixes[] = {" bytes", "K", "M", "G", "T", "P"};
     DOUBLE internalsize = (DOUBLE)((UQUAD)blocks * bytesperblock);
