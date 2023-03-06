@@ -237,7 +237,7 @@ Object *DiskInfo__OM_NEW
     strcpy(volicon, volname);
     strcat(volicon, "disk");
     volname[strlen(volname)-1] = '\0';
-    bug("[DiskInfo] %s: Volume '%s'\n", __func__, volname);
+    D(bug("[DiskInfo] %s: Volume '%s'\n", __func__, volname));
 
     /* find the volumes doslist information .. */
     filesystem = _(MSG_UNKNOWN);
@@ -249,7 +249,7 @@ Object *DiskInfo__OM_NEW
     {
         int i;
         disktype = id.id_DiskType;
-        bug("[DiskInfo] %s: FSID %08x\n", __func__, disktype);
+        D(bug("[DiskInfo] %s: FSID %08x\n", __func__, disktype));
 
         for (i = 0; i < sizeof(dt) / sizeof(ULONG); ++i)
         {
