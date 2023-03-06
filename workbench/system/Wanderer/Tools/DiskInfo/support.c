@@ -16,6 +16,8 @@
 
 #include <stdio.h>
 
+static CONST_STRPTR suffixes[] = {"K", "M", "G", "T", "P"};
+
 VOID ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL useIOError)
 {
     TEXT   buffer[128];
@@ -47,23 +49,23 @@ VOID ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL u
 
 VOID FormatSize(STRPTR buffer, ULONG bufsize, ULONG size)
 {
-    static STRPTR suffixes[] = {" bytes", "K", "M", "G", "T", "P"};
-    DOUBLE internalsize = (DOUBLE)size;
+    CONST_STRPTR suffix = _(MSG_BYTES);
     ULONG divcount = 0;
 
-    while (internalsize > 1024)
+    while (size > 1024)
     {
-        internalsize /= 1024;
+        size /= 1024;
+        suffix = suffixes[divcount];
         divcount++;
     }
     
-    snprintf(buffer, bufsize, "%.1f%s", internalsize, suffixes[divcount]);
+    snprintf(buffer, bufsize, "%u%s", size, suffix);
 }
 
 ULONG FormatBlocksSized(STRPTR buffer, ULONG bufsize, ULONG blocks, ULONG totalblocks, ULONG bytesperblock, BOOL showPercentage)
 {
-    static STRPTR suffixes[] = {" bytes", "K", "M", "G", "T", "P"};
     DOUBLE internalsize = (DOUBLE)((UQUAD)blocks * bytesperblock);
+    CONST_STRPTR suffix = _(MSG_BYTES);
     ULONG divcount = 0;
     ULONG percentage;
 
@@ -75,13 +77,14 @@ ULONG FormatBlocksSized(STRPTR buffer, ULONG bufsize, ULONG blocks, ULONG totalb
     while (internalsize > 1024)
     {
         internalsize /= 1024;
+        suffix = suffixes[divcount];
         divcount++;
     }
     
     if (!showPercentage)
-        snprintf(buffer, bufsize, "%.1f%s  (%d %s)", internalsize, suffixes[divcount], (int)blocks, _(MSG_BLOCKS) );
+        snprintf(buffer, bufsize, "%.1f%s  (%d %s)", internalsize, suffix, (int)blocks, _(MSG_BLOCKS) );
     else
-        snprintf(buffer, bufsize, "%.1f%s  (%d %s, %d%%)", internalsize, suffixes[divcount], (int)blocks, _(MSG_BLOCKS), (int)percentage);
+        snprintf(buffer, bufsize, "%.1f%s  (%d %s, %d%%)", internalsize, suffix, (int)blocks, _(MSG_BLOCKS), (int)percentage);
     
     return percentage;
 }

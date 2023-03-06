@@ -172,7 +172,6 @@ Object *DiskInfo__OM_NEW
     ULONG                       disktype       = ID_NO_DISK_PRESENT;
     LONG                        aspect         = 0;
     TEXT                        volname[108];
-    TEXT                        blksz[64];
     TEXT                        size[64];
     TEXT                        used[64];
     TEXT                        free[64];
@@ -183,7 +182,7 @@ Object *DiskInfo__OM_NEW
 
     STRPTR                      filesystem     = NULL;
     STRPTR                      volicon        = NULL;
-#if (0)
+#if (1)
     STRPTR                      handlertype    = "";
 #endif
     STRPTR                      unknown    = _(MSG_UNKNOWN);
@@ -266,11 +265,10 @@ Object *DiskInfo__OM_NEW
             CopyMem(unknown, filesystem, strlen(unknown));
         }
 
-        FormatSize(blksz, sizeof blksz, id.id_BytesPerBlock);
+        FormatSize(blocksize, sizeof blocksize, id.id_BytesPerBlock);
         FormatBlocksSized(size, sizeof size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
         percent = FormatBlocksSized(used, sizeof used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
         FormatBlocksSized(free, sizeof free, id.id_NumBlocks - id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
-        snprintf(blocksize, sizeof blocksize, "%d %s", (int)id.id_BytesPerBlock, _(MSG_BYTES));
 
         switch (id.id_DiskState)
         {
@@ -385,21 +383,13 @@ Object *DiskInfo__OM_NEW
                                     MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33l",
                                     MUIA_Text_Contents, (IPTR) filesystem,
                                 End,
-#if (0)
+#if (1)
                                 Child, (IPTR) HVSpace,
                                 Child, (IPTR) TextObject,
                                     MUIA_Text_PreParse, (IPTR) "\33l",
                                     MUIA_Text_Contents, (IPTR) handlertype,
                                 End,
 #endif
-                                Child, (IPTR) TextObject,
-                                    MUIA_Text_PreParse, (IPTR) "\33r",
-                                    MUIA_Text_Contents, (IPTR) "Blocksize:",
-                                End,
-                                Child, (IPTR) TextObject,
-                                    MUIA_Text_PreParse, (IPTR) "\33l",
-                                    MUIA_Text_Contents, (IPTR) blksz,
-                                End,
                             End,
                             Child, (IPTR) HVSpace,
                         End),
