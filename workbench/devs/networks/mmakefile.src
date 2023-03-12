@@ -1,5 +1,6 @@
 #MM- workbench-devs-networks: \
 #MM     workbench-devs-networks-atheros5000 \
+#MM     workbench-devs-networks-broadcom4400 \
 #MM     workbench-devs-networks-e1000-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-etherlink3 \
 #MM     workbench-devs-networks-intelpro100 \
