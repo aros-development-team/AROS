@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
     
     http://download.intel.com/design/chipsets/datashts/29056601.pdf
 */
@@ -567,7 +567,7 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     }
     else
     {
-        bug("[Kernel:IOAPIC] %s: trig == 0 ************************\n", __func__);
+        DINT(bug("[Kernel:IOAPIC] %s: trig == 0 ************************\n", __func__);)
     }
     APIC_REG(apic_base, APIC_EOI) = 0;
     return TRUE;
