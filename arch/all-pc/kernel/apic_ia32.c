@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Intel IA-32 APIC driver.
 */
@@ -52,6 +52,8 @@
 #endif
 
 #define FORCE_PIT_CALIB
+
+#define	APIC_CRMAXVAL	0XFFFFFFFFUL
 
 extern int core_APICErrorHandle(struct ExceptionContext *, void *, void *);
 extern int core_APICSpuriousHandle(struct ExceptionContext *, void *, void *);
@@ -127,11 +129,17 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
      * most a single MSI device will request) then report that
      * we can use MSI
      */
-    if ((count > 31) && (acpiData->acpi_fadt))
+    if (count > 31)
     {
-        ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
+        BOOL useMSI = TRUE;
+        if ((acpiData) && (acpiData->acpi_fadt))
+        {
+            ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
+            if (fadt->BootFlags & ACPI_FADT_NO_MSI)
+                useMSI = FALSE;
+        }
 
-        if ((!(fadt->BootFlags & ACPI_FADT_NO_MSI)) &&
+        if ((useMSI) &&
             (!(kernPlatD->kb_PDFlags & PLATFORMF_HAVEMSI)))
         {
             kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
@@ -310,6 +318,11 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
             pit_total += pit_final;
             DPIT(bug("[Kernel:APIC-IA32.%03u] %s: %u, diff = %u\n", cpuNum, __func__, pitresults[i], difftsc[i]);)
         }
+        else if (tsc_final < tsc_initial)
+        {
+            DPIT(bug("[Kernel:APIC-IA32.%03u] %s: skipping wrap around\n", cpuNum, __func__);)
+            i -= 1;
+        }
         else
         {
             DPIT(bug("[Kernel:APIC-IA32.%03u] %s: ## %02u - ignoring pit_final = %u\n", cpuNum, __func__, (PIT_SAMPLECOUNT - samples), pit_final);)
@@ -347,6 +360,14 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
               )
             calibrated_tsc = (10 * iter * calibrated_tsc / iter);
         }
+        else
+        {
+            bug("[Kernel:APIC-IA32.%03u] %s: calibration failed\n", cpuNum, __func__);
+        }
+    }
+    else
+    {
+        bug("[Kernel:APIC-IA32.%03u] %s: sampling failed\n", cpuNum, __func__);
     }
 
     return calibrated_tsc;
@@ -362,6 +383,8 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
     int samples, iter, i;
 
     samples = iter = PIT_SAMPLECOUNT;
+
+    APIC_REG(__APICBase, APIC_TIMER_ICR) = APIC_CRMAXVAL;
 
     for (i = 0; i < PIT_SAMPLECOUNT; i++)
     {
@@ -657,7 +680,6 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         /* Set the timer to one-shot mode, no interrupt, 1:1 divisor */
         APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
         APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
-        APIC_REG(__APICBase, APIC_TIMER_ICR) = 0x80000000;      /* Just some very large value */
 
         D(bug("[Kernel:APIC-IA32.%03u] %s: Calibrating timers ...\n", cpuNum, __func__));
 
@@ -685,9 +707,10 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         if (!apic->cores[cpuNum].cpu_TSCFreq)
         {
             UQUAD calib_tsc;
+            int count = 10;
 
             D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
-            calib_tsc = ia32_tsc_calibrate(cpuNum);
+            while(((calib_tsc = ia32_tsc_calibrate(cpuNum)) == 0) && (count-- > 0));
             apic->cores[cpuNum].cpu_TSCFreq = calib_tsc;
         }
         if (!apic->cores[cpuNum].cpu_TimerFreq)
