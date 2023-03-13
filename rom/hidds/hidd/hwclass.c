@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -13,6 +13,8 @@
 
 #include "hiddclass_intern.h"
 
+CONST_STRPTR classname_Unknown = "Unknown hardware";
+
 /*****************************************************************************************
 
     NAME
@@ -22,15 +24,15 @@
         CLID_HW
 
     NOTES
-        This class is a base class for all hardware subsystems in AROS. Its
-        main purpose is to manage hardware drivers.
+        The hwclass is the base class for all hardware subsystems in AROS. Its
+        main purpose is to manage hardware driver instances.
         
-        A "subsystem" is a kind of devices, e. g. keyboards, mice, etc. This
-        class stores information about existing device instances and can provide
-        this information to user's software.
+        A hardware subsystem is typically a class of devices, e. g. keyboards, mice, etc.
+        The hwclass stores information about existing driver instances, for enumeration by client
+        applications.
 
-        A typical subsystem class should be a singletone. This greatly simplifies
-        handling it.
+        A typical hardware subsystem class should be implemented as a singleton to simplify
+        handling.
 
 *****************************************************************************************/
 
@@ -73,7 +75,7 @@
         CLID_HW
 
     FUNCTION
-        Return TRUE if the subsystem is currently in use by some driver(s)
+        Returns TRUE if the subsystem is currently in use by some driver(s)
         and FALSE otherwise.
 
     NOTES
@@ -101,7 +103,7 @@ OOP_Object *HW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         InitSemaphore(&data->driver_lock);
 
         data->name = (const char *)GetTagData(aHW_ClassName,
-                                              (IPTR)"Unknown hardware",
+                                              (IPTR)classname_Unknown,
                                               msg->attrList);
     }
     return o;
@@ -143,10 +145,10 @@ void HW__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         CLID_HW
 
     FUNCTION
-        Creates a hardware driver object and registers it in the subsystem.
+        Creates a hardware driver object instance, and registers it in the subsystem.
 
     INPUTS
-        obj         - A subsystem object to operate on.
+        obj         - The subsystem object to operate on.
         driverClass - A pointer to OOP class of the driver. In order to create an object
                       of some previously registered public class, use
                       oop.library/OOP_FindClass().
@@ -177,37 +179,48 @@ OOP_Object *HW__HW__AddDriver(OOP_Class *cl, OOP_Object *o,
     OOP_Object *drv = NULL;
     struct DriverNode *dn;
 
-    D(bug("[HW] Adding Driver class 0x%p\n", msg->driverClass));
-
     if (msg->driverClass != NULL)
     {
-        // Get some extra memory for driver node
+        D(bug("[HW] %s: Adding Driver class @ 0x%p\n", __func__, msg->driverClass);)
+
+        /* Alloc memory for a driver instance node */
         dn = AllocPooled(CSD(cl)->MemPool, sizeof(struct DriverNode));
         if (dn)
         {
-            drv = OOP_NewObject(msg->driverClass, NULL, msg->tags);
-
-            if (!drv)
+            dn->driverObject = OOP_NewObject(msg->driverClass, NULL, msg->tags);
+            if (dn->driverObject)
             {
-                FreePooled(CSD(cl)->MemPool, dn, sizeof(struct DriverNode));
-                D(bug("[HW] Driver did not initialize\n"));
-                return NULL;
+                if (HW_SetUpDriver(o, dn->driverObject))
+                {
+                    /* Attach the driver instance to the tail of the driver objects list */
+                    ObtainSemaphore(&data->driver_lock);
+                    ADDTAIL(&data->drivers, dn);
+                    ReleaseSemaphore(&data->driver_lock);
+                    
+                    return dn->driverObject;
+                }
+                else
+                {
+                    bug("[HW] %s: Driver Object SetUp failed!\n", __func__);
+                }
+                OOP_DisposeObject(dn->driverObject);
             }
-
-            if (HW_SetUpDriver(o, drv))
+            else
             {
-                /* Add the driver to the end of drivers list */
-                dn->driverObject = drv;
-                ObtainSemaphore(&data->driver_lock);
-                ADDTAIL(&data->drivers, dn);
-                ReleaseSemaphore(&data->driver_lock);
-                
-                return drv;
+                bug("[HW] %s: Failed to instantiate Driver Object\n", __func__);
             }
-
-            OOP_DisposeObject(drv);
+            FreePooled(CSD(cl)->MemPool, dn, sizeof(struct DriverNode));
+        }
+        else
+        {
+            bug("[HW] %s: Failed to allocate DriverNode!\n", __func__);
         }
     }
+    else
+    {
+        bug("[HW] %s: Called with mising driverClass\n", __func__);
+    }
+
     return NULL;
 }
 
@@ -228,7 +241,7 @@ OOP_Object *HW__HW__AddDriver(OOP_Class *cl, OOP_Object *o,
         Unregisters and disposes hardware driver object.
 
     INPUTS
-        obj    - A subsystem object from which the driver should be removed.
+        obj    - The subsystem object from which the driver should be removed.
         driver - A pointer to a driver object, returned by HW_AddDriver().
 
     RESULT
