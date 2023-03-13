@@ -587,9 +587,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             pp[DE_NUMBUFFERS   + 4] = 10;
                             pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
                             pp[DE_MAXTRANSFER  + 4] = (1 << data->ab_Dev->dev_mdts) * (1 << unit->au_SecShift);
-                            bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);
+                            D(bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);)
                             pp[DE_MASK         + 4] = 0x7FFFFFFF & ~(data->ab_Dev->pagesize - 1);
-                            bug("[NVME:Bus] NVMEBus_Start: DE_MASK= %08x\n", pp[DE_MASK + 4]);
+                            D(bug("[NVME:Bus] NVMEBus_Start: DE_MASK= %08x\n", pp[DE_MASK + 4]);)
                             pp[DE_BOOTPRI      + 4] = 0;
                             pp[DE_DOSTYPE      + 4] = IdDOS;
                             pp[DE_CONTROL      + 4] = 0;
@@ -598,9 +598,11 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             devnode = MakeDosNode(pp);
                             if (devnode)
                             {
-                                D(bug("[NVME:Bus] NVMEBus_Start: DeviceNode @ 0x%p\n", devnode));
-                                D(bug("[NVME:Bus] NVMEBus_Start:'%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
-                                      devnode->dn_Name, pp[DE_DOSTYPE + 4], pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]));
+                                D(
+                                    bug("[NVME:Bus] NVMEBus_Start: DeviceNode @ 0x%p\n", devnode);
+                                    bug("[NVME:Bus] NVMEBus_Start:'%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
+                                      devnode->dn_Name, pp[DE_DOSTYPE + 4], pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]);
+                                )
 
                                 AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
                                 D(bug("done\n"));
