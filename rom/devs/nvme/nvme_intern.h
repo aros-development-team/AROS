@@ -8,6 +8,7 @@
 #include <exec/types.h>
 #include <asm/io.h>
 
+#include <exec/memory.h>
 #include <devices/scsidisk.h>
 #include <exec/devices.h>
 
@@ -143,18 +144,13 @@ typedef struct {
 
 struct completionevent_handler
 {
-    struct Task *ceh_Task;
-    APTR        ceh_Msg;
-    APTR        ceh_PRPBuff;
-    APTR        ceh_PRP;
-    APTR        ceh_DMABuff;
-    APTR        ceh_DMA;
-    ULONG       ceh_PRPCnt;
-    ULONG       ceh_DMAlen;
-    ULONG       ceh_SigSet;
-    ULONG       ceh_Result;
-    UWORD       ceh_Status;
-    UWORD       ceh_Reply;
+    struct Task         *ceh_Task;
+    APTR                ceh_Msg;
+    struct MemEntry     ceh_IOMem;
+    ULONG               ceh_SigSet;
+    ULONG               ceh_Result;
+    UWORD               ceh_Status;
+    UWORD               ceh_Reply;
 };
 
 typedef void (*_NVMEQUEUE_CE_HOOK)(struct nvme_queue *, struct nvme_completion *);

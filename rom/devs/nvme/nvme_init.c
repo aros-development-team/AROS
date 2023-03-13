@@ -1,8 +1,6 @@
 /*
-    Copyright (C) 2020-2021, The AROS Development Team. All rights reserved
+    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved
  */
-
-#include <aros/debug.h>
 
 #include <proto/exec.h>
 
@@ -36,6 +34,7 @@
 
 #include <string.h>
 
+#include "nvme_debug.h"
 #include "nvme_intern.h"
 #include <hardware/pci.h>
 

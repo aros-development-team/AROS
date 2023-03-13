@@ -1,8 +1,6 @@
 /*
     Copyright (C) 2020-2023, The AROS Development Team. All rights reserved
 */
- 
- #include <aros/debug.h>
 
 #include <proto/exec.h>
 
@@ -35,115 +33,13 @@
 
 #include <string.h>
 
+#include "nvme_debug.h"
 #include "nvme_intern.h"
 #include "nvme_queue_io.h"
 
 #include LC_LIBDEFS_FILE
 
-#define DIO(x)
-
-static UQUAD *nvme_allocprps(struct nvme_Unit *unit, APTR addr, IPTR len, APTR *prpbuff, ULONG *cnt)
-{
-    UQUAD *prps = NULL, pages = 0, page;
-    *cnt = (len / unit->au_Bus->ab_Dev->pagesize) - 1;
-
-    pages = (((*cnt) << 3) / unit->au_Bus->ab_Dev->pagesize) + 1;
-
-    D(
-     bug("[NVME%02ld] %s()\n", unit->au_UnitNum, __func__);
-     bug("[NVME%02ld] %s: allocation storage for %u prp entries (%u pages)\n", unit->au_UnitNum, __func__, *cnt, pages);
-    )
-
-    *prpbuff = AllocMem((pages + 1) * unit->au_Bus->ab_Dev->pagesize, MEMF_ANY);
-    if (*prpbuff != NULL)
-    {
-        ULONG len = (*cnt) << 3;
-        int prp;
-
-        prps = (APTR)(((IPTR)*prpbuff + unit->au_Bus->ab_Dev->pagesize) & ~(unit->au_Bus->ab_Dev->pagesize - 1));
-        D(bug("[NVME%02ld] %s: prps @ 0x%p (allocated @ 0x%p)\n", unit->au_UnitNum, __func__, prps, *prpbuff);)
-
-        for (prp = 0; prp < *cnt; prp++)
-        {
-            prps[prp] = (UQUAD)(IPTR)addr + (unit->au_Bus->ab_Dev->pagesize * (prp + 1));
-            D(bug("[NVME%02ld] %s:         [%u] = 0x%p\n", unit->au_UnitNum, __func__, prp, (APTR)prps[prp]);)
-        }
-        CachePreDMA(prps, &len, DMAFLAGS_PREREAD);
-    }
-    return prps;
-}
-
-/*
-	; PRP2 Calculation -:
-	; < 4k = only set PRP1
-	; 4k - 8k = set PRP2 to the second 4k
-	; > 8k = PRP2 points to a list of more PRPs
-*/
-static BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *ioehandle, struct nvme_Unit *unit, ULONG len, APTR *data, BOOL is_write)
-{
-    APTR _data = *data;
-
-    if (len > (unit->au_Bus->ab_Dev->pagesize << 1))
-    {
-        D(bug("[NVME%02ld] %s: >8k transfer\n", unit->au_UnitNum, __func__);)
-
-        if (((IPTR)*data & (unit->au_Bus->ab_Dev->pagesize - 1)) != 0)
-        {
-            D(bug("[NVME%02ld] %s: unaligned buffer start (%p)\n", unit->au_UnitNum, __func__, *data);)
-            ioehandle->ceh_DMAlen = len + unit->au_Bus->ab_Dev->pagesize;
-            ioehandle->ceh_DMABuff = AllocMem(ioehandle->ceh_DMAlen, MEMF_ANY);
-            ioehandle->ceh_DMA = (APTR)(((IPTR)ioehandle->ceh_DMABuff + unit->au_Bus->ab_Dev->pagesize)  & ~(unit->au_Bus->ab_Dev->pagesize - 1));
-            *data = ioehandle->ceh_DMA;
-            D(bug("[NVME%02ld] %s: using buffer @ %p (alloc @ 0x%p)\n", unit->au_UnitNum, __func__, *data, ioehandle->ceh_DMABuff);)
-        }
-        cmdio->rw.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)*data);
-
-        ioehandle->ceh_PRP = nvme_allocprps(unit, *data, len, &ioehandle->ceh_PRPBuff, &ioehandle->ceh_PRPCnt);
-        if ((cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)(IPTR)ioehandle->ceh_PRP)) == 0)
-        {
-            D(bug("[NVME%02ld] %s: failed to allocate prp's\n", unit->au_UnitNum, __func__);)
-
-            if (_data != *data)
-            {
-                FreeMem(ioehandle->ceh_DMABuff, ioehandle->ceh_DMAlen);
-                ioehandle->ceh_DMAlen = 0;
-                ioehandle->ceh_DMABuff = NULL;
-                ioehandle->ceh_DMA = NULL;
-                *data = _data;
-            }
-            return FALSE;
-        }
-        if ((_data != *data) && (is_write))
-            CopyMem(_data, *data, len);
-    }
-    else
-    {
-        if ((len > unit->au_Bus->ab_Dev->pagesize) && (((IPTR)*data & (unit->au_Bus->ab_Dev->pagesize - 1)) != 0))
-        {
-            D(bug("[NVME%02ld] %s: unaligned buffer start (%p)\n", unit->au_UnitNum, __func__, *data);)
-            ioehandle->ceh_DMAlen = len + unit->au_Bus->ab_Dev->pagesize;
-            ioehandle->ceh_DMABuff = AllocMem(ioehandle->ceh_DMAlen, MEMF_ANY);
-            ioehandle->ceh_DMA = (APTR)(((IPTR)ioehandle->ceh_DMABuff + unit->au_Bus->ab_Dev->pagesize)  & ~(unit->au_Bus->ab_Dev->pagesize - 1));
-            *data = ioehandle->ceh_DMA;
-            D(bug("[NVME%02ld] %s: using buffer @ %p (alloc @ 0x%p)\n", unit->au_UnitNum, __func__, *data, ioehandle->ceh_DMABuff);)
-        }
-        cmdio->rw.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)*data);
-
-        if (len > unit->au_Bus->ab_Dev->pagesize)
-        {
-            D(bug("[NVME%02ld] %s: <= 8k transfer\n", unit->au_UnitNum, __func__);)
-
-            cmdio->rw.prp2 = AROS_QUAD2LE((UQUAD)(IPTR)*data + unit->au_Bus->ab_Dev->pagesize);
-            if ((_data != *data) && (is_write))
-                CopyMem(_data, *data, len);
-            }
-        else
-        {
-            D(bug("[NVME%02ld] %s: <= 4k transfer\n", unit->au_UnitNum, __func__);)
-        }
-    }
-    return TRUE;
-}
+extern BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *ioehandle, struct nvme_Unit *unit, ULONG len, APTR *data, BOOL is_write);
 
 static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 {
@@ -174,14 +70,13 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
     else if (len == 0)
     {
-        bug("[NVME%02ld] %s: BADLENGTH %x > %x\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift), unit->au_High);
+        bug("[NVME%02ld] %s: BADLENGTH (writing 0 bytes to %x)\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift));
         io->io_Error = IOERR_BADLENGTH;
         return TRUE;
     }
 
     memset(&cmdio, 0, sizeof(cmdio));
-    ioehandle.ceh_DMA = ioehandle.ceh_DMABuff = NULL;
-    ioehandle.ceh_PRP = ioehandle.ceh_PRPBuff = NULL;
+    ioehandle.ceh_IOMem.me_Un.meu_Addr = NULL;
     if (!nvme_initprp(&cmdio, &ioehandle, unit, len, &data, is_write))
     {
         io->io_Error = IOERR_BADADDRESS;
