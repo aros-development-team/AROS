@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#define __INLINE_ACPICA_STACKCALL__
 #include <proto/acpica.h>
 
 #include <acpica/acnames.h>
