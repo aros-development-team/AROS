@@ -28,6 +28,41 @@ diff -ruN acpica-unix-20220331/source/include/achware.h acpica-unix-20220331.aro
 +#endif /* !__INLINE_ACPICA_STACKCALL__ */
  
  #endif /* __ACHWARE_H__ */
+diff -ruN acpica-unix-20220331/source/include/acpixf.h acpica-unix-20220331.aros/source/include/acpixf.h
+--- acpica-unix-20220331/source/include/acpixf.h	2022-03-31 16:38:39.000000000 +0000
++++ acpica-unix-20220331.aros/source/include/acpixf.h	2023-03-18 13:14:36.380657046 +0000
+@@ -545,6 +545,7 @@
+ 
+ #endif /* ACPI_DEBUGGER */
+ 
++#if !defined(__INLINE_ACPICA_STACKCALL__)
+ 
+ /*****************************************************************************
+  *
+@@ -1136,6 +1137,7 @@
+ AcpiRemoveGpeBlock (
+     ACPI_HANDLE             GpeDevice))
+ 
++#endif /* !__INLINE_ACPICA_STACKCALL__ */
+ 
+ /*
+  * Resource interfaces
+@@ -1145,6 +1147,8 @@
+     ACPI_RESOURCE           *Resource,
+     void                    *Context);
+ 
++#if !defined(__INLINE_ACPICA_STACKCALL__ )
++
+ ACPI_EXTERNAL_RETURN_STATUS (
+ ACPI_STATUS
+ AcpiGetVendorResource (
+@@ -1426,4 +1430,6 @@
+ AcpiSetDebuggerThreadId (
+     ACPI_THREAD_ID          ThreadId);
+ 
++#endif /* !__INLINE_ACPICA_STACKCALL__ */
++
+ #endif /* __ACXFACE_H__ */
 diff -ruN acpica-unix-20220331/source/include/acutils.h acpica-unix-20220331.aros/source/include/acutils.h
 --- acpica-unix-20220331/source/include/acutils.h	2022-03-31 16:38:39.000000000 +0000
 +++ acpica-unix-20220331.aros/source/include/acutils.h	2023-03-18 12:06:36.990656969 +0000
