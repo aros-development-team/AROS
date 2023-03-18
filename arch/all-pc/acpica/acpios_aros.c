@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2022, The AROS Development Team
+ * Copyright (C) 2012-2023, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -41,6 +41,29 @@
 */
 #undef __aros_getbase_ACPICABase
 struct Library *__aros_getbase_ACPICABase(void);
+
+#if defined(ACPI_DISASSEMBLER)
+/* Stubs for the disassembler */
+void
+MpSaveGpioInfo (
+    ACPI_PARSE_OBJECT       *Op,
+    AML_RESOURCE            *Resource,
+    UINT32                  PinCount,
+    UINT16                  *PinList,
+    char                    *DeviceName)
+{
+    D(bug("[ACPI] %s()\n", __func__));
+}
+
+void
+MpSaveSerialInfo (
+    ACPI_PARSE_OBJECT       *Op,
+    AML_RESOURCE            *Resource,
+    char                    *DeviceName)
+{
+    D(bug("[ACPI] %s()\n", __func__));
+}
+#endif
 
 ACPI_STATUS AcpiOsInitialize (void)
 {
@@ -791,6 +814,7 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
         return FALSE;
     }
 
+#if (0)
     err = AcpiEnableSubsystem(initlevel);
     if (ACPI_FAILURE(err)) {
         bug("[ACPI] %s: AcpiEnableSubsystem(0x%02x) returned error %d\n", __func__, initlevel, err);
@@ -816,7 +840,7 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
     D(bug("[ACPI] %s: Full initialization complete\n", __func__));
 
     ExecuteOSI("Windows 2009", 0);
-
+#endif
     ACPICABase->ab_Flags |= ACPICAF_FULLINIT;
 
     return TRUE;
@@ -841,12 +865,13 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
     AcpiDbgLevel = ~0;
     ACPICABase->ab_RootPointer = 0;
 
+#if (0)
     err = AcpiInitializeTables(NULL, ACPI_MAX_INIT_TABLES, FALSE);
     if (ACPI_FAILURE(err)) {
         D(bug("[ACPI] %s: AcpiInitializeTables returned error %d\n", __func__, err));
         return FALSE;
     }
-
+#endif
     ACPICABase->ab_Flags |= ACPICAF_TABLEINIT;
 
     if (AcpiGetTable("MCFG", 1, (ACPI_TABLE_HEADER **)&mcfg) == AE_OK) {

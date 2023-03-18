@@ -47,6 +47,7 @@ USER_LDFLAGS := -static
 # ACPICA debugging options
 ifeq ($(DEBUG_ACPI),yes)
 ACPICA_BASESOURCES +=  \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/common/ahids.c $(ACPICASRCDIR)/source/common/ahuuids.c) \
        $(call WILDCARD, $(ACPICASRCDIR)/source/components/disassembler/*.c)
 USER_CPPFLAGS += -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
 # AROS Glue code debugging options
