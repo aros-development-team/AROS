@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- includes-copy : libpng-fetch
 
-LIBPNGVERSION=1.6.37
+LIBPNGVERSION=1.6.39
 REPOSITORIES = http://prdownloads.sourceforge.net/libpng \
  https://download.sourceforge.net/libpng
 ARCHBASE     := libpng-$(LIBPNGVERSION)
