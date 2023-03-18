@@ -1,6 +1,6 @@
-diff -ruN freetype-2.12.1/builds/aros/src/base/ftsystem.c freetype-2.12.1.aros/builds/aros/src/base/ftsystem.c
---- freetype-2.12.1/builds/aros/src/base/ftsystem.c	1970-01-01 00:00:00.000000000 +0000
-+++ freetype-2.12.1.aros/builds/aros/src/base/ftsystem.c	2021-01-08 22:52:37.860000000 +0000
+diff -ruN freetype-2.13.0/builds/aros/src/base/ftsystem.c freetype-2.13.0.aros/builds/aros/src/base/ftsystem.c
+--- freetype-2.13.0/builds/aros/src/base/ftsystem.c	1970-01-01 00:00:00.000000000 +0000
++++ freetype-2.13.0.aros/builds/aros/src/base/ftsystem.c	2021-01-08 22:52:37.860000000 +0000
 @@ -0,0 +1,356 @@
 +/***************************************************************************/
 +/*                                                                         */
@@ -358,12 +358,9 @@ diff -ruN freetype-2.12.1/builds/aros/src/base/ftsystem.c freetype-2.12.1.aros/b
 +#endif
 +    DeletePool((APTR)memory->user);
 +  }
-+
-+
-+/* END */
-diff -ruN freetype-2.12.1/include/freetype/config/public-macros.h freetype-2.12.1.aros/include/freetype/config/public-macros.h
---- freetype-2.12.1/include/freetype/config/public-macros.h	2020-08-27 06:17:20.000000000 +0000
-+++ freetype-2.12.1.aros/include/freetype/config/public-macros.h	2022-03-27 05:35:05.934677526 +0000
+diff -ruN freetype-2.13.0/include/freetype/config/public-macros.h freetype-2.13.0.aros/include/freetype/config/public-macros.h
+--- freetype-2.13.0/include/freetype/config/public-macros.h	2023-02-04 14:00:05.000000000 +0000
++++ freetype-2.13.0.aros/include/freetype/config/public-macros.h	2023-03-18 16:52:48.310656000 +0000
 @@ -71,6 +71,8 @@
  #define FT_PUBLIC_FUNCTION_ATTRIBUTE  __declspec( dllimport )
  #endif
@@ -373,9 +370,9 @@ diff -ruN freetype-2.12.1/include/freetype/config/public-macros.h freetype-2.12.
    /* gcc, clang */
  #elif ( defined( __GNUC__ ) && __GNUC__ >= 4 ) || defined( __clang__ )
  #define FT_PUBLIC_FUNCTION_ATTRIBUTE \
-diff -ruN freetype-2.12.1/src/autofit/afcjk.c freetype-2.12.1.aros/src/autofit/afcjk.c
---- freetype-2.12.1/src/autofit/afcjk.c	2022-01-27 07:43:19.000000000 +0000
-+++ freetype-2.12.1.aros/src/autofit/afcjk.c	2022-05-06 19:37:29.628118000 +0000
+diff -ruN freetype-2.13.0/src/autofit/afcjk.c freetype-2.13.0.aros/src/autofit/afcjk.c
+--- freetype-2.13.0/src/autofit/afcjk.c	2023-02-08 20:09:32.000000000 +0000
++++ freetype-2.13.0.aros/src/autofit/afcjk.c	2023-03-18 16:52:48.310656000 +0000
 @@ -22,6 +22,11 @@
     *
     */
@@ -442,9 +439,9 @@ diff -ruN freetype-2.12.1/src/autofit/afcjk.c freetype-2.12.1.aros/src/autofit/a
    }
  
  
-diff -ruN freetype-2.12.1/src/autofit/aflatin.c freetype-2.12.1.aros/src/autofit/aflatin.c
---- freetype-2.12.1/src/autofit/aflatin.c	2022-01-27 07:43:19.000000000 +0000
-+++ freetype-2.12.1.aros/src/autofit/aflatin.c	2022-05-06 19:37:29.628118000 +0000
+diff -ruN freetype-2.13.0/src/autofit/aflatin.c freetype-2.13.0.aros/src/autofit/aflatin.c
+--- freetype-2.13.0/src/autofit/aflatin.c	2023-02-08 20:09:32.000000000 +0000
++++ freetype-2.13.0.aros/src/autofit/aflatin.c	2023-03-18 16:52:48.310656000 +0000
 @@ -15,6 +15,10 @@
   *
   */
@@ -521,10 +518,10 @@ diff -ruN freetype-2.12.1/src/autofit/aflatin.c freetype-2.12.1.aros/src/autofit
    }
  
  
-diff -ruN freetype-2.12.1/src/autofit/afmodule.c freetype-2.12.1.aros/src/autofit/afmodule.c
---- freetype-2.12.1/src/autofit/afmodule.c	2022-01-27 07:43:19.000000000 +0000
-+++ freetype-2.12.1.aros/src/autofit/afmodule.c	2022-05-06 19:37:29.628118000 +0000
-@@ -477,8 +477,25 @@
+diff -ruN freetype-2.13.0/src/autofit/afmodule.c freetype-2.13.0.aros/src/autofit/afmodule.c
+--- freetype-2.13.0/src/autofit/afmodule.c	2023-02-08 20:09:03.000000000 +0000
++++ freetype-2.13.0.aros/src/autofit/afmodule.c	2023-03-18 16:52:48.310656000 +0000
+@@ -475,8 +475,25 @@
  
  #else /* !FT_DEBUG_AUTOFIT */
  
@@ -550,7 +547,7 @@ diff -ruN freetype-2.12.1/src/autofit/afmodule.c freetype-2.12.1.aros/src/autofi
  
      FT_UNUSED( size );
  
-@@ -492,6 +509,11 @@
+@@ -490,6 +507,11 @@
      af_loader_done( loader );
      af_glyph_hints_done( hints );
  
