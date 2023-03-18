@@ -6,10 +6,11 @@ FILES := pcipc_init pcipc_driverclass pcipc_deviceclass pciconf1 pciconf2
 USER_CPPFLAGS := \
                -D__OOP_NOLIBBASE__ \
                -D__OOP_NOATTRBASES__ \
-               -D__OOP_NOMETHODBASES__
+               -D__OOP_NOMETHODBASES__ \
+               -D__INLINE_ACPICA_STACKCALL__ 
 
 %build_module mmake=kernel-hidd-pci-pcipc \
     modname=pcipc modtype=hidd \
-    files=$(FILES) uselibs="acpica"
+    files=$(FILES)
 
 %common
