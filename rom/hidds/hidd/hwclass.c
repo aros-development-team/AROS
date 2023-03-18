@@ -13,8 +13,6 @@
 
 #include "hiddclass_intern.h"
 
-CONST_STRPTR classname_Unknown = "Unknown hardware";
-
 /*****************************************************************************************
 
     NAME
@@ -97,6 +95,7 @@ OOP_Object *HW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
     if (o)
     {
+        CONST_STRPTR classname_Unknown = "Unknown hardware";
         struct HWData *data = OOP_INST_DATA(cl, o);
 
         NEWLIST(&data->drivers);
