@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- includes-copy : zlib-fetch
 
-ZLIBVERSION=1.2.12
+ZLIBVERSION=1.2.13
 REPOSITORIES := https://zlib.net/fossils/
 ARCHBASE     := zlib-$(ZLIBVERSION)
 ARCHSUFFIX := "tar.gz"
