@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -128,7 +128,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
         bug("[Kernel:SMP] %s[%03u]: Failed to launch AP Bootstrap task!\n", __func__, apicCPUNo);
     }
 #else
-    bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", apicCPUNo + 1, apicData->apic_count);
+    D(bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", apicCPUNo + 1, apicData->apic_count);)
 #endif
 
     /* Signal the bootstrap core that we are running */

@@ -144,8 +144,8 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         {
             kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
             apicPrivate->msibase = msibase;
-            bug("[Kernel:APIC-IA32] MSI Interrupts Allocatable\n");
             D(
+                bug("[Kernel:APIC-IA32] MSI Interrupts Allocatable\n");
                 bug("[Kernel:APIC-IA32]     start = %u\n", msibase);
                 bug("[Kernel:APIC-IA32]     total = %u\n", msiavailable);
             )

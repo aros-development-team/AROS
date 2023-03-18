@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/asmcall.h>
@@ -208,8 +208,10 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
         pdata->kb_ACPI->acpi_madt = madtTable;  /* Cache ACPI data for secondary cores */
         pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
 
-        bug("[Kernel:ACPI-APIC] Local APIC address 0x%p; Flags 0x%04X\n", pdata->kb_APIC->lapicBase, pdata->kb_APIC->flags);
-        D(bug("[Kernel:ACPI-APIC] MADT @ 0x%p\n", pdata->kb_ACPI->acpi_madt));
+        D(
+            bug("[Kernel:ACPI-APIC] Local APIC address 0x%p; Flags 0x%04X\n", pdata->kb_APIC->lapicBase, pdata->kb_APIC->flags);
+            bug("[Kernel:ACPI-APIC] MADT @ 0x%p\n", pdata->kb_ACPI->acpi_madt);
+        )
 
         /* Remember ID of the bootstrap APIC, this is CPU #1 */
         pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
@@ -221,7 +223,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
         if (pdata->kb_APIC->cores[0].cpu_LocalID == processor->Id)
         {
             /* This is the BSP, slot 0 is always reserved for it. */
-            bug("[Kernel:ACPI-APIC] Registering Core #1 [ID=%03u] as BSP\n", processor->Id);
+            D(bug("[Kernel:ACPI-APIC] Registering Core #1 [ID=%03u] as BSP\n", processor->Id);)
 
             pdata->kb_APIC->cores[0].cpu_PrivateID = processor->ProcessorId;
 
@@ -236,7 +238,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
         else
         {
             /* Add one more AP */
-            bug("[Kernel:ACPI-APIC] Registering Core #%u [ID=%03u:%03u]\n", pdata->kb_APIC->apic_count + 1, processor->Id, processor->ProcessorId);
+            D(bug("[Kernel:ACPI-APIC] Registering Core #%u [ID=%03u:%03u]\n", pdata->kb_APIC->apic_count + 1, processor->Id, processor->ProcessorId);)
 
             pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_LocalID = processor->Id;
             pdata->kb_APIC->cores[pdata->kb_APIC->apic_count].cpu_PrivateID = processor->ProcessorId;
