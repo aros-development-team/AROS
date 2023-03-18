@@ -814,7 +814,8 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
         return FALSE;
     }
 
-#if (0)
+/* The following block will only work on native builds */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     err = AcpiEnableSubsystem(initlevel);
     if (ACPI_FAILURE(err)) {
         bug("[ACPI] %s: AcpiEnableSubsystem(0x%02x) returned error %d\n", __func__, initlevel, err);
@@ -865,7 +866,8 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
     AcpiDbgLevel = ~0;
     ACPICABase->ab_RootPointer = 0;
 
-#if (0)
+/* The following block will only work on native builds */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     err = AcpiInitializeTables(NULL, ACPI_MAX_INIT_TABLES, FALSE);
     if (ACPI_FAILURE(err)) {
         D(bug("[ACPI] %s: AcpiInitializeTables returned error %d\n", __func__, err));
