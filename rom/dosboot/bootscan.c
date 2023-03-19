@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Discover all mountable partitions
 */
@@ -152,27 +152,41 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
         return;
     }
 
+#if !defined(FORCERDBMEMATTRIBS)
+    if ((pttype != PHPTT_RDB) ||
+        ((pp[DE_BUFMEMTYPE   + 4] == MEMF_PUBLIC) &&
+        (pp[DE_MAXTRANSFER  + 4] == 0xFFFFFF) &&
+        (pp[DE_MASK         + 4] == 0xFFFFFFFE)))
+#else
     if (pttype != PHPTT_RDB)
+#endif
     {
         /*
-         * Only RDB partitions can store the complete DosEnvec.
-         * For other partition types partition.library puts some defaults
+         * Non-RDB partitions do not provide enough information to complete DosEnvec.
+         * For those partition types, partition.library puts some defaults
          * into these fields, however they do not have anything to do with
          * real values, which are device-dependent.
-         * However, the device itself knows them. Here we inherit these settings
-         * from the original DeviceNode which represents the whole drive.
+         *
+         * C:Partition/HDToolbox also cannot provide the correct values, and since the device
+          * itself knows them, we inherit these settings from the original DeviceNode
+          * which represents the whole drive.
+         *
          * Note that we don't change DosEnvec size. If these fields are not included,
          * it will stay this way.
          * Copy members only if they are present in device's DosEnvec.
          */
         struct DosEnvec *devenv = BADDR(fssm->fssm_Environ);
 
-        if (devenv->de_TableSize >= DE_MAXTRANSFER)
+        if (pp[4 + DE_TABLESIZE] >= DE_BUFMEMTYPE && devenv->de_TableSize >= DE_BUFMEMTYPE)
         {
-            pp[4 + DE_MAXTRANSFER] = devenv->de_MaxTransfer;
+            pp[4 + DE_BUFMEMTYPE] = devenv->de_BufMemType;
+            if (pp[4 + DE_TABLESIZE] >= DE_MAXTRANSFER && devenv->de_TableSize >= DE_MAXTRANSFER)
+            {
+                pp[4 + DE_MAXTRANSFER] = devenv->de_MaxTransfer;
 
-            if (devenv->de_TableSize >= DE_MASK)
-                pp[4 + DE_MASK] = devenv->de_Mask;
+                if (pp[4 + DE_TABLESIZE] >= DE_MASK && devenv->de_TableSize >= DE_MASK)
+                    pp[4 + DE_MASK] = devenv->de_Mask;
+            }
         }
     }
 
@@ -286,6 +300,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
 
             if (pt)
             {
+                D(bug("[DOSBoot:bootscan] %s: checking %s:%u\n", __func__, AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit);)
                 res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
 
                 CloseRootPartition(pt);
