@@ -586,8 +586,11 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             pp[DE_HIGHCYL      + 4] = unit->nu_Cyl - 1;
                             pp[DE_NUMBUFFERS   + 4] = 10;
                             pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
-                            pp[DE_MAXTRANSFER  + 4] = (1 << data->ab_Dev->dev_mdts) * (1 << unit->au_SecShift);
-                            D(bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);)
+                            pp[DE_MAXTRANSFER  + 4] = (1 << data->ab_Dev->dev_mdts) * data->ab_Dev->pagesize;
+                            D(
+                                bug("[NVME:Bus] NVMEBus_Start: mdts = %u\n", data->ab_Dev->dev_mdts);
+                                bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);
+                            )
                             pp[DE_MASK         + 4] = 0x7FFFFFFF & ~(data->ab_Dev->pagesize - 1);
                             D(bug("[NVME:Bus] NVMEBus_Start: DE_MASK= %08x\n", pp[DE_MASK + 4]);)
                             pp[DE_BOOTPRI      + 4] = 0;
