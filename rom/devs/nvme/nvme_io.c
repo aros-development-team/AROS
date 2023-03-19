@@ -68,9 +68,9 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         io->io_Error = IOERR_BADADDRESS;
         return TRUE;
     }
-    else if (len == 0)
+    else if ((len == 0) || (len > (1 << unit->au_Bus->ab_Dev->dev_mdts) * unit->au_Bus->ab_Dev->pagesize))
     {
-        bug("[NVME%02ld] %s: BADLENGTH (writing 0 bytes to %x)\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift));
+        bug("[NVME%02ld] %s: BADLENGTH (writing %u bytes to %x)\n", unit->au_UnitNum, __func__, len, (off64 >> unit->au_SecShift));
         io->io_Error = IOERR_BADLENGTH;
         return TRUE;
     }
@@ -155,10 +155,6 @@ AROS_LH1(void, BeginIO,
     };
     struct IOExtTD *iotd = (struct IOExtTD *)io;
     struct nvme_Unit *unit = (struct nvme_Unit *)io->io_Unit;
-#if (0)
-    struct nvme_port *ap = unit->au_Port;
-    struct ata_port  *at = ap->ap_ata[0];
-#endif
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
     UQUAD off64;
@@ -170,15 +166,6 @@ AROS_LH1(void, BeginIO,
     io->io_Error = 0;
 
     D(bug("[NVME%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command));
-#if (0)
-    /* Unit going offline? Don't permit new commands. */
-    if (unit->au_Flags & OFFLINE) {
-        io->io_Error = IOERR_OPENFAIL;
-        if (!(io->io_Flags & IOF_QUICK))
-            ReplyMsg(&io->io_Message);
-        return;
-    }
-#endif
 
     ObtainSemaphore(&unit->au_Lock);
     AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
