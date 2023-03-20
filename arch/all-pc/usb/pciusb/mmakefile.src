@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+ARCHFILES := pciusb_init
+PCIUSBDIR := rom/usb/pciusb
+
+USER_CPPFLAGS := -DAROS_USE_OOP \
+               -D__OOP_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(PCIUSBDIR)
+
+%build_archspecific \
+  mainmmake=kernel-usb-pciusb maindir=$(PCIUSBDIR) \
+  arch=pc modname=pciusb \
+  files="$(ARCHFILES)"
