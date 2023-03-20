@@ -6,6 +6,8 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
+#include LC_LIBDEFS_FILE
+
 #include "uhwcmd.h"
 
 #define DEVNAME             "pciusb.device"

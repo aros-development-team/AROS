@@ -8,8 +8,6 @@
  *		     By Chris Hodges <chrisly@platon42.de>
  */
 
-#include LC_LIBDEFS_FILE
-
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>

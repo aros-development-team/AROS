@@ -8,6 +8,8 @@
 
 #include <strings.h>
 
+#include LC_LIBDEFS_FILE
+
 #include "uhwcmd.h"
 #include "ohciproto.h"
 

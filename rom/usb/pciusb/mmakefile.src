@@ -1,7 +1,16 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := pci_aros buffer uhcichip ohcichip ehcichip dev uhwcmd debug
+FILES := \
+        pciusb_init \
+        pciusb_arospci \
+        buffer \
+        uhcichip \
+        ohcichip \
+        ehcichip \
+        dev \
+        uhwcmd \
+        debug
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
 
