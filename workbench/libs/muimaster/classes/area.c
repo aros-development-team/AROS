@@ -1956,7 +1956,7 @@ static IPTR event_button(Class *cl, Object *obj,
                     (IPTR) &data->mad_ehn);
             }
             handle_press(cl, obj);
-            return 0;
+            return MUI_EventHandlerRC_Eat;
         }
         break;
 
