@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+# Copyright (C) 2009-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
