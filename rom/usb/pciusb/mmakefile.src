@@ -16,7 +16,6 @@ kernel-usb-pciusb-directories ::
 USER_LDFLAGS := -static
 ifeq ($(ARCH),pc)
 USER_CPPFLAGS := -DHAVE_ACPICA=1
-USER_LDFLAGS += -lacpica
 endif
 #USER_CPPFLAGS += -DDEBUG=1
 

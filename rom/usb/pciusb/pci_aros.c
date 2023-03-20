@@ -23,10 +23,10 @@
 #include "uhwcmd.h"
 #include "ohciproto.h"
 
-#ifdef HAVE_ACPICA
-#include <proto/acpica.h>
 /* acpica.library is optional */
-struct Library *ACPICABase = NULL;
+#ifdef HAVE_ACPICA
+#define __INLINE_ACPICA_STACKCALL__
+#include <proto/acpica.h>
 #endif
 
 #define NewList NEWLIST
@@ -124,6 +124,10 @@ AROS_UFH3(void, pciEnumerator,
                 AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
 
                 handleQuirks(hc);
+            }
+            else
+            {
+                KPRINTF(10, ("Failed to allocate storage for controller entry!\n"));
             }
             break;
 
@@ -649,8 +653,9 @@ static int getArguments(struct PCIDevice *base)
 {
     APTR BootLoaderBase;
 #ifdef HAVE_ACPICA
-
-    if ((ACPICABase = OpenLibrary("acpica.library", 0))) {
+    struct Library *ACPICABase;
+    ACPICABase = OpenLibrary("acpica.library", 0);
+    if (ACPICABase) {
         /*
          * Use ACPI IDs to identify known machines which need HDF_FORCEPOWER to work.
          * Currently we know only MacMini.
@@ -664,7 +669,6 @@ static int getArguments(struct PCIDevice *base)
             if (strcmp(dsdt->OemTableId, "Macmini") == 0)
             {
                 base->hd_Flags = HDF_FORCEPOWER;
-                return TRUE;
             }
         }
         CloseLibrary(ACPICABase);
