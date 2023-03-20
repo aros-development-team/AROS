@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved
+    Copyright (C) 2010-2023, The AROS Development Team. All rights reserved
 */
 
 #define DB_LEVEL 100
@@ -1097,8 +1097,12 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
 
 void ehciUpdateFrameCounter(struct PCIController *hc) {
 
+    ULONG fc;
     Disable();
-    hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffffc000)|(READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) & 0x3fff);
+    fc = READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT);
+    if ((hc->hc_Quirks & HCQ_EHCI_MOSC_FRAMECOUNTBUG) && ((fc & 7) == 0))
+        fc = READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT);
+    hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xffffc000)|(fc & 0x3fff);
     Enable();
 }
 

@@ -50,6 +50,11 @@ static void handleQuirks(struct PCIController *hc)
            speed of around 4 per second instead of ever 1024 ms */
         hc->hc_Quirks |= HCQ_EHCI_VBOX_FRAMEROOLOVER;
     }
+    else if (vendorid == 0x9710)
+    {
+        /* Apply MosChip frame-counter register bug workaround */
+        hc->hc_Quirks |= HCQ_EHCI_MOSC_FRAMECOUNTBUG;
+    }    
 }
 
 AROS_UFH3(void, pciEnumerator,

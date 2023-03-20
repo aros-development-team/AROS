@@ -187,6 +187,7 @@ struct PCIController
 #define HCQ_EHCI_OVERLAY_INT_FILL       (1 << 1)
 #define HCQ_EHCI_OVERLAY_BULK_FILL      (1 << 2)
 #define HCQ_EHCI_VBOX_FRAMEROOLOVER     (1 << 3)
+#define HCQ_EHCI_MOSC_FRAMECOUNTBUG     (1 << 4)
 
 
 /* The device node - private
