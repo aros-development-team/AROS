@@ -4,11 +4,11 @@ include $(SRCDIR)/config/aros.cfg
 FILES := \
         pciusb_init \
         pciusb_arospci \
+        pciusb_dev \
         buffer \
         uhcichip \
         ohcichip \
         ehcichip \
-        dev \
         uhwcmd \
         debug
 
