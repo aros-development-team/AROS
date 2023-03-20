@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved
+    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved
 
     Desc:
 */
@@ -110,6 +110,8 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
                     if (strstr(CmdLine, "disable"))
                     {
                         D(bug("[AHCI--] %s: Disabling AHCI support\n", __func__));
+                        CloseLibrary(AHCIBase->ahci_UtilityBase);
+                        AHCIBase->ahci_UtilityBase = NULL;
                         return FALSE;
                     }
                     if (strstr(CmdLine, "force150"))
@@ -141,41 +143,47 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
      * Alloc everything needed from a pool, so that we avoid memory fragmentation.
      */
     AHCIBase->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
-    if (AHCIBase->ahci_MemPool == NULL)
-        return FALSE;
-
-    D(bug("[AHCI--] %s: MemPool @ %p\n", __func__, AHCIBase->ahci_MemPool);)
+    if (AHCIBase->ahci_MemPool != NULL)
+    {
+        D(bug("[AHCI--] %s: MemPool @ %p\n", __func__, AHCIBase->ahci_MemPool);)
 
 #if defined(__OOP_NOATTRBASES__)
-    /* Get some useful bases */
-    if (OOP_ObtainAttrBasesArray(&AHCIBase->ahci_HWAttrBase, attrBaseIDs))
-        return FALSE;
+        /* Get some useful bases */
+        if (!OOP_ObtainAttrBasesArray(&AHCIBase->ahci_HWAttrBase, attrBaseIDs))
+        {
 #endif
 #if defined(__OOP_NOMETHODBASES__)
-    if (OOP_ObtainMethodBasesArray(&AHCIBase->ahci_HiddPCIDeviceMethodBase, methBaseIDs))
-    {
+        if (!OOP_ObtainMethodBasesArray(&AHCIBase->ahci_HiddPCIDeviceMethodBase, methBaseIDs))
+        {
+#endif
+
+        D(
+          bug("[AHCI--] %s: Base AHCI Hidd Class @ %p\n", __func__, AHCIBase->ahciClass);
+          bug("[AHCI--] %s: AHCI PCI Bus Class @ %p\n", __func__, AHCIBase->busClass);
+        )
+
+        AHCIBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+        if (!AHCIBase->storageRoot)
+            AHCIBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+        if (AHCIBase->storageRoot)
+        {
+            D(bug("[AHCI--] %s: storage root @ %p\n", __func__, AHCIBase->storageRoot);)
+            return TRUE;
+        }
+#if defined(__OOP_NOMETHODBASES__)
+        }
+#endif
 #if defined(__OOP_NOATTRBASES__)
         OOP_ReleaseAttrBasesArray(&AHCIBase->ahci_HWAttrBase, attrBaseIDs);
+        }
 #endif
-        return FALSE;
+        DeletePool(AHCIBase->ahci_MemPool);
+        AHCIBase->ahci_MemPool = NULL;
     }
-#endif
+    CloseLibrary(AHCIBase->ahci_UtilityBase);
+    AHCIBase->ahci_UtilityBase = NULL;
 
-    D(
-      bug("[AHCI--] %s: Base AHCI Hidd Class @ %p\n", __func__, AHCIBase->ahciClass);
-      bug("[AHCI--] %s: AHCI PCI Bus Class @ %p\n", __func__, AHCIBase->busClass);
-    )
-
-    AHCIBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-    if (!AHCIBase->storageRoot)
-        AHCIBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-    if (!AHCIBase->storageRoot)
-    {
-        return FALSE;
-    }
-    D(bug("[AHCI--] %s: storage root @ %p\n", __func__, AHCIBase->storageRoot);)
-
-    return TRUE;
+    return FALSE;
 }
 
 static int AHCI_Open
