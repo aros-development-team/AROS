@@ -193,6 +193,7 @@ BOOL pciInit(struct PCIDevice *hd)
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ)
     {
+        IPTR		  IntLine;
         hu = AllocPooled(hd->hd_MemPool, sizeof(struct PCIUnit));
         if(!hu)
         {
@@ -201,15 +202,18 @@ BOOL pciInit(struct PCIDevice *hd)
         }
         hu->hu_Device = hd;
         hu->hu_UnitNo = unitno;
-        hu->hu_DevID = ((struct PCIController *) hd->hd_TempHCIList.lh_Head)->hc_DevID;
 
         NewList(&hu->hu_Controllers);
         NewList(&hu->hu_RHIOQueue);
 
         hc = (struct PCIController *) hd->hd_TempHCIList.lh_Head;
+
+        hu->hu_DevID = hc->hc_DevID;
+        IntLine =  hc->hc_PCIIntLine;
+
         while((nexthc = (struct PCIController *) hc->hc_Node.ln_Succ))
         {
-            if(hc->hc_DevID == hu->hu_DevID)
+            if ((hc->hc_DevID == hu->hu_DevID) && (hc->hc_PCIIntLine == IntLine))
             {
                 Remove(&hc->hc_Node);
 
