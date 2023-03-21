@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2011, The AROS Development Team. All rights reserved
+    Copyright (C) 2010-2023, The AROS Development Team. All rights reserved
 */
 
 #define DB_LEVEL 20
@@ -1224,12 +1224,13 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHSF_USBINT | UHSF_USBERRORINT | UHSF_RESUMEDTX | UHSF_HCSYSERROR | UHSF_HCPROCERROR | UHSF_HCHALTED);
 
         // install reset handler
+        hc->hc_ResetInt.is_Node.ln_Name = "UHCI PCI (pciusb.device)";
         hc->hc_ResetInt.is_Code = (VOID_FUNC)UhciResetHandler;
         hc->hc_ResetInt.is_Data = hc;
         AddResetCallback(&hc->hc_ResetInt);
 
         // add interrupt
-        hc->hc_PCIIntHandler.is_Node.ln_Name = "UHCI PCI (pciusb.device)";
+        hc->hc_PCIIntHandler.is_Node.ln_Name = hc->hc_ResetInt.is_Node.ln_Name;
         hc->hc_PCIIntHandler.is_Node.ln_Pri = 5;
         hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
         hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)uhciIntCode;

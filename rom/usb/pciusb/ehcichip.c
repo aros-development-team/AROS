@@ -1555,12 +1555,13 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
 
         // install reset handler
+        hc->hc_ResetInt.is_Node.ln_Name = "EHCI PCI (pciusb.device)";
         hc->hc_ResetInt.is_Code = (VOID_FUNC)EhciResetHandler;
         hc->hc_ResetInt.is_Data = hc;
         AddResetCallback(&hc->hc_ResetInt);
 
         // add interrupt
-        hc->hc_PCIIntHandler.is_Node.ln_Name = "EHCI PCI (pciusb.device)";
+        hc->hc_PCIIntHandler.is_Node.ln_Name = hc->hc_ResetInt.is_Node.ln_Name;
         hc->hc_PCIIntHandler.is_Node.ln_Pri = 5;
         hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
         hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)ehciIntCode;
