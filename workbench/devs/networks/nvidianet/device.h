@@ -68,11 +68,6 @@ enum
    REQUEST_QUEUE_COUNT
 };
 
-enum
-{
-   PCI_BUS
-};
-
 #define STAT_COUNT 3
 
 #define TX_SLOT_COUNT 32
@@ -85,7 +80,6 @@ struct DevUnit
    ULONG index;
    ULONG open_count;
    ULONG flags;
-   UWORD bus;
    struct Task *task;
    struct MsgPort *request_ports[REQUEST_QUEUE_COUNT];
    struct DevBase *device;

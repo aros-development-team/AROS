@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2023 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -528,12 +528,7 @@ VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base)
       if((--unit->open_count) == 0)
       {
          Remove((APTR)unit);
-         switch(unit->bus)
-         {
-         case PCI_BUS:
-            DeletePCIUnit(unit, base);
-            break;
-         }
+         DeletePCIUnit(unit, base);
       }
    }
 
