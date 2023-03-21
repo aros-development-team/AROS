@@ -87,11 +87,9 @@ static UWORD ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
 *	CreateUnit -- Create a unit.
 *
 *   SYNOPSIS
-*	unit = CreateUnit(index, io_base, id, card,
-*	    io_tags, bus)
+*	unit = CreateUnit(index, card, io_tags)
 *
-*	struct DevUnit *CreateUnit(ULONG, APTR, UWORD, APTR,
-*	    struct TagItem *, UWORD);
+*	struct DevUnit *CreateUnit(ULONG, APTR, struct TagItem *);
 *
 *   FUNCTION
 *	Creates a new unit.
