@@ -916,7 +916,7 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
 
     // Install warm-reset handler
     ACPICABase->ab_ResetInt.is_Node.ln_Name = ACPICABase->ab_Lib.lib_Node.ln_Name;
-    ACPICABase->ab_ResetInt.is_Node.ln_Pri = -127;
+    ACPICABase->ab_ResetInt.is_Node.ln_Pri = -63;
     ACPICABase->ab_ResetInt.is_Code = (VOID_FUNC)ACPICAResetHandler;
     ACPICABase->ab_ResetInt.is_Data = ACPICABase;
     AddResetCallback(&ACPICABase->ab_ResetInt);
