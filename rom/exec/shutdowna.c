@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: ShutdownA() - Shut down the operating system.
 */
@@ -28,6 +28,7 @@
         action - what to do:
          * SD_ACTION_POWEROFF   - power off the machine.
          * SD_ACTION_COLDREBOOT - cold reboot the machine (not only AROS).
+         * SD_ACTION_WARMREBOOT
 
     RESULT
         This function does not return in case of success. Otherwise it returns
