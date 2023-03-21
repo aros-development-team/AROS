@@ -65,6 +65,34 @@ MpSaveSerialInfo (
 }
 #endif
 
+static AROS_INTH1(ACPICAResetHandler, struct ACPICABase *, ACPICABase)
+{
+    AROS_INTFUNC_INIT
+    ACPI_STATUS status;
+
+    D(bug("[ACPI] %s()\n", __func__);)
+
+    if (ACPICABase->ab_ResetInt.is_Node.ln_Type != SD_ACTION_WARMREBOOT)
+    {
+        D(bug("[ACPI] %s: Skipping ACPI shutdown (Not WARMREBOOT)\n", __func__);)
+        return FALSE;
+    }            
+    else
+    {
+        status = AcpiTerminate();
+        if (ACPI_SUCCESS(status))
+        {
+            D(bug("[ACPI] %s: ACPI subsystem shutdown complete\n", __func__);)
+            return FALSE;
+        }
+    }
+    bug("[ACPI] %s: Failed to shutdown ACPI! (%08x)\n", __func__, status);
+    return TRUE;
+
+    AROS_INTFUNC_EXIT
+}
+
+
 ACPI_STATUS AcpiOsInitialize (void)
 {
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
@@ -494,12 +522,13 @@ ACPI_STATUS AcpiOsWritePort(ACPI_IO_ADDRESS Address, UINT32 Value, UINT32 Width)
 
 static UINT8 *find_pci(struct ACPICABase *ACPICABase, ACPI_PCI_ID *PciId)
 {
+    ACPI_MCFG_ALLOCATION *mcfg = (ACPI_MCFG_ALLOCATION *)ACPICABase->ab_MCFG.me_Un.meu_Addr;
     int i;
 
     D(bug("[ACPI] %s()\n", __func__));
 
-    for (i = 0; i < ACPICABase->ab_PCIs; i++) {
-        ACPI_MCFG_ALLOCATION *ma = &ACPICABase->ab_PCI[i];
+    for (i = 0; i < (ACPICABase->ab_MCFG.me_Length / sizeof(ACPI_MCFG_ALLOCATION)); i++) {
+        ACPI_MCFG_ALLOCATION *ma = &mcfg[i];
         if (PciId->Segment != ma->PciSegment)
             continue;
         if (PciId->Bus < ma->StartBusNumber ||
@@ -877,13 +906,20 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
     ACPICABase->ab_Flags |= ACPICAF_TABLEINIT;
 
     if (AcpiGetTable("MCFG", 1, (ACPI_TABLE_HEADER **)&mcfg) == AE_OK) {
-        ACPICABase->ab_PCIs = (mcfg->Header.Length - sizeof(*mcfg)) / sizeof(ACPI_MCFG_ALLOCATION);
-        ACPICABase->ab_PCI = (ACPI_MCFG_ALLOCATION *)&mcfg[1];
+        ACPICABase->ab_MCFG.me_Un.meu_Addr = (ACPI_MCFG_ALLOCATION *)&mcfg[1];
+        ACPICABase->ab_MCFG.me_Length = (mcfg->Header.Length - sizeof(*mcfg));
     } else {
-        ACPICABase->ab_PCIs = 0;
+        ACPICABase->ab_MCFG.me_Length = 0;
     }
 
     ACPICABase->ab_Flags |= ACPICAF_ENABLED;
+
+    // Install warm-reset handler
+    ACPICABase->ab_ResetInt.is_Node.ln_Name = ACPICABase->ab_Lib.lib_Node.ln_Name;
+    ACPICABase->ab_ResetInt.is_Node.ln_Pri = -127;
+    ACPICABase->ab_ResetInt.is_Code = (VOID_FUNC)ACPICAResetHandler;
+    ACPICABase->ab_ResetInt.is_Data = ACPICABase;
+    AddResetCallback(&ACPICABase->ab_ResetInt);
 
     return TRUE;
 }
