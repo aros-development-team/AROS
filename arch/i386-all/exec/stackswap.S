@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -73,7 +73,7 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	xchgl	%ecx,             stk_Upper(%ebx)
 	movl    %ecx,             tc_SPUpper(%edx)
 
-	movb	tc_Flags(%edx), %cx
+	movb	tc_Flags(%edx), %cl
 	test	$TF_STACKCHK, %cx
 	je	noStackSnoop
 
