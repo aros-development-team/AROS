@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: i386-pc kernel startup code
 */
@@ -71,6 +71,14 @@ IPTR __startup kernel_entry(struct TagItem *bootMsg, ULONG magic)
 }
 
 /*
+ * Display the Kernel banner
+ */
+static void boot_banner()
+{
+    bug("AROS - The AROS Research OS. Compiled %s\n",__DATE__);
+}
+
+/*
  * The real entry point for initial boot.
  * Here we initialize debug console and say "hello".
  * Warm restart skips this since the screen was taken over by display driver.
@@ -88,8 +96,6 @@ static void kernel_boot(const struct TagItem *msg)
     fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
     con_InitTagList(msg);
 
-    bug("AROS - The AROS Research OS. Compiled %s\n",__DATE__);
- 
     kernel_cstart(msg);
 }
 
@@ -168,21 +174,25 @@ void kernel_cstart(const struct TagItem *msg)
     char *cmdline = NULL;
     ULONG allocator = ALLOCATOR_TLSF;
 
-    D(bug("[Kernel] Transient kickstart end 0x%p, BootMsg 0x%p\n", kick_end, BootMsg));
-    D(bug("[Kernel] Boot stack: 0x%p - 0x%p\n", boot_stack, boot_stack + STACK_SIZE));
-
     /* If __KernBootPrivate is not set, this is our first start. */
     if (__KernBootPrivate == NULL)
     {
         struct vbe_mode *vmode = NULL;
 
-        tag = LibFindTagItem(KRN_KernelHighest, msg);
-        if (!tag)
+        tag      = LibFindTagItem(KRN_KernelHighest, msg);
+#if (0)
+        mmap     = (struct mb_mmap *)LibGetTagData(KRN_MMAPAddress, 0, msg);
+#endif
+        mmap_len = LibGetTagData(KRN_MMAPLength, 0, msg);
+        if ((!tag) || (!mmap_len))
             krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
                      "Highest kickstart address is not supplied\n");
 
         /* Align kickstart top address (we are going to place a structure after it) */
         BootMemPtr = (void *)AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
+#if (0)
+        BootMemLimit = (void *)(((IPTR)mmap->addr + mmap->len) - (KERNEL_DEBUG_BUFFSIZE + 1));
+#endif
 
         /*
          * Our boot taglist is placed by the bootstrap just somewhere in memory.
@@ -192,7 +202,6 @@ void kernel_cstart(const struct TagItem *msg)
         RelocateBootMsg(msg);
 
         /* Now relocate linked data */
-        mmap_len = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
         msg = BootMsg;
         while ((tag = LibNextTagItem((struct TagItem **)&msg)))
         {
@@ -228,6 +237,15 @@ void kernel_cstart(const struct TagItem *msg)
 
         /* Now allocate KernBootPrivate */
         __KernBootPrivate = krnAllocBootMem(sizeof(struct KernBootPrivate));
+#if (0)
+//TODO: Allocate a buffer to use for the debug output..
+        __KernBootPrivate->debug_buffer = BootMemLimit + 1;
+        __KernBootPrivate->debug_buffsize = KERNEL_DEBUG_BUFFSIZE;
+#endif
+
+        boot_banner();
+        D(bug("[Kernel] Transient kickstart end 0x%p, BootMsg 0x%p\n", kick_end, BootMsg));
+        D(bug("[Kernel] Boot stack: 0x%p - 0x%p\n", boot_stack, boot_stack + STACK_SIZE));
 
         vesahack_Init(cmdline, vmode);
     }
