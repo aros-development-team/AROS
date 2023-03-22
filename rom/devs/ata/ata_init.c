@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved
+    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved
 
     Desc:
 */
@@ -68,7 +68,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                 dosdevstem[0] = 'C';
                 break;
             default:
-                D(bug("[ATA>>]:-ata_RegisterVolume called on unknown devicetype\n");)
+                D(bug("[ATA>>]:-%s called on unknown devicetype\n", __func__);)
                 break;
         }
 
@@ -115,7 +115,8 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
         if (devnode)
         {
             D(
-                bug("[ATA>>]:-ata_RegisterVolume: '%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
+                bug("[ATA>>]:-%s: '%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
+                    __func__,
                     devnode->dn_Name, pp[DE_DOSTYPE + 4], StartCyl, EndCyl);
             )
 

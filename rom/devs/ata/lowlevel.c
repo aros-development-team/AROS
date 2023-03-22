@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -1013,10 +1013,10 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
      */
     UBYTE u = (unit->au_UnitNum & 1), status;
 
-//    DINIT(
+    DINIT(
         bug("[ATA%02ld] %s()\n", unit->au_UnitNum, __func__);
         bug("[ATA%02ld] %s: sending select unit\n", unit->au_UnitNum, __func__);
-//    )
+    )
     ata_SelectUnit(unit);
 
     if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, FALSE, NULL))
@@ -1029,7 +1029,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
     if (!(status & ((1 << 0) | (1 << 5))))
     {
 
-        bug("[ATA%02ld] %s: device type %u\n", unit->au_UnitNum, __func__, bus->ab_Dev[u]);
+        DINIT(bug("[ATA%02ld] %s: device type %u\n", unit->au_UnitNum, __func__, bus->ab_Dev[u]);)
 
         switch (bus->ab_Dev[u])
         {
@@ -1050,7 +1050,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
         }
 
         status = PIO_InAlt(bus, ata_AltStatus);
-        bug("[ATA%02ld] %s: status before enabling IRQs = %lx\n", unit->au_UnitNum, __func__, status);
+        DINIT(bug("[ATA%02ld] %s: status before enabling IRQs = %lx\n", unit->au_UnitNum, __func__, status);)
 
         PIO_OutAlt(bus, 0x0, ata_AltControl);
 
@@ -1060,7 +1060,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
             /*
              * now make unit self diagnose
              */
-            bug("[ATA%02ld] %s: performing self identify (func @ 0x%p)\n", unit->au_UnitNum, __func__, unit->au_Identify);
+            DINIT(bug("[ATA%02ld] %s: performing self identify (func @ 0x%p)\n", unit->au_UnitNum, __func__, unit->au_Identify);)
             if ((status = unit->au_Identify(unit)) == 0)
                 return TRUE;
             
@@ -1393,44 +1393,44 @@ static BYTE ata_Identify(struct ata_Unit *unit)
     BYTE status;
 
     /* If the right command fails, try the wrong one. If both fail, abort */
-//    DINIT(
+    DINIT(
         bug("[ATA%02ld] %s: Executing ATA_IDENTIFY_%s command\n",
         unit->au_UnitNum, __func__, atapi ? "ATAPI" : "DEVICE");
-//    )
+    )
     if ((status = ata_exec_cmd(unit, &acb)) != 0)
     {
         acb.command = atapi ? ATA_IDENTIFY_DEVICE : ATA_IDENTIFY_ATAPI;
-//        DINIT(
+        DINIT(
         bug("[ATA%02ld] %s: failed (status = %lx)\n", unit->au_UnitNum, __func__, status);
         //ata_ResetBus(bus);
         bug("[ATA%02ld] %s: Executing ATA_IDENTIFY_%s command"
             " instead\n", unit->au_UnitNum, __func__, atapi ? "DEVICE" : "ATAPI");
-//        )
+        )
         if ((status = ata_exec_cmd(unit, &acb)) != 0)
         {
-//            DINIT(
+            DINIT(
             bug("[ATA%02ld] %s: failed (status = %lx)\n", unit->au_UnitNum, __func__, status);
             bug("[ATA%02ld] %s: Both command variants failed."
                 " Discarding drive.\n",
                 unit->au_UnitNum, __func__);
-//            )
+            )
             //ata_ResetBus(bus);
             return IOERR_OPENFAIL;
         }
         unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] ^= 0x82;
         atapi = unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] & 0x80;
-//        DINIT(
+        DINIT(
         bug("[ATA%02ld] %s:"
             " Incorrect device signature detected."
             " Switching device type to %lx.\n",
             unit->au_UnitNum, __func__,
             unit->au_Bus->ab_Dev[unit->au_UnitNum & 1]);
-//        )
+        )
     }
-//    DINIT(
+    DINIT(
         bug("[ATA%02ld] %s: IDENTIFY done\n",
         unit->au_UnitNum, __func__);
-//    )
+    )
 
     /*
      * If every second word is zero with 32-bit reads, switch to 16-bit
@@ -1443,10 +1443,10 @@ static BYTE ata_Identify(struct ata_Unit *unit)
 
         if (n == 0)
         {
-//            DINIT(
+            DINIT(
             bug("[ATA%02ld] %s: Identify data was invalid with 32-bit reads."
                 " Switching to 16-bit mode.\n", unit->au_UnitNum, __func__);
-//            )
+            )
 
             Unit_Disable32Bit(unit);
 
@@ -1533,13 +1533,13 @@ static BYTE ata_Identify(struct ata_Unit *unit)
         unit->au_Flags         |= AF_DiscPresent | AF_DiscChanged;
     }
 
-    bug("[ATA%02ld] %s: copying unit strings ..\n", unit->au_UnitNum, __func__);
+    DINIT(bug("[ATA%02ld] %s: copying unit strings ..\n", unit->au_UnitNum, __func__);)
 
     ata_strcpy(unit->au_Drive->id_Model, unit->au_Model, 40);
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
     ata_strcpy(unit->au_Drive->id_FirmwareRev, unit->au_FirmwareRev, 8);
 
-    bug("[ATA%02ld] %s: Unit info: %s / %s / %s\n", unit->au_UnitNum, __func__, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
+    DINIT(bug("[ATA%02ld] %s: Unit info: %s / %s / %s\n", unit->au_UnitNum, __func__, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);)
     common_DetectXferModes(unit);
     common_SetBestXferMode(unit);
 

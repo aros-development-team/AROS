@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -574,6 +574,7 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         data->ab_Object = bus;
 
         /* Install reset callback */
+        data->ab_ResetInt.is_Node.ln_Pri = SD_PRI_DOS - 1;
         data->ab_ResetInt.is_Node.ln_Name = ATABase->ata_Device.dd_Library.lib_Node.ln_Name;
         data->ab_ResetInt.is_Code         = (VOID_FUNC)ataBus_Reset;
         data->ab_ResetInt.is_Data         = data;
