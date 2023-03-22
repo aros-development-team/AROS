@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: PS/2 mouse driver.
 */
@@ -33,7 +33,7 @@
 
 /****************************************************************************************/
 
-int ps2mouse_reset(struct IORequest* tmr, struct mouse_data *);
+int ps2mouse_reset(struct kbdbase *csd, struct IORequest* tmr, struct mouse_data *);
 
 /****************************************************************************************
  * PS/2 Mouse Interrupt handler
@@ -226,7 +226,7 @@ void PS2Mouse_InitTask(OOP_Class *cl, OOP_Object *o)
 
     D(bug("[i8042:PS2Mouse] attempting reset to detect mouse ...\n");)
     Disable();
-    result = ps2mouse_reset(tmr, data);
+    result = ps2mouse_reset((struct kbdbase *)cl->UserData, tmr, data);
     Enable();
 
     /* If no valid PS/2 mouse detected, release the IRQ */
@@ -364,7 +364,20 @@ static int ps2mouse_detectintellimouse(struct IORequest* tmr)
 
 /****************************************************************************************/
 
-int ps2mouse_reset(struct IORequest* tmr, struct mouse_data *data)
+static AROS_INTH1(PS2KBMResetHandler, struct kbdbase *, i8042Base)
+{
+    AROS_INTFUNC_INIT
+
+    D(bug("[i8042:PS2Mouse] %s()\n", __func__);)
+
+    kbd_write_cmd(NULL, AUX_INTS_OFF);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
+int ps2mouse_reset(struct kbdbase *i8042Base, struct IORequest* tmr, struct mouse_data *data)
 {
     int result, timeout = 100;
 
@@ -451,6 +464,13 @@ int ps2mouse_reset(struct IORequest* tmr, struct mouse_data *data)
     kbd_read_data();
 
     D(bug("[i8042:PS2Mouse] Found and initialized PS/2 mouse!\n"));
+
+    // Install warm-reset handler
+    i8042Base->ksd.cs_ResetInt.is_Node.ln_Name = i8042Base->library.lib_Node.ln_Name;
+    i8042Base->ksd.cs_ResetInt.is_Node.ln_Pri = -10;
+    i8042Base->ksd.cs_ResetInt.is_Code = (VOID_FUNC)PS2KBMResetHandler;
+    i8042Base->ksd.cs_ResetInt.is_Data = i8042Base;
+    AddResetCallback(&i8042Base->ksd.cs_ResetInt);
 
     return 1;
 }

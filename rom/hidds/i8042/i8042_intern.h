@@ -24,6 +24,7 @@ struct kbd_staticdata
     APTR                cs_KernelBase;
     struct Library     *cs_OOPBase;
     struct Library     *cs_UtilityBase;
+    struct Interrupt    cs_ResetInt;
 };
 
 struct kbdbase
