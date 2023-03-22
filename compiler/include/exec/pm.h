@@ -16,14 +16,13 @@
 #define SD_ACTION_WARMREBOOT            2
 
 #define SD_ACTION_MASK                  0x00000007
-#define SD_FLAG_EMERGENCY               0x00000008      /* Only the most basic/essential code should be executed */
+#define SD_FLAG_EMERGENCY               0x00000008      /* Only the most basic/essential code should be executed    */
 
 /* Shutdown Priority levels */
-#define SD_PRI_SUBSYSTEMS				0
-#define SD_PRI_FILESYSTEMS				-30
-#define SD_PRI_NET						-45
-#define SD_PRI_REBOOT					-64
-#define SD_PRI_OFF						-128
+#define SD_PRI_OUTPUT				    0               /* displays/audio devices should stop now                   */
+#define SD_PRI_DOS				        -40             /* filesystems and io should stop                           */
+#define SD_PRI_REBOOT					-64             /* reboot occurs at this level                              */
+#define SD_PRI_OFF						-128            /* complete power off occurs at this level                  */
 
 /* Technically these are kernel definitions... */
 #define PM_STATE_OFF					0
