@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Class for VESA.
 */
@@ -127,6 +127,7 @@ OOP_Object *VESAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         D(bug("Got object from super\n"));
         XSD(cl)->vesagfxhidd = o;
 
+        data->ResetInterrupt.is_Node.ln_Name = (char *)msgNewTags[1].ti_Data;
         data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
         data->ResetInterrupt.is_Data = &XSD(cl)->data;
         AddResetCallback(&data->ResetInterrupt);
