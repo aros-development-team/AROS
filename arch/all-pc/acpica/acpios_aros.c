@@ -42,6 +42,13 @@
 #undef __aros_getbase_ACPICABase
 struct Library *__aros_getbase_ACPICABase(void);
 
+struct AcpiOsInt {
+    struct MinNode      ai_Node;
+    struct Interrupt    ai_Interrupt;
+    ACPI_OSD_HANDLER    ai_Handler;
+    void                *ai_Context;
+};
+
 #if defined(ACPI_DISASSEMBLER)
 /* Stubs for the disassembler */
 void
@@ -425,11 +432,6 @@ void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags)
         UnlockSpin(Handle);
 }
 
-struct AcpiOsInt {
-    struct Interrupt ai_Interrupt;
-    ACPI_OSD_HANDLER ai_Handler;
-    void *ai_Context;
-};
 
 static AROS_INTH1(AcpiOsIntServer, struct AcpiOsInt *, ai)
 {
@@ -453,12 +455,14 @@ ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel, ACPI_OSD_HANDLE
     D(bug("[ACPI] %s(%u)\n", __func__, InterruptLevel));
 
     if ((ai = ACPI_ALLOCATE(sizeof(*ai)))) {
+        struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
         ai->ai_Interrupt.is_Node.ln_Name = "ACPI";
         ai->ai_Interrupt.is_Code = (APTR)AcpiOsIntServer;
         ai->ai_Interrupt.is_Data = (APTR)ai;
         ai->ai_Handler = Handler;
         ai->ai_Context = Context;
         AddIntServer(INTB_KERNEL + InterruptLevel, &ai->ai_Interrupt);
+        AddTail((struct List *)&ACPICABase->ab_IntHandlers, (struct Node *)&ai->ai_Node);
         return AE_OK;
     }
 
@@ -467,9 +471,23 @@ ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel, ACPI_OSD_HANDLE
 
 ACPI_STATUS AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber, ACPI_OSD_HANDLER Handler)
 {
-    bug("[ACPI] %s: FIXME! (InterruptLevel=%d)\n", __func__, InterruptNumber);
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
+    struct AcpiOsInt *ai, *tmp;
 
-    return AE_NOT_IMPLEMENTED;
+    D(bug("[ACPI] %s(%u)\n", __func__, InterruptNumber);)
+
+    ForeachNodeSafe(&ACPICABase->ab_IntHandlers, ai, tmp)
+    {
+        if (ai->ai_Handler == Handler)
+        {
+            Remove((struct Node *)&ai->ai_Node);
+            RemIntServer(INTB_KERNEL + InterruptNumber, &ai->ai_Interrupt);
+            ACPI_FREE(ai);
+            return AE_OK;
+        }
+    }
+
+    return AE_BAD_PARAMETER;
 }
 
 ACPI_STATUS AcpiOsReadMemory(ACPI_PHYSICAL_ADDRESS Address, UINT64 *Value, UINT32 Width)
@@ -895,6 +913,8 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
     AcpiDbgLevel = ~0;
     ACPICABase->ab_RootPointer = 0;
 
+    NewMinList(&ACPICABase->ab_IntHandlers);
+
 /* The following block will only work on native builds */
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     err = AcpiInitializeTables(NULL, ACPI_MAX_INIT_TABLES, FALSE);
@@ -916,7 +936,7 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
 
     // Install warm-reset handler
     ACPICABase->ab_ResetInt.is_Node.ln_Name = ACPICABase->ab_Lib.lib_Node.ln_Name;
-    ACPICABase->ab_ResetInt.is_Node.ln_Pri = -63;
+    ACPICABase->ab_ResetInt.is_Node.ln_Pri = -60; /* run just before the warm reboot */
     ACPICABase->ab_ResetInt.is_Code = (VOID_FUNC)ACPICAResetHandler;
     ACPICABase->ab_ResetInt.is_Data = ACPICABase;
     AddResetCallback(&ACPICABase->ab_ResetInt);

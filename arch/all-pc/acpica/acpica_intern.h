@@ -29,6 +29,7 @@ struct ACPICABase {
     struct Library              *ab_TimerBase;
     struct MemEntry             ab_MCFG;
     struct Interrupt	        ab_ResetInt;
+    struct MinList              ab_IntHandlers;
     ACPI_PHYSICAL_ADDRESS       ab_RootPointer;
     UWORD                       ab_Flags;
 };
