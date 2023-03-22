@@ -581,7 +581,7 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         AddResetCallback(&data->ab_ResetInt);
     }
 
-    bug("[ATA:Bus] %s: returning 0x%p\n", __func__, bus);
+    D(bug("[ATA:Bus] %s: returning 0x%p\n", __func__, bus);)
 
     return bus;
 }
