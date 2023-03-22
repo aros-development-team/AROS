@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/asmcall.h>
@@ -30,6 +30,7 @@
 const char *ACPI_TABLE_FADT_STR __attribute__((weak)) = ACPI_SIG_FADT;
 
 /* Deafult ACPI PM Syscall Handlers */
+extern void X86_HandleChangePMStateSC(struct ExceptionContext *);
 
 void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 {
@@ -47,30 +48,35 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 
     if (pmState == 0xFF)
     {
-        ACPI_GENERIC_ADDRESS tmpReg;
-        ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
+        ACPI_STATUS             status;
+        D(bug("[Kernel:ACPI-PM] %s: STATE 0xFF - Cold Rebooting...\n", __func__);)
 
-        D(bug("[Kernel:ACPI-PM] %s: STATE 0xFF - Cold Rebooting...\n", __func__));
-        D(bug("[Kernel:ACPI-PM] %s:     FADT Reset Register @ 0x%p, Width %d, Offset %d, MemSpace %d\n", __func__, (IPTR)fadt->ResetRegister.Address, fadt->ResetRegister.BitWidth, fadt->ResetRegister.BitOffset, fadt->ResetRegister.SpaceId));
-        D(bug("[Kernel:ACPI-PM] %s:     FADT Reset Value = 0x%2x\n", __func__, fadt->ResetValue));
-
-        AcpiWrite (fadt->ResetValue, &fadt->ResetRegister);
-        
-        // If we got here the reset didn't happen,
-        // check if we are the known "faulty" implementation.
-        
-        if ((fadt->Header.Revision >= 2) &&
-            (fadt->ResetRegister.Address == 0xCF9))
+        /* Use the ACPICA call to perform the reset first... */
+        status = AcpiReset();
         {
-            D(bug("[Kernel:ACPI-PM] %s: Failed Reset? Using workaround...\n", __func__));
-            tmpReg.Address = 0x64;
-            tmpReg.BitWidth = fadt->ResetRegister.BitWidth;
-            tmpReg.BitOffset = fadt->ResetRegister.BitOffset;
-            tmpReg.SpaceId = fadt->ResetRegister.SpaceId;
+            ACPI_GENERIC_ADDRESS tmpReg;
+            ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
 
-            AcpiWrite (0xFE, &tmpReg);
+            D(
+                bug("[Kernel:ACPI-PM] %s: Failed Reset?\n", __func__);
+                bug("[Kernel:ACPI-PM] %s:     FADT Reset Register @ 0x%p, Width %d, Offset %d, MemSpace %d\n", __func__, (IPTR)fadt->ResetRegister.Address, fadt->ResetRegister.BitWidth, fadt->ResetRegister.BitOffset, fadt->ResetRegister.SpaceId);
+                bug("[Kernel:ACPI-PM] %s:     FADT Reset Value = 0x%2x\n", __func__, fadt->ResetValue);
+            )
+
+            if ((fadt->Header.Revision >= 2) &&
+                (fadt->ResetRegister.Address == 0xCF9))
+            {
+                D(bug("[Kernel:ACPI-PM] %s: Using workaround...\n", __func__);)
+                tmpReg.Address = 0x64;
+                tmpReg.BitWidth = fadt->ResetRegister.BitWidth;
+                tmpReg.BitOffset = fadt->ResetRegister.BitOffset;
+                tmpReg.SpaceId = fadt->ResetRegister.SpaceId;
+
+                status = AcpiHwWrite (0xFE, &tmpReg);
+            }
         }
-        bug("[Kernel:ACPI-PM] %s: Reset Failed.\n", __func__);
+        bug("[Kernel:ACPI-PM] %s: ACPI Reset Failed - falling back to default implementation\n", __func__);
+        X86_HandleChangePMStateSC(regs);
     }
     else if (pmState == 0)
     {
