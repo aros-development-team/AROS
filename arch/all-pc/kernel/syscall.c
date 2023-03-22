@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>
@@ -113,7 +113,7 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 
     D(bug("[Kernel] %s(0x%02x)\n", __func__, pmState));
     
-    if (pmState == 0xFF)
+    if (pmState == PM_STATE_REBOOT)
     {
         D(bug("[Kernel] %s: STATE 0xFF - Attempting Cold Reboot...\n", __func__));
 
@@ -124,7 +124,7 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 
         outb(0xFE, 0x64);
     }
-    else if (pmState == 0)
+    else if (pmState == PM_STATE_OFF)
     {
         D(bug("[Kernel] %s: STATE 0x00 - Halting...\n", __func__));
 
@@ -134,12 +134,12 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 
         while (1) asm volatile("hlt");
     }
-    else if (pmState == 0x90)
+    else if (pmState == PM_STATE_IDLE)
     {
         /* Sleep almost forever ;) */
         __asm__ __volatile__("sti; hlt; cli");
 
-        D(bug("[Kernel] %s: Woke from sleep; checking for softints...\n",
+        D(bug("[Kernel] %s: Woke from idling; checking for softints...\n",
             __func__);)
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);

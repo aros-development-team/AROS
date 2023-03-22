@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: default x86 power state handlers
 */
@@ -22,7 +22,7 @@ AROS_INTH1(Exec_X86ColdResetHandler, struct Interrupt *, handler)
 
     if (action == SD_ACTION_COLDREBOOT)
     {
-        krnSysCallChangePMState(0xFF);
+        krnSysCallChangePMState(PM_STATE_REBOOT);
     }
 
     return FALSE;
@@ -65,7 +65,7 @@ AROS_INTH1(Exec_X86ShutdownHandler, struct Interrupt *, handler)
          * syscall shutdown handler, or call an appropriate one =)
          */
 
-        krnSysCallChangePMState(0);
+        krnSysCallChangePMState(PM_STATE_OFF);
     };
 
     /* We really should not return from that */
