@@ -29,7 +29,7 @@
 #define PM_STATE_OFF					0
 
 #define PM_STATE_1                      0x10 /* Max Performance level */
-#define PM_STATE_1                      0x20
+#define PM_STATE_2                      0x20
 #define PM_STATE_3                      0x30
 #define PM_STATE_4                      0x40
 #define PM_STATE_5                      0x50 /* Min Performance level */
