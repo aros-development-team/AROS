@@ -1040,7 +1040,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
             case DEV_ATAPI:
             case DEV_SATA:
             case DEV_ATA:
-                bug("[ATA%02ld] %s:     * ATA\n", unit->au_UnitNum, __func__);
+                DINIT(bug("[ATA%02ld] %s:     * ATA\n", unit->au_UnitNum, __func__);)
                 unit->au_Identify = ata_Identify;
                 break;
 
