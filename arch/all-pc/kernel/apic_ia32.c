@@ -680,9 +680,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         maxlvt = 2;
 #endif
 
-//    D(
-        bug("[Kernel:APIC-IA32.%03u] %s(%p, %p)\n", cpuNum, __func__, apic, __APICBase);
-//      )
+    D(bug("[Kernel:APIC-IA32.%03u] %s(%p, %p)\n", cpuNum, __func__, apic, __APICBase);)
 
     if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != (icintrid_t)-1)
     {
