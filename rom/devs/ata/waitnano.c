@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved
+    Copyright (C) 2013-2023, The AROS Development Team. All rights reserved
 */
 
 #include <aros/debug.h>
@@ -63,7 +63,7 @@ BOOL ata_Calibrate(struct IORequest* tmr, struct ataBase *base)
     x = (x + t2.tv_micro - 1) / t2.tv_micro;
     x = (x+9) / 10;
 
-    bug("[ATA  ] Approximate number of iterations per 100 nanoseconds: %ld\n", x);
+    D(bug("[ATA  ] Approximate number of iterations per 100 nanoseconds: %ld\n", x);)
     base->ata_ItersPer100ns = x;
     return TRUE;
 }
