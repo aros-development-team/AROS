@@ -163,7 +163,10 @@ struct syscallx86_Handler x86_SCChangePMStateHandler =
 
 void X86_HandleRebootSC()
 {
-    D(bug("[Kernel] %s: Warm restart, stack 0x%p\n", __func__, AROS_GET_SP));
+    D(
+        bug("[Kernel] %s()\n", __func__);
+        bug("[Kernel] %s: Warm restart, stack 0x%p\n", __func__, AROS_GET_SP);
+    )
 
     /*
      * Restart the kernel with a double stack swap. This doesn't return.
@@ -175,17 +178,18 @@ void X86_HandleRebootSC()
      * 2. Boot task crashes. Privilege doesn't change this time, ESP/RSP is not changed.
      * 3. If we call core_Kick() right now, we are dead (core_Kick() clears .bss).
      */
-#if (__WORDSIZE == 64)
     __asm__ __volatile__(
         "cli\n\t"
         "cld\n\t"
+         ::: "memory");
+    core_InvalidateIDT();
+#if (__WORDSIZE == 64)
+    __asm__ __volatile__(
         "movq %0, %%rsp\n\t"
         "jmp *%1\n"
         ::"r"(__KernBootPrivate->SystemStack + STACK_SIZE), "r"(core_Kick), "D"(BootMsg), "S"(kernel_cstart));
 #else
     __asm__ __volatile__(
-        "cli\n\t"
-        "cld\n\t"
         "movl %0, %%esp\n\t"
         "pushl %3\n\t"
         "pushl %2\n\t"
