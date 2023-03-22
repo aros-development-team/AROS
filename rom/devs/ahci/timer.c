@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2018, The AROS Development Team. All rights reserved
+    Copyright (C) 2009-2023, The AROS Development Team. All rights reserved
 
     Desc:
 */
@@ -72,7 +72,7 @@ static BOOL ahci_Calibrate(struct IORequest* tmr)
     x = (x + t2.tv_micro - 1) / t2.tv_micro;
     x = (x+9) / 10;
 
-    bug("[AHCI  ] Approximate number of iterations per 100 nanoseconds: %ld\n", x);
+    D(bug("[AHCI  ] Approximate number of iterations per 100 nanoseconds: %ld\n", x);)
     iters_per_100ns = x;
     return TRUE;
 }
