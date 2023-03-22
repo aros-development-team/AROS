@@ -2,7 +2,7 @@
 #define EXEC_TASKS_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Task structure and constants
@@ -228,14 +228,5 @@ struct ETask
 
 #define TASKERROR_OK                    0
 #define TASKERROR_NOMEMORY              1
-
-/* Actions for ShutdownA() */
-
-#define SD_ACTION_POWEROFF              0
-#define SD_ACTION_COLDREBOOT            1
-#define SD_ACTION_WARMREBOOT            2
-
-#define SD_ACTION_MASK                  0x00000007
-#define SD_FLAG_EMERGENCY               0x00000008      /* Only the most basic/essential code should be executed */
 
 #endif /* EXEC_TASKS_H */

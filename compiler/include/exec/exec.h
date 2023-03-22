@@ -2,7 +2,7 @@
 #define EXEC_EXEC_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Includes all other exec/ includes if they have not already been
@@ -53,6 +53,9 @@
 #endif
 #ifndef EXEC_DEVICES_H
 #include <exec/devices.h>
+#endif
+#ifndef EXEC_PM_H
+#include <exec/pm.h>
 #endif
 #ifndef EXEC_EXECBASE_H
 #include <exec/execbase.h>
