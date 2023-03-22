@@ -40,6 +40,7 @@
 #define DINT(x)
 #define DWAKE(x)         /* Badly interferes with AP startup */
 #define DID(x)           /* Badly interferes with everything */
+#define DCALIB(x)
 #define DPIT(x)
 /* #define DEBUG_WAIT */
 
@@ -302,6 +303,9 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
 
     samples = iter = PIT_SAMPLECOUNT;
 
+    tsc_initial = RDTSC();
+    DPIT(bug("[Kernel:APIC-IA32.%03u] %s: TSC pre-calib = %u\n", cpuNum, __func__, tsc_initial);)
+
     for (i = 0; i < PIT_SAMPLECOUNT; i++)
     {
         tsc_initial = RDTSC();
@@ -458,7 +462,7 @@ static UQUAD ia32_tsc_calibrate(apicid_t cpuNum)
             ULONG numerator, denominator;
             eax = ebx = ecx = edx = 0;
             asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000015));
-            D(bug("[Kernel:APIC-IA32.%03u] %s: numerator = %u, denominator = %u\n", cpuNum, __func__, ebx, eax);)
+            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: numerator = %u, denominator = %u\n", cpuNum, __func__, ebx, eax);)
             if (((denominator = eax) != 0) && ((numerator = ebx) != 0))
             {
                 if ((ecx / 1000) != 0)
@@ -467,7 +471,7 @@ static UQUAD ia32_tsc_calibrate(apicid_t cpuNum)
                 eax = ebx = ecx = edx = 0;
                 asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000001));
                 model = ((eax & 0xF00000) >>14) | ((eax & 0xF0) >> 4);
-                D(bug("[Kernel:APIC-IA32.%03u] %s: model = %02x\n", cpuNum, __func__, model);)
+                DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: model = %02x\n", cpuNum, __func__, model);)
                 if (model == 0x4E || model == 0x5E)
                     return 24000000 * numerator / denominator; // 24.0 MHz
                 else if (model == 0x5C)
@@ -492,7 +496,7 @@ static UQUAD ia32_lapic_calibrate(apicid_t cpuNum, IPTR __APICBase)
         {
             eax = ebx = ecx = edx = 0;
             asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(0x00000016));
-            D(bug("[Kernel:APIC-IA32.%03u] %s: eax = %08x\n", cpuNum, __func__, eax);)
+            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: eax = %08x\n", cpuNum, __func__, eax);)
             if (eax > 0)
                 return (eax * 1000000);
         }
@@ -555,7 +559,7 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
     APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
     APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
 
-    D(bug("[Kernel:APIC-IA32.%03u] %s: Calibrating timers ...\n", cpuNum, __func__));
+    DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: Calibrating timers ...\n", cpuNum, __func__));
 
     if (APIC_isMSHyperV())
     {
@@ -563,15 +567,15 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
         {
             ULONG res[2];
 
-            D(bug("[Kernel:APIC-IA32.%03u] %s: Reading Hypervisor TSC/APIC frequencies...\n", cpuNum, __func__));
+            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: Reading Hypervisor TSC/APIC frequencies...\n", cpuNum, __func__));
 
             asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000022)); // Read TSC frequency
             apic->cores[cpuNum].cpu_TSCFreq = 100 * res[0];
-            D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR TSC frequency = %u\n", cpuNum, __func__, res[0]);)
+            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     MSR TSC frequency = %u\n", cpuNum, __func__, res[0]);)
 
             asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000023)); // Read APIC frequency
             apic->cores[cpuNum].cpu_TimerFreq = res[0];
-            D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR APIC frequency = %u...\n", cpuNum, __func__, res[0]);)
+            DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     MSR APIC frequency = %u...\n", cpuNum, __func__, res[0]);)
 
             if (ssp)
                 UserState(ssp);
@@ -583,20 +587,31 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
         UQUAD calib_tsc;
         int count = 10;
 
-        D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
+        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
         while(((calib_tsc = ia32_tsc_calibrate(cpuNum)) == 0) && (count-- > 0));
         apic->cores[cpuNum].cpu_TSCFreq = calib_tsc;
+    }
+    if (apic->cores[cpuNum].cpu_TSCFreq < 100)
+    {
+        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: Fixup invalid TSC Freq (%u)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TSCFreq);)
+        apic->cores[cpuNum].cpu_TSCFreq = 100;
     }
 
     if (!apic->cores[cpuNum].cpu_TimerFreq)
     {
         ULONG calib_lapic;
 
-        D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating LAPIC...\n", cpuNum, __func__);)
+        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating LAPIC...\n", cpuNum, __func__);)
         calib_lapic = ia32_lapic_calibrate(cpuNum, __APICBase);
         apic->cores[cpuNum].cpu_TimerFreq = calib_lapic;
     }
-    D(
+    if (apic->cores[cpuNum].cpu_TimerFreq < 100)
+    {
+        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: Fixup invalid Timer Freq (%u)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TSCFreq);)
+        apic->cores[cpuNum].cpu_TimerFreq = 100;
+    }
+
+    DCALIB(
         bug("[Kernel:APIC-IA32.%03u] %s: TSC frequency should be %u kHz (%u MHz)\n", cpuNum, __func__, (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500)/1000), (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500000) / 1000000));
         bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000);
     )
@@ -624,11 +639,11 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
 #if defined(__AROSEXEC_SMP__)
         tls_t *apicTLS = apic->cores[cpuNum].cpu_TLS;
         struct X86SchedulerPrivate *schedData = apicTLS->ScheduleData;
-        D(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
+        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
 #endif
 
         apic->cores[cpuNum].cpu_LAPICTick = 0;
-        D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat Exception Vector #$%02X (%d) set\n", cpuNum, __func__, APIC_EXCEPT_HEARTBEAT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT));)
+        DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat Exception Vector #$%02X (%d) set\n", cpuNum, __func__, APIC_EXCEPT_HEARTBEAT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT));)
 
         if (ssp)
             UserState(ssp);
@@ -648,6 +663,8 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
         APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
         APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
     }
+
+    DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: Calibration complete\n", cpuNum, __func__);)
 }
 
 void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
@@ -663,9 +680,9 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         maxlvt = 2;
 #endif
 
-    D(
+//    D(
         bug("[Kernel:APIC-IA32.%03u] %s(%p, %p)\n", cpuNum, __func__, apic, __APICBase);
-      )
+//      )
 
     if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != (icintrid_t)-1)
     {

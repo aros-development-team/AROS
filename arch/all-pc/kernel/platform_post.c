@@ -11,6 +11,7 @@
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
 #include <asm/cpu.h>
+#include <hardware/pit.h>
 #include <asm/io.h>
 #include <exec/lists.h>
 #include <exec/resident.h>
@@ -27,6 +28,7 @@
 #include "smp.h"
 
 #define D(x)
+//#define TEST_SMP_IPI
 
 /*
  * This file contains code that is run once Exec has been brought up - and is launched
@@ -38,9 +40,7 @@
 void PlatformPostInit(void)
 {
     D(bug("[Kernel] %s()\n", __func__));
-#if (0)
-    pit_start(0);
-#endif
+
 }
 
 /*
@@ -100,7 +100,7 @@ static AROS_UFP3 (APTR, KernelPost,
                   AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 static const TEXT kernelpost_namestring[] = "kernel.post";
-static const TEXT kernelpost_versionstring[] = "kernel.post 1.1\n";
+static const TEXT kernelpost_versionstring[] = "kernel.post 1.2\n";
 
 const struct Resident kernelpost_romtag =
 {
@@ -119,7 +119,7 @@ const struct Resident kernelpost_romtag =
 extern struct syscallx86_Handler x86_SCRebootHandler;
 extern struct syscallx86_Handler x86_SCChangePMStateHandler;
 
-#if 0
+#if defined(TEST_SMP_IPI)
 struct Hook test_ipi;
 
 AROS_UFH3(void, test_ipi_hook,
@@ -175,6 +175,7 @@ static AROS_UFH3 (APTR, KernelPost,
     // Calibrate the BSP
     if (pdata->kb_APIC)
     {
+        pit_start(0);
         core_APIC_Calibrate(pdata->kb_APIC, 0);        
     }
 
@@ -185,13 +186,13 @@ static AROS_UFH3 (APTR, KernelPost,
 
     D(bug("[Kernel] %s: Platform Initialization complete\n", __func__));
 
-#if 0
-    bug("--- TESTING IPI CALL HOOK ---\n");
+#if defined(TEST_SMP_IPI)
+    bug("[Kernel] %s: --- TESTING IPI CALL HOOK ---\n", __func__);
     test_ipi.h_Entry = test_ipi_hook;
     test_ipi.h_Data = KernelBase;
-    bug("--- SYNCHRONOUS IPI ---\n");
+    bug("[Kernel] %s: --- SYNCHRONOUS IPI ---\n", __func__);
     core_DoCallIPI(&test_ipi, (void*)TASKAFFINITY_ALL_BUT_SELF, 0, KernelBase);
-    bug("--- ASYNC IPI ---\n");
+    bug("[Kernel] %s: --- ASYNC IPI ---\n", __func__);
     core_DoCallIPI(&test_ipi, (void*)TASKAFFINITY_ALL_BUT_SELF, 1, KernelBase);
 #endif
 
