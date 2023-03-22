@@ -12,7 +12,7 @@ USER_CPPFLAGS      := -DAROS_USE_OOP \
                     -D__OOP_NOLIBBASE__ \
                     -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
-USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG=1
 
 #MM kernel-hidd-acpiacad : kernel-hidd-power-includes
 
