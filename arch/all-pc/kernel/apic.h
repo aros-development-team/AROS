@@ -1,7 +1,7 @@
 #ifndef KERNEL_APIC_H
 #define KERNEL_APIC_H
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Generic AROS APIC definitions.
@@ -75,6 +75,7 @@ struct APICCPUWake_Data
 ULONG core_APIC_Wake(APTR start_addr, apicid_t id, IPTR base);
 UBYTE core_APIC_GetID(IPTR base);
 void  core_APIC_Init(struct APICData *data, apicid_t cpuNum);
+void core_APIC_Calibrate(struct APICData *data, apicid_t cpuNum);
 void  core_APIC_AckIntr(void);
 
 /* This is callable in supervisor only */
@@ -90,6 +91,7 @@ apicid_t core_APIC_GetNumber(struct APICData *);
 void core_APIC_GetMask(struct APICData *, apicid_t, cpumask_t *);
 BOOL core_APIC_CPUInMask(apicid_t, cpumask_t *);
 
+void core_InvalidateIDT();
 void core_SetupIDT(apicid_t, apicidt_t *);
 BOOL core_SetIDTGate(apicidt_t *, int, uintptr_t, BOOL, BOOL);
 BOOL core_SetIRQGate(void *, int, uintptr_t);

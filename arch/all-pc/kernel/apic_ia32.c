@@ -542,6 +542,114 @@ static BOOL APIC_isMSHyperV(void)
                         Driver functions
  **********************************************************/
 
+void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
+{
+    IPTR __APICBase = apic->lapicBase;
+    APTR ssp = NULL;
+
+    /*
+     * Calibrate LAPIC timer frequency.
+     */
+
+    /* Set the timer to one-shot mode, no interrupt, 1:1 divisor */
+    APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
+    APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
+
+    D(bug("[Kernel:APIC-IA32.%03u] %s: Calibrating timers ...\n", cpuNum, __func__));
+
+    if (APIC_isMSHyperV())
+    {
+        if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
+        {
+            ULONG res[2];
+
+            D(bug("[Kernel:APIC-IA32.%03u] %s: Reading Hypervisor TSC/APIC frequencies...\n", cpuNum, __func__));
+
+            asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000022)); // Read TSC frequency
+            apic->cores[cpuNum].cpu_TSCFreq = 100 * res[0];
+            D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR TSC frequency = %u\n", cpuNum, __func__, res[0]);)
+
+            asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000023)); // Read APIC frequency
+            apic->cores[cpuNum].cpu_TimerFreq = res[0];
+            D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR APIC frequency = %u...\n", cpuNum, __func__, res[0]);)
+
+            if (ssp)
+                UserState(ssp);
+        }
+    }
+
+    if (!apic->cores[cpuNum].cpu_TSCFreq)
+    {
+        UQUAD calib_tsc;
+        int count = 10;
+
+        D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
+        while(((calib_tsc = ia32_tsc_calibrate(cpuNum)) == 0) && (count-- > 0));
+        apic->cores[cpuNum].cpu_TSCFreq = calib_tsc;
+    }
+
+    if (!apic->cores[cpuNum].cpu_TimerFreq)
+    {
+        ULONG calib_lapic;
+
+        D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating LAPIC...\n", cpuNum, __func__);)
+        calib_lapic = ia32_lapic_calibrate(cpuNum, __APICBase);
+        apic->cores[cpuNum].cpu_TimerFreq = calib_lapic;
+    }
+    D(
+        bug("[Kernel:APIC-IA32.%03u] %s: TSC frequency should be %u kHz (%u MHz)\n", cpuNum, __func__, (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500)/1000), (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500000) / 1000000));
+        bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000);
+    )
+    /*
+     * Once APIC timer has been calibrated -:
+     * # Set it to run at its full frequency.
+     * # Enable the heartbeat vector and use a suitable rate,
+     *   otherwise set to reload every second and disable it.
+     */
+    if (cpuNum == 0)
+    {
+        struct PlatformData *pdata = KernelBase->kb_PlatformData;
+
+        KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatServer, KernelBase, SysBase);
+        
+        apic->flags |= APF_TIMER;
+        pdata->kb_PDFlags |= PLATFORMF_HAVEHEARTBEAT;
+    }
+
+    APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
+
+    if ((apic->flags & APF_TIMER) &&
+        ((KrnIsSuper()) || ((ssp = SuperState()) != NULL)))
+    {
+#if defined(__AROSEXEC_SMP__)
+        tls_t *apicTLS = apic->cores[cpuNum].cpu_TLS;
+        struct X86SchedulerPrivate *schedData = apicTLS->ScheduleData;
+        D(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
+#endif
+
+        apic->cores[cpuNum].cpu_LAPICTick = 0;
+        D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat Exception Vector #$%02X (%d) set\n", cpuNum, __func__, APIC_EXCEPT_HEARTBEAT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT));)
+
+        if (ssp)
+            UserState(ssp);
+
+#if defined(__AROSEXEC_SMP__)
+        // TODO: Adjust based on the amount of work the APIC can do at its given frequency.
+        schedData->Granularity = 1;
+        schedData->Quantum = 5;
+        APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq);
+#else
+        APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 25) / 50;
+#endif
+        APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT); // | LVT_TMM_PERIOD;
+    }
+    else
+    {
+        APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
+        APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
+    }
+}
+
 void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 {
     IPTR __APICBase = apic->lapicBase;
@@ -673,110 +781,13 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
         D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR after enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
 
-        /*
-         * Calibrate LAPIC timer frequency.
-         */
-
-        /* Set the timer to one-shot mode, no interrupt, 1:1 divisor */
-        APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
-        APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
-
-        D(bug("[Kernel:APIC-IA32.%03u] %s: Calibrating timers ...\n", cpuNum, __func__));
-
-        if (APIC_isMSHyperV())
-        {
-            if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
-            {
-                ULONG res[2];
-
-                D(bug("[Kernel:APIC-IA32.%03u] %s: Reading Hypervisor TSC/APIC frequencies...\n", cpuNum, __func__));
-
-                asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000022)); // Read TSC frequency
-                apic->cores[cpuNum].cpu_TSCFreq = 100 * res[0];
-                D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR TSC frequency = %u\n", cpuNum, __func__, res[0]);)
-
-                asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000023)); // Read APIC frequency
-                apic->cores[cpuNum].cpu_TimerFreq = res[0];
-                D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR APIC frequency = %u...\n", cpuNum, __func__, res[0]);)
-
-                if (ssp)
-                    UserState(ssp);
-            }
-        }
-
-        if (!apic->cores[cpuNum].cpu_TSCFreq)
-        {
-            UQUAD calib_tsc;
-            int count = 10;
-
-            D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
-            while(((calib_tsc = ia32_tsc_calibrate(cpuNum)) == 0) && (count-- > 0));
-            apic->cores[cpuNum].cpu_TSCFreq = calib_tsc;
-        }
-        if (!apic->cores[cpuNum].cpu_TimerFreq)
-        {
-            ULONG calib_lapic;
-
-            D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating LAPIC...\n", cpuNum, __func__);)
-            calib_lapic = ia32_lapic_calibrate(cpuNum, __APICBase);
-            apic->cores[cpuNum].cpu_TimerFreq = calib_lapic;
-        }
-        D(
-            bug("[Kernel:APIC-IA32.%03u] %s: TSC frequency should be %u kHz (%u MHz)\n", cpuNum, __func__, (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500)/1000), (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500000) / 1000000));
-            bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000);
-        )
-        /*
-         * Once APIC timer has been calibrated -:
-         * # Set it to run at its full frequency.
-         * # Enable the heartbeat vector and use a suitable rate,
-         *   otherwise set to reload every second and disable it.
-         */
-        if (cpuNum == 0)
-        {
-            struct PlatformData *pdata = KernelBase->kb_PlatformData;
-
-            KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatServer, KernelBase, SysBase);
-            
-            apic->flags |= APF_TIMER;
-            pdata->kb_PDFlags |= PLATFORMF_HAVEHEARTBEAT;
-        }
-
-        APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
-
-        if ((apic->flags & APF_TIMER) &&
-            ((KrnIsSuper()) || ((ssp = SuperState()) != NULL)))
-        {
-#if defined(__AROSEXEC_SMP__)
-            tls_t *apicTLS = apic->cores[cpuNum].cpu_TLS;
-            struct X86SchedulerPrivate *schedData = apicTLS->ScheduleData;
-            D(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
-#endif
-
-            apic->cores[cpuNum].cpu_LAPICTick = 0;
-            D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat Exception Vector #$%02X (%d) set\n", cpuNum, __func__, APIC_EXCEPT_HEARTBEAT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT));)
-
-            if (ssp)
-                UserState(ssp);
-
-#if defined(__AROSEXEC_SMP__)
-            // TODO: Adjust based on the amount of work the APIC can do at its given frequency.
-            schedData->Granularity = 1;
-            schedData->Quantum = 5;
-            APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq);
-#else
-            APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 25) / 50;
-#endif
-            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT); // | LVT_TMM_PERIOD;
-        }
-        else
-        {
-            APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
-            APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
-        }
+        if (cpuNum> 0)
+            core_APIC_Calibrate(apic, cpuNum);
 
         /* Clear error status register using back-to-back writes */
         APIC_REG(__APICBase, APIC_ESR) = 0;
         APIC_REG(__APICBase, APIC_ESR) = 0;
+
 
         /* Ack any pending interrupts */
         APIC_REG(__APICBase, APIC_EOI) = 0;

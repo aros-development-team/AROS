@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -169,11 +169,17 @@ static AROS_UFH3 (APTR, KernelPost,
     krnAddSysCallHandler(pdata, &x86_SCRebootHandler, TRUE, FALSE);
     krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, TRUE, FALSE);
 
-    D(bug("[Kernel] %s: Attempting to bring up additional cores...\n", __func__));
-    smp_Initialize();
-
     D(bug("[Kernel] %s: Initializing interrupt controllers...\n", __func__));
     ictl_Initialize(KernelBase);
+
+    // Calibrate the BSP
+    if (pdata->kb_APIC)
+    {
+        core_APIC_Calibrate(pdata->kb_APIC, 0);        
+    }
+
+    D(bug("[Kernel] %s: Attempting to bring up additional cores...\n", __func__));
+    smp_Initialize();
 
     Enable();
 

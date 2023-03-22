@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>
@@ -212,6 +212,15 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
         krnPanic(NULL, "Invalid IDT\n");
     }
     DIDT(bug("[Kernel] %s(%u): IDT configured\n", __func__, _APICID));
+}
+
+void core_InvalidateIDT()
+{
+    struct segment_selector IDT_sel;
+    DIDT(bug("[Kernel] %s()\n", __func__));
+    IDT_sel.size = 0;
+    IDT_sel.base = 0;
+    asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
 /* CPU exceptions are processed here */
