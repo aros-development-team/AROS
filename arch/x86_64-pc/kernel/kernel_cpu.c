@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -222,7 +222,10 @@ void cpu_Switch(struct ExceptionContext *regs)
         /* Set task's tc_SPReg */
         task->tc_SPReg = (APTR)regs->rsp;
 
-        if (apicData && apicData->cores[cpunum].cpu_TimerFreq && timeCur)
+        if (apicData &&
+            apicData->cores[cpunum].cpu_TSCFreq &&
+            apicData->cores[cpunum].cpu_TimerFreq &&
+            timeCur)
         {
             /*
             if (timeCur < IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
