@@ -1,0 +1,20 @@
+#   $Id:$
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= udcli
+EXEDIR := $(AROS_C)
+
+#MM- workbench-c-pc : workbench-c-pc-pc-udcli
+#MM- workbench-c-pc-quick : workbench-c-pc-udcli-quick
+
+#MM c-pc-udcli : linklibs-udis86
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+%build_prog mmake=workbench-c-pc-udcli \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    progname=udcli uselibs=udis86
+
+%common

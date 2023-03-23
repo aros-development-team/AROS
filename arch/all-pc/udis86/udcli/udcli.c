@@ -32,7 +32,11 @@
 #define PACKAGE_STRING "udis86 pre-1.8"
 #else
 #include <udis86.h>
+#if !defined(__AROS__)
 #include <config.h>
+#else
+#define PACKAGE_STRING "udis86 pre-1.8"
+#endif
 #endif
 
 #if defined(__APPLE__)
