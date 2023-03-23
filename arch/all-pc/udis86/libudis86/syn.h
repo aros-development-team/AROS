@@ -32,6 +32,7 @@
 #endif /* __UD_STANDALONE__ */
 
 extern const char* ud_reg_tab[];
+extern const char* ud_flag_tab[];
 
 uint64_t ud_syn_rel_target(struct ud*, struct ud_operand*);
 

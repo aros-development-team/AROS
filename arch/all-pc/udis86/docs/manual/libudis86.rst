@@ -151,7 +151,7 @@ translator using the following function.
 
     If you want to create your own translator, you can specify a pointer to your
     own function. This function must accept a single parameter, the udis86 object
-    :type:`ud_t`, and it will be invoked everytime an instruction is decoded.
+    :type:`ud_t`, and it will be invoked every time an instruction is decoded.
 
 
 Disassemble
@@ -488,13 +488,9 @@ disassembled instruction using the function :func:`ud_insn_opr`.
 Inspect Prefixes
 ----------------
 
-Prefix bytes that affect the disassembly of the instruction are availabe in the
-following fields, each of which corressponds to a particular type or class of
+Prefix bytes that affect the disassembly of the instruction are available in the
+following fields, each of which corresponds to a particular type or class of
 prefixes.
-
-.. c:member:: uint8_t ud_t.pfx_rex
-
-    64-bit mode REX prefix
 
 .. c:member:: uint8_t ud_t.pfx_rex
 
@@ -515,6 +511,10 @@ prefixes.
 .. c:member:: uint8_t ud_t.pfx_lock
 
     Lock prefix
+
+.. c:member:: uint8_t ud_t.pfx_str
+
+    String prefix
 
 .. c:member:: uint8_t ud_t.pfx_rep
 

@@ -153,11 +153,22 @@ ud_translate_att(struct ud *u)
   }
   }
 
+  if (u->pfx_xacquire) {
+	ud_asmprintf(u, "xacquire ");
+  }
+  else if (u->pfx_xrelease) {
+	ud_asmprintf(u, "xrelease ");
+  }
+
   if (u->pfx_lock)
-    ud_asmprintf(u,  "lock ");
+	ud_asmprintf(u,  "lock ");
+
+  if (u->pfx_bnd)
+	ud_asmprintf(u,  "bnd ");
+
   if (u->pfx_rep) {
     ud_asmprintf(u, "rep ");
-  } else if (u->pfx_rep) {
+  } else if (u->pfx_repe) {
     ud_asmprintf(u, "repe ");
   } else if (u->pfx_repne) {
     ud_asmprintf(u, "repne ");
@@ -192,12 +203,13 @@ ud_translate_att(struct ud *u)
     ud_asmprintf(u, "%s", ud_lookup_mnemonic(u->mnemonic));
   }
 
-  if (size == 8)
-  ud_asmprintf(u, "b");
-  else if (size == 16)
-  ud_asmprintf(u, "w");
-  else if (size == 64)
-  ud_asmprintf(u, "q");
+  if (size == 8) {
+    ud_asmprintf(u, "b");
+  } else if (size == 16) {
+    ud_asmprintf(u, "w");
+  } else if (size == 64) {
+    ud_asmprintf(u, "q");
+  }
 
   if (star) {
     ud_asmprintf(u, " *");
@@ -205,18 +217,21 @@ ud_translate_att(struct ud *u)
     ud_asmprintf(u, " ");
   }
 
+  if (u->operand[3].type != UD_NONE) {
+    gen_operand(u, &u->operand[3]);
+    ud_asmprintf(u, ", ");
+  }
   if (u->operand[2].type != UD_NONE) {
-  gen_operand(u, &u->operand[2]);
-  ud_asmprintf(u, ", ");
+    gen_operand(u, &u->operand[2]);
+    ud_asmprintf(u, ", ");
   }
-
   if (u->operand[1].type != UD_NONE) {
-  gen_operand(u, &u->operand[1]);
-  ud_asmprintf(u, ", ");
+    gen_operand(u, &u->operand[1]);
+    ud_asmprintf(u, ", ");
   }
-
-  if (u->operand[0].type != UD_NONE)
-  gen_operand(u, &u->operand[0]);
+  if (u->operand[0].type != UD_NONE) {
+    gen_operand(u, &u->operand[0]);
+  }
 }
 
 /*

@@ -40,12 +40,18 @@ opr_cast(struct ud* u, struct ud_operand* op)
   if (u->br_far) {
     ud_asmprintf(u, "far "); 
   }
+
+  // Note: lea instruction will have op size == 0.
+
   switch(op->size) {
-  case  8: ud_asmprintf(u, "byte " ); break;
-  case 16: ud_asmprintf(u, "word " ); break;
-  case 32: ud_asmprintf(u, "dword "); break;
-  case 64: ud_asmprintf(u, "qword "); break;
-  case 80: ud_asmprintf(u, "tword "); break;
+  case  8:  ud_asmprintf(u, "byte " ); break;
+  case 16:  ud_asmprintf(u, "word " ); break;
+  case 32:  ud_asmprintf(u, "dword "); break;
+  case 64:  ud_asmprintf(u, "qword "); break;
+  case 80:  ud_asmprintf(u, "xword "); break;
+  case 128: ud_asmprintf(u, "xmmword "); break;
+  case 256: ud_asmprintf(u, "ymmword "); break;
+  case 512: ud_asmprintf(u, "zmmword "); break;
   default: break;
   }
 }
@@ -54,21 +60,22 @@ opr_cast(struct ud* u, struct ud_operand* op)
  * gen_operand() - Generates assembly output for each operand.
  * -----------------------------------------------------------------------------
  */
-static void gen_operand(struct ud* u, struct ud_operand* op, int syn_cast)
+static void gen_operand(struct ud* u, struct ud_operand* op)
 {
   switch(op->type) {
   case UD_OP_REG:
-    ud_asmprintf(u, "%s", ud_reg_tab[op->base - UD_R_AL]);
-    break;
+	ud_asmprintf(u, "%s", ud_reg_tab[op->base - UD_R_AL]);
+	break;
 
   case UD_OP_MEM:
-    if (syn_cast) {
-      opr_cast(u, op);
-    }
-    ud_asmprintf(u, "[");
+
+	opr_cast(u, op);
     if (u->pfx_seg) {
       ud_asmprintf(u, "%s:", ud_reg_tab[u->pfx_seg - UD_R_AL]);
-    }
+	}
+
+    ud_asmprintf(u, "[");
+
     if (op->base) {
       ud_asmprintf(u, "%s", ud_reg_tab[op->base - UD_R_AL]);
     }
@@ -109,7 +116,6 @@ static void gen_operand(struct ud* u, struct ud_operand* op, int syn_cast)
     break;
 
   case UD_OP_CONST:
-    if (syn_cast) opr_cast(u, op);
     ud_asmprintf(u, "%d", op->lval.udword);
     break;
 
@@ -148,9 +154,21 @@ ud_translate_intel(struct ud* u)
     ud_asmprintf(u, "%s ", ud_reg_tab[u->pfx_seg - UD_R_AL]);
   }
 
+  if (u->pfx_xacquire) {
+	ud_asmprintf(u, "xacquire ");
+  }
+  else if (u->pfx_xrelease) {
+	ud_asmprintf(u, "xrelease ");
+  }
+
   if (u->pfx_lock) {
     ud_asmprintf(u, "lock ");
   }
+
+  if (u->pfx_bnd) {
+	ud_asmprintf(u, "bnd ");
+  }
+
   if (u->pfx_rep) {
     ud_asmprintf(u, "rep ");
   } else if (u->pfx_repe) {
@@ -163,48 +181,23 @@ ud_translate_intel(struct ud* u)
   ud_asmprintf(u, "%s", ud_lookup_mnemonic(u->mnemonic));
 
   if (u->operand[0].type != UD_NONE) {
-    int cast = 0;
-    ud_asmprintf(u, " ");
-    if (u->operand[0].type == UD_OP_MEM) {
-      if (u->operand[1].type == UD_OP_IMM   ||
-          u->operand[1].type == UD_OP_CONST ||
-          u->operand[1].type == UD_NONE     ||
-          (u->operand[0].size != u->operand[1].size && 
-           u->operand[1].type != UD_OP_REG)) {
-          cast = 1;
-      } else if (u->operand[1].type == UD_OP_REG &&
-                 u->operand[1].base == UD_R_CL) {
-          switch (u->mnemonic) {
-          case UD_Ircl:
-          case UD_Irol:
-          case UD_Iror:
-          case UD_Ircr:
-          case UD_Ishl:
-          case UD_Ishr:
-          case UD_Isar:
-              cast = 1;
-              break;
-          default: break;
-          }
-      }
-    }
-    gen_operand(u, &u->operand[0], cast);
+	ud_asmprintf(u, " ");
+	gen_operand(u, &u->operand[0]);
   }
 
   if (u->operand[1].type != UD_NONE) {
-    int cast = 0;
-    ud_asmprintf(u, ", ");
-    if (u->operand[1].type == UD_OP_MEM &&
-        u->operand[0].size != u->operand[1].size && 
-        !ud_opr_is_sreg(&u->operand[0])) {
-      cast = 1;
-    }
-    gen_operand(u, &u->operand[1], cast);
+	ud_asmprintf(u, ", ");
+	gen_operand(u, &u->operand[1]);
   }
 
   if (u->operand[2].type != UD_NONE) {
+	ud_asmprintf(u, ", ");
+	gen_operand(u, &u->operand[2]);
+  }
+
+  if (u->operand[3].type != UD_NONE) {
     ud_asmprintf(u, ", ");
-    gen_operand(u, &u->operand[2], 0);
+	gen_operand(u, &u->operand[3]);
   }
 }
 

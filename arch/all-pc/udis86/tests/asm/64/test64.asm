@@ -92,7 +92,7 @@
     unpckhps xmm4, xmm5
     movhps xmm3, [eax]
     movhps [rax], xmm3
-    movss xmm0, [eax]
+    movss xmm0, dword [eax]
     movss [eax], xmm0
     movlpd [eax], xmm0
     movlpd xmm0, [eax]
@@ -106,9 +106,9 @@
     mov rax, dr1
     movnti [eax], eax
     movnti [rax], rax
-    movd [eax], xmm0
-    movd [eax], xmm0
-    movd xmm11, qword [eax]
+    movd dword [eax], xmm0
+    movd dword [eax], xmm0
+    movq xmm11, [eax]
     vmmcall 
     vmrun 
     clgi 
@@ -151,7 +151,7 @@
     fadd dword [rax+rbx]
     shl rsi, 1
     cvtsi2ss xmm1, qword [eax]
-    cvtss2si rax, [eax]
+    cvtss2si rax, dword [eax]
     cvttsd2si rax, [eax]
     call 0x64
     mpsadbw xmm7, xmm6, 0x7
