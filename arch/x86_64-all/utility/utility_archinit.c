@@ -1,6 +1,6 @@
 #ifdef __AVX__
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020-2023, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,12 +19,14 @@ static int Utilityx8664_ArchInit(struct Library *UtilityBase)
     struct ExceptionContext *ctx = me->tc_UnionETask.tc_ETask->et_RegFrame;
     BOOL setSet = FALSE;
 
+#if defined(USE_SSE_COPYMEM)
     if (!setSet && (ctx->Flags & ECF_FPXS))
     {
         D(bug("[Utility:x86_64] Using AVX SetMem\n"));
         SetFunction(UtilityBase, -LVOSetMem*LIB_VECTSIZE, AROS_SLIB_ENTRY(SetMem_AVX, Utility, LVOSetMem));
         setSet = TRUE;
     }
+#endif
 
     return TRUE;
 }

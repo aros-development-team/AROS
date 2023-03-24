@@ -1,6 +1,6 @@
 #ifdef __AVX__
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020-2023, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -62,9 +62,9 @@
     {
         ULONG presize, avxfillcount;
 
-        presize = (((IPTR) destination + 31 ) & ~31) - (IPTR)destination;
-        avxfillcount = (length - presize) / 32;
-        postsize = length - avxfillcount * 32 - presize;
+        presize = (((IPTR) destination + 32 ) & ~31) - (IPTR)destination;
+        avxfillcount = (length - presize) >> 5;
+        postsize = length - (avxfillcount << 5) - presize;
 
         /* setup avx value .. */
         __m256i c32 = _mm256_set1_epi8( val);

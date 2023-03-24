@@ -1,6 +1,6 @@
 #ifdef __SSE__
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020-2023, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -62,9 +62,9 @@
     {
         ULONG presize, ssefillcount;
 
-        presize = (((IPTR) destination + 15 ) & ~15) - (IPTR)destination;
-        ssefillcount = (length - presize) / 16;
-        postsize = length - (ssefillcount * 16) - presize;
+        presize = (((IPTR) destination + 16 ) & ~15) - (IPTR)destination;
+        ssefillcount = (length - presize) >> 4;
+        postsize = length - (ssefillcount << 4) - presize;
 
         /* setup sse value .. */
         __m128i c16 = _mm_set1_epi8(val);
