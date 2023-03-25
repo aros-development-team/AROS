@@ -248,7 +248,7 @@ void acpi_Init(struct PlatformData *pdata)
             Status = AcpiGetDevices(NULL, acpiInitDevice, pdata->kb_ACPI, NULL);
             if (ACPI_FAILURE(Status))
             {
-                D(bug("[Kernel:ACPI] %s: failed to enumerate ACPI Devices\n", __func__));
+                    D(bug("[Kernel:ACPI] %s: failed to enumerate ACPI Devices\n", __func__));
             }
         }
     }
