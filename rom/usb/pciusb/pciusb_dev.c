@@ -194,9 +194,27 @@ AROS_LH1(void, devBeginIO,
                 ret = cmdIntXFer(ioreq, unit, base);
                 break;
 
-			case UHCMD_ISOXFER:
+            case UHCMD_ISOXFER:
                 ret = cmdIsoXFer(ioreq, unit, base);
                 break;
+
+#if defined(PCIUSB_WIP_ISO)
+            case UHCMD_ADDISOHANDLER:
+                ret = cmdAddIsoHandler(ioreq, unit, base);
+                break;
+
+            case UHCMD_REMISOHANDLER:
+                ret = cmdRemIsoHandler(ioreq, unit, base);
+                break;
+
+            case UHCMD_STARTRTISO:
+                ret = cmdStartRTIso(ioreq, unit, base);
+                break;
+
+            case UHCMD_STOPRTISO:
+                ret = cmdStopRTIso(ioreq, unit, base);
+                break;
+#endif
 
             default:
                 ret = IOERR_NOCMD;
