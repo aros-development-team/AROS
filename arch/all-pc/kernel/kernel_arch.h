@@ -1,7 +1,7 @@
 #ifndef _KERNEL_ARCH_H_
 #define _KERNEL_ARCH_H_
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Machine-specific definitions for IBM PC hardware
@@ -29,7 +29,7 @@
 struct PlatformData
 {
     IPTR                kb_PDFlags;
-    APTR                kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
+    APTR                kb_APIC_TrampolineBase; /* Starting address of secondary core bootstrap code	*/
     struct List         kb_SysCallHandlers;
     struct ACPIData     *kb_ACPI;
     struct APICData     *kb_APIC;
@@ -38,12 +38,15 @@ struct PlatformData
     struct List         kb_BusyIPIHooks;
     spinlock_t          kb_FreeIPIHooksLock;
     spinlock_t          kb_BusyIPIHooksLock;
+    APTR                kb_FXCtx;               /* IRQ FPU/MMX/XMM Save area                            */
 };
 
 #define PLATFORMB_HAVEHEARTBEAT 0
 #define PLATFORMF_HAVEHEARTBEAT (1 << PLATFORMB_HAVEHEARTBEAT)
 #define PLATFORMB_HAVEMSI       1
 #define PLATFORMF_HAVEMSI       (1 << PLATFORMB_HAVEMSI)
+#define PLATFORMB_INIRQ         15
+#define PLATFORMF_INIRQ         (1 << PLATFORMB_INIRQ)
 
 /* Hardware IRQs *********************************************************************************/
 
