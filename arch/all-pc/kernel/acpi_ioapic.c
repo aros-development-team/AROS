@@ -141,7 +141,10 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
                                 (char *)"\\_PIC",
                                 &arg_list,
                                 NULL);
-
+	if (status == AE_NOT_FOUND)
+	{
+        return (icid_t)-1;
+	}
     if (ACPI_FAILURE(status))
     {
         bug("[Kernel:IOAPIC] %s: Error evaluating _PIC: %s\n", __func__, AcpiFormatException(status));
@@ -197,10 +200,20 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     int instance, irq = 0, ioapic_irqbase;
     struct IntrController *xtpicIC;
+    ACPI_TABLE_FADT *fadt = NULL;
+    BYTE sciIRQ = 0;
 
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, instanceCount));
 
     IOAPICInt_IntrController.ic_Private = ioapicPrivate;
+
+    if (kernPlatD->kb_ACPI)
+            fadt = (ACPI_TABLE_FADT *)kernPlatD->kb_ACPI->acpi_fadt;
+    if (fadt)
+    {
+        sciIRQ = fadt->SciInterrupt;
+        bug("[Kernel:ACPI-IOAPIC] %s: SCI IRQ = %u\n", __func__, sciIRQ);
+    }
 
     for (
             instance = 0;
@@ -246,6 +259,10 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             IOAPICREG_ID);
         if (ioapicData->ioapic_ID != ((ioapicval >> 24) & 0xF))
         {
+            if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
+            {
+                bug("[Kernel:IOAPIC] %s: Adjusting LocalID (= %03u)\n", __func__, ((ioapicval >> 24) & 0xF));
+            }
             ioapicval &= ~(0xF << 24);
             ioapicval |= (ioapicData->ioapic_ID << 24);
 
@@ -303,7 +320,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
                 irqRoute->ds = 0;
                 irqRoute->rirr = 0;
-                if (intrMap)
+                if ((intrMap) && !(ioapicData->ioapic_Flags & IOAPICF_NORD))
                 {
                     if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
                     {
@@ -519,7 +536,7 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     /* Write zero to EOI of APIC */
     apic_base = core_APIC_GetBase();
-    DINT(bug("[Kernel:IOAPIC] %s: apicBase = %p\n", __func__, apic_base);)
+    DINT(bug("[Kernel:IOAPIC] %s(%u): apicBase = %p\n", __func__, intNum, apic_base);)
 
     /* write IOAPIC EIO if necessary .. */
     if (intrMap)
@@ -529,22 +546,24 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     else
          ioapic_pin = intNum - ioapicData->ioapic_GSI;
 
-    DINT(bug("[Kernel:IOAPIC] %s: IOAPIC Pin %02X\n", __func__, ioapic_pin);)
+    DINT(bug("[Kernel:IOAPIC] %s(%u): IOAPIC Pin %02X\n", __func__, intNum, ioapic_pin);)
     irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
 
     if (irqRoute->trig == 1)
     {
+        DINT(bug("[Kernel:IOAPIC] %s(%u): LEVEL\n", __func__, intNum);)
+
         if (ioapicData->ioapic_Flags & IOAPICF_EOI)
         {
             volatile ULONG *ioapic_eoi = (volatile ULONG *)((IPTR)ioapicData->ioapic_Base + IOREGEOI);
-            DINT(bug("[Kernel:IOAPIC] %s: Writting EOI (%u) to IOAPIC REG @ 0x%p\n", __func__, irqRoute->vect, ioapic_eoi);)
+            DINT(bug("[Kernel:IOAPIC] %s(%u): Writting EOI (%u) to IOAPIC REG @ 0x%p\n", __func__, intNum, irqRoute->vect, ioapic_eoi);)
             *ioapic_eoi = irqRoute->vect;
         }
         else
         {
             int rttrig = irqRoute->trig, rtmask = irqRoute->mask;
 
-            DINT(bug("[Kernel:IOAPIC] %s: Toggling trig/mask\n", __func__);)
+            DINT(bug("[Kernel:IOAPIC] %s(%u): Toggling trig/mask\n", __func__, intNum);)
             /*
              * If the IO-APIC is too old, Replicate the linux kernel behaviour
              * of setting the pin to edge trigger and back - masking the pin while changing
@@ -567,7 +586,7 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     }
     else
     {
-        DINT(bug("[Kernel:IOAPIC] %s: trig == 0 ************************\n", __func__);)
+        DINT(bug("[Kernel:IOAPIC] %s(%u): EDGE\n", __func__, intNum);)
     }
     APIC_REG(apic_base, APIC_EOI) = 0;
     return TRUE;
@@ -727,6 +746,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
     if (fadt)
     {
         sciIRQ = fadt->SciInterrupt;
+        bug("[Kernel:ACPI-IOAPIC]    %s: SCI IRQ = %u\n", __func__, sciIRQ);
     }
 
     intrMap->im_Polarity = ACPI_PolFromInti(intsrc->SourceIrq, sciIRQ, intsrc->IntiFlags);
@@ -788,6 +808,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_NMI_Src_Parse,
     if (fadt)
     {
         sciIRQ = fadt->SciInterrupt;
+        bug("[Kernel:ACPI-IOAPIC]    %s: SCI IRQ = %u\n", __func__, sciIRQ);
     }
 
     intrMap->im_Polarity = ACPI_PolFromInti(nmi_src->GlobalIrq, sciIRQ, nmi_src->IntiFlags);
@@ -838,6 +859,10 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
                 if (strstr((const char *)cmdTags->ti_Data, "ioapicdump"))
                 {
                     ioapicData->ioapic_Flags |= IOAPICF_DUMP;
+                }
+                if (strstr((const char *)cmdTags->ti_Data, "ioapicdefrd"))
+                {
+                    ioapicData->ioapic_Flags |= IOAPICF_NORD;
                 }
             }
 #if defined(DEBUG) && (DEBUG > 0)
@@ -930,6 +955,18 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
 
     if (pdata->kb_ACPI->acpi_ioapicCnt == 0)
     {
+        struct TagItem *cmdTags = LibFindTagItem(KRN_CmdLine, BootMsg);
+        BOOL parseoverride = TRUE;
+
+        if (cmdTags)
+        {
+            if (strstr((const char *)cmdTags->ti_Data, "nointover"))
+            {
+                D(bug("[Kernel:ACPI-IOAPIC] %s: Interrupt Override Disabled\n", __func__));
+                parseoverride = FALSE;
+            }
+        }
+
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Registering IO-APIC Table Parser...\n", __func__));
 
         scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
@@ -958,20 +995,22 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_IOAPIC_Count,
             Enqueue(&pdata->kb_ACPI->acpi_tablehooks, &scanHook->acpith_Node);
         }
 
-        scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
-        if (scanHook)
+        if (parseoverride)
         {
-            DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Registering Interrupt Override Table Parser...\n", __func__));
+            scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
+            if (scanHook)
+            {
+                DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: Registering Interrupt Override Table Parser...\n", __func__));
 
-            scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
-            scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_IOAPIC - 30;                            /* Queue 30 priority levels after the module parser */
-            scanHook->acpith_Hook.h_Entry = (APTR)ACPI_hook_Table_Int_Src_Ovr_Parse;
-            scanHook->acpith_HeaderLen = sizeof(ACPI_TABLE_MADT);
-            scanHook->acpith_EntryType = ACPI_MADT_TYPE_INTERRUPT_OVERRIDE;
-            scanHook->acpith_UserData = pdata;
-            Enqueue(&pdata->kb_ACPI->acpi_tablehooks, &scanHook->acpith_Node);
+                scanHook->acpith_Node.ln_Name = (char *)ACPI_TABLE_MADT_STR;
+                scanHook->acpith_Node.ln_Pri = ACPI_MODPRIO_IOAPIC - 30;                            /* Queue 30 priority levels after the module parser */
+                scanHook->acpith_Hook.h_Entry = (APTR)ACPI_hook_Table_Int_Src_Ovr_Parse;
+                scanHook->acpith_HeaderLen = sizeof(ACPI_TABLE_MADT);
+                scanHook->acpith_EntryType = ACPI_MADT_TYPE_INTERRUPT_OVERRIDE;
+                scanHook->acpith_UserData = pdata;
+                Enqueue(&pdata->kb_ACPI->acpi_tablehooks, &scanHook->acpith_Node);
+            }
         }
-
         scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
         if (scanHook)
         {

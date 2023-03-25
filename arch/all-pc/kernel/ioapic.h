@@ -1,7 +1,7 @@
 #ifndef KERNEL_IOAPIC_H
 #define KERNEL_IOAPIC_H
 /*
-    Copyright © 2017-2022, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Generic AROS IOAPIC definitions.
@@ -59,6 +59,8 @@ struct IOAPICCfgData
 #define IOAPICF_ENABLED         (1 << IOAPICB_ENABLED)
 #define IOAPICB_EOI             2
 #define IOAPICF_EOI             (1 << IOAPICB_EOI)
+#define IOAPICB_NORD            30
+#define IOAPICF_NORD            (1 << IOAPICB_NORD)
 #define IOAPICB_DUMP            31
 #define IOAPICF_DUMP            (1 << IOAPICB_DUMP)
 
