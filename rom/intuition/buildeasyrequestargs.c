@@ -43,7 +43,7 @@ static struct Gadget *buildeasyreq_makegadgets(struct IntReqDims *dims,
                                 struct IntuitionBase *IntuitionBase);
 static struct Gadget *FindGadgetByID(struct Gadget *thisgadget, UWORD GadgetID);
 
-struct TagItem mapproptop[] = {
+const struct TagItem mapproptop[] = {
     {PGA_Top, ICSPECIAL_CODE},
     {TAG_END, }
 };
