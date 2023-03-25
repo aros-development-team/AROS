@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -437,71 +437,49 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
         {
             for (;;)
             {
+                BOOL umn;
+
                 CalcBBox (window, req, gadget, &bbox);
                 kbox = bbox;
 
                 if (bbox.Width <= 0 || bbox.Height <= 0)
                     break;
 
-                if (CalcKnobSize (gadget, &kbox))
+                pi = (struct PropInfo *)gadget->SpecialInfo;
+                if (!pi)
+                    break;
+
+                umn = CalcKnobSize (gadget, &kbox);
+
+                SetDrMd (rp, JAM2);
+                if (!(pi->Flags & PROPBORDERLESS))
                 {
-                    pi = (struct PropInfo *)gadget->SpecialInfo;
+                    SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+                    drawrect(rp,bbox.Left,
+                             bbox.Top,
+                             bbox.Left + bbox.Width - 1,
+                             bbox.Top + bbox.Height - 1,
+                             IntuitionBase);
+                             
+                    bbox.Left ++; bbox.Top ++;
+                    bbox.Width -= 2; bbox.Height -= 2;
+                }
 
-                    if (!pi)
-                        break;
-
-                    SetDrMd (rp, JAM2);
-
-                    if (!(pi->Flags & PROPBORDERLESS))
-                    {
-                        SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-                        drawrect(rp,bbox.Left,
-                                 bbox.Top,
-                                 bbox.Left + bbox.Width - 1,
-                                 bbox.Top + bbox.Height - 1,
-                                 IntuitionBase);
-                                 
-                        bbox.Left ++; bbox.Top ++;
-                        bbox.Width -= 2; bbox.Height -= 2;
-                    }
-
+                if (umn)
+                {
                     RefreshPropGadgetKnob (gadget, &bbox, &kbox, window, req, IntuitionBase);
                 }
                 else
                 {
+                    struct Rectangle tmprect;
+                    
+                    tmprect.MinX = bbox.Left;
+                    tmprect.MaxX = bbox.Left + bbox.Width - 1;
+                    tmprect.MinY = bbox.Top;
+                    tmprect.MaxY = bbox.Top + bbox.Height - 1;
 
-                    pi = (struct PropInfo *)gadget->SpecialInfo;
-
-                    if (!pi)
-                        break;
-
-                    SetDrMd (rp, JAM2);
-
-                    if (!(pi->Flags & PROPBORDERLESS))
-                    {
-                        SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-                        drawrect(rp,bbox.Left,
-                                 bbox.Top,
-                                 bbox.Left + bbox.Width - 1,
-                                 bbox.Top + bbox.Height - 1,
-                                 IntuitionBase);
-
-                        bbox.Left ++; bbox.Top ++;
-                        bbox.Width -= 2; bbox.Height -= 2;
-
-                    }
-
-                    {
-                        struct Rectangle tmprect;
-                        
-                        tmprect.MinX = bbox.Left;
-                        tmprect.MaxX = bbox.Left + bbox.Width - 1;
-                        tmprect.MinY = bbox.Top;
-                        tmprect.MaxY = bbox.Top + bbox.Height - 1;
-
-                        RenderPropBackground(gadget, window, dri, &tmprect, &tmprect, NULL,
-                                             pi, rp, onborder, IntuitionBase);
-                    }
+                    RenderPropBackground(gadget, window, dri, &tmprect, &tmprect, NULL,
+                                         pi, rp, onborder, IntuitionBase);
                 } // if (CalcKnob
                 break;
             }
