@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2023, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -400,7 +400,7 @@ WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
 
     if (((tag = FindTagItem(UHA_Copyright, taglist)) != NULL) && (tag->ti_Data))
     {
-        *((STRPTR *) tag->ti_Data) ="©2013 The AROS Dev Team";
+        *((STRPTR *) tag->ti_Data) ="\xA9""2013-2023 The AROS Dev Team";
         count++;
     }
 

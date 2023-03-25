@@ -15,9 +15,6 @@
 
 #define NewList NEWLIST
 
-/* Uncomment to enable the W.I.P Isochornous transfer stubs */
-//#define PCIUSB_WIP_ISO
-
 /* we cannot use AROS_WORD2LE in struct initializer */
 #if AROS_BIG_ENDIAN
 #define WORD2LE(w) (UWORD)(((w) >> 8) & 0x00FF) | (((w) << 8) & 0xFF00)
@@ -417,7 +414,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_Copyright, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) ="©2007-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) ="\xA9""2007-2009 Chris Hodges";
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist)))

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
     Command line options:
 
     1. PUBSCREEN <name>: the name of the public screen to open the window on
@@ -689,7 +689,7 @@ int main(void)
     app = ApplicationObject,
           MUIA_Application_Title, "Calculator",
           MUIA_Application_Version, "1.5",
-          MUIA_Application_Copyright, "©2007-2018, AROS Dev Team",
+          MUIA_Application_Copyright, "\xA9""2007-2023, AROS Dev Team",
           MUIA_Application_Author, "AROS Team",
           MUIA_Application_Description, "Simple desktop calculator",
           MUIA_Application_Base, "calculator",

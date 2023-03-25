@@ -9,6 +9,9 @@
 #include "ehcichip.h"
 #include "pciusb.h"
 
+/* Uncomment to enable the W.I.P Isochornous transfer stubs */
+//#define PCIUSB_WIP_ISO
+
 #if (__WORDSIZE == 64)
 
 APTR usbGetBuffer(APTR data, ULONG len, UWORD dir);
@@ -44,6 +47,13 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDe
 WORD cmdBulkXFer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 WORD cmdIsoXFer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
+
+#if defined(PCIUSB_WIP_ISO)
+WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
+WORD cmdRemIsoHandler(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
+WORD cmdStartRTIso(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
+WORD cmdStopRTIso(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
+#endif
 
 WORD cmdFlush(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 
