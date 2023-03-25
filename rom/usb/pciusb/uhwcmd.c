@@ -15,6 +15,9 @@
 
 #define NewList NEWLIST
 
+/* Uncomment to enable the W.I.P Isochornous transfer stubs */
+//#define PCIUSB_WIP_ISO
+
 /* we cannot use AROS_WORD2LE in struct initializer */
 #if AROS_BIG_ENDIAN
 #define WORD2LE(w) (UWORD)(((w) >> 8) & 0x00FF) | (((w) << 8) & 0xFF00)
@@ -414,7 +417,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_Copyright, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) ="Â©2007-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) ="©2007-2009 Chris Hodges";
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist)))
@@ -434,7 +437,16 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_Capabilities, taglist)))
     {
-        *((ULONG *) tag->ti_Data) = UHCF_USB20;
+        ULONG caps = 0;
+        if (unit->hu_RootHub20Ports > 0)
+            caps |= UHCF_USB20;
+#if defined(PCIUSB_WIP_ISO)
+        caps |= UHCF_ISO|UHCF_RT_ISO;
+#endif
+#if (0)
+        caps |= UHCF_QUICKIO;
+#endif
+        *((ULONG *) tag->ti_Data) = caps;
         count++;
     }
     ioreq->iouh_Actual = count;
@@ -519,7 +531,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             if(unit->hu_RootHub20Ports)
                             {
                                 struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[9+9];
-                                usepd->bInterval = 12; // 2048 ÂµFrames
+                                usepd->bInterval = 12; // 2048 µFrames
                             }
                             ioreq->iouh_Actual = (len > 9+9+7) ? 9+9+7 : len;
                             CopyMem(tmpbuf, ioreq->iouh_Data, ioreq->iouh_Actual);
@@ -1806,6 +1818,98 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
 }
 /* \\\ */
 
+#if defined(PCIUSB_WIP_ISO)
+/* /// "cmdAddIsoHandler()" */
+/*
+ *======================================================================
+ * cmdAddIsoHandler(ioreq, unit, base)
+ *======================================================================
+ *
+ * This is the device UHCMD_ADDISOHANDLER routine.
+ *
+ * First it check if the usb is in proper state and if user passed arguments
+ * are valid. If everything is ok, the request is linked to the list of
+ * realtime iso handlers.
+ *
+ */
+
+WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
+                      struct PCIUnit *unit,
+                      struct PCIDevice *base)
+{
+    KPRINTF(10, ("UHCMD_ADDISOHANDLER ioreq: 0x%08lx\n", ioreq));
+
+    return(RC_OK);
+}
+/* \\\ */
+
+/* /// "cmdRemIsoHandler()" */
+/*
+ *======================================================================
+ * cmdRemIsoHandler(ioreq, unit, base)
+ *======================================================================
+ *
+ * This is the device UHCMD_REMISOHANDLER routine.
+ *
+ * Removes a previously added real time ISO handler.
+ *
+ */
+
+WORD cmdRemIsoHandler(struct IOUsbHWReq *ioreq,
+                      struct PCIUnit *unit,
+                      struct PCIDevice *base)
+{
+    KPRINTF(10, ("UHCMD_REMISOHANDLER ioreq: 0x%08lx\n", ioreq));
+
+    return(RC_OK);
+}
+/* \\\ */
+
+/* /// "cmdStartRTIso()" */
+/*
+ *======================================================================
+ * cmdStartRTIso(ioreq, unit, base)
+ *======================================================================
+ *
+ * This is the device UHCMD_STARTRTISO routine.
+ *
+ * Enables a previously added realtime iso handler.
+ *
+ */
+
+WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
+                   struct PCIUnit *unit,
+                   struct PCIDevice *base)
+{
+    KPRINTF(10, ("UHCMD_STARTRTISO ioreq: 0x%08lx\n", ioreq));
+
+    return(RC_OK);
+}
+/* \\\ */
+
+/* /// "cmdStopRTIso()" */
+/*
+ *======================================================================
+ * cmdStopRTIso(ioreq, unit, base)
+ *======================================================================
+ *
+ * This is the device UHCMD_STOPRTISO routine.
+ *
+ * Disables a previously added realtime iso handler.
+ *
+ */
+
+WORD cmdStopRTIso(struct IOUsbHWReq *ioreq,
+                  struct PCIUnit *unit,
+                  struct PCIDevice *base)
+{
+    KPRINTF(10, ("UHCMD_STOPRTISO ioreq: 0x%08lx\n", ioreq));
+
+    return(RC_OK);
+}
+/* \\\ */
+#endif /* PCIUSB_WIP_ISO */
+
 /* /// "NSD stuff" */
 
 static
@@ -1817,6 +1921,10 @@ const UWORD NSDSupported[] =
     UHCMD_USBOPER, UHCMD_CONTROLXFER ,
     UHCMD_ISOXFER, UHCMD_INTXFER,
     UHCMD_BULKXFER,
+#if defined(PCIUSB_WIP_ISO)
+    UHCMD_ADDISOHANDLER, UHCMD_REMISOHANDLER,
+    UHCMD_STARTRTISO, UHCMD_STOPRTISO,
+#endif
     NSCMD_DEVICEQUERY, 0
 };
 
