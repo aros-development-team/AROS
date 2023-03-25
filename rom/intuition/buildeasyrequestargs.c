@@ -48,44 +48,6 @@ struct TagItem mapproptop[] = {
     {TAG_END, }
 };
 
-static inline struct IntuiText *requester_makebodyplain(struct IntReqDims *dims, STRPTR string, struct TextAttr *font)
-{
-    struct IntuiText *res;
-    char *s;
-    unsigned int lines = charsinstring(string, '\n') + 1;
-    unsigned int i;
-
-    DEBUG_BUILDEASYREQUEST(bug("%s: %u lines\n", __func__, lines));
-
-    res = AllocVec(sizeof(struct IntuiText) * lines, MEMF_ANY);
-    if (res)
-    {
-        s = string;
-        for (i = 0; i < lines; i++)
-        {
-            DEBUG_BUILDEASYREQUEST(bug("%s: %u @ 0x%p\n", __func__, i, s));
-            res[i].FrontPen = 1;
-            res[i].BackPen  = 0;
-            res[i].DrawMode = JAM2;
-            res[i].ITextFont = font;
-            res[i].LeftEdge = 0;
-            res[i].TopEdge  = (dims->fontheight + dims->fontxheight) * i;
-            res[i].IText = s;
-            while (*s)
-            {
-                if (*s == '\n')
-                    break;
-                s++;
-            }
-            res[i].NextText = *s ? &res[i+1] : NULL;
-            *s++ = '\0';
-            DEBUG_BUILDEASYREQUEST(bug("%s: %u, %u\n", __func__, res[i].LeftEdge, res[i].TopEdge));
-            DEBUG_BUILDEASYREQUEST(bug("%s: = '%s'\n", __func__, res[i].IText));
-        }
-    }
-    return res;
-}
-
 /*****************************************************************************
 
     NAME */

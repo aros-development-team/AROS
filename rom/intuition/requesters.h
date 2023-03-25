@@ -157,7 +157,6 @@ static inline struct IntuiText *requester_makebody(STRPTR string, struct TextAtt
     return res;
 }
 
-#if (0)
 static inline struct IntuiText *requester_makebodyplain(struct IntReqDims *dims, STRPTR string, struct TextAttr *font)
 {
     struct IntuiText *res;
@@ -175,9 +174,8 @@ static inline struct IntuiText *requester_makebodyplain(struct IntReqDims *dims,
             res[i].BackPen  = 0;
             res[i].DrawMode = JAM2;
             res[i].ITextFont = font;
-            res[i].LeftEdge = dims->textleft;
-            res[i].TopEdge  = (dims->fontheight + dims->fontxheight) * (i - 1) +
-                    OUTERSPACING_Y + TEXTBOXBORDER_Y + TOPAZ_8_BASELINE;
+            res[i].LeftEdge = 0;
+            res[i].TopEdge  = (dims->fontheight + dims->fontxheight) * i;
             res[i].IText = s;
             while (*s)
             {
@@ -185,12 +183,12 @@ static inline struct IntuiText *requester_makebodyplain(struct IntReqDims *dims,
                     break;
                 s++;
             }
+            res[i].NextText = *s ? &res[i+1] : NULL;
             *s++ = '\0';
         }
     }
     return res;
 }
-#endif
 
 /* Miscellaneous prototypes */
 void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
