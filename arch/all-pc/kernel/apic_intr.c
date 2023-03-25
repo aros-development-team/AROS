@@ -30,6 +30,7 @@
 #define DUMP_CONTEXT
 
 //#define IRQNOSCHED_FORBID
+//#define APICIRSTATUS_DEBUG
 
 /* use the correct registers depending on arch. */
 #if (__WORDSIZE != 64)
@@ -227,7 +228,10 @@ void core_InvalidateIDT()
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long int_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
-#if 0
+    struct PlatformData *pdata = (struct PlatformData *)KernelBase->kb_PlatformData;
+    BOOL restorefpu = TRUE;
+
+#if defined(APICIRSTATUS_DEBUG)
     // This debug works only if Local APIC exists...
     DIRQ(
         IPTR __APICBase = core_APIC_GetBase();
@@ -249,6 +253,20 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             APIC_REG(__APICBase, APIC_ISR + 0x10), APIC_REG(__APICBase, APIC_ISR + 0x00));
     )
 #endif
+
+    pdata->kb_PDFlags |= PLATFORMF_INIRQ;
+
+    if (pdata->kb_FXCtx)
+    {
+        if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
+        {
+            asm volatile("xsave (%0)"::"r"(pdata->kb_FXCtx));
+        }
+        else
+        {
+            asm volatile("fxsave (%0)"::"r"(pdata->kb_FXCtx));
+        }
+    }
     // An IRQ which arrived at the CPU is *either* an exception (let it be syscall, cpu exception,
     // LAPIC local irq) or a device IRQ.
     if (IS_EXCEPTION(int_number))
@@ -302,6 +320,18 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             }
         }
 
+        restorefpu = FALSE;
+        if (pdata->kb_FXCtx)
+        {
+            if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
+            {
+                asm volatile("xrstor (%0)"::"r"(pdata->kb_FXCtx));
+            }
+            else
+            {
+                asm volatile("fxrstor (%0)"::"r"(pdata->kb_FXCtx));
+            }
+        }
         /*
          * Upon exit from the lowest-level device IRQ, if we are returning to user mode,
          * we check if we need to call software interrupts or run the task scheduler.
@@ -315,12 +345,25 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             DIRQ(
                 bug("[Kernel] %s(%u): calling ExitInterrupt... (>usermode)(%08x)\n", __func__, int_number, regs->Flags);
             )
+            pdata->kb_PDFlags &= ~PLATFORMF_INIRQ;
             core_ExitInterrupt(regs);
         }
     }
 
+    if (pdata->kb_FXCtx && restorefpu)
+    {
+        if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
+        {
+            asm volatile("xrstor (%0)"::"r"(pdata->kb_FXCtx));
+        }
+        else
+        {
+            asm volatile("fxrstor (%0)"::"r"(pdata->kb_FXCtx));
+        }
+    }
     DIRQ(
         bug("[Kernel] %s(%u): calling LeaveInterrupt...(%08x)\n", __func__, int_number, regs->Flags);
     )
+    pdata->kb_PDFlags &= ~PLATFORMF_INIRQ;
     core_LeaveInterrupt(regs);
 }

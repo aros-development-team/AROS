@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -62,7 +62,7 @@ void cpu_PrepareExec(struct ExecBase *SysBase)
 
 static struct ExceptionContext *cpu_SMPInitCtx(cpuid_t cpuNo)
 {
-    if (KernelBase->kb_ContextSize > AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 16) + sizeof(struct FPFXSContext))
+    if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
     {
         D(
             bug("[Kernel:%03u] %s: Enabling AVX ...\n", cpuNo, __func__);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -89,6 +89,14 @@ static int cpu_Init(struct KernelBase *KernelBase)
         /* All x86-64 processors have SSE/FXSAVE */
         KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) + 16;
     }
+#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
+    if (KernelBase->kb_PlatformData)
+    {
+        APTR tmp = AllocMem(KernelBase->kb_ContextSize -  sizeof(struct AROSCPUContext), MEMF_PUBLIC);
+        KernelBase->kb_PlatformData->kb_FXCtx = (APTR)(AROS_ROUNDUP2((IPTR)tmp, 64));
+        bug("[Kernel] %s: IRQ FPU Save @ 0x%p\n", __func__, KernelBase->kb_PlatformData->kb_FXCtx);
+    }
+#endif
     D(bug("[Kernel] %s: CPU Context size = %u bytes\n", __func__, KernelBase->kb_ContextSize);)
 
     return TRUE;
