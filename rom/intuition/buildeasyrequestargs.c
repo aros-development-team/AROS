@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -17,6 +17,7 @@
 #include <proto/graphics.h>
 #include <exec/memory.h>
 #include <exec/rawfmt.h>
+#include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/screens.h>
@@ -26,40 +27,64 @@
 #include <aros/debug.h>
 #include "intuition_intern.h"
 
-
 /**********************************************************************************************/
 
-struct reqdims
-{
-    UWORD width;       /* width of the requester */
-    UWORD height;      /* height of the requester */
-    UWORD fontheight;  /* height of the default font */
-    UWORD fontxheight; /* extra height */
-    UWORD textleft;
-    UWORD textheight;  /* Height of text frame */
-    WORD  gadgets;     /* number of gadgets */
-    UWORD gadgetwidth; /* width of a gadget */
-};
-
-/**********************************************************************************************/
-
-static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,CONST_STRPTR labeltext, RAWARG args, struct IntuitionBase *IntuitionBase);
+static STRPTR *buildeasyreq_makelabels(struct IntReqDims *dims,CONST_STRPTR labeltext, RAWARG args, struct IntuitionBase *IntuitionBase);
 static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat, RAWARG args, RAWARG *nextargptr, struct IntuitionBase *IntuitionBase);
-static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
+static BOOL buildeasyreq_calculatedims(struct IntReqDims *dims,
                                        struct Screen *scr,
                                        STRPTR formattedtext,
                                        STRPTR *gadgetlabels,
                                        struct IntuitionBase *IntuitionBase);
-static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
+static struct Gadget *buildeasyreq_makegadgets(struct IntReqDims *dims,
                                 STRPTR *gadgetlabels,
                                 struct Screen *scr,
+                                ULONG *idcmp,
                                 struct IntuitionBase *IntuitionBase);
-static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
-                              struct Window *win, struct Screen *scr,
-                              struct Gadget *gadgets,
-                              struct IntuitionBase *IntuitionBase);
+static struct Gadget *FindGadgetByID(struct Gadget *thisgadget, UWORD GadgetID);
 
-static int charsinstring(CONST_STRPTR string, char c);
+struct TagItem mapproptop[] = {
+    {PGA_Top, ICSPECIAL_CODE},
+    {TAG_END, }
+};
+
+static inline struct IntuiText *requester_makebodyplain(struct IntReqDims *dims, STRPTR string, struct TextAttr *font)
+{
+    struct IntuiText *res;
+    char *s;
+    unsigned int lines = charsinstring(string, '\n') + 1;
+    unsigned int i;
+
+    DEBUG_BUILDEASYREQUEST(bug("%s: %u lines\n", __func__, lines));
+
+    res = AllocVec(sizeof(struct IntuiText) * lines, MEMF_ANY);
+    if (res)
+    {
+        s = string;
+        for (i = 0; i < lines; i++)
+        {
+            DEBUG_BUILDEASYREQUEST(bug("%s: %u @ 0x%p\n", __func__, i, s));
+            res[i].FrontPen = 1;
+            res[i].BackPen  = 0;
+            res[i].DrawMode = JAM2;
+            res[i].ITextFont = font;
+            res[i].LeftEdge = 0;
+            res[i].TopEdge  = (dims->fontheight + dims->fontxheight) * i;
+            res[i].IText = s;
+            while (*s)
+            {
+                if (*s == '\n')
+                    break;
+                s++;
+            }
+            res[i].NextText = *s ? &res[i+1] : NULL;
+            *s++ = '\0';
+            DEBUG_BUILDEASYREQUEST(bug("%s: %u, %u\n", __func__, res[i].LeftEdge, res[i].TopEdge));
+            DEBUG_BUILDEASYREQUEST(bug("%s: = '%s'\n", __func__, res[i].IText));
+        }
+    }
+    return res;
+}
 
 /*****************************************************************************
 
@@ -119,19 +144,18 @@ static int charsinstring(CONST_STRPTR string, char c);
     struct Window               *req;
     struct Gadget               *gadgets;
     CONST_STRPTR                 reqtitle;
-    STRPTR                       formattedtext;
     STRPTR                      *gadgetlabels;
-    struct                       reqdims dims;
     struct IntRequestUserData   *requserdata;
     RAWARG                       nextarg;
-    
-    DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: window 0x%p easystruct 0x%p IDCMPFlags 0x08%x args 0x%p\n",
+    ULONG                       reqidcmp = IDCMP_GADGETUP | IDCMP_RAWKEY;
+
+    DEBUG_BUILDEASYREQUEST(dprintf("%s: window 0x%p easystruct 0x%p IDCMPFlags 0x08%x args 0x%p\n", __func__,
                                    RefWindow, easyStruct, IDCMP, Args));
 
     if (!easyStruct)
         return FALSE;
 
-    DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: easy title <%s> Format <%s> Gadgets <%s>\n",
+    DEBUG_BUILDEASYREQUEST(dprintf("%s: easy title <%s> Format <%s> Gadgets <%s>\n", __func__,
                                    easyStruct->es_Title,
                                    easyStruct->es_TextFormat,
                                    easyStruct->es_GadgetFormat));
@@ -157,44 +181,61 @@ static int charsinstring(CONST_STRPTR string, char c);
     }
 
     /* create everything */
-    formattedtext = buildeasyreq_formattext(easyStruct->es_TextFormat,
-                                            Args,
-                                            &nextarg,
-                                            IntuitionBase);
-    DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: formatted text 0x%p\n", formattedtext));
-    if (formattedtext)
+    requserdata = AllocVec(sizeof(struct IntRequestUserData),
+                           MEMF_ANY|MEMF_CLEAR);
+    DEBUG_BUILDEASYREQUEST(dprintf("%s: requester data 0x%p\n", __func__, requserdata));
+
+    if (requserdata)
     {
-        gadgetlabels = buildeasyreq_makelabels(&dims,
-                                               easyStruct->es_GadgetFormat,
-                                               nextarg,
-                                               IntuitionBase);
-        DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: gadget labels 0x%p\n", gadgetlabels));
 
-        if(gadgetlabels)
+        requserdata->drawreq = buildreq_draw;
+
+        requserdata->RawBody = buildeasyreq_formattext(easyStruct->es_TextFormat,
+                                                Args,
+                                                &nextarg,
+                                                IntuitionBase);
+        DEBUG_BUILDEASYREQUEST(bug("%s: formatted text 0x%p\n", __func__, requserdata->RawBody));
+        if (requserdata->RawBody)
         {
-            if (buildeasyreq_calculatedims(&dims, scr,
-                                           formattedtext, gadgetlabels, IntuitionBase))
+            gadgetlabels = buildeasyreq_makelabels(&requserdata->ReqDims,
+                                                   easyStruct->es_GadgetFormat,
+                                                   nextarg,
+                                                   IntuitionBase);
+            DEBUG_BUILDEASYREQUEST(bug("%s: gadget labels 0x%p\n", __func__, gadgetlabels));
+
+            if(gadgetlabels)
             {
-                DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: dimensions OK\n"));
-
-                gadgets = buildeasyreq_makegadgets(&dims, gadgetlabels, scr, IntuitionBase);
-                if (gadgets)
+                if (buildeasyreq_calculatedims(&requserdata->ReqDims, scr,
+                                               requserdata->RawBody, gadgetlabels, IntuitionBase))
                 {
-                    DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: gadgets 0x%p\n", gadgets));
+                    DEBUG_BUILDEASYREQUEST(bug("%s: dimensions OK\n", __func__));
+                    struct TextAttr *reqfont = NULL;
+                    struct TextAttr defreqfont = {
+                        "topaz.font",
+                        scr->RastPort.Font->tf_YSize,
+                        scr->RastPort.Font->tf_Style,
+                        0
+                    };
+#if (0)
+                    reqfont = &defreqfont;
+#else
+                    reqfont = GetPrivIBase(IntuitionBase)->ReqFont;
+#endif
+                    requserdata->ReqBody = requester_makebodyplain(&requserdata->ReqDims, requserdata->RawBody, reqfont);
+                    DEBUG_BUILDEASYREQUEST(bug("%s: itext ReqBody 0x%p\n", __func__, requserdata->ReqBody));
 
-                    requserdata = AllocVec(sizeof(struct IntRequestUserData),
-                                           MEMF_ANY|MEMF_CLEAR);
-                    DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: requester data 0x%p\n", requserdata));
-
-                    if (requserdata)
+                    gadgets = buildeasyreq_makegadgets(&requserdata->ReqDims, gadgetlabels, scr, &reqidcmp, IntuitionBase);
+                    if (gadgets)
                     {
+                        DEBUG_BUILDEASYREQUEST(dprintf("%s: gadgets 0x%p\n", __func__, gadgets));
+
                         struct TagItem win_tags[] =
                         {
-                            { WA_Width                                    , dims.width                                                  },
-                            { WA_Height                                   , dims.height                                                 },
-                            { WA_Left                                     , - scr->LeftEdge + (scr->ViewPort.DWidth/2) - (dims.width/2) },
-                            { WA_Top                                      , - scr->TopEdge + (scr->ViewPort.DHeight/2) - (dims.height/2)},
-                            { WA_IDCMP                                    , IDCMP_GADGETUP | IDCMP_RAWKEY | (IDCMP & ~IDCMP_VANILLAKEY) },
+                            { WA_Width                                    , requserdata->ReqDims.width                                                  },
+                            { WA_Height                                   , requserdata->ReqDims.height                                                 },
+                            { WA_Left                                     , - scr->LeftEdge + (scr->ViewPort.DWidth/2) - (requserdata->ReqDims.width/2) },
+                            { WA_Top                                      , - scr->TopEdge + (scr->ViewPort.DHeight/2) - (requserdata->ReqDims.height/2)},
+                            { WA_IDCMP                                    , reqidcmp | (IDCMP & ~IDCMP_VANILLAKEY)                      },
                             { WA_Gadgets                                  , (IPTR)gadgets                                               },
                             { WA_Title                                    , (IPTR)reqtitle                                              },
                             { (lockedscr ? WA_PubScreen : WA_CustomScreen), (IPTR)scr                                                   },
@@ -208,7 +249,7 @@ static int charsinstring(CONST_STRPTR string, char c);
 
                         req = OpenWindowTagList(NULL, win_tags);
                         
-                        DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: window 0x%p\n", req));
+                        DEBUG_BUILDEASYREQUEST(bug("%s: window 0x%p\n", __func__, req));
                         
                         if (req)
                         {
@@ -218,33 +259,52 @@ static int charsinstring(CONST_STRPTR string, char c);
                             requserdata->IDCMP = IDCMP;
                             requserdata->GadgetLabels = gadgetlabels;
                             requserdata->Gadgets = gadgets;
-                            requserdata->NumGadgets = dims.gadgets;
-                            
-                            buildeasyreq_draw(&dims, formattedtext,
-                                              req, scr, gadgets, IntuitionBase);
-                            FreeVec(formattedtext);
+
+                            if (gadgets = FindGadgetByID(req->FirstGadget, (UWORD)-3))
+                            {
+                                DEBUG_BUILDEASYREQUEST(dprintf("%s: Adjusting VProp gadget @ 0x%p\n", __func__, gadgets));
+                                SetGadgetAttrs(gadgets, req, NULL,
+                                    PGA_Total, requserdata->ReqDims.textheight,
+                                    PGA_Visible, req->GZZHeight,
+                                    PGA_Top, 0,
+                                    TAG_END);
+                            }
+                            if (gadgets = FindGadgetByID(req->FirstGadget, (UWORD)-4))
+                            {
+#if (0)
+                                DEBUG_BUILDEASYREQUEST(dprintf("%s: Adjusting HProp gadget @ 0x%p\n", __func__, gadgets));
+                                SetGadgetAttrs(gadgets, req, NULL,
+                                    PGA_Total, content_w,
+                                    PGA_Visible, req->GZZWidth,
+                                    PGA_Top, pos_x,
+                                    TAG_END);
+#endif                    
+                            }
+                            gadgets = requserdata->Gadgets;
+                            buildreq_draw(&requserdata->ReqDims, requserdata->ReqBody,
+                                     req, scr, requserdata->Gadgets, IntuitionBase);
                             
                             return req;
                         }
 
-                        /* opening requester failed -> free everything */
-                        FreeVec(requserdata);
+                        intrequest_freegadgets(gadgets, IntuitionBase);
                         
-                    } /* if (requserdata) */
+                    } /* if (gadgets) */
                     
-                    intrequest_freegadgets(gadgets, IntuitionBase);
-                    
-                } /* if (gadgets) */
+                } /* if (if (buildeasyreq_calculatedims... */
+
+                intrequest_freelabels(gadgetlabels, IntuitionBase);
                 
-            } /* if (if (buildeasyreq_calculatedims... */
+            } /* if (gadgetlabels) */
 
-            intrequest_freelabels(gadgetlabels, IntuitionBase);
+            FreeVec(requserdata->RawBody);
             
-        } /* if (gadgetlabels) */
+        } /* if (requserdata->RawBody) */
 
-        FreeVec(formattedtext);
+        /* opening requester failed -> free everything */
+        FreeVec(requserdata);
         
-    } /* if (formattedtext) */
+    } /* if (requserdata) */
     
     if (lockedscr) UnlockPubScreen(NULL, lockedscr);
 
@@ -254,98 +314,29 @@ static int charsinstring(CONST_STRPTR string, char c);
 
 } /* BuildEasyRequestArgs */
 
-/**********************************************************************************************/
 
-CONST UWORD BgPattern[2]  = { 0xAAAA, 0x5555 };
 
 /**********************************************************************************************/
 
-/* draw the contents of the requester */
-static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
-                              struct Window *req, struct Screen *scr,
-                              struct Gadget *gadgets,
-                              struct IntuitionBase *IntuitionBase)
+static struct Gadget *FindGadgetByID(struct Gadget *thisgadget, UWORD GadgetID)
 {
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct TagItem   frame_tags[] =
+    DEBUG_BUILDEASYREQUEST(dprintf("%s: Looking for %d\n", __func__, (WORD)GadgetID));
+    while ((thisgadget))
     {
-        {IA_Left        , req->BorderLeft + OUTERSPACING_X                                      },
-        {IA_Top         , req->BorderTop + OUTERSPACING_Y                                       },
-        {IA_Width       , req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2  },
-        {IA_Height      , dims->textheight                                                      },
-        {IA_Recessed    , TRUE                                                                  },
-        {IA_EdgesOnly   , FALSE                                                                 },
-        {TAG_DONE                                                                               }
-    };
-    struct DrawInfo *dri;
-    struct Image    *frame;
-    LONG             currentline;
-
-    dri = GetScreenDrawInfo(scr);
-    if (!dri)
-        return;
-
-    SetFont(req->RPort, dri->dri_Font);
-
-    /* draw background pattern */
-    SetABPenDrMd(req->RPort,
-                 dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],
-                 JAM1);
-    SetAfPt(req->RPort, BgPattern, 1);
-    RectFill(req->RPort, req->BorderLeft,
-             req->BorderTop,
-             req->Width - req->BorderRight,
-             req->Height - req->BorderBottom);
-    SetAfPt(req->RPort, NULL, 0);
-
-    /* draw textframe */
-    frame = (struct Image *)NewObjectA(NULL, FRAMEICLASS, frame_tags);
-    if (frame)
-    {
-        DrawImageState(req->RPort, frame, 0, 0, IDS_NORMAL, dri);
-        DisposeObject((Object *)frame);
-    }
-
-    /* draw text */
-    SetABPenDrMd(req->RPort,
-                 dri->dri_Pens[TEXTPEN], dri->dri_Pens[BACKGROUNDPEN], JAM1);
-    for (currentline = 1; text[0] != '\0'; currentline++)
-    {
-        STRPTR strend;
-        int    length;
-
-        strend = strchr(text, '\n');
-        if (strend)
+        DEBUG_BUILDEASYREQUEST(dprintf("%s: 0x%p (%d)\n", __func__, thisgadget, (WORD)thisgadget->GadgetID));
+        if (thisgadget->GadgetID == GadgetID)
         {
-            length = strend - text;
+            return thisgadget;
         }
-        else
-        {
-            length = strlen(text);
-        }
-           
-        Move(req->RPort,
-             dims->textleft,
-             req->BorderTop + (dims->fontheight + dims->fontxheight) * (currentline - 1) +
-             OUTERSPACING_Y + TEXTBOXBORDER_Y + req->RPort->Font->tf_Baseline);
-             
-        Text(req->RPort, text, length);
-        
-        text += length;
-        if (text[0] == '\n')
-            text++;
+        thisgadget = thisgadget->NextGadget;
     }
-
-    /* draw gadgets */
-    RefreshGList(gadgets, req, NULL, -1L);
-
-    FreeScreenDrawInfo(scr, dri);
+    return NULL;
 }
 
 /**********************************************************************************************/
 
 /* create an array of gadgetlabels */
-static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
+static STRPTR *buildeasyreq_makelabels(struct IntReqDims *dims,
                                        CONST_STRPTR labeltext,
                                        RAWARG args,
                                        struct IntuitionBase *IntuitionBase)
@@ -421,7 +412,7 @@ static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat,
 /**********************************************************************************************/
 
 /* calculate dimensions of the requester */
-static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
+static BOOL buildeasyreq_calculatedims(struct IntReqDims *dims,
                                        struct Screen *scr,
                                        STRPTR formattedtext,
                                        STRPTR *gadgetlabels,
@@ -515,9 +506,10 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 /**********************************************************************************************/
 
 /* make all the gadgets */
-static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
+static struct Gadget *buildeasyreq_makegadgets(struct IntReqDims *dims,
                     STRPTR *gadgetlabels,
                     struct Screen *scr,
+                    ULONG   *idcmp,
                     struct IntuitionBase *IntuitionBase)
 {
     UWORD gadgetheight = dims->fontheight + BUTTONBORDER_Y * 2;
@@ -543,7 +535,7 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
     gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * ngadgets - GADGETGADGETSPACING;
     spacing = dims->width - scr->WBorLeft - scr->WBorRight - OUTERSPACING_X * 2;
 
-    DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Gadgets width %u, avalable space %u\n", gadgetswidth, spacing));
+    DEBUG_BUILDEASYREQUEST(bug("%s: Gadgets width %u, avalable space %u\n", __func__, gadgetswidth, spacing));
 
     /*
      * At this point 'spacing' holds total width of inner space available for use by gadgets.
@@ -561,14 +553,14 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 
         ngadgets--;
         gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * ngadgets - GADGETGADGETSPACING;
-        DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Trying %u gadgets per row, width %u\n", ngadgets, gadgetswidth));
+        DEBUG_BUILDEASYREQUEST(bug("%s: Trying %u gadgets per row, width %u\n", __func__, ngadgets, gadgetswidth));
     }
 
     nrows = dims->gadgets / ngadgets;
     if (nrows * ngadgets < dims->gadgets)
         nrows++;
 
-    DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Gadgets arranged in %u rows\n", nrows));
+    DEBUG_BUILDEASYREQUEST(bug("%s: Gadgets arranged in %u rows\n", __func__, nrows));
 
     /* Now calculate spacing between gadgets */
     if (ngadgets > 1)
@@ -581,16 +573,17 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
     gadgetsheight = nrows * gadgetheight - GADGETGADGETSPACING_Y;
     dims->height += gadgetsheight;
 
-    DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Resulting requester height: %u\n", dims->height));
+    DEBUG_BUILDEASYREQUEST(bug("%s: Resulting requester height: %u\n", __func__, dims->height));
+    dims->disptextheight = dims->textheight;
 
     /* Check if the resulting height fits on the screen. */
     if (dims->height > scr->Height)
     {
-        DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Too high (screen %u)\n", scr->Height));
+        DEBUG_BUILDEASYREQUEST(bug("%s: Too high (screen %u)\n", __func__, scr->Height));
 
         /* Decrease height of the requester at the expense of textbox */
         dims->height = scr->Height;
-        dims->textheight = dims->height - scr->WBorTop - dims->fontheight - 1 -
+        dims->disptextheight = dims->height - scr->WBorTop - dims->fontheight - 1 -
                            OUTERSPACING_Y -
                            TEXTGADGETSPACING -
                            gadgetsheight -
@@ -613,13 +606,16 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
             WORD gadgetid = (currentgadget == (dims->gadgets - 1)) ? 0 : currentgadget + 1;
 
             thisgadget = NewObject(NULL, FRBUTTONCLASS, GA_ID       , gadgetid,
-                                                        GA_Previous , thisgadget,
+                                                        GA_Previous , (IPTR)thisgadget,
                                                         GA_Left     , xoffset,
                                                         GA_Top      , yoffset,
-                                                        GA_Image    , gadgetframe,
+                                                        GA_Image    , (IPTR)gadgetframe,
                                                         GA_RelVerify, TRUE,
-                                                        GA_DrawInfo ,dri,
+                                                        GA_DrawInfo , (IPTR)dri,
                                                         TAG_DONE);
+
+            DEBUG_BUILDEASYREQUEST(bug("%s: GadgetID %u @ 0x%p\n", __func__, gadgetid, thisgadget));
+
             if (currentgadget == 0)
                 gadgetlist = thisgadget;
 
@@ -645,24 +641,49 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
         yoffset += gadgetheight;
     }
 
+    if (dims->textheight > dims->disptextheight)
+    {
+#define SCRLWIDTH   18
+#define SCRLHEIGHT  9
+        thisgadget = NewObject(NULL, PROPGCLASS, GA_ID, (UWORD)-3,
+            GA_Previous, (IPTR)thisgadget,
+            GA_RelRight, -(OUTERSPACING_X + SCRLWIDTH + 2),
+            GA_Top, (scr->WBorTop + OUTERSPACING_Y + dims->fontheight + 1),
+            GA_Width, SCRLWIDTH - 8,
+            GA_RelHeight, -(dims->height - dims->disptextheight - scr->WBorTop + dims->fontheight),
+            GA_DrawInfo, (IPTR)dri,
+            PGA_Freedom, FREEVERT,
+            PGA_NewLook, TRUE,
+            ICA_TARGET, ICTARGET_IDCMP,
+            ICA_MAP, mapproptop,
+            TAG_END);
+
+        DEBUG_BUILDEASYREQUEST(bug("%s: Vert Prop @ 0x%p\n", __func__, thisgadget));
+        *idcmp |= IDCMP_IDCMPUPDATE;
+        if (currentgadget == 0)
+            gadgetlist = thisgadget;
+    }
+#if (0)
+    if ()
+    {
+        thisgadget = NewObject (NULL,PROPGCLASS, GA_ID, (IPTR)-4UL,
+            GA_Previous, thisgadget,
+            GA_Left, wborleft,
+            GA_RelBottom, -size_h + 3,
+            GA_RelWidth, -wborleft - SCRLWIDTH - 2,
+            GA_Height, size_h - 4,
+            GA_DrawInfo, dri,
+            PGA_Freedom, FREEHORIZ,
+            PGA_NewLook, TRUE,
+            ICA_TARGET, ICTARGET_IDCMP,
+            ICA_MAP, mapproptop,
+            TAG_END);
+    }
+#endif
+
     FreeScreenDrawInfo(scr, dri);
 
     return gadgetlist;
-}
-
-/**********************************************************************************************/
-
-static int charsinstring(CONST_STRPTR string, char c)
-{
-    int count = 0;
-
-    while (string[0])
-    {
-        if (string[0] == c)
-            count++;
-        string++;
-    }
-    return count;
 }
 
 /**********************************************************************************************/

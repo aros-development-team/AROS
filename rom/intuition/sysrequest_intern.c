@@ -1,11 +1,7 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
-
-#define DEBUG_BUILDSYSREQUEST(x)
-#define DEBUG_FREESYSREQUEST(x)
-#define DEBUG_SYSREQHANDLER(x)
 
 /**********************************************************************************************/
 #include <proto/exec.h>
@@ -13,10 +9,12 @@
 #include <proto/graphics.h>
 #include <proto/keymap.h>
 #include <proto/utility.h>
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <clib/macros.h>
+
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
@@ -26,35 +24,17 @@
 #include <utility/tagitem.h>
 #include "intuition_intern.h"
 
-extern UWORD BgPattern[];
-
 /**********************************************************************************************/
 
-struct sysreqdims
-{
-    UWORD width;       /* width of the requester */
-    UWORD height;      /* height of the requester */
-    UWORD fontheight;  /* height of the default font */
-    UWORD itextleft;
-    int   gadgets;     /* number of gadgets */
-    UWORD gadgetwidth; /* width of a gadget */
-};
-
-/**********************************************************************************************/
-
-static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
+static BOOL buildsysreq_calculatedims(struct IntReqDims *dims,
                                       struct Screen *scr,
                                       struct IntuiText *itext,
                                       STRPTR *gadgetlabels,
                                       struct IntuitionBase *IntuitionBase);
-static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
+static struct Gadget *buildsysreq_makegadgets(struct IntReqDims *dims,
                                 STRPTR *gadgetlabels,
                                 struct Screen *scr,
                                 struct IntuitionBase *IntuitionBase);
-static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
-                             struct Window *win, struct Screen *scr,
-                             struct Gadget *gadgets,
-                             struct IntuitionBase *IntuitionBase);
 
 static void ReqITextSize(struct Screen *scr, struct IntuiText *itext,
                          WORD *width, WORD *height,
@@ -74,7 +54,6 @@ struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct
     struct Window               *req;
     struct Gadget               *gadgets;
     STRPTR                       gadgetlabels[3];
-    struct                       sysreqdims dims;
     struct IntRequestUserData   *requserdata;
 
     DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: window 0x%p body <%s> postext <%s> negtext <%s> IDCMPFlags 0x%lx width %ld height %ld\n",
@@ -104,48 +83,50 @@ struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct
         lockedscr = scr;
     }
 
-    if (postext)
-    {
-        dims.gadgets = 2;
-
-        gadgetlabels[0] = postext->IText;
-        gadgetlabels[1] = negtext->IText;
-        gadgetlabels[2] = NULL;
-    }
-    else
-    {
-        dims.gadgets = 1;
-
-        gadgetlabels[0] = negtext->IText;
-        gadgetlabels[1] = NULL;
-    }
-
-    /* EXPERIMENTAL: Obey user-supplied size if the text fits into it. Processed in buildsysreq_calculatedims().
-       This is experimental. Currently DisplayAlert() relies on ability to specify requester size.
-       Requester size actually determines inner text box size - sonic. */
-    dims.width  = width;
-    dims.height = height;
-
     /* create everything */
-
-    if (buildsysreq_calculatedims(&dims, scr,
-                                  bodytext, gadgetlabels, IntuitionBase))
+    requserdata = AllocVec(sizeof(struct IntRequestUserData),
+                           MEMF_ANY|MEMF_CLEAR);
+    DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: requserdata 0x%p\n", requserdata));
+    if (requserdata)
     {
-        gadgets = buildsysreq_makegadgets(&dims, gadgetlabels, scr, IntuitionBase);
-        DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%p\n", gadgets));
-        if (gadgets)
+        requserdata->ReqBody = bodytext;
+        requserdata->drawreq = buildreq_draw;
+
+        if (postext)
         {
-            requserdata = AllocVec(sizeof(struct IntRequestUserData),
-                                   MEMF_ANY|MEMF_CLEAR);
-            DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: requserdata 0x%p\n", requserdata));
-            if (requserdata)
+            requserdata->ReqDims.gadgets = 2;
+
+            gadgetlabels[0] = postext->IText;
+            gadgetlabels[1] = negtext->IText;
+            gadgetlabels[2] = NULL;
+        }
+        else
+        {
+            requserdata->ReqDims.gadgets = 1;
+
+            gadgetlabels[0] = negtext->IText;
+            gadgetlabels[1] = NULL;
+        }
+
+        /* EXPERIMENTAL: Obey user-supplied size if the text fits into it. Processed in buildsysreq_calculatedims().
+           This is experimental. Currently DisplayAlert() relies on ability to specify requester size.
+           Requester size actually determines inner text box size - sonic. */
+        requserdata->ReqDims.width  = width;
+        requserdata->ReqDims.height = height;
+
+        if (buildsysreq_calculatedims(&requserdata->ReqDims, scr,
+                                      bodytext, gadgetlabels, IntuitionBase))
+        {
+            gadgets = buildsysreq_makegadgets(&requserdata->ReqDims, gadgetlabels, scr, IntuitionBase);
+            DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%p\n", gadgets));
+            if (gadgets)
             {
                 struct TagItem win_tags[] =
                 {
-                    {WA_Width                                       , dims.width                                                        },
-                    {WA_Height                                      , dims.height                                                       },
-                    {WA_Left                                        , (scr->Width/2) - (dims.width/2)                                   },
-                    {WA_Top                                         , (scr->Height/2) - (dims.height/2)                                 },
+                    {WA_Width                                       , requserdata->ReqDims.width                                                        },
+                    {WA_Height                                      , requserdata->ReqDims.height                                                       },
+                    {WA_Left                                        , (scr->Width/2) - (requserdata->ReqDims.width/2)                                   },
+                    {WA_Top                                         , (scr->Height/2) - (requserdata->ReqDims.height/2)                                 },
                     {WA_IDCMP                                       , (IDCMP_GADGETUP | IDCMP_RAWKEY | (IDCMPFlags & ~IDCMP_VANILLAKEY))},
                     {WA_Gadgets                                     , (IPTR)gadgets                                                     },
                     {WA_Title                                       , (IPTR)reqtitle                                                    },
@@ -168,19 +149,19 @@ struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct
                     requserdata->IDCMP = IDCMPFlags;
                     requserdata->GadgetLabels = NULL;
                     requserdata->Gadgets = gadgets;
-                    requserdata->NumGadgets = dims.gadgets;
-                    buildsysreq_draw(&dims, bodytext,
-                                     req, scr, gadgets, IntuitionBase);
-                    DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%p\n", gadgets));
+
+                    buildreq_draw(&requserdata->ReqDims, requserdata->ReqBody,
+                                     req, scr, requserdata->Gadgets, IntuitionBase);
+                    DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%p\n", requserdata->Gadgets));
+                    gadgets = requserdata->Gadgets;
 
                     return req;
                 }
-
-                /* opening requester failed -> free everything */
-                FreeVec(requserdata);
+                intrequest_freegadgets(gadgets, IntuitionBase);
             }
-            intrequest_freegadgets(gadgets, IntuitionBase);
         }
+        /* opening requester failed -> free everything */
+        FreeVec(requserdata);
     }
 
     if (lockedscr) UnlockPubScreen(NULL, lockedscr);
@@ -190,6 +171,15 @@ struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct
 
 /**********************************************************************************************/
 
+static struct IntuiMessage *sysreqhandler_getmsg(struct Window *window, BOOL WaitInput)
+{
+    if (WaitInput)
+    {
+        WaitPort(window->UserPort);
+    }
+    return (struct IntuiMessage *)GetMsg(window->UserPort);
+}
+
 LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput, struct IntuitionBase *IntuitionBase)
 {
     struct Library *KeymapBase = GetPrivIBase(IntuitionBase)->KeymapBase;
@@ -197,9 +187,9 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
     struct IntuiMessage *msg;
     LONG                 result;
 
-    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: window 0x%lx IDCMPPtr 0x%lx WaitInput 0x%lx\n",
-                                (ULONG) window,
-                                (ULONG) IDCMPFlagsPtr,
+    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: window 0x%p IDCMPPtr 0x%p WaitInput 0x%lx\n",
+                                window,
+                                IDCMPFlagsPtr,
                                 (ULONG) WaitInput));
 
     if (window == 0)
@@ -214,24 +204,22 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
     {
         result = -2;
 
-        if (WaitInput)
+        while ((result <= -2) && (msg = sysreqhandler_getmsg(window, WaitInput)))
         {
-            WaitPort(window->UserPort);
-        }
-        while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)))
-        {
-            DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: msg 0x%lx class 0x%lx\n", (ULONG) msg, msg->Class));
+            DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: msg 0x%p class 0x%lx\n", msg, msg->Class));
             switch (msg->Class)
             {
             /* we don't use VANILLA (filtered from useridcmp!) to get
             all events we need */
             case IDCMP_RAWKEY:
             {
-                #define RKBUFLEN 1
+#define RKBUFLEN 1
                 
                 struct InputEvent ie;
                 char              rawbuffer[RKBUFLEN];
-                
+
+                DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: IDCMP_RAWKEY\n"));
+
                 ie.ie_Class         = IECLASS_RAWKEY;
                 ie.ie_SubClass      = 0;
                 ie.ie_Code          = msg->Code;
@@ -244,7 +232,7 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
                     {
                         if  (ToUpper(rawbuffer[0]) == ToUpper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue))
                         {
-                            if (((struct IntRequestUserData *)window->UserData)->NumGadgets > 1)
+                            if (((struct IntRequestUserData *)window->UserData)->ReqDims.gadgets > 1)
                             {
                                 result = 1;
                             }
@@ -264,17 +252,45 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
             }
 
             case IDCMP_GADGETUP:
+                DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: IDCMP_GADGETUP\n"));
                 result = ((struct Gadget *)msg->IAddress)->GadgetID;
                 break;
 
+            case IDCMP_IDCMPUPDATE:
+                DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: IDCMP_IDCMPUPDATE\n"));
+                UWORD scrollID = (UWORD)GetTagData(GA_ID, 0, (struct TagItem *)msg->IAddress);
+                if (scrollID == (UWORD)-3)
+                {
+                    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: Vert Prop %u\n", msg->Code));
+                    result = -3;
+                    ((struct IntRequestUserData *)window->UserData)->ReqDims.offy = msg->Code;
+                }
+                else if (scrollID == (UWORD)-4)
+                {
+                    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: Horiz Prop\n"));
+                    result = -4;
+                    ((struct IntRequestUserData *)window->UserData)->ReqDims.offx = msg->Code;
+                }
+                if (((struct IntRequestUserData *)window->UserData)->drawreq)
+                {
+                    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: Calling render hook\n"));
+                    ((struct IntRequestUserData *)window->UserData)->drawreq(&((struct IntRequestUserData *)window->UserData)->ReqDims,
+                            ((struct IntRequestUserData *)window->UserData)->ReqBody, window, window->WScreen, ((struct IntRequestUserData *)window->UserData)->Gadgets, IntuitionBase);
+                }
+                break;
+
             default:
-                DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: unknown IDCMP\n"));
                 if (result == -2)
                 {
                     if (msg->Class & ((struct IntRequestUserData *)window->UserData)->IDCMP)
                     {
+                        DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: passing IDCMP to caller\n"));
                         if (IDCMPFlagsPtr) *IDCMPFlagsPtr = msg->Class;
                         result = -1;
+                    }
+                    else
+                    {
+                        DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: unexpected IDCMP\n"));
                     }
                 }
                 break;
@@ -286,6 +302,9 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
     } /* real window */
 
     DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: Result 0x%lx\n",result));
+
+    if (result <= -2)
+        result = -2;
 
     return result;
 }
@@ -312,7 +331,7 @@ void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBas
     DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: gadgets 0x%lx\n", (ULONG) gadgets));
 
     /* Remove gadgets before closing window to avoid conflicts with system gadgets */
-    RemoveGList(window, gadgets, requserdata->NumGadgets);
+    RemoveGList(window, gadgets, requserdata->ReqDims.gadgets);
 
     gadgetlabels = requserdata->GadgetLabels;
 
@@ -320,6 +339,14 @@ void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBas
 
     window->UserData = 0;
     CloseWindow(window);
+#if (0)
+    if (requserdata->RawBody)
+    {
+        if (requserdata->ReqBody)
+            FreeVec(requserdata->ReqBody);
+        FreeVec(requserdata->RawBody);
+    }
+#endif
     intrequest_freegadgets(gadgets, IntuitionBase);
     intrequest_freelabels(gadgetlabels, IntuitionBase);
 
@@ -336,74 +363,13 @@ void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBas
 
 /**********************************************************************************************/
 
-/* draw the contents of the requester */
-static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
-                             struct Window *req, struct Screen *scr,
-                             struct Gadget *gadgets,
-                             struct IntuitionBase *IntuitionBase)
-{
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct TagItem   frame_tags[] =
-    {
-        {IA_Left        , req->BorderLeft + OUTERSPACING_X                                      },
-        {IA_Top         , req->BorderTop + OUTERSPACING_Y                                       },
-        {IA_Width       , req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2  },
-        {IA_Height      , req->Height - req->BorderTop - req->BorderBottom -
-                          dims->fontheight - OUTERSPACING_Y * 2 -
-                          TEXTGADGETSPACING - BUTTONBORDER_Y * 2                                },
-        {IA_Recessed    , TRUE                                                                  },
-        {IA_EdgesOnly   , FALSE                                                                 },
-        {TAG_DONE                                                                               }
-    };
-    struct DrawInfo *dri;
-    struct Image    *frame;
-
-    dri = GetScreenDrawInfo(scr);
-    if (!dri)
-        return;
-
-    SetFont(req->RPort, dri->dri_Font);
-
-    /* draw background pattern */
-    SetABPenDrMd(req->RPort,
-                 dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],
-                 JAM1);
-    SetAfPt(req->RPort, BgPattern, 1);
-    RectFill(req->RPort, req->BorderLeft,
-             req->BorderTop,
-             req->Width - req->BorderRight,
-             req->Height - req->BorderBottom);
-    SetAfPt(req->RPort, NULL, 0);
-
-    /* draw textframe */
-    frame = (struct Image *)NewObjectA(NULL, FRAMEICLASS, frame_tags);
-    if (frame)
-    {
-        DrawImageState(req->RPort, frame, 0, 0, IDS_NORMAL, dri);
-        DisposeObject((Object *)frame);
-    }
-
-    /* draw text */
-    ReqPrintIText(scr, dri, req->RPort, itext,
-                  dims->itextleft, req->BorderTop + OUTERSPACING_Y + TEXTBOXBORDER_Y,
-                  IntuitionBase);
-
-    /* draw gadgets */
-    RefreshGList(gadgets, req, NULL, -1L);
-
-    FreeScreenDrawInfo(scr, dri);
-}
-
-/**********************************************************************************************/
-
 /* calculate dimensions of the requester */
-static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
+static BOOL buildsysreq_calculatedims(struct IntReqDims *dims,
                                       struct Screen *scr,
                                       struct IntuiText *itext,
                                       STRPTR *gadgetlabels,
                                       struct IntuitionBase *IntuitionBase)
 {
-
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     LONG  currentgadget = 0;
     WORD  itextwidth, itextheight;
@@ -458,10 +424,10 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
     gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * dims->gadgets - GADGETGADGETSPACING;
 
     /* calculate width of requester and req text position */
-    dims->itextleft = scr->WBorLeft + OUTERSPACING_X + TEXTBOXBORDER_X;
+    dims->textleft = scr->WBorLeft + OUTERSPACING_X + TEXTBOXBORDER_X;
     if (textboxwidth <= gadgetswidth)
     {
-        dims->itextleft += (gadgetswidth - textboxwidth) / 2;
+        dims->textleft += (gadgetswidth - textboxwidth) / 2;
         textboxwidth = gadgetswidth;
     }
 
@@ -479,7 +445,7 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
 /**********************************************************************************************/
 
 /* make all the gadgets */
-static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
+static struct Gadget *buildsysreq_makegadgets(struct IntReqDims *dims,
                     STRPTR *gadgetlabels,
                     struct Screen *scr,
                     struct IntuitionBase *IntuitionBase)
@@ -537,7 +503,6 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 
         thisgadget = NewObjectA(NULL, FRBUTTONCLASS, gad_tags);
 
-
         if (currentgadget == 0)
             gadgetlist = thisgadget;
 
@@ -547,7 +512,7 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
             return NULL;
         }
 
-            SetAttrsA(thisgadget, gad2_tags);
+        SetAttrsA(thisgadget, gad2_tags);
 
         if ((currentgadget + 1) != dims->gadgets)
         {
@@ -587,30 +552,5 @@ static void ReqITextSize(struct Screen *scr, struct IntuiText *itext,
     }
 }
 
-/**********************************************************************************************/
-
-static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
-                          struct RastPort *rp, struct IntuiText *itext, WORD x, WORD y,
-                          struct IntuitionBase *IntuitionBase)
-{
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-
-    SetDrMd(rp, JAM1);
-    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
-
-/* Experimental: obey font specified in supplied IntuiText structures.
-   Makes sense because coordinates specified in these structures are taken
-   into account, but i guess they are specified according to font size.
-   Currently DisplayAlert() relies on this behavior - sonic.
-    while(itext)
-    {
-        Move(rp, x + itext->LeftEdge,
-             y + itext->TopEdge + scr->RastPort.Font->tf_Baseline);
-        Text(rp, itext->IText, strlen(itext->IText));
-
-        itext = itext->NextText;
-    }*/
-    int_PrintIText(rp, itext, x, y, TRUE, IntuitionBase);
-}
 
 /**********************************************************************************************/

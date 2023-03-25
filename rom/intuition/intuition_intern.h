@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -526,8 +526,9 @@ struct IntIntuitionBase
     struct MsgPort          	*MenuHandlerPort;
     BOOL                    	 MenusActive;
 
-    struct TextFont         	*ScreenFont;
     struct TextFont         	*TopazFont;
+    struct TextFont         	*ScreenFont;
+    struct TextAttr             *ReqFont;
 
     /* Dos function DisplayError() before intuition.library patched it */
     APTR                    	 OldDisplayErrorFunc;
@@ -1236,6 +1237,7 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_REMOVEGLIST(x)        	;
 #define DEBUG_REPORTMOUSE(x)        	;
 #define DEBUG_REQUEST(x)            	;
+#define DEBUG_REQUESTER(x)              ;
 #define DEBUG_SCROLLWINDOWRASTER(x) 	;
 #define DEBUG_SENDINTUIMESSAGE(x)   	;
 #define DEBUG_SETATTRS(x)           	;
@@ -1251,7 +1253,11 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_WORKBENCH(x)          	;
 #define DEBUG_LOCKPUBSCREENLIST(x)  	;
 #define DEBUG_UNLOCKPUBSCREENLIST(x)    ;
-#define DEBUG_RETHINKDISPLAY(x)   	;
+#define DEBUG_RETHINKDISPLAY(x)   	    ;
+
+#define DEBUG_BUILDSYSREQUEST(x)
+#define DEBUG_FREESYSREQUEST(x)
+#define DEBUG_SYSREQHANDLER(x)
 
 #ifdef NO_RUNTIME_DEBUG
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -7,48 +7,8 @@
 
 #include "intuition_intern.h"
 
-/* I'm too lazy to open the font and query it. Anyway this is hardcoded. */
-#define TOPAZ_8_BASELINE 6
-
 /* Perhaps this should be localized */
 static const char title[] = "Program alert: ";
-
-static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *font)
-{
-    struct IntuiText *res;
-    char *s = string;
-    unsigned int lines = 0;
-    unsigned int i;
-
-    /* First count number of lines */
-    do
-    {
-        s += 3;         /* Skip coordinates                           */
-        while (*s++);   /* Skip text bytes including NULL terminator  */
-        lines++;
-    } while (*s++);     /* This automatically skips continuation byte */
-
-    res = AllocVec(sizeof(struct IntuiText) * lines, MEMF_ANY);
-    if (!res)
-        return NULL;
-
-    s = string;
-    for (i = 0; i < lines; i++)
-    {
-        res[i].FrontPen = 1;
-        res[i].BackPen  = 0;
-        res[i].DrawMode = JAM2;
-        res[i].LeftEdge = AROS_BE2WORD(*((UWORD *)s));
-        s += 2;
-        res[i].TopEdge  = *s++ - TOPAZ_8_BASELINE;
-        res[i].ITextFont = font;
-        res[i].IText = s;
-        while(*s++);
-        res[i].NextText = *s++ ? &res[i+1] : NULL;
-    }
-
-    return res;
-}
 
 /*****************************************************************************
 
@@ -130,7 +90,7 @@ static struct IntuiText *displayalert_makebody(STRPTR string, struct TextAttr *f
         NULL,
         "Cancel"
     };
-    struct IntuiText *body = displayalert_makebody(string, &font);
+    struct IntuiText *body = requester_makebody(string, &font);
     struct Window *req;
     LONG ret = FALSE;
 
