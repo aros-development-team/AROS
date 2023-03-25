@@ -1074,9 +1074,9 @@ static AROS_UFH3 (APTR, ACPICATimerSetup,
     }
     D(bug("[ACPI] %s: Finished\n", __func__));
 
-    AROS_USERFUNC_EXIT
-
     return NULL;
+
+    AROS_USERFUNC_EXIT
 }
 
 void acpicatimer_end(void) { };
