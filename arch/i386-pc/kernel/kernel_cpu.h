@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: CPU-specific definitions.
 */
@@ -15,6 +15,7 @@
 #define regs_t struct ExceptionContext
 /* There are no private add-ons */
 #define AROSCPUContext ExceptionContext
+#define CPUSSEContxtSize (sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) + 16)
 
 /* We have no VBlank emulation */
 #define NO_VBLANK_EMU
