@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: The main keyboard class.
 */
@@ -38,6 +38,7 @@ static int  kbd_reset(struct kbd_data *data);
 
 /****************************************************************************************/
 
+#define DINT(x)
 #define DFAIL(x)        x
 #define KEYBOARDIRQ     1
 #define NOKEY           -1
@@ -61,7 +62,7 @@ static void Keyboard_IntHandler(struct kbd_data *data, void *unused)
     UBYTE           info = 0;       /* Data from info reg */
     WORD            work = 10000;
 
-    D(
+    DINT(
         bug("[i8042:Kbd] %s()\n", __func__);
         bug("[i8042:Kbd] %s: ki - {\n", __func__);
     )
@@ -78,7 +79,7 @@ static void Keyboard_IntHandler(struct kbd_data *data, void *unused)
         }
         keycode = kbd_read_input();
 
-        D(bug("[i8042:Kbd] %s: ki - keycode %d (%x)\n", __func__, keycode, keycode));
+        DINT(bug("[i8042:Kbd] %s: ki - keycode %d (%x)\n", __func__, keycode, keycode));
         if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
         {
             /* Ignore errors and messages for mouse -> eat status/error byte */
@@ -88,7 +89,7 @@ static void Keyboard_IntHandler(struct kbd_data *data, void *unused)
         kbd_irq_process_key(data, keycode, SysBase);
     } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
-    D(
+    DINT(
         if (!work)
             bug("[i8042:Kbd] %s: controller jammed (0x%02X).\n", __func__, info);
         bug("[i8042:Kbd] %s: ki - }\n", __func__);
