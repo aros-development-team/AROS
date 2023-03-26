@@ -163,6 +163,7 @@ struct syscallx86_Handler x86_SCChangePMStateHandler =
 
 void X86_HandleRebootSC()
 {
+    IPTR __APICBase;
     D(
         bug("[Kernel] %s()\n", __func__);
         bug("[Kernel] %s: Warm restart, stack 0x%p\n", __func__, AROS_GET_SP);
@@ -182,7 +183,15 @@ void X86_HandleRebootSC()
         "cli\n\t"
         "cld\n\t"
          ::: "memory");
+
+    /* disable APIC heartbeat */
+    __APICBase = core_APIC_GetBase();
+    if (__APICBase)
+    {
+        core_APIC_Finalize(__APICBase);
+    }
     core_InvalidateIDT();
+
 #if (__WORDSIZE == 64)
     __asm__ __volatile__(
         "movq %0, %%rsp\n\t"

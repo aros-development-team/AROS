@@ -57,7 +57,7 @@
 #define	APIC_CRMAXVAL	0XFFFFFFFFUL
 
 extern int core_APICErrorHandle(struct ExceptionContext *, void *, void *);
-extern int core_APICSpuriousHandle(struct ExceptionContext *, void *, void *);
+
 extern int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *KernelBase, struct ExecBase *SysBase);
 
 /* APIC Interrupt Controller Functions ... ***************************/
@@ -105,7 +105,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             else
             {
                 /* Don't enable the vector yet */
-                if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE, FALSE))
+                if (!core_SetIDTGate((x86vectgate_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE, FALSE))
                 {
                     bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
                     if (count > 31)
@@ -145,11 +145,11 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         {
             kernPlatD->kb_PDFlags |= PLATFORMF_HAVEMSI;
             apicPrivate->msibase = msibase;
-            D(
+//            D(
                 bug("[Kernel:APIC-IA32] MSI Interrupts Allocatable\n");
                 bug("[Kernel:APIC-IA32]     start = %u\n", msibase);
                 bug("[Kernel:APIC-IA32]     total = %u\n", msiavailable);
-            )
+//            )
         }
     }
     return TRUE;
@@ -160,13 +160,13 @@ BOOL APICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     apicid_t cpuNum = KrnGetCPUNumber();
-    apicidt_t *IGATES;
+    x86vectgate_t *IGATES;
     APTR ssp = NULL;
     BOOL retVal = FALSE;
 
     DINT(bug("[Kernel:APIC-IA32.%03u] %s(#$%02X)\n", cpuNum, __func__, intNum));
 
-    IGATES = (apicidt_t *)apicPrivate->cores[cpuNum].cpu_IDT;
+    IGATES = (x86vectgate_t *)apicPrivate->cores[cpuNum].cpu_IDT;
 
     if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {
@@ -185,13 +185,13 @@ BOOL APICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     apicid_t cpuNum = KrnGetCPUNumber();
-    apicidt_t *IGATES;
+    x86vectgate_t *IGATES;
     APTR ssp = NULL;
     BOOL retVal = FALSE;
 
     DINT(bug("[Kernel:APIC-IA32.%03u] %s(#$%02X)\n", cpuNum, __func__, intNum));
 
-    IGATES = (apicidt_t *)apicPrivate->cores[cpuNum].cpu_IDT;
+    IGATES = (x86vectgate_t *)apicPrivate->cores[cpuNum].cpu_IDT;
 
     if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {
@@ -546,10 +546,61 @@ static BOOL APIC_isMSHyperV(void)
                         Driver functions
  **********************************************************/
 
+int APICHeartbeatFinalizer(struct ExceptionContext *regs, struct KernelBase *LIBBASE, struct ExecBase *SysBase)
+{
+    struct PlatformData *pdata = LIBBASE->kb_PlatformData;
+
+    D(bug("[Kernel:APIC] %s(0x%p)\n", __func__, LIBBASE));
+
+    pdata->kb_PDFlags &= ~PLATFORMF_HAVEHEARTBEAT;
+}
+
+static AROS_INTH1(APICResetHandler, struct KernelBase *, KernelBase)
+{
+    AROS_INTFUNC_INIT
+
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+    APTR ssp = NULL;
+
+    D(bug("[Kernel:APIC] %s(0x%p)\n", __func__, KernelBase));
+
+    /*
+     * End the APIC heartbeat.
+     */
+    Forbid();
+
+    KrnRemExceptionHandler(pdata->kb_APICHeartBeat);
+    pdata->kb_APICHeartBeat = KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatFinalizer, KernelBase, SysBase);
+
+    if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
+    {
+        IPTR __APICBase = core_APIC_GetBase();
+        D(bug("[Kernel:APIC] %s(0x%p)\n", __func__, KernelBase);)
+        /* disable heartbeat timer */
+        APIC_REG(__APICBase, APIC_TIMER_VEC) = 0xFF;
+        APIC_REG(__APICBase, APIC_TIMER_ICR) = 0x10000;
+
+        if (ssp)
+            UserState(ssp);
+    }
+
+    KrnSti();
+    KrnCli();
+    Permit();
+
+    bug("[Kernel:APIC] %s: Timer shutdown complete\n", __func__);
+    
+    return 0;
+
+    AROS_INTFUNC_EXIT
+}
+
 void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
 {
     IPTR __APICBase = apic->lapicBase;
     APTR ssp = NULL;
+
+    DCALIB(bug("[Kernel:APIC-IA32.%03u] %s()\n", cpuNum, __func__);)
 
     /*
      * Calibrate LAPIC timer frequency.
@@ -625,8 +676,14 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
     {
         struct PlatformData *pdata = KernelBase->kb_PlatformData;
 
-        KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatServer, KernelBase, SysBase);
-        
+        pdata->kb_APICHeartBeat = KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatServer, KernelBase, SysBase);
+        pdata->kb_APICResetHandler.is_Node.ln_Pri = -62;
+        pdata->kb_APICResetHandler.is_Node.ln_Name =
+            KernelBase->kb_Node.ln_Name;
+        pdata->kb_APICResetHandler.is_Code = (VOID_FUNC)APICResetHandler;
+        pdata->kb_APICResetHandler.is_Data = KernelBase;
+        AddResetCallback(&pdata->kb_APICResetHandler);
+
         apic->flags |= APF_TIMER;
         pdata->kb_PDFlags |= PLATFORMF_HAVEHEARTBEAT;
     }
@@ -667,18 +724,109 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
     DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: Calibration complete\n", cpuNum, __func__);)
 }
 
-void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
+/* Configure the APIC */
+void core_APIC_Config(IPTR __APICBase, apicid_t cpuNum)
 {
-    IPTR __APICBase = apic->lapicBase;
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
     ULONG maxlvt = APIC_LVT(apic_ver);
-    icintrid_t coreICInstID;
+
+    D(bug("[Kernel:APIC-IA32.%03u] %s(%p)\n", cpuNum, __func__, __APICBase);)
 
 #ifdef CONFIG_LEGACY
     /* 82489DX doesn't report no. of LVT entries. */
     if (!APIC_INTEGRATED(apic_ver))
         maxlvt = 2;
 #endif
+
+    /* Use flat interrupt model with logical destination ID = 1 */
+    APIC_REG(__APICBase, APIC_DFR) = DFR_FLAT;
+    APIC_REG(__APICBase, APIC_LDR) = 1 << LDR_ID_SHIFT;
+
+    D(bug("[Kernel:APIC-IA32.%03u] %s: APIC IRQ delivery mode configured\n", cpuNum, __func__);)
+
+    /*
+     * Set spurious IRQ vector -:
+     *     APIC = enabled
+     *     Focus Check = disabled
+     *     EOI broadcast suppresion = disabled
+     */
+    APIC_REG(__APICBase, APIC_SVR) = SVR_ASE|APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS);
+
+    D(
+        bug("[Kernel:APIC-IA32.%03u] %s: Initial LINT0 = %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_LINT0_VEC));
+        bug("[Kernel:APIC-IA32.%03u] %s: Initial LINT1 = %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_LINT1_VEC));
+    )
+
+    /*
+     * Set LINT0 to external and LINT1 to NMI.
+     * These are common defaults and they are going to be overridden by ACPI tables.
+     *
+     * On all other LAPICs mask LINT0 and use some fake vector (0xff in this case),
+     * otherwise LAPIC may throw an error.
+     */
+    if (cpuNum == 0)
+        APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MT_EXT;
+    else
+        APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MASK | LVT_VEC_MASK;
+
+    APIC_REG(__APICBase, APIC_LINT1_VEC) = LVT_MT_NMI;
+
+#ifdef CONFIG_LEGACY
+    /* Due to the Pentium erratum 3AP. */
+    if (maxlvt > 3)
+    {
+         APIC_REG(__APICBase, APIC_ESR) = 0;
+         APIC_REG(__APICBase, APIC_ESR) = 0;
+    }
+#endif
+
+    /* Disable performance counter overflow interrupts, if supported */
+    if (((APIC_REG(__APICBase, APIC_VERSION)>>16) & 0xFF) >= 4)
+        APIC_REG(__APICBase, APIC_PCOUNT_VEC) = LVT_MASK;
+
+    D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR before enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
+
+    /* Set APIC error interrupt to fixed vector interrupt "APIC_IRQ_ERROR",  on APIC error */
+    APIC_REG(__APICBase, APIC_ERROR_VEC) = APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_ERROR);
+
+    /* spec says clear errors after enabling vector. */
+    if (maxlvt > 3)
+    {
+         APIC_REG(__APICBase, APIC_ESR) = 0;
+         APIC_REG(__APICBase, APIC_ESR) = 0;
+    }
+
+    D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR after enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
+}
+
+void core_APIC_Enable(IPTR __APICBase, apicid_t cpuNum)
+{
+    D(bug("[Kernel:APIC-IA32.%03u] %s(%p)\n", cpuNum, __func__, __APICBase);)
+
+    /* Clear error status register using back-to-back writes */
+    APIC_REG(__APICBase, APIC_ESR) = 0;
+    APIC_REG(__APICBase, APIC_ESR) = 0;
+
+    /* Ack any pending interrupts */
+    APIC_REG(__APICBase, APIC_EOI) = 0;
+
+    /* Send an Init Level De-Assert to synchronize arbitration ID's. */
+    APIC_REG(__APICBase, APIC_ICRH) = 0;
+    APIC_REG(__APICBase, APIC_ICRL) =  ICR_DSH_ALL | ICR_INT_LEVELTRIG | ICR_DM_INIT;
+    while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS)
+        ;
+
+    D(bug("[Kernel:APIC-IA32.%03u] %s: Initial TPR: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_TPR));)
+
+    /* Set Task Priority to 'accept all interrupts' */
+    APIC_REG(__APICBase, APIC_TPR) = 0;
+}
+
+/* Initialize the APIC */
+void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
+{
+    IPTR __APICBase = apic->lapicBase;
+    icintrid_t coreICInstID;
 
     D(bug("[Kernel:APIC-IA32.%03u] %s(%p, %p)\n", cpuNum, __func__, apic, __APICBase);)
 
@@ -695,22 +843,24 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
         {
             int i;
+            /*
+                    Obtain/set the critical IRQs and Vectors
+                    core_SetExGates is run early on the BSP
+                    via platform_init.c
+                */
+            if (cpuNum > 0)
+                core_SetExGates((x86vectgate_t *)apic->cores[cpuNum].cpu_IDT);
 
-            /* Obtain/set the critical IRQs and Vectors */
-            for (i = 0; i < X86_CPU_EXCEPT_COUNT; i++)
-            {
-                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE, FALSE))
-                {
-                    krnPanic(NULL, "Failed to set CPU Exception Vector\n"
-                                   "Vector #$%02X\n", i);
-                }
-            }
             for (i = X86_CPU_EXCEPT_COUNT; i < APIC_EXCEPT_TOP; i++)
             {
-                if (i == APIC_EXCEPT_SYSCALL)
+                if ((cpuNum == 0) &&
+                    ((i == APIC_EXCEPT_SYSCALL)||(i == APIC_EXCEPT_HEARTBEAT)||(i == APIC_EXCEPT_SPURIOUS)))
                     continue;
 
-                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(i), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(i)], TRUE, FALSE))
+                if (!core_SetIDTGate((x86vectgate_t *)apic->cores[cpuNum].cpu_IDT,
+                                                APIC_CPU_EXCEPT_TO_VECTOR(i),
+                                                (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(i)],
+                                                TRUE, FALSE))
                 {
                     krnPanic(NULL, "Failed to set APIC Exception Vector\n"
                                     "Vector #$%02X\n", i);
@@ -721,7 +871,6 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             if (cpuNum == 0)
             {
                 KrnAddExceptionHandler(APIC_EXCEPT_ERROR, core_APICErrorHandle, KernelBase, NULL);
-                KrnAddExceptionHandler(APIC_EXCEPT_SPURIOUS, core_APICSpuriousHandle, KernelBase, NULL);
 
                 D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Error Exception handler (exception #$%02X) installed\n", cpuNum, __func__, APIC_EXCEPT_ERROR));
 
@@ -743,79 +892,37 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
         D(bug("[Kernel:APIC-IA32.%03u] %s: APIC vectors/exceptions initialized\n", cpuNum, __func__);)
 
-        /* Use flat interrupt model with logical destination ID = 1 */
-        APIC_REG(__APICBase, APIC_DFR) = DFR_FLAT;
-        APIC_REG(__APICBase, APIC_LDR) = 1 << LDR_ID_SHIFT;
-
-        /*
-         * Set spurious IRQ vector -:
-         *     APIC = enabled
-         *     Focus Check = disabled
-         *     EOI broadcast suppresion = disabled
-         */
-        APIC_REG(__APICBase, APIC_SVR) = SVR_ASE|APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS);
-
-        /*
-         * Set LINT0 to external and LINT1 to NMI.
-         * These are common defaults and they are going to be overridden by ACPI tables.
-         *
-         * On all other LAPICs mask LINT0 and use some fake vector (0xff in this case),
-         * otherwise LAPIC may throw an error.
-         */
-        if (cpuNum == 0)
-            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MT_EXT;
-        else
-            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MASK | LVT_VEC_MASK;
-
-        APIC_REG(__APICBase, APIC_LINT1_VEC) = LVT_MT_NMI;
-
-#ifdef CONFIG_LEGACY
-        /* Due to the Pentium erratum 3AP. */
-        if (maxlvt > 3)
-        {
-             APIC_REG(__APICBase, APIC_ESR) = 0;
-             APIC_REG(__APICBase, APIC_ESR) = 0;
-        }
-#endif
-
-        /* Disable performance counter overflow interrupts, if supported */
-        if (((APIC_REG(__APICBase, APIC_VERSION)>>16) & 0xFF) >= 4)
-            APIC_REG(__APICBase, APIC_PCOUNT_VEC) = LVT_MASK;
-
-        D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR before enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
-
-        /* Set APIC error interrupt to fixed vector interrupt "APIC_IRQ_ERROR",  on APIC error */
-        APIC_REG(__APICBase, APIC_ERROR_VEC) = APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_ERROR);
-
-        /* spec says clear errors after enabling vector. */
-        if (maxlvt > 3)
-        {
-             APIC_REG(__APICBase, APIC_ESR) = 0;
-             APIC_REG(__APICBase, APIC_ESR) = 0;
-        }
-
-        D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR after enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
-
         if (cpuNum> 0)
+        {
+            core_APIC_Config(__APICBase, cpuNum);
             core_APIC_Calibrate(apic, cpuNum);
-
-        /* Clear error status register using back-to-back writes */
-        APIC_REG(__APICBase, APIC_ESR) = 0;
-        APIC_REG(__APICBase, APIC_ESR) = 0;
-
-
-        /* Ack any pending interrupts */
-        APIC_REG(__APICBase, APIC_EOI) = 0;
-
-        /* Send an Init Level De-Assert to synchronize arbitration ID's. */
-        APIC_REG(__APICBase, APIC_ICRH) = 0;
-        APIC_REG(__APICBase, APIC_ICRL) =  ICR_DSH_ALL | ICR_INT_LEVELTRIG | ICR_DM_INIT;
-        while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS)
-            ;
-
-        /* Set Task Priority to 'accept all interrupts' */
-        APIC_REG(__APICBase, APIC_TPR) = 0;
+            core_APIC_Enable(__APICBase, cpuNum);
+        }
     }
+}
+
+/*
+ * Finalize the APIC.
+ * performed during warm reboot, to set the APIC back to an initial state
+ */
+void core_APIC_Finalize(IPTR _APICBase)
+{
+    /* disable heartbeat timer */
+    APIC_REG(_APICBase, APIC_TIMER_VEC) = 0xFF;
+    APIC_REG(_APICBase, APIC_TIMER_ICR) = 0x10000;
+
+    /* Clear error status register using back-to-back writes */
+    APIC_REG(_APICBase, APIC_ESR) = 0;
+    APIC_REG(_APICBase, APIC_ESR) = 0;
+
+    APIC_REG(_APICBase, APIC_LINT1_VEC) = LVT_MT_NMI;
+    APIC_REG(_APICBase, APIC_LINT0_VEC) = 0;
+
+    /* disable spurious */
+    APIC_REG(_APICBase, APIC_SVR) = 0;
+
+    /* Ack any pending interrupts */
+    APIC_REG(_APICBase, APIC_EOI) = 0;
 }
 
 apicid_t core_APIC_GetID(IPTR _APICBase)

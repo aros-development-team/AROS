@@ -30,21 +30,27 @@ struct PlatformData
 {
     IPTR                kb_PDFlags;
     APTR                kb_APIC_TrampolineBase; /* Starting address of secondary core bootstrap code	*/
+    APTR                kb_APICHeartBeat;
     struct List         kb_SysCallHandlers;
     struct ACPIData     *kb_ACPI;
     struct APICData     *kb_APIC;
     struct IOAPICData   *kb_IOAPIC;
+    struct Interrupt    kb_APICResetHandler;
     struct List         kb_FreeIPIHooks;
     struct List         kb_BusyIPIHooks;
     spinlock_t          kb_FreeIPIHooksLock;
     spinlock_t          kb_BusyIPIHooksLock;
     APTR                kb_FXCtx;               /* IRQ FPU/MMX/XMM Save area                            */
+    ULONG               kb_LastException;
+    ULONG               kb_LastExceptionError;
 };
 
 #define PLATFORMB_HAVEHEARTBEAT 0
 #define PLATFORMF_HAVEHEARTBEAT (1 << PLATFORMB_HAVEHEARTBEAT)
 #define PLATFORMB_HAVEMSI       1
 #define PLATFORMF_HAVEMSI       (1 << PLATFORMB_HAVEMSI)
+#define PLATFORMB_PRIMED        14
+#define PLATFORMF_PRIMED        (1 << PLATFORMB_PRIMED)
 #define PLATFORMB_INIRQ         15
 #define PLATFORMF_INIRQ         (1 << PLATFORMB_INIRQ)
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -187,7 +187,9 @@ void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, void *Ha
 }
 #endif
 
-int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2);
+extern int core_SysCallHandler(struct ExceptionContext *, void *, void *);
+extern int core_APICSpuriousHandle(struct ExceptionContext *, void *, void *);
+
 
 static int Platform_Init(struct KernelBase *LIBBASE)
 {
@@ -204,7 +206,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
         /*
      * Setup the Interrupt Controller Environment ...
      */
-        NEWLIST(&LIBBASE->kb_ICList);
+    NEWLIST(&LIBBASE->kb_ICList);
     NEWLIST(&LIBBASE->kb_InterruptMappings);
     LIBBASE->kb_ICTypeBase = KBL_INTERNAL + 1;
 
@@ -234,17 +236,36 @@ static int Platform_Init(struct KernelBase *LIBBASE)
      */
     NEWLIST(&pdata->kb_SysCallHandlers);
 
-    // we need to setup the BSP's syscall gate early..
-    if (!core_SetIDTGate((apicidt_t *)__KernBootPrivate->BOOTIDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, FALSE))
+    /*
+     * Setup the BSP's exception, spurious, heartbeat and syscall gates early
+    */
+    core_SetExGates((x86vectgate_t *)__KernBootPrivate->BOOTIDT);
+    if (!core_SetIDTGate((x86vectgate_t *)__KernBootPrivate->BOOTIDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, FALSE))
     {
         krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
                        "Vector #%02X\n",
                  APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL));
     }
+    if (!core_SetIDTGate((x86vectgate_t *)__KernBootPrivate->BOOTIDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT)], TRUE, FALSE))
+    {
+        krnPanic(NULL, "Failed to set BSP Heartbeat Vector\n"
+                       "Vector #%02X\n",
+                 APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT));
+    }
+    if (!core_SetIDTGate((x86vectgate_t *)__KernBootPrivate->BOOTIDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS)], TRUE, FALSE))
+    {
+        krnPanic(NULL, "Failed to set BSP Spurious Vector\n"
+                       "Vector #%02X\n",
+                 APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS));
+    }
+    KrnAddExceptionHandler(APIC_EXCEPT_SPURIOUS, core_APICSpuriousHandle, LIBBASE, NULL);
     KrnAddExceptionHandler(APIC_EXCEPT_SYSCALL, core_SysCallHandler, LIBBASE, NULL);
     krnAddSysCallHandler(pdata, &x86_SCSupervisorHandler, FALSE, TRUE);
+    D(bug("[Kernel:x86_64] %s: BSP vectors and handlers configured\n", __func__));
 
-    D(bug("[Kernel:x86_64] %s: SysCall set up\n", __func__));
+    IPTR __APICBase = core_APIC_GetBase();
+    core_APIC_Config(__APICBase, 0);
+    core_APIC_Enable(__APICBase, 0);
 
 #if defined(EMULATE_SYSBASE)
 //    KrnAddExceptionHandler(0x0E, core_IRQ0EHandle, void *handlerData, void *handlerData2);
@@ -253,4 +274,4 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     return TRUE;
 }
 
-ADD2INITLIB(Platform_Init, 10)
+ADD2INITLIB(Platform_Init, 5)

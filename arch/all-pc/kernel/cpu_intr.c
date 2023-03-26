@@ -97,7 +97,7 @@ const void *IntrDefaultGates[256] =
 };
 
 /* Set the raw CPU vectors gate in the IDT */
-BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable, BOOL force)
+BOOL core_SetIDTGate(x86vectgate_t *IGATES, int vect, uintptr_t gate, BOOL enable, BOOL force)
 {
     DIDT(
         APTR gateOld;
@@ -147,13 +147,30 @@ BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable, B
 /* Set a hardware IRQ's gate in the IDT */
 BOOL core_SetIRQGate(void *idt, int IRQ, uintptr_t gate)
 {
-    apicidt_t *IGATES = (apicidt_t *)idt;
+    x86vectgate_t *IGATES = (x86vectgate_t *)idt;
     DIDT(
         bug("[Kernel] %s: Setting IRQGate #%d\n", __func__, IRQ);
         bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
     )
 
     return core_SetIDTGate(IGATES, HW_IRQ_BASE + IRQ, gate, TRUE, FALSE);
+}
+
+/* Initialize the Exception gates in the IDT */
+void core_SetExGates(void *idt)
+{
+    x86vectgate_t *IGATES = (x86vectgate_t *)idt;
+    int i;
+
+    /* Obtain/set the critical IRQs and Vectors */
+    for (i = 0; i < X86_CPU_EXCEPT_COUNT; i++)
+    {
+        if (!core_SetIDTGate(IGATES, i, (uintptr_t)IntrDefaultGates[i], TRUE, FALSE))
+        {
+            krnPanic(NULL, "Failed to set CPU Exception Vector\n"
+                           "Vector #$%02X\n", i);
+        }
+    }
 }
 
 void core_ReloadIDT()
@@ -163,18 +180,18 @@ void core_ReloadIDT()
     apicid_t cpuNo = KrnGetCPUNumber();
     struct segment_selector IDT_sel;
 
-    apicidt_t *IGATES = (apicidt_t *)apicData->cores[cpuNo].cpu_IDT;
+    x86vectgate_t *IGATES = (x86vectgate_t *)apicData->cores[cpuNo].cpu_IDT;
 
     DIRQ(bug("[Kernel] %s()\n", __func__);)
 
-    IDT_sel.size = sizeof(apicidt_t) * 256 - 1;
+    IDT_sel.size = sizeof(x86vectgate_t) * 256 - 1;
     IDT_sel.base = (unsigned long)IGATES;
     DIDT(bug("[Kernel] %s(%u):    base 0x%p, size %d\n", __func__, cpuNo, IDT_sel.base, IDT_sel.size));
 
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
-void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
+void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
 {
     int i;
     uintptr_t off;
@@ -202,7 +219,7 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
 
         DIDT(bug("[Kernel] %s(%u): Registering IDT ..\n", __func__, _APICID));
 
-        IDT_sel.size = sizeof(apicidt_t) * 256 - 1;
+        IDT_sel.size = sizeof(x86vectgate_t) * 256 - 1;
         IDT_sel.base = (unsigned long)IGATES;
         DIDT(bug("[Kernel] %s(%u):    base 0x%p, size %d\n", __func__, _APICID, IDT_sel.base, IDT_sel.size));
 
@@ -229,44 +246,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = (struct PlatformData *)KernelBase->kb_PlatformData;
-    BOOL restorefpu = TRUE;
 
-#if defined(APICIRSTATUS_DEBUG)
-    // This debug works only if Local APIC exists...
-    DIRQ(
-        IPTR __APICBase = core_APIC_GetBase();
-        int cpunum = KrnGetCPUNumber();
-
-        bug("[kernel] %s(%d): eflags=%08x\n", __func__, int_number, regs->rflags);
-
-        bug("[kernel] %s(%d): IRR.%03x: %08x%08x%08x%08x%08x%08x%08x%08x\n",
-            __func__, int_number, cpunum,
-            APIC_REG(__APICBase, APIC_IRR+0x70), APIC_REG(__APICBase, APIC_IRR+0x60),
-            APIC_REG(__APICBase, APIC_IRR+0x50), APIC_REG(__APICBase, APIC_IRR+0x40),
-            APIC_REG(__APICBase, APIC_IRR+0x30), APIC_REG(__APICBase, APIC_IRR+0x20),
-            APIC_REG(__APICBase, APIC_IRR+0x10), APIC_REG(__APICBase, APIC_IRR+0x00));
-        bug("[kernel] %s(%d): ISR.%03x: %08x%08x%08x%08x%08x%08x%08x%08x\n",
-            __func__, int_number, cpunum,
-            APIC_REG(__APICBase, APIC_ISR+0x70), APIC_REG(__APICBase, APIC_ISR + 0x60),
-            APIC_REG(__APICBase, APIC_ISR + 0x50), APIC_REG(__APICBase, APIC_ISR + 0x40),
-            APIC_REG(__APICBase, APIC_ISR + 0x30), APIC_REG(__APICBase, APIC_ISR + 0x20),
-            APIC_REG(__APICBase, APIC_ISR + 0x10), APIC_REG(__APICBase, APIC_ISR + 0x00));
-    )
-#endif
-
-    pdata->kb_PDFlags |= PLATFORMF_INIRQ;
-
-    if (pdata->kb_FXCtx)
-    {
-        if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
-        {
-            asm volatile("xsave (%0)"::"r"(pdata->kb_FXCtx));
-        }
-        else
-        {
-            asm volatile("fxsave (%0)"::"r"(pdata->kb_FXCtx));
-        }
-    }
     // An IRQ which arrived at the CPU is *either* an exception (let it be syscall, cpu exception,
     // LAPIC local irq) or a device IRQ.
     if (IS_EXCEPTION(int_number))
@@ -278,15 +258,37 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             bug("[Kernel] %s(%u): --> CPU Trap #$%08x\n", __func__, int_number, exception_number);
         )
 
+        /* Store the error code for later retrieval */
+        if (pdata)
+        {
+            switch (int_number)
+            {
+            /*
+                 * only store the error code if the exception
+                 * generates one
+                 */
+                case 8:
+                case 10:
+                case 11:
+                case 12:
+                case 13:
+                case 14:
+                case 17:
+                case 21:
+                case 29:
+                case 30:
+                    bug("[Kernel] %s(%u): Exception error code %08x\n", __func__, int_number, error_code);
+                    pdata->kb_LastException = int_number;
+                    pdata->kb_LastExceptionError = error_code;
+                    break;
+            }
+        }
+
         cpu_Trap(regs, error_code, exception_number);
 
-        // NOT a CPU exception, must be APIC or Syscall. If APIC, send EOI
-        if (exception_number >= X86_CPU_EXCEPT_COUNT && exception_number != APIC_EXCEPT_SYSCALL)
-        {
-            DTRAP(bug("[Kernel] %s(%u): Sending EOI to LAPIC on CPU%03x\n", __func__, int_number, KrnGetCPUNumber());)
-            IPTR __APICBase = core_APIC_GetBase();
-            APIC_REG(__APICBase, APIC_EOI) = 0;
-        }
+        DTRAP(
+            bug("[Kernel] %s(%u): CPU Trap returned\n", __func__, int_number);
+        )
     }
     else
     {
@@ -296,6 +298,26 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             bug("[Kernel] %s(%u): Device IRQ #$%02X\n", __func__, int_number, irq_number);
         )
 
+        if (pdata)
+        {
+            pdata->kb_PDFlags |= PLATFORMF_INIRQ;
+#if (0)
+            if (pdata->kb_FXCtx)
+            {
+                DIRQ(bug("[kernel] %s(%d): saving to kb_FXCt @ 0x%p\n", __func__, int_number, pdata->kb_FXCtx);)
+                if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
+                {
+                    DIRQ(bug("[kernel] %s(%d): AVX save\n", __func__, int_number);)
+                    asm volatile("xsave (%0)"::"r"(pdata->kb_FXCtx));
+                }
+                else
+                {
+                    DIRQ(bug("[kernel] %s(%d): SSE save\n", __func__, int_number);)
+                    asm volatile("fxsave (%0)"::"r"(pdata->kb_FXCtx));
+                }
+            }
+#endif
+        }
         if (KernelBase)
         {
             struct IntrController *irqIC;
@@ -318,19 +340,27 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
                         irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
                 }
             }
-        }
 
-        restorefpu = FALSE;
-        if (pdata->kb_FXCtx)
+        }
+        if (pdata)
         {
-            if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
+#if (0)
+            if (pdata->kb_FXCtx)
             {
-                asm volatile("xrstor (%0)"::"r"(pdata->kb_FXCtx));
+                DIRQ(bug("[kernel] %s(%d): Device IRQ - restoring fp state from kb_FXCt @ 0x%p\n", __func__, int_number, pdata->kb_FXCtx);)
+                if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
+                {
+                    DIRQ(bug("[kernel] %s(%d): AVX restore\n", __func__, int_number);)
+                    asm volatile("xrstor (%0)"::"r"(pdata->kb_FXCtx));
+                }
+                else
+                {
+                    DIRQ(bug("[kernel] %s(%d): SSE restore\n", __func__, int_number);)
+                    asm volatile("fxrstor (%0)"::"r"(pdata->kb_FXCtx));
+                }
             }
-            else
-            {
-                asm volatile("fxrstor (%0)"::"r"(pdata->kb_FXCtx));
-            }
+#endif
+            pdata->kb_PDFlags &= ~PLATFORMF_INIRQ;
         }
         /*
          * Upon exit from the lowest-level device IRQ, if we are returning to user mode,
@@ -345,25 +375,12 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             DIRQ(
                 bug("[Kernel] %s(%u): calling ExitInterrupt... (>usermode)(%08x)\n", __func__, int_number, regs->Flags);
             )
-            pdata->kb_PDFlags &= ~PLATFORMF_INIRQ;
             core_ExitInterrupt(regs);
         }
     }
 
-    if (pdata->kb_FXCtx && restorefpu)
-    {
-        if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
-        {
-            asm volatile("xrstor (%0)"::"r"(pdata->kb_FXCtx));
-        }
-        else
-        {
-            asm volatile("fxrstor (%0)"::"r"(pdata->kb_FXCtx));
-        }
-    }
     DIRQ(
         bug("[Kernel] %s(%u): calling LeaveInterrupt...(%08x)\n", __func__, int_number, regs->Flags);
     )
-    pdata->kb_PDFlags &= ~PLATFORMF_INIRQ;
     core_LeaveInterrupt(regs);
 }

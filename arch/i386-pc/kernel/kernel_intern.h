@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERN_H_
 #define KERNEL_INTERN_H_
 /*
-    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 32bit x86 kernel_intern.h
@@ -15,8 +15,7 @@
 #include <asm/cpu.h>
 #include <hardware/vbe.h>
 
-typedef struct int_gate_32bit apicidt_t;
-
+#include "cpu_x86.h"
 #include "apic.h"
 
 #define STACK_SIZE              8192
@@ -42,7 +41,7 @@ struct KernBootPrivate
 
 extern struct KernBootPrivate *__KernBootPrivate;
 
-#define IDT_SIZE                sizeof(apicidt_t) * 256
+#define IDT_SIZE                sizeof(x86vectgate_t) * 256
 #define GDT_SIZE                sizeof(long long) * 8
 #define TLS_SIZE                sizeof(struct tss)
 #define TLS_ALIGN               64

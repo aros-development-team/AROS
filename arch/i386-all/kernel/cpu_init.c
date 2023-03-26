@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -14,8 +14,16 @@
 #define D(x)
 
 #ifndef SIZEOF_8087_FRAME
-#define SIZEOF_8087_FRAME sizeof(struct FPUContext)
+#define SIZEOF_8087_FRAME   sizeof(struct FPUContext)
 #endif
+
+/* FXSAVE/FXRESTOR instruction capability */
+#define CPUID_EDX_FXSRB     24
+#define CPUID_EDX_FXSRF     (1 << CPUID_EDX_FXSRB)
+#define CPUID_EDX_SSEB      25
+#define CPUID_EDX_SSEF      (1 << CPUID_EDX_SSEB)
+#define CPUID_EDX_SSE2B     26
+#define CPUID_EDX_SSE2F     (1 << CPUID_EDX_SSE2B)
 
 static int cpu_Init(struct KernelBase *KernelBase)
 {
@@ -28,14 +36,15 @@ static int cpu_Init(struct KernelBase *KernelBase)
     /* Evaluate CPU capabilities */
     asm volatile("cpuid":"=a"(v1),"=b"(v2),"=c"(v3),"=d"(v4):"a"(1));
 
-    if (v4 & (1 << 24))
+    if (v4 & CPUID_FXSRF)
     {
-        switch ((v4 >> 25) & 3)
+        switch ((v4 & (CPUID_EDX_SSEF|CPUID_EDX_SSE2F)) >> CPUID_EDX_SSEB)
         {
         case 3:
         case 2:
+            /* SSE2 */
         case 1:
-            /* FPU + SSE */
+            /* SSE */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
             /* tell the CPU that we will support SSE */
@@ -66,4 +75,4 @@ static int cpu_Init(struct KernelBase *KernelBase)
     return TRUE;
 }
 
-ADD2INITLIB(cpu_Init, 5);
+ADD2INITLIB(cpu_Init, 10);

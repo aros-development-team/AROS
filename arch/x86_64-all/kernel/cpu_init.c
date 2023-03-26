@@ -81,13 +81,13 @@ static int cpu_Init(struct KernelBase *KernelBase)
             bug("[Kernel] %s: AVX feature mask %08x\n", __func__, featMask);
             bug("[Kernel] %s: AVX required size = %u\n", __func__, XContextSize);
         )
-        KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + XContextSize +  64;
+        KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + XContextSize +  63;
     }
 #endif
     if (KernelBase->kb_ContextSize == 0)
     {
         /* All x86-64 processors have SSE/FXSAVE */
-        KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) + 16;
+        KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) + 15;
     }
 #if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
     if (KernelBase->kb_PlatformData)
@@ -102,4 +102,4 @@ static int cpu_Init(struct KernelBase *KernelBase)
     return TRUE;
 }
 
-ADD2INITLIB(cpu_Init, 5);
+ADD2INITLIB(cpu_Init, 10);

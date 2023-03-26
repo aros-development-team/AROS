@@ -1,5 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/$(CURDIR)/make.opts
 
 FUNCS	 := \
              bug \
@@ -36,7 +37,6 @@ FILES    := \
              apic \
              apic_ia32 \
              apic_msi \
-             apic_intr \
              apic_heartbeat \
              apic_error \
              acpi \
@@ -46,6 +46,7 @@ FILES    := \
              acpi_set \
              smp \
              syscall \
+             cpu_intr \
              cpu_traps \
              pic_i8259a \
              ictl \
@@ -70,6 +71,6 @@ USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \
-  arch=pc files="$(FILES) $(FUNCS)" asmfiles=$(ASMFILES)
+  arch=pc files="$(FILES) $(FUNCS)" compiler=kernel asmfiles=$(ASMFILES)
 
 %common

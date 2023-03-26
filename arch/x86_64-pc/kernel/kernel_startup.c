@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/multiboot.h>
@@ -356,7 +356,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     /* Set-up the IDT */
     __KernBootPrivate->BOOTIDT = core_AllocBootIDT(__KernBootPrivate);
     D(bug("[Kernel] %s:                IDT      : 0x%p\n", __func__, __KernBootPrivate->BOOTIDT);)
-    core_SetupIDT(0, (apicidt_t *)__KernBootPrivate->BOOTIDT);
+    core_SetupIDT(0, (x86vectgate_t *)__KernBootPrivate->BOOTIDT);
 
     /* Set-up MMU */
     // Re-read mmap pointer, since we have modified it previously...

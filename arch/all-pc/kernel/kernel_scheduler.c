@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/alerts.h>
@@ -28,6 +28,9 @@
 
 #include "apic.h"
 
+#define LOWSTACKWARN
+#define SCHEDULERASCII_DEBUG
+
 #ifdef DEBUG
 #undef DEBUG
 #endif
@@ -40,10 +43,20 @@
 #define DSCHED(x)
 #endif
 
+#if (DEBUG > 0) && defined(SCHEDULERASCII_DEBUG)
+#define DEBUGCOLOR_SET       "\033[31m"
+#define DEBUGFUNCCOLOR_SET   "\033[31;1m"
+#define DEBUGCOLOR_RESET     "\033[0m"
+#else
+#define DEBUGCOLOR_SET
+#define DEBUGFUNCCOLOR_SET
+#define DEBUGCOLOR_RESET
+#endif
+
 #if defined(__AROSEXEC_SMP__)
 void core_InitScheduleData(struct X86SchedulerPrivate *schedData)
 {
-    DSCHED(bug("[Kernel] %s(0x%p)\n", __func__, schedData);)
+    DSCHED(bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s(0x%p)" DEBUGCOLOR_RESET "\n", __func__, schedData);)
     schedData->Granularity = SCHEDGRAN_VALUE;
     schedData->Quantum = SCHEDQUANTUM_VALUE;
 }
@@ -58,7 +71,7 @@ BOOL core_Schedule(void)
     struct Task *task;
     BOOL corereschedule = TRUE;
 
-    DSCHED(bug("[Kernel] %s()\n", __func__);)
+    DSCHED(bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", __func__);)
 
     task = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
@@ -66,8 +79,8 @@ BOOL core_Schedule(void)
 #endif
 
     DSCHED(
-        bug("[Kernel:%03u] %s: running Task @ 0x%p\n", cpuNo, __func__, task);
-        bug("[Kernel:%03u] %s: '%s', state %08x\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: running Task @ 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: '%s', state %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
     )
 
     FLAG_SCHEDSWITCH_CLEAR;
@@ -83,7 +96,7 @@ BOOL core_Schedule(void)
             /* always let finalising tasks finish... */
             corereschedule = FALSE;
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
-            bug("[Kernel:%03u] core_Schedule: letting finalising task run..\n", cpuNo);
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: letting finalising task run.." DEBUGCOLOR_RESET "\n", cpuNo, __func__);
 #endif
         }
         else if (!(task->tc_Flags & TF_EXCEPT))
@@ -139,7 +152,7 @@ BOOL core_Schedule(void)
     DSCHED
         (
             if (corereschedule)
-                bug("[Kernel:%03u] '%s' @ 0x%p needs rescheduled ..\n", cpuNo, task->tc_Node.ln_Name, task);
+                bug("[Kernel:%03u]" DEBUGCOLOR_SET " '%s' @ 0x%p needs rescheduled .." DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name, task);
         )
 
     return corereschedule;
@@ -158,22 +171,22 @@ void core_Switch(void)
     ULONG showAlert = 0;
     BOOL doSwitch = TRUE;
 
-    DSCHED(bug("[Kernel] %s()\n", __func__);)
+    DSCHED(bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", __func__);)
 
     cpuNo = KrnGetCPUNumber();
     task = GET_THIS_TASK;
 
     DSCHED(
-        bug("[Kernel:%03u] %s: Current running Task @ 0x%p\n", cpuNo, __func__, task);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Current running Task @ 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task);
     )
     if ((!task) || (task->tc_State == TS_INVALID))
     {
-        bug("[Kernel:%03u] %s: called on invalid task!\n", cpuNo, __func__);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: called on invalid task!" DEBUGCOLOR_RESET "\n", cpuNo, __func__);
         doSwitch = FALSE;
     }
     DSCHED(
-        bug("[Kernel:%03u] %s: Task name '%s'\n", cpuNo, __func__, task->tc_Node.ln_Name);
-        bug("[Kernel:%03u] %s: Task state = %08x\n", cpuNo, __func__, task->tc_State);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task name '%s'" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task state = %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_State);
     )
 #if defined(__AROSEXEC_SMP__)
     if (task->tc_State == TS_TOMBSTONED)
@@ -181,12 +194,12 @@ void core_Switch(void)
 #endif
     if (!doSwitch)
     {
-        bug("[Kernel:%03u] %s: Letting Task continue to run..\n", cpuNo, __func__);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Letting Task continue to run.." DEBUGCOLOR_RESET "\n", cpuNo, __func__);
         return;
     }
 
     DSCHED(
-        bug("[Kernel:%03u] %s: Switching away from Task\n", cpuNo, __func__);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Switching away from Task" DEBUGCOLOR_RESET "\n", cpuNo, __func__);
     )
     
 #if defined(__AROSEXEC_SMP__)
@@ -202,7 +215,7 @@ void core_Switch(void)
         task->tc_State = TS_TOMBSTONED;
 #endif
 
-    DSCHED(bug("[Kernel:%03u] %s: Task removed from list, state = %08x\n", cpuNo, __func__, task->tc_State);)
+    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task removed from list, state = %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_State);)
 
     if ((task->tc_State != TS_WAIT) &&
 #if defined(__AROSEXEC_SMP__)
@@ -215,16 +228,21 @@ void core_Switch(void)
     /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
-        bug("[Kernel:%03u] EROR! Task went out of stack limits\n", cpuNo);
-        bug("[Kernel:%03u]  - Lower Bound = 0x%p, Upper Bound = 0x%p\n", cpuNo, task->tc_SPLower, task->tc_SPUpper);
-        bug("[Kernel:%03u]  - SP = 0x%p\n", cpuNo, task->tc_SPReg);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " ERROR! Task (%s) went out of stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name, task);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - Lower Bound = 0x%p, Upper Bound = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPLower, task->tc_SPUpper);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - SP = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPReg);
 
         task->tc_SigWait    = 0;
         task->tc_State      = TS_WAIT;
 
         showAlert = AN_StackProbe;
+#if defined(LOWSTACKWARN)
     }
-
+    else if (task->tc_SPReg <= task->tc_SPLower + 1024)
+    {
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " WARNING - Task (%s) close to stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name, task);
+#endif
+    }
     task->tc_IDNestCnt = IDNESTCOUNT_GET;
 
     if (task->tc_State == TS_READY)
@@ -232,7 +250,7 @@ void core_Switch(void)
         if (task->tc_Flags & TF_SWITCH)
             AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
 
-        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p as ready\n", cpuNo, task->tc_Node.ln_Name, task);)
+        DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Setting '%s' @ 0x%p as ready" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
@@ -245,7 +263,7 @@ void core_Switch(void)
 #if defined(__AROSEXEC_SMP__)
     else if (task->tc_State == TS_SPIN)
     {
-        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to spin\n", cpuNo, task->tc_Node.ln_Name, task);)
+        DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Setting '%s' @ 0x%p to spin" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task);)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
                     SPINLOCK_MODE_WRITE);
         Enqueue(&PrivExecBase(SysBase)->TaskSpinning, &task->tc_Node);
@@ -258,7 +276,7 @@ void core_Switch(void)
 #endif
         (task->tc_State != TS_REMOVED))
     {
-        DSCHED(bug("[Kernel:%03u] Setting '%s' @ 0x%p to wait\n", cpuNo, task->tc_Node.ln_Name, task);)
+        DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Setting '%s' @ 0x%p to wait" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
@@ -281,7 +299,7 @@ struct Task *core_Dispatch(void)
     cpuid_t cpuNo = KrnGetCPUNumber();
 #endif
 
-    DSCHED(bug("[Kernel:%03u] core_Dispatch()\n", cpuNo);)
+    DSCHED(bug("[Kernel:%03u]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpuNo, __func__);)
 
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
@@ -308,8 +326,10 @@ struct Task *core_Dispatch(void)
 #if defined(__AROSEXEC_SMP__)
         if (task->tc_State == TS_SPIN)
         {
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Waking spinning task '%s' @ 0x%p" DEBUGCOLOR_RESET "\n",
+                cpuNo, __func__newtask->tc_Node.ln_Name, newtask);)
 #if 0
-bug("----> such unspinning should not take place!\n");
+bug("----> such unspinning should not take place!" DEBUGCOLOR_RESET "\n");
             KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
                     SPINLOCK_MODE_WRITE);
             REMOVE(&task->tc_Node);
@@ -327,8 +347,8 @@ bug("----> such unspinning should not take place!\n");
 
         if (newtask->tc_State == TS_READY)
         {
-            DSCHED(bug("[Kernel:%03u] Preparing to run '%s' @ 0x%p\n",
-                cpuNo, newtask->tc_Node.ln_Name, newtask);)
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Preparing to run '%s' @ 0x%p" DEBUGCOLOR_RESET "\n",
+                cpuNo, __func__, newtask->tc_Node.ln_Name, newtask);)
 
             IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
             SET_THIS_TASK(newtask);
@@ -358,14 +378,14 @@ bug("----> such unspinning should not take place!\n");
         {
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
             // The task is on its way out ...
-            bug("[Kernel:%03u] --> Dispatching finalizing/tombstoned task?\n", cpuNo);
-            bug("[Kernel:%03u] --> Task @ 0x%p '%s', state %08x\n", cpuNo, task, task->tc_Node.ln_Name, newtask->tc_State);
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: --> Dispatching finalizing/tombstoned task?" DEBUGCOLOR_RESET "\n", cpuNo, __func__);
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: --> Task @ 0x%p '%s', state %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task, task->tc_Node.ln_Name, newtask->tc_State);
 #endif
         }
 
         if (sleeptask)
         {
-            DSCHED(bug("[Kernel:%03u] Moving '%s' @ 0x%p to wait queue\n", cpuNo, newtask->tc_Node.ln_Name, newtask);)
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Moving '%s' @ 0x%p to wait queue" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newtask->tc_Node.ln_Name, newtask);)
 #if defined(__AROSEXEC_SMP__)
             KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
                         SPINLOCK_MODE_WRITE);
@@ -379,7 +399,7 @@ bug("----> such unspinning should not take place!\n");
         if (!launchtask)
         {
             /* if the new task shouldn't run - force a reschedule */
-            DSCHED(bug("[Kernel:%03u] Skipping '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Skipping '%s' @ 0x%p (state %08x)" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
 
             core_Switch();
             newtask = core_Dispatch();
@@ -391,13 +411,13 @@ bug("----> such unspinning should not take place!\n");
 #else
             AROS_ATOMIC_INC(SysBase->DispCount);
 #endif
-            DSCHED(bug("[Kernel:%03u] Launching '%s' @ 0x%p (state %08x)\n", cpuNo, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Launching '%s' @ 0x%p (state %08x)" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
         }
     }
     else
     {
         /* Go idle if there is nothing to do ... */
-        DSCHED(bug("[Kernel:%03u] No ready Task(s) - entering sleep mode\n", cpuNo);)
+        DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: No ready Task(s) - entering sleep mode" DEBUGCOLOR_RESET "\n", cpuNo, __func__);)
 
         /*
          * Idle counter is incremented every time when we enter here,

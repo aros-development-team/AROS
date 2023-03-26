@@ -185,6 +185,7 @@ static AROS_UFH3 (APTR, KernelPost,
     Enable();
 
     D(bug("[Kernel] %s: Platform Initialization complete\n", __func__));
+    pdata->kb_PDFlags |= PLATFORMF_PRIMED;
 
 #if defined(TEST_SMP_IPI)
     bug("[Kernel] %s: --- TESTING IPI CALL HOOK ---\n", __func__);

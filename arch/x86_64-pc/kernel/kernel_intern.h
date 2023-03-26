@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERN_H_
 #define KERNEL_INTERN_H_
 /*
-    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 64bit x86 kernel_intern.h
@@ -14,8 +14,7 @@
 #include <utility/tagitem.h>
 #include <asm/cpu.h>
 
-typedef struct int_gate_64bit apicidt_t;
-
+#include "cpu_x86.h"
 #include "apic.h"
 #include "tls.h"
 

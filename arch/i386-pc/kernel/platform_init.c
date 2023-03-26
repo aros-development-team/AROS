@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -30,7 +30,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
 {
     struct PlatformData *data;
     struct tss      *tss = __KernBootPrivate->TSS;
-    apicidt_t *idt = __KernBootPrivate->BOOTIDT;
+    x86vectgate_t *idt = __KernBootPrivate->BOOTIDT;
     struct segment_desc *GDT = __KernBootPrivate->BOOTGDT;
     int i;
 
@@ -106,4 +106,4 @@ static int PlatformInit(struct KernelBase *KernelBase)
     return TRUE;
 }
 
-ADD2INITLIB(PlatformInit, 10);
+ADD2INITLIB(PlatformInit, 5);

@@ -74,9 +74,13 @@ struct APICCPUWake_Data
 
 ULONG core_APIC_Wake(APTR start_addr, apicid_t id, IPTR base);
 UBYTE core_APIC_GetID(IPTR base);
+void core_APIC_InitExGates(x86vectgate_t *IGATES);
+void core_APIC_Config(IPTR, apicid_t);
+void core_APIC_Enable(IPTR, apicid_t);
 void  core_APIC_Init(struct APICData *data, apicid_t cpuNum);
 void core_APIC_Calibrate(struct APICData *data, apicid_t cpuNum);
 void  core_APIC_AckIntr(void);
+void core_APIC_Finalize(IPTR _APICBase);
 
 /* This is callable in supervisor only */
 static inline IPTR core_APIC_GetBase(void)
@@ -92,9 +96,10 @@ void core_APIC_GetMask(struct APICData *, apicid_t, cpumask_t *);
 BOOL core_APIC_CPUInMask(apicid_t, cpumask_t *);
 
 void core_InvalidateIDT();
-void core_SetupIDT(apicid_t, apicidt_t *);
-BOOL core_SetIDTGate(apicidt_t *, int, uintptr_t, BOOL, BOOL);
+void core_SetupIDT(apicid_t, x86vectgate_t *);
+BOOL core_SetIDTGate(x86vectgate_t *, int, uintptr_t, BOOL, BOOL);
 BOOL core_SetIRQGate(void *, int, uintptr_t);
+void core_SetExGates(void *);
 void core_DefaultIRETQ();
 
 ULONG core_APIC_AllocMSI(ULONG);

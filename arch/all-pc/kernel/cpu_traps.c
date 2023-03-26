@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2023, The AROS Development Team. All rights reserved.
 
     Desc: Common trap handling routines for x86 CPU
 */
@@ -50,8 +50,23 @@ static void PrintContext(struct ExceptionContext *regs, unsigned long error_code
 #endif
 
 /*
- * This table is used to translate x86 trap number
- * to AmigaOS trap number to be passed to exec exception handler.
+ * AmigaTraps is used to map intel x86 exception numbers
+ * to AmigaOS traps, so that they can be passed to exec
+ * exception handlers.
+ * 2	    Bus error	                            access to nonexistent memory
+ * 3	    Address error	                        unaligned long/word access
+ * 4	    Illegal instruction	                    illegal opcode (bar Line 1010 and 1111 emualted instructions)
+ * 5	    Zero divide	                            division by zero
+ * 6	    CHK instruction	                        register bounds error
+ * 7	    TRAPV instruction	                    overflow error
+ * 8	    Privilege violation
+ * 9	    Trace	status register
+ * 10	    Line 1010 emulator	                    executing opcodes beginning with $A
+ * 11	    Line 1111 emulator                      executing opcodes beginning with $F
+ *
+ * TODO: Map x86 debug traps to amiga traps
+ * 32-47	Trap instructions                       TRAP<x> instruction, where x ranges from 0 to 15
+ *
  */
 #define AMIGATRAP_COUNT 19
 static const char AmigaTraps[AMIGATRAP_COUNT] =
@@ -64,25 +79,43 @@ static const char AmigaTraps[AMIGATRAP_COUNT] =
 
 void cpu_Trap(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
-    D(bug("[Kernel] Trap exception %u\n", irq_number));
+    D(bug("[Kernel] %s(%u)\n", __func__, irq_number));
 
-    if (krnRunExceptionHandlers(KernelBase, irq_number, regs))
-        return;
-
-    if ((irq_number < AMIGATRAP_COUNT) && (AmigaTraps[irq_number] != -1))
+    if (!krnRunExceptionHandlers(KernelBase, irq_number, regs))
     {
-        D(bug("[Kernel] Passing on to exec, Amiga trap %d\n", AmigaTraps[irq_number]));
-
-        if (core_Trap(AmigaTraps[irq_number], regs))
+        if ((irq_number < AMIGATRAP_COUNT) && (AmigaTraps[irq_number] != -1))
         {
-            /* If the trap handler returned, we can continue */
-            D(bug("[Kernel] Trap handler returned\n"));
-            return;
+            D(bug("[Kernel] %s(%u): Forwarding to exec <Amiga trap #%d, exception error %08x>\n", __func__, irq_number, AmigaTraps[irq_number], error_code);)
+
+            if (core_Trap(AmigaTraps[irq_number], regs))
+            {
+                /* If the trap handler returned, we can continue */
+                D(bug("[Kernel] %s(%u): Trap handler(s) returned\n", __func__, irq_number));
+                goto trapDone;
+            }
+        }
+
+        /* Halt for all unhandled exceptions except spurious interrupts */
+        if (irq_number != APIC_EXCEPT_SPURIOUS)
+        {
+            bug("[Kernel] %s(%u) UNHANDLED EXCEPTION\n", __func__, irq_number);
+            PrintContext(regs, error_code);
+
+            //TODO: Stop other cores on SMP systems....
+            while (1) asm volatile ("hlt");
         }
     }
 
-    bug("[Kernel] UNHANDLED EXCEPTION %lu\n", irq_number);
-    PrintContext(regs, error_code);
+    /*
+     * If its an APIC exception, but not Syscall, send EOI
+     */
+    if ((irq_number >= X86_CPU_EXCEPT_COUNT) && (irq_number < APIC_EXCEPT_SYSCALL))
+    {
+        D(bug("[Kernel] %s(%u): Sending EOI to LAPIC on CPU%03x\n", __func__, irq_number, KrnGetCPUNumber());)
+        IPTR __APICBase = core_APIC_GetBase();
+        APIC_REG(__APICBase, APIC_EOI) = 0;
+    }
 
-    while (1) asm volatile ("hlt");
+trapDone:
+    return;
 }

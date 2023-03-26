@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>
@@ -93,13 +93,13 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR
 {
     struct KernelBase *KernelBase = _KB;
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
-    struct IPIHook *ipi = NULL;
+    struct IPIHook *ipi = NULL, *n = NULL;
     struct APICData *apicPrivate = pdata->kb_APIC;
     int cpunum = KrnGetCPUNumber();
     int ret = FALSE;
     int i;
 
-    D(bug("[Kernel:IPI] %s: Calling hook %p, async=%d\n", __func__, hook, async));
+    D(bug("[Kernel:IPI.CPU.%03u] %s: Hook @ 0x%p, async=%d\n", cpunum, __func__, hook, async));
 
     if (nargs > IPI_CALL_HOOK_MAX_ARGS)
         return ret;
@@ -122,13 +122,29 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR
             Enable();
             if (ipi == NULL)
             {
-                (bug("[Kernel:IPI] %s: Failed to allocate IPIHook entry\n", __func__));
+                (bug("[Kernel:IPI.CPU.%03u] %s: Failed to allocate IPIHook entry\n", cpunum, __func__));
+                Disable();
+                KrnSpinLock(&pdata->kb_BusyIPIHooksLock, NULL, SPINLOCK_MODE_WRITE);
+                ForeachNodeSafe(&pdata->kb_BusyIPIHooks, ipi, n)
+                {
+                    if (!memcmp(ipi->ih_CPUDone, ipi->ih_CPURequested, sizeof(ULONG) * ((31 + apicPrivate->apic_count)/32)))
+                    {
+                        D(bug("[Kernel:IPI.CPU.%03u] %s: Busy IPI @ %p appears to be finished?\n", cpunum, __func__, ipi));
+                    }
+                    else
+                    {
+                        D(bug("[Kernel:IPI.CPU.%03u] %s: Busy IPI @ %p\n", cpunum, __func__, ipi));
+                    }
+                }
+                KrnSpinUnLock(&pdata->kb_BusyIPIHooksLock);
+                Enable();
+                ipi = NULL;
                 // Tell CPU we are idling aroud a lock...
                 asm volatile("pause");
             }
         } while(ipi == NULL);
 
-        D(bug("[Kernel:IPI] %s: Allocated IPIHook %p\n", __func__, ipi));
+        D(bug("[Kernel:IPI.CPU.%03u] %s: Allocated IPIHook %p\n", cpunum, __func__, ipi));
     
         /*
             Copy IPI data from struct Hook provided by caller into allocated ipi
@@ -185,7 +201,7 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR
         KrnSpinUnLock(&pdata->kb_BusyIPIHooksLock);
         Enable();
 
-        D(bug("[Kernel:IPI] %s: Sending IPI message\n", __func__, ipi));
+        D(bug("[Kernel:IPI.CPU.%03u] %s: Sending IPI message\n", cpunum, __func__, ipi));
 
         ret = TRUE;
 
@@ -195,10 +211,10 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR
         /* If synchronous IPI, wait for completion */
         if (!async)
         {
-            D(bug("[Kernel:IPI] %s: Synchronous IPI, waiting for completion\n", __func__));
+            D(bug("[Kernel:IPI.CPU.%03u] %s: Synchronous IPI, waiting for completion\n", cpunum, __func__));
             KrnSpinLock(&ipi->ih_SyncLock, NULL, SPINLOCK_MODE_WRITE);
             KrnSpinUnLock(&ipi->ih_SyncLock);
-            D(bug("[Kernel:IPI] %s: Synchronous IPI completed\n", __func__));
+            D(bug("[Kernel:IPI.CPU.%03u] %s: Synchronous IPI completed\n", cpunum, __func__));
         }
     }
 
@@ -282,7 +298,7 @@ int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase
     IPTR ipi_number = (IPTR)data1;
     IPTR __APICBase = core_APIC_GetBase();
     
-    D(bug("[Kernel:IPI] CPU.%03u IPI%02d\n", cpunum, ipi_number));
+    D(bug("[Kernel:IPI.CPU.%03u] %s: IPI%02d\n", cpunum, __func__, ipi_number));
 
     switch (ipi_number)
     {
