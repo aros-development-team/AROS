@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Timer startup and device commands
 */
@@ -59,6 +59,14 @@ static void TimerInt(struct TimerBase *LIBBASE, struct ExecBase *SysBase)
     Timer0Setup(LIBBASE);
 }
 
+static void TimerShutdownInt(struct TimerBase *LIBBASE, struct ExecBase *SysBase)
+{
+    DINT(
+        bug("[Timer] %s(0x%p)\n", __func__, LIBBASE);
+    )
+    LIBBASE->tb_Platform.tb_Flags &= ~PCTIMER_FLAGF_ENABLED;
+}
+
 /****************************************************************************************/
 
 static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
@@ -66,10 +74,31 @@ static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
     AROS_INTFUNC_INIT
 
     D(bug("[Timer] %s(0x%p)\n", __func__, LIBBASE));
-    
-    /* Set a mode that won't generate interrupts */
-    outb(CH0|ACCESS_FULL|MODE_ONESHOT, PIT_CONTROL);
 
+    /*
+     * End the timer interrupt(s).
+     * First we make sure multitasking is disabled, and then swap out the
+     * timers interrupt handler with the shutdown handler.
+     * we then program the PIT to issue a terminal IRQ , but only set the first byte which stops the counter.
+     * we then enable interrupts so that the final Interrupt is handled.
+     * (all other interrupts should be disabled by this point)
+     */
+    Forbid();
+
+    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
+    LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0, TimerShutdownInt, LIBBASE, SysBase);
+    DINT(bug("[Timer] %s: Shutdown IRQ handle = 0x%p\n", __func__, LIBBASE->tb_TimerIRQHandle));
+
+    outb(CH0 | ACCESS_FULL | MODE_TERMINAL, PIT_CONTROL);
+    outb(CH0 | ACCESS_FULL | LATCH_COUNT, PIT_CONTROL);
+    outb(0, PIT_CH0);
+
+    KrnSti();
+    KrnCli();
+    Permit();
+
+    DINT(bug("[Timer] %s: Timer shutdown complete\n", __func__);)
+    
     return 0;
 
     AROS_INTFUNC_EXIT
@@ -79,8 +108,11 @@ static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
 
 static int hw_Init(struct TimerBase *LIBBASE)
 {
-    D(UBYTE chstatus;)
-    D(bug("[Timer] %s(0x%p)\n", __func__, LIBBASE));
+    D(
+        UBYTE chstatus;
+        bug("[Timer] %s(0x%p)\n", __func__, LIBBASE);
+    )
+
 #if defined(__AROSEXEC_SMP__)
     struct ExecLockBase *ExecLockBase;
     if ((ExecLockBase = OpenResource("execlock.resource")) != NULL)
@@ -133,8 +165,10 @@ static int hw_Init(struct TimerBase *LIBBASE)
     D(bug("[Timer] %s: IRQ handle = 0x%p\n", __func__, LIBBASE->tb_TimerIRQHandle));
     if (!LIBBASE->tb_TimerIRQHandle)
         return FALSE;
+    LIBBASE->tb_Platform.tb_Flags |= PCTIMER_FLAGF_ENABLED;
 
     /* Install a reset handler */
+    LIBBASE->tb_ResetHandler.is_Node.ln_Pri = -63;
     LIBBASE->tb_ResetHandler.is_Node.ln_Name =
         LIBBASE->tb_Device.dd_Library.lib_Node.ln_Name;
     LIBBASE->tb_ResetHandler.is_Code = (VOID_FUNC)ResetHandler;

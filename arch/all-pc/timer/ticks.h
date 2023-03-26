@@ -1,5 +1,5 @@
-#ifndef _TICKS_H
-#define _TICKS_H
+#ifndef _PC_TIMER_TICKS_H
+#define _PC_TIMER_TICKS_H
 
 #include <exec/types.h>
 #include <hardware/pit.h>
@@ -16,4 +16,4 @@ static inline void Timer0Start(UWORD delay, struct TimerBase *TimerBase)
 
 void Timer0Setup(struct TimerBase *TimerBase);
 
-#endif
+#endif /* _PC_TIMER_TICKS_H */
