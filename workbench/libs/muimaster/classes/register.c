@@ -19,6 +19,7 @@
 #include "support.h"
 #include "prefs.h"
 #include "font.h"
+#include "textengine.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -34,8 +35,7 @@ extern struct Library *MUIMasterBase;
 
 struct RegisterTabItem
 {
-    STRPTR text;            /* strlen(text) - valide between new/delete */
-    WORD textlen;           /* strlen(text) - valide between setup/cleanup */
+    ZText *ztext;           /* ztext - valide between setup/cleanup */
     WORD x1, x2;            /* tab x input sensitive interval, relative to
                              * object's origin - valid between show/hide */
     WORD y1, y2;            /* tab y input sensitive interval -
@@ -58,11 +58,7 @@ struct Register_DATA
     WORD tab_height;            /* title height */
     WORD framewidth;
     WORD frameheight;
-    WORD fontw;
-    WORD fonth;
-    WORD fontb;
     WORD total_hspacing;
-    WORD ty;                    /* text y origin - valid between setup/cleanup */
     WORD columns;               /* Number of register columns */
     WORD rows;                  /* Number of register rows */
 };
@@ -130,15 +126,12 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,
     struct Register_DATA *data = INST_DATA(cl, obj);
     struct RegisterTabItem *ri = &data->items[item];
     struct TextExtent extent;
-    WORD fitlen;                /* text len fitting in alloted space */
-    WORD fitpix;                /* text pixels fitting in alloted space */
     WORD x, y;
     WORD top_item_bar_y;
     WORD bottom_item_bar_y;
     WORD left_item_bar_x;
     WORD right_item_bar_x;
     WORD item_bar_width;
-    WORD text_y;
     WORD item_bg_height;
     WORD fitwidth;
 
@@ -154,7 +147,6 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,
         left_item_bar_x = _left(obj) + ri->x1 - 1;
         right_item_bar_x = _left(obj) + ri->x2 + 1;
         item_bg_height = data->tab_height;
-        text_y = y + data->ty;
         item_bar_width = right_item_bar_x - left_item_bar_x + 1;
         /* fill tab with register background */
         DoMethod(obj, MUIM_DrawBackground, left_item_bar_x,
@@ -174,7 +166,6 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,
         left_item_bar_x = _left(obj) + ri->x1;
         right_item_bar_x = _left(obj) + ri->x2;
         item_bg_height = data->tab_height - 3;
-        text_y = y + data->ty + 1;
         item_bar_width = right_item_bar_x - left_item_bar_x + 1;
         SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
         RectFill(_rp(obj), left_item_bar_x, top_item_bar_y + 4,
@@ -231,18 +222,14 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,
 
     /* text */
     fitwidth = item_bar_width - TEXTSPACING;
-    fitlen =
-        TextFit(_rp(obj), ri->text, ri->textlen, &extent, NULL, 1, fitwidth,
-        data->tab_height);
-    fitpix = extent.te_Width;
-//  D(bug("extent for %s (len=%d) in %d pix = %d chars, %d pix [%x,%x,%x]\n",
-//      ri->text, ri->textlen, fitwidth, fitlen, fitpix, _rp(obj),
-//      _rp(obj)->Font, _font(obj)));
-    x = left_item_bar_x + (item_bar_width - fitpix) / 2;
-    SetDrMd(_rp(obj), JAM1);
+    x = left_item_bar_x + TEXTSPACING / 2;
+    APTR clip = MUI_AddClipping(muiRenderInfo(obj), x, top_item_bar_y,
+        fitwidth, bottom_item_bar_y - top_item_bar_y + 1);
+
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
-    Move(_rp(obj), x, text_y);
-    Text(_rp(obj), ri->text, fitlen);
+    zune_text_draw(ri->ztext, obj, x, x + fitwidth, top_item_bar_y + TEXTSPACING - 1);
+
+    MUI_RemoveClipping(muiRenderInfo(obj), clip);
 }
 
 /**************************************************************************
@@ -439,11 +426,6 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return (IPTR) NULL;
     }
 
-    for (i = 0; i < data->numitems; i++)
-    {
-        data->items[i].text = data->labels[i];
-    }
-
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
@@ -497,23 +479,15 @@ IPTR Register__MUIM_Setup(struct IClass *cl, Object *obj,
     }
 
     _font(obj) = zune_font_get(obj, MUIV_Font_Title);
-    data->fonth = _font(obj)->tf_YSize;
-    data->fontb = _font(obj)->tf_Baseline;
 
     h = 0;
 
-    i = data->fonth + REGISTERTAB_EXTRA_HEIGHT;
+    i = _font(obj)->tf_YSize + REGISTERTAB_EXTRA_HEIGHT;
     h = (i > h) ? i : h;
 
     data->tab_height = h;
-    data->ty = data->fontb + 1 + (data->tab_height - data->fonth) / 2;
 
-/*      D(bug("Register_Setup : data->height=%d\n", data->tab_height)); */
-
-    for (i = 0; i < data->numitems; i++)
-    {
-        data->items[i].textlen = strlen(data->items[i].text);
-    }
+    D(bug("Register_Setup : data->height=%d\n", data->tab_height));
 
     data->total_hspacing = (data->columns + 1) * INTERTAB - 2;
 /*    D(bug("Register_AskMinMax : data->total_hspacing = %d\n",
@@ -521,6 +495,12 @@ IPTR Register__MUIM_Setup(struct IClass *cl, Object *obj,
 
     data->min_width = data->total_hspacing * 3;
     data->def_width = data->total_hspacing;
+
+    for (i = 0; i < data->numitems; i++)
+    {
+        data->items[i].ztext = zune_text_new(NULL, data->labels[i], ZTEXT_ARG_NONE, 0);
+        zune_text_get_bounds(data->items[i].ztext, obj);
+    }
 
     if (!(muiGlobalInfo(obj)->mgi_Prefs->register_truncate_titles))
     {
@@ -534,10 +514,7 @@ IPTR Register__MUIM_Setup(struct IClass *cl, Object *obj,
         textpixmax = 0;
         for (i = 0; i < data->numitems; i++)
         {
-            WORD textpix =
-                TextLength(&temprp, data->items[i].text,
-                data->items[i].textlen);
-            textpixmax = MAX(textpix, textpixmax);
+            textpixmax = MAX(data->items[i].ztext->width, textpixmax);
         }
         data->def_width += (textpixmax + TEXTSPACING + 1) * data->numitems;
         data->def_width = MAX(data->min_width, data->def_width);
@@ -557,6 +534,13 @@ IPTR Register__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
     struct Register_DATA *data = INST_DATA(cl, obj);
+    int i;
+
+    for (i = 0; i < data->numitems; i++)
+    {
+        zune_text_destroy(data->items[i].ztext);
+        data->items[i].ztext = NULL;
+    }
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
 
