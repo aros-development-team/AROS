@@ -222,7 +222,8 @@ static inline VOID CleanVisualBuffer(struct MUI_StringData *data)
 
 /**************************************************************************
  Buffer_SetNewContents
- Initialize buffer with a string, replace former content if any
+ Initialize buffer with a string, replace former content if any. Returns
+ TRUE if value actually changed.
 **************************************************************************/
 static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
     CONST_STRPTR str)
@@ -237,6 +238,9 @@ static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
     }
     else
     {
+        if (!strcmp(data->Buffer, str))
+            return FALSE;
+
         data->NumChars = strlen(str);
         if (data->NumChars >= data->BufferSize)
             data->NumChars = data->BufferSize - 1;
@@ -608,10 +612,17 @@ IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
         case MUIA_String_Contents:
-            Buffer_SetNewContents(data, (STRPTR) tag->ti_Data);
-            data->msd_RedrawReason = NEW_CONTENTS;
-            data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            if (Buffer_SetNewContents(data, (STRPTR) tag->ti_Data))
+            {
+                data->msd_RedrawReason = NEW_CONTENTS;
+                data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
+            }
+            else
+            {
+                /* Attribute value not changed, don't fire notification */
+                tag->ti_Tag = TAG_IGNORE;
+            }
             break;
 
         case MUIA_String_Accept:
