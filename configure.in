@@ -808,6 +808,7 @@ aros_warn_flags=
 aros_isa_extra=
 aros_isa_flags=
 aros_kernel_isa_flags=
+aros_kernel_isa_extra=
 aros_config_cppflags=
 aros_config_cflags=
 aros_config_cxxflags=
@@ -1444,6 +1445,7 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                aros_kernel_isa_extra="-mgeneral-regs-only"
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
@@ -2721,7 +2723,7 @@ if test "$kernel_tool_prefix" = "none" ; then
     aros_kernel_strip=$orig_target_strip
     aros_kernel_objcopy=$orig_target_objcopy
     aros_kernel_objdump=$orig_target_objdump
-    aros_kernel_isa_flags="$""(ISA_FLAGS)"
+    aros_kernel_isa_flags="$""(ISA_FLAGS) $aros_kernel_isa_extra"
     use_kernel_cc_wrapper=yes
 fi
 
