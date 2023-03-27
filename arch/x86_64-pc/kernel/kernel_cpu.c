@@ -31,11 +31,14 @@
  * NB - Enabling DSCHED() with safedebug enabled CAN cause
  * lockups!
  */
+
+#define SCHEDULERASCII_DEBUG
+
 #ifdef DEBUG
 #undef DEBUG
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 
  #if (DEBUG > 0)
 #define DSCHED(x) x
@@ -43,14 +46,25 @@
 #define DSCHED(x)
 #endif
 
+#if (DEBUG > 0) && defined(SCHEDULERASCII_DEBUG)
+#define DEBUGCOLOR_SET       "\033[32m"
+#define DEBUGFUNCCOLOR_SET   "\033[32;1m"
+#define DEBUGCOLOR_RESET     "\033[0m"
+#else
+#define DEBUGCOLOR_SET
+#define DEBUGFUNCCOLOR_SET
+#define DEBUGCOLOR_RESET
+#endif
+
 void cpu_Dispatch(struct ExceptionContext *regs)
 {
     struct Task *task;
+    struct ETask * taskEtask = NULL;
     struct ExceptionContext *ctx;
     apicid_t cpunum = KrnGetCPUNumber();
 
     DSCHED(
-        bug("[Kernel:%03u] cpu_Dispatch()\n", cpunum);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpunum, __func__);
     )
     
     /*
@@ -60,7 +74,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     {
         /* Sleep until we receive an interupt....*/
         DSCHED(
-            bug("[Kernel:%03u] cpu_Dispatch: Nothing to do .. sleeping...\n", cpunum);
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Nothing to do .. sleeping..." DEBUGCOLOR_RESET "\n", cpunum, __func__);
         )
 
         __asm__ __volatile__("sti; hlt; cli");
@@ -70,59 +84,65 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     }
 
     DSCHED(
-        bug("[Kernel:%03u] cpu_Dispatch: Task to Run @ 0x%p\n", cpunum, task);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task to Run @ 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task);
     )
 
-    /* Get task's context */
-    ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
-
-    DSCHED(
-        bug("[Kernel:%03u] cpu_Dispatch: Restoring FPU/MMX registers\n", cpunum);
-        bug("[Kernel:%03u] cpu_Dispatch: tc_ETask = 0x%p\n", cpunum, task->tc_UnionETask.tc_ETask);
-        bug("[Kernel:%03u] cpu_Dispatch: et_RegFrame = 0x%p, FXSData = 0x%p\n", cpunum, ctx, ctx->FXSData);
-    )
-    if (ctx)
+    if (task->tc_Flags & TF_ETASK)
     {
-        /*
-         * Restore the x86 FPU / XMM / AVX512/ MXCSR state
-         * NB: lazy saving of the x86 FPU states or FPU / XMM / AVX512 state, has
-         * been reported to leak across process, aswell as VM boundaries, giving
-         * attackers possibilities to read private data from other processes,
-         * when using speculative execution side channel attacks.
-         * While this isnt (currently) an issue for AROS, we will not use them none the less ...
-         */
-        if (ctx->Flags & ECF_FPXS)
+        taskEtask = GetETask(task);
+        if (taskEtask)
         {
-            if (ctx->XSData)
+            /* Get task's context */
+            ctx = taskEtask->et_RegFrame;
+
+            DSCHED(
+                bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: tc_ETask = 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, taskEtask);
+                bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: et_RegFrame = 0x%p, FXSData = 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx, ctx->FXSData);
+            )
+            if (ctx)
             {
-                DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring AVX registers\n", cpunum);)
-                asm volatile("xrstor (%0)"::"r"(ctx->XSData));
+                /*
+                 * Restore the x86 FPU / XMM / AVX512/ MXCSR state
+                 * NB: lazy saving of the x86 FPU states or FPU / XMM / AVX512 state, has
+                 * been reported to leak across process, aswell as VM boundaries, giving
+                 * attackers possibilities to read private data from other processes,
+                 * when using speculative execution side channel attacks.
+                 * While this isnt (currently) an issue for AROS, we will not use them none the less ...
+                 */
+                if (ctx->Flags & ECF_FPXS)
+                {
+                    if (ctx->XSData)
+                    {
+                        DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: restoring AVX registers" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+                        asm volatile("xrstor (%0)"::"r"(ctx->XSData));
+                    }
+                    else
+                    {
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: AVX reg storage missing for task 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task);
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_Node.ln_Name);
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         ctx data @ %p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx);
+                    }
+                }
+                else if (ctx->Flags & ECF_FPFXS)
+                {
+                    if (ctx->FXSData)
+                    {
+                        DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: restoring SSE registers" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+                        asm volatile("fxrstor (%0)"::"r"(ctx->FXSData));
+                    }
+                    else
+                    {
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: SSE reg storage missing for task 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task);
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_Node.ln_Name);
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         ctx data @ %p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx);
+                    }
+                }
             }
-            else
-            {
-                bug("[Kernel:%03u] cpu_Dispatch: AVX reg storage missing for task 0x%p\n", cpunum, task);
-                bug("[Kernel:%03u] cpu_Dispatch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
-                bug("[Kernel:%03u] cpu_Dispatch:         ctx data @ %p\n", cpunum, ctx);
-            }
-        }
-        else if (ctx->Flags & ECF_FPFXS)
-        {
-            if (ctx->FXSData)
-            {
-                DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring SSE registers\n", cpunum);)
-                asm volatile("fxrstor (%0)"::"r"(ctx->FXSData));
-            }
-            else
-            {
-                bug("[Kernel:%03u] cpu_Dispatch: SSE reg storage missing for task 0x%p\n", cpunum, task);
-                bug("[Kernel:%03u] cpu_Dispatch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
-                bug("[Kernel:%03u] cpu_Dispatch:         ctx data @ %p\n", cpunum, ctx);
-            }
+#if defined(__AROSEXEC_SMP__)
+            IntETask(taskEtask)->iet_CpuNumber = cpunum;
+#endif
         }
     }
-#if defined(__AROSEXEC_SMP__)
-    IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
-#endif
 
     if (task->tc_Flags & TF_EXCEPT)
     {
@@ -130,22 +150,22 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         Exception();
 #else
         /* TODO: Handle exception */
-        DSCHED(
-            bug("[Kernel:%03u] cpu_Dispatch: !! unhandled exception in task @ 0x%p '%s'\n", cpunum, task, task->tc_Node.ln_Name);
-            bug("[Kernel:%03u] cpu_Dispatch: tc_SigExcept %08x, tc_SigRecvd %08x\n", cpunum, task->tc_SigExcept, task->tc_SigRecvd);
-        )
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: !! unhandled exception in task @ 0x%p '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task, task->tc_Node.ln_Name);
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: tc_SigExcept %08x, tc_SigRecvd %08x" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_SigExcept, task->tc_SigRecvd);
 #endif
     }
 
-    DSCHED(
-        bug("[Kernel:%03u] cpu_Dispatch: Caching task launch time\n", cpunum);
-    )
+    if (taskEtask)
+    {
+        DSCHED(
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Caching task launch time (previous == %u)" DEBUGCOLOR_RESET "\n", cpunum, __func__, IntETask(taskEtask)->iet_private1);
+        )
+        /* Store the launch time */
+        IntETask(taskEtask)->iet_private1 = RDTSC();
+    }
 
-    /* Store the launch time */
-    IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = RDTSC();
-
     DSCHED(
-        bug("[Kernel:%03u] cpu_Dispatch: Leaving...\n", cpunum);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Leaving..." DEBUGCOLOR_RESET "\n", cpunum, __func__);
     )
     /*
      * Leave interrupt and jump to the new task.
@@ -158,101 +178,131 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 void cpu_Switch(struct ExceptionContext *regs)
 {
     struct Task *task;
-    struct ExceptionContext *ctx;
-    UQUAD timeCur = 0;
-    struct timespec timeSpec;
+    struct ETask * taskEtask = NULL;
     apicid_t cpunum = KrnGetCPUNumber();
-    struct APICData *apicData;
-    apicData  = KernelBase->kb_PlatformData->kb_APIC;
 
-    DSCHED(bug("[Kernel:%03u] cpu_Switch()\n", cpunum);)
+    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
 
     task = GET_THIS_TASK;
 
-    if (task)
+    if ((task) && (task->tc_Flags & TF_ETASK) && (regs->Flags & ECF_SEGMENTS))
     {
-        timeCur = RDTSC();
-
-        ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
-
-        /*
-        * Cache x86 FPU / XMM / AVX512 / MXCSR state first
-        * NB: See the note about lazy saving of the fpu above!!
-        */
-        if (ctx->FPUCtxSize > sizeof(struct FPXSContext))
+        taskEtask = GetETask(task);
+        if (taskEtask)
         {
-            if (ctx->XSData)
-            {
-                DSCHED(bug("[Kernel:%03u] cpu_Switch: saving AVX registers\n", cpunum);)
-                asm volatile("xsave (%0)"::"r"(ctx->XSData));
-                ctx->Flags |= ECF_FPXS;
-            }
-            else
-            {
-                bug("[Kernel:%03u] cpu_Switch: AVX reg storage missing for task 0x%p\n", cpunum, task);
-                bug("[Kernel:%03u] cpu_Switch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
-                bug("[Kernel:%03u] cpu_Switch:         ctx data @ %p\n", cpunum, ctx);
-                ctx->Flags &= ~ECF_FPXS;
-            }
-        }
-        else if (ctx->FPUCtxSize == sizeof(struct FPFXSContext))
-        {
-            if (ctx->FXSData)
-            {
-                DSCHED(bug("[Kernel:%03u] cpu_Switch: saving SSE registers\n", cpunum);)
-                asm volatile("fxsave (%0)"::"r"(ctx->FXSData));
-                ctx->Flags |= ECF_FPFXS;
-            }
-            else
-            {
-                bug("[Kernel:%03u] cpu_Switch: SSE reg storage missing for task 0x%p\n", cpunum, task);
-                bug("[Kernel:%03u] cpu_Switch:         '%s'\n", cpunum, task->tc_Node.ln_Name);
-                bug("[Kernel:%03u] cpu_Switch:         ctx data @ %p\n", cpunum, ctx);
-                ctx->Flags &= ~ECF_FPFXS;
-            }
-        }
+            struct APICData *apicData;
+            struct ExceptionContext *ctx;
+            UQUAD timeCur = RDTSC();
+            ULONG tcFlags = 0;
 
-        /*
-        * Copy current task's context into the ETask structure. Note that context on stack
-        * misses SSE data pointer.
-        */
-        CopyMemQuick(regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
-        ctx->Flags = ECF_SEGMENTS;
+            ctx = taskEtask->et_RegFrame;
 
-        /* Set task's tc_SPReg */
-        task->tc_SPReg = (APTR)regs->rsp;
-
-        if (apicData &&
-            apicData->cores[cpunum].cpu_TSCFreq &&
-            apicData->cores[cpunum].cpu_TimerFreq &&
-            timeCur)
-        {
             /*
-            if (timeCur < IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
-                timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 - timeCur;
-            else
-                timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
+            * Cache x86 FPU / XMM / AVX512 / MXCSR state first
+            * NB: See the note about lazy saving of the fpu above!!
             */
-            timeCur -= IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
-            
-            /* Increase CPU Usage cycles */
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_private2 += timeCur;
-
-            // Convert TSC cycles into nanoseconds
-            timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TSCFreq;
-
-            /* Update the task's CPU time */
-            timeSpec.tv_sec = timeCur / 1000000000;
-            timeSpec.tv_nsec = timeCur % 1000000000;
-
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec += timeSpec.tv_nsec;
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec  += timeSpec.tv_sec;
-            while(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec >= 1000000000)
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: ctx->FPUCtxSize = %u" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx->FPUCtxSize);)
+            if (ctx->FPUCtxSize > sizeof(struct FPFXSContext))
             {
-                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec -= 1000000000;
-                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec++;
+                if (ctx->XSData)
+                {
+                    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: saving AVX registers" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+                    asm volatile("xsave (%0)"::"r"(ctx->XSData));
+                    tcFlags |= ECF_FPXS;
+                }
+                else
+                {
+                    bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: AVX reg storage missing for task 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task);
+                    bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_Node.ln_Name);
+                    bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         ctx data @ %p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx);
+                    tcFlags &= ~ECF_FPXS;
+                }
+            }
+            else if (ctx->FPUCtxSize == sizeof(struct FPFXSContext))
+            {
+                if (ctx->FXSData)
+                {
+                    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: saving SSE registers" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+                    asm volatile("fxsave (%0)"::"r"(ctx->FXSData));
+                    tcFlags |= ECF_FPFXS;
+                }
+                else
+                {
+                    bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: SSE reg storage missing for task 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task);
+                    bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_Node.ln_Name);
+                    bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         ctx data @ %p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx);
+                    tcFlags &= ~ECF_FPFXS;
+                }
+            }
+
+            /*
+            * Copy current task's context into the ETask structure. Note that context on stack
+            * misses SSE data pointer.
+            */
+            CopyMemQuick(regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: copied regs from %p to ctx %p (%u bytes)" DEBUGCOLOR_RESET "\n", cpunum, __func__, regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
+            ctx->Flags |= tcFlags;
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: context flags = %08x" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx->Flags);
+
+            /* Set task's tc_SPReg */
+            task->tc_SPReg = (APTR)regs->rsp;
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: tc_SPReg = 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_SPReg);
+
+            if (KernelBase->kb_PlatformData)
+            {
+                apicData  = KernelBase->kb_PlatformData->kb_APIC;
+                if (apicData &&
+                    apicData->cores[cpunum].cpu_TSCFreq &&
+                    apicData->cores[cpunum].cpu_TimerFreq &&
+                    timeCur)
+                {
+                    struct timespec timeSpec;
+                    DSCHED(
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Updating task run-time" DEBUGCOLOR_RESET "\n", cpunum, __func__);
+                    )
+                    /*
+                    if (timeCur < IntETask(taskEtask)->iet_private1)
+                        timeCur = IntETask(taskEtask)->iet_private1 - timeCur;
+                    else
+                        timeCur = IntETask(taskEtask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
+                    */
+                    timeCur -= IntETask(taskEtask)->iet_private1;
+                    
+                    /* Increase CPU Usage cycles */
+                    IntETask(taskEtask)->iet_private2 += timeCur;
+
+                    // Convert TSC cycles into nanoseconds
+                    timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TSCFreq;
+
+                    /* Update the task's CPU time */
+                    timeSpec.tv_sec = timeCur / 1000000000;
+                    timeSpec.tv_nsec = timeCur % 1000000000;
+
+                    IntETask(taskEtask)->iet_CpuTime.tv_nsec += timeSpec.tv_nsec;
+                    IntETask(taskEtask)->iet_CpuTime.tv_sec  += timeSpec.tv_sec;
+                    while(IntETask(taskEtask)->iet_CpuTime.tv_nsec >= 1000000000)
+                    {
+                        IntETask(taskEtask)->iet_CpuTime.tv_nsec -= 1000000000;
+                        IntETask(taskEtask)->iet_CpuTime.tv_sec++;
+                    }
+                    DSCHED(
+                        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: = %u.%u" DEBUGCOLOR_RESET "\n", cpunum, __func__, IntETask(taskEtask)->iet_CpuTime.tv_sec, IntETask(taskEtask)->iet_CpuTime.tv_nsec);
+                    )
+                }
+            }
+            else
+            {
+                DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Kernel not ready" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
             }
         }
+        else
+        {
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: ETask missing" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+        }
+    }
+    else
+    {
+        DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: INVALID STATE!!" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
     }
     core_Switch();
 }
