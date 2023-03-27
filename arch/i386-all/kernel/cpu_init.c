@@ -36,7 +36,7 @@ static int cpu_Init(struct KernelBase *KernelBase)
     /* Evaluate CPU capabilities */
     asm volatile("cpuid":"=a"(v1),"=b"(v2),"=c"(v3),"=d"(v4):"a"(1));
 
-    if (v4 & CPUID_FXSRF)
+    if (v4 & CPUID_EDX_FXSRF)
     {
         switch ((v4 & (CPUID_EDX_SSEF|CPUID_EDX_SSE2F)) >> CPUID_EDX_SSEB)
         {

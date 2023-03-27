@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2023, The AROS Development Team. All rights reserved.
 
     Desc: Intel 8259A "Legacy" PIC driver.
 */
@@ -175,7 +175,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                             if ((irq - instIRQBase) != 2)
                             {
                                 if (!core_SetIRQGate(
-                                    (struct int_gate_64bit *)__KernBootPrivate->BOOTIDT,
+                                    (x86vectgate_t *)__KernBootPrivate->BOOTIDT,
                                     irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
                                 {
                                     bug("[Kernel:i8259a] %s: failed to set IRQ %d's gate\n", __func__, irq);

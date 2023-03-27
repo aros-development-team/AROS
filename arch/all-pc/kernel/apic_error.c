@@ -55,8 +55,12 @@ int core_APICSpuriousHandle(struct ExceptionContext *regs, struct KernelBase *Ke
         __LAPICBase = core_APIC_GetBase();
 
     bug("[Kernel:APIC-IA32.%03u] %s: __LAPICBase = %p\n", cpunum, __func__, __LAPICBase);
+#if (__WORDSIZE==64)
+    bug("[Kernel:APIC-IA32.%03u] %s: rflags=%08x\n", cpunum, __func__, regs->rflags);
+#else
+    bug("[Kernel:APIC-IA32.%03u] %s: eflags=%08x\n", cpunum, __func__, regs->eflags);
+#endif
 
-    bug("[Kernel:APIC-IA32.%03u] %s: eflags=%08x\n", cpunum, __func__, regs->rflags);
     if ((KrnIsSuper()) || (ssp = SuperState()) != NULL)
     {
         bug("[Kernel:APIC-IA32.%03u] %s: IRR = %08x%08x%08x%08x%08x%08x%08x%08x\n",
