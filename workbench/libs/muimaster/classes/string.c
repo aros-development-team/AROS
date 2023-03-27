@@ -640,9 +640,13 @@ IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_String_Integer:
             {
                 char buf[20];
+                IPTR oldval, newval;
 
+                get(obj, MUIA_String_Integer, &oldval);
                 snprintf(buf, 19, "%ld", tag->ti_Data);
                 set(obj, MUIA_String_Contents, buf);
+                get(obj, MUIA_String_Integer, &newval);
+                if (oldval == newval) tag->ti_Tag = TAG_IGNORE; /* Attribute value not changed */
             }
             break;
 
