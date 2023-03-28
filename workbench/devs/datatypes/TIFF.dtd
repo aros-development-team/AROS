@@ -1,0 +1,10 @@
+# DataType Description for Targa
+Name=TIFF
+Version=$VER: TIFF 50.0 (31.05.2022)
+BaseName=tiff
+Pattern=#?.tiff
+Mask=
+GroupID=pict
+ID=_tiff
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

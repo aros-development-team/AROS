@@ -1,0 +1,136 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+CLASSFILES := webpclass
+
+##MM- workbench-datatypes-complete: workbench-datatypes-heic
+#MM workbench-datatypes-heic : \
+#MM includes \
+#MM linklibs \
+#MM workbench-libs-z \
+#MM datatypes-heic-linklibs-heif
+
+#MM datatypes-heic-linklibs-heif : \
+#MM includes \
+#MM linklibs \
+#MM datatypes-heic-linklibs-heif-genfiles datatypes-heic-linklibs-de265
+
+#MM datatypes-heic-linklibs-de265 : \
+#MM includes \
+#MM linklibs \
+#MM datatypes-heic-linklibs-de265-genfiles
+
+#MM- workbench-datatypes-heic-quick : datatypes-heic-linklibs-de265-quick datatypes-heic-linklibs-heif-quick
+
+COMMON_CPPFLAGS := \
+        -D_POSIX_SOURCE=600L \
+        -D_GNU_SOURCE \
+        -D__STDC_CONSTANT_MACROS \
+        -D__STDC_FORMAT_MACROS \
+        -D__STDC_LIMIT_MACROS \
+        -DHAVE_UNISTD_H \
+        -DHAVE_VISIBILITY=1
+
+USER_CPPFLAGS := \
+        $(COMMON_CPPFLAGS) \
+        -DHAVE_STDINT_H \
+        -DHAVE_POSIX_MEMALIGN
+
+ifeq (0,1)
+USER_CPPFLAGS += \
+        -DDE265_LOG_DEBUG \
+        -DDE265_LOG_INFO \
+        -DDE265_LOG_TRACE
+endif
+
+USER_LDFLAGS := -static-libstdc++
+
+USER_INCLUDES   := -I$(GENDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/libde265
+
+LIBDEC265CXXFILES := \
+        libde265/libde265/alloc_pool \
+        libde265/libde265/bitstream \
+        libde265/libde265/cabac \
+        libde265/libde265/configparam \
+        libde265/libde265/contextmodel \
+        libde265/libde265/de265 \
+        libde265/libde265/deblock \
+        libde265/libde265/decctx \
+        libde265/libde265/fallback \
+        libde265/libde265/fallback-dct \
+        libde265/libde265/fallback-motion \
+        libde265/libde265/dpb \
+        libde265/libde265/image \
+        libde265/libde265/image-io \
+        libde265/libde265/intrapred \
+        libde265/libde265/md5 \
+        libde265/libde265/motion \
+        libde265/libde265/nal \
+        libde265/libde265/nal-parser \
+        libde265/libde265/pps \
+        libde265/libde265/quality \
+        libde265/libde265/refpic \
+        libde265/libde265/sao \
+        libde265/libde265/scan \
+        libde265/libde265/sei \
+        libde265/libde265/slice \
+        libde265/libde265/sps \
+        libde265/libde265/threads \
+        libde265/libde265/transform \
+        libde265/libde265/util \
+        libde265/libde265/visualize \
+        libde265/libde265/vps \
+        libde265/libde265/vui
+
+$(GENDIR)/$(CURDIR)/libde265/de265-version.h : $(SRCDIR)/$(CURDIR)/libde265/libde265/de265-version.h.in | $(GENDIR)/$(CURDIR)/libde265
+	cat $< | $(SED) s/@NUMERIC_VERSION@/0x01000500/ | $(SED) s/@PACKAGE_VERSION@/"1.0.5"/ > $@
+
+%build_linklib mmake=datatypes-heic-linklibs-de265 \
+    libname=de265 cxxfiles="$(LIBDEC265CXXFILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/libde265 libdir=$(GENDIR)/$(CURDIR)/lib
+
+#MM
+datatypes-heic-linklibs-de265-genfiles : $(GENDIR)/$(CURDIR)/libde265/de265-version.h
+
+USER_INCLUDES   += -I$(SRCDIR)/$(CURDIR)/libheif
+USER_CPPFLAGS := $(COMMON_CPPFLAGS) -DHAVE_LIBDE265
+
+LIBHEIFCXXFILES := \
+        libheif/libheif/bitstream \
+        libheif/libheif/box \
+        libheif/libheif/error \
+        libheif/libheif/heif_file \
+        libheif/libheif/heif_image \
+        libheif/libheif/heif \
+        libheif/libheif/heif_context \
+        libheif/libheif/heif_hevc \
+        libheif/libheif/heif_init \
+        libheif/libheif/heif_avif \
+        libheif/libheif/heif_plugin_registry \
+        libheif/libheif/heif_plugin \
+        libheif/libheif/heif_colorconversion \
+        libheif/libheif/metadata_compression \
+        libheif/libheif/nclx \
+        libheif/libheif/common_utils
+
+LIBHEIFCXXFILES += \
+        libheif/libheif/plugins/heif_decoder_libde265
+
+$(GENDIR)/$(CURDIR)/libheif/heif_version.h : $(SRCDIR)/$(CURDIR)/libheif/libheif/heif_version.h.in | $(GENDIR)/$(CURDIR)/libheif
+	cat $< | $(SED) s/@PROJECT_VERSION_MAJOR@/1/ | $(SED) s/@PROJECT_VERSION_MINOR@/6/ | $(SED) s/@PROJECT_VERSION_PATCH@/2/ | $(SED) s/@PROJECT_VERSION_TWEAK@/0/ > $@
+
+%build_linklib mmake=datatypes-heic-linklibs-heif \
+    libname=heif cxxfiles="$(LIBHEIFCXXFILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/libheif libdir=$(GENDIR)/$(CURDIR)/lib
+
+#MM
+datatypes-heic-linklibs-heif-genfiles : $(GENDIR)/$(CURDIR)/libheif/heif_version.h
+
+USER_LDFLAGS += -L$(GENDIR)/$(CURDIR)/lib -Wl,--start-group -lheif -lde265 -lposixc -lstdcio -lstdc
+
+HEICCLASSFILES := heicclass
+
+%build_module mmake=workbench-datatypes-heic \
+    modname=heic modtype=datatype \
+    files=$(HEICCLASSFILES) cxxfiles=heicdummy
