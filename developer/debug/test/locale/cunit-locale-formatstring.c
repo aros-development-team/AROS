@@ -118,8 +118,8 @@ void testFORMATSTRINGFMTEXPLICITARG(void)
 {
     hook.h_Data = buffer;
 
-    CU_ASSERT(&args.arg5 == FormatString(NULL, (STRPTR)"Textformat %2$s %4$u", (RAWARG)&args, &hook));
-    CU_ASSERT(0 == strcmp("Textformat ARG2 50", buffer));
+    CU_ASSERT(&args.arg5 == FormatString(NULL, (STRPTR)"Textformat %2$s %4$u %1$s %3$c", (RAWARG)&args, &hook));
+    CU_ASSERT(0 == strcmp("Textformat ARG2 50 ARG1 N", buffer));
 }
 
 int main(void)
