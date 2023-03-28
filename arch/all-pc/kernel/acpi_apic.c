@@ -44,7 +44,7 @@ void acpi_APIC_AllocPrivate(struct PlatformData *pdata)
 
 void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
 {
-    struct APICCPUWake_Data *apicWake = CPUEXCTX_REGB;
+    struct APICCPUWake_Data *apicWake = (struct APICCPUWake_Data *)CPUEXCTX_REGB;
 
     D(
       bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__);
