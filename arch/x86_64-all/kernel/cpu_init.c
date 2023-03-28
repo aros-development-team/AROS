@@ -14,13 +14,18 @@
 
 #define D(x)
 
-#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
-static ULONG GetAVXOffs(ULONG *XContextSizePtr)
+static int cpu_Init(struct KernelBase *KernelBase)
 {
-    ULONG _XContextSize = 0;
-    ULONG _AVXOffs = 0;
+#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
+    ULONG XContextSize = 0;
+    ULONG AVXOffs = 0;
+#endif
 
-    D(bug("[Kernel] %s: Checking for XSAVE/AVX availability...\n", __func__);)
+    D(bug("[Kernel] %s: KernelBase @ 0x%p\n", __func__, KernelBase);)
+
+    KernelBase->kb_ContextSize = 0;
+#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
+    D(bug("[Kernel] %s: Checking for XSAVE/AVX availability...\n", __func__, KernelBase);)
 
     asm volatile (
         "    mov $0x01, %%eax\n\t"
@@ -41,28 +46,12 @@ static ULONG GetAVXOffs(ULONG *XContextSizePtr)
         "    cpuid\n\t"
         "    mov        %%ebx, %0\n\t\n"
         ".xscheck_done:\n\t"
-        : "=m"(_XContextSize), "=m"(_AVXOffs)
+        : "+m"(XContextSize), "+m"(AVXOffs)
         :
         : "%eax", "%ebx", "%ecx", "%edx"
     );
-    *XContextSizePtr = _XContextSize;
-    return _AVXOffs;
-}
-#endif
 
-static int cpu_Init(struct KernelBase *KernelBase)
-{
-#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
-    volatile ULONG XContextSize = 0;
-    volatile ULONG AVXOffs = 0;
-#endif
-
-    D(bug("[Kernel] %s: KernelBase @ 0x%p\n", __func__, KernelBase);)
-
-    KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext);
-
-#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
-    if ((AVXOffs = GetAVXOffs(&XContextSize)) != 0)
+    if (AVXOffs)
     {
         ULONG featMask;
 
@@ -92,24 +81,20 @@ static int cpu_Init(struct KernelBase *KernelBase)
             bug("[Kernel] %s: AVX feature mask %08x\n", __func__, featMask);
             bug("[Kernel] %s: AVX required size = %u\n", __func__, XContextSize);
         )
-        KernelBase->kb_ContextSize += XContextSize +  63;
+        KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + XContextSize +  63;
     }
 #endif
-    if (KernelBase->kb_ContextSize <= sizeof(struct AROSCPUContext))
+    if (KernelBase->kb_ContextSize == 0)
     {
         /* All x86-64 processors have SSE/FXSAVE */
-        KernelBase->kb_ContextSize += sizeof(struct FPFXSContext) + 15;
-        D(
-            bug("[Kernel] %s:     base Context size = %u bytes\n", __func__, sizeof(struct AROSCPUContext));
-            bug("[Kernel] %s:     sse Context size = %u bytes\n", __func__, sizeof(struct FPFXSContext));
-        )
+        KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) + 15;
     }
 #if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
     if (KernelBase->kb_PlatformData)
     {
         APTR tmp = AllocMem(KernelBase->kb_ContextSize -  sizeof(struct AROSCPUContext), MEMF_PUBLIC);
         KernelBase->kb_PlatformData->kb_FXCtx = (APTR)(AROS_ROUNDUP2((IPTR)tmp, 64));
-        bug("[Kernel] %s: IRQ FPU Save @ 0x%p (%u bytes)\n", __func__, KernelBase->kb_PlatformData->kb_FXCtx, KernelBase->kb_ContextSize -  sizeof(struct AROSCPUContext));
+        bug("[Kernel] %s: IRQ FPU Save @ 0x%p\n", __func__, KernelBase->kb_PlatformData->kb_FXCtx);
     }
 #endif
     D(bug("[Kernel] %s: CPU Context size = %u bytes\n", __func__, KernelBase->kb_ContextSize);)
