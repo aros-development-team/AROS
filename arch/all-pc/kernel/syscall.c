@@ -34,12 +34,7 @@ int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *Kernel
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct syscallx86_Handler *scHandler;
-    ULONG sc =
-#if (__WORDSIZE == 64)
-        regs->rax;
-#else
-        regs->eax;
-#endif
+    ULONG sc = CPUEXCTX_REGA;
     BOOL systemSysCall = TRUE;
 
     /* Syscall number is actually ULONG (we use only eax) */

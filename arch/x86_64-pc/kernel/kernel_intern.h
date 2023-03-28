@@ -12,7 +12,6 @@
 
 #include <aros/kernel.h>
 #include <utility/tagitem.h>
-#include <asm/cpu.h>
 
 #include "cpu_x86.h"
 #include "apic.h"

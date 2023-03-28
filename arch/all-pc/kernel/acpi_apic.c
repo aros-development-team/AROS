@@ -44,12 +44,7 @@ void acpi_APIC_AllocPrivate(struct PlatformData *pdata)
 
 void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
 {
-    struct APICCPUWake_Data *apicWake =
-#if (__WORDSIZE==64)
-        (struct APICCPUWake_Data *)regs->rbx;
-#else
-        (struct APICCPUWake_Data *)regs->ebx;
-#endif
+    struct APICCPUWake_Data *apicWake = CPUEXCTX_REGB;
 
     D(
       bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__);
@@ -57,12 +52,7 @@ void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
       bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC ID %03u (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
      )
 
-#if (__WORDSIZE==64)
-    regs->rax =
-#else
-    regs->eax =
-#endif
-        core_APIC_Wake(apicWake->cpuw_apicstartrip, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
+    CPUEXCTX_REGA = core_APIC_Wake(apicWake->cpuw_apicstartrip, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
 
     core_LeaveInterrupt(regs);
 }

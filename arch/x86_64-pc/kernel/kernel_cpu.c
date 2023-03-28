@@ -37,7 +37,6 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-
 #define DEBUG 0
 
  #if (DEBUG > 0)
@@ -64,7 +63,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     apicid_t cpunum = KrnGetCPUNumber();
 
     DSCHED(
-        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpunum, __func__);
+        bug("[Kernel:%03u]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpunum, __func__);
     )
     
     /*
@@ -151,7 +150,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 #else
         /* TODO: Handle exception */
             bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: !! unhandled exception in task @ 0x%p '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task, task->tc_Node.ln_Name);
-            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: tc_SigExcept %08x, tc_SigRecvd %08x" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_SigExcept, task->tc_SigRecvd);
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: tc_SigExcept %08X, tc_SigRecvd %08X" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_SigExcept, task->tc_SigRecvd);
 #endif
     }
 
@@ -181,7 +180,7 @@ void cpu_Switch(struct ExceptionContext *regs)
     struct ETask * taskEtask = NULL;
     apicid_t cpunum = KrnGetCPUNumber();
 
-    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+    DSCHED(bug("[Kernel:%03u]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
 
     task = GET_THIS_TASK;
 
@@ -195,18 +194,22 @@ void cpu_Switch(struct ExceptionContext *regs)
             UQUAD timeCur = RDTSC();
             ULONG tcFlags = 0;
 
-            ctx = taskEtask->et_RegFrame;
+            if (!(ctx = taskEtask->et_RegFrame))
+            {
+                bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: !!!!! MISSING et_RegFrame !!!!!" DEBUGCOLOR_RESET "\n", cpunum, __func__);
+            }
 
             /*
             * Cache x86 FPU / XMM / AVX512 / MXCSR state first
             * NB: See the note about lazy saving of the fpu above!!
             */
             DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: ctx->FPUCtxSize = %u" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx->FPUCtxSize);)
+            tcFlags &= ~(ECF_FPXS|ECF_FPFXS);
             if (ctx->FPUCtxSize > sizeof(struct FPFXSContext))
             {
                 if (ctx->XSData)
                 {
-                    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: saving AVX registers" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+                    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: saving AVX registers to 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx->XSData);)
                     asm volatile("xsave (%0)"::"r"(ctx->XSData));
                     tcFlags |= ECF_FPXS;
                 }
@@ -215,14 +218,13 @@ void cpu_Switch(struct ExceptionContext *regs)
                     bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: AVX reg storage missing for task 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task);
                     bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_Node.ln_Name);
                     bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         ctx data @ %p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx);
-                    tcFlags &= ~ECF_FPXS;
                 }
             }
             else if (ctx->FPUCtxSize == sizeof(struct FPFXSContext))
             {
                 if (ctx->FXSData)
                 {
-                    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: saving SSE registers" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
+                    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: saving SSE registers to 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx->FXSData);)
                     asm volatile("fxsave (%0)"::"r"(ctx->FXSData));
                     tcFlags |= ECF_FPFXS;
                 }
@@ -231,7 +233,6 @@ void cpu_Switch(struct ExceptionContext *regs)
                     bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: SSE reg storage missing for task 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task);
                     bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         '%s'" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_Node.ln_Name);
                     bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s:         ctx data @ %p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx);
-                    tcFlags &= ~ECF_FPFXS;
                 }
             }
 
@@ -240,13 +241,10 @@ void cpu_Switch(struct ExceptionContext *regs)
             * misses SSE data pointer.
             */
             CopyMemQuick(regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
-            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: copied regs from %p to ctx %p (%u bytes)" DEBUGCOLOR_RESET "\n", cpunum, __func__, regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
             ctx->Flags |= tcFlags;
-            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: context flags = %08x" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx->Flags);
 
             /* Set task's tc_SPReg */
             task->tc_SPReg = (APTR)regs->rsp;
-            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: tc_SPReg = 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, task->tc_SPReg);
 
             if (KernelBase->kb_PlatformData)
             {

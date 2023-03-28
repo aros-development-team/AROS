@@ -34,7 +34,6 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-
 #define DEBUG 0
 
 #if (DEBUG > 0)
@@ -80,7 +79,7 @@ BOOL core_Schedule(void)
 
     DSCHED(
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: running Task @ 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task);
-        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: '%s', state %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: '%s', state %08X" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task->tc_State);
     )
 
     FLAG_SCHEDSWITCH_CLEAR;
@@ -170,6 +169,7 @@ void core_Switch(void)
     struct Task *task;
     ULONG showAlert = 0;
     BOOL doSwitch = TRUE;
+    struct ETask * taskEtask = NULL;
 
     DSCHED(bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", __func__);)
 
@@ -186,10 +186,10 @@ void core_Switch(void)
     }
     DSCHED(
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task name '%s'" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name);
-        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task state = %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_State);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task state = %08X" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_State);
     )
 #if defined(__AROSEXEC_SMP__)
-    if (task->tc_State == TS_TOMBSTONED)
+    if (doSwitch && task->tc_State == TS_TOMBSTONED)
         doSwitch = FALSE;
 #endif
     if (!doSwitch)
@@ -201,7 +201,7 @@ void core_Switch(void)
     DSCHED(
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Switching away from Task" DEBUGCOLOR_RESET "\n", cpuNo, __func__);
     )
-    
+
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
@@ -215,7 +215,7 @@ void core_Switch(void)
         task->tc_State = TS_TOMBSTONED;
 #endif
 
-    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task removed from list, state = %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_State);)
+    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task removed from list, state = %08X" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_State);)
 
     if ((task->tc_State != TS_WAIT) &&
 #if defined(__AROSEXEC_SMP__)
@@ -379,7 +379,7 @@ bug("----> such unspinning should not take place!" DEBUGCOLOR_RESET "\n");
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
             // The task is on its way out ...
             bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: --> Dispatching finalizing/tombstoned task?" DEBUGCOLOR_RESET "\n", cpuNo, __func__);
-            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: --> Task @ 0x%p '%s', state %08x" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task, task->tc_Node.ln_Name, newtask->tc_State);
+            bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: --> Task @ 0x%p '%s', state %08X" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task, task->tc_Node.ln_Name, newtask->tc_State);
 #endif
         }
 
@@ -399,7 +399,7 @@ bug("----> such unspinning should not take place!" DEBUGCOLOR_RESET "\n");
         if (!launchtask)
         {
             /* if the new task shouldn't run - force a reschedule */
-            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Skipping '%s' @ 0x%p (state %08x)" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Skipping '%s' @ 0x%p (state %08X)" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
 
             core_Switch();
             newtask = core_Dispatch();
@@ -411,7 +411,7 @@ bug("----> such unspinning should not take place!" DEBUGCOLOR_RESET "\n");
 #else
             AROS_ATOMIC_INC(SysBase->DispCount);
 #endif
-            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Launching '%s' @ 0x%p (state %08x)" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
+            DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Launching '%s' @ 0x%p (state %08X)" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newtask->tc_Node.ln_Name, newtask, newtask->tc_State);)
         }
     }
     else

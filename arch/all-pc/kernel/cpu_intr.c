@@ -23,20 +23,35 @@
 #include "kernel_ipi.h"
 #include "cpu_traps.h"
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 0
+
+ #if (DEBUG > 0)
+#define D(x)
+#define DIDT(x) x
+#define DIRQ(x) x
+#define DTRAP(x) x
+#else
 #define D(x)
 #define DIDT(x)
 #define DIRQ(x)
 #define DTRAP(x)
+#endif
+
 #define DUMP_CONTEXT
 
-//#define IRQNOSCHED_FORBID
-//#define APICIRSTATUS_DEBUG
+//#define INTRASCII_DEBUG
 
-/* use the correct registers depending on arch. */
-#if (__WORDSIZE != 64)
-#define INTR_REGA               regs->eax
+#if (DEBUG > 0) && defined(INTRASCII_DEBUG)
+#define DEBUGCOLOR_SET       "\033[41m"
+#define DEBUGFUNCCOLOR_SET   "\033[41;1m"
+#define DEBUGCOLOR_RESET     "\033[0m"
 #else
-#define INTR_REGA               regs->rax
+#define DEBUGCOLOR_SET
+#define DEBUGFUNCCOLOR_SET
+#define DEBUGCOLOR_RESET
 #endif
 
 #define IRQ(x,y) \
@@ -102,9 +117,9 @@ BOOL core_SetIDTGate(x86vectgate_t *IGATES, int vect, uintptr_t gate, BOOL enabl
     DIDT(
         APTR gateOld;
 
-        bug("[Kernel] %s: Setting IDTGate #%d IDT @ 0x%p\n", __func__, vect, IGATES);
-        bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
-        bug("[Kernel] %s: enable=%d\n", __func__, enable);
+        bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s: Setting IDTGate #%d IDT @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, vect, IGATES);
+        bug("[Kernel]" DEBUGCOLOR_SET " %s: gate @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, gate);
+        bug("[Kernel]" DEBUGCOLOR_SET " %s: enable=%d" DEBUGCOLOR_RESET "\n", __func__, enable);
     )
 #if (__WORDSIZE != 64)
     DIDT(gateOld = (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));)
@@ -112,7 +127,7 @@ BOOL core_SetIDTGate(x86vectgate_t *IGATES, int vect, uintptr_t gate, BOOL enabl
     DIDT(gateOld = (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFFFFFF) << 32) | (((IPTR)IGATES[vect].offset_mid & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));)
 #endif
     DIDT(
-        if (gateOld) bug("[Kernel] %s: existing gate @ 0x%p\n", __func__, gateOld);
+        if (gateOld) bug("[Kernel]" DEBUGCOLOR_SET " %s: existing gate @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, gateOld);
     )
 
     if (IGATES[vect].p && force)
@@ -139,7 +154,7 @@ BOOL core_SetIDTGate(x86vectgate_t *IGATES, int vect, uintptr_t gate, BOOL enabl
     }
     else
     {
-        bug("[Kernel] %s: Vector #%d gate already enabled!\n", __func__, vect);
+        bug("[Kernel]" DEBUGCOLOR_SET " %s: Vector #%d gate already enabled!" DEBUGCOLOR_RESET "\n", __func__, vect);
     }
     return FALSE;
 }
@@ -149,8 +164,8 @@ BOOL core_SetIRQGate(void *idt, int IRQ, uintptr_t gate)
 {
     x86vectgate_t *IGATES = (x86vectgate_t *)idt;
     DIDT(
-        bug("[Kernel] %s: Setting IRQGate #%d\n", __func__, IRQ);
-        bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
+        bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s: Setting IRQGate #%d" DEBUGCOLOR_RESET "\n", __func__, IRQ);
+        bug("[Kernel]" DEBUGCOLOR_SET " %s: gate @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, gate);
     )
 
     return core_SetIDTGate(IGATES, HW_IRQ_BASE + IRQ, gate, TRUE, FALSE);
@@ -182,11 +197,11 @@ void core_ReloadIDT()
 
     x86vectgate_t *IGATES = (x86vectgate_t *)apicData->cores[cpuNo].cpu_IDT;
 
-    DIRQ(bug("[Kernel] %s()\n", __func__);)
+    DIRQ(bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", __func__);)
 
     IDT_sel.size = sizeof(x86vectgate_t) * 256 - 1;
     IDT_sel.base = (unsigned long)IGATES;
-    DIDT(bug("[Kernel] %s(%u):    base 0x%p, size %d\n", __func__, cpuNo, IDT_sel.base, IDT_sel.size));
+    DIDT(bug("[Kernel]" DEBUGCOLOR_SET " %s(%u):    base 0x%p, size %d" DEBUGCOLOR_RESET "\n", __func__, cpuNo, IDT_sel.base, IDT_sel.size));
 
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
@@ -202,8 +217,8 @@ void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
     if (IGATES)
     {
         DIDT(
-            bug("[Kernel] %s(%u): IDT @ 0x%p\n", __func__, _APICID, IGATES);
-            bug("[Kernel] %s(%u): Setting default gates\n", __func__, _APICID);
+            bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): IDT @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, _APICID, IGATES);
+            bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): Setting default gates" DEBUGCOLOR_RESET "\n", __func__, _APICID);
         )
 
         // Disable ALL the default gates until something takes ownership
@@ -213,15 +228,15 @@ void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
 
             if (!core_SetIDTGate(IGATES, i, off, FALSE, TRUE))
             {
-                bug("[Kernel] %s(%u): gate #%d failed\n", __func__, _APICID, i);
+                bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): gate #%d failed" DEBUGCOLOR_RESET "\n", __func__, _APICID, i);
             }
         }
 
-        DIDT(bug("[Kernel] %s(%u): Registering IDT ..\n", __func__, _APICID));
+        DIDT(bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): Registering IDT .." DEBUGCOLOR_RESET "\n", __func__, _APICID));
 
         IDT_sel.size = sizeof(x86vectgate_t) * 256 - 1;
         IDT_sel.base = (unsigned long)IGATES;
-        DIDT(bug("[Kernel] %s(%u):    base 0x%p, size %d\n", __func__, _APICID, IDT_sel.base, IDT_sel.size));
+        DIDT(bug("[Kernel]" DEBUGCOLOR_SET " %s(%u):    base 0x%p, size %d" DEBUGCOLOR_RESET "\n", __func__, _APICID, IDT_sel.base, IDT_sel.size));
 
         asm volatile ("lidt %0"::"m"(IDT_sel));
     }
@@ -229,13 +244,13 @@ void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
     {
         krnPanic(NULL, "Invalid IDT\n");
     }
-    DIDT(bug("[Kernel] %s(%u): IDT configured\n", __func__, _APICID));
+    DIDT(bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): IDT configured" DEBUGCOLOR_RESET "\n", __func__, _APICID));
 }
 
 void core_InvalidateIDT()
 {
     struct segment_selector IDT_sel;
-    DIDT(bug("[Kernel] %s()\n", __func__));
+    DIDT(bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", __func__));
     IDT_sel.size = 0;
     IDT_sel.base = 0;
     asm volatile ("lidt %0"::"m"(IDT_sel));
@@ -254,8 +269,8 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         unsigned long exception_number = GET_EXCEPTION_NUMBER(int_number);
 
         DTRAP(
-            bug("[Kernel] %s(%u): CPU Exception %08x\n", __func__, int_number, int_number);
-            bug("[Kernel] %s(%u): --> CPU Trap #$%08x\n", __func__, int_number, exception_number);
+            bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): CPU Exception %08X" DEBUGCOLOR_RESET "\n", __func__, int_number, int_number);
+            bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): --> CPU Trap #$%08X" DEBUGCOLOR_RESET "\n", __func__, int_number, exception_number);
         )
 
         /* Store the error code for later retrieval */
@@ -277,7 +292,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
                 case 21:
                 case 29:
                 case 30:
-                    bug("[Kernel] %s(%u): Exception error code %08x\n", __func__, int_number, error_code);
+                    bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): Exception error code %08X" DEBUGCOLOR_RESET "\n", __func__, int_number, error_code);
                     pdata->kb_LastException = int_number;
                     pdata->kb_LastExceptionError = error_code;
                     break;
@@ -287,7 +302,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         cpu_Trap(regs, error_code, exception_number);
 
         DTRAP(
-            bug("[Kernel] %s(%u): CPU Trap returned\n", __func__, int_number);
+            bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): CPU Trap returned" DEBUGCOLOR_RESET "\n", __func__, int_number);
         )
     }
     else
@@ -295,7 +310,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         UBYTE irq_number = GET_DEVICE_IRQ(int_number);
 
         DIRQ(
-            bug("[Kernel] %s(%u): Device IRQ #$%02X\n", __func__, int_number, irq_number);
+            bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): Device IRQ #$%02X" DEBUGCOLOR_RESET "\n", __func__, int_number, irq_number);
         )
 
         if (pdata)
@@ -304,15 +319,15 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 #if (0)
             if (pdata->kb_FXCtx)
             {
-                DIRQ(bug("[kernel] %s(%d): saving to kb_FXCt @ 0x%p\n", __func__, int_number, pdata->kb_FXCtx);)
+                DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): saving to kb_FXCt @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, int_number, pdata->kb_FXCtx);)
                 if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
                 {
-                    DIRQ(bug("[kernel] %s(%d): AVX save\n", __func__, int_number);)
+                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): AVX save" DEBUGCOLOR_RESET "\n", __func__, int_number);)
                     asm volatile("xsave (%0)"::"r"(pdata->kb_FXCtx));
                 }
                 else
                 {
-                    DIRQ(bug("[kernel] %s(%d): SSE save\n", __func__, int_number);)
+                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): SSE save" DEBUGCOLOR_RESET "\n", __func__, int_number);)
                     asm volatile("fxsave (%0)"::"r"(pdata->kb_FXCtx));
                 }
             }
@@ -347,15 +362,15 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 #if (0)
             if (pdata->kb_FXCtx)
             {
-                DIRQ(bug("[kernel] %s(%d): Device IRQ - restoring fp state from kb_FXCt @ 0x%p\n", __func__, int_number, pdata->kb_FXCtx);)
+                DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): Device IRQ - restoring fp state from kb_FXCt @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, int_number, pdata->kb_FXCtx);)
                 if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
                 {
-                    DIRQ(bug("[kernel] %s(%d): AVX restore\n", __func__, int_number);)
+                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): AVX restore" DEBUGCOLOR_RESET "\n", __func__, int_number);)
                     asm volatile("xrstor (%0)"::"r"(pdata->kb_FXCtx));
                 }
                 else
                 {
-                    DIRQ(bug("[kernel] %s(%d): SSE restore\n", __func__, int_number);)
+                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): SSE restore" DEBUGCOLOR_RESET "\n", __func__, int_number);)
                     asm volatile("fxrstor (%0)"::"r"(pdata->kb_FXCtx));
                 }
             }
@@ -373,14 +388,14 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
             __asm__ __volatile__("cli; cld;");
 
             DIRQ(
-                bug("[Kernel] %s(%u): calling ExitInterrupt... (>usermode)(%08x)\n", __func__, int_number, regs->Flags);
+                bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): calling ExitInterrupt... (>usermode)(%08X)" DEBUGCOLOR_RESET "\n", __func__, int_number, regs->Flags);
             )
             core_ExitInterrupt(regs);
         }
     }
 
     DIRQ(
-        bug("[Kernel] %s(%u): calling LeaveInterrupt...(%08x)\n", __func__, int_number, regs->Flags);
+        bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): calling LeaveInterrupt...(%08X)" DEBUGCOLOR_RESET "\n", __func__, int_number, regs->Flags);
     )
     core_LeaveInterrupt(regs);
 }

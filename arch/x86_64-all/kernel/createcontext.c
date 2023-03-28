@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Create an empty usable CPU context, x86_64 version.
 */
@@ -33,11 +33,12 @@ AROS_LH0(void *, KrnCreateContext,
     {
         IPTR fpdata;
 
-        D(bug("[Kernel] %s: Context data @ 0x%p\n", __func__, ctx);)
+        D(bug("[Kernel] %s: Context data @ 0x%p (%u bytes)\n", __func__, ctx, KernelBase->kb_ContextSize);)
+
 #if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
         if (KernelBase->kb_ContextSize > (sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) +  16))
         {
-            ctx->FPUCtxSize = KernelBase->kb_ContextSize - (sizeof(struct AROSCPUContext) +  64);
+            ctx->FPUCtxSize = KernelBase->kb_ContextSize - (sizeof(struct AROSCPUContext) +  63);
             fpdata = AROS_ROUNDUP2((IPTR)ctx + sizeof(struct AROSCPUContext), 64);
             ctx->Flags  = ECF_FPXS;
             ctx->XSData = (struct FPXSContext *)fpdata;
@@ -72,7 +73,7 @@ AROS_LH0(void *, KrnCreateContext,
 
         if (ctx->Flags  & ECF_FPXS)
         {
-            D(bug("[Kernel] %s: saving initial AVX state\n", __func__);)
+            D(bug("[Kernel] %s: saving initial AVX state to 0x%p\n", __func__, ctx->XSData);)
 
             asm volatile("xsave (%0)"::"r"(ctx->XSData));
         }
