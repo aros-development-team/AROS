@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -19,26 +19,6 @@
 #include <utility/tagitem.h>
 
 #include "ahci.h"
-
-#define DIRQ(x)
-
-#if (0)
-static AROS_INTH1(ahciBus_Reset, struct ahci_Bus *, bus)
-{
-    AROS_INTFUNC_INIT
-
-    struct AHCIBase *AHCIBase = bus->ab_Base;
-    OOP_Object *obj = (void *)bus - AHCIBase->busClass->InstOffset;
-
-        D(bug ("[AHCI:Bus] ahciBus_Reset(%p)\n", bus);)
-
-    HIDD_AHCIBus_Shutdown(obj);
-
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
-}
-#endif
 
 /*****************************************************************************************
 

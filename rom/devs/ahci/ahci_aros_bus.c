@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2023, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -223,8 +223,14 @@ struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, 
 
     switch (type) {
     case SYS_RES_IRQ:
-        OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &INTLine);
-        resource->res_tag = INTLine;
+        if (*rid == 0)
+        {
+            OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &INTLine);
+            resource->res_tag = INTLine;
+        }
+        else
+            resource->res_tag = *rid;
+
         break;
     case SYS_RES_MEMORY:
         resource->res_tag = pci_read_config(dev, *rid, 4);
@@ -244,8 +250,14 @@ struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, 
         map.PCIAddress = (APTR)resource->res_tag;
         map.Length = resource->res_size;
         resource->res_handle = OOP_DoMethod(Driver, (OOP_Msg)&map);
-    } else {
-        /* FIXME: Map IRQ? */
+    } else if (type == SYS_RES_IRQ) {
+        resource->res_handle = (bus_space_handle_t)AllocMem(sizeof(struct irq_handle), MEMF_ANY);
+        ((struct irq_handle *)resource->res_handle)->irq_flags = flags;
+        ((struct irq_handle *)resource->res_handle)->irq_handle = 0;
+        resource->res_size = 1;
+    }
+    else
+    {
         resource->res_handle = resource->res_tag;
         resource->res_size = 1;
     }
@@ -269,6 +281,10 @@ int bus_release_resource(device_t dev, enum bus_resource_t type, int rid, struct
         unmap.CPUAddress = (APTR)res->res_handle;
         unmap.Length = res->res_size;
         OOP_DoMethod(Driver, (OOP_Msg)&unmap);
+
+    } else if (type == SYS_RES_IRQ) {
+        if (res->res_handle)
+            FreeMem((APTR)res->res_handle, sizeof(struct irq_handle));
     }
     FreePooled(AHCIBase->ahci_MemPool, res, sizeof(*res));
     return 0;
@@ -304,17 +320,28 @@ int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t fu
     handler->is_Node.ln_Pri = 10;
     handler->is_Node.ln_Name = device_get_name(dev);
     handler->is_Code = (VOID_FUNC)bus_intr_wrap;
+
     fa = (void **)&handler[1];
     fa[0] = func;
     fa[1] = arg;
+
     handler->is_Data = fa;
 
-    if (!HIDD_PCIDevice_AddInterrupt(dev->dev_Object, handler))
+    if (((struct irq_handle *)r->res_handle)->irq_flags == 0)
     {
-        FreeVec(handler);
-        return ENOMEM;
+        if (!HIDD_PCIDevice_AddInterrupt(dev->dev_Object, handler))
+        {
+            FreeVec(handler);
+            return ENOMEM;
+        }
+    }
+    else
+    {
+        AddIntServer(INTB_KERNEL + r->res_tag,
+            handler);
     }
 
+    ((struct irq_handle *)r->res_handle)->irq_handle = (bus_space_handle_t)handler;
     *cookiep = handler;
     
     return 0;
@@ -327,7 +354,17 @@ int bus_teardown_intr(device_t dev, struct resource *r, void *cookie)
 
     DDMA(bug("[AHCI] %s()\n", __func__));
 
-    HIDD_PCIDevice_RemoveInterrupt(dev->dev_Object, cookie);
+    if (((struct irq_handle *)r->res_handle)->irq_handle == (bus_space_handle_t)cookie)
+    {
+        if (((struct irq_handle *)r->res_handle)->irq_flags == 0)
+        {
+            HIDD_PCIDevice_RemoveInterrupt(dev->dev_Object, cookie);
+        }
+        else
+        {
+            RemIntServer(INTB_KERNEL + r->res_tag, cookie);
+        }
+    }
     FreeVec(cookie);
 
     return 0;

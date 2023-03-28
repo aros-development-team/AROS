@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2020, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2023, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -12,6 +12,7 @@
 
 #include <aros/atomic.h>
 #include <hidd/pci.h>
+#include <interface/Hidd_PCIDevice.h>
 #include <devices/timer.h>
 
 #include <string.h>
@@ -90,10 +91,37 @@ int callout_reset(struct callout *co, unsigned ticks, timeout_t *func, void *arg
 int pci_alloc_1intr(device_t dev, int msi_enable,
             int *rid0, u_int *irq_flags)
 {
+    if ((msi_enable) && (dev->dev_Object))
+    {
+        struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+        OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
+
+        struct TagItem vectreqs[] =
+        {
+            { tHidd_PCIVector_Min,      1                       },
+            { tHidd_PCIVector_Max,      1                       },
+            { TAG_DONE,                 0                       }
+        };
+        if (HIDD_PCIDevice_ObtainVectors(dev->dev_Object, vectreqs))
+        {
+            struct TagItem vecAttribs[] =
+            {
+                            {   tHidd_PCIVector_Int,    (IPTR)-1        },
+                            {   TAG_DONE,               0               }
+            };
+
+            HIDD_PCIDevice_GetVectorAttribs(dev->dev_Object, 0, vecAttribs);
+            *rid0 = vecAttribs[0].ti_Data;
+            *irq_flags = RF_ACTIVE;
+
+            return 1;
+        }
+    }
     *rid0 = AHCI_IRQ_RID;
     *irq_flags = RF_SHAREABLE | RF_ACTIVE;
-}
 
+    return 0;
+}
 
 /* AHCI Support Functions */
 void    ahci_os_sleep(int ms)

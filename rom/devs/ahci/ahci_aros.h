@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2020, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2023, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -286,6 +286,11 @@ struct resource {
     bus_space_tag_t res_tag;
     bus_space_handle_t res_handle;
     ULONG res_size;
+};
+
+struct irq_handle {
+    bus_space_tag_t irq_flags;
+    bus_space_handle_t irq_handle;
 };
 
 #define RF_SHAREABLE    (1 << 0)
