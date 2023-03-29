@@ -1,4 +1,6 @@
 ---
 exclude_paths:
   - 'arch/.unmaintained/**'
+  - 'workbench/classes/datatypes/heic/libde265/**'
+  - 'workbench/classes/datatypes/heic/libheif/**'
   
