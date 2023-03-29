@@ -11,11 +11,6 @@ The Original Code is written by Davy Wentzler.
 
 #ifdef __AROS__
 #include <aros/debug.h>
-#if defined(DEBUG) && (DEBUG > 0)
-#define DebugPrintF bug
-#else
-#define DebugPrintF(...)
-#endif
 #endif
 
 #include <exec/memory.h>
@@ -70,7 +65,7 @@ DriverInit( struct DriverBase* ahisubbase )
     struct List		foundCards;
     struct Node         *devTmp;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
     CMI8738Base->driverdatas = 0;
     CMI8738Base->cards_found = 0;
@@ -117,7 +112,7 @@ DriverInit( struct DriverBase* ahisubbase )
     vendor_device_list[0].device = DEVICE_ID;
     vendor_device_list_size++;
 
-    bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    
+    D(bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    )
 
     CMI8738Base->cards_found = 0;
     dev = NULL;
@@ -128,7 +123,7 @@ DriverInit( struct DriverBase* ahisubbase )
         
         if (dev != NULL)
         {
-            bug("[CMI8738] %s: Found CMI8738 #%d [%4x:%4x] pci obj @ 0x%p\n", __PRETTY_FUNCTION__, i, vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
+            D(bug("[CMI8738] %s: Found CMI8738 #%d [%4x:%4x] pci obj @ 0x%p\n", __func__, i, vendor_device_list[i].vendor, vendor_device_list[i].device, dev);)
             ++CMI8738Base->cards_found;
 
             devTmp = AllocVec(sizeof(struct Node), MEMF_CLEAR);
@@ -142,7 +137,7 @@ DriverInit( struct DriverBase* ahisubbase )
 
     if(CMI8738Base->cards_found == 0 )
     {
-        DebugPrintF("No CMI8738 found! :-(\n");
+        D(bug("[CMI8738] %s: No CMI8738 found! :-(\n", __func__);
 #if defined(VERBOSE_REQ)
         Req( "No card present.\n" );
 #endif
@@ -194,14 +189,14 @@ DriverInit( struct DriverBase* ahisubbase )
         Remove(devTmp);
 
         dev = (struct PCIDevice *)devTmp->ln_Name;
-        bug("[CMI8738] %s: Preparing card #%d pci obj @ 0x%p\n", __PRETTY_FUNCTION__, card_no, dev);
+        D(bug("[CMI8738] %s: Preparing card #%d pci obj @ 0x%p\n", __func__, card_no, dev);)
         CMI8738Base->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
         
         FreeVec(devTmp);
         ++card_no;
     }
 
-    bug("[CMI8738] %s: Done.\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738] %s: Done.\n", __func__);)
 
     return TRUE;
 }
@@ -217,7 +212,7 @@ DriverCleanup( struct DriverBase* AHIsubBase )
   struct CMI8738Base* CMI8738Base = (struct CMI8738Base*) AHIsubBase;
   int i;
 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __func__);)
 
   for( i = 0; i < CMI8738Base->cards_found; ++i )
   {
