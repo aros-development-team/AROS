@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Parallel Unit hidd class implementation.
 */
@@ -23,6 +23,7 @@
 #include <hidd/unixio.h>
 
 #include "parallel_intern.h"
+#include "parallelpc_io.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -35,49 +36,11 @@
 void parallelunit_receive_data();
 void parallelunit_write_more_data();
 
-static inline unsigned char inb(unsigned short port)
-{
-
-    unsigned char  _v;
-
-    __asm__ __volatile__
-    ("inb %w1,%0"
-     : "=a" (_v)
-     : "Nd" (port)
-    );
-    
-    return _v;
-}
-
-static inline void outb(unsigned char value, unsigned short port)
-{
-    __asm__ __volatile__
-    ("outb %b0,%w1"
-     :
-     : "a" (value), "Nd" (port)
-    );
-}
-
-#define parallel_usleep(x) __asm__ __volatile__("\noutb %al,$0x80\n")
-
-static inline void parallel_out(struct HIDDParallelUnitData * data,
-                                int offset,
-                                int value)
-{
-        outb(value, data->baseaddr+offset);
-}
-
-static inline unsigned int parallel_in(struct HIDDParallelUnitData * data,
-                                       int offset)
-{
-        return inb(data->baseaddr+offset);
-}
-
 /*************************** Classes *****************************/
 
 /* IO bases for every Parallel port */
 
-static ULONG bases[] = { 0x378, 0x278, 0x3bc};
+static const ULONG bases[] = { 0x378, 0x278, 0x3bc};
 
 static OOP_AttrBase HiddParallelUnitAB;
 
@@ -267,7 +230,7 @@ UWORD PCParUnit__Hidd_ParallelUnit__GetStatus(OOP_Class *cl, OOP_Object *o, stru
 }
 
 
-#if 0 /* !! STUFF BELOW DESABLED !! */
+#if 0 /* !! STUFF BELOW DISABLED !! */
 
 /************* The software interrupt handler that gets data from PORT *****/
 
