@@ -29,6 +29,9 @@ FILESPARANOIA := \
 #MM- test-crt-stdc : test-crt-stdc-math test-crt-stdc-math-cunit
 #MM- test-crt-stdc-quick : test-crt-stdc-math-quick test-crt-stdc-math-cunit-quick
 
+#MM- test-crt-stdc-math-cunit : test-crt-stdc-math-$(TARGET_UNITTESTS)-cunit
+#MM- test-crt-stdc-math-cunit-quick : test-crt-stdc-math-$(TARGET_UNITTESTS)-cunit-quick
+
 #MM- test-crt-stdc-math : test-crt-stdc-math-fenv test-crt-stdc-math-c99-double test-crt-stdc-math-c99-float test-crt-stdc-math-ieee754 test-crt-stdc-math-inftorture test-crt-stdc-math-paranoia-double test-crt-stdc-math-paranoia-float
 #MM- test-crt-stdc-math-quick : test-crt-stdc-math-fenv-quick test-crt-stdc-math-c99-double-quick test-crt-stdc-math-c99-float-quick test-crt-stdc-math-ieee754-quick test-crt-stdc-math-inftorture-quick test-crt-stdc-math-paranoia-double-quick test-crt-stdc-math-paranoia-float-quick
 #MM- test-crt-stdc-math-common : includes includes-copy linklibs kernel
@@ -83,6 +86,6 @@ STDC_BASE_CFLAGS := -noposixc -ffloat-store $(CFLAGS_NO_BUILTIN)
 USER_CFLAGS := $(STDC_BASE_CFLAGS)
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
-%build_prog mmake=test-crt-stdc-math-cunit \
+%build_prog mmake=test-crt-stdc-math-yes-cunit \
     files=cunit-crt-math targetdir=$(CUNITEXEDIR) \
     progname=cunit-crt-math uselibs="cunit"
