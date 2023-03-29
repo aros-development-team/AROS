@@ -72,7 +72,7 @@
 #include "aiff.h"
 
 #ifdef __AROS__
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #endif
 
@@ -1022,7 +1022,7 @@ dbug( kprintf( "NextTagItem\n" ); )
 			case SDTA_Period:
 				id->Frequency = (UWORD) Period2Freq( data );
 				pervol = TRUE;
-				dbug( kprintf("SDTA_Period = %ld (%lDHz)\n", data, Period2Freq(data) ); )
+				dbug( kprintf("SDTA_Period = %ld (%ldHz)\n", data, Period2Freq(data) ); )
 				cnt++;
 			break;
 			
