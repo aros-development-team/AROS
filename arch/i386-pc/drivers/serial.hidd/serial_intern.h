@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #ifndef SERIAL_HIDD_INTERN_H
@@ -39,20 +39,22 @@ struct HIDDSerialData
 
 struct HIDDSerialUnitData
 {
-    ULONG (*DataWriteCallBack)	(ULONG unitnum, APTR userdata);
-    VOID (*DataReceivedCallBack)(UBYTE *buffer, ULONG len, ULONG unitnum, APTR userdata);
-    VOID 		*DataWriteUserData;
-    VOID		*DataReceivedUserData;
+    ULONG               (*DataWriteCallBack)	(ULONG unitnum, APTR userdata);
+    VOID                (*DataReceivedCallBack)(UBYTE *buffer, ULONG len, ULONG unitnum, APTR userdata);
+    VOID 		        *DataWriteUserData;
+    VOID		        *DataReceivedUserData;
     
-    ULONG 		unitnum;
-    ULONG		baseaddr;
-    ULONG		baudrate;
-    UBYTE		datalength;
-    BOOL		parity;
-    UBYTE		paritytype;
-    UBYTE		stopbits;
-    BOOL		breakcontrol;    
-    BOOL		stopped;
+    struct Interrupt    unitsdh;
+
+    ULONG 		        unitnum;
+    ULONG		        baseaddr;
+    ULONG		        baudrate;
+    UBYTE		        datalength;
+    BOOL		        parity;
+    UBYTE		        paritytype;
+    UBYTE		        stopbits;
+    BOOL		        breakcontrol;    
+    BOOL		        stopped;
 };
 
 struct class_static_data
@@ -90,5 +92,7 @@ void   free_serialhiddclass(struct class_static_data *csd);
 
 OOP_Class *init_serialunitclass(struct class_static_data *csd);
 void   free_serialunitclass(struct class_static_data *csd);
+
+#include "serialpc_io.h"
 
 #endif /* SERIAL_HIDD_INTERN_H */

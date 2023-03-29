@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Serial hidd class implementation.
 */
@@ -14,7 +14,6 @@
 #include <utility/tagitem.h>
 #include <hidd/serial.h>
 
-
 #include "serial_intern.h"
 
 #include LC_LIBDEFS_FILE
@@ -24,7 +23,6 @@
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
-
 
 /*** HIDDSerial::NewUnit() *********************************************************/
 
@@ -36,7 +34,7 @@ OOP_Object *PCSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, struct p
 
   EnterFunc(bug("HIDDSerial::NewSerial()\n"));
 
-  D(bug("Request for unit number %d\n",msg->unitnum));
+  D(bug("[Serial:PC] %s: Request for unit number %d\n", __func__, msg->unitnum));
 
 #if (AROS_SERIAL_DEBUG > 0)
     if (msg->unitnum == (AROS_SERIAL_DEBUG-1))
@@ -106,7 +104,7 @@ VOID PCSer__Hidd_Serial__DisposeUnit(OOP_Class *cl, OOP_Object *obj, struct pHid
     {
       if (data->SerialUnits[unitnum] == su)
       {
-        D(bug("Disposing SerialUnit!\n"));
+        D(bug("[Serial:PC] %s: Disposing SerialUnit!\n", __func__));
         OOP_DisposeObject(su);
         data->SerialUnits[unitnum] = NULL;
         data->usedunits &= ~(1 << unitnum);

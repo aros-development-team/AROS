@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Serial Unit hidd class implementation.
 */
@@ -10,8 +10,6 @@
 */
 
 
-#include <asm/io.h>
-/* the rest are Amiga includes */
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -40,9 +38,10 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define DIRQ(x)
+
 /* The speed of the crystal */
 #define CRYSTAL_SPEED   1843200
-
 
 void serialunit_receive_data();
 ULONG serialunit_write_more_data();
@@ -53,38 +52,34 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
 static void adapt_data(struct HIDDSerialUnitData * data,
                        struct Preferences * prefs);
 
-static inline void serial_out(struct HIDDSerialUnitData * data,
-                              int offset,
-                              int value)
-{
-  outb(value, data->baseaddr+offset);
-}
-
-static inline void serial_outp(struct HIDDSerialUnitData * data,
-                               int offset,
-                               int value)
-{
-  outb_p(value, data->baseaddr+offset);
-}
-
-static inline unsigned int serial_in(struct HIDDSerialUnitData * data,
-                                     int offset)
-{
-  return inb(data->baseaddr+offset);
-}
-
-static inline unsigned int serial_inp(struct HIDDSerialUnitData * data,
-                                      int offset)
-{
-  return inb_p(data->baseaddr+offset);
-}
-
-
-
 /*************************** Classes *****************************/
 
 /* IO bases for every COM port */
-static ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
+static const ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
+
+/******* Shutdown Handler ***********************************/
+static AROS_INTH1(PCSerUnit_ResetHandler, struct HIDDSerialUnitData *, data)
+{
+    AROS_INTFUNC_INIT
+
+    DIRQ(bug("[Serial:Unit:PC] %s()\n", __func__));
+
+    serial_outp(data, UART_IER, 0);
+
+    /* clear the interrupt registers ... */
+    (void)serial_inp(data, UART_LSR);
+    (void)serial_inp(data, UART_RX);
+    (void)serial_inp(data, UART_IIR);
+    (void)serial_inp(data, UART_MSR);
+
+    serial_outp(data, UART_MCR, 0);
+
+    DIRQ(bug("[Serial:Unit:PC] %s: done\n", __func__));
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
 
 /******* SerialUnit::New() ***********************************/
 OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
@@ -140,7 +135,16 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
     CSD(cl->UserData)->units[data->unitnum] = data;
     Enable();
 
-    D(bug("Unit %d at 0x0%x\n", data->unitnum, data->baseaddr));
+    D(bug("[Serial:PC] %s: Unit %d at 0x0%x\n", __func__, data->unitnum, data->baseaddr));
+
+    /* Install reset callback */
+    data->unitsdh.is_Node.ln_Pri = -61;
+    data->unitsdh.is_Node.ln_Name = ((struct Node *)obj)->ln_Name;
+    data->unitsdh.is_Code = (VOID_FUNC)PCSerUnit_ResetHandler;
+    data->unitsdh.is_Data = data;
+    AddResetCallback(&data->unitsdh);
+
+    D(bug("[Serial:PC] %s: Shutdown handler installed\n", __func__));
 
     /* Wake up UART */
     serial_outp(data, UART_LCR, 0xBF);

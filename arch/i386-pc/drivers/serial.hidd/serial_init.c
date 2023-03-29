@@ -1,5 +1,5 @@
  /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial hidd initialization code.
@@ -51,7 +51,8 @@ static int PCSer_Init(LIBBASETYPEPTR LIBBASE)
     irq->is_Data = (APTR)csd;
     AddIntServer(INTB_KERNEL + 3, irq);
 
-    D(bug("  Got Interrupts\n"));
+    D(bug("[Serial:PC] %s: Interrupt handlers installed\n", __func__));
+
     ReturnInt("SerialHIDD_Init", ULONG, TRUE);
 }
 
