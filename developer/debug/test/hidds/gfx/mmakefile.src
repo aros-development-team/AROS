@@ -22,7 +22,11 @@ CUNITFILES := \
 #MM- test-hidd-gfx-quick : test-hidd-gfx-common-quick test-hidd-gfx-cunit-quick
 
 #MM test-hidd-gfx-common : includes linklibs
-#MM test-hidd-gfx-cunit : includes linklibs linklibs-cunit
+
+#MM- test-hidd-gfx-cunit : test-hidd-gfx-$(TARGET_UNITTESTS)-cunit
+#MM- test-hidd-gfx-cunit-quick : test-hidd-gfx-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-hidd-gfx-yes-cunit : includes linklibs linklibs-cunit
 
 %build_progs mmake=test-hidd-gfx-common \
     files=$(FILES) targetdir=$(EXEDIR) \
@@ -32,7 +36,7 @@ USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
-%build_progs mmake=test-hidd-gfx-cunit \
+%build_progs mmake=test-hidd-gfx-yes-cunit \
     files=$(CUNITFILES) targetdir=$(CUNITEXEDIR) \
     uselibs="hiddstubs cunit"
 

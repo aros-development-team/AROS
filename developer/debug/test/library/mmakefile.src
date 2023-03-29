@@ -11,6 +11,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM- test-cunit : test-genmodule-library-cunit
 #MM- test-cunit-quick : test-genmodule-library-cunit-quick
 
+#MM- test-genmodule-library-cunit : test-genmodule-library-$(TARGET_UNITTESTS)-cunit
+#MM- test-genmodule-library-cunit-quick : test-genmodule-library-$(TARGET_UNITTESTS)-cunit-quick
+
 #MM- test-library-userellib: includes-pertask includes-dummy linklibs-pertask linklibs-dummy
 
 #MM test-library-dummytest : test-library-dummylib
@@ -87,21 +90,21 @@ USER_INCLUDES += -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
 USER_LDFLAGS += -L$(AROS_CONTRIB_LIB)
 
-#MM test-genmodule-library-relbase-cunit : test-genmodule-library-cunit-deps
+#MM test-genmodule-library-relbase-yes-cunit : test-genmodule-library-cunit-deps
 
-%build_prog mmake=test-genmodule-library-autoopen-cunit \
+%build_prog mmake=test-genmodule-library-autoopen-yes-cunit \
     progname=cunit-genmodule-autoopen targetdir=$(CUNITEXEDIR) \
     uselibs="dummy cunit"
 
-%build_prog mmake=test-genmodule-library-library-cunit \
+%build_prog mmake=test-genmodule-library-library-yes-cunit \
     progname=cunit-genmodule-library targetdir=$(CUNITEXEDIR) \
     uselibs="dummy cunit"
 
-%build_prog mmake=test-genmodule-library-relbase-cunit \
+%build_prog mmake=test-genmodule-library-relbase-yes-cunit \
     progname=cunit-genmodule-relbase targetdir=$(CUNITEXEDIR) \
     uselibs="userel pertask cunit"
 
-#MM- test-genmodule-library-cunit : test-genmodule-library-relbase-cunit test-genmodule-library-autoopen-cunit test-genmodule-library-library-cunit
-#MM- test-genmodule-library-cunit-quick : test-genmodule-library-relbase-cunit-quick test-genmodule-library-autoopen-cunit-quick test-genmodule-library-library-cunit-quick
+#MM- test-genmodule-library-yes-cunit : test-genmodule-library-relbase-yes-cunit test-genmodule-library-autoopen-yes-cunit test-genmodule-library-library-yes-cunit
+#MM- test-genmodule-library-yes-cunit-quick : test-genmodule-library-relbase-yes-cunit-quick test-genmodule-library-autoopen-yes-cunit-quick test-genmodule-library-library-yes-cunit-quick
 
 %common

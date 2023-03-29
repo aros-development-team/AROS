@@ -55,7 +55,11 @@ CUNITEXECTESTFILES := \
 #MM test-exec-public : test-exec-deps
 #MM test-exec-public-posixc : test-exec-deps
 #MM test-exec-private : test-exec-deps
-#MM test-exec-cunit : test-exec-deps linklibs-cunit
+
+#MM- test-exec-cunit : test-exec-$(TARGET_UNITTESTS)-cunit
+#MM- test-exec-cunit-quick : test-exec-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-exec-yes-cunit : test-exec-deps linklibs-cunit
 
 %build_progs mmake=test-exec-public \
     files=$(EXECPUBLICFILES) targetdir=$(EXEDIR)
@@ -82,7 +86,7 @@ USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(STDC_BASE_CFLAGS)
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
-%build_progs mmake=test-exec-cunit \
+%build_progs mmake=test-exec-yes-cunit \
     files=$(CUNITEXECTESTFILES) targetdir=$(CUNITEXEDIR) \
     uselibs="cunit"
 

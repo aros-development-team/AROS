@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2021, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -68,6 +68,11 @@ CUNITSTDCTESTFILES := \
 #MM- test-cunit : test-dos-cunit
 #MM- test-cunit-quick : test-dos-cunit-quick
 
+#MM- test-dos-cunit : test-dos-$(TARGET_UNITTESTS)-cunit
+#MM- test-dos-cunit-quick : test-dos-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-dos-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
 #MM test-dos-common : includes linklibs
 
 %build_progs mmake=test-dos-common \
@@ -81,7 +86,7 @@ USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(CFLAGS_NO_BUILTIN) 
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
-%build_progs mmake=test-dos-cunit \
+%build_progs mmake=test-dos-yes-cunit \
     files=$(CUNITSTDCTESTFILES) targetdir=$(CUNITEXEDIR) \
     uselibs="cunit"
 
