@@ -196,11 +196,16 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     l = data->entries_num - 1;
             }
 
-            if (l >= 0 && l < data->entries_num)
+            if (l >= 0 && l < data->entries_num && l != data->entries_active)
             {
                 data->entries_active = l;
                 set(data->pageobj, MUIA_Group_ActivePage,
                     data->entries_active);
+            }
+            else
+            {
+                /* Attribute value not changed, don't fire notification */
+                tag->ti_Tag = TAG_IGNORE;
             }
             break;
 
