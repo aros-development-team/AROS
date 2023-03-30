@@ -41,8 +41,6 @@
 #include "nvme_queue_admin.h"
 #include "nvme_queue_io.h"
 
-#define USE_MSI
-
 #if defined(DEBUG) && (DEBUG > 1)
 #define NVME_DUMP_READS
 #endif
@@ -279,6 +277,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         busehandle.ceh_SigSet = SIGF_SINGLE;
         OOP_GetAttr(data->ab_Dev->dev_Object, aHidd_PCIDevice_INTLine, &PCIIntLine);
         AdminIntLine = PCIIntLine;
+        data->ab_Dev->dev_Queues[0]->q_irq = PCIIntLine;
 
         DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Initial Admin IRQ = %u\n", AdminIntLine);)
 
@@ -320,8 +319,11 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             //Switch The Admin Queue IRQ;
             HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, 0, vecAttribs);
             if (vecAttribs[0].ti_Data != (IPTR)-1)
+            {
                 AdminIntLine = vecAttribs[0].ti_Data;
-            //hwqcnt = ;
+                data->ab_Dev->dev_Queues[0]->q_irq = AdminIntLine;
+                //hwqcnt = ;
+            }
         }
         DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Re-Adding Admin Int Server ...\n");)
         // Add the hardware IRQ Admin Interrupt handler
@@ -361,14 +363,16 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 };
 
                 HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);
-
                 if ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1))
                 {
                     UBYTE qIRQ = (UBYTE)vecAttribs[0].ti_Data, qVect = (UBYTE)vecAttribs[1].ti_Data;
                     D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", vecAttribs[0].ti_Data, vecAttribs[1].ti_Data);)
+                    
+                    data->ab_Dev->dev_Queues[0]->q_irq = qIRQ;
 #else
                 {
                     UBYTE qIRQ = (UBYTE)AdminIntLine, qVect = (UBYTE)AdminIntLine;
+                    data->ab_Dev->dev_Queues[0]->q_irq = AdminIntLine;
 #endif
 
                     data->ab_Dev->dev_Queues[nn + 1]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);

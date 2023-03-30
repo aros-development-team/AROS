@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2020-2023, The AROS Development Team.  All rights reserved.
  */
 
 #ifndef NVME_INTERN_H
@@ -17,6 +17,8 @@
 
 #include <hardware/nvme.h>
 #include <hidd/nvme.h>
+
+#define USE_MSI
 
 #if !defined(MIN)
 # define MIN(a,b)       (a < b) ? a : b
@@ -149,7 +151,7 @@ struct completionevent_handler
     struct MemEntry     ceh_IOMem;
     ULONG               ceh_SigSet;
     ULONG               ceh_Result;
-    UWORD               ceh_Status;
+    volatile UWORD      ceh_Status;
     UWORD               ceh_Reply;
 };
 
@@ -164,7 +166,8 @@ struct nvme_queue {
     struct Interrupt	q_IntHandler;
     ULONG volatile *q_db;
     UWORD q_depth;
-    UWORD cq_vector;
+    UWORD cq_vector;                                /* vector # - not the "vector" */
+    UWORD q_irq;
     /* command queue */
     struct nvme_command *sqba;
     UWORD sq_head;
@@ -183,6 +186,7 @@ struct nvme_Controller
     struct Node         ac_Node;
     OOP_Class           *ac_Class;
     OOP_Object          *ac_Object;
+    struct Interrupt    ac_ResetHandler;
     device_t            ac_dev;
 };
 

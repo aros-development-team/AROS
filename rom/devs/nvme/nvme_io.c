@@ -166,7 +166,6 @@ AROS_LH1(void, BeginIO,
     io->io_Error = 0;
 
     D(bug("[NVME%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command));
-
     ObtainSemaphore(&unit->au_Lock);
     AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
     ReleaseSemaphore(&unit->au_Lock);

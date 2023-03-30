@@ -24,13 +24,18 @@
 
 void nvme_complete_adminevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
 {
-    D(bug ("[NVME:ADMINQ] %s(0x%p)\n", __func__, cqe);)
-    if (nvmeq->cehandlers[cqe->command_id])
+    struct completionevent_handler *handler;
+
+    D(bug("[NVME:ADMINQ] %s(0x%p)\n", __func__, cqe);)
+
+    if ((handler = nvmeq->cehandlers[cqe->command_id]) != NULL)
     {
-        D(bug ("[NVME:ADMINQ] %s: Signaling 0x%p (%08x)\n", __func__, nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);)
-        nvmeq->cehandlers[cqe->command_id]->ceh_Result = AROS_LE2LONG(cqe->result);
-        nvmeq->cehandlers[cqe->command_id]->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
-        Signal(nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);
+        D(bug ("[NVME:ADMINQ] %s: cehandler @ 0x%p\n", __func__, handler);)
+        handler->ceh_Result = AROS_LE2LONG(cqe->result);
+        handler->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
+        nvmeq->cehandlers[cqe->command_id] = NULL;
+        D(bug ("[NVME:ADMINQ] %s: Signaling 0x%p (%08x)\n", __func__, handler->ceh_Task, handler->ceh_SigSet);)
+        Signal(handler->ceh_Task, handler->ceh_SigSet);
     }
 }
 
@@ -38,9 +43,10 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
 {
     int retval;
 
-    D(bug ("[NVME:ADMINQ] %s(0x%p, 0x%p, 0x%p)\n", __func__, dev, cmd);)
+    D(bug("[NVME:ADMINQ] %s(0x%p, 0x%p)\n", __func__, dev, cmd);)
 
     cmd->common.op.command_id = nvme_alloc_cmdid(dev->dev_Queues[0]);
+
     dev->dev_Queues[0]->cehooks[cmd->common.op.command_id] = nvme_complete_adminevent;
     dev->dev_Queues[0]->cehandlers[cmd->common.op.command_id] = handler;
 
@@ -49,6 +55,7 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
         /* clear the signal first */
         SetSignal(0, handler->ceh_SigSet);
     }
+
     retval = nvme_submit_cmd(dev->dev_Queues[0], cmd);
 
     return retval;
