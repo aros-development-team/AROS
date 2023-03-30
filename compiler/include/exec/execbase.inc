@@ -2,7 +2,7 @@
 #define EXEC_EXECBASE_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: structure of exec.library
