@@ -112,7 +112,7 @@ DriverInit( struct DriverBase* ahisubbase )
     vendor_device_list[0].device = DEVICE_ID;
     vendor_device_list_size++;
 
-    D(bug("vendor_device_list_size = %ld\n", vendor_device_list_size);    )
+    D(bug("vendor_device_list_size = %ld\n", vendor_device_list_size);)
 
     CMI8738Base->cards_found = 0;
     dev = NULL;
@@ -137,7 +137,7 @@ DriverInit( struct DriverBase* ahisubbase )
 
     if(CMI8738Base->cards_found == 0 )
     {
-        D(bug("[CMI8738] %s: No CMI8738 found! :-(\n", __func__);
+        D(bug("[CMI8738] %s: No CMI8738 found! :-(\n", __func__);)
 #if defined(VERBOSE_REQ)
         Req( "No card present.\n" );
 #endif
