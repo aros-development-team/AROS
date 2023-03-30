@@ -204,6 +204,7 @@ struct ExecBase
 #define EXECDEBUGF_PPCSTART         0x04000000
 #define EXECDEBUGF_CGXDEBUG         0x08000000
 #define EXECDEBUGF_INVZEROPAGE      0x10000000
+#define EXECDEBUGF_SHUTDOWN         0x20000000  /* AROS specific */
 #define EXECDEBUGF_INIT             0x40000000  /* Generic system startup               */
 #define EXECDEBUGF_LOG              0x80000000
 
