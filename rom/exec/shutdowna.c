@@ -8,6 +8,18 @@
 #include <proto/exec.h>
 
 #include "exec_util.h"
+#include "exec_debug.h"
+
+static void ShutdownHandler(struct ExecBase *SysBase, IPTR action)
+{
+    DSHUTDOWN("Shutdown Handler started..");
+
+    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, action);
+
+    /* We shouldn't get here. If a reset handler has failed to shut down
+     * the system, the system may still be unstable as a result of
+     * peripheral device resets */
+}
 
 /*****************************************************************************
 
@@ -22,13 +34,14 @@
         struct ExecBase *, SysBase, 173, Exec)
 
 /*  FUNCTION
-        This function will shut down the operating system.
+        This function attempts to shut down registered handlers
+        before rebooting the system, or entering a powered off state.
 
     INPUTS
-        action - what to do:
-         * SD_ACTION_POWEROFF   - power off the machine.
-         * SD_ACTION_COLDREBOOT - cold reboot the machine (not only AROS).
-         * SD_ACTION_WARMREBOOT
+        action - which process to perform:
+         * SD_ACTION_POWEROFF   - power off/halt the hardware.
+         * SD_ACTION_COLDREBOOT - cold reboot the hardware.
+         * SD_ACTION_WARMREBOOT - soft reboot the operating system.
 
     RESULT
         This function does not return in case of success. Otherwise it returns
@@ -50,11 +63,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, action);
+    NewCreateTask(TASKTAG_NAME       , "Shutdown",
+                    TASKTAG_PRI        , 127,
+                    TASKTAG_PC         , ShutdownHandler,
+                    TASKTAG_ARG1       , SysBase,
+                    TASKTAG_ARG2       , action,
+                    TAG_DONE);
 
-    /* We shouldn't get here. If a reset handler has failed to shut down
-     * the system, the system may still be unstable as a result of
-     * peripheral device resets */
     return 0;
 
     AROS_LIBFUNC_EXIT

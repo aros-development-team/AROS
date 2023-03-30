@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Add a reset callback to internal list
 */
@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_debug.h"
 
 /*****************************************************************************
 
@@ -53,6 +54,8 @@
     AROS_LIBFUNC_INIT
 
     struct IntExecBase *IntSysBase = (struct IntExecBase *)SysBase;
+
+    DSHUTDOWN("Interrupt @ 0x%p", interrupt);
 
     Enqueue(&IntSysBase->ResetHandlers, &interrupt->is_Node);
     return TRUE;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Private data belonging to exec.library
 */
@@ -105,16 +105,19 @@ struct IntExecBase
 #ifndef __AROS_KERNEL__
 #define KernelBase              PrivExecBase(SysBase)->KernelBase
 #else
-#define __kernelBase              PrivExecBase(SysBase)->KernelBase
+#define __kernelBase            PrivExecBase(SysBase)->KernelBase
 #endif
 #if !defined(DEBUG_NOPRIVATEINLINE)
 #define DebugBase               PrivExecBase(SysBase)->DebugBase
 #endif
 
 /* IntFlags */
-#define EXECF_MungWall          0x0001                          /* This flag can't be changed at runtime                        */
-#define EXECF_StackSnoop        0x0002
-#define EXECF_CPUAffinity       0x0004                          /* Set once the CPU affinity masks should be used               */
+#define EXECB_MungWall          0                                /* This flag can't be changed at runtime                        */
+#define EXECF_MungWall          (1 << EXECB_MungWall)
+#define EXECB_StackSnoop        1
+#define EXECF_StackSnoop        (1 << EXECB_StackSnoop)
+#define EXECB_CPUAffinity       2                                /* Set once the CPU affinity masks should be used               */
+#define EXECF_CPUAffinity       (1 << EXECB_CPUAffinity)
 
 /* Additional private task states */
 #define TS_SERVICE              128

@@ -118,7 +118,8 @@ void VLog(struct ExecBase *, ULONG, const char * const *, const char *, va_list)
 #define DSETFUNCTION(...)	ExecLog(SysBase, EXECDEBUGF_SETFUNCTION, __VA_ARGS__)
 #define DADDTASK(...)		ExecLog(SysBase, EXECDEBUGF_ADDTASK, __VA_ARGS__)
 #define DREMTASK(...)		ExecLog(SysBase, EXECDEBUGF_REMTASK, __VA_ARGS__)
-#define DINIT(...)		ExecLog(SysBase, EXECDEBUGF_INIT, __VA_ARGS__)
+#define DINIT(...)			ExecLog(SysBase, EXECDEBUGF_INIT, __VA_ARGS__)
 #define DRAMLIB(...)		ExecLog(SysBase, EXECDEBUGF_RAMLIB, __VA_ARGS__)
+#define DSHUTDOWN(...)		ExecLog(SysBase, EXECDEBUGF_SHUTDOWN, __VA_ARGS__)
 
 #endif /* _EXEC_DEBUG_H_ */

@@ -239,6 +239,8 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
     if (PrivExecBase(SysBase)->IntFlags & EXECF_StackSnoop)
         task->tc_Flags |= TF_STACKCHK;
 
+	DADDTASK("Calling InitETask(0x%p, 0x%p)", task, parent);
+
     /* Initialize ETask */
     if (!InitETask(task, parent))
         return NULL;
@@ -250,8 +252,9 @@ static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHo
 #ifdef AROS_STACKALIGN
     if ((IPTR)task->tc_SPReg & (AROS_STACKALIGN - 1))
     {
-        DADDTASK("NewAddTask with unaligned stack pointer (0x%p)! Fixing...", task->tc_SPReg);
+        DADDTASK("WARNING: NewAddTask with unaligned stack pointer (0x%p)", task->tc_SPReg);
         task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~(AROS_STACKALIGN - 1));
+        DADDTASK("using 0x%p (%ubyte alignment)", task->tc_SPReg, AROS_STACKALIGN);
     }
 #endif
     DADDTASK("NewAddTask: SPLower: 0x%p SPUpper: 0x%p SP: 0x%p", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);

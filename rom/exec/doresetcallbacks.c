@@ -9,6 +9,7 @@
 
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "exec_debug.h"
 
 /*
    This function executes installed reset handlers.
@@ -28,12 +29,15 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
 
     Disable();
 
-    for (i = (struct Interrupt *)IntSysBase->ResetHandlers.lh_Head; i->is_Node.ln_Succ;
-         i = (struct Interrupt *)i->is_Node.ln_Succ)
+    for ( i = (struct Interrupt *)IntSysBase->ResetHandlers.lh_Head; i->is_Node.ln_Succ;
+            i = (struct Interrupt *)i->is_Node.ln_Succ)
     {
-        D(bug("[DoResetCallbacks] Calling handler: %d '%s'\n", i->is_Node.ln_Pri, i->is_Node.ln_Name);)
+        DSHUTDOWN("Calling handler: %d '%s'", i->is_Node.ln_Pri, i->is_Node.ln_Name);
+
         i->is_Node.ln_Type = action;
-        if (KrnIsSuper()) i->is_Node.ln_Type |= 0x80; /* Set the "supervisor" flag */
+        if (KrnIsSuper())
+            i->is_Node.ln_Type |= 0x80; /* Set the "supervisor" flag */
+
         AROS_INTC1(i->is_Code, i->is_Data);
     }
 }

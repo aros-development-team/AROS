@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Display an alert in user mode.
 */
@@ -85,6 +85,7 @@ LONG Alert_AskSuspend(struct Task *task, ULONG alertNum, char * buffer, struct E
                 buffer,
                 NULL,
             };
+            BOOL full = FALSE;
 
             buf = Alert_AddString(buffer, startstring);
             buf = FormatAlert(buf, alertNum, task, iet ? iet->iet_AlertLocation : NULL, iet ? iet->iet_AlertType : AT_NONE, SysBase);
@@ -98,17 +99,18 @@ LONG Alert_AskSuspend(struct Task *task, ULONG alertNum, char * buffer, struct E
             es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? deadend_buttons : recoverable_buttons;
 
             D(bug("[UserAlert] Body text:\n%s\n", buffer));
-            choice = SafeEasyRequest(&es, FALSE, IntuitionBase);
+reshow:
+            choice = SafeEasyRequest(&es, full, IntuitionBase);
 
-            if (choice == 1)
+            if ((choice == 1) && !full)
             {
                 /* 'More' has been pressed. Append full alert data */
                 FormatAlertExtra(end, iet->iet_AlertStack, iet ? iet->iet_AlertType : AT_NONE, iet ? &iet->iet_AlertData : NULL, SysBase);
 
                 /* Re-post the alert, without 'More...' this time */
                 es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? full_deadend_buttons : full_recoverable_buttons;
-
-                choice = SafeEasyRequest(&es, TRUE, IntuitionBase);
+                full = TRUE;
+                goto reshow;
             }
         }
 

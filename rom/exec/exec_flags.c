@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2023, The AROS Development Team. All rights reserved.
 
     Desc: Runtime debug flag support
 */
@@ -42,7 +42,7 @@ const char * const ExecFlagNames[] =
     (char *)-1,         /* PPCStart             */
     "CGXDebug",
     "InvZeroPage",
-    (char *)-1,         /* Reserved bit         */
+    "Shutdown",         /* Reserved bit         */
     "Init",
     NULL
 };

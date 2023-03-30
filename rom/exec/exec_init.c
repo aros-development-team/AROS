@@ -274,16 +274,21 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         }
     }
 
-    DINIT("Enabling Exec Interrupts...\n");
+    DINIT("Permitting multitasking...\n");
 
     /* We now start up the interrupts */
     Permit();
+    DINIT("Enabling Exec Interrupts...\n");
     Enable();
+
+    DINIT("Multitasking enabled\n");
 
     D(debugmem());
 
     /* Call platform-specific init code (if any) */
     set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
+
+    DINIT("Platform init complete\n");
 
     /* Multitasking is on. Call CoolCapture. */
     if (SysBase->CoolCapture)

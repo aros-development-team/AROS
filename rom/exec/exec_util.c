@@ -137,7 +137,7 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 #endif
 
     et->et_Parent = parent;
-    NEWLIST(&et->et_Children);
+    NewMinList(&et->et_Children);
 
     D(bug("[EXEC:ETask] Init: Parent @ 0x%p\n", et->et_Parent);)
 
@@ -188,11 +188,11 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
     if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)
     {
         struct ETask * parentEtask = GetETask(et->et_Parent);
-        D(bug("[EXEC:ETask] Init: Registering with Parent ETask\n");)
+
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_LOCK(&IntETask(parentEtask)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-        ADDHEAD(&parentEtask->et_Children, et);
+        AddHead(&parentEtask->et_Children, et);
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(&IntETask(parentEtask)->iet_TaskLock);
 #endif
