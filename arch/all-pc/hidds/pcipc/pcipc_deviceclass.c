@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
 
     Desc: i386/x86_64 native PCI device support routines.
 */
@@ -193,15 +193,14 @@ void PCIPCDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_GetVectorAttribs *msg)
 {
     struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
-    IPTR capmsi, driver;
+    IPTR capmsi;
     UBYTE vectirq = 0;
 
     D(bug("[PCIPC:Device] %s()\n", __func__);)
 
     OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);
-    OOP_GetAttr(o, aHidd_PCIDevice_Driver, &driver);
 
-    /* Is MSI even supported? */
+    /* Check if MSI is supported */
     if (capmsi)
     {
         struct pHidd_PCIDevice_ReadConfigWord cmeth;
@@ -257,13 +256,12 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, st
 BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
 {
     struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
-    IPTR capmsi, capmsix, driver;
+    IPTR capmsi, capmsix;
 
     D(bug("[PCIPC:Device] %s()\n", __func__);)
 
     OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);
     OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSIX, &capmsix);
-    OOP_GetAttr(o, aHidd_PCIDevice_Driver, &driver);
 
     if (capmsix)
     {
@@ -364,5 +362,42 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
 VOID PCIPCDev__Hidd_PCIDevice__ReleaseVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReleaseVectors *msg)
 {
     D(bug("[PCIPC:Device] %s()\n", __func__);)
+    struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
+    IPTR capmsi;
+    UBYTE vectirq = 0;
+
+    D(bug("[PCIPC:Device] %s()\n", __func__);)
+
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);
+
+    if (capmsi)
+    {
+        union {
+            struct pHidd_PCIDevice_WriteConfigWord wcw;
+            struct pHidd_PCIDevice_WriteConfigLong wcl;
+        } cmeth;
+        UWORD msiflags;
+
+        cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+        cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
+        msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
+        if (msiflags & PCIMSIF_ENABLE)
+        {
+            msiflags &= ~PCIMSIF_ENABLE;
+            cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+            cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
+            cmeth.wcw.val = msiflags;
+            OOP_DoMethod(o, &cmeth.wcw.mID);
+
+            cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+            cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
+            msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
+            DMSI(bug("[PCIPC:Device] %s: Configured MSI Flags = %04x\n", __func__, msiflags);)
+            if (msiflags & PCIMSIF_ENABLE)
+            {
+                bug("[PCIPC:Device] %s: Failed to disable MSI interrupts for device\n", __func__);
+            }
+        }
+    }
     return;
 }
