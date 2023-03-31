@@ -717,12 +717,12 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 data->mad_Flags &= ~MADF_SELECTED;
                 MUI_Redraw(obj, MADF_DRAWOBJECT);
             }
-#if 0 // CHECKME: What's the purpose of this? What superclass will care?
             else
             {
+                /* Attribute value not changed, don't fire notification */
                 tag->ti_Tag = TAG_IGNORE;
             }
-#endif
+
             break;
 
         case MUIA_Timer:
