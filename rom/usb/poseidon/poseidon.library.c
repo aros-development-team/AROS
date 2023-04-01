@@ -6342,10 +6342,9 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
 {
     AROS_LIBFUNC_INIT
     ULONG *buf;
-    BOOL loaded = FALSE;
     BPTR filehandle;
-    ULONG formhead[3];
-    ULONG formlen;
+    UWORD level;
+    BOOL loaded = FALSE;
 
     XPRINTF(10, ("Loading config file: %s\n", filename));
 
@@ -6372,6 +6371,11 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
     KPRINTF(1, ("File handle 0x%p\n", filehandle));
     if(filehandle)
     {
+        ULONG formhead[3];
+        ULONG formlen;
+
+        level = RETURN_ERROR;
+
         if(Read(filehandle, formhead, 12) == 12)
         {
             KPRINTF(1, ("Read header\n"));
@@ -6395,15 +6399,20 @@ AROS_LH1(BOOL, psdLoadCfgFromDisk,
                         
                         KPRINTF(1, ("All done\n"));
                         loaded = TRUE;
+                        level = RETURN_OK;
                     }
                     psdFreeVec(buf);
                 }
             }
         }
         Close(filehandle);
-    } else {
-        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                       "Failed to load config from '%s'!",
+    } else
+        level = RETURN_WARN;
+
+    if (level != RETURN_OK)
+    {
+        psdAddErrorMsg(level, (STRPTR) GM_UNIQUENAME(libname),
+                       "Failed to %s '%s'!", (level == RETURN_ERROR) ? "load config from" : "find config file",
                        filename);
     }
     if(loaded)
