@@ -1,12 +1,12 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 2.3 (22.12.2011)
+**	$VER: usbhardware.h 2.4 (01.04.2023)
 **
 **	standard usb hardware device include file
 **
 **	(C) Copyright 2002-2007 Chris Hodges
-**	(C) Copyright 2011 AROS Development Team
+**	(C) Copyright 2023 AROS Development Team
 **	    All Rights Reserved
 */
 
@@ -182,36 +182,26 @@ struct IOUsbHWBufferReq
 #define UHA_DriverVersion  (UHA_Dummy + 0x20)
 #define UHA_Capabilities   (UHA_Dummy + 0x21)
 
-/* Capabilities as returned by UHA_Capabities */
-#ifdef AROS_USB30_CODE
-#   define UHCB_USB20         0 /* Host controller supports USB 2.0 Highspeed */
-#   define UHCB_ISO           1 /* Host controller driver supports ISO transfers (UHCMD_ISOXFER) */
-#   define UHCB_RT_ISO        2 /* Host controller driver supports real time ISO transfers (UHCMD_ADDISOHANDLER) */
-#   define UHCB_QUICKIO       3 /* BeginIO()/AbortIO() may be called from interrupts for less overhead */
-#   define UHCB_USB30         4 /* Host controller supports USB 3.0 SuperSpeed */
+/*
+ *  Capabilities as returned by UHA_Capabities
+ *  Only the main USB generations are defined.
+ */
+#define UHCB_USB20         0 /* Host controller supports USB 2.0 Highspeed                                     */
+#define UHCB_ISO           1 /* Host controller driver supports ISO transfers (UHCMD_ISOXFER)                  */
+#define UHCB_RT_ISO        2 /* Host controller driver supports real time ISO transfers (UHCMD_ADDISOHANDLER)  */
+#define UHCB_QUICKIO       3 /* BeginIO()/AbortIO() may be called from interrupts for less overhead            */
+#define UHCB_USB2OTG       4 /* Host controller supports USB2OTG device mode                                   */
 
-#   define UHCF_USB20         (1<<UHCB_USB20)
-#   define UHCF_ISO           (1<<UHCB_ISO)
-#   define UHCF_RT_ISO        (1<<UHCB_RT_ISO)
-#   define UHCF_QUICKIO       (1<<UHCB_QUICKIO)
-#   define UHCF_USB30         (1<<UHCB_USB30)
-#else
-#   define UHCB_USB20         0 /* Host controller supports USB 2.0 Highspeed */
-#   define UHCB_ISO           1 /* Host controller driver supports ISO transfers (UHCMD_ISOXFER) */
-#   define UHCB_RT_ISO        2 /* Host controller driver supports real time ISO transfers (UHCMD_ADDISOHANDLER) */
-#   define UHCB_QUICKIO       3 /* BeginIO()/AbortIO() may be called from interrupts for less overhead */
+#define UHCB_USB40         30 /* Host controller supports USB 4.x SuperSpeed/+                                 */
+#define UHCB_USB30         31 /* Host controller supports USB 3.x SuperSpeed/+                                 */
 
-#   define UHCF_USB20         (1<<UHCB_USB20)
-#   define UHCF_ISO           (1<<UHCB_ISO)
-#   define UHCF_RT_ISO        (1<<UHCB_RT_ISO)
-#   define UHCF_QUICKIO       (1<<UHCB_QUICKIO)
-#endif
-
-#ifdef AROS_USB2OTG_CODE
-#   define UHCB_USB2OTG       5 /* Host controller supports USB2OTG (Controller can be a host or a device) */
-
-#   define UHCF_USB2OTG       (1<<UHCB_USB2OTG)
-#endif
+#define UHCF_USB20         (1<<UHCB_USB20)
+#define UHCF_ISO           (1<<UHCB_ISO)
+#define UHCF_RT_ISO        (1<<UHCB_RT_ISO)
+#define UHCF_QUICKIO       (1<<UHCB_QUICKIO)
+#define UHCF_USB2OTG       (1<<UHCB_USB2OTG)
+#define UHCF_USB30         (1<<UHCB_USB30)
+#define UHCF_USB40         (1<<UHCB_USB40)
 
 /* Definitions for UHA_State/iouh_State */
 
