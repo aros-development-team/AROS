@@ -1,5 +1,5 @@
 /*
-    Copyright  2011-2012, The AROS Development Team.
+    Copyright  2011-2023, The AROS Development Team.
 */
 
 #include <proto/dos.h>
@@ -305,11 +305,11 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     dc->STitleShadow = FALSE;
     dc->LUTBaseColors_a = 0x00CCCCCC;
     dc->LUTBaseColors_d = 0x00888888;
-    dc->STitleColorText = 0x00CCCCCC;
-    dc->STitleColorShadow = 0x00444444;
-    
+    dc->STitleColorText = 0xFFFFFFFF;
+    dc->STitleColorShadow = 0xFFFFFFFF;
+
     D(bug("Decoration/LoadSystemConfig: dc initialized\n"));
-    
+
     lock = Lock(path, ACCESS_READ);
     if (lock)
     {

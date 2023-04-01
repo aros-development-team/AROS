@@ -1,5 +1,5 @@
 /*
-    Copyright  2011-2012, The AROS Development Team.
+    Copyright  2011-2023, The AROS Development Team.
 */
 
 #define DEBUG 0
@@ -23,6 +23,9 @@
 #define SETIMAGE_SCR(id) sd->di->img_##id = CreateNewImageContainerMatchingScreen(data->di->img_##id, truecolor, screen)
 
 #define CHILDPADDING 1
+
+#define TITLE_DEFCOLORTEXT     0x00CCCCCC
+#define TITLE_DEFCOLORSHADOW   0x00444444
 
 struct scrdecor_data
 {
@@ -295,14 +298,22 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
             if (!(sd->truecolor) || ((data->dc->STitleOutline == FALSE) && (data->dc->STitleShadow == FALSE)))
             {
-                SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
+                if ((data->dc->STitleColorText != 0xFFFFFFFF) && !beeping)
+                    SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+                else if ((data->dc->STitleColorShadow != 0xFFFFFFFF) && beeping)
+                    SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+                else
+                    SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
                 Move(rp, tx, ty);
                 Text(rp, scr->Title, len);
             }
             else if (data->dc->STitleOutline)
             {
                 SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+                SetRPAttrs(rp,
+                            RPTAG_PenMode, FALSE,
+                            RPTAG_FgColor, (data->dc->STitleColorShadow != 0xFFFFFFFF) ? data->dc->STitleColorShadow : TITLE_DEFCOLORSHADOW,
+                            TAG_DONE);
 
                 Move(rp, tx + 1, ty ); Text(rp, scr->Title, len);
                 Move(rp, tx + 2, ty ); Text(rp, scr->Title, len);
@@ -313,7 +324,10 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
                 Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, len);
                 Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, len);
 
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+                SetRPAttrs(rp,
+                            RPTAG_PenMode, FALSE,
+                            RPTAG_FgColor, (data->dc->STitleColorText != 0xFFFFFFFF) ? data->dc->STitleColorText : TITLE_DEFCOLORTEXT,
+                            TAG_DONE);
                 Move(rp, tx + 1, ty + 1);
                 Text(rp, scr->Title, len);
                 SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
