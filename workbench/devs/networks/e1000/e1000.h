@@ -65,23 +65,45 @@ typedef UWORD __le16;
 
 struct e1000Base
 {
-    struct Device            e1kb_Device;
+    struct Device           e1kb_Device;
 
-    OOP_Object               *e1kb_PCI;
-    OOP_AttrBase             e1kb_PCIDeviceAttrBase;
-
-    ULONG                    e1kb_UnitCount;
-    struct List              e1kb_Units;
+#if defined(__OOP_NOLIBBASE__)
+    struct Library          *e1kb_OOPBase;
+#endif
+    OOP_Object              *e1kb_PCI;
+#if defined(__OOP_NOATTRBASES__)
+    OOP_AttrBase            e1kb_PCIDeviceAttrBase;
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    OOP_MethodID            e1kb_HiddPCIBase;
+    OOP_MethodID            e1kb_HiddPCIDriverBase;
+#endif
+    ULONG                   e1kb_UnitCount;
+    struct List             e1kb_Units;
 };
 
 struct e1000Startup
 {
-    struct MsgPort           *e1ksm_SyncPort;
+    struct MsgPort          *e1ksm_SyncPort;
     struct e1000Unit        *e1ksm_Unit;
 };
 
+#if defined(__OOP_NOLIBBASE__)
+#undef OOPBase
+#define OOPBase   (LIBBASE->e1kb_OOPBase)
+#endif
+
+#if defined(__OOP_NOMETHODBASES__)
+#undef HiddPCIBase
+#define HiddPCIBase   (LIBBASE->e1kb_HiddPCIBase)
+#undef HiddPCIDriverBase
+#define HiddPCIDriverBase       (LIBBASE->e1kb_HiddPCIDriverBase)
+#endif
+
+#if defined(__OOP_NOATTRBASES__)
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase   (LIBBASE->e1kb_PCIDeviceAttrBase)
+#endif
 
 enum {
     WRITE_QUEUE,

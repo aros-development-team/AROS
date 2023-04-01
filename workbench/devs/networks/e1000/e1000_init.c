@@ -97,7 +97,25 @@ struct pci_device_ids e1000_devices[] =
     {  (IPTR)NULL,                              NULL                          }
 };
 
-AROS_UFH3(void, PCI_Enumerator,
+#if defined(__OOP_NOATTRBASES__)
+/* Keep order the same as order of IDs in struct e1000Base! */
+static CONST_STRPTR const GM_UNIQUENAME(AttrBaseIDs)[] =
+{
+    IID_Hidd_PCIDevice,
+    NULL
+};
+#endif
+
+#if defined(__OOP_NOMETHODBASES__)
+static CONST_STRPTR const GM_UNIQUENAME(MethBaseIDs)[] =
+{
+    IID_Hidd_PCI,
+    IID_Hidd_PCIDriver,
+    NULL
+};
+#endif
+
+AROS_UFH3(void, GM_UNIQUENAME(PCI_Enumerator),
     AROS_UFHA(struct Hook *,    hook,       A0),
     AROS_UFHA(OOP_Object *,     pciDevice,  A2),
     AROS_UFHA(APTR,             message,    A1))
@@ -108,7 +126,7 @@ AROS_UFH3(void, PCI_Enumerator,
     int devid_count = 0;
     IPTR DeviceID = 0;
 
-D(bug("[e1000] PCI_Enumerator()\n"));
+    D(bug("[e1000] %s()\n", __func__));
 
     LIBBASETYPEPTR LIBBASE = (LIBBASETYPEPTR)hook->h_Data;
 
@@ -118,7 +136,7 @@ D(bug("[e1000] PCI_Enumerator()\n"));
     {
         if (DeviceID == e1000_devices[devid_count].deviceid)
         {
-D(bug("[e1000] PCI_Enumerator: Found %s e1000 NIC, ProductID = %04x\n", e1000_devices[devid_count].devicename, DeviceID));
+            D(bug("[e1000] %s: Found %s e1000 NIC, ProductID = %04x\n", __func__, e1000_devices[devid_count].devicename, DeviceID));
 
             if ((unit = CreateUnit(LIBBASE, pciDevice)) != NULL)
             {
@@ -126,7 +144,7 @@ D(bug("[e1000] PCI_Enumerator: Found %s e1000 NIC, ProductID = %04x\n", e1000_de
             }
             else
             {
-D(bug("[e1000] PCI_Enumerator: Failed to create unit!\n"));
+                D(bug("[e1000] %s: Failed to create unit!\n", __func__));
             }
             break;
         }
@@ -138,50 +156,64 @@ D(bug("[e1000] PCI_Enumerator: Failed to create unit!\n"));
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-D(bug("[e1000] Init()\n"));
-
     UBYTE tmpbuff[100];
-    sprintf((char *)tmpbuff, e1000_TASK_NAME, "e1000.0");
+    
+    D(bug("[e1000] %s()\n", __func__));
 
+    sprintf((char *)tmpbuff, e1000_TASK_NAME, "e1000.0");
     if (FindTask(tmpbuff) != NULL)
     {
-        D(bug("[e1000] device already up and running.\n"));
+        D(bug("[e1000] %s: device already up and running.\n", __func__));
         return FALSE;
     }
 
     NEWLIST(&LIBBASE->e1kb_Units);
-
-    LIBBASE->e1kb_PCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-
-    if (LIBBASE->e1kb_PCIDeviceAttrBase != 0)
+#if defined(__OOP_NOLIBBASE__)
+    if ((LIBBASE->e1kb_OOPBase = OpenLibrary("oop.library",0)) == NULL)
     {
-        D(bug("[e1000] HiddPCIDeviceAttrBase @ %p\n", LIBBASE->e1kb_PCIDeviceAttrBase));
+        return FALSE;
+    }
+#endif
+#if defined(__OOP_NOATTRBASES__)
+    if (OOP_ObtainAttrBasesArray(&LIBBASE->e1kb_PCIDeviceAttrBase, GM_UNIQUENAME(AttrBaseIDs)))
+    {
+        bug("[e1000] %s: Failed to obtain AttrBases!\n", __func__);
+        return FALSE;
+    }
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    if (OOP_ObtainMethodBasesArray(&LIBBASE->e1kb_HiddPCIBase, GM_UNIQUENAME(MethBaseIDs)))
+    {
+#if defined(__OOP_NOATTRBASES__)
+         OOP_ReleaseAttrBasesArray(&LIBBASE->e1kb_PCIDeviceAttrBase, GM_UNIQUENAME(AttrBaseIDs));
+#endif
+        return FALSE;
+    }
+#endif
+ 
+    LIBBASE->e1kb_PCI = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+    if (LIBBASE->e1kb_PCI)
+    {
+        D(bug("[e1000] %s: PCI Subsystem HIDD object @ %p\n", __func__, LIBBASE->e1kb_PCI));
 
-        LIBBASE->e1kb_PCI = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-        
-        if (LIBBASE->e1kb_PCI)
+        struct Hook FindHook = {
+            .h_Entry =    (IPTR (*)())GM_UNIQUENAME(PCI_Enumerator),
+            .h_Data  =     LIBBASE,
+        };
+
+        struct TagItem Requirements[] = {
+            { tHidd_PCI_VendorID,   0x8086  },
+            { TAG_DONE,             0UL }
+        };
+
+        HIDD_PCI_EnumDevices(LIBBASE->e1kb_PCI,
+                             &FindHook,
+                             (struct TagItem *)&Requirements
+        );
+
+        if (!(IsListEmpty(&LIBBASE->e1kb_Units)))
         {
-            D(bug("[e1000] PCI Subsystem HIDD object @ %p\n", LIBBASE->e1kb_PCI));
-
-            struct Hook FindHook = {
-                .h_Entry =    (IPTR (*)())PCI_Enumerator,
-                .h_Data  =     LIBBASE,
-            };
-
-            struct TagItem Requirements[] = {
-                { tHidd_PCI_VendorID,   0x8086  },
-                { TAG_DONE,             0UL }
-            };
-
-            HIDD_PCI_EnumDevices(LIBBASE->e1kb_PCI,
-                                 &FindHook,
-                                 (struct TagItem *)&Requirements
-            );
-
-            if (!(IsListEmpty(&LIBBASE->e1kb_Units)))
-            {
-                return TRUE;
-            }
+            return TRUE;
         }
     }
 
@@ -190,9 +222,9 @@ D(bug("[e1000] Init()\n"));
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-D(bug("[e1000] Expunge()\n"));
-
     struct e1000Unit *unit_current, *unit_tmp;
+
+    D(bug("[e1000] %s()\n", __func__));
 
     if (!(IsListEmpty(&LIBBASE->e1kb_Units)))
     {
@@ -202,10 +234,10 @@ D(bug("[e1000] Expunge()\n"));
         }
     }
 
-    if (LIBBASE->e1kb_PCIDeviceAttrBase != 0)
-        OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-
-    LIBBASE->e1kb_PCIDeviceAttrBase = 0;
+#if defined(__OOP_NOATTRBASES__)
+    D(bug("[e1000] %s: Releasing attribute bases\n", __func__));
+    OOP_ReleaseAttrBasesArray(&LIBBASE->e1kb_PCIDeviceAttrBase, GM_UNIQUENAME(AttrBaseIDs));
+#endif
 
     if (LIBBASE->e1kb_PCI != NULL)
         OOP_DisposeObject(LIBBASE->e1kb_PCI);
@@ -238,6 +270,8 @@ static int GM_UNIQUENAME(Open)
     BYTE error=0;
     int i;
 
+    D(bug("[e1000] %s(%d)\n", __func__, unitnum));
+
     if (!(IsListEmpty(&LIBBASE->e1kb_Units)))
     {
         ForeachNode(&LIBBASE->e1kb_Units, unit_current)
@@ -246,12 +280,11 @@ static int GM_UNIQUENAME(Open)
                 unit = unit_current;
         }
     }
-    
-D(bug("[e1000] OpenDevice(%d)\n", unitnum));
 
     if (unit != NULL)
     {
-D(bug("[e1000] OpenDevice: Unit %d @ %p\n", unitnum, unit));
+        D(bug("[e1000] %s: Unit %d @ 0x%p\n", __func__, unitnum, unit));
+
         req->ios2_Req.io_Unit = NULL;
         tags = req->ios2_BufferManagement;
 
@@ -314,9 +347,10 @@ D(bug("[e1000] OpenDevice: Unit %d @ %p\n", unitnum, unit));
             CloseDevice((struct IORequest *)req);
         else
         {
-D(bug("[e1000] OpenDevice: Starting Unit %d\n", unitnum));
             ULONG rx_ring_count, tx_ring_count;
             enum e1000_mac_type mac_type;
+
+            D(bug("[e1000] %s: Starting Unit %d\n", __func__, unitnum));
 
             mac_type = ((struct e1000_hw *)unit->e1ku_Private00)->mac.type;
 
@@ -363,13 +397,13 @@ D(bug("[e1000] OpenDevice: Starting Unit %d\n", unitnum));
             }
             else
             {
-D(bug("[%s] OpenDevice: IRQ Attached\n", unit->e1ku_name));
+                D(bug("[%s] %s: IRQ Attached\n", unit->e1ku_name, __func__));
             }
         }
     }
     else
     {
-D(bug("[e1000] OpenDevice: Invalid Unit! (unitno = %d)\n", unitnum));
+        D(bug("[e1000] %s: Invalid Unit! (unitno = %d)\n", __func__, unitnum));
         error = IOERR_OPENFAIL;
     }
 
@@ -387,7 +421,7 @@ static int GM_UNIQUENAME(Close)
     struct e1000Unit *unit = (struct e1000Unit *)req->ios2_Req.io_Unit;
     struct Opener *opener;
 
-D(bug("[e1000] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->e1ku_UnitNum));
+    D(bug("[e1000] %s(unit @ %p, unitno %d)\n", __func__, unit, unit->e1ku_UnitNum));
 
 /* FIXME: CloseDevice->stop */
 //    unit->stop(unit);
@@ -418,21 +452,21 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_INIT
     struct e1000Unit *unit;
 
-D(bug("[e1000] BeginIO()\n"));
+    D(bug("[e1000] %s()\n", __func__));
 
     req->ios2_Req.io_Error = 0;
     if ((unit = (APTR)req->ios2_Req.io_Unit) != NULL)
     {
-D(bug("[e1000] BeginIO: unit @ %p\n", unit));
+        D(bug("[e1000] %s: unit @ %p\n", __func__, unit));
 
         if (AttemptSemaphore(&unit->e1ku_unit_lock))
         {
-D(bug("[e1000] BeginIO: Calling handle_request()\n"));
+            D(bug("[e1000] %s: Calling handle_request()\n", __func__));
             handle_request(LIBBASE, req);
         }
         else
         {
-D(bug("[e1000] BeginIO: Queueing request\n"));
+            D(bug("[e1000] %s: Queueing request\n", __func__));
             req->ios2_Req.io_Flags &= ~IOF_QUICK;
             PutMsg(unit->e1ku_input_port, (struct Message *)req);
         }
@@ -447,7 +481,7 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_INIT
     struct e1000Unit *unit;
 
-D(bug("[e1000] AbortIO()\n"));
+    D(bug("[e1000] %s()\n", __func__));
 
     if ((unit = (APTR)req->ios2_Req.io_Unit) != NULL)
     {

@@ -205,7 +205,7 @@ static BOOL CmdRead(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
     unit = (APTR)request->ios2_Req.io_Unit;
 
-    D(bug("[%s]: CmdRead()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     if((unit->e1ku_ifflags & IFF_UP) != 0)
     {
@@ -236,7 +236,7 @@ static BOOL CmdWrite(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
     unit = (APTR)request->ios2_Req.io_Unit;
     
-    D(bug("[%s]: CmdWrite()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
     
     if((unit->e1ku_ifflags & IFF_UP) == 0)
     {
@@ -280,7 +280,8 @@ static BOOL CmdS2DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
     struct Sana2DeviceQuery *info;
     ULONG size_available, size;
     UWORD lnk_speed = 0, lnk_duplex = 0;
-    D(bug("[%s]: CmdS2DeviceQuery()\n", unit->e1ku_name));
+
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     /* Copy device info */
     info = request->ios2_StatData;
@@ -311,7 +312,7 @@ static BOOL CmdGetStationAddress(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *requ
 
     unit = (APTR)request->ios2_Req.io_Unit;
     
-    D(bug("[%s]: CmdGetStationAddress()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     CopyMem(unit->e1ku_dev_addr, request->ios2_SrcAddr, ETH_ADDRESSSIZE);
     CopyMem(unit->e1ku_org_addr, request->ios2_DstAddr, ETH_ADDRESSSIZE);
@@ -329,7 +330,7 @@ static BOOL CmdConfigInterface(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *reques
 
     unit = (APTR)request->ios2_Req.io_Unit;
 
-    D(bug("[%s]: CmdConfigInterface()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     if((unit->e1ku_ifflags & IFF_CONFIGURED) == 0)
     {
@@ -369,7 +370,7 @@ static BOOL CmdTrackType(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
     unit = (APTR)request->ios2_Req.io_Unit;
     
-    D(bug("[%s]: CmdTrackType()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
     
     packet_type = request->ios2_PacketType;
 
@@ -439,7 +440,7 @@ static BOOL CmdUntrackType(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
     unit = (APTR)request->ios2_Req.io_Unit;
     
-    D(bug("[%s]: CmdUntrackType()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
     
     packet_type = request->ios2_PacketType;
 
@@ -486,7 +487,7 @@ static BOOL CmdGetTypeStats(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
     unit = (APTR)request->ios2_Req.io_Unit;
 
-    D(bug("[%s]: CmdGetTypeStats()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     packet_type = request->ios2_PacketType;
 
@@ -526,7 +527,7 @@ static BOOL CmdGetGlobalStats(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request
 
     unit = (APTR)request->ios2_Req.io_Unit;
 
-    D(bug("[%s]: CmdGetGlobalStats()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     CopyMem(&unit->e1ku_stats, request->ios2_StatData,
         sizeof(struct Sana2DeviceStats));
@@ -567,7 +568,7 @@ static BOOL CmdOnEvent(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
     /* Check if we understand the event types */
 
     unit = (APTR)request->ios2_Req.io_Unit;
-    D(bug("[%s]: CmdOnEvent()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     wanted_events = request->ios2_WireError;
     if((wanted_events & ~KNOWN_EVENTS) != 0)
@@ -613,7 +614,7 @@ static BOOL CmdReadOrphan(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
     /* Check request is valid */
 
     unit = (APTR)request->ios2_Req.io_Unit;
-    D(bug("[%s]: CmdReadOrphan()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     if((unit->e1ku_ifflags & IFF_UP) == 0)
     {
@@ -647,7 +648,7 @@ static BOOL CmdOnline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
     int i;
     BYTE error = 0;
 
-    D(bug("[%s]: CmdOnline()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     /* Check request is valid */
     if((unit->e1ku_ifflags & IFF_CONFIGURED) == 0)
@@ -680,11 +681,11 @@ static BOOL CmdOnline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
         e1000func_irq_enable(unit);
 
-        D(bug("[%s]: CmdOnline: Causing Link Status Change..\n", unit->e1ku_name));
+        D(bug("[%s] %s: Causing Link Status Change..\n", unit->e1ku_name, __func__));
         /* fire a link status change interrupt to start the watchdog */
         E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_ICS, E1000_ICS_LSC);
 
-        D(bug("[%s]: CmdOnline: Reporting Interface is ONLINE..\n", unit->e1ku_name));
+        D(bug("[%s] %s: Reporting Interface is ONLINE..\n", unit->e1ku_name, __func__));
         unit->e1ku_ifflags |= IFF_UP;
         ReportEvents(LIBBASE, unit, S2EVENT_ONLINE);
     }
@@ -704,7 +705,7 @@ static BOOL CmdOffline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
     unit = (APTR)request->ios2_Req.io_Unit;
 
-    D(bug("[%s]: CmdOffline()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     if((unit->e1ku_ifflags & IFF_UP) != 0)
     {
@@ -720,7 +721,7 @@ static BOOL CmdOffline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
         e1000func_irq_disable(unit);
 
-        D(bug("[%s]: CmdOnline: Reporting Interface is OFFLINE..\n", unit->e1ku_name));
+        D(bug("[%s] %s: Reporting Interface is OFFLINE..\n", unit->e1ku_name, __func__));
 
         ReportEvents(LIBBASE, unit, S2EVENT_OFFLINE);
     }
@@ -736,7 +737,7 @@ static BOOL CmdAddMulticastAddresses(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *
 
     unit = (APTR)request->ios2_Req.io_Unit;
 
-    D(bug("[%s]: CmdAddMulticastAddresses()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     lower_bound = request->ios2_SrcAddr;
     if(request->ios2_Req.io_Command == S2_ADDMULTICASTADDRESS)
@@ -762,7 +763,7 @@ static BOOL CmdDelMulticastAddresses(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *
 
     unit = (APTR)request->ios2_Req.io_Unit;
 
-    D(bug("[%s]: CmdDelMulticastAddresses()\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     lower_bound = request->ios2_SrcAddr;
     if(request->ios2_Req.io_Command == S2_DELMULTICASTADDRESS)

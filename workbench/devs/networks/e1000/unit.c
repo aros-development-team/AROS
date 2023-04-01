@@ -111,7 +111,7 @@ void FlushUnit(LIBBASETYPEPTR LIBBASE, struct e1000Unit *unit, UBYTE last_queue,
     UBYTE i;
     struct Opener *opener, *tail;
 
-    D(bug("[%s] unit.FlushUnit\n", unit->e1ku_name));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     /* Abort queued operations */
 
@@ -164,7 +164,7 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
     ULONG wire_error=0;
     BOOL proceed = FALSE;
 
-    D(bug("[%s]: ## e1000func_TX_Int()\n", unit->e1ku_name));
+    D(bug("[%s]: ## %s()\n", unit->e1ku_name, __func__));
 
     if (tx_flags & E1000_TX_FLAGS_TSO) {
             txd_lower |= E1000_TXD_CMD_DEXT | E1000_TXD_DTYP_D |
@@ -190,7 +190,7 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
     proceed = TRUE; /* Success by default */
     port = unit->e1ku_request_ports[WRITE_QUEUE];
 
-    D(bug("[%s]: ## e1000func_TX_Int: nxt to use = %d, write queue port @ %p\n", unit->e1ku_name, i, port));
+    D(bug("[%s] ## %s: nxt to use = %d, write queue port @ %p\n", unit->e1ku_name, __func__, i, port));
 
     while(proceed && (!IsMsgPortEmpty(port)))
     {
@@ -208,11 +208,11 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
 
             if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, buffer_info->buffer)) == NULL)
             {
-                D(bug("[%s]: e1000func_TX_Int: Failed to Map Tx DMA buffer\n", unit->e1ku_name));
+                D(bug("[%s] ## %s: Failed to Map Tx DMA buffer\n", unit->e1ku_name, __func__));
             }
             else
             {
-                D(bug("[%s]: e1000func_TX_Int: Tx DMA buffer %d @ %p\n", unit->e1ku_name, i, buffer_info->dma));
+                D(bug("[%s] ## %s: Tx DMA buffer %d @ %p\n", unit->e1ku_name, __func__, i, buffer_info->dma));
             }
 
             if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
@@ -240,16 +240,21 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
             if (error == 0)
             {
                 Disable();
-                D(bug("[%s]: e1000func_TX_Int: packet %d [type = %d] queued for transmission.\n", unit->e1ku_name, i, AROS_BE2WORD(frame->eth_packet_type)));
+                D(bug("[%s] ## %s: packet %d [type = %d] queued for transmission.\n", unit->e1ku_name, __func__, i, AROS_BE2WORD(frame->eth_packet_type)));
 
               /* DEBUG? Dump frame if so */
 #ifdef DEBUG
                 {
                     int j;
-                    D(bug("[%s]: Tx Buffer %d Packet Dump -:", unit->e1ku_name, i));
-                    for (j=0; j<64; j++) {
+                    D(bug("[%s] Tx Buffer %d Packet Dump -:", unit->e1ku_name, i));
+                    for (j = 0; j < packet_size; j++) {
                         if ((j%16) == 0)
-                            D(bug("\n[%s]:     %03x:", unit->e1ku_name, j));
+                        {
+                            D(
+                            bug("\n");
+                            bug("[%s]:     %03x:", unit->e1ku_name, j);
+                            )
+                        }
                         D(bug(" %02x", ((unsigned char*)frame)[j]));
                     }
                     D(bug("\n"));
@@ -265,7 +270,7 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
                 tx_desc->lower.data = AROS_WORD2LE(txd_lower | buffer_info->length);
                 tx_desc->upper.data = AROS_WORD2LE(txd_upper);
                 tx_desc->lower.data |= AROS_WORD2LE(unit->txd_cmd);
-		MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), i);
+                MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), i);
             }
         }
 
@@ -312,7 +317,7 @@ AROS_INTH1(e1000func_WatchdogHandler,struct e1000Unit *,unit)
     struct timeval time;
 
     GetSysTime(&time);
-//D(bug("[%s]: ## e1000func_WatchdogHandler()\n", unit->e1ku_name));
+//    D(bug("[%s]: ## e1000func_WatchdogHandler()\n", unit->e1ku_name));
 
     /*
      * If timeout timer is expected, and time elapsed - regenerate the 
@@ -351,7 +356,7 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
 
     ULONG icr = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_ICR);
 
-    D(bug("[%s]: e1000func_IntHandler(status %x): ", unit->e1ku_name, icr));
+    D(bug("[%s]: %s(status %x) - ", unit->e1ku_name, __func__, icr));
 
     if (!icr)
     {
@@ -402,7 +407,7 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
     UBYTE *ptr;
     const UBYTE broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-    D(bug("[%s]: CopyPacket(packet @ %x, len = %d)\n", unit->e1ku_name, buffer, packet_size));
+    D(bug("[%s]: %s(packet @ %x, len = %d)\n", unit->e1ku_name, __func__, buffer, packet_size));
 
     /* Set multicast and broadcast flags */
 
@@ -410,12 +415,12 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
     if(memcmp(buffer->eth_packet_dest, broadcast, ETH_ADDRESSSIZE) == 0)
     {
        request->ios2_Req.io_Flags |= SANA2IOF_BCAST;
-        D(bug("[%s]: CopyPacket: BROADCAST Flag set\n", unit->e1ku_name));
+        D(bug("[%s] %s: BROADCAST Flag set\n", unit->e1ku_name, __func__));
     }
     else if((buffer->eth_packet_dest[0] & 0x1) != 0)
     {
        request->ios2_Req.io_Flags |= SANA2IOF_MCAST;
-        D(bug("[%s]: CopyPacket: MULTICAST Flag set\n", unit->e1ku_name));
+        D(bug("[%s] %s: MULTICAST Flag set\n", unit->e1ku_name, __func__));
     }
 
     /* Set source and destination addresses and packet type */
@@ -437,7 +442,7 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
 
     request->ios2_DataLength = packet_size;
 
-    D(bug("[%s]: CopyPacket: packet @ 0%p (%d bytes)\n", unit->e1ku_name, ptr, packet_size));
+    D(bug("[%s] %s: packet @ 0%p (%d bytes)\n", unit->e1ku_name, __func__, ptr, packet_size));
 
     /* Filter packet */
 
@@ -446,14 +451,14 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
         (opener->filter_hook != NULL))
         if(!CallHookPkt(opener->filter_hook, request, ptr))
         {
-            D(bug("[%s]: CopyPacket: packet filtered\n", unit->e1ku_name));
+            D(bug("[%s] %s: packet filtered\n", unit->e1ku_name, __func__));
             filtered = TRUE;
         }
 
     if(!filtered)
     {
         /* Copy packet into opener's buffer and reply packet */
-        D(bug("[%s]: CopyPacket: opener recieve packet .. ", unit->e1ku_name));
+        D(bug("[%s] %s: opener recieve packet .. ", unit->e1ku_name, __func__));
         if(!opener->rx_function(request->ios2_Data, ptr, packet_size))
         {
             D(bug("ERROR occured!!\n"));
@@ -469,7 +474,7 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
         Remove((APTR)request);
         Enable();
         ReplyMsg((APTR)request);
-        D(bug("[%s]: CopyPacket: opener notified.\n", unit->e1ku_name));
+        D(bug("[%s] %s: opener notified.\n", unit->e1ku_name, __func__));
     }
 }
 
@@ -520,8 +525,8 @@ AROS_UFH3(void, e1000func_Schedular,
     struct MsgPort *reply_port, *input;
 
     D(
-        bug("[%s] e1000func_Schedular()\n", unit->e1ku_name);
-        bug("[%s] e1000func_Schedular: Setting device up\n", unit->e1ku_name);
+        bug("[%s] %s()\n", unit->e1ku_name, __func__);
+        bug("[%s] %s: Setting device up\n", unit->e1ku_name, __func__);
      )
 
     reply_port = CreateMsgPort();
@@ -544,21 +549,21 @@ AROS_UFH3(void, e1000func_Schedular,
                 struct Message *msg = AllocVec(sizeof(struct Message), MEMF_PUBLIC|MEMF_CLEAR);
                 ULONG sigset;
 
-                D(bug("[%s] e1000func_Schedular: Got VBLANK unit of timer.device\n", unit->e1ku_name));
+                D(bug("[%s] %s: Got VBLANK unit of timer.device\n", unit->e1ku_name, __func__));
 
                 e1000func_reset(unit);
 
                 msg->mn_ReplyPort = reply_port;
                 msg->mn_Length = sizeof(struct Message);
 
-                D(bug("[%s] e1000func_Schedular: Setup complete. Sending handshake\n", unit->e1ku_name));
+                D(bug("[%s] %s: Setup complete. Sending handshake\n", unit->e1ku_name, __func__));
                 PutMsg(sm_UD->e1ksm_SyncPort, msg);
                 WaitPort(reply_port);
                 GetMsg(reply_port);
 
                 FreeVec(msg);
 
-                D(bug("[%s] e1000func_Schedular: entering forever loop ... \n", unit->e1ku_name));
+                D(bug("[%s] %s: entering forever loop ... \n", unit->e1ku_name, __func__));
 
                 unit->e1ku_signal_0 = AllocSignal(-1);
                 unit->e1ku_signal_1 = AllocSignal(-1);
@@ -587,7 +592,7 @@ AROS_UFH3(void, e1000func_Schedular,
                         DeleteMsgPort(input);
                         DeleteMsgPort(reply_port);
 
-                        D(bug("[%s] e1000func_Schedular: Process shutdown.\n", unit->e1ku_name));
+                        D(bug("[%s] %s: Process shutdown.\n", unit->e1ku_name, __func__));
                         return;
                     }
                     else if (recvd & (1 << input->mp_SigBit))
@@ -597,14 +602,14 @@ AROS_UFH3(void, e1000func_Schedular,
                         /* Handle incoming transactions */
                         while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL)
                         {
-                            D(bug("[%s] e1000func_Schedular: Handle incomming transaction.\n", unit->e1ku_name));
+                            D(bug("[%s] %s: Handle incomming transaction.\n", unit->e1ku_name, __func__));
                             ObtainSemaphore(&unit->e1ku_unit_lock);
                             handle_request(LIBBASE, io);
                         }
                     }
                     else
                     {
-                        D(bug("[%s] e1000func_Schedular: Handle incomming signal.\n", unit->e1ku_name));
+                        D(bug("[%s] %s: Handle incomming signal.\n", unit->e1ku_name, __func__));
                         /* Handle incoming signals */
                     }
                 }
@@ -627,7 +632,7 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
     BOOL success = TRUE;
     int i;
 
-    D(bug("[e1000] CreateUnit()\n"));
+    D(bug("[e1000] %s()\n", __func__));
 
     if ((unit = AllocMem(sizeof(struct e1000Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
@@ -641,7 +646,7 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
                                 MMIO_Base = (IPTR)NULL,
                                 Flash_Size = 0,
                                 MMIO_Size = 0,
-				PCIe_Cap = 0;
+                                PCIe_Cap = 0;
         OOP_Object              *driver;
 
         unit->e1ku_UnitNum = e1KBase->e1kb_UnitCount++;
@@ -679,13 +684,13 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_RevisionID, &RevisionID);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
 
-	OOP_GetAttr(pciDevice, aHidd_PCIDevice_CapabilityPCIE, (APTR)&PCIe_Cap);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_CapabilityPCIE, (APTR)&PCIe_Cap);
 	
         unit->e1ku_device     = e1KBase;
         ((struct e1000_hw *)unit->e1ku_Private00)->device_id         = DeviceID;
         ((struct e1000_hw *)unit->e1ku_Private00)->revision_id       = RevisionID;
 
-	unit->e1ku_PCIeCap = (UWORD)PCIe_Cap;
+        unit->e1ku_PCIeCap = (UWORD)PCIe_Cap;
 
         unit->e1ku_mtu        = unit->e1ku_Sana2Info.MTU;
         unit->rx_buffer_len   = MAXIMUM_ETHERNET_VLAN_SIZE;
@@ -701,7 +706,7 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
         NEWLIST(&unit->e1ku_type_trackers);
 
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->e1ku_IRQ);
-        D(bug("[%s] CreateUnit: Device IRQ  #%u\n", unit->e1ku_name, (UBYTE)unit->e1ku_IRQ));
+        D(bug("[%s] %s: Device IRQ  #%u\n", unit->e1ku_name, __func__, (UBYTE)unit->e1ku_IRQ));
 
         for (i = 1; i <= 5; i++)
         {
@@ -713,31 +718,31 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
                 if (BaseType & ADDRF_IO)
                 {
                     IOBase = BaseAddr;
-                    D(bug("[%s] CreateUnit: Device IO @ %p [%d bytes]\n", unit->e1ku_name, (APTR)IOBase, (int)BaseLen));
+                    D(bug("[%s] %s: Device IO @ %p [%d bytes]\n", unit->e1ku_name, __func__, (APTR)IOBase, (int)BaseLen));
                 }
                 else
                 {
                     Flash_Base = BaseAddr;
                     Flash_Size = BaseLen;
-                    D(bug("[%s] CreateUnit: Device Flash @ %p [%d bytes]\n", unit->e1ku_name, (APTR)Flash_Base, (int)Flash_Size));
+                    D(bug("[%s] %s: Device Flash @ %p [%d bytes]\n", unit->e1ku_name, __func__, (APTR)Flash_Base, (int)Flash_Size));
                 }
             }
         }
 
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &MMIO_Base);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &MMIO_Size);
-        D(bug("[%s] CreateUnit: Device MMIO @ %p\n", unit->e1ku_name, (APTR)MMIO_Base));
+        D(bug("[%s] %s: Device MMIO @ %p\n", unit->e1ku_name, __func__, (APTR)MMIO_Base));
 
         ((struct e1000_hw *)unit->e1ku_Private00)->io_base = (unsigned long)IOBase;
         ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr = (UBYTE *)HIDD_PCIDriver_MapPCI(driver, (APTR)MMIO_Base, MMIO_Size);
         unit->e1ku_MMIOSize = MMIO_Size;
 
-        D(bug("[%s] CreateUnit: Mapped MMIO @ %p [%d bytes]\n", unit->e1ku_name, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr, unit->e1ku_MMIOSize));
+        D(bug("[%s] %s: Mapped MMIO @ %p [%d bytes]\n", unit->e1ku_name, __func__, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr, unit->e1ku_MMIOSize));
 
         ((struct e1000_hw *)unit->e1ku_Private00)->flash_address = (UBYTE *)HIDD_PCIDriver_MapPCI(driver, (APTR)Flash_Base, Flash_Size);
         unit->e1ku_FlashSize = Flash_Size;
 
-        D(bug("[%s] CreateUnit: Mapped Flash Memory @ %p [%d bytes]\n", unit->e1ku_name, ((struct e1000_hw *)unit->e1ku_Private00)->flash_address, unit->e1ku_FlashSize));
+        D(bug("[%s] %s: Mapped Flash Memory @ %p [%d bytes]\n", unit->e1ku_name, __func__, ((struct e1000_hw *)unit->e1ku_Private00)->flash_address, unit->e1ku_FlashSize));
 
         if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) && (((struct e1000_hw *)unit->e1ku_Private00)->hw_addr))
         {
@@ -764,7 +769,7 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
             if (e1000_setup_init_funcs((struct e1000_hw *)unit->e1ku_Private00, FALSE) != E1000_SUCCESS)
             {
                 /* Should never have loaded on this device */
-                D(bug("[%s] CreateUnit: Called on unsupported NIC type!!\n", unit->e1ku_name));
+                D(bug("[%s] %s: Called on unsupported NIC type!!\n", unit->e1ku_name, __func__));
                 e1KBase->e1kb_UnitCount = unit->e1ku_UnitNum;
                 FreeVec(unit->e1ku_name);
                 FreeMem((APTR)unit->e1ku_Private00, sizeof(struct e1000_hw));
@@ -772,55 +777,55 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
                 return NULL;
             }
 
-            D(bug("[%s] CreateUnit: Initialised Intel NIC functions..\n", unit->e1ku_name));
+            D(bug("[%s] %s: Initialised Intel NIC functions..\n", unit->e1ku_name, __func__));
 
             unit->e1ku_txRing_QueueSize = 1;
             if ((unit->e1ku_txRing = AllocMem(sizeof(struct e1000_tx_ring) * unit->e1ku_txRing_QueueSize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
             {
                 /* TODO: Handle Tx Queue allocation failure more elegantly! */
-                D(bug("[%s] CreateUnit: Failed to Allocate Tx Ring Queue!!!\n", unit->e1ku_name));
+                D(bug("[%s] %s: Failed to Allocate Tx Ring Queue!!!\n", unit->e1ku_name, __func__));
                 return NULL;
             }
-            D(bug("[%s] CreateUnit: Queue 0 TxRing @ %p\n", unit->e1ku_name, unit->e1ku_txRing));
+            D(bug("[%s] %s: Queue 0 TxRing @ %p\n", unit->e1ku_name, __func__, unit->e1ku_txRing));
 
             unit->e1ku_rxRing_QueueSize = 1;
             if ((unit->e1ku_rxRing = AllocMem(sizeof(struct e1000_rx_ring) * unit->e1ku_rxRing_QueueSize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
             {
                 /* TODO: Handle Rx Queue allocation failure more elegantly! */
-                D(bug("[%s] CreateUnit: Failed to Allocate Rx Ring Queue!!!\n", unit->e1ku_name));
+                D(bug("[%s] %s: Failed to Allocate Rx Ring Queue!!!\n", unit->e1ku_name, __func__));
                 return NULL;
             }
-            D(bug("[%s] CreateUnit: Queue 0 RxRing @ %p\n", unit->e1ku_name, unit->e1ku_rxRing));
+            D(bug("[%s] %s: Queue 0 RxRing @ %p\n", unit->e1ku_name, __func__, unit->e1ku_rxRing));
 
             e1000func_irq_disable(unit);
-            D(bug("[%s] CreateUnit: e1000 IRQ disabled\n", unit->e1ku_name));
+            D(bug("[%s] %s: e1000 IRQ disabled\n", unit->e1ku_name, __func__));
 
             if (e1000_init_mac_params((struct e1000_hw *)unit->e1ku_Private00) != E1000_SUCCESS)
             {
-                D(bug("[%s] CreateUnit: Failed to init mac params\n", unit->e1ku_name));
+                D(bug("[%s] %s: Failed to init mac params\n", unit->e1ku_name, __func__));
             }
-            D(bug("[%s] CreateUnit: MAC Params Initialised\n", unit->e1ku_name));
+            D(bug("[%s] %s: MAC Params Initialised\n", unit->e1ku_name, __func__));
 
             if (e1000_init_nvm_params((struct e1000_hw *)unit->e1ku_Private00) != E1000_SUCCESS)
             {
-                D(bug("[%s] CreateUnit: Failed to init nvm params\n", unit->e1ku_name));
+                D(bug("[%s] %s: Failed to init nvm params\n", unit->e1ku_name, __func__));
             }
-            D(bug("[%s] CreateUnit: NVM Params Initialised\n", unit->e1ku_name));
+            D(bug("[%s] %s: NVM Params Initialised\n", unit->e1ku_name, __func__));
 
             if (e1000_init_phy_params((struct e1000_hw *)unit->e1ku_Private00) != E1000_SUCCESS)
             {
-                D(bug("[%s] CreateUnit: Failed to init phy params\n", unit->e1ku_name));
+                D(bug("[%s] %s: Failed to init phy params\n", unit->e1ku_name, __func__));
             }
-            D(bug("[%s] CreateUnit: PHY Params Initialised\n", unit->e1ku_name));
+            D(bug("[%s] %s: PHY Params Initialised\n", unit->e1ku_name, __func__));
 
             e1000_get_bus_info((struct e1000_hw *)unit->e1ku_Private00);
 
-            D(bug("[%s] CreateUnit: Retrieved Bus information..\n", unit->e1ku_name));
+            D(bug("[%s] %s: Retrieved Bus information..\n", unit->e1ku_name, __func__));
 
             e1000_init_script_state_82541((struct e1000_hw *)unit->e1ku_Private00, TRUE);
             e1000_set_tbi_compatibility_82543((struct e1000_hw *)unit->e1ku_Private00, TRUE);
 
-            D(bug("[%s] CreateUnit: 82541/82543 Setup complete\n", unit->e1ku_name));
+            D(bug("[%s] %s: 82541/82543 Setup complete\n", unit->e1ku_name, __func__));
 
             ((struct e1000_hw *)unit->e1ku_Private00)->phy.autoneg_wait_to_complete = FALSE;
             ((struct e1000_hw *)unit->e1ku_Private00)->mac.adaptive_ifs = TRUE;
@@ -836,7 +841,7 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
 
             if (e1000_check_reset_block((struct e1000_hw *)unit->e1ku_Private00))
             {
-                D(bug("[%s] CreateUnit: PHY reset is blocked due to SOL/IDER session.\n", unit->e1ku_name));
+                D(bug("[%s] %s: PHY reset is blocked due to SOL/IDER session.\n", unit->e1ku_name, __func__));
             }
 
             /* Hardware features, flags and workarounds */
@@ -849,36 +854,36 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
                 unit->e1ku_hwflags |= E1000_FLAG_BAD_TX_CARRIER_STATS_FD;
 
             e1000_reset_hw((struct e1000_hw *)unit->e1ku_Private00);
-            D(bug("[%s] CreateUnit: e1000 hardware reset\n", unit->e1ku_name));
+            D(bug("[%s] %s: e1000 hardware reset\n", unit->e1ku_name, __func__));
 
             if (e1000_validate_nvm_checksum((struct e1000_hw *)unit->e1ku_Private00) < 0) {
-                D(bug("[%s] CreateUnit: Warning: The NVM Checksum Is Not Valid!\n", unit->e1ku_name));
+                D(bug("[%s] %s: Warning: The NVM Checksum Is Not Valid!\n", unit->e1ku_name, __func__));
                 return NULL;
             }
             else
             {
-                D(bug("[%s] CreateUnit: NVM Checksum validated successfully\n", unit->e1ku_name));
+                D(bug("[%s] %s: NVM Checksum validated successfully\n", unit->e1ku_name, __func__));
             }
     
             /* copy the MAC address out of the NVM */
 
             if (e1000_read_mac_addr((struct e1000_hw *)unit->e1ku_Private00))
             {
-                D(bug("[%s] CreateUnit: NVM Read Error\n", unit->e1ku_name));
+                D(bug("[%s] %s: NVM Read Error\n", unit->e1ku_name, __func__));
             }
             else
             {
-                D(bug("[%s] CreateUnit: MAC Address Read\n", unit->e1ku_name));
+                D(bug("[%s] %s: MAC Address Read\n", unit->e1ku_name, __func__));
             }
             memcpy(unit->e1ku_org_addr, ((struct e1000_hw *)unit->e1ku_Private00)->mac.addr, ETH_ADDRESSSIZE);
             memcpy(unit->e1ku_dev_addr, unit->e1ku_org_addr, ETH_ADDRESSSIZE);
 
-            D(bug("[%s] CreateUnit: MAC Address %02x:%02x:%02x:%02x:%02x:%02x\n", unit->e1ku_name,
+            D(bug("[%s] %s: MAC Address %02x:%02x:%02x:%02x:%02x:%02x\n", unit->e1ku_name, __func__,
                 unit->e1ku_dev_addr[0], unit->e1ku_dev_addr[1], unit->e1ku_dev_addr[2],
                 unit->e1ku_dev_addr[3], unit->e1ku_dev_addr[4], unit->e1ku_dev_addr[5]));
 
             {
-                D(bug("[%s] CreateUnit: (PCI%s:%s:%s)\n", unit->e1ku_name,
+                D(bug("[%s] %s: (PCI%s:%s:%s)\n", unit->e1ku_name, __func__,
                     ((((struct e1000_hw *)unit->e1ku_Private00)->bus.type == e1000_bus_type_pcix) ? "-X" :
                      (((struct e1000_hw *)unit->e1ku_Private00)->bus.type == e1000_bus_type_pci_express ? " Express":"")),
                     ((((struct e1000_hw *)unit->e1ku_Private00)->bus.speed == e1000_bus_speed_2500) ? "2.5Gb/s" :
@@ -956,7 +961,7 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
                         DeleteMsgPort(sm_UD->e1ksm_SyncPort);
                         FreeMem(sm_UD, sizeof(struct e1000Startup));
 
-                        D(bug("[%s]  CreateUnit: Device Initialised. Unit %d @ %p\n", unit->e1ku_name, unit->e1ku_UnitNum, unit));
+                        D(bug("[%s]  %s: Device Initialised. Unit %d @ %p\n", unit->e1ku_name, __func__, unit->e1ku_UnitNum, unit));
                         return unit;
                     }
                 }
@@ -966,12 +971,12 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
         {
             if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) == 0)
             {
-                D(bug("[%s]  CreateUnit: PANIC! Couldn't find IO area. Aborting\n", unit->e1ku_name));
+                D(bug("[%s]  %s: PANIC! Couldn't find IO area. Aborting\n", unit->e1ku_name, __func__));
             }
 
             if ((((struct e1000_hw *)unit->e1ku_Private00)->hw_addr) == NULL)
             {
-                D(bug("[%s]  CreateUnit: PANIC! Couldn't get MMIO area. Aborting\n", unit->e1ku_name));
+                D(bug("[%s]  %s: PANIC! Couldn't get MMIO area. Aborting\n", unit->e1ku_name, __func__));
             }
         }
     }

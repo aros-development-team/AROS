@@ -492,7 +492,7 @@ void e1000func_reset(struct net_device *unit)
     }
 
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_PBA, pba);
-    D(bug("[%s]: %s: pba = %d\n", unit->e1ku_name, __func__, pba);)
+    D(bug("[%s] %s: pba = %d\n", unit->e1ku_name, __func__, pba);)
 
     /* flow control settings */
     /* The high water mark must be low enough to fit one full frame
@@ -979,7 +979,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
 
     D(
         bug("[%s]: %s(0x%p, 0x%p, %d)\n", unit->e1ku_name, __func__, unit, rx_ring, cleaned_count);
-        bug("[%s]: %s: starting at %d\n", unit->e1ku_name, __func__, i);
+        bug("[%s] %s: starting at %d\n", unit->e1ku_name, __func__, i);
      )
 
     while (cleaned_count--)
@@ -1006,7 +1006,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
             i = 0;
     }
     D(
-        bug("[%s]: %s: next_to_use = %d, i = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_use, i);
+        bug("[%s] %s: next_to_use = %d, i = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_use, i);
      )
     if (rx_ring->next_to_use != i) {
         rx_ring->next_to_use = i;
@@ -1014,7 +1014,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
             i = (rx_ring->count - 1);
 
         D(
-            bug("[%s]: %s: Adjusting RDT to %d\n", unit->e1ku_name, __func__, i);
+            bug("[%s] %s: Adjusting RDT to %d\n", unit->e1ku_name, __func__, i);
         )
         writel(i, (APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt));
     }
@@ -1272,7 +1272,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
          * packet, also make sure the frame isn't just CRC only */
         if (!(status & E1000_RXD_STAT_EOP) || (length <= ETH_CRCSIZE)) {
             /* All receives must fit into a single buffer */
-            D(bug("[%s] %s: Receive packet consumed multiple buffers - recyclcing\n", unit->e1ku_name, __func__);)
+            D(bug("[%s] %s: Receive packet consumed multiple buffers - recycling\n", unit->e1ku_name, __func__);)
             /* recycle */
             goto next_desc;
         }
@@ -1296,7 +1296,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                 length--;
             } else {
                 /* recycle */
-                D(bug("[%s] %s: TBI rejected - recyclcing\n", unit->e1ku_name, __func__);)
+                D(bug("[%s] %s: TBI rejected - recycling\n", unit->e1ku_name, __func__);)
                 goto next_desc;
             }
         }
@@ -1322,10 +1322,11 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         D(
             int j;
             bug("[%s]: Rx Buffer %d Packet Dump -:", unit->e1ku_name, buffer_no);
-            for (j=0; j<64; j++) {
+            for (j = 0; j < length; j++) {
                 if ((j%16) == 0)
                 {
-                    bug("\n[%s]:     %03x:", unit->e1ku_name, j);
+                    bug("\n");
+                    bug("[%s]:     %03x:", unit->e1ku_name, j);
                 }
                 bug(" %02x", ((unsigned char*)frame)[j]);
             }
@@ -1424,48 +1425,53 @@ next_desc:
     return cleaned;
 }
 
-/** OS SUPPORT CALLS FOR INTEL CODE **/
+/** ******************************************************************************************************************** **
+  **                                                                          OS SUPPORT CALLS FOR INTEL CODE                                                                                **
+  ** ******************************************************************************************************************** **/
+
+#undef unit
+#define unit ((struct e1000Unit *)hw->back)
 
 void e1000_pci_clear_mwi(struct e1000_hw *hw)
 {
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
 
-    D(bug("[%s]: %s()\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__);)
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
     /* Check if the devices cache line size is set first ?*/
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
     pciwritemsg.reg = 0x04;
-    pciwritemsg.val = (UWORD)OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg) & ~0x0010;
+    pciwritemsg.val = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg) & ~0x0010;
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-    OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
+    OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
 }
 
 void e1000_pci_set_mwi(struct e1000_hw *hw)
 {
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
 
-    D(bug("[%s]: %s()\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__);)
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
     /* Check if the devices cache line size is set first ?*/
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
     pciwritemsg.reg = 0x04;
-    pciwritemsg.val = (UWORD)OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg) | 0x0010;
+    pciwritemsg.val = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg) | 0x0010;
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-    OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
+    OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
 }
 
 LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_ReadConfigWord pcireadmsg;
 
-    D(bug("[%s]: %s(reg:%d)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, reg);)
+    D(bug("[%s]: %s(reg:%d)\n", unit->e1ku_name, __func__, reg);)
 
-    if (((struct e1000Unit *)hw->back)->e1ku_PCIeCap)
+    if (unit->e1ku_PCIeCap)
     {
         pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
-        pcireadmsg.reg = ((struct e1000Unit *)hw->back)->e1ku_PCIeCap + reg;
-        *value = (UWORD)OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
-        D(bug("[%s] %s: ------> [%04x]\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, *value);)
+        pcireadmsg.reg = unit->e1ku_PCIeCap + reg;
+        *value = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
+        D(bug("[%s] %s: ------> [%04x]\n", unit->e1ku_name, __func__, *value);)
         return (E1000_SUCCESS);
     }
 
@@ -1475,21 +1481,21 @@ LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 void e1000_read_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_ReadConfigWord pcireadmsg;
-    D(bug("[%s]: %s(reg:%d)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, reg);)
+    D(bug("[%s]: %s(reg:%d)\n", unit->e1ku_name, __func__, reg);)
 
     pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
     pcireadmsg.reg = reg;
-    *value = (UWORD)OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
-    D(bug("[%s] %s: ------> [%04x]\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, *value);)
+    *value = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
+    D(bug("[%s] %s: ------> [%04x]\n", unit->e1ku_name, __func__, *value);)
 }
 
 void e1000_write_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
-    D(bug("[%s]: %s(reg:%d, %04x)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, reg, *value);)
+    D(bug("[%s]: %s(reg:%d, %04x)\n", unit->e1ku_name, __func__, reg, *value);)
 
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
     pciwritemsg.reg = reg;
     pciwritemsg.val = *value;
-    OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
+    OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
 }

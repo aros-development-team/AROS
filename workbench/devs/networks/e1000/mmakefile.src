@@ -9,16 +9,23 @@ INTELCOREFILES := e1000_api e1000_phy e1000_mac e1000_nvm e1000_manage
 INTELMACFILES := e1000_82540 e1000_82541 e1000_82542 e1000_82543
 
 USER_LDFLAGS := -static
+USER_CPPFLAGS :=  \
+        -D__OOP_NOLIBBASE__ \
+        -D__OOP_NOMETHODBASES__ \
+        -D__OOP_NOATTRBASES__
 
 #MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-normal
 #MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-debug
+
+#MM- workbench-devs-networks-e1000-quick : workbench-devs-networks-e1000-normal-quick
+#MM- workbench-devs-networks-e1000-quick : workbench-devs-networks-e1000-debug-quick
 
 %build_module mmake=workbench-devs-networks-e1000-normal \
     modname=e1000 modtype=device \
     files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" \
     objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
 
-USER_CPPFLAGS :=  -DDEBUG=1
+USER_CPPFLAGS +=  -DDEBUG=1
 #USER_CPPFLAGS +=  -Dintel_debug
 
 %build_module mmake=workbench-devs-networks-e1000-debug \
