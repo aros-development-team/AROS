@@ -44,6 +44,8 @@
 
 #include LC_LIBDEFS_FILE
 
+#define USE_FAST_PCICFG
+
 typedef BOOL bool;
 typedef UBYTE u8;
 typedef UWORD u16;
@@ -76,6 +78,7 @@ struct e1000Base
 #endif
 #if defined(__OOP_NOMETHODBASES__)
     OOP_MethodID            e1kb_HiddPCIBase;
+    OOP_MethodID            e1kb_HiddPCIDeviceBase;
     OOP_MethodID            e1kb_HiddPCIDriverBase;
 #endif
     ULONG                   e1kb_UnitCount;
@@ -96,6 +99,8 @@ struct e1000Startup
 #if defined(__OOP_NOMETHODBASES__)
 #undef HiddPCIBase
 #define HiddPCIBase   (LIBBASE->e1kb_HiddPCIBase)
+#undef HiddPCIDeviceBase
+#define HiddPCIDeviceBase       (LIBBASE->e1kb_HiddPCIDeviceBase)
 #undef HiddPCIDriverBase
 #define HiddPCIDriverBase       (LIBBASE->e1kb_HiddPCIDriverBase)
 #endif

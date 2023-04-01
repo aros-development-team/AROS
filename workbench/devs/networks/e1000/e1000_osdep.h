@@ -279,6 +279,13 @@ struct e1000Unit {
     OOP_Object              *e1ku_PCIDriver;
     IPTR                    e1ku_IRQ;
 
+#if defined(USE_FAST_PCICFG)
+    OOP_MethodFunc         e1ku_ReadConfigWord;
+    OOP_Class 	          *e1ku_ReadConfigWord_Class;
+    OOP_MethodFunc         e1ku_WriteConfigWord;
+    OOP_Class 	          *e1ku_WriteConfigWord_Class;
+#endif
+
     UWORD		    e1ku_PCIeCap;
     int                     e1ku_open_count;
     struct SignalSemaphore  e1ku_unit_lock;
@@ -358,6 +365,36 @@ struct e1000Unit {
     BOOL                    e1ku_toutNEED;
 
 };
+
+#if defined(USE_FAST_PCICFG)
+static inline UWORD READCONFIGWORD(struct e1000Unit *unit, OOP_Object *o, ULONG reg)
+{
+    struct pHidd_PCIDevice_ReadConfigWord rcw_p;
+#if defined(__OOP_NOMETHODBASES__)
+    rcw_p.mID   = unit->e1ku_device->e1kb_HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+#else
+    rcw_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
+#endif
+    rcw_p.reg   = reg;
+    return (UWORD)unit->e1ku_ReadConfigWord(unit->e1ku_ReadConfigWord_Class, o, &rcw_p.mID);
+}
+
+static inline void WRITECONFIGWORD(struct e1000Unit *unit, OOP_Object *o, ULONG reg, UWORD value)
+{
+    struct pHidd_PCIDevice_WriteConfigWord wcw_p;
+#if defined(__OOP_NOMETHODBASES__)
+    wcw_p.mID   = unit->e1ku_device->e1kb_HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+#else
+    wcw_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
+#endif
+    wcw_p.reg   = reg;
+    wcw_p.val   = value;
+    unit->e1ku_WriteConfigWord(unit->e1ku_WriteConfigWord_Class, o, &wcw_p.mID);
+}
+#else
+#define READCONFIGWORD(cl, obj, reg) HIDD_PCIDevice_ReadConfigWord(obj, reg)
+#define WRITECONFIGWORD(cl, obj, reg, val) HIDD_PCIDevice_WriteConfigWord(obj, reg, val)
+#endif
 
 #define net_device e1000Unit
 

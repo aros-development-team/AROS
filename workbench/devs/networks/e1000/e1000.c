@@ -1437,13 +1437,28 @@ void e1000_pci_clear_mwi(struct e1000_hw *hw)
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
 
     D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
-
     /* Check if the devices cache line size is set first ?*/
+#if defined(__OOP_NOMETHODBASES__)
+    pciwritemsg.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+#else
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
+#endif
     pciwritemsg.reg = 0x04;
+#if defined(USE_FAST_PCICFG)
+    pciwritemsg.val = (UWORD)unit->e1ku_ReadConfigWord(unit->e1ku_ReadConfigWord_Class, unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg.mID) & ~0x0010;
+#else
     pciwritemsg.val = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg) & ~0x0010;
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    pciwritemsg.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+#else
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
+#endif
+#if defined(USE_FAST_PCICFG)
+    unit->e1ku_WriteConfigWord(unit->e1ku_WriteConfigWord_Class, unit->e1ku_PCIDevice, &pciwritemsg.mID);
+#else
     OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
+#endif
 }
 
 void e1000_pci_set_mwi(struct e1000_hw *hw)
@@ -1451,26 +1466,36 @@ void e1000_pci_set_mwi(struct e1000_hw *hw)
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
 
     D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
-
     /* Check if the devices cache line size is set first ?*/
+#if defined(__OOP_NOMETHODBASES__)
+    pciwritemsg.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+#else
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
+#endif
     pciwritemsg.reg = 0x04;
+#if defined(USE_FAST_PCICFG)
+    pciwritemsg.val = (UWORD)unit->e1ku_ReadConfigWord(unit->e1ku_ReadConfigWord_Class, unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg.mID) | 0x0010;
+#else
     pciwritemsg.val = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg) | 0x0010;
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    pciwritemsg.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+#else
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
+#endif
+#if defined(USE_FAST_PCICFG)
+    unit->e1ku_WriteConfigWord(unit->e1ku_WriteConfigWord_Class, unit->e1ku_PCIDevice, &pciwritemsg.mID);
+#else
     OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
+#endif
 }
 
 LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
-    struct pHidd_PCIDevice_ReadConfigWord pcireadmsg;
-
     D(bug("[%s]: %s(reg:%d)\n", unit->e1ku_name, __func__, reg);)
-
     if (unit->e1ku_PCIeCap)
     {
-        pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
-        pcireadmsg.reg = unit->e1ku_PCIeCap + reg;
-        *value = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
+        *value = READCONFIGWORD(unit, unit->e1ku_PCIDevice, unit->e1ku_PCIeCap + reg);
         D(bug("[%s] %s: ------> [%04x]\n", unit->e1ku_name, __func__, *value);)
         return (E1000_SUCCESS);
     }
@@ -1480,22 +1505,13 @@ LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 
 void e1000_read_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
-    struct pHidd_PCIDevice_ReadConfigWord pcireadmsg;
     D(bug("[%s]: %s(reg:%d)\n", unit->e1ku_name, __func__, reg);)
-
-    pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
-    pcireadmsg.reg = reg;
-    *value = (UWORD)OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
+    *value = READCONFIGWORD(unit, unit->e1ku_PCIDevice, reg);
     D(bug("[%s] %s: ------> [%04x]\n", unit->e1ku_name, __func__, *value);)
 }
 
 void e1000_write_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
-    struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
     D(bug("[%s]: %s(reg:%d, %04x)\n", unit->e1ku_name, __func__, reg, *value);)
-
-    pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-    pciwritemsg.reg = reg;
-    pciwritemsg.val = *value;
-    OOP_DoMethod(unit->e1ku_PCIDevice, (OOP_Msg)&pciwritemsg);
+    WRITECONFIGWORD(unit, unit->e1ku_PCIDevice, reg, *value);
 }

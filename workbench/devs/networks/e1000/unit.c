@@ -744,6 +744,11 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
 
         D(bug("[%s] %s: Mapped Flash Memory @ %p [%d bytes]\n", unit->e1ku_name, __func__, ((struct e1000_hw *)unit->e1ku_Private00)->flash_address, unit->e1ku_FlashSize));
 
+#if defined(USE_FAST_PCICFG)
+        unit->e1ku_ReadConfigWord = OOP_GetMethod(unit->e1ku_PCIDevice, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord, &unit->e1ku_ReadConfigWord_Class);
+        unit->e1ku_WriteConfigWord = OOP_GetMethod(unit->e1ku_PCIDevice, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord, &unit->e1ku_WriteConfigWord_Class);
+#endif
+
         if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) && (((struct e1000_hw *)unit->e1ku_Private00)->hw_addr))
         {
             struct TagItem attrs[] = {
