@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2017, The AROS Development Team.
+    Copyright (C) 2011-2023, The AROS Development Team.
 */
 
 #define DEBUG 0
@@ -24,6 +24,11 @@
 //#define DECOR_FAKESHADE
 //#define DECOR_NODIRECT
 //#define DECOR_NOSHADE
+
+// D = A + B
+#define BLIT_MINTERM_COPY        0xC0
+// D = A + B + C
+#define BLIT_MINTERM_COPYTM      0xE0
 
 #if AROS_BIG_ENDIAN
 #define GET_ARGB_A(rgb) ((rgb >> 24) & 0xff)
@@ -137,13 +142,13 @@ static void BltScaleNewImageSubImageRastPort(struct NewImage * ni, ULONG subimag
                 {
                     BltMaskBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
                         (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
-                        widthSrc, heightSrc, 0xe0, (PLANEPTR) ni->mask);
+                        widthSrc, heightSrc, BLIT_MINTERM_COPYTM, (PLANEPTR) ni->mask);
                 }
                 else
                 {
                     BltBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
                         (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
-                        widthSrc, heightSrc, 0xc0);
+                        widthSrc, heightSrc, BLIT_MINTERM_COPY);
                 }
             }
 
@@ -152,7 +157,7 @@ static void BltScaleNewImageSubImageRastPort(struct NewImage * ni, ULONG subimag
             {
                 BltBitMapRastPort(ni->bitmap2, (subimagewidth * subimageCol) + xSrc ,
                     (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
-                    widthSrc, heightSrc, 0xc0);
+                    widthSrc, heightSrc, BLIT_MINTERM_COPY);
             }
         }
     }
@@ -539,9 +544,9 @@ static void DrawMapTileToRP(struct NewImage *src, struct RastPort *rp, UWORD _sx
 
             if (src->mask)
             {
-                BltMaskBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, 0xe0, (PLANEPTR) src->mask);
+                BltMaskBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, BLIT_MINTERM_COPYTM, (PLANEPTR) src->mask);
             }
-            else BltBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, 0xc0);
+            else BltBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, BLIT_MINTERM_COPY);
 
             dx += dw;
         }
@@ -565,7 +570,7 @@ void DrawPartImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD 
         }
         else
         {
-            BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, y, sw, sh, 0xc0);
+            BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, y, sw, sh, BLIT_MINTERM_COPY);
         }
     }
 }
