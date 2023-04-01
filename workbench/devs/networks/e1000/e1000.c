@@ -61,6 +61,8 @@
 #undef LIBBASE
 #define LIBBASE (unit->e1ku_device)
 
+#define DCHK(x)
+
 void e1000_usec_delay(struct net_device *unit, ULONG usec)
 {
     if (unit != NULL)
@@ -370,7 +372,7 @@ static void e1000func_configure_rx(struct net_device *unit)
         D(bug("[%s] %s:        RDH = %d, RDT = %d\n", unit->e1ku_name, __func__, readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + unit->e1ku_rxRing[i].rdh)), readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + unit->e1ku_rxRing[i].rdt))));
     }
 
-    D(bug("[%s] %s: Configuring checksum Offload..\n", unit->e1ku_name, __func__));
+    D(bug("[%s] %s: Configuring Rx checksum Offload..\n", unit->e1ku_name, __func__));
 
     if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type >= e1000_82543)
     {
@@ -998,8 +1000,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
             )
 
             rx_desc = E1000_RX_DESC(rx_ring, i);
-    //    		rx_desc->buffer_addr = cpu_to_le64(buffer_info->dma);
-            rx_desc->buffer_addr = (IPTR)buffer_info->dma;
+            rx_desc->buffer_addr = AROS_QUAD2LE((IPTR)buffer_info->dma);
         }
 
         if (++i == rx_ring->count)
@@ -1161,7 +1162,7 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
     }
     adapter->hw_csum_good++;
 #else
-    bug("[%s] %s: Frame (Pre)Checksum %x%x%x%x\n", unit->e1ku_name, __func__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);
+    DCHK(bug("[%s] %s: Frame (Pre)Checksum %x%x%x%x\n", unit->e1ku_name, __func__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);)
     if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type >= e1000_82543)
     {
         if (status_err & E1000_RXD_STAT_IXSM)
@@ -1181,7 +1182,7 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
             /* It must be a TCP or UDP packet with a valid checksum */
             if (valid && (status_err & E1000_RXD_STAT_TCPCS)) {
                 /* TCP checksum is good */
-                bug("[%s] %s: Using offloaded Checksum\n", unit->e1ku_name, __func__);
+                DCHK(bug("[%s] %s: Using offloaded Checksum\n", unit->e1ku_name, __func__);)
 
                 doChecksum = FALSE;
                 frame->eth_packet_crc[0] = (csum & 0xff000000) >> 24;
@@ -1196,7 +1197,7 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
         else
         {
             /* let the stack verify checksum errors */
-            bug("[%s] %s: Checksum Error\n", unit->e1ku_name, __func__);
+            DCHK(bug("[%s] %s: Checksum Error\n", unit->e1ku_name, __func__);)
 #if (HAVE_CSUM_STATS)
             unit->e1ku_stats.hw_csum_err++;
 #endif
@@ -1206,17 +1207,17 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
     if (doChecksum)
     {
         // We need to calculate the frames checksum ...
-        bug("[%s] %s: Frames checksum needs calculated...\n", unit->e1ku_name, __func__);
+        DCHK(bug("[%s] %s: Frames checksum needs calculated...\n", unit->e1ku_name, __func__);)
     }
 
-    bug("[%s] %s: Frame (Post)Checksum %x%x%x%x\n", unit->e1ku_name, __func__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);
+    DCHK(bug("[%s] %s: Frame (Post)Checksum %x%x%x%x\n", unit->e1ku_name, __func__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);)
 }
 
 UBYTE get_status(struct net_device *unit,
                                     UBYTE *_status, struct e1000_rx_desc *rx_desc)
 {
     *_status = rx_desc->status;
-    bug("[%s] %s: Status: %08x\n", unit->e1ku_name, __func__, *_status);
+    D(bug("[%s] %s: Status: %08x\n", unit->e1ku_name, __func__, *_status);)
     return *_status;
 }
 
