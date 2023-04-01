@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2018, The AROS Development Team.
+    Copyright (C) 2011-2023, The AROS Development Team.
 */
 
 #include <datatypes/pictureclass.h>
@@ -20,9 +20,13 @@
 #include "newimage.h"
 
 #if AROS_BIG_ENDIAN
-#define GET_A(rgb) (((rgb) >> 24) & 0xff)
+#define GET_A(rgb)          (((rgb) >> 24) & 0xFF)
+#define MASK_ALPHATRANSP    0X00FFFFFF
+#define MASK_ALPHAOPAQUE    0XFF000000
 #else
-#define GET_A(rgb) ((rgb) & 0xff)
+#define GET_A(rgb)          ((rgb) & 0xFF)
+#define MASK_ALPHATRANSP    0xFFFFFF00
+#define MASK_ALPHAOPAQUE    0X000000FF
 #endif
 
 /* Code taken from BM__Hidd_BitMap__BitMapScale */
@@ -251,17 +255,16 @@ struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
                     {
                         for (x = 0; x < w; x++)
                         {
-#if !AROS_BIG_ENDIAN
-                        if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0xffffff00; else dst[x+y*w] |= 0x000000ff;
-#else
-                        if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0x00ffffff; else dst[x+y*w] |= 0xff000000;
-#endif
+                            if (ReadPixel(rp, x, y) == bmhd->bmh_Transparent)
+                                dst[x+y*w] &= MASK_ALPHATRANSP;
+                            else
+                                dst[x+y*w] |= MASK_ALPHAOPAQUE;
                         }
                     }
                     FreeRastPort(rp);
                 }
             }
-        }
+            }
         DisposeDTObject(pic);
     }
 
