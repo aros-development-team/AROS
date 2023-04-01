@@ -392,8 +392,8 @@ static inline void WRITECONFIGWORD(struct e1000Unit *unit, OOP_Object *o, ULONG 
     unit->e1ku_WriteConfigWord(unit->e1ku_WriteConfigWord_Class, o, &wcw_p.mID);
 }
 #else
-#define READCONFIGWORD(cl, obj, reg) HIDD_PCIDevice_ReadConfigWord(obj, reg)
-#define WRITECONFIGWORD(cl, obj, reg, val) HIDD_PCIDevice_WriteConfigWord(obj, reg, val)
+#define READCONFIGWORD(unit, obj, reg) HIDD_PCIDevice_ReadConfigWord(obj, reg)
+#define WRITECONFIGWORD(unit, obj, reg, val) HIDD_PCIDevice_WriteConfigWord(obj, reg, val)
 #endif
 
 #define net_device e1000Unit
