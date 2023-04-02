@@ -16,6 +16,7 @@
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct PCIDevice *hd = hu->hu_Device;
+    ULONG cnt;
 
     struct TagItem pciActivateMem[] =
     {
@@ -35,11 +36,16 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             { TAG_DONE, 0UL },
     };
 
+
+    for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
+        hu->hu_PortMapX[cnt] = hc;
+        hc->hc_PortNum[cnt] = cnt;
+    }
+
     KPRINTF(20, ("ohciInit returns TRUE...\n"));
     return TRUE;
 }
 
-/* ** Root hub support functions ** */
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
 {

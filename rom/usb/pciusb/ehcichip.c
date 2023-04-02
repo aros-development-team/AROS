@@ -1587,6 +1587,11 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         KPRINTF(10, ("HW Regs USBSTS=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS)));
         KPRINTF(10, ("HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT)));
 
+        for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
+            hu->hu_PortMap20[cnt] = hc;
+            hc->hc_PortNum[cnt] = cnt;
+        }
+
         KPRINTF(10, ("ehciInit returns TRUE...\n"));
         return TRUE;
     }
@@ -1638,8 +1643,6 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu) {
     }
 
 }
-
-/* ** Root hub support functions ** */
 
 BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
 {

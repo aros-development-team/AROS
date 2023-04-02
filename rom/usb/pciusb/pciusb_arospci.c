@@ -475,36 +475,26 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                 case HCITYPE_EHCI:
                 {
+                    if(usb20ports) {
+                        KPRINTF(200, ("WARNING: More than one EHCI controller per board?!?\n"));
+                    }
                     allocgood = ehciInit(hc,hu);
                     if(allocgood) {
                         ehcicnt++;
-                        if(usb20ports) {
-                            KPRINTF(200, ("WARNING: More than one EHCI controller per board?!?\n"));
-                        }
                         usb20ports = hc->hc_NumPorts;
-
-                        for(cnt = 0; cnt < usb20ports; cnt++) {
-                            hu->hu_PortMap20[cnt] = hc;
-                            hc->hc_PortNum[cnt] = cnt;
-                        }
                     }
                     break;
                 }
 #if defined(TMPXHCICODE)
                 case HCITYPE_XHCI:
                 {
+                    if(usb30ports) {
+                        KPRINTF(200, ("WARNING: More than one XHCI controller per board?!?\n"));
+                    }
                     allocgood = xhciInit(hc,hu);
                     if(allocgood) {
                         xhcicnt++;
-                        if(usb30ports) {
-                            KPRINTF(200, ("WARNING: More than one XHCI controller per board?!?\n"));
-                        }
                         usb30ports = hc->hc_NumPorts;
-
-                        for(cnt = 0; cnt < usb30ports; cnt++) {
-                            hu->hu_PortMapX[cnt] = hc;
-                            hc->hc_PortNum[cnt] = cnt;
-                        }
                     }
                     break;
                 }
