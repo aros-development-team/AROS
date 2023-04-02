@@ -12,6 +12,9 @@
 
 #include "uhwcmd.h"
 #include "ohciproto.h"
+#include "uhciproto.h"
+#include "ehciproto.h"
+#include "xhciproto.h"
 
 #define NewList NEWLIST
 
@@ -169,8 +172,15 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
         if(pciAllocUnit(unit)) // hardware self test
         {
             unit->hu_UnitAllocated = TRUE;
+            
+            unit->hu_PeriodicInt.is_Node.ln_Type = NT_INTERRUPT;
+            unit->hu_PeriodicInt.is_Node.ln_Name = "PCIUSB Periodic";
+            unit->hu_PeriodicInt.is_Node.ln_Pri  = 115;
+            unit->hu_PeriodicInt.is_Data = unit;
+            unit->hu_PeriodicInt.is_Code = (VOID_FUNC)uhwPeriodicInt;
+
             unit->hu_NakTimeoutInt.is_Node.ln_Type = NT_INTERRUPT;
-            unit->hu_NakTimeoutInt.is_Node.ln_Name = "PCI NakTimeout";
+            unit->hu_NakTimeoutInt.is_Node.ln_Name = "PCIUSB NakTimeout";
             unit->hu_NakTimeoutInt.is_Node.ln_Pri  = -16;
             unit->hu_NakTimeoutInt.is_Data = unit;
             unit->hu_NakTimeoutInt.is_Code = (VOID_FUNC)uhwNakTimeoutInt;
@@ -183,6 +193,11 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
             NewList(&unit->hu_NakTimeoutMsgPort.mp_MsgList);
             unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = &unit->hu_NakTimeoutMsgPort;
             Cause(&unit->hu_NakTimeoutInt);
+
+#if (0)
+            KPRINTF(1, ("Adding Interrupt Handler!\n"));
+            AddIntServer(INTB_EXTER, &unit->hu_PeriodicInt);
+#endif
             return(&unit->hu_Unit);
         } else {
             ioreq->iouh_Req.io_Error = IOERR_SELFTEST;
@@ -2466,6 +2481,23 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
     }
 }
 /* \\\ */
+
+
+/* /// "uhwPeriodicInt()" */
+AROS_INTH1(uhwPeriodicInt, struct PCIUnit *,  unit)
+{
+    AROS_INTFUNC_INIT
+
+    KPRINTF(1, ("Enter uhwPeriodicInt(0x%p)\n", unit));
+
+    KPRINTF(1, ("Exit uhwPeriodicInt(0x%p)\n", unit));
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+/* \\\ */
+
 
 /* /// "uhwNakTimeoutInt()" */
 AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)

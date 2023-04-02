@@ -1,3 +1,6 @@
+#ifndef OHCIPROTO_H
+#define OHCIPROTO_H
+
 void ohciUpdateFrameCounter(struct PCIController *hc);
 void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu);
@@ -94,3 +97,5 @@ static inline void ohciEnableInt(struct PCIController *hc, ULONG mask)
     hc->hc_PCIIntEnMask |= mask;
     WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, mask);
 }
+
+#endif /* OHCIPROTO_H */

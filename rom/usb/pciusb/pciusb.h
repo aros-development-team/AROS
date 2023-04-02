@@ -37,6 +37,8 @@
 
 #include "debug.h"
 
+#define TMPXHCICODE
+
 /* Reply the iorequest with success */
 #define RC_OK	                        0
 
@@ -78,6 +80,7 @@ struct PCIUnit
     struct timerequest	    hu_NakTimeoutReq;
     struct MsgPort	        hu_NakTimeoutMsgPort;
     struct Interrupt	    hu_NakTimeoutInt;
+    struct Interrupt	    hu_PeriodicInt;
 
     BOOL		            hu_UnitAllocated;                   /* Unit opened                                                  */
 
@@ -91,13 +94,24 @@ struct PCIUnit
     ULONG		            hu_FrameCounter;                    /* Common frame counter                                         */
     struct List		        hu_RHIOQueue;	                    /* Root Hub Pending IO Requests                                 */
 
+    struct MemEntry         hu_PFLRaw;
+    struct MemEntry         hu_PFL;                             /* Page aligned periodic frame list                             */
+
+    struct MemEntry         hu_TDRaw;
+    struct MemEntry         hu_TDs;                             /* 32byte aligned transfer descriptors                          */
+
     struct MinList          hu_FreeRTIsoNodes;
 
     struct PCIController    *hu_PortMap11[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 1.1 controller                  */
     struct PCIController    *hu_PortMap20[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 2.0 controller                  */
+#if defined(TMPXHCICODE)
     struct PCIController    *hu_PortMapX[MAX_ROOT_PORTS];       /* Maps from Global Port to XHCI controller                     */
+#endif
     UBYTE		            hu_PortNum11[MAX_ROOT_PORTS];       /* Maps from Global Port to USB 1.1 companion controller port   */
-    UBYTE		            hu_PortOwner[MAX_ROOT_PORTS];       /* TRUE, if currently owned by EHCI                             */
+#if defined(TMPXHCICODE)
+    UBYTE		            hu_PortNum20[MAX_ROOT_PORTS];        /* Maps from Global Port to USB 2.0 companion controller port   */
+#endif
+    UBYTE		            hu_PortOwner[MAX_ROOT_PORTS];       /* contains the HCITYPE of the ports current owner              */
     UBYTE		            hu_ProductName[80];                 /* for Query device                                             */
     struct PCIController    *hu_DevControllers[USB_DEV_MAX];    /* maps from Device address to controller                       */
     struct IOUsbHWReq       *hu_DevBusyReq[USB_PORTDEV_CNT];    /* pointer to io assigned to the Endpoint                       */
@@ -110,7 +124,7 @@ struct PCIUnit
 #define HCITYPE_UHCI	                0x00
 #define HCITYPE_OHCI	                0x10
 #define HCITYPE_EHCI	                0x20
-#define HCITYPE_XHCI	                0x40
+#define HCITYPE_XHCI	                0x30
 
 struct PCIController
 {
@@ -188,7 +202,7 @@ struct PCIController
     struct Interrupt        hc_CompleteInt;
     struct Interrupt	    hc_ResetInt;
 
-    UBYTE		            hc_PortNum20[MAX_ROOT_PORTS];	    /* Global Port number the local controller port corresponds with */
+    UBYTE		            hc_PortNum[MAX_ROOT_PORTS];	    /* Global Port number the local controller port corresponds with */
 
     UWORD		            hc_PortChangeMap[MAX_ROOT_PORTS];   /* Port Change Map */
 
@@ -244,6 +258,11 @@ struct PCIDevice
 };
 
 /* hd_Flags */
-#define HDF_FORCEPOWER	                0x01
+#define HDB_FORCEPOWER	                0
+#define HDF_FORCEPOWER	                (1 << HDB_FORCEPOWER)
+#if defined(TMPXHCICODE)
+#define HDB_ENABLEXHCI	                1
+#define HDF_ENABLEXHCI	                (1 << HDB_ENABLEXHCI)
+#endif
 
 #endif /* PCIUSB_H */

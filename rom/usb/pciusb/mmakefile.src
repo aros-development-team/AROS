@@ -6,9 +6,10 @@ FILES := \
         pciusb_arospci \
         pciusb_dev \
         buffer \
-        uhcichip \
         ohcichip \
+        uhcichip \
         ehcichip \
+        xhcichip \
         uhwcmd \
         debug
 

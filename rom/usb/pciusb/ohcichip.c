@@ -1215,10 +1215,10 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_CONNECTCHANGE|OHPF_ENABLECHANGE|OHPF_RESUMEDTX|OHPF_OVERCURRENTCHG|OHPF_RESETCHANGE);
                 }
 
-                KPRINTF(20, ("PCI Int Port %ld (glob %ld) Change %08lx\n", hciport, hc->hc_PortNum20[hciport] + 1, oldval));
+                KPRINTF(20, ("PCI Int Port %ld (glob %ld) Change %08lx\n", hciport, hc->hc_PortNum[hciport] + 1, oldval));
                 if(hc->hc_PortChangeMap[hciport])
                 {
-                    unit->hu_RootPortChanges |= 1UL<<(hc->hc_PortNum20[hciport] + 1);
+                    unit->hu_RootPortChanges |= 1UL<<(hc->hc_PortNum[hciport] + 1);
                 }
             }
             uhwCheckRootHubChanges(unit);

@@ -11,6 +11,7 @@
 #include <devices/usb_hub.h>
 
 #include "uhwcmd.h"
+#include "ehciproto.h"
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -1206,7 +1207,7 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
             for(hciport = 0; hciport < hc->hc_NumPorts; hciport++, portreg += 4)
             {
                 oldval = READREG32_LE(hc->hc_RegBase, portreg);
-                // reflect port ownership (shortcut without hc->hc_PortNum20[hciport], as usb 2.0 maps 1:1)
+                // reflect port ownership (shortcut without hc->hc_PortNum[hciport], as usb 2.0 maps 1:1)
                 unit->hu_PortOwner[hciport] = (oldval & EHPF_NOTPORTOWNER) ? HCITYPE_UHCI : HCITYPE_EHCI;
                 if(oldval & EHPF_ENABLECHANGE)
                 {

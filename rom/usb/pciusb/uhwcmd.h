@@ -63,6 +63,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
 void TermIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
+AROS_INTP(uhwPeriodicInt);
 AROS_INTP(uhwNakTimeoutInt);
 
 BOOL pciInit(struct PCIDevice *hd);
@@ -70,41 +71,6 @@ void pciExpunge(struct PCIDevice *hd);
 BOOL pciAllocUnit(struct PCIUnit *hu);
 void pciFreeUnit(struct PCIUnit *hu);
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr);
-
-/* uhcichip.c, in order of appearance */
-void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh);
-void uhciUpdateIntTree(struct PCIController *hc);
-void uhciCheckPortStatusChange(struct PCIController *hc);
-void uhciHandleFinishedTDs(struct PCIController *hc);
-void uhciScheduleCtrlTDs(struct PCIController *hc);
-void uhciScheduleIntTDs(struct PCIController *hc);
-void uhciScheduleBulkTDs(struct PCIController *hc);
-void uhciUpdateFrameCounter(struct PCIController *hc);
-BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu);
-void uhciFree(struct PCIController *hc, struct PCIUnit *hu);
-
-static inline struct UhciQH * uhciAllocQH(struct PCIController *hc);
-static inline void uhciFreeQH(struct PCIController *hc, struct UhciQH *uqh);
-static inline struct UhciTD * uhciAllocTD(struct PCIController *hc);
-static inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd);
-
-/* ehcichip.c, in order of appearance */
-void ehciFreeAsyncContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);
-void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);
-void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh);
-void ehciUpdateIntTree(struct PCIController *hc);
-void ehciHandleFinishedTDs(struct PCIController *hc);
-void ehciScheduleCtrlTDs(struct PCIController *hc);
-void ehciScheduleIntTDs(struct PCIController *hc);
-void ehciScheduleBulkTDs(struct PCIController *hc);
-void ehciUpdateFrameCounter(struct PCIController *hc);
-BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu);
-void ehciFree(struct PCIController *hc, struct PCIUnit *hu);
-
-static inline struct EhciQH * ehciAllocQH(struct PCIController *hc);
-static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
-static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
-static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 
 UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);
 UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset);

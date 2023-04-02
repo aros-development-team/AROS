@@ -11,6 +11,7 @@
 #include <devices/usb_hub.h>
 
 #include "uhwcmd.h"
+#include "uhciproto.h"
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -87,7 +88,7 @@ void uhciCheckPortStatusChange(struct PCIController *hc) {
     for(hciport = 0; hciport < 2; hciport++)
     {
         UWORD portreg;
-        UWORD idx = hc->hc_PortNum20[hciport];
+        UWORD idx = hc->hc_PortNum[hciport];
         // don't pay attention to UHCI port changes when pwned by EHCI
         if(unit->hu_PortOwner[idx] == HCITYPE_UHCI)
         {

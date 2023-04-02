@@ -9,10 +9,12 @@
 #include <hidd/pci.h>
 #include <hidd/usb.h>
 #include <hidd/system.h>
+#include <aros/bootloader.h>
 
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
+#include <proto/bootloader.h>
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -20,6 +22,9 @@
 
 #include "uhwcmd.h"
 #include "ohciproto.h"
+#include "uhciproto.h"
+#include "ehciproto.h"
+#include "xhciproto.h"
 
 #define NewList NEWLIST
 
@@ -65,7 +70,7 @@ AROS_UFH3(void, pciEnumerator,
     AROS_USERFUNC_INIT
 
     struct PCIDevice *hd = (struct PCIDevice *) hook->h_Data;
-    struct PCIController *hc;
+    struct PCIController *hc = NULL;
     IPTR hcitype;
     IPTR bus;
     IPTR dev;
@@ -93,10 +98,14 @@ AROS_UFH3(void, pciEnumerator,
     {
         switch (hcitype)
         {
+#if defined(TMPXHCICODE)
+        case HCITYPE_XHCI:
+            if (!(hd->hd_Flags & HDF_ENABLEXHCI))
+                break;
+#endif
         case HCITYPE_OHCI:
         case HCITYPE_EHCI:
         case HCITYPE_UHCI:
-        case HCITYPE_XHCI:
             KPRINTF(10, ("Setting up device...\n"));
 
             hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
@@ -134,9 +143,12 @@ AROS_UFH3(void, pciEnumerator,
             break;
 
         default:
-            KPRINTF(10, ("Unsupported HCI type %ld\n", hcitype));
+            break;
         }
     }
+
+    if (!hc)
+        KPRINTF(10, ("Unsupported HCI type %ld\n", hcitype));
 
     AROS_USERFUNC_EXIT
 }
@@ -154,6 +166,36 @@ BOOL pciInit(struct PCIDevice *hd)
     KPRINTF(10, ("*** pciInit(%p) ***\n", hd));
 
     NewList(&hd->hd_TempHCIList);
+
+#if defined(TMPXHCICODE)
+    struct BootLoaderBase       *BootLoaderBase;
+    BootLoaderBase = OpenResource("bootloader.resource");
+    KPRINTF(20, ("bootloader @ 0x%p\n", BootLoaderBase));
+    if (BootLoaderBase != NULL)
+    {
+        struct Node *node;
+        struct List *list = (struct List *)GetBootInfo(BL_Args);
+        if (list)
+        {
+            ForeachNode(list, node)
+            {
+                if (strncmp(node->ln_Name, "USB=", 4) == 0)
+                {
+                    const char *CmdLine = &node->ln_Name[3];
+
+                    if (strstr(CmdLine, "xhci"))
+                    {
+                        hd->hd_Flags |= HDF_ENABLEXHCI;
+                    }
+                }
+            }
+        }
+    }
+    if (hd->hd_Flags & HDF_ENABLEXHCI)
+    {
+        D(bug("[PCIUSB] %s: Enabling experimental XHCI code\n", __func__));
+    }
+#endif
 
     if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL)))
     {
@@ -224,7 +266,11 @@ BOOL pciInit(struct PCIDevice *hd)
 
         while((nexthc = (struct PCIController *) hc->hc_Node.ln_Succ))
         {
-            if ((hc->hc_DevID == hu->hu_DevID) && (hc->hc_PCIIntLine == huIntLine))
+            if ((hc->hc_DevID == hu->hu_DevID) &&
+#if defined(TMPXHCICODE)
+                ((hc->hc_HCIType != HCITYPE_XHCI) || (hd->hd_Flags & HDF_ENABLEXHCI)) &&
+#endif
+                (hc->hc_PCIIntLine == huIntLine))
             {
                 Remove(&hc->hc_Node);
 
@@ -352,10 +398,11 @@ BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt)
 }
 
 /* /// "pciStrcat()" */
-void pciStrcat(STRPTR d, STRPTR s)
+STRPTR pciStrcat(STRPTR d, STRPTR s)
 {
     while(*d) d++;
     while((*d++ = *s++));
+    return --d;
 }
 /* \\\ */
 
@@ -368,11 +415,13 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     BOOL allocgood = TRUE;
     ULONG usb11ports = 0;
     ULONG usb20ports = 0;
+    ULONG usb30ports = 0;
     ULONG cnt;
 
     ULONG ohcicnt = 0;
     ULONG uhcicnt = 0;
     ULONG ehcicnt = 0;
+    ULONG xhcicnt = 0;
 
     STRPTR prodname;
 
@@ -433,7 +482,25 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                         for(cnt = 0; cnt < usb20ports; cnt++) {
                             hu->hu_PortMap20[cnt] = hc;
-                            hc->hc_PortNum20[cnt] = cnt;
+                            hc->hc_PortNum[cnt] = cnt;
+                        }
+                    }
+                    break;
+                }
+
+                case HCITYPE_XHCI:
+                {
+                    allocgood = xhciInit(hc,hu);
+                    if(allocgood) {
+                        xhcicnt++;
+                        if(usb30ports) {
+                            KPRINTF(200, ("WARNING: More than one XHCI controller per board?!?\n"));
+                        }
+                        usb30ports = hc->hc_NumPorts;
+
+                        for(cnt = 0; cnt < usb30ports; cnt++) {
+                            hu->hu_PortMapX[cnt] = hc;
+                            hc->hc_PortNum[cnt] = cnt;
                         }
                     }
                     break;
@@ -475,7 +542,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         KPRINTF(10, ("CHC %ld Port %ld assigned to global Port %ld\n", hc->hc_FunctionNum, locport, cnt));
                         hu->hu_PortMap11[cnt] = hc;
                         hu->hu_PortNum11[cnt] = locport;
-                        hc->hc_PortNum20[locport] = cnt;
+                        hc->hc_PortNum[locport] = cnt;
                         locport++;
                     }
                 }
@@ -484,7 +551,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 {
                     hu->hu_PortMap11[cnt] = hc;
                     hu->hu_PortNum11[cnt] = cnt - usb11ports;
-                    hc->hc_PortNum20[cnt - usb11ports] = cnt;
+                    hc->hc_PortNum[cnt - usb11ports] = cnt;
                 }
             }
             usb11ports += hc->hc_NumPorts;
@@ -519,11 +586,13 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     }
 
     // create product name of device
+    BOOL havetype = FALSE;
+    int usbmaj = 1, usbmin = 0;
     prodname = hu->hu_ProductName;
     *prodname = 0;
     pciStrcat(prodname, "PCI ");
-    if(ohcicnt + uhcicnt)
-    {
+    if(ohcicnt + uhcicnt) {
+        havetype = TRUE;
         if(ohcicnt + uhcicnt >1)
         {
             prodname[4] = ohcicnt + uhcicnt + '0';
@@ -531,28 +600,29 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             prodname[6] = 0;
         }
         pciStrcat(prodname, ohcicnt ? "OHCI" : "UHCI");
-        if(ehcicnt)
-        {
-            pciStrcat(prodname, " +");
-        } else{
-            pciStrcat(prodname, " USB 1.1");
-        }
+        usbmin = 1;
     }
-    if(ehcicnt)
-    {
-        pciStrcat(prodname, " EHCI USB 2.0");
+    if(ehcicnt) {
+        if (havetype)
+            pciStrcat(prodname, "/");
+        havetype = TRUE;
+        usbmaj = 2;
+        usbmin = 0;
+        pciStrcat(prodname, "EHCI");
     }
-#if 0 // user can use pcitool to check what the chipset is and not guess it from this
-    pciStrcat(prodname, " Host Controller (");
-    if(ohcicnt + uhcicnt)
-    {
-        pciStrcat(prodname, ohcicnt ? "NEC)" : "VIA, Intel, ALI, etc.)");
-    } else {
-                pciStrcat(prodname, "Emulated?)");
-        }
-#else
+    if (xhcicnt) {
+        if (havetype)
+            pciStrcat(prodname, "/");
+        usbmaj = 3;
+        usbmin = 0;
+        pciStrcat(prodname, "XHCI");
+    }
+    STRPTR prodversstr = pciStrcat(prodname, " USB ");
+    prodversstr[0] = usbmaj + '0';
+    prodversstr[1] = '.';
+    prodversstr[2] = usbmin + '0';
+    prodversstr[3] = 0;
     pciStrcat(prodname, " Host Controller");
-#endif
     KPRINTF(10, ("Unit allocated!\n"));
 
     return TRUE;
