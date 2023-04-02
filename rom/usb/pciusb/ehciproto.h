@@ -1,6 +1,8 @@
 #ifndef EHCIPROTO_H
 #define EHCIPROTO_H
 
+#include "ehcichip.h"
+
 /* ehcichip.c, in order of appearance */
 void ehciFreeAsyncContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);

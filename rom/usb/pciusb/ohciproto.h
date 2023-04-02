@@ -1,6 +1,8 @@
 #ifndef OHCIPROTO_H
 #define OHCIPROTO_H
 
+#include "ohcichip.h"
+
 void ohciUpdateFrameCounter(struct PCIController *hc);
 void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu);

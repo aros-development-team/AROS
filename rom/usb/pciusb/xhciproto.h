@@ -1,6 +1,8 @@
 #ifndef XHCIPROTO_H
 #define XHCIPROTO_H
 
+#include "xhcichip.h"
+
 BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val);

@@ -1,6 +1,8 @@
 #ifndef UHCIPROTO_H
 #define UHCIPROTO_H
 
+#include "uhcichip.h"
+
 /* uhcichip.c, in order of appearance */
 void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh);
 void uhciUpdateIntTree(struct PCIController *hc);

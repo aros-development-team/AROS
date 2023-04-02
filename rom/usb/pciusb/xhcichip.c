@@ -56,7 +56,6 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     switch(val)
     {
         case UFS_PORT_ENABLE:
-            KPRINTF(10, ("XHCI: Enabling Port (%s)\n", newval & EHPF_PORTENABLE ? "already" : "ok"));
             cmdgood = TRUE;
             break;
 
@@ -66,13 +65,11 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
         /* case UFS_PORT_OVER_CURRENT: not possible */
         case UFS_PORT_RESET:
-            KPRINTF(10, ("XHCI: Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok"));
             cmdgood = TRUE;
             break;
 
         case UFS_PORT_POWER:
             KPRINTF(10, ("XHCI: Powering Port\n"));
-            newval |= EHPF_PORTPOWER;
             cmdgood = TRUE;
             break;
     }

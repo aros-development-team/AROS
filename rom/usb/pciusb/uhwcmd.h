@@ -3,10 +3,6 @@
 
 #include "debug.h"
 #include "pci_aros.h"
-
-#include "uhcichip.h"
-#include "ohcichip.h"
-#include "ehcichip.h"
 #include "pciusb.h"
 
 /* Uncomment to enable the W.I.P Isochornous transfer stubs */

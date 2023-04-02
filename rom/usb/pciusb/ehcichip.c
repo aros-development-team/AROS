@@ -12,6 +12,8 @@
 
 #include "uhwcmd.h"
 #include "ehciproto.h"
+#include "ohcichip.h"
+#include "uhcichip.h"
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)

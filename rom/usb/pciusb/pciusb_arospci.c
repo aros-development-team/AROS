@@ -571,14 +571,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hu->hu_FrameCounter = 1;
     hu->hu_RootHubAddr = 0;
 
-    // put em online
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
-        hc->hc_Flags |= HCF_ONLINE;
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
-    }
-
     // create product name of device
     BOOL havetype = FALSE;
     int usbmaj = 1, usbmin = 0;
@@ -613,6 +605,31 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         pciStrcat(prodname, "XHCI");
     }
 #endif
+
+    // put em online
+    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
+    while(hc->hc_Node.ln_Succ)
+    {
+        hc->hc_Flags |= HCF_ONLINE;
+#if defined(TMPXHCICODE)
+        if (hc->hc_HCIType == HCITYPE_XHCI)
+        {
+            UBYTE hcUSBVers = PCIXReadConfigByte(hc, XHCI_SBRN);
+            if (((hcUSBVers & 0xF0) >> 4) > usbmaj)
+            {
+                usbmaj = ((hcUSBVers & 0xF0) >> 4);
+                usbmin = (hcUSBVers & 0xF);
+            }
+            else if ((((hcUSBVers & 0xF0) >> 4) == usbmaj) && ((hcUSBVers & 0xF) > usbmin))
+            {
+                usbmin = (hcUSBVers & 0xF);
+            }
+        }
+#endif
+        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
+    }
+
+    // now add the USB version information to the product name.
     STRPTR prodversstr = pciStrcat(prodname, " USB ");
     prodversstr[0] = usbmaj + '0';
     prodversstr[1] = '.';
