@@ -415,14 +415,17 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     BOOL allocgood = TRUE;
     ULONG usb11ports = 0;
     ULONG usb20ports = 0;
+#if defined(TMPXHCICODE)
     ULONG usb30ports = 0;
+#endif
     ULONG cnt;
 
     ULONG ohcicnt = 0;
     ULONG uhcicnt = 0;
     ULONG ehcicnt = 0;
+#if defined(TMPXHCICODE)
     ULONG xhcicnt = 0;
-
+#endif
     STRPTR prodname;
 
     KPRINTF(10, ("*** pciAllocUnit(%p) ***\n", hu));
@@ -487,7 +490,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     }
                     break;
                 }
-
+#if defined(TMPXHCICODE)
                 case HCITYPE_XHCI:
                 {
                     allocgood = xhciInit(hc,hu);
@@ -505,6 +508,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     }
                     break;
                 }
+#endif
             }
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
@@ -610,6 +614,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         usbmin = 0;
         pciStrcat(prodname, "EHCI");
     }
+#if defined(TMPXHCICODE)
     if (xhcicnt) {
         if (havetype)
             pciStrcat(prodname, "/");
@@ -617,6 +622,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         usbmin = 0;
         pciStrcat(prodname, "XHCI");
     }
+#endif
     STRPTR prodversstr = pciStrcat(prodname, " USB ");
     prodversstr[0] = usbmaj + '0';
     prodversstr[1] = '.';

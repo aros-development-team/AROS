@@ -37,7 +37,7 @@
 
 #include "debug.h"
 
-#define TMPXHCICODE
+//#define TMPXHCICODE
 
 /* Reply the iorequest with success */
 #define RC_OK	                        0
