@@ -1310,6 +1310,8 @@ void uhciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
 }
 
+/* ** Root hub support functions ** */
+
 BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
 {
     BOOL cmdgood = FALSE;

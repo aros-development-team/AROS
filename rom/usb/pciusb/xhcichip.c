@@ -39,6 +39,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     return TRUE;
 }
 
+/* ** Root hub support functions ** */
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
 {
