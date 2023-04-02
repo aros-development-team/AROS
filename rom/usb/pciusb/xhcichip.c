@@ -38,3 +38,92 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     KPRINTF(20, ("ohciInit returns TRUE...\n"));
     return TRUE;
 }
+
+
+BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+{
+    BOOL cmdgood = FALSE;
+    UWORD portreg;
+    ULONG oldval;
+    ULONG newval;
+    switch(val)
+    {
+        case UFS_PORT_ENABLE:
+            KPRINTF(10, ("XHCI: Enabling Port (%s)\n", newval & EHPF_PORTENABLE ? "already" : "ok"));
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_SUSPEND:
+            cmdgood = TRUE;
+            break;
+
+        /* case UFS_PORT_OVER_CURRENT: not possible */
+        case UFS_PORT_RESET:
+            KPRINTF(10, ("XHCI: Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok"));
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_POWER:
+            KPRINTF(10, ("XHCI: Powering Port\n"));
+            newval |= EHPF_PORTPOWER;
+            cmdgood = TRUE;
+            break;
+    }
+    if(cmdgood)
+    {
+        KPRINTF(5, ("XHCI: Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+        return(0);
+    }
+    return cmdgood;
+}
+
+BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+{
+    BOOL cmdgood = FALSE;
+    switch(val)
+    {
+        case UFS_PORT_ENABLE:
+            cmdgood = TRUE;
+            // disable enumeration
+            unit->hu_DevControllers[0] = NULL;
+            break;
+
+        case UFS_PORT_SUSPEND:
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_POWER:
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_CONNECTION:
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_ENABLE:
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_SUSPEND:
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_OVER_CURRENT:
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_RESET:
+            cmdgood = TRUE;
+            break;
+    }
+    if(cmdgood)
+    {
+        KPRINTF(5, ("Port %ld CLEAR_FEATURE %08lx->%08lx\n", idx, val, val));
+    }
+    return cmdgood;
+}
+
+BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx)
+{
+    return FALSE;
+}

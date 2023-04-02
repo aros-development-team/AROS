@@ -1310,3 +1310,179 @@ void uhciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
 }
 
+BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+{
+    BOOL cmdgood = FALSE;
+    UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
+    ULONG oldval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
+    ULONG newval = oldval;
+    switch(val)
+    {
+        case UFS_PORT_ENABLE:
+            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+            newval &= ~UHPF_PORTENABLE;
+            cmdgood = TRUE;
+            // disable enumeration
+            unit->hu_DevControllers[0] = NULL;
+            break;
+
+        case UFS_PORT_SUSPEND:
+            newval &= ~UHPF_PORTSUSPEND;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_POWER: // ignore for UHCI, there's no power control here
+            KPRINTF(10, ("Disabling Power\n"));
+            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+            newval &= ~UHPF_PORTENABLE;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_CONNECTION:
+            newval |= UHPF_CONNECTCHANGE; // clear-on-write!
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_CONNECTION;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_ENABLE:
+            newval |= UHPF_ENABLECHANGE; // clear-on-write!
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_ENABLE;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_SUSPEND: // ignore for UHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND; // manually fake suspend change clearing
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_OVER_CURRENT: // ignore for UHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_OVER_CURRENT; // manually fake over current clearing
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_RESET: // ignore for UHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_RESET; // manually fake reset change clearing
+            cmdgood = TRUE;
+            break;
+    }
+
+    if (cmdgood)
+    {
+        KPRINTF(5, ("Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+        WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
+        if(hc->hc_PortChangeMap[hciport])
+        {
+            unit->hu_RootPortChanges |= 1UL<<idx;
+        } else {
+            unit->hu_RootPortChanges &= ~(1UL<<idx);
+        }
+    }
+    return cmdgood;
+}
+
+BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+{
+    BOOL cmdgood = FALSE;
+    UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
+    ULONG oldval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
+    ULONG newval = oldval;
+    switch(val)
+    {
+        case UFS_PORT_ENABLE:
+            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+            newval &= ~UHPF_PORTENABLE;
+            cmdgood = TRUE;
+            // disable enumeration
+            unit->hu_DevControllers[0] = NULL;
+            break;
+
+        case UFS_PORT_SUSPEND:
+            newval &= ~UHPF_PORTSUSPEND;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_POWER: // ignore for UHCI, there's no power control here
+            KPRINTF(10, ("Disabling Power\n"));
+            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+            newval &= ~UHPF_PORTENABLE;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_CONNECTION:
+            newval |= UHPF_CONNECTCHANGE; // clear-on-write!
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_CONNECTION;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_ENABLE:
+            newval |= UHPF_ENABLECHANGE; // clear-on-write!
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_ENABLE;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_SUSPEND: // ignore for UHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND; // manually fake suspend change clearing
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_OVER_CURRENT: // ignore for UHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_OVER_CURRENT; // manually fake over current clearing
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_RESET: // ignore for UHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_RESET; // manually fake reset change clearing
+            cmdgood = TRUE;
+            break;
+    }
+    if(cmdgood)
+    {
+        KPRINTF(5, ("Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+        WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
+        if(hc->hc_PortChangeMap[hciport])
+        {
+            unit->hu_RootPortChanges |= 1UL<<idx;
+        } else {
+            unit->hu_RootPortChanges &= ~(1UL<<idx);
+        }
+    }
+    return cmdgood;
+}
+
+BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx)
+{
+    UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
+    UWORD oldval = READIO16_LE(hc->hc_RegBase, portreg);
+
+    *mptr = AROS_WORD2LE(UPSF_PORT_POWER);
+
+    if(oldval & UHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+    if(oldval & UHPF_PORTENABLE) *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
+    if(oldval & UHPF_LOWSPEED) *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+    if(oldval & UHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
+    if(oldval & UHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
+
+    KPRINTF(5, ("UHCI Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
+    KPRINTF(5, ("UHCI Port %ld Status %08lx\n", idx, *mptr));
+
+    mptr++;
+    if(oldval & UHPF_ENABLECHANGE)
+    {
+        hc->hc_PortChangeMap[hciport] |= UPSF_PORT_ENABLE;
+    }
+    if(oldval & UHPF_CONNECTCHANGE)
+    {
+        hc->hc_PortChangeMap[hciport] |= UPSF_PORT_CONNECTION;
+    }
+    if(oldval & UHPF_RESUMEDTX)
+    {
+        hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND|UPSF_PORT_ENABLE;
+    }
+
+    *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
+    WRITEIO16_LE(hc->hc_RegBase, portreg, oldval);
+
+    KPRINTF(5, ("UHCI Port %ld Change %08lx\n", idx, *mptr));
+
+    return TRUE;
+}

@@ -1638,3 +1638,340 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu) {
     }
 
 }
+
+BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+{
+    BOOL cmdgood = FALSE;
+    UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
+    ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE); // these are clear-on-write!
+    ULONG newval = oldval;
+    ULONG cnt;
+
+    switch(val)
+    {
+        /* case UFS_PORT_CONNECTION: not possible */
+        case UFS_PORT_ENABLE:
+            KPRINTF(10, ("EHCI: Enabling Port (%s)\n", newval & EHPF_PORTENABLE ? "already" : "ok"));
+            newval |= EHPF_PORTENABLE;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_SUSPEND:
+            newval |= EHPF_PORTSUSPEND;
+            hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND; // manually fake suspend change
+            cmdgood = TRUE;
+            break;
+
+        /* case UFS_PORT_OVER_CURRENT: not possible */
+        case UFS_PORT_RESET:
+            KPRINTF(10, ("EHCI: Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok"));
+
+            // this is an ugly blocking workaround to the inability of EHCI to clear reset automatically
+            newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
+            newval |= EHPF_PORTRESET;
+            WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+            uhwDelayMS(200, unit); /* Spec is 50ms, FreeBSD source suggests 200ms */
+            newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
+            KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
+            if (newval & EHPF_PORTRESET)
+            {
+                newval &= ~EHPF_PORTRESET;
+                WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+            }
+            uhwDelayMS(10, unit);
+            newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
+            KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
+            KPRINTF(10, ("EHCI: Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO"));
+            KPRINTF(10, ("EHCI: Port status=%08lx\n", newval));
+            if(!(newval & EHPF_PORTENABLE))
+            {
+                struct PCIController *chc = unit->hu_PortMap11[idx - 1];
+
+                // if not highspeed, release ownership
+                KPRINTF(20, ("EHCI: Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]));
+                KPRINTF(10, ("EHCI: Device is %s\n", newval & EHPF_LINESTATUS_DM ? "LOWSPEED" : "FULLSPEED"));
+                newval |= EHPF_NOTPORTOWNER;
+                if(!chc)
+                {
+                    KPRINTF(20, ("EHCI has no companion controller, can't transfer ownership!\n"));
+                    WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+                    return(UHIOERR_HOSTERROR);
+                }
+                switch(chc->hc_HCIType)
+                {
+                    case HCITYPE_UHCI:
+                    {
+                        UWORD uhcihciport = unit->hu_PortNum11[idx - 1];
+                        UWORD uhciportreg = uhcihciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
+                        ULONG __unused uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg);
+
+                        KPRINTF(10, ("UHCI Port status before handover=%04lx\n", uhcinewval));
+                        break;
+                    }
+
+                    case HCITYPE_OHCI:
+                    {
+                        UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
+                        UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
+                        ULONG __unused ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
+
+                        KPRINTF(10, ("OHCI: Port status before handover=%08lx\n", ohcioldval));
+                        KPRINTF(10, ("OHCI: Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok"));
+                        WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER);
+                        uhwDelayMS(10, unit);
+                        KPRINTF(10, ("OHCI: Port status after handover=%08lx\n", READREG32_LE(chc->hc_RegBase, ohciportreg)));
+                        break;
+                    }
+                }
+                newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
+                KPRINTF(10, ("EHCI: Port status (reread)=%08lx\n", newval));
+                newval |= EHPF_NOTPORTOWNER;
+                unit->hu_PortOwner[idx - 1] = HCITYPE_UHCI;
+                WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+                uhwDelayMS(90, unit);
+                KPRINTF(10, ("EHCI: Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND)));
+                // enable companion controller port
+                switch(chc->hc_HCIType)
+                {
+                    case HCITYPE_UHCI:
+                    {
+                        UWORD uhcihciport = unit->hu_PortNum11[idx - 1];
+                        UWORD uhciportreg = uhcihciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
+                        ULONG uhcinewval;
+
+                        uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
+                        KPRINTF(10, ("UHCI: Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
+                        if((uhcinewval & UHPF_PORTRESET))//|| (newval & EHPF_LINESTATUS_DM))
+                        {
+                            // this is an ugly blocking workaround to the inability of UHCI to clear reset automatically
+                            KPRINTF(20, ("UHCI: Uhm, reset was bad!\n"));
+                            uhcinewval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
+                            uhcinewval |= UHPF_PORTRESET;
+                            WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
+                            uhwDelayMS(50, unit);
+                            uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
+                            KPRINTF(10, ("UHCI: ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
+                            uhcinewval &= ~UHPF_PORTRESET;
+                            WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
+                            uhwDelayMicro(50, unit);
+                            uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
+                            KPRINTF(10, ("UHCI: ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD"));
+                        }
+                        uhcinewval &= ~UHPF_PORTRESET;
+                        uhcinewval |= UHPF_PORTENABLE;
+                        WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
+                        chc->hc_PortChangeMap[uhcihciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
+                        uhwDelayMS(5, unit);
+                        cnt = 100;
+                        do
+                        {
+                            uhwDelayMS(1, unit);
+                            uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg);
+                        } while(--cnt && (!(uhcinewval & UHPF_PORTENABLE)));
+                        if(cnt)
+                        {
+                            KPRINTF(10, ("UHCI: Enabled after %ld ticks\n", 100-cnt));
+                        } else {
+                            KPRINTF(20, ("UHCI: Port refuses to be enabled!\n"));
+                            return(UHIOERR_HOSTERROR);
+                        }
+                        break;
+                    }
+
+                    case HCITYPE_OHCI:
+                    {
+                        UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
+                        UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
+                        ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
+                        KPRINTF(10, ("OHCI: Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok"));
+                        // make sure we have at least 50ms of reset time here, as required for a root hub port
+                        WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                        uhwDelayMS(10, unit);
+                        WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                        uhwDelayMS(10, unit);
+                        WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                        uhwDelayMS(10, unit);
+                        WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                        uhwDelayMS(10, unit);
+                        WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
+                        uhwDelayMS(15, unit);
+                        ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
+                        KPRINTF(10, ("OHCI: Reset release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                                                     ohcioldval & OHPF_PORTENABLE ? "enabled" : "not enabled"));
+                        if(ohcioldval & OHPF_PORTRESET)
+                        {
+                            uhwDelayMS(40, unit);
+                            ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
+                            KPRINTF(10, ("OHCI: Reset 2nd release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                                                             ohcioldval & OHPF_PORTENABLE ? "enabled" : "still not enabled"));
+                        }
+                        break;
+                    }
+
+                }
+                // make enumeration possible
+                unit->hu_DevControllers[0] = chc;
+                return(0);
+            } else {
+                newval &= ~EHPF_PORTRESET;
+                WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+                hc->hc_PortChangeMap[hciport] |= UPSF_PORT_RESET; // manually fake reset change
+                uhwDelayMS(10, unit);
+                cnt = 100;
+                do
+                {
+                    uhwDelayMS(1, unit);
+                    newval = READREG32_LE(hc->hc_RegBase, portreg);
+                } while(--cnt && (!(newval & EHPF_PORTENABLE)));
+                if(cnt)
+                {
+                    KPRINTF(10, ("EHCI: Enabled after %ld ticks\n", 100-cnt));
+                } else {
+                    KPRINTF(20, ("EHCI: Port refuses to be enabled!\n"));
+                    return(UHIOERR_HOSTERROR);
+                }
+                // make enumeration possible
+                unit->hu_DevControllers[0] = hc;
+            }
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_POWER:
+            KPRINTF(10, ("EHCI: Powering Port\n"));
+            newval |= EHPF_PORTPOWER;
+            cmdgood = TRUE;
+            break;
+
+        /* case UFS_PORT_LOW_SPEED: not possible */
+        /* case UFS_C_PORT_CONNECTION:
+        case UFS_C_PORT_ENABLE:
+        case UFS_C_PORT_SUSPEND:
+        case UFS_C_PORT_OVER_CURRENT:
+        case UFS_C_PORT_RESET: */
+    }
+    if(cmdgood)
+    {
+        KPRINTF(5, ("EHCI: Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+        WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+    }
+    return cmdgood;
+}
+
+BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+{
+    BOOL cmdgood = FALSE;
+    UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
+    ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE); // these are clear-on-write!
+    ULONG newval = oldval;
+    switch(val)
+    {
+        case UFS_PORT_ENABLE:
+            KPRINTF(10, ("Disabling Port (%s)\n", newval & EHPF_PORTENABLE ? "ok" : "already"));
+            newval &= ~EHPF_PORTENABLE;
+            cmdgood = TRUE;
+            // disable enumeration
+            unit->hu_DevControllers[0] = NULL;
+            break;
+
+        case UFS_PORT_SUSPEND:
+            newval &= ~EHPF_PORTSUSPEND;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_PORT_POWER: // ignore for UHCI, there's no power control here
+            KPRINTF(10, ("Disabling Power (%s)\n", newval & EHPF_PORTPOWER ? "ok" : "already"));
+            KPRINTF(10, ("Disabling Port (%s)\n", newval & EHPF_PORTENABLE ? "ok" : "already"));
+            newval &= ~(EHPF_PORTENABLE|EHPF_PORTPOWER);
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_CONNECTION:
+            newval |= EHPF_CONNECTCHANGE; // clear-on-write!
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_CONNECTION;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_ENABLE:
+            newval |= EHPF_ENABLECHANGE; // clear-on-write!
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_ENABLE;
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_SUSPEND: // ignore for EHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND; // manually fake suspend change clearing
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_OVER_CURRENT:
+            newval |= EHPF_OVERCURRENTCHG; // clear-on-write!
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_OVER_CURRENT; // manually fake over current clearing
+            cmdgood = TRUE;
+            break;
+
+        case UFS_C_PORT_RESET: // ignore for EHCI, there's no bit indicating this
+            hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_RESET; // manually fake reset change clearing
+            cmdgood = TRUE;
+            break;
+    }
+    if(cmdgood)
+    {
+        KPRINTF(5, ("Port %ld CLEAR_FEATURE %08lx->%08lx\n", idx, oldval, newval));
+        WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
+        if(hc->hc_PortChangeMap[hciport])
+        {
+            unit->hu_RootPortChanges |= 1UL<<idx;
+        } else {
+            unit->hu_RootPortChanges &= ~(1UL<<idx);
+        }
+    }
+    return cmdgood;
+}
+
+BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx)
+{
+    UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
+    ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
+
+    *mptr = 0;
+    if(oldval & EHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+    if(oldval & EHPF_PORTENABLE) *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE|UPSF_PORT_HIGH_SPEED);
+    if((oldval & (EHPF_LINESTATUS_DM|EHPF_PORTCONNECTED|EHPF_PORTENABLE)) ==
+       (EHPF_LINESTATUS_DM|EHPF_PORTCONNECTED))
+    {
+        KPRINTF(10, ("EHCI Port %ld is LOWSPEED\n", idx));
+        // we need to detect low speed devices prior to reset
+        *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+    }
+
+    if(oldval & EHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
+    if(oldval & EHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
+    if(oldval & EHPF_PORTPOWER) *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
+    if(oldval & EHPM_PORTINDICATOR) *mptr |= AROS_WORD2LE(UPSF_PORT_INDICATOR);
+
+    KPRINTF(5, ("EHCI Port %ld Status %08lx\n", idx, *mptr));
+
+    mptr++;
+    if(oldval & EHPF_ENABLECHANGE)
+    {
+        hc->hc_PortChangeMap[hciport] |= UPSF_PORT_ENABLE;
+    }
+    if(oldval & EHPF_CONNECTCHANGE)
+    {
+        hc->hc_PortChangeMap[hciport] |= UPSF_PORT_CONNECTION;
+    }
+    if(oldval & EHPF_RESUMEDTX)
+    {
+        hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND|UPSF_PORT_ENABLE;
+    }
+    if(oldval & EHPF_OVERCURRENTCHG)
+    {
+        hc->hc_PortChangeMap[hciport] |= UPSF_PORT_OVER_CURRENT;
+    }
+
+    *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
+    WRITEREG32_LE(hc->hc_RegBase, portreg, oldval);
+
+    KPRINTF(5, ("EHCI Port %ld Change %08lx\n", idx, *mptr));
+
+    return TRUE;
+}
