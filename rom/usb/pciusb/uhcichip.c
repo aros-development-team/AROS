@@ -89,7 +89,7 @@ void uhciCheckPortStatusChange(struct PCIController *hc) {
         UWORD portreg;
         UWORD idx = hc->hc_PortNum20[hciport];
         // don't pay attention to UHCI port changes when pwned by EHCI
-        if(!unit->hu_EhciOwned[idx])
+        if(unit->hu_PortOwner[idx] == HCITYPE_UHCI)
         {
             portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
             oldval = READIO16_LE(hc->hc_RegBase, portreg);
@@ -107,7 +107,7 @@ void uhciCheckPortStatusChange(struct PCIController *hc) {
                     if(unit->hu_PortMap20[idx])
                     {
                         KPRINTF(20, ("Transferring Port %ld back to EHCI\n", idx));
-                        unit->hu_EhciOwned[idx] = TRUE;
+                        unit->hu_PortOwner[idx] = HCITYPE_EHCI;
                     }
                 }
             }

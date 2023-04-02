@@ -95,16 +95,18 @@ struct PCIUnit
 
     struct PCIController    *hu_PortMap11[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 1.1 controller                  */
     struct PCIController    *hu_PortMap20[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 2.0 controller                  */
+    struct PCIController    *hu_PortMapX[MAX_ROOT_PORTS];       /* Maps from Global Port to XHCI controller                     */
     UBYTE		            hu_PortNum11[MAX_ROOT_PORTS];       /* Maps from Global Port to USB 1.1 companion controller port   */
-    UBYTE		            hu_EhciOwned[MAX_ROOT_PORTS];       /* TRUE, if currently owned by EHCI                             */
+    UBYTE		            hu_PortOwner[MAX_ROOT_PORTS];       /* TRUE, if currently owned by EHCI                             */
     UBYTE		            hu_ProductName[80];                 /* for Query device                                             */
     struct PCIController    *hu_DevControllers[USB_DEV_MAX];    /* maps from Device address to controller                       */
     struct IOUsbHWReq       *hu_DevBusyReq[USB_PORTDEV_CNT];    /* pointer to io assigned to the Endpoint                       */
-    ULONG		            hu_NakTimeoutFrame[USB_PORTDEV_CNT];/* Nak Timeout framenumber                                     */
+    ULONG		            hu_NakTimeoutFrame[USB_PORTDEV_CNT];/* Nak Timeout framenumber                                      */
     UBYTE		            hu_DevDataToggle[USB_PORTDEV_CNT];  /* Data toggle bit for endpoints                                */
     struct RTIsoNode        hu_RTIsoNodes[MAX_ROOT_PORTS];
 };
 
+/* HCITYPE_xxx, is the pci device interface */
 #define HCITYPE_UHCI	                0x00
 #define HCITYPE_OHCI	                0x10
 #define HCITYPE_EHCI	                0x20

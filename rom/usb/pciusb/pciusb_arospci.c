@@ -86,7 +86,7 @@ AROS_UFH3(void, pciEnumerator,
     if(intline == 255)
     {
         // we can't work without the correct interrupt line
-        // BIOS needs plug & play os option disabled. Alternatively AROS must support APIC reconfiguration
+        // BIOS needs plug & play os option disabled. Alternatively AROS must support ACPI reconfiguration
         KPRINTF(200, ("ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n"));
     }
     else
@@ -267,6 +267,12 @@ BOOL pciInit(struct PCIDevice *hd)
                     case HCITYPE_EHCI:
                         {
                             usbc_tags[1].ti_Data = (IPTR)"PCI USB 2.0 EHCI Host controller";
+                            break;
+                        }
+
+                    case HCITYPE_XHCI:
+                        {
+                            usbc_tags[1].ti_Data = (IPTR)"PCI USB 3.x XHCI Host controller";
                             break;
                         }
                     }
@@ -496,7 +502,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     for(cnt = 0; cnt < hu->hu_RootHubPorts; cnt++)
     {
-        hu->hu_EhciOwned[cnt] = hu->hu_PortMap20[cnt] ? TRUE : FALSE;
+        hu->hu_PortOwner[cnt] = hu->hu_PortMap20[cnt] ? HCITYPE_EHCI : HCITYPE_UHCI;
     }
 
     KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports));

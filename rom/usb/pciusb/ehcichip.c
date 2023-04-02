@@ -1207,7 +1207,7 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
             {
                 oldval = READREG32_LE(hc->hc_RegBase, portreg);
                 // reflect port ownership (shortcut without hc->hc_PortNum20[hciport], as usb 2.0 maps 1:1)
-                unit->hu_EhciOwned[hciport] = (oldval & EHPF_NOTPORTOWNER) ? FALSE : TRUE;
+                unit->hu_PortOwner[hciport] = (oldval & EHPF_NOTPORTOWNER) ? HCITYPE_UHCI : HCITYPE_EHCI;
                 if(oldval & EHPF_ENABLECHANGE)
                 {
                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_ENABLE;
