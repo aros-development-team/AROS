@@ -1661,7 +1661,12 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
             newval |= EHPF_PORTRESET;
             WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-            uhwDelayMS(200, unit); /* Spec is 50ms, FreeBSD source suggests 200ms */
+
+            // Wait for reset to complete (spec is 50ms, FreeBSD source suggests 200ms, but
+            // we compromise to help USB volumes become available in time to be chosen as
+            // the boot device)
+            uhwDelayMS(125, unit);
+
             newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
             KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
             if (newval & EHPF_PORTRESET)
