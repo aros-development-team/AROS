@@ -22,6 +22,9 @@ static int getArguments(struct PCIDevice *base)
     APTR BootLoaderBase;
 
     BootLoaderBase = OpenResource("bootloader.resource");
+
+    KPRINTF(20, ("bootloader @ 0x%p\n", BootLoaderBase));
+
     if (BootLoaderBase)
     {
         struct List *args = GetBootInfo(BL_Args);
@@ -30,17 +33,37 @@ static int getArguments(struct PCIDevice *base)
         {
             struct Node *node;
 
-            for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ)
+            ForeachNode(args, node)
             {
-                if (stricmp(node->ln_Name, "forceusbpower") == 0)
+                if (strncmp(node->ln_Name, "USB=", 4) == 0)
                 {
-                    base->hd_Flags = HDF_FORCEPOWER;
-                    break;
+                    const char *CmdLine = &node->ln_Name[3];
+
+                    if (strstr(CmdLine, "forcepower"))
+                    {
+                        base->hd_Flags |= HDF_FORCEPOWER;
+                        continue;
+                    }
+#if defined(TMPXHCICODE)
+                    if (strstr(CmdLine, "xhci"))
+                    {
+                        base->hd_Flags |= HDF_ENABLEXHCI;
+                    }
+#endif
                 }
             }
         }
     }
-
+    if (base->hd_Flags & HDF_FORCEPOWER)
+    {
+        D(bug("[PCIUSB] %s: Forcing USB Power\n", __func__));
+    }
+#if defined(TMPXHCICODE)
+    if (base->hd_Flags & HDF_ENABLEXHCI)
+    {
+        D(bug("[PCIUSB] %s: Enabling experimental XHCI code\n", __func__));
+    }
+#endif
     return TRUE;
 }
 

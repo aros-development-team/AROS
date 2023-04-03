@@ -171,36 +171,6 @@ BOOL pciInit(struct PCIDevice *hd)
 
     NewList(&hd->hd_TempHCIList);
 
-#if defined(TMPXHCICODE)
-    struct BootLoaderBase       *BootLoaderBase;
-    BootLoaderBase = OpenResource("bootloader.resource");
-    KPRINTF(20, ("bootloader @ 0x%p\n", BootLoaderBase));
-    if (BootLoaderBase != NULL)
-    {
-        struct Node *node;
-        struct List *list = (struct List *)GetBootInfo(BL_Args);
-        if (list)
-        {
-            ForeachNode(list, node)
-            {
-                if (strncmp(node->ln_Name, "USB=", 4) == 0)
-                {
-                    const char *CmdLine = &node->ln_Name[3];
-
-                    if (strstr(CmdLine, "xhci"))
-                    {
-                        hd->hd_Flags |= HDF_ENABLEXHCI;
-                    }
-                }
-            }
-        }
-    }
-    if (hd->hd_Flags & HDF_ENABLEXHCI)
-    {
-        D(bug("[PCIUSB] %s: Enabling experimental XHCI code\n", __func__));
-    }
-#endif
-
     if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL)))
     {
         struct TagItem tags[] =
@@ -209,13 +179,11 @@ BOOL pciInit(struct PCIDevice *hd)
             { tHidd_PCI_SubClass,   (PCI_CLASS_SERIAL_USB & 0xff) },
             { TAG_DONE, 0UL }
         };
-
         struct Hook findHook =
         {
              h_Entry:        (IPTR (*)()) pciEnumerator,
              h_Data:         hd,
         };
-
         KPRINTF(20, ("Searching for devices...\n"));
 
         HIDD_PCI_EnumDevices(hd->hd_PCIHidd, &findHook, (struct TagItem *) &tags);
