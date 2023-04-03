@@ -8,28 +8,16 @@
 
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <gallium/gallium.h>
 
 #include "util/u_memory.h"
 #include "util/u_inlines.h"
-#include "nouveau/nouveau_winsys.h"
 #include "nv50/nv50_resource.h"
 #include "nvfx/nvfx_resource.h"
 #include "nvc0/nvc0_resource.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
-
-struct HiddNouveauWinSys 
-{
-    struct HIDDT_WinSys base;
-    struct pipe_screen *pscreen;
-};
-
-static INLINE struct HiddNouveauWinSys *
-HiddNouveauWinSys(struct pipe_winsys *ws)
-{
-    return (struct HiddNouveauWinSys *)ws;
-}
 
 static VOID
 HIDDNouveauFlushFrontBuffer( struct pipe_screen *screen,
@@ -43,9 +31,7 @@ HIDDNouveauFlushFrontBuffer( struct pipe_screen *screen,
 static VOID
 HIDDNouveauDestroyWinSys(struct pipe_winsys *ws)
 {
-    struct HiddNouveauWinSys *nvws = HiddNouveauWinSys(ws);
-
-    FREE(nvws);
+    /* No Op */
 }
 
 /* Wraps the nouveau_bo from resource into 2D bitmap class data */
@@ -140,6 +126,13 @@ OOP_Object *METHOD(NouveauGallium, Root, New)
         }
     }
 
+    if (o)
+    {
+        struct HIDDGalliumNouveauData *data = OOP_INST_DATA(cl, o);
+        data->nouveau_winsys.destroy = HIDDNouveauDestroyWinSys;
+        data->nouveau_obj = o;
+    }
+
     return o;
 }
 
@@ -164,11 +157,11 @@ VOID METHOD(NouveauGallium, Root, Get)
 
 APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 {
-    struct HiddNouveauWinSys *nvws;
-    struct pipe_winsys *ws;
+    struct HIDDGalliumNouveauData *data = OOP_INST_DATA(cl, o);
     struct nouveau_device *dev = SD(cl)->carddata.dev;
     struct pipe_screen *(*init)(struct pipe_winsys *,
                     struct nouveau_device *);
+    struct pipe_screen *screen = NULL;
 
     switch (dev->chipset & 0xf0) 
     {
@@ -194,29 +187,17 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 
     LOCK_ENGINE
 
-    nvws = CALLOC_STRUCT(HiddNouveauWinSys);
-    if (!nvws) {
+    screen = init(&data->nouveau_winsys, dev);
+    if (!screen) {
         UNLOCK_ENGINE
         return NULL;
     }
-    ws = &nvws->base.base;
-    ws->destroy = HIDDNouveauDestroyWinSys;
 
-    nvws->pscreen = init(ws, dev);
-    if (!nvws->pscreen) {
-        ws->destroy(ws);
-        UNLOCK_ENGINE
-        return NULL;
-    }
-    
-    nvws->pscreen->flush_frontbuffer = HIDDNouveauFlushFrontBuffer;
-    
-    /* Preserve pointer to HIDD driver */
-    nvws->base.driver = o;
+    screen->flush_frontbuffer = HIDDNouveauFlushFrontBuffer;
 
     UNLOCK_ENGINE
 
-    return nvws->pscreen;
+    return screen;
 }
 
 VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)

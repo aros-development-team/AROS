@@ -12,8 +12,8 @@ diff -ruN cunit-3.2.6/CUnit/CMakeLists.txt cunit-3.2.6.aros/CUnit/CMakeLists.txt
  
 diff -ruN cunit-3.2.6/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.2.6.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c
 --- cunit-3.2.6/CUnit/Sources/Automated/AutomatedJUnitXml.c	2020-04-16 17:55:15.000000000 +0000
-+++ cunit-3.2.6.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2021-01-11 16:47:21.700000000 +0000
-@@ -177,13 +177,14 @@
++++ cunit-3.2.6.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2023-03-28 10:10:39.271322155 +0000
+@@ -177,14 +177,17 @@
    return n;
  }
  
@@ -23,14 +23,17 @@ diff -ruN cunit-3.2.6/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.2.6.ar
    CU_pFailureRecord failure = NULL;
    _dstr_putf(dst,
 -             "    <testcase classname=\"%s.%s\" name=\"%s\" time=\"%f\">\n",
-+             "    <testcase id=\"%s.%s.%u\" name=\"%s\" time=\"%f\">\n",
++             "    <testcase id=\"%s.%s.%u\" name=\"%s\" classname=\"%s.%s\" time=\"%f\">\n",
               CU_automated_package_name_get(),
               esc_name,
 +             testno,
               esc_test_name,
++             CU_automated_package_name_get(),
++             esc_name,
               CU_get_test_duration(test)
    );
-@@ -269,13 +270,14 @@
+ 
+@@ -269,13 +272,14 @@
      int all_tests = CU_count_all_tests(registry) + count_all_init_funcs(registry);
  
      _dstr_init(&dst);
@@ -48,7 +51,7 @@ diff -ruN cunit-3.2.6/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.2.6.ar
              summary->ElapsedTime
              );
      free(esc_name);
-@@ -286,27 +288,30 @@
+@@ -286,27 +290,30 @@
        int errors = count_suite_init_errors(suite);
        int test_count = CU_count_suite_tests(suite) + count_suite_init_funcs(suite);
        int test_failures = errors + CU_count_suite_failures(suite);

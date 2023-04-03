@@ -559,7 +559,7 @@ int main()
         return CU_get_error();
 
     /* add a suite to the registry */
-    pSuite = CU_add_suite("Suite_1", init_suite1, clean_suite1);
+    pSuite = CU_add_suite("CrtMath_Suite", init_suite1, clean_suite1);
     if (NULL == pSuite)
     {
         CU_cleanup_registry();

@@ -38,14 +38,19 @@ extern struct glx_func glx_func;
 #define GLXCALL(func,...) (glx_func.func(__VA_ARGS__))
 
 #ifdef HOST_OS_linux
-#define GLX_SOFILE    "libGL.so"
+#define GLX_SOFILE          "libGL.so.1"
+#define GLX_SOFILE_FALLBACK "libGL.so"
 #endif
 
 #ifdef HOST_OS_darwin
 #endif
 
 #ifndef GLX_SOFILE
-#define GLX_SOFILE    "libGL.so"
+#define GLX_SOFILE          "libGL.so.1"
+#endif
+
+#ifndef GLX_SOFILE_FALLBACK
+#define GLX_SOFILE_FALLBACK "libGL.so"
 #endif
 
 struct gl_func;

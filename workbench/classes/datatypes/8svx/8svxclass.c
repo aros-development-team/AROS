@@ -28,7 +28,6 @@
 
 #include <aros/symbolsets.h>
 
-#define DEBUG 1
 #include "debug.h"
 
 #include "methods.h"

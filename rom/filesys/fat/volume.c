@@ -156,7 +156,9 @@ LONG ReadFATSuper(struct FSSuper *sb)
     /* Check that the boot block's sector count is the same as the
      * partition's sector count. This stops a resized partition being
      * mounted before reformatting */
-    if (total_sectors != sb->total_sectors)
+    /* Note: Linux can create partitions where these two values differ, but still are valid for read / write
+     * under Linux, Windows and MacOS */
+    if ((total_sectors < sb->total_sectors - 6) || (total_sectors > sb->total_sectors))
         invalid = TRUE;
 
     sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count)

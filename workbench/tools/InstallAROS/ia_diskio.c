@@ -51,6 +51,9 @@ extern Object *optObjCheckSizeWork;
 extern Object *sys_size;
 extern Object *work_size;
 
+ULONG AskRetry(Class * CLASS, Object * self, CONST_STRPTR message, CONST_STRPTR file, CONST_STRPTR opt1,
+    CONST_STRPTR opt2, CONST_STRPTR opt3);
+
 char * GetDevNameForVolume(char *volumeName)
 {
     struct DosList *dl;
@@ -328,8 +331,7 @@ BOOL SkipPath(char *matchName, struct List *SkipList)
     return FALSE;
 }
 
-LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR fileMask,
-    BOOL recursive)
+LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR fileMask, BOOL recursive)
 {
     UBYTE *buffer = NULL;
     TEXT matchString[3 * strlen(fileMask)];
@@ -424,9 +426,8 @@ LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR file
     return fileCount;
 }
 
-LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir,
-    CONST_STRPTR dstDir, struct List *SkipList, CONST_STRPTR fileMask, BOOL recursive,
-    LONG totalFiles, LONG totalFilesCopied)
+LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_STRPTR dstDir, struct List *SkipList,
+    CONST_STRPTR fileMask, BOOL recursive, LONG totalFiles, LONG totalFilesCopied)
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
     UBYTE *buffer = NULL;
@@ -732,9 +733,7 @@ BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
     return lock;
 }
 
-BOOL BackUpFile(CONST_STRPTR filepath,
-    CONST_STRPTR backuppath,
-    struct InstallIO_Data *ioData,
+BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_Data *ioData,
     struct InstallC_UndoRecord * undorecord)
 {
     ULONG filepathlen = strlen(filepath);

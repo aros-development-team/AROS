@@ -354,7 +354,7 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
         OOP_DisposeObject(mdd->gfxhidd);
 
     /* Dispose driver object. This will take care about syncs etc */
-    OOP_DisposeObject(mdd->gfxhidd_orig );
+    HW_RemoveDriver(PrivGBase(GfxBase)->GfxRoot, mdd->gfxhidd_orig);
 
     FreeVec(mdd);
 }

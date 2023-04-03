@@ -160,6 +160,7 @@ struct ata_Bus
    void                    	*dmaInterface;   		/* DMA interface object     */
    BOOL                    	keepEmpty;       		/* Whether we should keep empty bus object */
    BOOL                    	haveAltIO;
+   IPTR                    	ab_Controller;   		/* Pointer to parent controller */
 
    volatile UBYTE          	ab_Dev[MAX_BUSUNITS];		/* Master/Slave type, see below */
    UBYTE                   	ab_Flags;   			/* Bus flags similar to unit flags */

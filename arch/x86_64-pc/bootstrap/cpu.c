@@ -226,4 +226,5 @@ void kick(void *kick_base, struct TagItem64 *km)
     }
 
     kprintf("Your processor is not x86-64 compatible\n");
+    kprintf("CPUID: EAX 0x%08x, EDX 0x%08x\n", v1, v4);
 }

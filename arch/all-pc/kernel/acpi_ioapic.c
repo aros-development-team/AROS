@@ -70,7 +70,7 @@ void ioapic_ParseTableEntry(UQUAD *tblData)
 {
     struct acpi_ioapic_route *tblEntry = (struct acpi_ioapic_route *)tblData;
 
-    bug("%08X%08X", ((*tblData >> 32) & 0xFFFFFFFF), (*tblData & 0xFFFFFFFF));
+    bug("%08X%08X", (ULONG)(((*tblData >> 32) & 0xFFFFFFFF)), (ULONG)((*tblData & 0xFFFFFFFF)));
 
     if (tblEntry->mask)
     {

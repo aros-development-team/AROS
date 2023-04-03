@@ -151,6 +151,8 @@ AROS_LH1(void, FreeDisassembleCtx,
 {
     AROS_LIBFUNC_INIT
 
+    struct DisData *disData = (struct DisData *)ud_get_user_opaque_data(ctx);
+    FreeVec(disData);
     FreeVec(ctx);
 
     AROS_LIBFUNC_EXIT

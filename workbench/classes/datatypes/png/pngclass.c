@@ -315,12 +315,13 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
             }
         }
     }
-    else if (png.png_type != PNG_COLOR_TYPE_PALETTE)
+    else if (png.png_type == PNG_COLOR_TYPE_RGB)
     {
         if(png_get_valid(png.png_ptr, png.png_info_ptr, PNG_INFO_tRNS))
         {
-            D(bug("[png.datatype] %s: set_tRNS_to_alpha\n", __func__);)
+            D(bug("[png.datatype] %s: set_tRNS_to_alpha\n", __func__));
             png_set_tRNS_to_alpha(png.png_ptr);
+            png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
         }
     }
 

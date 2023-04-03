@@ -90,6 +90,20 @@ const struct OOP_ABDescr install__abd[] =
 TEXT            *extras_path = NULL;       /* DOS DEVICE NAME of part used to store extras */
 struct List     SKIPLIST;
 
+BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_Data *ioData,
+    struct InstallC_UndoRecord * undorecord);
+BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name, ULONG dostype);
+LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_STRPTR dstDir, struct List *SkipList,
+    CONST_STRPTR fileMask, BOOL recursive, LONG totalFiles, LONG totalFilesCopied);
+LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR fileMask, BOOL recursive);
+BOOL GetVolumeForDevName(char *devName, char *buffer);
+LONG GetPartitionSize(BOOL get_work);
+char *FindPartition(struct PartitionHandle *root);
+struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
+char * GetDevNameForVolume(char *volumeName);
+
+void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value);
+
 AROS_UFH3S(BOOL, partradioHookFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(Object*, installer, A2),
@@ -120,13 +134,13 @@ AROS_UFH3S(BOOL, partradioHookFunc,
             OPTOSET(optObjCheckSysSize, MUIA_Selected, FALSE);
 
             curVal = NULL;
-            OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &curVal);
+            OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&curVal);
             D(bug("[InstallAROS] %s: Current Sys DevName '%s'\n", __func__, curVal));
             devvolName = GetDevNameForVolume((data->instc_default_usb) ? USB_SYS_VOL_NAME : SYS_VOL_NAME);
             /* Update the sys drives device name */
             if (devvolName)
             {
-                OPTOSET(optObjDestVolumeName, MUIA_String_Contents, devvolName);
+                OPTOSET(optObjDestVolumeName, MUIA_String_Contents, (IPTR)devvolName);
             }
 
             curVal = NULL;
@@ -331,7 +345,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                     /* use the partitions device ... */
                     if (Install__InitDriveTypeCycle(cycle_drivetype, AROS_BSTR_ADDR(fssm->fssm_Device)) == -1)
                     {
-                        OPTOSET(optObjDestDevice, MUIA_String_Contents, AROS_BSTR_ADDR(fssm->fssm_Device));
+                        OPTOSET(optObjDestDevice, MUIA_String_Contents, (IPTR)AROS_BSTR_ADDR(fssm->fssm_Device));
                     }
                     OPTOSET(optObjDestUnit, MUIA_String_Integer, fssm->fssm_Unit);
                     devset = TRUE;
@@ -342,7 +356,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                 /* fallback to boot device ... */
                 if (Install__InitDriveTypeCycle(cycle_drivetype,boot_Device) == -1)
                 {
-                    OPTOSET(optObjDestDevice, MUIA_String_Contents, boot_Device);
+                    OPTOSET(optObjDestDevice, MUIA_String_Contents, (IPTR)boot_Device);
                 }
                 OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
             }
@@ -352,7 +366,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
             /* use boot device ... */
             if (Install__InitDriveTypeCycle(cycle_drivetype,boot_Device) == -1)
             {
-                OPTOSET(optObjDestDevice, MUIA_String_Contents, boot_Device);
+                OPTOSET(optObjDestDevice, MUIA_String_Contents, (IPTR)boot_Device);
             }
             OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
         }
@@ -508,9 +522,8 @@ IPTR Install__OM_SET(Class * CLASS, Object * self, struct opSet * message)
 
 /* make page */
 
-ULONG AskRetry(Class * CLASS, Object * self, CONST_STRPTR message,
-    CONST_STRPTR file, CONST_STRPTR opt1, CONST_STRPTR opt2,
-    CONST_STRPTR opt3)
+ULONG AskRetry(Class * CLASS, Object * self, CONST_STRPTR message, CONST_STRPTR file, CONST_STRPTR opt1,
+    CONST_STRPTR opt2, CONST_STRPTR opt3)
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
     STRPTR finalmessage = NULL;
@@ -564,11 +577,11 @@ AROS_UFH3S(BOOL, Install__StorageUnitEnum,
         )
         if (!boot_Device)
         {
-            boot_Device = suDev;
+            boot_Device = (char *)suDev;
             boot_Unit = suUnit;
             bug("[InstallAROS] %s: Boot Device %s:%u\n", __func__, suDev, suUnit);
         }
-        if ((root = OpenRootPartition(suDev, suUnit)) != NULL)
+        if ((root = OpenRootPartition((CONST_STRPTR)suDev, suUnit)) != NULL)
         {
             char *result = NULL;
 
@@ -644,7 +657,7 @@ AROS_UFH3S(BOOL, Install__StorageCntrllrEnum,
 
 IPTR Install__MUIM_FindDrives(Class * CLASS, Object * self, Msg message)
 {
-    IPTR retval = NULL;
+    IPTR retval = 0L;
 
     struct Hook controllerenum_hook =
     {
@@ -1009,7 +1022,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 }
                 else
                     volname = nametmp;
-                OPTOSET(optObjDestVolLabel, MUIA_String_Contents, volname);
+                OPTOSET(optObjDestVolLabel, MUIA_String_Contents, (IPTR)volname);
 
                 GET(data->instc_options_main->opt_workdevname, MUIA_String_Contents, (IPTR *)&optname);
                 if (!GetVolumeForDevName(optname, nametmp))
@@ -1021,7 +1034,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 }
                 else
                     volname = nametmp;
-                OPTOSET(optObjWorkDestLabel, MUIA_String_Contents, volname);
+                OPTOSET(optObjWorkDestLabel, MUIA_String_Contents, (IPTR)volname);
 
                 data->disable_back = FALSE;
                 data->instc_options_main->partitioned = TRUE;
@@ -1042,7 +1055,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
         SET(data->page, MUIA_Group_ActivePage, EInstallStage);
 
         /* Set the paths used for the actual install */
-        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &data->install_SysTarget);
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&data->install_SysTarget);
         GET(work_devname, MUIA_String_Contents, &data->install_WorkTarget);
 
         /* Set the bootloader device and unit */
@@ -2004,7 +2017,7 @@ IPTR Install__MUIM_RefreshWindow(Class * CLASS, Object * self, Msg message)
 IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
-    char *dev_nametmp[100];
+    char dev_nametmp[100];
     char vol_nametmp[100];
     char fmt_nametmp[100];
     char *name_tmp = NULL;
@@ -2016,7 +2029,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
     if ((BOOL) XOPTOGET(optObjCheckFormatSys, MUIA_Selected))
     {
         /* Format Vol0 */
-        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &name_tmp);
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&name_tmp);
         sprintf(dev_nametmp, "%s:", name_tmp);
 
         sprintf(fmt_nametmp, _(MSG_FORMATTING), dev_nametmp);
@@ -2024,7 +2037,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
         SET(data->label, MUIA_Text_Contents, fmt_nametmp);
         SET(data->gauge2, MUIA_Gauge_Current, 0);
 
-        OPTOGET(optObjDestVolLabel, MUIA_String_Contents, &name_tmp);
+        OPTOGET(optObjDestVolLabel, MUIA_String_Contents, (IPTR *)&name_tmp);
         strcpy(vol_nametmp, name_tmp);
 
         /* XXX HACK
@@ -2045,7 +2058,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
     if (option && XOPTOGET(optObjCheckFormatWork, MUIA_Selected))
     {
         /* Format Vol1 */
-        GET(work_devname, MUIA_String_Contents, &name_tmp);
+        GET(work_devname, MUIA_String_Contents, (IPTR *)&name_tmp);
         sprintf(dev_nametmp, "%s:", name_tmp);
 
         sprintf(fmt_nametmp, _(MSG_FORMATTING), dev_nametmp);
@@ -2053,7 +2066,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
         SET(data->label, MUIA_Text_Contents, fmt_nametmp);
         SET(data->gauge2, MUIA_Gauge_Current, 0);
 
-        OPTOGET(optObjWorkDestLabel, MUIA_String_Contents, &name_tmp);
+        OPTOGET(optObjWorkDestLabel, MUIA_String_Contents, (IPTR *)&name_tmp);
         strcpy(vol_nametmp, name_tmp);
 
         /* XXX HACK
@@ -2069,12 +2082,10 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
         if (success)
         {
             SET(data->gauge2, MUIA_Gauge_Current, 100);
-            lock = Lock(dev_nametmp, SHARED_LOCK);      /* check the dest dir exists */
+            lock = Lock((CONST_STRPTR)dev_nametmp, SHARED_LOCK);      /* check the dest dir exists */
             if (lock == BNULL)
             {
-                bug
-                    ("[InstallAROS:Inst] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n",
-                        dev_nametmp);
+                bug("[InstallAROS:Inst] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", dev_nametmp);
                 extras_path = dest_Path;
             }
             else

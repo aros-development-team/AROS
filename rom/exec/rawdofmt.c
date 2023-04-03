@@ -72,11 +72,7 @@
    have a certain alignment greater than 2 bytes, and this
    code will miserably fail if DataStream is not properly
    aligned; in such cases data should be fetched in pieces,
-   taking into account the endianess of the machine.
-
-   Currently it is assumed that ULONG values are stored
-   in an array of IPTRs. This results in good portability for
-   both 32- and 64-bit systems. */
+   taking into account the endianess of the machine. */
 
 #define fetch_mem_arg(type)                     \
 ({                                              \

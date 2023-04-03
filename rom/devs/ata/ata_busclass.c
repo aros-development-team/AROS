@@ -652,9 +652,35 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     case aoHidd_ATABus_CanSetXferMode:
         *msg->storage = FALSE;
         return;
+
+    case aoHidd_ATABus_Controller:
+        *msg->storage = data->ab_Controller;
+        return;
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
+void ATABus__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct ataBase *ATABase = cl->UserData;
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
+    struct TagItem *tstate = msg->attrList;
+    struct TagItem *tag;
+
+    while ((tag = NextTagItem(&tstate)))
+    {
+        ULONG idx;
+
+        Hidd_ATABus_Switch(tag->ti_Tag, idx)
+        {
+        case aoHidd_ATABus_Controller:
+            data->ab_Controller = tag->ti_Data;
+            break;
+        }
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 void ATABus__Hidd_StorageBus__EnumUnits(OOP_Class *cl, OOP_Object *o, struct pHidd_StorageBus_EnumUnits *msg)

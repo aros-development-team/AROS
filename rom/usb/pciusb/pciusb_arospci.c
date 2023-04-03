@@ -29,20 +29,28 @@
 static void handleQuirks(struct PCIController *hc)
 {
     struct PCIDevice *hd = hc->hc_Device;
-    IPTR vendorid, productid;
+    IPTR vendorid, productid, revisionid, subvendorid, subproductid, memsize;
 
     hc->hc_Quirks = 0;
     if (hc->hc_HCIType == HCITYPE_EHCI)
         hc->hc_Quirks |= (HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
 
+    // Check for VirtualBox's EHCI (identify as precisely as possible to avoid
+    // applying incorrect quirks to real Intel ICH6 EHCI)
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_VendorID, &vendorid);
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_ProductID, &productid);
-    if (vendorid == 0x8086 && productid == 0x265C)
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_RevisionID, &revisionid);
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_SubsystemVendorID, &subvendorid);
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_SubsystemID, &subproductid);
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Size0, &memsize);
+    if (vendorid == 0x8086 && productid == 0x265c && revisionid == 0
+        && subvendorid == 0 && subproductid == 0 && memsize == 4096)
     {
-        /* This is needed for EHCI to work in VirtualBox */
+        // This is needed for EHCI to work in VirtualBox
         hc->hc_Quirks &= ~(HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
-        /* VirtualBox reports frame list size of 1024, but still issues interrupts at
-           speed of around 4 per second instead of ever 1024 ms */
+
+        // VirtualBox reports frame list size of 1024, but still issues interrupts at
+        // speed of around 4 per second instead of every 1024 ms
         hc->hc_Quirks |= HCQ_EHCI_VBOX_FRAMEROOLOVER;
     }
     else if (vendorid == 0x9710)

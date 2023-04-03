@@ -174,7 +174,7 @@ void fillGeometry(struct Volume *volume, struct DosEnvec *de)
 {
     ULONG spc;
 
-    D(bug("[install] fillGeometry(%x)\n", volume));
+    D(bug("[install] fillGeometry(0x%p)\n", volume));
 
     spc = de->de_Surfaces * de->de_BlocksPerTrack;
     volume->SizeBlock = de->de_SizeBlock;
@@ -188,7 +188,7 @@ void nsdCheck(struct Volume *volume)
     struct NSDeviceQueryResult nsdq;
     UWORD *cmdcheck;
 
-    D(bug("[install] nsdCheck(%x)\n", volume));
+    D(bug("[install] nsdCheck(0x%p)\n", volume));
 
     if (((volume->startblock + volume->countblock) *    /* last block */
          ((volume->SizeBlock << 2) / 512)       /* 1 portion (block) equals 512 (bytes) */
@@ -330,7 +330,7 @@ static ULONG _readwriteBlock(struct Volume *volume,
 
 ULONG readBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
 {
-    D(bug("[install] readBlock(vol:%x, block:%d, %d bytes)\n",
+    D(bug("[install] readBlock(vol:0x%p, block:%d, %d bytes)\n",
           volume, block, size));
 
     return _readwriteBlock(volume, block, buffer, size, volume->readcmd);
@@ -369,7 +369,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
     struct PartitionHandle *ph;
     ULONG dos_id;
 
-    D(bug("[install] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
+    D(bug("[install] isvalidFileSystem(0x%p, %s, %d)\n", volume, device, unit));
 
     if (readBlock(volume, 0, volume->blockbuffer, 512))
     {
@@ -412,13 +412,13 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
             if (OpenPartitionTable(ph) == 0)
             {
                 struct TagItem tags[3];
-                IPTR type;
 
+                ULONG ttype; /* Type of PTT_TYPE is ULONG*, not IPTR* */
                 tags[1].ti_Tag = TAG_DONE;
                 tags[0].ti_Tag = PTT_TYPE;
-                tags[0].ti_Data = (STACKIPTR) & type;
+                tags[0].ti_Data = (STACKIPTR) & ttype;
                 GetPartitionTableAttrs(ph, tags);
-                if (type == PHPTT_MBR)
+                if (ttype == PHPTT_MBR)
                 {
                     struct PartitionHandle *pn;
                     struct DosEnvec de;
@@ -451,11 +451,12 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                     }
                     if (pn->ln.ln_Succ)
                     {
+                        ULONG ppos;
                         tags[0].ti_Tag = PT_POSITION;
-                        tags[0].ti_Data = (STACKIPTR) & type;
+                        tags[0].ti_Data = (STACKIPTR) & ppos;
                         tags[1].ti_Tag = TAG_DONE;
                         GetPartitionAttrs(pn, tags);
-                        volume->partnum = (UBYTE) type;
+                        volume->partnum = (UBYTE) ppos;
                         retval = TRUE;
                         D(bug
                           ("[install] Primary partition found: partnum=%d\n",
@@ -466,10 +467,10 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                         if (OpenPartitionTable(extph) == 0)
                         {
                             tags[0].ti_Tag = PTT_TYPE;
-                            tags[0].ti_Data = (STACKIPTR) & type;
+                            tags[0].ti_Data = (STACKIPTR) & ttype;
                             tags[1].ti_Tag = TAG_DONE;
                             GetPartitionTableAttrs(extph, tags);
-                            if (type == PHPTT_EBR)
+                            if (ttype == PHPTT_EBR)
                             {
                                 tags[0].ti_Tag = PT_DOSENVEC;
                                 tags[0].ti_Data = (STACKIPTR) & de;
@@ -498,11 +499,12 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                                 }
                                 if (pn->ln.ln_Succ)
                                 {
+                                    ULONG ppos;
                                     tags[0].ti_Tag = PT_POSITION;
-                                    tags[0].ti_Data = (STACKIPTR) & type;
+                                    tags[0].ti_Data = (STACKIPTR) & ppos;
                                     GetPartitionAttrs(pn, tags);
                                     volume->partnum =
-                                        MBR_MAX_PARTITIONS + (UBYTE) type;
+                                        MBR_MAX_PARTITIONS + (UBYTE) ppos;
                                     retval = TRUE;
                                     D(bug
                                       ("[install] Logical partition found: partnum=%d\n",
@@ -515,7 +517,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                 }
                 else
                 {
-                    if (type == PHPTT_RDB)
+                    if (ttype == PHPTT_RDB)
                     {
                         /* just use whole hard disk */
                         retval = TRUE;
@@ -549,7 +551,7 @@ struct Volume *getGrubStageVolume(CONST_STRPTR device, ULONG unit,
 
     volume = initVolume(device, unit, flags, de);
 
-    D(bug("[install] getGrubStageVolume(): volume=%x\n", volume));
+    D(bug("[install] getGrubStageVolume(): volume=0x%p\n", volume));
 
     if (volume)
     {

@@ -40,8 +40,7 @@
 #include "ia_install.h"
 #include "ia_bootloader.h"
 
-void create_environment_variable(CONST_STRPTR envarchiveDisk,
-    CONST_STRPTR name, CONST_STRPTR value)
+void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value)
 {
     BPTR env_variable_fh = BNULL;
     TEXT env_variable_path[100];
@@ -72,8 +71,7 @@ void create_environment_variable(CONST_STRPTR envarchiveDisk,
     }
 }
 
-BOOL read_environment_variable(CONST_STRPTR envarchiveDisk,
-    CONST_STRPTR name, STRPTR buffer, ULONG size)
+BOOL read_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, STRPTR buffer, ULONG size)
 {
     BPTR env_variable_fh = BNULL;
     TEXT env_variable_path[100];
