@@ -344,7 +344,7 @@ static inline UBYTE READCONFIGBYTE(struct PCIController *hc, OOP_Object *o, ULON
     rcb_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
 #endif
     rcb_p.reg   = reg;
-    return (UWORD)hc->hc_ReadConfigByte(hc->hc_ReadConfigByte_Class, o, &rcb_p.mID);
+    return (UBYTE)hc->hc_ReadConfigByte(hc->hc_ReadConfigByte_Class, o, &rcb_p.mID);
 #if defined(__OOP_NOLIBBASE__)
 # undef base
 #else
@@ -401,7 +401,7 @@ static inline ULONG READCONFIGLONG(struct PCIController *hc, OOP_Object *o, ULON
     rcl_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
 #endif
     rcl_p.reg   = reg;
-    return (UWORD)hc->hc_ReadConfigLong(hc->hc_ReadConfigLong_Class, o, &rcl_p.mID);
+    return (ULONG)hc->hc_ReadConfigLong(hc->hc_ReadConfigLong_Class, o, &rcl_p.mID);
 #if defined(__OOP_NOLIBBASE__)
 # undef base
 #else
