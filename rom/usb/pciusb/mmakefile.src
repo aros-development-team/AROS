@@ -24,6 +24,10 @@ kernel-usb-pciusb-directories ::
 #FIXME: Currently pciusb.device is different when compiled for pc or not.
 #       It should thus normally be in SYS:Arch but it is not ATM.
 USER_LDFLAGS := -static
+USER_CPPFLAGS :=  \
+        -D__OOP_NOLIBBASE__ \
+        -D__OOP_NOMETHODBASES__ \
+        -D__OOP_NOATTRBASES__
 #USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-usb-pciusb \

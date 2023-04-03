@@ -34,10 +34,17 @@
 #include <devices/newstyle.h>
 
 #include <oop/oop.h>
+#include <hidd/hidd.h>
+#include <hidd/pci.h>
+#include <hidd/usb.h>
+#include <hidd/system.h>
 
 #include "debug.h"
 
 //#define TMPXHCICODE
+#if defined(__OOP_NOLIBBASE__) && defined(__OOP_NOMETHODBASES__)
+#define USE_FAST_PCICFG
+#endif
 
 /* Reply the iorequest with success */
 #define RC_OK	                        0
@@ -109,7 +116,7 @@ struct PCIUnit
 #endif
     UBYTE		            hu_PortNum11[MAX_ROOT_PORTS];       /* Maps from Global Port to USB 1.1 companion controller port   */
 #if defined(TMPXHCICODE)
-    UBYTE		            hu_PortNum20[MAX_ROOT_PORTS];        /* Maps from Global Port to USB 2.0 companion controller port   */
+    UBYTE		            hu_PortNum20[MAX_ROOT_PORTS];       /* Maps from Global Port to USB 2.0 companion controller port   */
 #endif
     UBYTE		            hu_PortOwner[MAX_ROOT_PORTS];       /* contains the HCITYPE of the ports current owner              */
     UBYTE		            hu_ProductName[80];                 /* for Query device                                             */
@@ -134,6 +141,22 @@ struct PCIController
 
     OOP_Object		        *hc_PCIDeviceObject;
     OOP_Object		        *hc_PCIDriverObject;
+    
+#if defined(USE_FAST_PCICFG)
+    OOP_MethodFunc         hc_ReadConfigByte;
+    OOP_Class 	          *hc_ReadConfigByte_Class;
+    OOP_MethodFunc         hc_ReadConfigWord;
+    OOP_Class 	          *hc_ReadConfigWord_Class;
+    OOP_MethodFunc         hc_ReadConfigLong;
+    OOP_Class 	          *hc_ReadConfigLong_Class;
+    OOP_MethodFunc         hc_WriteConfigByte;
+    OOP_Class 	          *hc_WriteConfigByte_Class;
+    OOP_MethodFunc         hc_WriteConfigWord;
+    OOP_Class 	          *hc_WriteConfigWord_Class;
+    OOP_MethodFunc         hc_WriteConfigLong;
+    OOP_Class 	          *hc_WriteConfigLong_Class;
+#endif
+
     ULONG		            hc_DevID;
     UWORD		            hc_FunctionNum;
     UWORD		            hc_HCIType;
@@ -243,13 +266,24 @@ struct PCIDevice
     UWORD		            hd_Flags;	                        /* various flags */
 
     struct UtilityBase      *hd_UtilityBase;	                /* for tags etc */
+#if defined(__OOP_NOLIBBASE__)
+    struct Library          *hd_OOPBase;
+#endif
+    OOP_Object              *e1kb_PCI;
+#if defined(__OOP_NOATTRBASES__)
+    OOP_AttrBase	        hd_HiddAB;
+    OOP_AttrBase	        hd_HiddPCIDeviceAB;
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    OOP_MethodID            hd_HiddPCIMB;
+    OOP_MethodID            hd_HiddPCIDeviceMB;
+    OOP_MethodID            hd_HiddPCIDriverMB;
+    OOP_MethodID            hd_HWBase;
+#endif
 
     struct List		        hd_TempHCIList;
 
     OOP_Object	            *hd_PCIHidd;
-    OOP_AttrBase	        hd_HiddAB;
-    OOP_AttrBase	        hd_HiddPCIDeviceAB;
-    OOP_MethodID            hd_HiddPCIDeviceMB;
 
     BOOL		            hd_ScanDone;	                    /* PCI scan done? */
     APTR		            hd_MemPool;	                        /* Memory Pool */
@@ -263,6 +297,216 @@ struct PCIDevice
 #if defined(TMPXHCICODE)
 #define HDB_ENABLEXHCI	                1
 #define HDF_ENABLEXHCI	                (1 << HDB_ENABLEXHCI)
+#endif
+
+/** OOP Related **/
+
+#if defined(__OOP_NOLIBBASE__)
+#undef OOPBase
+#define OOPBase                 (base->hd_OOPBase)
+#endif
+
+#if defined(__OOP_NOATTRBASES__)
+#undef HiddAttrBase
+#define HiddAttrBase            (base->hd_HiddAB)
+#undef HiddPCIDeviceAttrBase
+#define HiddPCIDeviceAttrBase   (base->hd_HiddPCIDeviceAB)
+#endif
+
+#if defined(__OOP_NOMETHODBASES__)
+#undef HiddPCIBase
+#define HiddPCIBase             (base->hd_HiddPCIMB)
+#undef HiddPCIDeviceBase
+#define HiddPCIDeviceBase       (base->hd_HiddPCIDeviceMB)
+#undef HiddPCIDriverBase
+#define HiddPCIDriverBase       (base->hd_HiddPCIDriverMB)
+#undef HWBase
+#define HWBase                  (base->hd_HWBase)
+#endif
+
+#if defined(USE_FAST_PCICFG)
+static inline UBYTE READCONFIGBYTE(struct PCIController *hc, OOP_Object *o, ULONG reg)
+{
+    struct pHidd_PCIDevice_ReadConfigWord rcb_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    rcb_p.mID   = hc->hc_Device->hd_HiddPCIDeviceMB + moHidd_PCIDevice_ReadConfigByte;
+#else
+    rcb_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+#endif
+    rcb_p.reg   = reg;
+    return (UWORD)hc->hc_ReadConfigByte(hc->hc_ReadConfigByte_Class, o, &rcb_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+static inline UWORD READCONFIGWORD(struct PCIController *hc, OOP_Object *o, ULONG reg)
+{
+    struct pHidd_PCIDevice_ReadConfigWord rcw_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    rcw_p.mID   = hc->hc_Device->hd_HiddPCIDeviceMB + moHidd_PCIDevice_ReadConfigWord;
+#else
+    rcw_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
+#endif
+    rcw_p.reg   = reg;
+    return (UWORD)hc->hc_ReadConfigWord(hc->hc_ReadConfigWord_Class, o, &rcw_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline ULONG READCONFIGLONG(struct PCIController *hc, OOP_Object *o, ULONG reg)
+{
+    struct pHidd_PCIDevice_ReadConfigLong rcl_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    rcl_p.mID   = hc->hc_Device->hd_HiddPCIDeviceMB + moHidd_PCIDevice_ReadConfigWord;
+#else
+    rcl_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
+#endif
+    rcl_p.reg   = reg;
+    return (UWORD)hc->hc_ReadConfigLong(hc->hc_ReadConfigLong_Class, o, &rcl_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline void WRITECONFIGBYTE(struct PCIController *hc, OOP_Object *o, ULONG reg, UBYTE value)
+{
+    struct pHidd_PCIDevice_WriteConfigByte wcb_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    wcb_p.mID   = hc->hc_Device->hd_HiddPCIDeviceMB + moHidd_PCIDevice_WriteConfigByte;
+#else
+    wcb_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+#endif
+    wcb_p.reg   = reg;
+    wcb_p.val   = value;
+    hc->hc_WriteConfigByte(hc->hc_WriteConfigByte_Class, o, &wcb_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline void WRITECONFIGWORD(struct PCIController *hc, OOP_Object *o, ULONG reg, UWORD value)
+{
+    struct pHidd_PCIDevice_WriteConfigWord wcw_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    wcw_p.mID   = hc->hc_Device->hd_HiddPCIDeviceMB + moHidd_PCIDevice_WriteConfigWord;
+#else
+    wcw_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
+#endif
+    wcw_p.reg   = reg;
+    wcw_p.val   = value;
+    hc->hc_WriteConfigWord(hc->hc_WriteConfigWord_Class, o, &wcw_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline void WRITECONFIGLONG(struct PCIController *hc, OOP_Object *o, ULONG reg, ULONG value)
+{
+    struct pHidd_PCIDevice_WriteConfigLong wcl_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    wcl_p.mID   = hc->hc_Device->hd_HiddPCIDeviceMB + moHidd_PCIDevice_WriteConfigLong;
+#else
+    wcl_p.mID   = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong);
+#endif
+    wcl_p.reg   = reg;
+    wcl_p.val   = value;
+    hc->hc_WriteConfigLong(hc->hc_WriteConfigLong_Class, o, &wcl_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+#else
+#define READCONFIGBYTE(hc, obj, reg) HIDD_PCIDevice_ReadConfigByte(obj, reg)
+#define READCONFIGWORD(hc, obj, reg) HIDD_PCIDevice_ReadConfigWord(obj, reg)
+#define READCONFIGLONG(hc, obj, reg) HIDD_PCIDevice_ReadConfigLong(obj, reg)
+#define WRITECONFIGBYTE(hc, obj, reg, val) HIDD_PCIDevice_WriteConfigByte(obj, reg, val)
+#define WRITECONFIGWORD(hc, obj, reg, val) HIDD_PCIDevice_WriteConfigWord(obj, reg, val)
+#define WRITECONFIGLONG(hc, obj, reg, val) HIDD_PCIDevice_WriteConfigLong(obj, reg, val)
 #endif
 
 #endif /* PCIUSB_H */

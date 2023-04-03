@@ -13,6 +13,9 @@
 #include "uhwcmd.h"
 #include "xhciproto.h"
 
+#undef base
+#define base (hc->hc_Device)
+
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct PCIDevice *hd = hu->hu_Device;
@@ -36,18 +39,21 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             { TAG_DONE, 0UL },
     };
 
-
+#if defined(TMPXHCICODE)
     for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
         hu->hu_PortMapX[cnt] = hc;
         hc->hc_PortNum[cnt] = cnt;
     }
+#endif
 
     KPRINTF(20, ("ohciInit returns TRUE...\n"));
     return TRUE;
 }
 
+void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
+}
 
-BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
 {
     BOOL cmdgood = FALSE;
     UWORD portreg;
@@ -81,7 +87,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     return cmdgood;
 }
 
-BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
 {
     BOOL cmdgood = FALSE;
     switch(val)
@@ -127,7 +133,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     return cmdgood;
 }
 
-BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx)
+BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval)
 {
     return FALSE;
 }

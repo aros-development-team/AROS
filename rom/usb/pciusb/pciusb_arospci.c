@@ -5,10 +5,6 @@
 #include <exec/types.h>
 #include <oop/oop.h>
 #include <devices/timer.h>
-#include <hidd/hidd.h>
-#include <hidd/pci.h>
-#include <hidd/usb.h>
-#include <hidd/system.h>
 #include <aros/bootloader.h>
 
 #include <proto/oop.h>
@@ -28,13 +24,7 @@
 
 #define NewList NEWLIST
 
-#undef HiddPCIDeviceAttrBase
-#undef HiddAttrBase
-#undef HiddPCIDeviceBase
-
-#define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
-#define HiddAttrBase (hd->hd_HiddAB)
-#define HiddPCIDeviceBase (hd->hd_HiddPCIDeviceMB)
+#define base hd
 
 static void handleQuirks(struct PCIController *hc)
 {
@@ -132,6 +122,20 @@ AROS_UFH3(void, pciEnumerator,
 
                 NewMinList(&hc->hc_RTIsoHandlers);
 
+#if defined(USE_FAST_PCICFG)
+# if !defined(__OOP_NOLIBBASE__) && !defined(__OOP_NOMETHODBASES__)
+#  define __obj hc->hc_PCIDeviceObject
+# endif
+                hc->hc_ReadConfigByte = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigByte, &hc->hc_ReadConfigByte_Class);
+                hc->hc_ReadConfigWord = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord, &hc->hc_ReadConfigWord_Class);
+                hc->hc_ReadConfigLong = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigLong, &hc->hc_ReadConfigLong_Class);
+                hc->hc_WriteConfigByte = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigByte, &hc->hc_WriteConfigByte_Class);
+                hc->hc_WriteConfigWord = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord, &hc->hc_WriteConfigWord_Class);
+                hc->hc_WriteConfigLong = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong, &hc->hc_WriteConfigLong_Class);
+# if !defined(__OOP_NOLIBBASE__) && !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
                 AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
 
                 handleQuirks(hc);
@@ -206,21 +210,11 @@ BOOL pciInit(struct PCIDevice *hd)
             { TAG_DONE, 0UL }
         };
 
-        struct OOP_ABDescr attrbases[] =
-        {
-            { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
-            { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
-            { NULL, NULL }
-        };
-
         struct Hook findHook =
         {
              h_Entry:        (IPTR (*)()) pciEnumerator,
              h_Data:         hd,
         };
-
-        OOP_ObtainAttrBases(attrbases);
-        hd->hd_HiddPCIDeviceMB = OOP_GetMethodID(IID_Hidd_PCIDevice, 0);
 
         KPRINTF(20, ("Searching for devices...\n"));
 
@@ -290,6 +284,7 @@ BOOL pciInit(struct PCIDevice *hd)
                     };
 
                     hc->hc_Node.ln_Name = AllocVec(16, MEMF_CLEAR);
+                    hc->hc_Node.ln_Pri = hc->hc_HCIType;
                     sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", hu->hu_UnitNo);
                     usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
 
@@ -325,7 +320,7 @@ BOOL pciInit(struct PCIDevice *hd)
                     HW_AddDriver(root, usbContrClass, usbc_tags);
                 }
                 hc->hc_Unit = hu;
-                AddTail(&hu->hu_Controllers, &hc->hc_Node);
+                Enqueue(&hu->hu_Controllers, &hc->hc_Node);
             }
             hc = nexthc;
         }
@@ -341,7 +336,7 @@ UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset)
 {
     struct PCIDevice *hd = hc->hc_Device;
 
-    return HIDD_PCIDevice_ReadConfigByte(hc->hc_PCIDeviceObject, offset);
+    return READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, offset);
 }
 /* \\\ */
 
@@ -350,7 +345,7 @@ UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset)
 {
     struct PCIDevice *hd = hc->hc_Device;
 
-    return HIDD_PCIDevice_ReadConfigWord(hc->hc_PCIDeviceObject, offset);
+    return READCONFIGWORD(hc, hc->hc_PCIDeviceObject, offset);
 }
 /* \\\ */
 
@@ -359,7 +354,7 @@ ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset)
 {
     struct PCIDevice *hd = hc->hc_Device;
 
-    return HIDD_PCIDevice_ReadConfigLong(hc->hc_PCIDeviceObject, offset);
+    return READCONFIGLONG(hc, hc->hc_PCIDeviceObject, offset);
 }
 /* \\\ */
 
@@ -368,7 +363,7 @@ void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value)
 {
     struct PCIDevice *hd = hc->hc_Device;
 
-    HIDD_PCIDevice_WriteConfigByte(hc->hc_PCIDeviceObject, offset, value);
+    WRITECONFIGBYTE(hc, hc->hc_PCIDeviceObject, offset, value);
 }
 /* \\\ */
 
@@ -377,7 +372,7 @@ void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value)
 {
     struct PCIDevice *hd = hc->hc_Device;
 
-    HIDD_PCIDevice_WriteConfigWord(hc->hc_PCIDeviceObject, offset, value);
+    WRITECONFIGWORD(hc, hc->hc_PCIDeviceObject, offset, value);
 }
 /* \\\ */
 
@@ -386,7 +381,7 @@ void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value)
 {
     struct PCIDevice *hd = hc->hc_Device;
 
-    HIDD_PCIDevice_WriteConfigLong(hc->hc_PCIDeviceObject, offset, value);
+    WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, offset, value);
 }
 /* \\\ */
 
@@ -663,13 +658,23 @@ void pciFreeUnit(struct PCIUnit *hu)
     while(hc->hc_Node.ln_Succ)
     {
         hc->hc_Flags &= ~HCF_ONLINE;
+        switch (hc->hc_HCIType)
+        {
+            case HCITYPE_XHCI:
+                xhciFree(hc, hu);
+                break;
+            case HCITYPE_EHCI:
+                ehciFree(hc, hu);
+                break;
+            case HCITYPE_OHCI:
+                ohciFree(hc, hu);
+                break;
+            case HCITYPE_UHCI:
+                uhciFree(hc, hu);
+                break;
+        }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
-
-    // doing this in three steps to avoid these damn host errors
-    ehciFree(hc, hu);
-    ohciFree(hc, hu);
-    uhciFree(hc, hu);
 
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
@@ -723,19 +728,13 @@ void pciExpunge(struct PCIDevice *hd)
     }
     if(hd->hd_PCIHidd)
     {
-        struct OOP_ABDescr attrbases[] =
-        {
-            { (STRPTR) IID_Hidd,            &hd->hd_HiddAB },
-            { (STRPTR) IID_Hidd_PCIDevice,  &hd->hd_HiddPCIDeviceAB },
-            { NULL, NULL }
-        };
-
-        OOP_ReleaseAttrBases(attrbases);
-
         OOP_DisposeObject(hd->hd_PCIHidd);
     }
 }
 /* \\\ */
+
+#undef base
+#define base (hc->hc_Device)
 
 /* /// "pciGetPhysical()" */
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)

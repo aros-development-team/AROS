@@ -4,6 +4,7 @@
 #include "debug.h"
 
 #include <proto/exec.h>
+#include <proto/oop.h>
 #include <proto/utility.h>
 
 #include LC_LIBDEFS_FILE
@@ -16,10 +17,65 @@
 
 const char devname[]     = MOD_NAME_STRING;
 
+#if defined(__OOP_NOATTRBASES__)
+/* Keep order the same as order of IDs in struct e1000Base! */
+static CONST_STRPTR const GM_UNIQUENAME(AttrBaseIDs)[] =
+{
+    IID_Hidd,
+    IID_Hidd_PCIDevice,
+    NULL
+};
+#else
+OOP_AttrBase __IHidd;
+OOP_AttrBase __IHidd_PCIDevice;
+#endif
+
+#if defined(__OOP_NOMETHODBASES__)
+static CONST_STRPTR const GM_UNIQUENAME(MethBaseIDs)[] =
+{
+    IID_Hidd_PCI,
+    IID_Hidd_PCIDevice,
+    IID_Hidd_PCIDriver,
+    IID_HW,
+    NULL
+};
+#endif
+
 static int devInit(LIBBASETYPEPTR base)
 {
     KPRINTF(10, ("devInit base: 0x%p SysBase: 0x%p\n",
                  base, SysBase));
+
+#if defined(__OOP_NOLIBBASE__)
+    if ((base->hd_OOPBase = OpenLibrary("oop.library",0)) == NULL)
+    {
+        KPRINTF(10, ("devInit: Failed to open oop.library!\n"));
+        return FALSE;
+    }
+#endif
+#if defined(__OOP_NOATTRBASES__)
+    if (OOP_ObtainAttrBasesArray(&base->hd_HiddAB, GM_UNIQUENAME(AttrBaseIDs)))
+    {
+        KPRINTF(10, ("devInit: Failed to obtain OOP AttrBases!\n"));
+#if defined(__OOP_NOLIBBASE__)
+        CloseLibrary(base->hd_OOPBase);
+#endif
+        return FALSE;
+    }
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    if (OOP_ObtainMethodBasesArray(&base->hd_HiddPCIMB, GM_UNIQUENAME(MethBaseIDs)))
+    {
+        KPRINTF(10, ("devInit: Failed to obtain OOP MethodBases!\n"));
+#if defined(__OOP_NOATTRBASES__)
+         OOP_ReleaseAttrBasesArray(&base->hd_HiddAB, GM_UNIQUENAME(AttrBaseIDs));
+#endif
+#if defined(__OOP_NOLIBBASE__)
+        CloseLibrary(base->hd_OOPBase);
+#endif
+        return FALSE;
+    }
+#endif
 
     base->hd_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library", 39);
 

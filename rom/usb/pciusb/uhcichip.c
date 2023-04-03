@@ -13,11 +13,6 @@
 #include "uhwcmd.h"
 #include "uhciproto.h"
 
-#undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
-#undef HiddAttrBase
-#define HiddAttrBase (hd->hd_HiddAB)
-
 static AROS_INTH1(UhciResetHandler, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
@@ -1005,6 +1000,9 @@ static AROS_INTH1(uhciIntCode, struct PCIController *, hc)
     AROS_INTFUNC_EXIT
 }
 
+#undef base
+#define base (hc->hc_Device)
+
 BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct PCIDevice *hd = hu->hu_Device;
@@ -1269,59 +1267,46 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
 void uhciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
-        switch(hc->hc_HCIType)
-        {
-            case HCITYPE_UHCI:
-            {
-                KPRINTF(20, ("Shutting down UHCI %08lx\n", hc));
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
-                // disable PIRQ
-                PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0);
-                // disable all ports
-                WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
-                uhwDelayMS(50, hu);
-                //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
-                //uhwDelayMS(50, hu);
-                KPRINTF(20, ("Stopping UHCI %08lx\n", hc));
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
-                SYNC;
+    KPRINTF(20, ("Shutting down UHCI %08lx\n", hc));
+    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
+    // disable PIRQ
+    PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0);
+    // disable all ports
+    WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
+    uhwDelayMS(50, hu);
+    //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
+    //uhwDelayMS(50, hu);
+    KPRINTF(20, ("Stopping UHCI %08lx\n", hc));
+    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
+    SYNC;
 
-                //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-                uhwDelayMS(10, hu);
+    //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
+    uhwDelayMS(10, hu);
 
-                KPRINTF(20, ("Resetting UHCI %08lx\n", hc));
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
-                SYNC;
+    KPRINTF(20, ("Resetting UHCI %08lx\n", hc));
+    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
+    SYNC;
 
-                uhwDelayMS(50, hu);
-                WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
-                SYNC;
+    uhwDelayMS(50, hu);
+    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
+    SYNC;
 
-                KPRINTF(20, ("Shutting down UHCI done.\n"));
-                break;
-            }
-        }
-
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
-    }
-
+    KPRINTF(20, ("Shutting down UHCI done.\n"));
 }
 
 /* ** Root hub support functions ** */
 
-BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
 {
-    BOOL cmdgood = FALSE;
     UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
     ULONG oldval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
     ULONG newval = oldval;
+    BOOL cmdgood = FALSE;
+
     switch(val)
     {
         case UFS_PORT_ENABLE:
-            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+            KPRINTF(10, ("UHCI: Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
             newval &= ~UHPF_PORTENABLE;
             cmdgood = TRUE;
             // disable enumeration
@@ -1334,8 +1319,8 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             break;
 
         case UFS_PORT_POWER: // ignore for UHCI, there's no power control here
-            KPRINTF(10, ("Disabling Power\n"));
-            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+            KPRINTF(10, ("UHCI: Disabling Power\n"));
+            KPRINTF(10, ("UHCI: Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
             newval &= ~UHPF_PORTENABLE;
             cmdgood = TRUE;
             break;
@@ -1370,7 +1355,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
     if (cmdgood)
     {
-        KPRINTF(5, ("Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+        KPRINTF(5, ("UHCI: Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
         if(hc->hc_PortChangeMap[hciport])
         {
@@ -1382,30 +1367,35 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     return cmdgood;
 }
 
-BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
 {
-    BOOL cmdgood = FALSE;
     UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
     ULONG oldval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
     ULONG newval = oldval;
+    BOOL cmdgood = FALSE;
+
     switch(val)
     {
         case UFS_PORT_ENABLE:
-            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
-            newval &= ~UHPF_PORTENABLE;
-            cmdgood = TRUE;
-            // disable enumeration
-            unit->hu_DevControllers[0] = NULL;
+            {
+                KPRINTF(10, ("UHCI: Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+                newval &= ~UHPF_PORTENABLE;
+                cmdgood = TRUE;
+                // disable enumeration
+                unit->hu_DevControllers[0] = NULL;
+            }
             break;
 
         case UFS_PORT_SUSPEND:
-            newval &= ~UHPF_PORTSUSPEND;
-            cmdgood = TRUE;
+            {
+                newval &= ~UHPF_PORTSUSPEND;
+                cmdgood = TRUE;
+            }
             break;
 
         case UFS_PORT_POWER: // ignore for UHCI, there's no power control here
-            KPRINTF(10, ("Disabling Power\n"));
-            KPRINTF(10, ("Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
+            KPRINTF(10, ("UHCI: Disabling Power\n"));
+            KPRINTF(10, ("UHCI: Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already"));
             newval &= ~UHPF_PORTENABLE;
             cmdgood = TRUE;
             break;
@@ -1437,9 +1427,10 @@ BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
             cmdgood = TRUE;
             break;
     }
-    if(cmdgood)
+
+    if (cmdgood)
     {
-        KPRINTF(5, ("Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+        KPRINTF(5, ("UHCI: Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
         if(hc->hc_PortChangeMap[hciport])
         {
@@ -1451,7 +1442,7 @@ BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     return cmdgood;
 }
 
-BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx)
+BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval)
 {
     UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
     UWORD oldval = READIO16_LE(hc->hc_RegBase, portreg);
@@ -1464,8 +1455,8 @@ BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     if(oldval & UHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
     if(oldval & UHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
-    KPRINTF(5, ("UHCI Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
-    KPRINTF(5, ("UHCI Port %ld Status %08lx\n", idx, *mptr));
+    KPRINTF(5, ("UHCI: Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
+    KPRINTF(5, ("UHCI: Port %ld Status %08lx\n", idx, *mptr));
 
     mptr++;
     if(oldval & UHPF_ENABLECHANGE)
@@ -1484,7 +1475,7 @@ BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
     WRITEIO16_LE(hc->hc_RegBase, portreg, oldval);
 
-    KPRINTF(5, ("UHCI Port %ld Change %08lx\n", idx, *mptr));
+    KPRINTF(5, ("UHCI: Port %ld Change %08lx\n", idx, *mptr));
 
     return TRUE;
 }

@@ -8,9 +8,9 @@ void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu);
 void ohciFree(struct PCIController *hc, struct PCIUnit *hu);
 
-BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val);
-BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val);
-BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx);
+BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval);
+BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval);
+BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval);
 
 /* /// "ohciAllocED()" */
 static inline struct OhciED * ohciAllocED(struct PCIController *hc)

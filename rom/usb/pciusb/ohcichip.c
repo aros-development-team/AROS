@@ -16,11 +16,6 @@
 #include "uhwcmd.h"
 #include "ohciproto.h"
 
-#undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
-#undef HiddAttrBase
-#define HiddAttrBase (hd->hd_HiddAB)
-
 #ifdef DEBUG_TD
 
 static void PrintTD(const char *txt, ULONG ptd, struct PCIController *hc)
@@ -1350,6 +1345,9 @@ void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     ohciEnableInt(hc, OISF_SOF);
 }
 
+#undef base
+#define base (hc->hc_Device)
+
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct PCIDevice *hd = hu->hu_Device;
@@ -1660,51 +1658,39 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
 }
 
 void ohciFree(struct PCIController *hc, struct PCIUnit *hu) {
+    KPRINTF(20, ("Shutting down OHCI %p\n", hc));
+    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, OISF_ALL_INTS);
+    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, OISF_ALL_INTS);
 
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
-        switch(hc->hc_HCIType)
-        {
-            case HCITYPE_OHCI:
-            {
-                KPRINTF(20, ("Shutting down OHCI %p\n", hc));
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, OISF_ALL_INTS);
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, OISF_ALL_INTS);
+    // disable all ports
+    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, 0);
+    WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_UNPOWERHUB);
 
-                // disable all ports
-                WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, 0);
-                WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_UNPOWERHUB);
+    uhwDelayMS(50, hu);
+    KPRINTF(20, ("Stopping OHCI %p\n", hc));
+    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, 0);
+    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, 0);
+    SYNC;
 
-                uhwDelayMS(50, hu);
-                KPRINTF(20, ("Stopping OHCI %p\n", hc));
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, 0);
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, 0);
-                SYNC;
+    //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
+    uhwDelayMS(10, hu);
+    KPRINTF(20, ("Resetting OHCI %p\n", hc));
+    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
+    SYNC;
+    uhwDelayMS(50, hu);
 
-                //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-                uhwDelayMS(10, hu);
-                KPRINTF(20, ("Resetting OHCI %p\n", hc));
-                CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
-                SYNC;
-                uhwDelayMS(50, hu);
-
-                KPRINTF(20, ("Shutting down OHCI done.\n"));
-                break;
-            }
-        }
-
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
-    }
+    KPRINTF(20, ("Shutting down OHCI done.\n"));
 }
 
 /* ** Root hub support functions ** */
 
-BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
 {
-    BOOL cmdgood = FALSE;
     UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
+    BOOL cmdgood = FALSE;
+
+    KPRINTF(10, ("%s(0x%p, 0x%p, %08x, %08x, %08x)\n", __func__, unit, hc, hciport, idx, val));
 
     switch(val)
     {
@@ -1767,29 +1753,29 @@ BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     return cmdgood;
 }
 
-BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val)
+BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
 {
-    BOOL cmdgood = FALSE;
     UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
     ULONG __unused oldval = READREG32_LE(hc->hc_RegBase, portreg);
+    BOOL cmdgood = FALSE;
 
     switch(val)
     {
         case UFS_PORT_ENABLE:
-            KPRINTF(10, ("Disabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "ok" : "already"));
+            KPRINTF(10, ("OHCI: Disabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "ok" : "already"));
             WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTDISABLE);
             cmdgood = TRUE;
             break;
 
         case UFS_PORT_SUSPEND:
-            KPRINTF(10, ("Resuming Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "ok" : "already"));
+            KPRINTF(10, ("OHCI: Resuming Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "ok" : "already"));
             //hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND; // manually fake suspend change
             WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_RESUME);
             cmdgood = TRUE;
             break;
 
         case UFS_PORT_POWER:
-            KPRINTF(10, ("Unpowering Port (%s)\n", oldval & OHPF_PORTPOWER ? "ok" : "already"));
+            KPRINTF(10, ("OHCI: Unpowering Port (%s)\n", oldval & OHPF_PORTPOWER ? "ok" : "already"));
             WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTUNPOWER);
             cmdgood = TRUE;
             break;
@@ -1827,7 +1813,7 @@ BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     return cmdgood;
 }
 
-BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx)
+BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval)
 {
     UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
@@ -1841,8 +1827,8 @@ BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     if(oldval & OHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
     if(oldval & OHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
-    KPRINTF(5, ("OHCI Port %ld (glob. %ld) is %s\n", hciport, idx, oldval & OHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
-    KPRINTF(5, ("OHCI Port %ld Status %08lx (%08lx)\n", idx, *mptr, oldval));
+    KPRINTF(5, ("OHCI: Port %ld (glob. %ld) is %s\n", hciport, idx, oldval & OHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
+    KPRINTF(5, ("OHCI: Port %ld Status %08lx (%08lx)\n", idx, *mptr, oldval));
 
     mptr++;
     if(oldval & OHPF_OVERCURRENTCHG)
@@ -1868,7 +1854,7 @@ BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
 
     *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
 
-    KPRINTF(5, ("OHCI Port %ld Change %08lx\n", idx, *mptr));
+    KPRINTF(5, ("OHCI: Port %ld Change %08lx\n", idx, *mptr));
 
     return TRUE;
 }
