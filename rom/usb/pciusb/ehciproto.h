@@ -21,9 +21,9 @@ static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
 static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
 static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 
-BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval);
-BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval);
-BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval);
+BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
+BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
+BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval);
 
 /* /// "ehciAllocQH()" */
 static inline struct EhciQH * ehciAllocQH(struct PCIController *hc)

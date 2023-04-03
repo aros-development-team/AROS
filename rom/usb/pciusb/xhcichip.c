@@ -53,12 +53,15 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
 }
 
-BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
+BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
     BOOL cmdgood = FALSE;
     UWORD portreg;
     ULONG oldval;
     ULONG newval;
+
+    KPRINTF(5, ("XHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
+
     switch(val)
     {
         case UFS_PORT_ENABLE:
@@ -87,9 +90,12 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     return cmdgood;
 }
 
-BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
+BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
     BOOL cmdgood = FALSE;
+
+    KPRINTF(5, ("XHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
+
     switch(val)
     {
         case UFS_PORT_ENABLE:
@@ -128,12 +134,14 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     }
     if(cmdgood)
     {
-        KPRINTF(5, ("Port %ld CLEAR_FEATURE %08lx->%08lx\n", idx, val, val));
+        KPRINTF(5, ("XHCI: Port %ld CLEAR_FEATURE %08lx->%08lx\n", idx, val, val));
     }
     return cmdgood;
 }
 
-BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval)
+BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval)
 {
+    KPRINTF(5, ("XHCI: %s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval));
+
     return FALSE;
 }

@@ -1247,8 +1247,6 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
 
 BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
-    struct PCIDevice *hd = hu->hu_Device;
-
     struct EhciQH *eqh;
     struct EhciQH *predeqh;
     struct EhciTD *etd;
@@ -1629,7 +1627,7 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu) {
     KPRINTF(20, ("Shutting down EHCI done.\n"));
 }
 
-BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
+BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
     struct PCIController *chc = unit->hu_PortMap11[idx - 1];
     UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
@@ -1637,6 +1635,8 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     ULONG newval = oldval;
     ULONG cnt;
     BOOL cmdgood = FALSE;
+
+    KPRINTF(5, ("EHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
 
     switch(val)
     {
@@ -1684,10 +1684,8 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                 {
                     KPRINTF(20, ("EHCI: No companion controller - can't transfer ownership!\n"));
                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-#if (1)
                     *retval = UHIOERR_HOSTERROR;
                     return TRUE;
-#endif
                 }
                 switch(chc->hc_HCIType)
                 {
@@ -1765,10 +1763,8 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                             KPRINTF(10, ("EHCI: UHCI Enabled after %ld ticks\n", 100-cnt));
                         } else {
                             KPRINTF(20, ("EHCI: UHCI Port refuses to be enabled!\n"));
-#if (1)
                             *retval = UHIOERR_HOSTERROR;
                             return TRUE;
-#endif
                         }
                         break;
                     }
@@ -1806,9 +1802,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                 }
                 // make enumeration possible
                 unit->hu_DevControllers[0] = chc;
-#if (1)
                 return  TRUE;
-#endif
             } else {
                 newval &= ~EHPF_PORTRESET;
                 WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
@@ -1825,10 +1819,8 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                     KPRINTF(10, ("EHCI: Enabled after %ld ticks\n", 100-cnt));
                 } else {
                     KPRINTF(20, ("EHCI: Port refuses to be enabled!\n"));
-#if (1)
                     *retval = UHIOERR_HOSTERROR;
                     return TRUE;
-#endif
                 }
                 // make enumeration possible
                 unit->hu_DevControllers[0] = hc;
@@ -1857,12 +1849,14 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     return cmdgood;
 }
 
-BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
+BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
     UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE); // these are clear-on-write!
     ULONG newval = oldval;
     BOOL cmdgood = FALSE;
+
+    KPRINTF(5, ("EHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
 
     switch(val)
     {
@@ -1928,10 +1922,12 @@ BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     return cmdgood;
 }
 
-BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval)
+BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval)
 {
     UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
+
+    KPRINTF(5, ("EHCI: %s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval));
 
     *mptr = 0;
     if(oldval & EHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);

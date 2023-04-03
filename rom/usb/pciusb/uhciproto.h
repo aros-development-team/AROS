@@ -20,9 +20,9 @@ static inline void uhciFreeQH(struct PCIController *hc, struct UhciQH *uqh);
 static inline struct UhciTD * uhciAllocTD(struct PCIController *hc);
 static inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd);
 
-BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval);
-BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval);
-BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval);
+BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
+BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
+BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval);
 
 /* /// "uhciAllocQH()" */
 static inline struct UhciQH * uhciAllocQH(struct PCIController *hc)

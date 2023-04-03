@@ -76,7 +76,7 @@ static void ohciFreeTDChain(struct PCIController *hc, struct OhciTD *nextotd)
 
     while (nextotd)
     {
-        KPRINTF(1, ("FreeTD %p\n", nextotd));
+        KPRINTF(1, ("OHCI: FreeTD %p\n", nextotd));
         otd = nextotd;
         nextotd = (struct OhciTD *) otd->otd_Succ;
         ohciFreeTD(hc, otd);
@@ -90,7 +90,7 @@ static void ohciFreeEDContext(struct PCIController *hc, struct IOUsbHWReq *ioreq
     UWORD devadrep;
     UWORD dir;
 
-    KPRINTF(5, ("Freeing EDContext 0x%p IOReq 0x%p\n", oed, ioreq));
+    KPRINTF(5, ("OHCI: Freeing EDContext 0x%p IOReq 0x%p\n", oed, ioreq));
 
     if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
         dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
@@ -146,18 +146,18 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
     ULONG donehead, nexttd;
     BOOL retire;
 
-    KPRINTF(1, ("Checking for work done...\n"));
+    KPRINTF(1, ("OHCI: Checking for work done...\n"));
     Disable();
     donehead = hc->hc_OhciDoneQueue;
     hc->hc_OhciDoneQueue = 0UL;
     Enable();
     if(!donehead)
     {
-        KPRINTF(1, ("Nothing to do!\n"));
+        KPRINTF(1, ("OHCI: Nothing to do!\n"));
         return;
     }
     otd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
-    KPRINTF(10, ("DoneHead=%08lx, OTD=%p, Frame=%ld\n", donehead, otd, READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
+    KPRINTF(10, ("OHCI: DoneHead=%08lx, OTD=%p, Frame=%ld\n", donehead, otd, READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
     PrintTD("Done", donehead, hc); /* CHECKME: This can give inconsistent printout on cache-incoherent hardware */
     do
     {
@@ -170,7 +170,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
              * If you see this, there's definitely a bug in DoneQueue processing flow.
              * See below for the complete description.
              */
-            KPRINTF(1000, ("Came across a rogue TD 0x%p that already has been freed!\n", otd));
+            KPRINTF(1000, ("OHCI: Came across a rogue TD 0x%p that already has been freed!\n", otd));
             nexttd = READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK;
             if(!nexttd)
             {
@@ -181,7 +181,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         }
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_InvalidateD);
         ctrlstatus = READMEM32_LE(&otd->otd_Ctrl);
-        KPRINTF(1, ("TD: %08lx - %08lx\n", READMEM32_LE(&otd->otd_BufferPtr),
+        KPRINTF(1, ("OHCI: TD: %08lx - %08lx\n", READMEM32_LE(&otd->otd_BufferPtr),
                         READMEM32_LE(&otd->otd_BufferEnd)));
         if(otd->otd_BufferPtr)
         {
@@ -193,11 +193,11 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
 
         ioreq = oed->oed_IOReq;
 
-        KPRINTF(1, ("Examining TD %p for ED %p (IOReq=%p), Status %08lx, len=%ld\n", otd, oed, ioreq, ctrlstatus, len));
+        KPRINTF(1, ("OHCI: Examining TD %p for ED %p (IOReq=%p), Status %08lx, len=%ld\n", otd, oed, ioreq, ctrlstatus, len));
         if(!ioreq)
         {
             /* You should never see this (very weird inconsistency), but who knows... */
-            KPRINTF(1000, ("Came across a rogue ED 0x%p that already has been replied! TD 0x%p,\n", oed, otd));
+            KPRINTF(1000, ("OHCI: Came across a rogue ED 0x%p that already has been replied! TD 0x%p,\n", oed, otd));
             nexttd = READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK;
             if(!nexttd)
             {
@@ -242,7 +242,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         retire = FALSE;
         if((ctrlstatus & OTCM_DELAYINT) != OTCF_NOINT)
         {
-            KPRINTF(10, ("TD 0x%p Terminator detected\n", otd));
+            KPRINTF(10, ("OHCI: TD 0x%p Terminator detected\n", otd));
             retire = TRUE;
         }
         switch((ctrlstatus & OTCM_COMPLETIONCODE)>>OTCS_COMPLETIONCODE)
@@ -251,7 +251,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 break;
 
             case (OTCF_CC_CRCERROR>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("CRC Error!\n"));
+                KPRINTF(200, ("OHCI: CRC Error!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
                 /*
                  * CHECKME: Do we really need to set retire flag here?
@@ -264,47 +264,47 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 break;
 
             case (OTCF_CC_BABBLE>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("Babble/Bitstuffing Error!\n"));
+                KPRINTF(200, ("OHCI: Babble/Bitstuffing Error!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
                 retire = TRUE;
                 break;
 
             case (OTCF_CC_WRONGTOGGLE>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("Data toggle mismatch length = %ld\n", len));
+                KPRINTF(200, ("OHCI: Data toggle mismatch length = %ld\n", len));
                 break;
 
             case (OTCF_CC_STALL>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("STALLED!\n"));
+                KPRINTF(200, ("OHCI: STALLED!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_STALL;
                 retire = TRUE;
                 break;
 
             case (OTCF_CC_TIMEOUT>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("TIMEOUT!\n"));
+                KPRINTF(200, ("OHCI: TIMEOUT!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                 retire = TRUE;
                 break;
 
             case (OTCF_CC_PIDCORRUPT>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("PID Error!\n"));
+                KPRINTF(200, ("OHCI: PID Error!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
                 retire = TRUE;
                 break;
 
             case (OTCF_CC_WRONGPID>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("Illegal PID!\n"));
+                KPRINTF(200, ("OHCI: Illegal PID!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
                 retire = TRUE;
                 break;
 
             case (OTCF_CC_OVERFLOW>>OTCS_COMPLETIONCODE):
-                KPRINTF(200, ("Overflow Error!\n"));
+                KPRINTF(200, ("OHCI: Overflow Error!\n"));
                 ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
                 retire = TRUE;
                 break;
 
             case (OTCF_CC_SHORTPKT>>OTCS_COMPLETIONCODE):
-                KPRINTF(10, ("Short packet %ld < %ld\n", len, otd->otd_Length));
+                KPRINTF(10, ("OHCI: Short packet %ld < %ld\n", len, otd->otd_Length));
                 if((!ioreq->iouh_Req.io_Error) && (!(ioreq->iouh_Flags & UHFF_ALLOWRUNTPKTS)))
                 {
                     ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
@@ -1684,13 +1684,13 @@ void ohciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
 /* ** Root hub support functions ** */
 
-BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
+BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
     UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
     BOOL cmdgood = FALSE;
 
-    KPRINTF(10, ("%s(0x%p, 0x%p, %08x, %08x, %08x)\n", __func__, unit, hc, hciport, idx, val));
+    KPRINTF(5, ("OHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
 
     switch(val)
     {
@@ -1753,11 +1753,13 @@ BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     return cmdgood;
 }
 
-BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, UWORD *retval)
+BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
     UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
     ULONG __unused oldval = READREG32_LE(hc->hc_RegBase, portreg);
     BOOL cmdgood = FALSE;
+
+    KPRINTF(5, ("OHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
 
     switch(val)
     {
@@ -1813,10 +1815,12 @@ BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     return cmdgood;
 }
 
-BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, UWORD *retval)
+BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval)
 {
     UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
+
+    KPRINTF(5, ("OHCI: %s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval));
 
     *mptr = 0;
     if(oldval & OHPF_PORTPOWER) *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
