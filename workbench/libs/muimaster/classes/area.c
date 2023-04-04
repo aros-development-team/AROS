@@ -451,7 +451,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* Please also send mui key events to us, no idea if mui handles this
      * like this */
-    data->mad_ehn.ehn_Flags = MUI_EHF_ALWAYSKEYS;
+    data->mad_ehn.ehn_Flags = MUI_EHF_ALWAYSKEYS | MUI_EHF_GUIMODE;
     data->mad_ehn.ehn_Object = obj;
     data->mad_ehn.ehn_Class = cl;
 
@@ -717,12 +717,12 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 data->mad_Flags &= ~MADF_SELECTED;
                 MUI_Redraw(obj, MADF_DRAWOBJECT);
             }
-#if 0 // CHECKME: What's the purpose of this? What superclass will care?
             else
             {
+                /* Attribute value not changed, don't fire notification */
                 tag->ti_Tag = TAG_IGNORE;
             }
-#endif
+
             break;
 
         case MUIA_Timer:
@@ -1967,7 +1967,7 @@ static IPTR event_button(Class *cl, Object *obj,
         if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
         {
             handle_release(cl, obj, FALSE /* cancel */ );
-            return MUI_EventHandlerRC_Eat;
+            return 0;
         }
         break;
 

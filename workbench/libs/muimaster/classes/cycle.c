@@ -196,11 +196,16 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     l = data->entries_num - 1;
             }
 
-            if (l >= 0 && l < data->entries_num)
+            if (l >= 0 && l < data->entries_num && l != data->entries_active)
             {
                 data->entries_active = l;
                 set(data->pageobj, MUIA_Group_ActivePage,
                     data->entries_active);
+            }
+            else
+            {
+                /* Attribute value not changed, don't fire notification */
+                tag->ti_Tag = TAG_IGNORE;
             }
             break;
 
@@ -261,7 +266,7 @@ IPTR Cycle__MUIM_Setup(struct IClass *cl, Object *obj,
 
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 1;
-    data->ehn.ehn_Flags = 0;
+    data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
     data->ehn.ehn_Object = obj;
     data->ehn.ehn_Class = cl;
 

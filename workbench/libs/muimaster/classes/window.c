@@ -1922,10 +1922,13 @@ static ULONG InvokeEventHandler(struct MUI_EventHandlerNode *ehn,
 {
     ULONG res;
 
-    if (!(_flags(ehn->ehn_Object) & MADF_CANDRAW))
-        return 0;
-    if (!(_flags(ehn->ehn_Object) & MADF_SHOWME))
-        return 0;
+    if (ehn->ehn_Flags & MUI_EHF_GUIMODE)
+    {
+        if (!(_flags(ehn->ehn_Object) & MADF_CANDRAW))
+            return 0;
+        if (!(_flags(ehn->ehn_Object) & MADF_SHOWME))
+            return 0;
+    }
 
     if (event != NULL
         && event->Class == IDCMP_MOUSEBUTTONS

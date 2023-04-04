@@ -1144,7 +1144,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
-    data->ehn.ehn_Flags = 0;
+    data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
     data->ehn.ehn_Object = obj;
     data->ehn.ehn_Class = cl;
 
