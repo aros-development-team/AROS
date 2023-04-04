@@ -77,8 +77,8 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
     { (5<<24)|(MS_PROTO_CB  <<16)                          |MASSSTORE_CLASSCODE, "MassStorage (CB)" },
     { (1<<24)                                              |MASSSTORE_CLASSCODE, "MassStorage" },
 
-    { (7<<24)|(1<<16)|(0<<8)            |HUB_CLASSCODE      , "Hub (2.0 Single TT)" },
-    { (7<<24)|(2<<16)|(0<<8)            |HUB_CLASSCODE      , "Hub (2.0 Multi TT)" },
+    { (7<<24)|(1<<16)|(0<<8)            |HUB_CLASSCODE      , "Hub (Hi-speed, Single TT)" },
+    { (7<<24)|(2<<16)|(0<<8)            |HUB_CLASSCODE      , "Hub (Hi-speed, Multi TT)" },
     { (1<<24)                           |HUB_CLASSCODE      , "Hub" },
 
     { (1<<24)                           |SMARTCARD_CLASSCODE, "Chip-/Smartcard" },
