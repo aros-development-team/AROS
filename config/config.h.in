@@ -32,7 +32,7 @@
 /* DEBUG options                                                        */
 
 // use atomic's to lock access when outputting debug
-#if defined(__AROSEXEC_SMP__) || defined(__AROSPLATFORM_SMP__)
+#if defined(__AROSEXEC_SMP__)
 #define DEBUG_USEATOMIC
 #endif
 

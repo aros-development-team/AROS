@@ -920,7 +920,7 @@ diff -ruN gcc-6.5.0/gcc/config.gcc gcc-6.5.0.aros/gcc/config.gcc
    esac
    ;;
 +*-*-aros*)
-+  tm_file="${tm_file} aros-stdint.h"
++  aros_tm_file="aros-stdint.h"
 +  gas=yes
 +  gnu_ld=yes
 +  thread_file=posix
@@ -937,7 +937,7 @@ diff -ruN gcc-6.5.0/gcc/config.gcc gcc-6.5.0.aros/gcc/config.gcc
  
  case ${target} in
 +aarch64*-*-aros*)
-+	tm_file="${tm_file} dbxelf.h elfos.h aarch64/aarch64-elf.h aros.h aarch64/aros.h"
++	tm_file="${tm_file} ${aros_tm_file} dbxelf.h elfos.h aarch64/aarch64-elf.h aros.h aarch64/aros.h"
 +	tmake_file="${tmake_file} aarch64/t-aarch64 aarch64/t-aros t-aros"
 +	xm_file="xm-aros.h"
 +	case $target in
@@ -954,7 +954,7 @@ diff -ruN gcc-6.5.0/gcc/config.gcc gcc-6.5.0.aros/gcc/config.gcc
  	tmake_file="${tmake_file} alpha/t-vms"
  	;;
 +arm*-*-aros*)
-+	tm_file="dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
++	tm_file="${aros_tm_file} dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
 +	tm_file="$tm_file ../../libgcc/config/arm/bpabi-lib.h"
 +	tmake_file="${tmake_file} arm/t-arm arm/t-arm-elf arm/t-arm-softfp arm/t-bpabi arm/t-aros t-aros"
 +	xm_file="xm-aros.h"
@@ -976,12 +976,12 @@ diff -ruN gcc-6.5.0/gcc/config.gcc gcc-6.5.0.aros/gcc/config.gcc
  	TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's/^,//'`
  	;;
 +i[34567]86-*-aros*)
-+	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h i386/aros.h"
++	tm_file="${tm_file} ${aros_tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h i386/aros.h"
 +	xm_file=xm-aros.h
 +	tmake_file="${tmake_file} i386/t-i386elf t-aros"
 +	;;	
 +x86_64-*-aros*)
-+	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h i386/x86-64.h aros.h i386/aros64.h"
++	tm_file="${tm_file} ${aros_tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h i386/x86-64.h aros.h i386/aros64.h"
 +	tmake_file="${tmake_file} i386/t-i386elf t-aros"
 +	xm_file=xm-aros.h
 +	;;
@@ -995,7 +995,7 @@ diff -ruN gcc-6.5.0/gcc/config.gcc gcc-6.5.0.aros/gcc/config.gcc
 +m68k-*-aros*)
 +	default_m68k_cpu=68000
 +	default_cf_cpu=5206
-+	tm_file="${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h m68k/m68kemb.h m68k/m68020-elf.h"
++	tm_file="${tm_file} ${aros_tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h m68k/m68kemb.h m68k/m68020-elf.h"
 +	tm_file="${tm_file} aros.h"
 +	tm_defines="${tm_defines} MOTOROLA=1"
 +	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
@@ -1010,7 +1010,7 @@ diff -ruN gcc-6.5.0/gcc/config.gcc gcc-6.5.0.aros/gcc/config.gcc
  	tmake_file="${tmake_file} rs6000/t-fprules rs6000/t-rtems rs6000/t-ppccomm"
  	;;
 +powerpc-*-aros*)
-+ 	tm_file="${tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h"
++ 	tm_file="${tm_file} ${aros_tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h"
 + 	extra_options="${extra_options} rs6000/sysv4.opt"
 + 	tm_file="${tm_file} rs6000/aros.h"
 + 	xm_file=xm-aros.h

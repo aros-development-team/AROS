@@ -454,7 +454,13 @@ static ACPI_STATUS ACPIHostBridgeCallbackA(ACPI_HANDLE handle, ULONG nesting_lev
 
             if (!found)
             {
+#if 0
                 FindIRQRouting(psd, hbNode, handle, (hbInfo->Address >> 20) & 0xff);
+#else
+                /* Always start explicitly with bus 0. My test machine give hbInfo->Address = 00180000 which gives
+                    bus 1 which is not true */
+                FindIRQRouting(psd, hbNode, handle, 0);
+#endif
 
                 Enqueue((struct List *)return_value, &hbNode->ahb_Node);
             }
