@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Exec utility functions.
 */
@@ -192,7 +192,7 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_LOCK(&IntETask(parentEtask)->iet_TaskLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-        AddHead(&parentEtask->et_Children, et);
+        AddHead((struct List *)&parentEtask->et_Children, (struct Node *)et);
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(&IntETask(parentEtask)->iet_TaskLock);
 #endif
