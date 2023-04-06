@@ -3004,16 +3004,21 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                 pd->pd_DevVers = AROS_WORD2LE(usdd.bcdDevice);
                 vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
-                // patch to early determine highspeed roothubs
-                if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x200) && (pd->pd_USBVers < 0x300)) {
+                // Hub is atleast highspeed is the USB version is > 2.0 and proto > 0
+                if ((!pd->pd_Hub) &&
+                    (pd->pd_USBVers >= 0x200) &&
+                    (pd->pd_DevProto > 0))
+                {
+                    pd->pd_Flags &= ~PDFF_LOWSPEED;
                     pd->pd_Flags |= PDFF_HIGHSPEED;
                 }
-
 #ifdef AROS_USB30_CODE
+#if (0)
                 if(((!pd->pd_Hub) && pd->pd_USBVers >= 0x300)) {
+                    pd->pd_Flags &= ~(PDFF_LOWSPEED|PDFF_HIGHSPEED);
                     pd->pd_Flags |= PDFF_SUPERSPEED;
                 }
-
+#endif
                 /*
                     The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called the Binary Device Object Store (BOS)
                     for a USB device, which reports a bcdUSB value greater than 0x0200 in their device descriptor
@@ -9333,9 +9338,7 @@ static const ULONG PsdDevicePT[] =
     PACK_WORDBIT(DA_Dummy, DA_HasAppBinding, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_APPBINDING),
     PACK_WORDBIT(DA_Dummy, DA_NeedsSplitTrans, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_NEEDSSPLIT),
     PACK_WORDBIT(DA_Dummy, DA_LowPower, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_LOWPOWER),
-#ifdef AROS_USB30_CODE
     PACK_WORDBIT(DA_Dummy, DA_IsSuperspeed, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_SUPERSPEED),
-#endif
     PACK_ENDTABLE
 };
 
