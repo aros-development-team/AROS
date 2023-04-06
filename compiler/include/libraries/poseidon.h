@@ -14,7 +14,7 @@
 |__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
                  _____
                 |" __ \  Poseidon -- The divine USB stack for Amiga computers
-                | (__) ) Version: 4.3 (30.05.09)
+                | (__) ) Version: 4.4 (06.04.23)
                 |  __ (  Designed and written by
                 |"(__) )   Chris Hodges <chrisly@platon42.de>
                 |_____/  Copyright ©2002-2009 Chris Hodges. All rights reserved.
@@ -373,68 +373,8 @@
 #define IFFCHNK_INSERTSND  MAKE_ID('I','N','S','F')
 #define IFFCHNK_REMOVESND  MAKE_ID('R','M','S','F')
 
-/* Private stuff starts here */
-
-#if defined(__GNUC__)
-# pragma pack(2)
-#endif
-
-/* GCA_PopupDeviceNew definitions */
-
-#define PGCP_NEVER      0 /* never open a pop-up window */
-#define PGCP_ERROR      1 /* popup, on error condition (e.g. low power) */
-#define PGCP_ISNEW      2 /* popup, if this is the first time the device is connected */
-#define PGCP_NOBINDING  3 /* popup, if there is no binding */
-#define PGCP_ASKCONFIG  4 /* popup and ask to configure, if not existent */
-#define PGCP_CANCONFIG  5 /* popup and ask to configure, if possible */
-#define PGCP_HASBINDING 6 /* popup, if there is a binding to a class */
-#define PGCP_ALWAYS     7 /* popup always */
-
-struct PsdGlobalCfg
-{
-    ULONG pgc_ChunkID;                    /* ChunkID=IFFCHNK_GLOBALCFG */
-    ULONG pgc_Length;                     /* sizeof(struct PsdGlobalCfg)-8 */
-    BOOL  pgc_LogInfo;                    /* Log normal messages */
-    BOOL  pgc_LogWarning;                 /* Log warnings */
-    BOOL  pgc_LogError;                   /* Log errors */
-    BOOL  pgc_LogFailure;                 /* Log failures */
-    ULONG pgc_BootDelay;                  /* boot delay */
-    WORD  pgc_SubTaskPri;                 /* Subtask priority */
-    UWORD pgc_PopupDeviceNew;             /* New device popup */
-    BOOL  pgc_PopupDeviceGone;            /* Device removed popup */
-    BOOL  pgc_PopupDeviceDeath;           /* Device dead popup */
-    ULONG pgc_PopupCloseDelay;            /* Delay in seconds before closing */
-    BOOL  pgc_PopupActivateWin;           /* Activate window on opening */
-    BOOL  pgc_PopupWinToFront;            /* Pop window to front on content change */
-    BOOL  pgc_AutoDisableLP;              /* Automatically disable on LowPower */
-    BOOL  pgc_AutoDisableDead;            /* Automatically disable on Dead */
-    BOOL  pgc_AutoRestartDead;            /* Automatically restart on Dead */
-    ULONG pgc_PrefsVersion;               /* Reference version of prefs saved */
-    BOOL  pgc_PowerSaving;                /* Enable power saving features */
-    BOOL  pgc_ForceSuspend;               /* Force Suspend on classes not supporting it, but with remote wakeup */
-    ULONG pgc_SuspendTimeout;             /* Timeout when to suspend a device after inactivity */
-};
-
-/* DA_OverridePowerInfo definitions */
-#define POCP_TRUST_DEVICE 0
-#define POCP_BUS_POWERED  1
-#define POCP_SELF_POWERED 2
-
-struct PsdPoPoCfg
-{
-    ULONG poc_ChunkID;                    /* ChunkID=IFFCHNK_POPO */
-    ULONG poc_Length;                     /* sizeof(struct PsdPopoCfg)-8 */
-    BOOL  poc_InhibitPopup;               /* Inhibit opening of popup window */
-    BOOL  poc_NoClassBind;                /* Inhibit class scan */
-    UWORD poc_OverridePowerInfo;          /* 0=keep, 1=buspowered, 2=selfpowered */
-};
-
-#if defined(__GNUC__)
-# pragma pack()
-#endif
-
-/* The library node - private
-*/
+/* Public definitions to Private interfaces */
+#if !defined(_LIBRARIES_POSEIDON_H)
 struct PsdBase
 {
     struct Library      ps_Library;       /* standard */
@@ -514,5 +454,64 @@ struct PsdRTIsoHandler
 {
     struct Node         prt_Node;         /* Node linkage */
 };
+#endif /* !_LIBRARIES_POSEIDON_H */
+
+#if defined(__GNUC__)
+# pragma pack(2)
+#endif
+
+/* GCA_PopupDeviceNew definitions */
+
+#define PGCP_NEVER      0 /* never open a pop-up window */
+#define PGCP_ERROR      1 /* popup, on error condition (e.g. low power) */
+#define PGCP_ISNEW      2 /* popup, if this is the first time the device is connected */
+#define PGCP_NOBINDING  3 /* popup, if there is no binding */
+#define PGCP_ASKCONFIG  4 /* popup and ask to configure, if not existent */
+#define PGCP_CANCONFIG  5 /* popup and ask to configure, if possible */
+#define PGCP_HASBINDING 6 /* popup, if there is a binding to a class */
+#define PGCP_ALWAYS     7 /* popup always */
+
+struct PsdGlobalCfg
+{
+    ULONG pgc_ChunkID;                    /* ChunkID=IFFCHNK_GLOBALCFG */
+    ULONG pgc_Length;                     /* sizeof(struct PsdGlobalCfg)-8 */
+    BOOL  pgc_LogInfo;                    /* Log normal messages */
+    BOOL  pgc_LogWarning;                 /* Log warnings */
+    BOOL  pgc_LogError;                   /* Log errors */
+    BOOL  pgc_LogFailure;                 /* Log failures */
+    ULONG pgc_BootDelay;                  /* boot delay */
+    WORD  pgc_SubTaskPri;                 /* Subtask priority */
+    UWORD pgc_PopupDeviceNew;             /* New device popup */
+    BOOL  pgc_PopupDeviceGone;            /* Device removed popup */
+    BOOL  pgc_PopupDeviceDeath;           /* Device dead popup */
+    ULONG pgc_PopupCloseDelay;            /* Delay in seconds before closing */
+    BOOL  pgc_PopupActivateWin;           /* Activate window on opening */
+    BOOL  pgc_PopupWinToFront;            /* Pop window to front on content change */
+    BOOL  pgc_AutoDisableLP;              /* Automatically disable on LowPower */
+    BOOL  pgc_AutoDisableDead;            /* Automatically disable on Dead */
+    BOOL  pgc_AutoRestartDead;            /* Automatically restart on Dead */
+    ULONG pgc_PrefsVersion;               /* Reference version of prefs saved */
+    BOOL  pgc_PowerSaving;                /* Enable power saving features */
+    BOOL  pgc_ForceSuspend;               /* Force Suspend on classes not supporting it, but with remote wakeup */
+    ULONG pgc_SuspendTimeout;             /* Timeout when to suspend a device after inactivity */
+};
+
+/* DA_OverridePowerInfo definitions */
+#define POCP_TRUST_DEVICE 0
+#define POCP_BUS_POWERED  1
+#define POCP_SELF_POWERED 2
+
+struct PsdPoPoCfg
+{
+    ULONG poc_ChunkID;                    /* ChunkID=IFFCHNK_POPO */
+    ULONG poc_Length;                     /* sizeof(struct PsdPopoCfg)-8 */
+    BOOL  poc_InhibitPopup;               /* Inhibit opening of popup window */
+    BOOL  poc_NoClassBind;                /* Inhibit class scan */
+    UWORD poc_OverridePowerInfo;          /* 0=keep, 1=buspowered, 2=selfpowered */
+};
+
+#if defined(__GNUC__)
+# pragma pack()
+#endif
 
 #endif /* LIBRARIES_POSEIDON_H */

@@ -1,7 +1,7 @@
 #ifndef DEVICES_USB_HUB_H
 #define DEVICES_USB_HUB_H
 /*
-**	$VER: usb_hub.h 3.0 (31.05.09)
+**	$VER: usb_hub.h 3.1 (06.04.23)
 **
 **	usb definitions include file
 **
@@ -105,16 +105,17 @@ struct UsbPortStatus
 };
 
 /* Flags for wPortStatus and wPortChange */
-#define UPSF_PORT_CONNECTION  0x0001
-#define UPSF_PORT_ENABLE      0x0002
-#define UPSF_PORT_SUSPEND     0x0004
-#define UPSF_PORT_OVER_CURRENT 0x0008
-#define UPSF_PORT_RESET       0x0010
-#define UPSF_PORT_POWER       0x0100
-#define UPSF_PORT_LOW_SPEED   0x0200
-#define UPSF_PORT_HIGH_SPEED  0x0400 /* USB 2.0 */
-#define UPSF_PORT_TEST_MODE   0x0800 /* USB 2.0 */
-#define UPSF_PORT_INDICATOR   0x1000 /* USB 2.0 */
+#define UPSF_PORT_CONNECTION        0x0001
+#define UPSF_PORT_ENABLE            0x0002
+#define UPSF_PORT_SUSPEND           0x0004
+#define UPSF_PORT_OVER_CURRENT      0x0008
+#define UPSF_PORT_RESET             0x0010
+#define UPSF_PORT_POWER             0x0100
+#define UPSF_PORT_LOW_SPEED         0x0200
+#define UPSF_PORT_HIGH_SPEED        0x0400 /* USB 2.0 */
+#define UPSF_PORT_TEST_MODE         0x0800 /* USB 2.0 */
+#define UPSF_PORT_INDICATOR         0x1000 /* USB 2.0 */
+#define UPSF_PORT_SUPER_SPEED       0x8000 /* USB 3.0 */
 
 #if defined(__GNUC__)
 # pragma pack()

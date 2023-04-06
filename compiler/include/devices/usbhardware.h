@@ -1,7 +1,7 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 2.4 (01.04.2023)
+**	$VER: usbhardware.h 2.5 (06.04.2023)
 **
 **	standard usb hardware device include file
 **
@@ -91,14 +91,10 @@ struct IOUsbHWBufferReq
 };
 
 /* Definitions for ubr_Flags */
-
 #define UBFB_CONTBUFFER    0  /* Set by InReqHook or OutReqHook to indicate that more buffer needs to be copied (scatter/gather) */
-
 #define UBFF_CONTBUFFER    (1<<UBFB_CONTBUFFER)
 
-
 /* non-standard commands */
-
 #define UHCMD_QUERYDEVICE   (CMD_NONSTD+0)
 #define UHCMD_USBRESET      (CMD_NONSTD+1)
 #define UHCMD_USBRESUME     (CMD_NONSTD+2)
@@ -114,7 +110,6 @@ struct IOUsbHWBufferReq
 #define UHCMD_STOPRTISO     (CMD_NONSTD+10)
 
 /* Error codes for io_Error field */
-
 #define UHIOERR_NO_ERROR      0   /* No error occured */
 #define UHIOERR_USBOFFLINE    1   /* USB non-operational */
 #define UHIOERR_NAK           2   /* NAK received */
@@ -131,41 +126,39 @@ struct IOUsbHWBufferReq
 #define UHIOERR_BABBLE       13   /* Babble condition */
 
 /* Values for iouh_Dir */
-
-#define UHDIR_SETUP      0  /* This is a setup transfer (UHCMD_CTRLXFER) */
-#define UHDIR_OUT        1  /* This is a host to device transfer */
-#define UHDIR_IN         2  /* This is a device to host transfer */
+#define UHDIR_SETUP             0  /* This is a setup transfer (UHCMD_CTRLXFER) */
+#define UHDIR_OUT               1  /* This is a host to device transfer */
+#define UHDIR_IN                2  /* This is a device to host transfer */
 
 /* Definitions for iouh_Flags */
-#define UHFB_LOWSPEED      0  /* Device operates at low speed */
-#define UHFB_HIGHSPEED     1  /* Device operates at high speed (USB 2.0) */
-#define UHFB_NOSHORTPKT    2  /* Inhibit sending of a short packet at the end of a transfer (if possible) */
-#define UHFB_NAKTIMEOUT    3  /* Allow the request to time-out after the given timeout value */
-#define UHFB_ALLOWRUNTPKTS 4  /* Receiving less data than expected will not cause an UHIOERR_RUNTPACKET */
-#define UHFB_SPLITTRANS    5  /* new for V2.0: Split transaction for Lowspeed/Fullspeed devices at USB2.0 hubs */
-#define UHFB_MULTI_1       6  /* new for V2.1: Number of transactions per microframe bit 0 */
-#define UHFB_MULTI_2       7  /* new for V2.1: Number of transactions per microframe bit 1 */
-#define UHFS_THINKTIME     8  /* new for V2.2: Bit times required at most for intertransaction gap on LS/FS */
-#ifdef AROS_USB30_CODE
-#   define UHFB_SUPERSPEED    9  /* Device operates at super speed (USB 3.0) */
-#endif
+#define UHFB_LOWSPEED           0  /* Device operates at low speed */
+#define UHFB_HIGHSPEED          1  /* Device operates at high speed (USB 2.0) */
+#define UHFB_NOSHORTPKT         2  /* Inhibit sending of a short packet at the end of a transfer (if possible)      */
+#define UHFB_NAKTIMEOUT         3  /* Allow the request to time-out after the given timeout value                   */
+#define UHFB_ALLOWRUNTPKTS      4  /* Receiving less data than expected will not cause an UHIOERR_RUNTPACKET        */
+#define UHFB_SPLITTRANS         5  /* new for V2.0: Split transaction for Lowspeed/Fullspeed devices at USB2.0 hubs */
+#define UHFB_MULTI_1            6  /* new for V2.1: Number of transactions per microframe bit 0                     */
+#define UHFB_MULTI_2            7  /* new for V2.1: Number of transactions per microframe bit 1                     */
+#define UHFS_THINKTIME          8  /* new for V2.2: Bit times required at most for intertransaction gap on LS/FS    */
 
-#define UHFF_LOWSPEED      (1<<UHFB_LOWSPEED)
-#define UHFF_HIGHSPEED     (1<<UHFB_HIGHSPEED)
-#define UHFF_NOSHORTPKT    (1<<UHFB_NOSHORTPKT)
-#define UHFF_NAKTIMEOUT    (1<<UHFB_NAKTIMEOUT)
-#define UHFF_ALLOWRUNTPKTS (1<<UHFB_ALLOWRUNTPKTS)
-#define UHFF_SPLITTRANS    (1<<UHFB_SPLITTRANS)
-#define UHFF_MULTI_1       (1<<UHFB_MULTI_1)
-#define UHFF_MULTI_2       (1<<UHFB_MULTI_2)
-#define UHFF_MULTI_3       ((1<<UHFB_MULTI_1)|(1<<UHFB_MULTI_2))
-#define UHFF_THINKTIME_8   (0<<UHFS_THINKTIME)
-#define UHFF_THINKTIME_16  (1<<UHFS_THINKTIME)
-#define UHFF_THINKTIME_24  (2<<UHFS_THINKTIME)
-#define UHFF_THINKTIME_32  (3<<UHFS_THINKTIME)
-#ifdef AROS_USB30_CODE
-#   define UHFB_SUPERSPEED    9  /* Device operates at super speed (USB 3.0) */
-#endif
+
+#define UHFB_SUPERSPEED         15 /* Device operates at super speed (USB 3.0)                                       */
+
+
+#define UHFF_LOWSPEED       (1<<UHFB_LOWSPEED)
+#define UHFF_HIGHSPEED      (1<<UHFB_HIGHSPEED)
+#define UHFF_NOSHORTPKT     (1<<UHFB_NOSHORTPKT)
+#define UHFF_NAKTIMEOUT     (1<<UHFB_NAKTIMEOUT)
+#define UHFF_ALLOWRUNTPKTS  (1<<UHFB_ALLOWRUNTPKTS)
+#define UHFF_SPLITTRANS     (1<<UHFB_SPLITTRANS)
+#define UHFF_MULTI_1        (1<<UHFB_MULTI_1)
+#define UHFF_MULTI_2        (1<<UHFB_MULTI_2)
+#define UHFF_MULTI_3        ((1<<UHFB_MULTI_1)|(1<<UHFB_MULTI_2))
+#define UHFF_THINKTIME_8    (0<<UHFS_THINKTIME)
+#define UHFF_THINKTIME_16   (1<<UHFS_THINKTIME)
+#define UHFF_THINKTIME_24   (2<<UHFS_THINKTIME)
+#define UHFF_THINKTIME_32   (3<<UHFS_THINKTIME)
+#define UHFF_SUPERSPEED     (1<<UHFB_SUPERSPEED)
 
 /* Tags for UHCMD_QUERYDEVICE */
 
