@@ -15,6 +15,7 @@
 #endif /* !__KERNEL_NOLIBBASE__ */
 
 #include <aros/debug.h>
+#include <aros/config.h>
 
 #include "acpica_intern.h"
 
