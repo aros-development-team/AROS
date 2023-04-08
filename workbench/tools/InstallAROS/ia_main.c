@@ -44,9 +44,6 @@
 
 struct ExpansionBase *ExpansionBase = NULL;
 
-char *boot_Device = NULL;
-ULONG boot_Unit = 0;
-
 char *source_Path = NULL;       /* full path to source "tree" */
 char *extras_source = NULL;
 
@@ -549,7 +546,7 @@ int main(int argc, char *argv[])
                                                 MUIA_InstallOption_ValueTag, MUIA_String_Contents,
                                                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                                                     MUIA_CycleChain, 1,
-                                                    MUIA_String_Contents, (IPTR) boot_Device,
+                                                    MUIA_String_Contents, "ahci.device",
                                                     MUIA_String_Reject, " \"\'*",
                                                     MUIA_Frame, MUIV_Frame_String,
                                                     MUIA_HorizWeight, 300,
@@ -579,6 +576,7 @@ int main(int argc, char *argv[])
                                                 MUIA_InstallOption_ValueTag, MUIA_String_Contents,
                                                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                                                     MUIA_CycleChain, 1,
+                                                    MUIA_String_Contents, SYS_PART_NAME,
                                                     MUIA_Disabled, TRUE,
                                                     MUIA_Frame, MUIV_Frame_String,
                                                 End),
