@@ -47,7 +47,7 @@ jobs:
   steps:
   - script: |
       if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != "" ]; then
-        export TARGETTOOLCHAINOPTS="--with-toolchain=$(arosbuild.toolchain.family)"
+        export TARGETTOOLCHAINOPTS="$TARGETTOOLCHAINOPTS --with-toolchain=$(arosbuild.toolchain.family)"
         export TARGETTOOLCHAIN="$(arosbuild.toolchain.family)"
       else
         export TARGETTOOLCHAIN="gnu"
@@ -69,6 +69,9 @@ jobs:
       CONFIGOPTS="$CONFIGOPTS $TOOLCHAINOPTS"
       if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
+      fi
+      if [ "$AROSBUILD_WITHUNITTESTS" != "" ]; then
+        export CONFIGOPTS="$CONFIGOPTS --enable-unit-tests=$(arosbuild.withunittests)"
       fi
       sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
       sudo apt-get update -y
