@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 CLASSFILES := webpclass
 
-##MM- workbench-datatypes-complete: workbench-datatypes-heic
+#MM- workbench-datatypes-complete: workbench-datatypes-heic
 #MM workbench-datatypes-heic : \
 #MM includes \
 #MM linklibs \
