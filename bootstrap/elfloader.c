@@ -72,6 +72,7 @@ static char *check_header(struct elfheader *eh)
  */
 static void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS_t **bss_tracker)
 {
+    elf_uintptr_t _adddr;
     uintptr_t align;
 
     /* empty chunk? Who cares :) */
@@ -100,7 +101,8 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
         (*bss_tracker)++;
     }
 
-    return (void *)((uintptr_t)(addr + sh->size));
+    _adddr = (elf_uintptr_t)(uintptr_t)addr;
+    return (void *)((uintptr_t)(_adddr + sh->size));
 }
 
 static void *copy_data(void *src, void *addr, uintptr_t len)
