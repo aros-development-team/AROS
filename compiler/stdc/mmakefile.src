@@ -366,6 +366,7 @@ STDC := \
     abort \
     abs labs llabs \
     asctime asctime_r \
+    asprintf \
     atexit \
     atof \
     atoi \
@@ -461,6 +462,7 @@ STDC := \
     strupr \
     strxfrm \
     time \
+    vasprintf \
     vsnprintf \
     vsprintf \
     vsscanf
@@ -585,6 +587,7 @@ STDC_STATIC := \
     __vcformat \
     __vcscan \
     abs labs llabs \
+    asprintf \
     atoi \
     atol \
     atoll \
@@ -633,6 +636,7 @@ STDC_STATIC := \
     strtof \
     strtol \
     strtoul \
+    vasprintf \
     vsnprintf \
     vsprintf \
     vsscanf
