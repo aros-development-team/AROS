@@ -3,6 +3,9 @@
 
     GNU extension asprintf().
 */
+
+#define _GNU_SOURCE
+
 #include <libraries/stdcio.h>
 
 #include <aros/debug.h>
@@ -11,7 +14,7 @@
 #endif
 
 #include "debug.h"
-#define _GNU_SOURCE
+
 /*****************************************************************************
 
     NAME */
