@@ -15,6 +15,7 @@
 #endif /* !__KERNEL_NOLIBBASE__ */
 
 #include <aros/debug.h>
+#include <aros/config.h>
 
 #include "acpica_intern.h"
 
@@ -72,6 +73,9 @@ MpSaveSerialInfo (
 }
 #endif
 
+BOOL __aros_setoffsettable(char *base);
+char *__aros_getoffsettable(void);
+
 static AROS_INTH1(ACPICAResetHandler, struct ACPICABase *, ACPICABase)
 {
     AROS_INTFUNC_INIT
@@ -86,7 +90,12 @@ static AROS_INTH1(ACPICAResetHandler, struct ACPICABase *, ACPICABase)
     }            
     else
     {
+        /* Install libbase into storage so that __aros_getbase_ACPICABase works on all architectures */
+        APTR ptr = __aros_getoffsettable();
+        __aros_setoffsettable((char *)ACPICABase);
         status = AcpiTerminate();
+        __aros_setoffsettable(ptr);
+
         if (ACPI_SUCCESS(status))
         {
             D(bug("[ACPI] %s: ACPI subsystem shutdown complete\n", __func__);)
@@ -841,6 +850,9 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
 {
     ACPI_STATUS err;
     const UINT8 initlevel = ACPI_FULL_INITIALIZATION;
+
+    /* Install libbase into storage so that __aros_getbase_ACPICABase works on all architectures */
+    __aros_setoffsettable((char *)ACPICABase);
 
     D(bug("[ACPI] %s: Starting Full initialization...\n", __func__);)
 

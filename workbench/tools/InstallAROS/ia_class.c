@@ -49,8 +49,8 @@ extern char *extras_source;
 extern char *dest_Path;         /* DOS DEVICE NAME of part used to store "aros" */
 extern char *work_Path;         /* DOS DEVICE NAME of part used to store "work" */
 
-extern char *boot_Device;
-extern ULONG boot_Unit;
+char *boot_Device = NULL;
+ULONG boot_Unit = 0;
 
 extern Object *optObjCheckCopyToWork;
 extern Object *optObjCheckWork;

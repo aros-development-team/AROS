@@ -187,15 +187,23 @@
 
 #if __WORDSIZE > 32
     /*
-     * EXPERIMENTAL: Fix up BufMemType on 64 bits.
-     * Many software set Mask to 0x7FFFFFFF, assuming 31-bit memory, with BufMemType = PUBLIC.
-     * This is perfectly true on 32-bit architectures, where addresses from 0x80000000 and up
-     * belong to MMIO, however on 64 bits we might have memory beyond this address.
-     * And AllocMem(MEMF_PUBLIC) would prefer to return that memory. This might screw up
-     * filesystems expecting AllocMem() to return memory fully corresponding to the mask.
+     * Fix up BufMemType on 64 bits.
+     *
+     * Many software, users and existing RDB partitions set Mask to 0x7FFFFFFE with
+     * BufMemType = PUBLIC assuming 31-bit memory. This is perfectly true on 32-bit
+     * architectures, where addresses from 0x80000000 and up belong to MMIO, however
+     * on 64 bits we might have memory beyond this address.
+     * Looking at SFS and PFS there seems to be an implicit relation that
+     *
+     * (max. addr. of type de_BufMemType) must be lesser than (de_Mask)
+     *
+     * There are only 3 ways to limit max. addr of memory returned: MEMF_24BITDMA (16MB),
+     * MEMF_31BIT (2GB) and MEMF_PUBLIC (2^64). This means de_BufMemType needs to be
+     * limited to MEMF_31BIT for most of de_Masks on 64 bits AROS.
      */
-    if ((de->de_TableSize >= DE_MASK) && (!(de->de_Mask & 0x7FFFFFFF)))
-        de->de_BufMemType |= MEMF_31BIT;
+    if ((de->de_TableSize >= DE_MASK) && (de->de_Mask < 0xFFFFFFFFFFFFFFFE))
+        if (!(de->de_BufMemType & MEMF_24BITDMA))
+            de->de_BufMemType |= MEMF_31BIT;
 #endif
 
     return dn;

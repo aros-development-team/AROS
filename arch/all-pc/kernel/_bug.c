@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -25,7 +25,9 @@ extern UQUAD Kernel_64_KrnTimeStamp(struct KernelBase *);
 
 /*
  * This is pc arch specific version of KrnBug(), to be called directly by the kernel bug() macro.
-  */
+ * Note: In early stages of kernel startup, kernelBase will be NULL. Code needs to work with such
+ * assumption
+ */
 int krnBug(const char *format, va_list args, APTR kernelBase)
 {
     int retval = 0;
@@ -43,18 +45,17 @@ int krnBug(const char *format, va_list args, APTR kernelBase)
         {
             struct Task         *debugTask = NULL;
             struct PlatformData *kernPlatD;
-            UQUAD               debugStamp;
-            unsigned int        debugCPU;
+            UQUAD               debugStamp = 0L;
+            unsigned int        debugCPU = 0;
 
-            debugStamp = Kernel_64_KrnTimeStamp(kernelBase);
+            if (kernelBase != NULL)
+                debugStamp = Kernel_64_KrnTimeStamp(kernelBase);
             if (SysBase != NULL)
                 debugTask = FindTask(NULL);
-            if ((kernelBase) &&
+            if ((kernelBase != NULL) &&
                 ((kernPlatD = (struct PlatformData *)(((struct KernelBase *)kernelBase)->kb_PlatformData)) != NULL) &&
                 (kernPlatD->kb_APIC))
                 debugCPU = core_APIC_GetNumber(kernPlatD->kb_APIC);
-            else
-                debugCPU = 0;
 
             retval = snprintf(__KernBootPrivate->debug_buffer, __KernBootPrivate->debug_buffsize,
                                      "%08x%08x 0x%p | %03u | ",
@@ -80,16 +81,23 @@ int krnBug(const char *format, va_list args, APTR kernelBase)
     return retval;
 }
 
+extern BOOL IsKernelBaseReady(struct ExecBase *SysBase);
+
 /*
  * This is yet another character stuffing callback for debug output. This one unifies the output
  * with debug output from outside the kernel where possible, allowing kernel debug output to be
  * redirected alongside that other output (e.g. with Sashimi or Bifteck).
  */
+/*
+ * Default implementation of RawPutChar requires KernelBase to be setup. Check for this. Otherwise
+ * since SysBase is setup first (PrepareExecBase), before SysBase->KernelBase is setup (Kernel_Init)
+ * just checking for SysBase causes some debug early to be lost.
+ */
 static int UniPutC(int c, struct KernelBase *KernelBase)
 {
     int result;
 
-    if (SysBase != NULL)
+    if (IsKernelBaseReady(SysBase))
     {
         RawPutChar(c);
         result = 1;

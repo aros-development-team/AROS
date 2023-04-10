@@ -418,6 +418,14 @@ struct Task *Exec_X86CreateIdleTask(APTR sysBase)
     return CPUIdleTask;
 }
 
+BOOL IsKernelBaseReady(struct ExecBase *SysBase)
+{
+    struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
+    if (sysBase && sysBase->KernelBase)
+        return TRUE;
+    return FALSE;
+}
+
 int Exec_X86Init(struct ExecBase *SysBase)
 {
     struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
