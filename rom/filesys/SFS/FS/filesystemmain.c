@@ -480,6 +480,174 @@ LONG mainprogram(struct ExecBase *SysBase)
   return(ERROR_NO_FREE_STORE);
 }
 
+/* Helper to make sure BSTR's are copied and NULL terminated,
+ * without generating compiler warnings!
+ */
+static void sfsCopyBSTRSafe(BSTR src, char *dst, ULONG len)
+{
+    ULONG end = copybstrasstr(src, dst, len) + 1;
+    dst[end] = 0;
+}
+
+static int sfsExamineAll(struct ExAllControl *eac,
+                                    struct ExAllData *ead,
+                                    struct ExAllData **prevead,
+                                    struct CacheBuffer *cb,
+                                    struct fsObject *o,
+                                    char *oname,
+                                    ULONG *eadsize,
+                                    ULONG *stringsize,
+                                    LONG *spaceleft,
+                                    LONG *errorcode)
+{
+    WORD namelength=strlen(oname);
+    WORD keepentry;
+
+    *stringsize=0;
+    *eadsize=0;
+
+    switch(globals->packet->dp_Arg4) {
+    default:
+    case ED_OWNER:
+        *eadsize += 4;			/* ed_OwnedGID, ed_OwnedUID */
+    case ED_COMMENT:
+        *stringsize += strlen(oname + namelength + 1) + 1;
+        *eadsize += sizeof(UBYTE *);	/* ed_Comment */
+    case ED_DATE:
+        *eadsize += 12;			/* ed_Ticks, ed_Mins, ed_Days */
+    case ED_PROTECTION:
+        *eadsize += 4;			/* ed_Prot */
+    case ED_SIZE:
+        *eadsize += 4;			/* ed_Size */
+    case ED_TYPE:
+        *eadsize += 4;
+    case ED_NAME:
+        *stringsize += namelength + 1;
+        *eadsize += sizeof(APTR) * 2;	/* ed_Name, ed_Next */
+        break;
+    }
+
+//    _DEBUG(("ACTION_EXAMINE_ALL: *eadsize = %ld, *stringsize = %ld, *spaceleft = %ld, packet->dp_Arg4 = %ld\n",*eadsize,*stringsize,*spaceleft,packet->dp_Arg4));
+
+    if(*spaceleft < *eadsize + *stringsize) {
+        return 0;
+    }
+
+    switch(globals->packet->dp_Arg4) {
+    default:
+    case ED_OWNER:
+        ead->ed_OwnerUID=BE2W(o->be_owneruid);
+        ead->ed_OwnerGID=BE2W(o->be_ownergid);
+    case ED_COMMENT:
+        {
+            UBYTE *src=oname+namelength+1;
+            UBYTE *dest=(UBYTE *)ead+*eadsize;
+
+            ead->ed_Comment=dest;
+
+            while(*src!=0) {
+                *dest++=*src++;
+                *eadsize++;
+            }
+
+            *dest=0;
+            *eadsize++;
+        }
+    case ED_DATE:
+        datetodatestamp(BE2L(o->be_datemodified),(struct DateStamp *)&ead->ed_Days);
+    case ED_PROTECTION:
+        ead->ed_Prot=BE2L(o->be_protection)^(FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE);
+    case ED_SIZE:
+        if((o->bits & OTYPE_DIR)==0) {
+            ead->ed_Size=BE2L(o->object.file.be_size);
+        } else {
+            ead->ed_Size=0;
+        }
+    case ED_TYPE:
+        _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_objectnode)));
+        if((o->bits & OTYPE_LINK)!=0) {
+            ead->ed_Type = ST_SOFTLINK;
+        }
+        if((o->bits & OTYPE_DIR)==0) {
+            ead->ed_Type = ST_FILE;
+        }
+        else if (o->be_objectnode == L2BE(ROOTNODE)) {
+            ead->ed_Type = ST_ROOT;
+        } else {
+            ead->ed_Type = ST_USERDIR;
+        }
+    case ED_NAME:
+        {
+            UBYTE *src = oname;
+            UBYTE *dest = (UBYTE *)ead+*eadsize;
+
+            ead->ed_Name=dest;
+
+            while(*src!=0) {
+                *dest++=*src++;
+                *eadsize++;
+            }
+
+            *dest=0;
+            *eadsize++;
+//            _DEBUG(("Stored entry %s\n",ead->ed_Name));
+        }
+    }
+
+    if(eac->eac_MatchString!=0) {
+        keepentry=MatchPatternNoCase(eac->eac_MatchString,ead->ed_Name);
+    } else {
+        keepentry=DOSTRUE;
+    }
+
+    if(keepentry!=DOSFALSE && eac->eac_MatchFunc!=0) {
+#ifdef __AROS__
+        keepentry=CALLHOOKPKT(eac->eac_MatchFunc, ead, (APTR)globals->packet->dp_Arg4);
+#else
+        LONG __asm(*hookfunc)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG)=(LONG __asm(*)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG))eac->eac_MatchFunc->h_Entry;
+        keepentry=hookfunc(eac->eac_MatchFunc,ead,packet->dp_Arg4);
+#endif
+    }
+
+    if(keepentry!=DOSFALSE && (o->bits & OTYPE_HIDDEN)==0) {
+        ead->ed_Next = 0;
+        *eadsize = (*eadsize + sizeof(APTR) - 1) & ~(sizeof(APTR) - 1);
+        if(*prevead != 0) {
+            (*prevead)->ed_Next=ead;
+        }
+        *prevead = ead;
+        ead = (struct ExAllData *)((UBYTE *)ead+*eadsize);
+        *spaceleft -= *eadsize;
+        eac->eac_Entries++;
+    }
+
+    {
+        struct fsObjectContainer *oc=cb->data;
+        UBYTE *endadr;
+
+        o=nextobject(o);
+
+        endadr=(UBYTE *)oc+globals->bytes_block-sizeof(struct fsObject)-2;
+
+        if((UBYTE *)o>=endadr || oname[0]==0) {
+            if(oc->be_next!=0) {
+                if((*errorcode=readcachebuffercheck(&cb,BE2L(oc->be_next),OBJECTCONTAINER_ID))==0) {
+                    struct fsObjectContainer *oc=cb->data;
+
+                    o=oc->object;
+                    eac->eac_LastKey=BE2L(o->be_objectnode);
+                }
+            }
+            else {
+                *errorcode=ERROR_NO_MORE_ENTRIES;
+            }
+        }
+        else {
+            eac->eac_LastKey=BE2L(o->be_objectnode);
+        }
+    }
+    return 1;
+}
 
 void mainloop(void) {
   ULONG signalbits;
@@ -1515,40 +1683,27 @@ void mainloop(void) {
                   if((errorcode=readcachebuffercheck(&cb,globals->block_root,OBJECTCONTAINER_ID))==0) {
                     if(AttemptLockDosList(LDF_WRITE|LDF_VOLUMES)!=0) {
                       struct fsObjectContainer *oc=cb->data;
+                        struct dstr
+                        {
+                            UBYTE  dname[31];
+                        } *oname = (struct dstr *)&oc->object[0].name[0];
                       UBYTE *s;
-                      UBYTE *d;
 #ifndef USE_FAST_BSTR
                       UBYTE len;
 #endif
-
                       /* Succesfully locked the doslist */
 
                       newtransaction();
 
                       preparecachebuffer(cb);
                       
-
                       s=BADDR(globals->packet->dp_Arg1);
-                      d=&oc->object[0].name[0];
-                      d[copybstrasstr((BSTR)globals->packet->dp_Arg1, d, 30)+1] = 0;
-#if 0
-                      len=*s++;
-
-                      if(len>30) {
-                        len=30;
-                      }
-
-                      while(len-->0) {
-                        *d++=*s++;
-                      }
-                      *d++=0;
-                      *d=0;    /* Zero for comment */
-#endif
+                      sfsCopyBSTRSafe((BSTR)globals->packet->dp_Arg1, oname->dname, 30);
                       if((errorcode=storecachebuffer(cb))==0 && globals->volumenode!=0) {
                         s=BADDR(globals->packet->dp_Arg1);
-                        d=BADDR(globals->volumenode->dl_Name);
+                        char *vname=BADDR(globals->volumenode->dl_Name);
 #ifdef USE_FAST_BSTR
-                        copystr(s, d, 30);
+                        copystr(s, vname, 30);
 #else
                         len=*s++;
 
@@ -1556,11 +1711,11 @@ void mainloop(void) {
                           len=30;
                         }
 
-                        *d++=len;
+                        *vname++=len;
                         while(len-->0) {
-                          *d++=*s++;
+                          *vname++=*s++;
                         }
-                        *d=0;
+                        *vname=0;
 #endif
                       }
 
@@ -1986,16 +2141,16 @@ void mainloop(void) {
                 _DEBUG(("ACTION_EXAMINE_ALL\n"));
 
                 {
-                  struct ExtFileLock *lock;
-                  struct ExAllData *ead;
-                  struct ExAllData *prevead=0;
-                  struct ExAllControl *eac;
-                  struct CacheBuffer *cb;
-                  struct fsObject *o;
-                  ULONG eadsize;
-                  ULONG stringsize;
-                  LONG spaceleft;
-                  LONG errorcode;
+                    struct ExtFileLock *lock;
+                    struct ExAllData *ead;
+                    struct ExAllData *prevead=0;
+                    struct ExAllControl *eac;
+                    struct CacheBuffer *cb;
+                    struct fsObject *o;
+                    ULONG eadsize;
+                    ULONG stringsize;
+                    LONG spaceleft;
+                    LONG errorcode;
 
                   lock=(struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
                   ead=(struct ExAllData *)globals->packet->dp_Arg2;
@@ -2043,157 +2198,8 @@ void mainloop(void) {
                   }
   
                   while(errorcode==0) {
-                    WORD namelength=strlen(o->name);
-                    WORD keepentry;
-  
-                    stringsize=0;
-                    eadsize=0;
-  
-                    switch(globals->packet->dp_Arg4) {
-                    default:
-                    case ED_OWNER:
-                      eadsize += 4;			/* ed_OwnedGID, ed_OwnedUID */
-                    case ED_COMMENT:
-                      stringsize+=strlen(o->name+namelength+1)+1;
-                      eadsize += sizeof(UBYTE *);	/* ed_Comment */
-                    case ED_DATE:
-                      eadsize += 12;			/* ed_Ticks, ed_Mins, ed_Days */
-                    case ED_PROTECTION:
-                      eadsize += 4;			/* ed_Prot */
-                    case ED_SIZE:
-                      eadsize += 4;			/* ed_Size */
-                    case ED_TYPE:
-                      eadsize += 4;
-                    case ED_NAME:
-                      stringsize += namelength+1;
-                      eadsize += sizeof(APTR) * 2;	/* ed_Name, ed_Next */
+                    if (!sfsExamineAll(eac, ead, &prevead, cb, o, (char *)&o->name[0], &eadsize, &stringsize, &spaceleft, &errorcode))
                       break;
-                    }
-
-//                    _DEBUG(("ACTION_EXAMINE_ALL: eadsize = %ld, stringsize = %ld, spaceleft = %ld, packet->dp_Arg4 = %ld\n",eadsize,stringsize,spaceleft,packet->dp_Arg4));
-
-                    if(spaceleft<eadsize+stringsize) {
-                      break;
-                    }
-
-                    switch(globals->packet->dp_Arg4) {
-                    default:
-                    case ED_OWNER:
-                      ead->ed_OwnerUID=BE2W(o->be_owneruid);
-                      ead->ed_OwnerGID=BE2W(o->be_ownergid);
-                    case ED_COMMENT:
-                      {
-                        UBYTE *src=o->name+namelength+1;
-                        UBYTE *dest=(UBYTE *)ead+eadsize;
-
-                        ead->ed_Comment=dest;
-
-                        while(*src!=0) {
-                          *dest++=*src++;
-                          eadsize++;
-                        }
-
-                        *dest=0;
-                        eadsize++;
-                      }
-                    case ED_DATE:
-                      datetodatestamp(BE2L(o->be_datemodified),(struct DateStamp *)&ead->ed_Days);
-                    case ED_PROTECTION:
-                      ead->ed_Prot=BE2L(o->be_protection)^(FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE);
-                    case ED_SIZE:
-                      if((o->bits & OTYPE_DIR)==0) {
-                        ead->ed_Size=BE2L(o->object.file.be_size);
-                      }
-                      else {
-                        ead->ed_Size=0;
-                      }
-                    case ED_TYPE:
-_DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_objectnode)));
-                      if((o->bits & OTYPE_LINK)!=0) {
-                        ead->ed_Type=ST_SOFTLINK;
-                      }
-                      if((o->bits & OTYPE_DIR)==0) {
-                        ead->ed_Type=ST_FILE;
-                      }
-                      else if (o->be_objectnode == L2BE(ROOTNODE)) {
-                        ead->ed_Type = ST_ROOT;
-                        }
-                      else {
-                        ead->ed_Type=ST_USERDIR;
-                      }
-                    case ED_NAME:
-                      {
-                        UBYTE *src=o->name;
-                        UBYTE *dest=(UBYTE *)ead+eadsize;
-
-                        ead->ed_Name=dest;
-
-                        while(*src!=0) {
-                          *dest++=*src++;
-                          eadsize++;
-                        }
-
-                        *dest=0;
-                        eadsize++;
-
-  //                    _DEBUG(("Stored entry %s\n",ead->ed_Name));
-                      }
-                    }
-
-                    if(eac->eac_MatchString!=0) {
-                      keepentry=MatchPatternNoCase(eac->eac_MatchString,ead->ed_Name);
-                    }
-                    else {
-                      keepentry=DOSTRUE;
-                    }
-
-                    if(keepentry!=DOSFALSE && eac->eac_MatchFunc!=0) {
-                      
-#ifdef __AROS__
-                      keepentry=CALLHOOKPKT(eac->eac_MatchFunc, ead, (APTR)globals->packet->dp_Arg4);
-#else
-                      LONG __asm(*hookfunc)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG)=(LONG __asm(*)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG))eac->eac_MatchFunc->h_Entry;
-                      keepentry=hookfunc(eac->eac_MatchFunc,ead,packet->dp_Arg4);
-#endif
-                    }
-
-                    if(keepentry!=DOSFALSE && (o->bits & OTYPE_HIDDEN)==0) {
-                      ead->ed_Next=0;
-                      eadsize = (eadsize + sizeof(APTR) - 1) & ~(sizeof(APTR) - 1);
-                      if(prevead!=0) {
-                        prevead->ed_Next=ead;
-                      }
-                      prevead=ead;
-                      ead=(struct ExAllData *)((UBYTE *)ead+eadsize);
-                      spaceleft-=eadsize;
-                      eac->eac_Entries++;
-                    }
-  
-                    {
-                      struct fsObjectContainer *oc=cb->data;
-                      UBYTE *endadr;
-  
-                      o=nextobject(o);
-  
-                      endadr=(UBYTE *)oc+globals->bytes_block-sizeof(struct fsObject)-2;
-  
-                      if((UBYTE *)o>=endadr || o->name[0]==0) {
-                        if(oc->be_next!=0) {
-                          if((errorcode=readcachebuffercheck(&cb,BE2L(oc->be_next),OBJECTCONTAINER_ID))==0) {
-                            struct fsObjectContainer *oc=cb->data;
-  
-                            o=oc->object;
-                            eac->eac_LastKey=BE2L(o->be_objectnode);
-                          }
-                        }
-                        else {
-                          errorcode=ERROR_NO_MORE_ENTRIES;
-                        }
-                      }
-                      else {
-                        eac->eac_LastKey=BE2L(o->be_objectnode);
-                      }
-                    }
                   }
   
                   if(errorcode!=0) {

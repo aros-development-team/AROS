@@ -938,12 +938,14 @@ LONG write(BLCK block, UBYTE *buffer, ULONG blocks) {
 
 
 LONG getbuffer(UBYTE **tempbuffer, ULONG *maxblocks) {
-  struct IOCache *ioc;
+  struct IOCache *ioc = NULL;
+  LONG errorcode;
 
-  lruiocache(&ioc);         /** Might fail!!  Make sure it never does! */
-  reuseiocache(ioc);
-  *tempbuffer=ioc->data;
-  *maxblocks=globals->iocache_sizeinblocks;
-
-  return(0);
+  if ((errorcode = lruiocache(&ioc))==0)
+  {
+    reuseiocache(ioc);
+    *tempbuffer=ioc->data;
+    *maxblocks=globals->iocache_sizeinblocks;
+  }
+  return errorcode;
 }
