@@ -2,7 +2,7 @@
 #define _STDC_INTTYPES_H_
 
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file inttypes.h with standard fixed sized integral types.
@@ -11,9 +11,13 @@
 #include <aros/system.h>
 #include <stdint.h>
 
+#if defined __cplusplus && __cplusplus < 201103L
+# define __STDC_NEEDS_DEFINES
+#endif
+
 #define __BIT_TYPES_DEFINED__
 
-#if !defined __cplusplus || defined __STDC_FORMAT_MACROS
+#if !defined(__STDC_NEEDS_DEFINES) || defined(__STDC_FORMAT_MACROS)
 
 # if __WORDSIZE == 64
 #  define __PRI64_PREFIX	"l"

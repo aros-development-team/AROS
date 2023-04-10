@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: C99 header file stdint.h
           Standard fixed sized integral types.
@@ -12,7 +12,11 @@
 #include <aros/types/intptr_t.h>
 #include <aros/types/uintptr_t.h>
 
-#if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
+#if defined __cplusplus && __cplusplus < 201103L
+# define __STDC_NEEDS_DEFINES
+#endif
+
+#if !defined(__STDC_NEEDS_DEFINES) || defined(__STDC_LIMIT_MACROS)
 #ifndef _STDC_STDINT_H_LIMITMACROS
 #define _STDC_STDINT_H_LIMITMACROS
 #define INT8_MIN    (-128)
@@ -90,9 +94,9 @@
 */
 
 #endif /* _STDC_STDINT_H_LIMITMACROS */
-#endif /* !__cplusplus || __STDC_LIMIT_MACROS */
+#endif /* !__STDC_NEEDS_DEFINES || __STDC_LIMIT_MACROS */
 
-#if !defined __cplusplus || defined __STDC_CONSTANT_MACROS
+#if !defined(__STDC_NEEDS_DEFINES) || defined(__STDC_CONSTANT_MACROS)
 #ifndef _STDC_STDINT_H_CONSTMACROS
 #define _STDC_STDINT_H_CONSTMACROS
 
@@ -132,4 +136,4 @@
 /* Maximal unsigned integer (unsigned long long) size */
 # define UINTMAX_MAX     UINT64_MAX
 #endif /* _STDC_STDINT_H_CONSTMACROS */
-#endif /* !__cplusplus || __STDC_CONSTANT_MACROS */
+#endif /* !__STDC_NEEDS_DEFINES || __STDC_CONSTANT_MACROS */
