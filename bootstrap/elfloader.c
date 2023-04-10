@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2006-2020 The AROS Development Team. All rights reserved.
+ Copyright (C) 2006-2023 The AROS Development Team. All rights reserved.
  
  Desc: ELF loader extracted from our internal_load_seg_elf in dos.library.
  */
@@ -100,7 +100,7 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
         (*bss_tracker)++;
     }
 
-    return (void *)((uintptr_t)addr + sh->size);
+    return (void *)((uintptr_t)(addr + sh->size));
 }
 
 static void *copy_data(void *src, void *addr, uintptr_t len)
@@ -136,7 +136,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
     for (i=0; i<numrel; i++, rel++)
     {
         struct symbol *sym = &symtab[ELF_R_SYM(rel->info)];
-        uintptr_t *p = (void *)((uintptr_t)toreloc->addr + rel->offset);
+        uintptr_t *p = (void *)(uintptr_t)((elf_uintptr_t)toreloc->addr + rel->offset);
         const char *name = (const char *)(uintptr_t)sh[shsymtab->link].addr + sym->name;
         elf_uintptr_t s;
 
@@ -238,7 +238,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
             break;
 
         case R_X86_64_PC64:
-            *(uint64_t *)p = (uint64_t)s + (uint64_t)rel->addend - (uint64_t) p;
+            *(uint64_t *)p = (uint64_t)s + (uint64_t)rel->addend - (uint64_t)(uintptr_t)p;
             break;
 
         case R_X86_64_NONE: /* No reloc */
