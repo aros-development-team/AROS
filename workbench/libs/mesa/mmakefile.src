@@ -71,11 +71,8 @@ MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
 #USER_LDFLAGS := -Wl,--gc-sections $(mesa3dgl_ENTRYPOINTS)
 endif
 
-USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) \
-  -L$(top_libdir) \
-  -Wl,--start-group -lpthread
+USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) -L$(top_libdir)
 
-#USER_LDFLAGS += -Wl,--end-group
 #USER_CPPFLAGS += -DDEBUG=1
 
 %build_module_library mmake=mesa3dgl-library \
@@ -83,7 +80,7 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) \
   conffile="$(SRCDIR)/workbench/libs/gl/gl.conf" \
   confoverride="$(top_srcdir)/mesa3dgl.conf" objdir="$(OBJDIR)/$(MESAGLVERSION)" \
   files="$(MESAGL_LIBRARY_SOURCES_C)" \
-  alwayscxxlink=yes uselibs="glapi mesa compiler galliumauxiliary gallium mesautil"
+  alwayscxxlink=yes uselibs="glapi mesa compiler galliumauxiliary gallium mesautil pthread"
 
 $(AROS_ENVARC)/SYS:
 	%mkdir_q dir=$@

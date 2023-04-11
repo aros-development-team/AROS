@@ -127,10 +127,11 @@ $(GENDIR)/$(CURDIR)/libheif/heif_version.h : $(SRCDIR)/$(CURDIR)/libheif/libheif
 #MM
 datatypes-heic-linklibs-heif-genfiles : $(GENDIR)/$(CURDIR)/libheif/heif_version.h
 
-USER_LDFLAGS += -L$(GENDIR)/$(CURDIR)/lib -Wl,--start-group -lheif -lde265 -lposixc -lstdcio -lstdc
+USER_LDFLAGS += -L$(GENDIR)/$(CURDIR)/lib
 
 HEICCLASSFILES := heicclass
 
 %build_module mmake=workbench-datatypes-heic \
     modname=heic modtype=datatype \
-    files=$(HEICCLASSFILES) cxxfiles=heicdummy
+    files=$(HEICCLASSFILES) cxxfiles=heicdummy \
+    uselibs="heif de265 stdcio"

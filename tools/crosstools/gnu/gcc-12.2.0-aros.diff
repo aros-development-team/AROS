@@ -66,7 +66,7 @@ diff -ruN gcc-12.2.0/fixincludes/configure.ac gcc-12.2.0.aros/fixincludes/config
  	x86_64-*-mingw32* | \
 diff -ruN gcc-12.2.0/fixincludes/fixincl.x gcc-12.2.0.aros/fixincludes/fixincl.x
 --- gcc-12.2.0/fixincludes/fixincl.x	2022-08-19 08:09:52.160657095 +0000
-+++ gcc-12.2.0.aros/fixincludes/fixincl.x	2023-03-25 15:45:20.554880749 +0000
++++ gcc-12.2.0.aros/fixincludes/fixincl.x	2020-12-27 16:58:14.310000000 +0000
 @@ -15,7 +15,7 @@
   * certain ANSI-incompatible system header files which are fixed to work
   * correctly with ANSI C and placed in a directory that GNU C will search.
@@ -491,8 +491,8 @@ diff -ruN gcc-12.2.0/gcc/config/aros-stdint.h gcc-12.2.0.aros/gcc/config/aros-st
 +#define UINTPTR_TYPE      (LONG_TYPE_SIZE == 64 ? UINT64_TYPE : UINT32_TYPE)
 diff -ruN gcc-12.2.0/gcc/config/aros.h gcc-12.2.0.aros/gcc/config/aros.h
 --- gcc-12.2.0/gcc/config/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-12.2.0.aros/gcc/config/aros.h	2020-12-27 16:58:14.310000000 +0000
-@@ -0,0 +1,112 @@
++++ gcc-12.2.0.aros/gcc/config/aros.h	2023-04-11 21:16:46.386946482 +0000
+@@ -0,0 +1,123 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -554,7 +554,7 @@ diff -ruN gcc-12.2.0/gcc/config/aros.h gcc-12.2.0.aros/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-libstdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s}"
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
@@ -589,14 +589,25 @@ diff -ruN gcc-12.2.0/gcc/config/aros.h gcc-12.2.0.aros/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:%{!deferposixc:-lposixc}} -lstdcio %{!noposixc:%{deferposixc:-lposixc}} -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
++  "-lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:%{!deferposixc:-lposixc}} -lstdcio %{!noposixc:%{deferposixc:-lposixc}} -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{!static:%{!noposixc:-lposixc} -lstdcio %{!nostdc:-lstdc}}%{static:%{!nostdc:-lstdc.static}}} --end-group"
 +
 +#undef	LIBSTDCXX_STATIC
-+#define LIBSTDCXX_STATIC "pthread"
++#define LIBSTDCXX_STATIC "supc++"
++
++#undef	LIBSTDCXX_PTHREAD
++#define LIBSTDCXX_PTHREAD "pthread"
 +
 +#if !defined(USE_GNULIBC_1) && defined(HAVE_LD_EH_FRAME_HDR)
 +#define LINK_EH_SPEC "%{!static:--eh-frame-hdr} "
 +#endif
++
++#define GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC \
++  "--start-group %G %{!nolibc:%L %G}"
++
++#undef LINK_GCC_C_SEQUENCE_SPEC
++#define LINK_GCC_C_SEQUENCE_SPEC GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC
++
++#define LIBSTDCXX_CIRCULAR
 +
 +/* AROS uses its own collect-like program for the moment.  */
 +#undef LINKER_NAME
@@ -719,7 +730,7 @@ diff -ruN gcc-12.2.0/gcc/config/i386/aros64.h gcc-12.2.0.aros/gcc/config/i386/ar
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 diff -ruN gcc-12.2.0/gcc/config/m68k/m68k.cc gcc-12.2.0.aros/gcc/config/m68k/m68k.cc
 --- gcc-12.2.0/gcc/config/m68k/m68k.cc	2022-08-19 08:09:52.652663394 +0000
-+++ gcc-12.2.0.aros/gcc/config/m68k/m68k.cc	2023-03-25 15:42:37.614880717 +0000
++++ gcc-12.2.0.aros/gcc/config/m68k/m68k.cc	2020-12-27 16:58:14.310000000 +0000
 @@ -4977,7 +4977,7 @@
    else if (letter == '/')
      asm_fprintf (file, "%R");
@@ -938,7 +949,7 @@ diff -ruN gcc-12.2.0/gcc/config/rs6000/aros.h gcc-12.2.0.aros/gcc/config/rs6000/
 +#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-12.2.0/gcc/config/rs6000/rs6000.cc gcc-12.2.0.aros/gcc/config/rs6000/rs6000.cc
 --- gcc-12.2.0/gcc/config/rs6000/rs6000.cc	2022-08-19 08:09:52.700664008 +0000
-+++ gcc-12.2.0.aros/gcc/config/rs6000/rs6000.cc	2023-03-25 15:47:32.424880563 +0000
++++ gcc-12.2.0.aros/gcc/config/rs6000/rs6000.cc	2020-12-27 16:58:14.310000000 +0000
 @@ -1269,6 +1269,8 @@
      rs6000_handle_longcall_attribute, NULL },
    { "shortcall", 0, 0, false, true,  true,  false,
@@ -1114,7 +1125,7 @@ diff -ruN gcc-12.2.0/gcc/config.gcc gcc-12.2.0.aros/gcc/config.gcc
  	extra_options="${extra_options} rs6000/sysv4.opt"
 diff -ruN gcc-12.2.0/gcc/config.host gcc-12.2.0.aros/gcc/config.host
 --- gcc-12.2.0/gcc/config.host	2022-08-19 08:09:52.552662114 +0000
-+++ gcc-12.2.0.aros/gcc/config.host	2020-12-29 19:52:32.410000000 +0000
++++ gcc-12.2.0.aros/gcc/config.host	2020-12-27 16:58:14.310000000 +0000
 @@ -108,7 +108,7 @@
  	;;
      esac
@@ -1135,6 +1146,94 @@ diff -ruN gcc-12.2.0/gcc/config.host gcc-12.2.0.aros/gcc/config.host
    *-*-*vms*)
      host_xm_file="vms/xm-vms.h"
      host_xmake_file=vms/x-vms
+diff -ruN gcc-12.2.0/gcc/cp/g++spec.cc gcc-12.2.0.aros/gcc/cp/g++spec.cc
+--- gcc-12.2.0/gcc/cp/g++spec.cc	2022-08-19 08:09:52.760664777 +0000
++++ gcc-12.2.0.aros/gcc/cp/g++spec.cc	2023-04-11 21:19:28.396946540 +0000
+@@ -68,6 +68,9 @@
+ #ifndef LIBCXXABI_STATIC
+ #define LIBCXXABI_STATIC NULL
+ #endif
++#ifndef LIBSTDCXX_PTHREAD
++#define LIBSTDCXX_PTHREAD NULL
++#endif
+ 
+ /* The values used here must match those of the stdlib_kind enumeration
+    in c.opt.  */
+@@ -82,6 +85,10 @@
+ 		      unsigned int *in_decoded_options_count,
+ 		      int *in_added_libraries)
+ {
++#ifdef LIBSTDCXX_CIRCULAR
++  int started = 0;
++#endif
++
+   unsigned int i, j;
+ 
+   /* If nonzero, the user gave us the `-p' or `-pg' flag.  */
+@@ -222,6 +229,8 @@
+ 
+ 	case OPT_static_libstdc__:
+ 	  library = library >= 0 ? 2 : library;
++	  if (LIBSTDCXX_PTHREAD != NULL)
++  		added += 1;
+ 	  args[i] |= SKIPOPT;
+ 	  break;
+ 
+@@ -283,6 +292,10 @@
+   shared_libgcc = 0;
+ #endif
+ 
++#ifdef LIBSTDCXX_CIRCULAR
++	if (library > 0)
++	  added += 2;
++#endif
+   /* Add one for shared_libgcc or extra static library.  */
+   num_args = argc + added + need_math + (library > 0) * 4 + 1;
+   /* For libc++, on most platforms, the ABI library (usually called libc++abi)
+@@ -357,6 +370,13 @@
+   /* Add `-lstdc++' if we haven't already done so.  */
+   if (library > 0)
+     {
++#ifdef LIBSTDCXX_CIRCULAR
++	  generate_option (OPT_Wl_, "--start-group", 1, CL_DRIVER,
++			   &new_decoded_options[j]);
++	  started = 1;
++	  j++;
++#endif
++
+ #ifdef HAVE_LD_STATIC_DYNAMIC
+       if (library > 1 && !static_link)
+ 	{
+@@ -394,6 +414,13 @@
+ 	  added_libraries++;
+ 	  j++;
+ 	}
++      if ((static_link || library > 1) && LIBSTDCXX_PTHREAD != NULL)
++	{
++	  generate_option (OPT_l, LIBSTDCXX_PTHREAD, 1,
++			   CL_DRIVER, &new_decoded_options[j]);
++	  added_libraries++;
++	  j++;
++	}
+ #ifdef HAVE_LD_STATIC_DYNAMIC
+       if (library > 1 && !static_link)
+ 	{
+@@ -421,6 +448,15 @@
+     generate_option (OPT_shared_libgcc, NULL, 1, CL_DRIVER,
+ 		     &new_decoded_options[j++]);
+ 
++#ifdef LIBSTDCXX_CIRCULAR
++  if (started)
++  {
++    generate_option (OPT_Wl_, "--end-group", 1, CL_DRIVER,
++			   &new_decoded_options[j]);
++    j++;
++  }
++#endif
++
+   *in_decoded_options_count = j;
+   *in_decoded_options = new_decoded_options;
+   *in_added_libraries = added_libraries;
 diff -ruN gcc-12.2.0/gcc/ginclude/aros/types/null.h gcc-12.2.0.aros/gcc/ginclude/aros/types/null.h
 --- gcc-12.2.0/gcc/ginclude/aros/types/null.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-12.2.0.aros/gcc/ginclude/aros/types/null.h	2020-12-27 16:58:14.310000000 +0000
@@ -2269,7 +2368,7 @@ diff -ruN gcc-12.2.0/libstdc++-v3/config/os/aros/os_defines.h gcc-12.2.0.aros/li
 +#endif
 diff -ruN gcc-12.2.0/libstdc++-v3/configure gcc-12.2.0.aros/libstdc++-v3/configure
 --- gcc-12.2.0/libstdc++-v3/configure	2022-08-19 08:09:55.416698774 +0000
-+++ gcc-12.2.0.aros/libstdc++-v3/configure	2023-03-25 15:51:28.594881108 +0000
++++ gcc-12.2.0.aros/libstdc++-v3/configure	2020-12-27 16:58:14.310000000 +0000
 @@ -5962,14 +5962,14 @@
  
  
@@ -2379,7 +2478,7 @@ diff -ruN gcc-12.2.0/libstdc++-v3/configure gcc-12.2.0.aros/libstdc++-v3/configu
      ;;
 diff -ruN gcc-12.2.0/libstdc++-v3/configure.ac gcc-12.2.0.aros/libstdc++-v3/configure.ac
 --- gcc-12.2.0/libstdc++-v3/configure.ac	2022-08-19 08:09:55.420698825 +0000
-+++ gcc-12.2.0.aros/libstdc++-v3/configure.ac	2023-03-25 15:52:54.514881591 +0000
++++ gcc-12.2.0.aros/libstdc++-v3/configure.ac	2020-12-27 16:58:14.310000000 +0000
 @@ -90,11 +90,11 @@
  GLIBCXX_CONFIGURE
  

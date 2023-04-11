@@ -142,7 +142,7 @@ endif
 USER_CPPFLAGS := -DLIBRARYBUILD
 USER_CFLAGS := $(GLU_COMMONFLAGS) $(NOWARN_FLAGS)
 USER_CXXFLAGS := $(GLU_COMMONFLAGS) $(CFLAGS_NO_RTTI) $(NOWARN_FLAGS)
-USER_LDFLAGS := -Wl,--start-group -static-libstdc++
+USER_LDFLAGS := -static-libstdc++
 
 CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))

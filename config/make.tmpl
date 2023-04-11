@@ -126,11 +126,11 @@ endif
 	$(Q)$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
 	$(Q)$(IF) %(cmd) %(ldopts) $(NOSTARTUP_OBJECTS) \
 		$(GENMAP) %(objdir)/%(module).map \
-		%(objs) %(endtag) -o $@ %(ldflags) %(libs) 2>&1 > %(objdir)/%(err) 2>&1 ; \
+		%(objs) %(endtag) -o $@ %(ldflags) -Wl,--start-group %(libs) -Wl,--end-group 2>&1 > %(objdir)/%(err) 2>&1 ; \
 	then \
 		cat %(objdir)/%(err); \
 	else \
-		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map %(objs) %(endtag) -o $@ %(ldflags) %(libs))"; \
+		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map %(objs) %(endtag) -o $@ %(ldflags) -Wl,--start-group %(libs) -Wl,--end-group)"; \
 		cat %(objdir)/%(err); \
 		exit 1; \
 	fi

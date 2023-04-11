@@ -44,6 +44,7 @@ USER_LDFLAGS := \
 ifneq ($(TARGET_LIBATOMIC),)
 USER_LDFLAGS += $(TARGET_CXX_LIBS)
 endif
+USER_LDFLAGS += -Wl,--end-group
 
 %build_module mmake=hidd-softpipe modname=softpipe modtype=hidd \
     files="$(SOFTPIPE_HIDD_SOURCES)" alwayscxxlink=yes uselibs="" objdir="$(OBJDIR)/$(MESAGLVERSION)"

@@ -1,5 +1,5 @@
 diff -ruN gcc-6.5.0/boehm-gc/include/gc.h gcc-6.5.0.aros/boehm-gc/include/gc.h
---- gcc-6.5.0/boehm-gc/include/gc.h	2014-10-23 09:39:19.000000000 +0100
+--- gcc-6.5.0/boehm-gc/include/gc.h	2014-10-23 08:39:19.000000000 +0000
 +++ gcc-6.5.0.aros/boehm-gc/include/gc.h	2019-03-01 02:31:13.371291400 +0000
 @@ -1056,7 +1056,7 @@
      GC_API void GC_win32_free_heap ();
@@ -67,7 +67,7 @@ diff -ruN gcc-6.5.0/configure.ac gcc-6.5.0.aros/configure.ac
  fi
  
 diff -ruN gcc-6.5.0/fixincludes/configure gcc-6.5.0.aros/fixincludes/configure
---- gcc-6.5.0/fixincludes/configure	2018-10-26 10:56:36.000000000 +0100
+--- gcc-6.5.0/fixincludes/configure	2018-10-26 09:56:36.000000000 +0000
 +++ gcc-6.5.0.aros/fixincludes/configure	2019-03-01 02:31:13.371291400 +0000
 @@ -4712,6 +4712,7 @@
  fi
@@ -78,7 +78,7 @@ diff -ruN gcc-6.5.0/fixincludes/configure gcc-6.5.0.aros/fixincludes/configure
  	i?86-*-mingw32* | \
  	x86_64-*-mingw32* | \
 diff -ruN gcc-6.5.0/fixincludes/configure.ac gcc-6.5.0.aros/fixincludes/configure.ac
---- gcc-6.5.0/fixincludes/configure.ac	2012-05-29 20:28:57.000000000 +0100
+--- gcc-6.5.0/fixincludes/configure.ac	2012-05-29 19:28:57.000000000 +0000
 +++ gcc-6.5.0.aros/fixincludes/configure.ac	2019-03-01 02:31:13.371291400 +0000
 @@ -50,6 +50,7 @@
  	TARGET=oneprocess
@@ -366,8 +366,8 @@ diff -ruN gcc-6.5.0/gcc/config/aros-stdint.h gcc-6.5.0.aros/gcc/config/aros-stdi
 +#define UINTPTR_TYPE      (LONG_TYPE_SIZE == 64 ? UINT64_TYPE : UINT32_TYPE)
 diff -ruN gcc-6.5.0/gcc/config/aros.h gcc-6.5.0.aros/gcc/config/aros.h
 --- gcc-6.5.0/gcc/config/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-6.5.0.aros/gcc/config/aros.h	2019-03-01 02:31:13.371291400 +0000
-@@ -0,0 +1,115 @@
++++ gcc-6.5.0.aros/gcc/config/aros.h	2023-04-11 20:55:33.006945229 +0000
+@@ -0,0 +1,126 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -432,7 +432,7 @@ diff -ruN gcc-6.5.0/gcc/config/aros.h gcc-6.5.0.aros/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s}"
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
@@ -467,14 +467,25 @@ diff -ruN gcc-6.5.0/gcc/config/aros.h gcc-6.5.0.aros/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:%{!deferposixc:-lposixc}} -lstdcio %{!noposixc:%{deferposixc:-lposixc}} -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
++  "-lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:%{!deferposixc:-lposixc}} -lstdcio %{!noposixc:%{deferposixc:-lposixc}} -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{!static:%{!noposixc:-lposixc} -lstdcio %{!nostdc:-lstdc}}%{static:%{!nostdc:-lstdc.static}}} --end-group"
 +
 +#undef	LIBSTDCXX_STATIC
-+#define LIBSTDCXX_STATIC "pthread"
++#define LIBSTDCXX_STATIC "supc++"
++
++#undef	LIBSTDCXX_PTHREAD
++#define LIBSTDCXX_PTHREAD "pthread"
 +
 +#if !defined(USE_GNULIBC_1) && defined(HAVE_LD_EH_FRAME_HDR)
 +#define LINK_EH_SPEC "%{!static:--eh-frame-hdr} "
 +#endif
++
++#define GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC \
++  "--start-group %G %{!nolibc:%L %G}"
++
++#undef LINK_GCC_C_SEQUENCE_SPEC
++#define LINK_GCC_C_SEQUENCE_SPEC GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC
++
++#define LIBSTDCXX_CIRCULAR
 +
 +/* AROS uses its own collect-like program for the moment.  */
 +#undef LINKER_NAME
@@ -815,7 +826,7 @@ diff -ruN gcc-6.5.0/gcc/config/rs6000/aros.h gcc-6.5.0.aros/gcc/config/rs6000/ar
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-6.5.0/gcc/config/rs6000/rs6000.c gcc-6.5.0.aros/gcc/config/rs6000/rs6000.c
---- gcc-6.5.0/gcc/config/rs6000/rs6000.c	2018-08-10 21:46:04.000000000 +0100
+--- gcc-6.5.0/gcc/config/rs6000/rs6000.c	2018-08-10 20:46:04.000000000 +0000
 +++ gcc-6.5.0.aros/gcc/config/rs6000/rs6000.c	2019-03-01 02:31:13.371291400 +0000
 @@ -1535,6 +1535,8 @@
      false },
@@ -856,7 +867,7 @@ diff -ruN gcc-6.5.0/gcc/config/rs6000/rs6000.c gcc-6.5.0.aros/gcc/config/rs6000/
  
    if (DEFAULT_ABI == ABI_V4)
 diff -ruN gcc-6.5.0/gcc/config/rs6000/rs6000.h gcc-6.5.0.aros/gcc/config/rs6000/rs6000.h
---- gcc-6.5.0/gcc/config/rs6000/rs6000.h	2018-06-07 15:03:35.000000000 +0100
+--- gcc-6.5.0/gcc/config/rs6000/rs6000.h	2018-06-07 14:03:35.000000000 +0000
 +++ gcc-6.5.0.aros/gcc/config/rs6000/rs6000.h	2019-03-01 02:31:13.371291400 +0000
 @@ -1881,6 +1881,7 @@
    int nargs_prototype;		/* # args left in the current prototype */
@@ -914,7 +925,7 @@ diff -ruN gcc-6.5.0/gcc/config.build gcc-6.5.0.aros/gcc/config.build
      build_install_headers_dir=install-headers-cpio
 diff -ruN gcc-6.5.0/gcc/config.gcc gcc-6.5.0.aros/gcc/config.gcc
 --- gcc-6.5.0/gcc/config.gcc	2017-11-21 09:41:34.000000000 +0000
-+++ gcc-6.5.0.aros/gcc/config.gcc	2019-03-01 11:10:04.219728700 +0000
++++ gcc-6.5.0.aros/gcc/config.gcc	2019-03-01 02:31:13.371291400 +0000
 @@ -798,6 +798,16 @@
        ;;
    esac
@@ -1033,6 +1044,90 @@ diff -ruN gcc-6.5.0/gcc/config.host gcc-6.5.0.aros/gcc/config.host
    *-*-*vms*)
      host_xm_file="vms/xm-vms.h"
      host_xmake_file=vms/x-vms
+diff -ruN gcc-6.5.0/gcc/cp/g++spec.c gcc-6.5.0.aros/gcc/cp/g++spec.c
+--- gcc-6.5.0/gcc/cp/g++spec.c	2016-01-04 14:30:50.000000000 +0000
++++ gcc-6.5.0.aros/gcc/cp/g++spec.c	2019-03-01 02:31:13.371291400 +0000
+@@ -54,12 +54,18 @@
+ #ifndef LIBSTDCXX_STATIC
+ #define LIBSTDCXX_STATIC NULL
+ #endif
++#ifndef LIBSTDCXX_PTHREAD
++#define LIBSTDCXX_PTHREAD NULL
++#endif
+ 
+ void
+ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
+ 		      unsigned int *in_decoded_options_count,
+ 		      int *in_added_libraries)
+ {
++#ifdef LIBSTDCXX_CIRCULAR
++  int started = 0;
++#endif
+   unsigned int i, j;
+ 
+   /* If nonzero, the user gave us the `-p' or `-pg' flag.  */
+@@ -204,6 +210,8 @@
+ 
+ 	case OPT_static_libstdc__:
+ 	  library = library >= 0 ? 2 : library;
++	  if (LIBSTDCXX_PTHREAD != NULL)
++  		added += 1;
+ 	  args[i] |= SKIPOPT;
+ 	  break;
+ 
+@@ -261,6 +269,10 @@
+   shared_libgcc = 0;
+ #endif
+ 
++#ifdef LIBSTDCXX_CIRCULAR
++  if (library > 0)
++    added += 2;
++#endif
+   /* Add one for shared_libgcc or extra static library.  */
+   num_args = argc + added + need_math + (library > 0) * 4 + 1;
+   new_decoded_options = XNEWVEC (struct cl_decoded_option, num_args);
+@@ -334,6 +346,12 @@
+   /* Add `-lstdc++' if we haven't already done so.  */
+   if (library > 0)
+     {
++#ifdef LIBSTDCXX_CIRCULAR
++	  generate_option (OPT_Wl_, "--start-group", 1, CL_DRIVER,
++			   &new_decoded_options[j++]);
++	  started = 1;
++#endif
++
+ #ifdef HAVE_LD_STATIC_DYNAMIC
+       if (library > 1 && !static_link)
+ 	{
+@@ -355,6 +373,13 @@
+ 	  added_libraries++;
+ 	  j++;
+ 	}
++      if ((static_link || library > 1) && LIBSTDCXX_PTHREAD != NULL)
++	{
++	  generate_option (OPT_l, LIBSTDCXX_PTHREAD, 1,
++			   CL_DRIVER, &new_decoded_options[j]);
++	  added_libraries++;
++	  j++;
++	}
+ #ifdef HAVE_LD_STATIC_DYNAMIC
+       if (library > 1 && !static_link)
+ 	{
+@@ -389,6 +414,14 @@
+     generate_option (OPT_shared_libgcc, NULL, 1, CL_DRIVER,
+ 		     &new_decoded_options[j++]);
+ 
++#ifdef LIBSTDCXX_CIRCULAR
++  if (started)
++  {
++    generate_option (OPT_Wl_, "--end-group", 1, CL_DRIVER,
++			   &new_decoded_options[j++]);
++  }
++#endif
++
+   *in_decoded_options_count = j;
+   *in_decoded_options = new_decoded_options;
+   *in_added_libraries = added_libraries;
 diff -ruN gcc-6.5.0/gcc/ginclude/aros/types/null.h gcc-6.5.0.aros/gcc/ginclude/aros/types/null.h
 --- gcc-6.5.0/gcc/ginclude/aros/types/null.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-6.5.0.aros/gcc/ginclude/aros/types/null.h	2019-03-01 02:31:13.371291400 +0000
@@ -1120,7 +1215,7 @@ diff -ruN gcc-6.5.0/gcc/ginclude/stddef.h gcc-6.5.0.aros/gcc/ginclude/stddef.h
  #endif /* _SIZE_T_ */
  #endif /* __SIZE_T */
 diff -ruN gcc-6.5.0/include/filenames.h gcc-6.5.0.aros/include/filenames.h
---- gcc-6.5.0/include/filenames.h	2015-07-14 17:08:59.000000000 +0100
+--- gcc-6.5.0/include/filenames.h	2015-07-14 16:08:59.000000000 +0000
 +++ gcc-6.5.0.aros/include/filenames.h	2019-03-01 02:31:13.371291400 +0000
 @@ -42,6 +42,13 @@
  #  define HAS_DRIVE_SPEC(f) HAS_DOS_DRIVE_SPEC (f)
@@ -1137,7 +1232,7 @@ diff -ruN gcc-6.5.0/include/filenames.h gcc-6.5.0.aros/include/filenames.h
  #  if defined(__APPLE__)
  #    ifndef HAVE_CASE_INSENSITIVE_FILE_SYSTEM
 diff -ruN gcc-6.5.0/libatomic/configure.tgt gcc-6.5.0.aros/libatomic/configure.tgt
---- gcc-6.5.0/libatomic/configure.tgt	2016-05-10 08:03:07.000000000 +0100
+--- gcc-6.5.0/libatomic/configure.tgt	2016-05-10 07:03:07.000000000 +0000
 +++ gcc-6.5.0.aros/libatomic/configure.tgt	2019-03-01 02:31:13.371291400 +0000
 @@ -108,6 +108,10 @@
  
@@ -1531,7 +1626,7 @@ diff -ruN gcc-6.5.0/libiberty/filename_cmp.c gcc-6.5.0.aros/libiberty/filename_c
    for (;;)
      {
 diff -ruN gcc-6.5.0/libobjc/configure gcc-6.5.0.aros/libobjc/configure
---- gcc-6.5.0/libobjc/configure	2018-10-26 10:56:36.000000000 +0100
+--- gcc-6.5.0/libobjc/configure	2018-10-26 09:56:36.000000000 +0000
 +++ gcc-6.5.0.aros/libobjc/configure	2019-03-01 02:31:13.371291400 +0000
 @@ -11253,214 +11253,7 @@
  # -----------
@@ -2285,7 +2380,7 @@ diff -ruN gcc-6.5.0/libstdc++-v3/configure.ac gcc-6.5.0.aros/libstdc++-v3/config
  ACX_LT_HOST_FLAGS
  AC_SUBST(enable_shared)
 diff -ruN gcc-6.5.0/libstdc++-v3/configure.host gcc-6.5.0.aros/libstdc++-v3/configure.host
---- gcc-6.5.0/libstdc++-v3/configure.host	2016-09-27 07:11:15.000000000 +0100
+--- gcc-6.5.0/libstdc++-v3/configure.host	2016-09-27 06:11:15.000000000 +0000
 +++ gcc-6.5.0.aros/libstdc++-v3/configure.host	2019-03-01 02:31:13.371291400 +0000
 @@ -226,6 +226,9 @@
      os_include_dir="os/generic"
@@ -2298,7 +2393,7 @@ diff -ruN gcc-6.5.0/libstdc++-v3/configure.host gcc-6.5.0.aros/libstdc++-v3/conf
      # Plain BSD attempts to share FreeBSD files.
      os_include_dir="os/bsd/freebsd"
 diff -ruN gcc-6.5.0/libstdc++-v3/crossconfig.m4 gcc-6.5.0.aros/libstdc++-v3/crossconfig.m4
---- gcc-6.5.0/libstdc++-v3/crossconfig.m4	2015-10-11 23:34:28.000000000 +0100
+--- gcc-6.5.0/libstdc++-v3/crossconfig.m4	2015-10-11 22:34:28.000000000 +0000
 +++ gcc-6.5.0.aros/libstdc++-v3/crossconfig.m4	2019-03-01 02:31:13.371291400 +0000
 @@ -5,6 +5,31 @@
  AC_DEFUN([GLIBCXX_CROSSCONFIG],[

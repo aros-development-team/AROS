@@ -51,7 +51,9 @@ endif
 ifneq (no-java,$(JAVA_TARGET))
 GCC_LANGUAGES:=$(GCC_LANGUAGES),java
 endif
-
+ifneq (no-rust,$(RUST_TARGET))
+GCC_LANGUAGES:=$(GCC_LANGUAGES),rust
+endif
 GCC_COMMON_OPTS := --target=$(AROS_TARGET_CPU)-aros
 
 # ARM requires additional flags to determine CPU type and FP model
