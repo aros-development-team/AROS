@@ -160,11 +160,12 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
 /*
  *
  */
-void IOAPIC_IntDeliveryOptions(UBYTE instance, UBYTE pin, UBYTE pol, UBYTE trig, UBYTE *rtPol, UBYTE *rtTrig)
+void IOAPIC_IntDeliveryOptions(UBYTE base, UBYTE pin, UBYTE pol, UBYTE trig, UBYTE *rtPol, UBYTE *rtTrig)
 {
     if (pol == 0)
     {
-        if (instance == 0 && pin < I8259A_IRQCOUNT)
+        if ((base < I8259A_IRQCOUNT) &&
+            ((base + pin) < I8259A_IRQCOUNT)
             *rtPol = 0;
         else
             *rtPol = 1;
@@ -178,7 +179,8 @@ void IOAPIC_IntDeliveryOptions(UBYTE instance, UBYTE pin, UBYTE pol, UBYTE trig,
     }
     if (trig == 0)
     {
-        if (instance == 0 && pin < I8259A_IRQCOUNT)
+        if ((base < I8259A_IRQCOUNT) &&
+            ((base + pin) < I8259A_IRQCOUNT)
             *rtTrig = 0;
         else
             *rtTrig = 1;
@@ -326,11 +328,11 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     {
                         bug("[Kernel:IOAPIC] %s: IRQ #%u mapped (pol:%d trig:%d)\n", __func__, irq, intrMap->im_Polarity, intrMap->im_Trig);
                     }
-                    IOAPIC_IntDeliveryOptions(instance, ioapic_pin, intrMap->im_Polarity, intrMap->im_Trig, &rtPol, &rtTrig);
+                    IOAPIC_IntDeliveryOptions(ioapicData->ioapic_GSI, ioapic_pin, intrMap->im_Polarity, intrMap->im_Trig, &rtPol, &rtTrig);
                 }
                 else
                 {
-                    IOAPIC_IntDeliveryOptions(instance, ioapic_pin, 0, 0, &rtPol, &rtTrig);
+                    IOAPIC_IntDeliveryOptions(ioapicData->ioapic_GSI, ioapic_pin, 0, 0, &rtPol, &rtTrig);
                 }
                 if (rtPol)
                     irqRoute->pol = IOAPIC_INTPOL_LOW;
