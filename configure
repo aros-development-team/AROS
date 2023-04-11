@@ -663,6 +663,7 @@ KERNEL_DBUS_INCLUDES
 KERNEL_DBUS_KOBJ
 DBUS_LIBFLAGS
 DBUS_CFLAGS
+rust_target
 java_target
 objc_target
 target_binutils_version
@@ -991,6 +992,7 @@ with_gcc_version
 with_llvm_version
 enable_objc
 enable_java
+enable_rust
 with_cpu
 with_fpu
 with_float
@@ -1687,6 +1689,7 @@ Optional Features:
   --disable-crosstools    Do not build cross-compiler toolchain
   --enable-objc           Enable Objectve-C support (default=no)
   --enable-java           Enable Java support (default=no)
+  --enable-rust           Enable Rust support (default=no)
   --enable-includes=dir   Alternative system include directory
   --enable-palm-debug-hack
                           Enable palm debug output hack in palm native
@@ -10996,6 +10999,24 @@ else
     java_target="no-java"
 fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to enable Rust suppport" >&5
+printf %s "checking whether to enable Rust suppport... " >&6; }
+# Check whether --enable-rust was given.
+if test ${enable_rust+y}
+then :
+  enableval=$enable_rust; rust="$enableval"
+else $as_nop
+  rust="no"
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rust" >&5
+printf "%s\n" "$rust" >&6; }
+if test "x$rust" != "xno"; then
+    rust_target="$rust"
+else
+    rust_target="no-rust"
+fi
+
 spec_obj_format="-m $aros_object_format"
 # Now process extra architecture-specific options.
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
@@ -17995,6 +18016,9 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 #Java related
+
+
+#Rust related
 
 
 # DBUS related

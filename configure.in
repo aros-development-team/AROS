@@ -2279,6 +2279,15 @@ else
     java_target="no-java"
 fi
 
+AC_MSG_CHECKING([whether to enable Rust suppport])
+AC_ARG_ENABLE(rust,AS_HELP_STRING([--enable-rust],[Enable Rust support (default=no)]),rust="$enableval",rust="no")
+AC_MSG_RESULT($rust)
+if test "x$rust" != "xno"; then
+    rust_target="$rust"
+else
+    rust_target="no-rust"
+fi
+
 spec_obj_format="-m $aros_object_format"
 # Now process extra architecture-specific options.
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
@@ -3625,6 +3634,9 @@ AC_SUBST(objc_target)
 
 #Java related
 AC_SUBST(java_target)
+
+#Rust related
+AC_SUBST(rust_target)
 
 # DBUS related
 AC_SUBST(DBUS_CFLAGS)
