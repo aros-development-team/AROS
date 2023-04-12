@@ -34,7 +34,7 @@ PCI_HIDD_TARGET               := @pci_hidd_target@
 CROSSTOOLS_TARGET             := @crosstools_target@
 OBJC_TARGET                   := @objc_target@
 JAVA_TARGET                   := @java_target@
-RUST_TARGET                   := no-rust
+RUST_TARGET                   := @rust_target@
 @aros_target_options@
 
 # -------------------------------------------------------------------------- 
@@ -100,21 +100,21 @@ CONFIG_BASE_CPPFLAGS          = $(strip @aros_config_cppflags@)
 CONFIG_CFLAGS                 = $(strip @aros_config_cflags@ $(CONFIG_WARN_CFLAGS) $(CONFIG_NOWARN_CFLAGS))
 CONFIG_CXXFLAGS               = $(strip @aros_config_cxxflags@ $(CONFIG_WARN_CXXFLAGS) $(CONFIG_NOWARN_CXXFLAGS))
 CONFIG_CPPFLAGS               = $(strip @aros_config_cppflags@)
-CONFIG_AFLAGS                 := $(strip @aros_config_aflags@)
-CONFIG_LDFLAGS                := $(strip @aros_config_ldflags@)
-SHARED_CFLAGS                 := $(strip @aros_shared_cflags@)
-SHARED_AFLAGS                 := $(strip @aros_shared_aflags@)
-SHARED_LDFLAGS                := $(strip @aros_shared_ldflags@)
+CONFIG_AFLAGS                 = $(strip @aros_config_aflags@)
+CONFIG_LDFLAGS                = $(strip @aros_config_ldflags@)
+SHARED_CFLAGS                 = $(strip @aros_shared_cflags@)
+SHARED_AFLAGS                 = $(strip @aros_shared_aflags@)
+SHARED_LDFLAGS                = $(strip @aros_shared_ldflags@)
 TARGET_CFLAGS                 = $(strip $(OPTIMIZATION_CFLAGS) $(CONFIG_CFLAGS) $(USER_CFLAGS))
 TARGET_CXXFLAGS               = $(strip $(OPTIMIZATION_CFLAGS) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS))
 TARGET_CPPFLAGS               = $(strip $(USER_INCLUDES) $(CONFIG_CPPFLAGS) $(USER_CPPFLAGS))
 TARGET_LDFLAGS                = $(strip $(CONFIG_LDFLAGS) $(TARGET_C_LIBS))
-DEBUG_CFLAGS                  := $(strip @aros_debug_cflags@)
-DEBUG_CXXFLAGS                := $(strip @aros_debug_cxxflags@)
-DEBUG_CPPFLAGS                := $(strip @aros_debug_cppflags@)
-DEBUG_AFLAGS                  := $(strip @aros_debug_aflags@)
-DEBUG_LDFLAGS                 := $(strip @aros_debug_ldflags@)
-OPTIMIZATION_CFLAGS           := $(strip @aros_optimization_cflags@)
+DEBUG_CFLAGS                  = $(strip @aros_debug_cflags@)
+DEBUG_CXXFLAGS                = $(strip @aros_debug_cxxflags@)
+DEBUG_CPPFLAGS                = $(strip @aros_debug_cppflags@)
+DEBUG_AFLAGS                  = $(strip @aros_debug_aflags@)
+DEBUG_LDFLAGS                 = $(strip @aros_debug_ldflags@)
+OPTIMIZATION_CFLAGS           = $(strip @aros_optimization_cflags@)
 @aros_isa_extra@ISA_FLAGS                     = $(strip @aros_isa_flags@)
 
 TARGET_ISA_CFLAGS             = $(ISA_FLAGS)
@@ -140,9 +140,9 @@ NIX_LDFLAGS                   := $(strip @aros_target_nix_ldflags@)
 DETACH_LDFLAGS                := $(strip @aros_target_detach_ldflags@)
 NOSTDLIB_LDFLAGS              := $(strip @aros_target_nostdlib_ldflags@)
 
-AR                            := $(strip @aros_target_ar@)
-AR_PLAIN                      := $(strip @aros_plain_ar@)
-RANLIB                        := $(strip @aros_target_ranlib@)
+AR                            = $(strip @aros_target_ar@)
+AR_PLAIN                      = $(strip @aros_plain_ar@)
+RANLIB                        = $(strip @aros_target_ranlib@)
 NM                            := $(strip @aros_target_nm@)
 NM_PLAIN                      := $(strip @aros_plain_nm@)
 OBJCOPY                       := $(strip @aros_target_objcopy@)
