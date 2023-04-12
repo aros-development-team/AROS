@@ -1,9 +1,36 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
-/* FIXME: add autodoc */
-char *realpath(const char *path, char *resolved_path)
+/*****************************************************************************
+
+    NAME */
+
+#include <grp.h>
+
+        char *realpath(
+
+/*  SYNOPSIS */
+        const char *path, char *resolved_path)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+        Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     /* TODO: Implement realpath() */
     return 0;
