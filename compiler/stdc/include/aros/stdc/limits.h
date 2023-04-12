@@ -45,8 +45,10 @@
 #define CHAR_MIN	SCHAR_MIN
 /* maximum value for an object of type char */
 #define CHAR_MAX	SCHAR_MAX
+
 /* maximum number of bytes in a multibyte character, for any supported locale */
 #define	MB_LEN_MAX	1	/* At the moment only "C" locale supported */
+
 /* minimum value for an object of type short int */
 #define SHRT_MIN	(-32768)
 /* maximum value for an object of type short int */
@@ -79,5 +81,9 @@
 #define LLONG_MAX	0x7fffffffffffffffLL
 /* maximum value for an object of type unsigned long long int */
 #define ULLONG_MAX	0xffffffffffffffffULL
+
+/* width and limit of _Bool (C2X) */
+# define BOOL_MAX 1
+# define BOOL_WIDTH 1
 
 #endif /* _STDC_LIMITS_H_ */
