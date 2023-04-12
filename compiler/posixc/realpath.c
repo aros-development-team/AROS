@@ -6,8 +6,6 @@
 
     NAME */
 
-#include <grp.h>
-
         char *realpath(
 
 /*  SYNOPSIS */
