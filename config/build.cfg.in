@@ -31,8 +31,6 @@ TARGET_FUNCINSTR          := no
 # Enable LTO if supported ...
 TARGET_LTO                := @aros_config_lto@
 
-TARGET_UNITTESTS          := @aros_config_unittests@
-
 # If set, the build system will use this tool to convert the elf
 # binary to the targets file format - otherwise the elf will be copied
 TARGET_TRANSLATEELF       = @aros_elf_translate@

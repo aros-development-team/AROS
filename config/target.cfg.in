@@ -1,4 +1,4 @@
-#   Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2023, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -29,6 +29,8 @@ TARGET_LLVM_VER               := @target_llvm_version@
 
 # Bootloader to use on platforms that support it
 AROS_TARGET_BOOTLOADER        := @aros_target_bootloader@
+
+TARGET_UNITTESTS          := @aros_config_unittests@
 
 PCI_HIDD_TARGET               := @pci_hidd_target@
 CROSSTOOLS_TARGET             := @crosstools_target@
