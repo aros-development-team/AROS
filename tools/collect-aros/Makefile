@@ -1,10 +1,11 @@
-# Copyright © 2000-2020, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2023, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Makefile to build collect-aros.
 
 USER_CFLAGS += -Wall -Wunused -O2
 -include $(TOP)/config/make.cfg
+Q=
 
 HOST_CC	     ?= $(CC)
 HOST_STRIP   ?= strip
@@ -18,7 +19,12 @@ COLLECT-AROS-DIR := $(TOP)/tools/collect-aros
 else
 COLLECT-AROS-DIR := .
 endif
-COLLECT_CFLAGS  ?= $(HOST_CFLAGS) $(USER_CFLAGS) -I $(COLLECT-AROS-DIR)
+ifneq ($(AROS_LIB),)
+AROS_LIB_DIR := $(AROS_LIB)
+else
+AROS_LIB_DIR := .
+endif
+COLLECT_CFLAGS  ?= $(HOST_CFLAGS) $(USER_CFLAGS) -I $(COLLECT-AROS-DIR) -DOBJLIBDIR=\"$(AROS_LIB_DIR)\"
 
 ifeq ($(AROS_HOST_ARCH),aros)
 COLLECT_CFLAGS += -D_HAVE_LIBIBERTY_

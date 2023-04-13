@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include "misc.h"
@@ -40,9 +40,8 @@ static FILE *my_popen(const char *command, const char *file)
     return pipe;
 }
 
-
 /*
-    This routine is slow, but does the work and it's the simplest to write down.
+    The following routines are slow, but do the work and are the simplest to write down.
     All this will get integrated into the linker anyway, so there's no point
     in doing optimizations
 */
@@ -52,7 +51,7 @@ void collect_sets(const char *file, setnode **setlist_ptr)
 
     FILE *pipe = my_popen(OBJDUMP_NAME " -h ", file);
 
-    /* This fscanf() simply splits the whole stream into separate words */
+    /* split the stream into separate words */
     while (fscanf(pipe, " %200s ", secname) > 0)
     {
         parse_format(secname);
@@ -62,21 +61,15 @@ void collect_sets(const char *file, setnode **setlist_ptr)
     pclose(pipe);
 }
 
-/*
-    This routine is slow, but does the work and it's the simplest to write down.
-    All this will get integrated into the linker anyway, so there's no point
-    in doing optimizations
-*/
 void collect_libs(const char *file, setnode **liblist_ptr)
 {
-    unsigned long offset;
-    char type;
     char secname[201];
     char buff[256];
+    unsigned long offset;
+    char type;
 
     FILE *pipe = my_popen("nm ", file);
 
-    /* This fscanf() simply splits the whole stream into separate words */
     while (fgets(buff, sizeof(buff), pipe)) {
         struct setnode *node;
         int pri;
@@ -119,11 +112,45 @@ void collect_libs(const char *file, setnode **liblist_ptr)
     pclose(pipe);
 }
 
+void collect_extra(const char *file, setnode **liblist_ptr)
+{
+    char *objname, secname[201];
+    char buff[256];
+    unsigned long offset;
+    char type;
+
+    FILE *pipe = my_popen("nm ", file);
+
+    while (fgets(buff, sizeof(buff), pipe)) {
+        struct setnode *node;
+
+        offset = 0;
+
+        if (sscanf(buff, "%lx %c %200s ", &offset, &type, secname) != 3 &&
+            sscanf(buff, " %c %200s", &type, secname) != 2)
+            continue;
+
+        if (strncmp(secname, "__cxa_pure_virtual", 18) == 0)
+        {
+            objname = calloc(strlen(OBJLIBDIR)+strlen(AROSOBJ_CXXPUREVIRT)+2, 1);
+            sprintf(objname, "%s/%s", OBJLIBDIR, AROSOBJ_CXXPUREVIRT);
+        }
+        else
+            continue;
+
+        node = calloc(sizeof(*node),1);
+        node->secname = strdup(objname);
+        node->next = *liblist_ptr;
+        *liblist_ptr = node;
+    }
+
+    pclose(pipe);
+}
 
 int check_and_print_undefined_symbols(const char *file)
 {
-    int there_are_undefined_syms = 0;
     char buf[200];
+    int undefined_syms = 0;
     size_t cnt;
 
     strcpy(buf, NM_NAME);
@@ -131,18 +158,16 @@ int check_and_print_undefined_symbols(const char *file)
         strcat(buf, " --demangle");
     if (!strstr(buf, "--undefined-only"))
         strcat(buf, " --undefined-only");
-#if (0)
-    //TODO: if we are using gnu nm, we should add --line-numbers
-    if (!strstr(buf, "--line-numbers"))
+    if ((have_gnunm) && (!strstr(buf, "--line-numbers")))
         strcat(buf, " --line-numbers");
-#endif
+
     FILE *pipe = my_popen(buf, file);
 
     while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
     {
-        if (!there_are_undefined_syms)
+        if (!undefined_syms)
         {
-            there_are_undefined_syms = 1;
+            undefined_syms = 1;
             fprintf(stderr, "There are undefined symbols in '%s':\n", file);
         }
 
@@ -151,5 +176,11 @@ int check_and_print_undefined_symbols(const char *file)
 
     pclose(pipe);
 
-    return there_are_undefined_syms;
+    return undefined_syms;
+}
+
+void backend_init(char *ldname)
+{
+    // nothing to do
+    return;
 }
