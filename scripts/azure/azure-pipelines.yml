@@ -409,6 +409,7 @@ jobs:
         fi
       }
       execute make -j $(BUILDTHREADS) crosstools
+      rm -Rf $(AROSBUILDDIR)/bin
       cd $(AROSBUILDTOOLCHAINDIR)/../
       tar cjvf $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
       md5sum $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 >$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5
