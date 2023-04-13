@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- includes-copy : includes-cunit-$(TARGET_UNITTESTS)-copy
 #MM- includes-cunit-yes-copy : cunit-fetch
 
-CUNITVERSION=3.2.6
+CUNITVERSION=3.2.7
 REPOSITORIES := https://gitlab.com/cunity/cunit/-/archive/$(CUNITVERSION)
 ARCHBASE     := cunit-$(CUNITVERSION)
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
