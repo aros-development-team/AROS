@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 DEBUG_ACPI=no
 
 ACPICAPACKAGE      := acpica
-ACPICAVERSION      := 20220331
+ACPICAVERSION      := 20230331
 ACPICAREPOSITORIES := \
     https://acpica.org/sites/acpica/files https://sources.voidlinux.org/acpica-utils-$(ACPICAVERSION)
 ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)

@@ -1,18 +1,6 @@
-diff -ruN acpica-unix-20220331/source/components/executer/exconfig.c acpica-unix-20220331.aros/source/components/executer/exconfig.c
---- acpica-unix-20220331/source/components/executer/exconfig.c	2022-03-31 16:38:37.000000000 +0000
-+++ acpica-unix-20220331.aros/source/components/executer/exconfig.c	2022-05-01 13:55:12.221111000 +0000
-@@ -471,7 +471,7 @@
-     }
-     if (Target->Common.Type != ACPI_TYPE_INTEGER)
-     {
--        fprintf (stderr, "Type not integer: %X\n", Target->Common.Type);
-+        ACPI_ERROR ((AE_INFO, "Type not integer: %X", Target->Common.Type));
-         return_ACPI_STATUS (AE_AML_OPERAND_TYPE);
-     }
- 
-diff -ruN acpica-unix-20220331/source/include/achware.h acpica-unix-20220331.aros/source/include/achware.h
---- acpica-unix-20220331/source/include/achware.h	2022-03-31 16:38:39.000000000 +0000
-+++ acpica-unix-20220331.aros/source/include/achware.h	2023-03-18 12:05:49.870656182 +0000
+diff -ruN acpica-unix-20230331/source/include/achware.h acpica-unix-20230331.aros/source/include/achware.h
+--- acpica-unix-20230331/source/include/achware.h	2023-03-31 19:17:52.000000000 +0000
++++ acpica-unix-20230331.aros/source/include/achware.h	2023-03-18 11:54:42.470656947 +0000
 @@ -161,6 +161,7 @@
  #define ACPI_SST_SLEEPING       3
  #define ACPI_SST_SLEEP_CONTEXT  4
@@ -28,26 +16,28 @@ diff -ruN acpica-unix-20220331/source/include/achware.h acpica-unix-20220331.aro
 +#endif /* !__INLINE_ACPICA_STACKCALL__ */
  
  #endif /* __ACHWARE_H__ */
-diff -ruN acpica-unix-20220331/source/include/acpixf.h acpica-unix-20220331.aros/source/include/acpixf.h
---- acpica-unix-20220331/source/include/acpixf.h	2022-03-31 16:38:39.000000000 +0000
-+++ acpica-unix-20220331.aros/source/include/acpixf.h	2023-03-18 13:14:36.380657046 +0000
-@@ -545,6 +545,7 @@
+diff -ruN acpica-unix-20230331/source/include/acpixf.h acpica-unix-20230331.aros/source/include/acpixf.h
+--- acpica-unix-20230331/source/include/acpixf.h	2023-03-31 19:17:52.000000000 +0000
++++ acpica-unix-20230331.aros/source/include/acpixf.h	2023-03-18 13:26:30.190657550 +0000
+@@ -545,7 +545,8 @@
  
  #endif /* ACPI_DEBUGGER */
  
+-
 +#if !defined(__INLINE_ACPICA_STACKCALL__)
- 
++ 
  /*****************************************************************************
   *
-@@ -1136,6 +1137,7 @@
+  * ACPICA public interface prototypes
+@@ -1151,6 +1152,7 @@
  AcpiRemoveGpeBlock (
      ACPI_HANDLE             GpeDevice))
  
-+#endif /* !__INLINE_ACPICA_STACKCALL__ */
++#endif /* !__INLINE_ACPICA_STACKCALL__ *
  
  /*
   * Resource interfaces
-@@ -1145,6 +1147,8 @@
+@@ -1160,6 +1162,8 @@
      ACPI_RESOURCE           *Resource,
      void                    *Context);
  
@@ -56,17 +46,17 @@ diff -ruN acpica-unix-20220331/source/include/acpixf.h acpica-unix-20220331.aros
  ACPI_EXTERNAL_RETURN_STATUS (
  ACPI_STATUS
  AcpiGetVendorResource (
-@@ -1426,4 +1430,6 @@
+@@ -1441,4 +1445,6 @@
  AcpiSetDebuggerThreadId (
      ACPI_THREAD_ID          ThreadId);
  
 +#endif /* !__INLINE_ACPICA_STACKCALL__ */
 +
  #endif /* __ACXFACE_H__ */
-diff -ruN acpica-unix-20220331/source/include/acutils.h acpica-unix-20220331.aros/source/include/acutils.h
---- acpica-unix-20220331/source/include/acutils.h	2022-03-31 16:38:39.000000000 +0000
-+++ acpica-unix-20220331.aros/source/include/acutils.h	2023-03-18 12:06:36.990656969 +0000
-@@ -297,6 +297,7 @@
+diff -ruN acpica-unix-20230331/source/include/acutils.h acpica-unix-20230331.aros/source/include/acutils.h
+--- acpica-unix-20230331/source/include/acutils.h	2023-03-31 19:17:53.000000000 +0000
++++ acpica-unix-20230331.aros/source/include/acutils.h	2023-03-18 11:55:30.040657010 +0000
+@@ -299,6 +299,7 @@
  #define DB_QWORD_DISPLAY     0x08
  #define DB_DISPLAY_DATA_ONLY 0x10
  
@@ -74,16 +64,16 @@ diff -ruN acpica-unix-20220331/source/include/acutils.h acpica-unix-20220331.aro
  
  /*
   * utascii - ASCII utilities
-@@ -1275,4 +1276,6 @@
+@@ -1302,4 +1303,6 @@
      char                    *OutString);
  #endif
  
 +#endif /* !__INLINE_ACPICA_STACKCALL__ */
 +
  #endif /* _ACUTILS_H */
-diff -ruN acpica-unix-20220331/source/include/platform/acaros.h acpica-unix-20220331.aros/source/include/platform/acaros.h
---- acpica-unix-20220331/source/include/platform/acaros.h	1970-01-01 00:00:00.000000000 +0000
-+++ acpica-unix-20220331.aros/source/include/platform/acaros.h	2019-02-21 10:24:26.129890000 +0000
+diff -ruN acpica-unix-20230331/source/include/platform/acaros.h acpica-unix-20230331.aros/source/include/platform/acaros.h
+--- acpica-unix-20230331/source/include/platform/acaros.h	1970-01-01 00:00:00.000000000 +0000
++++ acpica-unix-20230331.aros/source/include/platform/acaros.h	2019-02-21 10:24:26.129890000 +0000
 @@ -0,0 +1,86 @@
 +/******************************************************************************
 + *
@@ -171,9 +161,9 @@ diff -ruN acpica-unix-20220331/source/include/platform/acaros.h acpica-unix-2022
 +#include <libraries/acpica.h>
 +
 +#endif /* __ACAROS_H__ */
-diff -ruN acpica-unix-20220331/source/include/platform/acenv.h acpica-unix-20220331.aros/source/include/platform/acenv.h
---- acpica-unix-20220331/source/include/platform/acenv.h	2022-03-31 16:38:39.000000000 +0000
-+++ acpica-unix-20220331.aros/source/include/platform/acenv.h	2019-02-21 10:24:26.133912600 +0000
+diff -ruN acpica-unix-20230331/source/include/platform/acenv.h acpica-unix-20230331.aros/source/include/platform/acenv.h
+--- acpica-unix-20230331/source/include/platform/acenv.h	2023-03-31 19:17:53.000000000 +0000
++++ acpica-unix-20230331.aros/source/include/platform/acenv.h	2019-02-21 10:24:26.133912600 +0000
 @@ -350,6 +350,9 @@
  #elif defined(__QNX__)
  #include "acqnx.h"
