@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <stdio.h>
@@ -66,15 +66,23 @@ static int set_os_and_abi(const char *file)
     return 0;
 }
 
+struct libentry
+{
+    int idx;
+    char *str;
+};
+
 int main(int argc, char *argv[])
 {
-    int cnt, i;
+    struct libentry llibs[argc];
+    struct libentry rellibs[argc];
     char *output, **ldargs;
+    char *do_verbose = NULL;
     /* incremental = 1 -> don't do final linking.
        incremental = 2 -> don't do final linking AND STILL produce symbol sets.  */
     int incremental = 0, ignore_undefined_symbols = 0;
     int strip_all   = 0;
-    char *do_verbose = NULL;
+    int cnt, i, libcnt = 0, relcnt = 0;
 
     setnode *setlist = NULL, *liblist = NULL;
 
@@ -106,6 +114,23 @@ int main(int argc, char *argv[])
                 argv[cnt][2] = '\0';
             }
             else
+            /* linklib */
+            if (strncmp(&argv[cnt][1], "l", 1) == 0)
+            {
+                int lnlen = strlen(&argv[cnt][2]);
+                if ((lnlen > 4) && (strcmp("_rel", &argv[cnt][lnlen - 2]) == 0))
+                {
+                    rellibs[relcnt].idx = cnt;
+                    rellibs[relcnt++].str = &argv[cnt][2];
+                }
+                else
+                {
+                    llibs[libcnt].idx = cnt;
+                    llibs[libcnt++].str = &argv[cnt][2];
+                }
+            }
+            else
+            /* Complete stripping is requested, but we do it our own way */
             /* Ignoring of missing symbols is requested */
             if (strncmp(&argv[cnt][1], "ius", 4) == 0)
             {
@@ -138,7 +163,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+  
     ldargs = xmalloc(sizeof(char *) * (argc + EXTRA_ARG_CNT
         + ((incremental == 1) ? 0 : 2) + 1));
 
@@ -167,6 +192,21 @@ int main(int argc, char *argv[])
         ldargs[cnt++] = tempoutput;
     }
 
+    // Fixup relbase lib linking 
+    if (relcnt > 0)
+    {
+        int relid, libid;
+        for (relid = 0; relid < relcnt; relid++)
+            for (libid = 0; libid < libcnt; libid++)
+            {
+                if (!strncmp(llibs[libid].str, rellibs[relid].str, strlen(llibs[libid].str)))
+                {
+                    ldargs[llibs[libid].idx + EXTRA_ARG_CNT] = ldargs[rellibs[relid].idx + EXTRA_ARG_CNT];
+                }
+            }
+    }
+  
+    
     ldargs[cnt] = NULL;
               
     docommandvp(ld_name, ldargs);
