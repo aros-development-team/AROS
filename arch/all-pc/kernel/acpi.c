@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/asmcall.h>
@@ -78,7 +78,7 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                 struct acpi_resource_irq *irq  = &resource->Data.Irq;
                 D(
                     bug("[Kernel:ACPI] %s: - ACPI_RESOURCE_TYPE_IRQ\n", __func__);
-                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, irq->Interrupts[0], irq->Polarity, irq->Triggering);
+                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, irq->u.Interrupts[0], irq->Polarity, irq->Triggering);
                 )
                 if (irq->Triggering == ACPI_LEVEL_SENSITIVE)
                     irqAttribs[1].ti_Data = 1;
@@ -91,7 +91,7 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                     irqAttribs[0].ti_Data = 1;
 
                 /* Update delivery information */
-                KrnModifyIRQA(irq->Interrupts[0], irqAttribs);
+                KrnModifyIRQA(irq->u.Interrupts[0], irqAttribs);
             }
             break;
         case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
@@ -99,7 +99,7 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                 struct acpi_resource_extended_irq *eirq = &resource->Data.ExtendedIrq;
                 D(
                     bug("[Kernel:ACPI] %s: - ACPI_RESOURCE_TYPE_EXTENDED_IRQ\n", __func__);
-                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, eirq->Interrupts[0], eirq->Polarity, eirq->Triggering);
+                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, eirq->u.Interrupts[0], eirq->Polarity, eirq->Triggering);
                 )
                 if (eirq->Triggering == ACPI_LEVEL_SENSITIVE)
                     irqAttribs[1].ti_Data = 1;
@@ -112,7 +112,7 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                     irqAttribs[0].ti_Data = 1;
 
                 /* Update delivery information */
-                KrnModifyIRQA(eirq->Interrupts[0], irqAttribs);
+                KrnModifyIRQA(eirq->u.Interrupts[0], irqAttribs);
             }
             break;
     }
