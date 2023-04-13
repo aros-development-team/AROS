@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2023, The AROS Development Team. All rights reserved.
 */
 
 #define INTUITION_NO_INLINE_STDARG
@@ -452,7 +452,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                 Close(from);
             }
 
-            if (lock != NULL)
+            if (lock != BNULL)
             {
                 if (fib)
                     FreeVec(fib);
@@ -485,7 +485,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
             else
             {
                 lock = RecursiveCreateDir(INSTALLAROS_TMP_PATH);
-                if (lock != NULL)
+                if (lock != BNULL)
                     UnLock(lock);
                 else
                 {
@@ -1610,7 +1610,7 @@ IPTR Install__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
     else
     {
         lock = RecursiveCreateDir(envDstDir);
-        if (lock != NULL)
+        if (lock != BNULL)
             UnLock(lock);
         else
         {

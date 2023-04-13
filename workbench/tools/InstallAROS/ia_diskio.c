@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2023, The AROS Development Team. All rights reserved.
 */
 
 #define INTUITION_NO_INLINE_STDARG
@@ -471,7 +471,7 @@ LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_
     else
     {
         dstDirLock = RecursiveCreateDir(dstDir);
-        if (dstDirLock != NULL)
+        if (dstDirLock != BNULL)
             UnLock(dstDirLock);
         else
         {
@@ -656,7 +656,7 @@ LONG CopyDirArray(Class * CLASS, Object * self, CONST_STRPTR sourcePath,
             }
             else
             {
-                if ((lock = Lock(srcDirs, SHARED_LOCK)) != NULL)
+                if ((lock = Lock(srcDirs, SHARED_LOCK)) != BNULL)
                 {
                     UnLock(lock);
                     DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
