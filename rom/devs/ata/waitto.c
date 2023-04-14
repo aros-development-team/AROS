@@ -49,7 +49,7 @@ ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
     }
     WaitIO(tmr);
 
-    SetSignal(0, sig | tsigs);
+    SetSignal(tsigs, sig | tsigs);
 
     return sigs & ~sig;
 }

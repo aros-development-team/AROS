@@ -160,7 +160,7 @@ ULONG ahci_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
     }
     WaitIO(tmr);
 
-    SetSignal(0, iosig | tsigs);
+    SetSignal(tsigs, iosig | tsigs);
 
     return sigs &~ iosig;
 }
