@@ -862,8 +862,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
             for (i = X86_CPU_EXCEPT_COUNT; i < APIC_EXCEPT_TOP; i++)
             {
-                if ((cpuNum == 0) &&
-                    ((i == APIC_EXCEPT_SYSCALL)||(i == APIC_EXCEPT_HEARTBEAT)||(i == APIC_EXCEPT_SPURIOUS)))
+                if ((i == APIC_EXCEPT_SYSCALL) ||
+                    ((cpuNum == 0) && ((i == APIC_EXCEPT_HEARTBEAT)||(i == APIC_EXCEPT_SPURIOUS))))
                     continue;
 
                 if (!core_SetIDTGate((x86vectgate_t *)apic->cores[cpuNum].cpu_IDT,
