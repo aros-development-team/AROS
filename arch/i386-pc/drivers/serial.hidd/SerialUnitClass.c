@@ -32,16 +32,15 @@
 
 #include "serial_intern.h"
 
-#undef  SDEBUG
-#undef  DEBUG
-#define SDEBUG 0
-#define DEBUG 0
 #include <aros/debug.h>
 
 #define DIRQ(x)
 
 /* The speed of the crystal */
 #define CRYSTAL_SPEED   1843200
+
+AROS_INTP(serial_int_13);
+AROS_INTP(serial_int_24);
 
 void serialunit_receive_data();
 ULONG serialunit_write_more_data();
@@ -115,7 +114,57 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
   {
     struct IntuitionBase * IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
     data = OOP_INST_DATA(cl, obj);
-    
+
+    if (unitnum < 5 )
+    {
+        struct Interrupt *irq;
+        if ((unitnum == 1) || (unitnum == 3))
+        {
+            /* Install COM2 and COM4 interrupt */
+            irq = &CSD(cl->UserData)->intHandler[1];
+            if (!irq->is_Node.ln_Name)
+            {
+                irq->is_Node.ln_Name = "COM2/COM4";
+                irq->is_Code = (VOID_FUNC)serial_int_24;
+                irq->is_Node.ln_Type = NT_INTERRUPT;
+                irq->is_Node.ln_Pri = 127;            /* Set the highest pri */
+                irq->is_Data = (APTR)CSD(cl->UserData);
+                AddIntServer(INTB_KERNEL + 3, irq);
+                D(bug("[Serial:PC] %s: Interrupt handler installed\n", __func__));
+
+                /* Install reset callback */
+                data->unitsdh.is_Node.ln_Pri = -61;
+                data->unitsdh.is_Node.ln_Name = ((struct Node *)obj)->ln_Name;
+                data->unitsdh.is_Code = (VOID_FUNC)PCSerUnit_ResetHandler;
+                data->unitsdh.is_Data = data;
+                AddResetCallback(&data->unitsdh);
+                D(bug("[Serial:PC] %s: Shutdown handler installed\n", __func__));
+            }
+        }
+        else
+        {
+            /* Install COM1 and COM3 interrupt */
+            irq = &CSD(cl->UserData)->intHandler[0];
+            if (!irq->is_Node.ln_Name)
+            {
+                irq->is_Node.ln_Name = "COM1/COM3";
+                irq->is_Code = (VOID_FUNC)serial_int_13;
+                irq->is_Node.ln_Type = NT_INTERRUPT;
+                irq->is_Node.ln_Pri = 127;            /* Set the highest pri */
+                irq->is_Data = (APTR)CSD(cl->UserData);
+                AddIntServer(INTB_KERNEL + 4, irq);
+                D(bug("[Serial:PC] %s: Interrupt handler installed\n", __func__));
+
+                /* Install reset callback */
+                data->unitsdh.is_Node.ln_Pri = -61;
+                data->unitsdh.is_Node.ln_Name = ((struct Node *)obj)->ln_Name;
+                data->unitsdh.is_Code = (VOID_FUNC)PCSerUnit_ResetHandler;
+                data->unitsdh.is_Data = data;
+                AddResetCallback(&data->unitsdh);
+                D(bug("[Serial:PC] %s: Shutdown handler installed\n", __func__));
+            }
+        }
+    }
     data->baseaddr = bases[unitnum];
 
     if (NULL != IntuitionBase) {
@@ -136,15 +185,6 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
     Enable();
 
     D(bug("[Serial:PC] %s: Unit %d at 0x0%x\n", __func__, data->unitnum, data->baseaddr));
-
-    /* Install reset callback */
-    data->unitsdh.is_Node.ln_Pri = -61;
-    data->unitsdh.is_Node.ln_Name = ((struct Node *)obj)->ln_Name;
-    data->unitsdh.is_Code = (VOID_FUNC)PCSerUnit_ResetHandler;
-    data->unitsdh.is_Data = data;
-    AddResetCallback(&data->unitsdh);
-
-    D(bug("[Serial:PC] %s: Shutdown handler installed\n", __func__));
 
     /* Wake up UART */
     serial_outp(data, UART_LCR, 0xBF);
@@ -263,6 +303,8 @@ BOOL PCSerUnit__Hidd_SerialUnit__SetBaudrate(OOP_Class *cl, OOP_Object *o, struc
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   BOOL valid = FALSE;
   
+  EnterFunc(bug("SerialUnit::SetBaudrate()\n"));
+
   if (msg->baudrate != data->baudrate)
   {
     valid = set_baudrate(data, msg->baudrate);
@@ -286,7 +328,9 @@ BOOL PCSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, str
   BOOL valid = TRUE;
   int i = 0;
   struct TagItem * tags = msg->tags;
-  
+
+  EnterFunc(bug("SerialUnit::SetParameters()\n"));
+
   while (TAG_END != tags[i].ti_Tag && TRUE == valid)
   {
     switch (tags[i].ti_Tag)
@@ -347,26 +391,30 @@ BOOL PCSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, str
 /******* SerialUnit::SendBreak() **********************************/
 BYTE PCSerUnit__Hidd_SerialUnit__SendBreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
+
+  EnterFunc(bug("SerialUnit::SendBreak()\n"));
+
   return SerErr_LineErr;
 }
 
 /******* SerialUnit::Start() **********************************/
 VOID PCSerUnit__Hidd_SerialUnit__Start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Start *msg)
 {
-        struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
-        
-        /*
-         * Allow or start feeding the UART with data. Get the data
-         * from upper layer.
-         */
-        if (TRUE == data->stopped) {
-                if (NULL != data->DataWriteCallBack)
-                        data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
-                /*
-                 * Also mark the stopped flag as FALSE.
-                 */
-                data->stopped = FALSE;
-        }
+    struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+
+    EnterFunc(bug("SerialUnit::Start()\n"));
+    /*
+     * Allow or start feeding the UART with data. Get the data
+     * from upper layer.
+     */
+    if (TRUE == data->stopped) {
+            if (NULL != data->DataWriteCallBack)
+                    data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+            /*
+             * Also mark the stopped flag as FALSE.
+             */
+            data->stopped = FALSE;
+    }
 }
 
 /******* SerialUnit::Stop() **********************************/

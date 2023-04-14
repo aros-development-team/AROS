@@ -18,10 +18,6 @@
 
 #include LC_LIBDEFS_FILE
 
-#undef  SDEBUG
-#undef  DEBUG
-#define SDEBUG 0
-#define DEBUG 0
 #include <aros/debug.h>
 
 /*** HIDDSerial::NewUnit() *********************************************************/
@@ -38,7 +34,7 @@ OOP_Object *PCSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, struct p
 
 #if (AROS_SERIAL_DEBUG > 0)
     if (msg->unitnum == (AROS_SERIAL_DEBUG-1))
-        ReturnPtr("HIDDSerial::NewSerial", Object *, su);
+        ReturnPtr("HIDDSerial::NewSerial", OOP_Object *, su);
 #endif
 
   switch (msg->unitnum)
@@ -85,7 +81,7 @@ OOP_Object *PCSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, struct p
     data->usedunits |= (1 << unitnum);
   }
 
-  ReturnPtr("HIDDSerial::NewSerial", Object *, su);
+  ReturnPtr("HIDDSerial::NewSerial", OOP_Object *, su);
 }
 
 
