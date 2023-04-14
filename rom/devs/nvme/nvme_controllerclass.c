@@ -266,7 +266,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         D(bug ("[NVME:Controller] %s:     F/W '%s'\n", __func__, ctrl->fr);)
                         D(bug ("[NVME:Controller] %s:        %u namespace(s)\n", __func__, ctrl->nn);)
 
-                        D(bug ("[NVME:Controller] %s: mdts = %u\n", ctrl->mdts);)
+                        D(bug ("[NVME:Controller] %s: mdts = %u\n", __func__, ctrl->mdts);)
                         dev->dev_mdts = ctrl->mdts;
 
                         struct TagItem attrs[] =
