@@ -41,6 +41,9 @@ __section(".text.romtag") struct Resident const ROMTag =
     (CONST_STRPTR)&LibName[0],
     (CONST_STRPTR)&ID[6],
     (APTR)InitLib
+#if defined(__AROS__)
+    , 0, NULL
+#endif
 };
 
 __section(".text.romtag") const char LibName[] = "AHI-Handler";

@@ -1,6 +1,6 @@
 /*
      AHI - The AHI preferences program
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
         s = (char *) FindToolType(toolarray,"PUBSCREEN");
 
         if( s != NULL ) {
-          strncpy(pubscreen, s, sizeof pubscreen);
+          strncpy(pubscreen, s, sizeof(pubscreen) - 1);
           args.pubscreen = pubscreen;
         }
 
@@ -292,7 +292,7 @@ void NewMode(int selectedmode) {
 
   if( mode != NULL )
   {
-    D(bug("[AHI:Prefs] %s: Mode %08x\n", __func__, mode);)
+    D(bug("[AHI:Prefs] %s: Mode @ 0x%p\n", __func__, mode);)
 
     id = mode->ID;
     
@@ -463,7 +463,7 @@ void FillUnit() {
     unit->prefs.ahiup_Channels    = 0;
   }
 
-  if( state.ModeSelected != ~0 )
+  if( state.ModeSelected != ~0UL)
   {
     mode = (struct ModeNode *) GetNode(state.ModeSelected, ModeList);
   }
@@ -511,7 +511,7 @@ char *getFreq(void) {
 
   D(bug("[AHI:Prefs] %s()\n", __func__);)
 
-  if( state.ModeSelected != ~0 )
+  if( state.ModeSelected != ~0UL )
   {
     mode = (struct ModeNode *) GetNode(state.ModeSelected, ModeList);
   } else {
@@ -616,7 +616,7 @@ IPTR getAudioMode(void) {
   
   D(bug("[AHI:Prefs] %s()\n", __func__);)
 
-  if( state.ModeSelected == ~0 )
+  if( state.ModeSelected == ~0UL )
   {
     return AHI_INVALID_ID;
   }
@@ -637,7 +637,7 @@ char *getRecord(void) {
 
   D(bug("[AHI:Prefs] %s()\n", __func__);)
 
-  if( state.ModeSelected != ~0 )
+  if( state.ModeSelected != ~0UL )
   {
     mode = (struct ModeNode *) GetNode(state.ModeSelected, ModeList);
   }

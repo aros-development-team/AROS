@@ -1,6 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -949,11 +949,7 @@ _AHI_LoadSound( UWORD                    sound,
 	    rc = AHIE_BADSAMPLETYPE;
 	    break;
 	  }
-	  else
-	  {
-	    // Fall through ...
-	  }
-	  
+	  // fall through
         case AHIST_M8S:
         case AHIST_M16S:
         case AHIST_S8S:

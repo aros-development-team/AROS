@@ -1,6 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -826,19 +826,19 @@ AllocHardware ( struct AHIDevUnit *iounit,
 
     /* Set hardware properties */
     AHI_ControlAudio(iounit->AudioCtrl,
-        (iounit->MonitorVolume == ~0 ? TAG_IGNORE : AHIC_MonitorVolume),
+        ((LONG)iounit->MonitorVolume == ~0L ? TAG_IGNORE : AHIC_MonitorVolume),
         iounit->MonitorVolume,
 
-        (iounit->InputGain == ~0 ? TAG_IGNORE : AHIC_InputGain),
+        ((LONG)iounit->InputGain == ~0L ? TAG_IGNORE : AHIC_InputGain),
         iounit->InputGain,
 
-        (iounit->OutputVolume == ~0 ? TAG_IGNORE : AHIC_OutputVolume),
+        ((ULONG)iounit->OutputVolume == ~0UL ? TAG_IGNORE : AHIC_OutputVolume),
         iounit->OutputVolume,
 
-        (iounit->Input == ~0 ? TAG_IGNORE : AHIC_Input),
+        ((ULONG)iounit->Input == ~0UL ? TAG_IGNORE : AHIC_Input),
         iounit->Input,
 
-        (iounit->Output == ~0 ? TAG_IGNORE : AHIC_Output),
+        ((ULONG)iounit->Output == ~0UL ? TAG_IGNORE : AHIC_Output),
         iounit->Output,
 
         TAG_DONE);

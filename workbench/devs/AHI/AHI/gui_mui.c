@@ -1,6 +1,6 @@
 /*
      AHI - The AHI preferences program
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
 
      This program is free software; you can redistribute it and/or
@@ -307,13 +307,13 @@ static void GUINewUnit(void)
   set(MUIList, MUIA_List_Quiet, TRUE);
   DoMethod(MUIList, MUIM_List_Insert, Modes, -1, MUIV_List_Insert_Bottom);
   set(MUIList, MUIA_List_Quiet, FALSE);
-  set(MUIList, MUIA_List_Active, state.ModeSelected != ~0 ? state.ModeSelected : MUIV_List_Active_Off);
+  set(MUIList, MUIA_List_Active, state.ModeSelected != ~0UL ? state.ModeSelected : (IPTR)MUIV_List_Active_Off);
   GUINewMode();
 }
 
 static void GUINewMode(void)
 {
-  int Max, Sel, Dis;
+  IPTR Max, Sel, Dis;
   char* buffer;
   char* arg1 = getRecord();
   char* arg2 = getAuthor();

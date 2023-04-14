@@ -1,6 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This library is free software; you can redistribute it and/or
@@ -173,13 +173,13 @@ CreateAudioCtrl(struct TagItem *tags)
     audioctrl->ac.ahiac_AudioCtrl.ahiac_UserData =
       (APTR)GetTagData(AHIA_UserData,0,tags);
     audioctrl->ahiac_AudioID =
-      GetTagData(AHIA_AudioID,AHI_DEFAULT_ID,tags);
+      (ULONG)GetTagData(AHIA_AudioID,AHI_DEFAULT_ID,tags);
     audioctrl->ac.ahiac_MixFreq =
-      GetTagData(AHIA_MixFreq,AHI_DEFAULT_FREQ,tags);
+      (ULONG)GetTagData(AHIA_MixFreq,AHI_DEFAULT_FREQ,tags);
     audioctrl->ac.ahiac_Channels =
-      GetTagData(AHIA_Channels,0,tags);
+      (UWORD)GetTagData(AHIA_Channels,0,tags);
     audioctrl->ac.ahiac_Sounds =
-      GetTagData(AHIA_Sounds,0,tags);
+      (UWORD)GetTagData(AHIA_Sounds,0,tags);
     audioctrl->ac.ahiac_SoundFunc =
       (struct Hook *)GetTagData(AHIA_SoundFunc,0,tags);
     audioctrl->ahiac_RecordFunc =
@@ -187,13 +187,13 @@ CreateAudioCtrl(struct TagItem *tags)
     audioctrl->ac.ahiac_PlayerFunc =
       (struct Hook *)GetTagData(AHIA_PlayerFunc,0,tags);
     audioctrl->ac.ahiac_PlayerFreq =
-      GetTagData(AHIA_PlayerFreq,0,tags);
+      (Fixed)GetTagData(AHIA_PlayerFreq,0,tags);
     audioctrl->ac.ahiac_MinPlayerFreq =
-      GetTagData(AHIA_MinPlayerFreq,0,tags);
+      (Fixed)GetTagData(AHIA_MinPlayerFreq,0,tags);
     audioctrl->ac.ahiac_MaxPlayerFreq =
-      GetTagData(AHIA_MaxPlayerFreq,0,tags);
+      (Fixed)GetTagData(AHIA_MaxPlayerFreq,0,tags);
     audioctrl->ac.ahiac_AntiClickSamples = 
-      GetTagData(AHIA_AntiClickSamples,~0,tags);
+      (ULONG)GetTagData(AHIA_AntiClickSamples,~0UL,tags);
 
     audioctrl->ahiac_MasterVolume=0x00010000;
     audioctrl->ahiac_SetMasterVolume=0x00010000;
@@ -222,7 +222,7 @@ CreateAudioCtrl(struct TagItem *tags)
     if(audioctrl->ac.ahiac_MaxPlayerFreq < 65536)
       audioctrl->ac.ahiac_MaxPlayerFreq <<= 16;
 
-    if(audioctrl->ac.ahiac_AntiClickSamples == ~0)
+    if(audioctrl->ac.ahiac_AntiClickSamples == 0xFFFFFFFF)
       audioctrl->ac.ahiac_AntiClickSamples = 
           ( AHIBase->ahib_AntiClickTime * audioctrl->ac.ahiac_MixFreq ) >> 16;
 
@@ -628,8 +628,8 @@ _AHI_AllocAudioA( struct TagItem* tags,
       audioctrl->ahiac_MaxCPU = AHIBase->ahib_MaxCPU >> 8;
     }
 
-    audioctrl->ac.ahiac_PreTimer  = (BOOL (*)(void)) PreTimerPreserveAllRegs;
-    audioctrl->ac.ahiac_PostTimer = (void (*)(void)) PostTimerPreserveAllRegs;
+    audioctrl->ac.ahiac_PreTimer  = (AHIPreTimerHook) PreTimerPreserveAllRegs;
+    audioctrl->ac.ahiac_PostTimer = (AHIPostTimerHook) PostTimerPreserveAllRegs;
 
     audioctrl->ac.ahiac_PreTimerFunc=AllocVec(sizeof(struct Hook),MEMF_PUBLIC|MEMF_CLEAR);
     if(!audioctrl->ac.ahiac_PreTimerFunc)

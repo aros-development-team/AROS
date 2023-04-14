@@ -2,7 +2,7 @@
 #define LIBRARIES_AHISUB_H
 
 /*
-**	$VER: ahi_sub.h 6.0 (02.02.2005)
+**	$VER: ahi_sub.h 6.1 (14.04.2023)
 **	:ts=8 (TAB SIZE: 8)
 **
 **	ahi/[driver].audio definitions
@@ -35,35 +35,38 @@
 
 /*** STRUCTURES */
 
+typedef BOOL (*AHIPreTimerHook)(void *);
+typedef void (*AHIPostTimerHook)(void *);
+
 /* AHIAudioCtrlDrv */
 struct AHIAudioCtrlDrv
 {
 	struct AHIAudioCtrl ahiac_AudioCtrl;
-	ULONG	     ahiac_Flags;		/* See below for definition	*/
-	struct Hook *ahiac_SoundFunc;		/* AHIA_SoundFunc		*/
-	struct Hook *ahiac_PlayerFunc;		/* AHIA_PlayerFunc		*/
-	Fixed	     ahiac_PlayerFreq;		/* AHIA_PlayerFreq		*/
-	Fixed	     ahiac_MinPlayerFreq;	/* AHIA_MinPlayerFreq		*/
-	Fixed	     ahiac_MaxPlayerFreq;	/* AHIA_MaxPlayerFreq		*/
-	ULONG	     ahiac_MixFreq;		/* AHIA_MixFreq			*/
-	UWORD	     ahiac_Channels;		/* AHIA_Channels		*/
-	UWORD	     ahiac_Sounds;		/* AHIA_Sounds			*/
+	ULONG	     		ahiac_Flags;			/* See below for definition	*/
+	struct Hook 		*ahiac_SoundFunc;		/* AHIA_SoundFunc		*/
+	struct Hook 		*ahiac_PlayerFunc;		/* AHIA_PlayerFunc		*/
+	Fixed	     		ahiac_PlayerFreq;		/* AHIA_PlayerFreq		*/
+	Fixed	     		ahiac_MinPlayerFreq;	/* AHIA_MinPlayerFreq		*/
+	Fixed	     		ahiac_MaxPlayerFreq;	/* AHIA_MaxPlayerFreq		*/
+	ULONG	     		ahiac_MixFreq;			/* AHIA_MixFreq			*/
+	UWORD	     		ahiac_Channels;			/* AHIA_Channels		*/
+	UWORD	     		ahiac_Sounds;			/* AHIA_Sounds			*/
 
-	APTR	     ahiac_DriverData;		/* Unused. Store whatever you want here. */
+	APTR	     		ahiac_DriverData;		/* Unused. Store whatever you want here. */
 
-	struct Hook *ahiac_MixerFunc;		/* Mixing routine Hook		*/
-	struct Hook *ahiac_SamplerFunc;		/* Sampler routine Hook		*/
-	ULONG	     ahiac_Obsolete;
-	ULONG	     ahiac_BuffSamples;		/* Samples to mix this pass.	*/
-	ULONG	     ahiac_MinBuffSamples;	/* Min. samples to mix each pass. */
-	ULONG	     ahiac_MaxBuffSamples;	/* Max. samples to mix each pass. */
-	ULONG	     ahiac_BuffSize;		/* Buffer size ahiac_MixerFunc needs. */
-	ULONG	     ahiac_BuffType;		/* Buffer format (V2)		*/
-	BOOL	   (*ahiac_PreTimer)(void);	/* Call before mixing (V4)	*/
-	void	   (*ahiac_PostTimer)(void);	/* Call after mixing (V4)	*/
-	ULONG	     ahiac_AntiClickSamples;	/* AntiClick samples (V6)	*/
-	struct Hook *ahiac_PreTimerFunc;        /* A Hook wrapper for ahiac_PreTimer (V6) */
-	struct Hook *ahiac_PostTimerFunc;       /* A Hook wrapper for ahiac_PostTimer (V6) */
+	struct Hook 		*ahiac_MixerFunc;		/* Mixing routine Hook		*/
+	struct Hook 		*ahiac_SamplerFunc;		/* Sampler routine Hook		*/
+	ULONG	     		ahiac_Obsolete;
+	ULONG	     		ahiac_BuffSamples;		/* Samples to mix this pass.	*/
+	ULONG	     		ahiac_MinBuffSamples;	/* Min. samples to mix each pass. */
+	ULONG	     		ahiac_MaxBuffSamples;	/* Max. samples to mix each pass. */
+	ULONG	     		ahiac_BuffSize;			/* Buffer size ahiac_MixerFunc needs. */
+	ULONG	     		ahiac_BuffType;			/* Buffer format (V2)		*/
+	AHIPreTimerHook		ahiac_PreTimer;			/* Call before mixing (V4)	*/
+	AHIPostTimerHook	ahiac_PostTimer;		/* Call after mixing (V4)	*/
+	ULONG	     		ahiac_AntiClickSamples;	/* AntiClick samples (V6)	*/
+	struct Hook 		*ahiac_PreTimerFunc;    /* A Hook wrapper for ahiac_PreTimer (V6) */
+	struct Hook 		*ahiac_PostTimerFunc;   /* A Hook wrapper for ahiac_PostTimer (V6) */
 
 /* The rest is PRIVATE! Hands off! They may change any time.
 	[lots of private stuff] */

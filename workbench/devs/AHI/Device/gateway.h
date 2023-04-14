@@ -29,11 +29,8 @@ void m68k_DevProc( void );
 
 #if defined( __AROS__ ) && !defined( __mc68000__ )
 
-BOOL
-m68k_PreTimer( void );
-
-void
-m68k_PostTimer( void );
+BOOL m68k_PreTimer( void *);
+void m68k_PostTimer( void *);
 
 #define HookEntryPreserveAllRegs HookEntry
 #define PreTimerPreserveAllRegs  m68k_PreTimer
@@ -45,8 +42,8 @@ m68k_PostTimer( void );
 void HookEntryPreserveAllRegs( void );
 
 /* (Pre|Post)Timer entry points */
-void PreTimerPreserveAllRegs( void );
-void PostTimerPreserveAllRegs( void );
+BOOL PreTimerPreserveAllRegs( void * );
+void PostTimerPreserveAllRegs( void * );
 
 #endif /* defined( __AROS__ ) && !defined( __mc68000__ ) */
 
