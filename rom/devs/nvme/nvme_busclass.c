@@ -484,7 +484,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_identify\n", nn + 1);)
             signals = SetSignal(0, 0);
             nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-            Wait(busehandle.ceh_SigSet);
+            sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
             SetSignal(signals, signals);
             if ((!busehandle.ceh_Status) && (id_ns->ncap != 0))
             {
@@ -514,7 +514,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_get_features\n", nn + 1);)
                 signals = SetSignal(0, 0);
                 nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-                Wait(busehandle.ceh_SigSet);
+                sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
                 SetSignal(signals, signals);
                 if (!busehandle.ceh_Status)
                 {
