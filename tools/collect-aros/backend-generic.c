@@ -130,7 +130,8 @@ void collect_extra(const char *file, setnode **liblist_ptr)
             sscanf(buff, " %c %200s", &type, secname) != 2)
             continue;
 
-        if (strncmp(secname, "__cxa_pure_virtual", 18) == 0)
+        if ((strncmp(secname, "__cxa_pure_virtual", 18) == 0) &&
+            (type == 'w'))
         {
             objname = calloc(strlen(OBJLIBDIR)+strlen(AROSOBJ_CXXPUREVIRT)+2, 1);
             sprintf(objname, "%s/%s", OBJLIBDIR, AROSOBJ_CXXPUREVIRT);
