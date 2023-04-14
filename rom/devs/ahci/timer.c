@@ -143,6 +143,7 @@ void ahci_WaitNano(register ULONG ns)
 ULONG ahci_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
 {
     ULONG iosig = 1 << tmr->io_Message.mn_ReplyPort->mp_SigBit;
+    ULONG tsigs = SetSignal(0, 0);
 
     //D(bug("[AHCI--] Timed wait %lds %ldu\n", secs, micro));
 
@@ -159,7 +160,7 @@ ULONG ahci_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
     }
     WaitIO(tmr);
 
-    SetSignal(0, iosig);
+    SetSignal(0, iosig | tsigs);
 
     return sigs &~ iosig;
 }
