@@ -134,8 +134,8 @@ typedef struct {
     UBYTE               dev_mdts;
 
     int                 db_stride;
-    struct nvme_registers volatile *dev_nvmeregbase;
-    ULONG volatile      *dbs;
+    volatile struct nvme_registers *dev_nvmeregbase;
+    volatile ULONG *dbs;
 
     UWORD               pageshift;
     UWORD               pagesize;
@@ -164,7 +164,7 @@ struct nvme_queue {
     spinlock_t q_lock;
 #endif
     struct Interrupt	q_IntHandler;
-    ULONG volatile *q_db;
+    volatile ULONG *q_db;
     UWORD q_depth;
     UWORD cq_vector;                                /* vector # - not the "vector" */
     UWORD q_irq;

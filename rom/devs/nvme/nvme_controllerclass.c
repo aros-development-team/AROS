@@ -22,6 +22,7 @@
 
 #include "nvme_debug.h"
 #include "nvme_intern.h"
+#include "nvme_timer.h"
 #include "nvme_hw.h"
 #include "nvme_queue.h"
 #include "nvme_queue_admin.h"
@@ -142,8 +143,16 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct NVMEBase *NVMEBase = (struct NVMEBase *)cl->UserData;
     device_t dev = (device_t)GetTagData(aHidd_DriverData, 0, msg->attrList);
-    OOP_Object *nvmeController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
+    struct IORequest *nvmeTimer = nvme_OpenTimer(NVMEBase);
+    OOP_Object *nvmeController;
+ 
+    if (!nvmeTimer)
+    {
+        D(bug ("[NVME:Controller] %s: Failed to open time device\n", __func__);)
+        return NULL;
+    }
+    
+    nvmeController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (nvmeController)
     {
         struct nvme_Controller *data = OOP_INST_DATA(cl, nvmeController);
@@ -171,6 +180,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             if (!dev->dev_Queues)
             {
                 // TODO: dispose the controller object
+                nvme_CloseTimer(nvmeTimer);
                 return NULL;
             }
 
@@ -182,7 +192,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 unsigned long timeout, cmdno;
                 APTR buffer;
                 UQUAD cap;
-                ULONG aqa;
+                ULONG sigs, aqa;
 
                 dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
                 if (!dev->dev_Queues[0]->cehooks)
@@ -190,6 +200,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
+                    nvme_CloseTimer(nvmeTimer);
                     return NULL;
                 }
                 D(bug ("[NVME:Controller] %s:     admin queue hooks @ 0x%p\n", __func__, dev->dev_Queues[0]->cehooks);)
@@ -200,6 +211,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
+                    nvme_CloseTimer(nvmeTimer);
                     return NULL;
                 }
                 D(bug ("[NVME:Controller] %s:     admin queue handlers @ 0x%p\n", __func__, dev->dev_Queues[0]->cehandlers);)
@@ -256,10 +268,11 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     c.identify.cns = 1;
 
                     D(bug ("[NVME:Controller] %s: sending nvme_admin_identify\n", __func__);)
+                    ULONG signals = SetSignal(0, 0);
                     nvme_submit_admincmd(dev, &c, &cehandle);
-                    Wait(cehandle.ceh_SigSet);
-
-                    if (!cehandle.ceh_Status)
+                    sigs = nvme_WaitTO(nvmeTimer, 1, 0, cehandle.ceh_SigSet);
+                    SetSignal(signals, signals);
+                    if ((sigs & cehandle.ceh_SigSet) && (!cehandle.ceh_Status))
                     {
                         D(bug ("[NVME:Controller] %s:     Model '%s'\n", __func__, ctrl->mn);)
                         D(bug ("[NVME:Controller] %s:     Serial '%s'\n", __func__, ctrl->sn);)
@@ -285,6 +298,9 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         };
                         attrs[BUS_TAG_HARDWARENAME].ti_Data = (IPTR)AllocVec(24, MEMF_CLEAR);
                         sprintf((char *)attrs[BUS_TAG_HARDWARENAME].ti_Data, "NVME %u.%u Device Bus", (dev->dev_nvmeregbase->vs >> 16) & 0xFFFF, dev->dev_nvmeregbase->vs & 0xFFFF);
+
+                        nvme_CloseTimer(nvmeTimer);
+                        nvmeTimer = NULL;
 
                         /* Install reset callback */
                         data->ac_ResetHandler.is_Node.ln_Pri = SD_PRI_DOS - 1;
@@ -328,7 +344,12 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         if (data)
             AddTail(&NVMEBase->nvme_Controllers, &data->ac_Node);
     }
+
     D(bug ("[NVME:Controller] %s: returning 0x%p\n", __func__, nvmeController);)
+
+    if (nvmeTimer)
+        nvme_CloseTimer(nvmeTimer);
+
     return nvmeController;
 }
 
