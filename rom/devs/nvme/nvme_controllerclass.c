@@ -155,6 +155,11 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     nvmeController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (nvmeController)
     {
+        struct TagItem pciActivateBusmaster[] =
+        {
+                { aHidd_PCIDevice_isMaster, TRUE },
+                { TAG_DONE, 0UL },
+        };
         struct nvme_Controller *data = OOP_INST_DATA(cl, nvmeController);
         struct nvme_queue *nvmeq;
 
@@ -241,6 +246,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 dev->ctrl_config |= (dev->pageshift - 12) << NVME_CC_MPS_SHIFT;
                 dev->dev_nvmeregbase->cc = dev->ctrl_config;
 
+                OOP_SetAttrs(dev->dev_Object, (struct TagItem *) pciActivateBusmaster);
                 /*
                  * Add the initial admin queue interrupt.
                  * Use the devices IRQ.
