@@ -18,6 +18,8 @@
 
 #include "acpi.h"
 
+#include "x86_syscalls.h"
+
 #define D(x)
 #define DPOFF(x)
 
@@ -28,9 +30,6 @@
  ************************************************************************************************/
 
 const char *ACPI_TABLE_FADT_STR __attribute__((weak)) = ACPI_SIG_FADT;
-
-/* Deafult ACPI PM Syscall Handlers */
-extern void X86_HandleChangePMStateSC(struct ExceptionContext *);
 
 void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 {
@@ -81,138 +80,18 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
     else if (pmState == 0)
     {
         ACPI_STATUS             status;
-        ACPI_OBJECT             arg = { ACPI_TYPE_INTEGER };
-        ACPI_OBJECT_LIST        arg_list = { 1, &arg };
-        char                    *pathName;
-        UINT8                   acpiSleepTypeA, acpiSleepTypeB;
-        ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
-
         DPOFF(bug("[Kernel:ACPI-PM] %s: STATE 0x00 - Powering Off...\n", __func__));
 
         // we must be in user-mode with interrupts enabled to use AcpiCA
         krnLeaveSupervisorRing(FLAGS_INTENABLED);
 
-        status = AcpiGetSleepTypeData(ACPI_STATE_S5,
-                    &acpiSleepTypeA, &acpiSleepTypeB);
-
-        if (!ACPI_FAILURE(status))
+        status = AcpiEnterSleepStatePrep(ACPI_STATE_S5);
+        if (!ACPI_FAILURE (status))
         {
-            DPOFF(bug("[Kernel:ACPI-PM] %s:     %d:%d\n", __func__, acpiSleepTypeA, acpiSleepTypeB));
-
-            // call Prepare To Sleep
-            arg.Integer.Value = ACPI_STATE_S5;
-            pathName = METHOD_PATHNAME__PTS;
-            DPOFF(bug("[Kernel:ACPI-PM] %s:     > ACPI %s\n", __func__, &pathName[1]));
-            status = AcpiEvaluateObject(NULL,
-                                        pathName,
-                                        &arg_list,
-                                        NULL);
+            status = AcpiEnterSleepState(ACPI_STATE_S5);
         }
-        else
-        {
-            pathName = (char *)" ACPI Sleep Type Data";
-        }
-
-        if (!ACPI_FAILURE(status) || (status == AE_NOT_FOUND))
-        {
-            // call System State Transition...
-            // N.B. this is an optional method so we ignore the return value
-            arg.Integer.Value = ACPI_SST_INDICATOR_OFF;
-            pathName = METHOD_PATHNAME__SST;
-            DPOFF(bug("[Kernel:ACPI-PM] %s:     > ACPI %s\n", __func__, &pathName[1]));
-            status = AcpiEvaluateObject(NULL,
-                                        pathName,
-                                        &arg_list,
-                                        NULL);
-            status = AE_OK;
-        }
-
-        if (!ACPI_FAILURE(status))
-        {
-            if (fadt->Flags & ACPI_FADT_HW_REDUCED)
-            {
-                pathName = (char *)" ACPI Sleep Control";
-                if (!fadt->SleepControl.Address ||
-                    !fadt->SleepStatus.Address)
-                {
-                    status = AE_NOT_EXIST;
-                }
-                else
-                {
-                    acpiSleepTypeB = ((acpiSleepTypeA << ACPI_X_SLEEP_TYPE_POSITION) & ACPI_X_SLEEP_TYPE_MASK);
-
-                    DPOFF(bug("[Kernel:ACPI-PM] %s:     Sleep Control Register @ 0x%p, Width %d, Offset %d, MemSpace %d\n", __func__, (IPTR)fadt->SleepControl.Address, fadt->SleepControl.BitWidth, fadt->SleepControl.BitOffset, fadt->SleepControl.SpaceId));
-                    DPOFF(bug("[Kernel:ACPI-PM] %s:     Sleep Value = 0x%2x\n", __func__, acpiSleepTypeB));
-
-                    status = AcpiWrite ((UINT64) (acpiSleepTypeB | ACPI_X_SLEEP_ENABLE), &fadt->SleepControl);
-                }
-            }
-            else
-            {
-                ACPI_BIT_REGISTER_INFO  *sleepTypeRegInfo;
-                ACPI_BIT_REGISTER_INFO  *sleepEnableRegInfo;
-                UINT32 xpm1aControl, xpm1bControl;
-
-                sleepTypeRegInfo = AcpiHwGetBitRegisterInfo (ACPI_BITREG_SLEEP_TYPE);
-                sleepEnableRegInfo = AcpiHwGetBitRegisterInfo (ACPI_BITREG_SLEEP_ENABLE);
-
-                // Clear ACPI Wake status
-                pathName = " ACPI Wake Status";
-                status = AcpiWriteBitRegister (ACPI_BITREG_WAKE_STATUS, ACPI_CLEAR_STATUS);
-
-                // Read the PM1A control value
-                if (!ACPI_FAILURE (status))
-                {
-                    pathName = " PM1A Control Value";
-                    status = AcpiReadBitRegister (ACPI_REGISTER_PM1_CONTROL, &xpm1aControl);
-                }
-
-                // First, write only SLP_TYP to PM1
-                if (!ACPI_FAILURE (status))
-                {
-                    pathName = " PM1 SLP_TYP";
-                    xpm1aControl &= ~(sleepTypeRegInfo->AccessBitMask |
-                                     sleepEnableRegInfo->AccessBitMask);
-                    xpm1bControl = xpm1aControl;
-
-                    xpm1aControl |= (acpiSleepTypeA << sleepTypeRegInfo->BitPosition);
-                    xpm1bControl |= (acpiSleepTypeB << sleepTypeRegInfo->BitPosition);
-
-                    DPOFF(bug("[Kernel:ACPI-PM] %s:     PM1A = 0xd\n", __func__, xpm1aControl));
-
-                    status = AcpiWrite (xpm1aControl, &fadt->XPm1aControlBlock);
-                }
-
-                if ((!ACPI_FAILURE (status)) && (fadt->XPm1bControlBlock.Address))
-                {
-                    status = AcpiWrite (xpm1bControl, &fadt->XPm1bControlBlock);
-                }
-
-                // Second, write both SLP_TYP and SLP_EN to PM1
-                if (!ACPI_FAILURE (status))
-                {
-                    pathName = " PM1 SLP_TYP|SLP_EN";
-                    xpm1aControl |= sleepEnableRegInfo->AccessBitMask;
-                    xpm1bControl |= sleepEnableRegInfo->AccessBitMask;
-
-                    DPOFF(bug("[Kernel:ACPI-PM] %s:     PM1A = 0xd\n", __func__, xpm1aControl));
-
-                    CacheClearU();
-
-                    status = AcpiWrite (xpm1aControl, &fadt->XPm1aControlBlock);
-                }
-
-                if ((!ACPI_FAILURE (status)) && (fadt->XPm1bControlBlock.Address))
-                {
-                    status = AcpiWrite (xpm1bControl, &fadt->XPm1bControlBlock);
-                }
-            }
-        }
-
-        if (ACPI_FAILURE(status))
-        {
-            bug("[Kernel:ACPI-PM] %s: Error evaluating %s: %s\n", __func__, &pathName[1], AcpiFormatException(status));
-        }
+        bug("[Kernel:ACPI-PM] %s: Error entering S5 sleep state: %s\n", __func__, AcpiFormatException(status));
+        X86_HandleSysHaltSC(regs);
     }
     else if (pmState == 0x90)
     {

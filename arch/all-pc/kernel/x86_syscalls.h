@@ -49,7 +49,8 @@
     __value;						                                                \
 })
 
-extern void X86_HandleSysHaltSC(struct ExceptionContext *regs);
+extern void X86_HandleSysHaltSC(struct ExceptionContext *);
+extern void X86_HandleChangePMStateSC(struct ExceptionContext *);
 extern struct syscallx86_Handler x86_SCRebootHandler;
 extern struct syscallx86_Handler x86_SCChangePMStateHandler;
 extern struct syscallx86_Handler x86_SCSysHaltHandler;
