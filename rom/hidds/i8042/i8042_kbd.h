@@ -2,14 +2,16 @@
 #define I8042_KBD_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
     Lang: English.
 */
 
+#ifndef __OOP_NOMETHODBASES__
 #define __OOP_NOMETHODBASES__
+#endif
 
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
