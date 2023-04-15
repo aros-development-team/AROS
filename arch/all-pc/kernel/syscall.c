@@ -97,6 +97,26 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
 
 /* Default x86 syscall handlers */
 
+void X86_HandleSysHaltSC(struct ExceptionContext *regs)
+{
+    D(bug("[Kernel] %s()\n", __func__));
+#if defined(__AROSEXEC_SMP__)
+    //TODO: Halt other CPU cores.
+#endif
+    for(;;)
+    {
+        __asm__ __volatile__("cli; hlt;");
+    }
+}
+
+struct syscallx86_Handler x86_SCSysHaltHandler =
+{
+    {
+        .ln_Name = (APTR)SC_X86SYSHALT
+    },
+    (APTR)X86_HandleSysHaltSC
+};
+
 void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 {
     UBYTE pmState =
@@ -124,10 +144,10 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
         D(bug("[Kernel] %s: STATE 0x00 - Halting...\n", __func__));
 
         /*
-                there is no way to power off by default,
-                so just halt the cpu.. */
-
-        while (1) asm volatile("hlt");
+         * there is no way to power off by default,
+         * so just halt the cpu..
+         */
+        X86_HandleSysHaltSC(regs);
     }
     else if (pmState == PM_STATE_IDLE)
     {
@@ -153,27 +173,6 @@ struct syscallx86_Handler x86_SCChangePMStateHandler =
     },
     (APTR)X86_HandleChangePMStateSC
 };
-
-void X86_HandleSysHaltSC(struct ExceptionContext *regs)
-{
-    D(bug("[Kernel] %s()\n", __func__));
-#if defined(__AROSEXEC_SMP__)
-    //TODO: Halt other CPU cores.
-#endif
-    for(;;)
-    {
-        __asm__ __volatile__("cli; hlt;");
-    }
-}
-
-struct syscallx86_Handler x86_SCSysHaltHandler =
-{
-    {
-        .ln_Name = (APTR)SC_X86SYSHALT
-    },
-    (APTR)X86_HandleSysHaltSC
-};
-
 
 /* Generic warm-reset handler */
 
