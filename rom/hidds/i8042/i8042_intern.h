@@ -7,7 +7,7 @@
 
 /***** Common static data *******************/
 
-struct kbd_staticdata
+struct i8042_staticdata
 {
     OOP_Class          *kbdclass;
     OOP_Object         *kbdhidd;
@@ -25,17 +25,23 @@ struct kbd_staticdata
     struct Library     *cs_OOPBase;
     struct Library     *cs_UtilityBase;
     struct Interrupt    cs_ResetInt;
+    ULONG               cs_Flags;
 };
 
-struct kbdbase
+#define PS2B_DISABLEKEYB    0
+#define PS2F_DISABLEKEYB    (1 << PS2B_DISABLEKEYB)
+#define PS2B_DISABLEMOUSE   1
+#define PS2F_DISABLEMOUSE   (1 << PS2B_DISABLEMOUSE)
+
+struct i8042base
 {
     struct Library library;    
-    struct kbd_staticdata ksd;
+    struct i8042_staticdata csd;
 };
 
 /****************************************************************************************/
 
-#define XSD(cl) (&((struct kbdbase *)cl->UserData)->ksd)
+#define XSD(cl) (&((struct i8042base *)cl->UserData)->csd)
 
 #undef HiddAttrBase
 #undef HiddKbdAB

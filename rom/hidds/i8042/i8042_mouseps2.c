@@ -33,7 +33,7 @@
 
 /****************************************************************************************/
 
-int ps2mouse_reset(struct kbdbase *csd, struct IORequest* tmr, struct mouse_data *);
+int ps2mouse_reset(struct i8042base *csd, struct IORequest* tmr, struct mouse_data *);
 
 /****************************************************************************************
  * PS/2 Mouse Interrupt handler
@@ -226,7 +226,7 @@ void PS2Mouse_InitTask(OOP_Class *cl, OOP_Object *o)
 
     D(bug("[i8042:PS2Mouse] attempting reset to detect mouse ...\n");)
     Disable();
-    result = ps2mouse_reset((struct kbdbase *)cl->UserData, tmr, data);
+    result = ps2mouse_reset((struct i8042base *)cl->UserData, tmr, data);
     Enable();
 
     /* If no valid PS/2 mouse detected, release the IRQ */
@@ -364,7 +364,7 @@ static int ps2mouse_detectintellimouse(struct IORequest* tmr)
 
 /****************************************************************************************/
 
-static AROS_INTH1(PS2KBMResetHandler, struct kbdbase *, i8042Base)
+static AROS_INTH1(PS2KBMResetHandler, struct i8042base *, i8042Base)
 {
     AROS_INTFUNC_INIT
 
@@ -377,7 +377,7 @@ static AROS_INTH1(PS2KBMResetHandler, struct kbdbase *, i8042Base)
     AROS_INTFUNC_EXIT
 }
 
-int ps2mouse_reset(struct kbdbase *i8042Base, struct IORequest* tmr, struct mouse_data *data)
+int ps2mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct mouse_data *data)
 {
     int result, timeout = 100;
 
@@ -466,11 +466,11 @@ int ps2mouse_reset(struct kbdbase *i8042Base, struct IORequest* tmr, struct mous
     D(bug("[i8042:PS2Mouse] Found and initialized PS/2 mouse!\n"));
 
     // Install warm-reset handler
-    i8042Base->ksd.cs_ResetInt.is_Node.ln_Name = i8042Base->library.lib_Node.ln_Name;
-    i8042Base->ksd.cs_ResetInt.is_Node.ln_Pri = -10;
-    i8042Base->ksd.cs_ResetInt.is_Code = (VOID_FUNC)PS2KBMResetHandler;
-    i8042Base->ksd.cs_ResetInt.is_Data = i8042Base;
-    AddResetCallback(&i8042Base->ksd.cs_ResetInt);
+    i8042Base->csd.cs_ResetInt.is_Node.ln_Name = i8042Base->library.lib_Node.ln_Name;
+    i8042Base->csd.cs_ResetInt.is_Node.ln_Pri = -10;
+    i8042Base->csd.cs_ResetInt.is_Code = (VOID_FUNC)PS2KBMResetHandler;
+    i8042Base->csd.cs_ResetInt.is_Data = i8042Base;
+    AddResetCallback(&i8042Base->csd.cs_ResetInt);
 
     return 1;
 }

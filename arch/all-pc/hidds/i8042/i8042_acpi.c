@@ -22,10 +22,11 @@ static ACPI_STATUS ACPIFoundCallback(ACPI_HANDLE handle, ULONG nesting_level,
     void *context, void **return_value)
 {
     IPTR *found = (IPTR *)return_value;
+    IPTR  mask = (IPTR)context;
 
     D(bug("[i8042:ACPI] %s()\n", __func__));
 
-    *found = *found + 1;
+    *found = *found | mask;
 
     return AE_OK;
 }
@@ -47,13 +48,22 @@ static int init_i8042acpi(LIBBASETYPEPTR lh)
         ACPI_STATUS status;
         IPTR devicesfound = 0;
 
-        status = AcpiGetDevices("PNP0303", ACPIFoundCallback, NULL, (void **)&devicesfound);
+        status = AcpiGetDevices("PNP0303", ACPIFoundCallback, (APTR)(1 << 0), (void **)&devicesfound);
         if (ACPI_FAILURE(status)) {
             D(bug("[i8042:ACPI] %s: No PNP0303 PS/2 Keyboard found\n", __func__);)
         }
-        status = AcpiGetDevices("PNP0F03", ACPIFoundCallback, NULL, (void **)&devicesfound);
+        if (devicesfound & (1 << 0))
+        {
+            lh->csd.cs_Flags |= PS2F_DISABLEKEYB;
+        }
+
+        status = AcpiGetDevices("PNP0F03", ACPIFoundCallback, (APTR)(1 << 1), (void **)&devicesfound);
         if (ACPI_FAILURE(status)) {
             D(bug("[i8042:ACPI] %s: No PNP0F03 PS/2 Mouse found\n", __func__);)
+        }
+        if (devicesfound & (1 << 1))
+        {
+            lh->csd.cs_Flags |= PS2F_DISABLEMOUSE;
         }
 
         if (devicesfound)
@@ -66,7 +76,7 @@ static int init_i8042acpi(LIBBASETYPEPTR lh)
 
     return TRUE;
 
-    ReturnInt("HIDD::Init", ULONG, TRUE);
+    ReturnInt("i8042::ACPIInit", int, TRUE);
 }
 
-ADD2INITLIB(init_i8042acpi, 0)
+ADD2INITLIB(init_i8042acpi, 20)
