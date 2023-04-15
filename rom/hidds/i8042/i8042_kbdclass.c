@@ -157,7 +157,7 @@ void KbdCntrlTask(OOP_Class *cl, OOP_Object *o)
     data->LEDSigBit = AllocSignal(-1);
     /* Failed to get it? Use SIGBREAKB_CTRL_E instead */
 
-    if (data->LEDSigBit < 0)
+    if (data->LEDSigBit == (ULONG)-1)
         data->LEDSigBit = SIGBREAKB_CTRL_E;
 
     sig = 1L << data->LEDSigBit;
@@ -250,9 +250,9 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     while ((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
-        
-        D(bug("[i8042:Kbd] %s: Got tag %d, data %x\n", __func__, tag->ti_Tag, tag->ti_Data));
-            
+
+        D(bug("[i8042:Kbd] %s: Got tag %d, data %p\n", __func__, tag->ti_Tag, (APTR)tag->ti_Data));
+
         if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
         {
             D(bug("[i8042:Kbd] %s:   Kbd hidd tag\n", __func__));
@@ -260,7 +260,7 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
             {
                 case aoHidd_Kbd_IrqHandler:
                     callback = (APTR)tag->ti_Data;
-                    D(bug("[i8042:Kbd] %s:     Got callback %p\n", __func__, (APTR)tag->ti_Data));
+                    D(bug("[i8042:Kbd] %s:     Got callback 0x%p\n", __func__, (APTR)tag->ti_Data));
                     break;
                         
                 case aoHidd_Kbd_IrqHandlerData:
@@ -269,9 +269,9 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
                     break;
             }
         }
-            
+
     } /* while (tags to process) */
-    
+
     if (NULL == callback)
         ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
