@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := i8042_acpi
+
+USER_CPPFLAGS := -DAROS_USE_OOP \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__ \
+               -D__UTILITY_NOLIBBASE__ \
+               -D__INLINE_ACPICA_STACKCALL__ 
+
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/hidds/i8042
+
+%build_archspecific \
+  mainmmake=kernel-hidd-i8042 maindir=rom/hidds/i8042 \
+  arch=pc modname=i8042 \
+  files="$(FILES)"
