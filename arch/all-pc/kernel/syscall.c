@@ -154,6 +154,27 @@ struct syscallx86_Handler x86_SCChangePMStateHandler =
     (APTR)X86_HandleChangePMStateSC
 };
 
+void X86_HandleSysHaltSC(struct ExceptionContext *regs)
+{
+    D(bug("[Kernel] %s()\n", __func__));
+#if defined(__AROSEXEC_SMP__)
+    //TODO: Halt other CPU cores.
+#endif
+    for(;;)
+    {
+        __asm__ __volatile__("cli; hlt;");
+    }
+}
+
+struct syscallx86_Handler x86_SCSysHaltHandler =
+{
+    {
+        .ln_Name = (APTR)SC_X86SYSHALT
+    },
+    (APTR)X86_HandleSysHaltSC
+};
+
+
 /* Generic warm-reset handler */
 
 void X86_HandleRebootSC()

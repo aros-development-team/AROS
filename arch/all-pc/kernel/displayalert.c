@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/kernel.h>
@@ -30,7 +30,8 @@ AROS_LH2(void, KrnDisplayAlert,
          * Unfortunately we have no input yet, so just stop.
          */
         PrintString("\nSystem halted. Reset the machine.", KernelBase);
-        for(;;);
+
+        krnSysCallSystemHalt();
     }
 
     /* Recoverable alerts don't halt the machine. They are just dropped to debug log. */

@@ -103,9 +103,7 @@ void cpu_Trap(struct ExceptionContext *regs, unsigned long error_code, unsigned 
         {
             bug("[Kernel] %s(%u) UNHANDLED EXCEPTION\n", __func__, irq_number);
             PrintContext(regs, error_code);
-
-            //TODO: Stop other cores on SMP systems....
-            while (1) asm volatile ("hlt");
+            X86_HandleSysHaltSC(regs);
         }
     }
 

@@ -154,7 +154,7 @@ BOOL core_SetIDTGate(x86vectgate_t *IGATES, int vect, uintptr_t gate, BOOL enabl
     }
     else
     {
-        bug("[Kernel]" DEBUGCOLOR_SET " %s: Vector #%d gate already enabled!" DEBUGCOLOR_RESET "\n", __func__, vect);
+        bug("[Kernel]" DEBUGCOLOR_SET " %s: 0x%p Vector #%d gate already enabled!" DEBUGCOLOR_RESET "\n", __func__, IGATES, vect);
     }
     return FALSE;
 }
@@ -316,7 +316,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         if (pdata)
         {
             pdata->kb_PDFlags |= PLATFORMF_INIRQ;
-#if (0)
+#if defined(KERNEL_IRQSTORESSE)
             if (pdata->kb_FXCtx)
             {
                 DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): saving to kb_FXCt @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, int_number, pdata->kb_FXCtx);)
@@ -359,7 +359,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         }
         if (pdata)
         {
-#if (0)
+#if defined(KERNEL_IRQSTORESSE)
             if (pdata->kb_FXCtx)
             {
                 DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): Device IRQ - restoring fp state from kb_FXCt @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, int_number, pdata->kb_FXCtx);)

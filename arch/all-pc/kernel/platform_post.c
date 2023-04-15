@@ -27,6 +27,8 @@
 #include "apic.h"
 #include "smp.h"
 
+#include "x86_syscalls.h"
+
 #define D(x)
 //#define TEST_SMP_IPI
 
@@ -116,9 +118,6 @@ const struct Resident kernelpost_romtag =
    (APTR)KernelPost
 };
 
-extern struct syscallx86_Handler x86_SCRebootHandler;
-extern struct syscallx86_Handler x86_SCChangePMStateHandler;
-
 #if defined(TEST_SMP_IPI)
 struct Hook test_ipi;
 
@@ -166,6 +165,7 @@ static AROS_UFH3 (APTR, KernelPost,
     Disable();
 
     // Add the default reboot/shutdown handlers if ACPI ones haven't been registered
+    krnAddSysCallHandler(pdata, &x86_SCSysHaltHandler, TRUE, FALSE);
     krnAddSysCallHandler(pdata, &x86_SCRebootHandler, TRUE, FALSE);
     krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, TRUE, FALSE);
 
