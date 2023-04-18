@@ -17,6 +17,7 @@ STDCTESTFILES := \
         mktime \
         raise \
         setjmp \
+        setvbuf \
         sscanf \
         stpblk \
         strchr \
