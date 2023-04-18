@@ -21,15 +21,16 @@
 /* For each opener stdin, stdout and stderr may be different */
 static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
 {
+    struct FileHandle *_fh;
     struct Process *me = (struct Process *)FindTask(NULL);
-    BPTR _in, _out;
 
     NewList((struct List *)&StdCIOBase->files);
 
-    _in = Input();
-    _out = Output();
-
-    StdCIOBase->intstdin.fh = DupFileHandle(_in);
+    if ((StdCIOBase->intstdin.fh = Input()))
+    {
+        _fh = BADDR(StdCIOBase->intstdin.fh);
+        StdCIOBase->intstdin.fhFlags = _fh->fh_Flags;
+    }
     StdCIOBase->intstdin.flags =
         __STDCIO_STDIO_READ
         | __STDCIO_STDIO_DONTCLOSE
@@ -38,7 +39,11 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
     D(bug("[%s] %s: intstdin.fh = 0x%p\n", STDCNAME, __func__, StdCIOBase->intstdin.fh));
     StdCIOBase->StdCIOBase._stdin = &StdCIOBase->intstdin;
 
-    StdCIOBase->intstdout.fh = DupFileHandle(_out);
+    if ((StdCIOBase->intstdout.fh = Output()))
+    {
+        _fh = BADDR(StdCIOBase->intstdout.fh);
+        StdCIOBase->intstdout.fhFlags = _fh->fh_Flags;
+    }
     StdCIOBase->intstdout.flags =
         __STDCIO_STDIO_WRITE
         | __STDCIO_STDIO_DONTCLOSE
@@ -60,18 +65,22 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
 
 static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
 {
+    struct FileHandle *_fh;
     FILE *stream;
-    BPTR _in, _out;
 
     D(bug("[%s] %s: StdCIOBase = 0x%p, DOSBase = 0x%p\n", STDCNAME, __func__, StdCIOBase, DOSBase));
 
-    _in = Input();
-    _out = Output();
+    if (StdCIOBase->intstdout.fh)
+    {
+        _fh = BADDR(StdCIOBase->intstdout.fh);
+        _fh->fh_Flags = StdCIOBase->intstdout.fhFlags;
+    }
 
-    if (StdCIOBase->intstdin.fh != _in)
-        Close(StdCIOBase->intstdin.fh);
-    if (StdCIOBase->intstdout.fh != _out)
-        Close(StdCIOBase->intstdout.fh);
+    if (StdCIOBase->intstdin.fh)
+    {
+        _fh = BADDR(StdCIOBase->intstdin.fh);
+        _fh->fh_Flags = StdCIOBase->intstdin.fhFlags;
+    }
 
     ForeachNode(&StdCIOBase->files, stream)
     {

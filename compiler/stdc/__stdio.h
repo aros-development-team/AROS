@@ -2,7 +2,7 @@
 #define ___STDIO_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: internal header file for stdio
@@ -14,9 +14,10 @@
 
 struct __sFILE
 {
-    struct MinNode node;
-    BPTR fh;
-    int flags;
+    struct MinNode  node;
+    BPTR            fh;
+    ULONG           fhFlags;
+    int             flags;
 };
 
 #define __STDCIO_STDIO_EOF         0x0001L
