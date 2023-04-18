@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2023, The AROS Development Team. All rights reserved.
 
     Setup and support code for stdio.h functionality
 */
@@ -22,10 +22,14 @@
 static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR _in, _out;
 
     NewList((struct List *)&StdCIOBase->files);
 
-    StdCIOBase->intstdin.fh = Input();
+    _in = Input();
+    _out = Output();
+
+    StdCIOBase->intstdin.fh = DupFileHandle(_in);
     StdCIOBase->intstdin.flags =
         __STDCIO_STDIO_READ
         | __STDCIO_STDIO_DONTCLOSE
@@ -34,7 +38,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
     D(bug("[%s] %s: intstdin.fh = 0x%p\n", STDCNAME, __func__, StdCIOBase->intstdin.fh));
     StdCIOBase->StdCIOBase._stdin = &StdCIOBase->intstdin;
 
-    StdCIOBase->intstdout.fh = Output();
+    StdCIOBase->intstdout.fh = DupFileHandle(_out);
     StdCIOBase->intstdout.flags =
         __STDCIO_STDIO_WRITE
         | __STDCIO_STDIO_DONTCLOSE
@@ -57,8 +61,17 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
 static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
 {
     FILE *stream;
+    BPTR _in, _out;
 
     D(bug("[%s] %s: StdCIOBase = 0x%p, DOSBase = 0x%p\n", STDCNAME, __func__, StdCIOBase, DOSBase));
+
+    _in = Input();
+    _out = Output();
+
+    if (StdCIOBase->intstdin.fh != _in)
+        Close(StdCIOBase->intstdin.fh);
+    if (StdCIOBase->intstdout.fh != _out)
+        Close(StdCIOBase->intstdout.fh);
 
     ForeachNode(&StdCIOBase->files, stream)
     {
