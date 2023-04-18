@@ -15,7 +15,7 @@
 #define regs_t struct ExceptionContext
 /* There are no private add-ons */
 #define AROSCPUContext ExceptionContext
-#define CPUSSEContxtSize (sizeof(struct AROSCPUContext) + sizeof(struct FPFXSContext) + 15)
+#define CPUSSEContxtSize (sizeof(struct AROSCPUContext) + sizeof(struct FPXContext) + 15)
 
 /* We have no VBlank emulation */
 #define NO_VBLANK_EMU

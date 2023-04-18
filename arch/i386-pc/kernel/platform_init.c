@@ -25,6 +25,7 @@
 extern struct syscallx86_Handler x86_SCSupervisorHandler;
 
 int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2);
+extern int core_APICSpuriousHandle(struct ExceptionContext *, void *, void *);
 
 static int PlatformInit(struct KernelBase *KernelBase)
 {
@@ -76,16 +77,36 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     // Set up the base syscall handler(s)
     NEWLIST(&data->kb_SysCallHandlers);
-    if (!core_SetIDTGate(idt, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL),
-                         (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, FALSE))
+    /*
+     * Setup the BSP's exception, spurious, heartbeat and syscall gates early
+    */
+    core_SetExGates((x86vectgate_t *)idt);
+    if (!core_SetIDTGate((x86vectgate_t *)idt, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL),
+                                    (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, FALSE))
     {
         krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
                        "Vector #%02X\n",
                  APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL));
     }
+    if (!core_SetIDTGate((x86vectgate_t *)idt, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT),
+                                    (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT)], TRUE, FALSE))
+    {
+        krnPanic(NULL, "Failed to set BSP Heartbeat Vector\n"
+                       "Vector #%02X\n",
+                 APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT));
+    }
+    if (!core_SetIDTGate((x86vectgate_t *)idt, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS),
+                                    (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS)], TRUE, FALSE))
+    {
+        krnPanic(NULL, "Failed to set BSP Spurious Vector\n"
+                       "Vector #%02X\n",
+                 APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS));
+    }
+    KrnAddExceptionHandler(APIC_EXCEPT_SPURIOUS, core_APICSpuriousHandle, KernelBase, NULL);
     KrnAddExceptionHandler(APIC_EXCEPT_SYSCALL, core_SysCallHandler, KernelBase, NULL);
     krnAddSysCallHandler(data, &x86_SCSupervisorHandler, FALSE, TRUE);
-    
+    D(bug("[Kernel:i386] %s: BSP vectors and handlers configured\n", __func__));
+
     /* Set correct TSS address in the GDT */
     GDT[6].base_low  = ((unsigned long)tss) & 0xffff;
     GDT[6].base_mid  = (((unsigned long)tss) >> 16) & 0xff;
