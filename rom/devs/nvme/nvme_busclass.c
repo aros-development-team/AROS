@@ -375,13 +375,24 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     {   tHidd_PCIVector_Native, (IPTR)-1        },
                     {   TAG_DONE,               0               }
                 };
-
-                HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);
-                if ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1))
+                if (AdminIntLine != PCIIntLine)
+                    HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);
+                
+                if ((AdminIntLine == PCIIntLine) || ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1)))
                 {
-                    UBYTE qIRQ = (UBYTE)vecAttribs[0].ti_Data, qVect = (UBYTE)vecAttribs[1].ti_Data;
-                    D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", vecAttribs[0].ti_Data, vecAttribs[1].ti_Data);)
-                    
+                    UBYTE qIRQ, qVect;
+                    if (AdminIntLine != PCIIntLine)
+                    {
+                        qIRQ = (UBYTE)vecAttribs[0].ti_Data;
+                        qVect = (UBYTE)vecAttribs[1].ti_Data;
+                    }
+                    else
+                    {
+                        qIRQ = (UBYTE)AdminIntLine;
+                        qVect = (UBYTE)AdminIntLine;
+                    }
+
+                    D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", qIRQ, qVect);)
                     data->ab_Dev->dev_Queues[0]->q_irq = qIRQ;
 #else
                 {
