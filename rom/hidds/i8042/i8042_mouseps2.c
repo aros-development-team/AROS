@@ -409,14 +409,14 @@ int ps2mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct mo
 
     /* Reset mouse */
     aux_write_ack(tmr, KBD_OUTCMD_RESET);
-    result = kbd_wait_for_input(tmr);    /* Test result (0xAA) */
+    result = aux_wait_for_input(tmr);    /* Test result (0xAA) */
     while (result == 0xfa && --timeout)
     {
         /* somehow the ACK isn't always swallowed above */
         kbd_usleep(tmr, 1000);
-        result = kbd_wait_for_input(tmr);
+        result = aux_wait_for_input(tmr);
     }
-    kbd_wait_for_input(tmr);    /* Mouse type */
+    aux_wait_for_input(tmr);    /* Mouse type */
 
     if (result != 0xaa)
     {
