@@ -16,6 +16,7 @@ STDCTESTFILES := \
         jmpbuf \
         mktime \
         raise \
+        setbuf \
         setjmp \
         setvbuf \
         sscanf \
