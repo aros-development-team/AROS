@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: exec.library resident and initialization.
 */
@@ -273,6 +273,9 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
             SetIntVector(i,is);
         }
     }
+
+    IDNESTCOUNT_SET(t->tc_IDNestCnt);
+    TDNESTCOUNT_SET(t->tc_TDNestCnt);
 
     DINIT("Permitting multitasking...\n");
 
