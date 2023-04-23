@@ -100,8 +100,11 @@ AROS_UFH3(void, pciEnumerator,
         case HCITYPE_XHCI:
             if (!(hd->hd_Flags & HDF_ENABLEXHCI))
                 break;
-#endif
+            // fall through
         case HCITYPE_OHCI:
+#else
+        case HCITYPE_OHCI:
+#endif
         case HCITYPE_EHCI:
         case HCITYPE_UHCI:
             KPRINTF(10, ("Setting up device...\n"));
@@ -210,7 +213,10 @@ BOOL pciInit(struct PCIDevice *hd)
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ)
     {
-        IPTR    huIntLine;
+        BOOL    unitdone = FALSE; unithasv1 = FALSE, unithasv2 = FALSE;
+#if defined(TMPXHCICODE)
+        BOOL    unithasv3 = FALSE;
+#endif
         int     cnt;
 
         hu = AllocPooled(hd->hd_MemPool, sizeof(struct PCIUnit));
@@ -230,18 +236,44 @@ BOOL pciInit(struct PCIDevice *hd)
             AddTail((struct List *) &hu->hu_FreeRTIsoNodes, (struct Node *)&hu->hu_RTIsoNodes[cnt].rtn_Node);
         }
 
-        hc = (struct PCIController *) hd->hd_TempHCIList.lh_Head;
-        hu->hu_DevID = hc->hc_DevID;
-        huIntLine =  hc->hc_PCIIntLine;
-
-        while((nexthc = (struct PCIController *) hc->hc_Node.ln_Succ))
+        hu->hu_DevID = (ULONG)-1;
+        ForeachNodeSafe(&hd->hd_TempHCIList, hc, nexthc)
         {
-            if ((hc->hc_DevID == hu->hu_DevID) &&
-#if defined(TMPXHCICODE)
-                ((hc->hc_HCIType != HCITYPE_XHCI) || (hd->hd_Flags & HDF_ENABLEXHCI)) &&
-#endif
-                (hc->hc_PCIIntLine == huIntLine))
+            if (hu->hu_DevID == (ULONG)-1)
+                hu->hu_DevID = hc->hc_DevID;
+
+            if (hc->hc_DevID == hu->hu_DevID)
             {
+                BOOL ignore = FALSE;
+                switch (hc->hc_HCIType)
+                {
+                    case HCITYPE_UHCI:
+                    case HCITYPE_OHCI:
+                        if (unithasv2)
+                            unitdone = TRUE;
+                        unithasv1 = TRUE;
+                        break;
+                    case HCITYPE_EHCI:
+                        if (unithasv2)
+                            unitdone = TRUE;
+                        unithasv2 = TRUE;
+                        break;
+#if defined(TMPXHCICODE)
+                    case HCITYPE_XHCI:
+                        if ((unithasv1) || (unithasv2))
+                            unitdone = TRUE;
+                        if ((!(hd->hd_Flags & HDF_ENABLEXHCI)) || unithasv3)
+                            ignore = TRUE;
+                        unithasv3 = TRUE;
+                        break;
+#endif
+                }
+                if (unitdone)
+                    break;
+
+                if (ignore)
+                    continue;
+
                 Remove(&hc->hc_Node);
 
                 if ((usbContrClass) && (root))
@@ -298,7 +330,6 @@ BOOL pciInit(struct PCIDevice *hd)
                 hc->hc_Unit = hu;
                 Enqueue(&hu->hu_Controllers, &hc->hc_Node);
             }
-            hc = nexthc;
         }
         AddTail(&hd->hd_Units, (struct Node *) hu);
         unitno++;
