@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Cause() - Cause a software interrupt.
 */
@@ -92,22 +92,22 @@
         /* We are accessing an Exec list, protect ourselves. */
         ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
         softint->is_Node.ln_Type = NT_SOFTINT;
-
-        /* Signal pending software interrupt condition */
-        SysBase->SysFlags |= SFF_SoftInt;
-
-        /*
-         * Quick soft int request. For optimal performance m68k-amiga
-         * Enable() does not do any extra SFF_SoftInt checks
-         */
-        CUSTOM_CAUSE(INTF_SOFTINT);
-        /*
-         * If we are in usermode the software interrupt will end up being triggered
-         * in Enable(). On Amiga hardware this happens because a hardware interrupt
-         * was queued. On other machines Enable() will simulate this behavior,
-         * looking at SFF_SoftInt flag.
-         */
     }
+
+    /* Signal pending software interrupt condition */
+    SysBase->SysFlags |= SFF_SoftInt;
+
+    /*
+     * Quick soft int request. For optimal performance m68k-amiga
+     * Enable() does not do any extra SFF_SoftInt checks
+     */
+    CUSTOM_CAUSE(INTF_SOFTINT);
+    /*
+     * If we are in usermode the software interrupt will end up being triggered
+     * in Enable(). On Amiga hardware this happens because a hardware interrupt
+     * was queued. On other machines Enable() will simulate this behavior,
+     * looking at SFF_SoftInt flag.
+     */
     Enable();
 
     AROS_LIBFUNC_EXIT
