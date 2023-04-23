@@ -206,7 +206,7 @@ void core_Switch(void)
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
 #else
-    if (task->tc_State != TS_RUN)
+    if (task->tc_State != TS_RUN && task->tc_State != TS_REMOVED)
 #endif
     REMOVE(&task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
@@ -228,7 +228,7 @@ void core_Switch(void)
     /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
-        bug("[Kernel:%03u]" DEBUGCOLOR_SET " ERROR! Task (%s) went out of stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name, task);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " ERROR! Task (%s) went out of stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name);
         bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - Lower Bound = 0x%p, Upper Bound = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPLower, task->tc_SPUpper);
         bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - SP = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPReg);
 
@@ -240,7 +240,7 @@ void core_Switch(void)
     }
     else if (task->tc_SPReg <= task->tc_SPLower + 1024)
     {
-        bug("[Kernel:%03u]" DEBUGCOLOR_SET " WARNING - Task (%s) close to stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name, task);
+        bug("[Kernel:%03u]" DEBUGCOLOR_SET " WARNING - Task (%s) close to stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name);
 #endif
     }
     task->tc_IDNestCnt = IDNESTCOUNT_GET;
