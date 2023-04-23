@@ -2,7 +2,7 @@
 #define _STDC_STDIO_H_
 
 /*
-    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdio.h
@@ -50,13 +50,21 @@ __BEGIN_DECLS
    fields without needing to include proto/stdcio.h.
    These functions will be different if one links with or without posixc.
 */
+#if defined(_POSIXC_STDIO_H_)
+FILE *__posixc_getstdin(void);
+FILE *__posixc_getstdout(void);
+FILE *__posixc_getstderr(void);
+#define stdin __posixc_getstdin()
+#define stdout __posixc_getstdout()
+#define stderr __posixc_getstderr()
+#else
 FILE *__stdio_getstdin(void);
 FILE *__stdio_getstdout(void);
 FILE *__stdio_getstderr(void);
-
 #define stdin __stdio_getstdin()
 #define stdout __stdio_getstdout()
 #define stderr __stdio_getstderr()
+#endif
 
 
 /* Internal functions */
