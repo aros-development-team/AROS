@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2023, The AROS Development Team. All rights reserved.
 
     Support functions for POSIX exec*() functions.
 */
@@ -24,6 +24,7 @@
 
 #include "__posixc_intbase.h"
 #include "__exec.h"
+#include "__posixc_env.h"
 #include "__upath.h"
 #include "__fdesc.h"
 #include "__vfork.h"

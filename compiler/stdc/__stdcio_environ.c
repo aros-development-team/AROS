@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2023, The AROS Development Team. All rights reserved.
 
     Desc: AROS specific function for environ emulation handling
 */
@@ -10,7 +10,7 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 
-#include "__posixc_intbase.h"
+#include "__stdcio_intbase.h"
 #include "__env.h"
 
 #include <stdio.h>
@@ -20,7 +20,7 @@
     NAME */
 #include <stdlib.h>
 
-        int __posixc_set_environptr (
+        int __stdcio_set_environptr (
 
 /*  SYNOPSIS */
         char ***environptr)
@@ -48,22 +48,22 @@
         This is still TODO.
 
     SEE ALSO
-        __posixc_get_environptr(), __posixc_getenv(), setenv()
+        __stdcio_get_environptr(), __stdcio_getenv(), setenv()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    struct PosixCIntBase *PosixCBase =
-        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    struct StdCIOIntBase *StdCIOBase =
+        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
     int len;
 
     D(
-        bug("[posixc] %s(0x%p)\n", __func__, environptr);
-        bug("[posixc] %s: Initializing POSIX environ emulation\n", __func__);
+        bug("[stdcio] %s(0x%p)\n", __func__, environptr);
+        bug("[stdcio] %s: Initializing environ emulation\n", __func__);
     )
 
-    PosixCBase->environptr = environptr;
+    StdCIOBase->environptr = environptr;
 
     len = __env_get_environ(NULL, 0);
     *environptr = malloc(len);
@@ -75,7 +75,7 @@
     NAME */
 #include <stdlib.h>
 
-        char ***__posixc_get_environptr (
+        char ***__stdcio_get_environptr (
 
 /*  SYNOPSIS */
         void)
@@ -98,14 +98,14 @@
     BUGS
 
     SEE ALSO
-        __posixc_set_environptr()
+        __stdcio_set_environptr()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    struct PosixCIntBase *PosixCBase =
-        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    struct StdCIOIntBase *StdCIOBase =
+        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
 
-    return PosixCBase->environptr;
+    return StdCIOBase->environptr;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function execl().
 */
@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include "__exec.h"
+#include "__posixc_env.h"
 
 /*****************************************************************************
 

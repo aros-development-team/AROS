@@ -479,8 +479,11 @@ STDC_COMMON := \
     math/infinity
 
 STDCIO := \
+    __env \
     __stdcio_assert \
     __stdcio_init \
+    __stdcio_env \
+    __stdcio_environ \
     __stdio \
     clearerr \
     fclose \
@@ -504,6 +507,7 @@ STDCIO := \
     getchar \
     getenv \
     gets \
+    perror \
     printf \
     putchar \
     puts \
@@ -525,6 +529,9 @@ STDCIO := \
 # The common files will be put both in the shared and in the static link lib
 STDCIO_COMMON := \
     __stdcio_stdstreams
+
+STDCIO_LINKLIB := \
+    stdcio_environ
 
 #MM- core-linklibs : linklibs-stdc linklibs-stdcio linklibs-libm
 
@@ -555,7 +562,7 @@ USER_CPPFLAGS := \
 %build_module mmake=compiler-stdcio \
     modname=stdcio modtype=library \
     files="$(STDCIO) $(STDCIO_COMMON)" \
-    linklibobjs=$(STDCIO_LINKOBJS) \
+    linklibfiles=$(STDCIO_LINKLIB) linklibobjs=$(STDCIO_LINKOBJS) \
     uselibs="stdc_rel"
 
 STDC_MATH_STATIC := \

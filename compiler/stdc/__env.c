@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Internal functions for environment variables handling.
 */
 
-#include "__posixc_intbase.h"
+#include "__stdcio_intbase.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -90,13 +90,13 @@ err1:
 
 static __env_item **internal_findvar(register const char *name)
 {
-    struct PosixCIntBase *PosixCBase =
-        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    struct StdCIOIntBase *StdCIOBase =
+        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
 
    __env_item **curr;
 
    for (
-       curr = &PosixCBase->env_list;
+       curr = &StdCIOBase->env_list;
        *curr && strcmp((*curr)->name, name);
        curr = &((*curr)->next)
    );
@@ -111,7 +111,7 @@ static __env_item **internal_findvar(register const char *name)
 
   Returns NULL on error.
 */
-__env_item *__env_getvar(const char *name, int valuesize)
+__env_item *__stdcio_env_getvar(const char *name, int valuesize)
 {
     register __env_item **curr;
 

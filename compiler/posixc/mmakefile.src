@@ -3,14 +3,13 @@ include $(SRCDIR)/config/aros.cfg
 #MM- AROS : compiler-posixc
 
 POSIXC := \
-    __env \
     __exec \
     __fdesc \
     __fopen \
     __fseeko \
     __ftello \
     __posixc_assert \
-    __posixc_environ \
+    __posixc_env \
     __posixc_init \
     __posixc_nixmain \
     __posixc_timer \
@@ -236,7 +235,6 @@ POSIXC_LINKLIB := \
     gcvt \
     getopt \
     getopt_long \
-    posixc_environ \
     setlinebuf
 
 # Both in linklib and shared library
@@ -247,6 +245,7 @@ POSIXC_COMMON := \
 
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
 USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_MERGE_CONSTANTS)
+USER_INCLUDES += -iquote $(SRCDIR)/compiler/stdc
 
 USER_CPPFLAGS := \
         -D__TIMER_NOLIBBASE__ \

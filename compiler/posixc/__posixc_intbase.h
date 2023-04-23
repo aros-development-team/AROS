@@ -52,12 +52,6 @@ struct PosixCIntBase
     sigset_t   signals;
 #endif
 
-    /* __posixc_environ.c; don't use this field outside that file */
-    char ***environptr;
-
-    /* __env.c */
-    struct __env_item *env_list;
-
     /* __exec.c */
     BPTR exec_seglist;
     char *exec_args;

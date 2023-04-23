@@ -7,7 +7,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include "__env.h"
+#include "__posixc_env.h"
 
 /*****************************************************************************
 
@@ -56,7 +56,7 @@
     {
         LONG len = IoErr();
 
-        var = __env_getvar(name, len+1); /* size == len + null-byte. */
+        var = __posixc_env_getvar(name, len+1); /* size == len + null-byte. */
 
         if (var)
         {

@@ -17,6 +17,12 @@ struct StdCIOIntBase
 {
     struct StdCIOBase StdCIOBase;
 
+    /* __stdcio_environ.c; don't use this field outside that file */
+    char ***environptr;
+
+    /* __env.c */
+    struct __env_item *env_list;
+
     /* getenv.c */
     LONG varsize;
     char *envvar;

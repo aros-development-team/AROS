@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include "__posixc_intbase.h"
+#include "__posixc_env.h"
 #include "__fdesc.h"
 #include "__vfork.h"
 #include "__exec.h"
@@ -506,9 +507,11 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     */
     __stdc_program_startup(udata->parent_newexitjmp, &udata->child_error);
 
+#if (0)
     /* Remember and switch env var list */
-    udata->parent_env_list = PosixCBase->env_list;
-    PosixCBase->env_list = udata->child_posixcbase->env_list;
+    udata->parent_env_list = __posixc_get_envlistptr();
+    __posixc_set_envlistptr(udata->child_posixcbase->PosixCBase.StdCIOBase->env_list);
+#endif
 
     /* Remember and switch fd descriptor table */
     udata->parent_internalpool = PosixCBase->internalpool;
@@ -557,8 +560,10 @@ static void parent_leavepretendchild(struct vfork_data *udata)
     /* Restore parent's StdCBase */
     PosixCBase->PosixCBase.StdCBase = udata->parent_stdcbase;
 
+#if (0)
     /* Restore parent's env var list */
-    PosixCBase->env_list = udata->parent_env_list;
+    __posixc_set_envlistptr(udata->parent_env_list);
+#endif
 
     /* Restore parent's old fd_array */
     PosixCBase->internalpool = udata->parent_internalpool;
