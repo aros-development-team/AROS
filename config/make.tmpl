@@ -1569,7 +1569,22 @@ include $(SRCDIR)/config/make.tail
 BDID := $(BDTARGETID)
 %end
 #------------------------------------------------------------------------------
-      
+
+#############################################################################
+#############################################################################
+##                                                                         ##
+## This macro is used when the compiler is used for linking, to make sure  ##
+## needed flags propegate to the linker flags                              ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+%define add_compilerlinkflags mmake=/A cflags=
+%(mmake)_CSTATICFLAGS   := `echo "%(cflags)" | grep -o '\-static[^[:blank:]]*'`
+%(mmake)_CSTDCFLAGS   :=  `echo "%(cflags)" | grep -o '\-nostdc[^[:blank:]]*'`
+%(mmake)_CPOSIXCFLAGS   :=  `echo "%(cflags)" | grep -o '\-noposixc[^[:blank:]]*'`
+%(mmake)_LDFLAGS          += $(strip $(%(mmake)_CSTATICFLAGS) $(%(mmake)_CSTDCFLAGS) $(%(mmake)_CPOSIXCFLAGS))
+%end
 
 #############################################################################
 #############################################################################
@@ -1688,6 +1703,8 @@ endif
 else
 %(mmake)_LDFLAGS          := %(ldflags)
 endif
+
+%add_compilerlinkflags mmake=%(mmake) cflags=$(%(mmake)_CFLAGS)
 
 %(mmake)_COVERAGE := no
 ifeq (%(compiler),target)
@@ -1862,24 +1879,26 @@ else
 endif
 ifeq (%(ldflags),)
 ifeq (%(compiler),target)
-%(mmake)_LDFLAGS           := $(strip $(LDFLAGS))
+%(mmake)_LDFLAGS           = $(strip $(LDFLAGS))
 %(mmake)_LD_OPTS           := $(strip $(TARGET_ISA_LDFLAGS))
 endif
 ifeq (%(compiler),host)
-%(mmake)_LDFLAGS           := $(strip $(HOST_LDFLAGS))
+%(mmake)_LDFLAGS           = $(strip $(HOST_LDFLAGS))
 %(mmake)_LD_OPTS           := $(strip $(HOST_ISA_LDFLAGS))
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LDFLAGS           := $(strip $(KERNEL_LDFLAGS))
+%(mmake)_LDFLAGS           = $(strip $(KERNEL_LDFLAGS))
 %(mmake)_LD_OPTS           := $(strip $(KERNEL_ISA_LDFLAGS))
 endif
 else
-%(mmake)_LDFLAGS           := %(ldflags)
+%(mmake)_LDFLAGS           = %(ldflags)
 endif
 
 ifneq (%(libdir),)
     %(mmake)_LDFLAGS += -L%(libdir)
 endif
+
+%add_compilerlinkflags mmake=%(mmake) cflags=$(%(mmake)_CFLAGS)
 
 #MM
 %(mmake)-quick : %(mmake)
@@ -2035,6 +2054,8 @@ endif
 ifeq ($(%(mmake)_MODDIR),)
   $(error Don't know where to put the file for modtype %(modtype). Specify moduledir=)
 endif
+
+%add_compilerlinkflags mmake=%(mmake) cflags=$(%(mmake)_CFLAGS)
 
 %(mmake)_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 %(mmake)_ARCHFILES  := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
@@ -2232,7 +2253,7 @@ ifeq (%(alwayscxxlink),yes)
 %(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
 endif
 %(mmake)_LD_OPTS := $(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
-%(mmake)_LDFLAGS := $(strip $(LDFLAGS))
+%(mmake)_LDFLAGS = $(strip $(LDFLAGS))
 endif
 ifeq (%(compiler),kernel)
 ifeq (%(alwayscxxlink),yes)
@@ -2524,6 +2545,8 @@ $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_RELLINKLIBOBJS) : | $(%(m
 %(mmake)%(flavour)_TARGETCCFILES    := $(strip $(%(mmake)%(flavour)_STARTFILES) $(%(mmake)%(flavour)_ENDFILES))
 %(mmake)%(flavour)_LINKLIBCCFILES   := $(strip $(%(mmake)%(flavour)_NLIBARCHFILES) $(%(mmake)%(flavour)_LINKLIBCFILES) $(%(mmake)%(flavour)_RELLINKLIBCFILES))
 %(mmake)%(flavour)_LINKLIBCCGENFILES := $(strip $(%(mmake)%(flavour)_LINKLIBCFILES) $(%(mmake)%(flavour)_RELLINKLIBCFILES))
+
+%add_compilerlinkflags mmake="%(mmake)%(flavour)" cflags=$(%(mmake)_CFLAGS)
 
 %rule_compile_cxx_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_CXX_NARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
