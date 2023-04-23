@@ -4372,10 +4372,7 @@ main (int argc, char **argv)
       ulps_file = fopen ("ULPs", "a");
       if (ulps_file == NULL)
 	{
-	  fputs("can't open file `ULPs' for writing: ", stderr);
-	  fputs(strerror(errno), stderr);
-	  fputs("\n", stderr);
-
+	  perror ("can't open file `ULPs' for writing: ");
 	  exit (1);
 	}
     }

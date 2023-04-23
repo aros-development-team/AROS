@@ -188,6 +188,7 @@ void clearerr(FILE *stream);
 int feof(FILE *stream);
 int ferror(FILE *stream);
 #endif
+void perror(const char *s);
 
 /* AROS specific function to synchronise to keep DOS Input and Output in sync
  * with the C stdin, stdout and stderr
