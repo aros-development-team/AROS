@@ -94,7 +94,7 @@ static int cpu_Init(struct KernelBase *KernelBase)
     {
         APTR tmp = AllocMem(KernelBase->kb_ContextSize -  sizeof(struct AROSCPUContext), MEMF_PUBLIC);
         KernelBase->kb_PlatformData->kb_FXCtx = (APTR)(AROS_ROUNDUP2((IPTR)tmp, 64));
-        bug("[Kernel] %s: IRQ FPU Save @ 0x%p\n", __func__, KernelBase->kb_PlatformData->kb_FXCtx);
+        D(bug("[Kernel] %s: IRQ FPU Save @ 0x%p\n", __func__, KernelBase->kb_PlatformData->kb_FXCtx);)
     }
 #endif
     D(bug("[Kernel] %s: CPU Context size = %u bytes\n", __func__, KernelBase->kb_ContextSize);)
