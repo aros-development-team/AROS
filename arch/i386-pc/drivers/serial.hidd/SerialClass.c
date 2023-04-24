@@ -24,8 +24,9 @@
 
 OOP_Object *PCSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, struct pHidd_Serial_NewUnit *msg)
 {
-  OOP_Object *su = NULL;
+  struct class_static_data *csd = (&((struct IntHIDDSerialBase *)cl->UserData)->hdg_csd);
   struct HIDDSerialData * data = OOP_INST_DATA(cl, obj);
+  OOP_Object *su = NULL;
   ULONG unitnum = -1;
 
   EnterFunc(bug("HIDDSerial::NewSerial()\n"));
@@ -89,8 +90,10 @@ OOP_Object *PCSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, struct p
 
 VOID PCSer__Hidd_Serial__DisposeUnit(OOP_Class *cl, OOP_Object *obj, struct pHidd_Serial_DisposeUnit *msg)
 {
-  OOP_Object * su = msg->unit;
+  struct class_static_data *csd = (&((struct IntHIDDSerialBase *)cl->UserData)->hdg_csd);
   struct HIDDSerialData * data = OOP_INST_DATA(cl, obj);
+  OOP_Object * su = msg->unit;
+
   EnterFunc(bug("HIDDSerial::DisposeUnit()\n"));
 
   if(su)
@@ -113,30 +116,23 @@ VOID PCSer__Hidd_Serial__DisposeUnit(OOP_Class *cl, OOP_Object *obj, struct pHid
   ReturnVoid("HIDDSerial::DisposeUnit");
 }
 
-
-
-/*************************** Classes *****************************/
-
-#define csd (&(LIBBASE->hdg_csd))
-
-static int PCSer_InitAttrs(LIBBASETYPEPTR LIBBASE)
+/******* SerialUnit::New() ***********************************/
+OOP_Object *PCSer__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
-    EnterFunc(bug("PCSer_InitAttrs\n"));
-
-    __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
-
-    ReturnInt("PCSer_InitAttrs", ULONG, __IHidd_SerialUnitAB != 0);
+  struct class_static_data *csd = (&((struct IntHIDDSerialBase *)cl->UserData)->hdg_csd);
+  struct pRoot_New serhidNew;
+  struct TagItem serhidTags[] =
+  {
+      { aHidd_Name,           (IPTR)"serial.hidd"                            },
+      { aHidd_HardwareName,   (IPTR)"PC 16550 UART Serial-Port Controller"   },
+      { TAG_DONE,             0                                              }
+  };
+  if (msg->attrList)
+  {
+      serhidTags[1].ti_Tag  = TAG_MORE;
+      serhidTags[1].ti_Data = (IPTR)msg->attrList;
+  }
+  serhidNew.mID      = msg->mID;
+  serhidNew.attrList = serhidTags;
+  return (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)&serhidNew);
 }
-
-
-static int PCSer_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("PCSer_ExpungeAttrs\n"));
-
-    OOP_ReleaseAttrBase(IID_Hidd_SerialUnit);
-        
-    ReturnInt("PCSer_ExpungeAttrs", int, TRUE);
-}
-
-ADD2INITLIB(PCSer_InitAttrs, 0)
-ADD2EXPUNGELIB(PCSer_ExpungeAttrs, 0)

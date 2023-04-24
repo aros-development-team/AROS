@@ -9,6 +9,7 @@
   the 16550 UART.
 */
 
+#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -28,11 +29,7 @@
 
 #include <devices/serial.h>
 
-#include <SDI/SDI_interrupt.h>
-
 #include "serial_intern.h"
-
-#include <aros/debug.h>
 
 #define DIRQ(x)
 
@@ -83,10 +80,18 @@ static AROS_INTH1(PCSerUnit_ResetHandler, struct HIDDSerialUnitData *, data)
 /******* SerialUnit::New() ***********************************/
 OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
+  struct class_static_data *csd = (&((struct IntHIDDSerialBase *)cl->UserData)->hdg_csd);
+  struct pRoot_New serunitNew;
+  struct TagItem serunitTags[] =
+  {
+      { aHidd_Name,            (IPTR)"serial.hidd"                 },
+      { aHidd_HardwareName,    (IPTR)"PC 16550 UART Serial-Port"   },
+      { TAG_DONE,              0                                   }
+  };
   struct HIDDSerialUnitData * data;
   struct TagItem *tag, *tstate;
   ULONG unitnum = 0;
-  
+
   EnterFunc(bug("SerialUnit::New()\n"));
 
   tstate = msg->attrList;
@@ -94,9 +99,7 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
   {
       ULONG idx;
 
-#define csd CSD(cl->UserData)
       if (IS_HIDDSERIALUNIT_ATTR(tag->ti_Tag, idx))
-#undef csd
       {
           switch (idx)
           {
@@ -107,12 +110,19 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
       }
 
   } /* while (tags to process) */
-  
-  obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+
+  if (msg->attrList)
+  {
+      serunitTags[1].ti_Tag  = TAG_MORE;
+      serunitTags[1].ti_Data = (IPTR)msg->attrList;
+  }
+  serunitNew.mID      = msg->mID;
+  serunitNew.attrList = serunitTags;
+
+  obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)&serunitNew);
 
   if (obj)
   {
-    struct IntuitionBase * IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
     data = OOP_INST_DATA(cl, obj);
 
     if (unitnum < 5 )
@@ -120,6 +130,7 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
         struct Interrupt *irq;
         if ((unitnum == 1) || (unitnum == 3))
         {
+            D(bug("[Serial:PC] %s: Adding IRQ handlers for COM2/4\n", __func__));
             /* Install COM2 and COM4 interrupt */
             irq = &CSD(cl->UserData)->intHandler[1];
             if (!irq->is_Node.ln_Name)
@@ -143,6 +154,7 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
         }
         else
         {
+            D(bug("[Serial:PC] %s: Adding IRQ handlers for COM1/3\n", __func__));
             /* Install COM1 and COM3 interrupt */
             irq = &CSD(cl->UserData)->intHandler[0];
             if (!irq->is_Node.ln_Name)
@@ -166,7 +178,11 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
         }
     }
     data->baseaddr = bases[unitnum];
+    data->unitnum    = unitnum;
 
+    D(bug("[Serial:PC] %s: Base Address %08x\n", __func__, data->baseaddr));
+
+    struct IntuitionBase * IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
     if (NULL != IntuitionBase) {
       struct Preferences prefs;
       GetPrefs(&prefs,sizeof(prefs));
@@ -178,7 +194,6 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
       data->parity     = FALSE;
       data->baudrate   = 9600; /* will be initialize in set_baudrate() */
     }
-    data->unitnum    = unitnum;
 
     Disable();
     CSD(cl->UserData)->units[data->unitnum] = data;
@@ -226,6 +241,24 @@ OOP_Object *PCSerUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg
   EnterFunc(bug("SerialUnit::Dispose()\n"));
 
   data = OOP_INST_DATA(cl, obj);
+
+  if (data->unitsdh.is_Node.ln_Name)
+  {
+    struct Interrupt *irq;
+    int irqnum;
+    RemResetCallback(&data->unitsdh);
+    if ((data->unitnum == 1) || (data->unitnum == 3))
+    {
+      irq = &CSD(cl->UserData)->intHandler[1];
+      irqnum = 3;
+    }
+    else
+    {
+      irq = &CSD(cl->UserData)->intHandler[0];
+      irqnum = 4;
+    }
+    RemIntServer(INTB_KERNEL + irqnum, irq);
+  }
 
   Disable();
   CSD(cl->UserData)->units[data->unitnum] = NULL;

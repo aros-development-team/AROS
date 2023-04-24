@@ -22,12 +22,29 @@
 
 static int PCSer_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct class_static_data *csd = &LIBBASE->hdg_csd; /* SerialHidd static data */
+    struct class_static_data *csd = &LIBBASE->hdg_csd;
+
     EnterFunc(bug("SerialHIDD_Init()\n"));
 
     // TODO: Probe for the Serial ports and register units.
+    __IHidd = OOP_ObtainAttrBase(IID_Hidd);
+    __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
 
     ReturnInt("SerialHIDD_Init", int, TRUE);
 }
 
 ADD2INITLIB(PCSer_Init, 0)
+
+static int PCSer_Expunge(LIBBASETYPEPTR LIBBASE)
+{
+    struct class_static_data *csd = &LIBBASE->hdg_csd;
+
+    EnterFunc(bug("PCSer_Expunge()\n"));
+
+    OOP_ReleaseAttrBase(IID_Hidd_SerialUnit);
+    OOP_ReleaseAttrBase(IID_Hidd);
+        
+    ReturnInt("PCSer_Expunge", int, TRUE);
+}
+
+ADD2EXPUNGELIB(PCSer_Expunge, 0)

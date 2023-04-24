@@ -63,11 +63,13 @@ struct class_static_data
     OOP_Class		 *serialunitclass;
 
     struct HIDDSerialUnitData   *units[SER_MAX_UNITS];
+    OOP_AttrBase	            hiddAB;
     OOP_AttrBase                hiddSerialUnitAB;
     struct Interrupt            intHandler[2];
 };
 
-#define __IHidd_SerialUnitAB   (csd->hiddSerialUnitAB)
+#define __IHidd                 (csd->hiddAB)
+#define __IHidd_SerialUnitAB    (csd->hiddSerialUnitAB)
 
 #define SER_DEFAULT_BAUDRATE	57600
 
