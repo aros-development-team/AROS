@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     C99 function setbuf().
 */
@@ -40,5 +40,7 @@
 
 ******************************************************************************/
 {
-    setvbuf(stream, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
+    setvbuf(stream, buf,
+                            buf ? _IOFBF : _IONBF,
+                            buf ? BUFSIZ : 0);
 } /* setbuf */
