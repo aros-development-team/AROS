@@ -8,11 +8,26 @@
 
 int main(void)
 {
+    char buf[1024];
     int result;
 
-    result = setvbuf(stdout, NULL, _IONBF, 0);
-    printf("\033[32mText with escape sequences\033[0m\n");
-    printf("setvbuf returned %d\n", result);
+    if ((result = setvbuf(stdout, buf, _IOFBF, 1024)) == 0)
+    {
+        printf("\033[32mBuffered output with escape codes\033[0m\n");
+    }
+    else
+    {
+        printf("\033[32msetvbuf(stdout, buf, _IOFBF, 1024); failed\033[0m\n");
+    }
+
+    if ((result = setvbuf(stdout, NULL, _IONBF, 0)) == 0)
+    {
+        printf("\033[32mUnbuffered output with escape codes\033[0m\n");
+    }
+    else
+    {
+        printf("\033[32msetvbuf(stdout, NULL, _IONBF, 0); failed\033[0m\n");
+    }
 
     return 0;
 }
