@@ -213,7 +213,7 @@ BOOL pciInit(struct PCIDevice *hd)
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ)
     {
-        BOOL    unitdone = FALSE; unithasv1 = FALSE, unithasv2 = FALSE;
+        BOOL    unitdone = FALSE, unithasv1 = FALSE, unithasv2 = FALSE;
 #if defined(TMPXHCICODE)
         BOOL    unithasv3 = FALSE;
 #endif
