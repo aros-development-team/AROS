@@ -14,6 +14,7 @@ int main(void)
     if ((result = setvbuf(stdout, buf, _IOFBF, 1024)) == 0)
     {
         printf("\033[32mBuffered output with escape codes\033[0m\n");
+        fflush( stdout );
     }
     else
     {
