@@ -8,8 +8,13 @@
 
 int main(void)
 {
+   char buf[BUFSIZ];
+
+    setbuf(stdout, buf);
+    printf("\033[32mBuffered output with escape codes\033[0m\n");
+
     setbuf(stdout, NULL);
-    printf("\033[32mText with escape sequences\033[0m\n");
-    
+    printf("\033[32mUnbuffered output with escape codes\033[0m\n");
+
     return 0;
 }
