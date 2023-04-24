@@ -19,7 +19,7 @@ struct nvme_registers {
     ULONG			aqa;	/* Admin Queue Attributes */
     UQUAD			asq;	/* Admin Submission Queue Base Address */
     UQUAD			acq;	/* Admin Completion Queue Base Address */
-};
+} __packed;
 
 struct nvme_id_power_state {
     UWORD			max_power;	/* centiwatts */

@@ -60,6 +60,8 @@ struct NVMEBase
     struct Library              *nvme_UtilityBase;
     APTR                        nvme_KernelBase;
 
+    ULONG                       nvme_Flags;
+
     /* Frequently used object offsets */
     OOP_Class                   *nvmeClass;
     OOP_Class                   *busClass;
@@ -86,6 +88,9 @@ struct NVMEBase
 #endif
     struct List                 nvme_Controllers;
 };
+
+#define NVMEB_FLAG_NOMSI        0
+#define NVMEF_FLAG_NOMSI        (1 << NVMEB_FLAG_NOMSI)
 
 #if defined(__OOP_NOATTRBASES__)
 #undef HWAttrBase

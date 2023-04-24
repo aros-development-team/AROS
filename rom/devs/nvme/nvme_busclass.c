@@ -101,7 +101,7 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 {
     struct NVMEBase *NVMEBase = cl->UserData;
     device_t dev = (device_t)GetTagData(aHidd_DriverData, 0, msg->attrList);
-    IPTR unitCnt = GetTagData(aHidd_Bus_MaxUnits, 0, msg->attrList);
+    IPTR maxUnits = GetTagData(aHidd_Bus_MaxUnits, 0, msg->attrList);
 
     char *devName = (char *)GetTagData(aHidd_StorageUnit_Model, 0, msg->attrList);
     char *devSer = (char *)GetTagData(aHidd_StorageUnit_Serial, 0, msg->attrList);
@@ -110,7 +110,7 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     D(bug ("[NVME:Bus] Root__New()\n");)
 
-    if (!dev || !dev->dev_Queues[0] || unitCnt <= 0)
+    if (!dev || !dev->dev_Queues[0] || maxUnits <= 0)
             return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -140,9 +140,8 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             CopyMem(devFW, data->ab_DevFW, strlen(devFW));
         }
 
-        data->ab_UnitCnt = unitCnt;
-        data->ab_Units = AllocMem(sizeof(OOP_Object *) * data->ab_UnitCnt, MEMF_CLEAR);
-        D(bug ("[NVME:Bus] Root__New: Allocated pointers for %u unit(s) @ 0x%p\n", data->ab_UnitCnt, data->ab_Units);)
+        data->ab_Units = AllocMem(sizeof(OOP_Object *) * maxUnits, MEMF_CLEAR);
+        D(bug ("[NVME:Bus] Root__New: Allocated pointers for %u unit(s) @ 0x%p\n", maxUnits, data->ab_Units);)
     }
     return o;
 }
@@ -253,11 +252,15 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     struct nvme_Bus *data = OOP_INST_DATA(NVMEBase->busClass, o);
     APTR buffer = HIDD_PCIDriver_AllocPCIMem(data->ab_Dev->dev_PCIDriverObject, 8192);
     struct IORequest *nvmeTimer = nvme_OpenTimer(NVMEBase);
-    UQUAD lbaStart, lbaEnd;
     struct ExpansionBase *ExpansionBase;
+    struct Node *unitNode, *tmpNode;
+    UQUAD lbaStart, lbaEnd;
+    struct List nvmeUnits;
     struct nvme_command c;
     struct completionevent_handler busehandle;
     int nn;
+
+    NEWLIST(&nvmeUnits);
 
     if (nvmeTimer && buffer)
     {
@@ -290,10 +293,12 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         c.features.op.opcode = nvme_admin_set_features;
         c.features.fid = AROS_LONG2LE(NVME_FEAT_NUM_QUEUES);
 #if defined(USE_MSI)
-        c.features.dword11 = AROS_LONG2LE(vectreqs[1].ti_Data | (vectreqs[1].ti_Data << 16));
-#else
-        c.features.dword11 = AROS_LONG2LE(1 | (1 << 16));
+        if (!(NVMEBase->nvme_Flags & NVMEF_FLAG_NOMSI))
+            c.features.dword11 = AROS_LONG2LE(vectreqs[1].ti_Data | (vectreqs[1].ti_Data << 16));
+        else
 #endif
+            c.features.dword11 = AROS_LONG2LE(1 | (1 << 16));
+
         D(bug ("[NVME:Bus] NVMEBus_Start: sending nvme_admin_set_features(NVME_FEAT_NUM_QUEUES, %u)\n", c.features.dword11 & 0xFF);)
 
         ULONG signals = SetSignal(0, 0);
@@ -307,43 +312,46 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             return FALSE;
         }
 #if defined(USE_MSI)
-        if (!busehandle.ceh_Status)
+        if (!(NVMEBase->nvme_Flags & NVMEF_FLAG_NOMSI))
         {
-            int featqueues = MIN((busehandle.ceh_Result & 0xffff), (busehandle.ceh_Result >> 16)) + 1;
-            if (featqueues < vectreqs[1].ti_Data)
-                vectreqs[1].ti_Data = featqueues;
-        }
-
-        DIRQ(bug ("[NVME:Bus] NVMEBus_Start: required queues = %u\n", vectreqs[1].ti_Data);)
-
-        Disable();
-        DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Removing Admin Int Server...\n");)
-        // Remove the device Admin Interrupt handler
-        HIDD_PCIDriver_RemoveInterrupt(data->ab_Dev->dev_PCIDriverObject, data->ab_Dev->dev_Object, &data->ab_Dev->dev_Queues[0]->q_IntHandler);
-
-        DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Attempting to Obtain PCI Device MSI Vectors ...\n");)
-        if (HIDD_PCIDevice_ObtainVectors(data->ab_Dev->dev_Object, vectreqs))
-        {
-            struct TagItem vecAttribs[] =
+            if (!busehandle.ceh_Status)
             {
-                {   tHidd_PCIVector_Int,    (IPTR)-1        },
-                {   TAG_DONE,               0               }
-            };
-            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Obtained MSI Vectors!\n");)
-            //Switch The Admin Queue IRQ;
-            HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, 0, vecAttribs);
-            if (vecAttribs[0].ti_Data != (IPTR)-1)
-            {
-                AdminIntLine = vecAttribs[0].ti_Data;
-                data->ab_Dev->dev_Queues[0]->q_irq = AdminIntLine;
-                //hwqcnt = ;
+                int featqueues = MIN((busehandle.ceh_Result & 0xffff), (busehandle.ceh_Result >> 16)) + 1;
+                if (featqueues < vectreqs[1].ti_Data)
+                    vectreqs[1].ti_Data = featqueues;
             }
+
+            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: required queues = %u\n", vectreqs[1].ti_Data);)
+
+            Disable();
+            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Removing Admin Int Server...\n");)
+            // Remove the device Admin Interrupt handler
+            HIDD_PCIDriver_RemoveInterrupt(data->ab_Dev->dev_PCIDriverObject, data->ab_Dev->dev_Object, &data->ab_Dev->dev_Queues[0]->q_IntHandler);
+
+            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Attempting to Obtain PCI Device MSI Vectors ...\n");)
+            if (HIDD_PCIDevice_ObtainVectors(data->ab_Dev->dev_Object, vectreqs))
+            {
+                struct TagItem vecAttribs[] =
+                {
+                    {   tHidd_PCIVector_Int,    (IPTR)-1        },
+                    {   TAG_DONE,               0               }
+                };
+                DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Obtained MSI Vectors!\n");)
+                //Switch The Admin Queue IRQ;
+                HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, 0, vecAttribs);
+                if (vecAttribs[0].ti_Data != (IPTR)-1)
+                {
+                    AdminIntLine = vecAttribs[0].ti_Data;
+                    data->ab_Dev->dev_Queues[0]->q_irq = AdminIntLine;
+                    //hwqcnt = ;
+                }
+            }
+            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Re-Adding Admin Int Server ...\n");)
+            // Add the hardware IRQ Admin Interrupt handler
+            AddIntServer(INTB_KERNEL + AdminIntLine,
+                &data->ab_Dev->dev_Queues[0]->q_IntHandler);
+            Enable();
         }
-        DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Re-Adding Admin Int Server ...\n");)
-        // Add the hardware IRQ Admin Interrupt handler
-        AddIntServer(INTB_KERNEL + AdminIntLine,
-            &data->ab_Dev->dev_Queues[0]->q_IntHandler);
-        Enable();
 #endif
 
         DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Ending Admin IRQ = %u\n", AdminIntLine);)
@@ -445,6 +453,12 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             AddIntServer(INTB_KERNEL + qIRQ,
                                 &data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler);
                             data->ab_Dev->queuecnt++;
+                            unitNode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                            if (unitNode)
+                            {
+                                unitNode->ln_Pri = nn;
+                                AddTail(&nvmeUnits, unitNode);
+                            }
                         }
                         else
                         {
@@ -471,8 +485,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
         /* Attach detected Units */
 
-        for (nn = 0; nn < data->ab_UnitCnt; nn++)
+        ForeachNodeSafe(&nvmeUnits, unitNode, tmpNode)
         {
+            nn = unitNode->ln_Pri;
             struct nvme_id_ns *id_ns = (struct nvme_id_ns *)buffer;
             struct TagItem attrs[] =
             {
@@ -484,6 +499,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     {aHidd_StorageUnit_Revision,        (IPTR)data->ab_DevFW    },
                     {TAG_DONE,                          0                       }
             };
+
+            Remove(unitNode);
+            FreeVec(unitNode);
 
             memset(buffer, 0, 8192);
             memset(&c, 0, sizeof(c));
@@ -558,6 +576,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         struct nvme_Unit *unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
                         const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
                         IPTR pp[4 + DE_BOOTBLOCKS + 1];
+
+                        data->ab_UnitCnt++;
 
                         if (ExpansionBase)
                         {

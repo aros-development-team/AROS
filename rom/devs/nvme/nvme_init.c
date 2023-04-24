@@ -114,6 +114,10 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
                         D(bug("[NVME--] %s: Disabling NVME support\n", __func__));
                         enabled = FALSE;
                     }
+                    if (strstr(CmdLine, "nomsi"))
+                    {
+                        NVMEBase->nvme_Flags |= NVMEF_FLAG_NOMSI;
+                    }
                 }
             }
         }
