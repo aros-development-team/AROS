@@ -11,6 +11,7 @@ int main(void)
     int result;
 
     result = setvbuf(stdout, NULL, _IONBF, 0);
+    printf("\033[32mText with escape sequences\033[0m\n");
     printf("setvbuf returned %d\n", result);
 
     return 0;

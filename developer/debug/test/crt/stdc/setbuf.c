@@ -9,6 +9,7 @@
 int main(void)
 {
     setbuf(stdout, NULL);
-
+    printf("\033[32mText with escape sequences\033[0m\n");
+    
     return 0;
 }
