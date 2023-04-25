@@ -3,6 +3,7 @@
 
     C99 function setvbuf().
 */
+
 #include <dos/stdio.h>
 #include <proto/dos.h>
 #include <errno.h>
@@ -51,6 +52,10 @@
 
 ******************************************************************************/
 {
+    int bufsize = (int)size;
+    char *filebuf = NULL;
+    int retval;
+
     if (!stream)
     {
         errno = EINVAL;
@@ -58,20 +63,23 @@
     }
 
     /* Pointer has to be longword aligned */
-    if (buf && (((IPTR)buf & 3) != (IPTR)0))
+    if (((filebuf = buf) != NULL)
+        && (((IPTR)filebuf & 3) != 0))
     {
-        char *buf2 = (char *)(((IPTR)buf | 3) + 1);
-        size -= buf2 - buf;
-        buf = buf2;
+        char *buf2 = (char *)(((IPTR)filebuf | 3) + 1);
+        bufsize -= buf2 - filebuf;
+        filebuf = buf2;
     }
     /* Size >= 208 */
-    if (size < 208)
+    if (bufsize < 208)
     {
-        if (buf == NULL)
-            size = 208;
+        if (filebuf == NULL)
+            bufsize = 208;
         else
+        {
             errno = EINVAL;
             return EOF;
+        }
     }
 
     switch (mode)
@@ -90,5 +98,7 @@
         return EOF;
     }
 
-    return SetVBuf(stream->fh, buf, mode, size ? size : -1);
+    retval = (int)SetVBuf(stream->fh, filebuf, mode, bufsize ? bufsize : -1);
+
+    return retval;
 } /* setvbuf */
