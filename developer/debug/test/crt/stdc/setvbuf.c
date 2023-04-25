@@ -9,19 +9,20 @@
 int main(void)
 {
     char buf[1024];
-    int result;
 
-    if ((result = setvbuf(stdout, buf, _IOFBF, 1024)) == 0)
+    if (setvbuf(stdout, buf, _IOFBF, 1024) == 0)
     {
         printf("\033[32mBuffered output with escape codes\033[0m\n");
-        fflush( stdout );
+
     }
     else
     {
         printf("\033[32msetvbuf(stdout, buf, _IOFBF, 1024); failed\033[0m\n");
     }
 
-    if ((result = setvbuf(stdout, NULL, _IONBF, 0)) == 0)
+    fflush( stdout );
+
+    if (setvbuf(stdout, NULL, _IONBF, 0) == 0)
     {
         printf("\033[32mUnbuffered output with escape codes\033[0m\n");
     }
