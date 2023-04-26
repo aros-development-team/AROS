@@ -1,6 +1,6 @@
 /*
 
-    (C) 1995-2020 The AROS Development Team
+    (C) 1995-2023 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -131,9 +131,9 @@ struct UtilityBase *UtilityBase;
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.12 (20.01.2020) © AROS" ;
+static const char version[] = "\0$VER: Assign unofficial 50.13 (26.04.2023) © The AROS Dev Team" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.12 (20.01.2020) © AROS" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.13 (26.04.2023) © The AROS Dev Team" ;
 #endif
 
 struct localdata
@@ -188,6 +188,11 @@ const UBYTE argtemplate[] =
 "DIRS/S,"
 "DEVICES/S";
 
+static const char exthelp[] =
+	"Assign : List, or control the assignment of logical device names to filesystem directories\n"
+    "If no arguments are provided, all current assignments will be displayed.\n"
+	"\tNAME/A   The assign to operate on\n";
+
 struct ArgList
 {
     STRPTR name;
@@ -215,7 +220,7 @@ __startup AROS_PROCH(Start, argstr, argsize, sBase)
 static int Main(struct ExecBase *sBase)
 {
         struct localdata _ld, *ld = &_ld;
-        struct RDArgs *readarg;
+        struct RDArgs *readarg, *rd;
         struct ArgList arglist;
         struct ArgList *MyArgList = &arglist;
         int error = RETURN_OK;
@@ -231,7 +236,10 @@ static int Main(struct ExecBase *sBase)
 
                     NEWLIST(&DeferList);
 
-                    readarg = ReadArgs(argtemplate, (IPTR *)MyArgList, NULL);
+                    rd = AllocDosObject(DOS_RDARGS, NULL);
+                    if (rd)
+                        rd->RDA_ExtHelp = (STRPTR)exthelp;
+                    readarg = ReadArgs(argtemplate, (IPTR *)MyArgList, rd);
                     if (readarg)
                     {
                             /* Verify mutually exclusive args
@@ -240,6 +248,8 @@ static int Main(struct ExecBase *sBase)
                             {
                                     PutStr("Only one of ADD/APPEND, PREPEND, REMOVE, PATH or DEFER is allowed\n");
                                     FreeArgs(readarg);
+                                    if (rd)
+                                        FreeDosObject(DOS_RDARGS, rd);
                                     CloseLibrary((struct Library *) DOSBase);
                                     return RETURN_FAIL;
                             }
@@ -259,6 +269,8 @@ static int Main(struct ExecBase *sBase)
                                     {
                                             Printf("Invalid device name %s\n", (IPTR)MyArgList->name);
                                             FreeArgs(readarg);
+                                            if (rd)
+                                               FreeDosObject(DOS_RDARGS, rd);
                                             CloseLibrary((struct Library *) DOSBase);
                                             return RETURN_FAIL;
                                     }
@@ -295,6 +307,8 @@ static int Main(struct ExecBase *sBase)
                             }
 
                             FreeArgs(readarg);
+                            if (rd)
+                                FreeDosObject(DOS_RDARGS, rd);
                     }
 
                     CloseLibrary((struct Library *) DOSBase);
@@ -487,9 +501,27 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
                 DEBUG_ASSIGN(Printf("doassign: dp <%08X>\n",dp));
                 if (dp)
                 {
-                        success = DoPkt(dp,ACTION_DIE,0,0,0,0,0);
-                        ioerr = IoErr();
-                        DEBUG_ASSIGN(Printf("doassign: ACTION_DIE returned %ld\n",success));
+                        struct InfoData did;
+                        success = DoPkt(dp,ACTION_DISK_INFO,(SIPTR)MKBADDR(&did),0,0,0,0);
+                        if (!(success) || !(did.id_InUse))
+                        {
+                                success = DoPkt(dp,ACTION_INHIBIT,DOSTRUE,0,0,0,0);
+                                ioerr = IoErr();
+                                if (success)
+                                {
+                                        success = DoPkt(dp,ACTION_DIE,0,0,0,0,0);
+                                        ioerr = IoErr();
+                                        DEBUG_ASSIGN(Printf("doassign: ACTION_DIE returned %ld\n", success));
+                                        if (!(success) && (ioerr != RETURN_OK))
+                                        {
+                                               DoPkt(dp,ACTION_INHIBIT,DOSFALSE,0,0,0,0); 
+                                        }
+                                }
+                        }
+                        else
+                        {
+                                ioerr = ERROR_OBJECT_IN_USE;
+                        }
                 }
         }
 
