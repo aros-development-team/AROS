@@ -67,7 +67,7 @@ void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
 
     data = INST_DATA(cl, obj);
 
-    act = ++data->entries_active;
+    act = data->entries_active + 1;
     if (act >= data->entries_num)
         act = 0;
 
