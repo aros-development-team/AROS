@@ -72,7 +72,7 @@ LONG step(void);
 
 #define BLCKFACCURACY   (5)                          /* 2^5 = 32 */
 
-#define ID_BUSY         AROS_LONG2BE(MAKE_ID('B','U','S','Y'))
+#define ID_BUSY         MAKE_ID('B','U','S','Y')
 
 /* Our own usage of NotifyRequest private data */
 #define nr_Next nr_Reserved[2]
