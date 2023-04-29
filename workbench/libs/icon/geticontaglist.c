@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -275,6 +275,28 @@
             }
             
             UnLockObject(iim.iim_FileLock);
+        }
+        else
+        {
+            if (name)
+            {
+                int namelen = strlen(name);
+                if (namelen > 2 && name[namelen - 1] == ':')
+                {
+                    iim.iim_SysBase     = (struct Library *) SysBase;
+                    iim.iim_DOSBase     = (struct Library *) DOSBase;
+                    iim.iim_UtilityBase = (struct Library *) UtilityBase;
+                    iim.iim_IconBase    = (struct Library *) IconBase;
+                    iim.iim_Tags        = tags;
+                    if ((iim.iim_FIB = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
+                    {
+                        iim.iim_FIB->fib_DirEntryType = ST_ROOT;
+                        strncpy(iim.iim_FIB->fib_FileName, name, (namelen < MAXFILENAMELENGTH) ? namelen : MAXFILENAMELENGTH);
+                        icon = FindDeviceIcon(&iim);
+                        FreeDosObject(DOS_FIB, iim.iim_FIB);
+                    }
+                }
+            }
         }
 
         if (icon == NULL && defaultType > 0) {
