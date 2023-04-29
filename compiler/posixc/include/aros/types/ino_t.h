@@ -12,16 +12,20 @@
 
 #include <aros/cpu.h>
 
+#if (__WORDSIZE==64)
+typedef signed AROS_64BIT_TYPE __ino_t;
+#else
 typedef signed AROS_32BIT_TYPE __ino_t;
+#endif
 typedef signed AROS_64BIT_TYPE __ino64_t;
 
 #if defined(__USE_XOPEN)
 # if !defined(__ino_t_defined)
-/* NOTIMPL #  if !defined(__USE_FILE_OFFSET64) */
+#  if !defined(__USE_FILE_OFFSET64)
 typedef __ino_t ino_t;
-/* NOTIMPL #  else
+#  else
 typedef __ino64_t ino_t;
-#  endif */
+#  endif
 #  define __ino_t_defined
 # endif
 # if defined(__USE_LARGEFILE64) && !defined(__ino64_t_defined)

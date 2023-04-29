@@ -10,6 +10,11 @@
 
 #include <aros/cpu.h>
 
-typedef signed AROS_32BIT_TYPE time_t;
+typedef signed AROS_32BIT_TYPE __time_t;
+
+#if !defined(__time_t_defined)
+typedef __time_t time_t;
+# define __time_t_defined
+#endif
 
 #endif /* _AROS_TYPES_TIME_T_H */
