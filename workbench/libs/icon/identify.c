@@ -527,12 +527,12 @@ struct DiskObject *__FindDeviceIcon_WB
 )
 {
     struct InfoData devIData;
-    struct DosList *dl, *dn;
+    struct DosList *dl;
     devIData.id_DiskType = ID_UNREADABLE_DISK;
     dl = LockDosList(LDF_DEVICES|LDF_READ);
     if (dl)
     {
-        dn = FindDosEntry(dl, iim->iim_FIB->fib_FileName, LDF_DEVICES);
+        struct DosList *dn = FindDosEntry(dl, iim->iim_FIB->fib_FileName, LDF_DEVICES);
         if ((dn) && (dn->dol_Task))
         {
             DoPkt(dn->dol_Task, ACTION_DISK_INFO,
