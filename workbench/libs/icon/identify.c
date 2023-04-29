@@ -193,6 +193,15 @@ struct DiskObject *GetFloppydiskIcon(ULONG fsid, const struct TagItem *tags, str
         case ID_KICKSTART_DISK:
             fsstr = "Kick";
             break;
+        case ID_PFS_DISK:
+        case ID_PFS2_DISK:
+        case ID_PFS3_DISK:
+        case ID_PFS2_SCSI_DISK:
+        case ID_PFS3_SCSI_DISK:
+        case ID_PFS2_muFS_DISK:
+        case ID_FLOPPY_PFS_DISK:
+            fsstr = "PFS";
+            break;
         case ID_MSDOS_DISK:
         case ID_FAT12_DISK:
         case ID_FAT16_DISK:
@@ -203,6 +212,16 @@ struct DiskObject *GetFloppydiskIcon(ULONG fsid, const struct TagItem *tags, str
         case ID_SFS_LE_DISK:
             fsstr = "SFS";
             break;
+        case ID_muFS_DISK:
+        case ID_DOS_muFS_DISK:
+        case ID_FFS_muFS_DISK:
+        case ID_INTER_DOS_muFS_DISK:
+        case ID_INTER_FFS_muFS_DISK:
+        case ID_FASTDIR_DOS_muFS_DISK:
+        case ID_FASTDIR_FFS_muFS_DISK:
+        case ID_AFS0_DISK:
+        case ID_AFS1_DISK:
+        case ID_AFS_muFS_DISK:
         case ID_FFS_DISK:
         case ID_INTER_DOS_DISK:
         case ID_INTER_FFS_DISK:
@@ -240,6 +259,14 @@ struct DiskObject *GetHarddiskIcon(ULONG fsid, const struct TagItem *tags, struc
         case ID_BUSY_DISK:
             fsstr = "Busy";
             break;
+        case ID_PFS_DISK:
+        case ID_PFS2_DISK:
+        case ID_PFS3_DISK:
+        case ID_PFS2_SCSI_DISK:
+        case ID_PFS3_SCSI_DISK:
+        case ID_PFS2_muFS_DISK:
+            fsstr = "PFS";
+            break;
         case ID_NTFS_DISK:
         case ID_MSDOS_DISK:
         case ID_FAT12_DISK:
@@ -251,6 +278,16 @@ struct DiskObject *GetHarddiskIcon(ULONG fsid, const struct TagItem *tags, struc
         case ID_SFS_LE_DISK:
             fsstr = "SFS";
             break;
+        case ID_muFS_DISK:
+        case ID_DOS_muFS_DISK:
+        case ID_FFS_muFS_DISK:
+        case ID_INTER_DOS_muFS_DISK:
+        case ID_INTER_FFS_muFS_DISK:
+        case ID_FASTDIR_DOS_muFS_DISK:
+        case ID_FASTDIR_FFS_muFS_DISK:
+        case ID_AFS0_DISK:
+        case ID_AFS1_DISK:
+        case ID_AFS_muFS_DISK:
         case ID_FFS_DISK:
         case ID_INTER_DOS_DISK:
         case ID_INTER_FFS_DISK:
