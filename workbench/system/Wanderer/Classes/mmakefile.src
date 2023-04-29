@@ -1,4 +1,4 @@
-# Copyright (C) 2008-2011, The AROS Development Team. All rights reserved.
+# Copyright (C) 2008-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -7,6 +7,12 @@ include $(SRCDIR)/config/aros.cfg
 #MM  wanderer-classes-icondrawerlist \
 #MM  wanderer-classes-iconvolumelist \
 #MM  wanderer-classes-iconlistview
+
+#MM-  workbench-system-wanderer-classes-quick : \
+#MM  wanderer-classes-iconlist-quick \
+#MM  wanderer-classes-icondrawerlist-quick \
+#MM  wanderer-classes-iconvolumelist-quick \
+#MM  wanderer-classes-iconlistview-quick
 
 #MM wanderer-classes-icon : includes workbench-libs-muimaster
 #MM wanderer-classes-iconlist : includes workbench-libs-muimaster

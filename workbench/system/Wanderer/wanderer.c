@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 */
 
 #define ZCC_QUIET
@@ -259,7 +259,7 @@ AROS_UFH3(void, Wanderer__Func_CopyDropEntries,
 
     struct IconList_Drop_Event *copyFunc_DropEvent = FindTask(NULL)->tc_UserData;
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (copyFunc_DropEvent)
     {
@@ -394,7 +394,7 @@ AROS_UFH3
 {
     AROS_USERFUNC_INIT
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
@@ -406,7 +406,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         DoMethod(msg->iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent);
         if ((IPTR)ent == (IPTR)MUIV_IconList_NextIcon_End)
         {
-D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: NextIcon returned MUIV_IconList_NextIcon_TAG_DONE)\n", __PRETTY_FUNCTION__));
+            D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: NextIcon returned MUIV_IconList_NextIcon_TAG_DONE)\n", __func__));
             return;
         }
 
@@ -414,6 +414,33 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: NextIcon returned MUIV_IconList_Ne
 
         if ((msg->isroot) && (ent->type == ST_ROOT))
         {
+            struct Screen *ds = NULL;
+            GET(_app(obj), MUIA_Wanderer_Screen, &ds);
+
+            if (_volpriv(ent->ile_IconEntry)->vip_FLags & ICONENTRY_VOL_DISABLED)
+            {
+                if (ds)
+                    DisplayBeep(ds);
+                return;
+            }
+            struct Process *me = (struct Process *)FindTask(NULL);
+            APTR wPtr = me->pr_WindowPtr;
+            me->pr_WindowPtr = NULL;
+            BPTR tmpLock = Lock(ent->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
+            if (tmpLock)
+            {
+                me->pr_WindowPtr = wPtr;
+                UnLock(tmpLock);
+            }
+            else
+            {
+
+                me->pr_WindowPtr = wPtr;
+                if (ds)
+                    DisplayBeep(ds);
+                return;
+            }
+
             int len = strlen(ent->label);
             windowTitle = AllocVec(len + 1, MEMF_CLEAR | MEMF_ANY);
             strcpy(windowTitle, ent->label);
@@ -427,7 +454,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: NextIcon returned MUIV_IconList_Ne
             windowTitle[len] = '\0';
         }
 
-D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY_FUNCTION__, offset, windowTitle));
+D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __func__, offset, windowTitle));
 
         if  ((ent->type == ST_ROOT) || (ent->type == ST_USERDIR) || (ent->type == ST_LINKDIR))
         {
@@ -694,7 +721,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                                 strcpy(a->name, ent->ile_IconEntry->ie_IconNode.ln_Name);
                                 if((ent->type == ST_LINKDIR) || (ent->type == ST_USERDIR))
                                 {
-                                    D(bug("[Wanderer] %s: ent->type=%d\n", __PRETTY_FUNCTION__, ent->type));
+                                    D(bug("[Wanderer] %s: ent->type=%d\n", __func__, ent->type));
                                     strcat (a->name, "/");
                                 }
                                 AddTail(&AppList, (struct Node *) a);
@@ -726,7 +753,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                                 s =  succ;
                             }
 
-D(bug("[Wanderer] %s: win:<%s> first file:<%s> mx=%d my=%d\n", __PRETTY_FUNCTION__,
+D(bug("[Wanderer] %s: win:<%s> first file:<%s> mx=%d my=%d\n", __func__,
                                     win->Title, *filelist,
                                     wscreen->MouseX - win->LeftEdge, wscreen->MouseY - win->TopEdge);)
 
@@ -784,13 +811,13 @@ AROS_UFH3
     struct Wanderer_DATA *data = INST_DATA(_WandererIntern_CLASS, _WandererIntern_AppObj);
     BOOL    wb_iscurrentlybd;
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
-D(bug("[Wanderer] %s: Private data @ %x\n", __PRETTY_FUNCTION__, data));
+D(bug("[Wanderer] %s: Private data @ %x\n", __func__, data));
 
     if (!data->wd_WorkbenchWindow)
     {
-D(bug("[Wanderer] %s: No Workbench Window\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: No Workbench Window\n", __func__));
         return;
     }
 
@@ -801,8 +828,8 @@ D(bug("[Wanderer] %s: No Workbench Window\n", __PRETTY_FUNCTION__));
         BOOL          isOpen = (BOOL)XGET(data->wd_WorkbenchWindow, MUIA_Window_Open);
         Object        *win_Active = NULL;
 
-D(bug("[Wanderer] %s: Backdrop mode change requested!\n", __PRETTY_FUNCTION__));
-D(bug("[Wanderer] %s: Disposing of existing Workbench window Obj ..\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Backdrop mode change requested!\n", __func__));
+D(bug("[Wanderer] %s: Disposing of existing Workbench window Obj ..\n", __func__));
         if (isOpen)
             SET(data->wd_WorkbenchWindow, MUIA_Window_Open, FALSE);
 
@@ -829,11 +856,11 @@ D(bug("[Wanderer] %s: Disposing of existing Workbench window Obj ..\n", __PRETTY
 #if defined(DEBUG)
         if (data->wd_Option_BackDropMode)
         {
-D(bug("[Wanderer] %s: Creating new Workbench window Obj (BACKDROP MODE)..\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Creating new Workbench window Obj (BACKDROP MODE)..\n", __func__));
         }
         else
         {
-D(bug("[Wanderer] %s: Creating new Workbench window Obj (NORMAL MODE)..\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Creating new Workbench window Obj (NORMAL MODE)..\n", __func__));
         }
 #endif
         SetVar(wand_backdropprefs, data->wd_Option_BackDropMode ? "True" : "False", -1, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
@@ -845,7 +872,7 @@ D(bug("[Wanderer] %s: Creating new Workbench window Obj (NORMAL MODE)..\n", __PR
 
         if ((data->wd_WorkbenchWindow) && (isOpen))
         {
-D(bug("[Wanderer] %s: Making Workbench window visable..\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Making Workbench window visable..\n", __func__));
             DoMethod(data->wd_WorkbenchWindow, MUIM_IconWindow_Open);
             DoMethod(data->wd_WorkbenchWindow, MUIM_Window_ToBack);
         }
@@ -1088,7 +1115,7 @@ void wanderer_menufunc_wanderer_backdrop(Object **pstrip)
     Object *strip = *pstrip;
     Object *item = FindMenuitem(strip, MEN_WANDERER_BACKDROP);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL)
     {
@@ -1108,17 +1135,17 @@ void wanderer_menufunc_window_find(void)
     Object *wbwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     BPTR lock;
 
-D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, dr));
+D(bug("[Wanderer]: %s('%s')\n", __func__, dr));
 
     if (actwindow == wbwindow)
     {
         /* This check is necessary because WorkbenchWindow has path RAM: */
-D(bug("[Wanderer] %s: Can't call WBNewDrawer for WorkbenchWindow\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Can't call WBNewDrawer for WorkbenchWindow\n", __func__));
         return;
     }
     if ( XGET(actwindow, MUIA_Window_Open) == FALSE )
     {
-D(bug("[Wanderer] %s: Can't call WBNewDrawer: the active window isn't open\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Can't call WBNewDrawer: the active window isn't open\n", __func__));
         return;
     }
 
@@ -1148,17 +1175,17 @@ void wanderer_menufunc_window_newdrawer(STRPTR *cdptr)
     Object *wbwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     BPTR lock;
 
-D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, dr));
+D(bug("[Wanderer]: %s('%s')\n", __func__, dr));
 
     if (actwindow == wbwindow)
     {
         /* This check is necessary because WorkbenchWindow has path RAM: */
-D(bug("[Wanderer] %s: Can't call WBNewDrawer for WorkbenchWindow\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Can't call WBNewDrawer for WorkbenchWindow\n", __func__));
         return;
     }
     if ( XGET(actwindow, MUIA_Window_Open) == FALSE )
     {
-D(bug("[Wanderer] %s: Can't call WBNewDrawer: the active window isn't open\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Can't call WBNewDrawer: the active window isn't open\n", __func__));
         return;
     }
 
@@ -1190,7 +1217,7 @@ void wanderer_menufunc_window_openparent(STRPTR *cdptr)
     BOOL foundSlash, foundColon;
     int i = 0;
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     last_letter = &dr[ strlen(dr) - 1 ];
 
@@ -1262,7 +1289,7 @@ void wanderer_menufunc_window_close()
 {
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     SET(window, MUIA_Window_CloseRequest, TRUE);
 }
@@ -1275,7 +1302,7 @@ void wanderer_menufunc_window_update()
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextIcon_Start;
 
-    D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer]: %s()\n", __func__));
 
     if (iconList != NULL)
     {
@@ -1319,7 +1346,7 @@ void wanderer_menufunc_window_cleanup()
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (iconList != NULL)
     {
@@ -1359,7 +1386,7 @@ void wanderer_menufunc_window_clear()
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (iconList != NULL)
     {
@@ -1374,7 +1401,7 @@ void wanderer_menufunc_window_select()
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (iconList != NULL)
     {
@@ -1401,7 +1428,7 @@ void wanderer_menufunc_window_view_iconsonly(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if ((item != NULL) && (iconList != NULL))
     {
@@ -1432,7 +1459,7 @@ void wanderer_menufunc_window_view_modeicon(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if ((item != NULL) && (iconList != NULL))
     {
@@ -1463,7 +1490,7 @@ void wanderer_menufunc_window_view_modelist(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if ((item != NULL) && (iconList != NULL))
     {
@@ -1492,7 +1519,7 @@ void wanderer_menufunc_window_view_hidden(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if ((item != NULL) && (iconList != NULL))
     {
@@ -1523,7 +1550,7 @@ void wanderer_menufunc_window_sort_enable(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL)
     {
@@ -1587,7 +1614,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
                         sort_bits &= ~MUIV_IconList_Sort_DrawersMixed;
                     }
                 }
-D(bug("[Wanderer] %s: (enable) Setting sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
+D(bug("[Wanderer] %s: (enable) Setting sort flags %08x\n", __func__, sort_bits));
             }
             else
             {
@@ -1617,7 +1644,7 @@ D(bug("[Wanderer] %s: (enable) Setting sort flags %08x\n", __PRETTY_FUNCTION__, 
                 {
                     NNSET(item, MUIA_Disabled, TRUE);
                 }
-D(bug("[Wanderer] %s: (disable) Setting sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
+D(bug("[Wanderer] %s: (disable) Setting sort flags %08x\n", __func__, sort_bits));
             }
 
             SET(iconList, MUIA_IconList_SortFlags, sort_bits);
@@ -1635,7 +1662,7 @@ void wanderer_menufunc_window_sort_name(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL && iconList != NULL)
     {
@@ -1662,7 +1689,7 @@ void wanderer_menufunc_window_sort_date(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL && iconList != NULL)
     {
@@ -1689,7 +1716,7 @@ void wanderer_menufunc_window_sort_size(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL && iconList != NULL)
     {
@@ -1697,13 +1724,13 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
         GET(item, MUIA_Menuitem_Checked, &checked);
 
-D(bug("[Wanderer]: %s: (start) sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
+D(bug("[Wanderer]: %s: (start) sort flags %08x\n", __func__, sort_bits));
         sort_bits &= ~MUIV_IconList_Sort_Orders;
         if (checked == TRUE)
         {
             sort_bits |= MUIV_IconList_Sort_BySize;
         }
-D(bug("[Wanderer]: %s: (end) sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
+D(bug("[Wanderer]: %s: (end) sort flags %08x\n", __func__, sort_bits));
         SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
@@ -1718,7 +1745,7 @@ void wanderer_menufunc_window_sort_type(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL && iconList != NULL)
     {
@@ -1745,7 +1772,7 @@ void wanderer_menufunc_window_sort_reverse(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL && iconList != NULL)
     {
@@ -1776,7 +1803,7 @@ void wanderer_menufunc_window_sort_topdrawers(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if (item != NULL && iconList != NULL)
     {
@@ -1840,7 +1867,7 @@ void wanderer_menufunc_icon_rename(void)
                 
                 UnLock(lock);
 
-                D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__, filename));
+                D(bug("[Wanderer] %s: selected = '%s'\n", __func__, filename));
 
                 OpenWorkbenchObject
                 (
@@ -1850,7 +1877,7 @@ void wanderer_menufunc_icon_rename(void)
                     TAG_DONE
                 );
 
-                D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__,
+                D(bug("[Wanderer] %s: selected = '%s'\n", __func__,
                         entry->ile_IconEntry->ie_IconNode.ln_Name));
 
                 UnLock(parent);
@@ -1875,7 +1902,7 @@ void wanderer_menufunc_icon_information()
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
 
-    D(bug("[Wanderer] %s: Window @ %p, IconList @ %p\n", __PRETTY_FUNCTION__, window, iconList));
+    D(bug("[Wanderer] %s: Window @ %p, IconList @ %p\n", __func__, window, iconList));
         
     do
     {
@@ -1891,23 +1918,23 @@ void wanderer_menufunc_icon_information()
                 STRPTR name, file;
 
                 file = entry->ile_IconEntry->ie_IconNode.ln_Name;
-                D(bug("[Wanderer] %s: Trying with '%s'\n", __PRETTY_FUNCTION__, file));
+                D(bug("[Wanderer] %s: Trying with '%s'\n", __func__, file));
 
                 if ((lock = Lock(file, ACCESS_READ)) == BNULL)
                 {
                     ULONG flen = strlen(file);
-                    D(bug("[Wanderer] %s: couldnt lock '%s'\n", __PRETTY_FUNCTION__, file));
+                    D(bug("[Wanderer] %s: couldnt lock '%s'\n", __func__, file));
                     if ((flen > 5)
                         && (strcmp(file + flen - 5, ".info") != 0)
                         && (file[flen -1] != ':'))
                     {
                         STRPTR tmp;
-                        D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n", __PRETTY_FUNCTION__));
+                        D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n", __func__));
                         tmp = AllocVec(flen + 6, MEMF_CLEAR);
                         if (tmp == NULL) return;
 
                         sprintf(tmp, "%s.info", file);
-                        D(bug("[Wanderer] %s: Trying with '%s'\n", __PRETTY_FUNCTION__, tmp));
+                        D(bug("[Wanderer] %s: Trying with '%s'\n", __func__, tmp));
                         lock = Lock(tmp, ACCESS_READ);
                         FreeVec(tmp);
 
@@ -1927,7 +1954,7 @@ void wanderer_menufunc_icon_information()
                 }
 
                 D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n",
-                        __PRETTY_FUNCTION__, name, lock));
+                        __func__, name, lock));
                 WBInfo(parent, name, NULL);
 
                 UnLock(parent);
@@ -1955,7 +1982,7 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
         { TAG_DONE, 0                       }
     };
 
-    D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer]: %s()\n", __func__));
 
     do
     {
@@ -1981,7 +2008,7 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
              * (see window snapshoting comment) */
 
             node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
-            D(bug("[Wanderer] %s: %s entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__,
+            D(bug("[Wanderer] %s: %s entry = '%s' @ %p, (%p)\n", __func__,
                     (snapshot) ? "SNAPSHOT" : "UNSNAPSHOT", entry->ile_IconEntry->ie_IconNode.ln_Name, entry, node));
             if (node->ie_DiskObj)
             {
@@ -1999,11 +2026,11 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
                     PutIconTagList(entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, icontags);
                 else
                     PutIconTagList(entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, TAG_DONE);
-                D(bug("[Wanderer] %s: saved ..\n", __PRETTY_FUNCTION__));
+                D(bug("[Wanderer] %s: saved ..\n", __func__));
             }
             else
             {
-                D(bug("[Wanderer] %s: icon has no diskobj!\n", __PRETTY_FUNCTION__));
+                D(bug("[Wanderer] %s: icon has no diskobj!\n", __func__));
             }
         }
         else
@@ -2011,7 +2038,7 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
             break;
         }
     } while (TRUE);
-    D(bug("[Wanderer] %s: finished ..\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer] %s: finished ..\n", __func__));
 }
 
 static char * get_volume(char * path)
@@ -2049,19 +2076,19 @@ void wanderer_menufunc_icon_leaveout(void)
     char                                *leavout_dir = NULL;
     struct DesktopLinkIcon_Entry        *bdrpeNode = NULL, *bdrpeNext, *loiEntry = NULL;
 
-    D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer]: %s()\n", __func__));
 
     GET(window, MUIA_IconWindow_Location, &leavout_dir);
 
     if (leavout_dir != NULL)
     {
-        D(bug("[Wanderer] %s: dir '%s'\n", __PRETTY_FUNCTION__, leavout_dir));
+        D(bug("[Wanderer] %s: dir '%s'\n", __func__, leavout_dir));
         
         char *entryVolume = get_volume(leavout_dir);
 
         if (entryVolume != NULL)
         {
-            D(bug("[Wanderer] %s: Updating .backdrop file for volume '%s'.. \n", __PRETTY_FUNCTION__, entryVolume));
+            D(bug("[Wanderer] %s: Updating .backdrop file for volume '%s'.. \n", __func__, entryVolume));
             char * bdrp_file = NULL;
 
             if ((bdrp_file = AllocVec(strlen(entryVolume) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
@@ -2077,7 +2104,7 @@ void wanderer_menufunc_icon_leaveout(void)
                 
                 if ((bdrp_lock = Open(bdrp_file, MODE_OLDFILE)))
                 {
-                    D(bug("[Wanderer] %s:    Parsing backdrop file: '%s'\n", __PRETTY_FUNCTION__, bdrp_file));
+                    D(bug("[Wanderer] %s:    Parsing backdrop file: '%s'\n", __func__, bdrp_file));
 
                     if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
                     {
@@ -2091,7 +2118,7 @@ void wanderer_menufunc_icon_leaveout(void)
                                 {
                                     CopyMem(linebuf, bdrpeNode->dlie_Node.ln_Name, strlen(linebuf) - 1);
 
-                                    D(bug("[Wanderer] %s:       Existing entry '%s'\n", __PRETTY_FUNCTION__,
+                                    D(bug("[Wanderer] %s:       Existing entry '%s'\n", __func__,
                                         bdrpeNode->dlie_Node.ln_Name));
 
                                     AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
@@ -2112,7 +2139,7 @@ void wanderer_menufunc_icon_leaveout(void)
                     if (((IPTR)entry != MUIV_IconList_NextIcon_End) && ((entry->type == ST_FILE) || (entry->type == ST_USERDIR)))
                     {
                         char *entryDIEString = (entry->ile_IconEntry->ie_IconNode.ln_Name + strlen(entryVolume) - 1);
-                        D(bug("[Wanderer] %s:    Leave-Out Entry = '%s' @ %p ('%s')\n", __PRETTY_FUNCTION__,
+                        D(bug("[Wanderer] %s:    Leave-Out Entry = '%s' @ %p ('%s')\n", __func__,
                                 entry->ile_IconEntry->ie_IconNode.ln_Name, entry, entryDIEString));
                         loiEntry = NULL;
 
@@ -2137,7 +2164,7 @@ void wanderer_menufunc_icon_leaveout(void)
                                     CopyMem(entryDIEString, bdrpeNode->dlie_Node.ln_Name, strlen(entryDIEString));
 
                                     D(bug("[Wanderer] %s:       Created new .backdrop entry for '%s'\n",
-                                        __PRETTY_FUNCTION__, bdrpeNode->dlie_Node.ln_Name));
+                                        __func__, bdrpeNode->dlie_Node.ln_Name));
 
                                     AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
                                     bdrp_changed = TRUE;
@@ -2155,7 +2182,7 @@ void wanderer_menufunc_icon_leaveout(void)
             
                 if (bdrp_changed)
                 {
-                    D(bug("[Wanderer] %s:    Updating backdrop file for '%s' ..\n", __PRETTY_FUNCTION__, entryVolume));
+                    D(bug("[Wanderer] %s:    Updating backdrop file for '%s' ..\n", __func__, entryVolume));
                     // Write out the new backdrop file :
                     //   this will cause a filesystem notification in the iconwindow_volumeiconlist
                     //   class that will cause the changes to be noticed if the underlying
@@ -2165,7 +2192,7 @@ void wanderer_menufunc_icon_leaveout(void)
                     {
                         ForeachNode(&bdrp_Entries, bdrpeNode)
                         {
-                            D(bug("[Wanderer] %s:       Writing entry '%s'\n", __PRETTY_FUNCTION__,
+                            D(bug("[Wanderer] %s:       Writing entry '%s'\n", __func__,
                                     bdrpeNode->dlie_Node.ln_Name));
                             bdrpeNode->dlie_Node.ln_Name[strlen(bdrpeNode->dlie_Node.ln_Name)] = '\n';
                             FPuts(bdrp_lock, bdrpeNode->dlie_Node.ln_Name);
@@ -2186,7 +2213,7 @@ void wanderer_menufunc_icon_leaveout(void)
                             {
                                 // Volume's filesystem couldn't handle fs notifications so we will have to force the update...
                                 D(bug("[Wanderer] %s:    Forcing desktop redraw for volume '%s'\n",
-                                        __PRETTY_FUNCTION__, entryVolume));
+                                        __func__, entryVolume));
                                 DoMethod(rooticonList, MUIM_IconList_Update);
                                 DoMethod(rooticonList, MUIM_IconList_Sort);
                                 break;
@@ -2206,7 +2233,7 @@ void wanderer_menufunc_icon_leaveout(void)
         }
     }
 
-    D(bug("[Wanderer] %s: finished ..\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer] %s: finished ..\n", __func__));
 }
 
 struct PutAwayIcon_Volume
@@ -2228,7 +2255,7 @@ void wanderer_menufunc_icon_putaway(void)
     struct DesktopLinkIcon_Entry        *bdrpeNode = NULL, *paieNode = NULL, *paieNext, *paiEntry = NULL;
     struct List                    putawayiconlists;
 
-    D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer]: %s()\n", __func__));
 
     NEWLIST(&putawayiconlists);
 
@@ -2239,14 +2266,14 @@ void wanderer_menufunc_icon_putaway(void)
         if (((IPTR)entry != MUIV_IconList_NextIcon_End) && ((entry->type == ST_LINKFILE) || (entry->type == ST_LINKDIR)))
         {
             node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
-            D(bug("[Wanderer] %s: entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__,
+            D(bug("[Wanderer] %s: entry = '%s' @ %p, (%p)\n", __func__,
                     entry->ile_IconEntry->ie_IconNode.ln_Name, entry, node));
 
             char *entryVolume = get_volume(entry->ile_IconEntry->ie_IconNode.ln_Name);
 
             if (entryVolume == NULL)
             {
-                D(bug("[Wanderer] %s: couldnt figure out the volume name.. ?????\n", __PRETTY_FUNCTION__));
+                D(bug("[Wanderer] %s: couldnt figure out the volume name.. ?????\n", __func__));
                 continue;
             }
             
@@ -2298,7 +2325,7 @@ void wanderer_menufunc_icon_putaway(void)
         // Open the Backdrop file and read in the existing contents...
         char *bdrp_file = NULL;
 
-        D(bug("[Wanderer] %s: Processing entries in .backdrop file for '%s' ..\n", __PRETTY_FUNCTION__, paivNode->paiv_Node.ln_Name));
+        D(bug("[Wanderer] %s: Processing entries in .backdrop file for '%s' ..\n", __func__, paivNode->paiv_Node.ln_Name));
         if ((bdrp_file = AllocVec(strlen(paivNode->paiv_Node.ln_Name) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
         {
             struct List bdrp_Entries;
@@ -2312,7 +2339,7 @@ void wanderer_menufunc_icon_putaway(void)
             
             if ((bdrp_lock = Open(bdrp_file, MODE_OLDFILE)))
             {
-                D(bug("[Wanderer] %s:    Parsing backdrop file: '%s'\n", __PRETTY_FUNCTION__, bdrp_file));
+                D(bug("[Wanderer] %s:    Parsing backdrop file: '%s'\n", __func__, bdrp_file));
 
                 if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
                 {
@@ -2326,7 +2353,7 @@ void wanderer_menufunc_icon_putaway(void)
                             {
                                 CopyMem(linebuf, bdrpeNode->dlie_Node.ln_Name, strlen(linebuf) - 1);
 
-                                D(bug("[Wanderer] %s:       Existing entry '%s'\n", __PRETTY_FUNCTION__,
+                                D(bug("[Wanderer] %s:       Existing entry '%s'\n", __func__,
                                     bdrpeNode->dlie_Node.ln_Name));
 
                                 AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
@@ -2344,7 +2371,7 @@ void wanderer_menufunc_icon_putaway(void)
             {
                 paiEntry = NULL;
                 bdrpeNode = NULL;
-                D(bug("[Wanderer] %s:    Checking for '%s' ..\n", __PRETTY_FUNCTION__, paieNode->dlie_Node.ln_Name));
+                D(bug("[Wanderer] %s:    Checking for '%s' ..\n", __func__, paieNode->dlie_Node.ln_Name));
 
                 // Find and remove the entry...
                 ForeachNode(&bdrp_Entries, bdrpeNode)
@@ -2359,7 +2386,7 @@ void wanderer_menufunc_icon_putaway(void)
                 }
                 if (paiEntry != NULL)
                 {
-                    D(bug("[Wanderer] %s:       Removing entry '%s'\n", __PRETTY_FUNCTION__, paiEntry->dlie_Node.ln_Name));
+                    D(bug("[Wanderer] %s:       Removing entry '%s'\n", __func__, paiEntry->dlie_Node.ln_Name));
                     Remove(&paiEntry->dlie_Node);
                     FreeVec(paiEntry->dlie_Node.ln_Name);
                     FreeMem(paiEntry, sizeof(struct DesktopLinkIcon_Entry));
@@ -2370,7 +2397,7 @@ void wanderer_menufunc_icon_putaway(void)
             }
             if (bdrp_changed)
             {
-                D(bug("[Wanderer] %s:    Updating backdrop file for '%s' ..\n", __PRETTY_FUNCTION__,
+                D(bug("[Wanderer] %s:    Updating backdrop file for '%s' ..\n", __func__,
                         paivNode->paiv_Node.ln_Name));
                 // Write out the new backdrop file :
                 // this will cause a filesystem notification in the iconwindow_volumeiconlist
@@ -2379,7 +2406,7 @@ void wanderer_menufunc_icon_putaway(void)
                 {
                     ForeachNode(&bdrp_Entries, bdrpeNode)
                     {
-                        D(bug("[Wanderer] %s:       Writing entry '%s'\n", __PRETTY_FUNCTION__,
+                        D(bug("[Wanderer] %s:       Writing entry '%s'\n", __func__,
                                 bdrpeNode->dlie_Node.ln_Name));
                         bdrpeNode->dlie_Node.ln_Name[strlen(bdrpeNode->dlie_Node.ln_Name)] = '\n';
                         FPuts(bdrp_lock, bdrpeNode->dlie_Node.ln_Name);
@@ -2399,7 +2426,7 @@ void wanderer_menufunc_icon_putaway(void)
                         if (volPrivate && (volPrivate->vip_FSNotifyRequest.nr_Name == NULL))
                         {
                             // Volume's filesystem couldn't handle fs notifications so we will have to force the update...
-                            D(bug("[Wanderer] %s:    Forcing desktop redraw for volume '%s'\n", __PRETTY_FUNCTION__,
+                            D(bug("[Wanderer] %s:    Forcing desktop redraw for volume '%s'\n", __func__,
                                     paivNode->paiv_Node.ln_Name));
                             DoMethod(rooticonList, MUIM_IconList_Update);
                             DoMethod(rooticonList, MUIM_IconList_Sort);
@@ -2420,7 +2447,7 @@ void wanderer_menufunc_icon_putaway(void)
         FreeVec(paivNode->paiv_Node.ln_Name);
         FreeMem(paivNode, sizeof(struct PutAwayIcon_Volume));
     }
-    D(bug("[Wanderer] %s: Finished\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer] %s: Finished\n", __func__));
 }
 
 ///DisposeCopyDisplay()
@@ -2612,7 +2639,7 @@ void wanderer_menufunc_icon_format(void)
         if (entry->type != ILE_TYPE_APPICON) /* TODO: Implement */
         {
             BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
-            D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name));
+            D(bug("[Wanderer]: %s('%s')\n", __func__, entry->ile_IconEntry->ie_IconNode.ln_Name));
             /* Usually we pass object name and parent lock. Here we do the same thing.
                Just object name is empty string and its parent is device's root. */
             OpenWorkbenchObject
@@ -2636,7 +2663,7 @@ void wanderer_menufunc_icon_emptytrash(void)
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextIcon_Start;
 
-    D(bug("[Wanderer]: %s\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer]: %s\n", __func__));
 
     DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
 
@@ -2995,14 +3022,14 @@ VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
     if (IconlistObj == NULL)
         return;
 
-    D(bug("[Wanderer]: %s(IconList @ %p)\n", __PRETTY_FUNCTION__, IconlistObj));
+    D(bug("[Wanderer]: %s(IconList @ %p)\n", __func__, IconlistObj));
 
     GET(IconlistObj, MUIA_IconList_SortFlags, &current_SortFlags);
     GET(IconlistObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
     GET(WindowObj, MUIA_Window_Menustrip, &current_Menustrip);
     GET(WindowObj, MUIA_IconWindow_IsRoot, &isRoot);
 
-    D(bug("[Wanderer] %s: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", __PRETTY_FUNCTION__, current_Menustrip, current_DispFlags, current_SortFlags));
+    D(bug("[Wanderer] %s: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", __func__, current_Menustrip, current_DispFlags, current_SortFlags));
 
     do
     {
@@ -3178,15 +3205,15 @@ AROS_UFH3
     Object        *window = *( Object **)param;
     Object        *iconlist = NULL;
 
-D(bug("[Wanderer]: %s(self @ %p, window @ %p)\n", __PRETTY_FUNCTION__, self, window));
+D(bug("[Wanderer]: %s(self @ %p, window @ %p)\n", __func__, self, window));
 
     GET(window, MUIA_IconWindow_IconList, &iconlist);
 
-D(bug("[Wanderer] %s: iconlist @ %p\n", __PRETTY_FUNCTION__, iconlist));
+D(bug("[Wanderer] %s: iconlist @ %p\n", __func__, iconlist));
 
     Wanderer__Func_UpdateMenuStates(window, iconlist);
 
-D(bug("[Wanderer] %s: Update Complete.\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Update Complete.\n", __func__));
 
     return 0;
 
@@ -3197,7 +3224,7 @@ D(bug("[Wanderer] %s: Update Complete.\n", __PRETTY_FUNCTION__));
 ///OM_NEW()
 Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     self = (Object *) DoSuperNewTags
     (
@@ -3223,13 +3250,13 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         TEXT buff[16];
 
     //    ULONG updatedIcons;
-D(bug("[Wanderer] %s: Wanderer Obj @ %p, Instance data @ %p\n", __PRETTY_FUNCTION__, self, data));
+D(bug("[Wanderer] %s: Wanderer Obj @ %p, Instance data @ %p\n", __func__, self, data));
 
         _WandererIntern_CLASS = CLASS;
 
         NewList(&_WandererIntern_FSHandlerList);
 
-D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererIntern_FSHandlerList));
+D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __func__, &_WandererIntern_FSHandlerList));
 
         if (GetVar(wand_backdropprefs, buff, sizeof(buff), GVF_GLOBAL_ONLY) != -1) {
             data->wd_Option_BackDropMode = (Stricmp(buff, "True") == 0) ? TRUE : FALSE;
@@ -3301,11 +3328,11 @@ D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererInte
 
         if (data->wd_Prefs)
         {
-            D(bug("[Wanderer] %s: Prefs-Screentitle = '%s'\n", __PRETTY_FUNCTION__, XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
+            D(bug("[Wanderer] %s: Prefs-Screentitle = '%s'\n", __func__, XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
         }
     }
 
-    D(bug("[Wanderer] %s: WandererObj @ %p\n", __PRETTY_FUNCTION__, self));
+    D(bug("[Wanderer] %s: WandererObj @ %p\n", __func__, self));
     return self;
 }
 ///
@@ -3353,13 +3380,13 @@ IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         switch (tag->ti_Tag)
         {
         case MUIA_Wanderer_Screen:
-D(bug("[Wanderer] %s: MUIA_Wanderer_Screen = %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
-D(bug("[Wanderer] %s: setting MUIA_Wanderer_Screen isnt yet handled!\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: MUIA_Wanderer_Screen = %p\n", __func__, tag->ti_Data));
+D(bug("[Wanderer] %s: setting MUIA_Wanderer_Screen isnt yet handled!\n", __func__));
             break;
 
         case MUIA_Wanderer_ActiveWindow:
             data->wd_ActiveWindow = (Object *) tag->ti_Data;
-D(bug("[Wanderer] %s: MUIA_Wanderer_ActiveWindow = %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+D(bug("[Wanderer] %s: MUIA_Wanderer_ActiveWindow = %p\n", __func__, tag->ti_Data));
             if (!(XGET(data->wd_ActiveWindow, MUIA_Window_Activate)))
             {
                 NNSET(data->wd_ActiveWindow, MUIA_Window_Activate, TRUE);
@@ -3449,7 +3476,7 @@ IPTR Wanderer__MUIM_Application_Execute
 {
     SETUP_WANDERER_INST_DATA;
 
-D(bug("[Wanderer] %s() ##\n[Wanderer] %s: Creating 'Workbench' Window..\n", __PRETTY_FUNCTION__, __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s() ##\n[Wanderer] %s: Creating 'Workbench' Window..\n", __func__, __func__));
 
     data->wd_WorkbenchWindow = (Object *) DoMethod
     (
@@ -3458,11 +3485,11 @@ D(bug("[Wanderer] %s() ##\n[Wanderer] %s: Creating 'Workbench' Window..\n", __PR
 
     if (data->wd_WorkbenchWindow != NULL)
     {
-D(bug("[Wanderer] %s: Workbench Window Obj @ %x\n", __PRETTY_FUNCTION__, data->wd_WorkbenchWindow));
+D(bug("[Wanderer] %s: Workbench Window Obj @ %x\n", __func__, data->wd_WorkbenchWindow));
 
         Detach();
 
-D(bug("[Wanderer] %s: Really handing control to Zune ..\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Really handing control to Zune ..\n", __func__));
 
         DoSuperMethodA(CLASS, self, message);
 
@@ -3523,32 +3550,32 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
     struct List *pub_screen_list;
     struct PubScreenNode *pub_screen_node;
     WORD visitor_count = 0;
-D(bug("[Wanderer] %s()\n", __PRETTY_FUNCTION__));
-D(bug("[Wanderer] %s: Received signal at notification port\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s()\n", __func__));
+D(bug("[Wanderer] %s: Received signal at notification port\n", __func__));
 
     while ((wbhm = WBHM(GetMsg(data->wd_CommandPort))) != NULL)
     {
-D(bug("[Wanderer] %s: Received message from handler, type = %ld\n", __PRETTY_FUNCTION__, wbhm->wbhm_Type));
+D(bug("[Wanderer] %s: Received message from handler, type = %ld\n", __func__, wbhm->wbhm_Type));
 
         switch (wbhm->wbhm_Type)
         {
             case WBHM_TYPE_SHOW:
-D(bug("[Wanderer] %s: WBHM_TYPE_SHOW\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: WBHM_TYPE_SHOW\n", __func__));
                 if ((data->wd_Screen = LockPubScreen(NULL)) != NULL)
                 {
-D(bug("[Wanderer] %s: Unlocking access to screen @ %x\n", __PRETTY_FUNCTION__, data->wd_Screen));
+D(bug("[Wanderer] %s: Unlocking access to screen @ %x\n", __func__, data->wd_Screen));
                     UnlockPubScreen(NULL, data->wd_Screen);
                     SET(self, MUIA_ShowMe, TRUE);
                 }
                 else
                 {
 /* TODO: We need to handle the possiblity that we fail to lock the pubscreen... */
-D(bug("[Wanderer] %s: Couldnt Lock WB Screen!!\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Couldnt Lock WB Screen!!\n", __func__));
                 }
                 break;
 
             case WBHM_TYPE_HIDE:
-D(bug("[Wanderer] %s: WBHM_TYPE_HIDE\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: WBHM_TYPE_HIDE\n", __func__));
                 pub_screen_list = LockPubScreenList();
 
                 ForeachNode (pub_screen_list, pub_screen_node)
@@ -3562,7 +3589,7 @@ D(bug("[Wanderer] %s: WBHM_TYPE_HIDE\n", __PRETTY_FUNCTION__));
                 break;
 
             case WBHM_TYPE_UPDATE:
-D(bug("[Wanderer] %s: WBHM_TYPE_UPDATE\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: WBHM_TYPE_UPDATE\n", __func__));
                 {
                     CONST_STRPTR name = wbhm->wbhm_Data.Update.Name;
                     ULONG        length;
@@ -3584,7 +3611,7 @@ D(bug("[Wanderer] %s: WBHM_TYPE_UPDATE\n", __PRETTY_FUNCTION__));
                             break;
                     }
 
-D(bug("[Wanderer] %s: name = %s, length = %ld\n", __PRETTY_FUNCTION__, name, length));
+D(bug("[Wanderer] %s: name = %s, length = %ld\n", __func__, name, length));
 
                     if (windowned)
                     {
@@ -3606,7 +3633,7 @@ D(bug("[Wanderer] %s: name = %s, length = %ld\n", __PRETTY_FUNCTION__, name, len
                                 {
                                     Object *iconlist = (Object *) XGET(child, MUIA_IconWindow_IconList);
 
-D(bug("[Wanderer] %s: Drawer found: %s!\n", __PRETTY_FUNCTION__, child_drawer));
+D(bug("[Wanderer] %s: Drawer found: %s!\n", __func__, child_drawer));
 
                                     if (iconlist != NULL)
                                     {
@@ -3636,7 +3663,7 @@ D(bug("[Wanderer] %s: Drawer found: %s!\n", __PRETTY_FUNCTION__, child_drawer));
                 break;
 
             case WBHM_TYPE_OPEN:
-D(bug("[Wanderer] %s: WBHM_TYPE_OPEN\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: WBHM_TYPE_OPEN\n", __func__));
 
                 {
                     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
@@ -3692,14 +3719,14 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
     {
         struct NotifyMessage *notifyMessage = (struct NotifyMessage *) plainMessage;
         IPTR                  notifyMessage_UserData = notifyMessage->nm_NReq->nr_UserData;
-D(bug("[Wanderer] %s: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", __PRETTY_FUNCTION__, notifyMessage->nm_NReq->nr_Name, notifyMessage, notifyMessage_UserData));
+D(bug("[Wanderer] %s: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", __func__, notifyMessage->nm_NReq->nr_Name, notifyMessage, notifyMessage_UserData));
 
         if (notifyMessage_UserData != (IPTR)NULL)
         {
             if (!_isPerformingCopyOperation)
             {
                 /* Only IconWindowDrawerList, IconWindowVolumeList class at the moment */
-                D(bug("[Wanderer] %s: Icon Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
+                D(bug("[Wanderer] %s: Icon Window contents changed .. Updating\n", __func__));
                 nodeFSHandler = (struct Wanderer_FSHandler *)notifyMessage_UserData;
                 nodeFSHandler->HandleFSUpdate(nodeFSHandler->target, notifyMessage);
             }
@@ -3710,7 +3737,7 @@ D(bug("[Wanderer] %s: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", __P
         {
             if ((notifyMessage_UserData == (IPTR)NULL) && (strcmp(notifyMessage->nm_NReq->nr_Name, nodeFSHandler->fshn_Node.ln_Name) == 0))
             {
-D(bug("[Wanderer] %s: Notification for special handler for '%s'\n", __PRETTY_FUNCTION__, notifyMessage->nm_NReq->nr_Name));
+D(bug("[Wanderer] %s: Notification for special handler for '%s'\n", __func__, notifyMessage->nm_NReq->nr_Name));
 
                 nodeFSHandler->HandleFSUpdate(self, notifyMessage);
             }
@@ -3877,7 +3904,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
 
     Object *window_IconList = NULL;
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer]: %s()\n", __func__));
 
     if ((isWorkbenchWindow = (message->drawer == NULL ? TRUE : FALSE)))
     {
@@ -3890,11 +3917,11 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if(data->wd_Screen == NULL)
     {
-D(bug("[Wanderer] %s: Couldn't lock screen!\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Couldn't lock screen!\n", __func__));
         CoerceMethod(CLASS, self, OM_DISPOSE);
         return NULL;
     }
-D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen));
+D(bug("[Wanderer] %s: Using Screen @ %p\n", __func__, data->wd_Screen));
 
     _NewWandDrawerMenu__menustrip = Wanderer__Func_CreateWandererIntuitionMenu (isWorkbenchWindow, useBackdrop);
 
@@ -3916,13 +3943,13 @@ D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen
 
     if (data->wd_Screen)
     {
-D(bug("[Wanderer] %s: Unlocking access to screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen));
+D(bug("[Wanderer] %s: Unlocking access to screen @ %p\n", __func__, data->wd_Screen));
         UnlockPubScreen(NULL, data->wd_Screen);
     }
 
     if (window != NULL)
     {
-D(bug("[Wanderer] %s: window != NULL\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: window != NULL\n", __func__));
         /* Get the drawer path back so we can use it also outside this function */
         STRPTR drw = NULL;
         BOOL freeDrwStr = FALSE;
@@ -3930,7 +3957,7 @@ D(bug("[Wanderer] %s: window != NULL\n", __PRETTY_FUNCTION__));
         if (!isWorkbenchWindow) drw = (STRPTR) XGET(window, MUIA_IconWindow_Location);
         else
         {
-D(bug("[Wanderer] %s: call AllocVec()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: call AllocVec()\n", __func__));
             drw = AllocVec ( 5, MEMF_CLEAR );
             sprintf ( drw, "RAM:" );
             freeDrwStr = TRUE;
@@ -3938,7 +3965,7 @@ D(bug("[Wanderer] %s: call AllocVec()\n", __PRETTY_FUNCTION__));
 
         if (isWorkbenchWindow)
         {
-D(bug("[Wanderer] %s: isWorkbenchWindow\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: isWorkbenchWindow\n", __func__));
             DoMethod
             (
                 window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
@@ -3954,10 +3981,10 @@ D(bug("[Wanderer] %s: isWorkbenchWindow\n", __PRETTY_FUNCTION__));
             );
         }
 
-D(bug("[Wanderer] %s: call get with MUIA_IconWindow_IconList\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: call get with MUIA_IconWindow_IconList\n", __func__));
         GET(window, MUIA_IconWindow_IconList, &window_IconList);
 
-D(bug("[Wanderer] %s: IconWindows IconList @ %p\n", __PRETTY_FUNCTION__, window_IconList));
+D(bug("[Wanderer] %s: IconWindows IconList @ %p\n", __func__, window_IconList));
 
         if (window_IconList != NULL)
         {
@@ -3975,7 +4002,7 @@ D(bug("[Wanderer] %s: IconWindows IconList @ %p\n", __PRETTY_FUNCTION__, window_
             }
             Wanderer__Func_UpdateMenuStates(window, window_IconList);
         }
-D(bug("[Wanderer] %s: setup notifications\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: setup notifications\n", __func__));
         DoMethod
         (
             window, MUIM_Notify, MUIA_Window_Activate, TRUE,
@@ -3995,22 +4022,22 @@ D(bug("[Wanderer] %s: setup notifications\n", __PRETTY_FUNCTION__));
             (IPTR)_app(self), 2, MUIM_CallHook, (IPTR) &_WandererIntern_hook_backdrop
         );
 #endif
-D(bug("[Wanderer] %s: execute all notifies\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: execute all notifies\n", __func__));
         /* If "Execute Command" entry is clicked open the execute window */
         SetMenuDefaultNotifies(self, _NewWandDrawerMenu__menustrip, drw);
 
-D(bug("[Wanderer] %s: add window to app\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: add window to app\n", __func__));
         /* Add the window to the application */
         DoMethod(_app(self), OM_ADDMEMBER, (IPTR) window);
 
-D(bug("[Wanderer] %s: open window\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: open window\n", __func__));
         /* And now open it */
         DoMethod(window, MUIM_IconWindow_Open);
-D(bug("[Wanderer] %s: clean up memory\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: clean up memory\n", __func__));
         /* Clean up ram string */
         if ( freeDrwStr && drw ) FreeVec ( drw );
     }
-D(bug("[Wanderer] %s: exit\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: exit\n", __func__));
     return window;
 }
 ///

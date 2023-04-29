@@ -2,7 +2,7 @@
 #define _WANDERER_CLASSES_ICON_ATTRIBUTES_H
 
 /*
-    Copyright  2008-2009, The AROS Development Team. All rights reserved.
+    Copyright  2008-2023, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -73,14 +73,15 @@
 #define ICONENTRY_FLAG_VISIBLE          (1<<4)        /* icon for entry should be drawn     */
 #define ICONENTRY_FLAG_HASICON          (1<<5)        /* entry has an '.info' file          */
 #define ICONENTRY_FLAG_TODAY            (1<<6)        /* entry's timestamp is from today    */
-#define ICONENTRY_FLAG_LASSO            (1<<7)        /* icon is being altered by a lasso  */
+#define ICONENTRY_FLAG_LASSO            (1<<7)        /* icon is being altered by a lasso   */
 
 
 /* For Icons of type ST_ROOT */
-#define ICONENTRY_VOL_DISABLED         (1<<0)        /* Media is Read-Only           */
-#define ICONENTRY_VOL_READONLY         (1<<1)        /* Media is Read-Only           */
-#define ICONENTRY_VOL_OFFLINE         (1<<2)        /* Volume is Offline            */
-#define ICONENTRY_VOL_REMOVABLE         (1<<3)        /* Media is Removable           */
+#define ICONENTRY_VOL_DISABLED          (1<<0)        /* Device/Volume is Disabled          */
+#define ICONENTRY_VOL_DEVICE            (1<<1)        /* Icon represents a raw device       */
+#define ICONENTRY_VOL_READONLY          (1<<2)        /* Media is Read-Only                 */
+#define ICONENTRY_VOL_OFFLINE           (1<<3)        /* Volume is Offline                  */
+#define ICONENTRY_VOL_REMOVABLE         (1<<4)        /* Media is Removable                 */
 
 /* Default Icon label rendering settings */
 // Max no of characters to display on a single line
