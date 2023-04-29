@@ -13,7 +13,7 @@ void kbd_usleep(struct IORequest* tmr, LONG usec)
 {
     tmr->io_Command = TR_ADDREQUEST;
     ((struct timerequest*)tmr)->tr_time.tv_secs = 0;
-    ((struct timerequest*)tmr)->tr_time.tv_micro = usec * 1000;
+    ((struct timerequest*)tmr)->tr_time.tv_micro = usec;
     DoIO(tmr);
 }
 

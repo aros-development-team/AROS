@@ -647,7 +647,7 @@ static int kbd_reset(struct kbd_data *data)
 
 
     D(bug("[i8042:Kbd] %s: waiting for power-on-reset...\n", __func__);)
-    status = kbd_wait_for_input(data->ioTimer);
+    status = wait_for_input(data->ioTimer, 500);
     if (status != KBD_REPLY_POR)
     {
         DFAIL(bug("[i8042:Kbd] %s: Keyboard power-on-reset failed! (%x)\n", __func__, status));

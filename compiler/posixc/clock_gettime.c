@@ -64,7 +64,7 @@
             {
                 struct timeval tv;
                 GetSysTime(&tv);
-                tp->tv_sec  = tv.tv_sec;
+                tp->tv_sec  = tv.tv_sec + OFFSET_FROM_1970 + __stdc_gmtoffset() * 60;
                 tp->tv_nsec = tv.tv_usec * 1000;
                 retval = 0;
             }

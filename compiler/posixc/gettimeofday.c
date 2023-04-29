@@ -108,7 +108,7 @@
             GetSysTime(tv);
 
             /* Adjust with the current timezone, stored in minutes west of GMT */
-            tv->tv_sec += (2922 * 1440 + __stdc_gmtoffset()) * 60;
+            tv->tv_sec += OFFSET_FROM_1970 + __stdc_gmtoffset() * 60;
         }
         else
         {
