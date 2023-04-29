@@ -59,6 +59,8 @@ struct AboutAROS_DATA
     APTR    aad_Pool;
 };
 
+static STRPTR pages[4] = { NULL };
+
 /*** Utility Functions ******************************************************/
 STRPTR Section2Name(ULONG section)
 {
@@ -188,7 +190,6 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                           *sponsorsList,
                           *acknowledgementsList;
 
-    STRPTR                 pages[4]       = { NULL };
     STRPTR                 str_builddate  = NULL;
     STRPTR                 str_variant    = NULL;
     STRPTR                 str_arosarch   = NULL;
