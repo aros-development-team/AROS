@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -21,14 +21,18 @@
 #include "icon_intern.h"
 
 #include <string.h>
+#include <stdio.h>
 
+#ifndef ID_BUSY_DISK
+# define ID_BUSY_DISK       AROS_MAKE_ID('B','U','S','Y')
+#endif
 #ifndef ID_FAT12_DISK
-#define ID_FAT12_DISK      AROS_MAKE_ID('F','A','T',0) /* FAT12 */
-#define ID_FAT16_DISK      AROS_MAKE_ID('F','A','T',1) /* FAT16 */
-#define ID_FAT32_DISK      AROS_MAKE_ID('F','A','T',2) /* FAT32 */
+# define ID_FAT12_DISK      AROS_MAKE_ID('F','A','T',0) /* FAT12 */
+# define ID_FAT16_DISK      AROS_MAKE_ID('F','A','T',1) /* FAT16 */
+# define ID_FAT32_DISK      AROS_MAKE_ID('F','A','T',2) /* FAT32 */
 #endif
 #ifndef ID_CDFS_DISK
-#define ID_CDFS_DISK       AROS_MAKE_ID('C','D','F','S') /* CDFS */
+# define ID_CDFS_DISK       AROS_MAKE_ID('C','D','F','S') /* CDFS */
 #endif
 
 /*** Prototypes *************************************************************/
@@ -121,6 +125,143 @@ LONG __FindType_WB(BPTR lock, struct IconBase *IconBase)
     return type;
 }
 
+
+struct DiskObject *GetFSDeviceIcon(char *FS, char*Dev, const struct TagItem *tags, struct IconBase *IconBase)
+{
+    struct DiskObject *icon = NULL;
+    if (FS)
+    {
+        char fsDev[128];
+        sprintf(fsDev, "%s%s", FS, Dev);
+        if (icon = GetDefaultIconFromName(fsDev, tags))
+            return icon;
+    }
+    if (icon = GetDefaultIconFromName(Dev, tags))
+        return icon;
+    return NULL;
+}
+
+
+
+BOOL IsDiscDevice(char *dev)
+{
+    if (strncasecmp(dev, "CD", 2) == 0)
+        return TRUE;
+    return FALSE;
+}
+
+struct DiskObject *GetDiscIcon(ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase)
+{
+    char *fsstr = NULL;
+
+    if (fsid)
+        switch(fsid)
+        {
+        case ID_UNREADABLE_DISK:
+        case ID_NOT_REALLY_DOS:
+            fsstr = "NDOS";
+            break;
+        case ID_BUSY_DISK:
+            fsstr = "Busy";
+            break;
+        }
+    return GetFSDeviceIcon(fsstr, "CDROM", tags, IconBase);
+}
+
+BOOL IsFloppyDevice(char *dev)
+{
+    if ((dev[2] >= '0') && (dev[2] <= '9'))
+        if ((dev[0] == 'F') || (dev[1] == 'F'))
+            return TRUE;
+    return FALSE;
+}
+
+struct DiskObject *GetFloppydiskIcon(ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase)
+{
+    char *fsstr = NULL;
+
+    if (fsid)
+        switch(fsid)
+        {
+        case ID_UNREADABLE_DISK:
+        case ID_NOT_REALLY_DOS:
+            fsstr = "NDOS";
+            break;
+        case ID_BUSY_DISK:
+            fsstr = "Busy";
+            break;
+        case ID_KICKSTART_DISK:
+            fsstr = "Kick";
+            break;
+        case ID_MSDOS_DISK:
+        case ID_FAT12_DISK:
+        case ID_FAT16_DISK:
+        case ID_FAT32_DISK:
+            fsstr = "FAT";
+            break;
+        case ID_SFS_BE_DISK:
+        case ID_SFS_LE_DISK:
+            fsstr = "SFS";
+            break;
+        case ID_FFS_DISK:
+        case ID_INTER_DOS_DISK:
+        case ID_INTER_FFS_DISK:
+        case ID_FASTDIR_DOS_DISK:
+        case ID_FASTDIR_FFS_DISK:
+            fsstr = "FFS";
+            break;
+        }
+    return GetFSDeviceIcon(fsstr, "Disk", tags, IconBase);
+}
+
+BOOL IsHarddiskDevice(char *dev)
+{
+    if (dev[2] >= '0' && dev[2] <= '9')
+    {
+        if ((dev[0] == 'H') || (dev[1] == 'H'))
+            return TRUE;
+    }
+    else if (strncasecmp(dev, "EMU", 3) == 0)
+        return TRUE;
+    return FALSE;
+}
+
+struct DiskObject *GetHarddiskIcon(ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase)
+{
+    char *fsstr = NULL;
+
+    if (fsid)
+        switch(fsid)
+        {
+        case ID_UNREADABLE_DISK:
+        case ID_NOT_REALLY_DOS:
+            fsstr = "NDOS";
+            break;
+        case ID_BUSY_DISK:
+            fsstr = "Busy";
+            break;
+        case ID_NTFS_DISK:
+        case ID_MSDOS_DISK:
+        case ID_FAT12_DISK:
+        case ID_FAT16_DISK:
+        case ID_FAT32_DISK:
+            fsstr = "FAT";
+            break;
+        case ID_SFS_BE_DISK:
+        case ID_SFS_LE_DISK:
+            fsstr = "SFS";
+            break;
+        case ID_FFS_DISK:
+        case ID_INTER_DOS_DISK:
+        case ID_INTER_FFS_DISK:
+        case ID_FASTDIR_DOS_DISK:
+        case ID_FASTDIR_FFS_DISK:
+            fsstr = "FFS";
+            break;
+        }
+    return GetFSDeviceIcon(fsstr, "Harddisk", tags, IconBase);
+}
+
 struct DiskObject *__FindDefaultIcon_WB
 (
     struct IconIdentifyMsg *iim, struct IconBase *IconBase
@@ -156,56 +297,21 @@ struct DiskObject *__FindDefaultIcon_WB
                 {
                     icon = GetDefaultIconFromName("RAD", iim->iim_Tags);
                 }
-                else if (strncasecmp(device, "DF", 2) == 0)
-                {
-                    icon = GetDefaultIconFromName("Floppy", iim->iim_Tags);
-                }
-                else if (strncasecmp(device, "CD", 2) == 0)
-                {
-                    icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
-                }
-                else if
-                (
-                       strncasecmp(device, "DH",  2) == 0
-                    || strncasecmp(device, "HD",  2) == 0
-                    || strncasecmp(device, "EMU", 3) == 0
-                )
-                {
-                    icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
-                }
                 else if (strcasecmp(device, "HOME") == 0)
                 {
                     icon = GetDefaultIconFromName("Home", iim->iim_Tags);
                 }
-                else if (type)
+                else if (IsFloppyDevice(device))
                 {
-                    D(bug("[icon] Identify Type: 0x%8x\n",type));
-                    switch(type)
-                    {
-                        case ID_MSDOS_DISK:
-                        case ID_FAT12_DISK:
-                        case ID_FAT16_DISK:
-                        case ID_FAT32_DISK:
-                            icon = GetDefaultIconFromName("FAT", iim->iim_Tags);
-                            break;
-                        case ID_SFS_BE_DISK:
-                        case ID_SFS_LE_DISK:
-                            icon = GetDefaultIconFromName("SFS", iim->iim_Tags);
-                            break;
-                        case ID_FFS_DISK:
-                        case ID_INTER_DOS_DISK:
-                        case ID_INTER_FFS_DISK:
-                        case ID_FASTDIR_DOS_DISK:
-                        case ID_FASTDIR_FFS_DISK:
-                            icon = GetDefaultIconFromName("ADF", iim->iim_Tags);
-                            break;
-                        case ID_CDFS_DISK:
-                            icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
-                            break;
-                        default:
-                            icon = GetDefaultIconFromName("Disk", iim->iim_Tags);
-                            break;
-                    }
+                    icon = GetFloppydiskIcon(type, iim->iim_Tags, IconBase);
+                }
+                else if (IsDiscDevice(device))
+                {
+                    icon = GetDiscIcon(type, iim->iim_Tags, IconBase);
+                }
+                else if (IsHarddiskDevice(device))
+                {
+                    icon = GetHarddiskIcon(type, iim->iim_Tags, IconBase);
                 }
             }
             else if (strncasecmp(device, "USB", 3) ==0)
@@ -214,10 +320,10 @@ struct DiskObject *__FindDefaultIcon_WB
             }
             else
             {
-                /* Fall back to generic harddisk icon */
+                /* Fall back to generic icon */
                 if (icon ==  NULL)
                 {
-                    icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
+                    icon = GetDefaultIconFromName("UnknownDevice", iim->iim_Tags);
                 }
             }
         }
