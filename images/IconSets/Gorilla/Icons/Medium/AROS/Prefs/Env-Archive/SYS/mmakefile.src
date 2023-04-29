@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 ICONS := \
     def_CDROM def_BusyCDROM def_NDOSCDROM def_DVD \
     def_Disk def_BusyDisk def_FATDisk def_FFSDisk def_KickDisk def_PFSDisk def_SFSDisk def_NDOSDisk \
-    def_Harddisk def_BusyHarddisk def_NDOSHarddisk \
+    def_Harddisk def_BusyHarddisk def_FATHarddisk def_FFSHarddisk def_NDOSHarddisk \
     def_RAM def_RAD def_USB
 
 # File Icons
@@ -35,3 +35,9 @@ APPI := def_AppIcon
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs-envarc-appicon icons=$(APPI) \
              dir=$(AROS_ENVARC)/SYS  image=$(IMGS)
+
+# Special rules for the "Hosted" Boot drives.
+
+#MM
+iconset-Gorilla-icons-aros-windows-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/def_FATHarddisk.info.src $(SRCDIR)/$(CURDIR)/def_FATHarddisk.png $(AROSDIR)/disk.info

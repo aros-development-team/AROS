@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := CDROM_Amiga Harddisk_Amiga Harddisk_Linux Harddisk_MacOS Harddisk_Windows
+ICONS := CDROM_Amiga Harddisk_Linux Harddisk_MacOS
 
 #MM- themes-gorilla-icons-clean : themes-gorilla-icons-disks-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-disks
@@ -16,10 +16,6 @@ iconset-Gorilla-icons-aros-livecd :
 #MM
 iconset-Gorilla-icons-aros-linux-system :
 	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_Linux.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_Linux.png $(AROSDIR)/disk.info
-
-#MM
-iconset-Gorilla-icons-aros-windows-system :
-	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_Windows.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_Windows.png $(AROSDIR)/disk.info
 
 #MM
 iconset-Gorilla-icons-aros-darwin-system :
