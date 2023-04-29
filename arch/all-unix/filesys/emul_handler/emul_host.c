@@ -13,12 +13,11 @@
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
 
 #pragma pack()
 
 /* This prevents redefinition of struct timeval */
-#define _AROS_TYPES_TIMEVAL_S_H_
+#define NO_AROS_TIMEVAL
 
 #define DEBUG 0
 #define DASYNC(x)

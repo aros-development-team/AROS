@@ -17,13 +17,12 @@
 #pragma pack()
 
 /* This prevents redefinition of struct timeval */
-#define _AROS_TYPES_TIMEVAL_S_H_
+#define NO_AROS_TIMEVAL
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <dos/dosasl.h>
 #include <utility/date.h>
-#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
 #include <proto/oop.h>

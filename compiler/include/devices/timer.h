@@ -39,10 +39,11 @@ struct EClockVal
     ULONG ev_lo;
 };
 
+/* Request used with 32-bit commands */
 struct timerequest
 {
     struct IORequest tr_node;
-    struct timeval   tr_time;
+    struct timeval32 tr_time;
 };
 
 #endif /* DEVICES_TIMER_H */

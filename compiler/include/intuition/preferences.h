@@ -44,9 +44,9 @@ struct Preferences
     UWORD BaudRate;	/* Baud rate for the serial port */
 
     /* Timing rates */
-    struct timeval KeyRptSpeed; /* Repeat speed for keyboard */
-    struct timeval KeyRptDelay; /* Delay before keys repeat */
-    struct timeval DoubleClick; /* Interval allowed between clicks */
+    struct timeval32 KeyRptSpeed; /* Repeat speed for keyboard */
+    struct timeval32 KeyRptDelay; /* Delay before keys repeat */
+    struct timeval32 DoubleClick; /* Interval allowed between clicks */
 
     /* Intuition Mouse-Pointer data */
     UWORD PointerMatrix[POINTERSIZE];	/* Definition of pointer sprite */

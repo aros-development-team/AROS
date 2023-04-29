@@ -2283,7 +2283,7 @@ IPTR __regargs Sound_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi )
 				/* not in mark mode - start or stop playing */
 				else if( ie->ie_Code == IECODE_LBUTTON )
 				{
-					struct timeval		tv = gpi->gpi_IEvent->ie_TimeStamp;
+					struct timeval32	tv = gpi->gpi_IEvent->ie_TimeStamp;
 					STATIC ULONG	stm[] = { STM_PLAY, STM_STOP };
 					
 					CoerceMethod( cl, o, DTM_TRIGGER, 0, stm[ DoubleClick( id->LastClick.tv_secs, id->LastClick.tv_micro, tv.tv_secs, tv.tv_micro ) ], 0L );

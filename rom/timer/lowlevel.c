@@ -47,7 +47,7 @@ static void addToWaitList(struct MinList *list, struct timerequest *iotr, struct
     ForeachNode(list, tr)
     {
         /* If the time in the new request is less than the next request */
-        if (CMPTIME(&tr->tr_time, &iotr->tr_time) < 0)
+        if (CMPTIME3232(&tr->tr_time, &iotr->tr_time) < 0)
         {
             /* Add the node before the next request */
             Insert((struct List *)list, &iotr->tr_node.io_Message.mn_Node, tr->tr_node.io_Message.mn_Node.ln_Pred);
@@ -116,14 +116,18 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 #endif
 
     case TR_GETSYSTIME:
-        GetSysTime(&timereq->tr_time);
+    {
+        struct timeval tv;
+        GetSysTime(&tv);
+        timereq->tr_time.tv_secs = tv.tv_secs;
+        timereq->tr_time.tv_micro = tv.tv_micro;
 
         if (!(timereq->tr_node.io_Flags & IOF_QUICK))
             ReplyMsg(&timereq->tr_node.io_Message);
 
         replyit = FALSE; /* Because replyit will clear the timeval */
         break;
-
+    }
     case TR_SETSYSTIME:
         Disable();
 
@@ -146,7 +150,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
             /* Query the hardware first */
             EClockUpdate(TimerBase);
 
-            if (CMPTIME(&TimerBase->tb_CurrentTime, &timereq->tr_time) <= 0)
+            if (CMPTIMEXX32(&TimerBase->tb_CurrentTime, &timereq->tr_time) <= 0)
             {
                 timereq->tr_time.tv_secs = timereq->tr_time.tv_micro = 0;
                 timereq->tr_node.io_Error = 0;
@@ -274,7 +278,7 @@ void TimerProcessMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase, 
 #endif
     ForeachNodeSafe(unit, tr, next)
     {
-        if (CMPTIME(&TimerBase->tb_Elapsed, &tr->tr_time) <= 0)
+        if (CMPTIMEXX32(&TimerBase->tb_Elapsed, &tr->tr_time) <= 0)
         {
             /* This request has finished */
             REMOVE(tr);
@@ -360,7 +364,7 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
 #endif
     ForeachNodeSafe(&TimerBase->tb_Lists[TL_VBLANK], tr, next)
     {
-        if (CMPTIME(&TimerBase->tb_Elapsed, &tr->tr_time) <= 0)
+        if (CMPTIMEXX32(&TimerBase->tb_Elapsed, &tr->tr_time) <= 0)
         {
             /* This request has finished */
             REMOVE(tr);
@@ -380,7 +384,7 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
      */
     ForeachNodeSafe(&TimerBase->tb_Lists[TL_WAITVBL], tr, next)
     {
-        if (CMPTIME(&TimerBase->tb_CurrentTime, &tr->tr_time) <= 0)
+        if (CMPTIMEXX32(&TimerBase->tb_CurrentTime, &tr->tr_time) <= 0)
         {
             /* This request has finished */
             REMOVE(tr);

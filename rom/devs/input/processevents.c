@@ -42,7 +42,8 @@
 
 #define SEND_KEYTIMER_REQUEST(timerio,time)             \
         timerio->tr_node.io_Command = TR_ADDREQUEST;    \
-        timerio->tr_time = time;                        \
+        timerio->tr_time.tv_secs = time.tv_secs;        \
+        timerio->tr_time.tv_micro = time.tv_micro;      \
         SendIO((struct IORequest *)timerio)
 
 #define ABORT_KEYTIMER_REQUEST \
@@ -75,6 +76,14 @@ AROS_INTH1(ResetHandler, struct inputbase *, InputDevice)
     return FALSE;
 
     AROS_INTFUNC_EXIT
+}
+
+void GetSysTime32(struct timeval32 *dest, struct Library *TimerBase)
+{
+    struct timeval tv;
+    GetSysTime(&tv);
+    dest->tv_secs = tv.tv_secs;
+    dest->tv_micro = tv.tv_micro;
 }
 
 /**********************
@@ -281,7 +290,7 @@ void ProcessEvents(struct inputbase *InputDevice)
             timer_ie.ie_position.ie_addr = 0;
 
             /* Add a timestamp to the event */
-            GetSysTime(&(timer_ie.ie_TimeStamp));
+            GetSysTime32(&(timer_ie.ie_TimeStamp), TimerBase);
 
             AddEQTail(&timer_ie, InputDevice);
             ForwardQueuedEvents(InputDevice);
@@ -394,7 +403,7 @@ void ProcessEvents(struct inputbase *InputDevice)
                                 }
 
                                 /* Set the timestamp */
-                                GetSysTime(&(ie->ie_TimeStamp));
+                                GetSysTime32(&(ie->ie_TimeStamp), TimerBase);
 
                                 /* and enqueue */
                                 AddEQTail(ie, InputDevice);
@@ -414,7 +423,7 @@ void ProcessEvents(struct inputbase *InputDevice)
 
                         ie->ie_NextEvent = NULL;
                         /* Add a timestamp to the event */
-                        GetSysTime(&(ie->ie_TimeStamp));
+                        GetSysTime32(&(ie->ie_TimeStamp), TimerBase);
 
                         D(bug("id: %d\n", ie->ie_Class));
 
@@ -427,13 +436,17 @@ void ProcessEvents(struct inputbase *InputDevice)
                     } break;
 
                 case IND_SETTHRESH:
-                    InputDevice->KeyRepeatThreshold =
-                        ((struct timerequest *)ioreq)->tr_time;
+                    InputDevice->KeyRepeatThreshold.tv_secs =
+                        ((struct timerequest *)ioreq)->tr_time.tv_secs;
+                    InputDevice->KeyRepeatThreshold.tv_micro =
+                        ((struct timerequest *)ioreq)->tr_time.tv_micro;
                     break;
 
                 case IND_SETPERIOD:
-                    InputDevice->KeyRepeatInterval =
-                        ((struct timerequest *)ioreq)->tr_time;
+                    InputDevice->KeyRepeatInterval.tv_secs =
+                        ((struct timerequest *)ioreq)->tr_time.tv_secs;
+                    InputDevice->KeyRepeatInterval.tv_micro =
+                        ((struct timerequest *)ioreq)->tr_time.tv_micro;
                     break;
 
                 }
@@ -454,7 +467,7 @@ void ProcessEvents(struct inputbase *InputDevice)
             ie = keyrepeatie;
             ie.ie_NextEvent = NULL;     /* !! */
             ie.ie_Qualifier |= IEQUALIFIER_REPEAT;
-            GetSysTime(&ie.ie_TimeStamp);
+            GetSysTime32(&ie.ie_TimeStamp, TimerBase);
 
             AddEQTail(&ie, InputDevice);
 
@@ -533,7 +546,7 @@ void ProcessEvents(struct inputbase *InputDevice)
             /* Gameport just returns the frame count since the last
                report in ie_TimeStamp.tv_secs; we therefore must add
                a real timestamp ourselves */
-            GetSysTime(&gpdie->ie_TimeStamp);
+            GetSysTime32(&gpdie->ie_TimeStamp, TimerBase);
 
             /* Wheel events come in as IECLASS_NEWMOUSE, so fix ie_Class
                and ie_Qualifier) */

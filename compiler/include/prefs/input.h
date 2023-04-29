@@ -24,12 +24,12 @@
 #define ID_INPT MAKE_ID('I','N','P','T')
 
 struct InputPrefs {
-    char           ip_Keymap[16];
-    UWORD          ip_PointerTicks;
-    struct timeval ip_DoubleClick;
-    struct timeval ip_KeyRptDelay;
-    struct timeval ip_KeyRptSpeed;
-    WORD           ip_MouseAccel;
+    char             ip_Keymap[16];
+    UWORD            ip_PointerTicks;
+    struct timeval32 ip_DoubleClick;
+    struct timeval32 ip_KeyRptDelay;
+    struct timeval32 ip_KeyRptSpeed;
+    WORD             ip_MouseAccel;
 
     /* The following fields are compatible with AmigaOS v4 */
     ULONG          ip_ClassicKeyboard;		/* Reserved		       */

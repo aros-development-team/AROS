@@ -11,19 +11,13 @@ CONST struct Preferences IntuitionDefaultPreferences =
     0,      // PrinterPort
     5,      // BaudRate
 
-    {
-	{ 0 },{ 40000 }
-    }
+	{ 0, 40000 }
     ,   // timeval KeyRptSpeed
 
-    {
-	{ 0 },{ 500000 }
-    }
+	{ 0, 500000 }
     ,   // timeval KeyRptDelay
 
-    {
-	{ 0 },{ 500000 }
-    }
+	{ 0, 500000 }
     ,   // timeval DoubleClick
 
     {

@@ -83,7 +83,7 @@ struct InstanceData
 	struct Process	*PlayerProc;
 	struct MsgPort	*PlayerPort;
 	/* for STM_STOP (doubleclick) */
-	struct timeval		LastClick;
+	struct timeval32	LastClick;
 	/* DTM_SELECT */
 	WORD			MinX;
 	WORD			MaxX;

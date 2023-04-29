@@ -755,7 +755,7 @@ catcher()
   pinger();
 
   if (!npackets || ntransmitted < npackets) {
-    timermsg->tr_time.tv_sec = interval;
+    timermsg->tr_time.tv_secs = interval;
     SendIO((struct IORequest*)timermsg);
   } else {
     if (nreceived) {
@@ -764,7 +764,7 @@ catcher()
 	waittime = 1;
     } else
       waittime = MAXWAIT;
-    timermsg->tr_time.tv_sec = waittime;
+    timermsg->tr_time.tv_secs = waittime;
     SendIO((struct IORequest*)timermsg);
   }
 #else

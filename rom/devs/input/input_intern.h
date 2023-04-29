@@ -53,8 +53,8 @@ struct inputbase
     struct MinList HandlerList;
     struct InputEvent *EventQueueHead;
     struct InputEvent *EventQueueTail;
-    struct timeval KeyRepeatThreshold;
-    struct timeval KeyRepeatInterval;
+    struct timeval32 KeyRepeatThreshold;
+    struct timeval32 KeyRepeatInterval;
     ULONG ResetSig;
     UWORD ActQualifier;
     UBYTE Prev1DownCode;

@@ -14,11 +14,13 @@
 #include <sys/select.h>
 
 /* struct itimerval is used by the interval timers getitimer()/setitimer() */
+/* NOTIMPL
 struct itimerval
 {
-    struct timeval	it_interval;	    /* timer interval */
-    struct timeval	it_value;	    /* current value */
+    struct timeval	it_interval;	    // timer interval
+    struct timeval	it_value;	    // current value
 };
+*/
 
 /* Which interval timer */
 #define ITIMER_REAL	    0	    /* Decrements in real time */

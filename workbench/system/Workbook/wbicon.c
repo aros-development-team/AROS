@@ -30,7 +30,7 @@ struct wbIcon {
     STRPTR             Label;
     struct Screen     *Screen;
 
-    struct timeval LastActive;
+    struct timeval32 LastActive;
 };
 
 const struct TagItem wbIcon_DrawTags[] = {
@@ -243,7 +243,8 @@ static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
                            gpi->gpi_IEvent->ie_TimeStamp.tv_secs,
                            gpi->gpi_IEvent->ie_TimeStamp.tv_micro);
 
-    my->LastActive = gpi->gpi_IEvent->ie_TimeStamp;
+    my->LastActive.tv_secs = gpi->gpi_IEvent->ie_TimeStamp.tv_secs;
+    my->LastActive.tv_micro = gpi->gpi_IEvent->ie_TimeStamp.tv_micro;
 
     if (dclicked)
     {

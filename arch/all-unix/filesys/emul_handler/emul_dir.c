@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 /* This prevents redefinition of struct timeval */
-#define _AROS_TYPES_TIMEVAL_S_H_
+#define NO_AROS_TIMEVAL
 
 #include <aros/debug.h>
 

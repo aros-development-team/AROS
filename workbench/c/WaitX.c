@@ -267,7 +267,10 @@ LONG MainEntry(struct ExecBase *SysBase)
 
         if (clock)
         {
-            GetSysTime(&TimerReq->tr_time); /* Get current System Time */
+            struct timeval tv;
+            GetSysTime(&tv); /* Get current System Time */
+            TimerReq->tr_time.tv_secs = tv.tv_secs;
+            TimerReq->tr_time.tv_micro = tv.tv_micro;
             Amiga2Date(TimerReq->tr_time.tv_secs, clock); /* Fill in current date/time as default */
 
             if (ArgArray[TEM_DATE])

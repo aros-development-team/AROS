@@ -275,7 +275,8 @@ static LONG pd_PRead(char * buffer, LONG *length, struct timeval *tv)
     pd->pd_TIOR.tr_node.io_Command = TR_ADDREQUEST;
     pd->pd_TIOR.tr_node.io_Flags = 0;
     pd->pd_TIOR.tr_node.io_Message.mn_Length = sizeof(pd->pd_TIOR);
-    pd->pd_TIOR.tr_time = *tv;
+    pd->pd_TIOR.tr_time.tv_secs = tv->tv_secs;
+    pd->pd_TIOR.tr_time.tv_micro = tv->tv_micro;
     SendIO((struct IORequest *)&pd->pd_TIOR);
 
     io->io_Command = CMD_READ;

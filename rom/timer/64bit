@@ -1,0 +1,44 @@
+Transition from original 32-bit time to 64-bit time
+
+General rules:
+
+1) If time is relative / fits into 32 bit, leave for compatibility
+   (-> ie_TimeStamp)
+2) If time is absolute, add new functions
+3) "struct timeval" has both fields 64 bit wide so that it can be union between
+   AROS-style and POSIX-style
+
+AROS API:
+
+1) Functions/Tags taking "struct timeval" directly (ie. GetSysTime):
+  a) 32 bit function gets renamed keeping LVO (-> GetSysTime32)
+  b) 32 bit function gets changed to accept "struct timeval32"
+  c) 64 bit function gets a new LVO and accepts "struct timeval"
+  d) 64 bit function naming (alternatives to be decided):
+	i)  64 bit function gets old name (-> GetSysTime)
+	    This approach allows existing code to compile, but 64 bit values
+		might be used in places where 32 bit values are expected leading to
+		problems
+	OR
+	ii) 64 bit function ges new name (-> GetSysTime64) and old name is gone
+		This approach means that existing code will stop compiling and developer
+		will have to take action to review code and migrate it either to 64 bit
+		by using 64 bit functions or to 32 bit by replacing "struct timeval" with
+		"struct timeval32"
+2) Functions/Tags not taking "struct timeval" directly (ie. Amiga2Date)
+  a) 32 bit function does not get renamed
+  b) 64 bit function gets a new name (-> Amiga2Date64) and a new LVO
+3) timer.device commands
+  a) 32 bit commands are unchanged and accept "struct timerequest"
+  b) 64 bit commands are added (-> TR_GETSYSTIME64) using
+     "struct timerequest64"
+
+C library API
+
+1) time_t becomes 64 bit wide
+2) "struct timeval" and "struct timespec" have both fields 64 bit wide
+3) Function taking impacted structures/types:
+  a) 32 bit function gets renamed (-> xxx_time32) keeping LVO and 32-bit input
+     structures
+  b) 64 bit function gets a new name (-> xxx_time64) and a new LVO
+  c) defines are introduced to direct original name to 64 bit name

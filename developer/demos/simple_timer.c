@@ -202,8 +202,8 @@ void wait_for_timer(struct timerequest *tr, struct timeval *tv )
 
 tr->tr_node.io_Command = TR_ADDREQUEST; /* add a new timer request */
 
-/* structure assignment */
-tr->tr_time = *tv;
+tr->tr_time.tv_secs = tv->tv_secs;
+tr->tr_time.tv_micro = tv->tv_micro;
 
 /* post request to the timer -- will go to sleep till done */
 DoIO((struct IORequest *) tr );
@@ -239,8 +239,8 @@ if (tr == 0 )
 tr->tr_node.io_Command = TR_GETSYSTIME;
 DoIO((struct IORequest *) tr );
 
-/* structure assignment */
-*tv = tr->tr_time;
+tv->tv_secs = tr->tr_time.tv_secs;
+tv->tv_micro = tr->tr_time.tv_micro;
 
 delete_timer( tr );
 return( 0 );

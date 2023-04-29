@@ -62,7 +62,8 @@ struct timeoutRequest {
 static inline void
 sendTimeoutRequest(struct timeoutRequest *tr)
 {
-  tr->timeout_request.tr_time = tr->timeout_timeval;
+  tr->timeout_request.tr_time.tv_secs = tr->timeout_timeval.tv_sec;
+  tr->timeout_request.tr_time.tv_micro = tr->timeout_timeval.tv_usec;
   SendIO((struct IORequest *)&(tr->timeout_request));
 }
 

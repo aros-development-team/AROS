@@ -47,7 +47,9 @@ struct InputEvent
         } ie_dead;
     } ie_position;
 
-    struct timeval      ie_TimeStamp;
+    /* This is guaranteed to be increasing with time, but not guaranteed
+       to contain absolute time */
+    struct timeval32    ie_TimeStamp;
 };
 #define ie_X             ie_position.ie_xy.ie_x
 #define ie_Y             ie_position.ie_xy.ie_y

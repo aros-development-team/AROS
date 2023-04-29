@@ -57,6 +57,16 @@ static inline LONG CMPTIME(struct timeval *dest, struct timeval *src)
 	return 0;
 }
 
+static inline LONG CMPTIME3232(struct timeval32 *dest, struct timeval32 *src)
+{
+    return CMPTIME((struct timeval *)dest, (struct timeval *)src);
+}
+
+static inline LONG CMPTIMEXX32(struct timeval *dest, struct timeval32 *src)
+{
+    return CMPTIME(dest, (struct timeval *)src);
+}
+
 /*
  * Add 'diff' EClock ticks to timeval in 'time'.
  * Fraction of second value is stored in in 'frac'.

@@ -127,7 +127,8 @@ D(bug("[AROSTCP](kern_synch.c) tsleep_send_timeout()\n"));
     /*
      * set the timeout
      */
-    p->tsleep_timer->tr_time = *time_out;
+    p->tsleep_timer->tr_time.tv_secs = time_out->tv_sec;
+    p->tsleep_timer->tr_time.tv_micro = time_out->tv_usec;
     /*
      * Enable signalling again
      */
