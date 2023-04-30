@@ -504,9 +504,10 @@ STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *task, struct Exe
     STRPTR fmtTemplate = (STRPTR)text;
 
     if (Exec_CheckTask(task, SysBase))
-        fmtParams[0] = (IPTR)task->tc_Node.ln_Name;
+        fmtParams[1] = (IPTR)task->tc_Node.ln_Name;
     else
-        fmtParams[0] = (IPTR)notaskstring;
+        fmtParams[1] = (IPTR)notaskstring;
+    fmtParams[0] = task;
 
     KrnFmtAlertInfo(&fmtTemplate, &fmtParams);
 
