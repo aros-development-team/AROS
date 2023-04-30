@@ -43,14 +43,29 @@ struct PlatformData
     APTR                kb_FXCtx;               /* IRQ FPU/MMX/XMM Save area                            */
     ULONG               kb_LastException;
     ULONG               kb_LastExceptionError;
+    union {
+        ULONG           kb_LastState;
+        struct {
+            UWORD       kb_StateCtx;
+            UWORD       kb_StateInt;
+        };
+    };
+    struct IntrNode     *kb_LastIntr;   
+    UWORD               kb_LastInt;
 };
 
-#define PLATFORMB_HAVEHEARTBEAT 0
-#define PLATFORMF_HAVEHEARTBEAT (1 << PLATFORMB_HAVEHEARTBEAT)
-#define PLATFORMB_HAVEMSI       1
-#define PLATFORMF_HAVEMSI       (1 << PLATFORMB_HAVEMSI)
-#define PLATFORMB_PRIMED        14
+#define PLATFORMB_PRIMED        0
 #define PLATFORMF_PRIMED        (1 << PLATFORMB_PRIMED)
+#define PLATFORMB_HAVEHEARTBEAT 1
+#define PLATFORMF_HAVEHEARTBEAT (1 << PLATFORMB_HAVEHEARTBEAT)
+#define PLATFORMB_HAVEMSI       2
+#define PLATFORMF_HAVEMSI       (1 << PLATFORMB_HAVEMSI)
+/*
+ * State flags used to express the current running "context"
+ * used in both kb_PDFlags & kb_StateCtx
+ */
+#define PLATFORMB_INEXCPT       14
+#define PLATFORMF_INEXCPT       (1 << PLATFORMB_INEXCPT)
 #define PLATFORMB_INIRQ         15
 #define PLATFORMF_INIRQ         (1 << PLATFORMB_INIRQ)
 

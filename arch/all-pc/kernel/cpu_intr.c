@@ -260,7 +260,14 @@ void core_InvalidateIDT()
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long int_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    struct PlatformData *pdata = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct PlatformData *pdata;
+
+    if ((pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
+    {
+        /* cache the current state */
+        pdata->kb_LastState = ((pdata->kb_PDFlags & (PLATFORMF_INIRQ|PLATFORMF_INEXCPT)) << 16) | pdata->kb_LastInt;
+        pdata->kb_LastInt = int_number;
+    }
 
     // An IRQ which arrived at the CPU is *either* an exception (let it be syscall, cpu exception,
     // LAPIC local irq) or a device IRQ.
@@ -276,6 +283,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         /* Store the error code for later retrieval */
         if (pdata)
         {
+            pdata->kb_PDFlags |= PLATFORMF_INEXCPT;
             switch (int_number)
             {
             /*
@@ -304,6 +312,8 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         DTRAP(
             bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): CPU Trap returned" DEBUGCOLOR_RESET "\n", __func__, int_number);
         )
+        if (pdata)
+            pdata->kb_PDFlags &= ~PLATFORMF_INEXCPT;
     }
     else
     {

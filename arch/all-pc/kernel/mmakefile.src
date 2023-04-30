@@ -11,6 +11,7 @@ FUNCS	 := \
              modifyirq \
              exitinterrupt \
              displayalert \
+             fmtalertinfo \
              getcpucount \
              getcpunumber \
              alloccpumask \

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -115,12 +115,18 @@
 /* Run IRQ handlers */
 void krnRunIRQHandlers(struct KernelBase *KernelBase, uint8_t irq)
 {
-    struct IntrNode *in, *in2;
+    struct IntrNode **in, *in1, *in2;
+    struct PlatformData *pdata;
 
-    ForeachNodeSafe(&KERNELIRQ_LIST(irq), in, in2)
+    if ((pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
+        in = &pdata->kb_LastIntr;
+    else
+        in = &in1;
+
+    ForeachNodeSafe(&KERNELIRQ_LIST(irq), (*in), in2)
     {
-        irqhandler_t h = in->in_Handler;
+        irqhandler_t h = (*in)->in_Handler;
 
-        h(in->in_HandlerData, in->in_HandlerData2);
+        h((*in)->in_HandlerData, (*in)->in_HandlerData2);
     }
 }
