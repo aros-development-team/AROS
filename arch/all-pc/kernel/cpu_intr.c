@@ -260,9 +260,9 @@ void core_InvalidateIDT()
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long int_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    struct PlatformData *pdata;
+    struct PlatformData *pdata = NULL;
 
-    if ((pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
+    if (KernelBase && (pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
     {
         /* cache the current state */
         pdata->kb_LastState = ((pdata->kb_PDFlags & (PLATFORMF_INIRQ|PLATFORMF_INEXCPT)) << 16) | pdata->kb_LastInt;
