@@ -25,7 +25,7 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/locale
 USER_CPPFLAGS :=
 USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS :=
-USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB) -lposixc
 
 %build_prog mmake=test-locale-formatstring-yes-cunit \
     files=cunit-locale-formatstring targetdir=$(CUNITEXEDIR) \

@@ -4,16 +4,24 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM test-cxx: includes linklibs
+#MM- test-cxx : test-cxx-headertest test-cxx-exception
+#MM- test-cxx-quick : test-cxx-headertest-quick test-cxx-exception-quick
+
+#MM test-cxx-headertest : includes linklibs
+#MM test-cxx-exception : includes linklibs
 
 EXEDIR := $(AROS_TESTS)/cplusplus
+USER_LDFLAGS := -static-libstdc++
+ifeq ($(TARGET_UNITTESTS),"yes")
+USER_CPPFLAGS += -DUSE_CUNITHEADERS
+endif
 
-%build_prog mmake=test-cxx progname=headertest \
+%build_prog mmake=test-cxx-headertest progname=headertest \
     files="" cxxfiles="headertest" \
     targetdir=$(EXEDIR)
 
-%build_prog mmake=test-cxx progname=exception \
+%build_prog mmake=test-cxx-exception progname=exception \
     files="" cxxfiles="exception" \
-    targetdir=$(EXEDIR) uselibs="stdc++ pthread"
+    targetdir=$(EXEDIR)
 
 %common

@@ -88,7 +88,7 @@ USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
 
 USER_INCLUDES += -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
-USER_LDFLAGS += -L$(AROS_CONTRIB_LIB)
+USER_LDFLAGS += -L$(AROS_CONTRIB_LIB) -lposixc
 
 #MM test-genmodule-library-relbase-yes-cunit : test-genmodule-library-cunit-deps
 

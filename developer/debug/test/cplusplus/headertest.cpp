@@ -745,16 +745,20 @@
 // #include <clib/Volumelist_protos.h>
 #include <clib/wb_protos.h>
 #include <clib/workbench_protos.h>
+#if (AROS_FLAVOUR == AROS_FLAVOUR_EMULATION)
 #include <clib/x11gfx_protos.h>
+#endif
 #include <clib/z1_protos.h>
 
 #include <c++/swappedtype.hpp>
 
+#if defined(USE_CUNITHEADERS)
 // #include <CUnit/CUCurses.h>
 // #include <CUnit/CUError.h>
 // #include <CUnit/CUnitCI.h>
 // #include <CUnit/CUnitCITypes.h>
 #include <CUnit/CUnit_intl.h>
+#endif
 
 #include <cybergraphx/cgxvideo.h>
 #include <cybergraphx/cybergraphics.h>
@@ -1406,7 +1410,9 @@
 // #include <proto/Volumelist.h>
 #include <proto/wb.h>
 #include <proto/workbench.h>
+#if (AROS_FLAVOUR == AROS_FLAVOUR_EMULATION)
 #include <proto/x11gfx.h>
+#endif
 #include <proto/z1.h>
 
 #include <pthread.h>

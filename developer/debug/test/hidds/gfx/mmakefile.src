@@ -34,7 +34,7 @@ CUNITFILES := \
 
 USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
-USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB) -lposixc
 
 %build_progs mmake=test-hidd-gfx-yes-cunit \
     files=$(CUNITFILES) targetdir=$(CUNITEXEDIR) \
