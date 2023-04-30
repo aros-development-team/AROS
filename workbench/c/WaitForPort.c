@@ -64,118 +64,118 @@ static struct MsgPort      *timerport = NULL;         /* Timer message reply por
 static struct timerequest  *timerIORequest = NULL;    /* template IORequest */
 ULONG wait_time;
 ULONG wait_limit;
-int
-main(int argc, char *argv[])
+
+
+int main(int argc, char *argv[])
 {
-   struct MsgPort *AROSTCP_Port = NULL;
+    struct MsgPort *AROSTCP_Port = NULL;
    
-   wait_time = 0;
+    wait_time = 0;
    
-   if ((WFP_rda = ReadArgs(WaitForPort_ArgTemplate, WaitForPort_Arguments, NULL)))
-   {
+    if ((WFP_rda = ReadArgs(WaitForPort_ArgTemplate, WaitForPort_Arguments, NULL)))
+    {
  
-      if (WaitForPort_Arguments[0])
-      {
-D(bug("[WaitForPort] Waiting for '%s' port\n",WaitForPort_Arguments[0]));
-      }
+        if (WaitForPort_Arguments[0])
+        {
+            D(bug("[WaitForPort] Waiting for '%s' port\n",WaitForPort_Arguments[0]));
+        }
       
-      timerport = CreateMsgPort();
-      if (timerport != NULL)
-      {
-         /* allocate and initialize the template message structure */
-         timerIORequest = (struct timerequest *) CreateIORequest(timerport, sizeof(struct timerequest));
+        timerport = CreateMsgPort();
+        if (timerport != NULL)
+        {
+            /* allocate and initialize the template message structure */
+            timerIORequest = (struct timerequest *) CreateIORequest(timerport, sizeof(struct timerequest));
 
-         if (timerIORequest != NULL)
-         {
-            if (!(OpenDevice(TIMERNAME, UNIT_VBLANK,
-                                              (struct IORequest *)timerIORequest, 0)))
+            if (timerIORequest != NULL)
             {
-                /* Make sure that we got at least V36 timer, since we use some
-                 * functions defined only in V36 and later. */
-
-                if ((timerIORequest->tr_node.io_Device)->dd_Library.lib_Version >= 36)
+                if (!(OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)timerIORequest, 0)))
                 {
-                   /* initialize TimerBase from timerIORequest */
-                  TimerBase = timerIORequest->tr_node.io_Device;
+                    /* Make sure that we got at least V36 timer, since we use some
+                    * functions defined only in V36 and later. */
 
-                   /* Initialize some fields of the IO request to common values */
-                   timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
+                    if ((timerIORequest->tr_node.io_Device)->dd_Library.lib_Version >= 36)
+                    {
+                        /* initialize TimerBase from timerIORequest */
+                        TimerBase = timerIORequest->tr_node.io_Device;
 
-                   /* NT_UNKNOWN means unused, too (see note on exec/nodes.h) */
-                   timerIORequest->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+                        /* Initialize some fields of the IO request to common values */
+                        timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
 
-                  timerIORequest->tr_time.tv_micro = 1000000;
-                  wait_limit = timerIORequest->tr_time.tv_micro * 10; /* Default to a 10 second wait */
+                        /* NT_UNKNOWN means unused, too (see note on exec/nodes.h) */
+                        timerIORequest->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
 
-                  BeginIO((struct IORequest *)timerIORequest);
+                        timerIORequest->tr_time.tv_micro = 1000000;
+                        wait_limit = timerIORequest->tr_time.tv_micro * 10; /* Default to a 10 second wait */
 
-/* MAIN LOOP */
-                  while(1)
-                  {
-D(bug("[WaitForPort] In Wait Loop ..\n"));
-                     ULONG mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | (1 << timerport->mp_SigBit);
-                                        mask = Wait(mask);
-                     if (mask & SIGBREAKF_CTRL_C) break;
-                                        if (mask & SIGBREAKF_CTRL_D) break;
-                     if (mask & (1 << timerport->mp_SigBit))
-                     {
-D(bug("[WaitForPort] Received timer signal?...\n"));
-                        timerIORequest = (struct timerequest *)GetMsg(timerport);
-                        if (timerIORequest)
+                        BeginIO((struct IORequest *)timerIORequest);
+
+                        /* MAIN LOOP */
+                        while(1)
                         {
-                           AROSTCP_Port = FindPort((char *)WaitForPort_Arguments[0]);
-                           wait_time += 1000000;
-                           if (!(AROSTCP_Port))
-                           {
-                              if (wait_time > wait_limit)
-                              {
-D(bug("[WaitForPort] Timeout Reached\n"));
-                                  break;
-                              }
-D(bug("[WaitForPort] Port not found .. secs=%d\n",wait_time/1000000));
-                           }
-                           else
-                           {
-D(bug("[WaitForPort] Port found ... escaping from wait loop\n"));
-                              break;
-                           }
-                           timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
-                           timerIORequest->tr_time.tv_micro = 1000000;
-                           BeginIO((struct IORequest *)timerIORequest);
+                            D(bug("[WaitForPort] In Wait Loop ..\n"));
+                            ULONG mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | (1 << timerport->mp_SigBit);
+                            mask = Wait(mask);
+                            if (mask & SIGBREAKF_CTRL_C) break;
+                            if (mask & SIGBREAKF_CTRL_D) break;
+                            if (mask & (1 << timerport->mp_SigBit))
+                            {
+                                D(bug("[WaitForPort] Received timer signal?...\n"));
+                                timerIORequest = (struct timerequest *)GetMsg(timerport);
+                                if (timerIORequest)
+                                {
+                                    AROSTCP_Port = FindPort((char *)WaitForPort_Arguments[0]);
+                                    wait_time += 1000000;
+                                    if (!(AROSTCP_Port))
+                                    {
+                                        if (wait_time > wait_limit)
+                                        {
+                                            D(bug("[WaitForPort] Timeout Reached\n"));
+                                            break;
+                                        }
+                                        D(bug("[WaitForPort] Port not found .. secs=%d\n",wait_time/1000000));
+                                    }
+                                    else
+                                    {
+                                        D(bug("[WaitForPort] Port found ... escaping from wait loop\n"));
+                                        break;
+                                    }
+                                    timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
+                                    timerIORequest->tr_time.tv_micro = 1000000;
+                                    BeginIO((struct IORequest *)timerIORequest);
+                                }
+                            }
                         }
-                     }
-                  }
-               }
+                    }
+                }
             }
-         }
 
-/* CLEANUP */
+            /* CLEANUP */
 
-         if (timerIORequest)
-         {
-            TimerBase = NULL;
+            if (timerIORequest)
+            {
+                TimerBase = NULL;
 
-            if (timerIORequest->tr_node.io_Device != NULL) CloseDevice((struct IORequest *)timerIORequest);
+                if (timerIORequest->tr_node.io_Device != NULL) CloseDevice((struct IORequest *)timerIORequest);
 
-            DeleteIORequest((struct IORequest *)timerIORequest);
-            timerIORequest = NULL;
-         }
+                DeleteIORequest((struct IORequest *)timerIORequest);
+                timerIORequest = NULL;
+            }
 
-         if (timerport)
-         {
-            DeleteMsgPort(timerport);
-            timerport = NULL;
-         }
-      }
+            if (timerport)
+            {
+                DeleteMsgPort(timerport);
+                timerport = NULL;
+            }
+        }
 
-      FreeArgs(WFP_rda);
-   }
-   else
-   {
-      Printf("WaitForPort: Bad Arguments .. Use 'WaitForPort ?' for correct useage\n");
-   }
+        FreeArgs(WFP_rda);
+    }
+    else
+    {
+        Printf("WaitForPort: Bad Arguments .. Use 'WaitForPort ?' for correct useage\n");
+    }
 
-   if (AROSTCP_Port) return RETURN_OK;
+    if (AROSTCP_Port) return RETURN_OK;
 
-   return RETURN_WARN;
+    return RETURN_WARN;
 }
