@@ -106,9 +106,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(struct IClass * CLASS
     struct DOSVolumeNode *newdvn = NULL;
     struct DOSVolumeList *newdvl = NULL;
 
-    D(
-        bug("[IconVolumeList]: %s()\n", __func__);
-    )
+    D(bug("[IconVolumeList]: %s()\n", __func__);)
 
     if ((pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 4096, 4096)) != NULL)
     {
@@ -237,17 +235,17 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(struct IClass * CLASS
                     {
                         BOOL volfound;
 
-                        D(bug("[IconVolumeList] %s: '%s' : Checking DOSVolumeNode @ 0x%p \n", __func__, dosname, dvn));
+                        D(
+                            bug("[IconVolumeList] %s: '%s' : Checking DOSVolumeNode @ 0x%p \n", __func__, dosname, dvn);
+                            if (dl->dol_misc.dol_handler.dol_Startup)
+                            {
+                                struct FileSysStartupMsg *thisfs_SM =
+                                    BADDR(dl->dol_misc.dol_handler.dol_Startup);
 
-                        if (dl->dol_misc.dol_handler.dol_Startup)
-                        {
-                            struct FileSysStartupMsg *thisfs_SM =
-                                BADDR(dl->dol_misc.dol_handler.dol_Startup);
-
-                            bug("[IconVolumeList] %s: Device Startup msg @ 0x%p\n",
-                                __func__, thisfs_SM);
-                            bug("[IconVolumeList] %s: Device Startup Device @ %p, Unit %d\n", __func__, thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit);
-                        }
+                                bug("[IconVolumeList] %s: Device Startup msg @ 0x%p\n",
+                                    __func__, thisfs_SM);
+                                bug("[IconVolumeList] %s: Device Startup Device @ %p, Unit %d\n", __func__, thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit);
+                            })
 
                         /* For packet handlers it's enough to compare MsgPort */
                         volfound = (dvn->dvn_Port == dl->dol_Task);

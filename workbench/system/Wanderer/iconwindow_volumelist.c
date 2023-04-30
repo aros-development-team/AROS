@@ -620,18 +620,14 @@ IPTR IconWindowVolumeList__MUIM_HandleEvent
 
     if(imsg->Class == IDCMP_DISKINSERTED)
     {
-//        D(
-            bug("[Wanderer:VolumeList] %s: IDCMP_DISKINSERTED\n", __func__);
-//        )
+        D(bug("[Wanderer:VolumeList] %s: IDCMP_DISKINSERTED\n", __func__);)
         DoMethod(self, MUIM_IconList_Update);
         DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
     }
     else if (imsg->Class == IDCMP_DISKREMOVED)
     {
-//        D(
-            bug("[Wanderer:VolumeList] %s: IDCMP_DISKREMOVED\n", __func__);
-//        )
+        D(bug("[Wanderer:VolumeList] %s: IDCMP_DISKREMOVED\n", __func__);)
         DoMethod(self, MUIM_IconList_Update);
         DoMethod(self, MUIM_IconList_Sort);
         return(MUI_EventHandlerRC_Eat);
