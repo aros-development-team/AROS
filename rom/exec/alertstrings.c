@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -469,6 +469,7 @@ static const char hdrstring[] =   "Task : 0x%P - %s";
 static const char errstring[] = "\nError: 0x%08lx - ";
 static const char locstring[] = "\nPC   : 0x%P";
 static const char stkstring[] = "\nStack: 0x%P - 0x%P";
+static const char notaskstring[] = "-- task not found -- ";
 
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR location, UBYTE type, struct ExecBase *SysBase)
 {
@@ -499,14 +500,17 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR locatio
 
 STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *task, struct ExecBase *SysBase)
 {
-    STRPTR taskName;
+    IPTR fmtParams[2];
+    STRPTR fmtTemplate = (STRPTR)text;
 
     if (Exec_CheckTask(task, SysBase))
-        taskName = task->tc_Node.ln_Name;
+        fmtParams[0] = (IPTR)task->tc_Node.ln_Name;
     else
-        taskName = "-- task not found -- ";
-    
-    return NewRawDoFmt(text, RAWFMTFUNC_STRING, buffer, task, taskName) - 1;
+        fmtParams[0] = (IPTR)notaskstring;
+
+    KrnFmtAlertInfo(&fmtTemplate, &fmtParams);
+
+    return NewRawDoFmt(fmtTemplate, RAWFMTFUNC_STRING, buffer, fmtParams[0], fmtParams[1]) - 1;
 }
 
 static const char modstring[] = "\nModule %s Segment %lu %s (0x%P) Offset 0x%P";

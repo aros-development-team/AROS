@@ -43,7 +43,7 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
     if ((GET_THIS_TASK == PrivExecBase(SysBase)->SAT.sat_Task) &&
             (PrivExecBase(SysBase)->SAT.sat_Params[1] != (IPTR) NULL))
     {
-        /* SupervisorAlertTask crashed when trying to show crash information for another task */
+        /* SupervisorAlertTask crashed when trying to show crash information for another task (double fault) */
 
         struct Task * t = (struct Task*)PrivExecBase(SysBase)->SAT.sat_Params[1];
         ULONG alertNum = PrivExecBase(SysBase)->SAT.sat_Params[0];
