@@ -345,10 +345,9 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(struct IClass * CLASS
 
                     if (!(found))
                     {
-//                        D(
+                        D(
                             bug("[IconVolumeList] %s: '%s' : Couldn't find an associated Volume\n",
-                                __func__, nd_nambuf);
-//                        )
+                                __func__, nd_nambuf);)
                         if ((nd_paramblock)
                             && (nd_paramblock->id_DiskType !=
                                 ID_NO_DISK_PRESENT))
@@ -430,7 +429,6 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(struct IClass * CLASS
     }
     return NULL;
 }
-
 ///
 
 ///IconVolumeList__DestroyDOSList()
@@ -440,9 +438,7 @@ static void IconVolumeList__DestroyDOSList(struct DOSVolumeList *dvl)
     if (dvl && dvl->dvl_Pool)
         DeletePool(dvl->dvl_Pool);
 }
-
 ///
-/* sba: End SimpleFind3 */
 
 ///OM_NEW()
 /**************************************************************************
@@ -536,9 +532,7 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
     struct List newiconlist;
     struct Node *tmpNode = NULL;
 
-//    D(
-    bug("[IconVolumeList]: %s()\n", __func__);
-//    )
+    D(bug("[IconVolumeList]: %s()\n", __func__);)
 
     GET(obj, MUIA_Family_List, &iconlist);
 
@@ -576,13 +570,12 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                     {
                         BOOL entrychanged = FALSE;
 
-//                        D(
+                        D(
                             bug
                             ("[IconVolumeList] %s: Found existing IconEntry '%s' @ %p\n",
                                 __func__,
                                 this_Icon->ie_IconListEntry.label,
-                                this_Icon);
-//                        )
+                                this_Icon);)
 
                         Remove((struct Node *)&this_Icon->ie_IconNode);
 
@@ -625,23 +618,21 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                         {
                             IPTR iconlistScreen = (IPTR)_screen(obj);
                             IPTR geticon_error = 0;
-                            bug("[IconVolumeList] %s: Getting Icon for '%s'\n", __func__, dvn->dvn_DosName);
+                            D(bug("[IconVolumeList] %s: Getting Icon for '%s'\n", __func__, dvn->dvn_DosName);)
                             volDOB = GetIconTags
-                                (dvn->dvn_DosName,
+                            ((dvn->dvn_DosName) ? dvn->dvn_DosName : dvn->dvn_VolName,
                                 (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
                                 (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
                                 ICONGETA_FailIfUnavailable, FALSE,
                                 ICONGETA_GenerateImageMasks, TRUE,
                                 ICONA_ErrorCode, &geticon_error,
                                 TAG_DONE);
-                            bug("[IconVolumeList] %s: IconEntry Default DOB = 0x%p\n", __func__, volDOB);
+                            D(bug("[IconVolumeList] %s: IconEntry Default DOB = 0x%p\n", __func__, volDOB);)
                         }
 
                         if (entrychanged)
                         {
-//                            D(
-                                bug("[IconVolumeList] %s: IconEntry changed - updating..\n", __func__);
-//                            )
+                            D(bug("[IconVolumeList] %s: IconEntry changed - updating..\n", __func__);)
 
                             _volpriv(this_Icon)->vip_FLags = dvn->dvn_Flags;
 
@@ -657,22 +648,20 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                     if (!(this_Icon))
                     {
                         struct VolumeIcon_Private * volPrivate = AllocMem(sizeof(struct VolumeIcon_Private), MEMF_CLEAR);
+                        IPTR iconlistScreen = (IPTR)_screen(obj);
+                        IPTR geticon_error = 0;
+
                         if (volPrivate) volPrivate->vip_FLags = dvn->dvn_Flags;
 
-//                        if (dvn->dvn_Flags & ICONENTRY_VOL_DISABLED)
-                        {
-                            IPTR iconlistScreen = (IPTR)_screen(obj);
-                            IPTR geticon_error = 0;
-                            bug("[IconVolumeList] %s: Getting Icon for '%s'\n", __func__, dvn->dvn_DosName);
-                            volDOB = GetIconTags
-                                (dvn->dvn_DosName,
-                                (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
-                                (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
-                                ICONGETA_FailIfUnavailable, FALSE,
-                                ICONGETA_GenerateImageMasks, TRUE,
-                                ICONA_ErrorCode, &geticon_error,
-                                TAG_DONE);
-                        }
+                        D(bug("[IconVolumeList] %s: Getting Icon for '%s'\n", __func__, dvn->dvn_DosName);)
+                        volDOB = GetIconTags
+                            ((dvn->dvn_DosName) ? dvn->dvn_DosName : dvn->dvn_VolName,
+                            (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
+                            (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
+                            ICONGETA_FailIfUnavailable, FALSE,
+                            ICONGETA_GenerateImageMasks, TRUE,
+                            ICONA_ErrorCode, &geticon_error,
+                            TAG_DONE);
 
                         if ((volPrivate) && ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry,
                                     (IPTR) devname, (IPTR) dvn->dvn_VolName, (IPTR) NULL, volDOB,
@@ -718,12 +707,9 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
             {
                 if (this_Icon->ie_IconListEntry.type == ST_ROOT)
                 {
-//                    D(
-                    bug
-                        ("[IconVolumeList] %s: Destroying Removed IconEntry for '%s' @ %p\n",
+                    D(bug("[IconVolumeList] %s: Destroying Removed IconEntry for '%s' @ %p\n",
                             __func__,
-                            this_Icon->ie_IconListEntry.label, this_Icon);
-//                    )
+                            this_Icon->ie_IconListEntry.label, this_Icon);)
                     Remove((struct Node *)&this_Icon->ie_IconNode);
                     DoMethod(obj, MUIM_IconList_DestroyEntry, this_Icon);
                 }
