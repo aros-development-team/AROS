@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -80,14 +80,26 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IntrNode *handle = NULL;
+    struct IntrNode *handle;
     D(bug("[KRN] KrnAddExceptionHandler(%02x, %012p, %012p, %012p):\n", num, handler, handlerData, handlerData2));
+
+    goSuper();
+
+    handle = krnAddExceptionHandler(num, handler,  handlerData, handlerData2, KernelBase);
+    
+    goUser();
+
+    return handle;
+
+    AROS_LIBFUNC_EXIT
+}
+
+void *krnAddExceptionHandler(UBYTE num, APTR handler,  APTR handlerData, APTR handlerData2, struct KernelBase *KernelBase)
+{
+    struct IntrNode *handle = NULL;
 
     if (num < EXCEPTIONS_COUNT)
     {
-        /* Go to supervisor mode */
-        (void)goSuper();
-
         /* Allocate protected memory, accessible only in supervisor mode */
         handle = krnAllocIntrNode();
         D(bug("[KRN] handle=%012p\n", handle));
@@ -104,13 +116,9 @@
             ADDHEAD(&KernelBase->kb_Exceptions[num], &handle->in_Node);
             Enable();
         }
-
-        goUser();
     }
 
     return handle;
-
-    AROS_LIBFUNC_EXIT
 }
 
 /* Run exception handlers and accumulate return value */

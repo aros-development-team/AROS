@@ -2,7 +2,7 @@
 #define KERNEL_BASE_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -98,6 +98,7 @@ struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end);
 /* Memhry header - TLSF support functions */
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source);
+void *krnAddExceptionHandler(UBYTE num, APTR handler,  APTR handlerData, APTR handlerData2, struct KernelBase *KernelBase);
 
 #ifdef KERNELIRQ_NEEDSCONTROLLERS
 #include <kernel_interruptcontrollers.h>

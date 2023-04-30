@@ -47,11 +47,8 @@ static inline int core_Trap(ULONG code, void *regs)
         void (*trapHandler)(ULONG, void *) = SysBase->TaskTrapCode;
         struct Task *t = GET_THIS_TASK;
 
-        if (t)
-        {
-            if (t->tc_TrapCode)
-                trapHandler = t->tc_TrapCode;
-        }
+        if ((t) && (t->tc_TrapCode))
+            trapHandler = t->tc_TrapCode;
 
         if (trapHandler)
         {
