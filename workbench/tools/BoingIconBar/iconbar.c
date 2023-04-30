@@ -9,6 +9,52 @@
 //                                                          //
 //////////////////////////////////////////////////////////////
 
+/******************************************************************************
+
+    NAME
+
+        BoingIconBar
+
+    SYNOPSIS
+
+        SPACE/N/K, STATIC/N/K, AUTOREMAP/S/K, NAMES/S/K, SYSFONT/K, LABELFONT/K, FONTSIZE/N/K
+
+    LOCATION
+
+        SYS:Tools
+
+    FUNCTION
+
+        Display a toolbar at the screen's bottom for starting of applications. There's a
+        preferences editor for configuring.
+
+    INPUTS
+
+        SPACE       -- the number of pixels between the icons
+        STATIC      -- set this to 1 to let the toolbar stay permanently on screen
+        AUTOREMAP   --
+        NAMES       -- show icon labels
+        SYSFONT     -- font for the menu
+        LABELFONT   -- font for the labels
+        FONTSIZE    -- size of the label font
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        BoingIconBar NAMES FONTSIZE 20
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 
 //#define DEBUG 1
 #include <aros/debug.h>
