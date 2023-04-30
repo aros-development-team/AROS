@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 2022, The AROS Development Team. All rights reserved.
+   Copyright (C) 2022-2023, The AROS Development Team. All rights reserved.
  */
 
 /*********************************************************************************************/
@@ -20,7 +20,7 @@
 #include "args.h"
 #include "prefs.h"
 
-#define VERSION "$VER: Asl 41.0 (25.06.2022) AROS Dev Team"
+#define VERSION "$VER: Asl 41.1 (30.04.2023) AROS Dev Team"
 
 /*********************************************************************************************/
 
