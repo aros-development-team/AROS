@@ -1,15 +1,21 @@
 /*
-    Copyright (C) 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 0
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
+#include <proto/task.h>
 
 #include "task_intern.h"
+
+#define DTS(x)
 
 AROS_UFH3(void, TaskRes_PreLaunch,
           AROS_UFHA(struct Hook *, h, A0),
@@ -147,15 +153,68 @@ AROS_LH1(void, RemTask,
 #endif
     }
 
+    struct ETask *et = (struct ETask *)findTask->tc_UnionETask.tc_ETask;
+    IPTR *tsstorage = NULL;
+
+    if (et)
+        tsstorage = et->et_Reserved[ETASK_RSVD_SLOTID];
+
     D(bug("[TaskRes] %s: Calling original Exec->RemTask()\n", __func__));
 
     if (TaskResBase->trb_RemTask)
     {
         AROS_CALL1(void, TaskResBase->trb_RemTask,
-                    AROS_LCA(struct Task *,     task,      A1),
+                    AROS_LCA(struct Task *,     findTask,      A1),
                     struct ExecBase *, SysBase);
     }
+
+    if (tsstorage)
+    {
+        D(bug("[TaskRes] %s: Freeing Task SlotStorage @ 0x%p, size=%d\n",
+              __func__, tsstorage, tsstorage ? (ULONG)tsstorage[__TS_FIRSTSLOT] : 0
+        );)
+        FreeMem(tsstorage, tsstorage[__TS_FIRSTSLOT] * sizeof(tsstorage[0]));
+    }
+
     return;
 
     AROS_LIBFUNC_EXIT
 }
+
+/* Called from DOS:RunCommand */
+AROS_LH3(IPTR, NewStackSwap,
+        AROS_LHA(struct StackSwapStruct *, sss, A0),
+        AROS_LHA(LONG_FUNC, entry, A1),
+        AROS_LHA(struct StackSwapArgs *, args, A2),
+        struct ExecBase *, SysBase, 134, Task)
+{
+    AROS_LIBFUNC_INIT
+
+    struct TaskResBase *TaskResBase;
+    TaskResBase = (struct TaskResBase *)SysBase->lb_TaskResBase;
+
+    APTR tsid = SaveTaskStorage();
+    DTS(bug("[TaskRes] %s: Pre-StackSwap() <TSID=$%p, TaskStorage @ 0x%p>\n",
+          __func__, tsid, FindTask(NULL)->tc_UnionETask.tc_ETask->et_Reserved[ETASK_RSVD_SLOTID]
+    ));
+
+    IPTR retval = AROS_CALL3(IPTR, TaskResBase->trb_NewStackSwap,
+                AROS_LCA(struct StackSwapStruct *, sss, A0),
+                AROS_LCA(LONG_FUNC, entry, A1),
+                AROS_LCA(struct StackSwapArgs *, args, A2),
+                struct ExecBase *, SysBase);
+
+    DTS(bug("[TaskRes] %s: post-StackSwap() <TSID=$%p, TaskStorage @ 0x%p>\n",
+          __func__, tsid, FindTask(NULL)->tc_UnionETask.tc_ETask->et_Reserved[ETASK_RSVD_SLOTID]
+    ));
+
+    RestoreTaskStorage(tsid);
+
+    DTS(bug("[TaskRes] %s: Restored TaskStorage <TSID=$%p, TaskStorage @ 0x%p>\n",
+          __func__, tsid, FindTask(NULL)->tc_UnionETask.tc_ETask->et_Reserved[ETASK_RSVD_SLOTID]
+    ));
+    
+    return retval;
+
+    AROS_LIBFUNC_EXIT
+} /* NewStackSwap() */

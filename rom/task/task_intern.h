@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
 */
 
 #ifndef TASKRES_INTERN_H
@@ -22,6 +22,7 @@
 #endif
 
 #include <exec_intern.h>
+#include <etask.h>
 
 #define TASKRES_ENABLE
 
@@ -33,17 +34,24 @@
 #endif
 #endif
 
+#define ETASK_RSVD_SLOTID       1
+
+/* Puddle size, in slots. Must be at least 1 */
+#define TASKSTORAGEPUDDLE       16
+
 struct TaskResBase
 {
     struct Library              trb_LibNode;
     APTR                        trb_KernelBase;
     APTR                        trb_NewAddTask;
     APTR                        trb_RemTask;
+    APTR                        trb_NewStackSwap;
     struct SignalSemaphore      trb_Sem;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t                  TaskListSpinLock;
     void *                      trb_ExecLock;
 #endif
+    struct MinList              trb_TaskStorageSlots;               /* List of free slots, always one element with next slot        */
     struct List                 trb_TaskList;
     struct List                 trb_NewTasks;
     struct List                 trb_LockedLists;
@@ -76,6 +84,16 @@ struct TaskListPrivate
     struct List                 *tlp_Tasks;
     struct TaskListEntry        *tlp_Next;
 };
+
+#define __TS_FIRSTSLOT 0
+
+struct TaskStorageFreeSlot
+{
+    struct MinNode _node;
+    LONG FreeSlot;
+};
+
+IPTR TaskGetStorageSlot(struct Task * t, LONG id);
 #else
 struct TaskListPrivate
 {

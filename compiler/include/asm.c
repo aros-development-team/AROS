@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -85,7 +85,7 @@ int main(void) {
     DEFINE(tc_ETask      , offsetof (struct Task, tc_UnionETask.tc_ETask));
 
     asm volatile("\n.asciz \"/* struct ETask */\"" ::);
-    DEFINE(et_TaskStorage, offsetof (struct ETask, et_TaskStorage));
+    DEFINE(et_Reserved, offsetof (struct ETask, et_Reserved));
 
     asm volatile("\n.asciz \"/* struct Process */\"" ::);
     DEFINE(pr_CES        , offsetof (struct Process, pr_CES));

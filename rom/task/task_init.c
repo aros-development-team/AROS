@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -22,12 +22,15 @@ extern void AROS_SLIB_ENTRY(RemTask, Task, 48)();
 static LONG taskres_Init(struct TaskResBase *TaskResBase)
 {
 #ifdef TASKRES_ENABLE
+    struct TaskStorageFreeSlot *freeTaskStorageSlot;
     struct TaskListEntry *taskEntry = NULL;
     struct Task *curTask = NULL;
 
 #if defined(__AROSEXEC_SMP__)
     void *ExecLockBase = NULL;
 #endif
+    NEWLIST(&TaskResBase->trb_TaskStorageSlots);
+
 #endif /* TASKRES_ENABLE */
 
     KernelBase = OpenResource("kernel.resource");
@@ -59,8 +62,21 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     InitSemaphore(&TaskResBase->trb_Sem);
 
 #ifdef TASKRES_ENABLE
+    /* Initialize free task storage slots management */
+    freeTaskStorageSlot = AllocMem(sizeof(struct TaskStorageFreeSlot), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!freeTaskStorageSlot)
+    {
+         D(bug("[TaskRes] %S: FATAL: Failed to allocate inital free task storage slot!", __func__);)
+        return FALSE;
+    }
+    freeTaskStorageSlot->FreeSlot = __TS_FIRSTSLOT + 1;
+    AddHead((struct List *)&TaskResBase->trb_TaskStorageSlots, (struct Node *)freeTaskStorageSlot);
+
     TaskResBase->trb_RemTask = SetFunction((struct Library *)SysBase, -48*LIB_VECTSIZE, AROS_SLIB_ENTRY(RemTask, Task, 48));
     TaskResBase->trb_NewAddTask = SetFunction((struct Library *)SysBase, -176*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewAddTask, Task, 176));
+#if (0)
+    TaskResBase->trb_NewStackSwap = SetFunction((struct Library *)SysBase, -134*LIB_VECTSIZE, AROS_SLIB_ENTRY(NewStackSwap, Task, 134));
+#endif
 
     /*
        Add existing tasks to our internal list ..

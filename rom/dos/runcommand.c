@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Execute a loaded command synchronously
 */
@@ -136,23 +136,8 @@
     args.Args[2] = (IPTR)BADDR(segList) + sizeof(BPTR);
     args.Args[3] = (IPTR)me;
 
-    APTR tsid = SaveTaskStorage();
-    D(bug("RunCommand: b4 StackSwap() tsid=%x, thistask->TaskStorage=%x\n",
-          tsid, FindTask(NULL)->tc_UnionETask.tc_ETask->et_TaskStorage
-    ));
-
     ret = NewStackSwap(&sss, CallEntry, &args);
 
-    D(bug("RunCommand: after StackSwap() tsid=%x, thistask->TaskStorage=%x\n",
-          tsid, FindTask(NULL)->tc_UnionETask.tc_ETask->et_TaskStorage
-    ));
-
-    RestoreTaskStorage(tsid);
-
-    D(bug("RunCommand: after RestoreTaskStorage() tsid=%x, thistask->TaskStorage=%x\n",
-          tsid, FindTask(NULL)->tc_UnionETask.tc_ETask->et_TaskStorage
-    ));
-    
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;
 

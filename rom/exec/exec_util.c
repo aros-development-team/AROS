@@ -18,7 +18,6 @@
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
-#include "taskstorage.h"
 
 /****************************************************************************
 
@@ -310,19 +309,13 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
 void
 Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 {
-    IPTR *ts = et->et_TaskStorage;
-
     FreeVec(et->et_Result2);
 
 #ifdef DEBUG_ETASK
     FreeVec(IntETask(et)->iet_Me);
 #endif
-    D(bug("[EXEC:ETask] Expunge: Freeing ETask @ 0x%p, TS @ 0x%p, size=%d\n",
-          et, ts, ts ? (ULONG)ts[__TS_FIRSTSLOT] : 0
-    );)
+    D(bug("[EXEC:ETask] Expunge: Freeing ETask @ 0x%p\n", et);)
     FreeMem(et, sizeof(struct IntETask));
-    if (ts)
-        FreeMem(ts, ts[__TS_FIRSTSLOT] * sizeof(ts[0]));
 }
 
 BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)

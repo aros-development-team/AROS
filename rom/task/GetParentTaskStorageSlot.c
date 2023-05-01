@@ -1,27 +1,26 @@
 /*
-    Copyright (C) 2014-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2014-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
+#include <proto/exec.h>
 
-#include "taskstorage.h"
+#include "task_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <proto/exec.h>
-
         AROS_LH1(IPTR, GetParentTaskStorageSlot,
 
 /*  LOCATION */
-        AROS_LHA(LONG, id, D0),
-        struct ExecBase *, SysBase, 186, Exec)
+        AROS_LHA(LONG, slotid, D0),
+        struct TaskResBase *, TaskResBase, 18, Task)
 
 /*  FUNCTION
         Get a value for a task storage slot of parent task.
 
     INPUTS
-        id - slot ID returned from AllocTaskStorageSlot().
+        slotid - slot ID returned from AllocTaskStorageSlot().
 
     RESULT
         Value stored by SetTaskStorageSlot() on parent task, or
@@ -47,21 +46,26 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *ThisTask = GET_THIS_TASK;
-    struct ETask *et = ThisTask ? GetETask(ThisTask) : NULL;
     IPTR result = (IPTR)NULL;
+
+#ifdef TASKRES_ENABLE
+    struct Task *thisTask = GET_THIS_TASK;
+    struct ETask *et = thisTask ? GetETask(thisTask) : NULL;
 
     if (!et)
         return (IPTR)NULL;
 
-    Forbid(); /* Accessing other task's et_TaskStorage */
+    Forbid(); /* Accessing other task's et_Reserved[ETASK_RSVD_SLOTID] */
 
     if (et->et_Parent)
-        result = TaskGetStorageSlot(et->et_Parent, id);
+        result = TaskGetStorageSlot(et->et_Parent, slotid);
 
     Permit();
+#endif
+
+    D(bug("[TaskRes] %s: Returning $%p <Parent SlotID #%u>\n", __func__, result, slotid);)
 
     return result;
 
     AROS_LIBFUNC_EXIT
-}
+} /* GetParentTaskStorageSlot() */

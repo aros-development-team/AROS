@@ -16,7 +16,6 @@
 #include "etask.h"
 #include "exec_util.h"
 #include "exec_debug.h"
-#include "taskstorage.h"
 
 #if defined(__AROSEXEC_SMP__)
 #define __KERNEL_NOLIBBASE__

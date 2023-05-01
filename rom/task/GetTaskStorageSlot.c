@@ -1,32 +1,30 @@
 /*
-    Copyright (C) 2012-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
+#include <proto/exec.h>
 
 #include <exec/nodes.h>
 #include <exec/lists.h>
 #include <clib/macros.h>
 
-#include "exec_intern.h"
-#include "taskstorage.h"
+#include "task_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <proto/exec.h>
-
         AROS_LH1(IPTR, GetTaskStorageSlot,
 
 /*  LOCATION */
-        AROS_LHA(LONG, id, D0),
-        struct ExecBase *, SysBase, 185, Exec)
+        AROS_LHA(LONG, slotid, D0),
+        struct TaskResBase *, TaskResBase, 17, Task)
 
 /*  FUNCTION
         Get a value for a task storage slot.
 
     INPUTS
-        id - slot ID returned from AllocTaskStorageSlot().
+        slotid - slot ID returned from AllocTaskStorageSlot().
 
     RESULT
         Value stored by SetTaskStorageSlot(), or (IPTR)NULL if the slot was
@@ -47,29 +45,35 @@
 {
     AROS_LIBFUNC_INIT
 
-    return TaskGetStorageSlot(GET_THIS_TASK, id);
+#ifdef TASKRES_ENABLE
+    return TaskGetStorageSlot(GET_THIS_TASK, slotid);
+#else
+    return NULL;
+#endif
 
     AROS_LIBFUNC_EXIT
-}
+} /* GetTaskStorageSlot() */
 
-IPTR TaskGetStorageSlot(struct Task * t, LONG id)
+#ifdef TASKRES_ENABLE
+IPTR TaskGetStorageSlot(struct Task * t, LONG slotid)
 {
     struct ETask *et = t ? GetETask(t) : NULL;
-    IPTR *ts;
+    IPTR *tsstorage;
 
-    D(bug("TaskGetStorageSlot: %p: Get TaskGetStorageSlot %d\n", et, id);)
+    D(bug("[TaskRes] %s: ETask @ 0x%p SlotID #%u\n", __func__, et, slotid);)
 
     if (!et) {
         /* Only ETasks can do this */
-        D(bug("TaskGetStorageSlot: Not an ETask!\n");)
+        D(bug("[TaskRes] %s: Missing ETask!\n", __func__);)
         return (IPTR)NULL;
     }
 
-    ts = et->et_TaskStorage;
-    if (ts == NULL || ts[__TS_FIRSTSLOT] <= id) {
-        D(bug("TaskGetStorageSlot: ID %d was not set!\n", id);)
+    tsstorage = et->et_Reserved[ETASK_RSVD_SLOTID];
+    if (tsstorage == NULL || tsstorage[__TS_FIRSTSLOT] <= slotid) {
+        D(bug("[TaskRes] %s: SlotID #%u was not set!\n", __func__, slotid);)
         return (IPTR)NULL;
     }
 
-    return ts[id];
+    return tsstorage[slotid];
 }
+#endif

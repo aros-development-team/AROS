@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
 */
@@ -345,8 +345,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
         if (opts)
             SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
     }
-
-    NEWLIST(&PrivExecBase(SysBase)->TaskStorageSlots);
 
     SetSysBaseChkSum();
 

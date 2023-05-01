@@ -176,15 +176,9 @@ struct ETask
     APTR            et_Result2;                         /* Result data pointer (AllocVec)               */
     struct MsgPort  et_TaskMsgPort;
     void            *et_MemPool;                        /* Task's private memory pool                   */
-    /* Internal fields follow */
-    union {
-        IPTR        et_Reserved[2];                     /* MorphOS Private                              */
-        struct {
-            IPTR    et_Rsrvd;
-            IPTR    *et_TaskStorage;                    /* Task Storage Slots                           */
-        };
-    };
+    void            *et_Reserved[2];                    /* MorphOS Private                              */
     void            *et_RegFrame;
+    /* Internal fields follow */
 };
 #endif
 

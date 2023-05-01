@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2021, The AROS Development Team. All rights reserved.
+# Copyright (C) 2015-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -22,20 +22,27 @@ ifneq ($(AROS_TARGET_VARIANT),)
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
 endif
 
-TASKRES_FUNCS :=		\
-	    LockTaskList        \
-	    UnLockTaskList      \
-	    NextTaskEntry       \
-	    QueryTaskTagList    \
-	    InitTaskHooks       \
-	    AddTaskHook         \
-	    RunTaskHooks
+TASKRES_FUNCS :=             \
+        LockTaskList         \
+        UnLockTaskList       \
+        NextTaskEntry        \
+        QueryTaskTagList     \
+        InitTaskHooks        \
+        AddTaskHook          \
+        RunTaskHooks         \
+        AllocTaskStorageSlot \
+        FreeTaskStorageSlot  \
+        SaveTaskStorage      \
+        RestoreTaskStorage   \
+        SetTaskStorageSlot   \
+        GetTaskStorageSlot   \
+        GetParentTaskStorageSlot
 
-TASKRES_FILES :=		\
-	    task_init		\
-	    task_execfuncs	\
-            task_support	\
-	    $(TASKRES_FUNCS)
+TASKRES_FILES :=             \
+        task_init            \
+        task_execfuncs       \
+        task_support         \
+        $(TASKRES_FUNCS)
 
 %build_module mmake=kernel-task modname=task modtype=resource \
     files="$(TASKRES_FILES)"

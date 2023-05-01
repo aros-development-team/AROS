@@ -1,7 +1,10 @@
 /*
-    Copyright (C) 2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2019-2023, The AROS Development Team. All rights reserved.
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 0
 
 #include <aros/debug.h>

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Print the library magic and init code in the file modname_start.c.
     This code is partly based on code in CLib37x.lha from Andreas R. Kleinert
@@ -165,7 +165,7 @@ void writestart(struct config *cfg)
 static void writedecl(FILE *out, struct config *cfg)
 {
     struct stringlist *linelistit, *s;
-    int boopsiinc=0, muiinc=0, oopinc=0;
+    int boopsiinc=0, muiinc=0, oopinc=0, taskresbase=0;
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     struct classinfo *classlistit;
@@ -219,6 +219,7 @@ static void writedecl(FILE *out, struct config *cfg)
             "#undef UtilityBase\n"
             "\n"
             "#include <proto/exec.h>\n"
+            "#include <proto/task.h>\n"
             "#include <proto/alib.h>\n"
             "\n"
     );
@@ -240,10 +241,18 @@ static void writedecl(FILE *out, struct config *cfg)
         );
     }
     if (cfg->options & OPTION_DUPBASE)
+    {
         fprintf(out,
                 "/* Required for TaskStorage manipulation */\n"
                 "extern struct ExecBase *SysBase;\n"
         );
+        if (!taskresbase)
+        {
+            fprintf(out,
+                "APTR TaskResBase;\n");
+            taskresbase=1;
+        }
+    }
     if (cfg->options & OPTION_DUPBASE)
     {
         fprintf(out,
@@ -269,6 +278,12 @@ static void writedecl(FILE *out, struct config *cfg)
         );
         if (cfg->options & OPTION_PERTASKBASE)
         {
+            if (!taskresbase)
+            {
+                fprintf(out,
+                    "APTR TaskResBase;\n");
+                taskresbase=1;
+            }
             fprintf(out,
                     "static LONG __pertaskslot;\n"
                     "LIBBASETYPEPTR __GM_GetBaseParent(LIBBASETYPEPTR base)\n"
@@ -960,6 +975,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
         fprintf(out,
             "    struct ExecBase *SysBase = sysBase;\n"
         );
+
     fprintf(out,
             "\n"
             "#ifdef GM_SYSBASE_FIELD\n"
@@ -969,6 +985,14 @@ static void writeinitlib(FILE *out, struct config *cfg)
             "        return NULL;\n"
             "\n"
     );
+
+    if ((cfg->options & OPTION_PERTASKBASE) || (cfg->options & OPTION_DUPBASE))
+        fprintf(out,
+            "    TaskResBase = OpenResource(\"task.resource\");\n"
+            "    if (!TaskResBase)\n"
+            "        return NULL;\n"
+            "\n"
+        );
 
     if (cfg->options & OPTION_RESAUTOINIT) {
         fprintf(out,

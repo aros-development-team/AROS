@@ -33,7 +33,6 @@
 #include "etask.h"
 #include "intservers.h"
 #include "memory.h"
-#include "taskstorage.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -99,7 +98,6 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 {
     AROS_USERFUNC_INIT
 
-    struct TaskStorageFreeSlot *tsfs;
     struct Task *t;
     struct MemList *ml;
     struct ExceptionContext *ctx;
@@ -143,20 +141,6 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     set_call_libfuncs(SETNAME(PREINITLIB), 1, 0, origSysBase);
 
     DINIT("Preparing Bootstrap Task...");
-
-    /*
-     * kernel.resource is up and running and memory list is complete.
-     * Global SysBase is set to its final value. We've got KernelBase and AllocMem() works.
-     * Initialize free task storage slots management
-     */
-    tsfs = AllocMem(sizeof(struct TaskStorageFreeSlot), MEMF_PUBLIC|MEMF_CLEAR);
-    if (!tsfs)
-    {
-        DINIT("FATAL: Failed to allocate a task storage slot!");
-        goto execfatal;
-    }
-    tsfs->FreeSlot = __TS_FIRSTSLOT+1;
-    AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
 
     /* Now we are ready to become a Boot Task and turn on the multitasking */
     t   = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
