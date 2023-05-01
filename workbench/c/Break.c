@@ -120,151 +120,151 @@ int __nocommandline = 1;
 int
 main(void)
 {
-        struct RDArgs *rd, *rda = NULL;
-        struct List prList;
-        IPTR args[TOTAL_ARGS] = { };
+    struct RDArgs *rd, *rda = NULL;
+    struct List prList;
+    IPTR args[TOTAL_ARGS] = { };
 
-        int error = 0;
+    int error = 0;
 
-        NEWLIST(&prList);
+    NEWLIST(&prList);
 
-        if ((rda = AllocDosObject(DOS_RDARGS, NULL)))
+    if ((rda = AllocDosObject(DOS_RDARGS, NULL)))
+    {
+        rda->RDA_ExtHelp = (STRPTR) exthelp;
+
+        if ((rd = ReadArgs(ARG_TEMPLATE, (IPTR *) args, rda)))
         {
-                rda->RDA_ExtHelp = (STRPTR) exthelp;
-
-                if ((rd = ReadArgs(ARG_TEMPLATE, (IPTR *) args, rda)))
+            struct Process *pr = NULL;
+            Forbid();
+            if (args[ARG_PROCESS])
+                pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
+            else if (args[ARG_PORT])
+            {
+                struct MsgPort *MyPort;
+                if ((MyPort = (struct MsgPort*) FindPort((STRPTR) args[ARG_PORT])) != NULL)
                 {
-                        struct Process *pr = NULL;
-                        Forbid();
-                        if (args[ARG_PROCESS])
-                                pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
-                        else if (args[ARG_PORT])
+                    pr = (struct Process*) MyPort->mp_SigTask;
+                }
+            }
+            else if (args[ARG_NAME])
+            {
+                APTR TaskResBase = OpenResource("task.resource");
+                if (TaskResBase)
+                {
+                    Permit();
+                    int pbLen = ((strlen((char *)args[ARG_NAME]) + 1) << 1);
+                    char *patternBuf = AllocVec(pbLen, MEMF_ANY);
+                    if (patternBuf)
+                    {
+                        ParsePatternNoCase((char *)args[ARG_NAME], patternBuf, pbLen);
+
+                        struct Task * task;
+                        struct TaskList *systasklist = LockTaskList(LTF_ALL);
+                        while ((task = NextTaskEntry(systasklist, LTF_ALL)) != NULL)
                         {
-                                struct MsgPort *MyPort;
-                                if ((MyPort = (struct MsgPort*) FindPort((STRPTR) args[ARG_PORT])) != NULL)
-                                {
-                                        pr = (struct Process*) MyPort->mp_SigTask;
-                                }
+                            if (MatchPatternNoCase(patternBuf, ((struct Node *)task)->ln_Name))
+                            {
+                                struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
+                                prNode->ln_Name = (char *) task;
+                                AddTail(&prList, prNode);
+                            }
                         }
-                        else if (args[ARG_NAME])
-                        {
-                                APTR TaskResBase = OpenResource("task.resource");
-                                if (TaskResBase)
-                                {
-                                        Permit();
-                                        int pbLen = ((strlen((char *)args[ARG_NAME]) + 1) << 1);
-                                        char *patternBuf = AllocVec(pbLen, MEMF_ANY);
-                                        if (patternBuf)
-                                        {
-                                                ParsePatternNoCase((char *)args[ARG_NAME], patternBuf, pbLen);
-
-                                                struct Task * task;
-                                                struct TaskList *systasklist = LockTaskList(LTF_ALL);
-                                                while ((task = NextTaskEntry(systasklist, LTF_ALL)) != NULL)
-                                                {
-                                                        if (MatchPatternNoCase(patternBuf, ((struct Node *)task)->ln_Name))
-                                                        {
-                                                                struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
-                                                                prNode->ln_Name = (char *) task;
-                                                                AddTail(&prList, prNode);
-                                                        }
-                                                }
-                                                UnLockTaskList(systasklist, LTF_ALL);
-                                                FreeVec(patternBuf);
-                                        }
-                                        Forbid();
-                                }
-                                else
-                                {
-                                        struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
-                                        prNode->ln_Name = (char *) FindTask((UBYTE *)args[ARG_NAME]);
-                                        AddTail(&prList, prNode);
-                                }
-                        }
-                        if (!IsListEmpty(&prList))
-                        {
-                                struct Node *prNode, *tmpNode;
-                                ULONG mask = 0;
-
-                                /* Figure out the mask of flags to send. */
-                                if (args[ARG_ALL])
-                                {
-                                        mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D
-                                               | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F;
-                                }
-                                else
-                                {
-                                        mask = (args[ARG_C] != 0 ? SIGBREAKF_CTRL_C : 0)
-                                               | (args[ARG_D] != 0 ? SIGBREAKF_CTRL_D : 0)
-                                               | (args[ARG_E] != 0 ? SIGBREAKF_CTRL_E : 0)
-                                               | (args[ARG_F]!= 0 ? SIGBREAKF_CTRL_F : 0);
-
-                                        if (0 == mask)
-                                        {
-                                                mask = SIGBREAKF_CTRL_C; /* default */
-                                        }
-                                }
-                                ForeachNodeSafe(&prList, prNode, tmpNode)
-                                {
-                                        Remove(prNode);
-                                        pr = (struct Process *)prNode->ln_Name;
-                                        FreeVec(prNode);
-
-                                        Signal((struct Task *) pr, mask);
-                                }
-                                Permit();
-                        }
-                        else
-                        {
-                                /* There is no relevant error code, OBJECT_NOT_FOUND
-                                 * is a filesystem error, so we can't use that... */
-                                Permit();
-                                pr = (struct Process *) FindTask(NULL);
-
-                                BPTR errStream = (pr->pr_CES != BNULL)
-                                                 ? pr->pr_CES
-                                                 : Output();
-
-                                if (args[ARG_PROCESS])
-                                {
-                                        VFPrintf(errStream, "Break: Process %ld does not exist.\n", (APTR) args[ARG_PROCESS]);
-                                }
-                                else if (args[ARG_PORT])
-                                {
-                                        FPrintf(errStream, "Break: Port \"%s\" does not exist.\n", (LONG) args[ARG_PORT]);
-                                }
-                                else if (args[ARG_NAME])
-                                {
-                                        FPrintf(errStream, "Break: Task \"%s\" does not exist.\n", (LONG) args[ARG_NAME]);
-                                }
-                                else
-                                {
-                                        FPuts(errStream, "Break: Either PROCESS, PORT or NAME is required.\n");
-                                }
-                                error = -1;
-                        }
-
-                        FreeArgs(rd);
-                } /* ReadArgs() ok */
+                        UnLockTaskList(systasklist, LTF_ALL);
+                        FreeVec(patternBuf);
+                    }
+                    Forbid();
+                }
                 else
                 {
-                        error = IoErr();
+                    struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
+                    prNode->ln_Name = (char *) FindTask((UBYTE *)args[ARG_NAME]);
+                    AddTail(&prList, prNode);
                 }
+            }
+            if (!IsListEmpty(&prList))
+            {
+                struct Node *prNode, *tmpNode;
+                ULONG mask = 0;
 
-                FreeDosObject(DOS_RDARGS, rda);
-        } /* Got rda */
+                /* Figure out the mask of flags to send. */
+                if (args[ARG_ALL])
+                {
+                    mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D
+                               | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F;
+                }
+                else
+                {
+                    mask = (args[ARG_C] != 0 ? SIGBREAKF_CTRL_C : 0)
+                           | (args[ARG_D] != 0 ? SIGBREAKF_CTRL_D : 0)
+                           | (args[ARG_E] != 0 ? SIGBREAKF_CTRL_E : 0)
+                           | (args[ARG_F]!= 0 ? SIGBREAKF_CTRL_F : 0);
+
+                    if (0 == mask)
+                    {
+                        mask = SIGBREAKF_CTRL_C; /* default */
+                    }
+                }
+                ForeachNodeSafe(&prList, prNode, tmpNode)
+                {
+                    Remove(prNode);
+                    pr = (struct Process *)prNode->ln_Name;
+                    FreeVec(prNode);
+
+                    Signal((struct Task *) pr, mask);
+                }
+                Permit();
+            }
+            else
+            {
+                /* There is no relevant error code, OBJECT_NOT_FOUND
+                 * is a filesystem error, so we can't use that... */
+                Permit();
+                pr = (struct Process *) FindTask(NULL);
+
+                BPTR errStream = (pr->pr_CES != BNULL)
+                                 ? pr->pr_CES
+                                 : Output();
+
+                if (args[ARG_PROCESS])
+                {
+                    VFPrintf(errStream, "Break: Process %ld does not exist.\n", (APTR) args[ARG_PROCESS]);
+                }
+                else if (args[ARG_PORT])
+                {
+                    FPrintf(errStream, "Break: Port \"%s\" does not exist.\n", (LONG) args[ARG_PORT]);
+                }
+                else if (args[ARG_NAME])
+                {
+                    FPrintf(errStream, "Break: Task \"%s\" does not exist.\n", (LONG) args[ARG_NAME]);
+                }
+                else
+                {
+                    FPuts(errStream, "Break: Either PROCESS, PORT or NAME is required.\n");
+                }
+                error = -1;
+            }
+
+            FreeArgs(rd);
+        } /* ReadArgs() ok */
         else
         {
-                error = IoErr();
+            error = IoErr();
         }
 
-        if (error != 0 && error != -1)
-        {
-                PrintFault(error, "Break");
-                return RETURN_FAIL;
-        }
+        FreeDosObject(DOS_RDARGS, rda);
+    } /* Got rda */
+    else
+    {
+        error = IoErr();
+    }
 
-        SetIoErr(0);
+    if (error != 0 && error != -1)
+    {
+        PrintFault(error, "Break");
+        return RETURN_FAIL;
+    }
 
-        return 0;
+    SetIoErr(0);
+
+    return 0;
 }
