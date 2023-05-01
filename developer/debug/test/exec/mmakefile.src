@@ -34,7 +34,6 @@ EXECPUBLICFILES :=		\
     signaltest		\
     supertest		\
     tasklist		\
-    taskstorage \
     tasktest		\
     traptest		\
     vblank
