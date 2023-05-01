@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Break - send a signal to a process.
  */
@@ -85,8 +85,10 @@
 #include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/utility.h>
-#include <aros/crt_replacement.h>
+#include <proto/task.h>
+#include <resources/task.h>
+
+#include <string.h>
 
 #define ARG_TEMPLATE    "PROCESS/N,PORT,NAME/K,C/S,D/S,E/S,F/S,ALL/S"
 #define ARG_PROCESS     0
@@ -99,7 +101,7 @@
 #define ARG_ALL         7
 #define TOTAL_ARGS      8
 
-const TEXT version[] = "$VER: Break 42.2 (01.05.2023)";
+const TEXT version[] = "$VER: Break 42.3 (01.05.2023)";
 
 static const char exthelp[] =
         "Break: Send break signal(s) to a CLI process\n"
@@ -114,227 +116,155 @@ static const char exthelp[] =
 
 int __nocommandline = 1;
 
-static struct Task *findTaskPattern(CONST_STRPTR pattern);
-static struct Node *findNamePattern(struct List *list, CONST_STRPTR pattern);
 
 int
 main(void)
 {
-    struct RDArgs *rd, *rda = NULL;
+        struct RDArgs *rd, *rda = NULL;
+        struct List prList;
+        IPTR args[TOTAL_ARGS] = { };
 
-    IPTR args[TOTAL_ARGS] = { };
+        int error = 0;
 
-    int error = 0;
+        NEWLIST(&prList);
 
-    if ((rda = AllocDosObject(DOS_RDARGS, NULL)))
-    {
-        rda->RDA_ExtHelp = (STRPTR) exthelp;
-
-        if ((rd = ReadArgs(ARG_TEMPLATE, (IPTR *) args, rda)))
+        if ((rda = AllocDosObject(DOS_RDARGS, NULL)))
         {
-            struct Process *pr = NULL;
-            Forbid();
-            if (args[ARG_PROCESS])
-                    pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
-            else if (args[ARG_PORT])
-            {
-                struct MsgPort *MyPort;
-                if ((MyPort = (struct MsgPort*) FindPort((STRPTR) args[ARG_PORT])) != NULL)
-                {
-                    pr = (struct Process*) MyPort->mp_SigTask;
-                }
-            }
-            else if (args[ARG_NAME])
-            {
-                STRPTR pattern = (STRPTR)args[ARG_NAME];
-                ULONG patternBufferSize = Strlen(pattern) * 3;
-                STRPTR patternBuffer = AllocMem(patternBufferSize, MEMF_ANY);
-                if (patternBuffer)
-                {
-                    if (ParsePatternNoCase(pattern, patternBuffer, patternBufferSize) >= 0)
-                    {
-                        pr = (struct Process *) findTaskPattern(patternBuffer);
-                    }
-                    FreeMem(patternBuffer, patternBufferSize);
-                }
-            }
-            if (pr != NULL)
-            {
-                ULONG
-                mask = 0;
+                rda->RDA_ExtHelp = (STRPTR) exthelp;
 
-                /* Figure out the mask of flags to send. */
-                if (args[ARG_ALL])
+                if ((rd = ReadArgs(ARG_TEMPLATE, (IPTR *) args, rda)))
                 {
-                    mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D
-                               | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F;
-                }
+                        struct Process *pr = NULL;
+                        Forbid();
+                        if (args[ARG_PROCESS])
+                                pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
+                        else if (args[ARG_PORT])
+                        {
+                                struct MsgPort *MyPort;
+                                if ((MyPort = (struct MsgPort*) FindPort((STRPTR) args[ARG_PORT])) != NULL)
+                                {
+                                        pr = (struct Process*) MyPort->mp_SigTask;
+                                }
+                        }
+                        else if (args[ARG_NAME])
+                        {
+                                APTR TaskResBase = OpenResource("task.resource");
+                                if (TaskResBase)
+                                {
+                                        Permit();
+                                        int pbLen = ((strlen((char *)args[ARG_NAME]) + 1) << 1);
+                                        char *patternBuf = AllocVec(pbLen, MEMF_ANY);
+                                        if (patternBuf)
+                                        {
+                                                ParsePatternNoCase((char *)args[ARG_NAME], patternBuf, pbLen);
+
+                                                struct Task * task;
+                                                struct TaskList *systasklist = LockTaskList(LTF_ALL);
+                                                while ((task = NextTaskEntry(systasklist, LTF_ALL)) != NULL)
+                                                {
+                                                        if (MatchPatternNoCase(patternBuf, ((struct Node *)task)->ln_Name))
+                                                        {
+                                                                struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
+                                                                prNode->ln_Name = (char *) task;
+                                                                AddTail(&prList, prNode);
+                                                        }
+                                                }
+                                                UnLockTaskList(systasklist, LTF_ALL);
+                                                FreeVec(patternBuf);
+                                        }
+                                        Forbid();
+                                }
+                                else
+                                {
+                                        struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
+                                        prNode->ln_Name = (char *) FindTask((UBYTE *)args[ARG_NAME]);
+                                        AddTail(&prList, prNode);
+                                }
+                        }
+                        if (!IsListEmpty(&prList))
+                        {
+                                struct Node *prNode, *tmpNode;
+                                ULONG mask = 0;
+
+                                /* Figure out the mask of flags to send. */
+                                if (args[ARG_ALL])
+                                {
+                                        mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D
+                                               | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F;
+                                }
+                                else
+                                {
+                                        mask = (args[ARG_C] != 0 ? SIGBREAKF_CTRL_C : 0)
+                                               | (args[ARG_D] != 0 ? SIGBREAKF_CTRL_D : 0)
+                                               | (args[ARG_E] != 0 ? SIGBREAKF_CTRL_E : 0)
+                                               | (args[ARG_F]!= 0 ? SIGBREAKF_CTRL_F : 0);
+
+                                        if (0 == mask)
+                                        {
+                                                mask = SIGBREAKF_CTRL_C; /* default */
+                                        }
+                                }
+                                ForeachNodeSafe(&prList, prNode, tmpNode)
+                                {
+                                        Remove(prNode);
+                                        pr = (struct Process *)prNode->ln_Name;
+                                        FreeVec(prNode);
+
+                                        Signal((struct Task *) pr, mask);
+                                }
+                                Permit();
+                        }
+                        else
+                        {
+                                /* There is no relevant error code, OBJECT_NOT_FOUND
+                                 * is a filesystem error, so we can't use that... */
+                                Permit();
+                                pr = (struct Process *) FindTask(NULL);
+
+                                BPTR errStream = (pr->pr_CES != BNULL)
+                                                 ? pr->pr_CES
+                                                 : Output();
+
+                                if (args[ARG_PROCESS])
+                                {
+                                        VFPrintf(errStream, "Break: Process %ld does not exist.\n", (APTR) args[ARG_PROCESS]);
+                                }
+                                else if (args[ARG_PORT])
+                                {
+                                        FPrintf(errStream, "Break: Port \"%s\" does not exist.\n", (LONG) args[ARG_PORT]);
+                                }
+                                else if (args[ARG_NAME])
+                                {
+                                        FPrintf(errStream, "Break: Task \"%s\" does not exist.\n", (LONG) args[ARG_NAME]);
+                                }
+                                else
+                                {
+                                        FPuts(errStream, "Break: Either PROCESS, PORT or NAME is required.\n");
+                                }
+                                error = -1;
+                        }
+
+                        FreeArgs(rd);
+                } /* ReadArgs() ok */
                 else
                 {
-                    mask = (args[ARG_C] != 0 ? SIGBREAKF_CTRL_C : 0)
-                           | (args[ARG_D] != 0 ? SIGBREAKF_CTRL_D : 0)
-                           | (args[ARG_E] != 0 ? SIGBREAKF_CTRL_E : 0)
-                           | (args[ARG_F]!= 0 ? SIGBREAKF_CTRL_F : 0);
-
-                    if (0 == mask)
-                    {
-                        mask = SIGBREAKF_CTRL_C; /* default */
-                    }
+                        error = IoErr();
                 }
 
-                Signal((struct Task *) pr, mask);
-                Permit();
-            }
-            else
-            {
-                /* There is no relevant error code, OBJECT_NOT_FOUND
-                 * is a filesystem error, so we can't use that... */
-                Permit();
-                pr = (struct Process *) FindTask(NULL);
-
-                BPTR errStream = (pr->pr_CES != BNULL)
-                                 ? pr->pr_CES
-                                 : Output();
-
-                if (args[ARG_PROCESS])
-                {
-                    VFPrintf(errStream, "Break: Process %ld does not exist.\n", (APTR) args[ARG_PROCESS]);
-                }
-                else if (args[ARG_PORT])
-                {
-                    FPrintf(errStream, "Break: Port \"%s\" does not exist.\n", (LONG) args[ARG_PORT]);
-                }
-                else if (args[ARG_NAME])
-                {
-                    FPrintf(errStream, "Break: Task \"%s\" does not exist.\n", (LONG) args[ARG_NAME]);
-                }
-                else
-                {
-                    FPuts(errStream, "Break: Either PROCESS, PORT or NAME is required.\n");
-                }
-                error = -1;
-            }
-
-            FreeArgs(rd);
-        } /* ReadArgs() ok */
+                FreeDosObject(DOS_RDARGS, rda);
+        } /* Got rda */
         else
         {
-            error = IoErr();
+                error = IoErr();
         }
 
-        FreeDosObject(DOS_RDARGS, rda);
-    } /* Got rda */
-    else
-    {
-        error = IoErr();
-    }
-
-    if (error != 0 && error != -1)
-    {
-        PrintFault(error, "Break");
-        return RETURN_FAIL;
-    }
-
-    SetIoErr(0);
-
-    return 0;
-}
-
-
-/*
-    Like FindTask() but with case-insensitive pattern matching
-    The pattern must be prepared with ParsePatternNoCase().
-*/
-static struct Task *findTaskPattern(CONST_STRPTR pattern)
-{
-#if defined(__AROSEXEC_SMP__)
-    spinlock_t *listlock;
-#endif
-    struct Task *ret, *thisTask = FindTask(NULL);
-
-    /* Quick return for a quick argument */
-    if (pattern == NULL)
-        return thisTask;
-
-    /* Always protect task lists */
-#if defined(__AROSEXEC_SMP__)
-    EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskReadySpinLock);
-    listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
-#else
-    Disable();
-#endif
-
-    /* First look into the ready list. */
-    ret = (struct Task *)findNamePattern(&SysBase->TaskReady, pattern);
-    if (ret == NULL)
-    {
-#if defined(__AROSEXEC_SMP__)
-        EXEC_UNLOCK_AND_ENABLE(listlock);
-        EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskWaitSpinLock);
-        listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
-#endif
-        /* Then into the waiting list. */
-        ret = (struct Task *)findNamePattern(&SysBase->TaskWait, pattern);
-        if (ret == NULL)
+        if (error != 0 && error != -1)
         {
-            /*
-                Finally test the running task(s). This is mainly of importance on smp systems.
-            */
-#if defined(__AROSEXEC_SMP__)
-            EXEC_UNLOCK_AND_ENABLE(listlock);
-            EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-            listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
-            ret = (struct Task *)findNamePattern(&PrivExecBase(SysBase)->TaskRunning, pattern);
-            if (ret == NULL)
-            {
-                EXEC_UNLOCK_AND_ENABLE(listlock);
-                EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskSpinningLock);
-                listlock = &PrivExecBase(SysBase)->TaskSpinningLock;
-                ret = (struct Task *)findNamePattern(&PrivExecBase(SysBase)->TaskSpinning, pattern);
-            }
-#else
-            if (MatchPatternNoCase(pattern, thisTask->tc_Node.ln_Name))
-            {
-                ret = thisTask;
-            }
-#endif
+                PrintFault(error, "Break");
+                return RETURN_FAIL;
         }
-    }
 
-#if defined(__AROSEXEC_SMP__)
-    EXEC_UNLOCK_AND_ENABLE(listlock);
-#else
-    Enable();
-#endif
+        SetIoErr(0);
 
-    return ret;
-}
-
-
-/*
-    Like FindName() but with case-insensitive pattern matching
-    The pattern must be prepared with ParsePatternNoCase().
-*/
-static struct Node *findNamePattern(struct List *list, CONST_STRPTR pattern)
-{
-    struct Node *node;
-
-    if ((!list) || (!pattern))
-    {
-        return NULL;
-    }
-
-    /* Look through the list */
-    for (node=GetHead(list); node; node=GetSucc(node))
-    {
-        /* Only compare the names if this node has one. */
-        if (node->ln_Name)
-        {
-            /* Check the node. If we found it, stop. */
-            if (MatchPatternNoCase(pattern, node->ln_Name))
-                break;
-        }
-    }
-
-    return node;
+        return 0;
 }
