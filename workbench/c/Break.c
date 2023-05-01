@@ -137,13 +137,19 @@ main(void)
             struct Process *pr = NULL;
             Forbid();
             if (args[ARG_PROCESS])
-                pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
+            {
+                struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
+                prNode->ln_Name = (char *) FindCliProc(*(IPTR *) args[ARG_PROCESS]);;
+                AddTail(&prList, prNode);
+            }
             else if (args[ARG_PORT])
             {
                 struct MsgPort *MyPort;
                 if ((MyPort = (struct MsgPort*) FindPort((STRPTR) args[ARG_PORT])) != NULL)
                 {
-                    pr = (struct Process*) MyPort->mp_SigTask;
+                    struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
+                    prNode->ln_Name = (char *) MyPort->mp_SigTask;
+                    AddTail(&prList, prNode);
                 }
             }
             else if (args[ARG_NAME])
