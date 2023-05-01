@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 /*****************************************************************************
@@ -88,8 +88,9 @@
 
 static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, BOOL all,
                          struct Process *process);
+static struct Node *findNameNoCase(struct List *list, CONST_STRPTR name);
 
-AROS_SH5(Status,41.1,
+AROS_SH5(Status,41.2,
 AROS_SHA(LONG *, ,PROCESS,/N,NULL),
 AROS_SHA(BOOL, , FULL,/S,FALSE),
 AROS_SHA(BOOL, , TCB,/S,FALSE),
@@ -130,7 +131,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
         D(bug("Got RootLock\n"));
 
         cliList = (struct List *)&root->rn_CliList;
-        ci = (struct CLIInfo *)FindName(cliList, command);
+        ci = (struct CLIInfo *)findNameNoCase(cliList, command);
 
         if (ci != NULL)
         {
@@ -221,4 +222,29 @@ static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, BOOL a
     }
 
     Printf("\n");
+}
+
+/* Case-insensitive variant of FindName() */
+static struct Node *findNameNoCase(struct List *list, CONST_STRPTR name)
+{
+    struct Node *node;
+
+    if ((!list) || (!name))
+    {
+        return NULL;
+    }
+
+    /* Look through the list */
+    for (node=GetHead(list); node; node=GetSucc(node))
+    {
+        /* Only compare the names if this node has one. */
+        if (node->ln_Name)
+        {
+            /* Check the node. If we found it, stop. */
+            if (!stricmp(node->ln_Name, name))
+                break;
+        }
+    }
+
+    return node;
 }
