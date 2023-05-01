@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_AFLAGS  := -I$(GENINCDIR)
 USER_CPPFLAGS := -DDEBUG=0
-USER_INCLUDES := -I$(SRCDIR)/compiler/stdc
+USER_INCLUDES := -I$(SRCDIR)/compiler/crt/stdc
 ISA_FLOAT_FLAGS :=
 TARGET_ISA_AFLAGS := $(ISA_MC68020_FLAGS)
 
@@ -60,7 +60,7 @@ STDC_M68K_FILES += \
 
 %build_archspecific \
   mainmmake=compiler-stdc \
-  modname=stdc maindir=compiler/stdc \
+  modname=stdc maindir=compiler/crt/stdc \
   arch=m68k \
   files="$(STDC_M68K_FILES)" asmfiles="$(STDC_M68K_ASMFILES)"
 
