@@ -1,12 +1,14 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
+#include <proto/task.h>
 #include <proto/dos.h>
 
 #include <assert.h>
 
+APTR TaskResBase;
 static BPTR out;
 static LONG slot1, slot2, slot3;
 
@@ -17,6 +19,10 @@ static void printslot1(void)
 
 int main(void)
 {
+    TaskResBase = OpenResource("task.resource");
+    if (!TaskResBase)
+        return RETURN_FAIL;
+
     out = Output();
 
     slot1 = AllocTaskStorageSlot();
