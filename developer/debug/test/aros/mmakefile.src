@@ -1,0 +1,14 @@
+# Copyright (C) 2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=
+
+#MM- test : test-aros-detach
+#MM  test-aros-detach : includes linklibs
+
+%build_prog mmake=test-aros-detach \
+    progname=detach targetdir=$(AROS_TESTS)/aros \
+    files=detach detach=yes
+
+%common
