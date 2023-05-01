@@ -94,15 +94,15 @@ USER_LDFLAGS += -L$(AROS_CONTRIB_LIB) -lposixc
 
 %build_prog mmake=test-genmodule-library-autoopen-yes-cunit \
     progname=cunit-genmodule-autoopen targetdir=$(CUNITEXEDIR) \
-    uselibs="dummy cunit"
+    uselibs="dummy cunit posixc"
 
 %build_prog mmake=test-genmodule-library-library-yes-cunit \
     progname=cunit-genmodule-library targetdir=$(CUNITEXEDIR) \
-    uselibs="dummy cunit"
+    uselibs="dummy cunit posixc"
 
 %build_prog mmake=test-genmodule-library-relbase-yes-cunit \
     progname=cunit-genmodule-relbase targetdir=$(CUNITEXEDIR) \
-    uselibs="userel pertask cunit"
+    uselibs="userel pertask cunit posixc"
 
 #MM- test-genmodule-library-yes-cunit : test-genmodule-library-relbase-yes-cunit test-genmodule-library-autoopen-yes-cunit test-genmodule-library-library-yes-cunit
 #MM- test-genmodule-library-yes-cunit-quick : test-genmodule-library-relbase-yes-cunit-quick test-genmodule-library-autoopen-yes-cunit-quick test-genmodule-library-library-yes-cunit-quick

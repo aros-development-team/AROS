@@ -84,10 +84,10 @@ CUNITSTDCTESTFILES := \
 
 USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(CFLAGS_NO_BUILTIN) 
-USER_LDFLAGS := -L$(AROS_CONTRIB_LIB) -lposixc
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
 %build_progs mmake=test-dos-yes-cunit \
     files=$(CUNITSTDCTESTFILES) targetdir=$(CUNITEXEDIR) \
-    uselibs="cunit"
+    uselibs="cunit posixc"
 
 %common

@@ -84,8 +84,8 @@ USER_CPPFLAGS :=
 USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 STDC_BASE_CFLAGS := -noposixc -ffloat-store $(CFLAGS_NO_BUILTIN) 
 USER_CFLAGS := $(STDC_BASE_CFLAGS)
-USER_LDFLAGS := -L$(AROS_CONTRIB_LIB) -lposixc
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
 %build_prog mmake=test-crt-stdc-math-yes-cunit \
     files=cunit-crt-math targetdir=$(CUNITEXEDIR) \
-    progname=cunit-crt-math uselibs="cunit"
+    progname=cunit-crt-math uselibs="cunit posixc"

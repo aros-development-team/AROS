@@ -84,10 +84,10 @@ USER_CFLAGS := -noposixc
 
 USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(STDC_BASE_CFLAGS)
-USER_LDFLAGS := -L$(AROS_CONTRIB_LIB) -lposixc
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
 %build_progs mmake=test-exec-yes-cunit \
     files=$(CUNITEXECTESTFILES) targetdir=$(CUNITEXEDIR) \
-    uselibs="cunit"
+    uselibs="cunit posixc"
 
 %common
