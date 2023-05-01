@@ -43,6 +43,16 @@
         Not all programs respond to these signals, however most should
         respond to CTRL-C.
 
+    INPUTS
+        PROCESS     --  Process Identification number.
+        PORT        --  Public port name.
+        NAME        --  Process Name. Wildcards are supported.
+        ALL         --  All signals are sent.
+        C           --  Signal CTRL-C is sent.
+        D           --  Signal CTRL-D is sent.
+        E           --  Signal CTRL-E is sent.
+        F           --  Signal CTRL-F is sent.
+
     EXAMPLE
 
         1.SYS:> BREAK 1
@@ -57,6 +67,14 @@
 
             Send the CTRL-C signal to the process named "c:dhcpclient".
 
+        1.SYS:> BREAK NAME COPY#?
+
+            Send the CTRL-C signal to the process which matches the pattern COPY#?.
+
+    BUGS
+        Only one process is signalled when using wildcards
+
+
 ******************************************************************************/
 
 #include <exec/types.h>
@@ -67,6 +85,8 @@
 #include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
+#include <aros/crt_replacement.h>
 
 #define ARG_TEMPLATE    "PROCESS/N,PORT,NAME/K,C/S,D/S,E/S,F/S,ALL/S"
 #define ARG_PROCESS     0
@@ -79,7 +99,7 @@
 #define ARG_ALL         7
 #define TOTAL_ARGS      8
 
-const TEXT version[] = "$VER: Break 42.1 (8.12.2007)";
+const TEXT version[] = "$VER: Break 42.2 (01.05.2023)";
 
 static const char exthelp[] =
         "Break: Send break signal(s) to a CLI process\n"
@@ -94,6 +114,8 @@ static const char exthelp[] =
 
 int __nocommandline = 1;
 
+static struct Task *findTaskPattern(CONST_STRPTR pattern);
+static struct Node *findNamePattern(struct List *list, CONST_STRPTR pattern);
 
 int
 main(void)
@@ -124,7 +146,17 @@ main(void)
             }
             else if (args[ARG_NAME])
             {
-                pr = (struct Process *) FindTask((UBYTE *)args[ARG_NAME]);
+                STRPTR pattern = (STRPTR)args[ARG_NAME];
+                ULONG patternBufferSize = Strlen(pattern) * 3;
+                STRPTR patternBuffer = AllocMem(patternBufferSize, MEMF_ANY);
+                if (patternBuffer)
+                {
+                    if (ParsePatternNoCase(pattern, patternBuffer, patternBufferSize) >= 0)
+                    {
+                        pr = (struct Process *) findTaskPattern(patternBuffer);
+                    }
+                    FreeMem(patternBuffer, patternBufferSize);
+                }
             }
             if (pr != NULL)
             {
@@ -206,4 +238,103 @@ main(void)
     SetIoErr(0);
 
     return 0;
+}
+
+
+/*
+    Like FindTask() but with case-insensitive pattern matching
+    The pattern must be prepared with ParsePatternNoCase().
+*/
+static struct Task *findTaskPattern(CONST_STRPTR pattern)
+{
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t *listlock;
+#endif
+    struct Task *ret, *thisTask = FindTask(NULL);
+
+    /* Quick return for a quick argument */
+    if (pattern == NULL)
+        return thisTask;
+
+    /* Always protect task lists */
+#if defined(__AROSEXEC_SMP__)
+    EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
+#else
+    Disable();
+#endif
+
+    /* First look into the ready list. */
+    ret = (struct Task *)findNamePattern(&SysBase->TaskReady, pattern);
+    if (ret == NULL)
+    {
+#if defined(__AROSEXEC_SMP__)
+        EXEC_UNLOCK_AND_ENABLE(listlock);
+        EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskWaitSpinLock);
+        listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
+#endif
+        /* Then into the waiting list. */
+        ret = (struct Task *)findNamePattern(&SysBase->TaskWait, pattern);
+        if (ret == NULL)
+        {
+            /*
+                Finally test the running task(s). This is mainly of importance on smp systems.
+            */
+#if defined(__AROSEXEC_SMP__)
+            EXEC_UNLOCK_AND_ENABLE(listlock);
+            EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+            listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
+            ret = (struct Task *)findNamePattern(&PrivExecBase(SysBase)->TaskRunning, pattern);
+            if (ret == NULL)
+            {
+                EXEC_UNLOCK_AND_ENABLE(listlock);
+                EXEC_LOCK_READ_AND_DISABLE(&PrivExecBase(SysBase)->TaskSpinningLock);
+                listlock = &PrivExecBase(SysBase)->TaskSpinningLock;
+                ret = (struct Task *)findNamePattern(&PrivExecBase(SysBase)->TaskSpinning, pattern);
+            }
+#else
+            if (MatchPatternNoCase(pattern, thisTask->tc_Node.ln_Name))
+            {
+                ret = thisTask;
+            }
+#endif
+        }
+    }
+
+#if defined(__AROSEXEC_SMP__)
+    EXEC_UNLOCK_AND_ENABLE(listlock);
+#else
+    Enable();
+#endif
+
+    return ret;
+}
+
+
+/*
+    Like FindName() but with case-insensitive pattern matching
+    The pattern must be prepared with ParsePatternNoCase().
+*/
+static struct Node *findNamePattern(struct List *list, CONST_STRPTR pattern)
+{
+    struct Node *node;
+
+    if ((!list) || (!pattern))
+    {
+        return NULL;
+    }
+
+    /* Look through the list */
+    for (node=GetHead(list); node; node=GetSucc(node))
+    {
+        /* Only compare the names if this node has one. */
+        if (node->ln_Name)
+        {
+            /* Check the node. If we found it, stop. */
+            if (MatchPatternNoCase(pattern, node->ln_Name))
+                break;
+        }
+    }
+
+    return node;
 }
