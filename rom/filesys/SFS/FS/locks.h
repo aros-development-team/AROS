@@ -9,6 +9,9 @@ struct ExtFileLock
 {
   BPTR  link;
   NODE  objectnode;
+#if (__WORDSIZE==64)
+  ULONG eflpad;
+#endif
   LONG  access;
   struct MsgPort *task;
   BPTR  volume;
