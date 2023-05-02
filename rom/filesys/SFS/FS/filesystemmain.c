@@ -510,17 +510,23 @@ static int sfsExamineAll(struct ExAllControl *eac,
     default:
     case ED_OWNER:
         *eadsize += 4;			/* ed_OwnedGID, ed_OwnedUID */
+        // fall through
     case ED_COMMENT:
         *stringsize += strlen(oname + namelength + 1) + 1;
         *eadsize += sizeof(UBYTE *);	/* ed_Comment */
+        // fall through
     case ED_DATE:
         *eadsize += 12;			/* ed_Ticks, ed_Mins, ed_Days */
+        // fall through
     case ED_PROTECTION:
         *eadsize += 4;			/* ed_Prot */
+        // fall through
     case ED_SIZE:
         *eadsize += 4;			/* ed_Size */
+        // fall through
     case ED_TYPE:
         *eadsize += 4;
+        // fall through
     case ED_NAME:
         *stringsize += namelength + 1;
         *eadsize += sizeof(APTR) * 2;	/* ed_Name, ed_Next */
@@ -538,6 +544,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
     case ED_OWNER:
         ead->ed_OwnerUID=BE2W(o->be_owneruid);
         ead->ed_OwnerGID=BE2W(o->be_ownergid);
+        // fall through
     case ED_COMMENT:
         {
             UBYTE *src=oname+namelength+1;
@@ -546,23 +553,27 @@ static int sfsExamineAll(struct ExAllControl *eac,
             ead->ed_Comment=dest;
 
             while(*src!=0) {
-                *dest++=*src++;
-                *eadsize++;
+                *(dest++)=*(src++);
+                (*eadsize)++;
             }
 
             *dest=0;
-            *eadsize++;
+            (*eadsize)++;
         }
+        // fall through
     case ED_DATE:
         datetodatestamp(BE2L(o->be_datemodified),(struct DateStamp *)&ead->ed_Days);
+        // fall through
     case ED_PROTECTION:
         ead->ed_Prot=BE2L(o->be_protection)^(FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE);
+        // fall through
     case ED_SIZE:
         if((o->bits & OTYPE_DIR)==0) {
             ead->ed_Size=BE2L(o->object.file.be_size);
         } else {
             ead->ed_Size=0;
         }
+        // fall through
     case ED_TYPE:
         _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_objectnode)));
         if((o->bits & OTYPE_LINK)!=0) {
@@ -576,6 +587,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
         } else {
             ead->ed_Type = ST_USERDIR;
         }
+        // fall through
     case ED_NAME:
         {
             UBYTE *src = oname;
@@ -584,12 +596,12 @@ static int sfsExamineAll(struct ExAllControl *eac,
             ead->ed_Name=dest;
 
             while(*src!=0) {
-                *dest++=*src++;
-                *eadsize++;
+                *(dest++)=*(src++);
+                (*eadsize)++;
             }
 
             *dest=0;
-            *eadsize++;
+            (*eadsize)++;
 //            _DEBUG(("Stored entry %s\n",ead->ed_Name));
         }
     }
@@ -1972,8 +1984,8 @@ void mainloop(void) {
                     break;
                   }
   
-                  if(newpos>=0 && newpos<=gh->size) {
-                    if(newpos!=oldpos) {
+                  if(newpos>=0 && newpos<=(LONG)gh->size) {
+                    if((ULONG)newpos!=oldpos) {
                       errorcode=seek(lock,newpos);
                     }
                     else {
@@ -2170,16 +2182,14 @@ void mainloop(void) {
                     returnpacket(DOSFALSE,ERROR_BAD_NUMBER);
                     break;
                   }
-  
                   if(eac->eac_LastKey==0) {
                     if((errorcode=readobject(lock->objectnode,&cb,&o))==0) {
                       if((o->bits & OTYPE_DIR)!=0) {
                         if(o->object.dir.be_firstdirblock!=0) {
                           if((errorcode=readcachebuffercheck(&cb,BE2L(o->object.dir.be_firstdirblock),OBJECTCONTAINER_ID))==0) {
                             struct fsObjectContainer *oc=cb->data;
-  
                             o=oc->object;
-                            eac->eac_LastKey=BE2L(o->be_objectnode);
+                            eac->eac_LastKey = 0 + BE2L(o->be_objectnode);
                           }
                         }
                         else {
@@ -2192,22 +2202,23 @@ void mainloop(void) {
                     }
                   }
                   else {
-                    if((errorcode=readobject(eac->eac_LastKey,&cb,&o))==ERROR_IS_SOFT_LINK) {
+                    ULONG blcknode = (ULONG)eac->eac_LastKey;
+                    if((errorcode=readobject(blcknode,&cb,&o))==ERROR_IS_SOFT_LINK) {
                       errorcode=0;
                     }
                   }
   
                   while(errorcode==0) {
                     if (!sfsExamineAll(eac, ead, &prevead, cb, o, (char *)&o->name[0], &eadsize, &stringsize, &spaceleft, &errorcode))
+                    {
                       break;
+                    }
                   }
   
                   if(errorcode!=0) {
                     returnpacket(DOSFALSE,errorcode);
                   }
-                  else {
-                    returnpacket(DOSTRUE,0);
-                  }
+                  returnpacket(DOSTRUE,0);
                 }
                 break;
               case ACTION_EXAMINE_NEXT:
@@ -2872,7 +2883,7 @@ void mainloop(void) {
                 break;
               }
             }
-            else if(globals->disktype==ID_NO_DISK_PRESENT) {
+            else if(globals->disktype==(ULONG)ID_NO_DISK_PRESENT) {
               dumppackets(globals->packet,ERROR_NO_DISK);
             }
             else {
@@ -3351,7 +3362,7 @@ LONG initdisk() {
             while(cnt-->0 && (errorcode=readcachebuffercheck(&cb,bitmapblock,BITMAP_ID))==0) {
               b=cb->data;
 
-              for(n=0; n<((globals->bytes_block-sizeof(struct fsBitmap))>>2); n++) {
+              for(n = 0; n < ((WORD)((globals->bytes_block-sizeof(struct fsBitmap)) >> 2)); n++) {
                 if(b->bitmap[n]!=0) {
                   if(b->bitmap[n]==0xFFFFFFFF) {
                     blocksfree+=32;
@@ -4359,7 +4370,7 @@ void seekforward(struct ExtFileLock *lock, UWORD ebn_blocks, BLCK ebn_next, ULON
 
   lock->offset+=bytestoseek;
   lock->extentoffset+=bytestoseek;
-  if(lock->extentoffset >= ebn_blocks<<globals->shifts_block && ebn_next!=0) {
+  if(lock->extentoffset >= (ULONG)ebn_blocks<<globals->shifts_block && ebn_next!=0) {
     lock->extentoffset=0;
     lock->curextent=ebn_next;
   }
@@ -5540,8 +5551,8 @@ static LONG copy(BLCK source, BLCK dest, ULONG totblocks, UBYTE *optimizebuffer)
 
   while(totblocks!=0) {
     blocks=totblocks;
-    if(blocks > (OPTBUFSIZE>>globals->shifts_block)) {
-      blocks=OPTBUFSIZE>>globals->shifts_block;
+    if(blocks > ((ULONG)OPTBUFSIZE>>globals->shifts_block)) {
+      blocks = (ULONG)OPTBUFSIZE>>globals->shifts_block;
     }
 
     if((errorcode=read(source, optimizebuffer, blocks))!=0) {
@@ -6339,13 +6350,13 @@ LONG step(void) {
 
       if((errorcode=findbnode(globals->block_extentbnoderoot, globals->block_defragptr, &cb, (struct BNode **)&ebn))==0) {
         if(ebn==0 || BE2L(ebn->be_key)!=globals->block_defragptr) {
-          LONG block;
+          BLCK block;
 
           _DEBUG(("Defragmenter: Found unmoveable data at block %ld.\n", globals->block_defragptr));
 
           /* Skip unmoveable data */
 
-          if((block=skipunmoveable(globals->block_defragptr))!=-1) {
+          if((block=(BLCK)skipunmoveable(globals->block_defragptr))!=(BLCK)-1) {
             globals->block_defragptr=block;
           }
           else {
@@ -6388,11 +6399,11 @@ LONG step(void) {
                 errorcode=fillgap(key);
               }
               else {
-                LONG block;
+                BLCK block;
 
                 /* Determine which extent it is which is located directly after the current extent. */
 
-                if((block=skipunmoveable(key+blocks))!=-1) {
+                if((block=(BLCK)skipunmoveable(key+blocks))!=(BLCK)-1) {
                   if(block==key+blocks) {
 
                     _DEBUG(("Defragmenter: There was a moveable extent after the extent at block %ld.\n", key));

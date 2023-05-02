@@ -8,7 +8,7 @@
 struct ExtFileLock
 {
   BPTR  link;
-  IPTR  objectnode;
+  NODE  objectnode;
   LONG  access;
   struct MsgPort *task;
   BPTR  volume;

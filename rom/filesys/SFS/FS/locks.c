@@ -47,13 +47,13 @@ LONG lockable(NODE objectnode,LONG accessmode) {
 
 
 
-void __inline settemporarylock(NODE objectnode) {
+__inline void settemporarylock(NODE objectnode) {
   globals->templockedobjectnode=objectnode;
 }
 
 
 
-void __inline cleartemporarylock(void) {
+__inline void cleartemporarylock(void) {
   globals->templockedobjectnode=0;
 }
 
