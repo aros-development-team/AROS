@@ -72,8 +72,6 @@
             Send the CTRL-C signal to the process which matches the pattern COPY#?.
 
     BUGS
-        Only one process is signalled when using wildcards
-
 
 ******************************************************************************/
 
