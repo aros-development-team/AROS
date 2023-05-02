@@ -18,11 +18,11 @@ PATCHSPEC       := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
 REPOSITORIES    := https://download.savannah.gnu.org/releases/freetype
 
 %fetch mmake=freetype2-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/$(FT2NAME)2 \
-    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.gz" \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.xz tar.gz" \
     patches_specs=$(PATCHSPEC)
 
 %create_patch mmake=freetype2-create-patch \
-    archive=$(ARCHBASE) suffixes="tar.gz" \
+    archive=$(ARCHBASE) suffixes="tar.xz tar.gz" \
     destination=$(PORTSDIR)/$(FT2NAME)2
 
 FT2AUXFILES := \
