@@ -179,9 +179,9 @@ void mainloop(void);
 #define MINOR_VERSION (84)
 
 #ifdef __GNUC__
-const char ver_version[] = "\0$VER: " PROGRAMNAMEVER " 1.84 (" ADATE ")\r\n";
+const char ver_version[] = "\0$VER: " PROGRAMNAMEVER " 1.85 (" ADATE ")\r\n";
 #else
-static const char ver_version[] = {"\0$VER: " PROGRAMNAMEVER " 1.84 " __AMIGADATE__ "\r\n"};
+static const char ver_version[] = {"\0$VER: " PROGRAMNAMEVER " 1.85 " __AMIGADATE__ "\r\n"};
 #endif
 
 #ifdef __AROS__
