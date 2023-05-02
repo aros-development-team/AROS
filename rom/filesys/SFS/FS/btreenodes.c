@@ -57,13 +57,13 @@ void removebnode(ULONG key,struct BTreeContainer *btc);
 
 
 
-static void __inline copywordsforward(UWORD *src,UWORD *dst,UWORD len) {
+__inline static void copywordsforward(UWORD *src,UWORD *dst,UWORD len) {
   while(len-->0) {
     *dst++=*src++;
   }
 }
 
-static void __inline copywordsbackward(UWORD *src,UWORD *dst,UWORD len) {
+__inline static void copywordsbackward(UWORD *src,UWORD *dst,UWORD len) {
   while(len-->0) {
     *--dst=*--src;
   }

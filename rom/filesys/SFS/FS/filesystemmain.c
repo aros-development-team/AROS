@@ -108,7 +108,7 @@ struct SFSBase *globals=NULL;
 
 static struct DosPacket *getpacket(struct Process *);
 static struct DosPacket *waitpacket(struct Process *);
-static void returnpacket(SIPTR,LONG);
+static void returnpacket(SIPTR,SIPTR);
 static void sdlhtask(void);
 
 /* Prototypes of cachebuffer related functions */
@@ -490,21 +490,21 @@ static void sfsCopyBSTRSafe(BSTR src, char *dst, ULONG len)
 }
 
 static int sfsExamineAll(struct ExAllControl *eac,
-                                    struct ExAllData *ead,
+                                    struct ExAllData **ead,
                                     struct ExAllData **prevead,
                                     struct CacheBuffer *cb,
-                                    struct fsObject *o,
+                                    struct fsObject **o,
                                     char *oname,
                                     ULONG *eadsize,
                                     ULONG *stringsize,
                                     LONG *spaceleft,
                                     LONG *errorcode)
 {
-    WORD namelength=strlen(oname);
+    WORD namelength = strlen(oname);
     WORD keepentry;
 
-    *stringsize=0;
-    *eadsize=0;
+    *stringsize = 0;
+    *eadsize = 0;
 
     switch(globals->packet->dp_Arg4) {
     default:
@@ -512,7 +512,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
         *eadsize += 4;			/* ed_OwnedGID, ed_OwnedUID */
         // fall through
     case ED_COMMENT:
-        *stringsize += strlen(oname + namelength + 1) + 1;
+        *stringsize += strlen((char *)((IPTR)oname + namelength + 1)) + 1;
         *eadsize += sizeof(UBYTE *);	/* ed_Comment */
         // fall through
     case ED_DATE:
@@ -542,15 +542,15 @@ static int sfsExamineAll(struct ExAllControl *eac,
     switch(globals->packet->dp_Arg4) {
     default:
     case ED_OWNER:
-        ead->ed_OwnerUID=BE2W(o->be_owneruid);
-        ead->ed_OwnerGID=BE2W(o->be_ownergid);
+        (*ead)->ed_OwnerUID=BE2W((*o)->be_owneruid);
+        (*ead)->ed_OwnerGID=BE2W((*o)->be_ownergid);
         // fall through
     case ED_COMMENT:
         {
-            UBYTE *src=oname+namelength+1;
-            UBYTE *dest=(UBYTE *)ead+*eadsize;
+            UBYTE *src=(UBYTE *)((IPTR)oname + namelength + 1);
+            UBYTE *dest=(UBYTE *)((IPTR)*ead + *eadsize);
 
-            ead->ed_Comment=dest;
+            (*ead)->ed_Comment=dest;
 
             while(*src!=0) {
                 *dest++=*src++;
@@ -562,38 +562,38 @@ static int sfsExamineAll(struct ExAllControl *eac,
         }
         // fall through
     case ED_DATE:
-        datetodatestamp(BE2L(o->be_datemodified),(struct DateStamp *)&ead->ed_Days);
+        datetodatestamp(BE2L((*o)->be_datemodified),(struct DateStamp *)&(*ead)->ed_Days);
         // fall through
     case ED_PROTECTION:
-        ead->ed_Prot=BE2L(o->be_protection)^(FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE);
+        (*ead)->ed_Prot=BE2L((*o)->be_protection)^(FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE);
         // fall through
     case ED_SIZE:
-        if((o->bits & OTYPE_DIR)==0) {
-            ead->ed_Size=BE2L(o->object.file.be_size);
+        if(((*o)->bits & OTYPE_DIR)==0) {
+            (*ead)->ed_Size=BE2L((*o)->object.file.be_size);
         } else {
-            ead->ed_Size=0;
+            (*ead)->ed_Size=0;
         }
         // fall through
     case ED_TYPE:
-        _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_objectnode)));
-        if((o->bits & OTYPE_LINK)!=0) {
-            ead->ed_Type = ST_SOFTLINK;
+        _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", (*o)->bits, BE2L((*o)->be_objectnode)));
+        if(((*o)->bits & OTYPE_LINK)!=0) {
+            (*ead)->ed_Type = ST_SOFTLINK;
         }
-        if((o->bits & OTYPE_DIR)==0) {
-            ead->ed_Type = ST_FILE;
+        if(((*o)->bits & OTYPE_DIR)==0) {
+            (*ead)->ed_Type = ST_FILE;
         }
-        else if (o->be_objectnode == L2BE(ROOTNODE)) {
-            ead->ed_Type = ST_ROOT;
+        else if ((*o)->be_objectnode == L2BE(ROOTNODE)) {
+            (*ead)->ed_Type = ST_ROOT;
         } else {
-            ead->ed_Type = ST_USERDIR;
+            (*ead)->ed_Type = ST_USERDIR;
         }
         // fall through
     case ED_NAME:
         {
             UBYTE *src = oname;
-            UBYTE *dest = (UBYTE *)ead+*eadsize;
+            UBYTE *dest = (UBYTE *)((IPTR)*ead + *eadsize);
 
-            ead->ed_Name=dest;
+            (*ead)->ed_Name = dest;
 
             while(*src!=0) {
                 *dest++=*src++;
@@ -602,33 +602,33 @@ static int sfsExamineAll(struct ExAllControl *eac,
 
             *dest=0;
             *eadsize += 1;
-//            _DEBUG(("Stored entry %s\n",ead->ed_Name));
+//            _DEBUG(("Stored entry %s\n",(*ead)->ed_Name));
         }
     }
 
-    if(eac->eac_MatchString!=0) {
-        keepentry=MatchPatternNoCase(eac->eac_MatchString,ead->ed_Name);
+    if(eac->eac_MatchString != NULL) {
+        keepentry=MatchPatternNoCase(eac->eac_MatchString,(*ead)->ed_Name);
     } else {
         keepentry=DOSTRUE;
     }
 
-    if(keepentry!=DOSFALSE && eac->eac_MatchFunc!=0) {
+    if(keepentry == DOSTRUE && eac->eac_MatchFunc != NULL) {
 #ifdef __AROS__
-        keepentry=CALLHOOKPKT(eac->eac_MatchFunc, ead, (APTR)globals->packet->dp_Arg4);
+        keepentry=CALLHOOKPKT(eac->eac_MatchFunc, *ead, (APTR)globals->packet->dp_Arg4);
 #else
         LONG __asm(*hookfunc)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG)=(LONG __asm(*)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG))eac->eac_MatchFunc->h_Entry;
-        keepentry=hookfunc(eac->eac_MatchFunc,ead,packet->dp_Arg4);
+        keepentry=hookfunc(eac->eac_MatchFunc, *ead,packet->dp_Arg4);
 #endif
     }
 
-    if(keepentry!=DOSFALSE && (o->bits & OTYPE_HIDDEN)==0) {
-        ead->ed_Next = 0;
+    if(keepentry == DOSTRUE && ((*o)->bits & OTYPE_HIDDEN)==0) {
+        (*ead)->ed_Next = 0;
         *eadsize = (*eadsize + sizeof(APTR) - 1) & ~(sizeof(APTR) - 1);
-        if(*prevead != 0) {
-            (*prevead)->ed_Next=ead;
+        if(*prevead != NULL) {
+            (*prevead)->ed_Next = *ead;
         }
-        *prevead = ead;
-        ead = (struct ExAllData *)((UBYTE *)ead+*eadsize);
+        *prevead = *ead;
+        *ead = (struct ExAllData *)((IPTR)*ead + *eadsize);
         *spaceleft -= *eadsize;
         eac->eac_Entries++;
     }
@@ -637,17 +637,17 @@ static int sfsExamineAll(struct ExAllControl *eac,
         struct fsObjectContainer *oc=cb->data;
         UBYTE *endadr;
 
-        o=nextobject(o);
+        *o = nextobject(*o);
 
-        endadr=(UBYTE *)oc+globals->bytes_block-sizeof(struct fsObject)-2;
+        endadr=(UBYTE *)((IPTR)oc + globals->bytes_block - sizeof(struct fsObject) - 2);
 
-        if((UBYTE *)o>=endadr || oname[0]==0) {
+        if((UBYTE *)*o >= endadr || oname[0]==0) {
             if(oc->be_next!=0) {
-                if((*errorcode=readcachebuffercheck(&cb,BE2L(oc->be_next),OBJECTCONTAINER_ID))==0) {
-                    struct fsObjectContainer *oc=cb->data;
+                if((*errorcode = readcachebuffercheck(&cb, BE2L(oc->be_next), OBJECTCONTAINER_ID))==0) {
+                    struct fsObjectContainer *oc = cb->data;
 
-                    o=oc->object;
-                    eac->eac_LastKey=BE2L(o->be_objectnode);
+                    *o = oc->object;
+                    eac->eac_LastKey= 0 + BE2L((*o)->be_objectnode);
                 }
             }
             else {
@@ -655,7 +655,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
             }
         }
         else {
-            eac->eac_LastKey=BE2L(o->be_objectnode);
+            eac->eac_LastKey= 0 + BE2L((*o)->be_objectnode);
         }
     }
     return 1;
@@ -2155,7 +2155,7 @@ void mainloop(void) {
                 {
                     struct ExtFileLock *lock;
                     struct ExAllData *ead;
-                    struct ExAllData *prevead=0;
+                    struct ExAllData *prevead = NULL;
                     struct ExAllControl *eac;
                     struct CacheBuffer *cb;
                     struct fsObject *o;
@@ -2167,7 +2167,7 @@ void mainloop(void) {
                   lock=(struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
                   ead=(struct ExAllData *)globals->packet->dp_Arg2;
                   eac=(struct ExAllControl *)globals->packet->dp_Arg5;
-                  spaceleft=globals->packet->dp_Arg3;
+                  spaceleft=(LONG)globals->packet->dp_Arg3;
 
                   eac->eac_Entries=0;
 
@@ -2184,8 +2184,8 @@ void mainloop(void) {
                   }
                   if(eac->eac_LastKey==0) {
                     if((errorcode=readobject(lock->objectnode,&cb,&o))==0) {
-                      if((o->bits & OTYPE_DIR)!=0) {
-                        if(o->object.dir.be_firstdirblock!=0) {
+                      if((o->bits & OTYPE_DIR) != 0) {
+                        if(o->object.dir.be_firstdirblock != 0) {
                           if((errorcode=readcachebuffercheck(&cb,BE2L(o->object.dir.be_firstdirblock),OBJECTCONTAINER_ID))==0) {
                             struct fsObjectContainer *oc=cb->data;
                             o=oc->object;
@@ -2209,7 +2209,7 @@ void mainloop(void) {
                   }
   
                   while(errorcode==0) {
-                    if (!sfsExamineAll(eac, ead, &prevead, cb, o, (char *)&o->name[0], &eadsize, &stringsize, &spaceleft, &errorcode))
+                    if (!sfsExamineAll(eac, &ead, &prevead, cb, &o, (char *)&o->name[0], &eadsize, &stringsize, &spaceleft, &errorcode))
                     {
                       break;
                     }
@@ -2985,7 +2985,7 @@ static struct DosPacket *waitpacket(struct Process *p) {
 
 
 
-static void returnpacket(SIPTR res1,LONG res2) {
+static void returnpacket(SIPTR res1, SIPTR res2) {
   struct Message *msg;
   struct MsgPort *replyport;
 
@@ -3007,7 +3007,7 @@ static void returnpacket(SIPTR res1,LONG res2) {
 
 
 
-static void returnpacket2(struct DosPacket *packet, SIPTR res1, LONG res2)
+static void returnpacket2(struct DosPacket *packet, SIPTR res1, SIPTR res2)
 {
   struct Message *msg;
   struct MsgPort *replyport;
