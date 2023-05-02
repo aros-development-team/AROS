@@ -553,12 +553,12 @@ static int sfsExamineAll(struct ExAllControl *eac,
             ead->ed_Comment=dest;
 
             while(*src!=0) {
-                *(dest++)=*(src++);
-                (*eadsize)++;
+                *dest++=*src++;
+                *eadsize += 1;
             }
 
             *dest=0;
-            (*eadsize)++;
+            *eadsize += 1;
         }
         // fall through
     case ED_DATE:
@@ -596,12 +596,12 @@ static int sfsExamineAll(struct ExAllControl *eac,
             ead->ed_Name=dest;
 
             while(*src!=0) {
-                *(dest++)=*(src++);
-                (*eadsize)++;
+                *dest++=*src++;
+                *eadsize += 1;
             }
 
             *dest=0;
-            (*eadsize)++;
+            *eadsize += 1;
 //            _DEBUG(("Stored entry %s\n",ead->ed_Name));
         }
     }
