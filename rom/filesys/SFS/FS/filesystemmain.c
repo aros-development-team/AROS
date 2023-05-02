@@ -529,7 +529,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
 
 //    _DEBUG(("ACTION_EXAMINE_ALL: *eadsize = %ld, *stringsize = %ld, *spaceleft = %ld, packet->dp_Arg4 = %ld\n",*eadsize,*stringsize,*spaceleft,packet->dp_Arg4));
 
-    if(*spaceleft < *eadsize + *stringsize) {
+    if(*spaceleft < (LONG)(*eadsize + *stringsize)) {
         return 0;
     }
 
