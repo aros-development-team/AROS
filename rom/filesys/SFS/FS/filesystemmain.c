@@ -575,7 +575,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
         }
         // fall through
     case ED_TYPE:
-        _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", (*o)->bits, BE2L((*o)->be_objectnode)));
+        _DEBUG(("examine ED_TYPE, o->bits=%08x, o->objectnode=$%08x\n", (*o)->bits, BE2L((*o)->be_objectnode)));
         if(((*o)->bits & OTYPE_LINK)!=0) {
             (*ead)->ed_Type = ST_SOFTLINK;
         }
@@ -638,24 +638,25 @@ static int sfsExamineAll(struct ExAllControl *eac,
         UBYTE *endadr;
 
         *o = nextobject(*o);
-
+        oname = (char *)&(*o)->name[0];
         endadr=(UBYTE *)((IPTR)oc + globals->bytes_block - sizeof(struct fsObject) - 2);
 
         if((UBYTE *)*o >= endadr || oname[0]==0) {
-            if(oc->be_next!=0) {
-                if((*errorcode = readcachebuffercheck(&cb, BE2L(oc->be_next), OBJECTCONTAINER_ID))==0) {
-                    struct fsObjectContainer *oc = cb->data;
+            if(oc->be_next != 0) {
+                if((*errorcode=readcachebuffercheck(&cb,BE2L(oc->be_next),OBJECTCONTAINER_ID))==0) {
+                    struct fsObjectContainer *oc=cb->data;
 
                     *o = oc->object;
-                    eac->eac_LastKey= 0 + BE2L((*o)->be_objectnode);
+                    eac->eac_LastKey = BE2L((*o)->be_objectnode);
                 }
             }
             else {
                 *errorcode=ERROR_NO_MORE_ENTRIES;
             }
+            return 0;
         }
         else {
-            eac->eac_LastKey= 0 + BE2L((*o)->be_objectnode);
+            eac->eac_LastKey=BE2L((*o)->be_objectnode);
         }
     }
     return 1;
@@ -803,10 +804,10 @@ void mainloop(void) {
                 break;
 
               case ASQ_START_BYTEL:
-              	/*
-              	 * Explicitly cast to ULONG here because on 64 bits
-              	 * ti_Data is 64-bit wide, and this can confuse programs.
-              	 */
+                /*
+                 * Explicitly cast to ULONG here because on 64 bits
+                 * ti_Data is 64-bit wide, and this can confuse programs.
+                 */
                 tag->ti_Data = (ULONG)globals->byte_low;
                 break;
 
@@ -2214,11 +2215,13 @@ void mainloop(void) {
                       break;
                     }
                   }
-  
+
                   if(errorcode!=0) {
                     returnpacket(DOSFALSE,errorcode);
                   }
-                  returnpacket(DOSTRUE,0);
+                  else {
+                    returnpacket(DOSTRUE,0);
+                  }
                 }
                 break;
               case ACTION_EXAMINE_NEXT:
@@ -3185,8 +3188,8 @@ LONG readroots(void)
 
     if (last - first != globals->byte_high - globals->byte_low)
     {
-  	_DEBUG(("bad value in rb1!\n"));
-      	return ERROR_NOT_A_DOS_DISK;
+        _DEBUG(("bad value in rb1!\n"));
+        return ERROR_NOT_A_DOS_DISK;
     }
 
     if(rb1->be_version!=BE2W(STRUCTURE_VERSION)) {
