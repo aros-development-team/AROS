@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 
     Desc: Additional ExecBase manipulation code
 */
@@ -92,7 +92,6 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
         }
         reloclist(&PrivExecBase(newsb)->ResetHandlers);
         reloclist((struct List*)&PrivExecBase(newsb)->AllocMemList);
-        reloclist((struct List*)&PrivExecBase(newsb)->TaskStorageSlots);
         reloclist((struct List*)&PrivExecBase(newsb)->AllocatorCtxList);
 
         InitSemaphore(&PrivExecBase(newsb)->LowMemSem);
