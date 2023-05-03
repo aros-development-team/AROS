@@ -27,7 +27,7 @@
     <td style="text-align:center">6.5.0</td>
     <td style="text-align:center">9.1.0</td>
     <td style="text-align:center">10.2.0</td>
-    <td style="text-align:center">11.2.0</td>
+    <td style="text-align:center">13.1.0</td>
     <td style="text-align:center">10.0</td>
   </tr>
   <tr>
