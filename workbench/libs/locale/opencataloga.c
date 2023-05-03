@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>
@@ -268,33 +268,37 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
                 {
                     DEBUG_OPENCATALOG(dprintf
                         ("OpenCatalogA: parsed catalog\n"));
-                    /* Did everything go fine? */
 
-                    if (!(catalog->ic_LanguageName[0]))
+                    if (!version || (catalog->ic_Catalog.cat_Version == version)
                     {
-                        /* No ID_LANG chunk found. So setup languagename ourselves.
-                           Hmm ... maybe this should be done anyway always. Because
-                           if the catalog file *does* contain an ID_LANG chunk then
-                           this should be the same as "language" anyway. And if it
-                           is not, then maybe OpenCatalogA() should fail :-\ */
+                        if (!(catalog->ic_LanguageName[0]))
+                        {
+                            /* No ID_LANG chunk found. So setup languagename ourselves.
+                               Hmm ... maybe this should be done anyway always. Because
+                               if the catalog file *does* contain an ID_LANG chunk then
+                               this should be the same as "language" anyway. And if it
+                               is not, then maybe OpenCatalogA() should fail :-\ */
 
-                        strcpy(catalog->ic_LanguageName, language);
+                            strcpy(catalog->ic_LanguageName, language);
+                        }
+
+                        /* Connect this catalog to the list of catalogs */
+                        ObtainSemaphore(&_localeBase->lb_CatalogLock);
+                        AddHead((struct List *)&_localeBase->
+                            lb_CatalogList, &catalog->ic_Catalog.cat_Link);
+                        ReleaseSemaphore(&_localeBase->lb_CatalogLock);
+
+                        CloseIFF(iff);
+                        Close((BPTR) iff->iff_Stream);
+                        FreeIFF(iff);
+
+                        DEBUG_OPENCATALOG(dprintf
+                            ("OpenCatalogA: return catalog 0x%lx\n", catalog));
+
+                        return &catalog->ic_Catalog;
                     }
-
-                    /* Connect this catalog to the list of catalogs */
-                    ObtainSemaphore(&_localeBase->lb_CatalogLock);
-                    AddHead((struct List *)&_localeBase->
-                        lb_CatalogList, &catalog->ic_Catalog.cat_Link);
-                    ReleaseSemaphore(&_localeBase->lb_CatalogLock);
-
-                    CloseIFF(iff);
-                    Close((BPTR) iff->iff_Stream);
-                    FreeIFF(iff);
-
-                    DEBUG_OPENCATALOG(dprintf
-                        ("OpenCatalogA: return catalog 0x%lx\n", catalog));
-
-                    return &catalog->ic_Catalog;
+                    else
+                        error = RETURN_ERROR;
                 }
 
                 if (IFFERR_EOC == error)        /* end of chunk */
@@ -316,13 +320,9 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
 
                         error = ReadChunkBytes(iff, buf, top->cn_Size);
                         if (error == top->cn_Size)
-                        {
                             error = 0;
-                        }
                         else
-                        {
                             break;
-                        }
 
                         buf[99] = 0;
 
@@ -351,15 +351,8 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
                                         (LONG *) & catrevision) < 0)
                                     break;
                             }
-
                             catalog->ic_Catalog.cat_Version = catversion;
                             catalog->ic_Catalog.cat_Revision = catrevision;
-
-                            if (version && (catversion != version))
-                            {
-                                error = RETURN_ERROR;
-                            }
-
                             break;
                         }
 
@@ -375,9 +368,7 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
                             ReadChunkBytes(iff, catalog->ic_LanguageName,
                             top->cn_Size);
                         if (error == top->cn_Size)
-                        {
                             error = 0;
-                        }
                         break;
 
                     case ID_CSET:
@@ -404,13 +395,9 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
                             ReadChunkBytes(iff, catalog->ic_StringChunk,
                             top->cn_Size);
                         if (error == top->cn_Size)
-                        {
                             error = 0;
-                        }
                         else
-                        {
                             break;
-                        }
 
                         /* Count the number of strings */
 
