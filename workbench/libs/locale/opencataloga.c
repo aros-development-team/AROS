@@ -269,7 +269,7 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
                     DEBUG_OPENCATALOG(dprintf
                         ("OpenCatalogA: parsed catalog\n"));
 
-                    if (!version || (catalog->ic_Catalog.cat_Version == version)
+                    if (!version || (catalog->ic_Catalog.cat_Version == version))
                     {
                         if (!(catalog->ic_LanguageName[0]))
                         {
