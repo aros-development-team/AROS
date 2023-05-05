@@ -633,7 +633,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                     End)),
                 Child, (IPTR) (gradient_end_poppen =
                     (Object *) PoppenObject,
-                    MUIA_Window_Title, (IPTR) MSG_IMAGEADJUST_END_PEN,
+                    MUIA_Window_Title, (IPTR) _(MSG_IMAGEADJUST_END_PEN),
                     MUIA_Pendisplay_Spec, (IPTR) "r55555555,55555555,55555555",
                     End),
                 End,
