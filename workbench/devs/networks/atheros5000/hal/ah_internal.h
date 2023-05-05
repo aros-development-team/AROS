@@ -460,7 +460,7 @@ extern	u_int ath_hal_getctl(struct ath_hal *, HAL_CHANNEL *);
  * based on the current regulatory domain for the specified
  * channel.
  */
-extern	u_int ath_hal_getnfcheckrequired(struct ath_hal *, HAL_CHANNEL *);
+extern	HAL_BOOL ath_hal_getnfcheckrequired(struct ath_hal *, HAL_CHANNEL *);
 
 /*
  * Map a public channel definition to the corresponding
