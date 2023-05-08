@@ -341,7 +341,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     APTR KernelBase;
     APTR CSBase;
 
-    STRPTR pagetitles[5];
+    static STRPTR pagetitles[5];
     int pagecnt = 0;
 
     D(bug("[SysExplorer] %s()\n", __func__));

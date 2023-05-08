@@ -170,7 +170,8 @@ Object *AboutWindow__OM_NEW
                             *descriptionGroup  = NULL,
                             *descriptionObject = NULL,
                             *authorsList       = NULL,
-                            *sponsorsList      = NULL;
+                            *sponsorsList      = NULL,
+                            *registerGroup     = NULL;
     
     STRPTR                   title             = NULL,
                              versionNumber     = NULL,
@@ -179,7 +180,6 @@ Object *AboutWindow__OM_NEW
                              description       = NULL,
                              copyright         = NULL;
                              
-    CONST_STRPTR             pages[]           = { NULL, NULL, NULL };
     UBYTE                    nextPage          = 0;
     
     /* Allocate memory pool ------------------------------------------------*/
@@ -268,19 +268,6 @@ Object *AboutWindow__OM_NEW
         }
     }
 
-    /* Setup pages ---------------------------------------------------------*/
-    if (authorsTags != NULL)
-    {
-        pages[nextPage] = _(MSG_AUTHORS);
-        nextPage++;
-    }
-    
-    if (sponsorsTags != NULL)
-    {
-        pages[nextPage] = _(MSG_SPONSORS);
-        nextPage++;
-    }
-    
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
@@ -290,7 +277,7 @@ Object *AboutWindow__OM_NEW
         MUIA_Window_Height,   MUIV_Window_Height_Visible(25),
         MUIA_Window_Width,    MUIV_Window_Width_Visible(25),
         
-        WindowContents, (IPTR) VGroup,
+        WindowContents, (IPTR) (rootGroup = (Object *)VGroup,
             GroupSpacing(6),
             
             Child, (IPTR) (imageGroup = (Object *)HGroup,
@@ -316,19 +303,7 @@ Object *AboutWindow__OM_NEW
                 End),
             End),
             Child, (IPTR) VSpace(6),
-            Child, (IPTR) RegisterGroup(pages),
-                Child, (IPTR) ListviewObject,
-                    MUIA_Listview_List, (IPTR) (authorsList = (Object *)ListObject,
-                        ReadListFrame,
-                    End),
-                End,
-                Child, (IPTR) ListviewObject,
-                    MUIA_Listview_List, (IPTR) (sponsorsList = (Object *)ListObject,
-                        ReadListFrame,
-                    End),
-                End,
-            End,
-        End,
+        End),
         
         TAG_MORE, (IPTR) message->ops_AttrList
     );
@@ -351,7 +326,38 @@ Object *AboutWindow__OM_NEW
     data->awd_VersionExtra      = versionExtra;
     data->awd_Copyright         = copyright;
     data->awd_Description       = description;
+    data->awd_PageTitles[0]     =
+    data->awd_PageTitles[1]     =
+    data->awd_PageTitles[2]     = NULL;
+
+    /* Setup pages ---------------------------------------------------------*/
+    if (authorsTags != NULL)
+    {
+        data->awd_PageTitles[nextPage] = _(MSG_AUTHORS);
+        nextPage++;
+    }
     
+    if (sponsorsTags != NULL)
+    {
+        data->awd_PageTitles[nextPage] = _(MSG_SPONSORS);
+        nextPage++;
+    }
+
+    registerGroup = RegisterGroup(data->awd_PageTitles),
+            Child, (IPTR) ListviewObject,
+                MUIA_Listview_List, (IPTR) (authorsList = (Object *)ListObject,
+                    ReadListFrame,
+                End),
+            End,
+            Child, (IPTR) ListviewObject,
+                MUIA_Listview_List, (IPTR) (sponsorsList = (Object *)ListObject,
+                    ReadListFrame,
+                End),
+            End,
+        End;
+
+    DoMethod(data->awd_RootGroup, MUIM_Group_AddTail, registerGroup);
+
     if (authorsTags != NULL)  NamesToList(authorsList, authorsTags, data);
     if (sponsorsTags != NULL) NamesToList(sponsorsList, sponsorsTags, data);
     
