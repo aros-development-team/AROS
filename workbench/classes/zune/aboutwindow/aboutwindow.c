@@ -543,7 +543,9 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup copyright ====================================================*/
     if (data->awd_Copyright == NULL)
     {
-        GET(_app(self), MUIA_Application_Copyright, &data->awd_Copyright);
+        STRPTR tmp = NULL;
+        GET(_app(self), MUIA_Application_Copyright, &tmp);
+        if (tmp != NULL) data->awd_Copyright = StrDup(tmp);
     }
     
     if (data->awd_Copyright != IGNORE && data->awd_Copyright != NULL)
@@ -558,7 +560,9 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup description ==================================================*/
     if (data->awd_Description == NULL)
     {
-        GET(_app(self), MUIA_Application_Description, &data->awd_Description);
+        STRPTR tmp = NULL;
+        GET(_app(self), MUIA_Application_Description, &tmp);
+        if (tmp != NULL) data->awd_Description = StrDup(tmp);
     }
     
     if (data->awd_Description != IGNORE && data->awd_Description != NULL)
@@ -598,7 +602,7 @@ IPTR AboutWindow__OM_DISPOSE
     APTR                     ptrs[] =
     {
         data->awd_Title, data->awd_VersionNumber, data->awd_VersionDate,
-        data->awd_VersionExtra, data->awd_Copyright, data->awd_VersionExtra
+        data->awd_VersionExtra, data->awd_Copyright, data->awd_Description,
         data->awd_WindowTitle
     };
     
