@@ -18,6 +18,8 @@ struct AboutWindow_DATA
     /*- Private ------------------------------------------------------------*/
     struct Catalog *awd_Catalog;
     APTR            awd_Pool;
+    CONST_STRPTR    awd_PageTitles[3];
+    STRPTR          awd_WindowTitle;
     
     /*- Protected ----------------------------------------------------------*/
     Object         *awd_RootGroup,

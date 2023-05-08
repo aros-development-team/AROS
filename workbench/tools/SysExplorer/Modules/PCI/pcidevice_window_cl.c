@@ -35,7 +35,7 @@ struct PCIDevWindow_DATA
 
 static Object *PCIDevWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
-    STRPTR pagetitles[3] =
+    static STRPTR pagetitles[3] =
     {
         "General",
         "Capabilities",

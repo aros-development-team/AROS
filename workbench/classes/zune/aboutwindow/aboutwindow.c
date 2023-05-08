@@ -170,7 +170,8 @@ Object *AboutWindow__OM_NEW
                             *descriptionGroup  = NULL,
                             *descriptionObject = NULL,
                             *authorsList       = NULL,
-                            *sponsorsList      = NULL;
+                            *sponsorsList      = NULL,
+                            *registerGroup     = NULL;
     
     STRPTR                   title             = NULL,
                              versionNumber     = NULL,
@@ -179,7 +180,6 @@ Object *AboutWindow__OM_NEW
                              description       = NULL,
                              copyright         = NULL;
                              
-    CONST_STRPTR             pages[]           = { NULL, NULL, NULL };
     UBYTE                    nextPage          = 0;
     
     /* Allocate memory pool ------------------------------------------------*/
@@ -268,19 +268,6 @@ Object *AboutWindow__OM_NEW
         }
     }
 
-    /* Setup pages ---------------------------------------------------------*/
-    if (authorsTags != NULL)
-    {
-        pages[nextPage] = _(MSG_AUTHORS);
-        nextPage++;
-    }
-    
-    if (sponsorsTags != NULL)
-    {
-        pages[nextPage] = _(MSG_SPONSORS);
-        nextPage++;
-    }
-    
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
@@ -290,7 +277,7 @@ Object *AboutWindow__OM_NEW
         MUIA_Window_Height,   MUIV_Window_Height_Visible(25),
         MUIA_Window_Width,    MUIV_Window_Width_Visible(25),
         
-        WindowContents, (IPTR) VGroup,
+        WindowContents, (IPTR) (rootGroup = (Object *)VGroup,
             GroupSpacing(6),
             
             Child, (IPTR) (imageGroup = (Object *)HGroup,
@@ -316,19 +303,7 @@ Object *AboutWindow__OM_NEW
                 End),
             End),
             Child, (IPTR) VSpace(6),
-            Child, (IPTR) RegisterGroup(pages),
-                Child, (IPTR) ListviewObject,
-                    MUIA_Listview_List, (IPTR) (authorsList = (Object *)ListObject,
-                        ReadListFrame,
-                    End),
-                End,
-                Child, (IPTR) ListviewObject,
-                    MUIA_Listview_List, (IPTR) (sponsorsList = (Object *)ListObject,
-                        ReadListFrame,
-                    End),
-                End,
-            End,
-        End,
+        End),
         
         TAG_MORE, (IPTR) message->ops_AttrList
     );
@@ -351,7 +326,38 @@ Object *AboutWindow__OM_NEW
     data->awd_VersionExtra      = versionExtra;
     data->awd_Copyright         = copyright;
     data->awd_Description       = description;
+    data->awd_PageTitles[0]     =
+    data->awd_PageTitles[1]     =
+    data->awd_PageTitles[2]     = NULL;
+
+    /* Setup pages ---------------------------------------------------------*/
+    if (authorsTags != NULL)
+    {
+        data->awd_PageTitles[nextPage] = _(MSG_AUTHORS);
+        nextPage++;
+    }
     
+    if (sponsorsTags != NULL)
+    {
+        data->awd_PageTitles[nextPage] = _(MSG_SPONSORS);
+        nextPage++;
+    }
+
+    registerGroup = RegisterGroup(data->awd_PageTitles),
+            Child, (IPTR) ListviewObject,
+                MUIA_Listview_List, (IPTR) (authorsList = (Object *)ListObject,
+                    ReadListFrame,
+                End),
+            End,
+            Child, (IPTR) ListviewObject,
+                MUIA_Listview_List, (IPTR) (sponsorsList = (Object *)ListObject,
+                    ReadListFrame,
+                End),
+            End,
+        End;
+
+    DoMethod(data->awd_RootGroup, MUIM_Group_AddTail, registerGroup);
+
     if (authorsTags != NULL)  NamesToList(authorsList, authorsTags, data);
     if (sponsorsTags != NULL) NamesToList(sponsorsList, sponsorsTags, data);
     
@@ -359,7 +365,7 @@ Object *AboutWindow__OM_NEW
     DoMethod
     (
         self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-        (IPTR) self, 2, MUIA_Window_Open, FALSE
+        (IPTR) self, 3, MUIM_Set, MUIA_Window_Open, FALSE
     );
         
     return self;
@@ -383,9 +389,8 @@ IPTR AboutWindow__MUIM_Window_Setup
 
     /*= Setup window title =================================================*/
     {
-        STRPTR buffer = NULL;
         ULONG  length = 0;
-        
+
         string = data->awd_Title;
         if (string == NULL)
         {
@@ -401,18 +406,16 @@ IPTR AboutWindow__MUIM_Window_Setup
                 if (string != NULL)
                 {
                     length = strlen(string) + strlen(_(MSG_ABOUT)) + 2; /* space + newline */
-                    buffer = AllocVec(length, MEMF_ANY);
+                    data->awd_WindowTitle = AllocVec(length, MEMF_ANY);
                     
-                    if (buffer != NULL)
+                    if (data->awd_WindowTitle != NULL)
                     {
-                        buffer[0] = '\0';
-                        strlcat(buffer, _(MSG_ABOUT), length);
-                        strlcat(buffer, " ", length);
-                        strlcat(buffer, string, length);
+                        data->awd_WindowTitle[0] = '\0';
+                        strlcat(data->awd_WindowTitle, _(MSG_ABOUT), length);
+                        strlcat(data->awd_WindowTitle, " ", length);
+                        strlcat(data->awd_WindowTitle, string, length);
                         
-                        set(self, MUIA_Window_Title, buffer);
-                        
-                        FreeVec(buffer);
+                        set(self, MUIA_Window_Title, data->awd_WindowTitle);
                     }
                 }
             }
@@ -540,7 +543,9 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup copyright ====================================================*/
     if (data->awd_Copyright == NULL)
     {
-        GET(_app(self), MUIA_Application_Copyright, &data->awd_Copyright);
+        STRPTR tmp = NULL;
+        GET(_app(self), MUIA_Application_Copyright, &tmp);
+        if (tmp != NULL) data->awd_Copyright = StrDup(tmp);
     }
     
     if (data->awd_Copyright != IGNORE && data->awd_Copyright != NULL)
@@ -555,7 +560,9 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup description ==================================================*/
     if (data->awd_Description == NULL)
     {
-        GET(_app(self), MUIA_Application_Description, &data->awd_Description);
+        STRPTR tmp = NULL;
+        GET(_app(self), MUIA_Application_Description, &tmp);
+        if (tmp != NULL) data->awd_Description = StrDup(tmp);
     }
     
     if (data->awd_Description != IGNORE && data->awd_Description != NULL)
@@ -595,7 +602,8 @@ IPTR AboutWindow__OM_DISPOSE
     APTR                     ptrs[] =
     {
         data->awd_Title, data->awd_VersionNumber, data->awd_VersionDate,
-        data->awd_VersionExtra, data->awd_Copyright, data->awd_VersionExtra
+        data->awd_VersionExtra, data->awd_Copyright, data->awd_Description,
+        data->awd_WindowTitle
     };
     
     for (i = 0; i < (sizeof(ptrs) / sizeof(APTR)); i++)

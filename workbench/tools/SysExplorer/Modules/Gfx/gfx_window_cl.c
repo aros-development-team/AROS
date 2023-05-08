@@ -40,7 +40,7 @@ struct GfxWindow_DATA
 
 static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
-    STRPTR pagetitles[3] =
+    static STRPTR pagetitles[3] =
     {
         "General",
         "Capabilities",
