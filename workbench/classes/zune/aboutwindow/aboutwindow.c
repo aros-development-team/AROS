@@ -389,9 +389,8 @@ IPTR AboutWindow__MUIM_Window_Setup
 
     /*= Setup window title =================================================*/
     {
-        STRPTR buffer = NULL;
         ULONG  length = 0;
-        
+
         string = data->awd_Title;
         if (string == NULL)
         {
@@ -407,18 +406,16 @@ IPTR AboutWindow__MUIM_Window_Setup
                 if (string != NULL)
                 {
                     length = strlen(string) + strlen(_(MSG_ABOUT)) + 2; /* space + newline */
-                    buffer = AllocVec(length, MEMF_ANY);
+                    data->awd_WindowTitle = AllocVec(length, MEMF_ANY);
                     
-                    if (buffer != NULL)
+                    if (data->awd_WindowTitle != NULL)
                     {
-                        buffer[0] = '\0';
-                        strlcat(buffer, _(MSG_ABOUT), length);
-                        strlcat(buffer, " ", length);
-                        strlcat(buffer, string, length);
+                        data->awd_WindowTitle[0] = '\0';
+                        strlcat(data->awd_WindowTitle, _(MSG_ABOUT), length);
+                        strlcat(data->awd_WindowTitle, " ", length);
+                        strlcat(data->awd_WindowTitle, string, length);
                         
-                        set(self, MUIA_Window_Title, buffer);
-                        
-                        FreeVec(buffer);
+                        set(self, MUIA_Window_Title, data->awd_WindowTitle);
                     }
                 }
             }
@@ -602,6 +599,7 @@ IPTR AboutWindow__OM_DISPOSE
     {
         data->awd_Title, data->awd_VersionNumber, data->awd_VersionDate,
         data->awd_VersionExtra, data->awd_Copyright, data->awd_VersionExtra
+        data->awd_WindowTitle
     };
     
     for (i = 0; i < (sizeof(ptrs) / sizeof(APTR)); i++)
