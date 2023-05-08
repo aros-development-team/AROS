@@ -365,7 +365,7 @@ Object *AboutWindow__OM_NEW
     DoMethod
     (
         self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-        (IPTR) self, 2, MUIA_Window_Open, FALSE
+        (IPTR) self, 3, MUIM_Set, MUIA_Window_Open, FALSE
     );
         
     return self;
