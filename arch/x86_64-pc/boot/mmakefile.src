@@ -21,6 +21,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM kernel-bsp-pc-x86_64 :	\
 #MM			   linklibs-bootconsole		\
+#MM			   kernel-log				\
 #MM			   kernel-hidd-bus			\
 #MM			   kernel-hidd-base			\
 #MM			   kernel-ata				\
@@ -42,7 +43,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM			   kernel-hidd-pci-pcipc    \
 #MM			   kernel-processor
 
-KRSRCS      := efi hpet
+KRSRCS      := efi hpet log
 KRSRCS_ARCH := battclock processor
 KLIBS       := acpica
 KLIBS_ARCH  := expansion
