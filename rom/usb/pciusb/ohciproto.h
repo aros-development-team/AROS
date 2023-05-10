@@ -8,30 +8,50 @@ void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu);
 void ohciFree(struct PCIController *hc, struct PCIUnit *hu);
 
+WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+
 BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
 BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
 BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval);
 
+#ifdef base
+#undef base
+#endif
+#define base (hc->hc_Device)
+#if defined(AROS_USE_LOGRES)
+#ifdef LogResBase
+#undef LogResBase
+#endif
+#define LogResBase (base->hd_LogResBase)
+#ifdef LogHandle
+#undef LogHandle
+#endif
+#define LogHandle (hc->hc_LogRHandle)
+#endif
 /* /// "ohciAllocED()" */
-static inline struct OhciED * ohciAllocED(struct PCIController *hc)
-{
-    struct OhciED *oed = hc->hc_OhciEDPool;
+static inline struct OhciED * ohciAllocED(struct PCIController *hc) {
+    struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
+    struct OhciED *oed = ohcihcp->ohc_OhciEDPool;
 
     if(!oed)
     {
         // out of QHs!
-        KPRINTF(200, ("Out of EDs!\n"));
+        KPRINTF(200, "Out of EDs!\n");
         return NULL;
     }
 
-    hc->hc_OhciEDPool = oed->oed_Succ;
+    ohcihcp->ohc_OhciEDPool = oed->oed_Succ;
     return(oed);
 }
 /* \\\ */
 
 /* /// "ohciFreeED()" */
-static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed)
-{
+static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed) {
+    struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
     oed->oed_HeadPtr = oed->oed_TailPtr;	// Protect against ocassional reuse
     CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP);
     SYNC;
@@ -39,37 +59,37 @@ static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed)
     oed->oed_IOReq     = NULL;
     oed->oed_Buffer    = NULL;
     oed->oed_SetupData = NULL;
-    oed->oed_Succ = hc->hc_OhciEDPool;
-    hc->hc_OhciEDPool = oed;
+    oed->oed_Succ = ohcihcp->ohc_OhciEDPool;
+    ohcihcp->ohc_OhciEDPool = oed;
 }
 /* \\\ */
 
 /* /// "ohciAllocTD()" */
-static inline struct OhciTD * ohciAllocTD(struct PCIController *hc)
-{
-    struct OhciTD *otd = hc->hc_OhciTDPool;
+static inline struct OhciTD * ohciAllocTD(struct PCIController *hc) {
+    struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
+    struct OhciTD *otd = ohcihcp->ohc_OhciTDPool;
 
     if(!otd)
     {
         // out of TDs!
-        KPRINTF(200, ("Out of TDs!\n"));
+        KPRINTF(200, "Out of TDs!\n");
         return NULL;
     }
 
-    hc->hc_OhciTDPool = otd->otd_Succ;
+    ohcihcp->ohc_OhciTDPool = otd->otd_Succ;
     return(otd);
 }
 /* \\\ */
 
 /* /// "ohciFreeTD()" */
-static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd)
-{
+static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd) {
+    struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
     otd->otd_NextTD = 0; // Protect against looped TD list in ocassion of TD reuse ("Rogue TD" state)
     SYNC;
 
     otd->otd_ED = NULL;
-    otd->otd_Succ = hc->hc_OhciTDPool;
-    hc->hc_OhciTDPool = otd;
+    otd->otd_Succ = ohcihcp->ohc_OhciTDPool;
+    ohcihcp->ohc_OhciTDPool = otd;
 }
 /* \\\ */
 
@@ -103,5 +123,9 @@ static inline void ohciEnableInt(struct PCIController *hc, ULONG mask)
     hc->hc_PCIIntEnMask |= mask;
     WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, mask);
 }
-
+#undef base
+#if defined(AROS_USE_LOGRES)
+#undef LogResBase
+#undef LogHandle
+#endif
 #endif /* OHCIPROTO_H */

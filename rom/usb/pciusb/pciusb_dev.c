@@ -5,6 +5,7 @@
 
 #include <proto/exec.h>
 #include <proto/oop.h>
+#define __UTILITY_NOLIBBASE__
 #include <proto/utility.h>
 
 #include LC_LIBDEFS_FILE
@@ -40,23 +41,32 @@ static CONST_STRPTR const GM_UNIQUENAME(MethBaseIDs)[] =
     NULL
 };
 #endif
-
+#if defined(AROS_USE_LOGRES)
+#ifdef LogResBase
+#undef LogResBase
+#endif
+#ifdef LogResHandle
+#undef LogResHandle
+#endif
+#define LogResBase base->hd_LogResBase
+#define LogHandle base->hd_LogRHandle
+#endif
 static int devInit(LIBBASETYPEPTR base)
 {
-    KPRINTF(10, ("devInit base: 0x%p SysBase: 0x%p\n",
-                 base, SysBase));
+    KPRINTF(10, "base @ 0x%p, SysBase = 0x%p\n",
+                 base, SysBase);
 
 #if defined(__OOP_NOLIBBASE__)
     if ((base->hd_OOPBase = OpenLibrary("oop.library",0)) == NULL)
     {
-        KPRINTF(10, ("devInit: Failed to open oop.library!\n"));
+        KPRINTF(10, "devInit: Failed to open oop.library!\n");
         return FALSE;
     }
 #endif
 #if defined(__OOP_NOATTRBASES__)
     if (OOP_ObtainAttrBasesArray(&base->hd_HiddAB, GM_UNIQUENAME(AttrBaseIDs)))
     {
-        KPRINTF(10, ("devInit: Failed to obtain OOP AttrBases!\n"));
+        KPRINTF(10, "devInit: Failed to obtain OOP AttrBases!\n");
 #if defined(__OOP_NOLIBBASE__)
         CloseLibrary(base->hd_OOPBase);
 #endif
@@ -66,7 +76,7 @@ static int devInit(LIBBASETYPEPTR base)
 #if defined(__OOP_NOMETHODBASES__)
     if (OOP_ObtainMethodBasesArray(&base->hd_HiddPCIMB, GM_UNIQUENAME(MethBaseIDs)))
     {
-        KPRINTF(10, ("devInit: Failed to obtain OOP MethodBases!\n"));
+        KPRINTF(10, "devInit: Failed to obtain OOP MethodBases!\n");
 #if defined(__OOP_NOATTRBASES__)
          OOP_ReleaseAttrBasesArray(&base->hd_HiddAB, GM_UNIQUENAME(AttrBaseIDs));
 #endif
@@ -89,18 +99,18 @@ static int devInit(LIBBASETYPEPTR base)
         {
             NewList(&base->hd_Units);
 
-            KPRINTF(10, ("devInit: Ok\n"));
+            KPRINTF(10, "Ok\n");
         } else {
-            KPRINTF(10, ("devInit: CreatePool() failed!\n"));
+            KPRINTF(10, "CreatePool() failed!\n");
             CloseLibrary((struct Library *) UtilityBase);
             base = NULL;
         }
     } else {
-        KPRINTF(10, ("devInit: OpenLibrary(\"utility.library\", 39) failed!\n"));
+        KPRINTF(10, "OpenLibrary(\"utility.library\", 39) failed!\n");
         base = NULL;
     }
 
-    KPRINTF(10, ("devInit: openCnt = %ld\n", base->hd_Library.lib_OpenCnt));
+    KPRINTF(10, "openCnt = %ld\n", base->hd_Device.dd_Library.lib_OpenCnt);
 
     return base ? TRUE : FALSE;
 }
@@ -115,14 +125,14 @@ static int devInit(LIBBASETYPEPTR base)
  */
 static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, ULONG flags)
 {
-    KPRINTF(10, ("devOpen ioreq: 0x%p unit: %ld flags: 0x%08lx base: 0x%p\n",
-               ioreq, unit, flags, base));
+    KPRINTF(10, "ioreq: 0x%p unit: %ld flags: 0x%08lx base: 0x%p\n",
+               ioreq, unit, flags, base);
 
-    KPRINTF(10, ("devOpen: openCnt = %ld\n", base->hd_Library.lib_OpenCnt));
+    KPRINTF(10, "openCnt = %ld\n", base->hd_Device.dd_Library.lib_OpenCnt);
 
     if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq))
     {
-        KPRINTF(20, ("devOpen: invalid MN_LENGTH!\n"));
+        KPRINTF(20, "invalid MN_LENGTH!\n");
 
         ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
     } else {
@@ -132,7 +142,7 @@ static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, UL
         ioreq->iouh_Req.io_Unit = Open_Unit(ioreq, unit, base);
         if(!ioreq->iouh_Req.io_Unit)
         {
-            KPRINTF(20, ("devOpen: could not open unit!\n"));
+            KPRINTF(20, "could not open unit!\n");
         } else {
             /* Opended ok! */
             ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
@@ -157,7 +167,7 @@ static int devOpen(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq, ULONG unit, UL
 
 static int devClose(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq)
 {
-    KPRINTF(10, ("devClose ioreq: 0x%p base: 0x%p\n", ioreq, base));
+    KPRINTF(10, "ioreq: 0x%p base: 0x%p\n", ioreq, base);
 
     Close_Unit(base, (struct PCIUnit *) ioreq->iouh_Req.io_Unit, ioreq);
 
@@ -173,8 +183,8 @@ static int devExpunge(LIBBASETYPEPTR base)
 
     DeletePool(base->hd_MemPool);
 
-    KPRINTF(5, ("devExpunge: closelibrary utilitybase 0x%p\n",
-                UtilityBase));
+    KPRINTF(5, "closelibrary utilitybase 0x%p\n",
+                UtilityBase);
     CloseLibrary((struct Library *) UtilityBase);
     return TRUE;
 }
@@ -319,7 +329,7 @@ AROS_LH1(LONG, devAbortIO,
 {
     AROS_LIBFUNC_INIT
 
-    KPRINTF(50, ("devAbortIO ioreq: 0x%p, command %ld, status %ld\n", ioreq, ioreq->iouh_Req.io_Command, ioreq->iouh_Req.io_Message.mn_Node.ln_Type));
+    KPRINTF(50, "devAbortIO ioreq: 0x%p, command %ld, status %ld\n", ioreq, ioreq->iouh_Req.io_Command, ioreq->iouh_Req.io_Message.mn_Node.ln_Type);
 
     /* Is it pending? */
     if(ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)

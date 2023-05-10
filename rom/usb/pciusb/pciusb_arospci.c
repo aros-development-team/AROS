@@ -1,16 +1,16 @@
 /* pci_aros.c - pci access abstraction for AROS by Chris Hodges
 */
 
+#include <proto/exec.h>
+#include <proto/oop.h>
+#include <proto/utility.h>
+#include <proto/bootloader.h>
+
 #include <aros/symbolsets.h>
 #include <exec/types.h>
 #include <oop/oop.h>
 #include <devices/timer.h>
 #include <aros/bootloader.h>
-
-#include <proto/oop.h>
-#include <proto/utility.h>
-#include <proto/exec.h>
-#include <proto/bootloader.h>
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -24,8 +24,20 @@
 
 #define NewList NEWLIST
 
+#ifdef base
+#undef base
+#endif
 #define base hd
-
+#if defined(AROS_USE_LOGRES)
+#ifdef LogHandle
+#undef LogHandle
+#endif
+#ifdef LogResBase
+#undef LogResBase
+#endif
+#define LogHandle (hd->hd_LogRHandle)
+#define LogResBase (base->hd_LogResBase)
+#endif
 static void handleQuirks(struct PCIController *hc)
 {
     struct PCIDevice *hd = hc->hc_Device;
@@ -84,19 +96,19 @@ AROS_UFH3(void, pciEnumerator,
 
     devid = (bus<<16)|dev;
 
-    KPRINTF(10, ("Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline));
+    pciusbDebug("PCI", "Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline);
 
     if(intline == 255)
     {
         // we can't work without the correct interrupt line
         // BIOS needs plug & play os option disabled. Alternatively AROS must support ACPI reconfiguration
-        KPRINTF(200, ("ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n"));
+        pciusbDebug("PCI", "ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n");
     }
     else
     {
         switch (hcitype)
         {
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
         case HCITYPE_XHCI:
             if (!(hd->hd_Flags & HDF_ENABLEXHCI))
                 break;
@@ -107,7 +119,7 @@ AROS_UFH3(void, pciEnumerator,
 #endif
         case HCITYPE_EHCI:
         case HCITYPE_UHCI:
-            KPRINTF(10, ("Setting up device...\n"));
+            pciusbDebug("PCI", "Setting up device...\n");
 
             hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
             if (hc)
@@ -129,7 +141,6 @@ AROS_UFH3(void, pciEnumerator,
                 NewList(&hc->hc_BulkXFerQueue);
                 NewList(&hc->hc_TDQueue);
                 NewList(&hc->hc_AbortQueue);
-                NewList(&hc->hc_OhciRetireQueue);
 
                 NewMinList(&hc->hc_RTIsoHandlers);
 
@@ -143,6 +154,13 @@ AROS_UFH3(void, pciEnumerator,
                 hc->hc_WriteConfigByte = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigByte, &hc->hc_WriteConfigByte_Class);
                 hc->hc_WriteConfigWord = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord, &hc->hc_WriteConfigWord_Class);
                 hc->hc_WriteConfigLong = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong, &hc->hc_WriteConfigLong_Class);
+# if defined(PCIUSB_ENABLEXHCI)
+                hc->hc_AllocPCIMem = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_AllocPCIMem, &hc->hc_AllocPCIMem_Class);
+                hc->hc_FreePCIMem = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_FreePCIMem, &hc->hc_FreePCIMem_Class);
+                hc->hc_MapPCI = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_MapPCI, &hc->hc_MapPCI_Class);
+                hc->hc_CPUtoPCI = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_CPUtoPCI, &hc->hc_CPUtoPCI_Class);
+                hc->hc_PCItoCPU = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_PCItoCPU, &hc->hc_PCItoCPU_Class);
+# endif
 # if !defined(__OOP_NOLIBBASE__) && !defined(__OOP_NOMETHODBASES__)
 #  undef __obj
 # endif
@@ -153,7 +171,7 @@ AROS_UFH3(void, pciEnumerator,
             }
             else
             {
-                KPRINTF(10, ("Failed to allocate storage for controller entry!\n"));
+                pciusbDebug("PCI", "Failed to allocate storage for controller entry!\n");
             }
             break;
 
@@ -163,7 +181,7 @@ AROS_UFH3(void, pciEnumerator,
     }
 
     if (!hc)
-        KPRINTF(10, ("Unsupported HCI type %ld\n", hcitype));
+        pciusbDebug("PCI", "Unsupported HCI type %ld\n", hcitype);
 
     AROS_USERFUNC_EXIT
 }
@@ -178,7 +196,7 @@ BOOL pciInit(struct PCIDevice *hd)
     struct PCIUnit *hu;
     ULONG unitno = 0;
 
-    KPRINTF(10, ("*** pciInit(%p) ***\n", hd));
+    pciusbDebug("PCI", "*** pciInit(%p) ***\n", hd);
 
     NewList(&hd->hd_TempHCIList);
 
@@ -195,26 +213,26 @@ BOOL pciInit(struct PCIDevice *hd)
              h_Entry:        (IPTR (*)()) pciEnumerator,
              h_Data:         hd,
         };
-        KPRINTF(20, ("Searching for devices...\n"));
+        pciusbDebug("PCI", "Searching for devices...\n");
 
         HIDD_PCI_EnumDevices(hd->hd_PCIHidd, &findHook, (struct TagItem *) &tags);
     } else {
-        KPRINTF(20, ("Unable to create PCIHidd object!\n"));
+        pciusbDebug("PCI", "Unable to create PCIHidd object!\n");
         return FALSE;
     }
 
     root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
     if (!root)
         root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-    KPRINTF(20, ("HW Root @  0x%p\n", root));
+    pciusbDebug("PCI", "HW Root @  0x%p\n", root);
     usbContrClass = OOP_FindClass(CLID_Hidd_USBController);
-    KPRINTF(20, ("USB Controller class @  0x%p\n", usbContrClass));
+    pciusbDebug("PCI", "USB Controller class @  0x%p\n", usbContrClass);
 
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ)
     {
         BOOL    unitdone = FALSE, unithasv1 = FALSE, unithasv2 = FALSE;
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
         BOOL    unithasv3 = FALSE;
 #endif
         int     cnt;
@@ -258,7 +276,7 @@ BOOL pciInit(struct PCIDevice *hd)
                             unitdone = TRUE;
                         unithasv2 = TRUE;
                         break;
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
                     case HCITYPE_XHCI:
                         if ((unithasv1) || (unithasv2))
                             unitdone = TRUE;
@@ -293,7 +311,7 @@ BOOL pciInit(struct PCIDevice *hd)
 
                     hc->hc_Node.ln_Name = AllocVec(16, MEMF_CLEAR);
                     hc->hc_Node.ln_Pri = hc->hc_HCIType;
-                    sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", hu->hu_UnitNo);
+                    sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
                     usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
 
                     usbc_tags[USB_TAG_VEND].ti_Data = 0;
@@ -338,67 +356,6 @@ BOOL pciInit(struct PCIDevice *hd)
 }
 /* \\\ */
 
-/* /// "PCIXReadConfigByte()" */
-UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset)
-{
-    struct PCIDevice *hd = hc->hc_Device;
-
-    return READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, offset);
-}
-/* \\\ */
-
-/* /// "PCIXReadConfigWord()" */
-UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset)
-{
-    struct PCIDevice *hd = hc->hc_Device;
-
-    return READCONFIGWORD(hc, hc->hc_PCIDeviceObject, offset);
-}
-/* \\\ */
-
-/* /// "PCIXReadConfigLong()" */
-ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset)
-{
-    struct PCIDevice *hd = hc->hc_Device;
-
-    return READCONFIGLONG(hc, hc->hc_PCIDeviceObject, offset);
-}
-/* \\\ */
-
-/* /// "PCIXWriteConfigByte()" */
-void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value)
-{
-    struct PCIDevice *hd = hc->hc_Device;
-
-    WRITECONFIGBYTE(hc, hc->hc_PCIDeviceObject, offset, value);
-}
-/* \\\ */
-
-/* /// "PCIXWriteConfigWord()" */
-void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value)
-{
-    struct PCIDevice *hd = hc->hc_Device;
-
-    WRITECONFIGWORD(hc, hc->hc_PCIDeviceObject, offset, value);
-}
-/* \\\ */
-
-/* /// "PCIXWriteConfigLong()" */
-void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value)
-{
-    struct PCIDevice *hd = hc->hc_Device;
-
-    WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, offset, value);
-}
-/* \\\ */
-
-BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt)
-{
-    struct PCIDevice *hd = hc->hc_Device;
-
-    return HIDD_PCIDevice_AddInterrupt(hc->hc_PCIDeviceObject, interrupt);
-}
-
 /* /// "pciStrcat()" */
 STRPTR pciStrcat(STRPTR d, STRPTR s)
 {
@@ -417,32 +374,32 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     BOOL allocgood = TRUE;
     ULONG usb11ports = 0;
     ULONG usb20ports = 0;
-#if defined(TMPXHCICODE)
-    ULONG usb30ports = 0;
+#if defined(PCIUSB_ENABLEXHCI)
+    ULONG xhciports = 0;
 #endif
     ULONG cnt;
 
     ULONG ohcicnt = 0;
     ULONG uhcicnt = 0;
     ULONG ehcicnt = 0;
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
     ULONG xhcicnt = 0;
 #endif
     STRPTR prodname;
 
-    KPRINTF(10, ("*** pciAllocUnit(%p) ***\n", hu));
+    pciusbDebug("PCI", "Unit @ %p\n", hu);
 
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
         CONST_STRPTR owner;
         
-        owner = HIDD_PCIDevice_Obtain(hc->hc_PCIDeviceObject, hd->hd_Library.lib_Node.ln_Name);
+        owner = HIDD_PCIDevice_Obtain(hc->hc_PCIDeviceObject, hd->hd_Device.dd_Library.lib_Node.ln_Name);
         if (!owner)
             hc->hc_Flags |= HCF_ALLOCATED;
         else
         {
-            KPRINTF(20, ("Couldn't allocate board, already allocated by %s\n", owner));
+            pciusbWarn("PCI", "PCI Device already allocated <owner='%s'>\n", owner);
             allocgood = FALSE;
         }
 
@@ -478,7 +435,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 case HCITYPE_EHCI:
                 {
                     if(usb20ports) {
-                        KPRINTF(200, ("WARNING: More than one EHCI controller per board?!?\n"));
+                        pciusbWarn("PCI", "More than one EHCI controller per board?!?\n");
                     }
                     allocgood = ehciInit(hc,hu);
                     if(allocgood) {
@@ -487,16 +444,16 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     }
                     break;
                 }
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
                 case HCITYPE_XHCI:
                 {
-                    if(usb30ports) {
-                        KPRINTF(200, ("WARNING: More than one XHCI controller per board?!?\n"));
+                    if(xhciports) {
+                        pciusbWarn("PCI", "More than one XHCI controller per board?!?\n");
                     }
                     allocgood = xhciInit(hc,hu);
                     if(allocgood) {
                         xhcicnt++;
-                        usb30ports = hc->hc_NumPorts;
+                        xhciports = hc->hc_NumPorts;
                     }
                     break;
                 }
@@ -535,7 +492,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 {
                     if(((hc->hc_portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum)
                     {
-                        KPRINTF(10, ("CHC %ld Port %ld assigned to global Port %ld\n", hc->hc_FunctionNum, locport, cnt));
+                        pciusbDebug("PCI", "CHC %ld Port %ld assigned to global Port %ld\n", hc->hc_FunctionNum, locport, cnt);
                         hu->hu_PortMap11[cnt] = hc;
                         hu->hu_PortNum11[cnt] = locport;
                         hc->hc_PortNum[locport] = cnt;
@@ -556,19 +513,28 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     }
     if((usb11ports != usb20ports) && usb20ports)
     {
-        KPRINTF(20, ("Warning! #EHCI Ports (%ld) does not match USB 1.1 Ports (%ld)!\n", usb20ports, usb11ports));
+        pciusbWarn("PCI", "EHCI Ports (%ld), do not match USB 1.1 Ports (%ld)!\n", usb20ports, usb11ports);
     }
 
     hu->hu_RootHub11Ports = usb11ports;
     hu->hu_RootHub20Ports = usb20ports;
     hu->hu_RootHubPorts = (usb11ports > usb20ports) ? usb11ports : usb20ports;
+#if defined(PCIUSB_ENABLEXHCI)
+    hu->hu_RootHubXPorts = xhciports;
+    if (hu->hu_RootHubXPorts > hu->hu_RootHubPorts)
+        hu->hu_RootHubPorts = hu->hu_RootHubXPorts;
+#endif
 
     for(cnt = 0; cnt < hu->hu_RootHubPorts; cnt++)
     {
-        hu->hu_PortOwner[cnt] = hu->hu_PortMap20[cnt] ? HCITYPE_EHCI : HCITYPE_UHCI;
+        hu->hu_PortOwner[cnt] = 
+#if defined(PCIUSB_ENABLEXHCI)
+                                                hu->hu_PortMapX[cnt] ? HCITYPE_XHCI : 
+#endif
+                                                hu->hu_PortMap20[cnt] ? HCITYPE_EHCI : HCITYPE_UHCI;
     }
 
-    KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports));
+    pciusbDebug("PCI", "Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports);
 
     hu->hu_FrameCounter = 1;
     hu->hu_RootHubAddr = 0;
@@ -598,7 +564,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         usbmin = 0;
         pciStrcat(prodname, "EHCI");
     }
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
     if (xhcicnt) {
         if (havetype)
             pciStrcat(prodname, "/");
@@ -613,10 +579,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     while(hc->hc_Node.ln_Succ)
     {
         hc->hc_Flags |= HCF_ONLINE;
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
         if (hc->hc_HCIType == HCITYPE_XHCI)
         {
-            UBYTE hcUSBVers = PCIXReadConfigByte(hc, XHCI_SBRN);
+            UBYTE hcUSBVers = READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, XHCI_SBRN);
             if (((hcUSBVers & 0xF0) >> 4) > usbmaj)
             {
                 usbmaj = ((hcUSBVers & 0xF0) >> 4);
@@ -638,7 +604,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     prodversstr[2] = usbmin + '0';
     prodversstr[3] = 0;
     pciStrcat(prodname, " Host Controller");
-    KPRINTF(10, ("Unit allocated!\n"));
+    pciusbDebug("PCI", "Unit allocated!\n");
 
     return TRUE;
 }
@@ -658,7 +624,7 @@ void pciFreeUnit(struct PCIUnit *hu)
             { TAG_DONE, 0UL },
     };
 
-    KPRINTF(10, ("*** pciFreeUnit(%p) ***\n", hu));
+    pciusbDebug("PCI", "Freeing unit @ 0x%p", hu);
 
     // put em offline
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
@@ -686,9 +652,9 @@ void pciFreeUnit(struct PCIUnit *hu)
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ) {
-        if(hc->hc_PCIMem) {
-            HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem);
-            hc->hc_PCIMem = NULL;
+        if(hc->hc_PCIMem.me_Un.meu_Addr) {
+            HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
+            hc->hc_PCIMem.me_Un.meu_Addr = NULL;
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
@@ -717,7 +683,7 @@ void pciExpunge(struct PCIDevice *hd)
     struct PCIController *hc;
     struct PCIUnit *hu;
 
-    KPRINTF(10, ("*** pciExpunge(%p) ***\n", hd));
+    pciusbDebug("PCI", "Device @ 0x%p", hd);
 
     hu = (struct PCIUnit *) hd->hd_Units.lh_Head;
     while(((struct Node *) hu)->ln_Succ)
@@ -742,6 +708,40 @@ void pciExpunge(struct PCIDevice *hd)
 
 #undef base
 #define base (hc->hc_Device)
+#undef LogHandle
+#define LogHandle hc->hc_LogRHandle
+
+BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt)
+{
+    struct PCIDevice *hd = hc->hc_Device;
+
+    return HIDD_PCIDevice_AddInterrupt(hc->hc_PCIDeviceObject, interrupt);
+}
+
+/* /// "pciAllocAligned()" */
+APTR pciAllocAligned(struct PCIController *hc, struct MemEntry *alloc, ULONG Size, ULONG align, ULONG bounds)
+{
+    alloc->me_Length = align + Size;
+    alloc->me_Un.meu_Addr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Length);
+    if (alloc->me_Un.meu_Addr) {
+        IPTR addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (align-1)) & ~(align-1));
+        if ((addrAligned & (bounds - 1)) != ((addrAligned + Size -1 ) & (bounds-1)))
+        {
+            pciusbDebug("PCI", "Re-allocating using bounds\n");
+            FREEPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Un.meu_Addr);
+            alloc->me_Length = bounds + Size;
+            alloc->me_Un.meu_Addr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Length);
+            addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (bounds-1)) & ~(bounds-1));
+        }
+        if (alloc->me_Un.meu_Addr) {
+            pciusbDebug("PCI", "Allocated @ %p <0x%p, %u>\n", addrAligned, alloc->me_Un.meu_Addr, alloc->me_Length);
+            return (APTR)addrAligned;
+        }
+    }
+    pciusbDebug("PCI", "Unable to allocate suitably aligned memory\n");
+    return NULL;
+}
+/* \\\ */
 
 /* /// "pciGetPhysical()" */
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)

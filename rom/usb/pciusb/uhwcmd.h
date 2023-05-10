@@ -5,9 +5,6 @@
 #include "pci_aros.h"
 #include "pciusb.h"
 
-/* Uncomment to enable the W.I.P Isochornous transfer stubs */
-//#define PCIUSB_WIP_ISO
-
 #if (__WORDSIZE == 64)
 
 APTR usbGetBuffer(APTR data, ULONG len, UWORD dir);
@@ -64,16 +61,11 @@ AROS_INTP(uhwNakTimeoutInt);
 
 BOOL pciInit(struct PCIDevice *hd);
 void pciExpunge(struct PCIDevice *hd);
+APTR pciAllocAligned(struct PCIController *, struct MemEntry *, ULONG, ULONG, ULONG);
 BOOL pciAllocUnit(struct PCIUnit *hu);
 void pciFreeUnit(struct PCIUnit *hu);
 APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr);
 
-UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);
-UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset);
-ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset);
-void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value);
-void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value);
-void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value);
 BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt);
 
 void uhwDelayMicro(ULONG micro, struct PCIUnit *unit);
