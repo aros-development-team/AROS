@@ -2,6 +2,11 @@
 #define GLOBALS_H_
 
 #include <exec/execbase.h>
+#if defined(AROS_USE_LOGRES)
+#define __LOG_NOLIBBASE__
+#include <proto/log.h>
+#include <resources/log.h>
+#endif
 #include "deviceio.h"
 #include "bitmap.h"
 #include "transactions.h"
@@ -10,6 +15,9 @@
 
 struct SFSBase
 {
+#if defined(AROS_USE_LOGRES)
+    struct Node sfsNode;
+#endif
 #ifndef __AROS__
     struct ExecBase *sysBase;
 #endif
@@ -31,6 +39,11 @@ struct SFSBase
     struct MsgPort *msgportflushtimer;
     struct MsgPort *msgportnotify;
     struct Process *mytask;
+
+#if defined(AROS_USE_LOGRES)
+    APTR                    logresBase;
+    APTR                    logHandle;
+#endif
 
     ULONG diskstate;     /* ID_WRITE_PROTECTED, ID_VALIDATING, ID_VALIDATED */
     ULONG blockpercycle;
@@ -235,6 +248,9 @@ void initGlobals();
 */
 #ifndef __AROS__
 #define SysBase (globals->sysBase)
+#endif
+#if defined(AROS_USE_LOGRES)
+#define LogResBase (globals->logresBase)
 #endif
 #define DOSBase (globals->dosBase)
 #define IntuitionBase (globals->intuitionBase)

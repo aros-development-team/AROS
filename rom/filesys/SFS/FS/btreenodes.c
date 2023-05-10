@@ -76,7 +76,7 @@ LONG getparentbtreecontainer(BLCK rootblock,struct CacheBuffer **io_cb) {
   BLCK childblock=(*io_cb)->blckno;
   LONG errorcode=0;
 
-  _XDEBUG((DEBUG_NODES,"getparentbtreecontainer: Getting parent of block %ld\n",(*io_cb)->blckno));
+  _XDEBUG(DEBUG_NODES,"getparentbtreecontainer: Getting parent of block %ld\n",(*io_cb)->blckno);
 
   /* This function gets the BTreeContainer parent of the passed in CacheBuffer.  If
      there is no parent this function sets io_cb to 0 */
@@ -119,7 +119,7 @@ LONG getparentbtreecontainer(BLCK rootblock,struct CacheBuffer **io_cb) {
 LONG createbnode(BLCK rootblock,ULONG key,struct CacheBuffer **returned_cb,struct BNode **returned_bnode) {
   LONG errorcode;
 
-  _XDEBUG((DEBUG_NODES,"createbnode: Creating BNode with key %ld, using %ld as root.\n",key,rootblock));
+  _XDEBUG(DEBUG_NODES,"createbnode: Creating BNode with key %ld, using %ld as root.\n",key,rootblock);
 
   while((errorcode=findbnode(rootblock, key, returned_cb, returned_bnode))==0) {
     struct fsBNodeContainer *bnc=(*returned_cb)->data;
@@ -133,12 +133,12 @@ LONG createbnode(BLCK rootblock,ULONG key,struct CacheBuffer **returned_cb,struc
       }
     #endif
 
-    _XDEBUG((DEBUG_NODES,"createbnode: findbnode found block %ld\n",(*returned_cb)->blckno));
+    _XDEBUG(DEBUG_NODES,"createbnode: findbnode found block %ld\n",(*returned_cb)->blckno);
 
     if(BE2W(btc->be_nodecount)<extbranches) {
       /* Simply insert new node in this BTreeContainer */
 
-      _XDEBUG((DEBUG_NODES,"createbnode: Simple insert\n"));
+      _XDEBUG(DEBUG_NODES,"createbnode: Simple insert\n");
 
       preparecachebuffer(*returned_cb);
 
@@ -165,7 +165,7 @@ LONG splitbtreecontainer(BLCK rootblock,struct CacheBuffer *cb) {
   struct BNode *bn;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_NODES,"splitbtreecontainer: splitting block %ld\n",cb->blckno));
+  _XDEBUG(DEBUG_NODES,"splitbtreecontainer: splitting block %ld\n",cb->blckno);
 
   lockcachebuffer(cb);
 
@@ -174,7 +174,7 @@ LONG splitbtreecontainer(BLCK rootblock,struct CacheBuffer *cb) {
     if(cbparent==0) {
       /* We need to create Root tree-container */
 
-      _XDEBUG((DEBUG_NODES,"splitbtreecontainer: creating root tree-container\n"));
+      _XDEBUG(DEBUG_NODES,"splitbtreecontainer: creating root tree-container\n");
 
       cbparent=cb;
       if((errorcode=allocadminspace(&cb))==0) {
@@ -185,7 +185,7 @@ LONG splitbtreecontainer(BLCK rootblock,struct CacheBuffer *cb) {
         CopyMemQuick(cbparent->data,cb->data,globals->bytes_block);
         bnc->bheader.be_ownblock=L2BE(cb->blckno);
 
-        _XDEBUG((DEBUG_NODES,"splitbtreecontainer: allocated admin space for root\n"));
+        _XDEBUG(DEBUG_NODES,"splitbtreecontainer: allocated admin space for root\n");
 
         lockcachebuffer(cb);          /* Lock cachebuffer which now contains the data previously in root.
                                          It must be locked here, otherwise preparecachebuffer below could
@@ -303,7 +303,7 @@ LONG findbnode(BLCK rootblock, ULONG key, struct CacheBuffer **returned_cb, stru
      Any error will be returned.  If non-zero then don't rely on the contents
      of *returned_cb and *returned_bnode. */
 
-  _XDEBUG((DEBUG_NODES,"findbnode: Looking for BNode with key %ld, from root %ld\n",key,rootblock));
+  _XDEBUG(DEBUG_NODES,"findbnode: Looking for BNode with key %ld, from root %ld\n",key,rootblock);
 
   while((errorcode=readcachebuffercheck(returned_cb, rootblock, BNODECONTAINER_ID))==0) {
     struct fsBNodeContainer *bnc=(*returned_cb)->data;
@@ -321,7 +321,7 @@ LONG findbnode(BLCK rootblock, ULONG key, struct CacheBuffer **returned_cb, stru
     rootblock=BE2L((*returned_bnode)->be_data);
   }
 
-  _XDEBUG((DEBUG_NODES,"findbnode: *returned_cb->blckno = %ld, Exiting with errorcode %ld\n",(*returned_cb)->blckno,errorcode));
+  _XDEBUG(DEBUG_NODES,"findbnode: *returned_cb->blckno = %ld, Exiting with errorcode %ld\n",(*returned_cb)->blckno,errorcode);
 
   return(errorcode);
 }
@@ -411,7 +411,7 @@ LONG deleteinternalnode(BLCK rootblock,struct CacheBuffer *cb,ULONG key) {
     /* Now checks if the container still contains enough nodes,
        and takes action accordingly. */
 
-    _XDEBUG((DEBUG_NODES,"deleteinternalnode: branches = %ld, btc->nodecount = %ld\n",branches,BE2W(btc->be_nodecount)));
+    _XDEBUG(DEBUG_NODES,"deleteinternalnode: branches = %ld, btc->nodecount = %ld\n",branches,BE2W(btc->be_nodecount));
 
     if(BE2W(btc->be_nodecount)<(branches+1)/2) {
       struct CacheBuffer *cbparent=cb;
@@ -431,7 +431,7 @@ LONG deleteinternalnode(BLCK rootblock,struct CacheBuffer *cb,ULONG key) {
           struct BTreeContainer *btcparent=&bncparent->btc;
           WORD n;
 
-          _XDEBUG((DEBUG_NODES,"deleteinternalnode: get parent returned block %ld.\n",cbparent->blckno));
+          _XDEBUG(DEBUG_NODES,"deleteinternalnode: get parent returned block %ld.\n",cbparent->blckno);
 
           for(n=0; n<BE2W(btcparent->be_nodecount); n++) {
             if(BE2L(btcparent->bnode[n].be_data)==cb->blckno) {
@@ -446,7 +446,7 @@ LONG deleteinternalnode(BLCK rootblock,struct CacheBuffer *cb,ULONG key) {
           if(n<BE2W(btcparent->be_nodecount)-1) {      // Check if we have a next neighbour.
             struct CacheBuffer *cb_next;
 
-            _XDEBUG((DEBUG_NODES,"deleteinternalnode: using next container.\n"));
+            _XDEBUG(DEBUG_NODES,"deleteinternalnode: using next container.\n");
 
             if((errorcode=readcachebuffercheck(&cb_next,BE2L(btcparent->bnode[n+1].be_data),BNODECONTAINER_ID))==0) {
               struct fsBNodeContainer *bnc_next=cb_next->data;
@@ -498,7 +498,7 @@ LONG deleteinternalnode(BLCK rootblock,struct CacheBuffer *cb,ULONG key) {
           else if(n>0) {       // Check if we have a previous neighbour.
             struct CacheBuffer *cb2;
 
-            _XDEBUG((DEBUG_NODES,"deleteinternalnode: using prev container.\n"));
+            _XDEBUG(DEBUG_NODES,"deleteinternalnode: using prev container.\n");
 
             if((errorcode=readcachebuffercheck(&cb2,BE2L(btcparent->bnode[n-1].be_data),BNODECONTAINER_ID))==0) {
               struct fsBNodeContainer *bnc2=cb2->data;
@@ -560,7 +560,7 @@ LONG deleteinternalnode(BLCK rootblock,struct CacheBuffer *cb,ULONG key) {
         else if(BE2W(btc->be_nodecount)==1) {
           /* No parent, so must be root. */
 
-          _XDEBUG((DEBUG_NODES,"deleteinternalnode: no parent so must be root\n"));
+          _XDEBUG(DEBUG_NODES,"deleteinternalnode: no parent so must be root\n");
 
           if(btc->isleaf==FALSE) {
             struct CacheBuffer *cb2;
@@ -588,7 +588,7 @@ LONG deleteinternalnode(BLCK rootblock,struct CacheBuffer *cb,ULONG key) {
           /* If not, then root contains leafs. */
         }
 
-        _XDEBUG((DEBUG_NODES,"deleteinternalnode: almost done\n"));
+        _XDEBUG(DEBUG_NODES,"deleteinternalnode: almost done\n");
 
         /* otherwise, it must be the root, and the root is allowed
            to contain less than the minimum amount of nodes. */
@@ -618,7 +618,7 @@ LONG deletebnode(BLCK rootblock,ULONG key) {
       }
     #endif
 
-    _XDEBUG((DEBUG_NODES,"deletebnode: key %ld\n",key));
+    _XDEBUG(DEBUG_NODES,"deletebnode: key %ld\n",key);
 
     errorcode=deleteinternalnode(rootblock,cb,key);
   }
@@ -632,7 +632,7 @@ void removebnode(ULONG key,struct BTreeContainer *btc) {
   struct BNode *bn=btc->bnode;
   WORD n=0;
 
-  _XDEBUG((DEBUG_NODES,"removebnode: key %ld\n",key));
+  _XDEBUG(DEBUG_NODES,"removebnode: key %ld\n",key);
 
   /* This routine removes a node from a BTreeContainer indentified
      by its key.  If no such key exists this routine does nothing.

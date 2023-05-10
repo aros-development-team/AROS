@@ -53,7 +53,7 @@ extern void starttimeout(void);
 
 void update(void)
 {
-    _TDEBUG(("UPDATE\n"));
+    _TDEBUG("UPDATE\n");
     globals->ioreq->io_Command=CMD_UPDATE;
     globals->ioreq->io_Length=0;
     DoIO((struct IORequest *)globals->ioreq);
@@ -61,7 +61,7 @@ void update(void)
 
 void motoroff(void)
 {
-    _TDEBUG(("MOTOR OFF\n"));
+    _TDEBUG("MOTOR OFF\n");
     globals->ioreq->io_Command=TD_MOTOR;
     globals->ioreq->io_Length=0;
     DoIO((struct IORequest *)globals->ioreq);
@@ -267,7 +267,7 @@ void changegeometry(struct DosEnvec *de)
     globals->bytes_sector  = de->de_SizeBlock<<2;
     globals->bytes_block   = globals->bytes_sector * de->de_SectorPerBlock;
 
-    _DEBUG(("%u sectors per block, %u bytes per sector, %u bytes per block\n", globals->sectors_block, globals->bytes_sector, globals->bytes_block));
+    _DEBUG("%u sectors per block, %u bytes per sector, %u bytes per block\n", globals->sectors_block, globals->bytes_sector, globals->bytes_block);
 
     bs = globals->bytes_block;
 
@@ -279,7 +279,7 @@ void changegeometry(struct DosEnvec *de)
 
     globals->mask_block = globals->bytes_block-1;
     
-    _DEBUG(("Block shift: %u, mask: 0x%08X\n", globals->shifts_block, globals->mask_block));
+    _DEBUG("Block shift: %u, mask: 0x%08X\n", globals->shifts_block, globals->mask_block);
 
     /* Absolute offset on the entire disk are expressed in Sectors;
        Offset relative to the start of the partition are expressed in Blocks */
@@ -290,7 +290,7 @@ void changegeometry(struct DosEnvec *de)
     globals->sector_low  = sectorspercilinder * de->de_LowCyl;
     globals->sector_high = sectorspercilinder * (de->de_HighCyl+1);
 
-    _DEBUG(("%u sectors per cylinder, start sector %u, end sector %u\n", sectorspercilinder, globals->sector_low, globals->sector_high));
+    _DEBUG("%u sectors per cylinder, start sector %u, end sector %u\n", sectorspercilinder, globals->sector_low, globals->sector_high);
 
     /*
      * If our device starts from sector 0, we assume we are serving the whole device.
@@ -327,8 +327,8 @@ void changegeometry(struct DosEnvec *de)
     globals->byte_low      = (UQUAD)globals->sector_low  * globals->bytes_sector;
     globals->byte_high     = (UQUAD)globals->sector_high * globals->bytes_sector;
 
-    _DEBUG(("Total: %u sectors, %u blocks\n", globals->sectors_total, globals->blocks_total));
-    _DEBUG(("Start offset 0x%llu, end offset 0x%llu\n", globals->byte_low, globals->byte_high));
+    _DEBUG("Total: %u sectors, %u blocks\n", globals->sectors_total, globals->blocks_total);
+    _DEBUG("Start offset 0x%llu, end offset 0x%llu\n", globals->byte_low, globals->byte_high);
 }
 
 #ifdef DEBUGCODE
@@ -413,7 +413,7 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
 
                                 globals->newstyledevice=TRUE;
 
-//                              _DEBUG(("Device is a new style device\n"));
+//                              _DEBUG("Device is a new style device\n");
 
                                 /* Is it safe to use 64 bits with this driver?  We can reject
                                    bad mounts pretty easily via this check. */
@@ -423,7 +423,7 @@ LONG initdeviceio(UBYTE *devicename, IPTR unit, ULONG flags, struct DosEnvec *de
                                         /* This trackdisk style device supports the complete 64-bit
                                            command set without returning IOERR_NOCMD! */
 
-//                                      _DEBUG(("Device supports 64-bit commands\n"));
+//                                      _DEBUG("Device supports 64-bit commands\n");
 
                                         globals->does64bit=TRUE;
                                         globals->cmdread=NSCMD_TD_READ64;
@@ -579,12 +579,12 @@ void setiorequest(struct fsIORequest *fsi, UWORD action, UBYTE *buffer, ULONG bl
 {
     struct IOStdReq *ioreq=fsi->ioreq;
 
-    _DEBUG(("setiorequest(0x%p, %u, %u)\n", buffer, blockoffset, blocks));
+    _DEBUG("setiorequest(0x%p, %u, %u)\n", buffer, blockoffset, blocks);
 
     fsi->next=0;
     fsi->action=action;
 
-    _DEBUG(("Use DirectSCSI: %d\n", globals->scsidirect));
+    _DEBUG("Use DirectSCSI: %d\n", globals->scsidirect);
 
     if (globals->scsidirect==TRUE)
     {
@@ -640,7 +640,7 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
 
     if ((errorcode = getbuffer(&tempbuffer, &maxblocks)) != 0)
     {
-    	_DEBUG(("Buffered transfer: getbuffer() error %d\n", errorcode));
+    	_DEBUG("Buffered transfer: getbuffer() error %d\n", errorcode);
 
         return errorcode;
     }
@@ -663,11 +663,11 @@ LONG transfer_buffered(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blo
 
         while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
         {
-	    _DEBUG(("Buffered transfer: I/O error %d\n", errorcode));
+	    _DEBUG("Buffered transfer: I/O error %d\n", errorcode);
 
             if ((errorcode = handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
             {
-                _DEBUG(("Buffered transfer: SFS error %d\n", errorcode));
+                _DEBUG("Buffered transfer: SFS error %d\n", errorcode);
                 return(errorcode);
             }
         }
@@ -769,19 +769,19 @@ static LONG asynctransfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG 
 
 LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
 {
-    _TDEBUG(("TRANSFER: %ld, buf=0x%p, block=%ld, blocks=%ld...\n", action, buffer, blockoffset, blocklength));
+    _TDEBUG("TRANSFER: %ld, buf=0x%p, block=%ld, blocks=%ld...\n", action, buffer, blockoffset, blocklength);
 
     if ((blockoffset < globals->blocks_total) && (blockoffset + blocklength <= globals->blocks_total))
     {
         ULONG maxblocks = globals->blocks_maxtransfer;
         LONG errorcode;
 
-	_DEBUG(("MaxTransfer: %d\n", maxblocks));
+	_DEBUG("MaxTransfer: %d\n", maxblocks);
 
 	// Buffered transfer needed?
         if (((IPTR)buffer & ~globals->mask_mask) !=0 )
         {
-            _DEBUG(("Buffer 0x%p, mask 0x%p. Buffered transfer needed.\n", buffer, globals->mask_mask));
+            _DEBUG("Buffer 0x%p, mask 0x%p. Buffered transfer needed.\n", buffer, globals->mask_mask);
 
             return transfer_buffered(action, buffer, blockoffset, blocklength);
         }
@@ -801,11 +801,11 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
 
             while ((errorcode=DoIO((struct IORequest *)globals->fsioreq.ioreq)) != 0)
             {
-            	_DEBUG(("Direct transfer: I/O error %d\n", errorcode));
+            	_DEBUG("Direct transfer: I/O error %d\n", errorcode);
 
                 if ((errorcode=handleioerror(errorcode, action, globals->fsioreq.ioreq)) != 0)
                 {
-	            _DEBUG(("Direct transfer: SFS error %d\n", errorcode));
+	            _DEBUG("Direct transfer: SFS error %d\n", errorcode);
 
                     return errorcode;
                 }
@@ -816,8 +816,8 @@ LONG transfer(UWORD action, UBYTE *buffer, ULONG blockoffset, ULONG blocklength)
             buffer+=blocks<<globals->shifts_block;
         }
 
-	_DEBUG(("..."));
-        _TDEBUG(("\n"));
+	_DEBUG("...");
+        _TDEBUG("\n");
 
         return(0);
     }

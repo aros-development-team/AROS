@@ -248,13 +248,20 @@ LONG mainprogram(struct ExecBase *SysBase) {
     APTR newdata;
 #endif
 
-    D(bug("[SFS] Filesystem main\n"));
-
     globals = AllocMem(sizeof(struct SFSBase), MEMF_PUBLIC | MEMF_CLEAR);
 #ifndef __AROS__
     globals->sysBase = SysBase;
 #endif
     initGlobals();
+#if defined(AROS_USE_LOGRES)
+	globals->logresBase = OpenResource("log.resource");
+	if (globals->logresBase)
+	{
+		globals->sfsNode.ln_Name = "SFS";
+		globals->logHandle = logInitialise(&globals->sfsNode);
+	}
+#endif
+    D(bug("[SFS] Filesystem main\n"));
 
 #ifndef __AROS__
 #undef SysBase
@@ -357,7 +364,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
 
                                                         globals->block_rovingblockptr = globals->blocks_reserved_start + globals->blocks_admin + globals->blocks_bitmap + reserve;
 
-                                                        _DEBUG(("RovingBlockPtr = %ld, reserve = %ld\n", globals->block_rovingblockptr, reserve));
+                                                        _DEBUG("RovingBlockPtr = %ld, reserve = %ld\n", globals->block_rovingblockptr, reserve);
 
                                                         // block_rovingblockptr=0;
                                                     }
@@ -368,7 +375,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
 
                                                     addchangeint((struct Task *)globals->mytask, 1 << globals->mytask->pr_MsgPort.mp_SigBit);
 
-                                                    _DEBUG(("Initializing transactions\n"));
+                                                    _DEBUG("Initializing transactions\n");
 
                                                     if(inittransactions() == 0) {
 
@@ -384,12 +391,12 @@ LONG mainprogram(struct ExecBase *SysBase) {
 
                                                             /* return startup-packet, the handler runs now */
 
-                                                            _DEBUG(("Filesystem started!  Volumenode = %ld\n", globals->volumenode));
-                                                            _DEBUG(("Mountlist entry says: Allocate %ld buffers of memtype 0x%08lx\n", globals->dosenvec->de_NumBuffers, globals->dosenvec->de_BufMemType));
+                                                            _DEBUG("Filesystem started!  Volumenode = %ld\n", globals->volumenode);
+                                                            _DEBUG("Mountlist entry says: Allocate %ld buffers of memtype 0x%08lx\n", globals->dosenvec->de_NumBuffers, globals->dosenvec->de_BufMemType);
 
                                                             //  returnpacket(DOSTRUE,0);   // Sep 19 1999: Moved down again.
 
-                                                            _DEBUG(("CreateNewProc..."));
+                                                            _DEBUG("CreateNewProc...");
 
                                                             const struct TagItem 	     tags[] = {
                                                                 {NP_Entry, (IPTR)sdlhtask    	    	},
@@ -400,7 +407,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
 
                                                             if(CreateNewProc(tags) != 0) {
 
-                                                                _DEBUG(("ok\n"));
+                                                                _DEBUG("ok\n");
 
                                                                 while((globals->sdlhport = FindPort("SFS DosList handler")) == 0) {
                                                                     Delay(2);
@@ -461,7 +468,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
             }
         }
 
-        _DEBUG(("Returning startup packet with DOSFALSE\n"));
+        _DEBUG("Returning startup packet with DOSFALSE\n");
 
         returnpacket(DOSFALSE, ERROR_NO_FREE_STORE);
 
@@ -469,7 +476,7 @@ LONG mainprogram(struct ExecBase *SysBase) {
     }
 
     FreeMem(globals, sizeof(struct SFSBase));
-    _DEBUG(("Exiting filesystem\n"));
+    _DEBUG("Exiting filesystem\n");
 
     return(ERROR_NO_FREE_STORE);
 }
@@ -525,7 +532,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
         break;
     }
 
-    //    _DEBUG(("ACTION_EXAMINE_ALL: *eadsize = %ld, *stringsize = %ld, *spaceleft = %ld, packet->dp_Arg4 = %ld\n",*eadsize,*stringsize,*spaceleft,packet->dp_Arg4));
+    //    _DEBUG("ACTION_EXAMINE_ALL: *eadsize = %ld, *stringsize = %ld, *spaceleft = %ld, packet->dp_Arg4 = %ld\n",*eadsize,*stringsize,*spaceleft,packet->dp_Arg4);
 
     if(*spaceleft < (LONG)(*eadsize + *stringsize)) {
         return 0;
@@ -566,7 +573,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
         }
     // fall through
     case ED_TYPE:
-        _DEBUG(("examine ED_TYPE, o->bits=%08x, o->objectnode=$%08x\n", (*o)->bits, BE2L((*o)->be_objectnode)));
+        _DEBUG("examine ED_TYPE, o->bits=%08x, o->objectnode=$%08x\n", (*o)->bits, BE2L((*o)->be_objectnode));
         if(((*o)->bits & OTYPE_LINK) != 0) {
             (*ead)->ed_Type = ST_SOFTLINK;
         }
@@ -591,7 +598,7 @@ static int sfsExamineAll(struct ExAllControl *eac,
 
         *dest = 0;
         *eadsize += 1;
-        //            _DEBUG(("Stored entry %s\n",(*ead)->ed_Name));
+        //            _DEBUG("Stored entry %s\n",(*ead)->ed_Name);
     }
     }
 
@@ -670,7 +677,7 @@ void mainloop(void) {
 
         do {
             while((msg = GetMsg(globals->msgportflushtimer)) != 0) {
-                _TDEBUG(("mainloop: activity timeout -> flushed transaction\n"));
+                _TDEBUG("mainloop: activity timeout -> flushed transaction\n");
                 flushtransaction();
                 globals->activitytimeractive = FALSE;
             }
@@ -681,7 +688,7 @@ void mainloop(void) {
                     globals->pendingchanges = FALSE;
                     starttimeout();
                 } else {
-                    _TDEBUG(("mainloop: inactivity timeout -> flushed transaction\n"));
+                    _TDEBUG("mainloop: inactivity timeout -> flushed transaction\n");
                     flushcaches();
                     globals->pendingchanges = FALSE;
                 }
@@ -695,7 +702,7 @@ void mainloop(void) {
 
                 /* The disk was inserted or removed! */
 
-                _DEBUG(("mainloop: disk inserted or removed\n"));
+                _DEBUG("mainloop: disk inserted or removed\n");
 
                 if(isdiskpresent() == FALSE) {
                     /* Disk was removed */
@@ -873,7 +880,7 @@ void mainloop(void) {
                 }
                 break;
                 case ACTION_SET_DEBUG:
-                    _DEBUG(("New debug level set to 0x%08lx!\n", globals->packet->dp_Arg1));
+                    _DEBUG("New debug level set to 0x%08lx!\n", globals->packet->dp_Arg1);
                     {
                         globals->mask_debug = globals->packet->dp_Arg1;
 
@@ -881,7 +888,7 @@ void mainloop(void) {
                     }
                     break;
                 case ACTION_SET_CACHE:
-                    _DEBUG(("ACTION_SET_CACHE\n"));
+                    _DEBUG("ACTION_SET_CACHE\n");
                     {
                         LONG errorcode;
 
@@ -895,7 +902,7 @@ void mainloop(void) {
                     break;
                 case ACTION_SFS_FORMAT:
                 case ACTION_FORMAT:
-                    _DEBUG(("ACTION_FORMAT\n"));
+                    _DEBUG("ACTION_FORMAT\n");
 
                     {
                         struct CacheBuffer *cb;
@@ -959,7 +966,7 @@ void mainloop(void) {
                         if(errorcode == 0) {
                             struct fsAdminSpaceContainer *ac = cb->data;
 
-                            _DEBUG(("ACTION_FORMAT: Creating AdminSpace container block\n"));
+                            _DEBUG("ACTION_FORMAT: Creating AdminSpace container block\n");
 
                             /* Create AdminSpaceContainer block */
 
@@ -988,7 +995,7 @@ void mainloop(void) {
                             struct fsObjectContainer *oc = cb->data;
                             struct fsRootInfo *ri = (struct fsRootInfo *)((UBYTE *)cb->data + globals->bytes_block - sizeof(struct fsRootInfo));
 
-                            _DEBUG(("ACTION_FORMAT: Creating Root block\n"));
+                            _DEBUG("ACTION_FORMAT: Creating Root block\n");
 
                             /* Create Root block */
 
@@ -1020,7 +1027,7 @@ void mainloop(void) {
                         if(errorcode == 0) {
                             struct fsHashTable *ht = cb->data;
 
-                            _DEBUG(("ACTION_FORMAT: Creating Root's HashTable block\n"));
+                            _DEBUG("ACTION_FORMAT: Creating Root's HashTable block\n");
 
                             /* Create Root's HashTable block */
 
@@ -1042,7 +1049,7 @@ void mainloop(void) {
                         if(errorcode == 0) {
                             struct fsBlockHeader *bh = cb->data;
 
-                            _DEBUG(("ACTION_FORMAT: Creating Transaction block\n"));
+                            _DEBUG("ACTION_FORMAT: Creating Transaction block\n");
 
                             /* Create empty block as a placeholder for the TransactionFailure block. */
 
@@ -1060,7 +1067,7 @@ void mainloop(void) {
                             struct fsBNodeContainer *bnc = cb->data;
                             struct BTreeContainer *btc = &bnc->btc;
 
-                            _DEBUG(("ACTION_FORMAT: Creating ExtentNode root block\n"));
+                            _DEBUG("ACTION_FORMAT: Creating ExtentNode root block\n");
 
                             /* Create NodeContainer block for ExtentNodes */
 
@@ -1082,7 +1089,7 @@ void mainloop(void) {
                             struct fsNodeContainer *nc = cb->data;
                             struct fsObjectNode *on;
 
-                            _DEBUG(("ACTION_FORMAT: Creating ObjectNode root block\n"));
+                            _DEBUG("ACTION_FORMAT: Creating ObjectNode root block\n");
 
                             /* Create NodeContainer block for ObjectNodes */
 
@@ -1125,7 +1132,7 @@ void mainloop(void) {
                         if(errorcode == 0 && norecycled == FALSE) {
                             struct fsObjectContainer *oc = cb->data;
 
-                            _DEBUG(("ACTION_FORMAT: Creating Root ObjectContainer block\n"));
+                            _DEBUG("ACTION_FORMAT: Creating Root ObjectContainer block\n");
 
                             cb->blckno = block_recycled;
                             clearcachebuffer(cb);
@@ -1157,7 +1164,7 @@ void mainloop(void) {
                         if(errorcode==0 && norecycled==FALSE) {
                           struct fsHashTable *ht=cb->data;
 
-                          _DEBUG(("ACTION_FORMAT: Creating Recycled's HashTable block\n"));
+                          _DEBUG("ACTION_FORMAT: Creating Recycled's HashTable block\n");
 
                           cb->blckno=block_recycled+1;
                           clearcachebuffer(cb);
@@ -1178,7 +1185,7 @@ void mainloop(void) {
                             LONG startfree = globals->blocks_admin + globals->blocks_bitmap + globals->blocks_reserved_start;
                             LONG sizefree;
 
-                            _DEBUG(("ACTION_FORMAT: Creating the Bitmap blocks\n"));
+                            _DEBUG("ACTION_FORMAT: Creating the Bitmap blocks\n");
 
                             /* Create Bitmap blocks */
 
@@ -1221,7 +1228,7 @@ void mainloop(void) {
                         if(errorcode == 0) {
                             struct fsRootBlock *rb;
 
-                            _DEBUG(("ACTION_FORMAT: Creating the Root blocks\n"));
+                            _DEBUG("ACTION_FORMAT: Creating the Root blocks\n");
 
                             /* Create Root blocks */
 
@@ -1262,7 +1269,7 @@ void mainloop(void) {
                             if((errorcode = writecachebuffer(cb)) == 0) {
                                 cb->blckno = globals->blocks_total - 1;
 
-                                _DEBUG(("ACTION_FORMAT: Creating the 2nd Root block\n"));
+                                _DEBUG("ACTION_FORMAT: Creating the 2nd Root block\n");
 
                                 rb->bheader.be_ownblock = L2BE(globals->blocks_total - 1);
 
@@ -1276,7 +1283,7 @@ void mainloop(void) {
                         motoroff();
 
                         if(errorcode != 0) {
-                            _DEBUG(("ACTION_FORMAT: Exiting with errorcode %ld\n", errorcode));
+                            _DEBUG("ACTION_FORMAT: Exiting with errorcode %ld\n", errorcode);
 
                             returnpacket(DOSFALSE, errorcode);
                         } else {
@@ -1286,7 +1293,7 @@ void mainloop(void) {
 
                     break;
                 case ACTION_INHIBIT:
-                    _DEBUG(("ACTION_INHIBIT(%ld)\n", globals->packet->dp_Arg1));
+                    _DEBUG("ACTION_INHIBIT(%ld)\n", globals->packet->dp_Arg1);
 
                     /* This function nests.  Each call to inhibit the disk should be matched
                        with one to uninhibit the disk. */
@@ -1317,7 +1324,7 @@ void mainloop(void) {
                     }
                     break;
                 case ACTION_SERIALIZE_DISK:
-                    _DEBUG(("ACTION_SERIALIZE_DISK\n"));
+                    _DEBUG("ACTION_SERIALIZE_DISK\n");
 
                     {
                         struct CacheBuffer *cb;
@@ -1348,7 +1355,7 @@ void mainloop(void) {
                         if(globals->disktype == DOSTYPE_ID) {
                             switch(globals->packet->dp_Type) {
                             case ACTION_MAKE_LINK:
-                                _DEBUG(("ACTION_MAKE_LINK\n"));
+                                _DEBUG("ACTION_MAKE_LINK\n");
 
                                 {
                                     if(globals->packet->dp_Arg4 == LINK_HARD) {
@@ -1364,7 +1371,7 @@ void mainloop(void) {
                                         lock = (struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
                                         copybstrasstr((BSTR)globals->packet->dp_Arg2, globals->string, 258);
 
-                                        _DEBUG(("ACTION_MAKE_LINK: Name = '%s', LinkPath = '%s'\n", globals->string, (UBYTE *)globals->packet->dp_Arg3));
+                                        _DEBUG("ACTION_MAKE_LINK: Name = '%s', LinkPath = '%s'\n", globals->string, (UBYTE *)globals->packet->dp_Arg3);
 
                                         if((errorcode = findcreate(&lock, globals->string, globals->packet->dp_Type, (UBYTE *)globals->packet->dp_Arg3)) != 0) {
                                             returnpacket(DOSFALSE, errorcode);
@@ -1377,7 +1384,7 @@ void mainloop(void) {
 
                                 break;
                             case ACTION_READ_LINK:
-                                _DEBUG(("ACTION_READ_LINK\n"));
+                                _DEBUG("ACTION_READ_LINK\n");
 
                                 {
                                     struct CacheBuffer *cb;
@@ -1398,7 +1405,7 @@ void mainloop(void) {
                                     if((errorcode = readobject(objectnode, &cb, &o)) == 0) {
                                         UBYTE *path = (UBYTE *)globals->packet->dp_Arg2, *prefix = path;
 
-                                        _DEBUG(("ACTION_READ_LINK: path = '%s', errorcode = %ld\n", path, errorcode));
+                                        _DEBUG("ACTION_READ_LINK: path = '%s', errorcode = %ld\n", path, errorcode);
 
                                         errorcode = locateobject2(&path, &cb, &o);
 
@@ -1417,7 +1424,7 @@ void mainloop(void) {
                                                 path++;
                                             }
 
-                                            _DEBUG(("ACTION_READ_LINK: path = '%s'\n", path));
+                                            _DEBUG("ACTION_READ_LINK: path = '%s'\n", path);
 
                                             if((errorcode = readcachebuffercheck(&cb2, BE2L(o->object.file.be_data), SOFTLINK_ID)) == 0) {
                                                 struct fsSoftLink *sl = cb2->data;
@@ -1430,7 +1437,7 @@ void mainloop(void) {
 
                                                 s = globals->string;
 
-                                                _DEBUG(("ACTION_READ_LINK: length = %ld, sl->string = '%s', path = '%s'\n", length, sl->string, s));
+                                                _DEBUG("ACTION_READ_LINK: length = %ld, sl->string = '%s', path = '%s'\n", length, sl->string, s);
 
                                                 /* cb is no longer valid at this point. */
 
@@ -1494,7 +1501,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_CREATE_DIR:
-                                _DEBUG(("ACTION_CREATE_DIR\n"));
+                                _DEBUG("ACTION_CREATE_DIR\n");
 
                                 {
                                     struct ExtFileLock *lock;
@@ -1515,7 +1522,7 @@ void mainloop(void) {
                             case ACTION_FINDINPUT:
                             case ACTION_FINDOUTPUT:
                             case ACTION_FH_FROM_LOCK:
-                                _XDEBUG((DEBUG_OBJECTS, "ACTION_FIND#? or ACTION_FH_FROM_LOCK\n"));
+                                _XDEBUG(DEBUG_OBJECTS, "ACTION_FIND#? or ACTION_FH_FROM_LOCK\n");
 
                                 {
                                     struct ExtFileLock *lock;
@@ -1527,7 +1534,7 @@ void mainloop(void) {
 
                                     if(globals->packet->dp_Type != ACTION_FH_FROM_LOCK) {
                                         copybstrasstr((BSTR)globals->packet->dp_Arg3, globals->string, 258);
-                                        _DEBUG(("OPEN FILE: %s (mode = %ld)\n", globals->string, globals->packet->dp_Type));
+                                        _DEBUG("OPEN FILE: %s (mode = %ld)\n", globals->string, globals->packet->dp_Type);
                                         errorcode = findcreate(&lock, globals->string, globals->packet->dp_Type, 0);
                                     }
 
@@ -1558,7 +1565,7 @@ void mainloop(void) {
 
                                 break;
                             case ACTION_END:
-                                _XDEBUG((DEBUG_OBJECTS, "ACTION_END\n"));
+                                _XDEBUG(DEBUG_OBJECTS, "ACTION_END\n");
 
                                 /* ACTION_FREE_LOCK's code is similair */
 
@@ -1616,7 +1623,7 @@ void mainloop(void) {
 
                                 copybstrasstr((BSTR)globals->packet->dp_Arg2, globals->string, 258);
 
-                                _DEBUG(("ACTION_DELETE_OBJECT(0x%08lx,'%s')\n", BADDR(globals->packet->dp_Arg1), globals->string));
+                                _DEBUG("ACTION_DELETE_OBJECT(0x%08lx,'%s')\n", BADDR(globals->packet->dp_Arg1), globals->string);
 
                                 do {
                                     newtransaction();
@@ -1644,7 +1651,7 @@ void mainloop(void) {
                             }
                             break;
                             case ACTION_RENAME_DISK:
-                                _DEBUG(("ACTION_RENAME_DISK\n"));
+                                _DEBUG("ACTION_RENAME_DISK\n");
 
                                 {
                                     struct CacheBuffer *cb;
@@ -1712,7 +1719,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_RENAME_OBJECT:
-                                _DEBUG(("ACTION_RENAME_OBJECT\n"));
+                                _DEBUG("ACTION_RENAME_OBJECT\n");
 
                                 {
                                     LONG errorcode;
@@ -1758,7 +1765,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_SET_COMMENT:
-                                _DEBUG(("ACTION_SET_COMMENT\n"));
+                                _DEBUG("ACTION_SET_COMMENT\n");
                                 {
                                     LONG errorcode;
 
@@ -1785,7 +1792,7 @@ void mainloop(void) {
                             case ACTION_SET_PROTECT:
                             case ACTION_SET_OWNER:
                             case ACTION_SFS_SET_OBJECTBITS:
-                                _XDEBUG((DEBUG_OBJECTS, "ACTION_SET_DATE or ACTION_SET_PROTECT or ACTION_SET_OWNER\n"));
+                                _XDEBUG(DEBUG_OBJECTS, "ACTION_SET_DATE or ACTION_SET_PROTECT or ACTION_SET_OWNER\n");
 
                                 {
                                     LONG errorcode;
@@ -1859,7 +1866,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_SET_FILE_SIZE:
-                                _DEBUG(("ACTION_SET_FILE_SIZE(0x%08lx,0x%08lx,0x%08lx)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3));
+                                _DEBUG("ACTION_SET_FILE_SIZE(0x%08lx,0x%08lx,0x%08lx)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3);
 
                                 {
                                     struct ExtFileLock *lock = (struct ExtFileLock *)globals->packet->dp_Arg1;
@@ -1899,7 +1906,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_SEEK:
-                                _XDEBUG((DEBUG_SEEK, "ACTION_SEEK(0x%08lx,0x%08lx,0x%08lx)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3));
+                                _XDEBUG(DEBUG_SEEK, "ACTION_SEEK(0x%08lx,0x%08lx,0x%08lx)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3);
 
                                 {
                                     struct ExtFileLock *lock = (struct ExtFileLock *)globals->packet->dp_Arg1;
@@ -1937,7 +1944,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_READ:
-                                _XDEBUG((DEBUG_IO, "ACTION_READ(0x%08lx,0x%08lx,%ld)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3));
+                                _XDEBUG(DEBUG_IO, "ACTION_READ(0x%08lx,0x%08lx,%ld)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3);
 
                                 {
                                     struct ExtFileLock *lock = (struct ExtFileLock *)globals->packet->dp_Arg1;
@@ -1963,12 +1970,12 @@ void mainloop(void) {
                                                 BLCK ebn_next = BE2L(ebn->be_next);
                                                 UWORD ebn_blocks = BE2W(ebn->be_blocks);
 
-                                                _XDEBUG((DEBUG_IO, "ACTION_READ: buffer = 0x%p bytesleft = %ld, offsetinblock = %ld, ExtentBNode = %ld, ebn->data = %ld, ebn->blocks = %ld\n",
-                                                         buffer, bytesleft, offsetinblock, lock->curextent, BE2L(ebn->be_key), BE2W(ebn->be_blocks)));
+                                                _XDEBUG(DEBUG_IO, "ACTION_READ: buffer = 0x%p bytesleft = %ld, offsetinblock = %ld, ExtentBNode = %ld, ebn->data = %ld, ebn->blocks = %ld\n",
+                                                         buffer, bytesleft, offsetinblock, lock->curextent, BE2L(ebn->be_key), BE2W(ebn->be_blocks));
 
                                                 if(offsetinblock != 0 || bytesleft < globals->bytes_block) {
 
-                                                    // _XDEBUG((DEBUG_IO,"ACTION_READ: nextextentbnode = %ld, extentnodesize = %ld, en->blocks = %ld\n",nextextentbnode,extentnodesize,(ULONG)ebn->blocks));
+                                                    // _XDEBUG(DEBUG_IO,"ACTION_READ: nextextentbnode = %ld, extentnodesize = %ld, en->blocks = %ld\n",nextextentbnode,extentnodesize,(ULONG)ebn->blocks);
 
                                                     bytestoread = globals->bytes_block - offsetinblock;
 
@@ -1999,14 +2006,14 @@ void mainloop(void) {
                                                 bytesleft -= bytestoread;
                                                 buffer += bytestoread;
 
-                                                _XDEBUG((DEBUG_IO, "ACTION_READ: bytesleft = %ld, errorcode = %ld\n", bytesleft, errorcode));
+                                                _XDEBUG(DEBUG_IO, "ACTION_READ: bytesleft = %ld, errorcode = %ld\n", bytesleft, errorcode);
                                             }
                                         } else {
                                             errorcode = ERROR_READ_PROTECTED;
                                         }
                                     }
 
-                                    _XDEBUG((DEBUG_IO, "ACTION_READ: errorcode = %ld, buffer = %ld, startofbuf = %ld\n", errorcode, buffer, startofbuf));
+                                    _XDEBUG(DEBUG_IO, "ACTION_READ: errorcode = %ld, buffer = %ld, startofbuf = %ld\n", errorcode, buffer, startofbuf);
 
                                     if(errorcode != 0) {
                                         returnpacket(-1, errorcode);
@@ -2016,7 +2023,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_WRITE:
-                                _XDEBUG((DEBUG_IO, "ACTION_WRITE(0x%08lx,0x%08lx,%ld)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3));
+                                _XDEBUG(DEBUG_IO, "ACTION_WRITE(0x%08lx,0x%08lx,%ld)\n", globals->packet->dp_Arg1, globals->packet->dp_Arg2, globals->packet->dp_Arg3);
 
                                 {
                                     struct ExtFileLock *lock = (struct ExtFileLock *)globals->packet->dp_Arg1;
@@ -2052,11 +2059,11 @@ void mainloop(void) {
                                     } while(errorcode == ERROR_DISK_FULL && freeupspace() != FALSE);
 
                                     if(errorcode != 0) {
-                                        _XDEBUG((DEBUG_IO, "ACTION_WRITE returns (-1, %ld)\n", errorcode));
+                                        _XDEBUG(DEBUG_IO, "ACTION_WRITE returns (-1, %ld)\n", errorcode);
 
                                         returnpacket(-1, errorcode);
                                     } else {
-                                        _XDEBUG((DEBUG_IO, "ACTION_WRITE returns (%ld, 0)\n", bytestowrite));
+                                        _XDEBUG(DEBUG_IO, "ACTION_WRITE returns (%ld, 0)\n", bytestowrite);
 
                                         lock->bits |= EFL_MODIFIED;
                                         returnpacket(bytestowrite, 0);
@@ -2064,7 +2071,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_FREE_LOCK:
-                                _XDEBUG((DEBUG_LOCK, "ACTION_FREE_LOCK\n"));
+                                _XDEBUG(DEBUG_LOCK, "ACTION_FREE_LOCK\n");
 
                                 {
                                     LONG errorcode;
@@ -2077,7 +2084,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_EXAMINE_ALL:
-                                _DEBUG(("ACTION_EXAMINE_ALL\n"));
+                                _DEBUG("ACTION_EXAMINE_ALL\n");
 
                                 {
                                     struct ExtFileLock *lock;
@@ -2099,7 +2106,7 @@ void mainloop(void) {
                                     eac->eac_Entries = 0;
 
                                     if(lock == 0) {
-                                        _DEBUG(("ACTION_EXAMINE_ALL: Zero lock was passed in...\n"));
+                                        _DEBUG("ACTION_EXAMINE_ALL: Zero lock was passed in...\n");
 
                                         returnpacket(DOSFALSE, ERROR_OBJECT_WRONG_TYPE);
                                         break;
@@ -2146,7 +2153,7 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_EXAMINE_NEXT:
-                                // _DEBUG(("ACTION_EXAMINE_NEXT(0x%08lx,0x%08lx)\n",BADDR(packet->dp_Arg1),BADDR(packet->dp_Arg2)));
+                                // _DEBUG("ACTION_EXAMINE_NEXT(0x%08lx,0x%08lx)\n",BADDR(packet->dp_Arg1),BADDR(packet->dp_Arg2));
 
                                 /* An entry is added to a directory in the first dir block with
                                    enough space to hold the entry.  If there is no space, then
@@ -2192,7 +2199,7 @@ void mainloop(void) {
                                 lock = (struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
 
                                 if(lock == 0) {
-                                    _DEBUG(("ACTION_EXAMINE_NEXT: Zero lock was passed in...\n"));
+                                    _DEBUG("ACTION_EXAMINE_NEXT: Zero lock was passed in...\n");
 
                                     returnpacket(DOSFALSE, ERROR_OBJECT_WRONG_TYPE);
                                     break;
@@ -2200,7 +2207,7 @@ void mainloop(void) {
 
                                 /*
                                 if(lock->ocblck==0 && lock->ocnode==0) {
-                                  _DEBUG(("ACTION_EXAMINE_NEXT: Lock was never passed to EXAMINE_OBJECT or has been re-allocated or the object Examine()d was a file\n"));
+                                  _DEBUG("ACTION_EXAMINE_NEXT: Lock was never passed to EXAMINE_OBJECT or has been re-allocated or the object Examine()d was a file\n");
 
                                   returnpacket(DOSFALSE,ERROR_OBJECT_WRONG_TYPE);
                                   break;
@@ -2288,7 +2295,7 @@ void mainloop(void) {
 #if 0
                             /******** OLD EXAMINE_NEXT CODE! */
                             case ACTION_EXAMINE_NEXT:
-                                // _DEBUG(("ACTION_EXAMINE_NEXT(0x%08lx,0x%08lx)\n",BADDR(packet->dp_Arg1),BADDR(packet->dp_Arg2)));
+                                // _DEBUG("ACTION_EXAMINE_NEXT(0x%08lx,0x%08lx)\n",BADDR(packet->dp_Arg1),BADDR(packet->dp_Arg2));
 
                                 /* An entry is added to a directory in the first dir block with
                                    enough space to hold the entry.  If there is no space, then
@@ -2334,7 +2341,7 @@ void mainloop(void) {
                                 lock = (struct ExtFileLock *)BADDR(packet->dp_Arg1);
 
                                 if(lock == 0) {
-                                    _DEBUG(("ACTION_EXAMINE_NEXT: Zero lock was passed in...\n"));
+                                    _DEBUG("ACTION_EXAMINE_NEXT: Zero lock was passed in...\n");
 
                                     returnpacket(DOSFALSE, ERROR_OBJECT_WRONG_TYPE);
                                     break;
@@ -2342,7 +2349,7 @@ void mainloop(void) {
 
                                 /*
                                 if(lock->ocblck==0 && lock->ocnode==0) {
-                                  _DEBUG(("ACTION_EXAMINE_NEXT: Lock was never passed to EXAMINE_OBJECT or has been re-allocated or the object Examine()d was a file\n"));
+                                  _DEBUG("ACTION_EXAMINE_NEXT: Lock was never passed to EXAMINE_OBJECT or has been re-allocated or the object Examine()d was a file\n");
 
                                   returnpacket(DOSFALSE,ERROR_OBJECT_WRONG_TYPE);
                                   break;
@@ -2434,7 +2441,7 @@ void mainloop(void) {
 
                             case ACTION_EXAMINE_OBJECT:
                             case ACTION_EXAMINE_FH:
-                                _DEBUG(("ACTION_EXAMINE_OBJECT\n"));
+                                _DEBUG("ACTION_EXAMINE_OBJECT\n");
 
                                 {
                                     struct ExtFileLock *lock;
@@ -2474,14 +2481,14 @@ void mainloop(void) {
 
                                 break;
                             case ACTION_INFO:
-                                _DEBUG(("ACTION_INFO\n"));
+                                _DEBUG("ACTION_INFO\n");
 
                                 {
                                     struct ExtFileLock *lock = BADDR(globals->packet->dp_Arg1);
                                     struct InfoData *id = BADDR(globals->packet->dp_Arg2);
 
                                     if(lock != 0 && globals->volumenode != (struct DeviceList *)BADDR(lock->volume)) {
-                                        _DEBUG(("ACTION_INFO: returning error\n"));
+                                        _DEBUG("ACTION_INFO: returning error\n");
 
                                         returnpacket(DOSFALSE, ERROR_DEVICE_NOT_MOUNTED);
                                         break;
@@ -2493,13 +2500,13 @@ void mainloop(void) {
                                 }
                                 break;
                             case ACTION_MORE_CACHE:
-                                _DEBUG(("ACTION_MORE_CACHE\n"));
+                                _DEBUG("ACTION_MORE_CACHE\n");
 
                                 {
                                     LONG errorcode;
 
                                     errorcode = addcachebuffers(globals->packet->dp_Arg1);
-                                    _DEBUG(("ACTION_MORE_CACHE: dp_Arg1 = %ld, totalbuffers = %ld, errorcode = %ld\n", globals->packet->dp_Arg1, globals->totalbuffers, errorcode));
+                                    _DEBUG("ACTION_MORE_CACHE: dp_Arg1 = %ld, totalbuffers = %ld, errorcode = %ld\n", globals->packet->dp_Arg1, globals->totalbuffers, errorcode);
 
                                     if(errorcode == 0) {
                                         // returnpacket(DOSTRUE,totalbuffers);
@@ -2565,7 +2572,7 @@ void mainloop(void) {
                             break;
                             case ACTION_PARENT:
                             case ACTION_PARENT_FH:
-                                _DEBUG(("ACTION_PARENT\n"));
+                                _DEBUG("ACTION_PARENT\n");
 
                                 {
                                     LONG errorcode;
@@ -2593,7 +2600,7 @@ void mainloop(void) {
                                 break;
                             case ACTION_COPY_DIR:
                             case ACTION_COPY_DIR_FH:
-                                _DEBUG(("ACTION_COPY_DIR\n"));
+                                _DEBUG("ACTION_COPY_DIR\n");
 
                                 {
                                     LONG errorcode;
@@ -2605,10 +2612,10 @@ void mainloop(void) {
                                         lock = (struct ExtFileLock *)globals->packet->dp_Arg1;
                                     }
 
-                                    _DEBUG(("ACTION_COPY_DIR: lock=%p\n", lock));
+                                    _DEBUG("ACTION_COPY_DIR: lock=%p\n", lock);
 
                                     if((errorcode = lockobject(lock, "", SHARED_LOCK, &lock)) != 0) {
-                                        _DEBUG(("ACTION_COPY_DIR: Failed to obtain lock!\n"));
+                                        _DEBUG("ACTION_COPY_DIR: Failed to obtain lock!\n");
                                         returnpacket(0, errorcode);
                                     } else {
                                         returnpacket((SIPTR)TOBADDR(lock), 0);
@@ -2621,7 +2628,7 @@ void mainloop(void) {
 
                                 copybstrasstr((BSTR)globals->packet->dp_Arg2, globals->string, 258);
 
-                                _XDEBUG((DEBUG_LOCK, "ACTION_LOCATE_OBJECT(0x%08lx,'%s',0x%08lx)\n", BADDR(globals->packet->dp_Arg1), globals->string, globals->packet->dp_Arg3));
+                                _XDEBUG(DEBUG_LOCK, "ACTION_LOCATE_OBJECT(0x%08lx,'%s',0x%08lx)\n", BADDR(globals->packet->dp_Arg1), globals->string, globals->packet->dp_Arg3);
 
                                 if((errorcode = lockobject((struct ExtFileLock *)BADDR(globals->packet->dp_Arg1), validatepath(globals->string), globals->packet->dp_Arg3, &lock)) != 0) {
                                     returnpacket(0, errorcode);
@@ -2658,7 +2665,7 @@ void mainloop(void) {
                                     globals->notifyrequests->nr_Prev = (IPTR)nr;
                                 globals->notifyrequests = nr;
 
-                                _DEBUG(("ACTION_ADD_NOTIFY: Starting notification on %s (flags 0x%08lx)\n", nr->nr_FullName, nr->nr_Flags));
+                                _DEBUG("ACTION_ADD_NOTIFY: Starting notification on %s (flags 0x%08lx)\n", nr->nr_FullName, nr->nr_Flags);
 
                                 if((nr->nr_Flags & NRF_NOTIFY_INITIAL) != 0) {
                                     notify(nr);
@@ -2672,7 +2679,7 @@ void mainloop(void) {
 
                                 nr = (struct NotifyRequest *)globals->packet->dp_Arg1;
 
-                                _DEBUG(("ACTION_REMOVE_NOTIFY: Removing notification of %s\n", nr->nr_FullName));
+                                _DEBUG("ACTION_REMOVE_NOTIFY: Removing notification of %s\n", nr->nr_FullName);
 
                                 if((nr->nr_Flags & NRF_SEND_MESSAGE) != 0) {
                                     /* Removing all outstanding messages form msgport */
@@ -2766,7 +2773,7 @@ void mainloop(void) {
                             }
                             break;
                             default:
-                                _DEBUG(("ERROR_ACTION_NOT_KNOWN (packettype = %ld)\n", globals->packet->dp_Type));
+                                _DEBUG("ERROR_ACTION_NOT_KNOWN (packettype = %ld)\n", globals->packet->dp_Type);
                                 returnpacket(DOSFALSE, ERROR_ACTION_NOT_KNOWN);
                                 break;
                             }
@@ -3018,22 +3025,22 @@ LONG readroots(void) {
     rb2 = cb2->data;
 
     if(checkchecksum(cb1) == DOSFALSE || rb1->bheader.id != L2BE(DOSTYPE_ID) || rb1->bheader.be_ownblock != 0) {
-        _DEBUG(("cb1/rb1 not ok!\n"));
+        _DEBUG("cb1/rb1 not ok!\n");
         rb1okay = FALSE;
     }
 
-    _DEBUG(("checkchecksum(cb1)=%d, rb1->bheader.id=%08x (wanted %08x), rb1->bheader.ownblock=%u\n",
+    _DEBUG("checkchecksum(cb1)=%d, rb1->bheader.id=%08x (wanted %08x), rb1->bheader.ownblock=%u\n",
             checkchecksum(cb1), BE2L(rb1->bheader.id), DOSTYPE_ID, BE2L(rb1->bheader.be_ownblock)
-           ));
+           );
 
     if(checkchecksum(cb2) == DOSFALSE || rb2->bheader.id != L2BE(DOSTYPE_ID) || BE2L(rb2->bheader.be_ownblock) != BE2L(rb2->be_totalblocks) - 1) {
-        _DEBUG(("cb2/rb2 not ok!\n"));
+        _DEBUG("cb2/rb2 not ok!\n");
         rb2okay = FALSE;
     }
 
-    _DEBUG(("checkchecksum(cb2)=%d, rb2->bheader.id=%08x, rb2->bheader.ownblock=%u, rb2->be_totalblocks =%u\n",
+    _DEBUG("checkchecksum(cb2)=%d, rb2->bheader.id=%08x, rb2->bheader.ownblock=%u, rb2->be_totalblocks =%u\n",
             checkchecksum(cb2), BE2L(rb2->bheader.id), BE2L(rb2->bheader.be_ownblock), BE2L(rb2->be_totalblocks)
-           ));
+           );
 
     if(rb1okay != FALSE && rb2okay != FALSE) {
         /* Both root blocks look okay. */
@@ -3046,7 +3053,7 @@ LONG readroots(void) {
 
         /* Check sizes stored in rootblock */
         if ((rb1->be_blocksize != L2BE(globals->bytes_block)) || (rb1->be_totalblocks != L2BE(globals->blocks_total))) {
-            _DEBUG(("bad size in rb1!\n"));
+            _DEBUG("bad size in rb1!\n");
             return(ERROR_NOT_A_DOS_DISK);
         }
 
@@ -3062,7 +3069,7 @@ LONG readroots(void) {
         last   = ((UQUAD)BE2L(rb1->be_lastbyteh)  << 32) | BE2L(rb1->be_lastbyte);
 
         if (last - first != globals->byte_high - globals->byte_low) {
-            _DEBUG(("bad value in rb1!\n"));
+            _DEBUG("bad value in rb1!\n");
             return ERROR_NOT_A_DOS_DISK;
         }
 
@@ -3125,7 +3132,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
 
                 /* Volume is not currently in use, so grab locklist & notifyrequests and patch fl_Task fields */
 
-                _DEBUG(("usevolumenode: Found DosEntry with same date, and locklist!=0\n"));
+                _DEBUG("usevolumenode: Found DosEntry with same date, and locklist!=0\n");
 
                 lock = (struct ExtFileLock *)BADDR(dol->dol_misc.dol_volume.dol_LockList);
                 nr = (struct NotifyRequest *)BADDR((((struct DeviceList *)dol)->dl_unused));
@@ -3152,7 +3159,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
             } else {
                 Permit();
 
-                _DEBUG(("usevolumenode: Found DosEntry with same date, but it is in use!\n"));
+                _DEBUG("usevolumenode: Found DosEntry with same date, but it is in use!\n");
 
                 vn = (struct DeviceList *) - 1;
             }
@@ -3202,7 +3209,7 @@ LONG initdisk() {
 
             /* Root blocks are valid for this filesystem */
 
-            _DEBUG(("Initdisk: Root blocks read\n"));
+            _DEBUG("Initdisk: Root blocks read\n");
 
 #ifdef STARTDEBUG
             dreq("Root blocks are okay!");
@@ -3210,7 +3217,7 @@ LONG initdisk() {
 
             if((errorcode = checkfortransaction()) == 0) {
 
-                _DEBUG(("Initdisk: Checked for an old Transaction and applied it if it was present.\n"));
+                _DEBUG("Initdisk: Checked for an old Transaction and applied it if it was present.\n");
 
                 if((errorcode = readcachebuffercheck(&cb, globals->block_root, OBJECTCONTAINER_ID)) == 0) {
                     struct fsRootInfo *ri = (struct fsRootInfo *)((UBYTE *)cb->data + globals->bytes_block - sizeof(struct fsRootInfo));
@@ -3219,7 +3226,7 @@ LONG initdisk() {
                     lockcachebuffer(cb);
                     oc = cb->data;
 
-                    _DEBUG(("Initdisk: '%s' was inserted\n", oc->object[0].name));
+                    _DEBUG("Initdisk: '%s' was inserted\n", oc->object[0].name);
 
                     /* ROOT block is valid for this filesystem */
 
@@ -3250,7 +3257,7 @@ LONG initdisk() {
 
                     unlockcachebuffer(cb);
 
-                    _DEBUG(("Initdisk: Traversed bitmap, found %ld free blocks\n", blocksfree));
+                    _DEBUG("Initdisk: Traversed bitmap, found %ld free blocks\n", blocksfree);
 
                     if(errorcode == 0 && BE2L(ri->be_freeblocks) != blocksfree) {
                         if(ri->be_freeblocks != 0) {
@@ -3273,7 +3280,7 @@ LONG initdisk() {
                     }
 
                     if(errorcode == 0) {
-                        _DEBUG(("Initdisk: A valid DOS disk\n"));
+                        _DEBUG("Initdisk: A valid DOS disk\n");
 
                         newdisktype = DOSTYPE_ID;
 
@@ -3341,13 +3348,13 @@ LONG initdisk() {
             struct DeviceList *vn;
             struct fsRootInfo *ri = (struct fsRootInfo *)((UBYTE *)oc + globals->bytes_block - sizeof(struct fsRootInfo));
 
-            _DEBUG(("initdisk: Checking for an existing volume-node\n"));
+            _DEBUG("initdisk: Checking for an existing volume-node\n");
 
             if((vn = usevolumenode(oc->object[0].name, BE2L(ri->be_datecreated))) != (struct DeviceList *) - 1) {
                 if(vn == 0) {
                     /* VolumeNode was not found, so we need to create a new one. */
 
-                    _DEBUG(("initdisk: No volume-node found, creating new one instead.\n"));
+                    _DEBUG("initdisk: No volume-node found, creating new one instead.\n");
 
                     if((vn = (struct DeviceList *)MakeDosEntry("                              ", DLT_VOLUME)) != 0) {
                         struct SFSMessage *sfsm;
@@ -3370,7 +3377,7 @@ LONG initdisk() {
 
                         datetodatestamp(BE2L(ri->be_datecreated), &vn->dl_VolumeDate);
 
-                        _DEBUG(("initdisk: Sending msg.\n"));
+                        _DEBUG("initdisk: Sending msg.\n");
 
                         if((sfsm = AllocVec(sizeof(struct SFSMessage), MEMF_CLEAR)) != 0) {
                             sfsm->command = SFSM_ADD_VOLUMENODE;
@@ -3384,7 +3391,7 @@ LONG initdisk() {
                     }
                 }
 
-                _DEBUG(("initdisk: Using new or old volumenode.\n"));
+                _DEBUG("initdisk: Using new or old volumenode.\n");
 
                 if(errorcode == 0) {  /* Reusing the found VolumeNode or using the new VolumeNode */
                     vn->dl_Task = globals->devnode->dn_Task;
@@ -3392,7 +3399,7 @@ LONG initdisk() {
                     globals->volumenode = vn;
                 }
             } else { /* Volume is in use by another handler -- stay off */
-                _DEBUG(("Initdisk: Found DosEntry with same date, and locklist==0\n"));
+                _DEBUG("Initdisk: Found DosEntry with same date, and locklist==0\n");
                 newdisktype = ID_NO_DISK_PRESENT;           /* Hmmm... EXTREMELY unlikely, but may explain the strange bug Laire had. */
                 errorcode = ERROR_NO_DISK;
                 //   vn=0;
@@ -3457,7 +3464,7 @@ static void deinitdisk() {
        the volumenode, or transfer any outstanding locks/notifies to
        it.  Finally it notifies the system of the disk removal. */
 
-    _DEBUG(("deinitdisk: entry\n"));
+    _DEBUG("deinitdisk: entry\n");
 
     flushcaches();
     invalidatecaches();
@@ -3491,14 +3498,14 @@ static void deinitdisk() {
             struct SFSMessage *sfsm;
             struct DosList *dol = attemptlockdoslist(5, 1);
 
-            _DEBUG(("deinitdisk: dol = %ld\n", dol));
+            _DEBUG("deinitdisk: dol = %ld\n", dol);
 
             if(dol != 0) { /* Is DosList locked? */
                 removevolumenode(dol, (struct DosList *)globals->volumenode);
                 UnLockDosList(LDF_WRITE | LDF_VOLUMES);
             }
 
-            _DEBUG(("deinitdisk: sending msg\n"));
+            _DEBUG("deinitdisk: sending msg\n");
 
             /* Even if we succesfully locked the DosList, we still should notify
                the DosList task to remove the node as well (and to free it), just
@@ -3513,7 +3520,7 @@ static void deinitdisk() {
             }
         }
 
-        _DEBUG(("deinitdisk: done\n"));
+        _DEBUG("deinitdisk: done\n");
 
         globals->volumenode = 0;
 
@@ -3639,10 +3646,10 @@ static void dumppacket() {
 static void actioncurrentvolume(struct DosPacket *packet) {
     struct ExtFileLock *lock = (struct ExtFileLock *)packet->dp_Arg1;
 
-    _DEBUG(("ACTION_CURRENT_VOLUME(%ld)\n", lock));
+    _DEBUG("ACTION_CURRENT_VOLUME(%ld)\n", lock);
 
     if(lock == 0) {
-        _DEBUG(("ACTION_CURRENT_VOLUME: volumenode = %ld\n", globals->volumenode));
+        _DEBUG("ACTION_CURRENT_VOLUME: volumenode = %ld\n", globals->volumenode);
         returnpacket2(packet, (SIPTR)TOBADDR(globals->volumenode), 0);
     } else {
         returnpacket2(packet, (SIPTR)lock->volume, 0);
@@ -3670,7 +3677,7 @@ static void actionsamelock(struct DosPacket *packet) {
 static void actiondiskinfo(struct DosPacket *packet) {
     struct InfoData *id = BADDR(packet->dp_Arg1);
 
-    _DEBUG(("ACTION_DISK_INFO\n"));
+    _DEBUG("ACTION_DISK_INFO\n");
 
     fillinfodata(id);
 
@@ -3706,7 +3713,7 @@ static void fillinfodata(struct InfoData *id) {
 
     id->id_VolumeNode = TOBADDR(globals->volumenode);
 
-    _DEBUG(("fillinfodata: volumenode = %ld, disktype = 0x%08lx\n", globals->volumenode, globals->disktype));
+    _DEBUG("fillinfodata: volumenode = %ld, disktype = 0x%08lx\n", globals->volumenode, globals->disktype);
 
     if(globals->locklist != 0) {
         id->id_InUse = DOSTRUE;
@@ -3920,7 +3927,7 @@ static LONG extendblocksinfile(struct ExtFileLock *lock, ULONG blocks) {
 
        This function must be called from within a transaction. */
 
-    _XDEBUG((DEBUG_IO, "extendblocksinfile: Increasing number of blocks by %ld.  lock->curextent = %ld\n", blocks, lock->curextent));
+    _XDEBUG(DEBUG_IO, "extendblocksinfile: Increasing number of blocks by %ld.  lock->curextent = %ld\n", blocks, lock->curextent);
 
     if((errorcode = seektocurrent(lock)) == 0) {
 
@@ -3956,11 +3963,11 @@ static LONG extendblocksinfile(struct ExtFileLock *lock, ULONG blocks) {
                 }
 
                 if((errorcode = smartfindandmarkspace(searchstart, blocks)) != 0) { /* only within transaction! */
-                    _DEBUG(("extendblocksinfile: sfams returned errorcode %ld\n", errorcode));
+                    _DEBUG("extendblocksinfile: sfams returned errorcode %ld\n", errorcode);
                     break;
                 }
 
-                _XDEBUG((DEBUG_IO, "extendblocksinfile: Found some space!  blocks = %ld\n", blocks));
+                _XDEBUG(DEBUG_IO, "extendblocksinfile: Found some space!  blocks = %ld\n", blocks);
 
                 while(blocks != 0 && sl->block != 0) {
                     BLCK newspace = sl->block;
@@ -3975,10 +3982,10 @@ static LONG extendblocksinfile(struct ExtFileLock *lock, ULONG blocks) {
 
                         newspaceblocks -= extentblocks;
 
-                        _XDEBUG((DEBUG_IO, "extendblocksinfile: sl->block = %ld, lastextentbnode = %ld, extentblocks = %ld\n", sl->block, lastextentbnode, extentblocks));
+                        _XDEBUG(DEBUG_IO, "extendblocksinfile: sl->block = %ld, lastextentbnode = %ld, extentblocks = %ld\n", sl->block, lastextentbnode, extentblocks);
 
                         if((errorcode = addblocks(extentblocks, newspace, gh->objectnode, &lastextentbnode)) != 0) {
-                            _DEBUG(("extendblocksinfile: addblocks returned errorcode %ld\n", errorcode));
+                            _DEBUG("extendblocksinfile: addblocks returned errorcode %ld\n", errorcode);
                             return(errorcode);
                         }
 
@@ -3988,7 +3995,7 @@ static LONG extendblocksinfile(struct ExtFileLock *lock, ULONG blocks) {
 
                         lock->lastextendedblock = newspace + extentblocks;
 
-                        _XDEBUG((DEBUG_IO, "extendblocksinfile: Done adding or extending an extent -- blocks = %ld, extentblocks = %ld\n", blocks, extentblocks));
+                        _XDEBUG(DEBUG_IO, "extendblocksinfile: Done adding or extending an extent -- blocks = %ld, extentblocks = %ld\n", blocks, extentblocks);
 
                         blocks -= extentblocks;
                         newspace += extentblocks;
@@ -4019,16 +4026,16 @@ LONG truncateblocksinfile(struct ExtFileLock *lock, ULONG blocks, ULONG *lastext
 
     offset = blocks << globals->shifts_block;
 
-    _DEBUG(("truncateblocksinfile: truncating file by %ld blocks\n", blocks));
+    _DEBUG("truncateblocksinfile: truncating file by %ld blocks\n", blocks);
 
     if((errorcode = seekextent(lock, offset, &cb, &ebn, &extentoffset)) == 0) {
 
-        _DEBUG(("truncateblocksinfile: offset = %ld, extentoffset = %ld\n", offset, extentoffset));
+        _DEBUG("truncateblocksinfile: offset = %ld, extentoffset = %ld\n", offset, extentoffset);
 
         if(offset - extentoffset == 0) {
             ULONG prevkey = BE2L(ebn->be_prev);
 
-            _DEBUG(("truncateblocksinfile: prevkey = %ld\n", prevkey));
+            _DEBUG("truncateblocksinfile: prevkey = %ld\n", prevkey);
 
             /* Darn.  This Extent needs to be killed completely, meaning that we
                have to set the Next pointer of the previous Extent to zero. */
@@ -4052,7 +4059,7 @@ LONG truncateblocksinfile(struct ExtFileLock *lock, ULONG blocks, ULONG *lastext
                 if((errorcode = readobject((prevkey & 0x7fffffff), &cb, &o)) == 0) {
                     preparecachebuffer(cb);
 
-                    _DEBUG(("truncateblocksinfile: cb->blckno = %ld\n", cb->blckno));
+                    _DEBUG("truncateblocksinfile: cb->blckno = %ld\n", cb->blckno);
 
                     o->object.file.be_data = 0;
                     lock->gh->data = 0;
@@ -4069,7 +4076,7 @@ LONG truncateblocksinfile(struct ExtFileLock *lock, ULONG blocks, ULONG *lastext
             *lastextentkey = BE2L(ebn->be_key);
             *lastextentoffset = extentoffset;
 
-            _DEBUG(("truncateblocksinfile: newblocks = %ld, ebn->blocks = %ld\n", newblocks, BE2W(ebn->be_blocks)));
+            _DEBUG("truncateblocksinfile: newblocks = %ld, ebn->blocks = %ld\n", newblocks, BE2W(ebn->be_blocks));
 
             if(newblocks != BE2W(ebn->be_blocks)) {
                 /* There is only one case where newblocks could equal en->blocks here,
@@ -4115,7 +4122,7 @@ LONG setfilesize(struct ExtFileLock *lock, ULONG bytes) {
 
        In any other case the position of the file ptr is not altered. */
 
-    _DEBUG(("setfilesize: gh = 0x%08lx.  Setting to %ld bytes. Current size is %ld bytes.\n", gh, bytes, gh->size));
+    _DEBUG("setfilesize: gh = 0x%08lx.  Setting to %ld bytes. Current size is %ld bytes.\n", gh, bytes, gh->size);
 
     if(bytes != gh->size) {
         LONG blocksdiff;
@@ -4124,7 +4131,7 @@ LONG setfilesize(struct ExtFileLock *lock, ULONG bytes) {
         curblocks = (gh->size + globals->bytes_block - 1) >> globals->shifts_block;
         blocksdiff = ((bytes + globals->bytes_block - 1) >> globals->shifts_block) - curblocks;
 
-        _DEBUG(("setfilesize: blocksdiff = %ld\n", blocksdiff));
+        _DEBUG("setfilesize: blocksdiff = %ld\n", blocksdiff);
 
         if(blocksdiff > 0) {
 
@@ -4166,12 +4173,12 @@ LONG setfilesize(struct ExtFileLock *lock, ULONG bytes) {
             if(blocksdiff < 0) {
                 /* File needs to be shortened by -/blocksdiff/ blocks. */
 
-                _DEBUG(("setfilesize: Decreasing number of blocks\n"));
+                _DEBUG("setfilesize: Decreasing number of blocks\n");
 
                 errorcode = truncateblocksinfile(lock, curblocks + blocksdiff, &lastextentkey, &lastextentoffset);
             }
 
-            _DEBUG(("setfilesize: lastextentkey = %ld, lastextentoffset = %ld\n", lastextentkey, lastextentoffset));
+            _DEBUG("setfilesize: lastextentkey = %ld, lastextentoffset = %ld\n", lastextentkey, lastextentoffset);
 
             if(errorcode == 0) {
                 struct CacheBuffer *cb;
@@ -4182,7 +4189,7 @@ LONG setfilesize(struct ExtFileLock *lock, ULONG bytes) {
                 if((errorcode = readobject(gh->objectnode, &cb, &o)) == 0) {
                     preparecachebuffer(cb);
 
-                    _DEBUG(("setfilesize: gh->objectnode = %ld, cb->blcno = %ld\n", gh->objectnode, cb->blckno));
+                    _DEBUG("setfilesize: gh->objectnode = %ld, cb->blcno = %ld\n", gh->objectnode, cb->blckno);
 
                     o->object.file.be_size = L2BE(bytes);
 
@@ -4271,17 +4278,17 @@ static LONG seek(struct ExtFileLock *lock, ULONG offset) {
        position.  It will return an error if you try to seek beyond the
        end of the file. */
 
-    _XDEBUG((DEBUG_SEEK, "seek: Attempting to seek to %ld\n", offset));
+    _XDEBUG(DEBUG_SEEK, "seek: Attempting to seek to %ld\n", offset);
 
     if((errorcode = seekextent(lock, offset, &cb, &ebn, &extentoffset)) == 0) {
         lock->curextent = BE2L(ebn->be_key);
         lock->extentoffset = offset - extentoffset;
         lock->offset = offset;
 
-        _XDEBUG((DEBUG_SEEK, "seek: lock->curextent = %ld, lock->extentoffset = %ld, lock->offset = %ld\n", lock->curextent, lock->extentoffset, lock->offset));
+        _XDEBUG(DEBUG_SEEK, "seek: lock->curextent = %ld, lock->extentoffset = %ld, lock->offset = %ld\n", lock->curextent, lock->extentoffset, lock->offset);
     }
 
-    _XDEBUG((DEBUG_SEEK, "seek: Exiting with errorcode %ld\n", errorcode));
+    _XDEBUG(DEBUG_SEEK, "seek: Exiting with errorcode %ld\n", errorcode);
 
     return(errorcode);
 }
@@ -4302,13 +4309,13 @@ LONG deleteextents(ULONG key) {
 
        newtransaction() should have been called prior to calling this function. */
 
-    _XDEBUG((DEBUG_NODES, "deleteextents: Entry -- deleting extents from key %ld\n", key));
+    _XDEBUG(DEBUG_NODES, "deleteextents: Entry -- deleting extents from key %ld\n", key);
 
 
     while(key != 0 && (errorcode = findbnode(globals->block_extentbnoderoot, key, &cb, (struct BNode **)&ebn)) == 0) {
         /* node to be deleted located. */
 
-        // _XDEBUG((DDEBUG_NODES,"deleteextents: Now deleting key %ld.  Next key is %ld\n",key,ebn->next));
+        // _XDEBUG(DDEBUG_NODES,"deleteextents: Now deleting key %ld.  Next key is %ld\n",key,ebn->next);
 
         key = BE2L(ebn->be_next);
 
@@ -4317,7 +4324,7 @@ LONG deleteextents(ULONG key) {
         if((errorcode = freespace(BE2L(ebn->be_key), BE2W(ebn->be_blocks))) == 0) {
             unlockcachebuffer(cb);
 
-            // _XDEBUG((DDEBUG_NODES,"deleteextents: deletebnode from root %ld, with key %ld\n",block_extentbnoderoot,ebn->key));
+            // _XDEBUG(DDEBUG_NODES,"deleteextents: deletebnode from root %ld, with key %ld\n",block_extentbnoderoot,ebn->key);
 
             if((errorcode = deletebnode(globals->block_extentbnoderoot, BE2L(ebn->be_key))) != 0) { /*** Maybe use deleteinternalnode here??? */
                 break;
@@ -4328,7 +4335,7 @@ LONG deleteextents(ULONG key) {
         }
     }
 
-    // _XDEBUG((DEBUG_NODES,"deleteextents: Exiting with errorcode %ld\n",errorcode));
+    // _XDEBUG(DEBUG_NODES,"deleteextents: Exiting with errorcode %ld\n",errorcode);
 
     return(errorcode);
 }
@@ -4374,12 +4381,12 @@ LONG seekextent(struct ExtFileLock *lock, ULONG offset, struct CacheBuffer **ret
        startpoint: */
 
     if(offset > lock->gh->size) {
-        _XDEBUG((DEBUG_SEEK, "seekextent: Attempting to seek beyond file\n"));
+        _XDEBUG(DEBUG_SEEK, "seekextent: Attempting to seek beyond file\n");
 
         return(ERROR_SEEK_ERROR);
     }
 
-    //  _DEBUG(("seekextent: offset = %ld, lock->offset = %ld, lock->extentoffset = %ld, lock->curextent = %ld\n",offset, lock->offset, lock->extentoffset, lock->curextent));
+    //  _DEBUG("seekextent: offset = %ld, lock->offset = %ld, lock->extentoffset = %ld, lock->curextent = %ld\n",offset, lock->offset, lock->extentoffset, lock->curextent);
 
     if(lock->curextent != 0 && offset >= lock->offset - lock->extentoffset) {
         extentbnode = lock->curextent;
@@ -4485,7 +4492,7 @@ void checknotifyforpath(UBYTE *path, UBYTE notifyparent) {
 
     nr = globals->notifyrequests;
 
-    // _DEBUG(("checknotify: path = '%s'\n", path));
+    // _DEBUG("checknotify: path = '%s'\n", path);
 
     while(nr != 0) {
 
@@ -4503,12 +4510,12 @@ void checknotifyforpath(UBYTE *path, UBYTE notifyparent) {
            "/shit" == ""  -> match (parent dir)
            "shit" == ""   -> match (parent dir) */
 
-        // _DEBUG(("checknotify: fullpath = '%s', nr->FullName = '%s'\n",s1,s2));
+        // _DEBUG("checknotify: fullpath = '%s', nr->FullName = '%s'\n",s1,s2);
 
         if( (s1[0] == 0 && (s2[0] == 0 || (s2[0] == '/' && s2[1] == 0))) || ((s2[0] == 0 && (s1 == lastslash || s1 == lastslash + 1)) && notifyparent == TRUE) ) {
             /* Wow, the string in the NotifyRequest matches!  We need to notify someone! */
 
-            _DEBUG(("checknotify: Notificating!! nr->FullName = %s, UserData = 0x%08lx\n", nr->nr_FullName, nr->nr_UserData));
+            _DEBUG("checknotify: Notificating!! nr->FullName = %s, UserData = 0x%08lx\n", nr->nr_FullName, nr->nr_UserData);
 
             notify(nr);
 
@@ -4535,7 +4542,7 @@ void notify(struct NotifyRequest *nr) {
     if((nr->nr_Flags & NRF_SEND_SIGNAL) != 0) {
         /* Sending them a signal. */
 
-        _DEBUG(("notify: Sending signal\n"));
+        _DEBUG("notify: Sending signal\n");
 
         Signal(nr->nr_stuff.nr_Signal.nr_Task, 1 << nr->nr_stuff.nr_Signal.nr_SignalNum);
     } else if((nr->nr_Flags & NRF_SEND_MESSAGE) != 0) {
@@ -4543,7 +4550,7 @@ void notify(struct NotifyRequest *nr) {
 
         /* Sending them a message. */
 
-        _DEBUG(("notify: Sending message\n"));
+        _DEBUG("notify: Sending message\n");
 
         if((nm = AllocMem(sizeof(struct NotifyMessage), MEMF_CLEAR)) != 0) {
             nm->nm_ExecMessage.mn_ReplyPort = globals->msgportnotify;
@@ -4553,7 +4560,7 @@ void notify(struct NotifyRequest *nr) {
             nm->nm_Code = NOTIFY_CODE;
             nm->nm_NReq = (struct NotifyRequest *)nr;
 
-            _DEBUG(("notify: PutMsg() - UserData = 0x%08lx\n", nr->nr_UserData));
+            _DEBUG("notify: PutMsg() - UserData = 0x%08lx\n", nr->nr_UserData);
 
             PutMsg(nr->nr_stuff.nr_Msg.nr_Port, (struct Message *)nm);
         }
@@ -4581,7 +4588,7 @@ LONG writedata(ULONG newbytes, ULONG extentblocks, BLCK newspace, UBYTE *data) {
     if(blocks < extentblocks) {
         struct CacheBuffer *cb;
 
-        _XDEBUG((DEBUG_IO, "  writedata: blocks = %ld, newbytes = %ld\n", blocks, newbytes));
+        _XDEBUG(DEBUG_IO, "  writedata: blocks = %ld, newbytes = %ld\n", blocks, newbytes);
 
         newbytes -= blocks << shifts_block;
         data += blocks << shifts_block;
@@ -4640,7 +4647,7 @@ static LONG addblocks(UWORD blocks, BLCK newspace, NODE objectnode, BLCK *io_las
     if(*io_lastextentbnode != 0) {
         /* There was already a ExtentBNode chain for this file.  Extending it. */
 
-        _XDEBUG((DEBUG_IO, "  addblocks: Extending existing ExtentBNode chain.\n"));
+        _XDEBUG(DEBUG_IO, "  addblocks: Extending existing ExtentBNode chain.\n");
 
         if((errorcode = findextentbnode(*io_lastextentbnode, &cb, &ebn)) == 0) {
 
@@ -4649,7 +4656,7 @@ static LONG addblocks(UWORD blocks, BLCK newspace, NODE objectnode, BLCK *io_las
             if(BE2L(ebn->be_key) + BE2W(ebn->be_blocks) == newspace && BE2W(ebn->be_blocks) + blocks < 65536) {
                 /* It is possible to extent the last ExtentBNode! */
 
-                _XDEBUG((DEBUG_IO, "  addblocks: Extending last ExtentBNode.\n"));
+                _XDEBUG(DEBUG_IO, "  addblocks: Extending last ExtentBNode.\n");
 
                 ebn->be_blocks = W2BE(BE2W(ebn->be_blocks) + blocks);
 
@@ -4662,7 +4669,7 @@ static LONG addblocks(UWORD blocks, BLCK newspace, NODE objectnode, BLCK *io_las
 
                 if((errorcode = storecachebuffer(cb)) == 0 && (errorcode = createextentbnode(newspace, &cb, &ebn)) == 0) {
 
-                    _XDEBUG((DEBUG_IO, "  addblocks: Created new ExtentBNode.\n"));
+                    _XDEBUG(DEBUG_IO, "  addblocks: Created new ExtentBNode.\n");
 
                     ebn->be_key = L2BE(newspace);
                     ebn->be_prev = L2BE(*io_lastextentbnode);
@@ -4689,7 +4696,7 @@ static LONG addblocks(UWORD blocks, BLCK newspace, NODE objectnode, BLCK *io_las
 
         if((errorcode = createextentbnode(newspace, &cb, &ebn)) == 0) {
 
-            _XDEBUG((DEBUG_IO, "  addblocks: Created new ExtentBNode chain.\n"));
+            _XDEBUG(DEBUG_IO, "  addblocks: Created new ExtentBNode chain.\n");
 
             ebn->be_key = L2BE(newspace);
             ebn->be_prev = L2BE(objectnode + 0x80000000);
@@ -4883,7 +4890,7 @@ LONG writetofile(struct ExtFileLock *lock, UBYTE *buffer, ULONG bytestowrite) {
                            start of the block but not at the end of the file.  To add data
                            to it we'll first need to read this block. */
 
-                        _XDEBUG((DEBUG_IO, "writetofile: Partially overwriting a single block of a file.  ebn->key = %ld, lock->extentoffset = %ld\n", BE2L(ebn->be_key), lock->extentoffset));
+                        _XDEBUG(DEBUG_IO, "writetofile: Partially overwriting a single block of a file.  ebn->key = %ld, lock->extentoffset = %ld\n", BE2L(ebn->be_key), lock->extentoffset);
 
                         bytes = globals->bytes_block - offsetinblock;
 
@@ -4927,7 +4934,7 @@ LONG writetofile(struct ExtFileLock *lock, UBYTE *buffer, ULONG bytestowrite) {
                             //              }
                         }
 
-                        // _XDEBUG((DEBUG_IO,"writetofile: Writing multiple blocks: blockstowrite = %ld, ebn->key = %ld, lock->extentoffset = %ld, lock->offset = %ld\n",blockstowrite, ebn->key, lock->extentoffset, lock->offset));
+                        // _XDEBUG(DEBUG_IO,"writetofile: Writing multiple blocks: blockstowrite = %ld, ebn->key = %ld, lock->extentoffset = %ld, lock->offset = %ld\n",blockstowrite, ebn->key, lock->extentoffset, lock->offset);
 
                         if((errorcode = write(BE2L(ebn->be_key) + (lock->extentoffset >> globals->shifts_block), buffer, (bytes + globals->bytes_block - 1) >> globals->shifts_block)) != 0) {
                             break;
@@ -4962,7 +4969,7 @@ LONG deletefileslowly(struct CacheBuffer *cbobject, struct fsObject *o) {
        Note: This function deletes an object without first checking if
              this is allowed.  Use deleteobject() instead. */
 
-    _DEBUG(("deletefileslowly: Entry\n"));
+    _DEBUG("deletefileslowly: Entry\n");
 
     /* First we search for the last ExtentBNode */
 
@@ -5040,7 +5047,7 @@ LONG deletefileslowly(struct CacheBuffer *cbobject, struct fsObject *o) {
         unlockcachebuffer(cbobject);
     }
 
-    _DEBUG(("deletefileslowly: Alternative way errorcode = %ld\n", errorcode));
+    _DEBUG("deletefileslowly: Alternative way errorcode = %ld\n", errorcode);
 
     if(errorcode == 0) {
 
@@ -5056,7 +5063,7 @@ LONG deletefileslowly(struct CacheBuffer *cbobject, struct fsObject *o) {
         deletetransaction();
     }
 
-    _DEBUG(("deletefileslowly: Exiting with errorcode = %ld\n", errorcode));
+    _DEBUG("deletefileslowly: Exiting with errorcode = %ld\n", errorcode);
 
     return(errorcode);
 }
@@ -5543,7 +5550,7 @@ static LONG fillgap(BLCK key) {
 
                 unlockcachebuffer(cb);
 
-                _DEBUG(("fillgap: availablespace() returned %ld\n", free));
+                _DEBUG("fillgap: availablespace() returned %ld\n", free);
 
                 /* The gap consists of /free/ blocks. */
 
@@ -5564,7 +5571,7 @@ static LONG fillgap(BLCK key) {
         }
     }
 
-    _DEBUG(("fillgap: exiting with errorcode %ld\n", errorcode));
+    _DEBUG("fillgap: exiting with errorcode %ld\n", errorcode);
 
     return(errorcode);
 }
@@ -5580,12 +5587,12 @@ LONG getbnode(BLCK block, struct CacheBuffer **returned_cb, struct fsExtentBNode
 
     if((errorcode = findbnode(globals->block_extentbnoderoot, block, returned_cb, (struct BNode **)returned_ebn)) == 0) {
 
-        _DEBUG(("getbnode: ebn->key = %ld, ebn->prev = %ld, ebn->blocks = %ld\n", BE2L((*returned_ebn)->be_key), BE2L((*returned_ebn)->be_prev), BE2W((*returned_ebn)->be_blocks)));
+        _DEBUG("getbnode: ebn->key = %ld, ebn->prev = %ld, ebn->blocks = %ld\n", BE2L((*returned_ebn)->be_key), BE2L((*returned_ebn)->be_prev), BE2W((*returned_ebn)->be_blocks));
 
         if(*returned_ebn != 0 && BE2L((*returned_ebn)->be_key) < block) {
             errorcode = nextbnode(globals->block_extentbnoderoot, returned_cb, (struct BNode **)returned_ebn);
 
-            _DEBUG(("getbnode: 2: ebn->key = %ld, ebn->prev = %ld, ebn->blocks = %ld\n", BE2L((*returned_ebn)->be_key), BE2L((*returned_ebn)->be_prev), BE2W((*returned_ebn)->be_blocks)));
+            _DEBUG("getbnode: 2: ebn->key = %ld, ebn->prev = %ld, ebn->blocks = %ld\n", BE2L((*returned_ebn)->be_key), BE2L((*returned_ebn)->be_prev), BE2W((*returned_ebn)->be_blocks));
         }
     }
 
@@ -5617,7 +5624,7 @@ LONG makefreespace(BLCK block) {
 
             if(newblocks != 0) {
 
-                _DEBUG(("makefreespace: Looking for %ld blocks from block %ld, and found %ld blocks at block %ld.\n", blocks, block, newblocks, startblock));
+                _DEBUG("makefreespace: Looking for %ld blocks from block %ld, and found %ld blocks at block %ld.\n", blocks, block, newblocks, startblock);
 
                 errorcode = moveextent(ebn, startblock, newblocks);
             } else {
@@ -5657,7 +5664,7 @@ LONG makefreespace(BLCK block) {
 
                 if(newblocks != 0) {
 
-                    _DEBUG(("makefreespace: Looking for %ld blocks from block %ld, and found %ld blocks at block %ld.\n", blocks, block, newblocks, startblock));
+                    _DEBUG("makefreespace: Looking for %ld blocks from block %ld, and found %ld blocks at block %ld.\n", blocks, block, newblocks, startblock);
 
                     if((errorcode = moveextent(ebn, startblock, newblocks)) != 0) {
                         break;
@@ -5765,13 +5772,13 @@ LONG findmatch(BLCK startblock, ULONG blocks, ULONG *bestkey) {
        The first ExtentBNode examined is determined by the start
        block number which is passed. */
 
-    _DEBUG(("findmatch: Looking for a chain of %ld blocks starting from block %ld\n", blocks, startblock));
+    _DEBUG("findmatch: Looking for a chain of %ld blocks starting from block %ld\n", blocks, startblock);
 
     *bestkey = 0;
 
     if((errorcode = getbnode(startblock, &cb, &ebn)) == 0 && ebn != 0) {
 
-        _DEBUG(("findmatch: 1, ebn->key = %ld, ebn->blocks = %ld\n", ebn->key, ebn->blocks));
+        _DEBUG("findmatch: 1, ebn->key = %ld, ebn->blocks = %ld\n", ebn->key, ebn->blocks);
 
         do {
             struct CacheBuffer *cb2;
@@ -5797,7 +5804,7 @@ LONG findmatch(BLCK startblock, ULONG blocks, ULONG *bestkey) {
 
             if((total < bestblocks || bestblocks == 0) && (ebn_start->prev & 0x80000000) != 0) {
 
-                _DEBUG(("findmatch: 2, ebn->key = %ld\n", ebn->key));
+                _DEBUG("findmatch: 2, ebn->key = %ld\n", ebn->key);
 
                 key = ebn_start->key;
 
@@ -5809,7 +5816,7 @@ LONG findmatch(BLCK startblock, ULONG blocks, ULONG *bestkey) {
                     break;
                 }
 
-                _DEBUG(("findmatch: 3, filesize = %ld\n", o->object.file.size));
+                _DEBUG("findmatch: 3, filesize = %ld\n", o->object.file.size);
 
                 newblocks = (o->object.file.size + bytes_block - 1) >> shifts_block;
 
@@ -5992,7 +5999,7 @@ LONG findmatch(BLCK startblock, ULONG blocks, ULONG *bestkey) {
        The first ExtentBNode examined is determined by the start
        block number which is passed. */
 
-    _DEBUG(("findmatch: Looking for a chain of %ld blocks starting from block %ld\n", blocks, startblock));
+    _DEBUG("findmatch: Looking for a chain of %ld blocks starting from block %ld\n", blocks, startblock);
 
     *bestkey = 0;
 
@@ -6004,7 +6011,7 @@ LONG findmatch(BLCK startblock, ULONG blocks, ULONG *bestkey) {
 
     if((errorcode = getbnode(startblock, &cb, &ebn)) == 0 && ebn != 0) {
 
-        _DEBUG(("findmatch: ebn->key = %ld, ebn->blocks = %ld\n", ebn->key, ebn->blocks));
+        _DEBUG("findmatch: ebn->key = %ld, ebn->blocks = %ld\n", ebn->key, ebn->blocks);
 
         do {
             if((ebn->prev & 0x80000000) != 0) {
@@ -6075,7 +6082,7 @@ LONG findmatch_fromend(BLCK startblock, ULONG blocks, ULONG *bestkey) {
        The first ExtentBNode examined is determined by the start
        block number which is passed. */
 
-    _DEBUG(("findmatch_fromend: Looking for a chain of %ld blocks starting from block %ld\n", blocks, startblock));
+    _DEBUG("findmatch_fromend: Looking for a chain of %ld blocks starting from block %ld\n", blocks, startblock);
 
     *bestkey = 0;
 
@@ -6087,7 +6094,7 @@ LONG findmatch_fromend(BLCK startblock, ULONG blocks, ULONG *bestkey) {
 
     if((errorcode = lastbnode(globals->block_extentbnoderoot, &cb, (struct BNode **)&ebn)) == 0 && ebn != 0 && BE2L(ebn->be_key) >= startblock) {
 
-        _DEBUG(("findmatch_fromend: ebn->key = %ld, ebn->blocks = %ld\n", BE2L(ebn->be_key), BE2W(ebn->be_blocks)));
+        _DEBUG("findmatch_fromend: ebn->key = %ld, ebn->blocks = %ld\n", BE2L(ebn->be_key), BE2W(ebn->be_blocks));
 
         do {
             if((BE2L(ebn->be_prev) & 0x80000000) != 0) { // Is this a 'first fragment' of something?
@@ -6095,7 +6102,7 @@ LONG findmatch_fromend(BLCK startblock, ULONG blocks, ULONG *bestkey) {
                 struct fsObject *o;
                 ULONG newblocks;
 
-                _DEBUG(("findmatch_fromend!: ebn->key = %ld, ebn->blocks = %ld\n", BE2L(ebn->be_key), BE2W(ebn->be_blocks)));
+                _DEBUG("findmatch_fromend!: ebn->key = %ld, ebn->blocks = %ld\n", BE2L(ebn->be_key), BE2W(ebn->be_blocks));
 
                 /* Found the start of a candidate chain. */
 
@@ -6132,7 +6139,7 @@ LONG findmatch_fromend(BLCK startblock, ULONG blocks, ULONG *bestkey) {
                 *bestkey = newfragmentend_small();
             }
         } else {
-            _DEBUG(("findmatch_fromend: errorcode=%ld\n", errorcode));
+            _DEBUG("findmatch_fromend: errorcode=%ld\n", errorcode);
         }
     }
 
@@ -6147,7 +6154,7 @@ LONG step(void) {
 
     if((free = availablespace(globals->block_defragptr, 256)) != -1) {
 
-        _DEBUG(("Defragmenter: Found %ld blocks of free space at block %ld.\n", free, globals->block_defragptr));
+        _DEBUG("Defragmenter: Found %ld blocks of free space at block %ld.\n", free, globals->block_defragptr);
 
         if(free == 0) {
             struct CacheBuffer *cb;
@@ -6159,7 +6166,7 @@ LONG step(void) {
                 if(ebn == 0 || BE2L(ebn->be_key) != globals->block_defragptr) {
                     BLCK block;
 
-                    _DEBUG(("Defragmenter: Found unmoveable data at block %ld.\n", globals->block_defragptr));
+                    _DEBUG("Defragmenter: Found unmoveable data at block %ld.\n", globals->block_defragptr);
 
                     /* Skip unmoveable data */
 
@@ -6170,13 +6177,13 @@ LONG step(void) {
                     }
                 } else if((BE2L(ebn->be_prev) & 0x80000000) != 0 || BE2L(ebn->be_prev) < globals->block_defragptr) {
 
-                    _DEBUG(("Defragmenter: Found a (partially) defragmented extent at block %ld.\n", globals->block_defragptr));
+                    _DEBUG("Defragmenter: Found a (partially) defragmented extent at block %ld.\n", globals->block_defragptr);
 
                     if(BE2L(ebn->be_next) == 0 || BE2L(ebn->be_next) == BE2L(ebn->be_key) + BE2W(ebn->be_blocks)) {
                         /* If there is no next Extent, or if the next Extent is touching
                            this one, then skip the current one. */
 
-                        _DEBUG(("Defragmenter: Extent has no next or next is touching this one.\n"));
+                        _DEBUG("Defragmenter: Extent has no next or next is touching this one.\n");
 
                         globals->block_defragptr += BE2W(ebn->be_blocks);
                     } else {
@@ -6185,16 +6192,16 @@ LONG step(void) {
                         BLCK next = BE2L(ebn->be_next);
                         UWORD blocks = BE2W(ebn->be_blocks);
 
-                        _DEBUG(("Defragmenter: Extent has a next extent.\n"));
+                        _DEBUG("Defragmenter: Extent has a next extent.\n");
 
                         if((freeafter = availablespace(key + blocks, 256)) != -1) {
 
-                            _DEBUG(("Defragmenter: There are %ld blocks of free space after the extent at block %ld.\n", freeafter, key));
+                            _DEBUG("Defragmenter: There are %ld blocks of free space after the extent at block %ld.\n", freeafter, key);
 
                             if(freeafter > 0) {
                                 /* Move (part of) data located in next extent to this free space. */
 
-                                _DEBUG(("Defragmenter: Filling the gap.\n"));
+                                _DEBUG("Defragmenter: Filling the gap.\n");
 
                                 /* The function below can be called multiple times in a row.  When there is a large
                                    gap in which multiple extents of the file will fit, then these can all be transfered
@@ -6209,7 +6216,7 @@ LONG step(void) {
                                 if((block = (BLCK)skipunmoveable(key + blocks)) != (BLCK) - 1) {
                                     if(block == key + blocks) {
 
-                                        _DEBUG(("Defragmenter: There was a moveable extent after the extent at block %ld.\n", key));
+                                        _DEBUG("Defragmenter: There was a moveable extent after the extent at block %ld.\n", key);
 
                                         /* There was no unmoveable data, so let's move it. */
 
@@ -6217,7 +6224,7 @@ LONG step(void) {
                                     } else {
                                         LONG freeafter;
 
-                                        _DEBUG(("Defragmenter: Skipped %ld blocks of unmoveable data.\n", block - (key + blocks)));
+                                        _DEBUG("Defragmenter: Skipped %ld blocks of unmoveable data.\n", block - (key + blocks));
 
                                         /* Unmoveable data was skipped. */
 
@@ -6225,18 +6232,18 @@ LONG step(void) {
 
                                             if((freeafter = availablespace(block, 256)) != -1) {
 
-                                                _DEBUG(("Defragmenter: There are %ld blocks of free space after the unmoveable data.\n", freeafter));
+                                                _DEBUG("Defragmenter: There are %ld blocks of free space after the unmoveable data.\n", freeafter);
 
                                                 if(freeafter == 0) {
 
-                                                    _DEBUG(("Defragmenter: Clearing some space at block %ld.\n", block));
+                                                    _DEBUG("Defragmenter: Clearing some space at block %ld.\n", block);
 
                                                     if((errorcode = makefreespace(block)) == 0) {
                                                         if((freeafter = availablespace(block, 256)) == -1) {
                                                             errorcode = INTERR_DEFRAGMENTER;
                                                         }
 
-                                                        _DEBUG(("Defragmenter: There are now %ld blocks of cleared space after the unmoveable data.\n", freeafter));
+                                                        _DEBUG("Defragmenter: There are now %ld blocks of cleared space after the unmoveable data.\n", freeafter);
                                                     }
                                                 }
 
@@ -6246,7 +6253,7 @@ LONG step(void) {
 
                                                     if((errorcode = findextentbnode(next, &cb, &ebn)) == 0) {
 
-                                                        _DEBUG(("Defragmenter: Moved next extent of our extent directly after the unmoveable space (block = %ld).\n", block));
+                                                        _DEBUG("Defragmenter: Moved next extent of our extent directly after the unmoveable space (block = %ld).\n", block);
 
                                                         if((errorcode = moveextent(ebn, block, MIN(freeafter, BE2W(ebn->be_blocks)))) == 0) {
                                                             globals->block_defragptr = block;
@@ -6273,7 +6280,7 @@ LONG step(void) {
                     }
                 } else {
 
-                    _DEBUG(("Defragmenter: Found an extent at block %ld which must be moved away.\n", globals->block_defragptr));
+                    _DEBUG("Defragmenter: Found an extent at block %ld which must be moved away.\n", globals->block_defragptr);
 
                     errorcode = makefreespace(globals->block_defragptr);
                 }
@@ -6288,12 +6295,12 @@ LONG step(void) {
 
                     if((errorcode = findextentbnode(bestkey, &cb, &ebn)) == 0) {
 
-                        _DEBUG(("Defragmenter: Moving a new first Extent to %ld\n", globals->block_defragptr));
+                        _DEBUG("Defragmenter: Moving a new first Extent to %ld\n", globals->block_defragptr);
 
                         errorcode = moveextent(ebn, globals->block_defragptr, MIN(free, BE2W(ebn->be_blocks)));
                     }
                 } else {
-                    _DEBUG(("Defragmenter: Nothing more to optimize.\n"));
+                    _DEBUG("Defragmenter: Nothing more to optimize.\n");
 
                     add_done();
                 }
@@ -6303,7 +6310,7 @@ LONG step(void) {
         errorcode = INTERR_DEFRAGMENTER;
     }
 
-    _DEBUG(("Defragmenter: Exiting with errorcode %ld\n\n", errorcode));
+    _DEBUG("Defragmenter: Exiting with errorcode %ld\n\n", errorcode);
 
     return(errorcode);
 }

@@ -181,7 +181,7 @@ LONG savetransaction(BLCK *firsttransactionblock) {
   ULONG blckno;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_TRANSACTION,"savetransaction: Entry.  Transaction size = %ld\n", globals->transactionpoolsize));
+  _XDEBUG(DEBUG_TRANSACTION,"savetransaction: Entry.  Transaction size = %ld\n", globals->transactionpoolsize);
 
   *firsttransactionblock=0;
 
@@ -197,7 +197,7 @@ LONG savetransaction(BLCK *firsttransactionblock) {
     if((errorcode=findspace(1, globals->block_rovingblockptr, globals->block_rovingblockptr, &blckno))==0) {
       ULONG startblock;
 
-      _XDEBUG((DEBUG_TRANSACTION,"savetransaction: findspace succesfully completed\n"));
+      _XDEBUG(DEBUG_TRANSACTION,"savetransaction: findspace succesfully completed\n");
 
       /* Warning, this function doesn't mark space, so it assumes that
          findspace never returns the same space if startblock is set
@@ -205,7 +205,7 @@ LONG savetransaction(BLCK *firsttransactionblock) {
 
       do {
 
-        _XDEBUG((DEBUG_TRANSACTION,"savetransaction: Storing operations of transaction in block %ld\n",blckno));
+        _XDEBUG(DEBUG_TRANSACTION,"savetransaction: Storing operations of transaction in block %ld\n",blckno);
 
         startblock=blckno+1;
 
@@ -248,7 +248,7 @@ LONG savetransaction(BLCK *firsttransactionblock) {
     errorcode=ERROR_NO_FREE_STORE;
   }
 
-  _XDEBUG((DEBUG_TRANSACTION,"savetransaction: Exiting with errorcode = %ld\n",errorcode));
+  _XDEBUG(DEBUG_TRANSACTION,"savetransaction: Exiting with errorcode = %ld\n",errorcode);
 
   return(errorcode);
 }
@@ -344,7 +344,7 @@ LONG checkfortransaction(void) {
 
           req("The transaction loaded succesfully and\nit will now be re-applied to this volume.", "Ok");
 
-          _DEBUG(("Before writeoperations()\n"));
+          _DEBUG("Before writeoperations()\n");
 
           if((errorcode=writeoperations())==0) {
 
@@ -353,7 +353,7 @@ LONG checkfortransaction(void) {
                                            "Debug requester 1\n",
                                            "Ok",((UBYTE *)BADDR(devnode->dn_Name))+1);
 */
-            _DEBUG(("Before removetransactionfailure()\n"));
+            _DEBUG("Before removetransactionfailure()\n");
             if((errorcode=removetransactionfailure())==0) {
 
               req("The transaction has been succesfully\napplied to this volume.\nYou can continue normally now.", "Ok");
@@ -470,7 +470,7 @@ static void combineoperations(void) {
 LONG addoperation2(struct CacheBuffer *cb_org, struct CacheBuffer *cb_new) {
   struct Operation *o;
 
-  // _DEBUG(("addoperation: Adding a new operation for block %ld\n",block));
+  // _DEBUG("addoperation: Adding a new operation for block %ld\n",block);
 
   /* First remove all Operations with the same block in this Transaction */
 
@@ -593,7 +593,7 @@ void newtransaction(void) {
 
   globals->transactionnestcount++;
 
-  _XDEBUG((DEBUG_TRANSACTION,"--NEW-----> poolsize = %ld\n",globals->transactionpoolsize));
+  _XDEBUG(DEBUG_TRANSACTION,"--NEW-----> poolsize = %ld\n",globals->transactionpoolsize);
 }
 
 
@@ -606,7 +606,7 @@ void endtransaction(void) {
      CB_ORIGINAL|CB_LATEST -> leave alone.
      CB_LATEST -> leave alone. */
 
-  _XDEBUG((DEBUG_TRANSACTION,"--END----->\n"));
+  _XDEBUG(DEBUG_TRANSACTION,"--END----->\n");
 
   combineoperations();
 
@@ -623,7 +623,7 @@ void endtransaction(void) {
        to enforce a flush. */
 
     if(globals->transactionpoolsize>MAX_TRANSACTIONPOOLSIZE) {
-      _TDEBUG(("endtransaction: poolsize larger than 32 kB -> flushed transaction\n"));
+      _TDEBUG("endtransaction: poolsize larger than 32 kB -> flushed transaction\n");
       flushtransaction();
     }
   }
@@ -659,7 +659,7 @@ void deletetransaction(void) {
                            Cachebuffer then restore to latest version, if present.
                            Otherwise clear it. */
 
-  _DEBUG(("-DEL------>\n"));
+  _DEBUG("-DEL------>\n");
 
   o=FirstNode();
 
@@ -754,7 +754,7 @@ LONG writeoperations(void) {
        for.  Writing it to disk is all we need to do. */
 
 /*
-    _DEBUG(("writeoperations: Writing block %ld\n",o->oi.blckno));
+    _DEBUG("writeoperations: Writing block %ld\n",o->oi.blckno);
             request(PROGRAMNAME " request","%s\n"\
                                            "Writing block %ld\n",
                                            "Ok",((UBYTE *)BADDR(devnode->dn_Name))+1, o->oi.blckno);
@@ -870,26 +870,26 @@ LONG flushtransaction(void) {
   BLCK firsttransactionblock;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_TRANSACTION,"flushtransaction: Entry\n"));
+  _XDEBUG(DEBUG_TRANSACTION,"flushtransaction: Entry\n");
 
   while((errorcode=flushiocache())!=0 && flusherror(errorcode)==1) {     /* This commits any dirty data. */
   }
 
   if(errorcode==0 && hastransaction()) {
 
-    _DEBUG(("flushtransaction: There is a transaction\n"));
+    _DEBUG("flushtransaction: There is a transaction\n");
 
     while((errorcode=savetransaction(&firsttransactionblock))!=0 && flusherror(errorcode)==1) {
     }
 
     if(errorcode==0) {
 
-      _XDEBUG((DEBUG_TRANSACTION,"flushtransaction: Saved transaction\n"));
+      _XDEBUG(DEBUG_TRANSACTION,"flushtransaction: Saved transaction\n");
 
       while((errorcode=flushiocache())!=0 && flusherror(errorcode)==1) {     /* This commits any dirty data. */
       }
 
-      _XDEBUG((DEBUG_TRANSACTION,"flushtransaction: Disk updated\n"));
+      _XDEBUG(DEBUG_TRANSACTION,"flushtransaction: Disk updated\n");
 
       if(errorcode==0) {
         if((cb=getcachebuffer())!=0) {
@@ -908,19 +908,19 @@ LONG flushtransaction(void) {
           while((errorcode=writecachebuffer(cb))!=0 && flusherror(errorcode)==1) {
           }
 
-          _XDEBUG((DEBUG_TRANSACTION,"flushtransaction: Set TransactionFailure block\n"));
+          _XDEBUG(DEBUG_TRANSACTION,"flushtransaction: Set TransactionFailure block\n");
 
           if(errorcode==0) {
 
             while((errorcode=flushiocache())!=0 && flusherror(errorcode)==1) {     /* This commits any dirty data. */
             }
 
-            _XDEBUG((DEBUG_TRANSACTION,"flushtransaction: Disk updated (2)\n"));
+            _XDEBUG(DEBUG_TRANSACTION,"flushtransaction: Disk updated (2)\n");
 
             if(errorcode==0) {
               if((errorcode=writeoperations())==0) {           /* writeoperations() */
 
-                _XDEBUG((DEBUG_TRANSACTION,"flushtransaction: Updated all blocks\n"));
+                _XDEBUG(DEBUG_TRANSACTION,"flushtransaction: Updated all blocks\n");
 
                 if((errorcode=removetransactionfailure())==0) {
                   stoptimeout();
@@ -947,7 +947,7 @@ LONG flushtransaction(void) {
 
   }
 
-  _DEBUG(("flushtransaction: Done.  errorcode = %ld\n",errorcode));
+  _DEBUG("flushtransaction: Done.  errorcode = %ld\n",errorcode);
 
   return(errorcode);
 }
@@ -984,11 +984,11 @@ struct Operation *getlatestoperation(BLCK block) {
   /* Returns the latest operation (not necessarily the current operation)
      for a block.  Zero indicates there were no operations for this block. */
 
-  _XDEBUG((DEBUG_CACHEBUFFER,"getlatestoperation: Entry for block %ld\n",block));
+  _XDEBUG(DEBUG_CACHEBUFFER,"getlatestoperation: Entry for block %ld\n",block);
 
   o=getlatestoperation2(block, ROOT);
 
-  _XDEBUG((DEBUG_CACHEBUFFER,"getlatestoperation: Exit\n"));
+  _XDEBUG(DEBUG_CACHEBUFFER,"getlatestoperation: Exit\n");
 
   return(o);
 }
@@ -1015,7 +1015,7 @@ void restorecachebuffer(struct CacheBuffer *cb) {
     }
   #endif
 
-  _XDEBUG((DEBUG_CACHEBUFFER,"restorecachebuffer: Entry.  cb->blckno = %ld, cb->bits = %ld\n",cb->blckno, (ULONG)cb->bits));
+  _XDEBUG(DEBUG_CACHEBUFFER,"restorecachebuffer: Entry.  cb->blckno = %ld, cb->bits = %ld\n",cb->blckno, (ULONG)cb->bits);
 
   if((o=getlatestoperation(cb->blckno))!=0 && ((o->oi.bits & OI_EMPTY)!=0 || (cb->bits & CB_EMPTY)==0)) {
     if((o->oi.bits & OI_EMPTY)==0) {
@@ -1110,7 +1110,7 @@ LONG applyoperation(BLCK block, struct CacheBuffer **returned_cb) {
 
     globals->statistics.cache_operationdecode++;
 
-    _XDEBUG((DEBUG_CACHEBUFFER,"applyoperation: Entry. block = %ld -> found an operation!\n",block));
+    _XDEBUG(DEBUG_CACHEBUFFER,"applyoperation: Entry. block = %ld -> found an operation!\n",block);
 
     if((o->oi.bits & OI_EMPTY)!=0) {
       globals->statistics.cache_emptyoperationdecode++;
@@ -1133,7 +1133,7 @@ LONG applyoperation(BLCK block, struct CacheBuffer **returned_cb) {
   else {
     LONG errorcode;
 
-    _XDEBUG((DEBUG_CACHEBUFFER,"applyoperation: Entry. block = %ld -> returning original!\n",block));
+    _XDEBUG(DEBUG_CACHEBUFFER,"applyoperation: Entry. block = %ld -> returning original!\n",block);
 
     if((errorcode=readoriginalcachebuffer(returned_cb, block))!=0) {
       return(errorcode);

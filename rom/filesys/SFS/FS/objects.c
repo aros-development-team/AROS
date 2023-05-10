@@ -213,7 +213,7 @@ static LONG safedeleteobjectquick(struct CacheBuffer *cb, struct fsObject *o, WO
 
   unlockcachebuffer(cb);
 
-  _XDEBUG((DEBUG_OBJECTS,"safedeleteobjectquick: exiting with errorcode %ld\n",errorcode));
+  _XDEBUG(DEBUG_OBJECTS,"safedeleteobjectquick: exiting with errorcode %ld\n",errorcode);
 
   return(errorcode);
 }
@@ -227,7 +227,7 @@ BOOL cleanupdeletedfiles(void) {
 
      This function returns FALSE if there's no recycled directory. */
 
-  _DEBUG(("cleanupdeletedfiles: entry\n"));
+  _DEBUG("cleanupdeletedfiles: entry\n");
 
   if(globals->has_recycled!=FALSE) {
     struct CacheBuffer *cbdd;
@@ -265,7 +265,7 @@ BOOL cleanupdeletedfiles(void) {
             if(lockable(BE2L(o->be_objectnode),EXCLUSIVE_LOCK)!=DOSFALSE) {
               ULONG size=BE2L(o->object.file.be_size)>>10;
 
-              _DEBUG(("cleanupdeletedfiles: deleting %s, objectnode = %ld\n",o->name,BE2L(o->be_objectnode)));
+              _DEBUG("cleanupdeletedfiles: deleting %s, objectnode = %ld\n",o->name,BE2L(o->be_objectnode));
 
               if(deletefileslowly(cb, o)==0) {
                 kbdeleted+=size;
@@ -288,7 +288,7 @@ BOOL cleanupdeletedfiles(void) {
       unlockcachebuffer(cbdd);
     }
 
-    _DEBUG(("cleanupdeletedfiles: Deleted %ld files for %ld kB worth of space\n",filesdeleted,kbdeleted));
+    _DEBUG("cleanupdeletedfiles: Deleted %ld files for %ld kB worth of space\n",filesdeleted,kbdeleted);
 
     if(filesdeleted!=0) {
       return(TRUE);
@@ -324,17 +324,17 @@ static LONG deleteobjectquick(struct CacheBuffer *cb, struct fsObject *o, WORD s
        used space associated with them. */
 
     if((bits & OTYPE_LINK)!=0) {
-      _XDEBUG((DEBUG_OBJECTS,"deleteobject: Object is soft link!\n"));
+      _XDEBUG(DEBUG_OBJECTS,"deleteobject: Object is soft link!\n");
 
       errorcode=freeadminspace(extentbnode);
     }
     else if((bits & OTYPE_DIR)!=0) {
-      _XDEBUG((DEBUG_OBJECTS,"deleteobject: Object is a directory!\n"));
+      _XDEBUG(DEBUG_OBJECTS,"deleteobject: Object is a directory!\n");
 
       errorcode=freeadminspace(hashblckno);
     }
     else {
-      _XDEBUG((DEBUG_OBJECTS,"deleteobject: Object is a file\n"));
+      _XDEBUG(DEBUG_OBJECTS,"deleteobject: Object is a file\n");
 
       errorcode=deleteextents(extentbnode);
     }
@@ -358,7 +358,7 @@ LONG deleteobject(struct ExtFileLock *lock, UBYTE *path, WORD sendnotify) {
   /* This function deletes the specified object.  It will only delete directories
      if they are empty.  All space associated with a file will be marked free. */
 
-  _XDEBUG((DEBUG_OBJECTS,"deleteobject: Entry -- deleting object %s\n",path));
+  _XDEBUG(DEBUG_OBJECTS,"deleteobject: Entry -- deleting object %s\n",path);
 
   if(lock==0) {
     objectnode=ROOTNODE;
@@ -409,7 +409,7 @@ LONG deleteobject(struct ExtFileLock *lock, UBYTE *path, WORD sendnotify) {
     }
   }
 
-  _XDEBUG((DEBUG_OBJECTS,"deleteobject: Exiting with errorcode %ld\n",errorcode));
+  _XDEBUG(DEBUG_OBJECTS,"deleteobject: Exiting with errorcode %ld\n",errorcode);
 
   return(errorcode);
 }
@@ -423,7 +423,7 @@ LONG removeobjectcontainer(struct CacheBuffer *cb) {
   /* Removes an ObjectContainer from a directory chain.  Make
      sure it is empty before removing it! */
 
-  _XDEBUG((DEBUG_OBJECTS,"removeobjectcontainer: entry\n"));
+  _XDEBUG(DEBUG_OBJECTS,"removeobjectcontainer: entry\n");
 
   lockcachebuffer(cb);
 
@@ -532,7 +532,7 @@ LONG simpleremoveobject(struct CacheBuffer *cb, struct fsObject *o) {
 
      This function doesn't delink the object from the hashchain! */
 
-  _XDEBUG((DEBUG_OBJECTS,"simpleremoveobject: Entry\n"));
+  _XDEBUG(DEBUG_OBJECTS,"simpleremoveobject: Entry\n");
 
   if(BE2L(oc->be_parent)==RECYCLEDNODE) {
 
@@ -586,7 +586,7 @@ static LONG dehashobjectquick(NODE objectnode, UBYTE *name, NODE parentobjectnod
   struct fsObject *o;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_OBJECTS,"dehashobject: Delinking object %ld (=ObjectNode) from hashchain.  Parentnode = %ld\n",objectnode,parentobjectnode));
+  _XDEBUG(DEBUG_OBJECTS,"dehashobject: Delinking object %ld (=ObjectNode) from hashchain.  Parentnode = %ld\n",objectnode,parentobjectnode);
 
   /* This function delinks the passed in ObjectNode from its hash-chain.  Handy when deleting
      the object, or when renaming/moving it.  newtransaction() must have been called before
@@ -604,7 +604,7 @@ static LONG dehashobjectquick(NODE objectnode, UBYTE *name, NODE parentobjectnod
       if((errorcode=findnode(globals->block_objectnoderoot, sizeof(struct fsObjectNode), objectnode, &cbnode, (struct fsNode **)&on))==0) {
         UWORD hashchain;
 
-        _XDEBUG((DEBUG_OBJECTS,"dehashobject: Read HashTable block of parent object of object to be delinked\n"));
+        _XDEBUG(DEBUG_OBJECTS,"dehashobject: Read HashTable block of parent object of object to be delinked\n");
 
         lockcachebuffer(cbnode);
 
@@ -615,7 +615,7 @@ static LONG dehashobjectquick(NODE objectnode, UBYTE *name, NODE parentobjectnod
           /* The hashtable directly points to the fsObject to be delinked.  We simply
              modify the Hashtable to point to the new nexthash entry. */
 
-          _XDEBUG((DEBUG_OBJECTS,"dehashobject: The hashtable points directly to the to be delinked object\n"));
+          _XDEBUG(DEBUG_OBJECTS,"dehashobject: The hashtable points directly to the to be delinked object\n");
 
           preparecachebuffer(cb);
 
@@ -629,7 +629,7 @@ static LONG dehashobjectquick(NODE objectnode, UBYTE *name, NODE parentobjectnod
           struct CacheBuffer *cb=0;
           struct fsObjectNode *onsearch=0;
 
-          _XDEBUG((DEBUG_OBJECTS,"dehashobject: Walking through hashchain\n"));
+          _XDEBUG(DEBUG_OBJECTS,"dehashobject: Walking through hashchain\n");
 
           while(nexthash!=0 && nexthash!=objectnode) {
             if((errorcode=findnode(globals->block_objectnoderoot, sizeof(struct fsObjectNode), nexthash, &cb, (struct fsNode **)&onsearch))!=0) {
@@ -695,7 +695,7 @@ static LONG createobjecttagitem(struct CacheBuffer **io_cb, struct fsObject **io
      If this function returns no error it will return in io_cb & io_o the new object
      (prepared). */
 
-  _XDEBUG((DEBUG_OBJECTS,"createobjecttags: Creating object '%s' in dir '%s'.\n",objectname,(*io_o)->name));
+  _XDEBUG(DEBUG_OBJECTS,"createobjecttags: Creating object '%s' in dir '%s'.\n",objectname,(*io_o)->name);
 
   if(BE2L((*io_o)->be_objectnode)!=RECYCLEDNODE || globals->internalrename!=FALSE) {
     struct TagItem *tag;
@@ -708,7 +708,7 @@ static LONG createobjecttagitem(struct CacheBuffer **io_cb, struct fsObject **io
 
       unlockcachebuffer(*io_cb);
 
-      _XDEBUG((DEBUG_OBJECTS,"createobjecttags: Object didn't exist, so we can safely create it.\n"));
+      _XDEBUG(DEBUG_OBJECTS,"createobjecttags: Object didn't exist, so we can safely create it.\n");
 
       errorcode=0;
 
@@ -1125,28 +1125,28 @@ LONG findcreate(struct ExtFileLock **returned_lock, UBYTE *path, LONG packettype
     create=0;
     delete=0;
 
-    _XDEBUG((DEBUG_OBJECTS,"ACTION_FINDINPUT: %s\n",path));
+    _XDEBUG(DEBUG_OBJECTS,"ACTION_FINDINPUT: %s\n",path);
   }
   else if(packettype==ACTION_FINDOUTPUT || packettype==ACTION_MAKE_LINK) {
     accessmode=EXCLUSIVE_LOCK;
     create=1;
     delete=1;
 
-    _XDEBUG((DEBUG_OBJECTS,"ACTION_FINDOUTPUT/ACTION_MAKE_LINK: %s\n",path));
+    _XDEBUG(DEBUG_OBJECTS,"ACTION_FINDOUTPUT/ACTION_MAKE_LINK: %s\n",path);
   }
   else if(packettype==ACTION_CREATE_DIR) {
     accessmode=EXCLUSIVE_LOCK;
     create=1;
     delete=0;
 
-    _XDEBUG((DEBUG_OBJECTS,"ACTION_CREATE_DIR: %s\n",path));
+    _XDEBUG(DEBUG_OBJECTS,"ACTION_CREATE_DIR: %s\n",path);
   }
   else {  // if(packettype==ACTION_FINDUPDATE)
     accessmode=SHARED_LOCK;
     create=1;
     delete=0;
 
-    _XDEBUG((DEBUG_OBJECTS,"ACTION_FINDUPDATE: %s\n",path));
+    _XDEBUG(DEBUG_OBJECTS,"ACTION_FINDUPDATE: %s\n",path);
   } /*
   else if(packettype==ACTION_DELETE_OBJECT) {
     accessmode= ?? ;
@@ -1220,12 +1220,12 @@ LONG findcreate(struct ExtFileLock **returned_lock, UBYTE *path, LONG packettype
             errorcode=0;
           }
 
-          _XDEBUG((DEBUG_OBJECTS,"findcreate: locating lockable parent\n"));
+          _XDEBUG(DEBUG_OBJECTS,"findcreate: locating lockable parent\n");
 
           if(errorcode==0 && (errorcode=locateparent(lock,path,&cb,&o))==0) {  // was locatelockableparent()
             UBYTE bits=0;
 
-            _XDEBUG((DEBUG_OBJECTS,"findcreate: creating object\n"));
+            _XDEBUG(DEBUG_OBJECTS,"findcreate: creating object\n");
 
             if(packettype==ACTION_CREATE_DIR) {
               bits|=OTYPE_DIR;
@@ -1244,7 +1244,7 @@ LONG findcreate(struct ExtFileLock **returned_lock, UBYTE *path, LONG packettype
 
             if((errorcode=createobjecttagitem(&cb, &o, FilePart(path), tags))==0) {
 
-              _XDEBUG((DEBUG_OBJECTS,"findcreate: New object is now complete\n"));
+              _XDEBUG(DEBUG_OBJECTS,"findcreate: New object is now complete\n");
 
               if((errorcode=storecachebuffer(cb))==0) {
 
@@ -1290,7 +1290,7 @@ LONG findobjectspace(struct CacheBuffer **io_cb, struct fsObject **io_o, ULONG b
   ULONG nextblock=BE2L(oparent->object.dir.be_firstdirblock);
   LONG errorcode=0;
 
-  _XDEBUG((DEBUG_OBJECTS,"findobjectspace: Looking for %ld bytes in directory with ObjectNode number %ld (in block %ld)\n",bytesneeded,BE2L((*io_o)->be_objectnode),(*io_cb)->blckno));
+  _XDEBUG(DEBUG_OBJECTS,"findobjectspace: Looking for %ld bytes in directory with ObjectNode number %ld (in block %ld)\n",bytesneeded,BE2L((*io_o)->be_objectnode),(*io_cb)->blckno);
 
   /* This function will look in the directory indicated by io_o
      for an ObjectContainer block which contains bytesneeded free
@@ -1345,7 +1345,7 @@ LONG findobjectspace(struct CacheBuffer **io_cb, struct fsObject **io_o, ULONG b
       struct fsObjectContainer *oc=cb->data;
       UBYTE ringlist=oparent->bits & OTYPE_RINGLIST;
 
-      _XDEBUG((DEBUG_OBJECTS,"findobjectspace: No room was found, allocated new block at %ld\n",cb->blckno));
+      _XDEBUG(DEBUG_OBJECTS,"findobjectspace: No room was found, allocated new block at %ld\n",cb->blckno);
 
       /* Allocated new block.  We will now link it to the START of the directory chain
          so the new free space can be found quickly when more entries need to be added. */
@@ -1415,7 +1415,7 @@ static LONG deleteobjectnode(NODE objectnode) {
   struct fsObjectNode *on;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_NODES,"deleteobjectnode: Deleting Node %ld",objectnode));
+  _XDEBUG(DEBUG_NODES,"deleteobjectnode: Deleting Node %ld",objectnode);
 
   if((errorcode=findnode(globals->block_objectnoderoot, sizeof(struct fsObjectNode), objectnode, &cb, (struct fsNode **)&on))==0) {
     errorcode=deletenode(globals->block_objectnoderoot, cb, (struct fsNode *)on, sizeof(struct fsObjectNode));
@@ -1822,7 +1822,7 @@ LONG renameobject2(struct CacheBuffer *cb, struct fsObject *o, struct CacheBuffe
   /* The Object indicated by cb & o, gets renamed to newname and placed
      in the directory indicated by cbparent & oparent. */
 
-  _XDEBUG((DEBUG_OBJECTS,"renameobject2: Renaming '%s' to '%s' in dir '%s'\n",o->name,newname,oparent->name));
+  _XDEBUG(DEBUG_OBJECTS,"renameobject2: Renaming '%s' to '%s' in dir '%s'\n",o->name,newname,oparent->name);
 
   oldo=(struct fsObject *)object;
 
@@ -1918,7 +1918,7 @@ LONG renameobject2(struct CacheBuffer *cb, struct fsObject *o, struct CacheBuffe
 
           if((errorcode=storecachebuffer(cb))==0 && sendnotify!=FALSE) {    // Object itself has been completed.
 
-            _XDEBUG((DEBUG_OBJECTS,"renameobject2: Succesfully created & stored new object.\n"));
+            _XDEBUG(DEBUG_OBJECTS,"renameobject2: Succesfully created & stored new object.\n");
 
             if(parentobjectnode!=sourceparentobjectnode) {
               /* Object was moved! */

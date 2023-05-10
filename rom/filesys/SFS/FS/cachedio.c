@@ -424,19 +424,19 @@ LONG validateiocache(struct IOCache *ioc, ULONG blockoffset, ULONG blocks) {
     return(0);
   }
 
-//  _DEBUG(("validateiocache: ioc->block = %ld, ioc->blocks = %ld, ioc->dirty = 0x%08lx, ioc->valid = 0x%08lx\n", ioc->block, ioc->blocks, ioc->dirty[0], ioc->valid[0]));
+//  _DEBUG("validateiocache: ioc->block = %ld, ioc->blocks = %ld, ioc->dirty = 0x%08lx, ioc->valid = 0x%08lx\n", ioc->block, ioc->blocks, ioc->dirty[0], ioc->valid[0]);
 
   if((errorcode=transfer(DIO_READ, globals->ioc_buffer->data, ioc->block, ioc->blocks))==0) {
     LONG i=globals->iocache_sizeinblocks;
 
-//    _DEBUG(("validateiocache: BMCNTO returned %ld\n", BMCNTO(ioc->dirty, 0, ioc->blocks)));
+//    _DEBUG("validateiocache: BMCNTO returned %ld\n", BMCNTO(ioc->dirty, 0, ioc->blocks));
 
     if(bmcnto(ioc->dirty, 0, ioc->blocks) < globals->iocache_sizeinblocks/2) {
       void *data;
 
       /* Copying the dirty blocks to the new IOCache. */
 
-//      _DEBUG(("validateiocache: Using new IOCache\n"));
+//      _DEBUG("validateiocache: Using new IOCache\n");
 
       while(--i>=0) {
         if(bmtsto(ioc->dirty, i, 1)!=FALSE) {
@@ -452,7 +452,7 @@ LONG validateiocache(struct IOCache *ioc, ULONG blockoffset, ULONG blocks) {
 
       /* Copying the newly read blocks to the existing IOCache. */
 
-//      _DEBUG(("validateiocache: Using existing IOCache\n"));
+//      _DEBUG("validateiocache: Using existing IOCache\n");
 
       while(--i>=0) {
         if(bmtstz(ioc->dirty, i, 1)!=FALSE) {
@@ -482,21 +482,21 @@ static LONG copybackiocache(struct IOCache *ioc) {
      disk-access also flush any buffers following this one, to avoid
      physical head movement. */
 
-//  _DEBUG(("copybackiocache: ioc->block = %ld\n", ioc->block));
+//  _DEBUG("copybackiocache: ioc->block = %ld\n", ioc->block);
 
   while(ioc!=0 && ioc->blocks!=0 && (ioc->bits & IOC_DIRTY)!=0) {
     
-    _DEBUG(("copybackiocache: ioc->dirty=%p (@=%08x) ioc->blocks-1=%d\n", ioc->dirty, AROS_BE2LONG(*(ULONG*)ioc->dirty), ioc->blocks-1));
+    _DEBUG("copybackiocache: ioc->dirty=%p (@=%08x) ioc->blocks-1=%d\n", ioc->dirty, AROS_BE2LONG(*(ULONG*)ioc->dirty), ioc->blocks-1);
 
     if((dirtyhigh=bmflo(ioc->dirty, ioc->blocks-1))<0) {
-      _DEBUG(("copybackiocache: Say what?\n"));
+      _DEBUG("copybackiocache: Say what?\n");
       break;
 //    dirtyhigh = ioc->blocks-1;
     }
 
     dirtylow=bmffo(ioc->dirty, 4, 0);
 
-//    _DEBUG(("copybackiocache: dirtylow = %ld, dirtyhigh = %ld, ioc->dirty = 0x%08lx\n", dirtylow, dirtyhigh, ioc->dirty[0]));
+//    _DEBUG("copybackiocache: dirtylow = %ld, dirtyhigh = %ld, ioc->dirty = 0x%08lx\n", dirtylow, dirtyhigh, ioc->dirty[0]);
 
     /* dirtylow and dirtyhigh are known.  Now, to check if we can write
        all these changes in a single write we check if all the blocks
@@ -504,7 +504,7 @@ static LONG copybackiocache(struct IOCache *ioc) {
        most of them probably will be dirty). */
 
     if(bmffz(ioc->valid, 4, dirtylow)<dirtyhigh) {
-//      _DEBUG(("copybackiocache: calling validateiocache\n"));
+//      _DEBUG("copybackiocache: calling validateiocache\n");
       if((errorcode=validateiocache(ioc, 0, ioc->blocks))!=0) {
         break;
       }
@@ -552,7 +552,7 @@ LONG flushiocache(void) {
     update();
   }
 
-//  _DEBUG(("flushiocache: errorcode = %ld\n", errorcode));
+//  _DEBUG("flushiocache: errorcode = %ld\n", errorcode);
 
   return(errorcode);
 }
@@ -820,7 +820,7 @@ void writethroughoverlappingiocaches(BLCK block, ULONG blocks, UBYTE *buffer) {
       UBYTE *dst;
       ULONG maxinline, overlappedblocks;
 
-//      _DEBUG(("IOCACHE: found overlapping cache (%ld-%ld) for block %ld of %ld blocks\n",ioc->block,ioc->block+ioc->blocks-1,block,blocks));
+//      _DEBUG("IOCACHE: found overlapping cache (%ld-%ld) for block %ld of %ld blocks\n",ioc->block,ioc->block+ioc->blocks-1,block,blocks);
 
       /* |-------|            |-----|               |-------|            |---------|
            |=======|        |=========|           |=======|                |=====|

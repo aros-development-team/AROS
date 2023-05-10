@@ -148,7 +148,7 @@ LONG freeadminspace(BLCK block) {
   BLCK adminspaceblock=globals->block_adminspace;
   LONG errorcode;
 
-  _DEBUG(("freeadminspace: Entry -- freeing block %ld\n",block));
+  _DEBUG("freeadminspace: Entry -- freeing block %ld\n",block);
 
   while((errorcode=readcachebuffercheck(&cb,adminspaceblock,ADMINSPACECONTAINER_ID))==0) {
     struct fsAdminSpaceContainer *asc=cb->data;
@@ -161,7 +161,7 @@ LONG freeadminspace(BLCK block) {
 
         /* block to be freed has been located */
 
-        _DEBUG(("freeadminspace: Block to be freed is located in AdminSpaceContainer block at %ld\n",adminspaceblock));
+        _DEBUG("freeadminspace: Block to be freed is located in AdminSpaceContainer block at %ld\n",adminspaceblock);
 
         preparecachebuffer(cb);
 

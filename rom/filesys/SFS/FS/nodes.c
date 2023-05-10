@@ -173,7 +173,7 @@ static LONG addnewnodelevel(BLCK noderoot, UWORD nodesize) {
 
   /* Adds a new level to the Node tree. */
 
-  _XDEBUG((DEBUG_NODES,"addnewnodelevel: Entry\n"));
+  _XDEBUG(DEBUG_NODES,"addnewnodelevel: Entry\n");
 
   if((errorcode=readcachebuffercheck(&cb, noderoot, NODECONTAINER_ID))==0) {
     struct CacheBuffer *newcb;
@@ -217,7 +217,7 @@ static LONG addnewnodelevel(BLCK noderoot, UWORD nodesize) {
     unlockcachebuffer(cb);
   }
 
-  _XDEBUG((DEBUG_NODES,"addnewnodelevel: Exiting with errorcode %ld\n",errorcode));
+  _XDEBUG(DEBUG_NODES,"addnewnodelevel: Exiting with errorcode %ld\n",errorcode);
 
   return(errorcode);
 }
@@ -262,7 +262,7 @@ static LONG createnodecontainer(ULONG nodenumber, ULONG nodes, BLCK *returned_bl
   struct CacheBuffer *cb;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_NODES,"createnodecontainer: nodenumber = %ld, nodes = %ld\n",nodenumber,nodes));
+  _XDEBUG(DEBUG_NODES,"createnodecontainer: nodenumber = %ld, nodes = %ld\n",nodenumber,nodes);
 
   if((errorcode=allocadminspace(&cb))==0) {
     struct fsNodeContainer *nc=cb->data;
@@ -277,7 +277,7 @@ static LONG createnodecontainer(ULONG nodenumber, ULONG nodes, BLCK *returned_bl
     *returned_block=cb->blckno;
   }
 
-  _XDEBUG((DEBUG_NODES,"createnodecontainer: Exiting with errorcode %ld\n",errorcode));
+  _XDEBUG(DEBUG_NODES,"createnodecontainer: Exiting with errorcode %ld\n",errorcode);
 
   return(errorcode);
 }
@@ -294,7 +294,7 @@ LONG createnode(BLCK noderoot, UWORD nodesize, struct CacheBuffer **returned_cb,
      it will create a new fsNodeContainers and a new fsNodeIndexContainer.  newoperation()
      should be called prior to calling this function. */
 
-//  _XDEBUG((DEBUG_NODES,"createnode: Entry\n"));
+//  _XDEBUG(DEBUG_NODES,"createnode: Entry\n");
 
   while((errorcode=readcachebuffercheck(&cb, nodeindex, NODECONTAINER_ID))==0) {
     struct fsNodeContainer *nc=cb->data;
@@ -321,7 +321,7 @@ LONG createnode(BLCK noderoot, UWORD nodesize, struct CacheBuffer **returned_cb,
         *returned_node=n;
         *returned_nodeno=BE2L(nc->be_nodenumber)+((UBYTE *)n-(UBYTE *)nc->be_node)/nodesize;
 
-        _XDEBUG((DEBUG_NODES,"createnode: Created Node %ld\n",*returned_nodeno));
+        _XDEBUG(DEBUG_NODES,"createnode: Created Node %ld\n",*returned_nodeno);
 
         /* Below we continue to look through the NodeContainer block.  We skip the entry
            we found to be unused, and see if there are any more unused entries.  If we
@@ -397,7 +397,7 @@ LONG createnode(BLCK noderoot, UWORD nodesize, struct CacheBuffer **returned_cb,
         /* Everything in the NodeIndexContainer was completely filled.  There possibly
            are some unused pointers in this block however.  */
 
-        _XDEBUG((DEBUG_NODES,"createnode: NodeContainer at block %ld has no empty Nodes\n",cb->blckno));
+        _XDEBUG(DEBUG_NODES,"createnode: NodeContainer at block %ld has no empty Nodes\n",cb->blckno);
 
         p=nc->be_node;
         i=globals->node_containers;
@@ -449,7 +449,7 @@ LONG createnode(BLCK noderoot, UWORD nodesize, struct CacheBuffer **returned_cb,
     }
   }
 
-//  _XDEBUG((DEBUG_NODES,"createnode: Exiting with errorcode %ld\n",errorcode));
+//  _XDEBUG(DEBUG_NODES,"createnode: Exiting with errorcode %ld\n",errorcode);
 
   return(errorcode);
 }
@@ -460,7 +460,7 @@ LONG findnode(BLCK nodeindex,UWORD nodesize,NODE nodeno,struct CacheBuffer **ret
   struct CacheBuffer *cb;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_NODES,"findnode: Entry -- looking for nodeno %ld\n",nodeno));
+  _XDEBUG(DEBUG_NODES,"findnode: Entry -- looking for nodeno %ld\n",nodeno);
 
   /* Finds a specific node by number.  It returns the cachebuffer which contains the fsNode
      structure and a pointer to the fsNode structure directly. */
@@ -468,7 +468,7 @@ LONG findnode(BLCK nodeindex,UWORD nodesize,NODE nodeno,struct CacheBuffer **ret
   while((errorcode=readcachebuffercheck(&cb,nodeindex,NODECONTAINER_ID))==0) {
     struct fsNodeContainer *nc=cb->data;
 
-    _XDEBUG((DDEBUG_NODES,"findnode: Read NodeContainer at block %ld with nodenumber = %ld, nodes = %ld\n",nodeindex,BE2L(nc->be_nodenumber),BE2L(nc->be_nodes)));
+    _XDEBUG(DDEBUG_NODES,"findnode: Read NodeContainer at block %ld with nodenumber = %ld, nodes = %ld\n",nodeindex,BE2L(nc->be_nodenumber),BE2L(nc->be_nodes));
 
     if(BE2L(nc->be_nodes)==1) {
       /* We've descended the tree to a leaf NodeContainer */
@@ -485,7 +485,7 @@ LONG findnode(BLCK nodeindex,UWORD nodesize,NODE nodeno,struct CacheBuffer **ret
     }
   }
 
-  _XDEBUG((DEBUG_NODES,"findnode: Exiting with errorcode %ld\n",errorcode));
+  _XDEBUG(DEBUG_NODES,"findnode: Exiting with errorcode %ld\n",errorcode);
 
   return(errorcode);
 }

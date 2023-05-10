@@ -22,7 +22,7 @@
 #endif
 
 void BEGIN(void) {
-  _DEBUG(("BEGIN..."));
+  _DEBUG("BEGIN...");
 
   ReadEClock(&globals->ecv);
 }
@@ -39,7 +39,7 @@ void END(UBYTE *name) {
     diff=-diff;
   }
 
-  _DEBUG(("%s: ticks %ld (f=%ld)\n",name,diff,freq));
+  _DEBUG("%s: ticks %ld (f=%ld)\n",name,diff,freq);
 }
 
 #ifndef __AROS__

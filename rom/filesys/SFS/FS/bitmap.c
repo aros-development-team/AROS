@@ -81,7 +81,7 @@ LONG markspace(BLCK block,ULONG blocks) {
   ULONG freeblocks;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_BITMAP,"markspace: Marking %ld blocks from block %ld\n",blocks,block));
+  _XDEBUG(DEBUG_BITMAP,"markspace: Marking %ld blocks from block %ld\n",blocks,block);
 
   if(((ULONG)availablespace(block, blocks))<blocks) {
     req_unusual("Attempted to mark %ld blocks from block %ld,\n but some of them were already full.", blocks, block);
@@ -139,7 +139,7 @@ LONG freespace(BLCK block,ULONG blocks) {
   ULONG freeblocks;
   LONG errorcode;
 
-  _XDEBUG((DEBUG_BITMAP,"freespace: Freeing %ld blocks from block %ld\n",blocks,block));
+  _XDEBUG(DEBUG_BITMAP,"freespace: Freeing %ld blocks from block %ld\n",blocks,block);
 
   if((errorcode=getfreeblocks(&freeblocks))==0) {
     if((errorcode=setfreeblocks(freeblocks+blocks))==0) {
@@ -458,7 +458,7 @@ LONG findspace(ULONG blocksneeded,BLCK startblock,BLCK endblock,BLCK *returned_b
 
   if((errorcode=findspace2(blocksneeded, startblock, endblock, returned_block, &blocks))==0) {
     if(blocks!=blocksneeded) {
-      _DEBUG(("findspace: %ld != %ld\n", blocks, blocksneeded));
+      _DEBUG("findspace: %ld != %ld\n", blocks, blocksneeded);
       return(ERROR_DISK_FULL);
     }
   }
@@ -493,7 +493,7 @@ LONG findspace(ULONG blocksneeded, BLCK startblock, BLCK endblock, BLCK *returne
 
   if((errorcode=findspace2(blocksneeded, startblock, endblock, returned_block, &blocks))==0) {
     if(blocks!=blocksneeded) {
-      _DEBUG(("findspace: %ld != %ld\n", blocks, blocksneeded));
+      _DEBUG("findspace: %ld != %ld\n", blocks, blocksneeded);
       return(ERROR_DISK_FULL);
     }
   }
@@ -557,7 +557,7 @@ LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
 
     while(entry<SPACELIST_MAX) {
       freeblocks=availablespace(block,blocksneeded);
-      _XDEBUG((DEBUG_BITMAP,"sfams: availablespace returned %ld for block %ld while we needed %ld blocks\n",freeblocks,block,blocksneeded));
+      _XDEBUG(DEBUG_BITMAP,"sfams: availablespace returned %ld for block %ld while we needed %ld blocks\n",freeblocks,block,blocksneeded);
 
       if(freeblocks>0) {
         if((ULONG)freeblocks>=blocksneeded) {
@@ -594,10 +594,10 @@ LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
       }
 
       allocblocks=allocatedspace(block,globals->blocks_inbitmap*2);
-      _XDEBUG((DEBUG_BITMAP,"sfams: allocatedspace returned %ld for block %ld while we needed %ld blocks\n",allocblocks,block,globals->blocks_inbitmap*2));
+      _XDEBUG(DEBUG_BITMAP,"sfams: allocatedspace returned %ld for block %ld while we needed %ld blocks\n",allocblocks,block,globals->blocks_inbitmap*2);
 
       if(allocblocks<0) {
-        _DEBUG(("sfams: disk full 1\n"));
+        _DEBUG("sfams: disk full 1\n");
         return(ERROR_DISK_FULL);
       }
       else if(block<startblock && block+allocblocks>=startblock) {
@@ -614,7 +614,7 @@ LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
     }
 
     if(entry==0) {
-      _DEBUG(("sfams: disk full 2\n"));
+      _DEBUG("sfams: disk full 2\n");
       return(ERROR_DISK_FULL);
     }
 
@@ -673,7 +673,7 @@ LONG smartfindandmarkspace(BLCK startblock,ULONG blocksneeded) {
     }
   }
   else {
-    _DEBUG(("sfams: disk full 3\n"));
+    _DEBUG("sfams: disk full 3\n");
     return(ERROR_DISK_FULL);
   }
 

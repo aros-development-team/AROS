@@ -45,7 +45,7 @@ static void checkcb(struct CacheBuffer *cb,UBYTE *string) {
 
     req_unusual("Function '%s' detected an invalid CacheBuffer!", string);
 
-    _DEBUG(("checkcb: *** Not a valid cachebuffer!! ***\nDetected by function '%s'\n",string));
+    _DEBUG("checkcb: *** Not a valid cachebuffer!! ***\nDetected by function '%s'\n",string);
     outputcachebuffer(cb);
     dumpcachebuffers();
   }
@@ -105,7 +105,7 @@ LONG readcachebuffer(struct CacheBuffer **returned_cb, BLCK block) {
      modified and returns that if found.  Otherwise it reads the
      original cachebuffer and applies the most recent changes to it. */
 
-  _XDEBUG((DEBUG_CACHEBUFFER,"    readcb: block %ld\n",block));
+  _XDEBUG(DEBUG_CACHEBUFFER,"    readcb: block %ld\n",block);
 
   globals->statistics.cache_accesses++;
 
@@ -138,13 +138,13 @@ LONG readoriginalcachebuffer(struct CacheBuffer **returned_cb,BLCK blckno) {
   if((cb=findoriginalcachebuffer(blckno))!=0) {
     /* We managed to find the original! */
 
-    _XDEBUG((DEBUG_CACHEBUFFER,"    readorgcb: block %ld (from cache)\n",blckno));
+    _XDEBUG(DEBUG_CACHEBUFFER,"    readorgcb: block %ld (from cache)\n",blckno);
 
     mrucachebuffer(cb);
   }
   else if((cb=getcachebuffer())!=0) {
 
-    _XDEBUG((DEBUG_CACHEBUFFER,"    readorgcb: block %ld (from disk)\n",blckno));
+    _XDEBUG(DEBUG_CACHEBUFFER,"    readorgcb: block %ld (from disk)\n",blckno);
 
     #ifdef CHECKCODE
       if(findlatestcachebuffer(blckno)!=0) {
@@ -530,13 +530,13 @@ LONG changecachebuffer(struct CacheBuffer *cb, UBYTE *modifiedblocks) {
   BEGIN();
 
   if((o=getlatestoperation(cb->blckno))==0) {
-    _DEBUG(("changecachebuffer: Using storecachebuffer()\n"));
+    _DEBUG("changecachebuffer: Using storecachebuffer()\n");
     return(storecachebuffer(cb));
   }
 
   END("getlatestoperation()");
 
-//  _DEBUG(("changecachebuffer: Using mergediffs()\n"));
+//  _DEBUG("changecachebuffer: Using mergediffs()\n");
 
   BEGIN();
 
@@ -676,7 +676,7 @@ struct CacheBuffer *getcachebuffer() {
   } while((cb->locked>0 || ((cb->bits & (CB_ORIGINAL|CB_LATEST))==CB_ORIGINAL && findlatestcachebuffer(cb->blckno)!=0)) && buffers-->0);
 
   if(buffers<=0) {
-    _XDEBUG((DEBUG_CACHEBUFFER,"getcachebuffer: No more cachebuffers available!\n"));
+    _XDEBUG(DEBUG_CACHEBUFFER,"getcachebuffer: No more cachebuffers available!\n");
     dumpcachebuffers();
 
     req_unusual("SFS has ran out of cache buffers.");
@@ -720,14 +720,14 @@ void dumpcachebuffers(void) {
 
   cb=(struct CacheBuffer *)globals->cblrulist.mlh_Head;
 
-  _DEBUG(("Blck-- Lock Bits Data---- ID------ cb-adr-- Hashed?\n"));
+  _DEBUG("Blck-- Lock Bits Data---- ID------ cb-adr-- Hashed?\n");
   while(cb->node.mln_Succ!=0) {
-    _DEBUG(("%6ld %4ld %4ld %08lx %08lx %08lx ",cb->blckno,(LONG)cb->locked,(LONG)cb->bits,cb->data,*(ULONG *)cb->data,cb));
+    _DEBUG("%6ld %4ld %4ld %08lx %08lx %08lx ",cb->blckno,(LONG)cb->locked,(LONG)cb->bits,cb->data,*(ULONG *)cb->data,cb);
     if(cb->hashnode.mln_Succ==0 && cb->hashnode.mln_Pred==0) {
-      _DEBUG(("No\n"));
+      _DEBUG("No\n");
     }
     else {
-      _DEBUG(("Yes\n"));
+      _DEBUG("Yes\n");
     }
 
     cb=(struct CacheBuffer *)(cb->node.mln_Succ);
@@ -748,7 +748,7 @@ static void dumpcachebuffers2(void) {
   }
 
   if(cnt!=globals->totalbuffers) {
-    _DEBUG(("------------ cachebuffers have been killed!! ---------------\n"));
+    _DEBUG("------------ cachebuffers have been killed!! ---------------\n");
     dumpcachebuffers();
   }
 }
@@ -780,10 +780,10 @@ LONG addcachebuffers(LONG buffers) {
   }
 
   if(buffers>0) {
-    _DEBUG(("Allocating buffers\n"));
+    _DEBUG("Allocating buffers\n");
 
     while(buffers!=0 && (cb=AllocMem(globals->bytes_block+sizeof(struct CacheBuffer),MEMF_CLEAR|globals->bufmemtype))!=0) {
-      _DEBUG(("*"));
+      _DEBUG("*");
       counter++;
       addtailm(&globals->cblrulist,&cb->node);
       buffers--;
@@ -791,10 +791,10 @@ LONG addcachebuffers(LONG buffers) {
       cb->data=&cb->attached_data[0];
       cb->id=0x4A48;
     }
-    _DEBUG((" end\n"));
+    _DEBUG(" end\n");
 
     if(buffers!=0) {
-      _DEBUG(("Allocation failed!\n"));
+      _DEBUG("Allocation failed!\n");
 
       buffers=-counter;      /* This makes sure that the already allocated buffers are freed again */
       newbuffers=globals->totalbuffers;

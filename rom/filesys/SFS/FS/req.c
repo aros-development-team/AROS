@@ -29,7 +29,7 @@ void dreqArgs(UBYTE *fmt, APTR params)
     };
 
     if((fmt2=AllocVec(strlen(fmt)+100,0))!=0) {
-      _DEBUG(("\nREQUESTER\n\n"));
+      _DEBUG("\nREQUESTER\n\n");
       RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s",(RAWARG)&args,putChFunc,fmt2);
 
       if (requestArgs(PROGRAMNAME, fmt2, "Continue|No more requesters", params) == 0)
@@ -155,12 +155,12 @@ void outputcachebuffer(struct CacheBuffer *cb) {
   ULONG *a;
   UWORD n;
 
-  _DEBUG(("CacheBuffer at address 0x%08lx of block %ld (Locked = %ld, Bits = 0x%02lx)\n",cb,cb->blckno,(LONG)cb->locked,(LONG)cb->bits));
+  _DEBUG("CacheBuffer at address 0x%08lx of block %ld (Locked = %ld, Bits = 0x%02lx)\n",cb,cb->blckno,(LONG)cb->locked,(LONG)cb->bits);
 
   a=cb->data;
 
   for(n=0; n<(globals->bytes_block>>5); n++) {
-    _DEBUG(("%08lx %08lx %08lx %08lx %08lx %08lx %08lx %08lx\n",a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7]));
+    _DEBUG("%08lx %08lx %08lx %08lx %08lx %08lx %08lx %08lx\n",a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7]);
     a+=8;
   }
 }

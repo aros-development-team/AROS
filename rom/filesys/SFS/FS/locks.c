@@ -97,7 +97,7 @@ LONG freelock(struct ExtFileLock *lock) {
         struct DeviceList *vn=BADDR(lock->volume);
 
         if(vn->dl_LockList!=0) {
-          _DEBUG(("freelock: Freeing a lock of a volume which isn't currently inserted.\n"));
+          _DEBUG("freelock: Freeing a lock of a volume which isn't currently inserted.\n");
 
           if(lock->next==0) {
             /* Whoops... this was the last lock which was associated with a volume
@@ -105,7 +105,7 @@ LONG freelock(struct ExtFileLock *lock) {
                becomes zero if there are still some NotifyRequest's left, or it is
                completely removed. */
 
-            _DEBUG(("freelock: This was the last lock associated with that volume!\n"));
+            _DEBUG("freelock: This was the last lock associated with that volume!\n");
 
 //            #ifdef STARTDEBUG
 //              req("Last lock was freed!", "Ok");
@@ -150,7 +150,7 @@ LONG lockobject2(struct fsObject *o, LONG accessmode, struct ExtFileLock **retur
 
   if(BE2L(o->be_objectnode)==ROOTNODE && accessmode==EXCLUSIVE_LOCK) {
     /* Exclusive locks on the ROOT directory are not allowed */
-    _DEBUG(("lockobject: someone tried to lock the ROOT directory exclusively -- denied\n"));
+    _DEBUG("lockobject: someone tried to lock the ROOT directory exclusively -- denied\n");
 
     return(ERROR_OBJECT_IN_USE);
   }
@@ -162,7 +162,7 @@ LONG lockobject2(struct fsObject *o, LONG accessmode, struct ExtFileLock **retur
 
   if(lockable(BE2L(o->be_objectnode), accessmode)!=DOSFALSE) {
 
-    _XDEBUG((DEBUG_LOCK,"lockobject: lockable returned TRUE\n"));
+    _XDEBUG(DEBUG_LOCK,"lockobject: lockable returned TRUE\n");
 
     /* If we got this far then we can safely create the requested lock and
        add it to the locklist. */
@@ -232,7 +232,7 @@ LONG lockobject(struct ExtFileLock *efl, UBYTE *path, LONG accessmode, struct Ex
       return(lockobject2(o, accessmode, returned_efl));
     }
     else {
-      _XDEBUG((DEBUG_LOCK,"lockobject: locateobject failed\n"));
+      _XDEBUG(DEBUG_LOCK,"lockobject: locateobject failed\n");
 
       return(errorcode);
     }
@@ -315,7 +315,7 @@ LONG locateobject2(UBYTE **io_path, struct CacheBuffer **io_cb, struct fsObject 
 
   path=stripcolon(path);
 
-  _XDEBUG((DEBUG_LOCK,"locateobject: Locating object with path '%s' from ObjectNode %ld\n",path,BE2L((*io_o)->be_objectnode)));
+  _XDEBUG(DEBUG_LOCK,"locateobject: Locating object with path '%s' from ObjectNode %ld\n",path,BE2L((*io_o)->be_objectnode));
 
   while(*path!=0) {
 
@@ -332,7 +332,7 @@ LONG locateobject2(UBYTE **io_path, struct CacheBuffer **io_cb, struct fsObject 
       if(BE2L(oc->be_parent)==0) {
         /* We can't get the parent of the root! */
 
-        _XDEBUG((DEBUG_LOCK,"locateobject: Can't get parent of the root\n"));
+        _XDEBUG(DEBUG_LOCK,"locateobject: Can't get parent of the root\n");
 
         errorcode=ERROR_OBJECT_NOT_FOUND;
         break;
@@ -355,7 +355,7 @@ LONG locateobject2(UBYTE **io_path, struct CacheBuffer **io_cb, struct fsObject 
       */
 
       if(((*io_o)->bits & OTYPE_DIR)==0) {
-        _XDEBUG((DEBUG_LOCK,"locateobject: Not a directory\n"));
+        _XDEBUG(DEBUG_LOCK,"locateobject: Not a directory\n");
 
         errorcode=ERROR_OBJECT_WRONG_TYPE;
         break;
@@ -397,7 +397,7 @@ LONG createglobalhandle(struct ExtFileLock *efl) {
         efl->gh=lock->gh;
         lock->gh->count++;
 
-        // _DEBUG(("createglobalhandle: Returning existing gh structure\n"));
+        // _DEBUG("createglobalhandle: Returning existing gh structure\n");
 
         return(0);
       }
@@ -409,7 +409,7 @@ LONG createglobalhandle(struct ExtFileLock *efl) {
     if((efl->gh=AllocMem(sizeof(struct GlobalHandle), MEMF_PUBLIC))!=0) {
       struct GlobalHandle *gh=efl->gh;
 
-      // _DEBUG(("createglobalhandle: Allocated new gh structure\n"));
+      // _DEBUG("createglobalhandle: Allocated new gh structure\n");
 
       gh->count=1;
 
