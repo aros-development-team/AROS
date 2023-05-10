@@ -605,11 +605,41 @@ int	ahci_port_reset(struct ahci_port *, struct ata_port *at, int);
 void	ahci_port_link_pwr_mgmt(struct ahci_port *, int link_pwr_mgmt);
 int	ahci_port_link_pwr_state(struct ahci_port *);
 
+#if (0)
 u_int32_t ahci_read(struct ahci_softc *, bus_size_t);
 void	ahci_write(struct ahci_softc *, bus_size_t, u_int32_t);
-int	ahci_wait_ne(struct ahci_softc *, bus_size_t, u_int32_t, u_int32_t);
 u_int32_t ahci_pread(struct ahci_port *, bus_size_t);
 void	ahci_pwrite(struct ahci_port *, bus_size_t, u_int32_t);
+#else
+static inline u_int32_t ahci_read(struct ahci_softc *sc, bus_size_t r)
+{
+    bus_space_barrier(sc->sc_iot, sc->sc_ioh, r, 4,
+                  BUS_SPACE_BARRIER_READ);
+    return (bus_space_read_4(sc->sc_iot, sc->sc_ioh, r));
+}
+
+static inline void ahci_write(struct ahci_softc *sc, bus_size_t r, u_int32_t v)
+{
+    bus_space_write_4(sc->sc_iot, sc->sc_ioh, r, v);
+    bus_space_barrier(sc->sc_iot, sc->sc_ioh, r, 4,
+                  BUS_SPACE_BARRIER_WRITE);
+}
+
+static inline u_int32_t ahci_pread(struct ahci_port *ap, bus_size_t r)
+{
+    bus_space_barrier(ap->ap_sc->sc_iot, ap->ap_ioh, r, 4,
+                  BUS_SPACE_BARRIER_READ);
+    return (bus_space_read_4(ap->ap_sc->sc_iot, ap->ap_ioh, r));
+}
+
+static inline void ahci_pwrite(struct ahci_port *ap, bus_size_t r, u_int32_t v)
+{
+    bus_space_write_4(ap->ap_sc->sc_iot, ap->ap_ioh, r, v);
+    bus_space_barrier(ap->ap_sc->sc_iot, ap->ap_ioh, r, 4,
+                  BUS_SPACE_BARRIER_WRITE);
+}
+#endif
+int	ahci_wait_ne(struct ahci_softc *, bus_size_t, u_int32_t, u_int32_t);
 int	ahci_pwait_eq(struct ahci_port *, int, bus_size_t,
 			u_int32_t, u_int32_t);
 void	ahci_intr(void *);

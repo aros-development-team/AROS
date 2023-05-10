@@ -90,35 +90,35 @@ static const struct ahci_device ahci_devices[] = {
 };
 
 struct ahci_pciid {
-	uint16_t	ahci_vid;
-	uint16_t	ahci_did;
-	int		ahci_rev;
+        uint16_t	ahci_vid;
+        uint16_t	ahci_did;
+        int		ahci_rev;
 };
 
 static const struct ahci_pciid ahci_msi_blacklist[] = {
-	{ PCI_VENDOR_ATI,	PCI_PRODUCT_ATI_SB600_SATA, -1 },
-	{ PCI_VENDOR_ATI,	PCI_PRODUCT_ATI_SB700_AHCI, -1 },
+        { PCI_VENDOR_ATI,	PCI_PRODUCT_ATI_SB600_SATA, -1 },
+        { PCI_VENDOR_ATI,	PCI_PRODUCT_ATI_SB700_AHCI, -1 },
 
-	{ PCI_VENDOR_MARVELL,	PCI_PRODUCT_MARVELL_88SE6121, -1 },
-	{ PCI_VENDOR_MARVELL,	PCI_PRODUCT_MARVELL_88SE6145, -1 },
+        { PCI_VENDOR_MARVELL,	PCI_PRODUCT_MARVELL_88SE6121, -1 },
+        { PCI_VENDOR_MARVELL,	PCI_PRODUCT_MARVELL_88SE6145, -1 },
 
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_1, 0xa1 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_2, 0xa1 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_3, 0xa1 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_4, 0xa1 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_5, 0xa1 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_6, 0xa1 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_7, 0xa1 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_8, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_1, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_2, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_3, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_4, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_5, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_6, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_7, 0xa1 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_8, 0xa1 },
 
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_1, 0xa2 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_2, 0xa2 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_3, 0xa2 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_4, 0xa2 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_5, 0xa2 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_6, 0xa2 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_7, 0xa2 },
-	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_8, 0xa2 }
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_1, 0xa2 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_2, 0xa2 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_3, 0xa2 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_4, 0xa2 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_5, 0xa2 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_6, 0xa2 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_7, 0xa2 },
+        { PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_8, 0xa2 }
 };
 
 static int	ahci_msi_enable = 1;
@@ -130,6 +130,7 @@ int	ahci_synchronous_boot = 1;
 const struct ahci_device *
 ahci_lookup_device(device_t dev)
 {
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     const struct ahci_device *ad;
     u_int16_t vendor = pci_get_vendor(dev);
     u_int16_t product = pci_get_device(dev);
@@ -137,7 +138,8 @@ ahci_lookup_device(device_t dev)
     u_int8_t subclass = pci_get_subclass(dev);
     u_int8_t progif = pci_read_config(dev, PCIR_PROGIF, 1);
     int is_ahci;
-    D(bug("[AHCI] %s()\n", __func__)); 
+
+    ahciDebug("[AHCI] %s()\n", __func__);
 
     /*
      * Generally speaking if the pci device does not identify as
@@ -160,6 +162,7 @@ ahci_lookup_device(device_t dev)
      */
     if (is_ahci == 0)
             ad = NULL;
+
     return (ad);
 }
 
@@ -169,21 +172,26 @@ ahci_lookup_device(device_t dev)
 static int
 ahci_vt8251_attach(device_t dev)
 {
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     struct ahci_softc *sc = device_get_softc(dev);
-    D(bug("[AHCI] %s()\n", __func__)); 
+
+    ahciDebug("[AHCI] %s()\n", __func__);
 
     sc->sc_flags |= AHCI_F_NO_NCQ;
+
     return (ahci_pci_attach(dev));
 }
 
 static int
 ahci_ati_sb600_attach(device_t dev)
 {
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     struct ahci_softc *sc = device_get_softc(dev);
     pcireg_t magic;
     u_int8_t subclass = pci_get_subclass(dev);
     u_int8_t revid;
-    D(bug("[AHCI] %s()\n", __func__)); 
+
+    ahciDebug("[AHCI] %s()\n", __func__); 
 
     if (subclass == PCIS_STORAGE_IDE) {
         revid = pci_read_config(dev, PCIR_REVID, 1);
@@ -199,471 +207,484 @@ ahci_ati_sb600_attach(device_t dev)
     }
 
     sc->sc_flags |= AHCI_F_IGN_FR;
+
     return (ahci_pci_attach(dev));
 }
 
 static int
 ahci_ati_sb700_attach(device_t dev)
 {
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     struct ahci_softc *sc = device_get_softc(dev);
-    D(bug("[AHCI] %s()\n", __func__)); 
+
+    ahciDebug("[AHCI] %s()\n", __func__); 
 
     sc->sc_flags |= AHCI_F_IGN_FR;
+
     return (ahci_pci_attach(dev));
 }
 
 static int
 ahci_nvidia_mcp_attach(device_t dev)
 {
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     struct ahci_softc *sc = device_get_softc(dev);
-    D(bug("[AHCI] %s()\n", __func__)); 
+
+    ahciDebug("[AHCI] %s()\n", __func__); 
 
     sc->sc_flags |= AHCI_F_IGN_FR;
+
     return (ahci_pci_attach(dev));
 }
 
 static int
 ahci_pci_attach(device_t dev)
 {
-	struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
-	struct ahci_softc *sc = device_get_softc(dev);
-	struct ahci_port *ap;
+    struct AHCIBase             *AHCIBase = dev->dev_Base;
+    struct ahci_softc           *sc = device_get_softc(dev);
+    struct ahci_port            *ap;
 #if !defined(__AROS__)
-	const char *gen;
+    const char                  *gen;
 #else
-# define gen			dev->dev_gen
+# define gen                    dev->dev_gen
 #endif
-	uint16_t vid, did;
-	u_int32_t pi;
-	u_int32_t cap, cap2;
-	u_int irq_flags;
-	bus_addr_t addr;
-	int i, error, msi_enable, rev, fbs;
+    uint16_t                    vid, did;
+    u_int32_t                   pi;
+    u_int32_t                   cap, cap2;
+    u_int                       irq_flags;
+    bus_addr_t                  addr;
+    int                         i, error, msi_enable, rev, fbs;
 
-        D(bug("[AHCI] %s()\n", __func__)); 
+    ahciDebug("[AHCI] %s()\n", __func__);
 
-        vid = pci_get_vendor(dev);
-        did = pci_get_device(dev);
-    
-	if (pci_read_config(dev, PCIR_COMMAND, 2) & 0x0400) {
-		device_printf(dev, "BIOS disabled PCI interrupt, "
-				   "re-enabling\n");
-		pci_write_config(dev, PCIR_COMMAND,
-			pci_read_config(dev, PCIR_COMMAND, 2) & ~0x0400, 2);
-	}
+    vid = pci_get_vendor(dev);
+    did = pci_get_device(dev);
 
-	/*
-	 * Chip quirks.  Sigh.  The AHCI spec is not in the least confusing
-	 * when it comes to how the FR and CR bits work, but some AHCI
-	 * chipsets (aka Marvell) either don't have the bits at all or they
-	 * implement them poorly.
-	 */
-	switch((did << 16) | vid) {
-	case 0x91721b4b:
-		device_printf(dev,
-			      "Enable 88SE9172 workarounds for broken chip\n");
-		sc->sc_flags |= AHCI_F_IGN_FR;
-		sc->sc_flags |= AHCI_F_IGN_CR;
-		break;
-	case 0x92151b4b:
-		device_printf(dev,
-			      "Enable 88SE9215 workarounds for broken chip\n");
-		sc->sc_flags |= AHCI_F_IGN_FR;
-		sc->sc_flags |= AHCI_F_IGN_CR;
-		break;
-	case 0x92301b4b:
-		device_printf(dev,
-			      "Enable 88SE9230 workarounds for broken chip\n");
-		sc->sc_flags |= AHCI_F_CYCLE_FR;
-		break;
-	case 0x07f410de:
-		device_printf(dev,
-			      "Enable nForce 630i workarounds for broken chip\n");
-		sc->sc_flags |= AHCI_F_IGN_FR;
-		sc->sc_flags |= AHCI_F_IGN_CR;
-		break;
-	}
+    if (pci_read_config(dev, PCIR_COMMAND, 2) & 0x0400) {
+        ahciInfo("BIOS disabled PCI interrupt, re-enabling\n");
+        pci_write_config(dev, PCIR_COMMAND,
+                pci_read_config(dev, PCIR_COMMAND, 2) & ~0x0400, 2);
+    }
 
-	sc->sc_dev = dev;
+    /*
+     * Chip quirks.  Sigh.  The AHCI spec is not in the least confusing
+     * when it comes to how the FR and CR bits work, but some AHCI
+     * chipsets (aka Marvell) either don't have the bits at all or they
+     * implement them poorly.
+     */
+    switch((did << 16) | vid) {
+    case 0x91721b4b:
+            ahciInfo("Enable 88SE9172 workarounds for broken chip\n");
+            sc->sc_flags |= AHCI_F_IGN_FR;
+            sc->sc_flags |= AHCI_F_IGN_CR;
+            break;
+    case 0x92151b4b:
+            ahciInfo("Enable 88SE9215 workarounds for broken chip\n");
+            sc->sc_flags |= AHCI_F_IGN_FR;
+            sc->sc_flags |= AHCI_F_IGN_CR;
+            break;
+    case 0x92301b4b:
+            ahciInfo("Enable 88SE9230 workarounds for broken chip\n");
+            sc->sc_flags |= AHCI_F_CYCLE_FR;
+            break;
+    case 0x07f410de:
+            ahciInfo("Enable nForce 630i workarounds for broken chip\n");
+            sc->sc_flags |= AHCI_F_IGN_FR;
+            sc->sc_flags |= AHCI_F_IGN_CR;
+            break;
+    }
 
-	/*
-	 * Map the AHCI controller's IRQ and BAR(5) (hardware registers)
-	 */
-	msi_enable = ahci_msi_enable;
+    sc->sc_dev = dev;
 
-	rev = pci_get_revid(dev);
-	for (i = 0; i < NELEM(ahci_msi_blacklist); ++i) {
-		const struct ahci_pciid *id = &ahci_msi_blacklist[i];
+    /*
+     * Map the AHCI controller's IRQ and BAR(5) (hardware registers)
+     */
+    msi_enable = ahci_msi_enable;
 
-		if (vid == id->ahci_vid && did == id->ahci_did) {
-			if (id->ahci_rev < 0 || id->ahci_rev == rev) {
-				msi_enable = 0;
-				break;
-			}
-		}
-	}
+    rev = pci_get_revid(dev);
+    for (i = 0; i < NELEM(ahci_msi_blacklist); ++i) {
+        const struct ahci_pciid *id = &ahci_msi_blacklist[i];
 
-	sc->sc_irq_type = pci_alloc_1intr(dev, msi_enable,
-	    &sc->sc_rid_irq, &irq_flags);
-
-	sc->sc_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, &sc->sc_rid_irq,
-	    irq_flags);
-	if (sc->sc_irq == NULL) {
-		device_printf(dev, "unable to map interrupt\n");
-		ahci_pci_detach(dev);
-		return (ENXIO);
-	}
-
-	/*
-	 * When mapping the register window store the tag and handle
-	 * separately so we can use the tag with per-port bus handle
-	 * sub-spaces.
-	 */
-	sc->sc_rid_regs = PCIR_BAR(5);
-	sc->sc_regs = bus_alloc_resource_any(dev, SYS_RES_MEMORY,
-					     &sc->sc_rid_regs, RF_ACTIVE);
-	if (sc->sc_regs == NULL) {
-		device_printf(dev, "unable to map registers\n");
-		ahci_pci_detach(dev);
-		return (ENXIO);
-	}
-	sc->sc_iot = rman_get_bustag(sc->sc_regs);
-	sc->sc_ioh = rman_get_bushandle(sc->sc_regs);
-
-	/*
-	 * Initialize the chipset and then set the interrupt vector up
-	 */
-	device_printf(dev, "device flags 0x%x\n", sc->sc_flags);
-	error = ahci_init(sc);
-	if (error) {
-		ahci_pci_detach(dev);
-		return (ENXIO);
-	}
-
-	/*
-	 * Get the AHCI capabilities and max number of concurrent
-	 * command tags and set up the DMA tags.  Adjust the saved
-	 * sc_cap according to override flags.
-	 */
-	cap = ahci_read(sc, AHCI_REG_CAP);
-	if (sc->sc_flags & AHCI_F_NO_NCQ)
-		cap &= ~AHCI_REG_CAP_SNCQ;
-	if (sc->sc_flags & AHCI_F_FORCE_FBSS)
-		cap |= AHCI_REG_CAP_FBSS;
-	if (sc->sc_flags & AHCI_F_FORCE_SCLO)
-		cap |= AHCI_REG_CAP_SCLO;
-	sc->sc_cap = cap;
-
-	/*
-	 * We assume at least 4 commands.
-	 */
-	sc->sc_ncmds = AHCI_REG_CAP_NCS(cap);
-	if (sc->sc_ncmds < 4) {
-		device_printf(dev, "NCS must probe a value >= 4\n");
-		ahci_pci_detach(dev);
-		return (ENXIO);
-	}
-
-	addr = (cap & AHCI_REG_CAP_S64A) ?
-		BUS_SPACE_MAXADDR : BUS_SPACE_MAXADDR_32BIT;
-
-	/*
-	 * DMA tags for allocation of DMA memory buffers, lists, and so
-	 * forth.  These are typically per-port.
-	 *
-	 * When FIS-based switching is supported we need a rfis for
-	 * each target (4K total).  The spec also requires 4K alignment
-	 * for this case.
-	 */
-	fbs = (cap & AHCI_REG_CAP_FBSS) ? 16 : 1;
-	error = 0;
-
-	sc->sc_rfis_size = sizeof(struct ahci_rfis) * fbs;
-
-	error += bus_dma_tag_create(
-			NULL,				/* parent tag */
-			sc->sc_rfis_size,		/* alignment */
-			PAGE_SIZE,			/* boundary */
-			addr,				/* loaddr? */
-			BUS_SPACE_MAXADDR,		/* hiaddr */
-			NULL,				/* filter */
-			NULL,				/* filterarg */
-			sc->sc_rfis_size,		/* [max]size */
-			1,				/* maxsegs */
-			sc->sc_rfis_size,		/* maxsegsz */
-			0,				/* flags */
-			&sc->sc_tag_rfis);		/* return tag */
-
-	sc->sc_cmdlist_size = sc->sc_ncmds * sizeof(struct ahci_cmd_hdr);
-
-	error += bus_dma_tag_create(
-			NULL,				/* parent tag */
-			32,				/* alignment */
-			4096 * 1024,			/* boundary */
-			addr,				/* loaddr? */
-			BUS_SPACE_MAXADDR,		/* hiaddr */
-			NULL,				/* filter */
-			NULL,				/* filterarg */
-			sc->sc_cmdlist_size,
-			1,				/* maxsegs */
-			sc->sc_cmdlist_size,
-			0,				/* flags */
-			&sc->sc_tag_cmdh);		/* return tag */
-
-	/*
-	 * NOTE: ahci_cmd_table is sized to a power of 2
-	 */
-	error += bus_dma_tag_create(
-			NULL,				/* parent tag */
-			sizeof(struct ahci_cmd_table),	/* alignment */
-			4096 * 1024,			/* boundary */
-			addr,				/* loaddr? */
-			BUS_SPACE_MAXADDR,		/* hiaddr */
-			NULL,				/* filter */
-			NULL,				/* filterarg */
-			sc->sc_ncmds * sizeof(struct ahci_cmd_table),
-			1,				/* maxsegs */
-			sc->sc_ncmds * sizeof(struct ahci_cmd_table),
-			0,				/* flags */
-			&sc->sc_tag_cmdt);		/* return tag */
-
-	/*
-	 * The data tag is used for later dmamaps and not immediately
-	 * allocated.
-	 */
-	error += bus_dma_tag_create(
-			NULL,				/* parent tag */
-			4,				/* alignment */
-			0,				/* boundary */
-			addr,				/* loaddr? */
-			BUS_SPACE_MAXADDR,		/* hiaddr */
-			NULL,				/* filter */
-			NULL,				/* filterarg */
-			4096 * 1024,			/* maxiosize */
-			AHCI_MAX_PRDT,			/* maxsegs */
-			65536,				/* maxsegsz */
-			0,				/* flags */
-			&sc->sc_tag_data);		/* return tag */
-
-	if (error) {
-		device_printf(dev, "unable to create dma tags\n");
-		ahci_pci_detach(dev);
-		return (ENXIO);
-	}
-
-	switch (cap & AHCI_REG_CAP_ISS) {
-	case AHCI_REG_CAP_ISS_G1:
-		gen = str_gen1;
-		break;
-	case AHCI_REG_CAP_ISS_G2:
-		gen = str_gen2;
-		break;
-	case AHCI_REG_CAP_ISS_G3:
-		gen = str_gen3;
-		break;
-	default:
-		gen = str_genunk;
-		break;
-	}
-
-	/* check the revision */
-	sc->sc_vers = ahci_read(sc, AHCI_REG_VS);
-	if (sc->sc_vers >= AHCI_REG_VS_1_3) {
-		cap2 = ahci_read(sc, AHCI_REG_CAP2);
-		device_printf(dev,
-			      "%s cap 0x%b cap2 0x%b, %d ports, "
-			      "%d tags/port, gen %s\n",
-			      dev->dev_revision,
-			      cap, AHCI_FMT_CAP,
-			      cap2, AHCI_FMT_CAP2,
-			      AHCI_REG_CAP_NP(cap), sc->sc_ncmds, gen);
-	} else {
-		cap2 = 0;
-		device_printf(dev,
-			      "%s cap 0x%b, %d ports, "
-			      "%d tags/port, gen %s\n",
-			      dev->dev_revision,
-			      cap, AHCI_FMT_CAP,
-			      AHCI_REG_CAP_NP(cap), sc->sc_ncmds, gen);
-	}
-	sc->sc_cap2 = cap2;
-
-	pi = ahci_read(sc, AHCI_REG_PI);
-	DPRINTF(AHCI_D_VERBOSE, "%s: ports implemented: 0x%08x\n",
-	    DEVNAME(sc), pi);
-
-	sc->sc_ipm_disable = AHCI_PREG_SCTL_IPM_NOPARTIAL |
-			     AHCI_PREG_SCTL_IPM_NOSLUMBER;
-	if (sc->sc_cap2 & AHCI_REG_CAP2_SDS)
-		sc->sc_ipm_disable |= AHCI_PREG_SCTL_IPM_NODEVSLP;
-
-#ifdef AHCI_COALESCE
-	/* Naive coalescing support - enable for all ports. */
-	if (cap & AHCI_REG_CAP_CCCS) {
-		u_int16_t		ccc_timeout = 20;
-		u_int8_t		ccc_numcomplete = 12;
-		u_int32_t		ccc_ctl;
-
-		/* disable coalescing during reconfiguration. */
-		ccc_ctl = ahci_read(sc, AHCI_REG_CCC_CTL);
-		ccc_ctl &= ~0x00000001;
-		ahci_write(sc, AHCI_REG_CCC_CTL, ccc_ctl);
-
-		sc->sc_ccc_mask = 1 << AHCI_REG_CCC_CTL_INT(ccc_ctl);
-		if (pi & sc->sc_ccc_mask) {
-			/* A conflict with the implemented port list? */
-			kprintf("%s: coalescing interrupt/implemented port list "
-			    "conflict, PI: %08x, ccc_mask: %08x\n",
-			    DEVNAME(sc), pi, sc->sc_ccc_mask);
-			sc->sc_ccc_mask = 0;
-			goto noccc;
-		}
-
-		/* ahci_port_start will enable each port when it starts. */
-		sc->sc_ccc_ports = pi;
-		sc->sc_ccc_ports_cur = 0;
-
-		/* program thresholds and enable overall coalescing. */
-		ccc_ctl &= ~0xffffff00;
-		ccc_ctl |= (ccc_timeout << 16) | (ccc_numcomplete << 8);
-		ahci_write(sc, AHCI_REG_CCC_CTL, ccc_ctl);
-		ahci_write(sc, AHCI_REG_CCC_PORTS, 0);
-		ahci_write(sc, AHCI_REG_CCC_CTL, ccc_ctl | 1);
-	}
-noccc:
-#endif
-	/*
-	 * Allocate per-port resources
-	 *
-	 * Ignore attach errors, leave the port intact for
-	 * rescan and continue the loop.
-	 *
-	 * All ports are attached in parallel but the CAM scan-bus
-	 * is held up until all ports are attached so we get a deterministic
-	 * order.
-	 */
-	for (i = 0; error == 0 && i < AHCI_MAX_PORTS; i++) {
-            D(bug("[AHCI] %s: checking port %d\n", __func__, i)); 
-            if ((pi & (1 << i)) == 0) {
-                /* dont allocate stuff if the port isnt implemented */
-                continue;
+        if (vid == id->ahci_vid && did == id->ahci_did) {
+            if (id->ahci_rev < 0 || id->ahci_rev == rev) {
+                msi_enable = 0;
+                break;
             }
-            error = ahci_port_alloc(sc, i);
-            if (error == 0)
-            {
-                struct TagItem attrs[] =
-                {
-                        {aHidd_Name             , (IPTR)ahciDeviceName          },
-                        {aHidd_HardwareName     , 0                             },
-#define PORT_TAG_HARDWARENAME 1
-                        {aHidd_Producer         , 0                             },
-#define PORT_TAG_PRODUCER 2
-                        {aHidd_Product          , 0                             },
-#define PORT_TAG_PRODUCT 3
-                        {aHidd_DriverData       , (IPTR)sc->sc_ports[i]         },
-                        {TAG_DONE               , 0                             }
-                };
-                STRPTR name;
-                IPTR str[1];
-                OOP_Object *bus;
+        }
+    }
 
-                D(bug("[AHCI] %s: port @ 0x%p\n", __func__, sc->sc_ports[i])); 
-                name = (char *)AllocVec(20, MEMF_CLEAR);
-                str[0] = i;
-                RawDoFmt("AHCI channel #%d", (RAWARG)str, RAWFMTFUNC_STRING, name);
-                attrs[PORT_TAG_HARDWARENAME].ti_Data = (IPTR)name;
+    sc->sc_irq_type = pci_alloc_1intr(dev, msi_enable,
+        &sc->sc_rid_irq, &irq_flags);
 
-                if ((attrs[PORT_TAG_PRODUCER].ti_Data = sc->sc_ad->ad_vendor) == 0)
-                        attrs[PORT_TAG_PRODUCER].ti_Data = vid;
-                if ((attrs[PORT_TAG_PRODUCT].ti_Data = sc->sc_ad->ad_product) == 0)
-                        attrs[PORT_TAG_PRODUCT].ti_Data = did;
+    sc->sc_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, &sc->sc_rid_irq,
+        irq_flags);
+    if (sc->sc_irq == NULL) {
+        ahciWarn("unable to map interrupt\n");
+        ahci_pci_detach(dev);
+        return (ENXIO);
+    }
 
-                D(bug("[AHCI] %s: Registering '%s' with controller @ 0x%p\n", __func__, name, dev->dev_Controller)); 
-                bus = HW_AddDriver(dev->dev_Controller, AHCIBase->busClass, attrs);
-                if (!bus)
-                {
-                    device_printf(dev,
-                      "Failed to create Bus object for device %04X:%04X port %d\n",
-                      attrs[PORT_TAG_PRODUCER].ti_Data, attrs[PORT_TAG_PRODUCT].ti_Data, i);
-                }
-                D(bug("[AHCI] %s: Bus Obj @ 0x%p\n", __func__, bus)); 
-            }
-            else
-            {
-                D(bug("[AHCI] %s: Failed to alloc port\n", __func__)); 
-            }
-	}
-
-	/*
-	 * Setup the interrupt vector and enable interrupts.  Note that
-	 * since the irq may be shared we do not set it up until we are
-	 * ready to go.
-	 */
-	if (error == 0) {
-		error = bus_setup_intr(dev, sc->sc_irq, INTR_MPSAFE |
-							INTR_HIFREQ,
-                                   ahci_intr, sc,
-                                   &sc->sc_irq_handle, NULL);
-	}
-
-	if (error) {
-            device_printf(dev, "unable to install interrupt\n");
+    /*
+     * When mapping the register window store the tag and handle
+     * separately so we can use the tag with per-port bus handle
+     * sub-spaces.
+     */
+    sc->sc_rid_regs = PCIR_BAR(5);
+    sc->sc_regs = bus_alloc_resource_any(dev, SYS_RES_MEMORY,
+                                         &sc->sc_rid_regs, RF_ACTIVE);
+    if (sc->sc_regs == NULL) {
+            ahciWarn("unable to map registers\n");
             ahci_pci_detach(dev);
             return (ENXIO);
-	}
+    }
+    sc->sc_iot = rman_get_bustag(sc->sc_regs);
+    sc->sc_ioh = rman_get_bushandle(sc->sc_regs);
 
-	/*
-	 * Before marking the sc as good, which allows the interrupt
-	 * subsystem to operate on the ports, wait for all the port threads
-	 * to get past their initial pre-probe init.  Otherwise an interrupt
-	 * may try to process the port before it has been initialized.
-	 */
-	for (i = 0; i < AHCI_MAX_PORTS; i++) {
-            if ((ap = sc->sc_ports[i]) != NULL) {
-                while (ap->ap_signal & AP_SIGF_THREAD_SYNC)
-                    ahci_os_sleep(1000);
+    /*
+     * Initialize the chipset and then set the interrupt vector up
+     */
+    ahciInfo("device flags 0x%x\n", sc->sc_flags);
+    error = ahci_init(sc);
+    if (error) {
+            ahci_pci_detach(dev);
+            return (ENXIO);
+    }
+
+    /*
+     * Get the AHCI capabilities and max number of concurrent
+     * command tags and set up the DMA tags.  Adjust the saved
+     * sc_cap according to override flags.
+     */
+    cap = ahci_read(sc, AHCI_REG_CAP);
+    if (sc->sc_flags & AHCI_F_NO_NCQ)
+            cap &= ~AHCI_REG_CAP_SNCQ;
+    if (sc->sc_flags & AHCI_F_FORCE_FBSS)
+            cap |= AHCI_REG_CAP_FBSS;
+    if (sc->sc_flags & AHCI_F_FORCE_SCLO)
+            cap |= AHCI_REG_CAP_SCLO;
+    sc->sc_cap = cap;
+
+    /*
+     * We assume at least 4 commands.
+     */
+    sc->sc_ncmds = AHCI_REG_CAP_NCS(cap);
+    if (sc->sc_ncmds < 4) {
+            ahciWarn("NCS must probe a value >= 4\n");
+            ahci_pci_detach(dev);
+            return (ENXIO);
+    }
+
+    addr = (cap & AHCI_REG_CAP_S64A) ?
+            BUS_SPACE_MAXADDR : BUS_SPACE_MAXADDR_32BIT;
+
+    /*
+     * DMA tags for allocation of DMA memory buffers, lists, and so
+     * forth.  These are typically per-port.
+     *
+     * When FIS-based switching is supported we need a rfis for
+     * each target (4K total).  The spec also requires 4K alignment
+     * for this case.
+     */
+    fbs = (cap & AHCI_REG_CAP_FBSS) ? 16 : 1;
+    error = 0;
+
+    sc->sc_rfis_size = sizeof(struct ahci_rfis) * fbs;
+
+    error += bus_dma_tag_create(
+                    AHCIBase,
+                    NULL,				/* parent tag */
+                    sc->sc_rfis_size,		/* alignment */
+                    PAGE_SIZE,			/* boundary */
+                    addr,				/* loaddr? */
+                    BUS_SPACE_MAXADDR,		/* hiaddr */
+                    NULL,				/* filter */
+                    NULL,				/* filterarg */
+                    sc->sc_rfis_size,		/* [max]size */
+                    1,				/* maxsegs */
+                    sc->sc_rfis_size,		/* maxsegsz */
+                    0,				/* flags */
+                    &sc->sc_tag_rfis);		/* return tag */
+
+    sc->sc_cmdlist_size = sc->sc_ncmds * sizeof(struct ahci_cmd_hdr);
+
+    error += bus_dma_tag_create(
+                    AHCIBase,
+                    NULL,				/* parent tag */
+                    32,				/* alignment */
+                    4096 * 1024,			/* boundary */
+                    addr,				/* loaddr? */
+                    BUS_SPACE_MAXADDR,		/* hiaddr */
+                    NULL,				/* filter */
+                    NULL,				/* filterarg */
+                    sc->sc_cmdlist_size,
+                    1,				/* maxsegs */
+                    sc->sc_cmdlist_size,
+                    0,				/* flags */
+                    &sc->sc_tag_cmdh);		/* return tag */
+
+    /*
+     * NOTE: ahci_cmd_table is sized to a power of 2
+     */
+    error += bus_dma_tag_create(
+                    AHCIBase,
+                    NULL,				/* parent tag */
+                    sizeof(struct ahci_cmd_table),	/* alignment */
+                    4096 * 1024,			/* boundary */
+                    addr,				/* loaddr? */
+                    BUS_SPACE_MAXADDR,		/* hiaddr */
+                    NULL,				/* filter */
+                    NULL,				/* filterarg */
+                    sc->sc_ncmds * sizeof(struct ahci_cmd_table),
+                    1,				/* maxsegs */
+                    sc->sc_ncmds * sizeof(struct ahci_cmd_table),
+                    0,				/* flags */
+                    &sc->sc_tag_cmdt);		/* return tag */
+
+    /*
+     * The data tag is used for later dmamaps and not immediately
+     * allocated.
+     */
+    error += bus_dma_tag_create(
+                    AHCIBase,
+                    NULL,				/* parent tag */
+                    4,				/* alignment */
+                    0,				/* boundary */
+                    addr,				/* loaddr? */
+                    BUS_SPACE_MAXADDR,		/* hiaddr */
+                    NULL,				/* filter */
+                    NULL,				/* filterarg */
+                    4096 * 1024,			/* maxiosize */
+                    AHCI_MAX_PRDT,			/* maxsegs */
+                    65536,				/* maxsegsz */
+                    0,				/* flags */
+                    &sc->sc_tag_data);		/* return tag */
+
+    if (error) {
+            ahciError("unable to create dma tags\n");
+            ahci_pci_detach(dev);
+            return (ENXIO);
+    }
+
+    switch (cap & AHCI_REG_CAP_ISS) {
+    case AHCI_REG_CAP_ISS_G1:
+            gen = str_gen1;
+            break;
+    case AHCI_REG_CAP_ISS_G2:
+            gen = str_gen2;
+            break;
+    case AHCI_REG_CAP_ISS_G3:
+            gen = str_gen3;
+            break;
+    default:
+            gen = str_genunk;
+            break;
+    }
+
+    ahciDebug("Reading capability registers..");
+
+    /* check the revision */
+    sc->sc_vers = ahci_read(sc, AHCI_REG_VS);
+    if (sc->sc_vers >= AHCI_REG_VS_1_3) {
+            cap2 = ahci_read(sc, AHCI_REG_CAP2);
+#if (0)
+            ahciInfo("%s cap 0x%b cap2 0x%b, %d ports, "
+                          "%d tags/port, gen %s\n",
+                          dev->dev_revision,
+                          cap, AHCI_FMT_CAP,
+                          cap2, AHCI_FMT_CAP2,
+                          AHCI_REG_CAP_NP(cap), sc->sc_ncmds, gen);
+#endif
+    } else {
+            cap2 = 0;
+#if (0)
+            ahciInfo("%s cap 0x%b, %d ports, "
+                          "%d tags/port, gen %s\n",
+                          dev->dev_revision,
+                          cap, AHCI_FMT_CAP,
+                          AHCI_REG_CAP_NP(cap), sc->sc_ncmds, gen);
+#endif
+    }
+    sc->sc_cap2 = cap2;
+
+    ahciDebug("scvers = $%08x, cap2 = $%08x", sc->sc_vers, sc->sc_cap2);
+
+    pi = ahci_read(sc, AHCI_REG_PI);
+    ahciInfo("%s: ports implemented: $%08x",
+        DEVNAME(sc), pi);
+
+    sc->sc_ipm_disable = AHCI_PREG_SCTL_IPM_NOPARTIAL |
+                         AHCI_PREG_SCTL_IPM_NOSLUMBER;
+    if (sc->sc_cap2 & AHCI_REG_CAP2_SDS)
+            sc->sc_ipm_disable |= AHCI_PREG_SCTL_IPM_NODEVSLP;
+
+#ifdef AHCI_COALESCE
+    /* Naive coalescing support - enable for all ports. */
+    if (cap & AHCI_REG_CAP_CCCS) {
+            u_int16_t		ccc_timeout = 20;
+            u_int8_t		ccc_numcomplete = 12;
+            u_int32_t		ccc_ctl;
+
+            /* disable coalescing during reconfiguration. */
+            ccc_ctl = ahci_read(sc, AHCI_REG_CCC_CTL);
+            ccc_ctl &= ~0x00000001;
+            ahci_write(sc, AHCI_REG_CCC_CTL, ccc_ctl);
+
+            sc->sc_ccc_mask = 1 << AHCI_REG_CCC_CTL_INT(ccc_ctl);
+            if (pi & sc->sc_ccc_mask) {
+                    /* A conflict with the implemented port list? */
+                    kprintf("%s: coalescing interrupt/implemented port list "
+                        "conflict, PI: %08x, ccc_mask: %08x\n",
+                        DEVNAME(sc), pi, sc->sc_ccc_mask);
+                    sc->sc_ccc_mask = 0;
+                    goto noccc;
             }
-	}
 
-	/*
-	 * Master interrupt enable, and call ahci_intr() in case we race
-	 * our AHCI_F_INT_GOOD flag.
-	 */
-	crit_enter();
-	ahci_write(sc, AHCI_REG_GHC, AHCI_REG_GHC_AE | AHCI_REG_GHC_IE);
-	sc->sc_flags |= AHCI_F_INT_GOOD;
-	crit_exit();
-	ahci_intr(sc);
+            /* ahci_port_start will enable each port when it starts. */
+            sc->sc_ccc_ports = pi;
+            sc->sc_ccc_ports_cur = 0;
 
-	/*
-	 * Synchronously wait for some of the AHCI devices to initialize.
-	 *
-	 * All ports are probing in parallel.  Wait for them to finish
-	 * and then issue the cam attachment and bus scan serially so
-	 * the 'da' assignments are deterministic.
-	 */
-	for (i = 0; i < AHCI_MAX_PORTS && ahci_synchronous_boot; i++) {
-		if ((ap = sc->sc_ports[i]) != NULL) {
-			while (ap->ap_signal & AP_SIGF_INIT)
-			    ahci_os_sleep(1000);
-			ahci_os_lock_port(ap);
-			if (ahci_cam_attach(ap) == 0) {
-				ahci_cam_changed(ap, NULL, -1);
-				ahci_os_unlock_port(ap);
-				while ((ap->ap_flags & AP_F_SCAN_COMPLETED) == 0) {
-					ahci_os_sleep(1000);
-				}
-			} else {
-				ahci_os_unlock_port(ap);
-			}
-		}
-	}
+            /* program thresholds and enable overall coalescing. */
+            ccc_ctl &= ~0xffffff00;
+            ccc_ctl |= (ccc_timeout << 16) | (ccc_numcomplete << 8);
+            ahci_write(sc, AHCI_REG_CCC_CTL, ccc_ctl);
+            ahci_write(sc, AHCI_REG_CCC_PORTS, 0);
+            ahci_write(sc, AHCI_REG_CCC_CTL, ccc_ctl | 1);
+    }
+noccc:
+#endif
+    /*
+     * Allocate per-port resources
+     *
+     * Ignore attach errors, leave the port intact for
+     * rescan and continue the loop.
+     *
+     * All ports are attached in parallel but the CAM scan-bus
+     * is held up until all ports are attached so we get a deterministic
+     * order.
+     */
+    for (i = 0; error == 0 && i < AHCI_MAX_PORTS; i++) {
+        ahciDebug("[AHCI] %s: checking port %d\n", __func__, i);
+        if ((pi & (1 << i)) == 0) {
+            /* dont allocate stuff if the port isnt implemented */
+            continue;
+        }
+        error = ahci_port_alloc(sc, i);
+        if (error == 0)
+        {
+            struct TagItem attrs[] =
+            {
+                            {aHidd_Name             , (IPTR)ahciDeviceName          },
+                            {aHidd_HardwareName     , 0                             },
+#define PORT_TAG_HARDWARENAME 1
+                            {aHidd_Producer         , 0                             },
+#define PORT_TAG_PRODUCER 2
+                            {aHidd_Product          , 0                             },
+#define PORT_TAG_PRODUCT 3
+                            {aHidd_DriverData       , (IPTR)sc->sc_ports[i]         },
+                            {TAG_DONE               , 0                             }
+            };
+            STRPTR name;
+            IPTR str[1];
+            OOP_Object *bus;
+
+            ahciDebug("[AHCI] %s: port @ 0x%p\n", __func__, sc->sc_ports[i]);
+            name = (char *)AllocVec(20, MEMF_CLEAR);
+            str[0] = i;
+            RawDoFmt("AHCI channel #%d", (RAWARG)str, RAWFMTFUNC_STRING, name);
+            attrs[PORT_TAG_HARDWARENAME].ti_Data = (IPTR)name;
+
+            if ((attrs[PORT_TAG_PRODUCER].ti_Data = sc->sc_ad->ad_vendor) == 0)
+                        attrs[PORT_TAG_PRODUCER].ti_Data = vid;
+            if ((attrs[PORT_TAG_PRODUCT].ti_Data = sc->sc_ad->ad_product) == 0)
+                        attrs[PORT_TAG_PRODUCT].ti_Data = did;
+
+            ahciDebug("[AHCI] %s: Registering '%s' with controller @ 0x%p\n", __func__, name, dev->dev_Controller);
+            bus = HW_AddDriver(dev->dev_Controller, AHCIBase->busClass, attrs);
+            if (!bus)
+            {
+                device_printf(dev,
+                  "Failed to create Bus object for device %04X:%04X port %d\n",
+                  attrs[PORT_TAG_PRODUCER].ti_Data, attrs[PORT_TAG_PRODUCT].ti_Data, i);
+            }
+            ahciDebug("[AHCI] %s: Bus Obj @ 0x%p\n", __func__, bus);
+        }
+        else
+        {
+            ahciDebug("[AHCI] %s: Failed to alloc port\n", __func__);
+        }
+    }
+
+    /*
+     * Setup the interrupt vector and enable interrupts.  Note that
+     * since the irq may be shared we do not set it up until we are
+     * ready to go.
+     */
+    if (error == 0) {
+            error = bus_setup_intr(dev, sc->sc_irq, INTR_MPSAFE |
+                                                    INTR_HIFREQ,
+                               ahci_intr, sc,
+                               &sc->sc_irq_handle, NULL);
+    }
+
+    if (error) {
+        ahciError("unable to install interrupt");
+        ahci_pci_detach(dev);
+        return (ENXIO);
+    }
+
+    /*
+     * Before marking the sc as good, which allows the interrupt
+     * subsystem to operate on the ports, wait for all the port threads
+     * to get past their initial pre-probe init.  Otherwise an interrupt
+     * may try to process the port before it has been initialized.
+     */
+    for (i = 0; i < AHCI_MAX_PORTS; i++) {
+        if ((ap = sc->sc_ports[i]) != NULL) {
+            while (ap->ap_signal & AP_SIGF_THREAD_SYNC)
+                ahci_os_sleep(1000);
+        }
+    }
+
+    /*
+     * Master interrupt enable, and call ahci_intr() in case we race
+     * our AHCI_F_INT_GOOD flag.
+     */
+    crit_enter();
+    ahci_write(sc, AHCI_REG_GHC, AHCI_REG_GHC_AE | AHCI_REG_GHC_IE);
+    sc->sc_flags |= AHCI_F_INT_GOOD;
+    crit_exit();
+    ahci_intr(sc);
+
+    /*
+     * Synchronously wait for some of the AHCI devices to initialize.
+     *
+     * All ports are probing in parallel.  Wait for them to finish
+     * and then issue the cam attachment and bus scan serially so
+     * the 'da' assignments are deterministic.
+     */
+    for (i = 0; i < AHCI_MAX_PORTS && ahci_synchronous_boot; i++) {
+            if ((ap = sc->sc_ports[i]) != NULL) {
+                    while (ap->ap_signal & AP_SIGF_INIT)
+                        ahci_os_sleep(1000);
+                    ahci_os_lock_port(ap);
+                    if (ahci_cam_attach(ap) == 0) {
+                            ahci_cam_changed(ap, NULL, -1);
+                            ahci_os_unlock_port(ap);
+                            while ((ap->ap_flags & AP_F_SCAN_COMPLETED) == 0) {
+                                    ahci_os_sleep(1000);
+                            }
+                    } else {
+                            ahci_os_unlock_port(ap);
+                    }
+            }
+    }
 #if defined(__AROS__)
 # undef	gen
 #endif
-        
-        D(bug("[AHCI] %s: done\n", __func__)); 
-	return(0);
+    
+    ahciDebug("[AHCI] %s: done\n", __func__);
+
+    return(0);
 }
 
 /*
@@ -672,67 +693,68 @@ noccc:
 static int
 ahci_pci_detach(device_t dev)
 {
-	struct ahci_softc *sc = device_get_softc(dev);
-	struct ahci_port *ap;
-	int	i;
+    struct ahci_softc   *sc = device_get_softc(dev);
+    struct AHCIBase     *AHCIBase = sc->sc_dev->dev_Base;
+    struct ahci_port    *ap;
+    int                 i;
 
-        D(bug("[AHCI] %s()\n", __func__)); 
+    ahciDebug("[AHCI] %s()\n", __func__);
 
-	/*
-	 * Disable the controller and de-register the interrupt, if any.
-	 *
-	 * XXX interlock last interrupt?
-	 */
-	sc->sc_flags &= ~AHCI_F_INT_GOOD;
-	if (sc->sc_regs)
-		ahci_write(sc, AHCI_REG_GHC, 0);
+    /*
+     * Disable the controller and de-register the interrupt, if any.
+     *
+     * XXX interlock last interrupt?
+     */
+    sc->sc_flags &= ~AHCI_F_INT_GOOD;
+    if (sc->sc_regs)
+        ahci_write(sc, AHCI_REG_GHC, 0);
 
-	if (sc->sc_irq_handle) {
-		bus_teardown_intr(dev, sc->sc_irq, sc->sc_irq_handle);
-		sc->sc_irq_handle = NULL;
-	}
+    if (sc->sc_irq_handle) {
+        bus_teardown_intr(dev, sc->sc_irq, sc->sc_irq_handle);
+        sc->sc_irq_handle = NULL;
+    }
 
-	/*
-	 * Free port structures and DMA memory
-	 */
-	for (i = 0; i < AHCI_MAX_PORTS; i++) {
-		ap = sc->sc_ports[i];
-		if (ap) {
-			ahci_cam_detach(ap);
-			ahci_port_free(sc, i);
-		}
-	}
+    /*
+     * Free port structures and DMA memory
+     */
+    for (i = 0; i < AHCI_MAX_PORTS; i++) {
+        ap = sc->sc_ports[i];
+        if (ap) {
+            ahci_cam_detach(ap);
+            ahci_port_free(sc, i);
+        }
+    }
 
-	/*
-	 * Clean up the bus space
-	 */
-	if (sc->sc_irq) {
-		bus_release_resource(dev, SYS_RES_IRQ,
-				     sc->sc_rid_irq, sc->sc_irq);
-		sc->sc_irq = NULL;
-	}
-	if (sc->sc_regs) {
-		bus_release_resource(dev, SYS_RES_MEMORY,
-				     sc->sc_rid_regs, sc->sc_regs);
-		sc->sc_regs = NULL;
-	}
+    /*
+     * Clean up the bus space
+     */
+    if (sc->sc_irq) {
+        bus_release_resource(dev, SYS_RES_IRQ,
+                             sc->sc_rid_irq, sc->sc_irq);
+        sc->sc_irq = NULL;
+    }
+    if (sc->sc_regs) {
+        bus_release_resource(dev, SYS_RES_MEMORY,
+                             sc->sc_rid_regs, sc->sc_regs);
+        sc->sc_regs = NULL;
+    }
 
-	if (sc->sc_tag_rfis) {
-		bus_dma_tag_destroy(sc->sc_tag_rfis);
-		sc->sc_tag_rfis = NULL;
-	}
-	if (sc->sc_tag_cmdh) {
-		bus_dma_tag_destroy(sc->sc_tag_cmdh);
-		sc->sc_tag_cmdh = NULL;
-	}
-	if (sc->sc_tag_cmdt) {
-		bus_dma_tag_destroy(sc->sc_tag_cmdt);
-		sc->sc_tag_cmdt = NULL;
-	}
-	if (sc->sc_tag_data) {
-		bus_dma_tag_destroy(sc->sc_tag_data);
-		sc->sc_tag_data = NULL;
-	}
+    if (sc->sc_tag_rfis) {
+        bus_dma_tag_destroy(sc->sc_tag_rfis);
+        sc->sc_tag_rfis = NULL;
+    }
+    if (sc->sc_tag_cmdh) {
+        bus_dma_tag_destroy(sc->sc_tag_cmdh);
+        sc->sc_tag_cmdh = NULL;
+    }
+    if (sc->sc_tag_cmdt) {
+        bus_dma_tag_destroy(sc->sc_tag_cmdt);
+        sc->sc_tag_cmdt = NULL;
+    }
+    if (sc->sc_tag_data) {
+        bus_dma_tag_destroy(sc->sc_tag_data);
+        sc->sc_tag_data = NULL;
+    }
 
-	return (0);
+    return (0);
 }

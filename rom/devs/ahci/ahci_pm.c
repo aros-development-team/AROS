@@ -110,6 +110,7 @@ ahci_pm_port_init(struct ahci_port *ap, struct ata_port *at)
 int
 ahci_pm_port_probe(struct ahci_port *ap, int orig_error)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
 	struct ahci_cmd_hdr *cmd_slot;
 	struct ata_port	*at;
 	struct ahci_ccb	*ccb = NULL;
@@ -178,7 +179,7 @@ retry:
 			 */
 			ahci_pwrite(ap, AHCI_PREG_FBS, fbs & ~AHCI_PREG_FBS_EN);
 		}
-		kprintf(str_portmultfis, PORTNAME(ap), str1, str2, str3);
+		ahciInfo(str_portmultfis, PORTNAME(ap), str1, str2, str3);
 	}
 
 	/*
@@ -196,7 +197,7 @@ retry:
 	ahci_flush_tfd(ap);
 	ahci_port_clo(ap);
 	if (ahci_port_start(ap)) {
-		kprintf(str_pmprobefail, PORTNAME(ap));
+		ahciInfo(str_pmprobefail, PORTNAME(ap));
 		error = EIO;
 		goto err;
 	}
@@ -213,13 +214,13 @@ retry:
 		if (--rstcount) {
 			int pmdetect;
 
-			kprintf("%s: PMPROBE BUSY, comreset and retry\n",
+			ahciInfo("%s: PMPROBE BUSY, comreset and retry\n",
 				PORTNAME(ap));
 			ahci_comreset(ap, &pmdetect);
 			if (pmdetect)
 				goto retry;
 		}
-		kprintf("%s: PMPROBE BUSY, giving up\n",
+		ahciInfo("%s: PMPROBE BUSY, giving up\n",
 			PORTNAME(ap));
 
 		error = EBUSY;
@@ -238,7 +239,9 @@ retry:
 	ccb->ccb_xa.complete = ahci_pm_dummy_done;
 	ccb->ccb_xa.at = ap->ap_ata[15];
 	cmd_slot = ccb->ccb_cmd_hdr;
+#if !defined(AROS_USE_LOGRES)
 	KKASSERT(ccb->ccb_slot == 1);
+#endif
 
 	/*
 	 * Prep the first H2D command with SRST feature & clear busy/reset
@@ -259,7 +262,7 @@ retry:
 	ccb->ccb_xa.state = ATA_S_PENDING;
 
 	if (bootverbose) {
-		kprintf("%s: PMPROBE PreStatus 0x%b\n", PORTNAME(ap),
+		ahciInfo("%s: PMPROBE PreStatus 0x%b\n", PORTNAME(ap),
 			ahci_pread(ap, AHCI_PREG_TFD), AHCI_PFMT_TFD_STS);
 	}
 
@@ -279,7 +282,7 @@ retry:
 	 * the _C_
 	 */
 	if (ahci_poll(ccb, 1000, ahci_quick_timeout) != ATA_S_COMPLETE) {
-		kprintf(str_pmprobeno1, PORTNAME(ap));
+		ahciInfo(str_pmprobeno1, PORTNAME(ap));
 		if (--count) {
 			rstcount = 2;
 			ahci_put_err_ccb(ccb);
@@ -290,7 +293,7 @@ retry:
 	}
 
 	if (bootverbose) {
-		kprintf("%s: PMPROBE PosStatus 0x%b\n", PORTNAME(ap),
+		ahciInfo("%s: PMPROBE PosStatus 0x%b\n", PORTNAME(ap),
 			ahci_pread(ap, AHCI_PREG_TFD), AHCI_PFMT_TFD_STS);
 	}
 #if 0
@@ -300,9 +303,9 @@ retry:
 	 */
 	if (ahci_pwait_clr(ap, AHCI_PREG_TFD,
 			       AHCI_PREG_TFD_STS_BSY | AHCI_PREG_TFD_STS_DRQ)) {
-		kprintf(str_pmprobefis, PORTNAME(ap));
+		ahciInfo(str_pmprobefis, PORTNAME(ap));
 	} else if (bootverbose) {
-		kprintf("%s: PMPROBE Clean after first FIS\n", PORTNAME(ap));
+		ahciInfo("%s: PMPROBE Clean after first FIS\n", PORTNAME(ap));
 	}
 #endif
 
@@ -347,7 +350,7 @@ retry:
 	 * slot #0 behind the PM.
 	 */
 	if (ahci_poll(ccb, 5000, ahci_quick_timeout) != ATA_S_COMPLETE) {
-		kprintf(str_pmprobeno2, PORTNAME(ap));
+		ahciInfo(str_pmprobeno2, PORTNAME(ap));
 		if (--count) {
 			rstcount = 2;
 			ahci_put_err_ccb(ccb);
@@ -370,12 +373,12 @@ retry:
 	 */
 	sig = ahci_port_signature_detect(ap, NULL);
 	if (sig == ATA_PORT_T_PM) {
-		kprintf("%s: PMPROBE PM Signature detected\n",
+		ahciInfo("%s: PMPROBE PM Signature detected\n",
 			PORTNAME(ap));
 		ap->ap_ata[15]->at_probe = ATA_PROBE_GOOD;
 		error = 0;
 	} else if (--count == 0) {
-		kprintf("%s: PMPROBE PM Signature not detected\n",
+		ahciInfo("%s: PMPROBE PM Signature not detected\n",
 			PORTNAME(ap));
 		error = EBUSY;
 	} else {
@@ -383,7 +386,7 @@ retry:
 		fis[15] = 0;
 		ahci_put_err_ccb(ccb);
 		if (bootverbose) {
-			kprintf("%s: PMPROBE retry on count\n",
+			ahciInfo("%s: PMPROBE retry on count\n",
 				PORTNAME(ap));
 		}
 		goto retry;
@@ -399,10 +402,10 @@ err:
 	if (error == 0 && ahci_pm_identify(ap)) {
 		ahci_os_sleep(500);
 		if (ahci_pm_identify(ap)) {
-                        kprintf(str_pmidentfail, PORTNAME(ap));
+                        ahciInfo(str_pmidentfail, PORTNAME(ap));
 		error = EBUSY;
 		} else {
-			kprintf("%s: PM - Had to identify twice\n",
+			ahciInfo("%s: PM - Had to identify twice\n",
 				PORTNAME(ap));
 		}
 	}
@@ -420,7 +423,7 @@ err:
 		ahci_pwrite(ap, AHCI_PREG_FBS, fbs | AHCI_PREG_FBS_EN);
 		ahci_os_sleep(100);
 		if (ahci_port_start(ap)) {
-			kprintf("%s: PMPROBE failed to restart port "
+			ahciInfo("%s: PMPROBE failed to restart port "
 				"after FBS enable\n",
 				PORTNAME(ap));
 			ahci_pwrite(ap, AHCI_PREG_FBS, fbs & ~AHCI_PREG_FBS_EN);
@@ -454,7 +457,7 @@ err:
 	if (orig_error == 0) {
 		if (ahci_pwait_clr(ap, AHCI_PREG_TFD,
 			    AHCI_PREG_TFD_STS_BSY | AHCI_PREG_TFD_STS_DRQ)) {
-			kprintf(str_pmprobeportnr, PORTNAME(ap));
+			ahciInfo(str_pmprobeportnr, PORTNAME(ap));
 			orig_error = EBUSY;
 			ahci_port_init(ap);
 		}
@@ -468,6 +471,7 @@ err:
 int
 ahci_pm_identify(struct ahci_port *ap)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
 	u_int32_t chipid;
 	u_int32_t rev;
 	u_int32_t nports;
@@ -487,7 +491,7 @@ ahci_pm_identify(struct ahci_port *ap)
 
 	if ((rev & SATA_PMREV_MASK) == 0) {
 		if (bootverbose)
-			kprintf("%s: PM identify register empty!\n",
+			ahciInfo("%s: PM identify register empty!\n",
 				PORTNAME(ap));
 		return EIO;
 	}
@@ -509,26 +513,26 @@ ahci_pm_identify(struct ahci_port *ap)
 			--nports;
 	}
 
-	kprintf(str_pmchip,
+	ahciInfo(str_pmchip,
 		PORTNAME(ap),
 		chipid,
 		rev, SATA_PFMT_PM_REV,
 		nports);
 	if (has_dummy_port) {
-		kprintf(str_pmignore, PORTNAME(ap), nports);
+		ahciInfo(str_pmignore, PORTNAME(ap), nports);
 	}
 	ap->ap_pmcount = nports;
 
 	if (ahci_pm_read(ap, 15, SATA_PMREG_FEA, &data1)) {
-		kprintf(str_pmwarnfeat, PORTNAME(ap));
+		ahciInfo(str_pmwarnfeat, PORTNAME(ap));
 	} else {
-		kprintf(str_pmfeat,
+		ahciInfo(str_pmfeat,
 			PORTNAME(ap),
 			data1,
 			SATA_PFMT_PM_FEA);
 	}
 	if (ahci_pm_read(ap, 15, SATA_PMREG_FEAEN, &data2) == 0) {
-		kprintf(str_pmdefaults,
+		ahciInfo(str_pmdefaults,
 			PORTNAME(ap),
 			data2,
 			SATA_PFMT_PM_FEA);
@@ -546,17 +550,17 @@ ahci_pm_identify(struct ahci_port *ap)
 				      AHCI_PREG_SERR_DIAG_X;
 		data2 |= SATA_PMFEA_ASYNCNOTIFY;
 		if (ahci_pm_write(ap, 15, SATA_PMREG_FEAEN, data2)) {
-			kprintf(str_pmasyncfail, PORTNAME(ap));
+			ahciInfo(str_pmasyncfail, PORTNAME(ap));
 		} else if (ahci_pm_write(ap, 15, SATA_PMREG_EEENA, serr_bits)) {
-			kprintf(str_pmasyncebfail, PORTNAME(ap));
+			ahciInfo(str_pmasyncebfail, PORTNAME(ap));
 		} else {
-			kprintf(str_pmasyncenabled, PORTNAME(ap));
+			ahciInfo(str_pmasyncenabled, PORTNAME(ap));
 		}
 	}
 
 	return (0);
 err:
-	kprintf(str_pmnoident, PORTNAME(ap));
+	ahciInfo(str_pmnoident, PORTNAME(ap));
 	return (EIO);
 }
 
@@ -573,6 +577,7 @@ err:
 int
 ahci_pm_hardreset(struct ahci_port *ap, int target, int hard)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
 	struct ata_port *at;
 	u_int32_t data;
 	int loop;
@@ -628,7 +633,7 @@ ahci_pm_hardreset(struct ahci_port *ap, int target, int hard)
 	ahci_os_sleep(100);
 
 	if (ahci_pm_phy_status(ap, target, &data)) {
-		kprintf(str_cannotclear, ATANAME(ap ,at));
+		ahciInfo(str_cannotclear, ATANAME(ap ,at));
 	}
 
 	/*
@@ -656,7 +661,7 @@ ahci_pm_hardreset(struct ahci_port *ap, int target, int hard)
 		ahci_os_sleep(100);
 	}
 	if (loop == 0) {
-		kprintf(str_unplugged, PORTNAME(ap), target);
+		ahciInfo(str_unplugged, PORTNAME(ap), target);
 		error = ENODEV;
 		goto err;
 	}
@@ -677,7 +682,7 @@ ahci_pm_hardreset(struct ahci_port *ap, int target, int hard)
 	 * Device not detected
 	 */
 	if (loop == 0) {
-		kprintf(str_powereddown, PORTNAME(ap));
+		ahciInfo(str_powereddown, PORTNAME(ap));
 		error = ENODEV;
 		goto err;
 	}
@@ -685,7 +690,7 @@ ahci_pm_hardreset(struct ahci_port *ap, int target, int hard)
 	/*
 	 * Device detected
 	 */
-	kprintf(str_detected, PORTNAME(ap), target, data);
+	ahciInfo(str_detected, PORTNAME(ap), target, data);
 	/*
 	 * Clear SERR on the target so we get a new NOTIFY event if a hot-plug
 	 * or hot-unplug occurs.  Clear any spurious IFS that may have
@@ -716,6 +721,7 @@ err:
 int
 ahci_pm_softreset(struct ahci_port *ap, int target)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
 	struct ata_port		*at;
 	struct ahci_ccb		*ccb;
 	struct ahci_cmd_hdr	*cmd_slot;
@@ -739,7 +745,7 @@ retry:
 	 *	 softreset FISs.  It's now or never.
 	 */
 	if (ahci_pm_phy_status(ap, target, &data)) {
-		kprintf(str_cannotclear2, ATANAME(ap ,at));
+		ahciInfo(str_cannotclear2, ATANAME(ap ,at));
 	}
 	ahci_pm_write(ap, target, SATA_PMREG_SERR, -1);
 
@@ -787,7 +793,7 @@ retry:
 	ap->ap_flags &= ~AP_F_IFS_IGNORED;
 
 	if (ahci_poll(ccb, 1000, ahci_ata_cmd_timeout) != ATA_S_COMPLETE) {
-		kprintf(str_pmsoftresetfail,
+		ahciInfo(str_pmsoftresetfail,
 			ATANAME(ap, at),
 			(count > 1 ? str_retrying : str_giveup));
 		ahci_put_err_ccb(ccb);
@@ -840,7 +846,7 @@ retry:
 	ap->ap_flags &= ~AP_F_IFS_IGNORED;
 
 	if (ahci_poll(ccb, 1000, ahci_ata_cmd_timeout) != ATA_S_COMPLETE) {
-		kprintf(str_pmsoftresetfail2,
+		ahciInfo(str_pmsoftresetfail2,
 			ATANAME(ap, at),
 			(count > 1 ? str_retrying : str_giveup));
 		if (--count) {
@@ -860,7 +866,7 @@ retry:
 
 	ahci_pm_write(ap, target, SATA_PMREG_SERR, -1);
 	if (ahci_pm_phy_status(ap, target, &data)) {
-		kprintf(str_cannotclear3,
+		ahciInfo(str_cannotclear3,
 			ATANAME(ap ,at));
 	}
 	ahci_pm_write(ap, target, SATA_PMREG_SERR, -1);
@@ -885,7 +891,7 @@ retry:
 		at->at_type = ahci_port_signature_detect(ap, at);
 	} else {
 		if (ahci_port_signature_detect(ap, at) != at->at_type) {
-			kprintf(str_sigchange, ATANAME(ap, at));
+			ahciInfo(str_sigchange, ATANAME(ap, at));
 			error = EBUSY; /* XXX */
 		}
 	}
@@ -902,7 +908,7 @@ err:
 	 * Clear error status so we can detect removal.
 	 */
 	if (ahci_pm_write(ap, target, SATA_PMREG_SERR, -1)) {
-		kprintf(str_cannotclrserr, ATANAME(ap, at));
+		ahciInfo(str_cannotclrserr, ATANAME(ap, at));
 	}
 	ahci_pwrite(ap, AHCI_PREG_SERR, -1);
 	ahci_pwrite(ap, AHCI_PREG_IS, AHCI_PREG_IS_IFS);
@@ -942,6 +948,7 @@ ahci_pm_phy_status(struct ahci_port *ap, int target, u_int32_t *datap)
 void
 ahci_pm_check_good(struct ahci_port *ap, int target)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
 	struct ata_port *at;
 	u_int32_t data;
 
@@ -950,11 +957,11 @@ ahci_pm_check_good(struct ahci_port *ap, int target)
 	 * to allow the PM to generate a new event.
 	 */
 	if (ahci_pm_read(ap, 15, SATA_PMREG_EINFO, &data)) {
-		kprintf(str_cannotreadeinfo, PORTNAME(ap));
+		ahciInfo(str_cannotreadeinfo, PORTNAME(ap));
 	}
 
 	if (ahci_pm_write(ap, target, SATA_PMREG_SERR, -1)) {
-		kprintf(str_pmcannotclearserr, PORTNAME(ap));
+		ahciInfo(str_pmcannotclearserr, PORTNAME(ap));
 	}
 
 	if (target == ~0 || target >= ap->ap_pmcount)
@@ -966,7 +973,7 @@ ahci_pm_check_good(struct ahci_port *ap, int target)
 	 * PHY is turned on.
 	 */
 	if (at->at_probe <= ATA_PROBE_NEED_HARD_RESET) {
-		/*kprintf("%s DOHARD\n", ATANAME(ap, at));*/
+		/*ahciInfo("%s DOHARD\n", ATANAME(ap, at));*/
 		ahci_pm_hardreset(ap, target, 1);
 	}
 
@@ -974,22 +981,22 @@ ahci_pm_check_good(struct ahci_port *ap, int target)
 	 * Read the detect status
 	 */
 	if (ahci_pm_read(ap, target, SATA_PMREG_SSTS, &data)) {
-		kprintf(str_cannotaccessssts, PORTNAME(ap), target);
+		ahciInfo(str_cannotaccessssts, PORTNAME(ap), target);
 		return;
 	}
 	if ((data & AHCI_PREG_SSTS_DET) != AHCI_PREG_SSTS_DET_DEV) {
-		/*kprintf("%s: DETECT %08x\n", ATANAME(ap, at), data);*/
+		/*ahciInfo("%s: DETECT %08x\n", ATANAME(ap, at), data);*/
 		if (at->at_probe != ATA_PROBE_FAILED) {
 			at->at_probe = ATA_PROBE_FAILED;
 			at->at_type = ATA_PORT_T_NONE;
 			at->at_features |= ATA_PORT_F_RESCAN;
-			kprintf(str_hotplugremove, ATANAME(ap, at));
+			ahciInfo(str_hotplugremove, ATANAME(ap, at));
 		}
 	} else {
 		if (at->at_probe == ATA_PROBE_FAILED) {
 			at->at_probe = ATA_PROBE_NEED_HARD_RESET;
 			at->at_features |= ATA_PORT_F_RESCAN;
-			kprintf(str_hotpluginsert, ATANAME(ap, at));
+			ahciInfo(str_hotpluginsert, ATANAME(ap, at));
 		}
 	}
 }
@@ -1000,6 +1007,7 @@ ahci_pm_check_good(struct ahci_port *ap, int target)
 int
 ahci_pm_read(struct ahci_port *ap, int target, int which, u_int32_t *datap)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
 	struct ata_xfer	*xa;
 	int error;
 
@@ -1022,7 +1030,7 @@ ahci_pm_read(struct ahci_port *ap, int target, int which, u_int32_t *datap)
 		       (xa->rfis.lba_mid << 16) | (xa->rfis.lba_high << 24);
 		error = 0;
 	} else {
-		kprintf(str_readscafail, PORTNAME(ap), target, which);
+		ahciInfo(str_readscafail, PORTNAME(ap), target, which);
 		*datap = 0;
 		error = EIO;
 	}

@@ -16,6 +16,8 @@
 #include "ahci.h"
 #include "ahci_scsi.h"
 
+#define AHCIBase xa->at->at_ahci_port->ap_sc->sc_dev->dev_Base
+
 #undef offsetof
 #undef container_of
 
@@ -24,8 +26,7 @@
     const typeof(((type *)0)->member) *__mptr = (ptr);    \
              (type *)((char *)__mptr - offsetof(type, member)); })
 
-
-static inline UQUAD scsi_8btou64(UBYTE *addr)
+ static inline UQUAD scsi_8btou64(UBYTE *addr)
 {
     UQUAD res = 0;
     int i;
@@ -150,7 +151,7 @@ static void ahci_ata_sense(struct ata_xfer *xa,
                 }
                 break;
         default:
-                D(bug("ahci.device: No sense translation for ATA Error 0x%02x\n", rfis->error));
+                ahciDebug("No sense translation for ATA Error 0x%02x", rfis->error);
                 switch (rfis->status) {
                 case ATA_D2H_STATUS_DF:
                     key = SSD_KEY_HARDWARE_ERROR;
@@ -170,7 +171,7 @@ static void ahci_ata_sense(struct ata_xfer *xa,
                     }
                     break;
                 default:
-                    D(bug("ahci.device: No sense translation for ATA Status 0x%02x\n", rfis->status));
+                    ahciDebug("No sense translation for ATA Status 0x%02x", rfis->status);
                     key = SSD_KEY_ABORTED_COMMAND;
                     break;
                 }
@@ -209,19 +210,19 @@ static void ahci_io_complete(struct ata_xfer *xa)
     case ATA_S_ERROR:
         if (io->io_Command == HD_SCSICMD) {
             struct SCSICmd *scsi = IOStdReq(io)->io_Data;
-            D(bug("Error on HD_SCSICMD\n"));
+            ahciDebug("Error on HD_SCSICMD");
             scsi->scsi_Status = SCSI_CHECK_CONDITION;
             scsi->scsi_Actual = 0;
             IOStdReq(io)->io_Actual = sizeof(*scsi);
             if (scsi->scsi_Flags & (SCSIF_AUTOSENSE | SCSIF_OLDAUTOSENSE)) {
-                D(bug("SCSIF_AUTOSENSE desired\n"));
+                ahciDebug("SCSIF_AUTOSENSE desired");
                 if (scsi->scsi_SenseData && scsi->scsi_SenseLength >= sense_length) {
                     ahci_ata_sense(xa, (void *)scsi->scsi_SenseData);
                     scsi->scsi_SenseActual = sense_length;
-                    D(bug("SCSI Sense: KCQ = 0x%02x 0x%02x 0x%02x\n",
+                    ahciDebug("SCSI Sense <KCQ = 0x%02x 0x%02x 0x%02x>",
                                 scsi->scsi_SenseData[2],
                                 scsi->scsi_SenseData[12],
-                                scsi->scsi_SenseData[13]));
+                                scsi->scsi_SenseData[13]);
                 }
             }
         } else {
@@ -250,10 +251,10 @@ static void ahci_io_complete(struct ata_xfer *xa)
     ObtainSemaphore(&unit->sim_Lock);
     Remove(&io->io_Message.mn_Node);
     ReleaseSemaphore(&unit->sim_Lock);
-
-    ASSERT(!(io->io_Flags & IOF_QUICK));
-
-    D(bug("[AHCI%02ld] IO %p Final, io_Flags = %d, io_Error = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Error));
+#if !defined(AROS_USE_LOGRES)
+    KKASSERT(!(io->io_Flags & IOF_QUICK));
+#endif
+    ahciDebug("Unit %02ld IO %p Final, io_Flags = %d, io_Error = %d", unit->sim_Unit, io, io->io_Flags, io->io_Error);
 
     ReplyMsg(&io->io_Message);
 }
@@ -556,7 +557,9 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
      */
     if (!done) {
         io->io_Flags &= ~IOF_QUICK;
+#if !defined(AROS_USE_LOGRES)
         KKASSERT(xa->complete != NULL);
+#endif
         xa->atascsi_private = io;
         ahci_os_lock_port(ap);
         xa->fis->flags |= at->at_target;
@@ -658,7 +661,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
         memset(xa->packetcmd + scsi->scsi_CmdLength, 0, 16 - scsi->scsi_CmdLength);
 
 #if 0
-    kprintf("opcode %d cdb_len %d dxfer_len %d\n",
+    ahciDebug("opcode %d cdb_len %d dxfer_len %d\n",
         cdbs->generic.opcode,
         scsi->scsi_CmdLength, scsi->scsi_Length);
 #endif
@@ -677,8 +680,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
          */
         if (cdbd->sense.length == SSD_FULL_SIZE) {
             if (bootverbose) {
-                kprintf("%s: Shortening sense request\n",
-                    PORTNAME(ap));
+                ahciDebug("Shortening sense request for '%s'\n", PORTNAME(ap));
             }
             cdbd->sense.length = offsetof(struct scsi_sense_data,
                               extra_bytes[0]);

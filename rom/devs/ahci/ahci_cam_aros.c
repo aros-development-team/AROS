@@ -31,6 +31,8 @@
 
 #include LC_LIBDEFS_FILE
 
+//#define AHCIBase unit->sim_Port->ap_sc->sc_dev->dev_Base
+
 static const char *str_typedisk = "DISK";
 static const char *str_typeatapi = "ATAPI";
 static const char *str_typeunk = "UNKNOWN(ATAPI?)";
@@ -58,10 +60,12 @@ static const char *str_unabletoident = "%s: Detected %s device but unable to IDE
  */
 static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct cam_sim *unit)
 {
+    struct AHCIBase *AHCIBase = unit->sim_Port->ap_sc->sc_dev->dev_Base;
     struct MsgPort *mp;
     struct IORequest *tmr;
 
-    D(bug("%s %d: Monitor Start\n", ((struct Node *)device)->ln_Name, unit->sim_Unit));
+    ahciDebug("%s %d: Monitor Start\n", ((struct Node *)device)->ln_Name, unit->sim_Unit);
+
     AROS_ATOMIC_INC(unit->sim_UseCount);
     Signal(parent, SIGBREAKF_CTRL_C);
 
@@ -81,7 +85,7 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
             io->io_Device = device;
             io->io_Unit = (struct Unit *)unit;
 
-            D(bug("%s %d: Monitoring\n", ((struct Node *)device)->ln_Name, unit->sim_Unit));
+            ahciDebug("%s %d: Monitoring\n", ((struct Node *)device)->ln_Name, unit->sim_Unit);
             do {
                 BOOL is_present;
 
@@ -117,13 +121,13 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
                 if (is_present != media_present) {
                     struct IORequest *msg;
 
-                    D(bug("%s: Media change detected on ahci.device %d (%s => %s)\n", __func__, unit->sim_Unit, media_present ? "TRUE" : "FALSE", is_present ? "TRUE" : "FALSE"));
+                    ahciDebug("%s: Media change detected on ahci.device %d (%s => %s)\n", __func__, unit->sim_Unit, media_present ? "TRUE" : "FALSE", is_present ? "TRUE" : "FALSE");
 
                     Forbid();
                     ForeachNode((struct Node *)&unit->sim_IOs, msg) {
-                        D(bug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command));
+                        ahciDebug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command);
                         if (msg->io_Command == TD_ADDCHANGEINT) {
-                            D(bug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data));
+                            ahciDebug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data);
                             Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
                         }
                     }
@@ -139,15 +143,15 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
         DeleteMsgPort(mp);
     }
     AROS_ATOMIC_DEC(unit->sim_UseCount);
-    D(bug("%s %d: Monitor End\n", ((struct Node *)device)->ln_Name, unit->sim_Unit));
+    ahciDebug("%s %d: Monitor End\n", ((struct Node *)device)->ln_Name, unit->sim_Unit);
 }
 
 static int ahci_RegisterPort(struct ahci_port *ap)
 {
-    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
     struct cam_sim *unit;
     char name[64];
-        D(bug("[AHCI] %s()\n", __func__));
+        ahciDebug("[AHCI] %s()\n", __func__);
 
     unit = AllocPooled(AHCIBase->ahci_MemPool, sizeof(*unit));
     if (!unit)
@@ -177,18 +181,16 @@ static int ahci_RegisterPort(struct ahci_port *ap)
 
 static int ahci_UnregisterPort(struct ahci_port *ap)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
     struct ahci_softc *sc = ap->ap_sc;
-    struct AHCIBase *AHCIBase;
     struct cam_sim *unit = ap->ap_sim;
 
-    D(bug("[AHCI] ahci_UnregisterPort: %p\n", ap));
+    ahciDebug("[AHCI] ahci_UnregisterPort: %p\n", ap);
 
     if (sc == NULL) {
-        D(bug("No softc?\n"));
+        ahciDebug("No softc?\n");
         return 0;
     }
-
-    AHCIBase = sc->sc_dev->dev_AHCIBase;
 
     /* Stop the monitor, and wait for IOs to drain,
      * and users to CloseDevice() the unit.
@@ -220,6 +222,7 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
  */
 static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struct ahci_Unit *unit)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
     struct ExpansionBase *ExpansionBase;
     BOOL dos_loaded;
     struct DeviceNode *devnode;
@@ -229,8 +232,8 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
 
     unit->au_UnitNum = device_get_unit(ap->ap_sc->sc_dev) * 32 + ap->ap_num;
 
-    D(bug("[AHCI>>] %s()\n", __func__));
-    D(bug("[AHCI>>] %s: ap = %p, at = %p, unit = %d\n", __func__, ap, at, ap->ap_sim ? ap->ap_sim->sim_Unit : -1));
+    ahciDebug("[AHCI>>] %s()\n", __func__);
+    ahciDebug("[AHCI>>] %s: ap = %p, at = %p, unit = %d\n", __func__, ap, at, ap->ap_sim ? ap->ap_sim->sim_Unit : -1);
 
     /* See if dos.library has run */
     Forbid();
@@ -238,7 +241,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
     Permit();
 
     if (dos_loaded) {
-        D(bug("[AHCI>>] %s: refused to register as boot volume - dos.library already loaded\n", __func__));
+        ahciDebug("[AHCI>>] %s: refused to register as boot volume - dos.library already loaded\n", __func__);
         return FALSE;
     }
 
@@ -254,7 +257,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
             dosdevstem[0] = 'C';
             break;
         default:
-            D(bug("[AHCI>>]:-ahci_RegisterVolume called on unknown devicetype\n"));
+            ahciDebug("[AHCI>>]:-ahci_RegisterVolume called on unknown devicetype\n");
             return FALSE;
     }
 
@@ -262,7 +265,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
 
     if (ExpansionBase)
     {
-        struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
+        struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
         TEXT dosdevname[4];
         struct TagItem AHCIIDTags[] =
         {
@@ -311,10 +314,10 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
         devnode = MakeDosNode(pp);
 
         if (devnode) {
-            D(bug("[AHCI>>]:-ahci_RegisterVolume: '%s' C/H/S=%d/%d/%d, %s unit->au_UnitNum %d\n",
-                        AROS_BSTR_ADDR(devnode->dn_Name), at->at_identify.ncyls, at->at_identify.nheads,  at->at_identify.nsectors, MOD_NAME_STRING, unit->au_UnitNum));
+            ahciDebug("[AHCI>>]:-ahci_RegisterVolume: '%s' C/H/S=%d/%d/%d, %s unit->au_UnitNum %d\n",
+                        AROS_BSTR_ADDR(devnode->dn_Name), at->at_identify.ncyls, at->at_identify.nheads,  at->at_identify.nsectors, MOD_NAME_STRING, unit->au_UnitNum);
             AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
-            D(bug("[AHCI>>]:-ahci_RegisterVolume: done\n"));
+            ahciDebug("[AHCI>>]:-ahci_RegisterVolume: done\n");
             return TRUE;
         }
 
@@ -327,9 +330,10 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
 
 int ahci_cam_attach(struct ahci_port *ap)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
     int error;
 
-    D(bug("[AHCI] ahci_cam_attach: port %p\n", ap));
+    ahciDebug("[AHCI] ahci_cam_attach: port %p\n", ap);
 
     ahci_os_unlock_port(ap);
     lockmgr(&ap->ap_sim_lock, LK_EXCLUSIVE);
@@ -358,7 +362,9 @@ int ahci_cam_attach(struct ahci_port *ap)
 
 void ahci_cam_detach(struct ahci_port *ap)
 {
-    D(bug("[AHCI] ahci_cam_detach: port %p\n", ap));
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
+    ahciDebug("[AHCI] ahci_cam_detach: port %p\n", ap);
 
     lockmgr(&ap->ap_sim_lock, LK_EXCLUSIVE);
     if (ap->ap_flags & AP_F_BUS_REGISTERED) {
@@ -385,7 +391,9 @@ void ahci_cam_detach(struct ahci_port *ap)
  */
 void ahci_cam_changed(struct ahci_port *ap, struct ata_port *atx, int found)
 {
-    D(bug("[AHCI] ahci_cam_changed: ap=%p, sim = %p, atx=%p, found=%d\n", ap, ap->ap_sim, atx, found));
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
+    ahciDebug("[AHCI] ahci_cam_changed: ap=%p, sim = %p, atx=%p, found=%d\n", ap, ap->ap_sim, atx, found);
 
     if (ap->ap_sim) {
         if (found == 0) {
@@ -429,7 +437,6 @@ ata_fix_identify(struct ata_identify *id)
 {
         u_int16_t       *swap;
         int             i;
-        D(bug("[AHCI] %s()\n", __func__));
 
         swap = (u_int16_t *)id->serial;
         for (i = 0; i < sizeof(id->serial) / sizeof(u_int16_t); i++)
@@ -463,11 +470,13 @@ static void ahci_ata_dummy_done(struct ata_xfer *xa)
 static int
 ahci_set_xfer(struct ahci_port *ap, struct ata_port *atx)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
         struct ata_port *at;
         struct ata_xfer *xa;
         u_int16_t mode;
         u_int16_t mask;
-        D(bug("[AHCI] %s()\n", __func__));
+
+        ahciDebug("[AHCI] %s()\n", __func__);
 
         at = atx ? atx : ap->ap_ata[0];
 
@@ -503,10 +512,10 @@ ahci_set_xfer(struct ahci_port *ap, struct ata_port *atx)
         xa->timeout = 1000;
         xa->datalen = 0;
         if (ahci_ata_cmd(xa) != ATA_S_COMPLETE) {
-                kprintf("%s: Unable to set dummy xfer mode \n",
+                ahciDebug("%s: Unable to set dummy xfer mode \n",
                         ATANAME(ap, atx));
         } else if (bootverbose) {
-                kprintf("%s: Set dummy xfer mode to %02x\n",
+                ahciDebug("%s: Set dummy xfer mode to %02x\n",
                         ATANAME(ap, atx), mode);
         }
         ahci_ata_put_xfer(xa);
@@ -520,9 +529,11 @@ ahci_set_xfer(struct ahci_port *ap, struct ata_port *atx)
 static int
 ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
         struct ata_port *at;
         struct ata_xfer *xa;
-        D(bug("[AHCI] %s()\n", __func__));
+
+        ahciDebug("[AHCI] %s()\n", __func__);
 
         at = atx ? atx : ap->ap_ata[0];
 
@@ -556,7 +567,7 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
                 if (ahci_ata_cmd(xa) == ATA_S_COMPLETE)
                         at->at_features |= ATA_PORT_F_WCACHE;
                 else
-                        kprintf("%s: Unable to enable write-caching\n",
+                        ahciDebug("%s: Unable to enable write-caching\n",
                                 ATANAME(ap, atx));
                 ahci_ata_put_xfer(xa);
         }
@@ -578,7 +589,7 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
                 if (ahci_ata_cmd(xa) == ATA_S_COMPLETE)
                         at->at_features |= ATA_PORT_F_RAHEAD;
                 else
-                        kprintf("%s: Unable to enable read-ahead\n",
+                        ahciDebug("%s: Unable to enable read-ahead\n",
                                 ATANAME(ap, atx));
                 ahci_ata_put_xfer(xa);
         }
@@ -603,7 +614,7 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
                 if (ahci_ata_cmd(xa) == ATA_S_COMPLETE)
                         at->at_features |= ATA_PORT_F_FRZLCK;
                 else
-                        kprintf("%s: Unable to set security freeze\n",
+                        ahciDebug("%s: Unable to set security freeze\n",
                                 ATANAME(ap, atx));
                 ahci_ata_put_xfer(xa);
         }
@@ -612,28 +623,27 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
         if ((at->at_identify.phys_sect_sz & 0xc000) == 0x4000) {
                 /* Physical sector size is longer than 256 16-bit words? */
                 if (at->at_identify.phys_sect_sz & (1 << 12)) {
-                        ULONG logsize;
-                        D(ULONG physize;)
+                        ULONG logsize, physize;
                         logsize = at->at_identify.words_lsec[0];
                         logsize <<= 16;
                         logsize += at->at_identify.words_lsec[1];
-                        D(physize = logsize >> (at->at_identify.phys_sect_sz & 3));
-                        D(kprintf("%s: Logical  sector size: %d bytes\n",
-                                    ATANAME(ap, atx), logsize * 2));
-                        D(kprintf("%s: Physical sector size: %d bytes\n",
-                                    ATANAME(ap, atx), physize * 2));
+                        physize = logsize >> (at->at_identify.phys_sect_sz & 3);
+                        ahciDebug("%s: Logical  sector size: %d bytes\n",
+                                    ATANAME(ap, atx), logsize * 2);
+                        ahciDebug("%s: Physical sector size: %d bytes\n",
+                                    ATANAME(ap, atx), physize * 2);
                         at->at_identify.sector_size = logsize * 2;
                 } else {
-                        D(kprintf("%s: Physical sector size == Logical sector size\n", ATANAME(ap, atx)));
+                        ahciDebug("%s: Physical sector size == Logical sector size\n", ATANAME(ap, atx));
                         at->at_identify.sector_size = 256 * 2;
                 }
         } else {
-                kprintf("%s: ATA IDENTIFY: Invalid Word 106: 0x%04x\n", ATANAME(ap, atx), at->at_identify.phys_sect_sz);
+                ahciDebug("%s: ATA IDENTIFY: Invalid Word 106: 0x%04x\n", ATANAME(ap, atx), at->at_identify.phys_sect_sz);
                 at->at_identify.sector_size = 256 * 2;
         }
-        D(kprintf("%s: Sector size: %d bytes\n", ATANAME(ap, atx), at->at_identify.sector_size));
+        ahciDebug("%s: Sector size: %d bytes\n", ATANAME(ap, atx), at->at_identify.sector_size);
 
-#if 1 /* Temporary debugging... */
+#if 0 /* Temporary debugging... */
             int i;
             kprintf("%s: ATA IDENTIFY\n", ATANAME(ap, atx));
             for (i = 0; i < 128; i++) {
@@ -652,11 +662,13 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 static int
 ahci_cam_probe_atapi(struct ahci_port *ap, struct ata_port *atx)
 {
-        D(bug("[AHCI] %s()\n", __func__));
-        ahci_set_xfer(ap, atx);
-        return(0);
-}
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
 
+    ahciDebug("[AHCI] %s()\n", __func__);
+
+    ahci_set_xfer(ap, atx);
+    return(0);
+}
 
 /*
  * Once the AHCI port has been attached we need to probe for a device or
@@ -668,6 +680,8 @@ ahci_cam_probe_atapi(struct ahci_port *ap, struct ata_port *atx)
 int
 ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
         struct ata_port *at;
         struct ata_xfer *xa;
         u_int64_t       capacity;
@@ -686,7 +700,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
         const char      *scstr;
         const char      *type;
 
-        D(bug("[AHCI] %s()\n", __func__));
+        ahciDebug("[AHCI] %s()\n", __func__);
         error = EIO;
 
         /*
@@ -700,7 +714,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
         if (atx == NULL) {
                 at = ap->ap_ata[0];     /* direct attached - device 0 */
                 if (ap->ap_type == ATA_PORT_T_PM) {
-                        kprintf("%s: Found Port Multiplier\n",
+                        ahciDebug("%s: Found Port Multiplier\n",
                                 ATANAME(ap, atx));
                         return (0);
                 }
@@ -708,7 +722,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
         } else {
                 at = atx;
                 if (atx->at_type == ATA_PORT_T_PM) {
-                        kprintf("%s: Bogus device, reducing port count to %d\n",
+                        ahciDebug("%s: Bogus device, reducing port count to %d\n",
                                 ATANAME(ap, atx), atx->at_target);
                         if (ap->ap_pmcount > atx->at_target)
                                 ap->ap_pmcount = atx->at_target;
@@ -750,7 +764,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
         xa->timeout = 1000;
 
         if (ahci_ata_cmd(xa) != ATA_S_COMPLETE) {
-                kprintf(str_unabletoident, ATANAME(ap, atx), type);
+                ahciDebug(str_unabletoident, ATANAME(ap, atx), type);
                 ahci_ata_put_xfer(xa);
                 goto err;
         }
@@ -876,7 +890,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
                     scstr = str_unsupported;
         }
 
-        kprintf(str_found,
+        ahciDebug(str_found,
 
                 ATANAME(ap, atx),
                 type,
@@ -892,7 +906,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
                 (long long)capacity_bytes / (1024 * 1024),
                 (int)(capacity_bytes % (1024 * 1024)) * 100 / (1024 * 1024)
         );
-        kprintf(str_found2,
+        ahciDebug(str_found2,
                 ATANAME(ap, atx),
                 at->at_identify.features85,
                 at->at_identify.features86,
@@ -922,7 +936,7 @@ err:
                 if (atx == NULL)
                         ap->ap_probe = at->at_probe;
         } else {
-                struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
+                struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
                 struct TagItem unitAttrs[] =
                 {
                     {aHidd_DriverData   , 0 },
@@ -933,7 +947,7 @@ err:
 
                 if (ap->ap_Object)
                 {
-                    D(bug("[AHCI] %s: attaching unit to bus @ 0x%p\n", __func__, ap->ap_Object);)
+                    ahciDebug("[AHCI] %s: attaching unit to bus @ 0x%p\n", __func__, ap->ap_Object);
                     unitAttrs[0].ti_Data = (IPTR)OOP_INST_DATA(AHCIBase->busClass, ap->ap_Object);
                 }
 

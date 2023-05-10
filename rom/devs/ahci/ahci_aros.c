@@ -23,19 +23,25 @@
 /* Callout Support Functions */
 void callout_init_mp(struct callout *co)
 {
+#if (0)
     D(bug("[AHCI] %s()\n", __func__));
+#endif
     memset(co, 0, sizeof(*co));
 }
 
 void callout_init(struct callout *co)
 {
+#if (0)
     D(bug("[AHCI] %s()\n", __func__));
+#endif
     callout_init_mp(co);
 }
 
 void callout_stop(struct callout *co)
 {
+#if (0)
     D(bug("[AHCI] %s()\n", __func__));
+#endif
     Forbid();
     if (co->co_Task) {
         Signal(co->co_Task, SIGF_ABORT);
@@ -46,7 +52,9 @@ void callout_stop(struct callout *co)
 
 void callout_cancel(struct callout *co)
 {
+#if (0)
     D(bug("[AHCI] %s()\n", __func__));
+#endif
     callout_stop(co);
 }
 
@@ -70,7 +78,9 @@ static void callout_handler(struct callout *co, unsigned ticks, timeout_t *func,
 int callout_reset(struct callout *co, unsigned ticks, timeout_t *func, void *arg)
 {
     struct Task *t;
+#if (0)
     D(bug("[AHCI] %s()\n", __func__));
+#endif
 
     callout_stop(co);
 
@@ -93,7 +103,7 @@ int pci_alloc_1intr(device_t dev, int msi_enable,
 {
     if ((msi_enable) && (dev->dev_Object))
     {
-        struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+        struct AHCIBase *AHCIBase = dev->dev_Base;
         OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
 
         struct TagItem vectreqs[] =
@@ -164,9 +174,11 @@ int     ahci_os_softsleep(void)
 static void ahci_port_thread(void *arg)
 {
     struct ahci_port *ap = arg;
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
     int mask;
 
-    D(bug("[AHCI] %s()\n", __func__));
+    ahciDebug("[AHCI] %s()\n", __func__);
 
     /*
      * The helper thread is responsible for the initial port init,
@@ -201,9 +213,11 @@ static void ahci_port_thread(void *arg)
 
 void    ahci_os_start_port(struct ahci_port *ap)
 {
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
     char name[16];
 
-    D(bug("[AHCI] %s()\n", __func__));
+    ahciDebug("[AHCI] %s()\n", __func__);
 
     atomic_set_int(&ap->ap_signal, AP_SIGF_INIT | AP_SIGF_THREAD_SYNC);
     lockinit(&ap->ap_lock, "ahcipo", 0, LK_CANRECURSE);
@@ -220,16 +234,18 @@ void    ahci_os_start_port(struct ahci_port *ap)
  */
 void ahci_os_stop_port(struct ahci_port *ap)
 {
-    D(bug("[AHCI] %s()\n", __func__));
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
+    ahciDebug("[AHCI] %s()\n", __func__);
     if (ap->ap_thread) {
             ahci_os_signal_port_thread(ap, AP_SIGF_STOP);
             ahci_os_sleep(10);
             if (ap->ap_thread) {
-                    kprintf("%s: Waiting for thread to terminate\n",
+                    ahciDebug("%s: Waiting for thread to terminate\n",
                             PORTNAME(ap));
                     while (ap->ap_thread)
                             ahci_os_sleep(100);
-                    kprintf("%s: thread terminated\n",
+                    ahciDebug("%s: thread terminated\n",
                             PORTNAME(ap));
             }
     }
@@ -245,7 +261,9 @@ void ahci_os_stop_port(struct ahci_port *ap)
  */
 void ahci_os_signal_port_thread(struct ahci_port *ap, int mask)
 {
-    D(bug("[AHCI] %s()\n", __func__));
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
+    ahciDebug("[AHCI] %s()\n", __func__);
     atomic_set_int(&ap->ap_signal, mask);
     Signal(ap->ap_thread, SIGF_DOS);
 }

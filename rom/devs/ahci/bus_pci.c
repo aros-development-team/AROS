@@ -51,7 +51,7 @@ int ahci_attach(device_t dev)
 
 void ahci_release(device_t dev)
 {
-    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
 
     HIDD_PCIDevice_Release(dev->dev_Object);
@@ -87,26 +87,26 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
     if (dev == NULL)
         return;
 
-    dev->dev_AHCIBase = AHCIBase;
+    dev->dev_Base = AHCIBase;
     dev->dev_Object   = Device;
     dev->dev_softc    = (void *)&dev[1];
     dev->dev_HostID   = AHCIBase->ahci_HostCount;
 
-    D(bug("[AHCI:PCI] %s: Checking PCI device @ 0x%p\n", __func__, Device));
+    ahciDebug("[AHCI:PCI] %s: Checking PCI device @ 0x%p\n", __func__, Device);
 
     dev->dev_softc->sc_ad = ahci_lookup_device(dev);
     if (!dev->dev_softc->sc_ad) {
-        D(bug("[AHCI:PCI] %s: Device not supported\n", __func__));
+        ahciDebug("[AHCI:PCI] %s: Device not supported\n", __func__);
         FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
         return;
     }
 
-    D(bug("[AHCI:PCI] %s: Found '%s'\n", __func__, dev->dev_softc->sc_ad->name));
+    ahciDebug("[AHCI:PCI] %s: Found '%s'\n", __func__, dev->dev_softc->sc_ad->name);
 
     owner = HIDD_PCIDevice_Obtain(Device, AHCIBase->ahci_Device.dd_Library.lib_Node.ln_Name);
     if (owner)
     {
-        D(bug("[AHCI:PCI] Device is already in use by %s\n", __func__, owner));
+        ahciDebug("[AHCI:PCI] Device is already in use by %s\n", __func__, owner);
         FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
         return;
     }
@@ -145,7 +145,7 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
         {TAG_DONE               , 0                             }
     };
 
-    D(bug("[AHCI:PCI] %s: Enumerating PCI Devices\n", __func__));
+    ahciDebug("[AHCI:PCI] %s: Enumerating PCI Devices\n", __func__);
 
     Args.AHCIBase                 = AHCIBase;
     NEWLIST(&Args.devices);
@@ -171,7 +171,7 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
         OOP_DisposeObject(pci);
     }
 
-    D(bug("[AHCI:PCI] %s: Registering Detected Hosts..\n", __func__));
+    ahciDebug("[AHCI:PCI] %s: Registering Detected Hosts..\n", __func__);
         
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
         char revbuf[32];
@@ -198,7 +198,7 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
         sprintf((char *)ahci_tags[1].ti_Data, "PCI %s Controller", dev->dev_revision);
         ahci_tags[AHCI_TAG_DATA].ti_Data = (IPTR)dev;
         HW_AddDriver(AHCIBase->storageRoot, AHCIBase->ahciClass, ahci_tags);
-        D(bug("[AHCI:PCI] %s: AHCI Controller Object @ 0x%p\n", __func__, dev->dev_Controller));
+        ahciDebug("[AHCI:PCI] %s: AHCI Controller Object @ 0x%p\n", __func__, dev->dev_Controller);
         if (dev->dev_Controller)
         {
             if (ahci_attach(dev) != 0) {

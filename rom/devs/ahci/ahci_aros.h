@@ -8,6 +8,23 @@
 #ifndef AHCI_AROS_H
 #define AHCI_AROS_H
 
+#include <proto/exec.h>
+
+#ifndef __NOLIBBASE__
+#define __NOLIBBASE__
+#endif
+
+#include <proto/utility.h>
+#include <proto/oop.h>
+#if defined(AROS_USE_LOGRES)
+#include <proto/log.h>
+#include <resources/log.h>
+#else
+#include <aros/debug.h>
+#endif
+
+#include <hidd/pci.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
@@ -16,26 +33,8 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-#include <aros/debug.h>
-
-#undef D2
-#if DEBUG > 1
-#define D2(x) x
-#else
-#define D2(x)
-#endif
-
-#include <proto/exec.h>
-#include <proto/utility.h>
-#include <proto/oop.h>
-
-#include <hidd/pci.h>
-
 #include "ahci_intern.h"
 #include "pci_ids.h"
-
-#undef kprintf
-#define kprintf(fmt, args...) device_printf(NULL, fmt ,##args)
 
 #if !defined(NELEM)
 #define NELEM(a) (sizeof(a)/sizeof(a[0]))
@@ -56,13 +55,46 @@ typedef unsigned int u_int;
 
 /* Kernel stuff */
 
-#define KKASSERT(expr)  ASSERT(expr)
 
 int kvsnrprintf(char *str, size_t size, int radix, const char *format, va_list ap);
 int kvsnprintf(char *str, size_t size, const char *format, va_list ap);
 int ksnprintf(char *buff, size_t len, const char *fmt, ...);
 int kvcprintf(char const *fmt, void (*func)(int, void*), void *arg, int radix, va_list ap);
 
+#if defined(AROS_USE_LOGRES)
+#define device_printf(dev,fmt,args...) \
+    if ((dev)->dev_Base && (dev)->dev_Base->ahci_LogHandle) { \
+        struct AHCIBase *AHCIBase = (dev)->dev_Base; \
+        APTR LogResBase = AHCIBase->ahci_LogResBase; \
+        logAddEntry((LOGF_Flag_Type_Information | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+    }
+#define ahciInfo(fmt,args...) \
+    if (AHCIBase->ahci_LogHandle) { \
+        APTR LogResBase = AHCIBase->ahci_LogResBase; \
+        logAddEntry((LOGF_Flag_Type_Information | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+    }
+#define ahciWarn(fmt,args...) \
+    if (AHCIBase->ahci_LogHandle) { \
+        APTR LogResBase = AHCIBase->ahci_LogResBase; \
+        logAddEntry((LOGF_Flag_Type_Warn | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+    }
+#define ahciError(fmt,args...) \
+    if (AHCIBase->ahci_LogHandle) { \
+        APTR LogResBase = AHCIBase->ahci_LogResBase; \
+        logAddEntry((LOGF_Flag_Type_Error | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+    }
+#define panic(fmt, args...) \
+    do { \
+        Forbid(); \
+        if (AHCIBase->ahci_LogHandle) { \
+            APTR LogResBase = AHCIBase->ahci_LogResBase; \
+            logAddEntry((LOGF_Flag_Type_Crit | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+        } \
+        Disable(); \
+        for (;;); \
+    } while (0);
+#else
+#define KKASSERT(expr)  ASSERT(expr)
 static inline void bug_c(int c, void *info)
 {
     RawPutChar(c);
@@ -77,8 +109,49 @@ static inline int device_printf(device_t dev, const char *fmt, ...)
     va_end(args);
     return err;
 }
-
+#undef kprintf
+#define kprintf(fmt, args...) device_printf(NULL, fmt ,##args)
+#define ahciInfo(fmt,args...) device_printf(NULL, fmt ,##args)
+#define ahciCrit(fmt,args...) device_printf(NULL, fmt ,##args)
+#define ahciError(fmt,args...) device_printf(NULL, fmt ,##args)
+#define ahciWarn(fmt,args...) device_printf(NULL, fmt ,##args)
 #define panic(fmt, args...) do { Forbid(); device_printf(NULL, fmt ,##args); Disable(); for (;;); } while (0);
+#endif
+
+#if defined(AROS_USE_LOGRES) && (DEBUG > 0)
+#if (DEBUG > 1)
+#define ahciDebugVerb(fmt,args...) \
+    if (AHCIBase->ahci_LogHandle) { \
+        APTR LogResBase = AHCIBase->ahci_LogResBase; \
+        logAddEntry((LOGF_Flag_Type_Debug | 10), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+    }
+#else
+#define ahciDebugVerb(fmt,args...)
+#endif
+#define ahciDebug(fmt,args...) \
+    if (AHCIBase->ahci_LogHandle) { \
+        APTR LogResBase = AHCIBase->ahci_LogResBase; \
+        logAddEntry((LOGF_Flag_Type_Debug | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+    }
+#define ahciDMADebug(fmt,args...) \
+    if (AHCIBase->ahci_LogHandle) { \
+        APTR LogResBase = AHCIBase->ahci_LogResBase; \
+        logAddEntry((LOGF_Flag_Type_Debug | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
+    }
+#else
+#if (DEBUG > 1)
+#define ahciDebugVerb(fmt,args...) device_printf(NULL, fmt ,##args)
+#else
+#define ahciDebugVerb(fmt,args...)
+#endif
+#if (DEBUG > 0)
+#define ahciDebug(fmt,args...) device_printf(NULL, fmt ,##args)
+#define ahciDMADebug(fmt,args...) device_printf(NULL, fmt ,##args)
+#else
+#define ahciDebug(fmt,args...)
+#define ahciDMADebug(fmt,args...)
+#endif
+#endif
 
 static inline void *kmalloc(size_t size, unsigned where, unsigned flags)
 {
@@ -130,7 +203,7 @@ typedef u_int32_t pcireg_t;
 static inline u_int32_t pci_read_config(device_t dev, int reg, int width)
 {
     u_int32_t val = ~0;
-    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     OOP_MethodID HiddPCIDeviceMethodBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
     struct pHidd_PCIDevice_ReadConfigByte cb; 
     struct pHidd_PCIDevice_ReadConfigWord cw; 
@@ -162,7 +235,7 @@ static inline u_int32_t pci_read_config(device_t dev, int reg, int width)
 
 static inline void pci_write_config(device_t dev, int reg, u_int32_t val, int width)
 {
-    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    struct AHCIBase *AHCIBase = dev->dev_Base;
     OOP_MethodID HiddPCIDeviceMethodBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
     struct pHidd_PCIDevice_WriteConfigByte cb; 
     struct pHidd_PCIDevice_WriteConfigWord cw; 
@@ -241,7 +314,7 @@ typedef int bus_dma_filter_t(void *arg, bus_addr_t paddr);
 #define BUS_SPACE_MAXADDR       ~0
 #define BUS_SPACE_MAXADDR_32BIT ((ULONG)~0)
 
-int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t boundary, bus_addr_t lowaddr, bus_addr_t highaddr, bus_dma_filter_t *filter, void *filterarg, bus_size_t maxsize, int nsegments, bus_size_t maxsegsz, int flags, bus_dma_tag_t *dmat);
+int bus_dma_tag_create(APTR AHCIBase, bus_dma_tag_t parent, bus_size_t alignment, bus_size_t boundary, bus_addr_t lowaddr, bus_addr_t highaddr, bus_dma_filter_t *filter, void *filterarg, bus_size_t maxsize, int nsegments, bus_size_t maxsegsz, int flags, bus_dma_tag_t *dmat);
 
 int bus_dma_tag_destroy(bus_dma_tag_t tag);
 
@@ -334,18 +407,18 @@ static inline int bus_space_subregion(bus_space_tag_t iot, bus_space_handle_t io
 static inline void bus_space_barrier(bus_space_tag_t iot, bus_space_handle_t ioh, unsigned offset, size_t size, unsigned flags)
 {
     /* FIXME: Sync bus area */
+    return;
 }
 
 static inline u_int32_t bus_space_read_4(bus_space_tag_t iot, bus_space_handle_t ioh, unsigned offset)
 {
-    return *(u_int32_t *)(ioh + offset);
+    return *(volatile u_int32_t *)(ioh + offset);
 }
 
 static inline void bus_space_write_4(bus_space_tag_t iot, bus_space_handle_t ioh, unsigned offset, u_int32_t val)
 {
-    *(u_int32_t *)(ioh + offset) = val;
+    *(volatile u_int32_t *)(ioh + offset) = val;
 }
-
 
 /* Generic device info */
 static inline void *device_get_softc(device_t dev)
@@ -369,6 +442,7 @@ static inline void lockinit(struct lock *lock, const char *name, unsigned flags,
 static inline void lockuninit(struct lock *lock)
 {
     /* Nothing needed */
+    return;
 }
 
 #define LK_RELEASE    (1 << 0)
@@ -428,7 +502,7 @@ struct sysctl_ctx_list {};
 #define TAILQ_ENTRY(type)       struct { struct type *tqe_next; struct type **tqe_prev; }
 #define TAILQ_FIRST(head)       ((head)->tqh_first)
 #define TAILQ_EMPTY(head)       (TAILQ_FIRST(head) == NULL)
-#define TAILQ_INIT(head)        do {                                    \
+#define TAILQ_INIT(head)                do {                            \
     (head)->tqh_first = NULL;                                           \
     (head)->tqh_last = &(head)->tqh_first;                              \
 } while (0)
@@ -476,6 +550,6 @@ static inline int ffs(unsigned int bits)
 struct ata_xfer;
 void ahci_ata_io_complete(struct ata_xfer *xa);
 int pci_alloc_1intr(device_t dev, int msi_enable,
-	    int *rid0, u_int *irq_flags);
+        int *rid0, u_int *irq_flags);
 
 #endif /* AHCI_AROS_H */
