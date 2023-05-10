@@ -340,7 +340,7 @@ Object *AboutWindow__OM_NEW
     if (sponsorsTags != NULL)
     {
         data->awd_PageTitles[nextPage] = _(MSG_SPONSORS);
-        nextPage++;
+        //nextPage++;
     }
 
     registerGroup = RegisterGroup(data->awd_PageTitles),
