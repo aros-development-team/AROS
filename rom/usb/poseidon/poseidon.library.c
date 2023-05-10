@@ -3982,6 +3982,9 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
         pp->pp_Endpoint = pep;
         pp->pp_IOReq = *(pd->pd_Hardware->phw_RootIOReq);
         pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;
+        /* Always pass the hub port */
+        pp->pp_IOReq.iouh_HubPort = pd->pd_HubPort;
+
         if(pd->pd_Flags & PDFF_LOWSPEED)
         {
             pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
@@ -4018,7 +4021,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
             /* USB1.1 device connected to a USB2.0 hub */
             pp->pp_IOReq.iouh_Flags |= UHFF_SPLITTRANS;
             hubpd = pd->pd_Hub;
-            pp->pp_IOReq.iouh_SplitHubPort = pd->pd_HubPort;
+
             // find the root USB 2.0 hub in the tree
             while(hubpd && !(hubpd->pd_Flags & PDFF_HIGHSPEED))
             {
@@ -4283,6 +4286,7 @@ AROS_LH1(LONG, psdWaitPipe,
            // fall through
         case UHIOERR_NAKTIMEOUT:
            pd->pd_DeadCount++;
+           // fall through
         case UHIOERR_CRCERROR:
            pd->pd_DeadCount++;
            break;
@@ -6785,16 +6789,13 @@ AROS_LH0(void, psdParseCfg,
     psdLockReadPBase();
 
     /* select all hardware devices for removal */
-    phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
-    while(phw->phw_Node.ln_Succ)
+    ForeachNode(&ps->ps_Hardware, phw)
     {
         phw->phw_RemoveMe = removeall;
-        phw = (struct PsdHardware *) phw->phw_Node.ln_Succ;
     }
 
     /* select all classes for removal */
-    puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
-    while(puc->puc_Node.ln_Succ)
+    ForeachNode(&ps->ps_Classes, puc)
     {
 	/*
 	 * For kickstart-resident classes we check usage count, and
@@ -6807,8 +6808,6 @@ AROS_LH0(void, psdParseCfg,
     	    puc->puc_RemoveMe = (puc->puc_UseCnt == 0);
     	else
             puc->puc_RemoveMe = TRUE;
-
-        puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
     }
 
     psdUnlockPBase();
@@ -6861,31 +6860,24 @@ AROS_LH0(void, psdParseCfg,
     // unlock config while removing to avoid deadlocks.
     pUnlockSem(ps, &ps->ps_ConfigLock);
 
+    struct Node *nodetmp;
     /* now remove remaining classes not found in the config */
-    puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
-    while(puc->puc_Node.ln_Succ)
+    ForeachNodeSafe(&ps->ps_Classes, puc, nodetmp)
     {
         if(puc->puc_RemoveMe)
         {
 	    XPRINTF(5, ("Removing class %s\n", puc->puc_ClassName));
             psdRemClass(puc);
-            puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
-        } else {
-            puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
         }
     }
 
     /* now remove all remaining hardware not found in the config */
-    phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
-    while(phw->phw_Node.ln_Succ)
+    ForeachNodeSafe(&ps->ps_Hardware, phw, nodetmp)
     {
         if(phw->phw_RemoveMe)
         {
 	    XPRINTF(5, ("Removing device %s unit %u\n", phw->phw_DevName, phw->phw_Unit));
             psdRemHardware(phw);
-            phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
-        } else {
-            phw = (struct PsdHardware *) phw->phw_Node.ln_Succ;
         }
     }
 
@@ -6992,11 +6984,9 @@ AROS_LH0(void, psdParseCfg,
                         pd = NULL; /* restart */
                         continue;
                     }
-                    pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
-                    while(pc->pc_Node.ln_Succ)
+                    ForeachNode(&pd->pd_Configs, pc)
                     {
-                        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-                        while(pif->pif_Node.ln_Succ)
+                        ForeachNode(&pc->pc_Interfaces, pif)
                         {
                             if(pif->pif_IfBinding && (pif->pif_ClsBinding == puc))
                             {
@@ -7009,9 +6999,7 @@ AROS_LH0(void, psdParseCfg,
                                 pd = NULL; /* restart */
                                 continue;
                             }
-                            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
                         }
-                        pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
                     }
                 }
             }
@@ -8215,7 +8203,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                                        (STRPTR) "too high", pep->pep_MaxPktSize);
                                                         pep->pep_MaxPktSize = 1024;
                                                     }
-
+                                                    // fall through
                                                 case USEAF_INTERRUPT:
                                                     if(!pep->pep_Interval)
                                                     {

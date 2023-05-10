@@ -11,7 +11,7 @@ FUNCS := \
 
 SHELLFILES := PsdDevLister PsdErrorlog AddUSBClasses AddUSBHardware PsdStackLoader 
 
-USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG -D__POSEIDON_NOLIBBASE__
 #USER_CPPFLAGS += -DDEBUG=1
 
 #MM kernel-usb-poseidon-includes : \

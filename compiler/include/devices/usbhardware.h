@@ -1,7 +1,7 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 2.5 (06.04.2023)
+**	$VER: usbhardware.h 2.6 (10.05.2023)
 **
 **	standard usb hardware device include file
 **
@@ -62,11 +62,12 @@ struct IOUsbHWReq
     APTR                iouh_UserData;
     UWORD               iouh_ExtError;
     /* V2 structure extension */
-    UWORD               iouh_Frame;          /* current USB-Frame value and ISO start frame*/
-    UWORD               iouh_SplitHubAddr;   /* For Split-Transaction HUB address */
-    UWORD               iouh_SplitHubPort;   /* For Split-Transaction HUB downstream port */
-    APTR                iouh_DriverPrivate1; /* private data for internal driver use */
-    APTR                iouh_DriverPrivate2; /* private data for internal driver use */
+    UWORD               iouh_Frame;             /* current USB-Frame value and ISO start frame*/
+    UWORD               iouh_SplitHubAddr;      /* For Split-Transaction HUB address */
+    UWORD               iouh_HubPort;           /* HUB downstream port (Mainly for split transaction use) */
+#define iouh_SplitHubPort   iouh_HubPort
+    APTR                iouh_DriverPrivate1;    /* private data for internal driver use */
+    APTR                iouh_DriverPrivate2;    /* private data for internal driver use */
 };
 
 /* Realtime ISO transfer structure as given in iouh_Data */
