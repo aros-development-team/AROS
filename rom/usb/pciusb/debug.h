@@ -48,6 +48,8 @@ void dumpmem_pciusb(void *mem, unsigned long int len);
 #else /* !DEBUG */
 #define KPRINTF(l,fmt,args...) ((void) 0)
 #define pciusbDebug(fmt,args...)
+#define pciusbDebugTRB(fmt,args...)
+#define pciusbDebugEP(fmt,args...)
 #define DB(x)
 #endif
 #endif /* DEBUG */
