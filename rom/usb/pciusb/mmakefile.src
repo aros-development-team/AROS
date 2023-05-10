@@ -10,6 +10,12 @@ FILES := \
         uhcichip \
         ehcichip \
         xhcichip \
+        xhcichip_periodic \
+        xhcichip_async \
+        xhcichip_hcport \
+        xhcichip_hw \
+        xhcidevice \
+        xhcidebug \
         uhwcmd \
         debug
 
@@ -21,14 +27,20 @@ kernel-usb-pciusb-directories ::
 
 #MM- kernel-usb-pciusb : kernel-usb-pciusb-directories 
 
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/usb/pciusb/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/usb/pciusb/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/usb/pciusb/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/usb/pciusb/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/usb/pciusb/make.opts
+endif
+-include $(SRCDIR)/$(CURDIR)/make.opts
+
 #FIXME: Currently pciusb.device is different when compiled for pc or not.
 #       It should thus normally be in SYS:Arch but it is not ATM.
 USER_LDFLAGS := -static
-USER_CPPFLAGS :=  \
-        -D__OOP_NOLIBBASE__ \
-        -D__OOP_NOMETHODBASES__ \
-        -D__OOP_NOATTRBASES__
-#USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG
 
 %build_module mmake=kernel-usb-pciusb \
     modname=pciusb modtype=device \

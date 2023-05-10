@@ -2,8 +2,6 @@
     Copyright (C) 2010-2023, The AROS Development Team. All rights reserved
 */
 
-#define DB_LEVEL 100
-
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
@@ -15,7 +13,22 @@
 #include "ohcichip.h"
 #include "uhcichip.h"
 
-static AROS_INTH1(EhciResetHandler, struct PCIController *, hc)
+#ifdef base
+#undef base
+#endif
+#define base (hc->hc_Device)
+#if defined(AROS_USE_LOGRES)
+#ifdef LogHandle
+#undef LogHandle
+#endif
+#ifdef LogResBase
+#undef LogResBase
+#endif
+#define LogHandle (hc->hc_LogRHandle)
+#define LogResBase (base->hd_LogResBase)
+#endif
+
+static AROS_INTH1(ehciResetHandler, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
 
@@ -61,17 +74,18 @@ static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 
 void ehciFreeAsyncContext(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 {
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     struct EhciQH *eqh = ioreq->iouh_DriverPrivate1;
 
-    KPRINTF(5, ("Freeing AsyncContext 0x%p\n", eqh));
+    pciusbDebug("EHCI", "Freeing AsyncContext 0x%p\n", eqh);
     ehciFinishRequest(hc->hc_Unit, ioreq);
 
     // need to wait until an async schedule rollover before freeing these
     Disable();
-    eqh->eqh_Succ = hc->hc_EhciAsyncFreeQH;
-    hc->hc_EhciAsyncFreeQH = eqh;
+    eqh->eqh_Succ = ehcihcp->ehc_EhciAsyncFreeQH;
+    ehcihcp->ehc_EhciAsyncFreeQH = eqh;
     // activate doorbell
-    WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, hc->hc_EhciUsbCmd|EHUF_ASYNCDOORBELL);
+    WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, ehcihcp->ehc_EhciUsbCmd|EHUF_ASYNCDOORBELL);
     Enable();
 }
 
@@ -81,14 +95,14 @@ void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     struct EhciTD *etd;
     struct EhciTD *nextetd;
 
-    KPRINTF(5, ("Freeing PeriodicContext 0x%p\n", eqh));
+    pciusbDebug("EHCI", "Freeing PeriodicContext 0x%p\n", eqh);
     ehciFinishRequest(hc->hc_Unit, ioreq);
 
     Disable(); // avoid race condition with interrupt
     nextetd = eqh->eqh_FirstTD;
     while((etd = nextetd))
     {
-        KPRINTF(1, ("FreeTD 0x%p\n", nextetd));
+        pciusbDebug("EHCI", "FreeTD 0x%p\n", nextetd);
         nextetd = etd->etd_Succ;
         ehciFreeTD(hc, etd);
     }
@@ -101,11 +115,11 @@ void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh) {
     struct EhciTD *etd = NULL;
     struct EhciTD *nextetd;
 
-    KPRINTF(5, ("Unlinking QContext 0x%p\n", eqh));
+    pciusbDebug("EHCI", "Unlinking QContext 0x%p\n", eqh);
     nextetd = eqh->eqh_FirstTD;
     while(nextetd)
     {
-        KPRINTF(1, ("FreeTD 0x%p\n", nextetd));
+        pciusbDebug("EHCI", "FreeTD 0x%p\n", nextetd);
         etd = nextetd;
         nextetd = (struct EhciTD *) etd->etd_Succ;
         ehciFreeTD(hc, etd);
@@ -115,17 +129,17 @@ void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh) {
 }
 
 void ehciUpdateIntTree(struct PCIController *hc) {
-
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     struct EhciQH *eqh;
     struct EhciQH *predeqh;
     struct EhciQH *lastusedeqh;
     UWORD cnt;
 
     // optimize linkage between queue heads
-    predeqh = lastusedeqh = hc->hc_EhciTermQH;
+    predeqh = lastusedeqh = ehcihcp->ehc_EhciTermQH;
     for(cnt = 0; cnt < 11; cnt++)
     {
-        eqh = hc->hc_EhciIntQH[cnt];
+        eqh = ehcihcp->ehc_EhciIntQH[cnt];
         if(eqh->eqh_Succ != predeqh)
         {
             lastusedeqh = eqh->eqh_Succ;
@@ -137,7 +151,7 @@ void ehciUpdateIntTree(struct PCIController *hc) {
 }
 
 void ehciHandleFinishedTDs(struct PCIController *hc) {
-
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     struct IOUsbHWReq *nextioreq;
@@ -157,14 +171,14 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
     BOOL zeroterm;
     IPTR phyaddr;
 
-    KPRINTF(1, ("Checking for Async work done...\n"));
+    pciusbDebug("EHCI", "Checking for Async work done...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
     while((nextioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ))
     {
         eqh = (struct EhciQH *) ioreq->iouh_DriverPrivate1;
         if(eqh)
         {
-            KPRINTF(1, ("Examining IOReq=0x%p with EQH=0x%p\n", ioreq, eqh));
+            pciusbDebug("EHCI", "Examining IOReq=0x%p with EQH=0x%p\n", ioreq, eqh);
             SYNC;
 
             CacheClearE(&eqh->eqh_NextQH, 32, CACRF_InvalidateD);
@@ -174,7 +188,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
             halted = ((epctrlstatus & (ETCF_ACTIVE|ETSF_HALTED)) == ETSF_HALTED);
             if(halted || (!(epctrlstatus & ETCF_ACTIVE) && (nexttd & EHCI_TERMINATE)))
             {
-                KPRINTF(1, ("AS: CS=%08lx CP=%08lx NX=%08lx\n", epctrlstatus, READMEM32_LE(&eqh->eqh_CurrTD), nexttd));
+                pciusbDebug("EHCI", "AS: CS=%08lx CP=%08lx NX=%08lx\n", epctrlstatus, READMEM32_LE(&eqh->eqh_CurrTD), nexttd);
                 shortpkt = FALSE;
                 actual = 0;
                 inspect = 1;
@@ -182,17 +196,17 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 do
                 {
                     ctrlstatus = READMEM32_LE(&etd->etd_CtrlStatus);
-                    KPRINTF(1, ("AS: CS=%08lx SL=%08lx TD=0x%p\n", ctrlstatus, READMEM32_LE(&etd->etd_Self), etd));
+                    pciusbDebug("EHCI", "AS: CS=%08lx SL=%08lx TD=0x%p\n", ctrlstatus, READMEM32_LE(&etd->etd_Self), etd);
                     if(ctrlstatus & ETCF_ACTIVE)
                     {
                         if(halted)
                         {
-                            KPRINTF(20, ("Async: Halted before TD\n"));
+                            pciusbError("EHCI", "Async: Halted before TD\n");
                             //ctrlstatus = eqh->eqh_CtrlStatus;
                             inspect = 0;
                             if(unit->hu_NakTimeoutFrame[devadrep] && (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep]))
                             {
-                                KPRINTF(20, ("NAK timeout\n"));
+                                pciusbWarn("EHCI", "NAK timeout\n");
                                 ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
                             }
                             break;
@@ -218,26 +232,26 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     {
                         if(ctrlstatus & ETSF_BABBLE)
                         {
-                            KPRINTF(20, ("Babble error %08lx\n", ctrlstatus));
+                            pciusbError("EHCI", "Babble error %08lx\n", ctrlstatus);
                             ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
                         }
                         else if(ctrlstatus & ETSF_DATABUFFERERR)
                         {
-                            KPRINTF(20, ("Databuffer error\n"));
+                            pciusbError("EHCI", "Databuffer error\n");
                             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                         }
                         else if(ctrlstatus & ETSF_TRANSERR)
                         {
                             if((ctrlstatus & ETCM_ERRORLIMIT)>>ETCS_ERRORLIMIT)
                             {
-                                KPRINTF(20, ("other kind of STALLED!\n"));
+                                pciusbError("EHCI", "other kind of STALLED!\n");
                                 ioreq->iouh_Req.io_Error = UHIOERR_STALL;
                             } else {
-                                KPRINTF(20, ("TIMEOUT!\n"));
+                                pciusbError("EHCI", "TIMEOUT!\n");
                                 ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                             }
                         } else {
-                            KPRINTF(20, ("STALLED!\n"));
+                            pciusbError("EHCI", "STALLED!\n");
                             ioreq->iouh_Req.io_Error = UHIOERR_STALL;
                         }
                         inspect = 0;
@@ -251,7 +265,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     }
                     if(ctrlstatus & ETSM_TRANSLENGTH)
                     {
-                        KPRINTF(10, ("Short packet: %ld < %ld\n", len, etd->etd_Length));
+                        pciusbWarn("EHCI", "Short packet: %ld < %ld\n", len, etd->etd_Length);
                         shortpkt = TRUE;
                         break;
                     }
@@ -271,7 +285,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 ioreq->iouh_Actual += actual;
                 if(inspect && (!shortpkt) && (eqh->eqh_Actual < ioreq->iouh_Length))
                 {
-                    KPRINTF(10, ("Reloading BULK at %ld/%ld\n", eqh->eqh_Actual, ioreq->iouh_Length));
+                    pciusbDebug("EHCI", "Reloading BULK at %ld/%ld\n", eqh->eqh_Actual, ioreq->iouh_Length);
                     // reload
                     ctrlstatus = (ioreq->iouh_Dir == UHDIR_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
                     phyaddr = (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer + ioreq->iouh_Actual);
@@ -288,8 +302,8 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                             len = 4*EHCI_PAGE_SIZE;
                         }
                         etd->etd_Length = len;
-                        KPRINTF(1, ("Reload Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
-                                    etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr));
+                        pciusbDebug("EHCI", "Reload Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
+                                    etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr);
                         WRITEMEM32_LE(&etd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
                         // FIXME need quark scatter gather mechanism here
                         WRITEMEM32_LE(&etd->etd_BufferPtr[0], phyaddr);
@@ -316,12 +330,12 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                             etd = ehciAllocTD(hc);
                             if(!etd)
                             {
-                                KPRINTF(200, ("INTERNAL ERROR! This should not happen! Could not allocate zero packet TD\n"));
+                                KPRINTF(200, "INTERNAL ERROR! This should not happen! Could not allocate zero packet TD\n");
                                 break;
                             }
                             predetd->etd_Succ = etd;
                             predetd->etd_NextTD = etd->etd_Self;
-                            predetd->etd_AltNextTD = hc->hc_ShortPktEndTD->etd_Self;
+                            predetd->etd_AltNextTD = ehcihcp->ehc_ShortPktEndTD->etd_Self;
                             etd->etd_Succ = NULL;
                             CONSTWRITEMEM32_LE(&etd->etd_NextTD, EHCI_TERMINATE);
                             CONSTWRITEMEM32_LE(&etd->etd_AltNextTD, EHCI_TERMINATE);
@@ -336,15 +350,15 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     eqh->eqh_NextTD = etd->etd_Self;
                     SYNC;
                     unit->hu_NakTimeoutFrame[devadrep] =
-                        (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<hc->hc_EhciTimeoutShift) : 0;
+                        (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<ehcihcp->ehc_EhciTimeoutShift) : 0;
                 }
                 else
                 {
                     ehciFreeAsyncContext(hc, ioreq);
                     // use next data toggle bit based on last successful transaction
-                    KPRINTF(1, ("Old Toggle %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
+                    pciusbDebug("EHCI", "Old Toggle %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]);
                     unit->hu_DevDataToggle[devadrep] = (ctrlstatus & ETCF_DATA1) ? TRUE : FALSE;
-                    KPRINTF(1, ("Toggle now %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
+                    pciusbDebug("EHCI", "Toggle now %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]);
                     if(inspect)
                     {
                         if(ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
@@ -357,19 +371,19 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 }
             }
         } else {
-            KPRINTF(20, ("IOReq=0x%p has no UQH!\n", ioreq));
+            pciusbDebug("EHCI", "IOReq=0x%p has no UQH!\n", ioreq);
         }
         ioreq = nextioreq;
     }
 
-    KPRINTF(1, ("Checking for Periodic work done...\n"));
+    pciusbDebug("EHCI", "Checking for Periodic work done...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
     while((nextioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ))
     {
         eqh = (struct EhciQH *) ioreq->iouh_DriverPrivate1;
         if(eqh)
         {
-            KPRINTF(1, ("Examining IOReq=0x%p with EQH=0x%p\n", ioreq, eqh));
+            pciusbDebug("EHCI", "Examining IOReq=0x%p with EQH=0x%p\n", ioreq, eqh);
             nexttd = READMEM32_LE(&eqh->eqh_NextTD);
             etd = eqh->eqh_FirstTD;
             ctrlstatus = READMEM32_LE(&eqh->eqh_CtrlStatus);
@@ -377,29 +391,29 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
             halted = ((ctrlstatus & (ETCF_ACTIVE|ETSF_HALTED)) == ETSF_HALTED);
             if(halted || (!(ctrlstatus & ETCF_ACTIVE) && (nexttd & EHCI_TERMINATE)))
             {
-                KPRINTF(1, ("EQH not active %08lx\n", ctrlstatus));
+                pciusbDebug("EHCI", "EQH not active %08lx\n", ctrlstatus);
                 shortpkt = FALSE;
                 actual = 0;
                 inspect = 1;
                 do
                 {
                     ctrlstatus = READMEM32_LE(&etd->etd_CtrlStatus);
-                    KPRINTF(1, ("Periodic: TD=0x%p CS=%08lx\n", etd, ctrlstatus));
+                    pciusbDebug("EHCI", "Periodic: TD=0x%p CS=%08lx\n", etd, ctrlstatus);
                     if(ctrlstatus & ETCF_ACTIVE)
                     {
                         if(halted)
                         {
-                            KPRINTF(20, ("Periodic: Halted before TD\n"));
+                            pciusbError("EHCI", "Periodic: Halted before TD\n");
                             //ctrlstatus = eqh->eqh_CtrlStatus;
                             inspect = 0;
                             if(unit->hu_NakTimeoutFrame[devadrep] && (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep]))
                             {
-                                KPRINTF(20, ("NAK timeout\n"));
+                                pciusbWarn("EHCI", "NAK timeout\n");
                                 ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
                             }
                             break;
                         } else {
-                            KPRINTF(20, ("Periodic: Internal error! Still active?!\n"));
+                            pciusbError("EHCI", "Periodic: Internal error! Still active?!\n");
                             break;
                         }
                     }
@@ -408,27 +422,27 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     {
                         if(ctrlstatus & ETSF_BABBLE)
                         {
-                            KPRINTF(20, ("Babble error %08lx\n", ctrlstatus));
+                            pciusbError("EHCI", "Babble error %08lx\n", ctrlstatus);
                             ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
                         }
                         else if(ctrlstatus & ETSF_MISSEDCSPLIT)
                         {
-                            KPRINTF(20, ("Missed CSplit %08lx\n", ctrlstatus));
+                            pciusbError("EHCI", "Missed CSplit %08lx\n", ctrlstatus);
                             ioreq->iouh_Req.io_Error = UHIOERR_STALL;
                         }
                         else if(ctrlstatus & ETSF_DATABUFFERERR)
                         {
-                            KPRINTF(20, ("Databuffer error\n"));
+                            pciusbError("EHCI", "Databuffer error\n");
                             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                         }
                         else if(ctrlstatus & ETSF_TRANSERR)
                         {
                             if((ctrlstatus & ETCM_ERRORLIMIT)>>ETCS_ERRORLIMIT)
                             {
-                                KPRINTF(20, ("STALLED!\n"));
+                                pciusbError("EHCI", "STALLED!\n");
                                 ioreq->iouh_Req.io_Error = UHIOERR_STALL;
                             } else {
-                                KPRINTF(20, ("TIMEOUT!\n"));
+                                pciusbError("EHCI", "TIMEOUT!\n");
                                 ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                             }
                         }
@@ -444,7 +458,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     actual += len;
                     if(ctrlstatus & ETSM_TRANSLENGTH)
                     {
-                        KPRINTF(10, ("Short packet: %ld < %ld\n", len, etd->etd_Length));
+                        pciusbWarn("EHCI", "Short packet: %ld < %ld\n", len, etd->etd_Length);
                         shortpkt = TRUE;
                         break;
                     }
@@ -458,13 +472,13 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 ehciFreePeriodicContext(hc, ioreq);
                 updatetree = TRUE;
                 // use next data toggle bit based on last successful transaction
-                KPRINTF(1, ("Old Toggle %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
+                pciusbDebug("EHCI", "Old Toggle %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]);
                 unit->hu_DevDataToggle[devadrep] = (ctrlstatus & ETCF_DATA1) ? TRUE : FALSE;
-                KPRINTF(1, ("Toggle now %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
+                pciusbDebug("EHCI", "Toggle now %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]);
                 ReplyMsg(&ioreq->iouh_Req.io_Message);
             }
         } else {
-            KPRINTF(20, ("IOReq=0x%p has no UQH!\n", ioreq));
+            pciusbDebug("EHCI", "IOReq=0x%p has no UQH!\n", ioreq);
         }
         ioreq = nextioreq;
     }
@@ -475,7 +489,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
 }
 
 void ehciScheduleCtrlTDs(struct PCIController *hc) {
-
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     UWORD devadrep;
@@ -490,16 +504,16 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
     IPTR phyaddr;
 
     /* *** CTRL Transfers *** */
-    KPRINTF(1, ("Scheduling new CTRL transfers...\n"));
+    pciusbDebug("EHCI", "Scheduling new CTRL transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_CtrlXFerQueue.lh_Head;
     while(((struct Node *) ioreq)->ln_Succ)
     {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint;
-        KPRINTF(10, ("New CTRL transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length));
+        pciusbDebug("EHCI", "New CTRL transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep])
         {
-            KPRINTF(5, ("Endpoint %02lx in use!\n", devadrep));
+            pciusbWarn("EHCI", "Endpoint %02lx in use!\n", devadrep);
             ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
             continue;
         }
@@ -530,13 +544,13 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         epcaps = ((0<<EQES_RELOAD)|EQEF_TOGGLEFROMTD)|(ioreq->iouh_MaxPktSize<<EQES_MAXPKTLEN)|(ioreq->iouh_DevAddr<<EQES_DEVADDR)|(ioreq->iouh_Endpoint<<EQES_ENDPOINT);
         if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
         {
-            KPRINTF(10, ("*** SPLIT TRANSACTION to HubPort %ld at Addr %ld\n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr));
+            pciusbDebug("EHCI", "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld\n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
             // full speed and low speed handling
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, EQSF_MULTI_1|(ioreq->iouh_SplitHubPort<<EQSS_PORTNUMBER)|(ioreq->iouh_SplitHubAddr<<EQSS_HUBADDRESS));
             epcaps |= EQEF_SPLITCTRLEP;
             if(ioreq->iouh_Flags & UHFF_LOWSPEED)
             {
-                KPRINTF(10, ("*** LOW SPEED ***\n"));
+                pciusbDebug("EHCI", "*** LOW SPEED ***\n");
                 epcaps |= EQEF_LOWSPEED;
             }
         } else {
@@ -549,7 +563,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
 
         //termetd->etd_QueueHead = setupetd->etd_QueueHead = eqh;
 
-        KPRINTF(1, ("SetupTD=0x%p, TermTD=0x%p\n", setupetd, termetd));
+        pciusbDebug("EHCI", "SetupTD=0x%p, TermTD=0x%p\n", setupetd, termetd);
 
         // fill setup td
         setupetd->etd_Length = 8;
@@ -660,20 +674,20 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         // manage endpoint going busy
         unit->hu_DevBusyReq[devadrep] = ioreq;
         unit->hu_NakTimeoutFrame[devadrep] =
-            (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<hc->hc_EhciTimeoutShift) : 0;
+            (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<ehcihcp->ehc_EhciTimeoutShift) : 0;
 
         Disable();
         AddTail(&hc->hc_TDQueue, (struct Node *) ioreq);
 
         // looks good to me, now enqueue this entry (just behind the asyncQH)
-        eqh->eqh_Succ = hc->hc_EhciAsyncQH->eqh_Succ;
+        eqh->eqh_Succ = ehcihcp->ehc_EhciAsyncQH->eqh_Succ;
         eqh->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
         SYNC;
 
-        eqh->eqh_Pred = hc->hc_EhciAsyncQH;
+        eqh->eqh_Pred = ehcihcp->ehc_EhciAsyncQH;
         eqh->eqh_Succ->eqh_Pred = eqh;
-        hc->hc_EhciAsyncQH->eqh_Succ = eqh;
-        hc->hc_EhciAsyncQH->eqh_NextQH = eqh->eqh_Self;
+        ehcihcp->ehc_EhciAsyncQH->eqh_Succ = eqh;
+        ehcihcp->ehc_EhciAsyncQH->eqh_NextQH = eqh->eqh_Self;
         SYNC;
         Enable();
 
@@ -682,7 +696,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
 }
 
 void ehciScheduleIntTDs(struct PCIController *hc) {
-
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     UWORD devadrep;
@@ -698,16 +712,16 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
     IPTR phyaddr;
 
     /* *** INT Transfers *** */
-    KPRINTF(1, ("Scheduling new INT transfers...\n"));
+    pciusbDebug("EHCI", "Scheduling new INT transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_IntXFerQueue.lh_Head;
     while(((struct Node *) ioreq)->ln_Succ)
     {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-        KPRINTF(10, ("New INT transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length));
+        pciusbDebug("EHCI", "New INT transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep])
         {
-            KPRINTF(5, ("Endpoint %02lx in use!\n", devadrep));
+            pciusbWarn("EHCI", "Endpoint %02lx in use!\n", devadrep);
             ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
             continue;
         }
@@ -724,22 +738,22 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
         epcaps = (0<<EQES_RELOAD)|(ioreq->iouh_MaxPktSize<<EQES_MAXPKTLEN)|(ioreq->iouh_DevAddr<<EQES_DEVADDR)|(ioreq->iouh_Endpoint<<EQES_ENDPOINT);
         if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
         {
-            KPRINTF(10, ("*** SPLIT TRANSACTION to HubPort %ld at Addr %ld\n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr));
+            pciusbDebug("EHCI", "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld\n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
             // full speed and low speed handling
             if(ioreq->iouh_Flags & UHFF_LOWSPEED)
             {
-                KPRINTF(10, ("*** LOW SPEED ***\n"));
+                pciusbDebug("EHCI", "*** LOW SPEED ***\n");
                 epcaps |= EQEF_LOWSPEED;
             }
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, (EQSF_MULTI_1|(0x01<<EQSS_MUSOFACTIVE)|(0x1c<<EQSS_MUSOFCSPLIT))|(ioreq->iouh_SplitHubPort<<EQSS_PORTNUMBER)|(ioreq->iouh_SplitHubAddr<<EQSS_HUBADDRESS));
             if(ioreq->iouh_Interval >= 255)
             {
-                inteqh = hc->hc_EhciIntQH[8]; // 256ms interval
+                inteqh = ehcihcp->ehc_EhciIntQH[8]; // 256ms interval
             } else {
                 cnt = 0;
                 do
                 {
-                    inteqh = hc->hc_EhciIntQH[cnt++];
+                    inteqh = ehcihcp->ehc_EhciIntQH[cnt++];
                 } while(ioreq->iouh_Interval >= (1<<cnt));
             }
         } else {
@@ -777,12 +791,12 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, splitctrl);
             if(ioreq->iouh_Interval >= 1024)
             {
-                inteqh = hc->hc_EhciIntQH[10]; // 1024 µFrames interval
+                inteqh = ehcihcp->ehc_EhciIntQH[10]; // 1024 µFrames interval
             } else {
                 cnt = 0;
                 do
                 {
-                    inteqh = hc->hc_EhciIntQH[cnt++];
+                    inteqh = ehcihcp->ehc_EhciIntQH[cnt++];
                 } while(ioreq->iouh_Interval >= (1<<cnt));
             }
         }
@@ -810,7 +824,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             {
                 predetd->etd_Succ = etd;
                 predetd->etd_NextTD = etd->etd_Self;
-                predetd->etd_AltNextTD = hc->hc_ShortPktEndTD->etd_Self;
+                predetd->etd_AltNextTD = ehcihcp->ehc_ShortPktEndTD->etd_Self;
             } else {
                 eqh->eqh_FirstTD = etd;
                 eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
@@ -882,7 +896,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
         // manage endpoint going busy
         unit->hu_DevBusyReq[devadrep] = ioreq;
         unit->hu_NakTimeoutFrame[devadrep] =
-            (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<hc->hc_EhciTimeoutShift) : 0;
+            (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<ehcihcp->ehc_EhciTimeoutShift) : 0;
 
         Disable();
         AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
@@ -906,7 +920,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
 }
 
 void ehciScheduleBulkTDs(struct PCIController *hc) {
-
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     UWORD devadrep;
@@ -920,16 +934,16 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
     IPTR phyaddr;
 
     /* *** BULK Transfers *** */
-    KPRINTF(1, ("Scheduling new BULK transfers...\n"));
+    pciusbDebug("EHCI", "Scheduling new BULK transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
     while(((struct Node *) ioreq)->ln_Succ)
     {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-        KPRINTF(10, ("New BULK transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length));
+        pciusbDebug("EHCI", "New BULK transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep])
         {
-            KPRINTF(5, ("Endpoint %02lx in use!\n", devadrep));
+            pciusbWarn("EHCI", "Endpoint %02lx in use!\n", devadrep);
             ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
             continue;
         }
@@ -946,11 +960,11 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
         epcaps = (0<<EQES_RELOAD)|(ioreq->iouh_MaxPktSize<<EQES_MAXPKTLEN)|(ioreq->iouh_DevAddr<<EQES_DEVADDR)|(ioreq->iouh_Endpoint<<EQES_ENDPOINT);
         if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
         {
-            KPRINTF(10, ("*** SPLIT TRANSACTION to HubPort %ld at Addr %ld\n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr));
+            pciusbDebug("EHCI", "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld\n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
             // full speed and low speed handling
             if(ioreq->iouh_Flags & UHFF_LOWSPEED)
             {
-                KPRINTF(10, ("*** LOW SPEED ***\n"));
+                pciusbDebug("EHCI", "*** LOW SPEED ***\n");
                 epcaps |= EQEF_LOWSPEED;
             }
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, EQSF_MULTI_1|(ioreq->iouh_SplitHubPort<<EQSS_PORTNUMBER)|(ioreq->iouh_SplitHubAddr<<EQSS_HUBADDRESS));
@@ -985,7 +999,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
         {
             if((eqh->eqh_Actual >= EHCI_TD_BULK_LIMIT) && (eqh->eqh_Actual < ioreq->iouh_Length))
             {
-                KPRINTF(10, ("Bulk too large, splitting...\n"));
+                pciusbDebug("EHCI", "Bulk too large, splitting...\n");
                 break;
             }
             etd = ehciAllocTD(hc);
@@ -997,7 +1011,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             {
                 predetd->etd_Succ = etd;
                 predetd->etd_NextTD = etd->etd_Self;
-                predetd->etd_AltNextTD = hc->hc_ShortPktEndTD->etd_Self;
+                predetd->etd_AltNextTD = ehcihcp->ehc_ShortPktEndTD->etd_Self;
             } else {
                 eqh->eqh_FirstTD = etd;
                 eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
@@ -1009,8 +1023,8 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
                 len = 4*EHCI_PAGE_SIZE;
             }
             etd->etd_Length = len;
-            KPRINTF(1, ("Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
-                         etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr));
+            pciusbDebug("EHCI", "Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
+                         etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr);
             WRITEMEM32_LE(&etd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
             // FIXME need quark scatter gather mechanism here
             WRITEMEM32_LE(&etd->etd_BufferPtr[0], phyaddr);
@@ -1072,20 +1086,20 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
         // manage endpoint going busy
         unit->hu_DevBusyReq[devadrep] = ioreq;
         unit->hu_NakTimeoutFrame[devadrep] =
-            (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<hc->hc_EhciTimeoutShift) : 0;
+            (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<ehcihcp->ehc_EhciTimeoutShift) : 0;
 
         Disable();
         AddTail(&hc->hc_TDQueue, (struct Node *) ioreq);
 
         // looks good to me, now enqueue this entry (just behind the asyncQH)
-        eqh->eqh_Succ = hc->hc_EhciAsyncQH->eqh_Succ;
+        eqh->eqh_Succ = ehcihcp->ehc_EhciAsyncQH->eqh_Succ;
         eqh->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
         SYNC;
 
-        eqh->eqh_Pred = hc->hc_EhciAsyncQH;
+        eqh->eqh_Pred = ehcihcp->ehc_EhciAsyncQH;
         eqh->eqh_Succ->eqh_Pred = eqh;
-        hc->hc_EhciAsyncQH->eqh_Succ = eqh;
-        hc->hc_EhciAsyncQH->eqh_NextQH = eqh->eqh_Self;
+        ehcihcp->ehc_EhciAsyncQH->eqh_Succ = eqh;
+        ehcihcp->ehc_EhciAsyncQH->eqh_NextQH = eqh->eqh_Self;
         SYNC;
         Enable();
 
@@ -1108,32 +1122,35 @@ static AROS_INTH1(ehciCompleteInt, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
 
-    KPRINTF(1, ("CompleteInt!\n"));
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+
+    pciusbDebug("EHCI", "CompleteInt!\n");
+
     ehciUpdateFrameCounter(hc);
 
     /* **************** PROCESS DONE TRANSFERS **************** */
 
-    if(hc->hc_AsyncAdvanced)
+    if(ehcihcp->ehc_AsyncAdvanced)
     {
         struct EhciQH *eqh;
         struct EhciTD *etd;
         struct EhciTD *nextetd;
 
-        hc->hc_AsyncAdvanced = FALSE;
+        ehcihcp->ehc_AsyncAdvanced = FALSE;
 
-        KPRINTF(1, ("AsyncAdvance 0x%p\n", hc->hc_EhciAsyncFreeQH));
+        pciusbDebug("EHCI", "AsyncAdvance 0x%p\n", ehcihcp->ehc_EhciAsyncFreeQH);
 
-        while((eqh = hc->hc_EhciAsyncFreeQH))
+        while((eqh = ehcihcp->ehc_EhciAsyncFreeQH))
         {
-            KPRINTF(1, ("FreeQH 0x%p\n", eqh));
+            pciusbDebug("EHCI", "FreeQH 0x%p\n", eqh);
             nextetd = eqh->eqh_FirstTD;
             while((etd = nextetd))
             {
-                KPRINTF(1, ("FreeTD 0x%p\n", nextetd));
+                pciusbDebug("EHCI", "FreeTD 0x%p\n", nextetd);
                 nextetd = etd->etd_Succ;
                 ehciFreeTD(hc, etd);
             }
-            hc->hc_EhciAsyncFreeQH = eqh->eqh_Succ;
+            ehcihcp->ehc_EhciAsyncFreeQH = eqh->eqh_Succ;
             ehciFreeQH(hc, eqh);
         }
     }
@@ -1155,7 +1172,7 @@ static AROS_INTH1(ehciCompleteInt, struct PCIController *, hc)
         ehciScheduleBulkTDs(hc);
     }
 
-    KPRINTF(1, ("CompleteDone\n"));
+    pciusbDebug("EHCI", "CompleteDone\n");
 
     return FALSE;
 
@@ -1166,7 +1183,10 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
 
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+#ifndef base
     struct PCIDevice *base = hc->hc_Device;
+#endif
     struct PCIUnit *unit = hc->hc_Unit;
     ULONG intr;
 
@@ -1185,16 +1205,16 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
             hc->hc_FrameCounter |= 0x3fff;
             hc->hc_FrameCounter++;
             hc->hc_FrameCounter |= READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) & 0x3fff;
-            KPRINTF(5, ("Frame Counter Rollover %ld\n", hc->hc_FrameCounter));
+            pciusbDebug("EHCI", "Frame Counter Rollover %ld\n", hc->hc_FrameCounter);
         }
         if(intr & EHSF_ASYNCADVANCE)
         {
-            KPRINTF(1, ("AsyncAdvance\n"));
-            hc->hc_AsyncAdvanced = TRUE;
+            pciusbDebug("EHCI", "AsyncAdvance\n");
+            ehcihcp->ehc_AsyncAdvanced = TRUE;
         }
         if(intr & EHSF_HOSTERROR)
         {
-            KPRINTF(200, ("Host ERROR!\n"));
+            pciusbError("EHCI", "Host ERROR!\n");
         }
         if(intr & EHSF_PORTCHANGED)
         {
@@ -1223,7 +1243,7 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_OVER_CURRENT;
                 }
                 WRITEREG32_LE(hc->hc_RegBase, portreg, oldval);
-                KPRINTF(20, ("PCI Int Port %ld Change %08lx\n", hciport + 1, oldval));
+                pciusbDebug("EHCI", "PCI Int Port %ld Change %08lx\n", hciport + 1, oldval);
                 if(hc->hc_PortChangeMap[hciport])
                 {
                     unit->hu_RootPortChanges |= 1UL<<(hciport + 1);
@@ -1242,11 +1262,127 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
     AROS_INTFUNC_EXIT
 }
 
+WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    struct PTDNode *ptd0;
+    struct PTDNode *ptd1;
+    volatile ULONG *ispptd;
+    ULONG memmask;
+    ULONG memsize;
+    ULONG isomaxpktsize;
+    ULONG slicesize;
+    ULONG mask = 3;
+    UWORD ptdnum = 0;
+    UWORD memoffset;
+    UWORD cnt;
+
+    pciusbDebug("EHCI", "%s()\n", __func__);
+
+        return(UHIOERR_OUTOFMEMORY);
+
+    if(rtn->rtn_IOReq.iouh_Flags & UHFF_SPLITTRANS)
+    {
+        isomaxpktsize = rtn->rtn_IOReq.iouh_MaxPktSize;
+        // only 188 bytes can be set per microframe in the best case
+        if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN)
+        {
+            if(isomaxpktsize > 192)
+            {
+                isomaxpktsize = 192;
+            }
+        } else {
+        }
+
+        pciusbDebug("EHCI", "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld, size=%ld\n", rtn->rtn_IOReq.iouh_SplitHubPort, rtn->rtn_IOReq.iouh_SplitHubAddr, isomaxpktsize);
+    } else {
+        // obtain right polling interval
+        if(rtn->rtn_IOReq.iouh_Interval < 2) // 0-1 Frames
+        {
+        }
+        else if(rtn->rtn_IOReq.iouh_Interval < 4) // 2-3 Frames
+        {
+        }
+        else if(rtn->rtn_IOReq.iouh_Interval < 8) // 4-7 Frames
+        {
+        }
+        else if(rtn->rtn_IOReq.iouh_Interval > 511) // 64ms and higher
+        {
+        }
+        else //if(rtn->rtn_IOReq.iouh_Interval >= 8) // 1-64ms
+        {
+        }
+    }
+
+    if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN)
+    {
+    } else {
+    }
+    return RC_OK;    
+}
+
+WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+
+    pciusbDebug("EHCI", "%s()\n", __func__);
+
+    return RC_OK;    
+}
+
+void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    struct IOUsbHWBufferReq *ubr;
+    struct IOUsbHWRTIso *urti;
+    struct IOUsbHWReq *ioreq;
+    struct PTDNode *ptd;
+    volatile ULONG *ispptd;
+    volatile ULONG *memptr;
+    ULONG *srcptr;
+    UWORD cnt;
+    UWORD loopcnt = 2;
+    ULONG framecnt;
+    ULONG len;
+    UWORD isomaxpktsize;
+    UWORD toggle;
+
+    pciusbDebug("EHCI", "%s()\n", __func__);
+
+    ubr = &rtn->rtn_BufferReq;
+    urti = rtn->rtn_RTIso;
+    ioreq = &rtn->rtn_IOReq;
+
+    do
+    {
+        if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
+        {
+        } else {
+        }
+    } while(--loopcnt);
+}
+
+void ehciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    struct PTDNode *ptd;
+    volatile ULONG *ispptd;
+    UWORD cnt;
+
+    pciusbDebug("EHCI", "%s()\n", __func__);
+}
+
+void ehciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    struct PTDNode *ptd;
+    volatile ULONG *ispptd;
+
+    pciusbDebug("EHCI", "%s()\n", __func__);
+
+    return;
+}
+
 #undef base
 #define base (hc->hc_Device)
 
 BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
-
+    struct EhciHCPrivate *ehcihcp;
     struct EhciQH *eqh;
     struct EhciQH *predeqh;
     struct EhciTD *etd;
@@ -1281,6 +1417,11 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
             { TAG_DONE, 0UL },
     };
 
+    ehcihcp = AllocMem(sizeof(struct EhciHCPrivate), MEMF_CLEAR);
+    if (!ehcihcp)
+        return FALSE;
+
+    hc->hc_CPrivate = ehcihcp;
     hc->hc_portroute = 0;
 
     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
@@ -1294,31 +1435,31 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         and set the value accordingly if Frame List Flag in the HCCPARAMS indicates RW for the field
         else use default value of EHCI_FRAMELIST_SIZE (1024)
     */
-    hc->hc_PCIMemSize = sizeof(ULONG) * EHCI_FRAMELIST_SIZE + EHCI_FRAMELIST_ALIGNMENT + 1;
-    hc->hc_PCIMemSize += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
-    hc->hc_PCIMemSize += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
+    hc->hc_PCIMem.me_Length = sizeof(ULONG) * EHCI_FRAMELIST_SIZE + EHCI_FRAMELIST_ALIGNMENT + 1;
+    hc->hc_PCIMem.me_Length += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
+    hc->hc_PCIMem.me_Length += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
 
     /*
         FIXME: We should be able to read some EHCI registers before allocating memory
     */
-    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
-    hc->hc_PCIMem = (APTR) memptr;
+    memptr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Length);
+    hc->hc_PCIMem.me_Un.meu_Addr = (APTR) memptr;
 
     if(memptr) {
         // PhysicalAddress - VirtualAdjust = VirtualAddress
         // VirtualAddress  + VirtualAdjust = PhysicalAddress
         hc->hc_PCIVirtualAdjust = pciGetPhysical(hc, memptr) - (APTR)memptr;
-        KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
+        pciusbDebug("EHCI", "VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust);
 
         // align memory
-        memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
-        hc->hc_EhciFrameList = (ULONG *) memptr;
-        KPRINTF(10, ("FrameListBase 0x%p\n", hc->hc_EhciFrameList));
+        memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem.me_Un.meu_Addr) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
+        ehcihcp->ehc_EhciFrameList = (ULONG *) memptr;
+        pciusbDebug("EHCI", "FrameListBase 0x%p\n", ehcihcp->ehc_EhciFrameList);
         memptr += sizeof(APTR) * EHCI_FRAMELIST_SIZE;
 
         // build up QH pool
         eqh = (struct EhciQH *) memptr;
-        hc->hc_EhciQHPool = eqh;
+        ehcihcp->ehc_EhciQHPool = eqh;
         cnt = EHCI_QH_POOLSIZE - 1;
         do {
             // minimal initalization
@@ -1336,7 +1477,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         // build up TD pool
         etd = (struct EhciTD *) memptr;
-        hc->hc_EhciTDPool = etd;
+        ehcihcp->ehc_EhciTDPool = etd;
         cnt = EHCI_TD_POOLSIZE - 1;
         do
         {
@@ -1349,21 +1490,21 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         memptr += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
 
         // empty async queue head
-        hc->hc_EhciAsyncFreeQH = NULL;
-        hc->hc_EhciAsyncQH = eqh = ehciAllocQH(hc);
+        ehcihcp->ehc_EhciAsyncFreeQH = NULL;
+        ehcihcp->ehc_EhciAsyncQH = eqh = ehciAllocQH(hc);
         eqh->eqh_Succ = eqh;
         eqh->eqh_Pred = eqh;
         CONSTWRITEMEM32_LE(&eqh->eqh_EPCaps, EQEF_RECLAMHEAD);
         eqh->eqh_NextQH = eqh->eqh_Self;
 
         // empty terminating queue head
-        hc->hc_EhciTermQH = eqh = ehciAllocQH(hc);
+        ehcihcp->ehc_EhciTermQH = eqh = ehciAllocQH(hc);
         eqh->eqh_Succ = NULL;
         CONSTWRITEMEM32_LE(&eqh->eqh_NextQH, EHCI_TERMINATE);
         predeqh = eqh;
 
         // 1 ms INT QH
-        hc->hc_EhciIntQH[0] = eqh = ehciAllocQH(hc);
+        ehcihcp->ehc_EhciIntQH[0] = eqh = ehciAllocQH(hc);
         eqh->eqh_Succ = predeqh;
         predeqh->eqh_Pred = eqh;
         eqh->eqh_Pred = NULL; // who knows...
@@ -1373,7 +1514,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         // make 11 levels of QH interrupts
         for(cnt = 1; cnt < 11; cnt++)
         {
-            hc->hc_EhciIntQH[cnt] = eqh = ehciAllocQH(hc);
+            ehcihcp->ehc_EhciIntQH[cnt] = eqh = ehciAllocQH(hc);
             eqh->eqh_Succ = predeqh;
             eqh->eqh_Pred = NULL; // who knows...
             //eqh->eqh_NextQH = predeqh->eqh_Self; // link to previous int level
@@ -1383,23 +1524,23 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         ehciUpdateIntTree(hc);
 
         // fill in framelist with IntQH entry points based on interval
-        tabptr = hc->hc_EhciFrameList;
+        tabptr = ehcihcp->ehc_EhciFrameList;
         for(cnt = 0; cnt < EHCI_FRAMELIST_SIZE; cnt++)
         {
-            eqh = hc->hc_EhciIntQH[10];
+            eqh = ehcihcp->ehc_EhciIntQH[10];
             bitcnt = 0;
             do
             {
                 if(cnt & (1UL<<bitcnt))
                 {
-                    eqh = hc->hc_EhciIntQH[bitcnt];
+                    eqh = ehcihcp->ehc_EhciIntQH[bitcnt];
                     break;
                 }
             } while(++bitcnt < 11);
             *tabptr++ = eqh->eqh_Self;
         }
 
-        etd = hc->hc_ShortPktEndTD = ehciAllocTD(hc);
+        etd = ehcihcp->ehc_ShortPktEndTD = ehciAllocTD(hc);
         etd->etd_Succ = NULL;
         CONSTWRITEMEM32_LE(&etd->etd_NextTD, EHCI_TERMINATE);
         CONSTWRITEMEM32_LE(&etd->etd_AltNextTD, EHCI_TERMINATE);
@@ -1414,36 +1555,36 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         while(extcapoffset >= 0x40)
         {
-            KPRINTF(10, ("EHCI has extended caps at 0x%08lx\n", extcapoffset));
-            legsup = PCIXReadConfigLong(hc, extcapoffset);
+            pciusbDebug("EHCI", "Extended Caps at 0x%08lx\n", extcapoffset);
+            legsup = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, extcapoffset);
             if(((legsup & EHLM_CAP_ID) >> EHLS_CAP_ID) == 0x01)
             {
                 if(legsup & EHLF_BIOS_OWNER)
                 {
-                    KPRINTF(10, ("BIOS still has hands on EHCI, trying to get rid of it\n"));
+                    pciusbDebug("EHCI", "BIOS still has hands on EHCI, trying to get rid of it\n");
                     legsup |= EHLF_OS_OWNER;
-                    PCIXWriteConfigLong(hc, extcapoffset, legsup);
+                    WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, extcapoffset, legsup);
                     timeout = 100;
                     do
                     {
-                        legsup = PCIXReadConfigLong(hc, extcapoffset);
+                        legsup = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, extcapoffset);
                         if(!(legsup & EHLF_BIOS_OWNER))
                         {
-                            KPRINTF(10, ("BIOS gave up on EHCI. Pwned!\n"));
+                            pciusbDebug("EHCI", "BIOS gave up on EHCI. Pwned!\n");
                             break;
                         }
                         uhwDelayMS(10, hu);
                      } while(--timeout);
                      if(!timeout)
                      {
-                         KPRINTF(10, ("BIOS didn't release EHCI. Forcing and praying...\n"));
+                         pciusbWarn("EHCI", "BIOS didn't release EHCI. Forcing and praying...\n");
                          legsup |= EHLF_OS_OWNER;
                          legsup &= ~EHLF_BIOS_OWNER;
-                         PCIXWriteConfigLong(hc, extcapoffset, legsup);
+                         WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, extcapoffset, legsup);
                      }
                 }
                 /* disable all SMIs */
-                PCIXWriteConfigLong(hc, extcapoffset + 4, 0);
+                WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, extcapoffset + 4, 0);
                 break;
             }
             extcapoffset = (legsup & EHCM_EXTCAPOFFSET)>>EHCS_EXTCAPOFFSET;
@@ -1453,10 +1594,10 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         // we use the operational registers as RegBase.
         hc->hc_RegBase = (APTR) ((IPTR) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
-        KPRINTF(10, ("RegBase = 0x%p\n", hc->hc_RegBase));
+        pciusbDebug("EHCI", "RegBase = 0x%p\n", hc->hc_RegBase);
 
-        KPRINTF(10, ("Resetting EHCI HC\n"));
-        KPRINTF(10, ("EHCI CMD: 0x%08x STS: 0x%08x\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD), READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS)));
+        pciusbDebug("EHCI", "Resetting HC\n");
+        pciusbDebug("EHCI", "CMD: 0x%08x STS: 0x%08x\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD), READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS));
         /* Step 1: Stop the HC */
         tmp = READREG32_LE(hc->hc_RegBase, EHCI_USBCMD);
         tmp &= ~EHUF_RUNSTOP;
@@ -1474,7 +1615,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         } while (cnt--);
         if (cnt == 0)
         {
-            KPRINTF(200, ("EHCI: Timeout waiting for controller to halt\n"));
+            pciusbWarn("EHCI", "Timeout waiting for controller to halt\n");
         }
 
         /* Step 3. Reset the controller */
@@ -1494,9 +1635,9 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 #ifdef DEBUG
         if(cnt == 0)
         {
-            KPRINTF(20, ("Reset Timeout!\n"));
+            pciusbDebug("EHCI", "Reset Timeout!\n");
         } else {
-            KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
+            pciusbDebug("EHCI", "Reset finished after %ld ticks\n", 100-cnt);
         }
 #endif
 
@@ -1508,10 +1649,10 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         hc->hc_NumPorts = (hcsparams & EHSM_NUM_PORTS)>>EHSS_NUM_PORTS;
 
-        KPRINTF(20, ("Found EHCI Controller 0x%p with %ld ports (%ld companions with %ld ports each)\n",
+        pciusbDebug("EHCI", "Found Controller @ 0x%p with %ld ports (%ld companions with %ld ports each)\n",
                     hc->hc_PCIDeviceObject, hc->hc_NumPorts,
                     (hcsparams & EHSM_NUM_COMPANIONS)>>EHSS_NUM_COMPANIONS,
-                    (hcsparams & EHSM_PORTS_PER_COMP)>>EHSS_PORTS_PER_COMP));
+                    (hcsparams & EHSM_PORTS_PER_COMP)>>EHSS_PORTS_PER_COMP);
 
         if(hcsparams & EHSF_EXTPORTROUTING)
         {
@@ -1519,43 +1660,43 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
             hc->hc_portroute = READREG32_LE(pciregbase, EHCI_HCSPPORTROUTE);
 #ifdef DEBUG
             for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
-                KPRINTF(100, ("Port %ld maps to controller %ld\n", cnt, ((hc->hc_portroute >> (cnt<<2)) & 0xf)));
+                KPRINTF(100, "Port %ld maps to controller %ld\n", cnt, ((hc->hc_portroute >> (cnt<<2)) & 0xf));
             }
 #endif
         }else{
             hc->hc_complexrouting = FALSE;
         }
 
-        KPRINTF(20, ("HCCParams: 64 Bit=%s, ProgFrameList=%s, AsyncSchedPark=%s\n",
+        pciusbDebug("EHCI", "HCCParams: 64 Bit=%s, ProgFrameList=%s, AsyncSchedPark=%s\n",
                     (hccparams & EHCF_64BITS) ? "Yes" : "No",
                     (hccparams & EHCF_PROGFRAMELIST) ? "Yes" : "No",
-                    (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No"));
+                    (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No");
 
-        hc->hc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
-        hc->hc_EhciTimeoutShift = 3;
+        ehcihcp->ehc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
+        ehcihcp->ehc_EhciTimeoutShift = 3;
         if (hc->hc_Quirks & HCQ_EHCI_VBOX_FRAMEROOLOVER) {
-            hc->hc_EhciTimeoutShift += 2;
+            ehcihcp->ehc_EhciTimeoutShift += 2;
         }
 
         /* FIXME HERE: Process EHCF_64BITS flag and implement 64-bit addressing */
 
         if(hccparams & EHCF_ASYNCSCHEDPARK)
         {
-            KPRINTF(20, ("Enabling AsyncSchedParkMode with MULTI_3\n"));
-            hc->hc_EhciUsbCmd |= EHUF_ASYNCSCHEDPARK|(3<<EHUS_ASYNCPARKCOUNT);
+            pciusbDebug("EHCI", "Enabling AsyncSchedParkMode with MULTI_3\n");
+            ehcihcp->ehc_EhciUsbCmd |= EHUF_ASYNCSCHEDPARK|(3<<EHUS_ASYNCPARKCOUNT);
         }
 
-        WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, hc->hc_EhciUsbCmd);
+        WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, ehcihcp->ehc_EhciUsbCmd);
 
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT, 0);
 
-        WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (IPTR)pciGetPhysical(hc, hc->hc_EhciFrameList));
-        WRITEREG32_LE(hc->hc_RegBase, EHCI_ASYNCADDR, AROS_LONG2LE(hc->hc_EhciAsyncQH->eqh_Self));
+        WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (IPTR)pciGetPhysical(hc, ehcihcp->ehc_EhciFrameList));
+        WRITEREG32_LE(hc->hc_RegBase, EHCI_ASYNCADDR, AROS_LONG2LE(ehcihcp->ehc_EhciAsyncQH->eqh_Self));
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
 
         // install reset handler
         hc->hc_ResetInt.is_Node.ln_Name = "EHCI PCI (pciusb.device)";
-        hc->hc_ResetInt.is_Code = (VOID_FUNC)EhciResetHandler;
+        hc->hc_ResetInt.is_Code = (VOID_FUNC)ehciResetHandler;
         hc->hc_ResetInt.is_Data = hc;
         AddResetCallback(&hc->hc_ResetInt);
 
@@ -1570,41 +1711,41 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, hc->hc_PCIIntEnMask);
 
-        CacheClearE(hc->hc_EhciFrameList, sizeof(ULONG) * EHCI_FRAMELIST_SIZE,      CACRF_ClearD);
-        CacheClearE(hc->hc_EhciQHPool,    sizeof(struct EhciQH) * EHCI_QH_POOLSIZE, CACRF_ClearD);
-        CacheClearE(hc->hc_EhciTDPool,    sizeof(struct EhciTD) * EHCI_TD_POOLSIZE, CACRF_ClearD);
+        CacheClearE(ehcihcp->ehc_EhciFrameList, sizeof(ULONG) * EHCI_FRAMELIST_SIZE,      CACRF_ClearD);
+        CacheClearE(ehcihcp->ehc_EhciQHPool,    sizeof(struct EhciQH) * EHCI_QH_POOLSIZE, CACRF_ClearD);
+        CacheClearE(ehcihcp->ehc_EhciTDPool,    sizeof(struct EhciTD) * EHCI_TD_POOLSIZE, CACRF_ClearD);
                     
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, EHCF_CONFIGURED);
-        hc->hc_EhciUsbCmd |= EHUF_RUNSTOP|EHUF_PERIODICENABLE|EHUF_ASYNCENABLE;
-        WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, hc->hc_EhciUsbCmd);
+        ehcihcp->ehc_EhciUsbCmd |= EHUF_RUNSTOP|EHUF_PERIODICENABLE|EHUF_ASYNCENABLE;
+        WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, ehcihcp->ehc_EhciUsbCmd);
         SYNC;
 
-        KPRINTF(20, ("HW Init done\n"));
+        pciusbDebug("EHCI", "HW Init done\n");
 
-        KPRINTF(10, ("HW Regs USBCMD=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD)));
-        KPRINTF(10, ("HW Regs USBSTS=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS)));
-        KPRINTF(10, ("HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT)));
+        pciusbDebug("EHCI", "HW Regs USBCMD=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD));
+        pciusbDebug("EHCI", "HW Regs USBSTS=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS));
+        pciusbDebug("EHCI", "HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT));
 
         for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
             hu->hu_PortMap20[cnt] = hc;
             hc->hc_PortNum[cnt] = cnt;
         }
 
-        KPRINTF(10, ("ehciInit returns TRUE...\n"));
+        pciusbDebug("EHCI", "ehciInit returns TRUE...\n");
         return TRUE;
     }
 
     /*
         FIXME: What would the appropriate debug level be?
     */
-    KPRINTF(1000, ("ehciInit returns FALSE...\n"));
+    KPRINTF(1000, "ehciInit returns FALSE...\n");
     return FALSE;
 }
 
 void ehciFree(struct PCIController *hc, struct PCIUnit *hu) {
     UWORD portreg;
     UWORD hciport;
-    KPRINTF(20, ("Shutting down EHCI 0x%p\n", hc));
+    pciusbDebug("EHCI", "Shutting down HC @ 0x%p\n", hc);
     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, 0);
     // disable all ports
     for(hciport = 0; hciport < hc->hc_NumPorts; hciport++)
@@ -1624,7 +1765,12 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
     uhwDelayMS(10, hu);
 
-    KPRINTF(20, ("Shutting down EHCI done.\n"));
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    hc->hc_CPrivate = NULL;
+    if (ehcihcp)
+        FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
+    
+    pciusbDebug("EHCI", "Shut down complete\n");
 }
 
 BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
@@ -1636,13 +1782,13 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     ULONG cnt;
     BOOL cmdgood = FALSE;
 
-    KPRINTF(5, ("EHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
+    pciusbDebug("EHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
     switch(val)
     {
         /* case UFS_PORT_CONNECTION: not possible */
         case UFS_PORT_ENABLE:
-            KPRINTF(10, ("EHCI: Enabling Port (%s)\n", newval & EHPF_PORTENABLE ? "already" : "ok"));
+            pciusbDebug("EHCI", "Enabling Port (%s)\n", newval & EHPF_PORTENABLE ? "already" : "ok");
             newval |= EHPF_PORTENABLE;
             cmdgood = TRUE;
             break;
@@ -1655,7 +1801,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
         /* case UFS_PORT_OVER_CURRENT: not possible */
         case UFS_PORT_RESET:
-            KPRINTF(10, ("EHCI: Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok"));
+            pciusbDebug("EHCI", "Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok");
 
             // this is an ugly blocking workaround to the inability of EHCI to clear reset automatically
             newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
@@ -1668,7 +1814,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             uhwDelayMS(125, unit);
 
             newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
-            KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
+            pciusbDebug("EHCI", "Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD");
             if (newval & EHPF_PORTRESET)
             {
                 newval &= ~EHPF_PORTRESET;
@@ -1676,18 +1822,18 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             }
             uhwDelayMS(10, unit);
             newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
-            KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
-            KPRINTF(10, ("EHCI: Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO"));
-            KPRINTF(10, ("EHCI: Port status=%08lx\n", newval));
+            pciusbDebug("EHCI", "Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD");
+            pciusbDebug("EHCI", "Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO");
+            pciusbDebug("EHCI", "Port status=%08lx\n", newval);
             if(!(newval & EHPF_PORTENABLE))
             {
                 // if not highspeed, release ownership
-                KPRINTF(20, ("EHCI: Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]));
-                KPRINTF(10, ("EHCI: Device is %s\n", newval & EHPF_LINESTATUS_DM ? "LOWSPEED" : "FULLSPEED"));
+                pciusbDebug("EHCI", "Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]);
+                pciusbDebug("EHCI", "Device is %s\n", newval & EHPF_LINESTATUS_DM ? "LOWSPEED" : "FULLSPEED");
                 newval |= EHPF_NOTPORTOWNER;
                 if(!chc)
                 {
-                    KPRINTF(20, ("EHCI: No companion controller - can't transfer ownership!\n"));
+                    pciusbWarn("EHCI", "No companion controller - can't transfer ownership!\n");
                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                     *retval = UHIOERR_HOSTERROR;
                     return TRUE;
@@ -1700,7 +1846,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                         UWORD uhciportreg = uhcihciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
                         ULONG __unused uhcinewval = READREG16_LE(chc->hc_RegBase, uhciportreg);
 
-                        KPRINTF(10, ("EHCI: UHCI Port status before handover=%04lx\n", uhcinewval));
+                        pciusbDebug("EHCI", "UHCI Port status before handover=%04lx\n", uhcinewval);
                         break;
                     }
 
@@ -1710,21 +1856,21 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                         UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
                         ULONG __unused ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
 
-                        KPRINTF(10, ("EHCI: OHCI Port status before handover=%08lx\n", ohcioldval));
-                        KPRINTF(10, ("EHCI: OHCI Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok"));
+                        pciusbDebug("EHCI", "OHCI Port status before handover=%08lx\n", ohcioldval);
+                        pciusbDebug("EHCI", "OHCI Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok");
                         WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER);
                         uhwDelayMS(10, unit);
-                        KPRINTF(10, ("EHCI: OHCI Port status after handover=%08lx\n", READREG32_LE(chc->hc_RegBase, ohciportreg)));
+                        pciusbDebug("EHCI", "OHCI Port status after handover=%08lx\n", READREG32_LE(chc->hc_RegBase, ohciportreg));
                         break;
                     }
                 }
                 newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
-                KPRINTF(10, ("EHCI: Port status (reread)=%08lx\n", newval));
+                pciusbDebug("EHCI", "Port status (reread)=%08lx\n", newval);
                 newval |= EHPF_NOTPORTOWNER;
                 unit->hu_PortOwner[idx - 1] = HCITYPE_UHCI;
                 WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                 uhwDelayMS(90, unit);
-                KPRINTF(10, ("EHCI: Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND)));
+                pciusbDebug("EHCI", "Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND));
                 // enable companion controller port
                 switch(chc->hc_HCIType)
                 {
@@ -1735,22 +1881,22 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                         ULONG uhcinewval;
 
                         uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
-                        KPRINTF(10, ("EHCI: UHCI Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
+                        pciusbDebug("EHCI", "UHCI Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "BAD!" : "GOOD");
                         if((uhcinewval & UHPF_PORTRESET))//|| (newval & EHPF_LINESTATUS_DM))
                         {
                             // this is an ugly blocking workaround to the inability of UHCI to clear reset automatically
-                            KPRINTF(20, ("EHCI: Uhm, UHCI reset was bad!\n"));
+                            pciusbWarn("EHCI", "Uhm, UHCI reset was bad!\n");
                             uhcinewval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                             uhcinewval |= UHPF_PORTRESET;
                             WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                             uhwDelayMS(50, unit);
                             uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
-                            KPRINTF(10, ("EHCI: UHCI Re-Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
+                            pciusbDebug("EHCI", "UHCI Re-Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!");
                             uhcinewval &= ~UHPF_PORTRESET;
                             WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                             uhwDelayMicro(50, unit);
                             uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
-                            KPRINTF(10, ("EHCI: UHCI Re-Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD"));
+                            pciusbDebug("EHCI", "UHCI Re-Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD");
                         }
                         uhcinewval &= ~UHPF_PORTRESET;
                         uhcinewval |= UHPF_PORTENABLE;
@@ -1765,9 +1911,9 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                         } while(--cnt && (!(uhcinewval & UHPF_PORTENABLE)));
                         if(cnt)
                         {
-                            KPRINTF(10, ("EHCI: UHCI Enabled after %ld ticks\n", 100-cnt));
+                            pciusbDebug("EHCI", "UHCI Enabled after %ld ticks\n", 100-cnt);
                         } else {
-                            KPRINTF(20, ("EHCI: UHCI Port refuses to be enabled!\n"));
+                            pciusbWarn("EHCI", "UHCI Port refuses to be enabled!\n");
                             *retval = UHIOERR_HOSTERROR;
                             return TRUE;
                         }
@@ -1779,7 +1925,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                         UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
                         UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
                         ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
-                        KPRINTF(10, ("EHCI: OHCI Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok"));
+                        pciusbDebug("EHCI", "OHCI Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok");
                         // make sure we have at least 50ms of reset time here, as required for a root hub port
                         WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
                         uhwDelayMS(10, unit);
@@ -1792,14 +1938,14 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                         WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
                         uhwDelayMS(15, unit);
                         ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
-                        KPRINTF(10, ("EHCI: OHCI Reset release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
-                                                                     ohcioldval & OHPF_PORTENABLE ? "enabled" : "not enabled"));
+                        pciusbDebug("EHCI", "OHCI Reset release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                                                     ohcioldval & OHPF_PORTENABLE ? "enabled" : "not enabled");
                         if(ohcioldval & OHPF_PORTRESET)
                         {
                             uhwDelayMS(40, unit);
                             ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
-                            KPRINTF(10, ("EHCI: OHCI Reset 2nd release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
-                                                                             ohcioldval & OHPF_PORTENABLE ? "enabled" : "still not enabled"));
+                            pciusbDebug("EHCI", "OHCI Reset 2nd release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                                                             ohcioldval & OHPF_PORTENABLE ? "enabled" : "still not enabled");
                         }
                         break;
                     }
@@ -1821,9 +1967,9 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                 } while(--cnt && (!(newval & EHPF_PORTENABLE)));
                 if(cnt)
                 {
-                    KPRINTF(10, ("EHCI: Enabled after %ld ticks\n", 100-cnt));
+                    pciusbDebug("EHCI", "Enabled after %ld ticks\n", 100-cnt);
                 } else {
-                    KPRINTF(20, ("EHCI: Port refuses to be enabled!\n"));
+                    pciusbWarn("EHCI", "Port refuses to be enabled!\n");
                     *retval = UHIOERR_HOSTERROR;
                     return TRUE;
                 }
@@ -1834,7 +1980,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             break;
 
         case UFS_PORT_POWER:
-            KPRINTF(10, ("EHCI: Powering Port\n"));
+            pciusbDebug("EHCI", "Powering Port\n");
             newval |= EHPF_PORTPOWER;
             cmdgood = TRUE;
             break;
@@ -1848,7 +1994,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     }
     if(cmdgood)
     {
-        KPRINTF(5, ("EHCI: Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+        pciusbDebug("EHCI", "Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval);
         WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
     }
     return cmdgood;
@@ -1861,12 +2007,12 @@ BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     ULONG newval = oldval;
     BOOL cmdgood = FALSE;
 
-    KPRINTF(5, ("EHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval));
+    pciusbDebug("EHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
     switch(val)
     {
         case UFS_PORT_ENABLE:
-            KPRINTF(10, ("EHCI: Disabling Port (%s)\n", newval & EHPF_PORTENABLE ? "ok" : "already"));
+            pciusbDebug("EHCI", "Disabling Port (%s)\n", newval & EHPF_PORTENABLE ? "ok" : "already");
             newval &= ~EHPF_PORTENABLE;
             cmdgood = TRUE;
             // disable enumeration
@@ -1879,8 +2025,8 @@ BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
             break;
 
         case UFS_PORT_POWER: // ignore for UHCI, there's no power control here
-            KPRINTF(10, ("EHCI: Disabling Power (%s)\n", newval & EHPF_PORTPOWER ? "ok" : "already"));
-            KPRINTF(10, ("EHCI: Disabling Port (%s)\n", newval & EHPF_PORTENABLE ? "ok" : "already"));
+            pciusbDebug("EHCI", "Disabling Power (%s)\n", newval & EHPF_PORTPOWER ? "ok" : "already");
+            pciusbDebug("EHCI", "Disabling Port (%s)\n", newval & EHPF_PORTENABLE ? "ok" : "already");
             newval &= ~(EHPF_PORTENABLE|EHPF_PORTPOWER);
             cmdgood = TRUE;
             break;
@@ -1915,7 +2061,7 @@ BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     }
     if(cmdgood)
     {
-        KPRINTF(5, ("EHCI: Port %ld CLEAR_FEATURE %08lx->%08lx\n", idx, oldval, newval));
+        pciusbDebug("EHCI", "Port %ld CLEAR_FEATURE %08lx->%08lx\n", idx, oldval, newval);
         WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
         if(hc->hc_PortChangeMap[hciport])
         {
@@ -1932,7 +2078,7 @@ BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
 
-    KPRINTF(5, ("EHCI: %s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval));
+    pciusbDebug("EHCI", "%s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval);
 
     *mptr = 0;
     if(oldval & EHPF_PORTCONNECTED) *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
@@ -1940,7 +2086,7 @@ BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     if((oldval & (EHPF_LINESTATUS_DM|EHPF_PORTCONNECTED|EHPF_PORTENABLE)) ==
        (EHPF_LINESTATUS_DM|EHPF_PORTCONNECTED))
     {
-        KPRINTF(10, ("EHCI: Port %ld is LOWSPEED\n", idx));
+        pciusbDebug("EHCI", "Port %ld is LOWSPEED\n", idx);
         // we need to detect low speed devices prior to reset
         *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
     }
@@ -1950,7 +2096,7 @@ BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     if(oldval & EHPF_PORTPOWER) *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
     if(oldval & EHPM_PORTINDICATOR) *mptr |= AROS_WORD2LE(UPSF_PORT_INDICATOR);
 
-    KPRINTF(5, ("EHCI: Port %ld Status %08lx\n", idx, *mptr));
+    pciusbDebug("EHCI", "Port %ld Status %08lx\n", idx, *mptr);
 
     mptr++;
     if(oldval & EHPF_ENABLECHANGE)
@@ -1973,7 +2119,7 @@ BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
     WRITEREG32_LE(hc->hc_RegBase, portreg, oldval);
 
-    KPRINTF(5, ("EHCI: Port %ld Change %08lx\n", idx, *mptr));
+    pciusbDebug("EHCI", "Port %ld Change %08lx\n", idx, *mptr);
 
     return TRUE;
 }
