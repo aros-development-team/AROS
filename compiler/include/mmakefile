@@ -24,6 +24,7 @@ INCSUBDIRS :=	aros				\
 		hardware/cpu			\
 		hardware/efi			\
 		hardware/pic			\
+		hardware/usb			\
 		hidd				\
 		inline			        \
 		intuition			\
