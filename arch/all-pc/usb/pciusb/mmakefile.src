@@ -4,9 +4,9 @@ include $(SRCDIR)/config/aros.cfg
 ARCHFILES := pciusb_init
 PCIUSBDIR := rom/usb/pciusb
 
-USER_CPPFLAGS := -DAROS_USE_OOP \
-               -D__OOP_NOLIBBASE__ \
-               -D__UTILITY_NOLIBBASE__
+-include $(SRCDIR)/$(CURDIR)/make.opts
+-include $(SRCDIR)/$(PCIUSBDIR)/make.opts
+
 USER_LDFLAGS := -static
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(PCIUSBDIR)
 

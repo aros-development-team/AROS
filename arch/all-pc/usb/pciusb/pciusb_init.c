@@ -24,6 +24,22 @@ static int getArguments(struct PCIDevice *base)
 {
     APTR BootLoaderBase;
     struct Library *ACPICABase;
+#if defined(AROS_USE_LOGRES)
+#ifdef LogResBase
+#undef LogResBase
+#endif
+#ifdef LogResHandle
+#undef LogResHandle
+#endif
+    APTR LogResBase;
+#define LogHandle base->hd_LogRHandle
+    base->hd_LogResBase = OpenResource("log.resource");
+    if (base->hd_LogResBase)
+    {
+        LogResBase = base->hd_LogResBase;
+        base->hd_LogRHandle = logInitialise(&base->hd_Device.dd_Library.lib_Node);
+    }
+#endif
     if ((ACPICABase = OpenLibrary("acpica.library", 0))) {
         /*
          * Use ACPI IDs to identify known machines which need HDF_FORCEPOWER to work.
@@ -64,7 +80,7 @@ static int getArguments(struct PCIDevice *base)
                         base->hd_Flags |= HDF_FORCEPOWER;
                         continue;
                     }
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
                     if (strstr(CmdLine, "xhci"))
                     {
                         base->hd_Flags |= HDF_ENABLEXHCI;
@@ -76,12 +92,12 @@ static int getArguments(struct PCIDevice *base)
     }
     if (base->hd_Flags & HDF_FORCEPOWER)
     {
-        D(bug("[PCIUSB] %s: Forcing USB Power\n", __func__));
+        pciusbInfo("", "Forcing USB Power\n");
     }
-#if defined(TMPXHCICODE)
+#if defined(PCIUSB_ENABLEXHCI)
     if (base->hd_Flags & HDF_ENABLEXHCI)
     {
-        D(bug("[PCIUSB] %s: Enabling experimental XHCI code\n", __func__));
+        pciusbInfo("", "Enabling experimental XHCI code\n");
     }
 #endif
     return TRUE;
