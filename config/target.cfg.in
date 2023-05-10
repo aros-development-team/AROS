@@ -30,7 +30,8 @@ TARGET_LLVM_VER               := @target_llvm_version@
 # Bootloader to use on platforms that support it
 AROS_TARGET_BOOTLOADER        := @aros_target_bootloader@
 
-TARGET_UNITTESTS          := @aros_config_unittests@
+TARGET_USELOGRES              := @with_log_resource@
+TARGET_UNITTESTS              := @aros_config_unittests@
 
 PCI_HIDD_TARGET               := @pci_hidd_target@
 CROSSTOOLS_TARGET             := @crosstools_target@

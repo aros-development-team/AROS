@@ -906,8 +906,10 @@ case "$aros_toolchain" in
             toolchain_ranlib="ranlib"
             toolchain_nm="nm"
         else
+            gcc_ltoplugin="$""(CROSSTOOLSDIR)/libexec/gcc/$""(AROS_TARGET_CPU)-aros/$""(TARGET_GCC_VER)/liblto_plugin.so"
             toolchain_ld="ld.bfd"
             toolchain_ar="gcc-ar"
+            aros_target_ar_flags="--plugin $gcc_ltoplugin $aros_target_ar_flags"
             toolchain_ranlib="gcc-ranlib"
             toolchain_nm="gcc-nm"
         fi
@@ -1014,6 +1016,9 @@ if test "$aros_symbols_debug" = "1"; then
 else
     aros_symbols_debug=""
 fi
+
+# Pre-check if the logresource option was passed...
+AC_ARG_WITH(logresource,AS_HELP_STRING([--with-logresource=...],[Specify code should use log.resource to output debug, etc]),[with_log_resource="$withval"],[with_log_resource="no"])
 
 # These are the flags to pass when compiling debugged programs
 aros_debug_cppflags="$aros_messages_debug"
@@ -1437,6 +1442,7 @@ case "$target_os" in
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                with_log_resource="yes"
                 aros_target_cpu="x86_64"
                 aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
@@ -2020,7 +2026,7 @@ case "$target_os" in
                 aros_nominal_width=160
                 aros_nominal_height=160
                 aros_nominal_depth=1
-                aros_target_ar_flags="cru"
+                aros_target_ar_flags="$aros_target_ar_flags""u"
                 aros_c_libs="$aros_c_libs -lgcc1"
                 aros_shared_default=no
                 aros_shared_cflags="-fpic"
@@ -2055,7 +2061,7 @@ case "$target_os" in
                 aros_nominal_width=512
                 aros_nominal_height=384
                 aros_nominal_depth=8
-                aros_target_ar_flags="cru"
+                aros_target_ar_flags="$aros_target_ar_flags""u"
                 aros_c_libs="$aros_c_libs -lgcc1"
                 aros_shared_default=no
                 aros_shared_cflags="-fpic"
@@ -3082,6 +3088,16 @@ if test "$palm_debug_hack" = "yes" ; then
 fi
 AC_MSG_RESULT($palm_debug_hack)
 
+dnl See if debug/logging should be done using log.resource
+AC_MSG_CHECKING([use log.resource])
+if test "$with_log_resource" != "no"; then
+    with_log_resource="yes"
+fi
+if test "$with_log_resource" == "yes"; then
+    aros_config_cppflags="$aros_config_cppflags -DAROS_USE_LOGRES"
+fi
+AC_MSG_RESULT($with_log_resource)
+
 dnl See if dev wants the usb3.0 code
 AC_MSG_CHECKING([whether usb3.0 code is enabled])
 AC_ARG_ENABLE(usb30_code,AS_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
@@ -3578,6 +3594,8 @@ AC_SUBST(pci_hidd_target)
 AC_SUBST(aros_nominal_width)
 AC_SUBST(aros_nominal_height)
 AC_SUBST(aros_nominal_depth)
+
+AC_SUBST(with_log_resource)
 
 # Native version related
 AC_SUBST(aros_serial_debug)

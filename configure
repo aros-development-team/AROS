@@ -690,6 +690,7 @@ aros_enable_mmu
 ENABLE_EXECSMP
 PLATFORM_EXECSMP
 aros_serial_debug
+with_log_resource
 aros_nominal_depth
 aros_nominal_height
 aros_nominal_width
@@ -968,6 +969,7 @@ enable_lto
 enable_coverage
 enable_build_type
 enable_debug
+with_logresource
 enable_distcc
 enable_ccache
 with_kernel_gcc_version
@@ -1722,6 +1724,8 @@ Optional Packages:
                           Use specified c++ compiler building AROS
   --with-toolchain=family Which toolchain family to crosscompile with
                           (defaults to gnu)
+  --with-logresource=...  Specify code should use log.resource to output
+                          debug, etc
   --with-kernel-gcc-version=VERSION
                           Use gcc-VERSION for building bootstrap
   --with-optimization=FLAGS
@@ -9079,8 +9083,10 @@ case "$aros_toolchain" in
             toolchain_ranlib="ranlib"
             toolchain_nm="nm"
         else
+            gcc_ltoplugin="$""(CROSSTOOLSDIR)/libexec/gcc/$""(AROS_TARGET_CPU)-aros/$""(TARGET_GCC_VER)/liblto_plugin.so"
             toolchain_ld="ld.bfd"
             toolchain_ar="gcc-ar"
+            aros_target_ar_flags="--plugin $gcc_ltoplugin $aros_target_ar_flags"
             toolchain_ranlib="gcc-ranlib"
             toolchain_nm="gcc-nm"
         fi
@@ -9205,6 +9211,17 @@ if test "$aros_symbols_debug" = "1"; then
 else
     aros_symbols_debug=""
 fi
+
+# Pre-check if the logresource option was passed...
+
+# Check whether --with-logresource was given.
+if test ${with_logresource+y}
+then :
+  withval=$with_logresource; with_log_resource="$withval"
+else $as_nop
+  with_log_resource="no"
+fi
+
 
 # These are the flags to pass when compiling debugged programs
 aros_debug_cppflags="$aros_messages_debug"
@@ -9929,6 +9946,7 @@ case "$target_os" in
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                with_log_resource="yes"
                 aros_target_cpu="x86_64"
                 aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
@@ -10624,7 +10642,7 @@ fi
                 aros_nominal_width=160
                 aros_nominal_height=160
                 aros_nominal_depth=1
-                aros_target_ar_flags="cru"
+                aros_target_ar_flags="$aros_target_ar_flags""u"
                 aros_c_libs="$aros_c_libs -lgcc1"
                 aros_shared_default=no
                 aros_shared_cflags="-fpic"
@@ -10659,7 +10677,7 @@ fi
                 aros_nominal_width=512
                 aros_nominal_height=384
                 aros_nominal_depth=8
-                aros_target_ar_flags="cru"
+                aros_target_ar_flags="$aros_target_ar_flags""u"
                 aros_c_libs="$aros_c_libs -lgcc1"
                 aros_shared_default=no
                 aros_shared_cflags="-fpic"
@@ -16813,6 +16831,17 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $palm_debug_hack" >&5
 printf "%s\n" "$palm_debug_hack" >&6; }
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking use log.resource" >&5
+printf %s "checking use log.resource... " >&6; }
+if test "$with_log_resource" != "no"; then
+    with_log_resource="yes"
+fi
+if test "$with_log_resource" == "yes"; then
+    aros_config_cppflags="$aros_config_cppflags -DAROS_USE_LOGRES"
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $with_log_resource" >&5
+printf "%s\n" "$with_log_resource" >&6; }
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether usb3.0 code is enabled" >&5
 printf %s "checking whether usb3.0 code is enabled... " >&6; }
 # Check whether --enable-usb30_code was given.
@@ -17864,6 +17893,8 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Target Related #########################
+
+
 
 
 
