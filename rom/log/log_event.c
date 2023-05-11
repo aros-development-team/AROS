@@ -216,10 +216,6 @@ AROS_LH7(struct logEntry *, logAddEntryA,
             }
             FreeVec(leP);
         }
-        else
-        {
-            kprintf("[Log] Failed to allocate pool storage for entry\n");
-        }
     }
 
     return(NULL);
