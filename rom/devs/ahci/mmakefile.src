@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-ahci : kernel-timer-includes
+#MM kernel-ahci : kernel-timer-includes kernel-$(TARGET_USELOGRES)-log-includes
 
 INCLUDE_FILES := $(call WILDCARD, include/devices/*.h)
 %copy_includes path=devices dir=include/devices

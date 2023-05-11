@@ -21,6 +21,8 @@ FILES := adminspaces \
 USER_CPPFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS := -static
 
+#MM kernel-fs-sfs : includes kernel-$(TARGET_USELOGRES)-log-includes
+
 %build_module mmake=kernel-fs-sfs \
     modname=sfs modtype=handler \
     files="$(FILES)" uselibs=debug

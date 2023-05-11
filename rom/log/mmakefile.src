@@ -8,6 +8,7 @@ USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 #USER_CPPFLAGS += -DDEBUG=1
 
 #MM- kernel-log : linklibs
+#MM- kernel-yes-log-includes : kernel-log-includes
 
 INCLUDE_FILES := log.h
 %copy_includes path=resources

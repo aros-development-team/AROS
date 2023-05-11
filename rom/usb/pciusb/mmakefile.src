@@ -25,7 +25,7 @@ WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware
 kernel-usb-pciusb-directories ::
     %mkdirs_q $(WBUSBHARDWAREDIRS)
 
-#MM- kernel-usb-pciusb : kernel-usb-pciusb-directories 
+#MM kernel-usb-pciusb : kernel-usb-pciusb-directories  kernel-$(TARGET_USELOGRES)-log-includes
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(FAMILY)/usb/pciusb/make.opts
