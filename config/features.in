@@ -567,6 +567,14 @@ if test "x-$aros_ms_bitfields" = "x-yes" ; then
     aros_cflags_no_ms_bitfields=-mno-ms-bitfields
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -mgeneral-regs-only])
+CFLAGS=-mgeneral-regs-only
+AC_TRY_COMPILE(,, aros_general_regs_only="yes", aros_general_regs_only="no")
+AC_MSG_RESULT($aros_general_regs_only)
+if test "x-$aros_general_regs_only" = "x-yes" ; then
+    aros_cflags_general_regs_only=-mgeneral-regs-only
+fi
+
 CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
@@ -1528,6 +1536,7 @@ AC_SUBST(aros_cflags_iquote_end)
 #
 AC_SUBST(aros_cflags_red_zone)
 AC_SUBST(aros_cflags_no_red_zone)
+AC_SUBST(aros_cflags_general_regs_only)
 AC_SUBST(aros_cflags_ms_bitfields)
 AC_SUBST(aros_cflags_no_ms_bitfields)
 

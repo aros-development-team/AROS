@@ -135,6 +135,8 @@ CFLAGS_IQUOTE_END                       := @aros_cflags_iquote_end@
 CFLAGS_RED_ZONE                         := @aros_cflags_red_zone@
 CFLAGS_NO_RED_ZONE                      := @aros_cflags_no_red_zone@
 
+CFLAGS_GENERAL_REGS_ONLY                := @aros_cflags_general_regs_only@
+
 CFLAGS_MS_BITFIELDS                     := @aros_cflags_ms_bitfields@
 CFLAGS_NO_MS_BITFIELDS                  := @aros_cflags_no_ms_bitfields@
 
