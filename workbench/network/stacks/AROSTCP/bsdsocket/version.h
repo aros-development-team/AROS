@@ -13,6 +13,14 @@
 #ifdef __x86_64__
 #define CPU_TYPE "amd64"
 #endif
+#if defined(__riscv64)
+#define CPU_TYPE "RISC-V 64bit"
+#elif defined(__riscv)
+#define CPU_TYPE "RISC-V"
+#endif
+
+#endif
+
 #ifndef CPU_TYPE
 #error Unknown CPU, please define
 #endif
