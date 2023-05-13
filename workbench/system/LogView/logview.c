@@ -503,6 +503,7 @@ int main(int argc, char *argv[])
 {
     if(!(LogResBase = OpenResource("log.resource")))
     {
+        MUI_RequestA(NULL, NULL, 0, "Error", "OK", "Can't open log.resource", NULL);
         return 1;
     }
 
@@ -513,12 +514,14 @@ int main(int argc, char *argv[])
         stackfree = ((IPTR) thistask->tc_SPUpper) - ((IPTR) thistask->tc_SPLower);
         if(stackfree < 16000)
         {
+            MUI_RequestA(NULL, NULL, 0, "Error", "OK", "Too few stack", NULL);
             return 1;
         }
     }
 
     if(!(MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
     {
+        MUI_RequestA(NULL, NULL, 0, "Error", "OK", "Can't open muimaster.library", NULL);
         return 1;
     }
 
