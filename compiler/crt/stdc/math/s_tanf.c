@@ -18,6 +18,8 @@
 static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanf.c,v 1.17 2008/02/25 22:19:17 bde Exp $";
 #endif
 
+#include <float.h>
+
 #include "math.h"
 #define INLINE_KERNEL_TANDF
 #define INLINE_REM_PIO2F

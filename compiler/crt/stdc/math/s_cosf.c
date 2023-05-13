@@ -18,6 +18,7 @@
 static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cosf.c,v 1.18 2008/02/25 22:19:17 bde Exp $";
 #endif
 
+#include <float.h>
 #include "math.h"
 #define INLINE_KERNEL_COSDF
 #define INLINE_KERNEL_SINDF

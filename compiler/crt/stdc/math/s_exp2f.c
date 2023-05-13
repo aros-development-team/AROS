@@ -28,6 +28,7 @@
 static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_exp2f.c,v 1.9 2008/02/22 02:27:34 das Exp $";
 #endif
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 

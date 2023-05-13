@@ -11,6 +11,8 @@
 
 #include <aros/debug.h>
 
+#include <float.h>
+
 #include "math.h"
 #define INLINE_REM_PIO2F
 #include "math_private.h"

@@ -31,7 +31,7 @@
 #include "fpmath.h"
 #include "math_private.h"
 
-OLM_DLLEXPORT long double
+long double
 nanl(const char *s)
 {
 	union {

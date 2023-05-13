@@ -44,7 +44,7 @@
  *      only sinhl(0)=0 is exact for finite x.
  */
 
-#include <openlibm_math.h>
+#include "math.h"
 
 #include "math_private.h"
 

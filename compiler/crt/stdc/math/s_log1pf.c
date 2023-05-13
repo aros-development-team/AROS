@@ -17,6 +17,8 @@
 static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_log1pf.c,v 1.12 2008/03/29 16:37:59 das Exp $";
 #endif
 
+#include <float.h>
+
 #include "math.h"
 #include "math_private.h"
 
