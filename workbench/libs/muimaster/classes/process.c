@@ -16,7 +16,7 @@
 #include "support_classes.h"
 #include "process_private.h"
 
-#define MYDEBUG 1
+//#define MYDEBUG 1
 #include "debug.h"
 
 #define DELAYTICKS (10)
