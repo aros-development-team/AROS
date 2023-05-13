@@ -626,6 +626,7 @@ static int relocate
 
             case R_ARM_NONE:
                 break;
+            #elif defined(__riscv)
 
             #else
             #    error Your architecture is not supported
