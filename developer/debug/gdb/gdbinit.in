@@ -12,11 +12,11 @@ define log_to_file
   set logging file $arg0
   set logging redirect on
   set logging overwrite $arg1
-  set logging on
+  set logging enabled on
 end
 
 define end_log
-  set logging off
+  set logging enabled off
 end
 
 # Define $symbol = (type)addr if it exists,  undefined if not
