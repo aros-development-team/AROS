@@ -82,6 +82,9 @@ else
 # endif
 GCC_COMMON_OPTS += --with-dwarf2
 endif
+ifneq (,$(findstring riscv,$(AROS_TARGET_CPU)))
+GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU) --with-abi=$(GCC_DEFAULT_MODE)
+endif
 
 GCC_COMMON_OPTS += --with-sysroot=$(AROS_DEVELOPER)
 GCC_COMMON_OPTS += --with-native-system-header-dir=/include
@@ -147,6 +150,8 @@ gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
 #MM- tools-crosstools-gnu-arm      : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-gnu-armeb    : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-gnu-aarch64  : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-riscv    : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-riscv64  : tools-crosstools-gcc crosstools-gcc
 
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
 #MM                        tools-crosstools-gmp \
