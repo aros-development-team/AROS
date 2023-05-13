@@ -1,0 +1,94 @@
+# $Id $
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Common RISC-V rule(s) ..
+#
+
+#MM- kernel-package-native-riscv-quick: \
+#MM kernel-dos-quick \
+#MM kernel-bootloader-quick \
+#MM kernel-dosboot-quick \
+#MM kernel-oop-quick \
+#MM kernel-utility-quick \
+#MM kernel-debug-quick \
+#MM kernel-expansion-quick \
+#MM kernel-openfirmware-quick \
+#MM kernel-graphics-quick \
+#MM kernel-cgxbootpic-quick \
+#MM kernel-intuition-quick \
+#MM kernel-partition-quick \
+#MM kernel-layers-quick \
+#MM kernel-timer-quick \
+#MM kernel-lddemon-quick \
+#MM kernel-hidd-quick \
+#MM kernel-aros-quick \
+#MM kernel-misc-quick \
+#MM kernel-keymap-quick \
+#MM kernel-input-quick \
+#MM kernel-gameport-quick \
+#MM kernel-keyboard-quick \
+#MM kernel-console-quick \
+#MM kernel-shell-quick \
+#MM kernel-shellcommands-quick \
+#MM kernel-filesystem-quick \
+#MM kernel-fs-con-quick \
+#MM kernel-fs-afs-quick \
+#MM kernel-fs-cdvdfs-quick \
+#MM kernel-fs-fat-quick \
+#MM kernel-fs-sfs-quick \
+#MM kernel-fs-ram-quick \
+#MM kernel-processor-quick \
+#MM hidd-i2c-quick \
+#MM kernel-hidd-gfx-quick \
+#MM kernel-hidd-kbd-quick \
+#MM kernel-hidd-mouse-quick \
+#MM kernel-usb-nopci-quick \
+#MM kernel-econsole-quick
+
+#MM- kernel-package-native-riscv: \
+#MM kernel-dos \
+#MM kernel-bootloader \
+#MM kernel-dosboot \
+#MM kernel-oop \
+#MM kernel-utility \
+#MM kernel-debug \
+#MM kernel-expansion \
+#MM kernel-openfirmware \
+#MM kernel-graphics \
+#MM kernel-cgxbootpic \
+#MM kernel-intuition \
+#MM kernel-partition \
+#MM kernel-layers \
+#MM kernel-timer \
+#MM kernel-lddemon \
+#MM kernel-hidd \
+#MM kernel-aros \
+#MM kernel-misc \
+#MM kernel-keymap \
+#MM kernel-input \
+#MM kernel-gameport \
+#MM kernel-keyboard \
+#MM kernel-console \
+#MM kernel-shell \
+#MM kernel-shellcommands \
+#MM kernel-filesystem \
+#MM kernel-fs-con \
+#MM kernel-fs-afs \
+#MM kernel-fs-cdvdfs \
+#MM kernel-fs-fat \
+#MM kernel-fs-sfs \
+#MM kernel-fs-ram \
+#MM kernel-processor \
+#MM hidd-i2c \
+#MM kernel-hidd-gfx \
+#MM kernel-hidd-kbd \
+#MM kernel-hidd-mouse \
+#MM kernel-usb-nopci \
+#MM kernel-econsole
+
+#MM kernel-package-native-riscv-missing: \
+#MM kernel-battclock
+
+%common
