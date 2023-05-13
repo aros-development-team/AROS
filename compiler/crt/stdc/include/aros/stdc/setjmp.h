@@ -2,7 +2,7 @@
 #define _STDC_SETJMP_H_
 
 /*
-    Copyright Â© 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file setjmp.h
@@ -11,6 +11,7 @@
 #include <aros/system.h>
 
 #ifdef __mc68000__
+// A0-A7/D0-D7 /
 #   define _JMPLEN 15
 #elif __i386__
 #   define _JMPLEN 7
@@ -20,6 +21,10 @@
 #   define _JMPLEN 58
 #elif __arm__
 #   define _JMPLEN 63
+#elif __riscv64
+#   define _JMPLEN 12
+#elif __riscv
+#   define _JMPLEN 12
 #endif
 
 typedef struct __jmp_buf

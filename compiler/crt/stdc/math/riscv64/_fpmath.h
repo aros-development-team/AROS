@@ -1,6 +1,6 @@
 /*-
- * Copyright (c) 2003 Mike Barcroft <mike@FreeBSD.org>
- * Copyright (c) 2002 David Schultz <das@FreeBSD.ORG>
+ * Copyright (c) 2002, 2003 David Schultz <das@FreeBSD.ORG>
+ * Copyright (c) 2014 The FreeBSD Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,62 +24,34 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD: src/lib/libc/include/fpmath.h,v 1.4 2008/12/23 22:20:59 marcel Exp $
+ * $FreeBSD: head/lib/libc/riscv/_fpmath.h 362788 2020-06-29 19:30:35Z mhorne $
  */
-#ifndef _FPMATH_H_
-#define _FPMATH_H_
 
-#include <aros/cpu.h>
-
-#if defined __x86_64__
-#   include "x86_64/_fpmath.h"
-#elif defined __i386__
-#   include "i386/_fpmath.h"
-#elif defined __mc68000__
-#   include "m68k/_fpmath.h"
-#elif defined __powerpc__
-#   include "ppc/_fpmath.h"
-#elif defined __arm__
-#   include "arm/_fpmath.h"
-#elif defined(__riscv)
-#   include "riscv/_fpmath.h"
-#else
-#   error unsupported CPU type
-#endif
-
-union IEEEf2bits {
-	float	f;
+union IEEEl2bits {
+	long double	e;
 	struct {
-#if !AROS_BIG_ENDIAN
-		unsigned int	man	:23;
-		unsigned int	exp	:8;
+		unsigned long	manl	:64;
+		unsigned long	manh	:48;
+		unsigned int	exp	:15;
 		unsigned int	sign	:1;
-#else /* AROS_BIG_ENDIAN */
-		unsigned int	sign	:1;
-		unsigned int	exp	:8;
-		unsigned int	man	:23;
-#endif
 	} bits;
+	struct {
+		unsigned long	manl	:64;
+		unsigned long	manh	:48;
+		unsigned int	expsign	:16;
+	} xbits;
 };
 
-#define	DBL_MANH_SIZE	20
-#define	DBL_MANL_SIZE	32
+#define	LDBL_NBIT	0
+#define	LDBL_IMPLICIT_NBIT
+#define	mask_nbit_l(u)	((void)0)
 
-union IEEEd2bits {
-	double	d;
-	struct {
-#if !AROS_BIG_ENDIAN
-		unsigned int	manl	:32;
-		unsigned int	manh	:20;
-		unsigned int	exp	:11;
-		unsigned int	sign	:1;
-#else /* AROS_BIG_ENDIAN */
-		unsigned int	sign	:1;
-		unsigned int	exp	:11;
-		unsigned int	manh	:20;
-		unsigned int	manl	:32;
-#endif
-	} bits;
-};
+#define	LDBL_MANH_SIZE	48
+#define	LDBL_MANL_SIZE	64
 
-#endif
+#define	LDBL_TO_ARRAY32(u, a) do {			\
+	(a)[0] = (uint32_t)(u).bits.manl;		\
+	(a)[1] = (uint32_t)((u).bits.manl >> 32);	\
+	(a)[2] = (uint32_t)(u).bits.manh;		\
+	(a)[3] = (uint32_t)((u).bits.manh >> 32);	\
+} while(0)

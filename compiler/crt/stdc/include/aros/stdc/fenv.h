@@ -13,6 +13,10 @@
 #   include <aros/ppc/fenv.h>
 #elif defined __arm__
 #   include <aros/arm/fenv.h>
+#elif defined __riscv64
+#   include <aros/riscv64/fenv.h>
+#elif defined __riscv
+#   include <aros/riscv/fenv.h>
 #elif defined __mc68000__
 #   include <aros/m68k/fenv.h>
 

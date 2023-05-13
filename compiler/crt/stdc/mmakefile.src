@@ -309,6 +309,9 @@ STDC_LONGDB128_MATH := \
     math/ld128/s_nanl \
     math/ld128/s_tanhl
 
+STDC_MATH_CFLAGS := -fno-math-errno
+STDC_MATH_CPPFLAGS := -DSECTIONCOMMENT=\"$(AROS_SECTION_COMMENT)\"
+
 #
 # Add 80bit long double support on x86, x64 and m68k
 #
@@ -320,9 +323,9 @@ STDC_SCABS_MATH += math/s_cabsl
 STDC_WCABS_MATH += math/w_cabsl
 else
 #
-# Add 128bit long double support for aarch64
+# Add 128bit long double support for aarch64 and riscv
 #
-ifneq ($(filter $(AROS_TARGET_CPU),aarch64),)
+ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv),)
 STDC_MATH += $(STDC_LONGDB_MATH)
 STDC_MATH += $(STDC_LONGDB128_MATH)
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld128
@@ -468,6 +471,7 @@ STDC := \
     vsscanf
 
 STDC_LINKLIB := \
+    __flt_rounds \
     __ctype_linklib \
     strcasestr
 
@@ -542,9 +546,11 @@ STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) \
     $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
 
-USER_CFLAGS := $(NOWARN_FLAGS) -noposixc $(CFLAGS_NO_BUILTIN)
+USER_CFLAGS := $(NOWARN_FLAGS) -noposixc $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN)
 USER_LDFLAGS := -nostdc -noposixc
 USER_CPPFLAGS := \
+        $(STDC_MATH_CPPFLAGS) \
+        -D__ISO_C_VISIBLE=2011 \
         -Dlint '-D__FBSDID(x)=' 
 #USER_CPPFLAGS += -DDEBUG=1
 
@@ -555,6 +561,8 @@ USER_CPPFLAGS := \
 
 STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
 USER_CPPFLAGS := \
+        $(STDC_MATH_CPPFLAGS) \
+        -D__ISO_C_VISIBLE=2011 \
         -Dlint '-D__FBSDID(x)=' \
         -DSTDC_IO
 #USER_CPPFLAGS += -DDEBUG=1
@@ -566,6 +574,7 @@ USER_CPPFLAGS := \
     uselibs="stdc_rel"
 
 STDC_MATH_STATIC := \
+    __flt_rounds \
     math/e_log \
     math/e_logf \
     math/e_log2 \
@@ -648,9 +657,11 @@ STDC_STATIC := \
     vsprintf \
     vsscanf
 
-USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN) $(CFLAGS_MERGE_CONSTANTS)
+USER_CFLAGS := $(NOWARN_FLAGS) $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN) $(CFLAGS_MERGE_CONSTANTS)
 USER_CPPFLAGS := \
+        $(STDC_MATH_CPPFLAGS) \
         -DSTDC_STATIC \
+        -D__ISO_C_VISIBLE=2011 \
         -Dlint
 #USER_CPPFLAGS += -DDEBUG=1
 
