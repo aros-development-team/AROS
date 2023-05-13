@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2023, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -23,6 +23,8 @@
 #define AROS_PRINTER_MAGIC   0xe12fff1e      /* bx lr */
 #elif defined(__ppc__)
 #define AROS_PRINTER_MAGIC   0x4e800020      /* blr */
+#elif defined(__riscv)
+#define AROS_PRINTER_MAGIC   0x8082          /* ret */
 #else
 #error AROS_PRINTER_MAGIC is not defined for your architecture
 #endif

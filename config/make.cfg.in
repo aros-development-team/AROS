@@ -1,21 +1,9 @@
-# Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+# Copyright © 1995-2023, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Static makefile rule file for AROS.
 
-ifneq ($(AROS_TARGET_VARIANT),)
-    AROS_TARGET_SUFFIX        =-$(AROS_TARGET_VARIANT)
-    ifeq ($(AROS_TARGET_ARCH),pc)
-        # 'pc' target has 'tiny' variant for boot floppy, which affects only GRUB options.
-        # It should not affect AROS_TARGET_PLATFORM
-        AROS_TARGET_PLATFORM  := $(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-    else
-        AROS_TARGET_PLATFORM  := $(AROS_TARGET_VARIANT)-$(AROS_TARGET_CPU)
-    endif
-else
-    AROS_TARGET_SUFFIX        =
-    AROS_TARGET_PLATFORM      := $(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-endif
+AROS_TARGET_SUFFIX        = @aros_target_suffix@
 
 # All files corresponding to a specific host go here.
 DIR_HOST                      := bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)

@@ -1251,6 +1251,9 @@ case "$target_cpu" in
         ;;
     *powerpc*)
         ;;
+    *riscv*)
+        riscv_isa_extra="ISA_RISCV_FLAGS                 = -march=$""(GCC_DEFAULT_CPU) -mabi=$""(GCC_DEFAULT_MODE)"
+        ;;
 esac
 
 # This is the target configuration switch.
@@ -1894,6 +1897,34 @@ case "$target_os" in
         esac
         ;;
 
+    native)
+        case "$aros_target_variant" in
+            *sifive_u*)
+                aros_flavour="standalone"
+                aros_target_arch="native"
+                aros_object_format="riscvelf_aros"
+                aros_isa_flags="$""(ISA_RISCV_FLAGS)"
+                aros_shared_default="no"
+                case "$target_cpu" in
+                    *riscv64*)
+                        PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                        aros_target_cpu="riscv64"
+                        gcc_default_cpu="rv64imafdc"
+                        gcc_default_mode="lp64"
+                        ;;
+                    *riscv*)
+                        aros_target_cpu="riscv"
+                        gcc_default_cpu="rv32imafdc"
+                        gcc_default_mode="ilp32"
+                        ;;
+                    *)
+                        AC_MSG_ERROR("Unsupported CPU '$target_cpu' for SiFive Unleashed")
+                        ;;
+                esac
+                ;;
+        esac
+        ;;
+
     stm32f7_discovery)
         aros_flavour="standalone"
         aros_target_arch="stm32f7_discovery"
@@ -2398,6 +2429,9 @@ case "$aros_target_cpu" in
     i386)
         aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
         aros_kernel_ldflags="$aros_kernel_ldflags -m32" 
+        ;;
+    riscv)
+        aros_isa_extra="$riscv_isa_extra$export_newline"
         ;;
 esac
 
@@ -3386,12 +3420,18 @@ if ! test "$gcc_default_cpu" = "" ; then
 fi
 
 if ! test "$gcc_default_fpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $gcc_default_fpu"
+    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $gcc_default_fpu$export_newline"
     export_firstextraline=""
 fi
 
 if ! test "$gcc_default_float_abi" = "" ; then
-    target_extra_cfg+="$export_newline""# ARM gcc default config$export_newline""GCC_DEFAULT_FLOAT_ABI         := $gcc_default_float_abi$export_newline""GCC_DEFAULT_MODE              := $gcc_default_mode$export_newline"
+    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $gcc_default_float_abi$export_newline"
+    export_firstextraline=""
+fi
+
+if ! test "$gcc_default_mode" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_MODE              := $gcc_default_mode$export_newline"
+    export_firstextraline=""
 fi
 
 if test "$use_libatomic" = "yes" ; then
@@ -3405,6 +3445,19 @@ dnl Configuration Output Section
 dnl --------------------------------------------------------------------
 
 aros_kernel_cflags="$aros_kernel_cflags $aros_kernel_export_cflags"
+
+if test "$aros_target_variant" = ""; then
+    aros_target_platform="$aros_target_arch-$aros_target_cpu"
+else
+    case "$target_os" in
+        pc)
+            aros_target_platform="$aros_target_arch-$aros_target_cpu"
+            ;;
+        *)
+            aros_target_platform="$aros_target_variant-$aros_target_cpu"
+            ;;
+    esac
+fi
 
 dnl strip trailing spaces ...
 CC=m4_normalize($CC)
@@ -3510,6 +3563,7 @@ AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_family)
 AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_cpu_mode)
+AC_SUBST(aros_target_platform)
 AC_SUBST(aros_target_variant)
 AC_SUBST(aros_target_suffix)
 AC_SUBST(aros_target_ar)

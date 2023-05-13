@@ -2,7 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- distfiles-mingw32-$(AROS_TARGET_CPU) : distfiles-system
-#MM- distfiles-quick-mingw32-$(AROS_TARGET_CPU) : distfiles-system
+#MM- distfiles-mingw32-$(AROS_TARGET_CPU)-quick : distfiles-system
 
 EXEDIR := $(AROSARCHDIR)
 

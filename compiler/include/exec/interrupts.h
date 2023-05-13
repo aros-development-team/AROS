@@ -2,7 +2,7 @@
 #define EXEC_INTERRUPTS_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt structures
@@ -17,7 +17,11 @@
 #endif
 
 /* CPU-dependent struct ExceptionContext */
-#if defined __x86_64__
+#if defined __aarch64__
+#include <aros/aarch64/cpucontext.h>
+#elif defined __arm__
+#include <aros/arm/cpucontext.h>
+#elif defined __x86_64__
 #include <aros/x86_64/cpucontext.h>
 #include <aros/irqtypes.h>
 #elif defined __i386__
@@ -27,10 +31,10 @@
 #include <aros/m68k/cpucontext.h>
 #elif defined __powerpc__
 #include <aros/ppc/cpucontext.h>
-#elif defined __aarch64__
-#include <aros/aarch64/cpucontext.h>
-#elif defined __arm__
-#include <aros/arm/cpucontext.h>
+#elif defined __riscv64
+#include <aros/riscv64/cpucontext.h>
+#elif defined __riscv
+#include <aros/riscv/cpucontext.h>
 #else
 #error unsupported CPU type
 #endif
@@ -124,20 +128,12 @@ struct SoftIntList
 #define AROS_INTH1(n, type, data)                  AROS_INTH4(n, type, data, __ufi_intmask, __ufi_custom, __ufi_code)
 #define AROS_INTH0(n)                              AROS_INTH4(n, APTR, data, __ufi_intmask, __ufi_custom, __ufi_code)
 
-#ifdef __mc68000
-/* Special hack for setting the 'Z' condition code upon exit
- * for m68k architectures.
- */
-#define AROS_INTFUNC_INIT inline ULONG _handler(void) {
-#define AROS_INTFUNC_EXIT }; register ULONG _res asm ("d0") = _handler();     \
-                             asm volatile ("tst.l %0\n" : : "r" (_res)); \
-                             return _res; /* gcc only generates movem/unlk/rts */   \
-                             AROS_USERFUNC_EXIT }
-#else  /* ! __mc68000 */
-/* Everybody else */
+#if !defined(AROS_INTFUNC_INIT)
 #define AROS_INTFUNC_INIT
+#endif
+#if !defined(AROS_INTFUNC_EXIT)
 #define AROS_INTFUNC_EXIT       AROS_USERFUNC_EXIT }
-#endif /* ! __mc68000 */
+#endif
 
 #endif /* __AROS__ */
 

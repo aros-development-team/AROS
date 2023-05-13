@@ -2,7 +2,7 @@
 #define DOS_ELF_H
 
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definition of ELF file structures.
@@ -50,11 +50,20 @@
 #define ET_REL          1
 #define ET_EXEC         2
 
+#define EM_M32          1
+#define EM_SPARC        2
 #define EM_386          3
 #define EM_68K          4
+#define EM_88K          5
+#define EM_486          6
+#define EM_860          7
+#define EM_MIPS         8
 #define EM_PPC          20
+#define EM_PPC64        21
 #define EM_ARM          40
 #define EM_X86_64       62      /* AMD x86-64 */
+#define EM_AARCH64	    183
+#define EM_RISCV        243
 
 #define R_386_NONE      0
 #define R_386_32        1
@@ -342,6 +351,7 @@ struct attrs_subsection
 #define AROS_ELF_REL     SHT_RELA
 #define relo             rela
 #else
+//consider using EM_486 if AROS is built for better than a 386
 #define AROS_ELF_MACHINE EM_386
 #define AROS_ELF_REL     SHT_REL
 #define relo             rel
@@ -357,10 +367,24 @@ struct attrs_subsection
 #define AROS_ELF_REL     SHT_RELA
 #define relo             rela
 #endif
-#ifdef __arm__
+#if defined(__aarch64__)
+#define AROS_ELF_MACHINE EM_AARCH64
+#define AROS_ELF_REL     SHT_RELA
+#define relo             rela
+#elif defined(__arm__)
 #define AROS_ELF_MACHINE EM_ARM
 #define AROS_ELF_REL     SHT_RELA
 #define relo             rela
 #endif
+#if defined(__riscv64)
+#define AROS_ELF_MACHINE EM_RISCV
+#define AROS_ELF_REL     SHT_RELA
+#define relo             rela
+#elif defined(__riscv)
+#define AROS_ELF_MACHINE EM_RISCV
+#define AROS_ELF_REL     SHT_RELA
+#define relo             rel
+#endif
+
 
 #endif
