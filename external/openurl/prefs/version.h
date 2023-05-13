@@ -68,8 +68,6 @@
   #define CPU "x86"
 #elif defined(__x86_64__)
   #define CPU "x86_64"
-#elif defined(__arm__)
-  #define CPU "ARM"
 #elif defined(__riscv64)
   #define CPU "RISC-V 64bit"
 #elif defined(__riscv)
