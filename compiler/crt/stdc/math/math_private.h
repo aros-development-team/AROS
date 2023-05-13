@@ -22,6 +22,7 @@
 #include <aros/system.h>
 #include <stdint.h>
 
+#include "fpmath.h"
 #include "bsdsrc/math_private_openbsd.h"
 
 //the following define is used to comment out gcc's incorrect section attributes
