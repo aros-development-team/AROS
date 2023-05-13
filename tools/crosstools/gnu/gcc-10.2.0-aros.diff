@@ -820,6 +820,68 @@ diff -ruN gcc-10.2.0/gcc/config/m68k/t-aros gcc-10.2.0.aros/gcc/config/m68k/t-ar
 @@ -0,0 +1,2 @@
 +# Custom multilibs for AROS
 +M68K_MLIB_CPU += && match(MLIB, "^68")
+diff -ruN gcc-10.2.0/gcc/config/riscv/aros.h gcc-10.2.0.aros/gcc/config/riscv/aros.h
+--- gcc-10.2.0/gcc/config/riscv/aros.h	1970-01-01 00:00:00.000000000 +0000
++++ gcc-10.2.0.aros/gcc/config/riscv/aros.h	2020-12-27 16:58:14.310000000 +0000
+@@ -0,0 +1,58 @@
++/* Configuration file for ARM AROS EABI targets.
++   Copyright (C) 2004, 2005, 2006, 2007, 2010
++   Free Software Foundation, Inc.
++   Contributed by Pavel Fedin
++   Based on linux-eabi.h and other AROS targets
++
++   This file is part of GCC.
++
++   GCC is free software; you can redistribute it and/or modify it
++   under the terms of the GNU General Public License as published
++   by the Free Software Foundation; either version 3, or (at your
++   option) any later version.
++
++   GCC is distributed in the hope that it will be useful, but WITHOUT
++   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
++   License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with GCC; see the file COPYING3.  If not see
++   <http://www.gnu.org/licenses/>.  */
++
++#undef  TARGET_OS_CPP_BUILTINS
++#define TARGET_OS_CPP_BUILTINS() 		\
++  do 						\
++    {						\
++	builtin_define_std ("AROS");		\
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
++	builtin_assert ("system=posix");	\
++	if (flag_pic)				\
++	  {					\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
++	  }					\
++    }						\
++  while (false)
++
++#undef SUBTARGET_CPP_SPEC
++#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc|noposixinc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
++
++#undef  SUBTARGET_EXTRA_LINK_SPEC
++#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
++
++/* Provide a LINK_SPEC appropriate for AROS.  */
++#undef  LINK_SPEC
++#define LINK_SPEC SUBTARGET_EXTRA_LINK_SPEC " -L %R/lib"
++
++/* Use own supplement to libgcc.  */
++#undef LIBGCC_SPEC
++#define LIBGCC_SPEC "-lgcc"
++
++#undef	STARTFILE_SPEC
++#define STARTFILE_SPEC \
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
++
++/* FIXME: AROS doesn't support dw2 unwinding yet.  */
++#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-10.2.0/gcc/config/rs6000/aros.h gcc-10.2.0.aros/gcc/config/rs6000/aros.h
 --- gcc-10.2.0/gcc/config/rs6000/aros.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-10.2.0.aros/gcc/config/rs6000/aros.h	2020-12-27 16:58:14.310000000 +0000
@@ -1137,7 +1199,19 @@ diff -ruN gcc-10.2.0/gcc/config.gcc gcc-10.2.0.aros/gcc/config.gcc
  m68k-*-elf* | fido-*-elf*)
  	case ${target} in
  	fido-*-elf*)
-@@ -2924,6 +2979,13 @@
+@@ -2428,6 +2483,11 @@
+ 	cxx_target_objs="${cxx_target_objs} microblaze-c.o"
+ 	tmake_file="${tmake_file} microblaze/t-microblaze"
+         ;;
++riscv*-*-aros*)
++	tm_file="${tm_file} ${aros_tm_file} dbxelf.h elfos.h aros.h"
++	tmake_file="${tmake_file} riscv/t-riscv"
++	xm_file="xm-aros.h"
++	;;
+ riscv*-*-linux*)
+ 	tm_file="elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} riscv/linux.h"
+ 	case "x${enable_multilib}" in
+@@ -2924,6 +2984,13 @@
  	extra_options="${extra_options} rs6000/sysv4.opt rs6000/linux64.opt"
  	tmake_file="${tmake_file} rs6000/t-fprules rs6000/t-rtems rs6000/t-ppccomm"
  	;;
@@ -1176,7 +1250,7 @@ diff -ruN gcc-10.2.0/gcc/config.host gcc-10.2.0.aros/gcc/config.host
      host_xmake_file=vms/x-vms
 diff -ruN gcc-10.2.0/gcc/cp/g++spec.c gcc-10.2.0.aros/gcc/cp/g++spec.c
 --- gcc-10.2.0/gcc/cp/g++spec.c	2020-07-23 06:35:17.524386534 +0000
-+++ gcc-10.2.0.aros/gcc/cp/g++spec.c	2023-04-11 17:53:05.676944260 +0000
++++ gcc-10.2.0.aros/gcc/cp/g++spec.c	2020-12-27 16:58:14.310000000 +0000
 @@ -54,12 +54,19 @@
  #ifndef LIBSTDCXX_STATIC
  #define LIBSTDCXX_STATIC NULL
