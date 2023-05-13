@@ -19,8 +19,6 @@
 #define CPU_TYPE "RISC-V"
 #endif
 
-#endif
-
 #ifndef CPU_TYPE
 #error Unknown CPU, please define
 #endif
