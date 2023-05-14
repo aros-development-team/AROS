@@ -310,7 +310,9 @@ STDC_LONGDB128_MATH := \
     math/ld128/s_tanhl
 
 STDC_MATH_CFLAGS := -fno-math-errno
+ifneq ($(AROS_SECTION_COMMENT),)
 STDC_MATH_CPPFLAGS := -DSECTIONCOMMENT=\"$(AROS_SECTION_COMMENT)\"
+endif
 
 #
 # Add 80bit long double support on x86, x64 and m68k
