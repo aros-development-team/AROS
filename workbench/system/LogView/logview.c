@@ -29,7 +29,7 @@ extern struct IntuitionBase *IntuitionBase;
 
 extern struct DosLibrary *DOSBase;
 extern struct Library *UtilityBase;
-extern struct Library *MUIMasterBase;
+struct Library *MUIMasterBase; // no extern to prevent auto-opening
 extern struct Library *IconBase;
 
 extern struct List     logList;
@@ -501,6 +501,12 @@ AROS_UFH3
 
 int main(int argc, char *argv[])
 {
+    if(!(MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
+    {
+        // we can't use MUI_RequestA here
+        return 1;
+    }
+
     if(!(LogResBase = OpenResource("log.resource")))
     {
         MUI_RequestA(NULL, NULL, 0, "Error", "OK", "Can't open log.resource", NULL);
@@ -517,12 +523,6 @@ int main(int argc, char *argv[])
             MUI_RequestA(NULL, NULL, 0, "Error", "OK", "Too few stack", NULL);
             return 1;
         }
-    }
-
-    if(!(MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
-    {
-        MUI_RequestA(NULL, NULL, 0, "Error", "OK", "Can't open muimaster.library", NULL);
-        return 1;
     }
 
     NewList(&logList);
