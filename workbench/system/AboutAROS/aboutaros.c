@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
     This file is part of the About program, which is distributed under
     the terms of version 2 of the GNU General Public License.
     
@@ -233,7 +233,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         sprintf(str_abi, "ABI_V%d", (int)abiversion);
     }
     else
-        str_abi = "ABI_WIP";
+        str_abi = "ABI_V1";
 
 #if defined(BUILDCPU)
     str_buildcpu = AllocPooled(pool, strlen(_(MSG_BUILD_CPU)) + strlen(str_aroscpu) + 1);
