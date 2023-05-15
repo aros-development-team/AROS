@@ -11,14 +11,22 @@
 # In contrast to gimmearos.sh this script creates the toolchain
 # in external directories.
 
-# $VER: gimmearos-ext.sh 1.16 (18.01.2020)
+# $VER: gimmearos-ext.sh 1.17 (15.05.2023)
 
 curdir="`pwd`"
 srcdir="aros-src"
 portsdir="$HOME/aros-ports-src"
 tooldir="$HOME/aros-toolchain"
 makeopts="-j3 -s"
-configopts="--enable-ccache --with-portssources=$portsdir"
+
+# some generic configure options
+configopts="--with-portssources=$portsdir"
+configopts="$configopts --enable-ccache=yes"
+configopts="$configopts --with-paranoia=yes"
+configopts="$configopts --with-gcc-version=10.2.0"
+#configopts="$configopts --with-logresource"
+#configopts="$configopts --enable-unit-tests=yes"
+ 
 
 install_pkg()
 {
