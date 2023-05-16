@@ -2195,7 +2195,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 #M%(build_abi)- %(mmake) : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #M%(build_abi) %(mmake)-linklib : %(mmake)-includes includes-%(uselibs)
 #M%(build_abi)- %(mmake)-quick : %(mmake)-includes-quick
-#M%(build_abi) %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
+#M%(build_abi) %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs %(mmake)-set-archincludes \
 #M%(build_abi)     includes-generate-deps %(mmake)-fd
 #M%(build_abi) %(mmake)-includes-quick
 #M%(build_abi) %(mmake)-includes-dirs
@@ -2210,6 +2210,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 #%(build_library)%(build_abi) %(mmake)-kobj-quick : %(mmake)-includes-quick
 
 %gen_archspecificrules mainmmake=%(mmake)
+%gen_archspecificrules mainmmake=%(mmake) target=-set-archincludes
 %gen_archspecificrules mainmmake=%(mmake) target=-linklib
 %gen_archspecificrules mainmmake=%(mmake) target=-kobj
 %gen_archspecificrules mainmmake=%(mmake) target=-kobj-quick
@@ -2224,6 +2225,7 @@ endif
 
 ifeq (%(build_abi),M)
 %(mmake)%(flavour)_ALLTARGETS += %(mmake)-includes \
+                 %(mmake)-set-archincludes \
                  %(mmake)-includes-quick %(mmake)-includes-dirs  \
                  %(mmake)-linklib %(mmake)-fd
 endif
@@ -3127,21 +3129,43 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 %rule_archalias mainmmake=%(mainmmake) arch=%(arch)-kobj-quick alias=%(family)-kobj-quick
 %end
 
+%define set_archincludes mainmmake=/A maindir=/A modname=/A pri=/A arch=/A includes=
+$(GENDIR)/%(maindir)/%(modname)/include:
+	%mkdir_q dir="$@"
+
+#MM
+%(mainmmake)-%(arch)-set-archincludes: | $(GENDIR)/%(maindir)/%(modname)/include
+	$(Q)$(ECHO)  "%(includes) " > $(GENDIR)/%(maindir)/%(modname)/include/.%(modname).includeflag.%(pri).%(arch)
+
+%end
+
+%define get_archincludes mainmmake=/A includeflag=USER_INCLUDES maindir=/A modname=/A
+%(includeflag)_INCFFILES:=$(call WILDCARD, $(GENDIR)/%(maindir)/%(modname)/include/.%(modname).includeflag.*)
+ifneq ($(%(includeflag)_INCFFILES),)
+%(includeflag)+=$(shell cat $(%(includeflag)_INCFFILES))
+endif
+%end
+
 #------------------------------------------------------------------------------
 
 %define gen_archspecificrules mainmmake=/A target= subtarget=
 #MM- %(mainmmake)%(target)%(subtarget) : \
-#MM			    %(mainmmake)-$(CPU)%(subtarget)
-#MM- %(mainmmake)-$(ARCH)-$(CPU)%(subtarget) : \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)%(subtarget)
-#MM- %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(subtarget) : \
-#MM			    %(mainmmake)-$(ARCH)-$(CPU)%(subtarget)
-#MM- %(mainmmake)-$(ARCH)%(subtarget) : \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(subtarget)
-#MM- %(mainmmake)-$(FAMILY)%(subtarget) : \
-#MM			    %(mainmmake)-$(ARCH)%(subtarget)
-#MM- %(mainmmake)-$(CPU)%(subtarget) : \
-#MM			    %(mainmmake)-$(FAMILY)%(subtarget)
+#MM             %(mainmmake)-$(CPU)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(ARCH)-$(CPU)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)-$(CPU)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(ARCH)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(FAMILY)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(CPU)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(FAMILY)%(target)%(subtarget)
 %end
 
 #------------------------------------------------------------------------------
