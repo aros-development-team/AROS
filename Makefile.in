@@ -38,7 +38,9 @@ ifneq (,$(findstring s,$(MAKEFLAGS)))
 MMAKE_OPTIONS += -q
 endif
 
--include Build.extra
+ifneq ("$(wildcard Build.extra)","")
+include Build.extra
+endif
 
 #
 # Rules for Configure generated files ...
