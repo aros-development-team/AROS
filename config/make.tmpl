@@ -3139,7 +3139,7 @@ $(GENDIR)/%(maindir)/%(modname)/include:
 
 %end
 
-%define get_archincludes mainmmake=/A includeflag=USER_INCLUDES maindir=/A modname=/A
+%define get_archincludes includeflag=USER_INCLUDES maindir=/A modname=/A
 %(includeflag)_INCFFILES:=$(call WILDCARD, $(GENDIR)/%(maindir)/%(modname)/include/.%(modname).includeflag.*)
 ifneq ($(%(includeflag)_INCFFILES),)
 %(includeflag)+=$(shell cat $(%(includeflag)_INCFFILES))
