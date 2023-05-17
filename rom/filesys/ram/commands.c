@@ -2,6 +2,7 @@
 
 File: commands.c
 Author: Neil Cafferkey
+Copyright (C) 2008-2023 The AROS Dev Team
 Copyright (C) 2001-2008 Neil Cafferkey
 
 This file is free software; you can redistribute it and/or modify it
@@ -1814,8 +1815,13 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
       the target name */
 
    duplicate = GetHardObject(handler, new_lock, new_name, &parent);
-   if(duplicate != NULL && duplicate != object)
-      error = ERROR_OBJECT_EXISTS;
+   if(duplicate)
+   {
+      if (duplicate != object)
+         error = ERROR_OBJECT_EXISTS;
+      else
+         error = ERROR_INVALID_COMPONENT_NAME;
+   }
    if(parent == NULL)
       error = IoErr();
 
