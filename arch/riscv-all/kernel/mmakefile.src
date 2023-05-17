@@ -1,0 +1,30 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+##exec arch flags
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=5 arch=riscv \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR)
+USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__
+
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel \
+  files="cpu_init createcontext getcpunumber" \
+  arch=riscv
+
+%common

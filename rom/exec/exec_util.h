@@ -52,6 +52,13 @@
 #define CALLER_FRAME NULL
 #endif
 
+#ifdef __riscv
+#define PC pc
+#define FP x[4]
+#define CALLER_FRAME NULL
+#endif
+
+
 #ifndef PC
 #error unsupported CPU type
 #endif

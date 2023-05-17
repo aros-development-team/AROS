@@ -1,0 +1,50 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+CFILES := \
+        kernel_startup
+
+PLATFILES := 
+
+AFILES := 
+
+#MM kernel-sifive_u-riscv: setup-native-riscv-sifive_u kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
+#MM
+kernel-sifive_u-riscv: $(OSGENDIR)/boot/core.elf
+		$(Q)$(NOP)
+
+#MM- kernel-sifive_u-riscv-quick: setup-native-riscv-sifive_u-quick kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick kernel-sifive_u-riscv
+
+ELFCORELIBS := -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static
+ifeq ("$(AROS_TOOLCHAIN)","gnu")
+ELFCORELIBS += -L$(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(TARGET_GCC_VER) -lgcc
+endif
+
+$(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o  $(KOBJSDIR)/task_resource.o
+		@$(ECHO) "Creating   $@"
+		%mkdirs_q $(OSGENDIR)/boot
+		@$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ $(ELFCORELIBS)
+		@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
+
+#MM kernel-kernel-native-riscv-sifive_u :  includes
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include -I$(SRCDIR)/rom/openfirmware
+#USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=native-riscv-sifive_u \
+  files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
+
+%common

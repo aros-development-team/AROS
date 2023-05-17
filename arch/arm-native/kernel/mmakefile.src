@@ -1,6 +1,26 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=raspi-arm \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=raspi-armeb genincdir=no \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
 CFILES := \
         kernel_startup \
         kernel_execsmp \
@@ -59,9 +79,7 @@ $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 		@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
 #MM kernel-kernel-raspi-arm : includes
-#MM kernel-kernel-raspi-arm-kobj : includes
 #MM kernel-kernel-raspi-armeb : includes
-#MM kernel-kernel-raspi-armeb-kobj : includes
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include -I$(SRCDIR)/rom/openfirmware
 USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"

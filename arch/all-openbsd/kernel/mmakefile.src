@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=7 arch=openbsd \
+  includes="-I$(SRCDIR)/$(CURDIR)"

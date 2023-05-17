@@ -2,6 +2,18 @@
 include $(SRCDIR)/config/aros.cfg
 include $(TOP)/$(CURDIR)/geninc.cfg
 
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=$(CURDIR)
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec \
+	$(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel
+
 INCSUBDIRS :=	aros				\
 		aros/preprocessor		\
 		aros/preprocessor/variadic	\
@@ -140,7 +152,7 @@ endif
 
 $(OBJDIR)/asm.s : $(SRCDIR)/$(CURDIR)/asm.c | $(OBJDIR)
 	@$(ECHO) "Compiling  $<..."
-	@$(TARGET_CC) $(TARGET_SYSROOT) $(CFLAGS) $(PRIV_EXEC_INCLUDES) $(PRIV_KERNEL_INCLUDES) -S $< -o $@
+	@$(TARGET_CC) $(TARGET_SYSROOT) $(CFLAGS) $(PRIV_EXEC_INCLUDES) -S $< -o $@
 
 $(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
 	@$(ECHO) Generating $@...
@@ -152,7 +164,4 @@ $(OBJDIR) :
 $(GENINCDIR)/aros/$(CPU) :
 	@$(MKDIR) $@
 
-#MM
-clean :
-	-$(RM) $(AROS_INCLUDES) $(GENINCDIR)
-
+%common

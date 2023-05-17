@@ -1,6 +1,22 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=pc-i386 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
 FILES    := \
              kernel_startup \
              kernel_debug \
@@ -13,7 +29,7 @@ ASMFILES  := \
 
 MAINDIR := rom/kernel
 USER_AFLAGS   := $(AFLAGS) -isystem $(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
                  -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 

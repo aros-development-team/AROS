@@ -13,9 +13,7 @@ AROS_LH0(unsigned int, KrnGetCPUNumber,
 {
     AROS_LIBFUNC_INIT
 
-    int _mhartid;
-    __asm__ volatile("csrr %0, mhartid" : "=r"(_mhartid));
-    return _mhartid;
+    return GetCPUNumber();
 
     AROS_LIBFUNC_EXIT
 }

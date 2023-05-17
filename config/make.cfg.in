@@ -47,7 +47,7 @@ AROSDIR                       := $(TARGETDIR)/AROS
 
 # Relative paths for standard directories
 AROS_DIR_BOOT                 := boot
-ifeq ($(AROS_TARGET_ARCH),pc)
+ifeq ($(AROS_TARGET_SUFFIX),)
     AROS_DIR_ARCH             := $(AROS_DIR_BOOT)/$(AROS_TARGET_ARCH)
 else
     AROS_DIR_ARCH             := $(AROS_DIR_BOOT)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)

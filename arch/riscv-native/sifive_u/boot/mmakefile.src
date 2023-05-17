@@ -1,7 +1,5 @@
 # $Id $
 
-Q=
-
 include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
@@ -14,7 +12,7 @@ USER_CPPFLAGS   += -DUSE_UBOOT
 OPTIMIZATION_CFLAGS := -O2
 
 RISCV_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
-#RISCV_COREFILE := $(TARGETDIR)/core.bin.o
+RISCV_COREFILE := $(TARGETDIR)/core.bin.o
 
 #MM- distfiles-sifive_u-riscv : distfiles-sifive_u
 #MM- distfiles-sifive_u-riscv-quick : distfiles-sifive_u
@@ -62,7 +60,7 @@ $(AROSDIR)/aros-riscv-sifive.img: $(RISCV_COREFILE) $(foreach f, $(FILES), $(TAR
 
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf | $(OSGENDIR)/boot
 	@$(CP) $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
-	@cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
+	@cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary core.bin -o $@
 
 #MM
 distfiles-sifive_u : $(AROSDIR)/aros-riscv-sifive.img  $(AROSDIR)/$(RISCV_BSP)

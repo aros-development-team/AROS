@@ -40,6 +40,18 @@ FILES	   := alertextra alert_cpu systemalert initkicktags intservers intserver_v
 	      memory memory_nommu mungwall semaphores service traphandler \
 	      exec_flags exec_debug exec_vlog exec_util exec_locks supervisoralert
 
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=$(CURDIR)
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec \
+	$(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel
+
 # platform.h can be overriden in arch-specific directory
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/debug
 USER_CPPFLAGS := -DAROS_ARCH_$(ARCH)

@@ -72,10 +72,22 @@ USER_CFLAGS :=
 %build_progs mmake=test-exec-public-posixc \
     files=$(EXECPOSIXPUBLICFILES) targetdir=$(EXEDIR)
 
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
 EXECPRIVATEFILES :=		\
     tasktest2
 
-USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES += \
+    $(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec \
+	$(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel
+
 USER_CFLAGS := -noposixc
 
 %build_progs mmake=test-exec-private \

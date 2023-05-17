@@ -5,6 +5,18 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-task-kobj: includes
 #MM kernel-task: includes
 
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
 INCLUDE_FILES := task.h
 
 USER_CPPFLAGS := \

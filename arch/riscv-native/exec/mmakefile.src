@@ -1,0 +1,46 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+ifneq ($(AROS_TARGET_VARIANT),)
+#MM- kernel-exec-$(ARCH)-$(CPU) : \
+#MM     kernel-exec-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM     kernel-kernel-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM     kernel-rtas-$(ARCH)-$(CPU) \
+#MM     includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
+endif
+
+CFILES          := \
+        platform_init exec_idle superstate userstate coldreboot cachepredma cachecleare
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=2 arch=native-riscv \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+##exec_init
+
+#MM kernel-exec-native-riscv : kernel-kernel-riscv-includes kernel-kernel-includes
+
+#MM- kernel-exec-includes-native-riscv : kernel-kernel-includes
+
+USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+
+OPTIMIZATION_CFLAGS :=  -Os
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=native-riscv \
+  files=$(CFILES) modname=exec
+
+TARGETDIR = $(BD_OBJDIR$(BDID))

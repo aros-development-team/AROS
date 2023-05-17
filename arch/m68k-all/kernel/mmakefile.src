@@ -3,6 +3,22 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM kernel-kernel-m68k : includes-asm_h
 
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=5 arch=m68k \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
 FILES := \
         dispatch \
         schedule \
@@ -21,7 +37,7 @@ FILES := \
 
 AFILES=issuper fpusavecontext fpurestorecontext buserror ammxsavecontext ammxrestorecontext
 
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
 	       -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
 
 USER_CPPFLAGS := -DPARANOIA_STACK

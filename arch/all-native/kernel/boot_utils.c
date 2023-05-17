@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "boot_utils.h"
+#include "tags.h"
 #include "kernel_base.h"
 #include "kernel_bootmem.h"
 
@@ -32,7 +33,7 @@ void RelocateBootMsg(const struct TagItem *msg)
     ULONG num = 1;
 
     /* First count how much memory we will need */
-    while ((tag = LibNextTagItem(&tstate)))
+    while ((tag = krnNextTagItem(&tstate)))
     {
         num++;
     }
@@ -43,7 +44,7 @@ void RelocateBootMsg(const struct TagItem *msg)
 
     /* Now copy tagitems */
     tstate = (struct TagItem *)msg;
-    while ((tag = LibNextTagItem(&tstate)))
+    while ((tag = krnNextTagItem(&tstate)))
     {
         dest->ti_Tag  = tag->ti_Tag;
         dest->ti_Data = tag->ti_Data;

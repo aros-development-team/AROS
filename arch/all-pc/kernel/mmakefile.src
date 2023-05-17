@@ -2,6 +2,22 @@
 include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/$(CURDIR)/make.opts
 
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=7 arch=pc \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
 FUNCS	 := \
              bug \
              maygetchar \
@@ -61,7 +77,7 @@ FILES    := \
              kernel_ipi
 
 MAINDIR	      := rom/kernel
-USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) \
 		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
 #MM- kernel-kernel-pc-common : kernel-acpica-sharedlib-linklib linklibs-bootconsole \

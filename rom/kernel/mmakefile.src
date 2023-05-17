@@ -11,6 +11,22 @@ include $(SRCDIR)/config/aros.cfg
 # not to overcomplicate the build. This definition prevents kernel_cpu.h from including host-specific
 # stuff. The name of this definition is legacy, in ancient times exec.library included some private
 # kernel's stuff and needed this.
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=$(CURDIR)
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+#MM kernel-print-includes : kernel-kernel-includes
+#MM kernel-kernel : kernel-print-includes
+
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES)
 USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__ \
 	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \

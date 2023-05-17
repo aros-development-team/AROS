@@ -1,0 +1,7 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-exec-sifive_u-riscv : kernel-exec-native-riscv
+#MM kernel-exec-sifive_u-riscv-kobj : kernel-exec-native-riscv-kobj
+
+%common

@@ -1,10 +1,26 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := boot_utils kernel_bootmem
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=9 arch=native \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+FILES := boot_utils kernel_bootmem tags
 
 MAINDIR	      := rom/kernel
-USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES)
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \

@@ -5,54 +5,60 @@
     Copyright © 2023, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: CPU context definition for risc-v processors
+    Desc: CPU context definition for RISC-V processors
     Lang: english
 */
 
+/* 32 (x) registers, minus x0(zero), x3(gp) and x4(tp)                  */
+#define RISCV_REGSAVE_CNT   (32 - 3)
+/* How many args to pass in registers                                   */
+#define RISCV_FUNCREG_CNT   4
+
 struct ExceptionContext
 {
-    ULONG r[12];	/* General purpose registers	*/
-    ULONG ip;		/* r12				*/
-    ULONG sp;		/* r13				*/
-    ULONG lr;		/* r14				*/
-    ULONG pc;		/* r15				*/
-    ULONG cpsr;
-    UWORD Flags;	/* Currently reserved		*/
-    UBYTE FPUType;	/* FPU type (see below)		*/
-    UBYTE Reserved;	/* Unused			*/
-    APTR  fpuContext;	/* Pointer to FPU context area	*/
+    union {
+        ULONG x[RISCV_REGSAVE_CNT];     /* General purpose registers    */
+        struct {
+            ULONG ra;                   /* 0 = x1                       */
+            ULONG sp;                   /* x2                           */
+            ULONG t0;                   /* x5                           */
+            ULONG t1;
+            ULONG t2;
+#define REG_X_FP_OFF    5
+            ULONG fp;
+            ULONG s1;
+#define REG_X_Ax_OFF    7
+            ULONG a0;
+            ULONG a1;
+            ULONG a2;
+            ULONG a3;
+            ULONG a4;
+            ULONG a5;
+            ULONG a6;
+            ULONG a7;
+            ULONG s2;
+            ULONG s3;
+            ULONG s4;
+            ULONG s5;
+            ULONG s6;
+            ULONG s7;
+            ULONG s8;
+            ULONG s9;
+            ULONG s10;
+            ULONG s11;
+            ULONG t3;
+            ULONG t4;
+            ULONG t5;
+            ULONG t6;
+        };
+    };
+    ULONG pc;		                /* csrrr/mepc				    */
+    UWORD Flags;	                /* Currently reserved		    */
 };
 
 /* CPU modes */
-#define CPUMODE_USER            0x10
-#define CPUMODE_FIQ             0x11
-#define CPUMODE_IRQ             0x12
+#define CPUMODE_MACHINE         0x13
 #define CPUMODE_SUPERVISOR      0x13
-#define CPUMODE_ABORT           0x17
-#define CPUMODE_UNDEF           0x1B
-#define CPUMODE_SYSTEM          0x1F
-
-#define CPUMODE_MASK            0x1F
-
-#define CPUMODE_IRQENABLED      (1 << 7)
-#define CPUMODE_BIGENDIAN       (1 << 9)
-
-/* Flags */
-enum enECFlags
-{
-    ECF_FPU = 1<<0	        /* FPU data is present */
-};
-
-/* FPU types */
-#define FPU_NONE                0
-#define FPU_AFP                 1
-#define FPU_VFP                 2
-
-/* VFP context */
-struct VFPContext
-{
-    ULONG fpr[64];
-    ULONG fpscr;
-};
+#define CPUMODE_USER            0x10
 
 #endif

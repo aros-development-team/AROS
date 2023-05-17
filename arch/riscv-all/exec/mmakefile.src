@@ -1,0 +1,30 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=5 arch=riscv \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+USER_INCLUDES	:= $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+
+#MM- kernel-exec-riscv: includes-asm_h kernel-kernel-includes
+
+%build_archspecific \
+  mainmmake=kernel-exec modname=exec maindir=rom/exec \
+  files="alert_cpu newstackswap preparecontext" asmfiles="execstubs stackswap" \
+  arch=riscv
+
+%common

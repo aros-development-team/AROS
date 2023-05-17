@@ -3131,9 +3131,11 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 %rule_archalias mainmmake=%(mainmmake) arch=%(arch)-kobj-quick alias=%(family)-kobj-quick
 %end
 
-%define set_archincludes mainmmake=/A maindir=/A modname=/A pri=/A arch=/A includes=
+%define set_archincludes mainmmake=/A maindir=/A modname=/A pri=/A arch=/A includes= genincdir=yes
+ifeq ("%(genincdir)","yes")
 $(GENDIR)/%(maindir)/%(modname)/include:
 	%mkdir_q dir="$@"
+endif
 
 #MM
 %(mainmmake)-%(arch)-set-archincludes: | $(GENDIR)/%(maindir)/%(modname)/include

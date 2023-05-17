@@ -34,32 +34,3 @@ TARGET_LTO                := @aros_config_lto@
 # If set, the build system will use this tool to convert the elf
 # binary to the targets file format - otherwise the elf will be copied
 TARGET_TRANSLATEELF       = @aros_elf_translate@
-
-# Kernel private includes, in order of precedence:
-ifneq (,$(findstring $(ARCH),raspi))
-TARGET_KERNEL_INCLUDES    := -I$(SRCDIR)/arch/arm-native/kernel
-else
-TARGET_KERNEL_INCLUDES    := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
-endif
-TARGET_KERNEL_INCLUDES    += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
-ifneq ($(FAMILY),)
-TARGET_KERNEL_INCLUDES    += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
-endif
-TARGET_KERNEL_INCLUDES    += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
-                        -I$(SRCDIR)/rom/kernel
-
-# Exec private includes, in order of precedence:
-ifneq (,$(findstring $(ARCH),raspi))
-TARGET_EXEC_INCLUDES      := -I$(SRCDIR)/arch/arm-native/exec
-else
-TARGET_EXEC_INCLUDES      := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
-endif
-TARGET_EXEC_INCLUDES      += -I$(SRCDIR)/arch/all-$(ARCH)/exec
-ifneq ($(FAMILY),)
-TARGET_EXEC_INCLUDES      += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
-endif
-TARGET_EXEC_INCLUDES      += -I$(SRCDIR)/arch/$(CPU)-all/exec \
-                      -I$(SRCDIR)/rom/exec
-
-PRIV_KERNEL_INCLUDES      := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
-PRIV_EXEC_INCLUDES        := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)

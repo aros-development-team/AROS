@@ -4,9 +4,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-# TODO: Move this into the gcc source code ?
-#MM- compiler-stdc-arm : includes-asm_h linklibs-aeabi-arm
-#MM- compiler-stdc-armeb: includes-asm_h linklibs-aeabi-arm
+#MM- linklibs-arm : linklibs-aeabi-arm
+#MM- linklibs-armeb: linklibs-aeabi-arm
+
+#MM linklibs-aeabi-arm: includes-asm_h 
 
 %build_linklib mmake=linklibs-aeabi-arm \
     libname=aeabi files="uldiv ldiv l2f i2f i2d l2d llsl llsr lasr" \
