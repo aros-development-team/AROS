@@ -1,5 +1,5 @@
 #
-#   Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+#   Copyright © 2010-2023, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: Exit from emulated interrupt with enabling, x86-64 version
@@ -24,10 +24,11 @@
         .globl  core_LeaveInt_End
 
 core_LeaveInterrupt:
-        movq    %rbx, -128(%rsp)    # Save rbx
-        movq    0(%rax), %rbx       # Get real return address into rbx
-        xchg    %rbx, -128(%rsp)    # Remember return address and restore rbx
-	movq    8(%rax), %rax	    # Restore real rax contents
-	movl    $1, Ints_Enabled    # Now enable interrupts
+	movq    %rbx, -128(%rsp)    # Save rbx
+	lea     Ints_Enabled(%rip), %rbx  #
+	movl    $1, (%rbx)          # Set interrupts as enabled
+	movq    0(%rax), %rbx       # Get real return address into rbx
+	xchg    %rbx, -128(%rsp)    # Remember return address and restore rbx
+	movq    8(%rax), %rax       # Restore real rax contents
 	jmpq    *-128(%rsp)         # And jump to the needed address
 core_LeaveInt_End:
