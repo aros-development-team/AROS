@@ -151,7 +151,7 @@ diff -ruN binutils-2.40/bfd/elf-aros.c binutils-2.40.aros/bfd/elf-aros.c
 +   from symbol-relative to section-relative. In next step strip can
 +   then remove the symbols initially involved with relocations */
 +
-+bfd_boolean
++bool
 +elf_aros_emit_relocs (bfd *output_bfd,
 +		      asection *input_section,
 +		      Elf_Internal_Shdr *input_rel_hdr,
@@ -204,7 +204,7 @@ diff -ruN binutils-2.40/bfd/elf-aros.c binutils-2.40.aros/bfd/elf-aros.c
 +				      rel_hash);
 +}
 +
-+bfd_boolean
++bool
 +elf_aros_final_link(bfd *abfd, struct bfd_link_info *link_info)
 +{
 +  link_info->emitrelocations = 1;
@@ -214,7 +214,7 @@ diff -ruN binutils-2.40/bfd/elf-aros.c binutils-2.40.aros/bfd/elf-aros.c
 diff -ruN binutils-2.40/bfd/elf-aros.h binutils-2.40.aros/bfd/elf-aros.h
 --- binutils-2.40/bfd/elf-aros.h	1970-01-01 00:00:00.000000000 +0000
 +++ binutils-2.40.aros/bfd/elf-aros.h	2023-01-14 00:00:00.000000000 +0000
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,29 @@
 +/* AROS support for ELF
 +   Copyright (C) 2019 Free Software Foundation, Inc.
 +
@@ -236,11 +236,13 @@ diff -ruN binutils-2.40/bfd/elf-aros.h binutils-2.40.aros/bfd/elf-aros.h
 +#include "elf/common.h"
 +#include "elf/internal.h"
 +
-+bfd_boolean elf_aros_emit_relocs
++extern bool
++elf_aros_emit_relocs
 +  (bfd *output_bfd, asection *input_section, Elf_Internal_Shdr *input_rel_hdr,
 +   Elf_Internal_Rela *internal_relocs, struct elf_link_hash_entry **rel_hash);
 +
-+bfd_boolean elf_aros_final_link
++extern bool
++elf_aros_final_link
 +  (bfd *abfd, struct bfd_link_info *link_info);
 diff -ruN binutils-2.40/bfd/elf32-arm.c binutils-2.40.aros/bfd/elf32-arm.c
 --- binutils-2.40/bfd/elf32-arm.c	2023-01-14 00:00:00.000000000 +0000
