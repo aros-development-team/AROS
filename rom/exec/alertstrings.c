@@ -507,7 +507,7 @@ STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *task, struct Exe
         fmtParams[1] = (IPTR)task->tc_Node.ln_Name;
     else
         fmtParams[1] = (IPTR)notaskstring;
-    fmtParams[0] = task;
+    fmtParams[0] = (IPTR)task;
 
     KrnFmtAlertInfo(&fmtTemplate, &fmtParams);
 
