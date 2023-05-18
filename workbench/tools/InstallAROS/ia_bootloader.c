@@ -179,16 +179,24 @@ void BOOTLOADER_AddCoreSkipPaths(struct List *SkipList)
 {
     ULONG skipPathLen = strlen(source_Path) + BOOTLOADER_PATH_LEN;
     TEXT skipPath[skipPathLen];
+#if defined(INSTALL_BL_GRUB) || defined(INSTALL_BL_GRUB2)
+    BOOL grubSkipped = FALSE;
+#endif
 
 #if defined(INSTALL_BL_GRUB)
     strcpy(skipPath, source_Path);
-    AddPart(skipPath, ARCHBOOTDIR "/grub", skipPathLen);
+    AddPart(skipPath, "boot/grub", skipPathLen);
     AddSkipListEntry(SkipList, skipPath);
+    grubSkipped = TRUE;
 #endif
 #if defined(INSTALL_BL_GRUB2)
-    strcpy(skipPath, source_Path);
-    AddPart(skipPath, ARCHBOOTDIR "/grub2", skipPathLen);
-    AddSkipListEntry(SkipList, skipPath);
+    if (!grubSkipped)
+    {
+        strcpy(skipPath, source_Path);
+        AddPart(skipPath, "boot/grub", skipPathLen);
+        AddSkipListEntry(SkipList, skipPath);
+        grubSkipped = TRUE;
+    }
 #endif
 }
 
@@ -248,9 +256,9 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
     ULONG srcLen =
-        strlen(source_Path) + strlen(ARCHBOOTDIR) + BOOTLOADER_PATH_LEN + 4;
+        strlen(source_Path) + strlen("boot") + BOOTLOADER_PATH_LEN + 4;
     ULONG dstLen =
-        strlen(data->install_SysTarget) + strlen(ARCHBOOTDIR) + BOOTLOADER_PATH_LEN + 4;
+        strlen(data->install_SysTarget) + strlen("boot") + BOOTLOADER_PATH_LEN + 4;
     int numgrubfiles = 0, file_count = 0;
     TEXT srcPath[srcLen];
     TEXT dstPath[dstLen];
@@ -265,8 +273,8 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
     SET(data->label, MUIA_Text_Contents, __(MSG_COPYBOOT));
 
     strcpy(srcPath, source_Path);
-    AddPart(srcPath, ARCHBOOTDIR, srcLen);
-    sprintf(dstPath, "%s:%s", data->install_SysTarget, ARCHBOOTDIR);
+    AddPart(srcPath, "boot", srcLen);
+    sprintf(dstPath, "%s:boot", data->install_SysTarget);
 
     D(
         bug("[InstallAROS] %s: Boot Device = %s/%d\n", __func__, data->bl_TargetDevice, data->bl_TargetUnit);
