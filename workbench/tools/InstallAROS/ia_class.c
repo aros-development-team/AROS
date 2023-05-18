@@ -851,7 +851,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                     tmp_grub = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
 
                     OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &option);
-                    sprintf(tmp_grub, "%s:"ARCHBOOTDIR"/%s",
+                    sprintf(tmp_grub, "%s:boot/%s",
                         (CONST_STRPTR) option, BootLoaderData[BootLoaderType].path);
 
                     /* Guess the best disk to install GRUB's bootblock to */
