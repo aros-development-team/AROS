@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM grub-pc-x86_64: grub-quick grub-copy-stages
 
 MODULES_DEFAULT:=$(SRCDIR)/$(CURDIR)/../modules.default
-MODULE_BOOTSTRAP:=/$(AROS_DIR_ARCH)/bootstrap.gz
+MODULE_BOOTSTRAP:=/$(AROS_DIR_BOOTARCH)/bootstrap.gz
 
 grub-pc-x86_64: $(AROSARCHDIR)/grub/menu.lst $(AROSARCHDIR)/grub/menu.lst.DH0
 

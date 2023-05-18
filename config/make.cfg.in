@@ -46,12 +46,13 @@ SPECS                         := $(GENDIR)/config/specs
 AROSDIR                       := $(TARGETDIR)/AROS
 
 # Relative paths for standard directories
-AROS_DIR_BOOT                 := boot
 ifeq ($(AROS_TARGET_SUFFIX),)
-    AROS_DIR_ARCH             := $(AROS_DIR_BOOT)/$(AROS_TARGET_ARCH)
+    AROS_DIR_ARCH             := $(AROS_TARGET_ARCH)
 else
-    AROS_DIR_ARCH             := $(AROS_DIR_BOOT)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
+    AROS_DIR_ARCH             := $(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
 endif
+AROS_DIR_BOOT                 := boot
+AROS_DIR_BOOTARCH             := $(AROS_DIR_BOOT)/$(AROS_DIR_ARCH)
 AROS_DIR_C                    := C
 AROS_DIR_CLASSES              := Classes
 AROS_DIR_DATATYPES            := $(AROS_DIR_CLASSES)/Datatypes
@@ -78,22 +79,22 @@ AROS_DIR_LIB                  := lib
 AROS_DIR_CONTRIB              := Extras
 
 # Absolute paths for standard directories
-AROSARCHDIR                   := $(AROSDIR)/$(AROS_DIR_ARCH)
+AROSARCHDIR                   := $(AROSDIR)/$(AROS_DIR_BOOTARCH)
 AROS_BOOT                     := $(AROSDIR)/$(AROS_DIR_BOOT)
 AROS_C                        := $(AROSDIR)/$(AROS_DIR_C)
 AROS_CLASSES                  := $(AROSDIR)/$(AROS_DIR_CLASSES)
-AROS_CLASSES_ARCH             := $(AROSDIR)/$(AROS_DIR_ARCH)/$(AROS_DIR_CLASSES)
+AROS_CLASSES_ARCH             := $(AROSDIR)/$(AROS_DIR_BOOTARCH)/$(AROS_DIR_CLASSES)
 AROS_DATATYPES                := $(AROSDIR)/$(AROS_DIR_DATATYPES)
 AROS_GADGETS                  := $(AROSDIR)/$(AROS_DIR_GADGETS)
 AROS_DEVS                     := $(AROSDIR)/$(AROS_DIR_DEVS)
-AROS_DEVS_ARCH                := $(AROSDIR)/$(AROS_DIR_ARCH)/$(AROS_DIR_DEVS)
+AROS_DEVS_ARCH                := $(AROSDIR)/$(AROS_DIR_BOOTARCH)/$(AROS_DIR_DEVS)
 AROS_EXPANSION                := $(AROSDIR)/$(AROS_DIR_EXPANSION)
 AROS_FS	                      := $(AROSDIR)/$(AROS_DIR_FS)
-AROS_FS_ARCH                  := $(AROSDIR)/$(AROS_DIR_ARCH)/$(AROS_DIR_FS)
+AROS_FS_ARCH                  := $(AROSDIR)/$(AROS_DIR_BOOTARCH)/$(AROS_DIR_FS)
 AROS_RESOURCES                := $(AROS_DEVS)
 AROS_DRIVERS                  := $(AROS_DEVS)/$(AROS_DIR_DRIVERS)
 AROS_LIBRARIES                := $(AROSDIR)/$(AROS_DIR_LIBRARIES)
-AROS_LIBRARIES_ARCH           := $(AROSDIR)/$(AROS_DIR_ARCH)/$(AROS_DIR_LIBRARIES)
+AROS_LIBRARIES_ARCH           := $(AROSDIR)/$(AROS_DIR_BOOTARCH)/$(AROS_DIR_LIBRARIES)
 AROS_LOCALE                   := $(AROSDIR)/$(AROS_DIR_LOCALE)
 AROS_CATALOGS                 := $(AROS_LOCALE)/Catalogs
 AROS_HELP                     := $(AROS_LOCALE)/Help
@@ -259,6 +260,7 @@ endif
 #     so we don't include -fwhole-program for
 #     binaries by default.
 LTO_CFLAGS                    = $(CFLAGS_LTO)
+LTO_ARCHIVE_CFLAGS            = $(CFLAGS_ARCHIVE_LTO)
 LTO_BINARY_CFLAGS             = $(LTO_CFLAGS)
 LTO_BINARYWHOLE_CFLAGS        = $(LTO_BINARY_CFLAGS) $(CFLAGS_WHOLE_PROGRAM)
 @make_extra_targetcfg@

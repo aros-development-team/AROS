@@ -2342,7 +2342,7 @@ ifneq ($(filter $(TARGET),$(%(mmake)%(flavour)_ALLTARGETS)),)
 
 %(mmake)%(flavour)_DEFMODDIR        := $($(%(mmake)%(flavour)_DEFNAME)_MODDIR)
 ifeq (%(archspecific),yes)
-%(mmake)%(flavour)_DEFMODDIR        := $(AROS_DIR_ARCH)/$(%(mmake)%(flavour)_DEFMODDIR)
+%(mmake)%(flavour)_DEFMODDIR        := $(AROS_DIR_BOOTARCH)/$(%(mmake)%(flavour)_DEFMODDIR)
 endif
 ifneq (%(moduledir),)
     %(mmake)%(flavour)_MODDIR       := %(moduledir)

@@ -20,8 +20,8 @@ SYSTEM_FILES := \
     Libs/locale.library
 
 MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
-MODULE_BOOTSTRAP := /$(AROS_DIR_ARCH)/bootstrap.gz
-MODULE_LEGACY := /$(AROS_DIR_ARCH)/aros-legacy.pkg.gz
+MODULE_BOOTSTRAP := /$(AROS_DIR_BOOTARCH)/bootstrap.gz
+MODULE_LEGACY := /$(AROS_DIR_BOOTARCH)/aros-legacy.pkg.gz
 BOOT_FILES := $(MODULE_BOOTSTRAP) $(shell cat $(MODULES_DEFAULT)) \
  $(MODULE_LEGACY)
 
@@ -122,17 +122,17 @@ BOOT_DEST_DIR   := $(OSGENDIR)/boot/bootdisk
 SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
-BOOT_FILES += $(AROS_DIR_ARCH)/grub/stage1
-BOOT_TAR_MISC += $(AROS_DIR_ARCH)/grub/menu.lst.DH0 $(AROS_DIR_ARCH)/grub/stage2
-BOOT_EXTRA_FILES += $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/stage2
+BOOT_FILES += $(AROS_DIR_BOOTARCH)/grub/stage1
+BOOT_TAR_MISC += $(AROS_DIR_BOOTARCH)/grub/menu.lst.DH0 $(AROS_DIR_BOOTARCH)/grub/stage2
+BOOT_EXTRA_FILES += $(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)/grub/stage2
 
-$(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/stage2 $(SYSTEM_DEST_DIR)/$(AROS_DIR_ARCH)/grub/stage2:
+$(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)/grub/stage2 $(SYSTEM_DEST_DIR)/$(AROS_DIR_BOOTARCH)/grub/stage2:
 	@$(CP) $(AROSARCHDIR)/grub/stage2_hdisk $@
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
-BOOT_FILES += $(AROS_DIR_ARCH)/grub/grub.cfg
-BOOT_TAR_MISC += $(AROS_DIR_ARCH)/grub/grub.cfg
+BOOT_FILES += $(AROS_DIR_BOOTARCH)/grub/grub.cfg
+BOOT_TAR_MISC += $(AROS_DIR_BOOTARCH)/grub/grub.cfg
 endif
 
 BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
@@ -146,13 +146,13 @@ bootdisk-setup-pc-i386 :
 	@$(MKDIR) "$(AROSDIR)/Tools/Boot Disks"
 	-$(RM) $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
-	%mkdirs_q $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub
+	%mkdirs_q $(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)/grub
 	@$(ECHO) Generating $(SRCDIR)/$(CURDIR)/menu.lst...
 	@$(SED) -e \
 	 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' \
 	 -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
 	 $(SRCDIR)/$(CURDIR)/menu.lst \
-	 > $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/menu.lst
+	 > $(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)/grub/menu.lst
 
 #MM
 systemdisk-setup-pc-i386 :
