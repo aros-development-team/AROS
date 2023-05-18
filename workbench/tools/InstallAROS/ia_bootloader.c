@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2023, The AROS Development Team. All rights reserved.
 */
 
 #define INTUITION_NO_INLINE_STDARG
@@ -80,7 +80,7 @@ struct BootLoaderInfo BootLoaderData[] = {
 #if defined(INSTALL_BL_GRUB)
     {
         "grub",
-        ARCHBOOTDIR "/grub/stage1",
+        "boot/grub/stage1",
         "c/Install-grub",
         NULL
     },
@@ -88,9 +88,9 @@ struct BootLoaderInfo BootLoaderData[] = {
 #if defined(INSTALL_BL_GRUB2)
     {
         "grub",
-        ARCHBOOTDIR "/grub/" GRUBARCHDIR "/core.img",
+        "boot/grub/" GRUBARCHDIR "/core.img",
         "c/Install-grub2",
-        ARCHBOOTDIR "/grub/fonts/unicode.pf2"
+        "boot/grub/fonts/unicode.pf2"
     },
 #endif
     {
