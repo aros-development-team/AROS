@@ -20,7 +20,7 @@ static const char irqstring[] =   "IRQ : #%U - 0x%P";
 
 /*  SYNOPSIS */
         AROS_LHA(STRPTR *, TemplatePtr, A0),
-        AROS_LHA(IPTR **, ParamPtr, A1),
+        AROS_LHA(IPTR *, ParamPtr, A1),
 
 /*  LOCATION */
         struct KernelBase *, KernelBase, 65, Kernel)
