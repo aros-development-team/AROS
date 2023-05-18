@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-EXEDIR       := $(AROS_BOOT)/pc
+EXEDIR       := $(AROSARCHDIR)
 EXENAME      := bootstrap
 FILES	     := bootstrap memory_io multiboot1 multiboot2 support vesa_setup
 
