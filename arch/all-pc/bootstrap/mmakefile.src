@@ -1,8 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- boot-pc-i386: kernel-bootstrap-pc-gz
-
 EXEDIR       := $(AROS_BOOT)/pc
 EXENAME      := bootstrap
 FILES	     := bootstrap memory_io multiboot1 multiboot2 support vesa_setup

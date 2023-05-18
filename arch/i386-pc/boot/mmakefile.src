@@ -4,7 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 # The "core" AROS components for a bootable system
 
 #MM- boot-pc-i386        : \
-#MM                              bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
+#MM                              bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386 \
+#MM                              kernel-bootstrap-pc-gz
 
 #MM- includes-pc-i386 : \
 #MM                              includes-common-i386 \
