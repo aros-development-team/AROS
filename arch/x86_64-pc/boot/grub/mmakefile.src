@@ -12,8 +12,8 @@ grub-pc-x86_64: $(AROSARCHDIR)/grub/menu.lst $(AROSARCHDIR)/grub/menu.lst.DH0
 
 $(AROSARCHDIR)/grub/menu.lst: menu.lst
 	@$(ECHO) Generating $@...
-	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
+	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' -e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
 
 $(AROSARCHDIR)/grub/menu.lst.DH0: menu.lst.DH0
 	@$(ECHO) Generating $@...
-	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module /dh0\#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#/dh0$(MODULE_BOOTSTRAP)#g' $< > $@
+	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module /dh0\#g" $(MODULES_DEFAULT)#e' -e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' -e 's#@module.bootstrap@#/dh0$(MODULE_BOOTSTRAP)#g' $< > $@
