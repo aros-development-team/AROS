@@ -11,8 +11,8 @@ include $(SRCDIR)/config/aros.cfg
 MODULES_DEFAULT:=$(SRCDIR)/$(CURDIR)/../modules.default
 MODULE_BOOTSTRAP:=/$(AROS_DIR_BOOTARCH)/bootstrap.gz
 
-bootloader-grub2-pc-x86_64: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
-bootloader-grub2gfx-pc-x86_64: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
+bootloader-grub2-pc-x86_64: $(AROS_BOOT)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
+bootloader-grub2gfx-pc-x86_64: $(AROS_BOOT)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 
 ifeq ($(DEBUG),yes)
 SEDPARAMS = -e 's|@debug@|debug|g'
@@ -20,7 +20,7 @@ else
 SEDPARAMS = -e 's|@debug@||g'
 endif
 
-$(AROSARCHDIR)/grub/grub.cfg: grub.cfg
+$(AROS_BOOT)/grub/grub.cfg: grub.cfg
 	@$(ECHO) Generating $@...
 	@$(SED) $(SEDPARAMS) -e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' -e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
 
