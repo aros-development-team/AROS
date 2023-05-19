@@ -11,7 +11,7 @@
 # In contrast to gimmearos.sh this script creates the toolchain
 # in external directories.
 
-# $VER: gimmearos-ext.sh 1.17 (15.05.2023)
+# $VER: gimmearos-ext.sh 1.18 (19.05.2023)
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -153,6 +153,8 @@ case "$input" in
         install_pkg "pacman --needed --noconfirm -S" netpbm
         install_pkg "pacman --needed --noconfirm -S" autoconf
         install_pkg "pacman --needed --noconfirm -S" automake
+        install_pkg "pacman --needed --noconfirm -S" python-mako
+        install_pkg "pacman --needed --noconfirm -S" wget
         #it appears as though the libx11-dev,libc6-dev,liblzo2-dev is not needed on arch
         ;;
 
