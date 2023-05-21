@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
 */
 
 /******************************************************************************
@@ -11,7 +11,8 @@
     SYNOPSIS
 
         DEVICE, UNIT/N, SYSSIZE/K/N, SYSTYPE/K, SYSNAME/K, WORKSIZE/K/N,
-        MAXWORK/S, WORKTYPE/K, WORKNAME/K, WIPE/S, FORCE/S, QUIET/S, RDB/S
+        MAXWORK/S, WORKTYPE/K, WORKNAME/K, BOOTSIZE/K/N, BOOTTYPE/K,
+        BOOTNAME/K, WIPE/S, FORCE/S, QUIET/S, SCHEME/k
 
     LOCATION
 
@@ -74,8 +75,11 @@
         FORCE -- Do not ask for confirmation before partitioning the drive.
         QUIET -- Do not print any output. This option can only be used when
             FORCE is also specified.
-        RDB -- Create only RDB partitions, no MBR or EBR partitions will be
-            created.
+        SCHEME -- Specify the partition scheme to use 
+                             mbr - (default)
+                             gpt - 
+                             rdb - Create only RDB partitions, no MBR or EBR
+                                   partitions will be created.
 
     RESULT
 
@@ -107,7 +111,6 @@
 #include <proto/partition.h>
 #include <proto/utility.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include "args.h"
@@ -118,15 +121,11 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 41.7 (17.10.2013)";
+const TEXT version_string[] = "$VER: Partition 42.0 (18.05.2023)";
 
+static const struct PartitionType fat32 = { "FAT\2", 4 };
 static const struct PartitionType dos3 = { "DOS\3", 4 };
-#if AROS_BIG_ENDIAN
 static const struct PartitionType sfs0 = { "SFS\0", 4 };
-#else
-/* atm, SFS is BE on AROS */
-static const struct PartitionType sfs0 = { "SFS\0", 4 };
-#endif
 
 
 /*** Prototypes *************************************************************/
@@ -142,11 +141,21 @@ static struct PartitionHandle *CreateRDBPartition(
 static ULONG MBsToCylinders(ULONG size, struct DosEnvec *de);
 static LONG RecurviseDestroyPartitions(struct PartitionHandle *root);
 
+static LONG BlockToCyl(struct DosEnvec *de, UQUAD block)
+{
+    return (LONG)(block / (de->de_Surfaces * de->de_BlocksPerTrack));
+}
+
+static UQUAD CylToBlock(struct DosEnvec *de, LONG cyl)
+{
+    return (UQUAD)(cyl * (de->de_Surfaces * de->de_BlocksPerTrack));
+}
+
 /*** Functions **************************************************************/
 int main(void)
 {
     struct PartitionHandle *diskPart = NULL, *sysPart, *workPart,
-        *root = NULL, *partition, *extPartition = NULL, *parent = NULL;
+        *root = NULL, *partition, *activePart = NULL, *extPartition = NULL, *parent = NULL;
     TEXT choice = 'N';
     CONST_STRPTR device;
     const struct PartitionType *sysType = NULL, *workType = NULL;
@@ -154,6 +163,7 @@ int main(void)
         reqHighCyl, unit, hasActive = FALSE;
     QUAD rootLowBlock = 1, rootHighBlock = 0, extLowBlock = 1,
         extHighBlock = 0, lowBlock, highBlock, rootBlocks, extBlocks;
+    ULONG scheme = PHPTT_MBR;
     UWORD partCount = 0;
 
     /* Read and check arguments */
@@ -162,6 +172,13 @@ int main(void)
 
     if (error == 0)
     {
+        if (((ARG(BOOTSIZE) != (IPTR)NULL && ARG(BOOTTYPE) == (IPTR)NULL)) ||
+            ((ARG(BOOTSIZE) == (IPTR)NULL && ARG(BOOTTYPE) != (IPTR)NULL)))
+        {
+            PutStr("ERROR: BOOTSIZE and BOOTTYPE must be specified together.\n");
+            error = ERROR_REQUIRED_ARG_MISSING;
+        }
+
         if (ARG(WORKSIZE) != (IPTR)NULL && ARG(SYSSIZE) == (IPTR)NULL)
         {
             PutStr("ERROR: Cannot specify WORKSIZE without SYSSIZE.\n");
@@ -199,6 +216,21 @@ int main(void)
 
     if (error == 0)
     {
+        if (ARG(SCHEME))
+        {
+            if (Stricmp((CONST_STRPTR)ARG(SCHEME), "rdb") == 0)
+            {
+                if (ARG(BOOTSIZE))
+                {
+                    PutStr("BOOTSIZE option is invalid with RDB partitioning scheme\n");
+                    error = ERROR_OBJECT_WRONG_TYPE;
+                }
+                scheme = PHPTT_RDB;
+            }
+            else if (Stricmp((CONST_STRPTR)ARG(SCHEME), "gpt") == 0)
+                scheme = PHPTT_GPT;
+        }
+
         /* Get DOSType for each partition */
         if (ARG(SYSTYPE) == (IPTR)NULL ||
             Stricmp((CONST_STRPTR)ARG(SYSTYPE), "SFS") != 0)
@@ -276,11 +308,10 @@ int main(void)
         if (OpenPartitionTable(root) != 0)
         {
             D(bug("failed\n[C:Partition] Creating %s root partition table\n",
-                  ARG(RDB) ? "RDB" : "MBR"));
+                  ARG(SCHEME) ? (char *)ARG(SCHEME) : "MBR"));
 
-            ULONG type = ARG(RDB) ? PHPTT_RDB : PHPTT_MBR;
             /* Create a root partition table */
-            if (CreatePartitionTable(root, type) != 0)
+            if ((error == 0) && (CreatePartitionTable(root, scheme) != 0))
             {
                 error = ERROR_UNKNOWN;
                 PutStr("*** ERROR: Creating root partition table failed.\n");
@@ -292,12 +323,60 @@ int main(void)
             D(bug("ok\n"));
     }
 
+    if ((error == 0) && ARG(BOOTSIZE))
+    {
+        struct PartitionHandle *bootPart = NULL;
+        LONG bootSize = *(LONG *)ARG(BOOTSIZE);
+
+        /* Find largest gap in root partition */
+        FindLargestGap(root, &rootLowBlock, &rootHighBlock);
+
+        /* Create Boot partition if it doesn't exist */
+        if (bootPart == NULL)
+        {
+            ULONG fstype = 0xC; // Fat32
+
+            D(bug("[C:Partition] Creating Boot partition (%u MB)\n", bootSize));
+
+            if (Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32") == 0)
+            {
+                lowCyl = BlockToCyl(&root->de, rootLowBlock - 1) + 1;
+                reqHighCyl = lowCyl + MBsToCylinders(bootSize, &root->de);
+                highCyl = BlockToCyl(&root->de, rootHighBlock + 1) - 1;
+
+                if (reqHighCyl < highCyl)
+                {
+                    D(bug("[C:Partition] Boot Part loCyl = %u, HiCyl = %u\n", lowCyl, reqHighCyl));
+                    bootPart =
+                        CreateMBRPartition(root, lowCyl, reqHighCyl, fstype);
+                    if (bootPart)
+                    {
+                        D(bug("[C:Partition] Boot Partition handle @ 0x%p\n", bootPart));
+
+                        if (!activePart)
+                            activePart = bootPart;
+                        rootLowBlock = CylToBlock(&root->de, reqHighCyl + 1) - 1;
+                        partCount++;
+                    }
+                }
+                else
+                {
+                    error = ERROR_DISK_FULL;
+                }
+            }
+            else
+            {
+                // Unsupported boot partition format
+            }
+        }
+    }
+
     if (error == 0)
     {
         /* Find largest gap in root partition */
         FindLargestGap(root, &rootLowBlock, &rootHighBlock);
 
-        if (!ARG(RDB))
+        if (scheme != PHPTT_RDB)
         {
             /* Look for extended partition and count partitions */
             ForeachNode(&root->table->list, partition)
@@ -305,7 +384,11 @@ int main(void)
                 if (OpenPartitionTable(partition) == 0)
                 {
                     if (partition->table->type == PHPTT_EBR)
+                    {
                         extPartition = partition;
+                        if (!activePart)
+                            activePart = extPartition;
+                    }
                     else
                         ClosePartitionTable(partition);
                 }
@@ -320,24 +403,40 @@ int main(void)
             /* Create extended partition if it doesn't exist */
             if (extPartition == NULL)
             {
+                int ebrtype = 0x5;  // default to EBR-CHS
+
                 D(bug("[C:Partition] Creating EBR partition\n"));
-                lowCyl = (rootLowBlock - 1)
-                    / (LONG)(root->de.de_Surfaces * root->de.de_BlocksPerTrack)
-                    + 1;
-                highCyl = (rootHighBlock + 1)
-                    / (root->de.de_Surfaces * root->de.de_BlocksPerTrack) - 1;
+
+                lowCyl = BlockToCyl(&root->de, rootLowBlock - 1) + 1;
+                highCyl = BlockToCyl(&root->de, rootHighBlock + 1) - 1;
+#if (0)
+                /* If the partition is > 8Gb use EBR-LBA */
+                ebrtype = 0xF;
+#endif
+                D(bug("[C:Partition] EBR loCyl = %u, HiCyl = %u\n", lowCyl, highCyl));
+
                 extPartition =
-                    CreateMBRPartition(root, lowCyl, highCyl, 0x5);
+                    CreateMBRPartition(root, lowCyl, highCyl, ebrtype);
                 if (extPartition != NULL)
                 {
+                    D(bug("[C:Partition] EBR container handle @ 0x%p\n", extPartition));
+
                     if (CreatePartitionTable(extPartition, PHPTT_EBR) != 0)
                     {
                         PutStr("*** ERROR: Creating extended partition table failed.\n");
                         extPartition = NULL;
                     }
+                    if (extPartition && !activePart)
+                        activePart = extPartition;
+                    extLowBlock = rootLowBlock;
+                    extHighBlock = rootHighBlock;
                     rootLowBlock = 1;
                     rootHighBlock = 0;
                     partCount++;
+                }
+                else
+                {
+                    D(bug("[C:Partition] Failed to create EBR container\n"));
                 }
             }
         }
@@ -354,6 +453,8 @@ int main(void)
         /* Choose whether to create primary or logical partition */
         rootBlocks = rootHighBlock - rootLowBlock + 1;
         extBlocks = extHighBlock - extLowBlock + 1;
+        D(bug("[C:Partition] root blocks = %u, ext blocks = %u\n", rootBlocks, extBlocks));
+
         if (extBlocks > rootBlocks || partCount == 4)
         {
             parent = extPartition;
@@ -367,11 +468,13 @@ int main(void)
             highBlock = rootHighBlock;
         }
 
+        D(bug("[C:Partition] lowBlock = %u, highBlock = %u\n", lowBlock, highBlock));
+
         /* Convert block range to cylinders */
-        lowCyl = (lowBlock - 1)
-            / (LONG)(parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) + 1;
-        highCyl = (highBlock + 1)
-            / (LONG)(parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) - 1;
+        lowCyl = BlockToCyl(&parent->de, lowBlock - 1) + 1;
+        highCyl = BlockToCyl(&parent->de, highBlock + 1) - 1;
+
+        D(bug("[C:Partition] Target loCyl = %u, HiCyl = %u\n", lowCyl, highCyl));
 
         /* Ensure neither partition is too large for its filesystem */
         if ((sysSize == 0 &&
@@ -389,16 +492,20 @@ int main(void)
         /* Decide geometry for RDB virtual disk */
         reqHighCyl = lowCyl + MBsToCylinders(sysSize, &parent->de)
             + MBsToCylinders(workSize, &parent->de);
+
+        D(bug("[C:Partition] Target required HiCyl = %u\n", reqHighCyl));
+
         if (sysSize != 0 && (workSize != 0 || !ARG(MAXWORK))
             && reqHighCyl < highCyl)
             highCyl = reqHighCyl;
+
         if (reqHighCyl > highCyl
             || (highCyl - lowCyl + 1 < MBsToCylinders(MIN_SIZE, &parent->de)
             && workSize == 0))
             error = ERROR_DISK_FULL;
     }
 
-    if (error == 0 && !ARG(RDB))
+    if (error == 0 && scheme != PHPTT_RDB)
     {
         /* Create RDB virtual disk */
         D(bug("[C:Partition] Creating RDB virtual disk\n"));
@@ -410,7 +517,7 @@ int main(void)
         }
     }
 
-    if (error == 0 && !ARG(RDB))
+    if (error == 0 && scheme != PHPTT_RDB)
     {
         /* Create RDB partition table inside virtual-disk partition */
         D(bug("[C:Partition] Creating RDB partition table\n"));
@@ -424,7 +531,7 @@ int main(void)
 
     if (error == 0)
     {
-        if (ARG(RDB))
+        if (scheme == PHPTT_RDB)
         {
             diskPart = parent;
 
@@ -475,10 +582,12 @@ int main(void)
 
     if (error == 0)
     {
-        /* If MBR has no active partition, make extended partition active to
-           prevent broken BIOSes from treating disk as unbootable */
-        if (!hasActive && !ARG(RDB))
-            SetPartitionAttrsTags(extPartition, PT_ACTIVE, TRUE, TAG_DONE);
+        /* If the MBR has no active partition set, mark the boot partition, or
+         * extended partition active to prevent broken BIOSes from treating
+         * the disk as unbootable */
+
+        if (!hasActive && activePart)
+            SetPartitionAttrsTags(activePart, PT_ACTIVE, TRUE, TAG_DONE);
 
         /* Save to disk and deallocate */
         WritePartitionTable(diskPart);

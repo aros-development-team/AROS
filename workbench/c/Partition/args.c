@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <dos/rdargs.h>
@@ -9,10 +9,27 @@
 
 /*** Global Variables *******************************************************/
 STATIC CONST_STRPTR TEMPLATE =
-    "DEVICE,UNIT/N,SYSSIZE/K/N,SYSTYPE/K,SYSNAME/K,WORKSIZE/K/N,MAXWORK/S,WORKTYPE/K,WORKNAME/K,WIPE/S,FORCE/S,QUIET/S,RDB/S";
+    "DEVICE,"
+    "UNIT/N,"
+    "SYSSIZE/K/N,"
+    "SYSTYPE/K,"
+    "SYSNAME/K,"
+    "WORKSIZE/K/N,"
+    "MAXWORK/S,"
+    "WORKTYPE/K,"
+    "WORKNAME/K,"
+    "BOOTSIZE/K/N,"
+    "BOOTTYPE/K,"
+    "BOOTNAME/K,"
+    "WIPE/S,"
+    "FORCE/S,"
+    "QUIET/S,"
+    "SCHEME/K,";
 STATIC CONST LONG def_unit = 0;
+
 STATIC CONST TEXT def_sys_name[] = "DH0";
 STATIC CONST TEXT def_work_name[] = "DH1";
+
 STATIC IPTR args[COUNT] =
 {
     (IPTR) "ata.device",
