@@ -42,10 +42,9 @@ DISTDIR                       := @AROS_BUILDDIR_UNIX@/distfiles
 # File for AROS gcc cross compiler spec file
 SPECS                         := $(GENDIR)/config/specs
 
-# This is the directory structure for an AROS system.
-AROSDIR                       := $(TARGETDIR)/AROS
-
-# Relative paths for standard directories
+# Standard directory names (case sensitive) used to build
+# both relative and absolute paths.
+AROS_DIR_AROS             := AROS
 ifeq ($(AROS_TARGET_SUFFIX),)
     AROS_DIR_ARCH             := $(AROS_TARGET_ARCH)
 else
@@ -56,6 +55,7 @@ AROS_DIR_BOOTARCH             := $(AROS_DIR_BOOT)/$(AROS_DIR_ARCH)
 AROS_DIR_C                    := C
 AROS_DIR_CLASSES              := Classes
 AROS_DIR_CATALOGS             := Catalogs
+AROS_DIR_COMMODITIES          := Commodities
 AROS_DIR_DATATYPES            := $(AROS_DIR_CLASSES)/Datatypes
 AROS_DIR_GADGETS              := $(AROS_DIR_CLASSES)/Gadgets
 AROS_DIR_DEVS                 := Devs
@@ -87,7 +87,9 @@ AROS_DIR_LIB                  := lib
 
 AROS_DIR_CONTRIB              := Extras
 
+# This is the directory structure for an AROS system.
 # Absolute paths for standard directories
+AROSDIR                       := $(TARGETDIR)/$(AROS_DIR_AROS)
 AROSARCHDIR                   := $(AROSDIR)/$(AROS_DIR_BOOTARCH)
 AROS_BOOT                     := $(AROSDIR)/$(AROS_DIR_BOOT)
 AROS_C                        := $(AROSDIR)/$(AROS_DIR_C)
