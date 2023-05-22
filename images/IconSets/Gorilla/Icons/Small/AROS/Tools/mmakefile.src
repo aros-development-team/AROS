@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -16,3 +16,11 @@ ADDITIONALICONS := WiMP ScreenGrabber SysExplorer BoingIconBar
 
 %build_icons mmake=iconset-GorillaSmall-additional-icons-aros-tools icons=$(ADDITIONALICONS) \
              dir=$(AROS_TOOLS)
+
+#MM- icons-wbench-tools : gorillasmall-icons-wbench-tools
+%build_icons mmake=gorillasmall-icons-wbench-tools icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_TOOLS)
+
+#MM- icons-additional-wbench-tools : gorillasmall-icons-additional-wbench-tools
+%build_icons mmake=gorillasmall-icons-additional-wbench-tools icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR__TOOLS)

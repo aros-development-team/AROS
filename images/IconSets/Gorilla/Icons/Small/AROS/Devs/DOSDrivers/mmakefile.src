@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2017, The AROS Development Team. All rights reserved.
+# Copyright (C) 2012-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -13,3 +13,11 @@ DEVSICONS    := PAR PIPE PRT SER SER0 SER1
 
 %build_icons mmake=iconset-GorillaSmall-wbench-icons-storage-dosdrivers icons=$(STORAGEICONS) \
              dir=$(AROSDIR)/Storage/DOSDrivers
+
+#MM- icons-wbench-devs-dosdrivers : gorillasmall-icons-wbench-devs-dosdrivers
+%build_icons mmake=gorillasmall-icons-wbench-devs-dosdrivers icons=$(DEVSICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_DEVS)/DOSDrivers
+
+#MM- icons-wbench-storage-dosdrivers : gorillasmall-icons-wbench-storage-dosdrivers
+%build_icons mmake=gorillasmall-icons-wbench-storage-dosdrivers icons=$(STORAGEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_STORAGE)/DOSDrivers

@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -17,3 +17,11 @@ ADDITIONALICONS := AHI Appearance Boot  \
 
 %build_icons mmake=iconset-GorillaSmall-additional-icons-aros-prefs icons=$(ADDITIONALICONS) \
              dir=$(AROS_PREFS)
+
+#MM- icons-wbench-prefs : gorillasmall-icons-wbench-prefs
+%build_icons mmake=gorillasmall-icons-wbench-prefs icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)
+
+#MM- icons-additional-wbench-prefs : gorillasmall-icons-additional-wbench-prefs
+%build_icons mmake=gorillasmall-icons-additional-wbench-prefs icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)

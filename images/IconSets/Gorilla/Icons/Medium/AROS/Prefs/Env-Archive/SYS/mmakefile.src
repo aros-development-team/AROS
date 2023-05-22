@@ -44,7 +44,34 @@ APPI := def_AppIcon
 %build_icons mmake=gorilla-icons-wbench-prefs-envarc-appicon icons=$(APPI) \
              dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_ENVARC)/SYS  image=$(IMGS)
 
-# Special rules for the "Hosted" Boot drives.
+# Special rules
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/Drawer : $(SRCDIR)/$(CURDIR)/def_Drawer.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/Floppy : $(SRCDIR)/$(CURDIR)/def_Disk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/CDROM : $(SRCDIR)/$(CURDIR)/def_Harddisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/Harddisk : $(SRCDIR)/$(CURDIR)/def_Harddisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/USBdisk : $(SRCDIR)/$(CURDIR)/def_USB.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+#MM
+gorilla-icon-images : $(AROS_PRESETS)/Icons/Gorilla/Default/Images/Drawer $(AROS_PRESETS)/Icons/Gorilla/Default/Images/Floppy $(AROS_PRESETS)/Icons/Gorilla/Default/Images/CDROM $(AROS_PRESETS)/Icons/Gorilla/Default/Images/Harddisk $(AROS_PRESETS)/Icons/Gorilla/Default/Images/USBdisk
+
+#MM- icon-images : gorilla-icon-images
+
+# "Hosted" Boot drives.
 
 #MM
 iconset-Gorilla-icons-aros-windows-system :

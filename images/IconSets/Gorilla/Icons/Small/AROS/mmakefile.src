@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -17,6 +17,12 @@ ADDITIONALICONS := Demos \
 %build_icons mmake=iconset-GorillaSmall-wbench-icons-aros icons=$(BASEICONS) dir=$(AROSDIR)
 
 %build_icons mmake=iconset-GorillaSmall-additional-icons-aros icons=$(ADDITIONALICONS) dir=$(AROSDIR)
+
+#MM- icons-wbench : gorillasmall-icons-wbench
+%build_icons mmake=gorillasmall-icons-wbench icons=$(BASEICONS) dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)
+
+#MM- icons-additional-wbench : gorillasmall-icons-additional-wbench
+%build_icons mmake=gorillasmall-icons-additional-wbench icons=$(ADDITIONALICONS) dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)
 
 #MM
 iconset-GorillaSmall-wbench-icons-aros-livecd :  

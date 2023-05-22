@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2014, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -29,3 +29,38 @@ APPI := def_AppIcon
 
 %build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-prefs-envarc-appicon icons=$(APPI) \
              dir=$(AROS_ENVARC)/SYS  image=$(IMGS)
+
+#MM- icons-wbench-prefs-envarc : gorillasmall-icons-wbench-prefs-envarc
+%build_icons mmake=gorillasmall-icons-wbench-prefs-envarc icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_ENVARC)/SYS
+
+#MM- icons-wbench-prefs-envarc-appicon : gorillasmall-icons-wbench-prefs-envarc-appicon
+%build_icons mmake=gorillasmall-icons-wbench-prefs-envarc-appicon icons=$(APPI) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_ENVARC)/SYS  image=$(IMGS)
+
+
+$(AROS_PRESETS)/Icons/Gorilla/Small/Images/Drawer : $(SRCDIR)/$(CURDIR)/def_Drawer.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Small/Images/Floppy : $(SRCDIR)/$(CURDIR)/def_Disk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Small/Images/CDROM : $(SRCDIR)/$(CURDIR)/def_Harddisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Small/Images/Harddisk : $(SRCDIR)/$(CURDIR)/def_Harddisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Small/Images/USBdisk : $(SRCDIR)/$(CURDIR)/def_USB.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+#MM
+gorillasmall-icon-images : $(AROS_PRESETS)/Icons/Gorilla/Small/Images/Drawer $(AROS_PRESETS)/Icons/Gorilla/Small/Images/Floppy $(AROS_PRESETS)/Icons/Gorilla/Small/Images/CDROM $(AROS_PRESETS)/Icons/Gorilla/Small/Images/Harddisk $(AROS_PRESETS)/Icons/Gorilla/Small/Images/USBdisk
+
+#MM- icon-images : gorillasmall-icon-images
+
