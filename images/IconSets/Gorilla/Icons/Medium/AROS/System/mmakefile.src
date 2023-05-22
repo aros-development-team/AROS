@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -18,6 +18,9 @@ DISKIMAGEICON := DiskImageGUI
              dir=$(AROS_SYSTEM)
 
 %build_icons mmake=iconset-Gorilla-additional-icons-aros-system icons=$(ADDITIONALICONS) \
+             dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-system-logview icons="LogView" \
              dir=$(AROS_SYSTEM)
 
 %build_icons mmake=iconset-Gorilla-additional-icons-aros-system-diskimage \
