@@ -4,9 +4,12 @@
 include $(SRCDIR)/config/aros.cfg
 
 ICONS     := Input Zune Time ReqTools Font Locale Palette Pointer Printer ScreenMode Serial Wanderer
-ICONDIR   := $(AROSDIR)/Prefs
 
 #MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-prefs
 
 %build_icons mmake=iconset-Mason-wbench-icons-aros-prefs icons=$(ICONS) \
-             dir=$(ICONDIR)
+             dir=$(AROS_PREFS)
+
+#MM- icons-wbench-prefs : Mason-icons-wbench-prefs
+%build_icons mmake=Mason-icons-wbench-prefs icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Mason/Default/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)

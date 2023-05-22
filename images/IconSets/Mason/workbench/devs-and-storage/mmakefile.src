@@ -4,9 +4,12 @@
 include $(SRCDIR)/config/aros.cfg
 
 ICONS     := Keymaps
-ICONDIR   := $(AROSDIR)/Devs
 
 #MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-devs
 
 %build_icons mmake=iconset-Mason-wbench-icons-aros-devs icons=$(ICONS) \
-             dir=$(ICONDIR)
+             dir=$(AROS_DEVS)
+
+#MM- icons-wbench-devs : Mason-icons-wbench-devs
+%build_icons mmake=Mason-icons-wbench-devs icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Mason/Default/$(AROS_DIR_AROS)/$(AROS_DIR_DEVS)

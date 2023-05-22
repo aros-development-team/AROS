@@ -14,6 +14,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM         icons-wbench-devs-dosdrivers \
 #MM         icons-wbench-devs-monitors \
 #MM         icons-wbench-locale \
+#MM         icons-wbench-locale-help \
 #MM         icons-wbench-prefs \
 #MM         icons-wbench-prefs-envarc \
 #MM         icons-wbench-prefs-envarc-appicon \
