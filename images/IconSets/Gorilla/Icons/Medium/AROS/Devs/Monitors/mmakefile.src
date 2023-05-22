@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2020, The AROS Development Team. All rights reserved.
+# Copyright (C) 2010-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -29,4 +29,16 @@ endif
              dir=$(AMIGADEVSDIR)
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
-             dir=$(AROSDIR)/Storage/Monitors
+             dir=$(AROS_STORAGE)/Monitors
+
+#MM- icons-wbench-devs-monitors : gorilla-icons-wbench-devs-monitors-pc
+%build_icons mmake=gorilla-icons-wbench-devs-monitors-pc icons=$(PCDEVSICONS) image=Wrapper.png \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_STORAGE)/Monitors
+
+#MM- icons-wbench-devs-monitors : gorilla-icons-wbench-devs-monitors-amiga
+%build_icons mmake=gorilla-icons-wbench-devs-monitors-amiga icons=$(AMIGADEVSICONS) image=Wrapper.png \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_STORAGE)/Monitors
+
+#MM- icons-wbench-devs-monitors : gorilla-icons-wbench-devs-monitors
+%build_icons mmake=gorilla-icons-wbench-devs-monitors icons=$(STORAGEICONS) image=Wrapper.png \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_STORAGE)/Monitors

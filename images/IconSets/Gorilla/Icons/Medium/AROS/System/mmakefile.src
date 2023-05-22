@@ -23,5 +23,21 @@ DISKIMAGEICON := DiskImageGUI
 %build_icons mmake=iconset-Gorilla-additional-icons-aros-system-logview icons="LogView" \
              dir=$(AROS_SYSTEM)
 
-%build_icons mmake=iconset-Gorilla-additional-icons-aros-system-diskimage \
-             icons=$(DISKIMAGEICON) dir=$(AROS_SYSTEM) image=$(DISKIMAGESRCS)
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-system-diskimage icons=$(DISKIMAGEICON) \
+             dir=$(AROS_SYSTEM) image=$(DISKIMAGESRCS)
+
+#MM- icons-wbench-system : gorilla-icons-wbench-system
+%build_icons mmake=gorilla-icons-wbench-system icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system : gorilla-icons-additional-wbench-system
+%build_icons mmake=gorilla-icons-additional-wbench-system icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system-logview : gorilla-icons-additional-wbench-system-logview
+%build_icons mmake=gorilla-icons-additional-wbench-system-logview icons="LogView" \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system-diskimage : gorilla-icons-additional-wbench-system-diskimage
+%build_icons mmake=gorilla-icons-additional-wbench-system-diskimage icons=$(DISKIMAGEICON) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM) image=$(DISKIMAGESRCS)

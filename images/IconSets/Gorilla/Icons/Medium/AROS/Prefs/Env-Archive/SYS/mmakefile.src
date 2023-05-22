@@ -36,6 +36,14 @@ APPI := def_AppIcon
 %build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs-envarc-appicon icons=$(APPI) \
              dir=$(AROS_ENVARC)/SYS  image=$(IMGS)
 
+#MM- icons-wbench-prefs-envarc : gorilla-icons-wbench-prefs-envarc
+%build_icons mmake=gorilla-icons-wbench-prefs-envarc icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_ENVARC)/SYS
+
+#MM- icons-wbench-prefs-envarc-appicon : gorilla-icons-wbench-prefs-envarc-appicon
+%build_icons mmake=gorilla-icons-wbench-prefs-envarc-appicon icons=$(APPI) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_ENVARC)/SYS  image=$(IMGS)
+
 # Special rules for the "Hosted" Boot drives.
 
 #MM
