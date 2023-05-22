@@ -253,14 +253,10 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     APTR buffer = HIDD_PCIDriver_AllocPCIMem(data->ab_Dev->dev_PCIDriverObject, 8192);
     struct IORequest *nvmeTimer = nvme_OpenTimer(NVMEBase);
     struct ExpansionBase *ExpansionBase;
-    struct Node *unitNode, *tmpNode;
     UQUAD lbaStart, lbaEnd;
-    struct List nvmeUnits;
     struct nvme_command c;
     struct completionevent_handler busehandle;
     int nn;
-
-    NEWLIST(&nvmeUnits);
 
     if (nvmeTimer && buffer)
     {
@@ -453,12 +449,6 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             AddIntServer(INTB_KERNEL + qIRQ,
                                 &data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler);
                             data->ab_Dev->queuecnt++;
-                            unitNode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-                            if (unitNode)
-                            {
-                                unitNode->ln_Pri = nn;
-                                AddTail(&nvmeUnits, unitNode);
-                            }
                         }
                         else
                         {
@@ -485,9 +475,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
         /* Attach detected Units */
 
-        ForeachNodeSafe(&nvmeUnits, unitNode, tmpNode)
+        for (nn = 0; (data->ab_Dev->queuecnt > 0) && (nn < data->ab_UnitCnt); nn++)
         {
-            nn = unitNode->ln_Pri;
             struct nvme_id_ns *id_ns = (struct nvme_id_ns *)buffer;
             struct TagItem attrs[] =
             {
@@ -499,9 +488,6 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     {aHidd_StorageUnit_Revision,        (IPTR)data->ab_DevFW    },
                     {TAG_DONE,                          0                       }
             };
-
-            Remove(unitNode);
-            FreeVec(unitNode);
 
             memset(buffer, 0, 8192);
             memset(&c, 0, sizeof(c));
