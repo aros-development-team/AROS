@@ -1,0 +1,36 @@
+# Copyright (C) 2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+$(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/Drawer : $(SRCDIR)/$(CURDIR)/Drawer.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/File : $(SRCDIR)/$(CURDIR)/File.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/CDROM : $(SRCDIR)/$(CURDIR)/CDROM.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/Computer : $(SRCDIR)/$(CURDIR)/Computer.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/Harddisk : $(SRCDIR)/$(CURDIR)/Harddisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/RAMdisk : $(SRCDIR)/$(CURDIR)/RAMdisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/USBdisk : $(SRCDIR)/$(CURDIR)/USBdisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+#MM
+gorillatiny-icon-images : $(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/Drawer $(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/File $(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/CDROM $(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/Computer $(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/Harddisk $(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/RAMdisk $(AROS_PRESETS)/Icons/Gorilla/Tiny/Images/USBdisk
+
+#MM- icon-images : gorillatiny-icon-images
