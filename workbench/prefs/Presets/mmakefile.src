@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR := $(AROS_PREFS)/Presets
 
-#MM- workbench-prefs : workbench-prefs-presets
+#MM- workbench-prefs : workbench-prefs-presets workbench-prefs-presets-icons
 
 %copy_dir_recursive mmake=workbench-prefs-presets dst=$(TARGETDIR)
 
