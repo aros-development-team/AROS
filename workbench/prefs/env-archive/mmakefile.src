@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2019, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -37,5 +37,8 @@ $(AROS_ENVARC)/SYS/theme.default : $(SRCDIR)/$(CURDIR)/mmakefile.src
 	@$(MKDIR) $(AROS_PREFS)/Presets
 	@$(ECHO) "THEMES:$(AROS_GUI_THEME)" > $(AROS_PREFS)/Presets/theme.default
 
+$(AROS_ENVARC)/SYS/iconset.var : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@$(ECHO) "$(AROS_TARGET_ICONSET)" > $@
+
 #MM
-workbench-prefs-envarc-theme: $(AROS_ENVARC)/SYS/theme.default
+workbench-prefs-envarc-theme: $(AROS_ENVARC)/SYS/theme.default $(AROS_ENVARC)/SYS/iconset.var
