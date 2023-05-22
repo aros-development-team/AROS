@@ -187,7 +187,7 @@ static IPTR Volume__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
 	}
 	else
 	{
-		actionObjImgPath ="PROGDIR:IA-Icons/VolumeDropdown";
+		actionObjImgPath ="THEME:Images/Gadgets/Below";
 	}
 	imageSpec[0] = '\0';
     lock = Lock(actionObjImgPath, ACCESS_READ);
