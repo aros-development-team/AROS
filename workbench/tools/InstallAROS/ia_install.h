@@ -1,7 +1,7 @@
 #ifndef IA_INSTALL_H
 #define IA_INSTALL_H
 /*
-    Copyright © 2003-2021, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2023, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,8 +14,11 @@
 
 #define SYS_PART_NAME         "DH0"
 #define WORK_PART_NAME        "DH1"
+#define NVME_SYS_PART_NAME    "NH0"
+#define NVME_WORK_PART_NAME   "NH1"
 #define USB_SYS_PART_NAME     "DU0"
 #define USB_WORK_PART_NAME    "DU1"
+#define EFI_VOL_NAME          "EFI"
 #define SYS_VOL_NAME          "AROS"
 #define WORK_VOL_NAME         "Work"
 #define USB_SYS_VOL_NAME      "AROS Live Drive"
@@ -80,96 +83,33 @@ static const char KMsgNoDrives[] =
 */
 
 #define MUIM_IC_BASE                            (TAG_USER + 0x00335000)
-#define MUIA_IC_BASE                            (TAG_USER + 0x00336000)
+#define MUIA_IC_BASE                            (TAG_USER + 0x00335000)
+
+#define MUIM_IS_BASE                            (TAG_USER + 0x00336000)
+#define MUIA_IS_BASE                            (TAG_USER + 0x00336000)
+
 #define MUIM_IO_BASE                            (TAG_USER + 0x00337000)
-#define MUIA_IO_BASE                            (TAG_USER + 0x00338000)
+#define MUIA_IO_BASE                            (TAG_USER + 0x00337000)
+
+#define MUIM_ID_BASE                            (TAG_USER + 0x00338000)
+#define MUIA_ID_BASE                            (TAG_USER + 0x00338000)
+
+#define MUIM_IV_BASE                            (TAG_USER + 0x00339000)
+#define MUIA_IV_BASE                            (TAG_USER + 0x00339000)
 
 /* ************************************************
         Main Installer Class Methods/Attribs
  * ************************************************/
+#define MUIM_Install_AddOption                  (MUIM_IC_BASE + 0x1)
 
-#define MUIM_IC_NextStep                        (MUIM_IC_BASE + 0x1)
-#define MUIM_IC_PrevStep                        (MUIM_IC_BASE + 0x2)
-#define MUIM_IC_UndoSteps                       (MUIM_IC_BASE + 0x3)
+#define MUIA_Install_StageClass                 (MUIA_IC_BASE + 0x1)
+#define MUIA_Install_OptionClass                (MUIA_IC_BASE + 0x2)
 
-#define MUIM_IC_Install                         (MUIM_IC_BASE + 0x4)
-#define MUIM_IC_SetLocalePrefs                  (MUIM_IC_BASE + 0x5)
-
-#define MUIM_FindDrives                         (MUIM_IC_BASE + 0x6)
-#define MUIM_PartitionFree                      (MUIM_IC_BASE + 0x7)
-#define MUIM_Partition                          (MUIM_IC_BASE + 0x8)
-#define MUIM_Format                             (MUIM_IC_BASE + 0x9)
-
-#define MUIM_IC_CopyFiles                       (MUIM_IC_BASE + 0xa)
-#define MUIM_IC_CopyFile                        (MUIM_IC_BASE + 0xb)
-
-#define MUIM_IC_CancelInstall                   (MUIM_IC_BASE + 0x1a)
-#define MUIM_IC_ContinueInstall                 (MUIM_IC_BASE + 0x1b)
-#define MUIM_IC_QuitInstall                     (MUIM_IC_BASE + 0x1c)
-
-#define MUIM_Reboot                             (MUIM_IC_BASE + 0x1d)
-#define MUIM_RefreshWindow                      (MUIM_IC_BASE + 0x20)
-
-/* to be made obsolete */
-
-#define MUIA_Page                               (MUIA_IC_BASE + 0x0)
-
-#define MUIA_PartitionButton                    (MUIA_IC_BASE + 0x1)
-#define MUIA_Gauge1                             (MUIA_IC_BASE + 0x2)
-#define MUIA_Gauge2                             (MUIA_IC_BASE + 0x3)
-#define MUIA_Install                            (MUIA_IC_BASE + 0x4)
-/**/
-#define MUIA_WelcomeMsg                         (MUIA_IC_BASE + 0xa)
-#define MUIA_FinishedMsg                        (MUIA_IC_BASE + 0xb)
-
-/* new - some/most will "vanish(tm)" */
-
-#define MUIA_OBJ_Installer                      (MUIA_IC_BASE + 0xd)
-#define MUIA_Grub_Options                       (MUIA_IC_BASE + 0xe)
-#define MUIA_List_Options                       (MUIA_IC_BASE + 0xf)
-
-#define MUIA_OBJ_Window                         (MUIA_IC_BASE + 0x10)
-#define MUIA_OBJ_WindowContent                  (MUIA_IC_BASE + 0x11)
-
-#define MUIA_OBJ_PageTitle                      (MUIA_IC_BASE + 0x12)
-#define MUIA_OBJ_PageHeader                     (MUIA_IC_BASE + 0x13)
-#define MUIA_OBJ_CActionStrng                   (MUIA_IC_BASE + 0x14)
-
-#define MUIA_OBJ_Back                           (MUIA_IC_BASE + 0x15)
-#define MUIA_OBJ_Proceed                        (MUIA_IC_BASE + 0x16)
-#define MUIA_OBJ_Cancel                         (MUIA_IC_BASE + 0x17)
-
-#define MUIA_IC_License_File                    (MUIA_IC_BASE + 0x20)
-#define MUIA_IC_License_Mandatory	        (MUIA_IC_BASE + 0x21)
-
-#define MUIA_IC_EnableUndo                      (MUIA_IC_BASE + 0x30)
-
-/* Install Results */
-
-#define MUIA_InstallComplete                    (MUIA_IC_BASE + 0xff)
-#define MUIA_InstallFailed                      (MUIA_IC_BASE + 0xfe)
-
-#define MUIV_Inst_Completed                     (0xff)
-#define MUIV_Inst_InProgress                    (0x00)
-#define MUIV_Inst_Cancelled                     (0x01)
-#define MUIV_Inst_Failed                        (0x10)
-
-/* ************************************************
-        Install Option Class Methods/Attribs
- * ************************************************/
-#define MUIM_InstallOption_Update               (MUIM_IO_BASE + 0x1)
-
-#define MUIA_InstallOption_Obj                  (MUIA_IO_BASE + 0x1)            /* Install GUI Object representing the object   */
-#define MUIA_InstallOption_ID                   (MUIA_IO_BASE + 0x2)            /* Install 'unique' Option ID                   */
-#define MUIA_InstallOption_ValueTag             (MUIA_IO_BASE + 0x3)            /* TAG used to access the GUI objects value     */
-#define MUIA_InstallOption_Value                (MUIA_IO_BASE + 0x4)            /* The current value for the option, at this
-                                                                                   stage.
-                                                                                   N.B. this value only changes when the stage
-                                                                                   changes                                      */
-
-#define MUIV_InstallOptionID_Source             (-2L)                           /* Generic attrib for an install source path    */
-#define MUIV_InstallOptionID_Dest               (-3L)                           /* Generic attrib for an install target path    */
-#define MUIV_InstallOptionID_StorageAvail       (-4L)                           /* Generic attrib for storage device (maybe)    */
+struct MUIP_Install_NewOption
+{
+    STACKED ULONG               MethodID;
+    STACKED struct TagItem      *OptTags;
+};
 
 struct MUIP_CopyFiles
 {
@@ -217,31 +157,15 @@ enum IO_OVERWRITE_FLAGS
     IIO_Overwrite_Never
 };
 
-static void OPTOSET(Object *optObj, IPTR optTag, IPTR optVal)
-{
-    Object *optObjS;
-    GET(optObj, MUIA_InstallOption_Obj, &optObjS);
-    SET(optObjS, optTag, optVal);
-}
-
-static void OPTOGET(Object *optObj, IPTR optTag, IPTR *optstorage)
-{
-    Object *optObjS;
-    GET(optObj, MUIA_InstallOption_Obj, &optObjS);
-    GET(optObjS, optTag, optstorage);
-}
-
-static IPTR XOPTOGET(Object *optObj, IPTR optTag)
-{
-    Object *optObjS;
-    GET(optObj, MUIA_InstallOption_Obj, &optObjS);
-    return XGET(optObjS, optTag);
-}
-
-extern void AddSkipListEntry(struct List *SkipList, char *SkipEntry);
-extern void ClearSkipList(struct List *SkipList);
-extern BPTR RecursiveCreateDir(CONST_STRPTR dirpath);
-extern LONG CopyDirArray(Class * CLASS, Object * self, CONST_STRPTR sourcePath,
-    CONST_STRPTR destinationPath, CONST_STRPTR directories[], struct List *SkipList);
+#define Install_MakeOption(arg1, ...) \
+({ \
+    const IPTR Install_Option_args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };\
+    struct MUIP_Install_NewOption Install_Option_msg[] = \
+    { \
+        MUIM_Install_AddOption, \
+        (struct TagItem *)(Install_Option_args)  \
+    }; \
+    (Object *)DoMethodA((arg1), (Install_Option_msg)); \
+})
 
 #endif /* IA_INSTALL_H */

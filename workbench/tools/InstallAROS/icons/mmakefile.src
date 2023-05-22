@@ -1,0 +1,10 @@
+# Copyright (C) 2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR  := $(AROS_TOOLS)/IA-Icons
+
+%build_icons mmake=workbench-tools-installaros-diskicons icons="Harddisk USBdisk" \
+             dir=$(EXEDIR)
+
+%common

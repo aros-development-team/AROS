@@ -12,13 +12,14 @@
 #include <proto/muimaster.h>
 #include <proto/alib.h>
 
-#include "ia_install.h"
-#include "ia_installoption_intern.h"
+#include "ia_option.h"
+#include "ia_option_intern.h"
 
 #define DOPTION(x)
 
-IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
+static IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
 {
+    struct List *optList = (struct List *)GetTagData(MUIA_InstallOption_List, 0, message->ops_AttrList);
     IPTR iaTag = (IPTR)-1;
     char *iaID;
 
@@ -75,10 +76,13 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
             if (self)
             {
                 struct InstallOption_Data *data = INST_DATA(CLASS, self);
+                data->iod_Node.ln_Name = (char *)self;
                 data->iod_Object = iaObj;
                 data->iod_ID = iaID;
                 data->iod_OptionTag = GetTagData(MUIA_InstallOption_ValueTag, (iaTag != (IPTR)1) ? iaTag : (IPTR)-1, message->ops_AttrList);
                 SET(data->iod_Object, MUIA_UserData, self);
+                if (optList)
+                    AddTail(optList, &data->iod_Node);
             }
             return (IPTR)self;
         }
@@ -86,7 +90,7 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
     return (IPTR)NULL;
 }
 
-IPTR InstallOption__OM_GET(Class * CLASS, Object * self, struct opGet *message)
+static IPTR InstallOption__OM_GET(Class * CLASS, Object * self, struct opGet *message)
 {
     struct InstallOption_Data *data = INST_DATA(CLASS, self);
 
@@ -110,7 +114,7 @@ IPTR InstallOption__OM_GET(Class * CLASS, Object * self, struct opGet *message)
     return DoSuperMethodA(CLASS, self, message);
 }
 
-IPTR InstallOption__OM_SET(Class * CLASS, Object * self, struct opSet *message)
+static IPTR InstallOption__OM_SET(Class * CLASS, Object * self, struct opSet *message)
 {
     struct InstallOption_Data *data = INST_DATA(CLASS, self);
 
@@ -119,7 +123,7 @@ IPTR InstallOption__OM_SET(Class * CLASS, Object * self, struct opSet *message)
     return DoSuperMethodA(CLASS, self, message);
 }
 
-IPTR InstallOption__MUIM_InstallOption_Update(Class * CLASS, Object * self, struct opSet *message)
+static IPTR InstallOption__MUIM_InstallOption_Update(Class * CLASS, Object * self, struct opSet *message)
 {
     struct InstallOption_Data *data = INST_DATA(CLASS, self);
 

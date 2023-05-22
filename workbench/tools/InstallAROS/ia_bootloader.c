@@ -36,8 +36,11 @@
 
 #include "ia_locale.h"
 #include "ia_install.h"
-#include "ia_install_intern.h"
+#include "ia_stage.h"
+#include "ia_option.h"
+#include "ia_stage_intern.h"
 #include "ia_bootloader.h"
+#include "ia_diskio.h"
 
 extern char *source_Path;
 
@@ -80,6 +83,7 @@ struct BootLoaderInfo BootLoaderData[] = {
 #if defined(INSTALL_BL_GRUB)
     {
         "grub",
+        "SYS:",
         "boot/grub/stage1",
         "c/Install-grub",
         NULL
@@ -88,10 +92,20 @@ struct BootLoaderInfo BootLoaderData[] = {
 #if defined(INSTALL_BL_GRUB2)
     {
         "grub",
+        "SYS:",
         "boot/grub/" GRUBARCHDIR "/core.img",
         "c/Install-grub2",
         "boot/grub/fonts/unicode.pf2"
     },
+#if (0)
+    {
+        "grub EFI",
+        "SYS:",
+        "EFI/BOOT/BOOTX64.EFI",
+        NULL,
+        NULL
+    },
+#endif
 #endif
     {
         (CONST_STRPTR)-1,
@@ -200,7 +214,7 @@ void BOOTLOADER_AddCoreSkipPaths(struct List *SkipList)
 #endif
 }
 
-BOOL BOOTLOADER_PartFixUp(struct Install_DATA *data, IPTR systype)
+BOOL BOOTLOADER_PartFixUp(struct InstallStage_DATA *data, IPTR systype)
 {
     D(bug("[InstallAROS] %s()\n", __func__));
 
@@ -254,11 +268,11 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
 
 void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     ULONG srcLen =
-        strlen(source_Path) + strlen("boot") + BOOTLOADER_PATH_LEN + 4;
+        strlen(source_Path) + BOOTLOADER_PATH_LEN + 8;
     ULONG dstLen =
-        strlen(data->install_SysTarget) + strlen("boot") + BOOTLOADER_PATH_LEN + 4;
+        strlen(data->install_SysTarget) + BOOTLOADER_PATH_LEN + 8;
     int numgrubfiles = 0, file_count = 0;
     TEXT srcPath[srcLen];
     TEXT dstPath[dstLen];

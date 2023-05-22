@@ -22,8 +22,6 @@
 #include <libraries/expansionbase.h>
 #include <devices/trackdisk.h>
 #include <devices/scsidisk.h>
-#include <hidd/hidd.h>
-#include <hidd/storage.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <gadgets/colorwheel.h>
@@ -34,8 +32,10 @@
 #include <string.h>
 
 #include "ia_locale.h"
-#include "ia_install.h"
-#include "ia_install_intern.h"
+#include "ia_stage.h"
+#include "ia_stage_intern.h"
+#include "ia_option.h"
+#include "ia_diskio.h"
 #include "ia_packages.h"
 #include "ia_bootloader.h"
 
@@ -68,6 +68,9 @@ extern Object *optObjDestDevice;
 extern Object *cycle_drivetype;
 extern Object *optObjDestUnit;
 
+extern Object *optObjCheckEFI;
+
+extern Object *optObjCyclePartScheme;
 extern Object *optObjCheckSysSize;
 extern Object *optObjCheckSizeWork;
 extern Object *optObjCheckCreateWork;
@@ -80,13 +83,6 @@ extern Object *grub_unit;
 
 extern Object *reboot_group;
 
-OOP_AttrBase HiddStorageUnitAB;
-const struct OOP_ABDescr install__abd[] =
-{
-    {IID_Hidd_StorageUnit       , &HiddStorageUnitAB    },
-    {NULL                       , NULL                  }
-};
-
 TEXT            *extras_path = NULL;       /* DOS DEVICE NAME of part used to store extras */
 struct List     SKIPLIST;
 
@@ -98,7 +94,6 @@ LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_
 LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR fileMask, BOOL recursive);
 BOOL GetVolumeForDevName(char *devName, char *buffer);
 LONG GetPartitionSize(BOOL get_work);
-char *FindPartition(struct PartitionHandle *root);
 struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
 char * GetDevNameForVolume(char *volumeName);
 
@@ -113,8 +108,8 @@ AROS_UFH3S(BOOL, partradioHookFunc,
 
     Class *CLASS = (Class *)h->h_Data;
 
-    D(bug("[InstallAROS] %s()\n", __func__));
-    D(bug("[InstallAROS] %s: val = %d\n", __func__, *params));
+    D(bug("[InstallAROS:Stage] %s()\n", __func__));
+    D(bug("[InstallAROS:Stage] %s: val = %d\n", __func__, *params));
 
     switch (*params)
     {
@@ -126,7 +121,7 @@ AROS_UFH3S(BOOL, partradioHookFunc,
         break;
     case 2:
         {
-            struct Install_DATA *data = INST_DATA(CLASS, installer);
+            struct InstallStage_DATA *data = INST_DATA(CLASS, installer);
             char *devvolName, *curVal;
             //IPTR option = 0;
 
@@ -135,7 +130,7 @@ AROS_UFH3S(BOOL, partradioHookFunc,
 
             curVal = NULL;
             OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&curVal);
-            D(bug("[InstallAROS] %s: Current Sys DevName '%s'\n", __func__, curVal));
+            D(bug("[InstallAROS:Stage] %s: Current Sys DevName '%s'\n", __func__, curVal));
             devvolName = GetDevNameForVolume((data->instc_default_usb) ? USB_SYS_VOL_NAME : SYS_VOL_NAME);
             /* Update the sys drives device name */
             if (devvolName)
@@ -145,12 +140,12 @@ AROS_UFH3S(BOOL, partradioHookFunc,
 
             curVal = NULL;
             GET(work_devname, MUIA_String_Contents, &curVal);
-            D(bug("[InstallAROS] %s: Current Work DevName '%s'\n", __func__, curVal));
+            D(bug("[InstallAROS:Stage] %s: Current Work DevName '%s'\n", __func__, curVal));
             devvolName = GetDevNameForVolume((data->instc_default_usb) ? USB_WORK_VOL_NAME : WORK_VOL_NAME);
             /* Get the work drives device name */
             if (devvolName)
             {
-                D(bug("[InstallAROS] %s:     Changing to '%s'\n", __func__, devvolName));
+                D(bug("[InstallAROS:Stage] %s:     Changing to '%s'\n", __func__, devvolName));
                 SET(work_devname, MUIA_String_Contents, devvolName);
             }
 
@@ -168,50 +163,22 @@ struct Hook partradioHook =
     .h_Entry = partradioHookFunc,
 };
 
-BYTE Install__InitDriveTypeCycle(Object *dtCycle, char *driveDev)
-{
-    /* match the boot device to one of our known "types" ... */
-    if (!strcmp(driveDev, "ahci.device"))
-    {
-        SET(dtCycle, MUIA_Cycle_Active, 0);
-        return 0;
-    }
-    else if (!strcmp(driveDev, "ata.device"))
-    {
-        SET(dtCycle, MUIA_Cycle_Active, 1);
-        return 1;
-    }
-    else if (!strcmp(driveDev, "scsi.device"))
-    {
-        SET(dtCycle, MUIA_Cycle_Active, 2);
-        return 2;
-    }
-    /* not sure ... so treat it like it is a scsi device ... */
-    SET(dtCycle, MUIA_Cycle_Active, 2);
-    return -1;
-}
-
-IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
+IPTR InstallStage__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
 {
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
     if (self)
     {
-        struct Install_DATA *data = INST_DATA(CLASS, self);
+        struct InstallStage_DATA *data = INST_DATA(CLASS, self);
         BPTR lock = BNULL;
         ULONG largest, total;
-        char sys_path[100];
-        char *partvol;
 
         /* We will generate this info shortly */
 
         /* IO Related */
 
-        OOP_ObtainAttrBases(install__abd);
-
-
         largest = AvailMem(MEMF_LARGEST);
         total = AvailMem(0);
-        D(bug("[InstallAROS] Total : %u - Largest %u\n", total, largest);)
+        D(bug("[InstallAROS:Stage] Total : %u - Largest %u\n", total, largest);)
         if (largest < ((total / 100) * 70))
             data->instc_IOd.iio_BuffSize = largest >> 1;
         else
@@ -221,7 +188,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         if (data->instc_IOd.iio_BuffSize < 0x1ff)
             data->instc_IOd.iio_BuffSize = 0x1ff;
 
-        D(bug("[InstallAROS] Total : Using %u bytes to buffer\n", total, largest);)
+        D(bug("[InstallAROS:Stage] Total : Using %u bytes to buffer\n", data->instc_IOd.iio_BuffSize);)
 
         data->instc_IOd.iio_Buffer = AllocMem(data->instc_IOd.iio_BuffSize, MEMF_ANY);
 
@@ -315,100 +282,19 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         data->inst_success = FALSE;
         data->disable_back = FALSE;
 
-        data->instc_cflag_driveset = FALSE;
-        if ((partvol = (char *)DoMethod(self, MUIM_FindDrives)))
-        {
-            BOOL devset = FALSE;
-            BYTE namelen = (BYTE)strlen(partvol);
-            if (namelen > 1)
-            {
-                char devnamebuffer[128];
-                struct FileSysStartupMsg *fssm;
-                D(bug("[InstallAROS] %s: Suitable Existing Device '%s' (%u)\n", __func__, partvol, namelen));
-                devnamebuffer[namelen--] = ':';
-                while (namelen >= 0)
-                {
-                    devnamebuffer[namelen] = partvol[namelen];
-                    namelen--;
-                }
-                D(bug("[InstallAROS] %s: Checking '%s'\n", __func__, devnamebuffer));
-
-                data->instc_cflag_driveset = TRUE;
-                fssm = getDiskFSSM(devnamebuffer);
-                if (fssm != NULL)
-                {
-                    D(
-                        bug("[InstallAROS] %s: FSSM @ 0x%p\n", __func__, fssm);
-                        bug("[InstallAROS] %s:      %s:%u\n", __func__, AROS_BSTR_ADDR(fssm->fssm_Device), AROS_BSTR_ADDR(fssm->fssm_Unit));
-                    )
-
-                    /* use the partitions device ... */
-                    if (Install__InitDriveTypeCycle(cycle_drivetype, AROS_BSTR_ADDR(fssm->fssm_Device)) == -1)
-                    {
-                        OPTOSET(optObjDestDevice, MUIA_String_Contents, (IPTR)AROS_BSTR_ADDR(fssm->fssm_Device));
-                    }
-                    OPTOSET(optObjDestUnit, MUIA_String_Integer, fssm->fssm_Unit);
-                    devset = TRUE;
-                }
-            }
-            if (!devset)
-            {
-                /* fallback to boot device ... */
-                if (Install__InitDriveTypeCycle(cycle_drivetype,boot_Device) == -1)
-                {
-                    OPTOSET(optObjDestDevice, MUIA_String_Contents, (IPTR)boot_Device);
-                }
-                OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
-            }
-        }
-        else if (boot_Device)
-        {
-            /* use boot device ... */
-            if (Install__InitDriveTypeCycle(cycle_drivetype,boot_Device) == -1)
-            {
-                OPTOSET(optObjDestDevice, MUIA_String_Contents, (IPTR)boot_Device);
-            }
-            OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
-        }
-        else
-        {
-            /* couldnt detect anything so just show the default options ... */
-            SET(cycle_drivetype, MUIA_Cycle_Active, 0);
-        }
-
-        /* Default to USB if a USB system volume appears to be present and we
-         * haven't booted from it */
-
-        lock = Lock("SYS:", SHARED_LOCK);
-        NameFromLock(lock, sys_path, 100);
-        if (getDiskFSSM(USB_SYS_PART_NAME ":") != NULL
-            && strncmp(sys_path, USB_SYS_VOL_NAME ":",
-            strlen(USB_SYS_VOL_NAME) + 1))
-        {
-            data->instc_default_usb = TRUE;
-            SET(cycle_drivetype, MUIA_Cycle_Active, 3);
-        }
-        else
-            data->instc_default_usb = FALSE;
-        UnLock(lock);
-
         /* Cache the initial values */
         DoMethod(optObjDestDevice, MUIM_InstallOption_Update);
         DoMethod(optObjDestUnit, MUIM_InstallOption_Update);
-        
-    #if (0)
-        boot_Unit = GuessFirstHD(boot_Device);
-    #endif
 
-        DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self,
-            1, MUIM_IC_NextStep);
-        DoMethod(data->back, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1,
-            MUIM_IC_PrevStep);
-        DoMethod(data->cancel, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1,
-            MUIM_IC_CancelInstall);
+        DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR) self, 1, MUIM_IC_NextStep);
+        DoMethod(data->back, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR) self, 1, MUIM_IC_PrevStep);
+        DoMethod(data->cancel, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR) self, 1, MUIM_IC_CancelInstall);
 
-        DoMethod(self, MUIM_Notify, MUIA_InstallComplete, TRUE, (IPTR) self, 1,
-            MUIM_Reboot);
+        DoMethod(self, MUIM_Notify, MUIA_InstallComplete, TRUE,
+            (IPTR) self, 1, MUIM_Reboot);
 
         /* set up the license info */
 
@@ -428,14 +314,14 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
             if ((from = Open(data->instc_lic_file, MODE_OLDFILE)))
             {
                 D(bug
-                    ("[InstallAROS] %s: Allocating buffer [%d] for license file '%s'!", __func__,
+                    ("[InstallAROS:Stage] %s: Allocating buffer [%d] for license file '%s'!", __func__,
                         fib->fib_Size, data->instc_lic_file));
                 data->instc_lic_buffer =
                     AllocVec(fib->fib_Size + 1, MEMF_CLEAR | MEMF_PUBLIC);
                 if ((s = Read(from, data->instc_lic_buffer,
                             fib->fib_Size)) == -1)
                 {
-                    D(bug("[InstallAROS] %s: Error processing license file!", __func__));
+                    D(bug("[InstallAROS:Stage] %s: Error processing license file!", __func__));
                     if ((BOOL) data->instc_copt_licensemandatory)
                     {
                         Close(from);
@@ -473,12 +359,12 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         {
             lock = BNULL;
             NEWLIST((struct List *)&data->instc_undorecord);
-            D(bug("[InstallAROS] %s: Prepared UNDO list @ %p\n", __func__,
+            D(bug("[InstallAROS:Stage] %s: Prepared UNDO list @ %p\n", __func__,
                     &data->instc_undorecord));
 
             if ((lock = Lock(INSTALLAROS_TMP_PATH, ACCESS_READ)) != BNULL)
             {
-                D(bug("[InstallAROS] %s: Dir '%s' Exists - no nead to create\n", __func__,
+                D(bug("[InstallAROS:Stage] %s: Dir '%s' Exists - no nead to create\n", __func__,
                         INSTALLAROS_TMP_PATH));
                 UnLock(lock);
             }
@@ -489,7 +375,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                     UnLock(lock);
                 else
                 {
-                    D(bug("[InstallAROS] %s: Failed to create dir '%s'!!\n", __func__,
+                    D(bug("[InstallAROS:Stage] %s: Failed to create dir '%s'!!\n", __func__,
                             INSTALLAROS_TMP_PATH));
                     data->inst_success = MUIV_Inst_Failed;
                     return 0;
@@ -499,15 +385,15 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
 
         PACKAGES_InitSupport(&data->instc_packages);
     }
-    D(bug("[InstallAROS] %s: returning 0x%p\n", __func__,self));
+    D(bug("[InstallAROS:Stage] %s: returning 0x%p\n", __func__,self));
     return (IPTR) self;
 }
 
-IPTR Install__OM_DISPOSE(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__OM_DISPOSE(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
 
-    D(bug("[InstallAROS] %s(0x%p)\n", __func__, self));
+    D(bug("[InstallAROS:Stage] %s(0x%p)\n", __func__, self));
 
     if (data->instc_IOd.iio_Buffer)
         FreeMem(data->instc_IOd.iio_Buffer, data->instc_IOd.iio_BuffSize);
@@ -515,7 +401,7 @@ IPTR Install__OM_DISPOSE(Class * CLASS, Object * self, Msg message)
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
-IPTR Install__OM_SET(Class * CLASS, Object * self, struct opSet * message)
+IPTR InstallStage__OM_SET(Class * CLASS, Object * self, struct opSet * message)
 {
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
@@ -525,7 +411,7 @@ IPTR Install__OM_SET(Class * CLASS, Object * self, struct opSet * message)
 ULONG AskRetry(Class * CLASS, Object * self, CONST_STRPTR message, CONST_STRPTR file, CONST_STRPTR opt1,
     CONST_STRPTR opt2, CONST_STRPTR opt3)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     STRPTR finalmessage = NULL;
     STRPTR finaloptions = NULL;
     ULONG result = -1;
@@ -549,138 +435,12 @@ ULONG AskRetry(Class * CLASS, Object * self, CONST_STRPTR message, CONST_STRPTR 
     return result - 1;
 }
 
-AROS_UFH3S(BOOL, Install__StorageUnitEnum,
-    AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(OOP_Object*, unitObj, A2),
-    AROS_UFHA(IPTR *, retval, A1))
-{
-    AROS_USERFUNC_INIT
-
-    IPTR suType, suDev, suUnit, suModel, suRem;
-    BOOL enumstop = FALSE;
-
-    D(bug("[InstallAROS] %s(0x%p)\n", __func__, unitObj));
-
-    OOP_GetAttr(unitObj, aHidd_StorageUnit_Type, &suType);
-    OOP_GetAttr(unitObj, aHidd_StorageUnit_Device, &suDev);
-    OOP_GetAttr(unitObj, aHidd_StorageUnit_Number, &suUnit);
-    OOP_GetAttr(unitObj, aHidd_StorageUnit_Model, &suModel);
-    OOP_GetAttr(unitObj, aHidd_StorageUnit_Removable, &suRem);
-
-    if ((suType != vHidd_StorageUnit_Type_OpticalDisc) &&
-        (suType != vHidd_StorageUnit_Type_MagneticTape))
-    {
-        struct PartitionHandle *root;
-        D(
-            bug("[InstallAROS] %s: Potential Unit '%s'\n", __func__, suModel);
-            bug("[InstallAROS] %s:         Device %s:%u\n", __func__, suDev, suUnit);
-        )
-        if (!boot_Device)
-        {
-            boot_Device = (char *)suDev;
-            boot_Unit = suUnit;
-            bug("[InstallAROS] %s: Boot Device %s:%u\n", __func__, suDev, suUnit);
-        }
-        if ((root = OpenRootPartition((CONST_STRPTR)suDev, suUnit)) != NULL)
-        {
-            char *result = NULL;
-
-            D(bug("[InstallAROS] %s:     Part. Root @ 0x%p\n", __func__, root));
-
-            if (OpenPartitionTable(root) == 0)
-            {
-                result = FindPartition(root);
-                D(bug("[InstallAROS] %s: FindPartition returned 0x%p\n", __func__, result));
-                if (result)
-                {
-                    D(bug("[InstallAROS] %s: '%s'\n", __func__, result));
-                    *retval = (IPTR)result;
-                    enumstop = TRUE;
-                }
-                ClosePartitionTable(root);
-            }
-            CloseRootPartition(root);
-        }
-    }
-
-    /* Continue enumeration */
-    return enumstop;
-
-    AROS_USERFUNC_EXIT
-}
-
-AROS_UFH3S(BOOL, Install__StorageBusEnum,
-    AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(OOP_Object*, busObj, A2),
-    AROS_UFHA(IPTR *, retval, A1))
-{
-    AROS_USERFUNC_INIT
-
-    struct Hook unitenum_hook =
-    {
-        .h_Entry = Install__StorageUnitEnum,
-        .h_Data = NULL
-    };
-    D(bug("[InstallAROS] %s(0x%p)\n", __func__, busObj));
-
-    HIDD_StorageBus_EnumUnits(busObj, &unitenum_hook, retval);
-
-    /* Continue enumeration */
-    return FALSE;
-
-    AROS_USERFUNC_EXIT
-}
-
-
-AROS_UFH3S(BOOL, Install__StorageCntrllrEnum,
-    AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(OOP_Object*, ctrllrObj, A2),
-    AROS_UFHA(IPTR *, retval, A1))
-{
-    AROS_USERFUNC_INIT
-
-    struct Hook busenum_hook =
-    {
-        .h_Entry = Install__StorageBusEnum,
-        .h_Data = NULL
-    };
-    D(bug("[InstallAROS] %s(0x%p)\n", __func__, ctrllrObj));
-
-    HIDD_StorageController_EnumBuses(ctrllrObj, &busenum_hook, retval);
-
-    /* Continue enumeration */
-    return FALSE;
-
-    AROS_USERFUNC_EXIT
-}
-
-
-IPTR Install__MUIM_FindDrives(Class * CLASS, Object * self, Msg message)
-{
-    IPTR retval = 0L;
-
-    struct Hook controllerenum_hook =
-    {
-        .h_Entry = Install__StorageCntrllrEnum,
-        .h_Data = NULL
-    };
-
-    D(bug("[InstallAROS:Inst] %s()\n", __func__));
-
-    OOP_Object *storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-    if (storageRoot)
-    {
-        HW_EnumDrivers(storageRoot, &controllerenum_hook, &retval);
-    }
-    return retval;
-}
-
-IPTR Install__CacheOptionState(Class * CLASS, Object *optgrpObj, int grpChildID)
+IPTR InstallStage__CacheOptionState(Class * CLASS, Object *optgrpObj, int grpChildID)
 {
     struct MinList *fmlyList = NULL;
     IPTR count = 0;
 
-    DOPTS(bug("[InstallAROS:Inst] %s(0x%p, %d)\n", __func__, optgrpObj, grpChildID);)
+    DOPTS(bug("[InstallAROS:Stage] %s(0x%p, %d)\n", __func__, optgrpObj, grpChildID);)
 
     GET(optgrpObj, MUIA_Group_ChildList, (IPTR *)&fmlyList);
     if (!fmlyList)
@@ -692,26 +452,26 @@ IPTR Install__CacheOptionState(Class * CLASS, Object *optgrpObj, int grpChildID)
         Object *childNode = NULL, *cState;
         int childCnt = 0;
 
-        DOPTS(bug("[InstallAROS:Inst] %s: List @ 0x%p\n", __func__, fmlyList);)
+        DOPTS(bug("[InstallAROS:Stage] %s: List @ 0x%p\n", __func__, fmlyList);)
 
         cState = (Object *)fmlyList->mlh_Head;
         while ((childNode = NextObject(&cState)))
         {
-            DOPTS(bug("[InstallAROS:Inst] %s: child #%u 0x%p\n", __func__, childCnt, childNode);)
+            DOPTS(bug("[InstallAROS:Stage] %s: child #%u 0x%p\n", __func__, childCnt, childNode);)
             if ((grpChildID == -1) || (grpChildID == childCnt))
             {
                 Class *chClass = OCLASS(childNode);
-                DOPTS(bug("[InstallAROS:Inst] %s:      class 0x%p\n", __func__, chClass);)
+                DOPTS(bug("[InstallAROS:Stage] %s:      class 0x%p\n", __func__, chClass);)
                 if (chClass && (chClass->cl_ID == CLASS->cl_ID))
                 {
-                    DOPTS(bug("[InstallAROS:Inst] %s: Updating suitable child ..\n", __func__);)
+                    DOPTS(bug("[InstallAROS:Stage] %s: Updating suitable child ..\n", __func__);)
                     DoMethod(childNode, MUIM_InstallOption_Update);
                     count += 1;
                 }
                 else
                 {
-                    DOPTS(bug("[InstallAROS:Inst] %s: Checking descendant...\n", __func__);)
-                    count += Install__CacheOptionState(CLASS, childNode, -1);
+                    DOPTS(bug("[InstallAROS:Stage] %s: Checking descendant...\n", __func__);)
+                    count += InstallStage__CacheOptionState(CLASS, childNode, -1);
                 }
             }
             childCnt++;
@@ -720,12 +480,12 @@ IPTR Install__CacheOptionState(Class * CLASS, Object *optgrpObj, int grpChildID)
     return count;
 }
 
-IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     IPTR this_page = 0, next_stage = 0, option = 0;
 
-    D(bug("[InstallAROS:Inst] %s()\n", __func__));
+    D(bug("[InstallAROS:Stage] %s()\n", __func__));
 
     GET(data->page, MUIA_Group_ActivePage, &this_page);
 
@@ -735,7 +495,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
     SET(data->back, MUIA_Disabled, (BOOL) data->disable_back);
 
     /* Update the cached state of the options, for the current stage */
-    Install__CacheOptionState(CLASS, data->page, this_page);
+    InstallStage__CacheOptionState(CLASS, data->page, this_page);
 
     next_stage = data->instc_stage_next;
     data->instc_stage_prev = this_page;
@@ -748,7 +508,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
     {
 
     case ELicenseStage:
-        D(bug("[InstallAROS:Inst] %s: ELicenseStage\n", __func__));
+        D(bug("[InstallAROS:Stage] %s: ELicenseStage\n", __func__));
         if (data->instc_lic_file)
         {
             if (data->instc_copt_licensemandatory)
@@ -765,18 +525,14 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
         /* if no license we ignore this step... and go to partition options */
 
     case EPartitionOptionsStage:
-        D(bug("[InstallAROS:Inst] %s: EPartitionOptionsStage\n", __func__));
-        if (data->instc_cflag_driveset)
-            SET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
-                2);
-        else
-            OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
+        D(bug("[InstallAROS:Stage] %s: EPartitionOptionsStage\n", __func__));
+        OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
         data->instc_stage_next = EPartitioningStage;
         next_stage = EPartitionOptionsStage;
         break;
 
     case EInstallOptionsStage:
-        D(bug("[InstallAROS:Inst] %s: EInstallOptionsStage\n", __func__));
+        D(bug("[InstallAROS:Stage] %s: EInstallOptionsStage\n", __func__));
         SET(data->welcomeMsg, MUIA_Text_Contents, __(MSG_INSTALLOPTIONS));
         data->instc_stage_next = EDestOptionsStage;
         next_stage = EInstallOptionsStage;
@@ -784,7 +540,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
 
     case EDestOptionsStage:
         {
-            D(bug("[InstallAROS:Inst] %s: EDestOptionsStage\n", __func__));
+            D(bug("[InstallAROS:Stage] %s: EDestOptionsStage\n", __func__));
             if ((BOOL) XGET(data->instc_options_main->opt_format,
                     MUIA_Selected))
             {
@@ -803,7 +559,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
             break;
         }
     case EInstallMessageStage:
-        D(bug("[InstallAROS:Inst] %s: EInstallMessageStage\n", __func__));
+        D(bug("[InstallAROS:Stage] %s: EInstallMessageStage\n", __func__));
         /* PARTITION DRIVES */
 
         /* have we already done this? */
@@ -831,31 +587,18 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
 
                 if (!data->instc_options_grub->bootinfo)
                 {
-#if 0
-                    char *tmp_drive = NULL;
-                    char *tmp_device = NULL;
-#endif
-                    char *tmp_grub = NULL;
-#if 0
-                    struct IOStdReq *ioreq = NULL;
-                    struct MsgPort *mp = NULL;
-#endif
+                    char *tmp_blpath = NULL;
                     struct FileSysStartupMsg *fssm;
 
                     data->instc_options_grub->bootinfo = TRUE;
-
-#if 0
-                    tmp_drive = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
-                    tmp_device = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
-#endif
-                    tmp_grub = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
+                    tmp_blpath = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
 
                     OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &option);
-                    sprintf(tmp_grub, "%s:boot/%s",
+                    sprintf(tmp_blpath, "%s:boot/%s",
                         (CONST_STRPTR) option, BootLoaderData[BootLoaderType].path);
 
                     /* Guess the best disk to install GRUB's bootblock to */
-                    fssm = getDiskFSSM(tmp_grub);
+                    fssm = getDiskFSSM(tmp_blpath);
                     if (fssm != NULL)
                     {
                         boot_Device = AROS_BSTR_ADDR(fssm->fssm_Device);
@@ -870,44 +613,8 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                         (IPTR) boot_Device);
                     SET(grub_unit, MUIA_String_Integer, boot_Unit);
 
-#if 0
-                    mp = CreateMsgPort();
-                    if (mp)
-                    {
-                        ioreq =
-                            (struct IOStdReq *)CreateIORequest(mp,
-                            sizeof(struct IOStdReq));
-                        if (ioreq)
-                        {
-                            if (OpenDevice(boot_Device, boot_Unit,
-                                    (struct IORequest *)ioreq, 0) == 0)
-                            {
-                                identify(ioreq, tmp_drive);
-                                sprintf(tmp_device, "%s [%s unit %d]",
-                                    tmp_drive, boot_Device, boot_Unit);
-                                CloseDevice((struct IORequest *)ioreq);
-                            }
-                            else
-                                sprintf(tmp_device,
-                                    "Unknown Drive [%s unit %d]",
-                                    boot_Device, boot_Unit);
-                            DeleteIORequest((struct IORequest *)ioreq);
-                        }
-                        else
-                            sprintf(tmp_device,
-                                "Unknown Drive [%s unit %d]", boot_Device,
-                                boot_Unit);
-                        DeleteMsgPort(mp);
-                    }
-                    else
-                        sprintf(tmp_device, "Unknown Drive [%s unit %d]",
-                            boot_Device, boot_Unit);
-
-                    SET(data->instc_options_grub->gopt_drive,
-                        MUIA_Text_Contents, tmp_device);
-#endif
                     SET(data->instc_options_grub->gopt_grub,
-                        MUIA_Text_Contents, tmp_grub);
+                        MUIA_Text_Contents, tmp_blpath);
                 }
 
                 data->instc_stage_next = EInstallMessageStage;
@@ -940,7 +647,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
         break;
 
     case EPartitioningStage:
-        D(bug("[InstallAROS:Inst] %s: EPartitioningStage\n", __func__));
+        D(bug("[InstallAROS:Stage] %s: EPartitioningStage\n", __func__));
         get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
             &option);
         if ((int)option == 0 || (int)option == 1)
@@ -981,7 +688,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
         case 1:
             if (DoMethod(self, MUIM_Partition) != RETURN_OK)
             {
-                D(bug("[InstallAROS:Inst] %s: Partitioning FAILED!!!!\n", __func__));
+                D(bug("[InstallAROS:Stage] %s: Partitioning FAILED!!!!\n", __func__));
                 data->disable_back = FALSE;
                 SET(data->page, MUIA_Group_ActivePage,
                     EInstallMessageStage);
@@ -1043,14 +750,14 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 break;
             }
         default:
-            D(bug("[InstallAROS:Inst] %s: Launching QuickPart...\n", __func__));
+            D(bug("[InstallAROS:Stage] %s: Launching QuickPart...\n", __func__));
             Execute("SYS:Tools/QuickPart", NULL, NULL);
             break;
         }
         break;
 
     case EInstallStage:
-        D(bug("[InstallAROS:Inst] %s: EInstallStage\n", __func__));
+        D(bug("[InstallAROS:Stage] %s: EInstallStage\n", __func__));
         data->disable_back = TRUE;
         SET(data->page, MUIA_Group_ActivePage, EInstallStage);
 
@@ -1078,9 +785,9 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
     return 0;
 }
 
-IPTR Install__MUIM_IC_PrevStep(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_IC_PrevStep(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     IPTR this_page = 0;
 
     GET(data->page, MUIA_Group_ActivePage, &this_page);
@@ -1177,10 +884,10 @@ IPTR Install__MUIM_IC_PrevStep(Class * CLASS, Object * self, Msg message)
     return TRUE;
 }
 
-IPTR Install__MUIM_IC_CancelInstall
+IPTR InstallStage__MUIM_IC_CancelInstall
     (Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     struct optionstmp *backupOptions = NULL;
     IPTR this_page = 0;
     const char *cancelmessage = NULL;
@@ -1272,10 +979,10 @@ IPTR Install__MUIM_IC_CancelInstall
     return 0;
 }
 
-IPTR Install__MUIM_IC_ContinueInstall
+IPTR InstallStage__MUIM_IC_ContinueInstall
     (Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     struct optionstmp *backupOptions = NULL;
     IPTR this_page = 0;
 
@@ -1342,9 +1049,9 @@ IPTR Install__MUIM_IC_ContinueInstall
     return 0;
 }
 
-IPTR Install__MUIM_IC_QuitInstall(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_IC_QuitInstall(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
 
     if (data->inst_success == MUIV_Inst_InProgress)
     {
@@ -1361,17 +1068,17 @@ IPTR Install__MUIM_IC_QuitInstall(Class * CLASS, Object * self, Msg message)
    IT LAUNCHES THE NECESSARY FUNCTION TO PERFORM WHATEVER IS BEING ASKED TO DO
  */
 
-IPTR Install__MUIM_DispatchInstallProcedure
+IPTR InstallStage__MUIM_DispatchInstallProcedure
     (Class * CLASS, Object * self, Msg message)
 {
-    // struct Install_DATA* data = INST_DATA(CLASS, self);
+    // struct InstallStage_DATA* data = INST_DATA(CLASS, self);
 
     return 0;
 }
 
-IPTR Install__MUIM_Partition(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     IPTR option = FALSE;
     IPTR tmp = 0;
 
@@ -1385,6 +1092,19 @@ IPTR Install__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         GET(optObjDestUnit, MUIA_InstallOption_Value, &option);
         sprintf(tmpcmd, "C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
             (char *)tmp, option);
+
+        /* Create EFI's ESP? */
+        OPTOGET(optObjCheckEFI, MUIA_Selected, &option);
+        if (option)
+        {
+            strcat(tmpcmd, " BOOTSIZE=100 BOOTTYPE=fat32");
+        }
+        /* Partition scheme to use? */
+        OPTOGET(optObjCyclePartScheme, MUIA_Cycle_Active, &option);
+        if ((int)option == 0)
+            strcat(tmpcmd, " SCHEME=rdb");
+        if ((int)option == 2)
+            strcat(tmpcmd, " SCHEME=gpt");
 
         /* Specify SYS size */
         OPTOGET(optObjCheckSysSize, MUIA_Selected, &option);
@@ -1441,14 +1161,14 @@ IPTR Install__MUIM_Partition(Class * CLASS, Object * self, Msg message)
             &option);
         if (option == 1)
         {
-            D(bug("[InstallAROS:Inst] %s: Partitioning EVERYTHING! MUAHAHAHA...\n", __func__));
+            D(bug("[InstallAROS:Stage] %s: Partitioning EVERYTHING! MUAHAHAHA...\n", __func__));
             strcat(tmpcmd, " WIPE");
         }
         D(else
-                bug("[InstallAROS:Inst] %s: Partitioning Free Space...\n", __func__);
+                bug("[InstallAROS:Stage] %s: Partitioning Free Space...\n", __func__);
         )
 
-        D(bug("[InstallAROS:Inst] %s: ### Executing '%s'\n", __func__, &tmpcmd));
+        D(bug("[InstallAROS:Stage] %s: ### Executing '%s'\n", __func__, &tmpcmd));
         tmp = SystemTagList(tmpcmd, NULL);
 
         SET(data->proceed, MUIA_Disabled, FALSE);
@@ -1457,19 +1177,19 @@ IPTR Install__MUIM_Partition(Class * CLASS, Object * self, Msg message)
     return tmp;
 }
 
-IPTR Install__MUIM_IC_CopyFiles
+IPTR InstallStage__MUIM_IC_CopyFiles
     (Class * CLASS, Object * self, struct MUIP_CopyFiles * message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     LONG totalFiles = -1, totalFilesCopied = 0;
 
-    D(bug("[InstallAROS:Inst] %s: Entry, src: %s, dst: %s, mask: %s\n",
+    D(bug("[InstallAROS:Stage] %s: Entry, src: %s, dst: %s, mask: %s\n",
             __func__, message->srcDir, message->dstDir, message->fileMask));
 
     /* Check entry condition */
     if (data->inst_success != MUIV_Inst_InProgress)
     {
-        D(bug("[InstallAROS:Inst] %s: Installation failed\n", __func__));
+        D(bug("[InstallAROS:Stage] %s: Installation failed\n", __func__));
         return totalFilesCopied;
     }
 
@@ -1481,7 +1201,7 @@ IPTR Install__MUIM_IC_CopyFiles
         totalFiles =
             CountFiles(message->srcDir, message->skipList, message->fileMask,
             message->recursive);
-        D(bug("[InstallAROS:Inst] %s: Found %ld files in %s\n", __func__, totalFiles,
+        D(bug("[InstallAROS:Stage] %s: Found %ld files in %s\n", __func__, totalFiles,
                 message->srcDir));
 
         if (totalFiles < 0)
@@ -1529,12 +1249,12 @@ IPTR Install__MUIM_IC_CopyFiles
     return totalFilesCopied;
 }
 
-IPTR Install__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     BPTR lock = BNULL;
 
-    D(bug("[InstallAROS:Inst] %s: Launching Locale Prefs...\n", __func__));
+    D(bug("[InstallAROS:Stage] %s: Launching Locale Prefs...\n", __func__));
 
     ULONG srcLen = strlen(source_Path), dstLen =
         (strlen(data->install_SysTarget) + 1);
@@ -1582,28 +1302,28 @@ IPTR Install__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
     AddPart(inputPFile, prefs_path, inputPFileLen);
     AddPart(inputPFile, input_prfs_file, inputPFileLen);
 
-    D(bug("[InstallAROS:Inst] %s: Excecuting '%s'...\n", __func__, localeFile));
+    D(bug("[InstallAROS:Stage] %s: Excecuting '%s'...\n", __func__, localeFile));
 
     Execute(localeFile, NULL, NULL);
 
     DoMethod(data->installer, MUIM_Application_InputBuffered);
 
-    D(bug("[InstallAROS:Inst] %s: Excecuting '%s'...\n", __func__, inputFile));
+    D(bug("[InstallAROS:Stage] %s: Excecuting '%s'...\n", __func__, inputFile));
 
     Execute(inputFile, NULL, NULL);
 
     DoMethod(data->installer, MUIM_Application_InputBuffered);
 
-    D(bug("[InstallAROS:Inst] %s: Copying Locale Settings...\n", __func__));
+    D(bug("[InstallAROS:Stage] %s: Copying Locale Settings...\n", __func__));
 
     //create the dirs "Prefs","Prefs/Env-Archive" and "Prefs/Env-Archive/SYS"
     AddPart(envDstDir, "Prefs", dstLen + envdstLen);
     AddPart(envDstDir, "Env-Archive", envdstdirLen);
     AddPart(envDstDir, "SYS", envdstdirLen);
-    D(bug("[InstallAROS:Inst] %s: Create Dir '%s' \n", __func__, envDstDir));
+    D(bug("[InstallAROS:Stage] %s: Create Dir '%s' \n", __func__, envDstDir));
     if ((lock = Lock(envDstDir, ACCESS_READ)) != BNULL)
     {
-        D(bug("[InstallAROS:Inst] %s: Dir '%s' Exists - no nead to create\n",
+        D(bug("[InstallAROS:Stage] %s: Dir '%s' Exists - no nead to create\n",
                 __func__, envDstDir));
         UnLock(lock);
     }
@@ -1615,7 +1335,7 @@ IPTR Install__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
         else
         {
           createdirfaild:
-            D(bug("[InstallAROS:Inst] %s: Failed to create %s dir!!\n",
+            D(bug("[InstallAROS:Stage] %s: Failed to create %s dir!!\n",
                     envDstDir, __func__));
             /* TODO: Should prompt on failure to try again/continue anyhow/exit */
             goto localecopydone;
@@ -1626,7 +1346,7 @@ IPTR Install__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
     
     lock = BNULL;
 
-    D(bug("[InstallAROS:Inst] %s: Copying files\n", __func__));
+    D(bug("[InstallAROS:Stage] %s: Copying files\n", __func__));
 
     if ((lock = Lock(localesrcPFile, ACCESS_READ)) != BNULL)
     {
@@ -1645,17 +1365,17 @@ IPTR Install__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
     ;
 }
 
-IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     BPTR lock = BNULL;
     IPTR option = FALSE;
 
     NEWLIST(&SKIPLIST);
 
     D(
-        bug("[InstallAROS:Inst] %s: Dest Sys Path = '%s'\n", __func__, data->install_SysTarget);
-        bug("[InstallAROS:Inst] %s: Dest Work Path = '%s'\n", __func__, data->install_WorkTarget);
+        bug("[InstallAROS:Stage] %s: Dest Sys Path = '%s'\n", __func__, data->install_SysTarget);
+        bug("[InstallAROS:Stage] %s: Dest Work Path = '%s'\n", __func__, data->install_WorkTarget);
     )
 
     SET(data->back, MUIA_Disabled, TRUE);
@@ -1689,7 +1409,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         char tmp[100];
         sprintf(tmp, "%s:", data->install_WorkTarget);
         D(bug
-            ("[InstallAROS:Inst] %s: Checking validity of work partition '%s' ..", __func__, tmp));
+            ("[InstallAROS:Stage] %s: Checking validity of work partition '%s' ..", __func__, tmp));
         if ((lock = Lock(tmp, SHARED_LOCK)) != BNULL)    /* check the dest dir exists */
         {
             D(bug("OK!\n"));
@@ -1698,7 +1418,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         else
         {
             D(bug
-                ("FAILED!\n[InstallAROS:Inst] %s: (Warning) INSTALL - Failed to locate chosen work partition : defaulting to '%s'\n",
+                ("FAILED!\n[InstallAROS:Stage] %s: (Warning) INSTALL - Failed to locate chosen work partition : defaulting to '%s'\n",
                     __func__, data->install_SysTarget));
             extras_path = data->install_SysTarget;
         }
@@ -1706,7 +1426,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     }
     else
     {
-        D(bug("[InstallAROS:Inst] %s: Using SYS partition only (%s)\n",
+        D(bug("[InstallAROS:Stage] %s: Using SYS partition only (%s)\n",
                 __func__, data->install_SysTarget));
     }
 
@@ -1754,7 +1474,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         BOOL success = FALSE;
 
         /* Copying Core system Files */
-        D(bug("[InstallAROS:Inst] %s: Copying Core files...\n", __func__));
+        D(bug("[InstallAROS:Stage] %s: Copying Core files...\n", __func__));
         SET(data->label, MUIA_Text_Contents, __(MSG_COPYCORE));
         sprintf(destinationPath, "%s:", data->install_SysTarget);
 
@@ -1783,14 +1503,14 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         sprintf(tmp, "Protect ADD FLAGS=W ALL QUIET %s:Prefs/Env-Archive",
             data->install_SysTarget);
         D(bug
-            ("[InstallAROS:Inst] %s: Changing Protection on Env Files (command='%s')\n",
+            ("[InstallAROS:Stage] %s: Changing Protection on Env Files (command='%s')\n",
                 __func__, tmp));
         success = (BOOL) Execute(tmp, NULL, NULL);
 
         if (!success)
         {
             D(bug
-                ("[InstallAROS:Inst] %s: Changing Protection on Env Files failed: %d\n",
+                ("[InstallAROS:Stage] %s: Changing Protection on Env Files failed: %d\n",
                     __func__, IoErr()));
         }
         ClearSkipList(&SKIPLIST);
@@ -1816,7 +1536,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         data->instc_copt_undoenabled = FALSE;
 
         /* Copying Extras */
-        D(bug("[InstallAROS:Inst] %s: Copying Extras to '%s'...\n", __func__, extras_path));
+        D(bug("[InstallAROS:Stage] %s: Copying Extras to '%s'...\n", __func__, extras_path));
         SET(data->label, MUIA_Text_Contents, __(MSG_COPYEXTRA));
         sprintf(extraspath, "%s:", extras_path);
         CopyDirArray(CLASS, self, extras_source, extraspath, extras_dirs, &SKIPLIST);
@@ -1859,7 +1579,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             UnLock(lock);
 
             /* Copying Developer stuff */
-            D(bug("[InstallAROS:Inst] %s: Copying Developer Files...\n", __func__));
+            D(bug("[InstallAROS:Stage] %s: Copying Developer Files...\n", __func__));
             SET(data->label, MUIA_Text_Contents, __(MSG_COPYDEVEL));
             sprintf(developerpath, "%s:", extras_path);
             CopyDirArray(CLASS, self, source_Path, developerpath,
@@ -1878,7 +1598,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             data->instc_copt_undoenabled = undoenabled;
         }
         D(else
-           bug("[InstallAROS:Inst] %s: Couldn't locate Developer Files...\n", __func__);
+           bug("[InstallAROS:Stage] %s: Couldn't locate Developer Files...\n", __func__);
         )
 
         ClearSkipList(&SKIPLIST);
@@ -1929,7 +1649,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         if (scriptfile)
         {
 
-            D(bug("[InstallAROS:Inst] Running post-install script...\n");)
+            D(bug("[InstallAROS:Stage] Running post-install script...\n");)
             SET(data->label, MUIA_Text_Contents, __(MSG_POSTINSTALL));
             SET(data->pageheader, MUIA_Text_Contents, __(MSG_POSTINSTALL2));
             SET(data->gauge2, MUIA_Gauge_Current, 0);
@@ -1948,7 +1668,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
                 {TAG_DONE, 0}
             };
 
-            D(bug("[InstallAROS:Inst] execute: %s\n", POST_INSTALL_SCRIPT);)
+            D(bug("[InstallAROS:Stage] execute: %s\n", POST_INSTALL_SCRIPT);)
 
             SystemTagList("", tags);
 
@@ -1957,14 +1677,14 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             SET(data->gauge2, MUIA_Gauge_Current, 100);
         }
         D(else
-                bug("[InstallAROS:Inst] no post-install script\n");
+                bug("[InstallAROS:Stage] no post-install script\n");
         )
     }
 
     /* STEP : UNDORECORD CLEANUP */
 
     D(bug
-        ("[InstallAROS:Inst] Reached end of Install Function - cleaning up undo logs @ %p...\n",
+        ("[InstallAROS:Stage] Reached end of Install Function - cleaning up undo logs @ %p...\n",
             &data->instc_undorecord);)
 
     struct InstallC_UndoRecord *CurUndoNode = NULL;
@@ -1972,13 +1692,13 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
 
     ForeachNodeSafe(&data->instc_undorecord, CurUndoNode, undonode_tmp)
     {
-        D(bug("[InstallAROS:Inst] Removing undo record @ %p\n", CurUndoNode);)
+        D(bug("[InstallAROS:Stage] Removing undo record @ %p\n", CurUndoNode);)
         Remove((struct Node *)CurUndoNode);
 
         switch (CurUndoNode->undo_method)
         {
         case MUIM_IC_CopyFile:
-            D(bug("[InstallAROS:Inst] Deleting undo file '%s'\n",
+            D(bug("[InstallAROS:Stage] Deleting undo file '%s'\n",
                     CurUndoNode->undo_src);)
             DeleteFile(CurUndoNode->undo_src);
 
@@ -1994,9 +1714,9 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     return 0;
 }
 
-IPTR Install__MUIM_RefreshWindow(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_RefreshWindow(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     ULONG cur_width = 0, cur_height = 0;
 
     GET(data->window, MUIA_Window_Width, &cur_width);
@@ -2014,9 +1734,9 @@ IPTR Install__MUIM_RefreshWindow(Class * CLASS, Object * self, Msg message)
     return 0;
 }
 
-IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     char dev_nametmp[100];
     char vol_nametmp[100];
     char fmt_nametmp[100];
@@ -2033,7 +1753,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
         sprintf(dev_nametmp, "%s:", name_tmp);
 
         sprintf(fmt_nametmp, _(MSG_FORMATTING), dev_nametmp);
-        D(bug("[InstallAROS:Inst] %s\n", fmt_nametmp);)
+        D(bug("[InstallAROS:Stage] %s\n", fmt_nametmp);)
         SET(data->label, MUIA_Text_Contents, fmt_nametmp);
         SET(data->gauge2, MUIA_Gauge_Current, 0);
 
@@ -2046,7 +1766,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
          * Correct way of doing things: read type for DH0 and DH1, apply correct
          * type when formatting
          */
-        D(bug("[InstallAROS:Inst] (info) Using FormatPartition\n");)
+        D(bug("[InstallAROS:Stage] (info) Using FormatPartition\n");)
         success =
             FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
 
@@ -2062,7 +1782,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
         sprintf(dev_nametmp, "%s:", name_tmp);
 
         sprintf(fmt_nametmp, _(MSG_FORMATTING), dev_nametmp);
-        D(bug("[InstallAROS:Inst] %s\n", fmt_nametmp);)
+        D(bug("[InstallAROS:Stage] %s\n", fmt_nametmp);)
         SET(data->label, MUIA_Text_Contents, fmt_nametmp);
         SET(data->gauge2, MUIA_Gauge_Current, 0);
 
@@ -2075,7 +1795,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
          * Correct way of doing things: read type for DH0 and DH1, apply
          * correct type when formatting (ID_INTER_FFS_DISK or ID_SFS_BE_DISK)
          */
-        D(bug("[InstallAROS:Inst] (info) Using FormatPartition\n");)
+        D(bug("[InstallAROS:Stage] (info) Using FormatPartition\n");)
         success =
             FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
 
@@ -2085,7 +1805,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
             lock = Lock((CONST_STRPTR)dev_nametmp, SHARED_LOCK);      /* check the dest dir exists */
             if (lock == BNULL)
             {
-                bug("[InstallAROS:Inst] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", dev_nametmp);
+                bug("[InstallAROS:Stage] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", dev_nametmp);
                 extras_path = dest_Path;
             }
             else
@@ -2101,10 +1821,10 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
     return success;
 }
 
-IPTR Install__MUIM_IC_CopyFile
+IPTR InstallStage__MUIM_IC_CopyFile
     (Class * CLASS, Object * self, struct MUIP_CopyFile * message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     struct InstallC_UndoRecord *undorecord = NULL;
     ULONG retry = 0;
     ULONG filescopied = 0;
@@ -2199,7 +1919,7 @@ IPTR Install__MUIM_IC_CopyFile
             {
                 if ((s = Read(from, data->instc_IOd.iio_Buffer, data->instc_IOd.iio_BuffSize)) == -1)
                 {
-                    D(bug("[InstallAROS.CF] Failed to read: %s [ioerr=%d]\n",
+                    D(bug("[InstallAROS:Stage:CopyF] Failed to read: %s [ioerr=%d]\n",
                             message->srcFile, IoErr()));
 
                     Close(to);
@@ -2225,7 +1945,7 @@ IPTR Install__MUIM_IC_CopyFile
                 if (Write(to, data->instc_IOd.iio_Buffer, s) == -1)
                 {
                     D(bug
-                        ("[InstallAROS.CF] Failed to write: %s  [%d bytes, ioerr=%d]\n",
+                        ("[InstallAROS:Stage:CopyF] Failed to write: %s  [%d bytes, ioerr=%d]\n",
                             message->dstFile, s, IoErr()));
 
                     if (IoErr() == 103)
@@ -2264,7 +1984,7 @@ IPTR Install__MUIM_IC_CopyFile
         else
         {
             D(bug
-                ("[InstallAROS.CF] Failed to open '%s' for writing [ioerr=%d]\n",
+                ("[InstallAROS:Stage:CopyF] Failed to open '%s' for writing [ioerr=%d]\n",
                     message->dstFile, IoErr()));
             data->inst_success = MUIV_Inst_Failed;
         }
@@ -2277,13 +1997,13 @@ IPTR Install__MUIM_IC_CopyFile
             if (filescopied > 0)
             {
                 D(bug
-                    ("[InstallAROS.CF] Adding undo record @ %x to undo list @ %x \n",
+                    ("[InstallAROS:Stage:CopyF] Adding undo record @ %x to undo list @ %x \n",
                         undorecord, &data->instc_undorecord));
                 AddHead(&data->instc_undorecord, (struct Node *)undorecord);
             }
             else
             {
-                D(bug("[InstallAROS.CF] Freeing undo record\n"));
+                D(bug("[InstallAROS:Stage:CopyF] Freeing undo record\n"));
                 /* remove the backup file */
 
                 DeleteFile(undorecord->undo_src);
@@ -2297,7 +2017,7 @@ IPTR Install__MUIM_IC_CopyFile
     }
     else
     {
-        D(bug("[InstallAROS.CF] Failed to open: %s [ioerr=%d]\n",
+        D(bug("[InstallAROS:Stage:CopyF] Failed to open: %s [ioerr=%d]\n",
                 message->srcFile, IoErr()));
         data->inst_success = MUIV_Inst_Failed;
     }
@@ -2305,31 +2025,31 @@ IPTR Install__MUIM_IC_CopyFile
     return filescopied;
 }
 
-IPTR Install__MUIM_IC_UndoSteps(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_IC_UndoSteps(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     struct InstallC_UndoRecord *CurUndoNode = NULL;
 
-    D(bug("[InstallAROS.US] Performing UNDO steps...\n"));
+    D(bug("[InstallAROS:Stage:Undo] Performing UNDO steps...\n"));
 
     /* Disbale "UNDO" mode to prevent new records */
     data->instc_copt_undoenabled = FALSE;
 
     ForeachNode(&data->instc_undorecord, CurUndoNode)
     {
-        D(bug("[InstallAROS.US] Removing undo record @ %x\n", CurUndoNode));
+        D(bug("[InstallAROS:Stage:Undo] Removing undo record @ %x\n", CurUndoNode));
         Remove((struct Node *)CurUndoNode);
 
         switch (CurUndoNode->undo_method)
         {
         case MUIM_IC_CopyFile:
-            D(bug("[InstallAROS.US] Reverting file '%s'\n",
+            D(bug("[InstallAROS:Stage:Undo] Reverting file '%s'\n",
                     CurUndoNode->undo_dst));
 
             DoMethod(self, CurUndoNode->undo_method, CurUndoNode->undo_src,
                 CurUndoNode->undo_dst);
 
-            D(bug("[InstallAROS.US] Deleting undo file '%s'\n",
+            D(bug("[InstallAROS:Stage:Undo] Deleting undo file '%s'\n",
                     CurUndoNode->undo_src));
             DeleteFile(CurUndoNode->undo_src);
 
@@ -2342,14 +2062,14 @@ IPTR Install__MUIM_IC_UndoSteps(Class * CLASS, Object * self, Msg message)
         FreeMem(CurUndoNode, sizeof(struct InstallC_UndoRecord));
     }
 
-    D(bug("[InstallAROS.US] UNDO complete\n"));
+    D(bug("[InstallAROS:Stage:Undo] UNDO complete\n"));
 
     return 0;
 }
 
-IPTR Install__MUIM_Reboot(Class * CLASS, Object * self, Msg message)
+IPTR InstallStage__MUIM_Reboot(Class * CLASS, Object * self, Msg message)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
 
     IPTR option = FALSE;
 
@@ -2357,12 +2077,12 @@ IPTR Install__MUIM_Reboot(Class * CLASS, Object * self, Msg message)
     GET(data->instc_options_main->opt_reboot, MUIA_Selected, &option);
     if (option && (data->inst_success == MUIV_Inst_InProgress))
     {
-        D(bug("[InstallAROS:Inst] Cold rebooting...\n"));
+        D(bug("[InstallAROS:Stage] Cold rebooting...\n"));
         ShutdownA(SD_ACTION_COLDREBOOT);
     }
     else
     {
-        D(bug("[InstallAROS:Inst] Install Finished [no reboot]...\n"));
+        D(bug("[InstallAROS:Stage] Install Finished [no reboot]...\n"));
         if (data->inst_success == MUIV_Inst_InProgress)
             data->inst_success = MUIV_Inst_Completed;
         SET(data->window, MUIA_Window_CloseRequest, TRUE);
@@ -2371,67 +2091,64 @@ IPTR Install__MUIM_Reboot(Class * CLASS, Object * self, Msg message)
     return TRUE;                /* Keep the compiler happy... */
 }
 
-BOOPSI_DISPATCHER(IPTR, Install__Dispatcher, CLASS, self, message)
+BOOPSI_DISPATCHER(IPTR, InstallStage__Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
     case OM_NEW:
-        return Install__OM_NEW(CLASS, self, (struct opSet *)message);
+        return InstallStage__OM_NEW(CLASS, self, (struct opSet *)message);
 
     case OM_DISPOSE:
-        return Install__OM_DISPOSE(CLASS, self, message);
+        return InstallStage__OM_DISPOSE(CLASS, self, message);
 
     case OM_SET:
-        return Install__OM_SET(CLASS, self, (struct opSet *)message);
-
-    case MUIM_FindDrives:
-        return Install__MUIM_FindDrives(CLASS, self, message);
+        return InstallStage__OM_SET(CLASS, self, (struct opSet *)message);
 
     case MUIM_IC_NextStep:
-        return Install__MUIM_IC_NextStep(CLASS, self, message);
+        return InstallStage__MUIM_IC_NextStep(CLASS, self, message);
 
     case MUIM_IC_PrevStep:
-        return Install__MUIM_IC_PrevStep(CLASS, self, message);
+        return InstallStage__MUIM_IC_PrevStep(CLASS, self, message);
         //cancel control methods
     case MUIM_IC_CancelInstall:
-        return Install__MUIM_IC_CancelInstall(CLASS, self, message);
+        return InstallStage__MUIM_IC_CancelInstall(CLASS, self, message);
 
     case MUIM_IC_ContinueInstall:
-        return Install__MUIM_IC_ContinueInstall(CLASS, self, message);
+        return InstallStage__MUIM_IC_ContinueInstall(CLASS, self, message);
 
     case MUIM_IC_QuitInstall:
-        return Install__MUIM_IC_QuitInstall(CLASS, self, message);
+        return InstallStage__MUIM_IC_QuitInstall(CLASS, self, message);
 
     case MUIM_Reboot:
-        return Install__MUIM_Reboot(CLASS, self, message);
+        return InstallStage__MUIM_Reboot(CLASS, self, message);
 
         //This should disappear
     case MUIM_RefreshWindow:
-        return Install__MUIM_RefreshWindow(CLASS, self, message);
+        return InstallStage__MUIM_RefreshWindow(CLASS, self, message);
 
     case MUIM_IC_Install:
-        return Install__MUIM_IC_Install(CLASS, self, message);
+        return InstallStage__MUIM_IC_Install(CLASS, self, message);
 
     case MUIM_IC_SetLocalePrefs:
-        return Install__MUIM_IC_SetLocalePrefs(CLASS, self, message);
+        return InstallStage__MUIM_IC_SetLocalePrefs(CLASS, self, message);
 
         //These will be consumed by the io task
     case MUIM_Partition:
-        return Install__MUIM_Partition(CLASS, self, message);
+        return InstallStage__MUIM_Partition(CLASS, self, message);
 
     case MUIM_Format:
-        return Install__MUIM_Format(CLASS, self, message);
+        return InstallStage__MUIM_Format(CLASS, self, message);
 
     case MUIM_IC_CopyFiles:
-        return Install__MUIM_IC_CopyFiles(CLASS, self,
+        return InstallStage__MUIM_IC_CopyFiles(CLASS, self,
             (struct MUIP_CopyFiles *)message);
 
     case MUIM_IC_CopyFile:
-        return Install__MUIM_IC_CopyFile(CLASS, self,
+        return InstallStage__MUIM_IC_CopyFile(CLASS, self,
             (struct MUIP_CopyFile *)message);
 
     case MUIM_IC_UndoSteps:
-        return Install__MUIM_IC_UndoSteps(CLASS, self, message);
+        return InstallStage__MUIM_IC_UndoSteps(CLASS, self, message);
 
     default:
         return DoSuperMethodA(CLASS, self, message);

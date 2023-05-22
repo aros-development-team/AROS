@@ -34,12 +34,13 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#include <mui/TextEditor_mcc.h>
-
 #include "ia_locale.h"
 #include "ia_install.h"
-#include "ia_install_intern.h"
+#include "ia_stage.h"
+#include "ia_stage_intern.h"
+#include "ia_option.h"
 #include "ia_bootloader.h"
+#include "ia_diskio.h"
 
 extern struct ExpansionBase *ExpansionBase;
 
@@ -67,7 +68,7 @@ char * GetDevNameForVolume(char *volumeName)
     if (dl != NULL)
     {
         APTR voltask = dl->dol_Task;
-        D(bug("[InstallAROS] %s: dosentry for '%s' @ %p\n", __func__, volumeName, dl));
+        D(bug("[InstallAROS:IO] %s: dosentry for '%s' @ %p\n", __func__, volumeName, dl));
         dl = LockDosList(LDF_DEVICES|LDF_READ);
         if (dl) {
             while((dl = NextDosEntry(dl, LDF_DEVICES)))
@@ -75,9 +76,9 @@ char * GetDevNameForVolume(char *volumeName)
                 if (dl->dol_Task == voltask)
                 {
                     struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
-                    D(bug("[InstallAROS] %s:     device entry '%s' @ %p\n", __func__, AROS_BSTR_ADDR(dl->dol_Name), dl));
+                    D(bug("[InstallAROS:IO] %s:     device entry '%s' @ %p\n", __func__, AROS_BSTR_ADDR(dl->dol_Name), dl));
                     devName = AROS_BSTR_ADDR(dl->dol_Name);
-                    D(bug("[InstallAROS] %s:     devName '%s'\n", __func__, devName));
+                    D(bug("[InstallAROS:IO] %s:     devName '%s'\n", __func__, devName));
                 }
             }
             UnLockDosList(LDF_VOLUMES|LDF_READ);
@@ -95,7 +96,7 @@ BOOL GetVolumeForDevName(char *devName, char *buffer)
     {
         if (NameFromLock(tmpLock, buffer, 100))
         {
-            D(bug("[InstallAROS] %s: '%s' = '%s'\n", __func__, devName, buffer));
+            D(bug("[InstallAROS:IO] %s: '%s' = '%s'\n", __func__, devName, buffer));
             retVal = TRUE;
         }
         UnLock(tmpLock);
@@ -166,7 +167,7 @@ char *CheckPartition(struct PartitionHandle *part, char **name)
     struct PartitionType pttype;
     char *success = NULL;
 
-    D(bug("[InstallAROS] %s: checking PARTITION\n", __func__));
+    D(bug("[InstallAROS:IO] %s: checking PARTITION\n", __func__));
 
     *name = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
 
@@ -175,31 +176,31 @@ char *CheckPartition(struct PartitionHandle *part, char **name)
         PT_NAME, (IPTR)*name, PT_TYPE, (IPTR) & pttype, TAG_DONE);
 
     type = &pttype;
-    D(bug("[InstallAROS] %s: Type Len = %u\n", __func__, type->id_len));
+    D(bug("[InstallAROS:IO] %s: Type Len = %u\n", __func__, type->id_len));
     if (type->id_len == 4)
     {
-        D(bug("[InstallAROS] %s: Found RDB Partition!\n", __func__));
-        D(bug("[InstallAROS] %s: type '%c%c%c%c'\n", __func__, type->id[0], type->id[1], type->id[2], type->id[3]));
+        D(bug("[InstallAROS:IO] %s: Found RDB Partition!\n", __func__));
+        D(bug("[InstallAROS:IO] %s: type '%c%c%c%c'\n", __func__, type->id[0], type->id[1], type->id[2], type->id[3]));
         if ((type->id[0] == 68) && (type->id[1] == 79)
             && (type->id[2] == 83))
         {
-            D(bug("[InstallAROS] %s: Found AFFS Partition! '%s'\n", __func__, *name));
+            D(bug("[InstallAROS:IO] %s: Found AFFS Partition! '%s'\n", __func__, *name));
             success = *name;
         }
         else if ((type->id[0] == 83) && (type->id[1] == 70)
             && (type->id[2] == 83))
         {
-            D(bug("[InstallAROS] %s: Found SFS Partition! '%s'\n", __func__, *name));
+            D(bug("[InstallAROS:IO] %s: Found SFS Partition! '%s'\n", __func__, *name));
             success = *name;
         }
     }
     else if (type->id_len == 3)
     {
-        D(bug("[InstallAROS] %s: type '%c%c%c'\n", __func__, type->id[0], type->id[1], type->id[2]));
+        D(bug("[InstallAROS:IO] %s: type '%c%c%c'\n", __func__, type->id[0], type->id[1], type->id[2]));
     }
     else if (type->id_len == 2)
     {
-        D(bug("[InstallAROS] %s: type '%c%c'\n", __func__, type->id[0], type->id[1]));
+        D(bug("[InstallAROS:IO] %s: type '%c%c'\n", __func__, type->id[0], type->id[1]));
     }
     return  success;
 }
@@ -211,20 +212,20 @@ char *FindPartition(struct PartitionHandle *root)
     char *success = NULL;
     char *name = NULL;
 
-    D(bug("[InstallAROS] %s()\n", __func__));
+    D(bug("[InstallAROS:IO] %s()\n", __func__));
     
     if (root->table)
     {
         ForeachNode(&root->table->list, partition)
         {
-            D(bug("[InstallAROS] %s: checking part\n", __func__));
+            D(bug("[InstallAROS:IO] %s: checking part\n", __func__));
 
             if (OpenPartitionTable(partition) == 0)
             {
-                D(bug("[InstallAROS] %s: checking Child Parts... \n", __func__));
+                D(bug("[InstallAROS:IO] %s: checking Child Parts... \n", __func__));
                 success = FindPartition(partition);
                 ClosePartitionTable(partition);
-                D(bug("[InstallAROS] %s: Children Done...\n", __func__));
+                D(bug("[InstallAROS:IO] %s: Children Done...\n", __func__));
             }
             else
             {
@@ -232,7 +233,7 @@ char *FindPartition(struct PartitionHandle *root)
             }
             if (success != NULL)
             {
-                D(bug("[InstallAROS] %s: Found '%s'\n", __func__, success));
+                D(bug("[InstallAROS:IO] %s: Found '%s'\n", __func__, success));
                 break;
             }
         }
@@ -242,12 +243,12 @@ char *FindPartition(struct PartitionHandle *root)
         success = CheckPartition(root, &name);
     }
 
-    D(bug("[InstallAROS] %s: Scan finished\n", __func__));
+    D(bug("[InstallAROS:IO] %s: Scan finished\n", __func__));
 
     if ((!success) && (name))
         FreeVec(name);
 
-    D(bug("[InstallAROS] %s: returning %p\n", __func__, success));
+    D(bug("[InstallAROS:IO] %s: returning %p\n", __func__, success));
 
     return success;
 }
@@ -259,7 +260,7 @@ struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
     TEXT dname[32];
     UBYTE i;
 
-    D(bug("[InstallAROS] %s('%s')\n", __func__, path));
+    D(bug("[InstallAROS:IO] %s('%s')\n", __func__, path));
 
     for (i = 0; (path[i]) && (path[i] != ':'); i++)
         dname[i] = path[i];
@@ -324,7 +325,7 @@ BOOL SkipPath(char *matchName, struct List *SkipList)
     {
         if (!strcmp(matchName, matchNode->ln_Name))
         {
-            D(bug("[InstallAROS] %s: %s\n", __func__, matchName));
+            D(bug("[InstallAROS:IO] %s: %s\n", __func__, matchName));
             return TRUE;
         }
     }
@@ -338,7 +339,7 @@ LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR file
     BPTR dirLock = BNULL;
     LONG fileCount = 0;
 
-    D(bug("[InstallAROS] %s: Entry, directory: %s, mask: %s\n", __func__, directory,
+    D(bug("[InstallAROS:IO] %s: Entry, directory: %s, mask: %s\n", __func__, directory,
             fileMask));
 
     /* Check if directory exists */
@@ -429,7 +430,7 @@ LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR file
 LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_STRPTR dstDir, struct List *SkipList,
     CONST_STRPTR fileMask, BOOL recursive, LONG totalFiles, LONG totalFilesCopied)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     UBYTE *buffer = NULL;
     TEXT matchString[3 * strlen(fileMask)];
     BPTR srcDirLock = BNULL, dstDirLock = BNULL;
@@ -606,7 +607,7 @@ void ClearSkipList(struct List *SkipList)
 LONG CopyDirArray(Class * CLASS, Object * self, CONST_STRPTR sourcePath,
     CONST_STRPTR destinationPath, CONST_STRPTR directories[], struct List *SkipList)
 {
-    struct Install_DATA *data = INST_DATA(CLASS, self);
+    struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     LONG numdirs = 0, dir_count = 0;
     BPTR lock = BNULL;
 
@@ -615,7 +616,7 @@ LONG CopyDirArray(Class * CLASS, Object * self, CONST_STRPTR sourcePath,
 
     numdirs = (numdirs - 1) / 2;
 
-    D(bug("[InstallAROS] %s: Copying %d Dirs...\n", __func__, numdirs);)
+    D(bug("[InstallAROS:IO] %s: Copying %d Dirs...\n", __func__, numdirs);)
 
     while ((directories[dir_count] != NULL)
         && (data->inst_success == MUIV_Inst_InProgress))
@@ -693,7 +694,7 @@ BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
     ULONG dirpathlen = strlen(dirpath);
     STRPTR tmpdirpath = AllocVec(dirpathlen + 2, MEMF_CLEAR | MEMF_PUBLIC);
 
-    D(bug("[InstallAROS] %s('%s')\n", __func__, dirpath);)
+    D(bug("[InstallAROS:IO] %s('%s')\n", __func__, dirpath);)
 
     CopyMem(dirpath, tmpdirpath, dirpathlen);
 
@@ -777,7 +778,7 @@ BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_
     }
     *pathpart = '\0';           /* 'cut' string at end of path */
 
-    D(bug("[InstallAROS] %s: Backup '%s' @ '%s'\n", __func__, undorecord->undo_dst,
+    D(bug("[InstallAROS:IO] %s: Backup '%s' @ '%s'\n", __func__, undorecord->undo_dst,
             undorecord->undo_src);)
 
     undorecord->undo_method = MUIM_IC_CopyFile;
@@ -785,7 +786,7 @@ BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_
     /* Create backup directory */
     if ((lock = Lock(tmp, SHARED_LOCK)) != BNULL)
     {
-        D(bug("[InstallAROS] %s: Dir '%s' Exists - no need to create\n", __func__, tmp);)
+        D(bug("[InstallAROS:IO] %s: Dir '%s' Exists - no need to create\n", __func__, tmp);)
         UnLock(lock);
     }
     else
@@ -795,7 +796,7 @@ BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_
             UnLock(lock);
         else
         {
-            D(bug("[InstallAROS] %s: Failed to create %s dir!!\n", __func__, tmp));
+            D(bug("[InstallAROS:IO] %s: Failed to create %s dir!!\n", __func__, tmp));
             FreeVec(tmp);
             return FALSE;
         }

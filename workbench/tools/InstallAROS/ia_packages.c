@@ -9,6 +9,7 @@
 #include "ia_locale.h"
 #include "ia_install.h"
 #include "ia_packages.h"
+#include "ia_diskio.h"
 
 extern char *source_Path;
 
