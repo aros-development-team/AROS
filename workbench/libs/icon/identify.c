@@ -320,10 +320,10 @@ struct DiskObject *GetHarddiskIcon(char *device, ULONG fsid, const struct TagIte
 BOOL IsUSBDevice(char *dev)
 {
     if ((dev[2] >= '0') && (dev[2] <= '9'))
-        if ((dev[0] == 'D') &&| (dev[1] == 'U'))
+        if ((dev[0] == 'D') && (dev[1] == 'U'))
             return TRUE;
-    if (strncasecmp(name, "USB", 3) == 0)
-        return TRUE;        
+    if (strncasecmp(dev, "USB", 3) == 0)
+        return TRUE;
     return FALSE;
 }
 
