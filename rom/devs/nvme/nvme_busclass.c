@@ -140,6 +140,7 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             CopyMem(devFW, data->ab_DevFW, strlen(devFW));
         }
 
+        data->ab_UnitCnt = maxUnits;
         data->ab_Units = AllocMem(sizeof(OOP_Object *) * maxUnits, MEMF_CLEAR);
         D(bug ("[NVME:Bus] Root__New: Allocated pointers for %u unit(s) @ 0x%p\n", maxUnits, data->ab_Units);)
     }
@@ -256,7 +257,10 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     UQUAD lbaStart, lbaEnd;
     struct nvme_command c;
     struct completionevent_handler busehandle;
+    ULONG maxUnits = data->ab_UnitCnt;
     int nn;
+
+    data->ab_UnitCnt = 0;
 
     if (nvmeTimer && buffer)
     {
@@ -474,8 +478,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         }
 
         /* Attach detected Units */
-
-        for (nn = 0; (data->ab_Dev->queuecnt > 0) && (nn < data->ab_UnitCnt); nn++)
+        for (nn = 0; (data->ab_Dev->queuecnt > 0) && (nn < maxUnits); nn++)
         {
             struct nvme_id_ns *id_ns = (struct nvme_id_ns *)buffer;
             struct TagItem attrs[] =
