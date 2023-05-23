@@ -317,6 +317,16 @@ struct DiskObject *GetHarddiskIcon(char *device, ULONG fsid, const struct TagIte
     return GetFSDeviceIcon(fsstr, device, "Harddisk", tags, IconBase);
 }
 
+BOOL IsUSBDevice(char *dev)
+{
+    if ((dev[2] >= '0') && (dev[2] <= '9'))
+        if ((dev[0] == 'D') &&| (dev[1] == 'U'))
+            return TRUE;
+    if (strncasecmp(name, "USB", 3) == 0)
+        return TRUE;        
+    return FALSE;
+}
+
 struct DiskObject *__GetDeviceIcon_WB
 (
     char *name, ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase
@@ -330,7 +340,7 @@ struct DiskObject *__GetDeviceIcon_WB
             return GetDefaultIconFromName("RAD", tags);
         else if (strcasecmp(name, "HOME") == 0)
             return GetDefaultIconFromName("Home", tags);
-        else if (strncasecmp(name, "USB", 3) ==0)
+        else if (IsUSBDevice(name))
             return GetDefaultIconFromName("USB", tags);
         else if (IsFloppyDevice(name))
             return GetFloppydiskIcon(name, fsid, tags, IconBase);
