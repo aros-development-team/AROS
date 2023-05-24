@@ -332,7 +332,8 @@ struct DiskObject *__GetDeviceIcon_WB
     char *name, ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase
 )
 {
-    if (strlen(name) <= 5)
+    int devnamelen;
+    if ((devnamelen = strlen(name)) < 5)
     {
         if (strncasecmp(name, "RAM:", 4) == 0)
             return GetDefaultIconFromName("RAM", tags);
@@ -340,15 +341,16 @@ struct DiskObject *__GetDeviceIcon_WB
             return GetDefaultIconFromName("RAD", tags);
         else if (strcasecmp(name, "HOME") == 0)
             return GetDefaultIconFromName("Home", tags);
-        else if (IsUSBDevice(name))
-            return GetDefaultIconFromName("USB", tags);
         else if (IsFloppyDevice(name))
             return GetFloppydiskIcon(name, fsid, tags, IconBase);
-        else if (IsDiscDevice(name))
-            return GetDiscIcon(name, fsid, tags, IconBase);
-        else if (IsHarddiskDevice(name))
-            return GetHarddiskIcon(name, fsid, tags, IconBase);
     }
+    if (IsUSBDevice(name))
+        return GetDefaultIconFromName("USB", tags);
+    else if (IsDiscDevice(name))
+        return GetDiscIcon(name, fsid, tags, IconBase);
+    else if (IsHarddiskDevice(name))
+        return GetHarddiskIcon(name, fsid, tags, IconBase);
+
     return GetDefaultIconFromName("UnknownDevice", tags);
 }
 
