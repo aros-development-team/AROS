@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team.
+    Copyright (C) 2002-2023, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -222,12 +222,12 @@ static int Group_GetNumVisibleChildren(struct MUI_GroupData *data,
     struct MinList *children)
 {
     int num_visible_children = data->num_children;
-    Object *cstate;
+    APTR cstate;
     Object *child;
 
     /* As there can be invisible children we have to subtract those from
      * the total number of children */
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (IS_HIDDEN(child))
@@ -670,12 +670,12 @@ IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     /* seems to be the documented behaviour, however it should be slow! */
     if (!data->dont_forward_get && !data->dont_forward_methods)
     {
-        Object *cstate;
+        APTR cstate;
         Object *child;
         struct MinList *ChildList = NULL;
 
         get(data->family, MUIA_Family_List, &(ChildList));
-        cstate = (Object *) ChildList->mlh_Head;
+        cstate = ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
             if (DoMethodA(child, (Msg) msg))
                 return 1;
@@ -758,14 +758,14 @@ IPTR Group__MUIM_ConnectParent(struct IClass *cl, Object *obj,
     struct MUIP_ConnectParent *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if ((_flags(obj) & MADF_INVIRTUALGROUP)
@@ -789,12 +789,12 @@ IPTR Group__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     struct MUIP_ConnectParent *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         DoMethodA(child, (Msg) msg);
@@ -960,7 +960,7 @@ IPTR Group__MUIM_DoMethodNoForward(struct IClass *cl, Object *obj,
 static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
@@ -968,7 +968,7 @@ static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
         return TRUE;
 
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         DoMethodA(child, (Msg) msg);
@@ -984,8 +984,7 @@ IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
-    Object *cstate_copy;
+    APTR cstate;
     Object *child;
     Object *childFailed;
     struct MinList *ChildList = NULL;
@@ -1000,7 +999,7 @@ IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj,
     if (!(data->flags & GROUP_VSPACING))
         data->vert_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_vspacing;
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = cstate_copy = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
 #if 0                           /* SHOWME affects only show/hide */
@@ -1013,7 +1012,7 @@ IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj,
             /* Send MUIM_Cleanup to all objects that received MUIM_Setup.
              */
             childFailed = child;
-            cstate = cstate_copy;
+            cstate = ChildList->mlh_Head;
             while ((child = NextObject(&cstate)) && (child != childFailed))
             {
 #if 0                           /* SHOWME affects only show/hide */
@@ -1042,7 +1041,7 @@ IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj,
 IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
@@ -1053,7 +1052,7 @@ IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     }
 
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
 #if 0                           /* SHOWME affects only show/hide */
@@ -1077,7 +1076,7 @@ static struct Region *group_children_clip_region(struct IClass *cl,
         struct Rectangle rect;
         LONG page = -1;
         struct MinList *ChildList = NULL;
-        Object *cstate;
+        APTR cstate;
         Object *child;
 
         rect.MinX = _left(obj);
@@ -1087,7 +1086,7 @@ static struct Region *group_children_clip_region(struct IClass *cl,
 
         OrRectRegion(region, &rect);
         get(data->family, MUIA_Family_List, &ChildList);
-        cstate = (Object *) ChildList->mlh_Head;
+        cstate = ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
             if (child != data->titlegroup)
@@ -1123,7 +1122,7 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
     struct Rectangle group_rect;        /* child_rect; */
@@ -1310,7 +1309,7 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
     group_rect = muiRenderInfo(obj)->mri_ClipRect;
     page = -1;
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (!(_flags(child) & MADF_SHOWME))
@@ -1380,7 +1379,7 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MUI_MinMax tmp;
     WORD maxminwidth = 0;
@@ -1402,7 +1401,7 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 
     if (data->flags & GROUP_SAME_WIDTH)
     {
-        cstate = (Object *) children->mlh_Head;
+        cstate = children->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
             if (IS_HIDDEN(child))
@@ -1415,7 +1414,7 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 /*    D(bug("group_minmax_horiz(%p) : maxminwidth=%d\n", obj, maxminwidth)); */
 
     data->horiz_weight_sum = 0;
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         WORD minwidth;
@@ -1469,7 +1468,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MUI_MinMax tmp;
     WORD maxminheight = 0;
@@ -1491,7 +1490,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 
     if (data->flags & GROUP_SAME_HEIGHT)
     {
-        cstate = (Object *) children->mlh_Head;
+        cstate = children->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
             if (IS_HIDDEN(child))
@@ -1502,7 +1501,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 
     data->samesize_maxmin_vert = maxminheight;
     data->vert_weight_sum = 0;
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (IS_HIDDEN(child))
@@ -1537,11 +1536,11 @@ minmax_2d_rows_pass(struct MUI_GroupData *data, struct MinList *children,
     struct MUI_MinMax *req, WORD maxmin_height, WORD maxdef_height)
 {
     int i, j;
-    Object *cstate;
+    APTR cstate;
     Object *child;
 
     /* do not rewind after the while, to process line by line */
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     /* for each row */
     for (i = 0; i < data->rows; i++)
     {
@@ -1597,7 +1596,7 @@ minmax_2d_columns_pass(struct MUI_GroupData *data, struct MinList *children,
     struct MUI_MinMax *req, WORD maxmin_width, WORD maxdef_width)
 {
     int i, j;
-    Object *cstate;
+    APTR cstate;
     Object *child;
 
     for (i = 0; i < data->columns; i++)
@@ -1610,7 +1609,7 @@ minmax_2d_columns_pass(struct MUI_GroupData *data, struct MinList *children,
 
         j = 0;
         /* process all children to get children on a column */
-        cstate = (Object *) children->mlh_Head;
+        cstate = children->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
             if (IS_HIDDEN(child))
@@ -1660,7 +1659,7 @@ group_minmax_2d(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MUI_MinMax tmp;
     WORD maxmin_width;
@@ -1725,7 +1724,7 @@ group_minmax_2d(struct IClass *cl, Object *obj,
     if ((data->flags & GROUP_SAME_WIDTH)
         || (data->flags & GROUP_SAME_HEIGHT))
     {
-        cstate = (Object *) children->mlh_Head;
+        cstate = children->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
             if (!(_flags(child) & MADF_SHOWME))
@@ -1760,12 +1759,12 @@ static void
 group_minmax_pagemode(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
 {
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_MinMax tmp = { 0, 0, MUI_MAXMAX, MUI_MAXMAX, 0, 0 };
 
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
 
     D(bug("minmax_pagemode(0x%p) defw = %ld\n", obj, tmp.DefWidth));
 
@@ -1814,7 +1813,7 @@ IPTR Group__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUI_LayoutMsg lm;
     struct MUIP_AskMinMax childMsg;
     struct MUI_MinMax childMinMax;
-    Object *cstate;
+    APTR cstate;
     Object *child;
     LONG super_minwidth, super_minheight;
 
@@ -1832,8 +1831,7 @@ IPTR Group__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     childMsg.MinMaxInfo = &childMinMax;
     get(data->family, MUIA_Family_List, &(lm.lm_Children));
 
-    cstate = (Object *) lm.lm_Children->mlh_Head;
-
+    cstate = lm.lm_Children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (!(_flags(child) & MADF_SHOWME))
@@ -2083,7 +2081,7 @@ static void Layout1D_minmax_constraints_and_redistrib(struct MinList
     *children, WORD total_size, WORD remainder, WORD samesize,
     BOOL group_horiz)
 {
-    Object *cstate;
+    APTR cstate;
     Object *child;
     int i;
 
@@ -2099,7 +2097,7 @@ static void Layout1D_minmax_constraints_and_redistrib(struct MinList
 /*              remainder, total_size, size_growables, size_shrinkables)); */
 
         // minmax constraints
-        cstate = (Object *) children->mlh_Head;
+        cstate = children->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
             /* WORD old_size; */
@@ -2148,7 +2146,7 @@ static void Layout1D_minmax_constraints_and_redistrib(struct MinList
 /*                size_shrinkables, weight_growables, weight_shrinkables)); */
 
         // distribute remaining space to possible candidates
-        cstate = (Object *) children->mlh_Head;
+        cstate = children->mlh_Head;
         while (((child = NextObject(&cstate)) != NULL) && (remainder != 0))
         {
 /*            WORD old_size; */
@@ -2226,7 +2224,7 @@ static void group_layout_vert(struct IClass *cl, Object *obj,
     struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     ULONG total_weight;
     WORD remainder;    /* must converge to 0 to successfully end layout */
@@ -2272,7 +2270,7 @@ static void group_layout_vert(struct IClass *cl, Object *obj,
 
     // weight constraints
     // calculate ideal size for each object, and total ideal size
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (IS_HIDDEN(child))
@@ -2304,7 +2302,7 @@ static void group_layout_vert(struct IClass *cl, Object *obj,
         FALSE);
 
     // do the layout
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (IS_HIDDEN(child))
@@ -2328,7 +2326,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj,
     struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     ULONG total_weight;
     WORD remainder;    /* must converge to 0 to successfully end layout */
@@ -2380,7 +2378,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj,
 
     // weight constraints
     // calculate ideal size for each object, and total ideal size
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (IS_HIDDEN(child))
@@ -2415,7 +2413,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj,
         TRUE);
 
     // do the layout
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (IS_HIDDEN(child))
@@ -2560,7 +2558,7 @@ layout_2d_distribute_space(struct MUI_GroupData *data,
     struct layout2d_elem *col_infos,
     struct MinList *children, LONG left_start, LONG top_start)
 {
-    Object *cstate;
+    APTR cstate;
     Object *child;
     LONG left;
     LONG top;
@@ -2571,7 +2569,7 @@ layout_2d_distribute_space(struct MUI_GroupData *data,
     /*
      * pass 2 : distribute space
      */
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     top = top_start;
     /* for each row */
     for (i = 0; i < data->rows; i++)
@@ -2720,7 +2718,7 @@ static void group_layout_pagemode(struct IClass *cl, Object *obj,
     struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     WORD layout_width;
     WORD layout_height;
@@ -2750,7 +2748,7 @@ static void group_layout_pagemode(struct IClass *cl, Object *obj,
         layout_height -= yoffset;
     }
 
-    cstate = (Object *) children->mlh_Head;
+    cstate = children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         w = MIN(layout_width, _maxwidth(child));
@@ -2855,7 +2853,7 @@ IPTR Group__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
@@ -2865,7 +2863,7 @@ IPTR Group__MUIM_Show(struct IClass *cl, Object *obj,
         DoSuperMethodA(cl, obj, (Msg) msg);
 
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
 
     if (data->flags & GROUP_PAGEMODE)
     {
@@ -2908,12 +2906,12 @@ IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
 
     if (data->flags & GROUP_PAGEMODE)
     {
@@ -3028,13 +3026,13 @@ IPTR Group__MUIM_DragQueryExtended(struct IClass *cl, Object *obj,
     struct MUIP_DragQueryExtended *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     Object *found_obj;
     struct MinList *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (!(_flags(child) & MADF_CANDRAW))
@@ -3182,7 +3180,7 @@ IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
     struct MUIP_FindAreaObject *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
@@ -3192,7 +3190,7 @@ IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
 
     // it's one of my children ?
     get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (msg->obj == child)
@@ -3200,8 +3198,7 @@ IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
     }
 
     // let the children find it
-    get(data->family, MUIA_Family_List, &(ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         Object *res = (Object *) DoMethodA(child, (Msg) msg);
@@ -3219,7 +3216,7 @@ static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
@@ -3227,7 +3224,7 @@ static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj,
     if (!ChildList)
         return 0;
 
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         DoMethodA(child, (Msg) msg);
@@ -3244,7 +3241,7 @@ static IPTR Group__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
 
@@ -3252,7 +3249,7 @@ static IPTR Group__MUIM_Import(struct IClass *cl, Object *obj,
     if (!ChildList)
         return 0;
 
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         DoMethodA(child, (Msg) msg);
@@ -3270,7 +3267,7 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj,
     struct MUIP_Notify *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList;
 
@@ -3292,7 +3289,7 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj,
     data->dont_forward_get = 0;
 
     get(data->family, MUIA_Family_List, (IPTR *) & (ChildList));
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
         if (DoMethodA(child, (Msg) msg))
@@ -3326,7 +3323,7 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj,
     struct MUIP_Notify *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
+    APTR cstate;
     Object *child;
     struct MinList *ChildList = NULL;
     IPTR attr[30];
@@ -3344,7 +3341,7 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj,
     if (!ChildList)
         return TRUE;
 
-    cstate = (Object *) ChildList->mlh_Head;
+    cstate = ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
 
