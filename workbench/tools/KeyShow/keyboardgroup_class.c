@@ -407,7 +407,7 @@ static struct Key *read_keymap(void)
 AROS_UFH3S(void, change_qualifier_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(ULONG *, msg, A1))
+    AROS_UFHA(IPTR *, msg, A1))
 {
     AROS_USERFUNC_INIT
 
