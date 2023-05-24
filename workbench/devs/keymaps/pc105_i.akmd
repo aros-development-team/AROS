@@ -9,85 +9,85 @@ keymap: pc105_i
 # the "types" must come before "string", "deadkey", and "map"  sections.
 
 ## begin lokeymaptypes
-KC_VANILLA     		            # 00
-KC_VANILLA     		            # 01
-KCF_SHIFT|KCF_ALT	            # 02
-KCF_SHIFT|KCF_ALT	            # 03
-KCF_SHIFT|KCF_ALT	            # 04
-KCF_SHIFT|KCF_ALT	            # 05
-KCF_SHIFT|KCF_ALT	            # 06
-KCF_SHIFT|KCF_ALT	            # 07
-KCF_SHIFT|KCF_ALT	            # 08
-KCF_SHIFT|KCF_ALT	            # 09
-KCF_SHIFT|KCF_ALT	            # 0A
-KCF_SHIFT|KCF_ALT	            # 0B
-KCF_SHIFT|KCF_ALT	            # 0C
-KC_NOQUAL	                    # 0D
-KC_NOQUAL	                    # 0E
+KC_VANILLA                          # 00
+KC_VANILLA                          # 01
+KCF_SHIFT|KCF_ALT                   # 02
+KCF_SHIFT|KCF_ALT                   # 03
+KCF_SHIFT|KCF_ALT                   # 04
+KCF_SHIFT|KCF_ALT                   # 05
+KCF_SHIFT|KCF_ALT                   # 06
+KCF_SHIFT|KCF_ALT                   # 07
+KCF_SHIFT|KCF_ALT                   # 08
+KCF_SHIFT|KCF_ALT                   # 09
+KCF_SHIFT|KCF_ALT                   # 0A
+KCF_SHIFT|KCF_ALT                   # 0B
+KCF_SHIFT|KCF_ALT                   # 0C
+KC_NOQUAL                           # 0D
+KC_NOQUAL                           # 0E
 KCF_SHIFT|KCF_ALT                   # 0F
-KC_VANILLA	                    # 10 q
-KC_VANILLA	                    # 11 w
-KC_VANILLA	                    # 12 e
-KC_VANILLA	                    # 13 r
-KC_VANILLA	                    # 14 t
-KC_VANILLA	                    # 15 z
-KC_VANILLA	                    # 16 u
-KC_VANILLA	                    # 17 i
-KC_VANILLA	                    # 18 o
-KC_VANILLA	                    # 19 p
-KCF_SHIFT|KCF_ALT	            # 1A
+KC_VANILLA                          # 10 q
+KC_VANILLA                          # 11 w
+KC_VANILLA                          # 12 e
+KC_VANILLA                          # 13 r
+KC_VANILLA                          # 14 t
+KC_VANILLA                          # 15 z
+KC_VANILLA                          # 16 u
+KC_VANILLA                          # 17 i
+KC_VANILLA                          # 18 o
+KC_VANILLA                          # 19 p
+KCF_SHIFT|KCF_ALT                   # 1A
 KCF_SHIFT|KCF_ALT                   # 1B
 KCF_SHIFT|KCF_ALT                   # 1C
 KCF_SHIFT|KCF_ALT                   # 1D
 KCF_SHIFT|KCF_ALT                   # 1E
 KCF_SHIFT|KCF_ALT                   # 1F
-KC_VANILLA	                    # 20 a
-KC_VANILLA	                    # 21 s
-KC_VANILLA	                    # 22 d
-KC_VANILLA	                    # 23 f
-KC_VANILLA	                    # 24 g
-KC_VANILLA	                    # 25 h
-KC_VANILLA	                    # 26 j
-KC_VANILLA	                    # 27 k
-KC_VANILLA	                    # 28 l
-KC_VANILLA	                    # 29
-KC_VANILLA	                    # 2A
-KCF_SHIFT	                    # 2B
-KC_NOQUAL	                    # 2C
-KC_NOQUAL	                    # 2D
-KC_NOQUAL	                    # 2E
-KC_NOQUAL	                    # 2F
-KCF_SHIFT|KCF_ALT	            # 30
-KC_VANILLA	                    # 31 z
-KC_VANILLA	                    # 32 x
-KC_VANILLA	                    # 33 c
-KC_VANILLA	                    # 34 v
-KC_VANILLA	                    # 35 b
-KC_VANILLA	                    # 36 n
-KC_VANILLA	                    # 37 m
-KCF_SHIFT|KCF_ALT	            # 38
-KCF_SHIFT|KCF_ALT	            # 39
-KCF_SHIFT	                    # 3A
-KC_NOQUAL	                    # 3B
-KC_NOQUAL	                    # 3C
-KC_NOQUAL	                    # 3D
-KC_NOQUAL	                    # 3E
-KC_NOQUAL	                    # 3F
+KC_VANILLA                          # 20 a
+KC_VANILLA                          # 21 s
+KC_VANILLA                          # 22 d
+KC_VANILLA                          # 23 f
+KC_VANILLA                          # 24 g
+KC_VANILLA                          # 25 h
+KC_VANILLA                          # 26 j
+KC_VANILLA                          # 27 k
+KC_VANILLA                          # 28 l
+KC_VANILLA                          # 29
+KC_VANILLA                          # 2A
+KCF_SHIFT                           # 2B
+KC_NOQUAL                           # 2C
+KC_NOQUAL                           # 2D
+KC_NOQUAL                           # 2E
+KC_NOQUAL                           # 2F
+KCF_SHIFT|KCF_ALT                   # 30
+KC_VANILLA                          # 31 z
+KC_VANILLA                          # 32 x
+KC_VANILLA                          # 33 c
+KC_VANILLA                          # 34 v
+KC_VANILLA                          # 35 b
+KC_VANILLA                          # 36 n
+KC_VANILLA                          # 37 m
+KCF_SHIFT|KCF_ALT                   # 38
+KCF_SHIFT|KCF_ALT                   # 39
+KCF_SHIFT                           # 3A
+KC_NOQUAL                           # 3B
+KC_NOQUAL                           # 3C
+KC_NOQUAL                           # 3D
+KC_NOQUAL                           # 3E
+KC_NOQUAL                           # 3F
 ## end lokeymaptypes
 
 ## begin hikeymaptypes
-KC_NOQUAL	                    # 40 SPACE
-KC_NOQUAL	                    # 41 BACKSPACE
-KCF_STRING|KCF_SHIFT	            # 42 TAB
-KC_NOQUAL,		            # 43 ENTER
-KCF_CONTROL,		            # 44 RETURN
-KCF_ALT     	 	            # 45 ESCAPE
-KC_NOQUAL     	 	            # 46 DEL 
-KCF_STRING|KCF_SHIFT	            # 47 INSERT ??
-KCF_STRING|KCF_SHIFT	            # 48 PAGE UP ??
-KCF_STRING|KCF_SHIFT	            # 49 PAGE DOWN ??
-KC_NOQUAL,		            # 4A NUMERIC PAD -
-KCF_STRING|KCF_SHIFT	            # 4B F11 ??
+KC_NOQUAL                           # 40 SPACE
+KC_NOQUAL                           # 41 BACKSPACE
+KCF_STRING|KCF_SHIFT                # 42 TAB
+KC_NOQUAL                           # 43 ENTER
+KCF_CONTROL                         # 44 RETURN
+KCF_ALT                             # 45 ESCAPE
+KC_NOQUAL                           # 46 DEL 
+KCF_STRING|KCF_SHIFT                # 47 INSERT ??
+KCF_STRING|KCF_SHIFT                # 48 PAGE UP ??
+KCF_STRING|KCF_SHIFT                # 49 PAGE DOWN ??
+KC_NOQUAL                           # 4A NUMERIC PAD -
+KCF_STRING|KCF_SHIFT                # 4B F11 ??
 KCF_STRING|KCF_SHIFT                # 4C CURSORUP
 KCF_STRING|KCF_SHIFT                # 4D CURSORDOWN
 KCF_STRING|KCF_SHIFT                # 4E CURSORRIGHT
@@ -103,26 +103,26 @@ KCF_STRING|KCF_SHIFT                # 57 F8
 KCF_STRING|KCF_SHIFT                # 58 F9
 KCF_STRING|KCF_SHIFT                # 59 F10
 KCF_NOP                             # 5A NUMLOCK
-KC_NOQUAL	                    # 5B NUMPAD )
-KC_NOQUAL	                    # 5C NUMPAD /
-KC_NOQUAL	                    # 5D NUMPAD *
-KC_NOQUAL	                    # 5E NUMPAD +
-KCF_STRING,		            # 5F HELP
-KCF_NOP	                            # 60 LEFT SHIFT
+KC_NOQUAL                           # 5B NUMPAD )
+KC_NOQUAL                           # 5C NUMPAD /
+KC_NOQUAL                           # 5D NUMPAD *
+KC_NOQUAL                           # 5E NUMPAD +
+KCF_STRING                          # 5F HELP
+KCF_NOP                             # 60 LEFT SHIFT
 KCF_NOP                             # 61 RIGHT SHIFT
 KCF_NOP                             # 62 CAPS LOCK
-KCF_NOP	                            # 63 CONTROL
-KCF_NOP	                            # 64 LALT
-KCF_NOP	                            # 65 RALT
-KCF_NOP	                            # 66 LCOMMAND
+KCF_NOP                             # 63 CONTROL
+KCF_NOP                             # 64 LALT
+KCF_NOP                             # 65 RALT
+KCF_NOP                             # 66 LCOMMAND
 KCF_NOP                             # 67 RCOMMAND
 KCF_NOP                             # 68 LEFT MOUSE BUTTON
-KCF_NOP	                            # 69 RIGHT MOUSE BUTTON
-KCF_NOP	                            # 6A MIDDLE MOUSE BUTTON
-KCF_NOP	                            # 6B
-KCF_NOP	                            # 6C
-KCF_NOP	                            # 6D
-KCF_STRING|KCF_ALT	            # 6E PAUSE/BREAK ??
+KCF_NOP                             # 69 RIGHT MOUSE BUTTON
+KCF_NOP                             # 6A MIDDLE MOUSE BUTTON
+KCF_NOP                             # 6B
+KCF_NOP                             # 6C
+KCF_NOP                             # 6D
+KCF_STRING|KCF_ALT                  # 6E PAUSE/BREAK ??
 KCF_STRING|KCF_SHIFT                # 6F F12 ??
 KCF_STRING|KCF_CONTROL              # 70 HOME ??
 KCF_STRING|KCF_CONTROL              # 71 END ??
