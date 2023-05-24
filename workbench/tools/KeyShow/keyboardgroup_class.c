@@ -78,45 +78,45 @@ static void parse_normal_key(struct Key *key, UBYTE type, IPTR value)
     switch (type)
     {
         case KC_NOQUAL:
-            (*key).alone[0]     = value & 0xff;
+            key->alone[0]     = value & 0xff;
             break;
         case KCF_SHIFT:
-            (*key).alone[0]     = value & 0xff;
-            (*key).shift[0]     = (value >> 8) & 0xff;
+            key->alone[0]     = value & 0xff;
+            key->shift[0]     = (value >> 8) & 0xff;
             break;
         case KCF_ALT:
-            (*key).alone[0]     = value & 0xff;
-            (*key).alt[0]       = (value >> 8) & 0xff;
+            key->alone[0]     = value & 0xff;
+            key->alt[0]       = (value >> 8) & 0xff;
             break;
         case KCF_CONTROL:
-            (*key).alone[0]     = value & 0xff;
-            (*key).ctrl[0]      = (value >> 8) & 0xff;
+            key->alone[0]     = value & 0xff;
+            key->ctrl[0]      = (value >> 8) & 0xff;
             break;
         case KCF_ALT + KCF_SHIFT:
-            (*key).alone[0]     = value & 0xff;
-            (*key).shift[0]     = (value >> 8) & 0xff;
-            (*key).alt[0]       = (value >> 16) & 0xff;
-            (*key).shift_alt[0] = (value >> 24) & 0xff;
+            key->alone[0]     = value & 0xff;
+            key->shift[0]     = (value >> 8) & 0xff;
+            key->alt[0]       = (value >> 16) & 0xff;
+            key->shift_alt[0] = (value >> 24) & 0xff;
             break;
         case KCF_CONTROL + KCF_ALT:
-            (*key).alone[0]     = value & 0xff;
-            (*key).alt[0]       = (value >> 8) & 0xff;
-            (*key).ctrl[0]      = (value >> 16) & 0xff;
-            (*key).ctrl_alt[0]  = (value >> 24) & 0xff;
+            key->alone[0]     = value & 0xff;
+            key->alt[0]       = (value >> 8) & 0xff;
+            key->ctrl[0]      = (value >> 16) & 0xff;
+            key->ctrl_alt[0]  = (value >> 24) & 0xff;
             break;
         case KCF_CONTROL + KCF_SHIFT:
-            (*key).alone[0]     = value & 0xff;
-            (*key).shift[0]     = (value >> 8) & 0xff;
-            (*key).ctrl[0]      = (value >> 16) & 0xff;
-            (*key).ctrl_shift[0]= (value >> 24) & 0xff;
+            key->alone[0]     = value & 0xff;
+            key->shift[0]     = (value >> 8) & 0xff;
+            key->ctrl[0]      = (value >> 16) & 0xff;
+            key->ctrl_shift[0]= (value >> 24) & 0xff;
             break;
         case KC_VANILLA:
-            (*key).alone[0]     = value & 0xff;
-            (*key).shift[0]     = (value >> 8) & 0xff;
-            (*key).alt[0]       = (value >> 16) & 0xff;
-            (*key).shift_alt[0] = (value >> 24) & 0xff;
-            (*key).ctrl[0]      = '^';
-            (*key).ctrl[1]      = value & 0xff;
+            key->alone[0]     = value & 0xff;
+            key->shift[0]     = (value >> 8) & 0xff;
+            key->alt[0]       = (value >> 16) & 0xff;
+            key->shift_alt[0] = (value >> 24) & 0xff;
+            key->ctrl[0]      = '^';
+            key->ctrl[1]      = value & 0xff;
             break;
     }
 }
@@ -164,46 +164,46 @@ static void parse_string_key(struct Key *key, UBYTE type, IPTR value)
     switch (type)
     {
         case KC_NOQUAL:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
             break;
         case KCF_SHIFT:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->shift[0]     = set_string_key(type, value, KCF_SHIFT);
             break;
         case KCF_ALT:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
-            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->alt[0]       = set_string_key(type, value, KCF_ALT);
             break;
         case KCF_CONTROL:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
-            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
             break;
         case KCF_ALT + KCF_SHIFT:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
-            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
-            (*key).shift_alt[0] = set_string_key(type, value, KCF_ALT + KCF_SHIFT);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            key->alt[0]       = set_string_key(type, value, KCF_ALT);
+            key->shift_alt[0] = set_string_key(type, value, KCF_ALT + KCF_SHIFT);
             break;
         case KCF_CONTROL + KCF_ALT:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
-            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
-            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
-            (*key).ctrl_alt[0]  = set_string_key(type, value, KCF_CONTROL + KCF_ALT);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->alt[0]       = set_string_key(type, value, KCF_ALT);
+            key->ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            key->ctrl_alt[0]  = set_string_key(type, value, KCF_CONTROL + KCF_ALT);
             break;
         case KCF_CONTROL + KCF_SHIFT:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
-            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
-            (*key).ctrl_shift[0]= set_string_key(type, value, KCF_CONTROL + KCF_SHIFT);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            key->ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            key->ctrl_shift[0]= set_string_key(type, value, KCF_CONTROL + KCF_SHIFT);
             break;
         case KC_VANILLA:
-            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
-            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
-            (*key).shift_alt[0] = set_string_key(type, value, KCF_ALT + KCF_SHIFT);
-            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
-            (*key).ctrl_alt[0]  = set_string_key(type, value, KCF_CONTROL + KCF_ALT);
-            (*key).ctrl_shift[0]= set_string_key(type, value, KCF_CONTROL + KCF_SHIFT);
+            key->alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            key->shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            key->alt[0]       = set_string_key(type, value, KCF_ALT);
+            key->shift_alt[0] = set_string_key(type, value, KCF_ALT + KCF_SHIFT);
+            key->ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            key->ctrl_alt[0]  = set_string_key(type, value, KCF_CONTROL + KCF_ALT);
+            key->ctrl_shift[0]= set_string_key(type, value, KCF_CONTROL + KCF_SHIFT);
             break;
     }
 }
@@ -271,46 +271,46 @@ static void parse_dead_key(struct Key *key, UBYTE type, IPTR value)
     switch (type)
     {
         case KC_NOQUAL:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
             break;
         case KCF_SHIFT:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
-            set_dead_key((*key).shift, type, value, KCF_SHIFT);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
+            set_dead_key(key->shift, type, value, KCF_SHIFT);
             break;
         case KCF_ALT:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
-            set_dead_key((*key).alt, type, value, KCF_ALT);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
+            set_dead_key(key->alt, type, value, KCF_ALT);
             break;
         case KCF_CONTROL:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
-            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
+            set_dead_key(key->ctrl, type, value, KCF_CONTROL);
             break;
         case KCF_ALT + KCF_SHIFT:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
-            set_dead_key((*key).shift, type, value, KCF_SHIFT);
-            set_dead_key((*key).alt, type, value, KCF_ALT);
-            set_dead_key((*key).shift_alt, type, value, KCF_ALT + KCF_SHIFT);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
+            set_dead_key(key->shift, type, value, KCF_SHIFT);
+            set_dead_key(key->alt, type, value, KCF_ALT);
+            set_dead_key(key->shift_alt, type, value, KCF_ALT + KCF_SHIFT);
             break;
         case KCF_CONTROL + KCF_ALT:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
-            set_dead_key((*key).alt, type, value, KCF_ALT);
-            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
-            set_dead_key((*key).ctrl_alt, type, value, KCF_CONTROL + KCF_ALT);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
+            set_dead_key(key->alt, type, value, KCF_ALT);
+            set_dead_key(key->ctrl, type, value, KCF_CONTROL);
+            set_dead_key(key->ctrl_alt, type, value, KCF_CONTROL + KCF_ALT);
             break;
         case KCF_CONTROL + KCF_SHIFT:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
-            set_dead_key((*key).shift, type, value, KCF_SHIFT);
-            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
-            set_dead_key((*key).ctrl_shift, type, value, KCF_CONTROL + KCF_SHIFT);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
+            set_dead_key(key->shift, type, value, KCF_SHIFT);
+            set_dead_key(key->ctrl, type, value, KCF_CONTROL);
+            set_dead_key(key->ctrl_shift, type, value, KCF_CONTROL + KCF_SHIFT);
             break;
         case KC_VANILLA:
-            set_dead_key((*key).alone, type, value, KC_NOQUAL);
-            set_dead_key((*key).shift, type, value, KCF_SHIFT);
-            set_dead_key((*key).alt, type, value, KCF_ALT);
-            set_dead_key((*key).shift_alt, type, value, KCF_ALT + KCF_SHIFT);
-            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
-            set_dead_key((*key).ctrl_alt, type, value, KCF_CONTROL + KCF_ALT);
-            set_dead_key((*key).ctrl_shift, type, value, KCF_CONTROL + KCF_SHIFT);
+            set_dead_key(key->alone, type, value, KC_NOQUAL);
+            set_dead_key(key->shift, type, value, KCF_SHIFT);
+            set_dead_key(key->alt, type, value, KCF_ALT);
+            set_dead_key(key->shift_alt, type, value, KCF_ALT + KCF_SHIFT);
+            set_dead_key(key->ctrl, type, value, KCF_CONTROL);
+            set_dead_key(key->ctrl_alt, type, value, KCF_CONTROL + KCF_ALT);
+            set_dead_key(key->ctrl_shift, type, value, KCF_CONTROL + KCF_SHIFT);
             break;
     }
 }
