@@ -152,6 +152,26 @@ struct DiskInfo_DATA
     struct NotifyRequest        dki_FSNotifyRequest;
 };
 
+void GetFSNameFromID(ULONG fsid, STRPTR *fsname_ptr)
+{
+    int i;
+    for (i = 0; i < sizeof(dt) / sizeof(ULONG); ++i)
+    {
+        if (fsid == dt[i])
+        {
+            int fsnamlen = strlen(disktypelist[i]);
+            if (*fsname_ptr)
+                FreeVec(*fsname_ptr);
+            if ((*fsname_ptr = AllocVec(fsnamlen + 1, MEMF_ANY)) != NULL)
+            {
+                CopyMem(disktypelist[i], *fsname_ptr, fsnamlen);
+                (*fsname_ptr)[fsnamlen] = '\0';
+            }
+            break;
+        }
+    }
+}
+
 /*** Methods ****************************************************************/
 Object *DiskInfo__OM_NEW
 (
@@ -169,7 +189,6 @@ Object *DiskInfo__OM_NEW
                                *volusedobj, *volfreeobj,
                                *grp, *grpformat;
     ULONG                       percent        = 0;
-    ULONG                       disktype       = ID_NO_DISK_PRESENT;
     LONG                        aspect         = 0;
     TEXT                        volname[108];
     TEXT                        size[64];
@@ -238,27 +257,13 @@ Object *DiskInfo__OM_NEW
     volname[strlen(volname)-1] = '\0';
     D(bug("[DiskInfo] %s: Volume '%s'\n", __func__, volname));
 
-    /* find the volumes doslist information .. */
-    filesystem = _(MSG_UNKNOWN);
-
     volname[strlen(volname)] = ':';
 
     /* Extract volume info from InfoData */
     if (Info(initial, &id) == DOSTRUE)
     {
-        int i;
-        disktype = id.id_DiskType;
-        D(bug("[DiskInfo] %s: FSID %08x\n", __func__, disktype));
-
-        for (i = 0; i < sizeof(dt) / sizeof(ULONG); ++i)
-        {
-            if (disktype == dt[i])
-            {
-                filesystem = AllocVec(strlen(disktypelist[i]) + 1, MEMF_ANY|MEMF_CLEAR);
-                CopyMem(disktypelist[i], filesystem, strlen(disktypelist[i]));
-                break;
-            }
-        }
+        D(bug("[DiskInfo] %s: Info FSID = %08x\n", __func__, id.id_DiskType));
+        GetFSNameFromID(id.id_DiskType, &filesystem);
         if (!filesystem)
         {
             filesystem = AllocVec(strlen(unknown) + 1, MEMF_ANY|MEMF_CLEAR);
@@ -292,6 +297,12 @@ Object *DiskInfo__OM_NEW
         if (dl != NULL)
         {
             APTR voltask = dl->dol_Task;
+            if (dl->dol_misc.dol_volume.dol_DiskType &&
+                (dl->dol_misc.dol_volume.dol_DiskType != id.id_DiskType))
+            {
+                D(bug("[DiskInfo] %s: Volume FSID = %08x\n", __func__, dl->dol_misc.dol_volume.dol_DiskType);)
+                GetFSNameFromID(dl->dol_misc.dol_volume.dol_DiskType, &filesystem);
+            }
             dl = LockDosList(LDF_DEVICES|LDF_READ);
             if (dl) {
                 while((dl = NextDosEntry(dl, LDF_DEVICES)))
@@ -318,7 +329,8 @@ Object *DiskInfo__OM_NEW
             }
         }
     }
-    else
+
+    if (!filesystem)
     {
         filesystem = AllocVec(strlen(unknown) + 1, MEMF_ANY);
         CopyMem(unknown, filesystem, strlen(unknown));
@@ -330,7 +342,7 @@ Object *DiskInfo__OM_NEW
         CLASS, self, NULL,
 
         MUIA_Application_Title, __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.7 ("ADATE") \xA9 2006-2023 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.8 ("ADATE") \xA9 2006-2023 The AROS Dev Team",
         MUIA_Application_Copyright, __(MSG_COPYRIGHT),
         MUIA_Application_Author, __(MSG_AUTHOR),
         MUIA_Application_Description, __(MSG_DESCRIPTION),
