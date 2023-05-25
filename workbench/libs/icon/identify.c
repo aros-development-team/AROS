@@ -418,7 +418,6 @@ struct DiskObject *__FindDefaultIcon_WB
         )
         {
             BPTR lock = Lock(device, SHARED_LOCK);
-            bug("[Icon] %s: Lock for '%s' @ 0x%p\n", __func__, device, lock);
             LONG type = FindDiskType(iim->iim_FIB->fib_FileName, lock);
             UnLock(lock);
             icon = __GetDeviceIcon_WB(device, type, iim->iim_Tags, IconBase);
