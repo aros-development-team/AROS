@@ -168,12 +168,12 @@ struct DiskObject *GetFSDeviceIcon(char *FS, const char *Dev, const char *DevCla
 
 BOOL IsDiscDevice(char *dev, int devlen)
 {
-    if (((dev[0] & ~0x20) == 'c') &&
-         ((dev[1] & ~0x20) == 'd'))
+    if (((dev[0] & ~0x20) == 'C') &&
+         ((dev[1] & ~0x20) == 'D'))
         return TRUE;
-    else if (((dev[0] & ~0x20) == 'd') &&
-         ((dev[1] & ~0x20) == 'v') &&
-         ((dev[2] & ~0x20) == 'd'))
+    else if (((dev[0] & ~0x20) == 'D') &&
+         ((dev[1] & ~0x20) == 'V') &&
+         ((dev[2] & ~0x20) == 'D'))
         return TRUE;
     return FALSE;
 }
@@ -271,22 +271,22 @@ BOOL IsHarddiskDevice(char *dev, int devlen)
             if ((dev[0] == 'H') || (dev[1] == 'H'))
                 return TRUE;
         }
-        else if (((dev[0] & ~0x20) == 'e') &&
-         ((dev[1] & ~0x20) == 'm') &&
-         ((dev[2] & ~0x20) == 'u'))
+        else if (((dev[0] & ~0x20) == 'E') &&
+         ((dev[1] & ~0x20) == 'M') &&
+         ((dev[2] & ~0x20) == 'U'))
             return TRUE;
     }
     // try to match an ATAxPx or NVMExPx type name.
-    if (((dev[0] & ~0x20) == 'a') &&
-         ((dev[1] & ~0x20) == 't') &&
-         ((dev[2] & ~0x20) == 'a') &&
-         (((dev[4] & ~0x20) == 'p') || ((dev[5] & ~0x20) == 'p')))
+    if (((dev[0] & ~0x20) == 'A') &&
+         ((dev[1] & ~0x20) == 'T') &&
+         ((dev[2] & ~0x20) == 'A') &&
+         (((dev[4] & ~0x20) == 'P') || ((dev[5] & ~0x20) == 'P')))
         return TRUE;
-    if (((dev[0] & ~0x20) == 'n') &&
-         ((dev[1] & ~0x20) == 'v') &&
-         ((dev[2] & ~0x20) == 'm') &&
-         ((dev[3] & ~0x20) == 'e') &&
-         (((dev[5] & ~0x20) == 'p') || ((dev[6] & ~0x20) == 'p')))
+    if (((dev[0] & ~0x20) == 'N') &&
+         ((dev[1] & ~0x20) == 'V') &&
+         ((dev[2] & ~0x20) == 'M') &&
+         ((dev[3] & ~0x20) == 'E') &&
+         (((dev[5] & ~0x20) == 'P') || ((dev[6] & ~0x20) == 'P')))
         return TRUE;
     return FALSE;
 }
@@ -353,9 +353,9 @@ BOOL IsUSBDevice(char *dev, int devlen)
             if ((dev[0] == 'D') && (dev[1] == 'U'))
                 return TRUE;
     }
-    if (((dev[0] & ~0x20) == 'u') &&
-         ((dev[1] & ~0x20) == 's') &&
-         ((dev[2] & ~0x20) == 'b'))
+    if (((dev[0] & ~0x20) == 'U') &&
+         ((dev[1] & ~0x20) == 'S') &&
+         ((dev[2] & ~0x20) == 'B'))
         return TRUE;
     return FALSE;
 }
@@ -368,19 +368,19 @@ struct DiskObject *__GetDeviceIcon_WB
     int devnamelen;
     if ((devnamelen = strlen(name)) < 5)
     {
-        if (((name[0] & ~0x20) == 'r') &&
-             ((name[1] & ~0x20) == 'a') &&
-             ((name[2] & ~0x20) == 'm') &&
+        if (((name[0] & ~0x20) == 'R') &&
+             ((name[1] & ~0x20) == 'A') &&
+             ((name[2] & ~0x20) == 'M') &&
              (name[3] == ':'))
             return GetDefaultIconFromName("RAM", tags);
-        if (((name[0] & ~0x20) == 'r') &&
-             ((name[1] & ~0x20) == 'a') &&
-             ((name[2] & ~0x20) == 'd'))
+        if (((name[0] & ~0x20) == 'R') &&
+             ((name[1] & ~0x20) == 'A') &&
+             ((name[2] & ~0x20) == 'D'))
             return GetDefaultIconFromName("RAD", tags);
-        if (((name[0] & ~0x20) == 'h') &&
-             ((name[1] & ~0x20) == 'o') &&
-             ((name[2] & ~0x20) == 'm') &&
-             ((name[3] & ~0x20) == 'e'))
+        if (((name[0] & ~0x20) == 'H') &&
+             ((name[1] & ~0x20) == 'O') &&
+             ((name[2] & ~0x20) == 'M') &&
+             ((name[3] & ~0x20) == 'E'))
             return GetDefaultIconFromName("Home", tags);
         else if (IsFloppyDevice(name))
             return GetFloppydiskIcon(name, fsid, tags, IconBase);
