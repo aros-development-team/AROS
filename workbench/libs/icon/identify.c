@@ -41,6 +41,11 @@ struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, const struct T
 struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *tags, struct IconBase *IconBase);
 LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase);
 
+CONST_STRPTR    str_disk = "disk";
+CONST_STRPTR    str_Disk = "Disk";
+CONST_STRPTR    str_CDROM = "CDROM";
+CONST_STRPTR    str_Harddisk = "Harddisk";
+
 /*** Macros *****************************************************************/
 #define FindDeviceName(buffer, length, volume) (__FindDeviceName_WB((buffer), (length), (volume), DOSBase))
 #define GetDefaultIconFromName(name, tags) (__GetDefaultIconFromName_WB((name), (tags), IconBase))
@@ -125,8 +130,8 @@ LONG __FindType_WB(BPTR lock, struct IconBase *IconBase)
     return type;
 }
 
-
-struct DiskObject *GetFSDeviceIcon(char *FS, char*Dev, char*DevClass, const struct TagItem *tags, struct IconBase *IconBase)
+struct DiskObject *GetFSDeviceIcon(char *FS, const char *Dev, const char *DevClass,
+                                                        const struct TagItem *tags, struct IconBase *IconBase)
 {
     struct DiskObject *icon = NULL;
     char fsDev[MAXFILENAMELENGTH];
@@ -138,7 +143,7 @@ struct DiskObject *GetFSDeviceIcon(char *FS, char*Dev, char*DevClass, const stru
             fsDev[0] = '\0';
             strcat(fsDev, FS);
             strncat(fsDev, Dev, devlen - 1);
-            strcat(fsDev, "disk");
+            strcat(fsDev, str_disk);
             if (icon = GetDefaultIconFromName(fsDev, tags))
                 return icon;
         }
@@ -151,7 +156,7 @@ struct DiskObject *GetFSDeviceIcon(char *FS, char*Dev, char*DevClass, const stru
         int devlen = strnlen(Dev,32);
         fsDev[0] = '\0';
         strncat(fsDev, Dev, devlen - 1);
-        strcat(fsDev, "disk");
+        strcat(fsDev, str_disk);
         if (icon = GetDefaultIconFromName(fsDev, tags))
             return icon;
     }
@@ -161,9 +166,14 @@ struct DiskObject *GetFSDeviceIcon(char *FS, char*Dev, char*DevClass, const stru
     return NULL;
 }
 
-BOOL IsDiscDevice(char *dev)
+BOOL IsDiscDevice(char *dev, int devlen)
 {
-    if (strncasecmp(dev, "CD", 2) == 0)
+    if (((dev[0] & ~0x20) == 'c') &&
+         ((dev[1] & ~0x20) == 'd'))
+        return TRUE;
+    else if (((dev[0] & ~0x20) == 'd') &&
+         ((dev[1] & ~0x20) == 'v') &&
+         ((dev[2] & ~0x20) == 'd'))
         return TRUE;
     return FALSE;
 }
@@ -183,7 +193,7 @@ struct DiskObject *GetDiscIcon(char *device, ULONG fsid, const struct TagItem *t
             fsstr = "Busy";
             break;
         }
-    return GetFSDeviceIcon(fsstr, device, "CDROM", tags, IconBase);
+    return GetFSDeviceIcon(fsstr, device, str_CDROM, tags, IconBase);
 }
 
 BOOL IsFloppyDevice(char *dev)
@@ -248,17 +258,35 @@ struct DiskObject *GetFloppydiskIcon(char *device, ULONG fsid, const struct TagI
             fsstr = "FFS";
             break;
         }
-    return GetFSDeviceIcon(fsstr, device, "Disk", tags, IconBase);
+    return GetFSDeviceIcon(fsstr, device, str_Disk, tags, IconBase);
 }
 
-BOOL IsHarddiskDevice(char *dev)
+BOOL IsHarddiskDevice(char *dev, int devlen)
 {
-    if (dev[2] >= '0' && dev[2] <= '9')
+    // try to match a (D)Hx(.x) or H(D)x(.x) type name first.
+    if (devlen < 6)
     {
-        if ((dev[0] == 'H') || (dev[1] == 'H'))
+        if (dev[2] >= '0' && dev[2] <= '9')
+        {
+            if ((dev[0] == 'H') || (dev[1] == 'H'))
+                return TRUE;
+        }
+        else if (((dev[0] & ~0x20) == 'e') &&
+         ((dev[1] & ~0x20) == 'm') &&
+         ((dev[2] & ~0x20) == 'u'))
             return TRUE;
     }
-    else if (strncasecmp(dev, "EMU", 3) == 0)
+    // try to match an ATAxPx or NVMExPx type name.
+    if (((dev[0] & ~0x20) == 'a') &&
+         ((dev[1] & ~0x20) == 't') &&
+         ((dev[2] & ~0x20) == 'a') &&
+         (((dev[4] & ~0x20) == 'p') || ((dev[5] & ~0x20) == 'p')))
+        return TRUE;
+    if (((dev[0] & ~0x20) == 'n') &&
+         ((dev[1] & ~0x20) == 'v') &&
+         ((dev[2] & ~0x20) == 'm') &&
+         ((dev[3] & ~0x20) == 'e') &&
+         (((dev[5] & ~0x20) == 'p') || ((dev[6] & ~0x20) == 'p')))
         return TRUE;
     return FALSE;
 }
@@ -314,15 +342,20 @@ struct DiskObject *GetHarddiskIcon(char *device, ULONG fsid, const struct TagIte
             fsstr = "FFS";
             break;
         }
-    return GetFSDeviceIcon(fsstr, device, "Harddisk", tags, IconBase);
+    return GetFSDeviceIcon(fsstr, device, str_Harddisk, tags, IconBase);
 }
 
-BOOL IsUSBDevice(char *dev)
+BOOL IsUSBDevice(char *dev, int devlen)
 {
-    if ((dev[2] >= '0') && (dev[2] <= '9'))
-        if ((dev[0] == 'D') && (dev[1] == 'U'))
-            return TRUE;
-    if (strncasecmp(dev, "USB", 3) == 0)
+    if (devlen < 6)
+    {
+        if ((dev[2] >= '0') && (dev[2] <= '9'))
+            if ((dev[0] == 'D') && (dev[1] == 'U'))
+                return TRUE;
+    }
+    if (((dev[0] & ~0x20) == 'u') &&
+         ((dev[1] & ~0x20) == 's') &&
+         ((dev[2] & ~0x20) == 'b'))
         return TRUE;
     return FALSE;
 }
@@ -335,20 +368,28 @@ struct DiskObject *__GetDeviceIcon_WB
     int devnamelen;
     if ((devnamelen = strlen(name)) < 5)
     {
-        if (strncasecmp(name, "RAM:", 4) == 0)
+        if (((name[0] & ~0x20) == 'r') &&
+             ((name[1] & ~0x20) == 'a') &&
+             ((name[2] & ~0x20) == 'm') &&
+             (name[3] == ':'))
             return GetDefaultIconFromName("RAM", tags);
-        else if (strncasecmp(name, "RAD", 3) == 0)
+        if (((name[0] & ~0x20) == 'r') &&
+             ((name[1] & ~0x20) == 'a') &&
+             ((name[2] & ~0x20) == 'd'))
             return GetDefaultIconFromName("RAD", tags);
-        else if (strcasecmp(name, "HOME") == 0)
+        if (((name[0] & ~0x20) == 'h') &&
+             ((name[1] & ~0x20) == 'o') &&
+             ((name[2] & ~0x20) == 'm') &&
+             ((name[3] & ~0x20) == 'e'))
             return GetDefaultIconFromName("Home", tags);
         else if (IsFloppyDevice(name))
             return GetFloppydiskIcon(name, fsid, tags, IconBase);
     }
-    if (IsUSBDevice(name))
+    if (IsUSBDevice(name, devnamelen))
         return GetDefaultIconFromName("USB", tags);
-    else if (IsDiscDevice(name))
+    else if (IsDiscDevice(name, devnamelen))
         return GetDiscIcon(name, fsid, tags, IconBase);
-    else if (IsHarddiskDevice(name))
+    else if (IsHarddiskDevice(name, devnamelen))
         return GetHarddiskIcon(name, fsid, tags, IconBase);
 
     return GetDefaultIconFromName("UnknownDevice", tags);
