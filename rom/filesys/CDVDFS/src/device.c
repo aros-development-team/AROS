@@ -193,7 +193,7 @@ ULONG __abox__ = 1;
 #endif
 
 #ifndef __AROS__
-char __version__[] = "\0$VER: CDVDFS 1.8 (8.11.2013)";
+char __version__[] = "\0$VER: CDVDFS 1.9 (25.05.2023)";
 
 LONG SAVEDS Main(void)
 {
@@ -783,32 +783,13 @@ openbreak:
                                     if (errcode == ERROR_NO_DISK) {
                                         id->id_DiskType = ID_NO_DISK_PRESENT;
                                     } else if (!errcode) {
-                                        int protocol, skip;
-                                        t_ulong offset, svd_offset;
-
-                                        protocol = Which_Protocol (global->g_cd, TRUE, TRUE, &skip, &offset, &svd_offset);
-                                        switch (protocol)
-                                        {
-                                        case PRO_HIGH_SIERRA:
-                                                id->id_DiskType = ID_HSIERRA_DISK;
-                                                break;
-                                        case PRO_ROCK:
-                                                id->id_DiskType = ID_ISO9660RR_DISK;
-                                                break;
-                                        case PRO_JOLIET:
-                                                id->id_DiskType = ID_ISO9660JOL_DISK;
-                                                break;
-                                        default:
-                                                // PRO_ISO
-                                                id->id_DiskType = ID_ISO9660_DISK;
-                                                break;
-                                        }
+                                        id->id_DiskType = ID_DOS_DISK;
                                         id->id_NumBlocks= Volume_Size (global->g_volume);
-                                        id->id_BytesPerBlock = Block_Size (global->g_volume);
+                                         id->id_BytesPerBlock = Block_Size (global->g_volume);
                                         id->id_VolumeNode = MKBADDR(global->DevList);
                                     } else {
                                         /* For example empty CD-R */
-                                        id->id_DiskType = ID_NOT_REALLY_DOS;
+                                        id->id_DiskType = ID_UNREADABLE_DISK;
                                         id->id_NumBlocks = 0;
                                         id->id_BytesPerBlock = 2048;
                                     }
@@ -1399,6 +1380,8 @@ static void Create_Volume_Node (struct CDVDBase *global, LONG p_disk_type, ULONG
 
 static void Mount (struct CDVDBase *global)
 {
+  int protocol, skip;
+  t_ulong offset, svd_offset, discid;
   char buf[33];
 
   if (Has_Audio_Tracks (global->g_cd)) {
@@ -1442,7 +1425,24 @@ static void Mount (struct CDVDBase *global)
   global->g_volume->locks = Reinstall_Locks (global);
   global->g_volume->file_handles = Reinstall_File_Handles (global);
 
-  Create_Volume_Node (global, ID_CDFS_DISK, Volume_Creation_Date (global->g_volume));
+  protocol = Which_Protocol (global->g_cd, TRUE, TRUE, &skip, &offset, &svd_offset);
+  switch (protocol)
+  {
+  case PRO_HIGH_SIERRA:
+    discid = ID_HSIERRA_DISK;
+    break;
+  case PRO_ROCK:
+    discid = ID_ISO9660RR_DISK;
+    break;
+  case PRO_JOLIET:
+    discid = ID_ISO9660JOL_DISK;
+    break;
+  default:
+    // PRO_ISO
+    discid = ID_ISO9660_DISK;
+    break;
+  }
+  Create_Volume_Node (global, discid, Volume_Creation_Date (global->g_volume));
   global->g_volume->devlist = global->DevList;
   global->g_cd->t_changeint2 = global->g_cd->t_changeint;
   Send_Event (global, TRUE);
