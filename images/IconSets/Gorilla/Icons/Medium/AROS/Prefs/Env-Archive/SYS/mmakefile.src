@@ -7,7 +7,7 @@ ICONS := \
     def_CDROM def_BusyCDROM def_NDOSCDROM def_DVD \
     def_Disk def_BusyDisk def_FATDisk def_FFSDisk def_KickDisk def_PFSDisk def_SFSDisk def_NDOSDisk \
     def_Harddisk def_BusyHarddisk def_FATHarddisk def_FFSHarddisk def_NDOSHarddisk \
-    def_RAM def_RAD def_USB
+    def_RAM def_RAD def_USB def_UnknownDevice
 
 # File Icons
 ICONS += \
