@@ -419,12 +419,18 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         _flags(obj) |= MADF_ISVIRTUALGROUP;
     }
 
+#if (0)
+    // kalamatee : disabled as unnecessary.
+    // Object is created before children are added, so MUIA_Disabled is set
+    // and OM_ADDMEMBER (called on the children) already does this.
+
     /* will forward MUIA_Disabled to children */
     get(obj, MUIA_Disabled, &disabled);
     if (disabled)
     {
         set(obj, MUIA_Disabled, TRUE);
     }
+#endif
 
     /* This is only used for virtual groups */
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;  /* Will be filled on demand */
@@ -459,6 +465,7 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *disableTag = NULL;
     struct TagItem *tag;
     BOOL forward = TRUE;
     BOOL need_recalc = FALSE;
@@ -483,6 +490,10 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_Disabled:
+            disableTag = tag;
+            tag->ti_Tag = TAG_IGNORE;
+            break;
         case MUIA_Group_Columns:
             data->columns = MAX((ULONG) tag->ti_Data, 1);
             data->rows = 0;
@@ -538,11 +549,19 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR) obj);
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
+    if (disableTag)
+        disableTag->ti_Tag = MUIA_Disabled;
 
     /* seems to be the documented behaviour, however it should be slow! */
 
     if (forward)
     {
+        struct TagItem *attrsOrig = msg->ops_AttrList;
+        struct TagItem nestedAttrs[2] = {
+            { MUIA_NestedDisabled,  FALSE},
+            { TAG_MORE,             (IPTR)msg->ops_AttrList}
+        };
+
         /* Attributes which are to be filtered out, so that they are ignored
            when OM_SET is passed to group's children */
 
@@ -551,6 +570,10 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         {
             switch (tag->ti_Tag)
             {
+            case MUIA_Disabled:
+                nestedAttrs[0].ti_Data = tag->ti_Data;
+                msg->ops_AttrList = nestedAttrs;
+                break;
             case MUIA_HelpLine:
             case MUIA_HelpNode:
             case MUIA_ObjectID:
@@ -585,7 +608,19 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         }
 
         Group_DispatchMsg(cl, obj, (Msg) msg);
+        msg->ops_AttrList = attrsOrig;
+    }
 
+    if (disableTag)
+    {
+        struct TagItem disableAttrs[2] = {
+            { MUIA_Disabled,  disableTag->ti_Data },
+            { TAG_DONE, 		0}
+        };
+        struct TagItem *origTags = msg->ops_AttrList;
+        msg->ops_AttrList = disableAttrs;
+        DoSuperMethodA(cl, obj, (Msg) msg);
+        msg->ops_AttrList = origTags;
     }
 
     if (virt_offx != data->virt_offx || virt_offy != data->virt_offy)

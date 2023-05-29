@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -153,8 +153,8 @@
             }
         }
 #endif
-        
-        if (disabled)
+
+        if ((disabled) && (XGET(obj, MUIA_NestedDisabled) != TRUE))
         {
 #ifdef __AROS__
 #if 0

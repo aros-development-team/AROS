@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team.
+    Copyright (C) 2002-2023, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -311,12 +311,14 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 MADF_CYCLECHAIN);
             break;
 
-        case MUIA_Disabled:
         case MUIA_NestedDisabled:
             if (tag->ti_Data)
-            {
-                data->mad_DisableCount = 1;
-            }
+                data->mad_DisableCount |= 1;
+            break;
+
+        case MUIA_Disabled:
+            if (tag->ti_Data)
+                data->mad_DisableCount |= (1 << 31);
             break;
 
         case MUIA_FillArea:
@@ -591,40 +593,41 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Disabled:
             if (tag->ti_Data)
             {
-                if (!data->mad_DisableCount)
-                {
-                    data->mad_DisableCount = 1;
+                if (data->mad_DisableCount == 0)
                     change_disable = 1;
-                }
+                data->mad_DisableCount |= (1 << 31);
             }
             else
             {
-                if (data->mad_DisableCount)
-                {
-                    data->mad_DisableCount = 0;
-                    change_disable = 1;
-                }
+                int change_val = (data->mad_DisableCount != 0) ? 1 : 0;
+                data->mad_DisableCount &= ~(1 << 31);
+                if (data->mad_DisableCount == 0)
+                    change_disable = change_val;
             }
             break;
 
         case MUIA_NestedDisabled:
             if (tag->ti_Data)
             {
-                if (!data->mad_DisableCount)
+                ULONG count = data->mad_DisableCount & ~(1 << 31);
+                if (data->mad_DisableCount == 0)
                     change_disable = 1;
-                data->mad_DisableCount++;
+                count += 1;
+                data->mad_DisableCount = (data->mad_DisableCount & (1 << 31)) | (count & ~(1 << 31));
             }
             else
             {
-                if (data->mad_DisableCount)
+                int change_val = (data->mad_DisableCount != 0) ? 1 : 0;
+                ULONG count = data->mad_DisableCount & ~(1 << 31);
+                if (count > 0)
                 {
-                    data->mad_DisableCount--;
-                    if (!data->mad_DisableCount)
-                        change_disable = 1;
+                    count -= 1;
+                    data->mad_DisableCount = (data->mad_DisableCount & (1 << 31)) | (count & ~(1 << 31));
                 }
+                if (data->mad_DisableCount == 0)
+                    change_disable = change_val;
             }
             break;
-
 
         case MUIA_HorizWeight:
             data->mad_HorizWeight = tag->ti_Data;
@@ -722,7 +725,6 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 /* Attribute value not changed, don't fire notification */
                 tag->ti_Tag = TAG_IGNORE;
             }
-
             break;
 
         case MUIA_Timer:
@@ -796,8 +798,11 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return TRUE;
 
     case MUIA_Disabled:
+        STORE  = ! !data->mad_DisableCount;      /* BOOLEAN */
+        return TRUE;
+
     case MUIA_NestedDisabled:
-        STORE = ! !data->mad_DisableCount;      /* BOOLEAN */
+        STORE = ((data->mad_DisableCount & ~(1 << 31)) != 0)  ? (IPTR)TRUE : (IPTR)FALSE;
         return TRUE;
 
     case MUIA_Font:
