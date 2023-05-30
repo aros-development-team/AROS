@@ -251,6 +251,12 @@ static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUIP_StructWithObj *msgint = (struct MUIP_StructWithObj *)msg;
+    struct TagItem nestedDisableAttrs[4] = {
+        { MUIA_NoNotify,        TRUE    },
+        { MUIA_NestedDisabled,  TRUE    },
+        { MUIA_Disabled,        FALSE   },
+        { TAG_DONE                      }
+    };
 
     DoMethodA(data->family, (Msg) msg);
     data->num_children++;
@@ -272,8 +278,11 @@ static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
     }
 
     /* Ensure new children are disabled if their parent is */
-    if (XGET(obj, MUIA_Disabled))
-        nnset(obj, MUIA_Disabled, TRUE);
+    GET(obj, MUIA_Disabled, &nestedDisableAttrs[2].ti_Data);
+    if (nestedDisableAttrs[2].ti_Data == (IPTR)TRUE)
+    {
+        SetAttrsA(msgint->obj, nestedDisableAttrs);
+    }
 
     /* Some apps (Odyssey) expect _parent() will work before group tree is
      * added to application tree */
