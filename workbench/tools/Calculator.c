@@ -192,7 +192,7 @@ IPTR mTapePrintResult(struct IClass *cl, Object *obj, struct MUIMP_PrintResult *
     return (IPTR) obj;
 }
 
-ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tagListState = msg->ops_AttrList, *tag;
     struct TapeData *data = INST_DATA(cl, obj);
@@ -272,7 +272,7 @@ static char op2char(int op)
 {
     switch (op) {
         case BTYPE_MUL: return '*';
-        case BTYPE_DIV: return '*';
+        case BTYPE_DIV: return ':';
         case BTYPE_SUB: return '-';
         case BTYPE_ADD: return '+';
         default: return '?';
@@ -581,7 +581,7 @@ static char retrieve_decimal_point(void)
 static void get_arguments(void)
 {
     struct RDArgs *rdargs;
-    IPTR args[NUM_ARGS];
+    IPTR args[NUM_ARGS] = {0};
     int i;
 
     for (i = 0; i < NUM_ARGS; i++) args[i] = (IPTR) NULL;
