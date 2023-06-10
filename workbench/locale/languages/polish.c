@@ -58,7 +58,7 @@ const STRPTR ___strings[] =
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
     // NOTICE: deadwood: I agree
 
-    "Niedziala", "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek",
+    "Niedziela", "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek",
     "Pi±tek", "Sobota",
 
     /* Abbreviated days of the week */
