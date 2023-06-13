@@ -51,7 +51,7 @@ ARCHDIR         := ft2demos-$(FT2VERSION)
 FT2SRCDIR       := $(PORTSDIR)/$(FT2DEMOS)/$(ARCHDIR)
 
 PATCHSPEC       := $(ARCHBASE)-aros.diff:$(ARCHDIR):-p1
-REPOSITORIES    := https://download.savannah.gnu.org/releases/freetype
+REPOSITORIES    := https://download.savannah.gnu.org/releases/freetype https://sourceforge.net/projects/freetype/files/freetype-demos/$(FT2VERSION)
 
 %fetch mmake=freetype2-demos-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/$(FT2DEMOS) \
     location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="zip" \
