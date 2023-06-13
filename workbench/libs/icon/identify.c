@@ -35,16 +35,25 @@
 # define ID_CDFS_DISK       AROS_MAKE_ID('C','D','F','S') /* CDFS */
 #endif
 
+//the following define is used to comment out gcc's incorrect section attributes
+#if !defined(SECTIONCOMMENT)
+#if defined(__arm__)
+#define SECTIONCOMMENT "\n@"
+#else
+#define SECTIONCOMMENT "\n#"
+#endif
+#endif
+
 /*** Prototypes *************************************************************/
 BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, BPTR lock, APTR *theDOSBase);
 struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, const struct TagItem *tags, struct IconBase *IconBase);
 struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *tags, struct IconBase *IconBase);
 LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase);
 
-CONST_STRPTR    str_disk = "disk";
-CONST_STRPTR    str_Disk = "Disk";
-CONST_STRPTR    str_CDROM = "CDROM";
-CONST_STRPTR    str_Harddisk = "Harddisk";
+CONST_STRPTR    str_disk __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = "disk";
+CONST_STRPTR    str_Disk __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = "Disk";
+CONST_STRPTR    str_CDROM __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = "CDROM";
+CONST_STRPTR    str_Harddisk __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = "Harddisk";
 
 /*** Macros *****************************************************************/
 #define FindDeviceName(buffer, length, volume) (__FindDeviceName_WB((buffer), (length), (volume), DOSBase))

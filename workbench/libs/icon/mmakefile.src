@@ -4,6 +4,10 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
 USER_CPPFLAGS := -D__NOLIBBASE__
+ifneq ($(AROS_SECTION_COMMENT),)
+USER_CPPFLAGS += -DSECTIONCOMMENT=\"$(AROS_SECTION_COMMENT)\"
+endif
+
 USER_LDFLAGS := -static
 
 FILES := support 	 \
