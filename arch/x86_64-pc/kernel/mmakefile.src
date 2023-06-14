@@ -59,7 +59,7 @@ kernel-kernel-pc-x86_64-kobj-quick :: $(ARCHOBJDIR)/smpboot.bin.o
 # Without -N the linker tries to page-align .text section and produces a huge file (over 2MB)
 %rule_link_binary file=$(ARCHOBJDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
 
-$(OBJDIR)/smpbootstrap.o : | $(OBJDIR)
+$(OBJDIR)/smpbootstrap.o : | $(OBJDIR) $(ARCHOBJDIR)
 
 GLOB_MKDIRS += $(ARCHOBJDIR) $(OBJDIR)
 
