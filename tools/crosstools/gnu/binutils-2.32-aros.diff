@@ -336,11 +336,11 @@ diff -ruN binutils-2.32/bfd/elf32-arm.c binutils-2.32-aros/bfd/elf32-arm.c
 +#define ELF_COMMONPAGESIZE		0x1000
 +
 +#undef  elf_backend_may_use_rel_p
-+#define elf_backend_may_use_rel_p	0
++#define elf_backend_may_use_rel_p	1
 +#undef  elf_backend_may_use_rela_p
-+#define elf_backend_may_use_rela_p	1
++#define elf_backend_may_use_rela_p	0
 +#undef  elf_backend_default_use_rela_p
-+#define elf_backend_default_use_rela_p	1
++#define elf_backend_default_use_rela_p	0
 +#undef  elf_backend_rela_normal
 +#define elf_backend_rela_normal		1
 +#undef  elf_backend_want_plt_sym
