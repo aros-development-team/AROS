@@ -374,7 +374,7 @@ struct attrs_subsection
 #elif defined(__arm__)
 #define AROS_ELF_MACHINE EM_ARM
 #define AROS_ELF_REL     SHT_RELA
-#define relo             rela
+#define relo             rel
 #endif
 #if defined(__riscv64)
 #define AROS_ELF_MACHINE EM_RISCV
