@@ -15,6 +15,7 @@
  * These variables need to survive accross warm reboot, so we explicitly place them in .data section.
  */
 __attribute__((section(".data"))) char *fb_Mirror = NULL;
+__attribute__((section(".data"))) int fb_is_initialized  = 0;
 
 __attribute__((section(".data"))) static unsigned int fb_BytesPerLine = 0; /* Bytes per line  */
 __attribute__((section(".data"))) static unsigned int fb_BytesPerPix  = 0; /* Bytes per pixel */
@@ -102,6 +103,7 @@ void fb_Init(unsigned int width, unsigned int height, unsigned int depth, unsign
     fb_Mirror = malloc(scr_Width * (height + fontHeight - 1) / fontHeight);
 
     fb_Resize(height);
+    fb_is_initialized = 1;
 }
 
 void fb_Resize(unsigned int height)

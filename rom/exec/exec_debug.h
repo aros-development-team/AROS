@@ -90,6 +90,8 @@
 #define DEBUG_WaitIO 0
 #define DEBUG_WaitPort 0
 
+#undef NO_RUNTIME_DEBUG
+
 /* Runtime debugging */
 #ifdef NO_RUNTIME_DEBUG
 

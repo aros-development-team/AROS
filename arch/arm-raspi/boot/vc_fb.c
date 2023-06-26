@@ -21,7 +21,7 @@
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uint32_t __arm_periiobase;
 
-#define D(x) /* x */
+#define D(x) x
 
 int vcfb_init(void)
 {

@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DELF(x) /* x */
+#define DELF(x) x
 
 uint32_t        int_shnum;
 uint32_t        int_shstrndx;
@@ -244,6 +244,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
                 if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
                         continue;
 
+                //kprintf("[BOOT:ELF] symbol '%s'\n", (char *)((uint32_t) sh[shsymtab->link].addr) + sym->name);
                 switch (sym->shindex)
                 {
                 case SHN_UNDEF:
@@ -427,8 +428,9 @@ int loadElf(void *elf_file)
                                 {
                                         if (sh[i].size)
                                         {
-                                                DELF(kprintf("[BOOT:ELF] %s section loaded at %p (Virtual addr: %p, requestet addr: %p)\n",
+                                                DELF(kprintf("[BOOT:ELF] %s section '%s' loaded at %p (Virtual addr: %p, requestet addr: %p)\n",
                                                                 sh[i].flags & SHF_WRITE ? "RW":"RO",
+                                                                (char *)elf_file + sh[eh->shstrndx].offset + sh[i].name,
                                                                                 sh[i].addr,
                                                                                 sh[i].addr + virtoffset,
                                                                                 deltas[i]));

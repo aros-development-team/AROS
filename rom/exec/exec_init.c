@@ -4,7 +4,7 @@
     Desc: exec.library resident and initialization.
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/config.h>
 

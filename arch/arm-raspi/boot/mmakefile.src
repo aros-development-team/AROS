@@ -10,7 +10,7 @@ KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
 USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
 USER_CPPFLAGS   += -DUSE_UBOOT
-OPTIMIZATION_CFLAGS := -O2
+OPTIMIZATION_CFLAGS := -O0 -fno-inline
 
 ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
@@ -171,16 +171,19 @@ distfiles-raspi-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
 
+$(info KERNEL_LD is $(KERNEL_LD))
+#KERNEL_LD := /usr/bin/arm-none-eabi-ld
+
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
 	@$(KERNEL_LD) --be8 --format elf32-bigarm --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core-be.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
-	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	#@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
 	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
 
 $(AROSDIR)/aros-arm-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
 	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
-	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	#@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-arm-raspi.img.elf
 	@$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-arm-raspi.img.elf $@
 
 $(TARGETDIR)/core-be.bin.o: $(OSGENDIR)/boot/core.elf
@@ -206,8 +209,11 @@ distfiles-raspi : $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR
 clean ::
 	-$(RM) $(TESTS)
 
+$(info flags are $(KERNEL_ISA_FLAGS))
+
 $(TARGETDIR)/%.o : %.c
 	%compile_q
+	%compile_q opt="$(strip $(CFLAGS) $(CPPFLAGS) -S)" to="$(@:.o=.disas)"
 
 $(TARGETDIR)/%.o : %.S
 	%compile_q

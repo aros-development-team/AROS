@@ -5,15 +5,28 @@
 #include <stdio.h>
 
 #include "serialdebug.h"
+#include "vc_fb.h"
 //#include "bootconsole.h"
 
 void putBytes(const char *str)
 {
-    while(*str)
+    const char *s;
+    
+    s = str;
+    while(*s)
     {
-//        fb_Putc(*str);
-        putByte(*str++);
+        putByte(*s++);
     }
+    /*
+    if (fb_is_initialized)
+    {
+        s = str;
+        while (*s)
+        {
+            fb_Putc(*s++);
+        }
+    }
+    */
 }
 
 static char tmpbuf[512];
