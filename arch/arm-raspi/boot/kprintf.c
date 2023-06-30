@@ -5,14 +5,15 @@
 #include <stdio.h>
 
 #include "serialdebug.h"
-//#include "bootconsole.h"
+#include "bootconsole.h"
 
 void putBytes(const char *str)
 {
     while(*str)
     {
-//        fb_Putc(*str);
-        putByte(*str++);
+        fb_Putc(*str);
+        putByte(*str);
+        str++;
     }
 }
 

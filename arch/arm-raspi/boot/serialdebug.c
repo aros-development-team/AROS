@@ -33,17 +33,24 @@ unsigned int uartclock;
 unsigned int uartdivint;
 unsigned int uartdivfrac;
 unsigned int uartbaud;
+static int serInitialised = 0;
 
 inline void waitSerOUT()
 {
+    if (!serInitialised)
+        return;
+
     while(1)
     {
-       if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
+        if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
 }
 
 inline void putByte(uint8_t chr)
 {
+    if (!serInitialised)
+        return;
+
     waitSerOUT();
 
     if (chr == '\n')
@@ -59,6 +66,9 @@ void serInit(void)
     unsigned int        uartvar;
 
     volatile unsigned int *uart_msg = (unsigned int *) BOOTMEMADDR(bm_mboxmsg);
+
+    if (ARM_PERIIOBASE == 0)  // can't initialise serial if we don't have the IO addr yet
+        return;
 
     uartbaud = DEF_BAUD;
 
@@ -105,4 +115,6 @@ void serInit(void)
     wr32le(PL011_0_BASE + PL011_CR, PL011_CR_UARTEN|PL011_CR_TXE|PL011_CR_RXE);   // enable the uart, tx and rx
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
+
+    serInitialised = 1;
 }

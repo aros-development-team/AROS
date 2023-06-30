@@ -26,6 +26,9 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
     unsigned int try = 0x20000000;
     unsigned int msg;
 
+    if (ARM_PERIIOBASE == 0)  // not yet initialised
+        return (volatile unsigned int *)-1;
+
     D(kprintf("[VCMB] vcmb_read(%p, %p)\n", mb, chan));
 
     if (chan <= VCMB_CHAN_MAX)
@@ -59,6 +62,9 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
 
 void vcmb_write(uintptr_t mb, unsigned int chan, void *msg)
 {
+    if (ARM_PERIIOBASE == 0)  // not yet initialised
+        return;
+
     D(kprintf("[VCMB] vcmb_write(%p, %p, %p)\n", mb, chan, msg));
 
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
