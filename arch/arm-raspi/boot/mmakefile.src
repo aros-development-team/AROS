@@ -171,9 +171,6 @@ distfiles-raspi-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
 
-$(info KERNEL_LD is $(KERNEL_LD))
-#KERNEL_LD := /usr/bin/arm-none-eabi-ld
-
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
 	@$(KERNEL_LD) --be8 --format elf32-bigarm --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core-be.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
@@ -208,8 +205,6 @@ distfiles-raspi : $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR
 #MM
 clean ::
 	-$(RM) $(TESTS)
-
-$(info flags are $(KERNEL_ISA_FLAGS))
 
 $(TARGETDIR)/%.o : %.c
 	%compile_q

@@ -46,7 +46,7 @@ asm("   .section .aros.startup      \n"
 "       .globl bootstrap            \n"
 "       .type bootstrap,%function   \n"
 "bootstrap:                         \n"
-/* Stop all cores but one. */
+/* Stop all cores but one. TODO: fix SMP support */
 #if 1
 "       mrc     p15, 0, r4, c0, c0, 0\n" /* Read the MIDR register into r4 */
 "       lsr     r4, r4, #16          \n"
@@ -189,8 +189,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     uint32_t tmp, initcr;
     void (*entry)(struct TagItem *);
 
-    __arm_periiobase = 0x3F000000;  // TODO
-
     boottag = tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE;
 
     /*
@@ -214,18 +212,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     /* Initialize simplistic local memory allocator */
     mem_init();
-
-    serInit();
-
-    if (vcfb_init())
-    {
-        kprintf("[BOOT] Initialized VC framebuffer\n");
-        boottag->ti_Tag = KRN_FuncPutC;
-        boottag->ti_Data = (IPTR)fb_Putc;
-        boottag++;
-    }
-    else
-        kprintf("[BOOT] Failed to initialize VC framebuffer\n");
 
     int dt_mem_usage = mem_avail();
     /* Parse device tree */
@@ -264,6 +250,8 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     }
     else
         while(1) asm volatile("wfe");
+
+    serInit();
 
 #if AROS_BIG_ENDIAN
     kprintf("\n\n[BOOT] Big-Endian AROS %s\n", bootstrapName);
@@ -351,6 +339,13 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     boottag->ti_Tag = KRN_BootLoader;
     boottag->ti_Data = (IPTR)bootstrapName;
     boottag++;
+
+    if (vcfb_init())
+    {
+        boottag->ti_Tag = KRN_FuncPutC;
+        boottag->ti_Data = (IPTR)fb_Putc;
+        boottag++;
+    }
 
     DBOOT({
         kprintf("[BOOT] UART clock speed: %d\n", uartclock);
