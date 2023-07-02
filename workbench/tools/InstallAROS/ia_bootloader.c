@@ -347,8 +347,8 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
                     tmp);
                 D(bug
                         ("[InstallAROS] %s: calling '%s'\n", __func__, cmd));
-                BOOL success = (BOOL) Execute(cmd, NULL, NULL);
-                if (!success)
+                LONG success = Execute(cmd, NULL, NULL);
+                if (success)
                 {
                     BPTR menu_file = Open(tmp, MODE_READWRITE);
 
