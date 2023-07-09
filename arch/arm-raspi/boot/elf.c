@@ -428,16 +428,21 @@ int loadElf(void *elf_file)
                                 {
                                         if (sh[i].size)
                                         {
+                                                // paste into GDB to load symbols
+                                                DELF(kprintf(" -s %s 0x%08X", (char *)elf_file + sh[eh->shstrndx].offset + sh[i].name, sh[i].addr + virtoffset));
+                                                /*
                                                 DELF(kprintf("[BOOT:ELF] %s section '%s' loaded at %p (Virtual addr: %p, requestet addr: %p)\n",
                                                                 sh[i].flags & SHF_WRITE ? "RW":"RO",
                                                                 (char *)elf_file + sh[eh->shstrndx].offset + sh[i].name,
                                                                                 sh[i].addr,
                                                                                 sh[i].addr + virtoffset,
                                                                                 deltas[i]));
+                                                */
                                         }
                                 }
                         }
                 }
+                DELF(kprintf("\n"));
 
                 /* For every loaded section perform the relocations */
                 for (i = 0; i < int_shnum; i++)

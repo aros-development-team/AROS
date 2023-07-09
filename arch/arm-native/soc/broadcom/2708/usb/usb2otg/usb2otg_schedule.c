@@ -2,7 +2,7 @@
     Copyright (C) 2013-2019, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 0
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -22,6 +22,15 @@ static void DumpChannelRegs(int channel)
     D(bug("DMAADR=%08x\n", rd32le(USB2OTG_CHANNEL_REG(channel, DMAADDR))));
 }
 #endif
+
+// hang because of a fatal error
+static void hang(void)
+{
+    while (1)
+    {
+        asm volatile ("wfe");
+    }
+}
 
 /* Prepare Channel for transfer */
 void FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
@@ -177,8 +186,21 @@ void FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
 
     otg_Unit->hu_Channel[chan].hc_XferSize = xfer_size;
 
+    if (((ULONG)buffer & 3) != 0)
+    {
+        bug("buffer addr %p is not word-aligned!\n", buffer);
+        hang();
+    }
+    bug("%s channel %i (devaddr %i), %i packets (%i bytes)\n",
+        direction ? "receiving from" : "sending to",
+        chan,
+        req->iouh_DevAddr,
+        pkt_count,
+        xfer_size);
+
     /* Set the bus address of transferred data (use L2 uncached from AHB's point of view!) */
     wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)buffer);
+    bug("finished setting DMA reg\n");
 }
 
 /* Advance the status of channel, adjust iouh_Actual, PID etc */
@@ -377,7 +399,7 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
 
         /* Enable interrupts for this channel */
         tmp = rd32le(USB2OTG_CHANNEL_REG(chan, INTRMASK));
-        tmp |= USB2OTG_INTRCHAN_HALT | USB2OTG_INTRCHAN_TRANSFERCOMPLETE;
+        tmp |= USB2OTG_INTRCHAN_HALT | USB2OTG_INTRCHAN_TRANSFERCOMPLETE | USB2OTG_INTRCHAN_ACKNOWLEDGE | USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE | USB2OTG_INTRCHAN_TRANSACTIONERROR;
         wr32le(USB2OTG_CHANNEL_REG(chan, INTRMASK), tmp);
         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
 

@@ -29,7 +29,7 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
     struct IOUsbHWReq *req = NULL, *next = NULL;
     struct USB2OTGDevice * USB2OTGBase = USBUnit->hu_USB2OTGBase;
 
-    wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);
+    wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);  // clear the interrupt
 
     if (frnm < last_frame)
     {
@@ -41,13 +41,13 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
         DumpChannelRegs(CHAN_INT2);
         bug("Ch4\n");
         DumpChannelRegs(CHAN_INT3);
-        #endif
+#endif
     }
 
     if (frnm != last_frame)
     {
-        #if 0
-         if (USBUnit->hu_CtrlXFerQueue.lh_Head->ln_Succ)
+#if 0
+    if (USBUnit->hu_CtrlXFerQueue.lh_Head->ln_Succ)
     {
         D(bug("[USB2OTG] [0x%p:PEND] Process CtrlXFer ..\n", otg_Unit));
         FNAME_DEV(ScheduleCtrlTDs)(USBUnit);
@@ -126,6 +126,57 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
         }
 }
 
+void FNAME_DEV(GlobalIRQHandler_fucked)(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
+{
+    unsigned int otg_RegVal;
+    ULONG frameNum = rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff;
+    
+    otg_RegVal = rd32le(USB2OTG_INTR);
+    
+    if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
+    {
+        // TODO: start of frame. What is this?
+        wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);  // clear interrupt
+    }
+    
+    if (otg_RegVal & USB2OTG_INTRCORE_NPTRANSMITFIFOEMPTY)
+    {
+        //wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_NPTRANSMITFIFOEMPTY);
+    }
+    
+    if (otg_RegVal & USB2OTG_INTRCORE_PORT)  // port status change?
+    {
+        // find cause
+        uint32_t hprt = rd32le(USB2OTG_HOSTPORT);
+        if (hprt & USB2OTG_HOSTPORT_PRTCONNDET)
+        {
+            bug("device connected to host port!\n");
+            wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTCONNDET);  // clear interrupt
+        }
+        else if (hprt & USB2OTG_HOSTPORT_PRTENCHNG)
+        {
+            bug("port %s!\n", (hprt & USB2OTG_HOSTPORT_PRTENA) ? "enabled" : "disabled");
+            wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTENCHNG);
+        }
+        else if (hprt & USB2OTG_HOSTPORT_PRTOVRCURRCHNG)
+        {
+            bug("port overcurrent %s!\n", (hprt & USB2OTG_HOSTPORT_PRTOVRCURRACT) ? "active" : "inactive");
+            wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTOVRCURRCHNG);
+        }
+        else
+            bug("TODO: port interrupt: 0x%08X\n", hprt);
+    }
+}
+
+// hang because of a fatal error
+static void hang(void)
+{
+    while (1)
+    {
+        asm volatile ("wfe");
+    }
+}
+
 void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
 {
     //static ULONG last_frame = 0;
@@ -137,14 +188,56 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
     otg_RegVal = rd32le(USB2OTG_INTR);
 
+    /*
+    if (otg_RegVal & (1 << 24))
+    {
+        wr32le(USB2OTG_INTR, (1 << 24));  // clear interrupt ?
+        otg_RegVal = rd32le(USB2OTG_INTR);
+        bug("port interrupt\n");
+    }
+    if (otg_RegVal & (1 << 29))
+        bug("disconnect\n");
+    if (otg_RegVal & (1 << 28))
+        bug("connector status change\n");
+    if (otg_RegVal & (1 << 30))
+        bug("session request\n");
+    if (otg_RegVal & (1 << 31))
+        bug("wakeup\n");
+    */
+
     if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
     {
         handle_SOF(USBUnit, SysBase, frnm);
     }
 
+    // acknowledge some other interrupts
+    if (otg_RegVal & USB2OTG_INTRCORE_PORT)  // port status change?
+    {
+        // find cause
+        uint32_t hprt = rd32le(USB2OTG_HOSTPORT);
+        if (hprt & USB2OTG_HOSTPORT_PRTCONNDET)
+        {
+            bug("device connected to host port!\n");
+            wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTCONNDET);  // clear interrupt
+        }
+        else if (hprt & USB2OTG_HOSTPORT_PRTENCHNG)
+        {
+            bug("port %s!\n", (hprt & USB2OTG_HOSTPORT_PRTENA) ? "enabled" : "disabled");
+            wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTENCHNG);
+        }
+        else if (hprt & USB2OTG_HOSTPORT_PRTOVRCURRCHNG)
+        {
+            bug("port overcurrent %s!\n", (hprt & USB2OTG_HOSTPORT_PRTOVRCURRACT) ? "active" : "inactive");
+            wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTOVRCURRCHNG);
+        }
+        else
+            bug("TODO: port interrupt: 0x%08X\n", hprt);
+    }
+
+
     frnm >>= 3;
 
-    if (otg_RegVal & USB2OTG_INTRCORE_HOSTCHANNEL)
+    if (otg_RegVal & USB2OTG_INTRCORE_HOSTCHANNEL)  // There's an interrupt on a host channel
     {
         unsigned int otg_ChanVal;
         int chan;
@@ -154,30 +247,76 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
         //D(bug("[USB2OTG] HOSTCHANNEL %x frnm %d\n", otg_ChanVal, frnm));
 
-        for (chan = 0; chan < 8; chan++)
+        for (chan = 0; chan < 8; chan++)  // find which channel(s) triggered the interrupt
         {
-
-
             if (otg_ChanVal & (1 << chan))
             {
                 struct IOUsbHWReq * req = USBUnit->hu_Channel[chan].hc_Request;
                 uint32_t intr = rd32le(USB2OTG_CHANNEL_REG(chan, INTR));
-                wr32le(USB2OTG_CHANNEL_REG(chan, INTR), intr);
+                wr32le(USB2OTG_CHANNEL_REG(chan, INTR), intr);  // acknowledge the interrupt(s)
 
+                if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & 0x40000000)
+                {
 
-            if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & 0x40000000)
-            {
+                    bug("disable bit on channel %d is set!!!\n", chan);
 
-                bug("disable bit on channel %d is set!!!\n", chan);
+                    bug("req=%08x\n", USBUnit->hu_Channel[chan].hc_Request);
 
-                bug("req=%08x\n", USBUnit->hu_Channel[chan].hc_Request);
+                    DumpChannelRegs(chan);
+                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
+                    bug("HOSTINTR=%08x\nHOSTINTRMASK=%08x\n", otg_ChanVal, rd32le(USB2OTG_HOSTINTRMASK));
 
-                DumpChannelRegs(chan);
-                wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
-                bug("HOSTINTR=%08x\nHOSTINTRMASK=%08x\n", otg_ChanVal, rd32le(USB2OTG_HOSTINTRMASK));
+                    hang();
+                }
 
+                // Not sure why the halt bit gets set when the transfer completes successfully
+                // The halt bit is supposed to be for abnormal termination. Let's just ignore it, I guess.
+                if (intr & USB2OTG_INTRCHAN_TRANSFERCOMPLETE)
+                    intr &= ~USB2OTG_INTRCHAN_HALT;
 
-            }
+                // find cause of interrupt
+                if (intr & USB2OTG_INTRCHAN_DATATOGGLEERROR)
+                {
+                    bug("data toggle error on channel %i\n", chan);
+                    hang();
+                }
+                if (intr & USB2OTG_INTRCHAN_FRAMEOVERRUN)
+                {
+                    bug("frame overrun on channel %i\n", chan);
+                    hang();
+                }
+                if (intr & USB2OTG_INTRCHAN_BABBLEERROR)
+                {
+                    bug("babble error on channel %i\n", chan);
+                    hang();
+                }
+                if (intr & USB2OTG_INTRCHAN_TRANSACTIONERROR)
+                {
+                    bug("transaction error on channel %i\n", chan);
+                    hang();
+                }
+                if (intr & USB2OTG_INTRCHAN_NOTREADY)
+                {
+                    bug("NYET received, channel %i ain't ready\n", chan);
+                    hang();
+                }
+                if (intr & USB2OTG_INTRCHAN_ACKNOWLEDGE)
+                    bug("got ACK on channel %i\n", chan);
+                if (intr & USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE)
+                    bug("got NAK on channel %i\n", chan);
+                if (intr & USB2OTG_INTRCHAN_STALL)
+                    bug("got STALL on channel %i\n", chan);
+                if (intr & USB2OTG_INTRCHAN_AHBERROR)
+                {
+                    bug("AHB error on channel %i\n", chan);
+                    hang();
+                }
+                if (intr & USB2OTG_INTRCHAN_HALT)
+                {
+                    bug("channel %i halted for some reason\n", chan);
+                    DumpChannelRegs(chan);
+                    //hang();
+                }
 
                 if (req)
                 {
@@ -248,25 +387,25 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
 #endif
                         {
                             //D(bug("!!! Channel %d, Restarting CSPLIT phase! %d, %d, %d\n", chan, frnm, req->iouh_DriverPrivate1, req->iouh_DriverPrivate2));
-                            #if 0
+#if 0
                             /* Enable channel again */
                             uint32_t tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
                             tmp |= USB2OTG_HOSTCHAR_ENABLE;
                             wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
-                              #endif
+#endif
 
                             //intr = 2;
-        #if 1
-        if ((chan >= CHAN_INT1 && chan <= CHAN_INT3))
-        {
-         //   if (req->iouh_Flags & UHFF_LOWSPEED)
-         //       delayed_channel[chan] = 4;
-         //   else
-                FNAME_DEV(StartChannel)(USBUnit, chan, 1);
-        }
-            //delayed_channel[chan] = 8;
-        else
-                            delayed_channel[chan] = 16;
+#if 1
+                            if ((chan >= CHAN_INT1 && chan <= CHAN_INT3))
+                            {
+                             //   if (req->iouh_Flags & UHFF_LOWSPEED)
+                             //       delayed_channel[chan] = 4;
+                             //   else
+                                    FNAME_DEV(StartChannel)(USBUnit, chan, 1);
+                            }
+                                //delayed_channel[chan] = 8;
+                            else
+                                delayed_channel[chan] = 16;
                           //  delayed_frnm = frnm;
 #else
                             FNAME_DEV(StartChannel)(USBUnit, chan, 1);
@@ -313,9 +452,13 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                         //if (intr != 0x12 || (chan < CHAN_INT1 && chan > CHAN_INT3))
                         //    D(bug("[USB2OTG] Channel %d closed. INTR=%08x\n", chan, intr));
 
-                        if ((intr & 0x21) == 0x21)
+                        if ((intr & 0x21) == 0x21
+                            || (intr & 1)  // Somehow, it's not giving me an ACK response, even though it should!
+                        )
                         {
                             req->iouh_Req.io_Error = 0;
+                            //bug("advancing channel %i\n", chan);
+                            //hang();
 
                             if (!FNAME_DEV(AdvanceChannel)(USBUnit, chan))
                             {
@@ -376,7 +519,7 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                                 /* Disable channel */
                                 wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
 
-                                ADDTAIL(&USBUnit->hu_IntXFerQueue, req);
+                                //ADDTAIL(&USBUnit->hu_IntXFerQueue, req);
                                 USBUnit->hu_Channel[chan].hc_Request = NULL;
                                 req = NULL;
                             }

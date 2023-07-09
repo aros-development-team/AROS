@@ -2,7 +2,7 @@
     Copyright (C) 2013-2020, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 0
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -230,6 +230,13 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                                 otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
                                 otg_RegVal &= ~USB2OTG_HOSTPORT_PRTRST;
                                 wr32le(USB2OTG_HOSTPORT, otg_RegVal);
+                                
+                                // I think the port should remain powered when reset, so that hub.class can use it.
+                                otg_RegVal = rd32le(USB2OTG_HOSTPORT);
+                                otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
+                                otg_RegVal |= USB2OTG_HOSTPORT_PRTPWR;
+                                wr32le(USB2OTG_HOSTPORT, otg_RegVal);
+                                
 
                                 D(bug("[USB2OTG:Hub] port:%08x\n", rd32le(USB2OTG_HOSTPORT)));
 
@@ -555,7 +562,7 @@ void FNAME_ROOTHUB(PendingIO)(struct USB2OTGUnit *otg_Unit)
 {
     struct IOUsbHWReq *ioreq;
 
-    D(bug("[USB2OTG:Hub] PendingIO(0x%p)\n", otg_Unit));
+//    D(bug("[USB2OTG:Hub] PendingIO(0x%p)\n", otg_Unit));
 
     if (otg_Unit->hu_HubPortChanged && otg_Unit->hu_IOPendingQueue.lh_Head->ln_Succ)
     {

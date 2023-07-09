@@ -23,10 +23,12 @@ endif
 	$(Q)$(ECHO) "%(msg)  $(if $(filter /%,%(file)),$(if $(filter $(SRCDIR)/%,$(abspath %(file))),$(patsubst $(SRCDIR)/%,%,$(abspath %(file))),$(patsubst $(TOP)/%,%,$(abspath %(file)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(file)))) %(elipses)"
 %end
 
+# TODO: find some way to pass -mword-relocations to the ARM compiler without doing it here!!!
+TARGET_CC += -mword-relocations
+
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
-# TODO: find some way to pass -mword-relocations to the ARM compiler without doing it here!!!
 %define compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip $(CFLAGS) $(CPPFLAGS))" from="$<" to="$@" incextra="$(TOP)/$(CURDIR)" iquote="$(CFLAGS_IQUOTE)" iquote_end="$(CFLAGS_IQUOTE_END)"
 	%fileactionmsg msg="Compiling" file="%(from)"
 	$(Q)$(IF) %(cmd) -mword-relocations %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))"\" -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \

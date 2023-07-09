@@ -28,6 +28,9 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#define DEBUG 2
+#define DB_LEVEL 10
+
 #include "debug.h"
 
 #include "poseidon.library.h"
@@ -146,7 +149,8 @@ static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
 {
     struct PsdIFFContext *pic;
 
-    KPRINTF(10, ("libOpen ps: 0x%p\n", ps));
+    KPRINTF(1, ("libOpen ps: 0x%p\n", ps));
+    //return FALSE;
     ObtainSemaphore(&ps->ps_ReentrantLock);
     if(!ps->ps_StackInit)
     {
@@ -213,7 +217,7 @@ static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
 
                 psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "This is the AROS port.");
 
-                KPRINTF(10, ("libOpen: Ok\n"));
+                KPRINTF(1, ("libOpen: Ok\n"));
                 ps->ps_StackInit = TRUE;
                 ReleaseSemaphore(&ps->ps_ReentrantLock);
                 pStartEventHandler(ps);
@@ -2875,7 +2879,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     struct PsdDevice *itpd = pp->pp_Device;
     struct PsdConfig *pc;
     struct PsdInterface *pif;
-    struct UsbStdDevDesc usdd;
+    struct UsbStdDevDesc usdd = {0};
 
     UWORD oldflags;
     ULONG oldnaktimeout;
@@ -2903,7 +2907,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     LONG ioerr_bos;
 #endif
 
-    KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
+    KPRINTF(11, ("psdEnumerateDevice(%p)\n", pp));
 
     psdLockWriteDevice(pd);
     if(pAllocDevAddr(pd)) {
@@ -2932,7 +2936,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
             KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
         }
 
-        KPRINTF(1, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
+        KPRINTF(11, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
         psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS, pd->pd_DevAddr, 0);
         ioerr = psdDoPipe(pp, NULL, 0);
         /*
@@ -2941,7 +2945,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
             go to the wrong address!
         */
         if((ioerr == UHIOERR_TIMEOUT) || (ioerr == UHIOERR_STALL)) {
-            KPRINTF(1, ("First attempt failed, retrying new address\n"));
+            KPRINTF(11, ("First attempt failed, retrying new address\n"));
             /*pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;*/
             psdDelayMS(250);
             ioerr = psdDoPipe(pp, NULL, 0);
@@ -2977,15 +2981,15 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 #endif
                 default:
                     psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal MaxPktSize0=%ld for endpoint 0", (ULONG) usdd.bMaxPacketSize0);
-                    KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
+                    KPRINTF(11, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
                     //pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = 8;
                     ioerr = UHIOERR_CRCERROR;
                     break;
             }
 
-            KPRINTF(1, ("  MaxPktSize0 = %ld\n", pd->pd_MaxPktSize0));
+            KPRINTF(11, ("  MaxPktSize0 = %ld\n", pd->pd_MaxPktSize0));
 
-            KPRINTF(1, ("Getting full descriptor...\n"));
+            KPRINTF(11, ("Getting full descriptor...\n"));
             /*
                 We have set a new address for the device so we need to setup the pipe again
             */
@@ -3082,11 +3086,11 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     pd->pd_SerNumStr = psdCopyStr("n/a");
                 }
 
-                KPRINTF(2, ("Product     : %s\n"
+                KPRINTF(20, ("Product     : %s\n"
                             "Manufacturer: %s\n"
                             "SerialNumber: %s\n",
                             pd->pd_ProductStr, pd->pd_MnfctrStr, pd->pd_SerNumStr));
-                KPRINTF(2, ("USBVersion: %04lx\n"
+                KPRINTF(20, ("USBVersion: %04lx\n"
                             "Class     : %ld\n"
                             "SubClass  : %ld\n"
                             "DevProto  : %ld\n"
@@ -4145,7 +4149,7 @@ AROS_LH3(LONG, psdDoPipe,
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *pd = pp->pp_Device;
-    KPRINTF(200, ("psdDoPipe(%p, %p, %ld)\n", pp, data, len));
+    KPRINTF(1, ("psdDoPipe(%p, %p, %ld)\n", pp, data, len));
 
     if(pd->pd_Flags & PDFF_CONNECTED)
     {
@@ -4184,7 +4188,7 @@ AROS_LH3(void, psdSendPipe,
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *pd = pp->pp_Device;
-    KPRINTF(200, ("psdSendPipe(%p, %p, %ld)\n", pp, data, len));
+    KPRINTF(1, ("psdSendPipe(%p, %p, %ld)\n", pp, data, len));
     if(pd->pd_Flags & PDFF_CONNECTED)
     {
         if(pd->pd_Flags & PDFF_SUSPENDED)
@@ -4301,7 +4305,7 @@ AROS_LH1(LONG, psdWaitPipe,
                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
            }
     }
-    KPRINTF(200, ("psdWaitPipe(%p)=%ld\n", pp, ioerr));
+    KPRINTF(1, ("psdWaitPipe(%p)=%ld\n", pp, ioerr));
     --pd->pd_IOBusyCount;
     GetSysTime((APTR) &pd->pd_LastActivity);
 
@@ -5256,13 +5260,17 @@ AROS_LH2(struct PsdUsbClass *, psdAddClass,
                           "Start blaming %s V%ld.%ld for helping at %s.",
                           "Ain't %s V%ld.%ld useful for %s?" };
 
-    KPRINTF(5, ("psdAddClass(%s, %ld)\n", name, vers));
+    KPRINTF(10, ("psdAddClass(%s, %ld)\n", name, vers));
 
     while(*name)
     {
         if((cls = OpenLibrary(name, vers)))
         {
             break;
+        }
+        else
+        {
+            KPRINTF(10, ("Failed to open library %s\n", name));
         }
         do
         {
@@ -5311,8 +5319,13 @@ AROS_LH2(struct PsdUsbClass *, psdAddClass,
             psdSendEvent(EHMB_ADDCLASS, puc, NULL);
             return(puc);
         }
+        else
+        {
+            KPRINTF(10, ("Failed to alloc vec\n"));
+        }
         CloseLibrary(cls);
     }
+    KPRINTF(10, ("Failed to add class %s\n", name));
     return(NULL);
     AROS_LIBFUNC_EXIT
 }
@@ -5554,7 +5567,7 @@ AROS_LH1(struct PsdAppBinding *, psdClaimAppBindingA,
 
     APTR binding;
 
-    KPRINTF(2, ("psdClaimAppBindingA(%p)\n", tags));
+    KPRINTF(10, ("psdClaimAppBindingA(%p)\n", tags));
 
     tmppab.pab_Device = NULL;
     tmppab.pab_ReleaseHook = NULL;
@@ -5633,7 +5646,7 @@ AROS_LH1(void, psdReleaseAppBinding,
     struct PsdUsbClass *puc;
     APTR binding;
 
-    KPRINTF(2, ("psdReleaseAppBinding(%p)\n", pab));
+    KPRINTF(10, ("psdReleaseAppBinding(%p)\n", pab));
 
     if(pab)
     {
@@ -5663,7 +5676,7 @@ AROS_LH1(void, psdReleaseDevBinding,
     struct PsdDevice *hubpd;
     APTR binding;
 
-    KPRINTF(5, ("psdReleaseDevBinding(%p)\n", pd));
+    KPRINTF(10, ("psdReleaseDevBinding(%p)\n", pd));
     if(pd->pd_DevBinding)
     {
         hubpd = pd->pd_Hub;
@@ -5691,7 +5704,7 @@ AROS_LH1(void, psdReleaseIfBinding,
     struct PsdDevice *hubpd;
     APTR binding;
 
-    KPRINTF(5, ("psdReleaseIfBinding(%p)\n", pif));
+    KPRINTF(10, ("psdReleaseIfBinding(%p)\n", pif));
     if(pif->pif_IfBinding && pif->pif_ClsBinding)
     {
         hubpd = pif->pif_Config->pc_Device->pd_Hub;
@@ -5812,7 +5825,7 @@ AROS_LH1(void, psdHubClassScan,
         {
             break;
         }
-        KPRINTF(5, ("Doing ClassScan on Device: %s\n", pd->pd_ProductStr));
+        KPRINTF(10, ("Doing ClassScan on Device: %s\n", pd->pd_ProductStr));
         hasifbinding = 0;
         /* First look if there is any interface binding. We may not change
            the current config in this case! */
@@ -5869,14 +5882,14 @@ AROS_LH1(void, psdHubClassScan,
                 {
                     psdSetDeviceConfig(pp, pc->pc_CfgNum);
                 }
-                KPRINTF(5, ("  Config %ld\n", pc->pc_CfgNum));
+                KPRINTF(10, ("  Config %ld\n", pc->pc_CfgNum));
                 /* If something went wrong above, we must exclude this config */
                 if(pd->pd_CurrCfg == pc->pc_CfgNum)
                 {
                     pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
                     while(pif->pif_Node.ln_Succ)
                     {
-                        KPRINTF(5, ("    Interface %ld\n", pif->pif_IfNum));
+                        KPRINTF(10, ("    Interface %ld\n", pif->pif_IfNum));
                         firstpif = pif;
                         mainif = TRUE;
                         if(!pif->pif_IfBinding)
@@ -5893,10 +5906,10 @@ AROS_LH1(void, psdHubClassScan,
                                         pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
                                         if(pif->pif_Node.ln_Succ)
                                         {
-                                            KPRINTF(5, ("CONT!\n"));
+                                            KPRINTF(10, ("CONT!\n"));
                                             continue;
                                         } else {
-                                            KPRINTF(5, ("BREAK!\n"));
+                                            KPRINTF(10, ("BREAK!\n"));
                                             pif = firstpif;
                                             break;
                                         }
@@ -5906,7 +5919,7 @@ AROS_LH1(void, psdHubClassScan,
                                 puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
                                 while(puc->puc_Node.ln_Succ)
                                 {
-                                    KPRINTF(5, (">>>PING %s!\n", puc->puc_ClassName));
+                                    KPRINTF(10, (">>>PING %s!\n", puc->puc_ClassName));
                                     if(owner)
                                     {
                                         if(!strcmp(owner, puc->puc_ClassName))
@@ -5925,12 +5938,20 @@ AROS_LH1(void, psdHubClassScan,
                                         }
                                     } else {
                                         binding = (APTR) usbDoMethod(UCM_AttemptInterfaceBinding, pif);
+                                        if (binding)
+                                        {
+                                            KPRINTF(10, ("bound with %s\n", puc->puc_ClassName));
+                                        }
+                                        else
+                                        {
+                                            KPRINTF(10, ("couldn't bind with %s, UCM_AttemptInterfaceBinding returned NULL\n", puc->puc_ClassName));
+                                        }
                                     }
                                     Forbid();
-                                    KPRINTF(5, ("<<<PONG!!\n"));
+                                    KPRINTF(10, ("<<<PONG!!\n"));
                                     if(binding)
                                     {
-                                        KPRINTF(5, ("Got binding!\n"));
+                                        KPRINTF(10, ("Got binding!\n"));
                                         /* Find root config structure */
                                         pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
                                         while(pif->pif_Node.ln_Succ)
@@ -5943,7 +5964,7 @@ AROS_LH1(void, psdHubClassScan,
                                         }
                                         if(!pif->pif_Node.ln_Succ)
                                         {
-                                            KPRINTF(5, ("Fucked it up!\n"));
+                                            KPRINTF(10, ("Fucked it up!\n"));
                                             psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Something incredibly stupid happend. I've given up.");
                                             Permit();
                                             break;
@@ -5999,6 +6020,7 @@ AROS_LH1(void, psdHubClassScan,
         //psdUnlockPBase();
         if(!hasifbinding)
         {
+            KPRINTF(10, ("Couldn't establish interface binding, trying device binding...\n"));
             //pd->pd_DevBinding = (APTR) ~0UL;
             binding = NULL;
             owner = psdGetForcedBinding(pd->pd_IDString, NULL);
@@ -6067,7 +6089,7 @@ AROS_LH1(struct PsdAppBinding *, psdHubClaimAppBindingA,
     struct PsdInterface *pif;
 
     BOOL hasbinding = FALSE;
-    KPRINTF(2, ("psdHubClaimAppBindingA(%p)\n", tags));
+    KPRINTF(10, ("psdHubClaimAppBindingA(%p)\n", tags));
 
     if((pab = psdAllocVec(sizeof(struct PsdAppBinding))))
     {
@@ -6121,7 +6143,7 @@ AROS_LH1(void, psdHubReleaseDevBinding,
     APTR binding;
     struct PsdAppBinding *pab;
 
-    KPRINTF(5, ("psdHubReleaseDevBinding(%p)\n", pd));
+    KPRINTF(10, ("psdHubReleaseDevBinding(%p)\n", pd));
     if(pd)
     {
         psdLockWriteDevice(pd);
@@ -6163,7 +6185,7 @@ AROS_LH1(void, psdHubReleaseIfBinding,
     struct PsdDevice *pd;
     APTR binding;
 
-    KPRINTF(5, ("psdHubReleaseIfBinding(%p)\n", pif));
+    KPRINTF(10, ("psdHubReleaseIfBinding(%p)\n", pif));
 
     if(pif)
     {
@@ -6527,7 +6549,7 @@ AROS_LH2(struct PsdIFFContext *, psdFindCfgForm,
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *subpic;
 
-    KPRINTF(160, ("psdFindCfgForm(0x%p, 0x%08lx)\n", pic, formid));
+    KPRINTF(1, ("psdFindCfgForm(0x%p, 0x%08lx)\n", pic, formid));
     pLockSemShared(ps, &ps->ps_ConfigLock);
     if(!pic)
     {
@@ -6561,7 +6583,7 @@ AROS_LH1(struct PsdIFFContext *, psdNextCfgForm,
 {
     AROS_LIBFUNC_INIT
     ULONG formid;
-    KPRINTF(160, ("psdNextCfgForm(%p)\n", pic));
+    KPRINTF(1, ("psdNextCfgForm(%p)\n", pic));
 
     if(!pic)
     {
@@ -6594,7 +6616,7 @@ AROS_LH1(struct PsdIFFContext *, psdAllocCfgForm,
 {
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *pic;
-    KPRINTF(10, ("psdAllocCfgForm(%p)\n", formid));
+    KPRINTF(1, ("psdAllocCfgForm(%p)\n", formid));
     if((pic = psdAllocVec(sizeof(struct PsdIFFContext))))
     {
         NewList(&pic->pic_SubForms);
@@ -6619,7 +6641,7 @@ AROS_LH1(void, psdRemCfgForm,
          LIBBASETYPEPTR, ps, 56, psd)
 {
     AROS_LIBFUNC_INIT
-    KPRINTF(10, ("psdRemCfgForm(%p)\n", pic));
+    KPRINTF(1, ("psdRemCfgForm(%p)\n", pic));
 
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     if(!pic)
@@ -6647,7 +6669,7 @@ AROS_LH2(struct PsdIFFContext *, psdAddCfgEntry,
     AROS_LIBFUNC_INIT
     struct PsdIFFContext *res;
 
-    KPRINTF(10, ("psdAddCfgEntry(%p, %p)\n", pic, formdata));
+    KPRINTF(1, ("psdAddCfgEntry(%p, %p)\n", pic, formdata));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     if(!pic)
     {
@@ -6675,7 +6697,7 @@ AROS_LH2(BOOL, psdRemCfgChunk,
     AROS_LIBFUNC_INIT
     BOOL res = FALSE;
 
-    KPRINTF(10, ("psdRemCfgChunk(%p, %p)\n", pic, chnkid));
+    KPRINTF(1, ("psdRemCfgChunk(%p, %p)\n", pic, chnkid));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     if(!pic)
     {
@@ -6722,7 +6744,7 @@ AROS_LH2(APTR, psdGetCfgChunk,
     ULONG *chnk;
     ULONG *res = NULL;
 
-    KPRINTF(10, ("psdGetCfgChunk(%p, 0x%08lx)\n", pic, chnkid));
+    KPRINTF(1, ("psdGetCfgChunk(%p, 0x%08lx)\n", pic, chnkid));
 
     pLockSemShared(ps, &ps->ps_ConfigLock);
     if(!pic)
@@ -6766,7 +6788,7 @@ AROS_LH0(void, psdParseCfg,
     BOOL nodos = (FindTask(NULL)->tc_Node.ln_Type != NT_PROCESS);
     IPTR restartme;
 
-    XPRINTF(10, ("psdParseCfg()\n"));
+    XPRINTF(1, ("psdParseCfg()\n"));
 
     pLockSemShared(ps, &ps->ps_ConfigLock);
     pCheckCfgChanged(ps);
@@ -6829,7 +6851,7 @@ AROS_LH0(void, psdParseCfg,
             if(!pFindCfgChunk(ps, subpic, IFFCHNK_OFFLINE))
             {
                 phw = pFindHardware(ps, name, unit);
-                XPRINTF(5, ("Have configuration for device 0x%p (%s unit %u)\n", phw, name, unit));
+                XPRINTF(11, ("Have configuration for device 0x%p (%s unit %u)\n", phw, name, unit));
                 if(phw)
                 {
                     phw->phw_RemoveMe = FALSE;
@@ -6848,7 +6870,7 @@ AROS_LH0(void, psdParseCfg,
         {
             name = (STRPTR) &chnk[2];
             puc = (struct PsdUsbClass *) pFindName(ps, &ps->ps_Classes, name);
-            XPRINTF(5, ("Have configuration for class 0x%p (%s)\n", puc, name));
+            XPRINTF(11, ("Have configuration for class 0x%p (%s)\n", puc, name));
             if(puc)
             {
                 puc->puc_RemoveMe = FALSE;
@@ -6866,7 +6888,7 @@ AROS_LH0(void, psdParseCfg,
     {
         if(puc->puc_RemoveMe)
         {
-	    XPRINTF(5, ("Removing class %s\n", puc->puc_ClassName));
+	    XPRINTF(11, ("Removing class %s\n", puc->puc_ClassName));
             psdRemClass(puc);
         }
     }
@@ -6876,7 +6898,7 @@ AROS_LH0(void, psdParseCfg,
     {
         if(phw->phw_RemoveMe)
         {
-	    XPRINTF(5, ("Removing device %s unit %u\n", phw->phw_DevName, phw->phw_Unit));
+	    XPRINTF(11, ("Removing device %s unit %u\n", phw->phw_DevName, phw->phw_Unit));
             psdRemHardware(phw);
         }
     }
@@ -7690,20 +7712,20 @@ APTR pFindCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
     ULONG *buf = pic->pic_Chunks;
     ULONG len = pic->pic_ChunksLen;
     ULONG chlen;
-    KPRINTF(10, ("pFindCfgChunk(%p, %p)\n", pic, chnkid));
+    KPRINTF(1, ("pFindCfgChunk(%p, %p)\n", pic, chnkid));
 
     while(len)
     {
         if(AROS_LONG2BE(*buf) == chnkid)
         {
-            KPRINTF(10, ("Found at %p\n", buf));
+            KPRINTF(1, ("Found at %p\n", buf));
             return(buf);
         }
         chlen = (AROS_LONG2BE(buf[1]) + 9) & ~1UL;
         len -= chlen;
         buf = (ULONG *) (((UBYTE *) buf) + chlen);
     }
-    KPRINTF(10, ("Not found!\n"));
+    KPRINTF(1, ("Not found!\n"));
     return(NULL);
 }
 /* \\\ */
@@ -7714,7 +7736,7 @@ BOOL pRemCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
     ULONG *buf = pic->pic_Chunks;
     ULONG len = pic->pic_ChunksLen;
     ULONG chlen;
-    KPRINTF(10, ("pRemCfgChunk(%p, %p)\n", pic, chnkid));
+    KPRINTF(1, ("pRemCfgChunk(%p, %p)\n", pic, chnkid));
 
     while(len)
     {
@@ -7727,13 +7749,13 @@ BOOL pRemCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
                 memcpy(buf, &((UBYTE *) buf)[chlen], (size_t) len);
             }
             pic->pic_ChunksLen -= chlen;
-            KPRINTF(10, ("Deleted %ld bytes to %ld chunk len\n", chlen, pic->pic_ChunksLen));
+            KPRINTF(1, ("Deleted %ld bytes to %ld chunk len\n", chlen, pic->pic_ChunksLen));
             return(TRUE);
         }
         len -= chlen;
         buf = (ULONG *) (((UBYTE *) buf) + chlen);
     }
-    KPRINTF(10, ("Not found!\n"));
+    KPRINTF(1, ("Not found!\n"));
     return(FALSE);
 }
 /* \\\ */
@@ -7746,7 +7768,7 @@ struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic
     ULONG *buf = chunk;
     ULONG *newbuf;
     struct PsdIFFContext *subpic;
-    KPRINTF(10, ("pAddCfgChunk(%p, %p)\n", pic, chunk));
+    KPRINTF(1, ("pAddCfgChunk(%p, %p)\n", pic, chunk));
     if(AROS_LONG2BE(*buf) == ID_FORM)
     {
         buf++;
@@ -7779,7 +7801,7 @@ struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic
         len = (AROS_LONG2BE(buf[1]) + 9) & ~1UL;
         if(pic->pic_ChunksLen+len > pic->pic_BufferLen)
         {
-            KPRINTF(10, ("expanding buffer from %ld to %ld to fit %ld bytes\n", pic->pic_BufferLen, (pic->pic_ChunksLen+len)<<1, pic->pic_ChunksLen+len));
+            KPRINTF(1, ("expanding buffer from %ld to %ld to fit %ld bytes\n", pic->pic_BufferLen, (pic->pic_ChunksLen+len)<<1, pic->pic_ChunksLen+len));
 
             /* Expand buffer */
             if((newbuf = psdAllocVec((pic->pic_ChunksLen+len)<<1)))
@@ -8095,7 +8117,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                         altif->pif_IfClass = usif->bInterfaceClass;
                                         altif->pif_IfSubClass = usif->bInterfaceSubClass;
                                         altif->pif_IfProto = usif->bInterfaceProtocol;
-                                        KPRINTF(2, ("    Interface %ld\n", altif->pif_IfNum));
+                                        KPRINTF(20, ("    Interface %ld\n", altif->pif_IfNum));
                                         if(usif->iInterface)
                                         {
                                             altif->pif_IfStr = psdGetStringDescriptor(pp, usif->iInterface);
@@ -8110,7 +8132,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                                 altif->pif_IfStr = psdCopyStrFmt("Interface %ld", altif->pif_IfNum);
                                             }
                                         }
-                                        KPRINTF(2, ("      IfName    : %s\n"
+                                        KPRINTF(20, ("      IfName    : %s\n"
                                                     "      Alternate : %ld\n"
                                                     "      NumEPs    : %ld\n"
                                                     "      IfClass   : %ld\n"

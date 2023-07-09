@@ -5,6 +5,9 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#define DEBUG 2
+#define DB_LEVEL 1
+
 #include "debug.h"
 
 #include "numtostr.h"
@@ -152,6 +155,8 @@ struct NepClassHid * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepHidBase
     //IPTR subclass;
     //IPTR proto;
 
+    bug("hid.class trying to bind\n");
+
     KPRINTF(1, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
@@ -164,7 +169,12 @@ struct NepClassHid * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepHidBase
 
         if(ifclass == HID_CLASSCODE)
         {
+            bug("hid.class forcing interface binding\n");
             return(GM_UNIQUENAME(usbForceInterfaceBinding)(nh, pif));
+        }
+        else
+        {
+            bug("hid.class class code %i doesn't match HID class code %i\n", ifclass, HID_CLASSCODE);
         }
     }
     return(NULL);

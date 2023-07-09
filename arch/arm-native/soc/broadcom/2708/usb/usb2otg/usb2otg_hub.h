@@ -14,20 +14,20 @@
 
 /* Root hub data */
 const struct UsbStdDevDesc OTGRootHubDevDesc = {
-    sizeof(struct UsbStdDevDesc),
-    UDT_DEVICE,
-    LE16(0x0200),
-    HUB_CLASSCODE,
-    0,
-    0,
-    8,
-    LE16(0x0000),
-    LE16(0x0000),
-    LE16(0x0100),
-    0,
-    1,
-    0,
-    1
+    .bLength = sizeof(struct UsbStdDevDesc),
+    .bDescriptorType    = UDT_DEVICE,
+    .bcdUSB             = LE16(0x0200),
+    .bDeviceClass       = HUB_CLASSCODE,
+    .bDeviceSubClass    = 0,
+    .bDeviceProtocol    = 0,
+    .bMaxPacketSize0    = 8,
+    .idVendor           = LE16(0x1D6B),
+    .idProduct          = LE16(0x0002),
+    .bcdDevice          = LE16(0x0100),
+    .iManufacturer      = 1,
+    .iProduct           = 2,
+    .iSerialNumber      = 0,
+    .bNumConfigurations = 1
 };
 
 struct OTGHubCfg
@@ -39,36 +39,39 @@ struct OTGHubCfg
 
 const struct OTGHubCfg OTGRootHubCfg =
 {
-    .HubCfgDesc = {
-        sizeof(struct UsbStdCfgDesc),
-        UDT_CONFIGURATION,
-        LE16(sizeof(struct OTGHubCfg)),
-        1,
-        1,
-        3,
-        USCAF_ONE|USCAF_SELF_POWERED,
-        0
+    .HubCfgDesc =
+    {
+        .bLength             = sizeof(struct UsbStdCfgDesc),
+        .bDescriptorType     = UDT_CONFIGURATION,
+        .wTotalLength        = LE16(sizeof(struct OTGHubCfg)),
+        .bNumInterfaces      = 1,
+        .bConfigurationValue = 1,
+        .iConfiguration      = 3,
+        .bmAttributes        = USCAF_ONE|USCAF_SELF_POWERED,
+        .bMaxPower           = 0
     },
 
-    .HubIfDesc = {
-        sizeof(struct UsbStdIfDesc),
-        UDT_INTERFACE,
-        0,
-        0,
-        1,
-        HUB_CLASSCODE,
-        0,
-        0,
-        4
+    .HubIfDesc =
+    {
+        .bLength            = sizeof(struct UsbStdIfDesc),
+        .bDescriptorType    = UDT_INTERFACE,
+        .bInterfaceNumber   = 0,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 1,
+        .bInterfaceClass    = HUB_CLASSCODE,
+        .bInterfaceSubClass = 0,
+        .bInterfaceProtocol = 0,
+        .iInterface         = 4
     },
 
-    .HubEPDesc = {
-        sizeof(struct UsbStdEPDesc),
-        UDT_ENDPOINT,
-        URTF_IN|1,
-        USEAF_INTERRUPT,
-        LE16(8),
-        255
+    .HubEPDesc =
+    {
+        .bLength          = sizeof(struct UsbStdEPDesc),
+        .bDescriptorType  = UDT_ENDPOINT,
+        .bEndpointAddress = URTF_IN|1,
+        .bmAttributes     = USEAF_INTERRUPT,
+        .wMaxPacketSize   = LE16(8),
+        .bInterval        = 255
     },
 };
 
@@ -85,8 +88,8 @@ const struct UsbHubDesc    OTGRootHubDesc = {
 
 static const CONST_STRPTR OTGRootHubStrings[] =
 {
-    "The AROS Dev Team",
-    "BCM2708 OTG2USB Root Hub",
-    "Standard Config",
-    "Hub interface"
+    "The AROS Dev Team",         // 1 Manufacturer
+    "BCM2708 OTG2USB Root Hub",  // 2 Product
+    "Standard Config",           // 3 Configuration
+    "Hub interface"              // 4 Interface
 };

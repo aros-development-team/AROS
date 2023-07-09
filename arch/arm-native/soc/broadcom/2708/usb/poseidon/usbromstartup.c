@@ -62,6 +62,13 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         APTR msdclass;
         IPTR usecount = 0;
         ULONG bootdelay = 4;
+        struct Resident *res;
+
+        // Initialise USB class libraries. Not sure why these aren't already initialised at this point..
+        if ((res = FindResident("hid.class")))
+            InitResident(res, BNULL);
+        if ((res = FindResident("bootmouse.class")))
+            InitResident(res, BNULL);
 
         D(bug("[USBROMStartup] Adding classes...\n"));
 

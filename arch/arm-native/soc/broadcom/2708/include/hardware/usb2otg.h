@@ -324,9 +324,9 @@
 #define USB2OTG_INTRCHAN_BABBLEERROR                    (1 << 8)
 #define USB2OTG_INTRCHAN_FRAMEOVERRUN                   (1 << 9)
 #define USB2OTG_INTRCHAN_DATATOGGLEERROR                (1 << 10)
-#define USB2OTG_INTRCHAN_BUFFERNOTAVAILABLE             (1 << 11)
-#define USB2OTG_INTRCHAN_EXCESSIVETRANSMISSION          (1 << 12)
-#define USB2OTG_INTRCHAN_FRAMELISTROLLOVER              (1 << 13)
+#define USB2OTG_INTRCHAN_BUFFERNOTAVAILABLE             (1 << 11)  // reserved?
+#define USB2OTG_INTRCHAN_EXCESSIVETRANSMISSION          (1 << 12)  // reserved?
+#define USB2OTG_INTRCHAN_FRAMELISTROLLOVER              (1 << 13)  // reserved?
 
 /* Bits in the power register */
 #define USB2OTG_POWER_STOPPCLOCK                        (1 << 0)
