@@ -18,7 +18,7 @@
 
 #include "input_intern.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define NEWSTYLE_DEVICE 1

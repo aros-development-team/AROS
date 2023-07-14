@@ -570,7 +570,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         sdDataFlags = GetTagData(SDCARD_TAG_DATAFLAGS, 0, CmdTags);
     };
 
-bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen);
+//bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen);
 
     /* Dont wait for DATA inihibit for stop commands */
     if (sdCommand != MMC_CMD_STOP_TRANSMISSION)
@@ -877,7 +877,7 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 /********** BUS IRQ HANDLER **************/
 
 #undef DIRQ
-#define DIRQ(x) x
+#define DIRQ(x) /* x */
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 {

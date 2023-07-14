@@ -12,8 +12,10 @@
 
 #include "mouse.h"
 
+#define D(x) x
+
 /* Class initialization and destruction */
-#define SysBase LIBBASE->csd.cs_SysBase
+#define SysBase ((struct ExecBase *)(LIBBASE->csd.cs_SysBase))
 #define OOPBase LIBBASE->csd.cs_OOPBase
 #undef HWBase
 #define HWBase LIBBASE->csd.hwMethodBase

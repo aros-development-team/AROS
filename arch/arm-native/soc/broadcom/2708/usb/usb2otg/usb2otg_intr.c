@@ -217,7 +217,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
         uint32_t hprt = rd32le(USB2OTG_HOSTPORT);
         if (hprt & USB2OTG_HOSTPORT_PRTCONNDET)
         {
-            bug("device connected to host port!\n");
+            //bug("device connected to host port!\n");
             wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTCONNDET);  // clear interrupt
         }
         else if (hprt & USB2OTG_HOSTPORT_PRTENCHNG)
@@ -228,10 +228,14 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
         else if (hprt & USB2OTG_HOSTPORT_PRTOVRCURRCHNG)
         {
             bug("port overcurrent %s!\n", (hprt & USB2OTG_HOSTPORT_PRTOVRCURRACT) ? "active" : "inactive");
+            hang();
             wr32le(USB2OTG_HOSTPORT, USB2OTG_HOSTPORT_PRTOVRCURRCHNG);
         }
         else
+        {
             bug("TODO: port interrupt: 0x%08X\n", hprt);
+            hang();
+        }
     }
 
 

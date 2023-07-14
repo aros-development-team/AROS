@@ -69,6 +69,8 @@ AROS_UFH3(static IPTR, usbromstartup_init,
             InitResident(res, BNULL);
         if ((res = FindResident("bootmouse.class")))
             InitResident(res, BNULL);
+        if ((res = FindResident("bootkeyboard.class")))
+            InitResident(res, BNULL);
 
         D(bug("[USBROMStartup] Adding classes...\n"));
 
@@ -83,9 +85,9 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         D(bug("[USBROMStartup] Added chipset drivers...\n"));
 
         /* load the raspi usb hardware driver */
-        if ((phw = psdAddHardware("usb2otg.device", 0)))
+        if ((phw = psdAddHardware("dwc2.device", 0)))
         {
-            D(bug("[USBROMStartup] Added usb2otg.device unit %u\n", 0));
+            D(bug("[USBROMStartup] Added dwc2.device unit %u\n", 0));
 
             psdEnumerateHardware(phw);
         }

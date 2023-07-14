@@ -191,16 +191,16 @@ void FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         bug("buffer addr %p is not word-aligned!\n", buffer);
         hang();
     }
-    bug("%s channel %i (devaddr %i), %i packets (%i bytes)\n",
+    D(bug("%s channel %i (devaddr %i), %i packets (%i bytes)\n",
         direction ? "receiving from" : "sending to",
         chan,
         req->iouh_DevAddr,
         pkt_count,
-        xfer_size);
+        xfer_size));
 
     /* Set the bus address of transferred data (use L2 uncached from AHB's point of view!) */
     wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)buffer);
-    bug("finished setting DMA reg\n");
+    D(bug("finished setting DMA reg\n"));
 }
 
 /* Advance the status of channel, adjust iouh_Actual, PID etc */

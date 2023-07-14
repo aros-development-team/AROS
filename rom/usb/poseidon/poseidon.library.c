@@ -752,7 +752,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
     struct List reclaims;
     BOOL moveowner;
 
-    XPRINTF(10, ("Borrowing locks from %p (%s) to %p (%s)!\n",
+    XPRINTF(1, ("Borrowing locks from %p (%s) to %p (%s)!\n",
                   thistask, thistask->tc_Node.ln_Name, task, task->tc_Node.ln_Name));
 
     Forbid();
@@ -781,13 +781,13 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
     if(!cnt)
     {
         Permit();
-        XPRINTF(10, ("Nothing to borrow!\n"));
+        XPRINTF(1, ("Nothing to borrow!\n"));
         return(Wait(signals));
     }
 
     NewList(&borrows);
     NewList(&reclaims);
-    XPRINTF(10, ("Borrowing %ld locks\n", cnt));
+    XPRINTF(1, ("Borrowing %ld locks\n", cnt));
 
     psi = (struct PsdSemaInfo *) ps->ps_DeadlockDebug.lh_Head;
     while(psi->psi_Node.ln_Succ)
@@ -812,7 +812,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                         // this no optimal solution, but it guarantees the same
                         // behaviour with pending lock and no pending lock
                         prl->prl_IsExcl = TRUE;
-                        XPRINTF(10, ("Promo waiting lock to excl\n"));
+                        XPRINTF(1, ("Promo waiting lock to excl\n"));
                     }
                     // move shared lock to top of the list
                     Remove(&prl->prl_Node);
@@ -827,7 +827,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                         pls->pls_ExclLockCount = 0;
                         pls->pls_Owner = NULL;
                         Signal(task, SIGF_SINGLE);
-                        XPRINTF(10, ("Waiting lock %p transfer\n", pls));
+                        XPRINTF(1, ("Waiting lock %p transfer\n", pls));
                     }
                     moveowner = FALSE;
                     break;
@@ -842,7 +842,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                     pbl->pbl_ExclLockCount = pls->pls_ExclLockCount;
                     AddTail(&borrows, &pbl->pbl_Node);
                     pls->pls_Owner = task;
-                    XPRINTF(10, ("Lock %p transfer\n", pls));
+                    XPRINTF(1, ("Lock %p transfer\n", pls));
                 }
             }
         }
@@ -876,7 +876,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                                 Signal(task, SIGF_SINGLE);
                             }
                             moveowner = FALSE;
-                            XPRINTF(10, ("Waiting shared lock %p transfer\n", pls));
+                            XPRINTF(1, ("Waiting shared lock %p transfer\n", pls));
                             break;
                         }
                         prl2 = (struct PsdReadLock *) prl2->prl_Node.ln_Succ;
@@ -904,7 +904,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                                     // just increase lockcount, so a split occurs automatically
                                     prl2->prl_Count += pbl->pbl_Count;
                                 }
-                                XPRINTF(10, ("Already locked %p transfer\n", pls));
+                                XPRINTF(1, ("Already locked %p transfer\n", pls));
                                 moveowner = FALSE;
                                 break;
                             }
@@ -919,7 +919,7 @@ AROS_LH2(ULONG, psdBorrowLocksWait,
                             pbl->pbl_Count = prl->prl_Count;
                             AddTail(&borrows, &pbl->pbl_Node);
                             prl->prl_Task = task;
-                            XPRINTF(10, ("Std lock %p transfer\n", pls));
+                            XPRINTF(1, ("Std lock %p transfer\n", pls));
                         }
                     }
                     break;
@@ -1531,7 +1531,7 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
 #endif
     if((nt = AddTask(nt, initpc, NULL)))
     {
-        XPRINTF(10, ("Started task %p (%s)\n", nt, name));
+        XPRINTF(1, ("Started task %p (%s)\n", nt, name));
         return(nt);
     }
     FreeEntry(newmemlist);
@@ -2443,7 +2443,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
     buf[0] = 0;
     if(!pd->pd_LangIDArray)
     {
-        KPRINTF(10,("Trying to get language array...\n"));
+        KPRINTF(1,("Trying to get language array...\n"));
         psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE,
                      USR_GET_DESCRIPTOR, UDT_STRING<<8, 0);
         ioerr = psdDoPipe(pp, buf, 2);
@@ -5260,7 +5260,7 @@ AROS_LH2(struct PsdUsbClass *, psdAddClass,
                           "Start blaming %s V%ld.%ld for helping at %s.",
                           "Ain't %s V%ld.%ld useful for %s?" };
 
-    KPRINTF(10, ("psdAddClass(%s, %ld)\n", name, vers));
+    KPRINTF(1, ("psdAddClass(%s, %ld)\n", name, vers));
 
     while(*name)
     {
@@ -5433,9 +5433,9 @@ AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
         {
             if((pem->pem_Msg = psdCopyStrFmtA(fmtstr, fmtdata)))
             {
-		if (ps->ps_Flags & PSF_KLOG) {
+		//if (ps->ps_Flags & PSF_KLOG) {
 		    KPrintF("[%s] %s\n", origin, pem->pem_Msg);
-		}
+		//}
 
                 if(pOpenDOS(ps))
                 {
@@ -7075,7 +7075,7 @@ AROS_LH2(BOOL, psdSetClsCfg,
     struct PsdIFFContext *pic;
     BOOL result = FALSE;
 
-    KPRINTF(10, ("psdSetClsCfg(%s, %p)\n", owner, form));
+    KPRINTF(1, ("psdSetClsCfg(%s, %p)\n", owner, form));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     pic = psdFindCfgForm(NULL, IFFFORM_CLASSCFG);
     while(pic)
@@ -7180,7 +7180,7 @@ AROS_LH4(BOOL, psdSetUsbDevCfg,
     struct PsdIFFContext *mpic = NULL;
     BOOL result = FALSE;
 
-    KPRINTF(10, ("psdSetUsbDevCfg(%s, %s, %s, %p)\n", owner, devid, ifid, form));
+    KPRINTF(1, ("psdSetUsbDevCfg(%s, %s, %s, %p)\n", owner, devid, ifid, form));
     pLockSemExcl(ps, &ps->ps_ConfigLock);
     /* Find device config form. It contains all device config data */
     pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
@@ -7340,7 +7340,7 @@ AROS_LH3(struct PsdIFFContext *, psdGetUsbDevCfg,
     struct PsdIFFContext *cpic = NULL;
     struct PsdIFFContext *mpic = NULL;
 
-    KPRINTF(10, ("psdGetUsbDevCfg(%s, %s, %s)\n", owner, devid, ifid));
+    KPRINTF(1, ("psdGetUsbDevCfg(%s, %s, %s)\n", owner, devid, ifid));
     pLockSemShared(ps, &ps->ps_ConfigLock);
     /* Find device config form. It contains all device config data */
     pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
@@ -7650,7 +7650,7 @@ AROS_LH2(STRPTR, psdGetStringChunk,
 struct PsdIFFContext * pAllocForm(LIBBASETYPEPTR ps, struct PsdIFFContext *parent, ULONG formid)
 {
     struct PsdIFFContext *pic;
-    KPRINTF(10, ("pAllocForm(%p, %p)\n", parent, formid));
+    KPRINTF(1, ("pAllocForm(%p, %p)\n", parent, formid));
     if((pic = psdAllocVec(sizeof(struct PsdIFFContext))))
     {
         NewList(&pic->pic_SubForms);
@@ -7677,7 +7677,7 @@ struct PsdIFFContext * pAllocForm(LIBBASETYPEPTR ps, struct PsdIFFContext *paren
 void pFreeForm(LIBBASETYPEPTR ps, struct PsdIFFContext *pic)
 {
     struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
-    KPRINTF(10, ("pFreeForm(%p)\n", pic));
+    KPRINTF(1, ("pFreeForm(%p)\n", pic));
     Remove(&pic->pic_Node);
     while(subpic->pic_Node.ln_Succ)
     {

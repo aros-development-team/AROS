@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := \
+    dwc2 \
+    dwc2_roothub
+
+WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware
+
+#MM
+kernel-usb-dwc2-directories ::
+    %mkdirs_q $(WBUSBHARDWAREDIRS)
+
+#MM- kernel-usb-dwc2 : kernel-usb-dwc2-directories
+
+%build_module mmake=kernel-usb-dwc2 \
+    modname=dwc2 modtype=device \
+    moduledir=Devs/USBHardware \
+    files="$(FILES)" \
+    uselibs="hiddstubs debug"
+
+%common
