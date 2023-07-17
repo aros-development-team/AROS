@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2023, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -36,6 +36,7 @@ struct PTEditor_DATA
 
 STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data);
 STATIC VOID Gadgets2PTPrefs(struct PTEditor_DATA *data);
+STATIC VOID StoreEntry(struct PTEditor_DATA *data, ULONG entry);
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct PTEditor_DATA *data = INST_DATA(CLASS, self)
@@ -58,22 +59,7 @@ AROS_UFHA(APTR, msg, A1))
 
     D(bug("[PointerPrefs:Editor] %s: entry %d oldentry %d\n", __func__, entry, old));
 
-    // store data from previous entry
-    Strlcpy
-    (
-        pointerprefs[old].filename,
-        (STRPTR)XGET(data->pted_fileString, MUIA_String_Contents),
-        NAMEBUFLEN
-    );
-
-    D(bug("[PointerPrefs:Editor] %s: '%s'\n", __func__, pointerprefs[old].filename));
-
-    pointerprefs[old].npp.npp_AlphaValue =
-        XGET(data->pted_alphaSlider, MUIA_Numeric_Value) * 0x0101;
-    pointerprefs[old].npp.npp_X =
-        - XGET(data->pted_previewImage, MUIA_PPreview_HSpotX);
-    pointerprefs[old].npp.npp_Y =
-        - XGET(data->pted_previewImage, MUIA_PPreview_HSpotY);
+    StoreEntry(data, old);
 
     // set data of current entry
     NNSET(data->pted_fileString,  MUIA_String_Contents, pointerprefs[entry].filename);
@@ -218,14 +204,28 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
+STATIC VOID StoreEntry(struct PTEditor_DATA *data, ULONG entry)
+{
+    // store data from previous entry
+    Strlcpy
+    (
+        pointerprefs[entry].filename,
+        (STRPTR)XGET(data->pted_fileString, MUIA_String_Contents),
+        NAMEBUFLEN
+    );
 
-STATIC void Gadgets2PTPrefs(struct PTEditor_DATA *data)
+    D(bug("[PointerPrefs:Editor] %s: '%s'\n", __func__, pointerprefs[entry].filename));
+
+    pointerprefs[entry].npp.npp_AlphaValue = XGET(data->pted_alphaSlider, MUIA_Numeric_Value) * 0x0101;
+    pointerprefs[entry].npp.npp_X = -XGET(data->pted_previewImage, MUIA_PPreview_HSpotX);
+    pointerprefs[entry].npp.npp_Y = -XGET(data->pted_previewImage, MUIA_PPreview_HSpotY);
+}
+
+STATIC VOID Gadgets2PTPrefs(struct PTEditor_DATA *data)
 {
     ULONG entry = XGET(data->pted_typeCycle, MUIA_Cycle_Active);
 
-    // Trigger cycleHook
-    SET(data->pted_typeCycle, MUIA_Cycle_Active, entry);
-
+    StoreEntry(data, entry);
 }
 
 STATIC VOID PTPrefs2Gadgets(struct PTEditor_DATA *data)
