@@ -6,7 +6,7 @@ DEBUG_ACPI=no
 ACPICAPACKAGE      := acpica
 ACPICAVERSION      := 20230331
 ACPICAREPOSITORIES := \
-    https://acpica.org/sites/acpica/files https://sources.voidlinux.org/acpica-utils-$(ACPICAVERSION)
+    https://downloadmirror.intel.com/776304
 ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)
 ACPICASRCDIR       := $(PORTSDIR)/acpica/$(ACPICAARCHBASE)
 
