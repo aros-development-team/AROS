@@ -575,7 +575,7 @@ kprintf ("ProcessSelectRender\n");
 
     /* Not all icon with second image seem to have GFLG_GADGHIMAGE set */
     
-    if (icon->do_Gadget.SelectRender || (icon->do_Gadget.Flags & GFLG_GADGHIMAGE))
+    if (icon->do_Gadget.SelectRender || (icon->do_Gadget.Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE)
     {
         switch (data->sdd_Mode)
         {

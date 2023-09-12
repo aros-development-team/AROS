@@ -826,11 +826,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             {
                 gadget->Activation |= GACT_ACTIVEGADGET;
                 iihdata->MouseWasInsideBoolGadget = TRUE;
-                if (gadget->Flags & GFLG_GADGHIMAGE)
-                {
                 gadget->Flags ^= GFLG_SELECTED;
                 RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-                }
             }
             else
             {
@@ -963,13 +960,10 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         gadget->Activation &= ~GACT_ACTIVEGADGET;
         if (gadget->Activation & GACT_RELVERIFY)
         {
-            if (gadget->Flags & GFLG_GADGHIMAGE)
-            {
             if (inside)
             {
                 gadget->Flags ^= GFLG_SELECTED;
                 RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-            }
             }
 
             if (inside)

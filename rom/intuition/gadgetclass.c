@@ -208,7 +208,8 @@ static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
             case GA_SelectRender:
                 eg->SelectRender = (APTR)tidata;
                 {
-                    eg->Flags |= (GFLG_GADGIMAGE & GFLG_GADGHIMAGE);
+                    eg->Flags &= ~GFLG_GADGHIGHBITS;
+                    eg->Flags |= (GFLG_GADGIMAGE | GFLG_GADGHIMAGE);
                 }
                 retval = 1UL;
                 break;
@@ -554,7 +555,7 @@ IPTR GadgetClass__OM_GET(Class *cl, struct ExtGadget *eg, struct opGet *msg)
             break;
 
         case GA_SelectRender:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_GADGHIMAGE) ? eg->SelectRender : 0);
+            *msg->opg_Storage = (IPTR)(((eg->Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE) ? eg->SelectRender : 0);
             break;
 
         case GA_SpecialInfo:
