@@ -305,6 +305,7 @@ STATIC BOOL MakePlanarImages(struct NativeIcon *icon, struct IconBase *IconBase)
     if (MakePlanarImage(icon, (struct Image **) &icon->ni_DiskObject.do_Gadget.SelectRender,
             (UBYTE *)icon->ni_Image[1].ARGB, IconBase))
     {
+        icon->ni_DiskObject.do_Gadget.Flags &= ~GFLG_GADGHIGHBITS;
         icon->ni_DiskObject.do_Gadget.Flags |= GFLG_GADGHIMAGE;
     }
 
