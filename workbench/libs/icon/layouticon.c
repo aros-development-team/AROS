@@ -254,7 +254,7 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
             ULONG state;
             BOOL flood = FALSE;
 
-            if (i == 1 && (icon->do_Gadget.Flags & GFLG_GADGHIMAGE)) {
+            if (i == 1 && ((icon->do_Gadget.Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE)) {
                 gi = icon->do_Gadget.SelectRender;
             } else if (icon->do_Gadget.Flags & GFLG_GADGIMAGE) {
                 gi = icon->do_Gadget.GadgetRender;
@@ -263,7 +263,7 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
             if (gi == NULL)
                 continue;
 
-            if (i == 1 && (icon->do_Gadget.Flags & GFLG_GADGHCOMP))
+            if (i == 1 && ((icon->do_Gadget.Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHCOMP))
                 state = IDS_SELECTED;
             else
                 state = IDS_NORMAL;
