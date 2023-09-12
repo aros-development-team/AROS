@@ -536,6 +536,7 @@ LONG AFS_work(struct ExecBase *SysBase)
                     struct FileLock      *fl = BADDR(dp->dp_Arg2);
                     fh->fh_Arg1 = (SIPTR)fl->fl_Key;
                     FreeMem(fl, sizeof(*fl));
+                    ok = DOSTRUE;
                     break;
                 }
                 case ACTION_EXAMINE_OBJECT:
