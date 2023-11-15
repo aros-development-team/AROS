@@ -158,7 +158,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
      * mounted before reformatting */
     /* Note: Linux can create partitions where these two values differ, but still are valid for read / write
      * under Linux, Windows and MacOS */
-    if ((total_sectors < sb->total_sectors - 6) || (total_sectors > sb->total_sectors))
+    if ((total_sectors < sb->total_sectors - 64) || (total_sectors > sb->total_sectors))
         invalid = TRUE;
 
     sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count)
