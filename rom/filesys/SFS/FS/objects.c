@@ -1796,7 +1796,7 @@ LONG renameobject(struct CacheBuffer *cb, struct fsObject *o, struct ExtFileLock
 
   lockcachebuffer(cb);
 
-  if((errorcode=locatelockableparent(lock, path, &cbparent, &oparent))==0) {
+  if((errorcode=locateparent(lock, path, &cbparent, &oparent))==0) { // was locatelockableparent()
     unlockcachebuffer(cb);
     errorcode=renameobject2(cb, o, cbparent, oparent, FilePart(path), TRUE);
   }
