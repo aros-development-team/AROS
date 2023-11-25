@@ -1192,7 +1192,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
             }
             return FALSE;
         }
-        WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, OISF_HUBCHANGE);
+        ohciEnableInt(hc, OISF_HUBCHANGE);
         if(intr & OISF_FRAMECOUNTOVER)
         {
             hc->hc_FrameCounter |= 0x7fff;
