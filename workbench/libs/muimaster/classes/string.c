@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
 */
 
 /* This is based on muimaster/class/text.c (first string version)
@@ -254,6 +254,7 @@ static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
     if (data->BufferPos > data->NumChars)
         data->BufferPos = data->NumChars;
     data->DispPos = 0;
+    data->AckBuffer = data->Buffer;
     return TRUE;
 }
 
