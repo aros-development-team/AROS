@@ -825,7 +825,7 @@ static BOOL HandleProject
             {
                 success = CLI_LaunchProgram
                 (
-                    icon->do_DefaultTool, tags, WorkbenchBase
+                    icon->do_DefaultTool, deftool_tags, WorkbenchBase
                 );
             }
 

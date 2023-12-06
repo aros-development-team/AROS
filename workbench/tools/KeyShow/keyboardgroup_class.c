@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2023, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/muimaster.h>
@@ -57,11 +57,14 @@ static const BYTE keymapstr_table[8][8] =
 // TODO: is this order always the same?
 static const BYTE deadkey_table[] = " ´`^~\"°";
 
+#define KEYCOUNT                0x78
+#define PSEUDO_RAWKEY_RCONTROL  0x7F
 
 struct KeyboardGroup_DATA
 {
     struct Key *key;
-    Object *keybutton[128]; // 64-127 are high keys
+    Object *keybutton[KEYCOUNT];
+    Object *pseudo_r_ctrl;
     struct Hook change_qualifier_hook;
 };
 
@@ -318,24 +321,24 @@ static void parse_dead_key(struct Key *key, UBYTE type, IPTR value)
 
 static struct Key *read_keymap(void)
 {
-    struct Key *key = AllocVec(sizeof(struct Key) * 128, MEMF_CLEAR);
+    struct Key *key = AllocVec(sizeof(struct Key) * KEYCOUNT, MEMF_CLEAR);
     if (key)
     {
         struct KeyMap *km = AskKeyMapDefault();
         LONG i;
         IPTR value;
         UBYTE type;
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++) /* 0x40 Lo, 0x38 Hi */
         {
-            if (i < 64)
+            if (i < 0x40)
             {
                 type = km->km_LoKeyMapTypes[i];
                 value = km->km_LoKeyMap[i];
             }
             else
             {
-                type = km->km_HiKeyMapTypes[i-64];
-                value = km->km_HiKeyMap[i-64];
+                type = km->km_HiKeyMapTypes[i-0x40];
+                value = km->km_HiKeyMap[i-0x40];
             }
 
             if (type & KCF_STRING)
@@ -399,7 +402,6 @@ static struct Key *read_keymap(void)
         set_immutable_key(key, RAWKEY_PAUSE, _(MSG_KEY_PAUSE));
 
         set_immutable_key(key, RAWKEY_KP_ENTER, _(MSG_KEY_NUM_ENTER));
-        set_immutable_key(key, 127, _(MSG_KEY_CTRL));   // Pseudo right Ctrl
     }
     return key;
 }
@@ -419,7 +421,7 @@ AROS_UFH3S(void, change_qualifier_func,
 
     BOOL shift = XGET(data->keybutton[96], MUIA_Selected) | XGET(data->keybutton[97], MUIA_Selected);
     BOOL alt = XGET(data->keybutton[100], MUIA_Selected) | XGET(data->keybutton[101], MUIA_Selected);
-    BOOL ctrl = XGET(data->keybutton[99], MUIA_Selected) | XGET(data->keybutton[127], MUIA_Selected);
+    BOOL ctrl = XGET(data->keybutton[99], MUIA_Selected) | XGET(data->pseudo_r_ctrl, MUIA_Selected);
 
     D(bug("[keyshow/change_qualifier_func] old: shift %d alt %d ctrl %d key %d trigger %d\n", shift, alt, ctrl, selectedkey, keydown));
 
@@ -429,7 +431,7 @@ AROS_UFH3S(void, change_qualifier_func,
             shift = TRUE;
         else if ((selectedkey == RAWKEY_LALT) || (selectedkey == RAWKEY_RALT))
             alt = TRUE;
-        else if ((selectedkey == RAWKEY_LCONTROL) || (selectedkey == 127))
+        else if ((selectedkey == RAWKEY_LCONTROL) || (selectedkey == PSEUDO_RAWKEY_RCONTROL))
             ctrl = TRUE;
     }
     else
@@ -438,7 +440,7 @@ AROS_UFH3S(void, change_qualifier_func,
             shift = FALSE;
         else if ((selectedkey == RAWKEY_LALT) || (selectedkey == RAWKEY_RALT))
             alt = FALSE;
-        else if ((selectedkey == RAWKEY_LCONTROL) || (selectedkey == 127))
+        else if ((selectedkey == RAWKEY_LCONTROL) || (selectedkey == PSEUDO_RAWKEY_RCONTROL))
             ctrl = FALSE;
     }
 
@@ -447,13 +449,13 @@ AROS_UFH3S(void, change_qualifier_func,
     NNSET(data->keybutton[RAWKEY_LALT], MUIA_Selected, alt);
     NNSET(data->keybutton[RAWKEY_RALT], MUIA_Selected, alt);
     NNSET(data->keybutton[RAWKEY_LCONTROL], MUIA_Selected, ctrl);
-    NNSET(data->keybutton[127], MUIA_Selected, ctrl);
+    NNSET(data->pseudo_r_ctrl, MUIA_Selected, ctrl);
 
     D(bug("[keyshow/change_qualifier_func] new: shift %d alt %d ctrl %d key %d trigger %d\n", shift, alt, ctrl, selectedkey, keydown));
 
     if (shift && !alt && !ctrl)
     {
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             if (!data->key[i].immutable)
                 SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].shift);
@@ -461,7 +463,7 @@ AROS_UFH3S(void, change_qualifier_func,
     }
     else if (!shift && alt && !ctrl)
     {
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             if (!data->key[i].immutable)
                 SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].alt);
@@ -469,7 +471,7 @@ AROS_UFH3S(void, change_qualifier_func,
     }
     else if (!shift && !alt && ctrl)
     {
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             if (!data->key[i].immutable)
                 SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl);
@@ -477,7 +479,7 @@ AROS_UFH3S(void, change_qualifier_func,
     }
     else if (shift && alt && !ctrl)
     {
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             if (!data->key[i].immutable)
                 SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].shift_alt);
@@ -485,7 +487,7 @@ AROS_UFH3S(void, change_qualifier_func,
     }
     else if (!shift && alt && ctrl)
     {
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             if (!data->key[i].immutable)
                 SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl_alt);
@@ -493,7 +495,7 @@ AROS_UFH3S(void, change_qualifier_func,
     }
     else if (shift && !alt && ctrl)
     {
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             if (!data->key[i].immutable)
                 SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl_shift);
@@ -501,7 +503,7 @@ AROS_UFH3S(void, change_qualifier_func,
     }
     else
     {
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             if (!data->key[i].immutable)
                 SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].alone);
@@ -515,7 +517,8 @@ AROS_UFH3S(void, change_qualifier_func,
 Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     LONG i;
-    Object *keybtn[128];
+    Object *keybtn[KEYCOUNT];
+    Object *pseudo_r_ctrl;
     struct Key *key = read_keymap();
     ULONG kbtype = MUIV_KeyboardGroup_Type_Amiga;
 
@@ -532,9 +535,9 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         }
     }
 
-    for (i = 0; i < 128; i++)
+    for (i = 0; i < KEYCOUNT; i++)
     {
-        if ((i < 96 || i > 101 || i == RAWKEY_CAPSLOCK) && i != 127)
+        if ((i < 96 || i > 101 || i == RAWKEY_CAPSLOCK))
         {
             keybtn[i] = MUI_NewObject(MUIC_Text,
                 ButtonFrame,
@@ -547,15 +550,24 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         {
             // Qualifier keys
             keybtn[i] = MUI_NewObject(MUIC_Text,
-            ButtonFrame,
-            MUIA_Font, MUIV_Font_Tiny,
-            MUIA_Text_Contents, key[i].alone,
-            MUIA_Text_PreParse, "\33c",
-            MUIA_InputMode    , MUIV_InputMode_Toggle,
-            MUIA_Background   , MUII_ButtonBack,
-            TAG_DONE);
+                ButtonFrame,
+                MUIA_Font, MUIV_Font_Tiny,
+                MUIA_Text_Contents, key[i].alone,
+                MUIA_Text_PreParse, "\33c",
+                MUIA_InputMode    , MUIV_InputMode_Toggle,
+                MUIA_Background   , MUII_ButtonBack,
+                TAG_DONE);
         }
     }
+
+    pseudo_r_ctrl = MUI_NewObject(MUIC_Text,
+        ButtonFrame,
+        MUIA_Font, MUIV_Font_Tiny,
+        MUIA_Text_Contents, _(MSG_KEY_CTRL),
+        MUIA_Text_PreParse, "\33c",
+        MUIA_InputMode    , MUIV_InputMode_Toggle,
+        MUIA_Background   , MUII_ButtonBack,
+        TAG_DONE);
 
     if (kbtype == MUIV_KeyboardGroup_Type_PC105)
     {
@@ -610,7 +622,7 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     KEY(RAWKEY_SPACE),
                     Child, HGroup,
                         MUIA_Group_SameSize, TRUE,
-                        KEY(RAWKEY_RALT), KEY(RAWKEY_RAMIGA), KEY(RAWKEY_HELP), KEY(127),
+                        KEY(RAWKEY_RALT), KEY(RAWKEY_RAMIGA), KEY(RAWKEY_HELP), Child, pseudo_r_ctrl,
                     End,
                 End,
             End,
@@ -706,7 +718,7 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     KEY(RAWKEY_SPACE),
                     Child, HGroup,
                         MUIA_Group_SameSize, TRUE,
-                        KEY(RAWKEY_RALT), KEY(RAWKEY_RAMIGA), KEY(RAWKEY_HELP), KEY(127),
+                        KEY(RAWKEY_RALT), KEY(RAWKEY_RAMIGA), KEY(RAWKEY_HELP), Child, pseudo_r_ctrl,
                     End,
                 End,
             End,
@@ -844,10 +856,11 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         struct KeyboardGroup_DATA *data = INST_DATA(CLASS, self);
 
         data->key = key;
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < KEYCOUNT; i++)
         {
             data->keybutton[i] = keybtn[i];
         }
+        data->pseudo_r_ctrl = pseudo_r_ctrl;
 
         data->change_qualifier_hook.h_Entry = (HOOKFUNC)change_qualifier_func;
         data->change_qualifier_hook.h_Data = data;
@@ -863,8 +876,8 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         }
         DoMethod
         (
-            data->keybutton[127], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            self, 4, MUIM_CallHook, &data->change_qualifier_hook, 127, MUIV_TriggerValue
+            data->pseudo_r_ctrl, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            self, 4, MUIM_CallHook, &data->change_qualifier_hook, PSEUDO_RAWKEY_RCONTROL, MUIV_TriggerValue
         );
     }
     return self;
@@ -916,7 +929,6 @@ IPTR KeyboardGroup__MUIM_HandleInput(Class *CLASS, Object *obj, struct MUIP_Hand
                     if (btn)
                     {
                         SET(btn, MUIA_Selected, XGET(btn, MUIA_Selected) ? FALSE : TRUE);
-                        //MUI_Redraw(obj, MADF_DRAWUPDATE);
                     }
                 }
             }

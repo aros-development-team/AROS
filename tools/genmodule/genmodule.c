@@ -68,7 +68,10 @@ int main(int argc, char **argv)
         break;
 
     case WRITEFD:
-        writefd(cfg);
+        if ((cfg->options & OPTION_INCLUDES) && (cfg->funclist != NULL))
+        {
+            writefd(cfg);
+        }
         break;
 
     case WRITESKEL:
