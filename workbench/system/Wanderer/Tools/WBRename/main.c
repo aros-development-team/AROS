@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBRename 0.4 (6.4.2011) \xA9 2006-2011 AROS Dev Team";
+char versionstring[] = "$VER: WBRename 0.5 (10.12.2023) \xA9 2006-2023 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -174,6 +174,37 @@ static void bt_ok_hook_function(void)
 
 }
 
+static BOOL canRename(const STRPTR oldname, const STRPTR newname)
+{
+    BPTR newl;
+    if ((newl = Lock(newname, ACCESS_READ)))
+    {
+        /* There is already a file with new name. Let's see if it is the same file as oldname */
+        BPTR oldl;
+        if (oldl = Lock(oldname, ACCESS_READ))
+        {
+            LONG res = SameLock(newl, oldl);
+            UnLock(oldl);
+            UnLock(newl);
+
+            if (res == LOCK_SAME)
+            {
+                /* This is a case of changing capilatization of name. It's ok */
+                return TRUE;
+            }
+            else
+                return FALSE;
+        }
+        else
+        {
+            /* Old file no longer exists? Return TRUE and let the Rename call fail to show correct error */
+            UnLock(newl);
+            return TRUE;
+        }
+    }
+
+    return TRUE;
+}
 
 static BOOL doRename(const STRPTR oldname, const STRPTR newname)
 {
@@ -212,18 +243,16 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
 
     if (!isInfoFile)
     {
-        if ((test = Lock(newname, ACCESS_READ)))
+        if (!canRename(oldname, newname))
         {
-            UnLock(test);
             MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newname);
             goto end;
         }
     }
     else
     {
-        if ((test = Lock(newinfoname, ACCESS_READ)))
+        if (!canRename(oldinfoname, newinfoname))
         {
-            UnLock(test);
             MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newname);
             goto end;
         }
@@ -233,10 +262,8 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     {
         UnLock(test);
         infoexists = TRUE; // we have an .info file
-        test = Lock(newinfoname, ACCESS_READ);
-        if (test)
+        if (!canRename(oldinfoname, newinfoname))
         {
-            UnLock(test);
             MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newinfoname);
             goto end;
         }
