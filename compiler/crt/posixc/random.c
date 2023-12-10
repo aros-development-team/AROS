@@ -209,7 +209,7 @@ static void free_random_state(struct PosixCIntBase *PosixCIntBase)
     }
 }
 
-ADD2CLOSELIB(free_random_state, 0)
+ADD2CLOSELIB(free_random_state, 2)
 
 
 /*
