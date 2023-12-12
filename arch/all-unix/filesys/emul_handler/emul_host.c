@@ -816,7 +816,7 @@ LONG DoRename(struct emulbase *emulbase, char *filename, char *newfilename)
     HostLib_Lock();
 
     error = nocase_rename(emulbase, filename, newfilename);
-    if (error)
+    if (error && error != ERROR_OBJECT_EXISTS)
         error = err_u2a(emulbase);
 
     HostLib_Unlock();
