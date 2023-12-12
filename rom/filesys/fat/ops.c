@@ -564,12 +564,15 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         return ERROR_WRITE_PROTECTED;
     }
 
-    /* Now see if the wanted name is in this dir. If it exists, do nothing */
+    /* Now see if the wanted name is in this dir. If it exists, and is not a capilazation change, do nothing */
     if ((err = GetDirEntryByName(&ddh, dname, dnamelen, &dde, glob)) == 0)
     {
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return ERROR_OBJECT_EXISTS;
+        if ((dnamelen != snamelen) || (strnicmp(sname, dname, snamelen) != 0))
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return ERROR_OBJECT_EXISTS;
+        }
     }
     else if (err != ERROR_OBJECT_NOT_FOUND)
     {
@@ -579,7 +582,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     }
 
     /* At this point we have the source entry in sde, and we know the dest
-     * doesn't exist */
+     * doesn't exist or it is a capitalization change */
 
     /* XXX: if sdh and ddh are the same dir and there's room in the existing
      * entries for the new name, just overwrite the name */
