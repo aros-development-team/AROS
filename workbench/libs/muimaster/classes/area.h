@@ -583,8 +583,8 @@ enum
     MUIV_Frame_Slider,
     MUIV_Frame_Knob,
     MUIV_Frame_Drag,
-    MUIV_Frame_Count,
     MUIV_Frame_Register = 21,
+    MUIV_Frame_Count
 };
 
 // offset 95
