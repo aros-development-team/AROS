@@ -20,8 +20,8 @@
 #define MUIA_Listtree_DragDropSort         (MUIB_MUI|0x00020031) /* [I..]  BOOL          */
 #define MUIA_Listtree_SortHook             (MUIB_MUI|0x00020010) /* [I..]  struct Hook * */
 
-#define MUIV_Listtree_FindName_ListNode_Root         0
-#define MUIV_Listtree_FindName_ListNode_Active      -2
+#define MUIV_Listtree_FindName_ListNode_Root        ((IPTR)0)
+#define MUIV_Listtree_FindName_ListNode_Active      ((IPTR)-2)
 
 #define MUIV_Listtree_FindName_Flags_Visible        (1<<14)
 #define MUIV_Listtree_FindName_Flags_SameLevel      (1<<15)
@@ -36,65 +36,65 @@
 #define MUIV_Listtree_GetEntry_Flags_Visible        (1<<14)
 #define MUIV_Listtree_GetEntry_Flags_SameLevel      (1<<15)
 
-#define MUIV_Listtree_GetEntry_ListNode_Root         0
-#define MUIV_Listtree_GetEntry_ListNode_Active      -2
+#define MUIV_Listtree_GetEntry_ListNode_Root        ((IPTR)0)
+#define MUIV_Listtree_GetEntry_ListNode_Active      ((IPTR)-2)
 
-#define MUIV_Listtree_GetNr_TreeNode_Active         -2
+#define MUIV_Listtree_GetNr_TreeNode_Active         ((IPTR)-2)
 
 #define MUIV_Listtree_GetNr_Flags_ListEmpty         (1<<12)
 #define MUIV_Listtree_GetNr_Flags_CountList         (1<<13)
 #define MUIV_Listtree_GetNr_Flags_CountLevel        (1<<14)
 #define MUIV_Listtree_GetNr_Flags_CountAll          (1<<15)
 
-#define MUIV_Listtree_Remove_ListNode_Root           0
-#define MUIV_Listtree_Remove_ListNode_Active        -2
+#define MUIV_Listtree_Remove_ListNode_Root          ((IPTR)0)
+#define MUIV_Listtree_Remove_ListNode_Active        ((IPTR)-2)
 
-#define MUIV_Listtree_Remove_TreeNode_Head           0
-#define MUIV_Listtree_Remove_TreeNode_Tail          -1
-#define MUIV_Listtree_Remove_TreeNode_Active        -2
-#define MUIV_Listtree_Remove_TreeNode_All           -3
+#define MUIV_Listtree_Remove_TreeNode_Head          ((IPTR)0)
+#define MUIV_Listtree_Remove_TreeNode_Tail          ((IPTR)-1)
+#define MUIV_Listtree_Remove_TreeNode_Active        ((IPTR)-2)
+#define MUIV_Listtree_Remove_TreeNode_All           ((IPTR)-3)
 
 /* #define MUIV_Listtree_Remove_Flags_Visible          (1<<14) Not supported */
 /* #define MUIV_Listtree_Remove_Flags_Nr               (1<<15) Not supported */
 
-#define MUIV_Listtree_Rename_TreeNode_Active        -2
+#define MUIV_Listtree_Rename_TreeNode_Active        ((IPTR)-2)
 
 #define MUIV_Listtree_Rename_Flags_User             (1<<8)
 #define MUIV_Listtree_Rename_Flags_NoRefresh        (1<<9)
 
-#define MUIV_Listtree_Insert_ListNode_Root           0
-#define MUIV_Listtree_Insert_ListNode_Active        -2
+#define MUIV_Listtree_Insert_ListNode_Root          ((IPTR)0)
+#define MUIV_Listtree_Insert_ListNode_Active        ((IPTR)-2)
 
-#define MUIV_Listtree_Insert_PrevNode_Head           0
-#define MUIV_Listtree_Insert_PrevNode_Tail          -1
-#define MUIV_Listtree_Insert_PrevNode_Active        -2
-#define MUIV_Listtree_Insert_PrevNode_Sorted        -4
+#define MUIV_Listtree_Insert_PrevNode_Head          ((IPTR)0)
+#define MUIV_Listtree_Insert_PrevNode_Tail          ((IPTR)-1)
+#define MUIV_Listtree_Insert_PrevNode_Active        ((IPTR)-2)
+#define MUIV_Listtree_Insert_PrevNode_Sorted        ((IPTR)-4)
 
-#define MUIV_Listtree_Insert_Flags_NextNode      (1<<12)
-#define MUIV_Listtree_Insert_Flags_Active        (1<<13)
+#define MUIV_Listtree_Insert_Flags_NextNode         (1<<12)
+#define MUIV_Listtree_Insert_Flags_Active           (1<<13)
 /* #define MUIV_Listtree_Insert_Flags_Visible       (1<<14) Not supported */
 /* #define MUIV_Listtree_Insert_Flags_Nr            (1<<15) Not supported */
 
-#define MUIV_Listtree_Open_ListNode_Root             0
-#define MUIV_Listtree_Open_ListNode_Parent          -1
-#define MUIV_Listtree_Open_ListNode_Active          -2
+#define MUIV_Listtree_Open_ListNode_Root            ((IPTR)0)
+#define MUIV_Listtree_Open_ListNode_Parent          ((IPTR)-1)
+#define MUIV_Listtree_Open_ListNode_Active          ((IPTR)-2)
 
-#define MUIV_Listtree_Open_TreeNode_Head             0
-#define MUIV_Listtree_Open_TreeNode_Tail            -1
-#define MUIV_Listtree_Open_TreeNode_Active          -2
-#define MUIV_Listtree_Open_TreeNode_All             -3
+#define MUIV_Listtree_Open_TreeNode_Head            ((IPTR)0)
+#define MUIV_Listtree_Open_TreeNode_Tail            ((IPTR)-1)
+#define MUIV_Listtree_Open_TreeNode_Active          ((IPTR)-2)
+#define MUIV_Listtree_Open_TreeNode_All             ((IPTR)-3)
 
 /* #define MUIV_Listtree_Open_Flags_Visible            (1<<14) Not supported */
 /* #define MUIV_Listtree_Open_Flags_Nr                 (1<<15) Not supported */
 
-#define MUIV_Listtree_Close_ListNode_Root            0
-#define MUIV_Listtree_Close_ListNode_Parent         -1
-#define MUIV_Listtree_Close_ListNode_Active         -2
+#define MUIV_Listtree_Close_ListNode_Root           ((IPTR)0)
+#define MUIV_Listtree_Close_ListNode_Parent         ((IPTR)-1)
+#define MUIV_Listtree_Close_ListNode_Active         ((IPTR)-2)
 
-#define MUIV_Listtree_Close_TreeNode_Head            0
-#define MUIV_Listtree_Close_TreeNode_Tail           -1
-#define MUIV_Listtree_Close_TreeNode_Active         -2
-#define MUIV_Listtree_Close_TreeNode_All            -3
+#define MUIV_Listtree_Close_TreeNode_Head           ((IPTR)0)
+#define MUIV_Listtree_Close_TreeNode_Tail           ((IPTR)-1)
+#define MUIV_Listtree_Close_TreeNode_Active         ((IPTR)-2)
+#define MUIV_Listtree_Close_TreeNode_All            ((IPTR)-3)
 
 /* #define MUIV_Listtree_Close_Flags_Visible           (1<<14) Not supported */
 /* #define MUIV_Listtree_Close_Flags_Nr                (1<<15) Not supported */
