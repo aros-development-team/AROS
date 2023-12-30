@@ -372,10 +372,12 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Timer:
         case MUIA_Selected:
         case MUIA_Pressed:
+        case MUIA_Draggable:
+        case MUIA_Listview_DragType:
             break;
 
         default:
-            bug("[Listtree] OM_SET: passing to parent class %x\n", tag->ti_Tag);
+            D(bug("[Listtree] OM_SET: passing to parent class %x\n", tag->ti_Tag));
         }
     }
 
