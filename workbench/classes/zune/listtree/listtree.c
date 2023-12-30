@@ -9,6 +9,10 @@
 #include <mui/NListtree_mcc.h>
 #include <mui/NList_mcc.h>
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #undef TNF_OPEN
 #undef TNF_LIST
 #include "Listtree_mcc.h"
@@ -31,6 +35,7 @@ struct ListImage
 {
     struct MinNode  node;
     Object          *obj;
+    APTR            nlistimg;
 };
 
 #define MADF_SETUP             (1<< 28) /* PRIV - zune-specific */
@@ -92,6 +97,9 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
 {
     struct Hook * displayhook = (struct Hook *)hook->h_Data;
     APTR tn = NULL;
+    IPTR _ret = 0;
+    int i = 0;
+    STRPTR column;
 
     if (!displayhook)
         return 0;
@@ -100,7 +108,36 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
 
     tn  = msg->TreeNode ? msg->TreeNode->tn_User : NULL;
 
-    return CallHookPkt(displayhook, msg->Array, tn);
+    _ret = CallHookPkt(displayhook, msg->Array, tn);
+
+    while ((column = msg->Array[i++]) != NULL)
+    {
+        char * s = NULL;
+        /* Unholy Hack: see comment in in MUIM_List_CreateImage
+         * Modify the pointer value given by user in display hook. User was thinking he was given
+         * correct structure by MUIM_List_CreateImage, but that is not true for internal NListtree.
+         * Modify the address that will be used by NListtree. This works only because the msg->Array
+         * buffer in case of O[] has to be dinamically allocated and writable (so that user can put
+         * address there)
+         */
+        if ((s = strstr(column, "O[")) != NULL)
+        {
+            char tmp[16];
+            s += 2;
+            char *e = strchr(s, ']');
+            int len = e - s;
+            struct ListImage *li = (struct ListImage *)strtoul(s, NULL, 16);
+            APTR nlistimg = li->nlistimg;
+            sprintf(tmp, "%lx", nlistimg);
+            int len2 = strlen(tmp);
+            memcpy(s, tmp, len);
+
+            if (len != len2)
+                bug("[Listtree] CreateImage workaround BROKEN, see comment in code!\n");
+        }
+    }
+
+    return _ret;
 }
 
 static IPTR SortHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_CompareMessage *msg)
@@ -705,33 +742,47 @@ IPTR Listtree__MUIM_List_CreateImage(struct IClass *cl, Object *obj, struct MUIP
     IPTR _ret = DoMethod(data->nlisttree, MUIM_NList_CreateImage, msg->obj, msg->flags);
 
     /* There is a use case where an image object created in a Listtree can be passed as O[address]
-     * in the text in the display callback of List. Since Listtree just wraps around NListtree and the
-     * return structures from List_CreateImage and NList_CreateImage are different, this would normally
-     * not work. Luckily, List needs only the msg->obj and it is at the same offset in ListImage and
-     * in structure returned by NList. The case will work as long as this is met.
+     * in the text in the display callback of List. The way to trigger this usecase is on Odyssey Web
+     * Browser to take a link from a "Bookmarks" Listree and assign it to "Quick Links", which is a List.
+     *
+     * Since Listtree just wraps around NListtree and the return structures from List_CreateImage and
+     * NList_CreateImage are different, this would normally not work.
+     *
+     * The workaround is as follows:
+     *  1) create List-compatible return structure here, so that List-side works correctly
+     *  2) have that structure contain pointer to NList-compatible structure
+     *  3) Unholy Hack: in display hook, modify the address given by user to point to NList-compatible
+     *     structure, assuming List-compatible structure was given
+     *  4) Keep fingers crossed
      */
-    struct ListImage * li = (struct ListImage *)_ret;
-    if (li->obj != msg->obj)
-        bug("[Listtree] CreateImage condition BROKEN, see comment in code!\n");
+    struct ListImage *li = AllocPooled(data->pool, sizeof(struct ListImage));
+    li->node.mln_Succ = NULL;
+    li->node.mln_Pred = NULL;
+    li->obj = msg->obj;
+    li->nlistimg = (APTR)_ret;
 
     /* Setup the msg->obj as the List is doing */
     DoMethod(li->obj, MUIM_ConnectParent, (IPTR) obj);
     DoSetupMethod(li->obj, muiRenderInfo(obj));
 
-    return _ret;
+    return (IPTR)li;
 }
 
 IPTR Listtree__MUIM_List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_DeleteImage *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
     struct ListImage * li = (struct ListImage *)msg->listimg;
+    APTR nlistimg = NULL;
 
     if (!li)
         return 0;
 
     /* DoMethod(li->obj, MUIM_Cleanup); // Called in MUIM_NList_DeleteImage */
     DoMethod(li->obj, MUIM_DisconnectParent);
-    return DoMethod(data->nlisttree, MUIM_NList_DeleteImage, msg->listimg);
+    nlistimg = li->nlistimg;
+    FreePooled(data->pool, li, sizeof(struct ListImage));
+
+    return DoMethod(data->nlisttree, MUIM_NList_DeleteImage, nlistimg);
 }
 
 IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_Listtree_Close *msg)
