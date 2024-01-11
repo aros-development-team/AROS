@@ -25,6 +25,7 @@
 #include "nv04_pushbuf.h"
 #if defined(__AROS__)
 #include <aros/debug.h>
+#include <stdlib.h>
 #define NV40EXA_STATE
 #endif
 

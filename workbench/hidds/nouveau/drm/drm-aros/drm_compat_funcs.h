@@ -7,6 +7,7 @@
 
 #include <proto/exec.h>
 #include <aros/debug.h>
+#include <string.h>
 
 #include "drm_compat_types.h"
 
