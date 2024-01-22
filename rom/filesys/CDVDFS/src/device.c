@@ -260,7 +260,7 @@ ULONG signals;
 
     global->Dback = CreateMsgPort();
 
-#if !defined(NDEBUG) || defined(DEBUG_SECTORS)
+#if !defined(DEBUG_USE_SERIAL) && (!defined(NDEBUG) || defined(DEBUG_SECTORS))
     D(bug("[CDVDFS] Initializing debugging code\n"));
     global->DBDisable = 0;                                /*  Init. globals       */
     global->Dbport = NULL;
@@ -880,7 +880,7 @@ openbreak:
                                         break;
                                 }
                                 btos ((BSTR)packet->dp_Arg2, buf);
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !defined(DEBUG_USE_SERIAL)
                                 dbprintf (global, "'%s' %ld ", buf, packet->dp_Arg3);
                                 if (strcmp(buf,"debugoff") == 0)
                                         global->DBDisable = 1;

@@ -100,7 +100,7 @@ struct CDVDBase
 
     PORT *Dback;
     MSG DummyMsg;
-#if !defined(NDEBUG) || defined(DEBUG_SECTORS)
+#if !defined(DEBUG_USE_SERIAL) && (!defined(NDEBUG) || defined(DEBUG_SECTORS))
 	        /*  DEBUGGING		*/
     PORT *Dbport;       /*  owned by the debug process	*/
     WORD DBDisable;
