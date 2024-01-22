@@ -60,6 +60,8 @@ struct BootEditor_DATA
            *ata_32bit,
            *ata_poll,
            *ata_multi,
+           *ahci_enable,
+           *nvme_enable,
            *device_name,
            *device_delay,
            *ioapic_enable,
@@ -263,6 +265,22 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
                                     End,
                                 End),
                             End,
+                            Child, (IPTR)VGroup,
+                                Child, (IPTR)HGroup,
+                                    Child, (IPTR)(data->ahci_enable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)Label2("Enable"),
+                                    Child, (IPTR)HVSpace,
+                                End,
+                                Child, (IPTR)HVSpace,
+                            End,
+                            Child, (IPTR)VGroup,
+                                Child, (IPTR)HGroup,
+                                    Child, (IPTR)(data->nvme_enable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)Label2("Enable"),
+                                    Child, (IPTR)HVSpace,
+                                End,
+                                Child, (IPTR)HVSpace,
+                            End,
                         End,
                     End,
                     Child, (IPTR)VGroup,
@@ -441,6 +459,12 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->ata_poll, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->ahci_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->nvme_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->device_name, MUIM_Notify,
             MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
@@ -518,6 +542,10 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         SET(data->ata_enable, MUIA_Selected, TRUE);
         SET(data->ata_dma, MUIA_Selected, TRUE);
         SET(data->ata_multi, MUIA_Selected, TRUE);
+
+        SET(data->ahci_enable, MUIA_Selected, TRUE);
+
+        SET(data->nvme_enable, MUIA_Selected, TRUE);
 
         SET(data->device_delay, MUIA_String_Integer, 0);
 
@@ -872,11 +900,37 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
             NNSET(data->ata_32bit, MUIA_Selected, TRUE);
         if (strstr(options, "poll") != NULL)
             NNSET(data->ata_poll, MUIA_Selected, TRUE);
-        if (strstr(options, "disable") != NULL)
+
+
+        if ((p = strstr(options, "disable")) != NULL)
         {
-            NNSET(data->ata_enable, MUIA_Selected, FALSE);
-            NNSET(data->ata_group,  MUIA_Disabled, TRUE);
+            /* disable option is used by AHCI and NVME as well */
+            STRPTR options_end = strstr(options, " "); if (options_end == NULL) options_end = strstr(options, "\n");
+
+            if (p < options_end)
+            {
+                NNSET(data->ata_enable, MUIA_Selected, FALSE);
+                NNSET(data->ata_group,  MUIA_Disabled, TRUE);
+            }
         }
+    }
+
+    /* AHCI */
+
+    options = strstr(line, "AHCI=");
+    if (options != NULL)
+    {
+        if (strstr(options, "disable") != NULL)
+            NNSET(data->ahci_enable, MUIA_Selected, FALSE);
+    }
+
+    /* NVME */
+
+    options = strstr(line, "NVME=");
+    if (options != NULL)
+    {
+        if (strstr(options, "disable") != NULL)
+            NNSET(data->nvme_enable, MUIA_Selected, FALSE);
     }
 
     /* Boot Device */
@@ -1034,6 +1088,32 @@ static BOOL WriteBootArgs(BPTR file, struct BootEditor_DATA *data)
                 FPrintf(file, "poll");
                 count++;
             }
+        }
+    }
+
+    /* AHCI */
+
+    if(!XGET(data->ahci_enable, MUIA_Selected))
+    {
+        count = 0;
+        FPrintf(file, " AHCI=");
+
+        if (!XGET(data->ahci_enable, MUIA_Selected))
+        {
+            FPrintf(file, "disable");
+        }
+    }
+
+    /* NVME */
+
+    if(!XGET(data->nvme_enable, MUIA_Selected))
+    {
+        count = 0;
+        FPrintf(file, " NVME=");
+
+        if (!XGET(data->nvme_enable, MUIA_Selected))
+        {
+            FPrintf(file, "disable");
         }
     }
 
