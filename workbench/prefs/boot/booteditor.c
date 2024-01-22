@@ -838,7 +838,7 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
         if (strstr(options, "nomulti") != NULL)
             NNSET(data->ata_multi, MUIA_Selected, FALSE);
         if (strstr(options, "32bit") == NULL)
-            NNSET(data->ata_multi, MUIA_Selected, FALSE);
+            NNSET(data->ata_32bit, MUIA_Selected, FALSE);
         if (strstr(options, "poll") != NULL)
             NNSET(data->ata_poll, MUIA_Selected, TRUE);
     }
