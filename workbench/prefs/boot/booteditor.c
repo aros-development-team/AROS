@@ -41,6 +41,7 @@ static CONST_STRPTR gfx_type_list[5] = {NULL};
 static CONST_STRPTR vesa_depth_list[4] = {NULL};
 static CONST_STRPTR entry_tabs[3] = {NULL};
 static CONST_STRPTR storage_tabs[4] = {NULL};
+static CONST_STRPTR ahci_generation_list[5] = {NULL};
 
 struct BootEditor_DATA
 {
@@ -60,7 +61,9 @@ struct BootEditor_DATA
            *ata_32bit,
            *ata_poll,
            *ata_multi,
+           *ahci_group,
            *ahci_enable,
+           *ahci_generation,
            *nvme_enable,
            *device_name,
            *device_delay,
@@ -127,6 +130,11 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
     storage_tabs[0] = _(MSG_ATA);
     storage_tabs[1] = "AHCI";
     storage_tabs[2] = "NVME";
+
+    ahci_generation_list[0] = "None";
+    ahci_generation_list[1] = "Gen1";
+    ahci_generation_list[2] = "Gen2";
+    ahci_generation_list[3] = "Gen3";
 
     self = (Object *)DoSuperNewTags(CLASS, self, NULL,
         MUIA_PrefsEditor_Name, __(MSG_NAME),
@@ -271,6 +279,15 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
                                     Child, (IPTR)Label2("Enable"),
                                     Child, (IPTR)HVSpace,
                                 End,
+                                Child, (IPTR)(data->ahci_group = VGroup,
+                                    GroupFrameT("AHCI"),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2("Force generation"),
+                                        Child, (IPTR)(data->ahci_generation = (Object *)CycleObject,
+                                            MUIA_Cycle_Entries, (IPTR)ahci_generation_list,
+                                        End),
+                                    End,
+                                End),
                                 Child, (IPTR)HVSpace,
                             End,
                             Child, (IPTR)VGroup,
@@ -462,6 +479,9 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->ahci_enable, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->ahci_generation, MUIM_Notify,
+            MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->nvme_enable, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
@@ -530,6 +550,11 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->ata_enable, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)data->ata_group, 3, MUIM_Set, MUIA_Disabled,
+            MUIV_NotTriggerValue);
+
+        DoMethod(data->ahci_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)data->ahci_group, 3, MUIM_Set, MUIA_Disabled,
             MUIV_NotTriggerValue);
 
         /* Set default values */
@@ -920,8 +945,27 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
     options = strstr(line, "AHCI=");
     if (options != NULL)
     {
-        if (strstr(options, "disable") != NULL)
-            NNSET(data->ahci_enable, MUIA_Selected, FALSE);
+        if (strstr(options, "force150") != NULL)
+            choice = 1;
+        else if (strstr(options, "force300") != NULL)
+            choice = 2;
+        else if (strstr(options, "force600") != NULL)
+            choice = 3;
+        else
+            choice = 0;
+        NNSET(data->ahci_generation, MUIA_Cycle_Active, choice);
+
+        if ((p = strstr(options, "disable")) != NULL)
+        {
+            /* disable option is used by AHCI and NVME as well */
+            STRPTR options_end = strstr(options, " "); if (options_end == NULL) options_end = strstr(options, "\n");
+
+            if (p < options_end)
+            {
+                NNSET(data->ahci_enable, MUIA_Selected, FALSE);
+                NNSET(data->ahci_group,  MUIA_Disabled, TRUE);
+            }
+        }
     }
 
     /* NVME */
@@ -1093,7 +1137,8 @@ static BOOL WriteBootArgs(BPTR file, struct BootEditor_DATA *data)
 
     /* AHCI */
 
-    if(!XGET(data->ahci_enable, MUIA_Selected))
+    if(!XGET(data->ahci_enable, MUIA_Selected) ||
+        XGET(data->ahci_generation, MUIA_Cycle_Active) > 0)
     {
         count = 0;
         FPrintf(file, " AHCI=");
@@ -1101,6 +1146,25 @@ static BOOL WriteBootArgs(BPTR file, struct BootEditor_DATA *data)
         if (!XGET(data->ahci_enable, MUIA_Selected))
         {
             FPrintf(file, "disable");
+        }
+        else
+        {
+            choice = XGET(data->ahci_generation, MUIA_Cycle_Active);
+            if (choice == 1)
+            {
+                FPrintf(file, "force150");
+                count++;
+            }
+            else if (choice == 2)
+            {
+                FPrintf(file, "force300");
+                count++;
+            }
+            else if (choice == 3)
+            {
+                FPrintf(file, "force600");
+                count++;
+            }
         }
     }
 
