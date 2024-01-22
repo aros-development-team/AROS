@@ -50,7 +50,7 @@ void Register_Lock (LOCK *p_lock)
   BUG
   (
     if (!Full_Path_Name (obj_p, pathname, sizeof (pathname))) {
-      dbprintf (global, "[Cannot install lock / cannot determine pathname]");
+      BUG(dbprintf (global, "[Cannot install lock / cannot determine pathname]"));
       return;
     }
   );
@@ -66,7 +66,7 @@ void Register_Lock (LOCK *p_lock)
   new->vol_name = (char*) AllocMem (strlen (global->g_vol_name+1) + 1,
                                     MEMF_PUBLIC);
   if (!new->vol_name) {
-    BUG(dbprintf ("[Cannot install lock on '%s']", pathname);)
+    BUG(dbprintf (global, "[Cannot install lock on '%s']", pathname);)
     FreeMem (new, sizeof (t_lock_node));
     return;
   }
@@ -76,7 +76,7 @@ void Register_Lock (LOCK *p_lock)
   new->next = global->g_lock_list;
   global->g_lock_list = new;
 
-  BUG(dbprintf ("[CDVDFS]\tInstalling lock on '%s'", pathname);)
+  BUG(dbprintf (global, "[CDVDFS]\tInstalling lock on '%s'", pathname);)
 }
 
 /*  Remove the entry for p_lock in the list g_lock_list.

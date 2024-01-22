@@ -6,8 +6,8 @@
 
 #if !defined(NDEBUG) || defined(DEBUG_SECTORS)
 #if !(defined(__AROS__) || defined(__MORPHOS__))
-void dbinit (struct CDVDBase *global)
-void dbuninit (struct CDVDBase *global)
+void dbinit (struct CDVDBase *global);
+void dbuninit (struct CDVDBase *global);
 void dbprintf (struct CDVDBase *global, char *, ...);
 #endif
 #endif
