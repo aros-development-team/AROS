@@ -53,6 +53,8 @@ struct BootEditor_DATA
            *vesa_depth,
            *vesa_refresh,
            *vesa_default_refresh,
+           *ata_group,
+           *ata_enable,
            *ata_buses,
            *ata_dma,
            *ata_32bit,
@@ -211,47 +213,55 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
                             Child, (IPTR)HVSpace,
                         End,
                     End),
+                    Child, (IPTR)HVSpace,
                 End,
                 Child, (IPTR)VGroup,
                     Child, (IPTR)VGroup,
                         Child, (IPTR)RegisterGroup(storage_tabs),
                             Child, (IPTR)VGroup,
-                                GroupFrameT(_(MSG_ATA)),
                                 Child, (IPTR)HGroup,
-                                    Child, (IPTR)Label2(__(MSG_ATA_BUSES)),
-                                    Child, (IPTR)(data->ata_buses =
-                                        (Object *)CycleObject,
-                                        MUIA_Cycle_Entries, (IPTR)ata_buses_list,
-                                    End),
-                                End,
-                                Child, (IPTR)ColGroup(2),
-                                    Child, (IPTR)(data->ata_dma =
-                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
-                                    Child, (IPTR)HGroup,
-                                        Child, (IPTR)Label2(__(MSG_ATA_DMA)),
-                                        Child, (IPTR)HVSpace,
-                                    End,
-                                    Child, (IPTR)(data->ata_multi =
-                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
-                                    Child, (IPTR)HGroup,
-                                        Child, (IPTR)Label2(__(MSG_ATA_MULTI)),
-                                        Child, (IPTR)HVSpace,
-                                    End,
-                                    Child, (IPTR)(data->ata_32bit =
-                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
-                                    Child, (IPTR)HGroup,
-                                        Child, (IPTR)Label2(__(MSG_ATA_32BIT)),
-                                        Child, (IPTR)HVSpace,
-                                    End,
-                                    Child, (IPTR)(data->ata_poll =
-                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
-                                    Child, (IPTR)HGroup,
-                                        Child, (IPTR)Label2(__(MSG_ATA_POLL)),
-                                        Child, (IPTR)HVSpace,
-                                    End,
-                                    Child, (IPTR)HVSpace,
+                                    Child, (IPTR)(data->ata_enable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)Label2("Enable"),
                                     Child, (IPTR)HVSpace,
                                 End,
+                                Child, (IPTR)(data->ata_group = VGroup,
+                                    GroupFrameT(_(MSG_ATA)),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2(__(MSG_ATA_BUSES)),
+                                        Child, (IPTR)(data->ata_buses =
+                                            (Object *)CycleObject,
+                                            MUIA_Cycle_Entries, (IPTR)ata_buses_list,
+                                        End),
+                                    End,
+                                    Child, (IPTR)ColGroup(2),
+                                        Child, (IPTR)(data->ata_dma =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_DMA)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)(data->ata_multi =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_MULTI)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)(data->ata_32bit =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_32BIT)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)(data->ata_poll =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_POLL)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)HVSpace,
+                                        Child, (IPTR)HVSpace,
+                                    End,
+                                End),
                             End,
                         End,
                     End,
@@ -413,6 +423,9 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->vesa_best_res, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->ata_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->ata_buses, MUIM_Notify,
             MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
@@ -490,6 +503,11 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->remove_button, MUIM_Notify, MUIA_Pressed, TRUE,
             (IPTR)self, 1, MUIM_BootEditor_RemoveModule);
 
+        DoMethod(data->ata_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)data->ata_group, 3, MUIM_Set, MUIA_Disabled,
+            MUIV_NotTriggerValue);
+
         /* Set default values */
 
         SET(data->gfx_composition, MUIA_Selected, TRUE);
@@ -497,6 +515,7 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         SET(data->vesa_height, MUIA_String_Integer, DEFAULT_HEIGHT);
         SET(data->vesa_refresh, MUIA_String_Integer, DEFAULT_REFRESH);
 
+        SET(data->ata_enable, MUIA_Selected, TRUE);
         SET(data->ata_dma, MUIA_Selected, TRUE);
         SET(data->ata_multi, MUIA_Selected, TRUE);
 
@@ -853,6 +872,11 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
             NNSET(data->ata_32bit, MUIA_Selected, TRUE);
         if (strstr(options, "poll") != NULL)
             NNSET(data->ata_poll, MUIA_Selected, TRUE);
+        if (strstr(options, "disable") != NULL)
+        {
+            NNSET(data->ata_enable, MUIA_Selected, FALSE);
+            NNSET(data->ata_group,  MUIA_Disabled, TRUE);
+        }
     }
 
     /* Boot Device */
@@ -953,55 +977,63 @@ static BOOL WriteBootArgs(BPTR file, struct BootEditor_DATA *data)
         !XGET(data->ata_multi, MUIA_Selected) ||
         XGET(data->ata_32bit, MUIA_Selected) ||
         XGET(data->ata_poll, MUIA_Selected) ||
+        !XGET(data->ata_enable, MUIA_Selected) ||
         XGET(data->ata_buses, MUIA_Cycle_Active) > 0)
     {
         count = 0;
         FPrintf(file, " ATA=");
 
-        choice = XGET(data->ata_buses, MUIA_Cycle_Active);
-        if (choice == 1)
+        if (!XGET(data->ata_enable, MUIA_Selected))
         {
-            FPrintf(file, "nolegacy");
-            count++;
+            FPrintf(file, "disable");
         }
-        else if (choice == 2)
+        else
         {
-            FPrintf(file, "nopci");
-            count++;
-        }
-        else if (choice == 3)
-        {
-            FPrintf(file, "nopci,nolegacy");
-            count += 2;
-        }
+            choice = XGET(data->ata_buses, MUIA_Cycle_Active);
+            if (choice == 1)
+            {
+                FPrintf(file, "nolegacy");
+                count++;
+            }
+            else if (choice == 2)
+            {
+                FPrintf(file, "nopci");
+                count++;
+            }
+            else if (choice == 3)
+            {
+                FPrintf(file, "nopci,nolegacy");
+                count += 2;
+            }
 
-        if(!XGET(data->ata_dma, MUIA_Selected))
-        {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "nodma");
-            count++;
-        }
-        if(!XGET(data->ata_multi, MUIA_Selected))
-        {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "nomulti");
-            count++;
-        }
-        if(XGET(data->ata_32bit, MUIA_Selected))
-        {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "32bit");
-            count++;
-        }
-        if(XGET(data->ata_poll, MUIA_Selected))
-        {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "poll");
-            count++;
+            if(!XGET(data->ata_dma, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "nodma");
+                count++;
+            }
+            if(!XGET(data->ata_multi, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "nomulti");
+                count++;
+            }
+            if(XGET(data->ata_32bit, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "32bit");
+                count++;
+            }
+            if(XGET(data->ata_poll, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "poll");
+                count++;
+            }
         }
     }
 
