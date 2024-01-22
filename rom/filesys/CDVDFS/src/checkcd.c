@@ -10,7 +10,7 @@
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
- * 
+ *
  * 06-Mar-09 error     - Removed madness, fixed insanity. Cleanup started
  * 18-Aug-07 sonic     - Now builds on AROS.
  * 08-Apr-07 sonic     - Removed "TRACKDISK" option.
@@ -97,9 +97,9 @@ void Check_Optional_Path_Tables (void)
   t_uchar *buf1;
   t_uchar *buf2;
   int i;
-  
+
   for (i=0; i<=1; i++) {
-  
+
     int remain = g_pvd.path_size;
 
     if (i == 0)
@@ -111,13 +111,13 @@ void Check_Optional_Path_Tables (void)
       continue;
 
     for (;;) {
-    
+
       if (!Read_Chunk (global->g_cd, loc1)) {
 	printf ("ERROR: illegal sector %lu\n", (unsigned long)loc1);
 	exit (1);
       }
       buf1 = global->g_cd->buffer;
-    
+
       if (!Read_Chunk (global->g_cd, loc2)) {
 	printf ("ERROR: illegal sector %lu\n", (unsigned long)loc2);
 	exit (1);
@@ -165,7 +165,7 @@ void Get_Path_Table_Record (t_uchar *p_buf, t_ulong p_loc, t_ulong *p_offset)
     memcpy (p_buf + part1_len, global->g_cd->buffer, len - part1_len);
   } else
     memcpy (p_buf, global->g_cd->buffer + (*p_offset & 2047), len);
-  
+
   *p_offset += len;
 }
 
@@ -416,7 +416,7 @@ int Get_Device_And_Unit (void)
 {
   int len;
   char buf[10];
-  
+
   len = GetVar ((UBYTE *) "CDROM_DEVICE", (UBYTE *) global->g_device,
   		sizeof (global->g_device), 0);
   if (len < 0)
@@ -426,7 +426,7 @@ int Get_Device_And_Unit (void)
     exit (1);
   }
   global->g_device[len] = 0;
-  
+
   len = GetVar ((UBYTE *) "CDROM_UNIT", (UBYTE *) buf,
   		sizeof (buf), 0);
   if (len < 0)
@@ -437,7 +437,7 @@ int Get_Device_And_Unit (void)
   }
   buf[len] = 0;
   global->g_unit = atoi (buf);
-  
+
   if (GetVar ((UBYTE *) "CDROM_FASTMEM", (UBYTE *) buf,
       sizeof (buf), 0) > 0) {
     fprintf (stderr, "using fastmem\n");

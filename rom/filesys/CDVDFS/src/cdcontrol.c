@@ -61,7 +61,7 @@ void Send_Packet (int p_cmd, void *p_1, void *p_2)
         DeleteMsgPort(replyport);
     exit (1);
   }
-  
+
   packet->sp_Msg.mn_Node.ln_Name = (char *) &(packet->sp_Pkt);
   packet->sp_Pkt.dp_Link = &(packet->sp_Msg);
 
@@ -181,7 +181,7 @@ int main (int argc, char *argv[])
   if (!(UtilityBase = (APTR)OpenLibrary ("utility.library", 37))) {
     fprintf (stderr, "cannot open utility.library\n");
     exit (1);
-  }  
+  }
 
   dvp = GetDeviceProc(argv[1], NULL);
   if (!dvp) {

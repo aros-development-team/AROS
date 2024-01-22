@@ -9,7 +9,7 @@
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
- * 
+ *
  * 06-Mar-09 error   - Removed madness, fixed insanity. Cleanup started
  * 03-Nov-94   fmu   - Fixed bug in HFS_Read_From_File().
  *                   - Truncate file names to 30 characters.
@@ -74,7 +74,7 @@ void Convert_Mac_Characters (char *p_buf, int p_buf_len)
 {
   unsigned char *cp = (unsigned char *) p_buf;
   int i;
-  
+
   for (i=0; i<p_buf_len; i++, cp++)
     if (*cp >= 128)
       *cp = g_conv_table[*cp-128];
@@ -90,7 +90,7 @@ void Convert_HFS_Spaces (char *p_buf, int p_buf_len)
 {
   unsigned char *cp = (unsigned char *) p_buf;
   int i;
-  
+
   for (i=0; i<p_buf_len; i++, cp++)
     if (*cp == ' ' || *cp == 0xA0)
       *cp = '_';
@@ -126,7 +126,7 @@ typedef struct partition_map
 } t_partition_map;
 int i, entries;
 int result;
-    
+
 	block = Read_Block(p_cd, 1);
 	if (!block || block[0] != 0x50 || block[1] != 0x4D)
 		return -1;
@@ -181,7 +181,7 @@ t_ulong pos =
  		p_mdb->CTExtRec[0].StABN * (p_mdb->AlBlkSiz >> 9)
 	);
 t_hdr_node *hdr;
-  
+
 	hdr = (t_hdr_node *) Read_Block(p_cd, pos);
 	if (!hdr)
 		return FALSE;
@@ -467,7 +467,7 @@ void HFS_Close_Vol_Info(VOLUME *p_volume)
 
 CDROM_OBJ *HFS_Alloc_Obj(struct CDVDBase *global) {
 CDROM_OBJ *obj = AllocMem (sizeof (CDROM_OBJ), MEMF_PUBLIC | MEMF_CLEAR);
-  
+
 	if (!obj)
 	{
 		global->iso_errno = ISOERR_NO_MEMORY;
@@ -619,7 +619,7 @@ void HFS_Close_Obj(CDROM_OBJ *p_obj)
 	FreeMem (p_obj, sizeof (CDROM_OBJ));
 }
 
-int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length) 
+int HFS_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 {
     struct CDVDBase *global = p_file->global;
     uint32_t block;
@@ -855,13 +855,13 @@ short fork = 3;
 void *HFS_Clone_Obj_Info(void *p_info) {
 t_hfs_obj_info *info = (t_hfs_obj_info *) p_info;
 t_hfs_obj_info *new;
-  
+
 	new = AllocMem (sizeof (t_hfs_obj_info), MEMF_PUBLIC);
 	if (!new)
 		return NULL;
 
 	CopyMem(info, new, sizeof (t_hfs_obj_info));
-  
+
 	return new;
 }
 
@@ -905,7 +905,7 @@ int len = p_buf_length - 1;
 
 	if (len > VOL(p_volume,mdb).VolNameLen)
 		len = VOL(p_volume,mdb).VolNameLen;
-  
+
 	CopyMem(VOL(p_volume,mdb).VolName, p_buf, len);
 	p_buf[len] = 0;
 

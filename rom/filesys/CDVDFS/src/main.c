@@ -114,15 +114,15 @@ char *MKSTR (char *p_in, int p_length, char *p_out)
   char *res = p_out;
   int len = p_length;
   int i;
-  
+
   while (len && p_in[len-1] == ' ')
     len--;
 
   for (i=0; i<len; i++)
     *p_out++ = *p_in++;
-    
+
   *p_out = 0;
-  
+
   return res;
 }
 
@@ -173,7 +173,7 @@ void Find_Block_Starting_With (CDROM *p_cd, int p_val)
   uint32_t sec = 0;
   int cmp;
   int i;
-  
+
   for (;;) {
     if (!Read_Chunk (p_cd, sec)) {
       fprintf (stderr, "cannot read sector 16\n");
@@ -199,25 +199,25 @@ void Show_Primary_Volume_Descriptor (CDROM *p_cd)
   t_ulong offset, svd_offset;
   int protocol;
   t_bool hfs;
-  
+
   hfs = Uses_HFS_Protocol (p_cd, &skip);
   protocol = Which_Protocol (p_cd, TRUE, TRUE, &skip, &offset, &svd_offset);
-  
+
   if (protocol == PRO_UNKNOWN) {
     printf ("Unknown protocol\n");
     return;
   }
-  
+
   if (protocol == PRO_HIGH_SIERRA) {
     printf ("High sierra protocol (not supported)\n");
   }
-  
+
   if ((protocol == PRO_ROCK || protocol == PRO_ISO) && hfs)
     printf ("Multi-platform disk: HFS & ISO\n");
 
   if (protocol == PRO_ROCK)
     printf ("Rock Ridge extensions available, skip size = %d\n", skip);
-  
+
   if (protocol == PRO_ISO || protocol == PRO_JOLIET)
     printf ("Data track offset = %lu\n", (unsigned long)offset);
 
@@ -246,9 +246,9 @@ void Show_Primary_Volume_Descriptor (CDROM *p_cd)
     printf ("Location of Occ of M Path Table: %lu\n", (unsigned long) pvd->table);
     printf ("Location of Occ of Opt M Path T: %lu\n", (unsigned long) pvd->opt_table);
     printf ("Volume Set Identifier:           %s\n",
-  					MKSTR (pvd->volume_set_id,128,buf));  
+  					MKSTR (pvd->volume_set_id,128,buf));
     printf ("Publisher Identifier:            %s\n",
-  					MKSTR (pvd->publisher_id,128,buf)); 
+  					MKSTR (pvd->publisher_id,128,buf));
     printf ("Data Preparer Identifier:        %s\n",
   					MKSTR (pvd->data_preparer,128,buf));
     printf ("Application Identifier:          %s\n",
@@ -264,7 +264,7 @@ void Show_Primary_Volume_Descriptor (CDROM *p_cd)
     printf ("ROOT DIRECTORY RECORD:\n");
     Show_Directory_Record (&pvd->root);
   }
-  
+
   if (hfs) {
     if ((blk = HFS_Find_Master_Directory_Block (p_cd, &mdb)) < 0) {
       printf ("No master directory block found\n");
@@ -307,7 +307,7 @@ void Show_Directory (CDROM *p_cd, uint32_t p_location, uint32_t p_length)
 {
   int cnt = 0;
   int pos = 0;
-  
+
   if (!Read_Chunk (p_cd, p_location)) {
     fprintf (stderr, "cannot read sector %lu\n", (unsigned long)p_location);
     exit (1);
@@ -315,7 +315,7 @@ void Show_Directory (CDROM *p_cd, uint32_t p_location, uint32_t p_length)
 
   while (cnt < p_length) {
     directory_record *dir = (directory_record *) (p_cd->buffer + pos);
-    
+
     if (dir->length == 0)
       break;
     Show_Directory_Record (dir);
@@ -337,7 +337,7 @@ void Show_Directory (CDROM *p_cd, uint32_t p_location, uint32_t p_length)
 void Show_Root_Directory (CDROM *p_cd)
 {
   prim_vol_desc *pvd;
-  
+
   if (!Read_Chunk (p_cd, 16)) {
     fprintf (stderr, "cannot read sector 16\n");
     exit (1);
@@ -395,7 +395,7 @@ void Try_To_Open (CDROM *p_cd, char *p_directory, char *p_name)
       Close_Volume (vol);
       exit (1);
     }
-    
+
     if (!(home = Open_Object (top, p_directory))) {
       fprintf (stderr, "cannot open top level directory\n");
       Close_Object (top);
@@ -503,7 +503,7 @@ void Show_File_Contents (CDROM *p_cd, char *p_name)
 
   Close_Object (home);
   Close_Volume (vol);
-  
+
 }
 
 void Print_System_Use_Fields (CDROM *p_cd, directory_record *p_dir,
@@ -572,7 +572,7 @@ void Print_System_Use_Fields (CDROM *p_cd, directory_record *p_dir,
 
     system_use_pos += slen;
   }
-  
+
   putchar ('\n');
 }
 
@@ -627,7 +627,7 @@ void Show_Subdirectory (CDROM_OBJ *p_home, char *p_name, int p_long_info,
     obj = Open_Object (p_home, p_name);
     if (obj) {
       uint32_t offset = 0;
-    
+
       while (Examine_Next (obj, &info, &offset)) {
 	if (info.directory_f) {
 	  char *name = malloc (strlen (p_name) + info.name_length + 2);
@@ -692,10 +692,10 @@ void Show_Sectors (CDROM *p_cd, int p_sector, int p_cnt)
 {
   int i, j, s;
   int off;
-  
+
   if (p_sector < 0)
     return;
-  
+
   for (s=0; s<p_cnt; s++) {
     if (!Read_Chunk (p_cd, p_sector + s)) {
       fprintf (stderr, "cannot read sector %d\n", p_sector + s);
@@ -723,7 +723,7 @@ int Get_Device_And_Unit (void)
 {
   int len;
   char buf[10];
-  
+
   len = GetVar ((UBYTE *) "CDROM_DEVICE", (UBYTE *) global->g_device,
   		sizeof (global->g_device), 0);
   if (len < 0)
@@ -733,7 +733,7 @@ int Get_Device_And_Unit (void)
     exit (1);
   }
   global->g_device[len] = 0;
-  
+
   len = GetVar ((UBYTE *) "CDROM_UNIT", (UBYTE *) buf,
   		sizeof (buf), 0);
   if (len < 0)
@@ -763,7 +763,7 @@ void Select_Mode (CDROM *p_cd, int p_mode, int p_block_length)
 void Show_Drive_Information (CDROM *p_cd)
 {
   t_inquiry_data data;
-  
+
   if (!Inquire (p_cd, &data)) {
     fprintf (stderr, "cannot access CDROM drive\n");
     return;
@@ -791,12 +791,12 @@ void Show_Table_Of_Contents (CDROM *p_cd)
   uint32_t toc_len;
   t_toc_data *toc;
   short i, len;
-  
+
   if (!(toc = Read_TOC (p_cd, &toc_len))) {
     fprintf (stderr, "cannot read table of contents\n");
     return;
   }
-  
+
   len = toc_len / 8;
   for (i=0; i<len; i++) {
     if (toc[i].track_number == 0xAA)
@@ -834,7 +834,7 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
     fprintf (stderr, "cannot find node %lu\n", (unsigned long)p_node);
     return;
   }
-  
+
   switch (node->Type) {
   case 0:
     printf ("Index node:\n");
@@ -928,7 +928,7 @@ void Play_Audio (CDROM *p_cd, int p_stop)
     result = Stop_Play_Audio (p_cd);
   else
     result = Start_Play_Audio (p_cd);
-  
+
   if (!result)
     fprintf (stderr, "cannot perform operation\n");
 }
@@ -936,7 +936,7 @@ void Play_Audio (CDROM *p_cd, int p_stop)
 void Find_Offset_Of_Last_Session (CDROM *p_cd)
 {
   uint32_t last;
-  
+
   if (!Find_Last_Session (p_cd, &last)) {
     fprintf (stderr, "cannot determine offset of last session\n");
   } else {
@@ -947,7 +947,7 @@ void Find_Offset_Of_Last_Session (CDROM *p_cd)
 void Test_Trackdisk_Device (CDROM *p_cd)
 {
   int state, num;
-  
+
   for (;;) {
     p_cd->scsireq->io_Flags = IOF_QUICK;
     p_cd->scsireq->io_Command = TD_CHANGESTATE;

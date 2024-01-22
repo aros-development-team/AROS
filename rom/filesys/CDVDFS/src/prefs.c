@@ -41,7 +41,7 @@ void SAVEDS Prefs_Process (void)
 	 * 2. For AROS we need some way to trigger late codesets.library
 	 *    initialization. CDVDFS is mounder before SYS: is available.
 	 */
-			  
+
 	Sigset = Wait(SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D);
     } while (!(Sigset & SIGBREAKF_CTRL_C));
 
