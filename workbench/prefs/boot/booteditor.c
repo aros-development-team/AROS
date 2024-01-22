@@ -40,6 +40,7 @@ static CONST_STRPTR debug_output_list[4] = {NULL};
 static CONST_STRPTR gfx_type_list[5] = {NULL};
 static CONST_STRPTR vesa_depth_list[4] = {NULL};
 static CONST_STRPTR entry_tabs[3] = {NULL};
+static CONST_STRPTR storage_tabs[4] = {NULL};
 
 struct BootEditor_DATA
 {
@@ -118,6 +119,10 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
     debug_output_list[0] = _(MSG_DEBUG_OUTPUT_NONE);
     debug_output_list[1] = _(MSG_DEBUG_OUTPUT_MEMORY);
     debug_output_list[2] = _(MSG_DEBUG_OUTPUT_SERIAL);
+
+    storage_tabs[0] = _(MSG_ATA);
+    storage_tabs[1] = "AHCI";
+    storage_tabs[2] = "NVME";
 
     self = (Object *)DoSuperNewTags(CLASS, self, NULL,
         MUIA_PrefsEditor_Name, __(MSG_NAME),
@@ -209,41 +214,45 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
                 End,
                 Child, (IPTR)VGroup,
                     Child, (IPTR)VGroup,
-                        GroupFrameT(_(MSG_ATA)),
-                        Child, (IPTR)HGroup,
-                            Child, (IPTR)Label2(__(MSG_ATA_BUSES)),
-                            Child, (IPTR)(data->ata_buses =
-                                (Object *)CycleObject,
-                                MUIA_Cycle_Entries, (IPTR)ata_buses_list,
-                            End),
-                        End,
-                        Child, (IPTR)ColGroup(2),
-                            Child, (IPTR)(data->ata_dma =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_DMA)),
-                                Child, (IPTR)HVSpace,
+                        Child, (IPTR)RegisterGroup(storage_tabs),
+                            Child, (IPTR)VGroup,
+                                GroupFrameT(_(MSG_ATA)),
+                                Child, (IPTR)HGroup,
+                                    Child, (IPTR)Label2(__(MSG_ATA_BUSES)),
+                                    Child, (IPTR)(data->ata_buses =
+                                        (Object *)CycleObject,
+                                        MUIA_Cycle_Entries, (IPTR)ata_buses_list,
+                                    End),
+                                End,
+                                Child, (IPTR)ColGroup(2),
+                                    Child, (IPTR)(data->ata_dma =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2(__(MSG_ATA_DMA)),
+                                        Child, (IPTR)HVSpace,
+                                    End,
+                                    Child, (IPTR)(data->ata_multi =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2(__(MSG_ATA_MULTI)),
+                                        Child, (IPTR)HVSpace,
+                                    End,
+                                    Child, (IPTR)(data->ata_32bit =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2(__(MSG_ATA_32BIT)),
+                                        Child, (IPTR)HVSpace,
+                                    End,
+                                    Child, (IPTR)(data->ata_poll =
+                                        MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2(__(MSG_ATA_POLL)),
+                                        Child, (IPTR)HVSpace,
+                                    End,
+                                    Child, (IPTR)HVSpace,
+                                    Child, (IPTR)HVSpace,
+                                End,
                             End,
-                            Child, (IPTR)(data->ata_multi =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_MULTI)),
-                                Child, (IPTR)HVSpace,
-                            End,
-                            Child, (IPTR)(data->ata_32bit =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_32BIT)),
-                                Child, (IPTR)HVSpace,
-                            End,
-                            Child, (IPTR)(data->ata_poll =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_POLL)),
-                                Child, (IPTR)HVSpace,
-                            End,
-                            Child, (IPTR)HVSpace,
-                            Child, (IPTR)HVSpace,
                         End,
                     End,
                     Child, (IPTR)VGroup,
