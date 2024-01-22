@@ -490,7 +490,6 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
 
         SET(data->ata_dma, MUIA_Selected, TRUE);
         SET(data->ata_multi, MUIA_Selected, TRUE);
-        SET(data->ata_32bit, MUIA_Selected, TRUE);
 
         SET(data->device_delay, MUIA_String_Integer, 0);
 
@@ -841,8 +840,8 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
             NNSET(data->ata_dma, MUIA_Selected, FALSE);
         if (strstr(options, "nomulti") != NULL)
             NNSET(data->ata_multi, MUIA_Selected, FALSE);
-        if (strstr(options, "32bit") == NULL)
-            NNSET(data->ata_32bit, MUIA_Selected, FALSE);
+        if (strstr(options, "32bit") != NULL)
+            NNSET(data->ata_32bit, MUIA_Selected, TRUE);
         if (strstr(options, "poll") != NULL)
             NNSET(data->ata_poll, MUIA_Selected, TRUE);
     }
