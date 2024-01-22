@@ -75,7 +75,7 @@ void Register_Lock (LOCK *p_lock)
   new->lock = p_lock;
   new->next = global->g_lock_list;
   global->g_lock_list = new;
-  
+
   BUG(dbprintf ("[CDVDFS]\tInstalling lock on '%s'", pathname);)
 }
 
@@ -184,7 +184,7 @@ t_fh_node *new;
 void Unregister_File_Handle(CDROM_OBJ *p_obj) {
 t_fh_node *ptr, *old;
 struct CDVDBase *global = p_obj->global;
-  
+
         for (ptr=global->g_fh_list, old = NULL; ptr; old = ptr, ptr = ptr->next)
                 if (ptr->obj == p_obj && StrCmp (global->g_vol_name+1, ptr->vol_name) == 0)
                 {
@@ -238,7 +238,7 @@ t_fh_node *ptr;
 void Register_Volume_Node(struct CDVDBase *global, struct DeviceList *p_volume, char *Name) {
 t_vol_reg_node *new;
 int len;
-  
+
         new = (t_vol_reg_node*) AllocMem (sizeof (t_vol_reg_node), MEMF_PUBLIC);
         if (!new)
                 return;

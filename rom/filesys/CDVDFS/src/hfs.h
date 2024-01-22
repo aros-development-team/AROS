@@ -60,7 +60,7 @@ typedef struct node_descr {
   t_uchar	Type;
   t_uchar	NHeight;
   t_ushort	NRecs;
-  t_ushort	Reserved;	
+  t_ushort	Reserved;
 } t_node_descr;
 
 typedef struct hdr_node {

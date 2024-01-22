@@ -292,7 +292,7 @@ ULONG signals;
          *  (According to the official documentation, this is not
          *  required. Some debugging tools, however, depend on it.)
          */
-            
+
 /*      global->DosNode->dn_Startup = Make_FSSM (global); */
 
     } else {                            /*  couldn't open dos.library   */
@@ -359,7 +359,7 @@ ULONG signals;
 
     if (global->g_cd)
       Unmount (global);
-    
+
     FreeVec(global->g_vol_name);
 
     if (global->g_cd)
@@ -403,7 +403,7 @@ void    *tmp;
 char    buf[256];
 register WORD   error;
 UBYTE   notdone = 1;
- 
+
         if (signals & global->g_changeint_sigbit)
         {
                 if (global->g_cd && !global->g_inhibited)
@@ -1200,14 +1200,14 @@ static void cdunlock (LOCK *lock)
 
   Unregister_Lock (lock);
   --obj->volume->locks;
-  
+
   /* if all locks and filehandles have been removed, and if the volume
    * is not the current volume, then the volume node may be removed:
    */
   if (obj->volume != global->g_volume &&
       obj->volume->locks == 0 && obj->volume->file_handles == 0) {
     VOLUME *vol = obj->volume;
-    
+
     Forbid ();
       Remove_Volume_Node (global, vol->devlist);
     Permit ();
@@ -1250,7 +1250,7 @@ CDROM_OBJ *getlockfile (struct CDVDBase *global, IPTR lock)
 int Check_For_Volume_Name_Prefix (struct CDVDBase *global, char *p_pathname)
 {
   char *pos = strchr (p_pathname, ':');
-  
+
   return pos ? (pos - p_pathname) + 1 : 0;
 }
 
@@ -1271,7 +1271,7 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
                 p_fib->fib_DirEntryType = ST_SOFTLINK;
         else
                 p_fib->fib_DirEntryType = p_info->directory_f ? ST_USERDIR : ST_FILE;
-  
+
         if (len == 1 && *src == ':')
         {
                 /* root of file system: */
@@ -1314,9 +1314,9 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
         /* I don't know exactly why I have to set fib_EntryType, but other
          * handlers (e.g. DiskHandler by J Toebes et.al.) also do this.
          */
-   
+
         p_fib->fib_EntryType = p_fib->fib_DirEntryType;
-  
+
         p_fib->fib_Protection = p_info->protection;
         p_fib->fib_Size = p_info->file_length;
         p_fib->fib_NumBlocks = p_info->file_length >> 11;
@@ -1338,7 +1338,7 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
  * cause the WORKBENCH to recognize us as a disk. If we don't
  * create a Volume node, Wb will not recognize us.
  */
- 
+
 static void Create_Volume_Node (struct CDVDBase *global, LONG p_disk_type, ULONG p_volume_date) {
         struct DeviceList *dl;
 
@@ -1402,7 +1402,7 @@ static void Mount (struct CDVDBase *global)
       return;
     }
   }
-  
+
   BUG(dbprintf (global, "***mounting*** ");)
   Volume_ID (global->g_volume, buf, sizeof (buf)-1);
   global->g_vol_name[0] = strlen (buf);
@@ -1480,9 +1480,9 @@ static void Unmount (struct CDVDBase *global)
   if (global->DevList) {
 
     BUG(dbprintf(global, "***unmounting*** ");)
-    
+
     Close_Object (global->g_top_level_obj);
-    
+
     if (global->g_volume->locks == 0 && global->g_volume->file_handles == 0) {
       Remove_Volume_Node (global, global->DevList);
       Close_Volume (global->g_volume);
@@ -1603,7 +1603,7 @@ static void Cleanup_Timer_Device (struct CDVDBase *global)
   if (!CheckIO ((struct IORequest *) global->g_timer_io))
     AbortIO ((struct IORequest *) global->g_timer_io);
   WaitIO ((struct IORequest *) global->g_timer_io);
-  
+
   CloseDevice ((struct IORequest *) global->g_timer_io);
   DeleteIORequest ((struct IORequest *) global->g_timer_io);
   DeleteMsgPort (global->g_timer_mp);

@@ -139,7 +139,7 @@ CDROM *Open_CDROM
         cd->buffer_data  = AllocVec (((SCSI_BUFSIZE * p_std_buffers) << 4) + 15, MEMF_PUBLIC | p_memory_type);
         if (NULL == cd->buffer_data)
             break;
-        
+
         cd->buffer_io = AllocVec(SCSI_BUFSIZE, p_memory_type);
         if (NULL == cd->buffer_io)
             break;
