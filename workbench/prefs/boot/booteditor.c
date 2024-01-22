@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2024, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -59,7 +59,7 @@ struct BootEditor_DATA
            *ata_multi,
            *device_name,
            *device_delay,
-           *usb_enable,
+           *ioapic_enable,
            *acpi_enable,
            *floppy_enable,
            *debug_output,
@@ -273,10 +273,10 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
                 End,
                 Child, (IPTR)ColGroup(2),
                     GroupFrameT(_(MSG_MISC)),
-                    Child, (IPTR)(data->usb_enable =
+                    Child, (IPTR)(data->ioapic_enable =
                         MUI_MakeObject(MUIO_Checkmark, NULL)),
                     Child, (IPTR)HGroup,
-                        Child, (IPTR)Label2(__(MSG_USB_ENABLE)),
+                        Child, (IPTR)Label2(__(MSG_IOAPIC_ENABLE)),
                         Child, (IPTR)HVSpace,
                     End,
                     Child, (IPTR)(data->acpi_enable =
@@ -421,7 +421,7 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->device_delay, MUIM_Notify,
             MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-        DoMethod(data->usb_enable, MUIM_Notify,
+        DoMethod(data->ioapic_enable, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->acpi_enable, MUIM_Notify,
@@ -490,7 +490,7 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
 
         SET(data->device_delay, MUIA_String_Integer, 0);
 
-        SET(data->usb_enable, MUIA_Selected, TRUE);
+        SET(data->ioapic_enable, MUIA_Selected, TRUE);
         SET(data->acpi_enable, MUIA_Selected, TRUE);
 
         SET(data->remove_button, MUIA_Disabled, TRUE);
@@ -869,8 +869,8 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
 
     /* Miscellaneous */
 
-    NNSET(data->usb_enable, MUIA_Selected,
-        strstr(line, "enableusb") != NULL);
+    NNSET(data->ioapic_enable, MUIA_Selected,
+        strstr(line, "noioapic") == NULL);
     NNSET(data->acpi_enable, MUIA_Selected,
         strstr(line, "noacpi") == NULL);
     NNSET(data->floppy_enable, MUIA_Selected,
@@ -1004,8 +1004,8 @@ static BOOL WriteBootArgs(BPTR file, struct BootEditor_DATA *data)
 
     /* Miscellaneous */
 
-    if(XGET(data->usb_enable, MUIA_Selected))
-        FPrintf(file, " enableusb");
+    if(!XGET(data->ioapic_enable, MUIA_Selected))
+        FPrintf(file, " noioapic");
     if(!XGET(data->acpi_enable, MUIA_Selected))
         FPrintf(file, " noacpi");
     if(!XGET(data->floppy_enable, MUIA_Selected))
