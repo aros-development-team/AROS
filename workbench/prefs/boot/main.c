@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2024, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -15,7 +15,7 @@
 #include "args.h"
 #include "booteditor.h"
 
-#define VERSION "$VER: Boot 1.3 (8.3.2015)"
+#define VERSION "$VER: Boot 1.4 (22.1.2024)"
 
 int main(int argc, char **argv)
 {
