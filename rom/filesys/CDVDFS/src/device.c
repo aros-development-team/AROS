@@ -156,6 +156,18 @@
 #ifndef ID_CDFS_DISK
 #define ID_CDFS_DISK 0x43444653
 #endif
+#ifndef ID_HSIERRA_DISK
+#define ID_HSIERRA_DISK 0x43443030
+#endif
+#ifndef ID_ISO9660_DISK
+#define ID_ISO9660_DISK 0x43443031
+#endif
+#ifndef ID_ISO9660RR_DISK
+#define ID_ISO9660RR_DISK 0x43443032
+#endif
+#ifndef ID_ISO9660JOL_DISK
+#define ID_ISO9660JOL_DISK 0x43443033
+#endif
 
 LONG handler(struct ExecBase *);
 static LOCK *cdlock(CDROM_OBJ *, int);
