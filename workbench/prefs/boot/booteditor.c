@@ -125,6 +125,10 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         MUIA_PrefsEditor_CanTest, FALSE,
         MUIA_PrefsEditor_CanUse, FALSE,
 
+        Child, HGroup,
+            Child, (IPTR)Label2("Note: This application edits only first entry in GRUB configuration file."),
+        End,
+
         Child, (IPTR)RegisterGroup(entry_tabs),
 
             /* Options tab */
