@@ -5,7 +5,7 @@
 #include "debug.h"
 
 #if !defined(NDEBUG) || defined(DEBUG_SECTORS)
-#if !(defined(__AROS__) || defined(__MORPHOS__))
+#if !(defined(__AROS__) || defined(__MORPHOS__) || defined(DEBUG_USE_SERIAL))
 void dbinit (struct CDVDBase *global);
 void dbuninit (struct CDVDBase *global);
 void dbprintf (struct CDVDBase *global, char *, ...);

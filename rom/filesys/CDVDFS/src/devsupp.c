@@ -364,6 +364,8 @@ int Handle_Control_Packet (struct CDVDBase *global, ULONG p_type, IPTR p_par1, I
   return 0;
 }
 
+#if !defined(NDEBUG) || defined(DEBUG_SECTORS)
+
 char *typetostr (int ty)
 {
     switch(ty) {
@@ -408,7 +410,7 @@ char *typetostr (int ty)
     }
 }
 
-#if !(defined(__AROS__) || defined(__MORPHOS__))
+#if !defined(DEBUG_USE_SERIAL) && !(defined(__AROS__) || defined(__MORPHOS__))
 
 /*
  *  DEBUGGING CODE.     You cannot make DOS library calls that access other
@@ -544,3 +546,5 @@ int __fflush(void)
 }
 
 #endif /* !(__AROS__ || __MORPHOS__) */
+
+#endif /* !NDEBUG || DEBUG_SECTORS */
