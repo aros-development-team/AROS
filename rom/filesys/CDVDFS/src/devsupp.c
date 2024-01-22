@@ -234,7 +234,7 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                           /* Provide termination. */
                           *Index++ = '\n';
                           *Index = 0;
-                          BUG(dbprintf("Control string: %s", LocalBuffer);)
+                          BUG(dbprintf(global, "Control string: %s", LocalBuffer);)
 
                           ArgsPtr = (struct RDArgs *)AllocDosObject(DOS_RDARGS, NULL);
                           if (ArgsPtr)
@@ -481,7 +481,7 @@ void dbinit (struct CDVDBase *global)
                            TAG_DONE)) {
       WaitPort(global->Dback);                              /* handshake startup    */
       GetMsg(global->Dback);                                /* remove dummy msg     */
-      dbprintf("Debugger running:" HANDLER_VERSION "%s, %s\n",
+      dbprintf(global, "Debugger running:" HANDLER_VERSION "%s, %s\n",
 #define asString(x) #x
 #if defined(LATTICE)
                "SAS/C" asString(__VERSION__) "." asString(__REVISION__),

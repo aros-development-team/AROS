@@ -57,7 +57,7 @@ extern struct Library *SysBase, *DOSBase;
 #define STD_BUFFERS 20
 
 #ifdef DEBUG_SECTORS
-void dbprintf (char *p_dummy, ...)
+void dbprintf (struct CDVDBase *, char *p_dummy, ...)
 {
 }
 #endif
