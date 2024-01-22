@@ -102,7 +102,7 @@ main.o:		main.c cdrom.h iso9660.h rock.h generic.h hfs.h
 hfs.o:		hfs.c hfs.h generic.h cdrom.h params.h
 cdcontrol.o:	cdcontrol.c cdcontrol.h
 checkcd.o:	checkcd.c iso9660.h generic.h cdrom.h rock.h
-volimes.o:	volumes.c volumes.h cdrom.h device.h devsupp.h generic.g debug.h \
+volumes.o:	volumes.c volumes.h cdrom.h device.h devsupp.h generic.h debug.h \
 		path.h globals.h aros_stuff.h clib_stuff.h
 
 # install
