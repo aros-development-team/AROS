@@ -17,10 +17,6 @@
  * 06-Mar-09 error   - Removed madness, fixed insanity. Cleanup started
  */
 
-extern struct Globals *global;
-
-#define SysBase global->SysBase
-
 t_bool Uses_Joliet_Protocol(CDROM *p_cdrom, t_ulong offset, t_ulong *p_svdoffset)
 {
     t_ulong svd_offset;
