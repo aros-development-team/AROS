@@ -1005,7 +1005,7 @@ openbreak:
                         CDROM_OBJ *parentdir = getlockfile (global, packet->dp_Arg1);
                         char *outbuf = (char *) packet->dp_Arg3;
                         t_ulong maxlength = packet->dp_Arg4;
-                        int offs;
+                        int offs, vlen;
                         char buf[256];
                         int res;
 
@@ -1021,10 +1021,10 @@ openbreak:
                         if (obj)
                         {
                                 res = Get_Link_Name (obj, buf, sizeof (buf));
+                                vlen = strlen (global->g_vol_name+1) + 1;
                                 if (
                                                 res == 0 ||
-                                                        strlen (buf) +
-                                                        strlen (global->g_vol_name+1) + 1
+                                                        strlen (buf) + vlen
                                                 >=
                                                         maxlength
                                         )
@@ -1032,7 +1032,7 @@ openbreak:
                                 else
                                 {
                                         if (buf[0] == ':')
-                                                strcpy (outbuf, global->g_vol_name+1);
+                                                CopyMem (global->g_vol_name+1, outbuf, vlen);
                                         else
                                                 outbuf[0] = 0;
                                         strcat (outbuf, buf);

@@ -11,6 +11,7 @@
  * ----------------------------------------------------------------------
  * History:
  *
+ * 02-Jan-23  stepan - replaced memcpy by CopyMem
  * 28-Dec-12  neil   Adapted to new Read_TOC API.
  * 06-Mar-09  error  - Removed madness, fixed insanity. Cleanup started
  * 18-Aug-07  sonic  - Now builds on AROS.
@@ -531,9 +532,9 @@ void Print_System_Use_Fields (CDROM *p_cd, directory_record *p_dir,
 	buf[system_use_pos+1] == 'E') {
       uint32_t newloc, offset;
       printf ("/ ");
-      memcpy (&newloc, buf + system_use_pos + 8, 4);
-      memcpy (&offset, buf + system_use_pos + 16, 4);
-      memcpy (&length, buf + system_use_pos + 24, 4);
+      CopyMem (buf + system_use_pos + 8, &newloc, 4);
+      CopyMem (buf + system_use_pos + 16, &offset, 4);
+      CopyMem (buf + system_use_pos + 24, &length, 4);
       if (!Read_Chunk (p_cd, newloc))
 	return;
       buf = p_cd->buffer;
@@ -641,7 +642,7 @@ void Show_Subdirectory (CDROM_OBJ *p_home, char *p_name, int p_long_info,
 	  else
 	    sprintf (name, "%s/", p_name);
 	  len = strlen (name) + info.name_length;
-	  memcpy (name + strlen (name), info.name, info.name_length);
+	  CopyMem (info.name, name + strlen (name), info.name_length);
 	  name[len] = 0;
 	  printf ("\n%s:\n", name);
 	  Show_Subdirectory (p_home, name, p_long_info, TRUE);
@@ -873,7 +874,7 @@ void Show_Catalog_Node (CDROM *p_cd, t_ulong p_node)
       if ((leaf->length & 1) == 0)
 	cp++;
       printf ("Parent ID = 0x%08lx, '", (unsigned long)leaf->parent_id);
-      memcpy (buf, leaf->name, leaf->name_length);
+      CopyMem (leaf->name, buf, leaf->name_length);
       Convert_Mac_Characters (buf, leaf->name_length);
       fwrite (buf, leaf->name_length, 1, stdout);
       printf ("'  (");

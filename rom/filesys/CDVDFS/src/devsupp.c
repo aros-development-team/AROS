@@ -302,7 +302,7 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                                   Display_Error ("PLAYCDDA command name too long");
                                   result = FALSE;
                                 } else
-                                  strcpy (global->g_play_cdda_command, (char *) (Args[ARG_PLAYCDDA]));
+                                  CopyMem((char *) (Args[ARG_PLAYCDDA]), global->g_play_cdda_command, len + 1);
                               }
 
                               if (Args[ARG_XPOS])
