@@ -9,24 +9,34 @@
 #And these ones are for normal operation
 DEBUGLIBS  =
 DEBUGFLAGS = -DNDEBUG
+OS=$(shell uname)
 
 # some shortcuts
 
+ifeq (,$(wildcard /c/delete))
+RM		= rm -f
+NOEXEC		= chmod 644
+
+STRIP		= m68k-amigaos-strip --remove-section=.comment
+CC		= m68k-amigaos-gcc
+OPT		=-Os -m68020-60 -mtune=68030
+else
 RM		= /c/delete quiet
 NOEXEC		= /c/protect flags=-e
-STRIP		= strip --remove-section=.comment
-CC		= gcc
 
-OPT		=-O2
+STRIP          = strip --remove-section=.comment
+CC             = gcc
+OPT            = -O2
+endif
 
 # -fbaserel does not work, -msmall-code likewise, -fno-builtin requires ixemul
 
 CFLAGS		= $(OPT) -fno-function-cse
+CFLAGS         += -I. -include compat.h -I../../libcodesets/developer/include
 
 LDFLAGS1	= -noixemul -nostartfiles
 LDFLAGS2	= -noixemul
 
-OS=$(shell uname)
 ifeq "$(OS)" "MorphOS"
 LDLIBS1 =
 KILLDEV = KillDevice RemCDFS

@@ -206,14 +206,15 @@ ULONG __abox__ = 1;
 
 #ifndef __AROS__
 char __version__[] = "\0$VER: CDVDFS 1.9 (25.05.2023)";
-
+struct ExecBase *SysBase;
 LONG SAVEDS Main(void)
 {
+    SysBase = *(struct ExecBase **)4L;
     return handler(*(struct ExecBase **)4L);
 }
 #endif
 
-static struct CDVDBase *AllocCDVDBase(struct ExecBase *SysBase)
+static struct CDVDBase *AllocCDVDBase(void)
 {
     struct CDVDBase *cdvd = NULL;
 
@@ -237,7 +238,7 @@ register PACKET *packet;
 MSG     *msg;
 ULONG signals;
 
-    struct CDVDBase *global = AllocCDVDBase(SysBase);
+    struct CDVDBase *global = AllocCDVDBase();
 
     D(bug("[CDVDFS] In handler, cdvd=%p\n", global));
     global->playing = FALSE;
@@ -317,7 +318,7 @@ ULONG signals;
         D(Alert(0));
         packet->dp_Res1 = DOSFALSE;
         packet->dp_Res2 = 333; /* any error code */
-        global->DosNode->dn_Task = BNULL;
+        global->DosNode->dn_Task = NULL;
         returnpacket(global, packet);
         Forbid ();
         if (DOSBase) {

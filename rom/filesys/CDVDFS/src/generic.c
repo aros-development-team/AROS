@@ -76,6 +76,7 @@ t_protocol Which_Protocol
 		VOLUME tmp_vol; /* temporary volume descriptor */
 		t_bool rr;
 
+			tmp_vol.global = global;
 			tmp_vol.cd = p_cdrom;
 			tmp_vol.protocol = PRO_ISO;
 			Iso_Init_Vol_Info(&tmp_vol, 0, *p_offset, 16);
