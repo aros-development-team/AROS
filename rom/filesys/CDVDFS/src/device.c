@@ -313,7 +313,7 @@ ULONG signals;
 /*      global->DosNode->dn_Startup = Make_FSSM (global); */
 
     } else {                            /*  couldn't open dos.library   */
-        D(bug("[CDVDFS] Off track, globals at %p\n", global));
+        D(bug("[CDVDFS] Off track, globals at %lx\n", (ULONG)global));
         D(Alert(0));
         packet->dp_Res1 = DOSFALSE;
         packet->dp_Res2 = 333; /* any error code */

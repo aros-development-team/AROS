@@ -22,7 +22,7 @@ void SAVEDS Prefs_Process (void)
     msg =  GetMsg(mp);
     global = (APTR)msg->mn_Node.ln_Name;
 
-    BUG(dbprintf(global, "Prefs handler process started for CDVDBase %p\n", global);)
+    BUG(dbprintf(global, "Prefs handler process started for CDVDBase %lx\n", (ULONG)global);)
     ReplyMsg(msg);
 
     do
