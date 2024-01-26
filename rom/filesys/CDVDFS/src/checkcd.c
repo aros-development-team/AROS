@@ -453,7 +453,7 @@ int main (int argc, char *argv[])
   struct CDVDBase *global;
 
   global = AllocMem(sizeof(*global), MEMF_CLEAR | MEMF_PUBLIC);
-  if (global)
+  if (!global)
       return ERROR_NO_FREE_STORE;
 
   global->g_cd = NULL;
