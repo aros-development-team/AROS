@@ -140,7 +140,7 @@ void Init_Intui(struct CDVDBase *global) {
         else
         {
         char *name;
-                name = FindToolType (global->g_user_disk_object->do_ToolTypes, "ICONNAME");
+                name = FindToolType ((CONST_STRPTR *)global->g_user_disk_object->do_ToolTypes, "ICONNAME");
                 if (name)
                         global->g_iconname = name;
         }
