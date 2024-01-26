@@ -198,7 +198,7 @@ char name[256];
 	{
 		if (*cp == '/')
 		{
-			if (Is_Top_Level_Object(obj))
+			if (!obj || Is_Top_Level_Object(obj))
 			{
 				global->iso_errno = ISOERR_NOT_FOUND;
 				return NULL;
