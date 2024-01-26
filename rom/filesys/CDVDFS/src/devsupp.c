@@ -282,11 +282,21 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                                 }
                               }
 
-                              if (Args[ARG_DATAEXT])
-                                strcpy (global->g_data_fork_extension, (char *) Args[ARG_DATAEXT]);
+                              if (Args[ARG_DATAEXT]) {
+                                int len = strlen((char *) Args[ARG_DATAEXT]) + 1;
+                                CopyMem((char *)Args[ARG_DATAEXT],
+                                  global->g_data_fork_extension,
+                                  len < sizeof(*global->g_data_fork_extension) ?
+                                  len : sizeof(*global->g_data_fork_extension));
+                              }
 
-                              if (Args[ARG_RESOURCEEXT])
-                                strcpy (global->g_resource_fork_extension, (char *) Args[ARG_RESOURCEEXT]);
+                              if (Args[ARG_RESOURCEEXT]) {
+                                int len = strlen((char *) Args[ARG_RESOURCEEXT]) + 1;
+                                CopyMem((char *)Args[ARG_RESOURCEEXT],
+                                  global->g_resource_fork_extension,
+                                  len < sizeof(*global->g_resource_fork_extension) ?
+                                  len : sizeof(*global->g_resource_fork_extension));
+                              }
 
                               global->g_convert_hfs_filenames = (Args[ARG_MACTOISO] != NULL);
                               global->g_convert_hfs_spaces = (Args[ARG_CONVERTSPACES] != NULL);
