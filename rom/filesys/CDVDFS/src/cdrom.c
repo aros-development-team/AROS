@@ -656,6 +656,8 @@ int Stop_Play_Audio(CDROM *p_cd)
 
 void Cleanup_CDROM (CDROM *p_cd)
 {
+    if (!p_cd)
+        return;
     if (p_cd->iochangeint) {
         p_cd->iochangeint->io_Length  = sizeof(struct Interrupt);
         p_cd->iochangeint->io_Data    = &p_cd->changeint;
