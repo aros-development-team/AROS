@@ -594,6 +594,9 @@ int Start_Play_Audio(CDROM *p_cd)
     t_toc_data *toc;
     int i, len;
 
+    if (!p_cd)
+        return FALSE;
+
     cmd[0] = 0x47;
 
     /*
@@ -650,6 +653,10 @@ int Start_Play_Audio(CDROM *p_cd)
 int Stop_Play_Audio(CDROM *p_cd)
 {
     uint8_t cmd[6] = { };
+
+    if (!p_cd)
+        return FALSE;
+
     cmd[0] = 0x1b;
     return Do_SCSI_Command(p_cd, 0, 0, cmd, 6, SCSIF_READ);
 }
