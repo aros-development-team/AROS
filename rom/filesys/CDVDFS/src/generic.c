@@ -250,6 +250,8 @@ char name[256];
 
 void Close_Object(CDROM_OBJ *p_object)
 {
+	if (!p_object)
+		return;
 	Free_Path_List(p_object->pathlist);
 	HAN(p_object->volume, close_obj)(p_object);
 }
