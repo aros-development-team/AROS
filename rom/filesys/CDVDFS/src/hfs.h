@@ -90,7 +90,7 @@ typedef struct leaf_record {
   char		reserved;
   t_ulong	parent_id;
   t_uchar	name_length;
-  char		name[1];
+  char		name[33];
 } t_leaf_record;
 
 typedef struct dir_record {
@@ -171,7 +171,6 @@ typedef struct leaf_record_pos {
   t_node_descr		node_descr;
   t_catalog_record	cat_rec;
   t_leaf_record		leaf_rec;
-  char			pad[32]; /* space for name from t_leaf_record */
 } t_leaf_record_pos;
 
 #ifdef __MORPHOS__
