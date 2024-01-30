@@ -110,6 +110,12 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
             const unsigned char *ptr=format+1;
             size_t i;
 
+            if(*ptr=='*')
+            {
+                ignore=1;
+                ptr++;
+            }
+
             if(isdigit(*ptr))
             {
                 width=0;
@@ -117,12 +123,10 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                     width=width*10+(*ptr++-'0');
             }
 
-            while(*ptr=='h'||*ptr=='l'||*ptr=='L'||*ptr=='*')
+            while(*ptr=='h'||*ptr=='l'||*ptr=='L')
             {
                 if (subtype=='l'&&*ptr=='l')
                     lltype=1;
-                if(*ptr=='*')
-                    ignore=1;
                 else
                     subtype=*ptr;
                 ptr++;
