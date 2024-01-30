@@ -25,7 +25,13 @@ define symbol_check
   ignore-errors p $arg0
   end_log
 
+  # Turns $1 = (type)addr into $symbol = (type)addr
   shell sed -i -e '/^[^\$]/d' -e 's/^\$[0-9]* =/set $'$arg0' =/' symbol.tmp
+
+  # Hack. In case of C++, type is displayed without struct keyword and loading fails.
+  # Add struct keyword uncoditionally to any type after first removing it if it was there
+  shell sed -i -e 's/(APTR)//' -e 's/= (struct /= (/' -e 's/= (/= (struct /' symbol.tmp
+
   source symbol.tmp
 end
 
