@@ -116,24 +116,39 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
         /* Unholy Hack: see comment in in MUIM_List_CreateImage
          * Modify the pointer value given by user in display hook. User was thinking he was given
          * correct structure by MUIM_List_CreateImage, but that is not true for internal NListtree.
-         * Modify the address that will be used by NListtree. This works only because the msg->Array
+         * Modify the address so it can be used by NListtree. This works only because the msg->Array
          * buffer in case of O[] has to be dinamically allocated and writable (so that user can put
          * address there)
          */
         if ((s = strstr(column, "O[")) != NULL)
         {
-            char tmp[16];
-            s += 2;
-            char *e = strchr(s, ']');
-            int len = e - s;
-            struct ListImage *li = (struct ListImage *)strtoul(s, NULL, 16);
-            APTR nlistimg = li->nlistimg;
-            sprintf(tmp, "%lx", nlistimg);
-            int len2 = strlen(tmp);
-            memcpy(s, tmp, len);
+            char tmp[16], *e;
+            int len_o, len_h;
 
-            if (len != len2)
+            s += 2;
+            e = strchr(s, ']');
+            len_o = e - s;
+
+            struct ListImage *li = (struct ListImage *)strtoul(s, NULL, 16);
+            sprintf(tmp, "%lx", li->nlistimg);
+            len_h = strlen(tmp);
+
+            if (len_o == len_h)
+                memcpy(s, tmp, len_h);
+            else if (len_o == len_h + 1)
+            {
+                memcpy(s, tmp, len_h);
+                s[len_h] = ']'; s[len_h + 1] = ' ';
+            }
+            else
+            {
                 bug("[Listtree] CreateImage workaround BROKEN, see comment in code!\n");
+                /* Doing nothing will lead to NList using original address as BitMapImage. It will
+                 * then check BitMapImage->control (first ULONG) and will find it 0(NULL) so neither
+                 * MUIA_Image_Spec nor MUIM_NList_CreateImage in which case it will just ingore
+                 * the object and not render anything.
+                 */
+            }
         }
     }
 
