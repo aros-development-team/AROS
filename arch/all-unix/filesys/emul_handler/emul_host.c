@@ -378,9 +378,14 @@ static inline int nocase_rename(struct emulbase *emulbase, char *oldpath, char *
 {
     struct stat st;
     int ret;
+    int changecap = 0;
+
+    if ((strcmp(oldpath, newpath) != 0) && (Stricmp(oldpath, newpath) == 0))
+        changecap = 1; /* A request to change capitalisation of name */
     
     fixcase(emulbase, oldpath);
-    fixcase(emulbase, newpath);
+    if (!changecap)
+        fixcase(emulbase, newpath);
 
     /* AmigaDOS Rename does not allow overwriting */
     ret = emulbase->pdata.SysIFace->lstat(newpath, &st);
@@ -816,7 +821,7 @@ LONG DoRename(struct emulbase *emulbase, char *filename, char *newfilename)
     HostLib_Lock();
 
     error = nocase_rename(emulbase, filename, newfilename);
-    if (error)
+    if (error && error != ERROR_OBJECT_EXISTS)
         error = err_u2a(emulbase);
 
     HostLib_Unlock();
