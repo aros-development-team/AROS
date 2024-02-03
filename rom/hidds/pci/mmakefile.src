@@ -24,7 +24,7 @@ INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
 %copy_includes path=hardware dir=include/hardware
 
 %fetch mmake=kernel-hidd-pci-ids-fetch \
-    archive_origins="http://pciids.sourceforge.net/v2.2/ https://pci-ids.ucw.cz/v2.2/" \
+    archive_origins="https://raw.githubusercontent.com/pciutils/pciids/master/ https://pci-ids.ucw.cz/v2.2/" \
     archive="pci.ids" suffixes="" location=$(GENDIR)/$(CURDIR)
 
 %copy_files_q mmake=kernel-hidd-pci-ids-copy files="pci.ids" src=$(GENDIR)/$(CURDIR) dst=$(AROS_DEVS)
