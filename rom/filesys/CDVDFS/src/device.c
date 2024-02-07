@@ -205,7 +205,7 @@ ULONG __abox__ = 1;
 #endif
 
 #ifndef __AROS__
-char __version__[] = "\0$VER: CDVDFS 1.9 (25.05.2023)";
+char __version__[] = "\0$VER: CDVDFS 3.0 (07.02.2024)";
 struct ExecBase *SysBase;
 LONG SAVEDS Main(void)
 {

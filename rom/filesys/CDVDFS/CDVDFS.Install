@@ -2,8 +2,8 @@
 ;(C) 1994 Thomas Kessler
 ;(C) 2005-2007 Pavel Fedin
 
-(set #amicdrom-version "1.4")
-(set #amicdrom-date "(16-Jun-08)")
+(set #amicdrom-version "3.0")
+(set #amicdrom-date "(07-Feb-24)")
 (set #install-version "1.2")
 
 (set old-level @user-level)
@@ -217,7 +217,7 @@
 		(if (= 1 memtype) (set memtype "4"))
 		(if (= 2 memtype) (set memtype "32"))
 		(if (= 3 memtype) (set memtype "0"))
-		
+
 	)
 )
 
