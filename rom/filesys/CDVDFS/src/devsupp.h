@@ -16,7 +16,7 @@ char *typetostr (int ty);
 
 int Get_Startup (struct CDVDBase *global, struct FileSysStartupMsg *);
 
-#define HANDLER_VERSION "cdrom.handler 3.0 (2007-03-07)\n"
+#define HANDLER_VERSION "cdrom.handler 3.0 (2024-02-07)\n"
 
 int Handle_Control_Packet (struct CDVDBase *global, ULONG p_type, IPTR p_par1, IPTR p_par2);
 
