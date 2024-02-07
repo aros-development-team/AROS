@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2024, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -40,6 +40,8 @@ static CONST_STRPTR debug_output_list[4] = {NULL};
 static CONST_STRPTR gfx_type_list[5] = {NULL};
 static CONST_STRPTR vesa_depth_list[4] = {NULL};
 static CONST_STRPTR entry_tabs[3] = {NULL};
+static CONST_STRPTR storage_tabs[4] = {NULL};
+static CONST_STRPTR ahci_generation_list[5] = {NULL};
 
 struct BootEditor_DATA
 {
@@ -52,14 +54,20 @@ struct BootEditor_DATA
            *vesa_depth,
            *vesa_refresh,
            *vesa_default_refresh,
+           *ata_group,
+           *ata_enable,
            *ata_buses,
            *ata_dma,
            *ata_32bit,
            *ata_poll,
            *ata_multi,
+           *ahci_group,
+           *ahci_enable,
+           *ahci_generation,
+           *nvme_enable,
            *device_name,
            *device_delay,
-           *usb_enable,
+           *ioapic_enable,
            *acpi_enable,
            *floppy_enable,
            *debug_output,
@@ -119,11 +127,24 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
     debug_output_list[1] = _(MSG_DEBUG_OUTPUT_MEMORY);
     debug_output_list[2] = _(MSG_DEBUG_OUTPUT_SERIAL);
 
+    storage_tabs[0] = _(MSG_ATA);
+    storage_tabs[1] = "AHCI";
+    storage_tabs[2] = "NVME";
+
+    ahci_generation_list[0] = "None";
+    ahci_generation_list[1] = "Gen1";
+    ahci_generation_list[2] = "Gen2";
+    ahci_generation_list[3] = "Gen3";
+
     self = (Object *)DoSuperNewTags(CLASS, self, NULL,
         MUIA_PrefsEditor_Name, __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR)grub_config_path,
         MUIA_PrefsEditor_CanTest, FALSE,
         MUIA_PrefsEditor_CanUse, FALSE,
+
+        Child, HGroup,
+            Child, (IPTR)Label2(__(MSG_NOTE_INFO)),
+        End,
 
         Child, (IPTR)RegisterGroup(entry_tabs),
 
@@ -202,44 +223,81 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
                             Child, (IPTR)HVSpace,
                         End,
                     End),
+                    Child, (IPTR)HVSpace,
                 End,
                 Child, (IPTR)VGroup,
                     Child, (IPTR)VGroup,
-                        GroupFrameT(_(MSG_ATA)),
-                        Child, (IPTR)HGroup,
-                            Child, (IPTR)Label2(__(MSG_ATA_BUSES)),
-                            Child, (IPTR)(data->ata_buses =
-                                (Object *)CycleObject,
-                                MUIA_Cycle_Entries, (IPTR)ata_buses_list,
-                            End),
-                        End,
-                        Child, (IPTR)ColGroup(2),
-                            Child, (IPTR)(data->ata_dma =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_DMA)),
+                        Child, (IPTR)RegisterGroup(storage_tabs),
+                            Child, (IPTR)VGroup,
+                                Child, (IPTR)HGroup,
+                                    Child, (IPTR)(data->ata_enable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)Label2(__(MSG_ENABLE)),
+                                    Child, (IPTR)HVSpace,
+                                End,
+                                Child, (IPTR)(data->ata_group = VGroup,
+                                    GroupFrameT(_(MSG_ATA)),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2(__(MSG_ATA_BUSES)),
+                                        Child, (IPTR)(data->ata_buses =
+                                            (Object *)CycleObject,
+                                            MUIA_Cycle_Entries, (IPTR)ata_buses_list,
+                                        End),
+                                    End,
+                                    Child, (IPTR)ColGroup(2),
+                                        Child, (IPTR)(data->ata_dma =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_DMA)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)(data->ata_multi =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_MULTI)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)(data->ata_32bit =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_32BIT)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)(data->ata_poll =
+                                            MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                        Child, (IPTR)HGroup,
+                                            Child, (IPTR)Label2(__(MSG_ATA_POLL)),
+                                            Child, (IPTR)HVSpace,
+                                        End,
+                                        Child, (IPTR)HVSpace,
+                                        Child, (IPTR)HVSpace,
+                                    End,
+                                End),
+                            End,
+                            Child, (IPTR)VGroup,
+                                Child, (IPTR)HGroup,
+                                    Child, (IPTR)(data->ahci_enable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)Label2(__(MSG_ENABLE)),
+                                    Child, (IPTR)HVSpace,
+                                End,
+                                Child, (IPTR)(data->ahci_group = VGroup,
+                                    GroupFrameT("AHCI"),
+                                    Child, (IPTR)HGroup,
+                                        Child, (IPTR)Label2(__(MSG_AHCI_GENERATION)),
+                                        Child, (IPTR)(data->ahci_generation = (Object *)CycleObject,
+                                            MUIA_Cycle_Entries, (IPTR)ahci_generation_list,
+                                        End),
+                                    End,
+                                End),
                                 Child, (IPTR)HVSpace,
                             End,
-                            Child, (IPTR)(data->ata_multi =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_MULTI)),
+                            Child, (IPTR)VGroup,
+                                Child, (IPTR)HGroup,
+                                    Child, (IPTR)(data->nvme_enable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                                    Child, (IPTR)Label2(__(MSG_ENABLE)),
+                                    Child, (IPTR)HVSpace,
+                                End,
                                 Child, (IPTR)HVSpace,
                             End,
-                            Child, (IPTR)(data->ata_32bit =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_32BIT)),
-                                Child, (IPTR)HVSpace,
-                            End,
-                            Child, (IPTR)(data->ata_poll =
-                                MUI_MakeObject(MUIO_Checkmark, NULL)),
-                            Child, (IPTR)HGroup,
-                                Child, (IPTR)Label2(__(MSG_ATA_POLL)),
-                                Child, (IPTR)HVSpace,
-                            End,
-                            Child, (IPTR)HVSpace,
-                            Child, (IPTR)HVSpace,
                         End,
                     End,
                     Child, (IPTR)VGroup,
@@ -273,10 +331,10 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
                 End,
                 Child, (IPTR)ColGroup(2),
                     GroupFrameT(_(MSG_MISC)),
-                    Child, (IPTR)(data->usb_enable =
+                    Child, (IPTR)(data->ioapic_enable =
                         MUI_MakeObject(MUIO_Checkmark, NULL)),
                     Child, (IPTR)HGroup,
-                        Child, (IPTR)Label2(__(MSG_USB_ENABLE)),
+                        Child, (IPTR)Label2(__(MSG_IOAPIC_ENABLE)),
                         Child, (IPTR)HVSpace,
                     End,
                     Child, (IPTR)(data->acpi_enable =
@@ -400,6 +458,9 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->vesa_best_res, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->ata_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->ata_buses, MUIM_Notify,
             MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
@@ -415,13 +476,22 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->ata_poll, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->ahci_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->ahci_generation, MUIM_Notify,
+            MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+        DoMethod(data->nvme_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->device_name, MUIM_Notify,
             MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->device_delay, MUIM_Notify,
             MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
-        DoMethod(data->usb_enable, MUIM_Notify,
+        DoMethod(data->ioapic_enable, MUIM_Notify,
             MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(data->acpi_enable, MUIM_Notify,
@@ -477,6 +547,16 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         DoMethod(data->remove_button, MUIM_Notify, MUIA_Pressed, TRUE,
             (IPTR)self, 1, MUIM_BootEditor_RemoveModule);
 
+        DoMethod(data->ata_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)data->ata_group, 3, MUIM_Set, MUIA_Disabled,
+            MUIV_NotTriggerValue);
+
+        DoMethod(data->ahci_enable, MUIM_Notify,
+            MUIA_Selected, MUIV_EveryTime,
+            (IPTR)data->ahci_group, 3, MUIM_Set, MUIA_Disabled,
+            MUIV_NotTriggerValue);
+
         /* Set default values */
 
         SET(data->gfx_composition, MUIA_Selected, TRUE);
@@ -484,13 +564,17 @@ static Object *BootEditor__OM_NEW(Class *CLASS, Object *self,
         SET(data->vesa_height, MUIA_String_Integer, DEFAULT_HEIGHT);
         SET(data->vesa_refresh, MUIA_String_Integer, DEFAULT_REFRESH);
 
+        SET(data->ata_enable, MUIA_Selected, TRUE);
         SET(data->ata_dma, MUIA_Selected, TRUE);
         SET(data->ata_multi, MUIA_Selected, TRUE);
-        SET(data->ata_32bit, MUIA_Selected, TRUE);
+
+        SET(data->ahci_enable, MUIA_Selected, TRUE);
+
+        SET(data->nvme_enable, MUIA_Selected, TRUE);
 
         SET(data->device_delay, MUIA_String_Integer, 0);
 
-        SET(data->usb_enable, MUIA_Selected, TRUE);
+        SET(data->ioapic_enable, MUIA_Selected, TRUE);
         SET(data->acpi_enable, MUIA_Selected, TRUE);
 
         SET(data->remove_button, MUIA_Disabled, TRUE);
@@ -837,10 +921,60 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
             NNSET(data->ata_dma, MUIA_Selected, FALSE);
         if (strstr(options, "nomulti") != NULL)
             NNSET(data->ata_multi, MUIA_Selected, FALSE);
-        if (strstr(options, "32bit") == NULL)
-            NNSET(data->ata_multi, MUIA_Selected, FALSE);
+        if (strstr(options, "32bit") != NULL)
+            NNSET(data->ata_32bit, MUIA_Selected, TRUE);
         if (strstr(options, "poll") != NULL)
             NNSET(data->ata_poll, MUIA_Selected, TRUE);
+
+
+        if ((p = strstr(options, "disable")) != NULL)
+        {
+            /* disable option is used by AHCI and NVME as well */
+            STRPTR options_end = strstr(options, " "); if (options_end == NULL) options_end = strstr(options, "\n");
+
+            if (p < options_end)
+            {
+                NNSET(data->ata_enable, MUIA_Selected, FALSE);
+                NNSET(data->ata_group,  MUIA_Disabled, TRUE);
+            }
+        }
+    }
+
+    /* AHCI */
+
+    options = strstr(line, "AHCI=");
+    if (options != NULL)
+    {
+        if (strstr(options, "force150") != NULL)
+            choice = 1;
+        else if (strstr(options, "force300") != NULL)
+            choice = 2;
+        else if (strstr(options, "force600") != NULL)
+            choice = 3;
+        else
+            choice = 0;
+        NNSET(data->ahci_generation, MUIA_Cycle_Active, choice);
+
+        if ((p = strstr(options, "disable")) != NULL)
+        {
+            /* disable option is used by AHCI and NVME as well */
+            STRPTR options_end = strstr(options, " "); if (options_end == NULL) options_end = strstr(options, "\n");
+
+            if (p < options_end)
+            {
+                NNSET(data->ahci_enable, MUIA_Selected, FALSE);
+                NNSET(data->ahci_group,  MUIA_Disabled, TRUE);
+            }
+        }
+    }
+
+    /* NVME */
+
+    options = strstr(line, "NVME=");
+    if (options != NULL)
+    {
+        if (strstr(options, "disable") != NULL)
+            NNSET(data->nvme_enable, MUIA_Selected, FALSE);
     }
 
     /* Boot Device */
@@ -869,8 +1003,8 @@ static BOOL ReadBootArgs(CONST_STRPTR line, struct BootEditor_DATA *data)
 
     /* Miscellaneous */
 
-    NNSET(data->usb_enable, MUIA_Selected,
-        strstr(line, "enableusb") != NULL);
+    NNSET(data->ioapic_enable, MUIA_Selected,
+        strstr(line, "noioapic") == NULL);
     NNSET(data->acpi_enable, MUIA_Selected,
         strstr(line, "noacpi") == NULL);
     NNSET(data->floppy_enable, MUIA_Selected,
@@ -941,55 +1075,109 @@ static BOOL WriteBootArgs(BPTR file, struct BootEditor_DATA *data)
         !XGET(data->ata_multi, MUIA_Selected) ||
         XGET(data->ata_32bit, MUIA_Selected) ||
         XGET(data->ata_poll, MUIA_Selected) ||
+        !XGET(data->ata_enable, MUIA_Selected) ||
         XGET(data->ata_buses, MUIA_Cycle_Active) > 0)
     {
         count = 0;
         FPrintf(file, " ATA=");
 
-        choice = XGET(data->ata_buses, MUIA_Cycle_Active);
-        if (choice == 1)
+        if (!XGET(data->ata_enable, MUIA_Selected))
         {
-            FPrintf(file, "nolegacy");
-            count++;
+            FPrintf(file, "disable");
         }
-        else if (choice == 2)
+        else
         {
-            FPrintf(file, "nopci");
-            count++;
-        }
-        else if (choice == 3)
-        {
-            FPrintf(file, "nopci,nolegacy");
-            count += 2;
-        }
+            choice = XGET(data->ata_buses, MUIA_Cycle_Active);
+            if (choice == 1)
+            {
+                FPrintf(file, "nolegacy");
+                count++;
+            }
+            else if (choice == 2)
+            {
+                FPrintf(file, "nopci");
+                count++;
+            }
+            else if (choice == 3)
+            {
+                FPrintf(file, "nopci,nolegacy");
+                count += 2;
+            }
 
-        if(!XGET(data->ata_dma, MUIA_Selected))
-        {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "nodma");
-            count++;
+            if(!XGET(data->ata_dma, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "nodma");
+                count++;
+            }
+            if(!XGET(data->ata_multi, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "nomulti");
+                count++;
+            }
+            if(XGET(data->ata_32bit, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "32bit");
+                count++;
+            }
+            if(XGET(data->ata_poll, MUIA_Selected))
+            {
+                if(count > 0)
+                    FPrintf(file, ",");
+                FPrintf(file, "poll");
+                count++;
+            }
         }
-        if(!XGET(data->ata_multi, MUIA_Selected))
+    }
+
+    /* AHCI */
+
+    if(!XGET(data->ahci_enable, MUIA_Selected) ||
+        XGET(data->ahci_generation, MUIA_Cycle_Active) > 0)
+    {
+        count = 0;
+        FPrintf(file, " AHCI=");
+
+        if (!XGET(data->ahci_enable, MUIA_Selected))
         {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "nomulti");
-            count++;
+            FPrintf(file, "disable");
         }
-        if(XGET(data->ata_32bit, MUIA_Selected))
+        else
         {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "32bit");
-            count++;
+            choice = XGET(data->ahci_generation, MUIA_Cycle_Active);
+            if (choice == 1)
+            {
+                FPrintf(file, "force150");
+                count++;
+            }
+            else if (choice == 2)
+            {
+                FPrintf(file, "force300");
+                count++;
+            }
+            else if (choice == 3)
+            {
+                FPrintf(file, "force600");
+                count++;
+            }
         }
-        if(XGET(data->ata_poll, MUIA_Selected))
+    }
+
+    /* NVME */
+
+    if(!XGET(data->nvme_enable, MUIA_Selected))
+    {
+        count = 0;
+        FPrintf(file, " NVME=");
+
+        if (!XGET(data->nvme_enable, MUIA_Selected))
         {
-            if(count > 0)
-                FPrintf(file, ",");
-            FPrintf(file, "poll");
-            count++;
+            FPrintf(file, "disable");
         }
     }
 
@@ -1004,8 +1192,8 @@ static BOOL WriteBootArgs(BPTR file, struct BootEditor_DATA *data)
 
     /* Miscellaneous */
 
-    if(XGET(data->usb_enable, MUIA_Selected))
-        FPrintf(file, " enableusb");
+    if(!XGET(data->ioapic_enable, MUIA_Selected))
+        FPrintf(file, " noioapic");
     if(!XGET(data->acpi_enable, MUIA_Selected))
         FPrintf(file, " noacpi");
     if(!XGET(data->floppy_enable, MUIA_Selected))
