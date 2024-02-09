@@ -2479,3 +2479,17 @@ diff -ruN gcc-6.5.0/libstdc++-v3/include/std/ratio gcc-6.5.0.aros/libstdc++-v3/i
        static constexpr int __shift = __builtin_clzll(__d);
        static constexpr int __coshift_ = sizeof(uintmax_t) * 8 - __shift;
        static constexpr int __coshift = (__shift != 0) ? __coshift_ : 0;
+diff -ur gcc-6.5.0.orig/gcc/config.host gcc-6.5.0/gcc/config.host
+--- gcc-6.5.0/gcc/config.host	2019-02-28 18:31:13
++++ gcc-6.5.0.aros/gcc/config.host	2024-02-08 19:48:17
+@@ -93,8 +93,8 @@
+ case ${host} in
+   *-darwin*)
+     # Generic darwin host support.
+-    out_host_hook_obj=host-darwin.o
+-    host_xmake_file="${host_xmake_file} x-darwin"
++    # out_host_hook_obj=host-darwin.o
++    # host_xmake_file="${host_xmake_file} x-darwin"
+     ;;
+ esac
+ 
