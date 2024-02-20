@@ -31,7 +31,7 @@
 #include <proto/alib.h>
 #include <utility/hooks.h>
 
-static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL};
+static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
@@ -82,7 +82,8 @@ struct NetPEditor_DATA
             *netped_serverList,
             *netped_serverAddButton,
             *netped_serverEditButton,
-            *netped_serverRemoveButton;
+            *netped_serverRemoveButton,
+            *netped_mainTabs;
 
     // Interface window
     Object  *netped_ifWindow,
@@ -686,7 +687,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
             *serverList, *serverAddButton, *serverEditButton, *serverRemoveButton,
             *MBBInitString[MAXATCOMMANDS], *MBBDeviceString, *MBBUnit,
-            *MBBUsername, *MBBPassword;
+            *MBBUsername, *MBBPassword, *tetheringAddButton, *mainTabs;
 
     // inferface window
     Object  *deviceString, *IPString, *maskString,
@@ -721,8 +722,9 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     NetworkTabs[0] = _(MSG_TAB_IP_CONFIGURATION);
     NetworkTabs[1] = _(MSG_TAB_COMPUTER_NAMES);
     NetworkTabs[2] = _(MSG_TAB_WIRELESS);
-    NetworkTabs[3] = _(MSG_TAB_MOBILE);
-    NetworkTabs[4] = _(MSG_TAB_SERVERS);
+    NetworkTabs[3] = _(MSG_TAB_TETHERING);
+    NetworkTabs[4] = _(MSG_TAB_MOBILE);
+    NetworkTabs[5] = _(MSG_TAB_SERVERS);
 
     netpeditor_constructHook.h_Entry = (HOOKFUNC)constructFunc;
     netpeditor_destructHook.h_Entry = (HOOKFUNC)destructFunc;
@@ -747,7 +749,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Name, __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR)"AROSTCP/arostcp.prefs",
 
-        Child, RegisterGroup((IPTR)NetworkTabs),
+        Child, mainTabs = RegisterGroup((IPTR)NetworkTabs),
 
             Child, (IPTR)VGroup,
                 Child, (IPTR)(HGroup,
@@ -863,6 +865,13 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)HVSpace,
                     End),
                 End),
+            End,
+
+            Child, (IPTR)VGroup,
+                GroupFrame,
+                Child, (IPTR)(tetheringAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                Child, (IPTR)Label2(__(MSG_TETHERING_WARNING)),
+                Child, (IPTR)VSpace(0),
             End,
 
             Child, (IPTR)VGroup,
@@ -1210,6 +1219,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
         // main window
+        data->netped_mainTabs = mainTabs;
         data->netped_DHCPState = DHCPState;
         data->netped_gateString = gateString;
         data->netped_DNSString[0] = DNSString[0];
@@ -1474,6 +1484,12 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             serverRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)serverList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+
+        DoMethod
+        (
+            tetheringAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_AddTetheringEntry
         );
 
         // interface window
@@ -1806,7 +1822,7 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
     return 0;
 }
 
-static void NetPEditor_AddEntry(Class *CLASS, Object *self, CONST_STRPTR devicename)
+static void NetPEditor_AddEntry(Class *CLASS, Object *self, STRPTR devicename)
 {
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
@@ -1820,6 +1836,8 @@ static void NetPEditor_AddEntry(Class *CLASS, Object *self, CONST_STRPTR devicen
         InitInterface(&iface);
         iface.name[strlen(iface.name) - 1] += entries;
         SetUp(&iface, TRUE);    // new entries are UP
+        if (devicename != NULL)
+            SetDevice(&iface, devicename);
         DoMethod
         (
             data->netped_interfaceList,
@@ -2213,8 +2231,25 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyServerEntry
     return 0;
 }
 
+/*
+    Add network device responsible for tethering
+*/
+IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    NetPEditor_AddEntry(CLASS, self, "usbrndis.device");
+
+    SET(data->netped_mainTabs, MUIA_Group_ActivePage, 0);
+
+    return 0;
+}
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_20
+ZUNE_CUSTOMCLASS_21
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                         struct opSet *,
@@ -2236,5 +2271,6 @@ ZUNE_CUSTOMCLASS_20
     MUIM_NetPEditor_ApplyNetEntry,  Msg,
     MUIM_NetPEditor_ShowServerEntry,   Msg,
     MUIM_NetPEditor_EditServerEntry,   struct MUIP_NetPEditor_EditEntry *,
-    MUIM_NetPEditor_ApplyServerEntry,  Msg
+    MUIM_NetPEditor_ApplyServerEntry,  Msg,
+    MUIM_NetPEditor_AddTetheringEntry, Msg
 );
