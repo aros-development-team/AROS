@@ -1806,6 +1806,33 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
     return 0;
 }
 
+static void NetPEditor_AddEntry(Class *CLASS, Object *self, CONST_STRPTR devicename)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    /*
+        Create a new entry and make it the current one
+    */
+    LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
+    if (entries < MAXINTERFACES)
+    {
+        struct Interface iface;
+        InitInterface(&iface);
+        iface.name[strlen(iface.name) - 1] += entries;
+        SetUp(&iface, TRUE);    // new entries are UP
+        DoMethod
+        (
+            data->netped_interfaceList,
+            MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
+        );
+    }
+
+    /* Warn about DHCP limitations with more than one interface */
+    if (entries == 1)
+        DisplayErrorMessage(self, MULTIPLE_IFACES);
+
+    SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
+}
 IPTR NetPEditor__MUIM_NetPEditor_EditEntry
 (
     Class *CLASS, Object *self,
@@ -1816,28 +1843,7 @@ IPTR NetPEditor__MUIM_NetPEditor_EditEntry
 
     if (message->addEntry)
     {
-        /*
-            Create a new entry and make it the current one
-        */
-        LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
-        if (entries < MAXINTERFACES)
-        {
-            struct Interface iface;
-            InitInterface(&iface);
-            iface.name[strlen(iface.name) - 1] += entries;
-            SetUp(&iface, TRUE);    // new entries are UP
-            DoMethod
-            (
-                data->netped_interfaceList,
-                MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
-            );
-        }
-
-        /* Warn about DHCP limitations with more than one interface */
-        if (entries == 1)
-            DisplayErrorMessage(self, MULTIPLE_IFACES);
-
-        SET(data->netped_interfaceList, MUIA_List_Active, entries + 1);
+        NetPEditor_AddEntry(CLASS, self, NULL);
     }
 
     LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
