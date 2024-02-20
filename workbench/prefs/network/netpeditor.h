@@ -31,6 +31,7 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_ShowServerEntry (MUIB_NetPEditor | 0x0000000B)
 #define MUIM_NetPEditor_EditServerEntry (MUIB_NetPEditor | 0x0000000C)
 #define MUIM_NetPEditor_ApplyServerEntry (MUIB_NetPEditor | 0x0000000D)
+#define MUIM_NetPEditor_AddTetheringEntry   (MUIB_NetPEditor | 0x0000000E)
 
 struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
