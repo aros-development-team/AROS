@@ -559,7 +559,7 @@ void nParseMidiOut(struct NepClassHid *nch)
                                 break;
                             }
                             len -= 3;
-                            *out++ = cmd|chan;
+                            *out++ = (cmd >> 4) | chan;
                             *out++ = cmd;
                             ca->ca_TXReadPos = (ca->ca_TXReadPos+1) & mask;
                             *out++ = buf[ca->ca_TXReadPos];
@@ -577,7 +577,7 @@ void nParseMidiOut(struct NepClassHid *nch)
                                 break;
                             }
                             len -= 2;
-                            *out++ = cmd|chan;
+                            *out++ = (cmd >> 4) | chan;
                             *out++ = cmd;
                             ca->ca_TXReadPos = (ca->ca_TXReadPos+1) & mask;
                             *out++ = buf[ca->ca_TXReadPos];
@@ -707,7 +707,10 @@ void nParseMidiOut(struct NepClassHid *nch)
                         if(ca->ca_SysExNum == 3)
                         {
                             KPRINTF(1, ("Cont 3B SysEx %06lx\n", ca->ca_SysExData));
-                            *((ULONG *) out) = ((0x4|chan)<<24)|ca->ca_SysExData;
+                            *out++ = 0x4|chan;
+                            *out++ = (ca->ca_SysExData >> 16) & 0xff;
+                            *out++ = (ca->ca_SysExData >> 8) & 0xff;
+                            *out++ = ca->ca_SysExData & 0xff;
                             goodpkt++;
                             ca->ca_SysExData = 0;
                             ca->ca_SysExNum = 0;

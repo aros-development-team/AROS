@@ -154,6 +154,9 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 
 	}else{
 
+#if 0
+		/* hitchhikr: this part should be removed (or reworked) as it forbids to send several notes
+		 in the same transfer (like chords) */
 		if(driverdata->status==ret){
 			if(len>1){
 				driverdata->transmitfunc=Transmit_Datas;
@@ -164,6 +167,7 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 			}
 			return buf[BUF1];
 		}
+#endif
 
 		driverdata->status=ret;
 		driverdata->transmitfunc=Transmit_Datas;
