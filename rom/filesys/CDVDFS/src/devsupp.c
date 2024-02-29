@@ -234,7 +234,7 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                           /* Provide termination. */
                           *Index++ = '\n';
                           *Index = 0;
-                          BUG(dbprintf(global, "Control string: %s", LocalBuffer);)
+                          D(bug("Control string: %s", LocalBuffer));
 
                           ArgsPtr = (struct RDArgs *)AllocDosObject(DOS_RDARGS, NULL);
                           if (ArgsPtr)
@@ -332,10 +332,10 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                             Display_Error ("Out of memory");
                         } else
                           result = TRUE;
-                        BUG(dbprintf(global, "Use RockRidge: %ld\n", global->g_use_rock_ridge);)
-                        BUG(dbprintf(global, "Use joliet: %ld\n", global->g_use_joliet);)
-                        BUG(dbprintf(global, "Force lowercase: %ld\n", global->g_map_to_lowercase);)
-                        BUG(dbprintf(global, "Allow lowercase: %ld\n", global->g_maybe_map_to_lowercase);)
+                        D(bug("Use RockRidge: %ld\n", global->g_use_rock_ridge));
+                        D(bug("Use joliet: %ld\n", global->g_use_joliet));
+                        D(bug("Force lowercase: %ld\n", global->g_map_to_lowercase));
+                        D(bug("Allow lowercase: %ld\n", global->g_maybe_map_to_lowercase));
                 }
         }
         if (result)

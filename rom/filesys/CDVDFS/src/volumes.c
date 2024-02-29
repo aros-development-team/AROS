@@ -50,14 +50,14 @@ void Register_Lock (LOCK *p_lock)
   BUG
   (
     if (!Full_Path_Name (obj_p, pathname, sizeof (pathname))) {
-      BUG(dbprintf (global, "[Cannot install lock / cannot determine pathname]"));
+      D(bug("[Cannot install lock / cannot determine pathname]"));
       return;
     }
   );
 
   new = (t_lock_node*) AllocMem (sizeof (t_lock_node), MEMF_PUBLIC);
   if (!new) {
-    BUG(dbprintf (global, "[Cannot install lock on '%s']", pathname);)
+    D(bug("[Cannot install lock on '%s']", pathname);)
     return;
   }
 
@@ -66,7 +66,7 @@ void Register_Lock (LOCK *p_lock)
   new->vol_name = (char*) AllocMem (strlen (global->g_vol_name+1) + 1,
                                     MEMF_PUBLIC);
   if (!new->vol_name) {
-    BUG(dbprintf (global, "[Cannot install lock on '%s']", pathname);)
+    D(bug("[Cannot install lock on '%s']", pathname);)
     FreeMem (new, sizeof (t_lock_node));
     return;
   }
@@ -76,7 +76,7 @@ void Register_Lock (LOCK *p_lock)
   new->next = global->g_lock_list;
   global->g_lock_list = new;
 
-  BUG(dbprintf (global, "[CDVDFS]\tInstalling lock on '%s'", pathname);)
+  D(bug("[CDVDFS]\tInstalling lock on '%s'", pathname);)
 }
 
 /*  Remove the entry for p_lock in the list g_lock_list.
@@ -95,10 +95,10 @@ void Unregister_Lock (LOCK *p_lock)
       (
         if (!Path_Name_From_Path_List (ptr->pathlist, pathname,
                                        sizeof (pathname))) {
-          dbprintf (global, "[cannot determine pathname]");
+          D(bug("[cannot determine pathname]"));
           return;
         }
-        dbprintf (global, "[Removing lock from '%s']", pathname);
+        D(bug("[Removing lock from '%s']", pathname));
       );
       if (old)
         old->next = ptr->next;
@@ -109,7 +109,7 @@ void Unregister_Lock (LOCK *p_lock)
       FreeMem (ptr, sizeof (t_lock_node));
       return;
     }
-  BUG(dbprintf (global, "[Lock cannot be removed %p]", p_lock);)
+  D(bug("[Lock cannot be removed 0x%08lx]", (IPTR)p_lock);)
 }
 
 /*  Update the fl_Link values for all locks that have been
@@ -131,15 +131,15 @@ int Reinstall_Locks (struct CDVDBase *global)
     if (strcmp (global->g_vol_name+1, ptr->vol_name) == 0) {
       result++;
       if (!Path_Name_From_Path_List (ptr->pathlist, pathname, sizeof (pathname))) {
-        BUG(dbprintf (global, "[cannot determine pathname]");)
+        D(bug("[cannot determine pathname]");)
         break;
       }
-      BUG(dbprintf (global, "[Reinstalling lock on '%s'", pathname);)
+      D(bug("[Reinstalling lock on '%s'", pathname);)
       obj = Open_Object (global->g_top_level_obj, pathname);
       if (obj) {
-        BUG(dbprintf (global, "]\n");)
+        D(bug("]\n");)
       } else {
-        BUG(dbprintf (global, "(FAILED) ]\n");)
+        D(bug("(FAILED) ]\n"));
         continue;
       }
       ptr->lock->fl_Link = (BPTR)obj;
