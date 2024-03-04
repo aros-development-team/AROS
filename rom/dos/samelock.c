@@ -58,14 +58,18 @@
     status = dopacket2(DOSBase, &res, fl1->fl_Task, ACTION_SAME_LOCK, lock1, lock2);
     if (status)
         return LOCK_SAME;
+
     if (res == ERROR_ACTION_NOT_KNOWN) {
         SetIoErr(0);
         if (fl1->fl_Volume == fl2->fl_Volume && fl1->fl_Key == fl2->fl_Key)
             return LOCK_SAME;
-        if (fl1->fl_Volume == fl2->fl_Volume)
-            return LOCK_SAME_VOLUME;
     }
-    return LOCK_DIFFERENT;
+
+    /* Check for SAME_VOLUME when ACTION_SAME_LOCK returned DOS_FALSE or ACTION_SAME_LOCK is not supported. */
+    if (fl1->fl_Volume == fl2->fl_Volume)
+        return LOCK_SAME_VOLUME;
+    else
+        return LOCK_DIFFERENT;
 
     AROS_LIBFUNC_EXIT
 } /* SameLock */
