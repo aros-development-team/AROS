@@ -1014,7 +1014,10 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Entr
             ead->ed_OwnerUID    = st.st_uid;
             ead->ed_OwnerGID    = st.st_gid;
         case ED_COMMENT:
-            ead->ed_Comment=NULL;
+            ead->ed_Comment=next;
+            *next = '\0'; next++;
+            if(next>=end)
+                return ERROR_BUFFER_OVERFLOW;
         case ED_DATE:
         {
             struct DateStamp stamp;
