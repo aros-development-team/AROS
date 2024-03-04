@@ -1405,7 +1405,10 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
             comment = &((struct Node *)object)->ln_Type;
          else
             comment = object->comment;
-         comment_size = StrSize(comment);
+         if(comment)
+            comment_size = StrSize(comment);
+         else
+            comment_size = 1;
          entry_size = struct_size + name_size;
          if(type >= ED_COMMENT)
             entry_size += comment_size;
@@ -1448,7 +1451,10 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
             if(type >= ED_COMMENT)
             {
                comment_copy = buffer + struct_size + name_size;
-               CopyMem(comment, comment_copy, comment_size);
+               if(comment)
+                  CopyMem(comment, comment_copy, comment_size);
+               else
+                  *comment_copy = '\0';
                entry->ed_Comment = comment_copy;
             }
 
