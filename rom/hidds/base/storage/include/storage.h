@@ -1,15 +1,13 @@
 #ifndef HIDD_STORAGE_H
 #define HIDD_STORAGE_H
 
-#define CLID_Hidd_Storage                       "hw.storage"
-#define IID_Hidd_Storage                        CLID_Hidd_Storage
-
 #include <interface/Hidd_Bus.h>
 #include <interface/Hidd_Storage.h>
 #include <interface/Hidd_StorageController.h>
 #include <interface/Hidd_StorageBus.h>
 #include <interface/Hidd_StorageUnit.h>
 
+#define CLID_Hidd_Storage                       IID_Hidd_Storage
 #define CLID_Hidd_StorageController             IID_Hidd_StorageController
 #define CLID_Hidd_StorageBus                    IID_Hidd_StorageBus
 #define CLID_Hidd_StorageUnit                   IID_Hidd_StorageUnit
