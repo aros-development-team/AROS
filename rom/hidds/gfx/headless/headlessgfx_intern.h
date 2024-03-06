@@ -21,6 +21,9 @@
 #   include <exec/semaphores.h>
 #endif
 
+#include <hidd/hidd.h>
+#include <hidd/gfx.h>
+
 #define ATTRBASES_NUM 6
 
 struct HeadlessGfx_staticdata
