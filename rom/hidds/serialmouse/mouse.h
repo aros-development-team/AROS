@@ -13,6 +13,7 @@
 #include <exec/libraries.h>
 #include <oop/oop.h>
 #include <exec/semaphores.h>
+#include <hidd/hidd.h>
 #include <hidd/mouse.h>
 
 /* defines for buttonstate */
