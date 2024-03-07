@@ -79,6 +79,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
      */
     memset(&ctx, 0, sizeof(ctx));
     SAVEREGS(&ctx, regs);
+    ctx.regs.cs = regs->uc_mcontext.gregs[REG_CSGSFS];
     pc = PC(regs);
 
     amigaTrap = s->AmigaTrap;
@@ -100,6 +101,8 @@ static void core_TrapHandler(int sig, regs_t *regs)
     /* Trap handler(s) have possibly modified the context, so
        we convert it back before returning */
     RESTOREREGS(&ctx, regs);
+    // TODO: fill cs at context creation so that if () is not needed
+    if (ctx.regs.cs != 0) regs->uc_mcontext.gregs[REG_CSGSFS] = ctx.regs.cs;
 
     /* If the program counter has been modified, assume continuing in crash handling subroutine
        after completing signal handler. Align stack as if return address was passed, so that
