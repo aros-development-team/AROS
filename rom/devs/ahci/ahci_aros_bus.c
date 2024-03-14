@@ -192,7 +192,7 @@ int bus_dmamap_create(bus_dma_tag_t tag, unsigned flags, bus_dmamap_t *map)
 
     ahciDebug("[AHCI] %s()\n", __func__);
 
-    bus_dmamem_alloc(tag, NULL, 0, map);
+    *map = NULL;
 
     return 0;
 }
@@ -202,8 +202,6 @@ void bus_dmamap_destroy(bus_dma_tag_t tag, bus_dmamap_t map)
     struct AHCIBase *AHCIBase = (struct AHCIBase *)tag->dt_Base;
 
     ahciDebug("[AHCI] %s()\n", __func__);
-
-    bus_dmamem_free(tag, NULL, map);
 }
 
 int bus_dmamap_load(bus_dma_tag_t tag, bus_dmamap_t map, void *data, size_t len, bus_dmamap_callback_t *callback, void *info, unsigned flags)
@@ -221,6 +219,10 @@ void bus_dmamap_sync(bus_dma_tag_t tag, bus_dmamap_t map, unsigned flags)
     ULONG len = tag->dt_maxsegsz;
 
     ahciDebug("[AHCI] %s()\n", __func__);
+
+    /* Note: this works for rfis, cmd_list and cmd_table, because the go through bus_dmamem_alloc which is implemented
+       to set map to vaddr. In case of prdt, the memory DMAed with device comes from outside and should actually be
+       "assigned" to map in bus_dmamap_load so that it can be used here */
 
     if (!(flags & (1 << 31)))
         CachePreDMA(map, &len, flags);
