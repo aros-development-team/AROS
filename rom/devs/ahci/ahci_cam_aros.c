@@ -451,6 +451,54 @@ ata_fix_identify(struct ata_identify *id)
                 swap[i] = bswap16(swap[i]);
 }
 
+static void
+ata_fix_chs(struct ata_identify *id, u_int64_t capacity48)
+{
+    if (le16toh(id->cmdset83) & 0x0400) {
+        /* LBA48 feature set supported */
+        /* Code copied from ata.device */
+        ULONG div = 1;
+        /*
+            * TODO: this shouldn't be casted down here.
+            */
+        ULONG sec = capacity48;
+
+        if (sec < capacity48)
+            sec = ~((ULONG)0);
+
+        id->nsectors = 63;
+        sec /= 63;
+
+        /* Make the number even, otherwise if there is no division by 2 and by 3, resulting number will be
+           too large to fit into u_int16_t and will be cut down */
+        sec = (sec >> 1) << 1;
+        /*
+            * keep dividing by 2
+            */
+        do
+        {
+            if (((sec >> 1) << 1) != sec)
+                break;
+            if ((div << 1) > 255)
+                break;
+            div <<= 1;
+            sec >>= 1;
+        } while (1);
+
+        do
+        {
+            if (((sec / 3) * 3) != sec)
+                break;
+            if ((div * 3) > 255)
+                break;
+            div *= 3;
+            sec /= 3;
+        } while (1);
+
+        id->ncyls   = sec;
+        id->nheads  = div;
+    }
+}
 /*
  * Dummy done callback for xa.
  */
@@ -795,6 +843,8 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
                 ap->ap_probe = ATA_PROBE_GOOD;
 
         capacity_bytes = capacity * 512;
+
+        ata_fix_chs(&at->at_identify, capacity);
 
         /*
          * Negotiate NCQ, throw away any ata_xfer's beyond the negotiated
