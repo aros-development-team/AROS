@@ -158,10 +158,10 @@ int     ahci_os_softsleep(void)
 {
     struct IORequest *io = ahci_OpenTimer();
     if (io != NULL) {
-        ahci_WaitTO(io, 0, 100 * 1000, 0);
+        ahci_WaitTO(io, 0, 50 * 1000, 0);
         ahci_CloseTimer(io);
     }
-    return 100;
+    return 50;
 }
 
 /*
