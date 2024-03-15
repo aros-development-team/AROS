@@ -78,6 +78,10 @@
 
         head -> IntVSprite = NULL;
         tail -> IntVSprite = NULL;
+        head -> PrevVSprite = NULL;
+        tail -> NextVSprite = NULL;
+
+        if(GInfo->collHandler) GInfo->collHandler->collPtrs[0] = 0;
 
         AROS_LIBFUNC_EXIT
 } /* InitGels */

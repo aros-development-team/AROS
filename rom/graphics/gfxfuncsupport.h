@@ -216,6 +216,10 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
 		       WORD xSize, WORD ySize, ULONG minterm,
 		       struct GfxBase *GfxBase);
 
+void GenMinterms(struct RastPort *rp);
+void pokeCL(UWORD *ci, UWORD target, UWORD table);
+struct CopIns *pokeCI(struct CopIns *ci, UWORD *field1, short field2);
+
 /****************************************************************************************/
 
 static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r, struct GfxBase *GfxBase)

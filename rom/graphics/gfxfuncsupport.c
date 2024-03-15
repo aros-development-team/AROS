@@ -1221,3 +1221,123 @@ BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
 
     return res;
 }
+
+/****************************************************************************************/
+
+void GenMinterms(struct RastPort *rp)
+{
+    int i;
+    UBYTE minA=0, minB=0;
+
+    // COMPLEMENT
+    if(rp->DrawMode & COMPLEMENT)
+    {
+        minA = (rp->DrawMode & INVERSVID) ? 0x6a : 0x9a;
+        for(i=0;i<8;i++)
+            rp->minterms[i] = minA;
+    }
+    else
+    {
+        for(i=0 ; i<8 ; i++)
+        {
+            minA = ((rp->FgPen >> i) & 1) * 3;
+            minB = (rp->DrawMode & JAM2) ? ((rp->BgPen >> i) & 1) * 3 : 2;
+            if(rp->DrawMode & INVERSVID)
+                minA = (minB << 2) | minA;
+            else minA = (minA << 2) | minB;
+
+            rp->minterms[i] = (minA << 4) | 0x0a;
+        }
+    }
+}
+
+/****************************************************************************************/
+
+void pokeCL(UWORD *ci, UWORD target, UWORD table)
+{
+    ULONG targ = (ULONG)target;
+    if(!ci) return;
+    targ &= 0x1fe;
+    for(;ci;ci+=2)
+    {
+        if( ((*ci)==0xffff) && ((*(ci+1) == 0xfffe))) return;
+        if(*ci == targ) break;
+    }
+    if (((*ci) == 0xffff) && ((*(ci+1)==0xfffe))) return;
+    if(*ci == targ)
+    {
+        ci++;
+        *ci++ = table;
+    }
+}
+
+/****************************************************************************************/
+
+struct CopIns *pokeCI(struct CopIns *ci, UWORD *field1, short field2)
+{
+    struct CopIns *c;
+    UWORD op = COPPER_MOVE;
+    c = ci;
+    if(c)
+    {
+        short out = FALSE;
+        while(!out)
+        {
+            switch(c->OpCode & 3)
+            {
+                case COPPER_MOVE:
+                {
+                    if(c->DESTADDR == (((UWORD)field1) & 0x1fe))
+                    {
+                        short mask;
+                        if((mask = op&0xC000))
+                        {
+                            if(c->OpCode & mask)
+                            {
+                                c->DESTDATA = field2;
+                                return c;
+                            }
+                        }
+                        else
+                        {
+                            c->DESTDATA = field2;
+                            return c;
+                        }
+                    }
+                    c++;
+                    break;
+                }
+                case COPPER_WAIT:
+                {
+                    if(c->HWAITPOS == 255)
+                    {
+                        return 0;
+                    }
+                    else c++;
+                    break;
+                }
+                case CPRNXTBUF:
+                {
+                    if(c->NXTLIST == NULL)
+                    {
+                        out = TRUE;
+                    }
+                    else
+                    {
+                        if((c = c->NXTLIST->CopIns) == NULL)
+                        {
+                            out = TRUE;
+                        }
+                    }
+                    break;
+                }
+                default:
+                {
+                    out=TRUE;
+                    break;
+                }
+            }
+        }
+    }
+    return 0;
+}

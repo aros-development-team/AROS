@@ -45,8 +45,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: Write graphics/SetWriteMask() */
-    return FALSE;
+    rp->Mask = (UBYTE)mask;
+    return -1;
  
     AROS_LIBFUNC_EXIT
     
