@@ -641,7 +641,7 @@ noccc:
     for (i = 0; i < AHCI_MAX_PORTS; i++) {
         if ((ap = sc->sc_ports[i]) != NULL) {
             while (ap->ap_signal & AP_SIGF_THREAD_SYNC)
-                ahci_os_sleep(1000);
+                ahci_os_sleep(100);
         }
     }
 
@@ -665,13 +665,13 @@ noccc:
     for (i = 0; i < AHCI_MAX_PORTS && ahci_synchronous_boot; i++) {
             if ((ap = sc->sc_ports[i]) != NULL) {
                     while (ap->ap_signal & AP_SIGF_INIT)
-                        ahci_os_sleep(1000);
+                        ahci_os_sleep(100);
                     ahci_os_lock_port(ap);
                     if (ahci_cam_attach(ap) == 0) {
                             ahci_cam_changed(ap, NULL, -1);
                             ahci_os_unlock_port(ap);
                             while ((ap->ap_flags & AP_F_SCAN_COMPLETED) == 0) {
-                                    ahci_os_sleep(1000);
+                                    ahci_os_sleep(100);
                             }
                     } else {
                             ahci_os_unlock_port(ap);
