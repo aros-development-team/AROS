@@ -349,7 +349,7 @@ retry:
 	 * target 0, because when a PM is attached target 0 represents
 	 * slot #0 behind the PM.
 	 */
-	if (ahci_poll(ccb, 5000, ahci_quick_timeout) != ATA_S_COMPLETE) {
+	if (ahci_poll(ccb, 500 + (AhciStartDelay * 20), ahci_quick_timeout) != ATA_S_COMPLETE) {
 		ahciInfo(str_pmprobeno2, PORTNAME(ap));
 		if (--count) {
 			rstcount = 2;
