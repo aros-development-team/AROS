@@ -123,6 +123,7 @@ static const struct ahci_pciid ahci_msi_blacklist[] = {
 
 static int	ahci_msi_enable = 1;
 int	ahci_synchronous_boot = 1;
+int ahci_icc_bug = 0;
 
 /*
  * Match during probe and attach.  The device does not yet have a softc.
@@ -312,6 +313,10 @@ ahci_pci_attach(device_t dev)
             }
         }
     }
+
+	/* VirtualBox AHCI controller */
+	if (vid == PCI_VENDOR_INTEL && did == 0x2829 && rev == 0x2)
+		ahci_icc_bug = 1;
 
     sc->sc_irq_type = pci_alloc_1intr(dev, msi_enable,
         &sc->sc_rid_irq, &irq_flags);
