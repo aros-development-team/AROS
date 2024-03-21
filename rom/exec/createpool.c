@@ -105,7 +105,7 @@
     D(bug("[CreatePool] Aligned puddle size: %u (0x%08X)\n", puddleSize, puddleSize);)
 
     /* Allocate the first puddle. It will contain pool header. */
-    firstPuddle = AllocMemHeader(puddleSize, requirements, &tp, SysBase);
+    firstPuddle = AllocMemHeader(puddleSize, requirements & ~MEMF_SEM_PROTECTED, &tp, SysBase);
     D(bug("[CreatePool] Initial puddle 0x%p\n", firstPuddle);)
 
     if (firstPuddle)
@@ -144,10 +144,11 @@
              * Just link the pool structure at the ln_Name - we will need that
              * for the semaphore
              */
-            firstPuddle->mh_Node.ln_Name = (STRPTR)&pool->sem;
-
-            /* Use mh_First to store the pool requirements */
-            firstPuddle->mh_First = (APTR)(IPTR)requirements;
+            if (requirements & MEMF_SEM_PROTECTED)
+            {
+                firstPuddle->mh_Node.ln_Name = (STRPTR)&pool->sem;
+                firstPuddle->mh_First = (APTR)((IPTR)firstPuddle->mh_First | MEMF_SEM_PROTECTED);
+            }
         }
         else
         {
