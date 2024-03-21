@@ -1128,25 +1128,6 @@ void * tlsf_init(struct MemHeaderExt * mhe)
     return tlsf;
 }
 
-static void * tlsf_init_autogrow(struct MemHeaderExt * mhe, IPTR puddle_size, ULONG requirements, autogrow_get grow_function, autogrow_release release_function, APTR autogrow_data)
-{
-    tlsf_t *tlsf = tlsf_init(mhe);
-
-    if (tlsf)
-    {
-        if (puddle_size < 4096)
-            puddle_size = 4096;
-
-        tlsf->autogrow_puddle_size = puddle_size;
-        tlsf->autogrow_requirements = requirements;
-        tlsf->autogrow_data = autogrow_data;
-        tlsf->autogrow_get_fn = grow_function;
-        tlsf->autogrow_release_fn = release_function;
-    }
-
-    return tlsf;
-}
-
 void tlsf_destroy(struct MemHeaderExt * mhe)
 {
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
@@ -1282,7 +1263,21 @@ static VOID release_ram(void * data, APTR ptr, IPTR size)
 
 static void * init_Pool(struct MemHeaderExt *mhe, IPTR puddleSize, IPTR initialSize)
 {
-    return tlsf_init_autogrow(mhe, puddleSize, (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First, fetch_more_ram, release_ram, mhe);
+    tlsf_t *tlsf = tlsf_init(mhe);
+
+    if (tlsf)
+    {
+        if (puddleSize < 4096)
+            puddleSize = 4096;
+
+        tlsf->autogrow_puddle_size  = puddleSize;
+        tlsf->autogrow_requirements = (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First;
+        tlsf->autogrow_data         = mhe;
+        tlsf->autogrow_get_fn       = fetch_more_ram;
+        tlsf->autogrow_release_fn   = release_ram;
+    }
+
+    return tlsf;
 }
 
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
