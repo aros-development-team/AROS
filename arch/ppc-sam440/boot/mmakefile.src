@@ -69,7 +69,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-shell \
 #MM     kernel-shellcommands
 
-#MM- kernel-link-sam440-ppc: setup-sam440-ppc kernel-kernel-kobj kernel-exec-kobj kernel-sam440-ppc-quick
+#MM- kernel-link-sam440-ppc: setup-sam440-ppc kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj kernel-sam440-ppc-quick
 
 #MM
 kernel-link-sam440-ppc: $(AROSARCHDIR)/kernel
@@ -77,10 +77,10 @@ kernel-link-sam440-ppc: $(AROSARCHDIR)/kernel
 #MM
 kernel-link-sam440-ppc-quick: $(AROSARCHDIR)/kernel
 
-$(AROSARCHDIR)/kernel: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+$(AROSARCHDIR)/kernel: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/task_resource.o
 	@$(ECHO) "Linking    $(AROS_DIR_BOOTARCH)/kernel"
 	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
-        -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
+        -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/task_resource.o \
         -L$(AROS_LIB) -larossupport -lamiga -lautoinit -llibinit -lstdc.static -lgcc
 
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
