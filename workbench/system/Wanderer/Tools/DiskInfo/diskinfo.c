@@ -392,7 +392,7 @@ Object *DiskInfo__OM_NEW
                                     MUIA_Text_Contents, __(MSG_FILESYSTEM),
                                 End,
                                 Child, (IPTR) TextObject,
-                                    MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33l",
+                                    MUIA_Text_PreParse, (IPTR) "\33l",
                                     MUIA_Text_Contents, (IPTR) filesystem,
                                 End,
 #if (1)
