@@ -2565,6 +2565,9 @@ void wanderer_menufunc_icon_delete(void)
     ULONG updatedIcons;
 
     DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
+    if ((IPTR)entry == MUIV_IconList_NextIcon_End)
+        return;
+
     displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
     displayAskHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskModeFunc;
     

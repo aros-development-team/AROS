@@ -33,6 +33,8 @@
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
 
+#include <devices/rawkeycodes.h>
+
 #ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
 #endif
@@ -225,6 +227,12 @@ Object *IconWindowDrawerList__OM_NEW(Class *CLASS, Object *self, struct opSet *m
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port = (struct MsgPort *)_newIconList__FSNotifyPort;
             D(bug("[Wanderer:DrawerList] %s: FS Notify Port @ 0x%p\n", __PRETTY_FUNCTION__, _newIconList__FSNotifyPort));
         }
+
+        data->iwidld_EventHandlerNode.ehn_Priority  = 1;
+        data->iwidld_EventHandlerNode.ehn_Flags     = 0;
+        data->iwidld_EventHandlerNode.ehn_Object    = self;
+        data->iwidld_EventHandlerNode.ehn_Class     = CLASS;
+        data->iwidld_EventHandlerNode.ehn_Events    = IDCMP_RAWKEY;
     }
 
     return self;
@@ -471,6 +479,9 @@ IPTR IconWindowDrawerList__MUIM_Setup
 
     UpdateFSNotification(directory_path, data, self);
 
+    /* Adding event handler */
+    DoMethod(_win(self), MUIM_Window_AddEventHandler, &data->iwidld_EventHandlerNode);
+
     D(bug("[Wanderer:DrawerList] %s: Setup complete!\n", __PRETTY_FUNCTION__));
   
     return TRUE;
@@ -512,7 +523,34 @@ IPTR IconWindowDrawerList__MUIM_Cleanup
 
     RemoveFSNotification(data);
 
+    DoMethod(_win(self), MUIM_Window_RemEventHandler, &data->iwidld_EventHandlerNode);
+
     return DoSuperMethodA(CLASS, self, message);
+}
+///
+
+///IconWindowDrawerList__MUIM_HandleEvent()
+IPTR IconWindowDrawerList__MUIM_HandleEvent
+(
+    Class *CLASS, Object *self, struct MUIP_HandleEvent *message
+)
+{
+    struct IntuiMessage *imsg = message->imsg;
+
+    D(bug("[Wanderer:DrawerList]: %s()\n", __func__));
+
+
+    switch(message->imsg->Code)
+    {
+        case(RAWKEY_DELETE):
+        {
+            void wanderer_menufunc_icon_delete(void);
+            wanderer_menufunc_icon_delete();
+            return MUI_EventHandlerRC_Eat;
+        }
+    }
+
+    return 0;
 }
 ///
 
@@ -651,6 +689,7 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     MUIM_Setup,                                     Msg,
     MUIM_Cleanup,                                   Msg,
     MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
+    MUIM_HandleEvent,                               struct MUIP_HandleEvent *,
     MUIM_IconWindowDrawerList_FileSystemChanged,    Msg,
     MUIM_IconWindowIconList_RateLimitRefresh,       Msg
 );
