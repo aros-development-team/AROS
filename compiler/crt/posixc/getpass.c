@@ -8,6 +8,7 @@
 
 #include <limits.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "__posixc_intbase.h"
 
