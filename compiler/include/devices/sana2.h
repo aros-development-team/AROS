@@ -77,8 +77,8 @@
 #define S2_READORPHAN                   (CMD_NONSTD + 15)
 #define S2_ONLINE                       (CMD_NONSTD + 16)
 #define S2_OFFLINE                      (CMD_NONSTD + 17)
-#define S2_ADDMULTICASTADDRESSES        (CMD_NONSTD + 0xc000)
-#define S2_DELMULTICASTADDRESSES        (CMD_NONSTD + 0xc001)
+#define S2_ADDMULTICASTADDRESSES        0xc000
+#define S2_DELMULTICASTADDRESSES        0xc001
 
 #define S2ERR_NO_ERROR                  0
 #define S2ERR_NO_RESOURCES              1
