@@ -157,6 +157,14 @@ of_node_t * dt_find_node_by_phandle(uint32_t phandle)
 #define MAX_KEY_SIZE    64
 char ptrbuf[64];
 
+// Compare up to the at sign (if there's a unit address) or end of string
+static int node_name_matches(const char *name, const char *search)
+{
+    const char *atSign = strchr(name, '@');
+    int nameLen = atSign ? atSign - name : strlen(name);
+    return nameLen == strlen(search) && strncmp(name, search, nameLen) == 0;
+}
+
 of_node_t * dt_find_node(char *key)
 {
     int i;
@@ -181,7 +189,7 @@ of_node_t * dt_find_node(char *key)
 
             ForeachNode(&ret->on_children, node)
             {
-                if (!strcmp(node->on_name, ptrbuf))
+                if (node_name_matches(node->on_name, ptrbuf))
                 {
                     ret = node;
                     break;

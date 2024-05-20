@@ -3,6 +3,7 @@
 
     Desc: Add a device to the public list of devices.
 */
+#define DEBUG 1
 #include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/devices.h>
@@ -51,6 +52,8 @@
 {
     AROS_LIBFUNC_INIT
     ASSERT_VALID_PTR(device);
+
+    D(bug("[AddDevice] Adding %s", device->dd_Library.lib_IdString));
 
     /* Just in case the user forgot them */
     device->dd_Library.lib_Node.ln_Type=NT_DEVICE;
