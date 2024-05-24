@@ -6845,6 +6845,17 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         if ((message->obj == obj) && (drop_target_node) && (drop_target_node->ie_Flags & ICONENTRY_FLAG_SELECTED))
             drop_target_node = NULL;
 
+        /* Block action when target is an icon of type WBDRAWER or WBDISK without real directory behing it */
+        if ((drop_target_node != NULL) &&
+            (drop_target_node->ie_IconListEntry.type == ST_FILE) &&
+            (drop_target_node->ie_Flags & ICONENTRY_FLAG_ISONLYICON) &&
+            (drop_target_node->ie_DiskObj->do_Type == WBDRAWER || drop_target_node->ie_DiskObj->do_Type == WBDISK)
+        )
+        {
+            DisplayBeep(NULL);
+            goto dragdropdone;
+        }
+
         if ((drop_target_node != NULL) &&
             ((drop_target_node->ie_IconListEntry.type == ST_SOFTLINK)   ||
              (drop_target_node->ie_IconListEntry.type == ST_ROOT)       ||
