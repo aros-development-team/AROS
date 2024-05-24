@@ -595,7 +595,14 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __func__
 
                     if ( !OpenWorkbenchObjectA(ent->ile_IconEntry->ie_IconNode.ln_Name, argsTagList) )
                     {
-                        execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
+                        if ((ent->ile_IconEntry->ie_Flags & ICONENTRY_FLAG_ISONLYICON) &&
+                            (ent->ile_IconEntry->ie_DiskObj->do_Type == WBDRAWER ||
+                            ent->ile_IconEntry->ie_DiskObj->do_Type == WBDISK))
+                        {
+                            /* This is a lone drawer or disk icon. Do no further processing */
+                        }
+                        else
+                            execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
                     }
                     struct TagItem * tag = argsTagList;
                     while ((tag = FindTagItem(WBOPENA_ArgLock, tag)))

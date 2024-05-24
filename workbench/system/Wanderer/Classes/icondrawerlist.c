@@ -101,6 +101,7 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
                 {
                     int len = strlen(fib->fib_FileName);
                     struct IconEntry *this_Icon;
+                    BOOL isonlyicon = FALSE;
 
                     memset(namebuffer, 0, 512);
                     strcpy(filename, fib->fib_FileName);
@@ -129,6 +130,11 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
                                 D(bug("[IconDrawerList] %s: File found .. skipping\n", __PRETTY_FUNCTION__));
                                 UnLock(tmplock);
                                 continue;
+                            }
+                            else
+                            {
+                                /* There is no real file, mark accordingly */
+                                isonlyicon = TRUE;
                             }
                         }
                     }
@@ -164,20 +170,22 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
                         }
                         this_Icon->ie_IconNode.ln_Pri = 0;
 
-            if (fib->fib_DirEntryType == ST_FILE)
-            {
+                        if (fib->fib_DirEntryType == ST_FILE)
+                        {
+                            if (isonlyicon) this_Icon->ie_Flags |= ICONENTRY_FLAG_ISONLYICON;
+
                             this_Icon->ie_IconListEntry.type = ST_FILE;
                             D(bug("[IconDrawerList] %s: ST_FILE Entry created\n", __PRETTY_FUNCTION__));
-            }
-            else if (fib->fib_DirEntryType == ST_USERDIR)
-            {
+                        }
+                        else if (fib->fib_DirEntryType == ST_USERDIR)
+                        {
                             this_Icon->ie_IconListEntry.type = ST_USERDIR;
                             D(bug("[IconDrawerList] %s: ST_USERDIR Entry created\n", __PRETTY_FUNCTION__));
-            }
-            else
-            {
+                        }
+                        else
+                        {
                             D(bug("[IconDrawerList] %s: Unknown Entry Type created\n", __PRETTY_FUNCTION__));
-            }
+                        }
                     }
                     else
                     {

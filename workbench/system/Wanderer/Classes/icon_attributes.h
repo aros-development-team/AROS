@@ -74,6 +74,7 @@
 #define ICONENTRY_FLAG_HASICON          (1<<5)        /* entry has an '.info' file          */
 #define ICONENTRY_FLAG_TODAY            (1<<6)        /* entry's timestamp is from today    */
 #define ICONENTRY_FLAG_LASSO            (1<<7)        /* icon is being altered by a lasso   */
+#define ICONENTRY_FLAG_ISONLYICON       (1<<8)        /* entry represents an '.info' file without a real file behind it */
 
 
 /* For Icons of type ST_ROOT */
