@@ -3673,6 +3673,13 @@ D(bug("[Wanderer] %s: WBHM_TYPE_OPEN\n", __func__));
                     Object *child;
                     CONST_STRPTR buf = wbhm->wbhm_Data.Open.Name;
 
+                    /* Validate existance of requested drawer path */
+                    BPTR lock = Lock(buf, SHARED_LOCK);
+                    if (lock == BNULL)
+                        break;
+
+                    UnLock(lock);
+
                     while ((child = NextObject(&cstate)))
                     {
                         if (XGET(child, MUIA_UserData))

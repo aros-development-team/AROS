@@ -566,6 +566,17 @@ static BOOL HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
     struct WBCommandMessage *wbcm     = NULL;
     struct WBHandlerMessage *wbhm     = NULL;
     CONST_STRPTR             namecopy = NULL;
+    BPTR                     lock     = BNULL;
+
+    lock = Lock(name, ACCESS_READ);
+    if (lock == BNULL)
+    {
+        /* Inform user if the path the icon points to does not exist. Can happen with
+           .icon files left after deleting the directory itself. */
+        DisplayBeep(NULL);
+        return FALSE;
+    }
+    UnLock(name);
 
     if
     (
