@@ -25,32 +25,53 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBRename 0.5 (10.12.2023) \xA9 2006-2023 AROS Dev Team";
+char versionstring[] = "$VER: WBRename 0.6 (21.06.2024) \xA9 2006-2023 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
 static void Cleanup(STRPTR s);
 static BOOL doRename(const STRPTR oldname, const STRPTR newname);
+static BOOL doRelabel(const STRPTR oldname, const STRPTR newname);
 static void MakeGUI(void);
 
 static Object *app, *window, *bt_ok, *bt_cancel, *str_name;
 static struct Hook bt_ok_hook;
-static BPTR parentlock = (BPTR)-1;
 static STRPTR oldname;
 static TEXT str_line[256];
-static BPTR oldlock = (BPTR)-1;
 static STRPTR illegal_chars = "/:";
 static BOOL isInfoFile = FALSE;
+static BOOL isVolume = FALSE;
+
+/* Cleaned up */
+static BPTR oldlock = (BPTR)-1;
+static STRPTR volname = NULL;
+static STRPTR wbobjname = NULL;
 
 static BOOL checkIfInfoFile(CONST_STRPTR path)
 {
     return (strncmp(path + strlen(path) - 5, ".info", 5) == 0);
 }
 
+static BOOL checkIfVolume(BPTR lock, CONST_STRPTR path)
+{
+    BOOL _ret = FALSE;
+
+    if (strcmp(path, "") == 0)
+    {
+        struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+        Examine(lock, fib);
+        if (fib->fib_DirEntryType == ST_ROOT)
+            _ret = TRUE;
+        FreeDosObject(DOS_FIB, fib);
+    }
+
+    return _ret;
+}
+
 int main(int argc, char **argv)
 {
     struct WBStartup *startup;
-    STRPTR fullname;
+    BPTR parentlock = (BPTR)-1;
 
     if (argc != 0)
     {
@@ -67,24 +88,39 @@ int main(int argc, char **argv)
     parentlock = startup->sm_ArgList[1].wa_Lock;
     oldname    = startup->sm_ArgList[1].wa_Name;
 
-    if (checkIfInfoFile(oldname))
+    if ((parentlock == BNULL) || (oldname == NULL))
+       Cleanup(_(MSG_INVALID_LOCK));
+
+    /* If renaming, parent lock is lock to parent directory of file/directory to be renamed */
+    /* If relabeling, parent lock is lock to volume that is to be relabeled */
+
+    wbobjname = AllocateNameFromLock(parentlock);
+
+    if (checkIfVolume(parentlock, oldname))
+    {
+        isVolume = TRUE;
+        volname = StrDup(wbobjname);
+        volname[strlen(volname) - 1] = '\0'; /* Cut the ':' at end */
+        oldname = volname;
+    }
+
+    if (!isVolume && checkIfInfoFile(oldname))
     {
         isInfoFile = TRUE;
         WORD len = strlen(oldname);
         oldname[len - 5] = '\0';
     }
 
-    if ((parentlock == BNULL) || (oldname == NULL))
-       Cleanup(_(MSG_INVALID_LOCK));
-
-    oldlock = CurrentDir(parentlock);
+    if (!isVolume)
+        oldlock = CurrentDir(parentlock);
     
     MakeGUI();
     DoMethod(app, MUIM_Application_Execute);
 
-    fullname = AllocateNameFromLock(parentlock);
-    UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
-    FreeVec(fullname);
+    UpdateWorkbenchObject(wbobjname, WBDRAWER, TAG_DONE);
+
+    if (isVolume)
+        UpdateWorkbenchObject("", WBAPPICON, TAG_DONE); /* Hack to refresh desktop */
 
     Cleanup(NULL);
     return RETURN_OK;
@@ -161,8 +197,14 @@ static void bt_ok_hook_function(void)
 {
     STRPTR newname = (STRPTR)XGET(str_name, MUIA_String_Contents);
     D(bug("WBRename oldname %s newname %s \n", oldname, newname));
+    BOOL success = FALSE;
 
-    if (doRename(oldname, newname))
+    if (isVolume)
+        success = doRelabel(oldname, newname);
+    else
+        success = doRename(oldname, newname);
+
+    if (success)
     {
        DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
@@ -204,6 +246,49 @@ static BOOL canRename(const STRPTR oldname, const STRPTR newname)
     }
 
     return TRUE;
+}
+
+static STRPTR getDevNameForVolume(STRPTR volumeName)
+{
+    struct DosList *dl;
+    STRPTR devName = NULL;
+
+    /* Get the work drives device name */
+    dl = LockDosList(LDF_VOLUMES | LDF_READ);
+    dl = FindDosEntry(dl, volumeName, LDF_VOLUMES | LDF_READ);
+    UnLockDosList(LDF_VOLUMES | LDF_READ);
+
+    if (dl != NULL)
+    {
+        APTR voltask = dl->dol_Task;
+        dl = LockDosList(LDF_DEVICES|LDF_READ);
+        if (dl) {
+            while((dl = NextDosEntry(dl, LDF_DEVICES)))
+            {
+                if (dl->dol_Task == voltask)
+                {
+                    struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
+                    devName = AROS_BSTR_ADDR(dl->dol_Name);
+                }
+            }
+            UnLockDosList(LDF_VOLUMES|LDF_READ);
+        }
+    }
+    return devName;
+}
+
+static BOOL doRelabel(const STRPTR oldname, const STRPTR newname)
+{
+    TEXT buff[128];
+    strcpy(buff, "");
+    strcat(buff, oldname);
+    strcat(buff, ":"); /* Volume name with ':' at end */
+    STRPTR tmp = getDevNameForVolume(buff);
+    strcpy(buff, "");
+    strcat(buff, tmp);
+    strcat(buff, ":"); /* Device name with ':' at end */
+
+    return Relabel(buff, newname);
 }
 
 static BOOL doRename(const STRPTR oldname, const STRPTR newname)
@@ -351,7 +436,13 @@ static void Cleanup(STRPTR s)
     MUI_DisposeObject(app);
 
     if (oldlock != (BPTR)-1)
-       CurrentDir(oldlock);
+        CurrentDir(oldlock);
+
+    if (volname != NULL)
+        FreeVec(volname);
+
+    if (wbobjname != NULL)
+        FreeVec(wbobjname);
 
     if (s)
     {

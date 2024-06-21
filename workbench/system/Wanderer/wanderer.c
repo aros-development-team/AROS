@@ -1858,6 +1858,21 @@ void wanderer_menufunc_icon_rename(void)
             {
                 continue; /* TODO: Implement */
             }
+            else if (entry->type == ST_ROOT)
+            {
+                STRPTR diskname = entry->ile_IconEntry->ie_IconNode.ln_Name;
+                BPTR lock = Lock(diskname, ACCESS_READ);
+
+                OpenWorkbenchObject
+                (
+                    "WANDERER:Tools/WBRename",
+                    WBOPENA_ArgLock, (IPTR) lock,
+                    WBOPENA_ArgName, (IPTR) "",
+                    TAG_DONE
+                );
+
+                UnLock(lock);
+            }
             else
             {
                 BOOL isInfoFile = FALSE;
