@@ -241,7 +241,7 @@ static struct Node *findNameNoCase(struct List *list, CONST_STRPTR name)
         if (node->ln_Name)
         {
             /* Check the node. If we found it, stop. */
-            if (!stricmp(node->ln_Name, name))
+            if (!strcasecmp(node->ln_Name, name))
                 break;
         }
     }
