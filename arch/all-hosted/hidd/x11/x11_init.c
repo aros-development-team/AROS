@@ -204,6 +204,7 @@ int X11_Init(struct x11_staticdata *xsd)
         xsd->clipboard_property_atom    = XCALL(XInternAtom, xsd->display, "AROS_HOSTCLIP", FALSE);
         xsd->clipboard_incr_atom        = XCALL(XInternAtom, xsd->display, "INCR", FALSE);
         xsd->clipboard_targets_atom     = XCALL(XInternAtom, xsd->display, "TARGETS", FALSE);
+        xsd->utf8_string_atom           = XCALL(XInternAtom, xsd->display, "UTF8_STRING", FALSE);
 
         xtp.parent      = FindTask(NULL);
         xtp.ok_signal   = SIGBREAKF_CTRL_E;
