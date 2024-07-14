@@ -108,7 +108,7 @@ VOID x11clipboard_handle_commands(struct x11_staticdata *xsd)
                 LOCK_X11
                 XCALL(XConvertSelection, xsd->display,
                                   xsd->clipboard_atom,
-                                  XA_STRING,
+                                  xsd->utf8_string_atom,
                                   xsd->clipboard_property_atom,
                                   xsd->dummy_window_for_creating_pixmaps,
                                   CurrentTime);
@@ -431,13 +431,13 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 
                 if (event->xselectionrequest.target == xsd->clipboard_targets_atom)
                 {
-                    long supported_targets[] = {XA_STRING};
+                    Atom supported_targets[] = { xsd->utf8_string_atom, XA_STRING };
 
                     LOCK_X11
                     XCALL(XChangeProperty, xsd->display,
                                     xsd->hostclipboard_writerequest_window,
                                     xsd->hostclipboard_writerequest_property,
-                                    xsd->clipboard_targets_atom,
+                                    XA_ATOM,
                                     32,
                                     PropModeReplace,
                                     (unsigned char *)supported_targets,
@@ -473,6 +473,19 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
                         
                         e.xselection.property = None;
                     }
+                    UNLOCK_X11
+                }
+                else if (event->xselectionrequest.target = xsd->utf8_string_atom)
+                {
+                    LOCK_X11
+                    XCALL(XChangeProperty, xsd->display,
+                                    xsd->hostclipboard_writerequest_window,
+                                    xsd->hostclipboard_writerequest_property,
+                                    xsd->utf8_string_atom,
+                                    8,
+                                    PropModeReplace,
+                                    (unsigned char *)xsd->hostclipboard_writebuffer,
+                                    (int)xsd->hostclipboard_writebuffer_size);
                     UNLOCK_X11
                 }
                 else
