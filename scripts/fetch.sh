@@ -75,20 +75,20 @@ fetch_github()
     $ret
 }
 
-wget_ftp()
+curl_ftp()
 {
-    local wgetsrc="$1" wgetoutput="$2"
-    local wgetextraflags
+    local curlsrc="$1" curloutput="$2"
+    local curlextraflags
     local ret=true
 
     for (( ; ; ))
     do
-        if !  eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c \"$wgetsrc\" -O $wgetoutput"; then
+        if !  eval "curl -f --retry 3 --retry-connrefused $curlextraflags --max-time 15 -C - \"$curlsrc\" -o $curloutput"; then
             if test "$ret" = false; then
                 break
             fi
             ret=false
-            wgetextraflags="--secure-protocol=TLSv1"
+            curlextraflags="--tlsv1 --tls-max 1.0"
         else
             ret=true
             break
@@ -171,7 +171,7 @@ fetch()
             rm -f "$destination/$file.tmp"
             ;;
         ftp)    
-            if ! wget_ftp "$origin/$file" "$destination/$file.tmp"; then
+            if ! curl_ftp "$origin/$file" "$destination/$file.tmp"; then
                 ret=false
             else
                 mv "$destination/$file.tmp" "$destination/$file"
