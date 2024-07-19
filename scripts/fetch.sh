@@ -98,44 +98,46 @@ wget_ftp()
     $ret
 }
 
-wget_http()
-{
-    local tryurl="$1" wgetoutput="$2"
-    local wgetextraflags=""
-    local wgetext=""
-    local wgetsrc
+curl_http() {
+    local tryurl="$1" curloutput="$2"
+    local curlextraflags=""
+    local curlext=""
+    local curlsrc
     local urlsrc
     local ret
 
     if echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
         if ! echo "$tryurl" | grep "?download" >/dev/null; then
-            wgetext="?download"
+            curlext="?download"
         fi
     fi
 
-    urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
+    urlsrc=$(curl -fsIL -o /dev/null -w "%{url_effective}" "$tryurl$curlext")
     ret=$?
     if [ $ret -ne 0 ]; then
-        urlsrc=$(wget --secure-protocol=TLSv1 --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
+        # In case an old confused server is encountered we assume TLS 1.0.
+        # The system this script runs on might not support TLS 1.0,
+        # and then we are out of luck, but we tried.
+        # Servers of this kind should be super rare, but the fallback was
+        # carried over from the original code using wget.
+        urlsrc=$(curl --tlsv1 --tls-max 1.0 -fsIL -o /dev/null -w "%{url_effective}" "$tryurl$curlext")
         ret=$?
     fi
     if [ $ret -ne 0 ]; then
-        wgetsrc="$tryurl"
+        curlsrc="$tryurl"
     else
-        local origIFS=$IFS
-        IFS=$'\n' wgetsrc=($(echo "$urlsrc" | cut -d' ' -f4))
-        IFS=$origIFS
+        curlsrc="$urlsrc"
     fi
     ret=true
 
     for (( ; ; ))
     do
-        if ! eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c \"$wgetsrc\" -O $wgetoutput"; then
+        if ! eval "curl -fL --retry 3 --retry-connrefused $curlextraflags --max-time 15 -C - \"$curlsrc\" -o $curloutput"; then
             if test "$ret" = false; then
                 break
             fi
             ret=false
-            wgetextraflags="--secure-protocol=TLSv1"
+            curlextraflags="--tlsv1 --tls-max 1.0"
         else
             ret=true
             break
@@ -161,7 +163,7 @@ fetch()
 
     case $protocol in
         https| http)
-            if ! wget_http "$origin/$file" "$destination/$file.tmp"; then
+            if ! curl_http "$origin/$file" "$destination/$file.tmp"; then
                 ret=false
             else
                 mv "$destination/$file.tmp" "$destination/$file"
