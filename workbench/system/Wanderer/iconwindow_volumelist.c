@@ -265,30 +265,31 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
                     linelen = strlen(linebuf) - 1; /* drop the newline char */
                     linebuf[linelen] = '\0';
 
-                    if ((bdrp_fullfile = AllocVec(linelen + strlen(bdrp_dir), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+                    if ((bdrp_fullfile = AllocVec(linelen + strlen(bdrp_dir) + 5, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
                     {
                         ULONG lofTYPE = 0;
+                        BPTR lofLock = BNULL;
+                        BOOL isonlyicon = FALSE;
 
                         sprintf(bdrp_fullfile, "%s%s", bdrp_dir, &linebuf[1]);
-                        
-                        struct FileInfoBlock        *lofFIB = AllocDosObject(DOS_FIB, NULL);
-                        if (lofFIB)
+
+                        if ((lofLock = Lock(bdrp_fullfile, SHARED_LOCK)) == BNULL)
                         {
-                            BPTR                lofLock = BNULL;
-                            if ((lofLock = Lock(bdrp_fullfile, SHARED_LOCK)) != BNULL)
+                            sprintf(bdrp_fullfile, "%s%s.info", bdrp_dir, &linebuf[1]);
+                            if ((lofLock = Lock(bdrp_fullfile, SHARED_LOCK)) == BNULL)
                             {
-                                char        *tmpbdrp_file = NULL;
-                                int        tmpbdrp_len = strlen(bdrp_fullfile) + 128;
-                                if ((tmpbdrp_file = AllocVec(tmpbdrp_len, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-                                {
-                                    if (NameFromLock(lofLock, tmpbdrp_file, tmpbdrp_len) != 0)
-                                    {
-                                        FreeVec(bdrp_fullfile);
-                                        bdrp_fullfile = tmpbdrp_file;
-                                    }
-                                    else
-                                        FreeVec(tmpbdrp_file);
-                                }
+                                FreeVec(bdrp_fullfile);
+                                continue;
+                            }
+                            /* There is no real file, mark accordingly */
+                            isonlyicon = TRUE;
+                        }
+
+                        if (!isonlyicon)
+                        {
+                            struct FileInfoBlock *lofFIB = AllocDosObject(DOS_FIB, NULL);
+                            if (lofFIB)
+                            {
                                 if (Examine(lofLock, lofFIB))
                                 {
                                     if (lofFIB->fib_DirEntryType == ST_FILE)
@@ -300,11 +301,35 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
                                         lofTYPE = ST_LINKDIR;
                                     }
                                 }
-                                UnLock(lofLock);
+                                FreeDosObject(DOS_FIB, lofFIB);
                             }
-                            FreeDosObject(DOS_FIB, lofFIB);
+                        }
+                        else
+                        {
+                            /* Icon found, but not target file. Mark as ST_LINKFILE so menu operations
+                                work as on regular file. */
+                            lofTYPE = ST_LINKFILE;
                         }
                         
+                        {
+                            char *tmpbdrp_file = NULL;
+                            int tmpbdrp_len = strlen(bdrp_fullfile) + 128;
+
+                            if ((tmpbdrp_file = AllocVec(tmpbdrp_len, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+                            {
+                                if (NameFromLock(lofLock, tmpbdrp_file, tmpbdrp_len) != 0)
+                                {
+                                    FreeVec(bdrp_fullfile);
+                                    bdrp_fullfile = tmpbdrp_file;
+                                }
+                                else
+                                    FreeVec(tmpbdrp_file);
+                            }
+                            if (isonlyicon)
+                                bdrp_fullfile[strlen(bdrp_fullfile) - 5] = '\0'; /* cut .info */
+                        }
+                        UnLock(lofLock);
+
                         bdrp_namepart = FilePart(bdrp_fullfile);
 
                         struct IconEntry *this_entry = NULL, *iconNode = NULL, *tmpentry = NULL;
@@ -329,8 +354,6 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 
                         if (this_entry == NULL)
                         {
-                            //bug("[Wanderer:VolumeList] %s: Checking for existing entry in iconlist\n", __func__);
-
                             bdrp_currfile_dob = GetIconTags
                               (
                                 bdrp_fullfile,
@@ -346,6 +369,9 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
                             {
                                 if ((this_entry = (struct IconEntry *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0, (IPTR)NULL)))
                                 {
+                                    if (isonlyicon)
+                                        this_entry->ie_Flags |= ICONENTRY_FLAG_ISONLYICON;
+
                                     this_entry->ie_IconNode.ln_Pri = 1;
                                     this_entry->ie_IconListEntry.type = lofTYPE;
                                     this_entry->ie_IconListEntry.udata = bdrp_direntry;
