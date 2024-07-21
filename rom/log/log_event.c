@@ -192,6 +192,7 @@ AROS_LH7(struct logEntry *, logAddEntryA,
                 {
                     DateStamp(&leP->le_DateStamp);
                 } else {
+                    FreeVecPooled(lrHandle->lrh_Pool, leP);
                     return(NULL);
                     // The below does not work since there is no device reference in the request.
                     // Just say no above so the system can boot.
@@ -217,7 +218,7 @@ AROS_LH7(struct logEntry *, logAddEntryA,
 #endif
                 return((struct logEntry *)&leP->le_Node);
             }
-            FreeVec(leP);
+            FreeVecPooled(lrHandle->lrh_Pool, leP);
         }
     }
 
