@@ -192,6 +192,9 @@ AROS_LH7(struct logEntry *, logAddEntryA,
                 {
                     DateStamp(&leP->le_DateStamp);
                 } else {
+                    return(NULL);
+                    // The below does not work since there is no device reference in the request.
+                    // Just say no above so the system can boot.
                     struct timerequest tr;
                     CopyMem(&LIBBASE->lrb_TimerIOReq, &tr, sizeof(struct timerequest));
                     tr.tr_node.io_Command = TR_GETSYSTIME;
