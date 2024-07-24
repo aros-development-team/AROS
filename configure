@@ -10926,6 +10926,10 @@ printf "%s\n" "release" >&6; }
         GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
     fi
 
+    if test "$GCC_VERSION_MAJOR" -lt "8" ; then
+        as_fn_error $? "GCC version $target_gcc_version is too old. At least version 8 is required." "$LINENO" 5
+    fi
+
     # from gcc 8, armv7-a+fp is used to specify
     # hard-float/vfpv3-d16
     arm_v7_flotattgt="armv7-a+fp"
