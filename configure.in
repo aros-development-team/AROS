@@ -2241,9 +2241,6 @@ if test "$aros_toolchain" = "gnu" ; then
     # hard-float/vfpv3-d16
     arm_v7_flotattgt="armv7-a+fp"
     if test "$GCC_VERSION_MAJOR" -lt "10" ; then
-        if test "$GCC_VERSION_MAJOR" -lt "8" ; then
-            arm_v7_flotattgt="armv7-a"
-        fi
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
     fi
 
