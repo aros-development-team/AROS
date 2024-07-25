@@ -2233,8 +2233,20 @@ if test "$aros_toolchain" = "gnu" ; then
         GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
     fi
 
-    if test "$GCC_VERSION_MAJOR" -lt "8" ; then
-        AC_MSG_ERROR([GCC version $target_gcc_version is too old. At least version 8 is required.])
+    # Check if there is a patch available for the target gcc version
+    gcc_version_ok="no"
+    supported_versions=""
+    for patchfile in $(find "${SRCDIR}/tools/crosstools/gnu" -name 'gcc-*-aros.diff'); do
+        patchbasename=$(basename "$patchfile")
+        patchversion=$(echo "$patchbasename" | cut -d'-' -f2)
+        supported_versions="$supported_versions $patchversion"
+        if test "$patchversion" = "$target_gcc_version" ; then
+            gcc_version_ok="yes"
+            break
+        fi
+    done
+    if test $gcc_version_ok = "no" ; then
+        AC_MSG_ERROR([GCC version $target_gcc_version is not supported. Supported versions are$supported_versions.])
     fi
 
     # from gcc 8, armv7-a+fp is used to specify
