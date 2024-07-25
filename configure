@@ -10926,35 +10926,35 @@ printf "%s\n" "release" >&6; }
         GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
     fi
 
-    gcc_fix_bitfields="false"
-    if test "$GCC_VERSION_MAJOR" -gt "4" ; then
-        gcc_fix_bitfields="true"
-    else
-        if test "$GCC_VERSION_MAJOR" -gt "3" ; then
-            if test "$GCC_VERSION_MINOR" -gt "6" ; then
-                gcc_fix_bitfields="true"
-            fi
+    # Check if there is a patch available for the target gcc version
+    gcc_version_ok="no"
+    supported_versions=""
+    for patchfile in $(find "${SRCDIR}/tools/crosstools/gnu" -name 'gcc-*-aros.diff'); do
+        patchbasename=$(basename "$patchfile")
+        patchversion=$(echo "$patchbasename" | cut -d'-' -f2)
+        supported_versions="$supported_versions $patchversion"
+        if test "$patchversion" = "$target_gcc_version" ; then
+            gcc_version_ok="yes"
+            break
         fi
+    done
+    if test $gcc_version_ok = "no" ; then
+        as_fn_error $? "GCC version $target_gcc_version is not supported. Supported versions are$supported_versions." "$LINENO" 5
     fi
 
     # from gcc 8, armv7-a+fp is used to specify
     # hard-float/vfpv3-d16
     arm_v7_flotattgt="armv7-a+fp"
     if test "$GCC_VERSION_MAJOR" -lt "10" ; then
-        if test "$GCC_VERSION_MAJOR" -lt "8" ; then
-            arm_v7_flotattgt="armv7-a"
-        fi
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
     fi
 
-    if test "$gcc_fix_bitfields" = "true" ; then
-        case "$aros_target_cpu" in
+    case "$aros_target_cpu" in
         *x86_64* | *i?86*)
-            x86_isa_extra="$x86_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
-            x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
-            ;;
-        esac
-    fi
+        x86_isa_extra="$x86_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
+        x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
+        ;;
+    esac
 fi
 
 # Helper to identify llvm version

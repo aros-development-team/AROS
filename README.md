@@ -9,7 +9,6 @@
 
 * All builds are scheduled to run at 00:00 UTC.
 * The builds are made using the scripts/azure-pipelines.yml file. Further details can be found in that file.
-* GCC 6.5.0 builds are configured using default toolchain settings. Newer GCC builds may also use newer versions of binutils.
 * The main AROS target and distfiles are built for each arch.
 * The builds are downloadable via http://www.aros.org/nightly1.php [![Download AROS Research Operating System](https://img.shields.io/sourceforge/dt/aros.svg)](https://sourceforge.net/projects/aros/files/nightly2/).
 
@@ -24,7 +23,7 @@
     <td style="text-align:center">LLVM</td>
   </tr>
   <tr>
-    <td style="text-align:center">6.5.0</td>
+    <td style="text-align:center">8.3.0</td>
     <td style="text-align:center">9.1.0</td>
     <td style="text-align:center">10.2.0</td>
     <td style="text-align:center">13.1.0</td>
