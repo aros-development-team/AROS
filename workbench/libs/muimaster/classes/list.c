@@ -2565,6 +2565,7 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
             lentry = data->entries[pos];
             DoMethod(obj, MUIM_List_Destruct, (IPTR) lentry->data,
                 (IPTR) data->pool);
+            FreeListEntry(data, lentry);
             RemoveListEntries(data, pos, 1);
             data->confirm_entries_num--;
 
