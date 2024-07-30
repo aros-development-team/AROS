@@ -25,7 +25,7 @@
 
 #define RGB8to32(RGB) (((ULONG)(RGB) << 24)|((ULONG)(RGB) << 16)|((ULONG)(RGB) << 8)|((ULONG)(RGB)))
 
-ADD2LIBS("SYS:Classes/datatypes/picture.datatype", 0, struct Library *, PictureBase);
+ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 /**************************************************************************************************/
 
