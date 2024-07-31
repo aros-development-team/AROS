@@ -416,7 +416,7 @@ FILES         := $(FILES) $(CLASSFILES)
 %build_module mmake=workbench-libs-muimaster \
     modname=muimaster modtype=library \
     files="muimaster_init-aros $(FUNCS) $(FILES)" \
-    uselibs="coolimages stdc"
+    uselibs="coolimages stdc rexxsyslib"
 
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
 INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
