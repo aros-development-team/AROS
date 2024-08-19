@@ -1,0 +1,660 @@
+# Swedish PC105 Amiga keymap descriptor
+# Copyright 2024 Johan Gill.
+# v1.0
+
+## begin config
+keymap: pc105_s
+## end config
+
+## begin lokeymaptypes
+KCF_SHIFT|KCF_ALT                       # 00
+KCF_SHIFT|KCF_ALT                       # 01
+KCF_SHIFT|KCF_ALT                       # 02
+KCF_SHIFT|KCF_ALT                       # 03
+KCF_SHIFT|KCF_ALT                       # 04
+KCF_SHIFT|KCF_ALT                       # 05
+KCF_SHIFT|KCF_ALT                       # 06
+KCF_SHIFT|KCF_ALT                       # 07
+KCF_SHIFT|KCF_ALT                       # 08
+KCF_SHIFT|KCF_ALT                       # 09
+KCF_SHIFT|KCF_ALT                       # 0A
+KCF_SHIFT|KCF_ALT                       # 0B
+KCF_DEAD|KCF_SHIFT|KCF_ALT              # 0C
+KC_NOQUAL                               # 0D
+KC_NOQUAL                               # 0E
+KCF_SHIFT|KCF_ALT                       # 0F
+KC_VANILLA                              # 10 q
+KC_VANILLA                              # 11 w
+KCF_DEAD|KC_VANILLA                     # 12 e
+KC_VANILLA                              # 13 r
+KC_VANILLA                              # 14 t
+KCF_DEAD|KC_VANILLA                     # 15 y
+KCF_DEAD|KC_VANILLA                     # 16 u
+KCF_DEAD|KC_VANILLA                     # 17 i
+KCF_DEAD|KC_VANILLA                     # 18 o
+KC_VANILLA                              # 19 p
+KCF_SHIFT|KCF_ALT                       # 1A
+KCF_DEAD|KCF_SHIFT|KCF_ALT              # 1B
+KCF_SHIFT|KCF_ALT                       # 1C
+KCF_SHIFT|KCF_ALT                       # 1D
+KCF_SHIFT|KCF_ALT                       # 1E
+KCF_SHIFT|KCF_ALT                       # 1F
+KCF_DEAD|KC_VANILLA                     # 20 a
+KC_VANILLA                              # 21 s
+KC_VANILLA                              # 22 d
+KC_VANILLA                              # 23 f
+KC_VANILLA                              # 24 g
+KC_VANILLA                              # 25 h
+KC_VANILLA                              # 26 j
+KC_VANILLA                              # 27 k
+KC_VANILLA                              # 28 l
+KCF_SHIFT|KCF_ALT                       # 29
+KCF_SHIFT|KCF_ALT                       # 2A
+KCF_SHIFT|KCF_ALT                       # 2B
+KC_NOQUAL                               # 2C
+KC_NOQUAL                               # 2D
+KC_NOQUAL                               # 2E
+KC_NOQUAL                               # 2F
+KCF_SHIFT|KCF_ALT                       # 30
+KC_VANILLA                              # 31 z
+KC_VANILLA                              # 32 x
+KCF_DEAD|KC_VANILLA                     # 33 c
+KC_VANILLA                              # 34 v
+KC_VANILLA                              # 35 b
+KCF_DEAD|KC_VANILLA                     # 36 n
+KC_VANILLA                              # 37 m
+KCF_DEAD|KCF_SHIFT|KCF_ALT              # 38
+KCF_SHIFT|KCF_ALT                       # 39
+KCF_SHIFT                               # 3A
+KC_NOQUAL                               # 3B
+KCF_SHIFT                               # 3C
+KC_NOQUAL                               # 3D
+KC_NOQUAL                               # 3E
+KC_NOQUAL                               # 3F
+## end lokeymaptypes
+
+## begin hikeymaptypes
+KCF_DEAD|KCF_ALT                        # 40 SPACE
+KC_NOQUAL                               # 41 BACKSPACE
+KCF_STRING|KCF_SHIFT                    # 42 TAB
+KC_NOQUAL                               # 43 ENTER
+KCF_CONTROL                             # 44 RETURN
+KCF_ALT                                 # 45 ESCAPE
+KC_NOQUAL                               # 46 DEL 
+KCF_STRING|KCF_SHIFT                    # 47 INSERT ??
+KCF_STRING|KCF_SHIFT                    # 48 PAGE UP ??
+KCF_STRING|KCF_SHIFT                    # 49 PAGE DOWN ??
+KC_NOQUAL                               # 4A NUMERIC PAD -
+KCF_STRING|KCF_SHIFT                    # 4B F11 ??
+KCF_STRING|KCF_SHIFT                    # 4C CURSORUP
+KCF_STRING|KCF_SHIFT                    # 4D CURSORDOWN
+KCF_STRING|KCF_SHIFT                    # 4E CURSORRIGHT
+KCF_STRING|KCF_SHIFT                    # 4F CURSORLEFT
+KCF_STRING|KCF_SHIFT                    # 50 F1
+KCF_STRING|KCF_SHIFT                    # 51 F2
+KCF_STRING|KCF_SHIFT                    # 52 F3
+KCF_STRING|KCF_SHIFT                    # 53 F4
+KCF_STRING|KCF_SHIFT                    # 54 F5
+KCF_STRING|KCF_SHIFT                    # 55 F6
+KCF_STRING|KCF_SHIFT                    # 56 F7
+KCF_STRING|KCF_SHIFT                    # 57 F8
+KCF_STRING|KCF_SHIFT                    # 58 F9
+KCF_STRING|KCF_SHIFT                    # 59 F10
+KCF_NOP                                 # 5A NUMLOCK
+KC_NOQUAL                               # 5B NUMPAD )
+KC_NOQUAL                               # 5C NUMPAD /
+KC_NOQUAL                               # 5D NUMPAD *
+KC_NOQUAL                               # 5E NUMPAD +
+KCF_STRING                              # 5F HELP
+KCF_NOP                                 # 60 LEFT SHIFT
+KCF_NOP                                 # 61 RIGHT SHIFT
+KCF_NOP                                 # 62 CAPS LOCK
+KCF_NOP                                 # 63 CONTROL
+KCF_NOP                                 # 64 LALT
+KCF_NOP                                 # 65 RALT
+KCF_NOP                                 # 66 LCOMMAND
+KCF_NOP                                 # 67 RCOMMAND
+KCF_NOP                                 # 68 LEFT MOUSE BUTTON
+KCF_NOP                                 # 69 RIGHT MOUSE BUTTON
+KCF_NOP                                 # 6A MIDDLE MOUSE BUTTON
+KCF_NOP                                 # 6B
+KCF_NOP                                 # 6C
+KCF_NOP                                 # 6D
+KCF_STRING|KCF_ALT                      # 6E PAUSE/BREAK ??
+KCF_STRING|KCF_SHIFT                    # 6F F12 ??
+KCF_STRING|KCF_CONTROL                  # 70 HOME ??
+KCF_STRING|KCF_CONTROL                  # 71 END ??
+KCF_NOP                                 # 72
+KCF_NOP                                 # 73
+KCF_NOP                                 # 74
+KCF_NOP                                 # 75
+KCF_NOP                                 # 76
+KCF_NOP                                 # 77
+## end hikeymaptypes
+
+## begin deadkey
+id: KEY0C_descr
+8, 1,
+8, 2,
+0, '±',
+0, '¬'
+## end deadkey
+
+## begin deadkey
+id: KEY12_descr
+1, 0x10,
+1, 0x17,
+0, 0xA4,
+0, 0xA2,
+0, 0x5,
+0, 0,
+0, 0,
+0, 0,
+'e', 'é', 'è', 'ë', 'ê', 0, 0,
+'E', 'É', 'È', 'Ë', 'Ê', 0, 0
+## end deadkey
+
+## begin deadkey
+id: KEY15_descr
+1, 0x10,
+1, 0x17,
+0, 0xA5,
+0, 0xA5,
+0, 0x19,
+0, 0,
+0, 0,
+0, 0,
+'y', 'ý', 0, 'ÿ', 0, 0, 0,
+'Y', 'Ý', 0, 0, 0, 0, 0
+## end deadkey
+
+## begin deadkey
+id: KEY16_descr
+1, 0x10,
+1, 0x17,
+0, 'ú',
+0, 'Ú',
+0, 0x15,
+0, 0,
+0, 0,
+0, 0,
+'u', 'ú', 'ù', 'ü', 'û', 0, 0,
+'U', 'Ú', 'Ù', 'Ü', 'Û', 0, 0
+## end deadkey
+
+## begin deadkey
+id: KEY17_descr
+1, 0x10,
+1, 0x17,
+0, 'í',
+0, 'Í',
+0, 0x9,
+0, 0,
+0, 0,
+0, 0,
+'i', 'í', 'ì', 'ï', 'î', 0, 0,
+'I', 'Í', 'Ì', 'Ï', 'Î', 0, 0
+## end deadkey
+
+## begin deadkey
+id: KEY18_descr
+1, 0x10,
+1, 0x17,
+0, 'ó',
+0, 'Ó',
+0, 0xF,
+0, 0,
+0, 0,
+0, 0,
+'o', 'ó', 'ò', 'ö', 'ô', 'õ', 0,
+'O', 'Ó', 'Ò', 'Ö', 'Ô', 'Õ', 0
+## end deadkey
+
+## begin deadkey
+id: KEY1B_descr
+8, 3,
+8, 4,
+8, 5,
+0, 0
+## end deadkey
+
+## begin deadkey
+id: KEY20_descr
+1, 0x10,
+1, 0x17,
+0, 0xAA,
+0, 0xBA,
+0, 0x1,
+0, 0,
+0, 0,
+0, 0,
+'a', 'á', 'à', 'ä', 'â', 'ã', 0,
+'A', 'Á', 'À', 'Ä', 'Â', 'Ã', 0
+## end deadkey
+
+## begin deadkey
+id: KEY33_descr
+1, 0x10,
+1, 0x17,
+0, '©',
+0, '©',
+0, 0x3,
+0, 0,
+0, 0,
+0, 0,
+'c', 0, 0, 0, 0, 0, 'ç',
+'C', 0, 0, 0, 0, 0, 'Ç'
+## end deadkey
+
+## begin deadkey
+id: KEY36_descr
+1, 0x10,
+1, 0x17,
+0, '-',
+0, 0xAF,
+0, 0xE,
+0, 0,
+0, 0,
+0, 0,
+'n', 0, 0, 0, 0, 'ñ', 0,
+'N', 0, 0, 0, 0, 'Ñ', 0
+## end deadkey
+
+## begin deadkey
+id: KEY38_descr
+0, ',',
+0, ';',
+8, 6,
+0, 0
+## end deadkey
+
+## begin deadkey
+id: space_descr
+1, 0x4,
+0, 0xA0,
+' ', '´', '`', 0xA8, '^', '~', '¸'
+## end deadkey
+
+## begin string
+# 42 TAB 
+id: tab_descr
+1,4,
+2,5,
+0x9,
+0x9B,'Z'
+## end string
+
+## begin string
+# 47 INSERT ??
+id: insert_descr
+4,4,
+4,8,
+0x9B,'4','0','~',
+0x9B,'5','0','~'
+## end string
+
+## begin string
+# 48 PAGEUP ??
+id: pageup_descr
+4,4,
+4,8,
+0x9B,'4','1','~',
+0x9B,'5','1','~'
+## end string
+
+## begin string
+# 49 PAGEDOWN ??
+id: pagedown_descr
+4,4,
+4,8,
+0x9B,'4','2','~',
+0x9B,'5','2','~'
+## end string
+
+## begin string
+# 4C CURSOR UP
+id: up_descr
+2,4,
+2,6,
+0x9B,'A',
+0x9B,'T'
+## end string
+
+## begin string
+# 4D CURSOR DOWN
+id: down_descr
+2,4,
+2,6,
+0x9B,'B',
+0x9B,'S'
+## end string
+
+## begin string
+# 4E CURSOR RIGHT
+id: right_descr
+2,4,
+3,6,
+0x9B,'C',
+0x9B,' ','@'
+## end string
+
+## begin string
+# 4F CURSOR LEFT
+id: left_descr
+2,4,
+3,6,
+0x9B,'D',
+0x9B,' ','A'
+## end string
+
+## begin string
+# 50 F1
+id: f1_descr
+3,4,
+4,7,
+0x9B,'0','~',
+0x9B,'1','0','~'
+## end string
+
+## begin string
+# 51
+id: f2_descr
+3,4,
+4,7,
+0x9B,'1','~',
+0x9B,'1','1','~'
+## end string
+
+## begin string
+# 52
+id: f3_descr
+3,4,
+4,7,
+0x9B,'2','~',
+0x9B,'1','2','~'
+## end string
+
+## begin string
+# 53
+id: f4_descr
+3,4,
+4,7,
+0x9B,'3','~',
+0x9B,'1','3','~'
+## end string
+
+## begin string
+# 54
+id: f5_descr
+3,4,
+4,7,
+0x9B,'4','~',
+0x9B,'1','4','~'
+## end string
+
+## begin string
+# 55
+id: f6_descr
+3,4,
+4,7,
+0x9B,'5','~',
+0x9B,'1','5','~'
+## end string
+
+## begin string
+# 56
+id: f7_descr
+3,4,
+4,7,
+0x9B,'6','~',
+0x9B,'1','6','~'
+## end string
+
+## begin string
+# 57
+id: f8_descr
+3,4,
+4,7,
+0x9B,'7','~',
+0x9B,'1','7','~'
+## end string
+
+## begin string
+# 58
+id: f9_descr
+3,4,
+4,7,
+0x9B,'8','~',
+0x9B,'1','8','~'
+## end string
+
+## begin string
+# 59
+id: f10_descr
+3,4,
+4,7,
+0x9B,'9','~',
+0x9B,'1','9','~'
+## end string
+
+## begin string
+# 4B F11 ??
+id: f11_descr
+4,4,
+4,8,
+0x9B,'2','0','~',
+0x9B,'3','0','~'
+## end string
+
+## begin string
+# 6F F12 ??
+id: f12_descr
+4,4,
+4,8,
+0x9B,'2','1','~',
+0x9B,'3','1','~'
+## end string
+
+## begin string
+# 5F HELP
+id: help_descr
+3,2,
+0x9B,'?','~'
+## end string
+
+## begin string
+# 6E PAUSE/BREAK ??
+id: pausebreak_descr
+4,4,
+4,8,
+0x9B,'4','3','~',
+0x9B,'5','3','~'
+## end string
+
+## begin string
+# 70 HOME ??
+id: home_descr
+4,4,
+4,8,
+0x9B,'4','4','~',
+0x9B,'5','4','~'
+## end string
+
+## begin string
+# 71 END ??
+id: end_descr
+4,4,
+4,8,
+0x9B,'4','5','~',
+0x9B,'5','5','~'
+## end string
+
+# map tables ....
+
+## begin lokeymap
+'¾' ,0xB6,0xBD,0xA7
+'¹' ,'¡' ,'!' ,'1'
+'²' ,'@' ,0x22,'2'
+'³' ,0xA3,'#' ,'3'
+'¼' ,'$' ,0xA4,'4'
+'¢' ,0xA4,'%' ,'5'
+0   ,'¥' ,'&' ,'6'
+'÷' ,'{' ,0x2F,'7'
+'«' ,'[' ,'(' ,'8'
+'»' ,']' ,')' ,'9'
+'°' ,'}' ,'=' ,'0'
+0   ,0x5C,'?' ,'+'
+id:KEY0C_descr
+0   ,0   ,0xBD,0xA7
+0   ,0   ,0   ,0
+'0' ,'0' ,'0' ,'0'
+'@' ,'@' ,'Q' ,'q'
+'W' ,'w' ,'W' ,'w'
+id:KEY12_descr
+0xAE,0xAE,'R' ,'r'
+0xDE,0xFE,'T' ,'t'
+id:KEY15_descr
+id:KEY16_descr
+id:KEY17_descr
+id:KEY18_descr
+0xDE,0xFE,'P' ,'p'
+0xB0,0xB0,'Å' ,'å'
+id:KEY1B_descr
+0   ,0   ,0   ,0
+'1' ,'1' ,'1' ,'1'
+'2' ,'2' ,'2' ,'2'
+'3' ,'3' ,'3' ,'3'
+id:KEY20_descr
+0xA7,0xDF,'S' ,'s'
+0xD0,0xF0,'D' ,'d'
+0xDE,0xFE,'F' ,'f'
+'G' ,'g' ,'G' ,'g'
+'H' ,'h' ,'H' ,'h'
+'J' ,'j' ,'J' ,'j'
+'K' ,'k' ,'K' ,'k'
+'L' ,'l' ,'L' ,'l'
+'Ø' ,'ø' ,'Ö' ,'ö'
+'Æ' ,'æ' ,'Ä' ,'ä'
+0xD7,0xB4,'*' ,0x27
+0   ,0   ,0   ,0
+'4' ,'4' ,'4' ,'4'
+'5' ,'5' ,'5' ,'5'
+'6' ,'6' ,'6' ,'6'
+'¦' ,'|' ,'>' ,'<'
+0x3C,0xAB,'Z' ,'z'
+0x3E,0xBB,'X' ,'x'
+id:KEY33_descr
+'V' ,'v' ,'V' ,'v'
+'B' ,'b' ,'B' ,'b'
+id:KEY36_descr
+'º' ,'µ' ,'M' ,'m'
+id:KEY38_descr
+0   ,'·' ,':' ,'.'
+0   ,0   ,'_' ,'-'
+0   ,0   ,0   ,0
+0   ,0   ,',', '.'
+'7', '7', '7', '7'
+'8', '8', '8', '8'
+'9', '9', '9', '9'
+## end lokeymap
+
+## begin hikeymap
+id:space_descr
+8, 8, 8, 8
+id:tab_descr
+13, 13, 13, 13
+0, 0, 10, 13
+0, 0, 0x9B, 27
+127, 127, 127, 127
+id:insert_descr
+id:pageup_descr
+id:pagedown_descr
+'-', '-', '-', '-'
+id:f11_descr
+id:up_descr
+id:down_descr
+id:right_descr
+id:left_descr
+id:f1_descr
+id:f2_descr
+id:f3_descr
+id:f4_descr
+id:f5_descr
+id:f6_descr
+id:f7_descr
+id:f8_descr
+id:f9_descr
+id:f10_descr
+0, 0, 0, 0
+'/', '/', '/', '/'
+'*', '*', '*', '*'
+'-', '-', '-', '-'
+'+', '+', '+', '+'
+id:help_descr
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+id:pausebreak_descr
+id:f12_descr
+id:home_descr
+id:end_descr
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+## end hikeymap
+
+## begin locapsable
+0, 0, 0, 0, 0, 0, 0, 0        # 00 - 07
+0, 0, 0, 0, 0, 0, 0, 0        # 08 - 0F
+1, 1, 1, 1, 1, 1, 1, 1        # 10 - 17
+1, 1, 1, 0, 0, 0, 0, 0        # 18 - 1F
+1, 1, 1, 1, 1, 1, 1, 1        # 20 - 27
+1, 1, 1, 0, 0, 0, 0, 0        # 28 - 2F
+0, 1, 1, 1, 1, 1, 1, 1        # 30 - 37
+0, 0, 0, 0, 0, 0, 0, 0        # 38 - 3F
+## end locapsable
+
+## begin lorepeatable
+1, 1, 1, 1, 1, 1, 1, 1        # 00 - 07
+1, 1, 1, 1, 1, 1, 0, 1        # 08 - 0F
+1, 1, 1, 1, 1, 1, 1, 1        # 10 - 17
+1, 1, 1, 1, 0, 1, 1, 1        # 18 - 1F
+1, 1, 1, 1, 1, 1, 1, 1        # 20 - 27
+1, 1, 1, 1, 0, 1, 1, 1        # 28 - 2F
+1, 1, 1, 1, 1, 1, 1, 1        # 30 - 37
+1, 1, 1, 0, 1, 1, 1, 1        # 38 - 3F
+## end lorepeatable
+
+## begin hicapsable
+0, 0, 0, 0, 0, 0, 0, 0        # 40 - 47
+0, 0, 0, 0, 0, 0, 0, 0        # 48 - 4F
+0, 0, 0, 0, 0, 0, 0, 0        # 50 - 57
+0, 0, 0, 0, 0, 0, 0, 0        # 58 - 5F
+0, 0, 0, 0, 0, 0, 0, 0        # 60 - 67
+0, 0, 0, 0, 0, 0, 0, 0        # 68 - 6F
+0, 0, 0, 0, 0, 0, 0, 0        # 70 - 77
+## end hicapsable
+
+## begin hirepeatable
+1, 1, 1, 0, 0, 0, 1, 0        # 40 - 47
+1, 1, 0, 0, 1, 1, 1, 1        # 48 - 4F
+0, 0, 0, 0, 0, 0, 0, 0        # 50 - 57
+0, 0, 1, 1, 1, 1, 1, 0        # 58 - 5F
+0, 0, 0, 0, 0, 0, 0, 0        # 60 - 67
+0, 0, 0, 0, 0, 0, 0, 0        # 68 - 6F
+0, 0, 0, 0, 0, 0, 0, 0        # 70 - 77
+## end hirepeatable
