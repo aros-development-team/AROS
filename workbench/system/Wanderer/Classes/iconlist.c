@@ -6500,19 +6500,23 @@ IPTR IconList__MUIM_IconList_GetIconPrivate(struct IClass *CLASS, Object *obj, s
 static void DrawIconOnDragImage(struct RastPort *rp, struct DiskObject *icon, LONG ax, LONG ay, BOOL transp)
 {
     APTR image2;
-    ULONG height = 0;
-    ULONG width;
+    ULONG height;
+    ULONG width = 1001;
     struct TagItem tags [] = {
         { ICONCTRLA_GetARGBImageData2, (IPTR)&image2    },
         { ICONCTRLA_GetHeight, (IPTR)&height            },
+        { ICONCTRLA_GetWidth, (IPTR)&width              },
         { TAG_DONE,                                     }
     };
 
 
     IconControlA(icon, tags);
 
-    if (height == 0) height = icon->do_Gadget.Height; /* Workaround, some glow icons report half of height only */
-    width = icon->do_Gadget.Width;
+    /* Most icons will have valid ICONCRTLA_GetHeight/GetWidth. Those that not (OS 1.3, 2.0?) should have valid
+       do_Gadget.Height/Width. Workaround is based on implementation in icon.library returning 0 for height and
+       unchanged for width if nativeicon width/height is not available */
+    if (height == 0) height = icon->do_Gadget.Height;
+    if (width == 1001) width = icon->do_Gadget.Width;
 
     if (transp && image2)
     {
