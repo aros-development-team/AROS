@@ -267,7 +267,6 @@ static STRPTR getDevNameForVolume(STRPTR volumeName)
             {
                 if (dl->dol_Task == voltask)
                 {
-                    struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
                     devName = AROS_BSTR_ADDR(dl->dol_Name);
                 }
             }

@@ -540,7 +540,7 @@ IPTR IconWindowDrawerList__MUIM_HandleEvent
     D(bug("[Wanderer:DrawerList]: %s()\n", __func__));
 
 
-    switch(message->imsg->Code)
+    switch(imsg->Code)
     {
         case(RAWKEY_DELETE):
         {
