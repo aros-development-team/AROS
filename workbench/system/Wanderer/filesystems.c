@@ -148,7 +148,6 @@ static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, stru
 {
     struct FileCopyData hookData;
 
-    STRPTR directory;
     LONG bufferlen = COPYLEN;
     LONG filelen = 0;
     BOOL quit = TRUE;
@@ -180,7 +179,6 @@ static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, stru
 
     if (stop)
     {
-        FreeVec(directory);
         return stop;
     }
 
@@ -247,11 +245,6 @@ static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, stru
         }
 
         FreeVec(buffer);
-    }
-
-    if (displayHook)
-    {
-        FreeVec(directory);
     }
 
     return quit;

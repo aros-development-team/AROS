@@ -47,7 +47,8 @@ and temporarily placed here */
                            m5, m5_msg_type,                          \
                            m6, m6_msg_type,                          \
                            m7, m7_msg_type,                          \
-                           m8, m8_msg_type)                          \
+                           m8, m8_msg_type,                          \
+                           m9, m9_msg_type)                          \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -57,6 +58,7 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 #define ICONWINDOWICONVOLUMELIST_CUSTOMCLASS(name, base, parent_name, parent_class,   \

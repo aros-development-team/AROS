@@ -29,6 +29,7 @@
 #include <dos/datetime.h>
 #include <dos/filehandler.h>
 
+#include <aros/system.h>
 #include <exec/memory.h>
 #include <exec/rawfmt.h>
 #include <graphics/gfx.h>
@@ -167,10 +168,7 @@ for                                                        \
     node = (void *)(((struct Node *)(node))->ln_Pred)      \
 )
 
-#define RPALPHAFLAT     (1 << 0)
-#define RPALPHARADIAL   (1 << 1)
-
-static void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, ULONG height, UBYTE val, UBYTE alphamode)
+static void RastPortSetOpaque(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, ULONG height, ULONG transpcolval)
 {
     ULONG       x, y;
     ULONG       alphaval, pixelval;
@@ -179,31 +177,48 @@ static void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG 
     if ((buffer = AllocVec(width * height * sizeof(ULONG), MEMF_ANY)) == NULL)
         return;
 
-    ReadPixelArray(buffer, 0, 0, width * sizeof(ULONG), arport, 0, 0, width, height, RECTFMT_ARGB);
+    ReadPixelArray(buffer, 0, 0, width * sizeof(ULONG), arport, ax, ay, width, height, RECTFMT_ARGB);
 
     pixelptr = buffer;
+
+#if AROS_BIG_ENDIAN
+#else
+    // ARGB -> BGRA
+    transpcolval = ((transpcolval & 0x00FF0000) >> 8) | ((transpcolval & 0x0000FF00) << 8) | ((transpcolval & 0x000000FF) << 24);
+#endif
 
     for (y = 0; y < height; y++)
     {
         for (x = 0; x < width; x++)
         {
-            if((pixelval = *((ULONG *)pixelptr)))
-            {
-                if (alphamode == RPALPHARADIAL){
-                    //Set the alpha value based on distance from ax,ay
-                } else {
-                    alphaval = val;
-                }
-                pixelval = (pixelval & 0xffffff00) | alphaval;
-                *((ULONG *)pixelptr) = pixelval;
-            }
+
+            pixelval = *((ULONG *)pixelptr);
+
+#if AROS_BIG_ENDIAN
+            if ((pixelval & 0x00FFFFFF) == (transpcolval & 0x00FFFFFF))
+#else
+            if ((pixelval & 0xFFFFFF00) == (transpcolval & 0xFFFFFF00))
+#endif
+                alphaval = 0x0;
+            else
+                alphaval = 0xFF;
+
+#if AROS_BIG_ENDIAN
+            pixelval = (pixelval & 0x00FFFFFF) | (alphaval << 24);
+#else
+            pixelval = (pixelval & 0xFFFFFF00) | alphaval;
+#endif
+            *((ULONG *)pixelptr) = pixelval;
+
             pixelptr += sizeof(ULONG);
         }
     }
 
-    WritePixelArray(buffer, 0, 0, width * sizeof(ULONG), arport, 0, 0, width, height, RECTFMT_ARGB);
+    WritePixelArray(buffer, 0, 0, width * sizeof(ULONG), arport, ax, ay, width, height, RECTFMT_ARGB);
+
     FreeVec(buffer);
 }
+
 
 ///RectAndRect()
 // Entry/Label Area support functions
@@ -6482,6 +6497,48 @@ IPTR IconList__MUIM_IconList_GetIconPrivate(struct IClass *CLASS, Object *obj, s
     return (IPTR)node;
 }
 
+static void DrawIconOnDragImage(struct RastPort *rp, struct DiskObject *icon, LONG ax, LONG ay, BOOL transp)
+{
+    APTR image2;
+    ULONG height;
+    ULONG width = 1001;
+    struct TagItem tags [] = {
+        { ICONCTRLA_GetARGBImageData2, (IPTR)&image2    },
+        { ICONCTRLA_GetHeight, (IPTR)&height            },
+        { ICONCTRLA_GetWidth, (IPTR)&width              },
+        { TAG_DONE,                                     }
+    };
+
+
+    IconControlA(icon, tags);
+
+    /* Most icons will have valid ICONCRTLA_GetHeight/GetWidth. Those that not (OS 1.3, 2.0?) should have valid
+       do_Gadget.Height/Width. Workaround is based on implementation in icon.library returning 0 for height and
+       unchanged for width if nativeicon width/height is not available */
+    if (height == 0) height = icon->do_Gadget.Height;
+    if (width == 1001) width = icon->do_Gadget.Width;
+
+    if (transp && image2)
+    {
+        /* Target has alpha, preserve source alpha values unchanged. */
+        WritePixelArray(image2, 0, 0, width * sizeof(ULONG), rp, ax, ay, width, height, RECTFMT_ARGB);
+    }
+    else if (transp && !image2)
+    {
+        /* Target has alpha, but source does not. Use FEDCBA color to mask out where resulting alpha should be 0 */
+        FillPixelArray(rp, ax, ay, width, height, 0xFFFEDCBA);
+
+        DrawIconStateA(rp, icon, NULL, ax, ay, IDS_SELECTED, __iconList_DrawIconStateTags);
+
+        RastPortSetOpaque(rp, ax, ay, width, height, 0xFFFEDCBA);
+    }
+    else
+    {
+        /* Target is opaque. */
+        DrawIconStateA(rp, icon, NULL, ax, ay, IDS_SELECTED, __iconList_DrawIconStateTags);
+    }
+}
+
 ///MUIM_CreateDragImage()
 /**************************************************************************
 MUIM_CreateDragImage
@@ -6585,6 +6642,12 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             temprp.BitMap = img->bm;
             ULONG minY = 0;
 
+            if (!transp)
+            {
+                SetABPenDrMd(&temprp, _pens(obj)[MPEN_BACKGROUND], 0, JAM1);
+                RectFill(&temprp, 0, 0, img->width, img->height);
+            }
+
 #if defined(CREATE_FULL_DRAGIMAGE)
             ForeachNode(&data->icld_SelectionList, node)
             {
@@ -6616,13 +6679,8 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
 
                         IconList_GetIconImageOffsets(data, entry, &offsetx, &offsety);
 
-                        DrawIconStateA
-                            (
-                                &temprp, entry->ie_DiskObj, NULL,
-                                (entry->ie_IconX + 1) - first_x + offsetx, (entry->ie_IconY + 1) - first_y + offsety,
-                                IDS_SELECTED,
-                                __iconList_DrawIconStateTags
-                            );
+                        DrawIconOnDragImage(&temprp, entry->ie_DiskObj, (entry->ie_IconX + 1) - first_x + offsetx,
+                            (entry->ie_IconY + 1) - first_y + offsety, transp);
                     }
                 }
             }
@@ -6634,17 +6692,10 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             }
             else
             {
-                DrawIconStateA
-                    (
-                        &temprp, entry->ie_DiskObj, NULL,
-                        0, 0,
-                        IDS_SELECTED,
-                        __iconList_DrawIconStateTags
-                    );
+                DrawIconOnDragImage(&temprp, entry->ie_DiskObj, 0, 0, transp);
             }
 #endif
-            if (transp)
-                RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0xC0, RPALPHAFLAT);
+
             DeinitRastPort(&temprp);
         }
 
@@ -6844,6 +6895,17 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         /* Additional filter - if same window and the target entry is selected (==dragged), then it was intended as a move */
         if ((message->obj == obj) && (drop_target_node) && (drop_target_node->ie_Flags & ICONENTRY_FLAG_SELECTED))
             drop_target_node = NULL;
+
+        /* Block action when target is an icon of type WBDRAWER or WBDISK without real directory behing it */
+        if ((drop_target_node != NULL) &&
+            (drop_target_node->ie_IconListEntry.type == ST_FILE) &&
+            (drop_target_node->ie_Flags & ICONENTRY_FLAG_ISONLYICON) &&
+            (drop_target_node->ie_DiskObj->do_Type == WBDRAWER || drop_target_node->ie_DiskObj->do_Type == WBDISK)
+        )
+        {
+            DisplayBeep(NULL);
+            goto dragdropdone;
+        }
 
         if ((drop_target_node != NULL) &&
             ((drop_target_node->ie_IconListEntry.type == ST_SOFTLINK)   ||

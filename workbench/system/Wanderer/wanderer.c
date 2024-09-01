@@ -595,7 +595,14 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __func__
 
                     if ( !OpenWorkbenchObjectA(ent->ile_IconEntry->ie_IconNode.ln_Name, argsTagList) )
                     {
-                        execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
+                        if ((ent->ile_IconEntry->ie_Flags & ICONENTRY_FLAG_ISONLYICON) &&
+                            (ent->ile_IconEntry->ie_DiskObj->do_Type == WBDRAWER ||
+                            ent->ile_IconEntry->ie_DiskObj->do_Type == WBDISK))
+                        {
+                            /* This is a lone drawer or disk icon. Do no further processing */
+                        }
+                        else
+                            execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
                     }
                     struct TagItem * tag = argsTagList;
                     while ((tag = FindTagItem(WBOPENA_ArgLock, tag)))
@@ -1851,6 +1858,21 @@ void wanderer_menufunc_icon_rename(void)
             {
                 continue; /* TODO: Implement */
             }
+            else if (entry->type == ST_ROOT)
+            {
+                STRPTR diskname = entry->ile_IconEntry->ie_IconNode.ln_Name;
+                BPTR lock = Lock(diskname, ACCESS_READ);
+
+                OpenWorkbenchObject
+                (
+                    "WANDERER:Tools/WBRename",
+                    WBOPENA_ArgLock, (IPTR) lock,
+                    WBOPENA_ArgName, (IPTR) "",
+                    TAG_DONE
+                );
+
+                UnLock(lock);
+            }
             else
             {
                 BOOL isInfoFile = FALSE;
@@ -2565,6 +2587,9 @@ void wanderer_menufunc_icon_delete(void)
     ULONG updatedIcons;
 
     DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
+    if ((IPTR)entry == MUIV_IconList_NextIcon_End)
+        return;
+
     displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
     displayAskHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskModeFunc;
     
@@ -3669,6 +3694,13 @@ D(bug("[Wanderer] %s: WBHM_TYPE_OPEN\n", __func__));
                     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
                     Object *child;
                     CONST_STRPTR buf = wbhm->wbhm_Data.Open.Name;
+
+                    /* Validate existance of requested drawer path */
+                    BPTR lock = Lock(buf, SHARED_LOCK);
+                    if (lock == BNULL)
+                        break;
+
+                    UnLock(lock);
 
                     while ((child = NextObject(&cstate)))
                     {
