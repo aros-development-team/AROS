@@ -28,6 +28,9 @@
 #include <devices/newstyle.h>
 #include <devices/timer.h>
 #include <devices/cd.h>
+
+#include <hidd/hidd.h>
+#include <hidd/storage.h>
 #include <hardware/ata.h>
 #include <hidd/ata.h>
 

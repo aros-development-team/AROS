@@ -555,7 +555,11 @@ static int rtl8139nic_open(struct net_device *unit)
 		
 	np->rx_buffer = HIDD_PCIDriver_AllocPCIMem(
 						unit->rtl8139u_PCIDriver,
+#if 1 //stegerg: double size so wrapped-over data can be appended at end
+						(np->rx_buf_len * 2 + 16 + (TX_BUF_SIZE * NUM_TX_DESC))
+#else
 						(np->rx_buf_len + 16 + (TX_BUF_SIZE * NUM_TX_DESC))
+#endif
 					);
 
 	if (np->rx_buffer != NULL)

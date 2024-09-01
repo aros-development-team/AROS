@@ -9,6 +9,9 @@ FILES	:=	\
 	vesagfx_support \
 	vesagfx_bitmapclass
 
+USER_CPPFLAGS := \
+               -D__OOP_NOATTRBASES__
+
 %build_module mmake=kernel-hidd-vesagfx \
   modname=vesagfx modtype=hidd \
   files=$(FILES)

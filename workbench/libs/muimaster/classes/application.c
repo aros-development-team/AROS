@@ -134,7 +134,7 @@ MUIA_Application_Broker [..G]             done
 MUIA_Application_BrokerHook [ISG]         done
 MUIA_Application_BrokerPort [..G]         done
 MUIA_Application_BrokerPri [I.G]          done
-MUIA_Application_Commands [ISG]           needs Arexx
+MUIA_Application_Commands [ISG]           done
 MUIA_Application_Copyright [I.G]          done
 MUIA_Application_Description [I.G]        done
 MUIA_Application_DiskObject [ISG]         done
@@ -147,9 +147,9 @@ MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
 MUIA_Application_MenuAction [..G]         done
 MUIA_Application_MenuHelp [..G]           todo (ditto)
 MUIA_Application_Menustrip [I..]          done
-MUIA_Application_RexxHook [ISG]           needs Arexx
-MUIA_Application_RexxMsg [..G]            needs Arexx
-MUIA_Application_RexxString [.S.]         needs Arexx
+MUIA_Application_RexxHook [ISG]           todo
+MUIA_Application_RexxMsg [..G]            done
+MUIA_Application_RexxString [.S.]         done
 MUIA_Application_SingleTask [I..]         done
 MUIA_Application_Sleep [.S.]              todo
 MUIA_Application_Title [I.G]              done
@@ -551,7 +551,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
 
         case MUIA_Application_Commands:
             data->app_Commands = (struct MUI_Command *)tag->ti_Data;
-            /* MUI by default enabled Rexx port. Zune does not. Enable port at least
+            /* MUI by default enables Rexx port. Zune does not. Enable port at least
              * if the commands are passed */
             data->app_UseRexx = TRUE;
             break;
@@ -674,8 +674,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
             data->app_RexxPort->mp_Node.ln_Name = StrDup(data->app_Base);
             if (data->app_RexxPort->mp_Node.ln_Name != NULL)
             {
-                D(bug("[MUI] %s is using REXX!\n",
-                        data->app_RexxPort->mp_Node.ln_Name));
+                D(bug("[MUI] %s is using REXX!\n", data->app_RexxPort->mp_Node.ln_Name));
                 char *i;
                 for (i = data->app_RexxPort->mp_Node.ln_Name; *i != '\0';
                     i++)
@@ -841,6 +840,9 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
         FreeVec(data->app_RexxPort->mp_Node.ln_Name);
         DeleteMsgPort(data->app_RexxPort);
     }
+
+    if (data->app_RexxString)
+        FreeVec(data->app_RexxString);
 
     if (data->app_AppIcon)
         RemoveAppIcon(data->app_AppIcon);
@@ -1126,7 +1128,8 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
             break;
 
         case MUIA_Application_RexxString:
-            data->app_RexxString = (STRPTR) tag->ti_Data;
+            FreeVec(data->app_RexxString); /* MUI documentation say that "string in termporarily copied" */
+            data->app_RexxString = StrDup((CONST_STRPTR)tag->ti_Data);
             break;
 
         case MUIA_Application_RexxHook:
@@ -1585,10 +1588,76 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
         {
 
             D(bug("[MUI] Got Rexx message!\n"));
-            struct Message *msg;
-            while ((msg = GetMsg(data->app_RexxPort)))
+            struct RexxMsg *rmsg;
+            while ((rmsg = (struct RexxMsg *)GetMsg(data->app_RexxPort)))
             {
-                ReplyMsg(msg);
+                if (IsRexxMsg(rmsg))
+                {
+                    STRPTR commandstr = (STRPTR)rmsg->rm_Args[0];
+                    struct MUI_Command *cmd = data->app_Commands;
+                    while (cmd->mc_Name)
+                    {
+                        LONG len = 0;
+                        while ((commandstr[len] != ' ') && (commandstr[len] != '\0')) len++;
+
+                        if (Strnicmp(commandstr, cmd->mc_Name, len) == 0)
+                        {
+                            IPTR args[cmd->mc_Parameters];
+                            struct RDArgs *rdargs = NULL, *rdargsret = NULL;
+                            if (cmd->mc_Template)
+                            {
+                                STRPTR tmp = commandstr + len;
+                                STRPTR arguments;
+
+                                while (*tmp == ' ') tmp++;
+                                len = strlen(tmp);
+                                arguments = AllocVec(len + 2, MEMF_ANY);
+                                CopyMem(tmp, arguments, len);
+                                arguments[len]      = '\n';
+                                arguments[len + 1]  = '\0';
+
+                                if ((rdargs = AllocDosObject(DOS_RDARGS, NULL)))
+                                {
+                                    rdargs->RDA_Source.CS_Buffer = arguments;
+                                    rdargs->RDA_Source.CS_Length = strlen(arguments);
+                                    rdargs->RDA_Source.CS_CurChr = 0;
+                                    rdargs->RDA_DAList = 0;
+                                    rdargs->RDA_Buffer = NULL;
+                                    rdargs->RDA_BufSiz = 0;
+                                    rdargs->RDA_ExtHelp = NULL;
+                                    rdargs->RDA_Flags = 0;
+
+                                    memset(args, 0, cmd->mc_Parameters * sizeof(IPTR));
+
+                                    rdargsret = ReadArgs(cmd->mc_Template, args, rdargs);
+                                }
+
+                                FreeVec(arguments);
+                            }
+
+                            data->app_RexxMsg = rmsg;
+                            IPTR res = CallHookPkt(cmd->mc_Hook, obj, cmd->mc_Template ? args : NULL);
+                            data->app_RexxMsg = NULL;
+
+                            if (rdargsret)
+                                FreeArgs(rdargsret);
+
+                            if (rdargs)
+                                FreeDosObject(DOS_RDARGS, rdargs);
+
+                            rmsg->rm_Result1 = (LONG)res;
+                            if ((rmsg->rm_Action & RXFF_RESULT) && data->app_RexxString)
+                            {
+                                rmsg->rm_Result2 = (IPTR)CreateArgstring(data->app_RexxString, strlen(data->app_RexxString));
+                            }
+
+                            break;
+                        }
+                        cmd++;
+                    }
+                }
+
+                ReplyMsg((struct Message *)rmsg);
             }
         }
 

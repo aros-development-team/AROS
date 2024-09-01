@@ -21,6 +21,8 @@
 #   include <exec/semaphores.h>
 #endif
 
+#include <hidd/gfx.h>
+
 #include "vesagfx_support.h"
 
 #define ATTRBASES_NUM 6

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2024, The AROS Development Team. All rights reserved.
 
     C99 function free().
 */
@@ -54,8 +54,10 @@
         mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
 
         size = *((size_t *) mem);
-        if (size == MEMALIGN_MAGIC)
-            free(((void **) mem)[-1]);
+        if (size == MEMALIGN_MAGIC) {
+            mem -= AROS_ALIGN(sizeof(void *));
+            free(((void **) mem)[0]);
+        }
         else {
             size += AROS_ALIGN(sizeof(size_t));
             FreePooled (StdCBase->mempool, mem, size);

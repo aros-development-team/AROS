@@ -568,22 +568,22 @@ define bttask
     if ($task->tc_Node.ln_Type != 1) && ($task->tc_Node.ln_Type != 13)
         printf "ERROR: Given address does not look like a task or process!\n"
     else
-        #FIXME: The following assumes Linux x86
-        set $old_esp = $esp
-        set $old_eip = $eip
+        #FIXME: The following assumes Linux x86_64
+        set $old_esp = $rsp
+        set $old_eip = $rip
         
         if $task->tc_State == 2
             printf "WARNING: TS_RUN Task. Showing normal backtrace!\n"
         else
-            set $esp = $task->tc_SPReg
+            set $rsp = $task->tc_SPReg
             set $taskcontext = (struct AROSCPUContext *)$task->tc_UnionETask.tc_ETask.et_RegFrame
-            set $eip = $taskcontext.regs.eip
+            set $rip = $taskcontext.regs.rip
         end
         
         bt
  
-        set $esp = $old_esp
-        set $eip = $old_eip
+        set $rsp = $old_esp
+        set $rip = $old_eip
     end
 end
 document bttask

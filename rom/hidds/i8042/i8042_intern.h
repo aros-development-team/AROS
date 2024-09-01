@@ -5,6 +5,9 @@
 #include <exec/libraries.h>
 #include <oop/oop.h>
 
+#include <hidd/hidd.h>
+#include <hidd/mouse.h>
+
 /***** Common static data *******************/
 
 struct i8042_staticdata

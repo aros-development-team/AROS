@@ -2,6 +2,10 @@
 include $(SRCDIR)/config/aros.cfg
 
 #USER_CPPFLAGS := -DDEBUG=1
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
 
 FILES := \
           i8042_init \

@@ -56,8 +56,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    return (struct DBufInfo *)AllocMem(MEMF_ANY | MEMF_CLEAR,
-                                       sizeof(struct DBufInfo));
+    return (struct DBufInfo *)AllocMem(sizeof(struct DBufInfo),
+                                       MEMF_ANY | MEMF_CLEAR);
     
     AROS_LIBFUNC_EXIT
 } /* AllocDBufInfo */

@@ -4,8 +4,6 @@
     Desc: Bitmap class for VESA Gfx hidd.
 */
 
-#define __OOP_NOATTRBASES__
-
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <assert.h>

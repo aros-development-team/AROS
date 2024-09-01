@@ -9,6 +9,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
+#include <stdio.h>
 #include <errno.h>
 #include "__upath.h"
 #include <aros/debug.h>

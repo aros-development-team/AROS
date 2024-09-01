@@ -253,7 +253,9 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
     LONG segidx = 0, i = 0;
     IPTR maxgapsize = 0;
 #if AROS_MODULES_DEBUG
-    TEXT buffer[512];
+    TEXT buffer[2048];
+    /* If you start getting crashes with weird 'last' values, it might be an overrun of buffer.
+       Check Strlen(seg->s_name) */
     STRPTR last = NULL;
     ULONG seggdbhlplen = 0;
 #endif

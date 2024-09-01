@@ -4,8 +4,6 @@
     Desc: Class for VESA.
 */
 
-#define __OOP_NOATTRBASES__
-
 #include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/oop.h>

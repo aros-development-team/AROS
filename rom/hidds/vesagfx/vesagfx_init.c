@@ -4,8 +4,6 @@
     Desc: VESA Gfx Hidd for standalone i386 AROS
 */
 
-#define __OOP_NOATTRBASES__
-
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>

@@ -212,8 +212,13 @@ RTLD(bug("[%s] RTL8139_RX_Process: frame @ %p, len=%d\n", unit->rtl8139u_name, f
 			{
 				overspill = (ring_offset + rx_size) - np->rx_buf_len;
 RTLD(bug("[%s] RTL8139_RX_Process: WRAPPED Frame! (%d bytes overspill)\n", unit->rtl8139u_name, overspill))
+#if 1 //stegerg: double size so wrapped-over data can be appended at end
+				CopyMem(np->rx_buffer, np->rx_buffer + np->rx_buf_len, overspill);
+#else
 				len = len - overspill;
+
 /* TODO: We need to copy the wrapped buffer into a temp buff to pass to listeners! */
+#endif
 			}
 			
 			RTLD( int j;

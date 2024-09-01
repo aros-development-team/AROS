@@ -15,6 +15,8 @@
 #include <oop/oop.h>
 #include <utility/hooks.h>
 
+#include <hidd/hidd.h>
+#include <hidd/storage.h>
 #include <hardware/nvme.h>
 #include <hidd/nvme.h>
 

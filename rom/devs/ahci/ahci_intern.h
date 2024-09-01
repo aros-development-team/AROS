@@ -17,6 +17,8 @@
 #include <oop/oop.h>
 #include <utility/hooks.h>
 
+#include <hidd/hidd.h>
+#include <hidd/storage.h>
 #include <hardware/ahci.h>
 #include <hidd/ahci.h>
 
