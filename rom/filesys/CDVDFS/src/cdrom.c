@@ -139,7 +139,7 @@ CDROM *Open_CDROM
         cd->buffer_data  = AllocVec (((SCSI_BUFSIZE * p_std_buffers) << 4) + 15, MEMF_PUBLIC | p_memory_type);
         if (NULL == cd->buffer_data)
             break;
-        
+
         cd->buffer_io = AllocVec(SCSI_BUFSIZE, p_memory_type);
         if (NULL == cd->buffer_io)
             break;
@@ -594,6 +594,9 @@ int Start_Play_Audio(CDROM *p_cd)
     t_toc_data *toc;
     int i, len;
 
+    if (!p_cd)
+        return FALSE;
+
     cmd[0] = 0x47;
 
     /*
@@ -650,12 +653,18 @@ int Start_Play_Audio(CDROM *p_cd)
 int Stop_Play_Audio(CDROM *p_cd)
 {
     uint8_t cmd[6] = { };
+
+    if (!p_cd)
+        return FALSE;
+
     cmd[0] = 0x1b;
     return Do_SCSI_Command(p_cd, 0, 0, cmd, 6, SCSIF_READ);
 }
 
 void Cleanup_CDROM (CDROM *p_cd)
 {
+    if (!p_cd)
+        return;
     if (p_cd->iochangeint) {
         p_cd->iochangeint->io_Length  = sizeof(struct Interrupt);
         p_cd->iochangeint->io_Data    = &p_cd->changeint;
