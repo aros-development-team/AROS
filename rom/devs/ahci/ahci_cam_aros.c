@@ -463,10 +463,10 @@ ata_fix_chs(struct ata_identify *id, u_int32_t *ncyls, u_int64_t capacity48)
         /*
             * TODO: this shouldn't be casted down here.
             */
-        ULONG sec = capacity48;
+        ULONG sec = (ULONG)capacity48;
 
-        if (sec < capacity48)
-            sec = ~((ULONG)0);
+        if (capacity48 >= 0xFFFFFFFF)
+            sec = 0xFFFFFFFF;
 
         id->nsectors = 63;
         sec /= 63;
