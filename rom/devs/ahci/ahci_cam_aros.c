@@ -300,7 +300,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
         pp[DE_BLKSPERTRACK + 4] = at->at_identify.nsectors;
         pp[DE_RESERVEDBLKS + 4] = 2;
         pp[DE_LOWCYL       + 4] = 0;
-        pp[DE_HIGHCYL      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? (at->at_identify.ncyls - 1) : 0;
+        pp[DE_HIGHCYL      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? (at->at_ncyls - 1) : 0;
         pp[DE_NUMBUFFERS   + 4] = 10;
         pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
         pp[DE_MAXTRANSFER  + 4] = 0x00200000;
@@ -452,8 +452,10 @@ ata_fix_identify(struct ata_identify *id)
 }
 
 static void
-ata_fix_chs(struct ata_identify *id, u_int64_t capacity48)
+ata_fix_chs(struct ata_identify *id, u_int32_t *ncyls, u_int64_t capacity48)
 {
+    *ncyls = id->ncyls;
+
     if (le16toh(id->cmdset83) & 0x0400) {
         /* LBA48 feature set supported */
         /* Code copied from ata.device */
@@ -469,9 +471,6 @@ ata_fix_chs(struct ata_identify *id, u_int64_t capacity48)
         id->nsectors = 63;
         sec /= 63;
 
-        /* Make the number even, otherwise if there is no division by 2 and by 3, resulting number will be
-           too large to fit into u_int16_t and will be cut down */
-        sec = (sec >> 1) << 1;
         /*
             * keep dividing by 2
             */
@@ -495,7 +494,7 @@ ata_fix_chs(struct ata_identify *id, u_int64_t capacity48)
             sec /= 3;
         } while (1);
 
-        id->ncyls   = sec;
+        *ncyls      = sec;
         id->nheads  = div;
     }
 }
@@ -844,7 +843,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 
         capacity_bytes = capacity * 512;
 
-        ata_fix_chs(&at->at_identify, capacity);
+        ata_fix_chs(&at->at_identify, &at->at_ncyls, at->at_capacity);
 
         /*
          * Negotiate NCQ, throw away any ata_xfer's beyond the negotiated
