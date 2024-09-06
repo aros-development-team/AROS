@@ -83,7 +83,7 @@ curl_ftp()
 
     for (( ; ; ))
     do
-        if !  eval "curl -f --retry 3 --retry-connrefused $curlextraflags --max-time 15 -C - \"$curlsrc\" -o $curloutput"; then
+        if !  eval "curl -f --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - \"$curlsrc\" -o $curloutput"; then
             if test "$ret" = false; then
                 break
             fi
@@ -132,7 +132,7 @@ curl_http() {
 
     for (( ; ; ))
     do
-        if ! eval "curl -fL --retry 3 --retry-connrefused $curlextraflags --max-time 15 -C - \"$curlsrc\" -o $curloutput"; then
+        if ! eval "curl -fL --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - \"$curlsrc\" -o $curloutput"; then
             if test "$ret" = false; then
                 break
             fi
