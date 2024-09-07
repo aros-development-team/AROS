@@ -16,15 +16,16 @@
     .set    stack,   15*8
 
 AROS_CDEFNAME(vfork):
+    mov     %rsp, %r8               /* Save stack pointer to r8 */
+    sub     $0x8, %rsp              /* Align the stack to 16 bytes */
     lea     (-bufsize)(%rsp), %rsp  /* _JMPLEN + 1 longs on the stack
                                     it's our temporary jmp_buf */
     mov     %rsp, %rdi
     call    setjmp                  /* fill jmp_buf on the stack with
                                     current register values */
-    mov     bufsize(%rsp), %rax     /* set return address in jmp_buf */
+    mov     (%r8), %rax             /* set return address in jmp_buf */
     mov     %rax, 0(%rdi)           /* to this function call return
                                     address */
-    lea     bufsize(%rsp), %rax     /* set stack value in jmp_buf */
+    mov     %r8, %rax               /* set stack value in jmp_buf */
     mov     %rax, stack(%rdi)       /* this function call */
-    sub     $0x8, %rsp              /* align stack to 16 bytes */
     call    __vfork                 /* __vfork call won't return */
