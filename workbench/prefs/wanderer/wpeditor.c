@@ -1245,7 +1245,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 
 
-    _WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/Revert");
+    _WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/DirUp");
     _WP_Toolbar_PreviewSearchObj = ImageButton("", "THEME:Images/Gadgets/Search");
 /*END _WP_Toolbar_GroupObj---------------------------------------------------*/
 
