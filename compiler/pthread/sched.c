@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -19,6 +20,8 @@
 */
 
 #include <proto/exec.h>
+#include <exec/execbase.h>
+
 
 #include "sched.h"
 #include "debug.h"
@@ -42,6 +45,15 @@ int sched_get_priority_min(int policy)
 
 int sched_yield(void)
 {
+#if defined(__MORPHOS__) || defined(__AMIGA__)
+    D(bug("%s()\n", __FUNCTION__));
+    // calling Permit() will trigger a reschedule
+    Forbid();
+#if !defined(__MORPHOS__)
+    SysBase->SysFlags |= 1<<15; // trigger rescheduling on Permit();
+#endif
+    Permit();
+#else
     BYTE oldpri;
     struct Task *task;
 
@@ -51,6 +63,7 @@ int sched_yield(void)
     // changing the priority will trigger a reschedule
     oldpri = SetTaskPri(task, -10);
     SetTaskPri(task, oldpri);
+#endif
 
     return 0;
 }

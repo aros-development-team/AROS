@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -38,7 +40,13 @@ static void StarterFunc(void)
 
     DB2(bug("%s()\n", __FUNCTION__));
 
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+    struct Process * proc = (struct Process *)SysBase->ThisTask;
+    inf = (ThreadInfo *)proc->pr_CIS;
+    proc->pr_CIS = 0;
+#else
     inf = (ThreadInfo *)FindTask(NULL)->tc_UserData;
+#endif
     // trim the name
     //inf->task->tc_Node.ln_Name[inf->oldlen];
 
@@ -62,15 +70,31 @@ static void StarterFunc(void)
         // custom stack requires special handling
         if (inf->attr.stackaddr != NULL && inf->attr.stacksize > 0)
         {
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+            struct StackSwapStruct stack;
+            stack.stk_Lower = inf->attr.stackaddr;
+            stack.stk_Upper = (ULONG)((char *)stack.stk_Lower + inf->attr.stacksize);
+            stack.stk_Pointer = (APTR)stack.stk_Upper;
+
+            StackSwap(&stack);
+
+            inf->ret = inf->start(inf->arg);
+#else
             struct StackSwapArgs swapargs;
-            struct StackSwapStruct stack; 
+            struct StackSwapStruct stack;
 
             swapargs.Args[0] = (IPTR)inf->arg;
             stack.stk_Lower = inf->attr.stackaddr;
+#ifdef __MORPHOS__
+            stack.stk_Upper = (IPTR)stack.stk_Lower + inf->attr.stacksize;
+            stack.stk_Pointer = (APTR)stack.stk_Upper;
+#else
             stack.stk_Upper = (APTR)((IPTR)stack.stk_Lower + inf->attr.stacksize);
-            stack.stk_Pointer = stack.stk_Upper; 
+            stack.stk_Pointer = stack.stk_Upper;
+#endif
 
             inf->ret = (void *)NewStackSwap(&stack, inf->start, &swapargs);
+#endif
         }
         else
         {
@@ -146,7 +170,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
     memset(inf, 0, sizeof(ThreadInfo));
     inf->start = start;
     inf->arg = arg;
-    inf->parent = FindTask(NULL);
+    inf->parent = GET_THIS_TASK;
     if (attr)
         inf->attr = *attr;
     else
@@ -154,6 +178,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
     NEWLIST((struct List *)&inf->cleanup);
     inf->cancelstate = PTHREAD_CANCEL_ENABLE;
     inf->canceltype = PTHREAD_CANCEL_DEFERRED;
+    inf->detached = inf->attr.detachstate == PTHREAD_CREATE_DETACHED;
 
     // let's trick CreateNewProc into allocating a larger buffer for the name
     snprintf(name, sizeof(name), "pthread thread #%d", threadnew);
@@ -162,25 +187,29 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
     name[sizeof(name) - 1] = '\0';
 
     // start the child thread
-    inf->task = (struct Task *)CreateNewProcTags(NP_Entry, StarterFunc,
+    inf->task = (struct Task *)CreateNewProcTags(NP_Entry, (IPTR)StarterFunc,
 #ifdef __MORPHOS__
         NP_CodeType, CODETYPE_PPC,
         (inf->attr.stackaddr == NULL && inf->attr.stacksize > 0) ? NP_PPCStackSize : TAG_IGNORE, inf->attr.stacksize,
+        inf->attr.stacksize68k > 0 ? NP_StackSize : TAG_IGNORE, inf->attr.stacksize68k,
 #else
         (inf->attr.stackaddr == NULL && inf->attr.stacksize > 0) ? NP_StackSize : TAG_IGNORE, inf->attr.stacksize,
 #endif
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+        NP_Input, (IPTR)inf,
+#else
         NP_UserData, inf,
-        NP_Name, name,
+#endif
+        NP_Name, (IPTR)name,
         TAG_DONE);
+
+    ReleaseSemaphore(&thread_sem);
 
     if (!inf->task)
     {
         inf->parent = NULL;
-        ReleaseSemaphore(&thread_sem);
         return EAGAIN;
     }
-
-    ReleaseSemaphore(&thread_sem);
 
     *thread = threadnew;
 
