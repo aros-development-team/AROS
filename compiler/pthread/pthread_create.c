@@ -132,7 +132,7 @@ static void StarterFunc(void)
         // tell the parent thread that we are done
         Forbid();
         inf->finished = TRUE;
-        Signal(inf->parent, SIGF_PARENT);
+        Signal(inf->waiter, SIGF_PARENT);
     }
     else
     {
@@ -171,6 +171,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
     inf->start = start;
     inf->arg = arg;
     inf->parent = GET_THIS_TASK;
+    inf->waiter = inf->parent;
     if (attr)
         inf->attr = *attr;
     else

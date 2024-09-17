@@ -108,6 +108,7 @@ typedef struct
     void *(*start)(void *);
     void *arg;
     struct Task *parent;
+    struct Task *waiter;
     int finished;
     struct Task *task;
     void *ret;
