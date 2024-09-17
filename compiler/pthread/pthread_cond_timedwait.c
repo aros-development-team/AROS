@@ -48,6 +48,7 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
 
     if (abstime)
     {
+        struct timeval tvabstime;
         // open timer.device
         if (!OpenTimerDevice((struct IORequest *)&timerio, &timermp, task))
         {
@@ -58,20 +59,22 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
         // prepare the device command and send it
         timerio.tr_node.io_Command = TR_ADDREQUEST;
         timerio.tr_node.io_Flags = 0;
-        TIMESPEC_TO_TIMEVAL(&timerio.tr_time, abstime);
+        TIMESPEC_TO_TIMEVAL(&tvabstime, abstime);
         if (!relative)
         {
             struct timeval starttime;
             // absolute time has to be converted to relative
             // GetSysTime can't be used due to the timezone offset in abstime
             gettimeofday(&starttime, NULL);
-            timersub(&timerio.tr_time, &starttime, &timerio.tr_time);
-            if (!timerisset(&timerio.tr_time))
+            timersub(&tvabstime, &starttime, &tvabstime);
+            if (!timerisset(&tvabstime))
             {
                 CloseTimerDevice((struct IORequest *)&timerio);
                 return ETIMEDOUT;
             }
         }
+        timerio.tr_time.tv_secs = tvabstime.tv_sec;
+        timerio.tr_time.tv_micro = tvabstime.tv_usec;
         sigs |= (1 << timermp.mp_SigBit);
         SendIO((struct IORequest *)&timerio);
     }

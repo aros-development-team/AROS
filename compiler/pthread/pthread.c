@@ -245,6 +245,7 @@ static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespe
     struct SemaphoreMessage msg;
     struct timerequest timerio;
     struct Task *task;
+    struct timeval tvabstime;
 #if defined(__AMIGA__) && !defined(__MORPHOS__)
     struct SemaphoreRequest sr;
     ULONG sigmask, sigs;
@@ -264,20 +265,22 @@ static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespe
 
     timerio.tr_node.io_Command = TR_ADDREQUEST;
     timerio.tr_node.io_Flags = 0;
-    TIMESPEC_TO_TIMEVAL(&timerio.tr_time, abstime);
+    TIMESPEC_TO_TIMEVAL(&tvabstime, abstime);
     //if (!relative)
     {
         struct timeval starttime;
         // absolute time has to be converted to relative
         // GetSysTime can't be used due to the timezone offset in abstime
         gettimeofday(&starttime, NULL);
-        timersub(&timerio.tr_time, &starttime, &timerio.tr_time);
-        if (!timerisset(&timerio.tr_time))
+        timersub(&tvabstime, &starttime, &tvabstime);
+        if (!timerisset(&tvabstime))
         {
             CloseTimerDevice((struct IORequest *)&timerio);
             return ETIMEDOUT;
         }
     }
+    timerio.tr_time.tv_secs = tvabstime.tv_sec;
+    timerio.tr_time.tv_micro = tvabstime.tv_usec;
     SendIO((struct IORequest *)&timerio);
 
 #if defined(__AMIGA__) && !defined(__MORPHOS__)
