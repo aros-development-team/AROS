@@ -41,6 +41,7 @@ int pthread_join(pthread_t thread, void **value_ptr)
 
     pthread_testcancel();
 
+    inf->waiter = GET_THIS_TASK;
     while (!inf->finished)
         Wait(SIGF_PARENT);
 
