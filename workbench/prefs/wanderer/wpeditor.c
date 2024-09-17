@@ -1185,7 +1185,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                     MUIA_Scrollgroup_Contents,
                     (IPTR) (_WP_ViewSettings_VirtGrpObj = (Object *)VirtgroupObject,
                         MUIA_FrameTitle, (IPTR)_(MSG_VIEWSETTINGS),
-                        MUIA_Frame, MUIV_Frame_ReadList,
+                        MUIA_Frame, MUIV_Frame_Group,
                         MUIA_Virtgroup_Input, FALSE,
                     End),
                 End;
@@ -1195,7 +1195,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
       it's created after in this function...;
     */
     _WP_ViewSettings_GroupObj = (Object *)GroupObject,
-                    MUIA_Background, MUII_SHINE,
+                  /*  MUIA_Background, MUII_SHINE, */
                     Child, (IPTR) (_WP_ViewSettings_SpacerObj = HVSpace),
                 End;
     /**/
