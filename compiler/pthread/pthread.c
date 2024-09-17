@@ -300,7 +300,7 @@ static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespe
         msg.ssm_Semaphore = NULL;
 #else
     msg.ssm_Message.mn_Node.ln_Type = NT_MESSAGE;
-    msg.ssm_Message.mn_Node.ln_Name = (char *)shared;
+    msg.ssm_Message.mn_Node.ln_Name = (char *)(IPTR)shared;
     msg.ssm_Message.mn_ReplyPort = &msgport;
     Procure(sema, &msg);
 
