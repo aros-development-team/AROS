@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -17,7 +19,6 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-
 #include <string.h>
 
 #include "pthread_intern.h"
@@ -37,7 +38,11 @@ int pthread_cond_destroy(pthread_cond_t *cond)
     if (AttemptSemaphore(&cond->semaphore) == FALSE)
         return EBUSY;
 
-    if (!IsListEmpty(&cond->waiters))
+#ifdef __AROS__
+    if (!IsMinListEmpty(&cond->waiters))
+#else
+    if (!IsListEmpty((struct List *)&cond->waiters))
+#endif
     {
         ReleaseSemaphore(&cond->semaphore);
         return EBUSY;

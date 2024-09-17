@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -62,12 +63,21 @@ typedef unsigned int pthread_key_t;
 //
 // POSIX thread attribute values
 //
-
+#ifndef PTHREAD_CREATE_JOINABLE
 #define PTHREAD_CREATE_JOINABLE       0
-#define PTHREAD_CREATE_DETACHED       1
+#endif
 
+#ifndef PTHREAD_CREATE_DETACHED
+#define PTHREAD_CREATE_DETACHED       1
+#endif
+
+#ifndef PTHREAD_INHERIT_SCHED
 #define PTHREAD_INHERIT_SCHED         0
+#endif
+
+#ifndef PTHREAD_EXPLICIT_SCHED
 #define PTHREAD_EXPLICIT_SCHED        1
+#endif
 
 #define PTHREAD_SCOPE_PROCESS         0
 #define PTHREAD_SCOPE_SYSTEM          1
@@ -89,6 +99,9 @@ struct pthread_attr
 {
     void *stackaddr;
     size_t stacksize;
+#ifdef __MORPHOS__
+    size_t stacksize68k;
+#endif
     int detachstate;
     struct sched_param param;
     int inheritsched;
@@ -276,6 +289,7 @@ int pthread_once(pthread_once_t *once_control, void (*init_routine)(void));
 // Scheduling functions
 //
 
+int pthread_setschedprio(pthread_t thread, int prio);
 int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param);
 int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *param);
 int pthread_setconcurrency(int level);
@@ -389,6 +403,7 @@ int pthread_spin_unlock(pthread_spinlock_t *lock);
 int pthread_setname_np(pthread_t thread, const char *name);
 int pthread_getname_np(pthread_t thread, char *name, size_t len);
 int pthread_cond_timedwait_relative_np(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *reltime);
+int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr);
 
 //
 // Cancellation cleanup

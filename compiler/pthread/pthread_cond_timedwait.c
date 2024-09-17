@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -28,54 +30,28 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
 {
     CondWaiter waiter;
     BYTE signal;
-    ULONG sigs = 0;
-    ULONG timermask = 0;
+    ULONG sigs = SIGBREAKF_CTRL_C;
     struct MsgPort timermp;
     struct timerequest timerio;
     struct Task *task;
 
-    DB2(bug("%s(%p, %p, %p)\n", __FUNCTION__, cond, mutex, abstime));
+    DB2(bug("%s(%p, %p, %p, %d)\n", __FUNCTION__, cond, mutex, abstime, relative));
 
     if (cond == NULL || mutex == NULL)
         return EINVAL;
-
-    pthread_testcancel();
 
     // initialize static conditions
     if (SemaphoreIsInvalid(&cond->semaphore))
         pthread_cond_init(cond, NULL);
 
-    task = FindTask(NULL);
+    task = GET_THIS_TASK;
 
     if (abstime)
     {
-        // prepare MsgPort
-        memset( &timermp, 0, sizeof( timermp ) );
-        timermp.mp_Node.ln_Type = NT_MSGPORT;
-        timermp.mp_Flags = PA_SIGNAL;
-        timermp.mp_SigTask = task;
-        signal = AllocSignal(-1);
-        if (signal == -1)
-        {
-            signal = SIGB_TIMER_FALLBACK;
-            SetSignal(SIGF_TIMER_FALLBACK, 0);
-        }
-        timermp.mp_SigBit = signal;
-        NEWLIST(&timermp.mp_MsgList);
-
-        // prepare IORequest
-        timerio.tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
-        timerio.tr_node.io_Message.mn_Node.ln_Pri = 0;
-        timerio.tr_node.io_Message.mn_Node.ln_Name = NULL;
-        timerio.tr_node.io_Message.mn_ReplyPort = &timermp;
-        timerio.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
-
         // open timer.device
-        if (OpenDevice((STRPTR)TIMERNAME, UNIT_MICROHZ, &timerio.tr_node, 0) != 0)
+        if (!OpenTimerDevice((struct IORequest *)&timerio, &timermp, task))
         {
-            if (timermp.mp_SigBit != SIGB_TIMER_FALLBACK)
-                FreeSignal(timermp.mp_SigBit);
-
+            CloseTimerDevice((struct IORequest *)&timerio);
             return EINVAL;
         }
 
@@ -90,9 +66,13 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
             // GetSysTime can't be used due to the timezone offset in abstime
             gettimeofday(&starttime, NULL);
             timersub(&timerio.tr_time, &starttime, &timerio.tr_time);
+            if (!timerisset(&timerio.tr_time))
+            {
+                CloseTimerDevice((struct IORequest *)&timerio);
+                return ETIMEDOUT;
+            }
         }
-        timermask = 1 << timermp.mp_SigBit;
-        sigs |= timermask;
+        sigs |= (1 << timermp.mp_SigBit);
         SendIO((struct IORequest *)&timerio);
     }
 
@@ -104,8 +84,8 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
         signal = SIGB_COND_FALLBACK;
         SetSignal(SIGF_COND_FALLBACK, 0);
     }
-    waiter.sigmask = 1 << signal;
-    sigs |= waiter.sigmask;
+    waiter.sigbit = signal;
+    sigs |= 1 << waiter.sigbit;
 
     // add it to the end of the list
     ObtainSemaphore(&cond->semaphore);
@@ -124,25 +104,24 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
     Remove((struct Node *)&waiter);
     ReleaseSemaphore(&cond->semaphore);
 
-    if (signal != SIGB_COND_FALLBACK)
-        FreeSignal(signal);
+    if (waiter.sigbit != SIGB_COND_FALLBACK)
+        FreeSignal(waiter.sigbit);
 
     if (abstime)
     {
         // clean up the timerequest
-        if (!CheckIO((struct IORequest *)&timerio))
-        {
-            AbortIO((struct IORequest *)&timerio);
-            WaitIO((struct IORequest *)&timerio);
-        }
-        CloseDevice((struct IORequest *)&timerio);
-
-        if (timermp.mp_SigBit != SIGB_TIMER_FALLBACK)
-            FreeSignal(timermp.mp_SigBit);
+        CloseTimerDevice((struct IORequest *)&timerio);
 
         // did we timeout?
-        if (sigs & timermask)
+        if (sigs & (1 << timermp.mp_SigBit))
             return ETIMEDOUT;
+        else if (sigs & SIGBREAKF_CTRL_C)
+            pthread_testcancel();
+    }
+    else
+    {
+        if (sigs & SIGBREAKF_CTRL_C)
+            pthread_testcancel();
     }
 
     return 0;

@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -18,20 +20,57 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <setjmp.h>
-
+#ifdef __MORPHOS__
+#include <sys/time.h>
+#endif
+#include <dos/dostags.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/timer.h>
 #ifdef __AROS__
 #include <aros/symbolsets.h>
 #define    TIMESPEC_TO_TIMEVAL(tv, ts) {    \
     (tv)->tv_sec = (ts)->tv_sec;        \
     (tv)->tv_usec = (ts)->tv_nsec / 1000; }
-#else
+#elif !defined(__AMIGA__) || defined(__MORPHOS__)
 #include <constructor.h>
 #define StackSwapArgs PPCStackSwapArgs
 #define NewStackSwap NewPPCStackSwap
 #endif
 
+#include <setjmp.h>
+#include <string.h>
+#include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
+
 #include "pthread.h"
+#include "debug.h"
+
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+#include <exec/execbase.h>
+#include <inline/alib.h>
+#define NEWLIST(a) NewList(a)
+
+#include <stabs.h>
+
+#ifndef IPTR
+#define IPTR ULONG
+#endif
+
+#   define ForeachNode(l,n) \
+    for (n=(void *)(((struct List *)(l))->lh_Head); \
+        ((struct Node *)(n))->ln_Succ; \
+        n=(void *)(((struct Node *)(n))->ln_Succ))
+
+#define GET_THIS_TASK SysBase->ThisTask;
+
+#else
+
+#define GET_THIS_TASK FindTask(NULL)
+
+#endif
+
 
 #define SIGB_PARENT SIGBREAKB_CTRL_F
 #define SIGF_PARENT (1 << SIGB_PARENT)
@@ -48,7 +87,7 @@ typedef struct
 {
     struct MinNode node;
     struct Task *task;
-    ULONG sigmask;
+    UBYTE sigbit;
 } CondWaiter;
 
 typedef struct
@@ -88,10 +127,10 @@ extern TLSKey tlskeys[PTHREAD_KEYS_MAX];
 extern struct SignalSemaphore tls_sem;
 
 /* .c */
-extern pthread_t GetThreadId(struct Task *task);
-extern ThreadInfo *GetThreadInfo(pthread_t thread);
 extern int SemaphoreIsInvalid(struct SignalSemaphore *sem);
 extern int SemaphoreIsMine(struct SignalSemaphore *sem);
+extern ThreadInfo *GetThreadInfo(pthread_t thread);
+extern pthread_t GetThreadId(struct Task *task);
 
 /* .c */
 extern int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime, BOOL relative);

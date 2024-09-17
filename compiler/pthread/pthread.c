@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -59,22 +61,20 @@ int SemaphoreIsMine(struct SignalSemaphore *sem)
 
     DB2(bug("%s(%p)\n", __FUNCTION__, sem));
 
-    me = FindTask(NULL);
+    me = GET_THIS_TASK;
 
     return (sem && sem->ss_NestCount > 0 && sem->ss_Owner == me);
 }
 
 ThreadInfo *GetThreadInfo(pthread_t thread)
 {
-    ThreadInfo *inf = NULL;
-
     DB2(bug("%s(%u)\n", __FUNCTION__, thread));
 
     // TODO: more robust error handling?
     if (thread < PTHREAD_THREADS_MAX)
-        inf = &threads[thread];
+        return &threads[thread];
 
-    return inf;
+    return 0;
 }
 
 pthread_t GetThreadId(struct Task *task)
@@ -83,16 +83,12 @@ pthread_t GetThreadId(struct Task *task)
 
     DB2(bug("%s(%p)\n", __FUNCTION__, task));
 
-    ObtainSemaphoreShared(&thread_sem);
-
-    // First thread id will be 1 so that it is different than default value of pthread_t
-    for (i = PTHREAD_FIRST_THREAD_ID; i < PTHREAD_THREADS_MAX; i++)
+    // 0 is main task, First thread id will be 1 so that it is different than default value of pthread_t
+    for (i = 0; i < PTHREAD_THREADS_MAX; i++)
     {
         if (threads[i].task == task)
             break;
     }
-
-    ReleaseSemaphore(&thread_sem);
 
     return i;
 }
@@ -126,23 +122,70 @@ static int __m68k_sync_lock_test_and_set(int *v, int n)
 #define __sync_lock_test_and_set(v, n) __m68k_sync_lock_test_and_set(v, n)
 #undef __sync_lock_release
 #define __sync_lock_release(v) __m68k_sync_lock_test_and_set(v, 0)
-
-static inline int __m68k_sync_add_and_fetch(int *v, int n)
-{
-    int ret;
-
-    Disable();
-    (*v) += (n);
-    ret = (*v);
-    Enable();
-
-    return ret;
-}
-#undef __sync_add_and_fetch
-#define __sync_add_and_fetch(v, n) __m68k_sync_add_and_fetch(v, n)
-#undef __sync_sub_and_fetch
-#define __sync_sub_and_fetch(v, n) __m68k_sync_add_and_fetch(v, -(n))
 #endif
+
+static BOOL OpenTimerDevice(struct IORequest *io, struct MsgPort *mp, struct Task *task)
+{
+    BYTE signal;
+
+    DB2(bug("%s(%p,%p,%p)\n", __FUNCTION__, io, mp, task));
+
+    // prepare MsgPort
+    mp->mp_Node.ln_Type = NT_MSGPORT;
+    mp->mp_Node.ln_Pri = 0;
+    mp->mp_Node.ln_Name = NULL;
+    mp->mp_Flags = PA_SIGNAL;
+    mp->mp_SigTask = task;
+    signal = AllocSignal(-1);
+    if (signal == -1)
+    {
+        signal = SIGB_TIMER_FALLBACK;
+        SetSignal(SIGF_TIMER_FALLBACK, 0);
+    }
+    mp->mp_SigBit = signal;
+    NEWLIST(&mp->mp_MsgList);
+
+    // prepare IORequest
+    io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    io->io_Message.mn_Node.ln_Pri = 0;
+    io->io_Message.mn_Node.ln_Name = NULL;
+    io->io_Message.mn_ReplyPort = mp;
+    io->io_Message.mn_Length = sizeof(struct timerequest);
+
+    // open timer.device
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+    io->io_Device = DOSBase->dl_TimeReq->tr_node.io_Device;
+    io->io_Unit = DOSBase->dl_TimeReq->tr_node.io_Unit;
+    io->io_Error = 0;
+    return TRUE;
+#else
+    return !OpenDevice((STRPTR)TIMERNAME, UNIT_MICROHZ, io, 0);
+#endif
+}
+
+static void CloseTimerDevice(struct IORequest *io)
+{
+    struct MsgPort *mp;
+
+    DB2(bug("%s(%p)\n", __FUNCTION__, io));
+
+    if (!CheckIO(io))
+    {
+        AbortIO(io);
+        WaitIO(io);
+    }
+
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+    io->io_Device = (struct Device *)-1;
+#else
+    if (io->io_Device != NULL)
+        CloseDevice(io);
+#endif
+
+    mp = io->io_Message.mn_ReplyPort;
+    if (mp->mp_SigBit != SIGB_TIMER_FALLBACK)
+        FreeSignal(mp->mp_SigBit);
+}
 
 //
 // Thread specific data functions
@@ -196,9 +239,85 @@ int pthread_mutexattr_gettype(pthread_mutexattr_t *attr, int *kind)
 // Mutex functions
 //
 
+static int _obtain_sema_timed(struct SignalSemaphore *sema, const struct timespec *abstime, int shared)
+{
+    struct MsgPort msgport;
+    struct SemaphoreMessage msg;
+    struct timerequest timerio;
+    struct Task *task;
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+    struct SemaphoreRequest sr;
+    ULONG sigmask, sigs;
+#else
+    struct Message *m1, *m2;
+#endif
+
+    DB2(bug("%s(%p, %p, %d)\n", __FUNCTION__, sema, abstime, shared));
+
+    task = GET_THIS_TASK;
+
+    if (!OpenTimerDevice((struct IORequest *)&timerio, &msgport, task))
+    {
+        CloseTimerDevice((struct IORequest *)&timerio);
+        return EINVAL;
+    }
+
+    timerio.tr_node.io_Command = TR_ADDREQUEST;
+    timerio.tr_node.io_Flags = 0;
+    TIMESPEC_TO_TIMEVAL(&timerio.tr_time, abstime);
+    //if (!relative)
+    {
+        struct timeval starttime;
+        // absolute time has to be converted to relative
+        // GetSysTime can't be used due to the timezone offset in abstime
+        gettimeofday(&starttime, NULL);
+        timersub(&timerio.tr_time, &starttime, &timerio.tr_time);
+        if (!timerisset(&timerio.tr_time))
+        {
+            CloseTimerDevice((struct IORequest *)&timerio);
+            return ETIMEDOUT;
+        }
+    }
+    SendIO((struct IORequest *)&timerio);
+
+#if defined(__AMIGA__) && !defined(__MORPHOS__)
+    // Procure is broken on older systems... hand made...
+    sr.sr_Waiter = (struct Task *)((IPTR)task | shared);
+
+    sigmask = SIGF_SINGLE | (1<<msgport.mp_SigBit);
+    Forbid();
+    task->tc_SigRecvd &= ~sigmask;
+    AddTail((struct List *)&sema->ss_WaitQueue, (struct Node *)&sr.sr_Link);
+    sigs = Wait(sigmask);
+    Permit();
+
+    if (sigs & SIGF_SINGLE)
+        msg.ssm_Semaphore = sema;
+    else
+        msg.ssm_Semaphore = NULL;
+#else
+    msg.ssm_Message.mn_Node.ln_Type = NT_MESSAGE;
+    msg.ssm_Message.mn_Node.ln_Name = (char *)shared;
+    msg.ssm_Message.mn_ReplyPort = &msgport;
+    Procure(sema, &msg);
+
+    WaitPort(&msgport);
+    m1 = GetMsg(&msgport);
+    m2 = GetMsg(&msgport);
+    if (m1 == &timerio.tr_node.io_Message || m2 == &timerio.tr_node.io_Message)
+        Vacate(sema, &msg);
+#endif
+
+    CloseTimerDevice((struct IORequest *)&timerio);
+
+    if (msg.ssm_Semaphore == NULL)
+        return ETIMEDOUT;
+
+    return 0;
+}
+
 int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-    struct timeval end, now;
     int result;
 
     D(bug("%s(%p, %p)\n", __FUNCTION__, mutex, abstime));
@@ -207,22 +326,21 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *absti
         return EINVAL;
 
     if (abstime == NULL)
-        return pthread_mutex_lock(mutex); 
-    /*else if (abstime.tv_nsec < 0 || abstime.tv_nsec >= 1000000000)
-        return EINVAL;*/
+        return pthread_mutex_lock(mutex);
+    else if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
+        return EINVAL;
 
-    TIMESPEC_TO_TIMEVAL(&end, abstime);
-
-    // busy waiting is not very nice, but ObtainSemaphore doesn't support timeouts
-    while ((result = pthread_mutex_trylock(mutex)) == EBUSY)
+    result = pthread_mutex_trylock(mutex);
+    if (result != 0)
     {
-        sched_yield();
-        gettimeofday(&now, NULL);
-        if (timercmp(&end, &now, <))
-            return ETIMEDOUT;
+        // pthread_mutex_trylock returns EBUSY when a deadlock would occur
+        if (result != EBUSY)
+            return result;
+        else if (mutex->kind != PTHREAD_MUTEX_RECURSIVE && SemaphoreIsMine(&mutex->semaphore))
+            return EDEADLK;
     }
 
-    return result;
+    return _obtain_sema_timed(&mutex->semaphore, abstime, SM_EXCLUSIVE);
 }
 
 //
@@ -469,9 +587,12 @@ int pthread_rwlock_rdlock(pthread_rwlock_t *lock)
     if (SemaphoreIsInvalid(&lock->semaphore))
         pthread_rwlock_init(lock, NULL);
 
+    // "Results are undefined if the calling thread holds a write lock on rwlock at the time the call is made."
+    /*
     // we might already have a write lock
     if (SemaphoreIsMine(&lock->semaphore))
         return EDEADLK;
+    */
 
     ObtainSemaphoreShared(&lock->semaphore);
 
@@ -480,7 +601,6 @@ int pthread_rwlock_rdlock(pthread_rwlock_t *lock)
 
 int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *abstime)
 {
-    struct timeval end, now;
     int result;
 
     D(bug("%s(%p, %p)\n", __FUNCTION__, lock, abstime));
@@ -490,21 +610,16 @@ int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *ab
 
     if (abstime == NULL)
         return pthread_rwlock_rdlock(lock);
+    else if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
+        return EINVAL;
 
     pthread_testcancel();
 
-    TIMESPEC_TO_TIMEVAL(&end, abstime);
+    result = pthread_rwlock_tryrdlock(lock);
+    if (result != EBUSY)
+        return result;
 
-    // busy waiting is not very nice, but ObtainSemaphore doesn't support timeouts
-    while ((result = pthread_rwlock_tryrdlock(lock)) == EBUSY)
-    {
-        sched_yield();
-        gettimeofday(&now, NULL);
-        if (timercmp(&end, &now, <))
-            return ETIMEDOUT;
-    }
-
-    return result;
+    return _obtain_sema_timed(&lock->semaphore, abstime, SM_SHARED);
 }
 
 int pthread_rwlock_wrlock(pthread_rwlock_t *lock)
@@ -530,7 +645,6 @@ int pthread_rwlock_wrlock(pthread_rwlock_t *lock)
 
 int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *abstime)
 {
-    struct timeval end, now;
     int result;
 
     D(bug("%s(%p, %p)\n", __FUNCTION__, lock, abstime));
@@ -540,21 +654,16 @@ int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *ab
 
     if (abstime == NULL)
         return pthread_rwlock_wrlock(lock);
+    else if (abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)
+        return EINVAL;
 
     pthread_testcancel();
 
-    TIMESPEC_TO_TIMEVAL(&end, abstime);
+    result = pthread_rwlock_trywrlock(lock);
+    if (result != EBUSY)
+        return result;
 
-    // busy waiting is not very nice, but ObtainSemaphore doesn't support timeouts
-    while ((result = pthread_rwlock_trywrlock(lock)) == EBUSY)
-    {
-        sched_yield();
-        gettimeofday(&now, NULL);
-        if (timercmp(&end, &now, <))
-            return ETIMEDOUT;
-    }
-
-    return result;
+    return _obtain_sema_timed(&lock->semaphore, abstime, SM_EXCLUSIVE);
 }
 
 int pthread_rwlock_unlock(pthread_rwlock_t *lock)
@@ -609,8 +718,21 @@ int pthread_spin_lock(pthread_spinlock_t *lock)
     if (lock == NULL)
         return EINVAL;
 
+#ifdef __MORPHOS__
+    {
+    unsigned int cnt = 0;
+    while (__sync_lock_test_and_set((int *)lock, 1))
+    {
+        asm volatile("" ::: "memory");
+        if ((cnt++ & 255) == 0)
+            sched_yield();
+    }
+    }
+#else
     while (__sync_lock_test_and_set((int *)lock, 1))
         sched_yield(); // TODO: don't yield the CPU every iteration
+                        // SBF: if yield is implemented correctly there's nothing else to do.
+#endif
 
     return 0;
 }
@@ -661,7 +783,7 @@ int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate)
 {
     D(bug("%s(%p, %d)\n", __FUNCTION__, attr, detachstate));
 
-    if (attr == NULL || detachstate != PTHREAD_CREATE_JOINABLE)
+    if (attr == NULL || (detachstate != PTHREAD_CREATE_JOINABLE && detachstate != PTHREAD_CREATE_DETACHED))
         return EINVAL;
 
     attr->detachstate = detachstate;
@@ -703,6 +825,13 @@ int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize)
     D(bug("%s(%p, %p)\n", __FUNCTION__, attr, stacksize));
 
     return pthread_attr_getstack(attr, NULL, stacksize);
+}
+
+int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize)
+{
+    D(bug("%s(%p, %u)\n", __FUNCTION__, attr, stacksize));
+
+    return pthread_attr_setstack(attr, NULL, stacksize);
 }
 
 int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param)
@@ -774,8 +903,11 @@ int pthread_detach(pthread_t thread)
 
     inf = GetThreadInfo(thread);
 
-    if (inf == NULL)
+    if (inf == NULL || inf->task == NULL)
         return ESRCH;
+
+    if (inf->detached)
+        return EINVAL;
 
     inf->detached = TRUE;
 
@@ -794,6 +926,8 @@ void pthread_testcancel(void)
 
     if (inf->canceled && (inf->cancelstate == PTHREAD_CANCEL_ENABLE))
         pthread_exit(PTHREAD_CANCELED);
+
+    SetSignal(SIGBREAKF_CTRL_C, 0);
 }
 
 static void OnceCleanup(void *arg)
@@ -833,6 +967,25 @@ int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
 // Scheduling functions
 //
 
+int pthread_setschedprio(pthread_t thread, int prio)
+{
+    ThreadInfo *inf;
+
+    D(bug("%s(%u, %d)\n", __FUNCTION__, thread, prio));
+
+    if (prio < sched_get_priority_max(SCHED_NORMAL) || prio > sched_get_priority_min(SCHED_NORMAL))
+        return EINVAL;
+
+    inf = GetThreadInfo(thread);
+
+    if (inf == NULL)
+        return ESRCH;
+
+    SetTaskPri(inf->task, prio);
+
+    return 0;
+}
+
 int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
 {
     ThreadInfo *inf;
@@ -858,7 +1011,7 @@ int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *par
 
     D(bug("%s(%u, %d, %p)\n", __FUNCTION__, thread, policy, param));
 
-    if ((param == NULL) || (policy == NULL))
+    if (param == NULL || policy == NULL)
         return EINVAL;
 
     inf = GetThreadInfo(thread);
@@ -867,7 +1020,7 @@ int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *par
         return ESRCH;
 
     param->sched_priority = inf->task->tc_Node.ln_Pri;
-    *policy = 1;
+    *policy = SCHED_NORMAL;
 
     return 0;
 }
@@ -891,7 +1044,7 @@ int pthread_setname_np(pthread_t thread, const char *name)
     if (inf == NULL)
         return ERANGE;
 
-    currentname = GetNodeName(inf->task);
+    currentname = inf->task->tc_Node.ln_Name;
 
     if (inf->parent == NULL)
         namelen = strlen(currentname) + 1;
@@ -921,13 +1074,32 @@ int pthread_getname_np(pthread_t thread, char *name, size_t len)
     if (inf == NULL)
         return ERANGE;
 
-    currentname = GetNodeName(inf->task);
+    currentname = inf->task->tc_Node.ln_Name;
 
     if (strlen(currentname) + 1 > len)
         return ERANGE;
 
-    // TODO: partially copy the name?
-    strncpy(name, currentname, len);
+    // length check passed - strcpy is ok.
+    strcpy(name, currentname);
+
+    return 0;
+}
+
+int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr)
+{
+    ThreadInfo *inf;
+
+    D(bug("%s(%u, %p)\n", __FUNCTION__, thread, attr));
+
+    if (attr == NULL)
+        return EINVAL;
+
+    inf = GetThreadInfo(thread);
+
+    if (inf == NULL)
+        return ESRCH; // TODO
+
+    *attr = inf->attr;
 
     return 0;
 }
@@ -993,45 +1165,59 @@ int pthread_kill(pthread_t thread, int sig)
 // Constructors, destructors
 //
 
-static int _Init_Func(void)
+int __pthread_Init_Func(void)
 {
     DB2(bug("%s()\n", __FUNCTION__));
 
     //memset(&threads, 0, sizeof(threads));
     InitSemaphore(&thread_sem);
     InitSemaphore(&tls_sem);
-    // reserve ID 0 for the main thread
-    //pthread_self();
 
+    // reserve ID 0 for the main thread
+    ThreadInfo *inf = &threads[0];
+
+    inf->task = GET_THIS_TASK;
+
+    NEWLIST((struct List *)&inf->cleanup);
     return TRUE;
 }
 
-static void _Exit_Func(void)
+void __pthread_Exit_Func(void)
 {
-#if 0
     pthread_t i;
-#endif
+    ThreadInfo *inf;
 
     DB2(bug("%s()\n", __FUNCTION__));
 
-    // wait for the threads?
-#if 0
-    for (i = 0; i < PTHREAD_THREADS_MAX; i++)
-        pthread_join(i, NULL);
-#endif
+    // if we don't do this we can easily end up with unloaded code being executed
+    for (i = 1; i < PTHREAD_THREADS_MAX; i++)
+    {
+        inf = &threads[i];
+        if (inf->detached)
+        {
+            D(bug("waiting for detached thread %d\n", i));
+            // TODO longer delay between retries?
+            while (inf->task)
+                Delay(1);
+        }
+        else
+        {
+            pthread_join(i, NULL);
+        }
+    }
 }
 
-#ifdef __AROS__
-ADD2INIT(_Init_Func, 0);
-ADD2EXIT(_Exit_Func, 0);
+#if defined(__AROS__) || (defined(__AMIGA__) && !defined(__MORPHOS__))
+ADD2INIT(__pthread_Init_Func, 0);
+ADD2EXIT(__pthread_Exit_Func, 0);
 #else
-static CONSTRUCTOR_P(_Init_Func, 100)
+static CONSTRUCTOR_P(__pthread_Init_Func, 100)
 {
-    return !_Init_Func();
+    return !__pthread_Init_Func();
 }
 
-static DESTRUCTOR_P(_Exit_Func, 100)
+static DESTRUCTOR_P(__pthread_Exit_Func, 100)
 {
-    _Exit_Func();
+    __pthread_Exit_Func();
 }
 #endif
