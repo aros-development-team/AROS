@@ -124,7 +124,7 @@ static int __m68k_sync_lock_test_and_set(int *v, int n)
 #define __sync_lock_release(v) __m68k_sync_lock_test_and_set(v, 0)
 #endif
 
-static BOOL OpenTimerDevice(struct IORequest *io, struct MsgPort *mp, struct Task *task)
+BOOL OpenTimerDevice(struct IORequest *io, struct MsgPort *mp, struct Task *task)
 {
     BYTE signal;
 
@@ -163,7 +163,7 @@ static BOOL OpenTimerDevice(struct IORequest *io, struct MsgPort *mp, struct Tas
 #endif
 }
 
-static void CloseTimerDevice(struct IORequest *io)
+void CloseTimerDevice(struct IORequest *io)
 {
     struct MsgPort *mp;
 

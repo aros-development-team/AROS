@@ -140,3 +140,7 @@ extern int _pthread_cond_broadcast(pthread_cond_t *cond, BOOL onlyfirst);
 
 /* .c */
 extern int _pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr, BOOL staticinit);
+
+/* .c */
+extern BOOL OpenTimerDevice(struct IORequest *io, struct MsgPort *mp, struct Task *task);
+extern void CloseTimerDevice(struct IORequest *io);
