@@ -23,7 +23,7 @@
                         (MININTSIZE>MINFLOATSIZE?MININTSIZE:MINFLOATSIZE): \
                         (MINPOINTSIZE>MINFLOATSIZE?MINPOINTSIZE:MINFLOATSIZE))
 #else
-#define REQUIREDBUFFER (MININTSIZE>MINPOINTSIZE ? (MININTSIZE) : (MINPOINTSIZE))
+#define REQUIREDBUFFER 17 // Hexadecimal output of QUAD needs 16 characters
 #endif
 #define ALTERNATEFLAG 1  /* '#' is set */
 #define ZEROPADFLAG   2  /* '0' is set */
