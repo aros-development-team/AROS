@@ -174,7 +174,7 @@ static void add128(ULONG *s, ULONG *d)
     OR64Q(res, Qtmp1);
 
     if (sign)
-        OR64(res, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+        OR64QC(res, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
 
     return *Dres;
 
