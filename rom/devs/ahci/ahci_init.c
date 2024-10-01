@@ -46,6 +46,7 @@
 
 u_int32_t AhciForceGen = 0;
 u_int32_t AhciNoFeatures = 0;
+u_int32_t AhciStartDelay = 25;
 
 #include LC_LIBDEFS_FILE
 
@@ -140,6 +141,11 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
                     {
                         ahciWarn("[AHCI--] %s: Disabling AHCI features\n", __func__);
                         AhciNoFeatures = -1;
+                    }
+                    if (strstr(CmdLine, "slowerstart"))
+                    {
+                        ahciWarn("[AHCI--] %s: Using original start delays\n", __func__);
+                        AhciStartDelay = 250;
                     }
                 }
             }

@@ -85,6 +85,8 @@ static void ahci_empty_done(struct ahci_ccb *ccb);
 static void ahci_ata_cmd_done(struct ahci_ccb *ccb);
 static u_int32_t ahci_pactive(struct ahci_port *ap);
 
+extern int ahci_icc_bug;
+
 /*
  * Initialize the global AHCI hardware.  This code does not set up any of
  * its ports.
@@ -1473,6 +1475,7 @@ ahci_comreset(struct ahci_port *ap, int *pmdetectp)
     cmd |= AHCI_PREG_CMD_SUD | AHCI_PREG_CMD_POD;
     cmd |= AHCI_PREG_CMD_ICC_ACTIVE;
     ahci_pwrite(ap, AHCI_PREG_CMD, cmd);
+	if (!ahci_icc_bug)
     ahci_pwait_clr(ap, AHCI_PREG_CMD, AHCI_PREG_CMD_ICC);
 
     /*
@@ -1502,7 +1505,7 @@ retry:
      * Give the new power management state time to settle, then clear
      * pending status.
      */
-    ahci_os_sleep(1000);
+    ahci_os_sleep(AhciStartDelay << 2);
     ahci_flush_tfd(ap);
     ahci_pwrite(ap, AHCI_PREG_SERR, -1);
 
@@ -1534,7 +1537,7 @@ retry:
         break;
     }
     ahci_pwrite(ap, AHCI_PREG_SCTL, r);
-    ahci_os_sleep(1000);
+    ahci_os_sleep(AhciStartDelay << 2);
 
     ap->ap_flags &= ~AP_F_HARSH_REINIT;
 
@@ -1557,7 +1560,7 @@ retry:
     r &= ~AHCI_PREG_SCTL_DET_INIT;
     r |= AHCI_PREG_SCTL_DET_NONE;
     ahci_pwrite(ap, AHCI_PREG_SCTL, r);
-    ahci_os_sleep(1000);
+    ahci_os_sleep(AhciStartDelay << 2);
 
     /*
      * Try to determine if there is a device on the port.  This operation
@@ -1576,7 +1579,7 @@ retry:
      * If we fail clear PRCS (phy detect) since we may cycled
      * the phy and probably caused another PRCS interrupt.
      */
-    loop = 2000;
+    loop = AhciStartDelay * 10;
     while (loop > 0) {
         r = ahci_pread(ap, AHCI_PREG_SSTS);
         if (r & AHCI_PREG_SSTS_DET)
@@ -1700,7 +1703,7 @@ ahci_port_hardreset(struct ahci_port *ap, int hard)
     /*
      * Finish up.
      */
-    ahci_os_sleep(500);
+    ahci_os_sleep(AhciStartDelay << 1);
 
     switch(error) {
     case 0:
@@ -1857,6 +1860,7 @@ ahci_port_hardstop(struct ahci_port *ap)
            AHCI_PREG_CMD_SUD |
            AHCI_PREG_CMD_ICC_ACTIVE;
     ahci_pwrite(ap, AHCI_PREG_CMD, cmd);
+	if (!ahci_icc_bug)
     ahci_pwait_clr(ap, AHCI_PREG_CMD, AHCI_PREG_CMD_ICC);
 
     /*

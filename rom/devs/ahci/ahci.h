@@ -698,6 +698,7 @@ void	ahci_os_unlock_port(struct ahci_port *ap);
 extern u_int32_t AhciForceGen;
 extern u_int32_t AhciNoFeatures;
 extern int ahci_synchronous_boot;
+extern u_int32_t AhciStartDelay;
 
 enum {AHCI_LINK_PWR_MGMT_NONE, AHCI_LINK_PWR_MGMT_MEDIUM,
       AHCI_LINK_PWR_MGMT_AGGR};

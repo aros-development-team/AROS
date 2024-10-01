@@ -325,6 +325,7 @@ struct ata_port {
 	u_int64_t		at_capacity;	/* only if ATA_PORT_T_DISK */
 	int			at_target;	/* port multiplier port */
 	char			at_name[16];
+	u_int32_t		at_ncyls;	/* only if ATA_PORT_T_DISK */
 };
 
 struct ata_xfer {

@@ -300,7 +300,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
         pp[DE_BLKSPERTRACK + 4] = at->at_identify.nsectors;
         pp[DE_RESERVEDBLKS + 4] = 2;
         pp[DE_LOWCYL       + 4] = 0;
-        pp[DE_HIGHCYL      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? (at->at_identify.ncyls - 1) : 0;
+        pp[DE_HIGHCYL      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? (at->at_ncyls - 1) : 0;
         pp[DE_NUMBUFFERS   + 4] = 10;
         pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
         pp[DE_MAXTRANSFER  + 4] = 0x00200000;
@@ -451,6 +451,53 @@ ata_fix_identify(struct ata_identify *id)
                 swap[i] = bswap16(swap[i]);
 }
 
+static void
+ata_fix_chs(struct ata_identify *id, u_int32_t *ncyls, u_int64_t capacity48)
+{
+    *ncyls = id->ncyls;
+
+    if (le16toh(id->cmdset83) & 0x0400) {
+        /* LBA48 feature set supported */
+        /* Code copied from ata.device */
+        ULONG div = 1;
+        /*
+            * TODO: this shouldn't be casted down here.
+            */
+        ULONG sec = (ULONG)capacity48;
+
+        if (capacity48 >= 0xFFFFFFFF)
+            sec = 0xFFFFFFFF;
+
+        id->nsectors = 63;
+        sec /= 63;
+
+        /*
+            * keep dividing by 2
+            */
+        do
+        {
+            if (((sec >> 1) << 1) != sec)
+                break;
+            if ((div << 1) > 255)
+                break;
+            div <<= 1;
+            sec >>= 1;
+        } while (1);
+
+        do
+        {
+            if (((sec / 3) * 3) != sec)
+                break;
+            if ((div * 3) > 255)
+                break;
+            div *= 3;
+            sec /= 3;
+        } while (1);
+
+        *ncyls      = sec;
+        id->nheads  = div;
+    }
+}
 /*
  * Dummy done callback for xa.
  */
@@ -795,6 +842,8 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
                 ap->ap_probe = ATA_PROBE_GOOD;
 
         capacity_bytes = capacity * 512;
+
+        ata_fix_chs(&at->at_identify, &at->at_ncyls, at->at_capacity);
 
         /*
          * Negotiate NCQ, throw away any ata_xfer's beyond the negotiated
