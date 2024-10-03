@@ -612,6 +612,7 @@ IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_Text_Contents: /* MUI5 */
         case MUIA_String_Contents:
             if (Buffer_SetNewContents(data, (STRPTR) tag->ti_Data))
             {
@@ -701,6 +702,7 @@ IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 #define STORE *(msg->opg_Storage)
     switch (msg->opg_AttrID)
     {
+    case MUIA_Text_Contents: /* MUI5 */
     case MUIA_String_Contents:
         STORE = (IPTR) data->Buffer;
         return TRUE;
