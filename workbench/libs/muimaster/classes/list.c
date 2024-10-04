@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2024, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -3892,8 +3892,8 @@ static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
         return DoSuperMethodA(cl, obj, msg);
 
     /* Get info on dragged entry */
-    DoMethod(obj, MUIM_List_TestPos, _left(data->area) - msg->touchx,
-        _top(data->area) - msg->touchy, (IPTR) &pos);
+    DoMethod(obj, MUIM_List_TestPos, _left(data->area) + msg->touchx,
+        _top(data->area) + msg->touchy, (IPTR) &pos);
     if (pos.entry == -1)
         success = FALSE;
 
@@ -3903,7 +3903,7 @@ static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
         width = _mwidth(data->area);
         height = data->entry_maxheight;
         left = _mleft(data->area);
-        top = _top(data->area) - msg->touchy
+        top = _top(data->area) + msg->touchy
             - (pos.yoffset + data->entry_maxheight / 2);
 
         /* Allocate drag image structure */
