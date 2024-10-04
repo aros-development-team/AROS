@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team.
+    Copyright (C) 2002-2024, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -4077,7 +4077,7 @@ IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj,
 
         if (!(di =
                 (struct MUI_DragImage *)DoMethod(msg->obj,
-                    MUIM_CreateDragImage, -msg->touchx, -msg->touchy,
+                    MUIM_CreateDragImage, msg->touchx, msg->touchy,
                     msg->flags)))
         {
             DeleteDragNDrop(dnd);
