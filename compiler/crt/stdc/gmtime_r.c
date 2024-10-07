@@ -1,13 +1,8 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2024, The AROS Development Team. All rights reserved.
 
     Convert a time into UTC, reentrant.
 */
-
-/* At the moment no daylight saving time information
- * Implementation has to be changed when DST is implemented in AROS
- */
-static int __dstflag = -1;
 
 static char monthtable[] =
 {
@@ -27,8 +22,8 @@ static char monthtable[] =
         struct tm * tm)
 
 /*  FUNCTION
-        The gmtime_r() function converts the calendar time tt to
-        broken-down time representation, expressed in Coordinated Universal
+        The gmtime_r() function converts the calendar time tt (assumed to be UTC)
+        to broken-down time representation, expressed in Coordinated Universal
         Time (UTC).
 
 
@@ -156,7 +151,9 @@ static char monthtable[] =
     tm->tm_mon = i;
     tm->tm_mday = tim + 1;
 
-    tm->tm_isdst = __dstflag;
+    tm->tm_isdst = 0;
+    tm->tm_gmtoff = 0;
+    tm->tm_zone = NULL;
 
     return tm;
 } /* gmtime */
