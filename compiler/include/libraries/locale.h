@@ -41,7 +41,7 @@ struct Locale
 
     ULONG  loc_CountryCode;
     ULONG  loc_TelephoneCode;
-    LONG   loc_GMTOffset;
+    LONG   loc_GMTOffset;       /* offset from local to GMT, positive for zones west of Greenwich */
     UBYTE  loc_MeasuringSystem; /* see below */
     UBYTE  loc_CalendarType;    /* see below */
     UBYTE  loc_Reserved0[2];
