@@ -47,6 +47,9 @@ static void StarterFunc(void)
 #else
     inf = (ThreadInfo *)FindTask(NULL)->tc_UserData;
 #endif
+
+    Wait(SIGF_SINGLE);
+
     // trim the name
     //inf->task->tc_Node.ln_Name[inf->oldlen];
 
@@ -211,6 +214,8 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)
         inf->parent = NULL;
         return EAGAIN;
     }
+
+    Signal(inf->task, SIGF_SINGLE);
 
     *thread = threadnew;
 
