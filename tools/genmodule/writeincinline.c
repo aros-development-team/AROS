@@ -217,12 +217,24 @@ void writeincinline(struct config *cfg)
     fclose(out);
 }
 
+static void generate_argtype_name_part(FILE *out, int argtype, int consecutive_args)
+{
+    if (argtype == TYPE_DOUBLE) {
+        fprintf(out, "DOUBLE%d", consecutive_args);
+    } else if (argtype == TYPE_QUAD) {
+        fprintf(out, "QUAD%d", consecutive_args);
+    } else {
+        // This will look odd if normal args are last. Don't put them last!
+        fprintf(out, "%d", consecutive_args);
+    }
+}
+
 void
 writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit;
     int count, isvoid;
-    int narg=0,nquad=0;
+    int argtypes[funclistit->argcount];
 
     isvoid = strcmp(funclistit->type, "void") == 0
         || strcmp(funclistit->type, "VOID") == 0;
@@ -240,9 +252,13 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
         fprintf(out, "%s __arg%d, ",
             arglistit->type, count);
         if (strchr(arglistit->reg, '/') != NULL) {
-            nquad++;
+            if (strcmp(arglistit->type, "double") == 0) {
+                argtypes[count-1] = TYPE_DOUBLE;
+            } else {
+                argtypes[count-1] = TYPE_QUAD;
+            }
         } else {
-            narg++;
+            argtypes[count-1]  = TYPE_NORMAL;
         }
     }
     fprintf(out,
@@ -254,68 +270,56 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
         "    AROS_LIBREQ(%s, %d)\n",
         cfg->libbase, funclistit->version
     );
-    if (nquad==0)
-    {
-        fprintf(out,
-                "    %sAROS_LC%d%s(%s, %s,\n",
-                (isvoid) ? "" : "return ",
-                funclistit->argcount, (isvoid) ? "NR" : "",
-                funclistit->type, funclistit->name
-         );
-
-        for (arglistit = funclistit->arguments, count = 1;
-             arglistit!=NULL;
-             arglistit = arglistit->next, count++
-        )
-        {
-            assert(arglistit->type != NULL);
-            fprintf(out,
-                    "        AROS_LCA(%s,(__arg%d),%s),\n",
-                    arglistit->type, count, arglistit->reg
-            );
+    fprintf(out,
+            "    %sAROS_LC",
+            (isvoid) ? "" : "return ");
+    if (funclistit->argcount == 0) {
+        fprintf(out, "0");
+    } else {
+        int consecutive_args = 0;
+        int current_argtype = -1;
+        for (int i = 0; i < funclistit->argcount; ++i) {
+            if (current_argtype == -1) {
+                current_argtype = argtypes[i];
+                consecutive_args = 1;
+            } else if (argtypes[i] == current_argtype) {
+                ++consecutive_args;
+            } else {
+                generate_argtype_name_part(out, current_argtype, consecutive_args);
+                // Restart argument count for the new basic type
+                current_argtype = argtypes[i];
+                consecutive_args = 1;
+            }
         }
+        generate_argtype_name_part(out, current_argtype, consecutive_args);
     }
-    else /* nquad != 0 */
-    {
-        if (narg) {
-            fprintf(out,
-                    "    %sAROS_LC%dQUAD%d%s(%s, %s,\n",
-                    (isvoid) ? "" : "return ", narg,
-                    nquad, (isvoid) ? "NR" : "",
-                    funclistit->type, funclistit->name
+    fprintf(out,
+            "%s(%s, %s,\\\n",
+            (isvoid) ? "NR" : "",
+            funclistit->type, funclistit->name
             );
+
+    for (arglistit = funclistit->arguments, count = 1;
+         arglistit != NULL;
+         arglistit = arglistit->next, count++
+         ) {
+        char *quad2 = strchr(arglistit->reg, '/');
+
+        arglistit->reg[2] = 0;
+        assert(arglistit->type != NULL);
+
+        if (quad2 != NULL) {
+            *quad2 = '\0';
+            fprintf(out,
+                    "         AROS_LCA2(%s, (__arg%d), %s, %s), \\\n",
+                    arglistit->type, count, arglistit->reg, quad2+1
+                    );
+            *quad2 = '/';
         } else {
             fprintf(out,
-                    "    %sAROS_LCQUAD%d%s(%s, %s,\n",
-                    (isvoid) ? "" : "return ",
-                    nquad, (isvoid) ? "NR" : "",
-                    funclistit->type, funclistit->name
-            );
-        }
-
-        for (arglistit = funclistit->arguments, count = 1;
-             arglistit != NULL;
-             arglistit = arglistit->next, count++
-        )
-        {
-            char *quad2 = strchr(arglistit->reg, '/');
-
-            arglistit->reg[2] = 0;
-            assert(arglistit->type != NULL);
-
-            if (quad2 != NULL) {
-                *quad2 = 0;
-                fprintf(out,
-                        "         AROS_LCA2(%s, (__arg%d), %s, %s), \n",
-                        arglistit->type, count, arglistit->reg, quad2+1
-                );
-                *quad2 = '/';
-            } else {
-                fprintf(out,
-                        "         AROS_LCA(%s, (__arg%d), %s), \n",
-                        arglistit->type, count, arglistit->reg
-                );
-            }
+                    "         AROS_LCA(%s, (__arg%d), %s), \\\n",
+                    arglistit->type, count, arglistit->reg
+                    );
         }
     }
     fprintf(out,
