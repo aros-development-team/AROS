@@ -219,7 +219,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
                     assert(arglistit->type != NULL && arglistit->name != NULL);
 
                     fprintf(out,
-                            "         AROS_LDAQUAD(%s, %s, %s, %s),\n",
+                            "         AROS_LDA2(%s, %s, %s, %s),\n",
                             arglistit->type, arglistit->name, arglistit->reg, arglistit->reg+3
                     );
                     arglistit->reg[2] = '/';
@@ -334,7 +334,7 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                         assert(arglistit->type != NULL && arglistit->name != NULL);
 
                         fprintf(out,
-                                "         AROS_LPAQUAD(%s, %s, %s, %s),\n",
+                                "         AROS_LPA2(%s, %s, %s, %s),\n",
                                 arglistit->type, arglistit->name, arglistit->reg, arglistit->reg+3
                         );
                         arglistit->reg[2] = '/';

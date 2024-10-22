@@ -257,7 +257,7 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
                 if (quad2) {
                     *quad2 = 0;
                     fprintf(out,
-                            "         AROS_LCAQUAD(%s, %s, %s, %s), \\\n",
+                            "         AROS_LCA2(%s, %s, %s, %s), \\\n",
                             arglistit->type, arglistit->name, arglistit->reg, quad2+1
                     );
                     *quad2 = '/';

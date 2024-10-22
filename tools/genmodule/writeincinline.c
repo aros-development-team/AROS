@@ -306,7 +306,7 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
             if (quad2 != NULL) {
                 *quad2 = 0;
                 fprintf(out,
-                        "         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \n",
+                        "         AROS_LCA2(%s, (__arg%d), %s, %s), \n",
                         arglistit->type, count, arglistit->reg, quad2+1
                 );
                 *quad2 = '/';

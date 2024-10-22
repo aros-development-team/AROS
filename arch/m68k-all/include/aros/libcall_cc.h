@@ -41,16 +41,16 @@ register UWORD AROS_LIBFUNC_cc asm ("d7");
 #undef AROS_LH1QUAD1
 #define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \
     AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
-    __AROS_LH1QUAD1(t, n##_cc, AROS_LHA(a1), AROS_LHAQUAD(a2), bt, bn, o, s)
+    __AROS_LH1QUAD1(t, n##_cc, AROS_LHA(a1), AROS_LHA2(a2), bt, bn, o, s)
 
 #undef AROS_LHQUAD1
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
     AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
-    __AROS_LHQUAD1(t, n##_cc, AROS_LHAQUAD(a1), bt, bn, o, s)
+    __AROS_LHQUAD1(t, n##_cc, AROS_LHA2(a1), bt, bn, o, s)
 
 #undef AROS_LHQUAD2
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
     AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
-    __AROS_LHQUAD2(t, n##_cc, AROS_LHAQUAD(a1), AROS_LHAQUAD(a2), bt, bn, o, s)
+    __AROS_LHQUAD2(t, n##_cc, AROS_LHA2(a1), AROS_LHA2(a2), bt, bn, o, s)
 
 #endif /* LIBCALL_CC_H */
