@@ -11,7 +11,7 @@
         AROS_LHQUAD1(double, IEEEDPFloor,
 
 /*  SYNOPSIS */
-        AROS_LHAQUAD(double, y, D0, D1),
+        AROS_LHA2(double, y, D0, D1),
 
 /*  LOCATION */
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)

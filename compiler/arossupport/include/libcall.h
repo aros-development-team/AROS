@@ -127,17 +127,17 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef __AROS_LDA
 #define __AROS_LDA(type,name,reg)     type
 #endif
-#ifndef __AROS_LHAQUAD
-#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
+#ifndef __AROS_LHA2
+#define __AROS_LHA2(type,name,reg1,reg2)     type name
 #endif
-#ifndef __AROS_LPAQUAD
-#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
+#ifndef __AROS_LPA2
+#define __AROS_LPA2(type,name,reg1,reg2)     type
 #endif
-#ifndef __AROS_LCAQUAD
-#define __AROS_LCAQUAD(type,name,reg1,reg2)     (name)
+#ifndef __AROS_LCA2
+#define __AROS_LCA2(type,name,reg1,reg2)     (name)
 #endif
-#ifndef __AROS_LDAQUAD
-#define __AROS_LDAQUAD(type,name,reg1,reg2)     type
+#ifndef __AROS_LDA2
+#define __AROS_LDA2(type,name,reg1,reg2)     type
 #endif
 
 /* Declare all macros which the systems' libcall didn't */
@@ -158,24 +158,24 @@ typedef unsigned int (*ULONG_FUNC)();
 /* Library functions which need the libbase */
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
-    __AROS_LHAQUAD(a1),\
+    __AROS_LHA2(a1),\
     __AROS_LH_BASE(bt,bn)) {
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
-    __AROS_LHAQUAD(a1),\
-    __AROS_LHAQUAD(a2),\
+    __AROS_LHA2(a1),\
+    __AROS_LHA2(a2),\
     __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
     __AROS_LHA(a1),\
-    __AROS_LHAQUAD(a2),\
+    __AROS_LHA2(a2),\
     __AROS_LH_BASE(bt,bn)) {
 #define AROS_LH3QUAD1(t,n,a1,a2,a3,a4,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
-    __AROS_LHAQUAD(a4),\
+    __AROS_LHA2(a4),\
     __AROS_LH_BASE(bt,bn)) {
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
@@ -522,47 +522,47 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef __AROS_CPU_SPECIFIC_LC
 # define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPAQUAD(a1),\
+    __AROS_LPA2(a1),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
-    __AROS_LCAQUAD(a1),\
+    __AROS_LCA2(a1),\
     __AROS_LC_BASE(bt,bn)))
 #define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPAQUAD(a1),\
-    __AROS_LPAQUAD(a2),\
+    __AROS_LPA2(a1),\
+    __AROS_LPA2(a2),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
-    __AROS_LCAQUAD(a1),\
-    __AROS_LCAQUAD(a2),\
+    __AROS_LCA2(a1),\
+    __AROS_LCA2(a2),\
     __AROS_LC_BASE(bt,bn)))
 #define AROS_LC1QUAD1(t,n,a1,a2,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA(a1),\
-    __AROS_LPAQUAD(a2),\
+    __AROS_LPA2(a2),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCA(a1),\
-    __AROS_LCAQUAD(a2),\
+    __AROS_LCA2(a2),\
     __AROS_LC_BASE(bt,bn)))
 #define AROS_LC2QUAD1(t,n,a1,a2,a3,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA(a1),\
     __AROS_LPA(a2),\
-    __AROS_LPAQUAD(a3),\
+    __AROS_LPA2(a3),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
-    __AROS_LCAQUAD(a3),\
+    __AROS_LCA2(a3),\
     __AROS_LC_BASE(bt,bn)))
 #define AROS_LC3QUAD1(t,n,a1,a2,a3,a4,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA(a1),\
     __AROS_LPA(a2),\
     __AROS_LPA(a3),\
-    __AROS_LPAQUAD(a4),\
+    __AROS_LPA2(a4),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
-    __AROS_LCAQUAD(a4),\
+    __AROS_LCA2(a4),\
     __AROS_LC_BASE(bt,bn)))
 
 #define AROS_LC0(t,n,bt,bn,o,s) \
@@ -1216,9 +1216,9 @@ typedef unsigned int (*ULONG_FUNC)();
 
 #ifndef __AROS_CPU_SPECIFIC_LP
 #   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
-t n(__AROS_LPAQUAD(a1))
+t n(__AROS_LPA2(a1))
 #   define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \
-t n(__AROS_LPAQUAD(a1),__AROS_LPAQUAD(a2))
+t n(__AROS_LPA2(a1),__AROS_LPA2(a2))
 
 #   define AROS_LP0(t,n,bt,bn,o,s) \
 t n(void)
@@ -1259,11 +1259,11 @@ t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),_
 /* Declarations for library functions which need the libbase */
 #   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
-	__AROS_LDAQUAD(a1), __AROS_LD_BASE(bt,bn))
+	__AROS_LDA2(a1), __AROS_LD_BASE(bt,bn))
 #   define AROS_LDQUAD2(t,n,a1,a2,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
-	__AROS_LDAQUAD(a1), \
-	__AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))
+	__AROS_LDA2(a1), \
+	__AROS_LDA2(a2),__AROS_LD_BASE(bt,bn))
 
 #   define AROS_LD0(t,n,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) (__AROS_LD_BASE(bt,bn))
@@ -1578,10 +1578,10 @@ t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),_
 #define AROS_LCA(type,name,reg) type,name,reg
 #define AROS_LDA(type,name,reg) type,name,reg
 
-#define AROS_LHAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
-#define AROS_LPAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
-#define AROS_LCAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
-#define AROS_LDAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
+#define AROS_LHA2(type,name,reg1,reg2) type,name,reg1,reg2
+#define AROS_LPA2(type,name,reg1,reg2) type,name,reg1,reg2
+#define AROS_LCA2(type,name,reg1,reg2) type,name,reg1,reg2
+#define AROS_LDA2(type,name,reg1,reg2) type,name,reg1,reg2
 
 #ifndef AROS_LIBFUNC_INIT
 #   define AROS_LIBFUNC_INIT {

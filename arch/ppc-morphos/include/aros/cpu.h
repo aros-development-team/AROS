@@ -174,10 +174,10 @@ extern void _aros_not_implemented (char *);
 #define __AROS_UFPA(type,name,reg)    type r##reg = name
 #define __AROS_UFCA(type,name,reg)    REG_##reg = (LONG)r##reg
 #define __AROS_UFDA(type,name,reg)    type
-#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
-#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
-#define __AROS_LDAQUAD(type,name,reg1,reg2)     type
+#define __AROS_LHA2(type,name,reg1,reg2)     type name
+#define __AROS_LPA2(type,name,reg1,reg2)     type
+#define __AROS_LCA2(type,name,reg1,reg2)     name
+#define __AROS_LDA2(type,name,reg1,reg2)     type
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */

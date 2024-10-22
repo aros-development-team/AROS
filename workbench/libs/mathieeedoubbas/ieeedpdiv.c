@@ -11,8 +11,8 @@
         AROS_LHQUAD2(double, IEEEDPDiv,
 
 /*  SYNOPSIS */
-        AROS_LHAQUAD(double, y, D0, D1),
-        AROS_LHAQUAD(double, z, D2, D3),
+        AROS_LHA2(double, y, D0, D1),
+        AROS_LHA2(double, z, D2, D3),
 
 /*  LOCATION */
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas)

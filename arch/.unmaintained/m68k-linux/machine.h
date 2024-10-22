@@ -156,9 +156,9 @@ extern void _aros_not_implemented (char *X);
 #define __AROS_UFPA(type,name,reg)    type
 #define __AROS_UFCA(type,name,reg)    name
 #define __AROS_UFDA(type,name,reg)    type
-#define __AROS_LHAQUAD(type,name,reg1,reg2)	type name
-#define __AROS_LPAQUAD(type,name,reg1,reg2)	type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)	name
+#define __AROS_LHA2(type,name,reg1,reg2)	type name
+#define __AROS_LPA2(type,name,reg1,reg2)	type
+#define __AROS_LCA2(type,name,reg1,reg2)	name
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
@@ -241,19 +241,19 @@ extern void _aros_not_implemented (char *X);
 
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
     __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
-    __AROS_LPAQUAD(a1),\
+    __AROS_LPA2(a1),\
     __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARGQUAD1(a1)\
     __ASM_ARGQUAD2(a1)\
     __ASM_POSTFIX(t,n,s,2)\
-    __AROS_LHAQUAD(a1),\
+    __AROS_LHA2(a1),\
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
-    __AROS_LPAQUAD(a1),\
-    __AROS_LPAQUAD(a2),\
+    __AROS_LPA2(a1),\
+    __AROS_LPA2(a2),\
     __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
     __ASM_PREFIX(n,s)\
     __ASM_ARGQUAD1(a2)\
@@ -261,8 +261,8 @@ extern void _aros_not_implemented (char *X);
     __ASM_ARGQUAD1(a1)\
     __ASM_ARGQUAD2(a1)\
     __ASM_POSTFIX(t,n,s,4)\
-    __AROS_LHAQUAD(a1),\
-    __AROS_LHAQUAD(a2),\
+    __AROS_LHA2(a1),\
+    __AROS_LHA2(a2),\
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
