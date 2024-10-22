@@ -16,6 +16,11 @@
 #include "functionhead.h"
 #include "config.h"
 
+// Used when generating AROS_LC* calls in defines, inlines, and linklib.
+#define TYPE_NORMAL  0
+#define TYPE_DOUBLE  1
+#define TYPE_QUAD    2
+
 void writemakefile(struct config *);
 void writeincproto(struct config *);
 void writeincclib(struct config *);
