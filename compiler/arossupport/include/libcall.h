@@ -165,7 +165,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LHA2(a1),\
     __AROS_LHA2(a2),\
     __AROS_LH_BASE(bt,bn)) {
-#define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \
+#define AROS_LH1DOUBLE1(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
     __AROS_LHA(a1),\
     __AROS_LHA2(a2),\
@@ -534,7 +534,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA2(a1),\
     __AROS_LCA2(a2),\
     __AROS_LC_BASE(bt,bn)))
-#define AROS_LC1QUAD1(t,n,a1,a2,bt,bn,o,s) \
+#define AROS_LC1DOUBLE1(t,n,a1,a2,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA(a1),\
     __AROS_LPA2(a2),\

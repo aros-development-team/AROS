@@ -38,10 +38,10 @@ register UWORD AROS_LIBFUNC_cc asm ("d7");
     AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
     __AROS_LH1(t, n##_cc, AROS_LHA(a1), bt, bn, o, s)
 
-#undef AROS_LH1QUAD1
-#define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \
+#undef AROS_LH1DOUBLE1
+#define AROS_LH1DOUBLE1(t,n,a1,a2,bt,bn,o,s) \
     AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
-    __AROS_LH1QUAD1(t, n##_cc, AROS_LHA(a1), AROS_LHA2(a2), bt, bn, o, s)
+    __AROS_LH1DOUBLE1(t, n##_cc, AROS_LHA(a1), AROS_LHA2(a2), bt, bn, o, s)
 
 #undef AROS_LHDOUBLE1
 #define AROS_LHDOUBLE1(t,n,a1,bt,bn,o,s) \
