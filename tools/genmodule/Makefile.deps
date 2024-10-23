@@ -24,7 +24,8 @@ GENMODULE_SRCS := \
     writeskel.c \
     writethunk.c \
     writegetlibbase.c \
-    writelinkentries.c
+    writelinkentries.c \
+    writeutils.c
 
 GENMODULE_INCS := genmodule.h fileread.h functionhead.h
 GENMODULE_DEPS := $(addprefix $(SRCDIR)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS))

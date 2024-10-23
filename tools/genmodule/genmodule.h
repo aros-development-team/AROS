@@ -21,6 +21,7 @@
 #define TYPE_DOUBLE  1
 #define TYPE_QUAD    2
 
+void generate_argtype_name_part(FILE *, int, int);
 void writemakefile(struct config *);
 void writeincproto(struct config *);
 void writeincclib(struct config *);
