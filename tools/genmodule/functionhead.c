@@ -201,7 +201,7 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
             else
             {
                 fprintf(out,
-                        "AROS_LDQUAD%d(%s, %s,\n",
+                        "AROS_LDDOUBLE%d(%s, %s,\n",
                         funclistit->argcount, funclistit->type, funclistit->internalname
                 );
                 for (arglistit = funclistit->arguments;
@@ -316,7 +316,7 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
                 else
                 {
                     fprintf(out,
-                            "AROS_LPQUAD%d(%s, %s,\n",
+                            "AROS_LPDOUBLE%d(%s, %s,\n",
                             funclistit->argcount, funclistit->type, funclistit->name
                     );
                     for (arglistit = funclistit->arguments;

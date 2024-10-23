@@ -8,7 +8,7 @@
 
     NAME */
 
-        AROS_LHQUAD1(LONG, IEEEDPTst,
+        AROS_LHDOUBLE1(LONG, IEEEDPTst,
 
 /*  SYNOPSIS */
         AROS_LHA2(double, y, D0, D1),

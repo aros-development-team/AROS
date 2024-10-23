@@ -156,11 +156,11 @@ typedef unsigned int (*ULONG_FUNC)();
 
 #ifndef __AROS_CPU_SPECIFIC_LH
 /* Library functions which need the libbase */
-#define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
+#define AROS_LHDOUBLE1(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
     __AROS_LHA2(a1),\
     __AROS_LH_BASE(bt,bn)) {
-#define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#define AROS_LHDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
     __AROS_LHA2(a1),\
     __AROS_LHA2(a2),\
@@ -520,13 +520,13 @@ typedef unsigned int (*ULONG_FUNC)();
 
 /* Call a library function which requires the libbase */
 #ifndef __AROS_CPU_SPECIFIC_LC
-# define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
+# define AROS_LCDOUBLE1(t,n,a1,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA2(a1),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCA2(a1),\
     __AROS_LC_BASE(bt,bn)))
-#define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#define AROS_LCDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA2(a1),\
     __AROS_LPA2(a2),\
@@ -1215,9 +1215,9 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef __AROS_CPU_SPECIFIC_LP
-#   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
+#   define AROS_LPDOUBLE1(t,n,a1,bt,bn,o,s) \
 t n(__AROS_LPA2(a1))
-#   define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#   define AROS_LPDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
 t n(__AROS_LPA2(a1),__AROS_LPA2(a2))
 
 #   define AROS_LP0(t,n,bt,bn,o,s) \
@@ -1257,10 +1257,10 @@ t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),_
 
 #ifndef __AROS_CPU_SPECIFIC_LD
 /* Declarations for library functions which need the libbase */
-#   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
+#   define AROS_LDDOUBLE1(t,n,a1,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
 	__AROS_LDA2(a1), __AROS_LD_BASE(bt,bn))
-#   define AROS_LDQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#   define AROS_LDDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
 	__AROS_LDA2(a1), \
 	__AROS_LDA2(a2),__AROS_LD_BASE(bt,bn))

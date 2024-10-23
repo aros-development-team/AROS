@@ -18,7 +18,7 @@
 
     NAME */
 
-        AROS_LHQUAD1(double, IEEEDPAsin,
+        AROS_LHDOUBLE1(double, IEEEDPAsin,
 
 /*  SYNOPSIS */
         AROS_LHA2(double, x, D0, D1),

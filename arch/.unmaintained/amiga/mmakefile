@@ -42,8 +42,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM	workbench-libs-iffparse
 
 # workbench-libs-mathtrans <- missing math functions (__addsf3 etc.)
-# workbench-libs-mathieeedoubtrans <- removed due to bogus AROS_LHQUAD* macros
-# workbench-libs-mathieeedoubbas <- removed due to bogus AROS_LHQUAD* macros
+# workbench-libs-mathieeedoubtrans <- removed due to bogus AROS_LHDOUBLE* macros
+# workbench-libs-mathieeedoubbas <- removed due to bogus AROS_LHDOUBLE* macros
 
 #MM- workbench-classes-amiga : workbench-classes-complete
 

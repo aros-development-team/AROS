@@ -23,7 +23,7 @@
 #endif
 
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAtan,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPAtan,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 5, MathIeeeDoubTrans
 )
@@ -37,7 +37,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAtan,
 #endif
 } /* FPU_IEEEDPAtan */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSin,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPSin,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 6, MathIeeeDoubTrans
 )
@@ -51,7 +51,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSin,
 #endif
 } /* FPU_IEEEDPSin */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCos,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPCos,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 7, MathIeeeDoubTrans
 )
@@ -65,7 +65,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCos,
 #endif
 } /* FPU_IEEEDPCos */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTan,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPTan,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 8, MathIeeeDoubTrans
 )
@@ -79,7 +79,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTan,
 #endif
 } /* FPU_IEEEDPTan */
 
-AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPSincos,
+AROS_LHDOUBLE2(RETURN_TYPE, FPU_IEEEDPSincos,
     AROS_LHA2(double *, pf2, A0, D1),
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 9, MathIeeeDoubTrans
@@ -96,7 +96,7 @@ AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPSincos,
 #endif
 } /* FPU_IEEEDPSincos */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSinh,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPSinh,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 10, MathIeeeDoubTrans
 )
@@ -110,7 +110,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSinh,
 #endif
 } /* FPU_IEEEDPSinh */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCosh,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPCosh,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 11, MathIeeeDoubTrans
 )
@@ -124,7 +124,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCosh,
 #endif
 } /* FPU_IEEEDPCosh */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTanh,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPTanh,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 12, MathIeeeDoubTrans
 )
@@ -138,7 +138,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTanh,
 #endif
 } /* FPU_IEEEDPTanh */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPExp,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPExp,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 13, MathIeeeDoubTrans
 )
@@ -152,7 +152,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPExp,
 #endif
 } /* FPU_IEEEDPExp */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPLog,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPLog,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 14, MathIeeeDoubTrans
 )
@@ -166,7 +166,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPLog,
 #endif
 } /* FPU_IEEEDPLog */
 
-AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPPow,
+AROS_LHDOUBLE2(RETURN_TYPE, FPU_IEEEDPPow,
     AROS_LHA2(double, y, D2, D3),
     AROS_LHA2(double, z, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 15, MathIeeeDoubTrans
@@ -181,7 +181,7 @@ AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPPow,
 #endif
 } /* FPU_IEEEDPPow */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSqrt,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPSqrt,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 16, MathIeeeDoubTrans
 )
@@ -195,7 +195,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSqrt,
 #endif
 } /* FPU_IEEEDPSqrt */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTieee,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPTieee,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 17, MathIeeeDoubTrans
 )
@@ -208,7 +208,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTieee,
 #endif
 } /* FPU_IEEEDPTieee */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFieee,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPFieee,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 18, MathIeeeDoubTrans
 )
@@ -221,7 +221,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFieee,
 #endif
 } /* FPU_IEEEDPFieee */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAsin,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPAsin,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 19, MathIeeeDoubTrans
 )
@@ -235,7 +235,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAsin,
 #endif
 } /* FPU_IEEEDPAsin */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAcos,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPAcos,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 20, MathIeeeDoubTrans
 )
@@ -249,7 +249,7 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAcos,
 #endif
 } /* FPU_IEEEDPAcos */
 
-AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPLog10,
+AROS_LHDOUBLE1(RETURN_TYPE, FPU_IEEEDPLog10,
     AROS_LHA2(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 21, MathIeeeDoubTrans
 )
