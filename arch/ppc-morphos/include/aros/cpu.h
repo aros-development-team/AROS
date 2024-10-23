@@ -221,8 +221,8 @@ extern void _aros_not_implemented (char *);
 /* Library prototypes expand to nothing */
 #define __AROS_CPU_SPECIFIC_LP
 
-#define AROS_LPQUAD1(t,n,a1,bt,bn,o,s)
-#define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s)
+#define AROS_LPDOUBLE1(t,n,a1,bt,bn,o,s)
+#define AROS_LPDOUBLE2(t,n,a1,a2,bt,bn,o,s)
 
 #define AROS_LP0(t,n,bt,bn,o,s)
 #define AROS_LP1(t,n,a1,bt,bn,o,s)

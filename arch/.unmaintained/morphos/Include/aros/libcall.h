@@ -113,11 +113,11 @@ typedef unsigned long (*ULONG_FUNC)(void);
 
 #if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS))
 /* Library functions which need the libbase */
-#define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
+#define AROS_LHDOUBLE1(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA2(a1),\
     __AROS_LH_BASE(bt,bn))
-#define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#define AROS_LHDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA2(a1),\
     __AROS_LHA2(a2),\
@@ -462,13 +462,13 @@ typedef unsigned long (*ULONG_FUNC)(void);
 
 
 /* Call a library function which requires the libbase */
-#define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
+#define AROS_LCDOUBLE1(t,n,a1,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA2(a1),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCA2(a1),\
     __AROS_LC_BASE(bt,bn)))
-#define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#define AROS_LCDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
     __AROS_LPA2(a1),\
     __AROS_LPA2(a2),\
@@ -1005,8 +1005,8 @@ typedef unsigned long (*ULONG_FUNC)(void);
 #endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) */
 
 #ifdef __AROS_USE_MACROS_FOR_LIBCALL
-#   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s)
-#   define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s)
+#   define AROS_LPDOUBLE1(t,n,a1,bt,bn,o,s)
+#   define AROS_LPDOUBLE2(t,n,a1,a2,bt,bn,o,s)
 
 #   define AROS_LP0(t,n,bt,bn,o,s)
 #   define AROS_LP1(t,n,a1,bt,bn,o,s)
@@ -1043,9 +1043,9 @@ typedef unsigned long (*ULONG_FUNC)(void);
 #   define AROS_LP15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
 #else
 /* Prototypes for library functions which need the libbase */
-#   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
+#   define AROS_LPDOUBLE1(t,n,a1,bt,bn,o,s) \
 	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1,__AROS_LP_BASE(bt,bn))
-#   define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#   define AROS_LPDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
 	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1,a2,__AROS_LP_BASE(bt,bn))
 
 #   define AROS_LP0(t,n,bt,bn,o,s) \

@@ -23,7 +23,7 @@ static void add128(ULONG *s, ULONG *d)
 
     NAME */
 
-        AROS_LHQUAD2(double, IEEEDPMul,
+        AROS_LHDOUBLE2(double, IEEEDPMul,
 
 /*  SYNOPSIS */
         AROS_LHA2(double, y, D0, D1),

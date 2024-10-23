@@ -239,7 +239,7 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_PREFIX static type AROS_SLIB_ENTRY(name,_##system)(
 #endif
 
-#define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
+#define AROS_LHDOUBLE1(t,n,a1,bt,bn,o,s) \
     __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
     __AROS_LPA2(a1),\
     __AROS_LP_BASE(bt,bn)) __attribute__((unused));\
@@ -250,7 +250,7 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA2(a1),\
     __AROS_LH_BASE(bt,bn))
 
-#define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
+#define AROS_LHDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LP_PREFIX static t AROS_SLIB_ENTRY_U(n,s)(\
     __AROS_LPA2(a1),\
     __AROS_LPA2(a2),\
@@ -1535,7 +1535,7 @@ extern void _aros_not_implemented (char *X);
 
 /****************************************************/
 
-#define __LCQUAD1(t,n,t1,n1,r11,r12,bt,bn,o,s)      \
+#define __LCDOUBLE1(t,n,t1,n1,r11,r12,bt,bn,o,s)      \
 ({                                                  \
     t1 _##n##_n1 = (n1);                            \
     {						    \
@@ -1553,7 +1553,7 @@ extern void _aros_not_implemented (char *X);
     }						    \
 })
 
-#define __LCQUAD2(t,name,t1,n1,r11,r12,t2,n2,r21,r22,bt,bn,o,s)   \
+#define __LCDOUBLE2(t,name,t1,n1,r11,r12,t2,n2,r21,r22,bt,bn,o,s)   \
 ({                                                  \
     t1 _##name##_n1 = (n1);                         \
     t2 _##name##_n2 = (n2);                         \
@@ -1574,8 +1574,8 @@ extern void _aros_not_implemented (char *X);
 })
 
 /****************************************************/
-#define AROS_LCQUAD1(t,n,a1,bt,bn,o,s)          __LCQUAD1(t,n,a1,bt,bn,o,s)
-#define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s)       __LCQUAD2(t,n,a1,a2,bt,bn,o,s)
+#define AROS_LCDOUBLE1(t,n,a1,bt,bn,o,s)          __LCDOUBLE1(t,n,a1,bt,bn,o,s)
+#define AROS_LCDOUBLE2(t,n,a1,a2,bt,bn,o,s)       __LCDOUBLE2(t,n,a1,a2,bt,bn,o,s)
 
 #define AROS_LC0(t,n,bt,bn,o,s)                 __LC0(t,n,bt,bn,o,s)
 #define AROS_LC0I(t,n,bt,bn,o,s)                __LC0(t,n,bt,bn,o,s)
