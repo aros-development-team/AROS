@@ -524,7 +524,7 @@ static void  InitPipedirLock ()
 void  InitLock (lock, key)
 
 struct FileLock  *lock;
-LONG             key;
+SIPTR            key;
 
 { lock->fl_Link=   0;
   lock->fl_Key=    key;
