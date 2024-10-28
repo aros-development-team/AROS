@@ -570,6 +570,7 @@ D(bug("%s: PCN32_TX_Int: send poll triggered.\n", unit->pcnu_name));
                    }
                }
                try_count=0;
+               unit->pcnu_tx_ring_full = 0;
             }
             np->next_tx++;
             try_count++;
@@ -580,9 +581,18 @@ D(bug("%s: PCN32_TX_Int: send poll triggered.\n", unit->pcnu_name));
              */
             if ( (try_count + 1) >= TX_RING_SIZE)
             {
+                unit->pcnu_tx_ring_full++;
+                if (unit->pcnu_tx_ring_full > 5)
+                {
 D(bug("%s: output queue full!. Stopping [count = %d, TX_RING_SIZE = %d\n", unit->pcnu_name, try_count, TX_RING_SIZE));
-               netif_stop_queue(unit);
-               proceed = FALSE;
+                    netif_stop_queue(unit);
+                    proceed = FALSE;
+                }
+                else
+                {
+D(bug("%s: output queue full!. Exiting but not stopping\n", unit->pcnu_name));
+                }
+                break;
             }
         }
     }
@@ -1121,6 +1131,7 @@ D(bug("[pcnet32] CreateUnit()\n"));
                     unit->pcnu_tx_int.is_Node.ln_Name = unit->pcnu_name;
                     unit->pcnu_tx_int.is_Code = (VOID_FUNC)PCN32_TX_Int;
                     unit->pcnu_tx_int.is_Data = unit;
+                    unit->pcnu_tx_ring_full   = 0;
 
                     unit->pcnu_tx_end_int.is_Node.ln_Name = unit->pcnu_name;
                     unit->pcnu_tx_end_int.is_Code = (VOID_FUNC)PCN32_TX_End_Int;
