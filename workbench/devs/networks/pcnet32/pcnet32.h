@@ -208,6 +208,7 @@ struct PCN32Unit {
     struct Interrupt        pcnu_rx_int;
     struct Interrupt        pcnu_tx_int;
     struct Interrupt        pcnu_tx_end_int;
+    ULONG                   pcnu_tx_ring_full;
 
     STRPTR                  pcnu_name;
     ULONG                   pcnu_mtu;

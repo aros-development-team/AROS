@@ -253,6 +253,12 @@ D(bug("%s: S2CmdWrite()\n", unit->pcnu_name));
     if(error == 0) {
         request->ios2_Req.io_Flags &= ~IOF_QUICK;
         PutMsg(unit->pcnu_request_ports[WRITE_QUEUE], (APTR)request);
+        while (unit->pcnu_tx_ring_full > 0 && unit->pcnu_tx_ring_full <= 5)
+        {
+            Delay(1);
+D(bug("%s: S2CmdWrite(): will retry after tx ring full\n", unit->pcnu_name));
+            Cause(&unit->pcnu_tx_int);
+        }
     }
     else
     {
