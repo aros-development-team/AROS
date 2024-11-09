@@ -1,12 +1,57 @@
 /*
-    Copyright (C) 2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2024, The AROS Development Team. All rights reserved.
 */
+
+#include <signal.h>
 
 #include "alsa_hostlib.h"
 #include "alsa.h"
 
 #define CARDNAME    "default"
 #define VOLUMENAME  "Master"
+
+/*****************************************************************************/
+
+/*  This is an unfortunate HACK
+
+    Depending on how sound system is configured on host, ALSA user space library
+    can go directly to ALSA or go through user space sound servers like
+    PulseAudio or PipeWire. The implementation of Alsa-over-PipeWire is specific
+    as it starts three aditional threads. These threads inherit process signal
+    mask from parent (which is AROS). As a results any of those threads can be
+    invoked to handle a signal instead of AROS hosted kernel. On the other hand,
+    AROS hosted kernel uses signals to drive interrupts. In effect a PipeWire
+    thread can start executing AROS interrupt handler in parallel to AROS
+    thread operating as usual, which quickly leads to either stack out of range
+    (when PipeWire thread exists from interrupt and tries to schedule next
+    task) or semaphore being called from supervisor (when AROS thread executes
+    normal AROS code but supervisor flag was changed due to PipeWire thread
+    starting to handle interrupt)
+
+    There doesn't seem to be a way forbid child threads from inheriting parent
+    signals. Suggested solution it to change parent signals during creation
+    of child threads. This is what this hack do. In effect, for a short period
+    of time it completly disables AROS kernel logic.
+
+    The placement of these functions in code is adjusted to current
+    (Ubuntu 24.04) implementation of thread creation in PipeWire. It is
+    completly possible that future versions will change implementation and
+    placement will have to be changed.
+*/
+
+static void _prepare_kernel_for_new_host_pthread(sigset_t *sigset)
+{
+    sigset_t _full;
+    libc_func.sigfillset(&_full);
+    libc_func.sigprocmask(SIG_SETMASK, &_full, sigset);
+}
+
+static void _restore_kernel_after_new_host_pthread(sigset_t *sigset)
+{
+    libc_func.sigprocmask(SIG_SETMASK, sigset, NULL);
+}
+
+/*****************************************************************************/
 
 BOOL ALSA_Init()
 {
@@ -23,12 +68,18 @@ VOID ALSA_MixerInit(APTR * handle, APTR * elem, LONG * min, LONG * max)
     snd_mixer_t * _handle;
     snd_mixer_selem_id_t * _sid;
     snd_mixer_elem_t * _elem;
+    sigset_t _current;
 
     *handle = NULL;
     *elem = NULL;
 
+    _prepare_kernel_for_new_host_pthread(&_current);
+
     ALSACALL(snd_mixer_open,&_handle, 0);
     ALSACALL(snd_mixer_attach,_handle, CARDNAME);
+
+    _restore_kernel_after_new_host_pthread(&_current);
+
     ALSACALL(snd_mixer_selem_register,_handle, NULL, NULL);
     ALSACALL(snd_mixer_load,_handle);
 
@@ -73,11 +124,14 @@ VOID ALSA_MixerSetVolume(APTR elem, LONG volume)
 APTR ALSA_Open()
 {
     snd_pcm_t * handle = NULL;
+    int _ret;
+    sigset_t _current;
 
+    _prepare_kernel_for_new_host_pthread(&_current);
+    _ret = ALSACALL(snd_pcm_open, &handle, CARDNAME, SND_PCM_STREAM_PLAYBACK, 0);
+    _restore_kernel_after_new_host_pthread(&_current);
 
-    if (ALSACALL(snd_pcm_open, &handle, CARDNAME,
-            SND_PCM_STREAM_PLAYBACK, 0) < 0)
-        return NULL;
+    if (_ret < 0) return NULL;
 
     return handle;
 }
