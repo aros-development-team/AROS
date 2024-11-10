@@ -1102,7 +1102,12 @@ int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr)
     if (inf == NULL)
         return ESRCH; // TODO
 
-    *attr = inf->attr;
+    *attr = inf->attr; // Copy information at creation time
+
+    // Add current stack information
+    // (can't cache this during creation, as the thread might have executed NewStackSwap afterwards)
+    attr->stackaddr = inf->task->tc_SPLower;
+    attr->stacksize = inf->task->tc_SPUpper - inf->task->tc_SPLower;
 
     return 0;
 }
