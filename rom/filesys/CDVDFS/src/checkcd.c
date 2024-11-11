@@ -10,7 +10,8 @@
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
- * 
+ *
+ * 02-Jan-23 stepan    - replaced memcpy by CopyMem
  * 06-Mar-09 error     - Removed madness, fixed insanity. Cleanup started
  * 18-Aug-07 sonic     - Now builds on AROS.
  * 08-Apr-07 sonic     - Removed "TRACKDISK" option.
@@ -97,9 +98,9 @@ void Check_Optional_Path_Tables (void)
   t_uchar *buf1;
   t_uchar *buf2;
   int i;
-  
+
   for (i=0; i<=1; i++) {
-  
+
     int remain = g_pvd.path_size;
 
     if (i == 0)
@@ -111,13 +112,13 @@ void Check_Optional_Path_Tables (void)
       continue;
 
     for (;;) {
-    
+
       if (!Read_Chunk (global->g_cd, loc1)) {
 	printf ("ERROR: illegal sector %lu\n", (unsigned long)loc1);
 	exit (1);
       }
       buf1 = global->g_cd->buffer;
-    
+
       if (!Read_Chunk (global->g_cd, loc2)) {
 	printf ("ERROR: illegal sector %lu\n", (unsigned long)loc2);
 	exit (1);
@@ -157,15 +158,15 @@ void Get_Path_Table_Record (t_uchar *p_buf, t_ulong p_loc, t_ulong *p_offset)
 
   if (len + (*p_offset & 2047) > 2048) {
     int part1_len = 2048 - (*p_offset & 2047);
-    memcpy (p_buf, global->g_cd->buffer + (*p_offset & 2047), part1_len);
+    CopyMem (global->g_cd->buffer + (*p_offset & 2047), p_buf, part1_len);
     if (!Read_Chunk (global->g_cd, sector+1)) {
       printf ("ERROR: illegal sector %lu\n", (unsigned long)(sector+1));
       exit (1);
     }
-    memcpy (p_buf + part1_len, global->g_cd->buffer, len - part1_len);
+    CopyMem (global->g_cd->buffer, p_buf + part1_len, len - part1_len);
   } else
-    memcpy (p_buf, global->g_cd->buffer + (*p_offset & 2047), len);
-  
+    CopyMem (global->g_cd->buffer + (*p_offset & 2047), p_buf, len);
+
   *p_offset += len;
 }
 
@@ -319,7 +320,7 @@ void Check_PVD (void)
   Check_723 (pvd, 125);
   Check_723 (pvd, 129);
   Check_733 (pvd, 133);
-  memcpy (&g_pvd, pvd, sizeof (g_pvd));
+  CopyMem (pvd, &g_pvd, sizeof (g_pvd));
 }
 
 void Check_Subdirectory (CDROM_OBJ *p_home, char *p_name)
@@ -365,7 +366,7 @@ void Check_Subdirectory (CDROM_OBJ *p_home, char *p_name)
 	else
 	  sprintf (name, "%s/", p_name);
 	len = strlen (name) + info.name_length;
-	memcpy (name + strlen (name), info.name, info.name_length);
+	CopyMem (info.name, name + strlen (name), info.name_length);
 	name[len] = 0;
 	Check_Subdirectory (p_home, name);
 	free (name);
@@ -416,7 +417,7 @@ int Get_Device_And_Unit (void)
 {
   int len;
   char buf[10];
-  
+
   len = GetVar ((UBYTE *) "CDROM_DEVICE", (UBYTE *) global->g_device,
   		sizeof (global->g_device), 0);
   if (len < 0)
@@ -426,7 +427,7 @@ int Get_Device_And_Unit (void)
     exit (1);
   }
   global->g_device[len] = 0;
-  
+
   len = GetVar ((UBYTE *) "CDROM_UNIT", (UBYTE *) buf,
   		sizeof (buf), 0);
   if (len < 0)
@@ -437,7 +438,7 @@ int Get_Device_And_Unit (void)
   }
   buf[len] = 0;
   global->g_unit = atoi (buf);
-  
+
   if (GetVar ((UBYTE *) "CDROM_FASTMEM", (UBYTE *) buf,
       sizeof (buf), 0) > 0) {
     fprintf (stderr, "using fastmem\n");
@@ -452,7 +453,7 @@ int main (int argc, char *argv[])
   struct CDVDBase *global;
 
   global = AllocMem(sizeof(*global), MEMF_CLEAR | MEMF_PUBLIC);
-  if (global)
+  if (!global)
       return ERROR_NO_FREE_STORE;
 
   global->g_cd = NULL;

@@ -85,9 +85,15 @@ static UWORD const g_image_data[] = {
 };
 
 void Init_Intui(struct CDVDBase *global) {
+#ifdef __AROS__
         IntuitionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
         WorkbenchBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
         IconBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_ICON);
+#else
+	IntuitionBase = (APTR)OpenLibrary("intuition.library", 37);
+	WorkbenchBase = (APTR)OpenLibrary("workbench.library", 37);
+	IconBase = (APTR)OpenLibrary("icon.library", 37);
+#endif
         if (IconBase)
                 global->g_user_disk_object = GetDiskObject ("env:cdda");
         if ((!IconBase) || (!global->g_user_disk_object))
