@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2024, The AROS Development Team. All rights reserved.
 
     C99 function wcsncpy().
 */
@@ -46,13 +46,19 @@
     wchar_t *_wcptr;
 
     /* copy the wide characters */
-    for (_wcptr = wcdst; (cnt-- > 0) & *wcsrc; wcsrc++)
+    for (_wcptr = wcdst; (cnt > 0) && *wcsrc; wcsrc++)
+    {
         *_wcptr++ = *wcsrc;
+        cnt--;
+    }
 
     /* terminate the wide string, and fill the remaining
      * wide characters as specified in the spec... */
-    while (cnt-- > 0)
+    while (cnt > 0)
+    {
         *_wcptr++ = 0x0000;
+        cnt--;
+    }
 
     return wcdst;
 } /* wcsncpy */
