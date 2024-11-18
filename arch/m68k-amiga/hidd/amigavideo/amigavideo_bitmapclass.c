@@ -574,68 +574,162 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+static inline void write_aligned_planes(struct amigabm_data *data, UBYTE *src,
+                                        ULONG planeoffset, WORD xsrcstart, WORD xsrcend)
+{
+    register UBYTE **planes = data->pbm->Planes;
+    register UBYTE *this_plane;
+
+    register ULONG first_four_pixels;
+    register ULONG second_four_pixels;
+
+    WORD chunk_count = (xsrcend - xsrcstart) / 8;
+    WORD depth = data->depth;
+    register WORD d;
+    WORD i;
+
+    register UBYTE bitplane_byte;
+
+    src += xsrcstart;
+
+    // For each chunk of eight pixels,
+    for (i = 0; i < chunk_count; ++i, src += 8)  {
+        // Populate source registers with the source pixel data.
+        // Need to read individual bytes to handle all source alignments.
+        first_four_pixels = src[0] << 24;
+        first_four_pixels |= src[1] << 16;
+        first_four_pixels |= src[2] << 8;
+        first_four_pixels |= src[3];
+        second_four_pixels = src[4] << 24;
+        second_four_pixels |= src[5] << 16;
+        second_four_pixels |= src[6] << 8;
+        second_four_pixels |= src[7];
+
+        // For each bitplane, calculate the bitplane byte for eight pixels.
+        for (d = 0; d < depth; ++d) {
+            // Not sure if there really is a valid scenario where one plane is just missing
+            // but this kind of check was in the original code.
+            this_plane = planes[d];
+            if (this_plane == (UBYTE *)-1 || this_plane == NULL) {
+                continue;
+            }
+
+            // Here comes the conversion
+
+            bitplane_byte = first_four_pixels >> (17 + d) & 0x80; // First pixel
+            bitplane_byte |= first_four_pixels >> (10 + d) & 0x40; // Second pixel
+            bitplane_byte |= first_four_pixels >> (3 + d) & 0x20; // Third pixel
+            // Fourth pixel, needs a comparison and sometimes a branch
+            if (d >= 4) {
+                bitplane_byte |= first_four_pixels >> (d - 4) & 0x10;
+            } else {
+                bitplane_byte |= first_four_pixels << (4 - d) & 0x10;
+            }
+            bitplane_byte |= second_four_pixels >> (21 + d) & 0x8; // Fifth pixel
+            bitplane_byte |= second_four_pixels >> (14 + d) & 0x4; // Sixth pixel
+            bitplane_byte |= second_four_pixels >> (7 + d) & 0x2; // Seventh pixel
+            bitplane_byte |= second_four_pixels >> d & 0x1; // Eighth pixel
+
+            // A full bitplane byte is now done, so write it to the plane array
+            this_plane[planeoffset] = bitplane_byte;
+        }
+        ++planeoffset;
+    }
+}
+
+static inline void unaligned_c2p(struct amigabm_data *data, UBYTE *src,
+                                 ULONG planeoffset, WORD bitoffset, WORD xsrcstart, WORD xsrcend)
+{
+    UBYTE **plane = data->pbm->Planes;
+    
+    for(WORD d = 0; d < data->depth; d++)
+    {
+        ULONG dmask = 1L << d;
+        ULONG pmask = 0x80 >> bitoffset;
+        UBYTE *pl = *plane;
+        
+        if (pl == (UBYTE *)-1) continue;
+        if (pl == NULL) continue;
+        
+        pl += planeoffset;
+
+        for(WORD x = xsrcstart; x < xsrcend; x++)
+        {
+            if (src[x] & dmask)
+            {
+                *pl |= pmask;
+            }
+            else
+            {
+                *pl &= ~pmask;
+            }
+            
+            if (pmask == 0x1)
+            {
+                pmask = 0x80;
+                pl++;
+            }
+            else
+            {
+                pmask >>= 1;
+            }
+                
+        } /* for(WORD x = xsrcstart; x < xsrcend; x++) */
+
+        // Move to the next destination plane
+        plane++;
+            
+    } /* for(WORD d = 0; d < data->depth; d++) */
+}
+
 VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
                                    struct pHidd_BitMap_PutImageLUT *msg)
 {
-    WORD                    x, y, d;
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
-    UBYTE                   **plane;
-    ULONG                   planeoffset;
-    struct amigabm_data   *data;
-    
+    ULONG                   planeoffset, rowoffset;
+    struct amigabm_data     *data;
+    WORD                    y, bitoffset, endoffset;
+    WORD                    alignedstart;
+    WORD                    alignedend;
+    UBYTE                   row_has_trailing_pixels;
+
     CMDDEBUGUNIMP(bug("[AmigaVideo:Bitmap] %s()\n", __func__);)
 
     data = OOP_INST_DATA(cl, o);
     CLEARCACHE;
-    
-    planeoffset = msg->y * data->bytesperrow + msg->x / 8;
-    
+
+    rowoffset = msg->y * data->bytesperrow + msg->x / 8;
+    bitoffset = msg->x % 8;
+    alignedstart = bitoffset > 0 ? (8 - bitoffset > msg->width ? msg->width : 8 - bitoffset) : 0;
+    endoffset = (bitoffset + msg->width % 8) % 8;
+    alignedend = msg->width - endoffset;
+    row_has_trailing_pixels = msg->width > alignedend && alignedend > 0;
+
     for(y = 0; y < msg->height; y++)
     {
         UBYTE *src = pixarray;
-        
-        plane = data->pbm->Planes;
-        
-        for(d = 0; d < data->depth; d++)
-        {
-            ULONG dmask = 1L << d;
-            ULONG pmask = 0x80 >> (msg->x & 7);
-            UBYTE *pl = *plane;
-            
-            if (pl == (UBYTE *)-1) continue;
-            if (pl == NULL) continue;
-            
-            pl += planeoffset;
 
-            for(x = 0; x < msg->width; x++)
-            {
-                if (src[x] & dmask)
-                {
-                    *pl |= pmask;
-                }
-                else
-                {
-                    *pl &= ~pmask;
-                }
-                
-                if (pmask == 0x1)
-                {
-                    pmask = 0x80;
-                    pl++;
-                }
-                else
-                {
-                    pmask >>= 1;
-                }
-                
-            } /* for(x = 0; x < msg->width; x++) */
-            
-            plane++;
-            
-        } /* for(d = 0; d < data->depth; d++) */
-        
+        if (bitoffset != 0)
+        {
+            // Unaligned destination access, process pixels until aligned or done.
+            unaligned_c2p(data, src, rowoffset, bitoffset, 0, alignedstart);
+        }  /* if (remainder != 0) */
+
+        if (alignedend > alignedstart) {
+            // Now the destination planes are byte-aligned, so we can speed up.
+            planeoffset = rowoffset + (bitoffset != 0 ? 1 : 0);
+            write_aligned_planes(data, src, planeoffset, alignedstart, alignedend);
+        } /* if (alignedend > alignedstart) */
+
+        // Do any remaining pixels not filling a full plane byte
+        if (row_has_trailing_pixels)
+        {
+            planeoffset = rowoffset + (alignedend + bitoffset) / 8;
+            unaligned_c2p(data, src, planeoffset, 0, alignedend, msg->width);
+        }  /* if (row_has_trailing_pixels) */
+
         pixarray += msg->modulo;
-        planeoffset += data->bytesperrow;
+        rowoffset += data->bytesperrow;
         
     } /* for(y = 0; y < msg->height; y++) */
 }
