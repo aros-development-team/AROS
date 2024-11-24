@@ -41,7 +41,6 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
 {
     unsigned int x, y;
     const unsigned char *font = &fontData[c * fontHeight];
-    void *ptr = scr_FrameBuffer + fb_BytesPerLine * yc * fontHeight + fb_BytesPerPix * xc * fontWidth;
 
     /* Store our character in the mirror buffer */
     if (fb_Mirror)
@@ -50,6 +49,11 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
     /* Render zero bytes as spaces (do not depend on particular font) */
     if (c == '\0')
         c = ' ';
+
+    if (scr_FrameBuffer == NULL)
+        return;
+
+    void *ptr = scr_FrameBuffer + fb_BytesPerLine * yc * fontHeight + fb_BytesPerPix * xc * fontWidth;
 
     /* Now render it on the screen */
     for (y = 0; y < fontHeight; y++)
@@ -195,7 +199,7 @@ void fb_Putc(char chr)
             for (xc = 0; xc < destLen; xc++)
                 RenderChar(0, xc, scr_YPos);
         }
-        else
+        else if (scr_FrameBuffer)
         {
             /* We dont have a mirror buffer */
             memmove((void *)scr_FrameBuffer, (void *)scr_FrameBuffer + (fontHeight * (fb_BytesPerPix * scr_Width * fontWidth)), (((scr_Height - 1) * fontHeight) * (fb_BytesPerPix * scr_Width * fontWidth)));

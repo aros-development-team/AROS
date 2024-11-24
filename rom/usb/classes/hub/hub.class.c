@@ -398,8 +398,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
     STRPTR devname;
     struct NepHubMsg *nhm;
 
+    KPrintF("nHubTask()\n");
+
     if((nch = GM_UNIQUENAME(nAllocHub)()))
     {
+        KPrintF("I have %d ports.\n", nch->nch_NumPorts);
         Forbid();
         if(nch->nch_ReadySigTask)
         {
@@ -409,6 +412,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
         count = 0;
         for(num = 1; num <= nch->nch_NumPorts; num++)
         {
+            KPrintF("Configuring port %d\n", num);
             if(((nch->nch_Downstream)[num-1] = pd = GM_UNIQUENAME(nConfigurePort)(nch, num)))
             {
                 psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
@@ -424,11 +428,16 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
                            "Hub has added %ld device(s). That'll be fun!",
                            count);
         }
+        else
+        {
+            KPrintF("No devices? What!???\n");
+        }
         // do a class scan
         for(num = 1; num <= nch->nch_NumPorts; num++)
         {
             if((pd = (nch->nch_Downstream)[num-1]))
             {
+                KPrintF("Doing class scan on port %d\n", num);
                 psdHubClassScan(pd);
             }
         }
@@ -714,6 +723,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
                         /* Bail out on time out. */
                         if(nch->nch_PortChanges[0] == 0xff)
                         {
+                            KPrintF("timed out.\n");
                             break;
                         }
                         psdDelayMS(50);
@@ -741,6 +751,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
         psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Oh no! I've been shot! Arrggghh...");
         GM_UNIQUENAME(nFreeHub)(nch);
     }
+    KPrintF("nHubTask() done\n");
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -808,7 +819,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
 
         if(!nch->nch_Interface)
         {
-            KPRINTF(1, ("Ooops!?! No interfaces defined?\n"));
+            KPRINTF(10, ("Ooops!?! No interfaces defined?\n"));
             break;
         }
         nch->nch_EP1 = psdFindEndpoint(nch->nch_Interface, NULL,
@@ -819,7 +830,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
         if(!nch->nch_EP1)
         {
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "Ooops!?! No endpoints defined?");
-            KPRINTF(1, ("Ooops!?! No Endpoints defined?\n"));
+            KPRINTF(10, ("Ooops!?! No Endpoints defined?\n"));
             break;
         }
         if((nch->nch_CtrlMsgPort = CreateMsgPort()))
@@ -876,7 +887,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                     {
                                         nch->nch_Removable |= ((&uhd->DeviceRemovable)[num])<<(num<<3);
                                     }
-                                    KPRINTF(2, ("Hub with %ld ports\n"
+                                    KPRINTF(10, ("Hub with %ld ports\n"
                                     	   "  Characteristics 0x%04lx\n"
                                            "  PowerGood after %ld ms\n"
                                            "  Power consumption %ld mA\n",
@@ -929,7 +940,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                                 GM_UNIQUENAME(nClearPortStatus)(nch, num);
                                             }
                                             psdDelayMS(20);*/
-                                            KPRINTF(2, ("Powering up ports...\n"));
+                                            KPRINTF(10, ("Powering up ports...\n"));
                                             for(num = 1; num <= nch->nch_NumPorts; num++)
                                             {
                                                 psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
@@ -940,7 +951,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                                     psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                                                                    "PORT_POWER for port %ld failed: %s (%ld)",
                                                                    num, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                                                    KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", num, ioerr));
+                                                    KPRINTF(10, ("PORT_POWER for port %ld failed %ld!\n", num, ioerr));
                                                 }
                                             }
                                             psdDelayMS((ULONG) nch->nch_PwrGoodTime + 15);
@@ -953,7 +964,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                             nch->nch_Task = thistask;
                                             return(nch);
                                         } else {
-                                            KPRINTF(1, ("No downstream port array memory!\n"));
+                                            KPRINTF(10, ("No downstream port array memory!\n"));
                                         }
                                     }
                                 } else {
@@ -961,7 +972,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                     psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
                                                    "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
                                                    len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                                    KPRINTF(1, ("GET_HUB_DESCRIPTOR (%ld) failed %ld!\n", len, ioerr));
+                                    KPRINTF(10, ("GET_HUB_DESCRIPTOR (%ld) failed %ld!\n", len, ioerr));
                                 }
 #ifdef AROS_USB30_CODE
                                 } else {
@@ -970,13 +981,13 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                 }
 #endif
                             } else {
-                                KPRINTF(1, ("No Hub Descriptor memory!\n"));
+                                KPRINTF(10, ("No Hub Descriptor memory!\n"));
                             }
                         } else {
                             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
                                            "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
                                            1, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                            KPRINTF(1, ("GET_HUB_DESCRIPTOR (1) failed %ld!\n", ioerr));
+                            KPRINTF(10, ("GET_HUB_DESCRIPTOR (1) failed %ld!\n", ioerr));
                         }
                         psdFreePipe(nch->nch_EP1Pipe);
                     }
@@ -1145,7 +1156,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     BOOL washighspeed = FALSE;
     BOOL islowspeed = FALSE;
 
-    KPRINTF(2, ("Configuring port %ld of hub 0x%p\n", port, nch));
+    KPRINTF(10, ("Configuring port %ld of hub 0x%p\n", port, nch));
 
     uhps.wPortStatus = 0xDEAD;
     uhps.wPortChange = 0xDA1A;
@@ -1153,15 +1164,16 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
                  USR_GET_STATUS, UFS_PORT_CONNECTION, (ULONG) port);
     ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhps, sizeof(struct UsbPortStatus));
+    KPrintF("Pipe done\n");
     uhps.wPortStatus = AROS_WORD2LE(uhps.wPortStatus);
     uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
     if(!ioerr)
     {
-    	KPRINTF(2, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
+    	KPRINTF(10, ("Status 0x%04x, change 0x%04x\n", uhps.wPortStatus, uhps.wPortChange));
 
         if(uhps.wPortStatus & UPSF_PORT_ENABLE)
         {
-            KPRINTF(2, ("Disabling port %u\n", port));
+            KPRINTF(10, ("Disabling port %u\n", port));
 
             psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
                          USR_CLEAR_FEATURE, UFS_PORT_ENABLE, (ULONG) port);
@@ -1179,7 +1191,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
         }
         if(uhps.wPortStatus & UPSF_PORT_CONNECTION)
         {
-            KPRINTF(2, ("There's something at port %ld!\n", port));
+            KPRINTF(10, ("There's something at port %ld!\n", port));
             Forbid();
             if((pd = psdAllocDevice(nch->nch_Hardware)))
             {

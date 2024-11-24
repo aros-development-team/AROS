@@ -5,6 +5,9 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+//#define DEBUG 2
+//#define DB_LEVEL 1
+
 #include "debug.h"
 
 #include "numtostr.h"
@@ -152,6 +155,8 @@ struct NepClassHid * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepHidBase
     //IPTR subclass;
     //IPTR proto;
 
+    bug("hid.class trying to bind\n");
+
     KPRINTF(1, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
@@ -164,7 +169,12 @@ struct NepClassHid * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepHidBase
 
         if(ifclass == HID_CLASSCODE)
         {
+            bug("hid.class forcing interface binding\n");
             return(GM_UNIQUENAME(usbForceInterfaceBinding)(nh, pif));
+        }
+        else
+        {
+            bug("hid.class class code %i doesn't match HID class code %i\n", ifclass, HID_CLASSCODE);
         }
     }
     return(NULL);
@@ -206,6 +216,7 @@ struct NepClassHid * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepHidBase *
             nch->nch_CDC = psdAllocVec(sizeof(struct ClsDevCfg));
             if(!nch->nch_CDC)
             {
+                KPRINTF(1, ("Couldn't alloc vec\n"));
                 psdFreeVec(nch);
                 CloseLibrary(ps);
                 return(NULL);
@@ -239,6 +250,14 @@ struct NepClassHid * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepHidBase *
                     CloseLibrary(ps);
                     return(nch);
                 }
+                else
+                {
+                    KPRINTF(1, ("nch_Task is NULL\n"));
+                }
+            }
+            else
+            {
+                KPRINTF(1, ("Can't spawn subtask\n"));
             }
             nch->nch_ReadySigTask = NULL;
             //FreeSignal(nch->nch_ReadySignal);
@@ -721,6 +740,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
     struct NepHidItem **nhiptr;
     struct NepHidItem *nhi;
 
+    KPRINTF(1, ("nHidTask()\n"));
     if((nch = GM_UNIQUENAME(nAllocHid())))
     {
         Forbid();
@@ -1113,6 +1133,7 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
         {
             if((nch->nch_InpIOReq = (struct IOStdReq *) CreateIORequest(nch->nch_InpMsgPort, sizeof(struct IOStdReq))))
             {
+                psdDelayMS(3000);  // REALLY BAD HACK!!! TODO: find some way to wait until input.device is loaded.
                 if(!OpenDevice("input.device", 0, (struct IORequest *) nch->nch_InpIOReq, 0))
                 {
                     nch->nch_InputBase = (struct Library *) nch->nch_InpIOReq->io_Device;
