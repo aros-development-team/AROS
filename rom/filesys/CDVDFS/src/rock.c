@@ -9,7 +9,7 @@
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
- * 
+ *
  * 08-Dec-10 neil    Do not mark files/dirs as unwritable/undeletable.
  * 06-Mar-09 error   - Removed madness, fixed insanity. Cleanup started
  * 18-Aug-07 sonic   Fixed reading CL and PL fields on little-endian machines
@@ -216,7 +216,7 @@ int Get_RR_File_Comment(VOLUME *p_volume, directory_record *p_dir, uint32_t *p_p
 #define AS_PROTECTION	    0x01
 #define AS_COMMENT	    0x02
 #define AS_COMMENT_CONTINUE 0x04
-	
+
         struct as_system_use_field
         {
 		char	      id[2];
