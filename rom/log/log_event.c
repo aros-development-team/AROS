@@ -192,13 +192,17 @@ AROS_LH7(struct logEntry *, logAddEntryA,
                 {
                     DateStamp(&leP->le_DateStamp);
                 } else {
-                    struct timerequest tr;
-                    CopyMem(&LIBBASE->lrb_TimerIOReq, &tr, sizeof(struct timerequest));
-                    tr.tr_node.io_Command = TR_GETSYSTIME;
-                    DoIO((struct IORequest *) &tr);
-                    leP->le_DateStamp.ds_Days = tr.tr_time.tv_secs / (24*60*60);
-                    leP->le_DateStamp.ds_Minute = (tr.tr_time.tv_secs / 60) % 60;
-                    leP->le_DateStamp.ds_Tick = (tr.tr_time.tv_secs % 60) * 50;
+                    FreeVecPooled(lrHandle->lrh_Pool, leP);
+                    return(NULL);
+                    // The below does not work since there is no device reference in the request.
+                    // Just say no above so the system can boot.
+                    //struct timerequest tr;
+                    //CopyMem(&LIBBASE->lrb_TimerIOReq, &tr, sizeof(struct timerequest));
+                    //tr.tr_node.io_Command = TR_GETSYSTIME;
+                    //DoIO((struct IORequest *) &tr);
+                    //leP->le_DateStamp.ds_Days = tr.tr_time.tv_secs / (24*60*60);
+                    //leP->le_DateStamp.ds_Minute = (tr.tr_time.tv_secs / 60) % 60;
+                    //leP->le_DateStamp.ds_Tick = (tr.tr_time.tv_secs % 60) * 50;
                 }
                 
                 Forbid();
@@ -214,7 +218,7 @@ AROS_LH7(struct logEntry *, logAddEntryA,
 #endif
                 return((struct logEntry *)&leP->le_Node);
             }
-            FreeVec(leP);
+            FreeVecPooled(lrHandle->lrh_Pool, leP);
         }
     }
 
