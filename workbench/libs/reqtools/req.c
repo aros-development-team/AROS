@@ -300,7 +300,7 @@ ULONG ASM SAVEDS GetString (
     idcmpflags = glob->idcmp | IDCMP_REFRESHWINDOW|IDCMP_GADGETUP|IDCMP_RAWKEY;
     if (mode != IS_EZREQUEST) idcmpflags |= IDCMP_MOUSEBUTTONS|IDCMP_ACTIVEWINDOW;
 
-    if (!glob->prwin || !glob->prwin->UserPort
+    if ((LONG) glob->prwin <= 0 || !glob->prwin->UserPort
 		     || (glob->prwin->UserPort->mp_SigTask != ThisProcess()))
 	glob->shareidcmp = FALSE;
 
