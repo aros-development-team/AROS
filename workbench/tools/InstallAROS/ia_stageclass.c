@@ -86,7 +86,7 @@ extern Object *reboot_group;
 TEXT            *extras_path = NULL;       /* DOS DEVICE NAME of part used to store extras */
 struct List     SKIPLIST;
 
-BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_Data *ioData,
+BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, APTR buffer, ULONG buffsize,
     struct InstallC_UndoRecord * undorecord);
 BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name, ULONG dostype);
 LONG InternalCopyFiles(Class * CLASS, Object * self, CONST_STRPTR srcDir, CONST_STRPTR dstDir, struct List *SkipList,
@@ -1902,7 +1902,7 @@ IPTR InstallStage__MUIM_IC_CopyFile
                     MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
             DoMethod(self, MUIM_IC_QuitInstall);
 
-        if (!BackUpFile(message->dstFile, INSTALLAROS_TMP_PATH, &data->instc_IOd, undorecord))
+        if (!BackUpFile(message->dstFile, INSTALLAROS_TMP_PATH, data->instc_IOd.iio_Buffer, data->instc_IOd.iio_BuffSize, undorecord))
         {
             data->inst_success = MUIV_Inst_Failed;
             return 0;
