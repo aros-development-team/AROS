@@ -28,7 +28,7 @@ endif
 ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub2)
 USER_CPPFLAGS += -DGRUB=2
 endif
-USER_CPPFLAGS += -DDEBUG=1
+USER_CPPFLAGS += -DDEBUG=0
 
 %build_prog mmake=workbench-tools-installaros \
     progname=InstallAROS targetdir=$(EXEDIR) \
