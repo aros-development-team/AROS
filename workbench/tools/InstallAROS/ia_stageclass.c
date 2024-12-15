@@ -49,9 +49,6 @@ extern char *extras_source;
 extern char *dest_Path;         /* DOS DEVICE NAME of part used to store "aros" */
 extern char *work_Path;         /* DOS DEVICE NAME of part used to store "work" */
 
-char *boot_Device = NULL;
-ULONG boot_Unit = 0;
-
 extern Object *optObjCheckCopyToWork;
 extern Object *optObjCheckWork;
 extern Object *show_formatsys;
@@ -591,6 +588,8 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 {
                     char *tmp_blpath = NULL;
                     struct FileSysStartupMsg *fssm;
+                    char *boot_Device = NULL;
+                    ULONG boot_Unit = 0;
 
                     data->instc_options_grub->bootinfo = TRUE;
                     tmp_blpath = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
