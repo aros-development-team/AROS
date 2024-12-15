@@ -417,6 +417,11 @@ static IPTR DriveSelect__OM_GET(Class * CLASS, Object * self, struct opGet *mess
     return DoSuperMethodA(CLASS, self, message);
 }
 
+BOOL isUSBDevice(char *devStr)
+{
+    return strncmp(devStr, def_usbdev, strlen(def_usbdev)) == 0;
+}
+
 static IPTR DriveSelect__OM_SET(Class * CLASS, Object * self, struct opSet *message)
 {
     struct TagItem         *tag, *tags;
@@ -462,7 +467,7 @@ static IPTR DriveSelect__OM_SET(Class * CLASS, Object * self, struct opSet *mess
         if (devStr)
         {
             CONST_STRPTR imgStr = def_imghdisk;
-            if (strncmp(devStr, def_usbdev, strlen(def_usbdev)) == 0)
+            if (isUSBDevice(devStr))
                 imgStr = def_imgusbdisk;
             if (data->dsd_ImgStr != imgStr)
             {
@@ -490,7 +495,7 @@ static IPTR DriveSelect__OM_SET(Class * CLASS, Object * self, struct opSet *mess
                 OPTONNSET(optObjDestUnit, MUIA_String_Contents, (IPTR)unitStr);
                 DoMethod(optObjDestUnit, MUIM_InstallOption_Update);
             }
-            if (strncmp(devStr, def_usbdev, strlen(def_usbdev)) == 0)
+            if (isUSBDevice(devStr))
             {
                 data->dsd_SysPartName = USB_SYS_PART_NAME;
                 data->dsd_WorkPartName = USB_WORK_PART_NAME;

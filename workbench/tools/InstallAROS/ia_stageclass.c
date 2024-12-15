@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2024, The AROS Development Team. All rights reserved.
 */
 
 #define INTUITION_NO_INLINE_STDARG
@@ -62,7 +62,6 @@ extern Object *optObjDestVolLabel;
 extern Object *optObjWorkDestLabel;
 
 extern Object *optObjDestDevice;
-extern Object *cycle_drivetype;
 extern Object *optObjDestUnit;
 
 extern Object *optObjCheckEFI;
@@ -93,6 +92,7 @@ BOOL GetVolumeForDevName(char *devName, char *buffer);
 LONG GetPartitionSize(BOOL get_work);
 struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
 char * GetDevNameForVolume(char *volumeName);
+BOOL isUSBDevice(char *devStr);
 
 void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value);
 
@@ -703,14 +703,13 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
             data->instc_options_main->partitioned = TRUE;
             next_stage = EDoneStage;
             DoMethod(data->page, MUIM_Group_InitChange);
-            if (XGET(cycle_drivetype, MUIA_Cycle_Active) != 2)
+            if(!isUSBDevice((char *)XGET(optObjDestDevice, MUIA_InstallOption_Value)))
                 SET(data->doneMsg, MUIA_Text_Contents, __(MSG_DONEREBOOT));
             else
                 SET(data->doneMsg, MUIA_Text_Contents, __(MSG_DONEUSB));
             SET(reboot_group, MUIA_ShowMe, TRUE);
-            if (XGET(cycle_drivetype, MUIA_Cycle_Active) != 2)
-                SET(data->instc_options_main->opt_reboot, MUIA_Selected,
-                    TRUE);
+            if(!isUSBDevice((char *)XGET(optObjDestDevice, MUIA_InstallOption_Value)))
+                SET(data->instc_options_main->opt_reboot, MUIA_Selected, TRUE);
             DoMethod(data->page, MUIM_Group_ExitChange);
             SET(data->back, MUIA_Disabled, TRUE);
             SET(data->cancel, MUIA_Disabled, TRUE);
