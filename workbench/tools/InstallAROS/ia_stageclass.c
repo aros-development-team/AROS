@@ -185,8 +185,11 @@ IPTR InstallStage__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
             data->instc_IOd.iio_BuffSize = largest >> 2;
         data->instc_IOd.iio_BuffSize &= ~0x1ff;
 
-        if (data->instc_IOd.iio_BuffSize < 0x1ff)
+        if (data->instc_IOd.iio_BuffSize < 0x1ff) /* 8192 */
             data->instc_IOd.iio_BuffSize = 0x1ff;
+
+        if (data->instc_IOd.iio_BuffSize > 0x4000000) /* 64MB */
+            data->instc_IOd.iio_BuffSize = 0x4000000;
 
         D(bug("[InstallAROS:Stage] Total : Using %u bytes to buffer\n", data->instc_IOd.iio_BuffSize);)
 
