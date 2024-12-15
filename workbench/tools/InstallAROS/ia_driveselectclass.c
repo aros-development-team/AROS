@@ -409,23 +409,10 @@ static IPTR DriveSelect__OM_GET(Class * CLASS, Object * self, struct opGet *mess
 
     switch(message->opg_AttrID)
     {
+         /* Need for notification to work */
         case MUIA_DriveSelect_DevProbed:
             *message->opg_Storage = (IPTR)0;
             return TRUE;
-        case MUIA_DriveSelect_Device:
-            GET(data->dsd_DevTxtObj, MUIA_Text_Contents, message->opg_Storage);
-            return TRUE;
-        case MUIA_DriveSelect_Unit:
-            GET(data->dsd_UnitTxtObj, MUIA_Text_Contents, message->opg_Storage);
-            return TRUE;
-#if (0)
-        case MUIA_DriveSelect_SysName:
-            *message->opg_Storage = (IPTR)data->dsd_SysPartName;
-            return TRUE;
-        case MUIA_DriveSelect_WorkName:
-            *message->opg_Storage = (IPTR)data->dsd_WorkPartName;
-            return TRUE;
-#endif
     }
     return DoSuperMethodA(CLASS, self, message);
 }
