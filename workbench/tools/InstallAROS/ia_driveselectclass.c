@@ -553,6 +553,9 @@ static IPTR DriveSelect__MUIM_HandleEvent(Class * CLASS, Object * self, struct M
             DoMethod(data->dsd_PopObj, MUIM_Window_RemEventHandler, &data->dsd_EHNode);
             SET(data->dsd_PopObj, MUIA_Window_Open, FALSE);
         }
+        /* Save option values at closing of pop up*/
+        DoMethod(optObjDestDevice, MUIM_InstallOption_Update);
+        DoMethod(optObjDestUnit, MUIM_InstallOption_Update);
         SetAttrsA(self, devTags);
     }
 
