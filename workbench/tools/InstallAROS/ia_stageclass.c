@@ -529,7 +529,6 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
 
     case EPartitionOptionsStage:
         D(bug("[InstallAROS:Stage] %s: EPartitionOptionsStage\n", __func__));
-        OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
         data->instc_stage_next = EPartitioningStage;
         next_stage = EPartitionOptionsStage;
         break;
