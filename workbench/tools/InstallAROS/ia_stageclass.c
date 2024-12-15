@@ -602,10 +602,11 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                     fssm = getDiskFSSM(tmp_blpath);
                     if (fssm != NULL)
                     {
+                        /* Default to installing bootloader on same disk as SYS: is installed.
+                           This coveres the popular scenario of dedicated hardware
+                         */
                         boot_Device = AROS_BSTR_ADDR(fssm->fssm_Device);
-                        if (strcmp(boot_Device, "ahci.device") != 0
-                            && strcmp(boot_Device, "ata.device") != 0)
-                            boot_Unit = fssm->fssm_Unit;
+                        boot_Unit = fssm->fssm_Unit;
                     }
                     else
                         boot_Device = "";
