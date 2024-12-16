@@ -120,7 +120,7 @@ AROS_UFH3S(BOOL, partradioHookFunc,
         {
             struct InstallStage_DATA *data = INST_DATA(CLASS, installer);
             char *devvolName, *curVal;
-            //IPTR option = 0;
+            BOOL insttousb = isUSBDevice((char *)XGET(optObjDestDevice, MUIA_InstallOption_Value));
 
             OPTOSET(optObjCheckSysSize, MUIA_Disabled, TRUE);
             OPTOSET(optObjCheckSysSize, MUIA_Selected, FALSE);
@@ -128,7 +128,7 @@ AROS_UFH3S(BOOL, partradioHookFunc,
             curVal = NULL;
             OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&curVal);
             D(bug("[InstallAROS:Stage] %s: Current Sys DevName '%s'\n", __func__, curVal));
-            devvolName = GetDevNameForVolume((data->instc_default_usb) ? USB_SYS_VOL_NAME : SYS_VOL_NAME);
+            devvolName = GetDevNameForVolume(insttousb ? USB_SYS_VOL_NAME : SYS_VOL_NAME);
             /* Update the sys drives device name */
             if (devvolName)
             {
@@ -138,7 +138,7 @@ AROS_UFH3S(BOOL, partradioHookFunc,
             curVal = NULL;
             GET(work_devname, MUIA_String_Contents, &curVal);
             D(bug("[InstallAROS:Stage] %s: Current Work DevName '%s'\n", __func__, curVal));
-            devvolName = GetDevNameForVolume((data->instc_default_usb) ? USB_WORK_VOL_NAME : WORK_VOL_NAME);
+            devvolName = GetDevNameForVolume(insttousb ? USB_WORK_VOL_NAME : WORK_VOL_NAME);
             /* Get the work drives device name */
             if (devvolName)
             {
@@ -650,8 +650,9 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
 
     case EPartitioningStage:
         D(bug("[InstallAROS:Stage] %s: EPartitioningStage\n", __func__));
-        get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
-            &option);
+        get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, &option);
+        BOOL insttousb = isUSBDevice((char *)XGET(optObjDestDevice, MUIA_InstallOption_Value));
+
         if ((int)option == 0 || (int)option == 1)
         {
             LONG syssize, worksize;
@@ -704,12 +705,12 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
             data->instc_options_main->partitioned = TRUE;
             next_stage = EDoneStage;
             DoMethod(data->page, MUIM_Group_InitChange);
-            if(!isUSBDevice((char *)XGET(optObjDestDevice, MUIA_InstallOption_Value)))
+            if(!insttousb)
                 SET(data->doneMsg, MUIA_Text_Contents, __(MSG_DONEREBOOT));
             else
                 SET(data->doneMsg, MUIA_Text_Contents, __(MSG_DONEUSB));
             SET(reboot_group, MUIA_ShowMe, TRUE);
-            if(!isUSBDevice((char *)XGET(optObjDestDevice, MUIA_InstallOption_Value)))
+            if(!insttousb)
                 SET(data->instc_options_main->opt_reboot, MUIA_Selected, TRUE);
             DoMethod(data->page, MUIM_Group_ExitChange);
             SET(data->back, MUIA_Disabled, TRUE);
@@ -723,7 +724,7 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 GET(data->instc_options_main->opt_sysdevname, MUIA_String_Contents, (IPTR *)&optname);
                 if (!GetVolumeForDevName(optname, nametmp))
                 {
-                    if (data->instc_default_usb)
+                    if (insttousb)
                         volname = USB_SYS_VOL_NAME;
                     else
                         volname = SYS_VOL_NAME;
@@ -735,8 +736,8 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 GET(data->instc_options_main->opt_workdevname, MUIA_String_Contents, (IPTR *)&optname);
                 if (!GetVolumeForDevName(optname, nametmp))
                 {
-                    if (data->instc_default_usb)
-                        volname = USB_SYS_VOL_NAME;
+                    if (insttousb)
+                        volname = USB_WORK_VOL_NAME;
                     else
                         volname = WORK_VOL_NAME;
                 }

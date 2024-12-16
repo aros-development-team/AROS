@@ -71,7 +71,6 @@ struct InstallStage_DATA
         enum IO_OVERWRITE_FLAGS iio_AlwaysOverwrite;
     }                           instc_IOd;
 
-    BOOL                        instc_default_usb;
     BOOL			instc_copt_undoenabled;
     BOOL			instc_copt_licensemandatory;
 };
