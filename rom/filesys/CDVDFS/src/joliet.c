@@ -10,16 +10,12 @@
 #include "globals.h"
 #include "aros_stuff.h"
 #include "clib_stuff.h"
- 
+
 /*
  * History:
  *
  * 06-Mar-09 error   - Removed madness, fixed insanity. Cleanup started
  */
-
-extern struct Globals *global;
-
-#define SysBase global->SysBase
 
 t_bool Uses_Joliet_Protocol(CDROM *p_cdrom, t_ulong offset, t_ulong *p_svdoffset)
 {
@@ -46,7 +42,7 @@ t_bool Uses_Joliet_Protocol(CDROM *p_cdrom, t_ulong offset, t_ulong *p_svdoffset
 int Get_Joliet_Name(struct CDVDBase *global, char *from, char *to, unsigned char len)
 {
     int l;
-    
+
     l = UTF16ToSystem(global, from, to, len);
 
     if (l == -1)

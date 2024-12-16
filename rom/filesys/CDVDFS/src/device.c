@@ -156,6 +156,18 @@
 #ifndef ID_CDFS_DISK
 #define ID_CDFS_DISK 0x43444653
 #endif
+#ifndef ID_HSIERRA_DISK
+#define ID_HSIERRA_DISK 0x43443030
+#endif
+#ifndef ID_ISO9660_DISK
+#define ID_ISO9660_DISK 0x43443031
+#endif
+#ifndef ID_ISO9660RR_DISK
+#define ID_ISO9660RR_DISK 0x43443032
+#endif
+#ifndef ID_ISO9660JOL_DISK
+#define ID_ISO9660JOL_DISK 0x43443033
+#endif
 
 LONG handler(struct ExecBase *);
 static LOCK *cdlock(CDROM_OBJ *, int);
@@ -193,15 +205,16 @@ ULONG __abox__ = 1;
 #endif
 
 #ifndef __AROS__
-char __version__[] = "\0$VER: CDVDFS 1.9 (25.05.2023)";
-
+char __version__[] = "\0$VER: CDVDFS 3.0 (07.02.2024)";
+struct ExecBase *SysBase;
 LONG SAVEDS Main(void)
 {
+    SysBase = *(struct ExecBase **)4L;
     return handler(*(struct ExecBase **)4L);
 }
 #endif
 
-static struct CDVDBase *AllocCDVDBase(struct ExecBase *SysBase)
+static struct CDVDBase *AllocCDVDBase(void)
 {
     struct CDVDBase *cdvd = NULL;
 
@@ -225,9 +238,9 @@ register PACKET *packet;
 MSG     *msg;
 ULONG signals;
 
-    struct CDVDBase *global = AllocCDVDBase(SysBase);
+    struct CDVDBase *global = AllocCDVDBase();
 
-    D(bug("[CDVDFS] In handler, cdvd=%p\n", global));
+    D(bug("[CDVDFS] In handler, cdvd=0x%08lx\n", (IPTR)global));
     global->playing = FALSE;
 
     /*
@@ -236,13 +249,18 @@ ULONG signals;
      *  process only.
      */
     global->DosProc = (PROC *) FindTask(NULL);
+#ifndef __AROS__
+    DOSBase = (APTR)OpenLibrary("dos.library",37);
+    UtilityBase = (APTR)OpenLibrary("utility.library",37);
+#else
     DOSBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_DOS);
     UtilityBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+#endif
     CodesetsBase = NULL;
 
     global->Dback = CreateMsgPort();
 
-#if !defined(NDEBUG) || defined(DEBUG_SECTORS)
+#if !defined(DEBUG_USE_SERIAL) && (!defined(NDEBUG) || defined(DEBUG_SECTORS))
     D(bug("[CDVDFS] Initializing debugging code\n"));
     global->DBDisable = 0;                                /*  Init. globals       */
     global->Dbport = NULL;
@@ -271,7 +289,7 @@ ULONG signals;
 
     global->DosNode = (DEVNODE *)BADDR(packet->dp_Arg3);
 
-    D(bug("[CDVDFS] Fixing up DosNode %p\n", global->DosNode));
+    D(bug("[CDVDFS] Fixing up DosNode 0x%08lx\n", (IPTR)global->DosNode));
     /*
      *  Set dn_Task field which tells DOS not to startup a new
      *  process on every reference.
@@ -283,7 +301,7 @@ ULONG signals;
     if (UtilityBase && DOSBase && global->Dback &&
                         Get_Startup (global, (struct FileSysStartupMsg *)(BADDR(packet->dp_Arg2))))
     {
-        D(bug("[CDVDFS] On track, globals at %p\n", global));
+        D(bug("[CDVDFS] On track, globals at 0x%08lx\n", (IPTR)global));
         packet->dp_Res1 = DOSTRUE;
         packet->dp_Res2 = 0;
 
@@ -292,15 +310,15 @@ ULONG signals;
          *  (According to the official documentation, this is not
          *  required. Some debugging tools, however, depend on it.)
          */
-            
+
 /*      global->DosNode->dn_Startup = Make_FSSM (global); */
 
     } else {                            /*  couldn't open dos.library   */
-        D(bug("[CDVDFS] Off track, globals at %p\n", global));
+        D(bug("[CDVDFS] Off track, globals at %lx\n", (IPTR)global));
         D(Alert(0));
         packet->dp_Res1 = DOSFALSE;
         packet->dp_Res2 = 333; /* any error code */
-        global->DosNode->dn_Task = BNULL;
+        global->DosNode->dn_Task = NULL;
         returnpacket(global, packet);
         Forbid ();
         if (DOSBase) {
@@ -318,8 +336,8 @@ ULONG signals;
     global->g_inhibited = 0;
 
     BUG2(dbprintf (global, "g_cd = %08lx\n", global->g_cd);)
-    BUG(dbprintf(global, "%d std buffers, %d file buffers\n",
-                 global->g_std_buffers, global->g_file_buffers);)
+    D(bug("%d std buffers, %d file buffers\n",
+                 global->g_std_buffers, global->g_file_buffers));
 
     global->g_changeint_signumber = AllocSignal(-1);
     global->g_changeint_sigbit = 1L << global->g_changeint_signumber;
@@ -339,7 +357,10 @@ ULONG signals;
 
     if (global->g_cd) {
       /* Mount volume (if any disk is inserted): */
-      Mount_Check (global);
+      int errcode = Mount_Check (global);
+      if(errcode) {
+          D(bug("Mount_Check failed: %d\n", errcode));
+      }
     }
 
     /*
@@ -352,14 +373,14 @@ ULONG signals;
         {
                 signals = Wait(global->g_dos_sigbit | global->g_timer_sigbit | global->g_app_sigbit | global->g_changeint_sigbit);
         } while (handlemessage(global, signals));
-    BUG(dbprintf(global, "Terminating the handler\n");)
+    D(bug("Terminating the handler\n"));
     /* remove timer device and any pending timer requests: */
     if (global->g_timer_sigbit)
       Cleanup_Timer_Device (global);
 
     if (global->g_cd)
       Unmount (global);
-    
+
     FreeVec(global->g_vol_name);
 
     if (global->g_cd)
@@ -403,7 +424,7 @@ void    *tmp;
 char    buf[256];
 register WORD   error;
 UBYTE   notdone = 1;
- 
+
         if (signals & global->g_changeint_sigbit)
         {
                 if (global->g_cd && !global->g_inhibited)
@@ -416,7 +437,7 @@ UBYTE   notdone = 1;
                 /* retry opening the SCSI device (every 2 seconds): */
                 if (!global->g_cd && (global->g_time & 1))
                 {
-                        BUG(dbprintf(global, "Device is closed, attempting to open\n");)
+                        D(bug("Device is closed, attempting to open\n"));
                         Get_Startup(global, (struct FileSysStartupMsg *)-1);
                 }
                 if (global->g_cd)
@@ -424,7 +445,7 @@ UBYTE   notdone = 1;
                         /* icon retry (every second): */
                         if (global->g_retry_show_cdda_icon)
                         {
-                                BUG(dbprintf(global, "Showing CDDA icon\n");)
+                                D(bug("Showing CDDA icon\n"));
                                 Show_CDDA_Icon (global);
                         }
                         /* diskchange check: */
@@ -445,7 +466,7 @@ UBYTE   notdone = 1;
         if (signals & global->g_app_sigbit)
         {
         struct Message *msg;
-                BUG(dbprintf(global, "CDDA icon double-clicked\n");)
+                D(bug("CDDA icon double-clicked\n"));
                 while ((msg = GetMsg (global->g_app_port)))
                 {
                         struct TagItem PlayTags[] = {
@@ -483,14 +504,13 @@ UBYTE   notdone = 1;
                 packet->dp_Res2 = 0;
                 error = 0;
                 tmp = NULL;
-                BUG(dbprintf(global,
-                        "[CDVDFS]\tPacket: %3ld %08lx %08lx %08lx %10s ",
+                D(bug("[CDVDFS]\tPacket: %3ld %08lx %08lx %08lx %10s ",
                         packet->dp_Type,
                         packet->dp_Arg1,
                         packet->dp_Arg2,
                         packet->dp_Arg3,
                         typetostr(packet->dp_Type)
-                );)
+                ));
                 if (!global->g_cd)
                 {
                         switch (packet->dp_Type)
@@ -506,7 +526,7 @@ UBYTE   notdone = 1;
                                         want this, though. Therefore we use this "exotic" return code:
                                 */
                                 packet->dp_Res2 = ERROR_INVALID_COMPONENT_NAME;
-                                BUG(dbprintf(global, "ERR=%ld\n", (LONG) packet->dp_Res2);)
+                                D(bug("ERR=%ld\n", (LONG) packet->dp_Res2));
                                 returnpacket(global, packet);
                                 return TRUE;
                         }
@@ -525,7 +545,7 @@ UBYTE   notdone = 1;
                         default:
                                 packet->dp_Res1 = DOSFALSE;
                                 packet->dp_Res2 = ERROR_NOT_A_DOS_DISK;
-                                BUG(dbprintf(global, "ERR=%ld\n", (LONG) packet->dp_Res2);)
+                                D(bug("ERR=%ld\n", (LONG) packet->dp_Res2));
                                 returnpacket(global, packet);
                                 return TRUE;
                         }
@@ -552,7 +572,7 @@ UBYTE   notdone = 1;
                                                 ERROR_NOT_A_DOS_DISK :
                                         ERROR_NO_DISK
                                         );
-                                BUG(dbprintf(global, "ERR=%ld\n", (LONG) packet->dp_Res2);)
+                                D(bug("ERR=%ld\n", (LONG) packet->dp_Res2));
                                 returnpacket(global, packet);
                                 return TRUE;
                         }
@@ -587,7 +607,7 @@ UBYTE   notdone = 1;
                                         goto openbreak;
                                 }
                                 btos((BSTR)packet->dp_Arg3,buf);
-                                BUG(dbprintf(global, "'%s' ", buf);)
+                                D(bug("'%s' ", buf));
                                 offs = Check_For_Volume_Name_Prefix (global, buf);
                                 if ((obj = Open_Object (parentdir, buf + offs)))
                                 {
@@ -862,8 +882,8 @@ openbreak:
                                         break;
                                 }
                                 btos ((BSTR)packet->dp_Arg2, buf);
-#ifndef NDEBUG
-                                dbprintf (global, "'%s' %ld ", buf, packet->dp_Arg3);
+#if !defined(NDEBUG) && !defined(DEBUG_USE_SERIAL)
+                                D(bug("'%s' %ld ", buf, packet->dp_Arg3));
                                 if (strcmp(buf,"debugoff") == 0)
                                         global->DBDisable = 1;
                                 if (strcmp(buf,"debugon") == 0)
@@ -982,7 +1002,7 @@ openbreak:
                         int pos;
 
                         btos((BSTR)packet->dp_Arg3,buf);
-                        BUG(dbprintf(global, "'%s' ", buf);)
+                        D(bug("'%s' ", buf));
                         if ((pos = Check_For_Volume_Name_Prefix (global, buf)) && buf[pos] == 0)
                                 error = ERROR_OBJECT_WRONG_TYPE;
                         else
@@ -1015,16 +1035,17 @@ openbreak:
                                 error = ERROR_DEVICE_NOT_MOUNTED;
                                 break;
                         }
-                        BUG(dbprintf (global, "'%s' len=%lu ", packet->dp_Arg2, maxlength);)
+                        D(bug("'%s' len=%lu ", packet->dp_Arg2, maxlength));
                         offs = Check_For_Volume_Name_Prefix (global, (char *) packet->dp_Arg2);
                         obj = Open_Object (parentdir, (char *) packet->dp_Arg2 + offs);
                         if (obj)
                         {
+                                int vlen;
                                 res = Get_Link_Name (obj, buf, sizeof (buf));
+                                vlen = strlen (global->g_vol_name+1) + 1;
                                 if (
                                                 res == 0 ||
-                                                        strlen (buf) +
-                                                        strlen (global->g_vol_name+1) + 1
+                                                        strlen (buf) + vlen
                                                 >=
                                                         maxlength
                                         )
@@ -1032,7 +1053,7 @@ openbreak:
                                 else
                                 {
                                         if (buf[0] == ':')
-                                                strcpy (outbuf, global->g_vol_name+1);
+                                                CopyMem (global->g_vol_name+1, outbuf, vlen);
                                         else
                                                 outbuf[0] = 0;
                                         strcat (outbuf, buf);
@@ -1084,13 +1105,13 @@ openbreak:
                 {
                         if (error)
                         {
-                                BUG(dbprintf(global, "ERR=%ld\n", error);)
+                                D(bug("ERR=%ld\n", error);)
                                 packet->dp_Res1 = DOSFALSE;
                                 packet->dp_Res2 = error;
                         }
                         else
                         {
-                                BUG(dbprintf(global, "RES=%06lx\n", packet->dp_Res1));
+                                D(bug("RES=%06lx\n", packet->dp_Res1));
                         }
                         if (packet->dp_Type != ACTION_DIE)
                                 returnpacket(global, packet);
@@ -1100,7 +1121,7 @@ openbreak:
         }
         if (notdone)
                 return notdone;
-   BUG(dbprintf(global, "Can we remove ourselves? ");)
+   D(bug("Can we remove ourselves? ");)
    BUG(Delay(100);)         /*  I wanna even see the debug message! */
    Forbid();
         if (
@@ -1117,12 +1138,12 @@ openbreak:
                 )
         {
                 Permit();
-                BUG(dbprintf(global, " ..  not yet!\n");)
+                D(bug(" ..  not yet!\n");)
                 return TRUE;            /*  sorry... can't exit     */
         }
         else
         {
-                BUG(dbprintf(global, " ..  yes!\n");)
+                D(bug(" ..  yes!\n");)
         }
         return FALSE;
 }
@@ -1200,14 +1221,14 @@ static void cdunlock (LOCK *lock)
 
   Unregister_Lock (lock);
   --obj->volume->locks;
-  
+
   /* if all locks and filehandles have been removed, and if the volume
    * is not the current volume, then the volume node may be removed:
    */
   if (obj->volume != global->g_volume &&
       obj->volume->locks == 0 && obj->volume->file_handles == 0) {
     VOLUME *vol = obj->volume;
-    
+
     Forbid ();
       Remove_Volume_Node (global, vol->devlist);
     Permit ();
@@ -1250,7 +1271,7 @@ CDROM_OBJ *getlockfile (struct CDVDBase *global, IPTR lock)
 int Check_For_Volume_Name_Prefix (struct CDVDBase *global, char *p_pathname)
 {
   char *pos = strchr (p_pathname, ':');
-  
+
   return pos ? (pos - p_pathname) + 1 : 0;
 }
 
@@ -1271,7 +1292,7 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
                 p_fib->fib_DirEntryType = ST_SOFTLINK;
         else
                 p_fib->fib_DirEntryType = p_info->directory_f ? ST_USERDIR : ST_FILE;
-  
+
         if (len == 1 && *src == ':')
         {
                 /* root of file system: */
@@ -1314,9 +1335,9 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
         /* I don't know exactly why I have to set fib_EntryType, but other
          * handlers (e.g. DiskHandler by J Toebes et.al.) also do this.
          */
-   
+
         p_fib->fib_EntryType = p_fib->fib_DirEntryType;
-  
+
         p_fib->fib_Protection = p_info->protection;
         p_fib->fib_Size = p_info->file_length;
         p_fib->fib_NumBlocks = p_info->file_length >> 11;
@@ -1338,15 +1359,15 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
  * cause the WORKBENCH to recognize us as a disk. If we don't
  * create a Volume node, Wb will not recognize us.
  */
- 
+
 static void Create_Volume_Node (struct CDVDBase *global, LONG p_disk_type, ULONG p_volume_date) {
         struct DeviceList *dl;
 
-        BUG(dbprintf(global, "Inserted volume name: %s\n", global->g_vol_name + 1));
+        D(bug("Inserted volume name: %s\n", global->g_vol_name + 1));
         dl = Find_Volume_Node (global, global->g_vol_name + 1);
         if (dl)
         {
-                BUG(dbprintf(global, "[Reusing old volume node]");)
+                D(bug("[Reusing old volume node]");)
                 Forbid ();
                 global->DevList = dl;
                 dl->dl_Task = &global->DosProc->pr_MsgPort;
@@ -1360,9 +1381,9 @@ static void Create_Volume_Node (struct CDVDBase *global, LONG p_disk_type, ULONG
                 dl->dl_VolumeDate.ds_Days = p_volume_date / (24 * 60 * 60);
                 dl->dl_VolumeDate.ds_Minute = (p_volume_date % (24 * 60 * 60)) / 60;
                 dl->dl_VolumeDate.ds_Tick = (p_volume_date % 60) * TICKS_PER_SECOND;
-                BUG(dbprintf(global, "Name to add: <0x%08lX> %b\n", dl->dl_Name, dl->dl_Name));
+                D(bug("Name to add: <0x%08lX> %b\n", dl->dl_Name, dl->dl_Name));
                 AddDosEntry((struct DosList *)dl);
-                BUG(dbprintf(global, "Added name: <0x%08lX> %b\n", dl->dl_Name, dl->dl_Name));
+                D(bug("Added name: <0x%08lX> %b\n", dl->dl_Name, dl->dl_Name));
                 /* Under MorphOS AddDosEntry() can modify volume name in case if such a volume
                    is already present in the DosList. In this case it reallocates the name string,
                    appends "_%d" to it and modifies dl_Name. In this case we can lose our
@@ -1391,19 +1412,19 @@ static void Mount (struct CDVDBase *global)
 
   global->g_volume = Open_Volume (global->g_cd, global->g_use_rock_ridge, global->g_use_joliet);
   if (!global->g_volume) {
-    BUG(dbprintf (global, "!!! cannot open VOLUME (iso_errno=%d) !!!\n", global->iso_errno);)
+    D(bug("!!! cannot open VOLUME (iso_errno=%d) !!!\n", global->iso_errno));
     return;
   } else {
     global->g_disk_inserted = TRUE;
     global->g_cd->t_changeint2 = global->g_cd->t_changeint;
     global->g_top_level_obj = Open_Top_Level_Directory (global->g_volume);
     if (!global->g_top_level_obj) {
-      BUG(dbprintf (global, "!!! cannot open top level directory !!!\n");)
+      D(bug("!!! cannot open top level directory !!!\n"));
       return;
     }
   }
-  
-  BUG(dbprintf (global, "***mounting*** ");)
+
+  D(bug("***mounting*** "));
   Volume_ID (global->g_volume, buf, sizeof (buf)-1);
   global->g_vol_name[0] = strlen (buf);
   CopyMem(buf, global->g_vol_name+1, strlen (buf));
@@ -1479,18 +1500,18 @@ static void Unmount (struct CDVDBase *global)
 
   if (global->DevList) {
 
-    BUG(dbprintf(global, "***unmounting*** ");)
-    
+    D(bug("***unmounting*** "));
+
     Close_Object (global->g_top_level_obj);
-    
+
     if (global->g_volume->locks == 0 && global->g_volume->file_handles == 0) {
       Remove_Volume_Node (global, global->DevList);
       Close_Volume (global->g_volume);
     } else {
-      BUG(dbprintf(global, "[there are still %d locks on this volume]",
-                   global->g_volume->locks);)
-      BUG(dbprintf(global, "[there are still %d file handles on this volume]",
-                   global->g_volume->file_handles);)
+      D(bug("[there are still %d locks on this volume]",
+                   global->g_volume->locks));
+      D(bug("[there are still %d file handles on this volume]",
+                   global->g_volume->file_handles));
       global->DevList->dl_Task = NULL;
     }
 
@@ -1576,19 +1597,19 @@ int Open_Timer_Device (struct CDVDBase *global) {
                         }
                         else
                         {
-                                BUG(dbprintf (global, "cannot open timer device!\n");)
+                                D(bug("cannot open timer device!\n"));
                         }
                         DeleteIORequest ((struct IORequest *) global->g_timer_io);
                 }
                 else
                 {
-                        BUG(dbprintf (global, "cannot create timer i/o structure!\n");)
+                        D(bug("cannot create timer i/o structure!\n"));
                 }
                 DeleteMsgPort (global->g_timer_mp);
         }
         else
         {
-                BUG(dbprintf (global, "cannot create timer message port!\n");)
+                D(bug("cannot create timer message port!\n"));
         }
         return 0;
 }
@@ -1603,7 +1624,7 @@ static void Cleanup_Timer_Device (struct CDVDBase *global)
   if (!CheckIO ((struct IORequest *) global->g_timer_io))
     AbortIO ((struct IORequest *) global->g_timer_io);
   WaitIO ((struct IORequest *) global->g_timer_io);
-  
+
   CloseDevice ((struct IORequest *) global->g_timer_io);
   DeleteIORequest ((struct IORequest *) global->g_timer_io);
   DeleteMsgPort (global->g_timer_mp);
@@ -1630,32 +1651,32 @@ static void Check_Disk (struct CDVDBase *global)
     int i;
     ULONG l1, l2;
 
-    BUG(dbprintf (global, "[CDVDFS]\tChecking Disk... ");)
+    D(bug("[CDVDFS]\tChecking Disk... "));
         i = Test_Unit_Ready (global->g_cd);
 
     l1 = global->g_cd->t_changeint;
     l2 = global->g_cd->t_changeint2;
-    BUG(if (l1==l2 && i) dbprintf (global, "no disk change (T %ld)", l1);)
+    BUG(if (l1==l2 && i) D(bug("no disk change (T %ld)", l1)));
         if (l1!=l2 && i)
         {
             global->g_disk_inserted = TRUE;
-            BUG(dbprintf (global, "disk has been inserted (T %ld)", l1);)
+            D(bug("disk has been inserted (T %ld)", l1));
                 if (global->DevList)
                     Unmount (global);
             Delay (50);
             Clear_Sector_Buffers (global->g_cd);
             Mount (global);
         }
-    BUG(if (l1==l2 && !i) dbprintf (global, "no disk in drive (T %ld)", l1);)
+    BUG(if (l1==l2 && !i) D(bug("no disk in drive (T %ld)", l1)));
         if (l1!=l2 && !i)
         {
             global->g_disk_inserted = FALSE;
-            BUG(dbprintf (global, "disk has been removed (T %ld)", l1);)
+            D(bug("disk has been removed (T %ld)", l1));
                 global->playing = FALSE;
             Unmount (global);
             global->g_cd->t_changeint2 = global->g_cd->t_changeint;
         }
-    BUG(dbprintf (global, "\n");)
+    D(bug("\n"));
 }
 
 /* The following lines will generate a `disk inserted/removed' event, in order
