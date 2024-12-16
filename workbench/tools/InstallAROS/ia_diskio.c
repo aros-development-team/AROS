@@ -734,7 +734,7 @@ BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
     return lock;
 }
 
-BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_Data *ioData,
+BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, APTR buffer, ULONG buffsize,
     struct InstallC_UndoRecord * undorecord)
 {
     ULONG filepathlen = strlen(filepath);
@@ -813,20 +813,20 @@ BOOL BackUpFile(CONST_STRPTR filepath,CONST_STRPTR backuppath, struct InstallIO_
 
             do
             {
-                if ((s = Read(from, ioData->iio_Buffer, ioData->iio_BuffSize)) == -1)
+                if ((s = Read(from, buffer, buffsize)) == -1)
                 {
                     err = TRUE;
                     break;
                 };
 
-                if (Write(to, ioData->iio_Buffer, s) == -1)
+                if (Write(to, buffer, s) == -1)
                 {
                     err = TRUE;
                     break;
                 };
 
             }
-            while (s == ioData->iio_BuffSize && !err);
+            while (s == buffsize && !err);
 
             Close(to);
         }

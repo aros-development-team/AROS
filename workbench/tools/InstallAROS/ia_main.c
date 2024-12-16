@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
     InstallObj = NewObject(icMcc->mcc_Class, NULL,
         TAG_DONE);
 
-    bug("[INST-APP] Base Install Object @ 0x%p\n", InstallObj);
+    D(bug("[INST-APP] Base Install Object @ 0x%p\n", InstallObj));
 
     struct IClass  *stageClassPtr = NULL;
     GET(InstallObj, MUIA_Install_StageClass, &stageClassPtr);
@@ -506,7 +506,7 @@ int main(int argc, char *argv[])
             MUIA_Volume_SizeObj,  (IPTR)bootVolSizeObj,
         TAG_DONE);
 
-    bug("[INST-APP] Boot Vol FS Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", bootVolFSObj, bootVolSizeObj, bootVolObj);
+    D(bug("[INST-APP] Boot Vol FS Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", bootVolFSObj, bootVolSizeObj, bootVolObj));
     optObjDestVolumeName = Install_MakeOption(InstallObj, 
                                                                 MUIA_InstallOption_ID, (IPTR)"tgtvol",
                                                                 MUIA_InstallOption_ValueTag, MUIA_String_Contents,
@@ -536,7 +536,7 @@ int main(int argc, char *argv[])
             MUIA_Volume_SizeObj,  (IPTR)sysVolSizeObj,
         TAG_DONE);
 
-    bug("[INST-APP] Sys Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", optObjDestVolumeName, sysVolSizeObj, sysVolObj);
+    D(bug("[INST-APP] Sys Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", optObjDestVolumeName, sysVolSizeObj, sysVolObj));
 
     work_devname = StringObject,
                                 MUIA_CycleChain, 1,
@@ -565,7 +565,7 @@ int main(int argc, char *argv[])
         TAG_DONE);
 
 
-    bug("[INST-APP] Work Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", work_devname, workVolSizeObj, workVolObj);
+    D(bug("[INST-APP] Work Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", work_devname, workVolSizeObj, workVolObj));
 
     install_opts =
         AllocMem(sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC);
@@ -657,8 +657,8 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       __(MSG_TITLE),
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.30 (21.05.2023)",
-        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2023, The AROS Development Team. All rights reserved.",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.31 (16.12.2024)",
+        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2024, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nick Andrews & Neil Cafferkey",
         MUIA_Application_Description, __(MSG_DESCRIPTION),
         MUIA_Application_Base,        (IPTR) "INSTALLER",
@@ -1052,15 +1052,11 @@ int main(int argc, char *argv[])
     SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckEFI,
                                                 MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
     SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckCreateWork,
-                                                MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
     SetObjNotificationFromOptObj(optObjCheckSysSize, sys_size,
                                                 MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
     SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCycleSysUnits,
                                                 MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
-#if (0)
-    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckCreateWork,
-                                                MUIA_Selected, MUIV_EveryTime, MUIA_Selected, FALSE);
-#endif
 
     /* Notifications on change of selected status of 'create work volume' */
 #if (0)
