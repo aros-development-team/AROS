@@ -205,7 +205,12 @@ AROS_UFH3
     AROS_USERFUNC_EXIT
 }
 
-static BYTE DriveSelect__InitDriveTypeCycle(struct DriveSelect_Data *data, Object *dtCycle, char *driveDev)
+BOOL isUSBDevice(const char *devStr)
+{
+    return strncmp(devStr, def_usbdev, strlen(def_usbdev)) == 0;
+}
+
+static BYTE DriveSelect__InitDriveTypeCycle(struct DriveSelect_Data *data, Object *dtCycle, const char *driveDev)
 {
     /* default to scsi device ... */
     BYTE retval = -1;
@@ -236,7 +241,13 @@ static BYTE DriveSelect__InitDriveTypeCycle(struct DriveSelect_Data *data, Objec
             data->dsd_CycActive = OPT_DTYPE_SCSI;
             retval = (BYTE)data->dsd_CycActive;
         }
+        else if (isUSBDevice(driveDev))
+        {
+            data->dsd_CycActive = OPT_DTYPE_USB;
+            retval = (BYTE)data->dsd_CycActive;
+        }
     }
+
     if (dtCycle)
     {
         SET(dtCycle, MUIA_Cycle_Active, data->dsd_CycActive);
@@ -260,8 +271,7 @@ static int checkUSBSysdrive()
         if (getDiskFSSM(USB_SYS_PART_NAME ":") != NULL)
         {
             retval = 1;
-            if (strncmp(sys_path, USB_SYS_VOL_NAME ":",
-                strlen(USB_SYS_VOL_NAME) + 1))
+            if (strncmp(sys_path, USB_SYS_VOL_NAME ":", strlen(USB_SYS_VOL_NAME) + 1))
             {
                 retval = 2;
             }
@@ -279,7 +289,6 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
     Object **dsWorkObjPtr = (Object **)GetTagData(MUIA_DriveSelect_WorkObjPtr,  0, message->ops_AttrList);
     Object *imgObj, *txtObjDev, *txtObjUnit;
     Object *imgGrpObj, *txtGrpObj;
-    CONST_STRPTR    def_dev;
 
     D(bug("[InstallAROS:Drive] %s()\n", __func__));
 
@@ -288,21 +297,12 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
 
     OOP_ObtainAttrBases(install__abd);
 
-#ifdef __mc68000__
-#define DS_DEF_CYCLE    OPT_DTYPE_IDE
-    def_dev = def_atadev;
-#else
-#define DS_DEF_CYCLE    OPT_DTYPE_AHCI
-    def_dev = def_ahcidev;
-#endif
-
     optObjDestDevice = Install_MakeOption(installObj, 
                 MUIA_InstallOption_ID, (IPTR)"tgtdev",
                 MUIA_InstallOption_ValueTag, MUIA_String_Contents,
                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                     MUIA_CycleChain, 1,
                     MUIA_FixWidthTxt , "xxxxxxxxxxxxx",
-                    MUIA_String_Contents, def_dev,
                     MUIA_String_Reject, " \"\'*",
                     MUIA_Frame, MUIV_Frame_String,
                     MUIA_HorizWeight, 300,
@@ -349,7 +349,6 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
                 Child, (IPTR)(txtGrpObj = HGroup,
                     MUIA_FixHeightTxt, "\n\n",
                     Child, (IPTR)(txtObjDev = TextObject,
-                        MUIA_Text_Contents, (IPTR)def_dev,
                     End),
                     Child, (IPTR)(txtObjUnit = TextObject,
                         MUIA_Text_Contents, (IPTR)strZero,
@@ -414,11 +413,6 @@ static IPTR DriveSelect__OM_GET(Class * CLASS, Object * self, struct opGet *mess
             return TRUE;
     }
     return DoSuperMethodA(CLASS, self, message);
-}
-
-BOOL isUSBDevice(char *devStr)
-{
-    return strncmp(devStr, def_usbdev, strlen(def_usbdev)) == 0;
 }
 
 static IPTR DriveSelect__OM_SET(Class * CLASS, Object * self, struct opSet *message)
@@ -691,11 +685,14 @@ static IPTR DriveSelect__MUIM_DriveSelect_Initialize(Class * CLASS, Object * sel
 {
     struct DriveSelect_Data *data = INST_DATA(CLASS, self);
     char *partvol;
-    IPTR retval = 0L;
-    BOOL devset = FALSE;
 
     D(bug("[InstallAROS:Drive] %s()\n", __func__));
 
+    /* This part will find two things:
+        "boot device" - first device that is not an optional disk, saved in dsg_BootDev and dsg_BootUnit
+        "partvol" - first partition that AROS can be installed on
+        Note: currently usbscsi.device is not scanned at this step as it is not registering with HW hidd
+     */
     if ((partvol = (char *)DoMethod(self, MUIM_DriveSelect_FindDrives)))
     {
         BYTE namelen = (BYTE)strlen(partvol);
@@ -703,9 +700,9 @@ static IPTR DriveSelect__MUIM_DriveSelect_Initialize(Class * CLASS, Object * sel
         if (namelen > 1)
         {
             struct TagItem devTags[] = {
-                { MUIA_DriveSelect_Device,         0         },
-                { MUIA_DriveSelect_Unit,         0        },
-                { MUIA_DriveSelect_DevProbed,     TRUE    },
+                { MUIA_DriveSelect_Device,      0       },
+                { MUIA_DriveSelect_Unit,        0       },
+                { MUIA_DriveSelect_DevProbed,   TRUE    },
                 { TAG_DONE }
             };
             char devnamebuffer[128];
@@ -729,57 +726,59 @@ static IPTR DriveSelect__MUIM_DriveSelect_Initialize(Class * CLASS, Object * sel
                     bug("[InstallAROS:Drive] %s:      %s:%u\n", __func__, AROS_BSTR_ADDR(fssm->fssm_Device), AROS_BSTR_ADDR(fssm->fssm_Unit));
                 )
 
-                /* use the partitions device ... */
+                /* Partition is good. Preselect partitions device and unit in UI */
                 DriveSelect__InitDriveTypeCycle(data, cycle_drivetype, AROS_BSTR_ADDR(fssm->fssm_Device));
                 devTags[0].ti_Data = (IPTR)AROS_BSTR_ADDR(fssm->fssm_Device);
                 devTags[1].ti_Data = fssm->fssm_Unit;
-                devset = TRUE;
+                SetAttrsA(self, devTags);
+                return 0L;
             }
-            else
-            {
-                devTags[0].ti_Tag = TAG_IGNORE;
-                devTags[1].ti_Tag = TAG_IGNORE;
-            }
-            SetAttrsA(self, devTags);
         }
     }
 
-    if (!devset)
+    /* At this point dsg_BootDev might or might not be a suitable device, but partition was not found to be good */
     {
-        if (data->dsd_Global->dsg_BootDev)
+#ifdef __mc68000__
+        CONST_STRPTR dsdev = def_atadev;
+#else
+        CONST_STRPTR dsdev = def_ahcidev;
+#endif
+        ULONG dsunit = 0;
+        struct TagItem devTags[] = {
+            { MUIA_DriveSelect_Device,      0       },
+            { MUIA_DriveSelect_Unit,        0       },
+            { MUIA_DriveSelect_DevProbed,   FALSE   },
+            { TAG_DONE }
+        };
+
+        /* Default to USB if a USB system volume appears to be present and we haven't booted from it */
+        if (checkUSBSysdrive() == 2)
         {
-            struct TagItem devTags[] = {
-                { MUIA_DriveSelect_Device, 0},
-                { MUIA_DriveSelect_Unit, 0 },
-                { TAG_DONE }
-            };
-
-            D(bug("[InstallAROS:Drive] %s: Using boot device '%s'\n", __func__, data->dsd_Global->dsg_BootDev));
-
+            D(bug("[InstallAROS:Drive] %s: Using USB device '%s'\n", __func__, dsdev));
+            dsdev = def_usbdev;
+            devTags[2].ti_Data = TRUE; /* This will trigger switch to "Use existing partitions" */
+        }
+        else if (data->dsd_Global->dsg_BootDev)
+        {
             /* use boot device ... */
-            DriveSelect__InitDriveTypeCycle(data, cycle_drivetype, data->dsd_Global->dsg_BootDev);
-            devTags[0].ti_Data = (IPTR)data->dsd_Global->dsg_BootDev;
-            devTags[1].ti_Data = data->dsd_Global->dsg_BootUnit;
-            SetAttrsA(self, devTags);
+            D(bug("[InstallAROS:Drive] %s: Using boot device '%s'\n", __func__, dsdev));
+            dsdev = data->dsd_Global->dsg_BootDev;
+            dsunit = data->dsd_Global->dsg_BootUnit;
         }
         else
         {
             /* couldnt detect anything so just show the default options ... */
-            data->dsd_CycActive = DS_DEF_CYCLE;
+            D(bug("[InstallAROS:Drive] %s: Using default device '%s'\n", __func__, dsdev));
         }
+
+        DriveSelect__InitDriveTypeCycle(data, cycle_drivetype, dsdev);
+        devTags[0].ti_Data = (IPTR)dsdev;
+        devTags[1].ti_Data = dsunit;
+        SetAttrsA(self, devTags);
     }
 
-    /* Default to USB if a USB system volume appears to be present and we
-     * haven't booted from it */
-    switch (checkUSBSysdrive())
-    {
-        case 2:
-            data->dsd_CycActive = OPT_DTYPE_USB;
-            break;
-        default:
-            break;
-    }
-    return retval;
+    /* Note: fields dsg_BootDev and dsg_BootUnit are not expected to be used beyond this point, use options selected in UI */
+    return 0L;
 }
 
 static IPTR DriveSelect__MUIM_Setup(Class * CLASS, Object * self, struct MUIP_Setup *message)

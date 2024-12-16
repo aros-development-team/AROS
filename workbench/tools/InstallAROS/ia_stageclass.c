@@ -92,7 +92,7 @@ BOOL GetVolumeForDevName(char *devName, char *buffer);
 LONG GetPartitionSize(BOOL get_work);
 struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
 char * GetDevNameForVolume(char *volumeName);
-BOOL isUSBDevice(char *devStr);
+BOOL isUSBDevice(const char *devStr);
 
 void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value);
 
