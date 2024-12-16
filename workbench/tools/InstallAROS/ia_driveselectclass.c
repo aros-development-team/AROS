@@ -369,7 +369,6 @@ static IPTR DriveSelect__OM_NEW(Class * CLASS, Object * self, struct opSet *mess
         D(bug("[InstallAROS:Drive] %s: DriveSelect_Data @ 0x%p\n", __func__, data);)
 
         data->dsd_Global = dsGdata;
-        data->dsd_Global->dsg_DefDev = def_dev;
 
         data->dsd_EHNode.ehn_Class = CLASS;
 
@@ -775,7 +774,6 @@ static IPTR DriveSelect__MUIM_DriveSelect_Initialize(Class * CLASS, Object * sel
     switch (checkUSBSysdrive())
     {
         case 2:
-            data->dsd_Global->dsg_DefDev = def_usbdev;
             data->dsd_CycActive = OPT_DTYPE_USB;
             break;
         default:

@@ -3,7 +3,6 @@
 
 struct DriveSelect_Global
 {
-    CONST_STRPTR                dsg_DefDev;
     char                        *dsg_BootDev;
     ULONG                       dsg_BootUnit;
 };
