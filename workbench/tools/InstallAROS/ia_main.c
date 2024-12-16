@@ -1052,15 +1052,11 @@ int main(int argc, char *argv[])
     SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckEFI,
                                                 MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
     SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckCreateWork,
-                                                MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
     SetObjNotificationFromOptObj(optObjCheckSysSize, sys_size,
                                                 MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
     SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCycleSysUnits,
                                                 MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
-#if (0)
-    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckCreateWork,
-                                                MUIA_Selected, MUIV_EveryTime, MUIA_Selected, FALSE);
-#endif
 
     /* Notifications on change of selected status of 'create work volume' */
 #if (0)
