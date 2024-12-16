@@ -7,6 +7,8 @@
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <hardware/custom.h>
+#include <hardware/dmabits.h>
 #include <proto/expansion.h>
 #include <aros/asmcall.h>
 #include <libraries/expansionbase.h>
@@ -44,6 +46,14 @@ const struct Resident rb_tag =
    (STRPTR)version_string,
    (APTR)Init
 };
+
+static void reset_audio(void)
+{
+    volatile struct Custom *custom = (struct Custom *) 0xDFF000;
+
+    // Disable DMA for all four audio channels to get a clean state
+    custom->dmacon = 0x8000 | (DMAF_AUD0 | DMAF_AUD1 | DMAF_AUD2 | DMAF_AUD3);
+}
 
 // ROMTAG INIT time
 static void romtaginit(struct ExpansionBase *ExpansionBase)
@@ -122,6 +132,7 @@ static AROS_UFH3 (APTR, Init,
    if (res)
         uaegfxhack(res, "uaelib_demux");
 
+   reset_audio();
    romtaginit(eb);
 
    CloseLibrary((struct Library*)eb);
