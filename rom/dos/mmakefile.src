@@ -30,7 +30,7 @@ FILES	  := bstr_helper errorlist \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
 	     packethelper namefrom internalloadseg_support \
-	     shell_helper
+	     shell_helper resolvesoftlink
 
 LOADSEG_FILES := internalloadseg \
 		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
@@ -39,28 +39,31 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     allocdosobject assignadd assignaddtolist assignlate assignlock \
 	     assignpath attemptlockdoslist changemode checksignal \
 	     cli cliinit cliinitnewcli cliinitrun \
-	     close comparedates createdir createnewproc \
+	     close comparedates createdir createdirrelative createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
-	     deletevar deviceproc displayerror dopkt dosgetstring \
+	     deletefilerelative deletevar deviceproc displayerror dopkt dosgetstring \
 	     duplock duplockfromfh endnotify errorreport \
 	     exall exallend examine examinefh execute exit exnext \
 	     fault fgetc fgets filepart findarg findcliproc finddosentry findsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
-	     getcurrentdirname getdeviceproc getfilesystask getprogramdir \
-	     getprogramname getprompt getseglistinfo getvar info inhibit \
-	     input internalunloadseg ioerr isfilesystem \
-	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
-	     makedosentry makelink matchend matchfirst matchnext matchpattern \
+	     getcurrentdirname getdeviceproc getdeviceprocrelative getfilesystask \
+	     getprogramdir getprogramname getprompt getseglistinfo getvar info inhibit \
+	     input internalunloadseg ioerr isfilesystem isfilesystemrelative \
+	     isinteractive loadseg lock lockdoslist lockrelative lockrecord lockrecords \
+	     makedosentry makelink makelinkrelative \
+	     matchend matchfirst matchnext matchpattern \
 	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry nil \
-	     open openfromlock output parentdir parentoffh parsepattern \
+	     open openfromlock openrelative output parentdir parentoffh parsepattern \
 	     parsepatternnocase pathpart printfault putstr read readargs \
-	     readitem relabel readlink remassignlist remdosentry remsegment rename \
+	     readitem relabel readlink remassignlist remdosentry remsegment \
+	     rename renamerelative \
 	     replypkt runcommand samedevice samelock scanvars seek \
-	     selectinput selectoutput sendpkt setargstr setcomment setconsoletask \
-	     setcurrentdirname setfiledate setfilesize setfilesystask \
-	     setioerr setmode setowner setprogramdir setprogramname \
-	     setprompt setprotection setvar setvbuf splitname startnotify \
+	     selectinput selectoutput sendpkt setargstr setcomment setcommentrelative \
+	     setconsoletask setcurrentdirname setfiledate setfiledaterelative \
+	     setfilesize setfilesystask setioerr setmode setowner setownerrelative \
+	     setprogramdir setprogramname setprompt setprotection setprotectionrelative \
+	     setvar setvbuf splitname startnotify \
 	     strtodate strtolong systemtaglist ungetc unloadseg unlock \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars runhandler
