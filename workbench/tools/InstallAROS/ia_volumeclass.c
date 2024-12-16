@@ -67,7 +67,7 @@ AROS_UFH3
     struct Volume_Data *data = (struct Volume_Data *)hook->h_Data;
     Object *PopParentObj;
 
-    bug("[InstallAROS:Volume] %s: Volume_Data @ 0x%p\n", __func__, data);
+    DVOL(bug("[InstallAROS:Volume] %s: Volume_Data @ 0x%p\n", __func__, data));
 
     WORD winx, winy;
     WORD winw, winh;
@@ -132,7 +132,7 @@ AROS_UFH3
 
         if (data->vd_PopObj)
         {
-            bug("[InstallAROS:Volume] %s: new window created @ 0x%p\n", __func__, data->vd_PopObj);
+            DVOL(bug("[InstallAROS:Volume] %s: new window created @ 0x%p\n", __func__, data->vd_PopObj));
 
             DoMethod(_app(obj), OM_ADDMEMBER, (IPTR) data->vd_PopObj);
             data->vd_EHNode.ehn_Object = obj;
@@ -151,7 +151,7 @@ AROS_UFH3
     }
     if (data->vd_PopObj)
     {
-        bug("[InstallAROS:Volume] %s: vd_PopObj @ 0x%p\n", __func__, data->vd_PopObj);
+        DVOL(bug("[InstallAROS:Volume] %s: vd_PopObj @ 0x%p\n", __func__, data->vd_PopObj));
         SET(data->vd_PopObj, MUIA_Window_Open, TRUE);
         DoMethod(data->vd_PopObj, MUIM_Window_AddEventHandler, &data->vd_EHNode);
     }
@@ -176,7 +176,7 @@ static IPTR Volume__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
     BPTR lock;
     TEXT imageSpec[BUFFERSIZE];
 
-    D(bug("[InstallAROS:Volume] %s()\n", __func__));
+    DVOL(bug("[InstallAROS:Volume] %s()\n", __func__));
 
     if (!installObj || !volNameObj || !volFSObj || !volSizeObj)
         return 0;
@@ -245,7 +245,7 @@ static IPTR Volume__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
     {
         struct Volume_Data *data = INST_DATA(CLASS, self);
 
-        bug("[InstallAROS:Volume] %s: Volume_Data @ 0x%p\n", __func__, data);
+        DVOL(bug("[InstallAROS:Volume] %s: Volume_Data @ 0x%p\n", __func__, data));
 
         data->vd_PopPadTxt = volPadTxt;
 

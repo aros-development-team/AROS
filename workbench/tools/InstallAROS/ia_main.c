@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
     InstallObj = NewObject(icMcc->mcc_Class, NULL,
         TAG_DONE);
 
-    bug("[INST-APP] Base Install Object @ 0x%p\n", InstallObj);
+    D(bug("[INST-APP] Base Install Object @ 0x%p\n", InstallObj));
 
     struct IClass  *stageClassPtr = NULL;
     GET(InstallObj, MUIA_Install_StageClass, &stageClassPtr);
@@ -506,7 +506,7 @@ int main(int argc, char *argv[])
             MUIA_Volume_SizeObj,  (IPTR)bootVolSizeObj,
         TAG_DONE);
 
-    bug("[INST-APP] Boot Vol FS Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", bootVolFSObj, bootVolSizeObj, bootVolObj);
+    D(bug("[INST-APP] Boot Vol FS Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", bootVolFSObj, bootVolSizeObj, bootVolObj));
     optObjDestVolumeName = Install_MakeOption(InstallObj, 
                                                                 MUIA_InstallOption_ID, (IPTR)"tgtvol",
                                                                 MUIA_InstallOption_ValueTag, MUIA_String_Contents,
@@ -536,7 +536,7 @@ int main(int argc, char *argv[])
             MUIA_Volume_SizeObj,  (IPTR)sysVolSizeObj,
         TAG_DONE);
 
-    bug("[INST-APP] Sys Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", optObjDestVolumeName, sysVolSizeObj, sysVolObj);
+    D(bug("[INST-APP] Sys Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", optObjDestVolumeName, sysVolSizeObj, sysVolObj));
 
     work_devname = StringObject,
                                 MUIA_CycleChain, 1,
@@ -565,7 +565,7 @@ int main(int argc, char *argv[])
         TAG_DONE);
 
 
-    bug("[INST-APP] Work Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", work_devname, workVolSizeObj, workVolObj);
+    D(bug("[INST-APP] Work Vol Name Obj @ 0x%p, SizeObj @ 0x%p, VolumeObj @ 0x%p\n", work_devname, workVolSizeObj, workVolObj));
 
     install_opts =
         AllocMem(sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC);
