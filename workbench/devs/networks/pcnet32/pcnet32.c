@@ -200,6 +200,7 @@ D(bug("%s: Chipset RESET\n", dev->pcnu_name));
 
    pcnet32_deinitialize(dev);    // Stop the chipset and set it in 16bit-mode
 
+    /* This needs to be 32-bit memory */
     np->ring_addr = HIDD_PCIDriver_AllocPCIMem(
                     dev->pcnu_PCIDriver,
                     sizeof(struct rx_ring_desc) * (RX_RING_SIZE + TX_RING_SIZE));
@@ -302,6 +303,7 @@ static int pcnet32_open(struct net_device *dev)
 
    pcnet32_deinitialize(dev);    // Stop the chipset and set it in 16bit-mode
 
+   /* This needs to be 32-bit memory */
    np->rx_buffer = HIDD_PCIDriver_AllocPCIMem(
                         dev->pcnu_PCIDriver,
                         RX_RING_SIZE * RXTX_ALLOC_BUFSIZE);
@@ -309,6 +311,7 @@ static int pcnet32_open(struct net_device *dev)
    if (np->rx_buffer == NULL)
       oom = 1;
 
+   /* This needs to be 32-bit memory */
    np->tx_buffer = HIDD_PCIDriver_AllocPCIMem(
                         dev->pcnu_PCIDriver,
                         TX_RING_SIZE * RXTX_ALLOC_BUFSIZE);

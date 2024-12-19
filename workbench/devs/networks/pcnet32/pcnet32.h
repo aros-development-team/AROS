@@ -111,7 +111,7 @@ struct AddressRange
 
 struct rx_ring_desc
 {
-    IPTR    PacketBuffer;
+    ULONG   PacketBuffer;
     UWORD   BufferLength;
     UWORD   BufferStatus;
     ULONG   BufferMsgLength;
@@ -120,7 +120,7 @@ struct rx_ring_desc
 
 struct tx_ring_desc
 {
-    IPTR    PacketBuffer;
+    ULONG   PacketBuffer;
     UWORD   BufferLength;
     UWORD   BufferStatus;
     ULONG   Misc;
