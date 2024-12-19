@@ -207,7 +207,7 @@ D(bug("%s: Chipset RESET\n", dev->pcnu_name));
     np->fep_pcnet_init_block->rx_ring = AROS_LONG2LE((IPTR)np->ring_addr);
     np->fep_pcnet_init_block->tx_ring = AROS_LONG2LE((IPTR)&((struct rx_ring_desc *)np->ring_addr)[RX_RING_SIZE]);
 
-D(bug("%s: Allocated IO Rings [%d x Tx @ %x : %x] [%d x Rx @ %x : %x]\n",
+D(bug("%s: Allocated IO Rings [%d x Tx @ %p : %p] [%d x Rx @ %p : %p]\n",
   dev->pcnu_name,
   TX_RING_SIZE, np->ring_addr + (RX_RING_SIZE * sizeof(struct rx_ring_desc)), np->fep_pcnet_init_block->tx_ring,
   RX_RING_SIZE, np->ring_addr, np->fep_pcnet_init_block->rx_ring));
@@ -320,7 +320,7 @@ D(bug("%s: pcnet32_open: begin\n",dev->pcnu_name));
 
    if (oom == 0)
    {
-D(bug("%s: pcnet32_open: Allocated IO Buffers [ %d x Tx @ %x] [ %d x Rx @ %x]\n",dev->pcnu_name,
+D(bug("%s: pcnet32_open: Allocated IO Buffers [ %d x Tx @ %p] [ %d x Rx @ %p]\n",dev->pcnu_name,
                         TX_RING_SIZE, np->tx_buffer,
                         RX_RING_SIZE, np->rx_buffer ));   
    
@@ -366,7 +366,7 @@ D(bug("%s: PCnet Chipset put into 32bit mode\n", dev->pcnu_name));
    dev->write_csr(dev->pcnu_BaseMem, 1, (AROS_LONG2LE((IPTR)np->fep_pcnet_init_block) & 0xffff)); /* Store the pointer to the pcnet32_init_block */
    dev->write_csr(dev->pcnu_BaseMem, 2, (AROS_LONG2LE((IPTR)np->fep_pcnet_init_block) >> 16));
 
-D(bug("%s: pcnet32_open: set init_block (@ %x)\n",dev->pcnu_name,np->fep_pcnet_init_block));
+D(bug("%s: pcnet32_open: set init_block (@ %p)\n",dev->pcnu_name,np->fep_pcnet_init_block));
 
    dev->write_csr(dev->pcnu_BaseMem, 0, ((1 << 6)|(1 << 0))); /* Trigger an initialisation for the interrupt (INEA|INIT)*/
 
