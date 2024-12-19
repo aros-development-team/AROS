@@ -1094,6 +1094,7 @@ D(bug("[pcnet32] CreateUnit()\n"));
 
             unit->pcnu_fe_priv = AllocMem(sizeof(struct fe_priv), MEMF_PUBLIC|MEMF_CLEAR);
 
+            /* This needs to be 32-bit memory */
             unit->pcnu_fe_priv->fep_pcnet_init_block = HIDD_PCIDriver_AllocPCIMem(
                     driver,
                     sizeof(struct pcnet32_init_block));
