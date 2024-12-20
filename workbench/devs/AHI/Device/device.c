@@ -826,19 +826,19 @@ AllocHardware ( struct AHIDevUnit *iounit,
 
     /* Set hardware properties */
     AHI_ControlAudio(iounit->AudioCtrl,
-        ((LONG)iounit->MonitorVolume == ~0L ? TAG_IGNORE : AHIC_MonitorVolume),
+        (iounit->MonitorVolume == ~0 ? TAG_IGNORE : AHIC_MonitorVolume),
         iounit->MonitorVolume,
 
-        ((LONG)iounit->InputGain == ~0L ? TAG_IGNORE : AHIC_InputGain),
+        (iounit->InputGain == ~0 ? TAG_IGNORE : AHIC_InputGain),
         iounit->InputGain,
 
-        ((ULONG)iounit->OutputVolume == ~0UL ? TAG_IGNORE : AHIC_OutputVolume),
+        (iounit->OutputVolume == ~0 ? TAG_IGNORE : AHIC_OutputVolume),
         iounit->OutputVolume,
 
-        ((ULONG)iounit->Input == ~0UL ? TAG_IGNORE : AHIC_Input),
+        (iounit->Input == ~0UL ? TAG_IGNORE : AHIC_Input),
         iounit->Input,
 
-        ((ULONG)iounit->Output == ~0UL ? TAG_IGNORE : AHIC_Output),
+        (iounit->Output == ~0UL ? TAG_IGNORE : AHIC_Output),
         iounit->Output,
 
         TAG_DONE);
