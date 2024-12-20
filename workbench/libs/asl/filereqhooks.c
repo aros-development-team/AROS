@@ -1199,7 +1199,8 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                                                                         GA_Left     , &left  ,
                                                                         GA_Top      , &top   ,
                                                                         GA_RelWidth , &right ,
-                                                                        GA_RelHeight, &bottom);
+                                                                        GA_RelHeight, &bottom,
+                                                                        TAG_DONE);
 
                     if (    (ld->ld_Window->MouseY < bottom + ld->ld_Window->Height + top)
                          && (ld->ld_Window->MouseX < right  + ld->ld_Window->Width + left)
