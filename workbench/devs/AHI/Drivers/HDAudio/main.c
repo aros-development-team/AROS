@@ -696,9 +696,6 @@ static void free_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_bu
 {
     unsigned int entry;
 
-    stream->bdl = pci_alloc_consistent(nr_of_buffers * sizeof(struct BDLE), &(stream->bdl_nonaligned), 128);
-    stream->bdl_nonaligned_addresses = (APTR) AllocVec(nr_of_buffers * 8, MEMF_PUBLIC | MEMF_CLEAR);
-
     for (entry = 0; entry < nr_of_buffers; entry++)
     {
         pci_free_consistent(stream->bdl_nonaligned_addresses[entry]);
