@@ -339,7 +339,7 @@ SamplerFunc( struct Hook*             hook,
 *           in the preferences program. It's a good value to use the first
 *           time she starts your application.)
 *
-*       AHIA_MixFreq (IPTR) - Desired mixing frequency. The actual
+*       AHIA_MixFreq (ULONG) - Desired mixing frequency. The actual
 *           mixing rate may or may not be exactly what you asked for.
 *           Default is AHI_DEFAULT_FREQ. (AHI_DEFAULT_FREQ is the user's
 *           prefered frequency.)
@@ -885,8 +885,8 @@ _AHI_KillAudio( struct AHIBase* AHIBase )
 *           volume. ti_Data is a pointer to a Fixed variable, where the result
 *           will be stored.
 *
-*       AHIC_MixFreq_Query (IPTR *) - Get the current mixing frequency.
-*           ti_Data is a pointer to an IPTR variable, where the result will
+*       AHIC_MixFreq_Query (ULONG *) - Get the current mixing frequency.
+*           ti_Data is a pointer to an ULONG variable, where the result will
 *           be stored.
 *
 *       AHIC_InputGain (Fixed) - Set the input gain. Use AHI_GetAudioAttrsA()
@@ -899,15 +899,15 @@ _AHI_KillAudio( struct AHIBase* AHIBase )
 *
 *       AHIC_OutputVolume_Query (Fixed *) - Get current output volume. (V2)
 *
-*       AHIC_Input (IPTR) - Select input source. See AHI_GetAudioAttrsA().
+*       AHIC_Input (ULONG) - Select input source. See AHI_GetAudioAttrsA().
 *           (V2)
 *
-*       AHIC_Input_Query (IPTR *) - Get current input source. (V2)
+*       AHIC_Input_Query (ULONG *) - Get current input source. (V2)
 *
-*       AHIC_Output (IPTR) - Select destination for output. See
+*       AHIC_Output (ULONG) - Select destination for output. See
 *           AHI_GetAudioAttrsA(). (V2)
 *
-*       AHIC_Output_Query (IPTR *) - Get destination for output. (V2)
+*       AHIC_Output_Query (ULONG *) - Get destination for output. (V2)
 *
 *       The following tags are also recognized by AHI_ControlAudioA(). See
 *       AHI_AllocAudioA() for what they do. They may be used from interrupts.
@@ -947,8 +947,7 @@ _AHI_ControlAudioA( struct AHIPrivAudioCtrl* audioctrl,
 		    struct TagItem*          tags,
 		    struct AHIBase*          AHIBase )
 {
-  IPTR *ptr;
-  ULONG playflags=0, stopflags=0, rc=AHIE_OK;
+  ULONG *ptr, playflags=0, stopflags=0, rc=AHIE_OK;
   UBYTE update=FALSE;
   struct TagItem *tag,*tstate=tags;
   struct Library *AHIsubBase=audioctrl->ahiac_SubLib;
@@ -963,7 +962,7 @@ _AHI_ControlAudioA( struct AHIPrivAudioCtrl* audioctrl,
 
   while((tag=NextTagItem(&tstate)))
   {
-    ptr=(IPTR *)tag->ti_Data;  // For ..._Query tags
+    ptr=(ULONG *)tag->ti_Data;  // For ..._Query tags
     switch(tag->ti_Tag)
     {
     case AHIA_SoundFunc:
