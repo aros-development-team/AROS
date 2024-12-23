@@ -607,6 +607,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
     iounit->OutputVolume    = ~0;
     iounit->Input           = ~0;
     iounit->Output          = ~0;
+    AHIBase->ahib_ScaleMode       = AHI_SCALE_FIXED_0_DB;
   }
   else
   {
