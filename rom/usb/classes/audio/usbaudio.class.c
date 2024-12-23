@@ -4066,7 +4066,7 @@ AROS_LH5(IPTR, subLibGetAttr,
 /* \\\ */
 
 /* /// "subLibHardwareControl()" */
-AROS_LH3(IPTR, subLibHardwareControl,
+AROS_LH3(ULONG, subLibHardwareControl,
          AROS_LHA(ULONG, attr, D0),
          AROS_LHA(LONG, arg, D1),
          AROS_LHA(struct AHIAudioCtrlDrv *, audioctrl, A2),
@@ -4087,7 +4087,7 @@ AROS_LH3(IPTR, subLibHardwareControl,
     switch(attr)
     {
         case AHIC_MixFreq_Query:
-            return (IPTR) audioctrl->ahiac_MixFreq;
+            return audioctrl->ahiac_MixFreq;
 
         case AHIC_InputGain:
             nam->nam_InputGain = arg;

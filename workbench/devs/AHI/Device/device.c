@@ -835,10 +835,10 @@ AllocHardware ( struct AHIDevUnit *iounit,
         (iounit->OutputVolume == ~0 ? TAG_IGNORE : AHIC_OutputVolume),
         iounit->OutputVolume,
 
-        (iounit->Input == ~0UL ? TAG_IGNORE : AHIC_Input),
+        (iounit->Input == ~0 ? TAG_IGNORE : AHIC_Input),
         iounit->Input,
 
-        (iounit->Output == ~0UL ? TAG_IGNORE : AHIC_Output),
+        (iounit->Output == ~0 ? TAG_IGNORE : AHIC_Output),
         iounit->Output,
 
         TAG_DONE);
