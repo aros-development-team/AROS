@@ -287,7 +287,7 @@ _DevOpen ( struct AHIRequest* ioreq,
   {
     // Load database if not already loaded
 
-    if(AHI_NextAudioID(AHI_INVALID_ID) == (IPTR) AHI_INVALID_ID)
+    if(AHI_NextAudioID(AHI_INVALID_ID) == (ULONG) AHI_INVALID_ID)
     {
       AHI_LoadModeFile("DEVS:AudioModes");
 
@@ -305,7 +305,7 @@ _DevOpen ( struct AHIRequest* ioreq,
 
       // Load Void driver if no real hardware was found
 
-      if(AHI_NextAudioID(AHI_INVALID_ID) == (IPTR) AHI_INVALID_ID)
+      if(AHI_NextAudioID(AHI_INVALID_ID) == (ULONG) AHI_INVALID_ID)
       {
         AHI_LoadModeFile("SYS:Storage/AudioModes/VOID");
       }
@@ -592,7 +592,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
   struct IFFHandle *iff;
   struct StoredProperty *ahig;
   struct CollectionItem *ci;
-  IPTR *mode;
+  ULONG *mode;
 
   ahibug("[AHI:Device] %s()\n", __func__);
 
@@ -776,7 +776,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
     mode = &iounit->AudioMode;
   else
     mode = &AHIBase->ahib_AudioMode;
-  if(mode[0] == (IPTR) AHI_INVALID_ID)
+  if(mode[0] == (ULONG) AHI_INVALID_ID)
   { static const struct TagItem tags[] = { {AHIDB_Realtime, TRUE}, {TAG_DONE, 0} };
     mode[0] = AHI_BestAudioIDA((struct TagItem *)tags);
   }

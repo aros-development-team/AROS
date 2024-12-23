@@ -32,7 +32,7 @@ struct UnitNode {
 
 struct ModeNode {
   struct Node           node;
-  IPTR                 ID;
+  ULONG                 ID;
   char                  name[80];
 };
 
@@ -108,7 +108,7 @@ char *getMonVol(void);
 char *getGain(void);
 char *getInput(void);
 char *getOutput(void);
-IPTR getAudioMode(void);
+ULONG getAudioMode(void);
 char *getRecord(void);
 char *getAuthor(void);
 char *getCopyright(void);

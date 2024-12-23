@@ -508,7 +508,7 @@ struct List *GetModes(struct AHIUnitPrefs *prefs) {
   list = AllocVec(sizeof(struct List), MEMF_CLEAR);
   
   if(list) {
-    IPTR id = AHI_NextAudioID(AHI_INVALID_ID);
+    ULONG id = AHI_NextAudioID(AHI_INVALID_ID);
 
     NewList(list);
 
@@ -594,7 +594,7 @@ char **List2Array(struct List *list) {
 **** Returns a char* array with inputs names **********************************
 ******************************************************************************/
 
-char **GetInputs(IPTR id) {
+char **GetInputs(ULONG id) {
   char **strings, **rstrings;
   LONG inputs = 0, i;
 
@@ -629,7 +629,7 @@ char **GetInputs(IPTR id) {
 **** Returns a char* array with outputs names *********************************
 ******************************************************************************/
 
-char **GetOutputs(IPTR id) {
+char **GetOutputs(ULONG id) {
   char **strings, **rstrings;
   LONG outputs = 0, i;
 

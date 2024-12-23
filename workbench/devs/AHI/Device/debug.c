@@ -604,13 +604,13 @@ Debug_UnloadSound( UWORD sound, struct AHIPrivAudioCtrl *audioctrl )
 }
 
 void
-Debug_NextAudioID( IPTR id)
+Debug_NextAudioID( ULONG id)
 {
   KPrintF("AHI_NextAudioID(0x%08lx)", id);
 }
 
 void
-Debug_GetAudioAttrsA( IPTR id, struct AHIPrivAudioCtrl *audioctrl, struct TagItem *tags )
+Debug_GetAudioAttrsA( ULONG id, struct AHIPrivAudioCtrl *audioctrl, struct TagItem *tags )
 {
   KPrintF("AHI_GetAudioAttrsA(0x%08lx, 0x%p,", id, (IPTR)audioctrl);
   PrintTagList(tags);
@@ -665,7 +665,7 @@ Debug_AddAudioMode(struct TagItem *tags )
 }
 
 void
-Debug_RemoveAudioMode( IPTR id)
+Debug_RemoveAudioMode( ULONG id)
 {
   KPrintF("AHI_RemoveAudioMode(0x%08lx)", id);
 }
