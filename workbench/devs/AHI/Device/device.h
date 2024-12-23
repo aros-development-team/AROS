@@ -167,7 +167,7 @@ struct AHIDevUnit
         struct Voice            *Voices;
 
         struct AHIAudioCtrl     *AudioCtrl;
-        IPTR                    AudioMode;
+        ULONG                    AudioMode;
         ULONG                    Frequency;
         UWORD                    Channels;
         UWORD                    Pad;

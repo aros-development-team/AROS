@@ -204,7 +204,7 @@ UnlockDatabase ( struct AHI_AudioDatabase *audiodb )
 
 struct TagItem *
 GetDBTagList ( struct AHI_AudioDatabase *audiodb,
-               IPTR id )
+               ULONG id )
 {
   struct AHI_AudioMode *node;
   struct TagItem       *rc = NULL;
@@ -240,7 +240,7 @@ GetDBTagList ( struct AHI_AudioDatabase *audiodb,
 *       next_ID = AHI_NextAudioID( last_ID );
 *       D0                         D0
 *
-*       IPTR AHI_NextAudioID( IPTR );
+*       ULONG AHI_NextAudioID( ULONG );
 *
 *   FUNCTION
 *       This function is used to iterate through all current AudioIDs in
@@ -265,13 +265,13 @@ GetDBTagList ( struct AHI_AudioDatabase *audiodb,
 *
 */
 
-IPTR
-_AHI_NextAudioID( IPTR           id,
+ULONG
+_AHI_NextAudioID( ULONG           id,
 		  struct AHIBase* AHIBase )
 {
   struct AHI_AudioDatabase *audiodb;
   struct AHI_AudioMode *node;
-  IPTR  nextid=AHI_INVALID_ID;
+  ULONG  nextid=AHI_INVALID_ID;
 
   ahibug("[AHI:Device] %s(%08x)\n", __func__, id);
 
@@ -290,7 +290,7 @@ _AHI_NextAudioID( IPTR           id,
     {
       while(node != NULL)
       {
-        IPTR thisid;
+        ULONG thisid;
 
         ahibug("[AHI:Device] %s: node @ 0x%p)\n", __func__, node);
 
@@ -498,7 +498,7 @@ _AHI_AddAudioMode( struct TagItem* DBtags,
 *       success = AHI_RemoveAudioMode( ID );
 *       D0                             D0
 *
-*       ULONG AHI_RemoveAudioMode( IPTR );
+*       ULONG AHI_RemoveAudioMode( ULONG );
 *
 *   FUNCTION
 *       Removes the audio mode from the audio mode database.
@@ -522,7 +522,7 @@ _AHI_AddAudioMode( struct TagItem* DBtags,
 */
 
 ULONG
-_AHI_RemoveAudioMode( IPTR           id,
+_AHI_RemoveAudioMode( ULONG           id,
 		      struct AHIBase* AHIBase )
 {
   struct AHI_AudioMode *node;

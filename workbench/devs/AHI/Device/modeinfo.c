@@ -75,7 +75,7 @@ stccpy( char *to, const char *from, int n )
 
 // tags may be NULL
 
-Fixed DizzyTestAudioID(IPTR id, struct TagItem *tags )
+Fixed DizzyTestAudioID(ULONG id, struct TagItem *tags )
 {
   ULONG volume=0,stereo=0,panning=0,hifi=0,pingpong=0,record=0,realtime=0,
         fullduplex=0,bits=0,channels=0,minmix=0,maxmix=0,multichannel=0;
@@ -206,7 +206,7 @@ Fixed DizzyTestAudioID(IPTR id, struct TagItem *tags )
 
 // tags may be NULL
 
-BOOL TestAudioID(IPTR id, struct TagItem *tags )
+BOOL TestAudioID(ULONG id, struct TagItem *tags )
 {
   if(DizzyTestAudioID(id, tags) != 0x10000)
     return FALSE;
@@ -392,7 +392,7 @@ BOOL TestAudioID(IPTR id, struct TagItem *tags )
 *           NOTE: ti_Data is a pointer to an UBYTE array where the name
 *           will be stored. See AHIDB_BufferLen. (V2)
 *
-*       AHIDB_AudioID (IPTR *) - The ID for this mode. (V4)
+*       AHIDB_AudioID (ULONG *) - The ID for this mode. (V4)
 *
 *       If the requested information cannot be found, the variable will be not
 *       be touched.
@@ -416,7 +416,7 @@ BOOL TestAudioID(IPTR id, struct TagItem *tags )
 */
 
 ULONG
-_AHI_GetAudioAttrsA( IPTR                    id,
+_AHI_GetAudioAttrsA( ULONG                    id,
 		     struct AHIPrivAudioCtrl* actrl,
 		     struct TagItem*          tags,
 		     struct AHIBase*          AHIBase )
@@ -609,11 +609,11 @@ _AHI_GetAudioAttrsA( IPTR                    id,
 *       ID = AHI_BestAudioIDA( tags );
 *       D0                     A1
 *
-*       IPTR AHI_BestAudioIDA( struct TagItem * );
+*       ULONG AHI_BestAudioIDA( struct TagItem * );
 *
 *       ID = AHI_BestAudioID( tag1, ... );
 *
-*       IPTR AHI_BestAudioID( Tag, ... );
+*       ULONG AHI_BestAudioID( Tag, ... );
 *
 *   FUNCTION
 *       Determines the best AudioID to fit the parameters set in the tag
@@ -626,7 +626,7 @@ _AHI_GetAudioAttrsA( IPTR                    id,
 *       Many combinations are probably stupid to ask for, like not supporting
 *       panning or recording.
 *
-*       AHIDB_AudioID (IPTR) - The mode must use the same audio hardware
+*       AHIDB_AudioID (ULONG) - The mode must use the same audio hardware
 *           as this mode does.
 *
 *       AHIDB_Volume (BOOL) - If TRUE: mode must support volume changes.
@@ -696,11 +696,11 @@ _AHI_GetAudioAttrsA( IPTR                    id,
 *
 */
 
-IPTR
+ULONG
 _AHI_BestAudioIDA( struct TagItem* tags,
 		   struct AHIBase* AHIBase )
 {
-  IPTR id = AHI_INVALID_ID, bestid = 0;
+  ULONG id = AHI_INVALID_ID, bestid = 0;
   Fixed score, bestscore = 0;
   struct TagItem *dizzytags;
   static const struct TagItem const_defdizzy[] =

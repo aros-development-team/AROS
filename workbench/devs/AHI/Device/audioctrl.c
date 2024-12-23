@@ -334,7 +334,7 @@ SamplerFunc( struct Hook*             hook,
 *
 *   TAGS
 *
-*       AHIA_AudioID (IPTR) - The audio mode to use. Default is
+*       AHIA_AudioID (ULONG) - The audio mode to use. Default is
 *           AHI_DEFAULT_ID. (AHI_DEFAULT_ID is the ID the user has selected
 *           in the preferences program. It's a good value to use the first
 *           time she starts your application.)

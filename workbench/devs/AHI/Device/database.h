@@ -41,8 +41,8 @@ struct AHI_AudioDatabase
 };
 
 
-IPTR
-_AHI_NextAudioID( IPTR           id,
+ULONG
+_AHI_NextAudioID( ULONG           id,
 		  struct AHIBase* AHIBase );
 
 ULONG
@@ -50,7 +50,7 @@ _AHI_AddAudioMode( struct TagItem* DBtags,
 		   struct AHIBase* AHIBase );
 
 ULONG
-_AHI_RemoveAudioMode( IPTR           id,
+_AHI_RemoveAudioMode( ULONG           id,
 		      struct AHIBase* AHIBase );
 
 ULONG
@@ -68,6 +68,6 @@ UnlockDatabase( struct AHI_AudioDatabase* audiodb );
 
 struct TagItem*
 GetDBTagList( struct AHI_AudioDatabase* audiodb,
-              IPTR id );
+              ULONG id );
 
 #endif /* ahi_database_h */
