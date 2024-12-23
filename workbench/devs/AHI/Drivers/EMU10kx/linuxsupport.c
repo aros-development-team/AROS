@@ -43,7 +43,7 @@ AllocPages( size_t size, ULONG req )
   if( address != NULL )
   {
     a = (unsigned long) address;
-    a = (a + PAGE_SIZE - 1 + sizeof(APTR)) & ~(PAGE_SIZE - 1); //(((unsigned long) (a + 4096)) / 4096) * 4096; // get a 4K-aligned memory pointer
+    a = (a + PAGE_SIZE - 1 + sizeof(APTR)) & ~((unsigned long)PAGE_SIZE - 1); //(((unsigned long) (a + 4096)) / 4096) * 4096; // get a 4K-aligned memory pointer
     ((APTR *)a)[-1] = address;
     address = (void *) a;
   }
