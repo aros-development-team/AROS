@@ -1198,16 +1198,16 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int bo
 #endif
         MEMF_PUBLIC | MEMF_CLEAR));
 
-    if (address != NULL)
-    {
-        a = (unsigned long) address;
-        a = (a + boundary - 1) & ~(boundary - 1);
-        address = (void *) a;
-    }
-
     if (NonAlignedAddress)
     {
         *NonAlignedAddress = address;
+    }
+
+    if (address != NULL)
+    {
+        a = (unsigned long) address;
+        a = (a + boundary - 1) & ~((unsigned long)boundary - 1);
+        address = (void *) a;
     }
 
     return address;

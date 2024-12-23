@@ -670,6 +670,7 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress) {
         address = AllocVecTags(size, AVT_Type, MEMF_SHARED, AVT_Contiguous,
                                TRUE, AVT_Lock, TRUE, AVT_PhysicalAlignment, 32,
                                AVT_Clear, 0, TAG_DONE);
+        *NonAlignedAddress = address;
     } else
 #endif
     {
@@ -683,15 +684,14 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress) {
         allocflags |= MEMF_31BIT;
 #endif
         address = AllocVec(size + CACHELINE_SIZE, allocflags);
+        *NonAlignedAddress = address;
 
         if (address != NULL) {
             a       = (unsigned long)address;
-            a       = (a + CACHELINE_SIZE - 1) & ~(CACHELINE_SIZE - 1);
+            a       = (a + CACHELINE_SIZE - 1) & ~((unsigned long)CACHELINE_SIZE - 1);
             address = (void *)a;
         }
     }
-
-    *NonAlignedAddress = address;
 
     return address;
 }

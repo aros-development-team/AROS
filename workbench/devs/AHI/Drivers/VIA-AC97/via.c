@@ -586,6 +586,7 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         card->is_playing = FALSE;
 
         if (card->current_bytesize > 0) {
+            /* checkme: this probably should be done on playback_bufferX_unaligned pointers */
             pci_free_consistent(card->playback_buffer1);
             pci_free_consistent(card->playback_buffer2);
         }
@@ -600,6 +601,7 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         card->playback_interrupt_enabled = FALSE;
 
         if (card->play_idx_table_nonaligned) {
+            /* checkme: this probably should be done via pci_free_consistent */
             FreeVec(card->play_idx_table_nonaligned);
         }
         card->play_idx_table = NULL;
@@ -613,6 +615,7 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         }
 
         if (card->record_buffer1 != NULL) {
+            /* checkme: this probably should be done on record_bufferX_unaligned pointers */
             pci_free_consistent(card->record_buffer1);
             pci_free_consistent(card->record_buffer2);
         }
@@ -626,6 +629,7 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
 
         pci_free_consistent(card->rec_idx_table_nonaligned);
         card->rec_idx_table = NULL;
+        card->rec_idx_table_nonaligned = NULL;
     }
 
     card->current_bytesize = 0;
