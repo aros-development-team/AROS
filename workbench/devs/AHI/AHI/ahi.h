@@ -42,23 +42,23 @@ struct ModeNode {
 
 struct state 
 {
-  IPTR UnitSelected;
-  IPTR ModeSelected;
-  IPTR FreqSelected;
-  IPTR ChannelsSelected;
-  IPTR InputSelected;
-  IPTR OutputSelected;
-  IPTR OutVolSelected;
-  IPTR MonVolSelected;
-  IPTR GainSelected;
+  LONG UnitSelected;
+  LONG ModeSelected;
+  LONG FreqSelected;
+  LONG ChannelsSelected;
+  LONG InputSelected;
+  LONG OutputSelected;
+  LONG OutVolSelected;
+  LONG MonVolSelected;
+  LONG GainSelected;
 
-  IPTR Frequencies;
-  IPTR Channels;
-  IPTR Inputs;
-  IPTR Outputs;
-  IPTR OutVols;
-  IPTR MonVols;
-  IPTR Gains;
+  LONG Frequencies;
+  LONG Channels;
+  LONG Inputs;
+  LONG Outputs;
+  LONG OutVols;
+  LONG MonVols;
+  LONG Gains;
 
   BOOL ChannelsDisabled;
   BOOL OutVolMute;
