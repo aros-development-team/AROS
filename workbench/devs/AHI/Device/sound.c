@@ -710,7 +710,7 @@ _AHI_SetSound ( UWORD                    channel,
 
 
 ULONG
-_AHI_SetEffect( IPTR*                   effect,
+_AHI_SetEffect( APTR                   effect,
 		struct AHIPrivAudioCtrl* audioctrl,
 		struct AHIBase*          AHIBase )
 {
@@ -733,7 +733,7 @@ _AHI_SetEffect( IPTR*                   effect,
   }
 
 
-  switch(*effect)
+  switch(*((ULONG *)effect))
   {
 
   /*
