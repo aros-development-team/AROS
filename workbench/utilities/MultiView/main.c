@@ -8,7 +8,6 @@
 #include <exec/rawfmt.h>
 
 #include "global.h"
-
 #include "compilerspecific.h"
 #include "debug.h"
 #include "arossupport.h"
@@ -17,6 +16,7 @@
 #include <setjmp.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 extern struct NewMenu nm[];
 extern struct NewMenu nmpict[];
@@ -32,26 +32,34 @@ extern struct NewMenu nmtext[];
 /*********************************************************************************************/
 
 #define ARG_TEMPLATE    "FILE,CLIPBOARD/S,CLIPUNIT/K/N,SCREEN/S,PUBSCREEN/K,REQUESTER/S," \
-                        "BOOKMARK/S,FONTNAME/K,FONTSIZE/K/N,BACKDROP/S,WINDOW/S," \
-                        "PORTNAME/K,IMMEDIATE/S,REPEAT/S,PRTUNIT/K/N"
+                        "BOOKMARK/S,FONTNAME/K,FONTSIZE/K/N,CHARSET/K,BACKDROP/S,WINDOW/S," \
+                        "PORTNAME/K,IMMEDIATE/S,REPEAT/S,PRTUNIT/K/N," \
+                        "WINDOWLEFT/K/N,WINDOWTOP/K/N,WINDOWWIDTH/K/N,WINDOWHEIGHT/K/N," \
+                        "AUTORESIZE/S"
 
-#define ARG_FILE        0
-#define ARG_CLIPBOARD   1
-#define ARG_CLIPUNIT    2
-#define ARG_SCREEN      3
-#define ARG_PUBSCREEN   4
-#define ARG_REQUESTER   5
-#define ARG_BOOKMARK    6
-#define ARG_FONTNAME    7
-#define ARG_FONTSIZE    8
-#define ARG_BACKDROP    9
-#define ARG_WINDOW      10
-#define ARG_PORTNAME    11
-#define ARG_IMMEDIATE   12
-#define ARG_REPEAT      13
-#define ARG_PRTUNIT     14
+#define ARG_FILE         0
+#define ARG_CLIPBOARD    1
+#define ARG_CLIPUNIT     2
+#define ARG_SCREEN       3
+#define ARG_PUBSCREEN    4
+#define ARG_REQUESTER    5
+#define ARG_BOOKMARK     6
+#define ARG_FONTNAME     7
+#define ARG_FONTSIZE     8
+#define ARG_CHARSET      9
+#define ARG_BACKDROP     10
+#define ARG_WINDOW       11
+#define ARG_PORTNAME     12
+#define ARG_IMMEDIATE    13
+#define ARG_REPEAT       14
+#define ARG_PRTUNIT      15
+#define ARG_WINDOWLEFT   16
+#define ARG_WINDOWTOP    17
+#define ARG_WINDOWWIDTH  18
+#define ARG_WINDOWHEIGHT 19
+#define ARG_AUTORESIZE   20
 
-#define NUM_ARGS        15
+#define NUM_ARGS        21
 
 /*********************************************************************************************/
 
@@ -81,15 +89,28 @@ static UBYTE            fontname[256];
 static WORD             winwidth, winheight;
 static WORD             sizeimagewidth, sizeimageheight;
 static BOOL             model_has_members;
-static jmp_buf          exit_buf;
+static BOOL             FromWB;
+static BOOL             bClipBoard = FALSE;
+static BOOL             bRequester = TRUE;
+static BOOL             bWindow = FALSE;
+static APTR             clipunit = 0;
+static STRPTR           pubScreen;
+static jmp_buf exit_buf;
 
 /*********************************************************************************************/
 
+static void OpenLibs(void);
 static void CloseLibs(void);
+static void LoadFont(void);
+static void InitDefaultFont(void);
 static void KillFont(void);
+static void GetArguments(void);
 static void FreeArguments(void);
+static void GetFileToolTypes(STRPTR fname);
 static void KillICObjects(void);
+static void GetVisual(void);
 static void FreeVisual(void);
+static void MakeGadgets(void);
 static void KillGadgets(void);
 static void CloseDTO(void);
 static void KillWindow(void);
@@ -115,7 +136,7 @@ void OutputMessage(CONST_STRPTR msg)
             es.es_Title        = "MultiView";
             es.es_TextFormat   = msg;
             es.es_GadgetFormat = MSG(MSG_OK);
-           
+
             EasyRequestArgs(win, &es, NULL, NULL);
         }
         else
@@ -188,7 +209,7 @@ void Cleanup(CONST_STRPTR msg)
     WinCleanup();
 
     FreeArguments();
-    
+
     if (cd != BNULL)
         CurrentDir(cd); /* restore current directory */
 
@@ -197,7 +218,6 @@ void Cleanup(CONST_STRPTR msg)
 
     longjmp(exit_buf, 0);
 }
-
 
 /*********************************************************************************************/
 
@@ -239,6 +259,13 @@ static void LoadFont(void)
     D(bug("[MultiView] %s()\n", __func__));
 
     font = OpenDiskFont(&textattr);
+
+    if (!font)
+    {
+        InitDefaultFont();
+        font = OpenDiskFont(&textattr);
+    }
+
     if (!font)
     {
         textattr.ta_Name  = "topaz.font";
@@ -261,7 +288,7 @@ static void KillFont(void)
 
 /*********************************************************************************************/
 
-static void InitDefaults(void)
+static void InitDefaultFont(void)
 {
     struct TextFont *defaultfont = GfxBase->DefaultFont;
 
@@ -287,18 +314,28 @@ static void GetArguments(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
 
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
+    if (!filename)
+        filename = (STRPTR)args[ARG_FILE];
+    
+    if (args[ARG_REQUESTER]) /* Open file requester if using file and have no filename supplied */
+        bRequester = TRUE;
+        
+    if (args[ARG_CLIPBOARD]) /* Start with Clipboard data as input, as opposed to file */
     {
-        Fault(IoErr(), 0, s, 256);
-        Cleanup(s);
+        bClipBoard = TRUE;
+        bRequester = FALSE; /* Mutually Exclusive options */
+        bWindow    = FALSE; /* Mutually Exclusive options */
     }
 
-    filename = (STRPTR)args[ARG_FILE];
-    if (!filename && !args[ARG_CLIPBOARD])
+    if (args[ARG_WINDOW]) /* Start with empty Window with no input */
     {
-        filename = GetFileName(MSG_ASL_OPEN_TITLE);
-        if (!filename) Cleanup(NULL);
+        bWindow    = TRUE;
+        bRequester = FALSE; /* Mutually Exclusive options */
+        bClipBoard = FALSE; /* Mutually Exclusive options */
     }
+
+    if (args[ARG_CLIPUNIT])
+        clipunit = *(APTR *)args[ARG_CLIPUNIT];
 
     if (args[ARG_FONTNAME])
     {
@@ -309,64 +346,82 @@ static void GetArguments(void)
     }
 
     if (args[ARG_FONTSIZE])
-    {
         textattr.ta_YSize = *(LONG *)args[ARG_FONTSIZE];
-    }
-}
 
-static struct DiskObject *LoadProgIcon(struct WBStartup *startup, BPTR *icondir, STRPTR iconname)
-{
-    struct DiskObject *progicon = NULL;
+    if (args[ARG_WINDOWLEFT])
+        wincoords.MinX = *(LONG *)args[ARG_WINDOWLEFT];
 
-    D(bug("[MultiView] %s()\n", __func__));
-
-    if (startup)
-    {
-        BPTR olddir;
-        
-        *icondir = startup->sm_ArgList[0].wa_Lock;
-        
-        olddir = CurrentDir(*icondir);
-        progicon = GetDiskObject(startup->sm_ArgList[0].wa_Name);
-        CurrentDir(olddir);
-
-        strncpy(iconname, startup->sm_ArgList[0].wa_Name, 255);
-    }
-    else
-    {
-        if (GetProgramName(iconname, 255))
-        {
-            BPTR olddir;
-            
-            *icondir = GetProgramDir();
-            
-            olddir = CurrentDir(*icondir);
-            progicon = GetDiskObject(iconname);
-            CurrentDir(olddir);
-        }
-    }
+    if (args[ARG_WINDOWTOP])
+        wincoords.MinY = *(LONG *)args[ARG_WINDOWTOP];
     
-    return progicon;
+    if (args[ARG_WINDOWWIDTH])
+        wincoords.MaxX = *(LONG *)args[ARG_WINDOWWIDTH];
+
+    if (args[ARG_WINDOWHEIGHT])
+        wincoords.MaxY = *(LONG *)args[ARG_WINDOWHEIGHT];
+
+    if (args[ARG_PUBSCREEN])
+        pubScreen = (STRPTR)args[ARG_PUBSCREEN];
 }
 
-static void GetOptions(struct WBStartup *startup)
+static void GetFileToolTypes(STRPTR fname)
 {
-    struct DiskObject *mvIcon;
-    char mvIconName[256];
-    BPTR mvDirLock;
+    struct DiskObject *dobj;
+    char **toolarray;
+    char *s;
 
     D(bug("[MultiView] %s()\n", __func__));
 
-    mvIcon = LoadProgIcon(startup, &mvDirLock, mvIconName);
-    if (mvIcon)
+    if ((fname) && (dobj=GetDiskObject(fname)))
     {
-        const STRPTR *toolarray = (const STRPTR *)mvIcon->do_ToolTypes;
-        char *s;
-        if (s = (char *)FindToolType(toolarray,"EXPORT"))
+        /* We have read the DiskObject (icon) for this arg */
+        toolarray = (char **)dobj->do_ToolTypes; 
+
+        if (s = (char *)FindToolType(toolarray,"REQUESTER"))
+            bRequester = TRUE;  
+
+        if (s = (char *)FindToolType(toolarray,"CLIPBOARD"))
         {
-            cmdexport = StrDup(s);
-            D(bug("[MultiView] EXPORT = '%s'\n", cmdexport);)
+            bClipBoard = TRUE;
+            bRequester = FALSE; /* Mutually Exclusive options */
+            bWindow    = FALSE; /* Mutually Exclusive options */
         }
+
+        if (s = (char *)FindToolType(toolarray,"WINDOW"))
+        {
+            bWindow    = TRUE;
+            bRequester = FALSE; /* Mutually Exclusive options */
+            bClipBoard = FALSE; /* Mutually Exclusive options */
+        }
+        
+        if (s = (char *)FindToolType(toolarray,"CLIPUNIT"))
+            clipunit = (APTR)atoi(s);
+        
+        if (s = (char *)FindToolType(toolarray,"PUBSCREEN"))
+            pubScreen = (STRPTR)strdup(s);
+
+        if (s = (char *)FindToolType(toolarray,"FONTNAME"))
+        {
+            strncpy(fontname, s, 255 - 5);
+            if (!strstr(fontname, ".font")) strcat(fontname, ".font");
+            textattr.ta_Name = fontname;
+        }
+        if (s = (char *)FindToolType(toolarray,"FONTSIZE"))
+            textattr.ta_YSize = (LONG)atoi(s);
+
+        if (s = (char *)FindToolType(toolarray,"WINDOWLEFT"))
+            wincoords.MinX = (LONG)atoi(s);
+
+        if (s = (char *)FindToolType(toolarray,"WINDOWTOP"))
+            wincoords.MinY = (LONG)atoi(s);
+
+        if (s = (char *)FindToolType(toolarray,"WINDOWWIDTH"))
+            wincoords.MaxX = (LONG)atoi(s);
+
+        if (s = (char *)FindToolType(toolarray,"WINDOWHEIGHT"))
+            wincoords.MaxY = (LONG)atoi(s);
+
+        FreeDiskObject(dobj);
     }
 }
 
@@ -427,7 +482,7 @@ static void MakeICObjects(void)
         !dto_to_vert_ic_obj     ||
         !dto_to_horiz_ic_obj    ||
         !vert_to_dto_ic_obj     ||
-        !horiz_to_dto_ic_obj
+        !horiz_to_dto_ic_obj 
     #if BACK_CONNECTION
         || !model_to_dto_ic_obj
     #endif
@@ -472,7 +527,8 @@ static void GetVisual(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
 
-    scr = LockPubScreen((CONST_STRPTR)args[ARG_PUBSCREEN]);
+    //scr = LockPubScreen((CONST_STRPTR)args[ARG_PUBSCREEN]);
+    scr = LockPubScreen((CONST_STRPTR)pubScreen);
     if (!scr) Cleanup(MSG(MSG_CANT_LOCK_SCR));
 
     dri = GetScreenDrawInfo(scr);
@@ -682,12 +738,8 @@ static void OpenDTO(void)
     {
         D(bug("[MultiView] calling NewDTObject\n"));
 
-        if (!old_dto && args[ARG_CLIPBOARD])
+        if (!old_dto && bClipBoard)
         {
-            APTR clipunit = 0;
-
-            if (args[ARG_CLIPUNIT]) clipunit = *(APTR *)args[ARG_CLIPUNIT];
-
             dto = NewDTObject(clipunit, ICA_TARGET    , (IPTR)model_obj,
                                     GA_ID         , 1000           ,
                                     DTA_SourceType, DTST_CLIPBOARD ,
@@ -730,12 +782,17 @@ static void OpenDTO(void)
                             }
 
                             filename = GetFileName(MSG_ASL_OPEN_TITLE);
-                            if (filename) continue;
+                            if (filename)
+                            {
+                                ReleaseDataType(dtn);
+                                UnLock(lock);
+                                continue;
+                            }
                         }
                         ReleaseDataType(dtn);
                     }
                     UnLock(lock);
-                }
+		}
             }
 
             if (errnum >= DTERROR_UNKNOWN_DATATYPE)
@@ -1014,7 +1071,7 @@ static void KillWindow(void)
         if (menus) ClearMenuStrip(win);
         CloseWindow(win);
         win = NULL;
-        
+
         winwidth = winheight = 0;
     }
 }
@@ -1097,24 +1154,24 @@ static void ScrollTo(UWORD dir, UWORD quali)
             dir = CURSORUP;
             delta = 3;
             break;
-            
+
         case RAWKEY_NM_WHEEL_DOWN:
             dir = CURSORDOWN;
             delta = 3;
             break;
-            
+
         case RAWKEY_NM_WHEEL_LEFT:
             dir = CURSORLEFT;
             delta = 3;
             break;
-            
+
         case RAWKEY_NM_WHEEL_RIGHT:
             dir = CURSORRIGHT;
             delta = 3;
             break;
     }
 #endif
-    
+
     if ((dir == CURSORUP) || (dir == CURSORDOWN))
     {
         horiz = FALSE;
@@ -1131,7 +1188,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
     {
         horiz = TRUE;
         if (dir == CURSORLEFT) inc = FALSE; else inc = TRUE;
-        
+
         GetDTAttrs(dto, DTA_TopHoriz, (IPTR)&val, TAG_DONE);
         top = (LONG)val;
         GetDTAttrs(dto, DTA_TotalHoriz, (IPTR)&val, TAG_DONE);
@@ -1230,7 +1287,7 @@ static void HandleAll(void)
         struct AppMessage  *appmsg;
 
         sigs = Wait(msgmask | winmask | isnmask);
-        
+
         if (sigs & isnmask)
         {
             HandleIScreenNotify();
@@ -1268,7 +1325,7 @@ static void HandleAll(void)
                 case IDCMP_CLOSEWINDOW:
                     quitme = TRUE;
                     break;
-                
+
                 case IDCMP_VANILLAKEY:
                     D(bug("[Multiview] Vanillakey %d\n", (int)msg->Code));
                     switch(msg->Code)
@@ -1422,7 +1479,7 @@ static void HandleAll(void)
                     break;
                         
                 case IDCMP_MENUPICK:
-                    men = msg->Code;
+                    men = msg->Code;            
 //                  D(bug(" * MV: men %08lx\n", (long)men));
                     while(men != MENUNULL)
                     {
@@ -1705,7 +1762,6 @@ void InitWin(void)
 {
     D(bug("[MultiView] %s()\n", __func__));
 
-    InitDefaults();
     LoadFont();
     MakeICObjects();
     OpenDTO();
@@ -1728,10 +1784,14 @@ void InitWin(void)
 
 int main(int argc, char **argv)
 {
-    struct WBStartup *startup = NULL;
+    struct WBStartup *WBenchMsg;
+    struct WBArg *wbarg;
     int rc;
 
     D(bug("[MultiView] %s()\n", __func__));
+
+    BOOL FromWb = (argc == 0 ) ? TRUE : FALSE;
+    filename = NULL;
 
     /* This is for when Cleanup() is called */
     rc = setjmp(exit_buf);
@@ -1750,33 +1810,73 @@ int main(int argc, char **argv)
     tdt_text_wordwrap = TRUE;
     separate_screen   = FALSE;
 
-    InitLocale("System/Utilities/MultiView.catalog", CATALOG_VERSION);
+    InitDefaultFont(); /* May be overridden in GetArguments() if user specifies a font */
+    InitLocale("System/Utilities/MultiView.catalog", 2);
     InitMenus(nm);
     InitMenus(nmpict);
     InitMenus(nmtext);
     OpenLibs();
-    
-    if (argc == 0)
+
+    if (FromWb)
     {
-        startup = (struct WBStartup *) argv;
-        
-        if (startup->sm_NumArgs >= 2)
+        WBenchMsg = (struct WBStartup *) argv;
+        wbarg = WBenchMsg->sm_ArgList;
+
+        /* Note wbarg++ at end of FOR statement steps through wbargs.
+         * First arg is our executable (tool).  Any additional args
+         * are projects/icons passed to us via either extend select
+         * or default tool method.
+         * In our case, we only care about 2nd arg which is the filename
+         */
+
+        if ( WBenchMsg->sm_NumArgs > 0)
         {
-            /* FIXME: all arguments but the first are ignored */
-            cd       = CurrentDir(startup->sm_ArgList[1].wa_Lock);
-            filename = startup->sm_ArgList[1].wa_Name;
-        }
-        else
-        {
-            filename = GetFileName(MSG_ASL_OPEN_TITLE);
-            if (!filename) Cleanup(NULL);
+            /* Pass 1 gets any Tooltypes from MultiView Icon
+               Pass 2 gets any Tooltypes from file icon, overlaying MultiView Icon Tooltypes
+               */
+            for (int i = 0; i < 2 && i < WBenchMsg->sm_NumArgs; i++)
+            {
+                if ( *wbarg->wa_Name )
+                {
+                    /* if there's a directory lock for this wbarg, CD there */
+                    cd = -1;
+                    if (wbarg->wa_Lock)
+                        cd = CurrentDir(wbarg->wa_Lock);
+
+                    if (i > 0 )
+                        filename = wbarg->wa_Name;
+
+                    GetFileToolTypes(wbarg->wa_Name);
+
+                    if (cd != -1)
+                        CurrentDir(cd); /* CD back where we were */
+                }
+                wbarg++;
+            }
         }
     }
-    else
+    else /* from CLI */
     {
+        if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
+        {
+            Fault(IoErr(), 0, s, 256);
+            Cleanup(s);
+        }
         GetArguments();
     }
-    GetOptions(startup);
+
+    if (!filename && bRequester && !bWindow && !bClipBoard)
+        filename = GetFileName(MSG_ASL_OPEN_TITLE);
+
+    if (filename) 
+        GetFileToolTypes(filename);
+
+    /* ensure CLI parms beat icon parms */
+    if (!FromWb)
+        GetArguments();
+
+    if (!filename &&!bWindow && !bClipBoard)
+        Cleanup(NULL);
 
     InitIScreenNotify();
     InitWin();
@@ -1786,5 +1886,3 @@ int main(int argc, char **argv)
     
     return 0;
 }
-
-/*********************************************************************************************/
