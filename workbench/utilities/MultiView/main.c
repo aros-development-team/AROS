@@ -1033,7 +1033,7 @@ static void MakeWindow(void)
                                                   IDCMP_GADGETUP    |
                                                   IDCMP_GADGETDOWN  |
                                                   IDCMP_MOUSEMOVE   |
-                                                  IDCMP_VANILLAKEY  |                                             
+                                                  IDCMP_VANILLAKEY  |
                                                   IDCMP_RAWKEY      |
                                                   IDCMP_IDCMPUPDATE |
                                                   IDCMP_MENUPICK    |
@@ -1041,7 +1041,7 @@ static void MakeWindow(void)
                                                   IDCMP_INTUITICKS      ,
                             TAG_DONE);
 
-    if (!win) Cleanup(MSG(MSG_CANT_CREATE_WIN));                            
+    if (!win) Cleanup(MSG(MSG_CANT_CREATE_WIN));
 
     AddDTOToWin();
         
@@ -1071,7 +1071,7 @@ static void KillWindow(void)
         if (menus) ClearMenuStrip(win);
         CloseWindow(win);
         win = NULL;
-        
+
         winwidth = winheight = 0;
     }
 }
@@ -1147,31 +1147,31 @@ static void ScrollTo(UWORD dir, UWORD quali)
 
     D(bug("[MultiView] %s()\n", __func__));
 
-#ifdef __AROS__    
+#ifdef __AROS__
     switch(dir)
     {
         case RAWKEY_NM_WHEEL_UP:
             dir = CURSORUP;
             delta = 3;
             break;
-            
+
         case RAWKEY_NM_WHEEL_DOWN:
             dir = CURSORDOWN;
             delta = 3;
             break;
-            
+
         case RAWKEY_NM_WHEEL_LEFT:
             dir = CURSORLEFT;
             delta = 3;
             break;
-            
+
         case RAWKEY_NM_WHEEL_RIGHT:
             dir = CURSORRIGHT;
             delta = 3;
             break;
     }
 #endif
-    
+
     if ((dir == CURSORUP) || (dir == CURSORDOWN))
     {
         horiz = FALSE;
@@ -1188,7 +1188,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
     {
         horiz = TRUE;
         if (dir == CURSORLEFT) inc = FALSE; else inc = TRUE;
-        
+
         GetDTAttrs(dto, DTA_TopHoriz, (IPTR)&val, TAG_DONE);
         top = (LONG)val;
         GetDTAttrs(dto, DTA_TotalHoriz, (IPTR)&val, TAG_DONE);
@@ -1287,7 +1287,7 @@ static void HandleAll(void)
         struct AppMessage  *appmsg;
 
         sigs = Wait(msgmask | winmask | isnmask);
-        
+
         if (sigs & isnmask)
         {
             HandleIScreenNotify();
@@ -1325,7 +1325,7 @@ static void HandleAll(void)
                 case IDCMP_CLOSEWINDOW:
                     quitme = TRUE;
                     break;
-                
+
                 case IDCMP_VANILLAKEY:
                     D(bug("[Multiview] Vanillakey %d\n", (int)msg->Code));
                     switch(msg->Code)
