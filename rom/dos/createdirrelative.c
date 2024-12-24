@@ -4,6 +4,13 @@
     Desc: Create a new directory.
 */
 
+#include <aros/debug.h>
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include <utility/tagitem.h>
+#include <dos/dos.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -11,13 +18,14 @@
     NAME */
 #include <proto/dos.h>
 
-        AROS_LH1(BPTR, CreateDir,
+        AROS_LH2(BPTR, CreateDirRelative,
 
 /*  SYNOPSIS */
-        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(BPTR,         lock, D1),
+        AROS_LHA(CONST_STRPTR, name, D2),
 
 /*  LOCATION */
-        struct DosLibrary *, DOSBase, 20, Dos)
+        struct DosLibrary *, DOSBase, 231, Dos)
 
 /*  FUNCTION
         Creates a new directory under the given name. If all went well, an
@@ -31,21 +39,24 @@
         IoErr() gives additional information in that case.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
+        This call is AROS-specific.
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    return CreateDirRelative(BNULL, name);
+    BPTR lock = BNULL;
+    struct PacketHelperStruct phs;
+
+    D(bug("[CreateDirRelative] lock=0x%p '%s'\n", lock, name));
+
+    if (getpacketinfo(DOSBase, lock, name, &phs)) {
+        lock = (BPTR)dopacket2(DOSBase, NULL, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
+        freepacketinfo(DOSBase, &phs);
+    }
+
+    return lock;
 
     AROS_LIBFUNC_EXIT
-} /* CreateDir */
+} /* CreateDirRelative */
 
