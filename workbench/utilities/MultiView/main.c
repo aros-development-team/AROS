@@ -11,6 +11,7 @@
 #include "compilerspecific.h"
 #include "debug.h"
 #include "arossupport.h"
+#include "catalogs/catalog_version.h"
 
 #include <setjmp.h>
 #include <stdio.h>
@@ -135,8 +136,8 @@ void OutputMessage(CONST_STRPTR msg)
             es.es_Title        = "MultiView";
             es.es_TextFormat   = msg;
             es.es_GadgetFormat = MSG(MSG_OK);
-           
-            EasyRequestArgs(win, &es, NULL, NULL);  
+
+            EasyRequestArgs(win, &es, NULL, NULL);
         }
         else
         {
@@ -208,7 +209,7 @@ void Cleanup(CONST_STRPTR msg)
     WinCleanup();
 
     FreeArguments();
-    
+
     if (cd != BNULL)
         CurrentDir(cd); /* restore current directory */
 
@@ -232,7 +233,7 @@ static void OpenLibs(void)
         {
             __sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
             Cleanup(s);
-        }       
+        }
     }
        
 }
@@ -259,7 +260,7 @@ static void LoadFont(void)
 
     font = OpenDiskFont(&textattr);
 
-    if (!font) 
+    if (!font)
     {
         InitDefaultFont();
         font = OpenDiskFont(&textattr);
@@ -333,7 +334,7 @@ static void GetArguments(void)
         bClipBoard = FALSE; /* Mutually Exclusive options */
     }
 
-    if (args[ARG_CLIPUNIT]) 
+    if (args[ARG_CLIPUNIT])
         clipunit = *(APTR *)args[ARG_CLIPUNIT];
 
     if (args[ARG_FONTNAME])
