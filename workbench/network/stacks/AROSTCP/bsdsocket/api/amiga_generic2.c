@@ -427,9 +427,8 @@ setdtablesize(struct SocketBase * libPtr, UWORD size)
         If the actual data is stored directly into the ti_Data field, you
         should use the 'by value' macros, SBTM_GETVAL() or SBTM_SETVAL().
         However, if the ti_Data field contains a pointer to actual data, you
-        should use the 'by reference' macros, SBTM_GETREF() or SBTM_SETREF().
-        In either case the actual data should always be a LONG aligned to even
-        address.
+        should use the 'by reference' macros, SBTM_GETREF() or SBTM_SETREF()
+        and the actuall data needs to be an IPTR-sized memory location.
 
         According the used tag naming scheme a tag which has "PTR" suffix
         takes an pointer as its argument.  Don't mix the pointer arguments
