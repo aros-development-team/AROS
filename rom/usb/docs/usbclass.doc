@@ -438,7 +438,7 @@ usbclass/usbSetAttrs
         Acquires attribute information from an internal class structure,
         according to the attributes chosen in the tag list. For each entry in
         the tag list, ti_Tag identifies the attribute and ti_Data is a pointer
-        to the long variable where you wish the result to be stored.
+        to the IPTR variable where you wish the result to be stored.
 
         There are currently a number of thee different system structures which
         can be accessed in this way. To avoid adding multiple functions with
