@@ -63,6 +63,13 @@ static void ShutdownHandler(struct ExecBase *SysBase, IPTR action)
 {
     AROS_LIBFUNC_INIT
 
+    /* If we are in an emergency situation, go as simple as possible */
+    if (action & SD_FLAG_EMERGENCY)
+    {
+        ShutdownHandler(SysBase, action);
+        return 0;
+    }
+
     NewCreateTask(TASKTAG_NAME       , "Shutdown",
                     TASKTAG_PRI        , 127,
                     TASKTAG_PC         , ShutdownHandler,

@@ -66,6 +66,12 @@ AROS_INTH1(Exec_X86ShutdownHandler, struct Interrupt *, handler)
          */
 
         krnSysCallChangePMState(PM_STATE_OFF);
+
+        /*
+         * We are in an emergency situation and syscall shutdown handlers didn't work
+         */
+        if (handler->is_Node.ln_Type & SD_FLAG_EMERGENCY)
+            X86_HandleSysHaltSC(NULL);
     };
 
     /* We really should not return from that */
