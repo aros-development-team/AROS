@@ -5,28 +5,40 @@
 #Turn these flags on to enable debugging
 #DEBUGLIBS  = -ldebug
 #DEBUGFLAGS = -DDEBUG
+#DEBUGFLAGS += -DDEBUG_USE_SERIAL
 
 #And these ones are for normal operation
 DEBUGLIBS  =
 DEBUGFLAGS = -DNDEBUG
 
+OS=$(shell uname)
+
 # some shortcuts
 
+ifeq (,$(wildcard /c/delete))
+RM		= rm -f
+NOEXEC		= chmod 644
+
+STRIP		= m68k-amigaos-strip --remove-section=.comment
+CC		= m68k-amigaos-gcc
+OPT		=-Os -m68020-60 -mtune=68030
+else
 RM		= /c/delete quiet
 NOEXEC		= /c/protect flags=-e
-STRIP		= strip --remove-section=.comment
-CC		= gcc
 
-OPT		=-O2
+STRIP          = strip --remove-section=.comment
+CC             = gcc
+OPT            = -O2
+endif
 
 # -fbaserel does not work, -msmall-code likewise, -fno-builtin requires ixemul
 
 CFLAGS		= $(OPT) -fno-function-cse
+CFLAGS         += -I. -include compat.h -I../../libcodesets/developer/include
 
 LDFLAGS1	= -noixemul -nostartfiles
 LDFLAGS2	= -noixemul
 
-OS=$(shell uname)
 ifeq "$(OS)" "MorphOS"
 LDLIBS1 =
 KILLDEV = KillDevice RemCDFS
@@ -92,7 +104,7 @@ main.o:		main.c cdrom.h iso9660.h rock.h generic.h hfs.h
 hfs.o:		hfs.c hfs.h generic.h cdrom.h params.h
 cdcontrol.o:	cdcontrol.c cdcontrol.h
 checkcd.o:	checkcd.c iso9660.h generic.h cdrom.h rock.h
-volimes.o:	volumes.c volumes.h cdrom.h device.h devsupp.h generic.g debug.h \
+volumes.o:	volumes.c volumes.h cdrom.h device.h devsupp.h generic.h debug.h \
 		path.h globals.h aros_stuff.h clib_stuff.h
 
 # install

@@ -234,7 +234,7 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                           /* Provide termination. */
                           *Index++ = '\n';
                           *Index = 0;
-                          BUG(dbprintf("Control string: %s", LocalBuffer);)
+                          D(bug("Control string: %s", LocalBuffer));
 
                           ArgsPtr = (struct RDArgs *)AllocDosObject(DOS_RDARGS, NULL);
                           if (ArgsPtr)
@@ -282,11 +282,21 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                                 }
                               }
 
-                              if (Args[ARG_DATAEXT])
-                                strcpy (global->g_data_fork_extension, (char *) Args[ARG_DATAEXT]);
+                              if (Args[ARG_DATAEXT]) {
+                                int len = strlen((char *) Args[ARG_DATAEXT]) + 1;
+                                CopyMem((char *)Args[ARG_DATAEXT],
+                                  global->g_data_fork_extension,
+                                  len < sizeof(*global->g_data_fork_extension) ?
+                                  len : sizeof(*global->g_data_fork_extension));
+                              }
 
-                              if (Args[ARG_RESOURCEEXT])
-                                strcpy (global->g_resource_fork_extension, (char *) Args[ARG_RESOURCEEXT]);
+                              if (Args[ARG_RESOURCEEXT]) {
+                                int len = strlen((char *) Args[ARG_RESOURCEEXT]) + 1;
+                                CopyMem((char *)Args[ARG_RESOURCEEXT],
+                                  global->g_resource_fork_extension,
+                                  len < sizeof(*global->g_resource_fork_extension) ?
+                                  len : sizeof(*global->g_resource_fork_extension));
+                              }
 
                               global->g_convert_hfs_filenames = (Args[ARG_MACTOISO] != NULL);
                               global->g_convert_hfs_spaces = (Args[ARG_CONVERTSPACES] != NULL);
@@ -302,7 +312,7 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                                   Display_Error ("PLAYCDDA command name too long");
                                   result = FALSE;
                                 } else
-                                  strcpy (global->g_play_cdda_command, (char *) (Args[ARG_PLAYCDDA]));
+                                  CopyMem((char *) (Args[ARG_PLAYCDDA]), global->g_play_cdda_command, len + 1);
                               }
 
                               if (Args[ARG_XPOS])
@@ -322,10 +332,10 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                             Display_Error ("Out of memory");
                         } else
                           result = TRUE;
-                        BUG(dbprintf(global, "Use RockRidge: %ld\n", global->g_use_rock_ridge);)
-                        BUG(dbprintf(global, "Use joliet: %ld\n", global->g_use_joliet);)
-                        BUG(dbprintf(global, "Force lowercase: %ld\n", global->g_map_to_lowercase);)
-                        BUG(dbprintf(global, "Allow lowercase: %ld\n", global->g_maybe_map_to_lowercase);)
+                        D(bug("Use RockRidge: %ld\n", global->g_use_rock_ridge));
+                        D(bug("Use joliet: %ld\n", global->g_use_joliet));
+                        D(bug("Force lowercase: %ld\n", global->g_map_to_lowercase));
+                        D(bug("Allow lowercase: %ld\n", global->g_maybe_map_to_lowercase));
                 }
         }
         if (result)
@@ -363,6 +373,8 @@ int Handle_Control_Packet (struct CDVDBase *global, ULONG p_type, IPTR p_par1, I
   }
   return 0;
 }
+
+#if !defined(NDEBUG) || defined(DEBUG_SECTORS)
 
 char *typetostr (int ty)
 {
@@ -408,7 +420,7 @@ char *typetostr (int ty)
     }
 }
 
-#if !(defined(__AROS__) || defined(__MORPHOS__))
+#if !defined(DEBUG_USE_SERIAL) && !(defined(__AROS__) || defined(__MORPHOS__))
 
 /*
  *  DEBUGGING CODE.     You cannot make DOS library calls that access other
@@ -481,7 +493,7 @@ void dbinit (struct CDVDBase *global)
                            TAG_DONE)) {
       WaitPort(global->Dback);                              /* handshake startup    */
       GetMsg(global->Dback);                                /* remove dummy msg     */
-      dbprintf("Debugger running:" HANDLER_VERSION "%s, %s\n",
+      dbprintf(global, "Debugger running:" HANDLER_VERSION "%s, %s\n",
 #define asString(x) #x
 #if defined(LATTICE)
                "SAS/C" asString(__VERSION__) "." asString(__REVISION__),
@@ -544,3 +556,5 @@ int __fflush(void)
 }
 
 #endif /* !(__AROS__ || __MORPHOS__) */
+
+#endif /* !NDEBUG || DEBUG_SECTORS */

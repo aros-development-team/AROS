@@ -17,12 +17,12 @@ void InitCharset(struct CDVDBase *global)
     if (!CodesetsBase)
     {
 	CodesetsBase = OpenLibrary("codesets.library", 0);
-	BUG(dbprintf(global, "[CDVDFS] CodesetsBase 0x%p\n", CodesetsBase));
+	D(bug("[CDVDFS] CodesetsBase 0x%08lx\n", (IPTR)CodesetsBase));
 
 	if (CodesetsBase)
 	{
 	    global->uniCodeset = CodesetsFindA("UTF-16", NULL);
-	    BUG(dbprintf(global, "[CDVDFS] Unicode codeset: 0x%p\n", global->uniCodeset));
+	    D(bug("[CDVDFS] Unicode codeset: 0x%08lx\n", (IPTR)global->uniCodeset));
 	}
     }
 }

@@ -32,7 +32,7 @@ typedef struct directory_record {
   unsigned char		day;
   unsigned char		hour;
   unsigned char		minute;
-  unsigned char		second;  
+  unsigned char		second;
   char			tz;
   unsigned char		flags;
   unsigned char		file_unit_size;

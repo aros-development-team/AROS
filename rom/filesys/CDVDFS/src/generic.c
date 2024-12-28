@@ -9,7 +9,7 @@
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
- * 
+ *
  * 04-Dec-11   neil  Fixed buffer overrun with long filenames.
  * 30-Aug-04 sheutlin  fixed using handling of "/" to get the parent directory
  *                     the way Georg Steger suggested
@@ -76,6 +76,7 @@ t_protocol Which_Protocol
 		VOLUME tmp_vol; /* temporary volume descriptor */
 		t_bool rr;
 
+			tmp_vol.global = global;
 			tmp_vol.cd = p_cdrom;
 			tmp_vol.protocol = PRO_ISO;
 			Iso_Init_Vol_Info(&tmp_vol, 0, *p_offset, 16);
@@ -88,7 +89,7 @@ t_protocol Which_Protocol
 			return PRO_JOLIET;
 		return PRO_ISO;
 	}
-  
+
 	if (Uses_High_Sierra_Protocol(p_cdrom))
 		return PRO_HIGH_SIERRA;
 
@@ -103,7 +104,7 @@ struct CDVDBase *global = p_cdrom->global;
 VOLUME *res;
 int skip;
 t_ulong offset, svdoffset;
-    
+
 	res = AllocMem (sizeof (VOLUME), MEMF_PUBLIC | MEMF_CLEAR);
 	if (!res)
 	{
@@ -113,7 +114,7 @@ t_ulong offset, svdoffset;
 
 	res->global = global;
 	res->cd = p_cdrom;
-  
+
 	res->locks = 0;        /* may be modified by application program */
 	res->file_handles = 0; /* may be modified by application program */
 	res->protocol = Which_Protocol(p_cdrom, p_use_rock_ridge, p_use_joliet, &skip, &offset, &svdoffset);
@@ -197,7 +198,7 @@ char name[256];
 	{
 		if (*cp == '/')
 		{
-			if (Is_Top_Level_Object(obj))
+			if (!obj || Is_Top_Level_Object(obj))
 			{
 				global->iso_errno = ISOERR_NOT_FOUND;
 				return NULL;
@@ -249,6 +250,8 @@ char name[256];
 
 void Close_Object(CDROM_OBJ *p_object)
 {
+	if (!p_object)
+		return;
 	Free_Path_List(p_object->pathlist);
 	HAN(p_object->volume, close_obj)(p_object);
 }
@@ -346,7 +349,7 @@ int Seek_Position (CDROM_OBJ *p_object, long p_offset, int p_mode)
     global->iso_errno = ISOERR_BAD_ARGUMENTS;
     return 0;
   }
-  
+
   switch (p_mode) {
   case SEEK_FROM_START:
     if (p_offset < 0 || p_offset > max_len) {
@@ -372,7 +375,7 @@ int Seek_Position (CDROM_OBJ *p_object, long p_offset, int p_mode)
     break;
   default:
     global->iso_errno = ISOERR_BAD_ARGUMENTS;
-    return 0;    
+    return 0;
   }
   p_object->pos = new_pos;
   return 1;

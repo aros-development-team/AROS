@@ -1,11 +1,13 @@
 #ifndef ACDR_DEBUG_H
 #define ACDR_DEBUG_H
 
-#if defined(__AROS__) || defined(__MORPHOS__)
+#if defined(__AROS__) || defined(__MORPHOS__) || defined(DEBUG_USE_SERIAL)
 #ifdef __AROS__
 #	include <aros/debug.h>
-#else
+#elif defined(__MORPHOS__)
 #       include <proto/sysdebug.h>
+#else
+#       include <clib/debug_protos.h>
 #endif
 #	if DEBUG>0
 #		define BUG(x) x
