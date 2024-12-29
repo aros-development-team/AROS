@@ -130,7 +130,7 @@ AROS_LD5(IPTR, subLibGetAttr,
          AROS_LDA(struct AHIAudioCtrlDrv *, audioctrl, A2),
          SUBLIBBASETYPEPTR, nas, 18, nep);
 
-AROS_LD3(IPTR, subLibHardwareControl,
+AROS_LD3(ULONG, subLibHardwareControl,
          AROS_LDA(ULONG, attr, D0),
          AROS_LDA(LONG, arg, D1),
          AROS_LDA(struct AHIAudioCtrlDrv *, audioctrl, A2),
