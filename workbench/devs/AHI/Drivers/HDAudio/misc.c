@@ -65,7 +65,7 @@ struct MsgPort *replymp = NULL;
 static BOOL forceQuery = FALSE;
 static BOOL dumpAll = FALSE;
 static int force_speaker_nid = 0;
-//void AddResetHandler(struct HDAudioChip *card);
+void AddResetHandler(struct HDAudioChip *card);
 
 
 #ifdef __AROS__
@@ -211,6 +211,7 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
     if (success)
     {
         set_monitor_volumes(card, -6.0); // -6dB monitor volume
+        AddResetHandler(card);
     }
 
     if (!success)
@@ -1023,9 +1024,25 @@ static BOOL alloc_streams(struct HDAudioChip *card)
 }
 
 
-/*static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct HDAudioChip *card)
+#ifdef __AMIGAOS4__
+static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct HDAudioChip *card)
+#else
+static ULONG ResetHandler(struct HDAudioChip *card)
+#endif
 {
-    struct PCIDevice *dev = card->pci_dev;
+    pci_outl(0, HD_INTCTL, card);
+
+    if (card->is_playing)
+    {
+        struct Stream *output_stream = &(card->streams[card->nr_of_input_streams]);
+        outl_clearbits(HD_SD_CONTROL_STREAM_RUN, output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
+    }
+
+    if (card->is_recording)
+    {
+        struct Stream *input_stream = &(card->streams[0]);
+        outl_clearbits(HD_SD_CONTROL_STREAM_RUN, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
+    }
 
     return 0UL;
 }
@@ -1038,11 +1055,15 @@ void AddResetHandler(struct HDAudioChip *card)
     interrupt.is_Code = (void (*)())ResetHandler;
     interrupt.is_Data = (APTR) card;
     interrupt.is_Node.ln_Pri  = 0;
+#ifdef __AMIGAOS4__
     interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
-    interrupt.is_Node.ln_Name = "reset handler";
+#else
+    interrupt.is_Node.ln_Type = NT_INTERRUPT;
+#endif
+    interrupt.is_Node.ln_Name = "HDAudio reset handler";
 
     AddResetCallback(&interrupt);
-}*/
+}
 
 
 static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
