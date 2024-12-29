@@ -116,6 +116,11 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
              * the alert is deadend anyway.
              */
             ctx->PC = (IPTR)Exec_CrashHandler;
+#ifdef __x86_64__
+            /* the value (%rsp + 8) is always a multiple of 16 when control is transferred to the
+               function entry point */
+            if ((ctx->rsp & 0x0F) == 0) ctx->rsp -= 8;
+#endif
             /* Let the task go */
             return;
         }
