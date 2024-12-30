@@ -377,48 +377,48 @@ static void GetFileToolTypes(STRPTR fname)
         /* We have read the DiskObject (icon) for this arg */
         toolarray = (char **)dobj->do_ToolTypes; 
 
-        if (s = (char *)FindToolType(toolarray,"REQUESTER"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"REQUESTER"))
             bRequester = TRUE;  
 
-        if (s = (char *)FindToolType(toolarray,"CLIPBOARD"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"CLIPBOARD"))
         {
             bClipBoard = TRUE;
             bRequester = FALSE; /* Mutually Exclusive options */
             bWindow    = FALSE; /* Mutually Exclusive options */
         }
 
-        if (s = (char *)FindToolType(toolarray,"WINDOW"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"WINDOW"))
         {
             bWindow    = TRUE;
             bRequester = FALSE; /* Mutually Exclusive options */
             bClipBoard = FALSE; /* Mutually Exclusive options */
         }
         
-        if (s = (char *)FindToolType(toolarray,"CLIPUNIT"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"CLIPUNIT"))
             clipunit = (APTR)atoi(s);
         
-        if (s = (char *)FindToolType(toolarray,"PUBSCREEN"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"PUBSCREEN"))
             pubScreen = (STRPTR)strdup(s);
 
-        if (s = (char *)FindToolType(toolarray,"FONTNAME"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"FONTNAME"))
         {
             strncpy(fontname, s, 255 - 5);
             if (!strstr(fontname, ".font")) strcat(fontname, ".font");
             textattr.ta_Name = fontname;
         }
-        if (s = (char *)FindToolType(toolarray,"FONTSIZE"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"FONTSIZE"))
             textattr.ta_YSize = (LONG)atoi(s);
 
-        if (s = (char *)FindToolType(toolarray,"WINDOWLEFT"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"WINDOWLEFT"))
             wincoords.MinX = (LONG)atoi(s);
 
-        if (s = (char *)FindToolType(toolarray,"WINDOWTOP"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"WINDOWTOP"))
             wincoords.MinY = (LONG)atoi(s);
 
-        if (s = (char *)FindToolType(toolarray,"WINDOWWIDTH"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"WINDOWWIDTH"))
             wincoords.MaxX = (LONG)atoi(s);
 
-        if (s = (char *)FindToolType(toolarray,"WINDOWHEIGHT"))
+        if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"WINDOWHEIGHT"))
             wincoords.MaxY = (LONG)atoi(s);
 
         FreeDiskObject(dobj);
@@ -1839,7 +1839,7 @@ int main(int argc, char **argv)
                 if ( *wbarg->wa_Name )
                 {
                     /* if there's a directory lock for this wbarg, CD there */
-                    cd = -1;
+                    cd = (BPTR)-1;
                     if (wbarg->wa_Lock)
                         cd = CurrentDir(wbarg->wa_Lock);
 
@@ -1848,7 +1848,7 @@ int main(int argc, char **argv)
 
                     GetFileToolTypes(wbarg->wa_Name);
 
-                    if (cd != -1)
+                    if (cd != (BPTR)-1)
                         CurrentDir(cd); /* CD back where we were */
                 }
                 wbarg++;
