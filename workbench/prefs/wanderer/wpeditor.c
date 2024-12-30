@@ -2185,7 +2185,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Iff current handle 0x%p, 
 
     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-    if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+    if ((error = StopChunk(handle, ID_PREF, ID_WANR)) == 0)
     {
         do
         {
@@ -2280,7 +2280,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ParseIFF() failed, return
     {
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: StopChunk() failed, returncode %ld!\n", error));
         success = FALSE;// this brokes cancel button
-    }//END if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+    }//END if ((error = StopChunk(handle, ID_PREF, ID_WANR)) == 0)
 
         CloseIFF(handle);
     }
@@ -2413,7 +2413,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Marked Tag %d as
             ULONG globaldatasize = (_wp_GlobalTagCounter + 1) * sizeof(struct TagItem32);
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'global' Wanderer Prefs Header Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
+            if ((error = PushChunk(handle, ID_PREF, ID_WANR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
             {
                 sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:global");
                 wanderer_chunkdata.wpIFFch_ChunkSize = AROS_LONG2LE(globaldatasize);
@@ -2433,7 +2433,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Wanderer Prefs H
             }
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'global' Wanderer Prefs Data Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, globaldatasize)) == 0)
+            if ((error = PushChunk(handle, ID_PREF, ID_WANR, globaldatasize)) == 0)
             {
                 error = WriteChunkBytes(handle, _wp_GlobalTags, globaldatasize);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Data Chunk | Wrote %d bytes (data size = %d bytes)\n", error, globaldatasize));
@@ -2452,7 +2452,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' PushChunk() = %l
 
 #if defined(DEBUG_NETWORKBROWSER)
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'network' Wanderer Prefs Header Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
+            if ((error = PushChunk(handle, ID_PREF, ID_WANR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
             {
                 sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:network");
                 wanderer_chunkdata.wpIFFch_ChunkSize = AROS_LONG2LE(sizeof(struct TagItem));
@@ -2472,7 +2472,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' Wanderer Prefs 
             }
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'network' Wanderer Prefs Data Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct TagItem))) == 0)
+            if ((error = PushChunk(handle, ID_PREF, ID_WANR, sizeof(struct TagItem))) == 0)
             {
                 struct TagItem32 __wp_networkconfig[2];
 
@@ -2498,7 +2498,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' PushChunk() = %
 
 #if defined(DEBUG_CHANGESCREENTITLE)
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'screentitle' Wanderer Prefs Header Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
+            if ((error = PushChunk(handle, ID_PREF, ID_WANR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
             {
                 sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:screentitle");
                 UBYTE *screentitlestr = NULL;
@@ -2522,7 +2522,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' Wanderer Pr
             }
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'screentitle' Wanderer Prefs Data Chunk ... \n"));
-            if ((error = PushChunk(handle, ID_PREF, ID_WANDR, IFFSIZE_UNKNOWN)) == 0)
+            if ((error = PushChunk(handle, ID_PREF, ID_WANR, IFFSIZE_UNKNOWN)) == 0)
             {
                 // save screentitle options
                 UBYTE *screentitlestr = NULL;
@@ -2560,7 +2560,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Wand
                 
                 if (background_value)
                 {
-                    PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader));
+                    PushChunk(handle, ID_PREF, ID_WANR, sizeof(struct WandererPrefsIFFChunkHeader));
 
                     UBYTE _viewSettings_TagOffset = ((strlen(background_value)  + 1)/4);
 
@@ -2649,7 +2649,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Stri
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Wanderer Prefs Data Chunk  for '%s' ... \n", _viewSettings_Node->wpedbo_ViewName));
 
-                    if ((error = PushChunk(handle, ID_PREF, ID_WANDR, _viewSettings_ChunkSize)) == 0)
+                    if ((error = PushChunk(handle, ID_PREF, ID_WANR, _viewSettings_ChunkSize)) == 0)
                     {
                         UBYTE *_viewSettings_ChunkData = AllocMem(_viewSettings_ChunkSize, MEMF_ANY|MEMF_CLEAR);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' Chunk Data storage @ 0x%p, %d bytes\n", _viewSettings_ChunkData, _viewSettings_ChunkSize));

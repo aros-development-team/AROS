@@ -826,7 +826,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_Reload()\n"));
 
   if ((error = OpenIFF(handle, IFFF_READ)) == 0)
   {
-    if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+    if ((error = StopChunk(handle, ID_PREF, ID_WANR)) == 0)
     {
       SET(self, MUIA_WandererPrefs_Processing, TRUE);
       do
@@ -926,7 +926,7 @@ D(bug("[Wanderer:Prefs] StopChunk() failed, returncode %ld!\n", error));
 D(bug("[Wanderer:Prefs] Failed to open stream!, returncode %ld!\n", error));
     //ShowError(_(MSG_CANT_OPEN_STREAM));
     success = FALSE;
-  }//END if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+  }//END if ((error = StopChunk(handle, ID_PREF, ID_WANR)) == 0)
 
   Close((BPTR)handle->iff_Stream);
 

@@ -13,7 +13,7 @@
 #include <graphics/gfx.h>
 #endif
 
-#define ID_WANDR MAKE_ID('W','A','N','R')
+#define ID_WANR MAKE_ID('W','A','N','R')
 
 
 /* The maximum length the path may have. */
