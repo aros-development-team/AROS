@@ -536,10 +536,6 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, intNum);)
 
-    /* Write zero to EOI of APIC */
-    apic_base = core_APIC_GetBase();
-    DINT(bug("[Kernel:IOAPIC] %s(%u): apicBase = %p\n", __func__, intNum, apic_base);)
-
     /* write IOAPIC EIO if necessary .. */
     if (intrMap)
     {
@@ -590,7 +586,12 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     {
         DINT(bug("[Kernel:IOAPIC] %s(%u): EDGE\n", __func__, intNum);)
     }
+
+    /* Write zero to EOI of APIC */
+    apic_base = core_APIC_GetBase();
+    DINT(bug("[Kernel:IOAPIC] %s(%u): apicBase = %p\n", __func__, intNum, apic_base);)
     APIC_REG(apic_base, APIC_EOI) = 0;
+
     return TRUE;
 }
 
