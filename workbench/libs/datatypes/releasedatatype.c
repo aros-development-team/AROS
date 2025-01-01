@@ -7,6 +7,8 @@
 #include "datatypes_intern.h"
 #include <proto/exec.h>
 #include <exec/alerts.h>
+//#define DEBUG 1
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -58,7 +60,10 @@
     if(((struct CompoundDataType *)dt)->OpenCount)
         ((struct CompoundDataType*)dt)->OpenCount--;
     else
-        Alert(AN_Unknown);
+    {
+        D(bug("datatypes.library/ReleaseDataType : Datatype %x has invalid OpenCount value of %d\n", dt, ((struct CompoundDataType *)dt)->OpenCount));
+        //Alert(AN_Unknown);
+    }
 
     ReleaseSemaphore(&(GPB(DataTypesBase)->dtb_DTList)->dtl_Lock);
 
