@@ -9,6 +9,7 @@
 
 #include "global.h"
 #include "compilerspecific.h"
+//#define DEBUG 1
 #include "debug.h"
 #include "arossupport.h"
 #include "catalogs/catalog_version.h"
@@ -213,8 +214,8 @@ void Cleanup(CONST_STRPTR msg)
     if (cd != BNULL)
         CurrentDir(cd); /* restore current directory */
 
-    CloseLibs();
     CleanupLocale();
+    CloseLibs();
 
     longjmp(exit_buf, 0);
 }
@@ -371,8 +372,18 @@ static void GetFileToolTypes(STRPTR fname)
     char *s;
 
     D(bug("[MultiView] %s()\n", __func__));
-
-    if ((fname) && (dobj=GetDiskObject(fname)))
+    if (!fname)
+        return;
+    
+    D(bug("[Multiview] Checking ToolTypes in filename = '%s.info'\n", fname));
+    
+    dobj=GetDiskObject(fname);
+    if (!dobj)
+    {
+        char errtext[81];
+        Fault(IoErr(), "GetDiskObject() Failed", errtext, 80);
+    }
+    else
     {
         /* We have read the DiskObject (icon) for this arg */
         toolarray = (char **)dobj->do_ToolTypes; 
@@ -768,6 +779,7 @@ static void OpenDTO(void)
                     struct DataType *dtn;
                     if ((dtn = ObtainDataTypeA(DTST_FILE, (APTR)lock, NULL)))
                     {
+                        D(bug("[MultiView] %s ObtainDataTypeA returned %x\n", __func__, dtn));
                         if (!Stricmp(dtn->dtn_Header->dth_Name, "directory"))
                         {
                             /* file is a directory and no directory.datatype is installed */
@@ -784,15 +796,17 @@ static void OpenDTO(void)
                             filename = GetFileName(MSG_ASL_OPEN_TITLE);
                             if (filename)
                             {
+                                D(bug("[MultiView] %s calling ReleaseDataType(%x)\n", __func__, dtn));
                                 ReleaseDataType(dtn);
                                 UnLock(lock);
                                 continue;
                             }
                         }
+                        D(bug("[MultiView] %s calling ReleaseDataType(%x)\n", __func__, dtn));
                         ReleaseDataType(dtn);
                     }
                     UnLock(lock);
-		}
+		        }
             }
 
             if (errnum >= DTERROR_UNKNOWN_DATATYPE)
@@ -931,6 +945,7 @@ static void OpenDTO(void)
     if (old_dto)
     {
         if (win) RemoveDTObject(win, old_dto);
+        D(bug("[MultiView] %s: calling DisposeDTOObject(%x)\n", __func__, old_dto));
         DisposeDTObject(old_dto);
 
         if (win)
@@ -975,6 +990,7 @@ static void CloseDTO(void)
     if (dto)
     {
         if (win) RemoveDTObject(win, dto);
+        D(bug("[MultiView] %s: calling DisposeDTOObject(%x)\n", __func__, dto));
         DisposeDTObject(dto);
         dto = NULL;
     }
@@ -1810,49 +1826,46 @@ int main(int argc, char **argv)
     tdt_text_wordwrap = TRUE;
     separate_screen   = FALSE;
 
+    OpenLibs();
     InitDefaultFont(); /* May be overridden in GetArguments() if user specifies a font */
     InitLocale("System/Utilities/MultiView.catalog", 2);
     InitMenus(nm);
     InitMenus(nmpict);
     InitMenus(nmtext);
-    OpenLibs();
 
     if (FromWb)
     {
         WBenchMsg = (struct WBStartup *) argv;
-        wbarg = WBenchMsg->sm_ArgList;
-
-        /* Note wbarg++ at end of FOR statement steps through wbargs.
-         * First arg is our executable (tool).  Any additional args
-         * are projects/icons passed to us via either extend select
-         * or default tool method.
-         * In our case, we only care about 2nd arg which is the filename
-         */
+        char filepath[256];
 
         if ( WBenchMsg->sm_NumArgs > 0)
         {
-            /* Pass 1 gets any Tooltypes from MultiView Icon
-               Pass 2 gets any Tooltypes from file icon, overlaying MultiView Icon Tooltypes
-               */
-            for (int i = 0; i < 2 && i < WBenchMsg->sm_NumArgs; i++)
+            wbarg = WBenchMsg->sm_ArgList;
+            /* Look at icon for Multiview program */
+            if (wbarg->wa_Lock)
             {
-                if ( *wbarg->wa_Name )
-                {
-                    /* if there's a directory lock for this wbarg, CD there */
-                    cd = (BPTR)-1;
-                    if (wbarg->wa_Lock)
-                        cd = CurrentDir(wbarg->wa_Lock);
-
-                    if (i > 0 )
-                        filename = wbarg->wa_Name;
-
-                    GetFileToolTypes(wbarg->wa_Name);
-
-                    if (cd != (BPTR)-1)
-                        CurrentDir(cd); /* CD back where we were */
-                }
-                wbarg++;
+                NameFromLock(wbarg->wa_Lock, filepath, 256);
+                strcat(filepath,"/");
+                strcat(filepath, wbarg->wa_Name);
+                GetFileToolTypes(filepath); /*defaults from Multiview Icon*/
             }
+            else
+                D(bug("[MultiView] No wa_lock exits for program = %s\n", wbarg->wa_Name));
+        }
+        if ( WBenchMsg->sm_NumArgs > 1)
+        {
+            wbarg++; /* skip to input file */
+            D(bug("[MultiView] filename = %s\n", wbarg->wa_Name));
+            if (wbarg->wa_Lock)
+            {   
+                NameFromLock(wbarg->wa_Lock, filepath, 256);
+                strcat(filepath,"/");
+                strcat(filepath, wbarg->wa_Name);
+                filename = filepath;
+                D(bug("[MultiView] Fully qualified filename = %s\n", filename));
+            }
+            else
+                D(bug("[MultiView] No lock exits for filename = %s\n", wbarg->wa_Name));
         }
     }
     else /* from CLI */
@@ -1865,13 +1878,15 @@ int main(int argc, char **argv)
         GetArguments();
     }
 
+    /* if running with no filename, then maybe bring up a requester */
     if (!filename && bRequester && !bWindow && !bClipBoard)
         filename = GetFileName(MSG_ASL_OPEN_TITLE);
 
+    /* did we select a file ? If so, check to see if it has an icon to get options from */
     if (filename) 
         GetFileToolTypes(filename);
 
-    /* ensure CLI parms beat icon parms */
+    /* ensure CLI parms (other than filename) beat icon parms */
     if (!FromWb)
         GetArguments();
 
