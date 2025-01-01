@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2024, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Implements AROS's generic/amiga-like boot sequence.
 */
