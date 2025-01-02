@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# Update the year in various files which are supposed
+# to print the current year.
+
 START_YEAR=1995
-OLD_YEAR=2024
-NEW_YEAR=2025
+NEW_YEAR=$(date +"%Y")
+OLD_YEAR=$((NEW_YEAR-1))
 SUB=s/$START_YEAR-$OLD_YEAR/$START_YEAR-$NEW_YEAR/g
 echo "$SUB"
 
