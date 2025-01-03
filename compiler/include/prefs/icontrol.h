@@ -2,7 +2,7 @@
 #define PREFS_ICONTROL_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Icontrol prefs definitions
@@ -68,7 +68,7 @@ struct IControlPrefs {
 #define ICVDM_RBOUND    0x0008  /* Bounded at the right */
 
 /* Drag mode masks */
-#define ICVDM_HBOUND    (ICVDM_LBOUND|ICVDM_RBOUND) /* Horisontal bounding */
-#define ICVDM_VBOUND	(ICVDM_TBOUND|ICVDM_BBOUND) /* Verticak bounding   */
+#define ICVDM_HBOUND    (ICVDM_LBOUND|ICVDM_RBOUND) /* Horizontal bounding */
+#define ICVDM_VBOUND	(ICVDM_TBOUND|ICVDM_BBOUND) /* Vertical bounding   */
 
 #endif /* PREFS_ICONTROL_H */
