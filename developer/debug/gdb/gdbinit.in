@@ -232,7 +232,7 @@ define modlist
             set $segidx = 0
             while ($segidx < $modnode->m_segcnt)
                 set $segnode = $modnode->m_segments[$segidx]
-                printf "%p %12s %2u %42s\n", $segnode->s_lowest, $segnode->s_name, $segnode->s_num, $segnode->s_mod->m_name
+                printf "%p %12s %2u %42s\n", $segnode->s_lowest, $segnode->s_name, $segnode->s_num, (char *)$segnode->s_mod->m_name
                 set $segidx = $segidx + 1
             end
 
@@ -311,7 +311,7 @@ define findaddr
 
     if $find_segment_result
         set $segnode = $find_segment_result
-        printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
+        printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", (char *)$segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
         set $cont = 0
     end
 
@@ -400,7 +400,7 @@ define loadmod
     set $this_mod = $arg0
 
     log_to_file segname.tmp on
-    printf "%s", $this_mod->m_name
+    printf "%s", (char *)$this_mod->m_name
     end_log
     shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
     log_to_file loadseg.tmp on
