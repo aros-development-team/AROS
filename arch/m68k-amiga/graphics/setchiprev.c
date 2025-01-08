@@ -22,11 +22,14 @@ AROS_LH1(ULONG, SetChipRev,
     UBYTE chipflags = 0;
 
     vposr = custom->vposr & 0x7f00;
-    if (vposr >= 0x2000)
-        chipflags |= GFXF_HR_AGNUS;
-    if (vposr >= 0x2200) {
-        chipflags |= GFXF_AA_ALICE | GFXF_AA_LISA | GFXF_HR_DENISE;
-    } else {
+    if (vposr >= 0x2200 && vposr < 0x3000 // PAL AGA
+        || vposr >= 0x3200) { // NTSC AA
+        chipflags = GFXF_AA_ALICE | GFXF_HR_AGNUS | GFXF_AA_LISA | GFXF_HR_DENISE;
+    } else if (vposr >= 0x2000) {
+        chipflags = GFXF_HR_AGNUS;
+        // ECS Agnus can be combined with different Denise chips.
+        // DENISEID register does not exist in original Denise.
+        // The hack below is likely intended to handle that case.
         Disable();
         deniseid1 = custom->deniseid & 0x00ff;
         custom->deniseid = custom->dmaconr;
@@ -36,7 +39,7 @@ AROS_LH1(ULONG, SetChipRev,
         Enable();
         if (deniseid1 == deniseid2 && deniseid2 == deniseid3 && deniseid1 == 0xfc)
             chipflags |= GFXF_HR_DENISE;
-        }
+    }
 
     if (ChipRev != SETCHIPREV_BEST) {
         if (ChipRev == SETCHIPREV_A && chipflags >= SETCHIPREV_A)
