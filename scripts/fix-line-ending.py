@@ -4,7 +4,7 @@
 # Script for fixing line ending from \r and \r\n to \n.
 # Script starts with the current directory.
 
-import os, sys
+import os
 
 def examine(filename):
     infile = open(filename, "rb")

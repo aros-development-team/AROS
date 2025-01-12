@@ -159,7 +159,7 @@ class template:
         self.linerefs = None
         self.templrefs = None
         
-        for argname, argbody in list(args.items()):
+        for _, argbody in list(args.items()):
             if argbody.ismulti:
                 if self.multiarg:
                     sys.exit('A template can have only one main (/M) argument')
