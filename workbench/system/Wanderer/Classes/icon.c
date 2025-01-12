@@ -361,7 +361,8 @@ D(bug("[Icon] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 
     DrawIconStateA
         (
-            data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, message->icon->IcD_DiskObj, NULL,
+            data->icld_BufferRastPort,
+            message->icon->IcD_DiskObj, NULL,
             iconX,
             iconY,
             (message->icon->IcD_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
