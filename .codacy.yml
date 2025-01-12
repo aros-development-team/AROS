@@ -3,4 +3,7 @@ exclude_paths:
   - 'arch/.unmaintained/**'
   - 'workbench/classes/datatypes/heic/libde265/**'
   - 'workbench/classes/datatypes/heic/libheif/**'
+  - 'compiler/purify/test*'
+  - 'developer/debug/test/**/cunit-*'
+  - 'developer/debug/test/exec/crashtest.c'
   
