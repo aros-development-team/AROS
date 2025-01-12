@@ -647,8 +647,8 @@ menu_t *menu_load(boot_dev_t * boot)
 		n = magic_load(self);
 
 	if (n == 0) {
-		return NULL;
 		free(self);
+		return NULL;
 	}
 
 	return self;
