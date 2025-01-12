@@ -349,7 +349,6 @@ extern void RT_ShowRTStack (void);
                         RT_ShowRTStack ();
                         size = 1;
                         break;
-                        break;
 
                     case PMS_FREE:
                         kprintf ("Purify: Write to freed memory at %p (%ld bytes from the beginning of the block)\n"
