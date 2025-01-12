@@ -385,7 +385,7 @@ if not listfile:
     if closeout:
         outfile.close()
         if usetemp:
-            if os.path.isfile(files[1]):
+            if os.path.isfile(sys.argv[argin + 1]):
                 os.remove(sys.argv[argin + 1])
             os.rename(sys.argv[argin + 1]+"tmp", sys.argv[argin + 1])
 
