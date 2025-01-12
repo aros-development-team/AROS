@@ -6,4 +6,5 @@ exclude_paths:
   - 'compiler/purify/test*'
   - 'developer/debug/test/**/cunit-*'
   - 'developer/debug/test/exec/crashtest.c'
+  - 'developer/debug/test/exec/traptest.c'
   
