@@ -85,7 +85,7 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
     if (IntuitionBase) CloseLibrary(IntuitionBase);
     if (GfxBase)       CloseLibrary(GfxBase);
     if (DOSBase)       CloseLibrary(DOSBase);
-    if (IntuitionBase) CloseLibrary(IntuitionBase);
+    if (UtilityBase)   CloseLibrary(UtilityBase);
     
     return TRUE;
 }
