@@ -2,8 +2,6 @@
     Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
-#define AROS_USE_OOP
-
 #include <stdio.h>
 #include <strings.h>
 

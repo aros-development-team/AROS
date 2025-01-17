@@ -4,10 +4,6 @@
     Desc: Stub functions for PCI subsystem
  */
 
-#ifndef AROS_USE_OOP
-#   define AROS_USE_OOP
-#endif
-
 #include <stdint.h>
 #include <exec/libraries.h>
 #include <exec/interrupts.h>

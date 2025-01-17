@@ -4,8 +4,6 @@
 */
 
 
-#define AROS_USE_OOP
-
 #include <aros/config.h>
 #include <exec/io.h>
 #include <exec/types.h>

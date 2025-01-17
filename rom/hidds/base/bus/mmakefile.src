@@ -7,7 +7,6 @@ NOWARN_FLAGS := $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
-               -DAROS_USE_OOP \
                -D__OOP_NOMETHODBASES__ \
                -D__OOP_NOATTRBASES__
 #USER_CPPFLAGS += -DDEBUG
