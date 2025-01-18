@@ -385,13 +385,13 @@ static char *versToStr(char *version)
 
 void About(void)
 {
-    struct Library *tmpBase;
-    struct IClass *clSuper;
+    struct Library      *tmpBase;
+    struct IClass       *clSuper;
     struct DataType     *dt = NULL;
     struct EasyStruct   es;
-    struct DTClassInfo *classInfo;
-    char *fmtTemplate;
-    int                         count = 13, tmplLen;
+    struct DTClassInfo  *classInfo;
+    char                *fmtTemplate;
+    int                 count = 13, tmplLen;
     IPTR                *abouttxt;
     WORD                i = 0;
 
