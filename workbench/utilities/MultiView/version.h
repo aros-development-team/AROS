@@ -7,5 +7,5 @@
 
 #define VERSION         1
 #define REVISION        7
-#define DATESTR         "10.23.2024"
+#define DATESTR         "18.01.2025"
 #define VERSIONSTR      "$VER: MultiView 1.7 (" DATESTR ")"
