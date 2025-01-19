@@ -179,7 +179,7 @@ error_t StandardScan(uint32 opties)
 
 	aborting = 0;
 	// onbreak(&brk);
-	memset(&ss, sizeof(ss), 0);
+	memset(&ss, 0, sizeof(ss));
 	opties = opties;
 
 	flags = opties;
