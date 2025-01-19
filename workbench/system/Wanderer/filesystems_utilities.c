@@ -438,7 +438,6 @@ BPTR ReadFileInfoBlockAndLockPath(CONST_STRPTR path, struct FileInfoBlock *fib)
     }
     else
     {
-        fib = NULL;
         DisplayIOError(_(MSG_FAILED_TO_LOCK_PATH), IoErr(), (IPTR)path);
     }
 
