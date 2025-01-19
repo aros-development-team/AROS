@@ -271,7 +271,7 @@ class template:
 def read_templates(filename):
     try:
         infile = open(filename)
-    except:
+    except Exception:
         print("Error reading template file: "+filename)
 
     re_name = re.compile('[a-zA-Z0-9][a-zA-Z0-9_]*(?=(?:\s|$))')
