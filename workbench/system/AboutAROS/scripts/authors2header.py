@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: iso-8859-15 -*-
 # Copyright � 2002-2008, The AROS Development Team. All rights reserved.
-# $Id$
 
 import sys
 
@@ -30,7 +29,7 @@ labels2sids = {
 }
 
 def parse(file):
-    credits = []
+    creds = []
     names   = []
 
     for line in file:
@@ -38,7 +37,7 @@ def parse(file):
 
         if ':' in line:
             if len(names) > 0:
-                credits.append([area, names])
+                creds.append([area, names])
 
             area = line[:-1]
 
@@ -48,9 +47,9 @@ def parse(file):
             names.append(line)
 
     if len(names) > 0:
-        credits.append([area, names])
+        creds.append([area, names])
 
-    return credits
+    return creds
 
 file = open(sys.argv[1], "r", encoding="iso-8859-15")
 outfile = open(sys.argv[2], "w", encoding="iso-8859-15")
