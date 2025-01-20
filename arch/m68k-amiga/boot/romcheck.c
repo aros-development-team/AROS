@@ -78,7 +78,7 @@ int main(int argc, char **argv)
             return retval;
         }
         p = (uint8_t*)rom;
-        if (p[0] == 0x11 && (p[1] >= 0x11 || p[1] <= 0x14))
+        if (p[0] == 0x11 && p[1] >= 0x11 && p[1] <= 0x14)
         {
             if (p[1] == 0x11)
             {
