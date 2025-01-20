@@ -918,8 +918,8 @@ NVAccelInitNV30TCL(ScrnInfoPtr pScrn)
 	BEGIN_RING(chan, rankine, NV34TCL_VIEWPORT_TX_ORIGIN, 1);
 	OUT_RING  (chan, 0);
         BEGIN_RING(chan, rankine, 0x0a00, 2);
-        OUT_RING  (chan, (w<<16) | 0);
-        OUT_RING  (chan, (h<<16) | 0);
+        OUT_RING  (chan, w<<16);
+        OUT_RING  (chan, h<<16);
 	BEGIN_RING(chan, rankine, NV34TCL_VIEWPORT_CLIP_HORIZ(0), 2);
 	OUT_RING  (chan, (w-1)<<16);
 	OUT_RING  (chan, (h-1)<<16);

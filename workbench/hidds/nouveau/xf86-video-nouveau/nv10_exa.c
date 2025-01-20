@@ -850,8 +850,8 @@ NVAccelInitNV10TCL(ScrnInfoPtr pScrn)
 	OUT_RING  (chan, 0);
 
 	BEGIN_RING(chan, celsius, NV10TCL_RT_HORIZ, 2);
-	OUT_RING  (chan, 2048 << 16 | 0);
-	OUT_RING  (chan, 2048 << 16 | 0);
+	OUT_RING  (chan, 2048 << 16);
+	OUT_RING  (chan, 2048 << 16);
 
 	BEGIN_RING(chan, celsius, NV10TCL_ZETA_OFFSET, 1);
 	OUT_RING  (chan, 0);

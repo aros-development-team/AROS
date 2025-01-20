@@ -748,8 +748,7 @@ static int FlattenSimilarBlocks(const WebPPicture* const src,
       // If we have a fully similar block, we replace it with an
       // average transparent block. This compresses better in lossy mode.
       if (cnt == block_size * block_size) {
-        const uint32_t color = (0x00          << 24) |
-                               ((avg_r / cnt) << 16) |
+        const uint32_t color = ((avg_r / cnt) << 16) |
                                ((avg_g / cnt) <<  8) |
                                ((avg_b / cnt) <<  0);
         for (y = 0; y < block_size; ++y) {

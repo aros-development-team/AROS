@@ -3,7 +3,7 @@
 */
 
 /*
- * Copyright © 2011 Intel Corporation
+ * Copyright ï¿½ 2011 Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -204,11 +204,11 @@ BOOL copybox3d( GMABitMap_t *bm_dst, GMABitMap_t *bm_src,
     OUT_RING( 0 );
     OUT_RING( 0 );
     OUT_RING( _3DSTATE_DEPTH_SUBRECT_DISABLE );
-    OUT_RING( _3DSTATE_LOAD_INDIRECT | 0 );    /* disable indirect state */
+    OUT_RING( _3DSTATE_LOAD_INDIRECT );    /* disable indirect state */
     OUT_RING( 0 );
     OUT_RING( _3DSTATE_STIPPLE );
     OUT_RING( 0x00000000 );
-    OUT_RING( _3DSTATE_BACKFACE_STENCIL_OPS | BFO_ENABLE_STENCIL_TWO_SIDE | 0 );
+    OUT_RING( _3DSTATE_BACKFACE_STENCIL_OPS | BFO_ENABLE_STENCIL_TWO_SIDE );
 
     /* samler state */
 #define TEX_COUNT 1

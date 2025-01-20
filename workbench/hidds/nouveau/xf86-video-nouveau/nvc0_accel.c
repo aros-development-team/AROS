@@ -150,8 +150,8 @@ NVAccelInit3D_NVC0(ScrnInfoPtr pScrn)
 	FIRE_RING (chan);
 
 	BEGIN_RING(chan, fermi, NVC0_3D_SCREEN_SCISSOR_HORIZ, 2);
-	OUT_RING  (chan, (8192 << 16) | 0);
-	OUT_RING  (chan, (8192 << 16) | 0);
+	OUT_RING  (chan, 8192 << 16);
+	OUT_RING  (chan, 8192 << 16);
 	BEGIN_RING(chan, fermi, NVC0_3D_Y_ORIGIN_BOTTOM, 1);
 	OUT_RING  (chan, 0);
 	BEGIN_RING(chan, fermi, NVC0_3D_WINDOW_OFFSET_X, 2);

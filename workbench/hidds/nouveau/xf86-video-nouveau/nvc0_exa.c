@@ -1221,7 +1221,7 @@ NVC0EXAPrepareComposite(int op,
 		NOUVEAU_FALLBACK("src picture invalid\n");
 	}
 	BEGIN_RING(chan, fermi, NVC0_3D_BIND_TIC(4), 1);
-	OUT_RING  (chan, (0 << 9) | (0 << 1) | NVC0_3D_BIND_TIC_ACTIVE);
+	OUT_RING  (chan, NVC0_3D_BIND_TIC_ACTIVE);
 
 	if (pmpict) {
 		if (!NVC0EXATexture(pmpix, pmpict, 1)) {
@@ -1251,7 +1251,7 @@ NVC0EXAPrepareComposite(int op,
 		state->have_mask = FALSE;
 
 		BEGIN_RING(chan, fermi, NVC0_3D_BIND_TIC(4), 1);
-		OUT_RING  (chan, (1 << 1) | 0);
+		OUT_RING  (chan, (1 << 1));
 
 		BEGIN_RING(chan, fermi, NVC0_3D_SP_START_ID(5), 1);
 		if (pdpict->format == PICT_a8)

@@ -1128,7 +1128,7 @@ static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD de
     // MIC1 pin (0x18) as input
     send_command_12(card->codecnr, card->mic1_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x20, card); // input enabled
 
-    send_command_4(card->codecnr, card->mic1_nid, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | 0, card); // set amplifier gain: unmute input and set boost to +10dB
+    send_command_4(card->codecnr, card->mic1_nid, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // set amplifier gain: unmute input and set boost to +10dB
 
 
     // device specific support
@@ -1152,7 +1152,7 @@ static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD de
             send_command_12(card->codecnr, 0x1B, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
 
             // Monitor mixer (0xB): set the first 3 inputs to 0dB and unmute them
-            send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | 23 | (0 << 8), card); // set input amplifier gain and unmute (index 0 is MIC1), 23 is 0dB
+            send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | 23, card); // set input amplifier gain and unmute (index 0 is MIC1), 23 is 0dB
 
             send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | 23 | (1 << 8), card); // set input amplifier gain and unmute (index 2 is MIC2), 23 is 0dB
 

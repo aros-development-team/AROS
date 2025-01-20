@@ -565,7 +565,7 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
 
    /* Select IO addresses and interrupt for PCCard */
 
-   unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SELECTWINDOW | 0);
+   unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SELECTWINDOW);
    if(unit->bus == PCCARD_BUS)
       unit->LEWordOut(unit->card, EL3REG_RESCONFIG, 0x3f00);
    if(unit->bus == ISA_BUS)
@@ -962,7 +962,7 @@ VOID GoOnline(struct DevUnit *unit, struct DevBase *base)
          EL3REG_MEDIAF_BEATCHECK | EL3REG_MEDIAF_JABBERCHECK);
    }
    else if(transceiver == EL3XCVR_10BASE2)
-      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_STARTCOAX | 0);
+      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_STARTCOAX);
 
    unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SELECTWINDOW | 3);
    if((unit->flags & UNITF_FULLDUPLEX) != 0)
@@ -1010,7 +1010,7 @@ VOID GoOffline(struct DevUnit *unit, struct DevBase *base)
    {
       /* Stop interrupts */
 
-      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SETINTMASK | 0);
+      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SETINTMASK);
       unit->LEWordOut(unit->card, EL3REG_COMMAND,
          EL3CMD_ACKINT | EL3INTF_ANY);
 
