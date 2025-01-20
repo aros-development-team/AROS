@@ -912,7 +912,6 @@ void parse_failover_peer (cfile, group, type)
 					    "load balance settings.");
 			if (token != NUMBER) {
 				parse_warn (cfile, "expecting number");
-			      badsplit:
 				skip_to_rbrace (cfile, 1);
 				dhcp_failover_state_dereference (&peer, MDL);
 				return;
