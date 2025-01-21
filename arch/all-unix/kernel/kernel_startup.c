@@ -238,7 +238,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
         if (((IPTR)SysBase > mmapnxt->addr) && ((IPTR)SysBase + sizeof(struct ExecBase) < mmapnxt->addr + mmapnxt->len))
             sysb_safe = TRUE;
 
-        krnCreateMemHeader("Fast RAM", 0, highmh, mmapnxt->len, MEMF_FAST|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
+        krnCreateMemHeader("Fast RAM", 5, highmh, mmapnxt->len, MEMF_FAST|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
         if (mem_tlsf)
             highmh = krnConvertMemHeaderToTLSF(highmh);
 
