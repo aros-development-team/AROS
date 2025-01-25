@@ -54,6 +54,20 @@ struct KeyboardBase
      * random memory
      */
     struct MinList kb_kbunits;
+
+    /*
+     * The following modifiction allows BlitzBasic games in blitz mode
+     * to access the keyboard. Blitz does areal nasty seeming to access
+     * private keydata directly so we need to get the keyboard matrix at
+     *  0x136 bytes offset from the KeyBoardBase structure.
+     *
+     * At the time of writing the code fragments could be found:
+     * https://github.com/AmiBlitz/AmiBlitz3/blob/master/Sourcecodes/Amiblitz3/BlitzLibs/Blitzlibs/blitzkeyslib.ab3
+    */
+
+    ULONG          kb_pad1[35];
+    UWORD          kb_pad2;
+    UBYTE          kb_MatrixBuffer[KB_MATRIXSIZE];
 };
 
 
