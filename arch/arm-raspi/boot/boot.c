@@ -46,6 +46,18 @@ asm("   .section .aros.startup      \n"
 "       .globl bootstrap            \n"
 "       .type bootstrap,%function   \n"
 "bootstrap:                         \n"
+/* Stop all cores but one. TODO: fix SMP support */
+#if 1
+"       mrc     p15, 0, r4, c0, c0, 0\n" /* Read the MIDR register into r4 */
+"       lsr     r4, r4, #16          \n"
+"       and     r4, r4, #0xF         \n" /* Bits 16-19 are the architecture */
+"       cmp     r4, #7               \n" /* Assume 7 (ARMv6) is single-core */
+"       beq     single_core          \n"
+"       mrc     p15, 0, r4, c0, c0, 5\n" /* Read the MPIDR register into r4 */
+"       ands    r4, r4, #3          \n"  /* get the processor ID */
+"       bne     hang                \n"  /* halt if not processor 0 */
+"single_core: \n"
+#endif
 "       mrs     r4, cpsr_all        \n" /* Check if in hypervisor mode */
 "       and     r4, r4, #0x1f       \n"
 "       mov     r8, #0x1a           \n"
@@ -74,6 +86,9 @@ asm("   .section .aros.startup      \n"
 "       orr     r4, r4, #0x13       \n"
 "       .byte   0x04,0xf3,0x6e,0xe1 \n" /* msr     SPSR_hyp, r4 */
 "       .byte   0x6e,0x00,0x60,0xe1 \n" /* eret                 */
+"hang:                             \n"
+"      wfe                          \n"
+"      b hang                       \n"
 "       .section .text              \n"
 ".byte 0                            \n"
 #if AROS_BIG_ENDIAN
@@ -254,6 +269,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         Check if device tree contains /soc/local_intc entry. In this case assume RasPi 2 or 3 with smp setup.
         Neither PiZero nor classic Pi provide this entry.
     */
+#if 0
     e = dt_find_node("/__symbols__");
     if (e)
     {
@@ -273,7 +289,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
             mmu_map_section(AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[1]) < 0x100000 ? 0x100000 : AROS_BE2LONG(reg[1]), 0, 0, 3, 0);
         }
     }
-
+#endif
 
     /* Init LED(s) */
     e = dt_find_node("/leds");
