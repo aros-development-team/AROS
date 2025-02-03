@@ -75,7 +75,11 @@ AROS_LH0(void *, KrnCreateContext,
         {
             D(bug("[Kernel] %s: saving initial AVX state to 0x%p\n", __func__, ctx->XSData);)
 
-            asm volatile("xsave (%0)"::"r"(ctx->XSData));
+            asm volatile(
+                "       xor %%edx, %%edx\n"
+                "       mov $0b111, %%eax\n"        /* Load instruction mask */
+                "       xsave (%0)"
+                ::"r"(ctx->XSData): "rax", "rdx");
         }
         else if (ctx->Flags  & ECF_FPFXS)
         {

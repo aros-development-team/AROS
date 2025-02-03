@@ -113,7 +113,11 @@ void cpu_Dispatch(struct ExceptionContext *regs)
                     if (ctx->XSData)
                     {
                         DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: restoring AVX registers" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
-                        asm volatile("xrstor (%0)"::"r"(ctx->XSData));
+                        asm volatile(
+                            "       xor %%edx, %%edx\n"
+                            "       mov $0b111, %%eax\n"        /* Load instruction mask */
+                            "       xrstor (%0)"
+                            ::"r"(ctx->XSData): "rax", "rdx");
                     }
                     else
                     {
@@ -210,7 +214,11 @@ void cpu_Switch(struct ExceptionContext *regs)
                 if (ctx->XSData)
                 {
                     DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: saving AVX registers to 0x%p" DEBUGCOLOR_RESET "\n", cpunum, __func__, ctx->XSData);)
-                    asm volatile("xsave (%0)"::"r"(ctx->XSData));
+                    asm volatile(
+                        "       xor %%edx, %%edx\n"
+                        "       mov $0b111, %%eax\n"        /* Load instruction mask */
+                        "       xsave (%0)"
+                        ::"r"(ctx->XSData): "rax", "rdx");
                     tcFlags |= ECF_FPXS;
                 }
                 else
