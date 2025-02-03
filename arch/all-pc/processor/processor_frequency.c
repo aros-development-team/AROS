@@ -223,22 +223,39 @@ static VOID ReadAMDMaxFrequencyInformation(struct X86ProcessorInformation * info
 
     if (info->Family == CPUFAMILY_AMD_K10)
     {
-        ULONG eax, edx;
+        ULONG eax, ebx, ecx, edx;
         ULONG cpufid = 0, cpudid = 0;
+        BOOL success = TRUE;
 
-        /* AMD Family 10h Processor BKDG, page 425 */
-        rdmsr(MSR_K10_PSTATE_P0, &eax, &edx);
-        
-        cpufid = eax & 0x1F;
-        cpudid = (eax >> 6) & 0x07;
-        
-        info->MaxCPUFrequency = FSB_100 * (cpufid + 0x10) / (1 << cpudid);
+        /* Check for power management features */
+        if (info->CPUIDHighestExtendedFunction < 0x80000007)
+            success = FALSE;
+
+        if (success)
+        {
+            cpuid(0x80000007);
+
+            /* Check avalability of HwPstate */
+            if ((edx & 0x80) == 0)
+                success = FALSE;
+        }
+
+        if (success)
+        {
+            /* AMD Family 10h Processor BKDG, page 425 */
+            rdmsr(MSR_K10_PSTATE_P0, &eax, &edx);
+
+            cpufid = eax & 0x1F;
+            cpudid = (eax >> 6) & 0x07;
+
+            info->MaxCPUFrequency = FSB_100 * (cpufid + 0x10) / (1 << cpudid);
+        }
+
         /* Note: FSB is not a valid concept with K10 processors */
         info->MaxFSBFrequency = 0;
     }
     
-    if ((info->Family == CPUFAMILY_AMD_K9)
-        || (info->Family == CPUFAMILY_AMD_K8))
+    if ((info->Family == CPUFAMILY_AMD_K9) || (info->Family == CPUFAMILY_AMD_K8))
     {
         ULONG eax, ebx, ecx, edx;
         ULONG cpufid = 0;
