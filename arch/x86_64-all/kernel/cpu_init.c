@@ -17,7 +17,6 @@
 static int cpu_Init(struct KernelBase *KernelBase)
 {
 #if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
-    ULONG XContextSize = 0;
     ULONG AVXOffs = 0;
 #endif
 
@@ -39,14 +38,10 @@ static int cpu_Init(struct KernelBase *KernelBase)
         "    mov        $0x0d, %%eax\n\t"                                               /* ok get the AVX offset                        */
         "    mov        $0x02, %%ecx\n\t"
         "    cpuid\n\t"
-        "    mov        %%ebx, %1\n\t\n"
-        ".no_avx:\n\t"
-        "    mov        $0x0d, %%eax\n\t"                                               /* and get the size of the XSAVE area           */
-        "    xor        %%ecx, %%ecx\n\t"                                               /* for Extended Control Register 0              */
-        "    cpuid\n\t"
         "    mov        %%ebx, %0\n\t\n"
+        ".no_avx:\n\t"
         ".xscheck_done:\n\t"
-        : "+m"(XContextSize), "+m"(AVXOffs)
+        : "+m"(AVXOffs)
         :
         : "%eax", "%ebx", "%ecx", "%edx"
     );
@@ -54,6 +49,7 @@ static int cpu_Init(struct KernelBase *KernelBase)
     if (AVXOffs)
     {
         ULONG featMask;
+        ULONG XContextSize = 0;
 
         D(bug("[Kernel] %s: Adjusting CR0 flags ...\n", __func__);)
         /* Enable monitoring media instruction to generate #NM when CR0.TS is set.
@@ -76,6 +72,16 @@ static int cpu_Init(struct KernelBase *KernelBase)
             "    xsetbv\n\t"                                                            /* Save back to XCR0                            */
             : "=m"(featMask) : : "%rax",  "%rcx",  "%rdx"
             );
+
+        asm volatile (
+            "    mov        $0x0d, %%eax\n\t"                                           /* Get the size of the XSAVE area               */
+            "    xor        %%ecx, %%ecx\n\t"                                           /* for Extended Control Register 0              */
+            "    cpuid\n\t"
+            "    mov        %%ebx, %0\n\t\n"
+            : "+m"(XContextSize)
+            :
+            : "%eax", "%ebx", "%ecx", "%edx"
+        );
 
         D(
             bug("[Kernel] %s: AVX feature mask %08x\n", __func__, featMask);
