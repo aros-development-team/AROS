@@ -33,6 +33,7 @@ MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
 #USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
 
 #MM kernel-kernel-pc-x86_64 : kernel-pc-acpica-includes includes-asm_h includes kernel-kernel-includes linklibs-bootconsole

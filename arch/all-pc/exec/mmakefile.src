@@ -23,6 +23,7 @@ FILES := platform_init powerstate_handlers supervisor exec_idle intserver_vblank
 
 # From kernel.resource we need only kernel_syscalls.h
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc \

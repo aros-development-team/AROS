@@ -21,6 +21,7 @@ FILES := cpu_init createcontext
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
 	       -I$(GENINCDIR)
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
 USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__
 
 # Allow to add architecture-specific options

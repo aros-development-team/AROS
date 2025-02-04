@@ -24,6 +24,9 @@ USER_CPPFLAGS := \
 #USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CFLAGS += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
