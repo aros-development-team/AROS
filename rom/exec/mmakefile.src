@@ -55,6 +55,9 @@ PRIV_EXEC_INCLUDES = \
 # platform.h can be overriden in arch-specific directory
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/debug
 USER_CPPFLAGS := -DAROS_ARCH_$(ARCH)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CFLAGS += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
 ifeq ($(AROS_TARGET_CPU),m68k)
 # Make sure we optimize this code for size on m68k..
 OPTIMIZATION_CFLAGS := -Os
