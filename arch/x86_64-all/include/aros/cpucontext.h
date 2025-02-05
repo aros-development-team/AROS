@@ -54,8 +54,8 @@ struct FPXSContext
 
 struct ExceptionContext
 {
-    ULONG Flags;	                /* Context flags		                        */
-    ULONG Reserved;	                /* Padding			                        */
+    ULONG Flags;                        /* Context flags                                        */
+    ULONG Reserved;                     /* Padding                                              */
     UQUAD rax;
     UQUAD rbx;
     UQUAD rcx;
@@ -71,7 +71,7 @@ struct ExceptionContext
     UQUAD r14;
     UQUAD r15;
     UQUAD rbp;
-    UQUAD ds;		                /* Segment registers are padded                         */
+    UQUAD ds;                           /* Segment registers are padded                         */
     UQUAD es;
     UQUAD fs;
     UQUAD gs;
@@ -82,8 +82,8 @@ struct ExceptionContext
     UQUAD ss;
 
     union {
-    struct FPFXSContext *FXSData;       /* Pointer to legacy SSE FXSAVE 512 byte context area   */
-    struct FPXSContext *XSData;         /* Pointer to AVX XSAVE context area                    */
+        struct FPFXSContext *FXSData;   /* Pointer to legacy SSE FXSAVE 512 byte context area   */
+        struct FPXSContext *XSData;     /* Pointer to AVX XSAVE context area                    */
     };
 #if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
     ULONG FPUCtxSize;
@@ -93,8 +93,8 @@ struct ExceptionContext
 enum enECFlags
 {
     ECF_SEGMENTS        = 1<<0,         /* Segment registers are present                        */
-    ECF_FPFXS           = 1<<1,         /* FXSAVE context is present	                        */
-    ECF_FPXS            = 1<<2,         /* XSAVE context is present	                        */
+    ECF_FPFXS           = 1<<1,         /* FXSAVE context is present                            */
+    ECF_FPXS            = 1<<2,         /* XSAVE context is present                             */
 };
 
 #endif
