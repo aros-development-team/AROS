@@ -203,6 +203,16 @@ void cpu_Switch(struct ExceptionContext *regs)
                 bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: !!!!! MISSING et_RegFrame !!!!!" DEBUGCOLOR_RESET "\n", cpunum, __func__);
             }
 
+            /* Restore first four XMM registers. They could have been modified by any interrupt handler.
+               Interrupt handler or soft interrupt code is required to preserve XMM registers 5-15. */
+            /* Registers are restored here so that their correct values are written into cpu context and
+               can be restored later in cpu_Dispatch */
+            asm volatile (
+                "       movaps (%0), %%xmm0\n"
+                "       movaps 16(%0), %%xmm1\n"
+                "       movaps 32(%0), %%xmm2\n"
+                "       movaps 48(%0), %%xmm3\n"
+                ::"r"(regs->FXSData));
             /*
             * Cache x86 FPU / XMM / AVX512 / MXCSR state first
             * NB: See the note about lazy saving of the fpu above!!

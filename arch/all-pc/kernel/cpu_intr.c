@@ -261,6 +261,15 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = NULL;
+#if (__WORDSIZE==64)
+    /* Preserve first four XMM registers */
+    asm volatile (
+        "       movaps %%xmm0, (%0)\n"
+        "       movaps %%xmm1, 16(%0)\n"
+        "       movaps %%xmm2, 32(%0)\n"
+        "       movaps %%xmm3, 48(%0)\n"
+        ::"r"(regs->FXSData));
+#endif
 
     if (KernelBase && (pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
     {
@@ -407,5 +416,19 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     DIRQ(
         bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): calling LeaveInterrupt...(%08X)" DEBUGCOLOR_RESET "\n", __func__, int_number, regs->Flags);
     )
+
+#if (__WORDSIZE==64)
+    /* Restore first four XMM registers. They could have been modified by any interrupt handler.
+       Interrupt handler or soft interrupt code is required to preserve XMM registers 5-15. */
+    /* If we are here, we are either exiting from a nested interrupt or we are exiting to user mode
+       but without task switch. If task switch happened, we had already exited in cpu_Dispatch via
+       core_LeaveInterrupt with first restoring all XMM/YMM registers from cpu context. */
+    asm volatile (
+        "       movaps (%0), %%xmm0\n"
+        "       movaps 16(%0), %%xmm1\n"
+        "       movaps 32(%0), %%xmm2\n"
+        "       movaps 48(%0), %%xmm3\n"
+        ::"r"(regs->FXSData));
+#endif
     core_LeaveInterrupt(regs);
 }
