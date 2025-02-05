@@ -133,6 +133,13 @@ core_EnterInterrupt:            // At this point two UQUADs are already reserved
                                 // Also SS is used as an indicator into which mode iretq returns
                                 // (set to zero when interrupt raises privilege level).
                                 // So we do not have to manipulate segment registers here (unlike on i386).
+
+    subq    $8, %rsp                // Align to 16 bytes boundary
+    subq    $64, %rsp               // Make space for 4 XMM registers
+    movq    %rsp, reg_gs + 8(%rdi)  // Set FXSData/XSData
+    movl    $64, reg_gs + 16(%rdi)  // Set FPUCtxSize
+    subq    $8, %rsp                // Align to 8 bytes before entering C code
+
     jmp     core_IRQHandle      // Proceed to C handler
     .size core_EnterInterrupt, .-core_EnterInterrupt
 
