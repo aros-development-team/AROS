@@ -9,8 +9,6 @@
     Lang: english
 */
 
-#include <aros/config.h>
-
 typedef struct
 {
     UBYTE data[10];
@@ -75,19 +73,20 @@ struct ExceptionContext
     UQUAD es;
     UQUAD fs;
     UQUAD gs;
+
+    union {
+        struct FPFXSContext *FXSData;   /* Pointer to legacy SSE FXSAVE 512 byte context area   */
+        struct FPXSContext *XSData;     /* Pointer to AVX XSAVE context area                    */
+    };
+    ULONG FPUCtxSize;
+    ULONG Reserved2;                    /* Padding                                              */
+
     UQUAD rip;
     UQUAD cs;
     UQUAD rflags;
     UQUAD rsp;
     UQUAD ss;
 
-    union {
-        struct FPFXSContext *FXSData;   /* Pointer to legacy SSE FXSAVE 512 byte context area   */
-        struct FPXSContext *XSData;     /* Pointer to AVX XSAVE context area                    */
-    };
-#if (AROS_FLAVOUR == AROS_FLAVOUR_STANDALONE)
-    ULONG FPUCtxSize;
-#endif
 };
 
 enum enECFlags
