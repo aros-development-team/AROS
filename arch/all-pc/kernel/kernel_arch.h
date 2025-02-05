@@ -40,7 +40,6 @@ struct PlatformData
     struct List         kb_BusyIPIHooks;
     spinlock_t          kb_FreeIPIHooksLock;
     spinlock_t          kb_BusyIPIHooksLock;
-    APTR                kb_FXCtx;               /* IRQ FPU/MMX/XMM Save area                            */
     ULONG               kb_LastException;
     ULONG               kb_LastExceptionError;
     union {
