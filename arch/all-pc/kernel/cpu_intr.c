@@ -256,11 +256,43 @@ void core_InvalidateIDT()
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
+#define DEBUG_XMM 0 /* Keep the same with x86_64-pc/kernel/kernel_cpu.c !! */
+#if DEBUG_XMM
+/* Debug code to detect damaging XMM registers in interrupt handling */
+UBYTE pseudostack[16 * 8 * 8 + 15]; // Pseudo-stack to support nesting
+UBYTE *pseudorsp = NULL;
+
+#define SAVE_XMM_INTO_AREA(area)                \
+    asm volatile (                              \
+        "       movaps %%xmm0, (%0)\n"          \
+        "       movaps %%xmm1, 16(%0)\n"        \
+        "       movaps %%xmm2, 32(%0)\n"        \
+        "       movaps %%xmm3, 48(%0)\n"        \
+        "       movaps %%xmm4, 64(%0)\n"        \
+        "       movaps %%xmm5, 80(%0)\n"        \
+        "       movaps %%xmm6, 96(%0)\n"        \
+        "       movaps %%xmm7, 112(%0)\n"       \
+        ::"r"(area));
+
+#define SAVE_XMM_AND_CHECK                      \
+UQUAD xmmpost[16];                              \
+SAVE_XMM_INTO_AREA(xmmpost)                     \
+UQUAD *xmmpre = (UQUAD *)localarea;             \
+for (int i = 0; i < 15; i++)                    \
+    if (xmmpre[i] != xmmpost[i]) bug("diff in core_IRQHandle (%d) %lx vs %lx!!\n", i, xmmpre[i], xmmpost[i]);
+#endif
+
 /* CPU exceptions are processed here */
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long int_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = NULL;
+
+#if DEBUG_XMM
+if (pseudorsp == NULL)
+    pseudorsp = (UBYTE *)AROS_ROUNDUP2((IPTR)pseudostack, 16);
+#endif
+
 #if (__WORDSIZE==64)
     /* Preserve first four XMM registers */
     asm volatile (
@@ -269,6 +301,12 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         "       movaps %%xmm2, 32(%0)\n"
         "       movaps %%xmm3, 48(%0)\n"
         ::"r"(regs->FXSData));
+#endif
+
+#if DEBUG_XMM
+pseudorsp += 16 * 8;
+APTR localarea = pseudorsp - (16 * 8);
+SAVE_XMM_INTO_AREA(localarea)
 #endif
 
     if (KernelBase && (pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
@@ -398,5 +436,11 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         "       movaps 48(%0), %%xmm3\n"
         ::"r"(regs->FXSData));
 #endif
+
+#if DEBUG_XMM
+SAVE_XMM_AND_CHECK
+pseudorsp -= 16 * 8;
+#endif
+
     core_LeaveInterrupt(regs);
 }
