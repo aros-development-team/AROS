@@ -95,9 +95,11 @@ BUILD_IRQ(0xFF)
     .globl core_EnterInterrupt
     .type core_EnterInterrupt,@function
 
-core_EnterInterrupt:            // At this point two UQUADs for segment registers are
-                                // already reserved. They are occupied by error code and IRQ number
-    pushq   $0                  // Reserve two more UQUADs (for ES and DS)
+core_EnterInterrupt:            // At this point two UQUADs are already reserved.
+                                // They are occupied by error code and IRQ number
+    pushq   $0                  // Reserve four more UQUADs (for segment registers)
+    pushq   $0
+    pushq   $0
     pushq   $0
     pushq   %rbp                // Now save GPRs
     pushq   %r15
@@ -114,12 +116,12 @@ core_EnterInterrupt:            // At this point two UQUADs for segment register
     pushq   %rcx
     pushq   %rbx
     pushq   %rax
-    pushq   $ECF_SEGMENTS       // Flags. We have no FPU context here and even no pointer for it.
-    movq    %rsp, %rdi          // Supply context pointer to core_IRQHandle (first argument)
-    movq    reg_gs(%rdi), %rsi  // Error number - second argument
-    movq    reg_fs(%rdi), %rdx  // IRQ number - third argument
-    xorq    %rax, %rax          // Zero-pad segments
-    mov     %ds, %ax            // Now save segment registers
+    pushq   $ECF_SEGMENTS           // Flags. We have no FPU context here and even no pointer for it.
+    movq    %rsp, %rdi              // Supply context pointer to core_IRQHandle (first argument)
+    movq    reg_gs + 16(%rdi), %rsi // Error number - second argument
+    movq    reg_gs + 8(%rdi), %rdx  // IRQ number - third argument
+    xorq    %rax, %rax              // Zero-pad segments
+    mov     %ds, %ax                // Now save segment registers
     movq    %rax, reg_ds(%rdi)
     mov     %es, %ax
     movq    %rax, reg_es(%rdi)
@@ -167,7 +169,7 @@ noSegments:
     popq    %r14
     popq    %r15
     popq    %rbp
-    addq    $32, %rsp           // Remove segments
+    addq    $48, %rsp           // Remove segments and FPU pointer area
 
     .globl core_DefaultIRETQ
     .type core_DefaultIRETQ, @function
@@ -197,6 +199,6 @@ core_Supervisor:
     popq    %r14
     popq    %r15
     popq    %rbp
-    addq    $32, %rsp
+    addq    $48, %rsp
     jmpq    *%rdi
     .size core_Supervisor, .-core_Supervisor

@@ -246,9 +246,15 @@ void cpu_Switch(struct ExceptionContext *regs)
 
             /*
             * Copy current task's context into the ETask structure. Note that context on stack
-            * misses SSE data pointer.
+            * does not have valid pointer to full SSE data.
             */
-            CopyMemQuick(regs, ctx, ((IPTR)&regs->ss  - (IPTR)regs) + sizeof(regs->ss));
+            CopyMemQuick(regs, ctx, ((IPTR)&regs->gs  - (IPTR)regs) + sizeof(regs->gs));
+            ctx->rip    = regs->rip;
+            ctx->cs     = regs->cs;
+            ctx->rflags = regs->rflags;
+            ctx->rsp    = regs->rsp;
+            ctx->ss     = regs->ss;
+
             ctx->Flags |= tcFlags;
 
             /* Set task's tc_SPReg */
