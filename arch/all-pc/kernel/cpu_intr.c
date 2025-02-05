@@ -335,22 +335,6 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         if (pdata)
         {
             pdata->kb_PDFlags |= PLATFORMF_INIRQ;
-#if defined(KERNEL_IRQSTORESSE)
-            if (pdata->kb_FXCtx)
-            {
-                DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): saving to kb_FXCt @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, int_number, pdata->kb_FXCtx);)
-                if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
-                {
-                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): AVX save" DEBUGCOLOR_RESET "\n", __func__, int_number);)
-                    asm volatile("xsave (%0)"::"r"(pdata->kb_FXCtx));
-                }
-                else
-                {
-                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): SSE save" DEBUGCOLOR_RESET "\n", __func__, int_number);)
-                    asm volatile("fxsave (%0)"::"r"(pdata->kb_FXCtx));
-                }
-            }
-#endif
         }
         if (KernelBase)
         {
@@ -378,22 +362,6 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         }
         if (pdata)
         {
-#if defined(KERNEL_IRQSTORESSE)
-            if (pdata->kb_FXCtx)
-            {
-                DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): Device IRQ - restoring fp state from kb_FXCt @ 0x%p" DEBUGCOLOR_RESET "\n", __func__, int_number, pdata->kb_FXCtx);)
-                if (KernelBase->kb_ContextSize > CPUSSEContxtSize)
-                {
-                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): AVX restore" DEBUGCOLOR_RESET "\n", __func__, int_number);)
-                    asm volatile("xrstor (%0)"::"r"(pdata->kb_FXCtx));
-                }
-                else
-                {
-                    DIRQ(bug("[kernel]" DEBUGCOLOR_SET " %s(%d): SSE restore" DEBUGCOLOR_RESET "\n", __func__, int_number);)
-                    asm volatile("fxrstor (%0)"::"r"(pdata->kb_FXCtx));
-                }
-            }
-#endif
             pdata->kb_PDFlags &= ~PLATFORMF_INIRQ;
         }
         /*
