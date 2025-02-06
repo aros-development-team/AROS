@@ -10,6 +10,35 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#define DEBUG_XMM 0
+#if DEBUG_XMM
+static UQUAD copycount = 0;
+#define PRECOPY                     \
+    UQUAD srcreg[8];                \
+    UQUAD *psrc = (UQUAD *)src;     \
+    for (int i = 0; i < 8; i++)     \
+    {                               \
+        __asm__ __volatile__ ("movq (%0), %%rax\n movq %%rax, (%1)" : : "r"(psrc), "r"(srcreg + i) : "rax");    \
+        psrc++;                     \
+    }
+
+#define POSTCOPY                    \
+    copycount++;                    \
+    UQUAD dstreg[8];                \
+    UQUAD *pdst = (UQUAD *)dst;     \
+    for (int i = 0; i < 8; i++)     \
+    {                               \
+        __asm__ __volatile__ ("movq (%0), %%rax\n movq %%rax, (%1)" : : "r"(pdst), "r"(dstreg + i) : "rax");    \
+        pdst++;                     \
+    }                               \
+    for (int i = 0; i < 8; i++)     \
+    {                               \
+        if (srcreg[i] != dstreg[i]) \
+            bug("diff reg-reg [%d] (%ld) %p vs %p, %lx vs %lx\n",               \
+                i, copycount, src + i * 8, dst + i * 8, srcreg[i], dstreg[i]);  \
+    }
+#endif
+
 /* See rom/exec/copymem.c for documentation */
 
 #define SSE_REG_SIZE 16
@@ -120,6 +149,9 @@ D(bug("[Exec] CopyMem: Aligning src to %d byte boundary (%d bytes) .. \n", SSE_R
                 {
 D(bug("[Exec] CopyMem: SSE Aligned-Copy %p to %p.\n", src, dst));
 
+#if DEBUG_XMM
+PRECOPY
+#endif
                     __asm__ __volatile__ (
                         "    prefetchnta 320(%0)\n"
                         "    prefetchnta 352(%0)\n"
@@ -134,6 +166,10 @@ D(bug("[Exec] CopyMem: SSE Aligned-Copy %p to %p.\n", src, dst));
                         :
                         : "r" (src), "r" (dst)
                         : "memory");
+
+#if DEBUG_XMM
+POSTCOPY
+#endif
 
                     src += (SSE_REG_SIZE * 4);
                     dst += (SSE_REG_SIZE * 4);
