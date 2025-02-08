@@ -34,7 +34,17 @@ steps:
   displayName: 'Updating commit RSS feed'
 
 - script: |
+    $(AROSDOCSRCDIR)/scripts/web/updatearchives
+  displayName: 'Updating archives RSS feed'
+
+- script: |
+    $(AROSDOCSRCDIR)/scripts/web/updatearosworld
+  displayName: 'Updating arosworld RSS feed'
+
+- script: |
     mv $(AROSWEBDIR)/htdocs/commits.php $(AROSWEBDIR)/htdocs/github-commits.php
+    mv $(AROSWEBDIR)/htdocs/archives.php $(AROSWEBDIR)/htdocs/archives-uploads.php
+    mv $(AROSWEBDIR)/htdocs/arosworld.php $(AROSWEBDIR)/htdocs/arosworld-forum.php
     mkdir -p ~/.ssh
     #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
     sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(AROSWEBDIR)/htdocs/ $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/htdocs/
