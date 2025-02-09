@@ -8,6 +8,14 @@
 trigger:
 - master
 
+schedules:
+- cron: "0 * * * *"
+  branches:
+    include: [master]
+  always: true
+  batch: false
+  displayName: Hourly trigger
+
 pool:
   vmImage: 'ubuntu-latest'
 
