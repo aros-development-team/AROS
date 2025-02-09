@@ -1,6 +1,7 @@
 
-# Build & Deploy the commits.php file for the website
-# to use, you must define the following secret variables
+# Build & Deploy the github-commits.php, archives-uploads.php
+# and arosworld-forum.php files for the website.
+# To use, you must define the following secret variables
 # in the pipeline settings -:
 #    SF_RSYNC_USER - sourceforge user to upload as
 #    SF_RSYNC_PASSWORD - ...
@@ -11,7 +12,8 @@ trigger:
 schedules:
 - cron: "0 * * * *"
   branches:
-    include: [master]
+    include:
+    - master
   always: true
   batch: false
   displayName: Hourly trigger
