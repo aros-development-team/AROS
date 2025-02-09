@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import datetime
 import feedparser
 from jinja2 import Template
 
@@ -31,7 +32,7 @@ html_template = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSS Feed</title>
-    <meta name="lastupdate" content="{ datetime.datetime.now() }">
+    <meta name="lastupdate" content="{{ date }}">
     <link rel="stylesheet" href="/aros.css">
 </head>
 <body>
@@ -45,7 +46,7 @@ html_template = """
 
 # Render the HTML
 template = Template(html_template)
-html_content = template.render(feed=feed.feed, entries=feed.entries)
+html_content = template.render(feed=feed.feed, entries=feed.entries, date=datetime.datetime.now())
 
 # Write the HTML content to a file
 with open('/home/project-web/aros/htdocs/archives.php', 'w', encoding='utf-8') as f:
