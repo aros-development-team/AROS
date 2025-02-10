@@ -10,7 +10,7 @@ trigger:
 - master
 
 schedules:
-- cron: "0 * * * *"
+- cron: "15 */3 * * *"
   branches:
     include:
     - master
