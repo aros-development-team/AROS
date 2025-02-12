@@ -270,7 +270,6 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
                 tx_desc->lower.data = AROS_WORD2LE(txd_lower | buffer_info->length);
                 tx_desc->upper.data = AROS_WORD2LE(txd_upper);
                 tx_desc->lower.data |= AROS_WORD2LE(unit->txd_cmd);
-                MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), i);
             }
         }
 
@@ -300,6 +299,8 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
     }
 
     tx_ring->next_to_use = i;
+
+    MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), tx_ring->next_to_use);
 
     return 0;
 
