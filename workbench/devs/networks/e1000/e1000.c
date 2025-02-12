@@ -627,7 +627,7 @@ int request_irq(struct net_device *unit)
 {
     D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
-    AddIntServer(INTB_KERNEL | unit->e1ku_IRQ, &unit->e1ku_irqhandler);
+    AddIntServer(INTB_KERNEL + unit->e1ku_IRQ, &unit->e1ku_irqhandler);
     AddIntServer(INTB_VERTB, &unit->e1ku_touthandler);
 
     D(bug("[%s] %s: IRQ Handlers configured\n", unit->e1ku_name, __func__);)
@@ -638,7 +638,7 @@ int request_irq(struct net_device *unit)
 #if 0
 static void free_irq(struct net_device *unit)
 {
-    RemIntServer(INTB_KERNEL | unit->e1ku_IRQ, unit->e1ku_irqhandler);
+    RemIntServer(INTB_KERNEL + unit->e1ku_IRQ, unit->e1ku_irqhandler);
     RemIntServer(INTB_VERTB, unit->e1ku_touthandler);
 }
 #endif
