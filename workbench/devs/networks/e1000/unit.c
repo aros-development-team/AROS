@@ -352,7 +352,6 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
     AROS_INTFUNC_INIT
 
     struct Device *TimerBase = unit->e1ku_TimerSlowReq->tr_node.io_Device;
-    struct timeval time;
 	int rx_cleaned, tx_cleaned, i, j;
 
     ULONG icr = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_ICR);
@@ -366,7 +365,6 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
     }
 
     D(bug("Processing ..\n"));
-    GetSysTime(&time);
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMC, ~0);
     E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
