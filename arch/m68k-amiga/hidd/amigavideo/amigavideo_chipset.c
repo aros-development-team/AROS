@@ -1561,7 +1561,7 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     csd->starty = STANDARD_VIEW_Y;
 
     vposr = custom->vposr;
-    csd->aga = (vposr & 0x0f00) == 0x0300;
+    csd->aga = (vposr & 0x0200) == 0x0200;
     csd->ecs_agnus = (vposr & 0x2000) == 0x2000;
     val = custom->deniseid;
     custom->deniseid = custom->dmaconr;

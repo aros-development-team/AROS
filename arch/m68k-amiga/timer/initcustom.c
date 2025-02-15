@@ -70,7 +70,8 @@ void InitCustom(struct GfxBase *gfx)
 
         Enable();
 
-        if (vposr >= 0x2200) {
+        // 0x2200, 0x2300, 0x3200, 0x3300 are all AGA
+        if ((vposr & 0x0200) == 0x0200) {
                 gfx->MemType = BUS_32 | DBL_CAS;
         }
 
