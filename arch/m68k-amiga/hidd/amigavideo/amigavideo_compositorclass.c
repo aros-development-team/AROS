@@ -113,7 +113,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
     struct HIDD_ViewPortData * vpdata;
     OOP_Object *bm = NULL;
     struct amigabm_data *bmdata, *bmdatprev;
-        UWORD visdwidth, visdheight;
+    UWORD visdwidth, visdheight;
 
     D(bug("[AmigaVideo:Compositor] %s()\n", __func__));
 
@@ -177,7 +177,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
             if (vpdata->Bitmap && (OOP_OCLASS(vpdata->Bitmap) == csd->amigabmclass))
             {
                 struct Node *next;
-                                UWORD modeheight = 200;
+                UWORD modeheight = 200;
 
                 bmdata = OOP_INST_DATA(OOP_OCLASS(vpdata->Bitmap), vpdata->Bitmap);
                 bmdata->node.ln_Pri = scdepth++;
@@ -198,7 +198,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
                     continue;
                 }
 
-                if ((csd->ecs_agnus) && ((bmdata->modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)) {
+                if ((bmdata->modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID) {
                     modeheight += 56;
                     csd->palmode = TRUE;
                 }
@@ -208,8 +208,10 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
                     modeheight <<= bmdata->interlace;
                     csd->interlaced = TRUE;
                 }
+
                 if (visdheight < modeheight)
-                        visdheight = modeheight;
+                    visdheight = modeheight;
+
                 switch (bmdata->res)
                 {
                 case 2:
