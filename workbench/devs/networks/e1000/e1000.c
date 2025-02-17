@@ -1019,6 +1019,37 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
     }
 }
 
+void e1000func_alloc_rx_buffers_fake(struct net_device *unit,
+                                   struct e1000_rx_ring *rx_ring,
+                                   int cleaned_count)
+{
+    struct e1000_rx_desc *rx_desc;
+    struct e1000_rx_buffer *buffer_info;
+    unsigned int i;
+
+    i = rx_ring->next_to_use;
+
+    D(
+        bug("[%s]: %s(0x%p, 0x%p, %d)\n", unit->e1ku_name, __func__, unit, rx_ring, cleaned_count);
+        bug("[%s] %s: starting at %d\n", unit->e1ku_name, __func__, i);
+     )
+
+    while (cleaned_count--)
+    {
+        if (++i == rx_ring->count)
+            i = 0;
+    }
+    D(bug("[%s] %s: next_to_use = %d, i = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_use, i);)
+    if (rx_ring->next_to_use != i) {
+        rx_ring->next_to_use = i;
+        if (i-- == 0)
+            i = (rx_ring->count - 1);
+
+        D(bug("[%s] %s: Adjusting RDT to %d\n", unit->e1ku_name, __func__, i);)
+        writel(i, (APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt));
+    }
+}
+
 void e1000func_configure(struct net_device *unit)
 {
     int i;
@@ -1244,17 +1275,9 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         D(
             int buffer_no = i;
          )
-#if (BROKEN_RX_QUEUE)
-        // Queue stalls using this ....
+
         if (++i == rx_ring->count) i = 0;
-#else
-        // ... so for our sanity we loop at the rings tail
-        if (++i >= readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt)))
-        {
-            i = 0;
-            update = TRUE;
-        }
-#endif
+
         next_rxd = E1000_RX_DESC(rx_ring, i);
 #if (HAVE_PREFETCH)
         prefetch(next_rxd);
@@ -1387,28 +1410,21 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 next_desc:
         rx_desc->status = 0;
 
+        /* return some buffers to hardware, one at a time is too slow */
+        if (cleaned_count >= E1000_RX_BUFFER_WRITE) {
+            e1000func_alloc_rx_buffers_fake(unit, rx_ring, cleaned_count);
+            cleaned_count = 0;
+        }
+
         /* use prefetched values */
         rx_desc = next_rxd;
         D(buffer_info = next_buffer);
     }
     rx_ring->next_to_clean = i;
 
-#if (BROKEN_RX_QUEUE)
-    // Enabling this stalls the queue ...
-    if ((cleaned_count = E1000_DESC_UNUSED(rx_ring)))
-    {
-        D(bug("[%s] %s: Updating rdt\n", unit->e1ku_name, __func__));
-        writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
-    }
-#else
-    // ...but it seems we have to tell the hardware to wrap around?
-    if (update == TRUE)
-    {
-        D(bug("[%s] %s: Adjusting RDH/RDT\n", unit->e1ku_name, __func__));
-        writel(readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt), ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
-        writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdh);
-    }
-#endif
+    cleaned_count = E1000_DESC_UNUSED(rx_ring);
+    if (cleaned_count)
+        e1000func_alloc_rx_buffers_fake(unit, rx_ring, cleaned_count);
 
     D(
         bug("[%s] %s: Next to clean = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_clean);
