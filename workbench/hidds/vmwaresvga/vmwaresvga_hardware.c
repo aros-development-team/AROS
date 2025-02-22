@@ -631,6 +631,9 @@ VOID setModeVMWareSVGA(struct HWData *data, ULONG width, ULONG height)
 
     disableVMWareSVGA(data);
 
+    if (data->capabilities & SVGA_CAP_PITCHLOCK)
+        vmwareWriteReg(data, SVGA_REG_PITCHLOCK, width * data->bytesperline);
+
     vmwareWriteReg(data, SVGA_REG_WIDTH, width);
     vmwareWriteReg(data, SVGA_REG_HEIGHT, height);
 
