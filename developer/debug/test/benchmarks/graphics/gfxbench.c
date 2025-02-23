@@ -44,6 +44,7 @@
 struct Window * win;
 LONG            width = 1280;
 LONG            height = 720;
+BOOL            fullwidth = FALSE;
 
 /* COMMON */
 static void printresults(LONG timems, LONG blits)
@@ -451,8 +452,8 @@ static void detectsystem()
         sheight = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_HEIGHT);
         sdepth = GetCyberMapAttr(screen->RastPort.BitMap, CYBRMATTR_DEPTH);
         
-        if (width > swidth) width = swidth;
-        if (height > sheight) height = sheight;
+        width = swidth;
+        height = sheight * 3 / 4;
 
         printf("|Screen information| %dx%dx%d|\n", (int)swidth, (int)sheight, (int)sdepth);
     }
@@ -507,7 +508,7 @@ static void textbenchmarkset()
     printf("\n\n");
 }
 
-static void pixelarraybenchmark(LONG optpixfmt, LONG optfunction)
+static void pixelarraybenchmark(LONG optpixfmt, LONG optfunction, BOOL fullw)
 {
     STRPTR functionstr = "UNKNOWN";
     STRPTR pixfmtstr = "UNKNOWN";
@@ -531,8 +532,9 @@ static void pixelarraybenchmark(LONG optpixfmt, LONG optfunction)
 
     pixfmt = optpixfmt;
     function = optfunction;
+    fullwidth = fullw;
     
-    printf("| %s %s|", functionstr, pixfmtstr);
+    printf("| %s %s %s|", functionstr, pixfmtstr, fullwidth ? "FW" : "HW");
     
     action_pixelarray();
 }
@@ -541,16 +543,26 @@ static void pixelarraybenchmarkset()
 {
     printf("*PixelArray benchmark %dx%d*\n", (int)width, (int)height);
     printf("||Test||Blits/s||MB/s||\n");
-    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_WRITE);
-    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE);
-    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_WRITE);
-    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_WRITE);
-    pixelarraybenchmark(RECTFMT_LUT8,   FUNCTION_WRITE);
-    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_READ);
-    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_READ);
-    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_READ);
-    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_READ);
-    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE_ALPHA);
+    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_WRITE, TRUE);
+    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_WRITE, FALSE);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE, TRUE);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE, FALSE);
+    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_WRITE, TRUE);
+    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_WRITE, FALSE);
+    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_WRITE, TRUE);
+    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_WRITE, FALSE);
+    pixelarraybenchmark(RECTFMT_LUT8,   FUNCTION_WRITE, TRUE);
+    pixelarraybenchmark(RECTFMT_LUT8,   FUNCTION_WRITE, FALSE);
+    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_READ, TRUE);
+    pixelarraybenchmark(RECTFMT_RGB,    FUNCTION_READ, FALSE);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_READ, TRUE);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_READ, FALSE);
+    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_READ, TRUE);
+    pixelarraybenchmark(RECTFMT_RGBA,   FUNCTION_READ, FALSE);
+    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_READ, TRUE);
+    pixelarraybenchmark(RECTFMT_RGB16PC,FUNCTION_READ, FALSE);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE_ALPHA, TRUE);
+    pixelarraybenchmark(RECTFMT_ARGB32, FUNCTION_WRITE_ALPHA, FALSE);
     printf("\n\n");
 }
 
