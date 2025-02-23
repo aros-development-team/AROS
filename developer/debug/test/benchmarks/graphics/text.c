@@ -219,7 +219,7 @@ static void action_text(void)
     {
         CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
         t = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
-        if (t >= 10 * 1000000) break;
+        if (t >= 2 * 1000000) break;
 
         for (y = i % extend.te_Height; y < height; y += extend.te_Height)
             for (x = 0; x < width; x += extend.te_Width)
