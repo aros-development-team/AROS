@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES           := allocvec allocpooled taskswitch2
+FILES           := allocvec allocpooled copymem taskswitch2
 EXEDIR          := $(AROS_TESTS)/benchmarks/exec
 
 #MM- test-benchmarks : test-benchmarks-exec
