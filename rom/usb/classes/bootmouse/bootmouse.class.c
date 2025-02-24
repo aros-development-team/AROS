@@ -5,6 +5,9 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
+#define DEBUG 2
+#define DB_LEVEL 1
+
 #include "debug.h"
 
 #include "bootmouse.class.h"
@@ -74,6 +77,8 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
     IPTR ifclass;
     IPTR subclass;
     IPTR proto;
+    
+    bug("bootmouse.class trying to bind\n");
 
     KPRINTF(1, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
