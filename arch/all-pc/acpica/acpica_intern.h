@@ -17,7 +17,7 @@
 #define ACPICAF_ENABLED         (1 << ACPICAB_ENABLED)
 #define ACPICAB_TABLEINIT       1
 #define ACPICAF_TABLEINIT       (1 << ACPICAB_TABLEINIT)
-#define ACPICAB_FULLINIT        1
+#define ACPICAB_FULLINIT        2
 #define ACPICAF_FULLINIT        (1 << ACPICAB_FULLINIT)
 #define ACPICAB_TIMER           7
 #define ACPICAF_TIMER           (1 << ACPICAB_TIMER)

@@ -846,6 +846,106 @@ ExecuteOSI (
     return (AE_OK);
 }
 
+struct SMBIOSHeader
+{
+    UBYTE sm_Type;
+    UBYTE sm_Length;
+    UWORD sm_Handle;
+};
+
+static struct SMBIOSHeader * SMBIOS_GetNextTable(struct SMBIOSHeader *table)
+{
+    UBYTE *ptr = (UBYTE *)((IPTR)table + table->sm_Length);
+
+    while (1)
+    {
+        if (ptr[0] == 0 && ptr[1] == 0)
+            return (struct SMBIOSHeader *) (ptr + 2);
+        ptr++;
+    }
+
+    return NULL;
+}
+
+static char * SMBIOS_GetProductName()
+{
+    /* Use SMBIOS to find out system model */
+    char *ptr = (char *)0x000F0000;
+    BOOL smbiosver = 0;
+    IPTR eps = 0;
+
+    while (ptr <= (char *)0x000FFFFF)
+    {
+        if (ptr[0] == '_' && ptr[1] == 'S' && ptr[2] == 'M')
+        {
+            if (ptr[3] == '_') smbiosver = 2;
+            if (ptr[3] == '3' && ptr[4] == '_') smbiosver = 3;
+            if (smbiosver != 0)
+            {
+                eps = (IPTR)ptr;
+                break;
+            }
+        }
+        ptr += 16;
+    }
+
+    if (eps != 0)
+    {
+        IPTR firsttb = 0;
+        if (smbiosver == 2) firsttb = *((ULONG *)(eps + 0x18));
+        if (smbiosver == 3) firsttb = *((UQUAD *)(eps + 0x10));
+
+        D(bug("[SMBIOS] EPS found @ %p, first table %p\n", (APTR)eps, (APTR)(firsttb)));
+        struct SMBIOSHeader *table = (struct SMBIOSHeader *)firsttb;
+        while (table->sm_Type != 0x1) /* System information table */
+            table = SMBIOS_GetNextTable(table);
+
+        UBYTE productidx = *(UBYTE *)((IPTR)table + 0x5);
+        D(bug("[SMBIOS] System information table @ %p, product idx %d\n",(APTR)table, productidx));
+        char *string = (char *)((IPTR)table + table->sm_Length);
+        char *ptr = (char *)string;
+        UBYTE stridx = 1;
+        while(1)
+        {
+            if (ptr[0] == 0 && ptr[1] == 0) break;
+
+            if (ptr[0] == 0)
+            {
+                stridx++;
+                ptr++;
+                string = ptr;
+                continue;
+            }
+
+            if (stridx == productidx)
+            {
+                D(bug("[SMBIOS] Product '%s'\n", string));
+                return string;
+            }
+
+            ptr++;
+        }
+    }
+
+    return NULL;
+}
+
+static int ACPICA_CheckBlacklistedHardware()
+{
+    char *product = SMBIOS_GetProductName();
+
+    if (product != NULL)
+    {
+        /* Loading DSDT table causes an IRQ storm of IRQ 9 (which can be either SCI or USB)
+           For SCI, Fixed events and General Purpose events were checked and they are not signaling, so
+           source of this interrupt storm is unknown */
+        if (strncmp(product, "Latitude D520", 13) == 0)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
 {
     ACPI_STATUS err;
@@ -922,6 +1022,14 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
             return FALSE;
         }
     }
+
+    /* Check blacklisted hardware */
+    if (ACPICA_CheckBlacklistedHardware())
+    {
+        D(bug("[ACPI] %s: Disabled due to blacklisted hardware\n", __func__));
+        return FALSE;
+    }
+
     AcpiDbgLevel = ~0;
     ACPICABase->ab_RootPointer = 0;
 
