@@ -5,24 +5,10 @@ import feedparser
 from jinja2 import Template
 
 # URL of the RSS feed
-rss_url = 'https://archives.aros-exec.org/modules/rssfeed.php'
+rss_url = 'https://arosarchives.os4depot.net/modules/rssfeed.php'
 
 # Parse the RSS feed
 feed = feedparser.parse(rss_url)
-
-# Check if feed parsing was successful
-#if feed.bozo:
-#    print("Failed to parse the RSS feed.")
-#    print(feed.bozo_exception)
-#else:
-#    for entry in feed.entries:
-#        print(entry.title)
-#        print(entry.link)
-#        print(entry.author)
-#        print(entry.summary)
-#        print(entry.date)
-#        print()
-
 
 # HTML template
 html_template = """
