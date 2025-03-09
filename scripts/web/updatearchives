@@ -5,7 +5,7 @@ import feedparser
 from jinja2 import Template
 
 # URL of the RSS feed
-rss_url = 'https://arosarchives.os4depot.net/modules/rssfeed.php'
+rss_url = 'https://archives.arosworld.org/modules/rssfeed.php'
 
 # Parse the RSS feed
 feed = feedparser.parse(rss_url)
