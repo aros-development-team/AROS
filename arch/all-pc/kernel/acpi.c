@@ -68,6 +68,8 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
         { KERNELTAG_IRQ_TRIGGERLEVEL,   0       },
         { TAG_DONE,                     0       }
     };
+    struct ACPIData *kb_ACPI = (struct ACPIData *)Context;
+
     D(
         bug("[Kernel:ACPI] %s(0x%p)\n", __func__, resource);
         bug("[Kernel:ACPI] %s: Res Type #%u\n", __func__, resource->Type);
@@ -80,6 +82,14 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                     bug("[Kernel:ACPI] %s: - ACPI_RESOURCE_TYPE_IRQ\n", __func__);
                     bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, irq->u.Interrupts[0], irq->Polarity, irq->Triggering);
                 )
+                /*
+                   If in IO-APIC mode and interrupts 0-15 Interrupt Source Overide has priority over _CRS
+                   1) A bit set in acpi_interruptOverride indicates IO-APIC code was run and IO-APIC is in use
+                   2) ACPI_RESOURCE_TYPE_IRQ can only describe legacy, 0-15 IRQs
+                */
+                if (kb_ACPI->acpi_interruptOverrides & (1 << irq->u.Interrupts[0]))
+                    return AE_OK;
+
                 if (irq->Triggering == ACPI_LEVEL_SENSITIVE)
                     irqAttribs[1].ti_Data = 1;
                 else
@@ -139,7 +149,7 @@ static ACPI_STATUS acpiInitDevice(ACPI_HANDLE handle, ULONG level, void *context
           bug("[Kernel:ACPI] %s: device '%s'\n", __func__, devPath);
         }
 #endif
-        Status = AcpiWalkResources(handle, "_CRS", acpiAttachDevResource, NULL);
+        Status = AcpiWalkResources(handle, "_CRS", acpiAttachDevResource, context);
         if (ACPI_FAILURE(Status))
         {
             D(bug("[Kernel:ACPI] %s: failed to enumerate ACPI Device Resources\n", __func__));

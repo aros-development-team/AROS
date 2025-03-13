@@ -757,6 +757,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 
     if (newRt)
     {
+        pdata->kb_ACPI->acpi_interruptOverrides |= (1 << intrMap->im_Node.ln_Pri);
         Enqueue(&KernelBase->kb_InterruptMappings, &intrMap->im_Node);
     }
 

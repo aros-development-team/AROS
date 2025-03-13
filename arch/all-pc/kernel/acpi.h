@@ -1,7 +1,7 @@
 #ifndef KERNEL_ACPI_H
 #define KERNEL_ACPI_H
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Generic AROS ACPI definitions.
@@ -15,6 +15,7 @@ struct ACPIData {
     struct List                 acpi_tablehooks;
     ULONG                       acpi_apicCnt;
     ULONG                       acpi_ioapicCnt;
+    UWORD                       acpi_interruptOverrides;    /* Mask of 0-15 overriden interrupts */
 
     /* cached pointers to the ACPI Tables */
     CONST_APTR	                acpi_fadt;	        /* FADT pointer			                */
