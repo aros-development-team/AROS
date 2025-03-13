@@ -936,11 +936,8 @@ static int ACPICA_CheckBlacklistedHardware()
 
     if (product != NULL)
     {
-        /* Loading DSDT table causes an IRQ storm of IRQ 9 (which can be either SCI or USB)
-           For SCI, Fixed events and General Purpose events were checked and they are not signaling, so
-           source of this interrupt storm is unknown */
-        if (strncmp(product, "Latitude D520", 13) == 0)
-            return TRUE;
+        // if (strncmp(product, "<product name here>", size of name) == 0)
+        //     return TRUE;
     }
 
     return FALSE;
