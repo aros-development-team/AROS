@@ -145,6 +145,7 @@ UBYTE *fullpath(struct CacheBuffer *cbstart, struct fsObject *o);
 
 LONG initdisk(void);
 static void deinitdisk(void);
+static BOOL trydestroyvolumenode(struct DeviceList *argvn);
 
 LONG handlesimplepackets(struct DosPacket *packet);
 static LONG dumppackets(struct DosPacket *packet, LONG);
@@ -1351,6 +1352,45 @@ void mainloop(void) {
                     break;
                 default:
                     if(handlesimplepackets(globals->packet) == 0) {
+
+                        if(globals->volumenode_inh != 0 && globals->packet->dp_Type == ACTION_REMOVE_NOTIFY) {
+                            /* If volume was made offline instead of removed because of pending notifies, see if removing
+                               notifies can fully close the volume. Case of Wanderer setting up root directory notification
+                               on SFS pendrive / disk partition before re-formatting. */
+                            struct NotifyRequest *head, *nr = (struct NotifyRequest *)globals->packet->dp_Arg1;
+                            BOOL found = FALSE;
+
+                            head = (struct NotifyRequest *)BADDR(globals->volumenode_inh->dl_unused);
+
+                            /* Note: it is possible that one handler has at the same time volumenode and volumenode_inh
+                               This happens with inhibit/format/de-inhibit sequence where old volume is offline and new
+                               one is online in the same handler. Check if request was on offline volume list */
+                            struct NotifyRequest *tmp = nr;
+                            while(tmp != NULL) {
+                                if(tmp == head) { found = TRUE; break;}
+                                tmp = (struct NotifyRequest *)tmp->nr_Prev;
+                            }
+
+                            if (found) {
+                                if(nr->nr_Prev)
+                                    ((struct NotifyRequest *)nr->nr_Prev)->nr_Next = nr->nr_Next;
+                                else
+                                    head = (struct NotifyRequest *)nr->nr_Next;
+
+                                if (nr->nr_Next)
+                                    ((struct NotifyRequest *)nr->nr_Next)->nr_Prev = nr->nr_Prev;
+
+                                nr->nr_Next = 0;
+                                nr->nr_Prev = 0;
+                                globals->volumenode_inh->dl_unused = MKBADDR(head);
+
+                                trydestroyvolumenode(globals->volumenode_inh);
+
+                                returnpacket(DOSTRUE, 0);
+                                break;
+                            }
+                            // fallthrough to regular processing
+                        }
 
                         if(globals->disktype == DOSTYPE_ID) {
                             switch(globals->packet->dp_Type) {
@@ -3143,6 +3183,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
 
                 globals->locklist = lock;
                 globals->notifyrequests = nr;
+                globals->volumenode_inh = 0;
 
                 while(lock != 0) {
                     lock->task = &globals->mytask->pr_MsgPort;
@@ -3456,6 +3497,60 @@ void removevolumenode(struct DosList *dol, struct DosList *vn) {
     }
 }
 
+static BOOL trydestroyvolumenode(struct DeviceList *argvn) {
+    struct DeviceList **vn = NULL;
+
+    if (argvn == NULL)
+        return FALSE;
+
+    /* Two cases when volume can be destroyed:
+       1) volume is active and there are no locks and no notify requests
+       2) volume is offline and there are no locks and no notify requests */
+
+    if (argvn == globals->volumenode && globals->locklist == 0 && globals->notifyrequests == 0)
+        vn = &globals->volumenode;
+    else if (argvn == globals->volumenode_inh &&
+                globals->volumenode_inh->dl_LockList == BNULL && globals->volumenode_inh->dl_unused == BNULL)
+            vn = &globals->volumenode_inh;
+
+    /*  If VolumeNode must be removed, we first attempt to lock the DosList
+        synchronously; whether this fails or not, we always send a
+        removal message to the DosList subtask. */
+    if (vn && *vn) {
+        struct SFSMessage *sfsm;
+        struct DosList *dol = attemptlockdoslist(5, 1);
+
+        _DEBUG("trydestroyvolumenode: dol = %ld\n", dol);
+
+        if(dol != 0) { /* Is DosList locked? */
+            removevolumenode(dol, (struct DosList *)(*vn));
+            UnLockDosList(LDF_WRITE | LDF_VOLUMES);
+        }
+
+        _DEBUG("trydestroyvolumenode: sending msg\n");
+
+        /* Even if we succesfully locked the DosList, we still should notify
+        the DosList task to remove the node as well (and to free it), just
+        in case a VolumeNode Add was still pending. */
+        if((sfsm = AllocVec(sizeof(struct SFSMessage), MEMF_CLEAR)) != 0) {
+            sfsm->command = SFSM_REMOVE_VOLUMENODE;
+            sfsm->data = (IPTR)(*vn);
+            sfsm->msg.mn_Length = sizeof(struct SFSMessage);
+
+            PutMsg(globals->sdlhport, (struct Message *)sfsm);
+        }
+
+        *vn = 0; /* clear pointer in the globals structure */
+
+        _DEBUG("trydestroyvolumenode: done\n");
+
+        diskchangenotify(IECLASS_DISKREMOVED);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
 
 static void deinitdisk() {
 
@@ -3469,13 +3564,7 @@ static void deinitdisk() {
     flushcaches();
     invalidatecaches();
 
-    if(globals->volumenode != 0) {
-
-        /* We first check if the VolumeNode needs to be removed; if not
-           then we do not lock the DosList and modify some of its fields.
-           If it must be removed, we first attempt to lock the DosList
-           synchronously; whether this fails or not, we always send a
-           removal message to the DosList subtask. */
+    if (!trydestroyvolumenode(globals->volumenode) && globals->volumenode != 0) {
 
         if(globals->locklist != 0 || globals->notifyrequests != 0) {
 
@@ -3489,46 +3578,21 @@ static void deinitdisk() {
             globals->volumenode->dl_Task = 0;
             globals->volumenode->dl_LockList = MKBADDR(globals->locklist);
             globals->volumenode->dl_unused = MKBADDR(globals->notifyrequests);
+            globals->volumenode_inh = globals->volumenode;
 
             Permit();
 
             globals->locklist = 0;
             globals->notifyrequests = 0;
-        } else {
-            struct SFSMessage *sfsm;
-            struct DosList *dol = attemptlockdoslist(5, 1);
 
-            _DEBUG("deinitdisk: dol = %ld\n", dol);
+            _DEBUG("deinitdisk: done\n");
 
-            if(dol != 0) { /* Is DosList locked? */
-                removevolumenode(dol, (struct DosList *)globals->volumenode);
-                UnLockDosList(LDF_WRITE | LDF_VOLUMES);
-            }
+            globals->volumenode = 0;
 
-            _DEBUG("deinitdisk: sending msg\n");
-
-            /* Even if we succesfully locked the DosList, we still should notify
-               the DosList task to remove the node as well (and to free it), just
-               in case a VolumeNode Add was still pending. */
-
-            if((sfsm = AllocVec(sizeof(struct SFSMessage), MEMF_CLEAR)) != 0) {
-                sfsm->command = SFSM_REMOVE_VOLUMENODE;
-                sfsm->data = (IPTR)globals->volumenode;
-                sfsm->msg.mn_Length = sizeof(struct SFSMessage);
-
-                PutMsg(globals->sdlhport, (struct Message *)sfsm);
-            }
+            diskchangenotify(IECLASS_DISKREMOVED);
         }
-
-        _DEBUG("deinitdisk: done\n");
-
-        globals->volumenode = 0;
-
-        diskchangenotify(IECLASS_DISKREMOVED);
     }
 }
-
-
 
 LONG handlesimplepackets(struct DosPacket *packet) {
     LONG type = packet->dp_Type; /* After returnpacket, packet->dp_Type is invalid! */
