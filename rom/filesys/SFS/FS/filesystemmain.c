@@ -1350,6 +1350,16 @@ void mainloop(void) {
                     }
 
                     break;
+                case ACTION_DIE:
+                    /* Simplified ACTION_DIE for purpose of supporting unmounting of SFS pendrive. Since this process is
+                       not "dying", "changeint" is removed so that it does not receive the int (and takes over volume)
+                       instead of new process created by massstorage.class. Full implementation should include removal
+                       of int, waiting for locks/notifies to be removed and exiting. Thereis however a problem of
+                       "SFS DosList handler" which gets created by first instance and ending that instance might unload
+                       code segment. */
+                    removechangeint();
+                    returnpacket(DOSTRUE, 0);
+                    break;
                 default:
                     if(handlesimplepackets(globals->packet) == 0) {
 
