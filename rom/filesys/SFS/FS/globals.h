@@ -211,6 +211,8 @@ struct SFSBase
 
     ULONG defrag_maxfilestoscan;
     LONG debugreqs;
+
+    struct DeviceList *volumenode_inh;
 };
 
 #ifdef __AROS__
