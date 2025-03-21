@@ -62,6 +62,21 @@ static struct OOP_ABDescr attrbases[] =
     {NULL,                      NULL                            }
 };
 
+AROS_INTH1(ResetHandler, struct HWData *, hwdata)
+{
+    AROS_INTFUNC_INIT
+
+    syncfenceVMWareSVGAFIFO(hwdata, (hwdata->fence - 1));
+    displayCursorVMWareSVGA(hwdata, SVGA_CURSOR_ON_HIDE);
+    syncfenceVMWareSVGAFIFO(hwdata, fenceVMWareSVGAFIFO(hwdata));
+
+    SetMem(hwdata->vrambase, 0, hwdata->display_height * hwdata->bytesperline);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 static ULONG mask_to_shift(ULONG mask)
 {
     ULONG i;
@@ -316,6 +331,8 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
+        struct VMWareSVGAHiddData *data = OOP_INST_DATA(cl, o);
+
         DINFO(bug("[VMWareSVGA] %s: object @ 0x%p\n", __func__, o);)
 
         XSD(cl)->vmwaresvgahidd = o;
@@ -391,6 +408,10 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         /* Set the ID so vmware knows we are here */
         vmwareWriteReg(&XSD(cl)->data, SVGA_REG_GUEST_ID, 0x09);
 #endif
+        data->ResetInterrupt.is_Node.ln_Name = (char *)svganewtags[1].ti_Data;
+        data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
+        data->ResetInterrupt.is_Data = &XSD(cl)->data;
+        AddResetCallback(&data->ResetInterrupt);
     }
 
     D(bug("[VMWareSVGA] %s: returning 0x%p\n", __func__, o);)
