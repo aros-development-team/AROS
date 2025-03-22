@@ -44,5 +44,5 @@ template = Template(html_template)
 html_content = template.render(feed=feed.feed, entries=feed.entries, date=datetime.datetime.now())
 
 # Write the HTML content to a file
-with open('/home/project-web/aros/htdocs/arosworld.php', 'w', encoding='utf-8') as f:
+with open('/home/project-web/aros/htdocs/arosworld.html', 'w', encoding='utf-8') as f:
     f.write(html_content)

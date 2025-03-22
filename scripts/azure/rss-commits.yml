@@ -1,6 +1,6 @@
 
-# Build & Deploy the github-commits.php, archives-uploads.php
-# and arosworld-forum.php files for the website.
+# Build & Deploy the github-commits.html, archives-uploads.html
+# and arosworld-forum.html files for the website.
 # To use, you must define the following secret variables
 # in the pipeline settings -:
 #    SF_RSYNC_USER - sourceforge user to upload as
@@ -52,9 +52,9 @@ steps:
   displayName: 'Updating arosworld RSS feed'
 
 - script: |
-    mv $(AROSWEBDIR)/htdocs/commits.php $(AROSWEBDIR)/htdocs/github-commits.php
-    mv $(AROSWEBDIR)/htdocs/archives.php $(AROSWEBDIR)/htdocs/archives-uploads.php
-    mv $(AROSWEBDIR)/htdocs/arosworld.php $(AROSWEBDIR)/htdocs/arosworld-forum.php
+    mv $(AROSWEBDIR)/htdocs/commits.html $(AROSWEBDIR)/htdocs/github-commits.html
+    mv $(AROSWEBDIR)/htdocs/archives.html $(AROSWEBDIR)/htdocs/archives-uploads.html
+    mv $(AROSWEBDIR)/htdocs/arosworld.html $(AROSWEBDIR)/htdocs/arosworld-forum.html
     mkdir -p ~/.ssh
     #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
     sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(AROSWEBDIR)/htdocs/ $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/htdocs/
