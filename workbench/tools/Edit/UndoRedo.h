@@ -65,17 +65,23 @@ typedef JBUF *				JBuf;				/* Main type pointer */
 #define	OUT_OF_DATE		((STRPTR)-1)
 #define	NO_MEANING_VAL	((STRPTR)-2)
 
+#define COMMIT_TYPE \
+  union { \
+    APTR helper; \
+    struct { \
+      UBYTE pad[sizeof(APTR) - (2 * sizeof(UBYTE))]; \
+      UBYTE commit; \
+      UBYTE type; \
+    }; \
+};
+
 /** Datatypes specific to an operation (must be WORD aligned) **/
 typedef struct _AddChar
 {
 	LINE *line;									/* Line where operation occured */
 	UWORD pos;									/* Position in this line */
 	UWORD nbc;									/* Nb. of char inserted */
-#ifdef __AROS__
-	UWORD pad;									/* to get multiple-of-4 structure sizeof */
-#endif
-	UBYTE commit;								/* Savepoint */
-	UBYTE type;									/* ADD_CHAR */
+	COMMIT_TYPE
 }	*AddChar;
 
 /** Yes, no meaning changes, except type == REM_CHAR **/
@@ -85,11 +91,7 @@ typedef struct _RemLine
 {
 	LINE  *line;								/* Line removed */
 	LINE  *after;								/* Insert the line after this one */
-#ifdef __AROS__
-	UWORD pad;									/* to get multiple-of-4 structure sizeof */
-#endif
-	UBYTE  commit;								/* Savepoint */
-	UBYTE  type;								/* REM_LINE */
+	COMMIT_TYPE
 }	*RemLine;
 
 typedef struct _JoinLine
@@ -97,20 +99,12 @@ typedef struct _JoinLine
 	LINE  *line;								/* First line concerned */
 	LINE  *old;									/* Old line removed */
 	ULONG  pos;									/* Joined position */
-#ifdef __AROS__
-   UWORD pad;									/* to get multiple-of-4 structure sizeof */
-#endif
-	UBYTE  commit;								/* Savepoint */
-	UBYTE  type;								/* JOIN_LINE */
+	COMMIT_TYPE
 }	*JoinLine;
 
 typedef struct _GroupBy						/* Gather multiple operations */
 {
-#ifdef	__AROS__
-   UWORD pad;									/* to get multiple-of-4 structure sizeof */
-#endif
-	UBYTE  commit;								/* Savepoint */
-	UBYTE  type;								/* GROUP_BY */
+	COMMIT_TYPE
 }  *GroupBy;
 
 void flush_undo_buf ( JBuf );
