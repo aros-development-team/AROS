@@ -24,7 +24,6 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include "support.h"
