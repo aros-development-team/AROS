@@ -83,10 +83,9 @@ STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args) {
 	ULONG len = 0;
 	VA_LIST copy;
 
-	/* We must copy the VA_LIST, as it be altered in place
-	 */
+	/* We must copy the VA_LIST, as it will be altered in place */
 	VA_COPY(copy, args);
-	VNewRawDoFmt(fmt, RAWFMTFUNC_COUNT, &len, args);
+	VNewRawDoFmt(fmt, RAWFMTFUNC_COUNT, &len, copy);
 	VA_END(copy);
 
 	buf = AllocVec(len, MEMF_ANY);
