@@ -65,7 +65,7 @@ static CONST CONST_STRPTR image_name[DRIVE_ICO_MAX] = {
 
 static TEXT image_path[DRIVE_ICO_MAX][IMG_PATH_LEN];
 
-static TEXT image_str[DRIVE_ICO_MAX][16];
+static TEXT image_str[DRIVE_ICO_MAX][32];
 
 DISPATCHERPROTO(DriveList_Dispatch);
 
@@ -130,7 +130,7 @@ static IPTR DriveList_Setup(Class *cl, Object *o, Msg msg) {
 		} else {
 			data->handle[i] = (IPTR)NULL;
 		}
-		SNPrintf(image_str[i], sizeof(image_str[i]), "\33O[%08lx]", data->handle[i]);
+		SNPrintf(image_str[i], sizeof(image_str[i]), "\33O[%p]", data->handle[i]);
 	}
 	return TRUE;
 }
