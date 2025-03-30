@@ -11,5 +11,5 @@ ICONS := Patterns Themes Wallpapers
              dir=$(AROS_PRESETS)
 
 #MM- icons-wbench-prefs-presets : gorilla-icons-wbench-prefs-presets
-%build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs-presets icons=$(ICONS) \
+%build_icons mmake=gorilla-icons-wbench-prefs-presets icons=$(ICONS) \
              dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_PRESETS)
