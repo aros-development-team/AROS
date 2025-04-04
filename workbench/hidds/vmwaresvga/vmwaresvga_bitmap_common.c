@@ -495,19 +495,23 @@ VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Get
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct BitmapData *data =OOP_INST_DATA(cl, o);
+    BOOL done=FALSE;
+    HIDDT_Pixel pixel;
+    HIDDT_DrawMode mode;
 
+    pixel = GC_FG(msg->gc);
+    mode = GC_DRMD(msg->gc);
+#ifdef OnBitmap
+    LONG mod = data->data->bytesperline;
+#else
+    LONG mod = data->bytesperpix * data->width;
+#endif
     D(bug(DEBUGNAME " %s()\n", __func__);)
 
     LOCK_BITMAP
 
 #ifdef OnBitmap
     struct HWData *hw;
-    HIDDT_Pixel pixel;
-    HIDDT_DrawMode mode;
-    BOOL done=FALSE;
-
-    pixel = GC_FG(msg->gc);
-    mode = GC_DRMD(msg->gc);
     hw = data->data;
     if ((VPVISFLAG) && (hw->capabilities & SVGA_CAP_RASTER_OP))
     {
@@ -573,13 +577,50 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
             syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
         }
     }
+#endif
+
+    if (!done)
+    {
+        switch(mode)
+        {
+            case vHidd_GC_DrawMode_Copy:
+                done = TRUE;
+                switch(data->bytesperpix)
+                {
+                    case 1:
+                        /* Not supported */
+                        break;
+
+                    case 2:
+                        HIDD_BM_FillMemRect16(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
+                        break;
+
+                    case 3:
+                        HIDD_BM_FillMemRect24(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
+                        break;
+
+                    case 4:
+                        HIDD_BM_FillMemRect32(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
+                        break;
+
+                }
+                break;
+
+            case vHidd_GC_DrawMode_Invert:
+                done = TRUE;
+                HIDD_BM_InvertMemRect(o, data->VideoData,
+                                    msg->minX * data->bytesperpix, msg->minY,
+                                    msg->maxX * data->bytesperpix + data->bytesperpix - 1, msg->maxY,
+                                    mod);
+                break;
+
+        } /* switch(mode) */
+    }
+
     if (!done)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
-#else
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-#endif
 
     UNLOCK_BITMAP
 }
