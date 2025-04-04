@@ -366,6 +366,10 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
                 bug("[VMWareSVGA] %s:   3D.\n", __func__);
             if (XSD(cl)->data.capabilities & SVGA_CAP_MULTIMON)
                 bug("[VMWareSVGA] %s:   Multimon\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_RECT_FILL)
+                bug("[VMWareSVGA] %s:   Rect Fill\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_RASTER_OP)
+                bug("[VMWareSVGA] %s:   Raster Operations\n", __func__);
          )
         if (XSD(cl)->data.capabilities & SVGA_CAP_DISPLAY_TOPOLOGY)
         {

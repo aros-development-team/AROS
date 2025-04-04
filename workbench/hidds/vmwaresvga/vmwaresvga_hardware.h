@@ -182,10 +182,10 @@
  *  Capabilities
  */
 
-#define	SVGA_CAP_RECT_FILL	    0x00001
+#define	SVGA_CAP_RECT_FILL          0x00001
 #define	SVGA_CAP_RECT_PAT_FILL      0x00004
 #define	SVGA_CAP_LEGACY_OFFSCREEN   0x00008
-#define	SVGA_CAP_RASTER_OP	    0x00010
+#define	SVGA_CAP_RASTER_OP          0x00010
 #define SVGA_CAP_GLYPH              0x00400
 #define SVGA_CAP_GLYPH_CLIPPING     0x00800
 #define SVGA_CAP_OFFSCREEN_1        0x01000
