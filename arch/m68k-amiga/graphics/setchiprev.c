@@ -23,7 +23,7 @@ AROS_LH1(ULONG, SetChipRev,
 
     vposr = custom->vposr & 0x7f00;
     if ((vposr & 0x0200) == 0x0200) {
-        chipflags = GFXF_AA_ALICE | GFXF_HR_AGNUS | GFXF_AA_LISA | GFXF_HR_DENISE;
+        chipflags = GFXF_AA_ALICE | GFXF_HR_AGNUS | GFXF_AA_LISA | GFXF_AA_MLISA | GFXF_HR_DENISE;
     } else if (vposr >= 0x2000) {
         chipflags = GFXF_HR_AGNUS;
         // ECS Agnus can be combined with different Denise chips.
