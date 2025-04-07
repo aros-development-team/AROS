@@ -407,14 +407,14 @@ IPTR fbDispose(Class *cl, Object *o)
     return DoSuperMethod(cl, o, OM_DISPOSE);
 }
 
-AROS_UFH3(ULONG, FontBitmapDispatch,
+AROS_UFH3(IPTR, FontBitmapDispatch,
         AROS_UFHA(Class *, cl, A0),
         AROS_UFHA(Object *, o, A2),
         AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
 
-    ULONG ret;
+    IPTR ret;
 
     switch (msg->MethodID)
     {
