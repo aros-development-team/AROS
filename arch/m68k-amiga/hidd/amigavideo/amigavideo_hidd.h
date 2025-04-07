@@ -7,6 +7,7 @@
 #include <exec/interrupts.h>
 #include <graphics/gfxbase.h>
 #include <graphics/copper.h>
+#include <interface/Hidd_AmigaGfx.h>
 
 #include "amigavideo_intern.h"
 

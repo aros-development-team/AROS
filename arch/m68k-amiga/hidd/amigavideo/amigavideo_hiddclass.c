@@ -867,7 +867,7 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
 
-    maxw = (csd->aga ? 64 : 16);
+    maxw = (csd->aga_enabled ? 64 : 16);
     maxh = maxw * 2;
 
     if (width > maxw || height > maxh)

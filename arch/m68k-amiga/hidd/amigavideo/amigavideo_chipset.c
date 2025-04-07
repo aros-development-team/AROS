@@ -8,6 +8,7 @@
 
 #include <exec/libraries.h>
 #include <exec/lists.h>
+#include <exec/types.h>
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 #include <hardware/cia.h>
@@ -57,15 +58,16 @@ VOID resetcustom(struct amigavideo_staticdata *csd)
     custom->bplcon2 = csd->bplcon2;
     csd->bplcon3 = 0x0c00;          /* set PF2OFx to default offset value 8 (plane 3 affected) */
     custom->bplcon3 = csd->bplcon3;
+
+    // Use AGA modes and create AGA copperlists only if AGA is "enabled"
+    csd->aga_enabled = csd->aga && (GfxBase->ChipRevBits0 & SETCHIPREV_AA) == SETCHIPREV_AA;
+
     csd->bplcon4 = 0x0011;          /* set OSPRM7 to default */
-    if (csd->aga) {
+    if (csd->aga_enabled) {
         custom->bplcon4 = csd->bplcon4;
     }
     custom->vposw = 0x8000;
     custom->color[0] = DEFAULT_BORDER_GRAY;
-
-    // Use AGA modes and create AGA copperlists only if AGA is "enabled"
-    csd->aga_enabled = csd->aga && (GfxBase->ChipRevBits0 & SETCHIPREV_AA) == SETCHIPREV_AA;
 }
 
 static VOID waitvblank(struct amigavideo_staticdata *csd)
@@ -103,6 +105,9 @@ VOID setfmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
         if (bm->interlace)
             *bm->copsd.copper2_fmode = fmode;
     }
+    // Update sprite fmode in copper list 1 so the control words
+    // are read correctly.
+    csd->copper1[15] = fmode & 0xc;
 }
 
 VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, UBYTE *palette)
@@ -938,7 +943,7 @@ static void updatecopper1frombm(struct amigavideo_staticdata *csd, struct amigab
     csd->copper1[27] = csd->bplcon2 | ((csd->aga && !(bm->modeid & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
     if (bm->copld.copper2_palette)
     {
-        if (csd->aga && csd->aga_enabled)
+        if (csd->aga_enabled)
         {
             csd->copper1[7] = bm->copld.copper2_palette[3];
             csd->copper1[11] = bm->copld.copper2_palette[3];
@@ -1602,13 +1607,11 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     COPPEROUT(c, 0x0100, csd->bplcon0_null)
     COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 (ecs sprites)
     COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)                   // Pen = 0
-    // If AGA is available, set the high bits of the color palette entry.
-    // The check should really be for aga_enabled, but that requires additional
-    // upcoming fixes to the AGA logic.
-    COPPEROUT(c, csd->aga? 0x0106 : 0x1fe, csd->bplcon3 | (1 << 9) | (1 << 6))
-    COPPEROUT(c, csd->aga? 0x0180 : 0x1fe, DEFAULT_BORDER_GRAY) // Pen = 0
+    // If AGA is enabled, set the high bits of the color palette entry.
+    COPPEROUT(c, csd->aga_enabled? 0x0106 : 0x1fe, csd->bplcon3 | (1 << 9) | (1 << 6))
+    COPPEROUT(c, csd->aga_enabled? 0x0180 : 0x1fe, DEFAULT_BORDER_GRAY) // Pen = 0
     // Push the default display bplcon3 again
-    COPPEROUT(c, csd->aga? 0x0106 : 0x1fe, csd->bplcon3 | (1 << 6))
+    COPPEROUT(c, csd->aga_enabled? 0x0106 : 0x1fe, csd->bplcon3 | (1 << 6))
 
     // fm0
     COPPEROUT(c, csd->ecs_denise? 0x01fc: 0x1fe, 0)             // Push fmode 0
@@ -1664,4 +1667,24 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     GfxBase->copinit = (struct copinit*)csd->copper1;
 
     D(bug("[AmigaVideo] %s: Copperlist0 %p (%d bytes)\n", __func__, csd->copper1, 46 * (sizeof(WORD) << 1)));
+}
+
+// This function unconditionally enables AGA features. Only call if you are SetChipRev!
+VOID AmigaVideoCl__Hidd_AmigaGfx__EnableAGA(OOP_Class *cl, OOP_Object *o, void *msg)
+{
+    struct amigabm_data *bm, *bmnext;
+    struct amigavideo_staticdata *csd = CSD(cl);
+    IPTR copperlist_end;
+    csd->aga_enabled = TRUE;
+    // Recalculate copper lists for all visible screens now that AGA is on.
+    // This should be enough to cover the sane cases when SetChipRev is called.
+    // Interlace is ignored. Don't go open interlace screens before activating AGA!
+    ForeachNodeSafe(csd->compositedbms, bm, bmnext) {
+        setmode(csd, bm);
+        copperlist_end = (IPTR)populatebmcopperlist(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
+        bm->bmcl->Count = (copperlist_end - (IPTR)bm->bmcl->CopLStart) >> 2;
+        setfmode(csd, bm);
+        setcoppercolors(csd, bm, bm->palette);
+        setcopperscroll2(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
+    }
 }
