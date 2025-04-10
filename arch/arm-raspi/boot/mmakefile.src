@@ -141,7 +141,7 @@ PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
 PKG_RSRC_ARCH := processor
-PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
+PKG_DEVS      := input gameport keyboard console sdcard USBHardware/dwc2
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
 PKG_HIDDS     := gfx mouse keyboard hiddclass i2c i2c-bcm2708 vc4gfx
@@ -174,13 +174,13 @@ $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
 	@$(KERNEL_LD) --be8 --format elf32-bigarm --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core-be.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
-	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	#@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
 	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
 
 $(AROSDIR)/aros-arm-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
 	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
-	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	#@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-arm-raspi.img.elf
 	@$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-arm-raspi.img.elf $@
 
 $(TARGETDIR)/core-be.bin.o: $(OSGENDIR)/boot/core.elf
@@ -208,6 +208,7 @@ clean ::
 
 $(TARGETDIR)/%.o : %.c
 	%compile_q
+	%compile_q opt="$(strip $(CFLAGS) $(CPPFLAGS) -S)" to="$(@:.o=.disas)"
 
 $(TARGETDIR)/%.o : %.S
 	%compile_q
