@@ -1317,7 +1317,41 @@ BOOL CmdExamineFH(struct Handler *handler, struct Opening *opening,
 
 BOOL CmdExamineNext(struct Handler *handler, struct FileInfoBlock *info)
 {
-   return ExamineObject(handler, NULL, info);
+   struct Examination *examination;
+   BOOL flag = info->fib_DiskKey & 0x1L;
+   /* Remove flag (if any) from pointer */
+   info->fib_DiskKey &= ~0x1L;
+   examination = (struct Examination *)info->fib_DiskKey;
+   if (!flag)
+   {
+      /* This is a first call into ExNext, turn Object into Examination */
+      /* This is done only for ExNext calls, doing it for every Examine call would
+         leave a growing list of abandoned and not freed examinations, as there is
+         no quarantee that ExNext will be called after Examine */
+      examination = AllocPooled(handler->clear_pool, sizeof(struct Examination));
+      AddTail((APTR)&handler->examinations, (APTR)examination);
+      examination->next_object = (struct Object *)info->fib_DiskKey;
+      info->fib_DiskKey = (IPTR)examination;
+   }
+
+   BOOL result = ExamineObject(handler, NULL, info);
+
+   if (result)
+   {
+      /* fib_DiskKey now contains next Object, set it to examination */
+      examination->next_object = (struct Object *)info->fib_DiskKey;
+      info->fib_DiskKey = (IPTR)examination;
+      info->fib_DiskKey |= 0x1L;
+   }
+   else
+   {
+      /* no more entries */
+      info->fib_DiskKey = 0;
+      Remove((APTR)examination);
+      FreePooled(handler->clear_pool, examination, sizeof(struct Examination));
+   }
+
+   return result;
 }
 
 
@@ -1496,8 +1530,7 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
 
    if(error == 0 && examination == NULL)
    {
-      examination = AllocPooled(handler->clear_pool,
-         sizeof(struct Examination));
+      examination = AllocPooled(handler->clear_pool, sizeof(struct Examination));
       if(examination != NULL)
          AddTail((APTR)&handler->examinations, (APTR)examination);
       else
