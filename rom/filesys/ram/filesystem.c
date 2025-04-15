@@ -1073,7 +1073,9 @@ BOOL ExamineObject(struct Handler *handler, struct Object *object,
 
    if(object == NULL)
    {
-      object = (struct Object *)info->fib_DiskKey;
+      /* This happens only for ExNext call */
+      struct Examination *examination = (struct Examination *)info->fib_DiskKey;
+      object = examination->next_object;
       next_object = (APTR)((struct Node *)object)->ln_Succ;
    }
    else
