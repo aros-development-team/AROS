@@ -652,7 +652,8 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     }
 
     // TODO: This is nice and fast. but unfortunately has to go. We'll soon switch to a more refined accelerated blitting
-    else if ((VPVISFLAG) && (dst == src) && (OOP_OCLASS(msg->dest) == XSD(cl)->vmwaresvgaonbmclass))
+    else if ((VPVISFLAG) && (XSD(cl)->data.capabilities & SVGA_CAP_RASTER_OP) &&
+        (dst == src) && (OOP_OCLASS(msg->dest) == XSD(cl)->vmwaresvgaonbmclass))
     {
         D(bug("[VMWareSVGA] %s: suitable bitmaps used ...\n", __func__);)
 
