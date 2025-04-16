@@ -720,19 +720,13 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     {
         struct BitmapData *srcbd = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         struct BitmapData *dstbd = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-        UBYTE *sbuffer;
-        ULONG srestadd;
-        UBYTE *dbuffer;
-        ULONG drestadd;
-        ULONG ycnt = msg->height;
-        ULONG xcnt;
-        LONG offset;
+        ULONG srcbytesperline;
+        ULONG dstbytesperline;
 
         /* get src/dest video data start addresses and skip sizes */
         if (srcbd->VideoData == srcbd->data->vrambase)
         {
-            offset = (msg->srcX*srcbd->bytesperpix)+(msg->srcY*srcbd->data->bytesperline);
-            srestadd = (srcbd->data->bytesperline - (msg->width*srcbd->bytesperpix));
+            srcbytesperline = srcbd->data->bytesperline;
             if ((VPVISFLAG) && (XSD(cl)->mouse.visible))
             {
                 displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_REMOVE_FROM_FB);
@@ -740,14 +734,12 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         }
         else
         {
-            offset = (msg->srcX+(msg->srcY*srcbd->width))*srcbd->bytesperpix;
-            srestadd = (srcbd->width - msg->width)*srcbd->bytesperpix;
+            srcbytesperline = srcbd->width * srcbd->bytesperpix;
         }
-        sbuffer = srcbd->VideoData+offset;
+
         if (dstbd->VideoData == dstbd->data->vrambase)
         {
-            offset = (msg->destX*dstbd->bytesperpix)+(msg->destY*dstbd->data->bytesperline);
-            drestadd = (dstbd->data->bytesperline - (msg->width*dstbd->bytesperpix));
+            dstbytesperline = dstbd->data->bytesperline;
             if ((VPVISFLAG) && (XSD(cl)->mouse.visible))
             {
                 displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_REMOVE_FROM_FB);
@@ -755,31 +747,45 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         }
         else
         {
-            offset = (msg->destX+(msg->destY*dstbd->width))*dstbd->bytesperpix;
-            drestadd = (dstbd->width - msg->width)*dstbd->bytesperpix;
+            dstbytesperline = dstbd->width * dstbd->bytesperpix;
         }
-        dbuffer = dstbd->VideoData+offset;
 
         switch (mode)
         {
             case vHidd_GC_DrawMode_Copy:
+            {
+                if (srcbd->bytesperpix == dstbd->bytesperpix)
                 {
-                    D(bug("[VMWareSVGA] %s: using CopyMem\n", __func__);)
-                    while (ycnt--)
+                    switch (srcbd->bytesperpix)
                     {
-                        xcnt = msg->width;
+                        case 1:
+                            /* Not supported */
+                        break;
 
-                        // NOTE: this is only valid if the two bitmaps share the same bytes per pixel.
-                        //               we may want to pre-process it (see below in the mouse definition code)
-                        CopyMem(sbuffer, dbuffer, xcnt * dstbd->bytesperpix);
+                        case 2:
+                            HIDD_BM_CopyMemBox16(msg->dest, srcbd->VideoData, msg->srcX, msg->srcY,
+                                                dstbd->VideoData, msg->destX, msg->destY, msg->width, msg->height,
+                                                srcbytesperline, dstbytesperline);
+                            break;
 
-                        sbuffer += xcnt * dstbd->bytesperpix;
-                        sbuffer += srestadd;
-                        dbuffer += xcnt * dstbd->bytesperpix;
-                        dbuffer += drestadd;
+                        case 3:
+                            HIDD_BM_CopyMemBox24(msg->dest, srcbd->VideoData, msg->srcX, msg->srcY,
+                                                dstbd->VideoData, msg->destX, msg->destY, msg->width, msg->height,
+                                                srcbytesperline, dstbytesperline);
+                            break;
+
+                        case 4:
+                            HIDD_BM_CopyMemBox32(msg->dest, srcbd->VideoData, msg->srcX, msg->srcY,
+                                                dstbd->VideoData, msg->destX, msg->destY, msg->width, msg->height,
+                                                srcbytesperline, dstbytesperline);
+                            break;
                     }
                 }
+                else
+                    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
                 break;
+            }
             default:
                 D(bug("[VMWareSVGA] mode = %ld, src @ 0x%p dst @ 0x%p\n", mode, src, dst);)
                 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
