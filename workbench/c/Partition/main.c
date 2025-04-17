@@ -121,7 +121,7 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 42.0 (18.05.2023)";
+const TEXT version_string[] = "$VER: Partition 42.1 (17.04.2025)";
 
 static const struct PartitionType fat32 = { "FAT\2", 4 };
 static const struct PartitionType dos3 = { "DOS\3", 4 };
@@ -161,8 +161,8 @@ int main(void)
     const struct PartitionType *sysType = NULL, *workType = NULL;
     LONG error = 0, sysSize = 0, workSize = 0, sysHighCyl, lowCyl, highCyl,
         reqHighCyl, unit, hasActive = FALSE;
-    QUAD rootLowBlock = 1, rootHighBlock = 0, extLowBlock = 1,
-        extHighBlock = 0, lowBlock, highBlock, rootBlocks, extBlocks;
+    QUAD rootLowBlock = 1, rootHighBlock = 0; /* Blocks relative to disk start */
+    QUAD lowBlock, highBlock, rootBlocks, extBlocks;
     ULONG scheme = PHPTT_MBR;
     UWORD partCount = 0;
 
@@ -428,8 +428,6 @@ int main(void)
                     }
                     if (extPartition && !activePart)
                         activePart = extPartition;
-                    extLowBlock = rootLowBlock;
-                    extHighBlock = rootHighBlock;
                     rootLowBlock = 1;
                     rootHighBlock = 0;
                     partCount++;
@@ -444,6 +442,8 @@ int main(void)
 
     if (error == 0)
     {
+        QUAD extLowBlock = 1,  extHighBlock = 0; /* Block relative to EBR start */
+
         /* Find largest gap in extended partition */
         if (extPartition != NULL)
         {
