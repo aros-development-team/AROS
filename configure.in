@@ -1106,6 +1106,11 @@ else
 fi
 AC_MSG_RESULT($enableval)
 
+# Target variant "classic" implies aros-prefs "classic" if it is not set.
+if test "$target_variant" = "classic" -a "$config_prefs_set" = ""; then
+    config_prefs_set="classic"
+fi
+
 #-----------------------------------------------------------------------------
 # Target-specific defaults. You can override then on a per-target basis.
 #
@@ -1113,6 +1118,10 @@ AC_MSG_RESULT($enableval)
 target_bootloader="none"
 PLATFORM_EXECSMP=
 ENABLE_EXECSMP=
+
+#-----------------------------------------------------------------------------
+# Classic variant is possible for Amiga target.
+CLASSIC_VARIANT_DEFINE=
 
 #-----------------------------------------------------------------------------
 # Additional options for some specific targets
@@ -1958,6 +1967,9 @@ case "$target_os" in
         aros_target_arch="amiga"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
         aros_shared_default="no"
+        if test "$aros_target_variant" = "classic" ; then
+            CLASSIC_VARIANT_DEFINE="#define AROS_VARIANT_CLASSIC"
+        fi
 
         case "$target_cpu" in
             *m68k*)
@@ -3664,6 +3676,9 @@ AC_SUBST(target_grub2_version)
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)
+
+# Define set if classic variant is chosen
+AC_SUBST(CLASSIC_VARIANT_DEFINE)
 
 # ARM default GCC target related
 AC_SUBST(gcc_default_cpu)
