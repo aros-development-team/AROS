@@ -141,9 +141,9 @@ static struct PartitionHandle *CreateRDBPartition(
 static ULONG MBsToCylinders(ULONG size, struct DosEnvec *de);
 static LONG RecurviseDestroyPartitions(struct PartitionHandle *root);
 
-static LONG BlockToCyl(struct DosEnvec *de, UQUAD block)
+static LONG BlockToCyl(struct DosEnvec *de, QUAD block)
 {
-    return (LONG)(block / (de->de_Surfaces * de->de_BlocksPerTrack));
+    return (LONG)(block / (QUAD)(de->de_Surfaces * de->de_BlocksPerTrack));
 }
 
 static UQUAD CylToBlock(struct DosEnvec *de, LONG cyl)
