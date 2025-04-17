@@ -7,15 +7,15 @@ MEMORY {
 SECTIONS
 {
  .start.MEMF_LOCAL           : { _ext_start = .;
-INCLUDE ../../../bin/amiga-m68k/gen/start_objs.ld
+INCLUDE start_objs.ld
                                } >valid
  .kick.MEMF_KICK             : { _kick_start = .;
-INCLUDE ../../../bin/amiga-m68k/gen/any_objs.ld
+INCLUDE any_objs.ld
                                  _kick_end = .;
                                  _ext_end = .;
                                } >valid
  .rom.MEMF_LOCAL             : { _rom_start = .;
-INCLUDE ../../../bin/amiga-m68k/gen/local_objs.ld
+INCLUDE local_objs.ld
                                   /* This is for the static libs */
                                  *(.text .text.* .rodata .rodata.*)
                                  *(.eh_frame)

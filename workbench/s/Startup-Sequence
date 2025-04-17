@@ -87,7 +87,9 @@ EndIf
 
 AddDataTypes REFRESH QUIET
 IPrefs
-PsdStackLoader >NIL:
+If EXISTS "C:PsdStackLoader"
+    PsdStackLoader >NIL:
+EndIf
 Run <NIL: >NIL: QUIET ConClip
 
 If EXISTS "C:RexxMast"

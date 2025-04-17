@@ -1731,7 +1731,7 @@ static const char THIS_FILE[] = __FILE__;
         */
         UpdateScreenBitMap(&screen->Screen, IntuitionBase);
 
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__) || defined(AROS_VARIANT_CLASSIC)
         screen->Screen.WBorTop    = 2;
         screen->Screen.WBorLeft   = 4;
         screen->Screen.WBorRight  = 4;
