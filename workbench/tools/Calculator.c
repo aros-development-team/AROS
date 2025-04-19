@@ -477,10 +477,13 @@ IPTR mAddCalcKey(struct IClass *cl, Object *obj, struct MUIMP_CalcKey *msg)
     {
         if (data->tape) DoMethod(data->tape, TAPEM_PRINT_RVAL, op2char(data->op), localize_display(data));
 
-        data->rvalue = strtod(data->edit_buffer, NULL);
+        if(data->state != STATE_EQU) {
+            data->rvalue = strtod(data->edit_buffer, NULL);
+        }
+
         data->state = STATE_EQU;
         data->lvalue = eval_result(data->lvalue, data->rvalue, data->op);
-        snprintf(data->edit_buffer, MAX_DIGITS, "%f", data->lvalue);
+        snprintf(data->edit_buffer, MAX_DIGITS, "%g", data->lvalue);
         /* note that there is no strnlen() in AROS !!! */
         data->num_digits = strlen(data->edit_buffer);
 
