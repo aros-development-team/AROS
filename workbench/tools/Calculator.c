@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     Command line options:
 
     1. PUBSCREEN <name>: the name of the public screen to open the window on
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *version = "$VER: Calculator 1.5 (31.05.2018) \xA9 1995-2018 The AROS Dev Team";
+const char *version = "$VER: Calculator 1.5 (31.05.2018) \xA9 1995-2025 The AROS Dev Team";
 
 #define ARG_TEMPLATE "PUBSCREEN,TAPE/K"
 enum {ARG_PUBSCREEN,ARG_TAPE,NUM_ARGS};
@@ -69,7 +69,7 @@ struct CalcButtonInfo
 struct CalcButtonInfo BUTTONS[] =
 {
     {"7", BTYPE_7, '7'}, {"8", BTYPE_8, '8'}, {"9", BTYPE_9, '9'}, {"CA", BTYPE_CA, 'A'}, {"CE", BTYPE_CE, 'E'},
-    {"4", BTYPE_4, '4'}, {"5", BTYPE_5, '5'}, {"6", BTYPE_6, '6'}, {"*", BTYPE_MUL, '*'}, {":", BTYPE_DIV, ':'},
+    {"4", BTYPE_4, '4'}, {"5", BTYPE_5, '5'}, {"6", BTYPE_6, '6'}, {"*", BTYPE_MUL, '*'}, {"/", BTYPE_DIV, '/'},
     {"1", BTYPE_1, '1'}, {"2", BTYPE_2, '2'}, {"3", BTYPE_3, '3'}, {"+", BTYPE_ADD, '+'}, {"-", BTYPE_SUB, '-'},
     {"0", BTYPE_0, '0'}, {".", BTYPE_COMMA, '.'}, {"<<", BTYPE_BS, 8}, {"+/-", BTYPE_SIGN, 's'}, {"=", BTYPE_EQU, '='}
 };
