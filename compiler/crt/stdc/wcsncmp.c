@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 
     C99 function wcsncmp().
 */
@@ -42,18 +42,22 @@
 
 ******************************************************************************/
 {
-    while ((cnt-- > 0) &&
-                *wcstra &&
-                *wcstrb &&
-                (*wcstra == *wcstrb))
-    {
-        wcstra++;
-        wcstrb++;
-    }
+    wchar_t stra = L'\0';
+    wchar_t strb = L'\0';
 
-    if ((cnt > 0) && *wcstra < *wcstrb)
-        return -1;
-    else if ((cnt > 0) && *wcstra > *wcstrb)
-        return 1;
+    while (cnt-- > 0)
+    {
+        stra = *wcstra++;
+        strb = *wcstrb++;
+        if (stra == L'\0' || stra != strb)
+        {
+        if (stra < strb)
+            return -1;
+        else if (stra > strb)
+            return 1;
+        else
+            break;
+        }
+    }
     return 0;
 } /* wcsncmp */
