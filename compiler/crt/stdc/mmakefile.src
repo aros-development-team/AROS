@@ -348,6 +348,17 @@ STDC_MATH += $(STDC_WCABS_MATH)
 
 # wide char/string support
 STDC_WCHAR := \
+    wmemset \
+    wmemcmp \
+    wmemchr \
+    wcscspn \
+    wcsstr \
+    wcstok \
+    wcsspn \
+    wcspbrk \
+    wcsrchr \
+    wcschr \
+    wcsncat \
     wcscat \
     wcscmp \
     wcsncmp \
