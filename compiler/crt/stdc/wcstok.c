@@ -5,6 +5,9 @@
 
 #include <wchar.h>
 
+size_t wcsspn(const wchar_t *s1, const wchar_t *s2);
+wchar_t *wcspbrk(const wchar_t *s1, const wchar_t *s2);
+
 /*****************************************************************************
 
     NAME */
