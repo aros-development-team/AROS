@@ -16,6 +16,15 @@
 
 #define DMH(x)
 
+// On AGA Amigas, AmiBlitz 3 allocation of wide sprites relies on that AllocPooled
+// returns at least eight byte aligned memory. AllocPooled on a classic Amiga even
+// aligns memory on 16 bytes on some occasions, so go with that.
+#ifdef AMIGA
+#define ALLOCPOOLED_USER_OFFSET 16
+#else /* AMIGA */
+#define ALLOCPOOLED_USER_OFFSET sizeof(struct MemHeader *)
+#endif /* AMIGA */
+
 /*
  * Find MemHeader to which address belongs.
  * This function is legal to be called in supervisor mode (we use TypeOfMem()
@@ -933,7 +942,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
      * allocated from. This is done in order to avoid slow lookups in InternalFreePooled().
      * This is done in AllocVec()-alike manner; the pointer is placed right before the block.
      */
-    memSize += sizeof(struct MemHeader *);
+    memSize += ALLOCPOOLED_USER_OFFSET;
     origSize = memSize;
 
     /* If mungwall is enabled, count also size of walls */
@@ -1061,7 +1070,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
 
         /* Remember where we were allocated from */
         *((struct MemHeader **)ret) = mh;
-        ret += sizeof(struct MemHeader *);
+        ret += ALLOCPOOLED_USER_OFFSET;
     }
 
     /* Everything fine */
@@ -1087,8 +1096,8 @@ void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct Trace
     if (!memory || !memSize) return;
 
     /* Get MemHeader pointer. It is stored right before our block. */
-    freeStart = memory - sizeof(struct MemHeader *);
-    freeSize = memSize + sizeof(struct MemHeader *);
+    freeStart = memory - ALLOCPOOLED_USER_OFFSET;
+    freeSize = memSize + ALLOCPOOLED_USER_OFFSET;
     mh = *((struct MemHeader **)freeStart);
 
     /* Check walls first */
