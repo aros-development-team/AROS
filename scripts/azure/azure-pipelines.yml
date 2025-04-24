@@ -80,7 +80,8 @@ jobs:
       fi
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
-      sudo apt-get install -y python3-mako python3-distutils libswitch-perl gperf gcc-multilib g++ ccache
+      sudo apt-get install -y python3-mako python3-distutils-extra
+      sudo apt-get install -y libswitch-perl gperf gcc-multilib g++ ccache
       sudo apt-get install -y jlha-utils wget
       if [ "$AROSBUILD_TARGET" = "amiga-m68k" ]; then
         sudo apt-get install -y python3-crcmod
