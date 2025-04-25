@@ -125,7 +125,8 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
                     req.tr_node.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
                     req.tr_node.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
                     req.tr_node.io_Command = IND_SETTHRESH;
-                    req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay;
+                    req.tr_time.tv_secs = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay.tv_secs;
+                    req.tr_time.tv_micro = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay.tv_micro;
                     DoIO(&req.tr_node);
 
             #ifndef __MORPHOS__
@@ -156,7 +157,8 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
                 req.tr_node.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
                 req.tr_node.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
                 req.tr_node.io_Command = IND_SETPERIOD;
-                req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed;
+                req.tr_time.tv_secs = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed.tv_secs;
+                req.tr_time.tv_micro = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed.tv_micro;
                 DoIO(&req.tr_node);
     
             #ifndef __MORPHOS__
