@@ -42,13 +42,10 @@
 
 ******************************************************************************/
 {
-    wchar_t stra = L'\0';
-    wchar_t strb = L'\0';
-
     while (cnt-- > 0)
     {
-        stra = *wcstra++;
-        strb = *wcstrb++;
+        wchar_t stra = *wcstra++;
+        wchar_t strb = *wcstrb++;
         if (stra == L'\0' || stra != strb)
         {
         if (stra < strb)
