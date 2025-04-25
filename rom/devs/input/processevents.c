@@ -42,7 +42,8 @@
 
 #define SEND_KEYTIMER_REQUEST(timerio,time)             \
         timerio->tr_node.io_Command = TR_ADDREQUEST;    \
-        timerio->tr_time = time;                        \
+        timerio->tr_time.tv_secs = time.tv_secs;        \
+        timerio->tr_time.tv_micro = time.tv_micro;      \
         SendIO((struct IORequest *)timerio)
 
 #define ABORT_KEYTIMER_REQUEST \
@@ -427,13 +428,17 @@ void ProcessEvents(struct inputbase *InputDevice)
                     } break;
 
                 case IND_SETTHRESH:
-                    InputDevice->KeyRepeatThreshold =
-                        ((struct timerequest *)ioreq)->tr_time;
+                    InputDevice->KeyRepeatThreshold.tv_secs =
+                        ((struct timerequest *)ioreq)->tr_time.tv_secs;
+                    InputDevice->KeyRepeatThreshold.tv_micro =
+                        ((struct timerequest *)ioreq)->tr_time.tv_micro;
                     break;
 
                 case IND_SETPERIOD:
-                    InputDevice->KeyRepeatInterval =
-                        ((struct timerequest *)ioreq)->tr_time;
+                    InputDevice->KeyRepeatInterval.tv_secs =
+                        ((struct timerequest *)ioreq)->tr_time.tv_secs;
+                    InputDevice->KeyRepeatInterval.tv_micro =
+                        ((struct timerequest *)ioreq)->tr_time.tv_micro;
                     break;
 
                 }

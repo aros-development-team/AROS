@@ -116,14 +116,18 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 #endif
 
     case TR_GETSYSTIME:
-        GetSysTime(&timereq->tr_time);
+    {
+        struct timeval tv;
+        GetSysTime(&tv);
+        timereq->tr_time.tv_secs = tv.tv_secs;
+        timereq->tr_time.tv_micro = tv.tv_micro;
 
         if (!(timereq->tr_node.io_Flags & IOF_QUICK))
             ReplyMsg(&timereq->tr_node.io_Message);
 
         replyit = FALSE; /* Because replyit will clear the timeval */
         break;
-
+    }
     case TR_SETSYSTIME:
         Disable();
 
