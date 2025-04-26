@@ -12,8 +12,10 @@
 #include <utility/tagitem.h>
 #include <proto/utility.h>
 
-#include "gfxfuncsupport.h"
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
+
+#include <interface/Hidd_AmigaGfx.h>
 
 /*****************************************************************************
 
@@ -52,9 +54,6 @@
     SEE ALSO
 
     INTERNALS
-        This is a minimal implementation which supports only single sprite #0
-        for mouse pointer.
-
         With vp set to NULL the function always fails at the moment.
 
     HISTORY
@@ -63,16 +62,12 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     OOP_Object *bitmap;
     struct monitor_driverdata *mdd;
     LONG res;
 
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
-
-    /* We have only sprite #0 for the mouse pointer */
-    if (newsprite->es_SimpleSprite.num)
-        return 0;
 
     /* Pick up position from old sprite */
     newsprite->es_SimpleSprite.x = oldsprite->es_SimpleSprite.x;
@@ -85,9 +80,20 @@
     if (vp) {
         /* Pick up display driver from ViewPort's bitmap */
         mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
-        res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, 0, 0);
-        if (res)
-            HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+
+        if(newsprite->es_SimpleSprite.num == 0)
+        {
+            res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, 0, 0);
+            if (res)
+                HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+        }
+        else
+        {
+            OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+            res = HIDD_AMIGAGFX_SetSpriteShape(mdd->gfxhidd, bitmap, 0, 0, newsprite->es_SimpleSprite.num);
+            if (res)
+                HIDD_AMIGAGFX_SetSpriteVisible(mdd->gfxhidd, TRUE, newsprite->es_SimpleSprite.num);
+        }
     } else
         /* TODO: NULL ViewPort means Amiga(tm) chipset display */
         res = FALSE;

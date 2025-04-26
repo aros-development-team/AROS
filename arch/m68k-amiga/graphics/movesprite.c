@@ -11,6 +11,8 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
+#include <interface/Hidd_AmigaGfx.h>
+
 /*****************************************************************************
 
     NAME */
@@ -80,10 +82,12 @@
         return;
     }
 
-    if (sprite->num) /* We have only sprite #0 for the mouse cursor */
-        return;
-
-    HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);
+    if (sprite->num)
+    {
+        OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+        HIDD_AMIGAGFX_SetSpritePos(mdd->gfxhidd, sprite->x, sprite->y, sprite->num);
+    }
+    else HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);
 
     AROS_LIBFUNC_EXIT
 } /* MoveSprite */

@@ -879,7 +879,7 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct
     return TRUE;
 }
 
-BOOL AmigaVideoCl__Hidd_Gfx__SetSpriteShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetSpriteShape *msg, int spritenum)
+BOOL AmigaVideoCl__Hidd_AmigaGfx__SetSpriteShape(OOP_Class *cl, OOP_Object *o, struct pHidd_AmigaGfx_SetSpriteShape *msg, int spritenum)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *OOPBase = csd->cs_OOPBase;
@@ -933,7 +933,7 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct p
     return TRUE;
 }
 
-BOOL AmigaVideoCl__Hidd_Gfx__SetSpritePos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetSpritePos *msg, int spritenum)
+BOOL AmigaVideoCl__Hidd_AmigaGfx__SetSpritePos(OOP_Class *cl, OOP_Object *o, struct pHidd_AmigaGfx_SetSpritePos *msg, int spritenum)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     UBYTE res = 0, cursy;
@@ -963,7 +963,7 @@ VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, stru
     setspritevisible(csd, msg->visible);
 }
 
-VOID AmigaVideoCl__Hidd_Gfx__SetSpriteVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetSpriteVisible *msg, int spritenum)
+VOID AmigaVideoCl__Hidd_AmigaGfx__SetSpriteVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_AmigaGfx_SetSpriteVisible *msg, int spritenum)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     new_setspritevisible(csd, msg->visible, spritenum);

@@ -1,14 +1,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CFILES  := setchiprev vbeampos
+CFILES  := changeextspritea movesprite setchiprev vbeampos
 AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
 
 #MM kernel-graphics-amiga-m68k : kernel-amiga-m68k-amigavideo kernel-hidd-includes kernel-graphics-includes includes-asm_h kernel-hidd-graphics-includes
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \
                -I$(SRCDIR)/rom/graphics
-USER_CPPFLAGS := -D__GRAPHICS_NOHIDDBASE__ \
+USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ \
                  -D__OOP_RELLIBBASE__ \
                  -D__UTILITY_RELLIBBASE__ \
                  -DDoRegisterCalls

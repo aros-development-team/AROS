@@ -733,7 +733,7 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
     return TRUE;
 }
 
-BOOL new_setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHidd_Gfx_SetCursorShape *msg, int spritenum)
+BOOL new_setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHidd_AmigaGfx_SetSpriteShape *msg, int spritenum)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *OOPBase = csd->cs_OOPBase;
