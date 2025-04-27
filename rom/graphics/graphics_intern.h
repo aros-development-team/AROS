@@ -218,6 +218,9 @@ struct GfxBase_intern
 
     /* baseclass for CreateObject */
     OOP_Class                   *basebm;
+
+    // Platform-specific data like chipset driver handle
+    APTR                        PlatformData;
 };
 
 

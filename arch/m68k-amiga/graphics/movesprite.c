@@ -47,9 +47,6 @@
         None.
 
     NOTES
-        AROS currently supports only one sprite #0 for mouse pointer.
-        Other sprite numbers are ignored by this function.
-
         ViewPort is also used in order to specify the physical display.
         If it's not specified, Amiga(tm) chipset display is assumed.
         This is available only on Amiga(tm) architecture.
@@ -69,25 +66,26 @@
 {
     AROS_LIBFUNC_INIT
 
+    OOP_Object *gfxhidd;
     struct monitor_driverdata *mdd;
 
     if (vp) {
         sprite->x = x + vp->DxOffset;
         sprite->y = y + vp->DyOffset;
         mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
+        gfxhidd = mdd->gfxhidd;
     } else {
         sprite->x = x;
         sprite->y = y;
-        /* TODO: obviously this should use a chipset driver. Currently we have no one. */
-        return;
+        gfxhidd = (OOP_Object *)PrivGBase(GfxBase)->PlatformData;
     }
 
     if (sprite->num)
     {
         OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
-        HIDD_AMIGAGFX_SetSpritePos(mdd->gfxhidd, sprite->x, sprite->y, sprite->num);
+        HIDD_AMIGAGFX_SetSpritePos(gfxhidd, sprite->x, sprite->y, sprite->num);
     }
-    else HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);
+    else HIDD_Gfx_SetCursorPos(gfxhidd, sprite->x, sprite->y);
 
     AROS_LIBFUNC_EXIT
 } /* MoveSprite */
