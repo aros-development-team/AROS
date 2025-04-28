@@ -555,7 +555,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
                       for(plane = 1; plane<depth; plane++)
                       {
-                          nbm->Planes[plane] = (void *)((ULONG)(nbm->Planes[plane-1]) + RASSIZE(sizex,sizey));
+                          nbm->Planes[plane] = (void *)((IPTR)(nbm->Planes[plane-1]) + RASSIZE(sizex,sizey));
                       }
                     }
                 }
