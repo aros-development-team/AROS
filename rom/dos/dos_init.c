@@ -24,6 +24,8 @@
 
 #include "dos_intern.h"
 
+#define D(x) x
+
 static const UBYTE version[];
 extern const char LIBEND;
 

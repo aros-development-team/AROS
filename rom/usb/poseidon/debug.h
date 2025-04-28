@@ -1,3 +1,4 @@
+
 #undef XPRINTF
 #undef KPRINTF
 #undef DB
@@ -5,8 +6,6 @@
 #ifndef DB_LEVEL
 #define DB_LEVEL 1
 #endif
-
-//#define DEBUG 1
 
 //#define MEMDEBUG
 
