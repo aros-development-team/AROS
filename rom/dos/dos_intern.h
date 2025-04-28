@@ -96,7 +96,6 @@ struct vfp
 
 /* Softlink handling */
 STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
-LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase);
 
 /* Packet I/O */
 struct DosPacket *allocdospacket(void);
@@ -313,7 +312,7 @@ struct PacketHelperStruct
         struct DevProc *dp;
 };
 
-BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR, struct PacketHelperStruct*);
+BOOL getpacketinfo(struct DosLibrary *DOSBase, BPTR, CONST_STRPTR, struct PacketHelperStruct*);
 BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_STRPTR name, struct PacketHelperStruct *phs);
 void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 
@@ -337,5 +336,8 @@ BPTR findseg_shell(BOOL isBoot, struct DosLibrary *DOSBase);
 /* Helper for IN:, OUT:, ERR:, STDIN:, STDOUT:, STDERR:
  */
 BOOL pseudoLock(CONST_STRPTR name, LONG lockMode, BPTR *lock, LONG *ret, struct DosLibrary *DOSBase);
+
+/* helper for recursively resolving softlinks */
+STRPTR ResolveSoftlink(BPTR lock, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
 
 #endif /* DOS_INTERN_H */
