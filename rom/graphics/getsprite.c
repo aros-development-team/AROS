@@ -55,6 +55,8 @@
         FreeSprite(), ChangeSprite(), MoveSprite(), GetSprite(), graphics/sprite.h
 
     INTERNALS
+        In AROS, sprite zero is reserved for the mouse cursor and is
+        never reserved by this function.
 
     HISTORY
 
@@ -73,9 +75,11 @@
     Disable();
 
     if (-1 == pick) {
-      LONG Count = 0;
-      /* user just wants the next available sprite */
-      SearchMask = 0x01;
+      LONG Count = 1;
+      /* user just wants the next available sprite.
+       * Since AROS does not set up the Intuition pointer through the
+       * sprite API, we skip sprite 0 when searching for a sprite slot. */
+      SearchMask = 0x02;
 
       /* look for the first not allocated sprite */
       while (0 != (GfxBase->SpriteReserved & SearchMask)  &&  Count < 8) {
