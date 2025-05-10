@@ -111,7 +111,7 @@ struct AddressRange
 
 struct rx_ring_desc
 {
-    IPTR    PacketBuffer;
+    ULONG   PacketBuffer;
     UWORD   BufferLength;
     UWORD   BufferStatus;
     ULONG   BufferMsgLength;
@@ -120,7 +120,7 @@ struct rx_ring_desc
 
 struct tx_ring_desc
 {
-    IPTR    PacketBuffer;
+    ULONG   PacketBuffer;
     UWORD   BufferLength;
     UWORD   BufferStatus;
     ULONG   Misc;
@@ -208,6 +208,7 @@ struct PCN32Unit {
     struct Interrupt        pcnu_rx_int;
     struct Interrupt        pcnu_tx_int;
     struct Interrupt        pcnu_tx_end_int;
+    ULONG                   pcnu_tx_ring_full;
 
     STRPTR                  pcnu_name;
     ULONG                   pcnu_mtu;

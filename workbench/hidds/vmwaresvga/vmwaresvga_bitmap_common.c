@@ -180,6 +180,41 @@ VOID MNAME_BM(DrawPixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_DrawP
 
 #endif
 
+
+static VOID CopyMemBox32(struct BitmapData *data,
+    UBYTE *pixels, WORD x, WORD y, WORD width, WORD height, ULONG modulo,
+    BOOL togpu)
+{
+    ULONG offset;
+    ULONG restadd;
+    UBYTE *buffer;
+    ULONG ycnt;
+    LONG xcnt;
+    UBYTE *src=(UBYTE *)pixels;
+#ifdef OnBitmap
+    offset = (x*data->bytesperpix)+(y*data->data->bytesperline);
+    restadd = (data->data->bytesperline - (width*data->bytesperpix));
+#else
+    offset = (x + (y*data->width))*data->bytesperpix;
+    restadd = (data->width-width)*data->bytesperpix;
+#endif
+    buffer = data->VideoData+offset;
+    ycnt = height;
+    while (ycnt>0)
+    {
+        HIDDT_Pixel *p = (HIDDT_Pixel *)src;
+        xcnt = width;
+
+        togpu ?
+            CopyMem(p, buffer, xcnt * data->bytesperpix) :
+            CopyMem(buffer, p, xcnt * data->bytesperpix);
+
+        buffer += (xcnt * data->bytesperpix);
+        buffer += restadd;
+        src += modulo;
+        ycnt--;
+    }
+}
 /*********  BitMap::PutImage()  ***************************/
 
 VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
@@ -187,57 +222,98 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 #ifdef OnBitmap
     struct Box box;
+    LONG dstmod = data->data->bytesperline;
+#else
+    LONG dstmod = data->bytesperpix * data->width;
 #endif
-    ULONG offset;
-    ULONG restadd;
-    UBYTE *buffer;
-    ULONG ycnt;
-    LONG xcnt;
-    UBYTE *src=(UBYTE *)msg->pixels;
 
     D(bug(DEBUGNAME " %s()\n", __func__);)
 
     LOCK_BITMAP
 
-    if (msg->pixFmt == vHidd_StdPixFmt_Native32)
+    if (msg->pixFmt == vHidd_StdPixFmt_Native)
     {
-#ifdef OnBitmap
-        offset = (msg->x*data->bytesperpix)+(msg->y*data->data->bytesperline);
-        restadd = (data->data->bytesperline - (msg->width*data->bytesperpix));
-#else
-        offset = (msg->x + (msg->y*data->width))*data->bytesperpix;
-        restadd = (data->width-msg->width)*data->bytesperpix;
-#endif
-        buffer = data->VideoData+offset;
-        ycnt = msg->height;
-        while (ycnt>0)
+        switch(data->bytesperpix)
         {
-            HIDDT_Pixel *p = (HIDDT_Pixel *)src;
-            xcnt = msg->width;
+            case 1:
+                /* Not supported */
+                break;
 
-            CopyMem(p, buffer, xcnt * data->bytesperpix);
+            case 2:
+                HIDD_BM_CopyMemBox16(o, msg->pixels, 0, 0,
+                                        data->VideoData, msg->x, msg->y, msg->width, msg->height,
+                                        msg->modulo, dstmod);
+                break;
 
-            buffer += (xcnt * data->bytesperpix);
-            buffer += restadd;
-            src += msg->modulo;
-            ycnt--;
+            case 3:
+                HIDD_BM_CopyMemBox24(o, msg->pixels, 0, 0,
+                                        data->VideoData, msg->x, msg->y, msg->width, msg->height,
+                                        msg->modulo, dstmod);
+                break;
+
+            case 4:
+                CopyMemBox32(data, msg->pixels, msg->x, msg->y, msg->width, msg->height, msg->modulo, TRUE);
+                break;
+
         }
-#ifdef OnBitmap
-        if (VPVISFLAG)
+    }
+    else if (msg->pixFmt == vHidd_StdPixFmt_Native32)
+    {
+        switch(data->bytesperpix)
         {
-            syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
-            box.x1 = msg->x;
-            box.y1 = msg->y;
-            box.x2 = box.x1+msg->width-1;
-            box.y2 = box.y1+msg->height-1;
-            VMWareSVGA_Damage_DeltaAdd(data->data, &box);
+            case 1:
+                /* Not supported */
+                break;
+
+            case 2:
+                HIDD_BM_PutMem32Image16(o, msg->pixels,
+                                        data->VideoData, msg->x, msg->y, msg->width, msg->height,
+                                        msg->modulo, dstmod);
+                break;
+
+            case 3:
+                HIDD_BM_PutMem32Image24(o, msg->pixels,
+                                        data->VideoData, msg->x, msg->y, msg->width, msg->height,
+                                        msg->modulo, dstmod);
+                break;
+
+            case 4:
+                CopyMemBox32(data, msg->pixels, msg->x, msg->y, msg->width, msg->height, msg->modulo, TRUE);
+
+                break;
+
         }
-#endif
     }
     else
     {
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        APTR dst_pixels, src_pixels;
+        OOP_Object *srcPF, *dstPF;
+        OOP_Object * gfxHidd;
+
+        src_pixels = msg->pixels;
+        dst_pixels = data->VideoData + msg->y * dstmod
+            + msg->x * data->bytesperpix;
+        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstPF);
+        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
+        srcPF = HIDD_Gfx_GetPixFmt(gfxHidd, msg->pixFmt);
+
+        HIDD_BM_ConvertPixels(o, &src_pixels,
+            (HIDDT_PixelFormat *)srcPF, msg->modulo, &dst_pixels,
+            (HIDDT_PixelFormat *)dstPF, dstmod, msg->width, msg->height,
+            NULL);
     }
+
+#ifdef OnBitmap
+    if (VPVISFLAG)
+    {
+        syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+        box.x1 = msg->x;
+        box.y1 = msg->y;
+        box.x2 = box.x1+msg->width-1;
+        box.y2 = box.y1+msg->height-1;
+        VMWareSVGA_Damage_DeltaAdd(data->data, &box);
+    }
+#endif
 
     UNLOCK_BITMAP
 }
@@ -247,44 +323,84 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-    ULONG offset;
-    ULONG restadd;
-    UBYTE *buffer;
-    ULONG ycnt;
-    LONG xcnt;
-    UBYTE *src=msg->pixels;
+#ifdef OnBitmap
+    LONG srcmod = data->data->bytesperline;
+#else
+    LONG srcmod = data->bytesperpix * data->width;
+#endif
 
     D(bug(DEBUGNAME " %s()\n", __func__);)
 
     LOCK_BITMAP
 
-    if (msg->pixFmt == vHidd_StdPixFmt_Native32)
+    if (msg->pixFmt == vHidd_StdPixFmt_Native)
     {
-#ifdef OnBitmap
-        offset = (msg->x*data->bytesperpix)+(msg->y*data->data->bytesperline);
-        restadd = (data->data->bytesperline - (msg->width*data->bytesperpix));
-#else
-        offset = (msg->x + (msg->y*data->width))*data->bytesperpix;
-        restadd = (data->width-msg->width)*data->bytesperpix;
-#endif
-        buffer = data->VideoData+offset;
-        ycnt = msg->height;
-        while (ycnt>0)
+        switch(data->bytesperpix)
         {
-            HIDDT_Pixel *p = (HIDDT_Pixel *)src;
-            xcnt = msg->width;
+            case 1:
+                /* Not supported */
+                break;
 
-                        CopyMem(buffer, p, xcnt * data->bytesperpix);
+            case 2:
+                HIDD_BM_CopyMemBox16(o, data->VideoData, msg->x, msg->y,
+                                        msg->pixels, 0, 0, msg->width, msg->height,
+                                        srcmod, msg->modulo);
+                break;
 
-                        buffer += (xcnt * data->bytesperpix);
-            buffer += restadd;
-            src += msg->modulo;
-            ycnt--;
+            case 3:
+                HIDD_BM_CopyMemBox24(o, data->VideoData, msg->x, msg->y,
+                                        msg->pixels, 0, 0, msg->width, msg->height,
+                                        srcmod, msg->modulo);
+                break;
+
+            case 4:
+                CopyMemBox32(data, msg->pixels, msg->x, msg->y, msg->width, msg->height, msg->modulo, FALSE);
+
+                break;
+        }
+    }
+    else if (msg->pixFmt == vHidd_StdPixFmt_Native32)
+    {
+        switch(data->bytesperpix)
+        {
+            case 1:
+                /* Not supported */
+                break;
+
+            case 2:
+                HIDD_BM_GetMem32Image16(o, data->VideoData, msg->x, msg->y,
+                                        msg->pixels, msg->width, msg->height,
+                                        srcmod, msg->modulo);
+                break;
+
+            case 3:
+                HIDD_BM_GetMem32Image24(o, data->VideoData, msg->x, msg->y,
+                                        msg->pixels, msg->width, msg->height,
+                                        srcmod, msg->modulo);
+                break;
+
+            case 4:
+                CopyMemBox32(data, msg->pixels, msg->x, msg->y, msg->width, msg->height, msg->modulo, FALSE);
+
+                break;
         }
     }
     else
     {
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        APTR dst_pixels, src_pixels;
+        OOP_Object *srcPF, *dstPF;
+        OOP_Object * gfxHidd;
+
+        src_pixels = data->VideoData + msg->y * srcmod
+            + msg->x * data->bytesperpix;
+        dst_pixels = msg->pixels;
+        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&srcPF);
+        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
+        dstPF = HIDD_Gfx_GetPixFmt(gfxHidd, msg->pixFmt);
+
+        HIDD_BM_ConvertPixels(o, &src_pixels, (HIDDT_PixelFormat *)srcPF,
+            srcmod, &dst_pixels, (HIDDT_PixelFormat *)dstPF,
+            msg->modulo, msg->width, msg->height, NULL);
     }
 
     UNLOCK_BITMAP
@@ -379,19 +495,23 @@ VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Get
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct BitmapData *data =OOP_INST_DATA(cl, o);
+    BOOL done=FALSE;
+    HIDDT_Pixel pixel;
+    HIDDT_DrawMode mode;
 
+    pixel = GC_FG(msg->gc);
+    mode = GC_DRMD(msg->gc);
+#ifdef OnBitmap
+    LONG mod = data->data->bytesperline;
+#else
+    LONG mod = data->bytesperpix * data->width;
+#endif
     D(bug(DEBUGNAME " %s()\n", __func__);)
 
     LOCK_BITMAP
 
 #ifdef OnBitmap
     struct HWData *hw;
-    HIDDT_Pixel pixel;
-    HIDDT_DrawMode mode;
-    BOOL done=FALSE;
-
-    pixel = GC_FG(msg->gc);
-    mode = GC_DRMD(msg->gc);
     hw = data->data;
     if ((VPVISFLAG) && (hw->capabilities & SVGA_CAP_RASTER_OP))
     {
@@ -457,13 +577,50 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
             syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
         }
     }
+#endif
+
+    if (!done)
+    {
+        switch(mode)
+        {
+            case vHidd_GC_DrawMode_Copy:
+                done = TRUE;
+                switch(data->bytesperpix)
+                {
+                    case 1:
+                        /* Not supported */
+                        break;
+
+                    case 2:
+                        HIDD_BM_FillMemRect16(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
+                        break;
+
+                    case 3:
+                        HIDD_BM_FillMemRect24(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
+                        break;
+
+                    case 4:
+                        HIDD_BM_FillMemRect32(o, data->VideoData, msg->minX, msg->minY, msg->maxX, msg->maxY, mod, pixel);
+                        break;
+
+                }
+                break;
+
+            case vHidd_GC_DrawMode_Invert:
+                done = TRUE;
+                HIDD_BM_InvertMemRect(o, data->VideoData,
+                                    msg->minX * data->bytesperpix, msg->minY,
+                                    msg->maxX * data->bytesperpix + data->bytesperpix - 1, msg->maxY,
+                                    mod);
+                break;
+
+        } /* switch(mode) */
+    }
+
     if (!done)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
-#else
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-#endif
 
     UNLOCK_BITMAP
 }

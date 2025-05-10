@@ -42,19 +42,19 @@
 
 static inline LONG CMPTIME(struct timeval *dest, struct timeval *src)
 {
-    LONG diff;
-
-    if (dest->tv_secs == src->tv_secs)
-	diff = src->tv_micro - dest->tv_micro;
+    if (dest->tv_secs > src->tv_secs)
+        return -1;
+    else if (dest->tv_secs < src->tv_secs)
+        return 1;
     else
-	diff = src->tv_secs - dest->tv_secs;
+    {
+        if (dest->tv_micro > src->tv_micro)
+            return -1;
+        else if (dest->tv_micro < src->tv_micro)
+            return 1;
+    }
 
-    if (diff < 0)
-	return -1;
-    else if (diff > 0)
-	return 1;
-    else
-	return 0;
+    return 0;
 }
 
 /*

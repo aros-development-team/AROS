@@ -426,6 +426,22 @@ BOOL IsKernelBaseReady(struct ExecBase *SysBase)
     return FALSE;
 }
 
+int Exec_X86PreInit(struct ExecBase *SysBase)
+{
+    struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
+
+    D(bug("[Exec:X86] %s()\n", __func__));
+
+    sysBase->ShutdownHandler.is_Node.ln_Pri = -128;
+    sysBase->ShutdownHandler.is_Node.ln_Name = "System Shutdown";
+    sysBase->ShutdownHandler.is_Code = (VOID_FUNC)Exec_X86ShutdownHandler;
+    sysBase->ShutdownHandler.is_Data = &sysBase->ShutdownHandler;
+    AddResetCallback(&sysBase->ShutdownHandler);
+
+    return TRUE;
+}
+ADD2SET(Exec_X86PreInit, PREINITLIB, 0);
+
 int Exec_X86Init(struct ExecBase *SysBase)
 {
     struct IntExecBase *sysBase = (struct IntExecBase *)SysBase;
@@ -449,12 +465,6 @@ int Exec_X86Init(struct ExecBase *SysBase)
     sysBase->WarmResetHandler.is_Code = (VOID_FUNC)Exec_X86WarmResetHandler;
     sysBase->WarmResetHandler.is_Data = &sysBase->WarmResetHandler;
     AddResetCallback(&sysBase->WarmResetHandler);
-
-    sysBase->ShutdownHandler.is_Node.ln_Pri = -128;
-    sysBase->ShutdownHandler.is_Node.ln_Name = "System Shutdown";
-    sysBase->ShutdownHandler.is_Code = (VOID_FUNC)Exec_X86ShutdownHandler;
-    sysBase->ShutdownHandler.is_Data = &sysBase->ShutdownHandler;
-    AddResetCallback(&sysBase->ShutdownHandler);
 
     D(bug("[Exec:X86] %s: Default Handlers Registered\n", __func__));
 

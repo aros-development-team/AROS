@@ -30,9 +30,6 @@
 #include "vmwaresvga_hardware.h"
 #include "vmwaresvga_gallium.h"
 
-#define IID_Hidd_VMWareSVGA  "hidd.gfx.vmwaresvga"
-#define CLID_Hidd_VMWareSVGA "hidd.gfx.vmwaresvga"
-
 #define SYNC_DESCNAME_LEN               32
 
 #define VMWFIFO_CMD_SIZESHIFT           2

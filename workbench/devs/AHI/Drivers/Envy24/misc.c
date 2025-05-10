@@ -614,7 +614,7 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress,
       if( address != NULL )
       {
         a = (unsigned long) address;
-        a = (a + CACHELINE_SIZE - 1) & ~(CACHELINE_SIZE - 1);
+        a = (a + CACHELINE_SIZE - 1) & ~((unsigned long)CACHELINE_SIZE - 1);
         address = (void *) a;
       }
   }

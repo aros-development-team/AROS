@@ -200,6 +200,7 @@ struct x11_staticdata
     Atom    	    	        clipboard_property_atom;
     Atom    	    	        clipboard_incr_atom;
     Atom    	    	        clipboard_targets_atom;
+    Atom    	    	        utf8_string_atom;
     Time    	    	        x_time;
 
     VOID	    	        (*activecallback)(APTR, OOP_Object *);

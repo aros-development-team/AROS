@@ -627,7 +627,7 @@ int request_irq(struct net_device *unit)
 {
     D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
-    AddIntServer(INTB_KERNEL | unit->e1ku_IRQ, &unit->e1ku_irqhandler);
+    AddIntServer(INTB_KERNEL + unit->e1ku_IRQ, &unit->e1ku_irqhandler);
     AddIntServer(INTB_VERTB, &unit->e1ku_touthandler);
 
     D(bug("[%s] %s: IRQ Handlers configured\n", unit->e1ku_name, __func__);)
@@ -638,7 +638,7 @@ int request_irq(struct net_device *unit)
 #if 0
 static void free_irq(struct net_device *unit)
 {
-    RemIntServer(INTB_KERNEL | unit->e1ku_IRQ, unit->e1ku_irqhandler);
+    RemIntServer(INTB_KERNEL + unit->e1ku_IRQ, unit->e1ku_irqhandler);
     RemIntServer(INTB_VERTB, unit->e1ku_touthandler);
 }
 #endif
@@ -990,14 +990,12 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
 
         if ((buffer_info->buffer = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
         {
-            D(
-                bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __func__, i, buffer_info->buffer, unit->rx_buffer_len);
-                if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)buffer_info->buffer)) == NULL)
-                {
-                    bug("[%s] %s: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, __func__, i);
-                }
-                bug("[%s] %s: Buffer %d DMA @ %p\n", unit->e1ku_name, __func__, i, buffer_info->dma);
-            )
+            D(bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __func__, i, buffer_info->buffer, unit->rx_buffer_len));
+            if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)buffer_info->buffer)) == NULL)
+            {
+                D(bug("[%s] %s: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, __func__, i));
+            }
+            D(bug("[%s] %s: Buffer %d DMA @ %p\n", unit->e1ku_name, __func__, i, buffer_info->dma));
 
             rx_desc = E1000_RX_DESC(rx_ring, i);
             rx_desc->buffer_addr = AROS_QUAD2LE((IPTR)buffer_info->dma);
@@ -1017,6 +1015,37 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
         D(
             bug("[%s] %s: Adjusting RDT to %d\n", unit->e1ku_name, __func__, i);
         )
+        writel(i, (APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt));
+    }
+}
+
+void e1000func_alloc_rx_buffers_fake(struct net_device *unit,
+                                   struct e1000_rx_ring *rx_ring,
+                                   int cleaned_count)
+{
+    struct e1000_rx_desc *rx_desc;
+    struct e1000_rx_buffer *buffer_info;
+    unsigned int i;
+
+    i = rx_ring->next_to_use;
+
+    D(
+        bug("[%s]: %s(0x%p, 0x%p, %d)\n", unit->e1ku_name, __func__, unit, rx_ring, cleaned_count);
+        bug("[%s] %s: starting at %d\n", unit->e1ku_name, __func__, i);
+     )
+
+    while (cleaned_count--)
+    {
+        if (++i == rx_ring->count)
+            i = 0;
+    }
+    D(bug("[%s] %s: next_to_use = %d, i = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_use, i);)
+    if (rx_ring->next_to_use != i) {
+        rx_ring->next_to_use = i;
+        if (i-- == 0)
+            i = (rx_ring->count - 1);
+
+        D(bug("[%s] %s: Adjusting RDT to %d\n", unit->e1ku_name, __func__, i);)
         writel(i, (APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt));
     }
 }
@@ -1246,17 +1275,9 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         D(
             int buffer_no = i;
          )
-#if (BROKEN_RX_QUEUE)
-        // Queue stalls using this ....
+
         if (++i == rx_ring->count) i = 0;
-#else
-        // ... so for our sanity we loop at the rings tail
-        if (++i >= readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt)))
-        {
-            i = 0;
-            update = TRUE;
-        }
-#endif
+
         next_rxd = E1000_RX_DESC(rx_ring, i);
 #if (HAVE_PREFETCH)
         prefetch(next_rxd);
@@ -1389,28 +1410,21 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 next_desc:
         rx_desc->status = 0;
 
+        /* return some buffers to hardware, one at a time is too slow */
+        if (cleaned_count >= E1000_RX_BUFFER_WRITE) {
+            e1000func_alloc_rx_buffers_fake(unit, rx_ring, cleaned_count);
+            cleaned_count = 0;
+        }
+
         /* use prefetched values */
         rx_desc = next_rxd;
         D(buffer_info = next_buffer);
     }
     rx_ring->next_to_clean = i;
 
-#if (BROKEN_RX_QUEUE)
-    // Enabling this stalls the queue ...
-    if ((cleaned_count = E1000_DESC_UNUSED(rx_ring)))
-    {
-        D(bug("[%s] %s: Updating rdt\n", unit->e1ku_name, __func__));
-        writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
-    }
-#else
-    // ...but it seems we have to tell the hardware to wrap around?
-    if (update == TRUE)
-    {
-        D(bug("[%s] %s: Adjusting RDH/RDT\n", unit->e1ku_name, __func__));
-        writel(readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt), ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
-        writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdh);
-    }
-#endif
+    cleaned_count = E1000_DESC_UNUSED(rx_ring);
+    if (cleaned_count)
+        e1000func_alloc_rx_buffers_fake(unit, rx_ring, cleaned_count);
 
     D(
         bug("[%s] %s: Next to clean = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_clean);

@@ -75,6 +75,14 @@ int core_APICSpuriousHandle(struct ExceptionContext *regs, struct KernelBase *Ke
             APIC_REG(__LAPICBase, APIC_ISR + 0x50), APIC_REG(__LAPICBase, APIC_ISR + 0x40),
             APIC_REG(__LAPICBase, APIC_ISR + 0x30), APIC_REG(__LAPICBase, APIC_ISR + 0x20),
             APIC_REG(__LAPICBase, APIC_ISR + 0x10), APIC_REG(__LAPICBase, APIC_ISR + 0x00));
+
+        /* When doing a warm-reboot, APIC_TIMER_VEC gets set to 0xFF which is the vector of APIC_EXCEPT_SPURIOUS
+           If APIC timer actually fires, this generates a "fake" spurious interrup, one in which ISR is set.
+           In such case ISR needs to be reset via EOI, otherwise no further processing of exception happens
+         */
+        if (APIC_REG(__LAPICBase, APIC_ISR+0x70) & 0x80000000)
+            APIC_REG(__LAPICBase, APIC_EOI) = 0;
+
         if (ssp)
             UserState(ssp);
     }

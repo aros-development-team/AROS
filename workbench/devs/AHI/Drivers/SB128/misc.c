@@ -45,9 +45,7 @@ extern const UWORD InputBits[];
 int card_init(struct SB128_DATA *card);
 void card_cleanup(struct SB128_DATA *card);
 
-#if !defined(__AROS__)
 void AddResetHandler(struct SB128_DATA *card);
-#endif
 
 void micro_delay(unsigned int val)
 {
@@ -775,9 +773,7 @@ AllocDriverData( struct PCIDevice *    dev,
   card->output_volume  = Linear2MixerGain( 0x10000, &card->output_volume_bits );
   SaveMixerState(card);
 
-#if !defined(__AROS__)
   AddResetHandler(card);
-#endif
 
   return card;
 }
@@ -1198,16 +1194,16 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int bo
 #endif
         MEMF_PUBLIC | MEMF_CLEAR));
 
-    if (address != NULL)
-    {
-        a = (unsigned long) address;
-        a = (a + boundary - 1) & ~(boundary - 1);
-        address = (void *) a;
-    }
-
     if (NonAlignedAddress)
     {
         *NonAlignedAddress = address;
+    }
+
+    if (address != NULL)
+    {
+        a = (unsigned long) address;
+        a = (a + boundary - 1) & ~((unsigned long)boundary - 1);
+        address = (void *) a;
     }
 
     return address;
@@ -1221,8 +1217,11 @@ void pci_free_consistent(void* addr)
     FreeVec(addr);
 }
 
-#if !defined(__AROS__)
+#ifdef __AMIGAOS4__
 static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct SB128_DATA *card)
+#else
+static ULONG ResetHandler(struct SB128_DATA *card)
+#endif
 {
   struct PCIDevice *dev = card->pci_dev;
 
@@ -1248,9 +1247,12 @@ void AddResetHandler(struct SB128_DATA *card)
   interrupt.is_Code = (void (*)())ResetHandler;
   interrupt.is_Data = (APTR) card;
   interrupt.is_Node.ln_Pri = 0;
+#ifdef __AMIGAOS4__
   interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+#else
+  interrupt.is_Node.ln_Type = NT_INTERRUPT;
+#endif
   interrupt.is_Node.ln_Name = "SB128 Reset Handler";
 
   AddResetCallback( &interrupt );
 }
-#endif

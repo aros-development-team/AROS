@@ -173,14 +173,14 @@ main( void )
 
     if( args.refresh && !args.remove )
     {
-      IPTR id;
+      ULONG id;
 
       OpenAHI();
 
       /* First, empty the database */
       
       for( id = AHI_NextAudioID( AHI_INVALID_ID );
-           id != (IPTR) AHI_INVALID_ID;
+           id != (ULONG) AHI_INVALID_ID;
            id = AHI_NextAudioID( AHI_INVALID_ID ) )
       {
         D(bug("[AddAudioModes] %s: Removing ID %08x\n", __func__, id);)
@@ -256,12 +256,12 @@ main( void )
       }
       else
       {
-        IPTR id;
+        ULONG id;
 
         OpenAHI();
 
         for( id = AHI_NextAudioID( AHI_INVALID_ID );
-             id != (IPTR) AHI_INVALID_ID;
+             id != (ULONG) AHI_INVALID_ID;
              id = AHI_NextAudioID( AHI_INVALID_ID ) )
         {
           D(bug("[AddAudioModes] %s: Removing ID %08x\n", __func__, id);)

@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -34,9 +36,16 @@ int pthread_attr_init(pthread_attr_t *attr)
 
     memset(attr, 0, sizeof(pthread_attr_t));
     // inherit the priority and stack size of the parent thread
-    task = FindTask(NULL);
+
+    task = GET_THIS_TASK;
+
     attr->param.sched_priority = task->tc_Node.ln_Pri;
+#ifdef __MORPHOS__
+    NewGetTaskAttrs(task, &attr->stacksize68k, sizeof(attr->stacksize68k), TASKINFOTYPE_STACKSIZE_M68K, TAG_DONE);
+    NewGetTaskAttrs(task, &attr->stacksize, sizeof(attr->stacksize), TASKINFOTYPE_STACKSIZE, TAG_DONE);
+#else
     attr->stacksize = (UBYTE *)task->tc_SPUpper - (UBYTE *)task->tc_SPLower;
+#endif
 
     return 0;
 }

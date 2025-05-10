@@ -1,8 +1,6 @@
 #ifndef GFX_HIDD_TOOL_H
 #define GFX_HIDD_TOOL_H
 
-#define AROS_USE_OOP
-
 #include <utility/tagitem.h>
 #include <oop/oop.h>
 

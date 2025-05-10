@@ -267,10 +267,9 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
 
                 tx_desc = E1000_TX_DESC(tx_ring, i);
                 tx_desc->buffer_addr = (IPTR)buffer_info->dma;
-                tx_desc->lower.data = AROS_WORD2LE(txd_lower | buffer_info->length);
-                tx_desc->upper.data = AROS_WORD2LE(txd_upper);
-                tx_desc->lower.data |= AROS_WORD2LE(unit->txd_cmd);
-                MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), i);
+                tx_desc->lower.data = AROS_LONG2LE(txd_lower | buffer_info->length);
+                tx_desc->upper.data = AROS_LONG2LE(txd_upper);
+                tx_desc->lower.data |= AROS_LONG2LE(unit->txd_cmd);
             }
         }
 
@@ -300,6 +299,8 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
     }
 
     tx_ring->next_to_use = i;
+
+    MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), tx_ring->next_to_use);
 
     return 0;
 
@@ -351,7 +352,6 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
     AROS_INTFUNC_INIT
 
     struct Device *TimerBase = unit->e1ku_TimerSlowReq->tr_node.io_Device;
-    struct timeval time;
 	int rx_cleaned, tx_cleaned, i, j;
 
     ULONG icr = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_ICR);
@@ -365,9 +365,8 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
     }
 
     D(bug("Processing ..\n"));
-    GetSysTime(&time);
-    if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type == e1000_82547 || ((struct e1000_hw *)unit->e1ku_Private00)->mac.type == e1000_82547_rev_2)
-        E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMC, ~0);
+    E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMC, ~0);
+    E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
 //	adapter->total_tx_bytes = 0;
 //	adapter->total_rx_bytes = 0;
@@ -390,8 +389,7 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
 //	if (adapter->itr_setting & 3)
 //		e1000_set_itr(adapter);
     
-    if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type == e1000_82547 || ((struct e1000_hw *)unit->e1ku_Private00)->mac.type == e1000_82547_rev_2)
-        e1000func_irq_enable(unit);    
+    e1000func_irq_enable(unit);
 
    return 0;
  

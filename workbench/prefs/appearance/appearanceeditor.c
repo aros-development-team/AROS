@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -283,17 +283,16 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
             struct ExAllControl  *eac;
             if ((eac = AllocDosObject(DOS_EXALLCONTROL,NULL)) != NULL)
             {
-                struct ExAllData *ead = (struct ExAllData*)ExAllBuffer;
                 eac->eac_LastKey = 0;
                 do {
-                   ExAllMore = ExAll(_ThemeLock, ead, kExallBufSize, ED_COMMENT, eac);
+                    struct ExAllData *ead = (struct ExAllData*)ExAllBuffer;
+                    ExAllMore = ExAll(_ThemeLock, ead, kExallBufSize, ED_COMMENT, eac);
                     if ((!ExAllMore) && (IoErr() != ERROR_NO_MORE_ENTRIES)) {
                         break;
                     }
                     if (eac->eac_Entries == 0) {
                         continue;
                     }
-                    ead = (struct ExAllData *)ExAllBuffer;
                     do {
                         if (ead->ed_Type == ST_USERDIR)
                         {

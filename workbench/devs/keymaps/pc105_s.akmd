@@ -18,7 +18,7 @@ KCF_SHIFT|KCF_ALT                       # 07
 KCF_SHIFT|KCF_ALT                       # 08
 KCF_SHIFT|KCF_ALT                       # 09
 KCF_SHIFT|KCF_ALT                       # 0A
-KCF_SHIFT|KCF_ALT                       # 0B
+KCF_DEAD|KC_VANILLA                     # 0B
 KCF_DEAD|KCF_SHIFT|KCF_ALT              # 0C
 KC_NOQUAL                               # 0D
 KC_NOQUAL                               # 0E
@@ -131,6 +131,18 @@ KCF_NOP                                 # 75
 KCF_NOP                                 # 76
 KCF_NOP                                 # 77
 ## end hikeymaptypes
+
+## begin deadkey
+id: KEY0B_descr
+0, '+',
+0, '?',
+0, '\\',
+0, 0,
+0, 0,
+0, 0,
+0, 0x1C,
+0, 0,
+## end deadkey
 
 ## begin deadkey
 id: KEY0C_descr
@@ -503,7 +515,7 @@ id: end_descr
 '«' ,'[' ,'(' ,'8'
 '»' ,']' ,')' ,'9'
 '°' ,'}' ,'=' ,'0'
-0   ,0x5C,'?' ,'+'
+id:KEY0B_descr
 id:KEY0C_descr
 0   ,0   ,0xBD,0xA7
 0   ,0   ,0   ,0
@@ -552,7 +564,7 @@ id:KEY38_descr
 0   ,'·' ,':' ,'.'
 0   ,0   ,'_' ,'-'
 0   ,0   ,0   ,0
-0   ,0   ,',', '.'
+0   ,0   ,'.', ','
 '7', '7', '7', '7'
 '8', '8', '8', '8'
 '9', '9', '9', '9'

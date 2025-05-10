@@ -536,10 +536,6 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, intNum);)
 
-    /* Write zero to EOI of APIC */
-    apic_base = core_APIC_GetBase();
-    DINT(bug("[Kernel:IOAPIC] %s(%u): apicBase = %p\n", __func__, intNum, apic_base);)
-
     /* write IOAPIC EIO if necessary .. */
     if (intrMap)
     {
@@ -590,7 +586,12 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     {
         DINT(bug("[Kernel:IOAPIC] %s(%u): EDGE\n", __func__, intNum);)
     }
+
+    /* Write zero to EOI of APIC */
+    apic_base = core_APIC_GetBase();
+    DINT(bug("[Kernel:IOAPIC] %s(%u): apicBase = %p\n", __func__, intNum, apic_base);)
     APIC_REG(apic_base, APIC_EOI) = 0;
+
     return TRUE;
 }
 
@@ -756,6 +757,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 
     if (newRt)
     {
+        pdata->kb_ACPI->acpi_interruptOverrides |= (1 << intrMap->im_Node.ln_Pri);
         Enqueue(&KernelBase->kb_InterruptMappings, &intrMap->im_Node);
     }
 

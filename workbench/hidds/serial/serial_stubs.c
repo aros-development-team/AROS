@@ -4,10 +4,6 @@
     Desc: Stubs for Serial and SerialUnit class
 */
 
-#ifndef AROS_USE_OOP
-#   define AROS_USE_OOP
-#endif
-
 #include <aros/config.h>
 #include <exec/types.h>
 #include <exec/libraries.h>

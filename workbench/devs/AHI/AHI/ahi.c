@@ -273,9 +273,9 @@ void NewUnit(int selectedunit) {
 void NewMode(int selectedmode) {
   struct UnitNode *unit = NULL;
   struct ModeNode *mode = NULL;
-  IPTR id = AHI_INVALID_ID;
-  SIPTR MinOutVol = 0, MaxOutVol = 0, MinMonVol = 0, MaxMonVol = 0;
-  SIPTR MinGain = 0, MaxGain = 0;
+  ULONG id = AHI_INVALID_ID;
+  Fixed MinOutVol = 0, MaxOutVol = 0, MinMonVol = 0, MaxMonVol = 0;
+  Fixed MinGain = 0, MaxGain = 0;
   double Min, Max, Current;
   int offset;
 
@@ -611,7 +611,7 @@ char *getOutput(void) {
   return (char *) msgOptNoOutputs;
 }
 
-IPTR getAudioMode(void) {
+ULONG getAudioMode(void) {
   struct ModeNode * mode = NULL;
   
   D(bug("[AHI:Prefs] %s()\n", __func__);)
@@ -632,7 +632,7 @@ IPTR getAudioMode(void) {
 }
 
 char *getRecord(void) {
-  IPTR record = FALSE, fullduplex = FALSE;
+  ULONG record = FALSE, fullduplex = FALSE;
   struct ModeNode *mode = NULL;
 
   D(bug("[AHI:Prefs] %s()\n", __func__);)

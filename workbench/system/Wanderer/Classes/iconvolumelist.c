@@ -81,6 +81,7 @@ struct DOSVolumeNode
     ULONG dvn_Unit;
     ULONG dvn_Flags;
     struct MsgPort *dvn_Port;
+    IPTR dvn_Key1;
 };
 
 static BOOL VolumeIsOffline(struct DosList *dl)
@@ -149,6 +150,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(struct IClass * CLASS
                         )
 
                         newdvn->dvn_Port = dl->dol_Task;
+                        newdvn->dvn_Key1 = (IPTR)dl;
 
                         if (VolumeIsOffline(dl))
                         {
@@ -490,27 +492,26 @@ static BOOL MatchIconlistNames(char *entryname, char *matchname)
     return FALSE;
 }
 
-static struct IconEntry *FindIconlistVolumeIcon(struct List *iconlist,
-    char *icondevname, char *iconvolname)
+static struct IconEntry *FindIconlistVolumeIcon(struct List *iconlist, struct DOSVolumeNode *dvn)
 {
     struct IconEntry *foundEntry = NULL;
 
-    /* First look for icons which match the volume name */
+    /* First look for icons which match the volume name, then match cached port. This means icons which represented a volume
+       that had gone offline, will not be returned and will be re-created. This allows icons to release their fs notification and
+       then the offline volume to be destroyed. If a volume went offline/online before this was noticed by Wanderer (example:
+       formatting an existing partition), a new volume would be matched to old icon and since both new volume and old icon were
+       both online, no update would happen and fs notification would not be released (leaving volume offline) and notification
+       for new volume would not be set.
+       This code is much more restrictive, but it is better to destroy/create icons than re-use an icon with wrong state. */
     ForeachNode(iconlist, foundEntry)
     {
-        if ((foundEntry->ie_IconListEntry.type == ST_ROOT) && MatchIconlistNames(foundEntry->ie_IconListEntry.label, iconvolname))
-            return foundEntry;
-    }
-
-    if (icondevname != iconvolname)
-    {
-        /* Then, match on device name */
-        ForeachNode(iconlist, foundEntry)
+        if ((foundEntry->ie_IconListEntry.type == ST_ROOT) && MatchIconlistNames(foundEntry->ie_IconListEntry.label, dvn->dvn_VolName))
         {
-            if ((foundEntry->ie_IconListEntry.type == ST_ROOT) && MatchIconlistNames(foundEntry->ie_IconNode.ln_Name, iconvolname))
+            if (_volpriv(foundEntry)->vip_Key1 == (IPTR)dvn->dvn_Key1)
                 return foundEntry;
         }
     }
+
     return NULL;
 }
 
@@ -562,7 +563,7 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                     D(bug("[IconVolumeList] %s: Processing '%s'\n",
                             __func__, devname));
 
-                    this_Icon = FindIconlistVolumeIcon(iconlist, devname, dvn->dvn_VolName);
+                    this_Icon = FindIconlistVolumeIcon(iconlist, dvn);
                     if ((this_Icon) &&
                         (!(dvn->dvn_Flags & ICONENTRY_VOL_DEVICE) || (_volpriv(this_Icon)->vip_FLags & ICONENTRY_VOL_DEVICE)))
                     {
@@ -650,6 +651,7 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                         IPTR geticon_error = 0;
 
                         if (volPrivate) volPrivate->vip_FLags = dvn->dvn_Flags;
+                        if (volPrivate) volPrivate->vip_Key1 = (IPTR)dvn->dvn_Key1;
 
                         D(bug("[IconVolumeList] %s: Getting Icon for '%s'\n", __func__, dvn->dvn_DosName);)
                         volDOB = GetIconTags

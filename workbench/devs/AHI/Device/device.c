@@ -287,7 +287,7 @@ _DevOpen ( struct AHIRequest* ioreq,
   {
     // Load database if not already loaded
 
-    if(AHI_NextAudioID(AHI_INVALID_ID) == (IPTR) AHI_INVALID_ID)
+    if(AHI_NextAudioID(AHI_INVALID_ID) == (ULONG) AHI_INVALID_ID)
     {
       AHI_LoadModeFile("DEVS:AudioModes");
 
@@ -305,7 +305,7 @@ _DevOpen ( struct AHIRequest* ioreq,
 
       // Load Void driver if no real hardware was found
 
-      if(AHI_NextAudioID(AHI_INVALID_ID) == (IPTR) AHI_INVALID_ID)
+      if(AHI_NextAudioID(AHI_INVALID_ID) == (ULONG) AHI_INVALID_ID)
       {
         AHI_LoadModeFile("SYS:Storage/AudioModes/VOID");
       }
@@ -592,7 +592,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
   struct IFFHandle *iff;
   struct StoredProperty *ahig;
   struct CollectionItem *ci;
-  IPTR *mode;
+  ULONG *mode;
 
   ahibug("[AHI:Device] %s()\n", __func__);
 
@@ -604,9 +604,10 @@ ReadConfig ( struct AHIDevUnit *iounit,
     iounit->Channels        = 4;
     iounit->MonitorVolume   = ~0;
     iounit->InputGain       = ~0;
-    iounit->OutputVolume    = ~0;
+    iounit->OutputVolume    = 0x10000;
     iounit->Input           = ~0;
     iounit->Output          = ~0;
+    AHIBase->ahib_ScaleMode = AHI_SCALE_FIXED_0_DB;
   }
   else
   {
@@ -776,7 +777,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
     mode = &iounit->AudioMode;
   else
     mode = &AHIBase->ahib_AudioMode;
-  if(mode[0] == (IPTR) AHI_INVALID_ID)
+  if(mode[0] == (ULONG) AHI_INVALID_ID)
   { static const struct TagItem tags[] = { {AHIDB_Realtime, TRUE}, {TAG_DONE, 0} };
     mode[0] = AHI_BestAudioIDA((struct TagItem *)tags);
   }
@@ -826,19 +827,19 @@ AllocHardware ( struct AHIDevUnit *iounit,
 
     /* Set hardware properties */
     AHI_ControlAudio(iounit->AudioCtrl,
-        ((LONG)iounit->MonitorVolume == ~0L ? TAG_IGNORE : AHIC_MonitorVolume),
+        (iounit->MonitorVolume == ~0 ? TAG_IGNORE : AHIC_MonitorVolume),
         iounit->MonitorVolume,
 
-        ((LONG)iounit->InputGain == ~0L ? TAG_IGNORE : AHIC_InputGain),
+        (iounit->InputGain == ~0 ? TAG_IGNORE : AHIC_InputGain),
         iounit->InputGain,
 
-        ((ULONG)iounit->OutputVolume == ~0UL ? TAG_IGNORE : AHIC_OutputVolume),
+        (iounit->OutputVolume == ~0 ? TAG_IGNORE : AHIC_OutputVolume),
         iounit->OutputVolume,
 
-        ((ULONG)iounit->Input == ~0UL ? TAG_IGNORE : AHIC_Input),
+        (iounit->Input == ~0 ? TAG_IGNORE : AHIC_Input),
         iounit->Input,
 
-        ((ULONG)iounit->Output == ~0UL ? TAG_IGNORE : AHIC_Output),
+        (iounit->Output == ~0 ? TAG_IGNORE : AHIC_Output),
         iounit->Output,
 
         TAG_DONE);

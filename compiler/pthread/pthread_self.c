@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -31,32 +33,12 @@ pthread_t pthread_self(void)
 
     D(bug("%s()\n", __FUNCTION__));
 
-    task = FindTask(NULL);
+    task = GET_THIS_TASK;
+
     thread = GetThreadId(task);
 
-    // add non-pthread processes to our list, so we can handle the main thread
     if (thread == PTHREAD_THREADS_MAX)
-    {
-        ThreadInfo *inf;
-
-        ObtainSemaphore(&thread_sem);
-        thread = GetThreadId(NULL);
-        if (thread == PTHREAD_THREADS_MAX)
-        {
-            // TODO: pthread_self is supposed to always succeed, but we can fail
-            // here if we run out of thread slots
-            // this can only happen if too many non-pthread processes call
-            // this function
-            //ReleaseSemaphore(&thread_sem);
-            //return EAGAIN;
-            abort();
-        }
-        inf = GetThreadInfo(thread);
-        memset(inf, 0, sizeof(ThreadInfo));
-        NEWLIST((struct List *)&inf->cleanup);
-        inf->task = task;
-        ReleaseSemaphore(&thread_sem);
-    }
+        return 0;
 
     return thread;
 }

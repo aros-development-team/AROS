@@ -90,10 +90,10 @@ void
 Debug_UnloadSound( UWORD sound, struct AHIPrivAudioCtrl *audioctrl );
 
 void
-Debug_NextAudioID( IPTR id);
+Debug_NextAudioID( ULONG id);
 
 void
-Debug_GetAudioAttrsA( IPTR id, struct AHIPrivAudioCtrl *audioctrl, struct TagItem *tags );
+Debug_GetAudioAttrsA( ULONG id, struct AHIPrivAudioCtrl *audioctrl, struct TagItem *tags );
 
 void
 Debug_BestAudioIDA( struct TagItem *tags );
@@ -117,7 +117,7 @@ void
 Debug_AddAudioMode(struct TagItem *tags );
 
 void
-Debug_RemoveAudioMode( IPTR id);
+Debug_RemoveAudioMode( ULONG id);
 
 void
 Debug_LoadModeFile( STRPTR name);

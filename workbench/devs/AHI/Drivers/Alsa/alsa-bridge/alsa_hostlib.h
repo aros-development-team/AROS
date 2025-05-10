@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2024, The AROS Development Team. All rights reserved.
 */
 
 #include <alsa/asoundlib.h>
@@ -39,7 +39,14 @@ struct alsa_func
     int  (*snd_mixer_selem_set_playback_volume_all)(snd_mixer_elem_t *elem, long value);
 };
 
+struct libc_func
+{
+    int (*sigfillset)(sigset_t *set);
+    int (*sigprocmask)(int how, const sigset_t *set, sigset_t *oldset);
+};
+
 extern struct alsa_func alsa_func;
+extern struct libc_func libc_func;
 
 #define ALSACALL(func,...) (alsa_func.func(__VA_ARGS__))
 

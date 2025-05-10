@@ -4,10 +4,6 @@
     Desc: Stubs for Parallel and ParallelUnit class
 */
 
-#ifndef AROS_USE_OOP
-#   define AROS_USE_OOP
-#endif
-
 #include <aros/config.h>
 #include <exec/types.h>
 #include <exec/libraries.h>

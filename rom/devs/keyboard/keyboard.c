@@ -165,8 +165,8 @@ static int GM_UNIQUENAME(Open)
     /* nlorentz: Some extra stuff that must be initialised */
     if (NULL == KBBase->kb_Matrix)
     {
-        KBBase->kb_Matrix = AllocMem(KB_MATRIXSIZE, MEMF_ANY|MEMF_CLEAR);
-
+        /* Use the kb_MatrixBuffer added for blitzmode support */
+        KBBase->kb_Matrix = (UBYTE *)&KBBase->kb_MatrixBuffer;
         if (NULL == KBBase->kb_Matrix)
         {
             D(bug("keyboard.device: failed to allocated keyboard matrix buffer\n"));

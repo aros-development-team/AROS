@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 # a make.tmpl for a hiddclass would be useful
 
-CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
+CFLAGS      := $(CFLAGS) -I.
 
 OBJDIR	    := $(GENDIR)/$(CURDIR)
 #OS_INCLUDES := -I$(GENINCDIR)

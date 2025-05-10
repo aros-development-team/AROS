@@ -240,8 +240,7 @@ void PS2Mouse_InitTask(OOP_Class *cl, OOP_Object *o)
     D(bug("[i8042:PS2Mouse] finished - signaling waiting task and cleaning up\n");)
     /* Signals the waiting task before we exit ... */
     Signal(thisTask->tc_UserData, SIGF_SINGLE);
-    DeleteIORequest(tmr);
-    DeleteMsgPort(p);
+    /* Timer request is not freed as it is needed for reset handler */
 
     return ;
 }
@@ -364,13 +363,13 @@ static int ps2mouse_detectintellimouse(struct IORequest* tmr)
 
 /****************************************************************************************/
 
-static AROS_INTH1(PS2KBMResetHandler, struct i8042base *, i8042Base)
+static AROS_INTH1(PS2KBMResetHandler, struct IORequest *, tmr)
 {
     AROS_INTFUNC_INIT
 
     D(bug("[i8042:PS2Mouse] %s()\n", __func__);)
 
-    kbd_write_cmd(NULL, AUX_INTS_OFF);
+    kbd_write_cmd(tmr, AUX_INTS_OFF);
 
     return FALSE;
 
@@ -469,7 +468,7 @@ int ps2mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct mo
     i8042Base->csd.cs_ResetInt.is_Node.ln_Name = i8042Base->library.lib_Node.ln_Name;
     i8042Base->csd.cs_ResetInt.is_Node.ln_Pri = -10;
     i8042Base->csd.cs_ResetInt.is_Code = (VOID_FUNC)PS2KBMResetHandler;
-    i8042Base->csd.cs_ResetInt.is_Data = i8042Base;
+    i8042Base->csd.cs_ResetInt.is_Data = tmr;
     AddResetCallback(&i8042Base->csd.cs_ResetInt);
 
     return 1;

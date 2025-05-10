@@ -62,6 +62,21 @@ static struct OOP_ABDescr attrbases[] =
     {NULL,                      NULL                            }
 };
 
+AROS_INTH1(ResetHandler, struct HWData *, hwdata)
+{
+    AROS_INTFUNC_INIT
+
+    syncfenceVMWareSVGAFIFO(hwdata, (hwdata->fence - 1));
+    displayCursorVMWareSVGA(hwdata, SVGA_CURSOR_ON_HIDE);
+    syncfenceVMWareSVGAFIFO(hwdata, fenceVMWareSVGAFIFO(hwdata));
+
+    SetMem(hwdata->vrambase, 0, hwdata->display_height * hwdata->bytesperline);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 static ULONG mask_to_shift(ULONG mask)
 {
     ULONG i;
@@ -316,6 +331,8 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
+        struct VMWareSVGAHiddData *data = OOP_INST_DATA(cl, o);
+
         DINFO(bug("[VMWareSVGA] %s: object @ 0x%p\n", __func__, o);)
 
         XSD(cl)->vmwaresvgahidd = o;
@@ -349,6 +366,10 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
                 bug("[VMWareSVGA] %s:   3D.\n", __func__);
             if (XSD(cl)->data.capabilities & SVGA_CAP_MULTIMON)
                 bug("[VMWareSVGA] %s:   Multimon\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_RECT_FILL)
+                bug("[VMWareSVGA] %s:   Rect Fill\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_RASTER_OP)
+                bug("[VMWareSVGA] %s:   Raster Operations\n", __func__);
          )
         if (XSD(cl)->data.capabilities & SVGA_CAP_DISPLAY_TOPOLOGY)
         {
@@ -391,6 +412,10 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         /* Set the ID so vmware knows we are here */
         vmwareWriteReg(&XSD(cl)->data, SVGA_REG_GUEST_ID, 0x09);
 #endif
+        data->ResetInterrupt.is_Node.ln_Name = (char *)svganewtags[1].ti_Data;
+        data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
+        data->ResetInterrupt.is_Data = &XSD(cl)->data;
+        AddResetCallback(&data->ResetInterrupt);
     }
 
     D(bug("[VMWareSVGA] %s: returning 0x%p\n", __func__, o);)
@@ -627,7 +652,8 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     }
 
     // TODO: This is nice and fast. but unfortunately has to go. We'll soon switch to a more refined accelerated blitting
-    else if ((VPVISFLAG) && (dst == src) && (OOP_OCLASS(msg->dest) == XSD(cl)->vmwaresvgaonbmclass))
+    else if ((VPVISFLAG) && (XSD(cl)->data.capabilities & SVGA_CAP_RASTER_OP) &&
+        (dst == src) && (OOP_OCLASS(msg->dest) == XSD(cl)->vmwaresvgaonbmclass))
     {
         D(bug("[VMWareSVGA] %s: suitable bitmaps used ...\n", __func__);)
 
@@ -694,19 +720,13 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     {
         struct BitmapData *srcbd = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         struct BitmapData *dstbd = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-        UBYTE *sbuffer;
-        ULONG srestadd;
-        UBYTE *dbuffer;
-        ULONG drestadd;
-        ULONG ycnt = msg->height;
-        ULONG xcnt;
-        LONG offset;
+        ULONG srcbytesperline;
+        ULONG dstbytesperline;
 
         /* get src/dest video data start addresses and skip sizes */
         if (srcbd->VideoData == srcbd->data->vrambase)
         {
-            offset = (msg->srcX*srcbd->bytesperpix)+(msg->srcY*srcbd->data->bytesperline);
-            srestadd = (srcbd->data->bytesperline - (msg->width*srcbd->bytesperpix));
+            srcbytesperline = srcbd->data->bytesperline;
             if ((VPVISFLAG) && (XSD(cl)->mouse.visible))
             {
                 displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_REMOVE_FROM_FB);
@@ -714,14 +734,12 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         }
         else
         {
-            offset = (msg->srcX+(msg->srcY*srcbd->width))*srcbd->bytesperpix;
-            srestadd = (srcbd->width - msg->width)*srcbd->bytesperpix;
+            srcbytesperline = srcbd->width * srcbd->bytesperpix;
         }
-        sbuffer = srcbd->VideoData+offset;
+
         if (dstbd->VideoData == dstbd->data->vrambase)
         {
-            offset = (msg->destX*dstbd->bytesperpix)+(msg->destY*dstbd->data->bytesperline);
-            drestadd = (dstbd->data->bytesperline - (msg->width*dstbd->bytesperpix));
+            dstbytesperline = dstbd->data->bytesperline;
             if ((VPVISFLAG) && (XSD(cl)->mouse.visible))
             {
                 displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_REMOVE_FROM_FB);
@@ -729,31 +747,45 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         }
         else
         {
-            offset = (msg->destX+(msg->destY*dstbd->width))*dstbd->bytesperpix;
-            drestadd = (dstbd->width - msg->width)*dstbd->bytesperpix;
+            dstbytesperline = dstbd->width * dstbd->bytesperpix;
         }
-        dbuffer = dstbd->VideoData+offset;
 
         switch (mode)
         {
             case vHidd_GC_DrawMode_Copy:
+            {
+                if (srcbd->bytesperpix == dstbd->bytesperpix)
                 {
-                    D(bug("[VMWareSVGA] %s: using CopyMem\n", __func__);)
-                    while (ycnt--)
+                    switch (srcbd->bytesperpix)
                     {
-                        xcnt = msg->width;
+                        case 1:
+                            /* Not supported */
+                        break;
 
-                        // NOTE: this is only valid if the two bitmaps share the same bytes per pixel.
-                        //               we may want to pre-process it (see below in the mouse definition code)
-                        CopyMem(sbuffer, dbuffer, xcnt * dstbd->bytesperpix);
+                        case 2:
+                            HIDD_BM_CopyMemBox16(msg->dest, srcbd->VideoData, msg->srcX, msg->srcY,
+                                                dstbd->VideoData, msg->destX, msg->destY, msg->width, msg->height,
+                                                srcbytesperline, dstbytesperline);
+                            break;
 
-                        sbuffer += xcnt * dstbd->bytesperpix;
-                        sbuffer += srestadd;
-                        dbuffer += xcnt * dstbd->bytesperpix;
-                        dbuffer += drestadd;
+                        case 3:
+                            HIDD_BM_CopyMemBox24(msg->dest, srcbd->VideoData, msg->srcX, msg->srcY,
+                                                dstbd->VideoData, msg->destX, msg->destY, msg->width, msg->height,
+                                                srcbytesperline, dstbytesperline);
+                            break;
+
+                        case 4:
+                            HIDD_BM_CopyMemBox32(msg->dest, srcbd->VideoData, msg->srcX, msg->srcY,
+                                                dstbd->VideoData, msg->destX, msg->destY, msg->width, msg->height,
+                                                srcbytesperline, dstbytesperline);
+                            break;
                     }
                 }
+                else
+                    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
                 break;
+            }
             default:
                 D(bug("[VMWareSVGA] mode = %ld, src @ 0x%p dst @ 0x%p\n", mode, src, dst);)
                 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -871,6 +903,16 @@ VOID VMWareSVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct
         displayCursorVMWareSVGA(bmdata->data, msg->visible ? SVGA_CURSOR_ON_SHOW : SVGA_CURSOR_ON_HIDE);
         syncfenceVMWareSVGAFIFO(bmdata->data, fenceVMWareSVGAFIFO(bmdata->data));
     }
+}
+
+VOID VMWareSVGA__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
+{
+    if (msg->width)
+        *(msg->width) = 1024;
+    if (msg->height)
+        *(msg->height) = 768;
+    if (msg->depth)
+        *(msg->depth) = 24;
 }
 
 static int VMWareSVGA_InitStatic(LIBBASETYPEPTR LIBBASE)

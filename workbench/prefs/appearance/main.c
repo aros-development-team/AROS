@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 */
 
 /*********************************************************************************************/
@@ -19,7 +19,7 @@
 #include "args.h"
 #include "locale.h"
 
-#define VERSION "$VER: Appearance 1.4 (11.02.2021) AROS Dev Team"
+#define VERSION "$VER: Appearance 1.5 (30.03.2025) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)

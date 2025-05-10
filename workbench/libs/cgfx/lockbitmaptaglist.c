@@ -149,6 +149,8 @@
     
     while ((tag = NextTagItem(&tags)))
     {
+        IPTR val = 0;
+
         switch (tag->ti_Tag)
         {
             case LBMI_BASEADDRESS:
@@ -156,27 +158,32 @@
                 break;
 
             case LBMI_BYTESPERROW:
-        OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_BytesPerRow, (IPTR *)tag->ti_Data);
+                OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_BytesPerRow, &val);
+                *((ULONG *)tag->ti_Data) = (ULONG)val;
                 break;
 
             case LBMI_BYTESPERPIX:
-                OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, (IPTR *)tag->ti_Data);
+                OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &val);
+                *((ULONG *)tag->ti_Data) = (ULONG)val;
                 break;
             
             case LBMI_PIXFMT:
-                *((IPTR *)tag->ti_Data) = (IPTR)cpf;
+                *((ULONG *)tag->ti_Data) = (ULONG)cpf;
                 break;
                 
             case LBMI_DEPTH:
-                OOP_GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)tag->ti_Data);
+                OOP_GetAttr(pf, aHidd_PixFmt_Depth, &val);
+                *((ULONG *)tag->ti_Data) = (ULONG)val;
                 break;
             
             case LBMI_WIDTH:
-                OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Width, (IPTR *)tag->ti_Data);
+                OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Width, &val);
+                *((ULONG *)tag->ti_Data) = (ULONG)val;
                 break;
             
             case LBMI_HEIGHT:
-                OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Height, (IPTR *)tag->ti_Data);
+                OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Height, &val);
+                *((ULONG *)tag->ti_Data) = (ULONG)val;
                 break;
                 
             default:

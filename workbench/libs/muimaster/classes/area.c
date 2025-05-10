@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2023, The AROS Development Team.
+    Copyright (C) 2002-2024, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -2299,21 +2299,64 @@ static IPTR Area__MUIM_Timer(struct IClass *cl, Object *obj, Msg msg)
     return 0;
 }
 
-/**************************************************************************
-MUIM_DoDrag
-**************************************************************************/
-static IPTR Area__MUIM_DoDrag(struct IClass *cl, Object *obj,
+/****** Area.mui/MUIM_DoDrag *************************************************
+*
+*   NAME
+*       MUIM_DoDrag (V20)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_DoDrag, LONG touchx, LONG touchy, LONG flags);
+*
+*   FUNCTION
+*       For use in custom classes
+*
+*   INPUTS
+*       touchx - distance between left side of object and click point, positive
+*           if click happens inside object. Special value of 0x80000000 is
+*           translated to _window(obj)->MouseX - _left(obj)
+*       touchy - distance between top side of object and click point, positive
+*           if click happens inside object. Special value of 0x80000000 is
+*           translated to _window(obj)->MouseY - _top(obj)
+*
+*   SEE ALSO
+*
+******************************************************************************
+*
+*/static IPTR Area__MUIM_DoDrag(struct IClass *cl, Object *obj,
     struct MUIP_DoDrag *msg)
 {
-    //struct MUI_AreaData *data = INST_DATA(cl, obj);
-    DoMethod(_win(obj), MUIM_Window_DragObject, (IPTR) obj, msg->touchx,
-        msg->touchy, msg->flags);
+    LONG touchx = msg->touchx;
+    LONG touchy = msg->touchy;
+    if (touchx == 0x80000000) touchx = _window(obj)->MouseX - _left(obj);
+    if (touchy == 0x80000000) touchy = _window(obj)->MouseY - _top(obj);
+
+    DoMethod(_win(obj), MUIM_Window_DragObject, (IPTR) obj, touchx,
+        touchy, msg->flags);
     return 0;
 }
 
-/**************************************************************************
-MUIM_CreateDragImage
-**************************************************************************/
+/****** Area.mui/MUIM_CreateDragImage ****************************************
+*
+*   NAME
+*       MUIM_CreateDragImage (V18)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_CreateDragImage, LONG touchx, LONG touchy, LONG flags);
+*
+*   FUNCTION
+*       For use in custom classes
+*
+*   INPUTS
+*       touchx - distance between left side of object and click point, positive
+*           if image's left border is to be on the left side of mouse pointer
+*       touchy - distance between top side of object and click point, positive
+*           if image's top border is to be above the mouse pointer
+*
+*   SEE ALSO
+*
+******************************************************************************
+*
+*/
 static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     struct MUIP_CreateDragImage *msg)
 {

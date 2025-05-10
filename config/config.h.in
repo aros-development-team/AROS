@@ -26,6 +26,7 @@
 
 #define AROS_NESTING_SUPERVISOR         @aros_nesting_supervisor@
 
+@CLASSIC_VARIANT_DEFINE@
 @PLATFORM_EXECSMP@
 @ENABLE_EXECSMP@
 

@@ -4,7 +4,6 @@ include $(SRCDIR)/config/aros.cfg
 MODNAME	:=  serial
 MODTYPE	:=  hidd
 
-USER_CPPFLAGS :=	-DAROS_USE_OOP
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
 
 FILES       :=

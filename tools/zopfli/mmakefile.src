@@ -28,7 +28,8 @@ USER_LDFLAGS :=
 
 %build_linklib mmake=host-linklibs-zopfli \
     libname=zopfli files="$(ZOPFLILIB_SRC)" compiler=host \
-    objdir="$(HOSTGENDIR)/$(CURDIR)/lib" libdir="$(CROSSTOOLSDIR)/lib"
+    cflags=$(HOST_CFLAGS) objdir="$(HOSTGENDIR)/$(CURDIR)/lib" \
+    libdir="$(CROSSTOOLSDIR)/lib"
 
 HOST_LDFLAGS += -L$(CROSSTOOLSDIR)/lib -lzopfli -lm
 

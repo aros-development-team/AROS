@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2015 Szilard Biro
+    Copyright (C) 2018 Harry Sintonen
 
     This software is provided 'as-is', without any express or implied
     warranty. In no event will the authors be held liable for any damages
@@ -20,11 +21,18 @@
 
 #include <proto/exec.h>
 
+#include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
 
 #include "semaphore.h"
 #include "debug.h"
+
+#if defined(__AMIGA__)
+#include <exec/execbase.h>
+#include <inline/alib.h>
+#define NEWLIST(a) NewList(a)
+#endif
 
 #ifndef EOVERFLOW
 #define EOVERFLOW EINVAL
@@ -75,8 +83,8 @@ sem_t *sem_open(const char *name, int oflag, mode_t mode, unsigned int value)
             errno = ENOENT;
             return SEM_FAILED;
         }
-        
-        sem = malloc(sizeof(sem_t));
+
+        sem = malloc(sizeof(sem_t) + strlen(name) + 1);
         if (sem == NULL)
         {
             ReleaseSemaphore(&sema_sem);
@@ -90,8 +98,8 @@ sem_t *sem_open(const char *name, int oflag, mode_t mode, unsigned int value)
             ReleaseSemaphore(&sema_sem);
             return SEM_FAILED;
         }
-        // TODO: this string should be duplicated
-        sem->node.ln_Name = (char *)name;
+        sem->node.ln_Name = (char *) (sem + 1);
+        strcpy(sem->node.ln_Name, name);
         AddTail(&semaphores, (struct Node *)sem);
     }
     ReleaseSemaphore(&sema_sem);

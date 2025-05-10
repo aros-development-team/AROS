@@ -32,7 +32,7 @@ struct UnitNode {
 
 struct ModeNode {
   struct Node           node;
-  IPTR                 ID;
+  ULONG                 ID;
   char                  name[80];
 };
 
@@ -42,23 +42,23 @@ struct ModeNode {
 
 struct state 
 {
-  IPTR UnitSelected;
-  IPTR ModeSelected;
-  IPTR FreqSelected;
-  IPTR ChannelsSelected;
-  IPTR InputSelected;
-  IPTR OutputSelected;
-  IPTR OutVolSelected;
-  IPTR MonVolSelected;
-  IPTR GainSelected;
+  LONG UnitSelected;
+  LONG ModeSelected;
+  LONG FreqSelected;
+  LONG ChannelsSelected;
+  LONG InputSelected;
+  LONG OutputSelected;
+  LONG OutVolSelected;
+  LONG MonVolSelected;
+  LONG GainSelected;
 
-  IPTR Frequencies;
-  IPTR Channels;
-  IPTR Inputs;
-  IPTR Outputs;
-  IPTR OutVols;
-  IPTR MonVols;
-  IPTR Gains;
+  LONG Frequencies;
+  LONG Channels;
+  LONG Inputs;
+  LONG Outputs;
+  LONG OutVols;
+  LONG MonVols;
+  LONG Gains;
 
   BOOL ChannelsDisabled;
   BOOL OutVolMute;
@@ -108,7 +108,7 @@ char *getMonVol(void);
 char *getGain(void);
 char *getInput(void);
 char *getOutput(void);
-IPTR getAudioMode(void);
+ULONG getAudioMode(void);
 char *getRecord(void);
 char *getAuthor(void);
 char *getCopyright(void);

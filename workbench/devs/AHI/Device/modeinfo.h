@@ -26,17 +26,17 @@
 #include <utility/tagitem.h>
 
 ULONG
-_AHI_GetAudioAttrsA( IPTR                    id,
+_AHI_GetAudioAttrsA( ULONG                    id,
 		     struct AHIPrivAudioCtrl* actrl,
 		     struct TagItem*          tags,
 		     struct AHIBase*          AHIBase );
 
-IPTR
+ULONG
 _AHI_BestAudioIDA( struct TagItem* tags,
 		   struct AHIBase* AHIBase );
 
 BOOL
-TestAudioID( IPTR id,
+TestAudioID( ULONG id,
              struct TagItem *tags );
 
 #endif /* ahi_modeinfo_h */

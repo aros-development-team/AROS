@@ -162,6 +162,8 @@ struct ahci_Bus
     struct AHCIBase         *ab_Base;               /* device self                      */
     struct ahci_port        *ab_Port;
     OOP_Object              *ab_Unit;
+
+    struct Interrupt        ab_ResetInt;
 };
 
 struct ahci_Unit

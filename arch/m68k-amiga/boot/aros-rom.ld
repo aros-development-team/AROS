@@ -6,11 +6,11 @@ MEMORY {
 SECTIONS 
 {
   .ext                        : { _ext_start = .;
-INCLUDE ../../../bin/amiga-m68k/gen/ext_objs.ld
+INCLUDE ext_objs.ld
                                   _ext_end = .; 
                                 } >valid
   .rom                        : { _rom_start = .;
-INCLUDE ../../../bin/amiga-m68k/gen/rom_objs.ld
+INCLUDE rom_objs.ld
                                    /* This is for the static libs */
                                   *(.text .text.* .rodata .rodata.*)
                                   *(.eh_frame)

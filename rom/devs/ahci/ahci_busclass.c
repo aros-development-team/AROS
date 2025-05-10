@@ -20,6 +20,23 @@
 
 #include "ahci.h"
 
+static AROS_INTH1(ahciBus_Reset, struct ahci_Bus *, bus)
+{
+    AROS_INTFUNC_INIT
+
+    struct ahci_port *ap  = bus->ab_Port;
+
+    D(bug("[AHCI:Bus] %s()\n", __func__));
+
+    ahci_pwrite(ap, AHCI_PREG_CMD, 0);
+    ahci_pwrite(ap, AHCI_PREG_IE, 0);
+    ahci_pwrite(ap, AHCI_PREG_IS, ahci_pread(ap, AHCI_PREG_IS));
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 /*****************************************************************************************
 
     NAME
@@ -96,6 +113,13 @@ OOP_Object *AHCIBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
           bug ("[AHCI:Bus] Root__New: AHCIBase @ %p\n", data->ab_Base);
           bug ("[AHCI:Bus] Root__New: ahci_port @ %p\n", data->ab_Port);
         )
+
+        /* Install reset callback */
+        data->ab_ResetInt.is_Node.ln_Pri  = SD_PRI_DOS - 1;
+        data->ab_ResetInt.is_Node.ln_Name = AHCIBase->ahci_Device.dd_Library.lib_Node.ln_Name;
+        data->ab_ResetInt.is_Code         = (VOID_FUNC)ahciBus_Reset;
+        data->ab_ResetInt.is_Data         = data;
+        AddResetCallback(&data->ab_ResetInt);
     }
     return o;
 }

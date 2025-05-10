@@ -167,15 +167,15 @@ struct AHIDevUnit
         struct Voice            *Voices;
 
         struct AHIAudioCtrl     *AudioCtrl;
-        IPTR                    AudioMode;
-        IPTR                    Frequency;
+        ULONG                    AudioMode;
+        ULONG                    Frequency;
         UWORD                    Channels;
         UWORD                    Pad;
         Fixed                    MonitorVolume;
         Fixed                    InputGain;
         Fixed                    OutputVolume;
-        IPTR                    Input;
-        IPTR                    Output;
+        ULONG                    Input;
+        ULONG                    Output;
 
         UBYTE                    Sounds[MAXSOUNDS];
 };

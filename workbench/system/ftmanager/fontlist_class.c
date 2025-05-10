@@ -376,14 +376,14 @@ ULONG flAddEntry(Class *cl, Object *o, struct MUIP_FontList_AddEntry *msg)
 }
 
 
-AROS_UFH3(ULONG, FontListDispatch,
+AROS_UFH3(IPTR, FontListDispatch,
         AROS_UFHA(Class *, cl, A0),
         AROS_UFHA(Object *, o, A2),
         AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
 
-    ULONG ret;
+    IPTR ret;
 
     switch (msg->MethodID)
     {

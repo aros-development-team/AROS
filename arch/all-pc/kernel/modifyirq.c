@@ -48,6 +48,8 @@ AROS_LH2(ULONG, KrnModifyIRQA,
         if ((irqMap = krnInterruptMapping(KernelBase, irq)) == NULL)
         {
             irqMap = AllocMem(sizeof(struct IntrMapping), MEMF_CLEAR);
+            irqMap->im_Node.ln_Pri = irq;
+            irqMap->im_Int = irq;
             newMp = TRUE;
         }
         if (irqPol != (UBYTE)-1)

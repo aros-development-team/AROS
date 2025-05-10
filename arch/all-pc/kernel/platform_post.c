@@ -172,6 +172,15 @@ static AROS_UFH3 (APTR, KernelPost,
     D(bug("[Kernel] %s: Initializing interrupt controllers...\n", __func__));
     ictl_Initialize(KernelBase);
 
+#if (__WORDSIZE!=64)
+    /* Enable APIC on i386. x86_64 enables it much earlier, but APIC is guaranteed on x86_64 */
+    if (pdata->kb_APIC && pdata->kb_APIC->lapicBase)
+    {
+        core_APIC_Config(pdata->kb_APIC->lapicBase, 0);
+        core_APIC_Enable(pdata->kb_APIC->lapicBase, 0);
+    }
+#endif
+
     // Calibrate the BSP
     if (pdata->kb_APIC)
     {

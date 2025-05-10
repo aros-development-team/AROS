@@ -17,7 +17,7 @@
         AROS_LHA(struct PartitionHandle *, Partition , A0),
         AROS_LHA(APTR                    , Buffer    , A1),
         AROS_LHA(ULONG                   , DataSize  , D0),
-        AROS_LHAQUAD(UQUAD               , StartBlock, D1, D2),
+        AROS_LHA2(UQUAD               , StartBlock, D1, D2),
 
 /*  LOCATION */
         struct Library *, PartitionBase, 25, Partition)

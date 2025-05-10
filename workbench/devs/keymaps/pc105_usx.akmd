@@ -52,7 +52,7 @@ KC_VANILLA                      # 27 k
 KC_VANILLA                      # 28 l
 KCF_SHIFT                       # 29
 KCF_SHIFT                       # 2A
-KCF_SHIFT                       # 2B
+KCF_SHIFT|KCF_CONTROL           # 2B
 KC_NOQUAL                       # 2C
 KC_NOQUAL                       # 2D
 KC_NOQUAL                       # 2E
@@ -398,7 +398,7 @@ id: end_descr
 0xD8,0xF8,'L' ,'l'
 0xB0,0xB6,':' ,';'
 0xA8,0xB4,0x22,0x27
-0xA6,0xAC,0x7C,0x5C
+0,   0x1C,0x7C,0x5C
 0,   0,   0,   0
 '4', '4', '4', '4'
 '5', '5', '5', '5'

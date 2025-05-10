@@ -819,6 +819,18 @@ VOID X11Cl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+VOID X11Cl__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
+{
+    if (msg->width)
+        *(msg->width) = 1024;
+    if (msg->height)
+        *(msg->height) = 768;
+    if (msg->depth)
+        *(msg->depth) = 24;
+}
+
+/****************************************************************************************/
+
 static ULONG mask_to_shift(ULONG mask)
 {
     ULONG i;

@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

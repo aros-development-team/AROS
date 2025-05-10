@@ -576,7 +576,7 @@ static BOOL HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
         DisplayBeep(NULL);
         return FALSE;
     }
-    UnLock(name);
+    UnLock(lock);
 
     if
     (

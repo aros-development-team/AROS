@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 MODNAME :=  usb
 MODTYPE :=  hidd
 
-USER_CFLAGS :=  -DAROS_USE_OOP -I$(SRCDIR)/$(CURDIR)
+USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR)
 
 FILES       :=
 STUBS       := $(MODNAME)_stubs

@@ -1,5 +1,7 @@
 /*
   Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+  Copyright (C) 2019 Stefan "Bebbo" Franke - AmigaOS 3 port
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -23,20 +25,32 @@
 
 int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
+    struct SignalSemaphore *sem;
+
     D(bug("%s(%p)\n", __FUNCTION__, mutex));
 
     if (mutex == NULL)
         return EINVAL;
 
+    sem = &mutex->semaphore;
+
     // initialize static mutexes
-    if (SemaphoreIsInvalid(&mutex->semaphore))
+    if (SemaphoreIsInvalid(sem))
         _pthread_mutex_init(mutex, NULL, TRUE);
 
     // normal mutexes would simply deadlock here
-    if (mutex->kind == PTHREAD_MUTEX_ERRORCHECK && SemaphoreIsMine(&mutex->semaphore))
+    if (mutex->kind == PTHREAD_MUTEX_ERRORCHECK && SemaphoreIsMine(sem))
         return EDEADLK;
 
-    ObtainSemaphore(&mutex->semaphore);
+    ObtainSemaphore(sem);
+
+#if 0 // let's just deadlock here, to be compatible with normal mutexes on other platforms
+    if (mutex->kind == PTHREAD_MUTEX_NORMAL && sem->ss_NestCount > 1) {
+        // should have blocked - fix this
+        ReleaseSemaphore(sem);
+        return EDEADLK;
+    }
+#endif
 
     return 0;
 }

@@ -106,6 +106,7 @@ LONG            width = 1280;
 LONG            height = 720;
 LONG            function = FUNCTION_WRITE;
 STRPTR          functionname = "WritePixelArray";
+BOOL            fullwidth = TRUE;
 struct Window   *win;
 
 /****************************************************************************************/
@@ -214,6 +215,7 @@ static void action_pixelarray(void)
     struct timeval tv_start, tv_end;
     LONG t, i;
     APTR buffer;
+    LONG xact, widthact;
     
     win = OpenWindowTags(NULL, WA_Borderless, TRUE,
                                WA_InnerWidth, width,
@@ -229,6 +231,11 @@ static void action_pixelarray(void)
     
     width = win->Width;
     height = win->Height;
+
+    widthact = width;
+    if (!fullwidth) widthact /= 2;
+    xact = 0;
+    if (!fullwidth) xact = widthact / 2;
     
     /* Allocate and randomize the largest possible buffer */
     buffer = AllocMem(width * height * 4, MEMF_ANY);
@@ -246,18 +253,18 @@ static void action_pixelarray(void)
     {
         CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
         t = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
-        if (t >= 10 * 1000000) break;
+        if (t >= 2 * 1000000) break;
         
         switch(function)
         {
         case(FUNCTION_WRITE_ALPHA):
-            WritePixelArrayAlpha((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, 0, 0, width, height, 0);
+            WritePixelArrayAlpha((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, xact, 0, widthact, height, 0);
             break;
         case(FUNCTION_WRITE):
-            WritePixelArray((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, 0, 0, width, height, pixfmt);
+            WritePixelArray((ULONG *)buffer + ( i % 1000000), 0, 0, width * 4, win->RPort, xact, 0, widthact, height, pixfmt);
             break;
         case(FUNCTION_READ):
-            ReadPixelArray(buffer, 0, 0, width * 4, win->RPort, 0, 0, width, height, pixfmt);
+            ReadPixelArray(buffer, 0, 0, width * 4, win->RPort, xact, 0, widthact, height, pixfmt);
             break;
         }
     }

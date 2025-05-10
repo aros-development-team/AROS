@@ -208,6 +208,7 @@ $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakef
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-L$(GENDIR) \
 		-Wl,-Map=$(GENDIR)/boot/aros-amiga-m68k-reloc.elf.map \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
@@ -355,6 +356,7 @@ $(GENDIR)/boot/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefil
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-L$(GENDIR) \
 		-Wl,-Map=$(GENDIR)/boot/aros-amiga-m68k-ram.elf.map \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
@@ -373,6 +375,7 @@ $(GENDIR)/boot/objtest/%.tst : $(KOBJSDIR)/%.ko $(GENDIR)/boot/objtest
 	@$(ECHO) Test Linking $@...
 	$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-L$(GENDIR) \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \
@@ -407,6 +410,7 @@ $(AROSARCHDIR)/aros.elf.dbg : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 		$(ECHO) Linking $@...; \
 		$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-L$(GENDIR) \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \

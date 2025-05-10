@@ -159,6 +159,7 @@ struct VolumeIcon_Private
 {
     ULONG                   vip_FLags; /* These flags will set volume attributes */
     struct NotifyRequest    vip_FSNotifyRequest;
+    IPTR                    vip_Key1;
 };
 
 #define _volpriv(entry)  ((struct VolumeIcon_Private *)entry->ie_IconListEntry.udata)

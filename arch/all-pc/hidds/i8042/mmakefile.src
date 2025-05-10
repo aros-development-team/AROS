@@ -4,8 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES := \
           i8042_acpi
 
-USER_CPPFLAGS := -DAROS_USE_OOP \
-               -D__OOP_NOLIBBASE__ \
+USER_CPPFLAGS := -D__OOP_NOLIBBASE__ \
                -D__OOP_NOATTRBASES__ \
                -D__OOP_NOMETHODBASES__ \
                -D__UTILITY_NOLIBBASE__ \

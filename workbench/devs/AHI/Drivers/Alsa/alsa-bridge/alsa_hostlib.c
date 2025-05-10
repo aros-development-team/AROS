@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2024, The AROS Development Team. All rights reserved.
 */
 
 #include "alsa_hostlib.h"
@@ -8,6 +8,7 @@
 #include <aros/debug.h>
 
 #define LIBASOUND_SOFILE "libasound.so.2"
+#define LIBC_SOFILE      "libc.so.6"
 
 static const char *alsa_func_names[] =
 {
@@ -44,10 +45,20 @@ static const char *alsa_func_names[] =
 };
 
 #define ALSA_NUM_FUNCS (sizeof(alsa_func_names) / sizeof(alsa_func_names[0]))
-
-APTR HostLibBase;
 struct alsa_func alsa_func;
 static void *libasoundhandle;
+
+static const char *libc_func_names[] =
+{
+    "sigfillset",
+    "sigprocmask",
+};
+
+#define LIBC_NUM_FUNCS (sizeof(libc_func_names) / sizeof(libc_func_names[0]))
+struct libc_func libc_func;
+static void *libchandle;
+
+APTR HostLibBase;
 
 static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs,
         void **funcptr)
@@ -92,6 +103,9 @@ BOOL ALSA_HostLib_Init()
         return FALSE;
     }
 
+    libchandle = hostlib_load_so(LIBC_SOFILE, libc_func_names,
+            LIBC_NUM_FUNCS, (void **)&libc_func);
+
     return TRUE;
 }
 
@@ -99,4 +113,7 @@ VOID ALSA_HostLib_Cleanup()
 {
     if (libasoundhandle != NULL)
         HostLib_Close(libasoundhandle, NULL);
+
+    if (libchandle != NULL)
+        HostLib_Close(libchandle, NULL);
 }

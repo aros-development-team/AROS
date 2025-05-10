@@ -6703,8 +6703,8 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
          * dragged is virtual (its a collection of icons) and the coords passed to DoDrag are not relative to this
          * "object"
          */
-        img->touchx = first_x + message->touchx;
-        img->touchy = first_y + message->touchy;
+        img->touchx = message->touchx - first_x;
+        img->touchy = message->touchy - first_y;
 
         if (transp)
             img->flags = MUIF_DRAGIMAGE_SOURCEALPHA;

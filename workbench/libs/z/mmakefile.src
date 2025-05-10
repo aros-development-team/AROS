@@ -50,10 +50,10 @@ FILES := adler32 \
          contrib/infback9/inftree9
 
 ifeq ($(AROS_TARGET_CPU),x86_64)
-TARGET_ISA_CFLAGS +=  -msse2 -msse4.1 -mpclmul
-FILES += x86_aros fill_window_sse crc_folding
+#MM- workbench-libs-z-x86_64 : workbench-libs-z-sse
+SFILES := x86_aros
 else
-FILES += simd_stub
+SFILES := simd_stub
 endif
 
 LIBZ_CPPFLAGS := -D_XOPEN_SOURCE=600 -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
@@ -63,7 +63,7 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
 
 %build_module mmake=workbench-libs-z \
   modname=z1 modtype=library \
-  files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname=z
+  files="$(addprefix $(ARCHSRCDIR)/,$(FILES) $(SFILES))" linklibname=z
 
 #MM- linklibs: linklibs-z-static
 #MM linklibs-z-static : zlib-fetch
@@ -74,7 +74,7 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
 USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNO_POSIX_WRAPPERS -DNDEBUG
 
 %build_linklib mmake=linklibs-z-static libname=z.static \
-    files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
+    files="$(addprefix $(ARCHSRCDIR)/,$(FILES) simd_stub)" \
     objdir=$(GENDIR)/$(CURDIR)/static
 
 INCLUDE_FILES := zlib.h zconf.h
@@ -87,24 +87,44 @@ $(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
 	$(CP) $^ $@
 
-%build_prog mmake=wokbench-libs-z-example \
+%build_prog mmake=workbench-libs-z-example \
     progname=example \
     files=$(ARCHSRCDIR)/test/example targetdir=$(AROS_TESTS)/z uselibs="z1"
 
-#MM wokbench-libs-z-example : \
+#MM workbench-libs-z-example : \
 #MM        workbench-libs-z-linklib
 
-##MM- test-z : wokbench-libs-z-example
-##MM- test-z-quick : wokbench-libs-z-example-quick
+##MM- test-z : workbench-libs-z-example
+##MM- test-z-quick : workbench-libs-z-example-quick
 
-%build_prog mmake=wokbench-libs-z-minigzip \
+%build_prog mmake=workbench-libs-z-minigzip \
     progname=minigzip \
     files=$(ARCHSRCDIR)/test/minigzip targetdir=$(AROS_C) uselibs="z1"
 
 #MM- workbench-c : \
-#MM        wokbench-libs-z-minigzip
+#MM        workbench-libs-z-minigzip
 
-#MM wokbench-libs-z-minigzip : \
+#MM workbench-libs-z-minigzip : \
 #MM        workbench-libs-z-linklib
+
+TARGET_ISA_CFLAGS +=  -msse2 -msse4.1 -mpclmul
+
+# We depend on build_module linking-in everything it finds in ./arch/
+GENDIR_Z_ARCH:= $(GENDIR)/$(CURDIR)/z1/arch
+
+SSE_FILES := \
+    fill_window_sse crc_folding
+
+SSE_OBJS := $(addprefix $(GENDIR_Z_ARCH)/, $(addsuffix .o, $(SSE_FILES)))
+SSE_DEPS := $(addprefix $(GENDIR_Z_ARCH)/, $(addsuffix .d, $(SSE_FILES)))
+
+#MM
+workbench-libs-z-sse : $(SSE_OBJS)
+
+%rule_compile_multi mmake=workbench-libs-z-sse \
+    basenames="$(addprefix $(ARCHSRCDIR)/,$(SSE_FILES))" targetdir=$(GENDIR_Z_ARCH)
+
+%include_deps depstargets=workbench-libs-z-sse deps=$(SSE_DEPS)
+
 
 %common

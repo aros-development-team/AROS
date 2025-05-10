@@ -6,8 +6,6 @@
     Lang: English
 */
 
-#define AROS_USE_OOP
-
 #define  DEBUG 1
 #include <aros/debug.h>
 

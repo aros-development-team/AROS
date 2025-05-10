@@ -51,8 +51,6 @@
 
 ******************************************************************************/
 
-#define AROS_USE_OOP
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>

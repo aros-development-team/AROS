@@ -846,14 +846,14 @@ ULONG fiWriteFiles(FontInfoData *dat, STRPTR base, STRPTR target_dir, ULONG nr_t
     return 1;
 }
 
-AROS_UFH3(ULONG, FontInfoDispatch,
+AROS_UFH3(IPTR, FontInfoDispatch,
         AROS_UFHA(Class *, cl, A0),
         AROS_UFHA(Object *, o, A2),
         AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
 
-    ULONG ret;
+    IPTR ret;
 
     switch (msg->MethodID)
     {

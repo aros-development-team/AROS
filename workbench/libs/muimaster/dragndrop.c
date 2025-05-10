@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2011, The AROS Development Team.
+    Copyright (C) 2002-2024, The AROS Development Team.
     All rights reserved.
     
 */
@@ -1103,7 +1103,7 @@ VOID DrawDragNDrop(struct DragNDrop *dnd, LONG x, LONG y)
         node = List_First(&dnd->dnd_List);
         while (node)
         {
-            DrawBitMapNode(node, x + node->bmn_Left, y + node->bmn_Top);
+            DrawBitMapNode(node, x - node->bmn_Left, y - node->bmn_Top);
             node = Node_Next(node);
         }
     }
@@ -1112,7 +1112,7 @@ VOID DrawDragNDrop(struct DragNDrop *dnd, LONG x, LONG y)
         node = (struct BitMapNode *)List_Last(&dnd->dnd_List);
         while (node)
         {
-            DrawBitMapNode(node, x + node->bmn_Left, y + node->bmn_Top);
+            DrawBitMapNode(node, x - node->bmn_Left, y - node->bmn_Top);
             node = (struct BitMapNode *)Node_Prev(node);
         }
     }
