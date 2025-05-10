@@ -284,6 +284,11 @@
         Copy was done by Dirk Stoecker (stoecker@amigaworld.com), donated
         to AROS in March 2001
 
+        May 2025, Javier Alaguero
+        Added /A in the FROM and TO parts of the TEMPLATE to make those 
+        arguments mandatory and the command now returns ERROR_REQUIRED_ARG_MISSING
+        if required arguments are missing. 
+
 ******************************************************************************/
 
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
@@ -314,10 +319,10 @@ typedef ULONG IPTR;
 
 #include <string.h>
 
-const TEXT version[] = "\0$VER: Copy 50.17 (30.12.2011)";
+const TEXT version[] = "\0$VER: Copy 50.18 (08.05.2025)";
 
 static const UBYTE *PARAM =
-"FROM/M,TO,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
+"FROM/M/A,TO/A,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
 "DIRECT/S,CLONE/S,DATES/S,NOPRO/S,COM=COMMENT/S,"
 "QUIET/S,"
 #if !USE_ALWAYSVERBOSE
@@ -544,6 +549,8 @@ static void makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct
 static STRPTR skipspaces( STRPTR buffer);
 static STRPTR skipnonspaces( STRPTR buffer);
 static BOOL VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd);
+
+static char cmdname[] = "Copy";
 
 #ifdef __MORPHOS__
 #define BNULL NULL
@@ -1148,7 +1155,12 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
                 task->pr_WindowPtr = win;
 
                 FreeArgs(rda);
-            } /* ReadArgs */
+            } /* ReadArgs */  
+            else
+            {
+                PrintFault(IoErr(), cmdname);
+                retval = ERROR_REQUIRED_ARG_MISSING;
+            }  
 
             FreeDosObject(DOS_RDARGS, rda);
         } /* AllocDosObject */
@@ -1179,11 +1191,17 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
     }
     if (cd)
     {
-        retval = cd->RetVal2;
-        SetIoErr(cd->IoErr);
+        /*Checks added to avoid overwritting retval when 
+        arguments missing*/
+        if (retval!=ERROR_REQUIRED_ARG_MISSING)
+        {
+            retval = cd->RetVal2;
+            SetIoErr(cd->IoErr);
+        }
+
         FreeMem(cd, sizeof(*cd));
     }
-    else if (DOSBase)
+    else if (DOSBase && (retval!=ERROR_REQUIRED_ARG_MISSING))
     {
         PrintFault(IoErr(), NULL);
     }
