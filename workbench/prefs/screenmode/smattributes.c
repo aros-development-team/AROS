@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2025, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -41,6 +41,10 @@ ZUNE_CUSTOMCLASS_1
 struct ScreenModeAttributes_DATA
 {
     Object * objColGrp;
+    Object * objDispOGroup;
+    Object * objDisplay;
+    Object * objAspM;
+    Object * objAspR;
     Object * objVisibleW;
     Object * objVisibleH;
     Object * objMinimumW;
@@ -57,6 +61,8 @@ struct ScreenModeAttributes_DATA
 };
 
 CONST_STRPTR str_empty = "";
+CONST_STRPTR spec_displand = "3:Images:display-landscape";
+CONST_STRPTR spec_dispport = "3:Images:display-portrait";
 
 static inline Object *makeSMLabel1(char *label)
 {
@@ -73,7 +79,7 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     struct ScreenModeAttributes_DATA *data;
     Object  * objColGrp, * objVisibleW, * objVisibleH, * objMinimumW, * objMinimumH,
             * objMaximumW, * objMaximumH, * objMaximumColors, * objFreqH, * objFreqK,
-            * objFeaturesGrp, * objFeatures;
+            * objFeaturesGrp, * objFeatures, *aspM, *aspR, *objDispOGrp, *objDisp;
 
     ULONG id;
 
@@ -82,9 +88,41 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         CLASS, self, NULL,
         MUIA_Group_Horiz, TRUE,
         Child, (IPTR)VGroup,
-            Child, (IPTR)HGroup,
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(objDispOGrp = HGroup,
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)(objDisp = ImageObject,
+                        MUIA_Image_Spec, (IPTR)"3:Images:display-landscape",
+                        MUIA_FixWidth, 52,
+                        MUIA_FixHeight, 48,
+                    End),
+                    Child, (IPTR)HVSpace,
+                End),
                 Child, (IPTR)(objColGrp = (Object *)ColGroup(5),
 
+                    Child, (IPTR)RectangleObject,
+                        MUIA_FixHeightTxt, (IPTR)str_empty,
+                    End,
+                    Child, (IPTR)RectangleObject,
+                        MUIA_FixHeightTxt, (IPTR)str_empty,
+                    End,
+                    Child, (IPTR)RectangleObject,
+                        MUIA_FixHeightTxt, (IPTR)str_empty,
+                    End,
+                    Child, (IPTR)RectangleObject,
+                        MUIA_FixHeightTxt, (IPTR)str_empty,
+                    End,
+                    Child, (IPTR)RectangleObject,
+                        MUIA_FixHeightTxt, (IPTR)str_empty,
+                    End,
+                    
+                    Child, (IPTR)LLabel1("Aspect"),
+                    Child, (IPTR)LLabel1(": "),
+                    Child, (IPTR)(aspM = (Object *)makeSMLabel1("16368")),
+                    Child, (IPTR)Label1("(ratio:"),
+                    Child, (IPTR)(aspR = (Object *)makeSMLabel1("16384")),
+
+    
                     Child, (IPTR)LLabel1(_(MSG_VISIBLE_SIZE)),
                     Child, (IPTR)LLabel1(": "),
                     Child, (IPTR)(objVisibleW = (Object *)makeSMLabel1("16368")),
@@ -102,12 +140,6 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
                     Child, (IPTR)(objMaximumW = (Object *)makeSMLabel1("16368")),
                     Child, (IPTR)Label1("x"),
                     Child, (IPTR)(objMaximumH = (Object *)makeSMLabel1("16368")),
-
-                    Child, (IPTR)LLabel1(_(MSG_MAXIMUM_COLORS)),
-                    Child, (IPTR)LLabel1(": "),
-                    Child, (IPTR)(objMaximumColors = (Object *)LLabel1("16777216")),
-                    Child, (IPTR)RectangleObject, End,
-                    Child, (IPTR)RectangleObject, End,
 
                     Child, (IPTR)RectangleObject,
                         MUIA_FixHeightTxt, (IPTR)str_empty,
@@ -146,6 +178,13 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
                     Child, (IPTR)RectangleObject,
                         MUIA_FixHeightTxt, (IPTR)str_empty,
                     End,
+                    
+                    Child, (IPTR)LLabel1(_(MSG_MAXIMUM_COLORS)),
+                    Child, (IPTR)LLabel1(": "),
+                    Child, (IPTR)(objMaximumColors = (Object *)LLabel1("16777216")),
+                    Child, (IPTR)RectangleObject, End,
+                    Child, (IPTR)RectangleObject, End,
+
                 End),
                 Child, (IPTR)RectangleObject,
                 End,
@@ -171,6 +210,11 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 
     data->objColGrp             = objColGrp;
 
+    data->objDispOGroup         = objDispOGrp;
+    data->objDisplay            = objDisp;
+    data->objAspM               = aspM;
+    data->objAspR               = aspR;
+
     data->objVisibleW           = objVisibleW;
     data->objVisibleH           = objVisibleH;
     data->objMinimumW           = objMinimumW;
@@ -192,6 +236,15 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 err:
     CoerceMethod(CLASS, self, OM_DISPOSE);
     return NULL;
+}
+
+static int getgcd(int x, int y) 
+{ 
+	if (x == 0) 	return y; 
+	if (y == 0) 	return x; 
+	if (x == y)		return x; 
+	if (x > y)  	return getgcd(x-y, y); 
+	return getgcd(x, y-x); 
 }
 
 IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *message)
@@ -226,15 +279,33 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 
                 if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
                 {
-                    ULONG val;
+                    const char *dispOSpec = NULL;
+                    ULONG val[2];
 
                     if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
                     {
-                        val = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
-                        RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
+                        if (dim.Nominal.MaxX - dim.Nominal.MinX + 1 > dim.Nominal.MaxY - dim.Nominal.MinY + 1)
+                        {
+                            dispOSpec = spec_displand;
+                            set(data->objAspM, MUIA_Text_Contents, "Landscape");
+                        }
+                        else
+                        {
+                            dispOSpec = spec_dispport;
+                            set(data->objAspM, MUIA_Text_Contents, "Portrait");
+                        }
+
+                        int dispgcd = getgcd(dim.Nominal.MaxX - dim.Nominal.MinX + 1, dim.Nominal.MaxY - dim.Nominal.MinY + 1);
+                        val[0] = (dim.Nominal.MaxX - dim.Nominal.MinX + 1) / dispgcd;
+                        val[1] = (dim.Nominal.MaxY - dim.Nominal.MinY + 1) / dispgcd;
+                        RawDoFmt("%ld:%ld)", (RAWARG)val, RAWFMTFUNC_STRING, buffer);                           
+                        set(data->objAspR, MUIA_Text_Contents, buffer);
+
+                        val[0] = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
+                        RawDoFmt("%ld", (RAWARG)val, RAWFMTFUNC_STRING, buffer);
                         set(data->objVisibleW, MUIA_Text_Contents, buffer);
-                        val = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
-                        RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
+                        val[0] = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
+                        RawDoFmt("%ld", (RAWARG)val, RAWFMTFUNC_STRING, buffer);
                         set(data->objVisibleH, MUIA_Text_Contents, buffer);
 
                         RawDoFmt("%d", (RAWARG)&dim.MinRasterWidth, RAWFMTFUNC_STRING, buffer);
@@ -247,11 +318,16 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                         RawDoFmt("%d", (RAWARG)&dim.MaxRasterHeight, RAWFMTFUNC_STRING, buffer);
                         set(data->objMaximumH, MUIA_Text_Contents, buffer);
 
-                        val = 1 << (dim.MaxDepth > 24 ? 24 : dim.MaxDepth);
-                        RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
+                        val[0] = 1 << (dim.MaxDepth > 24 ? 24 : dim.MaxDepth);
+                        RawDoFmt("%ld", (RAWARG)val, RAWFMTFUNC_STRING, buffer);
                         set(data->objMaximumColors, MUIA_Text_Contents, buffer);
 
                         DoMethod(data->objColGrp, MUIM_Group_ExitChange);
+                    }
+                    if (dispOSpec && DoMethod(data->objDispOGroup, MUIM_Group_InitChange))
+                    {
+                        set(data->objDisplay, MUIA_Image_Spec, (IPTR)dispOSpec);
+                        DoMethod(data->objDispOGroup, MUIM_Group_ExitChange);
                     }
                 }
                 else
