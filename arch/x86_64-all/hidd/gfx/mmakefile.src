@@ -1,0 +1,21 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-hidd-gfx-x86_64 : kernel-hidd-includes
+
+
+FILES  := rgbconv_arch
+AFILES := 
+
+USER_INCLUDES := -I$(SRCDIR)/rom/hidds/gfx
+
+USER_CFLAGS := -mssse3 -mavx2
+
+%build_archspecific \
+  mainmmake=kernel-hidd-gfx modname=gfx maindir=rom/hidds/gfx \
+  asmfiles=$(AFILES) files=$(FILES) \
+  arch=x86_64
+
+#MM- kernel-hidd-gfx-x86_64 : kernel-hidd-gfx-x86_sse kernel-hidd-gfx-x86_avx
+
+%common

@@ -1,16 +1,45 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/hidd/gfx/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/hidd/gfx/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/hidd/gfx/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/hidd/gfx/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/hidd/gfx/make.opts
+endif
+
 #MM kernel-hidd-gfx-i386 : kernel-hidd-includes
+#MM kernel-hidd-gfx-x86_sse : kernel-hidd-includes
+#MM kernel-hidd-gfx-x86_avx : kernel-hidd-includes
 
 FILES  := rgbconv_arch
 AFILES := 
 
 USER_INCLUDES := -I$(SRCDIR)/rom/hidds/gfx
+HIDDGFX_SSE_CFLAGS ?= -mssse3
+HIDDGFX_AVX_CFLAGS ?= -mavx2
+
+USER_CFLAGS :=
 
 %build_archspecific \
   mainmmake=kernel-hidd-gfx modname=gfx maindir=rom/hidds/gfx \
   asmfiles=$(AFILES) files=$(FILES) \
   arch=i386
+
+USER_CFLAGS := $(HIDDGFX_SSE_CFLAGS)
+
+%build_archspecific \
+  mainmmake=kernel-hidd-gfx modname=gfx maindir=rom/hidds/gfx \
+  asmfiles=$(AFILES) files=rgbconv_sse \
+  arch=x86_sse
+
+USER_CFLAGS := $(HIDDGFX_AVX_CFLAGS)
+
+%build_archspecific \
+  mainmmake=kernel-hidd-gfx modname=gfx maindir=rom/hidds/gfx \
+  asmfiles=$(AFILES) files=rgbconv_avx \
+  arch=x86_avx
 
 %common
