@@ -149,7 +149,7 @@ int main(void)
     }
     printf("\n Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf(" Conversions          : %d\n", (int)i);
-    printf(" Conversions/sec    : %f\n", i * 1000000.0 / t);
+    printf(" Conversions/sec      : %f\n", i * 1000000.0 / t);
 
     {
         int i;
@@ -181,7 +181,7 @@ int main(void)
     }
     printf("\n Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf(" Conversions          : %d\n", (int)i);
-    printf(" Conversions/sec    : %f\n", i * 1000000.0 / t);
+    printf(" Conversions/sec      : %f\n", i * 1000000.0 / t);
 
     printf("\nConverting 24bit to 32bit...\n");
 
@@ -195,7 +195,7 @@ int main(void)
     }
     printf("\n Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf(" Conversions          : %d\n", (int)i);
-    printf(" Conversions/sec    : %f\n", i * 1000000.0 / t);
+    printf(" Conversions/sec      : %f\n", i * 1000000.0 / t);
 
     printf("\nPerforming 32bit format conversions...\n");
 
@@ -209,7 +209,7 @@ int main(void)
     }
     printf("\n Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf(" Conversions          : %d\n", (int)i);
-    printf(" Conversions/sec    : %f\n", i * 1000000.0 / t);
+    printf(" Conversions/sec      : %f\n", i * 1000000.0 / t);
 
     CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
     for(i = 0; ; i++)
@@ -221,7 +221,7 @@ int main(void)
     }
     printf("\n Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf(" Conversions          : %d\n", (int)i);
-    printf(" Conversions/sec    : %f\n", i * 1000000.0 / t);
+    printf(" Conversions/sec      : %f\n", i * 1000000.0 / t);
 
     printf("\nTesting complete.\n");
 
