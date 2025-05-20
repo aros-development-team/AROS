@@ -197,7 +197,7 @@ int main(void)
     printf(" Conversions          : %d\n", (int)i);
     printf(" Conversions/sec    : %f\n", i * 1000000.0 / t);
 
-    printf("\nPerfoming 32bit format conversions...\n");
+    printf("\nPerforming 32bit format conversions...\n");
 
     CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
     for(i = 0; ; i++)
