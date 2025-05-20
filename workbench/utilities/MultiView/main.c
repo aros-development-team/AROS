@@ -406,7 +406,7 @@ static void GetFileToolTypes(STRPTR fname)
         }
         
         if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"CLIPUNIT"))
-            clipunit = (APTR)atoi(s);
+            clipunit = (APTR)(IPTR)atoi(s);
         
         if (s = (char *)FindToolType((CONST STRPTR *)toolarray,"PUBSCREEN"))
             pubScreen = (STRPTR)strdup(s);
