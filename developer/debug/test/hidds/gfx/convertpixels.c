@@ -135,7 +135,7 @@ int main(void)
     }
     printf("\n Elapsed time         : %d us (%f s)\n", (int)t, (double)t / 1000000);
     printf(" Conversions          : %d\n", (int)i);
-    printf(" Conversions/sec    : %f\n", i * 1000000.0 / t);
+    printf(" Conversions/sec      : %f\n", i * 1000000.0 / t);
 
     printf("\nConverting 15bit to 32bit...\n");
 
