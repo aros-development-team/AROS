@@ -34,7 +34,7 @@ struct GemImgBase *LibOpen(ULONG version REG("d0"),
    struct GemImgBase *base REG(BASE_REG));
 APTR LibClose(struct GemImgBase *base REG(BASE_REG));
 APTR LibExpunge(struct GemImgBase *base REG(BASE_REG));
-APTR LibReserved();
+APTR LibReserved(struct GemImgBase *base REG(BASE_REG));
 struct IClass *ObtainClass(struct GemImgBase *base REG(BASE_REG));
 
 #endif

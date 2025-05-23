@@ -284,7 +284,7 @@ APTR LibExpunge(struct GemImgBase *base REG(BASE_REG))
 *
 */
 
-APTR LibReserved(VOID)
+APTR LibReserved(struct GemImgBase *base REG(BASE_REG))
 {
    return NULL;
 }
