@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -37,8 +37,6 @@
 #undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
-
-extern IPTR HookEntry();
 
 /**************************************************************************************************/
 

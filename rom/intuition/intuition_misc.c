@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2013, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -45,7 +45,6 @@
 #   include <aros/debug.h>
 
 ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relright,ULONG imagetype,ULONG gadgetid,ULONG gadgettype,struct IntuitionBase *IntuitionBase);
-extern IPTR HookEntry();
 
 /**********************************************************************************/
 

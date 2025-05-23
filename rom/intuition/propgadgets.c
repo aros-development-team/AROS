@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -23,8 +23,6 @@
 #include "morphos/proprender.h"
 #endif
 #include "gadgets.h"
-
-extern IPTR HookEntry();
 
 #undef DEBUG
 #define DEBUG 0
