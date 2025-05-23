@@ -1,6 +1,6 @@
-diff -ruN ft2demos-2.13.0/graph/aros/graros.c ft2demos-2.13.0.aros/graph/aros/graros.c
---- ft2demos-2.13.0/graph/aros/graros.c	1970-01-01 00:00:00.000000000 +0000
-+++ ft2demos-2.13.0.aros/graph/aros/graros.c	2021-01-08 23:10:06.320000000 +0000
+diff -ruN ft2demos-2.13.3/graph/aros/graros.c ft2demos-2.13.3.aros/graph/aros/graros.c
+--- ft2demos-2.13.3/graph/aros/graros.c	1970-01-01 00:00:00.000000000 +0000
++++ ft2demos-2.13.3.aros/graph/aros/graros.c	2021-01-08 23:10:06.320000000 +0000
 @@ -0,0 +1,293 @@
 +#include "graros.h"
 +
@@ -295,9 +295,9 @@ diff -ruN ft2demos-2.13.0/graph/aros/graros.c ft2demos-2.13.0.aros/graph/aros/gr
 +    
 +  };
 +
-diff -ruN ft2demos-2.13.0/graph/aros/graros.h ft2demos-2.13.0.aros/graph/aros/graros.h
---- ft2demos-2.13.0/graph/aros/graros.h	1970-01-01 00:00:00.000000000 +0000
-+++ ft2demos-2.13.0.aros/graph/aros/graros.h	2021-01-08 23:10:06.330000000 +0000
+diff -ruN ft2demos-2.13.3/graph/aros/graros.h ft2demos-2.13.3.aros/graph/aros/graros.h
+--- ft2demos-2.13.3/graph/aros/graros.h	1970-01-01 00:00:00.000000000 +0000
++++ ft2demos-2.13.3.aros/graph/aros/graros.h	2021-01-08 23:10:06.330000000 +0000
 @@ -0,0 +1,24 @@
 +#ifndef GRAROS_H
 +#define GRAROS_H

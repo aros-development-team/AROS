@@ -44,8 +44,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM test-freetype-ftviewstatic : test-freetype-static-deps
 
 FT2DEMOS        := ftdmo
-FT2VERS         := 2130
-FT2VERSION      := 2.13.0
+FT2VERS         := 2133
+FT2VERSION      := 2.13.3
 ARCHBASE        := $(FT2DEMOS)$(FT2VERS)
 ARCHDIR         := ft2demos-$(FT2VERSION)
 FT2SRCDIR       := $(PORTSDIR)/$(FT2DEMOS)/$(ARCHDIR)
