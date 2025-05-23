@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include "x11_debug.h"
@@ -43,6 +43,8 @@
 #define SWAP16(x) AROS_WORD2BE(x)
 #define SWAP32(x) AROS_LONG2BE(x)
 #endif
+
+typedef APTR (*bmimage_func_t)(OOP_Class *, OOP_Object *, APTR, XImage *, ULONG, ULONG, ULONG, APTR);
 
 /****************************************************************************************/
 
@@ -610,7 +612,7 @@ static UBYTE *ximage_to_buf_lut(OOP_Class *cl, OOP_Object *bm, UBYTE *buf, XImag
 
 static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
         ULONG width, ULONG height, APTR pixarray,
-        APTR (*fromimage_func)(), APTR fromimage_data)
+        bmimage_func_t fromimage_func, APTR fromimage_data)
 {
     struct bitmap_data *data;
     XImage *image;
@@ -739,7 +741,7 @@ static void getimage_xshm(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
 /****************************************************************************************/
 
 static void getimage_xlib(OOP_Class *cl, OOP_Object *o, LONG x, LONG y, ULONG width, ULONG height, APTR pixels,
-        APTR(*fromimage_func)(), APTR fromimage_data)
+        bmimage_func_t fromimage_func, APTR fromimage_data)
 {
     struct bitmap_data *data;
     XImage *image;
@@ -794,12 +796,12 @@ VOID MNAME(Hidd_BitMap__GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     if (XSD(cl)->use_xshm)
     {
         getimage_xshm(cl, o, msg->x, msg->y, msg->width, msg->height,
-                msg->pixels, (APTR (*)())ximage_to_buf, msg);
+                msg->pixels, (bmimage_func_t)ximage_to_buf, msg);
     }
     else
 #endif
     {
-        getimage_xlib(cl, o, msg->x, msg->y, msg->width, msg->height, msg->pixels, (APTR(*)()) ximage_to_buf, msg);
+        getimage_xlib(cl, o, msg->x, msg->y, msg->width, msg->height, msg->pixels, (bmimage_func_t) ximage_to_buf, msg);
     }
 }
 
@@ -814,12 +816,12 @@ VOID MNAME(Hidd_BitMap__GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     if (XSD(cl)->use_xshm)
     {
         getimage_xshm(cl, o, msg->x, msg->y, msg->width, msg->height,
-                msg->pixels, (APTR (*)())ximage_to_buf_lut, msg);
+                msg->pixels, (bmimage_func_t)ximage_to_buf_lut, msg);
     }
     else
 #endif
     {
-        getimage_xlib(cl, o, msg->x, msg->y, msg->width, msg->height, msg->pixels, (APTR(*)()) ximage_to_buf_lut, msg);
+        getimage_xlib(cl, o, msg->x, msg->y, msg->width, msg->height, msg->pixels, (bmimage_func_t) ximage_to_buf_lut, msg);
     }
 }
 
@@ -1101,7 +1103,7 @@ static UBYTE *buf_to_ximage_lut(OOP_Class *cl, OOP_Object *bm, UBYTE *pixarray, 
 
 static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
         LONG x, LONG y, ULONG width, ULONG height,
-        APTR pixarray, APTR (*toimage_func)(), APTR toimage_data)
+        APTR pixarray, bmimage_func_t toimage_func, APTR toimage_data)
 {
 
     struct bitmap_data *data;
@@ -1197,7 +1199,7 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
 /****************************************************************************************/
 
 static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, LONG x, LONG y, ULONG width, ULONG height,
-        APTR pixarray, APTR(*toimage_func)(), APTR toimage_data)
+        APTR pixarray, bmimage_func_t toimage_func, APTR toimage_data)
 {
 
     struct bitmap_data *data;
@@ -1279,12 +1281,12 @@ VOID MNAME(Hidd_BitMap__PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     {
         putimage_xshm(cl, o, msg->gc, msg->x, msg->y,
                 msg->width, msg->height, msg->pixels,
-                (APTR (*)()) buf_to_ximage, msg);
+                (bmimage_func_t) buf_to_ximage, msg);
     }
     else
 #endif
     {
-        putimage_xlib(cl, o, msg->gc, msg->x, msg->y, msg->width, msg->height, msg->pixels, (APTR(*)()) buf_to_ximage, msg);
+        putimage_xlib(cl, o, msg->gc, msg->x, msg->y, msg->width, msg->height, msg->pixels, (bmimage_func_t) buf_to_ximage, msg);
     }
 }
 
@@ -1300,12 +1302,12 @@ VOID MNAME(Hidd_BitMap__PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     {
         putimage_xshm(cl, o, msg->gc, msg->x, msg->y,
                 msg->width, msg->height, msg->pixels,
-                (APTR (*)())buf_to_ximage_lut, msg);
+                (bmimage_func_t)buf_to_ximage_lut, msg);
     }
     else
 #endif
     {
-        putimage_xlib(cl, o, msg->gc, msg->x, msg->y, msg->width, msg->height, msg->pixels, (APTR(*)()) buf_to_ximage_lut, msg);
+        putimage_xlib(cl, o, msg->gc, msg->x, msg->y, msg->width, msg->height, msg->pixels, (bmimage_func_t) buf_to_ximage_lut, msg);
     }
 }
 
