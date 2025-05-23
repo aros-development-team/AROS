@@ -33,6 +33,8 @@
 
 #include "NList_func.h"
 
+typedef int (*cmpfunc_t)(const void * element1, const void * element2);
+
 static ULONG NL_List_Move(struct NLData *data,LONG from,LONG to);
 
 LONG NL_GetSelects(struct NLData *data, LONG ent)
@@ -333,7 +335,7 @@ static ULONG NL_List_SortPart(struct NLData *data,LONG fent,LONG lent)
     }
 
 //D(DBF_ALWAYS, "qsort started.");
-    qsort(entry, (size_t) (lent-fent), (size_t) sizeof(struct sort_entry), (int (*)()) &sort_compar);
+    qsort(entry, (size_t) (lent-fent), (size_t) sizeof(struct sort_entry), (cmpfunc_t) &sort_compar);
 //D(DBF_ALWAYS, "qsort ended.");
 
     ent1 = numfollow = numexch = 0;
