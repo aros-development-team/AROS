@@ -39,7 +39,7 @@
  * 
  * This code may be freely utilized to develop programs for the Amiga.
  *
- * Modifications for AROS, July 2010:
+ * Modifications (c) AROS Dev Team 2010 - 2025
  *  - Window size
  *  - Header required for AROS
  *  - Fixed prototypes
@@ -192,8 +192,8 @@ struct MsgPort *consoleWritePort;      /* a port at which to receive */
 struct IOStdReq *consoleReadMsg;   /* I/O request block pointer */
 struct MsgPort *consoleReadPort;      /* a port at which to receive */	
 	
-extern struct MsgPort *CreatePort();
-extern struct IOStdReq *CreateStdIO();
+extern struct MsgPort *CreatePort(STRPTR, LONG);
+extern struct IOStdReq *CreateStdIO(struct MsgPort *);
 
 char readstring[200];	/* provides a buffer even though using only one char */
 

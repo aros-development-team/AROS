@@ -232,7 +232,8 @@ struct NewWindow NewWindowStructure = {
 struct IntuitionBase *IntuitionBase = 0L;
 
 struct Window *twindow;
-void GadMXSel(), GadMXSD();
+void GadMXSel(struct Window *win, struct Gadget *gad1, struct Gadget *gad2, struct Gadget *gad3, struct Gadget *gad4, struct Gadget *gad5, struct Gadget *gad6);
+void GadMXSD(struct Window *win, struct Gadget *gad1, struct Gadget *gad2);
 
 int main(void)
 {
