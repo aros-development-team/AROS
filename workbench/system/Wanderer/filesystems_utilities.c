@@ -3,6 +3,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/muimaster.h>
+#include <proto/intuition.h>
 #include <clib/alib_protos.h>
 
 #include <dos/dos.h>
