@@ -1,12 +1,12 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function qsort().
 */
 /* Original source from NetBSD */
 #include <stdlib.h>
 
-static inline const char *med3 (const char *, const char *, const char *, int (*)());
+static inline const char *med3 (const char *, const char *, const char *, int (*)(const void *, const void *));
 static inline void       swapfunc (char *, char *, int, int);
 
 #define min(a, b)       (a) < (b) ? a : b
