@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>
@@ -26,7 +26,7 @@ PFNGLUNIFORM4IPROC AROSglUniform4i = NULL;
 void testextensions()
 {
     printf("Getting pointer to glUniform4i...\n");
-    AROSglUniform4i = glAGetProcAddress("glUniform4i");
+    AROSglUniform4i = (PFNGLUNIFORM4IPROC)glAGetProcAddress("glUniform4i");
 
     if (AROSglUniform4i != NULL)
     {
