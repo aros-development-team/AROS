@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Linux hidd handling mouse events.
 */
@@ -49,7 +49,7 @@ OOP_Object *LinuxMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
                 switch (idx)
                 {
                 case aoHidd_Mouse_IrqHandler:
-                    data->mouse_callback = (VOID (*)())tag->ti_Data;
+                    data->mouse_callback = (VOID (*)(void *, struct pHidd_Mouse_Event *))tag->ti_Data;
                 break;
 
                 case aoHidd_Mouse_IrqHandlerData:
