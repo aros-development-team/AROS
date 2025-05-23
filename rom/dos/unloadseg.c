@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -67,7 +67,7 @@ static AROS_UFH3(void, FreeFunc,
 
     if (seglist)
     {
-        success = InternalUnLoadSeg(seglist, FreeFunc);
+        success = InternalUnLoadSeg(seglist, (VOID_FUNC)FreeFunc);
         if (success)
         {
             struct Node *segnode, *tmp;

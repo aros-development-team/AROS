@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Create a new process
 */
@@ -777,7 +777,8 @@ static void DosEntry(void)
            support both register and stack parameters at once, so we use
            the stack only on non-m68k. This oughta be fixed somehow.
          */
-        me->pr_ExitCode(result, me->pr_ExitData);
+         void (*doExitCode)(IPTR, IPTR) = (void (*)(IPTR, IPTR))me->pr_ExitCode;
+        doExitCode(result, me->pr_ExitData);
 #endif
     }
 
