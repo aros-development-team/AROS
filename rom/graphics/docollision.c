@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function DoCollision()
 */
@@ -7,6 +7,8 @@
 #include <graphics/gels.h>
 
 #include "graphics_intern.h"
+
+typedef int (*collhandler_t)(struct VSprite *, struct VSprite *);
 
 /*****************************************************************************
 
@@ -217,8 +219,10 @@
                 {
                   if (rp->GelsInfo->collHandler &&
                       rp->GelsInfo->collHandler->collPtrs[i])
-                    rp->GelsInfo->collHandler->collPtrs[i]( CurVSprite,
-                                                           _CurVSprite);
+                  {
+                    collhandler_t gelCHandler = (collhandler_t)rp->GelsInfo->collHandler->collPtrs[i];
+                    gelCHandler( CurVSprite, _CurVSprite);
+                  }
                   break;
                 }
                 i++;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -14,7 +14,7 @@
 struct fillinfo
 {
     ULONG fillpen;
-    BOOL (*isfillable)();
+    BOOL (*isfillable)(struct fillinfo *fi, LONG x, LONG y);
     struct RastPort *rp;
     UBYTE *rasptr;
     ULONG bpr;
