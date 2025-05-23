@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Gfx BitMap class implementation.
 */
@@ -73,12 +73,15 @@
 
 #define PIXBUFBYTES 16384
 
+typedef void (*bufferedopfunc_t)(UBYTE *, UWORD, UWORD, UWORD, void *);
+
 static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWORD starty, UWORD width, UWORD height,
-                                BOOL getimage, HIDDT_StdPixFmt stdpf, VOID_FUNC operation, void *userdata)
+                                BOOL getimage, HIDDT_StdPixFmt stdpf, VOID_FUNC opfunc, void *userdata)
 {
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
+    bufferedopfunc_t operation = (bufferedopfunc_t)opfunc;
     ULONG bytesperline = width * sizeof(ULONG);
-    UWORD buflines     = PIXBUFBYTES / 4; /* Remove slow division */
+    UWORD buflines     = PIXBUFBYTES >> 2;
     ULONG bufsize;
     UWORD endy = starty + height;
     UWORD y;
