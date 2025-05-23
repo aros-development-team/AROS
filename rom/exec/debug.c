@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Internal debugger.
 */
@@ -18,7 +18,7 @@
 
 /****************************************************************************************/
 
-char    GetK();
+char    GetK(struct ExecBase *SysBase);
 UQUAD   GetQ(char *);
 ULONG   GetL(char *);
 UWORD   GetW(char *);
