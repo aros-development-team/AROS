@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Get a pointer to a method for an object
 */
@@ -73,7 +73,7 @@
     /* Paranoia */
     D(if (NULL == ifm->MethodFunc) bug("!!! OOP/GetMethod(): IFMethod instance had no methodfunc. This should NEVER happen !!!\n");)
 
-    return ifm->MethodFunc;
+    return (OOP_MethodFunc)ifm->MethodFunc;
 
     AROS_LIBFUNC_EXIT
 } /* OOP_GetMethod */

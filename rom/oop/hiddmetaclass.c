@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: OOP HIDD metaclass
 */
@@ -22,13 +22,16 @@
 
 #define UB(x) ((UBYTE *)x)
 
-#define IntCallMethod(cl, o, msg)                                       \
-{                                                                       \
-    register struct IFMethod *ifm;                                      \
-    D(bug("mid=%ld\n", *msg)); ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];     \
-    D(bug("ifm: func %p, cl %p\n", ifm->MethodFunc, ifm->mClass)); return (ifm->MethodFunc(ifm->mClass, o, msg));                       \
+#define IntCallMethod(cl, o, msg)                                   \
+{                                                                   \
+    OOP_MethodFunc callfunc;                                        \
+    register struct IFMethod *ifm;                                  \
+    D(bug("mid=%ld\n", *msg));                                      \
+    ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];    \
+    D(bug("ifm: func %p, cl %p\n", ifm->MethodFunc, ifm->mClass));  \
+    callfunc = (OOP_MethodFunc)ifm->MethodFunc;                     \
+    return (callfunc(ifm->mClass, o, msg));                         \
 }
-
 
 static VOID get_info_on_ifs(OOP_Class *super, const struct OOP_InterfaceDescr *ifdescr,
                             ULONG *total_num_methods_ptr, ULONG *total_num_ifs_ptr, struct IntOOPBase *OOPBase);
@@ -85,9 +88,9 @@ static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     ** so we can easily exit cleanly if some info is missing
     */
     
-    domethod      = (IPTR (*)())GetTagData(aMeta_DoMethod,      0, msg->attrList);
-    coercemethod  = (IPTR (*)())GetTagData(aMeta_CoerceMethod,  0, msg->attrList);
-    dosupermethod = (IPTR (*)())GetTagData(aMeta_DoSuperMethod, 0, msg->attrList);
+    domethod      = (IPTR (*)(OOP_Object *, OOP_MethodID *))GetTagData(aMeta_DoMethod,      0, msg->attrList);
+    coercemethod  = (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))GetTagData(aMeta_CoerceMethod,  0, msg->attrList);
+    dosupermethod = (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))GetTagData(aMeta_DoSuperMethod, 0, msg->attrList);
 
     
     /* We are sure we have enough args, and can let rootclass alloc the instance data */
@@ -316,7 +319,7 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
                     mtab_idx = mdescr->MethodIdx + data->ifinfo[current_idx].mtab_offset;
                     D(bug("Initing of if %s methods at %ld\n", ifdescr->InterfaceID, mtab_idx));
                     
-                    data->methodtable[mtab_idx].MethodFunc = mdescr->MethodFunc;
+                    data->methodtable[mtab_idx].MethodFunc = (IFMethodFunc_t)mdescr->MethodFunc;
                     data->methodtable[mtab_idx].mClass = (OOP_Class *)o;
                 
                 } /* for (each method in current interface) */
@@ -440,17 +443,17 @@ OOP_Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
 {
     struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
-        { (IPTR (*)())hiddmeta_new,             moRoot_New              },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_new,             moRoot_New              },
         {  NULL, 0UL }
     };
     
     struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1] =
     {
-        { (IPTR (*)())hiddmeta_allocdisptabs,   MO_meta_allocdisptabs   },
-        { (IPTR (*)())hiddmeta_freedisptabs,    MO_meta_freedisptabs    },
-        { (IPTR (*)())hiddmeta_getifinfo,       MO_meta_getifinfo       },
-        { (IPTR (*)())hiddmeta_iterateifs,      MO_meta_iterateifs      },
-        { (IPTR (*)())hiddmeta_findmethod,      MO_meta_findmethod      },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_allocdisptabs,   MO_meta_allocdisptabs   },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_freedisptabs,    MO_meta_freedisptabs    },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_getifinfo,       MO_meta_getifinfo       },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_iterateifs,      MO_meta_iterateifs      },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_findmethod,      MO_meta_findmethod      },
         {  NULL, 0UL }
     };
     
@@ -579,10 +582,14 @@ static IPTR HIDD_DoMethod(OOP_Object *o, OOP_Msg msg)
 ************************/
 static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    OOP_MethodFunc coercefunc;
     register struct IFMethod *ifm;
     D(bug("HIDD_CoerceMethod()\n"));
-    D(bug("cl=%s, mid=%ld\n", cl->ClassNode.ln_Name, *msg)); ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];
-    D(bug("ifm %p func %p, cl %p\n", ifm, ifm->MethodFunc, ifm->mClass)); return (ifm->MethodFunc(ifm->mClass, o, msg));
+    D(bug("cl=%s, mid=%ld\n", cl->ClassNode.ln_Name, *msg));
+    ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];
+    D(bug("ifm %p func %p, cl %p\n", ifm, ifm->MethodFunc, ifm->mClass));
+    coercefunc = (OOP_MethodFunc)ifm->MethodFunc;
+    return (coercefunc(ifm->mClass, o, msg));
 }
 
 /************************

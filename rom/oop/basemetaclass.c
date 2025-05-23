@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: OOP base metaclass
 */
@@ -657,9 +657,10 @@ IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (MD(cl)->public.superclass == ROOTCLASSPTR)
     {
+        OOP_MethodFunc superfunc;
         ifm = &(OOPBase->ob_RootClassObject.inst.rootif[*msg]);
-
-        ret = ifm->MethodFunc(ifm->mClass, o, msg);
+        superfunc = (OOP_MethodFunc)ifm->MethodFunc;
+        ret = superfunc(ifm->mClass, o, msg);
     }
     else /* superclass is the BaseMeta class */
         ret = basemeta_coercemethod(cl, o, msg);
@@ -674,6 +675,7 @@ IPTR basemeta_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     ULONG method_offset = *msg & METHOD_MASK;
+    OOP_MethodFunc coercefunc;    
     struct IFMethod *ifm;
     
     EnterFunc(bug("basemeta_coercemethod(cl=%p, o=%p, msg=%p)\n", cl, o, msg));
@@ -697,7 +699,8 @@ IPTR basemeta_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
             Alert(AN_OOP);
             return 0;
     }
-    ReturnPtr ("basemeta_coercemethod", IPTR, ifm->MethodFunc(ifm->mClass, o, msg));
+    coercefunc = (OOP_MethodFunc)ifm->MethodFunc;
+    ReturnPtr ("basemeta_coercemethod", IPTR, coercefunc(ifm->mClass, o, msg));
 }
 
 /************************
@@ -743,17 +746,17 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
     bmo->inst.iftable[1] = bmo->inst.metaif;
     
     /* initialize interfaces */
-    bmo->inst.rootif[moRoot_New].MethodFunc     = (IPTR (*)())basemeta_new;
-    bmo->inst.rootif[moRoot_Dispose].MethodFunc = (IPTR (*)())basemeta_dispose;
+    bmo->inst.rootif[moRoot_New].MethodFunc     = (IFMethodFunc_t)basemeta_new;
+    bmo->inst.rootif[moRoot_Dispose].MethodFunc = (IFMethodFunc_t)basemeta_dispose;
 
     bmo->inst.rootif[moRoot_New].mClass         = BASEMETAPTR;
     bmo->inst.rootif[moRoot_Dispose].mClass  = BASEMETAPTR;
     
     /* Initialize meta interface */
-    bmo->inst.metaif[MO_meta_allocdisptabs].MethodFunc  = (IPTR (*)())NULL;
-    bmo->inst.metaif[MO_meta_freedisptabs].MethodFunc           = (IPTR (*)())NULL;
-    bmo->inst.metaif[MO_meta_getifinfo].MethodFunc              = (IPTR (*)())basemeta_getifinfo;
-    bmo->inst.metaif[MO_meta_iterateifs].MethodFunc             = (IPTR (*)())basemeta_iterateifs;
+    bmo->inst.metaif[MO_meta_allocdisptabs].MethodFunc  = (IFMethodFunc_t)NULL;
+    bmo->inst.metaif[MO_meta_freedisptabs].MethodFunc           = (IFMethodFunc_t)NULL;
+    bmo->inst.metaif[MO_meta_getifinfo].MethodFunc              = (IFMethodFunc_t)basemeta_getifinfo;
+    bmo->inst.metaif[MO_meta_iterateifs].MethodFunc             = (IFMethodFunc_t)basemeta_iterateifs;
     
     bmo->inst.metaif[MO_meta_allocdisptabs].mClass      = BASEMETAPTR;
     bmo->inst.metaif[MO_meta_freedisptabs].mClass       = BASEMETAPTR;

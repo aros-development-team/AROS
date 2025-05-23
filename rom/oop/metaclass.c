@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: OOP metaclass
 */
@@ -97,9 +97,9 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         
         inst = (struct ifmeta_inst *)o;
         
-        domethod        = (IPTR (*)())GetTagData(aMeta_DoMethod,        0, msg->attrList);
-        coercemethod    = (IPTR (*)())GetTagData(aMeta_CoerceMethod,    0, msg->attrList);
-        dosupermethod   = (IPTR (*)())GetTagData(aMeta_DoSuperMethod,   0, msg->attrList);
+        domethod        = (IPTR (*)(OOP_Object *, OOP_Msg))GetTagData(aMeta_DoMethod,        0, msg->attrList);
+        coercemethod    = (IPTR (*)(OOP_Class *, OOP_Object *, OOP_Msg))GetTagData(aMeta_CoerceMethod,    0, msg->attrList);
+        dosupermethod   = (IPTR (*)(OOP_Class *, OOP_Object *, OOP_Msg))GetTagData(aMeta_DoSuperMethod,   0, msg->attrList);
         
 
         D(bug("Instance allocated %p\n", inst));
@@ -312,12 +312,12 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
             {
                 D(bug("[META] Method ID 0x%08X function 0x%p\n", ifdescr->MethodTable[i].MethodIdx, ifdescr->MethodTable[i].MethodFunc));
 
-                ifb->MethodTable[ ifdescr->MethodTable[i].MethodIdx ].MethodFunc = ifdescr->MethodTable[i].MethodFunc;
+                ifb->MethodTable[ ifdescr->MethodTable[i].MethodIdx ].MethodFunc = (IFMethodFunc_t)ifdescr->MethodTable[i].MethodFunc;
                 ifb->MethodTable[ ifdescr->MethodTable[i].MethodIdx ].mClass     = (OOP_Class *)o;
             } /* for (each method in the interface) */
 
         } /* for (each interface to add to class) */
-        
+
         /* For speedup in method lookup */
         inst->data.iftab_directptr = (struct IFBucket **)inst->data.iftable->Table;
     
@@ -328,7 +328,7 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
 failure:
     D(bug("FAILURE\n"));
     if (inst->data.iftable)
-        FreeHash(inst->data.iftable, freebucket, OOPBase);
+        FreeHash(inst->data.iftable, (VOID_FUNC)freebucket, OOPBase);
     ReturnBool ("IFMeta::allocdisptabs", FALSE);
 }
 
@@ -342,7 +342,7 @@ static VOID ifmeta_freedisptabs(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
     /* This frees the hashtable + all buckets */
     
-    FreeHash(inst->data.iftable, freebucket, OOPBase);
+    FreeHash(inst->data.iftable, (VOID_FUNC)freebucket, OOPBase);
     
     return;
 }
@@ -498,17 +498,17 @@ loop:
 
 static const struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1]=
 {
-    { (IPTR (*)())ifmeta_new,   moRoot_New              },
+    { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))ifmeta_new,   moRoot_New              },
     {  NULL, 0UL }
 };
 
 static const struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1]=
 {
-    { (IPTR (*)())ifmeta_allocdisptabs, MO_meta_allocdisptabs   },
-    { (IPTR (*)())ifmeta_freedisptabs,  MO_meta_freedisptabs    },
-    { (IPTR (*)())ifmeta_getifinfo,     MO_meta_getifinfo       },
-    { (IPTR (*)())ifmeta_iterateifs,    MO_meta_iterateifs      },
-    { (IPTR (*)())ifmeta_findmethod,    MO_meta_findmethod      },
+    { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))ifmeta_allocdisptabs, MO_meta_allocdisptabs   },
+    { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))ifmeta_freedisptabs,  MO_meta_freedisptabs    },
+    { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))ifmeta_getifinfo,     MO_meta_getifinfo       },
+    { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))ifmeta_iterateifs,    MO_meta_iterateifs      },
+    { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))ifmeta_findmethod,    MO_meta_findmethod      },
     {  NULL, 0 }
 };
 
@@ -770,7 +770,10 @@ static IPTR Meta_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
                 register struct IFMethod *method = &b->MethodTable[mid];
 
                 if (method->MethodFunc)
-                    return method->MethodFunc(method->mClass, o, msg);
+                {
+                    OOP_MethodFunc coercefunc = (OOP_MethodFunc)method->MethodFunc;
+                    return coercefunc(method->mClass, o, msg);
+                }
             }
 
             /*

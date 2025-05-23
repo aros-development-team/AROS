@@ -2,7 +2,7 @@
 #define INTERN_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -168,10 +168,12 @@ struct IFBucket
 ** class of OCLASS(o)
 */
 
+typedef IPTR (*IFMethodFunc_t)();
+
 struct IFMethod
 {
-    IPTR (*MethodFunc)();
-    OOP_Class *mClass;
+    IFMethodFunc_t  MethodFunc;
+    OOP_Class       *mClass;
 };
 
 

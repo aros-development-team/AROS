@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
    Desc: Common code for handling hashing.
 */
@@ -106,10 +106,12 @@ struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase)
 /*****************
 **  FreeHash()  **
 *****************/
-VOID FreeHash(struct HashTable *ht, VOID (*freebucket)(), struct IntOOPBase *OOPBase)
+typedef VOID (*freebucketfunc_t)(struct Bucket *, struct IntOOPBase *);
+VOID FreeHash(struct HashTable *ht, VOID (*frbfunc)(), struct IntOOPBase *OOPBase)
 {
+    freebucketfunc_t freebucket = (freebucketfunc_t)frbfunc;
     ULONG i;
-    
+
     EnterFunc(bug("FreeHash(ht=%p, freebucket=%p)\n", ht, freebucket));
 
     D(bug("Hashsize: %ld\n", HashSize(ht) ));
@@ -195,19 +197,21 @@ struct Bucket *HashLookupStr(struct HashTable *ht, IPTR id, struct IntOOPBase *O
 /*****************
 **  CopyHash()  **
 *****************/
+typedef struct Bucket * (*copybucketfunc_t)(struct Bucket *, APTR, struct IntOOPBase *);
 BOOL CopyHash(struct HashTable *dest_ht
         ,struct HashTable *src_ht
-        ,struct Bucket * (*copybucket)()
+        ,struct Bucket * (*cpybfunc)()
         ,APTR data
         ,struct IntOOPBase *OOPBase     )
 {
+    copybucketfunc_t copybucket = (copybucketfunc_t)cpybfunc;
     ULONG i;
-    
+
     /* Copies all buckets of src_ht into dest_ht */
-    
+
     EnterFunc(bug("CopyHash(dest_ht=%p, src_ht=%p, copybucket=%p,data = %p)\n",
         dest_ht, src_ht, copybucket, data));
-    
+
     /* for each entry in the table */
     for (i = 0; i < HashSize(src_ht); i ++ )
     {
