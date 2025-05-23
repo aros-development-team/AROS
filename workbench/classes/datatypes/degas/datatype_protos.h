@@ -34,7 +34,7 @@ struct DTBase *LibOpen(ULONG version REG("d0"),
    struct DTBase *base REG(BASE_REG));
 APTR LibClose(struct DTBase *base REG(BASE_REG));
 APTR LibExpunge(struct DTBase *base REG(BASE_REG));
-APTR LibReserved();
+APTR LibReserved(struct DTBase *base REG(BASE_REG));
 struct IClass *ObtainClass(struct DTBase *base REG(BASE_REG));
 
 #endif

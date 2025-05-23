@@ -284,7 +284,7 @@ APTR LibExpunge(struct DTBase *base REG(BASE_REG))
 *
 */
 
-APTR LibReserved(VOID)
+APTR LibReserved(struct DTBase *base REG(BASE_REG))
 {
    return NULL;
 }
