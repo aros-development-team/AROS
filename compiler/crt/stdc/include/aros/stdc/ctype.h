@@ -2,7 +2,7 @@
 #define _STDC_CTYPE_H_
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file ctype.h
@@ -31,12 +31,19 @@ extern const unsigned char * const * const __ctype_tolower_ptr;
 #define _istype(c,type) \
     ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (type))
 
+#if !defined(_STDC_NOINLINE) && !defined(_STDC_NOINLINE_CTYPE)
 #define __ctype_make_func(__name__, __body__)    \
 __BEGIN_DECLS                          \
 static __inline__ int __name__(int c); \
 __END_DECLS                            \
 static __inline__ int __name__(int c)  \
 { return __body__; }
+#else
+#define __ctype_make_func(__name__, __body__)    \
+__BEGIN_DECLS                          \
+int __name__(int c); \
+__END_DECLS
+#endif
 
 __ctype_make_func(isupper,  _istype(c,_ISupper))
 __ctype_make_func(islower,  _istype(c,_ISlower))
@@ -56,6 +63,7 @@ __ctype_make_func(tolower,  (*__ctype_tolower_ptr)[((int)(c)) & 0xff])
 /* POSIX.1-2008/XSI extensions that are provided in stdc.library */
 __ctype_make_func(isascii,  (c & ~0x7F) == 0)
 __ctype_make_func(toascii,  c & 0x7F)
+
 #define _toupper(c) toupper(c)
 #define _tolower(c) tolower(c)
 
