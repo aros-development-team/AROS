@@ -29,7 +29,7 @@ void fit_in_screen(struct NewWindow *, struct Screen *);
 void check_tab(struct Gadget *);
 
 /*** Set default preference ***/
-void default_prefs();
+void default_prefs(PREFS *prefs);
 
 /*** Save current configuration to restore it later if desired ***/
 void save_config( char ConfigFile );
