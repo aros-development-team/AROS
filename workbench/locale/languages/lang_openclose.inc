@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: common code for language description files
@@ -41,7 +41,10 @@ extern const UBYTE name[];
 extern const UBYTE version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
-extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
+AROS_UFP3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
+    AROS_UFPA(struct Language *, language, D0),
+    AROS_UFPA(BPTR,             segList, A0),
+    AROS_UFPA(struct ExecBase *, _SysBase, A6));
 AROS_LD1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
     struct Language *, language, 1, language);
