@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 /* Utility functions for boot taglist relocation */
@@ -29,7 +29,7 @@ void RelocateBootMsg(const struct TagItem *msg)
 {
     struct TagItem *dest;
     struct TagItem *tag;
-    struct TagItem *tstate = (struct TagItem *)msg;
+    const struct TagItem *tstate = (const struct TagItem *)msg;
     ULONG num = 1;
 
     /* First count how much memory we will need */
