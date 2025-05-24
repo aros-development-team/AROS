@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Serial Unit hidd class implementation.
 */
@@ -39,8 +39,14 @@
 AROS_INTP(serial_int_13);
 AROS_INTP(serial_int_24);
 
-void serialunit_receive_data();
-ULONG serialunit_write_more_data();
+AROS_UFP3(void, serialunit_receive_data,
+   AROS_UFPA(APTR, iD, A1),
+   AROS_UFPA(APTR, iC, A5),
+   AROS_UFPA(struct ExecBase *, SysBase, A6));
+AROS_UFP3(ULONG, serialunit_write_more_data,
+   AROS_UFPA(APTR, iD, A1),
+   AROS_UFPA(APTR, iC, A5),
+   AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 unsigned char get_lcr(struct HIDDSerialUnitData * data);
 unsigned char get_fcr(ULONG baudrate);
