@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 /**********************************************************************/
@@ -88,17 +88,22 @@ my_output_message (j_common_ptr cinfo)
   );
 }
 
+#define INPUT_BUF_SIZE  4096    /* must match the size from libjpeg */
+
 typedef struct {
   struct jpeg_source_mgr pub;   /* public fields */
 
   FILE * infile;                /* source stream */
-  JOCTET * buffer;              /* start of buffer */
+ /* input buffer */
+#if defined(JPEG_LIB_VERSION_MAJOR) && ((JPEG_LIB_VERSION_MAJOR > 9) || ((JPEG_LIB_VERSION_MAJOR == 9)  &&  (JPEG_LIB_VERSION_MINOR > 5)))
+  JOCTET buffer[INPUT_BUF_SIZE];
+#else
+  JOCTET * buffer;
+#endif
   boolean start_of_file;        /* have we gotten any data yet? */
 } my_source_mgr;
 
 typedef my_source_mgr * my_src_ptr;
-
-#define INPUT_BUF_SIZE  4096    /* choose an efficiently fread'able size */
 
 METHODDEF(boolean)
 my_fill_input_buffer (j_decompress_ptr cinfo)
