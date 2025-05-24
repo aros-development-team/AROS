@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/asmcall.h>
@@ -26,6 +26,12 @@
 #include "pic_i8259a.h"
 
 #define D(x)
+
+#if defined(ACPI_CA_VERSION) && (ACPI_CA_VERSION >= 0x20250404)
+#define ACPICAIRQIntr Interrupts
+#else
+#define ACPICAIRQIntr u.Interrupts
+#endif
 
 /************************************************************************************************/
 /************************************************************************************************
@@ -80,14 +86,14 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                 struct acpi_resource_irq *irq  = &resource->Data.Irq;
                 D(
                     bug("[Kernel:ACPI] %s: - ACPI_RESOURCE_TYPE_IRQ\n", __func__);
-                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, irq->u.Interrupts[0], irq->Polarity, irq->Triggering);
+                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, irq->ACPICAIRQIntr[0], irq->Polarity, irq->Triggering);
                 )
                 /*
                    If in IO-APIC mode and interrupts 0-15 Interrupt Source Overide has priority over _CRS
                    1) A bit set in acpi_interruptOverride indicates IO-APIC code was run and IO-APIC is in use
                    2) ACPI_RESOURCE_TYPE_IRQ can only describe legacy, 0-15 IRQs
                 */
-                if (kb_ACPI->acpi_interruptOverrides & (1 << irq->u.Interrupts[0]))
+                if (kb_ACPI->acpi_interruptOverrides & (1 << irq->ACPICAIRQIntr[0]))
                     return AE_OK;
 
                 if (irq->Triggering == ACPI_LEVEL_SENSITIVE)
@@ -101,7 +107,7 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                     irqAttribs[0].ti_Data = 1;
 
                 /* Update delivery information */
-                KrnModifyIRQA(irq->u.Interrupts[0], irqAttribs);
+                KrnModifyIRQA(irq->ACPICAIRQIntr[0], irqAttribs);
             }
             break;
         case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
@@ -109,7 +115,7 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                 struct acpi_resource_extended_irq *eirq = &resource->Data.ExtendedIrq;
                 D(
                     bug("[Kernel:ACPI] %s: - ACPI_RESOURCE_TYPE_EXTENDED_IRQ\n", __func__);
-                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, eirq->u.Interrupts[0], eirq->Polarity, eirq->Triggering);
+                    bug("[Kernel:ACPI] %s:       IRQ #%u, Pol = %u, TrigLvl = %u\n", __func__, eirq->ACPICAIRQIntr[0], eirq->Polarity, eirq->Triggering);
                 )
                 if (eirq->Triggering == ACPI_LEVEL_SENSITIVE)
                     irqAttribs[1].ti_Data = 1;
@@ -122,7 +128,7 @@ ACPI_STATUS acpiAttachDevResource(ACPI_RESOURCE *resource, void *Context)
                     irqAttribs[0].ti_Data = 1;
 
                 /* Update delivery information */
-                KrnModifyIRQA(eirq->u.Interrupts[0], irqAttribs);
+                KrnModifyIRQA(eirq->ACPICAIRQIntr[0], irqAttribs);
             }
             break;
     }

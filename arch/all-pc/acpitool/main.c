@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2015, The AROS Development Team.
+    Copyright (C) 2003-2025, The AROS Development Team.
 */
 
 #include <proto/acpica.h>
@@ -142,7 +142,7 @@ AROS_UFH3(static void, select_function,
     GetAttr(MUIA_List_Active, object, &active);
     if (active != MUIV_List_Active_Off)
     {
-        void (*parser)() = unknown_parser;
+        void (*parser)(const ACPI_TABLE_HEADER *, void (*)(const char *)) = unknown_parser;
 
         DoMethod(object, MUIM_List_GetEntry, active, &table);
 
@@ -234,7 +234,7 @@ AROS_UFH3(static IPTR, dumpFunc,
 {
     AROS_USERFUNC_INIT
 
-    void (*parser)() = unknown_parser;
+    void (*parser)(const ACPI_TABLE_HEADER *, void (*)(const char *)) = unknown_parser;
 
     if (parsed)
     {

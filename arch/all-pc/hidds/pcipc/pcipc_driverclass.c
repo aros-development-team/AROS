@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 
     Desc: PCI direct bus driver, for i386/x86_64 native.
 */
@@ -27,6 +27,12 @@
 
 #define DMMIO(x)
 #define DIRQ(x)
+
+#if defined(ACPI_CA_VERSION) && (ACPI_CA_VERSION >= 0x20250404)
+#define ACPICARoutingSrc Source
+#else
+#define ACPICARoutingSrc u.Source
+#endif
 
 /*
  * N.B. Do not move/remove/refactor the following variable unless you fully
@@ -234,9 +240,9 @@ static void EnumPCIIRQ(struct pcipc_staticdata *psd, struct acpiHostBridge *ahb,
         n->re_IRQPin = item->Pin + 1;
         DIRQ(bug(" INT%c", 'A' + n->re_IRQPin - 1));
 
-        if (strlen(item->u.Source) > 0)
+        if (strlen(item->ACPICARoutingSrc) > 0)
         {
-            DIRQ(bug(" '%s'\n", item->u.Source));
+            DIRQ(bug(" '%s'\n", item->ACPICARoutingSrc));
             FreeVec(n);
         }
         else
