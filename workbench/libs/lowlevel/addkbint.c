@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -68,7 +68,7 @@ AROS_UFH1(void, KBEventWrapper,
     struct llKBInterrupt *kbInt = (struct llKBInterrupt *)AllocVec(sizeof(struct llKBInterrupt), MEMF_CLEAR);
     if (kbInt)
     {
-        kbInt->llkbi_Interrupt.is_Code = KBEventWrapper;
+        kbInt->llkbi_Interrupt.is_Code = (VOID_FUNC)KBEventWrapper;
         kbInt->llkbi_Code = intRoutine;
         kbInt->llkbi_Data = intData;
         kbInt->llkbi_Interrupt.is_Data = kbInt;
