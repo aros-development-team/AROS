@@ -1,7 +1,7 @@
 #ifndef _KERNEL_ARCH_H_
 #define _KERNEL_ARCH_H_
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Machine-specific definitions for IBM PC hardware
@@ -158,7 +158,7 @@ static inline unsigned long long RDTSC() {
 struct syscallx86_Handler
 {
         struct Node sc_Node;
-        void (*sc_SysCall)();
+        void (*sc_SysCall)(APTR);
 };
 
 #include "x86_syscalls.h"
