@@ -259,13 +259,14 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 	const uint16_t *ep = lp+listSize;
 	const uint16_t *tp;
 
+	*vlo = *vhi = 0;
+
 	/*
 	 * Check first and last elements for out-of-bounds conditions.
 	 */
-	if (target < lp[0]) {
-		*vlo = *vhi = 0;
+	if (target < lp[0])
 		return;
-	}
+
 	if (target >= ep[-1]) {
 		*vlo = *vhi = listSize - 1;
 		return;

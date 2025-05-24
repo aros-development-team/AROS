@@ -3711,14 +3711,13 @@ getLowerUpperIndex(uint8_t target, uint8_t *pList, uint16_t listSize,
                    uint16_t *indexL, uint16_t *indexR)
 {
     uint16_t i;
-
+	*indexL = *indexR = 0;
     /*
      * Check first and last elements for beyond ordered array cases.
      */
-    if (target <= pList[0]) {
-        *indexL = *indexR = 0;
+    if (target <= pList[0])
         return AH_TRUE;
-    }
+
     if (target >= pList[listSize-1]) {
         *indexL = *indexR = (uint16_t)(listSize - 1);
         return AH_TRUE;

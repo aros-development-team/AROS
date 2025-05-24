@@ -374,7 +374,7 @@ APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 *
 */
 
-APTR DevReserved()
+APTR DevReserved(struct DevBase *base)
 {
    return NULL;
 }

@@ -13,6 +13,7 @@ USER_CPPFLAGS :=  \
         -D__OOP_NOLIBBASE__ \
         -D__OOP_NOMETHODBASES__ \
         -D__OOP_NOATTRBASES__
+USER_CFLAGS := -std=gnu99
 
 #MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-normal
 

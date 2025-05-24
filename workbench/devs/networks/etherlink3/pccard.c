@@ -409,9 +409,9 @@ static struct BusContext *AllocCard(struct DevBase *base)
    {
       /* Try to gain access to card */
 
-      card_removed_int->is_Code = CardRemovedInt;
+      card_removed_int->is_Code = (VOID_FUNC)CardRemovedInt;
       card_removed_int->is_Data = context;
-      card_inserted_int->is_Code = CardInsertedInt;
+      card_inserted_int->is_Code = (VOID_FUNC)CardInsertedInt;
       card_inserted_int->is_Data = context;
       card_status_int->is_Code = (APTR)CardStatusInt;
       card_status_int->is_Data = context;

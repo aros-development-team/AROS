@@ -33,7 +33,7 @@ BYTE DevOpen(REG(a1, struct IOSana2Req *request),
 APTR DevClose(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base));
 APTR DevExpunge(REG(BASE_REG, struct DevBase *base));
-APTR DevReserved();
+APTR DevReserved(struct DevBase *base);
 VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base));
 VOID DevAbortIO(REG(a1, struct IOSana2Req *request),

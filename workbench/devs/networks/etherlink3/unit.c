@@ -371,7 +371,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
 
       unit->tx_end_int.is_Node.ln_Name =
          base->device.dd_Library.lib_Node.ln_Name;
-      unit->tx_end_int.is_Code = DMATXEndInt;
+      unit->tx_end_int.is_Code = (VOID_FUNC)DMATXEndInt;
       unit->tx_end_int.is_Data = unit;
 
       unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;

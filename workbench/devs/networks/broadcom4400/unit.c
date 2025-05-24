@@ -78,7 +78,7 @@ static VOID ResetHandler(REG(a1, struct DevUnit *unit),
    REG(a5, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
-static VOID UnitTask();
+static VOID UnitTask(struct DevUnit *unit);
 UWORD ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
    struct DevBase *base);
 static VOID WriteMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
