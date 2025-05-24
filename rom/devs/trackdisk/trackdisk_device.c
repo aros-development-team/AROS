@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Amiga-style device for trackdisk
 */
@@ -47,7 +47,7 @@
 int td_getbyte(unsigned char *, struct TrackDiskBase *);
 int td_sendbyte(unsigned char, struct TrackDiskBase *);
 ULONG TD_InitTask(struct TrackDiskBase *);
-static void TD_DevTask();
+static void TD_DevTask(struct TrackDiskBase *);
 BOOL TD_PerformIO( struct IOExtTD *, struct TrackDiskBase *);
 
 struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
