@@ -203,10 +203,10 @@ OPENMEMERR1:
 
 #if PIPEDIR
       pipe->lockct= 0;
-      InitLock (pipe->lock, pipe);
+      InitLock (pipe->lock, (SIPTR)pipe);
 #endif /* PIPEDIR */
 
-      InsertTail (&pipelist, pipe);     /* at tail for directory's sake */
+      InsertTail (&pipelist, (PIPELISTNODE *)pipe);     /* at tail for directory's sake */
 
 #ifdef DEBUG
        OS ("*** created pipe '"); OS (pipe->name);
@@ -369,7 +369,7 @@ PIPEDATA  *pipe;
   OS ("*** discarding pipe '"); OS (pipe->name); OS ("'\n");
 #endif /* DEBUG */
 
-  Delete (&pipelist, pipe);
+  Delete (&pipelist, (PIPELISTNODE *)pipe);
 
   FreePipebuf (pipe->buf);
   FreeMem (pipe->lock, sizeof (struct FileLock));
@@ -399,8 +399,6 @@ const char        *tapname;
   struct DosPacket   *tappkt;
   struct MsgPort     *Handler;
   struct FileLock    *Lock;
-  void               StartTapIO();
-
 
   if ( (tapname == NULL) ||
        ((Bname= (char *) AllocMem (OPENTAP_STRSIZE, ALLOCMEM_FLAGS)) == NULL) )
@@ -442,10 +440,10 @@ OPENTAPERR:
   wd->pktinfo.tapwait.handle= handle;     /* for HandleTapReply() */
 
   StartTapIO ( tappkt, ACTION_FINDOUTPUT,
-               CptrtoBPTR (handle), CptrtoBPTR (Lock), CptrtoBPTR (Bname),
+               (IPTR)CptrtoBPTR (handle), (IPTR)CptrtoBPTR (Lock), (IPTR)CptrtoBPTR (Bname),
                Handler );
 
-  InsertHead (&tapwaitlist, wd);
+  InsertHead (&tapwaitlist, (PIPELISTNODE *)wd);
 }
 
 
@@ -462,8 +460,6 @@ BPTR  tapfh;
 { struct FileHandle  *taphandle;
   struct DosPacket   *tappkt;
   WAITINGDATA        *wd;
-  void               StartTapIO();
-
 
   taphandle= (struct FileHandle *) BPTRtoCptr (tapfh);
 
@@ -488,5 +484,5 @@ CLOSETAPERR:
                taphandle->fh_Arg1, 0, 0,
                taphandle->fh_Type );
 
-  InsertHead (&tapwaitlist, wd);
+  InsertHead (&tapwaitlist, (PIPELISTNODE *)wd);
 }

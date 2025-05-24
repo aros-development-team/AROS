@@ -97,8 +97,6 @@ ULONG  *sizep;       /* size longword pointer */
 char   **tapnmp;     /* reference to tap name pointer, returns NULL if none */
 
 { char  *cp;
-  int   ParseNum();
-
 
   l_strcpy (namebuf, default_tapname_prefix);
 
@@ -340,8 +338,6 @@ char  *get_autoname (newflag)
 BYTE  newflag;
 
 { char      *cp, *cpc;
-  PIPEDATA  *FindPipe();
-
 
   if (newflag)     /* then create a new unique pipe name */
     { cp= findchar (autoname, '\0');
@@ -364,12 +360,10 @@ BYTE  newflag;
       while (FindPipe (autoname) != NULL);     /* repeat until name is unique */
     }
 
-
   return  autoname;
 }
 
 #endif /* AUTONAME || AUTONAME_STAR */
-
 
 
 /*---------------------------------------------------------------------------

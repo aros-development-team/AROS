@@ -25,10 +25,10 @@ extern BPTR  DebugFH;
 
 
 
-extern int   InitDebugIO    ( /* NodePri */ );
-extern void  CleanupDebugIO ( );
-extern BPTR  DebugOpen      ( /* name, mode */ );
-extern void  DebugClose     ( /* fh */ );
-extern int   DebugWrite     ( /* fh, buf, len */ );
-extern void  OutStr         ( /* str, fh */ );
-extern void  OutLONG        ( /* n, fh */ );
+extern int   InitDebugIO    ( BYTE NodePri );
+extern void  CleanupDebugIO ( void );
+extern BPTR  DebugOpen      ( char  *name, int mode );
+extern void  DebugClose     ( BPTR fh );
+extern int   DebugWrite     ( BPTR fh, BYTE *buf, ULONG len );
+extern void  OutStr         ( char *str, BPTR fh );
+extern void  OutLONG        ( ULONG n, BPTR fh );

@@ -509,7 +509,7 @@ static void  InitPipedirLock ()
     if (PipedirLock == NULL)
     {
         PipedirLock= (struct FileLock *)(((IPTR) LockBytes + 0x3) & ~0x3);
-        InitLock (PipedirLock, NULL);
+        InitLock (PipedirLock, (SIPTR)NULL);
     }
 }
 

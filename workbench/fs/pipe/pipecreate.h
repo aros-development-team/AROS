@@ -18,8 +18,9 @@
 
 #define   OPENTAP_STRSIZE   108
 
+struct pipedata;
+typedef struct pipedata PIPEDATA;
 
-
-extern void  OpenPipe    ( /* pkt, tapfh */ );
-extern void  ClosePipe   ( /* pkt */ );
-extern void  DiscardPipe ( /* pipe */ );
+extern void  OpenPipe    ( struct DosPacket *pkt, BPTR tapfh );
+extern void  ClosePipe   ( struct DosPacket *pkt );
+extern void  DiscardPipe ( PIPEDATA *pipe );

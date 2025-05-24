@@ -32,6 +32,6 @@ PIPEBUF;
 
 
 
-extern PIPEBUF  *AllocPipebuf   ( /* len */ );
-extern ULONG    MoveFromPipebuf ( /* pb, dest, amt */ );
-extern ULONG    MoveToPipebuf   ( /* pb, src, amt */ );
+extern PIPEBUF  *AllocPipebuf   ( ULONG  len );
+extern ULONG    MoveFromPipebuf ( PIPEBUF *pb, register BYTE *dest, ULONG amt );
+extern ULONG    MoveToPipebuf   ( PIPEBUF *pb, register BYTE *src, ULONG amt );

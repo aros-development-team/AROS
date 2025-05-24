@@ -9,8 +9,6 @@
 **  History:    05-Jan-87       Original Version (1.0)
 */
 
-
-
 typedef struct pipelistnode       /* must be first member of list items */
   { struct pipelistnode  *next;
   }
@@ -21,14 +19,10 @@ typedef struct pipelistheader
   }
 PIPELISTHEADER;
 
-
-
 #define   InitList(headerp)    ((void) ((headerp)->head= NULL))
 #define   FirstItem(headerp)   ((headerp)->head)
 #define   NextItem(nodep)      (((PIPELISTNODE *) (nodep))->next)
 
-
-
-extern void  InsertHead ( /* headerp, nodep */ );
-extern void  InsertTail ( /* headerp, nodep */ );
-extern void  Delete     ( /* headerp, nodep */ );
+extern void  InsertHead ( PIPELISTHEADER *headerp, PIPELISTNODE *nodep );
+extern void  InsertTail ( PIPELISTHEADER *headerp, PIPELISTNODE *nodep );
+extern void  Delete     ( PIPELISTHEADER *headerp, PIPELISTNODE *nodep );

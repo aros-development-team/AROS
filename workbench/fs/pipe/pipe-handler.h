@@ -137,8 +137,8 @@ extern struct MsgPort     *TapReplyPort;
 
 #define   QuickReplyPkt(pkt)       PutMsg ((pkt)->dp_Port, (pkt)->dp_Link)
 
-extern void      handler   ( /* StartPkt */ );
-extern PIPEDATA  *FindPipe ( /* name */ );
+extern void      handler   ( struct DosPacket *StartPkt );
+extern PIPEDATA  *FindPipe ( char *name );
 
 
 

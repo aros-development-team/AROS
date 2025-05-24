@@ -39,20 +39,16 @@
 
 # define   AUTONAME_INIT            "*00000000"
 
-
-
 #define   isnumeral(c)   inrange ((c), '0', '9')
 
+extern int   ParsePipeName ( BYTE *Bname, char **nmp, ULONG *sizep, char **tapnmp );
+extern void  BSTRtoCstr    ( register BYTE *BSTRp, register char *str, unsigned maxsize );
+extern void  CstrtoBSTR    ( register char *str, register BYTE *BSTRp, unsigned maxsize );
+extern void  CstrtoFIB     ( register char *str, register BYTE *BSTRp, unsigned maxsize );
+extern int   inrange       ( register int x, register int  lower, register int  upper );
+extern char  uppercase     ( register char c );
+extern char  *findchar     ( register char *str, register char ch );
+extern void  l_strcpy      ( register char *to, register char *from );
+extern char  *strdiff      ( register char *str1, register char *str2 );
 
-
-extern int   ParsePipeName ( /* Bname, nmp, sizep, tapnmp */ );
-extern void  BSTRtoCstr    ( /* BSTRp, str, maxsize */ );
-extern void  CstrtoBSTR    ( /* str, BSTRp, maxsize */ );
-extern void  CstrtoFIB     ( /* str, BSTRp, maxsize */ );
-extern int   inrange       ( /* x, lower, upper */ );
-extern char  uppercase     ( /* c */ );
-extern char  *findchar     ( /* str, ch */ );
-extern void  l_strcpy      ( /* to, from */ );
-extern char  *strdiff      ( /* str1, str2 */ );
-
-extern char  *get_autoname ( /* newflag */ );
+extern char  *get_autoname ( BYTE newflag );

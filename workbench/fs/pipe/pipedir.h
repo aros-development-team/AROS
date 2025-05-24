@@ -19,15 +19,15 @@
 
 
 
-extern void  SetPipeDate   ( /* pipe */ );
-extern void  PipeLock      ( /* pkt */ );
-extern void  PipeFHFromLock( /* pkt */ );
-extern void  PipeDupLock   ( /* pkt */ );
-extern void  PipeDupLockFH ( /* pkt */ );
-extern void  PipeUnLock    ( /* pkt */ );
-extern void  PipeExamine   ( /* pkt */ );
-extern void  PipeExNext    ( /* pkt */ );
-extern void  PipeExFH      ( /* pkt */ );
-extern void  PipeParentDir ( /* pkt */ );
-extern void  PipeParentFH  ( /* pkt */ );
-extern void  InitLock      ( /* lock, key */ );
+extern void  SetPipeDate   ( PIPEDATA *pipe );
+extern void  PipeLock      ( struct DosPacket *pkt );
+extern void  PipeFHFromLock( struct DosPacket *pkt );
+extern void  PipeDupLock   ( struct DosPacket *pkt );
+extern void  PipeDupLockFH ( struct DosPacket *pkt );
+extern void  PipeUnLock    ( struct DosPacket *pkt );
+extern void  PipeExamine   ( struct DosPacket *pkt );
+extern void  PipeExNext    ( struct DosPacket *pkt );
+extern void  PipeExFH      ( struct DosPacket *pkt );
+extern void  PipeParentDir ( struct DosPacket *pkt );
+extern void  PipeParentFH  ( struct DosPacket *pkt );
+extern void  InitLock      ( struct FileLock *lock, SIPTR key );

@@ -10,7 +10,8 @@
 **		07-Feb-87	Added "lockct" check in CheckWaiting().
 */
 
-
+struct pipedata;
+typedef struct pipedata PIPEDATA;
 
 typedef enum iotype
   { PIPEREAD,
@@ -46,11 +47,9 @@ typedef struct waitingdata
   }
 WAITINGDATA;
 
-
-
-extern void              StartPipeIO    ( /* pipe, pkt, iotype */ );
-extern void              CheckWaiting   ( /* pipe */ );
-extern struct DosPacket  *AllocPacket   ( /* ReplyPort */ );
-extern void              FreePacket     ( /* pkt */ );
-extern void              StartTapIO     ( /* pkt, Type, Arg1, Arg2, Arg3, Handler */ );
-extern void              HandleTapReply ( /* pkt */ );
+extern void              StartPipeIO    ( struct DosPacket *pkt, IOTYPE iotype );
+extern void              CheckWaiting   ( PIPEDATA *pipe );
+extern struct DosPacket  *AllocPacket   ( struct MsgPort *ReplyPort );
+extern void              FreePacket     ( struct DosPacket *pkt );
+extern void              StartTapIO     ( struct DosPacket *pkt, SIPTR Type, SIPTR Arg1, SIPTR Arg2, SIPTR Arg3, struct MsgPort *Handler );
+extern void              HandleTapReply ( struct DosPacket *pkt );

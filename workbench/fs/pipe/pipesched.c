@@ -103,13 +103,13 @@ SPIOEXIT:
     { if ((pipekey->iotype != PIPEREAD) && (pipekey->iotype != PIPERW))
         goto SPIOEXIT;
 
-      InsertTail (&pipe->readerlist, wd);
+      InsertTail (&pipe->readerlist, (PIPELISTNODE *)wd);
     }
   else     /* PIPEWRITE */
     { if ((pipekey->iotype != PIPEWRITE) && (pipekey->iotype != PIPERW))
         goto SPIOEXIT;
 
-      InsertTail (&pipe->writerlist, wd);
+      InsertTail (&pipe->writerlist, (PIPELISTNODE *)wd);
     }
 
 
@@ -145,8 +145,6 @@ PIPEDATA  *pipe;
 { BYTE         change;
   WAITINGDATA  *wd;
   ULONG        amt;
-  void         EndPipeIO();
-
 
 #if PIPEDIR
   SetPipeDate (pipe);
@@ -225,13 +223,13 @@ WAITINGDATA  *wd;
   pkt->dp_Res2= 0;
 
   if (wd->pktinfo.pipewait.reqtype == PIPEREAD)
-    { Delete (&pipe->readerlist, wd);
+    { Delete (&pipe->readerlist, (PIPELISTNODE *)wd);
 
       QuickReplyPkt (pkt);
       FreeMem (wd, sizeof (WAITINGDATA));
     }
   else     /* must be PIPEWRITE -- reqtype is new PIPERW */
-    { Delete (&pipe->writerlist, wd);
+    { Delete (&pipe->writerlist, (PIPELISTNODE *)wd);
 
       if (pipe->tapfh != 0)     /* then write to the pipe tap */
         { if ((tappkt= AllocPacket (TapReplyPort)) == NULL)
@@ -252,7 +250,7 @@ WAITINGDATA  *wd;
                            taphandle->fh_Arg1, pkt->dp_Arg2, pkt->dp_Arg3,
                            taphandle->fh_Type );
 
-              InsertHead (&tapwaitlist, wd);     /* for HandleTapReply() */
+              InsertHead (&tapwaitlist, (PIPELISTNODE *)wd);     /* for HandleTapReply() */
             }
         }
       else     /* otherwise, return finished packet */
@@ -323,10 +321,10 @@ struct DosPacket  *pkt;
 void  StartTapIO (pkt, Type, Arg1, Arg2, Arg3, Handler)
 
 struct DosPacket  *pkt;
-LONG              Type;
-LONG              Arg1;
-LONG              Arg2;
-LONG              Arg3;
+SIPTR              Type;
+SIPTR              Arg1;
+SIPTR              Arg2;
+SIPTR              Arg3;
 struct MsgPort    *Handler;
 
 { pkt->dp_Type= Type;
@@ -353,7 +351,7 @@ struct DosPacket  *pkt;
 
   for (wd= (WAITINGDATA *) FirstItem (&tapwaitlist); wd != NULL; wd= (WAITINGDATA *) NextItem (wd))
     if (wd->pkt == pkt)
-      { Delete (&tapwaitlist, wd);
+      { Delete (&tapwaitlist, (PIPELISTNODE *)wd);
         break;
       }
 
@@ -371,7 +369,7 @@ struct DosPacket  *pkt;
       case MODE_READONLY:
       case MODE_NEWFILE:     /* for a tap open request */
              if (pkt->dp_Res1)     /* then successful */
-               OpenPipe (wd->pktinfo.tapwait.clientpkt, pkt->dp_Arg1);
+               OpenPipe (wd->pktinfo.tapwait.clientpkt, (BPTR)pkt->dp_Arg1);
              else     /* couldn't open tap */
                { FreeMem (wd->pktinfo.tapwait.handle, sizeof (struct FileHandle));
                  pkt->dp_Res1= 0;
