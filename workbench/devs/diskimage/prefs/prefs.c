@@ -48,7 +48,7 @@ PrefsObject *AllocPrefsBoolean (BOOL value) {
 	obj = AllocVec(sizeof(PrefsObject), MEMF_CLEAR);
 	if (obj) {
 		obj->type = PREFS_BOOL;
-		obj->value.bool = value;
+		obj->value.boolean = value;
 		return obj;
 	}
 	return NULL;
@@ -118,7 +118,7 @@ BOOL DictGetBooleanForKey (PrefsObject *dict, CONST_STRPTR key, BOOL def_val) {
 	PrefsObject *child;
 	child = DictGetObjectForKey(dict, key);
 	if (child && child->type == PREFS_BOOL) {
-		return child->value.bool;
+		return child->value.boolean;
 	} else {
 		return def_val;
 	}

@@ -38,7 +38,7 @@ typedef struct {
 	ULONG type;
 	union {
 		struct List *list;
-		BOOL bool;
+		BOOL boolean;
 		LONG integer;
 		STRPTR string;
 	} value;

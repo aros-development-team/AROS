@@ -71,7 +71,7 @@ static void WritePrefsObject (PrefsObject *obj, BPTR file, LONG level) {
 				break;
 			case PREFS_BOOL:
 				Indent(file, level);
-				FPrintf(file, "<bool>%s</bool>\n", obj->value.bool ? "TRUE" : "FALSE");
+				FPrintf(file, "<bool>%s</bool>\n", obj->value.boolean ? "TRUE" : "FALSE");
 				break;
 			case PREFS_INTEGER:
 				Indent(file, level);
