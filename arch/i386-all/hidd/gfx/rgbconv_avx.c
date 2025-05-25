@@ -155,7 +155,11 @@ ARCHCONVERTFUNCH(AVX,RGB24,XRGB32)
         for (; x + 4 <= width; x += 4) {
             __m128i hi = _mm_loadu_si128((__m128i *)&src[x * 3 + 12]);
             __m128i lo = _mm_loadu_si128((__m128i *)&src[x * 3]);
+#if !defined(_mm256_set_m128i)
+            __m256i p0 = _mm256_insertf128_si256(_mm256_castsi128_si256(lo), hi, 1);
+#else
             __m256i p0 = _mm256_set_m128i(hi, lo);  // Combine into 256-bit register
+#endif
             __m256i mask = _mm256_set_epi8(
                 AVX_ABCtoDABC_MASK
             );
@@ -208,7 +212,11 @@ ARCHCONVERTFUNCH(AVX,BGR24,XRGB32)
         for (; x + 8 <= width; x += 8) {
             __m128i hi = _mm_loadu_si128((__m128i *)&src[x * 3 + 12]);
             __m128i lo = _mm_loadu_si128((__m128i *)&src[x * 3]);
-            __m256i p0 = _mm256_set_m128i(hi, lo);
+#if !defined(_mm256_set_m128i)
+            __m256i p0 = _mm256_insertf128_si256(_mm256_castsi128_si256(lo), hi, 1);
+#else
+            __m256i p0 = _mm256_set_m128i(hi, lo);  // Combine into 256-bit register
+#endif
             __m256i mask = _mm256_set_epi8(
                 AVX_ABCtoDCBA_MASK
             );
