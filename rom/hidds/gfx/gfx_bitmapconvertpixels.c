@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -489,15 +489,16 @@ static void native32_to_native(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+/*
+ * quick_copy : use CopyMem to copy pixels, for chunky formats 
+ *              where the src and dst pixfmts match
+ */
 static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
                        struct pHidd_BitMap_ConvertPixels *msg)
 {
-    /* Just do a simple CopyMem() of the pixels */
     INIT_VARS()
     HIDDT_PixelFormat   *srcfmt = msg->srcPixFmt;
     ULONG               bpl = msg->width * srcfmt->bytes_per_pixel;
-
-    /* FIXME: This does not work well for formats with bytes_per_pixel < 1 */
 
     if (msg->srcMod == bpl && msg->dstMod == bpl)
     {
@@ -506,13 +507,10 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
     else
     {
         ULONG i;
-        ULONG copy_width;
-
-        copy_width = msg->width * srcfmt->bytes_per_pixel;
 
         for (i = 0; i < msg->height; i ++)
         {
-            CopyMem(src, dst, copy_width);
+            CopyMem(src, dst, bpl);
             src += msg->srcMod;
             dst += msg->dstMod;
         }
@@ -542,29 +540,25 @@ VOID BM__Hidd_BitMap__ConvertPixels(OOP_Class *cl, OOP_Object *o,
                     struct pHidd_BitMap_ConvertPixels *msg)
 {
     /* For now we assume truecolor */
-    HIDDT_PixelFormat *srcfmt, *dstfmt;
-    
-    srcfmt = msg->srcPixFmt;
-    dstfmt = msg->dstPixFmt;
-    
+    HIDDT_PixelFormat *srcfmt = msg->srcPixFmt,
+                      *dstfmt = msg->dstPixFmt;
 
     D(bug("ConvertPixels: src=%d, dst=%d\n", srcfmt->stdpixfmt, dstfmt->stdpixfmt));
 
     /* Check if source and dest are the same format */
-    if (srcfmt->stdpixfmt == dstfmt->stdpixfmt)
+    if ((srcfmt->stdpixfmt == dstfmt->stdpixfmt) && 
+        (HIDD_PF_BITMAPTYPE(srcfmt) == vHidd_BitMapType_Chunky))
     {
         quick_copy(cl, o, msg);
         return;
     }
-    
-    
-    if (srcfmt->stdpixfmt == vHidd_StdPixFmt_Native32
+    else if (srcfmt->stdpixfmt == vHidd_StdPixFmt_Native32
          && dstfmt->stdpixfmt == vHidd_StdPixFmt_Native)
     {
         native32_to_native(cl, o, msg);
         return;
     }
-    
+
     switch (HIDD_PF_COLMODEL(srcfmt))
     {
     case vHidd_ColorModel_TrueColor:
