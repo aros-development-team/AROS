@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2021, The AROS Development Team. All rights reserved.
+    Copyright 2009-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef MESA3DGL_TYPES_H
@@ -9,10 +9,10 @@
 #include "main/mtypes.h"
 #if defined(GL_PACK_REVERSE_ROW_ORDER_ANGLE)
 #include "frontend/api.h"
-#include "state_tracker/st_gl_api.h"
 #else
 #include "state_tracker/st_api.h"
 #endif
+#include "state_tracker/st_gl_api.h"
 
 struct mesa3dgl_framebuffer
 {
