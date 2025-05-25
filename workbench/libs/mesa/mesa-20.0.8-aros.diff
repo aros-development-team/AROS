@@ -1,21 +1,3 @@
-diff -ruN mesa-20.0.8/include/EGL/eglplatform.h mesa-20.0.8.aros/include/EGL/eglplatform.h
---- mesa-20.0.8/include/EGL/eglplatform.h	2020-06-12 01:21:16.000000000 +0000
-+++ mesa-20.0.8.aros/include/EGL/eglplatform.h	2021-02-04 23:44:45.540000000 +0000
-@@ -107,6 +107,14 @@
- typedef struct gbm_bo      *EGLNativePixmapType;
- typedef void               *EGLNativeWindowType;
- 
-+#elif defined(__AROS__)
-+
-+#include <intuition/intuition.h>
-+
-+typedef APTR            EGLNativeDisplayType;
-+typedef struct Bitmap   *EGLNativePixmapType;
-+typedef struct Window   *EGLNativeWindowType;
-+
- #elif defined(__ANDROID__) || defined(ANDROID)
- 
- struct ANativeWindow;
 diff -ruN mesa-20.0.8/include/c11/threads_posix.h mesa-20.0.8.aros/include/c11/threads_posix.h
 --- mesa-20.0.8/include/c11/threads_posix.h	2020-06-12 01:21:16.000000000 +0000
 +++ mesa-20.0.8.aros/include/c11/threads_posix.h	2021-02-04 23:44:45.550000000 +0000
@@ -45,6 +27,24 @@ diff -ruN mesa-20.0.8/include/c99_math.h mesa-20.0.8.aros/include/c99_math.h
  #else
  #error "Need to include or define an fpclassify function"
  #endif
+diff -ruN mesa-20.0.8/include/EGL/eglplatform.h mesa-20.0.8.aros/include/EGL/eglplatform.h
+--- mesa-20.0.8/include/EGL/eglplatform.h	2020-06-12 01:21:16.000000000 +0000
++++ mesa-20.0.8.aros/include/EGL/eglplatform.h	2021-02-04 23:44:45.540000000 +0000
+@@ -107,6 +107,14 @@
+ typedef struct gbm_bo      *EGLNativePixmapType;
+ typedef void               *EGLNativeWindowType;
+ 
++#elif defined(__AROS__)
++
++#include <intuition/intuition.h>
++
++typedef APTR            EGLNativeDisplayType;
++typedef struct Bitmap   *EGLNativePixmapType;
++typedef struct Window   *EGLNativeWindowType;
++
+ #elif defined(__ANDROID__) || defined(ANDROID)
+ 
+ struct ANativeWindow;
 diff -ruN mesa-20.0.8/mesa3dgl.conf mesa-20.0.8.aros/mesa3dgl.conf
 --- mesa-20.0.8/mesa3dgl.conf	1970-01-01 00:00:00.000000000 +0000
 +++ mesa-20.0.8.aros/mesa3dgl.conf	2021-01-24 00:17:05.170000000 +0000
@@ -57,6 +57,43 @@ diff -ruN mesa-20.0.8/mesa3dgl.conf mesa-20.0.8.aros/mesa3dgl.conf
 +rellib posixc
 +rellib stdc
 +##end config
+diff -ruN mesa-20.0.8/src/compiler/glsl/list.h mesa-20.0.8.aros/src/compiler/glsl/list.h
+--- mesa-20.0.8/src/compiler/glsl/list.h	2020-06-12 01:21:16.000000000 +0000
++++ mesa-20.0.8.aros/src/compiler/glsl/list.h	2025-05-23 23:22:40.292170356 +0000
+@@ -45,6 +45,15 @@
+ 
+ #ifndef __cplusplus
+ #include <stddef.h>
++
++#if defined(unreachable) && defined(__AROS__)
++#undef unreachable
++#define unreachable(...) \
++    do { \
++        __builtin_unreachable (); \
++    } while (0)
++#endif
++
+ #endif
+ #include <assert.h>
+ 
+diff -ruN mesa-20.0.8/src/compiler/glsl_types.h mesa-20.0.8.aros/src/compiler/glsl_types.h
+--- mesa-20.0.8/src/compiler/glsl_types.h	2020-06-12 01:21:16.000000000 +0000
++++ mesa-20.0.8.aros/src/compiler/glsl_types.h	2025-05-23 22:32:19.367541817 +0000
+@@ -43,6 +43,14 @@
+ extern "C" {
+ #endif
+ 
++#if defined(unreachable) && defined(__AROS__)
++#undef unreachable
++#define unreachable(...) \
++    do { \
++        __builtin_unreachable (); \
++    } while (0)
++#endif
++
+ struct _mesa_glsl_parse_state;
+ struct glsl_symbol_table;
+ 
 diff -ruN mesa-20.0.8/src/egl/main/egldisplay.c mesa-20.0.8.aros/src/egl/main/egldisplay.c
 --- mesa-20.0.8/src/egl/main/egldisplay.c	2020-06-12 01:21:16.000000000 +0000
 +++ mesa-20.0.8.aros/src/egl/main/egldisplay.c	2021-02-04 23:44:45.550000000 +0000
@@ -93,8 +130,8 @@ diff -ruN mesa-20.0.8/src/gallium/auxiliary/driver_ddebug/dd_util.h mesa-20.0.8.
  #elif defined(PIPE_OS_WINDOWS)
 diff -ruN mesa-20.0.8/src/gallium/include/pipe/p_compiler.h mesa-20.0.8.aros/src/gallium/include/pipe/p_compiler.h
 --- mesa-20.0.8/src/gallium/include/pipe/p_compiler.h	2020-06-12 01:21:17.000000000 +0000
-+++ mesa-20.0.8.aros/src/gallium/include/pipe/p_compiler.h	2021-02-04 23:44:45.550000000 +0000
-@@ -35,6 +35,10 @@
++++ mesa-20.0.8.aros/src/gallium/include/pipe/p_compiler.h	2025-05-23 22:58:02.240404762 +0000
+@@ -35,12 +35,23 @@
  
  #include "util/macros.h"
  
@@ -105,6 +142,19 @@ diff -ruN mesa-20.0.8/src/gallium/include/pipe/p_compiler.h mesa-20.0.8.aros/src
  #include <stdlib.h>
  #include <string.h>
  #include <stddef.h>
+ #include <stdarg.h>
+ #include <limits.h>
+ 
++#if defined(unreachable) && defined(__AROS__)
++#undef unreachable
++#define unreachable(...) \
++    do { \
++        __builtin_unreachable (); \
++    } while (0)
++#endif
+ 
+ #if defined(_WIN32) && !defined(__WIN32__)
+ #define __WIN32__
 diff -ruN mesa-20.0.8/src/gallium/include/pipe/p_config.h mesa-20.0.8.aros/src/gallium/include/pipe/p_config.h
 --- mesa-20.0.8/src/gallium/include/pipe/p_config.h	2020-06-12 01:21:17.000000000 +0000
 +++ mesa-20.0.8.aros/src/gallium/include/pipe/p_config.h	2021-02-04 23:44:45.550000000 +0000
@@ -348,6 +398,24 @@ diff -ruN mesa-20.0.8/src/mesa/main/compiler.h mesa-20.0.8.aros/src/mesa/main/co
  #elif defined(__OpenBSD__)
  #include <sys/types.h>
  #define CPU_TO_LE32( x )	htole32( x )
+diff -ruN mesa-20.0.8/src/mesa/main/shaderobj.h mesa-20.0.8.aros/src/mesa/main/shaderobj.h
+--- mesa-20.0.8/src/mesa/main/shaderobj.h	2020-06-12 01:21:18.000000000 +0000
++++ mesa-20.0.8.aros/src/mesa/main/shaderobj.h	2025-05-23 23:07:29.621185467 +0000
+@@ -37,6 +37,14 @@
+ extern "C" {
+ #endif
+ 
++#if defined(unreachable) && defined(__AROS__)
++#undef unreachable
++#define unreachable(...) \
++    do { \
++        __builtin_unreachable (); \
++    } while (0)
++#endif
++
+ struct gl_shader_program_data;
+ struct gl_linked_shader;
+ struct dd_function_table;
 diff -ruN mesa-20.0.8/src/mesa/program/program_parse.y mesa-20.0.8.aros/src/mesa/program/program_parse.y
 --- mesa-20.0.8/src/mesa/program/program_parse.y	2020-06-12 01:21:18.000000000 +0000
 +++ mesa-20.0.8.aros/src/mesa/program/program_parse.y	2021-02-05 00:20:25.830000000 +0000
@@ -380,6 +448,19 @@ diff -ruN mesa-20.0.8/src/util/detect_os.h mesa-20.0.8.aros/src/util/detect_os.h
  #if defined(__linux__)
  #define DETECT_OS_LINUX 1
  #define DETECT_OS_UNIX 1
+diff -ruN mesa-20.0.8/src/util/macros.h mesa-20.0.8.aros/src/util/macros.h
+--- mesa-20.0.8/src/util/macros.h	2020-06-12 01:21:18.000000000 +0000
++++ mesa-20.0.8.aros/src/util/macros.h	2025-05-23 23:02:21.810793515 +0000
+@@ -73,6 +73,9 @@
+  * function" warnings.
+  */
+ #if defined(HAVE___BUILTIN_UNREACHABLE) || __has_builtin(__builtin_unreachable)
++#if defined(unreachable)
++#undef unreachable
++#endif
+ #define unreachable(str)    \
+ do {                        \
+    assert(!str);            \
 diff -ruN mesa-20.0.8/src/util/os_misc.c mesa-20.0.8.aros/src/util/os_misc.c
 --- mesa-20.0.8/src/util/os_misc.c	2020-06-12 01:21:18.000000000 +0000
 +++ mesa-20.0.8.aros/src/util/os_misc.c	2021-02-04 23:48:00.860000000 +0000
