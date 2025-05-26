@@ -846,6 +846,8 @@ aros_cflags_noexceptions
 aros_cflags_exceptions
 aros_cflags_no_integrated_as
 aros_targetsection_comment
+aros_cflags_cgnu11
+aros_cflags_cgnu99
 ac_ct_CXX
 CXXFLAGS
 CXX
@@ -3720,11 +3722,65 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu99" >&5
+printf %s "checking whether ${CC} supports -std=gnu99... " >&6; }
+CFLAGS=-std=gnu99
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_cgnu99="yes"
+else $as_nop
+  aros_cgnu99="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu99" >&5
+printf "%s\n" "$aros_cgnu99" >&6; }
+if test "x-$aros_cgnu99" = "x-yes" ; then
+    aros_cflags_cgnu99=-std=gnu99
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu11" >&5
+printf %s "checking whether ${CC} supports -std=gnu11... " >&6; }
+CFLAGS=-std=gnu11
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_cgnu11="yes"
+else $as_nop
+  aros_cgnu11="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu11" >&5
+printf "%s\n" "$aros_cgnu11" >&6; }
+if test "x-$aros_cgnu11" = "x-yes" ; then
+    aros_cflags_cgnu11=-std=gnu11
+fi
+
 save_cflags="$CFLAGS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
 printf %s "checking whether ${CC} accepts -fexceptions... " >&6; }
 CFLAGS=-fexceptions
-
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5301,11 +5357,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++11 features" >&5
 printf %s "checking for $CXX option to enable C++11 features... " >&6; }
-if test ${ac_cv_prog_cxx_11+y}
+if test ${ac_cv_prog_cxx_cxx11+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_11=no
+  ac_cv_prog_cxx_cxx11=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -5347,11 +5403,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++98 features" >&5
 printf %s "checking for $CXX option to enable C++98 features... " >&6; }
-if test ${ac_cv_prog_cxx_98+y}
+if test ${ac_cv_prog_cxx_cxx98+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_98=no
+  ac_cv_prog_cxx_cxx98=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -8021,6 +8077,10 @@ printf "%s\n" "$aros_targetsection_comment" >&6; }
 fi
 
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
+
+#
+
+
 
 #
 # export the feature flags...

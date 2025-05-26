@@ -86,6 +86,22 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 # C features first 
 AC_LANG_PUSH(C)
 
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu99])
+CFLAGS=-std=gnu99
+AC_TRY_COMPILE(,, aros_cgnu99="yes", aros_cgnu99="no")
+AC_MSG_RESULT($aros_cgnu99)
+if test "x-$aros_cgnu99" = "x-yes" ; then
+    aros_cflags_cgnu99=-std=gnu99
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu11])
+CFLAGS=-std=gnu11
+AC_TRY_COMPILE(,, aros_cgnu11="yes", aros_cgnu11="no")
+AC_MSG_RESULT($aros_cgnu11)
+if test "x-$aros_cgnu11" = "x-yes" ; then
+    aros_cflags_cgnu11=-std=gnu11
+fi
+
 save_cflags="$CFLAGS"
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
 CFLAGS=-fexceptions
@@ -1446,6 +1462,10 @@ fi
 
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
+#
+AC_SUBST(aros_cflags_cgnu99)
+AC_SUBST(aros_cflags_cgnu11)
+    
 #
 # export the feature flags...
 #
