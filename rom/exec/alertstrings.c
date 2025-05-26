@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -509,7 +509,7 @@ STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *task, struct Exe
         fmtParams[1] = (IPTR)notaskstring;
     fmtParams[0] = (IPTR)task;
 
-    KrnFmtAlertInfo(&fmtTemplate, &fmtParams);
+    KrnFmtAlertInfo(&fmtTemplate, fmtParams);
 
     return NewRawDoFmt(fmtTemplate, RAWFMTFUNC_STRING, buffer, fmtParams[0], fmtParams[1]) - 1;
 }

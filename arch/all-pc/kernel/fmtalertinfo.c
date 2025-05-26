@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
 
     Desc: x86_64 arch specific KrnFmtAlertInfo over-ride
 */
@@ -47,7 +47,7 @@ static const char irqstring[] =   "IRQ : #%U - 0x%P";
 
     if (TemplatePtr && ParamPtr) {
         struct PlatformData *pdata;
-        IPTR                        *params = *ParamPtr;
+        IPTR                        *params = ParamPtr;
 
         if ((pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
         {
