@@ -15,6 +15,10 @@ endif
 FILES := common clear init_multiboot init_multiboot2 init_taglist \
 	 screen_text screen_fb util_fb vars $(FONT) $(SERIAL)
 
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    USER_CFLAGS := $(CFLAGS_GENERAL_REGS_ONLY)
+endif
+
 USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 
 %build_linklib mmake=linklibs-bootconsole libname=bootconsole files="$(FILES)" libdir=$(GENDIR)/lib
