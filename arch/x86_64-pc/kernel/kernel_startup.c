@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/multiboot.h>
@@ -124,10 +124,15 @@ static void boot_banner()
 static void boot_start(struct TagItem *msg)
 {
     fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
+
     con_InitTagList(msg);
 
     kernel_cstart(msg);
 }
+
+#if defined(_KERNEL_EARLYTRAP)
+extern void core_InitEarlyIDT(void);
+#endif
 
 /*
  * This routine actually launches the kickstart. It's called either upon first start or upon warm reboot.
@@ -142,6 +147,10 @@ void core_Kick(struct TagItem *msg, void *target)
     /* First clear .bss */
     if (bss)
         __clear_bss((const struct KernelBSS *)bss->ti_Data);
+
+#if defined(_KERNEL_EARLYTRAP)
+    core_InitEarlyIDT();
+#endif
 
     /*
      * ... then switch to initial stack and jump to target address.

@@ -17,7 +17,15 @@ PRIV_KERNEL_INCLUDES = \
 	$(TARGET_EXEC_INCLUDES) \
 	-I$(SRCDIR)/rom/exec
 
+
 FILES    := \
+             kernel_startup \
+
+#USER_CPPFLAGS := -D_KERNEL_EARLYTRAP
+#FILES   += \
+#             kernel_early
+
+FILES    += \
              kernel_startup \
              platform_init \
              kernel_cpu \
@@ -25,6 +33,7 @@ FILES    := \
              kernel_memory \
              kernel_bootmem \
              mmu
+
 FUNCS	 :=
 ASMFILES := \
              core_interrupts
