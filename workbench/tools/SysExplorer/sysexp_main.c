@@ -491,6 +491,7 @@ int main(void)
             if (XGET(main_window, MUIA_Window_Open))
             {
                 SET(SysexpBase->sesb_Tree, MUIA_NListtree_Quiet, TRUE);
+                SET(app, MUIA_Application_Sleep, TRUE);
 #if (1)
                 AROS_UFC3(void, SysExplorer__Proc_EnumerateHardware,
                                 AROS_UFCA(STRPTR,              NULL, A0),
@@ -506,6 +507,7 @@ int main(void)
                                 TAG_DONE);
 #endif
 
+                SET(app, MUIA_Application_Sleep, FALSE);
                 SET(SysexpBase->sesb_Tree, MUIA_NListtree_Quiet, FALSE);
                 DoMethod(app, MUIM_Application_Execute);
                 SET(main_window, MUIA_Window_Open, FALSE);
