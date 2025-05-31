@@ -667,6 +667,7 @@ STDC_STATIC := \
     strtof \
     strtol \
     strtoul \
+    strtoull \
     vasprintf \
     vsnprintf \
     vsprintf \
