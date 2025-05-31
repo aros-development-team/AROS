@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2021, The AROS Development Team.
+    Copyright (C) 2013-2025, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -490,6 +490,7 @@ int main(void)
 
             if (XGET(main_window, MUIA_Window_Open))
             {
+                SET(SysexpBase->sesb_Tree, MUIA_NListtree_Quiet, TRUE);
 #if (1)
                 AROS_UFC3(void, SysExplorer__Proc_EnumerateHardware,
                                 AROS_UFCA(STRPTR,              NULL, A0),
@@ -505,6 +506,7 @@ int main(void)
                                 TAG_DONE);
 #endif
 
+                SET(SysexpBase->sesb_Tree, MUIA_NListtree_Quiet, FALSE);
                 DoMethod(app, MUIM_Application_Execute);
                 SET(main_window, MUIA_Window_Open, FALSE);
             }
