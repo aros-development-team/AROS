@@ -16,7 +16,7 @@
 <table>
   <tr>
     <td style="text-align:center">BUILD Arch</td>
-    <td colspan=4 style="text-align:center">Status</td>
+    <td colspan=6 style="text-align:center">Status</td>
   </tr>
   <tr>
     <td rowspan=2 style="text-align:center">Toolchain</td>
@@ -69,10 +69,10 @@
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=15&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-smp?branchName=master"></a>
     </td>
-    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
   </tr>
   <tr>
