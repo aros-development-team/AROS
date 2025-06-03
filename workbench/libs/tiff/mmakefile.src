@@ -1,0 +1,133 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- includes-copy : libtiff-fetch
+
+LIBTIFFVERSION=4.7.0
+REPOSITORIES = http://download.osgeo.org/libtiff
+ARCHBASE     := tiff-$(LIBTIFFVERSION)
+ARCHSUFFIX := "tar.xz"
+#PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+ARCHSRCDIR := $(PORTSDIR)/libtiff/$(ARCHBASE)
+
+%fetch mmake=libtiff-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/libtiff \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=libtiff-create-patch \
+    archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
+    destination=$(PORTSDIR)/libtiff
+
+#MM includes-copy : \
+#MM     libtiff-fetch
+
+#MM workbench-libs-tiff : workbench-libs-z
+#MM- workbench-libs-tiff-includes : \
+#MM     includes-copy \
+#MM     workbench-libs-tiff-generated
+
+TIFFILES := \
+	tif_aux \
+	tif_close \
+	tif_codec \
+	tif_color \
+	tif_compress \
+	tif_dir \
+	tif_dirinfo \
+	tif_dirread \
+	tif_dirwrite \
+	tif_dumpmode \
+	tif_error \
+	tif_extension \
+	tif_fax3 \
+	tif_fax3sm \
+	tif_flush \
+	tif_getimage \
+	tif_hash_set \
+	tif_jbig \
+	tif_jpeg \
+	tif_jpeg_12 \
+	tif_lerc \
+	tif_luv \
+	tif_lzma \
+	tif_lzw \
+	tif_next \
+	tif_ojpeg \
+	tif_open \
+	tif_packbits \
+	tif_pixarlog \
+	tif_predict \
+	tif_print \
+	tif_read \
+	tif_strip \
+	tif_swab \
+	tif_thunder \
+	tif_tile \
+	tif_version \
+	tif_warning \
+	tif_webp \
+	tif_write \
+	tif_zip \
+	tif_zstd
+
+
+FILES := tif_aros $(addprefix $(ARCHSRCDIR)/libtiff/,$(TIFFILES))
+
+NOWARN_FLAGS := $(NOWARN_DEPRECATED_DECLARATIONS) $(NOWARN_IMPLICIT_FUNCTION_DECL)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_INCLUDES := -iquote $(ARCHSRCDIR)/libtiff
+
+#MM- core-linklibs : linklibs-tiff
+#MM- linklibs-tiff : workbench-libs-tiff-pkgconfig
+
+%build_module mmake=workbench-libs-tiff \
+    modname=tiff modtype=library \
+    files="$(FILES)" linklibname="tiff"
+
+#MM workbench-libs-tiff-generated : libtiff-fetch
+
+##MM
+#workbench-libs-tiff-pkgconfig : $(AROS_LIB)/pkgconfig/libtiff.pc
+
+$(AROS_LIB)/pkgconfig/libtiff.pc : $(ARCHSRCDIR)/libtiff-4.pc.in $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@$(ECHO) "Generating /Developer/lib/pkgconfig/libtiff.pc ..."
+	%mkdir_q dir=$(AROS_LIB)/pkgconfig
+	@$(SED) -e 's|@exec_prefix@|$${prefix}|' \
+	       -e 's|@includedir@/libtiff@TIFFLIB_MAJOR@@TIFFLIB_MINOR@|$${prefix}/include|' \
+	       -e 's|-ltiff@TIFFLIB_MAJOR@@TIFFLIB_MINOR@|-ltiff|' \
+	       -e 's|@libdir@|$${prefix}/lib|' \
+	       -e 's|@prefix@|/Developer|' \
+	       -e 's|@LIBS@||' \
+	       -e 's|@TIFFLIB_VERSION@|$(LIBTIFFVERSION)|' \
+	       -e 's| -I$${includedir}||' \
+	       $< >$@
+
+$(AROS_INCLUDES)/tiffconf.h :  $(SRCDIR)/$(CURDIR)/tiffconf.h
+	$(CP) $< $@
+
+$(AROS_INCLUDES)/tifftypes.h :  $(SRCDIR)/$(CURDIR)/tifftypes.h
+	$(CP) $< $@
+
+$(AROS_INCLUDES)/tiffinline.h :  $(SRCDIR)/$(CURDIR)/tiffinline.h
+	$(CP) $< $@
+
+$(GENDIR)/$(CURDIR):
+	%mkdir_q dir="$@"
+
+$(GENDIR)/$(CURDIR)/tif_config.h :  $(SRCDIR)/$(CURDIR)/tif_config.h | $(GENDIR)/$(CURDIR)
+	$(CP) $< $@
+
+#MM
+workbench-libs-tiff-generated : $(AROS_INCLUDES)/tifftypes.h $(AROS_INCLUDES)/tiffinline.h $(AROS_INCLUDES)/tiffconf.h $(GENDIR)/$(CURDIR)/tif_config.h
+
+#MM includes-copy
+INCLUDE_FILES := tiff.h
+%copy_includes dir=$(ARCHSRCDIR)/libtiff
+
+%copy_dir_recursive mmake=test-tiff-tiffsuite src=$(ARCHSRCDIR)/contrib/tiffsuite dst=$(AROS_TESTS)/Datatypes/tiff/tiffsuite
+
+%copy_dir_recursive mmake=test-tiff-testtiffs src=$(ARCHSRCDIR)/test/images dst=$(AROS_TESTS)/Datatypes/tiff
+
+#MM- test-datatypes : test-tiff-testtiffs
+
+%common
