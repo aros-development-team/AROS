@@ -50,7 +50,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-lcms2 \
 #MM     workbench-libs-gallium \
 #MM     workbench-libs-vega \
-#MM     workbench-libs-egl
+#MM     workbench-libs-egl \
+#MM     workbench-libs-tiff
 
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
@@ -96,4 +97,5 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-vega-includes \
 #MM     workbench-libs-mesa-includes \
 #MM     workbench-libs-glu-includes \
-#MM     workbench-libs-egl-includes
+#MM     workbench-libs-egl-includes \
+#MM     workbench-libs-tiff-includes
