@@ -1,8 +1,8 @@
-# DataType Description for Targa
+# DataType Description for TIFF
 Name=TIFF
-Version=$VER: TIFF 50.0 (31.05.2022)
+Version=$VER: TIFF 50.1 (03.06.2025)
 BaseName=tiff
-Pattern=#?.tiff
+Pattern=#?.(tif|tiff)
 Mask=
 GroupID=pict
 ID=_tiff
