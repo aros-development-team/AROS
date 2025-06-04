@@ -49,6 +49,11 @@ USER_CPPFLAGS   := -DEMSCRIPTEN -DHAVE_CONFIG_H
 USER_CFLAGS := -noposixc
 USER_INCLUDES := -I $(WEBPARCHSRCDIR) -I $(GENDIR)/$(CURDIR)
 
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CPPFLAGS += -DWEBP_HAVE_SSE2
+WEBP_USESSE2=yes
+endif
+
 WEBPSYUVFILES := \
         sharpyuv/sharpyuv_cpu \
         sharpyuv/sharpyuv_csp \
