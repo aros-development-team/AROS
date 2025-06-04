@@ -8,13 +8,62 @@ CLASSFILES := webpclass
 #MM includes \
 #MM linklibs \
 #MM workbench-libs-z \
+#MM datatypes-webp-linklibs-sharpyuv \
 #MM datatypes-webp-linklibs-webpdecode \
 #MM datatypes-webp-linklibs-webpdsp \
 #MM datatypes-webp-linklibs-webpencode \
 #MM datatypes-webp-linklibs-webputils
 
-USER_CPPFLAGS   := -DEMSCRIPTEN
+LIBWEBPVERSION=1.5.0
+WEBPREPOSITORIES = https://storage.googleapis.com/downloads.webmproject.org/releases/webp
+WEBPARCHBASE     := libwebp-$(LIBWEBPVERSION)
+WEBPARCHSUFFIX := "tar.gz"
+#WEBPPATCHSPEC := $(WEBPARCHBASE)-aros.diff:$(WEBPARCHBASE):-f,-p1
+WEBPARCHSRCDIR := $(PORTSDIR)/libwebp/$(WEBPARCHBASE)
+
+%fetch mmake=linklibs-webp-fetch archive=$(WEBPARCHBASE) destination=$(PORTSDIR)/libwebp \
+    location=$(PORTSSOURCEDIR) archive_origins=$(WEBPREPOSITORIES) suffixes=$(WEBPARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=linklibs-webp-create-patch \
+    archive=$(WEBPARCHBASE) suffixes=$(WEBPARCHSUFFIX) \
+    srcdir="libwebp-$(LIBWEBPVERSION)" destination=$(PORTSDIR)/libwebp
+
+#MM- includes-copy : \
+#MM     linklibs-webp-fetch
+
+#MM datatypes-webp-linklibs-sharpyuv : linklibs-webp-fetch workbench-datatypes-webp-generated
+#MM datatypes-webp-linklibs-webpdsp : linklibs-webp-fetch workbench-datatypes-webp-generated
+#MM datatypes-webp-linklibs-webpdecode : linklibs-webp-fetch workbench-datatypes-webp-generated
+#MM datatypes-webp-linklibs-webpencode : linklibs-webp-fetch workbench-datatypes-webp-generated
+#MM datatypes-webp-linklibs-webputils : linklibs-webp-fetch workbench-datatypes-webp-generated
+
+#MM workbench-datatypes-webp-quick : \
+#MM datatypes-webp-linklibs-sharpyuv \
+#MM datatypes-webp-linklibs-webpdsp-quick \
+#MM datatypes-webp-linklibs-webpdecode-quick \
+#MM datatypes-webp-linklibs-webpencode-quick \
+#MM datatypes-webp-linklibs-webputils-quick
+
+USER_CPPFLAGS   := -DEMSCRIPTEN -DHAVE_CONFIG_H
 USER_CFLAGS := -noposixc
+USER_INCLUDES := -I $(WEBPARCHSRCDIR) -I $(GENDIR)/$(CURDIR)
+
+WEBPSYUVFILES := \
+        sharpyuv/sharpyuv_cpu \
+        sharpyuv/sharpyuv_csp \
+        sharpyuv/sharpyuv_dsp \
+        sharpyuv/sharpyuv_gamma \
+        sharpyuv/sharpyuv
+
+ifeq ($(WEBP_USESSE2),yes)
+WEBPSYUVFILES += \
+        sharpyuv/sharpyuv_sse2
+endif
+
+%build_linklib mmake=datatypes-webp-linklibs-sharpyuv \
+    libname=sharpyuv files="$(addprefix $(WEBPARCHSRCDIR)/,$(WEBPSYUVFILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/webpdsp libdir=$(GENDIR)/$(CURDIR)/lib
 
 WEBPDSPFILES := \
         src/dsp/alpha_processing \
@@ -33,8 +82,25 @@ WEBPDSPFILES += \
         src/dsp/lossless_enc \
         src/dsp/ssim
 
+ifeq ($(WEBP_USESSE2),yes)
+WEBPDSPFILES += \
+        src/dsp/alpha_processing_sse2 \
+        src/dsp/dec_sse2 \
+        src/dsp/filters_sse2 \
+        src/dsp/lossless_sse2 \
+        src/dsp/rescaler_sse2 \
+        src/dsp/upsampling_sse2 \
+        src/dsp/yuv_sse2
+
+WEBPDSPFILES += \
+        src/dsp/cost_sse2 \
+        src/dsp/enc_sse2 \
+        src/dsp/lossless_enc_sse2 \
+        src/dsp/ssim_sse2
+endif
+
 %build_linklib mmake=datatypes-webp-linklibs-webpdsp \
-    libname=webpdsp files="$(WEBPDSPFILES)" \
+    libname=webpdsp files="$(addprefix $(WEBPARCHSRCDIR)/,$(WEBPDSPFILES))" \
     objdir=$(GENDIR)/$(CURDIR)/webpdsp libdir=$(GENDIR)/$(CURDIR)/lib
 
 WEBPDECODEFILES := \
@@ -50,7 +116,7 @@ WEBPDECODEFILES := \
         src/dec/webp_dec
 
 %build_linklib mmake=datatypes-webp-linklibs-webpdecode \
-    libname=webpdecode files="$(WEBPDECODEFILES)" \
+    libname=webpdecode files="$(addprefix $(WEBPARCHSRCDIR)/,$(WEBPDECODEFILES))" \
     objdir=$(GENDIR)/$(CURDIR)/webpdecode libdir=$(GENDIR)/$(CURDIR)/lib
 
 WEBPENCODEFILES := \
@@ -79,7 +145,7 @@ WEBPENCODEFILES := \
         src/enc/webp_enc
 
 %build_linklib mmake=datatypes-webp-linklibs-webpencode \
-    libname=webpencode files="$(WEBPENCODEFILES)" \
+    libname=webpencode files="$(addprefix $(WEBPARCHSRCDIR)/,$(WEBPENCODEFILES))" \
     objdir=$(GENDIR)/$(CURDIR)/webpencode libdir=$(GENDIR)/$(CURDIR)/lib
 
 WEBPUTILSFILES := \
@@ -87,6 +153,7 @@ WEBPUTILSFILES := \
         src/utils/color_cache_utils \
         src/utils/filters_utils \
         src/utils/huffman_utils \
+        src/utils/palette \
         src/utils/quant_levels_dec_utils \
         src/utils/rescaler_utils \
         src/utils/random_utils \
@@ -99,10 +166,18 @@ WEBPUTILSFILES += \
         src/utils/quant_levels_utils
 
 %build_linklib mmake=datatypes-webp-linklibs-webputils \
-    libname=webputils files="$(WEBPUTILSFILES)" \
+    libname=webputils files="$(addprefix $(WEBPARCHSRCDIR)/,$(WEBPUTILSFILES))" \
     objdir=$(GENDIR)/$(CURDIR)/webputils libdir=$(GENDIR)/$(CURDIR)/lib
 
-USER_LDFLAGS := -L$(GENDIR)/$(CURDIR)/lib -lwebpencode -lwebpdecode -lwebpdsp -lwebputils -lstdc_rel
+$(GENDIR)/$(CURDIR)/src/webp/config.h : $(SRCDIR)/$(CURDIR)/config.h $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@$(ECHO) "Generating src/webp/config.h ..."
+	%mkdir_q dir=$(GENDIR)/$(CURDIR)/src/webp
+	@$(CP) $< $@
+
+#MM
+workbench-datatypes-webp-generated : $(GENDIR)/$(CURDIR)/src/webp/config.h
+
+USER_LDFLAGS := -L$(GENDIR)/$(CURDIR)/lib -lwebpencode -lwebpdecode -lwebpdsp -lwebputils -lsharpyuv -lstdc_rel
 
 WEBPFILES := webpclass
 
