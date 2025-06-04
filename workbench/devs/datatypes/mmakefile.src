@@ -20,7 +20,7 @@ AUDIODESCRIPTORS  := \
 PICDESCRIPTORS    := \
 			 Degas \
 			 GEMImage \
-			 HEIC HEIF \
+			 HEIC \
 			 Lunapaint \
 			 PCX \
 			 SVG \
