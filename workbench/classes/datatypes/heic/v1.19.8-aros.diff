@@ -1,0 +1,29 @@
+diff -ruN libheif-1.19.8/libheif/color-conversion/colorconversion.cc libheif-1.19.8.aros/libheif/color-conversion/colorconversion.cc
+--- libheif-1.19.8/libheif/color-conversion/colorconversion.cc	2025-04-27 18:27:18.000000000 +0000
++++ libheif-1.19.8.aros/libheif/color-conversion/colorconversion.cc	2025-06-03 23:15:37.228221402 +0000
+@@ -166,11 +166,11 @@
+ }
+ 
+ 
+-struct Node
++struct CCNode
+ {
+-  Node() = default;
++  CCNode() = default;
+ 
+-  Node(int prev,
++  CCNode(int prev,
+        const std::shared_ptr<ColorConversionOperation>& _op,
+       //const ColorState& _input_state,
+        const ColorState& _output_state,
+@@ -281,8 +281,8 @@
+ 
+   // --- Dijkstra search for the minimum-cost conversion pipeline
+ 
+-  std::vector<Node> processed_states;
+-  std::vector<Node> border_states;
++  std::vector<CCNode> processed_states;
++  std::vector<CCNode> border_states;
+   border_states.emplace_back(-1, nullptr, input_state, 0);
+ 
+   while (!border_states.empty()) {

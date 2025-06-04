@@ -23,6 +23,26 @@ CLASSFILES := webpclass
 
 #MM- workbench-datatypes-heic-quick : datatypes-heic-linklibs-de265-quick datatypes-heic-linklibs-heif-quick
 
+LIBDE265VERSION=1.0.16
+DE265REPOSITORIES = https://github.com/strukturag/libde265/archive/refs/tags
+DE265ARCHBASE     := v$(LIBDE265VERSION)
+DE265ARCHSUFFIX := "tar.gz"
+#DE265PATCHSPEC := $(DE265ARCHBASE)-aros.diff:libde265-$(LIBDE265VERSION):-f,-p1
+DE265ARCHSRCDIR := $(PORTSDIR)/libde265/libde265-$(LIBDE265VERSION)
+
+%fetch mmake=linklibs-de265-fetch archive=$(DE265ARCHBASE) destination=$(PORTSDIR)/libde265 \
+    location=$(PORTSSOURCEDIR) archive_origins=$(DE265REPOSITORIES) suffixes=$(DE265ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=linklibs-de265-create-patch \
+    archive=$(DE265ARCHBASE) suffixes=$(DE265ARCHSUFFIX) \
+    srcdir="libde265-$(LIBDE265VERSION)" destination=$(PORTSDIR)/libde265
+
+#MM- includes-copy : \
+#MM     linklibs-de265-fetch linklibs-heif-fetch
+
+#MM datatypes-heic-linklibs-de265 : linklibs-de265-fetch
+
 COMMON_CPPFLAGS := \
         -D_POSIX_SOURCE=600L \
         -D_GNU_SOURCE \
@@ -46,83 +66,144 @@ endif
 
 USER_LDFLAGS := -static-libstdc++
 
-USER_INCLUDES   := -I$(GENDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/libde265
+USER_INCLUDES   := -I$(GENDIR)/$(CURDIR) -I$(DE265ARCHSRCDIR)
 
 LIBDEC265CXXFILES := \
-        libde265/libde265/alloc_pool \
-        libde265/libde265/bitstream \
-        libde265/libde265/cabac \
-        libde265/libde265/configparam \
-        libde265/libde265/contextmodel \
-        libde265/libde265/de265 \
-        libde265/libde265/deblock \
-        libde265/libde265/decctx \
-        libde265/libde265/fallback \
-        libde265/libde265/fallback-dct \
-        libde265/libde265/fallback-motion \
-        libde265/libde265/dpb \
-        libde265/libde265/image \
-        libde265/libde265/image-io \
-        libde265/libde265/intrapred \
-        libde265/libde265/md5 \
-        libde265/libde265/motion \
-        libde265/libde265/nal \
-        libde265/libde265/nal-parser \
-        libde265/libde265/pps \
-        libde265/libde265/quality \
-        libde265/libde265/refpic \
-        libde265/libde265/sao \
-        libde265/libde265/scan \
-        libde265/libde265/sei \
-        libde265/libde265/slice \
-        libde265/libde265/sps \
-        libde265/libde265/threads \
-        libde265/libde265/transform \
-        libde265/libde265/util \
-        libde265/libde265/visualize \
-        libde265/libde265/vps \
-        libde265/libde265/vui
+        libde265/alloc_pool \
+        libde265/bitstream \
+        libde265/cabac \
+        libde265/configparam \
+        libde265/contextmodel \
+        libde265/de265 \
+        libde265/deblock \
+        libde265/decctx \
+        libde265/fallback \
+        libde265/fallback-dct \
+        libde265/fallback-motion \
+        libde265/dpb \
+        libde265/image \
+        libde265/image-io \
+        libde265/intrapred \
+        libde265/md5 \
+        libde265/motion \
+        libde265/nal \
+        libde265/nal-parser \
+        libde265/pps \
+        libde265/quality \
+        libde265/refpic \
+        libde265/sao \
+        libde265/scan \
+        libde265/sei \
+        libde265/slice \
+        libde265/sps \
+        libde265/threads \
+        libde265/transform \
+        libde265/util \
+        libde265/visualize \
+        libde265/vps \
+        libde265/vui
 
-$(GENDIR)/$(CURDIR)/libde265/de265-version.h : $(SRCDIR)/$(CURDIR)/libde265/libde265/de265-version.h.in | $(GENDIR)/$(CURDIR)/libde265
+$(GENDIR)/$(CURDIR)/libde265/de265-version.h : $(DE265ARCHSRCDIR)/libde265/de265-version.h.in | $(GENDIR)/$(CURDIR)/libde265
 	cat $< | $(SED) s/@NUMERIC_VERSION@/0x01000500/ | $(SED) s/@PACKAGE_VERSION@/"1.0.5"/ > $@
 
 %build_linklib mmake=datatypes-heic-linklibs-de265 \
-    libname=de265 cxxfiles="$(LIBDEC265CXXFILES)" \
+    libname=de265 cxxfiles="$(addprefix $(DE265ARCHSRCDIR)/,$(LIBDEC265CXXFILES))" \
     objdir=$(GENDIR)/$(CURDIR)/libde265 libdir=$(GENDIR)/$(CURDIR)/lib
+
+#MM datatypes-heic-linklibs-de265-genfiles : linklibs-de265-fetch
 
 #MM
 datatypes-heic-linklibs-de265-genfiles : $(GENDIR)/$(CURDIR)/libde265/de265-version.h
 
-USER_INCLUDES   += -I$(SRCDIR)/$(CURDIR)/libheif
+LIBHEIFVERSION=1.19.8
+HEIFREPOSITORIES = https://github.com/strukturag/libheif/archive/refs/tags
+HEIFARCHBASE     := v$(LIBHEIFVERSION)
+HEIFARCHSUFFIX := "tar.gz"
+HEIFPATCHSPEC := $(HEIFARCHBASE)-aros.diff:libheif-$(LIBHEIFVERSION):-f,-p1
+HEIFARCHSRCDIR := $(PORTSDIR)/libheif/libheif-$(LIBHEIFVERSION)
+
+%fetch mmake=linklibs-heif-fetch archive=$(HEIFARCHBASE) destination=$(PORTSDIR)/libheif \
+    location=$(PORTSSOURCEDIR) archive_origins=$(HEIFREPOSITORIES) suffixes=$(HEIFARCHSUFFIX) \
+    patches_specs=$(HEIFPATCHSPEC)
+
+%create_patch mmake=linklibs-heif-create-patch \
+    archive=$(HEIFARCHBASE) suffixes=$(HEIFARCHSUFFIX) \
+    srcdir="libheif-$(LIBHEIFVERSION)" destination=$(PORTSDIR)/libheif
+
+#MM datatypes-heic-linklibs-heif : linklibs-heif-fetch
+
+USER_INCLUDES   += -I$(HEIFARCHSRCDIR)/libheif -I$(HEIFARCHSRCDIR)/libheif/api
 USER_CPPFLAGS := $(COMMON_CPPFLAGS) -DHAVE_LIBDE265
 
 LIBHEIFCXXFILES := \
-        libheif/libheif/bitstream \
-        libheif/libheif/box \
-        libheif/libheif/error \
-        libheif/libheif/heif_file \
-        libheif/libheif/heif_image \
-        libheif/libheif/heif \
-        libheif/libheif/heif_context \
-        libheif/libheif/heif_hevc \
-        libheif/libheif/heif_init \
-        libheif/libheif/heif_avif \
-        libheif/libheif/heif_plugin_registry \
-        libheif/libheif/heif_plugin \
-        libheif/libheif/heif_colorconversion \
-        libheif/libheif/metadata_compression \
-        libheif/libheif/nclx \
-        libheif/libheif/common_utils
+        libheif/bitstream \
+        libheif/box \
+        libheif/error \
+        libheif/context \
+        libheif/file \
+        libheif/file_layout \
+        libheif/pixelimage \
+        libheif/plugin_registry \
+        libheif/nclx \
+        libheif/security_limits \
+        libheif/init \
+        libheif/logging \
+        libheif/compression_brotli \
+        libheif/compression_zlib \
+        libheif/common_utils \
+        libheif/region \
+        libheif/api/libheif/heif \
+        libheif/api/libheif/heif_regions \
+        libheif/api/libheif/heif_plugin \
+        libheif/api/libheif/heif_properties \
+        libheif/api/libheif/heif_items \
+        libheif/codecs/decoder \
+        libheif/image-items/hevc \
+        libheif/codecs/hevc_boxes \
+        libheif/codecs/hevc_dec \
+        libheif/image-items/avif \
+        libheif/codecs/avif_dec \
+        libheif/codecs/avif_boxes \
+        libheif/image-items/jpeg \
+        libheif/codecs/jpeg_boxes \
+        libheif/codecs/jpeg_dec \
+        libheif/image-items/jpeg2000 \
+        libheif/codecs/jpeg2000_dec \
+        libheif/codecs/jpeg2000_boxes \
+        libheif/image-items/vvc \
+        libheif/codecs/vvc_dec \
+        libheif/codecs/vvc_boxes \
+        libheif/image-items/avc \
+        libheif/codecs/avc_boxes \
+        libheif/codecs/avc_dec \
+        libheif/image-items/mask_image \
+        libheif/image-items/image_item \
+        libheif/image-items/grid \
+        libheif/image-items/overlay \
+        libheif/image-items/iden \
+        libheif/image-items/tiled \
+        libheif/color-conversion/colorconversion \
+        libheif/color-conversion/rgb2yuv \
+        libheif/color-conversion/rgb2yuv_sharp \
+        libheif/color-conversion/yuv2rgb \
+        libheif/color-conversion/rgb2rgb \
+        libheif/color-conversion/monochrome \
+        libheif/color-conversion/hdr_sdr \
+        libheif/color-conversion/alpha \
+        libheif/color-conversion/chroma_sampling
 
 LIBHEIFCXXFILES += \
-        libheif/libheif/plugins/heif_decoder_libde265
+        libheif/plugins/encoder_mask \
+        libheif/plugins/decoder_libde265
 
-$(GENDIR)/$(CURDIR)/libheif/heif_version.h : $(SRCDIR)/$(CURDIR)/libheif/libheif/heif_version.h.in | $(GENDIR)/$(CURDIR)/libheif
+$(GENDIR)/$(CURDIR)/libheif/heif_version.h : $(HEIFARCHSRCDIR)/libheif/api/libheif/heif_version.h.in | $(GENDIR)/$(CURDIR)/libheif
 	cat $< | $(SED) s/@PROJECT_VERSION_MAJOR@/1/ | $(SED) s/@PROJECT_VERSION_MINOR@/6/ | $(SED) s/@PROJECT_VERSION_PATCH@/2/ | $(SED) s/@PROJECT_VERSION_TWEAK@/0/ > $@
 
 %build_linklib mmake=datatypes-heic-linklibs-heif \
-    libname=heif cxxfiles="$(LIBHEIFCXXFILES)" \
+    libname=heif cxxfiles="$(addprefix $(HEIFARCHSRCDIR)/,$(LIBHEIFCXXFILES))" \
     objdir=$(GENDIR)/$(CURDIR)/libheif libdir=$(GENDIR)/$(CURDIR)/lib
+
+#MM datatypes-heic-linklibs-heif-genfiles : linklibs-heif-fetch
 
 #MM
 datatypes-heic-linklibs-heif-genfiles : $(GENDIR)/$(CURDIR)/libheif/heif_version.h
