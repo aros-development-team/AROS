@@ -3,8 +3,28 @@ include $(SRCDIR)/config/aros.cfg
 #MM- compiler-boost : compiler-boost-geninc-copy compiler-boost-includes-copy
 #MM- compiler-includes : compiler-boost-geninc-copy compiler-boost-includes-copy
 
+#MM- compiler-boost-geninc-copy : compiler-boost-fetch
+#MM- compiler-boost-includes-copy : compiler-boost-fetch
+
+BOOSTVERSION=1.88.0
+BOOSTVRS=1_88_0
+REPOSITORIES = https://archives.boost.io/release/$(BOOSTVERSION)/source
+ARCHBASE     := boost_$(BOOSTVRS)
+ARCHSUFFIX := "tar.gz"
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+ARCHSRCDIR := $(PORTSDIR)/boost/$(ARCHBASE)
+
+%fetch mmake=compiler-boost-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/boost \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=compiler-boost-create-patch \
+    archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
+    destination=$(PORTSDIR)/boost
+
+
 %copy_dir_recursive mmake=compiler-boost-geninc-copy \
-    dst="$(GENINCDIR)/boost"
+    src=$(ARCHSRCDIR)/boost/. dst="$(GENINCDIR)/boost"
 
 %copy_dir_recursive mmake=compiler-boost-includes-copy \
-    dst="$(AROS_INCLUDES)/boost"
+    src=$(ARCHSRCDIR)/boost/. dst="$(AROS_INCLUDES)/boost"
