@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2001-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -6176,16 +6176,15 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         D(bug("[IconList] %s: Update Lasso\n", __func__));
 #endif
                         /* Lasso active */
-                        struct Rectangle    new_lasso,
-                                            old_lasso;
+                        struct Rectangle    lasso_rect;
                         struct Rectangle    iconrect;
 
                         struct IconEntry    *node = NULL;
 //                        struct IconEntry    *new_selected = NULL;
 
                         /* Remove previous Lasso frame */
-                        GetAbsoluteLassoRect(data, &old_lasso);
-                        IconList_InvertLassoOutlines(obj, data, &old_lasso);
+                        GetAbsoluteLassoRect(data, &lasso_rect);
+                        IconList_InvertLassoOutlines(obj, data, &lasso_rect);
 
                         /* if the mouse leaves our visible area scroll the view */
                         if (mx < 0 || mx >= _mwidth(obj) || my < 0 || my >= _mheight(obj))
@@ -6215,7 +6214,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY;
 
                         /* get absolute Lasso coordinates */
-                        GetAbsoluteLassoRect(data, &new_lasso);
+                        GetAbsoluteLassoRect(data, &lasso_rect);
 
                         LONG current = 0, startIndex = 0, endIndex = 0;
                         
@@ -6300,8 +6299,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                         iconrect.MaxX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
                                     }
 
-                                    if ((((new_lasso.MaxX + data->icld_ViewX) >= iconrect.MinX) && ((new_lasso.MinX + data->icld_ViewX) <= iconrect.MaxX)) &&
-                                        (((new_lasso.MaxY + data->icld_ViewY) >= iconrect.MinY) && ((new_lasso.MinY + data->icld_ViewY) <= iconrect.MaxY)))
+                                    if ((((lasso_rect.MaxX + data->icld_ViewX) >= iconrect.MinX) && ((lasso_rect.MinX + data->icld_ViewX) <= iconrect.MaxX)) &&
+                                        (((lasso_rect.MaxY + data->icld_ViewY) >= iconrect.MinY) && ((lasso_rect.MinY + data->icld_ViewY) <= iconrect.MaxY)))
                                     {
                                         //Entry is inside our lasso ..
                                          if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
@@ -6347,7 +6346,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             }
                         }
                         /* Draw Lasso frame */
-                        IconList_InvertLassoOutlines(obj, data, &new_lasso);
+                        IconList_InvertLassoOutlines(obj, data, &lasso_rect);
                     }
 
                     return MUI_EventHandlerRC_Eat;
