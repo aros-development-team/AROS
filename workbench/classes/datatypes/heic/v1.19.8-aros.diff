@@ -1,3 +1,90 @@
+diff -ruN libheif-1.19.8/libheif/box.cc libheif-1.19.8.aros/libheif/box.cc
+--- libheif-1.19.8/libheif/box.cc	2025-04-27 18:27:18.000000000 +0000
++++ libheif-1.19.8.aros/libheif/box.cc	2025-06-05 20:48:35.622962780 +0000
+@@ -2739,8 +2739,11 @@
+   return range.get_error();
+ }
+ 
+-
++#if !defined(BOOST_OPTIONAL_FLC_19NOV2002_HPP)
+ template <typename T> std::ostream& operator<<(std::ostream& ostr, const std::optional<T>& value)
++#else
++template <typename T> std::ostream& operator<<(std::ostream& ostr, const boost::optional<T>& value)
++#endif
+ {
+   if (value) {
+     ostr << *value;
+diff -ruN libheif-1.19.8/libheif/box.h libheif-1.19.8.aros/libheif/box.h
+--- libheif-1.19.8/libheif/box.h	2025-04-27 18:27:18.000000000 +0000
++++ libheif-1.19.8.aros/libheif/box.h	2025-06-05 21:00:21.848707221 +0000
+@@ -37,7 +37,12 @@
+ #include <istream>
+ #include <bitset>
+ #include <utility>
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <optional>
++#else
++#include <boost/optional.hpp>
++#include <boost/optional/optional_io.hpp>
++#endif
+ 
+ #include "error.h"
+ #include "logging.h"
+@@ -1340,9 +1345,15 @@
+   int32_t m_ccv_primaries_x[3] {};
+   int32_t m_ccv_primaries_y[3] {};
+ 
++#if !defined(BOOST_OPTIONAL_FLC_19NOV2002_HPP)
+   std::optional<uint32_t> m_ccv_min_luminance_value;
+   std::optional<uint32_t> m_ccv_max_luminance_value;
+   std::optional<uint32_t> m_ccv_avg_luminance_value;
++#else
++  boost::optional<uint32_t> m_ccv_min_luminance_value;
++  boost::optional<uint32_t> m_ccv_max_luminance_value;
++  boost::optional<uint32_t> m_ccv_avg_luminance_value;
++#endif
+ };
+ 
+ 
+diff -ruN libheif-1.19.8/libheif/codecs/decoder.cc libheif-1.19.8.aros/libheif/codecs/decoder.cc
+--- libheif-1.19.8/libheif/codecs/decoder.cc	2025-04-27 18:27:18.000000000 +0000
++++ libheif-1.19.8.aros/libheif/codecs/decoder.cc	2025-06-05 21:10:52.587031693 +0000
+@@ -158,7 +158,7 @@
+ 
+   // append image data
+ 
+-  Result dataResult = m_data_extent.read_data();
++  Result<std::vector<uint8_t>*> dataResult = m_data_extent.read_data();
+   if (dataResult.error) {
+     return dataResult.error;
+   }
+diff -ruN libheif-1.19.8/libheif/codecs/jpeg_dec.h libheif-1.19.8.aros/libheif/codecs/jpeg_dec.h
+--- libheif-1.19.8/libheif/codecs/jpeg_dec.h	2025-04-27 18:27:18.000000000 +0000
++++ libheif-1.19.8.aros/libheif/codecs/jpeg_dec.h	2025-06-05 21:04:00.086743944 +0000
+@@ -28,7 +28,11 @@
+ 
+ #include <memory>
+ #include <vector>
++#if !defined(LIBHEIF_USE_BOOST_OPTIONAL)
+ #include <optional>
++#else
++#include <boost/optional.hpp>
++#endif
+ 
+ class Box_jpgC;
+ 
+@@ -60,7 +64,11 @@
+     uint8_t v_sampling[3]{};
+   };
+ 
++#if !defined(BOOST_OPTIONAL_FLC_19NOV2002_HPP)
+   std::optional<ConfigInfo> m_config;
++#else
++  boost::optional<ConfigInfo> m_config;
++#endif
+ 
+   Error parse_SOF();
+ };
 diff -ruN libheif-1.19.8/libheif/color-conversion/colorconversion.cc libheif-1.19.8.aros/libheif/color-conversion/colorconversion.cc
 --- libheif-1.19.8/libheif/color-conversion/colorconversion.cc	2025-04-27 18:27:18.000000000 +0000
 +++ libheif-1.19.8.aros/libheif/color-conversion/colorconversion.cc	2025-06-03 23:15:37.228221402 +0000

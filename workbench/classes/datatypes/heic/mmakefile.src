@@ -23,26 +23,6 @@ CLASSFILES := webpclass
 
 #MM- workbench-datatypes-heic-quick : datatypes-heic-linklibs-de265-quick datatypes-heic-linklibs-heif-quick
 
-LIBDE265VERSION=1.0.16
-DE265REPOSITORIES = https://github.com/strukturag/libde265/archive/refs/tags
-DE265ARCHBASE     := v$(LIBDE265VERSION)
-DE265ARCHSUFFIX := "tar.gz"
-#DE265PATCHSPEC := $(DE265ARCHBASE)-aros.diff:libde265-$(LIBDE265VERSION):-f,-p1
-DE265ARCHSRCDIR := $(PORTSDIR)/libde265/libde265-$(LIBDE265VERSION)
-
-%fetch mmake=linklibs-de265-fetch archive=$(DE265ARCHBASE) destination=$(PORTSDIR)/libde265 \
-    location=$(PORTSSOURCEDIR) archive_origins=$(DE265REPOSITORIES) suffixes=$(DE265ARCHSUFFIX) \
-    patches_specs=$(PATCHSPEC)
-
-%create_patch mmake=linklibs-de265-create-patch \
-    archive=$(DE265ARCHBASE) suffixes=$(DE265ARCHSUFFIX) \
-    srcdir="libde265-$(LIBDE265VERSION)" destination=$(PORTSDIR)/libde265
-
-#MM- includes-copy : \
-#MM     linklibs-de265-fetch linklibs-heif-fetch
-
-#MM datatypes-heic-linklibs-de265 : linklibs-de265-fetch
-
 COMMON_CPPFLAGS := \
         -D_POSIX_SOURCE=600L \
         -D_GNU_SOURCE \
@@ -64,11 +44,94 @@ USER_CPPFLAGS += \
         -DDE265_LOG_TRACE
 endif
 
-USER_LDFLAGS := -static-libstdc++
+LIBAOMVERSION=3.12.1
+AOMREPOSITORIES = https://storage.googleapis.com/aom-releases
+AOMARCHBASE     := libaom-$(LIBAOMVERSION)
+AOMARCHSUFFIX := "tar.gz"
+#AOMPATCHSPEC := $(AOMARCHBASE)-aros.diff:$(AOMARCHBASE):-f,-p1
+AOMARCHSRCDIR := $(PORTSDIR)/libaom/$(AOMARCHBASE)
 
+%fetch mmake=linklibs-aom-fetch archive=$(AOMARCHBASE) destination=$(PORTSDIR)/libaom \
+    location=$(PORTSSOURCEDIR) archive_origins=$(AOMREPOSITORIES) suffixes=$(AOMARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=linklibs-aom-create-patch \
+    archive=$(AOMARCHBASE) suffixes=$(AOMARCHSUFFIX) \
+    srcdir="libaom-$(LIBAOMVERSION)" destination=$(PORTSDIR)/libaom
+
+#MM- includes-copy : \
+#MM     linklibs-aom-fetch linklibs-heif-fetch
+
+#MM datatypes-heic-linklibs-aom : linklibs-aom-fetch datatypes-heic-linklibs-aom-generated
+
+USER_INCLUDES   := -I$(GENDIR)/$(CURDIR)/libaom -I$(AOMARCHSRCDIR)
+
+#LIBAOMCFILES := \
+#            config/aom_config
+
+LIBAOMCFILES := \
+            aom/src/aom_codec \
+            aom/src/aom_decoder \
+            aom/src/aom_encoder \
+            aom/src/aom_image \
+            aom/src/aom_integer
+
+LIBAOMCAFILES := \
+            "${AOM_ROOT}/av1/arg_defs.c" \
+            "${AOM_ROOT}/common/args_helper.c" \
+            "${AOM_ROOT}/common/args.c" \
+            "${AOM_ROOT}/common/av1_config.c" \
+            "${AOM_ROOT}/common/md5_utils.c" \
+            "${AOM_ROOT}/common/tools_common.c" \
+            "${AOM_ROOT}/common/rawenc.c" \
+            "${AOM_ROOT}/common/y4menc.c" \
+            "${AOM_ROOT}/common/ivfdec.c" \
+        "${AOM_ROOT}/common/obudec.c" \
+        "${AOM_ROOT}/common/video_reader.c"
+
+%build_linklib mmake=datatypes-heic-linklibs-aom \
+    libname=aom \
+    files="$(addprefix $(AOMARCHSRCDIR)/,$(LIBAOMCFILES))" \
+    cxxfiles="$(addprefix $(AOMARCHSRCDIR)/,$(LIBAOMCXXFILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/libaom libdir=$(GENDIR)/$(CURDIR)/lib
+
+$(GENDIR)/$(CURDIR)/libaom/config/aom_config.h : $(SRCDIR)/$(CURDIR)/aom_config.h $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@$(ECHO) "Generating libaom/config/aom_config.h ..."
+	%mkdir_q dir=$(GENDIR)/$(CURDIR)/libaom/config
+	@$(CP) $< $@
+
+$(GENDIR)/$(CURDIR)/libaom/config/aom_version.h : $(SRCDIR)/$(CURDIR)/aom_version.h $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@$(ECHO) "Generating libaom/config/aom_version.h ..."
+	%mkdir_q dir=$(GENDIR)/$(CURDIR)/libaom/config
+	@$(CP) $< $@
+
+#MM
+datatypes-heic-linklibs-aom-generated : $(GENDIR)/$(CURDIR)/libaom/config/aom_config.h $(GENDIR)/$(CURDIR)/libaom/config/aom_version.h
+
+LIBDE265VERSION=1.0.16
+DE265REPOSITORIES = https://github.com/strukturag/libde265/archive/refs/tags
+DE265ARCHBASE     := v$(LIBDE265VERSION)
+DE265ARCHSUFFIX := "tar.gz"
+#DE265PATCHSPEC := $(DE265ARCHBASE)-aros.diff:libde265-$(LIBDE265VERSION):-f,-p1
+DE265ARCHSRCDIR := $(PORTSDIR)/libde265/libde265-$(LIBDE265VERSION)
+
+%fetch mmake=linklibs-de265-fetch archive=$(DE265ARCHBASE) destination=$(PORTSDIR)/libde265 \
+    location=$(PORTSSOURCEDIR) archive_origins=$(DE265REPOSITORIES) suffixes=$(DE265ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=linklibs-de265-create-patch \
+    archive=$(DE265ARCHBASE) suffixes=$(DE265ARCHSUFFIX) \
+    srcdir="libde265-$(LIBDE265VERSION)" destination=$(PORTSDIR)/libde265
+
+#MM- includes-copy : \
+#MM     linklibs-de265-fetch linklibs-heif-fetch
+
+#MM datatypes-heic-linklibs-de265 : linklibs-de265-fetch
+
+USER_LDFLAGS := -static-libstdc++
 USER_INCLUDES   := -I$(GENDIR)/$(CURDIR) -I$(DE265ARCHSRCDIR)
 
-LIBDEC265CXXFILES := \
+LIBDE265CXXFILES := \
         libde265/alloc_pool \
         libde265/bitstream \
         libde265/cabac \
@@ -107,7 +170,7 @@ $(GENDIR)/$(CURDIR)/libde265/de265-version.h : $(DE265ARCHSRCDIR)/libde265/de265
 	cat $< | $(SED) s/@NUMERIC_VERSION@/0x01000500/ | $(SED) s/@PACKAGE_VERSION@/"1.0.5"/ > $@
 
 %build_linklib mmake=datatypes-heic-linklibs-de265 \
-    libname=de265 cxxfiles="$(addprefix $(DE265ARCHSRCDIR)/,$(LIBDEC265CXXFILES))" \
+    libname=de265 cxxfiles="$(addprefix $(DE265ARCHSRCDIR)/,$(LIBDE265CXXFILES))" \
     objdir=$(GENDIR)/$(CURDIR)/libde265 libdir=$(GENDIR)/$(CURDIR)/lib
 
 #MM datatypes-heic-linklibs-de265-genfiles : linklibs-de265-fetch
@@ -134,6 +197,16 @@ HEIFARCHSRCDIR := $(PORTSDIR)/libheif/libheif-$(LIBHEIFVERSION)
 
 USER_INCLUDES   += -I$(HEIFARCHSRCDIR)/libheif -I$(HEIFARCHSRCDIR)/libheif/api
 USER_CPPFLAGS := $(COMMON_CPPFLAGS) -DHAVE_LIBDE265
+
+ifeq ($(AROS_TOOLCHAIN),gnu)
+GCC_VERSION_MAJOR = $(shell echo "$(TARGET_GCC_VER)" | cut -d"." -f1)
+ifeq ($(shell [ $(GCC_VERSION_MAJOR) -lt 13 ] && echo true),true)
+USER_CPPFLAGS += -DLIBHEIF_USE_BOOST_OPTIONAL
+NOWARN_CXXFLAGS := $(NOWARN_ATTRIBUTES)
+endif
+endif
+
+USER_CXXFLAGS := $(NOWARN_CXXFLAGS)
 
 LIBHEIFCXXFILES := \
         libheif/bitstream \
