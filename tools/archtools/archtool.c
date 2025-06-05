@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <stdio.h>
@@ -530,8 +530,12 @@ int i;
   }
   time(&t);
   tm = localtime(&t);
-  date = malloc( 11 * sizeof(char) );
-  sprintf( date, "%02d.%02d.%4d", tm->tm_mday, tm->tm_mon+1, tm->tm_year+1900 );
+  date = malloc( 18 * sizeof(char) );
+  snprintf( date, 18 * sizeof(char),
+            "%02d.%02d.%4d",
+            tm->tm_mday & 0x1F,
+            (tm->tm_mon + 1) & 0xF,
+            (int)tm->tm_year+1900 );
   fd = fopen(filename,"w");
   if(!fd)
   {
