@@ -3,11 +3,6 @@ include $(SRCDIR)/config/aros.cfg
 
 LN ?= ln
 
-BINUTILS_VERSION = $(TARGET_BINUTILS_VER)
-BINUTILS_VERSION_MAJOR = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f1)
-BINUTILS_VERSION_MINOR = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f2)
-BINUTILS_VERSION_PATCH = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f3)
-
 BINUTILS_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
 BINUTILS_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
 BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
@@ -38,11 +33,6 @@ ifeq ($(AROS_TARGET_CPU),x86_64)
 BINUTILS_EXTRA_OPTS += --enable-separate-code=no
 endif
 endif
-
-GCC_VERSION     = $(TARGET_GCC_VER)
-GCC_VERSION_MAJOR = $(shell echo "$(GCC_VERSION)" | cut -d"." -f1)
-GCC_VERSION_MINOR = $(shell echo "$(GCC_VERSION)" | cut -d"." -f2)
-GCC_VERSION_PATCH = $(shell echo "$(GCC_VERSION)" | cut -d"." -f3)
 
 GCC_LANGUAGES:=c,c++
 ifneq (no-objc,$(OBJC_TARGET))
