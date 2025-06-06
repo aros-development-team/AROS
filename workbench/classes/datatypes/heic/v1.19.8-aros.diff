@@ -114,3 +114,32 @@ diff -ruN libheif-1.19.8/libheif/color-conversion/colorconversion.cc libheif-1.1
    border_states.emplace_back(-1, nullptr, input_state, 0);
  
    while (!border_states.empty()) {
+diff -ruN libheif-1.19.8/libheif/pixelimage.cc libheif-1.19.8.aros/libheif/pixelimage.cc
+--- libheif-1.19.8/libheif/pixelimage.cc	2025-04-27 18:27:18.000000000 +0000
++++ libheif-1.19.8.aros/libheif/pixelimage.cc	2025-06-06 09:25:05.559145333 +0000
+@@ -275,7 +275,9 @@
+             sstr.str()};
+   }
+ 
++#if !defined(__AROS__)  
+   try {
++#endif
+     allocated_mem = new uint8_t[static_cast<size_t>(m_mem_height) * stride + alignment - 1];
+     uint8_t* mem_8 = allocated_mem;
+ 
+@@ -290,6 +292,7 @@
+     mem = mem_8;
+ 
+     return Error::Ok;
++#if !defined(__AROS__)  
+   }
+   catch (const std::bad_alloc& excpt) {
+     std::stringstream sstr;
+@@ -299,6 +302,7 @@
+             heif_suberror_Unspecified,
+             sstr.str()};
+   }
++#endif
+ }
+ 
+ 
