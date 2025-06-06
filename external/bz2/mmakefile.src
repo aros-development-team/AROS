@@ -1,7 +1,6 @@
 #   $Id$
 include $(SRCDIR)/config/aros.cfg
 
-
 #MM external-bz2-includes : \
 #MM     kernel-exec-includes includes-copy
 
@@ -9,13 +8,33 @@ include $(SRCDIR)/config/aros.cfg
 
 ###################################################################################
 
-#MM- external-bz2-lib : linklibs
+LIBBZ2VERSION=1.0.8
+REPOSITORIES = https://sourceware.org/pub/bzip2
+ARCHBASE     := bzip2-$(LIBBZ2VERSION)
+ARCHSUFFIX := "tar.gz"
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+ARCHSRCDIR := $(PORTSDIR)/bzip2/$(ARCHBASE)
+
+%fetch mmake=external-bzip2-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/bzip2 \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=external-bzip2-create-patch \
+    archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
+    destination=$(PORTSDIR)/bzip2
+
+#MM includes-copy : \
+#MM     external-bzip2-fetch
+
+###################################################################################
+
+#MM- external-bz2-lib : linklibs external-bzip2-fetch
 
 FILES := blocksort huffman crctable randtable  \
          compress decompress bzlib
 
 %build_module mmake=external-bz2-lib \
-    modname=bz2 modtype=library files="$(FILES)"
+    modname=bz2 modtype=library files="$(addprefix $(ARCHSRCDIR)/,$(FILES))"
 
 ###################################################################################
 
@@ -25,11 +44,10 @@ NOWARN_FLAGS := $(NOWARN_UNUSED_BUT_SET_VARIABLE)
 USER_CFLAGS := $(NOWARN_FLAGS) -DBZ_NO_STDIO
 
 %build_linklib mmake=linklibs-bz2-nostdio libname=bz2_nostdio \
-               files="$(FILES)" objdir=$(OBJDIR)/nostdio
-
+               files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" objdir=$(OBJDIR)/nostdio
 
 INCLUDE_FILES := bzlib.h
-%copy_includes
+%copy_includes dir=$(ARCHSRCDIR)
 
 ###################################################################################
 
@@ -45,18 +63,24 @@ MAN_DIR := $(AROS_DEVELOPER)/man/man1
 
 #MM- external-bz2-bzip2 : \
 #MM     external-bz2-bzip2-bin \
+#MM     external-bz2-bzip2recover-bin \
 #MM     external-bz2-bzip2-install-sh \
 #MM     external-bz2-bzip2-install-aliases \
 #MM     external-bz2-bzip2-install-man \
 #MM     external-bz2-bzip2-install-man-cpy
 
-#MM  external-bz2-bzip2-bin : external-bz2-lib
+#MM  external-bz2-bzip2-bin : external-bzip2-fetch external-bz2-lib
+#MM  external-bz2-bzip2recover-bin : external-bzip2-fetch external-bz2-lib
 
 #MM  external-bz2-bzip2-install-man-cpy : external-bz2-bzip2-install-man
 
-%build_progs mmake=external-bz2-bzip2-bin targetdir=$(BIN_DIR) files=$(FILES) uselibs=bz2 nix=yes
+%build_prog mmake=external-bz2-bzip2recover-bin progname=bzip2recover \
+    files="$(addprefix $(ARCHSRCDIR)/,bzip2recover)" targetdir=$(BIN_DIR) coverageinstr=no uselibs=bz2 nix=yes
 
-%copy_files_q mmake=external-bz2-bzip2-install-sh files=$(SH_FILES) dst=$(BIN_DIR)
+%build_prog mmake=external-bz2-bzip2-bin progname=bzip2 \
+    files="$(addprefix $(ARCHSRCDIR)/,bzip2)" targetdir=$(BIN_DIR) coverageinstr=no uselibs=bz2 nix=yes
+
+%copy_files_q mmake=external-bz2-bzip2-install-sh src=$(ARCHSRCDIR)/. files=$(SH_FILES) dst=$(BIN_DIR)
 
 #MM
 external-bz2-bzip2-install-aliases : \
@@ -94,6 +118,6 @@ $(MAN_DIR)/bzcmp.1: | $(MAN_DIR)
 external-bz2-bzip2-install-man : $(MAN_DIR)/bzegrep.1 $(MAN_DIR)/bzfgrep.1 $(MAN_DIR)/bzless.1 $(MAN_DIR)/bzcmp.1
 	@$(NOP)
 
-%copy_files_q mmake=external-bz2-bzip2-install-man-cpy files=$(MAN_FILES) dst=$(MAN_DIR)
+%copy_files_q mmake=external-bz2-bzip2-install-man-cpy src=$(ARCHSRCDIR)/. files=$(MAN_FILES) dst=$(MAN_DIR)
 
 %common
