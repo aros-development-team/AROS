@@ -11,7 +11,7 @@
 * The builds are made using the scripts/azure-pipelines.yml file. Further details can be found in that file.
 * GCC 6.5.0 builds are configured using default toolchain settings. Newer GCC builds may also use newer versions of binutils.
 * The main AROS target and distfiles are built for each arch.
-* The builds are downloadable via http://www.aros.org/nightly1.php [![Download AROS Research Operating System](https://img.shields.io/sourceforge/dt/aros.svg)](https://sourceforge.net/projects/aros/files/nightly2/).
+* The builds are downloadable via http://www.aros.org/nightly1.html [![Download AROS Research Operating System](https://img.shields.io/sourceforge/dt/aros.svg)](http://www.aros.org/nightly1.html).
 
 <table>
   <tr>
