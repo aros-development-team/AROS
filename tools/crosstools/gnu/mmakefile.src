@@ -282,7 +282,7 @@ tools-crosstools-gcc :
 
 #MM tools-crosstools-gcc : crosstools-gcc--fetch crosstools-gcc--configure
 
-#MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch gnu-gcc-autolibs
+#MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch gnu-gcc-autolibs linklibs-$(AROS_TARGET_CPU)
 #MM- linklibs-gnu-libatomic : tools-crosstools-gcc-libatomic
 
 #MM- gnu-gcc-autolibs :          \
