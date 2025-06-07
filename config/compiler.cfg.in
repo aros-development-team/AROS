@@ -234,6 +234,7 @@ WARN_CLASS_MEMACCESS                    := @aros_warnflags_class_memaccess@
 WARN_INT_IN_BOOL_CONTEXT                := @aros_warnflags_int_in_bool_context@
 WARN_IGNORED_OPTIMIZATION_ARGUMENT      := @aros_warnflags_ignored_optimization_argument@
 WARN_BUILTIN_DECLARATION_MISMATCH       := @aros_warnflags_builtin_declaration_mismatch@
+WARN_OLD_STYLE_DEFINITION               := @aros_warnflags_old_style_definition@
 
 #
 # "Disable" compiler warning flags
@@ -316,6 +317,7 @@ NOWARN_CLASS_MEMACCESS                  := @aros_nowarnflags_class_memaccess@
 NOWARN_INT_IN_BOOL_CONTEXT              := @aros_nowarnflags_int_in_bool_context@
 NOWARN_IGNORED_OPTIMIZATION_ARGUMENT    := @aros_nowarnflags_ignored_optimization_argument@
 NOWARN_BUILTIN_DECLARATION_MISMATCH     := @aros_nowarnflags_builtin_declaration_mismatch@
+NOWARN_OLD_STYLE_DEFINITION             := @aros_nowarnflags_old_style_definition@
 
 # Toolchain support
 

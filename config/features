@@ -617,6 +617,8 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 aros_toolchain_cflags_common
 aros_toolchain_sysroot
+aros_nowarnflags_old_style_definition
+aros_warnflags_old_style_definition
 aros_nowarnflags_builtin_declaration_mismatch
 aros_warnflags_builtin_declaration_mismatch
 aros_nowarnflags_ignored_optimization_argument
@@ -2633,6 +2635,7 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
 
 
 
@@ -5777,6 +5780,7 @@ CFLAGS="$save_cflags"
 #  -Wint-in-bool-context
 #  -Wignored-optimization-argument
 #  -Wbuiltin-declaration-mismatch
+#  -Wold-style-definition
 
 # C warnings first
 ac_ext=c
@@ -7862,6 +7866,35 @@ if test "x-$aros_builtin_declaration_mismatch" = "x-yes" ; then
 fi
 CFLAGS="$save_cflags"
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wold-style-definition" >&5
+printf %s "checking whether ${CC} accepts -Wold-style-definition... " >&6; }
+CFLAGS=-Wold-style-definition
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_old_style_definition="yes"
+else $as_nop
+  aros_old_style_definition="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_old_style_definition" >&5
+printf "%s\n" "$aros_old_style_definition" >&6; }
+if test "x-$aros_old_style_definition" = "x-yes" ; then
+    aros_warnflags_old_style_definition=-Wold-style-definition
+    aros_nowarnflags_old_style_definition=-Wno-old-style-definition
+fi
+CFLAGS="$save_cflags"
+
 # Check the C++ warnings
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -8189,6 +8222,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # ...and warning flags...
 #
+
+
 
 
 
