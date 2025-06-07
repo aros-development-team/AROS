@@ -2,6 +2,8 @@
     Copyright (C) 2015-2016, The AROS Development Team. All rights reserved.
 */
 
+#undef __AROSEXEC_SMP
+
 #include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
@@ -92,7 +94,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
         asm volatile ("mrc p15, 0, %0, c2, c0, 0":"=r"(tmp));
         ((uint32_t *)(trampoline_dst + trampoline_data_offset))[0] = tmp; // pde
         ((uint32_t *)(trampoline_dst + trampoline_data_offset))[1] = (uint32_t)cpu_Register;
-
+#if 0
         for (cpu = 1; cpu < 4; cpu ++)
         {
             cpu_stack = (uint32_t *)AllocMem(AROS_STACKSIZE*sizeof(uint32_t), MEMF_CLEAR); /* MEMF_PRIVATE */
@@ -138,6 +140,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
             KrnSpinUnLock(&startup_lock);
         }
+#endif
     }
 }
 

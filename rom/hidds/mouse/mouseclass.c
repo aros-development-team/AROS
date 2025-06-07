@@ -16,7 +16,9 @@
 
 #include "mouse.h"
 
-#define SysBase     (CSD(cl)->cs_SysBase)
+#define D(x) x
+
+#define SysBase     ((struct ExecBase *)(CSD(cl)->cs_SysBase))
 #define UtilityBase (CSD(cl)->cs_UtilityBase)
 
 /*****************************************************************************************
