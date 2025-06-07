@@ -12,6 +12,7 @@ AROS_SECTION_COMMENT          := @aros_targetsection_comment@
 CFLAGS_C99                              := @aros_cflags_c99@
 CFLAGS_GNU99                            := @aros_cflags_cgnu99@
 CFLAGS_GNU11                            := @aros_cflags_cgnu11@
+CXXFLAGS_GNU98                          := @aros_cxxflags_gnu98@
 
 #
 # Standard compiler features ...

@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2025, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2019, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for target compiler feature detection
@@ -88,11 +88,11 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 AC_LANG_PUSH(C)
 
 AC_MSG_CHECKING([whether ${CC} supports -std=c99])
-CFLAGS=-std=gnu99
+CFLAGS=-std=c99
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c99="yes"],[aros_c99="no"])
 AC_MSG_RESULT($aros_c99)
 if test "x-$aros_c99" = "x-yes" ; then
-    aros_cflags_c99=-std=gnu99
+    aros_cflags_c99=-std=c99
 fi
 
 AC_MSG_CHECKING([whether ${CC} supports -std=gnu99])
@@ -509,6 +509,14 @@ fi
 # C++ features
 AC_LANG_PUSH(C++)
 save_cxxflags="$CXXFLAGS"
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++98])
+CXXFLAGS=-std=gnu++98
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu98="yes"],[aros_cxxgnu98="no"])
+AC_MSG_RESULT($aros_cxxgnu98)
+if test "x-$aros_cxxgnu98" = "x-yes" ; then
+    aros_cxxflags_gnu98=-std=gnu++98
+fi
 
 AC_MSG_CHECKING([whether ${CXX} accepts -fpermissive])
 CXXFLAGS=-fpermissive
@@ -1486,7 +1494,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 AC_SUBST(aros_cflags_c99)
 AC_SUBST(aros_cflags_cgnu99)
 AC_SUBST(aros_cflags_cgnu11)
-    
+AC_SUBST(aros_cxxflags_gnu98)
+
 #
 # export the feature flags...
 #

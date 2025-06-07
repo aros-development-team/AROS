@@ -848,6 +848,7 @@ aros_cflags_noexceptions
 aros_cflags_exceptions
 aros_cflags_no_integrated_as
 aros_targetsection_comment
+aros_cxxflags_gnu98
 aros_cflags_cgnu11
 aros_cflags_cgnu99
 aros_cflags_c99
@@ -3728,7 +3729,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c99" >&5
 printf %s "checking whether ${CC} supports -std=c99... " >&6; }
-CFLAGS=-std=gnu99
+CFLAGS=-std=c99
 
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -3751,7 +3752,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_c99" >&5
 printf "%s\n" "$aros_c99" >&6; }
 if test "x-$aros_c99" = "x-yes" ; then
-    aros_cflags_c99=-std=gnu99
+    aros_cflags_c99=-std=c99
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu99" >&5
@@ -5105,9 +5106,9 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 save_cxxflags="$CXXFLAGS"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} accepts -fpermissive" >&5
-printf %s "checking whether ${CXX} accepts -fpermissive... " >&6; }
-CXXFLAGS=-fpermissive
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++98" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++98... " >&6; }
+CXXFLAGS=-std=gnu++98
 
 
 
@@ -5484,6 +5485,33 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxgnu98="yes"
+else $as_nop
+  aros_cxxgnu98="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxgnu98" >&5
+printf "%s\n" "$aros_cxxgnu98" >&6; }
+if test "x-$aros_cxxgnu98" = "x-yes" ; then
+    aros_cxxflags_gnu98=-std=gnu++98
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} accepts -fpermissive" >&5
+printf %s "checking whether ${CXX} accepts -fpermissive... " >&6; }
+CXXFLAGS=-fpermissive
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -8140,6 +8168,7 @@ fi
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 #
+
 
 
 
