@@ -116,12 +116,13 @@ DE265ARCHSUFFIX := "tar.gz"
 DE265ARCHSRCDIR := $(PORTSDIR)/libde265/libde265-$(LIBDE265VERSION)
 
 %fetch mmake=linklibs-de265-fetch archive=$(DE265ARCHBASE) destination=$(PORTSDIR)/libde265 \
-    location=$(PORTSSOURCEDIR) archive_origins=$(DE265REPOSITORIES) suffixes=$(DE265ARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/de265 archive_origins=$(DE265REPOSITORIES) suffixes=$(DE265ARCHSUFFIX) \
     patches_specs=$(PATCHSPEC)
 
 %create_patch mmake=linklibs-de265-create-patch \
     archive=$(DE265ARCHBASE) suffixes=$(DE265ARCHSUFFIX) \
-    srcdir="libde265-$(LIBDE265VERSION)" destination=$(PORTSDIR)/libde265
+    location=$(PORTSSOURCEDIR)/de265 destination=$(PORTSDIR)/libde265 \
+    srcdir="libde265-$(LIBDE265VERSION)"
 
 #MM- includes-copy : \
 #MM     linklibs-de265-fetch linklibs-heif-fetch
@@ -186,12 +187,13 @@ HEIFPATCHSPEC := $(HEIFARCHBASE)-aros.diff:libheif-$(LIBHEIFVERSION):-f,-p1
 HEIFARCHSRCDIR := $(PORTSDIR)/libheif/libheif-$(LIBHEIFVERSION)
 
 %fetch mmake=linklibs-heif-fetch archive=$(HEIFARCHBASE) destination=$(PORTSDIR)/libheif \
-    location=$(PORTSSOURCEDIR) archive_origins=$(HEIFREPOSITORIES) suffixes=$(HEIFARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/heif archive_origins=$(HEIFREPOSITORIES) suffixes=$(HEIFARCHSUFFIX) \
     patches_specs=$(HEIFPATCHSPEC)
 
 %create_patch mmake=linklibs-heif-create-patch \
+    location=$(PORTSSOURCEDIR)/heif destination=$(PORTSDIR)/libheif \
     archive=$(HEIFARCHBASE) suffixes=$(HEIFARCHSUFFIX) \
-    srcdir="libheif-$(LIBHEIFVERSION)" destination=$(PORTSDIR)/libheif
+    srcdir="libheif-$(LIBHEIFVERSION)"
 
 #MM datatypes-heic-linklibs-heif : linklibs-heif-fetch
 
