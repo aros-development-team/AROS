@@ -4239,9 +4239,15 @@ endif
 #     - destination = the directory to unpack the archive to.
 #     - excludes    = diff patterns to exclude files or directories from the patch
 
-%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" destination=/A excludes= prediff= postdiff=
+%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" location= destination=/A excludes= prediff= postdiff=
 
 .PHONY: %(mmake)
+
+ifneq (%(location),)
+    %(mmake)-location := %(location)
+else
+    %(mmake)-location := %(destination)
+endif
 
 ifneq (%(excludes),)
     %(mmake)-exclude := -X ./exclude.patterns
@@ -4258,7 +4264,7 @@ endif
 
 #MM
 %(mmake)-diff:
-	$(Q)$(FETCH) -a %(archive) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d %(destination)/tmp ; \
+	$(Q)$(FETCH) -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) -d %(destination)/tmp ; \
 	$(MV) %(destination)/$(%(mmake)-srcdir) %(destination)/tmp/$(%(mmake)-srcdir).aros ; \
 	cd %(destination)/tmp ; \
 	$(FOR) f in %(excludes) ; do \
