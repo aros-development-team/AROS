@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function sigsetjmp()
@@ -26,9 +26,11 @@ AROS_CDEFNAME(sigsetjmp):
 	tst	r1, AFF_FPU
 	bxeq	lr
 #endif
+#if defined(__VFP_FP__) && !defined(__SOFTFP__)
 	fstmiax	ip!, {d8-d15}					/* Store VFP registers - we assume they are available! */
 	fmrx	r2, fpscr					/* VFP condition codes */
 	str	r2, [ip], #4
+#endif
 	bx	lr
 #ifdef __SOFTFP__
 1:	.word	SysBase

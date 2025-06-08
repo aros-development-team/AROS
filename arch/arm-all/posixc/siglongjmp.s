@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function siglongjmp()
@@ -27,9 +27,11 @@ AROS_CDEFNAME(siglongjmp):
 	tst	r1, AFF_FPU
 	bxeq	lr
 #endif
+#if defined(__VFP_FP__) && !defined(__SOFTFP__)
 	fldmiax ip!, {d8-d15}					/* Restore VFP registers - we assume they are available! */
 	ldr     r1, [ip], #4					/* restore VFP status reg */
   	fmxr    fpscr, r1
+#endif
 	bx      lr						/* Done! */
 #ifdef __SOFTFP__
 1:	.word	SysBase
