@@ -78,11 +78,14 @@ MESA3D_GALLIUM_ASM_SOURCES := $(filter %.S, $(X86_FILES))
 MESA3D_GALLIUM_C_SOURCES += $(filter x86/%.c, $(ASM_C_FILES))
 endif
 ifeq ($(MESA_USE_X86_64),TRUE)
+OPTIMIZATION_CFLAGS := -O3
 MESA3D_GALLIUM_ASM_SOURCES := $(filter %.S, $(X86_64_FILES))
 MESA3D_GALLIUM_C_SOURCES += $(filter x86-64/%.c, $(ASM_C_FILES))
 endif
 ifeq ($(MESA_USE_SSE41),TRUE)
 MESA3D_GALLIUM_C_SOURCES += $(filter %.c, $(X86_SSE41_FILES))
+TARGET_ISA_CFLAGS += -msse4.1
+TARGET_ISA_CXXFLAGS += -msse4.1
 endif
 
 define es-gen
