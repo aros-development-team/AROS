@@ -52,13 +52,26 @@ ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 #GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_COMMON_OPTS += --disable-libunwind-exceptions
 GCC_COMMON_OPTS += --disable-libstdcxx-verbose
-GCC_COMMON_OPTS += --with-multilib
+GCC_COMMON_OPTS += --enable-multilib
+LIBATOMIC_OPTS += --disable-multilib
+
+## NB: for ARM, multilibs are disabled in libatomic, otherwise we need to build aeabi, etc, for all the targets. E.g.
+## arm/eb/vfpv3-d16/v7-a/softfp
+## arm/eb/vfpv3-d16/v7-a/hard
+## arm/eb/neon/v7-a/softfp
+## arm/eb/neon/v7-a/hard
+
+## arm/el/vfpv3-d16/v7-a/softfp
+## arm/el/vfpv3-d16/v7-a/hard
+## arm/el/neon/v7-a/softfp
+## arm/el/neon/v7-a/hard
+
+ifneq (,$(GCC_DEFAULT_FPU))
 ifneq (,$(findstring big-endian,$(ISA_ARM_FLAGS)))
-GCC_LIBATOMIC_MULTILIB_TARGETS := \
-arm/eb/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mbig-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)
+LIBATOMIC_ENV=GCC_LIBATOMIC_MULTILIB_TARGETS="arm/eb/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mbig-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)"
 else
-GCC_LIBATOMIC_MULTILIB_TARGETS := \
-arm/el/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mlittle-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)
+LIBATOMIC_ENV=GCC_LIBATOMIC_MULTILIB_TARGETS="arm/el/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mlittle-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)"
+endif
 endif
 else
 # If we are building GCC >= 5, for x86 targets, enable libmpx
@@ -264,6 +277,7 @@ tools-crosstools-binutils :
 ## GCC ###
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
+crosstools-gcc-KERNEL_CFLAGS := $(CFLAGS_FOR_TARGET) $(TARGET_ISA_CFLAGS)
 
 #MM
 tools-crosstools-gcc :
@@ -352,4 +366,4 @@ ifeq ($(AROS_TARGET_CPU),m68k)
 ISA_FLAGS:=$(ISA_FLOAT_FLAGS)
 endif
 %build_with_configure mmake=tools-crosstools-gcc-libatomic srcdir="$(LIBATOMIC_SRCDIR)" \
-	basedir= gendir="$(LIBATOMIC_OBJDIR)"
+	basedir= gendir="$(LIBATOMIC_OBJDIR)" extraoptions="$(LIBATOMIC_OPTS)" install_env="$(LIBATOMIC_ENV)"
