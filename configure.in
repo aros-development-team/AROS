@@ -2430,7 +2430,9 @@ case "$aros_target_cpu" in
         ;;
         esac
 
-        aros_isa_extra="$aros_isa_extra -mfpu=$gcc_default_fpu"$export_newline
+        if test "$gcc_default_fpu" != ""; then
+            aros_isa_extra="$aros_isa_extra -mfpu=$gcc_default_fpu"$export_newline
+        fi
 
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
         aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
