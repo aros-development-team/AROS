@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 
     Main for mkkeymap. A tool to generate AmigaOS hunk format Keymap's.
 */
@@ -20,9 +20,9 @@ int main(int argc, char **argv)
 
     if (cfg->verbose)
     {
-        fprintf(stdout, "mkamikeymap 0.6 © 2020, The AROS Development Team.\n");
+        CONSOUT("mkamikeymap 0.6 © 2020, The AROS Development Team.\n");
 
-        fprintf(stdout, "parsing descriptor: %s\n", cfg->descriptor);
+        CONSOUT("parsing descriptor: %s\n", cfg->descriptor);
     }
 
     if (parseKeyDescriptor(cfg))
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
         }
         if (writeKeyMap(cfg))
         {
-            D(fprintf(stdout, "%s successfully generated\n", cfg->keymap);)
+            D(CONSOUT("%s successfully generated\n", cfg->keymap);)
         }
     }
 

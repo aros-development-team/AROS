@@ -14,6 +14,14 @@ tools-mkkeymap_STRIPDEBUG := no
 
 %build_prog mmake=tools-mkkeymap \
     progname="$(notdir $(MKAMIKEYMAP))" targetdir=$(EXEDIR) \
-    files="$(FILES)" compiler=host
+    files="$(FILES)" objdir="$(GENDIR)/$(CURDIR)/host" compiler=host
+
+#MM- contrib-development : tools-mkamikeymap
+#MM tools-mkamikeymap : includes linklibs
+
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
+
+%build_prog mmake=tools-mkamikeymap \
+    files="$(FILES)" progname="$(notdir $(MKAMIKEYMAP))" targetdir=$(EXEDIR)
 
 %common

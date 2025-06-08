@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <stdio.h>
@@ -71,7 +71,7 @@ BOOL writeKeyMap(struct config *cfg)
     APTR hunkData;
 
     if (doverbose)
-        fprintf(stdout, "creating keymap '%s' ('%s')\n", cfg->keymap, kmname);
+        CONSOUT("creating keymap '%s' ('%s')\n", cfg->keymap, kmname);
 
     reloctmp = 0;
     for (i = 0; i < 0x40; i ++)
@@ -79,14 +79,14 @@ BOOL writeKeyMap(struct config *cfg)
         if ((cfg->LoKeyMapTypes[i] & (KCF_DEAD|KCF_STRING)) != 0)
         {
             stNode = (struct Node *)cfg->LoKeyMap[i];
-            D(fprintf(stdout, "node @ 0x%p (%u bytes)\n", stNode, (UBYTE)stNode->ln_Pri);)
+            D(CONSOUT("node @ 0x%p (%u bytes)\n", stNode, (UBYTE)stNode->ln_Pri);)
             stdtsize += (((UBYTE)stNode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN);
             reloctmp++;
         }
     }
 
     reloccnt = reloctmp;
-    D(fprintf(stdout, "%u lokey relocations\n", reloccnt);)
+    D(CONSOUT("%u lokey relocations\n", reloccnt);)
 
     reloctmp = 0;
     for (i = 0; i < 0x38; i ++)
@@ -94,19 +94,19 @@ BOOL writeKeyMap(struct config *cfg)
         if ((cfg->HiKeyMapTypes[i] & (KCF_DEAD|KCF_STRING)) != 0)
         {
             stNode = (struct Node *)cfg->HiKeyMap[i];
-            D(fprintf(stdout, "node @ 0x%p (%u bytes)\n", stNode, (UBYTE)stNode->ln_Pri);)
+            D(CONSOUT("node @ 0x%p (%u bytes)\n", stNode, (UBYTE)stNode->ln_Pri);)
             stdtsize += (((UBYTE)stNode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN);
             reloctmp++;
         }
     }
 
     reloccnt += reloctmp;
-    D(fprintf(stdout, "%u hikey relocations\n", reloctmp);)
+    D(CONSOUT("%u hikey relocations\n", reloctmp);)
 
     if (doverbose)
     {
-        fprintf(stdout, "allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct AmiKMap_Hunk) + strlen(kmname) + 1 + stdtsize, stdtsize);
-        fprintf(stdout, "creating %u relocations\n", reloccnt + 9);
+        CONSOUT("allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct AmiKMap_Hunk) + strlen(kmname) + 1 + stdtsize, stdtsize);
+        CONSOUT("creating %u relocations\n", reloccnt + 9);
     }
 
     hunksize = (sizeof(struct AmiKMap_Hunk) + stdtsize + strlen(kmname) + 1 + MKAKM_HUNKALIGN) & ~MKAKM_HUNKALIGN;
@@ -187,13 +187,13 @@ BOOL writeKeyMap(struct config *cfg)
 
     if ((r - 3) != (reloccnt + 9))
     {
-        fprintf(stdout, "expected %u relocations - %u performed\n", (reloccnt + 9), (r - 3));
+        CONSOUT("expected %u relocations - %u performed\n", (reloccnt + 9), (r - 3));
     }
 
     out = fopen(cfg->keymap, "w");
     if (out==NULL)
     {
-        fprintf(stderr, "Could not write %s\n", cfg->keymap);
+        CONSERR("Could not write %s\n", cfg->keymap);
         exit(20);
     }
 
@@ -212,13 +212,13 @@ BOOL writeKeyMap(struct config *cfg)
     fwrite(&tmp, 4, 1, out);
 
     if (doverbose)
-        fprintf(stdout, "wrote 6x4 (24) bytes hunk exe header\n");
+        CONSOUT("wrote 6x4 (24) bytes hunk exe header\n");
 
     /* write hunk code */
     fwrite(hunkRaw, hunksize, 1, out);
 
     if (doverbose)
-        fprintf(stdout, "wrote %u bytes hunk code\n", (ntohl(hunkRaw->Length) << 2));
+        CONSOUT("wrote %u bytes hunk code\n", (ntohl(hunkRaw->Length) << 2));
 
     /* write relocs .. */
     fwrite(relocData, ((reloccnt + 12) << 2), 1, out);
@@ -226,7 +226,7 @@ BOOL writeKeyMap(struct config *cfg)
     fwrite(&tmp, 4, 1, out);
 
     if (doverbose)
-        fprintf(stdout, "wrote %u bytes relocation data\n", ((reloccnt + 12) << 2));
+        CONSOUT("wrote %u bytes relocation data\n", ((reloccnt + 12) << 2));
 
     tmp = htonl(HUNK_END);
     fwrite(&tmp, 4, 1, out);

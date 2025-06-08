@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 
     Code to parse the command line options for the mkkeymap program
 */
@@ -15,6 +15,7 @@
 #include <ctype.h>
 
 #include "config.h"
+#include "debug.h"
 
 const static char usage[] =
     "\n"
@@ -33,7 +34,7 @@ struct config *initconfig(int argc, char **argv)
     cfg = malloc(sizeof(struct config));
     if (cfg == NULL)
     {
-        fprintf(stderr, "Out of memory\n");
+        CONSERR("Out of memory\n");
         exit(20);
     }
 
@@ -58,11 +59,11 @@ struct config *initconfig(int argc, char **argv)
 
         case '?':
             if ((optopt == 'd') || (optopt == 'k'))
-                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+                CONSERR("Option -%c requires an argument.\n", optopt);
             else if (isprint (optopt))
-                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                CONSERR("Unknown option `-%c'.\n", optopt);
             else
-                fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+                CONSERR("Unknown option character `\\x%x'.\n", optopt);
             exit(20);
 
         default:
@@ -72,7 +73,7 @@ struct config *initconfig(int argc, char **argv)
 
     if (((!cfg->descriptor) && (!cfg->keymap)) || (optind < 3)  || (optind != argc))
     {
-        fprintf(stderr, "Wrong number of arguments.\n%s", usage);
+        CONSERR("Wrong number of arguments.\n%s", usage);
         exit(20);
     }
 
