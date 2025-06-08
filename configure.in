@@ -1227,7 +1227,7 @@ case "$target_cpu" in
         if test "$gcc_default_endian" = ""; then
             gcc_default_endian="little-endian"
         fi
-        arm_isa_extra="ISA_ARM_FLAGS                = -marm"$gcc_default_endian
+        arm_isa_extra="ISA_ARM_FLAGS                = -marm -m"$gcc_default_endian
         ;;
     *m68k*)
         target_extra_cfg+="$export_newline""AROSROM_MODULE_CFLAGS          = $""(CFLAGS_NO_BUILTIN)$export_newline"
