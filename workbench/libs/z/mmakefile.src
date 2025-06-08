@@ -3,15 +3,13 @@
 #
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/$(CURDIR)/make.opt
 
 #MM- includes-copy : zlib-fetch
 
-ZLIBVERSION=1.2.13
 REPOSITORIES := https://zlib.net/fossils/
-ARCHBASE     := zlib-$(ZLIBVERSION)
 ARCHSUFFIX := "tar.gz"
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
-ARCHSRCDIR := $(PORTSDIR)/zlib/$(ARCHBASE)
 
 %fetch mmake=zlib-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/zlib \
     location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
@@ -49,15 +47,7 @@ FILES := adler32 \
          contrib/infback9/infback9 \
          contrib/infback9/inftree9
 
-ifeq ($(AROS_TARGET_CPU),x86_64)
-#MM- workbench-libs-z-x86_64 : workbench-libs-z-sse
-SFILES := x86_aros
-else
 SFILES := simd_stub
-endif
-
-LIBZ_CPPFLAGS := -D_XOPEN_SOURCE=600 -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
-USER_INCLUDES += -I$(ARCHSRCDIR)
 
 USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
 
@@ -106,25 +96,5 @@ $(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
 
 #MM workbench-libs-z-minigzip : \
 #MM        workbench-libs-z-linklib
-
-TARGET_ISA_CFLAGS +=  -msse2 -msse4.1 -mpclmul
-
-# We depend on build_module linking-in everything it finds in ./arch/
-GENDIR_Z_ARCH:= $(GENDIR)/$(CURDIR)/z1/arch
-
-SSE_FILES := \
-    fill_window_sse crc_folding
-
-SSE_OBJS := $(addprefix $(GENDIR_Z_ARCH)/, $(addsuffix .o, $(SSE_FILES)))
-SSE_DEPS := $(addprefix $(GENDIR_Z_ARCH)/, $(addsuffix .d, $(SSE_FILES)))
-
-#MM
-workbench-libs-z-sse : $(SSE_OBJS)
-
-%rule_compile_multi mmake=workbench-libs-z-sse \
-    basenames="$(addprefix $(ARCHSRCDIR)/,$(SSE_FILES))" targetdir=$(GENDIR_Z_ARCH)
-
-%include_deps depstargets=workbench-libs-z-sse deps=$(SSE_DEPS)
-
 
 %common
