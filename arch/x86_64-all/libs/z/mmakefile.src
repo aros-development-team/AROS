@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/z/make.opt
+
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
+
+SSE_FILES := \
+    fill_window_sse crc_folding
+
+TARGET_ISA_CFLAGS +=  -msse2 -msse4.1 -mpclmul
+
+%build_archspecific \
+ mainmmake=workbench-libs-z maindir=workbench/libs/z \
+ files="$(SSE_FILES) simd_stub" arch=sse modname=z1
+
+#MM workbench-libs-z-sse : zlib-fetch
+#MM- workbench-libs-z-x86_64 : workbench-libs-z-sse
