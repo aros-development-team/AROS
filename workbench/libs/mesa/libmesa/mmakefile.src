@@ -10,7 +10,7 @@ include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 -include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
-#MM- mesa3dgl-linklibs : mesa3d-linklib-mesa
+#MM- mesa3dgl-linklibs : mesa3d-linklib-mesa mesa3d-linklib-mesa-sse41
 
 USER_INCLUDES += \
             -iquote $(top_builddir)/$(CUR_MESADIR) \
@@ -81,11 +81,6 @@ ifeq ($(MESA_USE_X86_64),TRUE)
 OPTIMIZATION_CFLAGS := -O3
 MESA3D_GALLIUM_ASM_SOURCES := $(filter %.S, $(X86_64_FILES))
 MESA3D_GALLIUM_C_SOURCES += $(filter x86-64/%.c, $(ASM_C_FILES))
-endif
-ifeq ($(MESA_USE_SSE41),TRUE)
-MESA3D_GALLIUM_C_SOURCES += $(filter %.c, $(X86_SSE41_FILES))
-TARGET_ISA_CFLAGS += -msse4.1
-TARGET_ISA_CXXFLAGS += -msse4.1
 endif
 
 define es-gen
@@ -292,5 +287,19 @@ mesa3d-linklib-mesa-generated : $(MESA3DGL_MESA_GENERATED_C_HEADERS) $(MESA3DGL_
 #MM mesa3d-linklib-mesa : mesa3d-linklib-mesa-generated mesa3d-linklib-compiler-generated
 
 %build_linklib mmake=mesa3d-linklib-mesa libname=mesa libdir="$(top_libdir)" objdir="$(top_builddir)/$(CUR_MESADIR)" files="$(MESA3DGL_MESA_SOURCES_C)" cxxfiles="$(MESA3DGL_MESA_SOURCES_CXX)" asmfiles="$(MESA3DGL_MESA_SOURCES_ASM)"
+
+MESA3D_GALLIUM_SSE41_SOURCES :=
+
+ifeq ($(MESA_USE_SSE41),TRUE)
+MESA3D_GALLIUM_SSE41_SOURCES += $(filter %.c, $(X86_SSE41_FILES))
+TARGET_ISA_CFLAGS += -msse4.1
+TARGET_ISA_CXXFLAGS += -msse4.1
+endif
+
+MESA3DGL_MESA_SSE41_SOURCES := \
+            $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3D_GALLIUM_SSE41_SOURCES)))
+MESA3DGL_MESA_SOURCES_SSE41 := $(MESA3DGL_MESA_SSE41_SOURCES:.c=)
+
+%build_linklib mmake=mesa3d-linklib-mesa-sse41 libname=mesa-sse41 libdir="$(top_libdir)" objdir="$(top_builddir)/$(CUR_MESADIR)" files="$(MESA3DGL_MESA_SOURCES_SSE41)"
 
 %common

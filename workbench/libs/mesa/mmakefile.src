@@ -80,7 +80,7 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) -L$(top_libdir)
   conffile="$(SRCDIR)/workbench/libs/gl/gl.conf" \
   confoverride="$(top_srcdir)/mesa3dgl.conf" objdir="$(OBJDIR)/$(MESAGLVERSION)" \
   files="$(MESAGL_LIBRARY_SOURCES_C)" \
-  alwayscxxlink=yes uselibs="glapi mesa compiler galliumauxiliary gallium mesautil pthread"
+  alwayscxxlink=yes uselibs="glapi mesa mesa-sse41 compiler galliumauxiliary gallium mesautil pthread"
 
 $(AROS_ENVARC)/SYS:
 	%mkdir_q dir=$@
