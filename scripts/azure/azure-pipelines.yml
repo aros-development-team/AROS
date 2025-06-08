@@ -88,9 +88,11 @@ jobs:
       fi
       if [ "$AROSBUILD_TARGET" = "linux-arm" ]; then
         sudo apt-get install -y libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabi g++-arm-linux-gnueabi linux-libc-dev-armel-cross
+        CONFIGOPTS="$CONFIGOPTS --enable-includes=/usr/arm-linux-gnueabi/include"
       fi
       if [ "$AROSBUILD_TARGET" = "linux-armhf" ]; then
         sudo apt-get install -y libc6-armhf-cross libc6-dev-armhf-cross binutils-arm-linux-gnueabihf libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf linux-libc-dev-armhf-cross
+        CONFIGOPTS="$CONFIGOPTS --enable-includes=/usr/arm-linux-gnueabihf/include"
       fi
       if [ "$AROSBUILD_TARGET" = "mingw32-i386" ]; then
         sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
