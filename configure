@@ -11215,7 +11215,9 @@ printf "%s\n" "$aros_target_cpu_mode" >&6; }
         esac
 
         if test "$gcc_default_fpu" != ""; then
-            aros_isa_extra="$aros_isa_extra -mfpu=$gcc_default_fpu"$export_newline
+            aros_isa_extra="$aros_isa_extra -mfpu=$gcc_default_fpu$export_newline"
+        else
+            aros_isa_extra="$aros_isa_extra$export_newline"
         fi
 
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
