@@ -2,12 +2,13 @@
 #define _STDC_STDLIB_H_
 
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdlib.h
 */
 
+#include <aros/stdc/stdcnotimpl.h>
 #include <aros/system.h>
 
 #include <aros/types/size_t.h>
@@ -116,12 +117,14 @@ lldiv_t lldiv(long long int numer, long long int denom);
 
 /* Multibyte/wide character conversion functions */
 int mblen(const char *s, size_t n);
-/* INLINE int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n); */
-/* INLINE int wctomb(char *s, wchar_t wchar); */
+STDC_STLDLIB_NOTIMPL(
+int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n);
+int wctomb(char *s, wchar_t wchar);
 
 /* Multibyte/wide string conversion functions */
-/* INLINE size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n); */
-/* INLINE size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n); */
+size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
+size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
+)
 
 /* AROS extra */
 int __stdc_mb_cur_max(void);

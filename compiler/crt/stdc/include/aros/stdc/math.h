@@ -17,6 +17,7 @@
 #ifndef _MATH_H_
 #define _MATH_H_
 
+#include <aros/stdc/stdcnotimpl.h>
 #include <aros/system.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -512,19 +513,23 @@ int	isnanl(long double) __pure2;
 /*
  * long double extensions; mostly from BSD
  */
-//NOT IMPL long double	j0l(long double);
-//NOT IMPL long double	j1l(long double);
-//NOT IMPL long double	jnl(int, long double);
-//NOT IMPL long double	scalbl(long double, long double);
-//NOT IMPL long double	y0l(long double);
-//NOT IMPL long double	y1l(long double);
-//NOT IMPL long double	ynl(int, long double);
-//NOT IMPL long double	gammal_r(long double, int *);
+STDC_MATH_NOTIMPL(
+long double	j0l(long double);
+long double	j1l(long double);
+long double	jnl(int, long double);
+long double	scalbl(long double, long double);
+long double	y0l(long double);
+long double	y1l(long double);
+long double	ynl(int, long double);
+long double	gammal_r(long double, int *);
+)
 long double	lgammal_r(long double, int *);
 void	sincosl(long double x, long double *sin, long double *cos);
 
 /* IEEE Test Vector */
-//NOT IMPL long double	significandl(long double);
+STDC_MATH_NOTIMPL(
+NOT IMPL long double	significandl(long double);
+)
 
 __END_DECLS
 

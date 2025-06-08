@@ -2,7 +2,7 @@
 #define _STDC_STRING_H_
 
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 & POSIX.1-2008 header file string.h with extra SAS/C and other extensions
@@ -10,6 +10,8 @@
     stdc.library. This avoids opening of posixc.library by programs
     that only use few simple POSIX string functions.
 */
+
+#include <aros/stdc/stdcnotimpl.h>
 #include <aros/system.h>
 
 
@@ -67,17 +69,25 @@ __BEGIN_DECLS
 
 void *memccpy(void *restrict, const void *restrict, int, size_t);
 char *stpcpy(char *restrict, const char *restrict);
-/* NOTIMPL char *stpncpy(char *restrict, const char *restrict, size_t); */
-/* NOTIMPL int strcoll_l(const char *, const char *, locale_t); */
+STDC_STRING_NOTIMPL(
+char *stpncpy(char *restrict, const char *restrict, size_t);
+int strcoll_l(const char *, const char *, locale_t);
+)
 char *strdup(const char *);
-/* NOTIMPL char *strerror_l(int, locale_t); */
-/* NOTIMPL int strerror_r(int, char *, size_t); */
+STDC_STRING_NOTIMPL(
+char *strerror_l(int, locale_t);
+int strerror_r(int, char *, size_t);
+)
 char *strndup(const char *, size_t);
 size_t strnlen(const char *, size_t);
-/* NOTIMPL char *strsignal(int); */
+STDC_STRING_NOTIMPL(
+char *strsignal(int);
+)
 char *strtok_r(char *restrict, const char *restrict, char **restrict);
-/* NOTIMPL size_t strxfrm_l(char *restrict, const char *restrict,
-       size_t, locale_t); */
+STDC_STRING_NOTIMPL(
+size_t strxfrm_l(char *restrict, const char *restrict,
+       size_t, locale_t);
+)
 
 /* BSD/other UNIX */
 size_t strlcpy(char *dst, const char *src, size_t size);
