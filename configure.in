@@ -1382,7 +1382,7 @@ case "$target_os" in
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_STRICT_ALIASING)"
-                aros_c_libs="$aros_c_libs -laeabi"
+                aros_c_libs="$aros_c_libs -laeabi -lsoftfloat"
                 android_tool_dir_prefix="arm-linux-androideabi"
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
@@ -1887,7 +1887,7 @@ case "$target_os" in
                 aros_config_aflags="$aros_config_aflags"
                 aros_kernel_cflags="$aros_kernel_cflags"
                 aros_target_mkdep="$aros_target_mkdep -Darm"
-                aros_c_libs="$aros_c_libs -laeabi"
+                aros_c_libs="$aros_c_libs -laeabi -lsoftfloat"
                 ;;
             *)
                 AC_MSG_ERROR("Unsupported CPU for RasPi $target_cpu")
@@ -2040,7 +2040,7 @@ case "$target_os" in
                 aros_target_cpu="arm"
                 aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
-                aros_c_libs="$aros_c_libs -laeabi"
+                aros_c_libs="$aros_c_libs -laeabi -lsoftfloat"
                 aros_nominal_depth=8
                 gcc_target_cpu="arm"
                 gcc_default_float_abi="soft"
