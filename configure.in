@@ -2941,6 +2941,16 @@ if test "x$test_kernel_cc" != "xno"; then
                 # Check for specific includes directory. Needed for Ubuntu 11.10 and Debian
                 if test -d "/usr/include/${aros_target_cpu}-linux-gnu"; then
                     aros_kernel_cc_includes+=" -isystem /usr/include/${aros_target_cpu}-linux-gnu"
+                else
+                    targetabi=gnu
+                    case "$aros_target_cpu" in
+                        *arm*)
+                            targetabi=gnueabi
+                            ;;
+                    esac
+                    if test -d "/usr/${aros_target_cpu}-linux-${targetabi}/include"; then
+                        aros_kernel_cc_includes+=" -isystem /usr/${aros_target_cpu}-linux-${targetabi}/include"
+                    fi
                 fi
             else
                 # The directory doesn't exist, we need to do some more work.
