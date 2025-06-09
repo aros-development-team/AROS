@@ -4,11 +4,23 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- linklibs-arm : linklibs-aeabi-arm
-#MM- linklibs-armeb: linklibs-aeabi-arm
+FILES := uldiv ldiv l2f i2f i2d l2d llsl llsr lasr
+ASMFILES := uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind
 
-#MM linklibs-aeabi-arm: includes-asm_h 
+#MM- linklibs-arm : linklibs-aeabi-$(AROS_TARGET_CPU)
+#MM- linklibs-armeb : linklibs-aeabi-$(AROS_TARGET_CPU)
+
+#MM linklibs-aeabi-arm : linklibs-softfloat includes-asm_h
+#MM linklibs-aeabi-armhf : includes-asm_h
+
+%build_linklib mmake=linklibs-aeabi-armhf \
+    libname=aeabi files="$(FILES)" \
+    objdir="$(GENDIR)/$(CURDIR)/hard" asmfiles="$(ASMFILES)"
+
+USER_INCLUDES := 
 
 %build_linklib mmake=linklibs-aeabi-arm \
-    libname=aeabi files="uldiv ldiv l2f i2f i2d l2d llsl llsr lasr" \
-    asmfiles="uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind"
+    libname=aeabi files="$(FILES) softfloat" \
+    objdir="$(GENDIR)/$(CURDIR)/soft" asmfiles="$(ASMFILES)"
+
+%common
