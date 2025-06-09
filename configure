@@ -17398,6 +17398,10 @@ fi
 
 fi
 
+    if test "x-$have_alsa" != "x-no" ; then
+        aros_target_options+="$export_newline""# Enable ALSA Audio Driver$export_newline""OPT_HOST_ALSA               := yes$export_newline"
+    fi
+
         # Check whether --enable-x11_hidd was given.
 if test ${enable_x11_hidd+y}
 then :
