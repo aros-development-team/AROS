@@ -20,7 +20,7 @@ ASMFILES := uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind
 USER_INCLUDES := 
 
 %build_linklib mmake=linklibs-aeabi-arm \
-    libname=aeabi files="$(FILES) softfloat" \
+    libname=aeabi files="$(FILES) softfloat dcmpun fcmpun" \
     objdir="$(GENDIR)/$(CURDIR)/soft" asmfiles="$(ASMFILES)"
 
 %common
