@@ -10,8 +10,10 @@ GRUB2_VERSION             := @target_grub2_version@
 DBUS_CFLAGS               := @DBUS_CFLAGS@
 DBUS_LIBFLAGS             := @DBUS_LIBFLAGS@
 
+ifeq ($(OPT_HOST_ALSA),yes)
 HOST_ALSA_CFLAGS           := @ALSA_CFLAGS@
 HOST_ALSA_LDFLAGS          := @ALSA_LIBS@
+endif
 
 ifeq ($(OPT_HOST_X11GFX),yes)
 HOST_X11_CFLAGS           := @aros_host_x11_cflags@
