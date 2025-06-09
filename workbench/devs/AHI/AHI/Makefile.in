@@ -128,13 +128,13 @@ Makefile: Makefile.in ../config.status
 ########################################
 
 AHI_BGUI:	$(OBJECTS) $(OBJECTS_BGUI)
-	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(CC) $^ $(LDFLAGS) $(LIBS) -o $@
 
 AHI_CA:		$(OBJECTS) $(OBJECTS_CA)
-	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(CC) $^ $(LDFLAGS) $(LIBS) -o $@
 
 AHI_MUI:	$(OBJECTS) $(OBJECTS_MUI)
-	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(CC) $^ $(LDFLAGS) $(LIBS) -o $@
 
 
 ${builddir}/ahiprefs_Cat.c:	$(srcdir)/translations/ahiprefs.cd $(srcdir)/C_c_noauto.sd ${builddir}/ahiprefs_Cat.h

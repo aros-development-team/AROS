@@ -117,7 +117,7 @@ Makefile: Makefile.in Makefile.common.in ../../config.status
 	$(AS) $(ASFLAGS) $^ -o $@
 
 $(DRIVER):		$(DRIVER_OBJECTS)
-	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(CC) $^ $(LDFLAGS) $(LIBS) -o $@
 
 $(MODEFILE):	$(MODEFILE).o
 	$(OBJCOPY) --output-target=binary $< $@
