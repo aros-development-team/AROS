@@ -3675,7 +3675,7 @@ endif
 ifeq (%(targetisaflags),)
 %(mmake)-TARGET_LDFLAGS :=
 else
-%(mmake)-TARGET_LDFLAGS := $(TARGET_ISA_LDFLAGS)
+%(mmake)-TARGET_LDFLAGS := $(TARGET_ISA_LDFLAGS) $(TARGET_LDFLAGS)
 endif
 
 ifeq (%(usecflags),yes)
@@ -3742,7 +3742,7 @@ ifeq (%(crossbuild),no)
         LD="$(strip $(TARGET_LD))"
     %(mmake)-cfg-env += CFLAGS="$(strip $(%(mmake)-TARGET_CFLAGS) $(%(mmake)-AC_CFLAGS) %(extracflags))" \
         CXXFLAGS="$(strip $(%(mmake)-TARGET_CXXFLAGS) $(%(mmake)-AC_CXXFLAGS) %(extracxxflags))"
-    %(mmake)-cfg-env += LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS)) -L$(AROS_DEVELOPER)/lib $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS)  $(%(mmake)-nix) $(%(mmake)-s_flag))"
     %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS))"
 else
     %(mmake)-cfg-env += \
