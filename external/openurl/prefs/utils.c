@@ -32,6 +32,9 @@
 
 /***********************************************************************/
 
+static const char upspec[] = "\33I[6:38]";
+static const char downspec[] = "\33I[6:39]";
+
 // DoSuperNew()
 // Calls parent NEW method within a subclass
 #if !defined(__MORPHOS__)
@@ -163,8 +166,10 @@ Object *obutton(ULONG text, ULONG help)
 
 Object *oibutton(ULONG spec, ULONG help)
 {
-    if (spec==IBT_Up) spec = (IPTR)"\33I[6:38]";
-    else if (spec==IBT_Down) spec = (IPTR)"\33I[6:39]";
+    IPTR specval = 0;
+
+    if (spec==IBT_Up) specval = (IPTR)upspec;
+    else if (spec==IBT_Down) specval = (IPTR)downspec;
          else return NULL;
 
     return TextObject,
@@ -174,7 +179,7 @@ Object *oibutton(ULONG spec, ULONG help)
         MUIA_InputMode,     MUIV_InputMode_RelVerify,
         ButtonFrame,
         MUIA_Background,    MUII_ButtonBack,
-        MUIA_Text_Contents, spec,
+        MUIA_Text_Contents, specval,
         MUIA_Text_PreParse, MUIX_C,
         MUIA_Text_SetMax,   TRUE,
     End;
