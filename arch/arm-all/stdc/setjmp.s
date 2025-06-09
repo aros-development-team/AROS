@@ -26,9 +26,11 @@ AROS_CDEFNAME(setjmp):
 	tst	r1, AFF_FPU
 	bxeq	lr
 #endif
+#if defined(__VFP_FP__) && !defined(__SOFTFP__)
 	fstmiax	ip!, {d8-d15}					/* Store VFP registers - we assume they are available! */
 	fmrx	r2, fpscr					/* VFP condition codes */
 	str	r2, [ip], #4
+#endif
 	bx	lr
 #ifdef __SOFTFP__
 1:	.word	SysBase
