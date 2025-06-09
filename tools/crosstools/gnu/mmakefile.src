@@ -111,13 +111,30 @@ GCC_COMMON_OPTS += --disable-libstdcxx-pch
 GCC_COMMON_OPTS += --disable-build-with-cxx
 GCC_COMMON_OPTS += --disable-build-poststage1-with-cxx
 
+# Disable libatomic - we build it manually later...
+gcc_build_libatomic?=enable_libatomic=no
+GCC_ENV+=$(gcc_build_libatomic)
+
+# Make sure necessary target build flags propagate to the gcc target binaries...
+GCC_TARGET_CFLAGS:=
+GCC_TARGET_CXXFLAGS:=
+ifneq (,$(findstring mcmodel=large,$(ISA_FLAGS)))
+GCC_TARGET_CFLAGS += -mcmodel=large
+GCC_TARGET_CXXFLAGS += -mcmodel=large
+endif
+
+ifneq (,$(GCC_TARGET_CFLAGS))
+GCC_COMMON_OPTS += --with-target-cflags="$(GCC_TARGET_CFLAGS)"
+GCC_ENV += CFLAGS_FOR_TARGET="$(GCC_TARGET_CFLAGS)"
+endif
+ifneq (,$(GCC_TARGET_CXXFLAGS))
+GCC_COMMON_OPTS += --with-target-cxxflags="$(GCC_TARGET_CXXFLAGS)"
+GCC_ENV += CXXFLAGS_FOR_TARGET="$(GCC_TARGET_CXXFLAGS)"
+endif
+
 ifeq (,$(GCC_EXTRA_OPTS))
 GCC_EXTRA_OPTS += $(GCC_COMMON_OPTS)
 endif
-
-# Disable libatomic - we build it manually later...
-gcc_build_libatomic?=enable_libatomic=no
-GCC_ENV=$(gcc_build_libatomic)
 
 GCC_PATH = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 
