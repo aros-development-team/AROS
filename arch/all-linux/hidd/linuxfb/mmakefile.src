@@ -14,6 +14,7 @@ FILES	:=	\
 	linuxfbgfx_hiddclass \
 	linuxfbgfx_bitmapclass
 
+#MM kernel-hidd-linuxfb : linklibs
 
 %build_module mmake=kernel-hidd-linuxfb \
   modname=linuxfbgfx modtype=hidd \

@@ -1,6 +1,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM hidd-pci-linux : linklibs
+
 USER_LDFLAGS		= -static
 
 FILES	:= pcilinux_init driverclass

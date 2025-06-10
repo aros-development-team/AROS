@@ -1,6 +1,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM kernel-hidd-linuxinput : linklibs
+
 FILES := linuxinput_init startup linuxinput_inputtask mouseclass kbdclass
 
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
