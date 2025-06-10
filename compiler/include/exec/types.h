@@ -2,7 +2,7 @@
 #define EXEC_TYPES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Data typing - must be included before any other file.
