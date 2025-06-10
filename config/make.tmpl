@@ -3730,6 +3730,7 @@ endif
         TARGET_NM="$(NM_PLAIN)" \
         TARGET_OBJCOPY="$(TARGET_OBJCOPY)"
 endif
+
 ifeq (%(compiler),target)
     %(mmake)-cfg-env := %(config_env_extra) \
         PKG_CONFIG_LIBDIR="$(AROS_DEVELOPER)/lib/pkgconfig" \
@@ -3746,15 +3747,15 @@ ifeq (%(crossbuild),no)
     %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS))"
 else
     %(mmake)-cfg-env += \
-        CPP="" \
-        CXXCPP="" \
-        CC="" \
-        CXX="" \
-        LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
-        LT_LDFLAGS=""
+        CPP="$(strip $(%(mmake)-CROSS_CPP) $(%(mmake)-CROSS_SYSROOT))" \
+        CXXCPP="$(strip $(%(mmake)-CROSS_CPP) $(%(mmake)-CROSS_SYSROOT))" \
+        CC="$(strip $(%(mmake)-CROSS_CC) $(%(mmake)-CROSS_SYSROOT))" \
+        CXX="$(strip $(%(mmake)-CROSS_CXX) $(%(mmake)-CROSS_SYSROOT))" \
+        LD="$(strip $(%(mmake)-CROSS_LD))" \
+        CFLAGS="$(strip $(%(mmake)-CROSS_CFLAGS))" \
+        CXXFLAGS="$(strip $(%(mmake)-CROSS_CXXFLAGS)" \
+        LDFLAGS="$(strip $(%(mmake)-CROSS_LDFLAGS))" \
+        LT_LDFLAGS="$(strip $(%(mmake)-CROSS_LDFLAGS))"
 endif
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
@@ -3825,6 +3826,7 @@ ifeq (%(xflag),yes)
 endif
 endif
 endif
+
 ifeq (%(compiler),kernel)
     %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(KERNEL_CPP)" \
