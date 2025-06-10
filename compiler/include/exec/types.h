@@ -203,9 +203,11 @@
 #   define VOID    void
 #endif
 
+#ifndef NO_AMIGA_LINKAGE_TYPES
 #define GLOBAL	 extern
 #define IMPORT	 extern
 #define STATIC	 static
+#endif
 #define REGISTER register
 
 #ifndef CONST
