@@ -71,6 +71,9 @@ USER_CFLAGS = $(STDC_BASE_CFLAGS) $(NOWARN_CFLAGS)
 %build_progs mmake=test-crt-stdc-print \
     files=$(STDCPRINTTESTFILES) targetdir=$(EXEDIR)
 
+#MM- test-crt-stdc-cunit : test-crt-stdc-$(TARGET_UNITTESTS)-cunit
+#MM- test-crt-stdc-cunit-quick : test-crt-stdc-$(TARGET_UNITTESTS)-cunit-quick
+
 USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
 USER_CFLAGS := $(STDC_BASE_CFLAGS)
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
