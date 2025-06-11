@@ -2943,7 +2943,10 @@ if test "x$test_kernel_cc" != "xno"; then
                     aros_kernel_cc_includes+=" -isystem /usr/include/${aros_target_cpu}-linux-gnu"
                 else
                     targetabi=gnu
-                    case "$aros_target_cpu" in
+                    case "$target_cpu" in
+                        *armhf*)
+                            targetabi=gnueabihf
+                            ;;
                         *arm*)
                             targetabi=gnueabi
                             ;;
