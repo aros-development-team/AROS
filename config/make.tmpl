@@ -4248,7 +4248,7 @@ endif
 ifneq (%(location),)
     %(mmake)-location := %(location)
 else
-    %(mmake)-location := %(destination)
+    %(mmake)-location := $(PORTSSOURCEDIR)
 endif
 
 ifneq (%(excludes),)
