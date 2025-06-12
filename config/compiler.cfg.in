@@ -9,10 +9,31 @@ AROS_SECTION_COMMENT          := @aros_targetsection_comment@
 #
 # C standards supported ...
 # 
+CFLAGS_C98                              := @aros_cflags_c98@
+CFLAGS_GNU98                            := @aros_cflags_gnu98@
 CFLAGS_C99                              := @aros_cflags_c99@
-CFLAGS_GNU99                            := @aros_cflags_cgnu99@
-CFLAGS_GNU11                            := @aros_cflags_cgnu11@
+CFLAGS_GNU99                            := @aros_cflags_gnu99@
+CFLAGS_C11                              := @aros_cflags_c11@
+CFLAGS_GNU11                            := @aros_cflags_gnu11@
+CFLAGS_C17                              := @aros_cflags_c17@
+CFLAGS_GNU17                            := @aros_cflags_gnu17@
+#
+# C++ standards supported ...
+# 
+CXXFLAGS_CXX98                          := @aros_cxxflags_cxx98@
 CXXFLAGS_GNU98                          := @aros_cxxflags_gnu98@
+CXXFLAGS_CXX03                          := @aros_cxxflags_cxx03@
+CXXFLAGS_GNU03                          := @aros_cxxflags_gnu03@
+CXXFLAGS_CXX11                          := @aros_cxxflags_cxx11@
+CXXFLAGS_GNU11                          := @aros_cxxflags_gnu11@
+CXXFLAGS_CXX14                          := @aros_cxxflags_cxx14@
+CXXFLAGS_GNU14                          := @aros_cxxflags_gnu14@
+CXXFLAGS_CXX17                          := @aros_cxxflags_cxx17@
+CXXFLAGS_GNU17                          := @aros_cxxflags_gnu17@
+CXXFLAGS_CXX20                          := @aros_cxxflags_cxx20@
+CXXFLAGS_GNU20                          := @aros_cxxflags_gnu20@
+CXXFLAGS_CXX23                          := @aros_cxxflags_cxx23@
+CXXFLAGS_GNU23                          := @aros_cxxflags_gnu23@
 
 #
 # Standard compiler features ...

@@ -848,10 +848,28 @@ aros_cflags_noexceptions
 aros_cflags_exceptions
 aros_cflags_no_integrated_as
 aros_targetsection_comment
+aros_cxxflags_gnu23
+aros_cxxflags_cxx23
+aros_cxxflags_gnu20
+aros_cxxflags_cxx20
+aros_cxxflags_gnu17
+aros_cxxflags_cxx17
+aros_cxxflags_gnu14
+aros_cxxflags_cxx14
+aros_cxxflags_gnu11
+aros_cxxflags_cxx11
+aros_cxxflags_gnu03
+aros_cxxflags_cxx03
 aros_cxxflags_gnu98
-aros_cflags_cgnu11
-aros_cflags_cgnu99
+aros_cxxflags_cxx98
+aros_cflags_gnu17
+aros_cflags_c17
+aros_cflags_gnu11
+aros_cflags_c11
+aros_cflags_gnu99
 aros_cflags_c99
+aros_cflags_gnu98
+aros_cflags_c98
 ac_ct_CXX
 CXXFLAGS
 CXX
@@ -3727,10 +3745,64 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c98" >&5
+printf %s "checking whether ${CC} supports -std=c98... " >&6; }
+CFLAGS=-std=c98
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_c98="yes"
+else $as_nop
+  aros_c98="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_c98" >&5
+printf "%s\n" "$aros_c98" >&6; }
+if test "x-$aros_c98" = "x-yes" ; then
+    aros_cflags_c98=-std=c98
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu98" >&5
+printf %s "checking whether ${CC} supports -std=gnu98... " >&6; }
+CFLAGS=-std=gnu98
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_cgnu98="yes"
+else $as_nop
+  aros_cgnu98="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu98" >&5
+printf "%s\n" "$aros_cgnu98" >&6; }
+if test "x-$aros_cgnu98" = "x-yes" ; then
+    aros_cflags_gnu98=-std=gnu98
+fi
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c99" >&5
 printf %s "checking whether ${CC} supports -std=c99... " >&6; }
 CFLAGS=-std=c99
-
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3779,7 +3851,34 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu99" >&5
 printf "%s\n" "$aros_cgnu99" >&6; }
 if test "x-$aros_cgnu99" = "x-yes" ; then
-    aros_cflags_cgnu99=-std=gnu99
+    aros_cflags_gnu99=-std=gnu99
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c11" >&5
+printf %s "checking whether ${CC} supports -std=c11... " >&6; }
+CFLAGS=-std=c11
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_c11="yes"
+else $as_nop
+  aros_c11="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_c11" >&5
+printf "%s\n" "$aros_c11" >&6; }
+if test "x-$aros_c11" = "x-yes" ; then
+    aros_cflags_c11=-std=c11
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu11" >&5
@@ -3806,7 +3905,61 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu11" >&5
 printf "%s\n" "$aros_cgnu11" >&6; }
 if test "x-$aros_cgnu11" = "x-yes" ; then
-    aros_cflags_cgnu11=-std=gnu11
+    aros_cflags_gnu11=-std=gnu11
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c17" >&5
+printf %s "checking whether ${CC} supports -std=c17... " >&6; }
+CFLAGS=-std=c17
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_c17="yes"
+else $as_nop
+  aros_c17="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_c17" >&5
+printf "%s\n" "$aros_c17" >&6; }
+if test "x-$aros_c17" = "x-yes" ; then
+    aros_cflags_c17=-std=c17
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu17" >&5
+printf %s "checking whether ${CC} supports -std=gnu17... " >&6; }
+CFLAGS=-std=gnu17
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_cgnu17="yes"
+else $as_nop
+  aros_cgnu17="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu17" >&5
+printf "%s\n" "$aros_cgnu17" >&6; }
+if test "x-$aros_cgnu17" = "x-yes" ; then
+    aros_cflags_gnu17=-std=gnu17
 fi
 
 save_cflags="$CFLAGS"
@@ -5106,9 +5259,9 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 save_cxxflags="$CXXFLAGS"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++98" >&5
-printf %s "checking whether ${CXX} supports -std=gnu++98... " >&6; }
-CXXFLAGS=-std=gnu++98
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=c++98" >&5
+printf %s "checking whether ${CXX} supports -std=c++98... " >&6; }
+CXXFLAGS=-std=c++98
 
 
 
@@ -5498,6 +5651,33 @@ main (void)
 _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"
 then :
+  aros_cxx98="yes"
+else $as_nop
+  aros_cxx98="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxx98" >&5
+printf "%s\n" "$aros_cxx98" >&6; }
+if test "x-$aros_cxx98" = "x-yes" ; then
+    aros_cxxflags_cxx98=-std=c++98
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++98" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++98... " >&6; }
+CXXFLAGS=-std=gnu++98
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
   aros_cxxgnu98="yes"
 else $as_nop
   aros_cxxgnu98="no"
@@ -5507,6 +5687,330 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 printf "%s\n" "$aros_cxxgnu98" >&6; }
 if test "x-$aros_cxxgnu98" = "x-yes" ; then
     aros_cxxflags_gnu98=-std=gnu++98
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=c++03" >&5
+printf %s "checking whether ${CXX} supports -std=c++03... " >&6; }
+CXXFLAGS=-std=c++03
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxx03="yes"
+else $as_nop
+  aros_cxx03="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxx03" >&5
+printf "%s\n" "$aros_cxx03" >&6; }
+if test "x-$aros_cxx03" = "x-yes" ; then
+    aros_cxxflags_cxx03=-std=c++03
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++03" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++03... " >&6; }
+CXXFLAGS=-std=gnu++03
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxgnu03="yes"
+else $as_nop
+  aros_cxxgnu03="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxgnu03" >&5
+printf "%s\n" "$aros_cxxgnu03" >&6; }
+if test "x-$aros_cxxgnu03" = "x-yes" ; then
+    aros_cxxflags_gnu03=-std=gnu++03
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=c++11" >&5
+printf %s "checking whether ${CXX} supports -std=c++11... " >&6; }
+CXXFLAGS=-std=c++11
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxx11="yes"
+else $as_nop
+  aros_cxx11="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxx11" >&5
+printf "%s\n" "$aros_cxx11" >&6; }
+if test "x-$aros_cxx11" = "x-yes" ; then
+    aros_cxxflags_cxx11=-std=c++11
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++11" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++11... " >&6; }
+CXXFLAGS=-std=gnu++11
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxgnu11="yes"
+else $as_nop
+  aros_cxxgnu11="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxgnu11" >&5
+printf "%s\n" "$aros_cxxgnu11" >&6; }
+if test "x-$aros_cxxgnu11" = "x-yes" ; then
+    aros_cxxflags_gnu11=-std=gnu++11
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=c++14" >&5
+printf %s "checking whether ${CXX} supports -std=c++14... " >&6; }
+CXXFLAGS=-std=c++14
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxx14="yes"
+else $as_nop
+  aros_cxx14="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxx14" >&5
+printf "%s\n" "$aros_cxx14" >&6; }
+if test "x-$aros_cxx14" = "x-yes" ; then
+    aros_cxxflags_cxx14=-std=c++14
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++14" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++14... " >&6; }
+CXXFLAGS=-std=gnu++14
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxgnu14="yes"
+else $as_nop
+  aros_cxxgnu14="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxgnu14" >&5
+printf "%s\n" "$aros_cxxgnu14" >&6; }
+if test "x-$aros_cxxgnu14" = "x-yes" ; then
+    aros_cxxflags_gnu14=-std=gnu++14
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=c++17" >&5
+printf %s "checking whether ${CXX} supports -std=c++17... " >&6; }
+CXXFLAGS=-std=c++17
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxx17="yes"
+else $as_nop
+  aros_cxx17="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxx17" >&5
+printf "%s\n" "$aros_cxx17" >&6; }
+if test "x-$aros_cxx17" = "x-yes" ; then
+    aros_cxxflags_cxx17=-std=c++17
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++17" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++17... " >&6; }
+CXXFLAGS=-std=gnu++17
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxgnu17="yes"
+else $as_nop
+  aros_cxxgnu17="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxgnu17" >&5
+printf "%s\n" "$aros_cxxgnu17" >&6; }
+if test "x-$aros_cxxgnu17" = "x-yes" ; then
+    aros_cxxflags_gnu17=-std=gnu++17
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=c++20" >&5
+printf %s "checking whether ${CXX} supports -std=c++20... " >&6; }
+CXXFLAGS=-std=c++20
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxx20="yes"
+else $as_nop
+  aros_cxx20="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxx20" >&5
+printf "%s\n" "$aros_cxx20" >&6; }
+if test "x-$aros_cxx20" = "x-yes" ; then
+    aros_cxxflags_cxx20=-std=c++20
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++20" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++20... " >&6; }
+CXXFLAGS=-std=gnu++20
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxgnu20="yes"
+else $as_nop
+  aros_cxxgnu20="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxgnu20" >&5
+printf "%s\n" "$aros_cxxgnu20" >&6; }
+if test "x-$aros_cxxgnu20" = "x-yes" ; then
+    aros_cxxflags_gnu20=-std=gnu++20
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=c++23" >&5
+printf %s "checking whether ${CXX} supports -std=c++23... " >&6; }
+CXXFLAGS=-std=c++23
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxx23="yes"
+else $as_nop
+  aros_cxx23="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxx23" >&5
+printf "%s\n" "$aros_cxx23" >&6; }
+if test "x-$aros_cxx23" = "x-yes" ; then
+    aros_cxxflags_cxx23=-std=c++23
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} supports -std=gnu++23" >&5
+printf %s "checking whether ${CXX} supports -std=gnu++23... " >&6; }
+CXXFLAGS=-std=gnu++23
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_cxxgnu23="yes"
+else $as_nop
+  aros_cxxgnu23="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cxxgnu23" >&5
+printf "%s\n" "$aros_cxxgnu23" >&6; }
+if test "x-$aros_cxxgnu23" = "x-yes" ; then
+    aros_cxxflags_gnu23=-std=gnu++23
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} accepts -fpermissive" >&5
@@ -8168,6 +8672,25 @@ fi
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

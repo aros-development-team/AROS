@@ -87,6 +87,22 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 # C features first 
 AC_LANG_PUSH(C)
 
+AC_MSG_CHECKING([whether ${CC} supports -std=c98])
+CFLAGS=-std=c98
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c98="yes"],[aros_c98="no"])
+AC_MSG_RESULT($aros_c98)
+if test "x-$aros_c98" = "x-yes" ; then
+    aros_cflags_c98=-std=c98
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu98])
+CFLAGS=-std=gnu98
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu98="yes"],[aros_cgnu98="no"])
+AC_MSG_RESULT($aros_cgnu98)
+if test "x-$aros_cgnu98" = "x-yes" ; then
+    aros_cflags_gnu98=-std=gnu98
+fi
+
 AC_MSG_CHECKING([whether ${CC} supports -std=c99])
 CFLAGS=-std=c99
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c99="yes"],[aros_c99="no"])
@@ -100,7 +116,15 @@ CFLAGS=-std=gnu99
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu99="yes"],[aros_cgnu99="no"])
 AC_MSG_RESULT($aros_cgnu99)
 if test "x-$aros_cgnu99" = "x-yes" ; then
-    aros_cflags_cgnu99=-std=gnu99
+    aros_cflags_gnu99=-std=gnu99
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=c11])
+CFLAGS=-std=c11
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c11="yes"],[aros_c11="no"])
+AC_MSG_RESULT($aros_c11)
+if test "x-$aros_c11" = "x-yes" ; then
+    aros_cflags_c11=-std=c11
 fi
 
 AC_MSG_CHECKING([whether ${CC} supports -std=gnu11])
@@ -108,7 +132,23 @@ CFLAGS=-std=gnu11
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu11="yes"],[aros_cgnu11="no"])
 AC_MSG_RESULT($aros_cgnu11)
 if test "x-$aros_cgnu11" = "x-yes" ; then
-    aros_cflags_cgnu11=-std=gnu11
+    aros_cflags_gnu11=-std=gnu11
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=c17])
+CFLAGS=-std=c17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c17="yes"],[aros_c17="no"])
+AC_MSG_RESULT($aros_c17)
+if test "x-$aros_c17" = "x-yes" ; then
+    aros_cflags_c17=-std=c17
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu17])
+CFLAGS=-std=gnu17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu17="yes"],[aros_cgnu17="no"])
+AC_MSG_RESULT($aros_cgnu17)
+if test "x-$aros_cgnu17" = "x-yes" ; then
+    aros_cflags_gnu17=-std=gnu17
 fi
 
 save_cflags="$CFLAGS"
@@ -510,12 +550,116 @@ fi
 AC_LANG_PUSH(C++)
 save_cxxflags="$CXXFLAGS"
 
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++98])
+CXXFLAGS=-std=c++98
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx98="yes"],[aros_cxx98="no"])
+AC_MSG_RESULT($aros_cxx98)
+if test "x-$aros_cxx98" = "x-yes" ; then
+    aros_cxxflags_cxx98=-std=c++98
+fi
+
 AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++98])
 CXXFLAGS=-std=gnu++98
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu98="yes"],[aros_cxxgnu98="no"])
 AC_MSG_RESULT($aros_cxxgnu98)
 if test "x-$aros_cxxgnu98" = "x-yes" ; then
     aros_cxxflags_gnu98=-std=gnu++98
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++03])
+CXXFLAGS=-std=c++03
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx03="yes"],[aros_cxx03="no"])
+AC_MSG_RESULT($aros_cxx03)
+if test "x-$aros_cxx03" = "x-yes" ; then
+    aros_cxxflags_cxx03=-std=c++03
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++03])
+CXXFLAGS=-std=gnu++03
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu03="yes"],[aros_cxxgnu03="no"])
+AC_MSG_RESULT($aros_cxxgnu03)
+if test "x-$aros_cxxgnu03" = "x-yes" ; then
+    aros_cxxflags_gnu03=-std=gnu++03
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++11])
+CXXFLAGS=-std=c++11
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx11="yes"],[aros_cxx11="no"])
+AC_MSG_RESULT($aros_cxx11)
+if test "x-$aros_cxx11" = "x-yes" ; then
+    aros_cxxflags_cxx11=-std=c++11
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++11])
+CXXFLAGS=-std=gnu++11
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu11="yes"],[aros_cxxgnu11="no"])
+AC_MSG_RESULT($aros_cxxgnu11)
+if test "x-$aros_cxxgnu11" = "x-yes" ; then
+    aros_cxxflags_gnu11=-std=gnu++11
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++14])
+CXXFLAGS=-std=c++14
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx14="yes"],[aros_cxx14="no"])
+AC_MSG_RESULT($aros_cxx14)
+if test "x-$aros_cxx14" = "x-yes" ; then
+    aros_cxxflags_cxx14=-std=c++14
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++14])
+CXXFLAGS=-std=gnu++14
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu14="yes"],[aros_cxxgnu14="no"])
+AC_MSG_RESULT($aros_cxxgnu14)
+if test "x-$aros_cxxgnu14" = "x-yes" ; then
+    aros_cxxflags_gnu14=-std=gnu++14
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++17])
+CXXFLAGS=-std=c++17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx17="yes"],[aros_cxx17="no"])
+AC_MSG_RESULT($aros_cxx17)
+if test "x-$aros_cxx17" = "x-yes" ; then
+    aros_cxxflags_cxx17=-std=c++17
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++17])
+CXXFLAGS=-std=gnu++17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu17="yes"],[aros_cxxgnu17="no"])
+AC_MSG_RESULT($aros_cxxgnu17)
+if test "x-$aros_cxxgnu17" = "x-yes" ; then
+    aros_cxxflags_gnu17=-std=gnu++17
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++20])
+CXXFLAGS=-std=c++20
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx20="yes"],[aros_cxx20="no"])
+AC_MSG_RESULT($aros_cxx20)
+if test "x-$aros_cxx20" = "x-yes" ; then
+    aros_cxxflags_cxx20=-std=c++20
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++20])
+CXXFLAGS=-std=gnu++20
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu20="yes"],[aros_cxxgnu20="no"])
+AC_MSG_RESULT($aros_cxxgnu20)
+if test "x-$aros_cxxgnu20" = "x-yes" ; then
+    aros_cxxflags_gnu20=-std=gnu++20
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++23])
+CXXFLAGS=-std=c++23
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx23="yes"],[aros_cxx23="no"])
+AC_MSG_RESULT($aros_cxx23)
+if test "x-$aros_cxx23" = "x-yes" ; then
+    aros_cxxflags_cxx23=-std=c++23
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++23])
+CXXFLAGS=-std=gnu++23
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu23="yes"],[aros_cxxgnu23="no"])
+AC_MSG_RESULT($aros_cxxgnu23)
+if test "x-$aros_cxxgnu23" = "x-yes" ; then
+    aros_cxxflags_gnu23=-std=gnu++23
 fi
 
 AC_MSG_CHECKING([whether ${CXX} accepts -fpermissive])
@@ -1491,10 +1635,29 @@ fi
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 #
+AC_SUBST(aros_cflags_c98)
+AC_SUBST(aros_cflags_gnu98)
 AC_SUBST(aros_cflags_c99)
-AC_SUBST(aros_cflags_cgnu99)
-AC_SUBST(aros_cflags_cgnu11)
+AC_SUBST(aros_cflags_gnu99)
+AC_SUBST(aros_cflags_c11)
+AC_SUBST(aros_cflags_gnu11)
+AC_SUBST(aros_cflags_c17)
+AC_SUBST(aros_cflags_gnu17)
+
+AC_SUBST(aros_cxxflags_cxx98)
 AC_SUBST(aros_cxxflags_gnu98)
+AC_SUBST(aros_cxxflags_cxx03)
+AC_SUBST(aros_cxxflags_gnu03)
+AC_SUBST(aros_cxxflags_cxx11)
+AC_SUBST(aros_cxxflags_gnu11)
+AC_SUBST(aros_cxxflags_cxx14)
+AC_SUBST(aros_cxxflags_gnu14)
+AC_SUBST(aros_cxxflags_cxx17)
+AC_SUBST(aros_cxxflags_gnu17)
+AC_SUBST(aros_cxxflags_cxx20)
+AC_SUBST(aros_cxxflags_gnu20)
+AC_SUBST(aros_cxxflags_cxx23)
+AC_SUBST(aros_cxxflags_gnu23)
 
 #
 # export the feature flags...
