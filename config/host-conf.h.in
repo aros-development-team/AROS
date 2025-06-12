@@ -1,5 +1,8 @@
 /* config/host-conf.h.in.  Generated from configure.in by autoheader.  */
 
+/* Define if ALSA is available */
+#undef HAVE_ALSA
+
 /* Define to 1 if you have the `clone' function. */
 #undef HAVE_CLONE
 
@@ -17,6 +20,9 @@
 /* Define to 1 if you have the `getpagesize' function. */
 #undef HAVE_GETPAGESIZE
 
+/* Define to 1 if you have the <GL/glx.h> header file. */
+#undef HAVE_GL_GLX_H
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -26,14 +32,8 @@
 /* Define to 1 if you have the `kse_create' function. */
 #undef HAVE_KSE_CREATE
 
-/* Define to 1 if you have the `png' library (-lpng). */
-#undef HAVE_LIBPNG
-
 /* Define to 1 if you have the `makecontext' function. */
 #undef HAVE_MAKECONTEXT
-
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
 
 /* Define to 1 if you have a working `mmap' system call. */
 #undef HAVE_MMAP
@@ -62,6 +62,9 @@
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
+
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
@@ -86,17 +89,9 @@
 /* Define to 1 if `tm_zone' is a member of `struct tm'. */
 #undef HAVE_STRUCT_TM_TM_ZONE
 
-/* Define to 1 if your `struct stat' has `st_blksize'. Deprecated, use
-   `HAVE_STRUCT_STAT_ST_BLKSIZE' instead. */
-#undef HAVE_ST_BLKSIZE
-
 /* Define to 1 if your `struct stat' has `st_blocks'. Deprecated, use
    `HAVE_STRUCT_STAT_ST_BLOCKS' instead. */
 #undef HAVE_ST_BLOCKS
-
-/* Define to 1 if your `struct stat' has `st_rdev'. Deprecated, use
-   `HAVE_STRUCT_STAT_ST_RDEV' instead. */
-#undef HAVE_ST_RDEV
 
 /* Define to 1 if you have the `swapcontext' function. */
 #undef HAVE_SWAPCONTEXT
@@ -139,8 +134,14 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/ucontext.h> header file. */
+#undef HAVE_SYS_UCONTEXT_H
 
 /* Define to 1 if you have the <sys/vfs.h> header file. */
 #undef HAVE_SYS_VFS_H
@@ -159,14 +160,11 @@
    `tzname'. */
 #undef HAVE_TZNAME
 
-/* Define to 1 if you have the <unistd.h> header file. */
-#undef HAVE_UNISTD_H
-
 /* Define to 1 if you have the <ucontext.h> header file. */
 #undef HAVE_UCONTEXT_H
 
-/* Define to 1 if you have the <sys/ucontext.h> header file. */
-#undef HAVE_SYS_UCONTEXT_H
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
@@ -189,10 +187,13 @@
 /* Define to 1 if the `S_IS*' macros in <sys/stat.h> do not work properly. */
 #undef STAT_MACROS_BROKEN
 
-/* Define to 1 if you have the ANSI C header files. */
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
-/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. This
+   macro is obsolete. */
 #undef TIME_WITH_SYS_TIME
 
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
@@ -204,7 +205,7 @@
 /* Define to `long int' if <sys/types.h> does not define. */
 #undef off_t
 
-/* Define to `int' if <sys/types.h> does not define. */
+/* Define as a signed integer type capable of holding a process identifier. */
 #undef pid_t
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
