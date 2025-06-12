@@ -1256,7 +1256,7 @@ case "$target_cpu" in
         if test "$gcc_default_endian" = ""; then
             gcc_default_endian="little-endian"
         fi
-        arm_isa_extra="ISA_ARM_FLAGS                 = -marm -mfloat-abi=hard -m"$gcc_default_endian
+        arm_isa_extra="ISA_ARM_FLAGS                 = -marm -mfloat-abi=$""(GCC_CONFIG_FLOAT_ABI) -m"$gcc_default_endian
         gcc_soft_abi=hard
         gcc_float_abi=hard
         ;;
@@ -1264,7 +1264,7 @@ case "$target_cpu" in
         if test "$gcc_default_endian" = ""; then
             gcc_default_endian="little-endian"
         fi
-        arm_isa_extra="ISA_ARM_FLAGS                 = -marm -mfloat-abi=soft -m"$gcc_default_endian
+        arm_isa_extra="ISA_ARM_FLAGS                 = -marm -mfloat-abi=$""(GCC_CONFIG_FLOAT_ABI) -m"$gcc_default_endian
         gcc_soft_abi=soft
         gcc_float_abi=softfp
         ;;
