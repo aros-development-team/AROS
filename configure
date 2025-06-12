@@ -18406,89 +18406,98 @@ fi
 printf "%s\n" "$aros_config_unittests" >&6; }
 
 
+case "$aros_target_cpu" in
+    arm)
+        export_target_gcccpu="yes"
+        ;;
+    *)
+        ;;
+esac
 
-export_firstextraline="$export_newline# GCC CPU Config$export_newline"
-if ! test "$aros_gcc_cpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                = $aros_gcc_cpu$export_newline"
-    export_firstextraline=""
-else
-    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                = $""(GCC_DEFAULT_CPU)$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_soft_cpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_SOFT_CPU                  := $gcc_soft_cpu$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_float_cpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_FLOAT_CPU                 := $gcc_float_cpu$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_default_cpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $gcc_default_cpu$export_newline"
-    export_firstextraline=""
-else
-    if test "$gcc_config_float_abi" = "hard" ; then
-        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $""(GCC_FLOAT_CPU)$export_newline"
+if test "$export_target_gcccpu" = "yes" ; then
+    export_firstextraline="$export_newline# GCC CPU Config$export_newline"
+    if ! test "$aros_gcc_cpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                = $aros_gcc_cpu$export_newline"
+        export_firstextraline=""
     else
-        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $""(GCC_SOFT_CPU)$export_newline"
+        target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                = $""(GCC_DEFAULT_CPU)$export_newline"
+        export_firstextraline=""
     fi
-    export_firstextraline=""
-fi
-
-if ! test "$gcc_config_fpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FPU               = $gcc_config_fpu$export_newline"
-    export_firstextraline=""
-else
-    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FPU                = $""(GCC_DEFAULT_FPU)$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_soft_fpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_SOFT_FPU                  := $gcc_soft_fpu$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_float_fpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_FLOAT_FPU                 := $gcc_float_fpu$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_default_fpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $gcc_default_fpu$export_newline"
-    export_firstextraline=""
-else
-    if test "$gcc_config_float_abi" = "hard" ; then
-        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $""(GCC_FLOAT_FPU)$export_newline"
+    if ! test "$gcc_soft_cpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_SOFT_CPU                  := $gcc_soft_cpu$export_newline"
+        export_firstextraline=""
+    fi
+    if ! test "$gcc_float_cpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_FLOAT_CPU                 := $gcc_float_cpu$export_newline"
+        export_firstextraline=""
+    fi
+    if ! test "$gcc_default_cpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $gcc_default_cpu$export_newline"
+        export_firstextraline=""
     else
-        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $""(GCC_SOFT_FPU)$export_newline"
+        if test "$gcc_config_float_abi" = "hard" ; then
+            target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $""(GCC_FLOAT_CPU)$export_newline"
+        else
+            target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $""(GCC_SOFT_CPU)$export_newline"
+        fi
+        export_firstextraline=""
     fi
-    export_firstextraline=""
-fi
 
-if ! test "$gcc_config_float_abi" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FLOAT_ABI          = $gcc_config_float_abi$export_newline"
-    export_firstextraline=""
-else
-    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FLOAT_ABI          = $""(GCC_DEFAULT_FLOAT_ABI)$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_soft_abi" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_SOFT_ABI                  := $gcc_soft_abi$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_float_abi" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_FLOAT_ABI                 := $gcc_float_abi$export_newline"
-    export_firstextraline=""
-fi
-if ! test "$gcc_default_float_abi" = "" ; then
-    if test "$gcc_default_float_abi" = "hard" ; then
-        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $""(GCC_FLOAT_ABI)$export_newline"
+    if ! test "$gcc_config_fpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FPU               = $gcc_config_fpu$export_newline"
+        export_firstextraline=""
     else
-        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $""(GCC_SOFT_ABI)$export_newline"
+        target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FPU                = $""(GCC_DEFAULT_FPU)$export_newline"
+        export_firstextraline=""
     fi
-    export_firstextraline=""
-fi
+    if ! test "$gcc_soft_fpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_SOFT_FPU                  := $gcc_soft_fpu$export_newline"
+        export_firstextraline=""
+    fi
+    if ! test "$gcc_float_fpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_FLOAT_FPU                 := $gcc_float_fpu$export_newline"
+        export_firstextraline=""
+    fi
+    if ! test "$gcc_default_fpu" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $gcc_default_fpu$export_newline"
+        export_firstextraline=""
+    else
+        if test "$gcc_config_float_abi" = "hard" ; then
+            target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $""(GCC_FLOAT_FPU)$export_newline"
+        else
+            target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $""(GCC_SOFT_FPU)$export_newline"
+        fi
+        export_firstextraline=""
+    fi
 
-if ! test "$gcc_default_mode" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_MODE              := $gcc_default_mode$export_newline"
-    export_firstextraline=""
+    if ! test "$gcc_config_float_abi" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FLOAT_ABI          = $gcc_config_float_abi$export_newline"
+        export_firstextraline=""
+    else
+        target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FLOAT_ABI          = $""(GCC_DEFAULT_FLOAT_ABI)$export_newline"
+        export_firstextraline=""
+    fi
+    if ! test "$gcc_soft_abi" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_SOFT_ABI                  := $gcc_soft_abi$export_newline"
+        export_firstextraline=""
+    fi
+    if ! test "$gcc_float_abi" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_FLOAT_ABI                 := $gcc_float_abi$export_newline"
+        export_firstextraline=""
+    fi
+    if ! test "$gcc_default_float_abi" = "" ; then
+        if test "$gcc_default_float_abi" = "hard" ; then
+            target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $""(GCC_FLOAT_ABI)$export_newline"
+        else
+            target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $""(GCC_SOFT_ABI)$export_newline"
+        fi
+        export_firstextraline=""
+    fi
+
+    if ! test "$gcc_default_mode" = "" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_MODE              := $gcc_default_mode$export_newline"
+        export_firstextraline=""
+    fi
 fi
 
 if test "$use_libatomic" = "yes" ; then
