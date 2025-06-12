@@ -15758,7 +15758,7 @@ $as_echo_n "checking for the kernel compiler's include path... " >&6; }
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cc_includes" >&5
 $as_echo "$aros_kernel_cc_includes" >&6; }
         # Adding -nostdinc to kernel includes as they are always used together.
-        aros_kernel_includes="$aros_kernel_includes $aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes"
+        aros_kernel_includes="$aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes $aros_kernel_includes"
     fi
 fi
 

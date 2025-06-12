@@ -3037,7 +3037,7 @@ if test "x$test_kernel_cc" != "xno"; then
         fi
         AC_MSG_RESULT($aros_kernel_cc_includes)
         # Adding -nostdinc to kernel includes as they are always used together.
-        aros_kernel_includes="$aros_kernel_includes $aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes"
+        aros_kernel_includes="$aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes $aros_kernel_includes"
     fi
 fi
 
