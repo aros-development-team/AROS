@@ -3313,7 +3313,19 @@ endif
 
 ifeq (%(dflags),)
 $(BD_DEPS$(BDID)) : TMP_CPPFLAGS:=$(strip %(cppflags) $(BD_DEFLIBDEFSINC$(BDID)))
+ifeq ("%(cflags)","")
+ifeq (%(compiler),host)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(strip $(HOST_CFLAGS))
+endif
+ifeq (%(compiler),kernel)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+endif
+ifeq (%(compiler),target)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(strip $(CFLAGS) $(SAFETY_CFLAGS))
+endif
+else
 $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(cflags)
+endif
 else
 $(BD_DEPS$(BDID)) : TMP_CPPFLAGS:=%(cppflags)
 $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
