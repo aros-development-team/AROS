@@ -1256,13 +1256,17 @@ case "$target_cpu" in
         if test "$gcc_default_endian" = ""; then
             gcc_default_endian="little-endian"
         fi
-        arm_isa_extra="ISA_ARM_FLAGS                = -marm -mfloat-abi=hard -m"$gcc_default_endian
+        arm_isa_extra="ISA_ARM_FLAGS                 = -marm -mfloat-abi=hard -m"$gcc_default_endian
+        gcc_soft_abi=hard
+        gcc_float_abi=hard
         ;;
     *arm*)
         if test "$gcc_default_endian" = ""; then
             gcc_default_endian="little-endian"
         fi
-        arm_isa_extra="ISA_ARM_FLAGS                = -marm -mfloat-abi=softfp -m"$gcc_default_endian
+        arm_isa_extra="ISA_ARM_FLAGS                 = -marm -mfloat-abi=soft -m"$gcc_default_endian
+        gcc_soft_abi=soft
+        gcc_float_abi=softfp
         ;;
     *m68k*)
         target_extra_cfg+="$export_newline""AROSROM_MODULE_CFLAGS          = $""(CFLAGS_NO_BUILTIN)$export_newline"
@@ -1831,7 +1835,6 @@ case "$target_os" in
         aros_nominal_width=1024
         aros_nominal_height=600
         aros_c_libs="$aros_c_libs -laeabi"
-        gcc_default_fpu="vfpv3"
         aros_isa_flags="$aros_isa_flags -mtune=cortex-a8"
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
@@ -1843,12 +1846,19 @@ case "$target_os" in
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 gcc_default_float_abi="hard"
+                gcc_float_fpu="vfpv3"
+                gcc_soft_fpu=$gcc_float_fpu
+                gcc_default_fpu="$""(GCC_FLOAT_FPU)"
+
                 target_cpu=arm
                 aros_target_cpu=arm
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
-                gcc_default_float_abi="softfp"
+                gcc_default_float_abi="soft"
+                gcc_float_fpu="vfpv3"
+                gcc_soft_fpu=
+                gcc_default_fpu=
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for EfikaMX $target_cpu")
@@ -1907,7 +1917,11 @@ case "$target_os" in
                 fi
                 aros_target_cpu="arm"
                 target_cpu="armhf"
-                gcc_default_fpu="vfpv3-d16"
+                
+                gcc_float_fpu="vfpv3-d16"
+                gcc_soft_fpu=$gcc_float_fpu
+                gcc_default_fpu="$""(GCC_FLOAT_FPU)"
+
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
                 aros_config_cxxflags="$aros_config_cxxflags"
@@ -1926,6 +1940,11 @@ case "$target_os" in
                     aros_object_format="armelf_aros"
                 fi
                 aros_target_cpu="arm"
+
+                gcc_float_fpu="vfpv3-d16"
+                gcc_soft_fpu=""
+                gcc_default_fpu=
+
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
                 aros_config_cxxflags="$aros_config_cxxflags"
@@ -1989,8 +2008,11 @@ case "$target_os" in
 
         gcc_default_cpu="armv7e-m"
         gcc_default_cpu_tune="cortex-m7"
-        gcc_default_fpu="fpv5-sp-d16"
+
         gcc_default_float_abi="hard"
+        gcc_float_fpu="fpv5-sp-d16"
+        gcc_soft_fpu=$gcc_float_fpu
+        gcc_default_fpu="$""(GCC_FLOAT_FPU)"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
@@ -2309,7 +2331,7 @@ if test "$aros_toolchain" = "gnu" ; then
         default_arm_cpu=$gcc_default_cpu
     fi
 
-    AX_GCC_ARM_MARCH_CONFIG($default_arm_cpu, [default_arm_softtgt], [default_arm_hardtgt])
+    AX_GCC_ARM_MARCH_CONFIG($default_arm_cpu, [gcc_soft_cpu], [gcc_float_cpu])
     if test "$GCC_VERSION_MAJOR" -lt "10" ; then
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
     fi
@@ -2401,8 +2423,14 @@ case "$aros_target_cpu" in
         aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
         
         AC_MSG_CHECKING([which minimum CPU to use])
-        AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
-        AC_MSG_RESULT($aros_gcc_cpu)
+        AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=)
+        if test "$aros_gcc_cpu" = ""; then
+            AC_MSG_RESULT($gcc_default_cpu)
+            aros_gcc_cpu="$""(GCC_DEFAULT_CPU)"
+        else
+            AC_MSG_RESULT($aros_gcc_cpu)
+        fi
+
         if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
             aros_target_cpu_extra=$aros_gcc_cpu
             gcc_target_cpu=mc$aros_gcc_cpu
@@ -2422,30 +2450,46 @@ case "$aros_target_cpu" in
             if test "$target_cpu" = "armhf"; then
                 gcc_default_float_abi="hard"
                 if test "$gcc_default_fpu" = ""; then
-                    gcc_default_fpu="vfpv3"
+                    gcc_float_fpu="vfpv3"
+                    gcc_soft_fpu=$gcc_float_fpu
+                    gcc_default_fpu="$""(GCC_FLOAT_FPU)"
                 fi
             else
-                gcc_default_float_abi="softfp"
+                gcc_float_fpu="vfpv3"
+                gcc_soft_fpu=
+                gcc_default_fpu=
+
+                gcc_default_float_abi="soft"
             fi
         fi
 
         if test "$gcc_default_cpu" = ""; then
             if test "$gcc_default_float_abi" = "hard"; then
-                gcc_default_cpu=$default_arm_hardtgt
+                gcc_default_cpu="$""(GCC_FLOAT_CPU)"
             else
-                gcc_default_cpu=$default_arm_softtgt
+                gcc_default_cpu="$""(GCC_SOFT_CPU)"
             fi
         fi
 
         aros_target_nostartup_objects="$""(AROS_LIB)/arm-exidx-unwind.o"
 
         AC_MSG_CHECKING([which minimum CPU to use])
-        AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
-        AC_MSG_RESULT($aros_gcc_cpu)
+        AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=)
+        if test "$aros_gcc_cpu" = ""; then
+            AC_MSG_RESULT($gcc_default_cpu)
+            aros_gcc_cpu="$""(GCC_DEFAULT_CPU)"
+        else
+            AC_MSG_RESULT($aros_gcc_cpu)
+        fi
 
         AC_MSG_CHECKING([which minimum FPU to use])
-        AC_ARG_WITH(fpu,AS_HELP_STRING([--with-fpu=<spec>],[Specify minumum FPU (default=$gcc_default_fpu).]),aros_gcc_fpu="$withval",aros_gcc_fpu=$gcc_default_fpu)
-        AC_MSG_RESULT($aros_gcc_fpu)
+        AC_ARG_WITH(fpu,AS_HELP_STRING([--with-fpu=<spec>],[Specify minumum FPU (default=$gcc_float_fpu).]),aros_gcc_fpu="$withval",aros_gcc_fpu=)
+        if test "$aros_gcc_fpu" = ""; then
+            AC_MSG_RESULT($gcc_float_fpu)
+            # aros_gcc_fpu="$""(GCC_DEFAULT_FPU)"
+        else
+            AC_MSG_RESULT($aros_gcc_fpu)
+        fi
 
         AC_MSG_CHECKING([which floating point ABI to use])
         AC_ARG_WITH(float,AS_HELP_STRING([--with-float=<spec>],[Specify floating point ABI (default=$gcc_default_float_abi).]),aros_gcc_float_abi="$withval",aros_gcc_float_abi=$gcc_default_float_abi)
@@ -2462,7 +2506,7 @@ case "$aros_target_cpu" in
         case "$aros_target_cpu_mode" in
         arm32)
             gcc_default_mode="arm"
-            aros_isa_extra="$aros_isa_extra -march=$aros_gcc_cpu"
+            aros_isa_extra="$aros_isa_extra -march=$""(GCC_CONFIG_CPU)"
         ;;
         arm64)
             AC_MSG_ERROR([ARM 64-bit mode is unsupported])
@@ -2476,15 +2520,16 @@ case "$aros_target_cpu" in
         thumb2)
             gcc_default_mode="thumb"
             # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
-            aros_isa_extra="$aros_isa_extra -march=$aros_gcc_cpu"
+            aros_isa_extra="$aros_isa_extra -march=$""(GCC_CONFIG_CPU)"
         ;;
         *)
             AC_MSG_ERROR([Unsupported ARM mode specified $aros_target_cpu_mode])
         ;;
         esac
 
+        aros_isa_extra="$export_newline""ISA_ARM_FLOAT_FLAGS           = -mfpu=$gcc_float_fpu$aros_isa_extra"
         if test "$gcc_default_fpu" != ""; then
-            aros_isa_extra="$aros_isa_extra -mfpu=$gcc_default_fpu$export_newline"
+            aros_isa_extra="$aros_isa_extra $""(ISA_ARM_FLOAT_FLAGS)$export_newline"
         else
             aros_isa_extra="$aros_isa_extra$export_newline"
         fi
@@ -3507,22 +3552,80 @@ AC_MSG_RESULT($aros_config_unittests)
 
 export_firstextraline="$export_newline# GCC CPU Config$export_newline"
 if ! test "$aros_gcc_cpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                := $aros_gcc_cpu$export_newline"
+    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                = $aros_gcc_cpu$export_newline"
+    export_firstextraline=""
+else
+    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                = $""(GCC_DEFAULT_CPU)$export_newline"
     export_firstextraline=""
 fi
-
+if ! test "$gcc_soft_cpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_SOFT_CPU                  := $gcc_soft_cpu$export_newline"
+    export_firstextraline=""
+fi
+if ! test "$gcc_float_cpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_FLOAT_CPU                 := $gcc_float_cpu$export_newline"
+    export_firstextraline=""
+fi
 if ! test "$gcc_default_cpu" = "" ; then
     target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $gcc_default_cpu$export_newline"
     export_firstextraline=""
-fi
-
-if ! test "$gcc_default_fpu" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $gcc_default_fpu$export_newline"
+else
+    if test "$gcc_config_float_abi" = "hard" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $""(GCC_FLOAT_CPU)$export_newline"
+    else
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $""(GCC_SOFT_CPU)$export_newline"
+    fi
     export_firstextraline=""
 fi
 
+if ! test "$gcc_config_fpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FPU               = $gcc_config_fpu$export_newline"
+    export_firstextraline=""
+else
+    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FPU                = $""(GCC_DEFAULT_FPU)$export_newline"
+    export_firstextraline=""
+fi
+if ! test "$gcc_soft_fpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_SOFT_FPU                  := $gcc_soft_fpu$export_newline"
+    export_firstextraline=""
+fi
+if ! test "$gcc_float_fpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_FLOAT_FPU                 := $gcc_float_fpu$export_newline"
+    export_firstextraline=""
+fi
+if ! test "$gcc_default_fpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $gcc_default_fpu$export_newline"
+    export_firstextraline=""
+else
+    if test "$gcc_config_float_abi" = "hard" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $""(GCC_FLOAT_FPU)$export_newline"
+    else
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $""(GCC_SOFT_FPU)$export_newline"
+    fi
+    export_firstextraline=""
+fi
+
+if ! test "$gcc_config_float_abi" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FLOAT_ABI          = $gcc_config_float_abi$export_newline"
+    export_firstextraline=""
+else
+    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_FLOAT_ABI          = $""(GCC_DEFAULT_FLOAT_ABI)$export_newline"
+    export_firstextraline=""
+fi
+if ! test "$gcc_soft_abi" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_SOFT_ABI                  := $gcc_soft_abi$export_newline"
+    export_firstextraline=""
+fi
+if ! test "$gcc_float_abi" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_FLOAT_ABI                 := $gcc_float_abi$export_newline"
+    export_firstextraline=""
+fi
 if ! test "$gcc_default_float_abi" = "" ; then
-    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $gcc_default_float_abi$export_newline"
+    if test "$gcc_default_float_abi" = "hard" ; then
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $""(GCC_FLOAT_ABI)$export_newline"
+    else
+        target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FLOAT_ABI         := $""(GCC_SOFT_ABI)$export_newline"
+    fi
     export_firstextraline=""
 fi
 
