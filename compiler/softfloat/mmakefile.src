@@ -10,12 +10,12 @@ SOFTFLOATARCHSUFFIX := "zip"
 SOFTFLOATARCHSRCDIR := $(PORTSDIR)/libsoftfloat/$(SOFTFLOATARCHBASE)
 
 %fetch mmake=linklibs-softfloat-fetch archive=$(SOFTFLOATARCHBASE) destination=$(PORTSDIR)/libsoftfloat \
-    location=$(PORTSSOURCEDIR)/softfloat archive_origins=$(SOFTFLOATREPOSITORIES) suffixes=$(SOFTFLOATARCHSUFFIX) \
+    archive_origins=$(SOFTFLOATREPOSITORIES) suffixes=$(SOFTFLOATARCHSUFFIX) \
     patches_specs=$(PATCHSPEC)
 
 %create_patch mmake=linklibs-softfloat-create-patch \
     archive=$(SOFTFLOATARCHBASE) suffixes=$(SOFTFLOATARCHSUFFIX) \
-    location=$(PORTSSOURCEDIR)/softfloat destination=$(PORTSDIR)/libsoftfloat \
+    destination=$(PORTSDIR)/libsoftfloat \
     srcdir="$(SOFTFLOATARCHBASE)"
 
 FILES_PRIMITIVES = \
