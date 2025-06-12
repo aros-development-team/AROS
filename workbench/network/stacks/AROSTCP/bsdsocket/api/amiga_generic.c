@@ -703,6 +703,11 @@ LONG __CloseSocket(LONG fd, struct SocketBase *libPtr)
   CHECK_TASK();
   ObtainSyscallSemaphore(libPtr);
 
+  if (fd < 0) {
+    error = EBADF;
+    goto Return;
+  }
+
   /*
    * Check from used sockets bitmask if this socket is in use
    */
