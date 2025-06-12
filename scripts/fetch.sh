@@ -359,22 +359,32 @@ patch_cached()
     
 fetchlock()
 {
-    local location="$1" archive="$2";
+    local location="$1" archive="$2" localbuild="$3" ;
     local notified=0;
 
     for (( ; ; ))
     do
         if ! test -f "$location"; then
-            if ! test -f "${location}/${archive}.fetch"; then
+            local lockfile="${location}/${archive}.fetch"
+            if ! test -f "$lockfile"; then
                 trap "fetchunlock $location $archive" INT
-                echo "$$"  > "${location}/${archive}.fetch"
+                echo "$$" > "$lockfile"
                 break
             else
-                if test "x${notified}" != "x1"; then
-                    echo "fetch.sh: waiting for process with PID: $(<"${location}/${archive}.fetch") to finish downloading..."
+                local pid=$(<"$lockfile")
+                if [ -n "$localbuild" ]; then
+                    if ! kill -0 "$pid" 2>/dev/null; then
+                        echo "fetch.sh: removing stale lockfile (no process with PID: $pid)"
+                        fetchunlock "$location" "$archive"
+                        continue
+                    fi
                 fi
-                notified=1
-                continue
+
+                if test "$notified" -ne 1; then
+                    echo "fetch.sh: waiting for process with PID: $pid to finish downloading..."
+                    notified=1
+                fi
+                sleep 1
             fi
         else
             break
