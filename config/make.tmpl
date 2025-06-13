@@ -831,7 +831,7 @@ ifeq (%(compiler),kernel)
   %(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
   %(mmake)_CXXLDFLAGS = $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 ifneq ($(TARGET_LIBATOMIC),)
-  %(mmake)_ARCHLIBS += $(TARGET_CXX_LIBS)
+  %(mmake)_ARCHLIBS += $(KERNEL_CXX_LIBS)
 endif
   %(mmake)_LDFLAGS ?= $(%(mmake)_CXXLDFLAGS)
   %(mmake)_STRIP ?= $(ECHO) >/dev/null
@@ -1789,7 +1789,7 @@ ifeq (%(compiler),target)
 %(mmake)_ARCHLIBS += $(TARGET_C_LIBS)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_ARCHLIBS += $(TARGET_C_LIBS)
+%(mmake)_ARCHLIBS += $(KERNEL_C_LIBS)
 endif
 
 %(mmake)_STRIPDEBUG ?= $(DEBUG)
@@ -2289,7 +2289,7 @@ ifeq (%(alwayscxxlink),yes)
 KERNEL_CXX ?= $(strip $(KERNEL_CC))
 %(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
 ifneq ($(TARGET_LIBATOMIC),)
-%(mmake)_ARCHLIBS := $(TARGET_CXX_LIBS)
+%(mmake)_ARCHLIBS := $(KERNEL_CXX_LIBS)
 endif
 endif
 %(mmake)_LD_OPTS := $(strip $(KERNEL_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
@@ -2668,7 +2668,7 @@ ifeq (%(compiler),target)
 %(mmake)_ARCHLIBS += $(TARGET_C_LIBS)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_ARCHLIBS += $(TARGET_C_LIBS)
+%(mmake)_ARCHLIBS += $(KERNEL_C_LIBS)
 endif
 # The module is linked from all the compiled .o files
 %rule_linkmodule module="$(%(mmake)%(flavour)_MODULE)" objs="$(%(mmake)%(flavour)_STARTOBJS) $(%(mmake)%(flavour)_OBJS) $(USER_OBJS)" \
