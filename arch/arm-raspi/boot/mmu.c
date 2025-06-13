@@ -9,7 +9,7 @@
 #include "mmu.h"
 #include "boot.h"
 
-#define DMMU(x)
+#define DMMU(x) x
 
 void mmu_init()
 {
@@ -66,6 +66,8 @@ void mmu_unmap_section(uint32_t virt, uint32_t length)
 
     uint32_t start = virt & ~(1024*1024-1);
     uint32_t end = (start + length) & ~(1024*1024-1);
+
+    DMMU(kprintf("[BOOT] MMU unmap %p:%p\n", virt, virt+length-1));
 
     start >>= 20;
     end >>= 20;
