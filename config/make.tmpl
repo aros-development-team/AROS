@@ -3789,7 +3789,7 @@ ifeq (%(crossbuild),no)
         LD="$(strip $(TARGET_LD))"
     %(mmake)-cfg-env += CFLAGS="$(strip $(%(mmake)-TARGET_CFLAGS) $(%(mmake)-AC_CFLAGS) %(extracflags))" \
         CXXFLAGS="$(strip $(%(mmake)-TARGET_CXXFLAGS) $(%(mmake)-AC_CXXFLAGS) %(extracxxflags))"
-    %(mmake)-cfg-env += LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS)) -L$(AROS_DEVELOPER)/lib $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS)  $(%(mmake)-nix) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS)) -L$(AROS_DEVELOPER)/lib $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS) $(TARGET_C_LIBS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
     %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS))"
 else
     %(mmake)-cfg-env += \
@@ -3830,7 +3830,7 @@ endif
         CXX_FOR_TARGET="$(strip $(%(mmake)-TARGET_CXX) $(TARGET_SYSROOT))" \
         CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CXXFLAGS) $(%(mmake)-ACTARGET_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags))" \
         LD_FOR_TARGET="$(strip $(TARGET_LD))" \
-        LDFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(%(mmake)-ACTARGET_LDFLAGS) $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        LDFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(%(mmake)-ACTARGET_LDFLAGS) $(USER_LDFLAGS) $(TARGET_C_LIBS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         AS_FOR_TARGET="$(strip $(TARGET_AS))" \
         OBJCOPY_FOR_TARGET="$(strip $(TARGET_OBJCOPY))" \
         RANLIB_FOR_TARGET="$(strip $(TARGET_RANLIB))" \
