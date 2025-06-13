@@ -301,7 +301,7 @@ diff -ruN gcc-9.1.0/gcc/config/aarch64/t-aros gcc-9.1.0.aros/gcc/config/aarch64/
 +
 diff -ruN gcc-9.1.0/gcc/config/arm/aros.h gcc-9.1.0.aros/gcc/config/arm/aros.h
 --- gcc-9.1.0/gcc/config/arm/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-9.1.0.aros/gcc/config/arm/aros.h	2025-06-13 00:40:54.101489830 +0000
++++ gcc-9.1.0.aros/gcc/config/arm/aros.h	2019-05-21 16:44:41.624247600 +0000
 @@ -0,0 +1,89 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
@@ -394,8 +394,8 @@ diff -ruN gcc-9.1.0/gcc/config/arm/aros.h gcc-9.1.0.aros/gcc/config/arm/aros.h
 +#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-9.1.0/gcc/config/arm/t-aros gcc-9.1.0.aros/gcc/config/arm/t-aros
 --- gcc-9.1.0/gcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-9.1.0.aros/gcc/config/arm/t-aros	2019-05-21 16:44:41.624247600 +0000
-@@ -0,0 +1,77 @@
++++ gcc-9.1.0.aros/gcc/config/arm/t-aros	2025-06-13 16:48:38.056417131 +0000
+@@ -0,0 +1,84 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
 +#
@@ -456,6 +456,13 @@ diff -ruN gcc-9.1.0/gcc/config/arm/t-aros gcc-9.1.0.aros/gcc/config/arm/t-aros
 +MULTILIB_MATCHES	+= $(foreach FP,$(v7a_fpus), march?armv7-a+fp=march?armv7-a+$(FP))
 +MULTILIB_MATCHES	+= $(foreach FP,$(v7ve_fpus), march?armv7-a+fp=march?armv7ve+$(FP))
 +MULTILIB_MATCHES	+= $(foreach AV7A,$(all_v7_a_r), march?armv7-a+fp=march?$(AV7A) march?armv7-a+fp=march?$(AV7A)+fp)
++
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=marm/mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=marm/mbig-endian/march.armv7-a+fp/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=mbig-endian/march.armv7-a+fp/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=marm/mbig-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=mbig-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.soft
 +
 +MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.hard=marm/mbig-endian/march.armv7-a+fp/mfloat-abi.hard
 +MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.hard=mbig-endian/march.armv7-a+fp/mfloat-abi.hard

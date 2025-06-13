@@ -274,8 +274,8 @@ diff -ruN gcc-15.1.0/gcc/config/aarch64/t-aros gcc-15.1.0.aros/gcc/config/aarch6
 +
 diff -ruN gcc-15.1.0/gcc/config/arm/aros.h gcc-15.1.0.aros/gcc/config/arm/aros.h
 --- gcc-15.1.0/gcc/config/arm/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config/arm/aros.h	2020-12-27 16:58:14.310000000 +0000
-@@ -0,0 +1,86 @@
++++ gcc-15.1.0.aros/gcc/config/arm/aros.h	2025-06-13 17:01:16.948416114 +0000
+@@ -0,0 +1,89 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
 +   Free Software Foundation, Inc.
@@ -358,14 +358,17 @@ diff -ruN gcc-15.1.0/gcc/config/arm/aros.h gcc-15.1.0.aros/gcc/config/arm/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-libstdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s} arm-exidx-unwind%O%s "
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s}"
++
++#undef ENDFILE_SPEC
++#define ENDFILE_SPEC "-lautoinit arm-exidx-unwind%O%s"
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-15.1.0/gcc/config/arm/t-aros gcc-15.1.0.aros/gcc/config/arm/t-aros
 --- gcc-15.1.0/gcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config/arm/t-aros	2025-06-12 23:48:18.412576636 +0000
-@@ -0,0 +1,77 @@
++++ gcc-15.1.0.aros/gcc/config/arm/t-aros	2025-06-13 17:01:08.380416121 +0000
+@@ -0,0 +1,84 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
 +#
@@ -426,6 +429,13 @@ diff -ruN gcc-15.1.0/gcc/config/arm/t-aros gcc-15.1.0.aros/gcc/config/arm/t-aros
 +MULTILIB_MATCHES	+= $(foreach FP,$(v7a_fpus), march?armv7-a+fp=march?armv7-a+$(FP))
 +MULTILIB_MATCHES	+= $(foreach FP,$(v7ve_fpus), march?armv7-a+fp=march?armv7ve+$(FP))
 +MULTILIB_MATCHES	+= $(foreach AV7A,$(all_v7_a_r), march?armv7-a+fp=march?$(AV7A) march?armv7-a+fp=march?$(AV7A)+fp)
++
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=marm/mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=marm/mbig-endian/march.armv7-a+fp/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=mbig-endian/march.armv7-a+fp/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=marm/mbig-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.soft
++MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+nofp/mfloat-abi.soft=mbig-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.soft
 +
 +MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.hard=marm/mbig-endian/march.armv7-a+fp/mfloat-abi.hard
 +MULTILIB_REUSE		+= marm/mbig-endian/march.armv7-a+fp/mfpu.vfpv3-d16/mfloat-abi.hard=mbig-endian/march.armv7-a+fp/mfloat-abi.hard
