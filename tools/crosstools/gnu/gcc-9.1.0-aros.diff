@@ -301,8 +301,8 @@ diff -ruN gcc-9.1.0/gcc/config/aarch64/t-aros gcc-9.1.0.aros/gcc/config/aarch64/
 +
 diff -ruN gcc-9.1.0/gcc/config/arm/aros.h gcc-9.1.0.aros/gcc/config/arm/aros.h
 --- gcc-9.1.0/gcc/config/arm/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-9.1.0.aros/gcc/config/arm/aros.h	2019-05-21 16:44:41.624247600 +0000
-@@ -0,0 +1,86 @@
++++ gcc-9.1.0.aros/gcc/config/arm/aros.h	2025-06-13 00:40:54.101489830 +0000
+@@ -0,0 +1,89 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
 +   Free Software Foundation, Inc.
@@ -385,13 +385,16 @@ diff -ruN gcc-9.1.0/gcc/config/arm/aros.h gcc-9.1.0.aros/gcc/config/arm/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s} arm-exidx-unwind%O%s "
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s}"
++
++#undef ENDFILE_SPEC
++#define ENDFILE_SPEC "-lautoinit arm-exidx-unwind%O%s"
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-9.1.0/gcc/config/arm/t-aros gcc-9.1.0.aros/gcc/config/arm/t-aros
 --- gcc-9.1.0/gcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-9.1.0.aros/gcc/config/arm/t-aros	2025-06-12 23:13:33.590540933 +0000
++++ gcc-9.1.0.aros/gcc/config/arm/t-aros	2019-05-21 16:44:41.624247600 +0000
 @@ -0,0 +1,77 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
