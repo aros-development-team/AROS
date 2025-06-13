@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM AROS : clean-errors AROS-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) AROS-$(ARCH)-$(CPU)
+#MM AROS : clean-errors linklibs-libatomic AROS-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) AROS-$(ARCH)-$(CPU)
 AROS : checkerr
 	@$(NOP)
 
