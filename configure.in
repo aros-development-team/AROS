@@ -2323,27 +2323,28 @@ if test "$aros_toolchain" = "gnu" ; then
         fi
     fi
 
-    # from gcc 8, <arm arch><features> (e.g. armv7-a+fp) is used to specify
-    # hard-float, etc.
-    if test "$gcc_default_cpu" = ""; then
-        default_arm_cpu=armv7-a
-    else
-        default_arm_cpu=$gcc_default_cpu
-    fi
-
-    AX_GCC_ARM_MARCH_CONFIG($default_arm_cpu, [gcc_soft_cpu], [gcc_float_cpu])
     if test "$GCC_VERSION_MAJOR" -lt "10" ; then
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
     fi
 
-    if test "$gcc_fix_bitfields" = "true" ; then
-        case "$aros_target_cpu" in
-        *x86_64* | *i?86*)
+    case "$aros_target_cpu" in
+    *arm*)
+        # from gcc 8, <arm arch><features> (e.g. armv7-a+fp) is used to specify
+        # hard-float, etc.
+        if test "$gcc_default_cpu" = ""; then
+            default_arm_cpu=armv7-a
+        else
+            default_arm_cpu=$gcc_default_cpu
+        fi
+        AX_GCC_ARM_MARCH_CONFIG($default_arm_cpu, [gcc_soft_cpu], [gcc_float_cpu])
+        ;;
+    *x86_64* | *i?86*)
+        if test "$gcc_fix_bitfields" = "true" ; then
             x86_isa_extra="$x86_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
             x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
-            ;;
-        esac
-    fi
+        fi
+        ;;
+    esac
 fi
 
 # Helper to identify llvm version

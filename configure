@@ -11183,15 +11183,20 @@ printf "%s\n" "release" >&6; }
         fi
     fi
 
-    # from gcc 8, <arm arch><features> (e.g. armv7-a+fp) is used to specify
-    # hard-float, etc.
-    if test "$gcc_default_cpu" = ""; then
-        default_arm_cpu=armv7-a
-    else
-        default_arm_cpu=$gcc_default_cpu
+    if test "$GCC_VERSION_MAJOR" -lt "10" ; then
+        aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
     fi
 
-    if test $ac_cv_c_compiler_gnu = yes; then
+    case "$aros_target_cpu" in
+    *arm*)
+        # from gcc 8, <arm arch><features> (e.g. armv7-a+fp) is used to specify
+        # hard-float, etc.
+        if test "$gcc_default_cpu" = ""; then
+            default_arm_cpu=armv7-a
+        else
+            default_arm_cpu=$gcc_default_cpu
+        fi
+        if test $ac_cv_c_compiler_gnu = yes; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $CC needs -traditional" >&5
 printf %s "checking whether $CC needs -traditional... " >&6; }
 if test ${ac_cv_prog_gcc_traditional+y}
@@ -11265,18 +11270,14 @@ fi
 
 
 
-    if test "$GCC_VERSION_MAJOR" -lt "10" ; then
-        aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
-    fi
-
-    if test "$gcc_fix_bitfields" = "true" ; then
-        case "$aros_target_cpu" in
-        *x86_64* | *i?86*)
+        ;;
+    *x86_64* | *i?86*)
+        if test "$gcc_fix_bitfields" = "true" ; then
             x86_isa_extra="$x86_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
             x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
-            ;;
-        esac
-    fi
+        fi
+        ;;
+    esac
 fi
 
 # Helper to identify llvm version
