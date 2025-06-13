@@ -7,6 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- core-linklibs : linklibs-libinit
 #MM- linklibs: linklibs-libinit
 #MM linklibs-libinit : includes
+#MM libinit-libentry : includes
 
 %build_linklib mmake=linklibs-libinit \
     libname=libinit files="libinit"
