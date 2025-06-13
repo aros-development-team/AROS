@@ -18410,6 +18410,9 @@ case "$aros_target_cpu" in
     arm)
         export_target_gcccpu="yes"
         ;;
+    m68k)
+        export_target_gcccpu="yes"
+        ;;
     *)
         ;;
 esac
