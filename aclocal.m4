@@ -745,10 +745,6 @@ AC_DEFUN([AX_GCC_ARM_MARCH_CONFIG], [
   m4_pushdef([SOFTVAR], [$2])
   m4_pushdef([HARDVAR], [$3])
 
-  AC_MSG_CHECKING([GCC major version])
-  GCC_VERSION_MAJOR=`$CC -dumpversion | cut -d. -f1`
-  AC_MSG_RESULT([$GCC_VERSION_MAJOR])
-
   if test "$GCC_VERSION_MAJOR" -lt "10"; then
     if test "$GCC_VERSION_MAJOR" -lt "8"; then
       SOFTVAR="BASEARCH"

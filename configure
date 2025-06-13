@@ -11244,12 +11244,6 @@ fi
 
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking GCC major version" >&5
-printf %s "checking GCC major version... " >&6; }
-  GCC_VERSION_MAJOR=`$CC -dumpversion | cut -d. -f1`
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $GCC_VERSION_MAJOR" >&5
-printf "%s\n" "$GCC_VERSION_MAJOR" >&6; }
-
   if test "$GCC_VERSION_MAJOR" -lt "10"; then
     if test "$GCC_VERSION_MAJOR" -lt "8"; then
       gcc_soft_cpu="$default_arm_cpu"
