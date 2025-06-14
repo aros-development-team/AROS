@@ -218,7 +218,7 @@
         case REPORT_INSERT:
             if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
-            if (!getpacketinfo(DOSBase, (STRPTR)arg1, &phs))
+            if (!getpacketinfo(DOSBase, BNULL, (STRPTR)arg1, &phs))
                 return DOSTRUE;
             msgport = phs.port;
             volname = (STRPTR) arg1;
