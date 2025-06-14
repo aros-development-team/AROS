@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Reposition read/write file offset.
 */
@@ -16,7 +16,7 @@
     NAME */
 #include <unistd.h>
 
-        off_t __posixc_lseek (
+        off_t lseek (
 
 /*  SYNOPSIS */
         int    filedes,

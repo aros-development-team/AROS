@@ -2,7 +2,7 @@
 #define _AROS_TYPES_WINT_T_H
 
 /*
-    Copyright Â© 2010-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 

@@ -2,7 +2,7 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
@@ -247,6 +247,7 @@ void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
                              ULONG *indexStream, ULONG *indexSize);
 
 #ifdef AROS_SLOWSTACKFORMAT
+#define _GNU_SOURCE
 #include <aros/posixc/alloca.h>
 
 #   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {                               \

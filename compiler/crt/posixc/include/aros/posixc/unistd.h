@@ -2,7 +2,7 @@
 #define _POSIXC_UNISTD_H_
 
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file unistd.h
@@ -130,51 +130,50 @@
 
 /*
     Values for the second argument to access.
-   These may be OR'd together.
+    These may be OR'd together.
 */
-#define	F_OK	0		/* Test for existence.  */
-#define	R_OK	4		/* Test for read permission.  */
-#define	W_OK	2		/* Test for write permission.  */
-#define	X_OK	1		/* Test for execute permission.  */
+#define F_OK    0   /* Test for existence.  */
+#define R_OK    4   /* Test for read permission.  */
+#define W_OK    2   /* Test for write permission.  */
+#define X_OK    1   /* Test for execute permission.  */
 
 /*
     FIXME: Arguments for confstr()
 
-_CS_PATH
-_CS_POSIX_V7_ILP32_OFF32_CFLAGS
-_CS_POSIX_V7_ILP32_OFF32_LDFLAGS
-_CS_POSIX_V7_ILP32_OFF32_LIBS
-_CS_POSIX_V7_ILP32_OFFBIG_CFLAGS
-_CS_POSIX_V7_ILP32_OFFBIG_LDFLAGS
-_CS_POSIX_V7_ILP32_OFFBIG_LIBS
-_CS_POSIX_V7_LP64_OFF64_CFLAGS
-_CS_POSIX_V7_LP64_OFF64_LDFLAGS
-_CS_POSIX_V7_LP64_OFF64_LIBS
-_CS_POSIX_V7_LPBIG_OFFBIG_CFLAGS
-_CS_POSIX_V7_LPBIG_OFFBIG_LDFLAGS
-_CS_POSIX_V7_LPBIG_OFFBIG_LIBS
-_CS_POSIX_V7_THREADS_CFLAGS
-_CS_POSIX_V7_THREADS_LDFLAGS
-_CS_POSIX_V7_WIDTH_RESTRICTED_ENVS
-_CS_V7_ENV
+    _CS_PATH
+    _CS_POSIX_V7_ILP32_OFF32_CFLAGS
+    _CS_POSIX_V7_ILP32_OFF32_LDFLAGS
+    _CS_POSIX_V7_ILP32_OFF32_LIBS
+    _CS_POSIX_V7_ILP32_OFFBIG_CFLAGS
+    _CS_POSIX_V7_ILP32_OFFBIG_LDFLAGS
+    _CS_POSIX_V7_ILP32_OFFBIG_LIBS
+    _CS_POSIX_V7_LP64_OFF64_CFLAGS
+    _CS_POSIX_V7_LP64_OFF64_LDFLAGS
+    _CS_POSIX_V7_LP64_OFF64_LIBS
+    _CS_POSIX_V7_LPBIG_OFFBIG_CFLAGS
+    _CS_POSIX_V7_LPBIG_OFFBIG_LDFLAGS
+    _CS_POSIX_V7_LPBIG_OFFBIG_LIBS
+    _CS_POSIX_V7_THREADS_CFLAGS
+    _CS_POSIX_V7_THREADS_LDFLAGS
+    _CS_POSIX_V7_WIDTH_RESTRICTED_ENVS
+    _CS_V7_ENV
 
-confstr Issue 6 compatbility:
+    confstr Issue 6 compatibility:
 
-_CS_POSIX_V6_ILP32_OFF32_CFLAGS
-_CS_POSIX_V6_ILP32_OFF32_LDFLAGS
-_CS_POSIX_V6_ILP32_OFF32_LIBS
-_CS_POSIX_V6_ILP32_OFFBIG_CFLAGS
-_CS_POSIX_V6_ILP32_OFFBIG_LDFLAGS
-_CS_POSIX_V6_ILP32_OFFBIG_LIBS
-_CS_POSIX_V6_LP64_OFF64_CFLAGS
-_CS_POSIX_V6_LP64_OFF64_LDFLAGS
-_CS_POSIX_V6_LP64_OFF64_LIBS
-_CS_POSIX_V6_LPBIG_OFFBIG_CFLAGS
-_CS_POSIX_V6_LPBIG_OFFBIG_LDFLAGS
-_CS_POSIX_V6_LPBIG_OFFBIG_LIBS
-_CS_POSIX_V6_WIDTH_RESTRICTED_ENVS
-_CS_V6_ENV
-
+    _CS_POSIX_V6_ILP32_OFF32_CFLAGS
+    _CS_POSIX_V6_ILP32_OFF32_LDFLAGS
+    _CS_POSIX_V6_ILP32_OFF32_LIBS
+    _CS_POSIX_V6_ILP32_OFFBIG_CFLAGS
+    _CS_POSIX_V6_ILP32_OFFBIG_LDFLAGS
+    _CS_POSIX_V6_ILP32_OFFBIG_LIBS
+    _CS_POSIX_V6_LP64_OFF64_CFLAGS
+    _CS_POSIX_V6_LP64_OFF64_LDFLAGS
+    _CS_POSIX_V6_LP64_OFF64_LIBS
+    _CS_POSIX_V6_LPBIG_OFFBIG_CFLAGS
+    _CS_POSIX_V6_LPBIG_OFFBIG_LDFLAGS
+    _CS_POSIX_V6_LPBIG_OFFBIG_LIBS
+    _CS_POSIX_V6_WIDTH_RESTRICTED_ENVS
+    _CS_V6_ENV
 */
 
 #include <aros/types/seek.h> /* SEEK_SET, SEEK_CUR and SEEK_END */
@@ -337,13 +336,9 @@ enum {
     _SC_XOPEN_VERSION
 };
 
-#define STDIN_FILENO                        0
-#define STDOUT_FILENO                       1
-#define STDERR_FILENO                       2
-
-/* FIXME
-#define _POSIX_VDISABLE
-*/
+#define STDIN_FILENO    0
+#define STDOUT_FILENO   1
+#define STDERR_FILENO   2
 
 #include <aros/types/size_t.h>
 #include <aros/types/ssize_t.h>
@@ -356,31 +351,19 @@ enum {
 __BEGIN_DECLS
 
 int access(const char *path, int mode);
-/* NOTIMPL unsigned alarm(unsigned); */
 int chdir(const char *path);
 int chown(const char *path, uid_t owner, gid_t group);
 int close(int fd);
-/* NOTIMPL size_t confstr(int, char *, size_t); */
-/* NOTIMPL char *crypt(const char *, const char *); */
-/* NOTIMPL char *ctermid(char *); */
 int dup(int oldfd);
 int dup2(int oldfd, int newfd);
 void _exit(int) __noreturn;
-/* NOTIMPL void encrypt(char [64], int); */
 int execl(const char *path, const char *arg, ...);
-/* NOTIMPL int execle(const char *path, const char *arg, ...); */
 int execlp(const char *path, const char *arg, ...);
 int execv(const char *path, char *const argv[]);
 int execve(const char *path, char *const argv[], char *const envp[]);
 int execvp(const char *path, char *const argv[]);
-/* NOTIMPL int faccessat(int, const char *, int, int); */
 int fchdir(int fd);
 int fchown(int fd, uid_t owner, gid_t group);
-/* NOTIMPL int fchownat(int, const char *, uid_t, gid_t, int); */
-/* NOTIMPL int fdatasync(int); */
-/* NOTIMPL long fpathconf(int fd, int name); */
-/* NOTIMPL int fexecve(int, char *const [], char *const []); */
-/* NOTIMPL pid_t fork(void); */
 int fsync(int fd);
 int ftruncate(int fd, off_t length);
 char *getcwd(char *buf, size_t size);
@@ -388,90 +371,53 @@ gid_t getegid(void);
 uid_t geteuid(void);
 gid_t getgid(void);
 int getgroups(int gidsetlen, gid_t *gidset);
-/* NOTIMPL long gethostid(void); */
-/* NOTIMPL int gethostname(char *name, size_t namelen); */
 char *getlogin(void);
-/* NOTIMPL int getlogin_r(char *, size_t); */
 int getopt(int argc, char * const argv[], const char *optstring);
 char *getpass(const char *prompt);
 pid_t getpgid(pid_t);
 pid_t getpgrp(void);
 pid_t getpid(void);
 pid_t getppid(void);
-/* NOTIMPL pid_t getsid(pid_t pid); */
 uid_t getuid(void);
 int isatty(int fd);
-/* NOTIMPL int lchown(const char *path, uid_t owner, gid_t group); */
 int link(const char *name1, const char *name2);
-/* NOTIMPL int linkat(int, const char *, int, const char *, int); */
-/* NOTIMPL int lockf(int filedes, int function, off_t size); */
-#if !defined(NO_POSIX_WRAPPERS)
-off_t __posixc_lseek(int filedes, off_t offset, int whence);
-#if defined(__off64_t_defined)
-__off64_t lseek64(int filedes, __off64_t offset, int whence);
-#endif
-#if defined(__USE_FILE_OFFSET64)
-static __inline__  off_t lseek(int filedes, off_t offset, int whence)
-{
-    return (off_t)lseek64(filedes, (__off64_t) offset, whence);
-}
-#else
-static __inline__  off_t lseek(int filedes, off_t offset, int whence)
-{
-    return __posixc_lseek(filedes, offset, whence);
-}
-#endif
-#else  /* NO_POSIX_WRAPPERS */
+
 off_t lseek(int filedes, off_t offset, int whence);
-#if defined(__off64_t_defined)
+# if defined(__off64_t_defined)
 __off64_t lseek64(int filedes, __off64_t offset, int whence);
-#endif
-#endif /* NO_POSIX_WRAPPERS */
-/* NOTIMPL int nice(int incr); */
+# endif
+
 long pathconf(const char *path, int name);
-/* NOTIMPL int pause(void); */
 int pipe(int filedes[2]);
-/* NOTIMPL ssize_t pread(int d, void *buf, size_t nbytes, off_t offset); */
-/* NOTIMPL ssize_t pwrite(int d, const void *buf, size_t nbytes, off_t offset); */
 ssize_t read(int d, void *buf, size_t nbytes);
-ssize_t readlink(const char * restrict path, char * restrict buf, size_t bufsize);
-/* NOTIMPL ssize_t readlinkat(int, const char *restrict, char *restrict, size_t); */
+ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
 int rmdir(const char *path);
 int setegid(gid_t egid);
 int seteuid(uid_t euid);
 int setgid(gid_t gid);
-/* NOTIMPL int setpgid(pid_t pid, pid_t pgrp); */
-/* NOTIMPL int setpgrp(pid_t pid, pid_t pgrp); */
-/* NOTIMPL int setregid(gid_t rgid, gid_t egid); */
-/* NOTIMPL int setreuid(uid_t ruid, uid_t euid); */
 pid_t setsid(void);
 int setuid(uid_t uid);
 unsigned sleep(unsigned);
-void swab(const void * restrict src, void * restrict dst, size_t len);
+void swab(const void *restrict src, void *restrict dst, size_t len);
 int symlink(const char *name1, const char *name2);
-/* NOTIMPL int symlinkat(const char *, int, const char *); */
 void sync(void);
 long sysconf(int name);
 pid_t tcgetpgrp(int fd);
-/* NOTIMPL int tcsetpgrp(int fd, pid_t pgrp_id); */
 int truncate(const char *path, off_t length);
 char *ttyname(int fd);
-/* NOTIMPL int ttyname_r(int fd, char *buf, size_t len); */
 int unlink(const char *path);
-/* NOTIMPL int unlinkat(int, const char *, int); */
 ssize_t write(int fd, const void *buf, size_t nbytes);
 
 extern char *optarg;
-extern int  optind, opterr, optopt;
+extern int optind, opterr, optopt;
 
 /* BSD/SUSv2 legacy */
 #include <aros/types/useconds_t.h>
-
 int usleep(useconds_t microseconds);
 pid_t vfork(void);
 
 /* AROS extension */
-void        sharecontextwithchild(int share); /* AROS specific call */
+void sharecontextwithchild(int share); /* AROS specific call */
 
 __END_DECLS
 #endif /* _POSIXC_UNISTD_H_ */

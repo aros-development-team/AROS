@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -23,7 +23,7 @@ static BPTR __lock(
 
 #include <sys/stat.h>
 
-        int __posixc_lstat(
+        int lstat(
 
 /*  SYNOPSIS */
         const char  *path,

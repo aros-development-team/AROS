@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function alphasort().
 */
@@ -11,7 +11,7 @@
     NAME */
 #include <dirent.h>
 
-        int __posixc_alphasort (
+        int alphasort (
 
 /*  SYNOPSIS */
         const struct dirent **a,

@@ -2,7 +2,7 @@
 #define _POSIXC_STDIO_H_
 
 /*
-    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdio.h
@@ -21,6 +21,8 @@
 #define P_tmpdir	"T:"		/* Default temporary path */
 
 __BEGIN_DECLS
+
+#define NO_POSIX_WRAPPERS
 
 #if !defined(NO_POSIX_WRAPPERS)
 FILE *__posixc_fopen(const char * restrict filename, const char * restrict mode);
@@ -381,9 +383,7 @@ int puts(const char *s);
 int putchar(int c);
 int printf(const char * restrict format, ...);
 char *gets(char *s);
-#ifndef getchar
 int getchar(void);
-#endif
 size_t fwrite(const void * restrict ptr, size_t size, size_t nmemb,
     FILE * restrict stream);
 long int ftell(FILE *stream);
@@ -417,7 +417,7 @@ static __inline__ int putw(int word, FILE *stream)
 
 __END_DECLS
 
-#ifdef __cplusplus
+#if 0 && defined __cplusplus
 #include <utility>
 namespace posixc
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function fstat().
 */
@@ -15,7 +15,7 @@
 
 #include <sys/stat.h>
 
-        int __posixc_fstat(
+        int fstat(
 
 /*  SYNOPSIS */
         int fd,

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2025, The AROS Development Team. All rights reserved.
 
     4.4BSD function flock().
 */
@@ -14,6 +14,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "__fdesc.h"
 #include "__posixc_intbase.h"

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function fgetc().
 */
@@ -48,7 +48,7 @@
     INTERNALS
 
 ******************************************************************************/
-int  __posixc_fgetc (   FILE * stream)
+int  fgetc (   FILE * stream)
 {
     int c;
     fdesc *fdesc = __getfdesc(stream->fd);

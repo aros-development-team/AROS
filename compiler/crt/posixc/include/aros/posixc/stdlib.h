@@ -2,7 +2,7 @@
 #define _POSIXC_STDLIB_H_
 
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdlib.h
@@ -38,7 +38,7 @@ int posix_memalign(void **memptr, size_t alignment, size_t size);
 int putenv(const char *);
 /* NOTIMPL int rand_r(unsigned int *); */
 long random(void);
-/* NOTIMPL char *realpath(const char * restrict , char * restrict); */
+char *realpath(const char * restrict , char * restrict);
 unsigned short int *seed48(unsigned short int [3]);
 int setenv(const char *, const char *, int);
 /* NOTIMPL void setkey(const char *); */
@@ -54,21 +54,8 @@ char *mktemp(char *);
 /* BSD */
 int getloadavg(double loadavg[], int n);
 
-#if !defined(NO_POSIX_WRAPPERS)
-char *__posixc_getenv(const char *name);
-static __inline__  char *getenv(const char *name)
-{
-    return __posixc_getenv(name);
-}
-int __posixc_system(const char *string);
-static __inline__ int system(const char *string)
-{
-    return __posixc_system(string);
-}
-#else
 char *getenv(const char *name);
 int system(const char *string);
-#endif
 
 __END_DECLS
 

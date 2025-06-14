@@ -41,10 +41,17 @@ POSIXCTESTFILES += \
 POSIXCNIXTESTFILES := \
          argv0_slave argv0_test3  argv0_test4
 
+CUNITPOSIXCTESTFILES := \
+    cunit-crt-realpath
+
 EXEDIR := $(AROS_TESTS)/crt/posix
+CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/posixc
 
 #MM- test-crt : test-crt-posixc test-crt-posixc-$(AROS_TARGET_CPU)
 #MM- test-crt-quick : test-crt-posixc-quick test-crt-posixc-$(AROS_TARGET_CPU)-quick
+
+#MM- test-cunit : test-crt-posixc-cunit
+#MM- test-cunit-quick : test-crt-posixc-cunit-quick
 
 #MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-nix test-crt-posixc-posix1
 #MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick
@@ -98,6 +105,18 @@ USER_CFLAGS = -ffloat-store $(NOWARN_CFLAGS)
 
 %build_prog mmake=test-crt-posixc-posix1-printf \
     progname=printf files="posix.1/printf-examples" targetdir=$(EXEDIR)
+
+#MM- test-crt-posixc-cunit : test-crt-posixc-$(TARGET_UNITTESTS)-cunit
+#MM- test-crt-posixc-cunit-quick : test-crt-posixc-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-crt-posixc-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-crt-posixc-yes-cunit \
+    files=$(CUNITPOSIXCTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
 
 # POSIX.1-2008
 

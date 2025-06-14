@@ -2,7 +2,7 @@
 #define _POSIXC_FCNTL_H_
 
 /*
-    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file fcntl.h
@@ -147,24 +147,9 @@ struct flock
 
 __BEGIN_DECLS
 
-#if !defined(NO_POSIX_WRAPPERS)
-int __posixc_creat(const char * filename, int mode);
-int creat64(const char * filename, int mode);
-#if defined(__USE_FILE_OFFSET64)
-static __inline__  int creat(const char * filename, int mode)
-{
-    return creat64(filename, mode);
-}
-#else
-static __inline__  int creat(const char * filename, int mode)
-{
-    return __posixc_creat(filename, mode);
-}
-#endif
-#else  /* NO_POSIX_WRAPPERS */
 int creat(const char * filename, int mode);
 int creat64(const char * filename, int mode);
-#endif /* NO_POSIX_WRAPPERS */
+
 int fcntl (int fd, int cmd, ...);
 int open  (const char * filename, int flags, ...);
 /* NOTIMPL int openat(int, const char *, int, ...); */

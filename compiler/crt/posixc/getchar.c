@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function getchar().
 */
@@ -57,7 +57,7 @@
         bug("[POSIXC] %s: stdin @ 0x%p\n", __func__, PosixCBase->_stdin);
     )
 
-    retval = __posixc_fgetc(PosixCBase->_stdin);
+    retval = fgetc(PosixCBase->_stdin);
 
     D(bug("[POSIXC] %s: returning %08x\n", __func__, retval);)
 

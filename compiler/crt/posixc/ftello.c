@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include "__stdio.h"
@@ -9,7 +9,7 @@
     NAME */
 #include <stdio.h>
 
-        off_t __posixc_ftello (
+        off_t ftello (
 
 /*  SYNOPSIS */
         FILE *stream)

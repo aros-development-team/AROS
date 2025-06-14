@@ -5,7 +5,7 @@
     Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
-    C99 header file stdlib.h
+    Desc: AROS implementation of the C Standard Library Header (C89/C99/GNU)
 */
 
 #include <aros/stdc/stdcnotimpl.h>
@@ -13,6 +13,7 @@
 
 #include <aros/types/size_t.h>
 #include <aros/types/wchar_t.h>
+#include <aros/types/null.h>
 
 /* Types for div and ldiv */
 typedef struct div_t {
@@ -27,21 +28,16 @@ typedef struct ldiv_t {
 
 #if defined AROS_HAVE_LONG_LONG
 typedef struct lldiv_t {
-    long long int   quot;
-    long long int   rem;
+    long long int quot;
+    long long int rem;
 } lldiv_t;
 #endif
 
-#include <aros/types/null.h>
+#define EXIT_SUCCESS    0
+#define EXIT_FAILURE    20
 
-#define EXIT_SUCCESS	0  /* Success exit status */
-#define EXIT_FAILURE	20 /* Failing exit status */
-
-/* Gives the largest size of a multibyte character for the current locale */
 #define MB_CUR_MAX      (__stdc_mb_cur_max())
-
-#define RAND_MAX	   2147483647
-
+#define RAND_MAX        2147483647
 
 __BEGIN_DECLS
 
@@ -55,56 +51,46 @@ long long int atoll(const char *nptr);
 
 double strtod(const char * restrict nptr, char ** restrict endptr);
 float strtof(const char * restrict nptr, char ** restrict endptr);
-long double strtold(const char * restrict nptr,
-		char ** restrict endptr);
-long int strtol(const char * restrict nptr,
-		char ** restrict endptr,
-		int base);
+long double strtold(const char * restrict nptr, char ** restrict endptr);
+long int strtol(const char * restrict nptr, char ** restrict endptr, int base);
 #if defined AROS_HAVE_LONG_LONG
-long long int strtoll(const char * restrict nptr,
-		char ** restrict endptr,
-		int base);
+long long int strtoll(const char * restrict nptr, char ** restrict endptr, int base);
 #endif
-unsigned long int strtoul(const char * restrict nptr,
-		char ** restrict endptr,
-		int base);
+unsigned long int strtoul(const char * restrict nptr, char ** restrict endptr, int base);
 #if defined AROS_HAVE_LONG_LONG
-unsigned long long int strtoull(const char * restrict nptr,
-		char ** restrict endptr,
-		int base);
+unsigned long long int strtoull(const char * restrict nptr, char ** restrict endptr, int base);
 #endif
 
-/* Pseudo-random sequence generation functions */
-int rand (void);
-void srand (unsigned int seed);
+/* Pseudo-random sequence generation */
+int rand(void);
+void srand(unsigned int seed);
 
-/* Memory management functions */
+/* Memory management */
 void *calloc(size_t count, size_t size);
 void free(void *memory);
 void *malloc(size_t size);
 void *realloc(void *oldmem, size_t newsize);
 
-/* Communication with the environment */
-void abort (void) __noreturn;
+/* Environment interaction */
+void abort(void) __noreturn;
 int atexit(void (*func)(void));
 void exit(int code) __noreturn;
 void _Exit(int status) __noreturn;
-#if (!defined(_XOPEN_SOURCE) && \
-     !defined(_POSIX_SOURCE) && \
-     !defined(_BSD_SOURCE))
+
+#if !defined(__STRICT_ANSI__)
 char *getenv(const char *name);
 int system(const char *string);
 #endif
 
-/* Searching and sorting utilities */
-void *bsearch(const void * key, const void * base, size_t count,
-	size_t size, int (*comparefunction)(const void *, const void *));
+/* Searching and sorting */
+void *bsearch(const void * key, const void * base, size_t count, size_t size,
+              int (*comparefunction)(const void *, const void *));
 void qsort(void * array, size_t count, size_t elementsize,
-	int (*comparefunction)(const void * element1, const void * element2));
+           int (*comparefunction)(const void *, const void *));
 
-/* Integer arithmetic functions */
-int abs (int j);
-long labs (long j);
+/* Integer arithmetic */
+int abs(int j);
+long labs(long j);
 #if defined AROS_HAVE_LONG_LONG
 long long int llabs(long long int j);
 #endif
@@ -115,126 +101,20 @@ ldiv_t ldiv(long int numer, long int denom);
 lldiv_t lldiv(long long int numer, long long int denom);
 #endif
 
-/* Multibyte/wide character conversion functions */
+/* Multibyte/wide character conversion */
 int mblen(const char *s, size_t n);
-STDC_STLDLIB_NOTIMPL(
 int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n);
 int wctomb(char *s, wchar_t wchar);
 
-/* Multibyte/wide string conversion functions */
+/* Multibyte/wide string conversion */
 size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
 size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
-)
 
-/* AROS extra */
+/* AROS-specific extensions */
 int __stdc_mb_cur_max(void);
-void *malloc_align(size_t size, size_t alignment); /* AROS specific */
-void *realloc_nocopy(void *oldmem, size_t newsize); /* AROS specific */
-int   on_exit(void (*func)(int, void *), void *);
-
-/* inline code */
-/* The multi-byte character functions are implemented inline so that they adapt to the
-   size of wchar_t used by the compiler. This would not be possible if the code would
-   be compiled in the shared library or even the static link library.
-*/
-
-#if !defined(_STDC_NOINLINE) && !defined(_STDC_NOINLINE_STDLIB)
-/* This is name space pollution */
-#include <ctype.h>
-
-
-#if !defined(_STDC_NOINLINE_MBTOWC)
-static __inline__
-int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n)
-{
-    if (s == NULL)
-        /* No state-dependent multi-byte character encoding */
-        return 0;
-    else
-    {
-        if (isascii(*s))
-        {
-            if (pwc)
-                *pwc = (wchar_t)*s;
-            if (*s == 0)
-                return 0;
-            else
-                return 1;
-        }
-        else
-            return -1;
-    }
-}
-#endif /* !_STDC_NOINLINE_MBTOWC */
-
-
-#if !defined(_STDC_NOINLINE_WCTOMB)
-static __inline__
-int wctomb(char *s, wchar_t wchar)
-{
-    if (s == NULL)
-        /* No state dependent encodings */
-        return 0;
-    else if (isascii((int)wchar))
-    {
-        *s = (char)wchar;
-        if (wchar == 0)
-            return 0;
-        else
-            return 1;
-    }
-    else
-        return -1;
-}
-#endif /* !_STDC_NOINLINE_WCTOMB */
-
-
-#if !defined(_STDC_NOINLINE_MBSTOWCS)
-static __inline__
-size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n)
-{
-    size_t l;
-
-    for(l = 0; n > 0; s++, pwcs++, n--)
-    {
-        *pwcs = (wchar_t)*s;
-
-        if (*s == '\0')
-            break;
-
-        l++;
-    }
-
-    return l;
-}
-#endif /* !_STDC_NOINLINE_MBSTOWCS */
-
-
-#if !defined(_STDC_NOINLINE_WCSTOMBS)
-static __inline__
-size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n)
-{
-    size_t l;
-
-    for(l = 0; n > 0; s++, pwcs++, n--)
-    {
-        if (!isascii((int)*pwcs))
-            return (size_t)-1;
-
-        *s = (char)*pwcs;
-
-        if (*s == '\0')
-            break;
-
-        l++;
-    }
-
-    return l;
-}
-#endif /* !_STDC_NOINLINE_MBTOWC */
-
-
-#endif /* !_STDC_NOINLINE && !_STDC_NOINLINE_STDLIB */
+void *malloc_align(size_t size, size_t alignment);
+void *realloc_nocopy(void *oldmem, size_t newsize);
+int on_exit(void (*func)(int, void *), void *);
 
 __END_DECLS
 
