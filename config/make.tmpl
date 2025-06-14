@@ -812,7 +812,7 @@ ifeq (%(compiler),target)
   %(mmake)_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
   %(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
   %(mmake)_CXXLDFLAGS = $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS))
-ifneq ($(TARGET_LIBATOMIC),)
+ifneq ($(TARGET_CXX_LIBS),)
   %(mmake)_ARCHLIBS += $(TARGET_CXX_LIBS)
 endif
   %(mmake)_LDFLAGS ?= $(%(mmake)_CXXLDFLAGS)
@@ -830,7 +830,7 @@ ifeq (%(compiler),kernel)
   %(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
   %(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
   %(mmake)_CXXLDFLAGS = $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
-ifneq ($(TARGET_LIBATOMIC),)
+ifneq ($(TARGET_CXX_LIBS),)
   %(mmake)_ARCHLIBS += $(KERNEL_CXX_LIBS)
 endif
   %(mmake)_LDFLAGS ?= $(%(mmake)_CXXLDFLAGS)
@@ -3781,17 +3781,7 @@ ifeq (%(compiler),target)
     %(mmake)-cfg-env := %(config_env_extra) \
         PKG_CONFIG_LIBDIR="$(AROS_DEVELOPER)/lib/pkgconfig" \
         PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)"
-ifeq (%(crossbuild),no)
-    %(mmake)-cfg-env += CPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
-        CXXCPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
-        CC="$(strip $(%(mmake)-TARGET_CC) $(TARGET_SYSROOT))" \
-        CXX="$(strip $(%(mmake)-TARGET_CXX) $(TARGET_SYSROOT))" \
-        LD="$(strip $(TARGET_LD))"
-    %(mmake)-cfg-env += CFLAGS="$(strip $(%(mmake)-TARGET_CFLAGS) $(%(mmake)-AC_CFLAGS) %(extracflags))" \
-        CXXFLAGS="$(strip $(%(mmake)-TARGET_CXXFLAGS) $(%(mmake)-AC_CXXFLAGS) %(extracxxflags))"
-    %(mmake)-cfg-env += LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS)) -L$(AROS_DEVELOPER)/lib $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS) $(TARGET_C_LIBS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
-    %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS))"
-else
+ifeq (%(crossbuild),yes)
     %(mmake)-cfg-env += \
         CPP="$(strip $(%(mmake)-CROSS_CPP) $(%(mmake)-CROSS_SYSROOT))" \
         CXXCPP="$(strip $(%(mmake)-CROSS_CPP) $(%(mmake)-CROSS_SYSROOT))" \
@@ -3802,7 +3792,27 @@ else
         CXXFLAGS="$(strip $(%(mmake)-CROSS_CXXFLAGS))" \
         LDFLAGS="$(strip $(%(mmake)-CROSS_LDFLAGS))" \
         LT_LDFLAGS="$(strip $(%(mmake)-CROSS_LDFLAGS))"
-endif
+    %(mmake)-cfg-env += CC_FOR_HOST="$(strip $(%(mmake)-CROSS_CC) $(%(mmake)-CROSS_SYSROOT))" \
+        CFLAGS_FOR_HOST="$(strip $(%(mmake)-CROSS_CFLAGS))" \
+        CXX_FOR_HOST="$(strip $(%(mmake)-CROSS_CXX) $(%(mmake)-CROSS_SYSROOT))" \
+        CXXFLAGS_FOR_HOST="$(strip $(%(mmake)-CROSS_CXXFLAGS))" \
+        LD_FOR_HOST="$(strip $(%(mmake)-CROSS_LD))" \
+        LDFLAGS_FOR_HOST="$(strip $(%(mmake)-CROSS_LDFLAGS))"
+else
+    %(mmake)-cfg-env += CPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
+        CXXCPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
+        CC="$(strip $(%(mmake)-TARGET_CC) $(TARGET_SYSROOT))" \
+        CXX="$(strip $(%(mmake)-TARGET_CXX) $(TARGET_SYSROOT))" \
+        LD="$(strip $(TARGET_LD))"
+    %(mmake)-cfg-env += CFLAGS="$(strip $(%(mmake)-TARGET_CFLAGS) $(%(mmake)-AC_CFLAGS) %(extracflags))" \
+        CXXFLAGS="$(strip $(%(mmake)-TARGET_CXXFLAGS) $(%(mmake)-AC_CXXFLAGS) %(extracxxflags))"
+    %(mmake)-cfg-env += LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS)) -L$(AROS_DEVELOPER)/lib $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS) $(TARGET_C_LIBS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS))"
+    %(mmake)-cfg-env += AR="$(strip $(AR_PLAIN))" \
+        AS="$(strip $(TARGET_AS))" \
+        OBJCOPY="$(strip $(OBJCOPY))" \
+        RANLIB="$(strip $(RANLIB))" \
+        STRIP="$(strip $(STRIP_PLAIN))"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
     %(mmake)-cfg-env += CPPFLAGS_FOR_BUILD="$(strip $(HOST_CPPFLAGS) $(%(mmake)-ACBUILD_CPPFLAGS))"
@@ -3817,9 +3827,9 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_HOST="$(strip $(BASE_CPPFLAGS)  $(%(mmake)-ACHOST_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
 endif
     %(mmake)-cfg-env += CC_FOR_HOST="$(strip $(%(mmake)-TARGET_CC) $(TARGET_SYSROOT))" \
-        CFLAGS_FOR_HOST="$(strip %(hostisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(%(mmake)-ACHOST_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CFLAGS_FOR_HOST="$(strip %(kernelisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(%(mmake)-ACHOST_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CXX_FOR_HOST="$(strip $(%(mmake)-TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_HOST="$(strip %(hostisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(%(mmake)-ACHOST_CXXFLAGS)  $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CXXFLAGS_FOR_HOST="$(strip %(kernelisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(%(mmake)-ACHOST_CXXFLAGS)  $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         LD_FOR_HOST="$(strip $(TARGET_LD))" \
         LDFLAGS_FOR_HOST="$(strip $(TARGET_ISA_LDFLAGS) -L$(AROS_DEVELOPER)/lib  $(%(mmake)-ACHOST_LDFLAGS) $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
 ifeq (%(usecppflags),yes)
@@ -3836,13 +3846,6 @@ endif
         RANLIB_FOR_TARGET="$(strip $(TARGET_RANLIB))" \
         STRIP_FOR_TARGET="$(strip $(TARGET_STRIP))" \
         NM_FOR_TARGET="$(strip $(TARGET_NM))"
-ifeq (%(crossbuild),no)
-    %(mmake)-cfg-env += AR="$(strip $(AR_PLAIN))" \
-        AS="$(strip $(TARGET_AS))" \
-        OBJCOPY="$(strip $(OBJCOPY))" \
-        RANLIB="$(strip $(RANLIB))" \
-        STRIP="$(strip $(STRIP_PLAIN))"
-endif
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += TARGET_CPPFLAGS="$(KERNEL_CPPFLAGS)"
 endif
@@ -3855,6 +3858,8 @@ endif
         TARGET_RANLIB="$(strip $(RANLIB))" \
         TARGET_STRIP="$(strip $(STRIP_PLAIN))" \
         TARGET_NM="$(strip $(NM_PLAIN))"
+endif
+
 ifeq (%(buildflags),yes)
     %(mmake)-config_opts += --target=$(AROS_TARGET_CPU)-aros
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)
@@ -4733,6 +4738,34 @@ endif
 %rule_makedirs dirs="$(TMP_DIRS)"
 
 %end
+
+# When we are cross compiling, we need to set the KERNEL flags to those
+# for the host AROS system, and clear the TARGET flags.
+%define init_crosscompile_flags compiler=target
+ifeq (%(compiler),target)
+KERNEL_CC:=$(TARGET_CC)
+KERNEL_SYSROOT:=$(TARGET_SYSROOT)
+KERNEL_ISA_CFLAGS:=$(TARGET_ISA_CFLAGS)
+KERNEL_CFLAGS:=$(TARGET_CFLAGS)
+KERNEL_CXX:=$(TARGET_CXX)
+KERNEL_ISA_CXXFLAGS:=$(TARGET_ISA_CXXFLAGS)
+KERNEL_CXXFLAGS:=$(TARGET_CXXFLAGS)
+KERNEL_LD:=:=$(TARGET_LD)
+KERNEL_ISA_LDFLAGS:=$(TARGET_ISA_LDFLAGS)
+KERNEL_LDFLAGS:=:=$(TARGET_LDFLAGS)
+TARGET_CFLAGS:=
+TARGET_CXXFLAGS:=
+TARGET_LDFLAGS:=
+TARGET_ISA_LDFLAGS:=
+TARGET_ISA_CFLAGS:=
+TARGET_ISA_CXXFLAGS:=
+USER_LDFLAGS:=
+CFLAGS:=
+CXXFLAGS:=
+LDFLAGS:=
+endif
+%end
+
 
 #------------------------------------------------------------------------------
 # Generate generic rules for a subtarget
