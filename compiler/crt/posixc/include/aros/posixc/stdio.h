@@ -27,7 +27,6 @@ POSIXCFUNC(int, fgetpos, (FILE * restrict stream, fpos_t * restrict pos));
 POSIXCFUNC(int, fsetpos, (FILE *stream, const fpos_t *pos));
 POSIXCFUNC(int, feof, (FILE *stream));
 POSIXCFUNC(int, ferror, (FILE *stream));
-POSIXCFUNC(void, funlockfile, (FILE *));
 POSIXCFUNC(int, ungetc, (int c, FILE *stream));
 POSIXCFUNC(FILE *, tmpfile, (void));
 POSIXCFUNC(char *, tmpnam, (char *s));
@@ -59,6 +58,7 @@ POSIXCFUNC(int, vfprintf, (FILE * restrict stream, const char * restrict format,
 int fileno(FILE *);
 void flockfile(FILE *);
 int getc_unlocked(FILE *);
+void funlockfile(FILE *);
 
 /* Extensions requiring feature guards */
 
