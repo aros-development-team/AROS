@@ -1,5 +1,11 @@
-#ifndef _STDC_UTF8_H
-#define _STDC_UTF8_H
+#ifndef _STDC_WCHAR_UTF8_H
+#define _STDC_WCHAR_UTF8_H
+/*
+    Copyright © 2025, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#if !defined(_STDC_NOINLINE) && !defined(_STDC_NOINLINE_STDLIB)
 
 #include <stddef.h>
 #include <wchar.h>
@@ -11,8 +17,16 @@
 extern "C" {
 #endif
 
+#if defined(WCHAR_FNAM_PREFIX)
+# define WCHAR_FNAM_CONCAT(a, b) a##b
+# define WCHARFUNC(name) WCHAR_FNAM_CONCAT(WCHAR_FNAM_PREFIX, name)
+#else
+# define WCHARFUNC(name) name
+#endif
+
+#if !defined(_STDC_NOINLINE_WCRTOMB)
 /* UTF-8 encoding of single wide character */
-static inline size_t wcrtomb(char *s, wchar_t wc, mbstate_t *ps) {
+static __inline__ size_t WCHARFUNC(wcrtomb)(char *s, wchar_t wc, mbstate_t *ps) {
     (void)ps; // stateless
 
     if (!s)
@@ -43,14 +57,22 @@ error:
     errno = EILSEQ;
     return (size_t)-1;
 }
+#endif /* !_STDC_NOINLINE_WCRTOMB */
 
+#if !defined(_STDC_NOINLINE_WCTOMB)
 /* Legacy wrapper for wcrtomb using static state (which we ignore) */
-static inline int wctomb(char *s, wchar_t wc) {
+static __inline__ int WCHARFUNC(wctomb)(char *s, wchar_t wc) {
+#if !defined(_STDC_NOINLINE_WCRTOMB)
+    return (int)WCHARFUNC(wcrtomb)(s, wc, NULL);
+#else
     return (int)wcrtomb(s, wc, NULL);
+#endif
 }
+#endif /* !_STDC_NOINLINE_WCTOMB */
 
+#if !defined(_STDC_NOINLINE_MBTOWC)
 /* UTF-8 decoding of a single multibyte character */
-static inline int mbtowc(wchar_t *pwc, const char *s, size_t n) {
+static __inline__ int WCHARFUNC(mbtowc)(wchar_t *pwc, const char *s, size_t n) {
     if (!s)
         return 0; // stateless encoding
 
@@ -108,20 +130,32 @@ static inline int mbtowc(wchar_t *pwc, const char *s, size_t n) {
 
     return len;
 }
+#endif /* !_STDC_NOINLINE_MBTOWC */
 
+#if !defined(_STDC_NOINLINE_MBLEN)
 /* Legacy multibyte length query */
-static inline int mblen(const char *s, size_t n) {
+static __inline__ int WCHARFUNC(mblen)(const char *s, size_t n) {
+#if !defined(_STDC_NOINLINE_MBTOWC)
+    return WCHARFUNC(mbtowc)(NULL, s, n);
+#else
     return mbtowc(NULL, s, n);
+#endif
 }
+#endif /* !_STDC_NOINLINE_MBLEN */
 
+#if !defined(_STDC_NOINLINE_WCSTOMBS)
 /* Convert wide string to multibyte (UTF-8) */
-static inline size_t wcstombs(char *dest, const wchar_t *src, size_t n) {
+static __inline__ size_t WCHARFUNC(wcstombs)(char *dest, const wchar_t *src, size_t n) {
     size_t total = 0;
     char buf[4];
     mbstate_t ps = {0};
 
     while (*src) {
+#if !defined(_STDC_NOINLINE_WCRTOMB)
+        size_t len = WCHARFUNC(wcrtomb)(buf, *src++, &ps);
+#else
         size_t len = wcrtomb(buf, *src++, &ps);
+#endif
         if (len == (size_t)-1)
             return (size_t)-1;
 
@@ -138,16 +172,22 @@ static inline size_t wcstombs(char *dest, const wchar_t *src, size_t n) {
 
     return total;
 }
+#endif /* !_STDC_NOINLINE_WCSTOMBS */
 
+#if !defined(_STDC_NOINLINE_MBSTOWCS)
 /* Convert multibyte string (UTF-8) to wide string */
-static inline size_t mbstowcs(wchar_t *dest, const char *src, size_t n) {
+static __inline__ size_t WCHARFUNC(mbstowcs)(wchar_t *dest, const char *src, size_t n) {
     size_t count = 0;
     mbstate_t ps = {0};
     wchar_t wc;
     int len;
 
     while (*src && count < n) {
+#if !defined(_STDC_NOINLINE_MBTOWC)
+        len = WCHARFUNC(mbtowc)(&wc, src, MB_CUR_MAX);
+#else
         len = mbtowc(&wc, src, MB_CUR_MAX);
+#endif
         if (len == -1)
             return (size_t)-1;
 
@@ -160,9 +200,12 @@ static inline size_t mbstowcs(wchar_t *dest, const char *src, size_t n) {
 
     return count;
 }
+#endif /* !_STDC_NOINLINE_MBSTOWCS */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _STDC_UTF8_H */
+#endif /* !_STDC_NOINLINE && !_STDC_NOINLINE_STDLIB */
+
+#endif /* _STDC_WCHAR_UTF8_H */
