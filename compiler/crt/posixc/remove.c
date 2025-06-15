@@ -8,17 +8,19 @@
 #include <errno.h>
 #include "__upath.h"
 
+extern int __stdcio_remove(const char *);
+
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
 
-/*      int remove (
+int remove (
 
-    SYNOPSIS
+/*  SYNOPSIS */
         const char * pathname)
 
-    FUNCTION
+/*  FUNCTION
         Deletes a file or directory.
 
     INPUTS
@@ -41,9 +43,8 @@
         Uses stdcio.library remove() function after path name conversion
 
 ******************************************************************************/
-int remove(const char * pathname)
 {
-    return remove(__path_u2a(pathname));
+    return __stdcio_remove(__path_u2a(pathname));
 } /* remove */
 
 
