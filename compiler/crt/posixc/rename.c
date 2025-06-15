@@ -14,18 +14,21 @@
 
 #include "__upath.h"
 
+extern int __stdcio_rename(const char *, const char *);
+
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
 
-/*      int rename (
+int rename (
 
-    SYNOPSIS
-        const char * oldpath
+/*  SYNOPSIS */
+        const char * oldpath,
         const char * newpath
+        )
 
-    FUNCTION
+/*  FUNCTION
         Changes the name or location of a file or directory from `oldpath` to `newpath`.
 
     INPUTS
@@ -59,7 +62,6 @@
         after path conversion.
 
 ******************************************************************************/
-int rename (const char * oldpath, const char * newpath)
 {
           STRPTR aoldpath = (STRPTR)strdup((const char*)__path_u2a(oldpath));
     CONST_STRPTR anewpath = __path_u2a(newpath);
