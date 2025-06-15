@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     ANSI function freopen().
 */
@@ -14,7 +14,7 @@
     NAME */
 #include <stdio.h>
 
-        FILE *__posixc_freopen (
+        FILE *freopen (
 
 /*  SYNOPSIS */
         const char *path,
@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-         open(), __posixc_fclose(), fileno()
+         open(), fclose(), fileno()
 
     INTERNALS
 

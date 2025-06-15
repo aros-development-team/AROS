@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function gets().
 */
@@ -18,7 +18,7 @@
     NAME */
 #include <stdio.h>
 
-        char * __posixc_gets (
+        char * gets (
 
 /*  SYNOPSIS */
         char * buffer)
@@ -45,7 +45,7 @@
         if it has not encountered a newline or EOF yet. Use fgets() instead.
 
     SEE ALSO
-        __posixc_fgets()
+        fgets()
 
     INTERNALS
 

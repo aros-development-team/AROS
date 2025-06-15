@@ -57,26 +57,52 @@ extern char *_mktemp(char *);
 
     NAME */
 
-	char *__posixc_tmpnam(
+	char *tmpnam(
 
 /*  SYNOPSIS */
 	char *s)
 
 /*  FUNCTION
+        Generates a string that is a valid and unique filename for a temporary
+        file. The filename is not associated with an open file and is not
+        guaranteed to remain unique if used multiple times without creating
+        the file immediately.
 
     INPUTS
+        s - Optional pointer to a user-provided buffer. If NULL, a static internal
+            buffer is used. The buffer must be at least L_tmpnam bytes in size.
 
     RESULT
+        Returns a pointer to the generated filename (either `s` or internal static buffer),
+        or NULL if an error occurs.
 
     NOTES
+        - The generated name is not guaranteed to be safe against race conditions;
+          use `tmpfile()` or `mkstemp()` for safer temporary file handling.
+        - If called multiple times with NULL, the static buffer is reused and
+          may be overwritten by subsequent calls.
+        - On AROS, the filename is formed using the `P_tmpdir` macro and a counter.
+        - `_mktemp()` is used to finalize the name in-place by replacing `XXXXXX`.
 
     EXAMPLE
+        char name[L_tmpnam];
+        if (tmpnam(name) != NULL) {
+            printf("Temporary file name: %s\n", name);
+        }
 
     BUGS
+        - Not thread-safe when `s == NULL`, due to use of a static buffer.
+        - The `_mktemp()` function is inherently unsafe; it does not create the file,
+          which can lead to race conditions if multiple processes or threads are involved.
+        - May return the same name if not followed by immediate file creation.
 
     SEE ALSO
+        tmpfile(), mkstemp(), mktemp()
 
     INTERNALS
+        - Uses a static counter (`tmpcount`) to generate unique suffixes.
+        - Constructs the name using snprintf() and `P_tmpdir` (typically "T:" on AROS).
+        - Calls `_mktemp()` to transform the `XXXXXX` suffix into a unique string.
 
 ******************************************************************************/
 {

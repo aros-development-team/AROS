@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function vfprintf()
 */
@@ -19,7 +19,7 @@ static int __putc(int c, void *fh);
     NAME */
 #include <stdio.h>
 
-        int __posixc_vfprintf (
+        int vfprintf (
 
 /*  SYNOPSIS */
         FILE       * stream,
@@ -27,25 +27,44 @@ static int __putc(int c, void *fh);
         va_list      args)
 
 /*  FUNCTION
-        Format a list of arguments and print them on the specified stream.
+        Writes formatted output to the specified output stream using the format
+        string and a `va_list` of arguments.
 
     INPUTS
-        stream - A stream on which one can write
-        format - A printf() format string.
-        args - A list of arguments for the format string.
+        stream - A pointer to an open output stream.
+        format - A format string, as used in printf().
+        args   - A `va_list` of arguments to be formatted and printed.
 
     RESULT
-        The number of characters written.
+        Returns the number of characters written, or 0 if an error occurred
+        (e.g., invalid stream).
 
     NOTES
+        - The stream must be writable and valid.
+        - This function is typically called by `fprintf` and `printf` internally.
+        - Format specifiers follow standard printf-style conventions.
 
     EXAMPLE
+        va_list ap;
+        va_start(ap, fmt);
+        vfprintf(stdout, fmt, ap);
+        va_end(ap);
 
     BUGS
+        - Returns 0 instead of the standard -1 on error, which may cause
+          incorrect error checking by compliant code.
+        - Not thread-safe if stream is shared among threads without synchronization.
+        - Assumes AROS-specific file descriptor abstraction and output handling.
 
     SEE ALSO
+        fprintf(), printf(), vsprintf(), vsnprintf(), vprintf(), va_start(), va_list
 
     INTERNALS
+        - Retrieves the file descriptor wrapper via `__getfdesc()`.
+        - Uses an AROS-specific `__vcformat()` function with `__putc()` as a
+          character output callback.
+        - `__putc()` uses `FPutC()` on the AROS file handle, converting AROS I/O
+          errors via `__stdc_ioerr2errno()`.
 
 ******************************************************************************/
 {

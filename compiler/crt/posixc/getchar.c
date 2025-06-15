@@ -21,7 +21,7 @@
     NAME */
 #include <stdio.h>
 
-        int __posixc_getchar (void)
+        int getchar (void)
 
 /*  SYNOPSIS */
 
@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_fgetc(), getc(), __posixc_fputc(), putc()
+        fgetc(), getc(), fputc(), putc()
 
     INTERNALS
 

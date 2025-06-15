@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function printf().
 */
@@ -13,7 +13,7 @@
     NAME */
 #include <stdio.h>
 
-        int __posixc_printf (
+        int printf (
 
 /*  SYNOPSIS */
         const char * format,
@@ -256,7 +256,7 @@
         often impossible to assure.
 
     SEE ALSO
-        __posixc_fprintf(), __posixc_vprintf(), __posixc_vfprintf(),
+        fprintf(), vprintf(), vfprintf(),
         stdc.library/sprintf(), stdc.library/vsprintf(), stdc.library/vsnprintf()
 
     INTERNALS

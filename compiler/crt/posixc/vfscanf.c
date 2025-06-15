@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function vfscanf()
 */
@@ -38,7 +38,7 @@ static int __ungetc(int c, void *_h);
     NAME */
 #include <stdio.h>
 
-        int __posixc_vfscanf (
+        int vfscanf (
 
 /*  SYNOPSIS */
         FILE       * stream,
@@ -46,26 +46,54 @@ static int __ungetc(int c, void *_h);
         va_list      args)
 
 /*  FUNCTION
-        Read the scream, scan it as the format specified and write the
-        result of the conversion into the specified arguments.
+        Reads input from the specified stream, interprets it according to
+        the provided format string, and stores the results in the locations
+        pointed to by the variable argument list `args`.
 
     INPUTS
-        stream - A stream to read from
-        format - A scanf() format string.
-        args - A list of arguments for the results.
+        stream - A pointer to a readable input stream.
+        format - A scanf-style format string describing expected input format.
+        args   - A `va_list` containing pointers to the variables where
+                 the results of the formatted input will be stored.
 
     RESULT
-        The number of converted arguments.
+        Returns the number of input items successfully matched and assigned,
+        which may be fewer than provided for, or zero in the event of an
+        early matching failure. Returns 0 if the stream is invalid.
 
     NOTES
+        - Whitespace in the format string matches any amount of whitespace
+          in the input.
+        - Input fields must match the expected format exactly or parsing will stop.
+        - This implementation includes both direct DOS-level and POSIX-style
+          fallback code paths, depending on compile-time `VFSCANF_DIRECT_DOS`.
 
     EXAMPLE
+        va_list ap;
+        va_start(ap, fmt);
+        vfscanf(stdin, "%d %s", ap);
+        va_end(ap);
 
     BUGS
+        - Returns 0 on stream error instead of EOF (-1), which may not conform
+          strictly to standard expectations.
+        - Error and EOF handling uses AROS-specific flags and conventions.
+        - `VFSCANF_DIRECT_DOS` path relies on AROS `UnGetC()` and `Flush()` calls,
+          making portability limited.
 
     SEE ALSO
+        scanf(), fscanf(), sscanf(), vscanf(), vsscanf(), va_start(), va_list
 
     INTERNALS
+        - Uses `__getfdesc()` to get AROS-specific file descriptor structure.
+        - Flushes stream handle before reading.
+        - Calls `__vcscan()` to perform actual parsing.
+        - If `VFSCANF_DIRECT_DOS` is defined:
+            * Uses a custom `__vfscanf_handle` struct.
+            * Input and unput functions (`__getc`, `__ungetc`) are passed
+              as callbacks to `__vcscan()`.
+            * `__getc.c` is included directly to implement common input logic.
+        - Otherwise, uses standard `fgetc` and `ungetc`.
 
 ******************************************************************************/
 {

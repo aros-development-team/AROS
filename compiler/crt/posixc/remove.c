@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function remove() with optional Amiga<>Posix file name conversion.
 */
@@ -41,7 +41,7 @@
         Uses stdcio.library remove() function after path name conversion
 
 ******************************************************************************/
-int __posixc_remove(const char * pathname)
+int remove(const char * pathname)
 {
     return remove(__path_u2a(pathname));
 } /* remove */

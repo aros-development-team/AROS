@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function system().
 */
@@ -27,33 +27,53 @@ static int system_no_sh(const char *string);
     NAME */
 #include <stdlib.h>
 
-        int __posixc_system (
+        int system (
 
 /*  SYNOPSIS */
         const char *string)
 
 /*  FUNCTION
-        Execute a command string. If string is NULL then 1 will be returned.
+        Executes a command specified by the string argument.
+
+        If the string is `NULL`, the function returns 1 to indicate that
+        a command processor is available.
+
+        If the string is non-NULL, the command is passed to a shell (if
+        available) or executed directly if no shell is present.
 
     INPUTS
-        string - command to execute or NULL
+        string - Command string to execute, or NULL to check for shell support.
 
     RESULT
-        Return value of command executed. If value < 0 errno indicates error.
-        1 is return if string is NULL.
+        On success, returns the command's exit status.
+        On error, returns -1 and sets `errno` appropriately.
+        If `string` is NULL, returns 1 (indicating a shell is available).
 
     NOTES
-        The system() version of posixc.library will translate UNIX<>Amiga
-        if applicable as well as use a shell for executing text batch
-        commands.
+        - On AROS, if the environment supports it, the command will be
+          executed through `/bin/sh` (or `bin:sh`).
+        - If no shell is found, the command is executed directly using the
+          AROS `SystemTags()` interface.
+        - The implementation ensures standard input/output/error are passed
+          through to the new process.
+        - Command paths and arguments are translated from UNIX-style to
+          Amiga-style if necessary.
 
     EXAMPLE
+        system("ls -l /");
 
     BUGS
+        - Argument splitting and quoting are simplistic; edge cases may break.
+        - Behavior depends on the shell being available in `bin:sh`.
 
     SEE ALSO
+        exec(), popen(), fork(), execl(), waitpid()
 
     INTERNALS
+        - Checks if the shell is available by trying to lock `bin:sh`.
+        - Uses `vfork()` and `execl()` when a shell is available.
+        - Falls back to `SystemTags()` for direct command execution.
+        - Accesses standard file descriptors using internal `fdesc` structs.
 
 ******************************************************************************/
 {

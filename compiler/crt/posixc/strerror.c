@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function strerror().
 */
@@ -14,7 +14,7 @@ static const char * _errstrings[];
     NAME */
 #include <string.h>
 
-        char * __posixc_strerror (
+        char * strerror (
 
 /*  SYNOPSIS */
         int n)
@@ -31,14 +31,13 @@ static const char * _errstrings[];
     NOTES
         This function is used to override the strerror() function of
         stdc.library to handle the extra errnos from posixc.library.
-        It is aliased as strerror() in libposixc.a
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-        stdc.library/__stdc_strerror(), stdc.library/strerror()
+        stdc.library/strerror(), stdc.library/strerror()
 
     INTERNALS
 

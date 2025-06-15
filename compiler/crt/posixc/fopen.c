@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function fopen().
 */
@@ -14,7 +14,7 @@
     NAME */
 #include <stdio.h>
 
-        FILE * __posixc_fopen (
+        FILE * fopen (
 
 /*  SYNOPSIS */
         const char * pathname,
@@ -71,8 +71,8 @@
         Most modes are not supported right now.
 
     SEE ALSO
-        __posixc_fclose(), __posixc_fread(), __posixc_fwrite(), open(),
-        __posixc_fgets(), fgetc(), __posixc_fputs(), __posixc_fputc(),
+        fclose(), fread(), fwrite(), open(),
+        fgets(), fgetc(), fputs(), fputc(),
         getc(), putc()
 
     INTERNALS
@@ -82,5 +82,5 @@
 
     return __fopen(pathname, mode, 0);
 
-} /* __posixc_fopen */
+} /* fopen */
 

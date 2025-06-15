@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Tell the position in a stream.
 */
@@ -15,7 +15,7 @@
     NAME */
 #include <stdio.h>
 
-        long __posixc_ftell (
+        long ftell (
 
 /*  SYNOPSIS */
         FILE * stream)
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_fopen(), __posixc_fseek(), __posixc_fwrite()
+        fopen(), fseek(), fwrite()
 
     INTERNALS
 

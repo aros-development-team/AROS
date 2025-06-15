@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
     
     SVID function getw().
 */
@@ -30,7 +30,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_fread()
+        fread()
 
     INTERNALS
 

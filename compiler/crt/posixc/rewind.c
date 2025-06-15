@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Change the position in a stream.
 */
@@ -9,29 +9,45 @@
     NAME */
 #include <stdio.h>
 
-        void __posixc_rewind (
+        void rewind (
 
 /*  SYNOPSIS */
         FILE * stream)
 
 /*  FUNCTION
-        Change the current position in a stream to the beginning.
+        Sets the file position indicator for the given stream to the beginning
+        of the file. Any error and end-of-file indicators for the stream are
+        cleared.
 
     INPUTS
-        stream - Modify this stream
+        stream - Pointer to a FILE object that identifies the stream to rewind.
 
     RESULT
+        None (void function).
 
     NOTES
+        - Unlike `fseek()`, `rewind()` does not return a value.
+        - The function clears the error and EOF indicators for the stream,
+          allowing further I/O operations without error states.
 
     EXAMPLE
+        FILE *fp = fopen("example.txt", "r");
+        if (fp) {
+            // Read some data...
+            rewind(fp);  // Reset to start of file
+            // Read again from beginning...
+            fclose(fp);
+        }
 
     BUGS
+        None known.
 
     SEE ALSO
-        __posixc_fopen(), __posixc_fwrite(), __posixc_fseek()
+        fopen(), fwrite(), fseek(), clearerr()
 
     INTERNALS
+        Implemented as a call to `fseek(stream, 0L, SEEK_SET)` followed by
+        `clearerr(stream)` to reset stream state indicators.
 
 ******************************************************************************/
 {

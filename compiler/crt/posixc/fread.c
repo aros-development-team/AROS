@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function fread().
 */
@@ -17,7 +17,7 @@
     NAME */
 #include <stdio.h>
 
-        size_t __posixc_fread (
+        size_t fread (
 
 /*  SYNOPSIS */
         void * buf,
@@ -46,7 +46,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_fopen(), __posixc_fwrite()
+        fopen(), fwrite()
 
     INTERNALS
 

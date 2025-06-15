@@ -21,7 +21,7 @@
     NAME */
 #include <stdio.h>
 
-        FILE * __posixc_tmpfile(
+        FILE * tmpfile(
 
 /*  SYNOPSIS */
 	void)
@@ -82,7 +82,7 @@
 
 
     SEE ALSO
-        __posixc_fopen(), mkstemp()
+        fopen(), mkstemp()
 
     INTERNALS
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function fwrite().
 */
@@ -21,7 +21,7 @@
     NAME */
 #include <unistd.h>
 
-        size_t __posixc_fwrite (
+        size_t fwrite (
 
 /*  SYNOPSIS */
         const void * restrict   buf,
@@ -43,7 +43,7 @@
         nblocks. Otherwise examine errno for the reason of the error.
 
     SEE ALSO
-        __posixc_fopen()
+        fopen()
 
 ******************************************************************************/
 {
@@ -76,4 +76,3 @@
 
     return cnt;
 } /* fwrite */
-

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function fclose().
 */
@@ -17,7 +17,7 @@
     NAME */
 #include <stdio.h>
 
-        int __posixc_fclose (
+        int fclose (
 
 /*  SYNOPSIS */
         FILE * stream)
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_fopen(), open(), close()
+        fopen(), open(), close()
 
     INTERNALS
 

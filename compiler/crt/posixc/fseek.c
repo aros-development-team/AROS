@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Change the position in a stream.
 */
@@ -16,7 +16,7 @@
     NAME */
 #include <stdio.h>
 
-        int __posixc_fseek (
+        int fseek (
 
 /*  SYNOPSIS */
         FILE * stream,
@@ -53,7 +53,7 @@
     implementation fails with EISDIR for directory file descriptors.
 
     SEE ALSO
-        __posixc_fopen(), __posixc_fwrite()
+        fopen(), fwrite()
 
     INTERNALS
 

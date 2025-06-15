@@ -204,8 +204,8 @@
 #define POSIXC_FNAM_EVAL(a, b) POSIXC_FNAM_CONCAT(a, b)
 
 // Stringify helper
-#define STR(s) #s
-#define XSTR(s) STR(s)
+#define PXSTR(s) #s
+#define XSTR(s) PXSTR(s)
 
 #if defined(AROS_POSIXC_BUILD) || !defined(POSIXC_MANGLE_FUNCS)
   // No mangling

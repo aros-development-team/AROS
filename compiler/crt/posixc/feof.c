@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function feof().
 */
@@ -11,7 +11,7 @@
     NAME */
 #include <stdio.h>
 
-        int __posixc_feof (
+        int feof (
 
 /*  SYNOPSIS */
         FILE * stream)
@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_ferror(), clearerr()
+        ferror(), clearerr()
 
     INTERNALS
 

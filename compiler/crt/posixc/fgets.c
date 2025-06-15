@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function fgets().
 */
@@ -18,7 +18,7 @@
     NAME */
 #include <stdio.h>
 
-    char * __posixc_fgets (
+    char * fgets (
 
 /*  SYNOPSIS */
     char * buffer,
@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_fopen(), __posixc_fputs()
+        fopen(), fputs()
 
     INTERNALS
 

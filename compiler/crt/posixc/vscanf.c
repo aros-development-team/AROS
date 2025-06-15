@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function vscanf()
 */
@@ -13,32 +13,48 @@
     NAME */
 #include <stdio.h>
 
-        int __posixc_vscanf (
+        int vscanf (
 
 /*  SYNOPSIS */
         const char * format,
         va_list      args)
 
 /*  FUNCTION
-        Scan the standard input and convert it into the arguments as
-        specified by format.
+        Reads input from the standard input stream (`stdin`), interprets it
+        according to the provided format string, and stores the results in
+        the locations specified by the variable argument list.
 
     INPUTS
-        format - A scanf() format string.
-        args - A list of arguments for the results
+        format - A `scanf`-style format string specifying how to interpret the input.
+        args   - A `va_list` containing pointers to variables where the converted values
+                 should be stored.
 
     RESULT
-        The number of converted parameters.
+        Returns the number of input items successfully matched and assigned.
+        Returns `EOF` if an input failure occurs before any conversion.
 
     NOTES
+        - This function is the `va_list` variant of `scanf()`.
+        - Input is read from the standard input stream obtained from
+          `PosixCBase->_stdin`.
+        - The actual scanning is performed by `vfscanf()`.
 
     EXAMPLE
+        va_list ap;
+        va_start(ap, fmt);
+        vscanf("%d %s", ap);
+        va_end(ap);
 
     BUGS
+        - Assumes `PosixCBase` and `_stdin` are properly initialized.
+        - Behavior is undefined if arguments do not match the format string.
 
     SEE ALSO
+        scanf(), fscanf(), vfscanf(), gets(), fgets()
 
     INTERNALS
+        - Retrieves the standard input stream from `PosixCBase->_stdin`.
+        - Delegates parsing and conversion to `vfscanf()`.
 
 ******************************************************************************/
 {

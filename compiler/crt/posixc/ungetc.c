@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function ungetc().
 */
@@ -17,7 +17,7 @@
     NAME */
 #include <stdio.h>
 
-        int __posixc_ungetc (
+        int ungetc (
 
 /*  SYNOPSIS */
         int    c,
@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-        fgetc(), getc(), __posixc_fputc(), putc()
+        fgetc(), getc(), fputc(), putc()
 
     INTERNALS
 
