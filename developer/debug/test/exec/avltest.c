@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008 The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2025 The AROS Development Team. All rights reserved.
 
     Desc: Test AVL balanced tree interface.
 */
@@ -18,6 +18,9 @@
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+
+// make sure we include the gnu extension srandom
+#define __GNU_SOURCE
 
 #include <stdio.h>
 #include <string.h>

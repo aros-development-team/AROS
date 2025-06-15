@@ -23,6 +23,8 @@ TARGET_ISA_CFLAGS += -msse
 TARGET_ISA_CXXFLAGS += -msse
 endif
 
+USER_CPPFLAGS := -D__GNU_SOURCE
+
 %build_prog mmake=test-smp-smp-smallpt \
     files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
     uselibs="" progname=SMP-SmallPT

@@ -18,44 +18,61 @@
 
 __BEGIN_DECLS
 
-/* NOTIMPL long a64l(const char *); */
+/* GNU/SVID extensions */
+#if defined(__GNU_SOURCE)
 double drand48(void);
 double erand48(unsigned short [3]);
-/* NOTIMPL int getsubopt(char **, char *const *, char **); */
-/* NOTIMPL int grantpt(int); */
 char *initstate(unsigned, char *, int);
 long int jrand48(unsigned short int [3]);
-/* NOTIMPL char *l64a(long); */
 void lcong48(unsigned short int [7]);
 long int lrand48(void);
-/* NOTIMPL char *mkdtemp(char *); */
-int mkstemp(char *);
 long int mrand48(void);
 long int nrand48(unsigned short int [3]);
-int posix_memalign(void **memptr, size_t alignment, size_t size);
-/* NOTIMPL int posix_openpt(int); */
-/* NOTIMPL char *ptsname(int); */
-int putenv(const char *);
-/* NOTIMPL int rand_r(unsigned int *); */
-long random(void);
-char *realpath(const char * restrict , char * restrict);
 unsigned short int *seed48(unsigned short int [3]);
-int setenv(const char *, const char *, int);
-/* NOTIMPL void setkey(const char *); */
-char *setstate(char *);
 void srand48(long int);
 void srandom(unsigned);
-/* NOTIMPL int unlockpt(int); */
+#endif
+
+/* POSIX.1-2001 */
+#if defined(__GNU_SOURCE) || (_POSIX_C_SOURCE >= 200112L)
+int setenv(const char *, const char *, int);
 int unsetenv(const char *);
+int posix_memalign(void **memptr, size_t alignment, size_t size);
+char *realpath(const char * restrict, char * restrict);
+#endif
 
-/* The following are deprecated POSIX functions */
+/* XSI extensions (X/Open, e.g. XPG4, POSIX.1-2001) */
+#if defined(__GNU_SOURCE) || defined(_XOPEN_SOURCE)
+int mkstemp(char *);
+#endif
+
+/* BSD / GNU extensions */
+#if defined(__GNU_SOURCE) || defined(_BSD_SOURCE)
 char *mktemp(char *);
-
-/* BSD */
 int getloadavg(double loadavg[], int n);
+#endif
 
-char *getenv(const char *name);
-int system(const char *string);
+/* Deprecated or unimplemented functions (preserved) */
+/* NOTIMPL long a64l(const char *); */
+/* NOTIMPL int getsubopt(char **, char *const *, char **); */
+/* NOTIMPL int grantpt(int); */
+/* NOTIMPL char *l64a(long); */
+/* NOTIMPL char *mkdtemp(char *); */
+/* NOTIMPL int posix_openpt(int); */
+/* NOTIMPL char *ptsname(int); */
+/* NOTIMPL int rand_r(unsigned int *); */
+/* NOTIMPL void setkey(const char *); */
+/* NOTIMPL int unlockpt(int); */
+
+/* Always available */
+int putenv(const char *);
+long random(void);
+
+/* Deprecated POSIX (still implemented) */
+char *setstate(char *);
+
+POSIXCFUNC(char *, getenv, (const char *name));
+POSIXCFUNC(int, system, (const char *string));
 
 __END_DECLS
 

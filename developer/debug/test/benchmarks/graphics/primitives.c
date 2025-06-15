@@ -1,9 +1,12 @@
 /*
-    Copyright (C) 2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2025, The AROS Development Team. All rights reserved.
 
     Originally written by by Rune Elvemo.
     Improved and adapted to gcc by Fabio Alemagna.
 */
+
+// make sure we include the gnu extensions srand48/drand48
+#define __GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>

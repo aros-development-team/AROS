@@ -350,74 +350,85 @@ enum {
 
 __BEGIN_DECLS
 
+/* POSIX.1-1990 (default with _POSIX_SOURCE or none) */
 int access(const char *path, int mode);
 int chdir(const char *path);
-int chown(const char *path, uid_t owner, gid_t group);
 int close(int fd);
 int dup(int oldfd);
 int dup2(int oldfd, int newfd);
 void _exit(int) __noreturn;
 int execl(const char *path, const char *arg, ...);
-int execlp(const char *path, const char *arg, ...);
 int execv(const char *path, char *const argv[]);
 int execve(const char *path, char *const argv[], char *const envp[]);
-int execvp(const char *path, char *const argv[]);
 int fchdir(int fd);
-int fchown(int fd, uid_t owner, gid_t group);
 int fsync(int fd);
-int ftruncate(int fd, off_t length);
-char *getcwd(char *buf, size_t size);
-gid_t getegid(void);
-uid_t geteuid(void);
-gid_t getgid(void);
-int getgroups(int gidsetlen, gid_t *gidset);
-char *getlogin(void);
-int getopt(int argc, char * const argv[], const char *optstring);
-char *getpass(const char *prompt);
-pid_t getpgid(pid_t);
-pid_t getpgrp(void);
 pid_t getpid(void);
 pid_t getppid(void);
 uid_t getuid(void);
+gid_t getgid(void);
+uid_t geteuid(void);
+gid_t getegid(void);
+int getgroups(int gidsetlen, gid_t *gidset);
 int isatty(int fd);
-int link(const char *name1, const char *name2);
-
 off_t lseek(int filedes, off_t offset, int whence);
 # if defined(__off64_t_defined)
 __off64_t lseek64(int filedes, __off64_t offset, int whence);
 # endif
-
-long pathconf(const char *path, int name);
 int pipe(int filedes[2]);
 ssize_t read(int d, void *buf, size_t nbytes);
-ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
 int rmdir(const char *path);
-int setegid(gid_t egid);
-int seteuid(uid_t euid);
-int setgid(gid_t gid);
-pid_t setsid(void);
 int setuid(uid_t uid);
+int setgid(gid_t gid);
 unsigned sleep(unsigned);
-void swab(const void *restrict src, void *restrict dst, size_t len);
-int symlink(const char *name1, const char *name2);
-void sync(void);
-long sysconf(int name);
-pid_t tcgetpgrp(int fd);
-int truncate(const char *path, off_t length);
-char *ttyname(int fd);
 int unlink(const char *path);
 ssize_t write(int fd, const void *buf, size_t nbytes);
 
+/* POSIX.1-2001 and later */
+#if !defined(__STRICT_ANSI__)
+int execvp(const char *path, char *const argv[]);
+int execlp(const char *path, const char *arg, ...);
+char *getcwd(char *buf, size_t size);
+long pathconf(const char *path, int name);
+long sysconf(int name);
+char *ttyname(int fd);
+int getopt(int argc, char * const argv[], const char *optstring);
 extern char *optarg;
 extern int optind, opterr, optopt;
+#endif
 
-/* BSD/SUSv2 legacy */
+/* POSIX.1-2008 and XSI (or available as extensions) */
+#if !defined(__STRICT_ANSI__) && \
+    (!defined(_POSIX_SOURCE) || defined(_XOPEN_SOURCE))
+int ftruncate(int fd, off_t length);
+int truncate(const char *path, off_t length);
+void sync(void);
+pid_t setsid(void);
+int setegid(gid_t egid);
+int seteuid(uid_t euid);
+char *getlogin(void);
+int chown(const char *path, uid_t owner, gid_t group);
+int fchown(int fd, uid_t owner, gid_t group);
+ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsize);
+int symlink(const char *name1, const char *name2);
+void swab(const void *restrict src, void *restrict dst, size_t len);
+pid_t tcgetpgrp(int fd);
+#endif
+
+/* GNU or BSD extensions */
+#if !defined(__STRICT_ANSI__) && \
+    (defined(_BSD_SOURCE) || defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE))
 #include <aros/types/useconds_t.h>
-int usleep(useconds_t microseconds);
+char *getpass(const char *prompt);
+pid_t getpgid(pid_t);
+pid_t getpgrp(void);
 pid_t vfork(void);
+int link(const char *name1, const char *name2);
+int usleep(useconds_t microseconds);
+#endif
 
-/* AROS extension */
-void sharecontextwithchild(int share); /* AROS specific call */
+/* AROS-specific extensions */
+void sharecontextwithchild(int share);
 
 __END_DECLS
+
 #endif /* _POSIXC_UNISTD_H_ */
