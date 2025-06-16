@@ -69,7 +69,6 @@ int putenv(const char *);
 long random(void);
 
 /* Deprecated POSIX (still implemented) */
-char *initstate(unsigned int seed, char *state, size_t n);
 char *setstate(char *);
 
 POSIXCFUNC(char *, getenv, (const char *name));
