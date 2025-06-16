@@ -32,7 +32,7 @@ fetch_mirrored()
     $ret
 }
 
-gnu_mirrors="http://mirror.netcologne.de/gnu http://ftpmirror.gnu.org/ http://ftp.gnu.org/pub/gnu"
+gnu_mirrors="http://mirror.netcologne.de/gnu http://ftpmirror.gnu.org http://ftp.gnu.org/pub/gnu"
 
 fetch_gnu()
 {
@@ -45,6 +45,21 @@ fetch_gnu()
 
     $ret
 }
+
+archives_sources="http://archives.aros-exec.org https://arosarchives.os4depot.net"
+
+fetch_archives()
+{
+    local origin="$1" file="$2" destination="$3"
+    local ret=true
+
+    if ! fetch_mirrored "$origin" "${file}" "$destination" "Archives" "${archives_sources}"; then
+        ret=false
+    fi
+
+    $ret
+}
+
 
 # Note: at time of writing, the main SF download server redirects to mirrors
 # and corrects moved paths, so we retry this server multiple times (in one
@@ -159,7 +174,7 @@ fetch()
     local origin="$1" file="$2" destination="$3"
     
     local protocol
-    
+
     if echo "$origin" | grep ":" >/dev/null; then
         protocol=$(echo "$origin" | cut -d':' -f1)
     fi
@@ -184,6 +199,11 @@ fetch()
                 mv "$destination/$file.tmp" "$destination/$file"
             fi
             rm -f "$destination/$file.tmp"
+            ;;
+        archives)
+            if ! fetch_archives "${origin:${#protocol}+3}" "$file" "$destination"; then
+                ret=false
+            fi
             ;;
         gnu)
             if ! fetch_gnu "${origin:${#protocol}+3}" "$file" "$destination"; then
