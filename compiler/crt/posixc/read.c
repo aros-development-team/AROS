@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function read().
 */
@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-        open(), read(), __posixc_fread()
+        open(), read(), fread()
 
     INTERNALS
 

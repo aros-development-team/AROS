@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function closedir().
 */
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-        close(), opendir(), __posixc_readdir(), rewinddir(), seekdir(),
+        close(), opendir(), readdir(), rewinddir(), seekdir(),
         telldir()
 
     INTERNALS

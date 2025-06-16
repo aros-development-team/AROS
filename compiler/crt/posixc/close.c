@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function close().
 */
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-        open(), read(), write(), __posixc_fopen()
+        open(), read(), write(), fopen()
 
     INTERNALS
 

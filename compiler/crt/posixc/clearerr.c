@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function clearerr().
 */
@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-        __posixc_ferror()
+        ferror()
 
     INTERNALS
 
