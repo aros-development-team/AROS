@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-# Copyright © 2004-2021, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2025, The AROS Development Team. All rights reserved.
 # $Id$
+
+SPOOFED_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 
 error()
 {    
@@ -105,6 +107,7 @@ curl_http() {
     local curlsrc
     local urlsrc
     local ret
+    local state=0
 
     if echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
         if ! echo "$tryurl" | grep "?download" >/dev/null; then
@@ -113,38 +116,42 @@ curl_http() {
     fi
 
     urlsrc=$(curl -fsIL -o /dev/null -w "%{url_effective}" "$tryurl$curlext")
-    ret=$?
-    if [ $ret -ne 0 ]; then
+    if [ $? -ne 0 ]; then
         # In case an old confused server is encountered we assume TLS 1.0.
         # The system this script runs on might not support TLS 1.0,
         # and then we are out of luck, but we tried.
         # Servers of this kind should be super rare, but the fallback was
         # carried over from the original code using wget.
         urlsrc=$(curl --tlsv1 --tls-max 1.0 -fsIL -o /dev/null -w "%{url_effective}" "$tryurl$curlext")
-        ret=$?
     fi
-    if [ $ret -ne 0 ]; then
+    if [ $? -ne 0 ]; then
         curlsrc="$tryurl"
     else
         curlsrc="$urlsrc"
     fi
-    ret=true
 
-    for (( ; ; ))
-    do
-        if ! eval "curl -fL --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - \"$curlsrc\" -o $curloutput"; then
-            if test "$ret" = false; then
-                break
-            fi
-            ret=false
-            curlextraflags="--tlsv1 --tls-max 1.0"
-        else
-            ret=true
-            break
+    while :; do
+        if eval "curl -fL --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - \"$curlsrc\" -o \"$curloutput\""; then
+            return 0
         fi
-    done
 
-    $ret
+        case $state in
+            0)
+                # First failure, try with older TLS
+                curlextraflags="--tlsv1 --tls-max 1.1"
+                state=1
+                ;;
+            1)
+                # Second failure, spoof user agent and referer
+                curlextraflags="--tlsv1.2 --tls-max 1.2 -A \"$SPOOFED_USER_AGENT\" -e \"$tryurl\""
+                state=2
+                ;;
+            *)
+                # Final failure, exit
+                return 1
+                ;;
+        esac
+    done
 }
 
 fetch()
