@@ -1,0 +1,41 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+    PROJWEBDIR:  '/home/project-web' # Location script is run from
+
+steps:
+- task: DownloadSecureFile@1
+  name: GetSSHKey
+  inputs:
+    secureFile: 'sf-azure-key'
+
+- script: |
+    echo "Setting up SSH key..."
+    mkdir -p ~/.ssh
+    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
+    chmod 700 ~/.ssh
+
+    # Add SourceForge to known hosts (non-interactive SSH)
+    ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
+  displayName: 'Setup SSH Key for SourceForge'
+
+- script: |
+    echo "Checking shell access..."
+    # Try a noop command to test if shell is ready
+    if ! ssh -o StrictHostKeyChecking=no "$MAPPED_USER"@shell.sourceforge.net true; then
+      echo "Shell not active yet. Creating shell..."
+      ssh -t "$MAPPED_USER"@shell.sourceforge.net create
+    fi
+
+    echo "Running cleanup script on SourceForge..."
+    ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER"@shell.sourceforge.net \
+      "cd '$PROJWEBDIR' && ./aros/scripts/unittests-clean"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)  # Set this in your pipeline variable group or UI
+  condition: ne( variables['SF_RSYNC_USER'], '' )
+  displayName: 'Run Remote Unittest Cleanup'
