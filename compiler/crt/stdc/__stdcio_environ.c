@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2025, The AROS Development Team. All rights reserved.
 
     Desc: AROS specific function for environ emulation handling
 */
@@ -48,7 +48,7 @@
         This is still TODO.
 
     SEE ALSO
-        __stdcio_get_environptr(), __stdcio_getenv(), setenv()
+        __stdcio_get_environptr(), getenv(), setenv()
 
     INTERNALS
 
