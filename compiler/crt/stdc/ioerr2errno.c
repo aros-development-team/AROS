@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: errno internals
 */
@@ -8,7 +8,7 @@
 #include <dos/dosasl.h>
 #include <errno.h>
 
-int __stdc_ioerr2errno (int ioerr)
+int ioerr2errno (int ioerr)
 {
     switch (ioerr)
     {
@@ -50,4 +50,4 @@ int __stdc_ioerr2errno (int ioerr)
     }
 
     return MAX_ERRNO+ioerr;
-} /* __stdc_ioerr2errno */
+} /* ioerr2errno */

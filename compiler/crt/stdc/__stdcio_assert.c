@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function assert() autodoc and stdcio.library support function
 */
@@ -60,7 +60,7 @@
     NAME */
 #include <assert.h>
 
-        void __stdcio_assert (
+        void __assert (
 
 /*  SYNOPSIS */
         const char * expr,
@@ -99,6 +99,3 @@
     fprintf (stderr, "Assertion (%s) failed in %s:%u\n", expr, file, line);
     abort();
 } /* assert */
-
-AROS_MAKE_ASM_SYM(typeof(__assert), __assert, AROS_CSYM_FROM_ASM_NAME(__assert), AROS_CSYM_FROM_ASM_NAME(__stdcio_assert));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(__assert));

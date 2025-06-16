@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     assert()
 */
@@ -12,7 +12,7 @@
     NAME */
 #include <assert.h>
 
-        void __posixc_assert (
+        void __assert (
 
 /*  SYNOPSIS */
         const char * expr,
@@ -41,8 +41,8 @@
     BUGS
 
     SEE ALSO
-        stdc.library/assert(), stdc.library/__stdc_assert(),
-        stdc.library/__stdcio_assert()
+        stdc.library/assert(), stdc.library/__assert(),
+        stdc.library/__assert()
 
     INTERNALS
 

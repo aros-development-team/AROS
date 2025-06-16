@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function strerror().
 */
@@ -20,42 +20,10 @@ static const char * _errstrings[];
 
 /*****************************************************************************
 
-    NAME
-#include <string.h>
-
-        char * strerror (
-
-    SYNOPSIS
-        int n)
-
-    FUNCTION
-        Returns a readable string for an error number in errno.
-
-    INPUTS
-        n - The contents of errno or a #define from errno.h
-
-    RESULT
-        A string describing the error.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        __stdc_strerror()
-
-    INTERNALS
-
-******************************************************************************/
-
-/*****************************************************************************
-
     NAME */
 #include <string.h>
 
-        char * __stdc_strerror (
+        char * strerror (
 
 /*  SYNOPSIS */
         int n)
@@ -82,7 +50,6 @@ static const char * _errstrings[];
     BUGS
 
     SEE ALSO
-        strerror()
 
     INTERNALS
 

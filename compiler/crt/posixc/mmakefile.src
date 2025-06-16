@@ -9,7 +9,7 @@ POSIXC := \
     __fopen \
     __fseeko \
     __ftello \
-    __posixc_assert \
+    __assert \
     __posixc_env \
     __posixc_init \
     __posixc_nixmain \
