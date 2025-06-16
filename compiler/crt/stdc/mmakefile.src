@@ -353,9 +353,14 @@ STDC_WCHAR_COMMON := \
     wcrtomb \
     wcstombs \
     mbstowcs \
-    mblen
-
+    mblen \
+    mbrtowc \
+    mbrlen \
+    mbsrtowcs \
+    wcsrtombs
+    
 STDC_WCHAR := \
+    __locale \
     $(STDC_WCHAR_COMMON) \
     wmemset \
     wmemmove \

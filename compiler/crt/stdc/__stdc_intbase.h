@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2025, The AROS Development Team. All rights reserved.
 
     This file defines the private part of StdCBase.
     This should only be used internally in stdc.library code so
@@ -15,6 +15,8 @@
 #include <devices/timer.h>
 #include <dos/bptr.h>
 #include <dos/dos.h>
+
+#include <aros/types/locale_t.h>
 
 #include <time.h>
 
@@ -68,6 +70,9 @@ struct StdCIntBase
     APTR                        __fe_dfl_env;
     APTR                        __fe_nomask_env;
     int                         __fe_round;
+    
+    /* locale */
+    struct __locale             *__locale_cur;
 };
 
 /* Make a distinction between exit() and abort() */

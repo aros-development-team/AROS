@@ -2,7 +2,7 @@
 #define _STDC_LOCALE_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file locale.h
@@ -52,6 +52,7 @@ struct lconv
 #define LC_NUMERIC	    4
 #define LC_TIME		    5
 
+typedef struct __locale *locale_t;
 
 __BEGIN_DECLS
 
