@@ -25,7 +25,7 @@
   </tr>
   <tr>
     <td style="text-align:center">6.5.0</td>
-    <td style="text-align:center">9.1.0</td>
+    <td style="text-align:center">9.5.0</td>
     <td style="text-align:center">10.5.0</td>
     <td style="text-align:center">13.4.0</td>
     <td style="text-align:center">15.1.0</td>
