@@ -1,5 +1,7 @@
+// smallpt, a Path Tracer by Kevin Beason, 2008
 
-#include <math.h>   // smallpt, a Path Tracer by Kevin Beason, 2008 
+#include <math.h>   
+
 #include <stdlib.h>
 #include <exec/types.h>
 #include <aros/debug.h>
@@ -20,18 +22,18 @@ struct Vec {        // Usage: time ./smallpt 5000 && xv image.ppm
         z = z_;
     } 
 
-    Vec operator+(const Vec &b) const { return Vec(x + b.x, y + b.y, z + b.z); } 
-    Vec operator-(const Vec &b) const { return Vec(x - b.x, y - b.y, z - b.z); } 
-    Vec operator*(double b) const { return Vec(x * b, y * b, z * b); } 
-    Vec mult(const Vec &b) const { return Vec(x * b.x, y * b.y, z * b.z); } 
-    Vec& norm() { return *this = *this * (1/sqrt(x * x + y * y + z * z)); } 
-    double dot(const Vec &b) const { return x * b.x + y * b.y + z * b.z; } // cross: 
-    Vec operator%(Vec &b){ return Vec(y * b.z - z * b.y, z * b.x - x * b.z, x * b.y - y * b.x);} 
+    inline Vec operator+(const Vec &b) const { return Vec(x + b.x, y + b.y, z + b.z); } 
+    inline Vec operator-(const Vec &b) const { return Vec(x - b.x, y - b.y, z - b.z); } 
+    inline Vec operator*(double b) const { return Vec(x * b, y * b, z * b); } 
+    inline Vec mult(const Vec &b) const { return Vec(x * b.x, y * b.y, z * b.z); } 
+    inline Vec& norm() { return *this = *this * (1/sqrt(x * x + y * y + z * z)); } 
+    inline double dot(const Vec &b) const { return x * b.x + y * b.y + z * b.z; } // cross: 
+    inline Vec operator%(Vec &b){ return Vec(y * b.z - z * b.y, z * b.x - x * b.z, x * b.y - y * b.x);} 
 }; 
 
 struct Ray {
     Vec o, d;
-    Ray(const Vec o_, Vec d_) : o(o_), d(d_) {}
+    Ray(const Vec& o_, Vec d_) : o(o_), d(d_) {}
 };
 
 enum Refl_t
@@ -46,7 +48,7 @@ struct Sphere
     double rad;  // radius
     Vec p, e, c; // position, emission, color
     Refl_t refl; // reflection type (DIFFuse, SPECular, REFRactive)
-    Sphere(double rad_, const Vec p_, Vec e_, Vec c_, Refl_t refl_) : rad(rad_), p(p_), e(e_), c(c_), refl(refl_) {}
+    Sphere(double rad_, const Vec& p_, Vec e_, Vec c_, Refl_t refl_) : rad(rad_), p(p_), e(e_), c(c_), refl(refl_) {}
     double intersect(const Ray &r) const
     {                     // returns distance, 0 if nohit
         Vec op = p - r.o; // Solve t^2*d.d + 2*t*(o-p).d + (o-p).(o-p)-R^2 = 0
