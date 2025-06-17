@@ -274,7 +274,7 @@ diff -ruN gcc-15.1.0/gcc/config/aarch64/t-aros gcc-15.1.0.aros/gcc/config/aarch6
 +
 diff -ruN gcc-15.1.0/gcc/config/arm/aros.h gcc-15.1.0.aros/gcc/config/arm/aros.h
 --- gcc-15.1.0/gcc/config/arm/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config/arm/aros.h	2025-06-13 17:01:16.948416114 +0000
++++ gcc-15.1.0.aros/gcc/config/arm/aros.h	2020-12-27 16:58:14.310000000 +0000
 @@ -0,0 +1,89 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
@@ -367,7 +367,7 @@ diff -ruN gcc-15.1.0/gcc/config/arm/aros.h gcc-15.1.0.aros/gcc/config/arm/aros.h
 +#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-15.1.0/gcc/config/arm/t-aros gcc-15.1.0.aros/gcc/config/arm/t-aros
 --- gcc-15.1.0/gcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config/arm/t-aros	2025-06-13 17:01:08.380416121 +0000
++++ gcc-15.1.0.aros/gcc/config/arm/t-aros	2020-12-27 16:58:14.310000000 +0000
 @@ -0,0 +1,84 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
@@ -455,8 +455,8 @@ diff -ruN gcc-15.1.0/gcc/config/arm/t-aros gcc-15.1.0.aros/gcc/config/arm/t-aros
 +MULTILIB_REUSE		+= marm/mlittle-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.hard=mlittle-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.hard
 diff -ruN gcc-15.1.0/gcc/config/aros.h gcc-15.1.0.aros/gcc/config/aros.h
 --- gcc-15.1.0/gcc/config/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config/aros.h	2020-12-27 16:58:14.310000000 +0000
-@@ -0,0 +1,123 @@
++++ gcc-15.1.0.aros/gcc/config/aros.h	2025-06-17 11:49:26.664319518 +0000
+@@ -0,0 +1,129 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -482,11 +482,17 @@ diff -ruN gcc-15.1.0/gcc/config/aros.h gcc-15.1.0.aros/gcc/config/aros.h
 +#undef SIZE_TYPE
 +#define SIZE_TYPE "long unsigned int"
 +
++#if !defined(__AROSGCC_UINTWCHAR)
 +#undef WCHAR_TYPE
 +#define WCHAR_TYPE "char"
-+
 +#undef WCHAR_TYPE_SIZE
 +#define WCHAR_TYPE_SIZE 8
++#else
++#undef	WCHAR_TYPE
++#define WCHAR_TYPE "unsigned int"
++#undef	WCHAR_TYPE_SIZE
++#define WCHAR_TYPE_SIZE 32
++#endif
 +
 +#undef PTRDIFF_TYPE
 +#define PTRDIFF_TYPE "long int"
