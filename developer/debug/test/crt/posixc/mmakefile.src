@@ -55,8 +55,8 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/posixc
 #MM- test-cunit : test-crt-posixc-cunit
 #MM- test-cunit-quick : test-crt-posixc-cunit-quick
 
-#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-gnu test-crt-posixc-2k8 test-crt-posixc-nix test-crt-posixc-posix1
-#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-gnu-quick test-crt-posixc-2k8-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick
+#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-gnu test-crt-posixc-2k8 test-crt-posixc-nix test-crt-posixc-posix1 test-crt-posixc-$(TARGET_UNITTESTS)-cunit
+#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-gnu-quick test-crt-posixc-2k8-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick test-crt-posixc-$(TARGET_UNITTESTS)-cunit-quick
 
 #MM test-crt-posixc-general : includes includes-copy linklibs kernel
 #MM test-crt-posixc-2k8 : includes includes-copy linklibs kernel
