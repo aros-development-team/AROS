@@ -1,11 +1,14 @@
 /*
-    Copyright (C) 2003-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2025, The AROS Development Team. All rights reserved.
 
     C99 function localeconv().
 */
 
 #include <locale.h>
 #include <string.h>
+#include <aros/types/locale_t.h>
+
+#include "__locale.h"
 
 /*****************************************************************************
 
@@ -22,15 +25,15 @@
 
     INPUTS
         category - category as defined in locale.h
-        locale - string representing "C"
+        locale - string representing the desired locale (see notes)
 
     RESULT
         The lconv struct
 
     NOTES
-        stdc.library only support "C" locale. So only NULL or
-        "C" are accepted for locale and this function does not
-        have an effect.
+        stdc.library supports "C", and (if the compiler has been
+        compiled with __WCHAR_MAX__ > 256) "utf8" locale(s).
+        Accepted values for locale are "C", and "".
 
     EXAMPLE
 
@@ -43,11 +46,11 @@
 
 ******************************************************************************/
 {
+    locale_t loc;
+
     if (category < LC_ALL || category > LC_TIME)
         return NULL;
 
-    if (locale == NULL || strcmp(locale, "C") == 0)
-        return "C";
-    
-    return NULL;
+    loc = __get_setlocale_internal(locale);
+    return loc ? (char *)loc->name : NULL;
 }

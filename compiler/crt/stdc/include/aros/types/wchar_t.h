@@ -31,7 +31,11 @@
 #ifdef __WCHAR_TYPE__
 typedef __WCHAR_TYPE__ wchar_t;
 #else
+#if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 256
 typedef uint32_t wchar_t;
+#else
+typedef char wchar_t;
+#endif
 #endif
 
 #endif

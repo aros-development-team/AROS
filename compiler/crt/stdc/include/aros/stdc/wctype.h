@@ -27,7 +27,6 @@ int iswcntrl(wint_t);
 int iswdigit(wint_t);
 int iswgraph(wint_t);
 int iswlower(wint_t);
-int iswprint(wint_t);
 int iswpunct(wint_t);
 int iswspace(wint_t);
 int iswupper(wint_t);
@@ -39,6 +38,17 @@ wint_t towupper(wint_t);
 wctrans_t wctrans(const char *);
 wctype_t wctype(const char *);
 )
+
+#if (0)
+int iswprint(wint_t wc);
+#else
+static __inline__ int iswprint(wint_t wc)
+{
+    // Basic Latin and common printable Unicode ranges
+    return (wc >= 0x20 && wc < 0x7F) ||  // Printable ASCII
+           (wc >= 0xA0 && wc <= 0x10FFFF); // Printable Unicode above Latin-1 (excluding control ranges)
+}
+#endif
 
 __END_DECLS
 

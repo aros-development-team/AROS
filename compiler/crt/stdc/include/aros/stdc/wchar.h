@@ -113,8 +113,15 @@ size_t wcsftime(wchar_t * restrict s, size_t maxsize,
 wint_t btowc(int c);
 int wctob(wint_t c);
 int wcwidth(wchar_t);
-int mbsinit(const mbstate_t *ps);
 )
+#if (0)
+int mbsinit(const mbstate_t *ps);
+#else
+static __inline__ int mbsinit(const mbstate_t *ps)
+{
+    return (ps == NULL) || (ps->__state == 0 && ps->__count == 0 && ps->__value == 0);
+}
+#endif
 size_t mbrlen(const char * restrict s, size_t n, mbstate_t * restrict ps);
 size_t mbrtowc(wchar_t * restrict pwc, const char * restrict s, size_t n,
 	mbstate_t * restrict ps);

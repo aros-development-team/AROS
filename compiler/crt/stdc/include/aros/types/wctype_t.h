@@ -8,7 +8,17 @@
 
 #ifndef __cplusplus
 
-/* typedef int wctype_t; */
+#include <aros/types/int_t.h>
+
+#ifdef __WINT_TYPE__
+typedef __WINT_TYPE__ wint_t;
+#else
+#if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 256
+typedef uint32_t wint_t;
+#else
+typedef char wint_t;
+#endif
+#endif
 
 #endif
 

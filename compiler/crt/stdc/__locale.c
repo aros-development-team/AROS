@@ -16,12 +16,14 @@ struct __locale __locale_C = {
     .mb_cur_max = 1
 };
 
+#if __WCHAR_MAX__ > 256
 struct __locale __locale_UTF8 = {
     .name = "C.UTF-8",
     .mb_cur_max = 4
 };
+#endif
 
-struct __locale *__get_current_locale(void) {
+locale_t __get_current_locale(void) {
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
 
@@ -34,8 +36,10 @@ locale_t __get_setlocale_internal(const char *name) {
 
     if (!name || strcmp(name, "C") == 0)
         StdCBase->__locale_cur = &__locale_C;
+#if __WCHAR_MAX__ > 256
     else if (strcmp(name, "C.UTF-8") == 0)
         StdCBase->__locale_cur = &__locale_UTF8;
+#endif
     else
         return NULL;
 
