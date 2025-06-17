@@ -125,8 +125,8 @@ curl_http() {
     local state=0
 
     if echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
-        if ! echo "$tryurl" | grep "?download" >/dev/null; then
-            curlext="?download"
+        if ! echo "$tryurl" | grep "/download" >/dev/null; then
+            curlext="/download"
         fi
     fi
 
@@ -158,8 +158,12 @@ curl_http() {
                 ;;
             1)
                 # Second failure, spoof user agent and referer
-                curlextraflags="--tlsv1.2 --tls-max 1.2 -A \"$SPOOFED_USER_AGENT\" -e \"$tryurl\""
-                state=2
+                if ! echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
+                    curlextraflags="--tlsv1.2 --tls-max 1.2 -A \"$SPOOFED_USER_AGENT\" -e \"$curlsrc\""
+                    state=2
+                else
+                    return 1
+                fi
                 ;;
             *)
                 # Final failure, exit
