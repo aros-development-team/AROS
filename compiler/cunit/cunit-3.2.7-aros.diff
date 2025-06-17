@@ -1,6 +1,6 @@
 diff -ruN cunit-3.2.7/CUnit/CMakeLists.txt cunit-3.2.7.aros/CUnit/CMakeLists.txt
---- cunit-3.2.7/CUnit/CMakeLists.txt	2020-04-16 17:55:15.000000000 +0000
-+++ cunit-3.2.7.aros/CUnit/CMakeLists.txt	2020-04-16 17:55:15.000000000 +0000
+--- cunit-3.2.7/CUnit/CMakeLists.txt	2020-07-29 06:43:30.000000000 +0000
++++ cunit-3.2.7.aros/CUnit/CMakeLists.txt	2020-07-29 06:43:30.000000000 +0000
 @@ -19,7 +19,7 @@
  
  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -10,9 +10,21 @@ diff -ruN cunit-3.2.7/CUnit/CMakeLists.txt cunit-3.2.7.aros/CUnit/CMakeLists.txt
  endif()
  
  
+diff -ruN cunit-3.2.7/CUnit/Sources/Automated/Automated.c cunit-3.2.7.aros/CUnit/Sources/Automated/Automated.c
+--- cunit-3.2.7/CUnit/Sources/Automated/Automated.c	2020-07-29 06:43:30.000000000 +0000
++++ cunit-3.2.7.aros/CUnit/Sources/Automated/Automated.c	2025-06-17 20:12:38.801037453 +0000
+@@ -251,7 +251,7 @@
+     if (!outfile) {
+       CU_set_error(CUE_FOPEN_FAILED);
+     }
+-    if (fclose(outfile)){
++    else if (fclose(outfile)){
+       CU_set_error(CUE_FCLOSE_FAILED);
+     }
+     return CU_get_error();
 diff -ruN cunit-3.2.7/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.2.7.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c
---- cunit-3.2.7/CUnit/Sources/Automated/AutomatedJUnitXml.c	2020-04-16 17:55:15.000000000 +0000
-+++ cunit-3.2.7.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2021-01-11 16:47:21.700000000 +0000
+--- cunit-3.2.7/CUnit/Sources/Automated/AutomatedJUnitXml.c	2020-07-29 06:43:30.000000000 +0000
++++ cunit-3.2.7.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2020-07-29 06:43:30.000000000 +0000
 @@ -177,13 +177,14 @@
    return n;
  }
