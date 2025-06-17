@@ -3654,7 +3654,7 @@ endif
 
 %(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
 
-%(mmake)-install_opts := prefix=$(%(mmake)-prefix) \
+%(mmake)-install_opts += prefix=$(%(mmake)-prefix) \
         exec_prefix=$(%(mmake)-prefix) %(install_env)
 
 # Check if chosen compiler is valid
@@ -3946,7 +3946,7 @@ $(%(mmake)-touchfileflag) : $(%(mmake)-pkgdir)/.local-copy
 else
     %(mmake)-cfg-srcdir=%(srcdir)
 endif
-%(mmake)-make-env := -C $(%(mmake)-pkgdir)
+%(mmake)-make-env += -C $(%(mmake)-pkgdir)
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
