@@ -41,8 +41,7 @@
     BUGS
 
     SEE ALSO
-        stdc.library/assert(), stdc.library/__assert(),
-        stdc.library/__assert()
+        stdc.library/assert(), stdc.library/__assert()
 
     INTERNALS
 
