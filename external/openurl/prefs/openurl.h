@@ -152,8 +152,8 @@ struct MUIP_App_OpenWin
     STACKED ULONG         MethodID;
     STACKED struct IClass *Class;
     STACKED ULONG         IDAttr;
-    STACKED ULONG         IDVal;
-    STACKED ULONG         InitAttrs;
+    STACKED IPTR          IDVal;
+    STACKED IPTR          InitAttrs;
 };
 
 struct MUIP_App_GetPrefs
