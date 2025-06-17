@@ -929,6 +929,13 @@ case "$aros_toolchain" in
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
     *gnu*)
+        AC_MSG_CHECKING([if we should enable unit32 WCHAR suport])
+        AC_ARG_ENABLE(wchar32,AS_HELP_STRING([--enable-wchar32=[yes|no]],[Enable uint32 WCHAR support in the compiler/AROS (default=no)]),
+         aros_config_wchar32="$enableval",aros_config_wchar32="no")
+        if test "$aros_config_wchar32" != "no"; then
+            aros_config_wchar32="yes"
+        fi
+        AC_MSG_RESULT($aros_config_wchar32)
         toolchain_c_compiler="gcc"
         toolchain_cxx_compiler="g++"
         toolchain_cpp_preprocessor="gcc"
@@ -3846,6 +3853,7 @@ AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
 AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
+AC_SUBST(aros_config_wchar32)
 AC_SUBST(aros_config_lto)
 AC_SUBST(aros_config_coverage)
 AC_SUBST(aros_optimization_cflags)

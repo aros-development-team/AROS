@@ -3,6 +3,8 @@
 
 AROS_PREFS_SET            := @config_prefs_set@
 
+AROS_STDC_WCHAR32         := @aros_config_wchar32@
+
 #Bootloader
 GRUB2_VERSION             := @target_grub2_version@
 

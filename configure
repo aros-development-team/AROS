@@ -706,6 +706,7 @@ aros_kernel_isa_flags
 aros_optimization_cflags
 aros_config_coverage
 aros_config_lto
+aros_config_wchar32
 aros_target_strip_flags
 aros_target_genmap
 aros_debug_ldflags
@@ -979,6 +980,7 @@ enable_libpng_config
 with_toolchain
 enable_lto
 enable_coverage
+enable_wchar32
 enable_build_type
 enable_debug
 with_logresource
@@ -1683,6 +1685,8 @@ Optional Features:
   --enable-coverage=yes|no
                           Enable coverage instrumentation if the target
                           compiler supports it (default=no)
+  --enable-wchar32=yes|no Enable uint32 WCHAR support in the compiler/AROS
+                          (default=no)
   --enable-build-type=TYPE
                           Select the build type. Available types are:
                           personal, nightly, snapshot, milestone, release. Do
@@ -9274,6 +9278,21 @@ case "$aros_toolchain" in
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
     *gnu*)
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if we should enable unit32 WCHAR suport" >&5
+printf %s "checking if we should enable unit32 WCHAR suport... " >&6; }
+        # Check whether --enable-wchar32 was given.
+if test ${enable_wchar32+y}
+then :
+  enableval=$enable_wchar32; aros_config_wchar32="$enableval"
+else $as_nop
+  aros_config_wchar32="no"
+fi
+
+        if test "$aros_config_wchar32" != "no"; then
+            aros_config_wchar32="yes"
+        fi
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_config_wchar32" >&5
+printf "%s\n" "$aros_config_wchar32" >&6; }
         toolchain_c_compiler="gcc"
         toolchain_cxx_compiler="g++"
         toolchain_cpp_preprocessor="gcc"
@@ -18610,6 +18629,7 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Target Related #########################
+
 
 
 
