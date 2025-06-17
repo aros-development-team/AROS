@@ -122,6 +122,7 @@
   </tr>
   <tr>
     <td>linux-arm</td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=29&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-arm?branchName=master"></a>
     </td>
@@ -129,14 +130,13 @@
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
-    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>linux-armhf</td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=28&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-armhf?branchName=master"></a>
     </td>
-    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
