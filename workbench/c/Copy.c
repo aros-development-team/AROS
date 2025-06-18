@@ -127,12 +127,12 @@
     Copy knows and returns the 3 types of dos.library errors:
     5   WARN    The processing of one file failed, Copy skips this file
                 and proceeds the next.
-    10  ERROR   The creation of a directory or any other bad error happend.
+    10  ERROR   The creation of a directory or any other bad error happened.
                 Copy quits after that.
-    20  FAIL    A really hard error happend (No memory, Examine failed, ...)
+    20  FAIL    A really hard error happened (No memory, Examine failed, ...)
                 Copy quits after that.
     When option ERRWARN is used, the result 5 (WARN) gets result 10 (ERROR). So
-    Copy aborts everytime an error occured.
+    Copy aborts every time an error occurred.
 
     MAKEDIR:
     All names specified in FROM field are taken as directories, which must be
@@ -153,8 +153,8 @@
 
     SOFT=SOFTLINK:
     Instead of copying directories, a soft link is created. These links are
-    useable between different devices also. Soft links are only created for
-    directories. Files are skipped here. Option FORCELINK is therefor always
+    usable between different devices also. Soft links are only created for
+    directories. Files are skipped here. Option FORCELINK is therefore always
     set to true.
     NOTE: Softlinks are not official supported by OS and may be dangerous.
     I suggest not to use this option! See description below.
@@ -244,7 +244,7 @@
         About links:
 
         HARDLINKS:
-        When copying one file to annother place on same disk, the file
+        When copying one file to another place on same disk, the file
         afterwards uses double space. Links are a method to resolve that
         problem. When using a link, the file is not copied, but only a new
         entry to the same data as created. This saves space and allows to
@@ -370,7 +370,7 @@ static const UBYTE *PARAM =
 #define TESTDEST_DIR_OK         2       /* directory exists, go in */
 #define TESTDEST_DELETED        1       /* file or empty directory deleted */
 #define TESTDEST_NONE           0       /* nothing existed */
-#define TESTDEST_ERROR          -1      /* an error occured */
+#define TESTDEST_ERROR          -1      /* an error occurred */
 #define TESTDEST_CANTDELETE     -2      /* deletion not allowed (DONTOV) */
 
 struct IptrArgs
@@ -1191,7 +1191,7 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
     }
     if (cd)
     {
-        /*Checks added to avoid overwritting retval when 
+        /*Checks added to avoid overwriting retval when 
         arguments missing*/
         if (retval!=ERROR_REQUIRED_ARG_MISSING)
         {
