@@ -42,7 +42,7 @@ wctype_t wctype(const char *);
 #if (0)
 int iswprint(wint_t wc);
 #else
-static __inline__ int iswprint(wint_t wc)
+__header_inline int iswprint(wint_t wc)
 {
     // Basic Latin and common printable Unicode ranges
     return (wc >= 0x20 && wc < 0x7F) ||  // Printable ASCII

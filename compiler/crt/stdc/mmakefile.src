@@ -567,7 +567,7 @@ STDCIO_LINKLIB := \
 
 #MM- core-linklibs : linklibs-stdc linklibs-stdcio linklibs-libm
 
-STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $(STDC_COMMON) $(STDC_WCHAR_COMMON))))
+STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $(STDC_COMMON) $(STDC_WCHAR_COMMON)) linklib/ctype))
 
 # Ugh. These are for the math routines, which have a number of
 # lint issues, that should be fixed.
@@ -578,6 +578,7 @@ USER_CFLAGS := $(NOWARN_FLAGS) -noposixc $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN
 USER_LDFLAGS := -nostdc -noposixc
 USER_CPPFLAGS := \
         $(STDC_MATH_CPPFLAGS) \
+        -D_GNU_SOURCE \
         -D__ISO_C_VISIBLE=2011 \
         -Dlint '-D__FBSDID(x)=' 
 #USER_CPPFLAGS += -DDEBUG=1
@@ -585,11 +586,12 @@ USER_CPPFLAGS := \
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
     files="$(STDC) $(STDC_WCHAR) $(STDC_COMMON)" \
-    linklibfiles=$(STDC_LINKLIB) linklibobjs=$(STDC_LINKOBJS)
+    linklibfiles="$(STDC_LINKLIB) ctype" linklibobjs=$(STDC_LINKOBJS)
 
 STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
 USER_CPPFLAGS := \
         $(STDC_MATH_CPPFLAGS) \
+        -D_GNU_SOURCE \
         -D__ISO_C_VISIBLE=2011 \
         -Dlint '-D__FBSDID(x)=' \
         -DSTDC_IO
@@ -690,13 +692,14 @@ USER_CFLAGS := $(NOWARN_FLAGS) $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN) $(CFLAGS
 USER_CPPFLAGS := \
         $(STDC_MATH_CPPFLAGS) \
         -DSTDC_STATIC \
+        -D_GNU_SOURCE \
         -D__ISO_C_VISIBLE=2011 \
         -Dlint
 #USER_CPPFLAGS += -DDEBUG=1
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
-    files="$(STDC_STATIC)" objdir=$(GENDIR)/$(CURDIR)/static
+    files="$(STDC_STATIC) ctype" objdir=$(GENDIR)/$(CURDIR)/static
 
 #MM- linklibs-romhack : compiler-stdc
 # FIXME: The next romhack linklib is a temporary hack and has to be
