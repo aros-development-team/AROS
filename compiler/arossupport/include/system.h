@@ -2,7 +2,7 @@
 #define AROS_SYSTEM_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Analyse the current kind of system and compiler.
@@ -24,6 +24,25 @@
 #   ifndef AMIGA
 #       define AMIGA
 #   endif
+#endif
+
+/*
+    __header_inline — Portable inline function marker for header use
+    - GCC and Clang: uses static inline + attributes
+    - VBCC / older Amiga compilers: falls back to static or nothing
+*/
+
+#if defined(__GNUC__) || defined(__clang__)
+    #define __header_inline static __inline__ __attribute__((__always_inline__, __unused__))
+#elif defined(__VBCC__)
+    /* VBCC supports inline but not always consistently in headers */
+    #define __header_inline static inline
+#elif defined(__SASC) || defined(__STORM__)
+    /* Very old Amiga compilers — no inline support or very limited */
+    #define __header_inline static
+#else
+    /* Generic fallback */
+    #define __header_inline static inline
 #endif
 
 /* handle clangs built-in's */
@@ -184,6 +203,18 @@
 #endif
 
 #define __pure2 __const
+
+/* Portable fallthrough annotation for switch/case logic */
+#ifndef __fallthrough
+# if __has_c_attribute(fallthrough)
+    # define __fallthrough [[fallthrough]]
+# elif __has_attribute(fallthrough) && (__GNUC__ >= 7)
+    # define __fallthrough __attribute__((fallthrough))
+# else
+    /* Older compilers or no support — define as empty */
+    # define __fallthrough ((void)0)
+# endif
+#endif
 
 /* 4. Macros for debugging and development */
 #if defined(__GNUC__) || defined(__INTEL_COMPILER) || (defined(__STDC__) && __STDC_VERSION__ >= 199901L)
