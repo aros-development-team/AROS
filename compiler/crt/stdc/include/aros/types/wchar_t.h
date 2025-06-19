@@ -38,6 +38,16 @@ typedef char wchar_t;
 #endif
 #endif
 
+#if defined(__WCHAR_MAX__)
+#if __WCHAR_MAX__ >= 0x10FFFF
+#define MAX_UNICODE 0x10FFFF
+#else
+#define MAX_UNICODE __WCHAR_MAX__
+#endif
+#else
+#define MAX_UNICODE 0xFF
+#endif
+
 #endif
 
 #endif /* _AROS_TYPES_WCHAR_T_H */

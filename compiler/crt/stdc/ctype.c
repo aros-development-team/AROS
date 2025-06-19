@@ -8,7 +8,7 @@
     Lang: english
 */
 
-#define _STDC_NOINLINE_CTYPE
+#define STDC_NOINLINE_CTYPE
 #include <ctype.h>
 
 int isupper(int c)

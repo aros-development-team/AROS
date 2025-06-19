@@ -6,10 +6,11 @@
     $Id$
 */
 
-#ifndef __cplusplus
+#include <aros/types/wint_t.h>
 
-/* typedef int wctrans_t; */
-
-#endif
+struct __wctrans {
+    const char *name;
+    wint_t (*func)(wint_t);
+};
 
 #endif /* _AROS_TYPES_WCTRANS_T_H */

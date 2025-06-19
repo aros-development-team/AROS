@@ -5,17 +5,23 @@
     Copyright © 2025, The AROS Development Team. All rights reserved.
     $Id$
 
-    locale_t type definition
+    Desc: locale_t type definition
 */
 
 #include <aros/types/size_t.h>
+#include <aros/types/wchar_t.h>
+#include <aros/types/wctype_t.h>
+#include <aros/types/wctrans_t.h>
 
 struct __locale {
-    const char *name;
-    size_t mb_cur_max;
-    // TODO:
-    // LC_CTYPE, LC_TIME, LC_COLLATE, LC_MONETARY, LC_NUMERIC
-    // Function pointers for encoding/decoding
+    const char              *__lc_name;
+    size_t                  __lc_mb_max;
+    const struct __wctrans  *__lc_wctrans_list;
+
+    int                     __lc_tbl_size;
+    const wctype_t          *__lc_tbl_clsfy;
+    const wchar_t           *__lc_tbl_u2l;
+    const wchar_t           *__lc_tbl_l2u;
 };
 
 #endif /* _AROS_TYPES_LOCALE_T_H */

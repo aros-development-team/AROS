@@ -8,18 +8,40 @@
 #include <string.h>
 #include <locale.h>
 
+#define STDC_NOINLINE_WCTYPE
+#include <wctype.h>
+
 #include "__stdc_intbase.h"
 #include "debug.h"
 
-struct __locale __locale_C = {
-    .name = "C",
-    .mb_cur_max = 1
+#include "_unicode_tables.c"
+
+/* Static table for known transformations */
+static const struct __wctrans stdc_wctrans_list[] = {
+    { "tolower", towlower },
+    { "toupper", towupper },
+    { NULL, NULL }
 };
 
-#if __WCHAR_MAX__ > 256
+struct __locale __locale_C = {
+    .__lc_name = "C",
+    .__lc_mb_max = 1,
+    .__lc_tbl_size = 128,
+    .__lc_tbl_clsfy = unicode_wctype,
+    .__lc_tbl_u2l = unicode_u2l,
+    .__lc_tbl_l2u = unicode_l2u,
+    .__lc_wctrans_list = stdc_wctrans_list
+};
+
+#if __WCHAR_MAX__ > 255
 struct __locale __locale_UTF8 = {
-    .name = "C.UTF-8",
-    .mb_cur_max = 4
+    .__lc_name = "C.UTF-8",
+    .__lc_mb_max = 4,
+    .__lc_tbl_size = 256,
+    .__lc_tbl_clsfy = unicode_wctype,
+    .__lc_tbl_u2l = unicode_u2l,
+    .__lc_tbl_l2u = unicode_l2u,
+    .__lc_wctrans_list = stdc_wctrans_list
 };
 #endif
 
@@ -30,14 +52,14 @@ locale_t __get_current_locale(void) {
     return StdCBase->__locale_cur;
 }
 
-locale_t __get_setlocale_internal(const char *name) {
+locale_t __get_setlocale_internal(const char *__lc_name) {
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    if (!name || strcmp(name, "C") == 0)
+    if (!__lc_name || strcmp(__lc_name, "C") == 0)
         StdCBase->__locale_cur = &__locale_C;
 #if __WCHAR_MAX__ > 256
-    else if (strcmp(name, "C.UTF-8") == 0)
+    else if (strcmp(__lc_name, "C.UTF-8") == 0)
         StdCBase->__locale_cur = &__locale_UTF8;
 #endif
     else
@@ -49,8 +71,9 @@ locale_t __get_setlocale_internal(const char *name) {
 static int __init_stdclocale(struct StdCIntBase *StdCBase)
 {
     D(bug("[%s] %s()\n", STDCNAME, __func__));
-	StdCBase->__locale_cur = &__locale_C;
 
+	StdCBase->__locale_cur = &__locale_C;
+    
     return 1;
 }
 

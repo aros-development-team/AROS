@@ -31,9 +31,9 @@
         The lconv struct
 
     NOTES
-        stdc.library supports "C", and (if the compiler has been
-        compiled with __WCHAR_MAX__ > 256) "utf8" locale(s).
-        Accepted values for locale are "C", and "".
+        stdc.library supports "C" (and if the compiler has been
+        compiled with __WCHAR_MAX__ > 255, "UTF8") locale(s).
+        Currently accepted values for locale are "C", and "C.UTF-8".
 
     EXAMPLE
 
@@ -52,5 +52,5 @@
         return NULL;
 
     loc = __get_setlocale_internal(locale);
-    return loc ? (char *)loc->name : NULL;
+    return loc ? (char *)loc->__lc_name : NULL;
 }

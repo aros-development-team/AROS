@@ -16,6 +16,8 @@
 #include <dos/bptr.h>
 #include <dos/dos.h>
 
+#include <aros/types/wchar_t.h>
+#include <aros/types/wctype_t.h>
 #include <aros/types/locale_t.h>
 
 #include <time.h>

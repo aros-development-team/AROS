@@ -362,6 +362,11 @@ STDC_WCHAR_COMMON := \
 STDC_WCHAR := \
     __locale \
     $(STDC_WCHAR_COMMON) \
+    wctrans \
+    towctrans \
+    towlower \
+    towupper \
+    iswctype \
     wmemset \
     wmemmove \
     wmemcpy \
@@ -381,6 +386,9 @@ STDC_WCHAR := \
     wcscpy \
     wcsncpy \
     wcslen
+
+STDC_WCHAR_LIBFUNCS := \
+    wctype
 
 STDC := \
     __ctype \
@@ -567,7 +575,7 @@ STDCIO_LINKLIB := \
 
 #MM- core-linklibs : linklibs-stdc linklibs-stdcio linklibs-libm
 
-STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $(STDC_COMMON) $(STDC_WCHAR_COMMON)) linklib/ctype))
+STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $(STDC_COMMON) $(STDC_WCHAR_COMMON)) $(addprefix linklib/,ctype $(STDC_WCHAR_LIBFUNCS))))
 
 # Ugh. These are for the math routines, which have a number of
 # lint issues, that should be fixed.
@@ -586,7 +594,7 @@ USER_CPPFLAGS := \
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
     files="$(STDC) $(STDC_WCHAR) $(STDC_COMMON)" \
-    linklibfiles="$(STDC_LINKLIB) ctype" linklibobjs=$(STDC_LINKOBJS)
+    linklibfiles="$(STDC_LINKLIB) ctype $(STDC_WCHAR_LIBFUNCS)" linklibobjs=$(STDC_LINKOBJS)
 
 STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
 USER_CPPFLAGS := \
@@ -699,7 +707,7 @@ USER_CPPFLAGS := \
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
-    files="$(STDC_STATIC) ctype" objdir=$(GENDIR)/$(CURDIR)/static
+    files="$(STDC_STATIC) ctype $(STDC_WCHAR_LIBFUNCS)" objdir=$(GENDIR)/$(CURDIR)/static
 
 #MM- linklibs-romhack : compiler-stdc
 # FIXME: The next romhack linklib is a temporary hack and has to be
