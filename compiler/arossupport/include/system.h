@@ -33,7 +33,11 @@
 */
 
 #if defined(__GNUC__) || defined(__clang__)
+#if !defined(AROS_SAFE_HEADERINLINE)
     #define __header_inline static inline __attribute__((__always_inline__, __unused__))
+#else
+    #define __header_inline static inline
+#endif
 #elif defined(__VBCC__)
     /* VBCC supports inline but not always consistently in headers */
     #define __header_inline static inline
@@ -106,20 +110,6 @@
     - Define fallback versions of const, inline, volatile, and restrict
     - Only redefine them when not using a modern standard or GCC/Clang
 */
-
-/* Unbreak bad macro definitions from earlier includes */
-#ifdef __unused__
-#  undef __unused__
-#endif
-#ifdef __inline__
-#  undef __inline__
-#endif
-#ifdef __volatile__
-#  undef __volatile__
-#endif
-#ifdef __restrict__
-#  undef __restrict__
-#endif
 
 #if defined(__STDC__) || defined(__cplusplus)
 
