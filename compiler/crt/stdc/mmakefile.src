@@ -388,6 +388,7 @@ STDC_WCHAR := \
     wcslen
 
 STDC_WCHAR_LIBFUNCS := \
+    wchar \
     wctype
 
 STDC := \
