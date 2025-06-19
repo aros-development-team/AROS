@@ -13,8 +13,6 @@
 #include <aros/types/wctype_t.h>
 #include <aros/types/wint_t.h>
 
-#include <wctype.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

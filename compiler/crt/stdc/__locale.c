@@ -52,14 +52,14 @@ locale_t __get_current_locale(void) {
     return StdCBase->__locale_cur;
 }
 
-locale_t __get_setlocale_internal(const char *__lc_name) {
+locale_t __get_setlocale_internal(const char *lcname) {
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    if (!__lc_name || strcmp(__lc_name, "C") == 0)
+    if (!lcname || strcmp(lcname, "C") == 0)
         StdCBase->__locale_cur = &__locale_C;
 #if __WCHAR_MAX__ > 256
-    else if (strcmp(__lc_name, "C.UTF-8") == 0)
+    else if (strcmp(lcname, "C.UTF-8") == 0)
         StdCBase->__locale_cur = &__locale_UTF8;
 #endif
     else
