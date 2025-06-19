@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -570,7 +570,7 @@ APTR InternalFormatString(const struct Locale * locale,
     }
 
     if (max_argpos == 0)
-        return dataStream;
+        return (APTR)dataStream;
 
     return (APTR)(ARG(max_argpos) + max_argpos_datasize);
 }
