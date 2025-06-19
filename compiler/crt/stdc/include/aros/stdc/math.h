@@ -210,19 +210,19 @@ int	__signbit(double) __pure2;
 int	__signbitf(float) __pure2;
 int	__signbitl(long double) __pure2;
 
-static __inline int
+__header_inline int
 __inline_isnan(__const double __x)
 {
     return (__x != __x);
 }
 
-static __inline int
+__header_inline int
 __inline_isnanf(__const float __x)
 {
     return (__x != __x);
 }
 
-static __inline int
+__header_inline int
 __inline_isnanl(__const long double __x)
 {
     return (__x != __x);
