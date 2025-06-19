@@ -140,7 +140,9 @@ __header_inline int wcwidth(wchar_t wc) {
 
 __header_inline int wcswidth(const wchar_t *pwcs, size_t n) {
     int width = 0;
-    for (size_t i = 0; i < n && pwcs[i] != L'\0'; ++i) {
+    size_t i;
+
+    for (i = 0; i < n && pwcs[i] != L'\0'; ++i) {
         int w = wcwidth(pwcs[i]);
         if (w < 0)
             return -1;
