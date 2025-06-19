@@ -1,0 +1,143 @@
+
+#   AROS metamakefile for codesetslib
+
+include $(SRCDIR)/config/aros.cfg
+
+CODESETSVERSION=6.22
+CODESETSREPOSITORIES = https://github.com/jens-maus/libcodesets/archive/refs/tags
+CODESETSARCHBASE     := $(CODESETSVERSION)
+CODESETSARCHSUFFIX := "tar.gz"
+CODESETSATCHSPEC := $(CODESETSARCHBASE)-aros.diff:libcodesets-$(CODESETSARCHBASE):-f,-p1
+CODESETSARCHSRCDIR := $(PORTSDIR)/codesets/libcodesets-$(CODESETSARCHBASE)
+
+%fetch mmake=workbench-libs-codesets-fetch archive=$(CODESETSARCHBASE) destination=$(PORTSDIR)/codesets \
+    location=$(PORTSSOURCEDIR)/codesets archive_origins=$(CODESETSREPOSITORIES) suffixes=$(CODESETSARCHSUFFIX) \
+    patches_specs=$(CODESETSATCHSPEC)
+
+%create_patch mmake=workbench-libs-codesets-create-patch \
+    archive=$(CODESETSARCHBASE) suffixes=$(CODESETSARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/codesets destination=$(PORTSDIR)/codesets \
+    srcdir="libcodesets-$(CODESETSARCHBASE)"
+
+FILES := \
+    libinit \
+    init \
+    utils \
+    base64 \
+    convertUTF \
+    codesets \
+    codepages \
+    debug \
+    stubs-aros
+
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_INCLUDES = -I. -idirafter $(CODESETSARCHSRCDIR)/include
+USER_CPPFLAGS := -DAROS_ABI_V1
+USER_LDFLAGS := -static
+
+#MM- workbench-libs-codesets : workbench-libs-codesets-library workbench-libs-codesets-charsets
+#MM workbench-libs-codesets-library : workbench-libs-codesets-fetch workbench-libs-codesets-includes 
+
+%build_module_simple mmake=workbench-libs-codesets-library \
+    modname=codesets modtype=library \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/src/,$(FILES))"
+
+%build_linklib mmake=linklibs-codesets \
+    libname=codesets \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/libcodesets/, autoinit-aros)" \
+    objdir=$(GENDIR)/$(CURDIR)/libcodesets
+
+#MM- includes-copy: workbench-libs-codesets-includes workbench-libs-codesets-fd
+
+#MM workbench-libs-codesets-includes : \
+#MM     workbench-libs-codesets-fetch \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes
+
+#MM workbench-libs-codesets-fd : \
+#MM     workbench-libs-codesets-fetch
+
+%copy_dir_recursive mmake=workbench-libs-codesets-includes \
+    src=$(CODESETSARCHSRCDIR)/developer/include dst=$(AROS_INCLUDES)/
+
+%copy_files_q mmake=workbench-libs-codesets-fd files=codesets_lib.fd \
+    src=$(CODESETSARCHSRCDIR)/developer/fd dst=$(AROS_SDK_FD)
+
+%copy_dir_recursive mmake=workbench-libs-codesets-charsets src=$(CODESETSARCHSRCDIR)/charsets dst=$(AROS_LIBRARIES)/Charsets
+
+#MM- workbench-libs-codesets : workbench-libs-codesets-tests
+
+#MM libcodesets-test-b64d : linklibs includes workbench-libs-codesets-fetch workbench-libs-codesets-lib
+#MM libcodesets-test-b64e : linklibs includes workbench-libs-codesets-fetch workbench-libs-codesets-lib
+#MM libcodesets-test-detectcodeset : linklibs includes workbench-libs-codesets-fetch workbench-libs-codesets-lib
+#MM libcodesets-test-utf8tostrhook : linklibs includes workbench-libs-codesets-fetch workbench-libs-codesets-lib
+#MM libcodesets-test-demo1 : linklibs includes workbench-libs-codesets-fetch workbench-libs-codesets-lib
+#MM libcodesets-test-convert : linklibs includes workbench-libs-codesets-fetch workbench-libs-codesets-lib
+#MM libcodesets-test-b64d : linklibs includes workbench-libs-codesets-fetch workbench-libs-codesets-lib
+
+TESTFILES  :=       
+
+EXEDIR := $(AROS_TESTS)/Codesetslib
+
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+#USER_INCLUDES := \
+	      #-idirafter $(CODESETSARCHSRCDIR)/developer/include \
+	      #-idirafter $(CODESETSARCHSRCDIR)/include
+USER_LDFLAGS :=
+USER_CPPFLAGS := -DAROS_ABI_V1
+
+%build_prog mmake=libcodesets-test-b64d progname=b64d \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/developer/examples/,b64d)" targetdir=$(EXEDIR) coverageinstr=no \
+    objdir=$(GENDIR)/$(CURDIR)/test
+
+%build_prog mmake=libcodesets-test-b64e progname=b64e \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/developer/examples/,b64e)" targetdir=$(EXEDIR) coverageinstr=no \
+    objdir=$(GENDIR)/$(CURDIR)/test
+
+
+%build_prog mmake=libcodesets-test-detectcodeset progname=DetectCodeset \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/developer/examples/,DetectCodeset)" targetdir=$(EXEDIR) coverageinstr=no \
+    objdir=$(GENDIR)/$(CURDIR)/test
+
+
+%build_prog mmake=libcodesets-test-utf8tostrhook progname=UTF8ToStrHook \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/developer/examples/,UTF8ToStrHook)" targetdir=$(EXEDIR) coverageinstr=no \
+    objdir=$(GENDIR)/$(CURDIR)/test
+
+
+%build_prog mmake=libcodesets-test-demo1 progname=demo1 \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/developer/examples/,demo1)" targetdir=$(EXEDIR) coverageinstr=no \
+    objdir=$(GENDIR)/$(CURDIR)/test
+
+
+%build_prog mmake=libcodesets-test-convert progname=Convert \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/developer/examples/,Convert)" targetdir=$(EXEDIR) coverageinstr=no \
+    objdir=$(GENDIR)/$(CURDIR)/test
+
+
+%build_prog mmake=libcodesets-test-autoopen progname=autoopen \
+    files="$(addprefix $(CODESETSARCHSRCDIR)/developer/examples/,autoopen)" targetdir=$(EXEDIR) coverageinstr=no \
+    objdir=$(GENDIR)/$(CURDIR)/test
+
+#MM- workbench-libs-codesets-tests :  \
+#MM       libcodesets-test-b64d \
+#MM       libcodesets-test-b64e \
+#MM       libcodesets-test-detectcodeset \
+#MM       libcodesets-test-utf8tostrhook \
+#MM       libcodesets-test-demo1 \
+#MM       libcodesets-test-convert \
+#MM       libcodesets-test-autoopen
+
+#MM- workbench-libs-codesets-tests-quick :  \
+#MM       libcodesets-test-b64d-quick \
+#MM       libcodesets-test-b64e-quick \
+#MM       libcodesets-test-detectcodeset-quick \
+#MM       libcodesets-test-utf8tostrhook-quick \
+#MM       libcodesets-test-demo1-quick \
+#MM       libcodesets-test-convert-quick \
+#MM       libcodesets-test-autoopen-quick
+
+%common
