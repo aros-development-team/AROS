@@ -114,13 +114,13 @@ wint_t btowc(int c);
 int wctob(wint_t c);
 int wcwidth(wchar_t);
 )
-#if (0)
-int mbsinit(const mbstate_t *ps);
-#else
-static __inline__ int mbsinit(const mbstate_t *ps)
+#if !defined(STDC_NOINLINE) && !defined(STDC_NOINLINE_WCHAR)
+__header_inline int mbsinit(const mbstate_t *ps)
 {
     return (ps == NULL) || (ps->__state == 0 && ps->__count == 0 && ps->__value == 0);
 }
+#else
+int mbsinit(const mbstate_t *ps);
 #endif
 size_t mbrlen(const char * restrict s, size_t n, mbstate_t * restrict ps);
 size_t mbrtowc(wchar_t * restrict pwc, const char * restrict s, size_t n,

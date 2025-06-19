@@ -8,6 +8,7 @@
 
 #include <aros/types/wctype_t.h>
 #include <aros/types/wint_t.h>
+#include <aros/types/mbstate_t.h>
 
 #include <string.h>
 
@@ -76,6 +77,14 @@
     if (!strcmp(prop, "xdigit"))  return _WCTYPE_XDIGIT;
     return 0;
 }
+
+#if (1)
+/* This doesnt really belong here, but it gets it in the linklib.. */
+int mbsinit(const mbstate_t *ps)
+{
+    return (ps == NULL) || (ps->__state == 0 && ps->__count == 0 && ps->__value == 0);
+}
+#endif
 
 int iswalnum(wint_t wc)
 {
