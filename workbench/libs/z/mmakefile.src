@@ -7,9 +7,9 @@ include $(SRCDIR)/$(CURDIR)/make.opt
 
 #MM- includes-copy : zlib-fetch
 
-REPOSITORIES := https://zlib.net/fossils/
+REPOSITORIES := https://chromium.googlesource.com/chromium/src/+archive/lkgr/third_party
 ARCHSUFFIX := "tar.gz"
-PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+#PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
 
 %fetch mmake=zlib-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/zlib \
     location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
@@ -28,32 +28,94 @@ PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
 #MM     kernel-dos-includes \
 #MM     includes-copy
 
-FILES := adler32 \
-         crc32 \
-         deflate \
-         infback \
-         inffast \
-         inflate \
-         inftrees \
-         trees \
-         zutil \
-         compress \
-         uncompr \
-         gzclose \
-         gzlib \
-         gzread \
-         gzwrite \
+FILES := \
+    adler32 \
+    compress \
+    crc32 \
+    deflate \
+    gzclose \
+    gzlib \
+    gzread \
+    gzwrite \
+    infback \
+    inftrees \
+    inffast \
+    trees \
+    uncompr \
+    zutil
+         
+OLDFILES :=\
          contrib/blast/blast \
          contrib/infback9/infback9 \
          contrib/infback9/inftree9
 
-SFILES := simd_stub
+#bitstream compatibility with canonical zlib
+#LIBZ_CPPFLAGS +=-DUSE_ZLIB_RABIN_KARP_ROLLING_HASH
+
+ifneq (,$(findstring x86_64,$(AROS_TARGET_CPU)))
+ISA_FLAGS += -mvpclmulqdq -msse2 -mavx512f -mpclmul
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_SIMD_SSE2
+LIBZ_CPPFLAGS +=-DADLER32_SIMD_SSSE3
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
+LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
+LIBZ_CPPFLAGS +=-DCRC32_SIMD_SSE42_PCLMUL
+LIBZ_CPPFLAGS +=-DCRC32_SIMD_AVX512_PCLMUL
+LIBZ_CPPFLAGS +=-DDEFLATE_SLIDE_HASH_SSE2
+LIBZ_CPPFLAGS +=-DX86_NOT_WINDOWS
+FILES += \
+        adler32_simd \
+        contrib/optimizations/inffast_chunk \
+        contrib/optimizations/inflate \
+        cpu_features \
+        crc32_simd \
+        crc_folding
+LIBZ_HAVE_SIMD=yes
+endif
+
+ifneq (,$(findstring aarch64,$(AROS_TARGET_CPU)))
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_SIMD_NEON
+LIBZ_CPPFLAGS +=-DADLER32_SIMD_NEON
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
+LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
+LIBZ_CPPFLAGS +=-DCRC32_ARMV8_CRC32
+LIBZ_CPPFLAGS +=-DDEFLATE_SLIDE_HASH_NEON
+FILES += \
+        adler32_simd \
+        contrib/optimizations/inffast_chunk \
+        contrib/optimizations/inflate \
+        cpu_features \
+        crc32_simd \
+        crc_folding
+LIBZ_HAVE_SIMD=yes
+endif
+
+ifneq (,$(findstring riscv64,$(AROS_TARGET_CPU)))
+LIBZ_CPPFLAGS +=-DRISCV_RVV
+LIBZ_CPPFLAGS +=-DDEFLATE_SLIDE_HASH_RVV
+LIBZ_CPPFLAGS +=-DADLER32_SIMD_RVV
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_GENERIC
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
+LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
+
+FILES += \
+        adler32_simd \
+        contrib/optimizations/inffast_chunk \
+        contrib/optimizations/inflate \
+        cpu_features
+LIBZ_HAVE_SIMD=yes
+endif
+
+ifneq (yes,$(LIBZ_HAVE_SIMD))
+FILES += \
+    inflate
+endif
 
 USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
+USER_LDFLAGS += -lpthread
 
 %build_module mmake=workbench-libs-z \
   modname=z1 modtype=library \
-  files="$(addprefix $(ARCHSRCDIR)/,$(FILES) $(SFILES))" linklibname=z
+  files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname=z
 
 #MM- linklibs: linklibs-z-static
 #MM linklibs-z-static : zlib-fetch
@@ -61,31 +123,26 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
 # N.B: z.static is compiled without the posix wrappers, so that it looks for the default function
 # symbol names (e.g. lseek)
 
-USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNO_POSIX_WRAPPERS -DNDEBUG
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG
 
 %build_linklib mmake=linklibs-z-static libname=z.static \
-    files="$(addprefix $(ARCHSRCDIR)/,$(FILES) simd_stub)" \
+    files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
     objdir=$(GENDIR)/$(CURDIR)/static
 
-INCLUDE_FILES := zlib.h zconf.h
+INCLUDE_FILES := zlib.h zconf.h chromeconf.h
 %copy_includes dir=$(ARCHSRCDIR)
 
 #MM
 workbench-libs-z-pkgc : $(AROS_LIB)/pkgconfig/zlib.pc
 
-$(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
+$(AROS_LIB)/pkgconfig/zlib.pc : $(ARCHSRCDIR)/zlib.pc.cmakein
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
-	$(CP) $^ $@
-
-%build_prog mmake=workbench-libs-z-example \
-    progname=example \
-    files=$(ARCHSRCDIR)/test/example targetdir=$(AROS_TESTS)/z uselibs="z1"
-
-#MM workbench-libs-z-example : \
-#MM        workbench-libs-z-linklib
-
-##MM- test-z : workbench-libs-z-example
-##MM- test-z-quick : workbench-libs-z-example-quick
+	$(SED) -e 's|@CMAKE_INSTALL_PREFIX@|/Developer|g' \
+	    -e 's|@INSTALL_LIB_DIR@|${prefix}/lib|g' \
+	    -e 's|@INSTALL_INC_DIR@|${prefix}/include|g' \
+	    -e 's|@VERSION@|1.3.1|g' \
+	    -e 's|^exec_prefix=.*|exec_prefix=${prefix}|' \
+	    $< > $@
 
 %build_prog mmake=workbench-libs-z-minigzip \
     progname=minigzip \
