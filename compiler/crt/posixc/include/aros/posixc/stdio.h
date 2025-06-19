@@ -8,6 +8,8 @@
     POSIX.1-2008 header file stdio.h
 */
 
+#include <aros/system.h>
+
 #include <aros/features.h>
 #include <aros/stdc/stdio.h>
 
@@ -101,13 +103,13 @@ off64_t ftello64(FILE *stream);
 int __get_default_file(int file_descriptor, long *file_handle);
 
 /* Deprecated POSIX functions */
-static __inline__ int getw(FILE *stream)
+__header_inline int getw(FILE *stream)
 {
     int word;
     return (fread(&word, sizeof(word), 1, stream) > 0) ? word : EOF;
 }
 
-static __inline__ int putw(int word, FILE *stream)
+__header_inline int putw(int word, FILE *stream)
 {
     return (fwrite(&word, sizeof(word), 1, stream) > 0) ? 0 : EOF;
 }
