@@ -141,10 +141,10 @@ workbench-libs-z-pkgc : $(AROS_LIB)/pkgconfig/zlib.pc
 $(AROS_LIB)/pkgconfig/zlib.pc : $(ARCHSRCDIR)/zlib.pc.cmakein
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
 	$(SED) -e 's|@CMAKE_INSTALL_PREFIX@|/Developer|g' \
-	    -e 's|@INSTALL_LIB_DIR@|${prefix}/lib|g' \
-	    -e 's|@INSTALL_INC_DIR@|${prefix}/include|g' \
+	    -e 's|@INSTALL_LIB_DIR@|$${prefix}/lib|g' \
+	    -e 's|@INSTALL_INC_DIR@|$${prefix}/include|g' \
 	    -e 's|@VERSION@|1.3.1|g' \
-	    -e 's|^exec_prefix=.*|exec_prefix=${prefix}|' \
+	    -e 's|^exec_prefix=.*|exec_prefix=$${prefix}|' \
 	    $< > $@
 
 %build_prog mmake=workbench-libs-z-minigzip \
