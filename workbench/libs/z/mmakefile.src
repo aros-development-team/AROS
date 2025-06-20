@@ -5,8 +5,6 @@
 include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/$(CURDIR)/make.opt
 
-#MM- includes-copy : zlib-fetch
-
 REPOSITORIES := https://chromium.googlesource.com/chromium/src/+archive/lkgr/third_party
 ARCHSUFFIX := "tar.gz"
 PATCHSPEC := $(ARCHBASE)-aros.diff::-f,-p1
@@ -132,15 +130,25 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG
     files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
     objdir=$(GENDIR)/$(CURDIR)/static
 
-INCLUDE_FILES := zlib.h zconf.h chromeconf.h
+INCLUDE_FILES := zlib.h chromeconf.h
 %copy_includes dir=$(ARCHSRCDIR)
+
+#MM
+workbench-libs-z-geninc : $(AROS_INCLUDES)/zconf.h
+
+$(AROS_INCLUDES)/zconf.h : $(ARCHSRCDIR)/zconf.h
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	@$(SED) -e 's/^#if !defined(CHROMIUM_ZLIB_NO_CHROMECONF)/#if defined(ZLIB_USE_CHROMECONF)/' \
+	    $< > $@
+
+#MM- workbench-libs-z-includes : workbench-libs-z-geninc
 
 #MM
 workbench-libs-z-pkgc : $(AROS_LIB)/pkgconfig/zlib.pc
 
 $(AROS_LIB)/pkgconfig/zlib.pc : $(ARCHSRCDIR)/zlib.pc.cmakein
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
-	$(SED) -e 's|@CMAKE_INSTALL_PREFIX@|/Developer|g' \
+	@$(SED) -e 's|@CMAKE_INSTALL_PREFIX@|/Developer|g' \
 	    -e 's|@INSTALL_LIB_DIR@|$${prefix}/lib|g' \
 	    -e 's|@INSTALL_INC_DIR@|$${prefix}/include|g' \
 	    -e 's|@VERSION@|1.3.1|g' \
