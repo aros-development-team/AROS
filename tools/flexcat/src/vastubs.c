@@ -46,7 +46,7 @@ struct Catalog *OpenCatalog(struct Locale *locale, STRPTR name, Tag tag1, ...)
 { return OpenCatalogA(locale, name, (struct TagItem *)&tag1); }
 
 #include <proto/codesets.h>
-struct codeset *CodesetsFind(STRPTR name, Tag tag1, ...)
+struct codeset *CodesetsFind(CONST_STRPTR name, Tag tag1, ...)
 { return CodesetsFindA(name, (struct TagItem *)&tag1); }
 STRPTR CodesetsConvertStr(Tag tag1, ...)
 { return CodesetsConvertStrA((struct TagItem *)&tag1); }
@@ -69,7 +69,7 @@ STRPTR *CodesetsSupported(Tag tag1, ...)
   AROS_SLOWSTACKTAGS_POST
 }
 
-struct codeset *CodesetsFind(STRPTR name, Tag tag1, ...)
+struct codeset *CodesetsFind(CONST_STRPTR name, Tag tag1, ...)
 {
 #undef AROS_TAGRETURNTYPE
 #define AROS_TAGRETURNTYPE	  struct codeset *
