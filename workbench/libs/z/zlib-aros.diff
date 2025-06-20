@@ -1,0 +1,15 @@
+diff -ruN ./cpu_features.c .aros/cpu_features.c
+--- zlib/cpu_features.c	2025-06-19 22:48:50.386000000 +0000
++++ zlib.aros/cpu_features.c	2025-06-20 00:04:52.815027915 +0000
+@@ -80,7 +80,11 @@
+ void ZLIB_INTERNAL cpu_check_features(void)
+ {
+ #if !defined(ARMV8_OS_MACOS)
++#if !defined(__AROS__)
+     pthread_once(&cpu_check_inited_once, _cpu_check_features);
++#else
++    _cpu_check_features();
++#endif
+ #endif
+ }
+ #elif defined(ARMV8_OS_WINDOWS) || defined(X86_WINDOWS)

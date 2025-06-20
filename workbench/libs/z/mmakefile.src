@@ -9,7 +9,7 @@ include $(SRCDIR)/$(CURDIR)/make.opt
 
 REPOSITORIES := https://chromium.googlesource.com/chromium/src/+archive/lkgr/third_party
 ARCHSUFFIX := "tar.gz"
-#PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+PATCHSPEC := $(ARCHBASE)-aros.diff::-f,-p1
 
 %fetch mmake=zlib-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/zlib \
     location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
