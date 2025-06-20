@@ -287,8 +287,7 @@
 #   endif
 #endif
 
-#define ___AROS_STR(x) #x
-#define __AROS_STR(x) ___AROS_STR(x)
+#include <aros/strmacro.h>
 
 /* Makes a 'new' symbol which occupies the same memory location as the 'old' symbol */
 #if !defined AROS_MAKE_ALIAS
