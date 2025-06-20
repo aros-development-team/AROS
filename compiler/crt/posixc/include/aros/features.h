@@ -204,8 +204,7 @@
 #define POSIXC_FNAM_EVAL(a, b) POSIXC_FNAM_CONCAT(a, b)
 
 // Stringify helper
-#define PXSTR(s) #s
-#define XSTR(s) PXSTR(s)
+#include <aros/strmacro.h>
 
 #if defined(AROS_POSIXC_BUILD) || !defined(POSIXC_MANGLE_FUNCS)
   // No mangling
@@ -213,7 +212,7 @@
 #elif defined(__GNUC__) || defined(__clang__)
   // Mangled symbol name
 #  define POSIXCFUNC(ret_type, name, args) \
-     ret_type name args __asm__(XSTR(POSIXC_FNAM_EVAL(POSIXC_FN_PREFIX, name)))
+     ret_type name args __asm__(__AROS_STR(POSIXC_FNAM_EVAL(POSIXC_FN_PREFIX, name)))
 #else
 #  error "POSIXC_MANGLE_FUNCS requires compiler support for __asm__ symbol renaming"
 #endif
