@@ -11,10 +11,10 @@ if not len(sys.argv) in [2, 3, 4, 5] :
     print("Usage:",sys.argv[0],"tmplfile --usetmp --listfile filename")
 
 # A regular expression for the start of a template instantiation (ex. %build_module)
-re_tmplinst = re.compile('%([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:\s|$))')
+re_tmplinst = re.compile(r'%([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:\s|$))')
 # A regular expression for the argument specification during template instantiation
 # (ex. cflags=$(CFLAGS) or uselibs="amiga arosc")
-re_arg = re.compile('([a-zA-Z0-9][a-zA-Z0-9_]*)=([^\s"]+|".*?")?')
+re_arg = re.compile(r'([a-zA-Z0-9][a-zA-Z0-9_]*)=([^\s"]+|".*?")?')
 
 ##################################
 # Class and function definitions #
@@ -142,7 +142,7 @@ class arg:
 # - templrefs: an array to indicate the templates used in the body of the template.
 #   This is generated with the generate_templrefs function of this class.
 class template:
-    re_arginst = re.compile('([a-zA-Z0-9-_]*)%\(([a-zA-Z0-9][a-zA-Z0-9_]*)\)([a-zA-Z0-9-_]*)')
+    re_arginst = re.compile(r'([a-zA-Z0-9-_]*)%\(([a-zA-Z0-9][a-zA-Z0-9_]*)\)([a-zA-Z0-9-_]*)')
     hascommon = 0
 
     # Generate a template
@@ -274,8 +274,8 @@ def read_templates(filename):
     except Exception:
         print("Error reading template file: "+filename)
 
-    re_name = re.compile('[a-zA-Z0-9][a-zA-Z0-9_]*(?=(?:\s|$))')
-    re_define = re.compile('%define(?=\s)')
+    re_name = re.compile(r'[a-zA-Z0-9][a-zA-Z0-9_]*(?=(?:\s|$))')
+    re_define = re.compile(r'%define(?=\s)')
     
     lines = infile.readlines()
     lineno = 0
