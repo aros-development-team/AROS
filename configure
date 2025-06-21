@@ -18524,6 +18524,8 @@ fi
 aros_target_options+="$export_newline""# Enable Nouveau Gfx Driver$export_newline""OPT_GFX_NOUVEAU               := no$export_newline"
 
 
+make_extra_commands="$make_extra_commands$export_newline""GENCTBL	:= $""(TOOLDIR)/genctbl$""(HOST_EXE_SUFFIX)$export_newline"
+
 aros_kernel_cflags="$aros_kernel_cflags $aros_kernel_export_cflags"
 
 if test "$aros_target_variant" = ""; then

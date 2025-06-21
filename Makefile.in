@@ -164,7 +164,7 @@ parsesdkoffsets : $(PARSEOFFSETS)
 
 # Create the tools that are used to build AROS.
 tools : makedirs gdbinit mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
-	$(FLEXCAT) $(CREATEDTDESC) \
+	$(FLEXCAT) $(CREATEDTDESC) $(GENCTBL) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
 	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV) $(PARSEOFFSETS)
@@ -210,6 +210,10 @@ $(ELF2HUNK): $(SRCDIR)/tools/elf2hunk/elf2hunk.c
 $(ARCHTOOL): $(SRCDIR)/tools/archtools/archtool.c
 	@$(ECHO) Building archtool...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/archtools SRCDIR=$(SRCDIR) TOP=$(TOP)
+
+$(GENCTBL): $(SRCDIR)/tools/genctbl/genctbl.c
+	@$(ECHO) Building genctbl...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genctbl SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(FLEXCAT): $(wildcard $(SRCDIR)/tools/flexcat/src/*.[ch]) $(wildcard $(SRCDIR)/tools/flexcat/src/sd/*.sd)
 	@$(ECHO) Building flexcat...

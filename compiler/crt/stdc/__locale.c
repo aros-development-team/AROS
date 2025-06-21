@@ -14,7 +14,11 @@
 #include "__stdc_intbase.h"
 #include "debug.h"
 
+#if !defined(STDC_LOCALE_DEFAULT)
 #include "_unicode_tables.c"
+#else
+#include STDC_LOCALE_DEFAULT
+#endif
 
 /* Static table for known transformations */
 static const struct __wctrans stdc_wctrans_list[] = {

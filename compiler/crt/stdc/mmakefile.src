@@ -587,15 +587,28 @@ USER_CFLAGS := $(NOWARN_FLAGS) -noposixc $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN
 USER_LDFLAGS := -nostdc -noposixc
 USER_CPPFLAGS := \
         $(STDC_MATH_CPPFLAGS) \
+        -DSTDC_LOCALE_DEFAULT=\"$(GENDIR)/$(CURDIR)/defaults/en_GB_ISO8859-1.c\" \
         -D_GNU_SOURCE \
         -D__ISO_C_VISIBLE=2011 \
         -Dlint '-D__FBSDID(x)=' 
 #USER_CPPFLAGS += -DDEBUG=1
 
+$(GENDIR)/$(CURDIR)/defaults:
+    %mkdirs_q $@
+
+$(GENDIR)/$(CURDIR)/defaults/%.c: $(GENCTBL) $(GENDIR)/ucd/UnicodeData.txt $(GENDIR)/ucd/SpecialCasing.txt | $(GENDIR)/$(CURDIR)/defaults
+	@$(ECHO) "Generating $*.c";
+	@$(GENCTBL) $(GENDIR)/ucd $(GENDIR)/$(CURDIR)/defaults $* --emit-c;
+
+#MM
+compiler-stdc-genwcharsupport : $(GENDIR)/$(CURDIR)/defaults/en_GB_ISO8859-1.c
+
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
     files="$(STDC) $(STDC_WCHAR) $(STDC_COMMON)" \
     linklibfiles="$(STDC_LINKLIB) ctype $(STDC_WCHAR_LIBFUNCS)" linklibobjs=$(STDC_LINKOBJS)
+
+#MM compiler-stdc : compiler-stdc-genwcharsupport
 
 STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
 USER_CPPFLAGS := \

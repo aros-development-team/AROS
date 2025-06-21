@@ -3668,6 +3668,8 @@ dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
 
+make_extra_commands="$make_extra_commands$export_newline""GENCTBL	:= $""(TOOLDIR)/genctbl$""(HOST_EXE_SUFFIX)$export_newline"
+
 aros_kernel_cflags="$aros_kernel_cflags $aros_kernel_export_cflags"
 
 if test "$aros_target_variant" = ""; then
