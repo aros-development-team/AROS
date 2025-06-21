@@ -4,10 +4,11 @@
     Convert a time into a string, reentrant.
 */
 
-/* At the moment no daylight saving time information
- * Implementation has to be changed when DST is implemented in AROS
+/* At the moment AROS has no daylight saving time information, so tm_gmtoff
+ * is never corrected for DST. Implementation has to be changed when DST is
+ * implemented in AROS.
  */
-static int __dstflag = -1;
+static int __dstflag = 0;
 
 
 /*****************************************************************************
@@ -51,6 +52,10 @@ static int __dstflag = -1;
                    is in effect at the time described. The value is positive
                    if daylight saving time is in effect, zero if it is not,
                    and negative if the information is not available.
+
+        tm_gmtoff - Number of minutes that need to be added to UTC time to
+                    get correct local time at time described . Note that this
+                    includes DST correction as well.
 
     INPUTS
         tt - A time in seconds from the 1. Jan 1970
