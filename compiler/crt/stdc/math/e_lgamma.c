@@ -34,8 +34,3 @@ __ieee754_lgamma(double x)
 	struct StdCBase *StdCBase = __aros_getbase_StdCBase();
 	return __ieee754_lgamma_r(x,&StdCBase->_signgam);
 }
-
-#if	LDBL_MANT_DIG == DBL_MANT_DIG
-AROS_MAKE_ASM_SYM(typeof(lgammal), lgammal, AROS_CSYM_FROM_ASM_NAME(lgammal), AROS_CSYM_FROM_ASM_NAME(lgamma));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(lgammal));
-#endif

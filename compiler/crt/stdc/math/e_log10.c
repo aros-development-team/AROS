@@ -88,8 +88,3 @@ __ieee754_log10(double x)
 
 	return val_lo + val_hi;
 }
-
-#if	LDBL_MANT_DIG == DBL_MANT_DIG
-AROS_MAKE_ASM_SYM(typeof(log10l), log10l, AROS_CSYM_FROM_ASM_NAME(log10l), AROS_CSYM_FROM_ASM_NAME(log10));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(log10l));
-#endif

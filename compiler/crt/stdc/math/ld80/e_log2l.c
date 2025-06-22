@@ -114,7 +114,7 @@ static const long double S[4] = {
 #define SQRTH 0.70710678118654752440L
 
 long double
-log2l(long double x)
+__ieee754_log2l(long double x)
 {
 volatile long double z;
 long double y;

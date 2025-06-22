@@ -68,7 +68,7 @@ dec(long double x)
 }
 
 long double
-sqrtl(long double x)
+__ieee754_sqrtl(long double x)
 {
 	union IEEEl2bits u;
 	int k, r;

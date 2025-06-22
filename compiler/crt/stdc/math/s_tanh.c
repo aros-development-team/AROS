@@ -46,7 +46,7 @@ static const volatile double tiny __attribute__ ((__section__(".rodata,\"a\" " S
 static const double one = 1.0, two = 2.0, huge = 1.0e300;
 
 double
-tanh(double x)
+__ieee754_tanh(double x)
 {
 	double t,z;
 	int32_t jx,ix;
@@ -78,8 +78,3 @@ tanh(double x)
 	}
 	return (jx>=0)? z: -z;
 }
-
-#if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ASM_SYM(typeof(tanhl), tanhl, AROS_CSYM_FROM_ASM_NAME(tanhl), AROS_CSYM_FROM_ASM_NAME(tanh));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(tanhl));
-#endif

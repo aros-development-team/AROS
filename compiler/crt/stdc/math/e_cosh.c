@@ -79,8 +79,3 @@ __ieee754_cosh(double x)
     /* |x| > overflowthresold, cosh(x) overflow */
 	return huge*huge;
 }
-
-#if (LDBL_MANT_DIG == DBL_MANT_DIG)
-AROS_MAKE_ASM_SYM(typeof(coshl), coshl, AROS_CSYM_FROM_ASM_NAME(coshl), AROS_CSYM_FROM_ASM_NAME(cosh));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(coshl));
-#endif

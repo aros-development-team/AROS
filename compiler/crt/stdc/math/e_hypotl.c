@@ -44,7 +44,7 @@ typedef	uint32_t man_t;
 #endif
 
 long double
-hypotl(long double x, long double y)
+__ieee754_hypotl(long double x, long double y)
 {
 	long double a=x,b=y,t1,t2,y1,y2,w;
 	int32_t j,k,ha,hb;

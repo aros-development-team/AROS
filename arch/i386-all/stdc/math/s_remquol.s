@@ -32,8 +32,8 @@
 
 	.text
 	_ALIGNMENT
-	.globl	AROS_CDEFNAME(remquol)
-	_FUNCTION(AROS_CDEFNAME(remquol))
+	.globl	AROS_CDEFNAME(__ieee754_remquol)
+	_FUNCTION(AROS_CDEFNAME(__ieee754_remquol))
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	arg_x, FirstArg
@@ -44,7 +44,7 @@
 	.set	ThirdArg, 16 /* Skip SecondArg */
 	.set	arg_quo, ThirdArg
 	
-AROS_CDEFNAME(remquol):
+AROS_CDEFNAME(__ieee754_remquol):
 	fldt	16(%esp)
 	fldt	4(%esp)
 1:	fprem1

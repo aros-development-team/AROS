@@ -6,6 +6,39 @@ FMTPRINTFDIR := $(SRCDIR)/compiler/fmtprintf
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math -iquote $(FMTPRINTFDIR)
 
 STDC_MATH := \
+    acos \
+    acosh \
+    asin \
+    atan \
+    atanh \
+    atan2 \
+    bessel \
+    cbrt \
+    cos \
+    cosh \
+    erf \
+    erfc \
+    exp \
+    fmod \
+    fmodl \
+    hypot \
+    lgamma \
+    log \
+    log10 \
+    log2 \
+    modf \
+    pow \
+    remquo \
+    remquol \
+    sin \
+    sinh \
+    sqrt \
+    sqrtl \
+    tan \
+    tanh \
+    tgamma
+
+STDC_MATH_RAW := \
     math/bsdsrc/b_exp \
     math/bsdsrc/b_log \
     math/bsdsrc/b_tgamma \
@@ -313,13 +346,15 @@ STDC_MATH_CFLAGS := -fno-math-errno
 ifneq ($(AROS_SECTION_COMMENT),)
 STDC_MATH_CPPFLAGS := -DSECTIONCOMMENT=\"$(AROS_SECTION_COMMENT)\"
 endif
+MATH_NORWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
+STDC_MATH_CFLAGS += $(MATH_NORWARN_FLAGS)
 
 #
 # Add 80bit long double support on x86, x64 and m68k
 #
 ifneq ($(filter $(AROS_TARGET_CPU),i386 x86_64 m68k),)
-STDC_MATH += $(STDC_LONGDB_MATH)
-STDC_MATH += $(STDC_LONGDB80_MATH)
+STDC_MATH_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_RAW += $(STDC_LONGDB80_MATH)
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld80
 STDC_SCABS_MATH += math/s_cabsl
 STDC_WCABS_MATH += math/w_cabsl
@@ -328,8 +363,8 @@ else
 # Add 128bit long double support for aarch64 and riscv
 #
 ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv),)
-STDC_MATH += $(STDC_LONGDB_MATH)
-STDC_MATH += $(STDC_LONGDB128_MATH)
+STDC_MATH_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_RAW += $(STDC_LONGDB128_MATH)
 USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld128
 STDC_SCABS_MATH += math/s_cabsl
 STDC_WCABS_MATH += math/w_cabsl
@@ -344,7 +379,7 @@ else
 endif
 endif
 
-STDC_MATH += $(STDC_WCABS_MATH)
+STDC_MATH_RAW += $(STDC_WCABS_MATH)
 
 # wide char/string support
 STDC_WCHAR_COMMON := \
@@ -431,6 +466,7 @@ STDC := \
     longjmp \
     malloc \
     malloc_align \
+    $(STDC_MATH_RAW) \
     $(STDC_MATH) \
     memchr \
     memcmp \
@@ -626,6 +662,17 @@ USER_CPPFLAGS := \
     uselibs="stdc_rel"
 
 STDC_MATH_STATIC := \
+    cos \
+    log \
+    log10 \
+    log2 \
+    pow \
+    sin \
+    sqrt \
+    tan \
+
+
+STDC_MATH_STATIC_RAW := \
     __flt_rounds \
     math/e_log \
     math/e_logf \
@@ -648,7 +695,8 @@ STDC_MATH_STATIC := \
     math/s_floor \
     math/s_fpclassify \
     math/s_scalbn \
-    math/s_scalbnf
+    math/s_scalbnf \
+    math/s_isfinite
 
 STDC_STATIC := \
     __ctype \
@@ -661,6 +709,7 @@ STDC_STATIC := \
     atoll \
     bsearch \
     $(STDC_MATH_STATIC) \
+    $(STDC_MATH_STATIC_RAW) \
     memchr \
     memcmp \
     memcpy \

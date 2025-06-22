@@ -306,8 +306,3 @@ __ieee754_pow(double x, double y)
 	else SET_HIGH_WORD(z,j);
 	return s*z;
 }
-
-#if	(LDBL_MANT_DIG == DBL_MANT_DIG)
-AROS_MAKE_ASM_SYM(typeof(powl), powl, AROS_CSYM_FROM_ASM_NAME(powl), AROS_CSYM_FROM_ASM_NAME(pow));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(powl));
-#endif

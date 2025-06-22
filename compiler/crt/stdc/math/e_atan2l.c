@@ -36,7 +36,7 @@ pi =  3.14159265358979323846264338327950280e+00L;
 #endif
 
 long double
-atan2l(long double y, long double x)
+__ieee754_atan2l(long double y, long double x)
 {
 	union IEEEl2bits ux, uy;
 	long double z;

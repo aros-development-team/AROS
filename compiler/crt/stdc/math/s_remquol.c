@@ -63,7 +63,7 @@ static const long double Zero[] = {0.0L, -0.0L};
  *   for an explicit integer bit in front of the fractional bits.
  */
 long double
-remquol(long double x, long double y, int *quo)
+__ieee754_remquol(long double x, long double y, int *quo)
 {
 	union IEEEl2bits ux, uy;
 	int64_t hx,hz;	/* We need a carry bit even if LDBL_MANH_SIZE is 32. */

@@ -196,7 +196,7 @@ sb6  =  4.74528541206955367215e+02, /* 0x407DA874, 0xE79FE763 */
 sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 
 double
-erf(double x)
+__ieee754_erf(double x)
 {
 	int32_t hx,ix,i;
 	double R,S,P,Q,s,y,z,r;
@@ -245,7 +245,7 @@ erf(double x)
 }
 
 double
-erfc(double x)
+__ieee754_erfc(double x)
 {
 	int32_t hx,ix;
 	double R,S,P,Q,s,y,z,r;
@@ -302,11 +302,3 @@ erfc(double x)
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}
 }
-
-#if	LDBL_MANT_DIG == DBL_MANT_DIG
-AROS_MAKE_ASM_SYM(typeof(erfl), erfl, AROS_CSYM_FROM_ASM_NAME(erfl), AROS_CSYM_FROM_ASM_NAME(erf));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(erfl));
-
-AROS_MAKE_ASM_SYM(typeof(erfcl), erfcl, AROS_CSYM_FROM_ASM_NAME(erfcl), AROS_CSYM_FROM_ASM_NAME(erfc));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(erfcl));
-#endif	/* LDBL_MANT_DIG == DBL_MANT_DIG */

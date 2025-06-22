@@ -52,7 +52,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sin.c,v 1.13 2011/02/10 07:3
 #include "e_rem_pio2.c"
 
 double
-sin(double x)
+__ieee754_sin(double x)
 {
 	double y[2],z=0.0;
 	int32_t n, ix;
@@ -83,8 +83,3 @@ sin(double x)
 	    }
 	}
 }
-
-#if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ASM_SYM(typeof(sinl), sinl, AROS_CSYM_FROM_ASM_NAME(sinl), AROS_CSYM_FROM_ASM_NAME(sin));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sinl));
-#endif

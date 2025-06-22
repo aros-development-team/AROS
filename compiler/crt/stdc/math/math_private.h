@@ -25,6 +25,8 @@
 #include "fpmath.h"
 #include "bsdsrc/math_private_openbsd.h"
 
+#include "math_private_aros.h"
+
 //the following define is used to comment out gcc's incorrect section attributes
 #if !defined(SECTIONCOMMENT)
 #if defined(__arm__)
@@ -791,6 +793,7 @@ irintl(long double x)
  * We rename functions here to improve other sources' diffability
  * against fdlibm.
  */
+#if !defined(__AROS__)
 #define	__ieee754_sqrt	sqrt
 #define	__ieee754_acos	acos
 #define	__ieee754_acosh	acosh
@@ -804,7 +807,9 @@ irintl(long double x)
 #define	__ieee754_fmod	fmod
 #define	__ieee754_pow	pow
 #define	__ieee754_lgamma lgamma
+#endif
 #define	__ieee754_lgamma_r lgamma_r
+#if !defined(__AROS__)
 #define	__ieee754_log10	log10
 #define	__ieee754_sinh	sinh
 #define	__ieee754_hypot	hypot
@@ -814,6 +819,7 @@ irintl(long double x)
 #define	__ieee754_y1	y1
 #define	__ieee754_jn	jn
 #define	__ieee754_yn	yn
+#endif
 #define	__ieee754_remainder remainder
 #define	__ieee754_sqrtf	sqrtf
 #define	__ieee754_acosf	acosf
@@ -844,7 +850,9 @@ irintl(long double x)
 	Deprecated functions: instead, use either the tgamma(3) or
 	the lgamma(3) functions, as appropriate.
 	*/
+#if !defined(__AROS__)
 #define	__ieee754_gamma	gamma
+#endif
 #define	__ieee754_gamma_r gamma_r
 #define	__ieee754_gammaf gammaf
 #define	__ieee754_gammaf_r gammaf_r

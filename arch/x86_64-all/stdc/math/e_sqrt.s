@@ -28,12 +28,12 @@
 
 	.text
 	_ALIGNMENT
-	.globl	AROS_CDEFNAME(sqrt)
-	_FUNCTION(AROS_CDEFNAME(sqrt))
+	.globl	AROS_CDEFNAME(__ieee754_sqrt)
+	_FUNCTION(AROS_CDEFNAME(__ieee754_sqrt))
 
 	.set	FirstArg, 8 /* Skip Return-Adress */
 	.set	arg_x, FirstArg
 
-AROS_CDEFNAME(sqrt):
+AROS_CDEFNAME(__ieee754_sqrt):
 	sqrtsd	%xmm0, %xmm0
 	ret

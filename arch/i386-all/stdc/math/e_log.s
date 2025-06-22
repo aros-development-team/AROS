@@ -37,13 +37,13 @@
 
 	.text
 	_ALIGNMENT
-	.globl	AROS_CDEFNAME(log)
-	_FUNCTION(AROS_CDEFNAME(log))
+	.globl	AROS_CDEFNAME(__ieee754_log)
+	_FUNCTION(AROS_CDEFNAME(__ieee754_log))
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	arg_x, FirstArg
 
-AROS_CDEFNAME(log):
+AROS_CDEFNAME(__ieee754_log):
 	fldln2
 	fldl	arg_x(%esp)
 	fyl2x

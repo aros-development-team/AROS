@@ -37,13 +37,13 @@
 
 	.text
 	_ALIGNMENT
-	.globl	AROS_CDEFNAME(sqrt)
-	_FUNCTION(AROS_CDEFNAME(sqrt))
+	.globl	AROS_CDEFNAME(__ieee754_sqrt)
+	_FUNCTION(AROS_CDEFNAME(__ieee754_sqrt))
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	arg_x, FirstArg
 	
-AROS_CDEFNAME(sqrt):
+AROS_CDEFNAME(__ieee754_sqrt):
 	/* Fetch the argument off the stack. */
 	fldl	arg_x(%esp)
 

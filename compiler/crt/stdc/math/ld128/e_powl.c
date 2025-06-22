@@ -141,7 +141,7 @@ static const long double
   cp_l = 5.0577616648125906047157785230014751039424E-17L;
 
 long double
-powl(long double x, long double y)
+__ieee754_powl(long double x, long double y)
 {
   long double z, ax, z_h, z_l, p_h, p_l;
   long double yy1, t1, t2, r, s, t, u, v, w;

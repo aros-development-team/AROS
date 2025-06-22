@@ -62,7 +62,7 @@ static const long double one = 1.0, Zero[] = {0.0, -0.0,};
  */
 
 long double
-fmodl(long double x, long double y)
+__ieee754_fmodl(long double x, long double y)
 {
 	union IEEEl2bits ux, uy;
 	int64_t hx,hz;	/* We need a carry bit even if LDBL_MANH_SIZE is 32. */

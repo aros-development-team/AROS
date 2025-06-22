@@ -73,8 +73,3 @@ __ieee754_sinh(double x)
     /* |x| > overflowthresold, sinh(x) overflow */
 	return x*shuge;
 }
-
-#if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ASM_SYM(typeof(sinhl), sinhl, AROS_CSYM_FROM_ASM_NAME(sinhl), AROS_CSYM_FROM_ASM_NAME(sinh));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sinhl));
-#endif

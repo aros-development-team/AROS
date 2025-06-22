@@ -28,13 +28,13 @@
 
 	.text
 	_ALIGNMENT
-	.globl	AROS_CDEFNAME(sqrtl)
-	_FUNCTION(AROS_CDEFNAME(sqrtl))
+	.globl	AROS_CDEFNAME(__ieee754_sqrtl)
+	_FUNCTION(AROS_CDEFNAME(__ieee754_sqrtl))
 
 	.set	FirstArg, 8 /* Skip Return-Adress */
 	.set	arg_x, FirstArg
 
-AROS_CDEFNAME(sqrtl):
+AROS_CDEFNAME(__ieee754_sqrtl):
 	fldt	arg_x(%rsp)
 	fsqrt
 	ret

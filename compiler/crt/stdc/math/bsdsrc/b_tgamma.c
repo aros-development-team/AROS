@@ -123,7 +123,7 @@ static struct Double ratfun_gam(double, double);
 static const double zero = 0., one = 1.0, tiny = 1e-300;
 
 double
-tgamma(x)
+__ieee754_tgamma(x)
 	double x;
 {
 	struct Double u;
@@ -312,8 +312,3 @@ neg_gam(x)
 	if (sgn < 0) y = -y;
 	return (M_PI / (y*z));
 }
-
-#if (LDBL_MANT_DIG == DBL_MANT_DIG)
-AROS_MAKE_ASM_SYM(typeof(tgammal), tgammal, AROS_CSYM_FROM_ASM_NAME(tgammal), AROS_CSYM_FROM_ASM_NAME(tgamma));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(tgammal));
-#endif

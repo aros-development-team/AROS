@@ -21,7 +21,7 @@
 #include "math_private.h"
 
 long double
-tgammal(long double x)
+__ieee754_tgammal(long double x)
 {
 	int64_t i0,i1;
 

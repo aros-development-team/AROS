@@ -32,8 +32,8 @@
 
 	.text
 	_ALIGNMENT
-	.globl	AROS_CDEFNAME(remquo)
-	_FUNCTION(AROS_CDEFNAME(remquo))
+	.globl	AROS_CDEFNAME(__ieee754_remquo)
+	_FUNCTION(AROS_CDEFNAME(__ieee754_remquo))
 
 	.set	FirstArg, 8 /* Skip Return-Adress */
 	.set	arg_x, FirstArg
@@ -44,7 +44,7 @@
 	.set	ThirdArg, 16 /* Skip SecondArg */
 	.set	arg_quo, ThirdArg
 
-AROS_CDEFNAME(remquo):
+AROS_CDEFNAME(__ieee754_remquo):
 	movsd	%xmm0,-8(%rsp)
 	movsd	%xmm1,-16(%rsp)
 	fldl	-16(%rsp)

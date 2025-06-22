@@ -27,7 +27,7 @@ static const double Zero[] = {0.0, -0.0,};
  * remquo in reduction algorithms.
  */
 double
-remquo(double x, double y, int *quo)
+__ieee754_remquo(double x, double y, int *quo)
 {
 	int32_t n,hx,hy,hz,ix,iy,sx,i;
 	uint32_t lx,ly,lz,q,sxy;
@@ -151,8 +151,3 @@ fixup:
 	*quo = (sxy ? -q : q);
 	return x;
 }
-
-#if LDBL_MANT_DIG == 53
-AROS_MAKE_ASM_SYM(typeof(remquol), remquol, AROS_CSYM_FROM_ASM_NAME(remquol), AROS_CSYM_FROM_ASM_NAME(remquo));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(remquol));
-#endif

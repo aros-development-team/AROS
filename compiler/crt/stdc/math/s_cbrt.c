@@ -36,7 +36,7 @@ P3 = -0.758397934778766047437,		/* 0xbfe844cb, 0xbee751d9 */
 P4 =  0.145996192886612446982;		/* 0x3fc2b000, 0xd4e4edd7 */
 
 double
-cbrt(double x)
+__ieee754_cbrt(double x)
 {
 	int32_t	hx;
 	union {
@@ -113,8 +113,3 @@ cbrt(double x)
 
 	return(t);
 }
-
-#if	LDBL_MANT_DIG == DBL_MANT_DIG
-AROS_MAKE_ASM_SYM(typeof(cbrtl), cbrtl, AROS_CSYM_FROM_ASM_NAME(cbrtl), AROS_CSYM_FROM_ASM_NAME(cbrt));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(cbrtl));
-#endif

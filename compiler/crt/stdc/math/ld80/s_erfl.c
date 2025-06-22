@@ -219,7 +219,7 @@ sc5u = LD80C(0xf80dfcbf37ffc5ea, 6,   1.24027318931184605891e+2L);
 #define sc5	(sc5u.e)
 
 long double
-erfl(long double x)
+__ieee754_erfl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	__unused uint64_t lx;
@@ -273,7 +273,7 @@ erfl(long double x)
 }
 
 long double
-erfcl(long double x)
+__ieee754_erfcl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	__unused uint64_t lx;

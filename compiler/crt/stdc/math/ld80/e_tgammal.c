@@ -215,7 +215,7 @@ return( y );
 }
 
 long double
-tgammal(long double x)
+__ieee754_tgammal(long double x)
 {
 long double p, q, z;
 int i;

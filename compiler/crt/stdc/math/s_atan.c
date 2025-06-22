@@ -71,7 +71,7 @@ one   = 1.0,
 huge   = 1.0e300;
 
 double
-atan(double x)
+__ieee754_atan(double x)
 {
 	double w,s1,s2,z;
 	int32_t ix,hx,id;
@@ -118,8 +118,3 @@ atan(double x)
 	    return (hx<0)? -z:z;
 	}
 }
-
-#if LDBL_MANT_DIG == DBL_MANT_DIG
-AROS_MAKE_ASM_SYM(typeof(atanl), atanl, AROS_CSYM_FROM_ASM_NAME(atanl), AROS_CSYM_FROM_ASM_NAME(atan));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(atanl));
-#endif

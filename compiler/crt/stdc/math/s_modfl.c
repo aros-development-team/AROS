@@ -55,7 +55,7 @@
 static const long double zero[] = { 0.0L, -0.0L };
 
 long double
-modfl(long double x, long double *iptr)
+__ieee754_modfl(long double x, long double *iptr)
 {
 	union IEEEl2bits ux;
 	int e;

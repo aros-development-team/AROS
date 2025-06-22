@@ -201,7 +201,7 @@ static long double reducl( long double );
 static long double powil ( long double, int );
 
 long double
-powl(long double x, long double y)
+__ieee754_powl(long double x, long double y)
 {
 volatile long double z;
 long double w, W, Wa, Wb, ya, yb, u;

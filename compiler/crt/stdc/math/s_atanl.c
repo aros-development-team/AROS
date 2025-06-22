@@ -31,7 +31,7 @@ one   = 1.0,
 huge   = 1.0e300;
 
 long double
-atanl(long double x)
+__ieee754_atanl(long double x)
 {
 	union IEEEl2bits u;
 	long double w,s1,s2,z;

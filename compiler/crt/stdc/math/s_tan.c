@@ -51,7 +51,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tan.c,v 1.13 2011/02/10 07:3
 #include "e_rem_pio2.c"
 
 double
-tan(double x)
+__ieee754_tan(double x)
 {
 	double y[2],z=0.0;
 	int32_t n, ix;
@@ -77,8 +77,3 @@ tan(double x)
 							-1 -- n odd */
 	}
 }
-
-#if (LDBL_MANT_DIG == DBL_MANT_DIG)
-AROS_MAKE_ASM_SYM(typeof(tanl), tanl, AROS_CSYM_FROM_ASM_NAME(tanl), AROS_CSYM_FROM_ASM_NAME(tan));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(tanl));
-#endif

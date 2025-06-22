@@ -188,11 +188,6 @@ __ieee754_sqrt(double x)
 	return z;
 }
 
-#if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ASM_SYM(typeof(sqrtl), sqrtl, AROS_CSYM_FROM_ASM_NAME(sqrtl), AROS_CSYM_FROM_ASM_NAME(sqrt));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sqrtl));
-#endif
-
 /*
 Other methods  (use floating-point arithmetic)
 -------------

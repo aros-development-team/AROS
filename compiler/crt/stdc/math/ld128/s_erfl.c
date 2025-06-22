@@ -190,7 +190,7 @@ sc8  =  2.59909544563616121735963429710382149e6L,  /* 0x40143d45, 0xbb90a9b1, 0x
 sc9  =  2.80930665169282501639651995082335693e5L;  /* 0x40111258, 0xaa92222e, 0xa97e3216, 0xa237fa6c */
 
 long double
-erfl(long double x)
+__ieee754_erfl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	uint64_t lx, llx;
@@ -252,7 +252,7 @@ erfl(long double x)
 }
 
 long double
-erfcl(long double x)
+__ieee754_erfcl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	uint64_t lx, llx;

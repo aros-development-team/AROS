@@ -38,7 +38,7 @@
 static const long double one = 1.0, half=0.5, huge = 1.0e4900L;
 
 long double
-coshl(long double x)
+__ieee754_coshl(long double x)
 {
 	long double t,w;
 	int32_t ex;

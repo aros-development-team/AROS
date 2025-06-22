@@ -23,7 +23,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_lgammaf.c,v 1.8 2008/02/22 0
 #include "__stdc_intbase.h"
 
 long double
-lgammal(long double x)
+__ieee754_lgammal(long double x)
 {
 	struct StdCBase *StdCBase = __aros_getbase_StdCBase();
 	return lgammal_r(x,&StdCBase->_signgam);

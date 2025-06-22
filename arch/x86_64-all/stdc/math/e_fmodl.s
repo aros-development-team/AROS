@@ -37,8 +37,8 @@
 
 	.text
 	_ALIGNMENT
-	.globl	AROS_CDEFNAME(fmodl)
-	_FUNCTION(AROS_CDEFNAME(fmodl))
+	.globl	AROS_CDEFNAME(__ieee754_fmodl)
+	_FUNCTION(AROS_CDEFNAME(__ieee754_fmodl))
 
 	.set	FirstArg, 8 /* Skip Return-Adress */
 	.set	arg_x, FirstArg
@@ -46,7 +46,7 @@
 	.set	SecondArg, 24 /* Skip FirstArg */
 	.set	arg_y, SecondArg
 	
-AROS_CDEFNAME(fmodl):
+AROS_CDEFNAME(__ieee754_fmodl):
 	fldt	arg_y(%rsp)
 	fldt	arg_x(%rsp)
 1:	fprem
