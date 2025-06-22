@@ -40,7 +40,6 @@
         if ((ret == ITEM_UNQUOTED) && \
         ((cs->CS_CurChr+1) == cs->CS_Length)) \
         { \
-            bug("[%s] [-1] = '%c', [0] = '%c'\n", __func__, cs->CS_Buffer[cs->CS_CurChr-1], cs->CS_Buffer[cs->CS_CurChr]); \
             if ((cs->CS_CurChr == ri_CurChr) || \
                 ((cs->CS_Buffer[cs->CS_CurChr-1] != '=') && \
                 (cs->CS_Buffer[cs->CS_CurChr-1] != ' ') && \
