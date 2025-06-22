@@ -4,10 +4,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- includes-copy : includes-cunit-$(TARGET_UNITTESTS)-copy
-#MM- includes-cunit-yes-copy : cunit-fetch
-
-CUNITVERSION=3.2.7
+CUNITVERSION=3.5.2
 REPOSITORIES := https://gitlab.com/cunity/cunit/-/archive/$(CUNITVERSION)
 ARCHBASE     := cunit-$(CUNITVERSION)
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
@@ -36,14 +33,5 @@ CUNIT_CMAKE_FLAGS :=  \
 
 %build_with_cmake mmake=linklibs-yes-cunit srcdir=$(PORTSDIR)/cunit/$(ARCHBASE) \
     extraoptions=$(CUNIT_CMAKE_FLAGS) prefix=$(AROS_CONTRIB_SDK)
-
-#
-# CUnit includes...
-#
-
-CUNIT_INCLUDE_FILES := CUCurses.h CUError.h CUnitCI.h CUnitCITypes.h CUnit_intl.h
-CUNIT_GENINCLUDE_FILES := CUnit.h
-
-%copy_includes mmake=includes-cunit-yes-copy  path=CUnit dir=$(PORTSDIR)/cunit/$(ARCHBASE)/CUnit/CUnit includes=$(CUNIT_INCLUDE_FILES)
 
 %common
