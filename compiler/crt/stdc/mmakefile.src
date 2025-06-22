@@ -24,6 +24,7 @@ STDC_MATH := \
     hypot \
     lgamma \
     log \
+    log1p \
     log10 \
     log2 \
     modf \
