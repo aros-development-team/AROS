@@ -132,6 +132,8 @@ POSIXC := \
     mktemp \
     mrand48 \
     nanosleep \
+    nl_langinfo \
+    nl_langinfo_l \
     nrand48 \
     open \
     opendir \
