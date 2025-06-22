@@ -25,6 +25,10 @@ FILESINFTORTURE := \
 
 FILESPARANOIA := \
         paranoia
+        
+CUNITSTDCMATHTESTFILES := \
+    cunit-crt-math \
+    cunit-crt-complexmath
 
 #MM- test-crt-stdc : test-crt-stdc-math test-crt-stdc-math-cunit
 #MM- test-crt-stdc-quick : test-crt-stdc-math-quick test-crt-stdc-math-cunit-quick
@@ -86,6 +90,8 @@ STDC_BASE_CFLAGS := -noposixc -ffloat-store $(CFLAGS_NO_BUILTIN)
 USER_CFLAGS := $(STDC_BASE_CFLAGS)
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
-%build_prog mmake=test-crt-stdc-math-yes-cunit \
-    files=cunit-crt-math targetdir=$(CUNITEXEDIR) \
-    progname=cunit-crt-math uselibs="cunit posixc"
+%build_progs mmake=test-crt-stdc-math-yes-cunit \
+    files=$(CUNITSTDCMATHTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
+
+%common
