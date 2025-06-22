@@ -51,11 +51,6 @@
 ******************************************************************************/
 {
     FORWARD_IF_NAN_OR_INF2(atan2, y, x);
-    if (x == 0.0 && y == 0.0) {
-        errno = EDOM;
-        feraiseexcept(FE_INVALID);
-        return NAN;
-    }
     return __ieee754_atan2(y, x);
 }
 
