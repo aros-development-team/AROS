@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -34,11 +34,23 @@
  * characters at the end of a non-\n terminated buffer.
  */
 #define READITEM(buff, bufflen, cs) \
-    ({ LONG ret = ReadItem(buff, bufflen, cs); \
-       if (ret == ITEM_UNQUOTED && (cs->CS_CurChr+1) == cs->CS_Length) \
-         cs->CS_CurChr++; \
-       ret; \
-     })
+    ({ \
+        LONG ret, ri_CurChr = cs->CS_CurChr; \
+        ret = ReadItem(buff, bufflen, cs); \
+        if ((ret == ITEM_UNQUOTED) && \
+        ((cs->CS_CurChr+1) == cs->CS_Length)) \
+        { \
+            bug("[%s] [-1] = '%c', [0] = '%c'\n", __func__, cs->CS_Buffer[cs->CS_CurChr-1], cs->CS_Buffer[cs->CS_CurChr]); \
+            if ((cs->CS_CurChr == ri_CurChr) || \
+                ((cs->CS_Buffer[cs->CS_CurChr-1] != '=') && \
+                (cs->CS_Buffer[cs->CS_CurChr-1] != ' ') && \
+                (cs->CS_Buffer[cs->CS_CurChr-1] != '\t'))) \
+                cs->CS_CurChr++; \
+            else \
+                cs->CS_CurChr--; \
+        } \
+        ret; \
+    })
 
 /* Returns 0 if this is not a '?' line, otherwise
  * returns the length between the '?' and the '\n'
@@ -438,13 +450,20 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
         }
     }
 
-    /*
-     * Get enough space for string buffer.
-     * It's always smaller than the size of the input line+1.
-     */
-
-    strbuflen = cs->CS_Length + 1;
-    strbuf = (STRPTR) AllocVec(strbuflen, MEMF_ANY);
+    if (rdargs->RDA_Flags & RDAF_NOALLOC)
+    {
+        strbuflen = rdargs->RDA_BufSiz;
+        strbuf = (STRPTR)rdargs->RDA_Buffer;
+    }
+    else
+    {
+        /*
+         * Get enough space for string buffer.
+         * It's always smaller than the size of the input line+1.
+         */
+        strbuflen = cs->CS_Length + 1;
+        strbuf = (STRPTR) AllocVec(strbuflen, MEMF_ANY);
+    }
 
     if (strbuf == NULL)
     {
@@ -542,7 +561,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
         {
             /* Get item. Quoted items are never keywords. */
             it = READITEM(s1, strbuflen, cs);
-            D(bug("[ReadArgs] Item %s type %d\n", s1, it));
+            D(bug("[ReadArgs] Item '%s' type %d\n", s1, it));
 
             if (it == ITEM_UNQUOTED)
             {
@@ -551,7 +570,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
 
                 if (item >= 0 && item < numargs && argbuf[item] == NULL)
                 {
-                    D(bug("[ReadArgs] %d: Keyword \"%s\" (%d)\n", arg, s1, item));
+                    D(bug("[ReadArgs] %d: Keyword '%s' (%d)\n", arg, s1, item));
                     /*
                      * It's a keyword. Fill it and retry the current option
                      * at the next turn
@@ -894,6 +913,9 @@ end:
 
     if (error)
     {
+        if (!(rdargs->RDA_Flags & RDAF_NOALLOC))
+            FreeVec(strbuf);
+
         /* ReadArgs() failed. Clean everything up. */
         if (rdargs)
         {
@@ -905,7 +927,6 @@ end:
 
         FreeVec(dalist);
         FreeVec(argbuf);
-        FreeVec(strbuf);
         FreeVec(multvec);
 
         me->pr_Result2 = error;
