@@ -99,7 +99,7 @@ static const double zero = 0.0;
 static const volatile double vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 double
-log1p(double x)
+__ieee754_log1p(double x)
 {
 	double hfsq,f,c,s,z,R,u;
 	int32_t k,hx,hu,ax;
@@ -174,8 +174,3 @@ log1p(double x)
 	if(k==0) return f-(hfsq-s*(hfsq+R)); else
 		 return k*ln2_hi-((hfsq-(s*(hfsq+R)+(k*ln2_lo+c)))-f);
 }
-
-#if (LDBL_MANT_DIG == DBL_MANT_DIG)
-AROS_MAKE_ASM_SYM(typeof(log1pl), log1pl, AROS_CSYM_FROM_ASM_NAME(log1pl), AROS_CSYM_FROM_ASM_NAME(log1p));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(log1pl));
-#endif

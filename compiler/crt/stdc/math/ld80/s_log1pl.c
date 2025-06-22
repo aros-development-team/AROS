@@ -111,7 +111,7 @@ static const long double C2 = 1.4286068203094172321215E-6L;
 #define SQRTH 0.70710678118654752440L
 
 long double
-log1pl(long double xm1)
+__ieee754_log1pl(long double xm1)
 {
 long double x, y, z;
 int e;

@@ -72,3 +72,8 @@
 
     return __ieee754_log1p(x);
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(log1pl), log1pl, AROS_CSYM_FROM_ASM_NAME(log1pl), AROS_CSYM_FROM_ASM_NAME(log1p));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(log1pl));
+#endif

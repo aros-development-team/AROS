@@ -17,6 +17,7 @@ extern double __ieee754_cos(double x);
 extern double __ieee754_tan(double x);
 extern double __ieee754_sqrt(double x);
 extern double __ieee754_log(double x);
+extern double __ieee754_log1p(double x);
 extern double __ieee754_log10(double x);
 extern double __ieee754_log2(double x);
 extern double __ieee754_exp(double x);
