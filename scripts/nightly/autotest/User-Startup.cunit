@@ -35,6 +35,9 @@ If NOT WARN
     ; Perform basic math unit tests...
     Execute S/Test cunit/crt/stdc/math/cunit-crt-math
 
+    ; Perform complex math unit tests...
+    Execute S/Test cunit/crt/stdc/math/cunit-crt-complexmath
+
     ; Perform wchar/multibyte unit tests...
     Execute S/Test cunit/crt/stdc/cunit-crt-wchar
 
