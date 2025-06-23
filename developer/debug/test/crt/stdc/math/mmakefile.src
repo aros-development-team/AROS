@@ -28,6 +28,7 @@ FILESPARANOIA := \
         
 CUNITSTDCMATHTESTFILES := \
     cunit-crt-math \
+    cunit-crt-ldmath \
     cunit-crt-complexmath
 
 #MM- test-crt-stdc : test-crt-stdc-math test-crt-stdc-math-cunit
