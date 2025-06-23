@@ -16955,23 +16955,31 @@ printf %s "checking for the kernel compiler's include path... " >&6; }
                 if test -d "$aros_kernel_cc_includes"-fixed; then
                     aros_kernel_cc_includes+=" -isystem $aros_kernel_cc_includes"-fixed
                 fi
-                # Check for specific includes directory. Needed for Ubuntu 11.10 and Debian
-                if test -d "/usr/include/${aros_target_cpu}-linux-gnu"; then
-                    aros_kernel_cc_includes+=" -isystem /usr/include/${aros_target_cpu}-linux-gnu"
-                else
-                    targetabi=gnu
-                    case "$target_cpu" in
-                        *armhf*)
-                            targetabi=gnueabihf
-                            ;;
-                        *arm*)
-                            targetabi=gnueabi
-                            ;;
-                    esac
-                    if test -d "/usr/${aros_target_cpu}-linux-${targetabi}/include"; then
-                        aros_kernel_cc_includes+=" -isystem /usr/${aros_target_cpu}-linux-${targetabi}/include"
-                    fi
-                fi
+                case "$target_os" in
+                    linux*)
+                        # Check for specific includes directory. Needed for Ubuntu 11.10 and Debian
+                        if test -d "/usr/include/${aros_target_cpu}-linux-gnu"; then
+                            aros_kernel_cc_includes+=" -isystem /usr/include/${aros_target_cpu}-linux-gnu"
+                        else
+                            targetabi=gnu
+                            kernelcpu=$target_cpu
+                            case "$kernelcpu" in
+                                i*86)
+                                    kernelcpu=i686
+                                    ;;
+                                *armhf*)
+                                    targetabi=gnueabihf
+                                    ;;
+                                *arm*)
+                                    targetabi=gnueabi
+                                    ;;
+                            esac
+                            if test -d "/usr/${kernelcpu}-linux-${targetabi}/include"; then
+                                aros_kernel_cc_includes+=" -isystem /usr/${kernelcpu}-linux-${targetabi}/include"
+                            fi
+                        fi
+                    ;;
+                esac
             else
                 # The directory doesn't exist, we need to do some more work.
                 aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
