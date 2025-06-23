@@ -10,10 +10,10 @@
 
 #include <math_private.h>
 
-#if (LDBL_MANT_DIG != 53)
+#if LDBL_MANT_DIG != DBL_MANT_DIG
 /* fmodl */
 long double fmodl(long double x, long double y) {
-    FORWARD_IF_NAN_OR_INF2(fmodl, x, y);
+//    FORWARD_IF_NAN_OR_INF2(fmodl, x, y);
 
     // Handle special cases: y == 0 or x infinite ? domain error
     if (y == 0.0 || !isfinite(x)) {
@@ -22,7 +22,8 @@ long double fmodl(long double x, long double y) {
         return __builtin_nan("");  // or (x - x) as NaN
     }
 
-    double r = __ieee754_fmodl(x, y);
+    double r = 0;
+    //r = __ieee754_fmodl(x, y);
 
     // fmod should never overflow, so no ERANGE check here
 

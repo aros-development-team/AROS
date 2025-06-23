@@ -94,7 +94,7 @@ static const long double MINLOGL = -1.13994985314888605586758E4L;
 static const long double LOG2EL = 1.4426950408889634073599E0L;
 
 long double
-expl(long double x)
+__ieee754_expl(long double x)
 {
 long double px, xx;
 int n;

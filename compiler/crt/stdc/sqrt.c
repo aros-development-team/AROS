@@ -56,7 +56,7 @@
     return __ieee754_sqrt(x);
 }
 
-#if (LDBL_MANT_DIG == 53)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 AROS_MAKE_ASM_SYM(typeof(sqrtl), sqrtl, AROS_CSYM_FROM_ASM_NAME(sqrtl), AROS_CSYM_FROM_ASM_NAME(sqrt));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sqrtl));
 #endif

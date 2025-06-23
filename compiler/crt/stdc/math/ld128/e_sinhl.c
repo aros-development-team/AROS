@@ -52,7 +52,7 @@ static const long double one = 1.0, shuge = 1.0e4931L,
 ovf_thresh = 1.1357216553474703894801348310092223067821E4L;
 
 long double
-sinhl(long double x)
+__ieee754_sinhl(long double x)
 {
   long double t, w, h;
   uint32_t jx, ix;

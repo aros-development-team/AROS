@@ -62,8 +62,3 @@ __ieee754_acosh(double x)
 	    return log1p(t+sqrt(2.0*t+t*t));
 	}
 }
-
-#if (LDBL_MANT_DIG == DBL_MANT_DIG)
-AROS_MAKE_ASM_SYM(typeof(acoshl), acoshl, AROS_CSYM_FROM_ASM_NAME(acoshl), AROS_CSYM_FROM_ASM_NAME(acosh));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(acoshl));
-#endif

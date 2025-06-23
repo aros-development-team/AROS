@@ -39,7 +39,7 @@ pi =  3.14159265358979323846264338327950280e+00L;
 #endif
 
 long double
-acosl(long double x)
+__ieee754_acosl(long double x)
 {
 	union IEEEl2bits u;
 	long double z,p,q,r,w,s,c,df;

@@ -31,7 +31,7 @@ static const long double
   huge = 1.0e+4900L;
 
 long double
-asinhl(long double x)
+__ieee754_asinhl(long double x)
 {
   long double t, w;
   int32_t ix, sign;

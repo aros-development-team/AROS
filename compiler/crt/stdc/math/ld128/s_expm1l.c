@@ -91,7 +91,7 @@ static const long double
 
 
 long double
-expm1l(long double x)
+__ieee754_expm1l(long double x)
 {
   long double px, qx, xx;
   int32_t ix, sign;

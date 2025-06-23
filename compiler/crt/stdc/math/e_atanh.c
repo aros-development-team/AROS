@@ -62,8 +62,3 @@ __ieee754_atanh(double x)
 	    t = 0.5*log1p((x+x)/(one-x));
 	if(hx>=0) return t; else return -t;
 }
-
-#if LDBL_MANT_DIG == DBL_MANT_DIG
-AROS_MAKE_ASM_SYM(typeof(atanhl), atanhl, AROS_CSYM_FROM_ASM_NAME(atanhl), AROS_CSYM_FROM_ASM_NAME(atanh));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(atanhl));
-#endif

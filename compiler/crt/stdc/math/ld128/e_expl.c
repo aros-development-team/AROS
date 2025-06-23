@@ -111,7 +111,7 @@ static const volatile long double twom10000 __attribute__ ((__section__(".rodata
 #endif
 
 long double
-expl(long double x)
+__ieee754_expl(long double x)
 {
 long double px, xx;
 int n;

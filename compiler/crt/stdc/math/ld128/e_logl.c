@@ -187,7 +187,7 @@ static const long double
   ln2b = 1.4286068203094172321214581765680755001344E-6L;
 
 long double
-logl(long double x)
+__ieee754_logl(long double x)
 {
   long double z, y, w;
   ieee_quad_shape_type u, t;

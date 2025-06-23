@@ -29,7 +29,7 @@ one =  1.00000000000000000000e+00,
 huge = 1.000e+300;
 
 long double
-asinl(long double x)
+__ieee754_asinl(long double x)
 {
 	union IEEEl2bits u;
 	long double t=0.0,w,p,q,c,r,s;

@@ -42,52 +42,69 @@
 
 /* Use architecture-specific implementation if available */
 #if defined __riscv64 || defined __riscv || defined __aarch64__
-# define	LDBL_MANT_DIG       113
-# define	LDBL_EPSILON        1.925929944387235853055977942584927319E-34L
-# define	LDBL_DIG            33
-# define	LDBL_MIN_EXP        (-16381)
-# define	LDBL_MIN            3.362103143112093506262677817321752603E-4932L
-# define	LDBL_MIN_10_EXP     (-4931)
-# define	LDBL_MAX_EXP        (+16384)
-# define	LDBL_MAX            1.189731495357231765085759326628007016E+4932L
-# define	LDBL_MAX_10_EXP     (+4932)
-# if (__ISO_C_VISIBLE >= 2011)
-#  define LDBL_TRUE_MIN         6.475175119438025110924438958227646552E-4966L
-#  define LDBL_DECIMAL_DIG      36
-#  define LDBL_HAS_SUBNORM      1
-# endif
-#else /* ! __riscv64 | __riscv | __aarch64__ */
-#if defined __arm__
-#define LDBL_MANT_DIG           DBL_MANT_DIG
-#define LDBL_EPSILON            ((long double)DBL_EPSILON)
-#define LDBL_DIG                DBL_DIG
-#define LDBL_MIN_EXP            DBL_MIN_EXP
-#define LDBL_MIN                ((long double)DBL_MIN)
-#define LDBL_MIN_10_EXP         DBL_MIN_10_EXP
-#define LDBL_MAX_EXP            DBL_MAX_EXP
-#define LDBL_MAX                ((long double)DBL_MAX)
-#define LDBL_MAX_10_EXP         DBL_MAX_10_EXP
-#if __ISO_C_VISIBLE >= 2011
-#define LDBL_TRUE_MIN           ((long double)DBL_TRUE_MIN)
-#define LDBL_DECIMAL_DIG        DBL_DECIMAL_DIG
-#define LDBL_HAS_SUBNORM        DBL_HAS_SUBNORM
-#endif
-#else /* ! __arm__ */
-#define LDBL_MANT_DIG           64
-#define LDBL_EPSILON            1.0842021724855044340E-19L
-#define LDBL_DIG                18
-#define LDBL_MIN_EXP            (-16381)
-#define LDBL_MIN                3.3621031431120935063E-4932L
-#define LDBL_MIN_10_EXP         (-4931)
-#define LDBL_MAX_EXP            (+16384)
-#define LDBL_MAX                1.1897314953572317650E+4932L
-#define LDBL_MAX_10_EXP         (+4932)
-#if __ISO_C_VISIBLE >= 2011
-#define LDBL_TRUE_MIN           3.6451995318824746025E-4951L
-#define LDBL_DECIMAL_DIG        21
-#define LDBL_HAS_SUBNORM        1
-#endif
-#endif /* ! __arm__ */
+  /* 128-bit quad precision (e.g. IEEE binary128) */
+  #define LDBL_MANT_DIG        113
+  #define LDBL_EPSILON         1.925929944387235853055977942584927319E-34L
+  #define LDBL_DIG             33
+  #define LDBL_MIN_EXP         (-16381)
+  #define LDBL_MIN             3.362103143112093506262677817321752603E-4932L
+  #define LDBL_MIN_10_EXP      (-4931)
+  #define LDBL_MAX_EXP         (+16384)
+  #define LDBL_MAX             1.189731495357231765085759326628007016E+4932L
+  #define LDBL_MAX_10_EXP      (+4932)
+  #if __ISO_C_VISIBLE >= 2011
+    #define LDBL_TRUE_MIN      6.475175119438025110924438958227646552E-4966L
+    #define LDBL_DECIMAL_DIG   36
+    #define LDBL_HAS_SUBNORM   1
+  #endif
+#elif defined __i386__ || defined __x86_64__ || defined __m68k__
+  /* 80-bit extended precision */
+  #define LDBL_MANT_DIG        64
+  #define LDBL_EPSILON         1.084202172485504434007452800869941711E-19L
+  #define LDBL_DIG             18
+  #define LDBL_MIN_EXP         (-16381)
+  #define LDBL_MIN             3.36210314311209350626267781732175260E-4932L
+  #define LDBL_MIN_10_EXP      (-4931)
+  #define LDBL_MAX_EXP         (+16384)
+  #define LDBL_MAX             1.18973149535723176508575932662800702E+4932L
+  #define LDBL_MAX_10_EXP      (+4932)
+  #if __ISO_C_VISIBLE >= 2011
+    #define LDBL_TRUE_MIN      3.64519953188247460252840593361941982E-4951L
+    #define LDBL_DECIMAL_DIG   21
+    #define LDBL_HAS_SUBNORM   1
+  #endif
+#elif defined __arm__
+  /* long double is same as double */
+  #define LDBL_MANT_DIG        DBL_MANT_DIG
+  #define LDBL_EPSILON         ((long double)DBL_EPSILON)
+  #define LDBL_DIG             DBL_DIG
+  #define LDBL_MIN_EXP         DBL_MIN_EXP
+  #define LDBL_MIN             ((long double)DBL_MIN)
+  #define LDBL_MIN_10_EXP      DBL_MIN_10_EXP
+  #define LDBL_MAX_EXP         DBL_MAX_EXP
+  #define LDBL_MAX             ((long double)DBL_MAX)
+  #define LDBL_MAX_10_EXP      DBL_MAX_10_EXP
+  #if __ISO_C_VISIBLE >= 2011
+    #define LDBL_TRUE_MIN      ((long double)DBL_TRUE_MIN)
+    #define LDBL_DECIMAL_DIG   DBL_DECIMAL_DIG
+    #define LDBL_HAS_SUBNORM   DBL_HAS_SUBNORM
+  #endif
+#else
+  /* Fallback — assume 80-bit extended precision */
+  #define LDBL_MANT_DIG        64
+  #define LDBL_EPSILON         1.084202172485504434007452800869941711E-19L
+  #define LDBL_DIG             18
+  #define LDBL_MIN_EXP         (-16381)
+  #define LDBL_MIN             3.36210314311209350626267781732175260E-4932L
+  #define LDBL_MIN_10_EXP      (-4931)
+  #define LDBL_MAX_EXP         (+16384)
+  #define LDBL_MAX             1.18973149535723176508575932662800702E+4932L
+  #define LDBL_MAX_10_EXP      (+4932)
+  #if __ISO_C_VISIBLE >= 2011
+    #define LDBL_TRUE_MIN      3.64519953188247460252840593361941982E-4951L
+    #define LDBL_DECIMAL_DIG   21
+    #define LDBL_HAS_SUBNORM   1
+  #endif
 #endif
 
 # if (__ISO_C_VISIBLE >= 1999)

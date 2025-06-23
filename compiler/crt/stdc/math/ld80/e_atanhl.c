@@ -37,7 +37,7 @@ static const long double one = 1.0, huge = 1e4900L;
 static const long double zero = 0.0;
 
 long double
-atanhl(long double x)
+__ieee754_atanhl(long double x)
 {
 	long double t;
 	int32_t ix;

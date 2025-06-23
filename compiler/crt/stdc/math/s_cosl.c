@@ -52,7 +52,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cosl.c,v 1.3 2011/05/30 19:4
 #endif
 
 long double
-cosl(long double x)
+__ieee754_cosl(long double x)
 {
 	union IEEEl2bits z;
 	int e0;

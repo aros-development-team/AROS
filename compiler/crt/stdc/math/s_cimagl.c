@@ -29,6 +29,7 @@
 #include <complex.h>
 #include "math_private.h"
 
+#if LDBL_MANT_DIG != DBL_MANT_DIG
 long double
 cimagl(long double complex z)
 {
@@ -36,3 +37,4 @@ cimagl(long double complex z)
 
 	return (IMAGPART(z1));
 }
+#endif

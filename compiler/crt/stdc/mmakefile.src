@@ -7,23 +7,30 @@ USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math -iquote $(FMTPRINTFDIR)
 
 STDC_MATH := \
     acos \
+    acosl \
     acosh \
+    acoshl \
     asin \
+    asinl \
     atan \
     atanh \
+    atanhl \
     atan2 \
     bessel \
     cbrt \
     cos \
+    cosl \
     cosh \
     erf \
     erfc \
     exp \
+    expl \
     fmod \
     fmodl \
     hypot \
     lgamma \
     log \
+    logl \
     log1p \
     log10 \
     log2 \
@@ -32,12 +39,30 @@ STDC_MATH := \
     remquo \
     remquol \
     sin \
+    sinl \
     sinh \
+    sinhl \
     sqrt \
     sqrtl \
     tan \
     tanh \
-    tgamma
+    tanhl \
+    tgamma \
+    atan2l \
+    atanl \
+    cbrtl \
+    coshl \
+    erfcl \
+    erfl \
+    hypotl \
+    lgammal \
+    log10l \
+    log1pl \
+    log2l \
+    modfl \
+    powl \
+    tanl \
+    tgammal
 
 STDC_MATH_RAW := \
     math/bsdsrc/b_exp \
@@ -375,7 +400,7 @@ else
 # or the platform doesn't support it, so alias the double versions
 # of necessary functions.
 # These architectures should have
-# LDBL_MANT_DIG == DBL_MANT_DIG (53) in float.h
+# LDBL_MANT_DIG == DBL_MANT_DIG in <float.h>
 #
 endif
 endif

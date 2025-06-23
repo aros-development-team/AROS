@@ -74,7 +74,7 @@ __ieee754_remainder(double x, double p)
 	return x;
 }
 
-#if LDBL_MANT_DIG == 53
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 AROS_MAKE_ASM_SYM(typeof(remainderl), remainderl, AROS_CSYM_FROM_ASM_NAME(remainderl), AROS_CSYM_FROM_ASM_NAME(remainder));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(remainderl));
 #endif

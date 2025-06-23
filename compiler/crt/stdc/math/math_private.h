@@ -25,8 +25,6 @@
 #include "fpmath.h"
 #include "bsdsrc/math_private_openbsd.h"
 
-#include "math_private_aros.h"
-
 //the following define is used to comment out gcc's incorrect section attributes
 #if !defined(SECTIONCOMMENT)
 #if defined(__arm__)
@@ -55,7 +53,6 @@
  */
 
 #if AROS_BIG_ENDIAN
-
 typedef union
 {
   double value;
@@ -69,10 +66,7 @@ typedef union
     uint64_t w;
   } xparts;
 } ieee_double_shape_type;
-#endif
-
-#if !AROS_BIG_ENDIAN
-
+#else
 typedef union
 {
   double value;
@@ -918,5 +912,7 @@ float complex __ldexp_cexpf(float complex,int);
 long double __kernel_sinl(long double, long double, int);
 long double __kernel_cosl(long double, long double);
 long double __kernel_tanl(long double, long double, int);
+
+#include "math_private_aros.h"
 
 #endif /* !_MATH_PRIVATE_H_ */

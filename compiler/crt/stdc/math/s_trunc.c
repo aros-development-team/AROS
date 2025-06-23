@@ -60,7 +60,7 @@ trunc(double x)
 	return x;
 }
 
-#if LDBL_MANT_DIG == 53
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 AROS_MAKE_ASM_SYM(typeof(truncl), truncl, AROS_CSYM_FROM_ASM_NAME(truncl), AROS_CSYM_FROM_ASM_NAME(trunc));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(truncl));
 #endif

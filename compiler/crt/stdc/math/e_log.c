@@ -141,8 +141,3 @@ __ieee754_log(double x)
 		     return dk*ln2_hi-((s*(f-R)-dk*ln2_lo)-f);
 	}
 }
-
-#if	LDBL_MANT_DIG == DBL_MANT_DIG
-AROS_MAKE_ASM_SYM(typeof(logl), logl, AROS_CSYM_FROM_ASM_NAME(logl), AROS_CSYM_FROM_ASM_NAME(log));
-AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(logl));
-#endif

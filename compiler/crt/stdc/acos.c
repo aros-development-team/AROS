@@ -57,3 +57,8 @@
     }
     return __ieee754_acos(x);
 }
+
+#if LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(acosl), acosl, AROS_CSYM_FROM_ASM_NAME(acosl), AROS_CSYM_FROM_ASM_NAME(acos));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(acosl));
+#endif

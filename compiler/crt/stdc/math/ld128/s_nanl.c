@@ -32,7 +32,7 @@
 #include "math_private.h"
 
 long double
-nanl(const char *s)
+__ieee754_nanl(const char *s)
 {
 	union {
 		union IEEEl2bits ieee;

@@ -30,6 +30,7 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fminl.c,v 1.1 2004/06/30 07:04:01 das Exp
 
 #include "fpmath.h"
 
+#if LDBL_MANT_DIG != DBL_MANT_DIG
 long double
 fminl(long double x, long double y)
 {
@@ -52,3 +53,4 @@ fminl(long double x, long double y)
 
 	return (x < y ? x : y);
 }
+#endif

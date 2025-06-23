@@ -33,7 +33,7 @@ one	= 1.0,
 ln2	= 6.931471805599453094287e-01L; /* 0x3FFE, 0xB17217F7, 0xD1CF79AC */
 
 long double
-acoshl(long double x)
+__ieee754_acoshl(long double x)
 {
 	long double t;
 	uint32_t se,i0,i1;

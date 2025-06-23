@@ -78,7 +78,7 @@ nextafter(double x, double y)
 	return x;
 }
 
-#if (LDBL_MANT_DIG == 53)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 /* Alias nextafter -> nexttoward */
 AROS_MAKE_ASM_SYM(typeof(nexttoward), nexttoward, AROS_CSYM_FROM_ASM_NAME(nexttoward), AROS_CSYM_FROM_ASM_NAME(nextafter));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(nexttoward));

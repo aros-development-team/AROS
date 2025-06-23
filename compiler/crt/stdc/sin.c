@@ -50,7 +50,7 @@
     return __ieee754_sin(x);
 }
 
-#if (LDBL_MANT_DIG == 53)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 AROS_MAKE_ASM_SYM(typeof(sinl), sinl, AROS_CSYM_FROM_ASM_NAME(sinl), AROS_CSYM_FROM_ASM_NAME(sin));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sinl));
 #endif

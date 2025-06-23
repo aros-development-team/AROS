@@ -48,7 +48,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sinl.c,v 1.3 2011/05/30 19:4
 #endif
 
 long double
-sinl(long double x)
+__ieee754_sinl(long double x)
 {
 	union IEEEl2bits z;
 	int e0, s;

@@ -117,7 +117,7 @@ nanf(const char *s)
 	return (u.f);
 }
 
-#if (LDBL_MANT_DIG == 53)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 /* Alias nan -> nanl */
 AROS_MAKE_ASM_SYM(typeof(nanl), nanl, AROS_CSYM_FROM_ASM_NAME(nanl), AROS_CSYM_FROM_ASM_NAME(nan));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(nanl));

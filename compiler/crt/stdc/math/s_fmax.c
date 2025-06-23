@@ -34,15 +34,20 @@ double
 fmax(double x, double y)
 {
 	union IEEEd2bits u[2];
-
+	int x_is_nan, y_is_nan;
+ 
 	u[0].d = x;
 	u[1].d = y;
 
-	/* Check for NaNs to avoid raising spurious exceptions. */
-	if (u[0].bits.exp == 2047 && (u[0].bits.manh | u[0].bits.manl) != 0)
-		return (y);
-	if (u[1].bits.exp == 2047 && (u[1].bits.manh | u[1].bits.manl) != 0)
-		return (x);
+	x_is_nan = (u[0].bits.exp == 2047 && (u[0].bits.manh | u[0].bits.manl) != 0);
+	y_is_nan = (u[1].bits.exp == 2047 && (u[1].bits.manh | u[1].bits.manl) != 0);
+
+	if (x_is_nan && y_is_nan)
+		return x + y;  // Return NaN, possibly raise invalid exception
+	if (x_is_nan)
+		return y;
+	if (y_is_nan)
+		return x;
 
 	/* Handle comparisons of signed zeroes. */
 	if (u[0].bits.sign != u[1].bits.sign)
@@ -51,7 +56,7 @@ fmax(double x, double y)
 	return (x > y ? x : y);
 }
 
-#if (LDBL_MANT_DIG == 53)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 /* Alias fmax -> fmaxl */
 AROS_MAKE_ASM_SYM(typeof(fmaxl), fmaxl, AROS_CSYM_FROM_ASM_NAME(fmaxl), AROS_CSYM_FROM_ASM_NAME(fmax));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(fmaxl));

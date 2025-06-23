@@ -285,7 +285,7 @@ fma(double x, double y, double z)
 		return (add_and_denormalize(r.hi, adj, spread));
 }
 
-#if (LDBL_MANT_DIG == 53)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 /* Alias fma -> fmal */
 AROS_MAKE_ASM_SYM(typeof(fmal), fmal, AROS_CSYM_FROM_ASM_NAME(fmal), AROS_CSYM_FROM_ASM_NAME(fma));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(fmal));

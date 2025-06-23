@@ -30,21 +30,27 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_fmaxl.c,v 1.1 2004/06/30 07:04:01 das Exp
 
 #include "fpmath.h"
 
+#if LDBL_MANT_DIG != DBL_MANT_DIG
 long double
 fmaxl(long double x, long double y)
 {
 	union IEEEl2bits u[2];
+	int x_is_nan, y_is_nan;
 
 	u[0].e = x;
 	mask_nbit_l(u[0]);
 	u[1].e = y;
 	mask_nbit_l(u[1]);
 
-	/* Check for NaNs to avoid raising spurious exceptions. */
-	if (u[0].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0)
-		return (y);
-	if (u[1].bits.exp == 32767 && (u[1].bits.manh | u[1].bits.manl) != 0)
-		return (x);
+    x_is_nan = (u[0].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0);
+    y_is_nan = (u[1].bits.exp == 32767 && (u[1].bits.manh | u[1].bits.manl) != 0);
+
+    if (x_is_nan && y_is_nan)
+        return (x + y);  // returns NaN while potentially raising invalid exception
+    if (x_is_nan)
+        return y;
+    if (y_is_nan)
+        return x;
 
 	/* Handle comparisons of signed zeroes. */
 	if (u[0].bits.sign != u[1].bits.sign)
@@ -52,3 +58,4 @@ fmaxl(long double x, long double y)
 
 	return (x > y ? x : y);
 }
+#endif

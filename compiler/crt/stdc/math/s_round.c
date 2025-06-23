@@ -54,7 +54,7 @@ round(double x)
 	}
 }
 
-#if (LDBL_MANT_DIG == 53)
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 AROS_MAKE_ASM_SYM(typeof(roundl), roundl, AROS_CSYM_FROM_ASM_NAME(roundl), AROS_CSYM_FROM_ASM_NAME(round));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(roundl));
 #endif

@@ -121,7 +121,7 @@ static const long double sqrth = 0.7071067811865475244008443621048490392848L;
 static const long double zero = 0.0L;
 
 long double
-log1pl(long double xm1)
+__ieee754_log1pl(long double xm1)
 {
   long double x, y, z, r, s;
   ieee_quad_shape_type u;

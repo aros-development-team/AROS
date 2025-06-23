@@ -63,7 +63,7 @@
     return __ieee754_remquo(x, y, quo);
 }
 
-#if LDBL_MANT_DIG == 53
+#if LDBL_MANT_DIG == DBL_MANT_DIG
 AROS_MAKE_ASM_SYM(typeof(remquol), remquol, AROS_CSYM_FROM_ASM_NAME(remquol), AROS_CSYM_FROM_ASM_NAME(remquo));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(remquol));
 #endif

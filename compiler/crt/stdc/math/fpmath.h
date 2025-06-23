@@ -29,6 +29,7 @@
 #ifndef _FPMATH_H_
 #define _FPMATH_H_
 
+#include <float.h>
 #include <aros/cpu.h>
 
 #if defined __x86_64__

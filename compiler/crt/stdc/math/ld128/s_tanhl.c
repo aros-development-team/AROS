@@ -57,7 +57,7 @@
 static const long double one = 1.0, two = 2.0, tiny = 1.0e-4900L;
 
 long double
-tanhl(long double x)
+__ieee754_tanhl(long double x)
 {
   long double t, z;
   uint32_t jx, ix;

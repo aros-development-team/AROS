@@ -10,7 +10,7 @@
 
 #include <math_private.h>
 
-#if (LDBL_MANT_DIG != 53)
+#if LDBL_MANT_DIG != DBL_MANT_DIG
 /*****************************************************************************
 
     NAME */
@@ -48,12 +48,12 @@
 
 ******************************************************************************/
 {
-    FORWARD_IF_NAN_OR_INF(sqrt, x);
+    FORWARD_IF_NAN_OR_INF(sqrtl, x);
     if (x < 0.0) {
         STDC_SETMATHERRNO(EDOM)
         STDC_RAISEMATHEXCPT(FE_INVALID)
         return NAN;
     }
-    return __ieee754_sqrt(x);
+    return __ieee754_sqrtl(x);
 }
 #endif
