@@ -54,13 +54,13 @@ long double remquol(
 ******************************************************************************/
 {
     if (!isfinite(x) || !isfinite(y)) {
-//        return __ieee754_remquol(x, y, quo);
+        return __ieee754_remquol(x, y, quo);
     }
     if (quo == NULL) {
         errno = EDOM;
         feraiseexcept(FE_INVALID);
         return NAN;
     }
-//    return __ieee754_remquol(x, y, quo);
+    return __ieee754_remquol(x, y, quo);
 }
 #endif
