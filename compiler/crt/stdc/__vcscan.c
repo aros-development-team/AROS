@@ -55,7 +55,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
 
     int __vcscan (
 
-/*    SYNOPSIS */
+/*  SYNOPSIS */
     void         * data,
     int        (* get_char)(void *),
     int        (* unget_char)(int,void *),

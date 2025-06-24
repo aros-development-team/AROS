@@ -11,7 +11,7 @@
 
 int wmemcmp(
     
- /*  SYNOPSIS */     
+/*  SYNOPSIS */     
     const wchar_t * s1, 
     const wchar_t * s2, 
     size_t n)
