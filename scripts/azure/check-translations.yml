@@ -22,6 +22,9 @@ steps:
       build_info=$(curl -s -u ":$(System.AccessToken)" \
         "$(System.CollectionUri)$(System.TeamProject)/_apis/pipelines/16/runs/$pipeline_run_id?api-version=7.1-preview.1")
 
+      echo "Full pipeline run info:"
+      echo "$build_info" | jq .
+
       build_id=$(echo "$build_info" | jq -r '.build.id')
       echo "Resolved build ID: $build_id"
 
