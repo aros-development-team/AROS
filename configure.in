@@ -3055,6 +3055,7 @@ if test "x$test_kernel_cc" != "xno"; then
                                 ;;
                             *armhf*)
                                 targetabi=gnueabihf
+                                kernelcpu=$aros_target_cpu
                                 ;;
                             *arm*)
                                 targetabi=gnueabi

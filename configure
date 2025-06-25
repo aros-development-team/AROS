@@ -16966,6 +16966,7 @@ printf %s "checking for the kernel compiler's include path... " >&6; }
                                 ;;
                             *armhf*)
                                 targetabi=gnueabihf
+                                kernelcpu=$aros_target_cpu
                                 ;;
                             *arm*)
                                 targetabi=gnueabi
