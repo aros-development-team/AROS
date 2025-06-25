@@ -14,14 +14,20 @@ pool:
 
 steps:
   - script: |
-      echo "Fetching logs for run triggered by pipeline 'aros-development-team.AROS-pc-i386'..."
+      echo "Fetching pipeline run ID from triggered pipeline..."
+      pipeline_run_id=$(echo "$(resources.pipeline.AROSPipeline16.runID)")
+      echo "Pipeline run ID: $pipeline_run_id"
 
-      run_id=$(echo "$(resources.pipeline.AROSPipeline16.runID)")
-      echo "Using run ID: $run_id"
+      echo "Fetching build info for pipeline run..."
+      build_info=$(curl -s -u ":$(System.AccessToken)" \
+        "$(System.CollectionUri)$(System.TeamProject)/_apis/pipelines/16/runs/$pipeline_run_id?api-version=7.1-preview.1")
 
-      echo "Downloading logs.zip..."
+      build_id=$(echo "$build_info" | jq -r '.resources.repositories.self.version')
+      echo "Resolved build ID: $build_id"
+
+      echo "Downloading logs.zip for build ID $build_id..."
       curl -sSL -u ":$(System.AccessToken)" \
-        "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$run_id/logs.zip?api-version=6.0" \
+        "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$build_id/logs.zip?api-version=6.0" \
         -o logs.zip
 
       echo "Checking logs.zip file type..."
@@ -29,7 +35,7 @@ steps:
 
       echo "Unzipping logs..."
       unzip -q logs.zip -d logs || (echo "Unzip failed" && file logs.zip && exit 1)
-    displayName: 'Download and unzip logs from aros-development-team.AROS-pc-i386'
+    displayName: 'Download and unzip logs from arros-development-team.AROS-pc-i386'
     env:
       System.AccessToken: $(System.AccessToken)
 
@@ -42,3 +48,9 @@ steps:
       echo "Matched log lines:"
       cat translation-errors.log || echo "No matching warnings found."
     displayName: 'Grep for translation warnings'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: 'translation-errors.log'
+      artifactName: 'translation-warnings'
+    condition: succeededOrFailed()
