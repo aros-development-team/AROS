@@ -2433,10 +2433,24 @@ case "$aros_target_cpu" in
         AC_MSG_CHECKING([which minimum CPU to use])
         AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=)
         if test "$aros_gcc_cpu" = ""; then
-            AC_MSG_RESULT($gcc_default_cpu)
+            case "$gcc_default_cpu" in
+                \$\(*)
+                    AC_MSG_RESULT(default)
+                    ;;
+                *)
+                    AC_MSG_RESULT([$gcc_default_cpu])
+                    ;;
+            esac
             aros_gcc_cpu="$""(GCC_DEFAULT_CPU)"
         else
-            AC_MSG_RESULT($aros_gcc_cpu)
+            case "$aros_gcc_cpu" in
+                \$\(*)
+                    AC_MSG_RESULT(default)
+                    ;;
+                *)
+                    AC_MSG_RESULT([$aros_gcc_cpu])
+                    ;;
+            esac
         fi
 
         if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
@@ -2484,19 +2498,59 @@ case "$aros_target_cpu" in
         AC_MSG_CHECKING([which minimum CPU to use])
         AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=)
         if test "$aros_gcc_cpu" = ""; then
-            AC_MSG_RESULT($gcc_default_cpu)
+            case "$gcc_default_cpu" in
+                \$\(GCC_FLOAT*)
+                    AC_MSG_RESULT($gcc_float_cpu)
+                    ;;
+                \$\(GCC_SOFT*)
+                    AC_MSG_RESULT($gcc_soft_cpu)
+                    ;;
+                \$\(*)
+                    AC_MSG_RESULT(default)
+                    ;;
+                *)
+                    AC_MSG_RESULT([$gcc_default_cpu])
+                    ;;
+            esac
             aros_gcc_cpu="$""(GCC_DEFAULT_CPU)"
         else
-            AC_MSG_RESULT($aros_gcc_cpu)
+            case "$aros_gcc_cpu" in
+                \$\(GCC_FLOAT*)
+                    AC_MSG_RESULT($gcc_float_cpu)
+                    ;;
+                \$\(GCC_SOFT*)
+                    AC_MSG_RESULT($gcc_soft_cpu)
+                    ;;
+                \$\(*)
+                    AC_MSG_RESULT(default)
+                    ;;
+                *)
+                    AC_MSG_RESULT([$aros_gcc_cpu])
+                    ;;
+            esac
         fi
 
         AC_MSG_CHECKING([which minimum FPU to use])
         AC_ARG_WITH(fpu,AS_HELP_STRING([--with-fpu=<spec>],[Specify minumum FPU (default=$gcc_float_fpu).]),aros_gcc_fpu="$withval",aros_gcc_fpu=)
         if test "$aros_gcc_fpu" = ""; then
-            AC_MSG_RESULT($gcc_float_fpu)
+            case "$gcc_float_fpu" in
+                \$\(*)
+                    AC_MSG_RESULT(default)
+                    ;;
+                *)
+                    AC_MSG_RESULT([$gcc_float_fpu])
+                    ;;
+            esac
             # aros_gcc_fpu="$""(GCC_DEFAULT_FPU)"
         else
-            AC_MSG_RESULT($aros_gcc_fpu)
+            case "$aros_gcc_fpu" in
+                \$\(*)
+                    AC_MSG_RESULT(default)
+                    ;;
+                *)
+                    AC_MSG_RESULT([$aros_gcc_fpu])
+                    ;;
+            esac
         fi
 
         AC_MSG_CHECKING([which floating point ABI to use])

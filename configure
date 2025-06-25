@@ -11436,12 +11436,28 @@ else $as_nop
 fi
 
         if test "$aros_gcc_cpu" = ""; then
-            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_default_cpu" >&5
+            case "$gcc_default_cpu" in
+                \$\(*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: default" >&5
+printf "%s\n" "default" >&6; }
+                    ;;
+                *)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_default_cpu" >&5
 printf "%s\n" "$gcc_default_cpu" >&6; }
+                    ;;
+            esac
             aros_gcc_cpu="$""(GCC_DEFAULT_CPU)"
         else
-            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
+            case "$aros_gcc_cpu" in
+                \$\(*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: default" >&5
+printf "%s\n" "default" >&6; }
+                    ;;
+                *)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
 printf "%s\n" "$aros_gcc_cpu" >&6; }
+                    ;;
+            esac
         fi
 
         if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
@@ -11496,12 +11512,44 @@ else $as_nop
 fi
 
         if test "$aros_gcc_cpu" = ""; then
-            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_default_cpu" >&5
+            case "$gcc_default_cpu" in
+                \$\(GCC_FLOAT*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_float_cpu" >&5
+printf "%s\n" "$gcc_float_cpu" >&6; }
+                    ;;
+                \$\(GCC_SOFT*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_soft_cpu" >&5
+printf "%s\n" "$gcc_soft_cpu" >&6; }
+                    ;;
+                \$\(*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: default" >&5
+printf "%s\n" "default" >&6; }
+                    ;;
+                *)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_default_cpu" >&5
 printf "%s\n" "$gcc_default_cpu" >&6; }
+                    ;;
+            esac
             aros_gcc_cpu="$""(GCC_DEFAULT_CPU)"
         else
-            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
+            case "$aros_gcc_cpu" in
+                \$\(GCC_FLOAT*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_float_cpu" >&5
+printf "%s\n" "$gcc_float_cpu" >&6; }
+                    ;;
+                \$\(GCC_SOFT*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_soft_cpu" >&5
+printf "%s\n" "$gcc_soft_cpu" >&6; }
+                    ;;
+                \$\(*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: default" >&5
+printf "%s\n" "default" >&6; }
+                    ;;
+                *)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
 printf "%s\n" "$aros_gcc_cpu" >&6; }
+                    ;;
+            esac
         fi
 
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking which minimum FPU to use" >&5
@@ -11516,12 +11564,28 @@ else $as_nop
 fi
 
         if test "$aros_gcc_fpu" = ""; then
-            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_float_fpu" >&5
+            case "$gcc_float_fpu" in
+                \$\(*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: default" >&5
+printf "%s\n" "default" >&6; }
+                    ;;
+                *)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gcc_float_fpu" >&5
 printf "%s\n" "$gcc_float_fpu" >&6; }
+                    ;;
+            esac
             # aros_gcc_fpu="$""(GCC_DEFAULT_FPU)"
         else
-            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_fpu" >&5
+            case "$aros_gcc_fpu" in
+                \$\(*)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: default" >&5
+printf "%s\n" "default" >&6; }
+                    ;;
+                *)
+                    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_fpu" >&5
 printf "%s\n" "$aros_gcc_fpu" >&6; }
+                    ;;
+            esac
         fi
 
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking which floating point ABI to use" >&5
