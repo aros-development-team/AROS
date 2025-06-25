@@ -11,8 +11,44 @@
 #include <math_private.h>
 
 #if LDBL_MANT_DIG != DBL_MANT_DIG
-/* fmodl */
-long double fmodl(long double x, long double y) {
+/*****************************************************************************
+
+    NAME */
+#include <math.h>
+
+        long double fmodl(
+
+/*  SYNOPSIS */
+        long double x,
+        long double y)
+
+/*  FUNCTION
+        Computes floating-point remainder for long double precision.
+
+    INPUTS
+        x - numerator.
+        y - denominator (non-zero).
+
+    RESULT
+        Floating-point remainder.
+
+    NOTES
+        Same rules as fmod().
+
+    EXAMPLE
+        long double r = fmodl(5.3L, 2.0L);  // r = 1.3L
+
+    BUGS
+        None known.
+
+    SEE ALSO
+        fmod(), fmodf()
+
+    INTERNALS
+        Calls __ieee754_fmodl(x, y).
+
+******************************************************************************/
+{
 //    FORWARD_IF_NAN_OR_INF2(fmodl, x, y);
 
     // Handle special cases: y == 0 or x infinite ? domain error

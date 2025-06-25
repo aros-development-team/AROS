@@ -24,25 +24,30 @@
         Computes the hyperbolic cosine of x.
 
     INPUTS
-        x - input value.
+        x - a double value.
 
     RESULT
-        Returns (e^x + e^(-x)) / 2.
+        The hyperbolic cosine of x, defined as (e^x + e^(-x)) / 2.
 
     NOTES
-        Result is always >= 1 for real x.
+        cosh(x) = 1 for all real x.
+        Returns NaN if input is NaN.
+        May overflow for large |x|, resulting in +Inf.
 
     EXAMPLE
-        double ch = cosh(0.0);  // returns 1.0
+        double y = cosh(0.0);     // y = 1.0
+        double z = cosh(1.0);     // z ˜ 1.5430806348
 
     BUGS
-        None known.
+        Overflow for large inputs.
 
     SEE ALSO
-        sinh(), tanh(), coshf(), coshl()
+        coshf(), sinh(), tanh()
 
     INTERNALS
-        Forwards to __ieee754_cosh().
+        Calls __ieee754_cosh(x).
+        Uses exponential function calls to compute cosh.
+        Handles large inputs by scaling to avoid overflow when possible.
 
 ******************************************************************************/
 {

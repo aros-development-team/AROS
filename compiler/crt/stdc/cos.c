@@ -24,25 +24,30 @@
         Computes the cosine of x (x in radians).
 
     INPUTS
-        x - angle in radians.
+        x - a double value representing an angle in radians.
 
     RESULT
-        Returns the cosine of x.
+        The cosine of the angle x.
 
     NOTES
-        Result is in the range [-1, 1].
+        The function is periodic with period 2p.
+        Returns NaN if input is NaN.
+        Uses argument reduction to improve precision for large inputs.
 
     EXAMPLE
-        double c = cos(0.0);  // returns 1.0
+        double y = cos(0.0);          // y = 1.0
+        double z = cos(M_PI / 2.0);   // z ˜ 0.0
 
     BUGS
-        None known.
+        Slight loss of precision for very large inputs.
 
     SEE ALSO
-        sin(), tan(), cosf(), cosl()
+        cosf(), sin(), tan()
 
     INTERNALS
-        Forwards to __ieee754_cos().
+        Calls __ieee754_cos(x).
+        Performs argument reduction modulo 2p.
+        Uses polynomial approximations (Taylor or Chebyshev series).
 
 ******************************************************************************/
 {

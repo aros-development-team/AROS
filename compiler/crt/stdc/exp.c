@@ -21,30 +21,33 @@
         double x)
 
 /*  FUNCTION
-        Computes e raised to the power x.
+        Computes the exponential function of x, e raised to the power x.
 
     INPUTS
-        x - exponent.
+        x - a double value.
 
     RESULT
-        Returns e^x.
-
-        Sets errno to ERANGE and raises FE_OVERFLOW on overflow.
+        The value of e^x.
 
     NOTES
-        Uses IEEE 754 semantics.
+        Returns +Inf if x is large and positive (overflow).
+        Returns 0 if x is large and negative (underflow).
+        Returns NaN if input is NaN.
 
     EXAMPLE
-        double val = exp(1.0);  // returns e (~2.71828)
+        double y = exp(0.0);     // y = 1.0
+        double z = exp(1.0);     // z ˜ 2.718281828
 
     BUGS
-        None known.
+        Precision may degrade for very large magnitude inputs.
 
     SEE ALSO
-        expm1(), log(), expf(), expl()
+        expf(), expm1()
 
     INTERNALS
-        Forwards to __ieee754_exp() with error handling.
+        Calls __ieee754_exp(x).
+        Uses range reduction and polynomial approximation.
+        Carefully handles overflow and underflow conditions.
 
 ******************************************************************************/
 {

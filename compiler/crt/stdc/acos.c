@@ -21,31 +21,31 @@
         double x)
 
 /*  FUNCTION
-        Computes the arc cosine (inverse cosine) of the input value `x`.
+        Computes the principal value of the arc cosine of x.
 
     INPUTS
-        x - the value whose arc cosine is to be calculated. Must be in the
-            range [-1, 1].
+        x - a double value in the domain [-1.0, 1.0]
 
     RESULT
-        Returns the arc cosine of `x`, in radians, in the range [0, p].
-        If `x` is outside the valid domain, returns NaN and sets errno to EDOM.
+        The arc cosine of x, in radians, in the range [0, p].
 
     NOTES
-        For values outside [-1, 1], the result is a domain error.
-        For x == ±1, the result is 0 or p respectively.
+        acos(x) returns NaN if x is outside the domain [-1,1].
 
     EXAMPLE
-        double angle = acos(0.5);  // returns ~1.047 (60 degrees in radians)
+        double y = acos(0.0);   // y = p/2 ˜ 1.57079632679
+        double z = acos(1.0);   // z = 0.0
 
     BUGS
-        None known.
+        None known beyond domain restrictions.
 
     SEE ALSO
-        cos(), asin(), atan(), acosf(), acosl()
+        acosf(), asin(), atan()
 
     INTERNALS
-        Forwards to __ieee754_acos() unless input is invalid or exceptional.
+        Calls __ieee754_acos(x).
+        Performs domain checking: if |x| > 1, sets errno to EDOM and returns NaN.
+        Uses polynomial/rational approximations with argument reduction for accuracy.
 
 ******************************************************************************/
 {

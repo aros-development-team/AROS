@@ -9,7 +9,6 @@
 #include <fenv.h>
 
 #include <math_private.h>
-
 /*****************************************************************************
 
     NAME */
@@ -21,30 +20,33 @@
         double x)
 
 /*  FUNCTION
-        Computes the inverse hyperbolic cosine of `x`.
+        Computes the inverse hyperbolic cosine of x.
 
     INPUTS
-        x - the value whose inverse hyperbolic cosine is to be calculated.
-            Must be greater than or equal to 1.
+        x - a double value where x >= 1.0
 
     RESULT
-        Returns the inverse hyperbolic cosine of `x`.
-        If `x` < 1, returns NaN and sets errno to EDOM.
+        The inverse hyperbolic cosine of x.
 
     NOTES
-        The result is always non-negative.
+        acosh(x) is defined only for x = 1.
+        Returns NaN and sets errno to EDOM if x < 1.
+        For large x, acosh(x) ˜ ln(2x).
 
     EXAMPLE
-        double r = acosh(2.0);  // returns ~1.317
+        double y = acosh(1.0);   // y = 0.0
+        double z = acosh(2.0);   // z ˜ 1.3169578969
 
     BUGS
-        None known.
+        None known beyond domain restrictions.
 
     SEE ALSO
-        cosh(), asinh(), atanh(), acoshf(), acoshl()
+        acoshf(), asinh(), cosh()
 
     INTERNALS
-        Forwards to __ieee754_acosh() with domain checking.
+        Calls __ieee754_acosh(x).
+        Performs domain checking: if x < 1, returns NaN with errno EDOM.
+        Uses logarithmic identity: acosh(x) = ln(x + sqrt(x^2 -1)).
 
 ******************************************************************************/
 {

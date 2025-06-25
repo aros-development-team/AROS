@@ -21,30 +21,32 @@
         double x)
 
 /*  FUNCTION
-        Computes the arc sine (inverse sine) of the input value `x`.
+        Computes the principal value of the arc sine of x.
 
     INPUTS
-        x - the value whose arc sine is to be calculated. Must be in the
-            range [-1, 1].
+        x - a double value in the domain [-1.0, 1.0]
 
     RESULT
-        Returns the arc sine of `x`, in radians, in the range [-p/2, p/2].
-        If `x` is outside the valid domain, returns NaN and sets errno to EDOM.
+        The arc sine of x, in radians, in the range [-p/2, p/2].
 
     NOTES
-        For values outside [-1, 1], the result is a domain error.
+        Returns NaN if |x| > 1 and sets errno to EDOM.
+        Accurate for inputs close to domain boundaries.
 
     EXAMPLE
-        double angle = asin(0.5);  // returns ~0.524 (30 degrees in radians)
+        double y = asin(0.0);   // y = 0.0
+        double z = asin(1.0);   // z = p/2 ˜ 1.57079632679
 
     BUGS
-        None known.
+        None known beyond domain checks.
 
     SEE ALSO
-        sin(), acos(), atan(), asinf(), asinl()
+        asinf(), acos(), atan()
 
     INTERNALS
-        Forwards to __ieee754_asin() with domain checks and error handling.
+        Calls __ieee754_asin(x).
+        Performs domain checking: if |x| > 1, returns NaN with errno EDOM.
+        Uses polynomial approximations with argument reduction.
 
 ******************************************************************************/
 {

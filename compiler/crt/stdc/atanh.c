@@ -21,31 +21,33 @@
         double x)
 
 /*  FUNCTION
-        Computes the inverse hyperbolic tangent of `x`.
+        Computes the inverse hyperbolic tangent of x.
 
     INPUTS
-        x - the value whose inverse hyperbolic tangent is to be calculated.
-            Must be in the range (-1, 1).
+        x - a double value.
 
     RESULT
-        Returns the inverse hyperbolic tangent of `x`.
-        Returns NaN and sets errno to EDOM if |x| > 1.
-        Returns ±infinity and sets errno to ERANGE if |x| == 1.
+        The inverse hyperbolic tangent of x.
 
     NOTES
-        The function is odd: atanh(-x) = -atanh(x).
+        Domain is (-1, 1); outside this range returns NaN.
+        Returns ±Inf if x is ±1.
+        Returns NaN if input is NaN.
+        The function satisfies atanh(x) = 0.5 * ln((1+x)/(1-x)).
 
     EXAMPLE
-        double r = atanh(0.5);  // returns ~0.549
+        double y = atanh(0.5);   // y ˜ 0.5493061443
 
     BUGS
-        None known.
+        May lose precision near domain boundaries.
 
     SEE ALSO
-        tanh(), asinh(), acosh(), atanhf(), atanhl()
+        atanhf(), tanh()
 
     INTERNALS
-        Forwards to __ieee754_atanh() with domain and range checks.
+        Calls __ieee754_atanh(x).
+        Performs domain checks.
+        Uses log and division operations to compute value.
 
 ******************************************************************************/
 {

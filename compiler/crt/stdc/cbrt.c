@@ -24,26 +24,30 @@
         Computes the cube root of x.
 
     INPUTS
-        x - input value.
+        x - a double value (any real number)
 
     RESULT
-        Returns the cube root of x.
-        Handles negative inputs properly.
+        The cube root of x.
 
     NOTES
-        Returns NaN if x is NaN.
+        Defined for all real numbers including negative values.
+        cbrt(-8.0) returns -2.0.
+        Returns NaN if input is NaN.
 
     EXAMPLE
-        double root = cbrt(27.0);  // returns 3.0
+        double y = cbrt(27.0);    // y = 3.0
+        double z = cbrt(-8.0);    // z = -2.0
 
     BUGS
         None known.
 
     SEE ALSO
-        sqrt(), pow(), cbrtf(), cbrtl()
+        cbrtf(), pow()
 
     INTERNALS
-        Forwards to __ieee754_cbrt().
+        Calls __ieee754_cbrt(x).
+        Uses iterative methods to approximate cube root.
+        Handles sign and zero carefully to maintain precision.
 
 ******************************************************************************/
 {

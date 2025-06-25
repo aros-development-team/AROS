@@ -18,34 +18,33 @@
         double hypot(
 
 /*  SYNOPSIS */
-        double x, double y)
+        double x,
+        double y)
 
 /*  FUNCTION
-        Computes the length of the hypotenuse of a right triangle with sides
-        of length `x` and `y`, without undue overflow or underflow.
+        Computes sqrt(x*x + y*y) without intermediate overflow or underflow.
 
     INPUTS
-        x - one side of the triangle.
-        y - the other side of the triangle.
+        x, y - double values.
 
     RESULT
-        Returns sqrt(x² + y²). If the result overflows, sets errno to ERANGE
-        and raises FE_OVERFLOW.
+        Hypotenuse sqrt(x² + y²).
 
     NOTES
-        Unlike sqrt(x*x + y*y), `hypot` avoids intermediate overflow/underflow.
+        More accurate than direct sqrt(x*x + y*y).
 
     EXAMPLE
-        double r = hypot(3.0, 4.0);  // returns 5.0
+        double h = hypot(3.0, 4.0);  // h = 5.0
 
     BUGS
         None known.
 
     SEE ALSO
-        sqrt(), cabs(), hypotf(), hypotl()
+        hypotf(), hypotl()
 
     INTERNALS
-        Delegates to __ieee754_hypot() and checks for overflow.
+        Calls __ieee754_hypot(x, y).
+        Uses scaling and intermediate normalization.
 
 ******************************************************************************/
 {

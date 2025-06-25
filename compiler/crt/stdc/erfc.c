@@ -24,25 +24,30 @@
         Computes the complementary error function of x.
 
     INPUTS
-        x - input value.
+        x - a double value.
 
     RESULT
-        Returns 1 - erf(x).
+        The complementary error function, defined as 1 - erf(x).
 
     NOTES
-        Useful for calculations involving tail probabilities.
+        erfc(x) approaches 0 as x ? 8 and 2 as x ? -8.
+        Returns NaN if input is NaN.
+        Useful for calculating tail probabilities in statistics.
 
     EXAMPLE
-        double val = erfc(1.0);
+        double y = erfc(0.0);     // y = 1.0
+        double z = erfc(1.0);     // z ˜ 0.157299
 
     BUGS
-        None known.
+        Accuracy can degrade for very large negative inputs.
 
     SEE ALSO
         erf(), erfcf(), erfcl()
 
     INTERNALS
-        Forwards to __ieee754_erfc().
+        Calls __ieee754_erfc(x).
+        Uses polynomial or rational approximations with argument reduction.
+        Handles underflow and overflow in exponential terms carefully.
 
 ******************************************************************************/
 {

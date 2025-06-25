@@ -21,28 +21,32 @@
         double x)
 
 /*  FUNCTION
-        Computes the arc tangent (inverse tangent) of the input value `x`.
+        Computes the principal value of the arc tangent of x.
 
     INPUTS
-        x - the value whose arc tangent is to be calculated.
+        x - a double value (any real number)
 
     RESULT
-        Returns the arc tangent of `x`, in radians, in the range [-p/2, p/2].
+        The arc tangent of x, in radians, in the range [-p/2, p/2].
 
     NOTES
-        Used to convert slopes to angles.
+        atan(x) is defined for all real numbers.
+        Returns NaN if input is NaN.
 
     EXAMPLE
-        double angle = atan(1.0);  // returns ~0.785 (p/4)
+        double y = atan(0.0);    // y = 0.0
+        double z = atan(1.0);    // z = p/4 ˜ 0.78539816339
 
     BUGS
         None known.
 
     SEE ALSO
-        tan(), atan2(), atanf(), atanl()
+        atanf(), atan2(), tan()
 
     INTERNALS
-        Forwards to __ieee754_atan().
+        Calls __ieee754_atan(x).
+        Uses polynomial approximations with argument reduction.
+        Handles special cases for large and small inputs.
 
 ******************************************************************************/
 {

@@ -18,35 +18,40 @@
         double atan2(
 
 /*  SYNOPSIS */
-        double y, double x)
+        double y,
+        double x)
 
 /*  FUNCTION
-        Computes the arc tangent of `y/x`, considering the quadrant of the
-        point (x, y), and returns the angle in radians.
+        Computes the arc tangent of y/x using the signs of both arguments
+        to determine the correct quadrant of the return value.
 
     INPUTS
-        y - the vertical component.
-        x - the horizontal component.
+        y - numerator (double)
+        x - denominator (double)
 
     RESULT
-        Returns angle in radians in the range [-p, p].
-        If both x and y are zero, returns NaN and sets errno to EDOM.
+        The angle ? between the positive x-axis and the point (x,y), in radians,
+        in the range [-p, p].
 
     NOTES
-        The function is useful for converting Cartesian coordinates to
-        polar coordinates.
+        Handles cases where x is zero to avoid division by zero.
+        Returns NaN if either argument is NaN.
+        Returns ±p/2 if x = 0 and y ? 0.
 
     EXAMPLE
-        double angle = atan2(1.0, 1.0);  // returns ~0.785 (p/4)
+        double angle = atan2(1.0, 1.0); // ˜ p/4 (0.78539816339)
+        double angle2 = atan2(-1.0, -1.0); // ˜ -3p/4 (-2.35619449019)
 
     BUGS
         None known.
 
     SEE ALSO
-        atan(), acos(), asin(), atan2f(), atan2l()
+        atan(), atan2f(), tan()
 
     INTERNALS
-        Uses __ieee754_atan2() with checks for zero inputs and domain errors.
+        Calls __ieee754_atan2(y, x).
+        Handles quadrant determination using signs of y and x.
+        Uses argument reduction and polynomial approximations internally.
 
 ******************************************************************************/
 {

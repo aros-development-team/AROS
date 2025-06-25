@@ -18,37 +18,36 @@
         double fmod(
 
 /*  SYNOPSIS */
-        double x, double y)
+        double x,
+        double y)
 
 /*  FUNCTION
-        Computes the floating-point remainder of x/y.
+        Computes the floating-point remainder of x / y.
 
     INPUTS
-        x - the dividend.
-        y - the divisor.
+        x - numerator.
+        y - denominator (non-zero).
 
     RESULT
-        Returns the value x - n*y, where n is the quotient of x/y truncated
-        toward zero. The result has the same sign as x and magnitude less
-        than the magnitude of y.
-
-        If y is zero or x is infinite, returns NaN and sets errno to EDOM.
+        The remainder r = x - n*y, where n = trunc(x/y).
 
     NOTES
-        Differentiates from remainder() by truncation toward zero instead
-        of rounding to nearest.
+        Behavior undefined if y == 0.
+        Result has same sign as x.
 
     EXAMPLE
-        double r = fmod(5.3, 2.0);  // returns 1.3
+        double r = fmod(5.3, 2.0);  // r = 1.3
+        double s = fmod(-5.3, 2.0); // s = -1.3
 
     BUGS
         None known.
 
     SEE ALSO
-        remainder(), remquo(), div(), fmodf(), fmodl()
+        remainder(), fmodf(), fmodl()
 
     INTERNALS
-        Forwards to __ieee754_fmod() with domain checks and error handling.
+        Calls __ieee754_fmod(x, y).
+        Uses division and subtraction to compute remainder.
 
 ******************************************************************************/
 {
