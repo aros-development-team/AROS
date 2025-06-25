@@ -3048,7 +3048,7 @@ if test "x$test_kernel_cc" != "xno"; then
                     linux*)
                         # Check for specific includes directory. Needed for Ubuntu 11.10 and Debian
                         targetabi=gnu
-                        kernelcpu=$aros_target_cpu
+                        kernelcpu=$target_cpu
                         case "$kernelcpu" in
                             i*86)
                                 kernelcpu=i686
