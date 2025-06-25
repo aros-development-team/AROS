@@ -16947,9 +16947,7 @@ if test "x$test_kernel_cc" != "xno"; then
 printf %s "checking for the kernel compiler's include path... " >&6; }
         if test "$aros_kernel_cc_includes" = "" ; then
             # Try to guess where the directory is.
-            if command -v "${aros_kernel_cc}" >/dev/null 2>&1; then
-                aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
-            fi
+            aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
             if test -d $aros_kernel_cc_includes; then
                 # Check if there is also an include-fixed directory and add it
                 # to kernel compiler's include path as it may contain some of
