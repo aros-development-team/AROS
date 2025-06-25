@@ -27,7 +27,7 @@ steps:
 
       echo "Downloading logs.zip..."
       curl -sSL -u ":$(System.AccessToken)" \
-        "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$run_id/logs?api-version=6.0" \
+        "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$run_id/logs.zip?api-version=6.0" \
         -o logs.zip
 
       unzip -q logs.zip -d logs
