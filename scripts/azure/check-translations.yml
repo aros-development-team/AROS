@@ -22,7 +22,7 @@ steps:
       build_info=$(curl -s -u ":$(System.AccessToken)" \
         "$(System.CollectionUri)$(System.TeamProject)/_apis/pipelines/16/runs/$pipeline_run_id?api-version=7.1-preview.1")
 
-      build_id=$(echo "$build_info" | jq -r '.resources.repositories.self.version')
+      build_id=$(echo "$build_info" | jq -r '.build.id')
       echo "Resolved build ID: $build_id"
 
       echo "Downloading logs.zip for build ID $build_id..."
