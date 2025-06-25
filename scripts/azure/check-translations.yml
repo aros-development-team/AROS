@@ -19,7 +19,7 @@ steps:
       echo "Pipeline run ID (and build ID): $pipeline_run_id"
 
       echo "Downloading logs.zip for build ID $pipeline_run_id..."
-      curl -sSL -u ":$(System.AccessToken)" \
+      curl -v -sSL -u ":$(System.AccessToken)" \
         "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$pipeline_run_id/logs.zip?api-version=6.0" \
         -o logs.zip
 
