@@ -2,36 +2,34 @@ trigger: none
 
 resources:
   pipelines:
-    - pipeline: AROSPipeline16       # alias to refer to the pipeline resource
-      source: 'aros-development-team.AROS-pc-i386'  # exact pipeline name
+    - pipeline: AROSPipeline16
+      source: 'aros-development-team.AROS-pc-i386'
       trigger:
         branches:
           include:
-            - main                 # trigger only on main branch runs
+            - main
 
 pool:
   vmImage: ubuntu-latest
 
 steps:
   - script: |
-      echo "Fetching latest run ID of pipeline 'aros-development-team.AROS-pc-i386'..."
+      echo "Fetching logs for run triggered by pipeline 'aros-development-team.AROS-pc-i386'..."
 
-      pipeline_id=$(echo "$(resources.pipeline.AROSPipeline16.pipelineId)")
-      echo "Pipeline ID: $pipeline_id"
-
-      run_info=$(curl -s -u ":$(System.AccessToken)" \
-        "$(System.CollectionUri)$(System.TeamProject)/_apis/pipelines/$pipeline_id/runs?api-version=7.1-preview.1")
-
-      run_id=$(echo "$run_info" | jq -r '.value[0].id')
-      echo "Latest run ID: $run_id"
+      run_id=$(echo "$(resources.pipeline.AROSPipeline16.runID)")
+      echo "Using run ID: $run_id"
 
       echo "Downloading logs.zip..."
       curl -sSL -u ":$(System.AccessToken)" \
         "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$run_id/logs.zip?api-version=6.0" \
         -o logs.zip
 
-      unzip -q logs.zip -d logs
-    displayName: 'Download Logs from pipeline arros-development-team.AROS-pc-i386'
+      echo "Checking logs.zip file type..."
+      file logs.zip
+
+      echo "Unzipping logs..."
+      unzip -q logs.zip -d logs || (echo "Unzip failed" && file logs.zip && exit 1)
+    displayName: 'Download and unzip logs from aros-development-team.AROS-pc-i386'
     env:
       System.AccessToken: $(System.AccessToken)
 
@@ -43,4 +41,4 @@ steps:
 
       echo "Matched log lines:"
       cat translation-errors.log || echo "No matching warnings found."
-    displayName: 'Grep for warnings in logs'
+    displayName: 'Grep for translation warnings'
