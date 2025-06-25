@@ -1,0 +1,46 @@
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: AROSPipeline16       # alias to refer to the pipeline resource
+      source: 'aros-development-team.AROS-pc-i386'  # exact pipeline name
+      trigger:
+        branches:
+          include:
+            - main                 # trigger only on main branch runs
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - script: |
+      echo "Fetching latest run ID of pipeline 'aros-development-team.AROS-pc-i386'..."
+
+      pipeline_id=$(echo "$(resources.pipeline.AROSPipeline16.pipelineId)")
+      echo "Pipeline ID: $pipeline_id"
+
+      run_info=$(curl -s -u ":$(System.AccessToken)" \
+        "$(System.CollectionUri)$(System.TeamProject)/_apis/pipelines/$pipeline_id/runs?api-version=7.1-preview.1")
+
+      run_id=$(echo "$run_info" | jq -r '.value[0].id')
+      echo "Latest run ID: $run_id"
+
+      echo "Downloading logs.zip..."
+      curl -sSL -u ":$(System.AccessToken)" \
+        "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$run_id/logs?api-version=6.0" \
+        -o logs.zip
+
+      unzip -q logs.zip -d logs
+    displayName: 'Download Logs from pipeline arros-development-team.AROS-pc-i386'
+    env:
+      System.AccessToken: $(System.AccessToken)
+
+  - script: |
+      echo "Searching logs for known warnings..."
+
+      grep -Er \
+        '^- warning: no catalog revision|- warning: ERROR in iconv|- warning: UTF8 conversion|- Warning: missing translation|- Warning: original string|missing in catalog description' logs/ > translation-errors.log || true
+
+      echo "Matched log lines:"
+      cat translation-errors.log || echo "No matching warnings found."
+    displayName: 'Grep for warnings in logs'
