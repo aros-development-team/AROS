@@ -10,40 +10,34 @@ resources:
             - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 steps:
   - script: |
-      echo "Fetching pipeline run ID from triggered pipeline..."
-      pipeline_run_id=$(echo "$(resources.pipeline.AROSPipeline16.runID)")
-      echo "Pipeline run ID (and build ID): $pipeline_run_id"
+      echo "Fetching triggered pipeline build ID..."
+      BUILD_ID=$(echo "$(resources.pipeline.AROSPipeline16.runID)")
+      echo "Build ID = $BUILD_ID"
 
-      echo "Downloading logs.zip for build ID $pipeline_run_id..."
-      curl -v -sSL -u ":$(System.AccessToken)" \
-        "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$pipeline_run_id/logs.zip?api-version=6.0" \
-        -o logs.zip
+      LOG_ID=32  # If the build pipeline changes this will need asjusted
+      LOG_URL="https://dev.azure.com/aros-development-team/AROS/_apis/build/builds/$BUILD_ID/logs/$LOG_ID?api-version=6.0"
+      echo "Fetching logs from: $LOG_URL"
 
-      echo "Checking logs.zip file type..."
-      file logs.zip
+      curl -sS \
+        -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+        "$LOG_URL" \
+        -o translation-stage.log
 
-      echo "Unzipping logs..."
-      unzip -q logs.zip -d logs || (echo "Unzip failed" && file logs.zip && exit 1)
-    displayName: 'Download and unzip logs from arros-development-team.AROS-pc-i386'
+      echo "===== Custom grep output ====="
+      grep -E \
+        '^- warning: no catalog revision|- warning: ERROR in iconv|- warning: UTF8 conversion|- Warning: missing translation|- Warning: original string|missing in catalog description' \
+        translation-stage.log || echo "No matching warnings found."
+    displayName: 'Download and parse log'
     env:
-      System.AccessToken: $(System.AccessToken)
-
-  - script: |
-      echo "Searching logs for known warnings..."
-
-      grep -Er \
-        '^- warning: no catalog revision|- warning: ERROR in iconv|- warning: UTF8 conversion|- Warning: missing translation|- Warning: original string|missing in catalog description' logs/ > translation-errors.log || true
-
-      echo "Matched log lines:"
-      cat translation-errors.log || echo "No matching warnings found."
-    displayName: 'Grep for translation warnings'
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
   - task: PublishBuildArtifacts@1
     inputs:
-      pathToPublish: 'translation-errors.log'
-      artifactName: 'translation-warnings'
+      pathToPublish: 'translation-stage.log'
+      artifactName: 'translation-stage-log'
+    displayName: 'Publish log artifact'
     condition: succeededOrFailed()
