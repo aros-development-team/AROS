@@ -1,77 +1,119 @@
 trigger: none
 
-resources:
-  pipelines:
-    - pipeline: AROSPipeline16
-      source: 'aros-development-team.AROS-pc-i386'
-      trigger:
-        branches:
-          include:
-            - main
+pr: none
 
-pool:
-  vmImage: ubuntu-latest
+jobs:
+- job: ProcessLogs
+  displayName: 'Download and Process Logs'
+  pool:
+    vmImage: ubuntu-latest
 
-steps:
+  steps:
   - checkout: self
     persistCredentials: true
 
-  - script: |
-      echo "Fetching latest run ID of pipeline 'aros-development-team.AROS-pc-i386'..."
-
-      pipeline_id=$(echo "$(resources.pipeline.AROSPipeline16.pipelineId)")
-      echo "Pipeline ID: $pipeline_id"
-
-      run_info=$(curl -s -H "Authorization: Bearer $(System.AccessToken)" \
-        "$(System.CollectionUri)$(System.TeamProject)/_apis/pipelines/$pipeline_id/runs?api-version=7.1-preview.1")
-
-      run_id=$(echo "$run_info" | jq -r '.value[0].id')
-      echo "Latest run ID: $run_id"
-
-      log_id=32
-      echo "Downloading specific log ID ($log_id) for build ID $run_id..."
-      curl -sSL -H "Authorization: Bearer $(System.AccessToken)" \
-        "$(System.CollectionUri)$(System.TeamProject)/_apis/build/builds/$run_id/logs/$log_id?api-version=6.0" \
-        -o log.txt
-
-      echo "Extracting warning lines..."
-      grep -E 'warning: no catalog revision|ERROR in iconv|UTF8 conversion|missing translation|original string|missing in catalog description' log.txt > raw-matches.log || true
-
-      echo "Stripping timestamp and absolute path..."
-      sed -E 's|^[^ ]+ /home/.*/s/||' raw-matches.log > cleaned-matches.log
-
-      echo "Parsing .gitmodules for submodule paths and URLs..."
-      declare -A submodules
-      current_path=""
-      while IFS= read -r line; do
-        if [[ $line =~ path\ =\ (.+) ]]; then
-          current_path="${BASH_REMATCH[1]}"
-        elif [[ $line =~ url\ =\ (.+) ]]; then
-          submodules["$current_path"]="${BASH_REMATCH[1]}"
-        fi
-      done < .gitmodules
-
-      echo "Grouping matches by submodule..."
-      > translation-errors.log
-      for path in "${!submodules[@]}"; do
-        matches=$(grep "^$path/" cleaned-matches.log)
-        if [[ -n "$matches" ]]; then
-          echo "### ${submodules[$path]} [$path]" >> translation-errors.log
-          echo "$matches" | sed "s|^$path/||" >> translation-errors.log
-          echo >> translation-errors.log
-        fi
-      done
-
-      echo "Unmatched lines:"
-      grep -v -Ff <(printf "%s\n" "${!submodules[@]}" | sed 's|$|/|') cleaned-matches.log >> translation-errors.log || true
-
-    displayName: 'Download and Process Logs'
-    env:
-      System.AccessToken: $(System.AccessToken)
-
-  - task: PublishBuildArtifacts@1
+  - task: Bash@3
+    displayName: 'Download and process logs'
     inputs:
-      pathToPublish: 'translation-stage.log'
-      artifactName: 'translation-stage-log'
-    displayName: 'Publish log artifact'
-    condition: succeededOrFailed()
+      targetType: 'inline'
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        ORG="aros-development-team"
+        PROJECT="AROS"
+        PIPELINE_NAME="aros-development-team.AROS-pc-i386"
+        LOG_ID=32  # This remains hardcoded per your request
+
+        echo "Fetching latest run ID of pipeline '$PIPELINE_NAME'..."
+
+        # Get pipeline ID from pipeline name
+        PIPELINE_ID=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+          "https://dev.azure.com/$ORG/$PROJECT/_apis/pipelines?api-version=6.0-preview.1" \
+          | jq -r --arg name "$PIPELINE_NAME" '.value[] | select(.name==$name) | .id')
+
+        if [[ -z "$PIPELINE_ID" ]]; then
+          echo "Error: Could not find pipeline ID for '$PIPELINE_NAME'"
+          exit 1
+        fi
+        echo "Pipeline ID: $PIPELINE_ID"
+
+        # Get latest run ID for that pipeline
+        BUILD_ID=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+          "https://dev.azure.com/$ORG/$PROJECT/_apis/pipelines/$PIPELINE_ID/runs?api-version=6.0-preview.1&$top=1" \
+          | jq -r '.value[0].id')
+
+        if [[ -z "$BUILD_ID" ]]; then
+          echo "Error: Could not find latest build ID"
+          exit 1
+        fi
+        echo "Latest run ID: $BUILD_ID"
+
+        echo "Downloading specific log ID ($LOG_ID) for build ID $BUILD_ID..."
+
+        curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+          "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$LOG_ID" -o log.txt
+
+        echo "Extracting warning lines..."
+        grep -i warning log.txt > matches.log || true
+
+        num_matches=$(wc -l < matches.log)
+        echo "Number of warning lines matched: $num_matches"
+
+        echo "Stripping timestamp and absolute path..."
+        # Remove leading timestamps and everything up to and including "/s/"
+        sed -E 's/^[0-9:\.\-TZ]+Z\s+.*\/s\///' matches.log > cleaned-matches.log || true
+
+        echo "=== Cleaned Matches ==="
+        cat cleaned-matches.log || echo "No cleaned matches found."
+
+        echo "Parsing .gitmodules for submodule paths and URLs..."
+        declare -A submodules
+        path=""
+        url=""
+        while IFS= read -r line; do
+          if [[ "$line" =~ path[[:space:]]*=[[:space:]]*(.*) ]]; then
+            path="${BASH_REMATCH[1]}"
+          elif [[ "$line" =~ url[[:space:]]*=[[:space:]]*(.*) ]]; then
+            url="${BASH_REMATCH[1]}"
+            if [[ -n "$path" && -n "$url" ]]; then
+              submodules["$path"]="$url"
+              path=""
+              url=""
+            fi
+          fi
+        done < .gitmodules
+
+        echo "=== Submodule Paths from .gitmodules ==="
+        for path in "${!submodules[@]}"; do
+          echo "Path: $path -> ${submodules[$path]}"
+        done
+
+        echo "Grouping matches by submodule..."
+        declare -A groups
+        while IFS= read -r line; do
+          matched=0
+          for path in "${!submodules[@]}"; do
+            if [[ "$line" == "$path"* ]]; then
+              groups["$path"]+="$line"$'\n'
+              matched=1
+              break
+            fi
+          done
+          if [[ $matched -eq 0 ]]; then
+            groups["__unmatched"]+="$line"$'\n'
+          fi
+        done < cleaned-matches.log
+
+        echo -e "\nGrouped output:"
+        for path in "${!groups[@]}"; do
+          if [[ "$path" == "__unmatched" ]]; then
+            echo -e "\n== Unmatched Lines =="
+          else
+            echo -e "\n== Submodule: $path =="
+            echo "URL: ${submodules[$path]}"
+          fi
+          echo "${groups[$path]}"
+        done
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
