@@ -907,6 +907,7 @@ use_ld_wrapper=yes
 
 case "$aros_toolchain" in
     *llvm*)
+        aros_c_libs="-L $""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU)"
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang"

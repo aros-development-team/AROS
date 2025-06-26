@@ -127,7 +127,7 @@ TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
 TARGET_ISA_LDFLAGS            = $(ISA_FLAGS)
 
 TARGET_LIBATOMIC              = @use_libatomic@
-TARGET_C_LIBS                 := $(strip @aros_c_libs@)
+TARGET_C_LIBS                 = $(strip @aros_c_libs@)
 TARGET_CXX_LDFLAGS            = $(strip @aros_cxx_ldflags@)
 TARGET_CXX_LIBS               := $(strip @aros_cxx_libs@)
 
