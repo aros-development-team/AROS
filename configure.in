@@ -1331,6 +1331,7 @@ case "$target_os" in
                 aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
                 aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
                 gcc_target_cpu="m68000"
+                llvm_target_cpu=""
                 ;;
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1348,6 +1349,7 @@ case "$target_os" in
                 android_tool_dir_prefix="x86"
                 android_tool_prefix="i686-android-linux"
                 android_ndk_arch="x86"
+                llvm_target_cpu="X86"
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1362,6 +1364,7 @@ case "$target_os" in
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_nominal_depth=8
                 pci_hidd_target="hidd-pci-linux"
+                llvm_target_cpu="X86"
                 ;;
             *powerpc*)
                 aros_target_cpu="ppc"
@@ -1370,6 +1373,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
                 aros_nominal_depth=8
                 gcc_target_cpu="ppc"
+                llvm_target_cpu="PowerPC"
                 ;;
 # TODO
 # Same as powerpc, but I need this for the nightly build to work again.
@@ -1382,6 +1386,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
                 aros_nominal_depth=8
                 gcc_target_cpu="ppc"
+                llvm_target_cpu="PowerPC"
                 ;;
             *aarch64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1397,6 +1402,7 @@ case "$target_os" in
                 aros_c_libs="$aros_c_libs -laeabi"
                 gcc_default_float_abi="hard"
                 kernel_tool_prefix="aarch64-linux-gnueabihf-"
+                llvm_target_cpu="AArch64"
                 ;;
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1419,6 +1425,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabihf-"
+                llvm_target_cpu="Arm"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1440,6 +1447,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabi-"
+                llvm_target_cpu="Arm"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
@@ -1504,6 +1512,7 @@ case "$target_os" in
                 aros_nominal_width=640
                 aros_nominal_height=480
                 gcc_target_cpu="i386"
+                llvm_target_cpu="X86"
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1528,6 +1537,7 @@ case "$target_os" in
                         ENABLE_EXECSMP="#define __AROSEXEC_SMP__"
                     ;;
                 esac
+                llvm_target_cpu="X86"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
@@ -1546,6 +1556,7 @@ case "$target_os" in
         aros_nominal_width=640
         aros_nominal_height=480
         gcc_target_cpu="ppc"
+        llvm_target_cpu="PowerPC"
         ;;
 
     freebsd*)
@@ -1561,6 +1572,7 @@ case "$target_os" in
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
         gcc_target_cpu="i386"
+        llvm_target_cpu="X86"
 
         aros_target_strip_flags="-x"
         ;;
@@ -1594,6 +1606,7 @@ case "$target_os" in
                 aros_kernel_ar_flags="-cr"
                 aros_target_strip_flags="-x"
                 kernel_tool_flags=""
+                llvm_target_cpu="X86"
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1615,6 +1628,7 @@ case "$target_os" in
                 aros_kernel_nm="$toolchain_nm"
                 aros_kernel_strip="strip"
                 kernel_tool_prefix="i686-apple-darwin10-"
+                llvm_target_cpu="X86"
                 ;;
             *ppc*)
                 aros_target_cpu="ppc"
@@ -1632,6 +1646,7 @@ case "$target_os" in
                 aros_kernel_nm="$toolchain_nm -arch ppc"
                 aros_kernel_strip="strip -arch ppc"
                 kernel_tool_prefix="powerpc-apple-darwin10-"
+                llvm_target_cpu="PowerPC"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1648,6 +1663,7 @@ case "$target_os" in
                 aros_kernel_ranlib="$toolchain_ranlib -arch arm"
                 kernel_tool_prefix="arm-apple-darwin10-" 
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
+                llvm_target_cpu="Arm"
                 ;;
             *)
                 AC_MSG_ERROR("Unsupported target CPU for darwin hosted flavour -- $target_cpu")
@@ -1697,6 +1713,7 @@ case "$target_os" in
                 aros_object_format="elf_i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__DragonFly__"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
+                llvm_target_cpu="X86"
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1706,6 +1723,7 @@ case "$target_os" in
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__DragonFly__"
                 aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                llvm_target_cpu="X86"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for DragonFly -- $target_cpu")
@@ -1729,6 +1747,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
                 aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 gcc_target_cpu="m68000"
+                llvm_target_cpu=""
                 ;;
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1739,6 +1758,7 @@ case "$target_os" in
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
                 aros_nominal_depth=8
                 gcc_target_cpu="i386"
+                llvm_target_cpu="X86"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for NetBSD -- $target_cpu")
@@ -1766,6 +1786,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__OpenBSD__"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
                 gcc_target_cpu="i386"
+                llvm_target_cpu="X86"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for OpenBSD -- $target_cpu")
@@ -1789,12 +1810,14 @@ case "$target_os" in
                aros_isa_flags="$""(ISA_X86_FLAGS)"
                aros_nominal_depth=8
                gcc_target_cpu="i386"
+                llvm_target_cpu="X86"
                ;;
             *sparc*)
                 aros_target_cpu="sparc"
                 aros_object_format="elf_sparc"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dsparc -D__Solaris__"
                 gcc_target_cpu="sparc"
+                llvm_target_cpu="SPARC"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Solaris -- $target_cpu")
@@ -1812,6 +1835,7 @@ case "$target_os" in
         aros_flavour="nativecompat"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
         gcc_target_cpu="ppc"
+        llvm_target_cpu="PowerPC"
         ;;
 
     sam440)
@@ -1829,6 +1853,7 @@ case "$target_os" in
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         gcc_target_cpu="powerpc"
+        llvm_target_cpu="PowerPC"
         ;;
 
     efika)
@@ -1859,6 +1884,7 @@ case "$target_os" in
 
                 target_cpu=arm
                 aros_target_cpu=arm
+                llvm_target_cpu="Arm"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1866,6 +1892,7 @@ case "$target_os" in
                 gcc_float_fpu="vfpv3"
                 gcc_soft_fpu=
                 gcc_default_fpu=
+                llvm_target_cpu="Arm"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for EfikaMX $target_cpu")
@@ -1887,6 +1914,7 @@ case "$target_os" in
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         gcc_target_cpu="powerpc"
+        llvm_target_cpu="PowerPC"
         case "$aros_target_variant" in
             efika)
                 aros_isa_flags="$aros_isa_flags -mcpu=603e"
@@ -1912,6 +1940,7 @@ case "$target_os" in
                 gcc_default_cpu_tune="cortex-a53"
                 gcc_default_fpu="neon-fp-armv8"
                 aros_object_format="aarch64elf_aros"
+                llvm_target_cpu="AArch64"
                 ;;
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1928,6 +1957,7 @@ case "$target_os" in
                 gcc_float_fpu="vfpv3-d16"
                 gcc_soft_fpu=$gcc_float_fpu
                 gcc_default_fpu="$""(GCC_FLOAT_FPU)"
+                llvm_target_cpu="Arm"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -1951,6 +1981,7 @@ case "$target_os" in
                 gcc_float_fpu="vfpv3-d16"
                 gcc_soft_fpu=""
                 gcc_default_fpu=
+                llvm_target_cpu="Arm"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -1985,6 +2016,7 @@ case "$target_os" in
                 aros_object_format="riscvelf_aros"
                 aros_isa_flags="$""(ISA_RISCV_FLAGS)"
                 aros_shared_default="no"
+                llvm_target_cpu="RISCV"
                 case "$target_cpu" in
                     *riscv64*)
                         PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -2020,6 +2052,7 @@ case "$target_os" in
         gcc_float_fpu="fpv5-sp-d16"
         gcc_soft_fpu=$gcc_float_fpu
         gcc_default_fpu="$""(GCC_FLOAT_FPU)"
+        llvm_target_cpu="Arm"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
@@ -2066,11 +2099,13 @@ case "$target_os" in
                 aros_nominal_width=640
                 aros_nominal_height=256
                 aros_nominal_depth=2
+                llvm_target_cpu=""
                 ;;
             *ppc*)
                 aros_cpu="ppc"
                 aros_flavour="native"
                 gcc_target_cpu="ppc"
+                llvm_target_cpu="PowerPC"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Amiga $target_cpu")
@@ -2095,6 +2130,7 @@ case "$target_os" in
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
                 aros_nominal_depth=8
                 gcc_target_cpu="i386"
+                llvm_target_cpu="X86"
 
                 kernel_tool_prefix="i686-w64-mingw32-"
                 ;;
@@ -2108,6 +2144,7 @@ case "$target_os" in
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_nominal_depth=8
                 kernel_tool_prefix="x86_64-w64-mingw32-"
+                llvm_target_cpu="X86"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -2121,6 +2158,7 @@ case "$target_os" in
                 kernel_tool_prefix="arm-mingw32ce-"
                 aros_nominal_width=160
                 aros_nominal_height=160
+                llvm_target_cpu="Arm"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
@@ -2157,6 +2195,7 @@ case "$target_os" in
                 aros_mungwall_debug="0"
                 aros_modules_debug="0"
                 gcc_target_cpu="m68000"
+                llvm_target_cpu=""
                 ignore_undefined_symbols="-ius"
                 ;;
            *)
@@ -2192,6 +2231,7 @@ case "$target_os" in
                 aros_mungwall_debug="0"
                 aros_modules_debug="0"
                 gcc_target_cpu="m68000"
+                llvm_target_cpu=""
                 ignore_undefined_symbols="-ius"
                 ;;
            *)
@@ -3992,6 +4032,7 @@ AC_SUBST(ignore_undefined_symbols)
 AC_SUBST(gcc_target_cpu)
 AC_SUBST(target_binutils_version)
 AC_SUBST(target_gcc_version)
+AC_SUBST(llvm_target_cpu)
 AC_SUBST(target_llvm_version)
 
 #ObjC compiler related
