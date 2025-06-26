@@ -1,4 +1,13 @@
-trigger: none  # adjust as needed
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: AROSPipeline16       # alias to refer to the pipeline resource
+      source: 'aros-development-team.AROS-pc-i386'  # exact pipeline name
+      trigger:
+        branches:
+          include:
+            - main                 # trigger only on main branch runs
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -10,7 +19,6 @@ variables:
   SF_RSYNC_USER_AROS: "$(SF_RSYNC_USER),translations"
 
 steps:
-# Checkout with OAuth token access enabled
 - checkout: self
   persistCredentials: true
 
