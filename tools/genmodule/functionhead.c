@@ -369,9 +369,6 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
     struct functionhead *funclistit;
-    struct functionarg *arglistit;
-    char *type, *name;
-    int first;
 
     for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
