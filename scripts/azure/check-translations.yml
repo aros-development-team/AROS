@@ -2,15 +2,15 @@ trigger: none
 
 resources:
   pipelines:
-    - pipeline: AROSPipeline16       # alias to refer to the pipeline resource
-      source: 'aros-development-team.AROS-pc-i386'  # exact pipeline name
+    - pipeline: AROSPipeline16
+      source: 'aros-development-team.AROS-pc-i386'
       trigger:
         branches:
           include:
-            - main                 # trigger only on main branch runs
+            - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: ubuntu-latest
 
 variables:
   arosbuilddate: $(Build.BuildDate)       # define or replace as needed
@@ -19,8 +19,6 @@ variables:
   SF_RSYNC_USER_AROS: "$(SF_RSYNC_USER),translations"
 
 steps:
-- checkout: self
-  persistCredentials: true
 
 # Download and setup the SSH key for SourceForge
 - task: DownloadSecureFile@1
@@ -72,7 +70,8 @@ steps:
     echo "Number of warning lines found: $(wc -l < warnings.txt)"
 
     echo "Stripping timestamp and absolute path..."
-    sed -E 's/^[0-9T:\.\-Z]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
+    # Fixed sed regex: moved '-' to end of character class
+    sed -E 's/^[0-9T:\.Z-]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
 
     echo "Parsing .gitmodules for submodule paths and URLs..."
     curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
