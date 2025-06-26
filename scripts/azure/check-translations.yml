@@ -1,95 +1,135 @@
-trigger: none  # or adjust your trigger as needed
+trigger: none  # adjust as needed
 
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  arosbuilddate: $(Build.BuildDate)       # define or replace as needed
+  AROSDOCBUILDDIR: "$(Build.SourcesDirectory)/docs/output"  # example, adjust to your docs dir
+  AROSBUILDID: $(Build.BuildId)           # your build ID variable
+  SF_RSYNC_USER_AROS: "$(SF_RSYNC_USER),translations"
+
 steps:
-  - bash: |
-      set -euo pipefail
 
-      ORG="aros-development-team"
-      PROJECT="AROS"
-      PIPELINE_ID=16
-      LOG_ID=32
+# Download and setup the SSH key for SourceForge
+- task: DownloadSecureFile@1
+  name: GetSSHKey
+  inputs:
+    secureFile: 'sf-azure-key'
 
-      echo "Fetching latest run ID of pipeline '$ORG.$PROJECT-pc-i386'..."
-      BUILD_ID=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-        "https://dev.azure.com/$ORG/$PROJECT/_apis/pipelines/$PIPELINE_ID/runs?api-version=6.0-preview.1&\$top=1" \
-        | jq -r '.value[0].id')
-      echo "Pipeline ID: $PIPELINE_ID"
-      echo "Latest run ID: $BUILD_ID"
+- bash: |
+    echo "Setting up SSH key..."
+    mkdir -p ~/.ssh
+    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
+    chmod 700 ~/.ssh
 
-      echo "Downloading specific log ID ($LOG_ID) for build ID $BUILD_ID..."
-      curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-        "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$LOG_ID" -o log.txt
+    ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
 
-      echo "Extracting warning lines..."
-      grep -i warning log.txt > warnings.txt
+    echo "Host web.sourceforge.net" > ~/.ssh/config
+    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+    echo "    IdentitiesOnly yes" >> ~/.ssh/config
+    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+    echo "    Port 22" >> ~/.ssh/config
+    chmod 600 ~/.ssh/config
 
-      echo "Number of warning lines found: $(wc -l < warnings.txt)"
+    echo "SSH key and config setup complete."
+  displayName: 'Setup SSH Key and SSH Config for SourceForge'
 
-      echo "Stripping timestamp and absolute path..."
-      sed -E 's/^[0-9T:\.\-Z]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
+- bash: |
+    set -euo pipefail
 
-      echo "Parsing .gitmodules for submodule paths and URLs..."
-      curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-        "https://dev.azure.com/$ORG/$PROJECT/_apis/git/repositories/$PROJECT/items?path=.gitmodules&version=refs/heads/master&includeContent=true" \
-        -o .gitmodules
+    ORG="aros-development-team"
+    PROJECT="AROS"
+    PIPELINE_ID=16
+    LOG_ID=32
 
-      declare -A submodules
-      path=""
-      url=""
-      while IFS= read -r line; do
-        if [[ $line =~ path\ =\ (.*) ]]; then
-          path="${BASH_REMATCH[1]}"
-        elif [[ $line =~ url\ =\ (.*) ]]; then
-          url="${BASH_REMATCH[1]}"
-          submodules["$path"]="$url"
-          path=""
-          url=""
-        fi
-      done < .gitmodules
+    echo "Fetching latest run ID of pipeline '$ORG.$PROJECT-pc-i386'..."
+    BUILD_ID=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+      "https://dev.azure.com/$ORG/$PROJECT/_apis/pipelines/$PIPELINE_ID/runs?api-version=6.0-preview.1&\$top=1" \
+      | jq -r '.value[0].id')
+    echo "Pipeline ID: $PIPELINE_ID"
+    echo "Latest run ID: $BUILD_ID"
 
-      echo "Grouping matches by submodule..."
+    echo "Downloading specific log ID ($LOG_ID) for build ID $BUILD_ID..."
+    curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+      "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$LOG_ID" -o log.txt
 
-      matched_submodules=()
-      : > submodule_localization_issues.txt
-      : > repository_localization_issues.txt
+    echo "Extracting warning lines..."
+    grep -i warning log.txt > warnings.txt
 
-      for path in "${!submodules[@]}"; do
-        count=$(grep -c "^$path/" warnings_stripped.txt || true)
-        if [[ $count -gt 0 ]]; then
-          matched_submodules+=("$path")
-          {
-            echo "Submodule: $path (${submodules[$path]})"
-            grep "^$path/" warnings_stripped.txt || true
-            echo ""
-          } >> submodule_localization_issues.txt
-        fi
+    echo "Number of warning lines found: $(wc -l < warnings.txt)"
+
+    echo "Stripping timestamp and absolute path..."
+    sed -E 's/^[0-9T:\.\-Z]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
+
+    echo "Parsing .gitmodules for submodule paths and URLs..."
+    curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+      "https://dev.azure.com/$ORG/$PROJECT/_apis/git/repositories/$PROJECT/items?path=.gitmodules&version=refs/heads/master&includeContent=true" \
+      -o .gitmodules
+
+    declare -A submodules
+    path=""
+    url=""
+    while IFS= read -r line; do
+      if [[ $line =~ path\ =\ (.*) ]]; then
+        path="${BASH_REMATCH[1]}"
+      elif [[ $line =~ url\ =\ (.*) ]]; then
+        url="${BASH_REMATCH[1]}"
+        submodules["$path"]="$url"
+        path=""
+        url=""
+      fi
+    done < .gitmodules
+
+    echo "Grouping matches by submodule..."
+
+    matched_submodules=()
+    : > submodule_localization_issues.txt
+    : > repository_localization_issues.txt
+
+    for path in "${!submodules[@]}"; do
+      count=$(grep -c "^$path/" warnings_stripped.txt || true)
+      if [[ $count -gt 0 ]]; then
+        matched_submodules+=("$path")
+        {
+          echo "Submodule: $path (${submodules[$path]})"
+          grep "^$path/" warnings_stripped.txt || true
+          echo ""
+        } >> submodule_localization_issues.txt
+      fi
+    done
+
+    echo "Summary:"
+    echo "Number of submodules with warnings: ${#matched_submodules[@]}"
+    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+      echo "Submodules with warnings:"
+      for sub in "${matched_submodules[@]}"; do
+        count=$(grep -c "^$sub/" warnings_stripped.txt || true)
+        echo "  - $sub: $count warnings"
       done
+    fi
+    echo ""
 
-      echo "Summary:"
-      echo "Number of submodules with warnings: ${#matched_submodules[@]}"
-      if [[ ${#matched_submodules[@]} -gt 0 ]]; then
-        echo "Submodules with warnings:"
-        for sub in "${matched_submodules[@]}"; do
-          count=$(grep -c "^$sub/" warnings_stripped.txt || true)
-          echo "  - $sub: $count warnings"
-        done
-      fi
-      echo ""
+    echo "Collecting unmatched lines..."
+    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+      pattern=$(printf '%s|' "${matched_submodules[@]}")
+      pattern="${pattern%|}"
+      grep -vE "^($pattern)/" warnings_stripped.txt > repository_localization_issues.txt || true
+    else
+      cp warnings_stripped.txt repository_localization_issues.txt
+    fi
 
-      echo "Collecting unmatched lines..."
-      if [[ ${#matched_submodules[@]} -gt 0 ]]; then
-        pattern=$(printf '%s|' "${matched_submodules[@]}")
-        pattern="${pattern%|}"
-        grep -vE "^($pattern)/" warnings_stripped.txt > repository_localization_issues.txt || true
-      else
-        cp warnings_stripped.txt repository_localization_issues.txt
-      fi
+    echo "Wrote matched warnings to submodule_localization_issues.txt"
+    echo "Wrote unmatched warnings to repository_localization_issues.txt"
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  displayName: Download and Process Logs
 
-      echo "Wrote matched warnings to submodule_localization_issues.txt"
-      echo "Wrote unmatched warnings to repository_localization_issues.txt"
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    displayName: Download and Process Logs
+- bash: |
+    echo "Uploading localization issue files using SSH key..."
+    rsync -avz -e ssh \
+      submodule_localization_issues.txt \
+      repository_localization_issues.txt \
+      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:documentation/"
+  displayName: 'Upload localization issue files using SSH key'
