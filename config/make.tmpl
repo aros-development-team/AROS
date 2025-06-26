@@ -2166,13 +2166,14 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 # Explanation of this macro is done in the developer's manual
 %define build_module_core mmake=/A modname=/A modtype=/A modsuffix= version= flavour= \
     conffile=  confoverride= \
+    asmfiles= \
     files="$(basename $(call WILDCARD, *.c))" \
     objcfiles= \
     cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
     alwayscxxlink=no \
     linklibfiles= linklibobjs= \
-    cppflags="$(CPPFLAGS)" \
-    cflags="$(CFLAGS)" dflags= \
+    cppflags="$(CPPFLAGS)" dflags= \
+    aflags="$(AFLAGS)" cflags="$(CFLAGS)" \
     cxxflags="$(CXXFLAGS)" dxxflags= \
     objdir= moduledir= prefix="$(AROSDIR)" \
     linklibname= uselibs= usehostlibs= \
@@ -2461,6 +2462,7 @@ endif
 
 ## Compilation
 ##
+%(mmake)%(flavour)_ASMFILES         := %(asmfiles)
 %(mmake)%(flavour)_FILES            := %(files)
 %(mmake)%(flavour)_OBJCFILES        := %(objcfiles)
 %(mmake)%(flavour)_CXXFILES         := %(cxxfiles)
@@ -2514,6 +2516,7 @@ ifeq (%(funcinstr),yes)
 %(mmake)%(flavour)_LIBS             += $(%(mmake)%(flavour)_INSTRFUNCLIBS)
 endif
 endif
+%(mmake)%(flavour)_AFLAGS           := %(aflags)
 %(mmake)%(flavour)_DFLAGS           := $(strip $(%(mmake)%(flavour)_DFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_DFLAGS))
 %(mmake)%(flavour)_LINKLIBDFLAGS    := $(strip $(%(mmake)%(flavour)_DFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBDFLAGS))
 %(mmake)%(flavour)_DXXFLAGS         := $(strip $(%(mmake)%(flavour)_DXXFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_DXXFLAGS))
@@ -2603,6 +2606,9 @@ $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_RELLINKLIBOBJS) : | $(%(m
     basenames="$(%(mmake)%(flavour)_LINKLIBCCGENFILES)" srcdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
     cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_LINKLIBCFLAGS)" dflags="$(%(mmake)%(flavour)_LINKLIBDFLAGS)" \
     compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
+%rule_assemble_multi mmake=%(mmake)%(flavour) \
+    cmd="$(%(mmake)%(flavour)_ASSEMBLER)" basenames="$(%(mmake)%(flavour)_ASMFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
+    cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" aflags="$(%(mmake)%(flavour)_AFLAGS)"
 
 ifneq ($(%(mmake)%(flavour)_LINKLIBAFILES),)
 %rule_assemble_multi  mmake=%(mmake)%(flavour) \
@@ -2641,7 +2647,7 @@ ifeq (%(build_abi),M)
 endif
 
 %(mmake)%(flavour)_OBJS := $(addsuffix .o,$(%(mmake)%(flavour)_STARTFILES)) $(%(mmake)%(flavour)_ARCHOBJS) \
-           $(addprefix $(%(mmake)%(flavour)_OBJDIR)/,$(notdir $(%(mmake)%(flavour)_C_NARCHFILES:=.o) $(%(mmake)%(flavour)_CXXFILES:=.o)))
+           $(addprefix $(%(mmake)%(flavour)_OBJDIR)/,$(notdir $(%(mmake)%(flavour)_ASMFILES:=.o) $(%(mmake)%(flavour)_C_NARCHFILES:=.o) $(%(mmake)%(flavour)_CXXFILES:=.o)))
 
 ifeq (%(nostartup),yes)
 # Handlers always have entry point
@@ -2762,10 +2768,10 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= confoverride= \
   files="$(basename $(call WILDCARD, *.c))" \
-  objcfiles= \
+  objcfiles= asmfiles= \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
   alwayscxxlink=no \
-  linklibfiles= linklibobjs= cflags="$(CFLAGS)" cppflags="$(CPPFLAGS)" dflags= cxxflags="$(CXXFLAGS)" dxxflags= \
+  linklibfiles= linklibobjs= aflags="$(AFLAGS)" cflags="$(CFLAGS)" cppflags="$(CPPFLAGS)" dflags= cxxflags="$(CXXFLAGS)" dxxflags= \
   objdir= moduledir= prefix="$(AROSDIR)" \
   linklibname= uselibs= usehostlibs= \
   compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
@@ -2773,9 +2779,9 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
-   files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)"  alwayscxxlink=%(alwayscxxlink) \
+   files="%(files)" asmfiles="%(asmfiles)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" alwayscxxlink=%(alwayscxxlink) \
    linklibname="%(linklibname)" linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
-   cflags="%(cflags)" cppflags="%(cppflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
+   cflags="%(cflags)" cppflags="%(cppflags)" aflags="%(aflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" funcinstr=%(funcinstr) lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
