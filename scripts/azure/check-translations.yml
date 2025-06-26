@@ -139,5 +139,5 @@ steps:
     rsync -avz -e ssh \
       submodule_localization_issues.txt \
       repository_localization_issues.txt \
-      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:documentation/"
+      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:htdocs/documentation/"
   displayName: 'Upload localization issue files using SSH key'
