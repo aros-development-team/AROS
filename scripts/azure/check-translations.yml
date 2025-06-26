@@ -24,22 +24,18 @@ steps:
       "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$LOG_ID" -o log.txt
 
     echo "Extracting warning lines..."
-    # Just as example, extract lines containing 'warning' (case-insensitive)
     grep -i warning log.txt > warnings.txt
 
     echo "Number of warning lines found: $(wc -l < warnings.txt)"
 
     echo "Stripping timestamp and absolute path..."
-    # Remove timestamp and leading path up to and including '/s/'
     sed -E 's/^[0-9T:\.\-Z]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
 
     echo "Parsing .gitmodules for submodule paths and URLs..."
-    # Download the .gitmodules file from repo for this pipeline run
     curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
       "https://dev.azure.com/$ORG/$PROJECT/_apis/git/repositories/$PROJECT/items?path=.gitmodules&version=refs/heads/master&includeContent=true" \
       -o .gitmodules
 
-    # Extract submodule paths and URLs (assuming standard format)
     declare -A submodules
     while IFS= read -r line; do
       if [[ $line =~ path\ =\ (.*) ]]; then
@@ -51,10 +47,12 @@ steps:
     done < .gitmodules
 
     echo "Grouping matches by submodule..."
-    # For each submodule path, output warnings_stripped.txt lines starting with that path
+
+    matched_submodules=()
     for path in "${!submodules[@]}"; do
       count=$(grep -c "^$path/" warnings_stripped.txt || true)
       if [[ $count -gt 0 ]]; then
+        matched_submodules+=("$path")
         echo "Submodule: $path (${submodules[$path]})"
         echo "Lines matched: $count"
         grep "^$path/" warnings_stripped.txt || true
@@ -62,9 +60,24 @@ steps:
       fi
     done
 
+    echo "Summary:"
+    echo "Number of submodules with warnings: ${#matched_submodules[@]}"
+    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+      echo "Submodules with warnings:"
+      for sub in "${matched_submodules[@]}"; do
+        echo "  - $sub"
+      done
+    fi
+    echo ""
+
     echo "Unmatched lines:"
-    # Lines that do not start with any submodule path
-    grep -vE "^($(printf '%s|' "${!submodules[@]}" | sed 's/|$//'))/" warnings_stripped.txt || true
+    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+      pattern=$(printf '%s|' "${matched_submodules[@]}")
+      pattern="${pattern%|}"
+      grep -vE "^($pattern)/" warnings_stripped.txt || true
+    else
+      cat warnings_stripped.txt
+    fi
 
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
