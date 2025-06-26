@@ -5,6 +5,10 @@ AROS_PREFS_SET            := @config_prefs_set@
 
 AROS_STDC_WCHAR32         := @aros_config_wchar32@
 
+#
+# Target options
+#
+
 #Bootloader
 GRUB2_VERSION             := @target_grub2_version@
 
@@ -26,6 +30,13 @@ ifeq ($(OPT_HOST_SDLGFX),yes)
 HOST_SDL_CFLAGS           := @aros_host_sdl_cflags@
 HOST_SDL_LIBS             := @aros_host_sdl_libs@
 endif
+
+#
+# Toolchain options
+#
+
+GCC_TARGET_CPU            := @gcc_target_cpu@
+LLVM_TARGET_CPU           := @llvm_target_cpu@
 
 TARGET_STRIP              := $(TARGET_DEF_STRIP)
 HOST_STRIP                := $(HOST_DEF_STRIP)
