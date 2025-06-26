@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef AROS_LIBCALL_H
@@ -152,6 +152,16 @@ typedef unsigned int (*ULONG_FUNC)();
     results
 */
 #   define AROS_SLIB_ENTRY(n,s,o)  __AROS_SLIB_ENTRY(n,s,o)
+#endif
+#ifndef AROS_SLIB_SAENTRY
+/*
+    This is to a special version for stack alias library functions.
+*/
+# if !defined(MODULE_START_INTERNAL) || !defined(__clang__)
+#   define AROS_SLIB_SAENTRY(n,s,o)  __AROS_SLIB_ENTRY(n,s,o)
+# else
+#   define AROS_SLIB_SAENTRY(n,s,o)  n
+# endif
 #endif
 
 #ifndef __AROS_CPU_SPECIFIC_LH

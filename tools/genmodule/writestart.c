@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Print the library magic and init code in the file modname_start.c.
     This code is partly based on code in CLib37x.lha from Andreas R. Kleinert
@@ -170,6 +170,11 @@ static void writedecl(FILE *out, struct config *cfg)
     struct functionarg *arglistit;
     struct classinfo *classlistit;
     char *type, *name;
+
+    fprintf(out,
+            "#define MODULE_START_INTERNAL\n"
+            "\n"
+    );
 
     if (cfg->modtype == DEVICE)
     {
@@ -1695,6 +1700,15 @@ writefunctable(FILE *out,
         switch (funclistit->libcall)
         {
         case STACK:
+                if (!(cfg->options & OPTION_DUPBASE) || funclistit->unusedlibbase)
+                {
+                    if (funclistit->version != lastversion) {
+                        lastversion = funclistit->version;
+                        fprintf(out, "    /* Version %d */\n", lastversion);
+                    }
+                    fprintf(out, "    &AROS_SLIB_SAENTRY(%s,%s,%d),\n", funclistit->internalname, cfg->basename, lvo);
+                    break;
+                }
         case REGISTER:
         case REGISTERMACRO:
             if (funclistit->version != lastversion) {
