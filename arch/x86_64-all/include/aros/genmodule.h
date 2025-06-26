@@ -2,7 +2,7 @@
 #define AROS_X86_64_GENMODULE_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: genmodule specific definitions for x86_64
@@ -129,13 +129,17 @@
    This macro will generate an alias 'alias' for function
    'functionname'
 */
-#define __AROS_GM_STACKALIAS(fname, alias) \
+
+#if defined(__clang__)
+  #define AROS_GM_STACKALIAS(fn, lib, lvo) 
+#else
+ #define __AROS_GM_STACKALIAS(fname, alias) \
     void alias(void); \
     asm(".weak " __GM_STRINGIZE(alias) "\n" \
         "\t.set " __GM_STRINGIZE(alias) "," #fname \
     );
-#define AROS_GM_STACKALIAS(fname, libbasename, lvo) \
+ #define AROS_GM_STACKALIAS(fname, libbasename, lvo) \
     __AROS_GM_STACKALIAS(fname, AROS_SLIB_ENTRY(fname, libbasename, lvo))
-
+#endif
 
 #endif /* AROS_X86_64_GENMODULE_H */
