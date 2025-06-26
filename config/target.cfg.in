@@ -143,6 +143,8 @@ NIX_LDFLAGS                   := $(strip @aros_target_nix_ldflags@)
 DETACH_LDFLAGS                := $(strip @aros_target_detach_ldflags@)
 NOSTDLIB_LDFLAGS              := $(strip @aros_target_nostdlib_ldflags@)
 
+FMTBINARY_LDFLAGS             := @toolchain_ld_fmtbinary@
+
 AR                            = $(strip @aros_target_ar@)
 AR_PLAIN                      = $(strip @aros_plain_ar@)
 RANLIB                        = $(strip @aros_target_ranlib@)
