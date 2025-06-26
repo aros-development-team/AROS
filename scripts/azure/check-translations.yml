@@ -2,12 +2,12 @@ trigger: none
 
 resources:
   pipelines:
-    - pipeline: AROSPipeline16
-      source: 'aros-development-team.AROS-pc-i386'
+    - pipeline: AROSPipeline16       # alias to refer to the pipeline resource
+      source: 'aros-development-team.AROS-pc-i386'  # exact pipeline name
       trigger:
         branches:
           include:
-            - main
+            - main                 # trigger only on main branch runs
 
 pool:
   vmImage: ubuntu-latest
@@ -70,8 +70,8 @@ steps:
     echo "Number of warning lines found: $(wc -l < warnings.txt)"
 
     echo "Stripping timestamp and absolute path..."
-    # Fixed sed regex: moved '-' to end of character class
-    sed -E 's/^[0-9T:\.Z-]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
+    # Fix sed for ranges - escape slashes properly and avoid invalid ranges
+    sed -E 's/^[0-9T:\.\-Z]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
 
     echo "Parsing .gitmodules for submodule paths and URLs..."
     curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
@@ -79,18 +79,39 @@ steps:
       -o .gitmodules
 
     declare -A submodules
-    path=""
-    url=""
+    current_path=""
+    current_url=""
+
     while IFS= read -r line; do
-      if [[ $line =~ path\ =\ (.*) ]]; then
-        path="${BASH_REMATCH[1]}"
-      elif [[ $line =~ url\ =\ (.*) ]]; then
-        url="${BASH_REMATCH[1]}"
-        submodules["$path"]="$url"
-        path=""
-        url=""
+      # Detect new submodule block and reset variables
+      if [[ $line =~ ^\[submodule\ \"(.+)\"\] ]]; then
+        current_path=""
+        current_url=""
+      fi
+
+      # Extract path=
+      if [[ $line =~ ^[[:space:]]*path[[:space:]]*=[[:space:]]*(.+) ]]; then
+        current_path="${BASH_REMATCH[1]}"
+      fi
+
+      # Extract url=
+      if [[ $line =~ ^[[:space:]]*url[[:space:]]*=[[:space:]]*(.+) ]]; then
+        current_url="${BASH_REMATCH[1]}"
+      fi
+
+      # Store if both set
+      if [[ -n "$current_path" && -n "$current_url" ]]; then
+        submodules["$current_path"]="$current_url"
+        current_path=""
+        current_url=""
       fi
     done < .gitmodules
+
+    echo "Parsed submodules:"
+    for key in "${!submodules[@]}"; do
+      echo "Path: $key"
+      echo "URL: ${submodules[$key]}"
+    done
 
     echo "Grouping matches by submodule..."
 
@@ -141,5 +162,5 @@ steps:
     rsync -avz -e ssh \
       submodule_localization_issues.txt \
       repository_localization_issues.txt \
-      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:htdocs/documentation/"
+      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:documentation/"
   displayName: 'Upload localization issue files using SSH key'
