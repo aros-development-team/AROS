@@ -10,6 +10,9 @@ variables:
   SF_RSYNC_USER_AROS: "$(SF_RSYNC_USER),translations"
 
 steps:
+# Checkout with OAuth token access enabled
+- checkout: self
+  persistCredentials: true
 
 # Download and setup the SSH key for SourceForge
 - task: DownloadSecureFile@1
