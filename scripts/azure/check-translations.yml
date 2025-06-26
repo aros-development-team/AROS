@@ -1,85 +1,95 @@
-trigger: none
+trigger: none  # or adjust your trigger as needed
 
 pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- bash: |
-    set -euo pipefail
+  - bash: |
+      set -euo pipefail
 
-    ORG="aros-development-team"
-    PROJECT="AROS"
-    PIPELINE_ID=16
-    LOG_ID=32
+      ORG="aros-development-team"
+      PROJECT="AROS"
+      PIPELINE_ID=16
+      LOG_ID=32
 
-    echo "Fetching latest run ID of pipeline '$ORG.$PROJECT-pc-i386'..."
-    BUILD_ID=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-      "https://dev.azure.com/$ORG/$PROJECT/_apis/pipelines/$PIPELINE_ID/runs?api-version=6.0-preview.1&\$top=1" \
-      | jq -r '.value[0].id')
-    echo "Pipeline ID: $PIPELINE_ID"
-    echo "Latest run ID: $BUILD_ID"
+      echo "Fetching latest run ID of pipeline '$ORG.$PROJECT-pc-i386'..."
+      BUILD_ID=$(curl -sS -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+        "https://dev.azure.com/$ORG/$PROJECT/_apis/pipelines/$PIPELINE_ID/runs?api-version=6.0-preview.1&\$top=1" \
+        | jq -r '.value[0].id')
+      echo "Pipeline ID: $PIPELINE_ID"
+      echo "Latest run ID: $BUILD_ID"
 
-    echo "Downloading specific log ID ($LOG_ID) for build ID $BUILD_ID..."
-    curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-      "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$LOG_ID" -o log.txt
+      echo "Downloading specific log ID ($LOG_ID) for build ID $BUILD_ID..."
+      curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+        "https://dev.azure.com/$ORG/$PROJECT/_apis/build/builds/$BUILD_ID/logs/$LOG_ID" -o log.txt
 
-    echo "Extracting warning lines..."
-    grep -i warning log.txt > warnings.txt
+      echo "Extracting warning lines..."
+      grep -i warning log.txt > warnings.txt
 
-    echo "Number of warning lines found: $(wc -l < warnings.txt)"
+      echo "Number of warning lines found: $(wc -l < warnings.txt)"
 
-    echo "Stripping timestamp and absolute path..."
-    sed -E 's/^[0-9T:\.\-Z]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
+      echo "Stripping timestamp and absolute path..."
+      sed -E 's/^[0-9T:\.\-Z]+Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
 
-    echo "Parsing .gitmodules for submodule paths and URLs..."
-    curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
-      "https://dev.azure.com/$ORG/$PROJECT/_apis/git/repositories/$PROJECT/items?path=.gitmodules&version=refs/heads/master&includeContent=true" \
-      -o .gitmodules
+      echo "Parsing .gitmodules for submodule paths and URLs..."
+      curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
+        "https://dev.azure.com/$ORG/$PROJECT/_apis/git/repositories/$PROJECT/items?path=.gitmodules&version=refs/heads/master&includeContent=true" \
+        -o .gitmodules
 
-    declare -A submodules
-    while IFS= read -r line; do
-      if [[ $line =~ path\ =\ (.*) ]]; then
-        path="${BASH_REMATCH[1]}"
-      elif [[ $line =~ url\ =\ (.*) ]]; then
-        url="${BASH_REMATCH[1]}"
-        submodules["$path"]="$url"
-      fi
-    done < .gitmodules
+      declare -A submodules
+      path=""
+      url=""
+      while IFS= read -r line; do
+        if [[ $line =~ path\ =\ (.*) ]]; then
+          path="${BASH_REMATCH[1]}"
+        elif [[ $line =~ url\ =\ (.*) ]]; then
+          url="${BASH_REMATCH[1]}"
+          submodules["$path"]="$url"
+          path=""
+          url=""
+        fi
+      done < .gitmodules
 
-    echo "Grouping matches by submodule..."
+      echo "Grouping matches by submodule..."
 
-    matched_submodules=()
-    for path in "${!submodules[@]}"; do
-      count=$(grep -c "^$path/" warnings_stripped.txt || true)
-      if [[ $count -gt 0 ]]; then
-        matched_submodules+=("$path")
-        echo "Submodule: $path (${submodules[$path]})"
-        echo "Lines matched: $count"
-        grep "^$path/" warnings_stripped.txt || true
-        echo ""
-      fi
-    done
+      matched_submodules=()
+      : > submodule_localization_issues.txt
+      : > repository_localization_issues.txt
 
-    echo "Summary:"
-    echo "Number of submodules with warnings: ${#matched_submodules[@]}"
-    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
-      echo "Submodules with warnings:"
-      for sub in "${matched_submodules[@]}"; do
-        echo "  - $sub"
+      for path in "${!submodules[@]}"; do
+        count=$(grep -c "^$path/" warnings_stripped.txt || true)
+        if [[ $count -gt 0 ]]; then
+          matched_submodules+=("$path")
+          {
+            echo "Submodule: $path (${submodules[$path]})"
+            grep "^$path/" warnings_stripped.txt || true
+            echo ""
+          } >> submodule_localization_issues.txt
+        fi
       done
-    fi
-    echo ""
 
-    echo "Unmatched lines:"
-    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
-      pattern=$(printf '%s|' "${matched_submodules[@]}")
-      pattern="${pattern%|}"
-      grep -vE "^($pattern)/" warnings_stripped.txt || true
-    else
-      cat warnings_stripped.txt
-    fi
+      echo "Summary:"
+      echo "Number of submodules with warnings: ${#matched_submodules[@]}"
+      if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+        echo "Submodules with warnings:"
+        for sub in "${matched_submodules[@]}"; do
+          count=$(grep -c "^$sub/" warnings_stripped.txt || true)
+          echo "  - $sub: $count warnings"
+        done
+      fi
+      echo ""
 
-  env:
-    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      echo "Collecting unmatched lines..."
+      if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+        pattern=$(printf '%s|' "${matched_submodules[@]}")
+        pattern="${pattern%|}"
+        grep -vE "^($pattern)/" warnings_stripped.txt > repository_localization_issues.txt || true
+      else
+        cp warnings_stripped.txt repository_localization_issues.txt
+      fi
 
-  displayName: Download and Process Logs
+      echo "Wrote matched warnings to submodule_localization_issues.txt"
+      echo "Wrote unmatched warnings to repository_localization_issues.txt"
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    displayName: Download and Process Logs
