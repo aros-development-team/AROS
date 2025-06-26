@@ -1,26 +1,21 @@
-trigger: none  # adjust as needed
+trigger: none
 
 resources:
   pipelines:
-    - pipeline: AROSPipeline16       # alias to refer to the pipeline resource
-      source: 'aros-development-team.AROS-pc-i386'  # exact pipeline name
+    - pipeline: AROSPipeline16
+      source: 'aros-development-team.AROS-pc-i386'
       trigger:
         branches:
           include:
-            - main                 # trigger only on main branch runs
+            - main
 
 pool:
   vmImage: ubuntu-latest
 
 variables:
-  arosbuilddate: $(Build.BuildDate)       # define or replace as needed
-  AROSDOCBUILDDIR: "$(Build.SourcesDirectory)/docs/output"  # example, adjust to your docs dir
-  AROSBUILDID: $(Build.BuildId)           # your build ID variable
   SF_RSYNC_USER_AROS: "$(SF_RSYNC_USER),translations"
 
 steps:
-
-# Download and setup the SSH key for SourceForge
 - task: DownloadSecureFile@1
   name: GetSSHKey
   inputs:
@@ -70,8 +65,8 @@ steps:
     echo "Number of warning lines found: $(wc -l < warnings.txt)"
 
     echo "Stripping timestamp and absolute path..."
-    # Fixed sed command with corrected character class to avoid Invalid range end error
-    sed -E 's#^[0-9T:.Z-]+Z? /home/vsts/work/[0-9]+/s/##' warnings.txt > warnings_stripped.txt
+    # Fixed sed to handle [0-9:.TZ-] safely inside []
+    sed -E 's/^[0-9:.TZ-]+ Z? \/home\/vsts\/work\/[0-9]+\/s\///' warnings.txt > warnings_stripped.txt
 
     echo "Parsing .gitmodules for submodule paths and URLs..."
     curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
@@ -82,9 +77,9 @@ steps:
     path=""
     url=""
     while IFS= read -r line; do
-      if [[ $line =~ ^[[:space:]]*path[[:space:]]*=[[:space:]]*(.*) ]]; then
+      if [[ $line =~ ^path\ =\ (.*) ]]; then
         path="${BASH_REMATCH[1]}"
-      elif [[ $line =~ ^[[:space:]]*url[[:space:]]*=[[:space:]]*(.*) ]]; then
+      elif [[ $line =~ ^url\ =\ (.*) ]]; then
         url="${BASH_REMATCH[1]}"
         submodules["$path"]="$url"
         path=""
@@ -92,8 +87,7 @@ steps:
       fi
     done < .gitmodules
 
-    echo "Grouping matches by submodule..."
-
+    total_submodules=${#submodules[@]}
     matched_submodules=()
     : > submodule_localization_issues.txt
     : > repository_localization_issues.txt
@@ -110,19 +104,19 @@ steps:
       fi
     done
 
-    echo "Summary:"
-    echo "Number of submodules with warnings: ${#matched_submodules[@]}"
-    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+    matched_count=${#matched_submodules[@]}
+    echo "Number of submodules with warnings: $matched_count of $total_submodules"
+
+    if [[ $matched_count -gt 0 ]]; then
       echo "Submodules with warnings:"
       for sub in "${matched_submodules[@]}"; do
         count=$(grep -c "^$sub/" warnings_stripped.txt || true)
         echo "  - $sub: $count warnings"
       done
     fi
-    echo ""
 
     echo "Collecting unmatched lines..."
-    if [[ ${#matched_submodules[@]} -gt 0 ]]; then
+    if [[ $matched_count -gt 0 ]]; then
       pattern=$(printf '%s|' "${matched_submodules[@]}")
       pattern="${pattern%|}"
       grep -vE "^($pattern)/" warnings_stripped.txt > repository_localization_issues.txt || true
