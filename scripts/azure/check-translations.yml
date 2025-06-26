@@ -1,4 +1,4 @@
-trigger: none
+trigger: none  # adjust as needed
 
 resources:
   pipelines:
@@ -70,8 +70,8 @@ steps:
     echo "Number of warning lines found: $(wc -l < warnings.txt)"
 
     echo "Stripping timestamp and absolute path..."
-    # Fixed sed command with alternate delimiter and corrected character class
-    sed -E 's#^[0-9T:.\-Z]+Z? /home/vsts/work/[0-9]+/s/##' warnings.txt > warnings_stripped.txt
+    # Fixed sed command with corrected character class to avoid Invalid range end error
+    sed -E 's#^[0-9T:.Z-]+Z? /home/vsts/work/[0-9]+/s/##' warnings.txt > warnings_stripped.txt
 
     echo "Parsing .gitmodules for submodule paths and URLs..."
     curl -sSL -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" \
@@ -79,19 +79,16 @@ steps:
       -o .gitmodules
 
     declare -A submodules
-    current_path=""
-    current_url=""
-
+    path=""
+    url=""
     while IFS= read -r line; do
-      if [[ $line =~ ^path[[:space:]]*=[[:space:]]*(.*) ]]; then
-        current_path="${BASH_REMATCH[1]}"
-      elif [[ $line =~ ^url[[:space:]]*=[[:space:]]*(.*) ]]; then
-        current_url="${BASH_REMATCH[1]}"
-        if [[ -n "$current_path" && -n "$current_url" ]]; then
-          submodules["$current_path"]="$current_url"
-          current_path=""
-          current_url=""
-        fi
+      if [[ $line =~ ^[[:space:]]*path[[:space:]]*=[[:space:]]*(.*) ]]; then
+        path="${BASH_REMATCH[1]}"
+      elif [[ $line =~ ^[[:space:]]*url[[:space:]]*=[[:space:]]*(.*) ]]; then
+        url="${BASH_REMATCH[1]}"
+        submodules["$path"]="$url"
+        path=""
+        url=""
       fi
     done < .gitmodules
 
