@@ -1555,7 +1555,7 @@ endif
 
 %(file) : $(%(mmake)_OBJS) $(%(mmake)_DEPS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
-	$(Q)$(KERNEL_LD) %(ldflags) --entry=%(start) --oformat=binary -Ttext=%(start) -o $(%(mmake)_TMPDIR)/%(name) $(%(mmake)_OBJS)
+	$(Q)$(KERNEL_LD) %(ldflags) --entry=%(start) $(FMTBINARY_LDFLAGS) -Ttext=%(start) -o $(%(mmake)_TMPDIR)/%(name) $(%(mmake)_OBJS)
 	$(Q)cd $(%(mmake)_TMPDIR) && $(AROS_LD) %(ldflags) -r --format binary %(name) -o $@
 
 ifeq ($(findstring $(%(mmake)_OUTDIR),$(GLOB_MKDIRS)),)
