@@ -25,8 +25,11 @@
 void
 SlaveEntry( void );
 
+#ifdef PROCGW
 PROCGW( static, void,  slaveentry, SlaveEntry );
-
+#else
+#define slaveentry SlaveEntry
+#endif
 
 /*  There is probably no reason to support all these frequencies. If,
  *  for example, your hardware is locked at 48 kHz, it's ok to only

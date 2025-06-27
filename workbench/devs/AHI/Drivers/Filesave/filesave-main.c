@@ -28,8 +28,13 @@
 void PlaySlaveEntry(void);
 void RecSlaveEntry(void);
 
+#ifdef PROCGW
 PROCGW( static, void,  playslaveentry, PlaySlaveEntry );
 PROCGW( static, void,  recslaveentry,  RecSlaveEntry );
+#else
+#define  playslaveentry PlaySlaveEntry
+#define  recslaveentry  RecSlaveEntry
+#endif
 
 static const LONG frequency[] =
 {

@@ -14,6 +14,25 @@ AC_CANONICAL_SYSTEM
 AC_PROG_MAKE_SET
 AC_CONFIG_HEADER( config.h )
 
+AC_MSG_CHECKING([whether the assembler accepts -Wa,--defsym])
+# write out a minimal test
+cat > conftest.s << 'EOF'
+    .globl  foo
+EOF
+
+# Try compiling with -Wa,--defsym,foo=1
+if $CC -no-integrated-as -x assembler -Wa,--defsym,foo=1 \
+      -c conftest.s -o conftest.o 2>/dev/null; then
+  AC_MSG_RESULT([yes])
+  AC_DEFINE([HAVE_AS_DEF_SYM], [1], [Assembler supports -Wa,--defsym])
+  ASDEFSYM="-Wa,--defsym,"
+else
+  AC_MSG_RESULT([no])
+  ASDEFSYM="--defsym "
+fi
+
+rm -f conftest.s conftest.o
+
 AC_MSG_CHECKING(CPU to build for)
 AC_ARG_WITH(cpu,
 [  --with-cpu              The CPU to optimize for],
@@ -41,7 +60,7 @@ case $host in
   cflags="-noixemul"
   optflags="-mcpu=${CPU} -O2"
   linkerflags="-noixemul -mcpu=${CPU} -r"
-  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
+  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
   resident=""                                      dnl *** Not supported (yet?)
   stripflag=""
  ;;
@@ -50,7 +69,7 @@ case $host in
   cflags=""
   optflags="-m32 -march=${CPU} -O2"
   linkerflags=""
-  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
+  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -61,7 +80,7 @@ case $host in
   optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
   linkerflags="-noixemul -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
+  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident="-resident"
   buildhandler="true"
   stripflag=""
@@ -72,7 +91,7 @@ case $host in
   optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
   linkerflags="-m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
+  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -84,7 +103,7 @@ case $host in
   cflags=""
   optflags="-mcpu=${CPU} -O2"
   linkerflags="-mcpu=${CPU}"
-  asflags="-m${CPU} -mregnames --defsym CPU=${CPU}"
+  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
   resident=""                                      dnl *** Not supported (yet?)
   stripflag=""
  ;;
@@ -94,7 +113,7 @@ case $host in
   cflags="-noixemul"
   optflags="-mcpu=${CPU} -O2"
   linkerflags="-noixemul -mcpu=${CPU}"
-  asflags="-m${CPU} -mregnames --defsym CPU=${CPU}"
+  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
   resident="-mresident32"
   buildhandler="true"
   stripflag=""
@@ -104,7 +123,7 @@ case $host in
   cflags=""
   optflags="-O2 -fomit-frame-pointer"
   linkerflags=""
-  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1 --defsym x86_64=1"
+  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
   resident=""
   buildhandler="true"
   stripflag=""

@@ -84,11 +84,14 @@ MyKPrintFArgs( UBYTE*           fmt,
     }
 # define INTGW(q,t,n,f) \
     INTGW_##t(q,n,f)
+#if !defined(__clang__)
 # define PROCGW(q,t,n,f)						\
     t n();                    \
     asm(".weak " #n "\n"        \
         "\t.set " #n "," #f     \
     );
+#else
+#endif
 # define INTERRUPT_NODE_TYPE NT_INTERRUPT
 
 #elif defined(__AMIGAOS4__)

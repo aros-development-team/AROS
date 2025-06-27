@@ -114,7 +114,7 @@ Makefile: Makefile.in Makefile.common.in ../../config.status
 ########################################
 
 %.o:	%.s
-	$(AS) $(ASFLAGS) $^ -o $@
+	$(AS) $(ASFLAGS) $< -o $@
 
 $(DRIVER):		$(DRIVER_OBJECTS)
 	$(CC) $^ $(LDFLAGS) $(LIBS) -o $@
@@ -122,8 +122,10 @@ $(DRIVER):		$(DRIVER_OBJECTS)
 $(MODEFILE):	$(MODEFILE).o
 	$(OBJCOPY) --output-target=binary $< $@
 
-$(MODEFILE).o:	MODEFILE.s $(MODEFILE).s
-	$(AS) $(ASFLAGS) $^ -o $@
+$(MODEFILE).o: MODEFILE.s $(MODEFILE).s
+	cat $^ | \
+	$(CC) $(ASFLAGS) \
+	       -c - -o $@
 
 gatestubs.c:	$(top_srcdir)/Include/SFD/ahi_sub_lib.sfd
 	$(SFDC) --mode=gatestubs --gateprefix=gw --libprefix=_ --libarg=last \

@@ -28,5 +28,13 @@ AHI_OPTIONS=--with-os-includedir=$(AROS_INCLUDES)
 # build_with_configure, and append the flags to the CFLAGS directly.
 USER_CFLAGS := $(CFLAGS_NO_BUILTIN_FLOOR) $(TARGET_CPPFLAGS)
 
+#
+# AHI uses GAS syntax, which LLVM AS
+# doesnt understand, so use clang with the 
+# configure'd AFLAGS to use the system AS.
+#
+TARGET_AS:=$(strip $(CC) $(TARGET_SYSROOT))
+AHI_ENV=ASFLAGS="$(AFLAGS) $(CPPFLAGS)"
+
 %build_with_configure mmake=workbench-devs-AHI-subsystem prefix=$(EXEDIR) \
-    extraoptions="$(AHI_OPTIONS)" usecppflags=no gnuflags=no
+    extraoptions="$(AHI_OPTIONS)" config_env_extra="$(AHI_ENV)" usecppflags=no gnuflags=no
