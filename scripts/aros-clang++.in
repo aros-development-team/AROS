@@ -1,0 +1,2 @@
+#!/bin/sh
+exec @orig_target_cxx@ "$@" -static
