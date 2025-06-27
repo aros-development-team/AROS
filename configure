@@ -9280,6 +9280,7 @@ case "$aros_toolchain" in
         aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
+        aros_kernel_llvmwrapper=yes
         ;;
     *gnu*)
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if we should enable unit32 WCHAR suport" >&5
@@ -10215,7 +10216,13 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_isa_flags="$""(ISA_X8664_FLAGS)"
-                aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        ;;
+                    *)
+                        aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
+                        ;;
+                esac
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
@@ -16853,7 +16860,9 @@ if test "$kernel_tool_prefix" = "none" ; then
     aros_kernel_objcopy=$orig_target_objcopy
     aros_kernel_objdump=$orig_target_objdump
     aros_kernel_isa_flags="$""(ISA_FLAGS) $aros_kernel_isa_extra"
-    use_kernel_cc_wrapper=yes
+    if ! test "$aros_kernel_llvmwrapper" = "yes"; then
+        use_kernel_cc_wrapper=yes
+    fi
 fi
 
 # At this point, all aros_kernel_* and aros_target_*
@@ -18498,7 +18507,7 @@ printf "%s\n" "$dbus" >&6; }
     fi
 fi
 
-if test "$use_kernel_cc_wrapper" = "yes" ; then
+if test "$use_kernel_cc_wrapper" = "yes" || test "$aros_kernel_llvmwrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
 fi
 
@@ -19022,6 +19031,14 @@ if test "${aros_target_toolchain}" = "no"; then
     ac_config_files="$ac_config_files ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cpp_preprocessor}:scripts/aros-${toolchain_cpp_preprocessor}.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_c_compiler}:scripts/aros-${toolchain_c_compiler}.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in"
 
 fi
+
+if test "${aros_kernel_llvmwrapper}" = "yes"; then
+    ac_config_commands="$ac_config_commands clang-kernel-compiler-wrapper-support"
+
+    ac_config_files="$ac_config_files ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}:scripts/aros-${toolchain_c_compiler}.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in"
+
+fi
+
 
 # Android support
 if test "$aros_target_variant" == "android"; then
@@ -19755,6 +19772,15 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 
 
 
+            aros_tools_dir=${aros_tools_dir}
+            aros_target_cpu=${aros_target_cpu}
+            aros_target_arch=${aros_target_arch}
+            aros_target_suffix=${aros_target_suffix}
+            toolchain_c_compiler=${toolchain_c_compiler}
+            toolchain_cxx_compiler=${toolchain_cxx_compiler}
+
+
+
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
@@ -19788,6 +19814,9 @@ do
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cpp_preprocessor}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cpp_preprocessor}:scripts/aros-${toolchain_cpp_preprocessor}.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_c_compiler}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_c_compiler}:scripts/aros-${toolchain_c_compiler}.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cxx_compiler}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in" ;;
+    "clang-kernel-compiler-wrapper-support") CONFIG_COMMANDS="$CONFIG_COMMANDS clang-kernel-compiler-wrapper-support" ;;
+    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}:scripts/aros-${toolchain_c_compiler}.in" ;;
+    "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in" ;;
     "${aros_gendir}/arch/all-android/bootstrap/app/default.properties") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in" ;;
     "${aros_targetcfg_dir}/conf.cmake") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in" ;;
 
@@ -20374,6 +20403,11 @@ printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
             prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
 
             chmod a+x ${prefix2}-${toolchain_c_compiler} ${prefix2}-${toolchain_cxx_compiler} ${prefix2}-${toolchain_cpp_preprocessor}
+         ;;
+    "clang-kernel-compiler-wrapper-support":C)
+            prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
+
+            chmod a+x ${prefix}-${toolchain_c_compiler} ${prefix}-${toolchain_cxx_compiler}
          ;;
 
   esac

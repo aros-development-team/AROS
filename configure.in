@@ -929,6 +929,7 @@ case "$aros_toolchain" in
         aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
+        aros_kernel_llvmwrapper=yes
         ;;
     *gnu*)
         AC_MSG_CHECKING([if we should enable unit32 WCHAR suport])
@@ -1529,7 +1530,13 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_isa_flags="$""(ISA_X8664_FLAGS)"
-                aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        ;;
+                    *)
+                        aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
+                        ;;
+                esac
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
@@ -2993,7 +3000,9 @@ if test "$kernel_tool_prefix" = "none" ; then
     aros_kernel_objcopy=$orig_target_objcopy
     aros_kernel_objdump=$orig_target_objdump
     aros_kernel_isa_flags="$""(ISA_FLAGS) $aros_kernel_isa_extra"
-    use_kernel_cc_wrapper=yes
+    if ! test "$aros_kernel_llvmwrapper" = "yes"; then
+        use_kernel_cc_wrapper=yes
+    fi
 fi
 
 # At this point, all aros_kernel_* and aros_target_* 
@@ -3631,7 +3640,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
     fi
 fi
 
-if test "$use_kernel_cc_wrapper" = "yes" ; then
+if test "$use_kernel_cc_wrapper" = "yes" || test "$aros_kernel_llvmwrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
 fi
 
@@ -4244,6 +4253,29 @@ if test "${aros_target_toolchain}" = "no"; then
         ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in
     )
 fi
+
+if test "${aros_kernel_llvmwrapper}" = "yes"; then
+    AC_CONFIG_COMMANDS([clang-kernel-compiler-wrapper-support],
+        [
+            prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
+
+            chmod a+x ${prefix}-${toolchain_c_compiler} ${prefix}-${toolchain_cxx_compiler}
+        ],
+        [
+            aros_tools_dir=${aros_tools_dir}
+            aros_target_cpu=${aros_target_cpu}
+            aros_target_arch=${aros_target_arch}
+            aros_target_suffix=${aros_target_suffix}
+            toolchain_c_compiler=${toolchain_c_compiler}
+            toolchain_cxx_compiler=${toolchain_cxx_compiler}
+        ]
+    )
+    AC_CONFIG_FILES(
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}:scripts/aros-${toolchain_c_compiler}.in
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in
+    )
+fi
+
 
 # Android support
 if test "$aros_target_variant" == "android"; then

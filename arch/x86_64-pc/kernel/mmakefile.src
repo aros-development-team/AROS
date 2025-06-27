@@ -42,8 +42,13 @@ MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
-USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
 #USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+
+ifeq ($(AROS_TOOLCHAIN),llvm)
+SMPBSLDFLAGS := -m elf_x86_64
+else
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
 
 #MM kernel-kernel-pc-x86_64 : kernel-pc-acpica-includes includes-asm_h includes kernel-kernel-includes linklibs-bootconsole
 #MM kernel-kernel-pc-x86_64-kobj : includes-asm_h includes kernel-kernel-includes linklibs-bootconsole
@@ -67,7 +72,7 @@ kernel-kernel-pc-x86_64-kobj-quick :: $(ARCHOBJDIR)/smpboot.bin.o
 %rule_assemble_multi basenames=smpbootstrap targetdir=$(OBJDIR)
 
 # Without -N the linker tries to page-align .text section and produces a huge file (over 2MB)
-%rule_link_binary file=$(ARCHOBJDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
+%rule_link_binary ldflags=$(SMPBSLDFLAGS) file=$(ARCHOBJDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
 
 $(OBJDIR)/smpbootstrap.o : | $(OBJDIR) $(ARCHOBJDIR)
 
