@@ -1,5 +1,5 @@
-#ifndef SCREEN_H_
-#define SCREEN_H_
+#ifndef CONSOLE_H_
+#define CONSOLE_H_
 
 #define VGA_TEXT_ADDR   (void *)0xb8000
 #define VGA_TEXT_WIDTH  80
@@ -15,4 +15,4 @@ extern const unsigned int  fontWidth;
 extern const unsigned int  fontHeight;
 extern const unsigned char fontData[];
 
-#endif /*SCREEN_H_*/
+#endif /*CONSOLE_H_*/

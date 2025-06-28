@@ -44,7 +44,7 @@ SPECS                         := $(GENDIR)/config/specs
 
 # Standard directory names (case sensitive) used to build
 # both relative and absolute paths.
-AROS_DIR_AROS             := AROS
+AROS_DIR_AROS                 := AROS
 ifeq ($(AROS_TARGET_SUFFIX),)
     AROS_DIR_ARCH             := $(AROS_TARGET_ARCH)
 else
@@ -140,10 +140,13 @@ AROS_INCLUDES                 := $(AROS_DEVELOPER)/$(AROS_DIR_INCLUDE)
 #AROS_INCLUDES                := $(AROS_SDK)/$(AROS_DIR_INCLUDE)
 AROS_ARCH_LIB                 = $(AROS_ARCH_SDK)/$(AROS_DIR_LIB)
 AROS_LIB                      := $(AROS_DEVELOPER)/$(AROS_DIR_LIB)
+ifneq ($(AROS_TARGET_CPU32),)
+AROS_LIB32                    := $(AROS_DEVELOPER)/$(AROS_DIR_LIB)32
+endif
 #AROS_LIB                     := $(AROS_SDK)/$(AROS_DIR_LIB)
 
-#DBGDIR                         := $(AROS_DEBUG)/dbg
-DBGDIR                         := $(AROSDIR)
+#DBGDIR                        := $(AROS_DEBUG)/dbg
+DBGDIR                        := $(AROSDIR)
 
 AROS_CONTRIB_DEVELOPER        := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)
 AROS_CONTRIB_SDK              := $(AROS_SDK)/$(AROS_DIR_CONTRIB)
@@ -186,6 +189,7 @@ RESIDENT_BEGIN                := compiler/libinit/libentry
 KICKSTART_BEGIN               := compiler/libinit/kickentry
 
 AROS_CC                       := $(TARGET_CC)
+# Use a wrapper if a real c++ compiler isnt available.
 ifneq ($(TARGET_CXX),)
     AROS_CXX                  := $(TARGET_CXX)
 else

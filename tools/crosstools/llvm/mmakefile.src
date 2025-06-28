@@ -1,14 +1,31 @@
 include $(SRCDIR)/config/aros.cfg
--include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
+$(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
+
+#MM crosstools-compiler-rt : crosstools-compiler-rt-fetch crosstools-llvm-toolchain
+#MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-fetch crosstools-llvm-toolchain-quick
+#MM crosstools-compiler-rt32 : crosstools-compiler-rt-fetch crosstools-llvm-toolchain
+##tools-crosstools-autolibs32
+#MM- crosstools-compiler-rt32-quick : crosstools-compiler-rt-fetch crosstools-llvm-toolchain-quick
+
+#MM crosstools-libcxx : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain
+#MM- crosstools-libcxx-quick : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain-quick
+#MM crosstools-libcxxabi : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain
+#MM- crosstools-libcxxabi-quick : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain-quick
+#MM crosstools-llvm-fetch : crosstools-clang-fetch crosstools-llvm-lld-fetch
+
+#MM- crosstools-llvm : crosstools-llvm-toolchain crosstools-compiler-rt crosstools-libcxx crosstools-libcxxabi
+#MM- crosstools-llvm-quick : crosstools-llvm-toolchain-quick crosstools-compiler-rt-quick crosstools-libcxx-quick crosstools-libcxxabi-quick
+#MM crosstools-llvm-toolchain : setup crosstools-llvm-fetch
+#MM- crosstools-llvm-toolchain-quick : setup crosstools-llvm-fetch
 
 # Build for supported targets -:
 
-#MM- tools-crosstools-llvm-i386   : crosstools-llvm
-#MM- tools-crosstools-llvm-x86_64 : crosstools-llvm
-#MM- tools-crosstools-llvm-ppc    : crosstools-llvm
-#MM- tools-crosstools-llvm-arm    : crosstools-llvm
-#MM- tools-crosstools-llvm-riscv  : crosstools-llvm
-##MM- tools-crosstools-llvm-m68k  : crosstools-llvm
+#MM- tools-crosstools-llvm-i386   : tools-crosstools-llvm-toolchain crosstools-llvm
+#MM- tools-crosstools-llvm-x86_64 : tools-crosstools-llvm-toolchain crosstools-llvm
+#MM- tools-crosstools-llvm-ppc    : tools-crosstools-llvm-toolchain crosstools-llvm
+#MM- tools-crosstools-llvm-arm    : tools-crosstools-llvm-toolchain crosstools-llvm
+#MM- tools-crosstools-llvm-riscv  : tools-crosstools-llvm-toolchain crosstools-llvm
+##MM- tools-crosstools-llvm-m68k  : tools-crosstools-llvm-toolchain crosstools-llvm
 
 #
 # LLVM toolchain
@@ -41,6 +58,11 @@ else
 LLVM_TARGETS      := $(LLVM_TARGET_CPU)
 endif
 
+ifeq ($(AROS_TARGET_CPU),x86_64)
+LLVM_TARGET32            := X86
+LLVM_CRT_TARGET32    := i386
+endif
+
 LLVM_HOST         := "$(AROS_TARGET_CPU)"
 
 LLVM_CMAKETARGET  :=
@@ -60,7 +82,9 @@ LLVM_CMAKEOPTIONS :=  \
     -DLLVM_INCLUDE_DOCS=OFF \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
-    -DLLVM_INCLUDE_BENCHMARKS=OFF
+    -DLLVM_INCLUDE_BENCHMARKS=OFF \
+    -DCLANG_ENABLE_STATIC_ANALYZER=OFF \
+    -DCLANG_ENABLE_ARCMT=OFF
 
 #LLVM_UNUSED_CMAKEOPTIONS :=  \
 #    -DLLDB_DISABLE_LIBEDIT=ON \
@@ -145,12 +169,10 @@ LLVM_LIBCXX_CMAKEOPTIONS := \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
     extraoptions="$(LLVM_LIBCXX_CMAKEOPTIONS)" compiler=host
 
-LLVM_COMPILER_RT_CMAKEOPTIONS := \
+LLVM_COMPILER_RT_CMAKEBASE := \
   -DLLVM_CONFIG_PATH=$(LLVM_BUILD_BINDIR)/llvm-config \
   -DCMAKE_SYSTEM_NAME=Generic \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang \
-  -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU)-unknown-aros \
-  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros" \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER) \
   -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR) \
   -DCMAKE_BUILD_TYPE=Release \
@@ -162,14 +184,33 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
   -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
   -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
   -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
-  -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) \
   -DLLVM_BUILD_LLVM_DYLIB=OFF \
   -DBUILD_SHARED_LIBS=OFF \
   -DAROS_BUILD=ON
 
+LLVM_COMPILER_RT_CMAKEOPTIONS := \
+  $(LLVM_COMPILER_RT_CMAKEBASE) \
+  -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU)-unknown-aros \
+  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros" \
+  -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS)
+
 %build_with_cmake mmake=crosstools-compiler-rt package=compiler-rt srcdir=$(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE) \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
     extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host
+
+ifneq ($(AROS_TARGET_CPU32),)
+LLVM_COMPILER_RT_CMAKEOPTIONS := \
+  $(LLVM_COMPILER_RT_CMAKEBASE) \
+  -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU32)-unknown-aros \
+  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU32)-unknown-aros -B$(AROS_LIB32)" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -nodefaultlibs -nostartfiles $(AROS_LIB32)/startup.o -L$(AROS_LIB32) -larossupport -lamiga -lautoinit" \
+  -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGET32) \
+  -DCOMPILER_RT_TARGETS_TO_BUILD=$(LLVM_CRT_TARGET32)
+
+%build_with_cmake mmake=crosstools-compiler-rt32 package=compiler-rt32 srcdir=$(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE) \
+    prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
+    extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host
+endif
 
 %fetch mmake=crosstools-clang-fetch archive=$(CLANG_ARCHBASE)  \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -178,7 +219,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
 
 %create_patch mmake=crosstools-clang-create-patch \
     archive=$(CLANG_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/clang prediff=crosstools-llvm-remdirs 
+    destination=$(HOSTDIR)/Ports/host/clang
 
 %fetch mmake=crosstools-compiler-rt-fetch archive=$(COMPILER_RT_ARCHBASE) \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -194,7 +235,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
 
 %create_patch mmake=crosstools-libcxx-create-patch \
     archive=$(LIBCXX_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/libcxx prediff=crosstools-llvm-remdirs 
+    destination=$(HOSTDIR)/Ports/host/libcxx
 
 %fetch mmake=crosstools-libcxxabi-fetch archive=$(LIBCXXABI_ARCHBASE)  \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -202,7 +243,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
 
 %create_patch mmake=crosstools-libcxxabi-create-patch \
     archive=$(LIBCXXABI_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/libcxxabi prediff=crosstools-llvm-remdirs 
+    destination=$(HOSTDIR)/Ports/host/libcxxabi
 
 %fetch mmake=crosstools-llvm-lld-fetch archive=$(LLVMLLD_ARCHBASE) \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -210,7 +251,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
 
 %create_patch mmake=crosstools-llvm-lld-create-patch \
     archive=$(LLVMLLD_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/llvm-lld prediff=crosstools-llvm-remdirs 
+    destination=$(HOSTDIR)/Ports/host/llvm-lld
 
 %fetch mmake=crosstools-llvm-fetch archive=$(LLVM_ARCHBASE) \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -219,21 +260,21 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
 
 %create_patch mmake=crosstools-llvm-create-patch \
     archive=$(LLVM_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/llvm prediff=crosstools-llvm-remdirs 
+    destination=$(HOSTDIR)/Ports/host/llvm
 
-#MM crosstools-compiler-rt : crosstools-compiler-rt-fetch crosstools-llvm-toolchain
-#MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-fetch crosstools-llvm-toolchain-quick
-#MM crosstools-libcxx : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain
-#MM- crosstools-libcxx-quick : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain-quick
-#MM crosstools-libcxxabi : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain
-#MM- crosstools-libcxxabi-quick : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain-quick
-#MM crosstools-llvm-fetch : crosstools-clang-fetch crosstools-llvm-lld-fetch
+llvm-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
 
-#MM- crosstools-llvm : crosstools-llvm-toolchain crosstools-compiler-rt crosstools-libcxx crosstools-libcxxabi
-#MM- crosstools-llvm-quick : crosstools-llvm-toolchain-quick crosstools-compiler-rt-quick crosstools-libcxx-quick crosstools-libcxxabi-quick
-#MM crosstools-llvm-toolchain : setup crosstools-llvm-fetch
-#MM- crosstools-llvm-toolchain-quick : setup crosstools-llvm-fetch
+#MM
+tools-crosstools-llvm-toolchain :
+	$(IF) ! $(TEST) -f $(llvm-installflag) ; then \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang lld $(crosstools-llvm-make-env) \
+	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) \
+	    && $(TOUCH) $(llvm-installflag) ; \
+	fi
 
 %build_with_cmake mmake=crosstools-llvm-toolchain package=llvm srcdir=$(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
     extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host
+
+#MM tools-crosstools-llvm-toolchain : includes-copy
+#MM tools-crosstools-llvm-toolchain : crosstools-llvm-fetch crosstools-llvm-toolchain-cmake

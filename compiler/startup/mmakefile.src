@@ -10,6 +10,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM linklibs-startup : linklibs-startup-setup includes includes-copy \
 #MM     compiler-stdc-includes compiler-posixc-includes kernel-task-includes
 
+STARTUP_DIRS := $(GENDIR)/$(CURDIR) $(GENDIR)/$(CURDIR)/nix $(GENDIR)/$(CURDIR)/cxx $(AROS_LIB)
+
 NIXFILES := \
 	nixmain
 
@@ -34,6 +36,12 @@ NIXDEPS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .d,$(NIXFILES)))
 CXXDEPS  := $(addprefix $(GENDIR)/$(CURDIR)/cxx/,$(addsuffix .d,$(CXXFILES)))
 DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
 
+ifneq ($(AROS_TARGET_CPU32),)
+OBJS    += $(addprefix $(AROS_LIB32)/,$(addsuffix .o,$(FILES)))
+DEPS  += $(addprefix $(GENDIR)/$(CURDIR)/32bit,$(addsuffix .d,$(FILES)))
+STARTUP_DIRS += $(GENDIR)/$(CURDIR)/32bit $(AROS_LIB32)
+endif
+
 linklibs-startup: $(NIXOBJS) $(CXXOBJS) $(OBJS)
 
 #MM
@@ -45,6 +53,15 @@ $(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/%.o
 	@$(CP) $< $@
 
 %rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
+
+ifneq ($(AROS_TARGET_CPU32),)
+# 32biit startup files
+
+$(AROS_LIB32)/%.o : $(GENDIR)/$(CURDIR)/32bit/%.o
+	@$(CP) $< $@
+
+%rule_compile mmake=startup-32 basename=% targetdir=$(GENDIR)/$(CURDIR)/32bit cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
 
 # Posix/*nix startup object rules ...
 
@@ -65,7 +82,7 @@ $(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/cxx/%.o
 # Generic rules ...
 
 #MM linklibs-startup-setup
-%rule_makedirs dirs="$(GENDIR)/$(CURDIR) $(AROS_LIB)" setuptarget=linklibs-startup-setup
+%rule_makedirs dirs="$(STARTUP_DIRS)" setuptarget=linklibs-startup-setup
 
 %copy_includes includes=startup.h path=aros
 

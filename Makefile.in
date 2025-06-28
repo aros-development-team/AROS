@@ -13,7 +13,7 @@ AROS_TARGET_CPU_TYPE    ?= @aros_target_cpu_extra@
 AROS_TARGET_CPU_MODE    ?= @aros_target_cpu_mode@
 AROS_TARGET_ARCH        ?= @aros_target_arch@
 AROS_TARGET_VARIANT     ?= @aros_target_variant@
-@aros_target_extra@
+
 AMIGAOSNDKDIR           ?= $(SRCDIR)/local/NDK_3.1
 
 # normally, these variable's should go in mmake.config/globalvarfile

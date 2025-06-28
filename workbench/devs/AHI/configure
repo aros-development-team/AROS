@@ -2565,14 +2565,16 @@ ac_config_headers="$ac_config_headers config.h"
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler accepts -Wa,--defsym" >&5
 printf %s "checking whether the assembler accepts -Wa,--defsym... " >&6; }
-# write out a minimal test
+
+# Write out a minimal assembler file
 cat > conftest.s << 'EOF'
     .globl  foo
+foo:
+    nop
 EOF
 
-# Try compiling with -Wa,--defsym,foo=1
-if $CC -no-integrated-as -x assembler -Wa,--defsym,foo=1 \
-      -c conftest.s -o conftest.o 2>/dev/null; then
+# Try compiling using the assembler explicitly
+if $AS -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 

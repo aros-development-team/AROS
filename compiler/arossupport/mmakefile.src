@@ -55,4 +55,8 @@ USER_CFLAGS := -noposixc $(CFLAGS_NO_BUILTIN)
 INCLUDE_FILES	    := $(call WILDCARD, include/*.h)
 %copy_includes mmake=compiler-includes path=aros dir=include
 
+ifneq ($(AROS_TARGET_CPU32),)
+%build_linklib mmake=linklibs-arossupport32 libname=arossupport files=$(FILES) libdir="$(AROS_LIB32)" objdir="$(GENDIR)/$(CURDIR)/32bit" cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
+
 %common

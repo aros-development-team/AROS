@@ -130,4 +130,8 @@ USER_CFLAGS := -noposixc
 
 %build_linklib mmake=linklibs-amiga libname=amiga files="$(FILES)"
 
+ifneq ($(AROS_TARGET_CPU32),)
+%build_linklib mmake=linklibs-amiga32 libname=amiga files=$(FILES) libdir="$(AROS_LIB32)" objdir="$(GENDIR)/$(CURDIR)/32bit" cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
+
 %common

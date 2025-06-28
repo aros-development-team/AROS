@@ -41,4 +41,7 @@ FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
 
 %build_linklib mmake=linklibs-autoinit libname=autoinit files=$(FILES)
 
+ifneq ($(AROS_TARGET_CPU32),)
+%build_linklib mmake=linklibs-autoinit32 libname=autoinit files=$(FILES) libdir="$(AROS_LIB32)" objdir="$(GENDIR)/$(CURDIR)/32bit" cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
 %common

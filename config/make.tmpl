@@ -1541,17 +1541,18 @@ endif
 # Link %(objs) to binary blob in %(file) using %(name) as name of embedded binary object
 # 'start' is an optional starting address
 # 'ldflags' is optional additional flags for the linker
-%define rule_link_binary mmake=BD file=/A name=/A objs= files= start=0 ldflags=
+%define rule_link_binary mmake=BD file=/A name=/A objs= files= asmfiles= start=0 ldflags=
 
 %(mmake)_OUTDIR := $(dir %(file))
 # This trick removes the trailing '/', otherwise findstring below fails, causing a warning
 %(mmake)_OUTDIR := $(subst /*,,$(addsuffix *,$(%(mmake)_OUTDIR)))
 %(mmake)_TMPDIR := $(GENDIR)/$(CURDIR)
-%(mmake)_OBJS := $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir %(files))))
+%(mmake)_OBJS := $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir %(files) %(asmfiles))))
 %(mmake)_DEPS := $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir %(files))))
 %(mmake)_OBJS += %(objs)
 
 %rule_compile_multi basenames="%(files)" targetdir="$(%(mmake)_OBJDIR)"
+%rule_assemble_multi basenames="%(asmfiles)" targetdir="$(%(mmake)_OBJDIR)"
 
 %(file) : $(%(mmake)_OBJS) $(%(mmake)_DEPS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
@@ -3732,11 +3733,11 @@ endif
 
 ifeq (%(usecflags),yes)
     %(mmake)-HOST_CFLAGS=%(hostisaflags) $(HOST_CFLAGS)
-    %(mmake)-KERNEL_CFLAGS=%(kernelisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)
+    %(mmake)-KERNEL_CFLAGS=%(kernelisaflags) $(KERNEL_CFLAGS)
 ifeq (%(crossbuild),yes)
-    %(mmake)-TARGET_CFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-s_flag)
+    %(mmake)-TARGET_CFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS)
 else
-    %(mmake)-TARGET_CFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)
+    %(mmake)-TARGET_CFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-nix)
 endif
 endif
 %(mmake)-TARGET_CC?=$(TARGET_CC)
@@ -3744,11 +3745,11 @@ endif
 %(mmake)-HOST_CC?=$(HOST_DEF_CC)
 ifeq (%(usecxxflags),yes)
     %(mmake)-HOST_CXXFLAGS=%(hostisaflags) $(HOST_CXXFLAGS)
-    %(mmake)-KERNEL_CXXFLAGS=%(kernelisaflags) $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag)
+    %(mmake)-KERNEL_CXXFLAGS=%(kernelisaflags) $(KERNEL_CXXFLAGS)
 ifeq (%(crossbuild),yes)
-    %(mmake)-TARGET_CXXFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) $(%(mmake)-s_flag)
+    %(mmake)-TARGET_CXXFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS)
 else
-    %(mmake)-TARGET_CXXFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)
+    %(mmake)-TARGET_CXXFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) $(%(mmake)-nix)
 endif
 endif
 %(mmake)-TARGET_CXX?=$(TARGET_CXX)
@@ -3816,6 +3817,7 @@ else
     %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS))"
     %(mmake)-cfg-env += AR="$(strip $(AR_PLAIN))" \
         AS="$(strip $(TARGET_AS))" \
+        AFLAGS="$(strip $(AFLAGS))" \
         OBJCOPY="$(strip $(OBJCOPY))" \
         RANLIB="$(strip $(RANLIB))" \
         STRIP="$(strip $(STRIP_PLAIN))"
@@ -3833,9 +3835,9 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_HOST="$(strip $(BASE_CPPFLAGS)  $(%(mmake)-ACHOST_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
 endif
     %(mmake)-cfg-env += CC_FOR_HOST="$(strip $(%(mmake)-TARGET_CC) $(TARGET_SYSROOT))" \
-        CFLAGS_FOR_HOST="$(strip %(kernelisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(%(mmake)-ACHOST_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CFLAGS_FOR_HOST="$(strip %(kernelisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(%(mmake)-ACHOST_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix))" \
         CXX_FOR_HOST="$(strip $(%(mmake)-TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_HOST="$(strip %(kernelisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(%(mmake)-ACHOST_CXXFLAGS)  $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CXXFLAGS_FOR_HOST="$(strip %(kernelisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(%(mmake)-ACHOST_CXXFLAGS)  $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix))" \
         LD_FOR_HOST="$(strip $(TARGET_LD))" \
         LDFLAGS_FOR_HOST="$(strip $(TARGET_ISA_LDFLAGS) -L$(AROS_DEVELOPER)/lib  $(%(mmake)-ACHOST_LDFLAGS) $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
 ifeq (%(usecppflags),yes)
@@ -4145,9 +4147,9 @@ else
 endif
 ifneq (%(gendir),)
     ifeq (%(package),)
-        %(mmake)-pkgdir      := %(gendir)/$(CURDIR)
+        %(mmake)-pkgdir      := %(gendir)
     else
-        %(mmake)-pkgdir      := %(gendir)/$(CURDIR)/%(package)
+        %(mmake)-pkgdir      := %(gendir)/%(package)
     endif
 endif
 

@@ -5,14 +5,17 @@ include $(SRCDIR)/config/aros.cfg
 FILES := elfloader
 
 USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)/include -I $(GENINCDIR)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CFLAGS += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
 
 %build_linklib mmake=linklibs-bootstrap libname=bootstrap files="$(FILES)" \
 	       compiler=kernel libdir=$(GENDIR)/lib
 
 # linklibs-bootstrap32 target is used by x86-64 bootstrap which runs in 32-bit mode
 
-ifeq ($(AROS_TARGET_CPU),x86_64)
-    ISA_FLAGS := $(ISA_X86_FLAGS)
+ifneq ($(AROS_TARGET_CPU32),)
+    ISA_FLAGS := $(ISA_32_FLAGS)
 endif
 USER_CPPFLAGS := -DELF_64BIT
 %build_linklib mmake=linklibs-bootstrap32 libname=bootstrap files="$(FILES)" \

@@ -15,14 +15,16 @@ AC_PROG_MAKE_SET
 AC_CONFIG_HEADER( config.h )
 
 AC_MSG_CHECKING([whether the assembler accepts -Wa,--defsym])
-# write out a minimal test
+
+# Write out a minimal assembler file
 cat > conftest.s << 'EOF'
     .globl  foo
+foo:
+    nop
 EOF
 
-# Try compiling with -Wa,--defsym,foo=1
-if $CC -no-integrated-as -x assembler -Wa,--defsym,foo=1 \
-      -c conftest.s -o conftest.o 2>/dev/null; then
+# Try compiling using the assembler explicitly
+if $AS -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
   AC_MSG_RESULT([yes])
   AC_DEFINE([HAVE_AS_DEF_SYM], [1], [Assembler supports -Wa,--defsym])
   ASDEFSYM="-Wa,--defsym,"

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 /* #define DEBUG */
@@ -175,7 +175,7 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
 
     /* Search for external modules loaded by GRUB */
     /* Are there any modules at all? */
-    if (mb->flags && MB_FLAGS_MODS)
+    if (mb->flags & MB_FLAGS_MODS)
     {
         struct mb_module *mod = (struct mb_module *)mb->mods_addr;
         int i;

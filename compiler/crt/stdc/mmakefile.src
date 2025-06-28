@@ -812,8 +812,8 @@ USER_CPPFLAGS := \
     libname=m files=empty objdir=$(GENDIR)/$(CURDIR)/libm
 
 # pc-x86_64 needs a 32bit version stdc.static
-ifeq ($(AROS_TARGET_CPU),x86_64)
-    ISA_FLAGS := $(ISA_X86_FLAGS)
+ifneq ($(AROS_TARGET_CPU32),)
+    ISA_FLAGS := $(ISA_32_FLAGS)
 endif
 USER_CPPFLAGS += -DSTDC_LIB32
 

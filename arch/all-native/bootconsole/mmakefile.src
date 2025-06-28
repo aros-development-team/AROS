@@ -24,8 +24,8 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 %build_linklib mmake=linklibs-bootconsole libname=bootconsole files="$(FILES)" libdir=$(GENDIR)/lib
 
 # pc-x86_64 needs a 32bit version of bootconsole.a
-ifeq ($(AROS_TARGET_CPU),x86_64)
-    ISA_FLAGS := $(ISA_X86_FLAGS)
+ifneq ($(AROS_TARGET_CPU32),)
+    ISA_FLAGS := $(ISA_32_FLAGS)
 endif
 
 %build_linklib mmake=linklibs-bootconsole32 libname=bootconsole files="$(FILES)" \
