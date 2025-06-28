@@ -1,4 +1,4 @@
-#   Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2025, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -125,6 +125,7 @@ TARGET_ISA_CXXFLAGS           = $(ISA_FLAGS)
 TARGET_ISA_OBJCFLAGS          = $(TARGET_ISA_CFLAGS)
 TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
 TARGET_ISA_LDFLAGS            = $(ISA_FLAGS)
+@target_isa_extra@
 
 TARGET_LIBATOMIC              = @use_libatomic@
 TARGET_C_LIBS                 = $(strip @aros_c_libs@)
@@ -159,7 +160,7 @@ STRIP_PLAIN                   := $(strip @aros_target_strip@)
 # MAGIC: This is needed here for MetaMake to work. mmake will read the
 # configured version of this file to find out a number of variables.
 # --------------------------------------------------------------------------
-AROS_TARGET_PLATFORM  := @aros_target_platform@
+AROS_TARGET_PLATFORM          := @aros_target_platform@
 
 HOSTDIR                       := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 TOOLDIR                       := $(HOSTDIR)/tools

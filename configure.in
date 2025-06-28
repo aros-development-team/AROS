@@ -1,4 +1,4 @@
-dnl Copyright (C) 1997-2023, The AROS Development Team. All rights reserved.
+dnl Copyright (C) 1997-2025, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -1529,7 +1529,7 @@ case "$target_os" in
                 fi
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
-                aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA32_FLAGS                   = $""(strp $""(ISA_X86_FLAGS)"
                 case "$aros_toolchain" in
                     *llvm*)
                         ;;
@@ -1549,6 +1549,11 @@ case "$target_os" in
                     ;;
                 esac
                 llvm_target_cpu="X86"
+
+                # export flags/options needed to build 32bit 
+                # components
+                aros_target_extra="AROS_TARGET_CPU32       ?= i386$export_newline"
+                target_isa_extra="TARGET_ISA32_CFLAGS           = $""(ISA32_FLAGS)$export_newline""TARGET_ISA32_CXXFLAGS         = $""(ISA32_FLAGS)$export_newline""TARGET_ISA32_OBJCFLAGS        = $""(TARGET_ISA32_CFLAGS)$export_newline""TARGET_ISA32_AFLAGS           = $""(ISA32_FLAGS)$export_newline""TARGET_ISA32_LDFLAGS          = $""(ISA32_FLAGS)$export_newline"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
@@ -3908,6 +3913,7 @@ AC_SUBST(aros_target_cpu_mode)
 AC_SUBST(aros_target_platform)
 AC_SUBST(aros_target_variant)
 AC_SUBST(aros_target_suffix)
+AC_SUBST(aros_target_extra)
 AC_SUBST(aros_target_ar)
 AC_SUBST(aros_target_ranlib)
 AC_SUBST(aros_plain_nm)
@@ -3979,6 +3985,7 @@ AC_SUBST(aros_optimization_cflags)
 AC_SUBST(aros_kernel_isa_flags)
 AC_SUBST(aros_isa_extra)
 AC_SUBST(aros_isa_flags)
+AC_SUBST(target_isa_extra)
 
 AC_SUBST(aros_target_nostartup_objects)
 
