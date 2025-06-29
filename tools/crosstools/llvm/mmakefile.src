@@ -132,13 +132,12 @@ LLVM_LIBCXXABI_CMAKEOPTIONS := \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++ \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER) \
   -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR) \
-  -DCMAKE_CXX_FLAGS="--target=aros-unknown-elf -nostdinc++ -I$(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE)/include" \
-  -DCMAKE_C_FLAGS="--target=aros-unknown-elf" \
+  -DCMAKE_CXX_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros -nostdinc++ -I$(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE)/include" \
+  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros" \
   -DLIBCXXABI_LIBCXX_INCLUDES=$(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE)/include \
   -DLIBCXXABI_ENABLE_SHARED=OFF \
   -DLIBCXXABI_ENABLE_STATIC=ON \
-  -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros"
+  -DLIBCXXABI_USE_LLVM_UNWINDER=ON
 
 
 %build_with_cmake mmake=crosstools-llvm-libcxxabi package=libcxxabi srcdir=$(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE) \
@@ -150,15 +149,13 @@ LLVM_LIBCXX_CMAKEOPTIONS := \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++ \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER) \
   -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR) \
-  -DCMAKE_CXX_FLAGS="--target=aros-unknown-elf -nostdinc++" \
-  -DCMAKE_C_FLAGS="--target=aros-unknown-elf" \
+  -DCMAKE_CXX_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros -nostdinc++" \
+  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros" \
   -DLIBCXX_CXX_ABI=libcxxabi \
   -DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE)/include \
   -DLIBCXX_USE_COMPILER_RT=ON \
   -DLIBCXX_ENABLE_STATIC=ON \
-  -DLIBCXX_ENABLE_SHARED=OFF \
-  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros"
-
+  -DLIBCXX_ENABLE_SHARED=OFF
 
 %build_with_cmake mmake=crosstools-llvm-libcxx package=libcxx srcdir=$(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE) \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
@@ -168,6 +165,7 @@ LLVM_COMPILER_RT_CMAKEBASE := \
   -DLLVM_CONFIG_PATH=$(LLVM_BUILD_BINDIR)/llvm-config \
   -DCMAKE_SYSTEM_NAME=Generic \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang \
+  -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++ \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER) \
   -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR) \
   -DCMAKE_BUILD_TYPE=Release \
@@ -198,7 +196,8 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
   $(LLVM_COMPILER_RT_CMAKEBASE) \
   -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU32)-unknown-aros \
   -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU32)-unknown-aros -B$(AROS_LIB32)" \
-  -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -nodefaultlibs -nostartfiles $(AROS_LIB32)/startup.o -L$(AROS_LIB32) -larossupport -lamiga -lautoinit" \
+  -DCMAKE_CXX_FLAGS="--target=$(AROS_TARGET_CPU32)-unknown-aros  -B$(AROS_LIB32)" \
+  -DCMAKE_EXE_LINKER_FLAGS="-nodefaultlibs -nostartfiles $(AROS_LIB32)/startup.o -L$(AROS_LIB32) -larossupport -lamiga -lautoinit" \
   -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGET32) \
   -DCOMPILER_RT_TARGETS_TO_BUILD=$(LLVM_CRT_TARGET32)
 

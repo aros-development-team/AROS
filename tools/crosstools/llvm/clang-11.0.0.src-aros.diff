@@ -212,8 +212,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
        break;
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-06-29 07:33:48.844818214 +0000
-@@ -0,0 +1,335 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-06-29 17:09:46.997574826 +0000
+@@ -0,0 +1,373 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -224,6 +224,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +//===----------------------------------------------------------------------===//
 +
 +#include "AROS.h"
++//#include "Arch/ARM.h"
++//#include "Arch/PPC.h"
++//#include "Arch/RISCV.h"
 +#include "InputInfo.h"
 +#include "CommonArgs.h"
 +#include "clang/Config/config.h"
@@ -250,21 +253,53 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +                              const InputInfoList &Inputs,
 +                              const ArgList &Args,
 +                              const char *LinkingOutput) const {
-+  claimNoWarnArgs(Args);
-+  ArgStringList CmdArgs;
++    claimNoWarnArgs(Args);
++    ArgStringList CmdArgs;
 +
-+  Args.AddAllArgValues(CmdArgs,
++    Args.AddAllArgValues(CmdArgs,
 +                       options::OPT_Wa_COMMA,
 +                       options::OPT_Xassembler);
 +
-+  CmdArgs.push_back("-o");
-+  CmdArgs.push_back(Output.getFilename());
++    CmdArgs.push_back("-o");
++    CmdArgs.push_back(Output.getFilename());
 +
-+  for (const auto &II : Inputs)
-+    CmdArgs.push_back(II.getFilename());
++    for (const auto &II : Inputs)
++        CmdArgs.push_back(II.getFilename());
 +
-+  const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
-+  C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(), Exec, CmdArgs, Inputs));
++    const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
++    C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(), Exec, CmdArgs, Inputs));
++}
++
++static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
++    switch (T.getArch()) {
++    case llvm::Triple::x86:
++        return "elf_i386";
++#if (0)
++    case llvm::Triple::aarch64:
++        return "aarch64";
++    case llvm::Triple::aarch64_be:
++        return "aarch64b";
++    case llvm::Triple::arm:
++    case llvm::Triple::thumb:
++    case llvm::Triple::armeb:
++    case llvm::Triple::thumbeb:
++        return isArmBigEndian(T, Args) ? "armelfb_eabi" : "armelf_eabi";
++    case llvm::Triple::ppc:
++        return "elf32ppc";
++    case llvm::Triple::ppc64:
++        return "elf64ppc";
++    case llvm::Triple::ppc64le:
++        return "elf64lppc";
++    case llvm::Triple::riscv32:
++        return "elf32lriscv";
++    case llvm::Triple::riscv64:
++        return "elf64lriscv";
++#endif
++    case llvm::Triple::x86_64:
++        return "elf_x86_64";
++    default:
++        return nullptr;
++    }
 +}
 +
 +void
@@ -274,58 +309,67 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +                           const InputInfoList &Inputs,
 +                           const ArgList &Args,
 +                           const char *LinkingOutput) const {
-+  const toolchains::AROSToolChain &AROSTC =
++    const toolchains::AROSToolChain &AROSTC =
 +      static_cast<const toolchains::AROSToolChain &>(getToolChain());
-+  const char *Exec = Args.MakeArgString(AROSTC.GetLinkerPath());
-+  const Driver &D = AROSTC.getDriver();
-+  const std::string &SysRoot = D.SysRoot;
-+  ArgStringList CmdArgs;
++    const char *Exec = Args.MakeArgString(AROSTC.GetLinkerPath());
++    const Driver &D = AROSTC.getDriver();
++    const std::string &SysRoot = D.SysRoot;
++    ArgStringList CmdArgs;
++    const llvm::Triple &Target = AROSTC.getTriple();
++    llvm::Triple CompilerTarget(LLVM_DEFAULT_TARGET_TRIPLE);
 +
-+  if (llvm::sys::path::filename(Exec) == "lld") {
-+      CmdArgs.push_back("-flavor");
-+      CmdArgs.push_back("gnu");
-+      if (!D.SysRoot.empty())
-+          CmdArgs.push_back(Args.MakeArgString("--sysroot=" + SysRoot));
-+  }
++    if (llvm::sys::path::filename(Exec) == "lld") {
++        CmdArgs.push_back("-flavor");
++        CmdArgs.push_back("gnu");
++        if (!D.SysRoot.empty())
++            CmdArgs.push_back(Args.MakeArgString("--sysroot=" + SysRoot));
++    }
 +
-+  // When building 32-bit code on AROS/pc64,
-+  // we have to explicitly instruct ld in
-+  // the base system to link 32-bit code.
-+  if (AROSTC.getArch() == llvm::Triple::x86) {
-+      CmdArgs.push_back("-m");
-+      CmdArgs.push_back("elf_i386");
-+  }
++#if (0)
++  CmdArgs.push_back("--eh-frame-hdr");
++#endif
 +
-+  if (Output.isFilename()) {
-+      CmdArgs.push_back("-o");
-+      CmdArgs.push_back(Output.getFilename());
-+  } else {
-+      assert(Output.isNothing() && "Invalid output.");
-+  }
++    if (const char *LDMOption = getLDMOption(Target, Args)) {
++        CmdArgs.push_back("-m");
++        CmdArgs.push_back(LDMOption);
++    } else {
++#if (0)
++        D.Diag(diag::err_target_unknown_triple) << Triple.str();
++        return;
++#endif
++    }
 +
-+  AROSTC.addStartObjectFileArgs(Args, CmdArgs);
++    if (Output.isFilename()) {
++        CmdArgs.push_back("-o");
++        CmdArgs.push_back(Output.getFilename());
++    } else {
++         assert(Output.isNothing() && "Invalid output.");
++    }
 +
-+  Args.AddAllArgs(CmdArgs,
++    AROSTC.addStartObjectFileArgs(Args, CmdArgs);
++
++    Args.AddAllArgs(CmdArgs,
 +                  {options::OPT_L,
 +                   options::OPT_T_Group,
 +                   options::OPT_e});
 +
-+  AddLinkerInputs(AROSTC, Inputs, Args, CmdArgs, JA);
++    AddLinkerInputs(AROSTC, Inputs, Args, CmdArgs, JA);
 +
-+  if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-+      SmallString<128> LibPath(SysRoot);
-+      if ((AROSTC.getArch() == llvm::Triple::x86) && D.getVFS().exists(LibPath + "/lib32/startup.o")){
-+        llvm::sys::path::append(LibPath, "lib32");
-+      } else {
-+        llvm::sys::path::append(LibPath, "lib");
-+      }
++    if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
++        SmallString<128> LibPath(SysRoot);
 +
-+      CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
++        if (Target.isArch32Bit() && CompilerTarget.isArch64Bit()) {
++            llvm::sys::path::append(LibPath, "lib32");
++        } else {
++            llvm::sys::path::append(LibPath, "lib");
++        }
 +
-+      if (D.CCCIsCXX()) {
-+          AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
-+          CmdArgs.push_back("-lpthread");
-+      }
++        CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
++
++        if (D.CCCIsCXX()) {
++            AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
++            CmdArgs.push_back("-lpthread");
++        }
 +        CmdArgs.push_back("--start-group");
 +        CmdArgs.push_back("-lmui");
 +        CmdArgs.push_back("-larossupport");
@@ -379,9 +423,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +            }
 +        }// 2nd OPT_nostartfiles endif
 +        CmdArgs.push_back("--end-group");
-+  }
++    }
 +
-+  C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::AtFileUTF8(), Exec, CmdArgs, Inputs));
++    C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::AtFileUTF8(), Exec, CmdArgs, Inputs));
 +}
 +
 +
@@ -392,18 +436,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +                             const llvm::Triple &Triple,
 +                             const llvm::opt::ArgList &Args)
 +    : Generic_ELF(D, Triple, Args) {
-+  if (GetCXXStdlibType(Args) == ToolChain::CST_Libstdcxx) {
++    if (GetCXXStdlibType(Args) == ToolChain::CST_Libstdcxx) {
 +
-+  }
-+
-+  // FIXME:
-+  // Now declared in AROS.h with the function getDefaultLinker() ???
-+  // Is this the correct way to implement this ???
-+  // This is an unused variable in clang 7 Driver. Delete this ???
-+  // Use LLD by default.
-+  // DefaultLinker = "collect-aros";
-+
-+
++    }
 +}
 +
 +#if (0)
@@ -443,102 +478,105 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +void AROSToolChain::
 +AddAROSSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                         llvm::opt::ArgStringList &CC1Args) const {
-+  const Driver &D = getDriver();
-+  const std::string &SysRoot = D.SysRoot;
++    const Driver &D = getDriver();
++    const std::string &SysRoot = D.SysRoot;
 +
-+  if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
-+      addSystemInclude(DriverArgs, CC1Args, SysRoot + "/include");
-+      if (!DriverArgs.hasArg(options::OPT_no_posixc)) {
-+          SmallString<128> ResourceDir(SysRoot);
-+          llvm::sys::path::append(ResourceDir, "include/aros/posixc");
-+          addSystemInclude(DriverArgs, CC1Args, ResourceDir);
-+      }// OPT_no_posixc endif
-+      if (!DriverArgs.hasArg(options::OPT_no_stdc)) {
-+          SmallString<128> ResourceDir(SysRoot);
-+          llvm::sys::path::append(ResourceDir, "include/aros/stdc");
-+          addSystemInclude(DriverArgs, CC1Args, ResourceDir);
-+      }// OPT_no_stdc endif
-+  }// OPT_nobuiltininc endif
++    if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
++        addSystemInclude(DriverArgs, CC1Args, SysRoot + "/include");
++        if (!DriverArgs.hasArg(options::OPT_no_posixc)) {
++            SmallString<128> ResourceDir(SysRoot);
++            llvm::sys::path::append(ResourceDir, "include/aros/posixc");
++            addSystemInclude(DriverArgs, CC1Args, ResourceDir);
++        }// OPT_no_posixc endif
++        if (!DriverArgs.hasArg(options::OPT_no_stdc)) {
++            SmallString<128> ResourceDir(SysRoot);
++            llvm::sys::path::append(ResourceDir, "include/aros/stdc");
++            addSystemInclude(DriverArgs, CC1Args, ResourceDir);
++        }// OPT_no_stdc endif
++    }// OPT_nobuiltininc endif
 +}
 +
 +void AROSToolChain::
 +AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                          llvm::opt::ArgStringList &CC1Args) const {
-+  if (DriverArgs.hasArg(options::OPT_nostdlibinc))
-+      return;
++    if (DriverArgs.hasArg(options::OPT_nostdlibinc))
++        return;
 +
-+  AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
++    AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
 +}
 +
 +void AROSToolChain::
 +addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
 +                      llvm::opt::ArgStringList &CC1Args,
 +                      Action::OffloadKind DeviceOffloadingKind) const {
-+  CC1Args.push_back("-D__AROS__");
-+  CC1Args.push_back("-D__AROS");
-+  CC1Args.push_back("-DAROS");
-+  CC1Args.push_back("-D__AMIGA__");
-+  CC1Args.push_back("-D_AMIGA");
-+  CC1Args.push_back("-DAMIGA");
-+  CC1Args.push_back("-D__ELF__");
-+  CC1Args.push_back("-Dsystem=posix");
++    CC1Args.push_back("-D__AROS__");
++    CC1Args.push_back("-D__AROS");
++    CC1Args.push_back("-DAROS");
++    CC1Args.push_back("-D__AMIGA__");
++    CC1Args.push_back("-D_AMIGA");
++    CC1Args.push_back("-DAMIGA");
++    CC1Args.push_back("-D__ELF__");
++    CC1Args.push_back("-Dsystem=posix");
 +}
 +
 +
 +void AROSToolChain::
 +AddClangCXXStdlibIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                             llvm::opt::ArgStringList &CC1Args) const {
-+  if (DriverArgs.hasArg(options::OPT_nostdlibinc) ||
-+      DriverArgs.hasArg(options::OPT_nostdincxx))
-+      return;
++    if (DriverArgs.hasArg(options::OPT_nostdlibinc) ||
++        DriverArgs.hasArg(options::OPT_nostdincxx))
++        return;
 +
-+  switch (GetCXXStdlibType(DriverArgs)) {
-+  case ToolChain::CST_Libcxx:
-+    AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
-+    break;
++    switch (GetCXXStdlibType(DriverArgs)) {
++    case ToolChain::CST_Libcxx:
++        AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
++        break;
 +
-+  case ToolChain::CST_Libstdcxx:
-+    AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
-+    break;
-+  }
++    case ToolChain::CST_Libstdcxx:
++        AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
++        break;
++    }
 +}
 +
 +void AROSToolChain::
 +AddCXXStdlibLibArgs(const llvm::opt::ArgList &DriverArgs,
 +                    llvm::opt::ArgStringList &CC1Args) const {
-+  switch (GetCXXStdlibType(DriverArgs)) {
-+  case ToolChain::CST_Libcxx:
-+    CC1Args.push_back("-lc++");
-+    break;
-+  case ToolChain::CST_Libstdcxx:
-+    CC1Args.push_back("-lstdc++");
-+    break;
-+  }
++    switch (GetCXXStdlibType(DriverArgs)) {
++    case ToolChain::CST_Libcxx:
++        CC1Args.push_back("-lc++");
++        break;
++    case ToolChain::CST_Libstdcxx:
++        CC1Args.push_back("-lstdc++");
++        break;
++    }
 +}
 +
 +void AROSToolChain::
 +addStartObjectFileArgs(const llvm::opt::ArgList &Args,
 +                       llvm::opt::ArgStringList &CmdArgs) const {
-+  if (Args.hasArg(options::OPT_nostartfiles))
-+      return;
++    if (Args.hasArg(options::OPT_nostartfiles))
++        return;
 +
-+  const Driver &D = getDriver();
-+  const std::string &SysRoot = D.SysRoot;
-+  SmallString<128> LibPath(SysRoot);
-+  if ((getArch() == llvm::Triple::x86) && D.getVFS().exists(LibPath + "/lib32/startup.o")){
-+    llvm::sys::path::append(LibPath, "lib32");
-+  } else {
-+    llvm::sys::path::append(LibPath, "lib");
-+  }
++    const Driver &D = getDriver();
++    const std::string &SysRoot = D.SysRoot;
++    SmallString<128> LibPath(SysRoot);
++    const llvm::Triple &Target = getTriple();
++    llvm::Triple CompilerTarget(LLVM_DEFAULT_TARGET_TRIPLE);
 +
-+  // Derived from startfile spec.
-+  CmdArgs.push_back(Args.MakeArgString(LibPath + "startup.o"));
-+  if (Args.hasArg(options::OPT_detach)) {
-+      CmdArgs.push_back(Args.MakeArgString(LibPath + "detach.o"));
-+  }
-+  if (Args.hasArg(options::OPT_nix)) {
-+      CmdArgs.push_back(Args.MakeArgString(LibPath + "nixmain.o"));
-+  }
++    if (Target.isArch32Bit() && CompilerTarget.isArch64Bit()) {
++        llvm::sys::path::append(LibPath, "lib32");
++    } else {
++        llvm::sys::path::append(LibPath, "lib");
++    }
++
++    // Derived from startfile spec.
++    CmdArgs.push_back(Args.MakeArgString(LibPath + "startup.o"));
++    if (Args.hasArg(options::OPT_detach)) {
++        CmdArgs.push_back(Args.MakeArgString(LibPath + "detach.o"));
++    }
++    if (Args.hasArg(options::OPT_nix)) {
++        CmdArgs.push_back(Args.MakeArgString(LibPath + "nixmain.o"));
++    }
 +}
 +
 +
@@ -551,8 +589,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +}
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.h	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h	2025-06-26 12:47:36.151031247 +0000
-@@ -0,0 +1,98 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h	2025-06-29 16:11:00.085592358 +0000
+@@ -0,0 +1,99 @@
 +//===--- AROS.h - AROS ToolChain Implementations ----------*- C -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -568,6 +606,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/li
 +#include "Gnu.h"
 +#include "clang/Driver/Tool.h"
 +#include "clang/Driver/ToolChain.h"
++#include "llvm/Config/llvm-config.h" // for LLVM_DEFAULT_TARGET_TRIPLE
 +
 +namespace clang {
 +namespace driver {
@@ -605,9 +644,6 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/li
 +} // end namespace tools
 +
 +namespace toolchains {
-+//  FIXME:
-+//  AROS - The base AROS tool chain. I changed it to => (Generic_ELF)
-+//  Should it be changed back to => Generic_GCC ???
 +class LLVM_LIBRARY_VISIBILITY AROSToolChain : public Generic_ELF {
 +public:
 +  AROSToolChain(const Driver &D,
@@ -629,13 +665,16 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/li
 +
 +  void addStartObjectFileArgs(const llvm::opt::ArgList &Args,
 +                              llvm::opt::ArgStringList &CmdArgs) const;
-+  // FIXME:
-+  // Is this the correct use of this function in this header?
-+  // Moved from AROS.cpp as it was an unused variable "DefaultLinker=collect-aros"
-+  // Should "ld.lld" be declare here ???
-+  // Use LLD by default.? "ld.lld" ???
-+  const char *getDefaultLinker() const override { return "collect-aros"; }
 +
++  const char *getDefaultLinker() const override {
++    const llvm::Triple &Target = getTriple();
++    llvm::Triple CompilerTarget(LLVM_DEFAULT_TARGET_TRIPLE);
++
++    if (Target.isArch32Bit() && CompilerTarget.isArch64Bit())
++      return "collect-aros32";
++
++    return "collect-aros";
++  }
 +private:
 +  void AddAROSSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                            llvm::opt::ArgStringList &CC1Args) const;
