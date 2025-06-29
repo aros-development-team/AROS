@@ -3,8 +3,7 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 
 #MM crosstools-compiler-rt : crosstools-compiler-rt-fetch crosstools-llvm-toolchain
 #MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-fetch crosstools-llvm-toolchain-quick
-#MM crosstools-compiler-rt32 : crosstools-compiler-rt-fetch crosstools-llvm-toolchain
-##tools-crosstools-autolibs32
+#MM crosstools-compiler-rt32 : crosstools-compiler-rt-fetch crosstools-llvm-toolchain tools-crosstools-autolibs32
 #MM- crosstools-compiler-rt32-quick : crosstools-compiler-rt-fetch crosstools-llvm-toolchain-quick
 
 #MM crosstools-libcxx : crosstools-libcxx-fetch crosstools-libcxxabi-fetch crosstools-llvm-toolchain
@@ -20,12 +19,12 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 
 # Build for supported targets -:
 
-#MM- tools-crosstools-llvm-i386   : tools-crosstools-llvm-toolchain crosstools-llvm
-#MM- tools-crosstools-llvm-x86_64 : tools-crosstools-llvm-toolchain crosstools-llvm
-#MM- tools-crosstools-llvm-ppc    : tools-crosstools-llvm-toolchain crosstools-llvm
-#MM- tools-crosstools-llvm-arm    : tools-crosstools-llvm-toolchain crosstools-llvm
-#MM- tools-crosstools-llvm-riscv  : tools-crosstools-llvm-toolchain crosstools-llvm
-##MM- tools-crosstools-llvm-m68k  : tools-crosstools-llvm-toolchain crosstools-llvm
+#MM- tools-crosstools-llvm-i386   : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-x86_64 : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-ppc    : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-arm    : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-riscv  : tools-crosstools-llvm-toolchain
+##MM- tools-crosstools-llvm-m68k  : tools-crosstools-llvm-toolchain
 
 #
 # LLVM toolchain
@@ -82,9 +81,7 @@ LLVM_CMAKEOPTIONS :=  \
     -DLLVM_INCLUDE_DOCS=OFF \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
-    -DLLVM_INCLUDE_BENCHMARKS=OFF \
-    -DCLANG_ENABLE_STATIC_ANALYZER=OFF \
-    -DCLANG_ENABLE_ARCMT=OFF
+    -DLLVM_INCLUDE_BENCHMARKS=OFF
 
 #LLVM_UNUSED_CMAKEOPTIONS :=  \
 #    -DLLDB_DISABLE_LIBEDIT=ON \
@@ -127,8 +124,6 @@ endif
 
 LLVM_CMAKEOPTIONS +=-DLLVM_EXTERNAL_LLD_SOURCE_DIR="$(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE)"
 LLVM_CMAKEOPTIONS +=-DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE)"
-LLVM_CMAKEOPTIONS +=-DLLVM_EXTERNAL_LIBCXX_SOURCE_DIR="$(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE)"
-LLVM_CMAKEOPTIONS +=-DLLVM_EXTERNAL_LIBCXXABI_SOURCE_DIR="$(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE)"
 
 #LLVM_CMAKEOPTIONS +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
@@ -227,7 +222,7 @@ endif
 
 %create_patch mmake=crosstools-compiler-rt-create-patch \
     archive=$(COMPILER_RT_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/compiler-rt prediff=crosstools-llvm-remdirs
+    destination=$(HOSTDIR)/Ports/host/compiler-rt
 
 %fetch mmake=crosstools-libcxx-fetch archive=$(LIBCXX_ARCHBASE)  \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -278,3 +273,6 @@ tools-crosstools-llvm-toolchain :
 
 #MM tools-crosstools-llvm-toolchain : includes-copy
 #MM tools-crosstools-llvm-toolchain : crosstools-llvm-fetch crosstools-llvm-toolchain-cmake
+
+#MM- toolchain-linklibs-llvm : crosstools-compiler-rt-quick crosstools-libcxx-quick crosstools-libcxxabi-quick
+#MM- toolchain-linklibs-llvm-x86_64 : crosstools-compiler-rt32-quick
