@@ -4065,8 +4065,7 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 
 %define build_with_cmake mmake=/A package= srcdir="$(SRCDIR)/$(CURDIR)" gendir= prefix= \
     aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
-    touch=yes cmakebuildcmd= \
-    cmakeinstallcmd= \
+    touch=yes cmakebuildcmd= cmakeinstallcmd= cleanafterbuild=no cleandir= \
     precmake=  postcmake= \
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags= \
@@ -4177,13 +4176,24 @@ else
 %(mmake)-cmakecmdinstall := %(cmakeinstallcmd)
 endif
 
+ifeq (%(cleandir),)
+%(mmake)-cmakecleandir := $(%(mmake)-pkgdir)
+else
+%(mmake)-cmakecleandir := %(cleandir)
+endif
+
 $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	$(IF) ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
-	    $(RM)  $(%(mmake)-installflag) && \
+	    $(RM) $(%(mmake)-installflag) && \
 	    $(%(mmake)-cmakecmdbuild) && \
 	    cd $(%(mmake)-pkgdir) && \
 	    $(%(mmake)-cmakecmdinstall) && \
 	    $(TOUCH) $@ -r $^; \
+	    $(IF) $(TEST) "%(cleanafterbuild)" = "yes"; then \
+	        $(IF) ! $(MAKE) -C $(%(mmake)-pkgdir) clean; then \
+	            $(RM) -r $(%(mmake)-cmakecleandir); \
+	        fi; \
+	    fi; \
 	fi
 
 ## **********************************************************************
