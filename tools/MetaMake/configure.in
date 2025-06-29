@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([MetaMake], [0.8])
-AC_PREREQ([2.69])
+AC_INIT([MetaMake],[0.8])
+AC_PREREQ([2.71])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_SRCDIR([mmake.c])
 
@@ -12,6 +12,10 @@ case "$host_os" in
   mingw* ) PWDCMD="pwd -W" ;;
   * )      PWDCMD="pwd" ;;
 esac
+
+# Remove -g from CFLAGS early, before any compile tests run
+AS_IF([test "x$CFLAGS" != x],
+      [CFLAGS=`echo $CFLAGS | sed -e 's/-g//g'`])
 
 dnl Determine current build path
 AC_MSG_CHECKING([Building MetaMake in])
