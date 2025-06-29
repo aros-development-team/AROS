@@ -217,7 +217,8 @@ endif
 
 %fetch mmake=crosstools-compiler-rt-fetch archive=$(COMPILER_RT_ARCHBASE) \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
-    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/compiler-rt
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/compiler-rt \
+    patches_specs=$(COMPILER_RT_ARCHBASE)-aros.diff:$(COMPILER_RT_ARCHBASE):-p1
 
 %create_patch mmake=crosstools-compiler-rt-create-patch \
     archive=$(COMPILER_RT_ARCHBASE) suffixes="tar.xz" \
