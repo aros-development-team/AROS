@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -22,6 +22,7 @@ Boston, MA 02111-1307, USA.  */
 
 #include "config.h"
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
