@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -29,7 +29,7 @@ Boston, MA 02111-1307, USA.  */
 #   define PARAMS(x) ()
 #endif /* PROTOTYPES */
 
-#if defined(HAVE_STDARG_H) && defined(__STDC__) && __STDC__
+#if defined(HAVE_STDARG_H)
 #   include <stdarg.h>
 #   define VA_START(args, lastarg) va_start(args, lastarg)
 #else
