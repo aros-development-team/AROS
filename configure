@@ -648,6 +648,7 @@ ac_includes_default="\
 ac_header_c_list=
 ac_func_c_list=
 ac_subst_vars='LTLIBOBJS
+aros_collect32_target
 aros_config_unittests
 mmake_ignore_dirs
 config_prefs_set
@@ -10009,6 +10010,10 @@ case "$target_cpu" in
         case "$aros_toolchain" in
             *llvm*)
                 x86_isa_extra+="--target=i386-unknown-aros -m32 -march=i486"
+                if test "$target_cpu" = "x86_64"; then
+                    target_needs_collect32=yes
+                    aros_target32_cpu=i386
+                fi
             ;;
         esac
         x86_isa_extra+="-m32 -march=i486"
@@ -16976,11 +16981,12 @@ fi
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"
 aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
-aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/host/config"
-aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
-aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Developer/include/aros"
+aros_host_gendir="bin/${aros_host_arch}-${aros_host_cpu}/gen/host"
+aros_hostcfg_dir="${aros_host_gendir}/config"
 aros_gendir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen"
-aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/include/aros"
+aros_targetcfg_dir="${aros_gendir}/config"
+aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Developer/include/aros"
+aros_geninc_dir="${aros_gendir}/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
 
@@ -19032,8 +19038,19 @@ ac_config_headers="$ac_config_headers ${aros_geninc_dir}/host-conf.h:config/host
 # Generic build tools (metamake, etc)
 ac_config_commands="$ac_config_commands genmf-executable-support"
 
-ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in ${aros_targetcfg_dir}/build.cfg:config/build.cfg.in mmake.config compiler/include/geninc.cfg:compiler/include/geninc.cfg.in ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname:scripts/uname.in tools/collect-aros/env.h"
+ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in ${aros_targetcfg_dir}/build.cfg:config/build.cfg.in mmake.config compiler/include/geninc.cfg:compiler/include/geninc.cfg.in ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname:scripts/uname.in ${aros_host_gendir}/tools/collect-aros/env.h:tools/collect-aros/env.h.in ${aros_gendir}/tools/collect-aros/env.h:tools/collect-aros/env.h.in"
 
+
+if test "x$target_needs_collect32" = "xyes"; then
+  ac_config_files="$ac_config_files ${aros_host_gendir}/tools/collect-aros32/env.h:tools/collect-aros/env.h.in"
+
+
+    ac_config_commands="$ac_config_commands collect-aros32"
+
+
+   aros_collect32_target="$""(COLLECT-AROS32)"
+
+fi
 
 # Binutils
 ac_config_commands="$ac_config_commands binutils-support"
@@ -19764,6 +19781,8 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
         aros_tools_dir=${aros_tools_dir}
 
 
+AROS_TARGET32_CPU=$aros_target_cpu32
+   AROS_HOST_GENDIR=$aros_host_gendir
 
         aros_host_exe_suffix=${aros_host_exe_suffix}
         aros_tools_dir=${aros_tools_dir}
@@ -19829,7 +19848,10 @@ do
     "${aros_targetcfg_dir}/make.defaults") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in" ;;
     "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
     "${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname") CONFIG_FILES="$CONFIG_FILES ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname:scripts/uname.in" ;;
-    "tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES tools/collect-aros/env.h" ;;
+    "${aros_host_gendir}/tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES ${aros_host_gendir}/tools/collect-aros/env.h:tools/collect-aros/env.h.in" ;;
+    "${aros_gendir}/tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/tools/collect-aros/env.h:tools/collect-aros/env.h.in" ;;
+    "${aros_host_gendir}/tools/collect-aros32/env.h") CONFIG_FILES="$CONFIG_FILES ${aros_host_gendir}/tools/collect-aros32/env.h:tools/collect-aros/env.h.in" ;;
+    "collect-aros32") CONFIG_COMMANDS="$CONFIG_COMMANDS collect-aros32" ;;
     "binutils-support") CONFIG_COMMANDS="$CONFIG_COMMANDS binutils-support" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}:scripts/aros-ld.in" ;;
     "elf-compiler-support") CONFIG_COMMANDS="$CONFIG_COMMANDS elf-compiler-support" ;;
@@ -20399,6 +20421,11 @@ printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
         chmod a+x ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname
         chmod a+x ${aros_tools_dir}/genmf.py
      ;;
+    "collect-aros32":C)
+    echo "Patching collect-aros32/env.h with 32-bit target CPU: $AROS_TARGET32_CPU"
+    sed -i.bak "s/^#define TARGET_CPU_.*/#define TARGET_CPU_$AROS_TARGET32_CPU/" "$AROS_HOST_GENDIR/tools/collect-aros32/env.h"
+    rm -f "$AROS_GENDIR/tools/collect-aros32/env.h.bak"
+   ;;
     "binutils-support":C)
         prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
         mkdir -p $prefix

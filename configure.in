@@ -1311,6 +1311,10 @@ case "$target_cpu" in
         case "$aros_toolchain" in
             *llvm*)
                 x86_isa_extra+="--target=i386-unknown-aros -m32 -march=i486"
+                if test "$target_cpu" = "x86_64"; then
+                    target_needs_collect32=yes
+                    aros_target32_cpu=i386
+                fi
             ;;
         esac
         x86_isa_extra+="-m32 -march=i486"
@@ -3059,11 +3063,12 @@ fi
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"
 aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
-aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/host/config"
-aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
-aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Developer/include/aros"
+aros_host_gendir="bin/${aros_host_arch}-${aros_host_cpu}/gen/host"
+aros_hostcfg_dir="${aros_host_gendir}/config"
 aros_gendir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen"
-aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/include/aros"
+aros_targetcfg_dir="${aros_gendir}/config"
+aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Developer/include/aros"
+aros_geninc_dir="${aros_gendir}/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 aros_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/scripts"
 
@@ -4182,8 +4187,27 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
     ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname:scripts/uname.in
-    tools/collect-aros/env.h
+    ${aros_host_gendir}/tools/collect-aros/env.h:tools/collect-aros/env.h.in
+    ${aros_gendir}/tools/collect-aros/env.h:tools/collect-aros/env.h.in
 )
+
+if test "x$target_needs_collect32" = "xyes"; then
+  AC_CONFIG_FILES([
+    ${aros_host_gendir}/tools/collect-aros32/env.h:tools/collect-aros/env.h.in
+  ])
+
+  dnl Properly expand shell variables via the 3rd argument
+  AC_CONFIG_COMMANDS([collect-aros32], [
+    echo "Patching collect-aros32/env.h with 32-bit target CPU: $AROS_TARGET32_CPU"
+    sed -i.bak "s/^#define TARGET_CPU_.*/#define TARGET_CPU_$AROS_TARGET32_CPU/" "$AROS_HOST_GENDIR/tools/collect-aros32/env.h"
+    rm -f "$AROS_GENDIR/tools/collect-aros32/env.h.bak"
+  ],
+  [AROS_TARGET32_CPU=$aros_target_cpu32
+   AROS_HOST_GENDIR=$aros_host_gendir])
+   
+   aros_collect32_target="$""(COLLECT-AROS32)"
+   AC_SUBST(aros_collect32_target)
+fi
 
 # Binutils
 AC_CONFIG_COMMANDS([binutils-support],

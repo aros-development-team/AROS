@@ -13,6 +13,7 @@ AROS_TARGET_CPU_TYPE    ?= @aros_target_cpu_extra@
 AROS_TARGET_CPU_MODE    ?= @aros_target_cpu_mode@
 AROS_TARGET_ARCH        ?= @aros_target_arch@
 AROS_TARGET_VARIANT     ?= @aros_target_variant@
+COLLECT-AROS32_TGT      ?= @aros_collect32_target@
 
 AMIGAOSNDKDIR           ?= $(SRCDIR)/local/NDK_3.1
 
@@ -166,7 +167,7 @@ parsesdkoffsets : $(PARSEOFFSETS)
 tools : makedirs gdbinit mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) $(GENCTBL) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
-	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
+	$(COLLECT-AROS) $(COLLECT-AROS32_TGT) $(AFSLIB) $(COPYTOAFS) \
 	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV) $(PARSEOFFSETS)
 	@$(NOP)
 
@@ -204,23 +205,23 @@ $(GENMFSCRIPT): $(SRCDIR)/tools/genmf/genmf.py
 	@$(TOP)/config.status --silent --file=$(subst $(TOP)/,,$@):$<
 
 $(ELF2HUNK): $(SRCDIR)/tools/elf2hunk/elf2hunk.c
-	@$(ECHO) Building elf2hunk...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/elf2hunk SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(ARCHTOOL): $(SRCDIR)/tools/archtools/archtool.c
-	@$(ECHO) Building archtool...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/archtools SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(GENCTBL): $(SRCDIR)/tools/genctbl/genctbl.c
-	@$(ECHO) Building genctbl...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genctbl SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(FLEXCAT): $(wildcard $(SRCDIR)/tools/flexcat/src/*.[ch]) $(wildcard $(SRCDIR)/tools/flexcat/src/sd/*.sd)
-	@$(ECHO) Building flexcat...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/flexcat/src -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(CREATEDTDESC): $(wildcard $(SRCDIR)/tools/dtdesc/*.[ch]) $(wildcard $(SRCDIR)/tools/dtdesc/c_iff/*.[ch])
-	@$(ECHO) Building createdtdesc...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/dtdesc -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(AFSLIB): $(wildcard $(SRCDIR)/rom/filesys/afs/*.[ch])
@@ -228,15 +229,15 @@ $(AFSLIB): $(wildcard $(SRCDIR)/rom/filesys/afs/*.[ch])
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/copytoafs -f Makefile.afslib SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(COPYTOAFS): $(AFSLIB) $(SRCDIR)/tools/copytoafs/copytoafs.c
-	@$(ECHO) Building copytoafs...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/copytoafs SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(ILBMTOC): $(SRCDIR)/tools/ilbmtoc/ilbmtoc.c
-	@$(ECHO) Building ilbmtoc...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/ilbmtoc SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(ILBMTOICON): $(SRCDIR)/tools/ilbmtoicon/ilbmtoicon.c $(SRCDIR)/tools/ilbmtoicon/infoinfo.c
-	@$(ECHO) Building ilbmtoicon...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) $@ -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(INFOINFO): $(SRCDIR)/tools/ilbmtoicon/infoinfo.c
@@ -244,23 +245,27 @@ $(INFOINFO): $(SRCDIR)/tools/ilbmtoicon/infoinfo.c
 	@$(CALL) $(MAKE) $(MKARGS) $@ -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(COLLECT-AROS): $(wildcard $(SRCDIR)/tools/collect-aros/*.[hc])
-	@$(ECHO) Building collect-aros...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/collect-aros SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(ECHO) Building $(notdir $@)...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/collect-aros SRCDIR=$(SRCDIR) TOP=$(TOP) CAGENDIR=$(HOSTGENDIR)/tools/collect-aros
+
+$(COLLECT-AROS32): $(wildcard $(SRCDIR)/tools/collect-aros/*.[hc])
+	@$(ECHO) Building $(notdir $@)...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/collect-aros SRCDIR=$(SRCDIR) TOP=$(TOP) CAGENDIR=$(HOSTGENDIR)/tools/collect-aros32 COLLECTAROSBIN=$@
 
 $(FD2INLINE): $(SRCDIR)/tools/fd2inline/fd2inline.c
-	@$(ECHO) Building fd2inline...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2inline SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(FD2PRAGMA): $(SRCDIR)/tools/fd2pragma/fd2pragma.c
-	@$(ECHO) Building fd2pragma...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2pragma SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(SFDC): $(SRCDIR)/tools/sfdc/*.pl 
-	@$(ECHO) Building sfdc...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(SETREV): $(SRCDIR)/tools/setrev/setrev.c
-	@$(ECHO) Building setrev...
+	@$(ECHO) Building $(notdir $@)...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/setrev SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 # MetaMake apparently requires a slighty different compilation. Probably
