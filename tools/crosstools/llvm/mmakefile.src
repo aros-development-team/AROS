@@ -274,5 +274,5 @@ tools-crosstools-llvm-toolchain :
 #MM tools-crosstools-llvm-toolchain : includes-copy
 #MM tools-crosstools-llvm-toolchain : crosstools-llvm-fetch crosstools-llvm-toolchain-cmake
 
-#MM- toolchain-linklibs-llvm : crosstools-compiler-rt-quick crosstools-libcxx-quick crosstools-libcxxabi-quick
-#MM- toolchain-linklibs-llvm-x86_64 : crosstools-compiler-rt32-quick
+#MM- toolchain-linklibs-llvm : crosstools-compiler-rt crosstools-libcxx crosstools-libcxxabi
+#MM- toolchain-linklibs-llvm-x86_64 : crosstools-compiler-rt32
