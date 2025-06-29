@@ -269,17 +269,22 @@ $(SETREV): $(SRCDIR)/tools/setrev/setrev.c
 mmake: $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 	@$(NOP)
 
-$(SRCDIR)/tools/MetaMake/configure: $(SRCDIR)/tools/MetaMake/configure.in
+$(GENDIR)/tools/MetaMake/configure: $(SRCDIR)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
-	@cd $(SRCDIR)/tools/MetaMake && @aros_host_aclocal@ && @aros_host_autoconf@
+	@$(IF) [ ! -d $(GENDIR)/tools/MetaMake ]; then \
+	    $(MECHO) $(MKDIR) "$(GENDIR)/tools/MetaMake" ; \
+	    $(MKDIR) "$(GENDIR)/tools/MetaMake"; \
+	fi;
+	@$(CP) -Rf $(SRCDIR)/tools/MetaMake/* $(GENDIR)/tools/MetaMake
+	@cd $(GENDIR)/tools/MetaMake && @aros_host_aclocal@ && @aros_host_autoconf@
 
-$(TOP)/tools/MetaMake/Makefile: $(SRCDIR)/tools/MetaMake/configure $(SRCDIR)/tools/MetaMake/Makefile.in
+$(TOP)/tools/MetaMake/Makefile: $(GENDIR)/tools/MetaMake/configure $(SRCDIR)/tools/MetaMake/Makefile.in
 	@$(IF) [ ! -d $(TOP)/tools/MetaMake ]; then \
 	    $(MECHO) $(MKDIR) "$(TOP)/tools/MetaMake" ; \
 	    $(MKDIR) "$(TOP)/tools/MetaMake"; \
 	fi;
 	@cd $(TOP)/tools/MetaMake ; \
-	CC="$(HOST_CC)" CFLAGS="$(HOST_CFLAGS) -D_FILE_OFFSET_BITS=64" LDFLAGS="$(HOST_LDFLAGS)" $(SRCDIR)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --with-objfiledir=$(HOSTGENDIR)/tools/MetaMake  || { echo "configure failed, dumping config.log:" ; cat $(TOP)/tools/MetaMake/config.log ; exit 1 ; }
+	CC="$(HOST_CC)" CFLAGS="$(HOST_CFLAGS) -D_FILE_OFFSET_BITS=64" LDFLAGS="$(HOST_LDFLAGS)" $(GENDIR)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --with-objfiledir=$(HOSTGENDIR)/tools/MetaMake  || { echo "configure failed, dumping config.log:" ; cat $(TOP)/tools/MetaMake/config.log ; exit 1 ; }
 
 $(MMAKE): $(TOP)/tools/MetaMake/Makefile $(wildcard $(SRCDIR)/tools/MetaMake/*.[ch]) $(GENMFSCRIPT)
 	@$(MAKE) $(MKARGS) AUTOHEADER=@aros_host_autoheader@ -C $(TOP)/tools/MetaMake all
