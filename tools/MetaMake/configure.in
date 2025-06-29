@@ -31,8 +31,7 @@ dnl Checks for libraries.
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
-AC_HEADER_STDC
-AC_CHECK_HEADERS(stdarg.h string.h unistd.h sys/stat.h sys/types.h netinet/in.h)
+AC_CHECK_HEADERS([stdarg.h stdio.h string.h unistd.h sys/stat.h sys/types.h netinet/in.h])
 
 AC_MSG_CHECKING([where to build objfiles])
 AC_ARG_WITH(objfiledir,AS_HELP_STRING([--with-objfiledir=DIR],[Build Object Files in DIR]),with_objfiles="$withval",with_objfiles="sourcedir")
@@ -49,7 +48,7 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
-AC_FUNC_VPRINTF
+AC_CHECK_FUNCS([vprintf])
 AC_CHECK_FUNCS(getcwd strdup strndup strerror)
 
 AC_SUBST(host_os)
