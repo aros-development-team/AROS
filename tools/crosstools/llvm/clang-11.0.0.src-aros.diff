@@ -564,9 +564,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    llvm::Triple CompilerTarget(LLVM_DEFAULT_TARGET_TRIPLE);
 +
 +    if (Target.isArch32Bit() && CompilerTarget.isArch64Bit()) {
-+        llvm::sys::path::append(LibPath, "lib32");
++        llvm::sys::path::append(LibPath, "lib32/");
 +    } else {
-+        llvm::sys::path::append(LibPath, "lib");
++        llvm::sys::path::append(LibPath, "lib/");
 +    }
 +
 +    // Derived from startfile spec.
