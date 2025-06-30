@@ -1,7 +1,7 @@
 include $(SRCDIR)/config/aros.cfg
 $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 
-#MM crosstools-compiler-rt : crosstools-compiler-rt-fetch crosstools-llvm-toolchain
+#MM crosstools-compiler-rt : crosstools-compiler-rt-fetch crosstools-llvm-toolchain tools-crosstools-autolibs
 #MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-fetch crosstools-llvm-toolchain-quick
 #MM crosstools-compiler-rt32 : crosstools-compiler-rt-fetch crosstools-llvm-toolchain tools-crosstools-autolibs32
 #MM- crosstools-compiler-rt32-quick : crosstools-compiler-rt-fetch crosstools-llvm-toolchain-quick
