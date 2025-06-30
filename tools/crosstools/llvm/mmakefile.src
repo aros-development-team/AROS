@@ -192,7 +192,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
     extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host
 
 ifneq ($(AROS_TARGET_CPU32),)
-LLVM_COMPILER_RT_CMAKEOPTIONS := \
+LLVM_COMPILER_RT32_CMAKEOPTIONS := \
   $(LLVM_COMPILER_RT_CMAKEBASE) \
   -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU32)-unknown-aros \
   -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU32)-unknown-aros -B$(AROS_LIB32)" \
@@ -203,7 +203,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS := \
 
 %build_with_cmake mmake=crosstools-compiler-rt32 package=compiler-rt32 srcdir=$(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE) \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
-    extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host
+    extraoptions="$(LLVM_COMPILER_RT32_CMAKEOPTIONS)" compiler=host
 endif
 
 %fetch mmake=crosstools-clang-fetch archive=$(CLANG_ARCHBASE)  \
