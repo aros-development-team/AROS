@@ -1,8 +1,7 @@
-diff --git a/include/llvm/ADT/Triple.h b/include/llvm/ADT/Triple.h
-index 6bad18f19244..78c8bd9a9316 100644
---- a/include/llvm/ADT/Triple.h
-+++ b/include/llvm/ADT/Triple.h
-@@ -161,6 +161,7 @@ public:
+diff -ruN llvm-11.0.0.src/include/llvm/ADT/Triple.h llvm-11.0.0.src.aros/include/llvm/ADT/Triple.h
+--- llvm-11.0.0.src/include/llvm/ADT/Triple.h	2020-10-07 10:10:48.000000000 +0000
++++ llvm-11.0.0.src.aros/include/llvm/ADT/Triple.h	2020-10-07 10:10:48.000000000 +0000
+@@ -161,6 +161,7 @@
      UnknownOS,
  
      Ananas,
@@ -10,7 +9,7 @@ index 6bad18f19244..78c8bd9a9316 100644
      CloudABI,
      Darwin,
      DragonFly,
-@@ -448,6 +449,11 @@ public:
+@@ -448,6 +449,11 @@
      return getOS() == Triple::Darwin || getOS() == Triple::MacOSX;
    }
  
@@ -22,11 +21,21 @@ index 6bad18f19244..78c8bd9a9316 100644
    /// Is this an iOS triple.
    /// Note: This identifies tvOS as a variant of iOS. If that ever
    /// changes, i.e., if the two operating systems diverge or their version
-diff --git a/lib/Support/Triple.cpp b/lib/Support/Triple.cpp
-index fec1985ccaca..70aeac1239ec 100644
---- a/lib/Support/Triple.cpp
-+++ b/lib/Support/Triple.cpp
-@@ -188,6 +188,7 @@ StringRef Triple::getOSTypeName(OSType Kind) {
+diff -ruN llvm-11.0.0.src/include/llvm/Support/Signals.h llvm-11.0.0.src.aros/include/llvm/Support/Signals.h
+--- llvm-11.0.0.src/include/llvm/Support/Signals.h	2020-10-07 10:10:48.000000000 +0000
++++ llvm-11.0.0.src.aros/include/llvm/Support/Signals.h	2025-06-30 02:39:23.759636178 +0000
+@@ -15,6 +15,7 @@
+ #define LLVM_SUPPORT_SIGNALS_H
+ 
+ #include <string>
++#include <cstdint>
+ 
+ namespace llvm {
+ class StringRef;
+diff -ruN llvm-11.0.0.src/lib/Support/Triple.cpp llvm-11.0.0.src.aros/lib/Support/Triple.cpp
+--- llvm-11.0.0.src/lib/Support/Triple.cpp	2020-10-07 10:10:48.000000000 +0000
++++ llvm-11.0.0.src.aros/lib/Support/Triple.cpp	2020-10-07 10:10:48.000000000 +0000
+@@ -188,6 +188,7 @@
    case AMDPAL: return "amdpal";
    case Ananas: return "ananas";
    case CNK: return "cnk";
@@ -34,7 +43,7 @@ index fec1985ccaca..70aeac1239ec 100644
    case CUDA: return "cuda";
    case CloudABI: return "cloudabi";
    case Contiki: return "contiki";
-@@ -489,6 +490,7 @@ static Triple::VendorType parseVendor(StringRef VendorName) {
+@@ -489,6 +490,7 @@
  static Triple::OSType parseOS(StringRef OSName) {
    return StringSwitch<Triple::OSType>(OSName)
      .StartsWith("ananas", Triple::Ananas)
