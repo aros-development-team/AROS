@@ -6,8 +6,9 @@
 #MM
 development-collect-aros-quick :
 	$(MAKE) HOST_CC="$(TARGET_CC) $(TARGET_SYSROOT)" HOST_CFLAGS="$(CFLAGS)" \
-	COLLECT-AROS=$(AROS_DEVELOPER)/bin/collect-aros \
+	COLLECTAROSBIN=$(AROS_DEVELOPER)/bin/collect-aros \
 	COLLECT-AROS-BACKEND=backend-bfd.c \
+	CAGENDIR=$(GENDIR)/tools/collect-aros \
 	USER_CFLAGS="-nix -D_HAVE_LIBIBERTY_ -D_NATIVE_" HOST_LDFLAGS="-L$(GENDIR)/contrib/gnu/binutils/binutils/libiberty -lbfd -liberty -lz"
 	$(STRIP) $(AROS_DEVELOPER)/bin/collect-aros
 
@@ -20,7 +21,7 @@ tools-crosstools-collect-aros : tools-crosstools-collect-aros-quick
 #MM
 tools-crosstools-collect-aros-quick :
 	@$(IF) ! $(TEST) -f $(collect-aros-installflag) ; then \
-	       $(MAKE) COLLECT-AROS=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_ -DOBJLIBDIR=\"$(AROS_LIB)\"" \
+	       $(MAKE) COLLECTAROSBIN=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_ -DOBJLIBDIR=\"$(AROS_LIB)\""  CAGENDIR=$(HOSTGENDIR)/tools/collect-aros \
 	    && $(HOST_STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros \
 	    && $(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros \
 	    && $(TOUCH) $(CROSSTOOLSDIR) $(collect-aros-installflag) ; \
@@ -30,6 +31,6 @@ tools-crosstools-collect-aros-quick :
 standalone-collect-aros :
 	@$(ECHO) Bulding $(TOOLDIR)/standalone/collect-aros$(HOST_EXE_SUFFIX)...
 	@$(MKDIR) $(TOOLDIR)/standalone
-	@$(MAKE) HOST_CC="$(HOST_CC)" HOST_CFLAGS="$(HOST_CFLAGS) -D_STANDALONE_ -DOBJLIBDIR=\"$(AROS_LIB)\"" AROS_HOST_ARCH=$(AROS_HOST_ARCH) \
-	COLLECT-AROS=$(TOOLDIR)/standalone/collect-aros
+	@$(MAKE) HOST_CC="$(HOST_CC)" HOST_CFLAGS="$(HOST_CFLAGS) -D_STANDALONE_ -DOBJLIBDIR=\"$(AROS_LIB)\"" AROS_HOST_ARCH=$(AROS_HOST_ARCH)  CAGENDIR=$(HOSTGENDIR)/tools/collect-aros \
+	COLLECTAROSBIN=$(TOOLDIR)/standalone/collect-aros
 	@$(HOST_STRIP) $(TOOLDIR)/standalone/collect-aros$(HOST_EXE_SUFFIX)
