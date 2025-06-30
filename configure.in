@@ -1373,14 +1373,31 @@ case "$target_os" in
                 aros_object_format="elf_x86_64"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
-                aros_isa_flags="$""(ISA_X8664_FLAGS)"
-                aros_kernel_isa_flags="-m64"
+                aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA_32_FLAGS                  = $""(strip $""(ISA_X86_FLAGS)"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        ;;
+                    *)
+                        aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
+                        ;;
+                esac
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_nominal_depth=8
                 pci_hidd_target="hidd-pci-linux"
                 llvm_target_cpu="X86"
+
+                # export flags/options needed to build 32bit 
+                # components
+                aros_target_cpu32="i386"
+                aros_target_extra="AROS_TARGET_CPU32             ?= $aros_target_cpu32$export_newline"
+                target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L $""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
+                        ;;
+                esac
                 ;;
             *powerpc*)
                 aros_target_cpu="ppc"
