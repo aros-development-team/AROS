@@ -4,31 +4,31 @@
     C99 function wmemcpy().
 */
 
-#include <wchar.h>
 #include <string.h>
 
 /*****************************************************************************
 
     NAME */
+#include <wchar.h>
 
 wchar_t *wmemcpy(
 
-/*  SYNOPSIS */  
-    wchar_t * restrict s1, 
-    const wchar_t * restrict s2, 
+/*  SYNOPSIS */
+    wchar_t * restrict s1,
+    const wchar_t * restrict s2,
     size_t n)
 
 /*  FUNCTION
-         Copies n wide characters from the object pointed to by s2
-         to the object pointed to by s1. 
+        Copies n wide characters from s2 to s1.
+        The memory areas must not overlap.
 
     INPUTS
-        s1 - Pointer to the destination array where the content is to be copied.
-        s2 - Pointer to the source of data to be copied.
-        n  - Number of bytes to copy.
+        s1 - Destination buffer.
+        s2 - Source buffer.
+        n  - Number of wide characters to copy.
 
     RESULT
-        Returns the value of s1.
+        Returns s1.
 
     NOTES
 
@@ -37,10 +37,11 @@ wchar_t *wmemcpy(
     BUGS
 
     SEE ALSO
+        wmemmove()
 
     INTERNALS
 
 ******************************************************************************/
 {
-	return memcpy(s1, s1, n * sizeof(wchar_t));
+    return (wchar_t *)memcpy(s1, s2, n * sizeof(wchar_t));
 }

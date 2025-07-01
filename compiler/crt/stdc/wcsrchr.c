@@ -1,29 +1,31 @@
 /*
-** Copyright 2011, Oliver Tappe, zooey@hirschkaefer.de. All rights reserved.
-** Distributed under the terms of the MIT License.
-*/
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
 
-#include <wchar.h>
+    C99 function wcsrchr().
+*/
 
 /*****************************************************************************
 
     NAME */
+#include <wchar.h>
 
 wchar_t *wcsrchr(
 
 /*  SYNOPSIS */
-    const wchar_t *s, 
+    const wchar_t *s,
     wchar_t c)
 
 /*  FUNCTION
-         Locates the last occurrence of c in the wide string pointed to by s.
+        Locates the last occurrence of the wide character c in the wide string s.
 
     INPUTS
-        s - wide string.
-        c - wide character to be located.
+        s - Wide string to search.
+        c - Wide character to locate.
 
     RESULT
-        Returns a pointer to the last occurrence of c in s.
+        Returns a pointer to the last occurrence of c in s,
+        or NULL if c is not found. If c is the null character,
+        returns a pointer to the null terminator.
 
     NOTES
 
@@ -32,16 +34,19 @@ wchar_t *wcsrchr(
     BUGS
 
     SEE ALSO
+        wcschr(), wmemchr()
 
     INTERNALS
 
 ******************************************************************************/
 {
-	const wchar_t* wcs = s + wcslen(s);
-	for (; wcs >= s; --wcs) {
-		if (*wcs == c)
-			return (wchar_t*)wcs;
-	}
-
-	return NULL;
+    const wchar_t *last = NULL;
+    while (*s) {
+        if (*s == c)
+            last = s;
+        ++s;
+    }
+    if (c == L'\0')
+        return (wchar_t *)s;
+    return (wchar_t *)last;
 }

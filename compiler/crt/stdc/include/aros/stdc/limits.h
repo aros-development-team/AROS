@@ -50,8 +50,15 @@
   maximum number of bytes in a multibyte character, for any supported locale
   NB: These definitions will change soon, so do not depend on them.
  */
-#define	MB_LEN_MAX	1	/* At the moment only "C" locale supported */
-#define	MB_CUR_MAX    1
+#if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 255
+#define MB_LEN_MAX 4
+#include <aros/types/size_t.h>
+extern size_t _stdc_MB_CUR_MAX(void);
+#define MB_CUR_MAX _stdc_MB_CUR_MAX()
+#else
+#define MB_LEN_MAX 1
+#define MB_CUR_MAX 1
+#endif
 
 /* minimum value for an object of type short int */
 #define SHRT_MIN	(-32768)

@@ -1,29 +1,31 @@
 /*
-** Copyright 2011, Oliver Tappe, zooey@hirschkaefer.de. All rights reserved.
-** Distributed under the terms of the MIT License.
-*/
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
 
-#include <wchar.h>
+    C99 function wcspbrk().
+*/
 
 /*****************************************************************************
 
     NAME */
+#include <wchar.h>
 
 wchar_t *wcspbrk(
-    
+
 /*  SYNOPSIS */
-    const wchar_t *s1, 
-    const wchar_t *s2)
+    const wchar_t *s,
+    const wchar_t *accept)
 
 /*  FUNCTION
-         Locate characters s2 in wide string s1.
+        Scans the wide string s for the first occurrence of any character
+        in the wide string accept.
 
     INPUTS
-        s1 - wide string to be scanned.
-        s2 - wide string containing the characters to match.
+        s      - Wide string to scan.
+        accept - Wide string containing characters to match.
 
     RESULT
-        Returns a pointer  to the wide character in s1, or a null pointer if no wide character from s2 occurs in s1. 
+        Returns a pointer to the first occurrence in s of any character from accept,
+        or NULL if no such character is found.
 
     NOTES
 
@@ -32,18 +34,20 @@ wchar_t *wcspbrk(
     BUGS
 
     SEE ALSO
+        wcschr(), wcsrchr(), wmemchr()
 
     INTERNALS
 
 ******************************************************************************/
 {
-	for (; *s1 != L'\0'; ++s1) {
-		const wchar_t* accept = s2;
-		for (; *accept != L'\0'; ++accept) {
-			if (*accept == *s1)
-				return (wchar_t*)s1;
-		}
-	}
-
-	return NULL;
+    while (*s) {
+        const wchar_t *a = accept;
+        while (*a) {
+            if (*s == *a)
+                return (wchar_t *)s;
+            ++a;
+        }
+        ++s;
+    }
+    return NULL;
 }

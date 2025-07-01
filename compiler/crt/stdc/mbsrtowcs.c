@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <limits.h>
 
+#include "__stdc_intbase.h"
+
 /*****************************************************************************
 
     NAME */
@@ -48,6 +50,7 @@
 
 ******************************************************************************/
 {
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     size_t count = 0;
     size_t res;
     wchar_t wc;
@@ -59,7 +62,7 @@
     s = *src;
 
     while (count < len || dst == NULL) {
-        res = mbrtowc(&wc, s, MB_CUR_MAX, ps);
+        res = mbrtowc(&wc, s, StdCBase->__locale_cur->__lc_mb_max, ps);
         if (res == (size_t)-1) {
             errno = EILSEQ;
             return (size_t)-1;

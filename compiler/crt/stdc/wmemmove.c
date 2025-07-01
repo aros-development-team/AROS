@@ -4,33 +4,31 @@
     C99 function wmemmove().
 */
 
-#include <wchar.h>
 #include <string.h>
 
 /*****************************************************************************
 
     NAME */
+#include <wchar.h>
 
 wchar_t *wmemmove(
-    
-/*  SYNOPSIS */  
-    wchar_t *s1, 
-    const wchar_t *s2, 
+
+/*  SYNOPSIS */
+    wchar_t *s1,
+    const wchar_t *s2,
     size_t n)
 
 /*  FUNCTION
-         Copies n wide characters from the object pointed to by s2
-         to the object pointed to by s1.
-         Copying takes place as if an intermediate buffer were used, 
-         allowing the destination and source to overlap 
+        Copies n wide characters from s2 to s1.
+        The memory areas may overlap.
 
     INPUTS
-        s1 - Pointer to the destination array where the content is to be copied.
-        s2 - Pointer to the source of data to be copied.
-        n  - Number of elements of type wchar_t to copy.
+        s1 - Destination buffer.
+        s2 - Source buffer.
+        n  - Number of wide characters to copy.
 
     RESULT
-        Returns the value of s1.
+        Returns s1.
 
     NOTES
 
@@ -39,10 +37,11 @@ wchar_t *wmemmove(
     BUGS
 
     SEE ALSO
+        wmemcpy()
 
     INTERNALS
 
 ******************************************************************************/
 {
-	return memmove(s1, s1, n * sizeof(wchar_t));
+    return (wchar_t *)memmove(s1, s2, n * sizeof(wchar_t));
 }

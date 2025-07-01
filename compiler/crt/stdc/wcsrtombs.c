@@ -4,10 +4,14 @@
     Desc: AROS implementation of the C99 function wcsrtombs().
 */
 
+#include <proto/exec.h>
+
 #include <stddef.h>
 #include <wchar.h>
 #include <errno.h>
 #include <limits.h>
+
+#include "__stdc_intbase.h"
 
 /*****************************************************************************
 
@@ -48,20 +52,23 @@
 
 ******************************************************************************/
 {
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     size_t count = 0;
     size_t res;
-    char buf[MB_CUR_MAX];
     const wchar_t *s;
+    char *buf;
 
     if (!src || !*src)
         return 0;
 
+    buf = AllocVec(StdCBase->__locale_cur->__lc_mb_max, MEMF_ANY);
     s = *src;
 
     while (*s) {
         res = wcrtomb(buf, *s, ps);
         if (res == (size_t)-1) {
             errno = EILSEQ;
+            FreeVec(buf);
             return (size_t)-1;
         }
 
@@ -84,6 +91,7 @@
         res = wcrtomb(buf, L'\0', ps);
         if (res == (size_t)-1) {
             errno = EILSEQ;
+            FreeVec(buf);
             return (size_t)-1;
         }
 
@@ -102,5 +110,6 @@
         *src = s;
     }
 
+    FreeVec(buf);
     return count;
 }

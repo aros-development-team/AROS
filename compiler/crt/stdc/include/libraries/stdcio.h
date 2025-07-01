@@ -2,7 +2,7 @@
 #define _LIBRARIES_STDCIO_H
 
 /*
-    Copyright Â© 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Public part of StdCIO libbase.

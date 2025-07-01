@@ -1,52 +1,68 @@
 /*
-** Copyright 2011, Oliver Tappe, zooey@hirschkaefer.de. All rights reserved.
-** Distributed under the terms of the MIT License.
-*/
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
 
-#include <wchar.h>
+    C99 function wcslen().
+*/
 
 /*****************************************************************************
 
     NAME */
+#include <wchar.h>
 
 wchar_t *wcsncat(
 
 /*  SYNOPSIS */
-    wchar_t * restrict s1, 
-    const wchar_t * restrict s2, 
+    wchar_t *dest,
+    const wchar_t *src,
     size_t n)
 
 /*  FUNCTION
-         Appends not more than n wide characters from the array pointed to by s2 to the end of the wide string pointed to by s1.
+        Appends at most n wide characters from the wide string src to the end
+        of the wide string dest, and null-terminates the result.
 
     INPUTS
-        s1 - specifies the pointer to the destination array.
-        s2 - specifies the string to be added to the destination.
-        n  - specifies the maximum number of wide characters to be added.
+        dest - Destination wide string buffer. Must be large enough to hold the
+               resulting concatenated string including the terminating null.
+        src  - Source wide string to append.
+        n    - Maximum number of wide characters to append from src.
 
     RESULT
-        Returns the value of s1.
+        Returns a pointer to the destination string dest.
 
     NOTES
+        Appends characters up to n or until a null wide character in src is
+        encountered, whichever comes first. The resulting string in dest is
+        always null-terminated. Behavior is undefined if dest and src overlap.
 
     EXAMPLE
+
+        wchar_t buf[20] = L"Hello, ";
+        wcsncat(buf, L"World!", 3);
+        // buf now contains L"Hello, Wor"
 
     BUGS
 
     SEE ALSO
+        wcscat(), wcsncpy()
 
     INTERNALS
 
 ******************************************************************************/
 {
-	wchar_t* dest = s1;
-	const wchar_t* srcEnd = s2 + n;
+    wchar_t *d = dest;
 
-	while (*dest != L'\0')
-		dest++;
-	while (s2 < srcEnd && *s2 != L'\0')
-		*dest++ = *s2++;
-	*dest = L'\0';
+    // Move to the end of dest
+    while (*d) {
+        d++;
+    }
 
-	return s1;
+    // Append at most n chars from src
+    while (n-- && *src) {
+        *d++ = *src++;
+    }
+
+    // Null-terminate
+    *d = L'\0';
+
+    return dest;
 }

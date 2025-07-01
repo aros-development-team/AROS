@@ -31,10 +31,10 @@
 #ifdef __WCHAR_TYPE__
 typedef __WCHAR_TYPE__ wchar_t;
 #else
-#if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 256
-typedef uint32_t wchar_t;
+#if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 255
+typedef uint32_t wchar_t;  /* UTF-8 capable wide char */
 #else
-typedef char wchar_t;
+typedef char wchar_t;      /* single-byte wide char */
 #endif
 #endif
 

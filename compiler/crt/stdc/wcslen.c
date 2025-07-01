@@ -3,6 +3,7 @@
 
     C99 function wcslen().
 */
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>

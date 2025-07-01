@@ -8,7 +8,9 @@
 
 #include <aros/types/wctype_t.h>
 #include <aros/types/wint_t.h>
+#include <aros/types/mbstate_t.h>
 
+#include <wchar.h>
 #include <string.h>
 
 #define STDC_NOINLINE_WCTYPE
@@ -135,4 +137,35 @@ int iswxdigit(wint_t wc)
 int iswblank(wint_t wc)
 {
     return iswctype(wc, _WCTYPE_BLANK);
+}
+
+size_t _stdc_MB_CUR_MAX(void) {
+    static mbstate_t state;
+    static int initialized = 0;
+    static size_t max_len = 1;
+
+    if (!initialized) {
+        memset(&state, 0, sizeof(state));
+        // Sample UTF-8 sequences for testing max bytes
+        const char *tests[] = {
+            "\x7F",                 // 1-byte ASCII max
+            "\xC2\x80",             // 2-byte min
+            "\xE0\xA0\x80",         // 3-byte min
+            "\xF0\x90\x80\x80"      // 4-byte min
+        };
+
+        for (size_t len = 1; len <= 4; len++) {
+            size_t res = mbrlen(tests[len-1], len, &state);
+            if (res == (size_t)-1 || res == (size_t)-2) {
+                break;
+            }
+            if (res > max_len) {
+                max_len = res;
+            }
+        }
+
+        initialized = 1;
+    }
+
+    return max_len;
 }

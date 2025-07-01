@@ -1,6 +1,5 @@
 /*
-** Copyright 2011, Oliver Tappe, zooey@hirschkaefer.de. All rights reserved.
-** Distributed under the terms of the MIT License.
+    Copyright © 2025, The AROS Development Team. All rights reserved.
 */
 
 #include <dos/dos.h>
@@ -41,12 +40,10 @@ wchar_t *wcschr(
 
 ******************************************************************************/
 {
-	while (1) {
+	do {
 		if (*s == c)
 			return (wchar_t*)s;
-		if (*s++ == L'\0')
-			break;
-	}
+	} while (*s++);
 
 	return NULL;
 }
