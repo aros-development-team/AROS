@@ -156,7 +156,7 @@ main (int argc, char ** argv)
             }
             else if (!strcmp (argv[t], "--help"))
             {
-                printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [-q,--quiet] [--debug] [--help]\n", argv[0]);
+                printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [-q,--quiet] [--debug] [--logfailed] [--logdeps] [--help]\n", argv[0]);
                 return 0;
             }
             else
