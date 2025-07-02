@@ -8,8 +8,11 @@
 #include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 
 #include "__stdio.h"
+#include "__stdc_intbase.h"
+
 
 #include <limits.h>
 
@@ -49,7 +52,8 @@
 
 ******************************************************************************/
 {
-    char mb[MB_CUR_MAX];
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    char *mb;
     int len;
 
     if (!(stream->flags & __STDCIO_STDIO_WRITE))
@@ -63,11 +67,13 @@
     if ((stream->flags & __STDCIO_STDIO_APPEND))
         Seek(stream->fh, 0, OFFSET_END);
 
+    mb = AllocVec(StdCBase->__locale_cur->__lc_mb_max, MEMF_ANY);
     len = wcrtomb(mb, wc, &stream->mbs);
     if (len < 0)
     {
         errno = EILSEQ;
         stream->flags |= __STDCIO_STDIO_ERROR;
+        FreeVec(mb);
         return WEOF;
     }
 
@@ -77,9 +83,11 @@
         {
             errno = __stdc_ioerr2errno(IoErr());
             stream->flags |= __STDCIO_STDIO_ERROR;
+            FreeVec(mb);
             return WEOF;
         }
     }
 
+    FreeVec(mb);
     return wc;
 }

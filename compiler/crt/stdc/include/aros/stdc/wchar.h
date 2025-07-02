@@ -190,7 +190,7 @@ wint_t ungetwc(wint_t c, struct __sFILE *stream);
 wint_t fgetwc(struct __sFILE *stream);
 wchar_t *fgetws(wchar_t * restrict s,
 	int n, struct __sFILE * restrict stream);
-wint_t fputwc(wchar_t c, struct __sFILE *stream);
+wint_t fputwc(wint_t c, struct __sFILE *stream);
 wint_t fputws(const wchar_t *ws, struct __sFILE * restrict stream);
 int fwide(struct __sFILE *stream, int mode);
 wint_t getwc(struct __sFILE *stream);

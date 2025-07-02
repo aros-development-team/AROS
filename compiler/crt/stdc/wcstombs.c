@@ -3,9 +3,13 @@
 
     Desc: AROS implementation of the C99 function wcstombs().
 */
+
+#include <proto/exec.h>
 #include <stddef.h>
 #include <wchar.h>
 #include <errno.h>
+
+#include "__stdc_intbase.h"
 
 /*****************************************************************************
 
@@ -69,18 +73,23 @@
 
 ******************************************************************************/
 {
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     size_t total = 0;
     size_t len;
-    char buf[MB_CUR_MAX];  // max multibyte length (typically 4 for UTF-8)
+    char *buf;              // max multibyte length (typically 4 for UTF-8)
     mbstate_t ps;          // unused in our `wcrtomb`, but here for completeness
 
     // Clear state (not used in your wcrtomb, but conventionally passed)
     ps = (mbstate_t){0};
+    buf = AllocVec(StdCBase->__locale_cur->__lc_mb_max, MEMF_ANY);
 
     while (*src) {
         len = wcrtomb(buf, *src, &ps);
         if (len == (size_t)-1)
+        {
+            FreeVec(buf);
             return (size_t)-1;
+        }
 
         if (total + len > n)
             break;
@@ -93,6 +102,7 @@
         total += len;
         ++src;
     }
+    FreeVec(buf);
 
     return total;
 }

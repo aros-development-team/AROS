@@ -7,6 +7,8 @@
 #include <wchar.h>
 #include <errno.h>
 
+#include "__stdc_intbase.h"
+
 /*****************************************************************************
 
     NAME */
@@ -70,13 +72,14 @@
 
 ******************************************************************************/
  {
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     size_t count = 0;
     size_t len;
     wchar_t wc;
     mbstate_t ps = {0}; // Not used in our implementation
 
     while (*src && count < n) {
-        len = mbtowc(&wc, src, MB_CUR_MAX);
+        len = mbtowc(&wc, src, StdCBase->__locale_cur->__lc_mb_max);
         if (len == (size_t)-1)
             return (size_t)-1;
 
