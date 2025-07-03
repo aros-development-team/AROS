@@ -455,7 +455,12 @@ STDC_WCHAR := \
     wcstoul \
     wcstoull \
     wctob \
-    btowc
+    btowc \
+    wcsftime \
+    swscanf \
+    vwscanf \
+    vswscanf \
+    wscanf
 
 STDC_WCHAR_LIBSTUBS := \
     wchar \
@@ -472,6 +477,7 @@ STDC := \
     __stdc_fpuprivate \
     __vcformat \
     __vcscan \
+    __vwscanf \
     _exit \
     abort \
     abs labs llabs \
@@ -651,7 +657,9 @@ STDCIO_WCHAR := \
     fwide \
     ungetwc \
     getwchar \
-    putwchar
+    putwchar \
+    vfwscanf \
+    fwscanf
 
 # The common files will be put both in the shared and in the static link lib
 STDCIO_COMMON := \
