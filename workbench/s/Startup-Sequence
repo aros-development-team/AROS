@@ -1,3 +1,4 @@
+Echo "Hello World!"
 SetClock LOAD
 
 FailAt 21
