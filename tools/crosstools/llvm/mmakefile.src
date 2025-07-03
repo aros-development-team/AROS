@@ -39,12 +39,13 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 
 # Build for supported targets -:
 
-#MM- tools-crosstools-llvm-i386   : tools-crosstools-llvm-toolchain
-#MM- tools-crosstools-llvm-x86_64 : tools-crosstools-llvm-toolchain
-#MM- tools-crosstools-llvm-ppc    : tools-crosstools-llvm-toolchain
-#MM- tools-crosstools-llvm-arm    : tools-crosstools-llvm-toolchain
-#MM- tools-crosstools-llvm-riscv  : tools-crosstools-llvm-toolchain
-##MM- tools-crosstools-llvm-m68k  : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-i386     : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-x86_64   : tools-crosstools-llvm-toolchain
+#MM- toolchain-linklibs-llvm-x86_64 : crosstools-compiler-rt32
+#MM- tools-crosstools-llvm-ppc      : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-arm      : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-riscv    : tools-crosstools-llvm-toolchain
+##MM- tools-crosstools-llvm-m68k    : tools-crosstools-llvm-toolchain
 
 # Flags used for stages of the build
 
@@ -77,11 +78,11 @@ LLVMLLD_ARCHBASE        :=lld-$(LLVM_VERSION)$(LLVM_RELEASE).src
 CLANG_ARCHBASE          :=$(CLANG_NAME)-$(LLVM_VERSION)$(LLVM_RELEASE).src
 LIBCXX_ARCHBASE         :=libcxx-$(LLVM_VERSION)$(LLVM_RELEASE).src
 LIBCXXABI_ARCHBASE      :=libcxxabi-$(LLVM_VERSION)$(LLVM_RELEASE).src
-COMPILER_RT_ARCHBASE    := compiler-rt-$(LLVM_VERSION)$(LLVM_RELEASE).src
+COMPILER_RT_ARCHBASE    :=compiler-rt-$(LLVM_VERSION)$(LLVM_RELEASE).src
 
 MONOTREE_BUILDBASE      := $(HOSTGENDIR)/$(CURDIR)/tree
 LLVM_BUILDBASE          := $(MONOTREE_BUILDBASE)/llvm
-LLVMLLD_BUILDBASE       :=$(MONOTREE_BUILDBASE)/llvm-lld
+LLVMLLD_BUILDBASE       := $(MONOTREE_BUILDBASE)/llvm-lld
 CLANG_BUILDBASE         := $(MONOTREE_BUILDBASE)/clang
 COMPILER_RT_BUILDBASE   := $(MONOTREE_BUILDBASE)/compiler_rt
 LIBCXX_BUILDBASE        := $(MONOTREE_BUILDBASE)/libcxx
@@ -119,12 +120,14 @@ LLVM_CMAKEOPTIONS       :=                                                      
     -DLLVM_INCLUDE_DOCS=OFF                                                                                                             \
     -DLLVM_INCLUDE_TESTS=OFF                                                                                                            \
     -DLLVM_INCLUDE_EXAMPLES=OFF                                                                                                         \
-    -DLLVM_INCLUDE_BENCHMARKS=OFF
+    -DLLVM_INCLUDE_BENCHMARKS=OFF                                                                                                       \
 
 #LLVM_UNUSED_CMAKEOPTIONS :=                                                                                                            \
 #    -DLLDB_DISABLE_LIBEDIT=ON                                                                                                          \
 #    -DLLDB_DISABLE_CURSES=ON                                                                                                           \
-#    -DLLDB_DISABLE_PYTHON=ON
+#    -DLLDB_DISABLE_PYTHON=ON                                                                                                           \
+#    -DLLVM_ENABLE_UTILS=ON                                                                                                             \
+#    -DLLVM_BUILD_TOOLS=OFF
 
 # Only perform a MinSizeRel build on Nightly builds,
 # otherwise use the default (Release)
@@ -200,7 +203,7 @@ $(HOSTGENDIR)/$(CURDIR)/libcxx:
 
 #MM
 tools-crosstools-llvm-libcxx : | $(HOSTGENDIR)/$(CURDIR)/libcxx
-	$(IF) ! $(TEST) -f $(llvm-libcxx-installflag) ; then                                                                                \
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxx-installflag) ; then                                                                            \
         cd $(HOSTGENDIR)/$(CURDIR)/libcxx                                                                                               \
         && cmake                                                                                                                        \
             -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake                                                                          \
@@ -311,11 +314,27 @@ endif
 
 #MM
 tools-crosstools-llvm-toolchain :
-	$(IF) ! $(TEST) -f $(llvm-installflag) ; then                                                                                       \
+ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
+	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm llvm $(crosstools-llvm-make-env) && \
+	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) && \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean && \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm lld $(crosstools-llvm-make-env) && \
+	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) && \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean && \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang $(crosstools-llvm-make-env) && \
+	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) && \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean && \
+	    $(TOUCH) $(llvm-installflag); \
+	fi
+else    
+	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag) ; then                                                                                   \
 	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang lld $(crosstools-llvm-make-env)                                                   \
 	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env)                                           \
+	    && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean                                                                                \
 	    && $(TOUCH) $(llvm-installflag) ;                                                                                               \
 	fi
+endif
 
 %build_with_cmake mmake=crosstools-llvm-toolchain package=llvm srcdir=$(LLVM_BUILDBASE)                                                 \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET)                                                                            \
@@ -330,35 +349,35 @@ $(MONOTREE_BUILDBASE):
 
 #MM
 tools-crosstools-llvm-setup : | $(MONOTREE_BUILDBASE)
-	$(IF) ! $(TEST) -f $(llvm-setupflag) ; then \
+	$(Q)$(IF) ! $(TEST) -f $(llvm-setupflag) ; then \
         mv $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) $(LLVM_BUILDBASE) \
 	    && $(TOUCH) $(llvm-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-lld-setup : | $(MONOTREE_BUILDBASE)
-	$(IF) ! $(TEST) -f $(llvm-lld-setupflag) ; then \
+	$(Q)$(IF) ! $(TEST) -f $(llvm-lld-setupflag) ; then \
         mv $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE) $(LLVMLLD_BUILDBASE) \
 	    && $(TOUCH) $(llvm-lld-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-clang-setup : | $(MONOTREE_BUILDBASE)
-	$(IF) ! $(TEST) -f $(clang-setupflag) ; then \
+	$(Q)$(IF) ! $(TEST) -f $(clang-setupflag) ; then \
         mv $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE) $(CLANG_BUILDBASE) \
 	    && $(TOUCH) $(clang-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-compiler_rt-setup : | $(MONOTREE_BUILDBASE)
-	$(IF) ! $(TEST) -f $(compiler-rt-setupflag) ; then \
+	$(Q)$(IF) ! $(TEST) -f $(compiler-rt-setupflag) ; then \
         mv $(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE) $(COMPILER_RT_BUILDBASE) \
 	    && $(TOUCH) $(compiler-rt-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-libcxx-setup : | $(MONOTREE_BUILDBASE)
-	$(IF) ! $(TEST) -f $(llvm-libcxx-setupflag) ; then \
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxx-setupflag) ; then \
         mv $(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE) $(LIBCXX_BUILDBASE) \
 	    && $(TOUCH) $(llvm-libcxx-setupflag) ; \
 	fi
@@ -366,7 +385,7 @@ tools-crosstools-llvm-libcxx-setup : | $(MONOTREE_BUILDBASE)
 
 #MM
 tools-crosstools-llvm-libcxxabi-setup : | $(MONOTREE_BUILDBASE)
-	$(IF) ! $(TEST) -f $(llvm-libcxxabi-setupflag) ; then \
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxxabi-setupflag) ; then \
         mv $(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE) $(LIBCXXABI_BUILDBASE) \
 	    && $(TOUCH) $(llvm-libcxxabi-setupflag) ; \
 	fi
@@ -377,42 +396,42 @@ tools-crosstools-llvm-libcxxabi-setup : | $(MONOTREE_BUILDBASE)
 
 #MM
 tools-crosstools-llvm-cleanup :
-	$(IF) $(TEST) -d $(LLVM_BUILDBASE) ; then \
+	$(Q)$(IF) $(TEST) -d $(LLVM_BUILDBASE) ; then \
         mv $(LLVM_BUILDBASE) $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) \
 	    && $(TOUCH) $(llvm-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-lld-cleanup :
-	$(IF) $(TEST) -d $(LLVMLLD_BUILDBASE) ; then \
+	$(Q)$(IF) $(TEST) -d $(LLVMLLD_BUILDBASE) ; then \
         mv $(LLVMLLD_BUILDBASE) $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE) \
 	    && $(TOUCH) $(llvm-lld-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-clang-cleanup :
-	$(IF) $(TEST) -d $(CLANG_BUILDBASE) ; then \
+	$(Q)$(IF) $(TEST) -d $(CLANG_BUILDBASE) ; then \
         mv $(CLANG_BUILDBASE) $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE) \
 	    && $(TOUCH) $(clang-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-compiler_rt-cleanup :
-	$(IF) $(TEST) -d $(COMPILER_RT_BUILDBASE) ; then \
+	$(Q)$(IF) $(TEST) -d $(COMPILER_RT_BUILDBASE) ; then \
         mv $(COMPILER_RT_BUILDBASE) $(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE) \
 	    && $(TOUCH) $(compiler-rt-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-libcxx-cleanup :
-	$(IF) $(TEST) -d $(LIBCXX_BUILDBASE) ; then \
+	$(Q)$(IF) $(TEST) -d $(LIBCXX_BUILDBASE) ; then \
         mv $(LIBCXX_BUILDBASE) $(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE) \
 	    && $(TOUCH) $(llvm-libcxx-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-libcxxabi-cleanup :
-	$(IF) $(TEST) -d $(LIBCXXABI_BUILDBASE) ; then \
+	$(Q)$(IF) $(TEST) -d $(LIBCXXABI_BUILDBASE) ; then \
         mv $(LIBCXXABI_BUILDBASE) $(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE) \
 	    && $(TOUCH) $(llvm-libcxxabi-setupflag) ; \
 	fi
@@ -425,5 +444,3 @@ tools-crosstools-llvm-libcxxabi-cleanup :
 #MM tools-crosstools-llvm-libcxx : tools-crosstools-llvm-setup tools-crosstools-llvm-libcxx-setup tools-crosstools-llvm-libcxxabi-setup crosstools-compiler-rt
 
 #MM- toolchain-linklibs-llvm : tools-crosstools-llvm-libcxx
-
-#MM- toolchain-linklibs-llvm-x86_64 : crosstools-compiler-rt32
