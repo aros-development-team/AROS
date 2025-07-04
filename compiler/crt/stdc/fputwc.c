@@ -4,17 +4,20 @@
     C99 function fputwc().
 */
 
+#include <aros/debug.h>
+
 #include <wchar.h>
 #include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include <limits.h>
+
 #include "__stdio.h"
 #include "__stdc_intbase.h"
 
-
-#include <limits.h>
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -55,6 +58,8 @@
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     char *mb;
     int len;
+
+    D(bug("[%s] %s(%08x, 0x%p)\n", STDCNAME, __func__, wc, stream));
 
     if (!(stream->flags & __STDCIO_STDIO_WRITE))
     {

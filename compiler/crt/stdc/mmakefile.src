@@ -458,9 +458,7 @@ STDC_WCHAR := \
     btowc \
     wcsftime \
     swscanf \
-    vwscanf \
-    vswscanf \
-    wscanf
+    vswscanf
 
 STDC_WCHAR_LIBSTUBS := \
     wchar \
@@ -659,7 +657,9 @@ STDCIO_WCHAR := \
     getwchar \
     putwchar \
     vfwscanf \
-    fwscanf
+    fwscanf \
+    vwscanf \
+    wscanf
 
 # The common files will be put both in the shared and in the static link lib
 STDCIO_COMMON := \

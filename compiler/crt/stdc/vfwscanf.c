@@ -4,11 +4,14 @@
     C99 function vfwscanf().
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <proto/dos.h>
-#include <wchar.h>
-#include <stdio.h>
 
 #include "__stdio.h"
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -51,7 +54,9 @@
 
 ******************************************************************************/
 {
+    D(bug("[%s] %s(0x%p, 0x%p)\n", STDCNAME, __func__, stream, format));
+
     Flush (stream->fh);
-    
+
     return __vwscanf(stream, (wint_t (*)(void *))fgetwc, (int (*)(wint_t,  void *))ungetwc, format, arg);
 }

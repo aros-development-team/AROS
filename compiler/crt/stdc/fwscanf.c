@@ -4,7 +4,12 @@
     C99 function fwscanf().
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <stdarg.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -47,6 +52,8 @@
 {
     int result;
     va_list args;
+
+    D(bug("[%s] %s(0x%p, 0x%p)\n", STDCNAME, __func__, stream, format));
 
     va_start(args, format);
 

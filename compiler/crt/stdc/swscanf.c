@@ -4,7 +4,12 @@
     C99 function swscanf().
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <wchar.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -48,8 +53,12 @@
     va_list args;
     int ret;
 
+    D(bug("[%s] %s(0x%p, 0x%p)\n", STDCNAME, __func__, ws, format));
+
     va_start(args, format);
+
     ret = vswscanf(ws, format, args);
+
     va_end(args);
 
     return ret;

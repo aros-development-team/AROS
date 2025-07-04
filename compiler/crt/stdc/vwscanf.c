@@ -4,9 +4,13 @@
     C99 function vwscanf().
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <libraries/stdcio.h>
-#include <wchar.h>
 #include <stdarg.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -45,7 +49,13 @@
 
 ******************************************************************************/
 {
-    struct StdCIOBase *StdCIOBase = __aros_getbase_StdCIOBase();
+    struct StdCIOBase *StdCIOBase;
+
+    D(bug("[%s] %s(0x%p, 0x%p)\n", STDCNAME, __func__, format, arg));
+
+    StdCIOBase = __aros_getbase_StdCIOBase();
+
+    D(bug("[%s] %s: StdCIOBase @ 0x%p\n", STDCNAME, __func__, StdCIOBase));
 
     return vfwscanf(StdCIOBase->_stdin, format, arg);
 }

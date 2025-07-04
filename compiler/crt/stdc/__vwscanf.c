@@ -11,33 +11,15 @@
 #include <stdarg.h>
 #include <math.h>
 
+#include "debug.h"
+
 #ifndef STDC_STATIC
 #define FULL_SPECIFIERS
 #endif
 
-#define NEXT(c) ((c)=(*get_char)(data), size++, incount++)
-#define PREV(c) do { if ((c) != WEOF) (*unget_char)((c), data); size--; incount--; } while (0)
+#define NEXT(c) ((c)=(*get_wchar)(data), size++, incount++)
+#define PREV(c) do { if ((c) != WEOF) (*unget_wchar)((c), data); size--; incount--; } while (0)
 #define VAL(a) ((a) && size <= width)
-
-extern wchar_t *__stdc_wchar_decimalpoint;
-
-struct vcs_ieeetype
-{
-    union
-    {
-        double doub;
-        unsigned char uchar[sizeof(double)];
-    };
-};
-
-#ifdef FULL_SPECIFIERS
-const static struct vcs_ieeetype undef[3] =
-{
-    { .uchar = { 0x7f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }},
-    { .uchar = { 0xff, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }},
-    { .uchar = { 0x7f, 0xf1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }}
-};
-#endif
 
 /*****************************************************************************
 
@@ -47,8 +29,8 @@ const static struct vcs_ieeetype undef[3] =
 
 /*  SYNOPSIS */
         void       * data,
-        wint_t    (* get_char)(void *),
-        int       (* unget_char)(wint_t, void *),
+        wint_t    (* get_wchar)(void *),
+        int       (* unget_wchar)(wint_t, void *),
         const wchar_t * format,
         va_list      args)
 
@@ -59,9 +41,9 @@ const static struct vcs_ieeetype undef[3] =
         into the locations described by the argument list.
 
     INPUTS
-        data       - Opaque pointer passed to get_char and unget_char
-        get_char   - Function to read the next character from the input
-        unget_char - Function to push back a character into the input
+        data       - Opaque pointer passed to get_wchar and unget_wchar
+        get_wchar   - Function to read the next character from the input
+        unget_wchar - Function to push back a character into the input
         format     - How to convert the input into the arguments
         args       - List of argument pointers to receive results
 
