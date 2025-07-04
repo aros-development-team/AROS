@@ -3,6 +3,7 @@
 
     Desc: AROS implementation of the C99 function putwchar().
 */
+#include <libraries/stdcio.h>
 
 #include <stdio.h>
 
@@ -51,5 +52,7 @@ wint_t putwchar(
 
 ******************************************************************************/
 {
-    return fputwc(wc, stdout);
+    struct StdCIOBase *StdCIOBase = __aros_getbase_StdCIOBase();
+
+    return fputwc(wc, StdCIOBase->_stdout);
 }

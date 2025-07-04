@@ -3,6 +3,9 @@
 
     Desc: AROS implementation of the C99 function getwchar().
 */
+#include <libraries/stdcio.h>
+
+#define _STDIO_H_NOMACRO
 
 #include <stdio.h>
 
@@ -54,5 +57,7 @@ wint_t getwchar(
 
 ******************************************************************************/
 {
-    return fgetwc(stdin);
+    struct StdCIOBase *StdCIOBase = __aros_getbase_StdCIOBase();
+
+    return fgetwc(StdCIOBase->_stdin);
 }
