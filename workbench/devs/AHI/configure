@@ -742,6 +742,7 @@ with_cpu
 with_os_includedir
 enable_warpup
 with_target_cflags
+with_target_cppflags
 with_target_ldflags
 with_target_asflags
 with_target_optflags
@@ -3272,10 +3273,10 @@ printf "%s\n" "${target_cflags} " >&6; }
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Target CPPFLAGS" >&5
 printf %s "checking Target CPPFLAGS... " >&6; }
 
-# Check whether --with-target-ldflags was given.
-if test ${with_target_ldflags+y}
+# Check whether --with-target-cppflags was given.
+if test ${with_target_cppflags+y}
 then :
-  withval=$with_target_ldflags; target_cppflags="${withval}"
+  withval=$with_target_cppflags; target_cppflags="${withval}"
 else $as_nop
   target_cppflags=""
 fi

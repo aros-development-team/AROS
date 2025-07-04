@@ -73,7 +73,7 @@ target_cflags="")
 AC_MSG_RESULT(${target_cflags} )
 
 AC_MSG_CHECKING(Target CPPFLAGS)
-AC_ARG_WITH(target-ldflags,
+AC_ARG_WITH(target-cppflags,
 [  --with-target-cppflags    CPPFLAGS needed for the target],
 target_cppflags="${withval}",
 target_cppflags="")
