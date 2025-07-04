@@ -65,44 +65,79 @@ ENABLE_WARPUP=${enable_warpup}
 AC_SUBST(ENABLE_WARPUP)
 AC_MSG_RESULT(${enable_warpup})
 
+AC_MSG_CHECKING(Target CFLAGS)
+AC_ARG_WITH(target-cflags,
+[  --with-target-cflags    CFLAGS needed for the target],
+target_cflags="${withval}",
+target_cflags="")
+AC_MSG_RESULT(${target_cflags} )
+
+AC_MSG_CHECKING(Target CPPFLAGS)
+AC_ARG_WITH(target-ldflags,
+[  --with-target-cppflags    CPPFLAGS needed for the target],
+target_cppflags="${withval}",
+target_cppflags="")
+AC_MSG_RESULT(${target_cppflags} )
+
+AC_MSG_CHECKING(Target LDFLAGS)
+AC_ARG_WITH(target-ldflags,
+[  --with-target-ldflags    LDFLAGS needed for the target],
+target_ldflags="${withval}",
+target_ldflags="")
+AC_MSG_RESULT(${target_ldflags} )
+
+AC_MSG_CHECKING(Target ASFLAGS)
+AC_ARG_WITH(target-asflags,
+[  --with-target-asflags    ASFLAGS needed for the target],
+target_asflags="${withval}",
+target_asflags="")
+AC_MSG_RESULT(${target_asflags} )
+
+AC_MSG_CHECKING(Optimization flags)
+AC_ARG_WITH(target-optflags,
+[  --with-target-optflags    Optimization flags to use (Default -O2)],
+target_optflags="${withval}",
+target_optflags="-O2")
+AC_MSG_RESULT(${target_optflags} )
+
 case $host in
  i?86be-pc-amithlon)
   : ${CPU="i686"}
-  cflags="-noixemul"
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-noixemul -mcpu=${CPU} -r"
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  cflags="$target_cflags -noixemul"
+  optflags="-mcpu=${CPU} $target_optflags"
+  linkerflags="$target_ldflags -noixemul -mcpu=${CPU} -r"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
   resident=""                                      dnl *** Not supported (yet?)
   stripflag=""
  ;;
  i?86-*-aros)
  : ${CPU="i486"}
-  cflags=""
-  optflags="-m32 -march=${CPU} -O2"
-  linkerflags=""
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  cflags="$target_cflags "
+  optflags="-m32 -march=${CPU} $target_optflags"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
  ;;
  m68k-unknown-amigaos)
   : ${CPU="68020-60"}
-  cflags="-noixemul"
-  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
-  linkerflags="-noixemul -m${CPU}"
+  cflags="$target_cflags -noixemul"
+  optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="$target_ldflags -noixemul -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident="-resident"
   buildhandler="true"
   stripflag=""
  ;;
  m68k-*-aros)
   : ${CPU="68020-60"}
-  cflags=""
-  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
-  linkerflags="-m${CPU}"
+  cflags="$target_cflags "
+  optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="$target_ldflags -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -111,30 +146,30 @@ case $host in
   : ${CPU="603"}
   AC_DEFINE([__USE_INLINE__], 1, [Use inlines])
   AC_DEFINE([__USE_BASETYPE__], 1, [Use traditional library base type])
-  cflags=""
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-mcpu=${CPU}"
-  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  cflags="$target_cflags "
+  optflags="-mcpu=${CPU} $target_optflags"
+  linkerflags="$target_ldflags -mcpu=${CPU}"
+  asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
   resident=""                                      dnl *** Not supported (yet?)
   stripflag=""
  ;;
  powerpc-unknown-morphos)
   : ${CPU="603"}
   AC_DEFINE([USE_INLINE_STDARG], 1, [Use inlines for stdarg functions])
-  cflags="-noixemul"
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-noixemul -mcpu=${CPU}"
-  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  cflags="$target_cflags -noixemul"
+  optflags="-mcpu=${CPU} $target_optflags"
+  linkerflags="$target_ldflags -noixemul -mcpu=${CPU}"
+  asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
   resident="-mresident32"
   buildhandler="true"
   stripflag=""
  ;;
  x86_64-*-aros)
  : ${CPU="x86_64"}
-  cflags=""
-  optflags="-O2 -fomit-frame-pointer"
-  linkerflags=""
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -147,7 +182,7 @@ esac
 top_builddir=$(pwd)
 
 : ${CFLAGS="-g -W -Wall -Wstrict-prototypes -Wno-unused ${cflags} ${optflags}"}
-: ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir}"}
+: ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir} $target_cppflags"}
 : ${LDFLAGS="${linkerflags}"}
 : ${ASFLAGS="${asflags}"}
 : ${ARFLAGS="-ru"}

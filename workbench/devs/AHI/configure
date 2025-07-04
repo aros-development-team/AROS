@@ -741,6 +741,10 @@ enable_option_checking
 with_cpu
 with_os_includedir
 enable_warpup
+with_target_cflags
+with_target_ldflags
+with_target_asflags
+with_target_optflags
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1378,6 +1382,11 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-cpu              The CPU to optimize for
   --with-os-includedir    Path to AmigaOS include directory
+  --with-target-cflags    CFLAGS needed for the target
+  --with-target-cppflags    CPPFLAGS needed for the target
+  --with-target-ldflags    LDFLAGS needed for the target
+  --with-target-asflags    ASFLAGS needed for the target
+  --with-target-optflags    Optimization flags to use (Default -O2)
 
 Some influential environment variables:
   CC          C compiler command
@@ -3246,43 +3255,113 @@ ENABLE_WARPUP=${enable_warpup}
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${enable_warpup}" >&5
 printf "%s\n" "${enable_warpup}" >&6; }
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Target CFLAGS" >&5
+printf %s "checking Target CFLAGS... " >&6; }
+
+# Check whether --with-target-cflags was given.
+if test ${with_target_cflags+y}
+then :
+  withval=$with_target_cflags; target_cflags="${withval}"
+else $as_nop
+  target_cflags=""
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${target_cflags} " >&5
+printf "%s\n" "${target_cflags} " >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Target CPPFLAGS" >&5
+printf %s "checking Target CPPFLAGS... " >&6; }
+
+# Check whether --with-target-ldflags was given.
+if test ${with_target_ldflags+y}
+then :
+  withval=$with_target_ldflags; target_cppflags="${withval}"
+else $as_nop
+  target_cppflags=""
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${target_cppflags} " >&5
+printf "%s\n" "${target_cppflags} " >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Target LDFLAGS" >&5
+printf %s "checking Target LDFLAGS... " >&6; }
+
+# Check whether --with-target-ldflags was given.
+if test ${with_target_ldflags+y}
+then :
+  withval=$with_target_ldflags; target_ldflags="${withval}"
+else $as_nop
+  target_ldflags=""
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${target_ldflags} " >&5
+printf "%s\n" "${target_ldflags} " >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Target ASFLAGS" >&5
+printf %s "checking Target ASFLAGS... " >&6; }
+
+# Check whether --with-target-asflags was given.
+if test ${with_target_asflags+y}
+then :
+  withval=$with_target_asflags; target_asflags="${withval}"
+else $as_nop
+  target_asflags=""
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${target_asflags} " >&5
+printf "%s\n" "${target_asflags} " >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Optimization flags" >&5
+printf %s "checking Optimization flags... " >&6; }
+
+# Check whether --with-target-optflags was given.
+if test ${with_target_optflags+y}
+then :
+  withval=$with_target_optflags; target_optflags="${withval}"
+else $as_nop
+  target_optflags="-O2"
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${target_optflags} " >&5
+printf "%s\n" "${target_optflags} " >&6; }
+
 case $host in
  i?86be-pc-amithlon)
   : ${CPU="i686"}
-  cflags="-noixemul"
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-noixemul -mcpu=${CPU} -r"
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  cflags="$target_cflags -noixemul"
+  optflags="-mcpu=${CPU} $target_optflags"
+  linkerflags="$target_ldflags -noixemul -mcpu=${CPU} -r"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
   resident=""                                        stripflag=""
  ;;
  i?86-*-aros)
  : ${CPU="i486"}
-  cflags=""
-  optflags="-m32 -march=${CPU} -O2"
-  linkerflags=""
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  cflags="$target_cflags "
+  optflags="-m32 -march=${CPU} $target_optflags"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
  ;;
  m68k-unknown-amigaos)
   : ${CPU="68020-60"}
-  cflags="-noixemul"
-  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
-  linkerflags="-noixemul -m${CPU}"
+  cflags="$target_cflags -noixemul"
+  optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="$target_ldflags -noixemul -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident="-resident"
   buildhandler="true"
   stripflag=""
  ;;
  m68k-*-aros)
   : ${CPU="68020-60"}
-  cflags=""
-  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
-  linkerflags="-m${CPU}"
+  cflags="$target_cflags "
+  optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="$target_ldflags -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3295,10 +3374,10 @@ printf "%s\n" "#define __USE_INLINE__ 1" >>confdefs.h
 
 printf "%s\n" "#define __USE_BASETYPE__ 1" >>confdefs.h
 
-  cflags=""
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-mcpu=${CPU}"
-  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  cflags="$target_cflags "
+  optflags="-mcpu=${CPU} $target_optflags"
+  linkerflags="$target_ldflags -mcpu=${CPU}"
+  asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
   resident=""                                        stripflag=""
  ;;
  powerpc-unknown-morphos)
@@ -3306,20 +3385,20 @@ printf "%s\n" "#define __USE_BASETYPE__ 1" >>confdefs.h
 
 printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
 
-  cflags="-noixemul"
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-noixemul -mcpu=${CPU}"
-  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  cflags="$target_cflags -noixemul"
+  optflags="-mcpu=${CPU} $target_optflags"
+  linkerflags="$target_ldflags -noixemul -mcpu=${CPU}"
+  asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
   resident="-mresident32"
   buildhandler="true"
   stripflag=""
  ;;
  x86_64-*-aros)
  : ${CPU="x86_64"}
-  cflags=""
-  optflags="-O2 -fomit-frame-pointer"
-  linkerflags=""
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3333,7 +3412,7 @@ esac
 top_builddir=$(pwd)
 
 : ${CFLAGS="-g -W -Wall -Wstrict-prototypes -Wno-unused ${cflags} ${optflags}"}
-: ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir}"}
+: ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir} $target_cppflags"}
 : ${LDFLAGS="${linkerflags}"}
 : ${ASFLAGS="${asflags}"}
 : ${ARFLAGS="-ru"}
