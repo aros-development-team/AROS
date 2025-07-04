@@ -316,7 +316,7 @@ endif
 tools-crosstools-llvm-toolchain :
 ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
 	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm llvm $(crosstools-llvm-make-env) && \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm LLVM $(crosstools-llvm-make-env) && \
 	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) && \
 	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean && \
 	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm lld $(crosstools-llvm-make-env) && \
