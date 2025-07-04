@@ -9,8 +9,8 @@ AROS_SECTION_COMMENT          := @aros_targetsection_comment@
 #
 # C standards supported ...
 # 
-CFLAGS_C98                              := @aros_cflags_c98@
-CFLAGS_GNU98                            := @aros_cflags_gnu98@
+CFLAGS_C89                              := @aros_cflags_c89@
+CFLAGS_GNU89                            := @aros_cflags_gnu89@
 CFLAGS_C99                              := @aros_cflags_c99@
 CFLAGS_GNU99                            := @aros_cflags_gnu99@
 CFLAGS_C11                              := @aros_cflags_c11@

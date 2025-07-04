@@ -868,8 +868,8 @@ aros_cflags_gnu11
 aros_cflags_c11
 aros_cflags_gnu99
 aros_cflags_c99
-aros_cflags_gnu98
-aros_cflags_c98
+aros_cflags_gnu89
+aros_cflags_c89
 ac_ct_CXX
 CXXFLAGS
 CXX
@@ -3745,9 +3745,9 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c98" >&5
-printf %s "checking whether ${CC} supports -std=c98... " >&6; }
-CFLAGS=-std=c98
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c89" >&5
+printf %s "checking whether ${CC} supports -std=c89... " >&6; }
+CFLAGS=-std=c89
 
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -3762,20 +3762,20 @@ main (void)
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
-  aros_c98="yes"
+  aros_c89="yes"
 else $as_nop
-  aros_c98="no"
+  aros_c89="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_c98" >&5
-printf "%s\n" "$aros_c98" >&6; }
-if test "x-$aros_c98" = "x-yes" ; then
-    aros_cflags_c98=-std=c98
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_c89" >&5
+printf "%s\n" "$aros_c89" >&6; }
+if test "x-$aros_c89" = "x-yes" ; then
+    aros_cflags_c89=-std=c89
 fi
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu98" >&5
-printf %s "checking whether ${CC} supports -std=gnu98... " >&6; }
-CFLAGS=-std=gnu98
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=gnu89" >&5
+printf %s "checking whether ${CC} supports -std=gnu89... " >&6; }
+CFLAGS=-std=gnu89
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3789,15 +3789,15 @@ main (void)
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
-  aros_cgnu98="yes"
+  aros_cgnu89="yes"
 else $as_nop
-  aros_cgnu98="no"
+  aros_cgnu89="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu98" >&5
-printf "%s\n" "$aros_cgnu98" >&6; }
-if test "x-$aros_cgnu98" = "x-yes" ; then
-    aros_cflags_gnu98=-std=gnu98
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_cgnu89" >&5
+printf "%s\n" "$aros_cgnu89" >&6; }
+if test "x-$aros_cgnu89" = "x-yes" ; then
+    aros_cflags_gnu89=-std=gnu89
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -std=c99" >&5
