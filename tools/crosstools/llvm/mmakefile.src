@@ -312,25 +312,33 @@ endif
     archive=$(LLVM_ARCHBASE) suffixes="tar.xz"                                                                                          \
     destination=$(HOSTDIR)/Ports/host/llvm
 
+JOBS := $(shell expr '$(MAKEFLAGS)' : '.*-j\([0-9]*\)')
+ifeq ($(JOBS),)
+  JOBS := 1
+endif
+
 #MM
 tools-crosstools-llvm-toolchain :
 ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
-	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm LLVM $(crosstools-llvm-make-env) && \
-	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) && \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean && \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm lld $(crosstools-llvm-make-env) && \
-	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) && \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean && \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang $(crosstools-llvm-make-env) && \
-	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env) && \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean && \
-	    $(TOUCH) $(llvm-installflag); \
+	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then                                                                                    \
+	    $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm LLVM $(crosstools-llvm-make-env) &&                                           \
+	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-LLVM $(crosstools-llvm-install-env) &&                                      \
+        $(STRIP) $(CROSSTOOLSDIR)/lib/libLLVM*.so &&                                                                                    \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
+	    $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm lld $(crosstools-llvm-make-env) &&                                            \
+	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-lld $(crosstools-llvm-install-env) &&                                       \
+        $(STRIP) $(LLVM_BUILD_BINDIR)/lld &&                                                                                            \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
+	    $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang $(crosstools-llvm-make-env) &&                                          \
+	    $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang $(crosstools-llvm-install-env) &&                                     \
+        $(STRIP) $(LLVM_BUILD_BINDIR)/clang &&                                                                                          \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
+	    $(TOUCH) $(llvm-installflag);                                                                                                   \
 	fi
-else    
+else
 	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag) ; then                                                                                   \
-	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang lld $(crosstools-llvm-make-env)                                                   \
-	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install $(crosstools-llvm-install-env)                                           \
+	    $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang lld $(crosstools-llvm-make-env)                                         \
+	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install/strip $(crosstools-llvm-install-env)                                     \
 	    && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean                                                                                \
 	    && $(TOUCH) $(llvm-installflag) ;                                                                                               \
 	fi
