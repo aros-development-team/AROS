@@ -14,6 +14,15 @@ AC_CANONICAL_SYSTEM
 AC_PROG_MAKE_SET
 AC_CONFIG_HEADER( config.h )
 
+dnl Checks for programs.
+
+AC_CHECK_TOOL( CC, gcc, : ) 
+AC_CHECK_TOOL( AS, as, : ) 
+AC_CHECK_TOOL( AR, ar, : )
+AC_CHECK_TOOL( RANLIB, ranlib, : )
+AC_CHECK_TOOL( STRIP, strip, : )
+AC_CHECK_TOOL( OBJCOPY, objcopy, : ) 
+
 AC_MSG_CHECKING([whether the assembler accepts -Wa,--defsym])
 
 # Write out a minimal assembler file
@@ -159,15 +168,6 @@ AC_SUBST(CFLAG_RESIDENT)
 AC_SUBST(LDFLAG_RESIDENT)
 AC_SUBST(DISTDIR)
 
-dnl Checks for programs.
-
-AC_CHECK_TOOL( CC, gcc, : ) 
-AC_CHECK_TOOL( AS, as, : ) 
-AC_CHECK_TOOL( AR, ar, : )
-AC_CHECK_TOOL( RANLIB, ranlib, : )
-AC_CHECK_TOOL( STRIP, strip, : )
-AC_CHECK_TOOL( OBJCOPY, objcopy, : ) 
-
 AC_PROG_INSTALL
 #AC_PROG_CC
 AC_PROG_RANLIB
@@ -201,7 +201,8 @@ AC_SEARCH_LIBS([NewList],      [amiga],, [AC_MSG_WARN(libamiga is missing.)])
 AC_SEARCH_LIBS([floor],        [m],,	 [AC_MSG_ERROR(libm is missing.)])
 AC_SEARCH_LIBS([IntuitionBase],[auto],,  [AC_MSG_WARN(Who cares?)])
 AC_SEARCH_LIBS([LayoutBase],   [raauto],,[AC_MSG_WARN(Who cares?)])
-AC_SEARCH_LIBS([MUI_NewObject],[mui],,   [AC_MSG_WARN(Who cares?)])
+AC_SEARCH_LIBS([MUI_NewObject],[mui],[AC_DEFINE([HAVE_LIBMUI], [1], [Define to 1 if you have the `mui' library (-lmui)])],   [AC_MSG_WARN(Who cares?)])
+AC_SUBST(HAVE_LIBMUI)
 
 dnl Checks for library functions.
 

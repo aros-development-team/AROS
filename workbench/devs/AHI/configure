@@ -655,6 +655,7 @@ HAVE_OSS
 HAVE_OPENPCI
 HAVE_ASMIO
 AHI_BUILDHANDLER
+HAVE_LIBMUI
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -669,12 +670,6 @@ RM
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
-OBJCOPY
-STRIP
-RANLIB
-AR
-AS
-CC
 DISTDIR
 LDFLAG_RESIDENT
 CFLAG_RESIDENT
@@ -682,6 +677,12 @@ STRIPFLAGS
 ARFLAGS
 ASFLAGS
 ENABLE_WARPUP
+OBJCOPY
+STRIP
+RANLIB
+AR
+AS
+CC
 SET_MAKE
 target_os
 target_vendor
@@ -2563,182 +2564,6 @@ fi
 ac_config_headers="$ac_config_headers config.h"
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler accepts -Wa,--defsym" >&5
-printf %s "checking whether the assembler accepts -Wa,--defsym... " >&6; }
-
-# Write out a minimal assembler file
-cat > conftest.s << 'EOF'
-    .globl  foo
-foo:
-    nop
-EOF
-
-# Try compiling using the assembler explicitly
-if $AS -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-
-printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
-
-  ASDEFSYM="-Wa,--defsym,"
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-  ASDEFSYM="--defsym "
-fi
-
-rm -f conftest.s conftest.o
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPU to build for" >&5
-printf %s "checking CPU to build for... " >&6; }
-
-# Check whether --with-cpu was given.
-if test ${with_cpu+y}
-then :
-  withval=$with_cpu; CPU=${withval}
-else $as_nop
-  unset CPU
-fi
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CPU}" >&5
-printf "%s\n" "${CPU}" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking OS include directory" >&5
-printf %s "checking OS include directory... " >&6; }
-
-# Check whether --with-os-includedir was given.
-if test ${with_os_includedir+y}
-then :
-  withval=$with_os_includedir; os_includedir="-I${withval}"
-else $as_nop
-  os_includedir=""
-fi
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${os_includedir} " >&5
-printf "%s\n" "${os_includedir} " >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if WarpUp support code should be enabled" >&5
-printf %s "checking if WarpUp support code should be enabled... " >&6; }
-# Check whether --enable-warpup was given.
-if test ${enable_warpup+y}
-then :
-  enableval=$enable_warpup; printf "%s\n" "#define ENABLE_WARPUP 1" >>confdefs.h
-
-fi
-
-ENABLE_WARPUP=${enable_warpup}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${enable_warpup}" >&5
-printf "%s\n" "${enable_warpup}" >&6; }
-
-case $host in
- i?86be-pc-amithlon)
-  : ${CPU="i686"}
-  cflags="-noixemul"
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-noixemul -mcpu=${CPU} -r"
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
-  resident=""                                        stripflag=""
- ;;
- i?86-*-aros)
- : ${CPU="i486"}
-  cflags=""
-  optflags="-m32 -march=${CPU} -O2"
-  linkerflags=""
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
-  resident=""
-  buildhandler="true"
-  stripflag=""
- ;;
- m68k-unknown-amigaos)
-  : ${CPU="68020-60"}
-  cflags="-noixemul"
-  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
-  linkerflags="-noixemul -m${CPU}"
-  asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
-  resident="-resident"
-  buildhandler="true"
-  stripflag=""
- ;;
- m68k-*-aros)
-  : ${CPU="68020-60"}
-  cflags=""
-  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
-  linkerflags="-m${CPU}"
-  asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
-  resident=""
-  buildhandler="true"
-  stripflag=""
- ;;
- powerpc-unknown-amigaos)
-  : ${CPU="603"}
-
-printf "%s\n" "#define __USE_INLINE__ 1" >>confdefs.h
-
-
-printf "%s\n" "#define __USE_BASETYPE__ 1" >>confdefs.h
-
-  cflags=""
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-mcpu=${CPU}"
-  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
-  resident=""                                        stripflag=""
- ;;
- powerpc-unknown-morphos)
-  : ${CPU="603"}
-
-printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
-
-  cflags="-noixemul"
-  optflags="-mcpu=${CPU} -O2"
-  linkerflags="-noixemul -mcpu=${CPU}"
-  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
-  resident="-mresident32"
-  buildhandler="true"
-  stripflag=""
- ;;
- x86_64-*-aros)
- : ${CPU="x86_64"}
-  cflags=""
-  optflags="-O2 -fomit-frame-pointer"
-  linkerflags=""
-  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
-  resident=""
-  buildhandler="true"
-  stripflag=""
- ;;
- *)
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Unknown architecture!" >&5
-printf "%s\n" "$as_me: WARNING: Unknown architecture!" >&2;}
- ;;
-esac
-
-top_builddir=$(pwd)
-
-: ${CFLAGS="-g -W -Wall -Wstrict-prototypes -Wno-unused ${cflags} ${optflags}"}
-: ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir}"}
-: ${LDFLAGS="${linkerflags}"}
-: ${ASFLAGS="${asflags}"}
-: ${ARFLAGS="-ru"}
-: ${STRIPFLAGS="${stripflag}"}
-
-: ${CFLAG_RESIDENT="${resident}"}
-: ${LDFLAG_RESIDENT="${resident}"}
-
-: ${DISTDIR="/tmp/${host_alias}-ahi"}
-: ${AHI_BUILDHANDLER="${buildhandler}"}
-
-
-
-
-
-
-
-
-
-
 
 if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}gcc", so it can be a program name with args.
@@ -3351,6 +3176,182 @@ esac
 else
   OBJCOPY="$ac_cv_prog_OBJCOPY"
 fi
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler accepts -Wa,--defsym" >&5
+printf %s "checking whether the assembler accepts -Wa,--defsym... " >&6; }
+
+# Write out a minimal assembler file
+cat > conftest.s << 'EOF'
+    .globl  foo
+foo:
+    nop
+EOF
+
+# Try compiling using the assembler explicitly
+if $AS -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
+
+  ASDEFSYM="-Wa,--defsym,"
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+  ASDEFSYM="--defsym "
+fi
+
+rm -f conftest.s conftest.o
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPU to build for" >&5
+printf %s "checking CPU to build for... " >&6; }
+
+# Check whether --with-cpu was given.
+if test ${with_cpu+y}
+then :
+  withval=$with_cpu; CPU=${withval}
+else $as_nop
+  unset CPU
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CPU}" >&5
+printf "%s\n" "${CPU}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking OS include directory" >&5
+printf %s "checking OS include directory... " >&6; }
+
+# Check whether --with-os-includedir was given.
+if test ${with_os_includedir+y}
+then :
+  withval=$with_os_includedir; os_includedir="-I${withval}"
+else $as_nop
+  os_includedir=""
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${os_includedir} " >&5
+printf "%s\n" "${os_includedir} " >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if WarpUp support code should be enabled" >&5
+printf %s "checking if WarpUp support code should be enabled... " >&6; }
+# Check whether --enable-warpup was given.
+if test ${enable_warpup+y}
+then :
+  enableval=$enable_warpup; printf "%s\n" "#define ENABLE_WARPUP 1" >>confdefs.h
+
+fi
+
+ENABLE_WARPUP=${enable_warpup}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${enable_warpup}" >&5
+printf "%s\n" "${enable_warpup}" >&6; }
+
+case $host in
+ i?86be-pc-amithlon)
+  : ${CPU="i686"}
+  cflags="-noixemul"
+  optflags="-mcpu=${CPU} -O2"
+  linkerflags="-noixemul -mcpu=${CPU} -r"
+  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""                                        stripflag=""
+ ;;
+ i?86-*-aros)
+ : ${CPU="i486"}
+  cflags=""
+  optflags="-m32 -march=${CPU} -O2"
+  linkerflags=""
+  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ m68k-unknown-amigaos)
+  : ${CPU="68020-60"}
+  cflags="-noixemul"
+  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="-noixemul -m${CPU}"
+  asCPU=`echo ${CPU} | sed 's/-.*//'`
+  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  resident="-resident"
+  buildhandler="true"
+  stripflag=""
+ ;;
+ m68k-*-aros)
+  : ${CPU="68020-60"}
+  cflags=""
+  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="-m${CPU}"
+  asCPU=`echo ${CPU} | sed 's/-.*//'`
+  asflags="$ASFLAGS -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ powerpc-unknown-amigaos)
+  : ${CPU="603"}
+
+printf "%s\n" "#define __USE_INLINE__ 1" >>confdefs.h
+
+
+printf "%s\n" "#define __USE_BASETYPE__ 1" >>confdefs.h
+
+  cflags=""
+  optflags="-mcpu=${CPU} -O2"
+  linkerflags="-mcpu=${CPU}"
+  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  resident=""                                        stripflag=""
+ ;;
+ powerpc-unknown-morphos)
+  : ${CPU="603"}
+
+printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
+
+  cflags="-noixemul"
+  optflags="-mcpu=${CPU} -O2"
+  linkerflags="-noixemul -mcpu=${CPU}"
+  asflags="$ASFLAGS -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  resident="-mresident32"
+  buildhandler="true"
+  stripflag=""
+ ;;
+ x86_64-*-aros)
+ : ${CPU="x86_64"}
+  cflags=""
+  optflags="-O2 -fomit-frame-pointer"
+  linkerflags=""
+  asflags="$ASFLAGS ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ *)
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Unknown architecture!" >&5
+printf "%s\n" "$as_me: WARNING: Unknown architecture!" >&2;}
+ ;;
+esac
+
+top_builddir=$(pwd)
+
+: ${CFLAGS="-g -W -Wall -Wstrict-prototypes -Wno-unused ${cflags} ${optflags}"}
+: ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir}"}
+: ${LDFLAGS="${linkerflags}"}
+: ${ASFLAGS="${asflags}"}
+: ${ARFLAGS="-ru"}
+: ${STRIPFLAGS="${stripflag}"}
+
+: ${CFLAG_RESIDENT="${resident}"}
+: ${LDFLAG_RESIDENT="${resident}"}
+
+: ${DISTDIR="/tmp/${host_alias}-ahi"}
+: ${AHI_BUILDHANDLER="${buildhandler}"}
+
+
+
+
+
+
+
+
 
 
 
@@ -5107,10 +5108,13 @@ if test "$ac_res" != no
 then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
+printf "%s\n" "#define HAVE_LIBMUI 1" >>confdefs.h
+
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Who cares?" >&5
 printf "%s\n" "$as_me: WARNING: Who cares?" >&2;}
 fi
+
 
 
 
