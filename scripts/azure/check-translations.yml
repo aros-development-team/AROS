@@ -141,7 +141,7 @@ steps:
 # Ensure the remote directory exists, then upload the files
 - bash: |
     echo "Creating remote target directory..."
-    ssh "$(SF_RSYNC_USER_AROS)@web.sourceforge.net" "mkdir -p htdocs/documentation/issues"
+    ssh "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net" "mkdir -p htdocs/documentation/issues"
 
     echo "Uploading generated HTML pages using SSH key..."
     rsync -avz -e ssh \
