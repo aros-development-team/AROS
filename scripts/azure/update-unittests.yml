@@ -5,7 +5,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-    PROJWEBDIR:  '/home/project-web' # Location script is run from
+  PROJWEBDIR: '/home/project-web' # Location script is run from
 
 steps:
 - task: DownloadSecureFile@1
@@ -26,16 +26,28 @@ steps:
 
 - script: |
     echo "Checking shell access..."
-    # Try a noop command to test if shell is ready
     if ! ssh -o StrictHostKeyChecking=no "$MAPPED_USER"@shell.sourceforge.net true; then
       echo "Shell not active yet. Creating shell..."
       ssh -t "$MAPPED_USER"@shell.sourceforge.net create
+
+      echo "Waiting for shell to become active (retrying up to 5 times)..."
+      for i in $(seq 1 5); do
+        if ssh -o StrictHostKeyChecking=no "$MAPPED_USER"@shell.sourceforge.net true; then
+          echo "Shell is ready."
+          break
+        else
+          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
+          sleep 5
+        fi
+      done
+    else
+      echo "Shell already active."
     fi
 
     echo "Running cleanup script on SourceForge..."
     ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER"@shell.sourceforge.net \
       "cd '$PROJWEBDIR' && ./aros/scripts/unittests-clean"
   env:
-    MAPPED_USER: $(SF_RSYNC_USER)  # Set this in your pipeline variable group or UI
+    MAPPED_USER: $(SF_RSYNC_USER)
   condition: ne( variables['SF_RSYNC_USER'], '' )
   displayName: 'Run Remote Unittest Cleanup'
