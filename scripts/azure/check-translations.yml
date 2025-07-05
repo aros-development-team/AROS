@@ -13,7 +13,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  SF_RSYNC_USER_AROS: "$(SF_RSYNC_USER),translations"
+  SF_RSYNC_USER_TRANS: "$(SF_RSYNC_USER),translations"
 
 steps:
 - checkout: self
@@ -138,12 +138,15 @@ steps:
     python3 scripts/azure/gen-smtranslation-pages.py submodule_localization_issues.txt
   displayName: 'Generate HTML Pages from Submodule Localization Issues'
 
-# Upload the generated HTML pages using SSH key
+# Ensure the remote directory exists, then upload the files
 - bash: |
+    echo "Creating remote target directory..."
+    ssh "$(SF_RSYNC_USER_AROS)@web.sourceforge.net" "mkdir -p htdocs/documentation/issues"
+
     echo "Uploading generated HTML pages using SSH key..."
     rsync -avz -e ssh \
       output/ \
-      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:htdocs/documentation/issues/"
+      "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/issues/"
   displayName: 'Upload generated HTML pages using SSH key'
 
 # Upload the remaining file via SSH key using rsync
@@ -151,5 +154,5 @@ steps:
     echo "Uploading localization issue files using SSH key..."
     rsync -avz -e ssh \
       repository_localization_issues.txt \
-      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:htdocs/documentation/"
+      "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/"
   displayName: 'Upload localization issue files using SSH key'
