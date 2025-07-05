@@ -3300,8 +3300,8 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${target_optflags} " >&5
 printf "%s\n" "${target_optflags} " >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler accepts -Wa,--defsym" >&5
-printf %s "checking whether the assembler accepts -Wa,--defsym... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler needs -Wa to forward options" >&5
+printf %s "checking whether the assembler needs -Wa to forward options... " >&6; }
 
 # Write out a minimal assembler file
 cat > conftest.s << 'EOF'
@@ -3317,7 +3317,8 @@ printf "%s\n" "yes" >&6; }
 
 printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
 
-  ASDEFSYM="-Wa,--defsym,"
+  ASFWDOPT="-Wa,"
+  ASDEFSYM="${ASFWDOPT}--defsym,"
 else
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
@@ -3351,7 +3352,7 @@ case $host in
   optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
   linkerflags="$target_ldflags -noixemul -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident="-resident"
   buildhandler="true"
   stripflag=""
@@ -3362,7 +3363,7 @@ case $host in
   optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
   linkerflags="$target_ldflags -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident=""
   buildhandler="true"
   stripflag=""

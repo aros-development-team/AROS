@@ -79,7 +79,7 @@ target_optflags="${withval}",
 target_optflags="-O2")
 AC_MSG_RESULT(${target_optflags} )
 
-AC_MSG_CHECKING([whether the assembler accepts -Wa,--defsym])
+AC_MSG_CHECKING([whether the assembler needs -Wa to forward options])
 
 # Write out a minimal assembler file
 cat > conftest.s << 'EOF'
@@ -91,8 +91,9 @@ EOF
 # Try compiling using the assembler explicitly
 if $AS $target_asflags -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
   AC_MSG_RESULT([yes])
-  AC_DEFINE([HAVE_AS_DEF_SYM], [1], [Assembler supports -Wa,--defsym])
-  ASDEFSYM="-Wa,--defsym,"
+  AC_DEFINE([HAVE_AS_DEF_SYM], [1], [Assembler needs -Wa])
+  ASFWDOPT="-Wa,"
+  ASDEFSYM="${ASFWDOPT}--defsym,"
 else
   AC_MSG_RESULT([no])
   ASDEFSYM="--defsym "
@@ -126,7 +127,7 @@ case $host in
   optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
   linkerflags="$target_ldflags -noixemul -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident="-resident"
   buildhandler="true"
   stripflag=""
@@ -137,7 +138,7 @@ case $host in
   optflags="-m${CPU} $target_optflags -fomit-frame-pointer -ffast-math -msoft-float"
   linkerflags="$target_ldflags -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
-  asflags="$target_asflags -m${asCPU} --register-prefix-optional --bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
   resident=""
   buildhandler="true"
   stripflag=""
