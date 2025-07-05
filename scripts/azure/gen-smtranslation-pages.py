@@ -72,20 +72,26 @@ LANG_TO_FLAG = {
     'turkish': 'tr.png',
 }
 
-def wrap_flags_html(langs):
+def wrap_flags_html(langs, size_suffix=""):
     valid_langs = sorted(lang for lang in langs if lang in LANGUAGE_MAP)
 
     imgs = []
     for lang in valid_langs:
-        flag_file = LANG_TO_FLAG.get(lang)
-        if not flag_file:
-            # If no flag image for this language, skip or use a placeholder
+        base_flag_file = LANG_TO_FLAG.get(lang)
+        if not base_flag_file:
             continue
+
+        # Insert the suffix before the extension if suffix is not empty
+        if size_suffix:
+            name, ext = base_flag_file.rsplit('.', 1)
+            flag_file = f"{name}-{size_suffix}.{ext}"
+        else:
+            flag_file = base_flag_file
+
         imgs.append(
             f"<img src='/images/flags/{flag_file}' alt='{LANGUAGE_MAP[lang]}' title='{LANGUAGE_MAP[lang]}' style='height:24px;margin-right:4px;'>"
         )
 
-    # Split into lines of 4 flags each
     lines = [' '.join(imgs[i:i+4]) for i in range(0, len(imgs), 4)]
 
     return '<br>'.join(lines)
@@ -135,7 +141,7 @@ def generate_module_pages(modules, output_dir):
             if known_langs:
                 f.write("<p>Affected Languages: ")
                 # Generate flag images with links to anchors
-                flags_html = wrap_flags_html(known_langs)  # e.g. images only
+                flags_html = wrap_flags_html(known_langs, "")  # e.g. images only
                 # Simple parsing + wrapping images with <a href="#lang">
                 # We do string manipulation here instead of using BeautifulSoup to avoid dependencies
                 import re
@@ -210,7 +216,7 @@ def generate_index_page(modules, output_dir):
 
         for module, data in sorted(modules.items()):
             known_langs = sorted(lang for lang in data["languages"] if lang in LANGUAGE_MAP)
-            flags_html = wrap_flags_html(known_langs) if known_langs else ''
+            flags_html = wrap_flags_html(known_langs, "16") if known_langs else ''
 
             # Count total errors/warnings
             total_errors = len(data.get("errors", []))
