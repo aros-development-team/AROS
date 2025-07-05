@@ -133,7 +133,16 @@ def generate_module_pages(modules, output_dir):
         known_langs = sorted(lang for lang in data["languages"] if lang in LANGUAGE_MAP)
 
         with open(module_file, "w") as f:
-            f.write(f"<html><head><title>{module} Translation Errors</title></head><body>\n")
+            f.write("<html><head>\n")
+            f.write(f"<title>{module} Translation Errors</title>\n")
+            f.write('<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n')
+            f.write('<link rel="stylesheet" type="text/css" href="/aros.css?v=1.6">\n')
+            f.write('<link rel="stylesheet" type="text/css" href="/print.css?v=1.0" media="print">\n')
+            f.write('<link rel="icon" type="image/x-icon" href="/aros.ico">\n')
+            f.write(f'<meta name="keywords" content="{module}, AROS translations, localization, translations">\n')
+            f.write('<meta name="viewport" content="width=device-width, initial-scale=1">\n')
+            f.write("</head><body>\n")
+            
             f.write(f"<h1>Module: {module}</h1>\n")
             f.write(f"<p>Repository: <a href='{data['repo']}'>{data['repo']}</a></p>\n")
             f.write(f"<p><a href='index.html'>Back to Index</a></p>\n")
