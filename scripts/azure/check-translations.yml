@@ -142,7 +142,7 @@ steps:
 # Create target directory on SourceForge web space
 - bash: |
     echo "Ensuring target directory exists on SourceForge..."
-    ssh -o StrictHostKeyChecking=yes "$SF_RSYNC_USER_TRANS"@shell.sourceforge.net \
+    ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net \
       "mkdir -p /home/project-web/translations/htdocs/documentation/issues"
   displayName: 'Create target directory on SourceForge'
 
@@ -151,7 +151,7 @@ steps:
     echo "Uploading generated HTML pages using SSH key..."
     rsync -avz -e ssh \
       output/ \
-      "$SF_RSYNC_USER_TRANS@web.sourceforge.net:htdocs/documentation/issues/"
+      "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/issues/"
   displayName: 'Upload generated HTML pages using SSH key'
 
 # Upload the remaining file via SSH key using rsync
