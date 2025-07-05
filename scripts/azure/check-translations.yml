@@ -133,11 +133,23 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   displayName: 'Download and Process Logs'
 
-# Upload the result files via SSH key using rsync
+# Run the Python script to generate HTML pages from the warnings file
+- bash: |
+    python3 gen-smtranslation-pages.py submodule_localization_issues.txt
+  displayName: 'Generate HTML Pages from Submodule Localization Issues'
+
+# Upload the generated HTML pages using SSH key
+- bash: |
+    echo "Uploading generated HTML pages using SSH key..."
+    rsync -avz -e ssh \
+      output/ \
+      "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:htdocs/documentation/issues/"
+  displayName: 'Upload generated HTML pages using SSH key'
+
+# Upload the remaining file via SSH key using rsync
 - bash: |
     echo "Uploading localization issue files using SSH key..."
     rsync -avz -e ssh \
-      submodule_localization_issues.txt \
       repository_localization_issues.txt \
       "$(SF_RSYNC_USER_AROS)@web.sourceforge.net:htdocs/documentation/"
   displayName: 'Upload localization issue files using SSH key'
