@@ -458,7 +458,10 @@ STDC_WCHAR := \
     btowc \
     wcsftime \
     swscanf \
-    vswscanf
+    vswscanf \
+    wcscoll \
+    wcsxfrm \
+    wcswcs
 
 STDC_WCHAR_LIBSTUBS := \
     wchar \

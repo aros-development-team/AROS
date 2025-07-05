@@ -229,6 +229,9 @@ POSIXC := \
     waitpid \
     write
 
+POSIXC_LOCALE := \
+    uselocale
+
 # The following files don't have source code here but have a CPU
 # specific version in arch directory hierarchy
 POSIXC_ARCH := \
@@ -271,7 +274,7 @@ POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notd
 
 %build_module mmake=compiler-posixc \
     modname=posixc modtype=library \
-    files="$(POSIXC) $(POSIXC_COMMON) $(POSIXC_ARCH)" \
+    files="$(POSIXC) $(POSIXC_LOCALE) $(POSIXC_COMMON) $(POSIXC_ARCH)" \
     linklibfiles="$(POSIXC_LINKLIB) $(POSIXC_COMMON)" linklibobjs=$(POSIXC_LINKOBJS) \
     uselibs="stdc_rel stdcio_rel"
 

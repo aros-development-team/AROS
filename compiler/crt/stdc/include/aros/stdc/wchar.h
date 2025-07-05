@@ -80,15 +80,10 @@ wchar_t *wcscat(wchar_t * restrict s1, const wchar_t * restrict s2);
 wchar_t *wcsncat(wchar_t * restrict s1, const wchar_t * restrict s2, size_t n);
 int wcscmp(const wchar_t *s1, const wchar_t *s2);
 wchar_t *wcscpy(wchar_t *s1, const wchar_t *s2);
-STDC_WCHAR_NOTIMPL(
 int wcscoll(const wchar_t *s1, const wchar_t *s2);
-)
 int wcsncmp(const wchar_t *s1, const wchar_t *s2, size_t n);
 wchar_t *wcsncpy(wchar_t *s1, const wchar_t *s2, size_t n);
-
-STDC_WCHAR_NOTIMPL(
 size_t wcsxfrm(wchar_t * restrict s1, const wchar_t * restrict s2, size_t n);
-)
 size_t wcscspn(const wchar_t *s1, const wchar_t *s2);
 wchar_t *wcschr(const wchar_t *s, wchar_t c);
 size_t wcslen(const wchar_t *s);
@@ -107,10 +102,6 @@ int wmemcmp(const wchar_t * s1, const wchar_t * s2, size_t n);
 size_t wcsftime(wchar_t * restrict s, size_t maxsize,
 	const wchar_t * restrict format,
 	const struct tm * restrict timeptr);
-STDC_WCHAR_NOTIMPL(
-/* Extended multibyte and wide character utilities */
-int wcwidth(wchar_t);
-)
 /* Extended multibyte and wide character utilities */
 wint_t btowc(int c);
 int wctob(wint_t c);
@@ -169,11 +160,11 @@ size_t mbsrtowcs(wchar_t * restrict dst, const char ** restrict src,
 	size_t len, mbstate_t * restrict ps);
 size_t wcsrtombs(char * restrict dst, const wchar_t ** restrict src,
 	size_t len, mbstate_t * restrict ps);
-STDC_WCHAR_NOTIMPL(
 /*
  * stdcio.library
  */
 /* Formatted wide-character input/output functions */
+STDC_WCHAR_NOTIMPL(
 int fwprintf(struct __sFILE * restrict stream,
         const wchar_t * restrict format, ...);
 int vfwprintf(struct __sFILE * restrict stream,
@@ -197,6 +188,10 @@ wint_t fputws(const wchar_t *ws, struct __sFILE * restrict stream);
 int fwide(struct __sFILE *stream, int mode);
 wint_t getwc(struct __sFILE *stream);
 wint_t putwc(wchar_t c, struct __sFILE *stream);
+
+#if defined(_GNU_SOURCE) || defined(__BSD_VISIBLE)
+wchar_t *wcswcs(const wchar_t *haystack, const wchar_t *needle);
+#endif
 
 __END_DECLS
 
