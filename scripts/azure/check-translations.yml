@@ -138,13 +138,10 @@ steps:
     python3 scripts/azure/gen-smtranslation-pages.py submodule_localization_issues.txt
   displayName: 'Generate HTML Pages from Submodule Localization Issues'
 
-# Ensure the remote directory exists, then upload the files
 - bash: |
-    echo "Creating remote target directory..."
-    ssh "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net" "mkdir -p htdocs/documentation/issues"
-
     echo "Uploading generated HTML pages using SSH key..."
     rsync -avz -e ssh \
+      --rsync-path="mkdir -p htdocs/documentation/issues && rsync" \
       output/ \
       "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/issues/"
   displayName: 'Upload generated HTML pages using SSH key'
