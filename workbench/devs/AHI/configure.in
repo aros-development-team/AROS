@@ -175,6 +175,46 @@ case $host in
   buildhandler="true"
   stripflag=""
  ;;
+ aarch64*-*-aros)
+ : ${CPU="aarch64"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ arm*-*-aros)
+ : ${CPU="arm"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ ppc*-*-aros)
+ : ${CPU="440fp"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU}"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ riscv*-*-aros)
+ : ${CPU="arm"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
  *)
   AC_MSG_WARN(Unknown architecture!)
  ;;

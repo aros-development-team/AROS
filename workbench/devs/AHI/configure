@@ -3405,6 +3405,46 @@ printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
   buildhandler="true"
   stripflag=""
  ;;
+ aarch64*-*-aros)
+ : ${CPU="aarch64"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ arm*-*-aros)
+ : ${CPU="arm"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ ppc*-*-aros)
+ : ${CPU="440fp"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU}"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
+ riscv*-*-aros)
+ : ${CPU="arm"}
+  cflags="$target_cflags "
+  optflags="$target_optflags -fomit-frame-pointer"
+  linkerflags="$target_ldflags"
+  asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  resident=""
+  buildhandler="true"
+  stripflag=""
+ ;;
  *)
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Unknown architecture!" >&5
 printf "%s\n" "$as_me: WARNING: Unknown architecture!" >&2;}
