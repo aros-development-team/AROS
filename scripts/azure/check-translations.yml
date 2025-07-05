@@ -33,6 +33,7 @@ steps:
     chmod 600 ~/.ssh/id_rsa
     chmod 700 ~/.ssh
 
+    ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
     ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
 
     echo "Host web.sourceforge.net" > ~/.ssh/config
@@ -138,12 +139,19 @@ steps:
     python3 scripts/azure/gen-smtranslation-pages.py submodule_localization_issues.txt
   displayName: 'Generate HTML Pages from Submodule Localization Issues'
 
+# Create target directory on SourceForge web space
+- bash: |
+    echo "Ensuring target directory exists on SourceForge..."
+    ssh -o StrictHostKeyChecking=yes "$SF_RSYNC_USER_TRANS"@shell.sourceforge.net \
+      "mkdir -p /home/project-web/translations/htdocs/documentation/issues"
+  displayName: 'Create target directory on SourceForge'
+
+# Upload the generated HTML pages using SSH key
 - bash: |
     echo "Uploading generated HTML pages using SSH key..."
     rsync -avz -e ssh \
-      --rsync-path="mkdir -p htdocs/documentation/issues && rsync" \
       output/ \
-      "$(SF_RSYNC_USER_TRANS)@web.sourceforge.net:htdocs/documentation/issues/"
+      "$SF_RSYNC_USER_TRANS@web.sourceforge.net:htdocs/documentation/issues/"
   displayName: 'Upload generated HTML pages using SSH key'
 
 # Upload the remaining file via SSH key using rsync
