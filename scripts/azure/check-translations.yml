@@ -141,6 +141,24 @@ steps:
 
 # Create target directory on SourceForge web space
 - bash: |
+    echo "Checking shell access..."
+    if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net true; then
+      echo "Shell not active yet. Creating shell..."
+      ssh -t "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net create
+
+      echo "Waiting for shell to become active (retrying up to 5 times)..."
+      for i in $(seq 1 5); do
+        if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net true; then
+          echo "Shell is ready."
+          break
+        else
+          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
+          sleep 5
+        fi
+      done
+    else
+      echo "Shell already active."
+    fi
     echo "Ensuring target directory exists on SourceForge..."
     ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER_TRANS)"@shell.sourceforge.net \
       "mkdir -p /home/project-web/translations/htdocs/documentation/issues"
