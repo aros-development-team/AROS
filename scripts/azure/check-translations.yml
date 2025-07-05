@@ -135,7 +135,7 @@ steps:
 
 # Run the Python script to generate HTML pages from the warnings file
 - bash: |
-    python3 gen-smtranslation-pages.py submodule_localization_issues.txt
+    python3 scripts/azure/gen-smtranslation-pages.py submodule_localization_issues.txt
   displayName: 'Generate HTML Pages from Submodule Localization Issues'
 
 # Upload the generated HTML pages using SSH key
