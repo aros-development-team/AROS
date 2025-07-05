@@ -39,20 +39,54 @@ LANGUAGE_MAP = {
     # add more as needed
 }
 
+LANG_TO_FLAG = {
+    'albanian': 'al.png',
+    'basque': 'es.png',
+    'catalan': 'es.png',
+    'croatian': 'hr.png',
+    'czech': 'cz.png',
+    'danish': 'dk.png',
+    'dutch': 'nl.png',
+    'esperanto': 'esperanto.png',
+    'finnish': 'fi.png',
+    'french': 'fr.png',
+    'german': 'de.png',
+    'greek': 'gr.png',
+    'hungarian': 'hu.png',
+    'icelandic': 'is.png',
+    'italian': 'it.png',
+    'maltese': 'mt.png',
+    'norwegian': 'no.png',
+    'piglatin': 'generic-language.png',  # or empty string if no image
+    'polish': 'pl.png',
+    'portuguese': 'pt.png',
+    'portuguese-brazil': 'br.png',
+    'romanian': 'ro.png',
+    'russian': 'ru.png',
+    'serbian': 'rs.png',
+    'slovak': 'sk.png',
+    'slovene': 'si.png',
+    'spanish': 'es.png',
+    'swedish': 'se.png',
+    'thai': 'th.png',
+    'turkish': 'tr.png',
+}
+
 def wrap_flags_html(langs):
-    # Only include languages that exist in LANGUAGE_MAP
     valid_langs = sorted(lang for lang in langs if lang in LANGUAGE_MAP)
 
-    # Build the image HTML for each language
-    imgs = [
-        f"<img src='/images/{lang}.png' alt='{LANGUAGE_MAP[lang]}' title='{LANGUAGE_MAP[lang]}' style='height:24px;margin-right:4px;'>"
-        for lang in valid_langs
-    ]
+    imgs = []
+    for lang in valid_langs:
+        flag_file = LANG_TO_FLAG.get(lang)
+        if not flag_file:
+            # If no flag image for this language, skip or use a placeholder
+            continue
+        imgs.append(
+            f"<img src='/images/flags/{flag_file}' alt='{LANGUAGE_MAP[lang]}' title='{LANGUAGE_MAP[lang]}' style='height:24px;margin-right:4px;'>"
+        )
 
     # Split into lines of 4 flags each
-    lines = []
-    for i in range(0, len(imgs), 4):
-        lines.append(' '.join(imgs[i:i+4]))
+    lines = [' '.join(imgs[i:i+4]) for i in range(0, len(imgs), 4)]
 
     return '<br>'.join(lines)
 
