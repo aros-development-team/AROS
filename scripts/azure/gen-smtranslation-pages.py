@@ -81,19 +81,22 @@ def wrap_flags_html(langs, size_suffix=""):
         if not base_flag_file:
             continue
 
-        # Insert the suffix before the extension if suffix is not empty
+        # Build the flag filename with optional suffix
         if size_suffix:
             name, ext = base_flag_file.rsplit('.', 1)
             flag_file = f"{name}-{size_suffix}.{ext}"
         else:
             flag_file = base_flag_file
 
+        # Adjust image height if suffix is '16'
+        height = "12px" if size_suffix == "16" else "24px"
+
         imgs.append(
-            f"<img src='/images/flags/{flag_file}' alt='{LANGUAGE_MAP[lang]}' title='{LANGUAGE_MAP[lang]}' style='height:24px;margin-right:4px;'>"
+            f"<img src='/images/flags/{flag_file}' alt='{LANGUAGE_MAP[lang]}' "
+            f"title='{LANGUAGE_MAP[lang]}' style='height:{height};margin-right:4px;'>"
         )
 
     lines = [' '.join(imgs[i:i+4]) for i in range(0, len(imgs), 4)]
-
     return '<br>'.join(lines)
 
 def parse_input_file(input_path):
