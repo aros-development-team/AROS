@@ -209,7 +209,16 @@ def generate_module_pages(modules, output_dir):
 def generate_index_page(modules, output_dir):
     index_path = os.path.join(output_dir, "index.html")
     with open(index_path, "w") as f:
-        f.write("<html><head><title>Submodules with Build Issues and Errors</title></head><body>\n")
+        f.write("<html><head>\n")
+        f.write("<title>Submodules with Build Issues and Errors</title>\n")
+        f.write('<meta http-equiv="Content-Type" content="text/html; charset=utf-8">\n')
+        f.write('<link rel="stylesheet" type="text/css" href="/aros.css?v=1.6">\n')
+        f.write('<link rel="stylesheet" type="text/css" href="/print.css?v=1.0" media="print">\n')
+        f.write('<link rel="icon" type="image/x-icon" href="/aros.ico">\n')
+        f.write('<meta name="keywords" content="AROS translations, localization, translations">\n')
+        f.write('<meta name="viewport" content="width=device-width, initial-scale=1">\n')
+        f.write("</head><body>\n")
+
         f.write("<h1>Submodules with Build Issues and Errors</h1>\n")
         f.write("<table border='1' cellpadding='5'>\n")
         f.write("<tr><th>Affected Languages</th><th>Module</th></tr>\n")
