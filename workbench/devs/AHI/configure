@@ -3188,32 +3188,6 @@ else
 fi
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler accepts -Wa,--defsym" >&5
-printf %s "checking whether the assembler accepts -Wa,--defsym... " >&6; }
-
-# Write out a minimal assembler file
-cat > conftest.s << 'EOF'
-    .globl  foo
-foo:
-    nop
-EOF
-
-# Try compiling using the assembler explicitly
-if $AS -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-
-printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
-
-  ASDEFSYM="-Wa,--defsym,"
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-  ASDEFSYM="--defsym "
-fi
-
-rm -f conftest.s conftest.o
-
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPU to build for" >&5
 printf %s "checking CPU to build for... " >&6; }
 
@@ -3325,6 +3299,32 @@ fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${target_optflags} " >&5
 printf "%s\n" "${target_optflags} " >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler accepts -Wa,--defsym" >&5
+printf %s "checking whether the assembler accepts -Wa,--defsym... " >&6; }
+
+# Write out a minimal assembler file
+cat > conftest.s << 'EOF'
+    .globl  foo
+foo:
+    nop
+EOF
+
+# Try compiling using the assembler explicitly
+if $AS $target_asflags -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
+
+  ASDEFSYM="-Wa,--defsym,"
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+  ASDEFSYM="--defsym "
+fi
+
+rm -f conftest.s conftest.o
 
 case $host in
  i?86be-pc-amithlon)

@@ -23,27 +23,6 @@ AC_CHECK_TOOL( RANLIB, ranlib, : )
 AC_CHECK_TOOL( STRIP, strip, : )
 AC_CHECK_TOOL( OBJCOPY, objcopy, : ) 
 
-AC_MSG_CHECKING([whether the assembler accepts -Wa,--defsym])
-
-# Write out a minimal assembler file
-cat > conftest.s << 'EOF'
-    .globl  foo
-foo:
-    nop
-EOF
-
-# Try compiling using the assembler explicitly
-if $AS -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
-  AC_MSG_RESULT([yes])
-  AC_DEFINE([HAVE_AS_DEF_SYM], [1], [Assembler supports -Wa,--defsym])
-  ASDEFSYM="-Wa,--defsym,"
-else
-  AC_MSG_RESULT([no])
-  ASDEFSYM="--defsym "
-fi
-
-rm -f conftest.s conftest.o
-
 AC_MSG_CHECKING(CPU to build for)
 AC_ARG_WITH(cpu,
 [  --with-cpu              The CPU to optimize for],
@@ -99,6 +78,27 @@ AC_ARG_WITH(target-optflags,
 target_optflags="${withval}",
 target_optflags="-O2")
 AC_MSG_RESULT(${target_optflags} )
+
+AC_MSG_CHECKING([whether the assembler accepts -Wa,--defsym])
+
+# Write out a minimal assembler file
+cat > conftest.s << 'EOF'
+    .globl  foo
+foo:
+    nop
+EOF
+
+# Try compiling using the assembler explicitly
+if $AS $target_asflags -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
+  AC_MSG_RESULT([yes])
+  AC_DEFINE([HAVE_AS_DEF_SYM], [1], [Assembler supports -Wa,--defsym])
+  ASDEFSYM="-Wa,--defsym,"
+else
+  AC_MSG_RESULT([no])
+  ASDEFSYM="--defsym "
+fi
+
+rm -f conftest.s conftest.o
 
 case $host in
  i?86be-pc-amithlon)
