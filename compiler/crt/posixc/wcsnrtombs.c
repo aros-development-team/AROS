@@ -18,12 +18,13 @@
     NAME */
         size_t wcsnrtombs(
 
-/*    SYNOPSIS */
+/*  SYNOPSIS */
         char * restrict dst,
         const wchar_t ** restrict src,
         size_t nwc,
         size_t len,
-        mbstate_t * restrict ps)
+        mbstate_t * restrict ps
+        )
 
 /*    FUNCTION
         Converts at most 'nwc' wide characters from the string pointed to by *src

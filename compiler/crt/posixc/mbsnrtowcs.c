@@ -18,12 +18,13 @@
     NAME */
         size_t mbsnrtowcs(
 
-/*    SYNOPSIS */
+/*  SYNOPSIS */
         wchar_t * restrict dst,
         const char ** restrict src,
         size_t nms,
         size_t len,
-        mbstate_t * restrict ps)
+        mbstate_t * restrict ps
+        )
 
 /*    FUNCTION
         Converts at most 'nms' bytes from the multibyte string pointed to by *src
