@@ -39,7 +39,7 @@
         \item Zero or more of the following flags:
 
         \begin{description}
-        \item{#} specifying that the value should be converted to an
+        \item[#] specifying that the value should be converted to an
         ``alternate form''. For c, d, i, n, p, s, and u conversions, this
         option has no effect. For o conversions, the precision of the
         number is increased to force the first character of the output
@@ -52,24 +52,24 @@
         digit follows). For g and G conversions, trailing zeros are not
         removed from the result as they would otherwise be.
 
-        \item{0} specifying zero padding. For all conversions except n, the
+        \item[0] specifying zero padding. For all conversions except n, the
         converted value is padded on the left with zeros rather than
         blanks. If a precision is given with a numeric conversion (d, i, o,
         u, i, x, and X), the 0 flag is ignored.
 
-        \item{-} (a negative field width flag) indicates the converted
+        \item[-] (a negative field width flag) indicates the converted
         value is to be left adjusted on the field boundary. Except for n
         conversions, the converted value is padded on the right with
         blanks, rather than on the left with blanks or zeros. A -
         overrides a 0 if both are given.
 
-        \item{ } (a space) specifying that a blank should be left before a
+        \item[ ] (a space) specifying that a blank should be left before a
         positive number produced by a signed conversion (d, e, E, f, g, G,
         or i). + specifying that a sign always be placed before a number
         produced by a signed conversion. A + overrides a space if both are
         used.
 
-        \item{'} specifying that in a numerical argument the output is to
+        \item['] specifying that in a numerical argument the output is to
         be grouped if the locale information indicates any. Note that many
         versions of gcc cannot parse this option and will issue a warning.
 
@@ -128,7 +128,7 @@
         The conversion specifiers and their meanings are:
 
         \begin{description}
-        \item{diouxX} The int (or appropriate variant) argument is
+        \item[diouxX] The int (or appropriate variant) argument is
         converted to signed decimal (d and i), unsigned octal (o, unsigned
         decimal (u, or unsigned hexadecimal (x and X) notation. The letters
         abcdef are used for x conversions; the letters ABCDEF are used for
@@ -136,7 +136,7 @@
         digits that must appear; if the converted value requires fewer
         digits, it is padded on the left with zeros.
 
-        \item{eE} The double argument is rounded and converted in the style
+        \item[eE] The double argument is rounded and converted in the style
         [<->]d.dddedd where there is one digit before the decimal-point
         character and the number of digits after it is equal to the
         precision; if the precision is missing, it is taken as 6; if the
@@ -145,7 +145,7 @@
         exponent. The exponent always contains at least two digits; if the
         value is zero, the exponent is 00.
 
-        \item{f} The double argument is rounded and converted to decimal
+        \item[f] The double argument is rounded and converted to decimal
         notation in the style [-]ddd.ddd, where the number of digits after
         the decimal-point character is equal to the precision
         specification. If the precision is missing, it is taken as 6; if
@@ -153,7 +153,7 @@
         appears. If a decimal point appears, at least one digit appears
         before it.
 
-        \item{g} The double argument is converted in style f or e (or E for
+        \item[g] The double argument is converted in style f or e (or E for
         G conversions). The precision specifies the number of significant
         digits. If the precision is missing, 6 digits are given; if the
         precision is zero, it is treated as 1. Style e is used if the
@@ -162,10 +162,10 @@
         fractional part of the result; a decimal point appears only if it
         is followed by at least one digit.
 
-        \item{c} The int argument is converted to an unsigned char, and the
+        \item[c] The int argument is converted to an unsigned char, and the
         resulting character is written.
 
-        \item{s} The ``char *'' argument is expected to be a pointer to an
+        \item[s] The ``char *'' argument is expected to be a pointer to an
         array of character type (pointer to a string). Characters from the
         array are written up to (but not including) a terminating NUL
         character; if a precision is specified, no more than the number
@@ -174,14 +174,14 @@
         than the size of the array, the array must contain a terminating
         NUL character.
 
-        \item{p} The ``void *'' pointer argument is printed in hexadecimal
+        \item[p] The ``void *'' pointer argument is printed in hexadecimal
         (as if by %#x or %#lx).
 
-        \item{n} The number of characters written so far is stored into the
+        \item[n] The number of characters written so far is stored into the
         integer indicated by the ``int *'' (or variant) pointer argument.
         No argument is converted.
 
-        \item{%} A `%' is written. No argument is converted. The complete
+        \item[%] A `%' is written. No argument is converted. The complete
         conversion specification is `%%'.
 
         \end{description}
