@@ -82,7 +82,9 @@ static int __ungetc(int c, void *_h);
           making portability limited.
 
     SEE ALSO
-        scanf(), fscanf(), sscanf(), vscanf(), vsscanf(), va_start(), va_list
+        scanf(), fscanf(), vscanf(),
+        stdc.library/sscanf(), stdc.library/vsscanf(),
+        va_start(), va_list
 
     INTERNALS
         - Uses `__getfdesc()` to get AROS-specific file descriptor structure.

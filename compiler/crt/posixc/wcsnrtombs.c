@@ -51,7 +51,7 @@
         currently use mbstate_t. It wraps around wcrtomb().
 
     SEE ALSO
-        wcrtomb(), wcsrtombs(), wcstombs(), mbsrtowcs()
+        stdc.library/wcrtomb(), stdc.library/wcsrtombs(), stdc.library/wcstombs(), stdc.library/mbsrtowcs()
 
 ******************************************************************************/
 {

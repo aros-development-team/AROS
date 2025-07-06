@@ -51,7 +51,8 @@
         currently use mbstate_t. It wraps around mbrtowc().
 
     SEE ALSO
-        mbrtowc(), mbstowcs(), wcsnrtombs(), wcsrtombs()
+        wcsnrtombs(),
+        stdc.library/mbrtowc(), stdc.library/mbstowcs(), stdc.library/wcsrtombs()
 
 ******************************************************************************/
 {

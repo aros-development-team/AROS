@@ -57,7 +57,9 @@ static int __putc(int c, void *fh);
         - Assumes AROS-specific file descriptor abstraction and output handling.
 
     SEE ALSO
-        fprintf(), printf(), vsprintf(), vsnprintf(), vprintf(), va_start(), va_list
+        fprintf(), printf(), vprintf(),
+        stdc.library/vsprintf(), stdc.library/vsnprintf(),
+        va_start(), va_list
 
     INTERNALS
         - Retrieves the file descriptor wrapper via `__getfdesc()`.
