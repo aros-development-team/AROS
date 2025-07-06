@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+
+import os
+import re
+from jinja2 import Template
+
+# === Configuration ===
+unittestroot = '/home/project-web/arosdev/htdocs/unittests/'
+html_path = '/home/project-web/arosdev/htdocs/unittests.html'
+
+# === Gather unit test files ===
+results = sorted(os.listdir(unittestroot))
+activepage = '/unittests/' + results[0] if results else ''
+
+# === HTML template for the div content ===
+html_template = """
+<h1>Unit Test Results<br><img style="width: 238px; height: 2px;" alt="spacer" src="/images/sidespacer.png"></h1>
+
+<select name="unittests" id="unittests" onchange="show_unittests(this.value)">
+{% for result in results %}
+    <option value="{{ result }}">{{ result[:-15] }}</option>
+{% endfor %}
+</select>
+
+<object style="float:left;height:100%;" width="100%" height="95vh" id="displayedtest" data="{{ activepage }}" type="text/html"></object>
+
+<script type="text/javascript">
+  function show_unittests(unittest) {
+    document.getElementById("displayedtest").data = "/unittests/" + unittest;
+  }
+</script>
+"""
+
+# === Render the div content ===
+template = Template(html_template)
+new_div_content = template.render(results=results, activepage=activepage)
+
+# === Read the existing HTML ===
+with open(html_path, 'r', encoding='utf-8') as f:
+    html_output = f.read()
+
+# === Replace the content inside <div class="document"> ... </div> ===
+html_output = re.sub(
+    r'(<div\s+class="document">).*?(</div>)',
+    rf'\1\n\n{new_div_content}\n\n\2',
+    html_output,
+    flags=re.DOTALL
+)
+
+# === Write the updated HTML back ===
+with open(html_path, 'w', encoding='utf-8') as f:
+    f.write(html_output)
