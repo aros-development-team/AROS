@@ -4,17 +4,16 @@
     C99 wcsxfrm.
 */
 
-
 /*****************************************************************************
 
     NAME */
 #include <wchar.h>
 
-  size_t wcsxfrm(
+        size_t wcsxfrm(
 
-/* SYNOPSIS */
-      wchar_t *dest, const wchar_t *src, size_t n)
- 
+/*  SYNOPSIS */
+        wchar_t *dest, const wchar_t *src, size_t n)
+
 /*  FUNCTION
         Transforms the wide-character string 'src' into a form suitable
         for comparison using wcscmp(), and stores it in 'dest'.
