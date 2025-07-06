@@ -7,7 +7,7 @@
 # most recent one.
 
 #-- Configuration & Setup ----------------------------------------------------
-ROOT=/home/project-web/aros
+ROOT=/home/project-web/arosdev
 SRC=$ROOT/htdocs/unittests
 LOCK=$SRC.lock
 DAYS_KEEP=30
