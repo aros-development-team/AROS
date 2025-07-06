@@ -50,7 +50,7 @@ steps:
       "$(SF_RSYNC_USER)"@shell.sourceforge.net:$(PROJWEBDIR)/unittests.html .
 
     echo "Run local unittest html update script..."
-    python3 $(LOCAL_WORKDIR)/updateunittests unittest_file_list.txt unittests.html
+    python3 $(LOCAL_WORKDIR)/updateunittests --filelist unittest_file_list.txt --htmlfile unittests.html
 
     echo "Upload updated unittests.html back to remote..."
     rsync -e "ssh -o StrictHostKeyChecking=yes" unittests.html \
