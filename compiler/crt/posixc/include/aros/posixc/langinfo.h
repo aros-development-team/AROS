@@ -1,11 +1,11 @@
 #ifndef _LANGINFO_H
 #define _LANGINFO_H
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright © 2025, The AROS Development Team. All rights reserved.
 */
 
 #include <locale.h>  // For locale_t
-#include <nl_types.h>  // For nl_item
+#include <aros/posixc/nl_types.h>  // For nl_item
 
 #ifdef __cplusplus
 extern "C" {

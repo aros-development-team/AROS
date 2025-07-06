@@ -2,7 +2,9 @@
     Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/posixc/langinfo.h>
 #include <time.h>
+
 /*
 TODO: Implement localization support
 #include <locale.h>
@@ -42,11 +44,6 @@ static const unsigned char *strings[]=
     /* 41 */
     "AM","PM"
 };
-#define ABDAY_1     7
-#define ABMON_1     26
-#define AM_STR      41
-#define DAY_1       0
-#define MON_1       14
 
 static size_t strfnumb(char *s, size_t maxsize, signed int places, size_t value)
 {

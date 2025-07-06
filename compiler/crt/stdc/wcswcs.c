@@ -12,7 +12,7 @@
 
  wchar_t * wcswcs(
 
-/* SYNOPSIS */
+/*  SYNOPSIS */
       const wchar_t *haystack, const wchar_t *needle)
  
 /*  FUNCTION

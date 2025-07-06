@@ -2,6 +2,7 @@
     Copyright (C) 2025, The AROS Development Team. All rights reserved.
 */
 
+#include <aros/posixc/langinfo.h>
 #include <wchar.h>
 #include <time.h>
 /*
@@ -43,11 +44,6 @@ static const wchar_t *wstrings[]=
     /* 41 */
     L"AM",L"PM"
 };
-#define WABDAY_1     7
-#define WABMON_1     26
-#define WAM_STR      41
-#define WDAY_1       0
-#define WMON_1       14
 
 static size_t wcsstrfnumb(wchar_t *s, size_t maxsize, signed int places, size_t value)
 {
@@ -136,10 +132,10 @@ static size_t wcsstrfnumb(wchar_t *s, size_t maxsize, signed int places, size_t 
             switch(*++format)
             {
                 case L'a':
-                    WADDS(WSTR(WABDAY_1+timeptr->tm_wday+1));
+                    WADDS(WSTR(ABDAY_1+timeptr->tm_wday+1));
                 case L'b':
                 case L'h':
-                    WADDS(WSTR(WABMON_1+timeptr->tm_mon+1));
+                    WADDS(WSTR(ABMON_1+timeptr->tm_mon+1));
                 case L'c':
                     WADDS(L"%m/%d/%y");
                 case L'd':
@@ -155,7 +151,7 @@ static size_t wcsstrfnumb(wchar_t *s, size_t maxsize, signed int places, size_t 
                 case L'm':
                     WADDN(2,timeptr->tm_mon+1);
                 case L'p':
-                    WADDS(WSTR(WAM_STR+(timeptr->tm_hour>=12)));
+                    WADDS(WSTR(AM_STR+(timeptr->tm_hour>=12)));
                 case L'r':
                     WADDS(L"%I:%M:%S %p");
                 case L'w':
@@ -165,9 +161,9 @@ static size_t wcsstrfnumb(wchar_t *s, size_t maxsize, signed int places, size_t 
                 case L'y':
                     WADDN(2,timeptr->tm_year%100);
                 case L'A':
-                    WADDS(WSTR(WDAY_1+timeptr->tm_wday+1));
+                    WADDS(WSTR(DAY_1+timeptr->tm_wday+1));
                 case L'B':
-                    WADDS(WSTR(WMON_1+timeptr->tm_mon+1));
+                    WADDS(WSTR(MON_1+timeptr->tm_mon+1));
                 case L'C':
                     WADDS(L"%a %b %e %H:%M:%S %Y");
                 case L'D':

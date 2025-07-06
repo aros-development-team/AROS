@@ -12,7 +12,7 @@
 
   int wcscoll(
 
-/* SYNOPSIS */
+/*  SYNOPSIS */
       const wchar_t *ws1, const wchar_t *ws2)
  
 /*  FUNCTION

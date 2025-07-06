@@ -46,10 +46,15 @@ struct lconv
 #include <aros/types/null.h>
 
 #define LC_ALL		    0
+/* Affects string collation (e.g., strcoll(), wcscoll()) */
 #define LC_COLLATE	    1
+/* Character classification/conversion (isalpha(), toupper(), wctype(), etc.) */
 #define LC_CTYPE	    2
+/* Affects monetary formatting (localeconv()) */
 #define LC_MONETARY	    3
+/* Affects decimal point and thousands separator (localeconv(), numeric I/O) */
 #define LC_NUMERIC	    4
+/* Affects date/time formatting (strftime(), wcsftime()) */
 #define LC_TIME		    5
 
 typedef struct __locale *locale_t;
