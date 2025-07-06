@@ -12,7 +12,7 @@
     NAME */
 #include <assert.h>
 
-        void __assert (
+        void __posixc_assert (
 
 /*  SYNOPSIS */
         const char * expr,
