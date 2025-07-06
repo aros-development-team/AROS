@@ -46,13 +46,15 @@ steps:
       "ls -1 $(REMOTE_UNITTETS_DIR)" > unittest_file_list.txt
 
     echo "Fetch current unittests.html..."
-    scp "$(SF_RSYNC_USER)"@shell.sourceforge.net:$(PROJWEBDIR)/unittests.html .
+    rsync -e "ssh -o StrictHostKeyChecking=yes" \
+      "$(SF_RSYNC_USER)"@shell.sourceforge.net:$(PROJWEBDIR)/unittests.html .
 
     echo "Run local unittest html update script..."
     python3 $(LOCAL_WORKDIR)/updateunittests unittest_file_list.txt unittests.html
 
     echo "Upload updated unittests.html back to remote..."
-    scp unittests.html "$(SF_RSYNC_USER)"@shell.sourceforge.net:$(PROJWEBDIR)/unittests.html
+    rsync -e "ssh -o StrictHostKeyChecking=yes" unittests.html \
+      "$(SF_RSYNC_USER)"@shell.sourceforge.net:$(PROJWEBDIR)/unittests.html
   env:
     SF_RSYNC_USER: $(SF_RSYNC_USER)
   displayName: 'Fetch, Update and Upload Unittests.html'
