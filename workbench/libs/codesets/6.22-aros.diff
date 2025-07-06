@@ -160,6 +160,41 @@ diff -ruN libcodesets-6.22/developer/include/defines/codesets.h libcodesets-6.22
  #endif /* __HAVE_IPTR_ATTR__ */
  #endif /* _SFDC_VARARG_DEFINED */
  
+diff -ruN libcodesets-6.22/include/SDI_lib.h libcodesets-6.22.aros/include/SDI_lib.h
+--- libcodesets-6.22/include/SDI_lib.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/include/SDI_lib.h	2025-07-06 01:06:31.240572061 +0000
+@@ -41,6 +41,7 @@
+                   version (Thore Böckelmann)
+  1.12  01.04.14 : removed the necessity of stub functions for AmigaOS4 (Thore
+                   Böckelmann)
++ WIP   21.08.14 : fix for AROS
+  1.13  28.09.15 : removed the exclusion of C++ (Thore Böckelmann)
+  1.14  18.02.16 : added LFUNC_NULL (Jens Maus)
+ 
+@@ -167,6 +168,23 @@
+   #define LFUNC_VA_(name)
+   #define LFUNC_NULL      ,NULL
+   #define LFUNC(name)     LIBSTUB_##name
++#elif defined(__AROS__)
++  #define LIBFUNC SAVEDS ASM
++  #if (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
++    (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
++    #define LIBPROTO(name, ret, base, ...)                            \
++      LIBFUNC ret LIB_##name(__VA_ARGS__)
++    #define LIBPROTOVA(name, ret, ...)
++    #define LIBSTUB(name, ret, ...)
++    #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
++    #define CALL_LFUNC(name, ...) LIB_##name(__VA_ARGS__, __BASE_OR_IFACE_VAR)
++  #endif
++  #define LFUNC_FAS(name) LIB_##name
++  #define LFUNC_VAS(name)
++  #define LFUNC_FA_(name) ,LIB_##name
++  #define LFUNC_VA_(name)
++  #define LFUNC_NULL      ,NULL
++  #define LFUNC(name)     LIB_##name
+ #else
+   #define LIBFUNC SAVEDS ASM
+   #if (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
 diff -ruN libcodesets-6.22/src/version.h libcodesets-6.22.aros/src/version.h
 --- libcodesets-6.22/src/version.h	2024-02-26 07:56:38.000000000 +0000
 +++ libcodesets-6.22.aros/src/version.h	2025-06-19 22:25:27.179309835 +0000
