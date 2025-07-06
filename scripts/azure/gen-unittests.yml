@@ -1,15 +1,12 @@
-
-# Update the unittests.html file based on available unit test results
-# To use, you must define the following secret variables
-# in the pipeline settings -:
-#    SF_RSYNC_USER - sourceforge user to upload as
-#    SF_RSYNC_PASSWORD - ...
+# Update unittests.html based on remote unit test files
+# Requires secrets:
+# - SF_RSYNC_USER
 
 trigger:
 - master
 
 schedules:
-- cron: "15 */6 * * *"
+- cron: "15 */6 * * *"    # Every 6 hours
   branches:
     include:
     - master
@@ -21,9 +18,12 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-    PROJWEBDIR:  '/home/project-web' # Location script is run from
+  PROJWEBDIR: '/home/project-web/arosdev/htdocs'
+  REMOTE_UNITTETS_DIR: '/home/project-web/arosdev/htdocs/unittests'
+  LOCAL_WORKDIR: '$(Build.SourcesDirectory)/scripts/web'
 
 steps:
+
 - task: DownloadSecureFile@1
   name: GetSSHKey
   inputs:
@@ -36,22 +36,24 @@ steps:
     chmod 600 ~/.ssh/id_rsa
     chmod 700 ~/.ssh
 
-    # Add SourceForge to known hosts (non-interactive SSH)
+    # Add SourceForge host to known hosts for non-interactive SSH
     ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
-  displayName: 'Setup SSH Key for SourceForge'
+  displayName: 'Setup SSH Key for SSH Access'
 
 - script: |
-    echo "Checking shell access..."
-    # Try a noop command to test if shell is ready
-    if ! ssh -o StrictHostKeyChecking=no "$MAPPED_USER"@shell.sourceforge.net true; then
-      echo "Shell not active yet. Creating shell..."
-      ssh -t "$MAPPED_USER"@shell.sourceforge.net create
-    fi
+    echo "Fetch remote unittest file list..."
+    ssh -o StrictHostKeyChecking=yes "$(SF_RSYNC_USER)"@shell.sourceforge.net \
+      "ls -1 $(REMOTE_UNITTETS_DIR)" > unittest_file_list.txt
 
-    echo "Running update scripts on SourceForge..."
-    ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER"@shell.sourceforge.net \
-      "cd '$PROJWEBDIR' && ./aros/scripts/updateunittests"
+    echo "Fetch current unittests.html..."
+    scp "$(SF_RSYNC_USER)"@shell.sourceforge.net:$(PROJWEBDIR)/unittests.html .
+
+    echo "Run local unittest html update script..."
+    python3 $(LOCAL_WORKDIR)/updateunittests unittest_file_list.txt unittests.html
+
+    echo "Upload updated unittests.html back to remote..."
+    scp unittests.html "$(SF_RSYNC_USER)"@shell.sourceforge.net:$(PROJWEBDIR)/unittests.html
   env:
-    MAPPED_USER: $(SF_RSYNC_USER)  # Set this in your pipeline variable group or UI
-  condition: ne( variables['SF_RSYNC_USER'], '' )
-  displayName: 'Run Remote Unittest Generate Script'
+    SF_RSYNC_USER: $(SF_RSYNC_USER)
+  displayName: 'Fetch, Update and Upload Unittests.html'
+  
