@@ -346,7 +346,7 @@ jobs:
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
       #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-      sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
+      sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/
       rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
@@ -446,7 +446,7 @@ jobs:
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/'
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)*-toolchain* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/
       #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-      sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
+      sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/
       rm -Rf '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)'
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
